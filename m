@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754489AbaBEUFW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:05:22 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:48089 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754409AbaBEUFN (ORCPT
+	id S1756091AbaBEU6Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:58:24 -0500
+Received: from mail.windriver.com ([147.11.1.11]:54692 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754338AbaBEUFY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:05:13 -0500
+	Wed, 5 Feb 2014 15:05:24 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+CC: "danborkmann@iogearbox.net" <danborkmann@iogearbox.net>,
+        Daniel Borkmann <daniel.borkmann@tik.ee.ethz.ch>,
         "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 058/213] net/core: Fix potential memory leak in dev_set_alias()
-Date: Wed, 5 Feb 2014 15:00:13 -0500
-Message-ID: <1391630568-49251-59-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 050/213] af_packet: remove BUG statement in tpacket_destruct_skb
+Date: Wed, 5 Feb 2014 15:00:05 -0500
+Message-ID: <1391630568-49251-51-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,7 +25,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+From: "danborkmann@iogearbox.net" <danborkmann@iogearbox.net>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -32,45 +33,49 @@ From: Alexey Khoroshilov <khoroshilov@ispras.ru>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 7364e445f62825758fa61195d237a5b8ecdd06ec upstream.
+commit 7f5c3e3a80e6654cf48dfba7cf94f88c6b505467 upstream.
 
-Do not leak memory by updating pointer with potentially NULL realloc return value.
+Here's a quote of the comment about the BUG macro from asm-generic/bug.h:
 
-Found by Linux Driver Verification project (linuxtesting.org).
+ Don't use BUG() or BUG_ON() unless there's really no way out; one
+ example might be detecting data structure corruption in the middle
+ of an operation that can't be backed out of.  If the (sub)system
+ can somehow continue operating, perhaps with reduced functionality,
+ it's probably not BUG-worthy.
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+ If you're tempted to BUG(), think again:  is completely giving up
+ really the *only* solution?  There are usually better options, where
+ users don't need to reboot ASAP and can mostly shut down cleanly.
+
+In our case, the status flag of a ring buffer slot is managed from both sides,
+the kernel space and the user space. This means that even though the kernel
+side might work as expected, the user space screws up and changes this flag
+right between the send(2) is triggered when the flag is changed to
+TP_STATUS_SENDING and a given skb is destructed after some time. Then, this
+will hit the BUG macro. As David suggested, the best solution is to simply
+remove this statement since it cannot be used for kernel side internal
+consistency checks. I've tested it and the system still behaves /stable/ in
+this case, so in accordance with the above comment, we should rather remove it.
+
+Signed-off-by: Daniel Borkmann <daniel.borkmann@tik.ee.ethz.ch>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/core/dev.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ net/packet/af_packet.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 253b409fe3ab..3dbbba137c93 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -1034,6 +1034,8 @@ rollback:
-  */
- int dev_set_alias(struct net_device *dev, const char *alias, size_t len)
- {
-+	char *new_ifalias;
-+
- 	ASSERT_RTNL();
+diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
+index 4096a66f6379..dbe4dd160631 100644
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -812,7 +812,6 @@ static void tpacket_destruct_skb(struct sk_buff *skb)
  
- 	if (len >= IFALIASZ)
-@@ -1047,9 +1049,10 @@ int dev_set_alias(struct net_device *dev, const char *alias, size_t len)
- 		return 0;
- 	}
- 
--	dev->ifalias = krealloc(dev->ifalias, len + 1, GFP_KERNEL);
--	if (!dev->ifalias)
-+	new_ifalias = krealloc(dev->ifalias, len + 1, GFP_KERNEL);
-+	if (!new_ifalias)
- 		return -ENOMEM;
-+	dev->ifalias = new_ifalias;
- 
- 	strlcpy(dev->ifalias, alias, len+1);
- 	return len;
+ 	if (likely(po->tx_ring.pg_vec)) {
+ 		ph = skb_shinfo(skb)->destructor_arg;
+-		BUG_ON(__packet_get_status(po, ph) != TP_STATUS_SENDING);
+ 		BUG_ON(atomic_read(&po->tx_ring.pending) == 0);
+ 		atomic_dec(&po->tx_ring.pending);
+ 		__packet_set_status(po, ph, TP_STATUS_AVAILABLE);
 -- 
 1.8.5.2
 
