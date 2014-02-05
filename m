@@ -1,108 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752906AbaBEQTp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 11:19:45 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54645 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752879AbaBEQTm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 11:19:42 -0500
-Date: Wed, 5 Feb 2014 17:19:40 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH -v2 4/6] memcg: make sure that memcg is not offline when
- charging
-Message-ID: <20140205161940.GE2425@dhcp22.suse.cz>
-References: <1391520540-17436-1-git-send-email-mhocko@suse.cz>
- <1391520540-17436-5-git-send-email-mhocko@suse.cz>
- <20140204162939.GP6963@cmpxchg.org>
- <20140205133834.GB2425@dhcp22.suse.cz>
- <20140205152821.GY6963@cmpxchg.org>
+	id S1752827AbaBEQZK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 11:25:10 -0500
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:49565 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752399AbaBEQZH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 11:25:07 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140205152821.GY6963@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+mB=1K8Cqe_c6_ce-fLyphvqcr90mhCjFdZ_d4BV-VkUk-gXw@mail.gmail.com>
+References: <1390409565-4200-1-git-send-email-sthokal@xilinx.com>
+	<1390409565-4200-2-git-send-email-sthokal@xilinx.com>
+	<52E0FC22.8060903@metafoo.de>
+	<CA+mB=1L6yvCwA3mKCwz83LQbXiVau110REV64rYrSzUhGE4ucA@mail.gmail.com>
+	<52E2698B.6070001@metafoo.de>
+	<20140126135933.GD10628@intel.com>
+	<52E54849.2000208@metafoo.de>
+	<CA+mB=1JvnTcyRnuvdnW1BCeiMLSTMrrAbKwVKgwFUmWrVuXzSw@mail.gmail.com>
+	<20140128031324.GH10628@intel.com>
+	<CA+mB=1K8Cqe_c6_ce-fLyphvqcr90mhCjFdZ_d4BV-VkUk-gXw@mail.gmail.com>
+Date: Wed, 5 Feb 2014 21:55:02 +0530
+X-Google-Sender-Auth: frdinwp4DeoQGV_pRewYndSZWaE
+Message-ID: <CA+mB=1L9XFC8h_qW_-K-cv5sYondL_0NiLr=9XCFxwWRjDHn1Q@mail.gmail.com>
+Subject: Re: [PATCH v2] dma: Add Xilinx AXI Video Direct Memory Access Engine
+ driver support
+From: Srikanth Thokala <sthokal@xilinx.com>
+To: Srikanth Thokala <sthokal@xilinx.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, Lars-Peter Clausen <lars@metafoo.de>,
+        dan.j.williams@intel.com, michal.simek@xilinx.com,
+        Grant Likely <grant.likely@linaro.org>, robh+dt@kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        devicetree@vger.kernel.org, dmaengine@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 05-02-14 10:28:21, Johannes Weiner wrote:
-> On Wed, Feb 05, 2014 at 02:38:34PM +0100, Michal Hocko wrote:
-> > On Tue 04-02-14 11:29:39, Johannes Weiner wrote:
-> > [...]
-> > > Maybe we should remove the XXX if it makes you think we should change
-> > > the current situation by any means necessary.  This patch is not an
-> > > improvement.
-> > >
-> > > I put the XXX there so that we one day maybe refactor the code in a
-> > > clean fashion where try_get_mem_cgroup_from_whatever() is in the same
-> > > rcu section as the first charge attempt.  On failure, reclaim, and do
-> > > the lookup again.
-> > 
-> > I wouldn't be opposed to such a cleanup. It is not that simple, though.
-> >
-> > > Also, this problem only exists on swapin, where the memcg is looked up
-> > > from an auxilliary data structure and not the current task, so maybe
-> > > that would be an angle to look for a clean solution.
-> > 
-> > I am not so sure about that. Task could have been moved to a different
-> > group basically anytime it was outside of rcu_read_lock section (which
-> > means most of the time). And so the group might get removed and we are
-> > in the very same situation.
-> > 
-> > > Either way, the problem is currently fixed 
-> > 
-> > OK, my understanding (and my ack was based on that) was that we needed
-> > a simple and safe fix for the stable trees and we would have something
-> > more appropriate later on. Preventing from the race sounds like a more
-> > appropriate and a better technical solution to me. So I would rather ask
-> > why to keep a workaround in place. Does it add any risk?
-> > Especially when we basically abuse the 2 stage cgroup removal. All the
-> > charges should be cleared out after css_offline.
-> 
-> I thought more about this and talked to Tejun as well.  He told me
-> that the rcu grace period between disabling tryget and calling
-> css_offline() is currently an implementation detail of the refcounter
-> that css uses, but it's not a guarantee.  So my initial idea of
-> reworking memcg to do css_tryget() and res_counter_charge() in the
-> same rcu section is no longer enough to synchronize against offlining.
-> We can forget about that.
-> 
-> On the other hand, memcg holds a css reference only while an actual
-> controller reference is being established (res_counter_charge), then
-> drops it.  This means that once css_tryget() is disabled, we only need
-> to wait for the css refcounter to hit 0 to know for sure that no new
-> charges can show up and reparent_charges() is safe to run, right?
-> 
-> Well, css_free() is the callback invoked when the ref counter hits 0,
-> and that is a guarantee.  From a memcg perspective, it's the right
-> place to do reparenting, not css_offline().
+On Fri, Jan 31, 2014 at 12:21 PM, Srikanth Thokala <sthokal@xilinx.com> wrote:
+> Hi Vinod,
+>
+> On Tue, Jan 28, 2014 at 8:43 AM, Vinod Koul <vinod.koul@intel.com> wrote:
+>> On Mon, Jan 27, 2014 at 06:42:36PM +0530, Srikanth Thokala wrote:
+>>> Hi Lars/Vinod,
+>>> >> The question here i think would be waht this device supports? Is the hardware
+>>> >> capable of doing interleaved transfers, then would make sense.
+>>> >
+>>> > The hardware does 2D transfers. The parameters for a transfer are height,
+>>> > width and stride. That's only a subset of what interleaved transfers can be
+>>> > (xt->num_frames must be one for 2d transfers). But if I remember correctly
+>>> > there has been some discussion on this in the past and the result of that
+>>> > discussion was that using interleaved transfers for 2D transfers is
+>>> > preferred over adding a custom API for 2D transfers.
+>>>
+>>> I went through the prep_interleaved_dma API and I see only one descriptor
+>>> is prepared per API call (i.e. per frame).  As our IP supports upto 16 frame
+>>> buffers (can be more in future), isn't it less efficient compared to the
+>>> prep_slave_sg where we get a single sg list and can prepare all the descriptors
+>>> (of non-contiguous buffers) in one go?  Correct me, if am wrong and let me
+>>> know your opinions.
+>> Well the descriptor maybe one, but that can represent multiple frames, for
+>> example 16 as in your case. Can you read up the documentation of how multiple
+>> frames are passed. Pls see include/linux/dmaengine.h
+>>
+>> /**
+>>  * Interleaved Transfer Request
+>>  * ----------------------------
+>>  * A chunk is collection of contiguous bytes to be transfered.
+>>  * The gap(in bytes) between two chunks is called inter-chunk-gap(ICG).
+>>  * ICGs may or maynot change between chunks.
+>>  * A FRAME is the smallest series of contiguous {chunk,icg} pairs,
+>>  *  that when repeated an integral number of times, specifies the transfer.
+>>  * A transfer template is specification of a Frame, the number of times
+>>  *  it is to be repeated and other per-transfer attributes.
+>>  *
+>>  * Practically, a client driver would have ready a template for each
+>>  *  type of transfer it is going to need during its lifetime and
+>>  *  set only 'src_start' and 'dst_start' before submitting the requests.
+>>  *
+>>  *
+>>  *  |      Frame-1        |       Frame-2       | ~ |       Frame-'numf'  |
+>>  *  |====....==.===...=...|====....==.===...=...| ~ |====....==.===...=...|
+>>  *
+>>  *    ==  Chunk size
+>>  *    ... ICG
+>>  */
+>
+> Yes, it can handle multiple frames specified by 'numf' each of size
+> 'frame_size * sgl[0].size'.
+> But, I see it only works if all the frames' memory is contiguous and
+> in this case we
+> can just increment 'src_start' by the total frame size 'numf' number
+> of times to fill in
+> for each HW descriptor (each frame is one HW descriptor).  So, there
+> is no issue when the
+> memory is contiguous.  If the frames are non contiguous, we have to
+> call this API for each
+> frame (hence for each descriptor), as the src_start for each frame is
+> different.  Is it correct?
+>
+> FYI: This hardware has an inbuilt Scatter-Gather engine.
+>
 
-OK, it seems I've totally misunderstood what is the purpose of
-css_offline. My understanding was that any attempt to css_tryget will
-fail when css_offline starts. I will read through Tejun's email as well
-and think about it some more.
+Ping?
 
-> Here is the only exception to the above: swapout records maintain
-> permanent css references, so they prevent css_free() from running.
-> For that reason alone we should run one optimistic reparenting in
-> css_offline() to make sure one swap record does not pin gigabytes of
-> pages in an offlined cgroup, which is unreachable for reclaim.  But
 
-How can reparenting help for swapped out pages? Or did you mean to at
-least get rid of swapcache pages?
-
-> the reparenting for *correctness* is in css_free(), not css_offline().
-
-With the provided explanation of css_offline yes.
-
-> We should be changing the comments.  The code is already correct.
-[...]
--- 
-Michal Hocko
-SUSE Labs
+> Srikanth
+>
+>>
+>> --
+>> ~Vinod
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
