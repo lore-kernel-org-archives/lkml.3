@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755933AbaBEUxE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:53:04 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:48228 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754709AbaBEUFz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754710AbaBEUFz (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 5 Feb 2014 15:05:55 -0500
+Received: from mail.windriver.com ([147.11.1.11]:54795 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754505AbaBEUFk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 15:05:40 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Denys Vlasenko <vda.linux@googlemail.com>, Oleg Nesterov <oleg@redhat.com>,
-        Venu Byravarasu <vbyravarasu@nvidia.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+CC: Neil Horman <nhorman@tuxdriver.com>, David Miller <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 090/213] coredump: prevent double-free on an error path in core dumper
-Date: Wed, 5 Feb 2014 15:00:45 -0500
-Message-ID: <1391630568-49251-91-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 065/213] drop_monitor: Make updating data->skb smp safe
+Date: Wed, 5 Feb 2014 15:00:20 -0500
+Message-ID: <1391630568-49251-66-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -25,7 +23,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Denys Vlasenko <vda.linux@googlemail.com>
+From: Neil Horman <nhorman@tuxdriver.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -33,65 +31,186 @@ From: Denys Vlasenko <vda.linux@googlemail.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit f34f9d186df35e5c39163444c43b4fc6255e39c5 upstream.
+commit 3885ca785a3618593226687ced84f3f336dc3860 upstream.
 
-In !CORE_DUMP_USE_REGSET case, if elf_note_info_init fails to allocate
-memory for info->fields, it frees already allocated stuff and returns
-error to its caller, fill_note_info.  Which in turn returns error to its
-caller, elf_core_dump.  Which jumps to cleanup label and calls
-free_note_info, which will happily try to free all info->fields again.
-BOOM.
+Eric Dumazet pointed out to me that the drop_monitor protocol has some holes in
+its smp protections.  Specifically, its possible to replace data->skb while its
+being written.  This patch corrects that by making data->skb an rcu protected
+variable.  That will prevent it from being overwritten while a tracepoint is
+modifying it.
 
-This is the fix.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Venu Byravarasu <vbyravarasu@nvidia.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+Reported-by: Eric Dumazet <eric.dumazet@gmail.com>
+CC: David Miller <davem@davemloft.net>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[PG: The "__rcu" sparse addition is only present in 2.6.37+ kernels.]
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/binfmt_elf.c | 19 ++++---------------
- 1 file changed, 4 insertions(+), 15 deletions(-)
+ net/core/drop_monitor.c | 70 ++++++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 54 insertions(+), 16 deletions(-)
 
-diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
-index c21da8aebe46..eee4dd5a13cc 100644
---- a/fs/binfmt_elf.c
-+++ b/fs/binfmt_elf.c
-@@ -1661,30 +1661,19 @@ static int elf_note_info_init(struct elf_note_info *info)
- 		return 0;
- 	info->psinfo = kmalloc(sizeof(*info->psinfo), GFP_KERNEL);
- 	if (!info->psinfo)
--		goto notes_free;
-+		return 0;
- 	info->prstatus = kmalloc(sizeof(*info->prstatus), GFP_KERNEL);
- 	if (!info->prstatus)
--		goto psinfo_free;
-+		return 0;
- 	info->fpu = kmalloc(sizeof(*info->fpu), GFP_KERNEL);
- 	if (!info->fpu)
--		goto prstatus_free;
-+		return 0;
- #ifdef ELF_CORE_COPY_XFPREGS
- 	info->xfpu = kmalloc(sizeof(*info->xfpu), GFP_KERNEL);
- 	if (!info->xfpu)
--		goto fpu_free;
-+		return 0;
- #endif
- 	return 1;
--#ifdef ELF_CORE_COPY_XFPREGS
-- fpu_free:
--	kfree(info->fpu);
--#endif
-- prstatus_free:
--	kfree(info->prstatus);
-- psinfo_free:
--	kfree(info->psinfo);
-- notes_free:
--	kfree(info->notes);
--	return 0;
+diff --git a/net/core/drop_monitor.c b/net/core/drop_monitor.c
+index e596db9fefd0..0b8aba761930 100644
+--- a/net/core/drop_monitor.c
++++ b/net/core/drop_monitor.c
+@@ -46,7 +46,7 @@ static DEFINE_MUTEX(trace_state_mutex);
+ 
+ struct per_cpu_dm_data {
+ 	struct work_struct dm_alert_work;
+-	struct sk_buff *skb;
++	struct sk_buff /* __rcu <-- only 2.6.37+ */ *skb;
+ 	atomic_t dm_hit_count;
+ 	struct timer_list send_timer;
+ };
+@@ -73,35 +73,58 @@ static int dm_hit_limit = 64;
+ static int dm_delay = 1;
+ static unsigned long dm_hw_check_delta = 2*HZ;
+ static LIST_HEAD(hw_stats_list);
++static int initialized = 0;
+ 
+ static void reset_per_cpu_data(struct per_cpu_dm_data *data)
+ {
+ 	size_t al;
+ 	struct net_dm_alert_msg *msg;
+ 	struct nlattr *nla;
++	struct sk_buff *skb;
++	struct sk_buff *oskb = rcu_dereference_protected(data->skb, 1);
+ 
+ 	al = sizeof(struct net_dm_alert_msg);
+ 	al += dm_hit_limit * sizeof(struct net_dm_drop_point);
+ 	al += sizeof(struct nlattr);
+ 
+-	data->skb = genlmsg_new(al, GFP_KERNEL);
+-	genlmsg_put(data->skb, 0, 0, &net_drop_monitor_family,
+-			0, NET_DM_CMD_ALERT);
+-	nla = nla_reserve(data->skb, NLA_UNSPEC, sizeof(struct net_dm_alert_msg));
+-	msg = nla_data(nla);
+-	memset(msg, 0, al);
+-	atomic_set(&data->dm_hit_count, dm_hit_limit);
++	skb = genlmsg_new(al, GFP_KERNEL);
++
++	if (skb) {
++		genlmsg_put(skb, 0, 0, &net_drop_monitor_family,
++				0, NET_DM_CMD_ALERT);
++		nla = nla_reserve(skb, NLA_UNSPEC,
++				  sizeof(struct net_dm_alert_msg));
++		msg = nla_data(nla);
++		memset(msg, 0, al);
++	} else if (initialized)
++		schedule_work_on(smp_processor_id(), &data->dm_alert_work);
++
++	/*
++	 * Don't need to lock this, since we are guaranteed to only
++	 * run this on a single cpu at a time.
++	 * Note also that we only update data->skb if the old and new skb
++	 * pointers don't match.  This ensures that we don't continually call
++	 * synchornize_rcu if we repeatedly fail to alloc a new netlink message.
++	 */
++	if (skb != oskb) {
++		rcu_assign_pointer(data->skb, skb);
++
++		synchronize_rcu();
++
++		atomic_set(&data->dm_hit_count, dm_hit_limit);
++	}
++
  }
  
- static int fill_note_info(struct elfhdr *elf, int phdrs,
+ static void send_dm_alert(struct work_struct *unused)
+ {
+ 	struct sk_buff *skb;
+-	struct per_cpu_dm_data *data = &__get_cpu_var(dm_cpu_data);
++	struct per_cpu_dm_data *data = &get_cpu_var(dm_cpu_data);
+ 
+ 	/*
+ 	 * Grab the skb we're about to send
+ 	 */
+-	skb = data->skb;
++	skb = rcu_dereference_protected(data->skb, 1);
+ 
+ 	/*
+ 	 * Replace it with a new one
+@@ -111,8 +134,10 @@ static void send_dm_alert(struct work_struct *unused)
+ 	/*
+ 	 * Ship it!
+ 	 */
+-	genlmsg_multicast(skb, 0, NET_DM_GRP_ALERT, GFP_KERNEL);
++	if (skb)
++		genlmsg_multicast(skb, 0, NET_DM_GRP_ALERT, GFP_KERNEL);
+ 
++	put_cpu_var(dm_cpu_data);
+ }
+ 
+ /*
+@@ -123,9 +148,11 @@ static void send_dm_alert(struct work_struct *unused)
+  */
+ static void sched_send_work(unsigned long unused)
+ {
+-	struct per_cpu_dm_data *data =  &__get_cpu_var(dm_cpu_data);
++	struct per_cpu_dm_data *data =  &get_cpu_var(dm_cpu_data);
++
++	schedule_work_on(smp_processor_id(), &data->dm_alert_work);
+ 
+-	schedule_work(&data->dm_alert_work);
++	put_cpu_var(dm_cpu_data);
+ }
+ 
+ static void trace_drop_common(struct sk_buff *skb, void *location)
+@@ -134,9 +161,16 @@ static void trace_drop_common(struct sk_buff *skb, void *location)
+ 	struct nlmsghdr *nlh;
+ 	struct nlattr *nla;
+ 	int i;
+-	struct per_cpu_dm_data *data = &__get_cpu_var(dm_cpu_data);
++	struct sk_buff *dskb;
++	struct per_cpu_dm_data *data = &get_cpu_var(dm_cpu_data);
+ 
+ 
++	rcu_read_lock();
++	dskb = rcu_dereference(data->skb);
++
++	if (!dskb)
++		goto out;
++
+ 	if (!atomic_add_unless(&data->dm_hit_count, -1, 0)) {
+ 		/*
+ 		 * we're already at zero, discard this hit
+@@ -144,7 +178,7 @@ static void trace_drop_common(struct sk_buff *skb, void *location)
+ 		goto out;
+ 	}
+ 
+-	nlh = (struct nlmsghdr *)data->skb->data;
++	nlh = (struct nlmsghdr *)dskb->data;
+ 	nla = genlmsg_data(nlmsg_data(nlh));
+ 	msg = nla_data(nla);
+ 	for (i = 0; i < msg->entries; i++) {
+@@ -157,7 +191,7 @@ static void trace_drop_common(struct sk_buff *skb, void *location)
+ 	/*
+ 	 * We need to create a new entry
+ 	 */
+-	__nla_reserve_nohdr(data->skb, sizeof(struct net_dm_drop_point));
++	__nla_reserve_nohdr(dskb, sizeof(struct net_dm_drop_point));
+ 	nla->nla_len += NLA_ALIGN(sizeof(struct net_dm_drop_point));
+ 	memcpy(msg->points[msg->entries].pc, &location, sizeof(void *));
+ 	msg->points[msg->entries].count = 1;
+@@ -169,6 +203,8 @@ static void trace_drop_common(struct sk_buff *skb, void *location)
+ 	}
+ 
+ out:
++	rcu_read_unlock();
++	put_cpu_var(dm_cpu_data);
+ 	return;
+ }
+ 
+@@ -385,6 +421,8 @@ static int __init init_net_drop_monitor(void)
+ 		data->send_timer.function = sched_send_work;
+ 	}
+ 
++	initialized = 1;
++
+ 	goto out;
+ 
+ out_unreg:
 -- 
 1.8.5.2
 
