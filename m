@@ -1,227 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753023AbaBEQws (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 11:52:48 -0500
-Received: from mail-vb0-f48.google.com ([209.85.212.48]:55357 "EHLO
-	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752681AbaBEQwp (ORCPT
+	id S1753141AbaBEQ4R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 11:56:17 -0500
+Received: from mx2.parallels.com ([199.115.105.18]:42547 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752293AbaBEQ4P convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 11:52:45 -0500
+	Wed, 5 Feb 2014 11:56:15 -0500
+From: James Bottomley <jbottomley@parallels.com>
+To: "eiichi.tsukata.xh@hitachi.com" <eiichi.tsukata.xh@hitachi.com>
+CC: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [REVIEW PATCH] scsi: Add 'retry_timeout' to avoid infinite
+ command retry
+Thread-Topic: [REVIEW PATCH] scsi: Add 'retry_timeout' to avoid infinite
+ command retry
+Thread-Index: AQHPIjXiE8KNOjvSREKEMoATMwfwZJqnZ+6A
+Date: Wed, 5 Feb 2014 16:55:49 +0000
+Message-ID: <1391619349.2213.11.camel@dabdike.int.hansenpartnership.com>
+References: <1391579254-26204-1-git-send-email-eiichi.tsukata.xh@hitachi.com>
+	 <1391579254-26204-2-git-send-email-eiichi.tsukata.xh@hitachi.com>
+In-Reply-To: <1391579254-26204-2-git-send-email-eiichi.tsukata.xh@hitachi.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [24.17.213.192]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <5EDC534DCF32254893D91A1F76CA58AB@sw.swsoft.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-In-Reply-To: <20140205135203.GA16229@redhat.com>
-References: <20140204120500.041b5175@gandalf.local.home>
-	<CA+55aFyObrVGXqncNboMzybeevPBOtAUcn-zur_B26VHJ1CEcg@mail.gmail.com>
-	<20140204182852.43ffa442@gandalf.local.home>
-	<20140204184208.6f4f22a8@gandalf.local.home>
-	<CA+55aFyTC1UGvRgH5vASh-C3M+GqHPMNGsUq3Q1MuynzkiSaEA@mail.gmail.com>
-	<20140205011028.GM10323@ZenIV.linux.org.uk>
-	<CA+55aFy23NFG6Vw_FRXSALcCeOXF=48iS4s2rDc_0dAONbOETw@mail.gmail.com>
-	<20140205135203.GA16229@redhat.com>
-Date: Wed, 5 Feb 2014 08:52:43 -0800
-X-Google-Sender-Auth: gKGaNxmLio5L1GpYSRK_ssz-e0E
-Message-ID: <CA+55aFx4Se0+ff4gnrY5_bVYH9BpeMsZ1=aKgZ5bmw8QC4sajw@mail.gmail.com>
-Subject: Re: [RFC][PATCH] exec: Fix use after free of tracepoint trace_sched_process_exec
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@parisplace.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Smith <dsmith@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Igor Zhbanov <i.zhbanov@samsung.com>,
-        Christoph Hellwig <hch@infradead.org>
-Content-Type: multipart/mixed; boundary=001a11c2b8daedbeb804f1ab95b1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001a11c2b8daedbeb804f1ab95b1
-Content-Type: text/plain; charset=UTF-8
+On Wed, 2014-02-05 at 14:47 +0900, Eiichi Tsukata wrote:
+> Currently, scsi error handling in scsi_decide_disposition() tries to
+> unconditionally requeue scsi command when device keeps some error state.
+> This is because retryable errors are thought to be temporary and the scsi
+> device will soon recover from those errors. Normally, such retry policy is
+> appropriate because the device will soon recover from temporary error state.
 
-On Wed, Feb 5, 2014 at 5:52 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->
-> Do we really need this change? If not (afaics), the patch can be
-> much simpler, see below...
+This description isn't very descriptive.  I presume you're talking about
+the ADD_TO_MLQUEUE return from scsi_decide_disposition()?
 
-Right you are.
+> But there is no guarantee that device is able to recover from error state
+> immediately. Some hardware error may prevent device from recovering.
+> Therefore hardware error can results in infinite command retry loop.
 
-I started out with free_bprm() being non-static, and thought I had to
-handle other callers. Which is why I made the bprm->filename be the
-"struct filename" so that brpm_free() could free it.
+If you're talking about ADD_TO_MLQUEUE, I don't believe this is correct:
+there's a test in scsi_softirq_done() that makes sure the maximum
+lifetime is retries*timeout and fails the command after that.
 
-And then I only later noticed that free_bprm() was really only used by
-fs/exec.c, and turned it static - and you're right, if we always just
-free it in do_execve_common(), that simplifies the patch a lot.
+James
 
-Good call. New patch attached. More comments?
 
-              Linus
+> This patchs adds 'retry_timeout' sysfs attribute which limits the retry time
+> of each scsi command. Once scsi command retry time is longer than this timeout,
+> the command is treated as failure. 'retry_timeout' is set to '0' by default
+> which means no timeout set.
+> 
+> Signed-off-by: Eiichi Tsukata <eiichi.tsukata.xh@hitachi.com>
+> Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+> Cc: linux-scsi@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  drivers/scsi/scsi_lib.c    | 22 +++++++++++++++++++++-
+>  drivers/scsi/scsi_scan.c   |  1 +
+>  drivers/scsi/scsi_sysfs.c  | 32 ++++++++++++++++++++++++++++++++
+>  include/scsi/scsi.h        |  1 +
+>  include/scsi/scsi_device.h |  1 +
+>  5 files changed, 56 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+> index 7bd7f0d..a9db69e 100644
+> --- a/drivers/scsi/scsi_lib.c
+> +++ b/drivers/scsi/scsi_lib.c
+> @@ -1492,6 +1492,23 @@ static void scsi_kill_request(struct request *req, struct request_queue *q)
+>  	blk_complete_request(req);
+>  }
+>  
+> +/*
+> + * Check if scsi command excessed retry timeout
+> + */
+> +static int scsi_retry_timed_out(struct scsi_cmnd *cmd)
+> +{
+> +	unsigned int retry_timeout;
+> +
+> +	retry_timeout = cmd->device->retry_timeout;
+> +	if (retry_timeout &&
+> +	    time_before(cmd->jiffies_at_alloc + retry_timeout, jiffies)) {
+> +		scmd_printk(KERN_INFO, cmd, "retry timeout\n");
+> +		return 1;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+>  static void scsi_softirq_done(struct request *rq)
+>  {
+>  	struct scsi_cmnd *cmd = rq->special;
+> @@ -1512,7 +1529,10 @@ static void scsi_softirq_done(struct request *rq)
+>  			    wait_for/HZ);
+>  		disposition = SUCCESS;
+>  	}
+> -			
+> +
+> +	if (scsi_retry_timed_out(cmd))
+> +		disposition = FAILED;
+> +
+>  	scsi_log_completion(cmd, disposition);
+>  
+>  	switch (disposition) {
+> diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
+> index 307a811..4ab044a 100644
+> --- a/drivers/scsi/scsi_scan.c
+> +++ b/drivers/scsi/scsi_scan.c
+> @@ -925,6 +925,7 @@ static int scsi_add_lun(struct scsi_device *sdev, unsigned char *inq_result,
+>  		sdev->no_dif = 1;
+>  
+>  	sdev->eh_timeout = SCSI_DEFAULT_EH_TIMEOUT;
+> +	sdev->retry_timeout = SCSI_DEFAULT_RETRY_TIMEOUT;
+>  
+>  	if (*bflags & BLIST_SKIP_VPD_PAGES)
+>  		sdev->skip_vpd_pages = 1;
+> diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
+> index 8ff62c2..eaa2118 100644
+> --- a/drivers/scsi/scsi_sysfs.c
+> +++ b/drivers/scsi/scsi_sysfs.c
+> @@ -627,6 +627,37 @@ sdev_store_eh_timeout(struct device *dev, struct device_attribute *attr,
+>  static DEVICE_ATTR(eh_timeout, S_IRUGO | S_IWUSR, sdev_show_eh_timeout, sdev_store_eh_timeout);
+>  
+>  static ssize_t
+> +sdev_show_retry_timeout(struct device *dev,
+> +			struct device_attribute *attr, char *buf)
+> +{
+> +	struct scsi_device *sdev;
+> +	sdev = to_scsi_device(dev);
+> +	return snprintf(buf, 20, "%u\n", sdev->retry_timeout / HZ);
+> +}
+> +
+> +static ssize_t
+> +sdev_store_retry_timeout(struct device *dev, struct device_attribute *attr,
+> +			 const char *buf, size_t count)
+> +{
+> +	struct scsi_device *sdev;
+> +	unsigned int retry_timeout;
+> +	int err;
+> +
+> +	if (!capable(CAP_SYS_ADMIN))
+> +		return -EACCES;
+> +
+> +	sdev = to_scsi_device(dev);
+> +	err = kstrtouint(buf, 10, &retry_timeout);
+> +	if (err)
+> +		return err;
+> +	sdev->retry_timeout = retry_timeout * HZ;
+> +
+> +	return count;
+> +}
+> +static DEVICE_ATTR(retry_timeout, S_IRUGO | S_IWUSR,
+> +		   sdev_show_retry_timeout, sdev_store_retry_timeout);
+> +
+> +static ssize_t
+>  store_rescan_field (struct device *dev, struct device_attribute *attr,
+>  		    const char *buf, size_t count)
+>  {
+> @@ -797,6 +828,7 @@ static struct attribute *scsi_sdev_attrs[] = {
+>  	&dev_attr_state.attr,
+>  	&dev_attr_timeout.attr,
+>  	&dev_attr_eh_timeout.attr,
+> +	&dev_attr_retry_timeout.attr,
+>  	&dev_attr_iocounterbits.attr,
+>  	&dev_attr_iorequest_cnt.attr,
+>  	&dev_attr_iodone_cnt.attr,
+> diff --git a/include/scsi/scsi.h b/include/scsi/scsi.h
+> index 66d42ed..545408d 100644
+> --- a/include/scsi/scsi.h
+> +++ b/include/scsi/scsi.h
+> @@ -16,6 +16,7 @@ struct scsi_cmnd;
+>  
+>  enum scsi_timeouts {
+>  	SCSI_DEFAULT_EH_TIMEOUT		= 10 * HZ,
+> +	SCSI_DEFAULT_RETRY_TIMEOUT	= 0,	/* disabled by default */
+>  };
+>  
+>  /*
+> diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
+> index d65fbec..04fc5ee 100644
+> --- a/include/scsi/scsi_device.h
+> +++ b/include/scsi/scsi_device.h
+> @@ -121,6 +121,7 @@ struct scsi_device {
+>  				 * pass settings from slave_alloc to scsi
+>  				 * core. */
+>  	unsigned int eh_timeout; /* Error handling timeout */
+> +	unsigned int retry_timeout;	/* Command retry timeout */
+>  	unsigned writeable:1;
+>  	unsigned removable:1;
+>  	unsigned changed:1;	/* Data invalid due to media change */
 
---001a11c2b8daedbeb804f1ab95b1
-Content-Type: text/plain; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hrau48040
 
-IGFyY2gvcGFyaXNjL2hwdXgvZnMuYyAgIHwgIDMgKy0tCiBmcy9leGVjLmMgICAgICAgICAgICAg
-ICB8IDQ1ICsrKysrKysrKysrKysrKysrKysrKy0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQogZnMv
-bmFtZWkuYyAgICAgICAgICAgICAgfCAzMCArKysrKysrKysrKysrKysrKysrKysrKysrKysrKysK
-IGluY2x1ZGUvbGludXgvYmluZm10cy5oIHwgIDEgLQogaW5jbHVkZS9saW51eC9mcy5oICAgICAg
-fCAgMSArCiBpbmNsdWRlL2xpbnV4L3NjaGVkLmggICB8ICAzICsrLQogaW5pdC9tYWluLmMgICAg
-ICAgICAgICAgfCAgMiArLQoga2VybmVsL2F1ZGl0c2MuYyAgICAgICAgfCAgMiArLQoga2VybmVs
-L2ttb2QuYyAgICAgICAgICAgfCAgMiArLQogOSBmaWxlcyBjaGFuZ2VkLCA1OCBpbnNlcnRpb25z
-KCspLCAzMSBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9hcmNoL3BhcmlzYy9ocHV4L2ZzLmMg
-Yi9hcmNoL3BhcmlzYy9ocHV4L2ZzLmMKaW5kZXggODhkMDk2MmRlNjVhLi4yM2ViY2Q2NzhkYTMg
-MTAwNjQ0Ci0tLSBhL2FyY2gvcGFyaXNjL2hwdXgvZnMuYworKysgYi9hcmNoL3BhcmlzYy9ocHV4
-L2ZzLmMKQEAgLTQxLDExICs0MSwxMCBAQCBpbnQgaHB1eF9leGVjdmUoc3RydWN0IHB0X3JlZ3Mg
-KnJlZ3MpCiAJaWYgKElTX0VSUihmaWxlbmFtZSkpCiAJCWdvdG8gb3V0OwogCi0JZXJyb3IgPSBk
-b19leGVjdmUoZmlsZW5hbWUtPm5hbWUsCisJZXJyb3IgPSBkb19leGVjdmUoZmlsZW5hbWUsCiAJ
-CQkgIChjb25zdCBjaGFyIF9fdXNlciAqY29uc3QgX191c2VyICopIHJlZ3MtPmdyWzI1XSwKIAkJ
-CSAgKGNvbnN0IGNoYXIgX191c2VyICpjb25zdCBfX3VzZXIgKikgcmVncy0+Z3JbMjRdKTsKIAot
-CXB1dG5hbWUoZmlsZW5hbWUpOwogCiBvdXQ6CiAJcmV0dXJuIGVycm9yOwpkaWZmIC0tZ2l0IGEv
-ZnMvZXhlYy5jIGIvZnMvZXhlYy5jCmluZGV4IGUxNTI5YjRjNzliMS4uM2Q3OGZjY2RkNzIzIDEw
-MDY0NAotLS0gYS9mcy9leGVjLmMKKysrIGIvZnMvZXhlYy5jCkBAIC03NDgsMTEgKzc0OCwxMCBA
-QCBFWFBPUlRfU1lNQk9MKHNldHVwX2FyZ19wYWdlcyk7CiAKICNlbmRpZiAvKiBDT05GSUdfTU1V
-ICovCiAKLXN0cnVjdCBmaWxlICpvcGVuX2V4ZWMoY29uc3QgY2hhciAqbmFtZSkKK3N0YXRpYyBz
-dHJ1Y3QgZmlsZSAqZG9fb3Blbl9leGVjKHN0cnVjdCBmaWxlbmFtZSAqbmFtZSkKIHsKIAlzdHJ1
-Y3QgZmlsZSAqZmlsZTsKIAlpbnQgZXJyOwotCXN0cnVjdCBmaWxlbmFtZSB0bXAgPSB7IC5uYW1l
-ID0gbmFtZSB9OwogCXN0YXRpYyBjb25zdCBzdHJ1Y3Qgb3Blbl9mbGFncyBvcGVuX2V4ZWNfZmxh
-Z3MgPSB7CiAJCS5vcGVuX2ZsYWcgPSBPX0xBUkdFRklMRSB8IE9fUkRPTkxZIHwgX19GTU9ERV9F
-WEVDLAogCQkuYWNjX21vZGUgPSBNQVlfRVhFQyB8IE1BWV9PUEVOLApAQCAtNzYwLDcgKzc1OSw3
-IEBAIHN0cnVjdCBmaWxlICpvcGVuX2V4ZWMoY29uc3QgY2hhciAqbmFtZSkKIAkJLmxvb2t1cF9m
-bGFncyA9IExPT0tVUF9GT0xMT1csCiAJfTsKIAotCWZpbGUgPSBkb19maWxwX29wZW4oQVRfRkRD
-V0QsICZ0bXAsICZvcGVuX2V4ZWNfZmxhZ3MpOworCWZpbGUgPSBkb19maWxwX29wZW4oQVRfRkRD
-V0QsIG5hbWUsICZvcGVuX2V4ZWNfZmxhZ3MpOwogCWlmIChJU19FUlIoZmlsZSkpCiAJCWdvdG8g
-b3V0OwogCkBAIC03ODQsNiArNzgzLDEyIEBAIGV4aXQ6CiAJZnB1dChmaWxlKTsKIAlyZXR1cm4g
-RVJSX1BUUihlcnIpOwogfQorCitzdHJ1Y3QgZmlsZSAqb3Blbl9leGVjKGNvbnN0IGNoYXIgKm5h
-bWUpCit7CisJc3RydWN0IGZpbGVuYW1lIHRtcCA9IHsgLm5hbWUgPSBuYW1lIH07CisJcmV0dXJu
-IGRvX29wZW5fZXhlYygmdG1wKTsKK30KIEVYUE9SVF9TWU1CT0wob3Blbl9leGVjKTsKIAogaW50
-IGtlcm5lbF9yZWFkKHN0cnVjdCBmaWxlICpmaWxlLCBsb2ZmX3Qgb2Zmc2V0LApAQCAtMTE2Miw3
-ICsxMTY3LDcgQEAgaW50IHByZXBhcmVfYnBybV9jcmVkcyhzdHJ1Y3QgbGludXhfYmlucHJtICpi
-cHJtKQogCXJldHVybiAtRU5PTUVNOwogfQogCi12b2lkIGZyZWVfYnBybShzdHJ1Y3QgbGludXhf
-YmlucHJtICpicHJtKQorc3RhdGljIHZvaWQgZnJlZV9icHJtKHN0cnVjdCBsaW51eF9iaW5wcm0g
-KmJwcm0pCiB7CiAJZnJlZV9hcmdfcGFnZXMoYnBybSk7CiAJaWYgKGJwcm0tPmNyZWQpIHsKQEAg
-LTE0MzIsNyArMTQzNyw3IEBAIHN0YXRpYyBpbnQgZXhlY19iaW5wcm0oc3RydWN0IGxpbnV4X2Jp
-bnBybSAqYnBybSkKIC8qCiAgKiBzeXNfZXhlY3ZlKCkgZXhlY3V0ZXMgYSBuZXcgcHJvZ3JhbS4K
-ICAqLwotc3RhdGljIGludCBkb19leGVjdmVfY29tbW9uKGNvbnN0IGNoYXIgKmZpbGVuYW1lLAor
-c3RhdGljIGludCBkb19leGVjdmVfY29tbW9uKHN0cnVjdCBmaWxlbmFtZSAqZmlsZW5hbWUsCiAJ
-CQkJc3RydWN0IHVzZXJfYXJnX3B0ciBhcmd2LAogCQkJCXN0cnVjdCB1c2VyX2FyZ19wdHIgZW52
-cCkKIHsKQEAgLTE0NDEsNiArMTQ0Niw5IEBAIHN0YXRpYyBpbnQgZG9fZXhlY3ZlX2NvbW1vbihj
-b25zdCBjaGFyICpmaWxlbmFtZSwKIAlzdHJ1Y3QgZmlsZXNfc3RydWN0ICpkaXNwbGFjZWQ7CiAJ
-aW50IHJldHZhbDsKIAorCWlmIChJU19FUlIoZmlsZW5hbWUpKQorCQlyZXR1cm4gUFRSX0VSUihm
-aWxlbmFtZSk7CisKIAkvKgogCSAqIFdlIG1vdmUgdGhlIGFjdHVhbCBmYWlsdXJlIGluIGNhc2Ug
-b2YgUkxJTUlUX05QUk9DIGV4Y2VzcyBmcm9tCiAJICogc2V0KnVpZCgpIHRvIGV4ZWN2ZSgpIGJl
-Y2F1c2UgdG9vIG1hbnkgcG9vcmx5IHdyaXR0ZW4gcHJvZ3JhbXMKQEAgLTE0NzMsNyArMTQ4MSw3
-IEBAIHN0YXRpYyBpbnQgZG9fZXhlY3ZlX2NvbW1vbihjb25zdCBjaGFyICpmaWxlbmFtZSwKIAlj
-aGVja191bnNhZmVfZXhlYyhicHJtKTsKIAljdXJyZW50LT5pbl9leGVjdmUgPSAxOwogCi0JZmls
-ZSA9IG9wZW5fZXhlYyhmaWxlbmFtZSk7CisJZmlsZSA9IGRvX29wZW5fZXhlYyhmaWxlbmFtZSk7
-CiAJcmV0dmFsID0gUFRSX0VSUihmaWxlKTsKIAlpZiAoSVNfRVJSKGZpbGUpKQogCQlnb3RvIG91
-dF91bm1hcms7CkBAIC0xNDgxLDggKzE0ODksNyBAQCBzdGF0aWMgaW50IGRvX2V4ZWN2ZV9jb21t
-b24oY29uc3QgY2hhciAqZmlsZW5hbWUsCiAJc2NoZWRfZXhlYygpOwogCiAJYnBybS0+ZmlsZSA9
-IGZpbGU7Ci0JYnBybS0+ZmlsZW5hbWUgPSBmaWxlbmFtZTsKLQlicHJtLT5pbnRlcnAgPSBmaWxl
-bmFtZTsKKwlicHJtLT5maWxlbmFtZSA9IGJwcm0tPmludGVycCA9IGZpbGVuYW1lLT5uYW1lOwog
-CiAJcmV0dmFsID0gYnBybV9tbV9pbml0KGJwcm0pOwogCWlmIChyZXR2YWwpCkBAIC0xNTIzLDYg
-KzE1MzAsNyBAQCBzdGF0aWMgaW50IGRvX2V4ZWN2ZV9jb21tb24oY29uc3QgY2hhciAqZmlsZW5h
-bWUsCiAJYWNjdF91cGRhdGVfaW50ZWdyYWxzKGN1cnJlbnQpOwogCXRhc2tfbnVtYV9mcmVlKGN1
-cnJlbnQpOwogCWZyZWVfYnBybShicHJtKTsKKwlwdXRuYW1lKGZpbGVuYW1lKTsKIAlpZiAoZGlz
-cGxhY2VkKQogCQlwdXRfZmlsZXNfc3RydWN0KGRpc3BsYWNlZCk7CiAJcmV0dXJuIHJldHZhbDsK
-QEAgLTE1NDQsMTAgKzE1NTIsMTEgQEAgb3V0X2ZpbGVzOgogCWlmIChkaXNwbGFjZWQpCiAJCXJl
-c2V0X2ZpbGVzX3N0cnVjdChkaXNwbGFjZWQpOwogb3V0X3JldDoKKwlwdXRuYW1lKGZpbGVuYW1l
-KTsKIAlyZXR1cm4gcmV0dmFsOwogfQogCi1pbnQgZG9fZXhlY3ZlKGNvbnN0IGNoYXIgKmZpbGVu
-YW1lLAoraW50IGRvX2V4ZWN2ZShzdHJ1Y3QgZmlsZW5hbWUgKmZpbGVuYW1lLAogCWNvbnN0IGNo
-YXIgX191c2VyICpjb25zdCBfX3VzZXIgKl9fYXJndiwKIAljb25zdCBjaGFyIF9fdXNlciAqY29u
-c3QgX191c2VyICpfX2VudnApCiB7CkBAIC0xNTU3LDcgKzE1NjYsNyBAQCBpbnQgZG9fZXhlY3Zl
-KGNvbnN0IGNoYXIgKmZpbGVuYW1lLAogfQogCiAjaWZkZWYgQ09ORklHX0NPTVBBVAotc3RhdGlj
-IGludCBjb21wYXRfZG9fZXhlY3ZlKGNvbnN0IGNoYXIgKmZpbGVuYW1lLAorc3RhdGljIGludCBj
-b21wYXRfZG9fZXhlY3ZlKHN0cnVjdCBmaWxlbmFtZSAqZmlsZW5hbWUsCiAJY29uc3QgY29tcGF0
-X3VwdHJfdCBfX3VzZXIgKl9fYXJndiwKIAljb25zdCBjb21wYXRfdXB0cl90IF9fdXNlciAqX19l
-bnZwKQogewpAQCAtMTYwNywyNSArMTYxNiwxMyBAQCBTWVNDQUxMX0RFRklORTMoZXhlY3ZlLAog
-CQljb25zdCBjaGFyIF9fdXNlciAqY29uc3QgX191c2VyICosIGFyZ3YsCiAJCWNvbnN0IGNoYXIg
-X191c2VyICpjb25zdCBfX3VzZXIgKiwgZW52cCkKIHsKLQlzdHJ1Y3QgZmlsZW5hbWUgKnBhdGgg
-PSBnZXRuYW1lKGZpbGVuYW1lKTsKLQlpbnQgZXJyb3IgPSBQVFJfRVJSKHBhdGgpOwotCWlmICgh
-SVNfRVJSKHBhdGgpKSB7Ci0JCWVycm9yID0gZG9fZXhlY3ZlKHBhdGgtPm5hbWUsIGFyZ3YsIGVu
-dnApOwotCQlwdXRuYW1lKHBhdGgpOwotCX0KLQlyZXR1cm4gZXJyb3I7CisJcmV0dXJuIGRvX2V4
-ZWN2ZShnZXRuYW1lKGZpbGVuYW1lKSwgYXJndiwgZW52cCk7CiB9CiAjaWZkZWYgQ09ORklHX0NP
-TVBBVAogYXNtbGlua2FnZSBsb25nIGNvbXBhdF9zeXNfZXhlY3ZlKGNvbnN0IGNoYXIgX191c2Vy
-ICogZmlsZW5hbWUsCiAJY29uc3QgY29tcGF0X3VwdHJfdCBfX3VzZXIgKiBhcmd2LAogCWNvbnN0
-IGNvbXBhdF91cHRyX3QgX191c2VyICogZW52cCkKIHsKLQlzdHJ1Y3QgZmlsZW5hbWUgKnBhdGgg
-PSBnZXRuYW1lKGZpbGVuYW1lKTsKLQlpbnQgZXJyb3IgPSBQVFJfRVJSKHBhdGgpOwotCWlmICgh
-SVNfRVJSKHBhdGgpKSB7Ci0JCWVycm9yID0gY29tcGF0X2RvX2V4ZWN2ZShwYXRoLT5uYW1lLCBh
-cmd2LCBlbnZwKTsKLQkJcHV0bmFtZShwYXRoKTsKLQl9Ci0JcmV0dXJuIGVycm9yOworCXJldHVy
-biBjb21wYXRfZG9fZXhlY3ZlKGdldG5hbWUoZmlsZW5hbWUpLCBhcmd2LCBlbnZwKTsKIH0KICNl
-bmRpZgpkaWZmIC0tZ2l0IGEvZnMvbmFtZWkuYyBiL2ZzL25hbWVpLmMKaW5kZXggZDU4MGRmMmU2
-ODA0Li4zODVmNzgxN2JmY2MgMTAwNjQ0Ci0tLSBhL2ZzL25hbWVpLmMKKysrIGIvZnMvbmFtZWku
-YwpAQCAtMTk2LDYgKzE5Niw3IEBAIHJlY29weToKIAkJZ290byBlcnJvcjsKIAogCXJlc3VsdC0+
-dXB0ciA9IGZpbGVuYW1lOworCXJlc3VsdC0+YW5hbWUgPSBOVUxMOwogCWF1ZGl0X2dldG5hbWUo
-cmVzdWx0KTsKIAlyZXR1cm4gcmVzdWx0OwogCkBAIC0yMTAsNiArMjExLDM1IEBAIGdldG5hbWUo
-Y29uc3QgY2hhciBfX3VzZXIgKiBmaWxlbmFtZSkKIAlyZXR1cm4gZ2V0bmFtZV9mbGFncyhmaWxl
-bmFtZSwgMCwgTlVMTCk7CiB9CiAKKy8qCisgKiBUaGUgImdldG5hbWVfa2VybmVsKCkiIGludGVy
-ZmFjZSBkb2Vzbid0IGRvIHBhdGhuYW1lcyBsb25nZXIKKyAqIHRoYW4gRU1CRURERURfTkFNRV9N
-QVguIERlYWwgd2l0aCBpdCAtIHlvdSdyZSBhIGtlcm5lbCB1c2VyLgorICovCitzdHJ1Y3QgZmls
-ZW5hbWUgKgorZ2V0bmFtZV9rZXJuZWwoY29uc3QgY2hhciAqIGZpbGVuYW1lKQoreworCXN0cnVj
-dCBmaWxlbmFtZSAqcmVzdWx0OworCWNoYXIgKmtuYW1lOworCWludCBsZW47CisKKwlsZW4gPSBz
-dHJsZW4oZmlsZW5hbWUpOworCWlmIChsZW4gPj0gRU1CRURERURfTkFNRV9NQVgpCisJCXJldHVy
-biBFUlJfUFRSKC1FTkFNRVRPT0xPTkcpOworCisJcmVzdWx0ID0gX19nZXRuYW1lKCk7CisJaWYg
-KHVubGlrZWx5KCFyZXN1bHQpKQorCQlyZXR1cm4gRVJSX1BUUigtRU5PTUVNKTsKKworCWtuYW1l
-ID0gKGNoYXIgKilyZXN1bHQgKyBzaXplb2YoKnJlc3VsdCk7CisJcmVzdWx0LT5uYW1lID0ga25h
-bWU7CisJcmVzdWx0LT51cHRyID0gTlVMTDsKKwlyZXN1bHQtPmFuYW1lID0gTlVMTDsKKwlyZXN1
-bHQtPnNlcGFyYXRlID0gZmFsc2U7CisKKwlzdHJsY3B5KGtuYW1lLCBmaWxlbmFtZSwgRU1CRURE
-RURfTkFNRV9NQVgpOworCXJldHVybiByZXN1bHQ7Cit9CisKICNpZmRlZiBDT05GSUdfQVVESVRT
-WVNDQUxMCiB2b2lkIHB1dG5hbWUoc3RydWN0IGZpbGVuYW1lICpuYW1lKQogewpkaWZmIC0tZ2l0
-IGEvaW5jbHVkZS9saW51eC9iaW5mbXRzLmggYi9pbmNsdWRlL2xpbnV4L2JpbmZtdHMuaAppbmRl
-eCBmZDhiZjMyMTllZjcuLmI0YTc0NWQ3ZDlhOSAxMDA2NDQKLS0tIGEvaW5jbHVkZS9saW51eC9i
-aW5mbXRzLmgKKysrIGIvaW5jbHVkZS9saW51eC9iaW5mbXRzLmgKQEAgLTExNSw3ICsxMTUsNiBA
-QCBleHRlcm4gaW50IGNvcHlfc3RyaW5nc19rZXJuZWwoaW50IGFyZ2MsIGNvbnN0IGNoYXIgKmNv
-bnN0ICphcmd2LAogZXh0ZXJuIGludCBwcmVwYXJlX2Jwcm1fY3JlZHMoc3RydWN0IGxpbnV4X2Jp
-bnBybSAqYnBybSk7CiBleHRlcm4gdm9pZCBpbnN0YWxsX2V4ZWNfY3JlZHMoc3RydWN0IGxpbnV4
-X2JpbnBybSAqYnBybSk7CiBleHRlcm4gdm9pZCBzZXRfYmluZm10KHN0cnVjdCBsaW51eF9iaW5m
-bXQgKm5ldyk7Ci1leHRlcm4gdm9pZCBmcmVlX2Jwcm0oc3RydWN0IGxpbnV4X2JpbnBybSAqKTsK
-IGV4dGVybiBzc2l6ZV90IHJlYWRfY29kZShzdHJ1Y3QgZmlsZSAqLCB1bnNpZ25lZCBsb25nLCBs
-b2ZmX3QsIHNpemVfdCk7CiAKICNlbmRpZiAvKiBfTElOVVhfQklORk1UU19IICovCmRpZmYgLS1n
-aXQgYS9pbmNsdWRlL2xpbnV4L2ZzLmggYi9pbmNsdWRlL2xpbnV4L2ZzLmgKaW5kZXggMDlmNTUz
-YzU5ODEzLi5kNzk2NzhjMTg4YWQgMTAwNjQ0Ci0tLSBhL2luY2x1ZGUvbGludXgvZnMuaAorKysg
-Yi9pbmNsdWRlL2xpbnV4L2ZzLmgKQEAgLTIwNzksNiArMjA3OSw3IEBAIGV4dGVybiBzdHJ1Y3Qg
-ZmlsZSAqIGRlbnRyeV9vcGVuKGNvbnN0IHN0cnVjdCBwYXRoICosIGludCwgY29uc3Qgc3RydWN0
-IGNyZWQgKik7CiBleHRlcm4gaW50IGZpbHBfY2xvc2Uoc3RydWN0IGZpbGUgKiwgZmxfb3duZXJf
-dCBpZCk7CiAKIGV4dGVybiBzdHJ1Y3QgZmlsZW5hbWUgKmdldG5hbWUoY29uc3QgY2hhciBfX3Vz
-ZXIgKik7CitleHRlcm4gc3RydWN0IGZpbGVuYW1lICpnZXRuYW1lX2tlcm5lbChjb25zdCBjaGFy
-ICopOwogCiBlbnVtIHsKIAlGSUxFX0NSRUFURUQgPSAxLApkaWZmIC0tZ2l0IGEvaW5jbHVkZS9s
-aW51eC9zY2hlZC5oIGIvaW5jbHVkZS9saW51eC9zY2hlZC5oCmluZGV4IDY4YTBlODQ0NjNhMC4u
-YTc4MWRlYzFjZDBiIDEwMDY0NAotLS0gYS9pbmNsdWRlL2xpbnV4L3NjaGVkLmgKKysrIGIvaW5j
-bHVkZS9saW51eC9zY2hlZC5oCkBAIC0xMjgsNiArMTI4LDcgQEAgc3RydWN0IGJpb19saXN0Owog
-c3RydWN0IGZzX3N0cnVjdDsKIHN0cnVjdCBwZXJmX2V2ZW50X2NvbnRleHQ7CiBzdHJ1Y3QgYmxr
-X3BsdWc7CitzdHJ1Y3QgZmlsZW5hbWU7CiAKIC8qCiAgKiBMaXN0IG9mIGZsYWdzIHdlIHdhbnQg
-dG8gc2hhcmUgZm9yIGtlcm5lbCB0aHJlYWRzLApAQCAtMjMxMSw3ICsyMzEyLDcgQEAgZXh0ZXJu
-IHZvaWQgZG9fZ3JvdXBfZXhpdChpbnQpOwogZXh0ZXJuIGludCBhbGxvd19zaWduYWwoaW50KTsK
-IGV4dGVybiBpbnQgZGlzYWxsb3dfc2lnbmFsKGludCk7CiAKLWV4dGVybiBpbnQgZG9fZXhlY3Zl
-KGNvbnN0IGNoYXIgKiwKK2V4dGVybiBpbnQgZG9fZXhlY3ZlKHN0cnVjdCBmaWxlbmFtZSAqLAog
-CQkgICAgIGNvbnN0IGNoYXIgX191c2VyICogY29uc3QgX191c2VyICosCiAJCSAgICAgY29uc3Qg
-Y2hhciBfX3VzZXIgKiBjb25zdCBfX3VzZXIgKik7CiBleHRlcm4gbG9uZyBkb19mb3JrKHVuc2ln
-bmVkIGxvbmcsIHVuc2lnbmVkIGxvbmcsIHVuc2lnbmVkIGxvbmcsIGludCBfX3VzZXIgKiwgaW50
-IF9fdXNlciAqKTsKZGlmZiAtLWdpdCBhL2luaXQvbWFpbi5jIGIvaW5pdC9tYWluLmMKaW5kZXgg
-MmZkOWNlZjcwZWU4Li5lYjAzMDkwY2RjZWQgMTAwNjQ0Ci0tLSBhL2luaXQvbWFpbi5jCisrKyBi
-L2luaXQvbWFpbi5jCkBAIC04MTIsNyArODEyLDcgQEAgdm9pZCBfX2luaXQgbG9hZF9kZWZhdWx0
-X21vZHVsZXModm9pZCkKIHN0YXRpYyBpbnQgcnVuX2luaXRfcHJvY2Vzcyhjb25zdCBjaGFyICpp
-bml0X2ZpbGVuYW1lKQogewogCWFyZ3ZfaW5pdFswXSA9IGluaXRfZmlsZW5hbWU7Ci0JcmV0dXJu
-IGRvX2V4ZWN2ZShpbml0X2ZpbGVuYW1lLAorCXJldHVybiBkb19leGVjdmUoZ2V0bmFtZV9rZXJu
-ZWwoaW5pdF9maWxlbmFtZSksCiAJCShjb25zdCBjaGFyIF9fdXNlciAqY29uc3QgX191c2VyICop
-YXJndl9pbml0LAogCQkoY29uc3QgY2hhciBfX3VzZXIgKmNvbnN0IF9fdXNlciAqKWVudnBfaW5p
-dCk7CiB9CmRpZmYgLS1naXQgYS9rZXJuZWwvYXVkaXRzYy5jIGIva2VybmVsL2F1ZGl0c2MuYwpp
-bmRleCAxMDE3NmNkNTk1NmEuLjdhZWYyZjRiNmM2NCAxMDA2NDQKLS0tIGEva2VybmVsL2F1ZGl0
-c2MuYworKysgYi9rZXJuZWwvYXVkaXRzYy5jCkBAIC0xNzE5LDcgKzE3MTksNyBAQCB2b2lkIGF1
-ZGl0X3B1dG5hbWUoc3RydWN0IGZpbGVuYW1lICpuYW1lKQogCXN0cnVjdCBhdWRpdF9jb250ZXh0
-ICpjb250ZXh0ID0gY3VycmVudC0+YXVkaXRfY29udGV4dDsKIAogCUJVR19PTighY29udGV4dCk7
-Ci0JaWYgKCFjb250ZXh0LT5pbl9zeXNjYWxsKSB7CisJaWYgKCFuYW1lLT5hbmFtZSB8fCAhY29u
-dGV4dC0+aW5fc3lzY2FsbCkgewogI2lmIEFVRElUX0RFQlVHID09IDIKIAkJcHJpbnRrKEtFUk5f
-RVJSICIlczolZCg6JWQpOiBmaW5hbF9wdXRuYW1lKCVwKVxuIiwKIAkJICAgICAgIF9fRklMRV9f
-LCBfX0xJTkVfXywgY29udGV4dC0+c2VyaWFsLCBuYW1lKTsKZGlmZiAtLWdpdCBhL2tlcm5lbC9r
-bW9kLmMgYi9rZXJuZWwva21vZC5jCmluZGV4IGIwODYwMDZjNTllNy4uNmIzNzVhZjQ5NThkIDEw
-MDY0NAotLS0gYS9rZXJuZWwva21vZC5jCisrKyBiL2tlcm5lbC9rbW9kLmMKQEAgLTIzOSw3ICsy
-MzksNyBAQCBzdGF0aWMgaW50IF9fX19jYWxsX3VzZXJtb2RlaGVscGVyKHZvaWQgKmRhdGEpCiAK
-IAljb21taXRfY3JlZHMobmV3KTsKIAotCXJldHZhbCA9IGRvX2V4ZWN2ZShzdWJfaW5mby0+cGF0
-aCwKKwlyZXR2YWwgPSBkb19leGVjdmUoZ2V0bmFtZV9rZXJuZWwoc3ViX2luZm8tPnBhdGgpLAog
-CQkJICAgKGNvbnN0IGNoYXIgX191c2VyICpjb25zdCBfX3VzZXIgKilzdWJfaW5mby0+YXJndiwK
-IAkJCSAgIChjb25zdCBjaGFyIF9fdXNlciAqY29uc3QgX191c2VyICopc3ViX2luZm8tPmVudnAp
-OwogCWlmICghcmV0dmFsKQo=
---001a11c2b8daedbeb804f1ab95b1--
