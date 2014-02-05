@@ -1,80 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752123AbaBEIHy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 03:07:54 -0500
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:53664 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751712AbaBEIHu (ORCPT
+	id S932396AbaBEIKN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 03:10:13 -0500
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:39133 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754097AbaBEIHy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 03:07:50 -0500
+	Wed, 5 Feb 2014 03:07:54 -0500
 From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
 To: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
 Cc: michael@ellerman.id.au, mikey@neuling.org, ak@linux.intel.com,
         eranian@google.com, acme@ghostprotocols.net,
         sukadev@linux.vnet.ibm.com, mingo@kernel.org
-Subject: [V5 03/11] powerpc, perf: Re-arrange PMU based branch filter processing in POWER8
-Date: Wed,  5 Feb 2014 13:36:14 +0530
-Message-Id: <1391587582-32028-4-git-send-email-khandual@linux.vnet.ibm.com>
+Subject: [V5 04/11] perf, tool: Conditional branch filter 'cond' added to perf record
+Date: Wed,  5 Feb 2014 13:36:15 +0530
+Message-Id: <1391587582-32028-5-git-send-email-khandual@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1391587582-32028-1-git-send-email-khandual@linux.vnet.ibm.com>
 References: <1391587582-32028-1-git-send-email-khandual@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14020508-6102-0000-0000-000004E3B4CB
+x-cbid: 14020508-7014-0000-0000-000004482E12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch does some code re-arrangements to make it clear that
-it ignores any separate privilege level branch filter request
-and does not support any combinations of HW PMU branch filters.
+Adding perf record support for new branch stack filter criteria
+PERF_SAMPLE_BRANCH_COND.
 
 Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+Reviewed-by: Stephane Eranian <eranian@google.com>
 ---
- arch/powerpc/perf/power8-pmu.c | 21 +++++++--------------
- 1 file changed, 7 insertions(+), 14 deletions(-)
+ tools/perf/builtin-record.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/powerpc/perf/power8-pmu.c b/arch/powerpc/perf/power8-pmu.c
-index a3f7abd..8551f85 100644
---- a/arch/powerpc/perf/power8-pmu.c
-+++ b/arch/powerpc/perf/power8-pmu.c
-@@ -561,8 +561,6 @@ static int power8_generic_events[] = {
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 3c394bf..eb74bcd 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -589,6 +589,7 @@ static const struct branch_mode branch_modes[] = {
+ 	BRANCH_OPT("abort_tx", PERF_SAMPLE_BRANCH_ABORT_TX),
+ 	BRANCH_OPT("in_tx", PERF_SAMPLE_BRANCH_IN_TX),
+ 	BRANCH_OPT("no_tx", PERF_SAMPLE_BRANCH_NO_TX),
++	BRANCH_OPT("cond", PERF_SAMPLE_BRANCH_COND),
+ 	BRANCH_END
+ };
  
- static u64 power8_bhrb_filter_map(u64 branch_sample_type)
- {
--	u64 pmu_bhrb_filter = 0;
--
- 	/* BHRB and regular PMU events share the same privilege state
- 	 * filter configuration. BHRB is always recorded along with a
- 	 * regular PMU event. As the privilege state filter is handled
-@@ -570,20 +568,15 @@ static u64 power8_bhrb_filter_map(u64 branch_sample_type)
- 	 * PMU event, we ignore any separate BHRB specific request.
- 	 */
- 
--	/* No branch filter requested */
--	if (branch_sample_type & PERF_SAMPLE_BRANCH_ANY)
--		return pmu_bhrb_filter;
--
--	/* Invalid branch filter options - HW does not support */
--	if (branch_sample_type & PERF_SAMPLE_BRANCH_ANY_RETURN)
--		return -1;
-+	/* Ignore user, kernel, hv bits */
-+	branch_sample_type &= ~PERF_SAMPLE_BRANCH_PLM_ALL;
- 
--	if (branch_sample_type & PERF_SAMPLE_BRANCH_IND_CALL)
--		return -1;
-+	/* No branch filter requested */
-+	if (branch_sample_type == PERF_SAMPLE_BRANCH_ANY)
-+		return 0;
- 
--	if (branch_sample_type & PERF_SAMPLE_BRANCH_ANY_CALL) {
--		pmu_bhrb_filter |= POWER8_MMCRA_IFM1;
--		return pmu_bhrb_filter;
-+	if (branch_sample_type == PERF_SAMPLE_BRANCH_ANY_CALL) {
-+		return POWER8_MMCRA_IFM1;
- 	}
- 
- 	/* Every thing else is unsupported */
 -- 
 1.7.11.7
 
