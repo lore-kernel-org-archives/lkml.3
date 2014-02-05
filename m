@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756788AbaBEVRJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 16:17:09 -0500
-Received: from mail.windriver.com ([147.11.1.11]:54166 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753601AbaBEUDa (ORCPT
+	id S932126AbaBEVR3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 16:17:29 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:47858 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753321AbaBEUD0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:03:30 -0500
+	Wed, 5 Feb 2014 15:03:26 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>,
+CC: Nick Bowler <nbowler@elliptictech.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 009/213] bridge: Fix mglist corruption that leads to memory corruption
-Date: Wed, 5 Feb 2014 14:59:24 -0500
-Message-ID: <1391630568-49251-10-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 004/213] crypto: ghash - Avoid null pointer dereference if no key is set
+Date: Wed, 5 Feb 2014 14:59:19 -0500
+Message-ID: <1391630568-49251-5-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Herbert Xu <herbert@gondor.apana.org.au>
+From: Nick Bowler <nbowler@elliptictech.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -32,52 +32,102 @@ From: Herbert Xu <herbert@gondor.apana.org.au>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 6b0d6a9b4296fa16a28d10d416db7a770fc03287 upstream.
+commit 7ed47b7d142ec99ad6880bbbec51e9f12b3af74c upstream.
 
-The list mp->mglist is used to indicate whether a multicast group
-is active on the bridge interface itself as opposed to one of the
-constituent interfaces in the bridge.
+The ghash_update function passes a pointer to gf128mul_4k_lle which will
+be NULL if ghash_setkey is not called or if the most recent call to
+ghash_setkey failed to allocate memory.  This causes an oops.  Fix this
+up by returning an error code in the null case.
 
-Unfortunately the operation that adds the mp->mglist node to the
-list neglected to check whether it has already been added.  This
-leads to list corruption in the form of nodes pointing to itself.
+This is trivially triggered from unprivileged userspace through the
+AF_ALG interface by simply writing to the socket without setting a key.
 
-Normally this would be quite obvious as it would cause an infinite
-loop when walking the list.  However, as this list is never actually
-walked (which means that we don't really need it, I'll get rid of
-it in a subsequent patch), this instead is hidden until we perform
-a delete operation on the affected nodes.
+The ghash_final function has a similar issue, but triggering it requires
+a memory allocation failure in ghash_setkey _after_ at least one
+successful call to ghash_update.
 
-As the same node may now be pointed to by more than one node, the
-delete operations can then cause modification of freed memory.
+  BUG: unable to handle kernel NULL pointer dereference at 00000670
+  IP: [<d88c92d4>] gf128mul_4k_lle+0x23/0x60 [gf128mul]
+  *pde = 00000000
+  Oops: 0000 [#1] PREEMPT SMP
+  Modules linked in: ghash_generic gf128mul algif_hash af_alg nfs lockd nfs_acl sunrpc bridge ipv6 stp llc
 
-This was observed in practice to cause corruption in 512-byte slabs,
-most commonly leading to crashes in jbd2.
+  Pid: 1502, comm: hashatron Tainted: G        W   3.1.0-rc9-00085-ge9308cf #32 Bochs Bochs
+  EIP: 0060:[<d88c92d4>] EFLAGS: 00000202 CPU: 0
+  EIP is at gf128mul_4k_lle+0x23/0x60 [gf128mul]
+  EAX: d69db1f0 EBX: d6b8ddac ECX: 00000004 EDX: 00000000
+  ESI: 00000670 EDI: d6b8ddac EBP: d6b8ddc8 ESP: d6b8dda4
+   DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+  Process hashatron (pid: 1502, ti=d6b8c000 task=d6810000 task.ti=d6b8c000)
+  Stack:
+   00000000 d69db1f0 00000163 00000000 d6b8ddc8 c101a520 d69db1f0 d52aa000
+   00000ff0 d6b8dde8 d88d310f d6b8a3f8 d52aa000 00001000 d88d502c d6b8ddfc
+   00001000 d6b8ddf4 c11676ed d69db1e8 d6b8de24 c11679ad d52aa000 00000000
+  Call Trace:
+   [<c101a520>] ? kmap_atomic_prot+0x37/0xa6
+   [<d88d310f>] ghash_update+0x85/0xbe [ghash_generic]
+   [<c11676ed>] crypto_shash_update+0x18/0x1b
+   [<c11679ad>] shash_ahash_update+0x22/0x36
+   [<c11679cc>] shash_async_update+0xb/0xd
+   [<d88ce0ba>] hash_sendpage+0xba/0xf2 [algif_hash]
+   [<c121b24c>] kernel_sendpage+0x39/0x4e
+   [<d88ce000>] ? 0xd88cdfff
+   [<c121b298>] sock_sendpage+0x37/0x3e
+   [<c121b261>] ? kernel_sendpage+0x4e/0x4e
+   [<c10b4dbc>] pipe_to_sendpage+0x56/0x61
+   [<c10b4e1f>] splice_from_pipe_feed+0x58/0xcd
+   [<c10b4d66>] ? splice_from_pipe_begin+0x10/0x10
+   [<c10b51f5>] __splice_from_pipe+0x36/0x55
+   [<c10b4d66>] ? splice_from_pipe_begin+0x10/0x10
+   [<c10b6383>] splice_from_pipe+0x51/0x64
+   [<c10b63c2>] ? default_file_splice_write+0x2c/0x2c
+   [<c10b63d5>] generic_splice_sendpage+0x13/0x15
+   [<c10b4d66>] ? splice_from_pipe_begin+0x10/0x10
+   [<c10b527f>] do_splice_from+0x5d/0x67
+   [<c10b6865>] sys_splice+0x2bf/0x363
+   [<c129373b>] ? sysenter_exit+0xf/0x16
+   [<c104dc1e>] ? trace_hardirqs_on_caller+0x10e/0x13f
+   [<c129370c>] sysenter_do_call+0x12/0x32
+  Code: 83 c4 0c 5b 5e 5f c9 c3 55 b9 04 00 00 00 89 e5 57 8d 7d e4 56 53 8d 5d e4 83 ec 18 89 45 e0 89 55 dc 0f b6 70 0f c1 e6 04 01 d6 <f3> a5 be 0f 00 00 00 4e 89 d8 e8 48 ff ff ff 8b 45 e0 89 da 0f
+  EIP: [<d88c92d4>] gf128mul_4k_lle+0x23/0x60 [gf128mul] SS:ESP 0068:d6b8dda4
+  CR2: 0000000000000670
+  ---[ end trace 4eaa2a86a8e2da24 ]---
+  note: hashatron[1502] exited with preempt_count 1
+  BUG: scheduling while atomic: hashatron/1502/0x10000002
+  INFO: lockdep is turned off.
+  [...]
 
-Thanks to Josef Bacik for pointing me in the right direction.
-
-Reported-by: Ian Page Hands <ihands@redhat.com>
+Signed-off-by: Nick Bowler <nbowler@elliptictech.com>
 Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/bridge/br_multicast.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ crypto/ghash-generic.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/net/bridge/br_multicast.c b/net/bridge/br_multicast.c
-index eaa0e1bae49b..ea4452f3dacb 100644
---- a/net/bridge/br_multicast.c
-+++ b/net/bridge/br_multicast.c
-@@ -532,7 +532,8 @@ static int br_multicast_add_group(struct net_bridge *br,
- 		goto err;
+diff --git a/crypto/ghash-generic.c b/crypto/ghash-generic.c
+index be4425616931..7835b8fc94db 100644
+--- a/crypto/ghash-generic.c
++++ b/crypto/ghash-generic.c
+@@ -67,6 +67,9 @@ static int ghash_update(struct shash_desc *desc,
+ 	struct ghash_ctx *ctx = crypto_shash_ctx(desc->tfm);
+ 	u8 *dst = dctx->buffer;
  
- 	if (!port) {
--		hlist_add_head(&mp->mglist, &br->mglist);
-+		if (hlist_unhashed(&mp->mglist))
-+			hlist_add_head(&mp->mglist, &br->mglist);
- 		mod_timer(&mp->timer, now + br->multicast_membership_interval);
- 		goto out;
- 	}
++	if (!ctx->gf128)
++		return -ENOKEY;
++
+ 	if (dctx->bytes) {
+ 		int n = min(srclen, dctx->bytes);
+ 		u8 *pos = dst + (GHASH_BLOCK_SIZE - dctx->bytes);
+@@ -119,6 +122,9 @@ static int ghash_final(struct shash_desc *desc, u8 *dst)
+ 	struct ghash_ctx *ctx = crypto_shash_ctx(desc->tfm);
+ 	u8 *buf = dctx->buffer;
+ 
++	if (!ctx->gf128)
++		return -ENOKEY;
++
+ 	ghash_flush(ctx, dctx);
+ 	memcpy(dst, buf, GHASH_BLOCK_SIZE);
+ 
 -- 
 1.8.5.2
 
