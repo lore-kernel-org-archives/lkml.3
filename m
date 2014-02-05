@@ -1,54 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755177AbaBEBuj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 20:50:39 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:49908 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754412AbaBEBuh (ORCPT
+	id S1755216AbaBEByj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 20:54:39 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:35081 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755157AbaBEByh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 20:50:37 -0500
-X-AuditID: 9c93017d-b7b51ae000000e33-a5-52f198eca328
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 04/22] perf tools: Add --list report option
-References: <1391377150-23920-1-git-send-email-jolsa@redhat.com>
-	<1391377150-23920-5-git-send-email-jolsa@redhat.com>
-Date: Wed, 05 Feb 2014 10:50:36 +0900
-In-Reply-To: <1391377150-23920-5-git-send-email-jolsa@redhat.com> (Jiri Olsa's
-	message of "Sun, 2 Feb 2014 22:38:52 +0100")
-Message-ID: <87iosu1g5v.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 4 Feb 2014 20:54:37 -0500
+Message-ID: <52F199D3.2060409@linaro.org>
+Date: Wed, 05 Feb 2014 10:54:27 +0900
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Will Deacon <will.deacon@arm.com>
+CC: "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "eparis@redhat.com" <eparis@redhat.com>,
+        "rgb@redhat.com" <rgb@redhat.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "arndb@arndb.de" <arndb@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-audit@redhat.com" <linux-audit@redhat.com>,
+        "patches@linaro.org" <patches@linaro.org>
+Subject: Re: [PATCH v3 3/3] arm64: audit: Add audit hook in ptrace/syscall_trace
+References: <1389946399-4525-1-git-send-email-takahiro.akashi@linaro.org> <1391410590-4884-1-git-send-email-takahiro.akashi@linaro.org> <1391410590-4884-4-git-send-email-takahiro.akashi@linaro.org> <20140204173133.GG664@mudshark.cambridge.arm.com>
+In-Reply-To: <20140204173133.GG664@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun,  2 Feb 2014 22:38:52 +0100, Jiri Olsa wrote:
-> Adding --list report option to display entries sequentialy:
+On 02/05/2014 02:31 AM, Will Deacon wrote:
+> On Mon, Feb 03, 2014 at 06:56:30AM +0000, AKASHI Takahiro wrote:
+>> This patch adds auditing functions on entry to or exit from
+>> every system call invocation.
+>>
+>> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+>> ---
+>>   arch/arm64/include/asm/thread_info.h |    1 +
+>>   arch/arm64/kernel/entry.S            |    3 +++
+>>   arch/arm64/kernel/ptrace.c           |   10 ++++++++++
+>>   3 files changed, 14 insertions(+)
+>>
+>> diff --git a/arch/arm64/include/asm/thread_info.h b/arch/arm64/include/asm/thread_info.h
+>> index 720e70b..7468388 100644
+>> --- a/arch/arm64/include/asm/thread_info.h
+>> +++ b/arch/arm64/include/asm/thread_info.h
+>> @@ -101,6 +101,7 @@ static inline struct thread_info *current_thread_info(void)
+>>   #define TIF_NEED_RESCHED	1
+>>   #define TIF_NOTIFY_RESUME	2	/* callback before returning to user */
+>>   #define TIF_SYSCALL_TRACE	8
+>> +#define TIF_SYSCALL_AUDIT	9
+>>   #define TIF_POLLING_NRFLAG	16
+>>   #define TIF_MEMDIE		18	/* is terminating due to OOM killer */
+>>   #define TIF_FREEZE		19
+>> diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
+>> index 827cbad..83c4b29 100644
+>> --- a/arch/arm64/kernel/entry.S
+>> +++ b/arch/arm64/kernel/entry.S
+>> @@ -630,6 +630,9 @@ el0_svc_naked:					// compat entry point
+>>   	get_thread_info tsk
+>>   	ldr	x16, [tsk, #TI_FLAGS]		// check for syscall tracing
+>>   	tbnz	x16, #TIF_SYSCALL_TRACE, __sys_trace // are we tracing syscalls?
+>> +#ifdef CONFIG_AUDITSYSCALL
+>> +	tbnz	x16, #TIF_SYSCALL_AUDIT, __sys_trace // auditing syscalls?
+>> +#endif
 >
->   $ perf report --list --stdio
->   ...
->        0.00%       13151.543527 +000000.000000       ls  [kernel.kallsyms]  [k] native_write_msr_safe
->        0.00%       13151.543530 +000000.000003       ls  [kernel.kallsyms]  [k] native_write_msr_safe
->        0.00%       13151.543532 +000000.000005       ls  [kernel.kallsyms]  [k] native_write_msr_safe
->        0.00%       13151.543534 +000000.000007       ls  [kernel.kallsyms]  [k] native_write_msr_safe
->        0.05%       13151.543536 +000000.000009       ls  [kernel.kallsyms]  [k] native_write_msr_safe
->        0.92%       13151.543538 +000000.000011       ls  [kernel.kallsyms]  [k] perf_event_comm
->       14.52%       13151.543560 +000000.000033       ls  [kernel.kallsyms]  [k] uprobe_mmap
->       30.10%       13151.543878 +000000.000351       ls  ld-2.17.so         [.] _dl_setup_hash
->       29.30%       13151.544531 +000000.001004       ls  ls                 [.] gobble_file.constprop.49
->       25.09%       13151.545613 +000000.002086       ls  [kernel.kallsyms]  [k] _cond_resched
+> Could we avoid the back-to-back tbnz instructions with a single mask? It's
+> not obvious that it will end up any better, but it would be good to know.
 
-Hmm.. it seems what this --list option does is very similar to
-what "perf script -f time,comm,dso,sym,ip" tries to do, no?
+When first implementing ftrace support, TIF_SYSCALL_TRACEPOINT is defined as 10
+and 'tst' instruction doesn't allow the following code:
+     tst x16, #(_TIF_SYSCALL_TRACE|_TIF_SYSCALL_TRACEPOINT)
+
+That is why I've used "back-to-back" tbnz since then, but now that I'm going to
+submit ftrace, audit and later seccomp, I will replace it with:
+     #define TIF_SYSCALL_WORK (_TIF_SYSCALL_TRACE|TRACEPOINT|AUDIT|SECCOMP)
+
+     tst x16, #TIF_SYSCALL_WORK
+     b.ne __syscall_trace
+
+
+>>   	adr	lr, ret_fast_syscall		// return address
+>>   	cmp     scno, sc_nr                     // check upper syscall limit
+>>   	b.hs	ni_sys
+>> diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
+>> index 6777a21..75a3f23 100644
+>> --- a/arch/arm64/kernel/ptrace.c
+>> +++ b/arch/arm64/kernel/ptrace.c
+>> @@ -19,6 +19,7 @@
+>>    * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+>>    */
+>>
+>> +#include <linux/audit.h>
+>>   #include <linux/kernel.h>
+>>   #include <linux/sched.h>
+>>   #include <linux/mm.h>
+>> @@ -38,6 +39,7 @@
+>>   #include <asm/compat.h>
+>>   #include <asm/debug-monitors.h>
+>>   #include <asm/pgtable.h>
+>> +#include <asm/syscall.h>
+>>   #include <asm/traps.h>
+>>   #include <asm/system_misc.h>
+>>
+>> @@ -1064,6 +1066,14 @@ asmlinkage int syscall_trace(int dir, struct pt_regs *regs)
+>>   {
+>>   	unsigned long saved_reg;
+>>
+>> +	if (dir)
+>> +		audit_syscall_exit(regs);
+>> +	else
+>> +		audit_syscall_entry(syscall_get_arch(current, regs),
+>> +			(int)regs->syscallno,
+>> +			regs->orig_x0, regs->regs[1],
+>> +			regs->regs[2], regs->regs[3]);
+>> +
+>
+> Do we really want to perform the audit checks before the tracehook calls?
+> Remember that the latter can rewrite all of the registers.
+
+OK. I will change the code to make calls in the following order:
+On entry,
+    *secure_computing
+    *tracehook_report_syscall(ENTER)
+    *trace_sys_enter
+    *audit_syscall_entry
+On exit,
+    *audit_syscall_exit
+    *trace_sys_exit
+    *tracehook_report_syscall(EXIT)
+
+The order here is the exact same as on x86, but such change might
+decrease the readability in syscall_trace().
 
 Thanks,
-Namhyung
+-Takahiro AKASHI
+
+> Will
+>
