@@ -1,59 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502AbaBERT3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 12:19:29 -0500
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:46320 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752961AbaBERT1 (ORCPT
+	id S1753086AbaBERVS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 12:21:18 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:37341 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752681AbaBERVQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 12:19:27 -0500
+	Wed, 5 Feb 2014 12:21:16 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+b24Ki3ZmbJ1FovkNviEleu1uvQb/HNWw=
+X-DKIM: OpenDKIM Filter v2.0.1 titan ADA7B51E688
+Date: Wed, 5 Feb 2014 12:21:07 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        gregory.clement@free-electrons.com, linux-pci@vger.kernel.org
+Subject: Re: [PATCH] mvebu : pcie: dt: potential issue in range parsing
+Message-ID: <20140205172107.GU8533@titan.lakedaemon.net>
+References: <1389349431-7997-1-git-send-email-jjhiblot@traphandler.com>
+ <20140205164710.082f689e@skate>
 MIME-Version: 1.0
-In-Reply-To: <1388728091-18564-7-git-send-email-zheng.z.yan@intel.com>
-References: <1388728091-18564-1-git-send-email-zheng.z.yan@intel.com>
-	<1388728091-18564-7-git-send-email-zheng.z.yan@intel.com>
-Date: Wed, 5 Feb 2014 18:19:27 +0100
-Message-ID: <CABPqkBQS=kSyRb0hb7DSTAOmUpB03_Cq70Wi1NvHj+DAQc4FVQ@mail.gmail.com>
-Subject: Re: [PATCH 06/14] perf, core: always switch pmu specific data during
- context switch
-From: Stephane Eranian <eranian@google.com>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140205164710.082f689e@skate>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 3, 2014 at 6:48 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
-> If two tasks were both forked from the same parent task, Events in their perf
-> task contexts can be the same. Perf core optimizes context switch oout in this
-> case.
->
-> Previous patch inroduces pmu specific data. The data is task specific, so we
-> should switch the data even when context switch is optimized out.
->
-Reviwed-by: Stephane Eranian <eranian@google.com>
-> Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
-> ---
->  kernel/events/core.c | 2 ++
->  1 file changed, 2 insertions(+)
->
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index b6650ab..d6d8dea 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -2319,6 +2319,8 @@ static void perf_event_context_sched_out(struct task_struct *task, int ctxn,
->                         next->perf_event_ctxp[ctxn] = ctx;
->                         ctx->task = next;
->                         next_ctx->task = task;
-> +                       ctx->task_ctx_data = xchg(&next_ctx->task_ctx_data,
-> +                                                 ctx->task_ctx_data);
->                         do_switch = 0;
->
->                         perf_event_sync_stat(ctx, next_ctx);
-> --
-> 1.8.4.2
->
+
++ Bjorn, linux-pci
+
+Bjorn,
+
+It looks like this didn't get Cc'd to linux-pci.  Here's a link:
+
+  http://www.spinics.net/lists/arm-kernel/msg299721.html
+
+On Wed, Feb 05, 2014 at 04:47:10PM +0100, Thomas Petazzoni wrote:
+> Dear Jean-Jacques Hiblot,
+> 
+> On Fri, 10 Jan 2014 11:23:51 +0100, Jean-Jacques Hiblot wrote:
+> > The second parameter of of_read_number is not the index, but a size.
+> > As it happens, in this case it may work just fine because of the the conversion
+> > to u32 and the favorable endianness on this architecture.
+> > 
+> > Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+> > ---
+> >  drivers/pci/host/pci-mvebu.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/pci/host/pci-mvebu.c b/drivers/pci/host/pci-mvebu.c
+> > index c269e43..877e8ce 100644
+> > --- a/drivers/pci/host/pci-mvebu.c
+> > +++ b/drivers/pci/host/pci-mvebu.c
+> > @@ -768,7 +768,7 @@ static int mvebu_get_tgt_attr(struct device_node *np, int devfn,
+> >  
+> >  	for (i = 0; i < nranges; i++) {
+> >  		u32 flags = of_read_number(range, 1);
+> > -		u32 slot = of_read_number(range, 2);
+> > +		u32 slot = of_read_number(range + 1, 1);
+> >  		u64 cpuaddr = of_read_number(range + na, pna);
+> >  		unsigned long rtype;
+> >  
+> 
+> Sorry for the long delay, and thanks for the fix!
+> 
+> Acked-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> Tested-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> 
+> (on Armada 370, with PCIe cards plugged in)
+
+
+Fixes: 11be65472a427 ("PCI: mvebu: Adapt to the new device tree layout")
+Cc: <stable@vger.kernel.org> # v3.12+
+Acked-by: Jason Cooper <jason@lakedaemon.net>
+
+thx,
+
+Jason.
