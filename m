@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755373AbaBEUuL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:50:11 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:48261 "EHLO
+	id S1754773AbaBEUGF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:06:05 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:48179 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753990AbaBEUGI (ORCPT
+	with ESMTP id S1754588AbaBEUFm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:06:08 -0500
+	Wed, 5 Feb 2014 15:05:42 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Takashi Iwai <tiwai@suse.de>,
+CC: Kees Cook <keescook@chromium.org>, Michal Marek <mmarek@suse.cz>,
+        Brad Spengler <spender@grsecurity.net>,
+        PaX Team <pageexec@freemail.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 107/213] ALSA: seq: Fix missing error handling in snd_seq_timer_open()
-Date: Wed, 5 Feb 2014 15:01:02 -0500
-Message-ID: <1391630568-49251-108-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 084/213] gen_init_cpio: avoid stack overflow when expanding
+Date: Wed, 5 Feb 2014 15:00:39 -0500
+Message-ID: <1391630568-49251-85-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,7 +27,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Kees Cook <keescook@chromium.org>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -31,74 +35,98 @@ From: Takashi Iwai <tiwai@suse.de>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 66efdc71d95887b652a742a5dae51fa834d71465 upstream.
+commit 20f1de659b77364d55d4e7fad2ef657e7730323f upstream.
 
-snd_seq_timer_open() didn't catch the whole error path but let through
-if the timer id is a slave.  This may lead to Oops by accessing the
-uninitialized pointer.
+Fix possible overflow of the buffer used for expanding environment
+variables when building file list.
 
- BUG: unable to handle kernel NULL pointer dereference at 00000000000002ae
- IP: [<ffffffff819b3477>] snd_seq_timer_open+0xe7/0x130
- PGD 785cd067 PUD 76964067 PMD 0
- Oops: 0002 [#4] SMP
- CPU 0
- Pid: 4288, comm: trinity-child7 Tainted: G      D W 3.9.0-rc1+ #100 Bochs Bochs
- RIP: 0010:[<ffffffff819b3477>]  [<ffffffff819b3477>] snd_seq_timer_open+0xe7/0x130
- RSP: 0018:ffff88006ece7d38  EFLAGS: 00010246
- RAX: 0000000000000286 RBX: ffff88007851b400 RCX: 0000000000000000
- RDX: 000000000000ffff RSI: ffff88006ece7d58 RDI: ffff88006ece7d38
- RBP: ffff88006ece7d98 R08: 000000000000000a R09: 000000000000fffe
- R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
- R13: ffff8800792c5400 R14: 0000000000e8f000 R15: 0000000000000007
- FS:  00007f7aaa650700(0000) GS:ffff88007f800000(0000) GS:0000000000000000
- CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
- CR2: 00000000000002ae CR3: 000000006efec000 CR4: 00000000000006f0
- DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
- DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
- Process trinity-child7 (pid: 4288, threadinfo ffff88006ece6000, task ffff880076a8a290)
- Stack:
-  0000000000000286 ffffffff828f2be0 ffff88006ece7d58 ffffffff810f354d
-  65636e6575716573 2065756575712072 ffff8800792c0030 0000000000000000
-  ffff88006ece7d98 ffff8800792c5400 ffff88007851b400 ffff8800792c5520
- Call Trace:
-  [<ffffffff810f354d>] ? trace_hardirqs_on+0xd/0x10
-  [<ffffffff819b17e9>] snd_seq_queue_timer_open+0x29/0x70
-  [<ffffffff819ae01a>] snd_seq_ioctl_set_queue_timer+0xda/0x120
-  [<ffffffff819acb9b>] snd_seq_do_ioctl+0x9b/0xd0
-  [<ffffffff819acbe0>] snd_seq_ioctl+0x10/0x20
-  [<ffffffff811b9542>] do_vfs_ioctl+0x522/0x570
-  [<ffffffff8130a4b3>] ? file_has_perm+0x83/0xa0
-  [<ffffffff810f354d>] ? trace_hardirqs_on+0xd/0x10
-  [<ffffffff811b95ed>] sys_ioctl+0x5d/0xa0
-  [<ffffffff813663fe>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-  [<ffffffff81faed69>] system_call_fastpath+0x16/0x1b
+In the extremely unlikely case of an attacker having control over the
+environment variables visible to gen_init_cpio, control over the
+contents of the file gen_init_cpio parses, and gen_init_cpio was built
+without compiler hardening, the attacker can gain arbitrary execution
+control via a stack buffer overflow.
 
-Reported-and-tested-by: Tommi Rantala <tt.rantala@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+  $ cat usr/crash.list
+  file foo ${BIG}${BIG}${BIG}${BIG}${BIG}${BIG} 0755 0 0
+  $ BIG=$(perl -e 'print "A" x 4096;') ./usr/gen_init_cpio usr/crash.list
+  *** buffer overflow detected ***: ./usr/gen_init_cpio terminated
+
+This also replaces the space-indenting with tabs.
+
+Patch based on existing fix extracted from grsecurity.
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: Brad Spengler <spender@grsecurity.net>
+Cc: PaX Team <pageexec@freemail.hu>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- sound/core/seq/seq_timer.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ usr/gen_init_cpio.c | 43 +++++++++++++++++++++++--------------------
+ 1 file changed, 23 insertions(+), 20 deletions(-)
 
-diff --git a/sound/core/seq/seq_timer.c b/sound/core/seq/seq_timer.c
-index 160b1bd0cd62..24d44b2f61ac 100644
---- a/sound/core/seq/seq_timer.c
-+++ b/sound/core/seq/seq_timer.c
-@@ -290,10 +290,10 @@ int snd_seq_timer_open(struct snd_seq_queue *q)
- 			tid.device = SNDRV_TIMER_GLOBAL_SYSTEM;
- 			err = snd_timer_open(&t, str, &tid, q->queue);
- 		}
--		if (err < 0) {
--			snd_printk(KERN_ERR "seq fatal error: cannot create timer (%i)\n", err);
--			return err;
--		}
+diff --git a/usr/gen_init_cpio.c b/usr/gen_init_cpio.c
+index b2b3c2d1cf8b..0478657c15bc 100644
+--- a/usr/gen_init_cpio.c
++++ b/usr/gen_init_cpio.c
+@@ -299,7 +299,7 @@ static int cpio_mkfile(const char *name, const char *location,
+ 	int retval;
+ 	int rc = -1;
+ 	int namesize;
+-	int i;
++	unsigned int i;
+ 
+ 	mode |= S_IFREG;
+ 
+@@ -375,25 +375,28 @@ error:
+ 
+ static char *cpio_replace_env(char *new_location)
+ {
+-       char expanded[PATH_MAX + 1];
+-       char env_var[PATH_MAX + 1];
+-       char *start;
+-       char *end;
+-
+-       for (start = NULL; (start = strstr(new_location, "${")); ) {
+-               end = strchr(start, '}');
+-               if (start < end) {
+-                       *env_var = *expanded = '\0';
+-                       strncat(env_var, start + 2, end - start - 2);
+-                       strncat(expanded, new_location, start - new_location);
+-                       strncat(expanded, getenv(env_var), PATH_MAX);
+-                       strncat(expanded, end + 1, PATH_MAX);
+-                       strncpy(new_location, expanded, PATH_MAX);
+-               } else
+-                       break;
+-       }
+-
+-       return new_location;
++	char expanded[PATH_MAX + 1];
++	char env_var[PATH_MAX + 1];
++	char *start;
++	char *end;
++
++	for (start = NULL; (start = strstr(new_location, "${")); ) {
++		end = strchr(start, '}');
++		if (start < end) {
++			*env_var = *expanded = '\0';
++			strncat(env_var, start + 2, end - start - 2);
++			strncat(expanded, new_location, start - new_location);
++			strncat(expanded, getenv(env_var),
++				PATH_MAX - strlen(expanded));
++			strncat(expanded, end + 1,
++				PATH_MAX - strlen(expanded));
++			strncpy(new_location, expanded, PATH_MAX);
++			new_location[PATH_MAX] = 0;
++		} else
++			break;
 +	}
-+	if (err < 0) {
-+		snd_printk(KERN_ERR "seq fatal error: cannot create timer (%i)\n", err);
-+		return err;
- 	}
- 	t->callback = snd_seq_timer_interrupt;
- 	t->callback_data = q;
++
++	return new_location;
+ }
+ 
+ 
 -- 
 1.8.5.2
 
