@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751924AbaBENlr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 08:41:47 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:17135 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751159AbaBENlp (ORCPT
+	id S1752056AbaBENl6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 08:41:58 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:35090 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751949AbaBENlz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 08:41:45 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 05 Feb 2014 05:40:16 -0800
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <linus.walleij@linaro.org>
-CC: <swarren@wwwdotorg.org>, <thierry.reding@gmail.com>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH] pinctrl: tegra: return correct error type
-Date: Wed, 5 Feb 2014 19:11:34 +0530
-Message-ID: <1391607694-8608-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 5 Feb 2014 08:41:55 -0500
+Date: Wed, 5 Feb 2014 13:43:04 +0000
+From: Leif Lindholm <leif.lindholm@linaro.org>
+To: Laura Abbott <lauraa@codeaurora.org>
+Cc: Russell King <linux@arm.linux.org.uk>, David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Rob Herring <robherring2@gmail.com>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: Re: [PATCHv2 2/2] arm: Get rid of meminfo
+Message-ID: <20140205134304.GB12169@bivouac.eciton.net>
+References: <1391558551-31395-1-git-send-email-lauraa@codeaurora.org>
+ <1391558551-31395-3-git-send-email-lauraa@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391558551-31395-3-git-send-email-lauraa@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When memory allocation failed, drive should return error as ENOMEM.
+On Tue, Feb 04, 2014 at 04:02:31PM -0800, Laura Abbott wrote:
+> memblock is now fully integrated into the kernel and is the prefered
+> method for tracking memory. Rather than reinvent the wheel with
+> meminfo, migrate to using memblock directly instead of meminfo as
+> an intermediate.
+> 
+> Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
- drivers/pinctrl/pinctrl-tegra.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/pinctrl/pinctrl-tegra.c b/drivers/pinctrl/pinctrl-tegra.c
-index a2e93a2..e767355 100644
---- a/drivers/pinctrl/pinctrl-tegra.c
-+++ b/drivers/pinctrl/pinctrl-tegra.c
-@@ -645,7 +645,7 @@ int tegra_pinctrl_probe(struct platform_device *pdev,
- 				 GFP_KERNEL);
- 	if (!pmx->regs) {
- 		dev_err(&pdev->dev, "Can't alloc regs pointer\n");
--		return -ENODEV;
-+		return -ENOMEM;
- 	}
- 
- 	for (i = 0; i < pmx->nbanks; i++) {
--- 
-1.7.9.5
-
+On VExpress TC2:
+Tested-by: Leif Lindholm <leif.lindholm@linaro.org>
+(Applies also to 1/2, of course.)
