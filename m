@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751787AbaBEJTY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 04:19:24 -0500
-Received: from smtp-out-092.synserver.de ([212.40.185.92]:1089 "EHLO
-	smtp-out-089.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751367AbaBEJTV (ORCPT
+	id S1751515AbaBEJW2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 04:22:28 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:57363 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750789AbaBEJWZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 04:19:21 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 13615
-Message-ID: <52F2021A.9020804@metafoo.de>
-Date: Wed, 05 Feb 2014 10:19:22 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	Wed, 5 Feb 2014 04:22:25 -0500
+Date: Wed, 5 Feb 2014 01:22:07 -0800
+From: tip-bot for Nitin A Kamble <tipbot@zytor.com>
+Message-ID: <tip-923fa4ea382f592dee2ba3b205befb90cbddf3af@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        nitin.a.kamble@intel.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        nitin.a.kamble@intel.com, tglx@linutronix.de
+In-Reply-To: <1391129410-54548-2-git-send-email-nitin.a.kamble@intel.com>
+References: <1391129410-54548-2-git-send-email-nitin.a.kamble@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/urgent] genirq: Generic irq chip requires IRQ_DOMAIN
+Git-Commit-ID: 923fa4ea382f592dee2ba3b205befb90cbddf3af
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Jean-Francois Moine <moinejf@free.fr>
-CC: Mark Brown <broonie@kernel.org>, alsa-devel@alsa-project.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Rob Clark <robdclark@gmail.com>, Dave Airlie <airlied@gmail.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [alsa-devel] [PATCH v3 4/5] ASoC: tda998x: adjust the audio hw
- parameters from EDID
-References: <cover.1391274627.git.moinejf@free.fr> <1b15025671d9099863a3091346536e45891e4a26.1391274628.git.moinejf@free.fr> <20140204180625.GM22609@sirena.org.uk> <20140205101134.4591e5c3@armhf>
-In-Reply-To: <20140205101134.4591e5c3@armhf>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 05 Feb 2014 01:22:14 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/05/2014 10:11 AM, Jean-Francois Moine wrote:
-> On Tue, 4 Feb 2014 18:06:25 +0000
-> Mark Brown <broonie@kernel.org> wrote:
->
->> On Mon, Jan 27, 2014 at 09:48:54AM +0100, Jean-Francois Moine wrote:
->>
->>> +		/* change the snd_soc_pcm_stream values of the driver */
->>> +		stream->rates = rate_mask;
->>> +		stream->channels_max = max_channels;
->>> +		stream->formats = formats;
->>
->>> +	/* copy the DAI driver to a writable area */
->>> +	dai_drv = devm_kzalloc(&pdev->dev, sizeof(tda998x_dai), GFP_KERNEL);
->>> +	if (!dai_drv)
->>> +		return -ENOMEM;
->>> +	memcpy(dai_drv, tda998x_dai, sizeof(tda998x_dai));
->>> +
->>
->> The code should be doing this by setting constraints based on the
->> current setup rather than by editing the data structure - the expecation
->> is very much that the data won't change so this prevents surprises with
->> future work on the core.
->
-> As it is done in the soc core, in soc_pcm_open(), the runtime hw_params
-> are initialized after the call to the CODEC startup, and the next CODEC
-> event is hw_params() when the user has already chosen all the parameters.
->
-> So, in the CODEC, I don't see how I could update the parameters
-> dictated by the EDID otherwise in changing the DAI driver parameters.
->
+Commit-ID:  923fa4ea382f592dee2ba3b205befb90cbddf3af
+Gitweb:     http://git.kernel.org/tip/923fa4ea382f592dee2ba3b205befb90cbddf3af
+Author:     Nitin A Kamble <nitin.a.kamble@intel.com>
+AuthorDate: Thu, 30 Jan 2014 16:50:10 -0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Wed, 5 Feb 2014 10:17:32 +0100
 
-The startup function is the right place. But instead of modifying the DAI 
-use snd_pcm_hw_constraint_mask64(), snd_pcm_hw_constraint_list(), etc. to 
-setup the additional constraints that come from the EDID.
+genirq: Generic irq chip requires IRQ_DOMAIN
 
-Bonus points for making this a generic helper function that takes a runtime 
-and a EDID and then applies the EDID constraints on the runtime.
+The generic_chip.c uses interfaces from irq_domain.c which is
+controlled by the IRQ_DOMAIN config option, but there is no Kconfig
+dependency so the build can fail:
 
-- Lars
+linux/kernel/irq/generic-chip.c:400:11: error:
+'irq_domain_xlate_onetwocell' undeclared here (not in a function)
+
+Select IRQ_DOMAIN when GENERIC_IRQ_CHIP is selected.
+
+Signed-off-by: Nitin A Kamble <nitin.a.kamble@intel.com>
+Link: http://lkml.kernel.org/r/1391129410-54548-2-git-send-email-nitin.a.kamble@intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: stable@vger.kernel.org # 3.11+
+---
+ kernel/irq/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/kernel/irq/Kconfig b/kernel/irq/Kconfig
+index 4a1fef0..07cbdfe 100644
+--- a/kernel/irq/Kconfig
++++ b/kernel/irq/Kconfig
+@@ -40,6 +40,7 @@ config IRQ_EDGE_EOI_HANDLER
+ # Generic configurable interrupt chip implementation
+ config GENERIC_IRQ_CHIP
+        bool
++       select IRQ_DOMAIN
+ 
+ # Generic irq_domain hw <--> linux irq number translation
+ config IRQ_DOMAIN
