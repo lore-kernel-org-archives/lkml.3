@@ -1,70 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752330AbaBENt7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 08:49:59 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:51266 "EHLO mx2.suse.de"
+	id S1751437AbaBENwg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 08:52:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48394 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751052AbaBENt6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 08:49:58 -0500
-Date: Wed, 5 Feb 2014 14:49:56 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: [PATCH -v2 1/6] memcg: do not replicate
- try_get_mem_cgroup_from_mm in __mem_cgroup_try_charge
-Message-ID: <20140205134956.GC2425@dhcp22.suse.cz>
-References: <1391520540-17436-1-git-send-email-mhocko@suse.cz>
- <1391520540-17436-2-git-send-email-mhocko@suse.cz>
- <20140204155508.GM6963@cmpxchg.org>
- <20140204160521.GM4890@dhcp22.suse.cz>
+	id S1750775AbaBENwf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 08:52:35 -0500
+Date: Wed, 5 Feb 2014 14:52:03 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@parisplace.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Smith <dsmith@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Igor Zhbanov <i.zhbanov@samsung.com>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [RFC][PATCH] exec: Fix use after free of tracepoint
+	trace_sched_process_exec
+Message-ID: <20140205135203.GA16229@redhat.com>
+References: <20140204120500.041b5175@gandalf.local.home> <CA+55aFyObrVGXqncNboMzybeevPBOtAUcn-zur_B26VHJ1CEcg@mail.gmail.com> <20140204182852.43ffa442@gandalf.local.home> <20140204184208.6f4f22a8@gandalf.local.home> <CA+55aFyTC1UGvRgH5vASh-C3M+GqHPMNGsUq3Q1MuynzkiSaEA@mail.gmail.com> <20140205011028.GM10323@ZenIV.linux.org.uk> <CA+55aFy23NFG6Vw_FRXSALcCeOXF=48iS4s2rDc_0dAONbOETw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140204160521.GM4890@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFy23NFG6Vw_FRXSALcCeOXF=48iS4s2rDc_0dAONbOETw@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 04-02-14 17:05:21, Michal Hocko wrote:
-> On Tue 04-02-14 10:55:08, Johannes Weiner wrote:
-> > On Tue, Feb 04, 2014 at 02:28:55PM +0100, Michal Hocko wrote:
-> > > Johannes Weiner has pointed out that __mem_cgroup_try_charge duplicates
-> > > try_get_mem_cgroup_from_mm for charges which came without a memcg. The
-> > > only reason seems to be a tiny optimization when css_tryget is not
-> > > called if the charge can be consumed from the stock. Nevertheless
-> > > css_tryget is very cheap since it has been reworked to use per-cpu
-> > > counting so this optimization doesn't give us anything these days.
-> > > 
-> > > So let's drop the code duplication so that the code is more readable.
-> > > While we are at it also remove a very confusing comment in
-> > > try_get_mem_cgroup_from_mm.
-> > > 
-> > > Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> > > ---
-> > >  mm/memcontrol.c | 49 ++++++++-----------------------------------------
-> > >  1 file changed, 8 insertions(+), 41 deletions(-)
-> > > 
-> > > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > > index 53385cd4e6f0..042e4ff36c05 100644
-> > > --- a/mm/memcontrol.c
-> > > +++ b/mm/memcontrol.c
-> > > @@ -1081,11 +1081,7 @@ struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm)
-> > >  
-> > >  	if (!mm)
-> > >  		return NULL;
-> > 
-> > While you're at it, this check also seems unnecessary.
-> 
-> Yes, it will be removed in a later patch. I wanted to have it in a
-> separate patch for a better bisectability just in case I have really
-> missed mm-might-by-NULL case.
+On 02/04, Linus Torvalds wrote:
+>
+> --- a/kernel/kmod.c
+> +++ b/kernel/kmod.c
+> @@ -239,7 +239,7 @@ static int ____call_usermodehelper(void *data)
+>
+>  	commit_creds(new);
+>
+> -	retval = do_execve(sub_info->path,
+> +	retval = do_execve(getname_kernel(sub_info->path),
+>  			   (const char __user *const __user *)sub_info->argv,
+>  			   (const char __user *const __user *)sub_info->envp);
 
-Ohh, I have mixed that with the other mm check. You are right we can
-remove this one as well. Thanks and sorry for confusion!
--- 
-Michal Hocko
-SUSE Labs
+Great, this naturally duplicates filename unconditionally, and we can
+kill bprm->tcomm[].
+
+But,
+
+> --- a/include/linux/binfmts.h
+> +++ b/include/linux/binfmts.h
+> @@ -37,7 +37,7 @@ struct linux_binprm {
+>  	int unsafe;		/* how unsafe this exec is (mask of LSM_UNSAFE_*) */
+>  	unsigned int per_clear;	/* bits to clear in current->personality */
+>  	int argc, envc;
+> -	const char * filename;	/* Name of binary as seen by procps */
+> +	struct filename *filename;	/* Name of binary as seen by procps */
+
+Do we really need this change? If not (afaics), the patch can be
+much simpler, see below...
+
+
+
+> -void free_bprm(struct linux_binprm *bprm)
+> +static void free_bprm(struct linux_binprm *bprm)
+>  {
+>  	free_arg_pages(bprm);
+>  	if (bprm->cred) {
+> @@ -1174,15 +1179,17 @@ void free_bprm(struct linux_binprm *bprm)
+>  		fput(bprm->file);
+>  	}
+>  	/* If a binfmt changed the interp, free it. */
+> -	if (bprm->interp != bprm->filename)
+> +	if (bprm->interp != bprm->filename->name)
+>  		kfree(bprm->interp);
+> +	if (bprm->filename)
+> +		putname(bprm->filename);
+
+Even if we actually need to turn bprm->filename into "struct filename"
+this free_bprm()->putname() only complicates the code, unless I missed
+something. The caller, do_execve(), can do putname() unconditionally and
+avoid if/NULL games.
+
+IOW, doesn't the change below (on top of your patch) obviously makes
+sense or I am totally confused?
+
+Oleg.
+
+--- x/fs/exec.c
++++ x/fs/exec.c
+@@ -1183,8 +1183,6 @@ static void free_bprm(struct linux_binpr
+ 	/* If a binfmt changed the interp, free it. */
+ 	if (bprm->interp != bprm->filename->name)
+ 		kfree(bprm->interp);
+-	if (bprm->filename)
+-		putname(bprm->filename);
+ 	kfree(bprm);
+ }
+ 
+@@ -1478,9 +1476,6 @@ static int do_execve_common(struct filen
+ 	if (!bprm)
+ 		goto out_files;
+ 
+-	bprm->filename = filename;
+-	bprm->interp = filename->name;
+-
+ 	retval = prepare_bprm_creds(bprm);
+ 	if (retval)
+ 		goto out_free;
+@@ -1496,6 +1491,8 @@ static int do_execve_common(struct filen
+ 	sched_exec();
+ 
+ 	bprm->file = file;
++	bprm->filename = filename;
++	bprm->interp = filename->name;
+ 
+ 	retval = bprm_mm_init(bprm);
+ 	if (retval)
+@@ -1538,7 +1535,7 @@ static int do_execve_common(struct filen
+ 	free_bprm(bprm);
+ 	if (displaced)
+ 		put_files_struct(displaced);
+-	return retval;
++	goto out_ret;
+ 
+ out:
+ 	if (bprm->mm) {
+@@ -1552,14 +1549,12 @@ out_unmark:
+ 
+ out_free:
+ 	free_bprm(bprm);
+-	filename = NULL;
+ 
+ out_files:
+ 	if (displaced)
+ 		reset_files_struct(displaced);
+ out_ret:
+-	if (filename)
+-		putname(filename);
++	putname(filename);
+ 	return retval;
+ }
+ 
+
