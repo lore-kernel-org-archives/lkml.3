@@ -1,134 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932625AbaBEU3K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:29:10 -0500
-Received: from mail.windriver.com ([147.11.1.11]:55270 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755122AbaBEUHG (ORCPT
+	id S932664AbaBEU3e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:29:34 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:57211 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751951AbaBEU33 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:07:06 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Wolfgang Frisch <wfpub@roembden.net>, Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 147/213] USB: io_ti: Fix NULL dereference in chase_port()
-Date: Wed, 5 Feb 2014 15:01:42 -0500
-Message-ID: <1391630568-49251-148-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
+	Wed, 5 Feb 2014 15:29:29 -0500
+Date: Wed, 5 Feb 2014 12:29:27 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Nathan Zimmer <nzimmer@sgi.com>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Xishi Qiu <qiuxishi@huawei.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jiang Liu <liuj97@gmail.com>, Hedi Berriche <hedi@sgi.com>,
+        Mike Travis <travis@sgi.com>
+Subject: Re: [RFC] Move the memory_notifier out of the memory_hotplug lock
+In-Reply-To: <1391617743-150518-1-git-send-email-nzimmer@sgi.com>
+Message-ID: <alpine.DEB.2.02.1402051217520.5616@chino.kir.corp.google.com>
+References: <1391617743-150518-1-git-send-email-nzimmer@sgi.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wolfgang Frisch <wfpub@roembden.net>
+On Wed, 5 Feb 2014, Nathan Zimmer wrote:
 
-                   -------------------
-    This is a commit scheduled for the next v2.6.34 longterm release.
-    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
-    If you see a problem with using this for longterm, please comment.
-                   -------------------
+> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+> index 62a0cd1..a3cbd14 100644
+> --- a/mm/memory_hotplug.c
+> +++ b/mm/memory_hotplug.c
+> @@ -985,12 +985,12 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages, int online_typ
+>  		if (need_zonelists_rebuild)
+>  			zone_pcp_reset(zone);
+>  		mutex_unlock(&zonelists_mutex);
+> +		unlock_memory_hotplug();
+>  		printk(KERN_DEBUG "online_pages [mem %#010llx-%#010llx] failed\n",
+>  		       (unsigned long long) pfn << PAGE_SHIFT,
+>  		       (((unsigned long long) pfn + nr_pages)
+>  			    << PAGE_SHIFT) - 1);
+>  		memory_notify(MEM_CANCEL_ONLINE, &arg);
+> -		unlock_memory_hotplug();
+>  		return ret;
+>  	}
+>  
+> @@ -1016,9 +1016,10 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages, int online_typ
+>  
+>  	writeback_set_ratelimit();
+>  
+> +	unlock_memory_hotplug();
+> +
+>  	if (onlined_pages)
+>  		memory_notify(MEM_ONLINE, &arg);
+> -	unlock_memory_hotplug();
+>  
+>  	return 0;
+>  }
 
-commit 1ee0a224bc9aad1de496c795f96bc6ba2c394811 upstream.
+That looks a little problematic, what happens if a nid is being brought 
+online and a registered callback does something like allocate resources 
+for the arg->status_change_nid and the above two hunks of this patch end 
+up racing?
 
-The tty is NULL when the port is hanging up.
-chase_port() needs to check for this.
+Before, a registered callback would be guaranteed to see either a 
+MEMORY_CANCEL_ONLINE or MEMORY_ONLINE after it has already done 
+MEMORY_GOING_ONLINE.
 
-This patch is intended for stable series.
-The behavior was observed and tested in Linux 3.2 and 3.7.1.
+With your patch, we could race and see one cpu doing MEMORY_GOING_ONLINE, 
+another cpu doing MEMORY_GOING_ONLINE, and then MEMORY_ONLINE and 
+MEMORY_CANCEL_ONLINE in either order.
 
-Johan Hovold submitted a more elaborate patch for the mainline kernel.
-
-[   56.277883] usb 1-1: edge_bulk_in_callback - nonzero read bulk status received: -84
-[   56.278811] usb 1-1: USB disconnect, device number 3
-[   56.278856] usb 1-1: edge_bulk_in_callback - stopping read!
-[   56.279562] BUG: unable to handle kernel NULL pointer dereference at 00000000000001c8
-[   56.280536] IP: [<ffffffff8144e62a>] _raw_spin_lock_irqsave+0x19/0x35
-[   56.281212] PGD 1dc1b067 PUD 1e0f7067 PMD 0
-[   56.282085] Oops: 0002 [#1] SMP
-[   56.282744] Modules linked in:
-[   56.283512] CPU 1
-[   56.283512] Pid: 25, comm: khubd Not tainted 3.7.1 #1 innotek GmbH VirtualBox/VirtualBox
-[   56.283512] RIP: 0010:[<ffffffff8144e62a>]  [<ffffffff8144e62a>] _raw_spin_lock_irqsave+0x19/0x35
-[   56.283512] RSP: 0018:ffff88001fa99ab0  EFLAGS: 00010046
-[   56.283512] RAX: 0000000000000046 RBX: 00000000000001c8 RCX: 0000000000640064
-[   56.283512] RDX: 0000000000010000 RSI: ffff88001fa99b20 RDI: 00000000000001c8
-[   56.283512] RBP: ffff88001fa99b20 R08: 0000000000000000 R09: 0000000000000000
-[   56.283512] R10: 0000000000000000 R11: ffffffff812fcb4c R12: ffff88001ddf53c0
-[   56.283512] R13: 0000000000000000 R14: 00000000000001c8 R15: ffff88001e19b9f4
-[   56.283512] FS:  0000000000000000(0000) GS:ffff88001fd00000(0000) knlGS:0000000000000000
-[   56.283512] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[   56.283512] CR2: 00000000000001c8 CR3: 000000001dc51000 CR4: 00000000000006e0
-[   56.283512] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[   56.283512] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[   56.283512] Process khubd (pid: 25, threadinfo ffff88001fa98000, task ffff88001fa94f80)
-[   56.283512] Stack:
-[   56.283512]  0000000000000046 00000000000001c8 ffffffff810578ec ffffffff812fcb4c
-[   56.283512]  ffff88001e19b980 0000000000002710 ffffffff812ffe81 0000000000000001
-[   56.283512]  ffff88001fa94f80 0000000000000202 ffffffff00000001 0000000000000296
-[   56.283512] Call Trace:
-[   56.283512]  [<ffffffff810578ec>] ? add_wait_queue+0x12/0x3c
-[   56.283512]  [<ffffffff812fcb4c>] ? usb_serial_port_work+0x28/0x28
-[   56.283512]  [<ffffffff812ffe81>] ? chase_port+0x84/0x2d6
-[   56.283512]  [<ffffffff81063f27>] ? try_to_wake_up+0x199/0x199
-[   56.283512]  [<ffffffff81263a5c>] ? tty_ldisc_hangup+0x222/0x298
-[   56.283512]  [<ffffffff81300171>] ? edge_close+0x64/0x129
-[   56.283512]  [<ffffffff810612f7>] ? __wake_up+0x35/0x46
-[   56.283512]  [<ffffffff8106135b>] ? should_resched+0x5/0x23
-[   56.283512]  [<ffffffff81264916>] ? tty_port_shutdown+0x39/0x44
-[   56.283512]  [<ffffffff812fcb4c>] ? usb_serial_port_work+0x28/0x28
-[   56.283512]  [<ffffffff8125d38c>] ? __tty_hangup+0x307/0x351
-[   56.283512]  [<ffffffff812e6ddc>] ? usb_hcd_flush_endpoint+0xde/0xed
-[   56.283512]  [<ffffffff8144e625>] ? _raw_spin_lock_irqsave+0x14/0x35
-[   56.283512]  [<ffffffff812fd361>] ? usb_serial_disconnect+0x57/0xc2
-[   56.283512]  [<ffffffff812ea99b>] ? usb_unbind_interface+0x5c/0x131
-[   56.283512]  [<ffffffff8128d738>] ? __device_release_driver+0x7f/0xd5
-[   56.283512]  [<ffffffff8128d9cd>] ? device_release_driver+0x1a/0x25
-[   56.283512]  [<ffffffff8128d393>] ? bus_remove_device+0xd2/0xe7
-[   56.283512]  [<ffffffff8128b7a3>] ? device_del+0x119/0x167
-[   56.283512]  [<ffffffff812e8d9d>] ? usb_disable_device+0x6a/0x180
-[   56.283512]  [<ffffffff812e2ae0>] ? usb_disconnect+0x81/0xe6
-[   56.283512]  [<ffffffff812e4435>] ? hub_thread+0x577/0xe82
-[   56.283512]  [<ffffffff8144daa7>] ? __schedule+0x490/0x4be
-[   56.283512]  [<ffffffff8105798f>] ? abort_exclusive_wait+0x79/0x79
-[   56.283512]  [<ffffffff812e3ebe>] ? usb_remote_wakeup+0x2f/0x2f
-[   56.283512]  [<ffffffff812e3ebe>] ? usb_remote_wakeup+0x2f/0x2f
-[   56.283512]  [<ffffffff810570b4>] ? kthread+0x81/0x89
-[   56.283512]  [<ffffffff81057033>] ? __kthread_parkme+0x5c/0x5c
-[   56.283512]  [<ffffffff8145387c>] ? ret_from_fork+0x7c/0xb0
-[   56.283512]  [<ffffffff81057033>] ? __kthread_parkme+0x5c/0x5c
-[   56.283512] Code: 8b 7c 24 08 e8 17 0b c3 ff 48 8b 04 24 48 83 c4 10 c3 53 48 89 fb 41 50 e8 e0 0a c3 ff 48 89 04 24 e8 e7 0a c3 ff ba 00 00 01 00
-<f0> 0f c1 13 48 8b 04 24 89 d1 c1 ea 10 66 39 d1 74 07 f3 90 66
-[   56.283512] RIP  [<ffffffff8144e62a>] _raw_spin_lock_irqsave+0x19/0x35
-[   56.283512]  RSP <ffff88001fa99ab0>
-[   56.283512] CR2: 00000000000001c8
-[   56.283512] ---[ end trace 49714df27e1679ce ]---
-
-Signed-off-by: Wolfgang Frisch <wfpub@roembden.net>
-Cc: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- drivers/usb/serial/io_ti.c | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/drivers/usb/serial/io_ti.c b/drivers/usb/serial/io_ti.c
-index b6e8908b5080..2e2bcf230be3 100644
---- a/drivers/usb/serial/io_ti.c
-+++ b/drivers/usb/serial/io_ti.c
-@@ -581,6 +581,9 @@ static void chase_port(struct edgeport_port *port, unsigned long timeout,
- 	wait_queue_t wait;
- 	unsigned long flags;
- 
-+	if (!tty)
-+		return;
-+
- 	if (!timeout)
- 		timeout = (HZ * EDGE_CLOSING_WAIT)/100;
- 
--- 
-1.8.5.2
-
+So I think this patch will break most registered callbacks that actually 
+depend on lock_memory_hotplug(), it's a coarse lock for that reason.
