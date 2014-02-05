@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753386AbaBESfO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 13:35:14 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:24605 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751771AbaBESfK (ORCPT
+	id S1753453AbaBESfp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 13:35:45 -0500
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:36003 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753410AbaBESfX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 13:35:10 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19Mcg7LtobndatzbaUH/3eNV4JgERVUHK8=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 2A28851E83E
-Date: Wed, 5 Feb 2014 13:34:57 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Mike Turquette <mturquette@linaro.org>,
-        linux-kernel@vger.kernel.org,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/4] clk: mvebu: fix clk init order
-Message-ID: <20140205183457.GW8533@titan.lakedaemon.net>
-References: <1390673950-4521-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Wed, 5 Feb 2014 13:35:23 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1390673950-4521-1-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20140205175528.GF5002@laptop.programming.kicks-ass.net>
+References: <1388728091-18564-1-git-send-email-zheng.z.yan@intel.com>
+	<1388728091-18564-7-git-send-email-zheng.z.yan@intel.com>
+	<CABPqkBQS=kSyRb0hb7DSTAOmUpB03_Cq70Wi1NvHj+DAQc4FVQ@mail.gmail.com>
+	<20140205175528.GF5002@laptop.programming.kicks-ass.net>
+Date: Wed, 5 Feb 2014 19:35:22 +0100
+Message-ID: <CABPqkBTB3B817LBnY2pu0uLMhjHzJa8fL6a--iKe-2bKUxFZpQ@mail.gmail.com>
+Subject: Re: [PATCH 06/14] perf, core: always switch pmu specific data during
+ context switch
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 25, 2014 at 07:19:06PM +0100, Sebastian Hesselbarth wrote:
-> This patch set fixes clk init order that went upside-down with
-> v3.14. I haven't really investigated what caused this, but I assume
-> it is related with DT node reordering by addresses.
-> 
-> Anyway, with v3.14 for MVEBU SoCs, the clock gating driver gets
-> registered before core clocks driver. Unfortunately, we cannot
-> return -EPROBE_DEFER in drivers initialized by clk_of_init. As the
-> init order for our drivers is always core clocks before clock gating,
-> we maintain init order ourselves by hooking CLK_OF_DECLARE to one
-> init function that will register core clocks before clock gating
-> driver.
-> 
-> This patch is based on pre-v3.14-rc1 mainline and should go in as
-> fixes for it. As we now send MVEBU clk pull-requests to Mike directly,
-> I suggest Jason picks it up as a topic branch.
-> 
-> The patches have been boot tested on Dove and compile-tested only
-> for Kirkwood, Armada 370 and XP.
-> 
-> Sebastian Hesselbarth (4):
->   clk: mvebu: armada-370: maintain clock init order
->   clk: mvebu: armada-xp: maintain clock init order
->   clk: mvebu: dove: maintain clock init order
->   clk: mvebu: kirkwood: maintain clock init order
-> 
->  drivers/clk/mvebu/armada-370.c | 21 ++++++++++-----------
->  drivers/clk/mvebu/armada-xp.c  | 20 +++++++++-----------
->  drivers/clk/mvebu/dove.c       | 19 +++++++++----------
->  drivers/clk/mvebu/kirkwood.c   | 34 ++++++++++++++++------------------
->  4 files changed, 44 insertions(+), 50 deletions(-)
+On Wed, Feb 5, 2014 at 6:55 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, Feb 05, 2014 at 06:19:27PM +0100, Stephane Eranian wrote:
+>> On Fri, Jan 3, 2014 at 6:48 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+>> > If two tasks were both forked from the same parent task, Events in their perf
+>> > task contexts can be the same. Perf core optimizes context switch oout in this
+>> > case.
+>> >
+>> > Previous patch inroduces pmu specific data. The data is task specific, so we
+>> > should switch the data even when context switch is optimized out.
+>> >
+>> Reviwed-by: Stephane Eranian <eranian@google.com>
+>
+> You should look again.. that xchg() is an atomic op and a total waste of
+> time since the assignment back onto ctx->task_ctx_data is non-atomic.
+>
+> Complete fail there.
+>
+I admit, it was not clear to me why the xchg().
 
-Whole series applied to mvebu/clk-fixes.
-
-thx,
-
-Jason.
+>> > Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+>> > ---
+>> >  kernel/events/core.c | 2 ++
+>> >  1 file changed, 2 insertions(+)
+>> >
+>> > diff --git a/kernel/events/core.c b/kernel/events/core.c
+>> > index b6650ab..d6d8dea 100644
+>> > --- a/kernel/events/core.c
+>> > +++ b/kernel/events/core.c
+>> > @@ -2319,6 +2319,8 @@ static void perf_event_context_sched_out(struct task_struct *task, int ctxn,
+>> >                         next->perf_event_ctxp[ctxn] = ctx;
+>> >                         ctx->task = next;
+>> >                         next_ctx->task = task;
+>> > +                       ctx->task_ctx_data = xchg(&next_ctx->task_ctx_data,
+>> > +                                                 ctx->task_ctx_data);
+>> >                         do_switch = 0;
+>> >
+>> >                         perf_event_sync_stat(ctx, next_ctx);
+>> > --
+>> > 1.8.4.2
+>> >
