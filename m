@@ -1,152 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751434AbaBEFNT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 00:13:19 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:51128 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750720AbaBEFNS (ORCPT
+	id S1751557AbaBEFRg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 00:17:36 -0500
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:65471 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750906AbaBEFRe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 00:13:18 -0500
-Message-ID: <52F1C871.1010003@gmail.com>
-Date: Wed, 05 Feb 2014 13:13:21 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Wed, 5 Feb 2014 00:17:34 -0500
+Date: Wed, 5 Feb 2014 00:17:30 -0500
+From: Matt Porter <mporter@linaro.org>
+To: Matt Ranostay <mranostay@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Pantelis Antoniou <pantelis.antoniou@gmail.com>
+Subject: Re: [PATCH v4 1/2] iio:as3935: Add DT binding docs for AS3935 driver
+Message-ID: <20140205051730.GA3911@beef>
+References: <1391570096-2932-1-git-send-email-mranostay@gmail.com>
+ <20140205044335.GA2172@beef>
+ <CAKzfze-mHkxmnb06jDuD=-Zg3SmhRoZo6-P0D9dReA-gDwbTnw@mail.gmail.com>
 MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: ananth@in.ibm.com, anil.s.keshavamurthy@intel.com,
-        =?UTF-8?B?SMOldmFy?= =?UTF-8?B?ZCBTa2lubmVtb2Vu?= 
-	<hskinnemoen@gmail.com>,
-        David Miller <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] kernel: kprobe: move all *kretprobe* generic implementation
- to CONFIG_KRETPROBES enabled area
-References: <52ECE5D8.6090209@gmail.com> <52EDB022.5070101@hitachi.com> <52EF8222.6030709@gmail.com> <52EFB8F4.6010207@hitachi.com> <52F04FA8.8040008@gmail.com> <52F077A1.3020701@gmail.com> <52F09404.3060502@hitachi.com> <52F0D7F3.7000901@gmail.com> <52F0EB30.2070401@hitachi.com> <52F0F0ED.5090005@gmail.com> <52F109AF.8040800@hitachi.com> <52F18367.2060803@gmail.com> <52F19223.5010506@hitachi.com> <52F1AB18.5040208@gmail.com> <52F1C4C3.2070404@hitachi.com>
-In-Reply-To: <52F1C4C3.2070404@hitachi.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKzfze-mHkxmnb06jDuD=-Zg3SmhRoZo6-P0D9dReA-gDwbTnw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/05/2014 12:57 PM, Masami Hiramatsu wrote:
-> (2014/02/05 12:08), Chen Gang wrote:
->>>>>>>>> Anyway, I don't think those inlined functions to be changed, because
->>>>>>>>> most of them are internal functions. If CONFIG_KRETPROBES=n, it just
->>>>>>>>> be ignored.
->>>>>>>>>
->>>>>>>>
->>>>>>>> In original implementation, if CONFIG_KRETPROBES=n, kretprobe_assert(),
->>>>>>>> disable_kretprobe(), and enable_kretprobe() are not ignored.
->>>>>>>
->>>>>>> Really? where are they called? I mean, those functions do not have
->>>>>>> any instance unless your module uses it (but that is not what the kernel
->>>>>>> itself should help).
->>>>>>>
->>>>>>
->>>>>> If what you said correct (I guess so), for me, we still need let them in
->>>>>> CONFIG_KRETPROBES area, and without any dummy outside, just like another
->>>>>> *kprobe* static inline functions have done in "include/linux/kprobes.h".
->>>>>
->>>>> kretprobe_assert() is only for the internal check. So we don't need to care
->>>>> about, and disable/enable_kretprobe() are anyway returns -EINVAL because
->>>>> kretprobe can not be registered. And all of them are inlined functions.
->>>>> In that case, we don't need to care about it.
->>>>
->>>> Hmm... it is related with code 'consistency':
->>>>
->>>>  - these static inline functions are kretprobe generic implementation,
->>>>    and we are trying to let all kretprobe generic implementation within
->>>>    CONFIG_KRETPROBES area.
->>>
->>> No, actually, kretprobe is just built on the kprobe. enable/disable_kretprobe
->>> just wrapped the kprobe methods. And kretprobe_assert() is just for kretprobe
->>> internal use. that is not an API. Moving only the kretprobe_assert() into the
->>> CONFIG_KRETPROBE area is not bad, but since it is just a static inline function,
->>> if there is no caller, it just be ignored, no side effect.
->>>
->>
->> OK, I can understand.
->>
->> And do you mean enable/disable_kretprobe() are API? if so, we have to
->> implement them whether CONFIG_KRETPROBES enabled or disabled.
->>
->> And when CONFIG_KRETPROBES=n, just like what you originally said: we
->> need returns -EINVAL directly (either, I am not quite sure whether the
->> input parameter will be NULL, in this case).
+On Tue, Feb 04, 2014 at 08:52:26PM -0800, Matt Ranostay Matt Ranostay wrote:
+> On Tue, Feb 4, 2014 at 8:43 PM, Matt Porter <mporter@linaro.org> wrote:
+> > On Tue, Feb 04, 2014 at 07:14:55PM -0800, Matt Ranostay Matt Ranostay wrote:
+> >> Document compatible string, required and optional DT properties for
+> >> AS3935 chipset driver.
+> >>
+> >> Signed-off-by: Matt Ranostay <mranostay@gmail.com>
+> >> ---
+> >>  .../devicetree/bindings/iio/proximity/as3935.txt   | 25 ++++++++++++++++++++++
+> >>  1 file changed, 25 insertions(+)
+> >>  create mode 100644 Documentation/devicetree/bindings/iio/proximity/as3935.txt
+> >>
+> >> diff --git a/Documentation/devicetree/bindings/iio/proximity/as3935.txt b/Documentation/devicetree/bindings/iio/proximity/as3935.txt
+> >> new file mode 100644
+> >> index 0000000..7e117cd
+> >> --- /dev/null
+> >> +++ b/Documentation/devicetree/bindings/iio/proximity/as3935.txt
+> >> @@ -0,0 +1,25 @@
+> >> +Austrian Microsystems AS3935 Franklin lightning sensor device driver
+> >> +
+> >> +Required properties:
+> >> +     - compatible: must be "ams,as3935"
+> >
+> > Change this to "amstaos,as3935"
+> >
+> > amstaos (AMS bought Taos) is already a registered vendor prefix in
+> > vendor-prefixes.txt
+> >
+> >> +     - reg: SPI chip select number for the device
+> >> +     - spi-cpha: SPI Mode 1
+> >
+> > When using generic binding properties, please reference the binding
+> > being used. Like:
+> >
+> >         - spi-cpha: SPI Mode 1. Refer to spi/spi-bus.txt for generic SPI
+> >           slave node bindings.
+> >
+> Noted.
 > 
-> Both are API, and when implementing it I had also considered that, but
-> I decided to stay it in inline-function wrapper. The reason why is,
-> that enable/disable_k*probe require the registered k*probes. If the
-> kernel hacker uses those functions, they must ensure registering his
-> k*probes, otherwise it does not work correctly. If the CONFIG_KRETPROBES=n,
-> register_kretprobe() always fails, this means that the code has
-> no chance to call those functions (it must be).
->
-
-OK, thank you for your explanations.
-
-
->>>>  - And original kprobe static inline functions have done like that,
->>>>    in same header file, if no obvious reasons, we can try to follow.
->>>
->>> It is no reasons to follow that too. Please keep your patch simple as much
->>> as possible.
->>>
->>
->> "keep our patch simple as much as posssible" sounds reasonable to me.
->> After skip "include/linux/kprobe.h", our patch's subject (include
->> comments) also need be changed (I will/should change it).
->>
->> For me, "include/linux/kprobe.h" can also be improved, but it can be
->> another patch for it (not only for kretprobe, but also for jpobe).
+> >> +     - interrupt-parent : should be the phandle for the interrupt controller
+> >> +     - interrupts : interrupt mapping for GPIO IRQ
+> >
+> >         Refer to interrupt-controller/interrupts.txt for generic
+> >         interrupt client node bindings.
+> >
+> Noted.
 > 
-> if that "improvement" means "simplify", it is acceptable. Now I don't like
-> ifdefs of CONFIG_KPROBES and dummy functions, since if CONFIG_KPROBES=n,
-> other kernel modules can also check the kconfig and decide what they do
-> (or don't).
-> Perhaps, what we've really needed is "just enough able to compile",
-> not the fully covered dummy APIs.
+> >> +
+> >> +Optional properties:
+> >> +     - ams,tune-cap: Calibration tuning capacitor stepping value 0 - 15.
+> >> +       Range of 0 to 120 pF, 8pF steps. This will require using the
+> >> +       calibration data from the manufacturer.
+> >> +
+> >> +
+> >> +Example:
+> >> +
+> >> +as3935@0 {
+> >> +     compatible = "ams,as3935";
+> >> +     reg = <0>;
+> >> +     spi-cpha;
+> >> +     interrupt-parent = <&gpio1>;
+> >> +     interrupts = <16 1>;
+> >> +     ams,tune-cap = /bits/ 8 <10>;
+> >
+> > What is this? Why not just ams,tune-cap = <10>; ?
+> >
+> > It's a value between 0-15, right?
 > 
+> Correct but it is using of_property_read_u8() so that requires the
+> /bits/ statement.
+> Should this just be a u32 value?
 
-Hmm... for me, I still try to send a patch for "include/linux/kprobe.h".
+Do you really need a u8? If not just read_u32() into an int and keep
+this syntax simple.
 
-For API (although it is kernel internal API), I have a hobby to try to
-let it 'beautiful' as much as possible.
-
-
->>>>> I just concerned that it is a waste of memory if there are useless kretprobe
->>>>> related instances are built when CONFIG_KRETPROBES=n.
->>>>>
->>>>
->>>> Yeah, that is also one of reason (3rd reason).
->>>>
->>>>
->>>> And if necessary, please help check what we have done whether already
->>>> "let all kretprobe generic implementation within CONFIG_KRETPROBES area"
->>>> (exclude declaration, struct/union definition, and architecture
->>>> implementation).
->>>
->>> As I commented, your changes in kernel/kprobes.c are good to me except
->>> two functions. That's all what we need to fix :)
->>>
->>
->> I will send a patch for it (since subject changed, we need not mark
->> "patch v2"), thanks.  :-)
-> 
-> OK, I'll review that.
-> 
-
-Thanks.
-
-> Thank you!
-> 
-> 
-
-Thanks.
--- 
-Chen Gang
-
-Open, share and attitude like air, water and life which God blessed
+-Matt
