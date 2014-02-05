@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860AbaBEP5T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 10:57:19 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:15056 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752642AbaBEP5K (ORCPT
+	id S1752885AbaBEP5a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 10:57:30 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:28823 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752642AbaBEP5Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 10:57:10 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-cb-52f25f53c28c
+	Wed, 5 Feb 2014 10:57:24 -0500
+X-AuditID: cbfec7f4-b7f796d000005a13-e6-52f25f61bc2e
 From: Kamil Debski <k.debski@samsung.com>
 To: "'Olof Johansson'" <olof@lixom.net>
 Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
@@ -25,78 +25,161 @@ Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
         tjakobi@math.uni-bielefeld.de,
         "'Alan Stern'" <stern@rowland.harvard.edu>
 References: <1391016574-25237-1-git-send-email-k.debski@samsung.com>
- <1391016574-25237-4-git-send-email-k.debski@samsung.com>
- <CAOesGMh8qEumWGb_mVuiSTWE=tsEusntG5r9xL3Z+f_WUnBQSw@mail.gmail.com>
-In-reply-to: <CAOesGMh8qEumWGb_mVuiSTWE=tsEusntG5r9xL3Z+f_WUnBQSw@mail.gmail.com>
-Subject: RE: [PATCH v6 3/8] dts: Add usb2phy to Exynos 4
-Date: Wed, 05 Feb 2014 16:57:07 +0100
-Message-id: <054401cf228a$ec10a9e0$c431fda0$%debski@samsung.com>
+ <1391016574-25237-9-git-send-email-k.debski@samsung.com>
+ <CAOesGMgKQrW=Rb6ZtpOVKAZ6dDzy82CzbmOJtKRb8x6JaS1QLg@mail.gmail.com>
+In-reply-to: <CAOesGMgKQrW=Rb6ZtpOVKAZ6dDzy82CzbmOJtKRb8x6JaS1QLg@mail.gmail.com>
+Subject: RE: [PATCH v6 8/8] usb: ehci-exynos: Change to use phy provided by the
+ generic phy framework
+Date: Wed, 05 Feb 2014 16:57:20 +0100
+Message-id: <054501cf228a$f45c61c0$dd152540$%debski@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac8dM8+RpPiMwR5mSVGaFB1A4bgk5wFVJ37g
+Thread-index: Ac8dNG62pk4uYKMpQl6IThTxqp9ZvwFVKTtw
 Content-language: pl
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMIsWRmVeSWpSXmKPExsVy+t/xq7rB8Z+CDJ4sMbVYsvsGq8X8I+dY
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCIsWRmVeSWpSXmKPExsVy+t/xa7qJ8Z+CDKbMM7RYsvsGq8X8I+dY
 	LfrfLGS1aLtykN3i8sJLrBYXnvawWZxtegPk7prDZjHj/D4mi0XLWpkt1h65y25xtv82m8XE
 	pmnsFqeuf2azOL+lk8ni8Jt2VosJvy+wWayf8ZrFom31B1aLjrMH2R1EPC739TJ57Jx1l93j
-	zrU9bB5XTjSxevw7xu4x++4PRo++LasYPY7f2M7k8XmTXABnFJdNSmpOZllqkb5dAlfGqmef
-	mAt+81Z0npjO3sC4iauLkYNDQsBE4sDD6i5GTiBTTOLCvfVsILaQwFJGiQUvdbsYuYDsBiaJ
-	lhXvmUHq2QQ0JVbd8wCpERFQlXjypIsVpIZZYDmrxNQVh1ghGo4xSjzZ18kCUsUpECxx5NR/
-	VhBbWMBCYu/p9+wgg1iAutsuG4OEeQUcJFobrzND2IISPybfA2tlFtCSWL/zOBOELS+xec1b
-	Zoib1SUe/dWFuMFI4vK2GewQJSISdxues05gFJqFZNIsJJNmIZk0C0nLAkaWVYyiqaXJBcVJ
-	6bmGesWJucWleel6yfm5mxghEf1lB+PiY1aHGAU4GJV4eDtEPwYJsSaWFVfmHmKU4GBWEuFt
-	jf0UJMSbklhZlVqUH19UmpNafIiRiYNTqoExbWdV5LyoTvP6M5tEZ/xoPtkUUX5Z3duf+euJ
-	m7c+LH4Wn2f47+OvOrFfvTELY2bpGssdf/hm1Zf5veyHH7FqydrOzdB+PO1HktnpKfuaV7jF
-	qoWsD/qzYw+b8akTKTMnXlv8177N/vfBjIKNv0Nn6G9xZJuYmXJ05nXFtV+y+XWY/jzYr7pR
-	TYmlOCPRUIu5qDgRAIMEyT7GAgAA
+	zrU9bB5XTjSxevw7xu4x++4PRo++LasYPY7f2M7k8XmTXABnFJdNSmpOZllqkb5dAlfG8mPL
+	WQrWqlUs/PeUpYGxQ6qLkZNDQsBEYtbn74wQtpjEhXvr2boYuTiEBJYyShx6doYZJCEk0MAk
+	seB+YBcjBwebgKbEqnseIGERAVWJJ0+6WEHqmQWWs0pMXXGIFaL5GKPElHnfWEEaOAWCJX4v
+	dgVpEBZIl7h/9ATYTBag5gn/z7OD2LwCDhJNd6+zQtiCEj8m32MBsZkFtCTW7zzOBGHLS2xe
+	85YZZKSEgLrEo7+6EDcYSWz/egmqRETibsNz1gmMQrOQTJqFZNIsJJNmIWlZwMiyilE0tTS5
+	oDgpPddQrzgxt7g0L10vOT93EyMkpr/sYFx8zOoQowAHoxIPb4foxyAh1sSy4srcQ4wSHMxK
+	IrytsZ+ChHhTEiurUovy44tKc1KLDzEycXBKNTCqb2vfOfNM8a+p4vK7xE/wb6u4dbE/sUr6
+	UkFf5/+Z+seYe2Q79tRprO79nSOxM0HkyocbX/i4f02s7S9MjNnWZFEjbPRXPmJZWPvWJzYf
+	nvtWrpnmZl8onOq16mHDtsfrhG4tTsjl93I0ebbqzuW6ltj5tg//nM5cq/FV3lV2zuKdkdtm
+	TbBSYinOSDTUYi4qTgQA76FIfMcCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Olof,
 
+Thank you for your review.
+
 > From: Olof Johansson [mailto:olof@lixom.net]
-> Sent: Wednesday, January 29, 2014 9:51 PM
+> Sent: Wednesday, January 29, 2014 9:55 PM
+> 
+> Hi,
 > 
 > On Wed, Jan 29, 2014 at 9:29 AM, Kamil Debski <k.debski@samsung.com>
 > wrote:
-> > Add support to PHY of USB2 of the Exynos 4 SoC.
+> > Change the phy provider used from the old one using the USB phy
+> > framework to a new one using the Generic phy framework.
 > >
 > > Signed-off-by: Kamil Debski <k.debski@samsung.com>
 > > ---
-> >  .../devicetree/bindings/arm/samsung/pmu.txt        |    2 ++
-> >  arch/arm/boot/dts/exynos4.dtsi                     |   31
-> ++++++++++++++++++++
-> >  arch/arm/boot/dts/exynos4210.dtsi                  |   17
-> +++++++++++
-> >  arch/arm/boot/dts/exynos4x12.dtsi                  |   17
-> +++++++++++
-> >  4 files changed, 67 insertions(+)
+> >  .../devicetree/bindings/usb/exynos-usb.txt         |   13 +++
+> >  drivers/usb/host/ehci-exynos.c                     |   97
+> +++++++++++++-------
+> >  2 files changed, 76 insertions(+), 34 deletions(-)
 > >
-> > diff --git a/Documentation/devicetree/bindings/arm/samsung/pmu.txt
-> > b/Documentation/devicetree/bindings/arm/samsung/pmu.txt
-> > index 307e727..a76f91d 100644
-> > --- a/Documentation/devicetree/bindings/arm/samsung/pmu.txt
-> > +++ b/Documentation/devicetree/bindings/arm/samsung/pmu.txt
-> > @@ -3,6 +3,8 @@ SAMSUNG Exynos SoC series PMU Registers
-> >  Properties:
-> >   - name : should be 'syscon';
-> >   - compatible : should contain two values. First value must be one
-> from following list:
-> > +                  - "samsung,exynos4210-pmu" - for Exynos4210 SoC,
-> > +                  - "samsung,exynos4x12-pmu" - for Exynos4212 SoC,
-> >                    - "samsung,exynos5250-pmu" - for Exynos5250 SoC,
-> >                    - "samsung,exynos5420-pmu" - for Exynos5420 SoC.
-> >                 second value must be always "syscon".
+> > diff --git a/Documentation/devicetree/bindings/usb/exynos-usb.txt
+> > b/Documentation/devicetree/bindings/usb/exynos-usb.txt
+> > index d967ba1..25e199a 100644
+> > --- a/Documentation/devicetree/bindings/usb/exynos-usb.txt
+> > +++ b/Documentation/devicetree/bindings/usb/exynos-usb.txt
+> > @@ -12,6 +12,10 @@ Required properties:
+> >   - interrupts: interrupt number to the cpu.
+> >   - clocks: from common clock binding: handle to usb clock.
+> >   - clock-names: from common clock binding: Shall be "usbhost".
+> > +  - port: if in the SoC there are EHCI phys, they should be listed
+> here.
+> > +One phy per port. Each port should have its reg entry with a
+> > +consecutive number. Also it should contain phys and phy-names
+> entries
+> > +specifying the phy used by the port.
+> >
+> >  Optional properties:
+> >   - samsung,vbus-gpio:  if present, specifies the GPIO that @@ -27,6
+> > +31,15 @@ Example:
+> >
+> >                 clocks = <&clock 285>;
+> >                 clock-names = "usbhost";
+> > +
+> > +               #address-cells = <1>;
+> > +               #size-cells = <0>;
+> > +               port@0 {
+> > +                   reg = <0>;
+> > +                   phys = <&usb2phy 1>;
+> > +                   phy-names = "host";
+> > +                   status = "disabled";
+> > +               };
+> >         };
+> >
+> >  OHCI
 > 
-> This and other PMU related bindings/dts changes should probably go in
-> separate patch(es) instead of being snuck in with USB changes.
+> [...]
+> 
+> > @@ -102,14 +132,26 @@ static int exynos_ehci_probe(struct
+> platform_device *pdev)
+> >                                         "samsung,exynos5440-ehci"))
+> >                 goto skip_phy;
+> >
+> > -       phy = devm_usb_get_phy(&pdev->dev, USB_PHY_TYPE_USB2);
+> > -       if (IS_ERR(phy)) {
+> > -               usb_put_hcd(hcd);
+> > -               dev_warn(&pdev->dev, "no platform data or transceiver
+> defined\n");
+> > -               return -EPROBE_DEFER;
+> > -       } else {
+> > -               exynos_ehci->phy = phy;
+> > -               exynos_ehci->otg = phy->otg;
+> > +       for_each_available_child_of_node(pdev->dev.of_node, child) {
+> > +               err = of_property_read_u32(child, "reg",
+> &phy_number);
+> > +               if (err) {
+> > +                       dev_err(&pdev->dev, "Failed to parse device
+> tree\n");
+> > +                       of_node_put(child);
+> > +                       return err;
+> > +               }
+> > +               if (phy_number >= PHY_NUMBER) {
+> > +                       dev_err(&pdev->dev, "Failed to parse device
+> tree - number out of range\n");
+> > +                       of_node_put(child);
+> > +                       return -EINVAL;
+> > +               }
+> > +               phy = devm_of_phy_get(&pdev->dev, child, 0);
+> > +               of_node_put(child);
+> > +               if (IS_ERR(phy)) {
+> > +                       dev_err(&pdev->dev, "Failed to get phy number
+> %d",
+> > +
+> phy_number);
+> > +                       return PTR_ERR(phy);
+> > +               }
+> > +               exynos_ehci->phy[phy_number] = phy;
+> 
+> this looks like it is now breaking older device trees, where ports
+> might not be described. Since device tree interfaces need to be
+> backwards compatible, you still need to handle the old case of not
+> having ports described.
+> 
+> There are two ways of doing this:
+> 
+> 1. Fall back to the old behavior if there are no ports 2. Use a new
+> compatible value for the new model with port subnodes, and if the old
+> compatible value is used, then fall back to the old behavior.
+> 
+> I'm guessing (1) might be easiest since you can check for the presence
+> of #address-cells to tell if this is just an old style node, or if it's
+> a new-style node without any ports below it.
 
-O, I will move this to a separate patch.
+The ultimate goal is to remove the old phy driver. Unfortunately
+this has to be synced with the new USB3 phy driver by Vivek Gautam. I think
+he
+is also close to completion. What about this case? In the end the old driver
+will be removed and no longer be supported. Having backward compatibility in
+mind, it is possible to have the old and the new phy driver together in one
+kernel release. But do we want to have two drivers doing the same thing at
+the same time?
 
 Best wishes,
 -- 
 Kamil Debski
 Samsung R&D Institute Poland
+
 
