@@ -1,70 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753453AbaBESfp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 13:35:45 -0500
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:36003 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753410AbaBESfX (ORCPT
+	id S1753542AbaBESgQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 13:36:16 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:53903 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753392AbaBESgO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 13:35:23 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140205175528.GF5002@laptop.programming.kicks-ass.net>
-References: <1388728091-18564-1-git-send-email-zheng.z.yan@intel.com>
-	<1388728091-18564-7-git-send-email-zheng.z.yan@intel.com>
-	<CABPqkBQS=kSyRb0hb7DSTAOmUpB03_Cq70Wi1NvHj+DAQc4FVQ@mail.gmail.com>
-	<20140205175528.GF5002@laptop.programming.kicks-ass.net>
-Date: Wed, 5 Feb 2014 19:35:22 +0100
-Message-ID: <CABPqkBTB3B817LBnY2pu0uLMhjHzJa8fL6a--iKe-2bKUxFZpQ@mail.gmail.com>
-Subject: Re: [PATCH 06/14] perf, core: always switch pmu specific data during
- context switch
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 5 Feb 2014 13:36:14 -0500
+From: Manish Badarkhe <badarkhe.manish@gmail.com>
+To: linux-kernel@vger.kernel.org,
+        davinci-linux-open-source@linux.davincidsp.com
+Cc: broonie@kernel.org, lgirdwood@gmail.com, badarkhe.manish@gmail.com
+Subject: [PATCH V2] regulator: tps6507x: Use "IS_ENABLED" for DT code.
+Date: Thu,  6 Feb 2014 00:06:00 +0530
+Message-Id: <1391625360-1827-1-git-send-email-badarkhe.manish@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 5, 2014 at 6:55 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, Feb 05, 2014 at 06:19:27PM +0100, Stephane Eranian wrote:
->> On Fri, Jan 3, 2014 at 6:48 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
->> > If two tasks were both forked from the same parent task, Events in their perf
->> > task contexts can be the same. Perf core optimizes context switch oout in this
->> > case.
->> >
->> > Previous patch inroduces pmu specific data. The data is task specific, so we
->> > should switch the data even when context switch is optimized out.
->> >
->> Reviwed-by: Stephane Eranian <eranian@google.com>
->
-> You should look again.. that xchg() is an atomic op and a total waste of
-> time since the assignment back onto ctx->task_ctx_data is non-atomic.
->
-> Complete fail there.
->
-I admit, it was not clear to me why the xchg().
+Instead of "#ifdef CONFIG_OF" use "IS_ENABLED(CONFIG_OF)"
+option for DT code to avoid if-deffery in code.
+Also, modify code as per coding style.
 
->> > Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
->> > ---
->> >  kernel/events/core.c | 2 ++
->> >  1 file changed, 2 insertions(+)
->> >
->> > diff --git a/kernel/events/core.c b/kernel/events/core.c
->> > index b6650ab..d6d8dea 100644
->> > --- a/kernel/events/core.c
->> > +++ b/kernel/events/core.c
->> > @@ -2319,6 +2319,8 @@ static void perf_event_context_sched_out(struct task_struct *task, int ctxn,
->> >                         next->perf_event_ctxp[ctxn] = ctx;
->> >                         ctx->task = next;
->> >                         next_ctx->task = task;
->> > +                       ctx->task_ctx_data = xchg(&next_ctx->task_ctx_data,
->> > +                                                 ctx->task_ctx_data);
->> >                         do_switch = 0;
->> >
->> >                         perf_event_sync_stat(ctx, next_ctx);
->> > --
->> > 1.8.4.2
->> >
+Signed-off-by: Manish Badarkhe <badarkhe.manish@gmail.com>
+---
+Changes since V1:
+1. fix build break when CONFIG_OF is not set.
+
+:100644 100644 162a0fa... 862cc81... M	drivers/regulator/tps6507x-regulator.c
+ drivers/regulator/tps6507x-regulator.c |   18 +++++-------------
+ 1 file changed, 5 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/regulator/tps6507x-regulator.c b/drivers/regulator/tps6507x-regulator.c
+index 162a0fa..862cc81 100644
+--- a/drivers/regulator/tps6507x-regulator.c
++++ b/drivers/regulator/tps6507x-regulator.c
+@@ -359,7 +359,6 @@ static struct regulator_ops tps6507x_pmic_ops = {
+ 	.map_voltage = regulator_map_voltage_ascend,
+ };
+ 
+-#ifdef CONFIG_OF
+ static struct of_regulator_match tps6507x_matches[] = {
+ 	{ .name = "VDCDC1"},
+ 	{ .name = "VDCDC2"},
+@@ -424,15 +423,7 @@ static struct tps6507x_board *tps6507x_parse_dt_reg_data(
+ 
+ 	return tps_board;
+ }
+-#else
+-static inline struct tps6507x_board *tps6507x_parse_dt_reg_data(
+-			struct platform_device *pdev,
+-			struct of_regulator_match **tps6507x_reg_matches)
+-{
+-	*tps6507x_reg_matches = NULL;
+-	return NULL;
+-}
+-#endif
++
+ static int tps6507x_pmic_probe(struct platform_device *pdev)
+ {
+ 	struct tps6507x_dev *tps6507x_dev = dev_get_drvdata(pdev->dev.parent);
+@@ -453,9 +444,10 @@ static int tps6507x_pmic_probe(struct platform_device *pdev)
+ 	 */
+ 
+ 	tps_board = dev_get_platdata(tps6507x_dev->dev);
+-	if (!tps_board && tps6507x_dev->dev->of_node)
++	if (IS_ENABLED(CONFIG_OF) && !tps_board &&
++		tps6507x_dev->dev->of_node)
+ 		tps_board = tps6507x_parse_dt_reg_data(pdev,
+-						&tps6507x_reg_matches);
++				&tps6507x_reg_matches);
+ 	if (!tps_board)
+ 		return -EINVAL;
+ 
+@@ -481,7 +473,7 @@ static int tps6507x_pmic_probe(struct platform_device *pdev)
+ 		tps->info[i] = info;
+ 		if (init_data->driver_data) {
+ 			struct tps6507x_reg_platform_data *data =
+-							init_data->driver_data;
++					init_data->driver_data;
+ 			tps->info[i]->defdcdc_default = data->defdcdc_default;
+ 		}
+ 
+-- 
+1.7.10.4
+
