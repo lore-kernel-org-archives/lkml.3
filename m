@@ -1,206 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754962AbaBEBVt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 20:21:49 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:38759 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751732AbaBEBVs (ORCPT
+	id S932115AbaBEBWG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 20:22:06 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:17723 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754995AbaBEBWE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 20:21:48 -0500
-Message-ID: <52F19223.5010506@hitachi.com>
-Date: Wed, 05 Feb 2014 10:21:39 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Tue, 4 Feb 2014 20:22:04 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 04 Feb 2014 17:20:35 -0800
+Message-ID: <52F19236.5010101@nvidia.com>
+Date: Wed, 5 Feb 2014 10:21:58 +0900
+From: Alexandre Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-Cc: ananth@in.ibm.com, anil.s.keshavamurthy@intel.com,
-        =?UTF-8?B?SMOldmFy?= =?UTF-8?B?ZCBTa2lubmVtb2Vu?= 
-	<hskinnemoen@gmail.com>,
-        David Miller <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] kernel: kprobe: move all *kretprobe* generic implementation
- to CONFIG_KRETPROBES enabled area
-References: <52ECE5D8.6090209@gmail.com> <52EDB022.5070101@hitachi.com> <52EF8222.6030709@gmail.com> <52EFB8F4.6010207@hitachi.com> <52F04FA8.8040008@gmail.com> <52F077A1.3020701@gmail.com> <52F09404.3060502@hitachi.com> <52F0D7F3.7000901@gmail.com> <52F0EB30.2070401@hitachi.com> <52F0F0ED.5090005@gmail.com> <52F109AF.8040800@hitachi.com> <52F18367.2060803@gmail.com>
-In-Reply-To: <52F18367.2060803@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Ben Skeggs <bskeggs@redhat.com>, <nouveau@lists.freedesktop.org>,
+        <dri-devel@lists.freedesktop.org>, <gnurou@gmail.com>,
+        Eric Brower <ebrower@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, <linux-kernel@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>, Terje Bergstrom <tbergstrom@nvidia.com>,
+        Ken Adams <KAdams@nvidia.com>
+Subject: Re: [RFC 12/16] drm/nouveau/fifo: add GK20A support
+References: <1391224618-3794-1-git-send-email-acourbot@nvidia.com> <1391224618-3794-13-git-send-email-acourbot@nvidia.com> <20140204091518.GZ17001@phenom.ffwll.local>
+In-Reply-To: <20140204091518.GZ17001@phenom.ffwll.local>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/02/05 9:18), Chen Gang wrote:
-> On 02/04/2014 11:39 PM, Masami Hiramatsu wrote:
->> (2014/02/04 22:53), Chen Gang wrote:
->>> On 02/04/2014 09:29 PM, Masami Hiramatsu wrote:
->>>> (2014/02/04 21:07), Chen Gang wrote:
->>>>> On 02/04/2014 03:17 PM, Masami Hiramatsu wrote:
->>>>>> (2014/02/04 14:16), Chen Gang wrote:
->>>>>>> When CONFIG_KRETPROBES disabled, all *kretprobe* generic implementation
->>>>>>> are useless, so need move them to CONFIG_KPROBES enabled area.
->>>>>>>
->>>>>>> Now, *kretprobe* generic implementation are all implemented in 2 files:
->>>>>>>
->>>>>>>  - in "include/linux/kprobes.h":
->>>>>>>
->>>>>>>      move inline kretprobe*() to CONFIG_KPROBES area and dummy outside.
->>>>>>>      move some *kprobe() declarations which kretprobe*() call, to front.
->>>>>>>      not touch kretprobe_blacklist[] which is architecture's variable.
->>>>>>>
->>>>>>>  - in "kernel/kprobes.c":
->>>>>>>
->>>>>>>      move all kretprobe* to CONFIG_KPROBES area and dummy outside.
->>>>>>>      define kretprobe_flush_task() to let kprobe_flush_task() call.
->>>>>>>      define init_kretprobes() to let init_kprobes() call.
->>>>>>>
->>>>>>> The patch passes compiling (get "kernel/kprobes.o" and "kernel/built-
->>>>>>> in.o") under avr32 and x86_64 allmodconfig, and passes building (get
->>>>>>> bzImage and Modpost modules) under x86_64 defconfig.
->>>>>>
->>>>>> Thanks for the fix! and I have some comments below.
->>>>>>
->>>>>>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
->>>>>>> ---
->>>>>>>  include/linux/kprobes.h |  58 +++++----
->>>>>>>  kernel/kprobes.c        | 328 +++++++++++++++++++++++++++---------------------
->>>>>>>  2 files changed, 222 insertions(+), 164 deletions(-)
->>>>>>>
->>>>>>> diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
->>>>>>> index 925eaf2..c0d1212 100644
->>>>>>> --- a/include/linux/kprobes.h
->>>>>>> +++ b/include/linux/kprobes.h
->>>>>>> @@ -223,10 +223,36 @@ static inline int kprobes_built_in(void)
->>>>>>>   return 1;
->>>>>>>  }
->>>>>>>  
->>>>>>> +int disable_kprobe(struct kprobe *kp);
->>>>>>> +int enable_kprobe(struct kprobe *kp);
->>>>>>> +
->>>>>>> +void dump_kprobe(struct kprobe *kp);
->>>>>>> +
->>>>>>> +extern struct kretprobe_blackpoint kretprobe_blacklist[];
->>>>>>> +
->>>>>>>  #ifdef CONFIG_KRETPROBES
->>>>>>>  extern void arch_prepare_kretprobe(struct kretprobe_instance *ri,
->>>>>>>     struct pt_regs *regs);
->>>>>>>  extern int arch_trampoline_kprobe(struct kprobe *p);
->>>>>>> +static inline void kretprobe_assert(struct kretprobe_instance *ri,
->>>>>>> + unsigned long orig_ret_address, unsigned long trampoline_address)
->>>>>>> +{
->>>>>>> + if (!orig_ret_address || (orig_ret_address == trampoline_address)) {
->>>>>>> + printk(KERN_ERR
->>>>>>> + "kretprobe BUG!: Processing kretprobe %p @ %p\n",
->>>>>>> + ri->rp, ri->rp->kp.addr);
->>>>>>> + BUG();
->>>>>>> + }
->>>>>>> +}
->>>>>>> +static inline int disable_kretprobe(struct kretprobe *rp)
->>>>>>> +{
->>>>>>> + return disable_kprobe(&rp->kp);
->>>>>>> +}
->>>>>>> +static inline int enable_kretprobe(struct kretprobe *rp)
->>>>>>> +{
->>>>>>> + return enable_kprobe(&rp->kp);
->>>>>>> +}
->>>>>>> +
->>>>>>>  #else /* CONFIG_KRETPROBES */
->>>>>>>  static inline void arch_prepare_kretprobe(struct kretprobe *rp,
->>>>>>>   struct pt_regs *regs)
->>>>>>> @@ -236,19 +262,20 @@ static inline int arch_trampoline_kprobe(struct kprobe *p)
->>>>>>>  {
->>>>>>>   return 0;
->>>>>>>  }
->>>>>>> -#endif /* CONFIG_KRETPROBES */
->>>>>>> -
->>>>>>> -extern struct kretprobe_blackpoint kretprobe_blacklist[];
->>>>>>> -
->>>>>>>  static inline void kretprobe_assert(struct kretprobe_instance *ri,
->>>>>>>   unsigned long orig_ret_address, unsigned long trampoline_address)
->>>>>>>  {
->>>>>>> - if (!orig_ret_address || (orig_ret_address == trampoline_address)) {
->>>>>>> - printk("kretprobe BUG!: Processing kretprobe %p @ %p\n",
->>>>>>> - ri->rp, ri->rp->kp.addr);
->>>>>>> - BUG();
->>>>>>> - }
->>>>>>>  }
->>>>>>> +static inline int disable_kretprobe(struct kretprobe *rp)
->>>>>>> +{
->>>>>>> + return 0;
->>>>>>> +}
->>>>>>> +static inline int enable_kretprobe(struct kretprobe *rp)
->>>>>>> +{
->>>>>>> + return 0;
->>>>>>> +}
->>>>>>
->>>>>> No, these should returns -EINVAL or -ENOSYS, since these are user API.
->>>>>
->>>>> OK, thanks, it sounds reasonable to me.
->>>>>
->>>>>> Anyway, I don't think those inlined functions to be changed, because
->>>>>> most of them are internal functions. If CONFIG_KRETPROBES=n, it just
->>>>>> be ignored.
->>>>>>
->>>>>
->>>>> In original implementation, if CONFIG_KRETPROBES=n, kretprobe_assert(),
->>>>> disable_kretprobe(), and enable_kretprobe() are not ignored.
->>>>
->>>> Really? where are they called? I mean, those functions do not have
->>>> any instance unless your module uses it (but that is not what the kernel
->>>> itself should help).
->>>>
->>>
->>> If what you said correct (I guess so), for me, we still need let them in
->>> CONFIG_KRETPROBES area, and without any dummy outside, just like another
->>> *kprobe* static inline functions have done in "include/linux/kprobes.h".
+Hi Daniel,
+
+On 02/04/2014 06:15 PM, Daniel Vetter wrote:
+> On Sat, Feb 01, 2014 at 12:16:54PM +0900, Alexandre Courbot wrote:
+>> GK20A's FIFO is compatible with NVE0, but only features 128 channels and
+>> 1 runlist.
 >>
->> kretprobe_assert() is only for the internal check. So we don't need to care
->> about, and disable/enable_kretprobe() are anyway returns -EINVAL because
->> kretprobe can not be registered. And all of them are inlined functions.
->> In that case, we don't need to care about it.
-> 
-> Hmm... it is related with code 'consistency':
-> 
->  - these static inline functions are kretprobe generic implementation,
->    and we are trying to let all kretprobe generic implementation within
->    CONFIG_KRETPROBES area.
-
-No, actually, kretprobe is just built on the kprobe. enable/disable_kretprobe
-just wrapped the kprobe methods. And kretprobe_assert() is just for kretprobe
-internal use. that is not an API. Moving only the kretprobe_assert() into the
-CONFIG_KRETPROBE area is not bad, but since it is just a static inline function,
-if there is no caller, it just be ignored, no side effect.
-
-> 
->  - And original kprobe static inline functions have done like that,
->    in same header file, if no obvious reasons, we can try to follow.
-
-It is no reasons to follow that too. Please keep your patch simple as much
-as possible.
-
->> I just concerned that it is a waste of memory if there are useless kretprobe
->> related instances are built when CONFIG_KRETPROBES=n.
+>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+>> ---
+>>   drivers/gpu/drm/nouveau/Makefile                   |  1 +
+>>   drivers/gpu/drm/nouveau/core/engine/fifo/nve0.h    |  1 +
+>>   drivers/gpu/drm/nouveau/core/engine/fifo/nvea.c    | 27 ++++++++++++++++++++++
+>>   drivers/gpu/drm/nouveau/core/include/engine/fifo.h |  1 +
+>>   4 files changed, 30 insertions(+)
+>>   create mode 100644 drivers/gpu/drm/nouveau/core/engine/fifo/nvea.c
 >>
-> 
-> Yeah, that is also one of reason (3rd reason).
-> 
-> 
-> And if necessary, please help check what we have done whether already
-> "let all kretprobe generic implementation within CONFIG_KRETPROBES area"
-> (exclude declaration, struct/union definition, and architecture
-> implementation).
+>> diff --git a/drivers/gpu/drm/nouveau/Makefile b/drivers/gpu/drm/nouveau/Makefile
+>> index e88145b..6c4b76d 100644
+>> --- a/drivers/gpu/drm/nouveau/Makefile
+>> +++ b/drivers/gpu/drm/nouveau/Makefile
+>> @@ -236,6 +236,7 @@ nouveau-y += core/engine/fifo/nv50.o
+>>   nouveau-y += core/engine/fifo/nv84.o
+>>   nouveau-y += core/engine/fifo/nvc0.o
+>>   nouveau-y += core/engine/fifo/nve0.o
+>> +nouveau-y += core/engine/fifo/nvea.o
+>>   nouveau-y += core/engine/fifo/nv108.o
+>>   nouveau-y += core/engine/graph/ctxnv40.o
+>>   nouveau-y += core/engine/graph/ctxnv50.o
+>> diff --git a/drivers/gpu/drm/nouveau/core/engine/fifo/nve0.h b/drivers/gpu/drm/nouveau/core/engine/fifo/nve0.h
+>> index 014344e..e96b32b 100644
+>> --- a/drivers/gpu/drm/nouveau/core/engine/fifo/nve0.h
+>> +++ b/drivers/gpu/drm/nouveau/core/engine/fifo/nve0.h
+>> @@ -8,6 +8,7 @@ int  nve0_fifo_ctor(struct nouveau_object *, struct nouveau_object *,
+>>   		    struct nouveau_object **);
+>>   void nve0_fifo_dtor(struct nouveau_object *);
+>>   int  nve0_fifo_init(struct nouveau_object *);
+>> +int  nve0_fifo_fini(struct nouveau_object *, bool);
+>>
+>>   struct nve0_fifo_impl {
+>>   	struct nouveau_oclass base;
+>> diff --git a/drivers/gpu/drm/nouveau/core/engine/fifo/nvea.c b/drivers/gpu/drm/nouveau/core/engine/fifo/nvea.c
+>> new file mode 100644
+>> index 0000000..16f8905
+>> --- /dev/null
+>> +++ b/drivers/gpu/drm/nouveau/core/engine/fifo/nvea.c
+>> @@ -0,0 +1,27 @@
+>> +/*
+>> + * Copyright (c) 2014, NVIDIA Corporation. All rights reserved.
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify it
+>> + * under the terms and conditions of the GNU General Public License,
+>> + * version 2, as published by the Free Software Foundation.
+>
+> Just stumbled over this lincense header: Generally drm is mit/gpl dual
+> lincensed. The important part for me is the drm core, but due to all the
+> refactoring we tend to do and code extraction from drivers those are
+> rather relevant imo, too. Was this just an oversight or are you still
+> working with your legap people on this?
 
-As I commented, your changes in kernel/kprobes.c are good to me except
-two functions. That's all what we need to fix :)
+Thanks for pointing this out. This was an oversight on my part indeed. 
+The following revisions will use the correct MIT copyright header.
 
-Thank you!
+In case someone wants to contribute significant fixes to this patchset, 
+please be aware that MIT is the license that will apply from now on.
 
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+Thanks,
+Alex.
 
