@@ -1,73 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932892AbaBEUd6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:33:58 -0500
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:10706 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755081AbaBEUHA convert rfc822-to-8bit (ORCPT
+	id S932911AbaBEUeW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:34:22 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:48420 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755073AbaBEUG7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:07:00 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 05 Feb 2014 12:05:01 -0800
-From: Andrew Chew <AChew@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "abrestic@chromium.org" <abrestic@chromium.org>,
-        "dgreid@chromium.org" <dgreid@chromium.org>,
-        "katierh@chromium.org" <katierh@chromium.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Date: Wed, 5 Feb 2014 12:06:57 -0800
-Subject: RE: [PATCH v2 1/3] clocksource: tegra: Add nvidia,tegra30-timer
- compat
-Thread-Topic: [PATCH v2 1/3] clocksource: tegra: Add nvidia,tegra30-timer
- compat
-Thread-Index: Ac8irZLYr4OBvFSEQfOUgi4C0k+svgAABL9g
-Message-ID: <643E69AA4436674C8F39DCC2C05F763863199859AC@HQMAIL03.nvidia.com>
-References: <1391473055-3158-1-git-send-email-achew@nvidia.com>
- <1391473055-3158-2-git-send-email-achew@nvidia.com>
- <52F2996B.4080005@wwwdotorg.org>
-In-Reply-To: <52F2996B.4080005@wwwdotorg.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 5 Feb 2014 15:06:59 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 144/213] USB: mos7840: fix urb leak at release
+Date: Wed, 5 Feb 2014 15:01:39 -0500
+Message-ID: <1391630568-49251-145-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.8.5.2
+In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 02/03/2014 05:17 PM, Andrew Chew wrote:
-> > There are some differences between tegra20's timer registers and
-> > tegra30's (and later).  For example, tegra30 has more timers.  In
-> > addition, watchdogs are not present in tegra20.
-> >
-> > Add this compatibility string in order to be able to distinguish
-> > whether the additional timers and watchdogs are there or not.
-> 
-> > diff --git a/drivers/clocksource/tegra20_timer.c
-> > b/drivers/clocksource/tegra20_timer.c
-> 
-> >  CLOCKSOURCE_OF_DECLARE(tegra20_timer, "nvidia,tegra20-timer",
-> > tegra20_init_timer);
-> > +CLOCKSOURCE_OF_DECLARE(tegra30_timer, "nvidia,tegra30-timer",
-> > +tegra20_init_timer);
-> 
-> Thinking about this more, nothing in this driver actually cares about
-> Tegra20 vs. Tegra30+, since the timer that's used is present in all chips.
-> Hence, this patch isn't needed.
+From: Johan Hovold <jhovold@gmail.com>
 
-Don't I need to add nvidia,tegra30-timer so that the tegra WDT driver
-can match against it?  It would be weird to have the tegra WDT driver
-bind against nvidia,tegra20-timer when the tegra WDT driver as it is won't
-work at all on tegra20.
+                   -------------------
+    This is a commit scheduled for the next v2.6.34 longterm release.
+    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
+    If you see a problem with using this for longterm, please comment.
+                   -------------------
+
+commit 65a4cdbb170e4ec1a7fa0e94936d47e24a17b0e8 upstream.
+
+Make sure control urb is freed at release.
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ drivers/usb/serial/mos7840.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/usb/serial/mos7840.c b/drivers/usb/serial/mos7840.c
+index 16f0548f5f3d..d891d44501f8 100644
+--- a/drivers/usb/serial/mos7840.c
++++ b/drivers/usb/serial/mos7840.c
+@@ -2632,6 +2632,7 @@ static void mos7840_release(struct usb_serial *serial)
+ 		mos7840_port = mos7840_get_port_private(serial->port[i]);
+ 		dbg("mos7840_port %d = %p", i, mos7840_port);
+ 		if (mos7840_port) {
++			usb_free_urb(mos7840_port->control_urb);
+ 			kfree(mos7840_port->ctrl_buf);
+ 			kfree(mos7840_port->dr);
+ 			kfree(mos7840_port);
+-- 
+1.8.5.2
+
