@@ -1,113 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752082AbaBEJx7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 04:53:59 -0500
-Received: from 15.mo3.mail-out.ovh.net ([87.98.150.177]:35134 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751469AbaBEJxz (ORCPT
+	id S1752109AbaBEJzf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 04:55:35 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:35749 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751532AbaBEJzc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 04:53:55 -0500
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Mike Turquette <mturquette@linaro.org>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-Subject: [PATCH] clk: add strict of_clk_init dependency check
-Date: Wed,  5 Feb 2014 10:48:00 +0100
-Message-Id: <1391593680-9388-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1391554766-11285-1-git-send-email-gregory.clement@free-electrons.com>
-References: <1391554766-11285-1-git-send-email-gregory.clement@free-electrons.com>
-X-Ovh-Tracer-Id: 638948197669763073
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrjedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.500029/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrjedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Wed, 5 Feb 2014 04:55:32 -0500
+Date: Wed, 5 Feb 2014 12:52:11 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Minchan Kim <minchan@kernel.org>, Jerome Marchand <jmarchan@redhat.com>,
+        Nitin Gupta <ngupta@vflare.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 6/8] zram: report failed read and write stats
+Message-ID: <20140205095211.GA2200@swordfish.minsk.epam.com>
+References: <1389877936-15543-1-git-send-email-sergey.senozhatsky@gmail.com>
+ <1389877936-15543-7-git-send-email-sergey.senozhatsky@gmail.com>
+ <20140204141849.d530625a13e80708446ac426@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140204141849.d530625a13e80708446ac426@linux-foundation.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The parent dependency check is only available on the first parent of a given
-clk.
+On (02/04/14 14:18), Andrew Morton wrote:
+> Date: Tue, 4 Feb 2014 14:18:49 -0800
+> From: Andrew Morton <akpm@linux-foundation.org>
+> To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> Cc: Minchan Kim <minchan@kernel.org>, Jerome Marchand
+>  <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
+>  linux-kernel@vger.kernel.org
+> Subject: Re: [PATCHv3 6/8] zram: report failed read and write stats
+> X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+> 
+> On Thu, 16 Jan 2014 16:12:14 +0300 Sergey Senozhatsky <sergey.senozhatsky@gmail.com> wrote:
+> 
+> > zram accounted but did not report numbers of failed read
+> > and write queries. make these stats available as failed_reads
+> > and failed_writes attrs.
+> > 
+> > Acked-by: Minchan Kim <minchan@kernel.org>
+> > Acked-by: Jerome Marchand <jmarchan@redhat.com>
+> > Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> > ---
+> >  drivers/block/zram/zram_drv.c | 4 ++++
+> >  1 file changed, 4 insertions(+)
+> > 
+> > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> > index e7102f1..9d67fbf 100644
+> > --- a/drivers/block/zram/zram_drv.c
+> > +++ b/drivers/block/zram/zram_drv.c
+> > @@ -728,6 +728,8 @@ static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL);
+> >  
+> >  ZRAM_ATTR_RO(num_reads);
+> >  ZRAM_ATTR_RO(num_writes);
+> > +ZRAM_ATTR_RO(failed_reads);
+> > +ZRAM_ATTR_RO(failed_writes);
+> >  ZRAM_ATTR_RO(invalid_io);
+> >  ZRAM_ATTR_RO(notify_free);
+> >  ZRAM_ATTR_RO(zero_pages);
+> > @@ -739,6 +741,8 @@ static struct attribute *zram_disk_attrs[] = {
+> >  	&dev_attr_reset.attr,
+> >  	&dev_attr_num_reads.attr,
+> >  	&dev_attr_num_writes.attr,
+> > +	&dev_attr_failed_reads.attr,
+> > +	&dev_attr_failed_writes.attr,
+> >  	&dev_attr_invalid_io.attr,
+> >  	&dev_attr_notify_free.attr,
+> >  	&dev_attr_zero_pages.attr,
+> 
+> Documentation/blockdev/zram.txt and
+> Documentation/ABI/testing/sysfs-block-zram need updating...
+> 
 
-Add support for strict dependency check: all parents of a given clk must be
-initialized.
+Hello,
+sure, will update.
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
-
-Hello Gregory,
-
-This patch adds support for strict check on clk dependencies (check if all
-parents specified by an DT clk node are initialized).
-
-I'm not sure this is what you were expecting (maybe testing the first parent
-is what you really want), so please feel free to tell me if I'm wrong.
-
-Best Regards,
-
-Boris
-
- drivers/clk/clk.c |   27 +++++++++++++++++++++------
- 1 file changed, 21 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index beb0f8b..6849769 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -2543,22 +2543,37 @@ static int parent_ready(struct device_node *np)
- {
- 	struct of_phandle_args clkspec;
- 	struct of_clk_provider *provider;
-+	int num_parents;
-+	bool found;
-+	int i;
- 
- 	/*
- 	 * If there is no clock parent, no need to wait for them, then
- 	 * we can consider their absence as being ready
- 	 */
--	if (of_parse_phandle_with_args(np, "clocks", "#clock-cells", 0,
--					&clkspec))
-+	num_parents = of_count_phandle_with_args(np, "clocks", "#clock-cells");
-+	if (num_parents <= 0)
- 		return 1;
- 
--	/* Check if we have such a provider in our array */
--	list_for_each_entry(provider, &of_clk_providers, link) {
--		if (provider->node == clkspec.np)
-+	for (i = 0; i < num_parents; i++) {
-+		if (of_parse_phandle_with_args(np, "clocks", "#clock-cells", i,
-+					       &clkspec))
- 			return 1;
-+
-+		/* Check if we have such a provider in our array */
-+		found = false;
-+		list_for_each_entry(provider, &of_clk_providers, link) {
-+			if (provider->node == clkspec.np) {
-+				found = true;
-+				break;
-+			}
-+		}
-+
-+		if (!found)
-+			return 0;
- 	}
- 
--	return 0;
-+	return 1;
- }
- 
- /**
--- 
-1.7.9.5
-
+	-ss
