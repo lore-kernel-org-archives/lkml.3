@@ -1,293 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754005AbaBEWKQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 17:10:16 -0500
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:49676 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753957AbaBEWKJ (ORCPT
+	id S1754092AbaBEWKZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 17:10:25 -0500
+Received: from relay.parallels.com ([195.214.232.42]:34035 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754022AbaBEWKR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 17:10:09 -0500
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH 01/51] CPU hotplug: Provide lockless versions of callback
- registration functions
-To: paulus@samba.org, oleg@redhat.com, rusty@rustcorp.com.au,
-        peterz@infradead.org, tglx@linutronix.de, akpm@linux-foundation.org
-Cc: mingo@kernel.org, paulmck@linux.vnet.ibm.com, tj@kernel.org,
-        walken@google.com, ego@linux.vnet.ibm.com, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
-        Thomas Gleixner <tglx@linutronix.de>, Toshi Kani <toshi.kani@hp.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Thu, 06 Feb 2014 03:34:48 +0530
-Message-ID: <20140205220447.19080.9460.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com>
-References: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
+	Wed, 5 Feb 2014 17:10:17 -0500
+Date: Thu, 6 Feb 2014 02:10:13 +0400
+From: Andrew Vagin <avagin@parallels.com>
+To: David Rientjes <rientjes@google.com>
+CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: Thread overran stack, or stack corrupted on 3.13.0
+Message-ID: <20140205221013.GA8794@paralelels.com>
+References: <20140205151817.GA28502@paralelels.com>
+ <alpine.DEB.2.02.1402051323100.14325@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14020522-9574-0000-0000-00000BCF3507
+Content-Type: text/plain; charset="koi8-r"
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1402051323100.14325@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [10.24.25.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following method of CPU hotplug callback registration is not safe
-due to the possibility of an ABBA deadlock involving the cpu_add_remove_lock
-and the cpu_hotplug.lock.
+On Wed, Feb 05, 2014 at 01:23:45PM -0800, David Rientjes wrote:
+> On Wed, 5 Feb 2014, Andrew Vagin wrote:
+...
+> 
+> You've clipped the most interesting part of the trace, we don't know what 
+> was calling mempool_alloc() and must have used a ton of stack.
 
-	get_online_cpus();
+Sorry. You can find the full trace bellow
 
-	for_each_online_cpu(cpu)
-		init_cpu(cpu);
-
-	register_cpu_notifier(&foobar_cpu_notifier);
-
-	put_online_cpus();
-
-The deadlock is shown below:
-
-          CPU 0                                         CPU 1
-          -----                                         -----
-
-   Acquire cpu_hotplug.lock
-   [via get_online_cpus()]
-
-                                              CPU online/offline operation
-                                              takes cpu_add_remove_lock
-                                              [via cpu_maps_update_begin()]
-
-
-   Try to acquire
-   cpu_add_remove_lock
-   [via register_cpu_notifier()]
-
-
-                                              CPU online/offline operation
-                                              tries to acquire cpu_hotplug.lock
-                                              [via cpu_hotplug_begin()]
-
-
-                            *** DEADLOCK! ***
-
-The problem here is that callback registration takes the locks in one order
-whereas the CPU hotplug operations take the same locks in the opposite order.
-To avoid this issue and to provide a race-free method to register CPU hotplug
-callbacks (along with initialization of already online CPUs), introduce new
-variants of the callback registration APIs that simply register the callbacks
-without holding the cpu_add_remove_lock during the registration. That way,
-we can avoid the ABBA scenario. However, we will need to hold the
-cpu_add_remove_lock throughout the entire critical section, to protect updates
-to the callback/notifier chain.
-
-This can be achieved by writing the callback registration code as follows:
-
-	cpu_maps_update_begin();
-
-	for_each_online_cpu(cpu)
-		init_cpu(cpu);
-
-	/* This doesn't take the cpu_add_remove_lock */
-	__register_cpu_notifier(&foobar_cpu_notifier);
-
-	cpu_maps_update_done();
-
-Note that we can't use get_online_cpus() here instead of cpu_maps_update_begin()
-because the cpu_hotplug.lock is dropped during the invocation of CPU_POST_DEAD
-notifiers, and hence get_online_cpus() cannot provide the necessary
-synchronization to protect the callback/notifier chains against concurrent
-reads and writes. On the other hand, since the cpu_add_remove_lock protects
-the entire hotplug operation (including CPU_POST_DEAD), we can use
-cpu_maps_update_begin/done() to guarantee proper synchronization.
-
-Also, since cpu_maps_update_begin/done() is like a super-set of
-get/put_online_cpus(), the former naturally protects the critical sections
-from concurrent hotplug operations.
-
-So, introduce the lockless variants of un/register_cpu_notifier() and also
-export the cpu_maps_update_begin/done() APIs for use by modules. This way,
-we provide a race-free way to register hotplug callbacks as well as perform
-initialization for the CPUs that are already online.
-
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Toshi Kani <toshi.kani@hp.com>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
-
- include/linux/cpu.h |   36 ++++++++++++++++++++++++++++++++++++
- kernel/cpu.c        |   20 ++++++++++++++++++--
- 2 files changed, 54 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/cpu.h b/include/linux/cpu.h
-index 03e235ad..eb97e37 100644
---- a/include/linux/cpu.h
-+++ b/include/linux/cpu.h
-@@ -122,26 +122,46 @@ enum {
- 		{ .notifier_call = fn, .priority = pri };	\
- 	register_cpu_notifier(&fn##_nb);			\
- }
-+
-+#define __cpu_notifier(fn, pri) {				\
-+	static struct notifier_block fn##_nb =			\
-+		{ .notifier_call = fn, .priority = pri };	\
-+	__register_cpu_notifier(&fn##_nb);			\
-+}
- #else /* #if defined(CONFIG_HOTPLUG_CPU) || !defined(MODULE) */
- #define cpu_notifier(fn, pri)	do { (void)(fn); } while (0)
-+#define __cpu_notifier(fn, pri)	do { (void)(fn); } while (0)
- #endif /* #else #if defined(CONFIG_HOTPLUG_CPU) || !defined(MODULE) */
-+
- #ifdef CONFIG_HOTPLUG_CPU
- extern int register_cpu_notifier(struct notifier_block *nb);
-+extern int __register_cpu_notifier(struct notifier_block *nb);
- extern void unregister_cpu_notifier(struct notifier_block *nb);
-+extern void __unregister_cpu_notifier(struct notifier_block *nb);
- #else
- 
- #ifndef MODULE
- extern int register_cpu_notifier(struct notifier_block *nb);
-+extern int __register_cpu_notifier(struct notifier_block *nb);
- #else
- static inline int register_cpu_notifier(struct notifier_block *nb)
- {
- 	return 0;
- }
-+
-+static inline int __register_cpu_notifier(struct notifier_block *nb)
-+{
-+	return 0;
-+}
- #endif
- 
- static inline void unregister_cpu_notifier(struct notifier_block *nb)
- {
- }
-+
-+static inline void __unregister_cpu_notifier(struct notifier_block *nb)
-+{
-+}
- #endif
- 
- int cpu_up(unsigned int cpu);
-@@ -152,16 +172,26 @@ extern void cpu_maps_update_done(void);
- #else	/* CONFIG_SMP */
- 
- #define cpu_notifier(fn, pri)	do { (void)(fn); } while (0)
-+#define __cpu_notifier(fn, pri)	do { (void)(fn); } while (0)
- 
- static inline int register_cpu_notifier(struct notifier_block *nb)
- {
- 	return 0;
- }
- 
-+static inline int __register_cpu_notifier(struct notifier_block *nb)
-+{
-+	return 0;
-+}
-+
- static inline void unregister_cpu_notifier(struct notifier_block *nb)
- {
- }
- 
-+static inline void __unregister_cpu_notifier(struct notifier_block *nb)
-+{
-+}
-+
- static inline void cpu_maps_update_begin(void)
- {
- }
-@@ -183,8 +213,11 @@ extern void put_online_cpus(void);
- extern void cpu_hotplug_disable(void);
- extern void cpu_hotplug_enable(void);
- #define hotcpu_notifier(fn, pri)	cpu_notifier(fn, pri)
-+#define __hotcpu_notifier(fn, pri)	__cpu_notifier(fn, pri)
- #define register_hotcpu_notifier(nb)	register_cpu_notifier(nb)
-+#define __register_hotcpu_notifier(nb)	__register_cpu_notifier(nb)
- #define unregister_hotcpu_notifier(nb)	unregister_cpu_notifier(nb)
-+#define __unregister_hotcpu_notifier(nb)	__unregister_cpu_notifier(nb)
- void clear_tasks_mm_cpumask(int cpu);
- int cpu_down(unsigned int cpu);
- 
-@@ -197,9 +230,12 @@ static inline void cpu_hotplug_done(void) {}
- #define cpu_hotplug_disable()	do { } while (0)
- #define cpu_hotplug_enable()	do { } while (0)
- #define hotcpu_notifier(fn, pri)	do { (void)(fn); } while (0)
-+#define __hotcpu_notifier(fn, pri)	do { (void)(fn); } while (0)
- /* These aren't inline functions due to a GCC bug. */
- #define register_hotcpu_notifier(nb)	({ (void)(nb); 0; })
-+#define __register_hotcpu_notifier(nb)	({ (void)(nb); 0; })
- #define unregister_hotcpu_notifier(nb)	({ (void)(nb); })
-+#define __unregister_hotcpu_notifier(nb)	({ (void)(nb); })
- #endif		/* CONFIG_HOTPLUG_CPU */
- 
- #ifdef CONFIG_PM_SLEEP_SMP
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index deff2e6..12a3a74 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -27,18 +27,22 @@
- static DEFINE_MUTEX(cpu_add_remove_lock);
- 
- /*
-- * The following two API's must be used when attempting
-- * to serialize the updates to cpu_online_mask, cpu_present_mask.
-+ * The following two API's must be used when attempting to serialize
-+ * the updates to cpu_online_mask, cpu_present_mask. Also, they must
-+ * be used to protect CPU hotplug callback (un)registration performed
-+ * using __register_cpu_notifier() or __unregister_cpu_notifier().
-  */
- void cpu_maps_update_begin(void)
- {
- 	mutex_lock(&cpu_add_remove_lock);
- }
-+EXPORT_SYMBOL(cpu_maps_update_begin);
- 
- void cpu_maps_update_done(void)
- {
- 	mutex_unlock(&cpu_add_remove_lock);
- }
-+EXPORT_SYMBOL(cpu_maps_update_done);
- 
- static RAW_NOTIFIER_HEAD(cpu_chain);
- 
-@@ -166,6 +170,11 @@ int __ref register_cpu_notifier(struct notifier_block *nb)
- 	return ret;
- }
- 
-+int __ref __register_cpu_notifier(struct notifier_block *nb)
-+{
-+	return raw_notifier_chain_register(&cpu_chain, nb);
-+}
-+
- static int __cpu_notify(unsigned long val, void *v, int nr_to_call,
- 			int *nr_calls)
- {
-@@ -189,6 +198,7 @@ static void cpu_notify_nofail(unsigned long val, void *v)
- 	BUG_ON(cpu_notify(val, v));
- }
- EXPORT_SYMBOL(register_cpu_notifier);
-+EXPORT_SYMBOL(__register_cpu_notifier);
- 
- void __ref unregister_cpu_notifier(struct notifier_block *nb)
- {
-@@ -198,6 +208,12 @@ void __ref unregister_cpu_notifier(struct notifier_block *nb)
- }
- EXPORT_SYMBOL(unregister_cpu_notifier);
- 
-+void __ref __unregister_cpu_notifier(struct notifier_block *nb)
-+{
-+	raw_notifier_chain_unregister(&cpu_chain, nb);
-+}
-+EXPORT_SYMBOL(__unregister_cpu_notifier);
-+
- /**
-  * clear_tasks_mm_cpumask - Safely clear tasks' mm_cpumask for a CPU
-  * @cpu: a CPU id
+[532284.563576] BUG: unable to handle kernel paging request at 0000000035c83420
+[532284.564086] IP: [<ffffffff810caf17>] cpuacct_charge+0x97/0x1e0
+[532284.564086] PGD 116369067 PUD 116368067 PMD 0
+[532284.564086] Thread overran stack, or stack corrupted
+[532284.564086] Oops: 0000 [#1] SMP
+[532284.564086] Modules linked in: veth binfmt_misc ip6table_filter ip6_tables tun netlink_diag af_packet_diag udp_diag tcp_diag inet_diag unix_diag bridge stp llc btrfs libcrc32c xor raid6_pq microcode i2c_piix4 joydev virtio_balloon virtio_net pcspkr i2c_core virtio_blk virtio_pci virtio_ring virtio floppy
+[532284.564086] CPU: 2 PID: 2487 Comm: cat Not tainted 3.13.0 #160
+[532284.564086] Hardware name: Red Hat KVM, BIOS 0.5.1 01/01/2007
+[532284.564086] task: ffff8800cdb60000 ti: ffff8801167ee000 task.ti: ffff8801167ee000
+[532284.564086] RIP: 0010:[<ffffffff810caf17>]  [<ffffffff810caf17>] cpuacct_charge+0x97/0x1e0
+[532284.564086] RSP: 0018:ffff8801167ee638  EFLAGS: 00010002
+[532284.564086] RAX: 000000000000e540 RBX: 000000000006086c RCX: 000000000000000f
+[532284.564086] RDX: ffffffff81c4e960 RSI: ffffffff81c50640 RDI: 0000000000000046
+[532284.564086] RBP: ffff8801167ee668 R08: 0000000000000003 R09: 0000000000000001
+[532284.564086] R10: 0000000000000001 R11: 0000000000000004 R12: ffff8800cdb60000
+[532284.564086] R13: 00000000167ee038 R14: ffff8800db3576d8 R15: 000080ee26ec7dcf
+[532284.564086] FS:  00007fc30ecc7740(0000) GS:ffff88011b200000(0000) knlGS:0000000000000000
+[532284.564086] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[532284.564086] CR2: 0000000035c83420 CR3: 000000011f966000 CR4: 00000000000006e0
+[532284.564086] Stack:
+[532284.564086]  ffffffff810cae80 ffff880100000014 ffff8800db333480 000000000006086c
+[532284.564086]  ffff8800cdb60068 ffff8800cdb60000 ffff8801167ee6a8 ffffffff810b948f
+[532284.564086]  ffff8801167ee698 ffff8800cdb60068 ffff8800db333480 0000000000000001
+[532284.564086] Call Trace:
+[532284.564086]  [<ffffffff810cae80>] ? cpuacct_css_alloc+0xb0/0xb0
+[532284.564086]  [<ffffffff810b948f>] update_curr+0x13f/0x220
+[532284.564086]  [<ffffffff810bfeb4>] dequeue_entity+0x24/0x5b0
+[532284.564086]  [<ffffffff8101ea59>] ? sched_clock+0x9/0x10
+[532284.564086]  [<ffffffff810c0489>] dequeue_task_fair+0x49/0x430
+[532284.564086]  [<ffffffff810acbb3>] dequeue_task+0x73/0x90
+[532284.564086]  [<ffffffff810acbf3>] deactivate_task+0x23/0x30
+[532284.564086]  [<ffffffff81745b11>] __schedule+0x501/0x960
+[532284.564086]  [<ffffffff817460b9>] schedule+0x29/0x70
+[532284.564086]  [<ffffffff81744eac>] schedule_timeout+0x14c/0x2a0
+[532284.564086]  [<ffffffff810835f0>] ? del_timer+0x70/0x70
+[532284.564086]  [<ffffffff8174b7d0>] ? _raw_spin_unlock_irqrestore+0x40/0x80
+[532284.564086]  [<ffffffff8174547f>] io_schedule_timeout+0x9f/0x100
+[532284.564086]  [<ffffffff810d16dd>] ? trace_hardirqs_on+0xd/0x10
+[532284.564086]  [<ffffffff81182b22>] mempool_alloc+0x152/0x180
+[532284.564086]  [<ffffffff810c56e0>] ? bit_waitqueue+0xd0/0xd0
+[532284.564086]  [<ffffffff810558c7>] ? kvm_clock_read+0x27/0x40
+[532284.564086]  [<ffffffff8123c89b>] bio_alloc_bioset+0x10b/0x1e0
+[532284.564086]  [<ffffffff811c2f00>] ? end_swap_bio_read+0xc0/0xc0
+[532284.564086]  [<ffffffff811c2f00>] ? end_swap_bio_read+0xc0/0xc0
+[532284.564086]  [<ffffffff811c2810>] get_swap_bio+0x30/0x90
+[532284.564086]  [<ffffffff811c2f00>] ? end_swap_bio_read+0xc0/0xc0
+[532284.564086]  [<ffffffff811c2aa0>] __swap_writepage+0x150/0x230
+[532284.564086]  [<ffffffff8174b83b>] ? _raw_spin_unlock+0x2b/0x40
+[532284.564086]  [<ffffffff811c43b3>] ? page_swapcount+0x53/0x70
+[532284.564086]  [<ffffffff811c2bc3>] swap_writepage+0x43/0x90
+[532284.564086]  [<ffffffff81194faf>] shrink_page_list+0x6cf/0xaa0
+[532284.564086]  [<ffffffff81196022>] shrink_inactive_list+0x1c2/0x5b0
+[532284.564086]  [<ffffffff810d1c59>] ? __lock_acquire+0x249/0x1800
+[532284.564086]  [<ffffffff81196a75>] shrink_lruvec+0x335/0x600
+[532284.564086]  [<ffffffff811ecd45>] ? mem_cgroup_iter+0x1f5/0x510
+[532284.564086]  [<ffffffff81196dd6>] shrink_zone+0x96/0x1d0
+[532284.564086]  [<ffffffff81197853>] do_try_to_free_pages+0x103/0x600
+[532284.564086]  [<ffffffff81184b2f>] ? zone_watermark_ok+0x1f/0x30
+[532284.564086]  [<ffffffff8119811c>] try_to_free_pages+0xdc/0x230
+[532284.564086]  [<ffffffff81187dfd>] ? drain_pages+0xad/0xe0
+[532284.564086]  [<ffffffff8118ad94>] __alloc_pages_nodemask+0xa14/0xc90
+[532284.564086]  [<ffffffff810b5d35>] ? sched_clock_local+0x25/0x90
+[532284.564086]  [<ffffffff811d1f36>] alloc_pages_current+0x126/0x200
+[532284.564086]  [<ffffffff811d97f5>] ? new_slab+0x2e5/0x390
+[532284.564086]  [<ffffffff811d97dd>] ? new_slab+0x2cd/0x390
+[532284.564086]  [<ffffffff811d97f5>] new_slab+0x2e5/0x390
+[532284.564086]  [<ffffffff811dc553>] __slab_alloc+0x3f3/0x700
+[532284.564086]  [<ffffffff811dd0ff>] ? kmem_cache_alloc+0x27f/0x2a0
+[532284.564086]  [<ffffffff810b5e58>] ? sched_clock_cpu+0xb8/0x110
+[532284.564086]  [<ffffffff811828c5>] ? mempool_alloc_slab+0x15/0x20
+[532284.564086]  [<ffffffff811e98ae>] ? rcu_read_unlock+0x2e/0x70
+[532284.564086]  [<ffffffff811f06e8>] ? __memcg_kmem_get_cache+0x58/0x2b0
+[532284.564086]  [<ffffffff811dd0ff>] kmem_cache_alloc+0x27f/0x2a0
+[532284.564086]  [<ffffffff811828c5>] ? mempool_alloc_slab+0x15/0x20
+[532284.564086]  [<ffffffff811828c5>] mempool_alloc_slab+0x15/0x20
+[532284.564086]  [<ffffffff81182a30>] mempool_alloc+0x60/0x180
+[532284.564086]  [<ffffffff8123c89b>] bio_alloc_bioset+0x10b/0x1e0
+[532284.564086]  [<ffffffff8124366b>] mpage_alloc+0x3b/0xa0
+[532284.564086]  [<ffffffff81243b69>] do_mpage_readpage+0x329/0x650
+[532284.564086]  [<ffffffff8117fa5f>] ? add_to_page_cache_locked+0x10f/0x200
+[532284.564086]  [<ffffffff81243fe9>] mpage_readpages+0xe9/0x140
+[532284.564086]  [<ffffffff81296f10>] ? ext4_get_block_write+0x20/0x20
+[532284.564086]  [<ffffffff81296f10>] ? ext4_get_block_write+0x20/0x20
+[532284.564086]  [<ffffffff81295877>] ext4_readpages+0x47/0x60
+[532284.564086]  [<ffffffff8118e918>] __do_page_cache_readahead+0x2c8/0x370
+[532284.564086]  [<ffffffff8118e76b>] ? __do_page_cache_readahead+0x11b/0x370
+[532284.564086]  [<ffffffff810b5e58>] ? sched_clock_cpu+0xb8/0x110
+[532284.564086]  [<ffffffff81180aa0>] ? find_get_pages_tag+0x330/0x330
+[532284.564086]  [<ffffffff8118e9e1>] ra_submit+0x21/0x30
+[532284.564086]  [<ffffffff811814e2>] filemap_fault+0x372/0x480
+[532284.564086]  [<ffffffff811afdf2>] __do_fault+0x72/0x5c0
+[532284.564086]  [<ffffffff811b06e6>] handle_mm_fault+0x3a6/0xf10
+[532284.564086]  [<ffffffff8174fc2f>] ? __do_page_fault+0x14f/0x530
+[532284.564086]  [<ffffffff8174fca1>] __do_page_fault+0x1c1/0x530
+[532284.564086]  [<ffffffff8101ea59>] ? sched_clock+0x9/0x10
+[532284.564086]  [<ffffffff810b5d35>] ? sched_clock_local+0x25/0x90
+[532284.564086]  [<ffffffff810b5e58>] ? sched_clock_cpu+0xb8/0x110
+[532284.564086]  [<ffffffff810ccd4d>] ? trace_hardirqs_off+0xd/0x10
+[532284.564086]  [<ffffffff810b5f1f>] ? local_clock+0x6f/0x80
+[532284.564086]  [<ffffffff810d0c55>] ? lock_release_holdtime+0x35/0x1a0
+[532284.564086]  [<ffffffff81393bbd>] ? trace_hardirqs_off_thunk+0x3a/0x3c
+[532284.564086]  [<ffffffff817501ae>] do_page_fault+0xe/0x10
+[532284.564086]  [<ffffffff8174c078>] page_fault+0x28/0x30
+[532284.564086]  [<ffffffff81393e42>] ? __clear_user+0x42/0x70
+[532284.564086]  [<ffffffff81393e21>] ? __clear_user+0x21/0x70
+[532284.564086]  [<ffffffff81393ea8>] clear_user+0x38/0x40
+[532284.564086]  [<ffffffff8125dbfd>] padzero+0x2d/0x40
+[532284.564086]  [<ffffffff8125e7ea>] load_elf_binary+0x8ca/0x1d40
+[532284.564086]  [<ffffffff810b5e58>] ? sched_clock_cpu+0xb8/0x110
+[532284.564086]  [<ffffffff810d0c55>] ? lock_release_holdtime+0x35/0x1a0
+[532284.564086]  [<ffffffff810558c7>] ? kvm_clock_read+0x27/0x40
+[532284.564086]  [<ffffffff8101ea59>] ? sched_clock+0x9/0x10
+[532284.564086]  [<ffffffff810b5d35>] ? sched_clock_local+0x25/0x90
+[532284.564086]  [<ffffffff81203fd3>] search_binary_handler+0xb3/0x1c0
+[532284.564086]  [<ffffffff8109bdf0>] ? get_pid_task+0x120/0x120
+[532284.564086]  [<ffffffff81205ecd>] do_execve_common+0x71d/0x990
+[532284.564086]  [<ffffffff81205e14>] ? do_execve_common+0x664/0x990
+[532284.564086]  [<ffffffff81206207>] do_execve+0x37/0x40
+[532284.564086]  [<ffffffff8120624d>] SyS_execve+0x3d/0x60
+[532284.564086]  [<ffffffff81755759>] stub_execve+0x69/0xa0
+[532284.564086] Code: 00 00 e8 5d 03 02 00 85 c0 74 0d 80 3d e6 bc c2 00 00 0f 84 d4 00 00 00 49 8b 56 48 4d 63 ed 0f 1f 44 00 00 48 8b 82 b8 00 00 00 <4a> 03 04 ed 60 32 d1 81 48 01 18 48 8b 52 40 48 85 d2 75 e5 e8
+[532284.564086] RIP  [<ffffffff810caf17>] cpuacct_charge+0x97/0x1e0
+[532284.564086]  RSP <ffff8801167ee638>
+[532284.564086] CR2: 0000000035c83420
 
