@@ -1,97 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754008AbaBEIFg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 03:05:36 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:41163 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751352AbaBEIFe (ORCPT
+	id S1754170AbaBEIHz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 03:07:55 -0500
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:53661 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754016AbaBEIHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 03:05:34 -0500
-Date: Wed, 5 Feb 2014 09:05:18 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: tglx@linutronix.de, Heinz.Egger@linutronix.de, bigeasy@linutronix.de,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Molnar, Ingo" <mingo@kernel.org>, rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: Perf user-space ABI sequence lock memory barriers
-Message-ID: <20140205080518.GF2936@laptop.programming.kicks-ass.net>
-References: <104831840.19303.1391553779700.JavaMail.zimbra@efficios.com>
- <238497929.19329.1391554584871.JavaMail.zimbra@efficios.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <238497929.19329.1391554584871.JavaMail.zimbra@efficios.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Wed, 5 Feb 2014 03:07:50 -0500
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+To: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
+Cc: michael@ellerman.id.au, mikey@neuling.org, ak@linux.intel.com,
+        eranian@google.com, acme@ghostprotocols.net,
+        sukadev@linux.vnet.ibm.com, mingo@kernel.org
+Subject: [V5 02/11] perf: Add PERF_SAMPLE_BRANCH_COND
+Date: Wed,  5 Feb 2014 13:36:13 +0530
+Message-Id: <1391587582-32028-3-git-send-email-khandual@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1391587582-32028-1-git-send-email-khandual@linux.vnet.ibm.com>
+References: <1391587582-32028-1-git-send-email-khandual@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14020508-6102-0000-0000-000004E3B4CA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 04, 2014 at 10:56:24PM +0000, Mathieu Desnoyers wrote:
-> Hi,
-> 
-> I'm currently integrating user-space performance counters from
-> Perf into LTTng-UST, and I'm noticing something odd regarding
-> the home-made sequence lock found at:
-> 
-> kernel/events/core.c: perf_event_update_userpage()
-> 
->         ++userpg->lock;
->         barrier();
-> [...]
->         barrier();
->         ++userpg->lock;
-> 
-> This goes in pair with something like this at user-level:
-> 
->         do {
->                 seq = pc->lock;
+This patch introduces new branch filter PERF_SAMPLE_BRANCH_COND which
+will extend the existing perf ABI. Various architectures can provide
+this functionality with either with HW filtering support (if present)
+or with SW filtering of captured branch instructions.
 
-You could make that:
+Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+Reviewed-by: Stephane Eranian <eranian@google.com>
+---
+ include/uapi/linux/perf_event.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-		while ((seq = pc->lock) & 1);
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index 853bc1c..696f69b4 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -163,8 +163,9 @@ enum perf_branch_sample_type {
+ 	PERF_SAMPLE_BRANCH_ABORT_TX	= 1U << 7, /* transaction aborts */
+ 	PERF_SAMPLE_BRANCH_IN_TX	= 1U << 8, /* in transaction */
+ 	PERF_SAMPLE_BRANCH_NO_TX	= 1U << 9, /* not in transaction */
++	PERF_SAMPLE_BRANCH_COND		= 1U << 10, /* conditional branches */
+ 
+-	PERF_SAMPLE_BRANCH_MAX		= 1U << 10, /* non-ABI */
++	PERF_SAMPLE_BRANCH_MAX		= 1U << 11, /* non-ABI */
+ };
+ 
+ #define PERF_SAMPLE_BRANCH_PLM_ALL \
+-- 
+1.7.11.7
 
->                 barrier();
-> 
->                 idx = pc->index;
->                 count = pc->offset;
->                 if (idx)
->                         count += rdpmc(idx - 1);
-> 
->                 barrier();
->         } while (pc->lock != seq);
-> 
-> As we see, only compiler barrier() are protecting all this.
-> First question, is it possible that the update be performed
-> by a thread running on a different CPU than the thread reading
-> the info in user-space ?
-
-You can make that so, but that is not a 'supported' case. This all
-assumes you're monitoring yourself, in which case the event is ran on
-the cpu you are running on too and the updates are matched on cpu, or
-separated by schedule() which includes the required memory barriers to
-make it appear its all on the same cpu anyway.
-
-> I would be tempted to use a volatile semantic on all reads of the
-> lock field (ACCESS_ONCE()).
-
-Since its all separated by the compiler barrier all the reads should be
-contained and the compiler is not allowed to re-read once outside.
-
-So I don't see the point of volatile/ACCESS_ONCE here.
-
-You could make an argument for ACCESS_ONCE(pc->lock) though.
-
-> Secondly, read sequence locks usually use a
-> smp_rmb() at the end of the seqcount_begin(), and at the beginning
-> of the seqcount_retry(). Moreover, this is usually matched
-> by smp_wmb() in write_seqcount begin/end().
-
-Given this is all for self-monitoring and hard assuming the event runs
-on the same cpu, smp barriers are pointless.
-
-> Am I missing something special about this lock that makes these
-> barriers unnecessary ?
-
-The self-monitoring aspect perhaps? But there's a NOTE in struct
-perf_event_mmap_page() that's rather a dead give-away on that though.
