@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932733AbaBEVKs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 16:10:48 -0500
-Received: from mail.windriver.com ([147.11.1.11]:54304 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753857AbaBEUEA (ORCPT
+	id S1754048AbaBEUD7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:03:59 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:47901 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753857AbaBEUDl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:04:00 -0500
+	Wed, 5 Feb 2014 15:03:41 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Daniel Borkmann <dborkman@redhat.com>,
+CC: Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Dave Jones <davej@redhat.com>,
+        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
         "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 036/213] net: sctp: sctp_setsockopt_auth_key: use kzfree instead of kfree
-Date: Wed, 5 Feb 2014 14:59:51 -0500
-Message-ID: <1391630568-49251-37-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 014/213] ipv6: call udp_push_pending_frames when uncorking a socket with AF_INET pending data
+Date: Wed, 5 Feb 2014 14:59:29 -0500
+Message-ID: <1391630568-49251-15-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,7 +26,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -32,35 +34,129 @@ From: Daniel Borkmann <dborkman@redhat.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 6ba542a291a5e558603ac51cda9bded347ce7627 upstream.
+commit 8822b64a0fa64a5dd1dfcf837c5b0be83f8c05d1 upstream.
 
-In sctp_setsockopt_auth_key, we create a temporary copy of the user
-passed shared auth key for the endpoint or association and after
-internal setup, we free it right away. Since it's sensitive data, we
-should zero out the key before returning the memory back to the
-allocator. Thus, use kzfree instead of kfree, just as we do in
-sctp_auth_key_put().
+We accidentally call down to ip6_push_pending_frames when uncorking
+pending AF_INET data on a ipv6 socket. This results in the following
+splat (from Dave Jones):
 
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+skbuff: skb_under_panic: text:ffffffff816765f6 len:48 put:40 head:ffff88013deb6df0 data:ffff88013deb6dec tail:0x2c end:0xc0 dev:<NULL>
+------------[ cut here ]------------
+kernel BUG at net/core/skbuff.c:126!
+invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+Modules linked in: dccp_ipv4 dccp 8021q garp bridge stp dlci mpoa snd_seq_dummy sctp fuse hidp tun bnep nfnetlink scsi_transport_iscsi rfcomm can_raw can_bcm af_802154 appletalk caif_socket can caif ipt_ULOG x25 rose af_key pppoe pppox ipx phonet irda llc2 ppp_generic slhc p8023 psnap p8022 llc crc_ccitt atm bluetooth
++netrom ax25 nfc rfkill rds af_rxrpc coretemp hwmon kvm_intel kvm crc32c_intel snd_hda_codec_realtek ghash_clmulni_intel microcode pcspkr snd_hda_codec_hdmi snd_hda_intel snd_hda_codec snd_hwdep usb_debug snd_seq snd_seq_device snd_pcm e1000e snd_page_alloc snd_timer ptp snd pps_core soundcore xfs libcrc32c
+CPU: 2 PID: 8095 Comm: trinity-child2 Not tainted 3.10.0-rc7+ #37
+task: ffff8801f52c2520 ti: ffff8801e6430000 task.ti: ffff8801e6430000
+RIP: 0010:[<ffffffff816e759c>]  [<ffffffff816e759c>] skb_panic+0x63/0x65
+RSP: 0018:ffff8801e6431de8  EFLAGS: 00010282
+RAX: 0000000000000086 RBX: ffff8802353d3cc0 RCX: 0000000000000006
+RDX: 0000000000003b90 RSI: ffff8801f52c2ca0 RDI: ffff8801f52c2520
+RBP: ffff8801e6431e08 R08: 0000000000000000 R09: 0000000000000000
+R10: 0000000000000001 R11: 0000000000000001 R12: ffff88022ea0c800
+R13: ffff88022ea0cdf8 R14: ffff8802353ecb40 R15: ffffffff81cc7800
+FS:  00007f5720a10740(0000) GS:ffff880244c00000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000000005862000 CR3: 000000022843c000 CR4: 00000000001407e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
+Stack:
+ ffff88013deb6dec 000000000000002c 00000000000000c0 ffffffff81a3f6e4
+ ffff8801e6431e18 ffffffff8159a9aa ffff8801e6431e90 ffffffff816765f6
+ ffffffff810b756b 0000000700000002 ffff8801e6431e40 0000fea9292aa8c0
+Call Trace:
+ [<ffffffff8159a9aa>] skb_push+0x3a/0x40
+ [<ffffffff816765f6>] ip6_push_pending_frames+0x1f6/0x4d0
+ [<ffffffff810b756b>] ? mark_held_locks+0xbb/0x140
+ [<ffffffff81694919>] udp_v6_push_pending_frames+0x2b9/0x3d0
+ [<ffffffff81694660>] ? udplite_getfrag+0x20/0x20
+ [<ffffffff8162092a>] udp_lib_setsockopt+0x1aa/0x1f0
+ [<ffffffff811cc5e7>] ? fget_light+0x387/0x4f0
+ [<ffffffff816958a4>] udpv6_setsockopt+0x34/0x40
+ [<ffffffff815949f4>] sock_common_setsockopt+0x14/0x20
+ [<ffffffff81593c31>] SyS_setsockopt+0x71/0xd0
+ [<ffffffff816f5d54>] tracesys+0xdd/0xe2
+Code: 00 00 48 89 44 24 10 8b 87 d8 00 00 00 48 89 44 24 08 48 8b 87 e8 00 00 00 48 c7 c7 c0 04 aa 81 48 89 04 24 31 c0 e8 e1 7e ff ff <0f> 0b 55 48 89 e5 0f 0b 55 48 89 e5 0f 0b 55 48 89 e5 0f 0b 55
+RIP  [<ffffffff816e759c>] skb_panic+0x63/0x65
+ RSP <ffff8801e6431de8>
+
+This patch adds a check if the pending data is of address family AF_INET
+and directly calls udp_push_ending_frames from udp_v6_push_pending_frames
+if that is the case.
+
+This bug was found by Dave Jones with trinity.
+
+(Also move the initialization of fl6 below the AF_INET check, even if
+not strictly necessary.)
+
+Cc: Dave Jones <davej@redhat.com>
+Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
+[PG: The line "flowi6 *fl6 = &inet->cork.fl.u.ip6"  was
+              "flowi *fl = &inet->cork.fl" in 2.6.34 kernel.]
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/sctp/socket.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/net/udp.h | 1 +
+ net/ipv4/udp.c    | 3 ++-
+ net/ipv6/udp.c    | 7 ++++++-
+ 3 files changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/net/sctp/socket.c b/net/sctp/socket.c
-index 03daceb2d9a0..38c19d38f438 100644
---- a/net/sctp/socket.c
-+++ b/net/sctp/socket.c
-@@ -3276,7 +3276,7 @@ static int sctp_setsockopt_auth_key(struct sock *sk,
+diff --git a/include/net/udp.h b/include/net/udp.h
+index b02f5d9f4d7e..acc0a1928c33 100644
+--- a/include/net/udp.h
++++ b/include/net/udp.h
+@@ -169,6 +169,7 @@ extern void	udp_err(struct sk_buff *, u32);
  
- 	ret = sctp_auth_set_key(sctp_sk(sk)->ep, asoc, authkey);
- out:
--	kfree(authkey);
-+	kzfree(authkey);
- 	return ret;
+ extern int	udp_sendmsg(struct kiocb *iocb, struct sock *sk,
+ 			    struct msghdr *msg, size_t len);
++extern int udp_push_pending_frames(struct sock *sk);
+ extern void	udp_flush_pending_frames(struct sock *sk);
+ 
+ extern int	udp_rcv(struct sk_buff *skb);
+diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
+index 7f0a1ae0544b..5346abf0e095 100644
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -705,7 +705,7 @@ static void udp4_hwcsum_outgoing(struct sock *sk, struct sk_buff *skb,
+ /*
+  * Push out all pending data as one UDP datagram. Socket is locked.
+  */
+-static int udp_push_pending_frames(struct sock *sk)
++int udp_push_pending_frames(struct sock *sk)
+ {
+ 	struct udp_sock  *up = udp_sk(sk);
+ 	struct inet_sock *inet = inet_sk(sk);
+@@ -767,6 +767,7 @@ out:
+ 	up->pending = 0;
+ 	return err;
  }
++EXPORT_SYMBOL(udp_push_pending_frames);
  
+ int udp_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
+ 		size_t len)
+diff --git a/net/ipv6/udp.c b/net/ipv6/udp.c
+index a1d3d32237dd..bf7702a5f0b6 100644
+--- a/net/ipv6/udp.c
++++ b/net/ipv6/udp.c
+@@ -872,11 +872,16 @@ static int udp_v6_push_pending_frames(struct sock *sk)
+ 	struct udphdr *uh;
+ 	struct udp_sock  *up = udp_sk(sk);
+ 	struct inet_sock *inet = inet_sk(sk);
+-	struct flowi *fl = &inet->cork.fl;
++	struct flowi *fl;
+ 	int err = 0;
+ 	int is_udplite = IS_UDPLITE(sk);
+ 	__wsum csum = 0;
+ 
++	if (up->pending == AF_INET)
++		return udp_push_pending_frames(sk);
++
++	fl = &inet->cork.fl;
++
+ 	/* Grab the skbuff where UDP header space exists. */
+ 	if ((skb = skb_peek(&sk->sk_write_queue)) == NULL)
+ 		goto out;
 -- 
 1.8.5.2
 
