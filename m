@@ -1,71 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752022AbaBEGn5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 01:43:57 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:42680 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750720AbaBEGn4 (ORCPT
+	id S1753344AbaBEGoI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 01:44:08 -0500
+Received: from relay.parallels.com ([195.214.232.42]:51842 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752041AbaBEGoE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 01:43:56 -0500
-X-AuditID: cbfec7f5-b7fc96d000004885-ef-52f1dda9e9d6
-Message-id: <52F1DDA8.90605@samsung.com>
-Date: Wed, 05 Feb 2014 10:43:52 +0400
-From: Alexey Perevalov <a.perevalov@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623
- Thunderbird/17.0.7
-MIME-version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
-        anton@enomsg.org, kyungmin.park@samsung.com, akpm@linux-foundation.org,
-        cw00.choi@samsung.com
-Subject: Re: [PATCH v2 0/3] Deferrable timers support for timerfd API
-References: <1389609835-24377-1-git-send-email-a.perevalov@samsung.com>
- <52DEC6A3.9020600@linaro.org> <52E606D8.6000401@samsung.com>
- <alpine.DEB.2.02.1402041419420.24986@ionos.tec.linutronix.de>
-In-reply-to: <alpine.DEB.2.02.1402041419420.24986@ionos.tec.linutronix.de>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrALMWRmVeSWpSXmKPExsVy+t/xa7or734MMtg9V8Vizvo1bBYHt2pa
-	XP/ynNXizG9di7NNb9gtLu+aw2axedNUZgd2jwn9nxg97lzbw+bx7tw5do8TM36zePRtWcXo
-	8XmTXABbFJdNSmpOZllqkb5dAlfG25c72ApaOSq+bTjI1sC4jq2LkZNDQsBEonnZNyhbTOLC
-	vfVgtpDAUkaJ2Svkuxi5gOzPjBKr+9+AJXgFNCTez13BAmKzCKhKTFzcydzFyMHBJmAgse+e
-	LYgpKhAhcXS5JkS1oMSPyffAqkWAOjdeusUMMpJZYCWjxNxvf9hBEsICrhIntq9nhdh1jFHi
-	/J01zCAJTgEviRuf74J1MwtYS6yctI0RwpaX2LzmLfMERoFZSJbMQlI2C0nZAkbmVYyiqaXJ
-	BcVJ6blGesWJucWleel6yfm5mxghof51B+PSY1aHGAU4GJV4eA2EPwYJsSaWFVfmHmKU4GBW
-	EuFN7AYK8aYkVlalFuXHF5XmpBYfYmTi4JRqYAzMjzzfE5TIvP7i1KBjAQb8kzWtX0kF3Zkn
-	WXf/oYuPlnBAbfNVVttt38s/e26SP1+3YIep5/TJa0WDpAU4r2v9ODPb4vDNE7nfjxvxZySy
-	HU9is9iUeWGu4peJPfJXDBqfv208UspgV9yU3bN1R/FL+3uZy0M81vMwSmevTPy7xSRAzS8h
-	RImlOCPRUIu5qDgRAKgp/FdTAgAA
+	Wed, 5 Feb 2014 01:44:04 -0500
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: <rientjes@google.com>
+CC: <akpm@linux-foundation.org>, <penberg@kernel.org>, <cl@linux.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] slub: fix false-positive lockdep warning in free_partial()
+Date: Wed, 5 Feb 2014 10:44:01 +0400
+Message-ID: <1391582641-12904-1-git-send-email-vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <52F1DB81.30805@parallels.com>
+References: <52F1DB81.30805@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.24.25.216]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/04/2014 08:10 PM, Thomas Gleixner wrote:
-> On Mon, 27 Jan 2014, Alexey Perevalov wrote:
->> On 01/21/2014 11:12 PM, John Stultz wrote:
->>> Thomas: Any thought here? Should we be trying to unify the timerfd flags
->>> and the posix timer flags (specifically things like TIMER_CANCEL_ON_SET,
->>> which is currently timerfd-only)?  Should a deferrable flag be added to
->>> the hrtimer core or left to the timer wheel?
-> The timer cancel on set was added only to timerfd because timerfd is a
-> non posix interface and we are halfways free to add stuff to
-> it. Adding extra flags to the real posix timer interfaces is a
-> different story.
-And what about "deferrable" possibility for hrtimers, do you consider it 
-reasonable?
+Commit c65c1877bd68 ("slub: use lockdep_assert_held") requires
+remove_partial() to be called with n->list_lock held, but free_partial()
+called from kmem_cache_close() on cache destruction does not follow this
+rule, leading to a warning:
 
->
-> What's the rationale for a deferrable flag for user space interfaces?
-The main reason of this was do not call user space timers on system 
-idle, to safe power on embedded systems, especially in case of NOHZ.
+  WARNING: CPU: 0 PID: 2787 at mm/slub.c:1536 __kmem_cache_shutdown+0x1b2/0x1f0()
+  Modules linked in:
+  CPU: 0 PID: 2787 Comm: modprobe Tainted: G        W    3.14.0-rc1-mm1+ #1
+  Hardware name:
+   0000000000000600 ffff88003ae1dde8 ffffffff816d9583 0000000000000600
+   0000000000000000 ffff88003ae1de28 ffffffff8107c107 0000000000000000
+   ffff880037ab2b00 ffff88007c240d30 ffffea0001ee5280 ffffea0001ee52a0
+  Call Trace:
+   [<ffffffff816d9583>] dump_stack+0x51/0x6e
+   [<ffffffff8107c107>] warn_slowpath_common+0x87/0xb0
+   [<ffffffff8107c145>] warn_slowpath_null+0x15/0x20
+   [<ffffffff811c7fe2>] __kmem_cache_shutdown+0x1b2/0x1f0
+   [<ffffffff811908d3>] kmem_cache_destroy+0x43/0xf0
+   [<ffffffffa013a123>] xfs_destroy_zones+0x103/0x110 [xfs]
+   [<ffffffffa0192b54>] exit_xfs_fs+0x38/0x4e4 [xfs]
+   [<ffffffff811036fa>] SyS_delete_module+0x19a/0x1f0
+   [<ffffffff816dfcd8>] ? retint_swapgs+0x13/0x1b
+   [<ffffffff810d2125>] ? trace_hardirqs_on_caller+0x105/0x1d0
+   [<ffffffff81359efe>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+   [<ffffffff816e8539>] system_call_fastpath+0x16/0x1b
 
->
-> Thanks,
->
-> 	tglx
->
+Although this cannot actually result in a race, because on cache
+destruction there should not be any concurrent frees or allocations from
+the cache, let's add spin_lock/unlock to free_partial() just to keep
+lockdep happy.
 
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+---
+ v2: add a comment explaining why we need to take the lock
 
+ mm/slub.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/mm/slub.c b/mm/slub.c
+index 0eeea85034c8..24bf05e962ff 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -3191,6 +3191,11 @@ static void free_partial(struct kmem_cache *s, struct kmem_cache_node *n)
+ {
+ 	struct page *page, *h;
+ 
++	/*
++	 * the lock is for lockdep's sake, not for any actual
++	 * race protection
++	 */
++	spin_lock_irq(&n->list_lock);
+ 	list_for_each_entry_safe(page, h, &n->partial, lru) {
+ 		if (!page->inuse) {
+ 			remove_partial(n, page);
+@@ -3200,6 +3205,7 @@ static void free_partial(struct kmem_cache *s, struct kmem_cache_node *n)
+ 			"Objects remaining in %s on kmem_cache_close()");
+ 		}
+ 	}
++	spin_unlock_irq(&n->list_lock);
+ }
+ 
+ /*
 -- 
-Best regards,
-Alexey Perevalov
+1.7.10.4
+
