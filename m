@@ -1,55 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752026AbaBEGvd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 01:51:33 -0500
-Received: from smtp5.epfl.ch ([128.178.224.8]:60623 "EHLO smtp5.epfl.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750720AbaBEGvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 01:51:31 -0500
-From: Florian Vaussard <florian.vaussard@epfl.ch>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Florian Vaussard <florian.vaussard@epfl.ch>
-Subject: [PATCH] pinctrl: do not init debugfs entries for unimplemented functionalities
-Date: Wed,  5 Feb 2014 07:51:22 +0100
-Message-Id: <1391583082-314-1-git-send-email-florian.vaussard@epfl.ch>
-X-Mailer: git-send-email 1.8.1.2
+	id S932221AbaBEGvv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 01:51:51 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:55296 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752100AbaBEGvf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 01:51:35 -0500
+From: Magnus Damm <magnus.damm@gmail.com>
+To: linux-pci@vger.kernel.org
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        valentine.barshak@cogentembedded.com, horms@verge.net.au,
+        bhelgaas@google.com, Magnus Damm <magnus.damm@gmail.com>,
+        ben.dooks@codethink.co.uk
+Date: Wed, 05 Feb 2014 15:52:43 +0900
+Message-Id: <20140205065243.29445.76593.sendpatchset@w520>
+Subject: [PATCH 00/04] PCI: rcar: Driver model and physical address space update
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit c420619 "pinctrl: pinconf: remove checks on ops->pin_config_get"
-removed the check on (ops != NULL) when performing pinconf_pins_show() or
-pinconf_groups_show(). As these entries are always enabled, even if
-pinconf is not supported, reading will result in an oops due to NULL
-ops.
+PCI: rcar: Driver model and physical address space update
 
-Instead of checking for ops, remove the corresponding debugfs entries if
-pinconf and/or pinmux are not implemented.
+[PATCH 01/04] PCI: rcar: Register each instance independently
+[PATCH 02/04] PCI: rcar: Break out window size handling
+[PATCH 03/04] PCI: rcar: Add DMABOUNCE support
+[PATCH 04/04] PCI: rcar: Enable BOUNCE in case of HIGHMEM
 
-Tested on OMAP3 (pinctrl-single).
+These patches update the pci-rcar-gen2.c driver in various ways
+including cleanups for driver model interface (1/4), readability
+update (2/4) and also bounce buffer support (3/4, 4/4). Basically
+the first two are just cleanups and the rest are fixes.
 
-Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
+As it is today without these patches the system memory start address
+is hard coded at 0x4000000 and the window is fixed at 1GiB. So we
+have board specific code hidden in the driver which is good to avoid.
+
+With these hard coded board specific constants there are some error cases
+that are not handled, in particular the issue that only maximum 1GiB of
+physical address space can be used for bus mastering with a single window.
+The common case of using ARM CONFIG_VMSPLIT_3G results in no visible issues
+as long as CONFIG_BOUNCE is used, but other CONFIG_VMSPLIT settings will
+break due to the hard coded 1GiB window not being enough. It has been
+verified that reducing the window size to 256MB makes the driver behave
+the same with VMSPLIT_3G as 1GiB window size and other VMSPLIT settings.
+
+To handle the maximum 1GiB physical address space limitation two types
+of bounce buffers are added. The ARM specific DMABOUNCE code is in 3/4
+hooked up to a chunk of local memory that is also handed of as coherent
+memory to the pci devices hanging off the PCI bridge. The driver makes
+sure to set the window so the local memory is always included. When the
+PCI devices are operating and in case memory is used outside the window
+then the DMABOUNCE buffers kicks in. This makes the driver support all
+kinds of VMSPLIT settings and window sizes. The BOUNCE code in 4/4 is
+selected to make sure bounce buffers are used for HIGHMEM.
+
+With these patches this driver can be used with or without CMA and
+with or without DMA zone. Basically the system wide memory setup is
+left to the user. If a DMA zone is used then the PCI window will
+be setup to cover that. Same thing with CMA.
+
+Tested with USB storage using LPAE and various VMSPLIT settings together
+with renesas git tag renesas-devel-v3.14-rc1-20140204 from kernel.org
+
+Signed-off-by: Magnus Damm <damm@opensource.se>
 ---
- drivers/pinctrl/core.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-index 5ee61a4..3f64c01 100644
---- a/drivers/pinctrl/core.c
-+++ b/drivers/pinctrl/core.c
-@@ -1642,8 +1642,10 @@ static void pinctrl_init_device_debugfs(struct pinctrl_dev *pctldev)
- 			    device_root, pctldev, &pinctrl_groups_ops);
- 	debugfs_create_file("gpio-ranges", S_IFREG | S_IRUGO,
- 			    device_root, pctldev, &pinctrl_gpioranges_ops);
--	pinmux_init_device_debugfs(device_root, pctldev);
--	pinconf_init_device_debugfs(device_root, pctldev);
-+	if (pctldev->desc->pmxops)
-+		pinmux_init_device_debugfs(device_root, pctldev);
-+	if (pctldev->desc->confops)
-+		pinconf_init_device_debugfs(device_root, pctldev);
- }
- 
- static void pinctrl_remove_device_debugfs(struct pinctrl_dev *pctldev)
--- 
-1.8.5.3
+ Written against renesas.git tag renesas-devel-v3.14-rc1-20140204
 
+ drivers/pci/host/Kconfig         |    3 
+ drivers/pci/host/pci-rcar-gen2.c |  367 +++++++++++++++++++++++++++++++-------
+ 2 files changed, 306 insertions(+), 64 deletions(-)
