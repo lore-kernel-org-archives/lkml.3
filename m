@@ -1,70 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751988AbaBEJxZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 04:53:25 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54096 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751437AbaBEJxW (ORCPT
+	id S1752082AbaBEJx7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 04:53:59 -0500
+Received: from 15.mo3.mail-out.ovh.net ([87.98.150.177]:35134 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751469AbaBEJxz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 04:53:22 -0500
-Message-ID: <1391593985.3003.48.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: perf trace: Initial beautifier for ioctl's 'cmd' arg
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 05 Feb 2014 09:53:05 +0000
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-glzWdRYALBnOLVfmqYYX"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.239
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Wed, 5 Feb 2014 04:53:55 -0500
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Mike Turquette <mturquette@linaro.org>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Boris BREZILLON <b.brezillon@overkiz.com>
+Subject: [PATCH] clk: add strict of_clk_init dependency check
+Date: Wed,  5 Feb 2014 10:48:00 +0100
+Message-Id: <1391593680-9388-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1391554766-11285-1-git-send-email-gregory.clement@free-electrons.com>
+References: <1391554766-11285-1-git-send-email-gregory.clement@free-electrons.com>
+X-Ovh-Tracer-Id: 638948197669763073
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrjedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.500029/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrjedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The parent dependency check is only available on the first parent of a given
+clk.
 
---=-glzWdRYALBnOLVfmqYYX
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Add support for strict dependency check: all parents of a given clk must be
+initialized.
 
-Commit 78645cf3ed32860a3e83b8e35aa469f5b844a4ba introduced a build
-failure on powerpc and sparc as it redefines TCGETS.  TCGETS doesn't
-actually appear to be used, but in any case these and many other
-architectures give it a different value than 0x5401.  In fact they have
-mostly different numbering of tty ioctls, in two different ranges (type
-byte may be 0x54 or 0x74).
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+---
 
-Please do this properly (actually use the macros!) or revert it.
+Hello Gregory,
 
-Ben.
+This patch adds support for strict check on clk dependencies (check if all
+parents specified by an DT clk node are initialized).
 
---=20
-Ben Hutchings
-Once a job is fouled up, anything done to improve it makes it worse.
+I'm not sure this is what you were expecting (maybe testing the first parent
+is what you really want), so please feel free to tell me if I'm wrong.
 
---=-glzWdRYALBnOLVfmqYYX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+Best Regards,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Boris
 
-iQIVAwUAUvIKAee/yOyVhhEJAQqd9hAAhiQyQx1aM91r8b70ZqBnTn0x1/Mk7NpJ
-r/jtPK4lHeeJPq3DYuQtgk56tcNsfwXRCLEGPE07SKgrMj60vWyDWwc2ZGBharFB
-OamojAQV0Vg41HoKwJDt8SYWrz0HAGJlFmOazw9lxE2PkiuwRXIEDF2bL3z7/EKp
-JTkcW0xTSfBDk4EIowARZzUOWP6TTXQHf6IPwjNpc/VjOxfH5x3bZ4PqpWMeA6UY
-3EJgO6QZ2X9KzDpEiN+aBEbAGe9gSAPKRzE8X9cmbLh8vPrrelXuV+ljETdUF5gu
-bCREVbGRFiDZbk3VhH9pMjJhtPr9YbpniGlcL2747oqu9azawtYguFaQAq0qx/E2
-5vmGt7/j7meMhIY+nW25dxcjunoWwnuu/fiHV+Al3WYni9Jeu7Wj/dk3bFghocUU
-6HLRyuv8fsgeL49Oajr8aUmCAE4BmJSIecqeyvR3tVQASdMRCE5CXA8cPqSSON5t
-zG6URswwpf4DUo5jlemrWYuHwd4VPw9dMOE8ycIWIIO0ev3mcKA4A2FMAeEMOw1r
-jqkhtYb4dvLw3JVp7+eDJ4YVYemgvskqr1yKuYbpuVVHMbsR9FChUOeZO9vkjfO5
-6K+8DftpWStILSlKCpg/U6tRGypL6W7vVwbzDxRL29D7UtBjuOphXJrrfvdXvSSe
-09N4DNd5an0=
-=XfOs
------END PGP SIGNATURE-----
+ drivers/clk/clk.c |   27 +++++++++++++++++++++------
+ 1 file changed, 21 insertions(+), 6 deletions(-)
 
---=-glzWdRYALBnOLVfmqYYX--
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index beb0f8b..6849769 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -2543,22 +2543,37 @@ static int parent_ready(struct device_node *np)
+ {
+ 	struct of_phandle_args clkspec;
+ 	struct of_clk_provider *provider;
++	int num_parents;
++	bool found;
++	int i;
+ 
+ 	/*
+ 	 * If there is no clock parent, no need to wait for them, then
+ 	 * we can consider their absence as being ready
+ 	 */
+-	if (of_parse_phandle_with_args(np, "clocks", "#clock-cells", 0,
+-					&clkspec))
++	num_parents = of_count_phandle_with_args(np, "clocks", "#clock-cells");
++	if (num_parents <= 0)
+ 		return 1;
+ 
+-	/* Check if we have such a provider in our array */
+-	list_for_each_entry(provider, &of_clk_providers, link) {
+-		if (provider->node == clkspec.np)
++	for (i = 0; i < num_parents; i++) {
++		if (of_parse_phandle_with_args(np, "clocks", "#clock-cells", i,
++					       &clkspec))
+ 			return 1;
++
++		/* Check if we have such a provider in our array */
++		found = false;
++		list_for_each_entry(provider, &of_clk_providers, link) {
++			if (provider->node == clkspec.np) {
++				found = true;
++				break;
++			}
++		}
++
++		if (!found)
++			return 0;
+ 	}
+ 
+-	return 0;
++	return 1;
+ }
+ 
+ /**
+-- 
+1.7.9.5
+
