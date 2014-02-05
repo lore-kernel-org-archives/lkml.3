@@ -1,115 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755594AbaBEVfc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 16:35:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59039 "EHLO mx1.redhat.com"
+	id S1755762AbaBEVgL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 16:36:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48813 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754535AbaBEVdi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 16:33:38 -0500
+	id S1754422AbaBEVdh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 16:33:37 -0500
 From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
         David Herrmann <dh.herrmann@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
         Frank Praznik <frank.praznik@oh.rr.com>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 6/9] HID: usbhid: remove duplicated code
-Date: Wed,  5 Feb 2014 16:33:21 -0500
-Message-Id: <1391636004-29354-7-git-send-email-benjamin.tissoires@redhat.com>
+Subject: [PATCH v2 3/9] HID: HIDp: remove hidp_hidinput_event
+Date: Wed,  5 Feb 2014 16:33:18 -0500
+Message-Id: <1391636004-29354-4-git-send-email-benjamin.tissoires@redhat.com>
 In-Reply-To: <1391636004-29354-1-git-send-email-benjamin.tissoires@redhat.com>
 References: <1391636004-29354-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Well, no use to keep twice the same code.
+hidp uses its own ->hidinput_input_event() instead of the generic binding
+in hid-input.
+Moving the handling of LEDs towards hidp_hidinput_event() allows two things:
+- remove hidinput_input_event definitively from struct hid_device
+- hidraw user space programs can also set the LEDs
 
 Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
 Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 ---
- drivers/hid/usbhid/hid-core.c | 64 ++++++++-----------------------------------
- 1 file changed, 11 insertions(+), 53 deletions(-)
+ net/bluetooth/hidp/core.c | 46 ----------------------------------------------
+ 1 file changed, 46 deletions(-)
 
-diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
-index f8ca312..406497b 100644
---- a/drivers/hid/usbhid/hid-core.c
-+++ b/drivers/hid/usbhid/hid-core.c
-@@ -915,59 +915,6 @@ static int usbhid_set_raw_report(struct hid_device *hid, unsigned int reportnum,
- 	return ret;
+diff --git a/net/bluetooth/hidp/core.c b/net/bluetooth/hidp/core.c
+index b062cee..469e61b 100644
+--- a/net/bluetooth/hidp/core.c
++++ b/net/bluetooth/hidp/core.c
+@@ -223,51 +223,6 @@ static void hidp_input_report(struct hidp_session *session, struct sk_buff *skb)
+ 	input_sync(dev);
  }
  
--
--static int usbhid_output_raw_report(struct hid_device *hid, __u8 *buf, size_t count,
--		unsigned char report_type)
+-static int hidp_send_report(struct hidp_session *session, struct hid_report *report)
 -{
--	struct usbhid_device *usbhid = hid->driver_data;
--	struct usb_device *dev = hid_to_usb_dev(hid);
--	struct usb_interface *intf = usbhid->intf;
--	struct usb_host_interface *interface = intf->cur_altsetting;
--	int ret;
+-	unsigned char hdr;
+-	u8 *buf;
+-	int rsize, ret;
 -
--	if (usbhid->urbout && report_type != HID_FEATURE_REPORT) {
--		int actual_length;
--		int skipped_report_id = 0;
+-	buf = hid_alloc_report_buf(report, GFP_ATOMIC);
+-	if (!buf)
+-		return -EIO;
 -
--		if (buf[0] == 0x0) {
--			/* Don't send the Report ID */
--			buf++;
--			count--;
--			skipped_report_id = 1;
--		}
--		ret = usb_interrupt_msg(dev, usbhid->urbout->pipe,
--			buf, count, &actual_length,
--			USB_CTRL_SET_TIMEOUT);
--		/* return the number of bytes transferred */
--		if (ret == 0) {
--			ret = actual_length;
--			/* count also the report id */
--			if (skipped_report_id)
--				ret++;
--		}
--	} else {
--		int skipped_report_id = 0;
--		int report_id = buf[0];
--		if (buf[0] == 0x0) {
--			/* Don't send the Report ID */
--			buf++;
--			count--;
--			skipped_report_id = 1;
--		}
--		ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
--			HID_REQ_SET_REPORT,
--			USB_DIR_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
--			((report_type + 1) << 8) | report_id,
--			interface->desc.bInterfaceNumber, buf, count,
--			USB_CTRL_SET_TIMEOUT);
--		/* count also the report id, if this was a numbered report. */
--		if (ret > 0 && skipped_report_id)
--			ret++;
--	}
+-	hid_output_report(report, buf);
+-	hdr = HIDP_TRANS_DATA | HIDP_DATA_RTYPE_OUPUT;
 -
+-	rsize = ((report->size - 1) >> 3) + 1 + (report->id > 0);
+-	ret = hidp_send_intr_message(session, hdr, buf, rsize);
+-
+-	kfree(buf);
 -	return ret;
 -}
 -
- static int usbhid_output_report(struct hid_device *hid, __u8 *buf, size_t count)
- {
- 	struct usbhid_device *usbhid = hid->driver_data;
-@@ -998,6 +945,17 @@ static int usbhid_output_report(struct hid_device *hid, __u8 *buf, size_t count)
- 	return ret;
- }
+-static int hidp_hidinput_event(struct input_dev *dev, unsigned int type,
+-			       unsigned int code, int value)
+-{
+-	struct hid_device *hid = input_get_drvdata(dev);
+-	struct hidp_session *session = hid->driver_data;
+-	struct hid_field *field;
+-	int offset;
+-
+-	BT_DBG("session %p type %d code %d value %d",
+-	       session, type, code, value);
+-
+-	if (type != EV_LED)
+-		return -1;
+-
+-	offset = hidinput_find_field(hid, type, code, &field);
+-	if (offset == -1) {
+-		hid_warn(dev, "event field not found\n");
+-		return -1;
+-	}
+-
+-	hid_set_field(field, offset, value);
+-
+-	return hidp_send_report(session, field->report);
+-}
+-
+ static int hidp_get_raw_report(struct hid_device *hid,
+ 		unsigned char report_number,
+ 		unsigned char *data, size_t count,
+@@ -817,7 +772,6 @@ static struct hid_ll_driver hidp_hid_driver = {
+ 	.close = hidp_close,
+ 	.raw_request = hidp_raw_request,
+ 	.output_report = hidp_output_report,
+-	.hidinput_input_event = hidp_hidinput_event,
+ };
  
-+static int usbhid_output_raw_report(struct hid_device *hid, __u8 *buf,
-+		size_t count, unsigned char report_type)
-+{
-+	struct usbhid_device *usbhid = hid->driver_data;
-+
-+	if (usbhid->urbout && report_type != HID_FEATURE_REPORT)
-+		return usbhid_output_report(hid, buf, count);
-+
-+	return usbhid_set_raw_report(hid, buf[0], buf, count, report_type);
-+}
-+
- static void usbhid_restart_queues(struct usbhid_device *usbhid)
- {
- 	if (usbhid->urbout && !test_bit(HID_OUT_RUNNING, &usbhid->iofl))
+ /* This function sets up the hid device. It does not add it
 -- 
 1.8.3.1
 
