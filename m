@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932565AbaBEU1q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:27:46 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:50664 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754905AbaBEU1k (ORCPT
+	id S932613AbaBEU2F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:28:05 -0500
+Received: from www.linutronix.de ([62.245.132.108]:57120 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932571AbaBEU15 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:27:40 -0500
-Message-ID: <52F29EB8.5040906@wwwdotorg.org>
-Date: Wed, 05 Feb 2014 13:27:36 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 5 Feb 2014 15:27:57 -0500
+Date: Wed, 5 Feb 2014 21:27:51 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+cc: santosh.shilimkar@ti.com, rob@landley.net, linux@arm.linux.org.uk,
+        galak@codeaurora.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        daniel.lezcano@linaro.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, grygorii.strashko@ti.com
+Subject: Re: [PATCH v5 1/3] clocksource: timer-keystone: introduce clocksource
+ driver for Keystone
+In-Reply-To: <1391608060-10760-2-git-send-email-ivan.khoronzhuk@ti.com>
+Message-ID: <alpine.DEB.2.02.1402052123560.24986@ionos.tec.linutronix.de>
+References: <1391608060-10760-1-git-send-email-ivan.khoronzhuk@ti.com> <1391608060-10760-2-git-send-email-ivan.khoronzhuk@ti.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Alexandre Courbot <acourbot@nvidia.com>, Ben Skeggs <skeggsb@gmail.com>
-CC: Ben Skeggs <bskeggs@redhat.com>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Alexandre Courbot <gnurou@gmail.com>, Eric Brower <ebrower@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Terje Bergstrom <tbergstrom@nvidia.com>, Ken Adams <KAdams@nvidia.com>
-Subject: Re: [RFC 10/16] drm/nouveau/timer: skip calibration on GK20A
-References: <1391224618-3794-1-git-send-email-acourbot@nvidia.com>	<1391224618-3794-11-git-send-email-acourbot@nvidia.com> <CACAvsv4T=TRb05OtkxG=t1+Ou9=Of9c-ALWkHJjKYpNi2aGs5Q@mail.gmail.com> <52F0A72B.8030900@nvidia.com>
-In-Reply-To: <52F0A72B.8030900@nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/04/2014 01:39 AM, Alexandre Courbot wrote:
-> On 02/04/2014 12:55 PM, Ben Skeggs wrote:
->> On Sat, Feb 1, 2014 at 1:16 PM, Alexandre Courbot
->> <acourbot@nvidia.com> wrote:
->>> GK20A's timer is directly attached to the system timer and cannot be
->>> calibrated. Skip the calibration phase on that chip since the
->>> corresponding registers do not exist.
->> Just a curiosity:  What timer resolution does the HW initialise at?
-> 
-> On T124 the timer input is the oscillator clock, which depending on the
-> device can run between 12 and 48Mhz (IIUC).
+On Wed, 5 Feb 2014, Ivan Khoronzhuk wrote:
+> +	/* here we have to be sure the timer has been disabled */
 
-On the one Tegra124 board we support upstream, the crystal is 12MHz. I
-believe this is a typical/common value; almost all the Tegra boards we
-support upstream run at this rate.
+Sigh. This is not a proper explanation for a barrier, really. You want
+to explain what it serializes against what. i.e. you want to explain
+why you are using the relaxed functions and avoid a separate non
+relaxed variant in favour of an explicit barrier.
+
+> +	__iowmb();
+
+The proper thing is to have an inline function key_stone_barrier() and
+a full explanation of the issue in exactly that place instead of
+handwaving comments here and there.
+
+Thanks,
+
+	tglx
