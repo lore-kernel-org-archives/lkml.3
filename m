@@ -1,63 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752905AbaBEQ2X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 11:28:23 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:50003 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751786AbaBEQ2W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 11:28:22 -0500
-Message-ID: <52F266A2.1030503@wwwdotorg.org>
-Date: Wed, 05 Feb 2014 09:28:18 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Alexandre Courbot <gnurou@gmail.com>
-CC: Alexandre Courbot <acourbot@nvidia.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/5] ARM: tegra: cpuidle: use firmware call for power
- down
-References: <1390299016-14105-1-git-send-email-acourbot@nvidia.com> <1390299016-14105-6-git-send-email-acourbot@nvidia.com> <52E02DCC.1000404@wwwdotorg.org> <CAAVeFuKLtC62+bujY4724hMV_6M8Ow0s=6zRn_M87VX4PHQgxA@mail.gmail.com>
-In-Reply-To: <CAAVeFuKLtC62+bujY4724hMV_6M8Ow0s=6zRn_M87VX4PHQgxA@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1752966AbaBEQ3M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 11:29:12 -0500
+Received: from relay2.sgi.com ([192.48.179.30]:55488 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752672AbaBEQ3K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 11:29:10 -0500
+From: Nathan Zimmer <nzimmer@sgi.com>
+To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Cc: Nathan Zimmer <nzimmer@sgi.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Xishi Qiu <qiuxishi@huawei.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        David Rientjes <rientjes@google.com>, Jiang Liu <liuj97@gmail.com>,
+        Hedi Berriche <hedi@sgi.com>, Mike Travis <travis@sgi.com>
+Subject: [RFC] Move the memory_notifier out of the memory_hotplug lock
+Date: Wed,  5 Feb 2014 10:29:03 -0600
+Message-Id: <1391617743-150518-1-git-send-email-nzimmer@sgi.com>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/2014 12:39 AM, Alexandre Courbot wrote:
-> On Thu, Jan 23, 2014 at 5:45 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
->> On 01/21/2014 03:10 AM, Alexandre Courbot wrote:
->>> Invoke the do_idle() firmware call before suspending a CPU so that the
->>> underlying firmware (if any) can take necessary action.
->>
->>> diff --git a/arch/arm/mach-tegra/cpuidle-tegra114.c b/arch/arm/mach-tegra/cpuidle-tegra114.c
->>
->>> @@ -45,6 +46,8 @@ static int tegra114_idle_power_down(struct cpuidle_device *dev,
->>>
->>>       clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &dev->cpu);
->>>
->>> +     call_firmware_op(do_idle);
->>> +
->>>       cpu_suspend(0, tegra30_sleep_cpu_secondary_finish);
->>>
->>>       clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &dev->cpu);
->>
->> Don't you need to have the kernel also *not* do something when entering
->> idle; doesn't the FW op replace some of the register writes that the
->> kernel would otherwise be doing?
-> 
-> It seems like the operation is actually to inform the firmware that we
-> are going to suspend the CPU. Downstream kernel also uses it that way.
-> But you are right in that we should expect do_idle() to actually
-> perform the suspend operation. Maybe a prepare_idle() operation should
-> be added to the firmware interface for this purpose?
+There are a few spots where we call memory_notifier. This doesn't need to be
+done under lock since memory_notify is just a blocking_notifier_call_chain
+with it's own locking mechanism.
 
-That sounds like a reasonable change. Is it easy to plumb in?
+This RFC is a follow on to the one I submitted earlier.
+(move register_memory_resource out of the lock_memory_hotplug, commit ac13c46)
+Most of our time is being spend under the memory hotplug lock in particular
+online_pages() so it makes sense to move out everything that can be easily
+moved out.
+
+However perf pointed me to a spot to work on, setup_zone_migrate_reserve.
+In fact most of the time is spent there.  Since that is going to require
+more reading and time I will start by whittling out some easy pieces.
+
+cc: Andrew Morton <akpm@linux-foundation.org>
+cc: Tang Chen <tangchen@cn.fujitsu.com>
+cc: Wen Congyang <wency@cn.fujitsu.com>
+cc: Toshi Kani <toshi.kani@hp.com>
+cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+cc: Xishi Qiu <qiuxishi@huawei.com>
+cc: Cody P Schafer <cody@linux.vnet.ibm.com>
+cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+cc: David Rientjes <rientjes@google.com>
+cc: Jiang Liu <liuj97@gmail.com>
+Cc: Hedi Berriche <hedi@sgi.com>
+Cc: Mike Travis <travis@sgi.com>
+linux-mm@kvack.org (open list:MEMORY MANAGEMENT)
+linux-kernel@vger.kernel.org (open list)
+
+---
+ mm/memory_hotplug.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index 62a0cd1..a3cbd14 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -985,12 +985,12 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages, int online_typ
+ 		if (need_zonelists_rebuild)
+ 			zone_pcp_reset(zone);
+ 		mutex_unlock(&zonelists_mutex);
++		unlock_memory_hotplug();
+ 		printk(KERN_DEBUG "online_pages [mem %#010llx-%#010llx] failed\n",
+ 		       (unsigned long long) pfn << PAGE_SHIFT,
+ 		       (((unsigned long long) pfn + nr_pages)
+ 			    << PAGE_SHIFT) - 1);
+ 		memory_notify(MEM_CANCEL_ONLINE, &arg);
+-		unlock_memory_hotplug();
+ 		return ret;
+ 	}
+ 
+@@ -1016,9 +1016,10 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages, int online_typ
+ 
+ 	writeback_set_ratelimit();
+ 
++	unlock_memory_hotplug();
++
+ 	if (onlined_pages)
+ 		memory_notify(MEM_ONLINE, &arg);
+-	unlock_memory_hotplug();
+ 
+ 	return 0;
+ }
+@@ -1601,8 +1602,8 @@ repeat:
+ 	vm_total_pages = nr_free_pagecache_pages();
+ 	writeback_set_ratelimit();
+ 
+-	memory_notify(MEM_OFFLINE, &arg);
+ 	unlock_memory_hotplug();
++	memory_notify(MEM_OFFLINE, &arg);
+ 	return 0;
+ 
+ failed_removal:
+-- 
+1.8.2.1
 
