@@ -1,61 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752619AbaBEPKV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 10:10:21 -0500
-Received: from mail.wdtv.com ([66.118.69.84]:52833 "EHLO mail.wdtv.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751505AbaBEPKU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 10:10:20 -0500
-From: Gene Heskett <gheskett@wdtv.com>
-To: Mihai =?utf-8?q?Don=C8=9Bu?= <mihai.dontu@gmail.com>
-Subject: Re: possible viri in tarballs?
-Date: Wed, 5 Feb 2014 10:10:07 -0500
-References: <201402050915.34607.gheskett@wdtv.com> <20140205163528.5b67d8e0@mdontu-l>
-In-Reply-To: <20140205163528.5b67d8e0@mdontu-l>
-Cc: linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201402051010.07539.gheskett@wdtv.com>
+	id S1752601AbaBEPNc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 10:13:32 -0500
+Received: from exprod5og112.obsmtp.com ([64.18.0.24]:47857 "EHLO
+	exprod5og112.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750971AbaBEPNa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 10:13:30 -0500
+X-Greylist: delayed 436 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Feb 2014 10:13:30 EST
+From: Illia Smyrnov <illia.smyrnov@globallogic.com>
+To: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
+        Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Roger Quadros <rogerq@ti.com>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Illia Smyrnov <illia.smyrnov@globallogic.com>
+Subject: [PATCH] ARM: OMAP4: hwmod: Fix SOFTRESET logic for OMAP4
+Date: Wed,  5 Feb 2014 17:06:09 +0200
+Message-Id: <1391612769-27890-1-git-send-email-illia.smyrnov@globallogic.com>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 05 February 2014, Mihai Donțu wrote:
->On Wed, 5 Feb 2014 09:15:34 -0500 Gene Heskett wrote:
->> I recently brought a daily system scan by clamscan back to life, and
->> its emailing me this:
->> 
->> /home/gene/src/linux-3.8.2/Documentation/usb/gadget_multi.txt:
->> MBL_400944.UNOFFICIAL
->> FOUND /home/gene/src/linux-3.12.6/Documentation/usb/gadget_multi.txt:
->> MBL_400944.UNOFFICIAL
->> FOUND /home/gene/src/linux-3.8.3/Documentation/usb/gadget_multi.txt:
->> MBL_400944.UNOFFICIAL
->> FOUND /home/gene/src/linux-3.12.9/Documentation/usb/gadget_multi.txt:
->> MBL_400944.UNOFFICIAL
->> FOUND /home/gene/src/linux-3.4.36/Documentation/usb/gadget_multi.txt:
->> MBL_400944.UNOFFICIAL
->> FOUND /home/gene/src/linux-3.0.69/Documentation/usb/gadget_multi.txt:
->> MBL_400944.UNOFFICIAL
->> FOUND /home/gene/src/linux-3.2.40/Documentation/usb/gadget_multi.txt:
->> MBL_400944.UNOFFICIAL FOUND
->> 
->> Repeat for several other kernel trees.
->> FP or ??
->
->Most likely a FP, but try: https://www.virustotal.com/
+Commit 313a76e (ARM: OMAP2+: hwmod: Fix SOFTRESET logic) introduced
+softreset bit cleaning right after set one. It is caused L3 error for
+OMAP4 ISS because ISS register write occurs when ISS reset process is in
+progress. Avoid this situation by cleaning softreset bit later, when reset
+process is successfully finished.
 
-I'll report it as an FP then.  I didn't know about that site. thanks.
+Signed-off-by: Illia Smyrnov <illia.smyrnov@globallogic.com>
+---
+ arch/arm/mach-omap2/omap_hwmod.c | 20 +++++++++++---------
+ 1 file changed, 11 insertions(+), 9 deletions(-)
 
-Cheers, Gene
+diff --git a/arch/arm/mach-omap2/omap_hwmod.c b/arch/arm/mach-omap2/omap_hwmod.c
+index 42d8188..1f33f5d 100644
+--- a/arch/arm/mach-omap2/omap_hwmod.c
++++ b/arch/arm/mach-omap2/omap_hwmod.c
+@@ -1947,29 +1947,31 @@ static int _ocp_softreset(struct omap_hwmod *oh)
+ 		goto dis_opt_clks;
+ 
+ 	_write_sysconfig(v, oh);
+-	ret = _clear_softreset(oh, &v);
+-	if (ret)
+-		goto dis_opt_clks;
+-
+-	_write_sysconfig(v, oh);
+ 
+ 	if (oh->class->sysc->srst_udelay)
+ 		udelay(oh->class->sysc->srst_udelay);
+ 
+ 	c = _wait_softreset_complete(oh);
+-	if (c == MAX_MODULE_SOFTRESET_WAIT)
++	if (c == MAX_MODULE_SOFTRESET_WAIT) {
+ 		pr_warning("omap_hwmod: %s: softreset failed (waited %d usec)\n",
+ 			   oh->name, MAX_MODULE_SOFTRESET_WAIT);
+-	else
++		ret = -ETIMEDOUT;
++		goto dis_opt_clks;
++	} else {
+ 		pr_debug("omap_hwmod: %s: softreset in %d usec\n", oh->name, c);
++	}
++
++	ret = _clear_softreset(oh, &v);
++	if (ret)
++		goto dis_opt_clks;
++
++	_write_sysconfig(v, oh);
+ 
+ 	/*
+ 	 * XXX add _HWMOD_STATE_WEDGED for modules that don't come back from
+ 	 * _wait_target_ready() or _reset()
+ 	 */
+ 
+-	ret = (c == MAX_MODULE_SOFTRESET_WAIT) ? -ETIMEDOUT : 0;
+-
+ dis_opt_clks:
+ 	if (oh->flags & HWMOD_CONTROL_OPT_CLKS_IN_RESET)
+ 		_disable_optional_clocks(oh);
 -- 
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-Genes Web page <http://geneslinuxbox.net:6309/gene>
-
-NOTICE: Will pay 100 USD for an HP-4815A defective but
-complete probe assembly.
+1.8.5.3
 
