@@ -1,124 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933089AbaBEUkQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:40:16 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:48358 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754984AbaBEUGj (ORCPT
+	id S932474AbaBEUk0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:40:26 -0500
+Received: from mailout2.w2.samsung.com ([211.189.100.12]:22517 "EHLO
+	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755199AbaBEUkV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:06:39 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Patrick McHardy <kaber@trash.net>, Roland Dreier <roland@purestorage.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 127/213] IPoIB: Fix use-after-free of multicast object
-Date: Wed, 5 Feb 2014 15:01:22 -0500
-Message-ID: <1391630568-49251-128-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 5 Feb 2014 15:40:21 -0500
+X-AuditID: cbfec37c-b7f0d6d0000057bc-eb-52f2a1b369a9
+Message-id: <52F2A1B1.7000004@samsung.com>
+Date: Wed, 05 Feb 2014 13:40:17 -0700
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.2.0
+MIME-version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org, Shuah Khan <shuah.kh@samsung.com>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [PATCH 3.10 000/104] 3.10.29-stable review
+References: <20140204210222.731641778@linuxfoundation.org>
+In-reply-to: <20140204210222.731641778@linuxfoundation.org>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.34.4]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCLMWRmVeSWpSXmKPExsVy+t9hX90tCz8FGRybyWQxZ/0aNovmxevZ
+	LC7vmsNm8fWng8WCjY8YLR71vWV3YPPYOesuu8eJGb9ZPPbPXcPu8XmTXABLFJdNSmpOZllq
+	kb5dAlfG6+2LGAumc1Rc//mHrYHxIFsXIyeHhICJxIvG5VC2mMSFe+vBbCGBZYwSjzvCuxi5
+	gOxeJonDbSsYIZwNjBI35vwFq+IV0JJY9morE4jNIqAqcaa5iwXEZhNQl/j8egc7xCQ5iaYl
+	q5lBbFGBCIlXZyeyQPQKSvyYfA/MFhEIllj7dSHYAmaBFYwSx1++BFrAwSEsYC7xYFssxBwr
+	ieb1txlBbE4Ba4lru9+B9TILmEk8alnHDGHLS2xe85YZol5Z4s/lU0wQnylIrLjxhmUCo8gs
+	JKtnIWmfhaR9ASPzKkax0uLkguKk9NQKY73ixNzi0rx0veT83E2MkJip2cF476vNIUYBDkYl
+	Hl6HGZ+ChFgTy4orcw8xSnAwK4nwnpgOFOJNSaysSi3Kjy8qzUktPsTIxMEp1cAo7q7OEN+Z
+	wjlfcJ50zupra9Yntfp+2PjgfqP5/j8nsnkNlhQuiLH1fr5sdU4xc4PYvIKmgK6wxf/tbnZu
+	ntatY/Sr1HdVZ/GXtV0B2WI7xfOFzhmVGOr0VYoVpuveKancU/aQbXnOJJkFn17wM39mrnad
+	9mrKqxPxK5fKJLoJ/gi982Qhn50SS3FGoqEWc1FxIgCT2IsNdwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Patrick McHardy <kaber@trash.net>
+On 02/04/2014 02:01 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.10.29 release.
+> There are 104 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Thu Feb  6 21:02:03 UTC 2014.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.29-rc1.gz
+> and the diffstat can be found below.
+>
+> thanks,
+>
+> greg k-h
+>
 
-                   -------------------
-    This is a commit scheduled for the next v2.6.34 longterm release.
-    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
-    If you see a problem with using this for longterm, please comment.
-                   -------------------
+Patch applied cleanly. boot tests passed on all test systems. No dmesg 
+regressions: emerg, crit, alert, err are clean. No regressions in warn.
 
-commit bea1e22df494a729978e7f2c54f7bda328f74bc3 upstream.
+Minor Note: git apply --index complained about extra white space at the 
+end of patch file. patch -p1 worked just fine.
 
-Fix a crash in ipoib_mcast_join_task().  (with help from Or Gerlitz)
+-- Shuah
 
-Commit c8c2afe360b7 ("IPoIB: Use rtnl lock/unlock when changing device
-flags") added a call to rtnl_lock() in ipoib_mcast_join_task(), which
-is run from the ipoib_workqueue, and hence the workqueue can't be
-flushed from the context of ipoib_stop().
-
-In the current code, ipoib_stop() (which doesn't flush the workqueue)
-calls ipoib_mcast_dev_flush(), which goes and deletes all the
-multicast entries.  This takes place without any synchronization with
-a possible running instance of ipoib_mcast_join_task() for the same
-ipoib device, leading to a crash due to NULL pointer dereference.
-
-Fix this by making sure that the workqueue is flushed before
-ipoib_mcast_dev_flush() is called.  To make that possible, we move the
-RTNL-lock wrapped code to ipoib_mcast_join_finish().
-
-Signed-off-by: Patrick McHardy <kaber@trash.net>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- drivers/infiniband/ulp/ipoib/ipoib_main.c      |  2 +-
- drivers/infiniband/ulp/ipoib/ipoib_multicast.c | 19 ++++++++++---------
- 2 files changed, 11 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/infiniband/ulp/ipoib/ipoib_main.c b/drivers/infiniband/ulp/ipoib/ipoib_main.c
-index b4b22576f12a..f6a23ecd982f 100644
---- a/drivers/infiniband/ulp/ipoib/ipoib_main.c
-+++ b/drivers/infiniband/ulp/ipoib/ipoib_main.c
-@@ -157,7 +157,7 @@ static int ipoib_stop(struct net_device *dev)
- 
- 	netif_stop_queue(dev);
- 
--	ipoib_ib_dev_down(dev, 0);
-+	ipoib_ib_dev_down(dev, 1);
- 	ipoib_ib_dev_stop(dev, 0);
- 
- 	if (!test_bit(IPOIB_FLAG_SUBINTERFACE, &priv->flags)) {
-diff --git a/drivers/infiniband/ulp/ipoib/ipoib_multicast.c b/drivers/infiniband/ulp/ipoib/ipoib_multicast.c
-index b166bb75753d..917540c81260 100644
---- a/drivers/infiniband/ulp/ipoib/ipoib_multicast.c
-+++ b/drivers/infiniband/ulp/ipoib/ipoib_multicast.c
-@@ -189,7 +189,9 @@ static int ipoib_mcast_join_finish(struct ipoib_mcast *mcast,
- 
- 	mcast->mcmember = *mcmember;
- 
--	/* Set the cached Q_Key before we attach if it's the broadcast group */
-+	/* Set the multicast MTU and cached Q_Key before we attach if it's
-+	 * the broadcast group.
-+	 */
- 	if (!memcmp(mcast->mcmember.mgid.raw, priv->dev->broadcast + 4,
- 		    sizeof (union ib_gid))) {
- 		spin_lock_irq(&priv->lock);
-@@ -197,10 +199,17 @@ static int ipoib_mcast_join_finish(struct ipoib_mcast *mcast,
- 			spin_unlock_irq(&priv->lock);
- 			return -EAGAIN;
- 		}
-+		priv->mcast_mtu = IPOIB_UD_MTU(ib_mtu_enum_to_int(priv->broadcast->mcmember.mtu));
- 		priv->qkey = be32_to_cpu(priv->broadcast->mcmember.qkey);
- 		spin_unlock_irq(&priv->lock);
- 		priv->tx_wr.wr.ud.remote_qkey = priv->qkey;
- 		set_qkey = 1;
-+
-+		if (!ipoib_cm_admin_enabled(dev)) {
-+			rtnl_lock();
-+			dev_set_mtu(dev, min(priv->mcast_mtu, priv->admin_mtu));
-+			rtnl_unlock();
-+		}
- 	}
- 
- 	if (!test_bit(IPOIB_MCAST_FLAG_SENDONLY, &mcast->flags)) {
-@@ -589,14 +598,6 @@ void ipoib_mcast_join_task(struct work_struct *work)
- 		return;
- 	}
- 
--	priv->mcast_mtu = IPOIB_UD_MTU(ib_mtu_enum_to_int(priv->broadcast->mcmember.mtu));
--
--	if (!ipoib_cm_admin_enabled(dev)) {
--		rtnl_lock();
--		dev_set_mtu(dev, min(priv->mcast_mtu, priv->admin_mtu));
--		rtnl_unlock();
--	}
--
- 	ipoib_dbg_mcast(priv, "successfully joined all multicast groups\n");
- 
- 	clear_bit(IPOIB_MCAST_RUN, &priv->flags);
 -- 
-1.8.5.2
-
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
