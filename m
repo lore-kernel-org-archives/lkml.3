@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933274AbaBEUpd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:45:33 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:48298 "EHLO
+	id S933292AbaBEUph (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:45:37 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:48295 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754871AbaBEUGU (ORCPT
+	with ESMTP id S1754864AbaBEUGU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Feb 2014 15:06:20 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Alan Cox <alan@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+CC: Christoffer Dall <cdall@cs.columbia.edu>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>, Steve Capper <Steve.Capper@arm.com>,
+        Christoph Lameter <cl@linux.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 109/213] x86/msr: Add capabilities check
-Date: Wed, 5 Feb 2014 15:01:04 -0500
-Message-ID: <1391630568-49251-110-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 101/213] mm: Fix PageHead when !CONFIG_PAGEFLAGS_EXTENDED
+Date: Wed, 5 Feb 2014 15:00:56 -0500
+Message-ID: <1391630568-49251-102-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -27,7 +27,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+From: Christoffer Dall <cdall@cs.columbia.edu>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -35,52 +35,63 @@ From: Alan Cox <alan@linux.intel.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit c903f0456bc69176912dee6dd25c6a66ee1aed00 upstream.
+commit ad4b3fb7ff9940bcdb1e4cd62bd189d10fa636ba upstream.
 
-At the moment the MSR driver only relies upon file system
-checks. This means that anything as root with any capability set
-can write to MSRs. Historically that wasn't very interesting but
-on modern processors the MSRs are such that writing to them
-provides several ways to execute arbitary code in kernel space.
-Sample code and documentation on doing this is circulating and
-MSR attacks are used on Windows 64bit rootkits already.
+Unfortunately with !CONFIG_PAGEFLAGS_EXTENDED, (!PageHead) is false, and
+(PageHead) is true, for tail pages.  If this is indeed the intended
+behavior, which I doubt because it breaks cache cleaning on some ARM
+systems, then the nomenclature is highly problematic.
 
-In the Linux case you still need to be able to open the device
-file so the impact is fairly limited and reduces the security of
-some capability and security model based systems down towards
-that of a generic "root owns the box" setup.
+This patch makes sure PageHead is only true for head pages and PageTail
+is only true for tail pages, and neither is true for non-compound pages.
 
-Therefore they should require CAP_SYS_RAWIO to prevent an
-elevation of capabilities. The impact of this is fairly minimal
-on most setups because they don't have heavy use of
-capabilities. Those using SELinux, SMACK or AppArmor rules might
-want to consider if their rulesets on the MSR driver could be
-tighter.
+[ This buglet seems ancient - seems to have been introduced back in Apr
+  2008 in commit 6a1e7f777f61: "pageflags: convert to the use of new
+  macros".  And the reason nobody noticed is because the PageHead()
+  tests are almost all about just sanity-checking, and only used on
+  pages that are actual page heads.  The fact that the old code returned
+  true for tail pages too was thus not really noticeable.   - Linus ]
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Christoffer Dall <cdall@cs.columbia.edu>
+Acked-by:  Andrea Arcangeli <aarcange@redhat.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Will Deacon <Will.Deacon@arm.com>
+Cc: Steve Capper <Steve.Capper@arm.com>
+Cc: Christoph Lameter <cl@linux.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/x86/kernel/msr.c | 3 +++
- 1 file changed, 3 insertions(+)
+ include/linux/page-flags.h | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/msr.c b/arch/x86/kernel/msr.c
-index 4d4468e9f47c..56b77410a9fe 100644
---- a/arch/x86/kernel/msr.c
-+++ b/arch/x86/kernel/msr.c
-@@ -176,6 +176,9 @@ static int msr_open(struct inode *inode, struct file *file)
- 	unsigned int cpu;
- 	struct cpuinfo_x86 *c;
+diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
+index 5b59f35dcb8f..040ce385f262 100644
+--- a/include/linux/page-flags.h
++++ b/include/linux/page-flags.h
+@@ -362,7 +362,7 @@ static inline int PageCompound(struct page *page)
+  * pages on the LRU and/or pagecache.
+  */
+ TESTPAGEFLAG(Compound, compound)
+-__PAGEFLAG(Head, compound)
++__SETPAGEFLAG(Head, compound)  __CLEARPAGEFLAG(Head, compound)
  
-+	if (!capable(CAP_SYS_RAWIO))
-+		return -EPERM;
+ /*
+  * PG_reclaim is used in combination with PG_compound to mark the
+@@ -374,8 +374,14 @@ __PAGEFLAG(Head, compound)
+  * PG_compound & PG_reclaim	=> Tail page
+  * PG_compound & ~PG_reclaim	=> Head page
+  */
++#define PG_head_mask ((1L << PG_compound))
+ #define PG_head_tail_mask ((1L << PG_compound) | (1L << PG_reclaim))
+ 
++static inline int PageHead(struct page *page)
++{
++	return ((page->flags & PG_head_tail_mask) == PG_head_mask);
++}
 +
- 	cpu = iminor(file->f_path.dentry->d_inode);
- 	if (cpu >= nr_cpu_ids || !cpu_online(cpu))
- 		return -ENXIO;	/* No such CPU */
+ static inline int PageTail(struct page *page)
+ {
+ 	return ((page->flags & PG_head_tail_mask) == PG_head_tail_mask);
 -- 
 1.8.5.2
 
