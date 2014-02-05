@@ -1,74 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753093AbaBEQuB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 11:50:01 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36938 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752850AbaBEQuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 11:50:00 -0500
-Date: Wed, 5 Feb 2014 11:49:52 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "Pearson, Greg" <greg.pearson@hp.com>
-Cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "d.hatayama@jp.fujitsu.com" <d.hatayama@jp.fujitsu.com>,
-        "holzheu@linux.vnet.ibm.com" <holzheu@linux.vnet.ibm.com>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] vmcore: prevent PT_NOTE p_memsz overflow during
- header update
-Message-ID: <20140205164952.GH6042@redhat.com>
-References: <1391556352-15881-1-git-send-email-greg.pearson@hp.com>
- <20140205133912.GC6042@redhat.com>
- <52F26928.4050101@hp.com>
+	id S1753162AbaBEQva (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 11:51:30 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:60394 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752952AbaBEQv2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 11:51:28 -0500
+Date: Wed, 5 Feb 2014 11:51:25 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Clark Williams <williams@redhat.com>,
+        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
+        John Kacur <jkacur@redhat.com>, Ulrich Obergfell <uobergfe@redhat.com>
+Subject: [PATCH RT] rt: Make cpu_chill() use hrtimer instead of msleep()
+Message-ID: <20140205115125.3cc950ce@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52F26928.4050101@hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 05, 2014 at 04:39:05PM +0000, Pearson, Greg wrote:
-> On 02/05/2014 06:39 AM, Vivek Goyal wrote:
-> > On Tue, Feb 04, 2014 at 04:25:52PM -0700, Greg Pearson wrote:
-> >
-> > [..]
-> >> diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
-> >> index 2ca7ba0..88d4585 100644
-> >> --- a/fs/proc/vmcore.c
-> >> +++ b/fs/proc/vmcore.c
-> >> @@ -468,17 +468,24 @@ static int __init update_note_header_size_elf64(const Elf64_Ehdr *ehdr_ptr)
-> >>   			return rc;
-> >>   		}
-> >>   		nhdr_ptr = notes_section;
-> >> -		while (real_sz < max_sz) {
-> >> -			if (nhdr_ptr->n_namesz == 0)
-> >> -				break;
-> >> +		while (nhdr_ptr->n_namesz != 0) {
-> >>   			sz = sizeof(Elf64_Nhdr) +
-> >>   				((nhdr_ptr->n_namesz + 3) & ~3) +
-> >>   				((nhdr_ptr->n_descsz + 3) & ~3);
-> >> +			if ((real_sz + sz) > max_sz) {
-> >> +				pr_warn("Warning: Exceeded p_memsz, dropping PT_NOTE entry n_namesz=0x%x, n_descsz=0x%x\n",
-> >> +					nhdr_ptr->n_namesz, nhdr_ptr->n_descsz);
-> > You will need line break in pr_warn(). Too long a line. Limit it 80
-> > columns per line.
-> 
-> The checkpatch.pl script issues a warning when you break quoted strings, 
-> I have no personal preference. Just let me know if you want me to ignore 
-> the checkpatch warning and conform to the 80 column per line limit.
 
-Hmm.., I am reading CodingStyle and it does say that do not break user
-visible strings as it breaks ability to grep these. 
+Ulrich Obergfell pointed out that cpu_chill() calls msleep() which is woken
+up by the ksoftirqd running the TIMER softirq. But as the cpu_chill() is
+called from softirq context, it may block the ksoftirqd() from running, in
+which case, it may never wake up the msleep() causing the deadlock.
 
-"However, never break user-visible strings such as
-printk messages, because that breaks the ability to grep for them."
+I checked the vmcore, and irq/74-qla2xxx is stuck in the msleep() call,
+running on CPU 8. The one ksoftirqd that is stuck, happens to be the one that
+runs on CPU 8, and it is blocked on a lock held by irq/74-qla2xxx. As that
+ksoftirqd is the one that will wake up irq/74-qla2xxx, and it happens to be
+blocked on a lock that irq/74-qla2xxx holds, we have our deadlock.
 
-Ok, so I am fine with this patch.
+The solution is not to convert the cpu_chill() back to a cpu_relax() as that
+will re-create a possible live lock that the cpu_chill() fixed earlier, and may
+also leave this bug open on other softirqs. The fix is to remove the
+dependency on ksoftirqd from cpu_chill(). That is, instead of calling
+msleep() that requires ksoftirqd to wake it up, use the
+hrtimer_nanosleep() code that does the wakeup from hard irq context.
 
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
+Found-by: Ulrich Obergfell <uobergfe@redhat.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-Thanks
-Vivek
+
+diff --git a/include/linux/delay.h b/include/linux/delay.h
+index e23a7c0..37caab3 100644
+--- a/include/linux/delay.h
++++ b/include/linux/delay.h
+@@ -53,7 +53,7 @@ static inline void ssleep(unsigned int seconds)
+ }
+ 
+ #ifdef CONFIG_PREEMPT_RT_FULL
+-# define cpu_chill()	msleep(1)
++extern void cpu_chill(void);
+ #else
+ # define cpu_chill()	cpu_relax()
+ #endif
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index aa5eb4f..2f023aa 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -1852,6 +1852,21 @@ SYSCALL_DEFINE2(nanosleep, struct timespec __user *, rqtp,
+ 	return hrtimer_nanosleep(&tu, rmtp, HRTIMER_MODE_REL, CLOCK_MONOTONIC);
+ }
+ 
++#ifdef CONFIG_PREEMPT_RT_FULL
++/*
++ * Sleep for 1 ms in hope whoever holds what we want will let it go.
++ */
++void cpu_chill(void)
++{
++	struct timespec tu = {
++		.tv_nsec = NSEC_PER_MSEC,
++	};
++
++	hrtimer_nanosleep(&tu, NULL, HRTIMER_MODE_REL, CLOCK_MONOTONIC);
++}
++EXPORT_SYMBOL(cpu_chill);
++#endif
++
+ /*
+  * Functions related to boot-time initialization:
+  */
