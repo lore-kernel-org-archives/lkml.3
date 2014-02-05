@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754327AbaBEIWt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 03:22:49 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:33199 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752158AbaBEIWs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 03:22:48 -0500
-Date: Wed, 5 Feb 2014 00:22:46 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Vladimir Davydov <vdavydov@parallels.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] slub: fix false-positive lockdep warning in
- free_partial()
-In-Reply-To: <1391588133-15469-1-git-send-email-vdavydov@parallels.com>
-Message-ID: <alpine.DEB.2.02.1402050022030.7839@chino.kir.corp.google.com>
-References: <52F1F25F.20402@parallels.com> <1391588133-15469-1-git-send-email-vdavydov@parallels.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S932294AbaBEIYZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 03:24:25 -0500
+Received: from smtp4-g21.free.fr ([212.27.42.4]:55906 "EHLO smtp4-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751434AbaBEIYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 03:24:24 -0500
+Date: Wed, 5 Feb 2014 09:24:04 +0100
+From: Sabrina Dubroca <sd@queasysnail.net>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Dave Airlie <airlied@redhat.com>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [3.14-rc1] cirrus driver problem (qemu)
+Message-ID: <20140205082404.GC12991@kria>
+References: <20140203153413.GA12991@kria>
+ <CAPM=9twWniCmKNb1vxjS_PbsTqimX6EWVusA_+GZ7H9fdhQj3A@mail.gmail.com>
+ <20140204225340.GB12991@kria>
+ <CAPM=9txmSVnCVDZ6ni8GfqGSQqJkyuVb3PLf4dtYB0b4FdpraQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAPM=9txmSVnCVDZ6ni8GfqGSQqJkyuVb3PLf4dtYB0b4FdpraQ@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Feb 2014, Vladimir Davydov wrote:
-
-> Commit c65c1877bd68 ("slub: use lockdep_assert_held") requires
-> remove_partial() to be called with n->list_lock held, but free_partial()
-> called from kmem_cache_close() on cache destruction does not follow this
-> rule, leading to a warning:
+2014-02-05, 14:50:18 +1000, Dave Airlie wrote:
+> On Wed, Feb 5, 2014 at 8:53 AM, Sabrina Dubroca <sd@queasysnail.net> wrote:
+> > 2014-02-04, 13:20:54 +1000, Dave Airlie wrote:
+> >> On Tue, Feb 4, 2014 at 1:34 AM, Sabrina Dubroca <sd@queasysnail.net> wrote:
+> >> > When I boot 3.14-rc1 in qemu, I get the trace below. The console stops
+> >> > updating and I don't get a login prompt. I can login, but I can't see
+> >> > what I'm doing. I can login normally via SSH.
+> >> >
+> >> > If I revert the last commit in drivers/gpu/drm/cirrus:
+> >> >
+> >> > f4b4718b61d1d5a7442a4fd6863ea80c3a10e508 drm: ast,cirrus,mgag200: use drm_can_sleep
+> >> >
+> >> > the problem is solved.
+> >> >
+> >>
+> >> Hi does the attach patch fix it?
+> >>
+> >> Dave.
+> >
+> >
+> > Same problem. Didn't you reverse the logic on in_interrupt, compared
+> > to the old "if (!in_interrupt())" ? It looks like drm_can_sleep() is
+> > false when in_interrupt() is true.
+> >
+> > I modified your patch as below. Display doesn't freeze, but I still
+> > get the warning.
 > 
->   WARNING: CPU: 0 PID: 2787 at mm/slub.c:1536 __kmem_cache_shutdown+0x1b2/0x1f0()
->   Modules linked in:
->   CPU: 0 PID: 2787 Comm: modprobe Tainted: G        W    3.14.0-rc1-mm1+ #1
->   Hardware name:
->    0000000000000600 ffff88003ae1dde8 ffffffff816d9583 0000000000000600
->    0000000000000000 ffff88003ae1de28 ffffffff8107c107 0000000000000000
->    ffff880037ab2b00 ffff88007c240d30 ffffea0001ee5280 ffffea0001ee52a0
->   Call Trace:
->    [<ffffffff816d9583>] dump_stack+0x51/0x6e
->    [<ffffffff8107c107>] warn_slowpath_common+0x87/0xb0
->    [<ffffffff8107c145>] warn_slowpath_null+0x15/0x20
->    [<ffffffff811c7fe2>] __kmem_cache_shutdown+0x1b2/0x1f0
->    [<ffffffff811908d3>] kmem_cache_destroy+0x43/0xf0
->    [<ffffffffa013a123>] xfs_destroy_zones+0x103/0x110 [xfs]
->    [<ffffffffa0192b54>] exit_xfs_fs+0x38/0x4e4 [xfs]
->    [<ffffffff811036fa>] SyS_delete_module+0x19a/0x1f0
->    [<ffffffff816dfcd8>] ? retint_swapgs+0x13/0x1b
->    [<ffffffff810d2125>] ? trace_hardirqs_on_caller+0x105/0x1d0
->    [<ffffffff81359efe>] ? trace_hardirqs_on_thunk+0x3a/0x3f
->    [<ffffffff816e8539>] system_call_fastpath+0x16/0x1b
+> Oh wow I totally screwed up there, you are right, logic inversion.
 > 
-> Although this cannot actually result in a race, because on cache
-> destruction there should not be any concurrent frees or allocations from
-> the cache, let's add spin_lock/unlock to free_partial() just to keep
-> lockdep happy.
+> Can you try the attached?
 > 
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+> without the in_interrupt addition.
+> 
+> Dave.
 
-Acked-by: David Rientjes <rientjes@google.com>
+It works, thanks!
+No freeze, no warning.
 
-And thanks for trying the irq-free variant!
+Sabrina
