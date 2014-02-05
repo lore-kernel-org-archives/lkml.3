@@ -1,84 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752601AbaBEPNc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 10:13:32 -0500
-Received: from exprod5og112.obsmtp.com ([64.18.0.24]:47857 "EHLO
-	exprod5og112.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750971AbaBEPNa (ORCPT
+	id S1752739AbaBEPOK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 10:14:10 -0500
+Received: from 12.mo6.mail-out.ovh.net ([178.32.125.228]:49070 "EHLO
+	mo6.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751650AbaBEPOI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 10:13:30 -0500
-X-Greylist: delayed 436 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Feb 2014 10:13:30 EST
-From: Illia Smyrnov <illia.smyrnov@globallogic.com>
-To: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
-        Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Roger Quadros <rogerq@ti.com>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+	Wed, 5 Feb 2014 10:14:08 -0500
+Message-ID: <52F253A7.9030805@overkiz.com>
+Date: Wed, 05 Feb 2014 16:07:19 +0100
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+CC: Mike Turquette <mturquette@linaro.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
         linux-kernel@vger.kernel.org,
-        Illia Smyrnov <illia.smyrnov@globallogic.com>
-Subject: [PATCH] ARM: OMAP4: hwmod: Fix SOFTRESET logic for OMAP4
-Date: Wed,  5 Feb 2014 17:06:09 +0200
-Message-Id: <1391612769-27890-1-git-send-email-illia.smyrnov@globallogic.com>
-X-Mailer: git-send-email 1.8.5.3
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH] clk: add strict of_clk_init dependency check
+References: <1391554766-11285-1-git-send-email-gregory.clement@free-electrons.com> <1391593680-9388-1-git-send-email-b.brezillon@overkiz.com> <52F24F4F.8000901@free-electrons.com> <52F25324.90108@free-electrons.com>
+In-Reply-To: <52F25324.90108@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 6026379251927578625
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrjedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.500176/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrjedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 313a76e (ARM: OMAP2+: hwmod: Fix SOFTRESET logic) introduced
-softreset bit cleaning right after set one. It is caused L3 error for
-OMAP4 ISS because ISS register write occurs when ISS reset process is in
-progress. Avoid this situation by cleaning softreset bit later, when reset
-process is successfully finished.
+On 05/02/2014 16:05, Gregory CLEMENT wrote:
+> On 05/02/2014 15:48, Gregory CLEMENT wrote:
+>> Hi Boris,
+>>
+>> On 05/02/2014 10:48, Boris BREZILLON wrote:
+>>> The parent dependency check is only available on the first parent of a given
+>>> clk.
+>>>
+>>> Add support for strict dependency check: all parents of a given clk must be
+>>> initialized.
+>>>
+>>> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+>>> ---
+>>>
+>>> Hello Gregory,
+>>>
+>>> This patch adds support for strict check on clk dependencies (check if all
+>>> parents specified by an DT clk node are initialized).
+>>>
+>>> I'm not sure this is what you were expecting (maybe testing the first parent
+>>> is what you really want), so please feel free to tell me if I'm wrong.
+>>>
+>>> Best Regards,
+>>>
+>>> Boris
+>>>
+>>>   drivers/clk/clk.c |   27 +++++++++++++++++++++------
+>>>   1 file changed, 21 insertions(+), 6 deletions(-)
+>>>
+>>> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+>>> index beb0f8b..6849769 100644
+>>> --- a/drivers/clk/clk.c
+>>> +++ b/drivers/clk/clk.c
+>>> @@ -2543,22 +2543,37 @@ static int parent_ready(struct device_node *np)
+>>>   {
+>>>   	struct of_phandle_args clkspec;
+>>>   	struct of_clk_provider *provider;
+>>> +	int num_parents;
+>>> +	bool found;
+>>> +	int i;
+>>>   
+>>>   	/*
+>>>   	 * If there is no clock parent, no need to wait for them, then
+>>>   	 * we can consider their absence as being ready
+>>>   	 */
+>>> -	if (of_parse_phandle_with_args(np, "clocks", "#clock-cells", 0,
+>>> -					&clkspec))
+>>> +	num_parents = of_count_phandle_with_args(np, "clocks", "#clock-cells");
+>>> +	if (num_parents <= 0)
+>>>   		return 1;
+>>>   
+>>> -	/* Check if we have such a provider in our array */
+>>> -	list_for_each_entry(provider, &of_clk_providers, link) {
+>>> -		if (provider->node == clkspec.np)
+>>> +	for (i = 0; i < num_parents; i++) {
+>>> +		if (of_parse_phandle_with_args(np, "clocks", "#clock-cells", i,
+>>> +					       &clkspec))
+>>>   			return 1;
+>>> +
+>>> +		/* Check if we have such a provider in our array */
+>>> +		found = false;
+>>> +		list_for_each_entry(provider, &of_clk_providers, link) {
+>>> +			if (provider->node == clkspec.np) {
+>>> +				found = true;
+>>> +				break;
+>> Hum this means that as soon as you have one parent then you consider it
+>> as ready. It is better of what I have done because I only test the 1st
+>> parent. However I wondered if we should go further by ensuring all the
+>> parents are ready.
+> My bad, I read the code too fast. Your code already checks that all the
+> parents are ready.
+>
+> So if you agree I will merge your code with mine and send a new patch.
 
-Signed-off-by: Illia Smyrnov <illia.smyrnov@globallogic.com>
----
- arch/arm/mach-omap2/omap_hwmod.c | 20 +++++++++++---------
- 1 file changed, 11 insertions(+), 9 deletions(-)
-
-diff --git a/arch/arm/mach-omap2/omap_hwmod.c b/arch/arm/mach-omap2/omap_hwmod.c
-index 42d8188..1f33f5d 100644
---- a/arch/arm/mach-omap2/omap_hwmod.c
-+++ b/arch/arm/mach-omap2/omap_hwmod.c
-@@ -1947,29 +1947,31 @@ static int _ocp_softreset(struct omap_hwmod *oh)
- 		goto dis_opt_clks;
- 
- 	_write_sysconfig(v, oh);
--	ret = _clear_softreset(oh, &v);
--	if (ret)
--		goto dis_opt_clks;
--
--	_write_sysconfig(v, oh);
- 
- 	if (oh->class->sysc->srst_udelay)
- 		udelay(oh->class->sysc->srst_udelay);
- 
- 	c = _wait_softreset_complete(oh);
--	if (c == MAX_MODULE_SOFTRESET_WAIT)
-+	if (c == MAX_MODULE_SOFTRESET_WAIT) {
- 		pr_warning("omap_hwmod: %s: softreset failed (waited %d usec)\n",
- 			   oh->name, MAX_MODULE_SOFTRESET_WAIT);
--	else
-+		ret = -ETIMEDOUT;
-+		goto dis_opt_clks;
-+	} else {
- 		pr_debug("omap_hwmod: %s: softreset in %d usec\n", oh->name, c);
-+	}
-+
-+	ret = _clear_softreset(oh, &v);
-+	if (ret)
-+		goto dis_opt_clks;
-+
-+	_write_sysconfig(v, oh);
- 
- 	/*
- 	 * XXX add _HWMOD_STATE_WEDGED for modules that don't come back from
- 	 * _wait_target_ready() or _reset()
- 	 */
- 
--	ret = (c == MAX_MODULE_SOFTRESET_WAIT) ? -ETIMEDOUT : 0;
--
- dis_opt_clks:
- 	if (oh->flags & HWMOD_CONTROL_OPT_CLKS_IN_RESET)
- 		_disable_optional_clocks(oh);
--- 
-1.8.5.3
+That's fine by me.
+>
+>> If I am right, there is more than one parent only for the muxer. In this
+>> case is it really expected that all the parent are ready?
+>>
+>> Thanks,
+>>
+>> Gregory
+>>
+>>> +			}
+>>> +		}
+>>> +
+>>> +		if (!found)
+>>> +			return 0;
+>>>   	}
+>>>   
+>>> -	return 0;
+>>> +	return 1;
+>>>   }
+>>>   
+>>>   /**
+>>>
+>>
+>
 
