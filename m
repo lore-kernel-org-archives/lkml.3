@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752986AbaBEQig (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 11:38:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48238 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752744AbaBEQie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 11:38:34 -0500
-Date: Wed, 5 Feb 2014 11:38:24 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: David Rientjes <rientjes@google.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jerry Hoemann <jerry.hoemann@hp.com>
-Subject: Re: [PATCH] x86, apic: clean up handling of boot_cpu_physical_apicid
- in boot process
-Message-ID: <20140205163824.GF6042@redhat.com>
-References: <52D7A8F0.70807@jp.fujitsu.com>
- <alpine.DEB.2.02.1401252000050.10325@chino.kir.corp.google.com>
- <52E5CA8D.7000602@jp.fujitsu.com>
+	id S1753045AbaBEQjh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 11:39:37 -0500
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:65006 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752681AbaBEQjf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 11:39:35 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52E5CA8D.7000602@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140205163117.GA15996@earth.universe>
+References: <1391603582-11371-1-git-send-email-sre@debian.org>
+ <CAHYPw2Ep9VP6Tem979ewcztdxkHkG8eR_U31U=f5ibsVa5AS4Q@mail.gmail.com> <20140205163117.GA15996@earth.universe>
+From: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
+Date: Wed, 5 Feb 2014 17:38:54 +0100
+Message-ID: <CAHYPw2HX478ZZPfDTKCKSGhVdFc1-G5DszUR4vG+WRgZx=8+dQ@mail.gmail.com>
+Subject: Re: [PATCH] ARM: OMAP2+: Add support for thumb mode on DT booted N900
+To: Sebastian Reichel <sre@debian.org>
+Cc: Tony Lindgren <tony@atomide.com>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, freemangordon@abv.bg
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 27, 2014 at 11:55:09AM +0900, HATAYAMA Daisuke wrote:
+2014-02-05 Sebastian Reichel <sre@debian.org>:
+> Hi Pali,
+>
+> On Wed, Feb 05, 2014 at 02:12:56PM +0100, Pali Rohár wrote:
+>> 1) Why are you using if (IS_ENABLED(CONFIG_ARM_ERRATA_430973)) instead #ifdef ?
+>
+> This is the preferred kernel style as far as I know.
+>
 
-[..]
-> ``bsp'' and ``boot cpu'' are different, but certainly they are close
-> for most of people who don't need to focus the difference.
+Ok.
 
-I agree. Especially this difference is becoming visible in kdump
-context where we skip BIOS and can trigger a fresh boot on an AP.
+>> 2) Why do you not write warning or info when omap type is not
+>> OMAP2_DEVICE_TYPE_SEC (e.g qemu) ?
+>
+> I assumed, that the workaround is not needed for this device type.
+>
 
-Hatayama, I think distinguishing BSP and boot cpu makes sense and
-we also need to find a way to export this information to user
-space. So that we can figure out who is BSP and tell second kernel
-not to bring up that cpu.
+That rx51 secure call must not be called on non secure devices (e.g.
+qemu), because it cause kernel crash. So I thought that kernel should
+write something like secure call is disabled on that device types.
+Kernel code for errata 430973 will update ibe bit for non secure
+devices.
 
-Initially we thought that cpu with "initial apicid" 0 is BSP. But
-Jerry from HP is reporting that on some of the machines he has, BSP
-does not have to have apic id 0.
+> I just added the warning for missing CONFIG_ARM_ERRATA_430973,
+> because its very likely a misconfigured kernel.
+>
+> -- Sebastian
 
-If that's the case, we don't have a reliable way to figure out which is
-BSP in the system. Or am I missing something?
+Yes, it can be misconfigured kernel, but if you do not have any thumb
+binary (like stock Maemo 5 system), then it is safe and OK.
 
-Thanks
-Vivek
+-- 
+Pali Rohár
+pali.rohar@gmail.com
