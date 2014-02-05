@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756651AbaBEVMv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 16:12:51 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:47941 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753965AbaBEUDv (ORCPT
+	id S1756694AbaBEVNg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 16:13:36 -0500
+Received: from mail.windriver.com ([147.11.1.11]:54250 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753874AbaBEUDu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:03:51 -0500
+	Wed, 5 Feb 2014 15:03:50 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: Mathias Krause <minipli@googlemail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 030/213] atm: fix info leak via getsockname()
-Date: Wed, 5 Feb 2014 14:59:45 -0500
-Message-ID: <1391630568-49251-31-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 025/213] llc: Fix missing msg_namelen update in llc_ui_recvmsg()
+Date: Wed, 5 Feb 2014 14:59:40 -0500
+Message-ID: <1391630568-49251-26-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -32,31 +33,38 @@ From: Mathias Krause <minipli@googlemail.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 3c0c5cfdcd4d69ffc4b9c0907cec99039f30a50a upstream.
+commit c77a4b9cffb6215a15196ec499490d116dfad181 upstream.
 
-The ATM code fails to initialize the two padding bytes of struct
-sockaddr_atmpvc inserted for alignment. Add an explicit memset(0)
-before filling the structure to avoid the info leak.
+For stream sockets the code misses to update the msg_namelen member
+to 0 and therefore makes net/socket.c leak the local, uninitialized
+sockaddr_storage variable to userland -- 128 bytes of kernel stack
+memory. The msg_namelen update is also missing for datagram sockets
+in case the socket is shutting down during receive.
 
+Fix both issues by setting msg_namelen to 0 early. It will be
+updated later if we're going to fill the msg_name member.
+
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Signed-off-by: Mathias Krause <minipli@googlemail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/atm/pvc.c | 1 +
- 1 file changed, 1 insertion(+)
+ net/llc/af_llc.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/net/atm/pvc.c b/net/atm/pvc.c
-index 437ee70c5e62..db0dd47de61b 100644
---- a/net/atm/pvc.c
-+++ b/net/atm/pvc.c
-@@ -94,6 +94,7 @@ static int pvc_getname(struct socket *sock, struct sockaddr *sockaddr,
- 		return -ENOTCONN;
- 	*sockaddr_len = sizeof(struct sockaddr_atmpvc);
- 	addr = (struct sockaddr_atmpvc *)sockaddr;
-+	memset(addr, 0, sizeof(*addr));
- 	addr->sap_family = AF_ATMPVC;
- 	addr->sap_addr.itf = vcc->dev->number;
- 	addr->sap_addr.vpi = vcc->vpi;
+diff --git a/net/llc/af_llc.c b/net/llc/af_llc.c
+index 06010e1e89f9..121c92e3c128 100644
+--- a/net/llc/af_llc.c
++++ b/net/llc/af_llc.c
+@@ -719,6 +719,8 @@ static int llc_ui_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 	int target;	/* Read at least this many bytes */
+ 	long timeo;
+ 
++	msg->msg_namelen = 0;
++
+ 	lock_sock(sk);
+ 	copied = -ENOTCONN;
+ 	if (unlikely(sk->sk_type == SOCK_STREAM && sk->sk_state == TCP_LISTEN))
 -- 
 1.8.5.2
 
