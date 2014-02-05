@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491AbaBERgM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 12:36:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35963 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752925AbaBERgJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 12:36:09 -0500
-Date: Wed, 5 Feb 2014 09:37:17 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Subject: Re: [PATCH 3.13 000/140] 3.13.2-stable review
-Message-ID: <20140205173717.GB10652@kroah.com>
-References: <20140204211036.967663852@linuxfoundation.org>
- <52F1DD0B.4070100@roeck-us.net>
+	id S1753535AbaBERgW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 12:36:22 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33308 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752925AbaBERgU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 12:36:20 -0500
+Message-ID: <52F27683.8090404@zytor.com>
+Date: Wed, 05 Feb 2014 09:36:03 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52F1DD0B.4070100@roeck-us.net>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>,
+        Meelis Roos <mroos@linux.ee>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: 3.13: BUG: unable to handle kernel paging request at 00000000b4343e88
+References: <alpine.SOC.1.00.1401211228410.25614@math.ut.ee> <20140121141037.f76dba61212c5597ff733207@linux-foundation.org> <alpine.SOC.1.00.1401221731150.3033@math.ut.ee> <52E26EF3.1090901@linux.vnet.ibm.com> <alpine.SOC.1.00.1401242249540.16252@math.ut.ee> <52E68111.6010005@linux.vnet.ibm.com> <alpine.SOC.1.00.1401280832500.5459@math.ut.ee> <52E918C9.7030408@linux.vnet.ibm.com> <alpine.SOC.1.00.1401292242390.12718@math.ut.ee> <52EBC65C.5020404@linux.vnet.ibm.com> <52F26E21.8000101@linux.vnet.ibm.com>
+In-Reply-To: <52F26E21.8000101@linux.vnet.ibm.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 04, 2014 at 10:41:15PM -0800, Guenter Roeck wrote:
-> On 02/04/2014 01:09 PM, Greg Kroah-Hartman wrote:
-> >This is the start of the stable review cycle for the 3.13.2 release.
-> >There are 140 patches in this series, all will be posted as a response
-> >to this one.  If anyone has any issues with these being applied, please
-> >let me know.
-> >
-> >Responses should be made by Thu Feb  6 21:10:18 UTC 2014.
-> >Anything received after that time might be too late.
-> >
+On 02/05/2014 09:00 AM, Peter Oberparleiter wrote:
 > 
-> Version tested: v3.13.1-139
+> Could you give this patch a try? It is a variation of the approach
+> proposed in the discussion mentioned earlier and fixes the problem
+> on my system.
 > 
-> Build results:
->     total: 126 pass: 122 skipped: 4 fail: 0
-> 
-> qemu tests all passed.
-> 
-> Results are as expected.
-> 
-> Details are available at http://server.roeck-us.net:8010/builders.
 
-Very nice to see all 4 -rc releases passed this, thanks for letting me
-know.
+I would rather suggest that we explicitly disable gcov etc. from these
+kinds of small, magic primitives.  Honestly, you're just trying to put a
+bandaid on a gaping wound.
 
-greg k-h
+The real thing here is that hweight.c is not a normal C file, and we
+shouldn't treat is as such.  It is a constrained environment, and trying
+to tack crap like gcov to it is bound to lose, simply because gcov
+doesn't know the rules it has to play by.
+
+Even with the below change, if gcov clobbers, say, %rdx we're still screwed.
+
+	-hpa
+
