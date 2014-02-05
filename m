@@ -1,43 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753509AbaBEXOU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 18:14:20 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:42897 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750952AbaBEXOS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 18:14:18 -0500
-Message-ID: <52F2C5BE.5080803@linux.vnet.ibm.com>
-Date: Wed, 05 Feb 2014 15:14:06 -0800
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753783AbaBEXPr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 18:15:47 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:41032 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751387AbaBEXPo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 18:15:44 -0500
+Date: Thu, 6 Feb 2014 00:15:40 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Alex Thorlton <athorlton@sgi.com>
+Cc: Russ Anderson <rja@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org,
+        linux-efi@vger.kernel.org
+Subject: Re: [BUG] Linux 3.14 fails to boot with new EFI changes
+Message-ID: <20140205231540.GB6364@pd.tnic>
+References: <20140128200754.GZ18196@sgi.com>
+ <20140128225905.GN815@pd.tnic>
+ <20140128234036.GB18196@sgi.com>
+ <20140129141822.GC24887@pd.tnic>
+ <20140130221950.GJ3105@sgi.com>
+ <52EAD0F2.7090101@zytor.com>
+ <20140131100722.GA21873@pd.tnic>
+ <20140131140220.GC22498@sgi.com>
+ <20140131142318.GC21873@pd.tnic>
+ <20140205214536.GT3034@sgi.com>
 MIME-Version: 1.0
-To: Michael Ellerman <mpe@ellerman.id.au>,
-        Linux PPC <linuxppc-dev@lists.ozlabs.org>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH 4/8] powerpc: add hv_gpci interface header
-References: <20140201055807.267F12C00BA@ozlabs.org>
-In-Reply-To: <20140201055807.267F12C00BA@ozlabs.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14020523-0928-0000-0000-0000064A018A
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140205214536.GT3034@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Feb 05, 2014 at 03:45:36PM -0600, Alex Thorlton wrote:
+> While working on an answer to this question, I ran across another issue
+> on some newer hardware, that looks like it's definitely related to this
+> problem, and might be the root cause.
+> 
+> When booting on a UV2 we die in efi_enter_virtual_mode:
+> 
+> BUG: unable to handle kernel paging request at 0000008f7e848020
+> IP: [<000000007dadb6a9>] 0x7dadb6a8
+> PGD 0
 
->> diff --git a/arch/powerpc/include/asm/hv_gpci.h b/arch/powerpc/include/asm/hv_gpci.h
->
-> Any reason this can't just live in arch/powerpc/perf ?
->
+That looks very much like this other issue we're debugging right now:
 
-Nope, it should be able to keep the header there for now. As this 
-interface allows determination of the HW topology, we may have some code 
-that exposes that (in sysfs) at some point, which doesn't really belong 
-in arch/powerpc/perf (though we could just put it there anyhow).
+http://marc.info/?l=linux-kernel&m=139115794830637
 
+> CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.11.0-medusa-00038-gd2f7cbe #821
+
+...
+
+> Let me know what other information you need and I'll get it to you ASAP.
+
+You could try to boot latest linus + Matt's 'next' branch ontop and see
+whether it is exploding. I'd venture a guess and say yes but a whole
+dmesg with CONFIG_EFI_PGT_DUMP and pagetable dump might still give us
+some clues.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
