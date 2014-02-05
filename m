@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752067AbaBEK13 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 05:27:29 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:43750 "EHLO
+	id S1752126AbaBEK2V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 05:28:21 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:43765 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751368AbaBEK11 (ORCPT
+	with ESMTP id S1751368AbaBEK2U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 05:27:27 -0500
-Date: Wed, 5 Feb 2014 11:27:18 +0100
+	Wed, 5 Feb 2014 05:28:20 -0500
+Date: Wed, 5 Feb 2014 11:28:15 +0100
 From: Peter Zijlstra <peterz@infradead.org>
 To: junk@eslaf.co.uk
-Cc: alan@lxorguk.ukuu.org.uk, Ingo Molnar <mingo@kernel.org>,
-        Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] perf,x86,p6: Add userspace RDPMC quirk for P6
-Message-ID: <20140205102718.GF3229@twins.programming.kicks-ass.net>
+Cc: fweisbec@gmail.com, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] perf,x86: Fix Userspace RDPMC switch
+Message-ID: <20140205102815.GG3229@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -22,86 +22,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: perf,x86,p6: Add userspace RDPMC quirk for P6
+Subject: perf,x86: Fix Userspace RDPMC switch
 From: Peter Zijlstra <peterz@infradead.org>
-Date: Wed Feb 5 11:17:46 CET 2014
+Date: Wed Feb  5 11:19:56 CET 2014
 
-P6 class machines can die hard when PCE gets enabled due to CPU
-errata. The safe way it so disable it by default and keep it disabled.
+The current code forgets to change the CR4 state on the current CPU.
+User on_each_cpu() instead of smp_call_function().
 
-See errata 26:
-
-http://download.intel.com/design/archives/processors/pro/docs/24268935.pdf
-
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: fweisbec@gmail.com
 Reported-by: Mark Davies <junk@eslaf.co.uk>
+Suggested-by: Mark Davies <junk@eslaf.co.uk>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 ---
- arch/x86/kernel/cpu/perf_event.c    |    6 +++++-
- arch/x86/kernel/cpu/perf_event.h    |    1 +
- arch/x86/kernel/cpu/perf_event_p6.c |    8 ++++++++
- 3 files changed, 14 insertions(+), 1 deletion(-)
+ arch/x86/kernel/cpu/perf_event.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 --- a/arch/x86/kernel/cpu/perf_event.c
 +++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1521,6 +1521,8 @@ static int __init init_hw_perf_events(vo
+@@ -1826,7 +1826,7 @@ static ssize_t set_attr_rdpmc(struct dev
  
- 	pr_cont("%s PMU driver.\n", x86_pmu.name);
- 
-+	x86_pmu.attr_rdpmc = 1; /* enable userspace RDPMC usage by default */
-+
- 	for (quirk = x86_pmu.quirks; quirk; quirk = quirk->next)
- 		quirk->func();
- 
-@@ -1534,7 +1536,6 @@ static int __init init_hw_perf_events(vo
- 		__EVENT_CONSTRAINT(0, (1ULL << x86_pmu.num_counters) - 1,
- 				   0, x86_pmu.num_counters, 0, 0);
- 
--	x86_pmu.attr_rdpmc = 1; /* enable userspace RDPMC usage by default */
- 	x86_pmu_format_group.attrs = x86_pmu.format_attrs;
- 
- 	if (x86_pmu.event_attrs)
-@@ -1820,6 +1821,9 @@ static ssize_t set_attr_rdpmc(struct dev
- 	if (ret)
- 		return ret;
- 
-+	if (x86_pmu.attr_rdpmc_broken)
-+		return -ENOTSUPP;
-+
  	if (!!val != !!x86_pmu.attr_rdpmc) {
  		x86_pmu.attr_rdpmc = !!val;
- 		smp_call_function(change_rdpmc, (void *)val, 1);
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -409,6 +409,7 @@ struct x86_pmu {
- 	/*
- 	 * sysfs attrs
- 	 */
-+	int		attr_rdpmc_broken;
- 	int		attr_rdpmc;
- 	struct attribute **format_attrs;
- 	struct attribute **event_attrs;
---- a/arch/x86/kernel/cpu/perf_event_p6.c
-+++ b/arch/x86/kernel/cpu/perf_event_p6.c
-@@ -231,6 +231,13 @@ static __initconst const struct x86_pmu
+-		smp_call_function(change_rdpmc, (void *)val, 1);
++		on_each_cpu(change_rdpmc, (void *)val, 1);
+ 	}
  
- };
- 
-+static __init void p6_pmu_rdpmc_quirk(void)
-+{
-+	pr_warn("Userspace RDPMC support disabled due to CPU errata\n");
-+	x86_pmu.attr_rdpmc_broken = 1;
-+	x86_pmu.attr_rdpmc = 0;
-+}
-+
- __init int p6_pmu_init(void)
- {
- 	switch (boot_cpu_data.x86_model) {
-@@ -256,6 +263,7 @@ __init int p6_pmu_init(void)
- 	memcpy(hw_cache_event_ids, p6_hw_cache_event_ids,
- 		sizeof(hw_cache_event_ids));
- 
-+	x86_add_quirk(p6_pmu_rdpmc_quirk);
- 
- 	return 0;
- }
+ 	return count;
