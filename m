@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755851AbaBEUQT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:16:19 -0500
-Received: from mail.windriver.com ([147.11.1.11]:55583 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755306AbaBEUH5 (ORCPT
+	id S1755863AbaBEUQW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:16:22 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:48600 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755212AbaBEUH5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Feb 2014 15:07:57 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+CC: "J. Bruce Fields" <bfields@redhat.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 194/213] Remove user-triggerable BUG from mpol_to_str
-Date: Wed, 5 Feb 2014 15:02:29 -0500
-Message-ID: <1391630568-49251-195-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 195/213] svcrpc: sends on closed socket should stop immediately
+Date: Wed, 5 Feb 2014 15:02:30 -0500
+Message-ID: <1391630568-49251-196-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,7 +23,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dave Jones <davej@redhat.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -32,42 +31,42 @@ From: Dave Jones <davej@redhat.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 80de7c3138ee9fd86a98696fd2cf7ad89b995d0a upstream.
+commit f06f00a24d76e168ecb38d352126fd203937b601 upstream.
 
-Trivially triggerable, found by trinity:
+svc_tcp_sendto sets XPT_CLOSE if we fail to transmit the entire reply.
+However, the XPT_CLOSE won't be acted on immediately.  Meanwhile other
+threads could send further replies before the socket is really shut
+down.  This can manifest as data corruption: for example, if a truncated
+read reply is followed by another rpc reply, that second reply will look
+to the client like further read data.
 
-  kernel BUG at mm/mempolicy.c:2546!
-  Process trinity-child2 (pid: 23988, threadinfo ffff88010197e000, task ffff88007821a670)
-  Call Trace:
-    show_numa_map+0xd5/0x450
-    show_pid_numa_map+0x13/0x20
-    traverse+0xf2/0x230
-    seq_read+0x34b/0x3e0
-    vfs_read+0xac/0x180
-    sys_pread64+0xa2/0xc0
-    system_call_fastpath+0x1a/0x1f
-  RIP: mpol_to_str+0x156/0x360
+Symptoms were data corruption preceded by svc_tcp_sendto logging
+something like
 
-Signed-off-by: Dave Jones <davej@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+	kernel: rpc-srv/tcp: nfsd: sent only 963696 when sending 1048708 bytes - shutting down socket
+
+Reported-by: Malahal Naineni <malahal@us.ibm.com>
+Tested-by: Malahal Naineni <malahal@us.ibm.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- mm/mempolicy.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/sunrpc/svc_xprt.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index ae43da3aff5a..1d5c89a7e128 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2330,7 +2330,7 @@ int mpol_to_str(char *buffer, int maxlen, struct mempolicy *pol, int no_context)
- 		break;
+diff --git a/net/sunrpc/svc_xprt.c b/net/sunrpc/svc_xprt.c
+index 33df29bd8c61..957a7e88e827 100644
+--- a/net/sunrpc/svc_xprt.c
++++ b/net/sunrpc/svc_xprt.c
+@@ -807,7 +807,8 @@ int svc_send(struct svc_rqst *rqstp)
  
- 	default:
--		BUG();
-+		return -EINVAL;
- 	}
- 
- 	l = strlen(policy_types[mode]);
+ 	/* Grab mutex to serialize outgoing data. */
+ 	mutex_lock(&xprt->xpt_mutex);
+-	if (test_bit(XPT_DEAD, &xprt->xpt_flags))
++	if (test_bit(XPT_DEAD, &xprt->xpt_flags)
++			|| test_bit(XPT_CLOSE, &xprt->xpt_flags))
+ 		len = -ENOTCONN;
+ 	else
+ 		len = xprt->xpt_ops->xpo_sendto(rqstp);
 -- 
 1.8.5.2
 
