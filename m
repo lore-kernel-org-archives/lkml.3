@@ -1,91 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932844AbaBEAJP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 19:09:15 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64057 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932590AbaBEAJM (ORCPT
+	id S933085AbaBEAJS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 19:09:18 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:42022 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932590AbaBEAJP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 19:09:12 -0500
+	Tue, 4 Feb 2014 19:09:15 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, Greg KH <gregkh@linuxfoundation.org>,
-        Colin Cross <ccross@android.com>, Greg Hackmann <ghackmann@google.com>,
-        Prakash Kamliya <pkamliya@codeaurora.org>,
-        Alistair Strachan <alistair.strachan@imgtec.com>,
-        Todd Poynor <toddpoynor@google.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Android Kernel Team <kernel-team@android.com>
-Subject: [PATCHv2 0/7] Staging fixes from the Android tree (for 3.14)
-Date: Tue,  4 Feb 2014 16:08:33 -0800
-Message-Id: <1391558920-31590-1-git-send-email-john.stultz@linaro.org>
+Cc: Prakash Kamliya <pkamliya@codeaurora.org>,
+        Colin Cross <ccross@android.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 2/7] staging: sync: Signal pt before sync_timeline object gets destroyed
+Date: Tue,  4 Feb 2014 16:08:35 -0800
+Message-Id: <1391558920-31590-3-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1391558920-31590-1-git-send-email-john.stultz@linaro.org>
+References: <1391558920-31590-1-git-send-email-john.stultz@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I recently went through the AOSP common.git android/3.10 tree to
-try to pull fixes that haven't been submitted upstream. I've
-cherry picked those patches and submitted them for 3.15, but
-Greg requested the bugfixes to be submitted by themselves for
-3.14.
+From: Prakash Kamliya <pkamliya@codeaurora.org>
 
-So here are the subset of changes that are bugfixes. There is
-one additional patch here which I missed in my last submission,
-but its a build warning fix, so I think its appropriate.
+There is a race condition
 
-If and when these are merged, I'll resubmit the rest of the
-queue (which has grown further as of today) for 3.15.
+Assume we have *one* sync_fence object, with *one* sync_pt
+which belongs to *one* sync_timeline, given this condition,
+sync_timeline->kref will have two counts, one for sync_timeline
+(implicit) and another for sync_pt.
 
-Anyway, please let me know if there's any feedback or suggestions.
+Assume following is the situation on CPU
 
-thanks
--john
+Theead-1 : (Thread which calls sync_timeline_destroy())
+  -> (some function calls)
+   -> sync_timeline_destory()
+    -> sync_timeline_signal() (CPU is inside this
+function after putting reference to sync_timeline)
 
+At this time Thread-2 comes and does following
 
-Cc: Greg KH <gregkh@linuxfoundation.org>
+Thread-2 : (fclose on fence fd)
+> sync_fence_release() -> because of fclose() on fence object
+ -> sync_fence_free()
+  -> sync_pt_free()
+   -> kref_put(&pt->parent->kref, sync_timeline_free);
+    -> sync_timeline_free() (CPU is inside this because
+this time kref will be zero after _put)
+
+Thread-2 will free sync_timeline object before Thread-1
+has finished its work inside sync_timeline_signal.
+
+With this change we signals all sync_pt before putting
+reference to sync_timeline object.
+
+c: Greg KH <gregkh@linuxfoundation.org>
 Cc: Colin Cross <ccross@android.com>
-Cc: Greg Hackmann <ghackmann@google.com>
-Cc: Prakash Kamliya <pkamliya@codeaurora.org>
-Cc: Alistair Strachan <alistair.strachan@imgtec.com>
-Cc: Todd Poynor <toddpoynor@google.com>
-Cc: Laura Abbott <lauraa@codeaurora.org>
 Cc: Android Kernel Team <kernel-team@android.com>
+Signed-off-by: Prakash Kamliya <pkamliya@codeaurora.org>
+[jstultz: minor commit subject tweak]
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ drivers/staging/android/sync.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-
-
-Alistair Strachan (1):
-  staging: sync: Fix a race condition between release_obj and print_obj
-
-Colin Cross (1):
-  staging: ion: Fix overflow and list bugs in system heap
-
-Greg Hackmann (1):
-  staging: sw_sync: Add stubs for kernels without CONFIG_SW_SYNC
-
-John Stultz (1):
-  staging: ion: Fix build warning
-
-Laura Abbott (1):
-  staging: ion: Fix ION_IOC_FREE compat ioctl
-
-Prakash Kamliya (1):
-  staging: sync: Signal pt before sync_timeline object gets destroyed
-
-Todd Poynor (1):
-  staging: ashmem: Avoid deadlock between read and mmap calls
-
- drivers/staging/android/ashmem.c              | 45 ++++++++++++++++-----------
- drivers/staging/android/ion/compat_ion.c      | 26 +++++++++++++---
- drivers/staging/android/ion/ion_priv.h        |  1 +
- drivers/staging/android/ion/ion_system_heap.c |  6 +++-
- drivers/staging/android/sw_sync.h             | 17 ++++++++++
- drivers/staging/android/sync.c                | 14 ++++-----
- 6 files changed, 78 insertions(+), 31 deletions(-)
-
+diff --git a/drivers/staging/android/sync.c b/drivers/staging/android/sync.c
+index 38e5d3b..fec2d1c 100644
+--- a/drivers/staging/android/sync.c
++++ b/drivers/staging/android/sync.c
+@@ -92,14 +92,14 @@ static void sync_timeline_free(struct kref *kref)
+ void sync_timeline_destroy(struct sync_timeline *obj)
+ {
+ 	obj->destroyed = true;
++	smp_wmb();
+ 
+ 	/*
+-	 * If this is not the last reference, signal any children
+-	 * that their parent is going away.
++	 * signal any children that their parent is going away.
+ 	 */
++	sync_timeline_signal(obj);
+ 
+-	if (!kref_put(&obj->kref, sync_timeline_free))
+-		sync_timeline_signal(obj);
++	kref_put(&obj->kref, sync_timeline_free);
+ }
+ EXPORT_SYMBOL(sync_timeline_destroy);
+ 
 -- 
 1.8.3.2
 
