@@ -1,30 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932425AbaBEUIQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:08:16 -0500
-Received: from mail.windriver.com ([147.11.1.11]:55532 "EHLO
+	id S1755620AbaBEUM4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:12:56 -0500
+Received: from mail.windriver.com ([147.11.1.11]:55686 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932384AbaBEUHq (ORCPT
+	with ESMTP id S1755376AbaBEUIS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:07:46 -0500
+	Wed, 5 Feb 2014 15:08:18 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Eric Wong <normalperson@yhbt.net>, Hans Verkuil <hans.verkuil@cisco.com>,
-        Jiri Olsa <jolsa@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        David Miller <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Voellmy <andreas.voellmy@yale.edu>, <netdev@vger.kernel.org>,
-        <linux-fsdevel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+CC: Dan Williams <dan.j.williams@intel.com>,
+        James Bottomley <JBottomley@Parallels.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 157/213] epoll: prevent missed events on EPOLL_CTL_MOD
-Date: Wed, 5 Feb 2014 15:01:52 -0500
-Message-ID: <1391630568-49251-158-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 207/213] fix eh wakeup (scsi_schedule_eh vs scsi_restart_operations)
+Date: Wed, 5 Feb 2014 15:02:42 -0500
+Message-ID: <1391630568-49251-208-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -34,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Wong <normalperson@yhbt.net>
+From: Dan Williams <dan.j.williams@intel.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -42,80 +32,59 @@ From: Eric Wong <normalperson@yhbt.net>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 128dd1759d96ad36c379240f8b9463e8acfd37a1 upstream.
+commit 57fc2e335fd3c2f898ee73570dc81426c28dc7b4 upstream.
 
-EPOLL_CTL_MOD sets the interest mask before calling f_op->poll() to
-ensure events are not missed.  Since the modifications to the interest
-mask are not protected by the same lock as ep_poll_callback, we need to
-ensure the change is visible to other CPUs calling ep_poll_callback.
+Rapid ata hotplug on a libsas controller results in cases where libsas
+is waiting indefinitely on eh to perform an ata probe.
 
-We also need to ensure f_op->poll() has an up-to-date view of past
-events which occured before we modified the interest mask.  So this
-barrier also pairs with the barrier in wq_has_sleeper().
+A race exists between scsi_schedule_eh() and scsi_restart_operations()
+in the case when scsi_restart_operations() issues i/o to other devices
+in the sas domain.  When this happens the host state transitions from
+SHOST_RECOVERY (set by scsi_schedule_eh) back to SHOST_RUNNING and
+->host_busy is non-zero so we put the eh thread to sleep even though
+->host_eh_scheduled is active.
 
-This should guarantee either ep_poll_callback or f_op->poll() (or both)
-will notice the readiness of a recently-ready/modified item.
+Before putting the error handler to sleep we need to check if the
+host_state needs to return to SHOST_RECOVERY for another trip through
+eh.  Since i/o that is released by scsi_restart_operations has been
+blocked for at least one eh cycle, this implementation allows those
+i/o's to run before another eh cycle starts to discourage hung task
+timeouts.
 
-This issue was encountered by Andreas Voellmy and Junchang(Jason) Wang in:
-http://thread.gmane.org/gmane.linux.kernel/1408782/
-
-Signed-off-by: Eric Wong <normalperson@yhbt.net>
-Cc: Hans Verkuil <hans.verkuil@cisco.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Jonathan Corbet <corbet@lwn.net>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Davide Libenzi <davidel@xmailserver.org>
-Cc: Hans de Goede <hdegoede@redhat.com>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: David Miller <davem@davemloft.net>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andreas Voellmy <andreas.voellmy@yale.edu>
-Tested-by: "Junchang(Jason) Wang" <junchang.wang@yale.edu>
-Cc: netdev@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Tom Jackson <thomas.p.jackson@intel.com>
+Tested-by: Tom Jackson <thomas.p.jackson@intel.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/eventpoll.c | 22 +++++++++++++++++++++-
- 1 file changed, 21 insertions(+), 1 deletion(-)
+ drivers/scsi/scsi_error.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-index 34ca5ca9c3e8..f8a6c0876a7a 100644
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -1033,10 +1033,30 @@ static int ep_modify(struct eventpoll *ep, struct epitem *epi, struct epoll_even
- 	 * otherwise we might miss an event that happens between the
- 	 * f_op->poll() call and the new event set registering.
+diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
+index 7ad53fa42766..3a56835c3ad3 100644
+--- a/drivers/scsi/scsi_error.c
++++ b/drivers/scsi/scsi_error.c
+@@ -1614,6 +1614,20 @@ static void scsi_restart_operations(struct Scsi_Host *shost)
+ 	 * requests are started.
  	 */
--	epi->event.events = event->events;
-+	epi->event.events = event->events; /* need barrier below */
- 	epi->event.data = event->data; /* protected by mtx */
- 
- 	/*
-+	 * The following barrier has two effects:
-+	 *
-+	 * 1) Flush epi changes above to other CPUs.  This ensures
-+	 *    we do not miss events from ep_poll_callback if an
-+	 *    event occurs immediately after we call f_op->poll().
-+	 *    We need this because we did not take ep->lock while
-+	 *    changing epi above (but ep_poll_callback does take
-+	 *    ep->lock).
-+	 *
-+	 * 2) We also need to ensure we do not miss _past_ events
-+	 *    when calling f_op->poll().  This barrier also
-+	 *    pairs with the barrier in wq_has_sleeper (see
-+	 *    comments for wq_has_sleeper).
-+	 *
-+	 * This barrier will now guarantee ep_poll_callback or f_op->poll
-+	 * (or both) will notice the readiness of an item.
-+	 */
-+	smp_mb();
+ 	scsi_run_host_queues(shost);
 +
 +	/*
- 	 * Get current event bits. We can safely use the file* here because
- 	 * its usage count has been increased by the caller of this function.
- 	 */
++	 * if eh is active and host_eh_scheduled is pending we need to re-run
++	 * recovery.  we do this check after scsi_run_host_queues() to allow
++	 * everything pent up since the last eh run a chance to make forward
++	 * progress before we sync again.  Either we'll immediately re-run
++	 * recovery or scsi_device_unbusy() will wake us again when these
++	 * pending commands complete.
++	 */
++	spin_lock_irqsave(shost->host_lock, flags);
++	if (shost->host_eh_scheduled)
++		if (scsi_host_set_state(shost, SHOST_RECOVERY))
++			WARN_ON(scsi_host_set_state(shost, SHOST_CANCEL_RECOVERY));
++	spin_unlock_irqrestore(shost->host_lock, flags);
+ }
+ 
+ /**
 -- 
 1.8.5.2
 
