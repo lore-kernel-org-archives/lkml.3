@@ -1,81 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752090AbaBECpD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 21:45:03 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:46924 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750836AbaBECpA (ORCPT
+	id S1753502AbaBECvx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 21:51:53 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:62668 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751523AbaBECvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 21:45:00 -0500
-Date: Tue, 4 Feb 2014 18:44:58 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [patch v2] mm, compaction: avoid isolating pinned pages
-In-Reply-To: <alpine.DEB.2.02.1402031848290.15032@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.02.1402041842100.14045@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1402012145510.2593@chino.kir.corp.google.com> <20140203095329.GH6732@suse.de> <alpine.DEB.2.02.1402030231590.31061@chino.kir.corp.google.com> <20140204000237.GA17331@lge.com> <alpine.DEB.2.02.1402031610090.10778@chino.kir.corp.google.com>
- <20140204015332.GA14779@lge.com> <alpine.DEB.2.02.1402031755440.26347@chino.kir.corp.google.com> <20140204021533.GA14924@lge.com> <alpine.DEB.2.02.1402031848290.15032@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 4 Feb 2014 21:51:52 -0500
+Date: Tue, 4 Feb 2014 21:51:49 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        David Smith <dsmith@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Igor Zhbanov <i.zhbanov@samsung.com>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [RFC][PATCH] exec: Fix use after free of tracepoint
+ trace_sched_process_exec
+Message-ID: <20140204215149.7a81e9bc@gandalf.local.home>
+In-Reply-To: <20140204213109.40dcfd28@gandalf.local.home>
+References: <20140204120500.041b5175@gandalf.local.home>
+	<CA+55aFyObrVGXqncNboMzybeevPBOtAUcn-zur_B26VHJ1CEcg@mail.gmail.com>
+	<20140204182852.43ffa442@gandalf.local.home>
+	<20140204184208.6f4f22a8@gandalf.local.home>
+	<CA+55aFyTC1UGvRgH5vASh-C3M+GqHPMNGsUq3Q1MuynzkiSaEA@mail.gmail.com>
+	<20140204213109.40dcfd28@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Page migration will fail for memory that is pinned in memory with, for
-example, get_user_pages().  In this case, it is unnecessary to take
-zone->lru_lock or isolating the page and passing it to page migration
-which will ultimately fail.
-
-This is a racy check, the page can still change from under us, but in
-that case we'll just fail later when attempting to move the page.
-
-This avoids very expensive memory compaction when faulting transparent
-hugepages after pinning a lot of memory with a Mellanox driver.
-
-On a 128GB machine and pinning ~120GB of memory, before this patch we
-see the enormous disparity in the number of page migration failures
-because of the pinning (from /proc/vmstat):
-
-	compact_pages_moved 8450
-	compact_pagemigrate_failed 15614415
-
-0.05% of pages isolated are successfully migrated and explicitly 
-triggering memory compaction takes 102 seconds.  After the patch:
-
-	compact_pages_moved 9197
-	compact_pagemigrate_failed 7
-
-99.9% of pages isolated are now successfully migrated in this 
-configuration and memory compaction takes less than one second.
-
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- v2: address page count issue per Joonsoo
-
- mm/compaction.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
-
-diff --git a/mm/compaction.c b/mm/compaction.c
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -578,6 +578,15 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
- 			continue;
- 		}
+On Tue, 4 Feb 2014 21:31:09 -0500
+Steven Rostedt <rostedt@goodmis.org> wrote:
  
-+		/*
-+		 * Migration will fail if an anonymous page is pinned in memory,
-+		 * so avoid taking lru_lock and isolating it unnecessarily in an
-+		 * admittedly racy check.
-+		 */
-+		if (!page_mapping(page) &&
-+		    page_count(page) > page_mapcount(page))
-+			continue;
-+
- 		/* Check if it is ok to still hold the lock */
- 		locked = compact_checklock_irqsave(&zone->lru_lock, &flags,
- 								locked, cc);
+> (probably should keep)
+> 
+> Reported-by: Igor Zhbanov <i.zhbanov@samsung.com>
+
+I should probably state that "IZh" confirmed on IRC that this is indeed
+the person that reported the issue in the first place.
+
+-- Steve
