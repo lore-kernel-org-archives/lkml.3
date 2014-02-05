@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753910AbaBESjz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 13:39:55 -0500
-Received: from relay.parallels.com ([195.214.232.42]:35632 "EHLO
+	id S1753949AbaBESkH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 13:40:07 -0500
+Received: from relay.parallels.com ([195.214.232.42]:35765 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753760AbaBESji (ORCPT
+	with ESMTP id S1753878AbaBESjv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 13:39:38 -0500
+	Wed, 5 Feb 2014 13:39:51 -0500
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <akpm@linux-foundation.org>
 CC: <dchinner@redhat.com>, <mhocko@suse.cz>, <hannes@cmpxchg.org>,
         <glommer@gmail.com>, <rientjes@google.com>,
         <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
         <devel@openvz.org>, Glauber Costa <glommer@openvz.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH -mm v15 07/13] fs: do not call destroy_super() in atomic context
-Date: Wed, 5 Feb 2014 22:39:23 +0400
-Message-ID: <81263f0532a3550bd8a82aaa9b0aabae8a1f011d.1391624021.git.vdavydov@parallels.com>
+        Anton Vorontsov <anton@enomsg.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH -mm v15 13/13] memcg: reap dead memcgs upon global memory pressure
+Date: Wed, 5 Feb 2014 22:39:29 +0400
+Message-ID: <6bf292fd6184c23db7b11142812769aec712ed7b.1391624021.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1391624021.git.vdavydov@parallels.com>
 References: <cover.1391624021.git.vdavydov@parallels.com>
@@ -27,73 +29,159 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To make list_lru per-memcg, I'll have to add some code that might sleep
-to list_lru_destroy(), but it is impossible to do now, because
-list_lru_destroy() is currently called by destroy_super(), which can be
-called in atomic context from __put_super().
+From: Glauber Costa <glommer@openvz.org>
 
-To overcome this, in this patch I make __put_super() schedule the super
-block destruction in an asynchronous work instead of calling
-destroy_super() directly.
+When we delete kmem-enabled memcgs, they can still be zombieing around
+for a while. The reason is that the objects may still be alive, and we
+won't be able to delete them at destruction time.
 
+The only entry point for that, though, are the shrinkers. The shrinker
+interface, however, is not exactly tailored to our needs. It could be a
+little bit better by using the API Dave Chinner proposed, but it is
+still not ideal since we aren't really a count-and-scan event, but more
+a one-off flush-all-you-can event that would have to abuse that somehow.
+
+Signed-off-by: Glauber Costa <glommer@openvz.org>
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Glauber Costa <glommer@openvz.org>
-Cc: Dave Chinner <dchinner@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Anton Vorontsov <anton@enomsg.org>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
 ---
- fs/super.c         |   10 +++++++++-
- include/linux/fs.h |    2 ++
- 2 files changed, 11 insertions(+), 1 deletion(-)
+ mm/memcontrol.c |   82 +++++++++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 79 insertions(+), 3 deletions(-)
 
-diff --git a/fs/super.c b/fs/super.c
-index ff9ff5fad70c..33cbff3769e7 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -147,6 +147,13 @@ static void destroy_super(struct super_block *s)
- 	kfree_rcu(s, rcu);
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index aed1456015cf..14b152f4c69b 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -328,8 +328,16 @@ struct mem_cgroup {
+ 	/* thresholds for mem+swap usage. RCU-protected */
+ 	struct mem_cgroup_thresholds memsw_thresholds;
+ 
+-	/* For oom notifier event fd */
+-	struct list_head oom_notify;
++	union {
++		/* For oom notifier event fd */
++		struct list_head oom_notify;
++		/*
++		 * we can only trigger an oom event if the memcg is alive.
++		 * so we will reuse this field to hook the memcg in the list
++		 * of dead memcgs.
++		 */
++		struct list_head dead;
++	};
+ 
+ 	/*
+ 	 * Should we move charges of a task when a task is moved into this
+@@ -6134,6 +6142,58 @@ static int mem_cgroup_oom_control_write(struct cgroup_subsys_state *css,
  }
  
-+static void destroy_super_work_func(struct work_struct *w)
-+{
-+	struct super_block *s = container_of(w, struct super_block, destroy);
+ #ifdef CONFIG_MEMCG_KMEM
++static LIST_HEAD(dangling_memcgs);
++static DEFINE_MUTEX(dangling_memcgs_mutex);
 +
-+	destroy_super(s);
++static void memcg_dangling_add(struct mem_cgroup *memcg)
++{
++	mutex_lock(&dangling_memcgs_mutex);
++	list_add(&memcg->dead, &dangling_memcgs);
++	mutex_unlock(&dangling_memcgs_mutex);
 +}
 +
- /**
-  *	alloc_super	-	create new superblock
-  *	@type:	filesystem type superblock should belong to
-@@ -182,6 +189,7 @@ static struct super_block *alloc_super(struct file_system_type *type, int flags)
- 	INIT_HLIST_NODE(&s->s_instances);
- 	INIT_HLIST_BL_HEAD(&s->s_anon);
- 	INIT_LIST_HEAD(&s->s_inodes);
-+	INIT_WORK(&s->destroy, destroy_super_work_func);
- 
- 	if (list_lru_init(&s->s_dentry_lru))
- 		goto fail;
-@@ -239,7 +247,7 @@ static void __put_super(struct super_block *sb)
++static void memcg_dangling_del(struct mem_cgroup *memcg)
++{
++	mutex_lock(&dangling_memcgs_mutex);
++	list_del(&memcg->dead);
++	mutex_unlock(&dangling_memcgs_mutex);
++}
++
++static void memcg_vmpressure_shrink_dead(void)
++{
++	struct memcg_cache_params *params, *tmp;
++	struct kmem_cache *cachep;
++	struct mem_cgroup *memcg;
++
++	mutex_lock(&dangling_memcgs_mutex);
++	list_for_each_entry(memcg, &dangling_memcgs, dead) {
++		mutex_lock(&memcg->slab_caches_mutex);
++		/* The element may go away as an indirect result of shrink */
++		list_for_each_entry_safe(params, tmp,
++					 &memcg->memcg_slab_caches, list) {
++			cachep = memcg_params_to_cache(params);
++			/*
++			 * the cpu_hotplug lock is taken in kmem_cache_create
++			 * outside the slab_caches_mutex manipulation. It will
++			 * be taken by kmem_cache_shrink to flush the cache.
++			 * So we need to drop the lock. It is all right because
++			 * the lock only protects elements moving in and out the
++			 * list.
++			 */
++			mutex_unlock(&memcg->slab_caches_mutex);
++			kmem_cache_shrink(cachep);
++			mutex_lock(&memcg->slab_caches_mutex);
++		}
++		mutex_unlock(&memcg->slab_caches_mutex);
++	}
++	mutex_unlock(&dangling_memcgs_mutex);
++}
++
++static void memcg_register_kmem_events(struct mem_cgroup *memcg)
++{
++	vmpressure_register_kernel_event(memcg, memcg_vmpressure_shrink_dead);
++}
++
+ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
  {
- 	if (!--sb->s_count) {
- 		list_del_init(&sb->s_list);
--		destroy_super(sb);
-+		schedule_work(&sb->destroy);
- 	}
+ 	int ret;
+@@ -6217,6 +6277,18 @@ static void kmem_cgroup_css_offline(struct mem_cgroup *memcg)
+ 		css_put(&memcg->css);
+ }
+ #else
++static void memcg_dangling_add(struct mem_cgroup *memcg)
++{
++}
++
++static void memcg_dangling_del(struct mem_cgroup *memcg)
++{
++}
++
++static void memcg_register_kmem_events(struct mem_cgroup *memcg)
++{
++}
++
+ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
+ {
+ 	return 0;
+@@ -6767,8 +6839,10 @@ mem_cgroup_css_online(struct cgroup_subsys_state *css)
+ 	if (css->cgroup->id > MEM_CGROUP_ID_MAX)
+ 		return -ENOSPC;
+ 
+-	if (!parent)
++	if (!parent) {
++		memcg_register_kmem_events(memcg);
+ 		return 0;
++	}
+ 
+ 	mutex_lock(&memcg_create_mutex);
+ 
+@@ -6842,6 +6916,7 @@ static void mem_cgroup_css_offline(struct cgroup_subsys_state *css)
+ 	mem_cgroup_invalidate_reclaim_iterators(memcg);
+ 	mem_cgroup_reparent_charges(memcg);
+ 	mem_cgroup_destroy_all_caches(memcg);
++	memcg_dangling_add(memcg);
+ 	vmpressure_cleanup(&memcg->vmpressure);
  }
  
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 3a87b0254408..200cbf804335 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1328,7 +1328,9 @@ struct super_block {
- 	 */
- 	struct list_lru		s_dentry_lru ____cacheline_aligned_in_smp;
- 	struct list_lru		s_inode_lru ____cacheline_aligned_in_smp;
-+
- 	struct rcu_head		rcu;
-+	struct work_struct	destroy;
- };
+@@ -6886,6 +6961,7 @@ static void mem_cgroup_css_free(struct cgroup_subsys_state *css)
+ 	mem_cgroup_reparent_charges(memcg);
  
- extern struct timespec current_fs_time(struct super_block *sb);
+ 	memcg_destroy_kmem(memcg);
++	memcg_dangling_del(memcg);
+ 	__mem_cgroup_free(memcg);
+ }
+ 
 -- 
 1.7.10.4
 
