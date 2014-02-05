@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751918AbaBENsn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 08:48:43 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:33872 "EHLO bear.ext.ti.com"
+	id S1752133AbaBENtG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 08:49:06 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57246 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751769AbaBENsk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 08:48:40 -0500
+	id S1751187AbaBENtA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 08:49:00 -0500
 From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
 To: <santosh.shilimkar@ti.com>, <rob@landley.net>, <linux@arm.linux.org.uk>,
         <galak@codeaurora.org>
@@ -15,66 +15,72 @@ CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
         <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-kernel@vger.kernel.org>, <grygorii.strashko@ti.com>,
         Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Subject: [PATCH v5 0/3] Introduce clocksource driver for Keystone platform
-Date: Wed, 5 Feb 2014 15:47:37 +0200
-Message-ID: <1391608060-10760-1-git-send-email-ivan.khoronzhuk@ti.com>
+Subject: [PATCH v5 2/3] clocksource: keystone: add bindings for keystone timer
+Date: Wed, 5 Feb 2014 15:47:39 +0200
+Message-ID: <1391608060-10760-3-git-send-email-ivan.khoronzhuk@ti.com>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1391608060-10760-1-git-send-email-ivan.khoronzhuk@ti.com>
+References: <1391608060-10760-1-git-send-email-ivan.khoronzhuk@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a broadcast timer64 based clockevent driver for keystone arch.
-This driver uses timer in 64-bit general purpose mode as clock event
-device.
+This patch provides bindings for the 64-bit timer in the KeyStone
+architecture devices. The timer can be configured as a general-purpose 64-bit
+timer, dual general-purpose 32-bit timers. When configured as dual 32-bit
+timers, each half can operate in conjunction (chain mode) or independently
+(unchained mode) of each other.
+
+It is global timer is a free running up-counter and can generate interrupt
+when the counter reaches preset counter values.
 
 Documentation:
-    http://www.ti.com/lit/ug/sprugv5a/sprugv5a.pdf
+http://www.ti.com/lit/ug/sprugv5a/sprugv5a.pdf
 
-Based on
-git://git.kernel.org/pub/scm/linux/kernel/git/ssantosh/linux-keystone.git
-keystone/master
-
-v4..v5:
-	used __iowmb() insted of wmb()
-
-v3..v4:
-	rebased on latest of linux-keystone.git keystone/master
-
-v2..v3:
-- clocksource: timer-keystone: introduce clocksource driver for
-	changed "u64" type to "unsigned long" for hz_period as more appropriate
-	hz_period rounded up by DIV_ROUND_UP(rate, HZ)
-	corrected comments
-
-v1..v2:
-- clocksource: timer-keystone: introduce clocksource driver for
-	renamed timer on "timer-keystone"
-	in keystone_timer_interrupt() evet pointer is passed via "dev_id"
-	used __relaxed variants of writel/readl and added explicit barriers
-	added "keystone_timer_disable()" for using in keystone_set_mode()
-	keystone_timer_config() is not used for disabling the timer any more
-	in case of an unsupported mode the keystone_timer_config() returns -1.
-	used request_irq() instead of setup_irq()
-	assigned irq for event_device in event_dev->irq
-	calculated timer.hz_period for CLOCK_EVT_MODE_PERIODIC at init
-	deleted spare call of keystone_timer_config() in keystone_timer_init()
-
-Ivan Khoronzhuk (3):
-  clocksource: timer-keystone: introduce clocksource driver for Keystone
-  clocksource: keystone: add bindings for keystone timer
-  arm: dts: keystone: add keystone timer entry
-
- .../bindings/timer/ti,keystone-timer.txt           |  29 +++
- arch/arm/boot/dts/keystone-clocks.dtsi             |  10 +
- arch/arm/boot/dts/keystone.dtsi                    |   7 +
- drivers/clocksource/Makefile                       |   1 +
- drivers/clocksource/timer-keystone.c               | 233 +++++++++++++++++++++
- 5 files changed, 280 insertions(+)
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+---
+ .../bindings/timer/ti,keystone-timer.txt           | 29 ++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
  create mode 100644 Documentation/devicetree/bindings/timer/ti,keystone-timer.txt
- create mode 100644 drivers/clocksource/timer-keystone.c
 
+diff --git a/Documentation/devicetree/bindings/timer/ti,keystone-timer.txt b/Documentation/devicetree/bindings/timer/ti,keystone-timer.txt
+new file mode 100644
+index 0000000..5fbe361
+--- /dev/null
++++ b/Documentation/devicetree/bindings/timer/ti,keystone-timer.txt
+@@ -0,0 +1,29 @@
++* Device tree bindings for Texas instruments Keystone timer
++
++This document provides bindings for the 64-bit timer in the KeyStone
++architecture devices. The timer can be configured as a general-purpose 64-bit
++timer, dual general-purpose 32-bit timers. When configured as dual 32-bit
++timers, each half can operate in conjunction (chain mode) or independently
++(unchained mode) of each other.
++
++It is global timer is a free running up-counter and can generate interrupt
++when the counter reaches preset counter values.
++
++Documentation:
++http://www.ti.com/lit/ug/sprugv5a/sprugv5a.pdf
++
++Required properties:
++
++- compatible : should be "ti,keystone-timer".
++- reg : specifies base physical address and count of the registers.
++- interrupts : interrupt generated by the timer.
++- clocks : the clock feeding the timer clock.
++
++Example:
++
++timer@22f0000 {
++	compatible = "ti,keystone-timer";
++	reg = <0x022f0000 0x80>;
++	interrupts = <GIC_SPI 110 IRQ_TYPE_EDGE_RISING>;
++	clocks = <&clktimer15>;
++};
 -- 
 1.8.3.2
 
