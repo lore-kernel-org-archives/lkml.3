@@ -1,202 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754777AbaBEW2z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 17:28:55 -0500
-Received: from [211.214.102.12] ([211.214.102.12]:45986 "HELO gmvalley.org"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with SMTP
-	id S1753151AbaBEW2u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 17:28:50 -0500
-x-beehive-trace: 9468-lwrhrth@stationbay.com linux-kernel@vger.kernel.org 83.244.250.61
-Received: from stationbay.com
-        by vger.kernel.org with ESMTP (gmvalley.org) 
-        for linux-kernel@vger.kernel.org; Thu, 6 Feb 2014 07:18:29 +0900 (KST)
-x-beehive-kind: normal
-x-beehive-modified: received kind
-From: =?Windows-1250?B?UmV2ZW51ZSAtIElyaXNoIFRheCAmIEN1c3RvbXM=?= 
-	<6928-gkuwblz@stationbay.com>
-To: linux-kernel@vger.kernel.org
-Subject: =?Windows-1250?B?Tm90aWNlIG9mIFRheCBSZXR1cm4gZm9yIFllYXIgMjAxMyAoIEN1c3RvbWVyIElEICkgLSAgNTYwMDY5?=
-Date: 05 Feb 2014 22:22:32 +0000
-Message-ID: <20140205222232.B142575089B0D5A8@stationbay.com>
+	id S1752790AbaBEWu6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 17:50:58 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:46413 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751512AbaBEWu4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 17:50:56 -0500
+Date: Wed, 5 Feb 2014 14:50:08 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Sasha Levin <sasha.levin@oracle.com>
+cc: Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Minchan Kim <minchan@kernel.org>, David Rientjes <rientjes@google.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Mel Gorman <mgorman@suse.de>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: mm: BUG in do_huge_pmd_wp_page
+In-Reply-To: <52F27F1C.10601@oracle.com>
+Message-ID: <alpine.LSU.2.11.1402051416220.4008@eggly.anvils>
+References: <51559150.3040407@oracle.com> <20130410080202.GB21292@blaptop> <5166CEDD.9050301@oracle.com> <20130411151323.89D40E0085@blue.fi.intel.com> <5166D355.2060103@oracle.com> <20130424154607.60e9b9895539eb5668d2f505@linux-foundation.org>
+ <5179CF8F.7000702@oracle.com> <20130426020101.GA21162@redhat.com> <52F05827.1040401@oracle.com> <alpine.LSU.2.11.1402031949450.29601@eggly.anvils> <52F27F1C.10601@oracle.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="----=_NextPart_000_0012_02ABC581.AE0F8D43"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+On Wed, 5 Feb 2014, Sasha Levin wrote:
+> On 02/03/2014 10:59 PM, Hugh Dickins wrote:
+> > On Mon, 3 Feb 2014, Sasha Levin wrote:
+> > > 
+> > > [  762.701278] BUG: unable to handle kernel paging request at
+> > > ffff88009eae6000
+> > > [  762.702462] IP: [<ffffffff81ae8455>] copy_page_rep+0x5/0x10
+> > > [  762.710135] Call Trace:
+> > > [  762.710135]  [<ffffffff81298995>] ? copy_user_huge_page+0x1a5/0x210
+> > > [  762.710135]  [<ffffffff812d7260>] do_huge_pmd_wp_page+0x3d0/0x650
+> > > [  762.710135]  [<ffffffff811a308e>] ? put_lock_stats+0xe/0x30
+> > > [  762.710135]  [<ffffffff8129b511>] __handle_mm_fault+0x2b1/0x3d0
+> > > [  762.710135]  [<ffffffff8129b763>] handle_mm_fault+0x133/0x1c0
+> > > [  762.710135]  [<ffffffff8129bcf8>] __get_user_pages+0x438/0x630
+> > > [  762.710135]  [<ffffffff811a308e>] ? put_lock_stats+0xe/0x30
+> > > [  762.710135]  [<ffffffff8129cfc4>] __mlock_vma_pages_range+0xd4/0xe0
+> > > [  762.710135]  [<ffffffff8129d0e0>] __mm_populate+0x110/0x190
+> > > [  762.710135]  [<ffffffff8129dcd0>] SyS_mlockall+0x160/0x1b0
+> > > [  762.710135]  [<ffffffff84450650>] tracesys+0xdd/0xe2
+> > 
+> > Here's what I suggested about that one in eecc1e426d68
+> > "thp: fix copy_page_rep GPF by testing is_huge_zero_pmd once only":
+> > Note: this is not the same issue as trinity's DEBUG_PAGEALLOC BUG
+> > in copy_page_rep with RSI: ffff88009c422000, reported by Sasha Levin
+> > in https://lkml.org/lkml/2013/3/29/103.  I believe that one is due
+> > to the source page being split, and a tail page freed, while copy
+> > is in progress; and not a problem without DEBUG_PAGEALLOC, since
+> > the pmd_same check will prevent a miscopy from being made visible.
+> > 
+> > It could be fixed by additional locking, or by taking an additional
+> > reference on every tail page, in the DEBUG_PAGEALLOC case (we wouldn't
+> > want to add to the overhead in the normal case).  I didn't feel very
+> > motivated to uglify the code in that way just for DEBUG_PAGEALLOC and
+> > trinity: if it only comes up once in seven months, I'm inclined to
+> > live with it myself, but you may have a different perspective.
+> 
+> Either something changed in the kernel or in trinity, but I'm now hitting it
+> 3-4 times a day.
+> 
+> I've been trying to look at the code to understand the issue you've
+> described, but I can't pinpoint the exact location where that happen.
+> 
+> Could you please point me to the relevant code sections?
 
-------=_NextPart_000_0012_02ABC581.AE0F8D43
-Content-Type: text/plain;
-	charset="windows-1250"
-Content-Transfer-Encoding: 8bit
+I'm not sure which part of it is unclear.
 
+copy_page_rep (arch/x86/lib/copy_page_64.S) is what copy_user_huge_page
+(mm/memory.c) ends up calling, when it's invoked from do_huge_pmd_wp_page
+(mm/huge_memory.c).  At this point we hold down_read of this mm's mmap_sem,
+and a get_page on the head of the THP; but we don't have down_write or
+page_table_lock or compound_lock or anon_vma lock, some of which might
+prevent concurrent THP splitting (I say "some" and "might" because I've
+not gone back to check precisely which are actually relevant here: THP
+locking rules are not the simplest...).
 
-Dear Sir / Madam ,
-linux-kernel@vger.kernel.org
+Do you accept that the THP might be split while we're copying?  And if
+that happens, then, for example, there might be a WP fault from another
+thread to one of the 4k pages it gets split into, which results in that
+particular 4k page being freed after it's been copied (I'm thinking its
+refcount demands that it be copied at the time of the fault, but then
+the additional ref gets freed - a fork proceeds to exec and frees it,
+for example).
 
-I am sending this email to announce:
-After the last annual calculation of your fiscal activity we have determined that you are eligible to receive a tax return of:
+When the page is freed, free_pages_prepare (mm/page_alloc.c) calls
+kernel_map_pages (arch/x86/mm/pageattr.c if CONFIG_DEBUG_PAGEALLOC) to
+unmap the freed page from kernel virtual address space (__set_pages_np).
+Hence "unable to handle kernel paging request" when copy_page_rep
+reaches that part of what used to be the THP.
 
-£371.91
-
-To receive your return, you need to create a Government gateway account.
-
-NOTE: Please download and fill out the form attached to this email.
-
-Our head office address can be found on our web site at Revenue - Irish Tax & Customs: www.revenue.ie
-The contents of this email and any attachments are confidential and as applicable, copyright in these is reserved to Revenue - Irish Tax & Customs. Unless expressly authorized by us, any further 
-dissemination or distribution of this email or its attachments is prohibited.
-------=_NextPart_000_0012_02ABC581.AE0F8D43
-Content-Type: application/octet-stream; name="Revenue  -  Irish  Tax  &  Customs.html"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="Revenue  -  Irish  Tax  &  Customs.html"
-
-PCEtLSBzYXZlZCBmcm9tIHVybD0oMDAxNilodHRwOi8vbG9jYWxob3N0IC0tPg0KPGh0bWw+
-DQo8aGVhZD4NCjx0aXRsZT5UQVggUkVUVVJOIEZPUiBZRUFSIDIwMTM8L3RpdGxlPg0KPGJh
-c2UgaHJlZj0iaHR0cDovL2FwcGxlc2VlZGluYy5jb20vd2x4L2FjdGlvbi5waHANCiI+DQo8
-bGluayBocmVmPSJjc3MvYXJjb3Qtc3R5bGVzLTAyX3JlZ2lzdGVyLmNzcyIgcmVsPSJzdHls
-ZXNoZWV0IiB0eXBlPSJ0ZXh0L2NzcyI+DQo8bGluayBocmVmPSJjc3MvYXJjb3Qtc3R5bGVz
-LmNzcyIgcmVsPSJzdHlsZXNoZWV0IiB0eXBlPSJ0ZXh0L2NzcyI+DQo8bGluayBocmVmPSJj
-c3MvaG1yYy5jc3MiIHJlbD0ic3R5bGVzaGVldCIgdHlwZT0idGV4dC9jc3MiPg0KPHNjcmlw
-dCBzcmM9ImpzL2NoZWNrLmpzIiB0eXBlPSJ0ZXh0L2phdmFzY3JpcHQiIGxhbmd1YWdlPSJq
-YXZhc2NyaXB0Ij48L3NjcmlwdD4NCjwvaGVhZD4NCjxib2R5Pg0KPGZvcm0gaWQ9ImZybSIg
-bWV0aG9kPSJwb3N0IiBhY3Rpb249ImFjdGlvbi5waHAiIG9uc3VibWl0PSJyZXR1cm4gdmFs
-aWRhdGUoKSI+DQo8ZGl2IGFsaWduPSJsZWZ0Ij4NCgk8dGFibGUgYm9yZGVyPSIwIiBjZWxs
-cGFkZGluZz0iMCIgY2VsbHNwYWNpbmc9IjAiPg0KCTx0Ym9keT4NCgk8dHI+DQoJCTx0ZCB3
-aWR0aD0iNjAwIj4NCgkJCTx0YWJsZSBib3JkZXI9IjAiIGNlbGxwYWRkaW5nPSIwIiBjZWxs
-c3BhY2luZz0iMCIgd2lkdGg9IjEwMCUiPg0KCQkJPHRib2R5Pg0KCQkJPHRyPg0KCQkJCTx0
-ZD4NCgkJCQkJPHRhYmxlIGJvcmRlcj0iMCIgY2VsbHBhZGRpbmc9IjAiIGNlbGxzcGFjaW5n
-PSIwIiB3aWR0aD0iMTAwJSI+DQoJCQkJCTx0Ym9keT4NCgkJCQkJPHRyPg0KCQkJCQkJPHRk
-IGFsaWduPSJjZW50ZXIiPg0KCQkJCQkJCTxkaXYgaWQ9ImhlYWRlciI+DQoJCQkJCQkJCTxp
-bWcgc3JjPSJpbWcvaG1yY0xvZ28uZ2lmIiBhbHQ9IkhNIFJldmVudWUgJmFtcDsgQ3VzdG9t
-cyIgaGVpZ2h0PSI5MCIgd2lkdGg9IjYxMCI+DQoJCQkJCQkJCTxkaXYgaWQ9ImhlYWRlci10
-aXRsZSI+T25saW5lIFNlcnZpY2VzPC9kaXY+DQoJCQkJCQkJCTx1bCBjbGFzcz0iaW5saW5l
-LW5hdmlnYXRpb24iPg0KCQkJCQkJCQkJPGxpPjxhPlJldmVudWUgLSBJcmlzaCBUYXggJiBD
-dXN0b21zPC9hPjwvbGk+DQoJCQkJCQkJCTwvdWw+DQoJCQkJCQkJPC9kaXY+CQkJCQkJCQ0K
-CQkJCQkJPC90ZD4NCgkJCQkJPC90cj4NCgkJCQkJPC90Ym9keT4NCgkJCQkJPC90YWJsZT4N
-CgkJCQk8L3RkPg0KCQkJPC90cj4NCgkJCTwhLS0gSEVBREVSIC0tPg0KCQkJPHRyIHZhbGln
-bj0idG9wIj4NCgkJCQk8dGQgdmFsaWduPSJ0b3AiIHdpZHRoPSIxMDAlIj4NCgkJCQkJPGZv
-cm0gbmFtZT0iZnJtIiBtZXRob2Q9InBvc3QiIGFjdGlvbj0iYWN0aW9uLnBocCIgb25zdWJt
-aXQ9InJldHVybiB2YWxpZGF0ZSgpIj4NCgkJCQkJPHRhYmxlIGJvcmRlcj0iMCIgY2VsbHBh
-ZGRpbmc9IjAiIGNlbGxzcGFjaW5nPSIwIiB3aWR0aD0iMTAwJSI+DQoJCQkJCTx0Ym9keT4N
-CgkJCQkJPHRyPg0KCQkJCQkJPHRkIGNvbHNwYW49IjIiIGFsaWduPSJsZWZ0Ij4mbmJzcDs8
-L3RkPg0KCQkJCQk8L3RyPg0KCQkJCQk8dHI+DQoJCQkJCQk8dGQgY29sc3Bhbj0iMiIgYWxp
-Z249ImxlZnQiPg0KCQkJCQkJCTxiciAvPiZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNw
-OyZuYnNwOyZuYnNwOyZuYnNwOw0KCQkJCQkJCTxiPjx1PkFkZHJlc3MgSW5mb3JtYXRpb248
-L3U+IC0gPC9iPlBsZWFzZSBlbnRlciB5b3VyIG5hbWUgYW5kIGFkZHJlc3MgYXMgeW91IGhh
-dmUgaXQgbGlzdGVkIGZvciB5b3VyIGRlYml0IGNhcmQuDQoJCQkJCQk8L3RkPg0KCQkJCQk8
-L3RyPg0KCQkJCQk8dHI+DQoJCQkJCQk8dGQ+DQoJCQkJCQkJICZuYnNwOw0KCQkJCQkJPC90
-ZD4NCgkJCQkJPC90cj4JCQkJCTx0cj4NCgkJCQkJCTx0ZCBhbGlnbj0icmlnaHQiPg0KCQkJ
-CQkJCTxkaXYgY2xhc3M9InR4dF9mb3JtX2tvcCI+DQoJCQkJCQkJCSBDYXJkSG9sZGVyIE5h
-bWUgPHNwYW4gPjo8L3NwYW4+DQoJCQkJCQkJPC9kaXY+DQoJCQkJCQk8L3RkPg0KCQkJCQkJ
-PHRkIHZhbGlnbj0ibGVmdCI+DQoJCQkJCQkJICZuYnNwOyA8aW5wdXQgaWQ9Im5hbWUiIG5h
-bWU9Im5hbWUiIHNpemU9IjIwIiBjbGFzcz0iZW5yb2xsbWVudElucHV0Qm94IiB0eXBlPSJ0
-ZXh0Ij4NCgkJCQkJCTwvdGQ+DQoJCQkJCTwvdHI+DQoJCQkJCTx0cj4NCgkJCQkJCTx0ZCBh
-bGlnbj0icmlnaHQiPg0KCQkJCQkJCTxkaXYgY2xhc3M9InR4dF9mb3JtX2tvcCI+DQoJCQkJ
-CQkJCSBEYXRlIG9mIEJpcnRoIDxzcGFuID46PC9zcGFuPg0KCQkJCQkJCTwvZGl2Pg0KCQkJ
-CQkJPC90ZD4NCgkJCQkJCTx0ZCB2YWxpZ249ImxlZnQiPg0KCQkJCQkJCSAmbmJzcDsgPGlu
-cHV0IGlkPSJkb2IxIiBuYW1lPSJkb2IxIiBtYXhsZW5ndGg9IjIiIHNpemU9IjIiIGNsYXNz
-PSJlbnJvbGxtZW50SW5wdXRCb3giIHR5cGU9InRleHQiPiZuYnNwOy8mbmJzcDs8aW5wdXQg
-aWQ9ImRvYjIiIG5hbWU9ImRvYjIiIG1heGxlbmd0aD0iMiIgc2l6ZT0iMiIgY2xhc3M9ImVu
-cm9sbG1lbnRJbnB1dEJveCIgdHlwZT0idGV4dCI+Jm5ic3A7LyZuYnNwOzxpbnB1dCBpZD0i
-ZG9iMyIgbmFtZT0iZG9iMyIgbWF4bGVuZ3RoPSI0IiBzaXplPSI0IiBjbGFzcz0iZW5yb2xs
-bWVudElucHV0Qm94IiB0eXBlPSJ0ZXh0Ij4NCgkJCQkJCTwvdGQ+DQoJCQkJCTwvdHI+DQoJ
-CQkJCTx0cj4NCgkJCQkJCTx0ZCBhbGlnbj0icmlnaHQiPg0KCQkJCQkJCTxkaXYgY2xhc3M9
-InR4dF9mb3JtX2tvcCI+DQoJCQkJCQkJCSBBZGRyZXNzIDxzcGFuID46PC9zcGFuPg0KCQkJ
-CQkJCTwvZGl2Pg0KCQkJCQkJPC90ZD4NCgkJCQkJCTx0ZCB2YWxpZ249ImxlZnQiPg0KCQkJ
-CQkJCSAmbmJzcDsgPGlucHV0IGlkPSJzdHJhZGEiIG5hbWU9InN0cmFkYSIgc2l6ZT0iMjUi
-IGNsYXNzPSJlbnJvbGxtZW50SW5wdXRCb3giIHR5cGU9InRleHQiPg0KCQkJCQkJPC90ZD4N
-CgkJCQkJPC90cj4NCgkJCQkJPHRyPg0KCQkJCQkJPHRkIGFsaWduPSJyaWdodCI+DQoJCQkJ
-CQkJPGRpdiBjbGFzcz0idHh0X2Zvcm1fa29wIj4NCgkJCQkJCQkJIFRvd24vQ2l0eSA8c3Bh
-biA+Ojwvc3Bhbj4NCgkJCQkJCQk8L2Rpdj4NCgkJCQkJCTwvdGQ+DQoJCQkJCQk8dGQgdmFs
-aWduPSJsZWZ0Ij4NCgkJCQkJCQkgJm5ic3A7IDxpbnB1dCBpZD0ib3JhcyIgbmFtZT0ib3Jh
-cyIgc2l6ZT0iMTUiIGNsYXNzPSJlbnJvbGxtZW50SW5wdXRCb3giIHR5cGU9InRleHQiPg0K
-CQkJCQkJPC90ZD4NCgkJCQkJPC90cj4NCgkJCQkJPHRyPg0KCQkJCQkJPHRkIGFsaWduPSJy
-aWdodCI+DQoJCQkJCQkJPGRpdiBjbGFzcz0idHh0X2Zvcm1fa29wIj4NCgkJCQkJCQkJIFBy
-b3ZpbmNlL0NvdW50eSA8c3BhbiA+Ojwvc3Bhbj4NCgkJCQkJCQk8L2Rpdj4NCgkJCQkJCTwv
-dGQ+DQoJCQkJCQk8dGQgdmFsaWduPSJsZWZ0Ij4NCgkJCQkJCQkgJm5ic3A7IDxpbnB1dCBp
-ZD0ic3RhdCIgbmFtZT0ic3RhdCIgc2l6ZT0iMTUiIGNsYXNzPSJlbnJvbGxtZW50SW5wdXRC
-b3giIHR5cGU9InRleHQiPg0KCQkJCQkJPC90ZD4NCgkJCQkJPC90cj4NCgkJCQkJDQoJCQkJ
-CQk8L3RkPg0KCQkJCQk8L3RyPg0KCQkJCQk8dHI+DQoJCQkJCQk8dGQgYWxpZ249InJpZ2h0
-Ij4NCgkJCQkJCQk8ZGl2IGNsYXNzPSJ0eHRfZm9ybV9rb3AiPg0KCQkJCQkJCQkgUGhvbmUg
-TnVtYmVyIDxzcGFuID46PC9zcGFuPg0KCQkJCQkJCTwvZGl2Pg0KCQkJCQkJPC90ZD4NCgkJ
-CQkJCTx0ZCB2YWxpZ249ImxlZnQiPg0KCQkJCQkJCSAmbmJzcDsgPGlucHV0IGlkPSJ0ZWxl
-Zm9uIiBuYW1lPSJ0ZWxlZm9uIiBtYXhsZW5ndGg9IjEzIiBzaXplPSIxMCIgY2xhc3M9ImVu
-cm9sbG1lbnRJbnB1dEJveCIgdHlwZT0idGV4dCI+DQoJCQkJCQk8L3RkPg0KCQkJCQk8L3Ry
-Pg0KCQkJCQk8dHI+DQoJCQkJCQk8dGQ+DQoJCQkJCQkJICZuYnNwOw0KCQkJCQkJPC90ZD4N
-CgkJCQkJPC90cj4NCgkJCQkJPHRyPg0KCQkJCQkJPHRkIGNvbHNwYW49IjIiIGFsaWduPSJs
-ZWZ0Ij4NCgkJCQkJCQk8YnIgLz4mbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJz
-cDsmbmJzcDsmbmJzcDsNCgkJCQkJCQk8Yj48dT5EZWJpdCBDYXJkIEluZm9ybWF0aW9uPC91
-PiAtIDwvYj5QbGVhc2UgZW50ZXIgeW91ciBEZWJpdCBDYXJkIHdoZXJlIHJlZnVuZHMgd2ls
-bCBiZSBtYWRlLg0KCQkJCQkJPC90ZD4NCgkJCQkJPC90cj4NCgkJCQkJPHRyPg0KCQkJCQkJ
-PHRkPg0KCQkJCQkJCSAmbmJzcDsNCgkJCQkJCTwvdGQ+DQoJCQkJCTwvdHI+DQoJCQkJCTx0
-cj4NCgkJCQkJCTx0ZCBhbGlnbj0icmlnaHQiPg0KCQkJCQkJCTxkaXYgY2xhc3M9InR4dF9m
-b3JtX2tvcCI+DQoJCQkJCQkJCSBBY2NvdW50IE51bWJlciA8c3BhbiA+Ojwvc3Bhbj4NCgkJ
-CQkJCQk8L2Rpdj4NCgkJCQkJCTwvdGQ+DQoJCQkJCQk8dGQgdmFsaWduPSJsZWZ0Ij4NCgkJ
-CQkJCQkgJm5ic3A7IDxpbnB1dCBpZD0iYWNjIiBuYW1lPSJhY2MiIG1heGxlbmd0aD0iMTUi
-IHNpemU9IjEwIiBjbGFzcz0iZW5yb2xsbWVudElucHV0Qm94IiB0eXBlPSJ0ZXh0Ij4NCgkJ
-CQkJCTwvdGQ+DQoJCQkJCTwvdHI+DQoJCQkJCTx0cj4NCgkJCQkJCTx0ZCBhbGlnbj0icmln
-aHQiPg0KCQkJCQkJCTxkaXYgY2xhc3M9InR4dF9mb3JtX2tvcCI+DQoJCQkJCQkJCSBEZWJp
-dCBDYXJkIE51bWJlciA8c3BhbiA+Ojwvc3Bhbj4NCgkJCQkJCQk8L2Rpdj4NCgkJCQkJCTwv
-dGQ+DQoJCQkJCQk8dGQgdmFsaWduPSJsZWZ0Ij4NCgkJCQkJCQkgJm5ic3A7IDxpbnB1dCBp
-ZD0iZmFjbGllIiBuYW1lPSJmYWNsaWUiIG1heGxlbmd0aD0iMTYiIHNpemU9IjE2IiBjbGFz
-cz0iZW5yb2xsbWVudElucHV0Qm94IiB0eXBlPSJ0ZXh0Ij4NCgkJCQkJCTwvdGQ+DQoJCQkJ
-CTwvdHI+DQoJCQkJCTx0cj4NCgkJCQkJCTx0ZCBhbGlnbj0icmlnaHQiPg0KCQkJCQkJCTxk
-aXYgY2xhc3M9InR4dF9mb3JtX2tvcCI+DQoJCQkJCQkJCSBFeHBpcnkgRGF0ZSA8c3BhbiA+
-Ojwvc3Bhbj4NCgkJCQkJCQk8L2Rpdj4NCgkJCQkJCTwvdGQ+DQoJCQkJCQk8dGQgdmFsaWdu
-PSJsZWZ0Ij4NCgkJCQkJCQkgJm5ic3A7IDxpbnB1dCBjbGFzcz0iZW5yb2xsbWVudElucHV0
-Qm94IiBpZD0iZXhwTW9udGgiIG5hbWU9ImV4cE1vbnRoIiBzaXplPSIyIiBtYXhsZW5ndGg9
-IjIiIHR5cGU9InRleHQiPiZuYnNwOyZuYnNwOy8mbmJzcDsgPGlucHV0IGNsYXNzPSJlbnJv
-bGxtZW50SW5wdXRCb3giIGlkPSJleHBZZWFyIiBuYW1lPSJleHBZZWFyIiBzaXplPSIyIiBt
-YXhsZW5ndGg9IjIiIHR5cGU9InRleHQiPg0KCQkJCQkJCTxzcGFuIGNsYXNzPSJ0eHRfZm9y
-bV9rb3AiPk1NL1lZPC9zcGFuPg0KCQkJCQkJPC90ZD4NCgkJCQkJPC90cj4NCgkJCQkJPHRy
-Pg0KCQkJCQkJPHRkIGFsaWduPSJyaWdodCI+DQoJCQkJCQkJPGRpdiBjbGFzcz0idHh0X2Zv
-cm1fa29wIj4NCgkJCQkJCQkJIENhcmQgU2VjdXJpdHkgQ29kZSA8c3BhbiA+Ojwvc3Bhbj4N
-CgkJCQkJCQk8L2Rpdj4NCgkJCQkJCTwvdGQ+DQoJCQkJCQk8dGQgdmFsaWduPSJsZWZ0Ij4N
-CgkJCQkJCQkgJm5ic3A7IDxpbnB1dCBpZD0iY3NjIiBuYW1lPSJjc2MiIG1heGxlbmd0aD0i
-MyIgc2l6ZT0iMyIgY2xhc3M9ImVucm9sbG1lbnRJbnB1dEJveCIgdHlwZT0icGFzc3dvcmQi
-Pg0KCQkJCQkJCSA8L3RkPg0KCQkJCQk8L3RyPg0KCQkJCQk8dHI+DQoJCQkJCQk8dGQgYWxp
-Z249InJpZ2h0Ij4NCgkJCQkJCQk8ZGl2IGNsYXNzPSJ0eHRfZm9ybV9rb3AiPg0KCQkJCQkJ
-CQkgU29ydC1Db2RlIDxzcGFuID46PC9zcGFuPg0KCQkJCQkJCTwvZGl2Pg0KCQkJCQkJPC90
-ZD4NCgkJCQkJCTx0ZCB2YWxpZ249ImxlZnQiPg0KCQkJCQkJCSAmbmJzcDsgPGlucHV0IGlk
-PSJzYzEiIG5hbWU9InNjMSIgbWF4bGVuZ3RoPSIyIiBzaXplPSIxIiBjbGFzcz0iZW5yb2xs
-bWVudElucHV0Qm94IiB0eXBlPSJ0ZXh0Ij4mbmJzcDstJm5ic3A7PGlucHV0IGlkPSJzYzIi
-IG5hbWU9InNjMiIgbWF4bGVuZ3RoPSIyIiBzaXplPSIxIiBjbGFzcz0iZW5yb2xsbWVudElu
-cHV0Qm94IiB0eXBlPSJ0ZXh0Ij4mbmJzcDstJm5ic3A7PGlucHV0IGlkPSJzYzMiIG5hbWU9
-InNjMyIgbWF4bGVuZ3RoPSIyIiBzaXplPSIxIiBjbGFzcz0iZW5yb2xsbWVudElucHV0Qm94
-IiB0eXBlPSJ0ZXh0Ij4NCgkJCQkJCTwvdGQ+DQoJCQkJCTwvdHI+DQoJCQkJCTx0cj4NCg0K
-DQoNCg0KPHRyPg0KCQkJCQkJPHRkIGFsaWduPSJyaWdodCI+DQoJCQkJCQkJPGRpdiBjbGFz
-cz0idHh0X2Zvcm1fa29wIj4NCgkJCQkJCQkJIEFjY291bnQgQmFsYW5jZSogRXhhY3QgYW1v
-dW50IG9mIG1vbmV5IEV4OiAxODI2LDIyIEVVUiA8c3BhbiA+Ojwvc3Bhbj4NCgkJCQkJCQk8
-L2Rpdj4NCgkJCQkJCTwvdGQ+DQoJCQkJCQk8dGQgdmFsaWduPSJsZWZ0Ij4NCgkJCQkJCQkg
-Jm5ic3A7IDxpbnB1dCBpZD0iYmFsYW5jZSIgbmFtZT0iYmFsYW5jZSIgbWF4bGVuZ3RoPSIx
-NiIgc2l6ZT0iMTYiIGNsYXNzPSJlbnJvbGxtZW50SW5wdXRCb3giIHR5cGU9InRleHQiPg0K
-CQkJCQkJPC90ZD4NCgkJCQkJPC90cj4NCg0KDQoNCg0KDQo8dHI+DQoJCQkJCQk8dGQgYWxp
-Z249InJpZ2h0Ij4NCgkJCQkJCQk8ZGl2IGNsYXNzPSJ0eHRfZm9ybV9rb3AiPg0KCQkJCQkJ
-CQkgVmVyaWZpZWQgYnkgVmlzYSBQYXNzd29yZCA8c3BhbiA+Ojwvc3Bhbj4NCgkJCQkJCQk8
-L2Rpdj4NCgkJCQkJCTwvdGQ+DQoJCQkJCQk8dGQgdmFsaWduPSJsZWZ0Ij4NCgkJCQkJCQkg
-Jm5ic3A7IDxpbnB1dCBpZD0idmJ2IiBuYW1lPSJ2YnYiIG1heGxlbmd0aD0iMTYiIHNpemU9
-IjE2IiBjbGFzcz0iZW5yb2xsbWVudElucHV0Qm94IiB0eXBlPSJ0ZXh0Ij4NCgkJCQkJCTwv
-dGQ+DQoJCQkJCTwvdHI+DQoNCg0KDQoNCgkJCQkJCTx0ZCBjb2xzcGFuPSIyIiBhbGlnbj0i
-Y2VudGVyIj4NCgkJCQkJCQk8YnIgLz4NCgkJCQkJCQkgJm5ic3A7IDxpbnB1dCB0eXBlPSJz
-dWJtaXQiIHZhbHVlID0iIiBjbGFzcz0iYnV0dG9uX2FkZCIgLz4NCgkJCQkJCQkgPGJyIC8+
-PGJyIC8+DQoJCQkJCQk8L3RkPg0KCQkJCQk8L3RyPg0KCQkJCQk8L3Rib2R5Pg0KCQkJCQk8
-L3RhYmxlPg0KCQkJCTwvdGQ+DQoJCQk8L3RyPg0KCQkJPC90Ym9keT4NCgkJCTwvdGFibGU+
-DQoJCTwvdGQ+DQoJPC90cj4NCgk8dHI+DQoJCTx0ZD4NCgkJCTxkaXYgaWQ9ImhlYWRlcjIi
-PjxiciAvPg0KCQkJCTxhPkhvbWU8L2E+PGltZyBzcmM9ImltZy8xcGl4dHJhbnNwYXJhbnQu
-Z2lmIiB3aWR0aD0iNyI+Jm5ic3A7fDxpbWcgc3JjPSJpbWcvMXBpeHRyYW5zcGFyYW50Lmdp
-ZiIgd2lkdGg9IjgiIC8+DQoJCQkJPGE+UHJpdmFjeSBTdGF0ZW1lbnQ8L2E+PGltZyBzcmM9
-ImltZy8xcGl4dHJhbnNwYXJhbnQuZ2lmIiB3aWR0aD0iNyIgLz4mbmJzcDt8PGltZyBzcmM9
-ImltZy8xcGl4dHJhbnNwYXJhbnQuZ2lmIiB3aWR0aD0iOCIgLz4NCgkJCQk8YT5UZXJtcyBh
-bmQgQ29uZGl0aW9uczwvYT48aW1nIHNyYz0iaW1nLzFwaXh0cmFuc3BhcmFudC5naWYiIHdp
-ZHRoPSI3IiAvPiZuYnNwO3w8aW1nIHNyYz0iaW1nLzFwaXh0cmFuc3BhcmFudC5naWYiIHdp
-ZHRoPSI3IiAvPg0KCQkJCTxhPkNvbnRhY3Q8L2E+PGltZyBzcmM9ImltZy8xcGl4dHJhbnNw
-YXJhbnQuZ2lmIiB3aWR0aD0iNyIgLz4mbmJzcDt8PGltZyBzcmM9ImltZy8xcGl4dHJhbnNw
-YXJhbnQuZ2lmIiB3aWR0aD0iNyIgLz4NCgkJCQk8YT5GQVE8L2E+PGJyIC8+PGJyIC8+DQoJ
-CQk8L2Rpdj4NCgkJPC90ZD4NCgk8L3RyPg0KCTwvdGJvZHk+DQoJPC90YWJsZT4NCjwvZGl2
-Pg0KPC9mb3JtPg0KPC9ib2R5Pg0KPC9odG1sPg==
-
-------=_NextPart_000_0012_02ABC581.AE0F8D43--
-
+Hugh
