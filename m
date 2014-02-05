@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753534AbaBEXm5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 18:42:57 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:34046 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752074AbaBEXmz (ORCPT
+	id S1752969AbaBEXs0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 18:48:26 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:60295 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751468AbaBEXsY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 18:42:55 -0500
-Message-ID: <52F2CC7B.80406@gmail.com>
-Date: Thu, 06 Feb 2014 00:42:51 +0100
-From: Bastien Traverse <bastien.traverse@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Wed, 5 Feb 2014 18:48:24 -0500
+Date: Wed, 5 Feb 2014 23:48:15 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>,
+        "Strashko, Grygorii" <grygorii.strashko@ti.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] ARM: mm: Fix the memblock allocation for LPAE machines
+Message-ID: <20140205234815.GU26684@n2100.arm.linux.org.uk>
+References: <1391285687-20534-1-git-send-email-santosh.shilimkar@ti.com> <52F2CBC0.3030305@ti.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: francis.moro@gmail.com, linuux-pm@vger.kernel.org
-Subject: Re: 3.12: ethernet controller missing after resuming from suspend
- to RAM
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52F2CBC0.3030305@ti.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, Feb 05, 2014 at 06:39:44PM -0500, Santosh Shilimkar wrote:
+> Russell,
+> 
+> On Saturday 01 February 2014 03:14 PM, Santosh Shilimkar wrote:
+> > Commit ad6492b8 added much needed memblock_virt_alloc_low() and further
+> > commit 07bacb3 {memblock, bootmem: restore goal for alloc_low} fixed the
+> > issue with low memory limit thansk to Yinghai. But even after all these fixes,
+> > there is still one case where the limit check done with ARCH_LOW_ADDRESS_LIMIT
+> > for low memory fails. Russell pointed out the issue with 32 bit LPAE machines
+> > in below thread.
+> > 	https://lkml.org/lkml/2014/1/28/364
+> > 
+> > Since on some LPAE machines where memory start address is beyond 4GB,
+> > the low memory marker in memblock will be set to default
+> > ARCH_LOW_ADDRESS_LIMIT which is wrong. We can fix this by letting
+> > architectures set the ARCH_LOW_ADDRESS_LIMIT using another export
+> > similar to memblock_set_current_limit() but am not sure whether
+> > its worth the trouble. Tell me if you think otherwise.
+> > 
+> > Rather am just trying to fix that one broken case using memblock_virt_alloc()
+> > in setup code since the memblock.current_limit is updated appropriately
+> > makes it work on all ARM 32 bit machines.
+> > 
+> > Cc: Yinghai Lu <yinghai@kernel.org>
+> > Cc: Russell King <linux@arm.linux.org.uk>
+> > Cc: Strashko, Grygorii <grygorii.strashko@ti.com>
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> > ---
+> Whats you say here ? We should get the fix for the
+> issue. If you are ok, I can drop the patch in patch system.
 
-I'm encountering the exact same problem (same model of machine, same
-controller, same OS) and was wondering where this bug was at.
+Is this still an issue, or has Tejun fixed it by some other means?  I've not
+noticed anything being broken at the moment.
 
-I just used my Ethernet NIC for the first time on an up-to-date
-Archlinux; it was working fine until I suspended to RAM: on resume the
-Realtek/Ethernet device had completely disappeared.
+Can you confirm whether we still have an issue without this patch please?
 
-The two entries absent from lspci output after resume are:
-$ sudo lspci -v
-(…)
-03:00.0 Unassigned class [ff00]: Realtek Semiconductor Co., Ltd. Device
-5289 (rev 01)
-	Subsystem: CLEVO/KAPOK Computer Device 0540
-	Flags: bus master, fast devsel, latency 0, IRQ 44
-	Memory at f7200000 (32-bit, non-prefetchable) [size=64K]
-	Capabilities: [40] Power Management version 3
-	Capabilities: [50] MSI: Enable+ Count=1/1 Maskable- 64bit+
-	Capabilities: [70] Express Endpoint, MSI 00
-	Capabilities: [b0] MSI-X: Enable- Count=1 Masked-
-	Capabilities: [d0] Vital Product Data
-	Capabilities: [100] Advanced Error Reporting
-	Capabilities: [140] Virtual Channel
-	Capabilities: [160] Device Serial Number 00-00-00-00-00-00-00-00
-	Kernel driver in use: rtsx_pci
-	Kernel modules: rtsx_pci
+Thanks.
 
-03:00.2 Ethernet controller: Realtek Semiconductor Co., Ltd.
-RTL8111/8168/8411 PCI Express Gigabit Ethernet Controller (rev 0a)
-	Subsystem: CLEVO/KAPOK Computer Device 0540
-	Flags: bus master, fast devsel, latency 0, IRQ 45
-	I/O ports at e000 [size=256]
-	Memory at f0a04000 (64-bit, prefetchable) [size=4K]
-	Memory at f0a00000 (64-bit, prefetchable) [size=16K]
-	Capabilities: [40] Power Management version 3
-	Capabilities: [50] MSI: Enable+ Count=1/1 Maskable- 64bit+
-	Capabilities: [70] Express Endpoint, MSI 01
-	Capabilities: [b0] MSI-X: Enable- Count=4 Masked-
-	Capabilities: [d0] Vital Product Data
-	Capabilities: [100] Advanced Error Reporting
-	Capabilities: [160] Device Serial Number 02-00-00-00-68-4c-e0-00
-	Kernel driver in use: r8169
-	Kernel modules: r8169
-
-Trying to modprobe r8169 & rtsx_pci didn't change anything.
-
-Tell me whether my dmesg may be of any use, but I doubt it as it is
-pretty close to original poster's one.
-
-Thanks,
-Bastien
+-- 
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
