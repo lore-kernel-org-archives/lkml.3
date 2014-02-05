@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932364AbaBEITk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 03:19:40 -0500
-Received: from www84.your-server.de ([213.133.104.84]:36020 "EHLO
+	id S932352AbaBEITj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 03:19:39 -0500
+Received: from www84.your-server.de ([213.133.104.84]:36021 "EHLO
 	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751768AbaBEITd (ORCPT
+	with ESMTP id S1754054AbaBEITe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 03:19:33 -0500
+	Wed, 5 Feb 2014 03:19:34 -0500
 From: stefani@seibold.net
 To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
         tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
@@ -15,9 +15,9 @@ To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
         andriy.shevchenko@linux.intel.com
 Cc: Martin.Runge@rohde-schwarz.com, Andreas.Brief@rohde-schwarz.com,
         Stefani Seibold <stefani@seibold.net>
-Subject: [PATCH v12 6/9] cleanup __vdso_gettimeofday
-Date: Wed,  5 Feb 2014 09:20:01 +0100
-Message-Id: <1391588404-28147-7-git-send-email-stefani@seibold.net>
+Subject: [PATCH v12 4/9] vclock_gettime.c __vdso_clock_gettime cleanup
+Date: Wed,  5 Feb 2014 09:19:59 +0100
+Message-Id: <1391588404-28147-5-git-send-email-stefani@seibold.net>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1391588404-28147-1-git-send-email-stefani@seibold.net>
 References: <1391588404-28147-1-git-send-email-stefani@seibold.net>
@@ -28,45 +28,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stefani Seibold <stefani@seibold.net>
 
-This patch do a little cleanup for the __vdso_gettimeofday() function.
+This patch is a small code cleanup for the __vdso_clock_gettime() function.
 
-It kick out an unneeded ret local variable and makes the code faster if
-only the timezone is needed.
+It removes the unneeded return values from do_monotonic_coarse() and
+do_realtime_coarse() and add a fallback label for doing the kernel
+gettimeofday() system call.
 
 Signed-off-by: Stefani Seibold <stefani@seibold.net>
 ---
- arch/x86/vdso/vclock_gettime.c | 7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+ arch/x86/vdso/vclock_gettime.c | 27 ++++++++++++++-------------
+ 1 file changed, 14 insertions(+), 13 deletions(-)
 
 diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
-index 743f277..74e5c8e 100644
+index bbc8065..fd074dd 100644
 --- a/arch/x86/vdso/vclock_gettime.c
 +++ b/arch/x86/vdso/vclock_gettime.c
-@@ -259,13 +259,12 @@ int clock_gettime(clockid_t, struct timespec *)
+@@ -209,7 +209,7 @@ notrace static int do_monotonic(struct timespec *ts)
+ 	return mode;
+ }
  
- notrace int __vdso_gettimeofday(struct timeval *tv, struct timezone *tz)
+-notrace static int do_realtime_coarse(struct timespec *ts)
++notrace static void do_realtime_coarse(struct timespec *ts)
  {
--	long ret = VCLOCK_NONE;
+ 	unsigned long seq;
+ 	do {
+@@ -217,10 +217,9 @@ notrace static int do_realtime_coarse(struct timespec *ts)
+ 		ts->tv_sec = gtod->wall_time_coarse.tv_sec;
+ 		ts->tv_nsec = gtod->wall_time_coarse.tv_nsec;
+ 	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
+-	return 0;
+ }
+ 
+-notrace static int do_monotonic_coarse(struct timespec *ts)
++notrace static void do_monotonic_coarse(struct timespec *ts)
+ {
+ 	unsigned long seq;
+ 	do {
+@@ -228,30 +227,32 @@ notrace static int do_monotonic_coarse(struct timespec *ts)
+ 		ts->tv_sec = gtod->monotonic_time_coarse.tv_sec;
+ 		ts->tv_nsec = gtod->monotonic_time_coarse.tv_nsec;
+ 	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
 -
- 	if (likely(tv != NULL)) {
- 		BUILD_BUG_ON(offsetof(struct timeval, tv_usec) !=
- 			     offsetof(struct timespec, tv_nsec) ||
- 			     sizeof(*tv) != sizeof(struct timespec));
--		ret = do_realtime((struct timespec *)tv);
-+		if (unlikely(do_realtime(&tmp) == VCLOCK_NONE))
-+			return vdso_fallback_gtod(tv, tz);
- 		tv->tv_usec /= 1000;
- 	}
- 	if (unlikely(tz != NULL)) {
-@@ -274,8 +273,6 @@ notrace int __vdso_gettimeofday(struct timeval *tv, struct timezone *tz)
- 		tz->tz_dsttime = gtod->sys_tz.tz_dsttime;
+-	return 0;
+ }
+ 
+ notrace int __vdso_clock_gettime(clockid_t clock, struct timespec *ts)
+ {
+-	int ret = VCLOCK_NONE;
+-
+ 	switch (clock) {
+ 	case CLOCK_REALTIME:
+-		ret = do_realtime(ts);
++		if (do_realtime(ts) == VCLOCK_NONE)
++			goto fallback;
+ 		break;
+ 	case CLOCK_MONOTONIC:
+-		ret = do_monotonic(ts);
++		if (do_monotonic(ts) == VCLOCK_NONE)
++			goto fallback;
+ 		break;
+ 	case CLOCK_REALTIME_COARSE:
+-		return do_realtime_coarse(ts);
++		do_realtime_coarse(ts);
++		break;
+ 	case CLOCK_MONOTONIC_COARSE:
+-		return do_monotonic_coarse(ts);
++		do_monotonic_coarse(ts);
++		break;
++	default:
++		goto fallback;
  	}
  
 -	if (ret == VCLOCK_NONE)
--		return vdso_fallback_gtod(tv, tz);
+-		return vdso_fallback_gettime(clock, ts);
  	return 0;
++fallback:
++	return vdso_fallback_gettime(clock, ts);
  }
- int gettimeofday(struct timeval *, struct timezone *)
+ int clock_gettime(clockid_t, struct timespec *)
+ 	__attribute__((weak, alias("__vdso_clock_gettime")));
 -- 
 1.8.5.3
 
