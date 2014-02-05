@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755867AbaBEUW2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:22:28 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:48537 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755245AbaBEUHi (ORCPT
+	id S1755240AbaBEUHf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:07:35 -0500
+Received: from mail.windriver.com ([147.11.1.11]:55309 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754084AbaBEUHM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:07:38 -0500
+	Wed, 5 Feb 2014 15:07:12 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Dmitry Monakhov <dmonakhov@openvz.org>, "Theodore Ts'o" <tytso@mit.edu>,
+CC: Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 175/213] ext4: online defrag is not supported for journaled files
-Date: Wed, 5 Feb 2014 15:02:10 -0500
-Message-ID: <1391630568-49251-176-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 155/213] USB: serial: fix race between probe and open
+Date: Wed, 5 Feb 2014 15:01:50 -0500
+Message-ID: <1391630568-49251-156-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dmitry Monakhov <dmonakhov@openvz.org>
+From: Johan Hovold <jhovold@gmail.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -31,37 +32,96 @@ From: Dmitry Monakhov <dmonakhov@openvz.org>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit f066055a3449f0e5b0ae4f3ceab4445bead47638 upstream.
+commit a65a6f14dc24a90bde3f5d0073ba2364476200bf upstream.
 
-Proper block swap for inodes with full journaling enabled is
-truly non obvious task. In order to be on a safe side let's
-explicitly disable it for now.
+Fix race between probe and open by making sure that the disconnected
+flag is not cleared until all ports have been registered.
 
-Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+A call to tty_open while probe is running may get a reference to the
+serial structure in serial_install before its ports have been
+registered. This may lead to usb_serial_core calling driver open before
+port is fully initialised.
+
+With ftdi_sio this result in the following NULL-pointer dereference as
+the private data has not been initialised at open:
+
+[  199.698286] IP: [<f811a089>] ftdi_open+0x59/0xe0 [ftdi_sio]
+[  199.698297] *pde = 00000000
+[  199.698303] Oops: 0000 [#1] PREEMPT SMP
+[  199.698313] Modules linked in: ftdi_sio usbserial
+[  199.698323]
+[  199.698327] Pid: 1146, comm: ftdi_open Not tainted 3.2.11 #70 Dell Inc. Vostro 1520/0T816J
+[  199.698339] EIP: 0060:[<f811a089>] EFLAGS: 00010286 CPU: 0
+[  199.698344] EIP is at ftdi_open+0x59/0xe0 [ftdi_sio]
+[  199.698348] EAX: 0000003e EBX: f5067000 ECX: 00000000 EDX: 80000600
+[  199.698352] ESI: f48d8800 EDI: 00000001 EBP: f515dd54 ESP: f515dcfc
+[  199.698356]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+[  199.698361] Process ftdi_open (pid: 1146, ti=f515c000 task=f481e040 task.ti=f515c000)
+[  199.698364] Stack:
+[  199.698368]  f811a9fe f811a9e0 f811b3ef 00000000 00000000 00001388 00000000 f4a86800
+[  199.698387]  00000002 00000000 f806e68e 00000000 f532765c f481e040 00000246 22222222
+[  199.698479]  22222222 22222222 22222222 f5067004 f5327600 f5327638 f515dd74 f806e6ab
+[  199.698496] Call Trace:
+[  199.698504]  [<f806e68e>] ? serial_activate+0x2e/0x70 [usbserial]
+[  199.698511]  [<f806e6ab>] serial_activate+0x4b/0x70 [usbserial]
+[  199.698521]  [<c126380c>] tty_port_open+0x7c/0xd0
+[  199.698527]  [<f806e660>] ? serial_set_termios+0xa0/0xa0 [usbserial]
+[  199.698534]  [<f806e76f>] serial_open+0x2f/0x70 [usbserial]
+[  199.698540]  [<c125d07c>] tty_open+0x20c/0x510
+[  199.698546]  [<c10e9eb7>] chrdev_open+0xe7/0x230
+[  199.698553]  [<c10e48f2>] __dentry_open+0x1f2/0x390
+[  199.698559]  [<c144bfec>] ? _raw_spin_unlock+0x2c/0x50
+[  199.698565]  [<c10e4b76>] nameidata_to_filp+0x66/0x80
+[  199.698570]  [<c10e9dd0>] ? cdev_put+0x20/0x20
+[  199.698576]  [<c10f3e08>] do_last+0x198/0x730
+[  199.698581]  [<c10f4440>] path_openat+0xa0/0x350
+[  199.698587]  [<c10f47d5>] do_filp_open+0x35/0x80
+[  199.698593]  [<c144bfec>] ? _raw_spin_unlock+0x2c/0x50
+[  199.698599]  [<c10ff110>] ? alloc_fd+0xc0/0x100
+[  199.698605]  [<c10f0b72>] ? getname_flags+0x72/0x120
+[  199.698611]  [<c10e4450>] do_sys_open+0xf0/0x1c0
+[  199.698617]  [<c11fcc08>] ? trace_hardirqs_on_thunk+0xc/0x10
+[  199.698623]  [<c10e458e>] sys_open+0x2e/0x40
+[  199.698628]  [<c144c990>] sysenter_do_call+0x12/0x36
+[  199.698632] Code: 85 89 00 00 00 8b 16 8b 4d c0 c1 e2 08 c7 44 24 14 88 13 00 00 81 ca 00 00 00 80 c7 44 24 10 00 00 00 00 c7 44 24 0c 00 00 00 00 <0f> b7 41 78 31 c9 89 44 24 08 c7 44 24 04 00 00 00 00 c7 04 24
+[  199.698884] EIP: [<f811a089>] ftdi_open+0x59/0xe0 [ftdi_sio] SS:ESP 0068:f515dcfc
+[  199.698893] CR2: 0000000000000078
+[  199.698925] ---[ end trace 77c43ec023940cff ]---
+
+Reported-and-tested-by: Ken Huang <csuhgw@gmail.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/ext4/move_extent.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/usb/serial/usb-serial.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/fs/ext4/move_extent.c b/fs/ext4/move_extent.c
-index deff4a5085e8..6764168776bf 100644
---- a/fs/ext4/move_extent.c
-+++ b/fs/ext4/move_extent.c
-@@ -1209,7 +1209,12 @@ ext4_move_extents(struct file *o_filp, struct file *d_filp,
- 			orig_inode->i_ino, donor_inode->i_ino);
- 		return -EINVAL;
+diff --git a/drivers/usb/serial/usb-serial.c b/drivers/usb/serial/usb-serial.c
+index b40884a4191d..561bf115619b 100644
+--- a/drivers/usb/serial/usb-serial.c
++++ b/drivers/usb/serial/usb-serial.c
+@@ -1040,6 +1040,12 @@ int usb_serial_probe(struct usb_interface *interface,
+ 		serial->attached = 1;
  	}
--
-+	/* TODO: This is non obvious task to swap blocks for inodes with full
-+	   jornaling enabled */
-+	if (ext4_should_journal_data(orig_inode) ||
-+	    ext4_should_journal_data(donor_inode)) {
-+		return -EINVAL;
-+	}
- 	/* Protect orig and donor inodes against a truncate */
- 	ret1 = mext_inode_double_lock(orig_inode, donor_inode);
- 	if (ret1 < 0)
+ 
++	/* Avoid race with tty_open and serial_install by setting the
++	 * disconnected flag and not clearing it until all ports have been
++	 * registered.
++	 */
++	serial->disconnected = 1;
++
+ 	if (get_free_serial(serial, num_ports, &minor) == NULL) {
+ 		dev_err(&interface->dev, "No more free serial devices\n");
+ 		goto probe_error;
+@@ -1062,6 +1068,8 @@ int usb_serial_probe(struct usb_interface *interface,
+ 		}
+ 	}
+ 
++	serial->disconnected = 0;
++
+ 	usb_serial_console_init(debug, minor);
+ 
+ exit:
 -- 
 1.8.5.2
 
