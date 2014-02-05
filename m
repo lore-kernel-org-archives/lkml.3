@@ -1,88 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752667AbaBEPCX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 10:02:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9361 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751539AbaBEPCS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 10:02:18 -0500
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, Michal Marek <mmarek@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kirill Tkhai <tkhai@yandex.ru>,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-kbuild@vger.kernel.org
-Subject: [PATCH] Makefile, CONFIG_MODVERSIONS, ignore *.mod.c files
-Date: Wed,  5 Feb 2014 10:01:51 -0500
-Message-Id: <1391612511-9276-1-git-send-email-prarit@redhat.com>
+	id S1752549AbaBEPFU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 10:05:20 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:35420 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751840AbaBEPFS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 10:05:18 -0500
+Message-ID: <52F25324.90108@free-electrons.com>
+Date: Wed, 05 Feb 2014 16:05:08 +0100
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Boris BREZILLON <b.brezillon@overkiz.com>
+CC: Mike Turquette <mturquette@linaro.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
+        linux-kernel@vger.kernel.org,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH] clk: add strict of_clk_init dependency check
+References: <1391554766-11285-1-git-send-email-gregory.clement@free-electrons.com> <1391593680-9388-1-git-send-email-b.brezillon@overkiz.com> <52F24F4F.8000901@free-electrons.com>
+In-Reply-To: <52F24F4F.8000901@free-electrons.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CONFIG_MODVERSIONS=y results in a .mod.c for every compiled file in the kernel.
-Issuing a 'make cscope' on a compiled kernel tree results in the cscope files
-containing *.mod.c files.
+On 05/02/2014 15:48, Gregory CLEMENT wrote:
+> Hi Boris,
+> 
+> On 05/02/2014 10:48, Boris BREZILLON wrote:
+>> The parent dependency check is only available on the first parent of a given
+>> clk.
+>>
+>> Add support for strict dependency check: all parents of a given clk must be
+>> initialized.
+>>
+>> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+>> ---
+>>
+>> Hello Gregory,
+>>
+>> This patch adds support for strict check on clk dependencies (check if all
+>> parents specified by an DT clk node are initialized).
+>>
+>> I'm not sure this is what you were expecting (maybe testing the first parent
+>> is what you really want), so please feel free to tell me if I'm wrong.
+>>
+>> Best Regards,
+>>
+>> Boris
+>>
+>>  drivers/clk/clk.c |   27 +++++++++++++++++++++------
+>>  1 file changed, 21 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+>> index beb0f8b..6849769 100644
+>> --- a/drivers/clk/clk.c
+>> +++ b/drivers/clk/clk.c
+>> @@ -2543,22 +2543,37 @@ static int parent_ready(struct device_node *np)
+>>  {
+>>  	struct of_phandle_args clkspec;
+>>  	struct of_clk_provider *provider;
+>> +	int num_parents;
+>> +	bool found;
+>> +	int i;
+>>  
+>>  	/*
+>>  	 * If there is no clock parent, no need to wait for them, then
+>>  	 * we can consider their absence as being ready
+>>  	 */
+>> -	if (of_parse_phandle_with_args(np, "clocks", "#clock-cells", 0,
+>> -					&clkspec))
+>> +	num_parents = of_count_phandle_with_args(np, "clocks", "#clock-cells");
+>> +	if (num_parents <= 0)
+>>  		return 1;
+>>  
+>> -	/* Check if we have such a provider in our array */
+>> -	list_for_each_entry(provider, &of_clk_providers, link) {
+>> -		if (provider->node == clkspec.np)
+>> +	for (i = 0; i < num_parents; i++) {
+>> +		if (of_parse_phandle_with_args(np, "clocks", "#clock-cells", i,
+>> +					       &clkspec))
+>>  			return 1;
+>> +
+>> +		/* Check if we have such a provider in our array */
+>> +		found = false;
+>> +		list_for_each_entry(provider, &of_clk_providers, link) {
+>> +			if (provider->node == clkspec.np) {
+>> +				found = true;
+>> +				break;
+> 
+> Hum this means that as soon as you have one parent then you consider it
+> as ready. It is better of what I have done because I only test the 1st
+> parent. However I wondered if we should go further by ensuring all the
+> parents are ready.
 
-[prarit@prarit linux]# make cscope
-[prarit@prarit linux]# cat cscope.files | grep mod.c | wc -l
-4807
+My bad, I read the code too fast. Your code already checks that all the
+parents are ready.
 
-These files are not useful for cscope and should be ignored.  For example,
+So if you agree I will merge your code with mine and send a new patch.
 
-   #   line  filename / context / line
-   1    105  arch/x86/kvm/kvm-intel.mod.c <<GLOBAL>>
-             { 0x618911fc, __VMLINUX_SYMBOL_STR(numa_node) },
-   2    508  drivers/block/mtip32xx/mtip32xx.h <<GLOBAL>>
-             int numa_node;
-   3     55  drivers/block/mtip32xx/mtip32xx.mod.c <<GLOBAL>>
-             { 0x618911fc, __VMLINUX_SYMBOL_STR(numa_node) },
-   4     37  drivers/cpufreq/acpi-cpufreq.mod.c <<GLOBAL>>
-             { 0x618911fc, __VMLINUX_SYMBOL_STR(numa_node) },
-   <snip>
+> 
+> If I am right, there is more than one parent only for the muxer. In this
+> case is it really expected that all the parent are ready?
+> 
+> Thanks,
+> 
+> Gregory
+> 
+>> +			}
+>> +		}
+>> +
+>> +		if (!found)
+>> +			return 0;
+>>  	}
+>>  
+>> -	return 0;
+>> +	return 1;
+>>  }
+>>  
+>>  /**
+>>
+> 
+> 
 
-Add *.mod.c to the RCS_FIND_IGNORE in the top-level Makefile and to the ignore
-list in scripts/tags.sh.
 
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Kirill Tkhai <tkhai@yandex.ru>
-Cc: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-kbuild@vger.kernel.org
----
- Makefile        |    3 ++-
- scripts/tags.sh |    2 +-
- 2 files changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/Makefile b/Makefile
-index 606ef7c..4e1b87a 100644
---- a/Makefile
-+++ b/Makefile
-@@ -415,7 +415,8 @@ export MODVERDIR := $(if $(KBUILD_EXTMOD),$(firstword $(KBUILD_EXTMOD))/).tmp_ve
- # Files to ignore in find ... statements
- 
- RCS_FIND_IGNORE := \( -name SCCS -o -name BitKeeper -o -name .svn -o -name CVS \
--		   -o -name .pc -o -name .hg -o -name .git \) -prune -o
-+		   -o -name .pc -o -name .hg -o -name .git -o -name *.mod.c\) \
-+		   -prune -o
- export RCS_TAR_IGNORE := --exclude SCCS --exclude BitKeeper --exclude .svn \
- 			 --exclude CVS --exclude .pc --exclude .hg --exclude .git
- 
-diff --git a/scripts/tags.sh b/scripts/tags.sh
-index 58c4559..6229d6b 100755
---- a/scripts/tags.sh
-+++ b/scripts/tags.sh
-@@ -14,7 +14,7 @@ fi
- # This is a duplicate of RCS_FIND_IGNORE without escaped '()'
- ignore="( -name SCCS -o -name BitKeeper -o -name .svn -o \
-           -name CVS  -o -name .pc       -o -name .hg  -o \
--          -name .git )                                   \
-+          -name .git -o -name *.mod.c )                  \
-           -prune -o"
- 
- # Do not use full path if we do not use O=.. builds
 -- 
-1.7.9.3
-
+Gregory Clement, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
