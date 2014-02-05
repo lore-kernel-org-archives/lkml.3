@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932758AbaBEUsV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:48:21 -0500
-Received: from mail.windriver.com ([147.11.1.11]:55031 "EHLO
+	id S932131AbaBEUGP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:06:15 -0500
+Received: from mail.windriver.com ([147.11.1.11]:54909 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754604AbaBEUGQ (ORCPT
+	with ESMTP id S1754696AbaBEUFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:06:16 -0500
+	Wed, 5 Feb 2014 15:05:53 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Dan Carpenter <dan.carpenter@oracle.com>, "H. Peter Anvin" <hpa@zytor.com>,
+CC: Daniel J Blueman <daniel@quora.org>, Jeff Garzik <jgarzik@redhat.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 110/213] x86, tls: Off by one limit check
-Date: Wed, 5 Feb 2014 15:01:05 -0500
-Message-ID: <1391630568-49251-111-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 096/213] Prevent interface errors with Seagate FreeAgent GoFlex
+Date: Wed, 5 Feb 2014 15:00:51 -0500
+Message-ID: <1391630568-49251-97-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,7 +23,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Daniel J Blueman <daniel@quora.org>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -31,41 +31,36 @@ From: Dan Carpenter <dan.carpenter@oracle.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 8f0750f19789cf352d7e24a6cc50f2ab1b4f1372 upstream.
+commit c531077f40abc9f2129c4c83a30b3f8d6ce1c0e7 upstream.
 
-These are used as offsets into an array of GDT_ENTRY_TLS_ENTRIES members
-so GDT_ENTRY_TLS_ENTRIES is one past the end of the array.
+When using my Seagate FreeAgent GoFlex eSATAp external disk enclosure,
+interface errors are always seen until 1.5Gbps is negotiated [1]. This
+occurs using any disk in the enclosure, and when the disk is connected
+directly with a generic passive eSATAp cable, we see stable 3Gbps
+operation as expected.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Link: http://lkml.kernel.org/r/20120324075250.GA28258@elgon.mountain
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Blacklist 3Gbps mode to avoid dataloss and the ~30s delay bus reset
+and renegotiation incurs.
+
+Signed-off-by: Daniel J Blueman <daniel@quora.org>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/x86/kernel/tls.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/ata/libata-core.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/x86/kernel/tls.c b/arch/x86/kernel/tls.c
-index 6bb7b8579e70..bcfec2d23769 100644
---- a/arch/x86/kernel/tls.c
-+++ b/arch/x86/kernel/tls.c
-@@ -163,7 +163,7 @@ int regset_tls_get(struct task_struct *target, const struct user_regset *regset,
- {
- 	const struct desc_struct *tls;
+diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+index 6e4b795d79e0..ce0ba625bd62 100644
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -4407,6 +4407,7 @@ static const struct ata_blacklist_entry ata_device_blacklist [] = {
  
--	if (pos > GDT_ENTRY_TLS_ENTRIES * sizeof(struct user_desc) ||
-+	if (pos >= GDT_ENTRY_TLS_ENTRIES * sizeof(struct user_desc) ||
- 	    (pos % sizeof(struct user_desc)) != 0 ||
- 	    (count % sizeof(struct user_desc)) != 0)
- 		return -EINVAL;
-@@ -198,7 +198,7 @@ int regset_tls_set(struct task_struct *target, const struct user_regset *regset,
- 	struct user_desc infobuf[GDT_ENTRY_TLS_ENTRIES];
- 	const struct user_desc *info;
+ 	/* Devices which aren't very happy with higher link speeds */
+ 	{ "WD My Book",			NULL,	ATA_HORKAGE_1_5_GBPS, },
++	{ "Seagate FreeAgent GoFlex",	NULL,	ATA_HORKAGE_1_5_GBPS, },
  
--	if (pos > GDT_ENTRY_TLS_ENTRIES * sizeof(struct user_desc) ||
-+	if (pos >= GDT_ENTRY_TLS_ENTRIES * sizeof(struct user_desc) ||
- 	    (pos % sizeof(struct user_desc)) != 0 ||
- 	    (count % sizeof(struct user_desc)) != 0)
- 		return -EINVAL;
+ 	/*
+ 	 * Devices which choke on SETXFER.  Applies only if both the
 -- 
 1.8.5.2
 
