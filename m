@@ -1,108 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752647AbaBEP2g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 10:28:36 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:57682 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751872AbaBEP2e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 10:28:34 -0500
-Date: Wed, 5 Feb 2014 10:28:21 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH -v2 4/6] memcg: make sure that memcg is not offline when
- charging
-Message-ID: <20140205152821.GY6963@cmpxchg.org>
-References: <1391520540-17436-1-git-send-email-mhocko@suse.cz>
- <1391520540-17436-5-git-send-email-mhocko@suse.cz>
- <20140204162939.GP6963@cmpxchg.org>
- <20140205133834.GB2425@dhcp22.suse.cz>
+	id S1752719AbaBEP3r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 10:29:47 -0500
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:48522 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751425AbaBEP3p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 10:29:45 -0500
+Date: Wed, 5 Feb 2014 10:29:40 -0500
+From: Matt Porter <mporter@linaro.org>
+To: Nishanth Menon <nm@ti.com>
+Cc: Jack Mitchell <ml@embed.me.uk>, bcousson@baylibre.com, tony@atomide.com,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, linux-omap@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Jack Mitchell <jack@embed.me.uk>
+Subject: Re: [PATCH RESEND] ARM: dts: add BeagleBone Audio Cape (Rev A) dtsi
+Message-ID: <20140205152940.GD22153@beef>
+References: <1391608084-12665-1-git-send-email-ml@embed.me.uk>
+ <52F2460C.3080908@ti.com>
+ <20140205143800.GB22153@beef>
+ <52F25122.50400@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140205133834.GB2425@dhcp22.suse.cz>
+In-Reply-To: <52F25122.50400@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 05, 2014 at 02:38:34PM +0100, Michal Hocko wrote:
-> On Tue 04-02-14 11:29:39, Johannes Weiner wrote:
+On Wed, Feb 05, 2014 at 08:56:34AM -0600, Nishanth Menon wrote:
+> On 02/05/2014 08:38 AM, Matt Porter wrote:
+> > On Wed, Feb 05, 2014 at 08:09:16AM -0600, Nishanth Menon wrote:
+> >> On 02/05/2014 07:48 AM, Jack Mitchell wrote:
 > [...]
-> > Maybe we should remove the XXX if it makes you think we should change
-> > the current situation by any means necessary.  This patch is not an
-> > improvement.
-> >
-> > I put the XXX there so that we one day maybe refactor the code in a
-> > clean fashion where try_get_mem_cgroup_from_whatever() is in the same
-> > rcu section as the first charge attempt.  On failure, reclaim, and do
-> > the lookup again.
+> >>> + * --- a/arch/arm/boot/dts/am335x-boneblack.dts
+> >>> + * +++ b/arch/arm/boot/dts/am335x-boneblack.dts
+> >>> + * @@ -73,6 +74,6 @@
+> >>> + *  		pinctrl-names = "default", "off";
+> >>> + *  		pinctrl-0 = <&nxp_hdmi_bonelt_pins>;
+> >>> + *  		pinctrl-1 = <&nxp_hdmi_bonelt_off_pins>;
+> >>> + * -		status = "okay";
+> >>> + * +		status = "disabled";
+> >>> + *  	};
+> >>> + *  };
+> >>> + */
+> >>> +
+> >> how about making the audio-cape-reva.dts which includes and overrides
+> >> parameters of boneblack.dts?
+> > 
+> > Yeah, that might be a little cleaner. Black makes things unfortunately
+> > messy for these capes that were really intended for BBW :(
 > 
-> I wouldn't be opposed to such a cleanup. It is not that simple, though.
->
-> > Also, this problem only exists on swapin, where the memcg is looked up
-> > from an auxilliary data structure and not the current task, so maybe
-> > that would be an angle to look for a clean solution.
+> yes indeed - we might have to live with more dts in such a case.
+> > 
+> >> Further, I see a bunch of capes in
+> >> http://elinux.org/Beagleboard:BeagleBone_Capes
+> >>
+> >> Assuming that we dont want to discuss capebus all over again, is this
+> >> the approach we'd like to consider in the interim?
+> > 
+> > I think that's a fair assumption...I'll note that there is work slowly
+> > in progress on a very minimal implementation DT overlays upstream. But
+> > that doesn't exist. We are simply interested in a sane way to use the
+> > hardware we own in mainline and this approach makes it possible to build
+> > a kernel+dtb from mainline that works for this configuration. If
+> > there's a better way to support this hardware *today* let's discuss it.
+> > One of the big benefits to having this upstream is that it's no longer
+> > out of sight out of mind. It should be managed alongside all the other
+> > am335x dts data.
+> > 
+> > Incidentally, I'm hoping to contribute a similar patch for the DVI cape
+> > I have here.
 > 
-> I am not so sure about that. Task could have been moved to a different
-> group basically anytime it was outside of rcu_read_lock section (which
-> means most of the time). And so the group might get removed and we are
-> in the very same situation.
-> 
-> > Either way, the problem is currently fixed 
-> 
-> OK, my understanding (and my ack was based on that) was that we needed
-> a simple and safe fix for the stable trees and we would have something
-> more appropriate later on. Preventing from the race sounds like a more
-> appropriate and a better technical solution to me. So I would rather ask
-> why to keep a workaround in place. Does it add any risk?
-> Especially when we basically abuse the 2 stage cgroup removal. All the
-> charges should be cleared out after css_offline.
+> If I am not mistaken, the capes are stackable (within reason), and are
+> not exactly hotpluggable.. question pops up as to how do we handle
+> multiple cape descriptions on the same board without having the user
+> to create custom dts which includes each relevant cape dts he has on
+> his/her bone? I wonder(without proper research, just thinking aloud)
+> if u-boot can do some sort of merge of dtbs - assuming ofcourse eeprom
+> data is used to detect the capes plugged on board?
 
-I thought more about this and talked to Tejun as well.  He told me
-that the rcu grace period between disabling tryget and calling
-css_offline() is currently an implementation detail of the refcounter
-that css uses, but it's not a guarantee.  So my initial idea of
-reworking memcg to do css_tryget() and res_counter_charge() in the
-same rcu section is no longer enough to synchronize against offlining.
-We can forget about that.
+Well covered in the original discussion. gcl summarizes options in
+https://lkml.org/lkml/2012/11/5/615
 
-On the other hand, memcg holds a css reference only while an actual
-controller reference is being established (res_counter_charge), then
-drops it.  This means that once css_tryget() is disabled, we only need
-to wait for the css refcounter to hit 0 to know for sure that no new
-charges can show up and reparent_charges() is safe to run, right?
+Since then, the basic overlay support for the kernel is pretty much a
+done deal. It has a wide variety of users (FPGA folks) beyond this board
+specific case. The problem you describe about resource management and
+conflicts would probably need to be built on top of that. Pantelis
+had a PoC implementation with capebus/not-a-capebus but that's not part
+of what is being upstreamed. I'm not sure if there's anybody with enough
+time out of the Beagleboard community to upstream a resource manager on
+top of the basic overlay support that's in progress. However, it might
+make a nice GSoC2014 project. :)
 
-Well, css_free() is the callback invoked when the ref counter hits 0,
-and that is a guarantee.  From a memcg perspective, it's the right
-place to do reparenting, not css_offline().
-
-Here is the only exception to the above: swapout records maintain
-permanent css references, so they prevent css_free() from running.
-For that reason alone we should run one optimistic reparenting in
-css_offline() to make sure one swap record does not pin gigabytes of
-pages in an offlined cgroup, which is unreachable for reclaim.  But
-the reparenting for *correctness* is in css_free(), not css_offline().
-
-We should be changing the comments.  The code is already correct.
-
-> > Unless the alternative solution is inherent in a clean rework of the
-> > code to match cgroup core lifetime management, I don't see any reason
-> > to move away from the status quo.
-> 
-> To be honest this sounds like a weak reasoning to refuse a real fix
-> which replaces a workaround.
-> 
-> This is a second attempt to fix the actual race that you are dismissing
-> which is really surprising to me. Especially when the workaround is an
-> ugly hack.
-
-IMO it was always functionally correct, just something that could have
-been done cleaner from a design POV.  That's why I refused every
-alternative solution that made the code worse instead of better.
-
-But looks like it also makes perfect sense from a design POV, so
-it's all moot now.
+-Matt
