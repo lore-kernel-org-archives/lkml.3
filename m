@@ -1,51 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752800AbaBEPQe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 10:16:34 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53089 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752764AbaBEPQc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 10:16:32 -0500
-Message-ID: <52F255C9.3030600@suse.cz>
-Date: Wed, 05 Feb 2014 16:16:25 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752774AbaBEPSW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 10:18:22 -0500
+Received: from relay.parallels.com ([195.214.232.42]:34477 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752354AbaBEPSV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 10:18:21 -0500
+Date: Wed, 5 Feb 2014 19:18:18 +0400
+From: Andrew Vagin <avagin@parallels.com>
+To: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+Subject: Thread overran stack, or stack corrupted on 3.13.0
+Message-ID: <20140205151817.GA28502@paralelels.com>
 MIME-Version: 1.0
-To: Prarit Bhargava <prarit@redhat.com>
-CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Kirill Tkhai <tkhai@yandex.ru>,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH] Makefile, CONFIG_MODVERSIONS, ignore *.mod.c files
-References: <1391612511-9276-1-git-send-email-prarit@redhat.com> <52F2533F.2020302@suse.cz> <52F253D6.2060100@redhat.com>
-In-Reply-To: <52F253D6.2060100@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="koi8-r"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [10.30.16.48]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-02-05 16:08, Prarit Bhargava wrote:
-> 
-> 
-> On 02/05/2014 10:05 AM, Michal Marek wrote:
->> On 2014-02-05 16:01, Prarit Bhargava wrote:
->>> Add *.mod.c to the RCS_FIND_IGNORE in the top-level Makefile and to the ignore
->>> list in scripts/tags.sh.
->>
->>
->> This breaks make clean, which is supposed to remove the *.mod.c files.
->>
-> 
-> Michal,
-> 
-> Oops. :(.  So just the scripts/tags.sh needs to modified.  I'll resubmit just
-> that patch unless you have a better suggestion.
+Hello All,
 
-Please directly change the find command in find_arch_sources() and
-find_include_sources(), so that the $ignore variable is really
-equivalent to $RCS_FIND_IGNORE. I'm actually wondering why we do not
-simply use $RCS_FIND_IGNORE in the script.
+My test server crashed a few days ago. The kernel was built from Linus'
+git without any additional changes. I don't know how to reproduce this
+bug.
 
-Thanks,
-Michal
+[532284.563576] BUG: unable to handle kernel paging request at 0000000035c83420
+[532284.564086] IP: [<ffffffff810caf17>] cpuacct_charge+0x97/0x1e0
+[532284.564086] PGD 116369067 PUD 116368067 PMD 0
+[532284.564086] Thread overran stack, or stack corrupted
+[532284.564086] Oops: 0000 [#1] SMP
+[532284.564086] Modules linked in: veth binfmt_misc ip6table_filter ip6_tables tun netlink_diag af_packet_diag udp_diag tcp_diag inet_diag unix_diag bridge stp llc btrfs libcrc32c xor raid6_pq microcode i2c_piix4 joydev virtio_balloon virtio_net pcspkr i2c_core virtio_blk virtio_pci virtio_ring virtio floppy
+[532284.564086] CPU: 2 PID: 2487 Comm: cat Not tainted 3.13.0 #160
+[532284.564086] Hardware name: Red Hat KVM, BIOS 0.5.1 01/01/2007
+[532284.564086] task: ffff8800cdb60000 ti: ffff8801167ee000 task.ti: ffff8801167ee000
+[532284.564086] RIP: 0010:[<ffffffff810caf17>]  [<ffffffff810caf17>] cpuacct_charge+0x97/0x1e0
+[532284.564086] RSP: 0018:ffff8801167ee638  EFLAGS: 00010002
+[532284.564086] RAX: 000000000000e540 RBX: 000000000006086c RCX: 000000000000000f
+[532284.564086] RDX: ffffffff81c4e960 RSI: ffffffff81c50640 RDI: 0000000000000046
+[532284.564086] RBP: ffff8801167ee668 R08: 0000000000000003 R09: 0000000000000001
+[532284.564086] R10: 0000000000000001 R11: 0000000000000004 R12: ffff8800cdb60000
+[532284.564086] R13: 00000000167ee038 R14: ffff8800db3576d8 R15: 000080ee26ec7dcf
+[532284.564086] FS:  00007fc30ecc7740(0000) GS:ffff88011b200000(0000) knlGS:0000000000000000
+[532284.564086] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[532284.564086] CR2: 0000000035c83420 CR3: 000000011f966000 CR4: 00000000000006e0
+[532284.564086] Stack:
+[532284.564086]  ffffffff810cae80 ffff880100000014 ffff8800db333480 000000000006086c
+[532284.564086]  ffff8800cdb60068 ffff8800cdb60000 ffff8801167ee6a8 ffffffff810b948f
+[532284.564086]  ffff8801167ee698 ffff8800cdb60068 ffff8800db333480 0000000000000001
+[532284.564086] Call Trace:
+[532284.564086]  [<ffffffff810cae80>] ? cpuacct_css_alloc+0xb0/0xb0
+[532284.564086]  [<ffffffff810b948f>] update_curr+0x13f/0x220
+[532284.564086]  [<ffffffff810bfeb4>] dequeue_entity+0x24/0x5b0
+[532284.564086]  [<ffffffff8101ea59>] ? sched_clock+0x9/0x10
+[532284.564086]  [<ffffffff810c0489>] dequeue_task_fair+0x49/0x430
+[532284.564086]  [<ffffffff810acbb3>] dequeue_task+0x73/0x90
+[532284.564086]  [<ffffffff810acbf3>] deactivate_task+0x23/0x30
+[532284.564086]  [<ffffffff81745b11>] __schedule+0x501/0x960
+[532284.564086]  [<ffffffff817460b9>] schedule+0x29/0x70
+[532284.564086]  [<ffffffff81744eac>] schedule_timeout+0x14c/0x2a0
+[532284.564086]  [<ffffffff810835f0>] ? del_timer+0x70/0x70
+[532284.564086]  [<ffffffff8174b7d0>] ? _raw_spin_unlock_irqrestore+0x40/0x80
+[532284.564086]  [<ffffffff8174547f>] io_schedule_timeout+0x9f/0x100
+[532284.564086]  [<ffffffff810d16dd>] ? trace_hardirqs_on+0xd/0x10
+[532284.564086]  [<ffffffff81182b22>] mempool_alloc+0x152/0x180
+[532284.564086]  [<ffffffff810c56e0>] ? bit_waitqueue+0xd0/0xd0
+[532284.564086]  [<ffffffff810558c7>] ? kvm_clock_read+0x27/0x40
