@@ -1,125 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753632AbaBERzj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 12:55:39 -0500
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.140]:42203 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753116AbaBERzg (ORCPT
+	id S1753661AbaBERzn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 12:55:43 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:55367 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753116AbaBERzk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 12:55:36 -0500
-X-Env-Sender: Adam.Thomson.Opensource@diasemi.com
-X-Msg-Ref: server-15.tower-179.messagelabs.com!1391622519!28172031!1
-X-Originating-IP: [82.210.246.133]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.16; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <0f633e556abaecaa1feb70e0e3f6bbaeffc47874.1391614923.git.Adam.Thomson.Opensource@diasemi.com>
-In-Reply-To: <cover.1391614923.git.Adam.Thomson.Opensource@diasemi.com>
-References: <cover.1391614923.git.Adam.Thomson.Opensource@diasemi.com>
-From: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
-Date: Wed, 5 Feb 2014 17:48:38 +0000
-Subject: [PATCH 8/8] mfd: da9055: Remove unused resource structures for mfd cells.
-To: Mark Brown <broonie@kernel.org>, Lee Jones <lee.jones@linaro.org>
-CC: <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Guenter Roeck <linux@roeck-us.net>
+	Wed, 5 Feb 2014 12:55:40 -0500
+Date: Wed, 5 Feb 2014 18:55:28 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 06/14] perf, core: always switch pmu specific data during
+ context switch
+Message-ID: <20140205175528.GF5002@laptop.programming.kicks-ass.net>
+References: <1388728091-18564-1-git-send-email-zheng.z.yan@intel.com>
+ <1388728091-18564-7-git-send-email-zheng.z.yan@intel.com>
+ <CABPqkBQS=kSyRb0hb7DSTAOmUpB03_Cq70Wi1NvHj+DAQc4FVQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBQS=kSyRb0hb7DSTAOmUpB03_Cq70Wi1NvHj+DAQc4FVQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Feb 05, 2014 at 06:19:27PM +0100, Stephane Eranian wrote:
+> On Fri, Jan 3, 2014 at 6:48 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+> > If two tasks were both forked from the same parent task, Events in their perf
+> > task contexts can be the same. Perf core optimizes context switch oout in this
+> > case.
+> >
+> > Previous patch inroduces pmu specific data. The data is task specific, so we
+> > should switch the data even when context switch is optimized out.
+> >
+> Reviwed-by: Stephane Eranian <eranian@google.com>
 
+You should look again.. that xchg() is an atomic op and a total waste of
+time since the assignment back onto ctx->task_ctx_data is non-atomic.
 
-Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
----
- drivers/mfd/da9055-core.c |   46 ---------------------------------------------
- 1 files changed, 0 insertions(+), 46 deletions(-)
+Complete fail there.
 
-diff --git a/drivers/mfd/da9055-core.c b/drivers/mfd/da9055-core.c
-index caf8dcf..5cf8ca6 100644
---- a/drivers/mfd/da9055-core.c
-+++ b/drivers/mfd/da9055-core.c
-@@ -258,42 +258,6 @@ struct regmap_config da9055_regmap_config = {
- };
- EXPORT_SYMBOL_GPL(da9055_regmap_config);
-
--static struct resource da9055_onkey_resource = {
--	.name = "ONKEY",
--	.start = DA9055_IRQ_NONKEY,
--	.end   = DA9055_IRQ_NONKEY,
--	.flags = IORESOURCE_IRQ,
--};
--
--static struct resource da9055_rtc_resource[] = {
--	{
--		.name = "ALM",
--		.start = DA9055_IRQ_ALARM,
--		.end   = DA9055_IRQ_ALARM,
--		.flags = IORESOURCE_IRQ,
--	},
--	{
--		.name = "TICK",
--		.start = DA9055_IRQ_TICK,
--		.end   = DA9055_IRQ_TICK,
--		.flags = IORESOURCE_IRQ,
--	},
--};
--
--static struct resource da9055_hwmon_resource = {
--	.name = "HWMON",
--	.start = DA9055_IRQ_HWMON,
--	.end   = DA9055_IRQ_HWMON,
--	.flags = IORESOURCE_IRQ,
--};
--
--static struct resource da9055_ld05_6_resource = {
--	.name = "REGULATOR",
--	.start = DA9055_IRQ_REGULATOR,
--	.end   = DA9055_IRQ_REGULATOR,
--	.flags = IORESOURCE_IRQ,
--};
--
- static const struct mfd_cell da9055_devs[] = {
- 	{
- 		.of_compatible = "dialog,da9055-gpio",
-@@ -333,33 +297,23 @@ static const struct mfd_cell da9055_devs[] = {
- 		.of_compatible = "dialog,da9055-regulator",
- 		.name = "da9055-regulator",
- 		.id = 7,
--		.resources = &da9055_ld05_6_resource,
--		.num_resources = 1,
- 	},
- 	{
- 		.of_compatible = "dialog,da9055-regulator",
- 		.name = "da9055-regulator",
--		.resources = &da9055_ld05_6_resource,
--		.num_resources = 1,
- 		.id = 8,
- 	},
- 	{
- 		.of_compatible = "dialog,da9055-onkey",
- 		.name = "da9055-onkey",
--		.resources = &da9055_onkey_resource,
--		.num_resources = 1,
- 	},
- 	{
- 		.of_compatible = "dialog,da9055-rtc",
- 		.name = "da9055-rtc",
--		.resources = da9055_rtc_resource,
--		.num_resources = ARRAY_SIZE(da9055_rtc_resource),
- 	},
- 	{
- 		.of_compatible = "dialog,da9055-hwmon",
- 		.name = "da9055-hwmon",
--		.resources = &da9055_hwmon_resource,
--		.num_resources = 1,
- 	},
- 	{
- 		.of_compatible = "dialog,da9055-watchdog",
---
-1.7.0.4
-
+> > Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+> > ---
+> >  kernel/events/core.c | 2 ++
+> >  1 file changed, 2 insertions(+)
+> >
+> > diff --git a/kernel/events/core.c b/kernel/events/core.c
+> > index b6650ab..d6d8dea 100644
+> > --- a/kernel/events/core.c
+> > +++ b/kernel/events/core.c
+> > @@ -2319,6 +2319,8 @@ static void perf_event_context_sched_out(struct task_struct *task, int ctxn,
+> >                         next->perf_event_ctxp[ctxn] = ctx;
+> >                         ctx->task = next;
+> >                         next_ctx->task = task;
+> > +                       ctx->task_ctx_data = xchg(&next_ctx->task_ctx_data,
+> > +                                                 ctx->task_ctx_data);
+> >                         do_switch = 0;
+> >
+> >                         perf_event_sync_stat(ctx, next_ctx);
+> > --
+> > 1.8.4.2
+> >
