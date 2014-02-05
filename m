@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751000AbaBEI3w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 03:29:52 -0500
-Received: from ducie-dc1.codethink.co.uk ([37.128.190.40]:35009 "EHLO
+	id S1751152AbaBEIdV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 03:33:21 -0500
+Received: from ducie-dc1.codethink.co.uk ([37.128.190.40]:35065 "EHLO
 	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750750AbaBEI3v (ORCPT
+	with ESMTP id S1750750AbaBEIdU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 03:29:51 -0500
-Message-ID: <52F1F67A.6070509@codethink.co.uk>
-Date: Wed, 05 Feb 2014 08:29:46 +0000
+	Wed, 5 Feb 2014 03:33:20 -0500
+Message-ID: <52F1F74C.2090106@codethink.co.uk>
+Date: Wed, 05 Feb 2014 08:33:16 +0000
 From: Ben Dooks <ben.dooks@codethink.co.uk>
 Organization: Codethink Limited.
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
@@ -17,9 +17,10 @@ To: Magnus Damm <magnus.damm@gmail.com>
 CC: linux-pci@vger.kernel.org, linux-sh@vger.kernel.org,
         linux-kernel@vger.kernel.org, valentine.barshak@cogentembedded.com,
         horms@verge.net.au, bhelgaas@google.com
-Subject: Re: [PATCH 01/04] PCI: rcar: Register each instance independently
-References: <20140205065243.29445.76593.sendpatchset@w520> <20140205065254.29445.77939.sendpatchset@w520>
-In-Reply-To: <20140205065254.29445.77939.sendpatchset@w520>
+Subject: Re: [PATCH 00/04] PCI: rcar: Driver model and physical address space
+ update
+References: <20140205065243.29445.76593.sendpatchset@w520>
+In-Reply-To: <20140205065243.29445.76593.sendpatchset@w520>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -27,117 +28,53 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 05/02/14 06:52, Magnus Damm wrote:
-> From: Magnus Damm <damm@opensource.se>
+> PCI: rcar: Driver model and physical address space update
 >
-> Convert the code to allow per-device probe() like other device
-> drivers. This also delays driver registration due to change from
-> subsys_initcall() to regular module_platform_driver().
+> [PATCH 01/04] PCI: rcar: Register each instance independently
+> [PATCH 02/04] PCI: rcar: Break out window size handling
+> [PATCH 03/04] PCI: rcar: Add DMABOUNCE support
+> [PATCH 04/04] PCI: rcar: Enable BOUNCE in case of HIGHMEM
 >
-> Signed-off-by: Magnus Damm <damm@opensource.se>
-> ---
+> These patches update the pci-rcar-gen2.c driver in various ways
+> including cleanups for driver model interface (1/4), readability
+> update (2/4) and also bounce buffer support (3/4, 4/4). Basically
+> the first two are just cleanups and the rest are fixes.
 >
->   drivers/pci/host/pci-rcar-gen2.c |   74 ++++++++------------------------------
->   1 file changed, 16 insertions(+), 58 deletions(-)
+> As it is today without these patches the system memory start address
+> is hard coded at 0x4000000 and the window is fixed at 1GiB. So we
+> have board specific code hidden in the driver which is good to avoid.
 >
-> --- 0001/drivers/pci/host/pci-rcar-gen2.c
-> +++ work/drivers/pci/host/pci-rcar-gen2.c	2014-02-04 16:38:46.000000000 +0900
-> @@ -74,9 +74,6 @@
+> With these hard coded board specific constants there are some error cases
+> that are not handled, in particular the issue that only maximum 1GiB of
+> physical address space can be used for bus mastering with a single window.
+> The common case of using ARM CONFIG_VMSPLIT_3G results in no visible issues
+> as long as CONFIG_BOUNCE is used, but other CONFIG_VMSPLIT settings will
+> break due to the hard coded 1GiB window not being enough. It has been
+> verified that reducing the window size to 256MB makes the driver behave
+> the same with VMSPLIT_3G as 1GiB window size and other VMSPLIT settings.
 >
->   #define RCAR_PCI_UNIT_REV_REG		(RCAR_AHBPCI_PCICOM_OFFSET + 0x48)
+> To handle the maximum 1GiB physical address space limitation two types
+> of bounce buffers are added. The ARM specific DMABOUNCE code is in 3/4
+> hooked up to a chunk of local memory that is also handed of as coherent
+> memory to the pci devices hanging off the PCI bridge. The driver makes
+> sure to set the window so the local memory is always included. When the
+> PCI devices are operating and in case memory is used outside the window
+> then the DMABOUNCE buffers kicks in. This makes the driver support all
+> kinds of VMSPLIT settings and window sizes. The BOUNCE code in 4/4 is
+> selected to make sure bounce buffers are used for HIGHMEM.
 >
-> -/* Number of internal PCI controllers */
-> -#define RCAR_PCI_NR_CONTROLLERS		3
-> -
->   struct rcar_pci_priv {
->   	struct device *dev;
->   	void __iomem *reg;
-> @@ -228,6 +225,8 @@ static int __init rcar_pci_setup(int nr,
->   	pci_add_resource(&sys->resources, &priv->io_res);
->   	pci_add_resource(&sys->resources, &priv->mem_res);
+> With these patches this driver can be used with or without CMA and
+> with or without DMA zone. Basically the system wide memory setup is
+> left to the user. If a DMA zone is used then the PCI window will
+> be setup to cover that. Same thing with CMA.
 >
-> +	/* Setup bus number based on platform device id */
-> +	sys->busnr = to_platform_device(priv->dev)->id;
->   	return 1;
->   }
->
-> @@ -236,48 +235,12 @@ static struct pci_ops rcar_pci_ops = {
->   	.write	= rcar_pci_write_config,
->   };
->
-> -static struct hw_pci rcar_hw_pci __initdata = {
-> -	.map_irq	= rcar_pci_map_irq,
-> -	.ops		= &rcar_pci_ops,
-> -	.setup		= rcar_pci_setup,
-> -};
-> -
-> -static int rcar_pci_count __initdata;
-> -
-> -static int __init rcar_pci_add_controller(struct rcar_pci_priv *priv)
-> -{
-> -	void **private_data;
-> -	int count;
-> -
-> -	if (rcar_hw_pci.nr_controllers < rcar_pci_count)
-> -		goto add_priv;
-> -
-> -	/* (Re)allocate private data pointer array if needed */
-> -	count = rcar_pci_count + RCAR_PCI_NR_CONTROLLERS;
-> -	private_data = kzalloc(count * sizeof(void *), GFP_KERNEL);
-> -	if (!private_data)
-> -		return -ENOMEM;
-> -
-> -	rcar_pci_count = count;
-> -	if (rcar_hw_pci.private_data) {
-> -		memcpy(private_data, rcar_hw_pci.private_data,
-> -		       rcar_hw_pci.nr_controllers * sizeof(void *));
-> -		kfree(rcar_hw_pci.private_data);
-> -	}
-> -
-> -	rcar_hw_pci.private_data = private_data;
-> -
-> -add_priv:
-> -	/* Add private data pointer to the array */
-> -	rcar_hw_pci.private_data[rcar_hw_pci.nr_controllers++] = priv;
-> -	return 0;
-> -}
-> -
-> -static int __init rcar_pci_probe(struct platform_device *pdev)
-> +static int rcar_pci_probe(struct platform_device *pdev)
->   {
->   	struct resource *cfg_res, *mem_res;
->   	struct rcar_pci_priv *priv;
->   	void __iomem *reg;
-> +	struct hw_pci hw;
->
->   	cfg_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->   	reg = devm_ioremap_resource(&pdev->dev, cfg_res);
-> @@ -308,31 +271,26 @@ static int __init rcar_pci_probe(struct
->   	priv->reg = reg;
->   	priv->dev = &pdev->dev;
->
-> -	return rcar_pci_add_controller(priv);
-> +	memset(&hw, 0, sizeof(hw));
-> +	hw.nr_controllers = 1;
-> +	hw.private_data = (void **)&priv;
-> +	hw.map_irq = rcar_pci_map_irq;
-> +	hw.ops = &rcar_pci_ops;
-> +	hw.setup = rcar_pci_setup;
-> +	pci_common_init_dev(&pdev->dev, &hw);
-> +	return 0;
->   }
+> Tested with USB storage using LPAE and various VMSPLIT settings together
+> with renesas git tag renesas-devel-v3.14-rc1-20140204 from kernel.org
 
-Do we really want to explicitly set the bus number here?
-
->
->   static struct platform_driver rcar_pci_driver = {
->   	.driver = {
->   		.name = "pci-rcar-gen2",
-> +		.owner = THIS_MODULE,
-> +		.suppress_bind_attrs = true,
->   	},
-> +	.probe = rcar_pci_probe,
->   };
-
+Ok, is it possible to build a set with my of updates ready for next
+merge window? I can update the set based on this if you like and try
+and make the necessary changes to deal with the modifications from this
+series.
 
 -- 
 Ben Dooks				http://www.codethink.co.uk/
