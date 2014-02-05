@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755835AbaBEUQR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:16:17 -0500
-Received: from mail.windriver.com ([147.11.1.11]:55582 "EHLO
+	id S1755303AbaBEUH4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:07:56 -0500
+Received: from mail.windriver.com ([147.11.1.11]:55450 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755309AbaBEUH5 (ORCPT
+	with ESMTP id S1755101AbaBEUHa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:07:57 -0500
+	Wed, 5 Feb 2014 15:07:30 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Nikola Pajkovsky <npajkovs@redhat.com>, Jan Kara <jack@suse.cz>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 190/213] udf: fix retun value on error path in udf_load_logicalvol
-Date: Wed, 5 Feb 2014 15:02:25 -0500
-Message-ID: <1391630568-49251-191-git-send-email-paul.gortmaker@windriver.com>
+CC: Jan Kara <jack@suse.cz>, Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 170/213] ext3: Fix error handling on inode bitmap corruption
+Date: Wed, 5 Feb 2014 15:02:05 -0500
+Message-ID: <1391630568-49251-171-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,7 +22,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nikola Pajkovsky <npajkovs@redhat.com>
+From: Jan Kara <jack@suse.cz>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -31,42 +30,41 @@ From: Nikola Pajkovsky <npajkovs@redhat.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 68766a2edcd5cd744262a70a2f67a320ac944760 upstream.
+commit 1415dd8705394399d59a3df1ab48d149e1e41e77 upstream.
 
-In case we detect a problem and bail out, we fail to set "ret" to a
-nonzero value, and udf_load_logicalvol will mistakenly report success.
+When insert_inode_locked() fails in ext3_new_inode() it most likely
+means inode bitmap got corrupted and we allocated again inode which
+is already in use. Also doing unlock_new_inode() during error recovery
+is wrong since inode does not have I_NEW set. Fix the problem by jumping
+to fail: (instead of fail_drop:) which declares filesystem error and
+does not call unlock_new_inode().
 
-Signed-off-by: Nikola Pajkovsky <npajkovs@redhat.com>
+Reviewed-by: Eric Sandeen <sandeen@redhat.com>
 Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/udf/super.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ fs/ext3/ialloc.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/fs/udf/super.c b/fs/udf/super.c
-index 5ece6d6721f8..325d4d6856b1 100644
---- a/fs/udf/super.c
-+++ b/fs/udf/super.c
-@@ -1314,6 +1314,7 @@ static int udf_load_logicalvol(struct super_block *sb, sector_t block,
- 			  "error loading logical volume descriptor: "
- 			  "Partition table too long (%u > %lu)\n", table_len,
- 			  sb->s_blocksize - sizeof(*lvd));
-+		ret = 1;
- 		goto out_bh;
+diff --git a/fs/ext3/ialloc.c b/fs/ext3/ialloc.c
+index 0d0e97ed3ff6..fd16a928574c 100644
+--- a/fs/ext3/ialloc.c
++++ b/fs/ext3/ialloc.c
+@@ -575,8 +575,12 @@ got:
+ 	if (IS_DIRSYNC(inode))
+ 		handle->h_sync = 1;
+ 	if (insert_inode_locked(inode) < 0) {
+-		err = -EINVAL;
+-		goto fail_drop;
++		/*
++		 * Likely a bitmap corruption causing inode to be allocated
++		 * twice.
++		 */
++		err = -EIO;
++		goto fail;
  	}
- 
-@@ -1360,8 +1361,10 @@ static int udf_load_logicalvol(struct super_block *sb, sector_t block,
- 						UDF_ID_SPARABLE,
- 						strlen(UDF_ID_SPARABLE))) {
- 				if (udf_load_sparable_map(sb, map,
--				    (struct sparablePartitionMap *)gpm) < 0)
-+				    (struct sparablePartitionMap *)gpm) < 0) {
-+					ret = 1;
- 					goto out_bh;
-+				}
- 			} else if (!strncmp(upm2->partIdent.ident,
- 						UDF_ID_METADATA,
- 						strlen(UDF_ID_METADATA))) {
+ 	spin_lock(&sbi->s_next_gen_lock);
+ 	inode->i_generation = sbi->s_next_generation++;
 -- 
 1.8.5.2
 
