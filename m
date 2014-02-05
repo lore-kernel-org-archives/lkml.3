@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754632AbaBEWL6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 17:11:58 -0500
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:53574 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754552AbaBEWLx (ORCPT
+	id S1754724AbaBEWMI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 17:12:08 -0500
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:34005 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752647AbaBEWMF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 17:11:53 -0500
+	Wed, 5 Feb 2014 17:12:05 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH 11/51] s390, smp: Fix CPU hotplug callback registration
+Subject: [PATCH 12/51] sparc, sysfs: Fix CPU hotplug callback registration
 To: paulus@samba.org, oleg@redhat.com, rusty@rustcorp.com.au,
         peterz@infradead.org, tglx@linutronix.de, akpm@linux-foundation.org
 Cc: mingo@kernel.org, paulmck@linux.vnet.ibm.com, tj@kernel.org,
         walken@google.com, ego@linux.vnet.ibm.com, linux@arm.linux.org.uk,
         linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-s390@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Thu, 06 Feb 2014 03:36:33 +0530
-Message-ID: <20140205220632.19080.94177.stgit@srivatsabhat.in.ibm.com>
+Date: Thu, 06 Feb 2014 03:36:42 +0530
+Message-ID: <20140205220641.19080.3349.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com>
 References: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -28,7 +26,7 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14020522-4790-0000-0000-00000C92C98C
+x-cbid: 14020522-1396-0000-0000-0000043F167A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -64,49 +62,39 @@ registration is:
 	cpu_maps_update_done();
 
 
-Fix the smp code in s390 by using this latter form of callback registration.
+Fix the sysfs code in sparc by using this latter form of callback
+registration.
 
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-s390@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: sparclinux@vger.kernel.org
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- arch/s390/kernel/smp.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ arch/sparc/kernel/sysfs.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/arch/s390/kernel/smp.c b/arch/s390/kernel/smp.c
-index a7125b6..415a44e 100644
---- a/arch/s390/kernel/smp.c
-+++ b/arch/s390/kernel/smp.c
-@@ -1057,19 +1057,24 @@ static DEVICE_ATTR(rescan, 0200, NULL, rescan_store);
+diff --git a/arch/sparc/kernel/sysfs.c b/arch/sparc/kernel/sysfs.c
+index c21c673..2177b9e 100644
+--- a/arch/sparc/kernel/sysfs.c
++++ b/arch/sparc/kernel/sysfs.c
+@@ -300,7 +300,7 @@ static int __init topology_init(void)
  
- static int __init s390_smp_init(void)
- {
--	int cpu, rc;
-+	int cpu, rc = 0;
+ 	check_mmu_stats();
  
--	hotcpu_notifier(smp_cpu_notify, 0);
- #ifdef CONFIG_HOTPLUG_CPU
- 	rc = device_create_file(cpu_subsys.dev_root, &dev_attr_rescan);
- 	if (rc)
- 		return rc;
- #endif
+-	register_cpu_notifier(&sysfs_cpu_nb);
 +	cpu_maps_update_begin();
- 	for_each_present_cpu(cpu) {
- 		rc = smp_add_present_cpu(cpu);
- 		if (rc)
--			return rc;
-+			goto out;
+ 
+ 	for_each_possible_cpu(cpu) {
+ 		struct cpu *c = &per_cpu(cpu_devices, cpu);
+@@ -310,6 +310,10 @@ static int __init topology_init(void)
+ 			register_cpu_online(cpu);
  	}
--	return 0;
+ 
++	__register_cpu_notifier(&sysfs_cpu_nb);
 +
-+	__hotcpu_notifier(smp_cpu_notify, 0);
-+
-+out:
 +	cpu_maps_update_done();
-+	return rc;
++
+ 	return 0;
  }
- subsys_initcall(s390_smp_init);
+ 
 
