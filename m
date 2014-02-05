@@ -1,60 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622AbaBES4p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 13:56:45 -0500
-Received: from mail-we0-f169.google.com ([74.125.82.169]:41761 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751047AbaBES4n (ORCPT
+	id S1751446AbaBETBy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 14:01:54 -0500
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:59312 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751062AbaBETBt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 13:56:43 -0500
-MIME-Version: 1.0
-In-Reply-To: <CACRpkda=h=0bpMfHeq-zJs5nZ+740rz9jZChCk0OAHm=Jmw5AQ@mail.gmail.com>
-References: <1391463780-19840-1-git-send-email-markus.mayer@linaro.org>
-	<CACRpkda=h=0bpMfHeq-zJs5nZ+740rz9jZChCk0OAHm=Jmw5AQ@mail.gmail.com>
-Date: Wed, 5 Feb 2014 10:56:42 -0800
-Message-ID: <CAPdLdqmb7_e04w-Mw8NiqjyYVaaPyd79Hn8HsWWQx0mEFKS8AQ@mail.gmail.com>
-Subject: Re: [PATCH] gpio: bcm281xx: Update MODULE_AUTHOR
-From: Markus Mayer <markus.mayer@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Linux GPIO List <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 5 Feb 2014 14:01:49 -0500
+From: Matt Porter <mporter@linaro.org>
+To: Jonathan Cameron <jic23@kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <robh+dt@kernel.org>,
+        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Thierry Reding <thierry.reding@gmail.com>
+Cc: Linux IIO List <linux-iio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        Linux PWM List <linux-pwm@vger.kernel.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH v3 0/6] IIO pulse capture support for TI ECAP
+Date: Wed,  5 Feb 2014 14:01:35 -0500
+Message-Id: <1391626901-31684-1-git-send-email-mporter@linaro.org>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5 February 2014 02:03, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Mon, Feb 3, 2014 at 10:43 PM, Markus Mayer <markus.mayer@linaro.org> wrote:
->
->> Add Broadcom's upstreaming mailing list address to MODULE_AUTHOR.
->>
->> Signed-off-by: Markus Mayer <markus.mayer@linaro.org>
->
-> Hm OK not that this is used very much, and nothing to argue about
-> so patch applied.
+Changes since v2:
+	- Remove various unneeded field initialization
+	- Call iio_triggered_buffer_cleanup() on remove
 
-Thanks. I am hopefully done the trivial changes to this driver now.
+Changes since v1:
+	- Rebased to 3.14-rc1
+	- Renamed in_pulse_polarity to pulse_polarity
+	- Added ABI entries for pulse devices and TI ECAP
 
-> However we do not really recognize corporate bodies as maintainers,
-> only physical people whose GPG keys we can sign ... but I
-> guess you wanted to convey that the driver is the work of several
-> individuals inside BRCM and thus authors, while you take care
-> of the maintenance.
+This series adds support for PWM capture devices within IIO and
+adds a TI ECAP IIO driver.
 
-That's exactly right.
+PWM capture devices are supported using a new IIO "pulse" channel type.
 
-> A patch to MAINTAINERS adding this to Christians entry for
-> the SoCs or as a standalone entry with Markus as maintainer
-> would be more important and usefule than this though, so I'm
-> throwing out that challenge!
+The IIO ECAP driver implements interrupt driven triggered buffer capture
+only as raw sample reads are not applicable to this hardware.
+Initially, the driver supports a single pulse width measurement with
+configurable polarity. The ECAP hardware can support measurement of a
+complete period and duty cycle but this is not yet implemented.
 
-I'll talk to Christian about this and see what we can come up with.
+Matt Porter (6):
+  iio: add support for pulse width capture devices
+  iio: pulse: add TI ECAP driver
+  iio: enable selection and build of pulse drivers
+  iio: Add ABI docs for pulse capture devices
+  pwm: enable TI PWMSS if the IIO tiecap driver is selected
+  ARM: dts: AM33XX: Add ecap interrupt properties
 
-Regards,
--Markus
+ Documentation/ABI/testing/sysfs-bus-iio            |  18 +
+ .../ABI/testing/sysfs-bus-iio-pulse-tiecap         |   9 +
+ arch/arm/boot/dts/am33xx.dtsi                      |   6 +
+ drivers/iio/Kconfig                                |   1 +
+ drivers/iio/Makefile                               |   1 +
+ drivers/iio/industrialio-core.c                    |   1 +
+ drivers/iio/pulse/Kconfig                          |  20 +
+ drivers/iio/pulse/Makefile                         |   6 +
+ drivers/iio/pulse/tiecap.c                         | 491 +++++++++++++++++++++
+ drivers/pwm/Kconfig                                |   2 +-
+ include/linux/iio/types.h                          |   1 +
+ 11 files changed, 555 insertions(+), 1 deletion(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-bus-iio-pulse-tiecap
+ create mode 100644 drivers/iio/pulse/Kconfig
+ create mode 100644 drivers/iio/pulse/Makefile
+ create mode 100644 drivers/iio/pulse/tiecap.c
 
 -- 
-Markus Mayer
-Broadcom Landing Team
+1.8.4
+
