@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753636AbaBERHj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 12:07:39 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:32824 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753403AbaBERFb (ORCPT
+	id S1753615AbaBERHf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 12:07:35 -0500
+Received: from mail-we0-f181.google.com ([74.125.82.181]:39697 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753419AbaBERFe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 12:05:31 -0500
+	Wed, 5 Feb 2014 12:05:34 -0500
 From: Leif Lindholm <leif.lindholm@linaro.org>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-efi@vger.kernel.org
 Cc: patches@linaro.org, Mark Salter <msalter@redhat.com>,
         Leif Lindholm <leif.lindholm@linaro.org>
-Subject: [PATCH 15/22] lib: add fdt_empty_tree.c
-Date: Wed,  5 Feb 2014 17:04:06 +0000
-Message-Id: <1391619853-10601-16-git-send-email-leif.lindholm@linaro.org>
+Subject: [PATCH 16/22] arm64: Add function to create identity mappings
+Date: Wed,  5 Feb 2014 17:04:07 +0000
+Message-Id: <1391619853-10601-17-git-send-email-leif.lindholm@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1391619853-10601-1-git-send-email-leif.lindholm@linaro.org>
 References: <1391619853-10601-1-git-send-email-leif.lindholm@linaro.org>
@@ -24,39 +24,163 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mark Salter <msalter@redhat.com>
 
-CONFIG_LIBFDT support does not include fdt_empty_tree.c which is
-needed by arm64 EFI stub. Add it to libfdt_files.
+At boot time, before switching to a virtual UEFI memory map, firmware
+expects UEFI memory and IO regions to be identity mapped whenever
+kernel makes runtime services calls. The exisitng early boot code
+creates an identity map of kernel text/data but this is not sufficient
+for UEFI. This patch adds a create_id_mapping() function which reuses
+the core code of the existing create_mapping().
 
 Signed-off-by: Mark Salter <msalter@redhat.com>
 Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
 ---
- lib/Makefile         |    3 ++-
- lib/fdt_empty_tree.c |    2 ++
- 2 files changed, 4 insertions(+), 1 deletion(-)
- create mode 100644 lib/fdt_empty_tree.c
+ arch/arm64/include/asm/mmu.h |    2 ++
+ arch/arm64/mm/mmu.c          |   66 ++++++++++++++++++++++++++++++------------
+ 2 files changed, 50 insertions(+), 18 deletions(-)
 
-diff --git a/lib/Makefile b/lib/Makefile
-index 126b34f..ce085d2 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -146,7 +146,8 @@ obj-$(CONFIG_GENERIC_NET_UTILS) += net_utils.o
+diff --git a/arch/arm64/include/asm/mmu.h b/arch/arm64/include/asm/mmu.h
+index f600d40..29ed1d8 100644
+--- a/arch/arm64/include/asm/mmu.h
++++ b/arch/arm64/include/asm/mmu.h
+@@ -28,5 +28,7 @@ extern void paging_init(void);
+ extern void setup_mm_for_reboot(void);
+ extern void __iomem *early_io_map(phys_addr_t phys, unsigned long virt);
+ extern void init_mem_pgprot(void);
++/* create an identity mapping for memory (or io if map_io is true) */
++extern void create_id_mapping(phys_addr_t addr, phys_addr_t size, int map_io);
  
- obj-$(CONFIG_STMP_DEVICE) += stmp_device.o
+ #endif
+diff --git a/arch/arm64/mm/mmu.c b/arch/arm64/mm/mmu.c
+index 7b345e3..2eeebd1 100644
+--- a/arch/arm64/mm/mmu.c
++++ b/arch/arm64/mm/mmu.c
+@@ -168,7 +168,8 @@ static void __init *early_alloc(unsigned long sz)
+ }
  
--libfdt_files = fdt.o fdt_ro.o fdt_wip.o fdt_rw.o fdt_sw.o fdt_strerror.o
-+libfdt_files = fdt.o fdt_ro.o fdt_wip.o fdt_rw.o fdt_sw.o fdt_strerror.o \
-+	       fdt_empty_tree.o
- $(foreach file, $(libfdt_files), \
- 	$(eval CFLAGS_$(file) = -I$(src)/../scripts/dtc/libfdt))
- lib-$(CONFIG_LIBFDT) += $(libfdt_files)
-diff --git a/lib/fdt_empty_tree.c b/lib/fdt_empty_tree.c
-new file mode 100644
-index 0000000..5d30c58
---- /dev/null
-+++ b/lib/fdt_empty_tree.c
-@@ -0,0 +1,2 @@
-+#include <linux/libfdt_env.h>
-+#include "../scripts/dtc/libfdt/fdt_empty_tree.c"
+ static void __init alloc_init_pte(pmd_t *pmd, unsigned long addr,
+-				  unsigned long end, unsigned long pfn)
++				  unsigned long end, unsigned long pfn,
++				  pgprot_t prot)
+ {
+ 	pte_t *pte;
+ 
+@@ -180,16 +181,28 @@ static void __init alloc_init_pte(pmd_t *pmd, unsigned long addr,
+ 
+ 	pte = pte_offset_kernel(pmd, addr);
+ 	do {
+-		set_pte(pte, pfn_pte(pfn, PAGE_KERNEL_EXEC));
++		set_pte(pte, pfn_pte(pfn, prot));
+ 		pfn++;
+ 	} while (pte++, addr += PAGE_SIZE, addr != end);
+ }
+ 
+ static void __init alloc_init_pmd(pud_t *pud, unsigned long addr,
+-				  unsigned long end, phys_addr_t phys)
++				  unsigned long end, phys_addr_t phys,
++				  int map_io)
+ {
+ 	pmd_t *pmd;
+ 	unsigned long next;
++	pmdval_t prot_sect;
++	pgprot_t prot_pte;
++
++	if (map_io) {
++		prot_sect = PMD_TYPE_SECT | PMD_SECT_AF |
++			    PMD_ATTRINDX(MT_DEVICE_nGnRE);
++		prot_pte = __pgprot(PROT_DEVICE_nGnRE);
++	} else {
++		prot_sect = prot_sect_kernel;
++		prot_pte = PAGE_KERNEL_EXEC;
++	}
+ 
+ 	/*
+ 	 * Check for initial section mappings in the pgd/pud and remove them.
+@@ -204,22 +217,24 @@ static void __init alloc_init_pmd(pud_t *pud, unsigned long addr,
+ 		next = pmd_addr_end(addr, end);
+ 		/* try section mapping first */
+ 		if (((addr | next | phys) & ~SECTION_MASK) == 0)
+-			set_pmd(pmd, __pmd(phys | prot_sect_kernel));
++			set_pmd(pmd, __pmd(phys | prot_sect));
+ 		else
+-			alloc_init_pte(pmd, addr, next, __phys_to_pfn(phys));
++			alloc_init_pte(pmd, addr, next, __phys_to_pfn(phys),
++				       prot_pte);
+ 		phys += next - addr;
+ 	} while (pmd++, addr = next, addr != end);
+ }
+ 
+ static void __init alloc_init_pud(pgd_t *pgd, unsigned long addr,
+-				  unsigned long end, unsigned long phys)
++				  unsigned long end, unsigned long phys,
++				  int map_io)
+ {
+ 	pud_t *pud = pud_offset(pgd, addr);
+ 	unsigned long next;
+ 
+ 	do {
+ 		next = pud_addr_end(addr, end);
+-		alloc_init_pmd(pud, addr, next, phys);
++		alloc_init_pmd(pud, addr, next, phys, map_io);
+ 		phys += next - addr;
+ 	} while (pud++, addr = next, addr != end);
+ }
+@@ -228,30 +243,45 @@ static void __init alloc_init_pud(pgd_t *pgd, unsigned long addr,
+  * Create the page directory entries and any necessary page tables for the
+  * mapping specified by 'md'.
+  */
+-static void __init create_mapping(phys_addr_t phys, unsigned long virt,
+-				  phys_addr_t size)
++static void __init __create_mapping(pgd_t *pgd, phys_addr_t phys,
++				    unsigned long virt, phys_addr_t size,
++				    int map_io)
+ {
+ 	unsigned long addr, length, end, next;
+-	pgd_t *pgd;
+-
+-	if (virt < VMALLOC_START) {
+-		pr_warning("BUG: not creating mapping for 0x%016llx at 0x%016lx - outside kernel range\n",
+-			   phys, virt);
+-		return;
+-	}
+ 
+ 	addr = virt & PAGE_MASK;
+ 	length = PAGE_ALIGN(size + (virt & ~PAGE_MASK));
+ 
+-	pgd = pgd_offset_k(addr);
+ 	end = addr + length;
+ 	do {
+ 		next = pgd_addr_end(addr, end);
+-		alloc_init_pud(pgd, addr, next, phys);
++		alloc_init_pud(pgd, addr, next, phys, map_io);
+ 		phys += next - addr;
+ 	} while (pgd++, addr = next, addr != end);
+ }
+ 
++static void __init create_mapping(phys_addr_t phys, unsigned long virt,
++				  phys_addr_t size)
++{
++	if (virt < VMALLOC_START) {
++		pr_warn("BUG: not creating mapping for 0x%016llx at 0x%016lx - outside kernel range\n",
++			phys, virt);
++		return;
++	}
++	__create_mapping(pgd_offset_k(virt & PAGE_MASK), phys, virt, size, 0);
++}
++
++void __init create_id_mapping(phys_addr_t addr, phys_addr_t size, int map_io)
++{
++	pgd_t *pgd = &idmap_pg_dir[pgd_index(addr)];
++
++	if (pgd >= &idmap_pg_dir[ARRAY_SIZE(idmap_pg_dir)]) {
++		pr_warn("BUG: not creating id mapping for 0x%016llx\n", addr);
++		return;
++	}
++	__create_mapping(pgd, addr, addr, size, map_io);
++}
++
+ static void __init map_mem(void)
+ {
+ 	struct memblock_region *reg;
 -- 
 1.7.10.4
 
