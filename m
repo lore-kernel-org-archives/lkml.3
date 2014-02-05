@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753510AbaBEUD1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:03:27 -0500
-Received: from mail.windriver.com ([147.11.1.11]:54121 "EHLO
+	id S1756788AbaBEVRJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 16:17:09 -0500
+Received: from mail.windriver.com ([147.11.1.11]:54166 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751929AbaBEUDQ (ORCPT
+	with ESMTP id S1753601AbaBEUDa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:03:16 -0500
+	Wed, 5 Feb 2014 15:03:30 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: "George G. Davis" <george_davis@mentor.com>,
+CC: Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 002/213] udf: fix udf_error build warnings
-Date: Wed, 5 Feb 2014 14:59:17 -0500
-Message-ID: <1391630568-49251-3-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 009/213] bridge: Fix mglist corruption that leads to memory corruption
+Date: Wed, 5 Feb 2014 14:59:24 -0500
+Message-ID: <1391630568-49251-10-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "George G. Davis" <george_davis@mentor.com>
+From: Herbert Xu <herbert@gondor.apana.org.au>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -31,61 +32,52 @@ From: "George G. Davis" <george_davis@mentor.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-The v2.6.34.14 commit "d7542a6 udf: Avoid run away loop when partition
-table length is corrupted" introduced the following build warning due
-to a change in the number of args in udf_error/udf_err for v2.6.34.14:
+commit 6b0d6a9b4296fa16a28d10d416db7a770fc03287 upstream.
 
- CC      fs/udf/super.o
-fs/udf/super.c: In function 'udf_load_sparable_map':
-fs/udf/super.c:1259: warning: passing argument 3 of 'udf_error' makes pointer from integer without a cast
-fs/udf/super.c:1265: warning: passing argument 3 of 'udf_error' makes pointer from integer without a cast
-fs/udf/super.c: In function 'udf_load_logicalvol':
-fs/udf/super.c:1313: warning: passing argument 3 of 'udf_error' makes pointer from integer without a cast
+The list mp->mglist is used to indicate whether a multicast group
+is active on the bridge interface itself as opposed to one of the
+constituent interfaces in the bridge.
 
-The above warnings are due to a missing __func__ argument in the above
-udf_error function calls.  This is because of commit 8076c363da15e7
-("udf: Rename udf_error to udf_err") which removed the __func__ arg.
+Unfortunately the operation that adds the mp->mglist node to the
+list neglected to check whether it has already been added.  This
+leads to list corruption in the form of nodes pointing to itself.
 
-Restore the missing __func__ argument to fix the build warnings.
+Normally this would be quite obvious as it would cause an infinite
+loop when walking the list.  However, as this list is never actually
+walked (which means that we don't really need it, I'll get rid of
+it in a subsequent patch), this instead is hidden until we perform
+a delete operation on the affected nodes.
 
-Signed-off-by: George G. Davis <george_davis@mentor.com>
+As the same node may now be pointed to by more than one node, the
+delete operations can then cause modification of freed memory.
+
+This was observed in practice to cause corruption in 512-byte slabs,
+most commonly leading to crashes in jbd2.
+
+Thanks to Josef Bacik for pointing me in the right direction.
+
+Reported-by: Ian Page Hands <ihands@redhat.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/udf/super.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ net/bridge/br_multicast.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/fs/udf/super.c b/fs/udf/super.c
-index 1d36fdd4ae56..5ece6d6721f8 100644
---- a/fs/udf/super.c
-+++ b/fs/udf/super.c
-@@ -1254,13 +1254,15 @@ static int udf_load_sparable_map(struct super_block *sb,
- 	map->s_partition_type = UDF_SPARABLE_MAP15;
- 	sdata->s_packet_len = le16_to_cpu(spm->packetLength);
- 	if (!is_power_of_2(sdata->s_packet_len)) {
--		udf_error(sb, "error loading logical volume descriptor: "
-+		udf_error(sb, __func__,
-+			  "error loading logical volume descriptor: "
- 			  "Invalid packet length %u\n",
- 			  (unsigned)sdata->s_packet_len);
- 		return -EIO;
+diff --git a/net/bridge/br_multicast.c b/net/bridge/br_multicast.c
+index eaa0e1bae49b..ea4452f3dacb 100644
+--- a/net/bridge/br_multicast.c
++++ b/net/bridge/br_multicast.c
+@@ -532,7 +532,8 @@ static int br_multicast_add_group(struct net_bridge *br,
+ 		goto err;
+ 
+ 	if (!port) {
+-		hlist_add_head(&mp->mglist, &br->mglist);
++		if (hlist_unhashed(&mp->mglist))
++			hlist_add_head(&mp->mglist, &br->mglist);
+ 		mod_timer(&mp->timer, now + br->multicast_membership_interval);
+ 		goto out;
  	}
- 	if (spm->numSparingTables > 4) {
--		udf_error(sb, "error loading logical volume descriptor: "
-+		udf_error(sb, __func__,
-+			  "error loading logical volume descriptor: "
- 			  "Too many sparing tables (%d)\n",
- 			  (int)spm->numSparingTables);
- 		return -EIO;
-@@ -1308,7 +1310,8 @@ static int udf_load_logicalvol(struct super_block *sb, sector_t block,
- 	lvd = (struct logicalVolDesc *)bh->b_data;
- 	table_len = le32_to_cpu(lvd->mapTableLength);
- 	if (table_len > sb->s_blocksize - sizeof(*lvd)) {
--		udf_error(sb, "error loading logical volume descriptor: "
-+		udf_error(sb, __func__,
-+			  "error loading logical volume descriptor: "
- 			  "Partition table too long (%u > %lu)\n", table_len,
- 			  sb->s_blocksize - sizeof(*lvd));
- 		goto out_bh;
 -- 
 1.8.5.2
 
