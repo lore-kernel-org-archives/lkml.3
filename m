@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755426AbaBEWNu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 17:13:50 -0500
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:50053 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754004AbaBEWNr (ORCPT
+	id S1754121AbaBEWOG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 17:14:06 -0500
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:42129 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752821AbaBEWOB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 17:13:47 -0500
+	Wed, 5 Feb 2014 17:14:01 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH 21/51] x86, intel,
- cacheinfo: Fix CPU hotplug callback registration
+Subject: [PATCH 22/51] x86, intel, rapl: Fix CPU hotplug callback registration
 To: paulus@samba.org, oleg@redhat.com, rusty@rustcorp.com.au,
         peterz@infradead.org, tglx@linutronix.de, akpm@linux-foundation.org
 Cc: mingo@kernel.org, paulmck@linux.vnet.ibm.com, tj@kernel.org,
         walken@google.com, ego@linux.vnet.ibm.com, linux@arm.linux.org.uk,
         linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Borislav Petkov <bp@suse.de>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Thu, 06 Feb 2014 03:38:23 +0530
-Message-ID: <20140205220822.19080.77707.stgit@srivatsabhat.in.ibm.com>
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Date: Thu, 06 Feb 2014 03:38:36 +0530
+Message-ID: <20140205220836.19080.90280.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com>
 References: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -29,7 +29,7 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14020522-1396-0000-0000-0000043F16CD
+x-cbid: 14020522-3568-0000-0000-000004E58C35
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -65,52 +65,57 @@ registration is:
 	cpu_maps_update_done();
 
 
-Fix the intel cacheinfo code in x86 by using this latter form of callback
+Fix the intel rapl code in x86 by using this latter form of callback
 registration.
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
 Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
 Cc: x86@kernel.org
-Cc: Borislav Petkov <bp@suse.de>
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- arch/x86/kernel/cpu/intel_cacheinfo.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_rapl.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
-index 0641113..d15c0dc 100644
---- a/arch/x86/kernel/cpu/intel_cacheinfo.c
-+++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -1225,21 +1225,24 @@ static struct notifier_block cacheinfo_cpu_notifier = {
- 
- static int __init cache_sysfs_init(void)
- {
--	int i;
-+	int i, err = 0;
- 
- 	if (num_cache_leaves == 0)
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_rapl.c b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
+index 5ad35ad..bc41c02 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_rapl.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
+@@ -646,19 +646,20 @@ static int __init rapl_pmu_init(void)
+ 		/* unsupported */
  		return 0;
- 
-+	cpu_maps_update_begin();
- 	for_each_online_cpu(i) {
--		int err;
- 		struct device *dev = get_cpu_device(i);
- 
- 		err = cache_add_dev(dev);
- 		if (err)
--			return err;
-+			goto out;
  	}
--	register_hotcpu_notifier(&cacheinfo_cpu_notifier);
--	return 0;
-+	__register_hotcpu_notifier(&cacheinfo_cpu_notifier);
+-	get_online_cpus();
 +
-+out:
-+	cpu_maps_update_done();
-+	return err;
- }
++	cpu_maps_update_begin();
  
- device_initcall(cache_sysfs_init);
+ 	for_each_online_cpu(cpu) {
+ 		rapl_cpu_prepare(cpu);
+ 		rapl_cpu_init(cpu);
+ 	}
+ 
+-	perf_cpu_notifier(rapl_cpu_notifier);
++	__perf_cpu_notifier(rapl_cpu_notifier);
+ 
+ 	ret = perf_pmu_register(&rapl_pmu_class, "power", -1);
+ 	if (WARN_ON(ret)) {
+ 		pr_info("RAPL PMU detected, registration failed (%d), RAPL PMU disabled\n", ret);
+-		put_online_cpus();
++		cpu_maps_update_done();
+ 		return -1;
+ 	}
+ 
+@@ -672,7 +673,7 @@ static int __init rapl_pmu_init(void)
+ 		hweight32(rapl_cntr_mask),
+ 		ktime_to_ms(pmu->timer_interval));
+ 
+-	put_online_cpus();
++	cpu_maps_update_done();
+ 
+ 	return 0;
+ }
 
