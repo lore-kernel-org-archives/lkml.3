@@ -1,77 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932089AbaBEFvm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 00:51:42 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:40727 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750941AbaBEFvl (ORCPT
+	id S1751512AbaBEFz4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 00:55:56 -0500
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:34967 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750898AbaBEFzz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 00:51:41 -0500
-Date: Wed, 5 Feb 2014 06:51:37 +0100
+	Wed, 5 Feb 2014 00:55:55 -0500
+Date: Wed, 5 Feb 2014 06:55:52 +0100
 From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>, David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Richard Weinberger <richard@nod.at>,
-        Borislav Petkov <bp@suse.de>
-Subject: [PATCH] x86: Disable CONFIG_X86_DECODER_SELFTEST in
- allmod/allyesconfigs
-Message-ID: <20140205055137.GB30094@gmail.com>
-References: <1391452183-2160-1-git-send-email-bp@alien8.de>
- <alpine.DEB.2.02.1402031358390.9768@chino.kir.corp.google.com>
- <CA+55aFzwB0-fcqa_RaNDE1jjS+awM=j3BGroA5C3wRnK_G7UHg@mail.gmail.com>
- <20140203145718.5bc9ba1619aff8ea0754b0ab@linux-foundation.org>
- <alpine.DEB.2.02.1402031532480.7643@chino.kir.corp.google.com>
- <20140204090809.GA19156@gmail.com>
- <CA+55aFzXvPseHVZOk82hTpFrQYRnHnq-5TBz5Jw__wuktUgi2w@mail.gmail.com>
- <87fvny238i.fsf@tassilo.jf.intel.com>
- <CA+55aFzDp70dv=eCwuOr=gAPVBKaDVUyvFbqedrRJXhUDeHnfQ@mail.gmail.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH] perf tools: Handle PERF_RECORD_HEADER_EVENT_TYPE properly
+Message-ID: <20140205055552.GD30094@gmail.com>
+References: <1391524668-12546-1-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFzDp70dv=eCwuOr=gAPVBKaDVUyvFbqedrRJXhUDeHnfQ@mail.gmail.com>
+In-Reply-To: <1391524668-12546-1-git-send-email-jolsa@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+* Jiri Olsa <jolsa@redhat.com> wrote:
 
-> > BTW you probably also want to do the same for the x86 instruction 
-> > decoder test. It seems to be the biggest compile time waster in 
-> > allyesconfig and I usually disable it too.
+> We removed event types from data file in following commits:
+>   6065210 perf tools: Remove event types framework completely
+>   44b3c57 perf tools: Remove event types from perf data file
 > 
-> Agreed, that should be disabled too by default. Although in that 
-> case I think the COMPILE_TEST combination makes more sense, since 
-> it's a coverage issue.
+> We no longer need this information, because we can get it
+> directly from tracepoints.
+> 
+> But we still need to handle PERF_RECORD_HEADER_EVENT_TYPE
+> event for the sake of old perf data files created in pipe
+> mode like:
+> 
+>   $ perf.3.4 record -o - foo >perf.data
+>   $ perf.312 report -i - < perf.data
+> 
+> Reported-by: Stephane Eranian <eranian@google.com>
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Cc: David Ahern <dsahern@gmail.com>
+> ---
+>  tools/perf/util/session.c | 6 ++++++
+>  1 file changed, 6 insertions(+)
+> 
+> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+> index 0b39a48..5da6ce7 100644
+> --- a/tools/perf/util/session.c
+> +++ b/tools/perf/util/session.c
+> @@ -1008,6 +1008,12 @@ static int perf_session__process_user_event(struct perf_session *session, union
+>  		if (err == 0)
+>  			perf_session__set_id_hdr_size(session);
+>  		return err;
+> +	case PERF_RECORD_HEADER_EVENT_TYPE:
+> +		/*
+> +		 * Depreceated, but we need to handle it for sake
+> +		 * of old data files create in pipe mode.
+> +		 */
 
-I'd say randconfig will cover it often enough, and the failure is also 
-borderline build coverage related: you cannot really make the decoder 
-test fail via source level changes, only with changes in the build 
-environment, so I agree with Andi that we can disable this one too - 
-via the patch below.
+Two small speling nits:
+
+ s/Depreceated
+  /Deprecated
+
+ s/create
+  /created
+
+Ack otherwise.
 
 Thanks,
 
 	Ingo
-
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-
-diff --git a/arch/x86/Kconfig.debug b/arch/x86/Kconfig.debug
-index 0f3621e..f0fca39 100644
---- a/arch/x86/Kconfig.debug
-+++ b/arch/x86/Kconfig.debug
-@@ -184,6 +184,11 @@ config HAVE_MMIOTRACE_SUPPORT
- config X86_DECODER_SELFTEST
- 	bool "x86 instruction decoder selftest"
- 	depends on DEBUG_KERNEL && KPROBES
-+	#
-+	# It can take some time to validate the image,
-+	# make sure {allyes|allmod}config doesn't enable it:
-+	#
-+	depends on !COMPILE_TEST
- 	---help---
- 	 Perform x86 instruction decoder selftests at build time.
- 	 This option is useful for checking the sanity of x86 instruction
