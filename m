@@ -1,32 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754208AbaBEUEh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:04:37 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:47984 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751860AbaBEUEc (ORCPT
+	id S1754235AbaBEUEp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:04:45 -0500
+Received: from mail.windriver.com ([147.11.1.11]:54421 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751860AbaBEUEj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:04:32 -0500
+	Wed, 5 Feb 2014 15:04:39 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Paolo Bonzini <pbonzini@redhat.com>, <linux-scsi@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        James Bottomley <JBottomley@parallels.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+CC: Eric Dumazet <eric.dumazet@gmail.com>,
+        Nandita Dukkipati <nanditad@google.com>,
+        Neal Cardwell <ncardwell@google.com>,
+        Tom Herbert <therbert@google.com>, Yuchung Cheng <ycheng@google.com>,
+        "H.K. Jerry Chu" <hkchu@google.com>,
+        =?UTF-8?q?Maciej=20=C5=BBenczykowski?= <maze@google.com>,
+        Mahesh Bandewar <maheshb@google.com>,
+        =?UTF-8?q?Ilpo=20J=C3=A4rvinen?= <ilpo.jarvinen@helsinki.fi>,
+        "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 010/213] block: add and use scsi_blk_cmd_ioctl
-Date: Wed, 5 Feb 2014 14:59:25 -0500
-Message-ID: <1391630568-49251-11-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 039/213] tcp: allow splice() to build full TSO packets
+Date: Wed, 5 Feb 2014 14:59:54 -0500
+Message-ID: <1391630568-49251-40-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -34,162 +40,66 @@ From: Paolo Bonzini <pbonzini@redhat.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 577ebb374c78314ac4617242f509e2f5e7156649 upstream.
+commit 2f53384424251c06038ae612e56231b96ab610ee upstream.
 
-Introduce a wrapper around scsi_cmd_ioctl that takes a block device.
+vmsplice()/splice(pipe, socket) call do_tcp_sendpages() one page at a
+time, adding at most 4096 bytes to an skb. (assuming PAGE_SIZE=4096)
 
-The function will then be enhanced to detect partition block devices
-and, in that case, subject the ioctls to whitelisting.
+The call to tcp_push() at the end of do_tcp_sendpages() forces an
+immediate xmit when pipe is not already filled, and tso_fragment() try
+to split these skb to MSS multiples.
 
-Cc: linux-scsi@vger.kernel.org
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: James Bottomley <JBottomley@parallels.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+4096 bytes are usually split in a skb with 2 MSS, and a remaining
+sub-mss skb (assuming MTU=1500)
+
+This makes slow start suboptimal because many small frames are sent to
+qdisc/driver layers instead of big ones (constrained by cwnd and packets
+in flight of course)
+
+In fact, applications using sendmsg() (adding an additional memory copy)
+instead of vmsplice()/splice()/sendfile() are a bit faster because of
+this anomaly, especially if serving small files in environments with
+large initial [c]wnd.
+
+Call tcp_push() only if MSG_MORE is not set in the flags parameter.
+
+This bit is automatically provided by splice() internals but for the
+last page, or on all pages if user specified SPLICE_F_MORE splice()
+flag.
+
+In some workloads, this can reduce number of sent logical packets by an
+order of magnitude, making zero-copy TCP actually faster than
+one-copy :)
+
+Reported-by: Tom Herbert <therbert@google.com>
+Cc: Nandita Dukkipati <nanditad@google.com>
+Cc: Neal Cardwell <ncardwell@google.com>
+Cc: Tom Herbert <therbert@google.com>
+Cc: Yuchung Cheng <ycheng@google.com>
+Cc: H.K. Jerry Chu <hkchu@google.com>
+Cc: Maciej Żenczykowski <maze@google.com>
+Cc: Mahesh Bandewar <maheshb@google.com>
+Cc: Ilpo Järvinen <ilpo.jarvinen@helsinki.fi>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail>com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- block/scsi_ioctl.c             | 7 +++++++
- drivers/block/cciss.c          | 6 +++---
- drivers/block/ub.c             | 3 +--
- drivers/block/virtio_blk.c     | 4 ++--
- drivers/cdrom/cdrom.c          | 3 +--
- drivers/ide/ide-floppy_ioctl.c | 3 +--
- drivers/scsi/sd.c              | 2 +-
- include/linux/blkdev.h         | 2 ++
- 8 files changed, 18 insertions(+), 12 deletions(-)
+ net/ipv4/tcp.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
-index 4f4230b79bb6..57ac93754841 100644
---- a/block/scsi_ioctl.c
-+++ b/block/scsi_ioctl.c
-@@ -691,6 +691,13 @@ int scsi_cmd_ioctl(struct request_queue *q, struct gendisk *bd_disk, fmode_t mod
- }
- EXPORT_SYMBOL(scsi_cmd_ioctl);
- 
-+int scsi_cmd_blk_ioctl(struct block_device *bd, fmode_t mode,
-+		       unsigned int cmd, void __user *arg)
-+{
-+	return scsi_cmd_ioctl(bd->bd_disk->queue, bd->bd_disk, mode, cmd, arg);
-+}
-+EXPORT_SYMBOL(scsi_cmd_blk_ioctl);
-+
- static int __init blk_scsi_ioctl_init(void)
- {
- 	blk_set_cmd_filter_defaults(&blk_default_cmd_filter);
-diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
-index eb5ff0531cfb..54bad7584ea4 100644
---- a/drivers/block/cciss.c
-+++ b/drivers/block/cciss.c
-@@ -1652,7 +1652,7 @@ static int cciss_ioctl(struct block_device *bdev, fmode_t mode,
- 			return status;
- 		}
- 
--	/* scsi_cmd_ioctl handles these, below, though some are not */
-+	/* scsi_cmd_blk_ioctl handles these, below, though some are not */
- 	/* very meaningful for cciss.  SG_IO is the main one people want. */
- 
- 	case SG_GET_VERSION_NUM:
-@@ -1663,9 +1663,9 @@ static int cciss_ioctl(struct block_device *bdev, fmode_t mode,
- 	case SG_EMULATED_HOST:
- 	case SG_IO:
- 	case SCSI_IOCTL_SEND_COMMAND:
--		return scsi_cmd_ioctl(disk->queue, disk, mode, cmd, argp);
-+		return scsi_cmd_blk_ioctl(bdev, mode, cmd, argp);
- 
--	/* scsi_cmd_ioctl would normally handle these, below, but */
-+	/* scsi_cmd_blk_ioctl would normally handle these, below, but */
- 	/* they aren't a good fit for cciss, as CD-ROMs are */
- 	/* not supported, and we don't have any bus/target/lun */
- 	/* which we present to the kernel. */
-diff --git a/drivers/block/ub.c b/drivers/block/ub.c
-index 0536b5b29adc..1c1533a59c4d 100644
---- a/drivers/block/ub.c
-+++ b/drivers/block/ub.c
-@@ -1727,10 +1727,9 @@ static int ub_bd_release(struct gendisk *disk, fmode_t mode)
- static int ub_bd_ioctl(struct block_device *bdev, fmode_t mode,
-     unsigned int cmd, unsigned long arg)
- {
--	struct gendisk *disk = bdev->bd_disk;
- 	void __user *usermem = (void __user *) arg;
- 
--	return scsi_cmd_ioctl(disk->queue, disk, mode, cmd, usermem);
-+	return scsi_cmd_blk_ioctl(bdev, mode, cmd, usermem);
- }
- 
- /*
-diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-index 2138a7ae050c..4abfa80fdcd6 100644
---- a/drivers/block/virtio_blk.c
-+++ b/drivers/block/virtio_blk.c
-@@ -201,8 +201,8 @@ static int virtblk_ioctl(struct block_device *bdev, fmode_t mode,
- 	if (!virtio_has_feature(vblk->vdev, VIRTIO_BLK_F_SCSI))
- 		return -ENOTTY;
- 
--	return scsi_cmd_ioctl(disk->queue, disk, mode, cmd,
--			      (void __user *)data);
-+	return scsi_cmd_blk_ioctl(bdev, mode, cmd,
-+				  (void __user *)data);
- }
- 
- /* We provide getgeo only to please some old bootloader/partitioning tools */
-diff --git a/drivers/cdrom/cdrom.c b/drivers/cdrom/cdrom.c
-index e3749d0ba68b..5e7c72d3fe39 100644
---- a/drivers/cdrom/cdrom.c
-+++ b/drivers/cdrom/cdrom.c
-@@ -2684,12 +2684,11 @@ int cdrom_ioctl(struct cdrom_device_info *cdi, struct block_device *bdev,
- {
- 	void __user *argp = (void __user *)arg;
- 	int ret;
--	struct gendisk *disk = bdev->bd_disk;
- 
- 	/*
- 	 * Try the generic SCSI command ioctl's first.
- 	 */
--	ret = scsi_cmd_ioctl(disk->queue, disk, mode, cmd, argp);
-+	ret = scsi_cmd_blk_ioctl(bdev, mode, cmd, argp);
- 	if (ret != -ENOTTY)
- 		return ret;
- 
-diff --git a/drivers/ide/ide-floppy_ioctl.c b/drivers/ide/ide-floppy_ioctl.c
-index 9c2288234dea..05f024caf4c9 100644
---- a/drivers/ide/ide-floppy_ioctl.c
-+++ b/drivers/ide/ide-floppy_ioctl.c
-@@ -287,8 +287,7 @@ int ide_floppy_ioctl(ide_drive_t *drive, struct block_device *bdev,
- 	 * and CDROM_SEND_PACKET (legacy) ioctls
- 	 */
- 	if (cmd != CDROM_SEND_PACKET && cmd != SCSI_IOCTL_SEND_COMMAND)
--		err = scsi_cmd_ioctl(bdev->bd_disk->queue, bdev->bd_disk,
--				mode, cmd, argp);
-+		err = scsi_cmd_blk_ioctl(bdev, mode, cmd, argp);
- 
- 	if (err == -ENOTTY)
- 		err = generic_ide_ioctl(drive, bdev, cmd, arg);
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index 18e6c59ed12d..654e2674e7c3 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -907,7 +907,7 @@ static int sd_ioctl(struct block_device *bdev, fmode_t mode,
- 		case SCSI_IOCTL_GET_BUS_NUMBER:
- 			return scsi_ioctl(sdp, cmd, p);
- 		default:
--			error = scsi_cmd_ioctl(disk->queue, disk, mode, cmd, p);
-+			error = scsi_cmd_blk_ioctl(bdev, mode, cmd, p);
- 			if (error != -ENOTTY)
- 				return error;
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index 3a8cbf72b06e..cea0a9223c5d 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -849,7 +849,7 @@ wait_for_memory:
  	}
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index cda62da68108..ba55e497f7dc 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -793,6 +793,8 @@ extern void blk_plug_device(struct request_queue *);
- extern void blk_plug_device_unlocked(struct request_queue *);
- extern int blk_remove_plug(struct request_queue *);
- extern void blk_recount_segments(struct request_queue *, struct bio *);
-+extern int scsi_cmd_blk_ioctl(struct block_device *, fmode_t,
-+			      unsigned int, void __user *);
- extern int scsi_cmd_ioctl(struct request_queue *, struct gendisk *, fmode_t,
- 			  unsigned int, void __user *);
- extern int sg_scsi_ioctl(struct request_queue *, struct gendisk *, fmode_t,
+ 
+ out:
+-	if (copied)
++	if (copied && !(flags & MSG_MORE))
+ 		tcp_push(sk, flags, mss_now, tp->nonagle);
+ 	return copied;
+ 
 -- 
 1.8.5.2
 
