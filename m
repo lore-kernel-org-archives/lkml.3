@@ -1,64 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756618AbaBEVHQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 16:07:16 -0500
-Received: from mail.windriver.com ([147.11.1.11]:54453 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754246AbaBEUEt (ORCPT
+	id S1756601AbaBEVHO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 16:07:14 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:54729 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754896AbaBEVHJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:04:49 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Mathias Krause <minipli@googlemail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 043/213] net: fix info leak in compat dev_ifconf()
-Date: Wed, 5 Feb 2014 14:59:58 -0500
-Message-ID: <1391630568-49251-44-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
+	Wed, 5 Feb 2014 16:07:09 -0500
+Date: Wed, 5 Feb 2014 13:07:05 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: Vladimir Davydov <vdavydov@parallels.com>, akpm@linux-foundation.org,
+        penberg@kernel.org, cl@linux.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl
+Subject: Re: [PATCH v3] slub: fix false-positive lockdep warning in
+ free_partial()
+In-Reply-To: <20140205155840.43d6b4ad@gandalf.local.home>
+Message-ID: <alpine.DEB.2.02.1402051301460.14325@chino.kir.corp.google.com>
+References: <52F1F25F.20402@parallels.com> <1391588133-15469-1-git-send-email-vdavydov@parallels.com> <20140205195837.GA6857@home.goodmis.org> <alpine.DEB.2.02.1402051231250.5616@chino.kir.corp.google.com> <20140205155840.43d6b4ad@gandalf.local.home>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathias Krause <minipli@googlemail.com>
+On Wed, 5 Feb 2014, Steven Rostedt wrote:
 
-                   -------------------
-    This is a commit scheduled for the next v2.6.34 longterm release.
-    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
-    If you see a problem with using this for longterm, please comment.
-                   -------------------
+> > There's an extremely small overhead of taking this lock, the cache has 
+> > been destroyed and is the process of being torn down, there will be 
+> > absolutely no contention on n->list_lock.
+> 
+> But why add it if it isn't necessary? You're even disabling interrupts,
+> which means that you add to the response latency. That is, this change
+> does affect other aspects of the kernel!
+> 
 
-commit 43da5f2e0d0c69ded3d51907d9552310a6b545e8 upstream.
-
-The implementation of dev_ifconf() for the compat ioctl interface uses
-an intermediate ifc structure allocated in userland for the duration of
-the syscall. Though, it fails to initialize the padding bytes inserted
-for alignment and that for leaks four bytes of kernel stack. Add an
-explicit memset(0) before filling the structure to avoid the info leak.
-
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- net/socket.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/net/socket.c b/net/socket.c
-index c802797e3a4a..b0d3b6a025ea 100644
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -2508,6 +2508,7 @@ static int dev_ifconf(struct net *net, struct compat_ifconf __user *uifc32)
- 	if (copy_from_user(&ifc32, uifc32, sizeof(struct compat_ifconf)))
- 		return -EFAULT;
- 
-+	memset(&ifc, 0, sizeof(ifc));
- 	if (ifc32.ifcbuf == 0) {
- 		ifc32.ifc_len = 0;
- 		ifc.ifc_len = 0;
--- 
-1.8.5.2
-
+The functions that manipulate the partial lists was modified by 
+c65c1877bd68 ("slub: use lockdep_assert_held") which replaced commentary 
+with runtime checking on debug kernels with lockdep enabled.  I'm not sure 
+adding more code to do the remove_partial() and __remove_partial() variant 
+is the right solution to just bypass the check; if anything, I think we 
+should accept the fact that the comment should have been "requires 
+n->list_lock if the slab cache can be accessed by other cpus" that makes 
+it clear we don't need it for init and destroy paths.
