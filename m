@@ -1,57 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751688AbaBEJhT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 04:37:19 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:50798 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751296AbaBEJhC (ORCPT
+	id S1751802AbaBEJhx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 04:37:53 -0500
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:43846 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751262AbaBEJhu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 04:37:02 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org, monstr@monstr.eu
-Subject: Re: [PATCH 09/10] watchdog: xilinx: Add missing binding
-Date: Wed, 5 Feb 2014 10:36:19 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-doc@vger.kernel.org, Michal Simek <michal.simek@xilinx.com>,
-        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Rob Landley <rob@landley.net>, Kumar Gala <galak@codeaurora.org>
-References: <ed4cb31c9a549343e6b492cf62fc962d39034bd0.1391177880.git.michal.simek@xilinx.com> <201402042027.15898.arnd@arndb.de> <52F20387.3090709@monstr.eu>
-In-Reply-To: <52F20387.3090709@monstr.eu>
+	Wed, 5 Feb 2014 04:37:50 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201402051036.19428.arnd@arndb.de>
-X-Provags-ID: V02:K0:bFGgXeWhhkN8hLMbBFOMobHgRFMXeiVkznEcxbdXwlA
- hdyi6S35Ql3UMi6xtL+N4lCcY85OBPLUOCbLQppQvnPznDnq6n
- BVtQ68OufnwCklhurBAXoOTajkdCjinJ4x9OrHVYOHDGaOeEls
- GQzBIDVdjKb8VE4re5KbXDdbFU6Gr9L/UkUlShCWYYXl9XxDFM
- Wv3Dw25oV0SmSGyRlzYvlRFivsO2LP0DUUYdHRBh4sv0Gaaly0
- jIrytT2pFuuL+W3DwhnyMH/1fRNb60vE6ACTX4qmXSdcEmwsKO
- monoM9Syy6GCEgGfkHgkMU2vk29cgtDGIG+xUEi5AE7lD1qMZE
- CJCP/nzjmHKr6sCFoLir4Pw4eLWK+/72IjFERwNtB
+In-Reply-To: <1391202481-19533-1-git-send-email-david.a.cohen@linux.intel.com>
+References: <20140131205007.GB26770@psi-dev26.jf.intel.com>
+	<1391202481-19533-1-git-send-email-david.a.cohen@linux.intel.com>
+Date: Wed, 5 Feb 2014 10:37:49 +0100
+Message-ID: <CACRpkdbmhWkq8BRTgSGQsSwGbz1t3dzEww6ibAT2nWZuTTyncg@mail.gmail.com>
+Subject: Re: [PATCH v2] gpio-intel-mid: fix the incorrect return of idle callback
+From: Linus Walleij <linus.walleij@linaro.org>
+To: David Cohen <david.a.cohen@linux.intel.com>
+Cc: Alexandre Courbot <gnurou@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xinhui.pan" <xinhuiX.pan@intel.com>, "bo.he" <bo.he@intel.com>,
+        Felibe Balbi <balbi@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 05 February 2014, Michal Simek wrote:
-> I am not quite sure what you mean by reports to user space.
-> If you mean to get timeout through ioctl for example - then yes it is working
-> through standard watchdog ioctl interface and timeout is calculated
-> from hardware setup.
+On Fri, Jan 31, 2014 at 10:08 PM, David Cohen
+<david.a.cohen@linux.intel.com> wrote:
 
-Yes, that is what I meant. I believe most other watchdogs let
-you program the timeout, but I don't see anything wrong with
-having that fixed in the FPGA in your case.
+> From: "xinhui.pan" <xinhuiX.pan@intel.com>
+>
+> intel_gpio_runtime_idle should return correct error code if it do fail.
+> make it more correct even though -EBUSY is the most possible return value.
+>
+> Signed-off-by: bo.he <bo.he@intel.com>
+> Signed-off-by: xinhui.pan <xinhuiX.pan@intel.com>
+> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+> Cc: Felibe Balbi <balbi@ti.com>
 
-Still, the choice of putting the timeout into DT in terms of
-cycles rather than miliseconds wasn't ideal from an interface
-perspective and we should change that if/when we do a generic
-binding. I can definitely see where it's coming from for your
-case, as the cycle count totally makes sense from an FPGA
-tool perspective...
+Patch applied with Felipe's Reviewed-by tag.
 
-	Arnd
+Yours,
+Linus Walleij
