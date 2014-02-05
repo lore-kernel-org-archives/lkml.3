@@ -1,132 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754131AbaBESnl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 13:43:41 -0500
-Received: from relay.parallels.com ([195.214.232.42]:35624 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753746AbaBESjh (ORCPT
+	id S1754137AbaBESok (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 13:44:40 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:40609 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751175AbaBESoi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 13:39:37 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <akpm@linux-foundation.org>
-CC: <dchinner@redhat.com>, <mhocko@suse.cz>, <hannes@cmpxchg.org>,
-        <glommer@gmail.com>, <rientjes@google.com>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <devel@openvz.org>, Glauber Costa <glommer@openvz.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH -mm v15 06/13] fs: consolidate {nr,free}_cached_objects args in shrink_control
-Date: Wed, 5 Feb 2014 22:39:22 +0400
-Message-ID: <e0d1b40a983e7e7da88dd7a59934ea64b97190e0.1391624021.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1391624021.git.vdavydov@parallels.com>
-References: <cover.1391624021.git.vdavydov@parallels.com>
+	Wed, 5 Feb 2014 13:44:38 -0500
+Message-ID: <52F28692.1070404@wwwdotorg.org>
+Date: Wed, 05 Feb 2014 11:44:34 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.24.25.229]
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joseph Lo <josephl@nvidia.com>, Hiroshi Doyu <hdoyu@nvidia.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Danny Huang <dahuang@nvidia.com>
+Subject: Re: [PATCH v3 5/6] misc: enable fuse drivers
+References: <1390952176-30402-1-git-send-email-pdeschrijver@nvidia.com> <1390952176-30402-6-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1390952176-30402-6-git-send-email-pdeschrijver@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are going to make the FS shrinker memcg-aware. To achieve that, we
-will have to pass the memcg to scan to the nr_cached_objects and
-free_cached_objects VFS methods, which currently take only the NUMA node
-to scan. Since the shrink_control structure already holds the node, and
-the memcg to scan will be added to it as we introduce memcg-aware
-vmscan, let us consolidate the methods' arguments in this structure to
-keep things clean.
+On 01/28/2014 04:36 PM, Peter De Schrijver wrote:
+> Enable building the fuse drivers.
 
-Thanks to David Chinner for the tip.
+This isn't really about enabling them. It's about changing which Tegra
+fuse driver is built. Perhaps rephrase this more as:
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Glauber Costa <glommer@openvz.org>
-Cc: Dave Chinner <dchinner@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
----
- fs/super.c         |   12 ++++++------
- fs/xfs/xfs_super.c |    7 +++----
- include/linux/fs.h |    6 ++++--
- 3 files changed, 13 insertions(+), 12 deletions(-)
+ARM: tegra: build fuse driver from drivers/misc instead
 
-diff --git a/fs/super.c b/fs/super.c
-index 0688f3eaf012..ff9ff5fad70c 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -76,7 +76,7 @@ static unsigned long super_cache_scan(struct shrinker *shrink,
- 		return SHRINK_STOP;
- 
- 	if (sb->s_op->nr_cached_objects)
--		fs_objects = sb->s_op->nr_cached_objects(sb, sc->nid);
-+		fs_objects = sb->s_op->nr_cached_objects(sb, sc);
- 
- 	inodes = list_lru_shrink_count(&sb->s_inode_lru, sc);
- 	dentries = list_lru_shrink_count(&sb->s_dentry_lru, sc);
-@@ -96,9 +96,10 @@ static unsigned long super_cache_scan(struct shrinker *shrink,
- 	sc->nr_to_scan = inodes;
- 	freed += prune_icache_sb(sb, sc);
- 
--	if (fs_objects)
--		freed += sb->s_op->free_cached_objects(sb, fs_objects,
--						       sc->nid);
-+	if (fs_objects) {
-+		sc->nr_to_scan = fs_objects;
-+		freed += sb->s_op->free_cached_objects(sb, sc);
-+	}
- 
- 	drop_super(sb);
- 	return freed;
-@@ -116,8 +117,7 @@ static unsigned long super_cache_count(struct shrinker *shrink,
- 		return 0;
- 
- 	if (sb->s_op && sb->s_op->nr_cached_objects)
--		total_objects = sb->s_op->nr_cached_objects(sb,
--						 sc->nid);
-+		total_objects = sb->s_op->nr_cached_objects(sb, sc);
- 
- 	total_objects += list_lru_shrink_count(&sb->s_dentry_lru, sc);
- 	total_objects += list_lru_shrink_count(&sb->s_inode_lru, sc);
-diff --git a/fs/xfs/xfs_super.c b/fs/xfs/xfs_super.c
-index 01ee44444885..4bc182b29c8f 100644
---- a/fs/xfs/xfs_super.c
-+++ b/fs/xfs/xfs_super.c
-@@ -1524,7 +1524,7 @@ xfs_fs_mount(
- static long
- xfs_fs_nr_cached_objects(
- 	struct super_block	*sb,
--	int			nid)
-+	struct shrink_control	*sc)
- {
- 	return xfs_reclaim_inodes_count(XFS_M(sb));
- }
-@@ -1532,10 +1532,9 @@ xfs_fs_nr_cached_objects(
- static long
- xfs_fs_free_cached_objects(
- 	struct super_block	*sb,
--	long			nr_to_scan,
--	int			nid)
-+	struct shrink_control	*sc)
- {
--	return xfs_reclaim_inodes_nr(XFS_M(sb), nr_to_scan);
-+	return xfs_reclaim_inodes_nr(XFS_M(sb), sc->nr_to_scan);
- }
- 
- static const struct super_operations xfs_super_operations = {
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 9b613a828b53..3a87b0254408 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1624,8 +1624,10 @@ struct super_operations {
- 	ssize_t (*quota_write)(struct super_block *, int, const char *, size_t, loff_t);
- #endif
- 	int (*bdev_try_to_free_page)(struct super_block*, struct page*, gfp_t);
--	long (*nr_cached_objects)(struct super_block *, int);
--	long (*free_cached_objects)(struct super_block *, long, int);
-+	long (*nr_cached_objects)(struct super_block *,
-+				  struct shrink_control *);
-+	long (*free_cached_objects)(struct super_block *,
-+				    struct shrink_control *);
- };
- 
- /*
--- 
-1.7.10.4
-
+The Tegra fuse code has moved to drivers/misc/fuse/tegra. Enable the
+building of that code, and disable the building of the old fuse code in
+arch/arm/mach-tegra/.
