@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755121AbaBEUHF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:07:05 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:48404 "EHLO
+	id S932309AbaBEUHS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:07:18 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:48454 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755029AbaBEUGw (ORCPT
+	with ESMTP id S1755156AbaBEUHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:06:52 -0500
+	Wed, 5 Feb 2014 15:07:11 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Mathias Krause <minipli@googlemail.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
+CC: Sven Schnelle <svens@stackframe.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 133/213] Bluetooth: fix possible info leak in bt_sock_recvmsg()
-Date: Wed, 5 Feb 2014 15:01:28 -0500
-Message-ID: <1391630568-49251-134-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 150/213] USB: CDC ACM: Fix NULL pointer dereference
+Date: Wed, 5 Feb 2014 15:01:45 -0500
+Message-ID: <1391630568-49251-151-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -27,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Sven Schnelle <svens@stackframe.org>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -35,47 +32,35 @@ From: Mathias Krause <minipli@googlemail.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 4683f42fde3977bdb4e8a09622788cc8b5313778 upstream.
+commit 99f347caa4568cb803862730b3b1f1942639523f upstream.
 
-In case the socket is already shutting down, bt_sock_recvmsg() returns
-with 0 without updating msg_namelen leading to net/socket.c leaking the
-local, uninitialized sockaddr_storage variable to userland -- 128 bytes
-of kernel stack memory.
+If a device specifies zero endpoints in its interface descriptor,
+the kernel oopses in acm_probe(). Even though that's clearly an
+invalid descriptor, we should test wether we have all endpoints.
+This is especially bad as this oops can be triggered by just
+plugging a USB device in.
 
-Fix this by moving the msg_namelen assignment in front of the shutdown
-test.
-
-Cc: Marcel Holtmann <marcel@holtmann.org>
-Cc: Gustavo Padovan <gustavo@padovan.org>
-Cc: Johan Hedberg <johan.hedberg@gmail.com>
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Sven Schnelle <svens@stackframe.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/bluetooth/af_bluetooth.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/class/cdc-acm.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/net/bluetooth/af_bluetooth.c b/net/bluetooth/af_bluetooth.c
-index 404a8500fd03..0891857b7ca2 100644
---- a/net/bluetooth/af_bluetooth.c
-+++ b/net/bluetooth/af_bluetooth.c
-@@ -240,14 +240,14 @@ int bt_sock_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	if (flags & (MSG_OOB))
- 		return -EOPNOTSUPP;
- 
-+	msg->msg_namelen = 0;
-+
- 	if (!(skb = skb_recv_datagram(sk, flags, noblock, &err))) {
- 		if (sk->sk_shutdown & RCV_SHUTDOWN)
- 			return 0;
- 		return err;
+diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
+index af45f735f6e5..45f85df306e5 100644
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -1120,7 +1120,8 @@ skip_normal_probe:
  	}
  
--	msg->msg_namelen = 0;
--
- 	copied = skb->len;
- 	if (len < copied) {
- 		msg->msg_flags |= MSG_TRUNC;
+ 
+-	if (data_interface->cur_altsetting->desc.bNumEndpoints < 2)
++	if (data_interface->cur_altsetting->desc.bNumEndpoints < 2 ||
++	    control_interface->cur_altsetting->desc.bNumEndpoints == 0)
+ 		return -EINVAL;
+ 
+ 	epctrl = &control_interface->cur_altsetting->endpoint[0].desc;
 -- 
 1.8.5.2
 
