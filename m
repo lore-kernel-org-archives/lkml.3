@@ -1,142 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752594AbaBEOv5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 09:51:57 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:57492 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752382AbaBEOvz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 09:51:55 -0500
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        "Mark Brown" <broonie@kernel.org>,
-        "Emilio Lopez" <emilio@elopez.com.ar>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1391605507-30981-2-git-send-email-maxime.ripard@free-electrons.com>
-Cc: linux-sunxi@googlegroups.com, linux-spi@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        zhuzhenhua@allwinnertech.com,
-        "Maxime Ripard" <maxime.ripard@free-electrons.com>
-References: <1391605507-30981-1-git-send-email-maxime.ripard@free-electrons.com>
- <1391605507-30981-2-git-send-email-maxime.ripard@free-electrons.com>
-Message-ID: <20140205145149.22158.72564@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH v4 1/5] clk: sunxi: Add support for PLL6 on the A31
-Date: Wed, 05 Feb 2014 06:51:49 -0800
+	id S1752721AbaBEOwI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 09:52:08 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:55351 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752382AbaBEOwB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 09:52:01 -0500
+From: Borislav Petkov <bp@alien8.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Borislav Petkov <bp@suse.de>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <rric@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Namhyung Kim <namhyung@gmail.com>
+Subject: [PATCH 0/3] perf-tool: Move last fs* bits
+Date: Wed,  5 Feb 2014 15:51:51 +0100
+Message-Id: <1391611914-26054-1-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 1.8.5.2.192.g7794a68
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Maxime Ripard (2014-02-05 05:05:03)
-> The A31 has a slightly different PLL6 clock. Add support for this new clock in
-> our driver.
-> 
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+From: Borislav Petkov <bp@suse.de>
 
-Looks good to me.
+One dangling patch fs* patch and two headers, one going to /dev/null
+even.
 
-Regards,
-Mike
+Please apply.
 
-> ---
->  Documentation/devicetree/bindings/clock/sunxi.txt |  1 +
->  drivers/clk/sunxi/clk-sunxi.c                     | 45 +++++++++++++++++++++++
->  2 files changed, 46 insertions(+)
-> 
-> diff --git a/Documentation/devicetree/bindings/clock/sunxi.txt b/Documentation/devicetree/bindings/clock/sunxi.txt
-> index c2cb762..954845c 100644
-> --- a/Documentation/devicetree/bindings/clock/sunxi.txt
-> +++ b/Documentation/devicetree/bindings/clock/sunxi.txt
-> @@ -11,6 +11,7 @@ Required properties:
->         "allwinner,sun6i-a31-pll1-clk" - for the main PLL clock on A31
->         "allwinner,sun4i-pll5-clk" - for the PLL5 clock
->         "allwinner,sun4i-pll6-clk" - for the PLL6 clock
-> +       "allwinner,sun6i-a31-pll6-clk" - for the PLL6 clock on A31
->         "allwinner,sun4i-cpu-clk" - for the CPU multiplexer clock
->         "allwinner,sun4i-axi-clk" - for the AXI clock
->         "allwinner,sun4i-axi-gates-clk" - for the AXI gates
-> diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
-> index abb6c5a..0c05c2d 100644
-> --- a/drivers/clk/sunxi/clk-sunxi.c
-> +++ b/drivers/clk/sunxi/clk-sunxi.c
-> @@ -249,7 +249,38 @@ static void sun4i_get_pll5_factors(u32 *freq, u32 parent_rate,
->         *n = DIV_ROUND_UP(div, (*k+1));
->  }
->  
-> +/**
-> + * sun6i_a31_get_pll6_factors() - calculates n, k factors for A31 PLL6
-> + * PLL6 rate is calculated as follows
-> + * rate = parent_rate * n * (k + 1) / 2
-> + * parent_rate is always 24Mhz
-> + */
-> +
-> +static void sun6i_a31_get_pll6_factors(u32 *freq, u32 parent_rate,
-> +                                      u8 *n, u8 *k, u8 *m, u8 *p)
-> +{
-> +       u8 div;
-> +
-> +       /*
-> +        * We always have 24MHz / 2, so we can just say that our
-> +        * parent clock is 12MHz.
-> +        */
-> +       parent_rate = parent_rate / 2;
-> +
-> +       /* Normalize value to a parent_rate multiple (24M / 2) */
-> +       div = *freq / parent_rate;
-> +       *freq = parent_rate * div;
-> +
-> +       /* we were called to round the frequency, we can now return */
-> +       if (n == NULL)
-> +               return;
-> +
-> +       *k = div / 32;
-> +       if (*k > 3)
-> +               *k = 3;
->  
-> +       *n = DIV_ROUND_UP(div, (*k+1));
-> +}
->  
->  /**
->   * sun4i_get_apb1_factors() - calculates m, p factors for APB1
-> @@ -416,6 +447,13 @@ static struct clk_factors_config sun4i_pll5_config = {
->         .kwidth = 2,
->  };
->  
-> +static struct clk_factors_config sun6i_a31_pll6_config = {
-> +       .nshift = 8,
-> +       .nwidth = 5,
-> +       .kshift = 4,
-> +       .kwidth = 2,
-> +};
-> +
->  static struct clk_factors_config sun4i_apb1_config = {
->         .mshift = 0,
->         .mwidth = 5,
-> @@ -457,6 +495,12 @@ static const struct factors_data sun4i_pll5_data __initconst = {
->         .getter = sun4i_get_pll5_factors,
->  };
->  
-> +static const struct factors_data sun6i_a31_pll6_data __initconst = {
-> +       .enable = 31,
-> +       .table = &sun6i_a31_pll6_config,
-> +       .getter = sun6i_a31_get_pll6_factors,
-> +};
-> +
->  static const struct factors_data sun4i_apb1_data __initconst = {
->         .table = &sun4i_apb1_config,
->         .getter = sun4i_get_apb1_factors,
-> @@ -972,6 +1016,7 @@ free_clkdata:
->  static const struct of_device_id clk_factors_match[] __initconst = {
->         {.compatible = "allwinner,sun4i-pll1-clk", .data = &sun4i_pll1_data,},
->         {.compatible = "allwinner,sun6i-a31-pll1-clk", .data = &sun6i_a31_pll1_data,},
-> +       {.compatible = "allwinner,sun6i-a31-pll6-clk", .data = &sun6i_a31_pll6_data,},
->         {.compatible = "allwinner,sun4i-apb1-clk", .data = &sun4i_apb1_data,},
->         {.compatible = "allwinner,sun4i-mod0-clk", .data = &sun4i_mod0_data,},
->         {.compatible = "allwinner,sun7i-a20-out-clk", .data = &sun7i_a20_out_data,},
-> -- 
-> 1.8.4.2
-> 
+Borislav Petkov (3):
+  perf: Move fs.* to lib/api/fs/
+  perf: Move hash.h header
+  perf: Drop prefetch.h
+
+ tools/include/linux/hash.h                                 |  5 +++++
+ tools/lib/api/Makefile                                     |  2 ++
+ tools/{perf/util => lib/api/fs}/fs.c                       | 11 ++++++++---
+ tools/{perf/util/include/linux/magic.h => lib/api/fs/fs.h} | 12 +++++-------
+ tools/perf/MANIFEST                                        |  2 +-
+ tools/perf/Makefile.perf                                   |  6 +-----
+ tools/perf/tests/parse-events.c                            |  2 +-
+ tools/perf/util/cpumap.c                                   |  2 +-
+ tools/perf/util/fs.h                                       |  7 -------
+ tools/perf/util/include/linux/hash.h                       |  5 -----
+ tools/perf/util/include/linux/list.h                       |  1 -
+ tools/perf/util/include/linux/prefetch.h                   |  6 ------
+ tools/perf/util/pmu.c                                      |  2 +-
+ tools/perf/util/python-ext-sources                         |  2 +-
+ tools/perf/util/record.c                                   |  2 +-
+ tools/perf/util/util.c                                     |  2 +-
+ 16 files changed, 28 insertions(+), 41 deletions(-)
+ create mode 100644 tools/include/linux/hash.h
+ rename tools/{perf/util => lib/api/fs}/fs.c (91%)
+ rename tools/{perf/util/include/linux/magic.h => lib/api/fs/fs.h} (50%)
+ delete mode 100644 tools/perf/util/fs.h
+ delete mode 100644 tools/perf/util/include/linux/hash.h
+ delete mode 100644 tools/perf/util/include/linux/prefetch.h
+
+-- 
+1.8.5.2.192.g7794a68
+
