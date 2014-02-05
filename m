@@ -1,49 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752079AbaBEOp5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 09:45:57 -0500
-Received: from mail-vb0-f51.google.com ([209.85.212.51]:56819 "EHLO
-	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751064AbaBEOpz (ORCPT
+	id S1752175AbaBEOs5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 09:48:57 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:35213 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750971AbaBEOs4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 09:45:55 -0500
+	Wed, 5 Feb 2014 09:48:56 -0500
+Message-ID: <52F24F4F.8000901@free-electrons.com>
+Date: Wed, 05 Feb 2014 15:48:47 +0100
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <1391529538-21685-15-git-send-email-ulf.hansson@linaro.org>
-References: <1391529538-21685-1-git-send-email-ulf.hansson@linaro.org>
-	<1391529538-21685-15-git-send-email-ulf.hansson@linaro.org>
-Date: Wed, 5 Feb 2014 12:45:54 -0200
-Message-ID: <CAOMZO5CzUuQrmbk6FpFGR56jHBtW-1d_AGcdgB2xyMG0Nkf+Fw@mail.gmail.com>
-Subject: Re: [PATCH 14/17] i2c: nomadik: Fixup deployment of runtime PM
-From: Fabio Estevam <festevam@gmail.com>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Alessandro Rubini <rubini@unipv.it>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>, Chris Ball <chris@printf.net>,
-        Mark Brown <broonie@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-i2c <linux-i2c@vger.kernel.org>,
-        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
+To: Boris BREZILLON <b.brezillon@overkiz.com>,
+        Mike Turquette <mturquette@linaro.org>
+CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] clk: add strict of_clk_init dependency check
+References: <1391554766-11285-1-git-send-email-gregory.clement@free-electrons.com> <1391593680-9388-1-git-send-email-b.brezillon@overkiz.com>
+In-Reply-To: <1391593680-9388-1-git-send-email-b.brezillon@overkiz.com>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 4, 2014 at 1:58 PM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+Hi Boris,
 
-> +static int nmk_i2c_runtime_resume(struct device *dev)
-> +{
-> +       struct amba_device *adev = to_amba_device(dev);,
-> +       struct nmk_i2c_dev *nmk_i2c = amba_get_drvdata(adev);
+On 05/02/2014 10:48, Boris BREZILLON wrote:
+> The parent dependency check is only available on the first parent of a given
+> clk.
+> 
+> Add support for strict dependency check: all parents of a given clk must be
+> initialized.
+> 
+> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+> ---
+> 
+> Hello Gregory,
+> 
+> This patch adds support for strict check on clk dependencies (check if all
+> parents specified by an DT clk node are initialized).
+> 
+> I'm not sure this is what you were expecting (maybe testing the first parent
+> is what you really want), so please feel free to tell me if I'm wrong.
+> 
+> Best Regards,
+> 
+> Boris
+> 
+>  drivers/clk/clk.c |   27 +++++++++++++++++++++------
+>  1 file changed, 21 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> index beb0f8b..6849769 100644
+> --- a/drivers/clk/clk.c
+> +++ b/drivers/clk/clk.c
+> @@ -2543,22 +2543,37 @@ static int parent_ready(struct device_node *np)
+>  {
+>  	struct of_phandle_args clkspec;
+>  	struct of_clk_provider *provider;
+> +	int num_parents;
+> +	bool found;
+> +	int i;
+>  
+>  	/*
+>  	 * If there is no clock parent, no need to wait for them, then
+>  	 * we can consider their absence as being ready
+>  	 */
+> -	if (of_parse_phandle_with_args(np, "clocks", "#clock-cells", 0,
+> -					&clkspec))
+> +	num_parents = of_count_phandle_with_args(np, "clocks", "#clock-cells");
+> +	if (num_parents <= 0)
+>  		return 1;
+>  
+> -	/* Check if we have such a provider in our array */
+> -	list_for_each_entry(provider, &of_clk_providers, link) {
+> -		if (provider->node == clkspec.np)
+> +	for (i = 0; i < num_parents; i++) {
+> +		if (of_parse_phandle_with_args(np, "clocks", "#clock-cells", i,
+> +					       &clkspec))
+>  			return 1;
 > +
-> +       clk_prepare_enable(nmk_i2c->clk);
+> +		/* Check if we have such a provider in our array */
+> +		found = false;
+> +		list_for_each_entry(provider, &of_clk_providers, link) {
+> +			if (provider->node == clkspec.np) {
+> +				found = true;
+> +				break;
 
-Previously the code was checking the return value from
-clk_prepare_enable(). You should keep the check here.
+Hum this means that as soon as you have one parent then you consider it
+as ready. It is better of what I have done because I only test the 1st
+parent. However I wondered if we should go further by ensuring all the
+parents are ready.
 
-Regards,
+If I am right, there is more than one parent only for the muxer. In this
+case is it really expected that all the parent are ready?
 
-Fabio Estevam
+Thanks,
+
+Gregory
+
+> +			}
+> +		}
+> +
+> +		if (!found)
+> +			return 0;
+>  	}
+>  
+> -	return 0;
+> +	return 1;
+>  }
+>  
+>  /**
+> 
+
+
+-- 
+Gregory Clement, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
