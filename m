@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752551AbaBEO7x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 09:59:53 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:36328 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751480AbaBEO7v (ORCPT
+	id S1752765AbaBEO76 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 09:59:58 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:39483 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752489AbaBEO74 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 09:59:51 -0500
-Date: Wed, 5 Feb 2014 14:59:24 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Emilio Lopez <emilio@elopez.com.ar>, linux-sunxi@googlegroups.com,
-        linux-spi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com
-Message-ID: <20140205145924.GA32298@sirena.org.uk>
-References: <1391605507-30981-1-git-send-email-maxime.ripard@free-electrons.com>
- <1391605507-30981-4-git-send-email-maxime.ripard@free-electrons.com>
+	Wed, 5 Feb 2014 09:59:56 -0500
+Message-ID: <52F25209.2010506@windriver.com>
+Date: Wed, 5 Feb 2014 10:00:25 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="dDRMvlgZJXvWKvBx"
-Content-Disposition: inline
-In-Reply-To: <1391605507-30981-4-git-send-email-maxime.ripard@free-electrons.com>
-X-Cookie: Take it easy, we're in a hurry.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v4 3/5] spi: sunxi: Add Allwinner A31 SPI controller
- driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
+Subject: Re: [PATCH 59/73] drivers/gpio: delete non-required instances of
+ include <linux/init.h>
+References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>	<1390339396-3479-60-git-send-email-paul.gortmaker@windriver.com>	<CACRpkdYk6cOO-JZbe887ihJaWE5JMjuXm3EVcZmE1jCeL2BODQ@mail.gmail.com>	<20140124095827.1ee8ddcfed8d1c8e0a6d3dbd@canb.auug.org.au>	<20140124022154.GA13428@windriver.com> <CACRpkdYF2f1Ekp6JYwntj+UhbceWtMN==yKC7emsXHfktcZZsg@mail.gmail.com>
+In-Reply-To: <CACRpkdYF2f1Ekp6JYwntj+UhbceWtMN==yKC7emsXHfktcZZsg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 14-02-05 08:02 AM, Linus Walleij wrote:
+> On Fri, Jan 24, 2014 at 3:21 AM, Paul Gortmaker
+> <paul.gortmaker@windriver.com> wrote:
+> 
+>> For what it is worth, I'm not removing any patches from my series file
+>> until they explicitly conflict and/or become redundant.  If a maintainer
+>> says they are adding the patch, I add a comment in the series file, but
+>> I don't remove them until I see them come into next via another branch,
+>> and/or sfr reports a conflict/redundancy.
+> 
+> So I can add these patches to my devel branches now I think?
 
---dDRMvlgZJXvWKvBx
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The patches that weren't taken by maintainers before 3.14-rc1 were
+encompassed in the cleanup pull request to Linus sent yesterday.
 
-On Wed, Feb 05, 2014 at 02:05:05PM +0100, Maxime Ripard wrote:
-> The Allwinner A31 has a new SPI controller IP compared to the older Allwinner
-> SoCs.
+http://www.spinics.net/lists/arm-kernel/msg304864.html
 
-Looks good - applied, thanks!
+So, assuming he does pull it, you'll not have to do anything.
 
---dDRMvlgZJXvWKvBx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Thanks,
+Paul.
+--
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS8lHIAAoJELSic+t+oim9U0YP/3Lp8IvFOsSfD/Aj41cjxW5I
-ruD6tVrOyJkmQnONj4oPatHhvclOZdiLIYYENpXWbSHhMttV6ng65Ct6kFrxa054
-3iWVOsmGNs9sjYd+oCWYwk097+pKqPB9skjJa7+AXXU6IP9hkAImTsHPhQtCNmTW
-1CQ96/tW62miZtBkJ+UE+iunknayYlsAFJ9AsQ9tBrJ8fRaapfOwOJ3NU5jFkbM1
-Tuj5b9b932rVJEZYZn0/ZdoqdDydhwq5Ql4FpXsqPNYRukuDatI3eU5Yx+IKmUPT
-VglqIfNYk8Rk3Y+x370sYfadGp/ojgczAcCbm6oSMsk3m7ABT8oAaaINb1IvY2bZ
-0F8QmvDRpLnePiUnMGsrZLc4KC4oc0M1Xb1DOPQDe4xL1jo89dbQryjc4cYPJuwR
-7NucvvAkqFVBAML9w8Nc2VQAQuhOEyJVlWuA2JzcxOku9+fYT6TekSa86DXXGgst
-aF9zLHdPQfXiO8gDhFf4Q7pwvspUVyBM0KfaV4y2OSiGhfIk4BqwfDJ013/6RW6E
-Vt7D90f1iFlTNRuHrbKUyASyAyOCnEVKsU86mRoP5N+i0gxtlsabIC3NvWneiPGV
-jM1wIx8P95W30LsHXCINo3Wwrvqwr5PO53HfYOXUOlYcMbXVuYnHorjUI0dJsDCF
-FyIoFTZI7qrbSOAAr9QF
-=D/De
------END PGP SIGNATURE-----
-
---dDRMvlgZJXvWKvBx--
+> 
+> Yours,
+> Linus Walleij
+> 
