@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754893AbaBFFcZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 00:32:25 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:56256 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752003AbaBFFcY (ORCPT
+	id S1754652AbaBFFcX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 00:32:23 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:44315 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752003AbaBFFcR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 00:32:24 -0500
-Subject: [PATCH -tip v3 08/11] perf-probe: Show appropriate symbol for
- ref_reloc_sym based kprobes
+	Thu, 6 Feb 2014 00:32:17 -0500
+Subject: [PATCH -tip v3 05/11] perf-probe: Show in what binaries/modules
+ probes are set
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
@@ -17,8 +17,8 @@ Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
         "David A. Long" <dave.long@linaro.org>, yrl.pp-manager.tt@hitachi.com,
         Namhyung Kim <namhyung@kernel.org>
-Date: Thu, 06 Feb 2014 05:32:20 +0000
-Message-ID: <20140206053220.29635.81819.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
+Date: Thu, 06 Feb 2014 05:32:13 +0000
+Message-ID: <20140206053213.29635.69948.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
 In-Reply-To: <20140206053201.29635.99095.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
 References: <20140206053201.29635.99095.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
 User-Agent: StGit/0.16
@@ -29,161 +29,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Show appropriate symbol for ref_reloc_sym based kprobes instead
-of refpoint+offset when perf-probe -l runs without debuginfo.
+Show the name of binary file or modules in which the probes
+are set with --list option.
 
-Without this change:
+Without this change;
+
+  # ./perf probe -m drm drm_av_sync_delay
+  # ./perf probe -x perf dso__load_vmlinux
+
   # ./perf probe -l
-    probe:t_show         (on _stext+889880 with m v)
-    probe:t_show_1       (on _stext+928568 with m v t)
-    probe:t_show_2       (on _stext+969512 with m v fmt)
-    probe:t_show_3       (on _stext+1001416 with m v file)
+    probe:drm_av_sync_delay (on drm_av_sync_delay)
+    probe_perf:dso__load_vmlinux (on 0x000000000006d110)
 
-With this change:
+With this change;
+
   # ./perf probe -l
-    probe:t_show         (on t_show with m v)
-    probe:t_show_1       (on t_show with m v t)
-    probe:t_show_2       (on t_show with m v fmt)
-    probe:t_show_3       (on t_show with m v file)
-
-Changes from v2:
- - Check ref_reloc_sym to find correct unrelocated address.
+    probe:drm_av_sync_delay (on drm_av_sync_delay in drm)
+    probe_perf:dso__load_vmlinux (on 0x000000000006d110 in /kbuild/ksrc/linux-3/tools/perf/perf)
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 ---
- tools/perf/util/probe-event.c |   83 +++++++++++++++++++++++++++--------------
- 1 file changed, 55 insertions(+), 28 deletions(-)
+ tools/perf/util/probe-event.c |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
 diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 8e34c8d..f86820c 100644
+index ace3ba3..de9fe90 100644
 --- a/tools/perf/util/probe-event.c
 +++ b/tools/perf/util/probe-event.c
-@@ -121,6 +121,42 @@ static struct symbol *__find_kernel_function_by_name(const char *name,
- 						     NULL);
+@@ -1728,7 +1728,8 @@ static struct strlist *get_probe_trace_command_rawlist(int fd)
  }
  
-+static struct symbol *__find_kernel_function(u64 addr, struct map **mapp)
-+{
-+	return machine__find_kernel_function(host_machine, addr, mapp, NULL);
-+}
-+
-+static struct ref_reloc_sym *kernel_get_ref_reloc_sym(void)
-+{
-+	/* kmap->ref_reloc_sym should be set if host_machine is initialized */
-+	struct kmap *kmap;
-+
-+	if (map__load(host_machine->vmlinux_maps[MAP__FUNCTION], NULL) < 0)
-+		return NULL;
-+
-+	kmap = map__kmap(host_machine->vmlinux_maps[MAP__FUNCTION]);
-+	return kmap->ref_reloc_sym;
-+}
-+
-+static u64 kernel_get_symbol_address_by_name(const char *name, bool reloc)
-+{
-+	struct ref_reloc_sym *reloc_sym;
-+	struct symbol *sym;
-+	struct map *map;
-+
-+	/* ref_reloc_sym is just a label. Need a special fix*/
-+	reloc_sym = kernel_get_ref_reloc_sym();
-+	if (reloc_sym && strcmp(name, reloc_sym->name) == 0)
-+		return (reloc) ? reloc_sym->addr : reloc_sym->unrelocated_addr;
-+	else {
-+		sym = __find_kernel_function_by_name(name, &map);
-+		if (sym)
-+			return map->unmap_ip(map, sym->start) -
-+				(reloc) ? 0 : map->reloc;
-+	}
-+	return 0;
-+}
-+
- static struct map *kernel_get_module_map(const char *module)
+ /* Show an event */
+-static int show_perf_probe_event(struct perf_probe_event *pev)
++static int show_perf_probe_event(struct perf_probe_event *pev,
++				 const char *module)
  {
- 	struct rb_node *nd;
-@@ -216,12 +252,26 @@ out:
- static int convert_to_perf_probe_point(struct probe_trace_point *tp,
- 					struct perf_probe_point *pp)
- {
--	pp->function = strdup(tp->symbol);
-+	struct symbol *sym;
-+	struct map *map;
-+	u64 addr = kernel_get_symbol_address_by_name(tp->symbol, true);
-+
-+	if (addr) {
-+		addr += tp->offset;
-+		sym = __find_kernel_function(addr, &map);
-+		if (!sym)
-+			goto failed;
-+		pp->function = strdup(sym->name);
-+		pp->offset = addr - map->unmap_ip(map, sym->start);
-+	} else {
-+failed:
-+		pp->function = strdup(tp->symbol);
-+		pp->offset = tp->offset;
-+	}
+ 	int i, ret;
+ 	char buf[128];
+@@ -1744,6 +1745,8 @@ static int show_perf_probe_event(struct perf_probe_event *pev)
+ 		return ret;
  
- 	if (pp->function == NULL)
- 		return -ENOMEM;
+ 	printf("  %-20s (on %s", buf, place);
++	if (module)
++		printf(" in %s", module);
  
--	pp->offset = tp->offset;
- 	pp->retprobe = tp->retprobe;
- 
- 	return 0;
-@@ -248,18 +298,6 @@ static struct debuginfo *open_debuginfo(const char *module)
- 	return debuginfo__new(path);
- }
- 
--static struct ref_reloc_sym *__kernel_get_ref_reloc_sym(void)
--{
--	/* kmap->ref_reloc_sym should be set if host_machine is initialized */
--	struct kmap *kmap;
--
--	if (map__load(host_machine->vmlinux_maps[MAP__FUNCTION], NULL) < 0)
--		return NULL;
--
--	kmap = map__kmap(host_machine->vmlinux_maps[MAP__FUNCTION]);
--	return kmap->ref_reloc_sym;
--}
--
- /*
-  * Convert trace point to probe point with debuginfo
-  * Currently only handles kprobes.
-@@ -267,24 +305,13 @@ static struct ref_reloc_sym *__kernel_get_ref_reloc_sym(void)
- static int kprobe_convert_to_perf_probe(struct probe_trace_point *tp,
- 					struct perf_probe_point *pp)
- {
--	struct symbol *sym;
--	struct ref_reloc_sym *reloc_sym;
--	struct map *map;
- 	u64 addr = 0;
- 	int ret = -ENOENT;
- 	struct debuginfo *dinfo;
- 
--	/* ref_reloc_sym is just a label. Need a special fix*/
--	reloc_sym = __kernel_get_ref_reloc_sym();
--	if (reloc_sym && strcmp(tp->symbol, reloc_sym->name) == 0)
--		addr = reloc_sym->unrelocated_addr + tp->offset;
--	else {
--		sym = __find_kernel_function_by_name(tp->symbol, &map);
--		if (sym)
--			addr = map->unmap_ip(map, sym->start + tp->offset) -
--				map->reloc;
--	}
-+	addr = kernel_get_symbol_address_by_name(tp->symbol, false);
- 	if (addr) {
-+		addr += tp->offset;
- 		pr_debug("try to find %s+%ld@%" PRIx64 "\n", tp->symbol,
- 			 tp->offset, addr);
- 
-@@ -420,7 +447,7 @@ static int post_process_probe_trace_events(struct probe_trace_event *tevs,
- 	if (module)
- 		return add_module_to_probe_trace_events(tevs, ntevs, module);
- 
--	reloc_sym = __kernel_get_ref_reloc_sym();
-+	reloc_sym = kernel_get_ref_reloc_sym();
- 	if (!reloc_sym) {
- 		pr_warning("Relocated base symbol is not found!\n");
- 		return -EINVAL;
+ 	if (pev->nargs > 0) {
+ 		printf(" with");
+@@ -1781,7 +1784,8 @@ static int __show_perf_probe_events(int fd, bool is_kprobe)
+ 			ret = convert_to_perf_probe_event(&tev, &pev,
+ 								is_kprobe);
+ 			if (ret >= 0)
+-				ret = show_perf_probe_event(&pev);
++				ret = show_perf_probe_event(&pev,
++							    tev.point.module);
+ 		}
+ 		clear_perf_probe_event(&pev);
+ 		clear_probe_trace_event(&tev);
+@@ -1980,7 +1984,7 @@ static int __add_probe_trace_events(struct perf_probe_event *pev,
+ 		group = pev->group;
+ 		pev->event = tev->event;
+ 		pev->group = tev->group;
+-		show_perf_probe_event(pev);
++		show_perf_probe_event(pev, tev->point.module);
+ 		/* Trick here - restore current event/group */
+ 		pev->event = (char *)event;
+ 		pev->group = (char *)group;
 
 
