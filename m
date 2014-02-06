@@ -1,77 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752815AbaBFOJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 09:09:59 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:33966 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752723AbaBFOJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 09:09:57 -0500
-Message-ID: <52F39781.3060405@ti.com>
-Date: Thu, 6 Feb 2014 16:09:05 +0200
-From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Rob Landley <rob@landley.net>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Subject: Re: [PATCH v5 2/3] clocksource: keystone: add bindings for keystone
- timer
-References: <1391608060-10760-1-git-send-email-ivan.khoronzhuk@ti.com>	<1391608060-10760-3-git-send-email-ivan.khoronzhuk@ti.com>	<CAL_JsqKVc2fdg1Q+TH6ro9kpJmUYyHw8FCwhORfm2_oj6GYM2Q@mail.gmail.com>	<52F26444.5090707@ti.com>	<CAL_JsqL6YDcZJa5xziR7dP-bEt1CO4BtL1vsO8Qm+hFwgCiQ1w@mail.gmail.com>	<52F28875.9000200@ti.com> <CAL_JsqLSNrTvH2SFfA5KB8RsDqcj9zks1QaVmvYya6WQ--W7jg@mail.gmail.com>
-In-Reply-To: <CAL_JsqLSNrTvH2SFfA5KB8RsDqcj9zks1QaVmvYya6WQ--W7jg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753528AbaBFOQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 09:16:56 -0500
+Received: from relais.videotron.ca ([24.201.245.36]:13196 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753370AbaBFOQx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 09:16:53 -0500
+Content-transfer-encoding: 7BIT
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, linux-pm@vger.kernel.org,
+        linaro-kernel@lists.linaro.org
+Subject: [PATCH 1/2] PPC: powernv: remove redundant cpuidle_idle_call()
+Date: Thu, 06 Feb 2014 09:16:27 -0500
+Message-id: <1391696188-14540-1-git-send-email-nicolas.pitre@linaro.org>
+X-Mailer: git-send-email 1.8.4.108.g55ea5f6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/2014 01:36 AM, Rob Herring wrote:
-> On Wed, Feb 5, 2014 at 12:52 PM, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com> wrote:
->> On 02/05/2014 07:41 PM, Rob Herring wrote:
->>> On Wed, Feb 5, 2014 at 10:18 AM, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
->>> wrote:
->>>> On 02/05/2014 04:39 PM, Rob Herring wrote:
->>>>> On Wed, Feb 5, 2014 at 7:47 AM, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
->>>>> wrote:
->>>>>> This patch provides bindings for the 64-bit timer in the KeyStone
->>>>>> architecture devices. The timer can be configured as a general-purpose
->>>>>> 64-bit
->>>>>> timer, dual general-purpose 32-bit timers. When configured as dual
->>>>>> 32-bit
->>>>>> timers, each half can operate in conjunction (chain mode) or
->>>>>> independently
->>>>>> (unchained mode) of each other.
->>>>> This is software configurable or h/w design time configurations?
->>>>>
->>>>> Rob
->>>>>
->>>> This is h/w design time configurations
->>> Then it seems like the binding should provide for describing those
->>> differences either with a property or different compatible strings.
->>>
->>> Rob
->> Oh..sorry, seems I didn't catch, this is configurable by software.
->> These configurations are like modes in which timer can work
->> and they are not different hardware IPs. It depends on driver in
->> which mode it should work.
-> In that case,
->
-> Acked-by: Rob Herring <robh@kernel.org>
+The core idle loop now takes care of it.
 
-Thanks
+Signed-off-by: Nicolas Pitre <nico@linaro.org>
+---
+ arch/powerpc/platforms/powernv/setup.c | 13 +------------
+ 1 file changed, 1 insertion(+), 12 deletions(-)
 
+diff --git a/arch/powerpc/platforms/powernv/setup.c b/arch/powerpc/platforms/powernv/setup.c
+index 21166f65c9..a932feb290 100644
+--- a/arch/powerpc/platforms/powernv/setup.c
++++ b/arch/powerpc/platforms/powernv/setup.c
+@@ -26,7 +26,6 @@
+ #include <linux/of_fdt.h>
+ #include <linux/interrupt.h>
+ #include <linux/bug.h>
+-#include <linux/cpuidle.h>
+ 
+ #include <asm/machdep.h>
+ #include <asm/firmware.h>
+@@ -217,16 +216,6 @@ static int __init pnv_probe(void)
+ 	return 1;
+ }
+ 
+-void powernv_idle(void)
+-{
+-	/* Hook to cpuidle framework if available, else
+-	 * call on default platform idle code
+-	 */
+-	if (cpuidle_idle_call()) {
+-		power7_idle();
+-	}
+-}
+-
+ define_machine(powernv) {
+ 	.name			= "PowerNV",
+ 	.probe			= pnv_probe,
+@@ -236,7 +225,7 @@ define_machine(powernv) {
+ 	.show_cpuinfo		= pnv_show_cpuinfo,
+ 	.progress		= pnv_progress,
+ 	.machine_shutdown	= pnv_shutdown,
+-	.power_save             = powernv_idle,
++	.power_save             = power7_idle,
+ 	.calibrate_decr		= generic_calibrate_decr,
+ #ifdef CONFIG_KEXEC
+ 	.kexec_cpu_down		= pnv_kexec_cpu_down,
 -- 
-Regards,
-Ivan Khoronzhuk
+1.8.4.108.g55ea5f6
 
