@@ -1,63 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751529AbaBFXWX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 18:22:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49768 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751019AbaBFXWU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 18:22:20 -0500
-Date: Thu, 6 Feb 2014 15:22:19 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Damien Ramonda <damien.ramonda@intel.com>, Jan Kara <jack@suse.cz>,
-        Linus <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH V5] mm readahead: Fix readahead fail for no local
- memory and limit readahead pages
-Message-Id: <20140206152219.45c2039e5092c8ea1c31fd38@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.02.1402061456290.31828@chino.kir.corp.google.com>
-References: <1390388025-1418-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
-	<20140206145105.27dec37b16f24e4ac5fd90ce@linux-foundation.org>
-	<alpine.DEB.2.02.1402061456290.31828@chino.kir.corp.google.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	id S1751424AbaBFX0K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 18:26:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59199 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750968AbaBFX0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 18:26:05 -0500
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Torvald Riegel <triegel@redhat.com>
+To: "Joseph S. Myers" <joseph@codesourcery.com>
+Cc: Will Deacon <will.deacon@arm.com>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+In-Reply-To: <Pine.LNX.4.64.1402062147020.17635@digraph.polyomino.org.uk>
+References: <20140206134825.305510953@infradead.org>
+	 <21984.1391711149@warthog.procyon.org.uk> <52F3DA85.1060209@arm.com>
+	 <20140206185910.GE27276@mudshark.cambridge.arm.com>
+	 <1391720965.23421.3884.camel@triegel.csb>
+	 <Pine.LNX.4.64.1402062147020.17635@digraph.polyomino.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 07 Feb 2014 00:25:17 +0100
+Message-ID: <1391729117.23421.4066.camel@triegel.csb>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Feb 2014 14:58:21 -0800 (PST) David Rientjes <rientjes@google.com> wrote:
-
-> > > +#define MAX_REMOTE_READAHEAD   4096UL
-> > >  /*
-> > >   * Given a desired number of PAGE_CACHE_SIZE readahead pages, return a
-> > >   * sensible upper limit.
-> > >   */
-> > >  unsigned long max_sane_readahead(unsigned long nr)
-> > >  {
-> > > -	return min(nr, (node_page_state(numa_node_id(), NR_INACTIVE_FILE)
-> > > -		+ node_page_state(numa_node_id(), NR_FREE_PAGES)) / 2);
-> > > +	unsigned long local_free_page;
-> > > +	int nid;
-> > > +
-> > > +	nid = numa_node_id();
+On Thu, 2014-02-06 at 22:13 +0000, Joseph S. Myers wrote:
+> On Thu, 6 Feb 2014, Torvald Riegel wrote:
 > 
-> If you're intending this to be cached for your calls into 
-> node_page_state() you need nid = ACCESS_ONCE(numa_node_id()).
+> > > It seems that nobody really
+> > > agrees on exactly how the C11 atomics map to real architectural
+> > > instructions on anything but the trivial architectures.
+> > 
+> > There's certainly different ways to implement the memory model and those
+> > have to be specified elsewhere, but I don't see how this differs much
+> > from other things specified in the ABI(s) for each architecture.
+> 
+> It is not clear to me that there is any good consensus understanding of 
+> how to specify this in an ABI, or how, given an ABI, to determine whether 
+> an implementation is valid.
+> 
+> For ABIs not considering atomics / concurrency, it's well understood, for 
+> example, that the ABI specifies observable conditions at function call 
+> boundaries ("these arguments are in these registers", "the stack pointer 
+> has this alignment", "on return from the function, the values of these 
+> registers are unchanged from the values they had on entry").  It may 
+> sometimes specify things at other times (e.g. presence or absence of a red 
+> zone - whether memory beyond the stack pointer may be overwritten on an 
+> interrupt).  But if it gives a code sequence, it's clear this is just an 
+> example rather than a requirement for particular code to be generated - 
+> any code sequence suffices if it meets the observable conditions at the 
+> points where code generated by one implementation may pass control to code 
+> generated by another implementation.
+> 
+> When atomics are involved, you no longer have a limited set of 
+> well-defined points where control may pass from code generated by one 
+> implementation to code generated by another - the code generated by the 
+> two may be running concurrently.
 
-ugh.  That's too subtle and we didn't even document it.
+Agreed.
 
-We could put the ACCESS_ONCE inside numa_node_id() I assume but we
-still have the same problem as smp_processor_id(): the numa_node_id()
-return value is wrong as soon as you obtain it if running preemptibly. 
+> We know of certain cases 
+> <http://www.cl.cam.ac.uk/~pes20/cpp/cpp0xmappings.html> where there are 
+> choices of the mapping of atomic operations to particular instructions.  
+> But I'm not sure there's much evidence that these are the only ABI issues 
+> arising from concurrency - that there aren't any other ways in which an 
+> implementation may transform code, consistent with the as-if rule of ISO 
+> C, that may run into incompatibilities of different choices.
 
-We could plaster Big Fat Warnings all over the place or we could treat
-numa_node_id() and derivatives in the same way as smp_processor_id()
-(which is a huge pain).  Or something else, but we've left a big hand
-grenade here and Raghavendra won't be the last one to pull the pin?
+I can't think of other incompatibilities with high likelihood --
+provided we ignore consume memory order and the handling of dependencies
+(see below).  But I would doubt there is a high risk of such because (1)
+the data race definition should hopefully not cause subtle
+incompatibilities and (2) there is  clear "hand-off point" from the
+compiler to a specific instruction representing an atomic access.  For
+example, if we have a release store, and we agree on the instructions
+used for that, then compilers will have to ensure happens-before for
+anything before the release store; for example, as long as stores
+sequenced-before the release store are performed, it doesn't matter in
+which order that happens.  Subsequently, an acquire-load somewhere else
+can pick this sequence of events up just by using the agreed-upon
+acquire-load; like with the stores, it can order subsequent loads in any
+way it sees fit, including different optimizations.  That's obviously
+not a formal proof, though.  But it seems likely to me, at least :)
+
+I'm more concerned about consume and dependencies because as far as I
+understand the standard's requirements, dependencies need to be tracked
+across function calls.  Thus, we might have several compilers involved
+in that, and we can't just "condense" things to happens-before, but it's
+instead how and that we keep dependencies intact.  Because of that, I'm
+wondering whether this is actually implementable practically.  (See
+http://gcc.gnu.org/bugzilla/show_bug.cgi?id=59448#c10)
+
+> And even if 
+> those are the only issues, it's not clear there are well-understood ways 
+> to define the mapping from the C11 memory model to the architecture's 
+> model, which provide a good way to reason about whether a particular 
+> choice of instructions is valid according to the mapping.
+
+I think that if we have different options, there needs to be agreement
+on which to choose across the compilers, at the very least.  I don't
+quite know how this looks like for GCC and LLVM, for example.
+
+> > Are you familiar with the formalization of the C11/C++11 model by Batty
+> > et al.?
+> > http://www.cl.cam.ac.uk/~mjb220/popl085ap-sewell.pdf
+> > http://www.cl.cam.ac.uk/~mjb220/n3132.pdf
+> 
+> These discuss, as well as the model itself, proving the validity of a 
+> particular choice of x86 instructions.  I imagine that might be a starting 
+> point towards an understanding of how to describe the relevant issues in 
+> an ABI, and how to determine whether a choice of instructions is 
+> consistent with what an ABI says.  But I don't get the impression this is 
+> yet at the level where people not doing research in the area can routinely 
+> read and write such ABIs and work out whether a code sequence is 
+> consistent with them.
+
+It's certainly complicated stuff (IMHO).  On the positive side, it's
+just a few compilers, the kernel, etc. that have to deal with this, if
+most programmers use the languages' memory model.
+
+> (If an ABI says "use instruction X", then you can't use a more efficient 
+> X' added by a new version of the instruction set.  But it can't 
+> necessarily be as loose as saying "use X and Y, or other instructions that 
+> achieve semantics when the other thread is using X or Y", because it might 
+> be the case that Y' interoperates with X, X' interoperates with Y, but X' 
+> and Y' don't interoperate with each other.  I'd envisage something more 
+> like mapping not to instructions, but to concepts within the 
+> architecture's own memory model - but that requires the architecture's 
+> memory model to be as well defined, and probably formalized, as the C11 
+> one.)
+
+Yes.  The same group of researchers have also worked on formalizing the
+Power model, and use this as base for a proof of the correctness of the
+proposed mappings: http://www.cl.cam.ac.uk/~pes20/cppppc/
+
+The formal approach to all this might be a complex task, but it is more
+confidence-inspiring than making guesses about one standard's prose vs.
+another specification's prose.
+
