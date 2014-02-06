@@ -1,134 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756306AbaBFMIR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 07:08:17 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:25449 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752062AbaBFMIP (ORCPT
+	id S1756349AbaBFMJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 07:09:27 -0500
+Received: from www84.your-server.de ([213.133.104.84]:48562 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752062AbaBFMJZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 07:08:15 -0500
-X-AuditID: cbfee68f-b7f156d00000276c-9a-52f37b2ebbe5
-From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-To: linux-samsung-soc@vger.kernel.org, linux-i2c@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
-        naveenkrishna.ch@gmail.com, kgene.kim@samsung.com,
-        grant.likely@secretlab.ca, w.sang@pengutronix.de,
-        linux-kernel@vger.kernel.org, taeggyun.ko@samsung.com, balbi@ti.com,
-        cpgs@samsung.com, t.figa@samsung.com
-Subject: [PATCH] ARM: DTS: exynos5420: Rename hsi2c compatible to
- exynos5250-hsi2c
-Date: Thu, 06 Feb 2014 17:37:57 +0530
-Message-id: <1391688477-8124-1-git-send-email-ch.naveen@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnkeLIzCtJLcpLzFFi42JZI2JSratX/TnIoHcnu8XB+/UWLw9pWhyY
-	/ZDV4tWZjWwWvQuusllsenyN1aLj7xdGi8u75rBZzDi/j8li0bb/zBbrZ7xmsXjyHyi27/VW
-	Zgdej52z7rJ7bF5S73F+xkJGj/6/Bh59W1Yxevx8qeNx/MZ2Jo/Pm+QCOKK4bFJSczLLUov0
-	7RK4MhZc3sVesESwYtOKrcwNjJd4uxg5OSQETCSOL5vCAmGLSVy4t56ti5GLQ0hgKaPEknnt
-	jDBF5yYcYoFILGKUeDLvHyuE088k8WHSGVaQKjYBM4mDi1azg9giAg4S89Z+ZwcpYhZYzCSx
-	8v5ZsFHCAiESiz9vACtiEVCVaLu9C6yZV8BF4smFFcxdjBxA6xQk5kyyAemVEDjELnFk7QJW
-	iHoBiW+TQc4AqZGV2HSAGeI6SYmDK26wTGAUXMDIsIpRNLUguaA4Kb3IWK84Mbe4NC9dLzk/
-	dxMjMBJO/3vWv4Px7gHrQ4zJQOMmMkuJJucDIymvJN7Q2MzIwtTE1NjI3NKMNGElcd77D5OC
-	hATSE0tSs1NTC1KL4otKc1KLDzEycXBKNTAKegv9ZivY4xB/T9lsTrrCkVNHDt995l2ufnbf
-	igtuHsWJXyZPeX3MrfLlMels9m9PGhnVo37JiJdrbeJad9o+iTH9x8TtyvbVrKqvl75OUT9d
-	2v51RafbBv/Q0z9cHtz907eNVb9pSr32B+uXWqa3JNklPvtaT6v38TS//mTf6QMfZFuNp4gq
-	sRRnJBpqMRcVJwIApPLzXZoCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCIsWRmVeSWpSXmKPExsVy+t9jAV3d6s9BBseuWVkcvF9v8fKQpsWB
-	2Q9ZLV6d2chm0bvgKpvFpsfXWC06/n5htLi8aw6bxYzz+5gsFm37z2yxfsZrFosn/4Fi+15v
-	ZXbg9dg56y67x+Yl9R7nZyxk9Oj/a+DRt2UVo8fPlzoex29sZ/L4vEkugCOqgdEmIzUxJbVI
-	ITUvOT8lMy/dVsk7ON453tTMwFDX0NLCXEkhLzE31VbJxSdA1y0zB+heJYWyxJxSoFBAYnGx
-	kr4dpgmhIW66FjCNEbq+IUFwPUYGaCBhDWPGgsu72AuWCFZsWrGVuYHxEm8XIyeHhICJxLkJ
-	h1ggbDGJC/fWs3UxcnEICSxilHgy7x8rhNPPJPFh0hlWkCo2ATOJg4tWs4PYIgIOEvPWfmcH
-	KWIWWMwksfL+WUaQhLBAiMTizxvAilgEVCXabu8Ca+YVcJF4cmEFcxcjB9A6BYk5k2wmMHIv
-	YGRYxSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7iREcZ8+kdjCubLA4xCjAwajEw7th/acgIdbE
-	suLK3EOMEhzMSiK8YgWfg4R4UxIrq1KL8uOLSnNSiw8xJgMtn8gsJZqcD0wBeSXxhsYm5qbG
-	ppYmFiZmlqQJK4nzHmi1DhQSSE8sSc1OTS1ILYLZwsTBKdXA2MUaPimkQfiZx+Ovf34ril5e
-	8fuR6ZzDr1XybD7lODKf2PJrK2fxlue1GyQlH6/LnOluOX+qpMHikJDSvrfK6WxLGfruLHd7
-	b27xI29Syr/KQ0yHnUQUGByEe6fM4ftcf+L+0qwDHxKfqEhKxu8/eaCU+WOu5lrGxFWizAyL
-	/q8qn7+g7F6StBJLcUaioRZzUXEiALpkRF33AgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 6 Feb 2014 07:09:25 -0500
+Message-ID: <1391688600.29423.15.camel@wall-e.seibold.net>
+Subject: Re: [PATCH v12 9/9] Add 32 bit VDSO time support for 64 bit kernel
+From: Stefani Seibold <stefani@seibold.net>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
+        Andreas.Brief@rohde-schwarz.com
+Date: Thu, 06 Feb 2014 13:10:00 +0100
+In-Reply-To: <CALCETrUx7iSquojTuYzoVZ_Pbi8NW7Wvs-CXSh3GEjMd-diRKQ@mail.gmail.com>
+References: <1391588404-28147-1-git-send-email-stefani@seibold.net>
+	 <1391588404-28147-10-git-send-email-stefani@seibold.net>
+	 <CALCETrUx7iSquojTuYzoVZ_Pbi8NW7Wvs-CXSh3GEjMd-diRKQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As per the changes submitted for the i2c-exynos5.c driver with the
-compatible string being named after the first SoC it is observed on.
-This patch modifes the existing hsi2c compatible strings in
-arch/arm/boot/dts.
+Am Mittwoch, den 05.02.2014, 14:01 -0800 schrieb Andy Lutomirski:
+> On Wed, Feb 5, 2014 at 12:20 AM,  <stefani@seibold.net> wrote:
+> > From: Stefani Seibold <stefani@seibold.net>
+> >
+> > This patch add the VDSO time support for the IA32 Emulation Layer.
+> >
+> > Due the nature of the kernel headers and the LP64 compiler where the
+> > size of a long and a pointer differs against a 32 bit compiler, there
+> > is some type hacking necessary.
+> >
+> > The vsyscall_gtod_data struture must be a little bit rearranged, to
+> > serve 32- and 64-bit code access:
+> >
+> > - The seqcount_t was replaced by an unsigned, this makes the
+> >   vsyscall_gtod_data intedepend of kernel configuration and internal functions.
+> > - The structure is now packed, so it can accessed from 32- und 64- bit
+> >   code at the same time.
+> > - The inner struct clock was removed, to make packing of the while
+> >   struct easier.
+> >
+> > The "unsigned seq" would be handled by functions derivated from seqcount_t.
+> >
+> > Signed-off-by: Stefani Seibold <stefani@seibold.net>
+> > ---
+> >  arch/x86/include/asm/vgtod.h          |  20 +++---
+> >  arch/x86/kernel/vsyscall_gtod.c       |  26 +++++--
+> >  arch/x86/vdso/vclock_gettime.c        | 129 ++++++++++++++++++++++++----------
+> >  arch/x86/vdso/vdso32/vclock_gettime.c |  11 +++
+> >  include/uapi/linux/time.h             |   2 +-
+> >  5 files changed, 132 insertions(+), 56 deletions(-)
+> >
+> > diff --git a/arch/x86/include/asm/vgtod.h b/arch/x86/include/asm/vgtod.h
+> > index 46e24d3..2567b02 100644
+> > --- a/arch/x86/include/asm/vgtod.h
+> > +++ b/arch/x86/include/asm/vgtod.h
+> > @@ -4,16 +4,18 @@
+> >  #include <asm/vsyscall.h>
+> >  #include <linux/clocksource.h>
+> >
+> > -struct vsyscall_gtod_data {
+> > -       seqcount_t      seq;
+> > +/*
+> > + * vsyscall_gtod_data will be accessed by 32 and 64 bit code at the same time
+> > + * so the structure must be packed
+> > + */
+> > +struct __attribute__((packed)) vsyscall_gtod_data {
+> > +       unsigned seq;
+> 
+> Is that actually true?  At least in the part you're changing,
+> everything looks like it's aligned correctly.
+> 
 
-Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
----
- arch/arm/boot/dts/exynos5420.dtsi |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+Yes, i know. But for convenient this is less error prone when modifying
+the structure. I can kick it out if you insist.
+ 
+> It's almost certainly having some kind of BUILD_BUG_ON that will catch
+> the case where this structure's size changes.  I suspect that some
+> kind of asm-offsets magic can be used for this.
+> 
 
-diff --git a/arch/arm/boot/dts/exynos5420.dtsi b/arch/arm/boot/dts/exynos5420.dtsi
-index 11dd202..c5187d1 100644
---- a/arch/arm/boot/dts/exynos5420.dtsi
-+++ b/arch/arm/boot/dts/exynos5420.dtsi
-@@ -486,7 +486,7 @@
- 	};
- 
- 	hsi2c_4: i2c@12CA0000 {
--		compatible = "samsung,exynos5-hsi2c";
-+		compatible = "samsung,exynos5250-hsi2c";
- 		reg = <0x12CA0000 0x1000>;
- 		interrupts = <0 60 0>;
- 		#address-cells = <1>;
-@@ -499,7 +499,7 @@
- 	};
- 
- 	hsi2c_5: i2c@12CB0000 {
--		compatible = "samsung,exynos5-hsi2c";
-+		compatible = "samsung,exynos5250-hsi2c";
- 		reg = <0x12CB0000 0x1000>;
- 		interrupts = <0 61 0>;
- 		#address-cells = <1>;
-@@ -512,7 +512,7 @@
- 	};
- 
- 	hsi2c_6: i2c@12CC0000 {
--		compatible = "samsung,exynos5-hsi2c";
-+		compatible = "samsung,exynos5250-hsi2c";
- 		reg = <0x12CC0000 0x1000>;
- 		interrupts = <0 62 0>;
- 		#address-cells = <1>;
-@@ -525,7 +525,7 @@
- 	};
- 
- 	hsi2c_7: i2c@12CD0000 {
--		compatible = "samsung,exynos5-hsi2c";
-+		compatible = "samsung,exynos5250-hsi2c";
- 		reg = <0x12CD0000 0x1000>;
- 		interrupts = <0 63 0>;
- 		#address-cells = <1>;
-@@ -538,7 +538,7 @@
- 	};
- 
- 	hsi2c_8: i2c@12E00000 {
--		compatible = "samsung,exynos5-hsi2c";
-+		compatible = "samsung,exynos5250-hsi2c";
- 		reg = <0x12E00000 0x1000>;
- 		interrupts = <0 87 0>;
- 		#address-cells = <1>;
-@@ -551,7 +551,7 @@
- 	};
- 
- 	hsi2c_9: i2c@12E10000 {
--		compatible = "samsung,exynos5-hsi2c";
-+		compatible = "samsung,exynos5250-hsi2c";
- 		reg = <0x12E10000 0x1000>;
- 		interrupts = <0 88 0>;
- 		#address-cells = <1>;
-@@ -564,7 +564,7 @@
- 	};
- 
- 	hsi2c_10: i2c@12E20000 {
--		compatible = "samsung,exynos5-hsi2c";
-+		compatible = "samsung,exynos5250-hsi2c";
- 		reg = <0x12E20000 0x1000>;
- 		interrupts = <0 203 0>;
- 		#address-cells = <1>;
--- 
-1.7.9.5
+This kind af ASM magic wan't work, because the code will be compiled
+with -m32 for a 32 bit VDSO but will access a structure generated with a
+64 bit compiler.
+
+> >
+> > -       struct { /* extract of a clocksource struct */
+> > -               int vclock_mode;
+> > -               cycle_t cycle_last;
+> > -               cycle_t mask;
+> > -               u32     mult;
+> > -               u32     shift;
+> > -       } clock;
+> > +       int vclock_mode;
+> > +       cycle_t cycle_last;
+> > +       cycle_t mask;
+> > +       u32     mult;
+> > +       u32     shift;
+> >
+> >         /* open coded 'struct timespec' */
+> >         time_t          wall_time_sec;
+> > diff --git a/arch/x86/kernel/vsyscall_gtod.c b/arch/x86/kernel/vsyscall_gtod.c
+> > index 91862a4..ca48248 100644
+> > --- a/arch/x86/kernel/vsyscall_gtod.c
+> > +++ b/arch/x86/kernel/vsyscall_gtod.c
+> > @@ -16,6 +16,18 @@
+> >
+> >  DEFINE_VVAR(struct vsyscall_gtod_data, vsyscall_gtod_data);
+> >
+> > +static inline void gtod_write_begin(unsigned *s)
+> > +{
+> > +       ++*s;
+> > +       smp_wmb();
+> > +}
+> > +
+> > +static inline void gtod_write_end(unsigned *s)
+> > +{
+> > +       smp_wmb();
+> > +       ++*s;
+> > +}
+> > +
+> 
+> Someone else should probably comment on the style for this.  Maybe
+> this should live in a header somewhere.  IMO if it's called
+> gtod_write_begin, it should take a pointer to gtod as a parameter.
+> 
+
+Fixed in the next version.
+
+> 
+> > +struct api_timeval {
+> > +       long    tv_sec;         /* seconds */
+> > +       long    tv_usec;        /* microseconds */
+> > +};
+> > +
+> > +struct api_timespec {
+> > +       long    tv_sec;         /* seconds */
+> > +       long    tv_nsec;        /* nanoseconds */
+> > +};
+> 
+> Did you address my question about why there are two versions of this?
+> Shouldn't it just match the userspace headers regardless of what the
+> host kernel is?
+> 
+
+Again, -m32 compilation. The timeval and timespec are __kernel_long_t,
+which is defined as "long long" in a case of 32 bit VDSO for 64 bit
+kernel.
+
+The vsyscall_gtod_data use the kernel defined timeval and timespec, so
+for 32 bit a conversation is needed.
+
+The only way to prevent this kind of hack is to replace the struct
+timespec and time_t members of vsyscall_gtod_data by a compiler independ
+definition.
+
+In this case it would be also necessary to have an own copy of
+timespec_add_ns() function for the VDSO.
+
+> You have *still* not responded to my objection to the unconditional fixmaps.
+> 
+
+I have responded this objection on monday. If i enable the sysctl
+interface i need this mapping too.
+
+- Stefani
+
 
