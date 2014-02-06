@@ -1,76 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755321AbaBFSmG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 13:42:06 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:33187 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754029AbaBFSmD (ORCPT
+	id S1755760AbaBFSmq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 13:42:46 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:50468 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752782AbaBFSmo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 13:42:03 -0500
-Date: Thu, 6 Feb 2014 18:41:53 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>,
-        "Strashko, Grygorii" <grygorii.strashko@ti.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] ARM: mm: Fix the memblock allocation for LPAE machines
-Message-ID: <20140206184153.GV26684@n2100.arm.linux.org.uk>
-References: <1391285687-20534-1-git-send-email-santosh.shilimkar@ti.com> <52F2CBC0.3030305@ti.com> <20140205234815.GU26684@n2100.arm.linux.org.uk> <52F2DC6F.8070005@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52F2DC6F.8070005@ti.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Thu, 6 Feb 2014 13:42:44 -0500
+Message-ID: <1391712162.10160.8.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: [PATCH] net: use __GFP_NORETRY for high order allocations
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: netdev <netdev@vger.kernel.org>, David Rientjes <rientjes@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 06 Feb 2014 10:42:42 -0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 05, 2014 at 07:50:55PM -0500, Santosh Shilimkar wrote:
-> On Wednesday 05 February 2014 06:48 PM, Russell King - ARM Linux wrote:
-> > On Wed, Feb 05, 2014 at 06:39:44PM -0500, Santosh Shilimkar wrote:
-> >> Russell,
-> >>
-> >> On Saturday 01 February 2014 03:14 PM, Santosh Shilimkar wrote:
-> >>> Commit ad6492b8 added much needed memblock_virt_alloc_low() and further
-> >>> commit 07bacb3 {memblock, bootmem: restore goal for alloc_low} fixed the
-> >>> issue with low memory limit thansk to Yinghai. But even after all these fixes,
-> >>> there is still one case where the limit check done with ARCH_LOW_ADDRESS_LIMIT
-> >>> for low memory fails. Russell pointed out the issue with 32 bit LPAE machines
-> >>> in below thread.
-> >>> 	https://lkml.org/lkml/2014/1/28/364
-> >>>
-> >>> Since on some LPAE machines where memory start address is beyond 4GB,
-> >>> the low memory marker in memblock will be set to default
-> >>> ARCH_LOW_ADDRESS_LIMIT which is wrong. We can fix this by letting
-> >>> architectures set the ARCH_LOW_ADDRESS_LIMIT using another export
-> >>> similar to memblock_set_current_limit() but am not sure whether
-> >>> its worth the trouble. Tell me if you think otherwise.
-> >>>
-> >>> Rather am just trying to fix that one broken case using memblock_virt_alloc()
-> >>> in setup code since the memblock.current_limit is updated appropriately
-> >>> makes it work on all ARM 32 bit machines.
-> >>>
-> >>> Cc: Yinghai Lu <yinghai@kernel.org>
-> >>> Cc: Russell King <linux@arm.linux.org.uk>
-> >>> Cc: Strashko, Grygorii <grygorii.strashko@ti.com>
-> >>> Cc: Andrew Morton <akpm@linux-foundation.org>
-> >>> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> >>> ---
-> >> Whats you say here ? We should get the fix for the
-> >> issue. If you are ok, I can drop the patch in patch system.
-> > 
-> > Is this still an issue, or has Tejun fixed it by some other means?  I've not
-> > noticed anything being broken at the moment.
-> > 
-> > Can you confirm whether we still have an issue without this patch please?
-> > 
-> Fixes for all cases exist except 'LPAE + memory start beyond 4 GB'.
-> This case is still broken and  hence I posted the $subject patch.
+From: Eric Dumazet <edumazet@google.com>
 
-Okay.  Patch system please then.  Thanks.
+sock_alloc_send_pskb() & sk_page_frag_refill()
+have a loop trying high order allocations to prepare
+skb with low number of fragments as this increases performance.
 
--- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+Problem is that under memory pressure/fragmentation, this can
+trigger OOM while the intent was only to try the high order
+allocations, then fallback to order-0 allocations.
+
+We had various reports from unexpected regressions.
+
+According to David, setting __GFP_NORETRY should be fine,
+as the asynchronous compaction is still enabled, and this
+will prevent OOM from kicking as in :
+
+CFSClientEventm invoked oom-killer: gfp_mask=0x42d0, order=3, oom_adj=0,
+oom_score_adj=0, oom_score_badness=2 (enabled),memcg_scoring=disabled
+CFSClientEventm 
+
+Call Trace:
+ [<ffffffff8043766c>] dump_header+0xe1/0x23e
+ [<ffffffff80437a02>] oom_kill_process+0x6a/0x323
+ [<ffffffff80438443>] out_of_memory+0x4b3/0x50d
+ [<ffffffff8043a4a6>] __alloc_pages_may_oom+0xa2/0xc7
+ [<ffffffff80236f42>] __alloc_pages_nodemask+0x1002/0x17f0
+ [<ffffffff8024bd23>] alloc_pages_current+0x103/0x2b0
+ [<ffffffff8028567f>] sk_page_frag_refill+0x8f/0x160
+ [<ffffffff80295fa0>] tcp_sendmsg+0x560/0xee0
+ [<ffffffff802a5037>] inet_sendmsg+0x67/0x100
+ [<ffffffff80283c9c>] __sock_sendmsg_nosec+0x6c/0x90
+ [<ffffffff80283e85>] sock_sendmsg+0xc5/0xf0
+ [<ffffffff802847b6>] __sys_sendmsg+0x136/0x430
+ [<ffffffff80284ec8>] sys_sendmsg+0x88/0x110
+ [<ffffffff80711472>] system_call_fastpath+0x16/0x1b
+Out of Memory: Kill process 2856 (bash) score 9999 or sacrifice child
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Acked-by: David Rientjes <rientjes@google.com>
+---
+ net/core/sock.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/net/core/sock.c b/net/core/sock.c
+index 0c127dcdf6a8..5b6a9431b017 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -1775,7 +1775,9 @@ struct sk_buff *sock_alloc_send_pskb(struct sock *sk, unsigned long header_len,
+ 			while (order) {
+ 				if (npages >= 1 << order) {
+ 					page = alloc_pages(sk->sk_allocation |
+-							   __GFP_COMP | __GFP_NOWARN,
++							   __GFP_COMP |
++							   __GFP_NOWARN |
++							   __GFP_NORETRY,
+ 							   order);
+ 					if (page)
+ 						goto fill_page;
+@@ -1845,7 +1847,7 @@ bool skb_page_frag_refill(unsigned int sz, struct page_frag *pfrag, gfp_t prio)
+ 		gfp_t gfp = prio;
+ 
+ 		if (order)
+-			gfp |= __GFP_COMP | __GFP_NOWARN;
++			gfp |= __GFP_COMP | __GFP_NOWARN | __GFP_NORETRY;
+ 		pfrag->page = alloc_pages(gfp, order);
+ 		if (likely(pfrag->page)) {
+ 			pfrag->offset = 0;
+
+
