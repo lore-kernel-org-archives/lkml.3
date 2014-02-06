@@ -1,155 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754547AbaBFCRQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 21:17:16 -0500
-Received: from fallback.hitachi.co.jp ([133.145.228.50]:49098 "EHLO
-	mailxx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753529AbaBFCRO (ORCPT
+	id S1754505AbaBFCYZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 21:24:25 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:29964 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753529AbaBFCYX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 21:17:14 -0500
-X-AuditID: 85900ec0-d1d29b9000001514-dc-52f2f0989746
-Subject: [PATCH] serial/uart: Add tunable RX interrupt trigger I/F of FIFO
- buffers
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        yrl.pp-manager.tt@hitachi.com
-Date: Thu, 06 Feb 2014 11:16:55 +0900
-Message-ID: <20140206021655.8613.52786.stgit@yunodevel>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 5 Feb 2014 21:24:23 -0500
+X-AuditID: cbfee68e-b7f566d000002344-30-52f2f2551a10
+Message-id: <52F2F255.90705@samsung.com>
+Date: Thu, 06 Feb 2014 11:24:21 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Mark Brown <broonie@kernel.org>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH 11/18] extcon: max14577: Add max14577 prefix to muic_irqs
+References: <1390911522-28209-1-git-send-email-k.kozlowski@samsung.com>
+ <1390911522-28209-12-git-send-email-k.kozlowski@samsung.com>
+ <52F18A08.6070409@samsung.com> <1391596810.3726.5.camel@AMDC1943>
+ <20140205140450.GE5196@lee--X1>
+In-reply-to: <20140205140450.GE5196@lee--X1>
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrIIsWRmVeSWpSXmKPExsWyRsSkRDf006cgg4uTFSymPnzCZvH6haHF
+	2aY37Bb3vx5ltPh2pYPJYtPja6wWl3fNYbNYe+Quu8XtxhVsFqe7WR24PHbOusvusWlVJ5vH
+	nWt72DzmnQz02Lyk3qNvyypGj8+b5ALYo7hsUlJzMstSi/TtErgyjvzdyFzwRLDi7pWABsbd
+	fF2MnBwSAiYSS1fvYYGwxSQu3FvP1sXIxSEksJRR4vabg+wwRU/n/2KGSCxilJg8aycThPOK
+	UWJucxszSBWvgIbEqvnvgWwODhYBVYkTb9hAwmwCWhL7X9wAs0UFwiRWTr/CAlEuKPFj8j0W
+	kHIRARWJc2/MQUYyC7xhkph4ZiorSI2wgK/E8mlHGUFsIYE3jBK/z/GC2JwCOhJHtl8GW8ss
+	oC4xad4iKFteYvOat8wQR39klzh4vxjEZhEQkPg2+RDYLgkBWYlNB6BKJCUOrrjBMoFRbBaS
+	i2YhmToLydQFjMyrGEVTC5ILipPSi4z0ihNzi0vz0vWS83M3MQKj8/S/Z307GG8esD7EmAy0
+	ciKzlGhyPjC680riDY3NjCxMTUyNjcwtzUgTVhLnXfQwKUhIID2xJDU7NbUgtSi+qDQntfgQ
+	IxMHp1QDI6/Eipvpf7Z9WmrH/WBHdlKnRez12qtvHl0QCfO7/tMyWfzMiVN+p/1V01Y9jonf
+	y99ncWtn/oK5K69MdNzdqiFq4fosM/vv3D/5dcIFoo9fOKe0HWHdt+VN6JIZYl13tUy4zxZF
+	T1uaHh4+i1X4fe2uF74alv89ur/s22xhYjplTs9mk3vcIUosxRmJhlrMRcWJACDo0tjkAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPKsWRmVeSWpSXmKPExsVy+t9jAd3QT5+CDHo+SVhMffiEzeL1C0OL
+	s01v2C3ufz3KaPHtSgeTxabH11gtLu+aw2ax9shddovbjSvYLE53szpweeycdZfdY9OqTjaP
+	O9f2sHnMOxnosXlJvUffllWMHp83yQWwRzUw2mSkJqakFimk5iXnp2TmpdsqeQfHO8ebmhkY
+	6hpaWpgrKeQl5qbaKrn4BOi6ZeYAHaekUJaYUwoUCkgsLlbSt8M0ITTETdcCpjFC1zckCK7H
+	yAANJKxhzDjydyNzwRPBirtXAhoYd/N1MXJySAiYSDyd/4sZwhaTuHBvPVsXIxeHkMAiRonJ
+	s3YyQTivGCXmNreBVfEKaEismv8eyObgYBFQlTjxhg0kzCagJbH/xQ0wW1QgTGLl9CssEOWC
+	Ej8m32MBKRcRUJE498YcZCSzwBsmiYlnprKC1AgL+Eosn3aUEcQWEnjDKPH7HC+IzSmgI3Fk
+	+2WwtcwC6hKT5i2CsuUlNq95yzyBUWAWkhWzkJTNQlK2gJF5FaNoakFyQXFSeq6RXnFibnFp
+	Xrpecn7uJkZw9D+T3sG4qsHiEKMAB6MSD++G9Z+ChFgTy4orcw8xSnAwK4nwXnwOFOJNSays
+	Si3Kjy8qzUktPsSYDAyAicxSosn5wMSUVxJvaGxiZmRpZG5oYWRsTpqwkjjvwVbrQCGB9MSS
+	1OzU1ILUIpgtTBycUg2M5RHi/6ueC0ZI3j8SzLL5E8exEsV3bPlV56qdHz3IMVJUON68aL3W
+	yn95AlZLJs7O+RBu5yka/6Hxa1FRYNw5jg/7pr+6XF3Yl7C0xnMD9yp126dnK5+7t/5+7LZr
+	XuSMhqha976m8Itap+If6nJNXcH7TW6le2BmiuzNClf3v121F92D3zEosRRnJBpqMRcVJwIA
+	9603QUIDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add tunable RX interrupt trigger I/F of FIFO buffers.
-Serial devices are used as not only message communication devices but control
-or sending communication devices. For the latter uses, normally small data
-will be exchanged, so user applications want to receive data unit as soon as
-possible for real-time tendency. If we have a sensor which sends a 1 byte data
-each time and must control a device based on the sensor feedback, the RX
-interrupt should be triggered for each data.
+On 02/05/2014 11:04 PM, Lee Jones wrote:
+>>> Following patch has conflict on extcon-next branch(Linus 3.14-rc1)
+>>> when apply patchset by using git am.
+>>>
+>>> [PATCH 11/18] extcon: max14577: Add max14577 prefix to muic_irqs
+>>> [PATCH 12/18] extcon: max14577: Choose muic_irqs according to device type
+>>> [PATCH 14/18] extcon: max14577: Add support for max77836
+>>>
+>>> The base commit of this patchset isn't mainline. You need to rebase this patchset 
+>>> on extcon-next branch and please resend this patchset.
+> 
+> <snip>
+> 
+>> This patch patch (along with other) depends on previous rename patches
+>> from this patchset:
+>> [PATCH 07/18] mfd: max14577: Rename and add MAX14577 symbols to prepare
+>> for max77836
+>> http://article.gmane.org/gmane.linux.kernel/1636674
+>>
+>> I can resolve the conflict but then they will return on applying patch
+>> 7/18.
+>>
+>> I think this patch may wait for a little until the rename-like patches
+>> will be accepted.
+>>
+>> Can you ACK other patches touch extcon?
+>>  - [PATCH 07/18] mfd: max14577: Rename and add MAX14577 symbols...
+>>  - [PATCH 08/18] mfd: max14577: Rename state container to maxim_core
+>>  - [PATCH 09/18] mfd: max14577: Add "muic" suffix to regmap and irq_chip
+> 
+> If you can obtain Acks for all of the patches, I can apply the entire
+> patch-set to an immutable branch and issue a pull-request for the
+> other maintainers to pull from.
+> 
 
-According to HW specification of serial UART devices, RX interrupt trigger
-can be changed, but the trigger is hard-coded. For example, RX interrupt trigger
-in 16550A can be set to 1, 4, 8, or 14 bytes for HW, but current driver sets
-the trigger to only 8bytes.
+Hi Lee,
 
-This patch makes a 16550A device change RX interrupt trigger from userland.
+OK, I agree your opionion.
+I'd like you to apply this patchset dependent on extcon subsytem
+on your tree. I acked on following patchset and tested all of this patchset series.
 
-<How to use>
-unsigned char rx_trig_byte = 1;
-fd = open(TTY_PASS, O_RDWR | O_NONBLOCK);
-ioctl(fd, TIOCSFIFOTRIG, &rx_trig_byte);
-read(fd, buf, size);
+Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
 
-<Support uart device>
-- 16550A (1, 4, 8, or 14 bytes)
+[PATCH 06/18] extcon: max14577: Change extcon name instead of static name according to device type
+- I will delete this patch([PATCH 06/18]) on extcon-next branch.
+[PATCH 07/18] mfd: max14577: Rename and add MAX14577 symbols...
+[PATCH 08/18] mfd: max14577: Rename state container to maxim_core
+[PATCH 09/18] mfd: max14577: Add "muic" suffix to regmap and irq_chip
 
-Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/tty/serial/8250/8250_core.c |   63 +++++++++++++++++++++++++++++++++++
- include/uapi/asm-generic/ioctls.h   |    2 +
- 2 files changed, 65 insertions(+)
+[PATCH 11/18] extcon: max14577: Add max14577 prefix to muic_irqs
+[PATCH 12/18] extcon: max14577: Choose muic_irqs according to device type
+[PATCH 14/18] extcon: max14577: Add support for max77836
 
-diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
-index 61ecd70..f51637a 100644
---- a/drivers/tty/serial/8250/8250_core.c
-+++ b/drivers/tty/serial/8250/8250_core.c
-@@ -2699,6 +2699,68 @@ serial8250_verify_port(struct uart_port *port, struct serial_struct *ser)
- 	return 0;
- }
- 
-+static int convert_val2rxtrig(struct uart_8250_port *up, unsigned char val)
-+{
-+	switch (up->port.type) {
-+	case PORT_16550A:
-+		if (val == 1)
-+			return UART_FCR_R_TRIG_00;
-+		else if (val == 4)
-+			return UART_FCR_R_TRIG_01;
-+		else if (val == 8)
-+			return UART_FCR_R_TRIG_10;
-+		else if (val == 14)
-+			return UART_FCR_R_TRIG_11;
-+		break;
-+	default:
-+		pr_info("Not support RX-trigger setting for this serial %u\n",
-+			up->port.type);
-+	}
-+	return -EINVAL;
-+}
-+
-+static int set_fifo_rx_trigger(struct uart_8250_port *up,
-+			       unsigned char __user *uval)
-+{
-+	unsigned char fcr, val;
-+	int rx_trig;
-+
-+	if (copy_from_user(&val, uval, sizeof(unsigned char)))
-+		return -EFAULT;
-+
-+	rx_trig = convert_val2rxtrig(up, val);
-+	if (rx_trig < 0)
-+		return rx_trig;
-+
-+	fcr = uart_config[up->port.type].fcr;
-+	serial8250_clear_fifos(up);
-+	fcr &= ~UART_FCR_TRIGGER_MASK;
-+	fcr |= (unsigned char)rx_trig;
-+	serial_out(up, UART_FCR, fcr);
-+	return 0;
-+}
-+
-+static int
-+serial8250_ioctl(struct uart_port *port, unsigned int cmd, unsigned long arg)
-+{
-+	struct uart_8250_port *up =
-+		container_of(port, struct uart_8250_port, port);
-+	void __user *uarg = (void __user *)arg;
-+	int ret;
-+
-+	if (!(up->capabilities & UART_CAP_FIFO) || port->fifosize <= 1)
-+		return -EINVAL;
-+
-+	switch (cmd) {
-+	case TIOCSFIFORTRIG:
-+		ret = set_fifo_rx_trigger(up, uarg);
-+		break;
-+	default:
-+		ret = -ENOIOCTLCMD;
-+	}
-+	return ret;
-+}
-+
- static const char *
- serial8250_type(struct uart_port *port)
- {
-@@ -2728,6 +2790,7 @@ static struct uart_ops serial8250_pops = {
- 	.request_port	= serial8250_request_port,
- 	.config_port	= serial8250_config_port,
- 	.verify_port	= serial8250_verify_port,
-+	.ioctl		= serial8250_ioctl,
- #ifdef CONFIG_CONSOLE_POLL
- 	.poll_get_char = serial8250_get_poll_char,
- 	.poll_put_char = serial8250_put_poll_char,
-diff --git a/include/uapi/asm-generic/ioctls.h b/include/uapi/asm-generic/ioctls.h
-index 143dacb..d2e56a4 100644
---- a/include/uapi/asm-generic/ioctls.h
-+++ b/include/uapi/asm-generic/ioctls.h
-@@ -78,6 +78,8 @@
- #define TIOCGPTLCK	_IOR('T', 0x39, int) /* Get Pty lock state */
- #define TIOCGEXCL	_IOR('T', 0x40, int) /* Get exclusive mode state */
- 
-+#define TIOCSFIFORTRIG	0x5441
-+
- #define FIONCLEX	0x5450
- #define FIOCLEX		0x5451
- #define FIOASYNC	0x5452
+Thanks,
+Chanwoo Choi
 
