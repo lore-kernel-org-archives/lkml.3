@@ -1,638 +1,267 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932444AbaBFBMM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 20:12:12 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:53271 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932199AbaBFBLD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 20:11:03 -0500
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: [RFC PATCH v2 tip 5/7] use BPF in tracing filters
-Date: Wed,  5 Feb 2014 17:10:44 -0800
-Message-Id: <1391649046-4383-6-git-send-email-ast@plumgrid.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1391649046-4383-1-git-send-email-ast@plumgrid.com>
-References: <1391649046-4383-1-git-send-email-ast@plumgrid.com>
+	id S1754557AbaBFBMd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 20:12:33 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34206 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754483AbaBFBMJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 20:12:09 -0500
+Date: Thu, 6 Feb 2014 12:11:51 +1100
+From: NeilBrown <neilb@suse.de>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: paulus@samba.org, oleg@redhat.com, rusty@rustcorp.com.au,
+        peterz@infradead.org, tglx@linutronix.de, akpm@linux-foundation.org,
+        mingo@kernel.org, paulmck@linux.vnet.ibm.com, tj@kernel.org,
+        walken@google.com, ego@linux.vnet.ibm.com, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 45/51] md, raid5: Fix CPU hotplug callback registration
+Message-ID: <20140206121151.0cbdbaa1@notabene.brown>
+In-Reply-To: <20140205221244.19080.70910.stgit@srivatsabhat.in.ibm.com>
+References: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com>
+	<20140205221244.19080.70910.stgit@srivatsabhat.in.ibm.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/8Sh5fJFndN.WKIU2q1H+blD"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Such filters can be written in C and allow safe read-only access to
-any kernel data structure.
-Like systemtap but with safety guaranteed by kernel.
+--Sig_/8Sh5fJFndN.WKIU2q1H+blD
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-The user can do:
-cat bpf_program > /sys/kernel/debug/tracing/.../filter
-if tracing event is either static or dynamic via kprobe_events.
+On Thu, 06 Feb 2014 03:42:45 +0530 "Srivatsa S. Bhat"
+<srivatsa.bhat@linux.vnet.ibm.com> wrote:
 
-The program can be anything as long as bpf_check() can verify its safety.
-For example, the user can create kprobe_event on dst_discard()
-and use logically following code inside BPF filter:
-      skb = (struct sk_buff *)ctx->arg1;
-      dev = bpf_load_pointer(&skb->dev);
-to access 'struct net_device'
-Since its prototype is 'int dst_discard(struct sk_buff *skb);'
-bpf_load_pointer() will try to fetch 'dev' field of 'sk_buff'
-structure and will suppress page-fault if pointer is incorrect.
-
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
----
- include/linux/ftrace_event.h       |    5 +
- include/trace/bpf_trace.h          |   41 ++++++++
- include/trace/ftrace.h             |   17 ++++
- kernel/trace/Kconfig               |    1 +
- kernel/trace/Makefile              |    1 +
- kernel/trace/bpf_trace_callbacks.c |  193 ++++++++++++++++++++++++++++++++++++
- kernel/trace/trace.c               |    7 ++
- kernel/trace/trace.h               |   11 +-
- kernel/trace/trace_events.c        |    9 +-
- kernel/trace/trace_events_filter.c |   61 +++++++++++-
- kernel/trace/trace_kprobe.c        |   15 ++-
- 11 files changed, 356 insertions(+), 5 deletions(-)
- create mode 100644 include/trace/bpf_trace.h
- create mode 100644 kernel/trace/bpf_trace_callbacks.c
-
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 4e4cc28..616ae01 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -204,6 +204,7 @@ enum {
- 	TRACE_EVENT_FL_IGNORE_ENABLE_BIT,
- 	TRACE_EVENT_FL_WAS_ENABLED_BIT,
- 	TRACE_EVENT_FL_USE_CALL_FILTER_BIT,
-+	TRACE_EVENT_FL_BPF_BIT,
- };
- 
- /*
-@@ -224,6 +225,7 @@ enum {
- 	TRACE_EVENT_FL_IGNORE_ENABLE	= (1 << TRACE_EVENT_FL_IGNORE_ENABLE_BIT),
- 	TRACE_EVENT_FL_WAS_ENABLED	= (1 << TRACE_EVENT_FL_WAS_ENABLED_BIT),
- 	TRACE_EVENT_FL_USE_CALL_FILTER	= (1 << TRACE_EVENT_FL_USE_CALL_FILTER_BIT),
-+	TRACE_EVENT_FL_BPF		= (1 << TRACE_EVENT_FL_BPF_BIT),
- };
- 
- struct ftrace_event_call {
-@@ -487,6 +489,9 @@ event_trigger_unlock_commit_regs(struct ftrace_event_file *file,
- 		event_triggers_post_call(file, tt);
- }
- 
-+struct bpf_context;
-+void filter_call_bpf(struct event_filter *filter, struct bpf_context *ctx);
-+
- enum {
- 	FILTER_OTHER = 0,
- 	FILTER_STATIC_STRING,
-diff --git a/include/trace/bpf_trace.h b/include/trace/bpf_trace.h
-new file mode 100644
-index 0000000..3402384
---- /dev/null
-+++ b/include/trace/bpf_trace.h
-@@ -0,0 +1,41 @@
-+/* Copyright (c) 2011-2014 PLUMgrid, http://plumgrid.com
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of version 2 of the GNU General Public
-+ * License as published by the Free Software Foundation.
-+ */
-+#ifndef _LINUX_KERNEL_BPF_TRACE_H
-+#define _LINUX_KERNEL_BPF_TRACE_H
-+
-+struct pt_regs;
-+
-+struct bpf_context {
-+	long arg1;
-+	long arg2;
-+	long arg3;
-+	long arg4;
-+	long arg5;
-+	struct pt_regs *regs;
-+};
-+
-+static inline void init_bpf_context(struct bpf_context *ctx, long arg1,
-+				    long arg2, long arg3, long arg4, long arg5)
-+{
-+	ctx->arg1 = arg1;
-+	ctx->arg2 = arg2;
-+	ctx->arg3 = arg3;
-+	ctx->arg4 = arg4;
-+	ctx->arg5 = arg5;
-+}
-+void *bpf_load_pointer(void *unsafe_ptr);
-+long bpf_memcmp(void *unsafe_ptr, void *safe_ptr, long size);
-+void bpf_dump_stack(struct bpf_context *ctx);
-+void bpf_trace_printk(char *fmt, long fmt_size,
-+		      long arg1, long arg2, long arg3);
-+void *bpf_table_lookup(struct bpf_context *ctx, long table_id, const void *key);
-+long bpf_table_update(struct bpf_context *ctx, long table_id, const void *key,
-+		      const void *leaf);
-+
-+extern struct bpf_callbacks bpf_trace_cb;
-+
-+#endif /* _LINUX_KERNEL_BPF_TRACE_H */
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index 1a8b28d..2348afd 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -17,6 +17,8 @@
-  */
- 
- #include <linux/ftrace_event.h>
-+#include <linux/kexec.h>
-+#include <trace/bpf_trace.h>
- 
- /*
-  * DECLARE_EVENT_CLASS can be used to add a generic function
-@@ -556,6 +558,21 @@ ftrace_raw_event_##call(void *__data, proto)				\
- 	if (ftrace_trigger_soft_disabled(ftrace_file))			\
- 		return;							\
- 									\
-+	if (unlikely(ftrace_file->flags & FTRACE_EVENT_FL_FILTERED) &&	\
-+	    unlikely(ftrace_file->event_call->flags & TRACE_EVENT_FL_BPF)) { \
-+		struct bpf_context _ctx;				\
-+		struct pt_regs _regs;					\
-+		void (*_fn)(struct bpf_context *, proto,		\
-+			    long, long, long, long);			\
-+		crash_setup_regs(&_regs, NULL);				\
-+		_fn = (void (*)(struct bpf_context *, proto, long, long,\
-+				long, long))init_bpf_context;		\
-+		_fn(&_ctx, args, 0, 0, 0, 0);				\
-+		_ctx.regs = &_regs;					\
-+		filter_call_bpf(ftrace_file->filter, &_ctx);		\
-+		return;							\
-+	}								\
-+									\
- 	local_save_flags(irq_flags);					\
- 	pc = preempt_count();						\
- 									\
-diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
-index 015f85a..2809cd1 100644
---- a/kernel/trace/Kconfig
-+++ b/kernel/trace/Kconfig
-@@ -80,6 +80,7 @@ config FTRACE_NMI_ENTER
- 
- config EVENT_TRACING
- 	select CONTEXT_SWITCH_TRACER
-+	select BPF64
- 	bool
- 
- config CONTEXT_SWITCH_TRACER
-diff --git a/kernel/trace/Makefile b/kernel/trace/Makefile
-index 1378e84..dc4fb44 100644
---- a/kernel/trace/Makefile
-+++ b/kernel/trace/Makefile
-@@ -51,6 +51,7 @@ obj-$(CONFIG_EVENT_TRACING) += trace_event_perf.o
- endif
- obj-$(CONFIG_EVENT_TRACING) += trace_events_filter.o
- obj-$(CONFIG_EVENT_TRACING) += trace_events_trigger.o
-+obj-$(CONFIG_EVENT_TRACING) += bpf_trace_callbacks.o
- obj-$(CONFIG_KPROBE_EVENT) += trace_kprobe.o
- obj-$(CONFIG_TRACEPOINTS) += power-traces.o
- ifeq ($(CONFIG_PM_RUNTIME),y)
-diff --git a/kernel/trace/bpf_trace_callbacks.c b/kernel/trace/bpf_trace_callbacks.c
-new file mode 100644
-index 0000000..2b7955d
---- /dev/null
-+++ b/kernel/trace/bpf_trace_callbacks.c
-@@ -0,0 +1,193 @@
-+/* Copyright (c) 2011-2014 PLUMgrid, http://plumgrid.com
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of version 2 of the GNU General Public
-+ * License as published by the Free Software Foundation.
-+ */
-+#include <linux/kernel.h>
-+#include <linux/types.h>
-+#include <linux/slab.h>
-+#include <linux/bpf_jit.h>
-+#include <linux/uaccess.h>
-+#include <trace/bpf_trace.h>
-+#include "trace.h"
-+
-+#define MAX_CTX_OFF sizeof(struct bpf_context)
-+
-+static const struct bpf_context_access ctx_access[MAX_CTX_OFF] = {
-+	[offsetof(struct bpf_context, arg1)] = {
-+		FIELD_SIZEOF(struct bpf_context, arg1),
-+		BPF_READ
-+	},
-+	[offsetof(struct bpf_context, arg2)] = {
-+		FIELD_SIZEOF(struct bpf_context, arg2),
-+		BPF_READ
-+	},
-+	[offsetof(struct bpf_context, arg3)] = {
-+		FIELD_SIZEOF(struct bpf_context, arg3),
-+		BPF_READ
-+	},
-+	[offsetof(struct bpf_context, arg4)] = {
-+		FIELD_SIZEOF(struct bpf_context, arg4),
-+		BPF_READ
-+	},
-+	[offsetof(struct bpf_context, arg5)] = {
-+		FIELD_SIZEOF(struct bpf_context, arg5),
-+		BPF_READ
-+	},
-+};
-+
-+static const struct bpf_context_access *get_context_access(int off)
-+{
-+	if (off >= MAX_CTX_OFF)
-+		return NULL;
-+	return &ctx_access[off];
-+}
-+
-+void *bpf_load_pointer(void *unsafe_ptr)
-+{
-+	void *ptr = NULL;
-+
-+	probe_kernel_read(&ptr, unsafe_ptr, sizeof(void *));
-+	return ptr;
-+}
-+
-+long bpf_memcmp(void *unsafe_ptr, void *safe_ptr, long size)
-+{
-+	char buf[64];
-+	int err;
-+
-+	if (size < 64) {
-+		err = probe_kernel_read(buf, unsafe_ptr, size);
-+		if (err)
-+			return err;
-+		return memcmp(buf, safe_ptr, size);
-+	}
-+	return -1;
-+}
-+
-+void bpf_dump_stack(struct bpf_context *ctx)
-+{
-+	unsigned long flags;
-+
-+	local_save_flags(flags);
-+
-+	__trace_stack_regs(flags, 0, preempt_count(), ctx->regs);
-+}
-+
-+/*
-+ * limited trace_printk()
-+ * only %d %u %p %x conversion specifiers allowed
-+ */
-+void bpf_trace_printk(char *fmt, long fmt_size, long arg1, long arg2, long arg3)
-+{
-+	int fmt_cnt = 0;
-+	int i;
-+
-+	/*
-+	 * bpf_check() guarantees that fmt points to bpf program stack and
-+	 * fmt_size bytes of it were initialized by bpf program
-+	 */
-+	if (fmt[fmt_size - 1] != 0)
-+		return;
-+
-+	for (i = 0; i < fmt_size; i++)
-+		if (fmt[i] == '%') {
-+			if (i + 1 >= fmt_size)
-+				return;
-+			if (fmt[i + 1] != 'p' && fmt[i + 1] != 'd' &&
-+			    fmt[i + 1] != 'u' && fmt[i + 1] != 'x')
-+				return;
-+			fmt_cnt++;
-+		}
-+	if (fmt_cnt > 3)
-+		return;
-+	__trace_printk((unsigned long)__builtin_return_address(3), fmt,
-+		       arg1, arg2, arg3);
-+}
-+
-+
-+static const struct bpf_func_proto *get_func_proto(char *strtab, int id)
-+{
-+	if (!strcmp(strtab + id, "bpf_load_pointer")) {
-+		static const struct bpf_func_proto proto = {RET_INTEGER};
-+		return &proto;
-+	}
-+	if (!strcmp(strtab + id, "bpf_memcmp")) {
-+		static const struct bpf_func_proto proto = {RET_INTEGER,
-+			INVALID_PTR, PTR_TO_STACK_IMM,
-+			CONST_ARG_STACK_IMM_SIZE};
-+		return &proto;
-+	}
-+	if (!strcmp(strtab + id, "bpf_dump_stack")) {
-+		static const struct bpf_func_proto proto = {RET_VOID,
-+			PTR_TO_CTX};
-+		return &proto;
-+	}
-+	if (!strcmp(strtab + id, "bpf_trace_printk")) {
-+		static const struct bpf_func_proto proto = {RET_VOID,
-+			PTR_TO_STACK_IMM, CONST_ARG_STACK_IMM_SIZE};
-+		return &proto;
-+	}
-+	if (!strcmp(strtab + id, "bpf_table_lookup")) {
-+		static const struct bpf_func_proto proto = {
-+			PTR_TO_TABLE_CONDITIONAL, PTR_TO_CTX,
-+			CONST_ARG_TABLE_ID, PTR_TO_STACK_IMM_TABLE_KEY};
-+		return &proto;
-+	}
-+	if (!strcmp(strtab + id, "bpf_table_update")) {
-+		static const struct bpf_func_proto proto = {RET_INTEGER,
-+			PTR_TO_CTX, CONST_ARG_TABLE_ID,
-+			PTR_TO_STACK_IMM_TABLE_KEY,
-+			PTR_TO_STACK_IMM_TABLE_ELEM};
-+		return &proto;
-+	}
-+	return NULL;
-+}
-+
-+static void execute_func(char *strtab, int id, u64 *regs)
-+{
-+	regs[R0] = 0;
-+
-+	/*
-+	 * strcmp-approach is not efficient.
-+	 * TODO: optimize it for poor archs that don't have JIT yet
-+	 */
-+	if (!strcmp(strtab + id, "bpf_load_pointer")) {
-+		regs[R0] = (u64)bpf_load_pointer((void *)regs[R1]);
-+	} else if (!strcmp(strtab + id, "bpf_memcmp")) {
-+		regs[R0] = (u64)bpf_memcmp((void *)regs[R1], (void *)regs[R2],
-+					   (long)regs[R3]);
-+	} else if (!strcmp(strtab + id, "bpf_dump_stack")) {
-+		bpf_dump_stack((struct bpf_context *)regs[R1]);
-+	} else if (!strcmp(strtab + id, "bpf_trace_printk")) {
-+		bpf_trace_printk((char *)regs[R1], (long)regs[R2],
-+				 (long)regs[R3], (long)regs[R4],
-+				 (long)regs[R5]);
-+	} else {
-+		pr_err_once("trace cannot execute unknown bpf function %d '%s'\n",
-+			    id, strtab + id);
-+	}
-+}
-+
-+static void *jit_select_func(char *strtab, int id)
-+{
-+	if (!strcmp(strtab + id, "bpf_load_pointer"))
-+		return bpf_load_pointer;
-+
-+	if (!strcmp(strtab + id, "bpf_memcmp"))
-+		return bpf_memcmp;
-+
-+	if (!strcmp(strtab + id, "bpf_dump_stack"))
-+		return bpf_dump_stack;
-+
-+	if (!strcmp(strtab + id, "bpf_trace_printk"))
-+		return bpf_trace_printk;
-+
-+	return NULL;
-+}
-+
-+struct bpf_callbacks bpf_trace_cb = {
-+	execute_func, jit_select_func, get_func_proto, get_context_access
-+};
-+
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 815c878..1a7762b 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -1791,6 +1791,13 @@ void __trace_stack(struct trace_array *tr, unsigned long flags, int skip,
- 	__ftrace_trace_stack(tr->trace_buffer.buffer, flags, skip, pc, NULL);
- }
- 
-+void __trace_stack_regs(unsigned long flags, int skip, int pc,
-+			struct pt_regs *regs)
-+{
-+	__ftrace_trace_stack(global_trace.trace_buffer.buffer, flags, skip,
-+			     pc, regs);
-+}
-+
- /**
-  * trace_dump_stack - record a stack back trace in the trace buffer
-  * @skip: Number of functions to skip (helper handlers)
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 02b592f..fa7db5f 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -619,6 +619,8 @@ void ftrace_trace_userstack(struct ring_buffer *buffer, unsigned long flags,
- 
- void __trace_stack(struct trace_array *tr, unsigned long flags, int skip,
- 		   int pc);
-+void __trace_stack_regs(unsigned long flags, int skip, int pc,
-+			struct pt_regs *regs);
- #else
- static inline void ftrace_trace_stack(struct ring_buffer *buffer,
- 				      unsigned long flags, int skip, int pc)
-@@ -640,6 +642,10 @@ static inline void __trace_stack(struct trace_array *tr, unsigned long flags,
- 				 int skip, int pc)
+> From: Oleg Nesterov <oleg@redhat.com>
+>=20
+> Subsystems that want to register CPU hotplug callbacks, as well as perform
+> initialization for the CPUs that are already online, often do it as shown
+> below:
+>=20
+> 	get_online_cpus();
+>=20
+> 	for_each_online_cpu(cpu)
+> 		init_cpu(cpu);
+>=20
+> 	register_cpu_notifier(&foobar_cpu_notifier);
+>=20
+> 	put_online_cpus();
+>=20
+> This is wrong, since it is prone to ABBA deadlocks involving the
+> cpu_add_remove_lock and the cpu_hotplug.lock (when running concurrently
+> with CPU hotplug operations).
+>=20
+> Interestingly, the raid5 code can actually prevent double initialization =
+and
+> hence can use the following simplified form of callback registration:
+>=20
+> 	register_cpu_notifier(&foobar_cpu_notifier);
+>=20
+> 	get_online_cpus();
+>=20
+> 	for_each_online_cpu(cpu)
+> 		init_cpu(cpu);
+>=20
+> 	put_online_cpus();
+>=20
+> A hotplug operation that occurs between registering the notifier and call=
+ing
+> get_online_cpus(), won't disrupt anything, because the code takes care to
+> perform the memory allocations only once.
+>=20
+> So reorganize the code in raid5 this way to fix the deadlock with callback
+> registration.
+>=20
+> Cc: Neil Brown <neilb@suse.de>
+> Cc: linux-raid@vger.kernel.org
+> Cc: stable@vger.kernel.org
+> [Srivatsa: Fixed the unregister_cpu_notifier() deadlock, added the
+> free_scratch_buffer() helper to condense code further and wrote the chang=
+elog.]
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> ---
+>=20
+>  drivers/md/raid5.c |   90 +++++++++++++++++++++++++---------------------=
+------
+>  1 file changed, 44 insertions(+), 46 deletions(-)
+>=20
+> diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
+> index f1feade..16f5c21 100644
+> --- a/drivers/md/raid5.c
+> +++ b/drivers/md/raid5.c
+> @@ -5514,23 +5514,43 @@ raid5_size(struct mddev *mddev, sector_t sectors,=
+ int raid_disks)
+>  	return sectors * (raid_disks - conf->max_degraded);
+>  }
+> =20
+> +static void free_scratch_buffer(struct r5conf *conf, struct raid5_percpu=
+ *percpu)
+> +{
+> +	safe_put_page(percpu->spare_page);
+> +	kfree(percpu->scribble);
+> +	percpu->spare_page =3D NULL;
+> +	percpu->scribble =3D NULL;
+> +}
+> +
+> +static int alloc_scratch_buffer(struct r5conf *conf, struct raid5_percpu=
+ *percpu)
+> +{
+> +	if (conf->level =3D=3D 6 && !percpu->spare_page)
+> +		percpu->spare_page =3D alloc_page(GFP_KERNEL);
+> +	if (!percpu->scribble)
+> +		percpu->scribble =3D kmalloc(conf->scribble_len, GFP_KERNEL);
+> +
+> +	if (!percpu->scribble || (conf->level =3D=3D 6 && !percpu->spare_page))=
  {
- }
-+static inline void __trace_stack_regs(unsigned long flags, int skip, int pc,
-+				      struct pt_regs *regs)
-+{
-+}
- #endif /* CONFIG_STACKTRACE */
- 
- extern cycle_t ftrace_now(int cpu);
-@@ -939,12 +945,15 @@ struct ftrace_event_field {
- 	int			is_signed;
- };
- 
-+struct bpf_program;
-+
- struct event_filter {
- 	int			n_preds;	/* Number assigned */
- 	int			a_preds;	/* allocated */
- 	struct filter_pred	*preds;
- 	struct filter_pred	*root;
- 	char			*filter_string;
-+	struct bpf_program	*prog;
- };
- 
- struct event_subsystem {
-@@ -1017,7 +1026,7 @@ filter_parse_regex(char *buff, int len, char **search, int *not);
- extern void print_event_filter(struct ftrace_event_file *file,
- 			       struct trace_seq *s);
- extern int apply_event_filter(struct ftrace_event_file *file,
--			      char *filter_string);
-+			      char *filter_string, int filter_len);
- extern int apply_subsystem_event_filter(struct ftrace_subsystem_dir *dir,
- 					char *filter_string);
- extern void print_subsystem_event_filter(struct event_subsystem *system,
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index e71ffd4..b6aadc3 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -1042,9 +1042,16 @@ event_filter_write(struct file *filp, const char __user *ubuf, size_t cnt,
- 	mutex_lock(&event_mutex);
- 	file = event_file_data(filp);
- 	if (file)
--		err = apply_event_filter(file, buf);
-+		err = apply_event_filter(file, buf, cnt);
- 	mutex_unlock(&event_mutex);
- 
-+	if (file->event_call->flags & TRACE_EVENT_FL_BPF)
-+		/*
-+		 * allocate per-cpu printk buffers, since BPF program
-+		 * might be calling bpf_trace_printk
-+		 */
-+		trace_printk_init_buffers();
-+
- 	free_page((unsigned long) buf);
- 	if (err < 0)
- 		return err;
-diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
-index 8a86319..d4fb09c 100644
---- a/kernel/trace/trace_events_filter.c
-+++ b/kernel/trace/trace_events_filter.c
-@@ -23,6 +23,8 @@
- #include <linux/mutex.h>
- #include <linux/perf_event.h>
- #include <linux/slab.h>
-+#include <linux/bpf_jit.h>
-+#include <trace/bpf_trace.h>
- 
- #include "trace.h"
- #include "trace_output.h"
-@@ -535,6 +537,20 @@ static int filter_match_preds_cb(enum move_type move, struct filter_pred *pred,
- 	return WALK_PRED_DEFAULT;
- }
- 
-+void filter_call_bpf(struct event_filter *filter, struct bpf_context *ctx)
-+{
-+	BUG_ON(!filter || !filter->prog);
-+
-+	if (!filter->prog->jit_image) {
-+		pr_warn_once("BPF jit image is not available. Fallback to emulation\n");
-+		bpf_run(filter->prog, ctx);
-+		return;
-+	}
-+
-+	filter->prog->jit_image(ctx);
-+}
-+EXPORT_SYMBOL_GPL(filter_call_bpf);
-+
- /* return 1 if event matches, 0 otherwise (discard) */
- int filter_match_preds(struct event_filter *filter, void *rec)
- {
-@@ -794,6 +810,7 @@ static void __free_filter(struct event_filter *filter)
- 	if (!filter)
- 		return;
- 
-+	bpf_free(filter->prog);
- 	__free_preds(filter);
- 	kfree(filter->filter_string);
- 	kfree(filter);
-@@ -1898,6 +1915,37 @@ static int create_filter_start(char *filter_str, bool set_str,
- 	return err;
- }
- 
-+static int create_filter_bpf(char *filter_str, int filter_len,
-+			     struct event_filter **filterp)
-+{
-+	struct event_filter *filter;
-+	int err = 0;
-+
-+	*filterp = NULL;
-+
-+	filter = __alloc_filter();
-+	if (filter)
-+		err = replace_filter_string(filter, "bpf");
-+
-+	if (!filter || err) {
-+		__free_filter(filter);
-+		return -ENOMEM;
-+	}
-+
-+	err = bpf_load_image(filter_str, filter_len, &bpf_trace_cb,
-+			     &filter->prog);
-+
-+	if (err) {
-+		pr_err("failed to load bpf %d\n", err);
-+		__free_filter(filter);
-+		return -EACCES;
-+	}
-+
-+	*filterp = filter;
-+
-+	return err;
-+}
-+
- static void create_filter_finish(struct filter_parse_state *ps)
- {
- 	if (ps) {
-@@ -1985,7 +2033,8 @@ static int create_system_filter(struct event_subsystem *system,
- }
- 
- /* caller must hold event_mutex */
--int apply_event_filter(struct ftrace_event_file *file, char *filter_string)
-+int apply_event_filter(struct ftrace_event_file *file, char *filter_string,
-+		       int filter_len)
- {
- 	struct ftrace_event_call *call = file->event_call;
- 	struct event_filter *filter;
-@@ -2007,7 +2056,15 @@ int apply_event_filter(struct ftrace_event_file *file, char *filter_string)
- 		return 0;
- 	}
- 
--	err = create_filter(call, filter_string, true, &filter);
-+	if (!strcmp(filter_string, "bpf")) {
-+		err = create_filter_bpf(filter_string, filter_len, &filter);
-+		if (!err)
-+			call->flags |= TRACE_EVENT_FL_BPF;
-+	} else {
-+		err = create_filter(call, filter_string, true, &filter);
-+		if (!err)
-+			call->flags &= ~TRACE_EVENT_FL_BPF;
-+	}
- 
- 	/*
- 	 * Always swap the call filter with the new filter
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index bdbae45..1e508d2 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -19,7 +19,7 @@
- 
- #include <linux/module.h>
- #include <linux/uaccess.h>
--
-+#include <trace/bpf_trace.h>
- #include "trace_probe.h"
- 
- #define KPROBE_EVENT_SYSTEM "kprobes"
-@@ -936,6 +936,19 @@ __kprobe_trace_func(struct trace_kprobe *tk, struct pt_regs *regs,
- 	if (ftrace_trigger_soft_disabled(ftrace_file))
- 		return;
- 
-+	if (unlikely(ftrace_file->flags & FTRACE_EVENT_FL_FILTERED) &&
-+	    unlikely(ftrace_file->event_call->flags & TRACE_EVENT_FL_BPF)) {
-+		struct bpf_context ctx;
-+		ctx.regs = regs;
-+		ctx.arg1 = regs_get_argument_nth(regs, 0);
-+		ctx.arg2 = regs_get_argument_nth(regs, 1);
-+		ctx.arg3 = regs_get_argument_nth(regs, 2);
-+		ctx.arg4 = regs_get_argument_nth(regs, 3);
-+		ctx.arg5 = regs_get_argument_nth(regs, 4);
-+		filter_call_bpf(ftrace_file->filter, &ctx);
-+		return;
-+	}
-+
- 	local_save_flags(irq_flags);
- 	pc = preempt_count();
- 
--- 
-1.7.9.5
+> +		free_scratch_buffer(conf, percpu);
+> +		return -ENOMEM;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+>  static void raid5_free_percpu(struct r5conf *conf)
+>  {
+> -	struct raid5_percpu *percpu;
+>  	unsigned long cpu;
+> =20
+>  	if (!conf->percpu)
+>  		return;
+> =20
+> -	get_online_cpus();
+> -	for_each_possible_cpu(cpu) {
+> -		percpu =3D per_cpu_ptr(conf->percpu, cpu);
+> -		safe_put_page(percpu->spare_page);
+> -		kfree(percpu->scribble);
+> -	}
+>  #ifdef CONFIG_HOTPLUG_CPU
+>  	unregister_cpu_notifier(&conf->cpu_notify);
+>  #endif
+> +
+> +	get_online_cpus();
+> +	for_each_possible_cpu(cpu)
+> +		free_scratch_buffer(conf, per_cpu_ptr(conf->percpu, cpu));
+>  	put_online_cpus();
+> =20
+>  	free_percpu(conf->percpu);
+> @@ -5557,15 +5577,7 @@ static int raid456_cpu_notify(struct notifier_bloc=
+k *nfb, unsigned long action,
+>  	switch (action) {
+>  	case CPU_UP_PREPARE:
+>  	case CPU_UP_PREPARE_FROZEN:
+> -		if (conf->level =3D=3D 6 && !percpu->spare_page)
+> -			percpu->spare_page =3D alloc_page(GFP_KERNEL);
+> -		if (!percpu->scribble)
+> -			percpu->scribble =3D kmalloc(conf->scribble_len, GFP_KERNEL);
+> -
+> -		if (!percpu->scribble ||
+> -		    (conf->level =3D=3D 6 && !percpu->spare_page)) {
+> -			safe_put_page(percpu->spare_page);
+> -			kfree(percpu->scribble);
+> +		if (alloc_scratch_buffer(conf, percpu)) {
+>  			pr_err("%s: failed memory allocation for cpu%ld\n",
+>  			       __func__, cpu);
+>  			return notifier_from_errno(-ENOMEM);
+> @@ -5573,10 +5585,7 @@ static int raid456_cpu_notify(struct notifier_bloc=
+k *nfb, unsigned long action,
+>  		break;
+>  	case CPU_DEAD:
+>  	case CPU_DEAD_FROZEN:
+> -		safe_put_page(percpu->spare_page);
+> -		kfree(percpu->scribble);
+> -		percpu->spare_page =3D NULL;
+> -		percpu->scribble =3D NULL;
+> +		free_scratch_buffer(conf, per_cpu_ptr(conf->percpu, cpu));
+>  		break;
+>  	default:
+>  		break;
+> @@ -5588,40 +5597,29 @@ static int raid456_cpu_notify(struct notifier_blo=
+ck *nfb, unsigned long action,
+>  static int raid5_alloc_percpu(struct r5conf *conf)
+>  {
+>  	unsigned long cpu;
+> -	struct page *spare_page;
+> -	struct raid5_percpu __percpu *allcpus;
+> -	void *scribble;
+> -	int err;
+> +	int err =3D 0;
+> =20
+> -	allcpus =3D alloc_percpu(struct raid5_percpu);
+> -	if (!allcpus)
+> +	conf->percpu =3D alloc_percpu(struct raid5_percpu);
+> +	if (!conf->percpu)
+>  		return -ENOMEM;
+> -	conf->percpu =3D allcpus;
+> +
+> +#ifdef CONFIG_HOTPLUG_CPU
+> +	conf->cpu_notify.notifier_call =3D raid456_cpu_notify;
+> +	conf->cpu_notify.priority =3D 0;
+> +	err =3D register_cpu_notifier(&conf->cpu_notify);
+> +	if (err)
+> +		return err;
+> +#endif
+> =20
+>  	get_online_cpus();
+> -	err =3D 0;
+>  	for_each_present_cpu(cpu) {
+> -		if (conf->level =3D=3D 6) {
+> -			spare_page =3D alloc_page(GFP_KERNEL);
+> -			if (!spare_page) {
+> -				err =3D -ENOMEM;
+> -				break;
+> -			}
+> -			per_cpu_ptr(conf->percpu, cpu)->spare_page =3D spare_page;
+> -		}
+> -		scribble =3D kmalloc(conf->scribble_len, GFP_KERNEL);
+> -		if (!scribble) {
+> -			err =3D -ENOMEM;
+> +		err =3D alloc_scratch_buffer(conf, per_cpu_ptr(conf->percpu, cpu));
+> +		if (err) {
+> +			pr_err("%s: failed memory allocation for cpu%ld\n",
+> +			       __func__, cpu);
+>  			break;
+>  		}
+> -		per_cpu_ptr(conf->percpu, cpu)->scribble =3D scribble;
+>  	}
+> -#ifdef CONFIG_HOTPLUG_CPU
+> -	conf->cpu_notify.notifier_call =3D raid456_cpu_notify;
+> -	conf->cpu_notify.priority =3D 0;
+> -	if (err =3D=3D 0)
+> -		err =3D register_cpu_notifier(&conf->cpu_notify);
+> -#endif
+>  	put_online_cpus();
+> =20
+>  	return err;
 
+
+Looks good, thanks.
+Shall I wait for a signed-of-by from Oleg, then queue it through my md tree?
+
+NeilBrown
+
+--Sig_/8Sh5fJFndN.WKIU2q1H+blD
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIVAwUBUvLhVznsnt1WYoG5AQKFmg//d1Kld0oVg0+dKRhM9dDXkuU3tP4K7Q9W
+DsWITNBfQU/jgGxbp0ggkkIfOHtwKc6D0v1qEHLmvNQDfgq20fnU1msJ6mmbf1/N
+d/CLiEjL8f1rEQeiBbh46xy47lnYHu2nTacG2oUy4X9vowxIQqdyGTYZULdicRi1
+sI+RIjb8T6GgsybeKIxuSmPnltbxCbh9weQ7fENkCj9PfZz58d919Om2WhRk4bcV
+hDCG2Wuxn2CJ9gjbn9D2FrhuvtO8RJ62YXjUSGu2rM3pIihwHMyL2l1GAydsFV/Z
+6r+0lnafTEJH3F02yKjAjD98hfskRg1KxHMkl9pwydtdRJ1P4CtQ+RQqaYhdsGcZ
+ZptvkslUs6znykhvAY8WnBTXH2mrE2fPyfA8ENiBRJNXZ6apfwXZnydcjkYtMx3R
+SQeUu3H83pgEbyVY0/vLLKfs//66KvkNFf2nYZXv9mRcqkWcQWbRb26aF9w9Q/Gx
+usVnr9i+B1D39+2T18di/QvaUhmMYpobMrJfdK0XuOAY4ndfZQHnOoFUxzfguOen
+WBh+yC4cUX6MfqBMHoKwO0QJvGhfsw1hy+03SqAS4zo39X+OBFHKEeQRHtZ9HCEM
+Uggym6ySvNWC3q4/NJlcJ4RclE5qe6i5CYixSJAKVwlXcx5wCO75SIIYph9o1cG+
+YWhf35h9I20=
+=pjqx
+-----END PGP SIGNATURE-----
+
+--Sig_/8Sh5fJFndN.WKIU2q1H+blD--
