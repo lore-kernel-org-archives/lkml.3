@@ -1,82 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756809AbaBFRES (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 12:04:18 -0500
-Received: from fieldses.org ([174.143.236.118]:49264 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756793AbaBFREP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 12:04:15 -0500
-Date: Thu, 6 Feb 2014 12:03:48 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        Miklos Szeredi <mszeredi@suse.cz>, Harshula <hjayasur@redhat.com>,
-        hfuchi@redhat.com, Trond Myklebust <trondmy@gmail.com>
-Subject: Re: [PATCH] dcache: make d_splice_alias use d_materialise_unique
-Message-ID: <20140206170348.GD14575@fieldses.org>
-References: <20140115151749.GF23999@fieldses.org>
- <20140117121723.GA18375@infradead.org>
- <20140117153917.GA26636@fieldses.org>
- <20140117210343.GD26636@fieldses.org>
- <20140117212655.GE26636@fieldses.org>
- <20140123212700.GA30466@fieldses.org>
- <20140131184258.GN10323@ZenIV.linux.org.uk>
- <20140131194758.GA24618@fieldses.org>
+	id S1754578AbaBFRIr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 12:08:47 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:42104 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752027AbaBFRIp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 12:08:45 -0500
+Date: Thu, 6 Feb 2014 14:08:39 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Mike Turquette <mturquette@linaro.org>,
+        linux-kernel@vger.kernel.org,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 0/4] clk: mvebu: fix clk init order
+Message-ID: <20140206170838.GB12542@localhost>
+References: <1390673950-4521-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <20140205183457.GW8533@titan.lakedaemon.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140131194758.GA24618@fieldses.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140205183457.GW8533@titan.lakedaemon.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 31, 2014 at 02:47:58PM -0500, J. Bruce Fields wrote:
-> (Then one remaining thing I don't understand is how to make that fixing
-> up reliable.  Or is there some reason nobody hits the _EBUSY case of
-> __d_unalias?)
+On Wed, Feb 05, 2014 at 01:34:57PM -0500, Jason Cooper wrote:
+> On Sat, Jan 25, 2014 at 07:19:06PM +0100, Sebastian Hesselbarth wrote:
+> > This patch set fixes clk init order that went upside-down with
+> > v3.14. I haven't really investigated what caused this, but I assume
+> > it is related with DT node reordering by addresses.
+> > 
+> > Anyway, with v3.14 for MVEBU SoCs, the clock gating driver gets
+> > registered before core clocks driver. Unfortunately, we cannot
+> > return -EPROBE_DEFER in drivers initialized by clk_of_init. As the
+> > init order for our drivers is always core clocks before clock gating,
+> > we maintain init order ourselves by hooking CLK_OF_DECLARE to one
+> > init function that will register core clocks before clock gating
+> > driver.
+> > 
+> > This patch is based on pre-v3.14-rc1 mainline and should go in as
+> > fixes for it. As we now send MVEBU clk pull-requests to Mike directly,
+> > I suggest Jason picks it up as a topic branch.
+> > 
+> > The patches have been boot tested on Dove and compile-tested only
+> > for Kirkwood, Armada 370 and XP.
+> > 
+> > Sebastian Hesselbarth (4):
+> >   clk: mvebu: armada-370: maintain clock init order
+> >   clk: mvebu: armada-xp: maintain clock init order
+> >   clk: mvebu: dove: maintain clock init order
+> >   clk: mvebu: kirkwood: maintain clock init order
+> > 
+> >  drivers/clk/mvebu/armada-370.c | 21 ++++++++++-----------
+> >  drivers/clk/mvebu/armada-xp.c  | 20 +++++++++-----------
+> >  drivers/clk/mvebu/dove.c       | 19 +++++++++----------
+> >  drivers/clk/mvebu/kirkwood.c   | 34 ++++++++++++++++------------------
+> >  4 files changed, 44 insertions(+), 50 deletions(-)
+> 
+> Whole series applied to mvebu/clk-fixes.
+> 
 
-In fact, a reproducer found thanks to Hideshi Yamaoka:
+FWIW, Tested-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
 
-On server:
-
-	while true; do
-		mv /exports/DIR /exports/TO/DIR
-		mv /exports/TO/DIR /exports/DIR
-	done
-
-On client:
-
-	mount -olookupcache=pos /mnt
-
-	while true; do
-		ls /mnt/TO;
-	done
-
-Also on client:
-
-	while true; do
-		strace -e open cat /mnt/DIR/test.txt 2>&1 | grep EBUSY
-	done
-
-Once all three of those loops are running I hit
-
-	open("/mnt/DIR/test.txt", O_RDONLY)	= -1 EBUSY
-
-very quickly.
-
-The "lookupcache=pos" isn't really necessary but makes the reproducer
-more reliable.
-
-(Originally this was seen on a single client: the client itself was
-doing the renames but also continually killing the second mv.  I suspect
-that means the client sends the RENAME but then fails to update its
-dcache, the result being again that the client's dcache is out of sync
-with the server's tree and hence lookup is stuck trying to grab a dentry
-from another directory.)
-
-Is there some solution short of making ->lookup callers drop the i_mutex
-and retry???
-
---b.
+Observed "division by zero" get fixed by this, on A370 Mirabox, Kirkwood
+Topkick and Dove Cubox.
+-- 
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
