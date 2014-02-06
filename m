@@ -1,133 +1,359 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754496AbaBFT1u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 14:27:50 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:54049 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751336AbaBFT1s (ORCPT
+	id S1756940AbaBFT2e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 14:28:34 -0500
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:60464 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751150AbaBFT2c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 14:27:48 -0500
-Date: Thu, 6 Feb 2014 11:27:43 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-Message-ID: <20140206192743.GH4250@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140206134825.305510953@infradead.org>
- <21984.1391711149@warthog.procyon.org.uk>
- <52F3DA85.1060209@arm.com>
- <20140206185910.GE27276@mudshark.cambridge.arm.com>
+	Thu, 6 Feb 2014 14:28:32 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140206185910.GE27276@mudshark.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14020619-3532-0000-0000-00000553AA4E
+In-Reply-To: <1390339396-3479-55-git-send-email-paul.gortmaker@windriver.com>
+References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com> <1390339396-3479-55-git-send-email-paul.gortmaker@windriver.com>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Thu, 6 Feb 2014 11:28:10 -0800
+Message-ID: <CAK5ve-J+G6yH-E6bde-DXP7vNvdcevrH6nwvkot0n3cGi19WmA@mail.gmail.com>
+Subject: Re: [PATCH 54/73] drivers/leds: delete non-required instances of
+ include <linux/init.h>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 06, 2014 at 06:59:10PM +0000, Will Deacon wrote:
-> On Thu, Feb 06, 2014 at 06:55:01PM +0000, Ramana Radhakrishnan wrote:
-> > On 02/06/14 18:25, David Howells wrote:
-> > >
-> > > Is it worth considering a move towards using C11 atomics and barriers and
-> > > compiler intrinsics inside the kernel?  The compiler _ought_ to be able to do
-> > > these.
-> > 
-> > 
-> > It sounds interesting to me, if we can make it work properly and 
-> > reliably. + gcc@gcc.gnu.org for others in the GCC community to chip in.
-> 
-> Given my (albeit limited) experience playing with the C11 spec and GCC, I
-> really think this is a bad idea for the kernel. It seems that nobody really
-> agrees on exactly how the C11 atomics map to real architectural
-> instructions on anything but the trivial architectures. For example, should
-> the following code fire the assert?
-> 
-> 
-> extern atomic<int> foo, bar, baz;
-> 
-> void thread1(void)
-> {
-> 	foo.store(42, memory_order_relaxed);
-> 	bar.fetch_add(1, memory_order_seq_cst);
-> 	baz.store(42, memory_order_relaxed);
-> }
-> 
-> void thread2(void)
-> {
-> 	while (baz.load(memory_order_seq_cst) != 42) {
-> 		/* do nothing */
-> 	}
-> 
-> 	assert(foo.load(memory_order_seq_cst) == 42);
-> }
-> 
-> 
-> To answer that question, you need to go and look at the definitions of
-> synchronises-with, happens-before, dependency_ordered_before and a whole
-> pile of vaguely written waffle to realise that you don't know. Certainly,
-> the code that arm64 GCC currently spits out would allow the assertion to fire
-> on some microarchitectures.
+On Tue, Jan 21, 2014 at 1:22 PM, Paul Gortmaker
+<paul.gortmaker@windriver.com> wrote:
+> None of these files are actually using any __init type directives
+> and hence don't need to include <linux/init.h>.  Most are just a
+> left over from __devinit and __cpuinit removal, or simply due to
+> code getting copied from one driver to the next.
+>
 
-Yep!  I believe that a memory_order_seq_cst fence in combination with the
-fetch_add() would do the trick on many architectures, however.  All of
-this is one reason that any C11 definitions need to be individually
-overridable by individual architectures.
+I will take this patch. Thanks,
+-Bryan
 
-> There are also so many ways to blow your head off it's untrue. For example,
-> cmpxchg takes a separate memory model parameter for failure and success, but
-> then there are restrictions on the sets you can use for each. It's not hard
-> to find well-known memory-ordering experts shouting "Just use
-> memory_model_seq_cst for everything, it's too hard otherwise". Then there's
-> the fun of load-consume vs load-acquire (arm64 GCC completely ignores consume
-> atm and optimises all of the data dependencies away) as well as the definition
-> of "data races", which seem to be used as an excuse to miscompile a program
-> at the earliest opportunity.
-
-Trust me, rcu_dereference() is not going to be defined in terms of
-memory_order_consume until the compilers implement it both correctly and
-efficiently.  They are not there yet, and there is currently no shortage
-of compiler writers who would prefer to ignore memory_order_consume.
-And rcu_dereference() will need per-arch overrides for some time during
-any transition to memory_order_consume.
-
-> Trying to introduce system concepts (writes to devices, interrupts,
-> non-coherent agents) into this mess is going to be an uphill battle IMHO. I'd
-> just rather stick to the semantics we have and the asm volatile barriers.
-
-And barrier() isn't going to go away any time soon, either.  And
-ACCESS_ONCE() needs to keep volatile semantics until there is some
-memory_order_whatever that prevents loads and stores from being coalesced.
-
-> That's not to say I don't there's no room for improvement in what we have
-> in the kernel. Certainly, I'd welcome allowing more relaxed operations on
-> architectures that support them, but it needs to be something that at least
-> the different architecture maintainers can understand how to implement
-> efficiently behind an uncomplicated interface. I don't think that interface is
-> C11.
-> 
-> Just my thoughts on the matter...
-
-C11 does not provide a good interface for the Linux kernel, nor was it
-intended to do so.  It might provide good implementations for some of
-the atomic ops for some architectures.  This could reduce the amount of
-assembly written for new architectures, and could potentially allow the
-compiler to do a better job of optimizing (scary thought!).  But for this
-to work, that architecture's Linux-kernel maintainer and gcc maintainer
-would need to be working together.
-
-							Thanx, Paul
-
+> Cc: Bryan Wu <cooloney@gmail.com>
+> Cc: Richard Purdie <rpurdie@rpsys.net>
+> Cc: linux-leds@vger.kernel.org
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+> ---
+>  drivers/leds/led-triggers.c       | 1 -
+>  drivers/leds/leds-88pm860x.c      | 1 -
+>  drivers/leds/leds-adp5520.c       | 1 -
+>  drivers/leds/leds-asic3.c         | 1 -
+>  drivers/leds/leds-blinkm.c        | 1 -
+>  drivers/leds/leds-cobalt-qube.c   | 1 -
+>  drivers/leds/leds-da903x.c        | 1 -
+>  drivers/leds/leds-da9052.c        | 1 -
+>  drivers/leds/leds-fsg.c           | 1 -
+>  drivers/leds/leds-gpio.c          | 1 -
+>  drivers/leds/leds-hp6xx.c         | 1 -
+>  drivers/leds/leds-lm3533.c        | 1 -
+>  drivers/leds/leds-lp5521.c        | 1 -
+>  drivers/leds/leds-lp5523.c        | 1 -
+>  drivers/leds/leds-lp5562.c        | 1 -
+>  drivers/leds/leds-lt3593.c        | 1 -
+>  drivers/leds/leds-mc13783.c       | 1 -
+>  drivers/leds/leds-netxbig.c       | 1 -
+>  drivers/leds/leds-ns2.c           | 1 -
+>  drivers/leds/leds-ot200.c         | 1 -
+>  drivers/leds/leds-pwm.c           | 1 -
+>  drivers/leds/leds-s3c24xx.c       | 1 -
+>  drivers/leds/leds-wm831x-status.c | 1 -
+>  drivers/leds/leds-wm8350.c        | 1 -
+>  24 files changed, 24 deletions(-)
+>
+> diff --git a/drivers/leds/led-triggers.c b/drivers/leds/led-triggers.c
+> index e387f41..df1a7c1 100644
+> --- a/drivers/leds/led-triggers.c
+> +++ b/drivers/leds/led-triggers.c
+> @@ -13,7 +13,6 @@
+>
+>  #include <linux/module.h>
+>  #include <linux/kernel.h>
+> -#include <linux/init.h>
+>  #include <linux/list.h>
+>  #include <linux/spinlock.h>
+>  #include <linux/device.h>
+> diff --git a/drivers/leds/leds-88pm860x.c b/drivers/leds/leds-88pm860x.c
+> index 5f588c0..d1e1bca 100644
+> --- a/drivers/leds/leds-88pm860x.c
+> +++ b/drivers/leds/leds-88pm860x.c
+> @@ -11,7 +11,6 @@
+>   */
+>
+>  #include <linux/kernel.h>
+> -#include <linux/init.h>
+>  #include <linux/of.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/i2c.h>
+> diff --git a/drivers/leds/leds-adp5520.c b/drivers/leds/leds-adp5520.c
+> index 7e311a1..86b5bdb 100644
+> --- a/drivers/leds/leds-adp5520.c
+> +++ b/drivers/leds/leds-adp5520.c
+> @@ -15,7 +15,6 @@
+>
+>  #include <linux/module.h>
+>  #include <linux/kernel.h>
+> -#include <linux/init.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/leds.h>
+>  #include <linux/workqueue.h>
+> diff --git a/drivers/leds/leds-asic3.c b/drivers/leds/leds-asic3.c
+> index 6de216a..70c74a7 100644
+> --- a/drivers/leds/leds-asic3.c
+> +++ b/drivers/leds/leds-asic3.c
+> @@ -7,7 +7,6 @@
+>   */
+>
+>  #include <linux/kernel.h>
+> -#include <linux/init.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/leds.h>
+>  #include <linux/slab.h>
+> diff --git a/drivers/leds/leds-blinkm.c b/drivers/leds/leds-blinkm.c
+> index 66d0a57..0c50860 100644
+> --- a/drivers/leds/leds-blinkm.c
+> +++ b/drivers/leds/leds-blinkm.c
+> @@ -18,7 +18,6 @@
+>   */
+>
+>  #include <linux/module.h>
+> -#include <linux/init.h>
+>  #include <linux/slab.h>
+>  #include <linux/jiffies.h>
+>  #include <linux/i2c.h>
+> diff --git a/drivers/leds/leds-cobalt-qube.c b/drivers/leds/leds-cobalt-qube.c
+> index 8abcb66..910339d 100644
+> --- a/drivers/leds/leds-cobalt-qube.c
+> +++ b/drivers/leds/leds-cobalt-qube.c
+> @@ -3,7 +3,6 @@
+>   *
+>   * Control the Cobalt Qube/RaQ front LED
+>   */
+> -#include <linux/init.h>
+>  #include <linux/io.h>
+>  #include <linux/ioport.h>
+>  #include <linux/leds.h>
+> diff --git a/drivers/leds/leds-da903x.c b/drivers/leds/leds-da903x.c
+> index 2a4b87f..35dffb1 100644
+> --- a/drivers/leds/leds-da903x.c
+> +++ b/drivers/leds/leds-da903x.c
+> @@ -14,7 +14,6 @@
+>
+>  #include <linux/module.h>
+>  #include <linux/kernel.h>
+> -#include <linux/init.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/leds.h>
+>  #include <linux/workqueue.h>
+> diff --git a/drivers/leds/leds-da9052.c b/drivers/leds/leds-da9052.c
+> index 865d4fa..01486ad 100644
+> --- a/drivers/leds/leds-da9052.c
+> +++ b/drivers/leds/leds-da9052.c
+> @@ -14,7 +14,6 @@
+>
+>  #include <linux/module.h>
+>  #include <linux/kernel.h>
+> -#include <linux/init.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/leds.h>
+>  #include <linux/workqueue.h>
+> diff --git a/drivers/leds/leds-fsg.c b/drivers/leds/leds-fsg.c
+> index b4d5a44..2b4dc73 100644
+> --- a/drivers/leds/leds-fsg.c
+> +++ b/drivers/leds/leds-fsg.c
+> @@ -16,7 +16,6 @@
+>   */
+>
+>  #include <linux/kernel.h>
+> -#include <linux/init.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/leds.h>
+>  #include <linux/module.h>
+> diff --git a/drivers/leds/leds-gpio.c b/drivers/leds/leds-gpio.c
+> index 78b0e27..3f65a08 100644
+> --- a/drivers/leds/leds-gpio.c
+> +++ b/drivers/leds/leds-gpio.c
+> @@ -11,7 +11,6 @@
+>   *
+>   */
+>  #include <linux/kernel.h>
+> -#include <linux/init.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/gpio.h>
+>  #include <linux/leds.h>
+> diff --git a/drivers/leds/leds-hp6xx.c b/drivers/leds/leds-hp6xx.c
+> index 366b605..d61a988 100644
+> --- a/drivers/leds/leds-hp6xx.c
+> +++ b/drivers/leds/leds-hp6xx.c
+> @@ -12,7 +12,6 @@
+>
+>  #include <linux/module.h>
+>  #include <linux/kernel.h>
+> -#include <linux/init.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/leds.h>
+>  #include <asm/hd64461.h>
+> diff --git a/drivers/leds/leds-lm3533.c b/drivers/leds/leds-lm3533.c
+> index 027ede7..e2c642c11 100644
+> --- a/drivers/leds/leds-lm3533.c
+> +++ b/drivers/leds/leds-lm3533.c
+> @@ -12,7 +12,6 @@
+>   */
+>
+>  #include <linux/module.h>
+> -#include <linux/init.h>
+>  #include <linux/leds.h>
+>  #include <linux/mfd/core.h>
+>  #include <linux/mutex.h>
+> diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
+> index 2ec34cf..8ca197a 100644
+> --- a/drivers/leds/leds-lp5521.c
+> +++ b/drivers/leds/leds-lp5521.c
+> @@ -25,7 +25,6 @@
+>  #include <linux/delay.h>
+>  #include <linux/firmware.h>
+>  #include <linux/i2c.h>
+> -#include <linux/init.h>
+>  #include <linux/leds.h>
+>  #include <linux/module.h>
+>  #include <linux/mutex.h>
+> diff --git a/drivers/leds/leds-lp5523.c b/drivers/leds/leds-lp5523.c
+> index 4ade66a..cb5ed82 100644
+> --- a/drivers/leds/leds-lp5523.c
+> +++ b/drivers/leds/leds-lp5523.c
+> @@ -25,7 +25,6 @@
+>  #include <linux/delay.h>
+>  #include <linux/firmware.h>
+>  #include <linux/i2c.h>
+> -#include <linux/init.h>
+>  #include <linux/leds.h>
+>  #include <linux/module.h>
+>  #include <linux/mutex.h>
+> diff --git a/drivers/leds/leds-lp5562.c b/drivers/leds/leds-lp5562.c
+> index bf006f4..315d3ca 100644
+> --- a/drivers/leds/leds-lp5562.c
+> +++ b/drivers/leds/leds-lp5562.c
+> @@ -13,7 +13,6 @@
+>  #include <linux/delay.h>
+>  #include <linux/firmware.h>
+>  #include <linux/i2c.h>
+> -#include <linux/init.h>
+>  #include <linux/leds.h>
+>  #include <linux/module.h>
+>  #include <linux/mutex.h>
+> diff --git a/drivers/leds/leds-lt3593.c b/drivers/leds/leds-lt3593.c
+> index 3417e5b..059f5b1 100644
+> --- a/drivers/leds/leds-lt3593.c
+> +++ b/drivers/leds/leds-lt3593.c
+> @@ -17,7 +17,6 @@
+>   */
+>
+>  #include <linux/kernel.h>
+> -#include <linux/init.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/leds.h>
+>  #include <linux/workqueue.h>
+> diff --git a/drivers/leds/leds-mc13783.c b/drivers/leds/leds-mc13783.c
+> index ca87a1b..dca34c7 100644
+> --- a/drivers/leds/leds-mc13783.c
+> +++ b/drivers/leds/leds-mc13783.c
+> @@ -17,7 +17,6 @@
+>
+>  #include <linux/module.h>
+>  #include <linux/kernel.h>
+> -#include <linux/init.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/leds.h>
+>  #include <linux/workqueue.h>
+> diff --git a/drivers/leds/leds-netxbig.c b/drivers/leds/leds-netxbig.c
+> index 2f9f141..e97f443 100644
+> --- a/drivers/leds/leds-netxbig.c
+> +++ b/drivers/leds/leds-netxbig.c
+> @@ -21,7 +21,6 @@
+>   */
+>
+>  #include <linux/module.h>
+> -#include <linux/init.h>
+>  #include <linux/irq.h>
+>  #include <linux/slab.h>
+>  #include <linux/spinlock.h>
+> diff --git a/drivers/leds/leds-ns2.c b/drivers/leds/leds-ns2.c
+> index c7a4230..efa6258 100644
+> --- a/drivers/leds/leds-ns2.c
+> +++ b/drivers/leds/leds-ns2.c
+> @@ -23,7 +23,6 @@
+>   */
+>
+>  #include <linux/kernel.h>
+> -#include <linux/init.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/slab.h>
+>  #include <linux/gpio.h>
+> diff --git a/drivers/leds/leds-ot200.c b/drivers/leds/leds-ot200.c
+> index 98cae52..c9d9060 100644
+> --- a/drivers/leds/leds-ot200.c
+> +++ b/drivers/leds/leds-ot200.c
+> @@ -8,7 +8,6 @@
+>   */
+>
+>  #include <linux/kernel.h>
+> -#include <linux/init.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/slab.h>
+>  #include <linux/leds.h>
+> diff --git a/drivers/leds/leds-pwm.c b/drivers/leds/leds-pwm.c
+> index 6050474..dd17873 100644
+> --- a/drivers/leds/leds-pwm.c
+> +++ b/drivers/leds/leds-pwm.c
+> @@ -14,7 +14,6 @@
+>
+>  #include <linux/module.h>
+>  #include <linux/kernel.h>
+> -#include <linux/init.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/of_platform.h>
+>  #include <linux/fb.h>
+> diff --git a/drivers/leds/leds-s3c24xx.c b/drivers/leds/leds-s3c24xx.c
+> index 98174e7..28988b7 100644
+> --- a/drivers/leds/leds-s3c24xx.c
+> +++ b/drivers/leds/leds-s3c24xx.c
+> @@ -12,7 +12,6 @@
+>  */
+>
+>  #include <linux/kernel.h>
+> -#include <linux/init.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/leds.h>
+>  #include <linux/gpio.h>
+> diff --git a/drivers/leds/leds-wm831x-status.c b/drivers/leds/leds-wm831x-status.c
+> index 0a1a13f..e72c974 100644
+> --- a/drivers/leds/leds-wm831x-status.c
+> +++ b/drivers/leds/leds-wm831x-status.c
+> @@ -10,7 +10,6 @@
+>   */
+>
+>  #include <linux/kernel.h>
+> -#include <linux/init.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/slab.h>
+>  #include <linux/leds.h>
+> diff --git a/drivers/leds/leds-wm8350.c b/drivers/leds/leds-wm8350.c
+> index 3f75fd2..4133ffe 100644
+> --- a/drivers/leds/leds-wm8350.c
+> +++ b/drivers/leds/leds-wm8350.c
+> @@ -10,7 +10,6 @@
+>   */
+>
+>  #include <linux/kernel.h>
+> -#include <linux/init.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/leds.h>
+>  #include <linux/err.h>
+> --
+> 1.8.4.1
+>
