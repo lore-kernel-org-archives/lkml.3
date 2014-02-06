@@ -1,185 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756349AbaBFMJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 07:09:27 -0500
-Received: from www84.your-server.de ([213.133.104.84]:48562 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752062AbaBFMJZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 07:09:25 -0500
-Message-ID: <1391688600.29423.15.camel@wall-e.seibold.net>
-Subject: Re: [PATCH v12 9/9] Add 32 bit VDSO time support for 64 bit kernel
-From: Stefani Seibold <stefani@seibold.net>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
-        Andreas.Brief@rohde-schwarz.com
-Date: Thu, 06 Feb 2014 13:10:00 +0100
-In-Reply-To: <CALCETrUx7iSquojTuYzoVZ_Pbi8NW7Wvs-CXSh3GEjMd-diRKQ@mail.gmail.com>
-References: <1391588404-28147-1-git-send-email-stefani@seibold.net>
-	 <1391588404-28147-10-git-send-email-stefani@seibold.net>
-	 <CALCETrUx7iSquojTuYzoVZ_Pbi8NW7Wvs-CXSh3GEjMd-diRKQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: stefani@seibold.net
+	id S932376AbaBFMO0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 07:14:26 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:55794 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751433AbaBFMOY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 07:14:24 -0500
+Date: Thu, 6 Feb 2014 17:44:10 +0530
+From: Gautham R Shenoy <ego@linux.vnet.ibm.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: ego@linux.vnet.ibm.com, paulus@samba.org, oleg@redhat.com,
+        rusty@rustcorp.com.au, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, mingo@kernel.org,
+        paulmck@linux.vnet.ibm.com, tj@kernel.org, walken@google.com,
+        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/51] CPU hotplug: Fix issues with callback registration
+Message-ID: <20140206121410.GA30676@in.ibm.com>
+Reply-To: ego@linux.vnet.ibm.com
+References: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com>
+ <20140206093833.GA8105@in.ibm.com>
+ <52F36C41.2070700@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52F36C41.2070700@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14020612-0320-0000-0000-00000265943A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, den 05.02.2014, 14:01 -0800 schrieb Andy Lutomirski:
-> On Wed, Feb 5, 2014 at 12:20 AM,  <stefani@seibold.net> wrote:
-> > From: Stefani Seibold <stefani@seibold.net>
-> >
-> > This patch add the VDSO time support for the IA32 Emulation Layer.
-> >
-> > Due the nature of the kernel headers and the LP64 compiler where the
-> > size of a long and a pointer differs against a 32 bit compiler, there
-> > is some type hacking necessary.
-> >
-> > The vsyscall_gtod_data struture must be a little bit rearranged, to
-> > serve 32- and 64-bit code access:
-> >
-> > - The seqcount_t was replaced by an unsigned, this makes the
-> >   vsyscall_gtod_data intedepend of kernel configuration and internal functions.
-> > - The structure is now packed, so it can accessed from 32- und 64- bit
-> >   code at the same time.
-> > - The inner struct clock was removed, to make packing of the while
-> >   struct easier.
-> >
-> > The "unsigned seq" would be handled by functions derivated from seqcount_t.
-> >
-> > Signed-off-by: Stefani Seibold <stefani@seibold.net>
-> > ---
-> >  arch/x86/include/asm/vgtod.h          |  20 +++---
-> >  arch/x86/kernel/vsyscall_gtod.c       |  26 +++++--
-> >  arch/x86/vdso/vclock_gettime.c        | 129 ++++++++++++++++++++++++----------
-> >  arch/x86/vdso/vdso32/vclock_gettime.c |  11 +++
-> >  include/uapi/linux/time.h             |   2 +-
-> >  5 files changed, 132 insertions(+), 56 deletions(-)
-> >
-> > diff --git a/arch/x86/include/asm/vgtod.h b/arch/x86/include/asm/vgtod.h
-> > index 46e24d3..2567b02 100644
-> > --- a/arch/x86/include/asm/vgtod.h
-> > +++ b/arch/x86/include/asm/vgtod.h
-> > @@ -4,16 +4,18 @@
-> >  #include <asm/vsyscall.h>
-> >  #include <linux/clocksource.h>
-> >
-> > -struct vsyscall_gtod_data {
-> > -       seqcount_t      seq;
-> > +/*
-> > + * vsyscall_gtod_data will be accessed by 32 and 64 bit code at the same time
-> > + * so the structure must be packed
-> > + */
-> > +struct __attribute__((packed)) vsyscall_gtod_data {
-> > +       unsigned seq;
+On Thu, Feb 06, 2014 at 04:34:33PM +0530, Srivatsa S. Bhat wrote:
+> > 
+> > CPU_POST_DEAD notification, is invoked with the cpu_hotplug.lock
+> > dropped. This was necessary for subsystems which would be waiting for
+> > some other thread to finish some work, and that other thread could
+> > invoke get_online_cpus(). If CPU_POST_DEAD notification were issued
+> > without dropping the cpu_hotplug.lock, this would lead to a deadlock
+> > as the notifier would be left stuck waiting for the thread which is
+> > blocked in get_online_cpus().
+> > 
+> > It was introduced to ensure that multithreaded workqueues can safely
+> > use get_online_cpus() [https://lkml.org/lkml/2008/6/29/121].
+> > 
+> > As of now, only two subsystems use this notification and workqueues is
+> > _not_ one of them!
+> >   * arch/x86/kernel/cpu/mcheck/mce.c:mce_cpu_callback()
+> >   * drivers/cpufreq/cpufreq.c:cpufreq_cpu_callback()
+> > I haven't yet audited these two cases to see if they really need this
+> > to be handled in CPU_POST_DEAD or if they can be handled in CPU_DEAD.
+> > 
 > 
-> Is that actually true?  At least in the part you're changing,
-> everything looks like it's aligned correctly.
-> 
+> Well, cpufreq had a legitimate need to use POST_DEAD to avoid the
+> deadlock described in commit 1aee40ac9c. However, there had been some
+> discussion some time ago about reorganizing the cpufreq's hotplug callback
+> so as to move most (but not all) of its work outside of POST_DEAD [1].
+> But as it stands, I don't think it would be easy to totally get rid of
+> cpufreq's dependence on the POST_DEAD notifier.
+>
 
-Yes, i know. But for convenient this is less error prone when modifying
-the structure. I can kick it out if you insist.
+Right, I see the reason why cpufreq needs POST_DEAD.
  
-> It's almost certainly having some kind of BUILD_BUG_ON that will catch
-> the case where this structure's size changes.  I suspect that some
-> kind of asm-offsets magic can be used for this.
+> Besides, I think its good to retain the POST_DEAD notifier option in
+> the CPU hotplug core code. It has come handy several times to fix hard
+> deadlock issues.
 > 
 
-This kind af ASM magic wan't work, because the code will be compiled
-with -m32 for a 32 bit VDSO but will access a structure generated with a
-64 bit compiler.
+I know. I am not denying the usefulness of POST_DEAD. But the fact
+that some of the CPU_* notifiers are invoked with the cpu_hotplug.lock
+held while CPU_POST_DEAD is invoked with the lock dropped looks a bit
+asymmetrical. At the moment I cannot think of a simpler alternative.
 
-> >
-> > -       struct { /* extract of a clocksource struct */
-> > -               int vclock_mode;
-> > -               cycle_t cycle_last;
-> > -               cycle_t mask;
-> > -               u32     mult;
-> > -               u32     shift;
-> > -       } clock;
-> > +       int vclock_mode;
-> > +       cycle_t cycle_last;
-> > +       cycle_t mask;
-> > +       u32     mult;
-> > +       u32     shift;
-> >
-> >         /* open coded 'struct timespec' */
-> >         time_t          wall_time_sec;
-> > diff --git a/arch/x86/kernel/vsyscall_gtod.c b/arch/x86/kernel/vsyscall_gtod.c
-> > index 91862a4..ca48248 100644
-> > --- a/arch/x86/kernel/vsyscall_gtod.c
-> > +++ b/arch/x86/kernel/vsyscall_gtod.c
-> > @@ -16,6 +16,18 @@
-> >
-> >  DEFINE_VVAR(struct vsyscall_gtod_data, vsyscall_gtod_data);
-> >
-> > +static inline void gtod_write_begin(unsigned *s)
-> > +{
-> > +       ++*s;
-> > +       smp_wmb();
-> > +}
-> > +
-> > +static inline void gtod_write_end(unsigned *s)
-> > +{
-> > +       smp_wmb();
-> > +       ++*s;
-> > +}
-> > +
+
+> > Also can we have an alternate API, something like
+> > cpu_hotplug_register_begin/end() instead of reusing
+> > cpu_maps_update_begin/end() for this usage, since in most of the
+> > patches that follow, we're not touching the any of the cpu_*_maps!
+> > 
 > 
-> Someone else should probably comment on the style for this.  Maybe
-> this should live in a header somewhere.  IMO if it's called
-> gtod_write_begin, it should take a pointer to gtod as a parameter.
+> Yes, the function names cpu_maps_update_begin/end() don't really suit
+> the kind of usage I'm proposing in this patchset, and hence is kind of
+> a misnomer. For better readability, I'm thinking of defining a macro
+> such as say, cpu_hotplug_notifier_lock()/unlock() that redirects to
+> cpu_maps_update_begin/end() respectively. That way, we can export just
+> those former symbols for use by modules, and thereby the code would look
+> more intuitive, like this:
+> 
+> 	cpu_hotplug_notifier_lock();
+> 
+> 	for_each_online_cpu(cpu)
+> 		init_cpu(cpu);
+> 
+> 	/* This doesn't take the cpu_add_remove_lock */
+> 	__register_cpu_notifier(&foobar_cpu_notifier);
+> 
+> 	cpu_hotplug_notifier_unlock();
+> 
+> What do you think?
+
+Sounds good.
+> 
+> Regards,
+> Srivatsa S. Bhat
 > 
 
-Fixed in the next version.
-
-> 
-> > +struct api_timeval {
-> > +       long    tv_sec;         /* seconds */
-> > +       long    tv_usec;        /* microseconds */
-> > +};
-> > +
-> > +struct api_timespec {
-> > +       long    tv_sec;         /* seconds */
-> > +       long    tv_nsec;        /* nanoseconds */
-> > +};
-> 
-> Did you address my question about why there are two versions of this?
-> Shouldn't it just match the userspace headers regardless of what the
-> host kernel is?
-> 
-
-Again, -m32 compilation. The timeval and timespec are __kernel_long_t,
-which is defined as "long long" in a case of 32 bit VDSO for 64 bit
-kernel.
-
-The vsyscall_gtod_data use the kernel defined timeval and timespec, so
-for 32 bit a conversation is needed.
-
-The only way to prevent this kind of hack is to replace the struct
-timespec and time_t members of vsyscall_gtod_data by a compiler independ
-definition.
-
-In this case it would be also necessary to have an own copy of
-timespec_add_ns() function for the VDSO.
-
-> You have *still* not responded to my objection to the unconditional fixmaps.
-> 
-
-I have responded this objection on monday. If i enable the sysctl
-interface i need this mapping too.
-
-- Stefani
-
+Thanks and Regards
+gautham.
 
