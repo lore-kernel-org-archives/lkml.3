@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932259AbaBFFvj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 00:51:39 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:39596 "EHLO arroyo.ext.ti.com"
+	id S932180AbaBFFvh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 00:51:37 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:46955 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752503AbaBFFvD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 00:51:03 -0500
+	id S1752407AbaBFFu7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 00:50:59 -0500
 From: Keerthy <j-keerthy@ti.com>
 To: <rob.herring@calxeda.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
         <swarren@wwwdotorg.org>, <ijc+devicetree@hellion.org.uk>,
@@ -14,9 +14,9 @@ To: <rob.herring@calxeda.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
 CC: <j-keerthy@ti.com>, <devicetree@vger.kernel.org>,
         <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-omap@vger.kernel.org>
-Subject: [PATCH v2 3/4] Regulators: TPS65218: Add Regulator driver for TPS65218 PMIC
-Date: Thu, 6 Feb 2014 11:20:13 +0530
-Message-ID: <1391665814-18814-4-git-send-email-j-keerthy@ti.com>
+Subject: [PATCH v2 2/4] MFD: TPS65218: Add driver for the TPS65218 PMIC
+Date: Thu, 6 Feb 2014 11:20:12 +0530
+Message-ID: <1391665814-18814-3-git-send-email-j-keerthy@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1391665814-18814-1-git-send-email-j-keerthy@ti.com>
 References: <1391665814-18814-1-git-send-email-j-keerthy@ti.com>
@@ -26,62 +26,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for TPS65218 PMIC regulators.
+The TPS65218 chip is a power management IC for Portable Navigation Systems
+and Tablet Computing devices. It contains the following components:
 
-The regulators set consists of 6 DCDCs and 1 LDO. The output
-voltages are configurable and are meant to supply power to the
-main processor and other components.
+ - Regulators.
+ - Over Temperature warning and Shut down.
+
+This patch adds support for tps65218 mfd device. At this time only
+the regulator functionality is made available.
 
 Signed-off-by: Keerthy <j-keerthy@ti.com>
 ---
- drivers/regulator/Kconfig              |    9 +
- drivers/regulator/Makefile             |    1 +
- drivers/regulator/tps65218-regulator.c |  304 ++++++++++++++++++++++++++++++++
- 3 files changed, 314 insertions(+)
- create mode 100644 drivers/regulator/tps65218-regulator.c
+ drivers/mfd/Kconfig          |   15 +++
+ drivers/mfd/Makefile         |    1 +
+ drivers/mfd/tps65218.c       |  281 +++++++++++++++++++++++++++++++++++++++++
+ include/linux/mfd/tps65218.h |  284 ++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 581 insertions(+)
+ create mode 100644 drivers/mfd/tps65218.c
+ create mode 100644 include/linux/mfd/tps65218.h
 
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index 6a79328..b05da880 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -513,6 +513,15 @@ config REGULATOR_TPS65217
- 	  voltage regulators. It supports software based voltage control
- 	  for different voltage domains
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 49bb445..de55e41 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -853,6 +853,21 @@ config MFD_TPS65217
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called tps65217.
  
-+config REGULATOR_TPS65218
-+	tristate "TI TPS65218 Power regulators"
-+	depends on MFD_TPS65218
++config MFD_TPS65218
++	tristate "TI TPS65218 Power Management chips"
++	depends on I2C
++	select MFD_CORE
++	select REGMAP_I2C
 +	help
-+	  This driver supports TPS65218 voltage regulator chips. TPS65218
-+	  provides six step-down converters and one general-purpose LDO
-+	  voltage regulators. It supports software based voltage control
-+	  for different voltage domains
++	  If you say yes here you get support for the TPS65218 series of
++	  Power Management chips.
++	  These include voltage regulators, gpio and other features
++	  that are often used in portable devices. Only regulator
++	  component is currently supported.
 +
- config REGULATOR_TPS6524X
- 	tristate "TI TPS6524X Power regulators"
- 	depends on SPI
-diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
-index 979f9dd..ba801a5 100644
---- a/drivers/regulator/Makefile
-+++ b/drivers/regulator/Makefile
-@@ -67,6 +67,7 @@ obj-$(CONFIG_REGULATOR_TPS65023) += tps65023-regulator.o
- obj-$(CONFIG_REGULATOR_TPS6507X) += tps6507x-regulator.o
- obj-$(CONFIG_REGULATOR_TPS65090) += tps65090-regulator.o
- obj-$(CONFIG_REGULATOR_TPS65217) += tps65217-regulator.o
-+obj-$(CONFIG_REGULATOR_TPS65218) += tps65218-regulator.o
- obj-$(CONFIG_REGULATOR_TPS6524X) += tps6524x-regulator.o
- obj-$(CONFIG_REGULATOR_TPS6586X) += tps6586x-regulator.o
- obj-$(CONFIG_REGULATOR_TPS65910) += tps65910-regulator.o
-diff --git a/drivers/regulator/tps65218-regulator.c b/drivers/regulator/tps65218-regulator.c
++	  This driver can also be built as a module.  If so, the module
++	  will be called tps65218.
++
+ config MFD_TPS6586X
+ 	bool "TI TPS6586x Power Management chips"
+ 	depends on I2C=y
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index 5aea5ef..e1f7279 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -62,6 +62,7 @@ obj-$(CONFIG_TPS6105X)		+= tps6105x.o
+ obj-$(CONFIG_TPS65010)		+= tps65010.o
+ obj-$(CONFIG_TPS6507X)		+= tps6507x.o
+ obj-$(CONFIG_MFD_TPS65217)	+= tps65217.o
++obj-$(CONFIG_MFD_TPS65218)	+= tps65218.o
+ obj-$(CONFIG_MFD_TPS65910)	+= tps65910.o
+ tps65912-objs                   := tps65912-core.o tps65912-irq.o
+ obj-$(CONFIG_MFD_TPS65912)	+= tps65912.o
+diff --git a/drivers/mfd/tps65218.c b/drivers/mfd/tps65218.c
 new file mode 100644
-index 0000000..39fb189
+index 0000000..02679ac
 --- /dev/null
-+++ b/drivers/regulator/tps65218-regulator.c
-@@ -0,0 +1,304 @@
++++ b/drivers/mfd/tps65218.c
+@@ -0,0 +1,281 @@
 +/*
-+ * tps65218-regulator.c
-+ *
-+ * Regulator driver for TPS65218 PMIC
++ * Driver for TPS65218 Integrated power management chipsets
 + *
 + * Copyright (C) 2014 Texas Instruments Incorporated - http://www.ti.com/
 + *
@@ -96,292 +105,561 @@ index 0000000..39fb189
 + */
 +
 +#include <linux/kernel.h>
-+#include <linux/module.h>
 +#include <linux/device.h>
-+#include <linux/init.h>
-+#include <linux/err.h>
++#include <linux/module.h>
 +#include <linux/platform_device.h>
++#include <linux/init.h>
++#include <linux/i2c.h>
++#include <linux/slab.h>
++#include <linux/regmap.h>
++#include <linux/err.h>
++#include <linux/of.h>
 +#include <linux/of_device.h>
-+#include <linux/regulator/of_regulator.h>
-+#include <linux/regulator/driver.h>
-+#include <linux/regulator/machine.h>
++#include <linux/irq.h>
++#include <linux/interrupt.h>
++#include <linux/mutex.h>
++
++#include <linux/mfd/core.h>
 +#include <linux/mfd/tps65218.h>
 +
-+static unsigned int tps65218_ramp_delay = 4000;
++#define TPS65218_PASSWORD_REGS_UNLOCK   0x7D
 +
-+enum tps65218_regulators { DCDC1, DCDC2, DCDC3, DCDC4, DCDC5, DCDC6, LDO1 };
++/**
++ * tps65218_reg_read: Read a single tps65218 register.
++ *
++ * @tps: Device to read from.
++ * @reg: Register to read.
++ * @val: Contians the value
++ */
++int tps65218_reg_read(struct tps65218 *tps, unsigned int reg,
++			unsigned int *val)
++{
++	return regmap_read(tps->regmap, reg, val);
++}
++EXPORT_SYMBOL_GPL(tps65218_reg_read);
 +
-+#define TPS65218_REGULATOR(_name, _id, _ops, _n, _vr, _vm, _er, _em, _t, \
-+			    _lr, _nlr)				\
-+	{							\
-+		.name			= _name,		\
-+		.id			= _id,			\
-+		.ops			= &_ops,		\
-+		.n_voltages		= _n,			\
-+		.type			= REGULATOR_VOLTAGE,	\
-+		.owner			= THIS_MODULE,		\
-+		.vsel_reg		= _vr,			\
-+		.vsel_mask		= _vm,			\
-+		.enable_reg		= _er,			\
-+		.enable_mask		= _em,			\
-+		.volt_table		= _t,			\
-+		.linear_ranges		= _lr,			\
-+		.n_linear_ranges	= _nlr,			\
-+	}							\
-+
-+#define TPS65218_INFO(_id, _nm, _min, _max)	\
-+	{						\
-+		.id		= _id,			\
-+		.name		= _nm,			\
-+		.min_uV		= _min,			\
-+		.max_uV		= _max,			\
-+	}
-+
-+static const struct regulator_linear_range dcdc1_dcdc2_ranges[] = {
-+	REGULATOR_LINEAR_RANGE(850000, 0x0, 0x32, 10000),
-+	REGULATOR_LINEAR_RANGE(1375000, 0x33, 0x3f, 25000),
-+};
-+
-+static const struct regulator_linear_range ldo1_dcdc3_ranges[] = {
-+	REGULATOR_LINEAR_RANGE(900000, 0x0, 0x1a, 25000),
-+	REGULATOR_LINEAR_RANGE(1600000, 0x1b, 0x3f, 50000),
-+};
-+
-+static const struct regulator_linear_range dcdc4_ranges[] = {
-+	REGULATOR_LINEAR_RANGE(1175000, 0x0, 0xf, 25000),
-+	REGULATOR_LINEAR_RANGE(1550000, 0x10, 0x34, 50000),
-+};
-+
-+static struct tps_info tps65218_pmic_regs[] = {
-+	TPS65218_INFO(0, "DCDC1", 850000, 167500),
-+	TPS65218_INFO(1, "DCDC2", 850000, 1675000),
-+	TPS65218_INFO(2, "DCDC3", 900000, 3400000),
-+	TPS65218_INFO(3, "DCDC4", 1175000, 3400000),
-+	TPS65218_INFO(4, "DCDC5", 1000000, 1000000),
-+	TPS65218_INFO(5, "DCDC6", 1800000, 1800000),
-+	TPS65218_INFO(6, "LDO1", 900000, 3400000),
-+};
-+
-+#define TPS65218_OF_MATCH(comp, label) \
-+	{ \
-+		.compatible = comp, \
-+		.data = &label, \
-+	}
-+
-+static const struct of_device_id tps65218_of_match[] = {
-+	TPS65218_OF_MATCH("ti,tps65218-dcdc1", tps65218_pmic_regs[DCDC1]),
-+	TPS65218_OF_MATCH("ti,tps65218-dcdc2", tps65218_pmic_regs[DCDC2]),
-+	TPS65218_OF_MATCH("ti,tps65218-dcdc3", tps65218_pmic_regs[DCDC3]),
-+	TPS65218_OF_MATCH("ti,tps65218-dcdc4", tps65218_pmic_regs[DCDC4]),
-+	TPS65218_OF_MATCH("ti,tps65218-dcdc5", tps65218_pmic_regs[DCDC5]),
-+	TPS65218_OF_MATCH("ti,tps65218-dcdc6", tps65218_pmic_regs[DCDC6]),
-+	TPS65218_OF_MATCH("ti,tps65218-ldo1", tps65218_pmic_regs[LDO1]),
-+};
-+MODULE_DEVICE_TABLE(of, tps65218_of_match);
-+
-+static int tps65218_pmic_set_voltage_sel(struct regulator_dev *dev,
-+					 unsigned selector)
++/**
++ * tps65218_reg_write: Write a single tps65218 register.
++ *
++ * @tps65218: Device to write to.
++ * @reg: Register to write to.
++ * @val: Value to write.
++ * @level: Password protected level
++ */
++int tps65218_reg_write(struct tps65218 *tps, unsigned int reg,
++			unsigned int val, unsigned int level)
 +{
 +	int ret;
-+	struct tps65218 *tps = rdev_get_drvdata(dev);
-+	unsigned int rid = rdev_get_id(dev);
++	unsigned int xor_reg_val;
 +
-+	/* Set the voltage based on vsel value and write protect level is 2 */
-+	ret = tps65218_set_bits(tps, dev->desc->vsel_reg, dev->desc->vsel_mask,
-+				selector, TPS65218_PROTECT_L1);
++	switch (level) {
++	case TPS65218_PROTECT_NONE:
++		return regmap_write(tps->regmap, reg, val);
++	case TPS65218_PROTECT_L1:
++		xor_reg_val = reg ^ TPS65218_PASSWORD_REGS_UNLOCK;
++		ret = regmap_write(tps->regmap, TPS65218_REG_PASSWORD,
++							xor_reg_val);
++		if (ret < 0)
++			return ret;
 +
-+	/* Set GO bit for DCDC1/2 to initiate voltage transistion */
-+	switch (rid) {
-+	case TPS65218_DCDC_1:
-+	case TPS65218_DCDC_2:
-+		ret = tps65218_set_bits(tps, TPS65218_REG_CONTRL_SLEW_RATE,
-+					TPS65218_SLEW_RATE_GO,
-+					TPS65218_SLEW_RATE_GO,
-+					TPS65218_PROTECT_L1);
-+		break;
++		return regmap_write(tps->regmap, reg, val);
++	default:
++		return -EINVAL;
 +	}
++}
++EXPORT_SYMBOL_GPL(tps65218_reg_write);
++
++/**
++ * tps65218_update_bits: Modify bits w.r.t mask, val and level.
++ *
++ * @tps65218: Device to write to.
++ * @reg: Register to read-write to.
++ * @mask: Mask.
++ * @val: Value to write.
++ * @level: Password protected level
++ */
++static int tps65218_update_bits(struct tps65218 *tps, unsigned int reg,
++		unsigned int mask, unsigned int val, unsigned int level)
++{
++	int ret;
++	unsigned int data;
++
++	ret = tps65218_reg_read(tps, reg, &data);
++	if (ret) {
++		dev_err(tps->dev, "Read from reg 0x%x failed\n", reg);
++		return ret;
++	}
++
++	data &= ~mask;
++	data |= val & mask;
++
++	mutex_lock(&tps->tps_lock);
++	ret = tps65218_reg_write(tps, reg, data, level);
++	if (ret)
++		dev_err(tps->dev, "Write for reg 0x%x failed\n", reg);
++	mutex_unlock(&tps->tps_lock);
 +
 +	return ret;
 +}
 +
-+static int tps65218_pmic_enable(struct regulator_dev *dev)
++int tps65218_set_bits(struct tps65218 *tps, unsigned int reg,
++		unsigned int mask, unsigned int val, unsigned int level)
 +{
-+	struct tps65218 *tps = rdev_get_drvdata(dev);
-+	unsigned int rid = rdev_get_id(dev);
-+
-+	if (rid < TPS65218_DCDC_1 || rid > TPS65218_LDO_1)
-+		return -EINVAL;
-+
-+	/* Enable the regulator and password protection is level 1 */
-+	return tps65218_set_bits(tps, dev->desc->enable_reg,
-+				 dev->desc->enable_mask, dev->desc->enable_mask,
-+				 TPS65218_PROTECT_L1);
++	return tps65218_update_bits(tps, reg, mask, val, level);
 +}
++EXPORT_SYMBOL_GPL(tps65218_set_bits);
 +
-+static int tps65218_pmic_disable(struct regulator_dev *dev)
++int tps65218_clear_bits(struct tps65218 *tps, unsigned int reg,
++		unsigned int mask, unsigned int level)
 +{
-+	struct tps65218 *tps = rdev_get_drvdata(dev);
-+	unsigned int rid = rdev_get_id(dev);
-+
-+	if (rid < TPS65218_DCDC_1 || rid > TPS65218_LDO_1)
-+		return -EINVAL;
-+
-+	/* Disable the regulator and password protection is level 1 */
-+	return tps65218_clear_bits(tps, dev->desc->enable_reg,
-+				   dev->desc->enable_mask, TPS65218_PROTECT_L1);
++	return tps65218_update_bits(tps, reg, mask, 0, level);
 +}
++EXPORT_SYMBOL_GPL(tps65218_clear_bits);
 +
-+static int tps65218_set_voltage_time_sel(struct regulator_dev *rdev,
-+	unsigned int old_selector, unsigned int new_selector)
-+{
-+	int old_uv, new_uv;
-+
-+	old_uv = regulator_list_voltage_linear_range(rdev, old_selector);
-+	if (old_uv < 0)
-+		return old_uv;
-+
-+	new_uv = regulator_list_voltage_linear_range(rdev, new_selector);
-+	if (new_uv < 0)
-+		return new_uv;
-+
-+	return DIV_ROUND_UP(abs(old_uv - new_uv), tps65218_ramp_delay);
-+}
-+
-+/* Operations permitted on DCDC1, DCDC2 */
-+static struct regulator_ops tps65218_dcdc12_ops = {
-+	.is_enabled		= regulator_is_enabled_regmap,
-+	.enable			= tps65218_pmic_enable,
-+	.disable		= tps65218_pmic_disable,
-+	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
-+	.set_voltage_sel	= tps65218_pmic_set_voltage_sel,
-+	.list_voltage		= regulator_list_voltage_linear_range,
-+	.map_voltage		= regulator_map_voltage_linear_range,
-+	.set_voltage_time_sel	= tps65218_set_voltage_time_sel,
++static struct regmap_config tps65218_regmap_config = {
++	.reg_bits = 8,
++	.val_bits = 8,
++	.cache_type = REGCACHE_RBTREE,
 +};
 +
-+/* Operations permitted on DCDC3, DCDC4 and LDO1 */
-+static struct regulator_ops tps65218_ldo1_dcdc34_ops = {
-+	.is_enabled		= regulator_is_enabled_regmap,
-+	.enable			= tps65218_pmic_enable,
-+	.disable		= tps65218_pmic_disable,
-+	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
-+	.set_voltage_sel	= tps65218_pmic_set_voltage_sel,
-+	.list_voltage		= regulator_list_voltage_linear_range,
-+	.map_voltage		= regulator_map_voltage_linear_range,
-+};
-+
-+/* Operations permitted on DCDC5, DCDC6 */
-+static struct regulator_ops tps65218_dcdc56_pmic_ops = {
-+	.is_enabled		= regulator_is_enabled_regmap,
-+	.enable			= tps65218_pmic_enable,
-+	.disable		= tps65218_pmic_disable,
-+};
-+
-+static const struct regulator_desc regulators[] = {
-+	TPS65218_REGULATOR("DCDC1", TPS65218_DCDC_1, tps65218_dcdc12_ops, 64,
-+			   TPS65218_REG_CONTROL_DCDC1,
-+			   TPS65218_CONTROL_DCDC1_MASK,
-+			   TPS65218_REG_ENABLE1, TPS65218_ENABLE1_DC1_EN, NULL,
-+			   dcdc1_dcdc2_ranges, 2),
-+	TPS65218_REGULATOR("DCDC2", TPS65218_DCDC_2, tps65218_dcdc12_ops, 64,
-+			   TPS65218_REG_CONTROL_DCDC2,
-+			   TPS65218_CONTROL_DCDC2_MASK,
-+			   TPS65218_REG_ENABLE1, TPS65218_ENABLE1_DC2_EN, NULL,
-+			   dcdc1_dcdc2_ranges, 2),
-+	TPS65218_REGULATOR("DCDC3", TPS65218_DCDC_3, tps65218_ldo1_dcdc34_ops,
-+			   64, TPS65218_REG_CONTROL_DCDC3,
-+			   TPS65218_CONTROL_DCDC3_MASK, TPS65218_REG_ENABLE1,
-+			   TPS65218_ENABLE1_DC3_EN, NULL,
-+			   ldo1_dcdc3_ranges, 2),
-+	TPS65218_REGULATOR("DCDC4", TPS65218_DCDC_4, tps65218_ldo1_dcdc34_ops,
-+			   53, TPS65218_REG_CONTROL_DCDC4,
-+			   TPS65218_CONTROL_DCDC4_MASK,
-+			   TPS65218_REG_ENABLE1, TPS65218_ENABLE1_DC4_EN, NULL,
-+			   dcdc4_ranges, 2),
-+	TPS65218_REGULATOR("DCDC5", TPS65218_DCDC_5, tps65218_dcdc56_pmic_ops,
-+			   1, -1, -1, TPS65218_REG_ENABLE1,
-+			   TPS65218_ENABLE1_DC5_EN, NULL, NULL, 0),
-+	TPS65218_REGULATOR("DCDC6", TPS65218_DCDC_6, tps65218_dcdc56_pmic_ops,
-+			   1, -1, -1, TPS65218_REG_ENABLE1,
-+			   TPS65218_ENABLE1_DC6_EN, NULL, NULL, 0),
-+	TPS65218_REGULATOR("LDO1", TPS65218_LDO_1, tps65218_ldo1_dcdc34_ops, 64,
-+			   TPS65218_REG_CONTROL_DCDC4,
-+			   TPS65218_CONTROL_LDO1_MASK, TPS65218_REG_ENABLE2,
-+			   TPS65218_ENABLE2_LDO1_EN, NULL, ldo1_dcdc3_ranges,
-+			   2),
-+};
-+
-+static int tps65218_regulator_probe(struct platform_device *pdev)
-+{
-+	struct tps65218 *tps = dev_get_drvdata(pdev->dev.parent);
-+	struct regulator_init_data *init_data;
-+	const struct tps_info	*template;
-+	struct regulator_dev *rdev;
-+	const struct of_device_id	*match;
-+	struct regulator_config config = { };
-+	int id;
-+
-+	match = of_match_device(tps65218_of_match, &pdev->dev);
-+	if (match) {
-+		template = match->data;
-+		id = template->id;
-+		init_data = of_get_regulator_init_data(&pdev->dev,
-+						      pdev->dev.of_node);
-+	} else {
-+		return -ENODEV;
-+	}
-+
-+	platform_set_drvdata(pdev, tps);
-+
-+	tps->info[id] = &tps65218_pmic_regs[id];
-+	config.dev = &pdev->dev;
-+	config.init_data = init_data;
-+	config.driver_data = tps;
-+	config.regmap = tps->regmap;
-+
-+	rdev = devm_regulator_register(&pdev->dev, &regulators[id], &config);
-+	if (IS_ERR(rdev)) {
-+		dev_err(tps->dev, "failed to register %s regulator\n",
-+			pdev->name);
-+		return PTR_ERR(rdev);
-+	}
-+
-+	/* Save regulator */
-+	tps->rdev[id] = rdev;
-+
-+	return 0;
-+}
-+
-+static int tps65218_regulator_remove(struct platform_device *pdev)
-+{
-+	struct tps65218 *tps = platform_get_drvdata(pdev);
-+	const struct of_device_id	*match;
-+	const struct tps_info		*template;
-+
-+	match = of_match_device(tps65218_of_match, &pdev->dev);
-+	template = match->data;
-+	regulator_unregister(tps->rdev[template->id]);
-+	platform_set_drvdata(pdev, NULL);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver tps65218_regulator_driver = {
-+	.driver = {
-+		.name = "tps65218-pmic",
-+		.owner = THIS_MODULE,
-+		.of_match_table = of_match_ptr(tps65218_of_match),
++static const struct regmap_irq tps65218_irqs[] = {
++	/* INT1 IRQs */
++	[TPS65218_PRGC_IRQ] = {
++		.mask = TPS65218_INT1_PRGC,
 +	},
-+	.probe = tps65218_regulator_probe,
-+	.remove = tps65218_regulator_remove,
++	[TPS65218_CC_AQC_IRQ] = {
++		.mask = TPS65218_INT1_CC_AQC,
++	},
++	[TPS65218_HOT_IRQ] = {
++		.mask = TPS65218_INT1_HOT,
++	},
++	[TPS65218_PB_IRQ] = {
++		.mask = TPS65218_INT1_PB,
++	},
++	[TPS65218_AC_IRQ] = {
++		.mask = TPS65218_INT1_AC,
++	},
++	[TPS65218_VPRG_IRQ] = {
++		.mask = TPS65218_INT1_VPRG,
++	},
++	[TPS65218_INVALID1_IRQ] = {
++	},
++	[TPS65218_INVALID2_IRQ] = {
++	},
++	/* INT2 IRQs*/
++	[TPS65218_LS1_I_IRQ] = {
++		.mask = TPS65218_INT2_LS1_I,
++		.reg_offset = 1,
++	},
++	[TPS65218_LS2_I_IRQ] = {
++		.mask = TPS65218_INT2_LS2_I,
++		.reg_offset = 1,
++	},
++	[TPS65218_LS3_I_IRQ] = {
++		.mask = TPS65218_INT2_LS3_I,
++		.reg_offset = 1,
++	},
++	[TPS65218_LS1_F_IRQ] = {
++		.mask = TPS65218_INT2_LS1_F,
++		.reg_offset = 1,
++	},
++	[TPS65218_LS2_F_IRQ] = {
++		.mask = TPS65218_INT2_LS2_F,
++		.reg_offset = 1,
++	},
++	[TPS65218_LS3_F_IRQ] = {
++		.mask = TPS65218_INT2_LS3_F,
++		.reg_offset = 1,
++	},
++	[TPS65218_INVALID3_IRQ] = {
++	},
++	[TPS65218_INVALID4_IRQ] = {
++	},
 +};
 +
-+module_platform_driver(tps65218_regulator_driver);
++static struct regmap_irq_chip tps65218_irq_chip = {
++	.name = "tps65218",
++	.irqs = tps65218_irqs,
++	.num_irqs = ARRAY_SIZE(tps65218_irqs),
++
++	.num_regs = 2,
++	.mask_base = TPS65218_REG_INT_MASK1,
++};
++
++static const struct of_device_id of_tps65218_match_table[] = {
++	{ .compatible = "ti,tps65218", },
++};
++
++static int tps65218_probe(struct i2c_client *client,
++				const struct i2c_device_id *ids)
++{
++	struct tps65218 *tps;
++	const struct of_device_id *match;
++	int ret;
++
++	match = of_match_device(of_tps65218_match_table, &client->dev);
++	if (!match) {
++		dev_err(&client->dev,
++			"Failed to find matching dt id\n");
++		return -EINVAL;
++	}
++
++	tps = devm_kzalloc(&client->dev, sizeof(*tps), GFP_KERNEL);
++	if (!tps)
++		return -ENOMEM;
++
++	i2c_set_clientdata(client, tps);
++	tps->dev = &client->dev;
++	tps->irq = client->irq;
++	tps->regmap = devm_regmap_init_i2c(client, &tps65218_regmap_config);
++	if (IS_ERR(tps->regmap)) {
++		ret = PTR_ERR(tps->regmap);
++		dev_err(tps->dev, "Failed to allocate register map: %d\n",
++			ret);
++		return ret;
++	}
++
++	mutex_init(&tps->tps_lock);
++
++	ret = regmap_add_irq_chip(tps->regmap, tps->irq,
++			IRQF_ONESHOT, 0, &tps65218_irq_chip,
++			&tps->irq_data);
++	if (ret < 0)
++		return ret;
++
++	ret = of_platform_populate(client->dev.of_node, NULL, NULL,
++				   &client->dev);
++	if (ret < 0)
++		goto err_irq;
++
++	return 0;
++
++err_irq:
++	regmap_del_irq_chip(tps->irq, tps->irq_data);
++
++	return ret;
++}
++
++static int tps65218_remove(struct i2c_client *client)
++{
++	struct tps65218 *tps = i2c_get_clientdata(client);
++
++	regmap_del_irq_chip(tps->irq, tps->irq_data);
++
++	return 0;
++}
++
++static const struct i2c_device_id tps65218_id_table[] = {
++	{ "tps65218", TPS65218 },
++};
++MODULE_DEVICE_TABLE(i2c, tps65218_id_table);
++
++static struct i2c_driver tps65218_driver = {
++	.driver		= {
++		.name	= "tps65218",
++		.owner	= THIS_MODULE,
++		.of_match_table = of_tps65218_match_table,
++	},
++	.probe		= tps65218_probe,
++	.remove		= tps65218_remove,
++	.id_table       = tps65218_id_table,
++};
++
++module_i2c_driver(tps65218_driver);
 +
 +MODULE_AUTHOR("J Keerthy <j-keerthy@ti.com>");
-+MODULE_DESCRIPTION("TPS65218 voltage regulator driver");
-+MODULE_ALIAS("platform:tps65218-pmic");
++MODULE_DESCRIPTION("TPS65218 chip family multi-function driver");
 +MODULE_LICENSE("GPL v2");
+diff --git a/include/linux/mfd/tps65218.h b/include/linux/mfd/tps65218.h
+new file mode 100644
+index 0000000..a250d06
+--- /dev/null
++++ b/include/linux/mfd/tps65218.h
+@@ -0,0 +1,284 @@
++/*
++ * linux/mfd/tps65218.h
++ *
++ * Functions to access TPS65219 power management chip.
++ *
++ * Copyright (C) 2014 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
++ * kind, whether expressed or implied; without even the implied warranty
++ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License version 2 for more details.
++ */
++
++#ifndef __LINUX_MFD_TPS65218_H
++#define __LINUX_MFD_TPS65218_H
++
++#include <linux/i2c.h>
++#include <linux/regulator/driver.h>
++#include <linux/regulator/machine.h>
++#include <linux/bitops.h>
++
++/* TPS chip id list */
++#define TPS65218			0xF0
++
++/* I2C ID for TPS65218 part */
++#define TPS65218_I2C_ID			0x24
++
++/* All register addresses */
++#define TPS65218_REG_CHIPID		0x00
++#define TPS65218_REG_INT1		0x01
++#define TPS65218_REG_INT2		0x02
++#define TPS65218_REG_INT_MASK1		0x03
++#define TPS65218_REG_INT_MASK2		0x04
++#define TPS65218_REG_STATUS		0x05
++#define TPS65218_REG_CONTROL		0x06
++#define TPS65218_REG_FLAG		0x07
++
++#define TPS65218_REG_PASSWORD		0x10
++#define TPS65218_REG_ENABLE1		0x11
++#define TPS65218_REG_ENABLE2		0x12
++#define TPS65218_REG_CONFIG1		0x13
++#define TPS65218_REG_CONFIG2		0x14
++#define TPS65218_REG_CONFIG3		0x15
++#define TPS65218_REG_CONTROL_DCDC1	0x16
++#define TPS65218_REG_CONTROL_DCDC2	0x17
++#define TPS65218_REG_CONTROL_DCDC3	0x18
++#define TPS65218_REG_CONTROL_DCDC4	0x19
++#define TPS65218_REG_CONTRL_SLEW_RATE	0x1A
++#define TPS65218_REG_CONTROL_LDO1	0x1B
++#define TPS65218_REG_SEQ1		0x20
++#define TPS65218_REG_SEQ2		0x21
++#define TPS65218_REG_SEQ3		0x22
++#define TPS65218_REG_SEQ4		0x23
++#define TPS65218_REG_SEQ5		0x24
++#define TPS65218_REG_SEQ6		0x25
++#define TPS65218_REG_SEQ7		0x26
++
++/* Register field definitions */
++#define TPS65218_CHIPID_CHIP_MASK	0xF8
++#define TPS65218_CHIPID_REV_MASK	0x07
++
++#define TPS65218_INT1_VPRG		BIT(5)
++#define TPS65218_INT1_AC		BIT(4)
++#define TPS65218_INT1_PB		BIT(3)
++#define TPS65218_INT1_HOT		BIT(2)
++#define TPS65218_INT1_CC_AQC		BIT(1)
++#define TPS65218_INT1_PRGC		BIT(0)
++
++#define TPS65218_INT2_LS3_F		BIT(5)
++#define TPS65218_INT2_LS2_F		BIT(4)
++#define TPS65218_INT2_LS1_F		BIT(3)
++#define TPS65218_INT2_LS3_I		BIT(2)
++#define TPS65218_INT2_LS2_I		BIT(1)
++#define TPS65218_INT2_LS1_I		BIT(0)
++
++#define TPS65218_INT_MASK1_VPRG		BIT(5)
++#define TPS65218_INT_MASK1_AC		BIT(4)
++#define TPS65218_INT_MASK1_PB		BIT(3)
++#define TPS65218_INT_MASK1_HOT		BIT(2)
++#define TPS65218_INT_MASK1_CC_AQC	BIT(1)
++#define TPS65218_INT_MASK1_PRGC		BIT(0)
++
++#define TPS65218_INT_MASK2_LS3_F	BIT(5)
++#define TPS65218_INT_MASK2_LS2_F	BIT(4)
++#define TPS65218_INT_MASK2_LS1_F	BIT(3)
++#define TPS65218_INT_MASK2_LS3_I	BIT(2)
++#define TPS65218_INT_MASK2_LS2_I	BIT(1)
++#define TPS65218_INT_MASK2_LS1_I	BIT(0)
++
++#define TPS65218_STATUS_FSEAL		BIT(7)
++#define TPS65218_STATUS_EE		BIT(6)
++#define TPS65218_STATUS_AC_STATE	BIT(5)
++#define TPS65218_STATUS_PB_STATE	BIT(4)
++#define TPS65218_STATUS_STATE_MASK	0xC
++#define TPS65218_STATUS_CC_STAT		0x3
++
++#define TPS65218_CONTROL_OFFNPFO	BIT(1)
++#define TPS65218_CONTROL_CC_AQ	BIT(0)
++
++#define TPS65218_FLAG_GPO3_FLG		BIT(7)
++#define TPS65218_FLAG_GPO2_FLG		BIT(6)
++#define TPS65218_FLAG_GPO1_FLG		BIT(5)
++#define TPS65218_FLAG_LDO1_FLG		BIT(4)
++#define TPS65218_FLAG_DC4_FLG		BIT(3)
++#define TPS65218_FLAG_DC3_FLG		BIT(2)
++#define TPS65218_FLAG_DC2_FLG		BIT(1)
++#define TPS65218_FLAG_DC1_FLG		BIT(0)
++
++#define TPS65218_ENABLE1_DC6_EN		BIT(5)
++#define TPS65218_ENABLE1_DC5_EN		BIT(4)
++#define TPS65218_ENABLE1_DC4_EN		BIT(3)
++#define TPS65218_ENABLE1_DC3_EN		BIT(2)
++#define TPS65218_ENABLE1_DC2_EN		BIT(1)
++#define TPS65218_ENABLE1_DC1_EN		BIT(0)
++
++#define TPS65218_ENABLE2_GPIO3		BIT(6)
++#define TPS65218_ENABLE2_GPIO2		BIT(5)
++#define TPS65218_ENABLE2_GPIO1		BIT(4)
++#define TPS65218_ENABLE2_LS3_EN		BIT(3)
++#define TPS65218_ENABLE2_LS2_EN		BIT(2)
++#define TPS65218_ENABLE2_LS1_EN		BIT(1)
++#define TPS65218_ENABLE2_LDO1_EN	BIT(0)
++
++
++#define TPS65218_CONFIG1_TRST		BIT(7)
++#define TPS65218_CONFIG1_GPO2_BUF	BIT(6)
++#define TPS65218_CONFIG1_IO1_SEL	BIT(5)
++#define TPS65218_CONFIG1_PGDLY_MASK	0x18
++#define TPS65218_CONFIG1_STRICT		BIT(2)
++#define TPS65218_CONFIG1_UVLO_MASK	0x3
++
++#define TPS65218_CONFIG2_DC12_RST	BIT(7)
++#define TPS65218_CONFIG2_UVLOHYS	BIT(6)
++#define TPS65218_CONFIG2_LS3ILIM_MASK	0xC
++#define TPS65218_CONFIG2_LS2ILIM_MASK	0x3
++
++#define TPS65218_CONFIG3_LS3NPFO	BIT(5)
++#define TPS65218_CONFIG3_LS2NPFO	BIT(4)
++#define TPS65218_CONFIG3_LS1NPFO	BIT(3)
++#define TPS65218_CONFIG3_LS3DCHRG	BIT(2)
++#define TPS65218_CONFIG3_LS2DCHRG	BIT(1)
++#define TPS65218_CONFIG3_LS1DCHRG	BIT(0)
++
++#define TPS65218_CONTROL_DCDC1_PFM	BIT(7)
++#define TPS65218_CONTROL_DCDC1_MASK	0x7F
++
++#define TPS65218_CONTROL_DCDC2_PFM	BIT(7)
++#define TPS65218_CONTROL_DCDC2_MASK	0x3F
++
++#define TPS65218_CONTROL_DCDC3_PFM	BIT(7)
++#define TPS65218_CONTROL_DCDC3_MASK	0x3F
++
++#define TPS65218_CONTROL_DCDC4_PFM	BIT(7)
++#define TPS65218_CONTROL_DCDC4_MASK	0x3F
++
++#define TPS65218_SLEW_RATE_GO		BIT(7)
++#define TPS65218_SLEW_RATE_GODSBL	BIT(6)
++#define TPS65218_SLEW_RATE_SLEW_MASK	0x7
++
++#define TPS65218_CONTROL_LDO1_MASK	0x3F
++
++#define TPS65218_SEQ1_DLY8		BIT(7)
++#define TPS65218_SEQ1_DLY7		BIT(6)
++#define TPS65218_SEQ1_DLY6		BIT(5)
++#define TPS65218_SEQ1_DLY5		BIT(4)
++#define TPS65218_SEQ1_DLY4		BIT(3)
++#define TPS65218_SEQ1_DLY3		BIT(2)
++#define TPS65218_SEQ1_DLY2		BIT(1)
++#define TPS65218_SEQ1_DLY1		BIT(0)
++
++#define TPS65218_SEQ2_DLYFCTR		BIT(7)
++#define TPS65218_SEQ2_DLY9		BIT(0)
++
++#define TPS65218_SEQ3_DC2_SEQ_MASK	0xF0
++#define TPS65218_SEQ3_DC1_SEQ_MASK	0xF
++
++#define TPS65218_SEQ4_DC4_SEQ_MASK	0xF0
++#define TPS65218_SEQ4_DC3_SEQ_MASK	0xF
++
++#define TPS65218_SEQ5_DC6_SEQ_MASK	0xF0
++#define TPS65218_SEQ5_DC5_SEQ_MASK	0xF
++
++#define TPS65218_SEQ6_LS1_SEQ_MASK	0xF0
++#define TPS65218_SEQ6_LDO1_SEQ_MASK	0xF
++
++#define TPS65218_SEQ7_GPO3_SEQ_MASK	0xF0
++#define TPS65218_SEQ7_GPO1_SEQ_MASK	0xF
++#define TPS65218_PROTECT_NONE		0
++#define TPS65218_PROTECT_L1		1
++
++enum tps65218_regulator_id {
++	/* DCDC's */
++	TPS65218_DCDC_1,
++	TPS65218_DCDC_2,
++	TPS65218_DCDC_3,
++	TPS65218_DCDC_4,
++	TPS65218_DCDC_5,
++	TPS65218_DCDC_6,
++	/* LDOs */
++	TPS65218_LDO_1,
++};
++
++#define TPS65218_MAX_REG_ID		TPS65218_LDO_1
++
++/* Number of step-down converters available */
++#define TPS65218_NUM_DCDC		6
++/* Number of LDO voltage regulators available */
++#define TPS65218_NUM_LDO		1
++/* Number of total regulators available */
++#define TPS65218_NUM_REGULATOR		(TPS65218_NUM_DCDC + TPS65218_NUM_LDO)
++
++/* Define the TPS65218 IRQ numbers */
++enum tps65218_irqs {
++	/* INT1 registers */
++	TPS65218_PRGC_IRQ,
++	TPS65218_CC_AQC_IRQ,
++	TPS65218_HOT_IRQ,
++	TPS65218_PB_IRQ,
++	TPS65218_AC_IRQ,
++	TPS65218_VPRG_IRQ,
++	TPS65218_INVALID1_IRQ,
++	TPS65218_INVALID2_IRQ,
++	/* INT2 registers */
++	TPS65218_LS1_I_IRQ,
++	TPS65218_LS2_I_IRQ,
++	TPS65218_LS3_I_IRQ,
++	TPS65218_LS1_F_IRQ,
++	TPS65218_LS2_F_IRQ,
++	TPS65218_LS3_F_IRQ,
++	TPS65218_INVALID3_IRQ,
++	TPS65218_INVALID4_IRQ,
++};
++
++/**
++ * struct tps_info - packages regulator constraints
++ * @id:			Id of the regulator
++ * @name:		Voltage regulator name
++ * @min_uV:		minimum micro volts
++ * @max_uV:		minimum micro volts
++ *
++ * This data is used to check the regualtor voltage limits while setting.
++ */
++struct tps_info {
++	int id;
++	const char *name;
++	int min_uV;
++	int max_uV;
++};
++
++/**
++ * struct tps65218 - tps65218 sub-driver chip access routines
++ *
++ * Device data may be used to access the TPS65218 chip
++ */
++
++struct tps65218 {
++	struct device *dev;
++	unsigned int id;
++
++	struct mutex tps_lock;		/* lock guarding the data structure */
++	/* IRQ Data */
++	int irq;
++	u32 irq_mask;
++	struct regmap_irq_chip_data *irq_data;
++	struct regulator_desc desc[TPS65218_NUM_REGULATOR];
++	struct regulator_dev *rdev[TPS65218_NUM_REGULATOR];
++	struct tps_info *info[TPS65218_NUM_REGULATOR];
++	struct regmap *regmap;
++};
++
++int tps65218_reg_read(struct tps65218 *tps, unsigned int reg,
++					unsigned int *val);
++int tps65218_reg_write(struct tps65218 *tps, unsigned int reg,
++			unsigned int val, unsigned int level);
++int tps65218_set_bits(struct tps65218 *tps, unsigned int reg,
++		unsigned int mask, unsigned int val, unsigned int level);
++int tps65218_clear_bits(struct tps65218 *tps, unsigned int reg,
++		unsigned int mask, unsigned int level);
++
++#endif /*  __LINUX_MFD_TPS65218_H */
 -- 
 1.7.9.5
 
