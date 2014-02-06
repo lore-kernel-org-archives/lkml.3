@@ -1,78 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755902AbaBFJS4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 04:18:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64767 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755174AbaBFJSw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 04:18:52 -0500
-Date: Thu, 6 Feb 2014 04:18:42 -0500 (EST)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: Michael Cree <mcree@orcon.net.nz>, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Matt Turner <mattst88@gmail.com>
-Subject: Re: [PATCH 3.12 117/133] alpha: fix broken network checksum
-In-Reply-To: <20140206043833.GA12599@omega>
-Message-ID: <alpine.LRH.2.02.1402060341090.31200@file01.intranet.prod.int.rdu2.redhat.com>
-References: <20140204210737.008598235@linuxfoundation.org> <20140204210740.336662867@linuxfoundation.org> <20140206043833.GA12599@omega>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1755771AbaBFJVr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 04:21:47 -0500
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:45665 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755415AbaBFJVk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 04:21:40 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <52F149F4.6040105@broadcom.com>
+References: <1391503770.19947.0.camel@phoenix>
+	<52F149F4.6040105@broadcom.com>
+Date: Thu, 6 Feb 2014 10:21:40 +0100
+Message-ID: <CACRpkdY4rQC30idfYP0bJHeHL-OMbH=oSNaKf8pBfUP1f+sYBg@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: capri: Make capri_pinctrl_probe static
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sherman Yin <syin@broadcom.com>
+Cc: Axel Lin <axel.lin@ingics.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Christian Daudt <bcm@fixthebug.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Feb 4, 2014 at 9:13 PM, Sherman Yin <syin@broadcom.com> wrote:
+> On 14-02-04 12:49 AM, Axel Lin wrote:
+>>
+>> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+>>
+> Note that this will collide with the capri->bcm281xx renaming patches.
+>
+> Linus, Christian, are those patches going in soon?
 
+I have ACKed it, expecting it to be funneled through ARM SoC.
 
-On Thu, 6 Feb 2014, Michael Cree wrote:
-
-> On Tue, Feb 04, 2014 at 01:08:38PM -0800, Greg Kroah-Hartman wrote:
-> > 3.12-stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: Mikulas Patocka <mpatocka@redhat.com>
-> > 
-> > commit 0ef38d70d4118b2ce1a538d14357be5ff9dc2bbd upstream.
-> > 
-> > The patch 3ddc5b46a8e90f3c9251338b60191d0a804b0d92 breaks networking on
-> > alpha (there is a follow-up fix 5cfe8f1ba5eebe6f4b6e5858cdb1a5be4f3272a6,
-> > but networking is still broken even with the second patch).
-> 
-> I wonder whether that follow-up (partial) fix mentioned
-> (5cfe8f1ba5eebe6f4b6e5858cdb1a5be4f3272a6) should be pulled into 3.12 stable
-> too?
-> 
-> Cheers
-> Michael.
-
-Hi
-
-It is quite confusing - csum_partial_copy_from_user is only called from 
-csum_and_copy_from_user in include/net/checksum.h.
-
-csum_and_copy_from_user already verifies the source memory range with 
-access_ok. Despite this, people started to add access_ok to many 
-architecture-specific versions of csum_partial_copy_from_user (for example 
-3ddc5b46a8e90f3c9251338b60191d0a804b0d92).
-
-It seems that the best thing is to revert 
-0ef38d70d4118b2ce1a538d14357be5ff9dc2bbd, 
-5cfe8f1ba5eebe6f4b6e5858cdb1a5be4f3272a6 and csum_partial_copy_from_user 
-change from 3ddc5b46a8e90f3c9251338b60191d0a804b0d92.
-
-
-David, you are maintainer of networking - does it have any deeper sense to 
-perform access_ok in csum_partial_copy_from_user if the caller performs 
-this check already? Should this be just removed?
-
-Also - the x86 and alpha implementation of csum_and_copy_from_user zero 
-the destination buffer on userspace-access error - but 
-csum_and_copy_from_user (that calls these function) doesn't zero the 
-destination buffer on error. Should the destination buffer be zeroed on 
-error or not?
-
-Mikulas
+Yours,
+Linus Walleij
