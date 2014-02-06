@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756830AbaBFSwE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 13:52:04 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:47051 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754370AbaBFSwB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 13:52:01 -0500
-Message-ID: <52F3D9B0.40505@ti.com>
-Date: Thu, 6 Feb 2014 13:51:28 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1756649AbaBFSzJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 13:55:09 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:47806 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753187AbaBFSzG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 13:55:06 -0500
+Message-ID: <52F3DA85.1060209@arm.com>
+Date: Thu, 06 Feb 2014 18:55:01 +0000
+From: Ramana Radhakrishnan <ramrad01@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        "Strashko, Grygorii" <grygorii.strashko@ti.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] ARM: mm: Fix the memblock allocation for LPAE machines
-References: <1391285687-20534-1-git-send-email-santosh.shilimkar@ti.com> <52F2CBC0.3030305@ti.com> <20140205234815.GU26684@n2100.arm.linux.org.uk> <52F2DC6F.8070005@ti.com> <20140206184153.GV26684@n2100.arm.linux.org.uk>
-In-Reply-To: <20140206184153.GV26684@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+To: David Howells <dhowells@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+References: <20140206134825.305510953@infradead.org> <21984.1391711149@warthog.procyon.org.uk>
+In-Reply-To: <21984.1391711149@warthog.procyon.org.uk>
+X-OriginalArrivalTime: 06 Feb 2014 18:55:01.0805 (UTC) FILETIME=[F0A885D0:01CF236C]
+X-MC-Unique: 114020618550303001
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 06 February 2014 01:41 PM, Russell King - ARM Linux wrote:
-> On Wed, Feb 05, 2014 at 07:50:55PM -0500, Santosh Shilimkar wrote:
->> On Wednesday 05 February 2014 06:48 PM, Russell King - ARM Linux wrote:
->>> On Wed, Feb 05, 2014 at 06:39:44PM -0500, Santosh Shilimkar wrote:
->>>> Russell,
->>>>
->>>> On Saturday 01 February 2014 03:14 PM, Santosh Shilimkar wrote:
->>>>> Commit ad6492b8 added much needed memblock_virt_alloc_low() and further
->>>>> commit 07bacb3 {memblock, bootmem: restore goal for alloc_low} fixed the
->>>>> issue with low memory limit thansk to Yinghai. But even after all these fixes,
->>>>> there is still one case where the limit check done with ARCH_LOW_ADDRESS_LIMIT
->>>>> for low memory fails. Russell pointed out the issue with 32 bit LPAE machines
->>>>> in below thread.
->>>>> 	https://lkml.org/lkml/2014/1/28/364
->>>>>
->>>>> Since on some LPAE machines where memory start address is beyond 4GB,
->>>>> the low memory marker in memblock will be set to default
->>>>> ARCH_LOW_ADDRESS_LIMIT which is wrong. We can fix this by letting
->>>>> architectures set the ARCH_LOW_ADDRESS_LIMIT using another export
->>>>> similar to memblock_set_current_limit() but am not sure whether
->>>>> its worth the trouble. Tell me if you think otherwise.
->>>>>
->>>>> Rather am just trying to fix that one broken case using memblock_virt_alloc()
->>>>> in setup code since the memblock.current_limit is updated appropriately
->>>>> makes it work on all ARM 32 bit machines.
->>>>>
->>>>> Cc: Yinghai Lu <yinghai@kernel.org>
->>>>> Cc: Russell King <linux@arm.linux.org.uk>
->>>>> Cc: Strashko, Grygorii <grygorii.strashko@ti.com>
->>>>> Cc: Andrew Morton <akpm@linux-foundation.org>
->>>>> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
->>>>> ---
->>>> Whats you say here ? We should get the fix for the
->>>> issue. If you are ok, I can drop the patch in patch system.
->>>
->>> Is this still an issue, or has Tejun fixed it by some other means?  I've not
->>> noticed anything being broken at the moment.
->>>
->>> Can you confirm whether we still have an issue without this patch please?
->>>
->> Fixes for all cases exist except 'LPAE + memory start beyond 4 GB'.
->> This case is still broken and  hence I posted the $subject patch.
-> 
-> Okay.  Patch system please then.  Thanks.
-> 
-Thanks.  patch 7952/1
+On 02/06/14 18:25, David Howells wrote:
+>
+> Is it worth considering a move towards using C11 atomics and barriers and
+> compiler intrinsics inside the kernel?  The compiler _ought_ to be able to do
+> these.
 
-Regards,
-Santosh
+
+It sounds interesting to me, if we can make it work properly and 
+reliably. + gcc@gcc.gnu.org for others in the GCC community to chip in.
+
+>
+> One thing I'm not sure of, though, is how well gcc's atomics will cope with
+> interrupt handlers touching atomics on CPUs without suitable atomic
+> instructions - that said, userspace does have to deal with signals getting
+> underfoot. but then userspace can't normally disable interrupts.
+>
+> David
+>
+
+Ramana
+
