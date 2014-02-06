@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752423AbaBFFcV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 00:32:21 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:56205 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752129AbaBFFcM (ORCPT
+	id S1755471AbaBFFeG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 00:34:06 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:47543 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751794AbaBFFcU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 00:32:12 -0500
-Subject: [PATCH -tip v3 03/11] [CLEANUP] perf-probe: Replace line_list with
- intlist
+	Thu, 6 Feb 2014 00:32:20 -0500
+Subject: [PATCH -tip v3 06/11] perf-probe: Use ref_reloc_sym based address
+ instead of the symbol name
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
@@ -17,8 +17,8 @@ Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
         "David A. Long" <dave.long@linaro.org>, yrl.pp-manager.tt@hitachi.com,
         Namhyung Kim <namhyung@kernel.org>
-Date: Thu, 06 Feb 2014 05:32:09 +0000
-Message-ID: <20140206053209.29635.81043.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
+Date: Thu, 06 Feb 2014 05:32:16 +0000
+Message-ID: <20140206053216.29635.22584.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
 In-Reply-To: <20140206053201.29635.99095.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
 References: <20140206053201.29635.99095.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
 User-Agent: StGit/0.16
@@ -29,325 +29,176 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace line_list (struct line_node) with intlist for
-reducing similar codes.
+Since several local symbols can have same name (e.g. t_show),
+we need to use the relative address from the symbol referred by
+kmap->ref_reloc_sym instead of the target symbol name itself.
+Because the kernel address space layout randomize (kASLR) changes
+the absolute address of kernel symbols, we can't relay on the
+absolute address.
+Note that this works only with debuginfo.
+
+E.g. without this change;
+  ----
+  # ./perf probe -a "t_show \$vars"
+  Added new events:
+    probe:t_show         (on t_show with $vars)
+    probe:t_show_1       (on t_show with $vars)
+    probe:t_show_2       (on t_show with $vars)
+    probe:t_show_3       (on t_show with $vars)
+
+  You can now use it in all perf tools, such as:
+
+          perf record -e probe:t_show_3 -aR sleep 1
+  ----
+OK, we have 4 different t_show()s. All functions have
+different arguments as below;
+  ----
+  # cat /sys/kernel/debug/tracing/kprobe_events
+  p:probe/t_show t_show m=%di:u64 v=%si:u64
+  p:probe/t_show_1 t_show m=%di:u64 v=%si:u64 t=%si:u64
+  p:probe/t_show_2 t_show m=%di:u64 v=%si:u64 fmt=%si:u64
+  p:probe/t_show_3 t_show m=%di:u64 v=%si:u64 file=%si:u64
+  ----
+However, all of them have been put on the *same* address.
+  ----
+  # cat /sys/kernel/debug/kprobes/list
+  ffffffff810d9720  k  t_show+0x0    [DISABLED]
+  ffffffff810d9720  k  t_show+0x0    [DISABLED]
+  ffffffff810d9720  k  t_show+0x0    [DISABLED]
+  ffffffff810d9720  k  t_show+0x0    [DISABLED]
+  ----
+
+With this change;
+  ----
+  # ./perf probe -a "t_show \$vars"
+  Added new events:
+    probe:t_show         (on t_show with $vars)
+    probe:t_show_1       (on t_show with $vars)
+    probe:t_show_2       (on t_show with $vars)
+    probe:t_show_3       (on t_show with $vars)
+
+  You can now use it in all perf tools, such as:
+
+          perf record -e probe:t_show_3 -aR sleep 1
+
+  # cat /sys/kernel/debug/tracing/kprobe_events
+  p:probe/t_show _stext+889880 m=%di:u64 v=%si:u64
+  p:probe/t_show_1 _stext+928568 m=%di:u64 v=%si:u64 t=%si:u64
+  p:probe/t_show_2 _stext+969512 m=%di:u64 v=%si:u64 fmt=%si:u64
+  p:probe/t_show_3 _stext+1001416 m=%di:u64 v=%si:u64 file=%si:u64
+
+  # cat /sys/kernel/debug/kprobes/list
+  ffffffffb50d95e0  k  t_show+0x0    [DISABLED]
+  ffffffffb50e2d00  k  t_show+0x0    [DISABLED]
+  ffffffffb50f4990  k  t_show+0x0    [DISABLED]
+  ffffffffb50eccf0  k  t_show+0x0    [DISABLED]
+  ----
+This time, each event is put in different address
+correctly.
+
+Note that currently this doesn't support address-based
+probe on modules (thus the probes on modules are symbol
+based), since it requires relative address probe syntax
+for kprobe-tracer, and it isn't implemented yet.
+
+One more note, this allows us to put events on correct
+address, but --list option should be updated to show
+correct corresponding source code.
+
+Changes from v2:
+  - Refer kmap->ref_reloc_sym instead of "_stext".
+  - Refer map->reloc to catch up the kASLR perf fix.
+
+Changes from v1:
+  - Use _stext relative address instead of actual
+    absolute address recorded in debuginfo.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 ---
- tools/perf/builtin-probe.c     |   12 +++---
- tools/perf/util/probe-event.c  |   22 +++++------
- tools/perf/util/probe-event.h  |   12 +-----
- tools/perf/util/probe-finder.c |   81 ++++++----------------------------------
- tools/perf/util/probe-finder.h |    3 +
- 5 files changed, 35 insertions(+), 95 deletions(-)
+ tools/perf/util/probe-event.c |   58 +++++++++++++++++++++++++++++++++++------
+ 1 file changed, 49 insertions(+), 9 deletions(-)
 
-diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-index 7894888..cdcd4eb 100644
---- a/tools/perf/builtin-probe.c
-+++ b/tools/perf/builtin-probe.c
-@@ -268,9 +268,9 @@ static int opt_set_filter(const struct option *opt __maybe_unused,
- 	return 0;
- }
- 
--static void init_params(void)
-+static int init_params(void)
- {
--	line_range__init(&params.line_range);
-+	return line_range__init(&params.line_range);
- }
- 
- static void cleanup_params(void)
-@@ -515,9 +515,11 @@ int cmd_probe(int argc, const char **argv, const char *prefix)
- {
- 	int ret;
- 
--	init_params();
--	ret = __cmd_probe(argc, argv, prefix);
--	cleanup_params();
-+	ret = init_params();
-+	if (!ret) {
-+		ret = __cmd_probe(argc, argv, prefix);
-+		cleanup_params();
-+	}
- 
- 	return ret;
- }
 diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index a4649e7..f70fd08 100644
+index de9fe90..1ce2cb9 100644
 --- a/tools/perf/util/probe-event.c
 +++ b/tools/perf/util/probe-event.c
-@@ -561,7 +561,7 @@ static int _show_one_line(FILE *fp, int l, bool skip, bool show_num)
- static int __show_line_range(struct line_range *lr, const char *module)
- {
- 	int l = 1;
--	struct line_node *ln;
-+	struct int_node *ln;
- 	struct debuginfo *dinfo;
- 	FILE *fp;
- 	int ret;
-@@ -614,8 +614,8 @@ static int __show_line_range(struct line_range *lr, const char *module)
- 			goto end;
- 	}
- 
--	list_for_each_entry(ln, &lr->line_list, list) {
--		for (; ln->line > l; l++) {
-+	intlist__for_each(ln, lr->line_list) {
-+		for (; ln->i > l; l++) {
- 			ret = show_one_line(fp, l - lr->offset);
- 			if (ret < 0)
- 				goto end;
-@@ -775,24 +775,22 @@ int show_available_vars(struct perf_probe_event *pevs __maybe_unused,
- 
- void line_range__clear(struct line_range *lr)
- {
--	struct line_node *ln;
--
- 	free(lr->function);
- 	free(lr->file);
- 	free(lr->path);
- 	free(lr->comp_dir);
--	while (!list_empty(&lr->line_list)) {
--		ln = list_first_entry(&lr->line_list, struct line_node, list);
--		list_del(&ln->list);
--		free(ln);
--	}
-+	intlist__delete(lr->line_list);
- 	memset(lr, 0, sizeof(*lr));
- }
- 
--void line_range__init(struct line_range *lr)
-+int line_range__init(struct line_range *lr)
- {
- 	memset(lr, 0, sizeof(*lr));
--	INIT_LIST_HEAD(&lr->line_list);
-+	lr->line_list = intlist__new(NULL);
-+	if (!lr->line_list)
-+		return -ENOMEM;
-+	else
-+		return 0;
- }
- 
- static int parse_line_num(char **ptr, int *val, const char *what)
-diff --git a/tools/perf/util/probe-event.h b/tools/perf/util/probe-event.h
-index fcaf727..776c934 100644
---- a/tools/perf/util/probe-event.h
-+++ b/tools/perf/util/probe-event.h
-@@ -2,6 +2,7 @@
- #define _PROBE_EVENT_H
- 
- #include <stdbool.h>
-+#include "intlist.h"
- #include "strlist.h"
- #include "strfilter.h"
- 
-@@ -76,13 +77,6 @@ struct perf_probe_event {
- 	struct perf_probe_arg	*args;	/* Arguments */
- };
- 
--
--/* Line number container */
--struct line_node {
--	struct list_head	list;
--	int			line;
--};
--
- /* Line range */
- struct line_range {
- 	char			*file;		/* File name */
-@@ -92,7 +86,7 @@ struct line_range {
- 	int			offset;		/* Start line offset */
- 	char			*path;		/* Real path name */
- 	char			*comp_dir;	/* Compile directory */
--	struct list_head	line_list;	/* Visible lines */
-+	struct intlist		*line_list;	/* Visible lines */
- };
- 
- /* List of variables */
-@@ -124,7 +118,7 @@ extern int parse_line_range_desc(const char *cmd, struct line_range *lr);
- extern void line_range__clear(struct line_range *lr);
- 
- /* Initialize line range */
--extern void line_range__init(struct line_range *lr);
-+extern int line_range__init(struct line_range *lr);
- 
- /* Internal use: Return kernel/module path */
- extern const char *kernel_get_module_path(const char *module);
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index 061edb1..e5e589f 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -35,6 +35,7 @@
- #include <linux/bitops.h>
- #include "event.h"
- #include "debug.h"
-+#include "intlist.h"
- #include "util.h"
- #include "symbol.h"
- #include "probe-finder.h"
-@@ -42,65 +43,6 @@
- /* Kprobe tracer basic type is up to u64 */
- #define MAX_BASIC_TYPE_BITS	64
- 
--/* Line number list operations */
--
--/* Add a line to line number list */
--static int line_list__add_line(struct list_head *head, int line)
--{
--	struct line_node *ln;
--	struct list_head *p;
--
--	/* Reverse search, because new line will be the last one */
--	list_for_each_entry_reverse(ln, head, list) {
--		if (ln->line < line) {
--			p = &ln->list;
--			goto found;
--		} else if (ln->line == line)	/* Already exist */
--			return 1;
--	}
--	/* List is empty, or the smallest entry */
--	p = head;
--found:
--	pr_debug("line list: add a line %u\n", line);
--	ln = zalloc(sizeof(struct line_node));
--	if (ln == NULL)
--		return -ENOMEM;
--	ln->line = line;
--	INIT_LIST_HEAD(&ln->list);
--	list_add(&ln->list, p);
--	return 0;
--}
--
--/* Check if the line in line number list */
--static int line_list__has_line(struct list_head *head, int line)
--{
--	struct line_node *ln;
--
--	/* Reverse search, because new line will be the last one */
--	list_for_each_entry(ln, head, list)
--		if (ln->line == line)
--			return 1;
--
--	return 0;
--}
--
--/* Init line number list */
--static void line_list__init(struct list_head *head)
--{
--	INIT_LIST_HEAD(head);
--}
--
--/* Free line number list */
--static void line_list__free(struct list_head *head)
--{
--	struct line_node *ln;
--	while (!list_empty(head)) {
--		ln = list_first_entry(head, struct line_node, list);
--		list_del(&ln->list);
--		free(ln);
--	}
--}
--
- /* Dwarf FL wrappers */
- static char *debuginfo_path;	/* Currently dummy */
- 
-@@ -880,7 +822,7 @@ static int find_probe_point_by_line(struct probe_finder *pf)
- }
- 
- /* Find lines which match lazy pattern */
--static int find_lazy_match_lines(struct list_head *head,
-+static int find_lazy_match_lines(struct intlist *list,
- 				 const char *fname, const char *pat)
- {
- 	FILE *fp;
-@@ -901,7 +843,7 @@ static int find_lazy_match_lines(struct list_head *head,
- 			line[len - 1] = '\0';
- 
- 		if (strlazymatch(line, pat)) {
--			line_list__add_line(head, linenum);
-+			intlist__add(list, linenum);
- 			count++;
- 		}
- 		linenum++;
-@@ -924,7 +866,7 @@ static int probe_point_lazy_walker(const char *fname, int lineno,
- 	Dwarf_Die *sc_die, die_mem;
- 	int ret;
- 
--	if (!line_list__has_line(&pf->lcache, lineno) ||
-+	if (!intlist__has_entry(pf->lcache, lineno) ||
- 	    strtailcmp(fname, pf->fname) != 0)
- 		return 0;
- 
-@@ -952,9 +894,9 @@ static int find_probe_point_lazy(Dwarf_Die *sp_die, struct probe_finder *pf)
- {
- 	int ret = 0;
- 
--	if (list_empty(&pf->lcache)) {
-+	if (intlist__empty(pf->lcache)) {
- 		/* Matching lazy line pattern */
--		ret = find_lazy_match_lines(&pf->lcache, pf->fname,
-+		ret = find_lazy_match_lines(pf->lcache, pf->fname,
- 					    pf->pev->point.lazy_line);
- 		if (ret <= 0)
- 			return ret;
-@@ -1096,7 +1038,9 @@ static int debuginfo__find_probes(struct debuginfo *dbg,
- #endif
- 
- 	off = 0;
--	line_list__init(&pf->lcache);
-+	pf->lcache = intlist__new(NULL);
-+	if (!pf->lcache)
-+		return -ENOMEM;
- 
- 	/* Fastpath: lookup by function name from .debug_pubnames section */
- 	if (pp->function) {
-@@ -1149,7 +1093,8 @@ static int debuginfo__find_probes(struct debuginfo *dbg,
- 	}
- 
- found:
--	line_list__free(&pf->lcache);
-+	intlist__delete(pf->lcache);
-+	pf->lcache = NULL;
- 
+@@ -383,6 +383,51 @@ static int add_module_to_probe_trace_events(struct probe_trace_event *tevs,
  	return ret;
  }
-@@ -1537,7 +1482,7 @@ static int line_range_add_line(const char *src, unsigned int lineno,
- 		if (lr->path == NULL)
- 			return -ENOMEM;
+ 
++static struct ref_reloc_sym *__kernel_get_ref_reloc_sym(void)
++{
++	/* kmap->ref_reloc_sym should be set if host_machine is initialized */
++	struct kmap *kmap;
++
++	kmap = map__kmap(host_machine->vmlinux_maps[MAP__FUNCTION]);
++	return kmap->ref_reloc_sym;
++}
++
++/* Post processing the probe events */
++static int post_process_probe_trace_events(struct probe_trace_event *tevs,
++					   int ntevs, const char *module,
++					   bool uprobe)
++{
++	struct ref_reloc_sym *reloc_sym;
++	char *tmp;
++	int i;
++
++	if (uprobe)
++		return add_exec_to_probe_trace_events(tevs, ntevs, module);
++
++	/* Note that currently ref_reloc_sym based probe is not for drivers */
++	if (module)
++		return add_module_to_probe_trace_events(tevs, ntevs, module);
++
++	reloc_sym = __kernel_get_ref_reloc_sym();
++	if (!reloc_sym) {
++		pr_warning("Relocated base symbol is not found!\n");
++		return -EINVAL;
++	}
++
++	for (i = 0; i < ntevs; i++) {
++		if (tevs[i].point.address) {
++			tmp = strdup(reloc_sym->name);
++			if (!tmp)
++				return -ENOMEM;
++			free(tevs[i].point.symbol);
++			tevs[i].point.symbol = tmp;
++			tevs[i].point.offset = tevs[i].point.address -
++					       reloc_sym->unrelocated_addr;
++		}
++	}
++	return 0;
++}
++
+ static void clear_probe_trace_events(struct probe_trace_event *tevs, int ntevs)
+ {
+ 	int i;
+@@ -411,21 +456,16 @@ static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
+ 		return 0;
  	}
--	return line_list__add_line(&lr->line_list, lineno);
-+	return intlist__add(lr->line_list, lineno);
- }
  
- static int line_range_walk_cb(const char *fname, int lineno,
-@@ -1565,7 +1510,7 @@ static int find_line_range_by_line(Dwarf_Die *sp_die, struct line_finder *lf)
++	pr_debug("Try to find probe point from debuginfo.\n");
+ 	/* Searching trace events corresponding to a probe event */
+ 	ntevs = debuginfo__find_trace_events(dinfo, pev, tevs, max_tevs);
  
- 	/* Update status */
- 	if (ret >= 0)
--		if (!list_empty(&lf->lr->line_list))
-+		if (!intlist__empty(lf->lr->line_list))
- 			ret = lf->found = 1;
- 		else
- 			ret = 0;	/* Lines are not found */
-diff --git a/tools/perf/util/probe-finder.h b/tools/perf/util/probe-finder.h
-index ffc33cd..592c4da 100644
---- a/tools/perf/util/probe-finder.h
-+++ b/tools/perf/util/probe-finder.h
-@@ -3,6 +3,7 @@
+ 	debuginfo__delete(dinfo);
  
- #include <stdbool.h>
- #include "util.h"
-+#include "intlist.h"
- #include "probe-event.h"
- 
- #define MAX_PROBE_BUFFER	1024
-@@ -66,7 +67,7 @@ struct probe_finder {
- 	const char		*fname;		/* Real file name */
- 	Dwarf_Die		cu_die;		/* Current CU */
- 	Dwarf_Die		sp_die;
--	struct list_head	lcache;		/* Line cache for lazy match */
-+	struct intlist		*lcache;	/* Line cache for lazy match */
- 
- 	/* For variable searching */
- #if _ELFUTILS_PREREQ(0, 142)
+ 	if (ntevs > 0) {	/* Succeeded to find trace events */
+-		pr_debug("find %d probe_trace_events.\n", ntevs);
+-		if (target) {
+-			if (pev->uprobes)
+-				ret = add_exec_to_probe_trace_events(*tevs,
+-						 ntevs, target);
+-			else
+-				ret = add_module_to_probe_trace_events(*tevs,
+-						 ntevs, target);
+-		}
++		pr_debug("Found %d probe_trace_events.\n", ntevs);
++		ret = post_process_probe_trace_events(*tevs, ntevs,
++							target, pev->uprobes);
+ 		if (ret < 0) {
+ 			clear_probe_trace_events(*tevs, ntevs);
+ 			zfree(tevs);
 
 
