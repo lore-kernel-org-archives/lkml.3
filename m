@@ -1,57 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752492AbaBFQ7U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 11:59:20 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:41386 "EHLO extserv.mm-sol.com"
+	id S1755901AbaBFQ7a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 11:59:30 -0500
+Received: from ns.mm-sol.com ([37.157.136.199]:41397 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750775AbaBFQ7S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 11:59:18 -0500
+	id S1750775AbaBFQ70 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 11:59:26 -0500
 From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Mark Brown <broonie@kernel.org>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>
-Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>, linux-spi@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: [PATCH 0/2] spi: Add Qualcomm QUP SPI controller support
-Date: Thu,  6 Feb 2014 18:57:46 +0200
-Message-Id: <1391705868-20091-1-git-send-email-iivanov@mm-sol.com>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>
+Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] spi: qup: Add device tree bindings information
+Date: Thu,  6 Feb 2014 18:57:47 +0200
+Message-Id: <1391705868-20091-2-git-send-email-iivanov@mm-sol.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1391705868-20091-1-git-send-email-iivanov@mm-sol.com>
+References: <1391705868-20091-1-git-send-email-iivanov@mm-sol.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-Hi, 
+The Qualcomm Universal Peripheral (QUP) core is an
+AHB slave that provides a common data path (an output
+FIFO and an input FIFO) for serial peripheral interface
+(SPI) mini-core.
 
-Following two patches are adding initial support for SPI controller
-available in Qualcomm SoC's.
-
-Controller initialization is based on spi_qsd driver available in
-CAF repository. 
-
-Controller supports SPI_CPOL | SPI_CPHA | SPI_CS_HIGH | SPI_LOOP modes, 
-up to 3 CS's and from 4 to 32 bits per word. SPI_LOOP mode is limited 
-to input FIFO buffer size.
-
-Currently driver support only PIO mode, I am hopping to add also DMA
-mode support with dmaengine patches developed by Andy.
-
-Regards,
-Ivan
-
-Ivan T. Ivanov (2):
-  spi: qup: Add device tree bindings information
-  spi: Add Qualcomm QUP SPI controller support
-
- .../devicetree/bindings/spi/qcom,spi-qup.txt       |   86 ++
- drivers/spi/Kconfig                                |   14 +
- drivers/spi/Makefile                               |    1 +
- drivers/spi/spi-qup.c                              |  898 ++++++++++++++++++++
- 4 files changed, 999 insertions(+)
+Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+---
+ .../devicetree/bindings/spi/qcom,spi-qup.txt       |   86 ++++++++++++++++++++
+ 1 file changed, 86 insertions(+)
  create mode 100644 Documentation/devicetree/bindings/spi/qcom,spi-qup.txt
- create mode 100644 drivers/spi/spi-qup.c
 
+diff --git a/Documentation/devicetree/bindings/spi/qcom,spi-qup.txt b/Documentation/devicetree/bindings/spi/qcom,spi-qup.txt
+new file mode 100644
+index 0000000..74565f1
+--- /dev/null
++++ b/Documentation/devicetree/bindings/spi/qcom,spi-qup.txt
+@@ -0,0 +1,86 @@
++Qualcomm Universal Peripheral (QUP) Serial Peripheral Interface (SPI)
++
++The QUP core is an AHB slave that provides a common data path (an output FIFO
++and an input FIFO) for serial peripheral interface (SPI) mini-core.
++
++SPI in master mode support up to 50MHz, up to four chip selects, and a
++programmable data path from 4 bits to 32 bits; supports numerous protocol
++variants.
++
++Required properties:
++- compatible: 		Should contain "qcom,spi-qup-v2".
++- reg: 				Should contain base register location and length
++- interrupts: 		Interrupt number used by this controller
++
++- clocks: 			Should contain the core clock and the AHB clock.
++- clock-names: 		Should be "core" for the core clock and "iface" for the
++                	AHB clock.
++
++- #address-cells: 	Number of cells required to define a chip select
++					address on the SPI bus. Should be set to 1.
++- #size-cells: 		Should be zero.
++
++Optional properties:
++- spi-max-frequency: Specifies maximum SPI clock frequency, Units - Hz. Definition
++                    as per Documentation/devicetree/bindings/spi/spi-bus.txt
++
++SPI slave nodes must be children of the SPI master node and can
++contain properties described in Documentation/devicetree/bindings/spi/spi-bus.txt
++
++Example:
++
++	spi_8: spi@f9964000 { /* BLSP2 QUP2 */
++
++		compatible = "qcom,spi-qup-v2";
++		#address-cells = <1>;
++		#size-cells = <0>;
++		reg = <0xf9964000 0x1000>;
++		interrupts = <0 102 0>;
++		spi-max-frequency = <19200000>;
++
++		clocks = <&gcc GCC_BLSP2_QUP2_SPI_APPS_CLK>, <&gcc GCC_BLSP2_AHB_CLK>;
++		clock-names = "core", "iface";
++
++		pinctrl-names = "default";
++		pinctrl-0 = <&spi8_default>;
++
++		device@0 {
++			compatible = "arm,pl022-dummy";
++			#address-cells = <1>;
++			#size-cells = <1>;
++			reg = <0>; /* Chip select 0 */
++			spi-max-frequency = <19200000>;
++			spi-cpol;
++		};
++
++		device@1 {
++			compatible = "arm,pl022-dummy";
++			#address-cells = <1>;
++			#size-cells = <1>;
++			reg = <1>; /* Chip select 1 */
++			spi-max-frequency = <9600000>;
++			spi-cpha;
++		};
++
++		device@2 {
++			compatible = "arm,pl022-dummy";
++			#address-cells = <1>;
++			#size-cells = <1>;
++			reg = <2>; /* Chip select 2 */
++			spi-max-frequency = <19200000>;
++			spi-cpol;
++			spi-cpha;
++		};
++
++		device@3 {
++			compatible = "arm,pl022-dummy";
++			#address-cells = <1>;
++			#size-cells = <1>;
++			reg = <3>; /* Chip select 3 */
++			spi-max-frequency = <19200000>;
++			spi-cpol;
++			spi-cpha;
++			spi-cs-high;
++		};
++	};
++
 -- 
 1.7.9.5
 
