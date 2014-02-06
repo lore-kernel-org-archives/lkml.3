@@ -1,50 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752181AbaBKQI7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 11:08:59 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:32448 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750978AbaBKQI6 (ORCPT
+	id S1751986AbaBKQLF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 11:11:05 -0500
+Received: from mail1.bemta5.messagelabs.com ([195.245.231.149]:44874 "EHLO
+	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751071AbaBKQLD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 11:08:58 -0500
-Date: Tue, 11 Feb 2014 19:08:26 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Evgeniy Polyakov <zbr@ioremap.net>, David Fries <David@Fries.net>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch] w1: small type cleanup in sysfs
-Message-ID: <20140211160826.GD9406@elgon.mountain>
+	Tue, 11 Feb 2014 11:11:03 -0500
+X-Env-Sender: anthony.olech.opensource@diasemi.com
+X-Msg-Ref: server-9.tower-179.messagelabs.com!1392135036!26660354!1
+X-Originating-IP: [82.210.246.133]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.16; banners=-,-,-
+X-VirusChecked: Checked
+Message-ID: <201402111610.s1BGAXJo056493@swsrvapps-02.lan>
+From: "Anthony Olech <anthony.olech.opensource@diasemi.com>" 
+	<Anthony.Olech.OpenSource@diasemi.com>
+Date: Thu, 6 Feb 2014 15:19:49 +0000
+Subject: [PATCH V1] da9052: ONKEY: use correct register bit for key status
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 64 bit systems, a large value for "tmp" could be truncated so we
-still end up with a ->max_slave_count which is less than one despite the
-"tmp < 1" check.
+The wrong register bit of the DA9052/3 PMIC registers was
+used to determine the status on the ONKEY.
 
-This is more of a problem for static checkers than a real life issue,
-but it's simple enough to fix.
+Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
+Signed-off-by: David Dajun Chen <david.chen@diasemi.com>
+---
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+This patch is relative to linux-next repository tag next-20140206
 
-diff --git a/drivers/w1/w1.c b/drivers/w1/w1.c
-index 9eb816b2ea5e..b96f61b15dc6 100644
---- a/drivers/w1/w1.c
-+++ b/drivers/w1/w1.c
-@@ -320,10 +320,10 @@ static ssize_t w1_master_attribute_show_timeout(struct device *dev, struct devic
- static ssize_t w1_master_attribute_store_max_slave_count(struct device *dev,
- 	struct device_attribute *attr, const char *buf, size_t count)
+The bug that this patch fixes affects only the DA9052 ONKEY driver.
+
+The problem was detected whilst running a scripted set of functional
+regression tests whilst investigating a different problem.
+
+This patch has been test compiled on an amd64 server for both x86
+and arm targets.
+
+This patch has been spot verified using an SMDK6410 platform
+fly-wired to a Dialog da9053 EVB.
+
+ drivers/input/misc/da9052_onkey.c |   14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/input/misc/da9052_onkey.c b/drivers/input/misc/da9052_onkey.c
+index 1f695f2..7e78334 100644
+--- a/drivers/input/misc/da9052_onkey.c
++++ b/drivers/input/misc/da9052_onkey.c
+@@ -27,19 +27,23 @@ struct da9052_onkey {
+ 
+ static void da9052_onkey_query(struct da9052_onkey *onkey)
  {
--	long tmp;
-+	int tmp;
- 	struct w1_master *md = dev_to_w1_master(dev);
+-	int key_stat;
++	int ret, key_stat;
  
--	if (kstrtol(buf, 0, &tmp) == -EINVAL || tmp < 1)
-+	if (kstrtoint(buf, 0, &tmp) == -EINVAL || tmp < 1)
- 		return -EINVAL;
- 
- 	mutex_lock(&md->mutex);
+-	key_stat = da9052_reg_read(onkey->da9052, DA9052_EVENT_B_REG);
+-	if (key_stat < 0) {
++	ret = da9052_reg_read(onkey->da9052, DA9052_STATUS_A_REG);
++	if (ret < 0) {
+ 		dev_err(onkey->da9052->dev,
+-			"Failed to read onkey event %d\n", key_stat);
++			"Failed to read onkey event err=%d\n", ret);
++		key_stat = false;
+ 	} else {
+ 		/*
+ 		 * Since interrupt for deassertion of ONKEY pin is not
+ 		 * generated, onkey event state determines the onkey
+ 		 * button state.
+ 		 */
+-		key_stat &= DA9052_EVENTB_ENONKEY;
++		if (ret & DA9052_STATUSA_NONKEY)
++			key_stat = false;
++		else
++			key_stat = true;
+ 		input_report_key(onkey->input, KEY_POWER, key_stat);
+ 		input_sync(onkey->input);
+ 	}
+-- 
+end-of-patch for da9052: ONKEY: use correct register bit for key status V1
+
