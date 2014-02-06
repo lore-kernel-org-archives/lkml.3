@@ -1,81 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754307AbaBFO6X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 09:58:23 -0500
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:42460 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752015AbaBFO6W (ORCPT
+	id S1755307AbaBFPAs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 10:00:48 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:56229 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752750AbaBFPAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 09:58:22 -0500
-Message-ID: <52F3A30C.7050205@linux.vnet.ibm.com>
-Date: Thu, 06 Feb 2014 15:58:20 +0100
-From: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
+	Thu, 6 Feb 2014 10:00:44 -0500
+Date: Thu, 6 Feb 2014 16:02:26 +0100
+From: Emil Goode <emilgoode@gmail.com>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: "David S. Miller" <davem@davemloft.net>, Ming Lei <ming.lei@canonical.com>,
+        Mark Brown <broonie@linaro.org>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Glen Turner <gdt@gdt.id.au>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] net: asix: fix bad header length bug
+Message-ID: <20140206150226.GA5251@lianli>
+References: <1391691384-8486-1-git-send-email-emilgoode@gmail.com>
+ <063D6719AE5E284EB5DD2968C1650D6D0F6B98CA@AcuExch.aculab.com>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>, Meelis Roos <mroos@linux.ee>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: 3.13: BUG: unable to handle kernel paging request at 00000000b4343e88
-References: <alpine.SOC.1.00.1401211228410.25614@math.ut.ee> <20140121141037.f76dba61212c5597ff733207@linux-foundation.org> <alpine.SOC.1.00.1401221731150.3033@math.ut.ee> <52E26EF3.1090901@linux.vnet.ibm.com> <alpine.SOC.1.00.1401242249540.16252@math.ut.ee> <52E68111.6010005@linux.vnet.ibm.com> <alpine.SOC.1.00.1401280832500.5459@math.ut.ee> <52E918C9.7030408@linux.vnet.ibm.com> <alpine.SOC.1.00.1401292242390.12718@math.ut.ee> <52EBC65C.5020404@linux.vnet.ibm.com> <52F26E21.8000101@linux.vnet.ibm.com> <52F27683.8090404@zytor.com>
-In-Reply-To: <52F27683.8090404@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14020614-1948-0000-0000-000007B675F6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D0F6B98CA@AcuExch.aculab.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05.02.2014 18:36, H. Peter Anvin wrote:
-> On 02/05/2014 09:00 AM, Peter Oberparleiter wrote:
->>
->> Could you give this patch a try? It is a variation of the approach
->> proposed in the discussion mentioned earlier and fixes the problem
->> on my system.
->>
+Hello David,
+
+Thank's for the review.
+
+On Thu, Feb 06, 2014 at 01:37:12PM +0000, David Laight wrote:
+> From: Emil Goode
+> > The AX88772B occasionally send rx packets that cross urb boundaries
+> > and the remaining partial packet is sent with no header.
+> > When the buffer with a partial packet is of less number of octets
+> > than the value of hard_header_len the buffer is discarded by the
+> > usbnet module. This is causing dropped packages and error messages
+> > in dmesg.
+> > 
+> > This can be reproduced by using ping with a packet size
+> > between 1965-1976.
 > 
-> I would rather suggest that we explicitly disable gcov etc. from these
-> kinds of small, magic primitives.  Honestly, you're just trying to put a
-> bandaid on a gaping wound.
+> I think this can affect other USB ethernet drivers.
+> Probably most of the ones that explicitly set rx_urb_len.
 > 
-> The real thing here is that hweight.c is not a normal C file, and we
-> shouldn't treat is as such.  It is a constrained environment, and trying
-> to tack crap like gcov to it is bound to lose, simply because gcov
-> doesn't know the rules it has to play by.
+> The ax88179_178a driver sets massive 20k receive urb.
+
+The ax88179_178a has it's own bind function, so I believe it's
+not affected by this change.
+
+> I've seen over 10k of data in a single urb, dunno if it
+> can actually generate more than 20k - possibly if the usb3 link
+> is loaded with other traffic.
+> It would be much more efficient for it to use an aligned 4k urb
+> and then merge the fragment into skbs.
 > 
-> Even with the below change, if gcov clobbers, say, %rdx we're still screwed.
+> Once you've set:
+> +	dev->net->hard_header_len = 0; /* Partial packets have no header */
+> try setting the mtu to a multiple of 1k.
 
-I'm fine with the proposed alternative of disabling gcov profiling for
-lib/hweight.c. The patch below fixes the problem on my test system.
+I tried setting the mtu to 2000 and when using ping with a large enough
+packet size to fill the urb to rx_urb_size all packages are dropped.
 
----
-x86/hweight: Fix BUG when booting with CONFIG_GCOV_PROFILE_ALL=y
+> There is a very odd check in usbnet_change_mtu() that tries to stop the
+> receive urb_length being a multiple of the usb packet size.
 
-Commit d61931d89b, "x86: Add optimized popcnt variants" introduced
-compile flag -fcall-saved-rdi for lib/hweight.c. When combined with
-options -fprofile-arcs and -O2, this flag causes gcc to generate broken
-constructor code. As a result, a 64 bit x86 kernel compiled with
-CONFIG_GCOV_PROFILE_ALL=y prints message "gcov: could not create file"
-and runs into sproadic BUGs during boot.
+This is very odd indeed!
 
-This patch avoids the bug by excluding lib/hweight.o from coverage
-profiling.
-
-Reported-by: Meelis Roos <mroos@linux.ee>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
----
- lib/Makefile |    1 +
- 1 file changed, 1 insertion(+)
-diff -Naurp a/lib/Makefile b/lib/Makefile
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -43,6 +43,7 @@ obj-$(CONFIG_HAS_IOMEM) += iomap_copy.o
- obj-$(CONFIG_CHECK_SIGNATURE) += check_signature.o
- obj-$(CONFIG_DEBUG_LOCKING_API_SELFTESTS) += locking-selftest.o
-
-+GCOV_PROFILE_hweight.o := n
- CFLAGS_hweight.o = $(subst $(quote),,$(CONFIG_ARCH_HWEIGHT_CFLAGS))
- obj-$(CONFIG_GENERIC_HWEIGHT) += hweight.o
-
+>
+> This code looks as though it is hoping that the usb controller will discard
+> any full length bulk messages after finding a short buffer.
+> I suspect that might be just wishful thinking!
+> 
+> 	David
+> 
+> 
+> 
