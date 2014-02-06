@@ -1,58 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754668AbaBFEwE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 23:52:04 -0500
-Received: from nctlincom02.orcon.net.nz ([60.234.4.76]:57602 "EHLO
-	nctlincom02.orcon.net.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753942AbaBFEwC (ORCPT
+	id S1754897AbaBFE5g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 23:57:36 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:33107 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754478AbaBFE5f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 23:52:02 -0500
-X-Greylist: delayed 800 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Feb 2014 23:52:02 EST
-Date: Thu, 6 Feb 2014 17:38:33 +1300
-From: Michael Cree <mcree@orcon.net.nz>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Matt Turner <mattst88@gmail.com>
-Subject: Re: [PATCH 3.12 117/133] alpha: fix broken network checksum
-Message-ID: <20140206043833.GA12599@omega>
-References: <20140204210737.008598235@linuxfoundation.org>
- <20140204210740.336662867@linuxfoundation.org>
+	Wed, 5 Feb 2014 23:57:35 -0500
+Date: Wed, 5 Feb 2014 20:57:30 -0800
+From: Matt Wilson <msw@linux.com>
+To: Konrad Rzeszutek Wilk <konrad@darnok.org>
+Cc: Roger Pau Monne <roger.pau@citrix.com>, mrushton@amazon.com,
+        msw@amazon.com, xen-devel@lists.xenproject.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH v2 0/4] xen-blk: bug fixes
+Message-ID: <20140206045729.GA15901@u109add4315675089e695.ant.amazon.com>
+References: <1391509575-3949-1-git-send-email-roger.pau@citrix.com>
+ <20140204151501.GA1781@andromeda.dapyr.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140204210740.336662867@linuxfoundation.org>
+In-Reply-To: <20140204151501.GA1781@andromeda.dapyr.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Check: by mx6.orcon.net.nz on Thu, 06 Feb 2014 17:38:38 +1300
-X-DSPAM-Result: Innocent
-X-DSPAM-Processed: Thu Feb  6 17:38:38 2014
-X-DSPAM-Confidence: 0.6515
-X-DSPAM-Probability: 0.0000
-X-Bayes-Prob: 0.0001 (Score 0, tokens from: @@RPTN, default)
-X-Spam-Score: -3.00 () [Hold at 4.00] CC(NZ:-3)
-X-CanIt-Geo: ip=60.234.221.162; country=NZ; region=E7; city=Auckland; latitude=-36.8667; longitude=174.7667; http://maps.google.com/maps?q=-36.8667,174.7667&z=6
-X-CanItPRO-Stream: base:default
-X-Canit-Stats-ID: 05LmQCCfu - 6bebdd82f3c9 - 20140206
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 04, 2014 at 01:08:38PM -0800, Greg Kroah-Hartman wrote:
-> 3.12-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Feb 04, 2014 at 11:15:01AM -0400, Konrad Rzeszutek Wilk wrote:
+> On Tue, Feb 04, 2014 at 11:26:11AM +0100, Roger Pau Monne wrote:
+> > This series contain blkback bug fixes for memory leaks (patches 1 and 
+> > 2) and a race (patch 3). Patch 4 removes blkif_request_segment_aligned 
+> > since its memory layout is exactly the same as blkif_request_segment 
+> > and should introduce no functional change.
+> > 
+> > All patches should be backported to stable branches, although the last 
+> > one is not a functional change it will still be nice to have it for 
+> > code correctness.
 > 
-> ------------------
-> 
-> From: Mikulas Patocka <mpatocka@redhat.com>
-> 
-> commit 0ef38d70d4118b2ce1a538d14357be5ff9dc2bbd upstream.
-> 
-> The patch 3ddc5b46a8e90f3c9251338b60191d0a804b0d92 breaks networking on
-> alpha (there is a follow-up fix 5cfe8f1ba5eebe6f4b6e5858cdb1a5be4f3272a6,
-> but networking is still broken even with the second patch).
+> Matt and Matt, could you guys kindly take a look as well? Thank you!
 
-I wonder whether that follow-up (partial) fix mentioned
-(5cfe8f1ba5eebe6f4b6e5858cdb1a5be4f3272a6) should be pulled into 3.12 stable
-too?
+Matt R. did some testing today and set up additional tests to run
+overnight. He'll follow up after the overnight tests complete.
 
-Cheers
-Michael.
+--msw
