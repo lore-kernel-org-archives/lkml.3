@@ -1,46 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751520AbaBFOHL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 09:07:11 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43121 "EHLO mx2.suse.de"
+	id S1751744AbaBFOHV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 09:07:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33657 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750720AbaBFOHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 09:07:09 -0500
-Date: Thu, 6 Feb 2014 15:07:07 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: akpm@linux-foundation.org, rientjes@google.com, penberg@kernel.org,
-        cl@linux.com, glommer@gmail.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@openvz.org
-Subject: Re: [PATCH 3/8] memcg, slab: never try to merge memcg caches
-Message-ID: <20140206140707.GF20269@dhcp22.suse.cz>
-References: <cover.1391356789.git.vdavydov@parallels.com>
- <27c4e7d7fb6b788b66995d2523225ef2dcbc6431.1391356789.git.vdavydov@parallels.com>
- <20140204145210.GH4890@dhcp22.suse.cz>
- <52F1004B.90307@parallels.com>
- <20140204151145.GI4890@dhcp22.suse.cz>
- <52F106D7.3060802@parallels.com>
+	id S1751572AbaBFOHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 09:07:17 -0500
+Date: Thu, 6 Feb 2014 12:07:05 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>, Jiri Olsa <jolsa@redhat.com>,
+        Eric Dumazet <edumazet@google.com>
+Subject: Re: [BUG] perf top: --stdio causes continuous refresh
+Message-ID: <20140206140705.GB26955@infradead.org>
+References: <CABPqkBSkSbWvdRu3iEtNvHhfV4J4sALHvdd40hZTcGxLe576yQ@mail.gmail.com>
+ <20140206135627.GA26955@infradead.org>
+ <CABPqkBS5qLDYyyv=n8fT4K+hA3uRWYmQOZmO+n-UE9=X=cEFzQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52F106D7.3060802@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CABPqkBS5qLDYyyv=n8fT4K+hA3uRWYmQOZmO+n-UE9=X=cEFzQ@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 04-02-14 19:27:19, Vladimir Davydov wrote:
-[...]
-> What does this patch change? Actually, it introduces no functional
-> changes - it only remove the code trying to find an alias for a memcg
-> cache, because it will fail anyway. So this is rather a cleanup.
+Em Thu, Feb 06, 2014 at 02:58:01PM +0100, Stephane Eranian escreveu:
+> On Thu, Feb 6, 2014 at 2:56 PM, Arnaldo Carvalho de Melo
+> <acme@redhat.com> wrote:
+> > Em Wed, Feb 05, 2014 at 10:25:09PM +0100, Stephane Eranian escreveu:
+> >> If you run perf top on 3.14 but you force --stdio mode, perf top
+> >> goes crazy and constantly refreshes the output.
 
-But this also means that two different memcgs might share the same cache
-and so the pages for that cache, no? Actually it would depend on timing
-because a new page would be chaged for the current allocator.
+> >> It does that with many older versions of the perf as well on 3.14.
+> >> It runs fine with newt mode.
 
-cachep->memcg_params->memcg == memcg would prevent from such a merge
-previously AFAICS, or am I still confused?
--- 
-Michal Hocko
-SUSE Labs
+> >> Works fine with my 3.11 kernel. So something must be broken
+> >> with 3.14.
+
+> >> Can you reproduce the problem as well?
+
+> > Not so far, using my perf/urgent branch:
+
+> I am using tip.git. Or try 3.11, 3.10.
+
+Tried torvalds/master, no problem, looking at what the top's screen
+refresh thread does we can see:
+
+[root@ssdandy ~]# trace -t 3562 -e \!write
+     0.000 ( 0.000 ms):  ... [continued]: poll()) = 0 Timeout
+  2031.522 (2002.480 ms): poll(ufds: 0x7fbb91596bb0, nfds: 1, timeout_msecs: 2000               ) = 0 Timeout
+  4064.346 (2002.456 ms): poll(ufds: 0x7fbb91596bb0, nfds: 1, timeout_msecs: 2000               ) = 0 Timeout
+^C[root@ssdandy ~]# 
+
+I.e. waiting the default of:
+
+                .delay_secs          = 2,
+
+2 seconds between refreshes.
+
+Checking out tip.tip, or are you suggesting to try an old perf binary, from
+3.11 or 3.10 on top of a newer kernel?
+
+- Arnaldo
