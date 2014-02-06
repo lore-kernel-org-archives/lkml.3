@@ -1,97 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756663AbaBFVdP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 16:33:15 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:55112 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751634AbaBFVdO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 16:33:14 -0500
-Date: Thu, 6 Feb 2014 13:33:11 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Vlastimil Babka <vbabka@suse.cz>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [patch v2] mm, compaction: avoid isolating pinned pages
-In-Reply-To: <52F3D912.4020607@suse.cz>
-Message-ID: <alpine.DEB.2.02.1402061331190.12761@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1402012145510.2593@chino.kir.corp.google.com> <20140203095329.GH6732@suse.de> <alpine.DEB.2.02.1402030231590.31061@chino.kir.corp.google.com> <20140204000237.GA17331@lge.com> <alpine.DEB.2.02.1402031610090.10778@chino.kir.corp.google.com>
- <20140204015332.GA14779@lge.com> <alpine.DEB.2.02.1402031755440.26347@chino.kir.corp.google.com> <20140204021533.GA14924@lge.com> <alpine.DEB.2.02.1402031848290.15032@chino.kir.corp.google.com> <alpine.DEB.2.02.1402041842100.14045@chino.kir.corp.google.com>
- <52F3D912.4020607@suse.cz>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1756872AbaBFVdy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 16:33:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18015 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751319AbaBFVdw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 16:33:52 -0500
+Message-ID: <52F3FFBC.1010505@redhat.com>
+Date: Thu, 06 Feb 2014 16:33:48 -0500
+From: "Carlos O'Donell" <carlos@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Jan Moskyto Matejka <mq@suse.cz>, "David S. Miller" <davem@davemloft.net>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] inet: defines IPPROTO_* needed for module alias generation
+References: <1391685000-7346-1-git-send-email-mq@suse.cz>
+In-Reply-To: <1391685000-7346-1-git-send-email-mq@suse.cz>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Feb 2014, Vlastimil Babka wrote:
+On 02/06/2014 06:10 AM, Jan Moskyto Matejka wrote:
+> Commit cfd280c91253 ("net: sync some IP headers with glibc") changed a set of
+> define's to an enum (with no explanation why) which introduced a bug
+> in module mip6 where aliases are generated using the IPPROTO_* defines;
+> mip6 doesn't load if require_module called with the aliases from
+> xfrm_get_type().
 
-> > Page migration will fail for memory that is pinned in memory with, for
-> > example, get_user_pages().  In this case, it is unnecessary to take
-> > zone->lru_lock or isolating the page and passing it to page migration
-> > which will ultimately fail.
-> > 
-> > This is a racy check, the page can still change from under us, but in
-> > that case we'll just fail later when attempting to move the page.
-> > 
-> > This avoids very expensive memory compaction when faulting transparent
-> > hugepages after pinning a lot of memory with a Mellanox driver.
-> > 
-> > On a 128GB machine and pinning ~120GB of memory, before this patch we
-> > see the enormous disparity in the number of page migration failures
-> > because of the pinning (from /proc/vmstat):
-> > 
-> > 	compact_pages_moved 8450
-> > 	compact_pagemigrate_failed 15614415
-> > 
-> > 0.05% of pages isolated are successfully migrated and explicitly
-> > triggering memory compaction takes 102 seconds.  After the patch:
-> > 
-> > 	compact_pages_moved 9197
-> > 	compact_pagemigrate_failed 7
-> > 
-> > 99.9% of pages isolated are now successfully migrated in this
-> > configuration and memory compaction takes less than one second.
-> > 
-> > Signed-off-by: David Rientjes <rientjes@google.com>
-> > ---
-> >   v2: address page count issue per Joonsoo
-> > 
-> >   mm/compaction.c | 9 +++++++++
-> >   1 file changed, 9 insertions(+)
-> > 
-> > diff --git a/mm/compaction.c b/mm/compaction.c
-> > --- a/mm/compaction.c
-> > +++ b/mm/compaction.c
-> > @@ -578,6 +578,15 @@ isolate_migratepages_range(struct zone *zone, struct
-> > compact_control *cc,
-> >   			continue;
-> >   		}
-> >   +		/*
-> > +		 * Migration will fail if an anonymous page is pinned in
-> > memory,
-> > +		 * so avoid taking lru_lock and isolating it unnecessarily in
-> > an
-> > +		 * admittedly racy check.
-> > +		 */
-> > +		if (!page_mapping(page) &&
-> > +		    page_count(page) > page_mapcount(page))
-> > +			continue;
-> > +
+I wrote that code and I apologize for not giving a reason at
+the time.
+
+There are two reasons:
+
+* It makes the debuginfo better and debugging easier via the enum.
+
+* It harmonizes those headers with what is already in glibc.
+
+Harmonizing this header with glibc makes it easier for userspace
+to synchronize changes and perhaps eventually use the UAPI headers
+directly.
+
+> Reverting this change back to define's to fix the aliases.
 > 
-> Hm this page_count() seems it could substantially increase the chance of race
-> with prep_compound_page that your patch "mm, page_alloc: make first_page
-> visible before PageTail" tries to fix :)
+> modinfo mip6 (before this change)
+> alias:          xfrm-type-10-IPPROTO_DSTOPTS
+> alias:          xfrm-type-10-IPPROTO_ROUTING
+> 
+> modinfo mip6 (after this change)
+> alias:          xfrm-type-10-43
+> alias:          xfrm-type-10-60
+
+Instead of reverting these changes I suggest someone fix
+whatever is processing that information.
+
+I do not condone the application of this patch for the
+above two reasons. Though you might argue that I should
+just make all debuggers and compilers better at dealing
+with DW_at_macro_info/DW_MACINFO_* debug info... and 
+you also would not be wrong.
+
+I hope that answers your question.
+
+> Signed-off-by: Jan Moskyto Matejka <mq@suse.cz>
+> ---
+>  include/uapi/linux/in6.h | 23 +++++++----------------
+>  1 file changed, 7 insertions(+), 16 deletions(-)
+> 
+> diff --git a/include/uapi/linux/in6.h b/include/uapi/linux/in6.h
+> index 633b93c..e9a1d2d97 100644
+> --- a/include/uapi/linux/in6.h
+> +++ b/include/uapi/linux/in6.h
+> @@ -128,22 +128,13 @@ struct in6_flowlabel_req {
+>   *	IPV6 extension headers
+>   */
+>  #if __UAPI_DEF_IPPROTO_V6
+> -enum {
+> -  IPPROTO_HOPOPTS = 0,		/* IPv6 hop-by-hop options      */
+> -#define IPPROTO_HOPOPTS		IPPROTO_HOPOPTS
+> -  IPPROTO_ROUTING = 43,		/* IPv6 routing header          */
+> -#define IPPROTO_ROUTING		IPPROTO_ROUTING
+> -  IPPROTO_FRAGMENT = 44,	/* IPv6 fragmentation header    */
+> -#define IPPROTO_FRAGMENT	IPPROTO_FRAGMENT
+> -  IPPROTO_ICMPV6 = 58,		/* ICMPv6                       */
+> -#define IPPROTO_ICMPV6		IPPROTO_ICMPV6
+> -  IPPROTO_NONE = 59,		/* IPv6 no next header          */
+> -#define IPPROTO_NONE		IPPROTO_NONE
+> -  IPPROTO_DSTOPTS = 60,		/* IPv6 destination options     */
+> -#define IPPROTO_DSTOPTS		IPPROTO_DSTOPTS
+> -  IPPROTO_MH = 135,		/* IPv6 mobility header         */
+> -#define IPPROTO_MH		IPPROTO_MH
+> -};
+> +#define IPPROTO_HOPOPTS		0	/* IPv6 hop-by-hop options	*/
+> +#define IPPROTO_ROUTING		43	/* IPv6 routing header		*/
+> +#define IPPROTO_FRAGMENT	44	/* IPv6 fragmentation header	*/
+> +#define IPPROTO_ICMPV6		58	/* ICMPv6			*/
+> +#define IPPROTO_NONE		59	/* IPv6 no next header		*/
+> +#define IPPROTO_DSTOPTS		60	/* IPv6 destination options	*/
+> +#define IPPROTO_MH		135	/* IPv6 mobility header		*/
+>  #endif /* __UAPI_DEF_IPPROTO_V6 */
+>  
+>  /*
 > 
 
-That's why I sent the fix for page_count().
-
-The "racy check" the comment eludes to above concerns the fact that 
-page_count() and page_mapcount() can change out from under us before 
-isolation and if we had not avoided isolating them that they would have 
-been migratable later.  We accept that as a consequence of doing this in a 
-lockless way without page references.
+Cheers,
+Carlos.
