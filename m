@@ -1,58 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756739AbaBFQw4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 11:52:56 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:50076 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755941AbaBFQwy (ORCPT
+	id S1756757AbaBFQxI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 11:53:08 -0500
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:33825 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756742AbaBFQxD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 11:52:54 -0500
-Date: Thu, 6 Feb 2014 11:52:52 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Johannes Berg <johannes@sipsolutions.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH] sched/wait: suppress sparse 'variable shadowing'
- warning
-Message-ID: <20140206115252.230094a1@gandalf.local.home>
-In-Reply-To: <20140206164558.GV2936@laptop.programming.kicks-ass.net>
-References: <20140206111346.712edc04@gandalf.local.home>
-	<1391704121.12789.20.camel@jlt4.sipsolutions.net>
-	<20140206164558.GV2936@laptop.programming.kicks-ass.net>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Thu, 6 Feb 2014 11:53:03 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+In-Reply-To: <20140206135001.333583247@infradead.org>
+References: <20140206134825.305510953@infradead.org>
+	<20140206135001.333583247@infradead.org>
+Date: Thu, 6 Feb 2014 08:53:02 -0800
+X-Google-Sender-Auth: _uVOhh3kIHGguPtpSM8b5SDUby0
+Message-ID: <CA+55aFwzn09dPJekgCbO2VRO8j3=eEt2j_QFd=Gd4MXTA2gm9g@mail.gmail.com>
+Subject: Re: [RFC][PATCH 5/5] arch: Sanitize atomic_t bitwise ops
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Will Deacon <will.deacon@arm.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Feb 2014 17:45:58 +0100
-Peter Zijlstra <peterz@infradead.org> wrote:
+On Thu, Feb 6, 2014 at 5:48 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> Many archs have atomic_{set,clear}_mask() but not all. Remove these
+> and provide a comprehensive set of bitops:
+>
+>   atomic{,64}_{and,or,xor}{,_return}()
 
-> On Thu, Feb 06, 2014 at 05:28:41PM +0100, Johannes Berg wrote:
-> > From: Johannes Berg <johannes.berg@intel.com>
-> > 
-> > This warning seems to show up a lot now, since ___wait_event()
-> > is (indirectly) used inside wait_event_timeout(), which also
-> > has a variable called __ret. Rename the one in ___wait_event()
-> > to ___ret (another leading underscore) to suppress the warning.
-> > 
-> > Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-> 
-> Thanks!
+Who uses these, and why?
 
-Tag, you're it!
+The "_return()" versions of atomic ops are noticeably slower and more
+complex on common architectures (ie x86), and apparently there is no
+use of them since they didn't exist.
 
-Now you need to submit a patch to fix one sparse warning this week ;-)
+So why add them? Just to encourage people to do bad things?
 
-Yeah, yeah, I know. Like you have time.
-
-This could be a cool drinking game. Every time you fix someone else's
-sparse error, they have to drink a pint :-)
-
--- Steve
+                  Linus
