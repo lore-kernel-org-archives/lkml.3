@@ -1,231 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754661AbaBFELU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 23:11:20 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:37686 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753995AbaBFELS (ORCPT
+	id S1754623AbaBFEda (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 23:33:30 -0500
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:41388 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753942AbaBFEd2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 23:11:18 -0500
-Message-ID: <52F30B5E.8020202@hitachi.com>
-Date: Thu, 06 Feb 2014 13:11:10 +0900
-From: Eiichi Tsukata <eiichi.tsukata.xh@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Wed, 5 Feb 2014 23:33:28 -0500
 MIME-Version: 1.0
-To: James Bottomley <jbottomley@parallels.com>
-Cc: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [REVIEW PATCH] scsi: Add 'retry_timeout' to avoid infinite command
- retry
-References: <1391579254-26204-1-git-send-email-eiichi.tsukata.xh@hitachi.com>	 <1391579254-26204-2-git-send-email-eiichi.tsukata.xh@hitachi.com> <1391619349.2213.11.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1391619349.2213.11.camel@dabdike.int.hansenpartnership.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CA+55aFx70seh4VD+=ZKHrjTCrinG0Hq3=X6ygCeOeuNCSG8n8Q@mail.gmail.com>
+References: <CA+55aFzNxTtvNX7zqBELHs489e5mEx1sM=i=red=aQAGviXrNw@mail.gmail.com>
+	<CA+55aFxpBkTn3LvSzxFj7ZoxuY=Rrg0OoAVuk5dK-ZLsO8kk4A@mail.gmail.com>
+	<20140206005534.GA27848@node.dhcp.inet.fi>
+	<CA+55aFx70seh4VD+=ZKHrjTCrinG0Hq3=X6ygCeOeuNCSG8n8Q@mail.gmail.com>
+Date: Wed, 5 Feb 2014 20:33:27 -0800
+X-Google-Sender-Auth: y7Rnwh8PcKsP8hnQB-cXx4au9t4
+Message-ID: <CA+55aFwfGVCVouh5uap3UPy92vc4N9OrRRa-NpYT9ZMicU6w8w@mail.gmail.com>
+Subject: Re: [RFC] de-asmify the x86-64 system call slowpath
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ning Qu <quning@google.com>
+Content-Type: multipart/mixed; boundary=089e01294232f24eb904f1b55fdd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/02/06 1:55), James Bottomley wrote:
-> On Wed, 2014-02-05 at 14:47 +0900, Eiichi Tsukata wrote:
->> Currently, scsi error handling in scsi_decide_disposition() tries to
->> unconditionally requeue scsi command when device keeps some error state.
->> This is because retryable errors are thought to be temporary and the scsi
->> device will soon recover from those errors. Normally, such retry policy is
->> appropriate because the device will soon recover from temporary error state.
-> This description isn't very descriptive.  I presume you're talking about
-> the ADD_TO_MLQUEUE return from scsi_decide_disposition()?
+--089e01294232f24eb904f1b55fdd
+Content-Type: text/plain; charset=UTF-8
+
+On Wed, Feb 5, 2014 at 6:32 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 >
+> No, I was thinking "try to optimistically map 8 adjacent aligned pages
+> at a time" - that would be the same cacheline in the page tables, so
+> it would be fairly cheap if we couple it with a gang-lookup of the
+> pages in the page cache
 
-Thanks for reviewing, James.
+Doing the gang-lookup is hard, since it's all abstracted away, but the
+attached patch kind of tries to do what I described.
 
-I was talking about ADD_TO_MLQUEUE and NEEDS_RETRY.
-I'll fix the description.
+This patch probably doesn't work, but something *like* this might be
+worth playing with.
 
->> But there is no guarantee that device is able to recover from error state
->> immediately. Some hardware error may prevent device from recovering.
->> Therefore hardware error can results in infinite command retry loop.
-> If you're talking about ADD_TO_MLQUEUE, I don't believe this is correct:
-> there's a test in scsi_softirq_done() that makes sure the maximum
-> lifetime is retries*timeout and fails the command after that.
+Except I suspect the page-backed faults are actually the minority,
+judging by how high clear_page_c_e is in the profile it's probably
+mostly anonymous memory. I have no idea why I started with the (more
+complex) case of file-backed prefaulting. Oh well.
 
-I see, threre's already timeout in scsi_softirq_done() so my patch is not correct
-as you say.
+            Linus
 
-What I really want to do is to prevent command from retrying indefinitely
-in scsi_io_completion()
-with action == ACTION_RETRY || action == ACTION_DELAYED_RETRY.
-In v2 patch, I'll change the location of retry timeout check from scsi_softirq_done()
-to scsi_io_completion().
+--089e01294232f24eb904f1b55fdd
+Content-Type: text/plain; charset=US-ASCII; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hrbj4pla0
 
-Eiichi
-
-
-(2014/02/06 1:55), James Bottomley wrote:
-> On Wed, 2014-02-05 at 14:47 +0900, Eiichi Tsukata wrote:
->> Currently, scsi error handling in scsi_decide_disposition() tries to
->> unconditionally requeue scsi command when device keeps some error state.
->> This is because retryable errors are thought to be temporary and the scsi
->> device will soon recover from those errors. Normally, such retry policy is
->> appropriate because the device will soon recover from temporary error state.
-> This description isn't very descriptive.  I presume you're talking about
-> the ADD_TO_MLQUEUE return from scsi_decide_disposition()?
->
->> But there is no guarantee that device is able to recover from error state
->> immediately. Some hardware error may prevent device from recovering.
->> Therefore hardware error can results in infinite command retry loop.
-> If you're talking about ADD_TO_MLQUEUE, I don't believe this is correct:
-> there's a test in scsi_softirq_done() that makes sure the maximum
-> lifetime is retries*timeout and fails the command after that.
->
-> James
->
->
->> This patchs adds 'retry_timeout' sysfs attribute which limits the retry time
->> of each scsi command. Once scsi command retry time is longer than this timeout,
->> the command is treated as failure. 'retry_timeout' is set to '0' by default
->> which means no timeout set.
->>
->> Signed-off-by: Eiichi Tsukata <eiichi.tsukata.xh@hitachi.com>
->> Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
->> Cc: linux-scsi@vger.kernel.org
->> Cc: linux-kernel@vger.kernel.org
->> ---
->>   drivers/scsi/scsi_lib.c    | 22 +++++++++++++++++++++-
->>   drivers/scsi/scsi_scan.c   |  1 +
->>   drivers/scsi/scsi_sysfs.c  | 32 ++++++++++++++++++++++++++++++++
->>   include/scsi/scsi.h        |  1 +
->>   include/scsi/scsi_device.h |  1 +
->>   5 files changed, 56 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
->> index 7bd7f0d..a9db69e 100644
->> --- a/drivers/scsi/scsi_lib.c
->> +++ b/drivers/scsi/scsi_lib.c
->> @@ -1492,6 +1492,23 @@ static void scsi_kill_request(struct request *req, struct request_queue *q)
->>   	blk_complete_request(req);
->>   }
->>   
->> +/*
->> + * Check if scsi command excessed retry timeout
->> + */
->> +static int scsi_retry_timed_out(struct scsi_cmnd *cmd)
->> +{
->> +	unsigned int retry_timeout;
->> +
->> +	retry_timeout = cmd->device->retry_timeout;
->> +	if (retry_timeout &&
->> +	    time_before(cmd->jiffies_at_alloc + retry_timeout, jiffies)) {
->> +		scmd_printk(KERN_INFO, cmd, "retry timeout\n");
->> +		return 1;
->> +	}
->> +
->> +	return 0;
->> +}
->> +
->>   static void scsi_softirq_done(struct request *rq)
->>   {
->>   	struct scsi_cmnd *cmd = rq->special;
->> @@ -1512,7 +1529,10 @@ static void scsi_softirq_done(struct request *rq)
->>   			    wait_for/HZ);
->>   		disposition = SUCCESS;
->>   	}
->> -			
->> +
->> +	if (scsi_retry_timed_out(cmd))
->> +		disposition = FAILED;
->> +
->>   	scsi_log_completion(cmd, disposition);
->>   
->>   	switch (disposition) {
->> diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
->> index 307a811..4ab044a 100644
->> --- a/drivers/scsi/scsi_scan.c
->> +++ b/drivers/scsi/scsi_scan.c
->> @@ -925,6 +925,7 @@ static int scsi_add_lun(struct scsi_device *sdev, unsigned char *inq_result,
->>   		sdev->no_dif = 1;
->>   
->>   	sdev->eh_timeout = SCSI_DEFAULT_EH_TIMEOUT;
->> +	sdev->retry_timeout = SCSI_DEFAULT_RETRY_TIMEOUT;
->>   
->>   	if (*bflags & BLIST_SKIP_VPD_PAGES)
->>   		sdev->skip_vpd_pages = 1;
->> diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
->> index 8ff62c2..eaa2118 100644
->> --- a/drivers/scsi/scsi_sysfs.c
->> +++ b/drivers/scsi/scsi_sysfs.c
->> @@ -627,6 +627,37 @@ sdev_store_eh_timeout(struct device *dev, struct device_attribute *attr,
->>   static DEVICE_ATTR(eh_timeout, S_IRUGO | S_IWUSR, sdev_show_eh_timeout, sdev_store_eh_timeout);
->>   
->>   static ssize_t
->> +sdev_show_retry_timeout(struct device *dev,
->> +			struct device_attribute *attr, char *buf)
->> +{
->> +	struct scsi_device *sdev;
->> +	sdev = to_scsi_device(dev);
->> +	return snprintf(buf, 20, "%u\n", sdev->retry_timeout / HZ);
->> +}
->> +
->> +static ssize_t
->> +sdev_store_retry_timeout(struct device *dev, struct device_attribute *attr,
->> +			 const char *buf, size_t count)
->> +{
->> +	struct scsi_device *sdev;
->> +	unsigned int retry_timeout;
->> +	int err;
->> +
->> +	if (!capable(CAP_SYS_ADMIN))
->> +		return -EACCES;
->> +
->> +	sdev = to_scsi_device(dev);
->> +	err = kstrtouint(buf, 10, &retry_timeout);
->> +	if (err)
->> +		return err;
->> +	sdev->retry_timeout = retry_timeout * HZ;
->> +
->> +	return count;
->> +}
->> +static DEVICE_ATTR(retry_timeout, S_IRUGO | S_IWUSR,
->> +		   sdev_show_retry_timeout, sdev_store_retry_timeout);
->> +
->> +static ssize_t
->>   store_rescan_field (struct device *dev, struct device_attribute *attr,
->>   		    const char *buf, size_t count)
->>   {
->> @@ -797,6 +828,7 @@ static struct attribute *scsi_sdev_attrs[] = {
->>   	&dev_attr_state.attr,
->>   	&dev_attr_timeout.attr,
->>   	&dev_attr_eh_timeout.attr,
->> +	&dev_attr_retry_timeout.attr,
->>   	&dev_attr_iocounterbits.attr,
->>   	&dev_attr_iorequest_cnt.attr,
->>   	&dev_attr_iodone_cnt.attr,
->> diff --git a/include/scsi/scsi.h b/include/scsi/scsi.h
->> index 66d42ed..545408d 100644
->> --- a/include/scsi/scsi.h
->> +++ b/include/scsi/scsi.h
->> @@ -16,6 +16,7 @@ struct scsi_cmnd;
->>   
->>   enum scsi_timeouts {
->>   	SCSI_DEFAULT_EH_TIMEOUT		= 10 * HZ,
->> +	SCSI_DEFAULT_RETRY_TIMEOUT	= 0,	/* disabled by default */
->>   };
->>   
->>   /*
->> diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
->> index d65fbec..04fc5ee 100644
->> --- a/include/scsi/scsi_device.h
->> +++ b/include/scsi/scsi_device.h
->> @@ -121,6 +121,7 @@ struct scsi_device {
->>   				 * pass settings from slave_alloc to scsi
->>   				 * core. */
->>   	unsigned int eh_timeout; /* Error handling timeout */
->> +	unsigned int retry_timeout;	/* Command retry timeout */
->>   	unsigned writeable:1;
->>   	unsigned removable:1;
->>   	unsigned changed:1;	/* Data invalid due to media change */
->
->
-> .
->
-
+IG1tL21lbW9yeS5jIHwgNDIgKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysr
+KystCiAxIGZpbGUgY2hhbmdlZCwgNDEgaW5zZXJ0aW9ucygrKSwgMSBkZWxldGlvbigtKQoKZGlm
+ZiAtLWdpdCBhL21tL21lbW9yeS5jIGIvbW0vbWVtb3J5LmMKaW5kZXggYmU2YTBjMGQ0YWUwLi5k
+NTJlYzZhMzQ0ZGMgMTAwNjQ0Ci0tLSBhL21tL21lbW9yeS5jCisrKyBiL21tL21lbW9yeS5jCkBA
+IC0zNDg3LDE1ICszNDg3LDU1IEBAIHVuY2hhcmdlX291dDoKIAlyZXR1cm4gcmV0OwogfQogCisj
+ZGVmaW5lIG5vX2ZhdWx0X2Fyb3VuZCh4KSAoeCAmIChWTV9GQVVMVF9FUlJPUiB8IFZNX0ZBVUxU
+X01BSk9SIHwgVk1fRkFVTFRfUkVUUlkpKQorI2RlZmluZSBGQVVMVF9BUk9VTkRfU0hJRlQgKDMp
+CisKK3N0YXRpYyB2b2lkIGZhdWx0X2Fyb3VuZChzdHJ1Y3QgbW1fc3RydWN0ICptbSwgc3RydWN0
+IHZtX2FyZWFfc3RydWN0ICp2bWEsCisJdW5zaWduZWQgbG9uZyBhZGRyZXNzLCBwbWRfdCAqcG1k
+KQoreworCWludCBuciA9IDEgPDwgRkFVTFRfQVJPVU5EX1NISUZUOworCisJYWRkcmVzcyAmPSBQ
+QUdFX01BU0sgPDwgRkFVTFRfQVJPVU5EX1NISUZUOworCWlmIChhZGRyZXNzIDwgdm1hLT52bV9z
+dGFydCkKKwkJcmV0dXJuOworCisJZG8geworCQlwdGVfdCAqcHRlOworCQlwdGVfdCBlbnRyeTsK
+KwkJcGdvZmZfdCBwZ29mZjsKKworCQlwdGUgPSBwdGVfb2Zmc2V0X21hcChwbWQsIGFkZHJlc3Mp
+OworCQllbnRyeSA9ICpwdGU7CisKKwkJcHRlX3VubWFwKHB0ZSk7CisJCWlmICghcHRlX25vbmUo
+ZW50cnkpKQorCQkJY29udGludWU7CisJCXBnb2ZmID0gKGFkZHJlc3MgLSB2bWEtPnZtX3N0YXJ0
+KSA+PiBQQUdFX1NISUZUOworCQlwZ29mZiArPSB2bWEtPnZtX3Bnb2ZmOworCQlpZiAobm9fZmF1
+bHRfYXJvdW5kKF9fZG9fZmF1bHQobW0sIHZtYSwgYWRkcmVzcywgcG1kLCBwZ29mZiwgMCwgZW50
+cnkpKSkKKwkJCWJyZWFrOworCX0gd2hpbGUgKGFkZHJlc3MgKz0gUEFHRV9TSVpFLCBhZGRyZXNz
+IDwgdm1hLT52bV9lbmQgJiYgLS1uciA+IDApOworfQorCiBzdGF0aWMgaW50IGRvX2xpbmVhcl9m
+YXVsdChzdHJ1Y3QgbW1fc3RydWN0ICptbSwgc3RydWN0IHZtX2FyZWFfc3RydWN0ICp2bWEsCiAJ
+CXVuc2lnbmVkIGxvbmcgYWRkcmVzcywgcHRlX3QgKnBhZ2VfdGFibGUsIHBtZF90ICpwbWQsCiAJ
+CXVuc2lnbmVkIGludCBmbGFncywgcHRlX3Qgb3JpZ19wdGUpCiB7CisJaW50IHJldDsKIAlwZ29m
+Zl90IHBnb2ZmID0gKCgoYWRkcmVzcyAmIFBBR0VfTUFTSykKIAkJCS0gdm1hLT52bV9zdGFydCkg
+Pj4gUEFHRV9TSElGVCkgKyB2bWEtPnZtX3Bnb2ZmOwogCiAJcHRlX3VubWFwKHBhZ2VfdGFibGUp
+OwotCXJldHVybiBfX2RvX2ZhdWx0KG1tLCB2bWEsIGFkZHJlc3MsIHBtZCwgcGdvZmYsIGZsYWdz
+LCBvcmlnX3B0ZSk7CisJcmV0ID0gX19kb19mYXVsdChtbSwgdm1hLCBhZGRyZXNzLCBwbWQsIHBn
+b2ZmLCBmbGFncywgb3JpZ19wdGUpOworCisJLyoKKwkgKiBJZiB0aGUgcGFnZSB3ZSB3ZXJlIGxv
+b2tpbmcgZm9yIHN1Y2NlZWRlZCB3aXRoIG5vIHJldHJpZXMsCisJICogc2VlIGlmIHdlIGNhbiBm
+YXVsdCBhcm91bmQgaXQgdG9vLi4KKwkgKi8KKwlpZiAoIW5vX2ZhdWx0X2Fyb3VuZChyZXQpICYm
+IChmbGFncyAmIEZBVUxUX0ZMQUdfQUxMT1dfUkVUUlkpKQorCQlmYXVsdF9hcm91bmQobW0sIHZt
+YSwgYWRkcmVzcywgcG1kKTsKKworCXJldHVybiByZXQ7CiB9CiAKIC8qCg==
+--089e01294232f24eb904f1b55fdd--
