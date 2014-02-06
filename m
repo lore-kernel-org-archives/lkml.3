@@ -1,98 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753825AbaBFQ2A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 11:28:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46349 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751426AbaBFQ17 (ORCPT
+	id S1756616AbaBFQ2s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 11:28:48 -0500
+Received: from s3.sipsolutions.net ([144.76.43.152]:57508 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751840AbaBFQ2r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 11:27:59 -0500
-Date: Thu, 6 Feb 2014 08:29:08 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Hannes Reinecke <hare@suse.de>
-Cc: systemd Mailing List <systemd-devel@lists.freedesktop.org>,
-        dh.herrmann@gmail.com, linux-kernel@vger.kernel.org,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay@vrfy.org>, Jiri Slaby <jslaby@suse.cz>,
-        Werner Fink <werner@suse.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: Re: [PATCHv2] tty: Set correct tty name in 'active' sysfs attribute
-Message-ID: <20140206162908.GA7443@kroah.com>
-References: <1391696863-62767-1-git-send-email-hare@suse.de>
- <20140206152947.GA19335@kroah.com>
- <52F3ADD4.7020907@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52F3ADD4.7020907@suse.de>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Thu, 6 Feb 2014 11:28:47 -0500
+Message-ID: <1391704121.12789.20.camel@jlt4.sipsolutions.net>
+Subject: [PATCH] sched/wait: suppress sparse 'variable shadowing' warning
+From: Johannes Berg <johannes@sipsolutions.net>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Date: Thu, 06 Feb 2014 17:28:41 +0100
+In-Reply-To: <20140206111346.712edc04@gandalf.local.home>
+References: <20140206111346.712edc04@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 06, 2014 at 04:44:20PM +0100, Hannes Reinecke wrote:
-> On 02/06/2014 04:29 PM, Greg Kroah-Hartman wrote:
-> > On Thu, Feb 06, 2014 at 03:27:43PM +0100, Hannes Reinecke wrote:
-> >> The 'active' sysfs attribute should refer to the currently
-> >> active tty devices the console is running on, not the currently
-> >> active console.
-> > 
-> > That's not what Documentation/ABI/sysfs-tty says:
-> >                  Shows the list of currently configured                         
-> >                  console devices, like 'tty1 ttyS0'.                            
-> >                  The last entry in the file is the active                       
-> >                  device connected to /dev/console.                              
-> >                  The file supports poll() to detect virtual                     
-> >                  console switches.                         
-> > 
-> The problem is indeed with 'console devices'. There is no such
-> thing; you only have tty devices where the console is running on.
-> 
-> >> The console structure doesn't refer to any device in sysfs,
-> >> only the tty the console is running on has.
-> > 
-> > That sentance doesn't make sense.
-> > 
-> >> So we need to print out the tty names in 'active', not
-> >> the console names.
-> > 
-> > But that doesn't match the documentation.
-> > 
-> > What exactly are you trying to "fix" here?  What is the problem that the
-> > current file has that is broken?  And as you are changing what this file
-> > means, what will break if the information in the file changes?
-> > 
-> systemd is using the 'active' sysfs attribute to figure out on which
-> _tty_ device to start a getty on.
-> As soon as the console name and the tty name are different
-> you have no means of figuring out which _device_ to open.
-> AFAICS the console 'device' (ie the current entry in 'active')
-> doesn't have _any_ equivalent in sysfs; it just so happens that for
-> most console drivers the tty driver name is identical.
-> But this is not a requirement, and fails for drivers which have a
-> different device for the console and the tty.
-> 
-> EG on S/390 the 3270 tty has the devices
-> 
-> /dev/3270/tty1
-> 
-> but the console driver announces the name 'tty3270'.
-> So as per current rules the 'active' attribute contains
-> 
-> tty32700
-> 
-> which correct as per documentation, but doesn't have _any_
-> equivalent in sysfs.
-> 
-> Martin has the grubby details here.
-> 
-> But of course, the documentation should be updated to match the new
-> behavior.
+From: Johannes Berg <johannes.berg@intel.com>
 
-Ok, care to send an updated version, that fixes the Documentation as
-well?  If Kay agrees that this is the correct solution, I'll be glad to
-take it.
+This warning seems to show up a lot now, since ___wait_event()
+is (indirectly) used inside wait_event_timeout(), which also
+has a variable called __ret. Rename the one in ___wait_event()
+to ___ret (another leading underscore) to suppress the warning.
 
-thanks,
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+---
+ include/linux/wait.h | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-greg k-h
+diff --git a/include/linux/wait.h b/include/linux/wait.h
+index 559044c..c55ea5c 100644
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -195,7 +195,7 @@ wait_queue_head_t *bit_waitqueue(void *, int);
+ ({									\
+ 	__label__ __out;						\
+ 	wait_queue_t __wait;						\
+-	long __ret = ret;						\
++	long ___ret = ret;						\
+ 									\
+ 	INIT_LIST_HEAD(&__wait.task_list);				\
+ 	if (exclusive)							\
+@@ -210,7 +210,7 @@ wait_queue_head_t *bit_waitqueue(void *, int);
+ 			break;						\
+ 									\
+ 		if (___wait_is_interruptible(state) && __int) {		\
+-			__ret = __int;					\
++			___ret = __int;					\
+ 			if (exclusive) {				\
+ 				abort_exclusive_wait(&wq, &__wait,	\
+ 						     state, NULL);	\
+@@ -222,7 +222,7 @@ wait_queue_head_t *bit_waitqueue(void *, int);
+ 		cmd;							\
+ 	}								\
+ 	finish_wait(&wq, &__wait);					\
+-__out:	__ret;								\
++__out:	___ret;								\
+ })
+ 
+ #define __wait_event(wq, condition)					\
+-- 
+1.8.5.3
+
+
+
