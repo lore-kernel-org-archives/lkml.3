@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932439AbaBFJPZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 04:15:25 -0500
-Received: from mail-out.m-online.net ([212.18.0.10]:56752 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755174AbaBFJPV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 04:15:21 -0500
-X-Auth-Info: BGutzzvfoN0YJRbQi5bT2O7jyC7+nPq+z/20P5wUsdo=
-Message-ID: <52F352A4.7090500@denx.de>
-Date: Thu, 06 Feb 2014 10:15:16 +0100
-From: Stefano Babic <sbabic@denx.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1755902AbaBFJS4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 04:18:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64767 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755174AbaBFJSw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 04:18:52 -0500
+Date: Thu, 6 Feb 2014 04:18:42 -0500 (EST)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Michael Cree <mcree@orcon.net.nz>, "David S. Miller" <davem@davemloft.net>,
+        netdev@vger.kernel.org
+cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Matt Turner <mattst88@gmail.com>
+Subject: Re: [PATCH 3.12 117/133] alpha: fix broken network checksum
+In-Reply-To: <20140206043833.GA12599@omega>
+Message-ID: <alpine.LRH.2.02.1402060341090.31200@file01.intranet.prod.int.rdu2.redhat.com>
+References: <20140204210737.008598235@linuxfoundation.org> <20140204210740.336662867@linuxfoundation.org> <20140206043833.GA12599@omega>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-To: Jingoo Han <jg1.han@samsung.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, "'Stefano Babic'" <sbabic@denx.de>,
-        "'Anatolij Gustschin'" <agust@denx.de>
-Subject: Re: [PATCH 06/12] backlight: ili922x: Remove unnecessary OOM messages
-References: <000101cf2313$6ef38e80$4cdaab80$%han@samsung.com> <000701cf2314$78459d60$68d0d820$%han@samsung.com>
-In-Reply-To: <000701cf2314$78459d60$68d0d820$%han@samsung.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jingoo,
 
-On 06/02/2014 09:21, Jingoo Han wrote:
-> The site-specific OOM messages are unnecessary, because they
-> duplicate the MM subsystem generic OOM message.
+
+On Thu, 6 Feb 2014, Michael Cree wrote:
+
+> On Tue, Feb 04, 2014 at 01:08:38PM -0800, Greg Kroah-Hartman wrote:
+> > 3.12-stable review patch.  If anyone has any objections, please let me know.
+> > 
+> > ------------------
+> > 
+> > From: Mikulas Patocka <mpatocka@redhat.com>
+> > 
+> > commit 0ef38d70d4118b2ce1a538d14357be5ff9dc2bbd upstream.
+> > 
+> > The patch 3ddc5b46a8e90f3c9251338b60191d0a804b0d92 breaks networking on
+> > alpha (there is a follow-up fix 5cfe8f1ba5eebe6f4b6e5858cdb1a5be4f3272a6,
+> > but networking is still broken even with the second patch).
 > 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> ---
->  drivers/video/backlight/ili922x.c |    4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
+> I wonder whether that follow-up (partial) fix mentioned
+> (5cfe8f1ba5eebe6f4b6e5858cdb1a5be4f3272a6) should be pulled into 3.12 stable
+> too?
 > 
-> diff --git a/drivers/video/backlight/ili922x.c b/drivers/video/backlight/ili922x.c
-> index 73464e4..ea67fe1 100644
-> --- a/drivers/video/backlight/ili922x.c
-> +++ b/drivers/video/backlight/ili922x.c
-> @@ -482,10 +482,8 @@ static int ili922x_probe(struct spi_device *spi)
->  	u16 reg = 0;
->  
->  	ili = devm_kzalloc(&spi->dev, sizeof(*ili), GFP_KERNEL);
-> -	if (!ili) {
-> -		dev_err(&spi->dev, "cannot alloc priv data\n");
-> +	if (!ili)
->  		return -ENOMEM;
-> -	}
->  
->  	ili->spi = spi;
->  	spi_set_drvdata(spi, ili);
-> 
+> Cheers
+> Michael.
 
-Acked-by: Stefano Babic <sbabic@denx.de>
+Hi
 
-Thanks !
+It is quite confusing - csum_partial_copy_from_user is only called from 
+csum_and_copy_from_user in include/net/checksum.h.
 
-Best regards,
-Stefano Babic
+csum_and_copy_from_user already verifies the source memory range with 
+access_ok. Despite this, people started to add access_ok to many 
+architecture-specific versions of csum_partial_copy_from_user (for example 
+3ddc5b46a8e90f3c9251338b60191d0a804b0d92).
 
--- 
-=====================================================================
-DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
-HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
-Phone: +49-8142-66989-53 Fax: +49-8142-66989-80 Email: sbabic@denx.de
-=====================================================================
+It seems that the best thing is to revert 
+0ef38d70d4118b2ce1a538d14357be5ff9dc2bbd, 
+5cfe8f1ba5eebe6f4b6e5858cdb1a5be4f3272a6 and csum_partial_copy_from_user 
+change from 3ddc5b46a8e90f3c9251338b60191d0a804b0d92.
+
+
+David, you are maintainer of networking - does it have any deeper sense to 
+perform access_ok in csum_partial_copy_from_user if the caller performs 
+this check already? Should this be just removed?
+
+Also - the x86 and alpha implementation of csum_and_copy_from_user zero 
+the destination buffer on userspace-access error - but 
+csum_and_copy_from_user (that calls these function) doesn't zero the 
+destination buffer on error. Should the destination buffer be zeroed on 
+error or not?
+
+Mikulas
