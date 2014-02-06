@@ -1,84 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756257AbaBFLnQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 06:43:16 -0500
-Received: from kirsty.vergenet.net ([202.4.237.240]:55727 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755949AbaBFLnO (ORCPT
+	id S1756286AbaBFLoB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 06:44:01 -0500
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:46482 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755949AbaBFLoA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 06:43:14 -0500
-Date: Thu, 6 Feb 2014 20:43:11 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-spi@vger.kernel.org,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/11] ARM: shmobile: RSPI RZ and QSPI SoC and board
- integration
-Message-ID: <20140206114305.GA26662@verge.net.au>
-References: <1391527445-14881-1-git-send-email-geert@linux-m68k.org>
- <20140205005631.GA7664@verge.net.au>
- <CANqRtoSrLV3PiUdbUQv9gTsM-p8tiqRvSza-=D9hG5fVn-CR0A@mail.gmail.com>
+	Thu, 6 Feb 2014 06:44:00 -0500
+Message-ID: <52F3743D.3030105@linux.vnet.ibm.com>
+Date: Thu, 06 Feb 2014 17:08:37 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANqRtoSrLV3PiUdbUQv9gTsM-p8tiqRvSza-=D9hG5fVn-CR0A@mail.gmail.com>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Will Deacon <will.deacon@arm.com>
+CC: "paulus@samba.org" <paulus@samba.org>, "oleg@redhat.com" <oleg@redhat.com>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "tj@kernel.org" <tj@kernel.org>,
+        "walken@google.com" <walken@google.com>,
+        "ego@linux.vnet.ibm.com" <ego@linux.vnet.ibm.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 08/51] arm, hw-breakpoint: Fix CPU hotplug callback registration
+References: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com> <20140205220603.19080.80971.stgit@srivatsabhat.in.ibm.com> <20140206105718.GG26035@mudshark.cambridge.arm.com> <52F3713A.3040407@linux.vnet.ibm.com> <20140206113933.GJ26035@mudshark.cambridge.arm.com>
+In-Reply-To: <20140206113933.GJ26035@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14020611-8256-0000-0000-00000B54505E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 06, 2014 at 07:36:17PM +0900, Magnus Damm wrote:
-> On Wed, Feb 5, 2014 at 9:56 AM, Simon Horman <horms@verge.net.au> wrote:
-> > Magnus, could you Ack these or otherwise?
-> >
-> > On Tue, Feb 04, 2014 at 04:23:54PM +0100, Geert Uytterhoeven wrote:
-> >>       Hi Simon, Magnus,
-> >>
-> >> This patch series contains SoC and board integration for
-> >>   1. RSPI in the r7s72100 aka RZ/A1H SoC on the Genmai reference board,
-> >>   2. QSPI in the r8a7791 aka R-Car M2 SoC on the Koelsch reference board.
-> >> It was rebased on top of renesas-devel-v3.14-rc1-20140204.
-> >>
-> >> It was tested on the r7s72100-based Genmai reference board using loopback
-> >> mode, and on the r8a7791-based Koelsch reference board using the Spansion
-> >> s25fl512s SPI FLASH.
-> >>
-> >>   - [v5 01/11] ARM: shmobile: r7s72100 clock: Add RSPI clocks
-> >>   - [v5 02/11] ARM: shmobile: genmai legacy: Add RSPI support
-> >>   - [v3 03/11] ARM: shmobile: genmai defconfig: Enable RSPI
-> >>   - [v3 04/11] ARM: shmobile: r7s72100 clock: Add RSPI clocks for DT
-> >>   - [v5 05/11] ARM: shmobile: r7s72100 dtsi: Add RSPI nodes
-> >>   - [v4 06/11] ARM: shmobile: r8a7791 clock: add QSPI clocks
-> >>   - [v4 07/11] ARM: shmobile: koelsch legacy: Add QSPI support
-> >>   - [v4 08/11] ARM: shmobile: koelsch defconfig: Enable RSPI and
-> >>   - [v3 09/11] ARM: shmobile: r8a7791 dtsi: Add QSPI node
-> >>   - [v3 10/11] ARM: shmobile: koelsch dts: Add QSPI nodes
-> >>   - [v2 11/11] ARM: shmobile: lager legacy: Switch QSPI to named IRQs
-> >
-> > Above I see v2, v3, v4 and v5 patches.
-> >
-> > While I can make sense of this it makes it cumbersome to refer to the
-> > series as a whole.
-> >
-> > Bob, can you take a look at '"[PATCH 00/11] ARM: shmobile: RSPI RZ and
-> > QSPI SoC and board", posted on Tuesday the 2nd, which includes v2, v3,
-> > v4 and v5 patches'?
-> >
-> > What would make my life easier would be if the entire series was v5 and
-> > all the patches contained in it were v5. Then I could just ask Bob to look
-> > at "[PATCH v5 00/11] ARM: shmobile: RSPI RZ and QSPI SoC and board"
-> >
-> > There is no Bob but I do ask people these kind of questions :)
+On 02/06/2014 05:09 PM, Will Deacon wrote:
+> On Thu, Feb 06, 2014 at 11:25:46AM +0000, Srivatsa S. Bhat wrote:
+>> Hi Will,
 > 
-> Simon, Geert, Bob,
+> Hello,
 > 
-> I've now gone through these patches and I think they look great. My
-> apologies for slow handling.
+>> On 02/06/2014 04:27 PM, Will Deacon wrote:
+>>> On Wed, Feb 05, 2014 at 10:06:04PM +0000, Srivatsa S. Bhat wrote:
+>>>> Subsystems that want to register CPU hotplug callbacks, as well as perform
+>>>> initialization for the CPUs that are already online, often do it as shown
+>>>> below:
+>>>>
+>>>> 	get_online_cpus();
+>>>>
+>>>> 	for_each_online_cpu(cpu)
+>>>> 		init_cpu(cpu);
+>>>>
+>>>> 	register_cpu_notifier(&foobar_cpu_notifier);
+>>>>
+>>>> 	put_online_cpus();
+>>>>
+>>>> This is wrong, since it is prone to ABBA deadlocks involving the
+>>>> cpu_add_remove_lock and the cpu_hotplug.lock (when running concurrently
+>>>> with CPU hotplug operations).
+>>>
+>>> Hmm, the code in question (for this patch) runs from an arch_initcall. How
+>>> can you generate CPU hotplug operations at that stage?
+>>>
+>>
+>> You are right - in today's design of the init sequence, CPU hotplug
+>> operations can't be triggered at that time during boot.
 > 
-> Acked-by: Magnus Damm <damm@opensource.se>
+> Phew, so we don't have a bug as the code stands today.
 
-Thanks, I have queued these up.
+Yes, that's right.
+
+> 
+>> However, there have been proposals to boot CPUs in parallel along with the
+>> rest of the kernel initialization [1] (and that would need full synchronization
+>> with CPU hotplug even at the initcall stage). Of course this needs a lot of
+>> auditing and modifications to the CPU hotplug notifiers of various subsystems
+>> to make them robust enough to handle the parallel boot; so its not going to
+>> happen very soon. But I felt that it would be a good idea to ensure that we
+>> get the locking/synchronization right, even if the registrations happen very
+>> early during boot today.. you know, just to be on the safer side and also to
+>> make the job easier for whoever that is, who tries to implement parallel
+>> CPU booting again in the future ;-)
+>>
+>> [1]. http://thread.gmane.org/gmane.linux.kernel/1246209
+> 
+> Makes sense, and this seems like a good start.
+> 
+>>> so it's best if you take this all via your tree.
+>>>
+>>
+>> Hmm.. I'm not a maintainer myself, so I'm hoping that either Oleg or Rusty
+>> or any of the other CPU hotplug maintainers (Thomas/Peter/Ingo) would be
+>> willing to take these patches through their tree.
+> 
+> Well, you can have my ack for this patch:
+> 
+>   Acked-by: Will Deacon <will.deacon@arm.com>
+>
+
+Great! Thanks a lot Will!
+
+Regards,
+Srivatsa S. Bhat
+
