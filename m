@@ -1,165 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755708AbaBFWKB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 17:10:01 -0500
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:42893 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751297AbaBFWJ6 (ORCPT
+	id S1756661AbaBFWL1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 17:11:27 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:36729 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753489AbaBFWLW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 17:09:58 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140206170325.GF16551@e106331-lin.cambridge.arm.com>
-References: <1391702147-6617-1-git-send-email-delicious.quinoa@gmail.com>
-	<20140206170325.GF16551@e106331-lin.cambridge.arm.com>
-Date: Thu, 6 Feb 2014 16:09:28 -0600
-Message-ID: <CANk1AXRx1aYSNHJ41ru_4EU61YoGOyno_qGfApjZe2iiq00RPQ@mail.gmail.com>
-Subject: Re: [PATCH v10] gpio: add a driver for the Synopsys DesignWare APB
- GPIO block
-From: delicious quinoa <delicious.quinoa@gmail.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Linus Walleij <linus.walleij@linaro.com>,
+	Thu, 6 Feb 2014 17:11:22 -0500
+Date: Thu, 6 Feb 2014 14:11:18 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Torvald Riegel <triegel@redhat.com>
+Cc: Will Deacon <will.deacon@arm.com>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Jamie Iles <jamie@jamieiles.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Heiko Stuebner <heiko@sntech.de>, Alan Tull <atull@altera.com>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Yves Vandervennet <rocket.yvanderv@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+Message-ID: <20140206221117.GJ4250@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140206134825.305510953@infradead.org>
+ <21984.1391711149@warthog.procyon.org.uk>
+ <52F3DA85.1060209@arm.com>
+ <20140206185910.GE27276@mudshark.cambridge.arm.com>
+ <20140206192743.GH4250@linux.vnet.ibm.com>
+ <1391721423.23421.3898.camel@triegel.csb>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1391721423.23421.3898.camel@triegel.csb>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14020622-1542-0000-0000-000005D6BB3D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 6, 2014 at 11:03 AM, Mark Rutland <mark.rutland@arm.com> wrote:
-> On Thu, Feb 06, 2014 at 03:55:47PM +0000, Alan Tull wrote:
->> From: Jamie Iles <jamie@jamieiles.com>
->>
->> The Synopsys DesignWare block is used in some ARM devices (picoxcell)
->> and can be configured to provide multiple banks of GPIO pins.
->>
->> Signed-off-by: Jamie Iles <jamie@jamieiles.com>
->> Signed-off-by: Alan Tull <atull@altera.com>
->> Reviewed-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
->>
->> v10:    - in documentation nr-gpio -> nr-gpios
->> v9:     - cleanup in dt bindings doc
->>         - use of_get_child_count()
->> v8:     - remove socfpga.dtsi changes
->>         - minor cleanup in devicetree documentation
->> v7:     - use irq_generic_chip
->>         - support one irq per gpio line or one irq for many
->>         - s/bank/port/ and other cleanup
->> v6:     - (atull) squash the set of patches
->>         - use linear irq domain
->>         - build fixes. Original driver was reviewed on v3.2.
->>         - Fix setting irq edge type for 'rising' and 'both'.
->>         - Support as a loadable module.
->>         - Use bgpio_chip's spinlock during register access.
->>         - Clean up register names to match spec
->>         - s/bank/port/ because register names use the word 'port'
->>         - s/nr-gpio/nr-gpios/
->>         - don't get/put the of_node
->>         - remove signoffs/acked-by's because of changes
->>         - other cleanup
->> v5:     - handle sparse bank population correctly
->> v3:     - depend on rather than select IRQ_DOMAIN
->>         - split IRQ support into a separate patch
->> v2:     - use Rob Herring's irqdomain in generic irq chip patches
->>         - use reg property to indicate bank index
->>         - support irqs on both edges based on LinusW's u300 driver
->> ---
->>  .../devicetree/bindings/gpio/snps-dwapb-gpio.txt   |   59 +++
->>  drivers/gpio/Kconfig                               |    9 +
->>  drivers/gpio/Makefile                              |    1 +
->>  drivers/gpio/gpio-dwapb.c                          |  415 ++++++++++++++++++++
->>  4 files changed, 484 insertions(+)
->>  create mode 100644 Documentation/devicetree/bindings/gpio/snps-dwapb-gpio.txt
->>  create mode 100644 drivers/gpio/gpio-dwapb.c
->>
->> diff --git a/Documentation/devicetree/bindings/gpio/snps-dwapb-gpio.txt b/Documentation/devicetree/bindings/gpio/snps-dwapb-gpio.txt
->> new file mode 100644
->> index 0000000..cb01f9f
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/gpio/snps-dwapb-gpio.txt
->> @@ -0,0 +1,59 @@
->> +* Synopsys DesignWare APB GPIO controller
->> +
->> +Required properties:
->> +- compatible : Should contain "snps,dw-apb-gpio"
->> +- reg : Address and length of the register set for the device
->
-> Presumably #address-cells and #size-cells should be described here?
->
->> +
->> +The GPIO controller has a configurable number of ports, each of which are
->> +represented as child nodes with the following properties:
->> +
->> +Required properties:
->> +- compatible : "snps,dw-apb-gpio-port"
->> +- gpio-controller : Marks the device node as a gpio controller.
->> +- #gpio-cells : Should be two.  The first cell is the pin number and
->> +  the second cell is used to specify optional parameters (currently
->> +  unused).
->
-> Why not just have this as one cell for now if the second cell is unused?
->
-> If it needs to be expanded the driver can read #gpio-cells to figure out
-> what to do at runtime, and it prevents crap DTSs in the mean time that
-> could get in the way if you need to use additional cells in future.
->
->> +- reg : The integer port index of the port, a single cell.
->> +- #address-cells : should be 1.
->> +- #size-cells : should be 0.
->
-> As mentioned above, presumably #address-cells and #size-cells should be
-> in the parent node, as is the case in the example?
->
->> +
->> +Optional properties:
->> +- interrupt-controller : The first port may be configured to be an interrupt
->> +controller.
->> +- #interrupt-cells : Specifies the number of cells needed to encode an
->> +interrupt.  Shall be set to 2.  The first cell defines the interrupt number,
->> +the second encodes the triger flags encoded as described in
->> +Documentation/devicetree/bindings/interrupts.txt
->> +- interrupt-parent : The parent interrupt controller.
->> +- interrupts : The interrupts to the parent controller raised when GPIOs
->> +generate the interrupts.
->
-> How many are expected?
->
-> Otherwise, the binding looks ok to me.
->
-> [...]
->
->> +static void dwapb_configure_irqs(struct dwapb_gpio *gpio,
->> +                                struct dwapb_gpio_port *port)
->> +{
->> +       struct gpio_chip *gc = &port->bgc.gc;
->> +       struct device_node *node =  gc->of_node;
->> +       struct irq_chip_generic *irq_gc;
->> +       unsigned int hwirq, ngpio = gc->ngpio;
->> +       struct irq_chip_type *ct;
->> +       int reg, err, irq;
->> +
->> +       if (of_get_property(node, "interrupts", &reg) == NULL)
->> +               return;
->
-> of_get_property can take a NULL lenp (core OF code depends on this
-> fact), so you don't need the somewhat confusing &reg here.
->
-> Cheers,
-> Mark.
+On Thu, Feb 06, 2014 at 10:17:03PM +0100, Torvald Riegel wrote:
+> On Thu, 2014-02-06 at 11:27 -0800, Paul E. McKenney wrote:
+> > On Thu, Feb 06, 2014 at 06:59:10PM +0000, Will Deacon wrote:
+> > > On Thu, Feb 06, 2014 at 06:55:01PM +0000, Ramana Radhakrishnan wrote:
+> > > > On 02/06/14 18:25, David Howells wrote:
+> > > > >
+> > > > > Is it worth considering a move towards using C11 atomics and barriers and
+> > > > > compiler intrinsics inside the kernel?  The compiler _ought_ to be able to do
+> > > > > these.
+> > > > 
+> > > > 
+> > > > It sounds interesting to me, if we can make it work properly and 
+> > > > reliably. + gcc@gcc.gnu.org for others in the GCC community to chip in.
+> > > 
+> > > Given my (albeit limited) experience playing with the C11 spec and GCC, I
+> > > really think this is a bad idea for the kernel. It seems that nobody really
+> > > agrees on exactly how the C11 atomics map to real architectural
+> > > instructions on anything but the trivial architectures. For example, should
+> > > the following code fire the assert?
+> > > 
+> > > 
+> > > extern atomic<int> foo, bar, baz;
+> > > 
+> > > void thread1(void)
+> > > {
+> > > 	foo.store(42, memory_order_relaxed);
+> > > 	bar.fetch_add(1, memory_order_seq_cst);
+> > > 	baz.store(42, memory_order_relaxed);
+> > > }
+> > > 
+> > > void thread2(void)
+> > > {
+> > > 	while (baz.load(memory_order_seq_cst) != 42) {
+> > > 		/* do nothing */
+> > > 	}
+> > > 
+> > > 	assert(foo.load(memory_order_seq_cst) == 42);
+> > > }
+> > > 
+> > > 
+> > > To answer that question, you need to go and look at the definitions of
+> > > synchronises-with, happens-before, dependency_ordered_before and a whole
+> > > pile of vaguely written waffle to realise that you don't know. Certainly,
+> > > the code that arm64 GCC currently spits out would allow the assertion to fire
+> > > on some microarchitectures.
+> > 
+> > Yep!  I believe that a memory_order_seq_cst fence in combination with the
+> > fetch_add() would do the trick on many architectures, however.  All of
+> > this is one reason that any C11 definitions need to be individually
+> > overridable by individual architectures.
+> 
+> "Overridable" in which sense?  Do you want to change the semantics on
+> the language level in the sense of altering the memory model, or rather
+> use a different implementation under the hood to, for example, fix
+> deficiencies in the compilers?
 
-Hi Mark,
+We need the architecture maintainer to be able to select either an
+assembly-language implementation or a C11-atomics implementation for any
+given Linux-kernel operation.  For example, a given architecture might
+be able to use fetch_add(1, memory_order_relaxed) for atomic_inc() but
+assembly for atomic_add_return().  This is because atomic_inc() is not
+required to have any particular ordering properties, while as discussed
+previously, atomic_add_return() requires tighter ordering than the C11
+standard provides.
 
-Thanks for the feedback.  I have made the changes in v11, which I just sent out.
+> > > There are also so many ways to blow your head off it's untrue. For example,
+> > > cmpxchg takes a separate memory model parameter for failure and success, but
+> > > then there are restrictions on the sets you can use for each. It's not hard
+> > > to find well-known memory-ordering experts shouting "Just use
+> > > memory_model_seq_cst for everything, it's too hard otherwise". Then there's
+> > > the fun of load-consume vs load-acquire (arm64 GCC completely ignores consume
+> > > atm and optimises all of the data dependencies away) as well as the definition
+> > > of "data races", which seem to be used as an excuse to miscompile a program
+> > > at the earliest opportunity.
+> > 
+> > Trust me, rcu_dereference() is not going to be defined in terms of
+> > memory_order_consume until the compilers implement it both correctly and
+> > efficiently.  They are not there yet, and there is currently no shortage
+> > of compiler writers who would prefer to ignore memory_order_consume.
+> 
+> Do you have any input on
+> http://gcc.gnu.org/bugzilla/show_bug.cgi?id=59448?  In particular, the
+> language standard's definition of dependencies?
 
-Alan Tull
-aka
-delicious quinoa
+Let's see...  1.10p9 says that a dependency must be carried unless:
+
+— B is an invocation of any specialization of std::kill_dependency (29.3), or
+— A is the left operand of a built-in logical AND (&&, see 5.14) or logical OR (||, see 5.15) operator,
+or
+— A is the left operand of a conditional (?:, see 5.16) operator, or
+— A is the left operand of the built-in comma (,) operator (5.18);
+
+So the use of "flag" before the "?" is ignored.  But the "flag - flag"
+after the "?" will carry a dependency, so the code fragment in 59448
+needs to do the ordering rather than just optimizing "flag - flag" out
+of existence.  One way to do that on both ARM and Power is to actually
+emit code for "flag - flag", but there are a number of other ways to
+make that work.
+
+BTW, there is some discussion on 1.10p9's handling of && and ||, and
+that clause is likely to change.  And yes, I am behind on analyzing
+usage in the Linux kernel to find out if Linux cares...
+
+> > And rcu_dereference() will need per-arch overrides for some time during
+> > any transition to memory_order_consume.
+> > 
+> > > Trying to introduce system concepts (writes to devices, interrupts,
+> > > non-coherent agents) into this mess is going to be an uphill battle IMHO. I'd
+> > > just rather stick to the semantics we have and the asm volatile barriers.
+> > 
+> > And barrier() isn't going to go away any time soon, either.  And
+> > ACCESS_ONCE() needs to keep volatile semantics until there is some
+> > memory_order_whatever that prevents loads and stores from being coalesced.
+> 
+> I'd be happy to discuss something like this in ISO C++ SG1 (or has this
+> been discussed in the past already?).  But it needs to have a paper I
+> suppose.
+
+The current position of the usual suspects other than me is that this
+falls into the category of forward-progress guarantees, which are
+considers (again, by the usual suspects other than me) to be out
+of scope.
+
+> Will you be in Issaquah for the C++ meeting next week?
+
+Weather permitting, I will be there!
+
+							Thanx, Paul
+
