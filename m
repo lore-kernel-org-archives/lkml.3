@@ -1,79 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754458AbaBFB0K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 20:26:10 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:51831 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754217AbaBFB0F (ORCPT
+	id S1754670AbaBFB0j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 20:26:39 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:35094 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754586AbaBFB0h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 20:26:05 -0500
-Date: Wed, 5 Feb 2014 17:26:04 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: paulus@samba.org, oleg@redhat.com, rusty@rustcorp.com.au,
-        peterz@infradead.org, tglx@linutronix.de, akpm@linux-foundation.org,
-        mingo@kernel.org, paulmck@linux.vnet.ibm.com, tj@kernel.org,
-        walken@google.com, ego@linux.vnet.ibm.com, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, Jean Delvare <jdelvare@suse.de>,
-        lm-sensors@lm-sensors.org
-Subject: Re: [PATCH 43/51] hwmon, via-cputemp: Fix CPU hotplug callback
- registration
-Message-ID: <20140206012604.GB3887@roeck-us.net>
-References: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com>
- <20140205221218.19080.8681.stgit@srivatsabhat.in.ibm.com>
- <20140206004431.GB1308@roeck-us.net>
+	Wed, 5 Feb 2014 20:26:37 -0500
+Date: Wed, 5 Feb 2014 17:26:35 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: LKML <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>,
+        Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] slub: Do not assert not having lock in removing freed
+ partial
+In-Reply-To: <20140205200632.021dc613@gandalf.local.home>
+Message-ID: <alpine.DEB.2.02.1402051725270.20281@chino.kir.corp.google.com>
+References: <20140205192404.550da7dc@gandalf.local.home> <alpine.DEB.2.02.1402051644520.5159@chino.kir.corp.google.com> <20140205200632.021dc613@gandalf.local.home>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140206004431.GB1308@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 05, 2014 at 04:44:31PM -0800, Guenter Roeck wrote:
-> On Thu, Feb 06, 2014 at 03:42:19AM +0530, Srivatsa S. Bhat wrote:
-> > Subsystems that want to register CPU hotplug callbacks, as well as perform
-> > initialization for the CPUs that are already online, often do it as shown
-> > below:
-> > 
-> > 	get_online_cpus();
-> > 
-> > 	for_each_online_cpu(cpu)
-> > 		init_cpu(cpu);
-> > 
-> > 	register_cpu_notifier(&foobar_cpu_notifier);
-> > 
-> > 	put_online_cpus();
-> > 
-> > This is wrong, since it is prone to ABBA deadlocks involving the
-> > cpu_add_remove_lock and the cpu_hotplug.lock (when running concurrently
-> > with CPU hotplug operations).
-> > 
-> > Instead, the correct and race-free way of performing the callback
-> > registration is:
-> > 
-> > 	cpu_maps_update_begin();
-> > 
-> > 	for_each_online_cpu(cpu)
-> > 		init_cpu(cpu);
-> > 
-> > 	/* Note the use of the double underscored version of the API */
-> > 	__register_cpu_notifier(&foobar_cpu_notifier);
-> > 
-> > 	cpu_maps_update_done();
-> > 
-> > 
-> > Fix the hwmon via-cputemp code by using this latter form of callback
-> > registration.
-> > 
-> > Cc: Jean Delvare <jdelvare@suse.de>
-> > Cc: Guenter Roeck <linux@roeck-us.net>
-> > Cc: lm-sensors@lm-sensors.org
-> > Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> 
-> Applied.
-> 
-Same here ... 
+On Wed, 5 Feb 2014, Steven Rostedt wrote:
 
-Acked-by: Guenter Roeck <linux@roeck-us.net>
+> > We'll want to do something similiar for the add_partial() called from
+> > early_kmem_cache_node_alloc(), right?  It had the added n->list_lock for 
+> > the same reason and is done during early init where nobody else can be 
+> > referencing a kmem_cache_node.
+> > 
+> > It would probably be better to define these in terms of "partial slabs 
+> > that cannot have anyone else accessing it" rather than "freed slabs".
+> 
+> Perhaps then we just use the __remove_partial() and __add_partial()
+> that does not do the checks. That's common practice to use a "__" to
+> denote that it's special and usually doesn't require locking.
+> 
+
+Sounds appropriate.  Andrew released a mmotm today so I'm assuming it will 
+be in linux-next tomorrow with my {add,remove}_full() patch but it 
+shouldn't matter if you're going to be playing with 
+{add,remove}_partial().
