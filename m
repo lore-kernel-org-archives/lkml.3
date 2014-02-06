@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754385AbaBFPYJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 10:24:09 -0500
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:56406 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752176AbaBFPYH (ORCPT
+	id S1754675AbaBFP2E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 10:28:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45436 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750739AbaBFP2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 10:24:07 -0500
+	Thu, 6 Feb 2014 10:28:03 -0500
+Date: Thu, 6 Feb 2014 16:29:47 +0100
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Hannes Reinecke <hare@suse.de>
+Cc: sytemd-devel@lists.freedesktop.org, dh.herrmann@gmail.com,
+        linux-kernel@vger.kernel.org,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay@vrfy.org>, Jiri Slaby <jslaby@suse.cz>,
+        Werner Fink <werner@suse.de>
+Subject: Re: [PATCHv2] tty: Set correct tty name in 'active' sysfs attribute
+Message-ID: <20140206152947.GA19335@kroah.com>
+References: <1391696863-62767-1-git-send-email-hare@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <20140206140936.GC26955@infradead.org>
-References: <CABPqkBSkSbWvdRu3iEtNvHhfV4J4sALHvdd40hZTcGxLe576yQ@mail.gmail.com>
-	<20140206135627.GA26955@infradead.org>
-	<CABPqkBS5qLDYyyv=n8fT4K+hA3uRWYmQOZmO+n-UE9=X=cEFzQ@mail.gmail.com>
-	<20140206140705.GB26955@infradead.org>
-	<20140206140936.GC26955@infradead.org>
-Date: Thu, 6 Feb 2014 16:24:07 +0100
-Message-ID: <CABPqkBRwy=0pnmm657TwV25GiYbpkqC1E8+cUGLEUbqxO=Gusw@mail.gmail.com>
-Subject: Re: [BUG] perf top: --stdio causes continuous refresh
-From: Stephane Eranian <eranian@google.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>, Jiri Olsa <jolsa@redhat.com>,
-        Eric Dumazet <edumazet@google.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391696863-62767-1-git-send-email-hare@suse.de>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 6, 2014 at 3:09 PM, Arnaldo Carvalho de Melo
-<acme@redhat.com> wrote:
-> Em Thu, Feb 06, 2014 at 12:07:05PM -0200, Arnaldo Carvalho de Melo escreveu:
->> Em Thu, Feb 06, 2014 at 02:58:01PM +0100, Stephane Eranian escreveu:
->> > On Thu, Feb 6, 2014 at 2:56 PM, Arnaldo Carvalho de Melo
->> > <acme@redhat.com> wrote:
->> > > Em Wed, Feb 05, 2014 at 10:25:09PM +0100, Stephane Eranian escreveu:
->> > >> If you run perf top on 3.14 but you force --stdio mode, perf top
->> > >> goes crazy and constantly refreshes the output.
->>
->> > >> It does that with many older versions of the perf as well on 3.14.
->> > >> It runs fine with newt mode.
->>
->> > >> Works fine with my 3.11 kernel. So something must be broken
->> > >> with 3.14.
->>
->> > >> Can you reproduce the problem as well?
->>
->> > > Not so far, using my perf/urgent branch:
->>
->> > I am using tip.git. Or try 3.11, 3.10.
->
-> But my tests are on top of:
->
-> [acme@ssdandy linux]$ uname -r
-> 3.11.4-101.fc18.x86_64
->
-> I thought it was a 3.14ish one, building one to try there...
->
-The kernel must be 3.14-rcX, the tool can be any version.
+On Thu, Feb 06, 2014 at 03:27:43PM +0100, Hannes Reinecke wrote:
+> The 'active' sysfs attribute should refer to the currently
+> active tty devices the console is running on, not the currently
+> active console.
 
-> - Arnaldo
+That's not what Documentation/ABI/sysfs-tty says:
+                 Shows the list of currently configured                         
+                 console devices, like 'tty1 ttyS0'.                            
+                 The last entry in the file is the active                       
+                 device connected to /dev/console.                              
+                 The file supports poll() to detect virtual                     
+                 console switches.                         
+
+> The console structure doesn't refer to any device in sysfs,
+> only the tty the console is running on has.
+
+That sentance doesn't make sense.
+
+> So we need to print out the tty names in 'active', not
+> the console names.
+
+But that doesn't match the documentation.
+
+What exactly are you trying to "fix" here?  What is the problem that the
+current file has that is broken?  And as you are changing what this file
+means, what will break if the information in the file changes?
+
+
+thanks,
+
+greg k-h
