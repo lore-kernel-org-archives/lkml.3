@@ -1,154 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932842AbaBFNyT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 08:54:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42854 "EHLO mx2.suse.de"
+	id S932848AbaBFN4m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 08:56:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64379 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932589AbaBFNyR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 08:54:17 -0500
-Date: Thu, 6 Feb 2014 13:53:37 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Hugh Dickins <hughd@google.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Greg Thelen <gthelen@google.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [patch v2] mm, compaction: avoid isolating pinned pages
-Message-ID: <20140206135337.GV6732@suse.de>
-References: <20140204000237.GA17331@lge.com>
- <alpine.DEB.2.02.1402031610090.10778@chino.kir.corp.google.com>
- <20140204015332.GA14779@lge.com>
- <alpine.DEB.2.02.1402031755440.26347@chino.kir.corp.google.com>
- <20140204021533.GA14924@lge.com>
- <alpine.DEB.2.02.1402031848290.15032@chino.kir.corp.google.com>
- <alpine.DEB.2.02.1402041842100.14045@chino.kir.corp.google.com>
- <alpine.LSU.2.11.1402051232530.3440@eggly.anvils>
- <20140206000504.GA17465@lge.com>
- <alpine.LSU.2.11.1402051647360.28926@eggly.anvils>
+	id S1755990AbaBFN4l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 08:56:41 -0500
+Date: Thu, 6 Feb 2014 11:56:27 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>, Jiri Olsa <jolsa@redhat.com>,
+        Eric Dumazet <edumazet@google.com>
+Subject: Re: [BUG] perf top: --stdio causes continuous refresh
+Message-ID: <20140206135627.GA26955@infradead.org>
+References: <CABPqkBSkSbWvdRu3iEtNvHhfV4J4sALHvdd40hZTcGxLe576yQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1402051647360.28926@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CABPqkBSkSbWvdRu3iEtNvHhfV4J4sALHvdd40hZTcGxLe576yQ@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 05, 2014 at 05:16:06PM -0800, Hugh Dickins wrote:
-> On Thu, 6 Feb 2014, Joonsoo Kim wrote:
-> > On Wed, Feb 05, 2014 at 12:56:40PM -0800, Hugh Dickins wrote:
-> > > On Tue, 4 Feb 2014, David Rientjes wrote:
-> > > 
-> > > > Page migration will fail for memory that is pinned in memory with, for
-> > > > example, get_user_pages().  In this case, it is unnecessary to take
-> > > > zone->lru_lock or isolating the page and passing it to page migration
-> > > > which will ultimately fail.
-> > > > 
-> > > > This is a racy check, the page can still change from under us, but in
-> > > > that case we'll just fail later when attempting to move the page.
-> > > > 
-> > > > This avoids very expensive memory compaction when faulting transparent
-> > > > hugepages after pinning a lot of memory with a Mellanox driver.
-> > > > 
-> > > > On a 128GB machine and pinning ~120GB of memory, before this patch we
-> > > > see the enormous disparity in the number of page migration failures
-> > > > because of the pinning (from /proc/vmstat):
-> > > > 
-> > > > 	compact_pages_moved 8450
-> > > > 	compact_pagemigrate_failed 15614415
-> > > > 
-> > > > 0.05% of pages isolated are successfully migrated and explicitly 
-> > > > triggering memory compaction takes 102 seconds.  After the patch:
-> > > > 
-> > > > 	compact_pages_moved 9197
-> > > > 	compact_pagemigrate_failed 7
-> > > > 
-> > > > 99.9% of pages isolated are now successfully migrated in this 
-> > > > configuration and memory compaction takes less than one second.
-> > > > 
-> > > > Signed-off-by: David Rientjes <rientjes@google.com>
-> > > > ---
-> > > >  v2: address page count issue per Joonsoo
-> > > > 
-> > > >  mm/compaction.c | 9 +++++++++
-> > > >  1 file changed, 9 insertions(+)
-> > > > 
-> > > > diff --git a/mm/compaction.c b/mm/compaction.c
-> > > > --- a/mm/compaction.c
-> > > > +++ b/mm/compaction.c
-> > > > @@ -578,6 +578,15 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
-> > > >  			continue;
-> > > >  		}
-> > > >  
-> > > > +		/*
-> > > > +		 * Migration will fail if an anonymous page is pinned in memory,
-> > > > +		 * so avoid taking lru_lock and isolating it unnecessarily in an
-> > > > +		 * admittedly racy check.
-> > > > +		 */
-> > > > +		if (!page_mapping(page) &&
-> > > > +		    page_count(page) > page_mapcount(page))
-> > > > +			continue;
-> > > > +
-> > > >  		/* Check if it is ok to still hold the lock */
-> > > >  		locked = compact_checklock_irqsave(&zone->lru_lock, &flags,
-> > > 
-> > > Much better, maybe good enough as an internal patch to fix a particular
-> > > problem you're seeing; but not yet good enough to go upstream.
-> > > 
-> > > Anonymous pages are not the only pages which might be pinned,
-> > > and your test doesn't mention PageAnon, so does not match your comment.
-> > > 
-> > > I've remembered is_page_cache_freeable() in mm/vmscan.c, which gives
-> > > more assurance that a page_count - page_has_private test is appropriate,
-> > > whatever the filesystem and migrate method to be used.
-> > > 
-> > > So I think the test you're looking for is
-> > > 
-> > > 		pincount = page_count(page) - page_mapcount(page);
-> > > 		if (page_mapping(page))
-> > > 			pincount -= 1 + page_has_private(page);
-> > > 		if (pincount > 0)
-> > > 			continue;
-> > > 
-> > > but please cross-check and test that out, it's easy to be off-by-one etc.
-> > 
-> > Hello, Hugh.
-> > 
-> > I don't think that this is right.
-> > One of migratepage function, aio_migratepage(), pass extra count 1 to
-> > migrate_page_move_mapping(). So it can be migrated when pincount == 1 in
-> > above test.
-> > 
-> > I think that we should not be aggressive here. This is just for prediction
-> > so that it is better not to skip apropriate pages at most. Just for anon case
-> > that we are sure easily is the right solution for me.
+Em Wed, Feb 05, 2014 at 10:25:09PM +0100, Stephane Eranian escreveu:
+> If you run perf top on 3.14 but you force --stdio mode, perf top
+> goes crazy and constantly refreshes the output.
 > 
-> Interesting, thank you for the pointer.  That's a pity!
+> It does that with many older versions of the perf as well on 3.14.
+> It runs fine with newt mode.
 > 
-> I hope that later on we can modify fs/aio.c to set PagePrivate on
-> ring pages, revert the extra argument to migrate_page_move_mapping(),
-> and then let it appear the same as the other filesystems (but lacking
-> a writepage, reclaim won't try to free the pages).
-> 
-> But that's "later on" and may prove impossible in the implementation.
-> I agree it's beyond the scope of David's patch, and so only anonymous
-> should be dealt with in this way at present.
-> 
-> And since page_mapping() is non-NULL on PageAnon PageSwapCache pages,
-> those will fall through David's test and go on to try migration:
-> which is the correct default.  Although we could add code to handle
-> pinned swapcache, it would be rather an ugly excrescence, until the case
-> gets handled naturally when proper page_mapping() support is added later.
-> 
-> Okay, to David's current patch
-> Acked-by: Hugh Dickins <hughd@google.com>
-> though I'd like to hear whether Mel is happy with it.
-> 
+> Works fine with my 3.11 kernel. So something must be broken
+> with 3.14.
+ 
+> Can you reproduce the problem as well?
 
-I have nothing useful to add other than
+Not so far, using my perf/urgent branch:
 
-Acked-by: Mel Gorman <mgorman@suse.de>
+[root@ssdandy ~]# perf --version
+perf version 3.13.g1da187
 
--- 
-Mel Gorman
-SUSE Labs
+Also it honours --delay, i.e.
+
+# perf top --delay 5 --stdio
+
+it will wait 5 seconds between refreshes, etc.
+
+Checking out v3.14-rc1 now.
+
+- Arnaldo
