@@ -1,77 +1,315 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752087AbaBFF03 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 00:26:29 -0500
-Received: from aurora.thatsmathematics.com ([162.209.10.89]:46099 "EHLO
-	aurora.thatsmathematics.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751319AbaBFF01 (ORCPT
+	id S1751992AbaBFFcL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 00:32:11 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:56189 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774AbaBFFcI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 00:26:27 -0500
-Date: Wed, 5 Feb 2014 22:26:24 -0700 (MST)
-From: Nate Eldredge <nate@thatsmathematics.com>
-X-X-Sender: nate@minerva.lan
-To: Suresh Siddha <sbsiddha@gmail.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        stable <stable@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Maarten Baert <maarten-baert@hotmail.com>, Jan Kara <jack@suse.cz>,
-        George Spelvin <linux@horizon.com>, Pekka Riikonen <priikone@iki.fi>
-Subject: Re: [PATCH] Make math_state_restore() save and restore the interrupt
- flag
-In-Reply-To: <1391410583.3801.6.camel@europa>
-Message-ID: <alpine.DEB.2.10.1402052224200.2702@minerva.lan>
-References: <alpine.DEB.2.10.1401301442170.2769@minerva.lan>  <CA+55aFz_CYQGxukpRb5zF5SZ9ZWqpvohoUzqdEb-3+bR_FMnWA@mail.gmail.com>  <CALmL7E9LRZCPH5EuS_Jm-iJzpKnWj4OsXmS44VYDpLoDKPfVxA@mail.gmail.com>  <CA+55aFz-=9L=K2O-yB5f9R-w40PzXJ5xEXcinnUdUF1QHO7KMQ@mail.gmail.com>
-  <CALmL7E9j5Rv8ZqUZXZh-dfNu_-7XWK_EoNjZHpuAwtG7jpk9+g@mail.gmail.com>  <1391325599.6481.5.camel@europa>  <CA+55aFzz8a7K+KSB_TkGb1ih1hAg09-0TQusQgE5vwMJGegHDw@mail.gmail.com> <1391410583.3801.6.camel@europa>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Thu, 6 Feb 2014 00:32:08 -0500
+Subject: [PATCH -tip v3 01/11] [BUGFIX] perf-probe: Fix to do exit call for
+ symbol maps
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        "David A. Long" <dave.long@linaro.org>, yrl.pp-manager.tt@hitachi.com,
+        Namhyung Kim <namhyung@kernel.org>
+Date: Thu, 06 Feb 2014 05:32:04 +0000
+Message-ID: <20140206053204.29635.28334.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
+In-Reply-To: <20140206053201.29635.99095.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
+References: <20140206053201.29635.99095.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2 Feb 2014, Suresh Siddha wrote:
+Some perf-probe commands do symbol_init() but doesn't
+do exit call. This fixes that to call symbol_exit()
+and releases machine if needed.
+This also merges init_vmlinux() and init_user_exec()
+because both of them are doing similar things.
+(init_user_exec() just skips init vmlinux related
+ symbol maps)
 
-> Here is the second patch, which should fix the issue reported in this
-> thread. Maarten, Nate, George, please give this patch a try as is and
-> see if it helps address the issue you ran into. And please ack/review
-> with your test results.
+Changes from v2:
+ - Not to set symbol_conf.try_vmlinux_path in init_symbol_maps()
+   (Thanks to Namhyung Kim!)
 
-3.13 plus this patch: boots and fixes the testcase I reported (core dump 
-on ecrypt).
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+---
+ tools/perf/util/probe-event.c |  104 ++++++++++++++++++++++-------------------
+ 1 file changed, 56 insertions(+), 48 deletions(-)
 
-Tested-by: Nate Eldredge <nate@thatsmathematics.com>
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index d8b048c..9aa7783 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -73,31 +73,31 @@ static char *synthesize_perf_probe_point(struct perf_probe_point *pp);
+ static int convert_name_to_addr(struct perf_probe_event *pev,
+ 				const char *exec);
+ static void clear_probe_trace_event(struct probe_trace_event *tev);
+-static struct machine machine;
++static struct machine *host_machine;
+ 
+ /* Initialize symbol maps and path of vmlinux/modules */
+-static int init_vmlinux(void)
++static int init_symbol_maps(bool user_only)
+ {
+ 	int ret;
+ 
+ 	symbol_conf.sort_by_name = true;
+-	if (symbol_conf.vmlinux_name == NULL)
+-		symbol_conf.try_vmlinux_path = true;
+-	else
+-		pr_debug("Use vmlinux: %s\n", symbol_conf.vmlinux_name);
+ 	ret = symbol__init();
+ 	if (ret < 0) {
+ 		pr_debug("Failed to init symbol map.\n");
+ 		goto out;
+ 	}
+ 
+-	ret = machine__init(&machine, "", HOST_KERNEL_ID);
+-	if (ret < 0)
+-		goto out;
++	if (host_machine || user_only)	/* already initialized */
++		return 0;
+ 
+-	if (machine__create_kernel_maps(&machine) < 0) {
+-		pr_debug("machine__create_kernel_maps() failed.\n");
+-		goto out;
++	if (symbol_conf.vmlinux_name)
++		pr_debug("Use vmlinux: %s\n", symbol_conf.vmlinux_name);
++
++	host_machine = machine__new_host();
++	if (!host_machine) {
++		pr_debug("machine__new_host() failed.\n");
++		symbol__exit();
++		ret = -1;
+ 	}
+ out:
+ 	if (ret < 0)
+@@ -105,21 +105,30 @@ out:
+ 	return ret;
+ }
+ 
++static void exit_symbol_maps(void)
++{
++	if (host_machine) {
++		machine__delete(host_machine);
++		host_machine = NULL;
++	}
++	symbol__exit();
++}
++
+ static struct symbol *__find_kernel_function_by_name(const char *name,
+ 						     struct map **mapp)
+ {
+-	return machine__find_kernel_function_by_name(&machine, name, mapp,
++	return machine__find_kernel_function_by_name(host_machine, name, mapp,
+ 						     NULL);
+ }
+ 
+ static struct map *kernel_get_module_map(const char *module)
+ {
+ 	struct rb_node *nd;
+-	struct map_groups *grp = &machine.kmaps;
++	struct map_groups *grp = &host_machine->kmaps;
+ 
+ 	/* A file path -- this is an offline module */
+ 	if (module && strchr(module, '/'))
+-		return machine__new_module(&machine, 0, module);
++		return machine__new_module(host_machine, 0, module);
+ 
+ 	if (!module)
+ 		module = "kernel";
+@@ -141,7 +150,7 @@ static struct dso *kernel_get_module_dso(const char *module)
+ 	const char *vmlinux_name;
+ 
+ 	if (module) {
+-		list_for_each_entry(dso, &machine.kernel_dsos, node) {
++		list_for_each_entry(dso, &host_machine->kernel_dsos, node) {
+ 			if (strncmp(dso->short_name + 1, module,
+ 				    dso->short_name_len - 2) == 0)
+ 				goto found;
+@@ -150,7 +159,7 @@ static struct dso *kernel_get_module_dso(const char *module)
+ 		return NULL;
+ 	}
+ 
+-	map = machine.vmlinux_maps[MAP__FUNCTION];
++	map = host_machine->vmlinux_maps[MAP__FUNCTION];
+ 	dso = map->dso;
+ 
+ 	vmlinux_name = symbol_conf.vmlinux_name;
+@@ -173,20 +182,6 @@ const char *kernel_get_module_path(const char *module)
+ 	return (dso) ? dso->long_name : NULL;
+ }
+ 
+-static int init_user_exec(void)
+-{
+-	int ret = 0;
+-
+-	symbol_conf.try_vmlinux_path = false;
+-	symbol_conf.sort_by_name = true;
+-	ret = symbol__init();
+-
+-	if (ret < 0)
+-		pr_debug("Failed to init symbol map.\n");
+-
+-	return ret;
+-}
+-
+ static int convert_exec_to_group(const char *exec, char **result)
+ {
+ 	char *ptr1, *ptr2, *exec_copy;
+@@ -563,7 +558,7 @@ static int _show_one_line(FILE *fp, int l, bool skip, bool show_num)
+  * Show line-range always requires debuginfo to find source file and
+  * line number.
+  */
+-int show_line_range(struct line_range *lr, const char *module)
++static int __show_line_range(struct line_range *lr, const char *module)
+ {
+ 	int l = 1;
+ 	struct line_node *ln;
+@@ -573,10 +568,6 @@ int show_line_range(struct line_range *lr, const char *module)
+ 	char *tmp;
+ 
+ 	/* Search a line range */
+-	ret = init_vmlinux();
+-	if (ret < 0)
+-		return ret;
+-
+ 	dinfo = open_debuginfo(module);
+ 	if (!dinfo) {
+ 		pr_warning("Failed to open debuginfo file.\n");
+@@ -646,6 +637,19 @@ end:
+ 	return ret;
+ }
+ 
++int show_line_range(struct line_range *lr, const char *module)
++{
++	int ret;
++
++	ret = init_symbol_maps(false);
++	if (ret < 0)
++		return ret;
++	ret = __show_line_range(lr, module);
++	exit_symbol_maps();
++
++	return ret;
++}
++
+ static int show_available_vars_at(struct debuginfo *dinfo,
+ 				  struct perf_probe_event *pev,
+ 				  int max_vls, struct strfilter *_filter,
+@@ -707,14 +711,15 @@ int show_available_vars(struct perf_probe_event *pevs, int npevs,
+ 	int i, ret = 0;
+ 	struct debuginfo *dinfo;
+ 
+-	ret = init_vmlinux();
++	ret = init_symbol_maps(false);
+ 	if (ret < 0)
+ 		return ret;
+ 
+ 	dinfo = open_debuginfo(module);
+ 	if (!dinfo) {
+ 		pr_warning("Failed to open debuginfo file.\n");
+-		return -ENOENT;
++		ret = -ENOENT;
++		goto out;
+ 	}
+ 
+ 	setup_pager();
+@@ -724,6 +729,8 @@ int show_available_vars(struct perf_probe_event *pevs, int npevs,
+ 					     externs);
+ 
+ 	debuginfo__delete(dinfo);
++out:
++	exit_symbol_maps();
+ 	return ret;
+ }
+ 
+@@ -1807,7 +1814,7 @@ int show_perf_probe_events(void)
+ 	if (fd < 0)
+ 		return fd;
+ 
+-	ret = init_vmlinux();
++	ret = init_symbol_maps(false);
+ 	if (ret < 0)
+ 		return ret;
+ 
+@@ -1820,6 +1827,7 @@ int show_perf_probe_events(void)
+ 		close(fd);
+ 	}
+ 
++	exit_symbol_maps();
+ 	return ret;
+ }
+ 
+@@ -2135,12 +2143,7 @@ int add_perf_probe_events(struct perf_probe_event *pevs, int npevs,
+ 	if (pkgs == NULL)
+ 		return -ENOMEM;
+ 
+-	if (!pevs->uprobes)
+-		/* Init vmlinux path */
+-		ret = init_vmlinux();
+-	else
+-		ret = init_user_exec();
+-
++	ret = init_symbol_maps(pevs->uprobes);
+ 	if (ret < 0) {
+ 		free(pkgs);
+ 		return ret;
+@@ -2174,6 +2177,7 @@ end:
+ 		zfree(&pkgs[i].tevs);
+ 	}
+ 	free(pkgs);
++	exit_symbol_maps();
+ 
+ 	return ret;
+ }
+@@ -2347,7 +2351,7 @@ static int available_kernel_funcs(const char *module)
+ 	struct map *map;
+ 	int ret;
+ 
+-	ret = init_vmlinux();
++	ret = init_symbol_maps(false);
+ 	if (ret < 0)
+ 		return ret;
+ 
+@@ -2356,7 +2360,10 @@ static int available_kernel_funcs(const char *module)
+ 		pr_err("Failed to find %s map.\n", (module) ? : "kernel");
+ 		return -EINVAL;
+ 	}
+-	return __show_available_funcs(map);
++	ret = __show_available_funcs(map);
++	exit_symbol_maps();
++
++	return ret;
+ }
+ 
+ static int available_user_funcs(const char *target)
+@@ -2364,7 +2371,7 @@ static int available_user_funcs(const char *target)
+ 	struct map *map;
+ 	int ret;
+ 
+-	ret = init_user_exec();
++	ret = init_symbol_maps(true);
+ 	if (ret < 0)
+ 		return ret;
+ 
+@@ -2372,6 +2379,7 @@ static int available_user_funcs(const char *target)
+ 	ret = __show_available_funcs(map);
+ 	dso__delete(map->dso);
+ 	map__delete(map);
++	exit_symbol_maps();
+ 	return ret;
+ }
+ 
 
-> diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
-> index 4e5f770..670bba1 100644
-> --- a/arch/x86/kernel/i387.c
-> +++ b/arch/x86/kernel/i387.c
-> @@ -87,10 +87,19 @@ EXPORT_SYMBOL(__kernel_fpu_begin);
->
-> void __kernel_fpu_end(void)
-> {
-> -	if (use_eager_fpu())
-> -		math_state_restore();
-> -	else
-> +	if (use_eager_fpu()) {
-> +		/*
-> +		 * For eager fpu, most the time, tsk_used_math() is true.
-> +		 * Restore the user math as we are done with the kernel usage.
-> +		 * At few instances during thread exit, signal handling etc,
-> +		 * tsk_used_math() is false. Those few places will take proper
-> +		 * actions, so we don't need to restore the math here.
-> +		 */
-> +		if (likely(tsk_used_math(current)))
-> +			math_state_restore();
-> +	} else {
-> 		stts();
-> +	}
-> }
-> EXPORT_SYMBOL(__kernel_fpu_end);
-
--- 
-Nate Eldredge
-nate@thatsmathematics.com
 
