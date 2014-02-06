@@ -1,65 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755311AbaBFPjO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 10:39:14 -0500
-Received: from relay.parallels.com ([195.214.232.42]:57090 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750706AbaBFPjN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 10:39:13 -0500
-Message-ID: <52F3AC9A.7050600@parallels.com>
-Date: Thu, 6 Feb 2014 19:39:06 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
+	id S1754979AbaBFPoX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 10:44:23 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45751 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750757AbaBFPoW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 10:44:22 -0500
+Message-ID: <52F3ADD4.7020907@suse.de>
+Date: Thu, 06 Feb 2014 16:44:20 +0100
+From: Hannes Reinecke <hare@suse.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: <akpm@linux-foundation.org>, <rientjes@google.com>, <penberg@kernel.org>,
-        <cl@linux.com>, <glommer@gmail.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <devel@openvz.org>
-Subject: Re: [PATCH 3/8] memcg, slab: never try to merge memcg caches
-References: <cover.1391356789.git.vdavydov@parallels.com> <27c4e7d7fb6b788b66995d2523225ef2dcbc6431.1391356789.git.vdavydov@parallels.com> <20140204145210.GH4890@dhcp22.suse.cz> <52F1004B.90307@parallels.com> <20140204151145.GI4890@dhcp22.suse.cz> <52F106D7.3060802@parallels.com> <20140206140707.GF20269@dhcp22.suse.cz> <52F39916.2040603@parallels.com> <20140206152944.GG20269@dhcp22.suse.cz>
-In-Reply-To: <20140206152944.GG20269@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.16.96]
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: systemd Mailing List <systemd-devel@lists.freedesktop.org>,
+        dh.herrmann@gmail.com, linux-kernel@vger.kernel.org,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay@vrfy.org>, Jiri Slaby <jslaby@suse.cz>,
+        Werner Fink <werner@suse.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: Re: [PATCHv2] tty: Set correct tty name in 'active' sysfs attribute
+References: <1391696863-62767-1-git-send-email-hare@suse.de> <20140206152947.GA19335@kroah.com>
+In-Reply-To: <20140206152947.GA19335@kroah.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/2014 07:29 PM, Michal Hocko wrote:
-> On Thu 06-02-14 18:15:50, Vladimir Davydov wrote:
->> On 02/06/2014 06:07 PM, Michal Hocko wrote:
->>> On Tue 04-02-14 19:27:19, Vladimir Davydov wrote:
->>> [...]
->>>> What does this patch change? Actually, it introduces no functional
->>>> changes - it only remove the code trying to find an alias for a memcg
->>>> cache, because it will fail anyway. So this is rather a cleanup.
->>> But this also means that two different memcgs might share the same cache
->>> and so the pages for that cache, no?
->> No, because in this patch I explicitly forbid to merge memcg caches by
->> this hunk:
->>
->> @@ -200,9 +200,11 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg,
->> const char *name, size_t size,
->>       */
->>      flags &= CACHE_CREATE_MASK;
->>  
->> -    s = __kmem_cache_alias(memcg, name, size, align, flags, ctor);
->> -    if (s)
->> -        goto out_unlock;
->> +    if (!memcg) {
->> +        s = __kmem_cache_alias(name, size, align, flags, ctor);
->> +        if (s)
->> +            goto out_unlock;
->> +    }
-> Ohh, that was the missing part. Thanks and sorry I have missed it.
+On 02/06/2014 04:29 PM, Greg Kroah-Hartman wrote:
+> On Thu, Feb 06, 2014 at 03:27:43PM +0100, Hannes Reinecke wrote:
+>> The 'active' sysfs attribute should refer to the currently
+>> active tty devices the console is running on, not the currently
+>> active console.
+> 
+> That's not what Documentation/ABI/sysfs-tty says:
+>                  Shows the list of currently configured                         
+>                  console devices, like 'tty1 ttyS0'.                            
+>                  The last entry in the file is the active                       
+>                  device connected to /dev/console.                              
+>                  The file supports poll() to detect virtual                     
+>                  console switches.                         
+> 
+The problem is indeed with 'console devices'. There is no such
+thing; you only have tty devices where the console is running on.
 
-Never mind.
+>> The console structure doesn't refer to any device in sysfs,
+>> only the tty the console is running on has.
+> 
+> That sentance doesn't make sense.
+> 
+>> So we need to print out the tty names in 'active', not
+>> the console names.
+> 
+> But that doesn't match the documentation.
+> 
+> What exactly are you trying to "fix" here?  What is the problem that the
+> current file has that is broken?  And as you are changing what this file
+> means, what will break if the information in the file changes?
+> 
+systemd is using the 'active' sysfs attribute to figure out on which
+_tty_ device to start a getty on.
+As soon as the console name and the tty name are different
+you have no means of figuring out which _device_ to open.
+AFAICS the console 'device' (ie the current entry in 'active')
+doesn't have _any_ equivalent in sysfs; it just so happens that for
+most console drivers the tty driver name is identical.
+But this is not a requirement, and fails for drivers which have a
+different device for the console and the tty.
 
-> Maybe it is worth mentioning in the changelog?
+EG on S/390 the 3270 tty has the devices
 
-Hmm, changelog? This hunk was there from the very beginning :-/
+/dev/3270/tty1
 
-Anyway, I'm going to expand this patch's comment, because it's too short
-and difficult to understand.
+but the console driver announces the name 'tty3270'.
+So as per current rules the 'active' attribute contains
 
-Thanks.
+tty32700
+
+which correct as per documentation, but doesn't have _any_
+equivalent in sysfs.
+
+Martin has the grubby details here.
+
+But of course, the documentation should be updated to match the new
+behavior.
+
+Cheers,
+
+Hannes
+-- 
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
