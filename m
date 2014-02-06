@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755428AbaBFQoK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 11:44:10 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:53346 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751367AbaBFQoH (ORCPT
+	id S1756672AbaBFQph (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 11:45:37 -0500
+Received: from mail-lb0-f196.google.com ([209.85.217.196]:57451 "EHLO
+	mail-lb0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750739AbaBFQpg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 11:44:07 -0500
-Date: Thu, 6 Feb 2014 17:43:36 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, linux-sh@vger.kernel.org,
-        linux-pm@vger.kernel.org, linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH v2 6/6] cpu/idle.c: move to sched/idle.c
-Message-ID: <20140206164336.GU2936@laptop.programming.kicks-ass.net>
-References: <1391017513-12995-1-git-send-email-nicolas.pitre@linaro.org>
- <1391017513-12995-7-git-send-email-nicolas.pitre@linaro.org>
- <20140130152500.GB5002@laptop.programming.kicks-ass.net>
- <alpine.LFD.2.11.1401301102210.1652@knanqh.ubzr>
- <20140130162753.GF5002@laptop.programming.kicks-ass.net>
- <alpine.LFD.2.11.1402061152550.1906@knanqh.ubzr>
+	Thu, 6 Feb 2014 11:45:36 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.11.1402061152550.1906@knanqh.ubzr>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Reply-To: drsalifmohammed23@gmail.com
+Date: Thu, 6 Feb 2014 17:20:02 +0100
+Message-ID: <CAMHHO55YC_DU46BpV0-NsQsJ9+LZBN=tbpZVtaaa6cKODpq9zg@mail.gmail.com>
+Subject: Dear Friend.
+From: "Dr. Salif Mohamed" <lotprm06@gmail.com>
+To: undisclosed-recipients:;
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 06, 2014 at 02:09:59PM +0000, Nicolas Pitre wrote:
-> Hi Peter,
-> 
-> Did you merge those patches in your tree? 
+Dear Friend,
 
-tree, tree, what's in a word. Its in my patch stack yes. I should get
-some of that into tip I suppose, been side-tracked a bit this week.
-Sorry for the delay.
+I know that this mail will come to you as a surprise since we have not
+known or met before now, but please, I would like you to treat it like
+blood brother affair and with the urgency and secrecy it requires. I
+am Dr. Salif Mohamed, an Audit staff of (B.O.A) Bank of Africa Burkina
+Faso.
 
-> If so, is it published somewhere?  
+An investor (name with-held) died without naming any next of kin to
+his fund he deposited in my bank. The amount is $10.5M (Ten Million
+Five hundred Thousand Dollars) and banking regulation/legislation in
+Burkina Faso demands that I should notify the fiscal authorities after
+three years. The above set of facts underscores my reason to seek your
+permission to have you stand in as the next of kin to the deceased.
 
-http://programming.kicks-ass.net/sekrit/patches.tar.bz2
+This fund will be approved and released in your favour as the next of
+kin if only you will adhere to my instruction and cooperate with me in
+one accord.
 
-It is of varying quality at best.
+I have all the legal and banking details of the deceased client that
+will facilitate our putting you forward as the claimant/beneficiary of
+the funds and ultimately transfer of the $10.5M plus interest to any
+bank account nominated by you.
 
-> That would be a good idea if that could appear in linux-next 
-> so to prevent people from adding more calls to cpuidle_idle_call() from 
-> architecture code.  I'm sending you 2 additional patches right away to 
-> remove those that appeared in v3.14-rc1.
+I am prepared to compensate you with a 35% share of the total funds
+for your efforts. The final details will be given upon receipt an
+affirmation of your desire to participate.
 
-Yeah, once they land in tip they'll end up in -next automagically. I'll
-try and get that sorted tomorrow somewhere.
+Please contact me immediately on (drsalifmohammed23@gmail.com) if you
+are interest in my proposal to enable me not to start scouting for
+another foreign partner.
+
+Thanks,
+Dr. Salif Mohamed.
