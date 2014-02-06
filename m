@@ -1,83 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755307AbaBFPAs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 10:00:48 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:56229 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752750AbaBFPAo (ORCPT
+	id S1755365AbaBFPDo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 10:03:44 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:36943 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752659AbaBFPDn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 10:00:44 -0500
-Date: Thu, 6 Feb 2014 16:02:26 +0100
-From: Emil Goode <emilgoode@gmail.com>
-To: David Laight <David.Laight@ACULAB.COM>
-Cc: "David S. Miller" <davem@davemloft.net>, Ming Lei <ming.lei@canonical.com>,
-        Mark Brown <broonie@linaro.org>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Glen Turner <gdt@gdt.id.au>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] net: asix: fix bad header length bug
-Message-ID: <20140206150226.GA5251@lianli>
-References: <1391691384-8486-1-git-send-email-emilgoode@gmail.com>
- <063D6719AE5E284EB5DD2968C1650D6D0F6B98CA@AcuExch.aculab.com>
+	Thu, 6 Feb 2014 10:03:43 -0500
+Date: Thu, 6 Feb 2014 14:30:50 +0000
+From: Mark Brown <broonie@kernel.org>
+To: "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Guenter Roeck <linux@roeck-us.net>
+Message-ID: <20140206143050.GU32298@sirena.org.uk>
+References: <cover.1391614923.git.Adam.Thomson.Opensource@diasemi.com>
+ <6d76ae40cd435eaae0323f3e806515130b06a376.1391614923.git.Adam.Thomson.Opensource@diasemi.com>
+ <20140205183642.GH32298@sirena.org.uk>
+ <2E89032DDAA8B9408CB92943514A03376B7E1669@SW-EX-MBX02.diasemi.com>
+ <20140206120336.GL32298@sirena.org.uk>
+ <2E89032DDAA8B9408CB92943514A03376B7E36B9@SW-EX-MBX02.diasemi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="28wbjzzu+2Xmo01Z"
 Content-Disposition: inline
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D0F6B98CA@AcuExch.aculab.com>
+In-Reply-To: <2E89032DDAA8B9408CB92943514A03376B7E36B9@SW-EX-MBX02.diasemi.com>
+X-Cookie: Take it easy, we're in a hurry.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 4/8] regulator: da9055: Add DT support
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello David,
 
-Thank's for the review.
+--28wbjzzu+2Xmo01Z
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-On Thu, Feb 06, 2014 at 01:37:12PM +0000, David Laight wrote:
-> From: Emil Goode
-> > The AX88772B occasionally send rx packets that cross urb boundaries
-> > and the remaining partial packet is sent with no header.
-> > When the buffer with a partial packet is of less number of octets
-> > than the value of hard_header_len the buffer is discarded by the
-> > usbnet module. This is causing dropped packages and error messages
-> > in dmesg.
-> > 
-> > This can be reproduced by using ping with a packet size
-> > between 1965-1976.
-> 
-> I think this can affect other USB ethernet drivers.
-> Probably most of the ones that explicitly set rx_urb_len.
-> 
-> The ax88179_178a driver sets massive 20k receive urb.
+On Thu, Feb 06, 2014 at 12:22:13PM +0000, Opensource [Adam Thomson] wrote:
 
-The ax88179_178a has it's own bind function, so I believe it's
-not affected by this change.
+> Is what I summised but I obviously chose the wrong direction for my fix.
+> Will use platform_get_irq_byname() solely, and will make sure all works on
+> both DT and non-DT setups. If not I'll dig further.
 
-> I've seen over 10k of data in a single urb, dunno if it
-> can actually generate more than 20k - possibly if the usb3 link
-> is loaded with other traffic.
-> It would be much more efficient for it to use an aligned 4k urb
-> and then merge the fragment into skbs.
-> 
-> Once you've set:
-> +	dev->net->hard_header_len = 0; /* Partial packets have no header */
-> try setting the mtu to a multiple of 1k.
+Yeah.  In general I'd say that if you've got two options for something
+like this the option that makes the driver smaller or which replaces
+more code with data is normally going to be the right way to go.
 
-I tried setting the mtu to 2000 and when using ping with a large enough
-packet size to fill the urb to rx_urb_size all packages are dropped.
+--28wbjzzu+2Xmo01Z
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> There is a very odd check in usbnet_change_mtu() that tries to stop the
-> receive urb_length being a multiple of the usb packet size.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-This is very odd indeed!
+iQIcBAEBAgAGBQJS85yWAAoJELSic+t+oim9WqwP/3LhoaOTrzYs4B99Daljki9R
+jDfHwyk2GQ/uC9yNcE6BtXF2wRO/I/R+dJtMzd6RUYZcheodcC6e6zFUxlk9wu0/
+PABtnuCc5au2KrGsYZmAz+bQ+qd0gkpNyC373XXnvczKm8rASj11u7Da7ddRlT5G
+29oBBhSFypR4wP85Vi3mPdQ8WAz9fsQR6ZOaxZbn8VB84yVy2ojG506uxwclH1+K
+J4sL2HJMy9jAjdDCw2ewuuJvPILz6JHf5fh7+SksxMZEjqxjYfVhum/hzB/rYxU3
+/rRXDl0UesMGpDOqZtFIF+v3+RQcB8sWsn1yKN1QtiidbgLc1xifbZMRX0//zJfR
+oAB+ccBRv6Q37ZdmLZdvzyDJDEmmjYJhvvFkgjdODXT18XPkGUnINNC3/5Q3MmxT
+vSwTvfnnYA0yQEz1O67Y53v+NxnFtrpH+QnMcHkw6GF8FmhEswBs4GWEqchwjx19
+VZkACXnRNtQYvLW5QDKxhRM6hoDiyNE98bBih6cfFyGgvgOdrsuL70Me1mXd2ada
+V7q1aWmCLzgzORC3fWOO7u+YHZ4IeqovbxXv2nzjDd+ZtG6ikuScEjV6GhbKP4ku
+fYjJfOkP0w+F/LMJimgcnv71c25m3ovZvSIdJjiNzacBBpYt9g47UtHOuDbX8PK4
+TBZe4jBYEEYGdGLl+EbU
+=jCP6
+-----END PGP SIGNATURE-----
 
->
-> This code looks as though it is hoping that the usb controller will discard
-> any full length bulk messages after finding a short buffer.
-> I suspect that might be just wishful thinking!
-> 
-> 	David
-> 
-> 
-> 
+--28wbjzzu+2Xmo01Z--
