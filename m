@@ -1,40 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756823AbaBFWb7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 17:31:59 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:65406 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752666AbaBFWb6 (ORCPT
+	id S1757022AbaBFWjR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 17:39:17 -0500
+Received: from mail-la0-f45.google.com ([209.85.215.45]:50404 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751297AbaBFWjP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 17:31:58 -0500
-Date: Thu, 6 Feb 2014 14:31:55 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andi Kleen <andi@firstfloor.org>
-cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: [patch 1/4] x86, apic: Only use default_wait_for_init_deassert
-In-Reply-To: <87txcc57y2.fsf@tassilo.jf.intel.com>
-Message-ID: <alpine.DEB.2.02.1402061430420.29446@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1402042353030.7839@chino.kir.corp.google.com> <87txcc57y2.fsf@tassilo.jf.intel.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 6 Feb 2014 17:39:15 -0500
+Date: Thu, 6 Feb 2014 23:41:21 +0100
+From: Emil Goode <emilgoode@gmail.com>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: "'Igor Gnatenko'" <i.gnatenko.brain@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ming Lei <ming.lei@canonical.com>, Mark Brown <broonie@linaro.org>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Glen Turner <gdt@gdt.id.au>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] net: asix: fix bad header length bug
+Message-ID: <20140206224121.GB5251@lianli>
+References: <1391691384-8486-1-git-send-email-emilgoode@gmail.com>
+ <1391692768.2843.4.camel@X1Carbon.localdomain>
+ <063D6719AE5E284EB5DD2968C1650D6D0F6B99F7@AcuExch.aculab.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D0F6B99F7@AcuExch.aculab.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Feb 2014, Andi Kleen wrote:
-
-> > es7000_wait_for_init_deassert() is functionally equivalent to 
-> > default_wait_for_init_deassert(), so remove the duplicate code and use
-> > only a single function.
+On Thu, Feb 06, 2014 at 03:28:13PM +0000, David Laight wrote:
+> From: Igor Gnatenko
+> > On Thu, 2014-02-06 at 13:56 +0100, Emil Goode wrote:
+> > > The AX88772B occasionally send rx packets that cross urb boundaries
+> > > and the remaining partial packet is sent with no header.
+> > > When the buffer with a partial packet is of less number of octets
+> > > than the value of hard_header_len the buffer is discarded by the
+> > > usbnet module. This is causing dropped packages and error messages
+> > > in dmesg.
+> > >
+> > > This can be reproduced by using ping with a packet size
+> > > between 1965-1976.
+> > >
+> > > The bug has been reported here:
+> > >
+> > > https://bugzilla.kernel.org/show_bug.cgi?id=29082
+> > >
+> > > Signed-off-by: Emil Goode <emilgoode@gmail.com>
+> > Reported-and-tested-by: Igor Gnatenko <i.gnatenko.brain@gmail.com>
+> > > ---
+> > >  drivers/net/usb/asix_devices.c |    1 +
+> > >  1 file changed, 1 insertion(+)
+> > >
+> > > diff --git a/drivers/net/usb/asix_devices.c b/drivers/net/usb/asix_devices.c
+> > > index 9765a7d..120bb29 100644
+> > > --- a/drivers/net/usb/asix_devices.c
+> > > +++ b/drivers/net/usb/asix_devices.c
+> > > @@ -455,6 +455,7 @@ static int ax88772_bind(struct usbnet *dev, struct usb_interface *intf)
+> > >  	dev->net->ethtool_ops = &ax88772_ethtool_ops;
+> > >  	dev->net->needed_headroom = 4; /* cf asix_tx_fixup() */
+> > >  	dev->net->needed_tailroom = 4; /* cf asix_tx_fixup() */
+> > > +	dev->net->hard_header_len = 0; /* Partial packets have no header */
 > 
-> It would surprise me if anyone uses the es7000 anymore -- it may be
-> reasonable to just deprecate the complete port.
+> That is the wrong place for the fix.
 > 
+> It should only be done when rx_urb_size is set to a multiple of the usb
+> packet size.
+> That is only done for some of the supported devices.
+> 
+> In fact, if the rx_urb_size is a multiple of the usb frame size (or 1k)
+> then maybe the usbnet code should assume that the driver is capable
+> of processing ethernet frames that cross usb packet boundaries and
+> not delete short packets at all - regardless of the hard_header_len.
+> 
+> 	David
+>
 
-How do we usually do that?  Do we add a big fat warning for anyone who is 
-using it for a few releases or just yank support out entirely and see if 
-we're surprised?
+I will do some more digging in the code, but the test of skb->len
+against hard_header_len is done already in the completion callback
+function passed to usb_fill_bulk_urb so it seems that buffers of less
+than hard_header_len number of octets will be dropped regardless.
+
+Best regards,
+
+Emil Goode
+
