@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755734AbaBFISC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 03:18:02 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:56535 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755263AbaBFISA (ORCPT
+	id S1755776AbaBFITq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 03:19:46 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:45960 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752305AbaBFITo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 03:18:00 -0500
-X-AuditID: cbfee68d-b7fcd6d00000315b-89-52f345379a5e
+	Thu, 6 Feb 2014 03:19:44 -0500
+X-AuditID: cbfee68f-b7f156d00000276c-00-52f3459edb11
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>,
-        "'Michael Hennerich'" <michael.hennerich@analog.com>,
-        "'Mike Frysinger'" <vapier@gentoo.org>
+        "'Eric Miao'" <eric.y.miao@gmail.com>
 References: <000101cf2313$6ef38e80$4cdaab80$%han@samsung.com>
 In-reply-to: <000101cf2313$6ef38e80$4cdaab80$%han@samsung.com>
-Subject: [PATCH 03/12] backlight: adp8870: Remove unnecessary OOM messages
-Date: Thu, 06 Feb 2014 17:17:59 +0900
-Message-id: <000401cf2313$f2297df0$d67c79d0$%han@samsung.com>
+Subject: [PATCH 04/12] backlight: corgi_lcd: Remove unnecessary OOM messages
+Date: Thu, 06 Feb 2014 17:19:42 +0900
+Message-id: <000501cf2314$2fa64e60$8ef2eb20$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac8jE27bRmoXkttyRH6rTI4zkLyyhgAAF/OQ
+Thread-index: Ac8jE27bRmoXkttyRH6rTI4zkLyyhgAAIRXg
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCIsWRmVeSWpSXmKPExsVy+t8zY11z189BBi/vylrMWb+GzeLywkus
-	Fpd3zWGzmHB4M7vFzQk/mB1YPV5ddfS4/P0Ns8eJGb9ZPPq2rGL0+LxJLoA1issmJTUnsyy1
-	SN8ugSvj6o2rTAXP2Sp+nqxqYLzG2sXIySEhYCKxoW8vG4QtJnHh3nowW0hgGaPEtdvhXYwc
-	YDXfTkR3MXIBhRcxSvw9cJENwvnFKHFzUi8LSAObgJrEly+H2UEaRAT0JdpaNEBqmEEaOrbe
-	YoEYaiux+/RJsMWcAnYS2z61MoHYwgJeEj8a1oItZhFQlXi44jYjiM0LVN+64iQLhC0o8WPy
-	PTCbWUBLYv3O40wQtrzE5jVvmSEOVZd49FcXJCwiYCQx6dseZogSEYl9L94xgtwjIXCLXeLr
-	geWMELsEJL5NPsQC0SsrsekAMyQcJCUOrrjBMoFRYhaSzbOQbJ6FZPMsJCsWMLKsYhRNLUgu
-	KE5KLzLUK07MLS7NS9dLzs/dxAiJ0d4djLcPWB9iTAZaP5FZSjQ5HxjjeSXxhsZmRhamJqbG
-	RuaWZqQJK4nzJj1MChISSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXAKGwkE3v95JbvukLvj5x7
-	vHhmticzr/6JxiXBvCIFJ6OW9F3RSPH5VbHpugyTespN0b8fLhRsuNbZu+Lqt70u65m6re10
-	JOcnrdst0b/r3EPjTX7qC/svzNriatD6uFH5GNvhxjsVm/+pKRg+2nNPt7TqvfOvpfMneZhu
-	L50YnfTIzenyR4kLEkosxRmJhlrMRcWJAF3XFjDnAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEKsWRmVeSWpSXmKPExsVy+t9jAV1z189BBtt7pCzmrF/DZnF54SVW
-	i8u75rBZTDi8md3i5oQfzA6sHq+uOnpc/v6G2ePEjN8sHn1bVjF6fN4kF8Aa1cBok5GamJJa
-	pJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQO0XEmhLDGnFCgUkFhc
-	rKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeYcfXGVaaC52wVP09WNTBeY+1i5OCQEDCR+HYi
-	uouRE8gUk7hwbz1bFyMXh5DAIkaJvwcuQjm/GCVuTuplAaliE1CT+PLlMDtIs4iAvkRbiwZI
-	DTNIQ8fWW2A1QgK2ErtPn2QFsTkF7CS2fWplArGFBbwkfjSsZQOxWQRUJR6uuM0IYvMC1beu
-	OMkCYQtK/Jh8D8xmFtCSWL/zOBOELS+xec1bZoij1SUe/dUFCYsIGElM+raHGaJERGLfi3eM
-	ExiFZiGZNAvJpFlIJs1C0rKAkWUVo2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnAKeCa9g3FV
-	g8UhRgEORiUe3g3rPwUJsSaWFVfmHmKU4GBWEuHdav45SIg3JbGyKrUoP76oNCe1+BBjMtCj
-	E5mlRJPzgekpryTe0NjEzMjSyMzCyMTcnDRhJXHeg63WgUIC6YklqdmpqQWpRTBbmDg4pRoY
-	V++KOZDIUR2zPHSGk44w09aFCz9tvsJqkBp8Y8oT1oifauH1HE2341k6TNXPFt/92vA1g8fP
-	pMP8WKHm9DLd1pWf7h4Q0Lqnreb3V5jV5ch6LbXzZqYsVyfslhbZPOP31tigL4ft+cS8Cy9N
-	/qM4588axuoagZJvbmbBc9z/JE+ckZq9/thrJZbijERDLeai4kQAvtEcEEUDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBIsWRmVeSWpSXmKPExsVy+t8zA915rp+DDKZ/NreYs34Nm8WOtuNs
+	FpcXXmK1uLxrDpsDi8fOWXfZPU7M+M3i0bdlFaPH501yASxRXDYpqTmZZalF+nYJXBmTV11n
+	K+hjq7jfNpO1gbGDtYuRk0NCwERibmcDE4QtJnHh3no2EFtIYBmjxLWF3F2MHGA1S2a6dDFy
+	AYUXMUrcXnaOHcL5xSix8PYysEFsAmoSX74cZgdpEBHQl2hr0QAxmQWyJU7vdoEYaSux+/RJ
+	sGpOATuJbZ9amUBKhAV8JP6fSgQJswioSrx794YVJMwLVP5xcSZImFdAUOLH5HssIDazgJbE
+	+p3HmSBseYnNa94yQxypLvHory5IWETASOLDx2VQ5SIS+168YwS5V0LgHLvEiSddbBCrBCS+
+	TT7EAtErK7HpADMkDCQlDq64wTKBUWIWks2zkGyehWTzLCQrFjCyrGIUTS1ILihOSi8y1itO
+	zC0uzUvXS87P3cQIicX+HYx3D1gfYkwGWj+RWUo0OR8Yy3kl8YbGZkYWpiamxkbmlmakCSuJ
+	895/mBQkJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgbHn3pdev3erjmo2Siun/RbyuJmw712b
+	+oVVVc27Z154KeT3Z96luRMW3wv/es7MnWPevIk/FI7Lcf/LD573XcnF/YhXyi7vhxrd/vHn
+	Ds1XYq1hiFu3asudn43bpjV+WPR/a1lYTKZX9g/7Kxo3Om4/38j+Xi7x7PUp8m+veXw93ev7
+	9eP/xl1pSizFGYmGWsxFxYkAOTuY79sCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGKsWRmVeSWpSXmKPExsVy+t9jAd15rp+DDF6tNLGYs34Nm8WOtuNs
+	FpcXXmK1uLxrDpsDi8fOWXfZPU7M+M3i0bdlFaPH501yASxRDYw2GamJKalFCql5yfkpmXnp
+	tkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUA7lRTKEnNKgUIBicXFSvp2mCaEhrjp
+	WsA0Ruj6hgTB9RgZoIGEdYwZk1ddZyvoY6u43zaTtYGxg7WLkYNDQsBEYslMly5GTiBTTOLC
+	vfVsXYxcHEICixglbi87xw7h/GKUWHh7GStIFZuAmsSXL4fZQZpFBPQl2lo0QExmgWyJ07vB
+	5ggJ2ErsPn0SrJpTwE5i26dWJpASYQEfif+nEkHCLAKqEu/evQG7gBeo/OPiTJAwr4CgxI/J
+	91hAbGYBLYn1O48zQdjyEpvXvGWGOFhd4tFfXZCwiICRxIePy6DKRST2vXjHOIFRaBaSSbOQ
+	TJqFZNIsJC0LGFlWMYqmFiQXFCel5xrqFSfmFpfmpesl5+duYgTH+jOpHYwrGywOMQpwMCrx
+	8G5Y/ylIiDWxrLgy9xCjBAezkgjvVvPPQUK8KYmVValF+fFFpTmpxYcYk4H+nMgsJZqcD0xD
+	eSXxhsYmZkaWRmYWRibm5qQJK4nzHmi1DhQSSE8sSc1OTS1ILYLZwsTBKdXAmBVsXHalhyX3
+	5Y9pdps7OZfUtgguKPR8J726zlzk/KFvX9ecl+g1nsVYc2V75iXrP2qxPDtK3Es7nTvWfY8+
+	yi9iLxDLta/q+u/f19d5V5x45a29fM5rt66Jx0/n3fg+84WJhXGCy2a7azNmf9yUF+TRI3Xr
+	gsbZ/YF/v/A/YjC/d1b4tf4FGSWW4oxEQy3mouJEAHgzI+85AwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -61,25 +60,25 @@ duplicate the MM subsystem generic OOM message.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/video/backlight/adp8870_bl.c |    4 +---
+ drivers/video/backlight/corgi_lcd.c |    4 +---
  1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/drivers/video/backlight/adp8870_bl.c b/drivers/video/backlight/adp8870_bl.c
-index 6370720..251af4d 100644
---- a/drivers/video/backlight/adp8870_bl.c
-+++ b/drivers/video/backlight/adp8870_bl.c
-@@ -246,10 +246,8 @@ static int adp8870_led_probe(struct i2c_client *client)
+diff --git a/drivers/video/backlight/corgi_lcd.c b/drivers/video/backlight/corgi_lcd.c
+index db8db5f..51d18d6 100644
+--- a/drivers/video/backlight/corgi_lcd.c
++++ b/drivers/video/backlight/corgi_lcd.c
+@@ -543,10 +543,8 @@ static int corgi_lcd_probe(struct spi_device *spi)
+ 	}
  
- 	led = devm_kzalloc(&client->dev, pdata->num_leds * sizeof(*led),
- 				GFP_KERNEL);
--	if (led == NULL) {
--		dev_err(&client->dev, "failed to alloc memory\n");
-+	if (led == NULL)
+ 	lcd = devm_kzalloc(&spi->dev, sizeof(struct corgi_lcd), GFP_KERNEL);
+-	if (!lcd) {
+-		dev_err(&spi->dev, "failed to allocate memory\n");
++	if (!lcd)
  		return -ENOMEM;
 -	}
  
- 	ret = adp8870_write(client, ADP8870_ISCLAW, pdata->led_fade_law);
- 	if (ret)
+ 	lcd->spi_dev = spi;
+ 
 -- 
 1.7.10.4
 
