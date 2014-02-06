@@ -1,343 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754503AbaBFBmF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 20:42:05 -0500
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:13239 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751769AbaBFBmD (ORCPT
+	id S1754302AbaBFBpS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 20:45:18 -0500
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:48060 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752884AbaBFBpQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 20:42:03 -0500
-From: Courtney Cavin <courtney.cavin@sonymobile.com>
-To: <rui.zhang@intel.com>, <eduardo.valentin@ti.com>
-CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <rob@landley.net>, <grant.likely@linaro.org>,
-        <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] thermal: add generic IIO channel thermal sensor driver
-Date: Wed, 5 Feb 2014 17:43:27 -0800
-Message-ID: <1391651007-29813-1-git-send-email-courtney.cavin@sonymobile.com>
-X-Mailer: git-send-email 1.8.1.5
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 5 Feb 2014 20:45:16 -0500
+From: Calvin Owens <jcalvinowens@gmail.com>
+To: Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Calvin Owens" <jcalvinowens@gmail.com>
+Subject: [PATCH] ieee80211: Print human-readable disassoc/deauth reason codes
+Date: Wed,  5 Feb 2014 19:44:48 -0600
+Message-Id: <1391651088-31785-1-git-send-email-jcalvinowens@gmail.com>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver is a generic method for using IIO ADC channels as thermal
-sensors.
+Create a function to return a descriptive string for each reason code,
+and print that instead of the numeric value in the kernel log. These
+codes are easily found on popular search engines, but one is generally
+not able to access the internet when dealing with wireless connectivity
+issues.
 
-Signed-off-by: Courtney Cavin <courtney.cavin@sonymobile.com>
+On x86_64, this patch only enlarges the kernel binary by 489 bytes.
+
+Signed-off-by: Calvin Owens <jcalvinowens@gmail.com>
 ---
- .../devicetree/bindings/thermal/iio-thermal.txt    |  46 +++++
- drivers/thermal/Kconfig                            |  13 ++
- drivers/thermal/Makefile                           |   1 +
- drivers/thermal/iio_thermal.c                      | 207 +++++++++++++++++++++
- 4 files changed, 267 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/thermal/iio-thermal.txt
- create mode 100644 drivers/thermal/iio_thermal.c
+ include/net/mac80211.h | 11 +++++++++
+ net/mac80211/main.c    | 66 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ net/mac80211/mlme.c    | 12 ++++-----
+ 3 files changed, 83 insertions(+), 6 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/thermal/iio-thermal.txt b/Documentation/devicetree/bindings/thermal/iio-thermal.txt
-new file mode 100644
-index 0000000..3be11b6
---- /dev/null
-+++ b/Documentation/devicetree/bindings/thermal/iio-thermal.txt
-@@ -0,0 +1,46 @@
-+Generic IIO channel thermal sensor bindings
-+
-+compatible:
-+	Usage: required
-+	Type: string
-+	Desc: compatible string, must be "iio-thermal"
-+
-+conversion-method:
-+	Usage: required
-+	Type: string
-+	Desc: How to convert IIO voltage values to temperature, one of:
-+		"interpolation" - interpolate between values in lookup table
-+		"scalar" - use values as multiplier and divisor
-+
-+conversion-values:
-+	Usage: required
-+	Type: u32 array, 2-tuples
-+	Desc: lookup table for conversion, for conversion-method:
-+		"interpolation" - 2-tuples of < uV mK >; micro-volts to
-+				  milli-kelvin; table must ascend
-+		"scalar" - single scalar 2-tuple as < M D >; where:
-+			   mK = uV * M / D
-+
-+io-channels:
-+	Usage: required
-+	Type: prop-encoded-array
-+	Desc: See bindings/iio/iio-bindings.txt; must be a voltage channel
-+
-+Example:
-+
-+vadc: some_vadc {
-+	compatible = "...";
-+	#io-channel-cells = <1>;
-+};
-+
-+iio-thermal {
-+	compatible = "iio-thermal";
-+	io-channels = <&vadc 0>;
-+	conversion-method = "interpolation";
-+	conversion-values = <
-+		  30000 398200
-+		 385000 318200
-+		1738000 233200
-+	>;
-+};
-+
-diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-index 35c0664..f83a8e8 100644
---- a/drivers/thermal/Kconfig
-+++ b/drivers/thermal/Kconfig
-@@ -114,6 +114,19 @@ config THERMAL_EMULATION
- 	  because userland can easily disable the thermal policy by simply
- 	  flooding this sysfs node with low temperature values.
+diff --git a/include/net/mac80211.h b/include/net/mac80211.h
+index f4ab2fb..5983b25 100644
+--- a/include/net/mac80211.h
++++ b/include/net/mac80211.h
+@@ -2973,6 +2973,17 @@ struct ieee80211_hw *ieee80211_alloc_hw(size_t priv_data_len,
+ 					const struct ieee80211_ops *ops);
  
-+config IIO_THERMAL
-+	tristate "Temperature sensor driver for generic IIO channels"
-+	depends on IIO
-+	depends on THERMAL_OF
-+	help
-+	  Support for generic IIO channels, such as ADCs.  This driver allows
-+	  you to expose an IIO voltage channel as a thermal sensor.  This is
-+	  implemented as a thermal sensor, not a thermal zone, and thus
-+	  requires DT defined thermal infrastructure in order to be useful.
-+
-+	  If you aren't sure that you need this support, or haven't configured
-+	  a thermal infrastructure in device tree, you should say 'N' here.
-+
- config IMX_THERMAL
- 	tristate "Temperature sensor driver for Freescale i.MX SoCs"
- 	depends on CPU_THERMAL
-diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
-index 54e4ec9..0ee2c92 100644
---- a/drivers/thermal/Makefile
-+++ b/drivers/thermal/Makefile
-@@ -25,6 +25,7 @@ obj-y				+= samsung/
- obj-$(CONFIG_DOVE_THERMAL)  	+= dove_thermal.o
- obj-$(CONFIG_DB8500_THERMAL)	+= db8500_thermal.o
- obj-$(CONFIG_ARMADA_THERMAL)	+= armada_thermal.o
-+obj-$(CONFIG_IIO_THERMAL)	+= iio_thermal.o
- obj-$(CONFIG_IMX_THERMAL)	+= imx_thermal.o
- obj-$(CONFIG_DB8500_CPUFREQ_COOLING)	+= db8500_cpufreq_cooling.o
- obj-$(CONFIG_INTEL_POWERCLAMP)	+= intel_powerclamp.o
-diff --git a/drivers/thermal/iio_thermal.c b/drivers/thermal/iio_thermal.c
-new file mode 100644
-index 0000000..df21dbc
---- /dev/null
-+++ b/drivers/thermal/iio_thermal.c
-@@ -0,0 +1,207 @@
-+/*
-+ * An IIO channel based thermal sensor driver
+ /**
++ * ieee80211_get_reason_code_string - Get human readable reason code
 + *
-+ * Copyright (C) 2014 Sony Mobile Communications, AB
++ * This function returns a string describing the @reason_code.
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2 of the License.
++ * @reason_code: Reason code we want a human readable string for
 + *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
++ * Return: Human readable reason string, or "(INVALID)"
 + */
++const char *ieee80211_get_reason_code_string(u16 reason_code);
 +
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/iio/iio.h>
-+#include <linux/iio/consumer.h>
-+#include <linux/thermal.h>
-+#include <linux/err.h>
-+#include <linux/of.h>
-+
-+#define MILLIKELVIN_0C 273150
-+
-+struct iio_thermal_conv {
-+	s32 *values;
-+	int ntuple;
-+	long (*convert)(const struct iio_thermal_conv *, int val);
++/**
+  * ieee80211_register_hw - Register hardware device
+  *
+  * You must call this function before any other functions in
+diff --git a/net/mac80211/main.c b/net/mac80211/main.c
+index d767cfb..a1eb3ab 100644
+--- a/net/mac80211/main.c
++++ b/net/mac80211/main.c
+@@ -743,6 +743,72 @@ static int ieee80211_init_cipher_suites(struct ieee80211_local *local)
+ 	return 0;
+ }
+ 
++static const char *reason_code_strings[49] = {
++	"(RESERVED)",
++	"UNSPECIFIED",
++	"PREV_AUTH_NOT_VALID",
++	"DEAUTH_LEAVING",
++	"DISASSOC_DUE_TO_INACTIVITY",
++	"DISASSOC_AP_BUSY",
++	"CLASS2_FRAME_FROM_NONAUTH_STA",
++	"CLASS3_FRAME_FROM_NONASSOC_STA",
++	"DISASSOC_STA_HAS_LEFT",
++	"STA_REQ_ASSOC_WITHOUT_AUTH",
++	"DISASSOC_BAD_POWER",
++	"DISASSOC_BAD_SUPP_CHAN",
++	"(RESERVED)",
++	"INVALID_IE",
++	"MIC_FAILURE",
++	"4WAY_HANDSHAKE_TIMEOUT",
++	"GROUP_KEY_HANDSHAKE_TIMEOUT",
++	"IE_DIFFERENT",
++	"INVALID_GROUP_CIPHER",
++	"INVALID_PAIRWISE_CIPHER",
++	"INVALID_AKMP",
++	"UNSUPP_RSN_VERSION",
++	"INVALID_RSN_IE_CAP",
++	"IEEE8021X_FAILED",
++	"CIPHER_SUITE_REJECTED", /* 24 */
++	"DISASSOC_UNSPECIFIED_QOS", /* 32 (25) */
++	"DISASSOC_QAP_NO_BANDWIDTH",
++	"DISASSOC_LOW_ACK",
++	"DISASSOC_QAP_EXCEED_TXOP",
++	"QSTA_LEAVE_QBSS",
++	"QSTA_NOT_USE",
++	"QSTA_REQUIRE_SETUP",
++	"QSTA_TIMEOUT",
++	"QSTA_CIPHER_NOT_SUPP", /* 45 (33) */
++	"MESH_PEER_CANCELED", /* 52 (34) */
++	"MESH_MAX_PEERS",
++	"MESH_CONFIG",
++	"MESH_CLOSE",
++	"MESH_MAX_RETRIES",
++	"MESH_CONFIRM_TIMEOUT",
++	"MESH_INVALID_GTK",
++	"MESH_INCONSISTENT_PARAM",
++	"MESH_INVALID_SECURITY",
++	"MESH_PATH_ERROR",
++	"MESH_PATH_NOFORWARD",
++	"MESH_PATH_DEST_UNREACHABLE",
++	"MAC_EXISTS_IN_MBSS",
++	"MESH_CHAN_REGULATORY",
++	"MESH_CHAN" /* 66 (48) */
 +};
 +
-+struct iio_thermal {
-+	struct thermal_zone_device *tz;
-+	struct iio_channel *chan;
-+	struct iio_thermal_conv conv;
-+};
-+
-+static int iio_bsearch(const struct iio_thermal_conv *conv, s32 input)
++const char *ieee80211_get_reason_code_string(u16 reason_code)
 +{
-+	int h = conv->ntuple - 1;
-+	int l = 0;
-+
-+	while (h - 1 > l) {
-+		int m = (l + h) & ~1;
-+		s32 v = conv->values[m];
-+		if (v < input)
-+			l = m >> 1;
-+		else
-+			h = m >> 1;
-+	}
-+
-+	return h;
++	if (reason_code <= 24)
++		return reason_code_strings[reason_code];
++	else if (reason_code >= 32 && reason_code <= 39)
++		return reason_code_strings[reason_code - 7];
++	else if (reason_code == 45)
++		return reason_code_strings[33];
++	else if (reason_code >= 52 && reason_code <= 66)
++		return reason_code_strings[reason_code - 18];
++	else
++		return "(INVALID)";
 +}
 +
-+static long iio_thermal_interpolate(const struct iio_thermal_conv *conv, int v)
-+{
-+	int n;
-+
-+	n = iio_bsearch(conv, v);
-+	if (n == 0 || n == conv->ntuple) {
-+		BUG();
-+	} else {
-+		s32 *pts = &conv->values[(n-1)*2];
-+		s32 sx = pts[3] - pts[1];
-+		s32 sy = pts[2] - pts[0];
-+		return sx * (v - pts[0]) / sy + pts[1];
-+	}
-+}
-+
-+static long iio_thermal_scale(const struct iio_thermal_conv *conv, int v)
-+{
-+	return div_s64((s64)v * conv->values[0], conv->values[1]);
-+}
-+
-+static int iio_thermal_get_temp(void *pdata, long *value)
-+{
-+	struct iio_thermal *iio = pdata;
-+	long temp;
-+	int val;
-+	int rc;
-+
-+	rc = iio_read_channel_processed(iio->chan, &val);
-+	if (rc)
-+		return rc;
-+
-+	temp = iio->conv.convert(&iio->conv, val);
-+
-+	/* thermal core wants milli-celsius; we deal in milli-kelvin */
-+	temp = temp - MILLIKELVIN_0C;
-+
-+	/*
-+	 * Although it would appear that the temperature value here is a
-+	 * signed value for sensors, the underlying thermal zone core
-+	 * doesn't deal with negative temperature. Cut this value off at 0C.
-+	 */
-+	*value = (temp < 0) ? 0 : temp;
-+
-+	return 0;
-+}
-+
-+static int iio_thermal_probe(struct platform_device *pdev)
-+{
-+	struct iio_thermal *iio;
-+	const void *values;
-+	const char *type;
-+	int rc;
-+
-+	dev_info(&pdev->dev, "registering IIO thermal device\n");
-+	iio = devm_kzalloc(&pdev->dev, sizeof(*iio), GFP_KERNEL);
-+	if (!iio)
-+		return -ENOMEM;
-+
-+	values = of_get_property(pdev->dev.of_node,
-+			"conversion-values", &iio->conv.ntuple);
-+	if (values == NULL || (iio->conv.ntuple % (sizeof(u32) * 2)) != 0) {
-+		dev_err(&pdev->dev, "invalid/missing conversion values\n");
-+		return -EINVAL;
-+	}
-+	iio->conv.ntuple /= sizeof(u32) * 2;
-+	iio->conv.values = devm_kzalloc(&pdev->dev,
-+			sizeof(u32) * 2 * iio->conv.ntuple, GFP_KERNEL);
-+	if (!iio->conv.values)
-+		return -ENOMEM;
-+
-+	rc = of_property_read_u32_array(pdev->dev.of_node,
-+			"conversion-values", (u32 *)iio->conv.values,
-+			iio->conv.ntuple * 2);
-+	if (rc) {
-+		dev_err(&pdev->dev, "invalid/missing conversion values\n");
-+		return -EINVAL;
-+	}
-+
-+	rc = of_property_read_string(pdev->dev.of_node,
-+			"conversion-method", &type);
-+	if (rc) {
-+		dev_err(&pdev->dev, "invalid/missing conversion method\n");
-+		return rc;
-+	}
-+	if (!strcmp(type, "interpolation") && iio->conv.ntuple > 1) {
-+		if (iio->conv.values[0] > iio->conv.values[2]) {
-+			dev_err(&pdev->dev,
-+					"conversion values should ascend\n");
-+			return rc;
-+		}
-+		iio->conv.convert = iio_thermal_interpolate;
-+	} else if (!strcmp(type, "scalar") && iio->conv.ntuple == 1) {
-+		iio->conv.convert = iio_thermal_scale;
-+	} else {
-+		dev_err(&pdev->dev, "invalid conversion method for values\n");
-+		return rc;
-+	}
-+
-+	iio->chan = iio_channel_get(&pdev->dev, NULL);
-+	if (IS_ERR(iio->chan)) {
-+		dev_err(&pdev->dev, "invalid/missing iio channel\n");
-+		return PTR_ERR(iio->chan);
-+	}
-+	if (iio->chan->channel->type != IIO_VOLTAGE) {
-+		dev_err(&pdev->dev, "specified iio channel is not voltage\n");
-+		iio_channel_release(iio->chan);
-+		return -EINVAL;
-+	}
-+	platform_set_drvdata(pdev, iio);
-+
-+	iio->tz = thermal_zone_of_sensor_register(&pdev->dev, 0, iio,
-+			iio_thermal_get_temp, NULL);
-+	if (IS_ERR(iio->tz)) {
-+		dev_err(&pdev->dev, "failed to register thermal sensor\n");
-+		iio_channel_release(iio->chan);
-+		return PTR_ERR(iio->tz);
-+	}
-+	dev_info(&pdev->dev, "successfully registered IIO thermal sensor\n");
-+
-+	return 0;
-+}
-+
-+static int iio_thermal_remove(struct platform_device *pdev)
-+{
-+	struct iio_thermal *iio;
-+
-+	iio = platform_get_drvdata(pdev);
-+
-+	thermal_zone_of_sensor_unregister(&pdev->dev, iio->tz);
-+	iio_channel_release(iio->chan);
-+
-+	return 0;
-+}
-+
-+static const struct of_device_id iio_thermal_match[] = {
-+	{ .compatible = "iio-thermal", },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(of, iio_thermal_match);
-+
-+static struct platform_driver iio_thermal = {
-+	.driver = {
-+		.name = "iio-thermal",
-+		.owner = THIS_MODULE,
-+		.of_match_table = iio_thermal_match,
-+	},
-+	.probe = iio_thermal_probe,
-+	.remove = iio_thermal_remove,
-+};
-+module_platform_driver(iio_thermal);
-+
-+MODULE_DESCRIPTION("Thermal driver for IIO ADCs");
-+MODULE_LICENSE("GPL v2");
+ int ieee80211_register_hw(struct ieee80211_hw *hw)
+ {
+ 	struct ieee80211_local *local = hw_to_local(hw);
+diff --git a/net/mac80211/mlme.c b/net/mac80211/mlme.c
+index fc1d824..74e4585 100644
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -2231,8 +2231,8 @@ static void ieee80211_rx_mgmt_deauth(struct ieee80211_sub_if_data *sdata,
+ 
+ 	reason_code = le16_to_cpu(mgmt->u.deauth.reason_code);
+ 
+-	sdata_info(sdata, "deauthenticated from %pM (Reason: %u)\n",
+-		   bssid, reason_code);
++	sdata_info(sdata, "deauthenticated from %pM (reason: %s)\n",
++		   bssid, ieee80211_get_reason_code_string(reason_code));
+ 
+ 	ieee80211_set_disassoc(sdata, 0, 0, false, NULL);
+ 
+@@ -4301,8 +4301,8 @@ int ieee80211_mgd_deauth(struct ieee80211_sub_if_data *sdata,
+ 	bool report_frame = false;
+ 
+ 	sdata_info(sdata,
+-		   "deauthenticating from %pM by local choice (reason=%d)\n",
+-		   req->bssid, req->reason_code);
++		   "deauthenticating from %pM by local choice (reason: %s)\n",
++		   req->bssid, ieee80211_get_reason_code_string(req->reason_code));
+ 
+ 	if (ifmgd->auth_data) {
+ 		drv_mgd_prepare_tx(sdata->local, sdata);
+@@ -4348,8 +4348,8 @@ int ieee80211_mgd_disassoc(struct ieee80211_sub_if_data *sdata,
+ 		return -ENOLINK;
+ 
+ 	sdata_info(sdata,
+-		   "disassociating from %pM by local choice (reason=%d)\n",
+-		   req->bss->bssid, req->reason_code);
++		   "disassociating from %pM by local choice (reason: %s)\n",
++		   req->bss->bssid, ieee80211_get_reason_code_string(req->reason_code));
+ 
+ 	memcpy(bssid, req->bss->bssid, ETH_ALEN);
+ 	ieee80211_set_disassoc(sdata, IEEE80211_STYPE_DISASSOC,
 -- 
-1.8.1.5
+1.8.5.3
 
