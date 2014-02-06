@@ -1,221 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757259AbaBFW7M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 17:59:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18941 "EHLO mx1.redhat.com"
+	id S1757201AbaBFXBy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 18:01:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30809 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757220AbaBFW7L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 17:59:11 -0500
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-From: Torvald Riegel <triegel@redhat.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Will Deacon <will.deacon@arm.com>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-In-Reply-To: <20140206215521.GI4250@linux.vnet.ibm.com>
-References: <20140206134825.305510953@infradead.org>
-	 <21984.1391711149@warthog.procyon.org.uk> <52F3DA85.1060209@arm.com>
-	 <20140206185910.GE27276@mudshark.cambridge.arm.com>
-	 <1391720965.23421.3884.camel@triegel.csb>
-	 <20140206215521.GI4250@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 06 Feb 2014 23:58:22 +0100
-Message-ID: <1391727502.23421.4017.camel@triegel.csb>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751297AbaBFXBw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 18:01:52 -0500
+From: Steve Grubb <sgrubb@redhat.com>
+To: linux-audit@redhat.com
+Cc: William Roberts <bill.c.roberts@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, rgb@redhat.com, viro@zeniv.linux.org.uk,
+        akpm@linux-foundation.org, sds@tycho.nsa.gov,
+        William Roberts <wroberts@tresys.com>
+Subject: Re: [PATCH v5 3/3] audit: Audit proc/<pid>/cmdline aka proctitle
+Date: Thu, 06 Feb 2014 18:01:39 -0500
+Message-ID: <4258851.7s7uqWZHxJ@x2>
+Organization: Red Hat
+User-Agent: KMail/4.11.5 (Linux/3.12.9-301.fc20.x86_64; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1391710528-23481-3-git-send-email-wroberts@tresys.com>
+References: <1391710528-23481-1-git-send-email-wroberts@tresys.com> <1391710528-23481-3-git-send-email-wroberts@tresys.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-02-06 at 13:55 -0800, Paul E. McKenney wrote:
-> On Thu, Feb 06, 2014 at 10:09:25PM +0100, Torvald Riegel wrote:
-> > On Thu, 2014-02-06 at 18:59 +0000, Will Deacon wrote:
-> > > On Thu, Feb 06, 2014 at 06:55:01PM +0000, Ramana Radhakrishnan wrote:
-> > > > On 02/06/14 18:25, David Howells wrote:
-> > > > >
-> > > > > Is it worth considering a move towards using C11 atomics and barriers and
-> > > > > compiler intrinsics inside the kernel?  The compiler _ought_ to be able to do
-> > > > > these.
-> > > > 
-> > > > 
-> > > > It sounds interesting to me, if we can make it work properly and 
-> > > > reliably. + gcc@gcc.gnu.org for others in the GCC community to chip in.
-> > > 
-> > > Given my (albeit limited) experience playing with the C11 spec and GCC, I
-> > > really think this is a bad idea for the kernel.
-> > 
-> > I'm not going to comment on what's best for the kernel (simply because I
-> > don't work on it), but I disagree with several of your statements.
-> > 
-> > > It seems that nobody really
-> > > agrees on exactly how the C11 atomics map to real architectural
-> > > instructions on anything but the trivial architectures.
-> > 
-> > There's certainly different ways to implement the memory model and those
-> > have to be specified elsewhere, but I don't see how this differs much
-> > from other things specified in the ABI(s) for each architecture.
-> > 
-> > > For example, should
-> > > the following code fire the assert?
-> > 
-> > I don't see how your example (which is about what the language requires
-> > or not) relates to the statement about the mapping above?
-> > 
-> > > 
-> > > extern atomic<int> foo, bar, baz;
-> > > 
-> > > void thread1(void)
-> > > {
-> > > 	foo.store(42, memory_order_relaxed);
-> > > 	bar.fetch_add(1, memory_order_seq_cst);
-> > > 	baz.store(42, memory_order_relaxed);
-> > > }
-> > > 
-> > > void thread2(void)
-> > > {
-> > > 	while (baz.load(memory_order_seq_cst) != 42) {
-> > > 		/* do nothing */
-> > > 	}
-> > > 
-> > > 	assert(foo.load(memory_order_seq_cst) == 42);
-> > > }
-> > > 
-> > 
-> > It's a good example.  My first gut feeling was that the assertion should
-> > never fire, but that was wrong because (as I seem to usually forget) the
-> > seq-cst total order is just a constraint but doesn't itself contribute
-> > to synchronizes-with -- but this is different for seq-cst fences.
+On Thursday, February 06, 2014 10:15:28 AM William Roberts wrote:
+> During an audit event, cache and print the value of the process's
+> proctitle value (proc/<pid>/cmdline). This is useful in situations
+> where processes are started via fork'd virtual machines where the
+> comm field is incorrect. Often times, setting the comm field still
+> is insufficient as the comm width is not very wide and most
+> virtual machine "package names" do not fit. Also, during execution,
+> many threads have their comm field set as well. By tying it back to
+> the global cmdline value for the process, audit records will be more
+> complete in systems with these properties. An example of where this
+> is useful and applicable is in the realm of Android. With Android,
+> their is no fork/exec for VM instances. The bare, preloaded Dalvik
+> VM listens for a fork and specialize request. When this request comes
+> in, the VM forks, and the loads the specific application (specializing).
+> This was done to take advantage of COW and to not require a load of
+> basic packages by the VM on very app spawn. When this spawn occurs,
+> the package name is set via setproctitle() and shows up in procfs.
+> Many of these package names are longer then 16 bytes, the historical
+> width of task->comm. Having the cmdline in the audit records will
+> couple the application back to the record directly. Also, on my
+> Debian development box, some audit records were more useful then
+> what was printed under comm.
 > 
-> From what I can see, Will's point is that mapping the Linux kernel's
-> atomic_add_return() primitive into fetch_add() does not work because
-> atomic_add_return()'s ordering properties require that the assert()
-> never fire.
+> The cached proctitle is tied to the life-cycle of the audit_context
+> structure and is built on demand.
 > 
-> Augmenting the fetch_add() with a seq_cst fence would work on many
-> architectures, but not for all similar examples.  The reason is that
-> the C11 seq_cst fence is deliberately weak compared to ARM's dmb or
-> Power's sync.  To your point, I believe that it would make the above
-> example work, but there are some IRIW-like examples that would fail
-> according to the standard (though a number of specific implementations
-> would in fact work correctly).
+> Proctitle is controllable by userspace, and thus should not be trusted.
+> It is meant as an aid to assist in debugging. The proctitle event is
+> emitted during syscall audits, and can be filtered with auditctl.
 
-Thanks for the background.  I don't read LKML, and it wasn't obvious
-from reading just the part of the thread posted to gcc@ that achieving
-these semantics is the goal.
+Ack  wrt record format and contents.
 
-> > > To answer that question, you need to go and look at the definitions of
-> > > synchronises-with, happens-before, dependency_ordered_before and a whole
-> > > pile of vaguely written waffle to realise that you don't know.
-> > 
-> > Are you familiar with the formalization of the C11/C++11 model by Batty
-> > et al.?
-> > http://www.cl.cam.ac.uk/~mjb220/popl085ap-sewell.pdf
-> > http://www.cl.cam.ac.uk/~mjb220/n3132.pdf
-> > 
-> > They also have a nice tool that can run condensed examples and show you
-> > all allowed (and forbidden) executions (it runs in the browser, so is
-> > slow for larger examples), including nice annotated graphs for those:
-> > http://svr-pes20-cppmem.cl.cam.ac.uk/cppmem/
-> > 
-> > It requires somewhat special syntax, but the following, which should be
-> > equivalent to your example above, runs just fine:
-> > 
-> > int main() {
-> >   atomic_int foo = 0; 
-> >   atomic_int bar = 0; 
-> >   atomic_int baz = 0; 
-> >   {{{ {
-> >         foo.store(42, memory_order_relaxed);
-> >         bar.store(1, memory_order_seq_cst);
-> >         baz.store(42, memory_order_relaxed);
-> >       }
-> >   ||| {
-> >         r1=baz.load(memory_order_seq_cst).readsvalue(42);
-> >         r2=foo.load(memory_order_seq_cst).readsvalue(0);
-> >       }
-> >   }}};
-> >   return 0; }
-> > 
-> > That yields 3 consistent executions for me, and likewise if the last
-> > readsvalue() is using 42 as argument.
-> > 
-> > If you add a "fence(memory_order_seq_cst);" after the store to foo, the
-> > program can't observe != 42 for foo anymore, because the seq-cst fence
-> > is adding a synchronizes-with edge via the baz reads-from.
-> > 
-> > I think this is a really neat tool, and very helpful to answer such
-> > questions as in your example.
+-Steve
+
+> Example:
+> type=AVC msg=audit(1391217013.924:386): avc:  denied  { getattr } for 
+> pid=1971 comm="mkdir" name="/" dev="selinuxfs" ino=1
+> scontext=system_u:system_r:consolekit_t:s0-s0:c0.c255
+> tcontext=system_u:object_r:security_t:s0 tclass=filesystem type=SYSCALL
+> msg=audit(1391217013.924:386): arch=c000003e syscall=137 success=yes exit=0
+> a0=7f019dfc8bd7 a1=7fffa6aed2c0 a2=fffffffffff4bd25 a3=7fffa6aed050 items=0
+> ppid=1967 pid=1971 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0
+> sgid=0 fsgid=0 tty=(none) ses=4294967295 comm="mkdir" exe="/bin/mkdir"
+> subj=system_u:system_r:consolekit_t:s0-s0:c0.c255 key=(null)
+> type=UNKNOWN[1327] msg=audit(1391217013.924:386): 
+> proctitle=6D6B646972002D70002F7661722F72756E2F636F6E736F6C65
 > 
-> Hmmm...  The tool doesn't seem to like fetch_add().  But let's assume that
-> your substitution of store() for fetch_add() is correct.  Then this shows
-> that we cannot substitute fetch_add() for atomic_add_return().
-
-It should be in this example, I believe.
-
-The tool also supports CAS:
-cas_strong_explicit(bar,0,1,memory_order_seq_cst,memory_order_seq_cst);
-cas_strong(bar,0,1);
-cas_weak likewise...
-
-With that change, I get a few more executions but still the 3 consistent
-ones for either outcome.
-
-> > > It's not hard
-> > > to find well-known memory-ordering experts shouting "Just use
-> > > memory_model_seq_cst for everything, it's too hard otherwise".
-> > 
-> > Everyone I've heard saying this meant this as advice to people new to
-> > synchronization or just dealing infrequently with it.  The advice is the
-> > simple and safe fallback, and I don't think it's meant as an
-> > acknowledgment that the model itself would be too hard.  If the
-> > language's memory model is supposed to represent weak HW memory models
-> > to at least some extent, there's only so much you can do in terms of
-> > keeping it simple.  If all architectures had x86-like models, the
-> > language's model would certainly be simpler... :)
+> Signed-off-by: William Roberts <wroberts@tresys.com>
+> ---
+>  include/uapi/linux/audit.h |    1 +
+>  kernel/audit.h             |    6 ++++
+>  kernel/auditsc.c           |   67
+> ++++++++++++++++++++++++++++++++++++++++++++ 3 files changed, 74
+> insertions(+)
 > 
-> That is said a lot, but there was a recent Linux-kernel example that
-> turned out to be quite hard to prove for x86.  ;-)
+> diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
+> index 2d48fe1..4315ee9 100644
+> --- a/include/uapi/linux/audit.h
+> +++ b/include/uapi/linux/audit.h
+> @@ -109,6 +109,7 @@
+>  #define AUDIT_NETFILTER_PKT	1324	/* Packets traversing netfilter chains 
+*/
+>  #define AUDIT_NETFILTER_CFG	1325	/* Netfilter chain modifications */
+>  #define AUDIT_SECCOMP		1326	/* Secure Computing event */
+> +#define AUDIT_PROCTITLE		1327	/* Proctitle emit event */
 > 
-> > > Then there's
-> > > the fun of load-consume vs load-acquire (arm64 GCC completely ignores consume
-> > > atm and optimises all of the data dependencies away)
-> > 
-> > AFAIK consume memory order was added to model Power/ARM-specific
-> > behavior.  I agree that the way the standard specifies how dependencies
-> > are to be preserved is kind of vague (as far as I understand it).  See
-> > GCC PR 59448.
+>  #define AUDIT_AVC		1400	/* SE Linux avc denial or grant */
+>  #define AUDIT_SELINUX_ERR	1401	/* Internal SE Linux Errors */
+> diff --git a/kernel/audit.h b/kernel/audit.h
+> index 57cc64d..38c967d 100644
+> --- a/kernel/audit.h
+> +++ b/kernel/audit.h
+> @@ -106,6 +106,11 @@ struct audit_names {
+>  	bool			should_free;
+>  };
 > 
-> This one? http://gcc.gnu.org/ml/gcc-bugs/2013-12/msg01083.html
-
-Yes, this bug, and I'd like to get feedback on the implementability of
-this: http://gcc.gnu.org/bugzilla/show_bug.cgi?id=59448#c10
-
-> That does indeed look to match what Will was calling out as a problem.
+> +struct audit_proctitle {
+> +	int	len;	/* length of the cmdline field. */
+> +	char	*value;	/* the cmdline field */
+> +};
+> +
+>  /* The per-task audit context. */
+>  struct audit_context {
+>  	int		    dummy;	/* must be the first element */
+> @@ -202,6 +207,7 @@ struct audit_context {
+>  		} execve;
+>  	};
+>  	int fds[2];
+> +	struct audit_proctitle proctitle;
 > 
-> > > as well as the definition
-> > > of "data races", which seem to be used as an excuse to miscompile a program
-> > > at the earliest opportunity.
-> > 
-> > No.  The purpose of this is to *not disallow* every optimization on
-> > non-synchronizing code.  Due to the assumption of data-race-free
-> > programs, the compiler can assume a sequential code sequence when no
-> > atomics are involved (and thus, keep applying optimizations for
-> > sequential code).
-> > 
-> > Or is there something particular that you dislike about the
-> > specification of data races?
+>  #if AUDIT_DEBUG
+>  	int		    put_count;
+> diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+> index 10176cd..e342eb0 100644
+> --- a/kernel/auditsc.c
+> +++ b/kernel/auditsc.c
+> @@ -68,6 +68,7 @@
+>  #include <linux/capability.h>
+>  #include <linux/fs_struct.h>
+>  #include <linux/compat.h>
+> +#include <linux/ctype.h>
 > 
-> Cut Will a break, Torvald!  ;-)
-
-Sorry if my comment came across too harsh.  I've observed a couple of
-times that people forget about the compiler's role in this, and it might
-not be obvious, so I wanted to point out just that.
-
+>  #include "audit.h"
+> 
+> @@ -79,6 +80,9 @@
+>  /* no execve audit message should be longer than this (userspace limits) */
+> #define MAX_EXECVE_AUDIT_LEN 7500
+> 
+> +/* max length to print of cmdline/proctitle value during audit */
+> +#define MAX_PROCTITLE_AUDIT_LEN 128
+> +
+>  /* number of audit rules */
+>  int audit_n_rules;
+> 
+> @@ -842,6 +846,13 @@ static inline struct audit_context
+> *audit_get_context(struct task_struct *tsk, return context;
+>  }
+> 
+> +static inline void audit_proctitle_free(struct audit_context *context)
+> +{
+> +	kfree(context->proctitle.value);
+> +	context->proctitle.value = NULL;
+> +	context->proctitle.len = 0;
+> +}
+> +
+>  static inline void audit_free_names(struct audit_context *context)
+>  {
+>  	struct audit_names *n, *next;
+> @@ -955,6 +966,7 @@ static inline void audit_free_context(struct
+> audit_context *context) audit_free_aux(context);
+>  	kfree(context->filterkey);
+>  	kfree(context->sockaddr);
+> +	audit_proctitle_free(context);
+>  	kfree(context);
+>  }
+> 
+> @@ -1271,6 +1283,59 @@ static void show_special(struct audit_context
+> *context, int *call_panic) audit_log_end(ab);
+>  }
+> 
+> +static inline int audit_proctitle_rtrim(char *proctitle, int len)
+> +{
+> +	char *end = proctitle + len - 1;
+> +	while (end > proctitle && !isprint(*end))
+> +		end--;
+> +
+> +	/* catch the case where proctitle is only 1 non-print character */
+> +	len = end - proctitle + 1;
+> +	len -= isprint(proctitle[len-1]) == 0;
+> +	return len;
+> +}
+> +
+> +static void audit_log_proctitle(struct task_struct *tsk,
+> +			 struct audit_context *context)
+> +{
+> +	int res;
+> +	char *buf;
+> +	char *msg = "(null)";
+> +	int len = strlen(msg);
+> +	struct audit_buffer *ab;
+> +
+> +	ab = audit_log_start(context, GFP_KERNEL, AUDIT_PROCTITLE);
+> +	if (!ab)
+> +		return;	/* audit_panic or being filtered */
+> +
+> +	audit_log_format(ab, "proctitle=");
+> +
+> +	/* Not  cached */
+> +	if (!context->proctitle.value) {
+> +		buf = kmalloc(MAX_PROCTITLE_AUDIT_LEN, GFP_KERNEL);
+> +		if (!buf)
+> +			goto out;
+> +		/* Historically called this from procfs naming */
+> +		res = get_cmdline(tsk, buf, MAX_PROCTITLE_AUDIT_LEN);
+> +		if (res == 0) {
+> +			kfree(buf);
+> +			goto out;
+> +		}
+> +		res = audit_proctitle_rtrim(buf, res);
+> +		if (res == 0) {
+> +			kfree(buf);
+> +			goto out;
+> +		}
+> +		context->proctitle.value = buf;
+> +		context->proctitle.len = res;
+> +	}
+> +	msg = context->proctitle.value;
+> +	len = context->proctitle.len;
+> +out:
+> +	audit_log_n_untrustedstring(ab, msg, len);
+> +	audit_log_end(ab);
+> +}
+> +
+>  static void audit_log_exit(struct audit_context *context, struct
+> task_struct *tsk) {
+>  	int i, call_panic = 0;
+> @@ -1388,6 +1453,8 @@ static void audit_log_exit(struct audit_context
+> *context, struct task_struct *ts audit_log_name(context, n, NULL, i++,
+> &call_panic);
+>  	}
+> 
+> +	audit_log_proctitle(tsk, context);
+> +
+>  	/* Send end of event record to help user space know we are finished */
+>  	ab = audit_log_start(context, GFP_KERNEL, AUDIT_EOE);
+>  	if (ab)
 
