@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754578AbaBFRIr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 12:08:47 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:42104 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752027AbaBFRIp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 12:08:45 -0500
-Date: Thu, 6 Feb 2014 14:08:39 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Mike Turquette <mturquette@linaro.org>,
-        linux-kernel@vger.kernel.org,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/4] clk: mvebu: fix clk init order
-Message-ID: <20140206170838.GB12542@localhost>
-References: <1390673950-4521-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <20140205183457.GW8533@titan.lakedaemon.net>
+	id S1756270AbaBFRKf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 12:10:35 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:53462 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752571AbaBFRKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 12:10:33 -0500
+Message-ID: <52F3C1C6.5030301@ti.com>
+Date: Thu, 6 Feb 2014 22:39:26 +0530
+From: Keerthy <a0393675@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140205183457.GW8533@titan.lakedaemon.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Lee Jones <lee.jones@linaro.org>
+CC: Keerthy <j-keerthy@ti.com>, <rob.herring@calxeda.com>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
+        <ijc+devicetree@hellion.org.uk>, <rob@landley.net>,
+        <sameo@linux.intel.com>, <grant.likely@linaro.org>,
+        <lgirdwood@gmail.com>, <broonie@kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH v2 2/4] MFD: TPS65218: Add driver for the TPS65218 PMIC
+References: <1391665814-18814-1-git-send-email-j-keerthy@ti.com> <1391665814-18814-3-git-send-email-j-keerthy@ti.com> <20140206143700.GA14727@lee--X1>
+In-Reply-To: <20140206143700.GA14727@lee--X1>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 05, 2014 at 01:34:57PM -0500, Jason Cooper wrote:
-> On Sat, Jan 25, 2014 at 07:19:06PM +0100, Sebastian Hesselbarth wrote:
-> > This patch set fixes clk init order that went upside-down with
-> > v3.14. I haven't really investigated what caused this, but I assume
-> > it is related with DT node reordering by addresses.
-> > 
-> > Anyway, with v3.14 for MVEBU SoCs, the clock gating driver gets
-> > registered before core clocks driver. Unfortunately, we cannot
-> > return -EPROBE_DEFER in drivers initialized by clk_of_init. As the
-> > init order for our drivers is always core clocks before clock gating,
-> > we maintain init order ourselves by hooking CLK_OF_DECLARE to one
-> > init function that will register core clocks before clock gating
-> > driver.
-> > 
-> > This patch is based on pre-v3.14-rc1 mainline and should go in as
-> > fixes for it. As we now send MVEBU clk pull-requests to Mike directly,
-> > I suggest Jason picks it up as a topic branch.
-> > 
-> > The patches have been boot tested on Dove and compile-tested only
-> > for Kirkwood, Armada 370 and XP.
-> > 
-> > Sebastian Hesselbarth (4):
-> >   clk: mvebu: armada-370: maintain clock init order
-> >   clk: mvebu: armada-xp: maintain clock init order
-> >   clk: mvebu: dove: maintain clock init order
-> >   clk: mvebu: kirkwood: maintain clock init order
-> > 
-> >  drivers/clk/mvebu/armada-370.c | 21 ++++++++++-----------
-> >  drivers/clk/mvebu/armada-xp.c  | 20 +++++++++-----------
-> >  drivers/clk/mvebu/dove.c       | 19 +++++++++----------
-> >  drivers/clk/mvebu/kirkwood.c   | 34 ++++++++++++++++------------------
-> >  4 files changed, 44 insertions(+), 50 deletions(-)
-> 
-> Whole series applied to mvebu/clk-fixes.
-> 
+On Thursday 06 February 2014 08:07 PM, Lee Jones wrote:
+>> The TPS65218 chip is a power management IC for Portable Navigation Systems
+>> and Tablet Computing devices. It contains the following components:
+>>
+>>   - Regulators.
+>>   - Over Temperature warning and Shut down.
+>>
+>> This patch adds support for tps65218 mfd device. At this time only
+>> the regulator functionality is made available.
+>>
+>> Signed-off-by: Keerthy <j-keerthy@ti.com>
+>> ---
+>>   drivers/mfd/Kconfig          |   15 +++
+>>   drivers/mfd/Makefile         |    1 +
+>>   drivers/mfd/tps65218.c       |  281 +++++++++++++++++++++++++++++++++++++++++
+> How much different is the TPS65218 to all the other TPS drivers?
+>
+> drivers/mfd/tps6105x.c
+> drivers/mfd/tps65010.c
+> drivers/mfd/tps6507x.c
+> drivers/mfd/tps65090.c
+> drivers/mfd/tps65217.c
+> drivers/mfd/tps6586x.c
+> drivers/mfd/tps65910.c
+> drivers/mfd/tps65911-comparator.c
+> drivers/mfd/tps65912-core.c
+> drivers/mfd/tps65912-i2c.c
+> drivers/mfd/tps65912-irq.c
+> drivers/mfd/tps65912-spi.c
+> drivers/mfd/tps80031.c
+>
+> Perhaps some consolidating might be in order?
 
-FWIW, Tested-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Well the closest one is tps65217.c  but then register space is different
+and components are different. So a new driver.
 
-Observed "division by zero" get fixed by this, on A370 Mirabox, Kirkwood
-Topkick and Dove Cubox.
--- 
-Ezequiel García, Free Electrons
-Embedded Linux, Kernel and Android Engineering
-http://free-electrons.com
+>
+
