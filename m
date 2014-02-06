@@ -1,52 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756714AbaBFVBM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 16:01:12 -0500
-Received: from fn.samba.org ([216.83.154.106]:43384 "EHLO mail.samba.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751847AbaBFVBK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 16:01:10 -0500
-X-Greylist: delayed 583 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Feb 2014 16:01:10 EST
-Date: Thu, 6 Feb 2014 12:51:23 -0800
-From: Jeremy Allison <jra@samba.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Ilya Dryomov <ilya.dryomov@inktank.com>, Sage Weil <sage@inktank.com>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ceph-devel@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Guangliang Zhao <lucienchao@gmail.com>,
-        Li Wang <li.wang@ubuntykylin.com>, zheng.z.yan@intel.com
-Subject: Re: [PATCH v2] ceph: fix posix ACL hooks
-Message-ID: <20140206205123.GH6588@samba2>
-Reply-To: Jeremy Allison <jra@samba.org>
-References: <CA+55aFwTuBDHgQoTymr8OtE-+k=+pX0T_eb+fff0K+Pa3C-g-Q@mail.gmail.com>
- <20140130075421.GA10050@infradead.org>
- <CA+55aFxbVFpy8Y8P5fMCmmTSGbFxU9dTbOj9uTH+fKWGUzwgNg@mail.gmail.com>
- <20140203102943.GF11829@infradead.org>
- <CA+55aFytvTPdBsv6BwSomUGWXZ_tKP=BxaeJ7FXBft0JNnjBCQ@mail.gmail.com>
- <20140203211955.GY10323@ZenIV.linux.org.uk>
- <CA+55aFyfPVgGXn_hSBnnVyzWn4AbZQ40MPk_AoKB_6uC6LJqPg@mail.gmail.com>
- <20140203213926.GA10323@ZenIV.linux.org.uk>
- <CA+55aFyKN47V56oksujoojdV_uhoFYJxURg3RNHXbLFSqqDnGA@mail.gmail.com>
- <20140203223127.GE10323@ZenIV.linux.org.uk>
+	id S1756816AbaBFVDI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 16:03:08 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:42348 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751319AbaBFVDG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 16:03:06 -0500
+Date: Thu, 6 Feb 2014 13:03:03 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Joe Perches <joe@perches.com>
+cc: Eric Dumazet <eric.dumazet@gmail.com>, David Miller <davem@davemloft.net>,
+        netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] net: use __GFP_NORETRY for high order allocations
+In-Reply-To: <1391718270.15777.20.camel@joe-AO722>
+Message-ID: <alpine.DEB.2.02.1402061302020.9567@chino.kir.corp.google.com>
+References: <1391712162.10160.8.camel@edumazet-glaptop2.roam.corp.google.com> <1391718270.15777.20.camel@joe-AO722>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140203223127.GE10323@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 03, 2014 at 10:31:27PM +0000, Al Viro wrote:
-> 
-> > And the fact is, filesystems with hardlinks and path-name-based
-> > operations do exist. cifs with the unix extensions is one of them.
-> 
-> Pox on Tridge...
+On Thu, 6 Feb 2014, Joe Perches wrote:
 
-Actually you have to blame me for that. Tridge always
-*HATED* the UNIX extensions :-).
+> On Thu, 2014-02-06 at 10:42 -0800, Eric Dumazet wrote:
+> > sock_alloc_send_pskb() & sk_page_frag_refill()
+> > have a loop trying high order allocations to prepare
+> > skb with low number of fragments as this increases performance.
+> > 
+> > Problem is that under memory pressure/fragmentation, this can
+> > trigger OOM while the intent was only to try the high order
+> > allocations, then fallback to order-0 allocations.
+> []
+> > Call Trace:
+> >  [<ffffffff8043766c>] dump_header+0xe1/0x23e
+> >  [<ffffffff80437a02>] oom_kill_process+0x6a/0x323
+> >  [<ffffffff80438443>] out_of_memory+0x4b3/0x50d
+> >  [<ffffffff8043a4a6>] __alloc_pages_may_oom+0xa2/0xc7
+> >  [<ffffffff80236f42>] __alloc_pages_nodemask+0x1002/0x17f0
+> >  [<ffffffff8024bd23>] alloc_pages_current+0x103/0x2b0
+> >  [<ffffffff8028567f>] sk_page_frag_refill+0x8f/0x160
+> []
+> > diff --git a/net/core/sock.c b/net/core/sock.c
+> []
+> > @@ -1775,7 +1775,9 @@ struct sk_buff *sock_alloc_send_pskb(struct sock *sk, unsigned long header_len,
+> >  			while (order) {
+> >  				if (npages >= 1 << order) {
+> >  					page = alloc_pages(sk->sk_allocation |
+> > -							   __GFP_COMP | __GFP_NOWARN,
+> > +							   __GFP_COMP |
+> > +							   __GFP_NOWARN |
+> > +							   __GFP_NORETRY,
+> >  							   order);
+> >  					if (page)
+> >  						goto fill_page;
+> > @@ -1845,7 +1847,7 @@ bool skb_page_frag_refill(unsigned int sz, struct page_frag *pfrag, gfp_t prio)
+> >  		gfp_t gfp = prio;
+> >  
+> >  		if (order)
+> > -			gfp |= __GFP_COMP | __GFP_NOWARN;
+> > +			gfp |= __GFP_COMP | __GFP_NOWARN | __GFP_NORETRY;
+> 
+> Perhaps add __GFP_THISNODE too ?
+> 
+
+How does __GFP_THISNODE have anything to do with avoiding oom killing due 
+to high-order fragmentation?  If they absolutely require local memory to 
+currnet's cpu node then that would make sense, but the fallback still 
+allocates order-0 memory remotely and with __GFP_THISNODE on this attempt 
+we wouldn't even attempt remote reclaim.
