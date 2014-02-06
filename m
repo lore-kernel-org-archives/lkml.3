@@ -1,69 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756579AbaBFRvM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 12:51:12 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:37010 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753686AbaBFRvJ (ORCPT
+	id S1756623AbaBFRwK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 12:52:10 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:55117 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754357AbaBFRwI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 12:51:09 -0500
-Date: Thu, 6 Feb 2014 17:50:59 +0000
-From: Mark Brown <broonie@kernel.org>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        linux-spi@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Message-ID: <20140206175059.GW32298@sirena.org.uk>
-References: <1391705868-20091-1-git-send-email-iivanov@mm-sol.com>
+	Thu, 6 Feb 2014 12:52:08 -0500
+Date: Thu, 6 Feb 2014 18:52:01 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Will Deacon <will.deacon@arm.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+Subject: Re: [RFC][PATCH 5/5] arch: Sanitize atomic_t bitwise ops
+Message-ID: <20140206175201.GH5002@laptop.programming.kicks-ass.net>
+References: <20140206134825.305510953@infradead.org>
+ <20140206135001.333583247@infradead.org>
+ <CA+55aFwzn09dPJekgCbO2VRO8j3=eEt2j_QFd=Gd4MXTA2gm9g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="D/26AIznG/rf8cgR"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1391705868-20091-1-git-send-email-iivanov@mm-sol.com>
-X-Cookie: Take it easy, we're in a hurry.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 0/2] spi: Add Qualcomm QUP SPI controller support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <CA+55aFwzn09dPJekgCbO2VRO8j3=eEt2j_QFd=Gd4MXTA2gm9g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Feb 06, 2014 at 08:53:02AM -0800, Linus Torvalds wrote:
+> On Thu, Feb 6, 2014 at 5:48 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > Many archs have atomic_{set,clear}_mask() but not all. Remove these
+> > and provide a comprehensive set of bitops:
+> >
+> >   atomic{,64}_{and,or,xor}{,_return}()
+> 
+> Who uses these, and why?
 
---D/26AIznG/rf8cgR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+s390 is stuffed with atomic_{set,clear}_mask usage, no clue whatfor.
 
-On Thu, Feb 06, 2014 at 06:57:46PM +0200, Ivan T. Ivanov wrote:
+There's 2 atomic_set_mask() users in drm/i915, again haven't looked if
+it makes sense.
 
-> Ivan T. Ivanov (2):
->   spi: qup: Add device tree bindings information
->   spi: Add Qualcomm QUP SPI controller support
+Various archs use atomic_set_mask() for their tlb flush mask, which
+arguably should be done using the bitmap functions we have.
 
-I only seem to have the second patch here?
+> The "_return()" versions of atomic ops are noticeably slower and more
+> complex on common architectures (ie x86), and apparently there is no
+> use of them since they didn't exist.
+> 
+> So why add them? Just to encourage people to do bad things?
 
---D/26AIznG/rf8cgR
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Fair enough, they're mostly an accident of how I implemented the macro
+generation magic. I suppose I can change that and avoid generating the
+_return thingies.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+I don't particularly care for this patch too much; but I do dislike the
+atomic_{set,clear}_mask() things -- mostly because they don't really fit
+the normal atomic_t functions and because some archs have then and
+others do no.
 
-iQIcBAEBAgAGBQJS88uAAAoJELSic+t+oim9YIgQAIfxMqe6EspWrxCayc3D8BSY
-tK5dNTsWew8W6szhXPf8C/pWortKwSjUiNmo08dJzS6FGzbJFIisC0l3fleIyIhO
-zYmYYh/pkDPCiYlLgIAwtH3uxR+Rh6F4tCFsjuf9PVRAfIPCk31CVCHM5UY7S3ul
-x1oZ3Or/a4Xoq7YHJgaLSzAhyEmrka+yOPy1OtIobbjsOvHUDVILdblTdk0MAJCO
-TGnvVu+SGh1qaicYmDD6zSunsF4TUfslmpdDJAAPwZLpvpEYmd7Ix3jvAGbSyNZc
-uzAJoJPhnlCRpnV+5sgTPs5zuoK34fSk8JMDAgnx1AvxyWfl44ZW4UbUuGg6Ger6
-R93oqCYNzuv8Xwz+Xk2ISfpLGmX79SrynOP+w1uh8rxQXK4dUL/jRDIm/bJNHybj
-JcuZm5lNLXqce/QJ68jZu3d62Wyr57N85nGF1LlzA5gVMgVsNeF10V2BzEZY9e23
-HiZ8TYa51dLPEzxvZlIxlqn7bqGA4ruLjF0STyOh1snoDb7qv2/wjnHYQy+gy49s
-jfyRzSN6EUc0EueSlY+2sx109r12m6sz+8bdpuO6hWkbcOZmviKSTFPVNZIZ2W37
-aqDtvuiNdAqza93n0SqlCzxkH/qkkP5SUqL8aPHKxrU2pmq7cXZmKLVd1x7NifZW
-VgHPwh26t4lix6rn/ZY/
-=Urnj
------END PGP SIGNATURE-----
+And atomic_{set,clear}_mask() can be used for setting/clearing multiple
+bits as opposed to {set,clear}_bit, which only does a single bit.
 
---D/26AIznG/rf8cgR--
+
