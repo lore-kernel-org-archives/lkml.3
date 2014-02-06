@@ -1,80 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756522AbaBFRrV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 12:47:21 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:34306 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751187AbaBFRrR (ORCPT
+	id S1756562AbaBFRs3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 12:48:29 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:59396 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752065AbaBFRs2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 12:47:17 -0500
-Message-ID: <52F3CAA2.3070705@linaro.org>
-Date: Thu, 06 Feb 2014 09:47:14 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 6 Feb 2014 12:48:28 -0500
+Message-ID: <52F3CAE3.7060007@gmail.com>
+Date: Thu, 06 Feb 2014 10:48:19 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Alexey Perevalov <a.perevalov@samsung.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-CC: linux-kernel@vger.kernel.org, anton@enomsg.org, kyungmin.park@samsung.com,
-        akpm@linux-foundation.org, cw00.choi@samsung.com
-Subject: Re: [PATCH v2 0/3] Deferrable timers support for timerfd API
-References: <1389609835-24377-1-git-send-email-a.perevalov@samsung.com> <52DEC6A3.9020600@linaro.org> <52E606D8.6000401@samsung.com> <alpine.DEB.2.02.1402041419420.24986@ionos.tec.linutronix.de> <52F1DDA8.90605@samsung.com> <alpine.DEB.2.02.1402051229260.24986@ionos.tec.linutronix.de> <52F2B504.5010403@linaro.org> <alpine.DEB.2.02.1402052306580.24986@ionos.tec.linutronix.de> <52F3C8A5.708@samsung.com>
-In-Reply-To: <52F3C8A5.708@samsung.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>, Jiri Olsa <jolsa@redhat.com>,
+        Eric Dumazet <edumazet@google.com>
+Subject: Re: [BUG] perf top: --stdio causes continuous refresh
+References: <CABPqkBSkSbWvdRu3iEtNvHhfV4J4sALHvdd40hZTcGxLe576yQ@mail.gmail.com>	<20140206135627.GA26955@infradead.org>	<CABPqkBS5qLDYyyv=n8fT4K+hA3uRWYmQOZmO+n-UE9=X=cEFzQ@mail.gmail.com>	<20140206140705.GB26955@infradead.org>	<20140206140936.GC26955@infradead.org> <CABPqkBRwy=0pnmm657TwV25GiYbpkqC1E8+cUGLEUbqxO=Gusw@mail.gmail.com>
+In-Reply-To: <CABPqkBRwy=0pnmm657TwV25GiYbpkqC1E8+cUGLEUbqxO=Gusw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/2014 09:38 AM, Alexey Perevalov wrote:
-> On 02/06/2014 02:16 AM, Thomas Gleixner wrote:
->> On Wed, 5 Feb 2014, John Stultz wrote: 
->>> My reasoning was that the deferrablity isn't a clock domain, and is
->>> more
->>> of a modifier. Thus to keep the interfaces somewhat sane (and avoiding
->>> having to add N new clockids for each new modifier), we should utilize
->>> the flag arguments to timers. So instead of just having TIMER_ABSTIME,
->>> we could add TIMER_DEFER, etc, which we could utilize instead.
->> I can see the point. I have no objections against that approach as
->> long as we map that against separate internal bases.
->>  
->>> Internally we can still keep separate bases, much as your patch
->>> does, to
->>> keep the next-event searching overhead more limited.
->> It's not only more limited, it's bound.
->>  
->>> I mainly wanted to get your thoughts on extending the flags, and doing
->>> so in a consistent manner between the timerfd and other timer
->>> interfaces.
->> So the only interface which does not support that is sys_nanosleep()
->> but that's not really an issue. sys_nanosleep() should die anyway :)
+On 2/6/14, 8:24 AM, Stephane Eranian wrote:
+> On Thu, Feb 6, 2014 at 3:09 PM, Arnaldo Carvalho de Melo
+> <acme@redhat.com> wrote:
+>> Em Thu, Feb 06, 2014 at 12:07:05PM -0200, Arnaldo Carvalho de Melo escreveu:
+>>> Em Thu, Feb 06, 2014 at 02:58:01PM +0100, Stephane Eranian escreveu:
+>>>> On Thu, Feb 6, 2014 at 2:56 PM, Arnaldo Carvalho de Melo
+>>>> <acme@redhat.com> wrote:
+>>>>> Em Wed, Feb 05, 2014 at 10:25:09PM +0100, Stephane Eranian escreveu:
+>>>>>> If you run perf top on 3.14 but you force --stdio mode, perf top
+>>>>>> goes crazy and constantly refreshes the output.
+>>>
+>>>>>> It does that with many older versions of the perf as well on 3.14.
+>>>>>> It runs fine with newt mode.
+>>>
+>>>>>> Works fine with my 3.11 kernel. So something must be broken
+>>>>>> with 3.14.
+>>>
+>>>>>> Can you reproduce the problem as well?
+>>>
+>>>>> Not so far, using my perf/urgent branch:
+>>>
+>>>> I am using tip.git. Or try 3.11, 3.10.
 >>
->>> Of course, all this is after I added the _ALARM clockids... so you can
->>> decide if its hypocrisy or experience.
->>> (The "old wisdom comes from experience and experience comes from bad
->>> decisions" bit ;).
->> Well, you have a valid point about the clock ids. I did not realize in
->> the first place that we can avoid that business if we use the flags to
->> select the internal representation.
+>> But my tests are on top of:
 >>
->> Either way is preferred over reintroducing the timer wheel mess....
->
-> As I truly understand, you decided - flags is better than new
-> clockids, and internals of timerfd could be a mix of timer_list and
-> hrtimer.
-> If so, it's in v2 patch set.
-
-So, I think Thomas is suggesting we add new deferrable HRTIMER bases,
-then the timerfd code would only use the hrtimers for non-alarm-timers.
-We would then use the flag from the interface to decide internally which
-base to add the hrtimer to. This would also allow us to use the flag via
-non-timerfd interfaces to get the same result.
-
-Does that clarify things?
-
-thanks
--john
+>> [acme@ssdandy linux]$ uname -r
+>> 3.11.4-101.fc18.x86_64
+>>
+>> I thought it was a 3.14ish one, building one to try there...
+>>
+> The kernel must be 3.14-rcX, the tool can be any version.
 
 
+I don't have time to do a git bisect, but I can narrow the window to 
+3.13-rc6 and 3.14-rc1. Just happened to update a server yesterday. 
+perf-top --stdio runs fine on the former and shows the problem on the 
+latter.
 
+David
 
