@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754294AbaBFBKx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 20:10:53 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:51281 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753164AbaBFBKv (ORCPT
+	id S932198AbaBFBLC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 20:11:02 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:56000 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932133AbaBFBK6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 20:10:51 -0500
+	Wed, 5 Feb 2014 20:10:58 -0500
 From: Alexei Starovoitov <ast@plumgrid.com>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: "David S. Miller" <davem@davemloft.net>,
@@ -24,355 +24,232 @@ Cc: "David S. Miller" <davem@davemloft.net>,
         Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
         Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
         netdev@vger.kernel.org
-Subject: [RFC PATCH v2 tip 0/7] 64-bit BPF insn set and tracing filters
-Date: Wed,  5 Feb 2014 17:10:39 -0800
-Message-Id: <1391649046-4383-1-git-send-email-ast@plumgrid.com>
+Subject: [RFC PATCH v2 tip 3/7] Extended BPF (64-bit BPF) design document
+Date: Wed,  5 Feb 2014 17:10:42 -0800
+Message-Id: <1391649046-4383-4-git-send-email-ast@plumgrid.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1391649046-4383-1-git-send-email-ast@plumgrid.com>
+References: <1391649046-4383-1-git-send-email-ast@plumgrid.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
-
-this patch set addresses main sticking points of the previous discussion:
-http://thread.gmane.org/gmane.linux.kernel/1605783
-
-Main difference:
-. all components are now in one place
-  tools/bpf/llvm - standalone LLVM backend for extended BPF instruction set
-
-. regs.si, regs.di accessors are replaced with arg1, arg2
-
-. compiler enforces presence of 'license' string in source C code
-  kernel enforces GPL compatibility of BPF program
-
-Why bother with it?
-Current 32-bit BPF is safe, but limited.
-kernel modules are 'all-goes', but not-safe.
-Extended 64-bit BPF provides safe and restricted kernel modules.
-
-Just like the first two, extended BPF can be used for all sorts of things.
-Initially for tracing/debugging/[ks]tap-like without vmlinux around,
-then for networking, security, etc
-
-To make exising kernel modules safe the x86 disassembler and code analyzer
-are needed. We've tried to follow that path. Disassembler was straight forward,
-but x86 analyzer was becoming unbearably complex due to variety of addressing
-modes, so we started to hack GCC to reduce output x86 insns and facing
-the headache of redoing disasm/analyzer for arm and other arhcs.
-Plus there is old 32-bit bpf insn set already.
-On one side extended BPF is a 64-bit extension to current BPF.
-On the other side it's a common subset of x86-64/aarch64/... ISAs:
-a generic 64-bit insn set that can be JITed to native HW one to one.
-
-Tested on x86-64 and i386.
-BPF core was tested on arm-v7.
-
-V2 vs V1 details:
-0001-Extended-BPF-core-framework:
-  no difference to instruction set
-  new bpf image format to include license string and enforcement during load
-
-0002-Extended-BPF-JIT-for-x86-64: no changes
-
-0003-Extended-BPF-64-bit-BPF-design-document: no changes
-
-0004-Revert-x86-ptrace-Remove-unused-regs_get_argument:
-  restoring Masami's get_Nth_argument accessor to simplify kprobe filters
-
-0005-use-BPF-in-tracing-filters: minor changes to switch from si/di to argN
-
-0006-LLVM-BPF-backend: standalone BPF backend for LLVM
-  requires: apt-get install llvm-3.2-dev clang
-  compiles in 7 seconds, links with the rest of llvm infra
-  compatible with llvm 3.2, 3.3 and just released 3.4
-  Written in llvm coding style and llvm license, so it can be
-  upstreamed into llvm tree
-
-0007-tracing-filter-examples-in-BPF:
-  tools/bpf/filter_check: userspace pre-checker of BPF filter
-  runs the same bpf_check() code as kernel does
-
-  tools/bpf/examples/netif_rcv.c:
------
-#define DESC(NAME) __attribute__((section(NAME), used))
-void my_filter(struct bpf_context *ctx)
-{
-        char devname[4] = "lo";
-        struct net_device *dev;
-        struct sk_buff *skb = 0;
-
-        /*
-         * for tracepoints arg1 is the 1st arg of TP_ARGS() macro
-         * defined in include/trace/events/.h
-         * for kprobe events arg1 is the 1st arg of probed function
-         */
-        skb = (struct sk_buff *)ctx->arg1;
-
-        dev = bpf_load_pointer(&skb->dev);
-        if (bpf_memcmp(dev->name, devname, 2) == 0) {
-                char fmt[] = "skb %p dev %p \n";
-                bpf_trace_printk(fmt, sizeof(fmt), (long)skb, (long)dev, 0);
-        }
-}
-/* filter code license: */
-char license[] DESC("license") = "GPL";
------
-
-$cd tools/bpf/examples
-$make
-  compile it using clang+llvm_bpf
-$make check
-  check safety
-$make try
-  attach this filter to net:netif_receive_skb and kprobe __netif_receive_skb
-  and try ping
-
-dropmon.c is a demo of faster version of net_dropmonitor:
------
-/* attaches to /sys/kernel/debug/tracing/events/skb/kfree_skb */
-void dropmon(struct bpf_context *ctx)
-{
-        void *loc;
-        uint64_t *drop_cnt;
-
-        /*
-         * skb:kfree_skb is defined as:
-         * TRACE_EVENT(kfree_skb,
-         *         TP_PROTO(struct sk_buff *skb, void *location),
-         * so ctx->arg2 is 'location'
-         */
-        loc = (void *)ctx->arg2;
-
-        drop_cnt = bpf_table_lookup(ctx, 0, &loc);
-        if (drop_cnt) {
-                __sync_fetch_and_add(drop_cnt, 1);
-        } else {
-                uint64_t init = 0;
-                bpf_table_update(ctx, 0, &loc, &init);
-        }
-}
-struct bpf_table t[] DESC("bpftables") = {
-        {BPF_TABLE_HASH, sizeof(void *), sizeof(uint64_t), 4096, 0}
-};
-/* filter code license: */
-char l[] DESC("license") = "GPL v2";
------
-It's not fully functional yet. Minimal work remaining to implement
-bpf_table_lookup()/bpf_table_update() in kernel
-and userspace access to filter's table.
-
-This example demonstrates that some interesting events don't have to be
-always fed into userspace, but can be pre-processed in kernel.
-tools/perf/scripts/python/net_dropmonitor.py would need to read bpf table
-from kernel (via debugfs or netlink) and print it in a nice format.
-
-Same as in V1 BPF filters are called before tracepoints store the TP_STRUCT
-fields, since performance advantage is significant.
-
-TODO:
-
-- complete 'dropmonitor': finish bpf hashtable and userspace access to it
-
-- add multi-probe support, so that one C program can specify multiple
-  functions for different probe points (similar to [ks]tap)
-
-- add 'lsmod' like facility to list all loaded BPF filters
-
-- add -m32 flag to llvm, so that C pointers are 32-bit,
-  but emitted BPF is still 64-bit.
-  Useful for kernel struct walking in BPF program on 32-bit archs
-
-- finish testing on arm
-
-- teach llvm to store line numbers in BPF image, so that bpf_check()
-  can print nice errors when program is not safe
-
-- allow read-only "strings" in C code
-  today analyzer can only verify safety of: char s[] = "string"; bpf_print(s);
-  but bpf_print("string"); cannot be proven yet
-
-- write JIT from BPF to aarch64
-
-- refactor openvswitch + BPF proposal
-
-If direction is ok, I would like to commit this part to a branch of tip tree
-or staging tree and continue working there.
-Future deltas will be easier to review.
-
-Thanks
-
-Alexei Starovoitov (7):
-  Extended BPF core framework
-  Extended BPF JIT for x86-64
-  Extended BPF (64-bit BPF) design document
-  Revert "x86/ptrace: Remove unused regs_get_argument_nth API"
-  use BPF in tracing filters
-  LLVM BPF backend
-  tracing filter examples in BPF
-
- Documentation/bpf_jit.txt                          |  204 ++++
- arch/x86/Kconfig                                   |    1 +
- arch/x86/include/asm/ptrace.h                      |    3 +
- arch/x86/kernel/ptrace.c                           |   24 +
- arch/x86/net/Makefile                              |    1 +
- arch/x86/net/bpf64_jit_comp.c                      |  625 ++++++++++++
- arch/x86/net/bpf_jit_comp.c                        |   23 +-
- arch/x86/net/bpf_jit_comp.h                        |   35 +
- include/linux/bpf.h                                |  149 +++
- include/linux/bpf_jit.h                            |  134 +++
- include/linux/ftrace_event.h                       |    5 +
- include/trace/bpf_trace.h                          |   41 +
- include/trace/ftrace.h                             |   17 +
- kernel/Makefile                                    |    1 +
- kernel/bpf_jit/Makefile                            |    3 +
- kernel/bpf_jit/bpf_check.c                         | 1054 ++++++++++++++++++++
- kernel/bpf_jit/bpf_run.c                           |  511 ++++++++++
- kernel/trace/Kconfig                               |    1 +
- kernel/trace/Makefile                              |    1 +
- kernel/trace/bpf_trace_callbacks.c                 |  193 ++++
- kernel/trace/trace.c                               |    7 +
- kernel/trace/trace.h                               |   11 +-
- kernel/trace/trace_events.c                        |    9 +-
- kernel/trace/trace_events_filter.c                 |   61 +-
- kernel/trace/trace_kprobe.c                        |   15 +-
- lib/Kconfig.debug                                  |   15 +
- tools/bpf/examples/Makefile                        |   71 ++
- tools/bpf/examples/README.txt                      |   59 ++
- tools/bpf/examples/dropmon.c                       |   40 +
- tools/bpf/examples/netif_rcv.c                     |   34 +
- tools/bpf/filter_check/Makefile                    |   32 +
- tools/bpf/filter_check/README.txt                  |    3 +
- tools/bpf/filter_check/trace_filter_check.c        |  115 +++
- tools/bpf/llvm/LICENSE.TXT                         |   70 ++
- tools/bpf/llvm/Makefile.rules                      |  641 ++++++++++++
- tools/bpf/llvm/README.txt                          |   23 +
- tools/bpf/llvm/bld/.gitignore                      |    2 +
- tools/bpf/llvm/bld/Makefile                        |   27 +
- tools/bpf/llvm/bld/Makefile.common                 |   14 +
- tools/bpf/llvm/bld/Makefile.config                 |  124 +++
- .../llvm/bld/include/llvm/Config/AsmParsers.def    |    8 +
- .../llvm/bld/include/llvm/Config/AsmPrinters.def   |    9 +
- .../llvm/bld/include/llvm/Config/Disassemblers.def |    8 +
- tools/bpf/llvm/bld/include/llvm/Config/Targets.def |    9 +
- .../bpf/llvm/bld/include/llvm/Support/DataTypes.h  |   96 ++
- tools/bpf/llvm/bld/lib/Makefile                    |   11 +
- .../llvm/bld/lib/Target/BPF/InstPrinter/Makefile   |   10 +
- .../llvm/bld/lib/Target/BPF/MCTargetDesc/Makefile  |   11 +
- tools/bpf/llvm/bld/lib/Target/BPF/Makefile         |   17 +
- .../llvm/bld/lib/Target/BPF/TargetInfo/Makefile    |   10 +
- tools/bpf/llvm/bld/lib/Target/Makefile             |   11 +
- tools/bpf/llvm/bld/tools/Makefile                  |   12 +
- tools/bpf/llvm/bld/tools/llc/Makefile              |   15 +
- tools/bpf/llvm/lib/Target/BPF/BPF.h                |   30 +
- tools/bpf/llvm/lib/Target/BPF/BPF.td               |   29 +
- tools/bpf/llvm/lib/Target/BPF/BPFAsmPrinter.cpp    |  100 ++
- tools/bpf/llvm/lib/Target/BPF/BPFCFGFixup.cpp      |   62 ++
- tools/bpf/llvm/lib/Target/BPF/BPFCallingConv.td    |   24 +
- tools/bpf/llvm/lib/Target/BPF/BPFFrameLowering.cpp |   36 +
- tools/bpf/llvm/lib/Target/BPF/BPFFrameLowering.h   |   35 +
- tools/bpf/llvm/lib/Target/BPF/BPFISelDAGToDAG.cpp  |  182 ++++
- tools/bpf/llvm/lib/Target/BPF/BPFISelLowering.cpp  |  676 +++++++++++++
- tools/bpf/llvm/lib/Target/BPF/BPFISelLowering.h    |  105 ++
- tools/bpf/llvm/lib/Target/BPF/BPFInstrFormats.td   |   29 +
- tools/bpf/llvm/lib/Target/BPF/BPFInstrInfo.cpp     |  162 +++
- tools/bpf/llvm/lib/Target/BPF/BPFInstrInfo.h       |   53 +
- tools/bpf/llvm/lib/Target/BPF/BPFInstrInfo.td      |  455 +++++++++
- tools/bpf/llvm/lib/Target/BPF/BPFMCInstLower.cpp   |   77 ++
- tools/bpf/llvm/lib/Target/BPF/BPFMCInstLower.h     |   40 +
- tools/bpf/llvm/lib/Target/BPF/BPFRegisterInfo.cpp  |  122 +++
- tools/bpf/llvm/lib/Target/BPF/BPFRegisterInfo.h    |   65 ++
- tools/bpf/llvm/lib/Target/BPF/BPFRegisterInfo.td   |   39 +
- tools/bpf/llvm/lib/Target/BPF/BPFSubtarget.cpp     |   23 +
- tools/bpf/llvm/lib/Target/BPF/BPFSubtarget.h       |   33 +
- tools/bpf/llvm/lib/Target/BPF/BPFTargetMachine.cpp |   72 ++
- tools/bpf/llvm/lib/Target/BPF/BPFTargetMachine.h   |   69 ++
- .../lib/Target/BPF/InstPrinter/BPFInstPrinter.cpp  |   79 ++
- .../lib/Target/BPF/InstPrinter/BPFInstPrinter.h    |   34 +
- .../lib/Target/BPF/MCTargetDesc/BPFAsmBackend.cpp  |   85 ++
- .../llvm/lib/Target/BPF/MCTargetDesc/BPFBaseInfo.h |   33 +
- .../Target/BPF/MCTargetDesc/BPFELFObjectWriter.cpp |  119 +++
- .../lib/Target/BPF/MCTargetDesc/BPFMCAsmInfo.h     |   34 +
- .../Target/BPF/MCTargetDesc/BPFMCCodeEmitter.cpp   |  120 +++
- .../lib/Target/BPF/MCTargetDesc/BPFMCCodeEmitter.h |   67 ++
- .../Target/BPF/MCTargetDesc/BPFMCTargetDesc.cpp    |  115 +++
- .../lib/Target/BPF/MCTargetDesc/BPFMCTargetDesc.h  |   56 ++
- .../lib/Target/BPF/TargetInfo/BPFTargetInfo.cpp    |   13 +
- tools/bpf/llvm/tools/llc/llc.cpp                   |  381 +++++++
- 88 files changed, 8255 insertions(+), 25 deletions(-)
+Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+---
+ Documentation/bpf_jit.txt |  204 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 204 insertions(+)
  create mode 100644 Documentation/bpf_jit.txt
- create mode 100644 arch/x86/net/bpf64_jit_comp.c
- create mode 100644 arch/x86/net/bpf_jit_comp.h
- create mode 100644 include/linux/bpf.h
- create mode 100644 include/linux/bpf_jit.h
- create mode 100644 include/trace/bpf_trace.h
- create mode 100644 kernel/bpf_jit/Makefile
- create mode 100644 kernel/bpf_jit/bpf_check.c
- create mode 100644 kernel/bpf_jit/bpf_run.c
- create mode 100644 kernel/trace/bpf_trace_callbacks.c
- create mode 100644 tools/bpf/examples/Makefile
- create mode 100644 tools/bpf/examples/README.txt
- create mode 100644 tools/bpf/examples/dropmon.c
- create mode 100644 tools/bpf/examples/netif_rcv.c
- create mode 100644 tools/bpf/filter_check/Makefile
- create mode 100644 tools/bpf/filter_check/README.txt
- create mode 100644 tools/bpf/filter_check/trace_filter_check.c
- create mode 100644 tools/bpf/llvm/LICENSE.TXT
- create mode 100644 tools/bpf/llvm/Makefile.rules
- create mode 100644 tools/bpf/llvm/README.txt
- create mode 100644 tools/bpf/llvm/bld/.gitignore
- create mode 100644 tools/bpf/llvm/bld/Makefile
- create mode 100644 tools/bpf/llvm/bld/Makefile.common
- create mode 100644 tools/bpf/llvm/bld/Makefile.config
- create mode 100644 tools/bpf/llvm/bld/include/llvm/Config/AsmParsers.def
- create mode 100644 tools/bpf/llvm/bld/include/llvm/Config/AsmPrinters.def
- create mode 100644 tools/bpf/llvm/bld/include/llvm/Config/Disassemblers.def
- create mode 100644 tools/bpf/llvm/bld/include/llvm/Config/Targets.def
- create mode 100644 tools/bpf/llvm/bld/include/llvm/Support/DataTypes.h
- create mode 100644 tools/bpf/llvm/bld/lib/Makefile
- create mode 100644 tools/bpf/llvm/bld/lib/Target/BPF/InstPrinter/Makefile
- create mode 100644 tools/bpf/llvm/bld/lib/Target/BPF/MCTargetDesc/Makefile
- create mode 100644 tools/bpf/llvm/bld/lib/Target/BPF/Makefile
- create mode 100644 tools/bpf/llvm/bld/lib/Target/BPF/TargetInfo/Makefile
- create mode 100644 tools/bpf/llvm/bld/lib/Target/Makefile
- create mode 100644 tools/bpf/llvm/bld/tools/Makefile
- create mode 100644 tools/bpf/llvm/bld/tools/llc/Makefile
- create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPF.h
- create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPF.td
- create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFAsmPrinter.cpp
- create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFCFGFixup.cpp
- create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFCallingConv.td
- create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFFrameLowering.cpp
- create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFFrameLowering.h
- create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFISelDAGToDAG.cpp
- create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFISelLowering.cpp
- create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFISelLowering.h
- create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFInstrFormats.td
- create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFInstrInfo.cpp
- create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFInstrInfo.h
- create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFInstrInfo.td
- create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFMCInstLower.cpp
- create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFMCInstLower.h
- create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFRegisterInfo.cpp
- create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFRegisterInfo.h
- create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFRegisterInfo.td
- create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFSubtarget.cpp
- create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFSubtarget.h
- create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFTargetMachine.cpp
- create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFTargetMachine.h
- create mode 100644 tools/bpf/llvm/lib/Target/BPF/InstPrinter/BPFInstPrinter.cpp
- create mode 100644 tools/bpf/llvm/lib/Target/BPF/InstPrinter/BPFInstPrinter.h
- create mode 100644 tools/bpf/llvm/lib/Target/BPF/MCTargetDesc/BPFAsmBackend.cpp
- create mode 100644 tools/bpf/llvm/lib/Target/BPF/MCTargetDesc/BPFBaseInfo.h
- create mode 100644 tools/bpf/llvm/lib/Target/BPF/MCTargetDesc/BPFELFObjectWriter.cpp
- create mode 100644 tools/bpf/llvm/lib/Target/BPF/MCTargetDesc/BPFMCAsmInfo.h
- create mode 100644 tools/bpf/llvm/lib/Target/BPF/MCTargetDesc/BPFMCCodeEmitter.cpp
- create mode 100644 tools/bpf/llvm/lib/Target/BPF/MCTargetDesc/BPFMCCodeEmitter.h
- create mode 100644 tools/bpf/llvm/lib/Target/BPF/MCTargetDesc/BPFMCTargetDesc.cpp
- create mode 100644 tools/bpf/llvm/lib/Target/BPF/MCTargetDesc/BPFMCTargetDesc.h
- create mode 100644 tools/bpf/llvm/lib/Target/BPF/TargetInfo/BPFTargetInfo.cpp
- create mode 100644 tools/bpf/llvm/tools/llc/llc.cpp
 
+diff --git a/Documentation/bpf_jit.txt b/Documentation/bpf_jit.txt
+new file mode 100644
+index 0000000..9c70f42
+--- /dev/null
++++ b/Documentation/bpf_jit.txt
+@@ -0,0 +1,204 @@
++Subject: extended BPF or 64-bit BPF
++
++Q: What is BPF?
++A: Safe dynamically loadable 32-bit program that can access skb->data via
++sk_load_byte/half/word calls or seccomp_data. Can be attached to sockets,
++to netfilter xtables, seccomp. In case of sockets/xtables input is skb.
++In case of seccomp input is struct seccomp_data.
++
++Q: What is extended BPF?
++A: Safe dynamically loadable 64-bit program that can call fixed set
++of kernel functions and takes generic bpf_context as an input.
++BPF program is a glue between kernel functions and bpf_context.
++Different kernel subsystems can define their own set of available functions
++and alter BPF machinery for specific use case.
++
++Example 1:
++when function set is {bpf_load_byte/half/word} and bpf_context=skb
++the extended BPF is equivalent to original BPF (w/o negative offset extensions),
++since any such extended BPF program will only be able to load data from skb
++and interpret it.
++
++Example 2:
++when function set is {empty} and bpf_context=seccomp_data,
++the extended BPF is equivalent to original seccomp BPF with simpler programs
++and can immediately take advantage of extended BPF-JIT.
++(original BPF-JIT doesn't work for seccomp)
++
++Example 3:
++when function set is {bpf_load_xxx + bpf_table_lookup} and bpf_context=skb
++the extended BPF can be used to implement network analytics in tcpdump.
++Like counting all tcp flows through the dev or filtering for specific
++set of IP addresses.
++
++Example 4:
++when function set is {load_xxx + table_lookup + trace_printk} and
++bpf_context=pt_regs, the extended BPF is used to implement systemtap-like
++tracing filters
++
++Extended Instruction Set was designed with these goals:
++- write programs in restricted C and compile into BPF with GCC/LLVM
++- just-in-time map to modern 64-bit CPU with minimal performance overhead
++  over two steps: C -> BPF -> native code
++- guarantee termination and safety of BPF program in kernel
++  with simple algorithm
++
++Writing filters in tcpdump syntax or in systemtap language is difficult.
++Same filter done in C is easier to understand.
++GCC/LLVM-bpf backend is optional.
++Extended BPF can be coded with macroses from bpf.h just like original BPF.
++
++Minimal performance overhead is achieved by having one to one mapping
++between BPF insns and native insns, and one to one mapping between BPF
++registers and native registers on 64-bit CPUs
++
++Extended BPF allows jump forward and backward for two reasons:
++to reduce branch mispredict penalty compiler moves cold basic blocks out of
++fall-through path and to reduce code duplication that would be unavoidable
++if only jump forward was available.
++To guarantee termination simple non-recursive depth-first-search verifies
++that there are no back-edges (no loops in the program), program is a DAG
++with root at the first insn, all branches end at the last RET insn and
++all instructions are reachable.
++(Original BPF actually allows unreachable insns, but that's a bug)
++
++Original BPF has two registers (A and X) and hidden frame pointer.
++Extended BPF has ten registers and read-only frame pointer.
++Since 64-bit CPUs are passing arguments to the functions via registers
++the number of args from BPF program to in-kernel function is restricted to 5
++and one register is used to accept return value from in-kernel function.
++x86_64 passes first 6 arguments in registers.
++aarch64/sparcv9/mips64 have 7-8 registers for arguments.
++x86_64 has 6 callee saved registers.
++aarch64/sparcv9/mips64 have 11 or more callee saved registers.
++
++Therefore extended BPF calling convention is defined as:
++R0 - return value from in-kernel function
++R1-R5 - arguments from BPF program to in-kernel function
++R6-R9 - callee saved registers that in-kernel function will preserve
++R10 - read-only frame pointer to access stack
++
++so that all BPF registers map one to one to HW registers on x86_64,aarch64,etc
++and BPF calling convention maps directly to ABIs used by kernel on 64-bit
++architectures.
++
++R0-R5 are scratch registers and BPF program needs spill/fill them if necessary
++across calls.
++Note that there is only one BPF program == one BPF function and it cannot call
++other BPF functions. It can only call predefined in-kernel functions.
++
++All BPF registers are 64-bit without subregs, which makes JITed x86 code
++less optimal, but matches sparc/mips architectures.
++Adding 32-bit subregs was considered, since JIT can map them to x86 and aarch64
++nicely, but read-modify-write overhead for sparc/mips is not worth the gains.
++
++Original BPF and extended BPF are two operand instructions, which helps
++to do one-to-one mapping between BPF insn and x86 insn during JIT.
++
++Extended BPF doesn't have pre-defined endianness not to favor one
++architecture vs another. Therefore bswap insn was introduced.
++Original BPF doesn't have such insn and does bswap as part of sk_load_word call
++which is often unnecessary if we want to compare the value with the constant.
++Restricted C code might be written differently depending on endianness
++and GCC/LLVM-bpf will take an endianness flag.
++
++32-bit architectures run 64-bit extended BPF programs via interpreter
++
++Q: Why extended BPF is 64-bit? Cannot we live with 32-bit?
++A: On 64-bit architectures, pointers are 64-bit and we want to pass 64-bit
++values in/out kernel functions, so 32-bit BPF registers would require to define
++register-pair ABI, there won't be a direct BPF register to HW register
++mapping and JIT would need to do combine/split/move operations for every
++register in and out of the function, which is complex, bug prone and slow.
++Another reason is counters. To use 64-bit counter BPF program would need to do
++a complex math. Again bug prone and not atomic.
++
++Q: Original BPF is safe, deterministic and kernel can easily prove that.
++   Does extended BPF keep these properties?
++A: Yes. The safety of the program is determined in two steps.
++First step does depth-first-search to disallow loops and other CFG validation.
++Second step starts from the first insn and descends all possible paths.
++It simulates execution of every insn and observes the state change of
++registers and stack.
++At the start of the program the register R1 contains a pointer to bpf_context
++and has type PTR_TO_CTX. If checker sees an insn that does R2=R1, then R2 has
++now type PTR_TO_CTX as well and can be used on right hand side of expression.
++If R1=PTR_TO_CTX and insn is R2=R1+1, then R2=INVALID_PTR and it is readable.
++If register was never written to, it's not readable.
++After kernel function call, R1-R5 are reset to unreadable and R0 has a return
++type of the function. Since R6-R9 are callee saved, their state is preserved
++across the call.
++load/store instructions are allowed only with registers of valid types, which
++are PTR_TO_CTX, PTR_TO_TABLE, PTR_TO_STACK. They are bounds and alginment
++checked.
++
++bpf_context structure is generic. Its contents are defined by specific use case.
++For seccomp it can be seccomp_data and through get_context_access callback
++BPF checker is customized, so that BPF program can only access certain fields
++of bpf_context with specified size and alignment.
++For example, the following insn:
++  BPF_INSN_LD(BPF_W, R0, R6, 8)
++intends to load word from address R6 + 8 and store it into R0
++If R6=PTR_TO_CTX, then get_context_access callback should let the checker know
++that offset 8 of size 4 bytes can be accessed for reading, otherwise the checker
++will reject the program.
++If R6=PTR_TO_STACK, then access should be aligned and be within stack bounds,
++which are hard coded to [-480, 0]. In this example offset is 8, so it will fail
++verification.
++The checker will allow BPF program to read data from stack only after it wrote
++into it.
++Pointer register spill/fill is tracked as well, since four (R6-R9) callee saved
++registers may not be enough for some programs.
++
++Allowed function calls are customized via get_func_proto callback.
++For example:
++  u64 bpf_load_byte(struct bpf_context *ctx, u32 offset);
++function will have the following definition:
++  struct bpf_func_proto proto = {RET_INTEGER, PTR_TO_CTX};
++and BPF checker will verify that bpf_load_byte is always called with first
++argument being a valid pointer to bpf_context. After the call BPF register R0
++will be set to readable state, so that BPF program can access it.
++
++One of the useful functions that can be made available to BPF program
++are bpf_table_lookup/bpf_table_update.
++Using them a tracing filter can collect any type of statistics.
++
++Therefore extended BPF program consists of instructions and tables.
++From BPF program the table is identified by constant table_id
++and access to a table in C looks like:
++elem = bpf_table_lookup(ctx, table_id, key);
++
++BPF checker matches 'table_id' against known tables, verifies that 'key' points
++to stack and table->key_size bytes are initialized.
++From there on bpf_table_lookup() is a normal kernel function. It needs to do
++a lookup by whatever means and return either valid pointer to the element
++or NULL. BPF checker will verify that the program accesses the pointer only
++after comparing it to NULL. That's the meaning of PTR_TO_TABLE_CONDITIONAL and
++PTR_TO_TABLE register types in bpf_check.c
++
++If a kernel subsystem wants to use this BPF framework and decides to implement
++bpf_table_lookup, the checker will guarantee that argument 'ctx' is a valid
++pointer to bpf_context, 'table_id' is valid table_id and table->key_size bytes
++can be read from the pointer 'key'. It's up to implementation to decide how it
++wants to do the lookup and what is the key.
++
++Going back to the example BPF insn:
++  BPF_INSN_LD(BPF_W, R0, R6, 8)
++if R6=PTR_TO_TABLE, then offset and size of access must be within
++[0, table->elem_size] which is determined by constant table_id that was passed
++into bpf_table_lookup call prior to this insn.
++
++Just like original, extended BPF is limited to 4096 insns, which means that any
++program will terminate quickly and will call fixed number of kernel functions.
++Earlier implementation of the checker had a precise calculation of worst case
++number of insns, but it was removed to simplify the code, since the worst number
++is always less then number of insns in a program anyway (because it's a DAG).
++
++Since register/stack state tracking simulates execution of all insns in all
++possible branches, it will explode if not bounded. There are two bounds.
++verifier_state stack is limited to 1k, therefore BPF program cannot have
++more than 1k jump insns.
++Total number of insns to be analyzed is limited to 32k, which means that
++checker will either prove correctness or reject the program in few
++milliseconds on average x86 cpu. Valid programs take microseconds to verify.
++
 -- 
 1.7.9.5
 
