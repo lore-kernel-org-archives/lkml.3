@@ -1,75 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755192AbaBFHsI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 02:48:08 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52623 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751685AbaBFHsG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 02:48:06 -0500
-X-AuditID: 9c93016f-b7b0cae0000024a7-4b-52f33e32e0f3
-From: Namhyung Kim <namhyung@kernel.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
-        "Steven Rostedt \(Red Hat\)" <rostedt@goodmis.org>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        "David A. Long" <dave.long@linaro.org>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH -tip ] [BUGFIX/URGENT] perf-probe: Do not add offset to uprobe address
-In-Reply-To: <20140205051858.6519.27314.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
-	(Masami Hiramatsu's message of "Wed, 05 Feb 2014 05:18:58 +0000")
-References: <20140205051858.6519.27314.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-Date: Thu, 06 Feb 2014 16:48:02 +0900
-Message-ID: <871tzg1y31.fsf@sejong.aot.lge.com>
+	id S1755111AbaBFIBq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 03:01:46 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:19529 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751942AbaBFIBo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 03:01:44 -0500
+X-IronPort-AV: E=Sophos;i="4.95,792,1384272000"; 
+   d="scan'208";a="9476456"
+Message-ID: <52F34200.1010102@cn.fujitsu.com>
+Date: Thu, 06 Feb 2014 16:04:16 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: kosaki.motohiro@gmail.com
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        akpm@linux-foundation.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Larry Woodman <lwoodman@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>, stable@vger.kernel.org
+Subject: Re: [PATCH] mm: __set_page_dirty_nobuffers uses spin_lock_irqseve
+ instead of spin_lock_irq
+References: <1391446195-9457-1-git-send-email-kosaki.motohiro@gmail.com>
+In-Reply-To: <1391446195-9457-1-git-send-email-kosaki.motohiro@gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/02/06 15:59:49,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/02/06 15:59:50,
+	Serialize complete at 2014/02/06 15:59:50
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Masami,
 
-On Wed, 05 Feb 2014 05:18:58 +0000, Masami Hiramatsu wrote:
-> Fix perf-probe not to add offset value to uprobe probe
-> address when post processing.
-> tevs[i].point.address is the address of symbol+offset,
-> but current perf-probe adjusts the point.address by
-> adding the offset. As a result, the probe address becomes
-> symbol+offset+offset. This may cause unexpected
-> code corruption. Urgent fix is needed.
+Hi,
+
+Tested-by: Tang Chen <tangchen@cn.fujitsu.com>
+
+Have tested this patch, and the problem is fixed.
+
+Thanks.
+
+On 02/04/2014 12:49 AM, kosaki.motohiro@gmail.com wrote:
+> From: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
 >
-> Without this fix
->   ---
->   # ./perf probe -x ./perf dso__load_vmlinux+4
->   # ./perf probe -l
->     probe_perf:dso__load_vmlinux (on 0x000000000006d2b8)
->   # nm ./perf.orig | grep dso__load_vmlinux\$
->   000000000046d0a0 T dso__load_vmlinux
-
-Shouldn't the original symbol address be
-
-    000000000046d2b0
-
-?
-
->   ---
-> You can see the given offset is 3 but the actual probed
-
-s/3/4/ ?
-
-Thanks,
-Namhyung
-
-
-> address is dso__load_vmlinux+8.
+> During aio stress test, we observed the following lockdep warning.
+> This mean AIO+numa_balancing is currently deadlockable.
 >
-> With this fix
->   ---
->   # ./perf probe -x ./perf dso__load_vmlinux+4
->   # ./perf probe -l
->     probe_perf:dso__load_vmlinux (on 0x000000000006d2b4)
->   ---
-> Now the problem is fixed.
+> The problem is, aio_migratepage disable interrupt, but __set_page_dirty_nobuffers
+> unintentionally enable it again.
+>
+> Generally, all helper function should use spin_lock_irqsave()
+> instead of spin_lock_irq() because they don't know caller at all.
+>
+> [  599.843948] other info that might help us debug this:
+> [  599.873748]  Possible unsafe locking scenario:
+> [  599.873748]
+> [  599.900902]        CPU0
+> [  599.912701]        ----
+> [  599.924929]   lock(&(&ctx->completion_lock)->rlock);
+> [  599.950299]<Interrupt>
+> [  599.962576]     lock(&(&ctx->completion_lock)->rlock);
+> [  599.985771]
+> [  599.985771]  *** DEADLOCK ***
+>
+> [  600.375623]  [<ffffffff81678d3c>] dump_stack+0x19/0x1b
+> [  600.398769]  [<ffffffff816731aa>] print_usage_bug+0x1f7/0x208
+> [  600.425092]  [<ffffffff810df370>] ? print_shortest_lock_dependencies+0x1d0/0x1d0
+> [  600.458981]  [<ffffffff810e08dd>] mark_lock+0x21d/0x2a0
+> [  600.482910]  [<ffffffff810e0a19>] mark_held_locks+0xb9/0x140
+> [  600.508956]  [<ffffffff8168201c>] ? _raw_spin_unlock_irq+0x2c/0x50
+> [  600.536825]  [<ffffffff810e0ba5>] trace_hardirqs_on_caller+0x105/0x1d0
+> [  600.566861]  [<ffffffff810e0c7d>] trace_hardirqs_on+0xd/0x10
+> [  600.593210]  [<ffffffff8168201c>] _raw_spin_unlock_irq+0x2c/0x50
+> [  600.620599]  [<ffffffff8117f72c>] __set_page_dirty_nobuffers+0x8c/0xf0
+> [  600.649992]  [<ffffffff811d1094>] migrate_page_copy+0x434/0x540
+> [  600.676635]  [<ffffffff8123f5b1>] aio_migratepage+0xb1/0x140
+> [  600.703126]  [<ffffffff811d126d>] move_to_new_page+0x7d/0x230
+> [  600.729022]  [<ffffffff811d1b45>] migrate_pages+0x5e5/0x700
+> [  600.754705]  [<ffffffff811d0070>] ? buffer_migrate_lock_buffers+0xb0/0xb0
+> [  600.785784]  [<ffffffff811d29cc>] migrate_misplaced_page+0xbc/0xf0
+> [  600.814029]  [<ffffffff8119eb62>] do_numa_page+0x102/0x190
+> [  600.839182]  [<ffffffff8119ee31>] handle_pte_fault+0x241/0x970
+> [  600.865875]  [<ffffffff811a0345>] handle_mm_fault+0x265/0x370
+> [  600.892071]  [<ffffffff81686d82>] __do_page_fault+0x172/0x5a0
+> [  600.918065]  [<ffffffff81682cd8>] ? retint_swapgs+0x13/0x1b
+> [  600.943493]  [<ffffffff816871ca>] do_page_fault+0x1a/0x70
+> [  600.968081]  [<ffffffff81682ff8>] page_fault+0x28/0x30
+>
+> Signed-off-by: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
+> Cc: Larry Woodman<lwoodman@redhat.com>
+> Cc: Rik van Riel<riel@redhat.com>
+> Cc: Johannes Weiner<jweiner@redhat.com>
+> Cc: stable@vger.kernel.org
+> ---
+>   mm/page-writeback.c |    5 +++--
+>   1 files changed, 3 insertions(+), 2 deletions(-)
+>
+> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+> index 2d30e2c..7106cb1 100644
+> --- a/mm/page-writeback.c
+> +++ b/mm/page-writeback.c
+> @@ -2173,11 +2173,12 @@ int __set_page_dirty_nobuffers(struct page *page)
+>   	if (!TestSetPageDirty(page)) {
+>   		struct address_space *mapping = page_mapping(page);
+>   		struct address_space *mapping2;
+> +		unsigned long flags;
+>
+>   		if (!mapping)
+>   			return 1;
+>
+> -		spin_lock_irq(&mapping->tree_lock);
+> +		spin_lock_irqsave(&mapping->tree_lock, flags);
+>   		mapping2 = page_mapping(page);
+>   		if (mapping2) { /* Race with truncate? */
+>   			BUG_ON(mapping2 != mapping);
+> @@ -2186,7 +2187,7 @@ int __set_page_dirty_nobuffers(struct page *page)
+>   			radix_tree_tag_set(&mapping->page_tree,
+>   				page_index(page), PAGECACHE_TAG_DIRTY);
+>   		}
+> -		spin_unlock_irq(&mapping->tree_lock);
+> +		spin_unlock_irqrestore(&mapping->tree_lock, flags);
+>   		if (mapping->host) {
+>   			/* !PageAnon&&  !swapper_space */
+>   			__mark_inode_dirty(mapping->host, I_DIRTY_PAGES);
