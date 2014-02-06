@@ -1,57 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756856AbaBFSFJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 13:05:09 -0500
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.142]:62806 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751480AbaBFSDt (ORCPT
+	id S1756865AbaBFSFd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 13:05:33 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:24294 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751942AbaBFSFc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 13:03:49 -0500
-X-Env-Sender: Adam.Thomson.Opensource@diasemi.com
-X-Msg-Ref: server-12.tower-179.messagelabs.com!1391709809!22887069!5
-X-Originating-IP: [82.210.246.133]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.16; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <1234f50ae0bcf6e9fe057cbe26f9c55b042d2c2e.1391705989.git.Adam.Thomson.Opensource@diasemi.com>
-In-Reply-To: <cover.1391705989.git.Adam.Thomson.Opensource@diasemi.com>
-References: <cover.1391705989.git.Adam.Thomson.Opensource@diasemi.com>
-From: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
-Date: Thu, 6 Feb 2014 18:03:21 +0000
-Subject: [PATCH v2 8/8] regulator: da9055: Remove use of regmap_irq_get_virq()
-To: Mark Brown <broonie@kernel.org>, Lee Jones <lee.jones@linaro.org>
-CC: <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Guenter Roeck <linux@roeck-us.net>
+	Thu, 6 Feb 2014 13:05:32 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+KjnKPDmFNEQzki6rs+88/YzTHSuINF40=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 60F6751F9DF
+Date: Thu, 6 Feb 2014 13:05:06 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Cc: Andrew Lunn <andrew@lunn.ch>, linux-kernel@vger.kernel.org,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH 0/3] irqchip: orion: bridge irq fixes for v3.14-rc1
+Message-ID: <20140206180506.GJ8533@titan.lakedaemon.net>
+References: <1390516686-2224-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <20140205045415.GN8533@titan.lakedaemon.net>
+ <20140206171039.GC12542@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140206171039.GC12542@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
----
- drivers/regulator/da9055-regulator.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+On Thu, Feb 06, 2014 at 02:10:40PM -0300, Ezequiel Garcia wrote:
+> On Tue, Feb 04, 2014 at 11:54:15PM -0500, Jason Cooper wrote:
+> > On Thu, Jan 23, 2014 at 11:38:03PM +0100, Sebastian Hesselbarth wrote:
+> > > This is a small patch set to fix some shortcomings how Orion bridge
+> > > irqs are handled. The patches are based on v3.13-rc8 and should go
+> > > into v3.14. They can possibly also marked for -stable down to v3.10.
+> > > 
+> > > This patches are the result of a discussion about a stale watchdog irq,
+> > > that can accidentially trigger the watchdog's irq handler and cause a
+> > > reset [1].
+> > > 
+> > > The first patch will add a write to clear already pending interrupts
+> > > on init. The second patch replaces handle_level_irq with handle_edge_irq
+> > > which is more appropriate for bridge irqs which are edge-triggered.
+> > > The last patch finally, fixes stale interrupts by installing an
+> > > .irq_enable callback, that will clear a possible pending interrupt
+> > > before unmasking it.
+> > > 
+> > > [1] http://www.spinics.net/lists/arm-kernel/msg302106.html
+> > > 
+> > > Sebastian Hesselbarth (3):
+> > >   irqchip: orion: clear bridge cause register on init
+> > >   irqchip: orion: use handle_edge_irq on bridge irqs
+> > >   irqchip: orion: clear stale interrupts in irq_enable
+> > > 
+> > >  drivers/irqchip/irq-orion.c | 18 ++++++++++++++++--
+> > >  1 file changed, 16 insertions(+), 2 deletions(-)
+> > 
+> > Whole series applied to mvebu-next/irqchip-fixes (v2 for 3/3).  Once I
+> > see that the outstanding pull requests for mvebu/irqchip have been
+> > merged into mainline, I'll be changing the name of this branch to
+> > mvebu/irqchip-fixes.  I just don't want to upset the applecart atm.
+> > 
+> > Oh yeah, Cc'd for stable back to v3.10.
+> > 
+> 
+> If you want to pick this:
+> 
+> Tested-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
 
-diff --git a/drivers/regulator/da9055-regulator.c b/drivers/regulator/da9055-regulator.c
-index d90f785..3b7a26c 100644
---- a/drivers/regulator/da9055-regulator.c
-+++ b/drivers/regulator/da9055-regulator.c
-@@ -637,7 +637,9 @@ static int da9055_regulator_probe(struct platform_device *pdev)
- 	/* Only LDO 5 and 6 has got the over current interrupt */
- 	if (pdev->id == DA9055_ID_LDO5 || pdev->id ==  DA9055_ID_LDO6) {
- 		irq = platform_get_irq_byname(pdev, "REGULATOR");
--		irq = regmap_irq_get_virq(da9055->irq_data, irq);
-+		if (irq < 0)
-+			return irq;
-+
- 		ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
- 						da9055_ldo5_6_oc_irq,
- 						IRQF_TRIGGER_HIGH |
---
-1.7.0.4
+Added, thanks for testing!
 
+thx,
+
+Jason.
