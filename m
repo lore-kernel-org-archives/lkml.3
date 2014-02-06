@@ -1,89 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754049AbaBFULI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 15:11:08 -0500
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:15105 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751426AbaBFULG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 15:11:06 -0500
-From: "Norton, Scott J" <scott.norton@hp.com>
-To: "Long, Wai Man" <waiman.long@hp.com>,
-        Peter Zijlstra <peterz@infradead.org>
-CC: "Low, Jason" <jason.low2@hp.com>, "mingo@redhat.com" <mingo@redhat.com>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "riel@redhat.com" <riel@redhat.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "Bueso, Davidlohr" <davidlohr@hp.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>
-Subject: RE: [RFC][PATCH v2 5/5] mutex: Give spinners a chance to
- spin_on_owner if need_resched() triggered while queued
-Thread-Topic: [RFC][PATCH v2 5/5] mutex: Give spinners a chance to
- spin_on_owner if need_resched() triggered while queued
-Thread-Index: AQHPHF0cp8t15pjM302Bqq3hOCL8MJqaoUqAgAAc+YCAANn2AIALpfcAgAER0ICAAE6BgIAAFPrQ
-Date: Thu, 6 Feb 2014 20:10:02 +0000
-Message-ID: <E2BC6EB51A09EC46A4906DEA4A9496EE0B7077AA@G9W0719.americas.hpqcorp.net>
-References: <1390936396-3962-1-git-send-email-jason.low2@hp.com>
- <1390936396-3962-6-git-send-email-jason.low2@hp.com>
- <20140128210753.GJ11314@laptop.programming.kicks-ass.net>
- <1390949495.2807.52.camel@j-VirtualBox>
- <20140129115142.GE9636@twins.programming.kicks-ass.net>
- <52F2B0C2.8040408@hp.com>
- <20140206140435.GU8874@twins.programming.kicks-ass.net>
- <52F3D84D.5060309@hp.com>
-In-Reply-To: <52F3D84D.5060309@hp.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.28]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753212AbaBFUUB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 15:20:01 -0500
+Received: from mail-bn1blp0189.outbound.protection.outlook.com ([207.46.163.189]:43400
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751799AbaBFUUA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 15:20:00 -0500
+Message-ID: <1391717992.6733.232.camel@snotra.buserror.net>
+Subject: Re: [PATCH] Convert powerpc simple spinlocks into ticket locks
+From: Scott Wood <scottwood@freescale.com>
+To: Torsten Duwe <duwe@lst.de>
+CC: Peter Zijlstra <peterz@infradead.org>, <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        <linuxppc-dev@lists.ozlabs.org>, Ingo Molnar <mingo@kernel.org>
+Date: Thu, 6 Feb 2014 14:19:52 -0600
+In-Reply-To: <20140206173727.GA13048@lst.de>
+References: <20140206103736.GA18054@lst.de>
+	 <20140206163837.GT2936@laptop.programming.kicks-ass.net>
+	 <20140206173727.GA13048@lst.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [2601:2:5800:3f7:12bf:48ff:fe84:c9a0]
+X-ClientProxiedBy: DM2PR04CA001.namprd04.prod.outlook.com (10.141.96.11) To
+ DM2PR03MB398.namprd03.prod.outlook.com (10.141.84.140)
+X-Forefront-PRVS: 0114FF88F6
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009001)(6009001)(377424004)(199002)(189002)(24454002)(51704005)(81542001)(74876001)(94946001)(33646001)(94316002)(74366001)(50986001)(93916002)(50466002)(23676002)(77096001)(50226001)(95416001)(93136001)(65816001)(46102001)(76786001)(76796001)(47776003)(80022001)(63696002)(74706001)(77982001)(42186004)(87266001)(79102001)(85306002)(74502001)(54316002)(74662001)(92566001)(80976001)(4396001)(88136002)(92726001)(87286001)(90146001)(81686001)(81816001)(31966008)(56776001)(69226001)(47976001)(59766001)(62966002)(83322001)(81342001)(93516002)(86362001)(53806001)(47446002)(85852003)(47736001)(56816005)(76482001)(49866001)(89996001)(87976001)(83072002)(51856001)(77156001)(3826001);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR03MB398;H:[IPv6:2601:2:5800:3f7:12bf:48ff:fe84:c9a0];CLIP:2601:2:5800:3f7:12bf:48ff:fe84:c9a0;FPR:CCBFFC6F.86360644.F7F49DA2.44EB4AEC.202F0;InfoNoRecordsA:1;MX:1;LANG:en;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> I run the patch through the AIM7 high-systime workload on a
->> 4-socket server and it seemed to run fine.
-> How do people run this AIM7 piece of shit? I let it run for over an hour
-> and it generated exactly 0 numbers, it just sits there eating cpu-time
-> and creating a racket from my pantry.
+On Thu, 2014-02-06 at 18:37 +0100, Torsten Duwe wrote:
+> On Thu, Feb 06, 2014 at 05:38:37PM +0100, Peter Zijlstra wrote:
+> > On Thu, Feb 06, 2014 at 11:37:37AM +0100, Torsten Duwe wrote:
+> > > x86 has them, MIPS has them, ARM has them, even ia64 has them:
+> > > ticket locks. They reduce memory bus and cache pressure especially
+> > > for contended spinlocks, increasing performance.
+> > > 
+> > > This patch is a port of the x86 spin locks, mostly written in C,
+> > > to the powerpc, introducing inline asm where needed. The pSeries
+> > > directed yield for vCPUs is taken care of by an additional "holder"
+> > > field in the lock.
+> > > 
+> > 
+> > A few questions; what's with the ppc64 holder thing? Not having a 32bit
+> > spinlock_t is sad.
+> 
+> I must admit that I haven't tested the patch on non-pseries ppc64 nor on
+> ppc32. Only ppc64 has the ldarx and I tried to atomically replace the 
+> holder along with the locks. That might prove unneccessary.
 
-./reaim -s100  -e2000 -t -j100 -i100 -f workfile.high_systime
+Why is the functionality of holder only required on 64-bit?  We have too
+many 32/64 differences as is.  Perhaps on 32-bit a lower max number of
+CPUs could be assumed, to make it fit in one word.
 
-The reaim.config file contains:
+> > Can you pair lwarx with sthcx ? I couldn't immediately find the answer
+> > in the PowerISA doc. If so I think you can do better by being able to
+> > atomically load both tickets but only storing the head without affecting
+> > the tail.
+> 
+> V2.06b, Book II, Chapter 3, "sthcx" says:
+> | If a reservation exists and the length associated [...] is not 2 bytes,
+> | it is undefined whether (RS)_48:63 are stored [...]
+> 
+> That doesn't make me feel comfortable :(
 
-FILESIZE 10k
-POOLSIZE 1m
-DISKDIR /t0
-DISKDIR /t1
-DISKDIR /t2
-DISKDIR /t3
-DISKDIR /t4
-DISKDIR /t5
-DISKDIR /t6
-DISKDIR /t7
-DISKDIR /t8
-DISKDIR /t9
-DISKDIR /t10
-DISKDIR /t11
-DISKDIR /t12
-DISKDIR /t13
-DISKDIR /t14
-DISKDIR /t15
+Plus, sthcx doesn't exist on all PPC chips.
 
-The way Longman uses this is to create 16 ramdisk filesystems through
-/dev/ram* and then mount those filesystems to the /t* directories.
-Although you could run it through a regular filesystem also. It will use
-whatever you place in the reaim.config file as DISKDIR. You can specify
-one or more DISKDIR directories.
+-Scott
 
-
-Scott
 
