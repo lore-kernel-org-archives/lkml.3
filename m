@@ -1,79 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754552AbaBFEFz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 23:05:55 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:34581 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752784AbaBFEFy (ORCPT
+	id S1754661AbaBFELU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 23:11:20 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:37686 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753995AbaBFELS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 23:05:54 -0500
-Date: Wed, 5 Feb 2014 20:05:51 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: LKML <linux-kernel@vger.kernel.org>, penberg@kernel.org, cl@linux.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH v2] slub: Do not assert not having lock in removing freed
- partial
-In-Reply-To: <20140205222112.742169e0@gandalf.local.home>
-Message-ID: <alpine.DEB.2.02.1402052005350.18312@chino.kir.corp.google.com>
-References: <20140205222112.742169e0@gandalf.local.home>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 5 Feb 2014 23:11:18 -0500
+Message-ID: <52F30B5E.8020202@hitachi.com>
+Date: Thu, 06 Feb 2014 13:11:10 +0900
+From: Eiichi Tsukata <eiichi.tsukata.xh@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: James Bottomley <jbottomley@parallels.com>
+Cc: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [REVIEW PATCH] scsi: Add 'retry_timeout' to avoid infinite command
+ retry
+References: <1391579254-26204-1-git-send-email-eiichi.tsukata.xh@hitachi.com>	 <1391579254-26204-2-git-send-email-eiichi.tsukata.xh@hitachi.com> <1391619349.2213.11.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1391619349.2213.11.camel@dabdike.int.hansenpartnership.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Feb 2014, Steven Rostedt wrote:
+(2014/02/06 1:55), James Bottomley wrote:
+> On Wed, 2014-02-05 at 14:47 +0900, Eiichi Tsukata wrote:
+>> Currently, scsi error handling in scsi_decide_disposition() tries to
+>> unconditionally requeue scsi command when device keeps some error state.
+>> This is because retryable errors are thought to be temporary and the scsi
+>> device will soon recover from those errors. Normally, such retry policy is
+>> appropriate because the device will soon recover from temporary error state.
+> This description isn't very descriptive.  I presume you're talking about
+> the ADD_TO_MLQUEUE return from scsi_decide_disposition()?
+>
 
-> Vladimir reported the following issue:
-> 
-> Commit c65c1877bd68 ("slub: use lockdep_assert_held") requires
-> remove_partial() to be called with n->list_lock held, but free_partial()
-> called from kmem_cache_close() on cache destruction does not follow this
-> rule, leading to a warning:
-> 
->   WARNING: CPU: 0 PID: 2787 at mm/slub.c:1536 __kmem_cache_shutdown+0x1b2/0x1f0()
->   Modules linked in:
->   CPU: 0 PID: 2787 Comm: modprobe Tainted: G        W    3.14.0-rc1-mm1+ #1
->   Hardware name:
->    0000000000000600 ffff88003ae1dde8 ffffffff816d9583 0000000000000600
->    0000000000000000 ffff88003ae1de28 ffffffff8107c107 0000000000000000
->    ffff880037ab2b00 ffff88007c240d30 ffffea0001ee5280 ffffea0001ee52a0
->   Call Trace:
->    [<ffffffff816d9583>] dump_stack+0x51/0x6e
->    [<ffffffff8107c107>] warn_slowpath_common+0x87/0xb0
->    [<ffffffff8107c145>] warn_slowpath_null+0x15/0x20
->    [<ffffffff811c7fe2>] __kmem_cache_shutdown+0x1b2/0x1f0
->    [<ffffffff811908d3>] kmem_cache_destroy+0x43/0xf0
->    [<ffffffffa013a123>] xfs_destroy_zones+0x103/0x110 [xfs]
->    [<ffffffffa0192b54>] exit_xfs_fs+0x38/0x4e4 [xfs]
->    [<ffffffff811036fa>] SyS_delete_module+0x19a/0x1f0
->    [<ffffffff816dfcd8>] ? retint_swapgs+0x13/0x1b
->    [<ffffffff810d2125>] ? trace_hardirqs_on_caller+0x105/0x1d0
->    [<ffffffff81359efe>] ? trace_hardirqs_on_thunk+0x3a/0x3f
->    [<ffffffff816e8539>] system_call_fastpath+0x16/0x1b
-> 
-> 
-> His solution was to add a spinlock in order to quiet lockdep. Although
-> there would be no contention to adding the lock, that lock also
-> requires disabling of interrupts which will have a larger impact on the
-> system.
-> 
-> Instead of adding a spinlock to a location where it is not needed for
-> lockdep, make a __remove_partial() function that does not test if
-> the list_lock is held, as no one should have it due to it being freed.
-> 
-> Also added a __add_partial() function that does not do the lock validation
-> either, as it is not needed for the creation of the cache.
-> 
-> Suggested-by: David Rientjes <rientjes@google.com>
-> Reported-by: Vladimir Davydov <vdavydov@parallels.com>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Thanks for reviewing, James.
 
-Acked-by: David Rientjes <rientjes@google.com>
+I was talking about ADD_TO_MLQUEUE and NEEDS_RETRY.
+I'll fix the description.
 
-Thanks Steven!
+>> But there is no guarantee that device is able to recover from error state
+>> immediately. Some hardware error may prevent device from recovering.
+>> Therefore hardware error can results in infinite command retry loop.
+> If you're talking about ADD_TO_MLQUEUE, I don't believe this is correct:
+> there's a test in scsi_softirq_done() that makes sure the maximum
+> lifetime is retries*timeout and fails the command after that.
+
+I see, threre's already timeout in scsi_softirq_done() so my patch is not correct
+as you say.
+
+What I really want to do is to prevent command from retrying indefinitely
+in scsi_io_completion()
+with action == ACTION_RETRY || action == ACTION_DELAYED_RETRY.
+In v2 patch, I'll change the location of retry timeout check from scsi_softirq_done()
+to scsi_io_completion().
+
+Eiichi
+
+
+(2014/02/06 1:55), James Bottomley wrote:
+> On Wed, 2014-02-05 at 14:47 +0900, Eiichi Tsukata wrote:
+>> Currently, scsi error handling in scsi_decide_disposition() tries to
+>> unconditionally requeue scsi command when device keeps some error state.
+>> This is because retryable errors are thought to be temporary and the scsi
+>> device will soon recover from those errors. Normally, such retry policy is
+>> appropriate because the device will soon recover from temporary error state.
+> This description isn't very descriptive.  I presume you're talking about
+> the ADD_TO_MLQUEUE return from scsi_decide_disposition()?
+>
+>> But there is no guarantee that device is able to recover from error state
+>> immediately. Some hardware error may prevent device from recovering.
+>> Therefore hardware error can results in infinite command retry loop.
+> If you're talking about ADD_TO_MLQUEUE, I don't believe this is correct:
+> there's a test in scsi_softirq_done() that makes sure the maximum
+> lifetime is retries*timeout and fails the command after that.
+>
+> James
+>
+>
+>> This patchs adds 'retry_timeout' sysfs attribute which limits the retry time
+>> of each scsi command. Once scsi command retry time is longer than this timeout,
+>> the command is treated as failure. 'retry_timeout' is set to '0' by default
+>> which means no timeout set.
+>>
+>> Signed-off-by: Eiichi Tsukata <eiichi.tsukata.xh@hitachi.com>
+>> Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+>> Cc: linux-scsi@vger.kernel.org
+>> Cc: linux-kernel@vger.kernel.org
+>> ---
+>>   drivers/scsi/scsi_lib.c    | 22 +++++++++++++++++++++-
+>>   drivers/scsi/scsi_scan.c   |  1 +
+>>   drivers/scsi/scsi_sysfs.c  | 32 ++++++++++++++++++++++++++++++++
+>>   include/scsi/scsi.h        |  1 +
+>>   include/scsi/scsi_device.h |  1 +
+>>   5 files changed, 56 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+>> index 7bd7f0d..a9db69e 100644
+>> --- a/drivers/scsi/scsi_lib.c
+>> +++ b/drivers/scsi/scsi_lib.c
+>> @@ -1492,6 +1492,23 @@ static void scsi_kill_request(struct request *req, struct request_queue *q)
+>>   	blk_complete_request(req);
+>>   }
+>>   
+>> +/*
+>> + * Check if scsi command excessed retry timeout
+>> + */
+>> +static int scsi_retry_timed_out(struct scsi_cmnd *cmd)
+>> +{
+>> +	unsigned int retry_timeout;
+>> +
+>> +	retry_timeout = cmd->device->retry_timeout;
+>> +	if (retry_timeout &&
+>> +	    time_before(cmd->jiffies_at_alloc + retry_timeout, jiffies)) {
+>> +		scmd_printk(KERN_INFO, cmd, "retry timeout\n");
+>> +		return 1;
+>> +	}
+>> +
+>> +	return 0;
+>> +}
+>> +
+>>   static void scsi_softirq_done(struct request *rq)
+>>   {
+>>   	struct scsi_cmnd *cmd = rq->special;
+>> @@ -1512,7 +1529,10 @@ static void scsi_softirq_done(struct request *rq)
+>>   			    wait_for/HZ);
+>>   		disposition = SUCCESS;
+>>   	}
+>> -			
+>> +
+>> +	if (scsi_retry_timed_out(cmd))
+>> +		disposition = FAILED;
+>> +
+>>   	scsi_log_completion(cmd, disposition);
+>>   
+>>   	switch (disposition) {
+>> diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
+>> index 307a811..4ab044a 100644
+>> --- a/drivers/scsi/scsi_scan.c
+>> +++ b/drivers/scsi/scsi_scan.c
+>> @@ -925,6 +925,7 @@ static int scsi_add_lun(struct scsi_device *sdev, unsigned char *inq_result,
+>>   		sdev->no_dif = 1;
+>>   
+>>   	sdev->eh_timeout = SCSI_DEFAULT_EH_TIMEOUT;
+>> +	sdev->retry_timeout = SCSI_DEFAULT_RETRY_TIMEOUT;
+>>   
+>>   	if (*bflags & BLIST_SKIP_VPD_PAGES)
+>>   		sdev->skip_vpd_pages = 1;
+>> diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
+>> index 8ff62c2..eaa2118 100644
+>> --- a/drivers/scsi/scsi_sysfs.c
+>> +++ b/drivers/scsi/scsi_sysfs.c
+>> @@ -627,6 +627,37 @@ sdev_store_eh_timeout(struct device *dev, struct device_attribute *attr,
+>>   static DEVICE_ATTR(eh_timeout, S_IRUGO | S_IWUSR, sdev_show_eh_timeout, sdev_store_eh_timeout);
+>>   
+>>   static ssize_t
+>> +sdev_show_retry_timeout(struct device *dev,
+>> +			struct device_attribute *attr, char *buf)
+>> +{
+>> +	struct scsi_device *sdev;
+>> +	sdev = to_scsi_device(dev);
+>> +	return snprintf(buf, 20, "%u\n", sdev->retry_timeout / HZ);
+>> +}
+>> +
+>> +static ssize_t
+>> +sdev_store_retry_timeout(struct device *dev, struct device_attribute *attr,
+>> +			 const char *buf, size_t count)
+>> +{
+>> +	struct scsi_device *sdev;
+>> +	unsigned int retry_timeout;
+>> +	int err;
+>> +
+>> +	if (!capable(CAP_SYS_ADMIN))
+>> +		return -EACCES;
+>> +
+>> +	sdev = to_scsi_device(dev);
+>> +	err = kstrtouint(buf, 10, &retry_timeout);
+>> +	if (err)
+>> +		return err;
+>> +	sdev->retry_timeout = retry_timeout * HZ;
+>> +
+>> +	return count;
+>> +}
+>> +static DEVICE_ATTR(retry_timeout, S_IRUGO | S_IWUSR,
+>> +		   sdev_show_retry_timeout, sdev_store_retry_timeout);
+>> +
+>> +static ssize_t
+>>   store_rescan_field (struct device *dev, struct device_attribute *attr,
+>>   		    const char *buf, size_t count)
+>>   {
+>> @@ -797,6 +828,7 @@ static struct attribute *scsi_sdev_attrs[] = {
+>>   	&dev_attr_state.attr,
+>>   	&dev_attr_timeout.attr,
+>>   	&dev_attr_eh_timeout.attr,
+>> +	&dev_attr_retry_timeout.attr,
+>>   	&dev_attr_iocounterbits.attr,
+>>   	&dev_attr_iorequest_cnt.attr,
+>>   	&dev_attr_iodone_cnt.attr,
+>> diff --git a/include/scsi/scsi.h b/include/scsi/scsi.h
+>> index 66d42ed..545408d 100644
+>> --- a/include/scsi/scsi.h
+>> +++ b/include/scsi/scsi.h
+>> @@ -16,6 +16,7 @@ struct scsi_cmnd;
+>>   
+>>   enum scsi_timeouts {
+>>   	SCSI_DEFAULT_EH_TIMEOUT		= 10 * HZ,
+>> +	SCSI_DEFAULT_RETRY_TIMEOUT	= 0,	/* disabled by default */
+>>   };
+>>   
+>>   /*
+>> diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
+>> index d65fbec..04fc5ee 100644
+>> --- a/include/scsi/scsi_device.h
+>> +++ b/include/scsi/scsi_device.h
+>> @@ -121,6 +121,7 @@ struct scsi_device {
+>>   				 * pass settings from slave_alloc to scsi
+>>   				 * core. */
+>>   	unsigned int eh_timeout; /* Error handling timeout */
+>> +	unsigned int retry_timeout;	/* Command retry timeout */
+>>   	unsigned writeable:1;
+>>   	unsigned removable:1;
+>>   	unsigned changed:1;	/* Data invalid due to media change */
+>
+>
+> .
+>
+
