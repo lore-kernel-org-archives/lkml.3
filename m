@@ -1,122 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756364AbaBFLq5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 06:46:57 -0500
-Received: from mga01.intel.com ([192.55.52.88]:4115 "EHLO mga01.intel.com"
+	id S932480AbaBFLtc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 06:49:32 -0500
+Received: from mga02.intel.com ([134.134.136.20]:3402 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755766AbaBFLq4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 06:46:56 -0500
+	id S932182AbaBFLta (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 06:49:30 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,793,1384329600"; 
-   d="scan'208";a="470775467"
-Date: Thu, 6 Feb 2014 19:46:35 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [sched/preempt] INFO: rcu_sched self-detected stall on CPU { 1}
-Message-ID: <20140206114635.GA27429@localhost>
-References: <20140206095646.GE17971@localhost>
- <20140206112731.GH4941@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140206112731.GH4941@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+   d="scan'208";a="479003831"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Bin Gao <bin.gao@linux.intel.com>, linux-kernel@vger.kernel.org,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH v3 2/2] x86, tsc: Add missing Baytrail frequency to the table
+Date: Thu,  6 Feb 2014 13:49:25 +0200
+Message-Id: <1391687365-10922-2-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.8.5.2
+In-Reply-To: <1391687365-10922-1-git-send-email-mika.westerberg@linux.intel.com>
+References: <20140206054410.GB18884@gmail.com>
+ <1391687365-10922-1-git-send-email-mika.westerberg@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 06, 2014 at 12:27:31PM +0100, Peter Zijlstra wrote:
-> On Thu, Feb 06, 2014 at 05:56:46PM +0800, Fengguang Wu wrote:
-> > Hi Peter,
-> > 
-> > We noticed the below RCU stalls which will block the system.
-> > The problem is bisected to
-> > 
-> > commit 8cb75e0c4ec9786b81439761eac1d18d4a931af3
-> > Author:     Peter Zijlstra <peterz@infradead.org>
-> > AuthorDate: Wed Nov 20 12:22:37 2013 +0100
-> > Commit:     Ingo Molnar <mingo@kernel.org>
-> > CommitDate: Mon Jan 13 17:38:55 2014 +0100
-> > 
-> >     sched/preempt: Fix up missed PREEMPT_NEED_RESCHED folding
-> >     
-> >  arch/x86/include/asm/mwait.h |  2 +-
-> >  include/linux/preempt.h      | 15 +++++++++++++++
-> >  include/linux/sched.h        | 15 +++++++++++++++
-> >  kernel/cpu/idle.c            | 17 ++++++++++-------
-> >  kernel/sched/core.c          |  3 +--
-> >  5 files changed, 42 insertions(+), 10 deletions(-)
-> > 
-> > [   85.786775] INFO: rcu_sched self-detected stall on CPU { 1}  (t=15000 jiffies g=233 c=232 q=1940)
-> 
-> Did the initial kernel contain the below?
+Intel Baytrail is based on Silvermont core so MSR_FSB_FREQ[2:0] == 0 means
+that the CPU reference clock runs at 83.3MHz. Add this missing frequency to
+the table.
 
-Nope, so I was testing some old tip sched/core..  Bisect log is
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+ arch/x86/kernel/tsc_msr.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-# good: [v3.13-rc1] Linux 3.13-rc1
-git bisect good v3.13-rc1
-# bad: [130816ce4d5f69167324f7272e70aa3d641677c6] sched, thermal: Clean up preempt_enable_no_resched() abuse
-git bisect bad 130816ce4d5f69167324f7272e70aa3d641677c6
-# good: [v3.13-rc1] Linux 3.13-rc1
-git bisect good v3.13-rc1
-# bad: [130816ce4d5f69167324f7272e70aa3d641677c6] sched, thermal: Clean up preempt_enable_no_resched() abuse
-git bisect bad 130816ce4d5f69167324f7272e70aa3d641677c6
-# skip: [fb00aca474405f4fa8a8519c3179fed722eabd83] rtmutex: Turn the plist into an rb-tree
-git bisect skip fb00aca474405f4fa8a8519c3179fed722eabd83
-# good: [c9c8986847d2f4fc474c10ee08afa57e7474096d] Merge branch 'x86/idle' into sched/core
-git bisect good c9c8986847d2f4fc474c10ee08afa57e7474096d
-# bad: [1774e9f3e5c8b38de3b3bc8bd0eacd280f655baf] sched, net: Clean up preempt_enable_no_resched() abuse
-git bisect bad 1774e9f3e5c8b38de3b3bc8bd0eacd280f655baf
-# bad: [8cb75e0c4ec9786b81439761eac1d18d4a931af3] sched/preempt: Fix up missed PREEMPT_NEED_RESCHED folding
-git bisect bad 8cb75e0c4ec9786b81439761eac1d18d4a931af3
-# first bad commit: [8cb75e0c4ec9786b81439761eac1d18d4a931af3] sched/preempt: Fix up missed PREEMPT_NEED_RESCHED folding
+diff --git a/arch/x86/kernel/tsc_msr.c b/arch/x86/kernel/tsc_msr.c
+index 8b5434f4389f..10a278661fe1 100644
+--- a/arch/x86/kernel/tsc_msr.c
++++ b/arch/x86/kernel/tsc_msr.c
+@@ -53,7 +53,7 @@ static struct freq_desc freq_desc_tables[] = {
+ 	/* TNG */
+ 	{ 6, 0x4a, 1, { 0, FREQ_100, FREQ_133, 0, 0, 0, 0, 0 } },
+ 	/* VLV2 */
+-	{ 6, 0x37, 1, { 0, FREQ_100, FREQ_133, FREQ_166, 0, 0, 0, 0 } },
++	{ 6, 0x37, 1, { FREQ_83, FREQ_100, FREQ_133, FREQ_166, 0, 0, 0, 0 } },
+ 	/* ANN */
+ 	{ 6, 0x5a, 1, { FREQ_83, FREQ_100, FREQ_133, FREQ_100, 0, 0, 0, 0 } },
+ };
+-- 
+1.8.5.2
 
-Thanks,
-Fengguang
-
-> ---
-> commit 215393bc1fab3d61a5a296838bdffce22f27ffda
-> Author: Peter Zijlstra <peterz@infradead.org>
-> Date:   Wed Jan 22 11:24:35 2014 +0100
-> 
->     sched/preempt/x86: Fix voluntary preempt for x86
->     
->     The #ifdef CONFIG_PREEMPT is both not needed and wrong.
->     
->     Its not required because asm/preempt.h should provide
->     {set,clear}_preempt_need_resched() regardless and its wrong because
->     for voluntary preempt we still rely on PREEMPT_NEED_RESCHED.
->     
->     Reported-and-Tested-by: Markus Trippelsdorf <markus@trippelsdorf.de>
->     Fixes: 8cb75e0c4ec9 ("sched/preempt: Fix up missed PREEMPT_NEED_RESCHED folding")
->     Signed-off-by: Peter Zijlstra <peterz@infradead.org>
->     Cc: Dipankar Sarma <dipankar@in.ibm.com>
->     Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
->     Link: http://lkml.kernel.org/r/20140122102435.GH31570@twins.programming.kicks-ass.net
->     Signed-off-by: Ingo Molnar <mingo@kernel.org>
-> 
-> diff --git a/include/linux/preempt.h b/include/linux/preempt.h
-> index 59749fc..de83b4e 100644
-> --- a/include/linux/preempt.h
-> +++ b/include/linux/preempt.h
-> @@ -134,7 +134,6 @@ do { \
->  #undef preempt_check_resched
->  #endif
->  
-> -#ifdef CONFIG_PREEMPT
->  #define preempt_set_need_resched() \
->  do { \
->  	set_preempt_need_resched(); \
-> @@ -144,10 +143,6 @@ do { \
->  	if (tif_need_resched()) \
->  		set_preempt_need_resched(); \
->  } while (0)
-> -#else
-> -#define preempt_set_need_resched() do { } while (0)
-> -#define preempt_fold_need_resched() do { } while (0)
-> -#endif
->  
->  #ifdef CONFIG_PREEMPT_NOTIFIERS
->  
