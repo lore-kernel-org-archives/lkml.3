@@ -1,85 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754681AbaBFO0Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 09:26:16 -0500
-Received: from mga01.intel.com ([192.55.52.88]:64420 "EHLO mga01.intel.com"
+	id S1752641AbaBFOJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 09:09:28 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:44435 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754308AbaBFO0N convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 09:26:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,793,1384329600"; 
-   d="scan'208";a="476986346"
-From: "Dorau, Lukasz" <lukasz.dorau@intel.com>
-To: Alexander Gordeev <agordeev@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "Patelczyk, Maciej" <maciej.patelczyk@intel.com>,
-        "Jiang, Dave" <dave.jiang@intel.com>,
-        intel-linux-scu <intel-linux-scu@intel.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "Paszkiewicz, Artur" <artur.paszkiewicz@intel.com>
-Subject: RE: [PATCH 10/22] isci: Use pci_enable_msix_range()
-Thread-Topic: [PATCH 10/22] isci: Use pci_enable_msix_range()
-Thread-Index: AQHPIZqCU9rXZ1v8f0OZ8A3K/z5yPpqoSh8w
-Date: Thu, 6 Feb 2014 14:25:13 +0000
-Message-ID: <D9FFE20C522965449E182ACE73889AEB1A6C7012@IRSMSX105.ger.corp.intel.com>
-References: <cover.1391512266.git.agordeev@redhat.com>
- <ff99281291c3189da00a7d8150da326808a723ea.1391512266.git.agordeev@redhat.com>
-In-Reply-To: <ff99281291c3189da00a7d8150da326808a723ea.1391512266.git.agordeev@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [163.33.239.182]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752450AbaBFOJ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 09:09:27 -0500
+Message-ID: <52F3975B.2080806@ti.com>
+Date: Thu, 6 Feb 2014 16:08:27 +0200
+From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: <santosh.shilimkar@ti.com>, <rob@landley.net>, <linux@arm.linux.org.uk>,
+        <galak@codeaurora.org>, <robh+dt@kernel.org>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
+        <daniel.lezcano@linaro.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <grygorii.strashko@ti.com>
+Subject: Re: [PATCH v5 1/3] clocksource: timer-keystone: introduce clocksource
+ driver for Keystone
+References: <1391608060-10760-1-git-send-email-ivan.khoronzhuk@ti.com> <1391608060-10760-2-git-send-email-ivan.khoronzhuk@ti.com> <alpine.DEB.2.02.1402052123560.24986@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1402052123560.24986@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, February 04, 2014 12:17 PM Alexander Gordeev <agordeev@redhat.com> wrote:
-> As result of deprecation of MSI-X/MSI enablement functions
-> pci_enable_msix() and pci_enable_msi_block() all drivers
-> using these two interfaces need to be updated to use the
-> new pci_enable_msi_range() and pci_enable_msix_range()
-> interfaces.
-> 
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> Cc: Lukasz Dorau <lukasz.dorau@intel.com>
-> Cc: Maciej Patelczyk <maciej.patelczyk@intel.com>
-> Cc: Dave Jiang <dave.jiang@intel.com>
-> Cc: intel-linux-scu@intel.com
-> Cc: linux-scsi@vger.kernel.org
-> Cc: linux-pci@vger.kernel.org
-> ---
->  drivers/scsi/isci/init.c |    5 +++--
->  1 files changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/scsi/isci/init.c b/drivers/scsi/isci/init.c
-> index d25d0d8..b99f307 100644
-> --- a/drivers/scsi/isci/init.c
-> +++ b/drivers/scsi/isci/init.c
-> @@ -356,8 +356,9 @@ static int isci_setup_interrupts(struct pci_dev *pdev)
->  	for (i = 0; i < num_msix; i++)
->  		pci_info->msix_entries[i].entry = i;
-> 
-> -	err = pci_enable_msix(pdev, pci_info->msix_entries, num_msix);
-> -	if (err)
-> +	err = pci_enable_msix_range(pdev,
-> +				    pci_info->msix_entries, num_msix, num_msix);
-> +	if (err < 0)
->  		goto intx;
-> 
->  	for (i = 0; i < num_msix; i++) {
-> --
-> 1.7.7.6
 
-Looks fine.
+On 02/05/2014 10:27 PM, Thomas Gleixner wrote:
+> On Wed, 5 Feb 2014, Ivan Khoronzhuk wrote:
+>> +	/* here we have to be sure the timer has been disabled */
+> Sigh. This is not a proper explanation for a barrier, really. You want
+> to explain what it serializes against what. i.e. you want to explain
+> why you are using the relaxed functions and avoid a separate non
+> relaxed variant in favour of an explicit barrier.
+>
+>> +	__iowmb();
+> The proper thing is to have an inline function key_stone_barrier() and
+> a full explanation of the issue in exactly that place instead of
+> handwaving comments here and there.
+>
+> Thanks,
+>
+> 	tglx
 
-Acked-by: Lukasz Dorau <lukasz.dorau@intel.com>
+I can add new inline function like:
 
-Thanks,
-Lukasz
+/**
+  * keystone_timer_barrier: write memory barrier
+  * use explicit barrier to avoid using readl/writel non relaxed function
+  * variants, because in our case relaxed variants hide the true places
+  * where barrier is needed.
+  */
+static inline void keystone_timer_barrier(void)
+{
+     __iowmb();
+}
+
+and use it where it is needed.
+Are you OK with it?
+
+And I propose to leave comments under the barriers in order to be
+able to understand why they are used.
+
+-- 
+Regards,
+Ivan Khoronzhuk
 
