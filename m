@@ -1,71 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754322AbaBFAv3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 19:51:29 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:47778 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752935AbaBFAv2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 19:51:28 -0500
-Message-ID: <52F2DC6F.8070005@ti.com>
-Date: Wed, 5 Feb 2014 19:50:55 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1754366AbaBFAyO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 19:54:14 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:44404 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751881AbaBFAyM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 19:54:12 -0500
+Date: Wed, 5 Feb 2014 16:54:06 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+Cc: Mark Brown <broonie@kernel.org>, Lee Jones <lee.jones@linaro.org>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>
+Subject: Re: [PATCH 0/8] da9055: Driver initialisation fixes, add DT support
+Message-ID: <20140206005406.GC1308@roeck-us.net>
+References: <cover.1391614923.git.Adam.Thomson.Opensource@diasemi.com>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        "Strashko, Grygorii" <grygorii.strashko@ti.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] ARM: mm: Fix the memblock allocation for LPAE machines
-References: <1391285687-20534-1-git-send-email-santosh.shilimkar@ti.com> <52F2CBC0.3030305@ti.com> <20140205234815.GU26684@n2100.arm.linux.org.uk>
-In-Reply-To: <20140205234815.GU26684@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1391614923.git.Adam.Thomson.Opensource@diasemi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 05 February 2014 06:48 PM, Russell King - ARM Linux wrote:
-> On Wed, Feb 05, 2014 at 06:39:44PM -0500, Santosh Shilimkar wrote:
->> Russell,
->>
->> On Saturday 01 February 2014 03:14 PM, Santosh Shilimkar wrote:
->>> Commit ad6492b8 added much needed memblock_virt_alloc_low() and further
->>> commit 07bacb3 {memblock, bootmem: restore goal for alloc_low} fixed the
->>> issue with low memory limit thansk to Yinghai. But even after all these fixes,
->>> there is still one case where the limit check done with ARCH_LOW_ADDRESS_LIMIT
->>> for low memory fails. Russell pointed out the issue with 32 bit LPAE machines
->>> in below thread.
->>> 	https://lkml.org/lkml/2014/1/28/364
->>>
->>> Since on some LPAE machines where memory start address is beyond 4GB,
->>> the low memory marker in memblock will be set to default
->>> ARCH_LOW_ADDRESS_LIMIT which is wrong. We can fix this by letting
->>> architectures set the ARCH_LOW_ADDRESS_LIMIT using another export
->>> similar to memblock_set_current_limit() but am not sure whether
->>> its worth the trouble. Tell me if you think otherwise.
->>>
->>> Rather am just trying to fix that one broken case using memblock_virt_alloc()
->>> in setup code since the memblock.current_limit is updated appropriately
->>> makes it work on all ARM 32 bit machines.
->>>
->>> Cc: Yinghai Lu <yinghai@kernel.org>
->>> Cc: Russell King <linux@arm.linux.org.uk>
->>> Cc: Strashko, Grygorii <grygorii.strashko@ti.com>
->>> Cc: Andrew Morton <akpm@linux-foundation.org>
->>> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
->>> ---
->> Whats you say here ? We should get the fix for the
->> issue. If you are ok, I can drop the patch in patch system.
+On Wed, Feb 05, 2014 at 05:48:28PM +0000, Adam Thomson wrote:
+> This patch series provides the following updates for DA9055 drivers:
 > 
-> Is this still an issue, or has Tejun fixed it by some other means?  I've not
-> noticed anything being broken at the moment.
-> 
-> Can you confirm whether we still have an issue without this patch please?
-> 
-Fixes for all cases exist except 'LPAE + memory start beyond 4 GB'.
-This case is still broken and  hence I posted the $subject patch.
+>  - Fixes an issue with da9055 driver initialisation (conflicting device ids) of
+>    PMIC (MFD) and CODEC drivers.
+>  - Add initial DT support for DA9055 related drivers, including binding
+>    documentation.
+>  - Remove conflicting use of platform_get_irq_byname() in driver probes.
 
-Regards,
-Santosh
+Adam,
 
+You don't really explain what the problem actually is. Can you elaborate ?
+
+Also, I have been using platform_get_irq() to get the interrupt resource
+in mfd client drivers and similar situations. Wouldn't this work here as well
+if you don't want to use platform_get_irq_byname() ?
+
+Thanks,
+Guenter
+
+>  - Remove unnecessary resource structures for MFD cells as a result of removing
+>    use of platform_get_irq_byname().
+> 
+> Adam Thomson (8):
+>   ASoC: da9055: Fix device registration of PMIC and CODEC devices
+>   ASoC: da9055: Add DT support for CODEC
+>   mfd: da9055: Add DT support for PMIC
+>   regulator: da9055: Add DT support
+>   onkey: da9055: Remove use of platform_get_irq_byname()
+>   hwmon: da9055: Remove use of platform_get_irq_byname()
+>   rtc: da9055: Remove use of platform_get_irq_byname()
+>   mfd: da9055: Remove unused resource structures for mfd cells.
+> 
+>  Documentation/devicetree/bindings/mfd/da9055.txt   |   73 ++++++++++++++++++++
+>  Documentation/devicetree/bindings/sound/da9055.txt |   22 ++++++
+>  drivers/hwmon/da9055-hwmon.c                       |    7 +--
+>  drivers/input/misc/da9055_onkey.c                  |    9 +--
+>  drivers/mfd/da9055-core.c                          |   46 ------------
+>  drivers/mfd/da9055-i2c.c                           |   20 +++++-
+>  drivers/regulator/da9055-regulator.c               |   59 ++++++++++++++--
+>  drivers/rtc/rtc-da9055.c                           |    3 +-
+>  sound/soc/codecs/da9055.c                          |   19 +++++-
+>  9 files changed, 188 insertions(+), 70 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/mfd/da9055.txt
+>  create mode 100644 Documentation/devicetree/bindings/sound/da9055.txt
+> 
+> 
