@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751959AbaBFFmO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 00:42:14 -0500
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:36614 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750706AbaBFFmN (ORCPT
+	id S1752147AbaBFFoQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 00:44:16 -0500
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:54319 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751361AbaBFFoO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 00:42:13 -0500
-Date: Thu, 6 Feb 2014 06:42:09 +0100
+	Thu, 6 Feb 2014 00:44:14 -0500
+Date: Thu, 6 Feb 2014 06:44:11 +0100
 From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, Peter Anvin <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ning Qu <quning@google.com>
-Subject: Re: [RFC] de-asmify the x86-64 system call slowpath
-Message-ID: <20140206054209.GA18884@gmail.com>
-References: <CA+55aFzNxTtvNX7zqBELHs489e5mEx1sM=i=red=aQAGviXrNw@mail.gmail.com>
- <CA+55aFxpBkTn3LvSzxFj7ZoxuY=Rrg0OoAVuk5dK-ZLsO8kk4A@mail.gmail.com>
- <20140206005534.GA27848@node.dhcp.inet.fi>
- <CA+55aFx70seh4VD+=ZKHrjTCrinG0Hq3=X6ygCeOeuNCSG8n8Q@mail.gmail.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Bin Gao <bin.gao@linux.intel.com>, linux-kernel@vger.kernel.org,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Bin Gao <bin.gao@intel.com>
+Subject: Re: [PATCH v2] x86, tsc: Add missing Baytrail frequency to the table
+Message-ID: <20140206054410.GB18884@gmail.com>
+References: <20140123150912.7ee822a0@alan.etchedpixels.co.uk>
+ <1390553196-15346-1-git-send-email-mika.westerberg@linux.intel.com>
+ <4460FA1017EA3844B646E90DA4E984057D5A4E9F@ORSMSX103.amr.corp.intel.com>
+ <20140125090923.GA106810@bin.fm.intel.com>
+ <20140127102002.GT18029@intel.com>
+ <20140128120407.GB18029@intel.com>
+ <20140129214754.GA102071@bin.fm.intel.com>
+ <20140204132831.GA18029@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFx70seh4VD+=ZKHrjTCrinG0Hq3=X6ygCeOeuNCSG8n8Q@mail.gmail.com>
+In-Reply-To: <20140204132831.GA18029@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+* Mika Westerberg <mika.westerberg@linux.intel.com> wrote:
 
-> [...]
+> On Wed, Jan 29, 2014 at 01:47:54PM -0800, Bin Gao wrote:
+> > On Tue, Jan 28, 2014 at 02:04:07PM +0200, Mika Westerberg wrote:
+> > > Actually it does not work. I had the fallback path still in the patch when
+> > > I tried.
+> > 
+> > Let's merge the ptach v2 then(continue on msr calibration retuning 0).
+> > All supported SoCs now have the correct frequency ID coding
+> > so continuing on non-PIC SoCs has very very small possibility.
 > 
-> No, I was thinking "try to optimistically map 8 adjacent aligned 
-> pages at a time" - that would be the same cacheline in the page 
-> tables, so it would be fairly cheap if we couple it with a 
-> gang-lookup of the pages in the page cache (or, for anonymous pages, 
-> by just optimistically trying to do an order-3 page allocation, and 
-> if that works, just map the 32kB allocation you got as eight 
-> individual pages).
-> 
-> I know it's been discussed at some point, and I even have a dim 
-> memory of having seen some really ugly patches.
+> x86 maintainers, any comments on this patch (v2)? Without the patch some
+> Baytrail systems fail to boot 3.14-rc1.
 
-I have a dim memory of having written such group-prefaulting patches 
-myself a decade ago or so - IIRC the main problem was that at that 
-time we never found a common load where it really mattered, and it was 
-easy to spend more time doing all this extra work and not see the 
-prefaulted pages used.
-
-But the cost/benefit balance has indeed changed so IMO it's worth a 
-try.
+It should be split in two: first a patch to fix the divide by zero 
+bug, second the Baytrail addition.
 
 Thanks,
 
