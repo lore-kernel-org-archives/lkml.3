@@ -1,309 +1,454 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757090AbaBFVza (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 16:55:30 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:48967 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753916AbaBFVz2 (ORCPT
+	id S1756971AbaBFWFF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 17:05:05 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:19083 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753432AbaBFWFC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 16:55:28 -0500
-Date: Thu, 6 Feb 2014 13:55:21 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Torvald Riegel <triegel@redhat.com>
-Cc: Will Deacon <will.deacon@arm.com>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-Message-ID: <20140206215521.GI4250@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140206134825.305510953@infradead.org>
- <21984.1391711149@warthog.procyon.org.uk>
- <52F3DA85.1060209@arm.com>
- <20140206185910.GE27276@mudshark.cambridge.arm.com>
- <1391720965.23421.3884.camel@triegel.csb>
+	Thu, 6 Feb 2014 17:05:02 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 06 Feb 2014 14:03:28 -0800
+From: Andrew Chew <achew@nvidia.com>
+To: <linux@roeck-us.net>, <wim@iguana.be>, <rob@landley.net>,
+        <swarren@wwwdotorg.org>, <thierry.reding@gmail.com>,
+        <grant.likely@linaro.org>, <robh+dt@kernel.org>,
+        <abrestic@chromium.org>, <dgreid@chromium.org>, <katierh@chromium.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
+        <linux-watchdog@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        Andrew Chew <achew@nvidia.com>
+Subject: [PATCH v4 1/1] watchdog: Add tegra watchdog
+Date: Thu, 6 Feb 2014 14:05:56 -0800
+Message-ID: <1391724356-17034-1-git-send-email-achew@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1391720965.23421.3884.camel@triegel.csb>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14020621-8236-0000-0000-000006C34720
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 06, 2014 at 10:09:25PM +0100, Torvald Riegel wrote:
-> On Thu, 2014-02-06 at 18:59 +0000, Will Deacon wrote:
-> > On Thu, Feb 06, 2014 at 06:55:01PM +0000, Ramana Radhakrishnan wrote:
-> > > On 02/06/14 18:25, David Howells wrote:
-> > > >
-> > > > Is it worth considering a move towards using C11 atomics and barriers and
-> > > > compiler intrinsics inside the kernel?  The compiler _ought_ to be able to do
-> > > > these.
-> > > 
-> > > 
-> > > It sounds interesting to me, if we can make it work properly and 
-> > > reliably. + gcc@gcc.gnu.org for others in the GCC community to chip in.
-> > 
-> > Given my (albeit limited) experience playing with the C11 spec and GCC, I
-> > really think this is a bad idea for the kernel.
-> 
-> I'm not going to comment on what's best for the kernel (simply because I
-> don't work on it), but I disagree with several of your statements.
-> 
-> > It seems that nobody really
-> > agrees on exactly how the C11 atomics map to real architectural
-> > instructions on anything but the trivial architectures.
-> 
-> There's certainly different ways to implement the memory model and those
-> have to be specified elsewhere, but I don't see how this differs much
-> from other things specified in the ABI(s) for each architecture.
-> 
-> > For example, should
-> > the following code fire the assert?
-> 
-> I don't see how your example (which is about what the language requires
-> or not) relates to the statement about the mapping above?
-> 
-> > 
-> > extern atomic<int> foo, bar, baz;
-> > 
-> > void thread1(void)
-> > {
-> > 	foo.store(42, memory_order_relaxed);
-> > 	bar.fetch_add(1, memory_order_seq_cst);
-> > 	baz.store(42, memory_order_relaxed);
-> > }
-> > 
-> > void thread2(void)
-> > {
-> > 	while (baz.load(memory_order_seq_cst) != 42) {
-> > 		/* do nothing */
-> > 	}
-> > 
-> > 	assert(foo.load(memory_order_seq_cst) == 42);
-> > }
-> > 
-> 
-> It's a good example.  My first gut feeling was that the assertion should
-> never fire, but that was wrong because (as I seem to usually forget) the
-> seq-cst total order is just a constraint but doesn't itself contribute
-> to synchronizes-with -- but this is different for seq-cst fences.
+Add a driver for the hardware watchdogs in NVIDIA Tegra SoCs (Tegra30 and
+later).  This driver will configure one watchdog timer that will reset the
+system in the case of a watchdog timeout.
 
->From what I can see, Will's point is that mapping the Linux kernel's
-atomic_add_return() primitive into fetch_add() does not work because
-atomic_add_return()'s ordering properties require that the assert()
-never fire.
+This driver binds to the nvidia,tegra30-timer device node and gets its
+register base from there.
 
-Augmenting the fetch_add() with a seq_cst fence would work on many
-architectures, but not for all similar examples.  The reason is that
-the C11 seq_cst fence is deliberately weak compared to ARM's dmb or
-Power's sync.  To your point, I believe that it would make the above
-example work, but there are some IRIW-like examples that would fail
-according to the standard (though a number of specific implementations
-would in fact work correctly).
+Signed-off-by: Andrew Chew <achew@nvidia.com>
+---
+Changes from v3:
 
-> > To answer that question, you need to go and look at the definitions of
-> > synchronises-with, happens-before, dependency_ordered_before and a whole
-> > pile of vaguely written waffle to realise that you don't know.
-> 
-> Are you familiar with the formalization of the C11/C++11 model by Batty
-> et al.?
-> http://www.cl.cam.ac.uk/~mjb220/popl085ap-sewell.pdf
-> http://www.cl.cam.ac.uk/~mjb220/n3132.pdf
-> 
-> They also have a nice tool that can run condensed examples and show you
-> all allowed (and forbidden) executions (it runs in the browser, so is
-> slow for larger examples), including nice annotated graphs for those:
-> http://svr-pes20-cppmem.cl.cam.ac.uk/cppmem/
-> 
-> It requires somewhat special syntax, but the following, which should be
-> equivalent to your example above, runs just fine:
-> 
-> int main() {
->   atomic_int foo = 0; 
->   atomic_int bar = 0; 
->   atomic_int baz = 0; 
->   {{{ {
->         foo.store(42, memory_order_relaxed);
->         bar.store(1, memory_order_seq_cst);
->         baz.store(42, memory_order_relaxed);
->       }
->   ||| {
->         r1=baz.load(memory_order_seq_cst).readsvalue(42);
->         r2=foo.load(memory_order_seq_cst).readsvalue(0);
->       }
->   }}};
->   return 0; }
-> 
-> That yields 3 consistent executions for me, and likewise if the last
-> readsvalue() is using 42 as argument.
-> 
-> If you add a "fence(memory_order_seq_cst);" after the store to foo, the
-> program can't observe != 42 for foo anymore, because the seq-cst fence
-> is adding a synchronizes-with edge via the baz reads-from.
-> 
-> I think this is a really neat tool, and very helpful to answer such
-> questions as in your example.
+Applied Cuenter Roeck <linux@roeck-us.net>'s comments.  In particular,
+since tegra_wdt_start() and tegra_wdt_stop() always return success, skip
+error checking for these calls.  Also, removed some unnecessarily verbose
+logging around which watchdog and timer ID is being used.  Fixed typo
+regarding the ref and unref callback setup.  Removed miscdev stuff.
 
-Hmmm...  The tool doesn't seem to like fetch_add().  But let's assume that
-your substitution of store() for fetch_add() is correct.  Then this shows
-that we cannot substitute fetch_add() for atomic_add_return().
+Cuenter was right in that the watchdog doesn't need to be stopped prior
+to changing the timeout.  It is sufficient to just reprogram the watchdog
+with the new timeout.
 
-Adding atomic_thread_fence(memory_order_seq_cst) after the bar.store
-gives me "192 executions; no consistent", so perhaps there is hope for
-augmenting the fetch_add() with a fence.  Except, as noted above, for
-any number of IRIW-like examples such as the following:
+Tested on T124.
 
-int main() {
-  atomic_int x = 0; atomic_int y = 0;
-  {{{ x.store(1, memory_order_release);
-  ||| y.store(1, memory_order_release);
-  ||| { r1=x.load(memory_order_relaxed).readsvalue(1);
-        atomic_thread_fence(memory_order_seq_cst);
-        r2=y.load(memory_order_relaxed).readsvalue(0); }
-  ||| { r3=y.load(memory_order_relaxed).readsvalue(1);
-        atomic_thread_fence(memory_order_seq_cst);
-        r4=x.load(memory_order_relaxed).readsvalue(0); }
-  }}};
-  return 0; }
+To do a simple test, "echo 0 > /dev/watchdog0".  The target will reset when
+two minutes (the default heartbeat interval) have expired since the last
+write to /dev/watchdog0.
 
-Adding a seq_cst store to a new variable z between each pair of reads
-seems to choke cppmem:
+ Documentation/watchdog/watchdog-parameters.txt |   5 +
+ drivers/watchdog/Kconfig                       |  11 +
+ drivers/watchdog/Makefile                      |   1 +
+ drivers/watchdog/tegra_wdt.c                   | 332 +++++++++++++++++++++++++
+ 4 files changed, 349 insertions(+)
+ create mode 100644 drivers/watchdog/tegra_wdt.c
 
-int main() {
-  atomic_int x = 0; atomic_int y = 0; atomic_int z = 0
-  {{{ x.store(1, memory_order_release);
-  ||| y.store(1, memory_order_release);
-  ||| { r1=x.load(memory_order_relaxed).readsvalue(1);
-        z.store(1, memory_order_seq_cst);
-        atomic_thread_fence(memory_order_seq_cst);
-        r2=y.load(memory_order_relaxed).readsvalue(0); }
-  ||| { r3=y.load(memory_order_relaxed).readsvalue(1);
-        z.store(1, memory_order_seq_cst);
-        atomic_thread_fence(memory_order_seq_cst);
-        r4=x.load(memory_order_relaxed).readsvalue(0); }
-  }}};
-  return 0; }
-
-Ah, it did eventually finish with "576 executions; 6 consistent, all
-race free".  So this is an example where C11 has a hard time modeling
-the Linux kernel's atomic_add_return().  Therefore, use of C11 atomics
-to implement Linux kernel atomic operations requires knowledge of the
-underlying architecture and the compiler's implementation, as was noted
-earlier in this thread.
-
-> > Certainly,
-> > the code that arm64 GCC currently spits out would allow the assertion to fire
-> > on some microarchitectures.
-> > 
-> > There are also so many ways to blow your head off it's untrue. For example,
-> > cmpxchg takes a separate memory model parameter for failure and success, but
-> > then there are restrictions on the sets you can use for each.
-> 
-> That's in there for the architectures without a single-instruction
-> CAS/cmpxchg, I believe.
-
-Yep.  The Linux kernel currently requires the rough equivalent of
-memory_order_seq_cst for both paths, but there is some chance that the
-failure-path requirement might be weakened.
-
-> > It's not hard
-> > to find well-known memory-ordering experts shouting "Just use
-> > memory_model_seq_cst for everything, it's too hard otherwise".
-> 
-> Everyone I've heard saying this meant this as advice to people new to
-> synchronization or just dealing infrequently with it.  The advice is the
-> simple and safe fallback, and I don't think it's meant as an
-> acknowledgment that the model itself would be too hard.  If the
-> language's memory model is supposed to represent weak HW memory models
-> to at least some extent, there's only so much you can do in terms of
-> keeping it simple.  If all architectures had x86-like models, the
-> language's model would certainly be simpler... :)
-
-That is said a lot, but there was a recent Linux-kernel example that
-turned out to be quite hard to prove for x86.  ;-)
-
-> > Then there's
-> > the fun of load-consume vs load-acquire (arm64 GCC completely ignores consume
-> > atm and optimises all of the data dependencies away)
-> 
-> AFAIK consume memory order was added to model Power/ARM-specific
-> behavior.  I agree that the way the standard specifies how dependencies
-> are to be preserved is kind of vague (as far as I understand it).  See
-> GCC PR 59448.
-
-This one? http://gcc.gnu.org/ml/gcc-bugs/2013-12/msg01083.html
-
-That does indeed look to match what Will was calling out as a problem.
-
-> > as well as the definition
-> > of "data races", which seem to be used as an excuse to miscompile a program
-> > at the earliest opportunity.
-> 
-> No.  The purpose of this is to *not disallow* every optimization on
-> non-synchronizing code.  Due to the assumption of data-race-free
-> programs, the compiler can assume a sequential code sequence when no
-> atomics are involved (and thus, keep applying optimizations for
-> sequential code).
-> 
-> Or is there something particular that you dislike about the
-> specification of data races?
-
-Cut Will a break, Torvald!  ;-)
-
-> > Trying to introduce system concepts (writes to devices, interrupts,
-> > non-coherent agents) into this mess is going to be an uphill battle IMHO.
-> 
-> That might very well be true.
-> 
-> OTOH, if you whould need to model this uniformly across different
-> architectures (ie, so that there is a intra-kernel-portable abstraction
-> for those system concepts), you might as well try doing this by
-> extending the C11/C++11 model.  Maybe that will not be successful or not
-> really a good fit, though, but at least then it's clear why that's the
-> case.
-
-I would guess that Linux-kernel use of C11 atomics will be selected or not
-on an architecture-specific for the foreseeable future.
-
-> > I'd
-> > just rather stick to the semantics we have and the asm volatile barriers.
-> > 
-> > That's not to say I don't there's no room for improvement in what we have
-> > in the kernel. Certainly, I'd welcome allowing more relaxed operations on
-> > architectures that support them, but it needs to be something that at least
-> > the different architecture maintainers can understand how to implement
-> > efficiently behind an uncomplicated interface. I don't think that interface is
-> > C11.
-> 
-> IMHO, one thing worth considering is that for C/C++, the C11/C++11 is
-> the only memory model that has widespread support.  So, even though it's
-> a fairly weak memory model (unless you go for the "only seq-cst"
-> beginners advice) and thus comes with a higher complexity, this model is
-> what likely most people will be familiar with over time.  Deviating from
-> the "standard" model can have valid reasons, but it also has a cost in
-> that new contributors are more likely to be familiar with the "standard"
-> model.
-> 
-> Note that I won't claim that the C11/C++11 model is perfect -- there are
-> a few rough edges there (e.g., the forward progress guarantees are (or
-> used to be) a little coarse for my taste), and consume vs. dependencies
-> worries me as well.  But, IMHO, overall it's the best C/C++ language
-> model we have.
-
-I could be wrong, but I strongly suspect that in the near term,
-any memory-model migration of the 15M+ LoC Linux-kernel code base
-will be incremental in nature.  Especially if the C/C++ committee
-insists on strengthening memory_order_relaxed.  :-/
-
-							Thanx, Paul
+diff --git a/Documentation/watchdog/watchdog-parameters.txt b/Documentation/watchdog/watchdog-parameters.txt
+index f9492fe..b39f355 100644
+--- a/Documentation/watchdog/watchdog-parameters.txt
++++ b/Documentation/watchdog/watchdog-parameters.txt
+@@ -325,6 +325,11 @@ soft_noboot: Softdog action, set to 1 to ignore reboots, 0 to reboot
+ stmp3xxx_wdt:
+ heartbeat: Watchdog heartbeat period in seconds from 1 to 4194304, default 19
+ -------------------------------------------------
++tegra_wdt:
++heartbeat: Watchdog heartbeats in seconds. (default = 120)
++nowayout: Watchdog cannot be stopped once started
++	(default=kernel config parameter)
++-------------------------------------------------
+ ts72xx_wdt:
+ timeout: Watchdog timeout in seconds. (1 <= timeout <= 8, default=8)
+ nowayout: Disable watchdog shutdown on close
+diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+index 4c4c566..3aae2da 100644
+--- a/drivers/watchdog/Kconfig
++++ b/drivers/watchdog/Kconfig
+@@ -420,6 +420,17 @@ config SIRFSOC_WATCHDOG
+ 	  Support for CSR SiRFprimaII and SiRFatlasVI watchdog. When
+ 	  the watchdog triggers the system will be reset.
+ 
++config TEGRA_WATCHDOG
++	tristate "Tegra watchdog"
++	depends on ARCH_TEGRA || COMPILE_TEST
++	select WATCHDOG_CORE
++	help
++	  Say Y here to include support for the watchdog timer
++	  embedded in NVIDIA Tegra SoCs.
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called tegra_wdt.
++
+ # AVR32 Architecture
+ 
+ config AT32AP700X_WDT
+diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
+index 985a66c..1b5f3d5 100644
+--- a/drivers/watchdog/Makefile
++++ b/drivers/watchdog/Makefile
+@@ -58,6 +58,7 @@ obj-$(CONFIG_BCM2835_WDT) += bcm2835_wdt.o
+ obj-$(CONFIG_MOXART_WDT) += moxart_wdt.o
+ obj-$(CONFIG_SIRFSOC_WATCHDOG) += sirfsoc_wdt.o
+ obj-$(CONFIG_BCM_KONA_WDT) += bcm_kona_wdt.o
++obj-$(CONFIG_TEGRA_WATCHDOG) += tegra_wdt.o
+ 
+ # AVR32 Architecture
+ obj-$(CONFIG_AT32AP700X_WDT) += at32ap700x_wdt.o
+diff --git a/drivers/watchdog/tegra_wdt.c b/drivers/watchdog/tegra_wdt.c
+new file mode 100644
+index 0000000..1e7bdea
+--- /dev/null
++++ b/drivers/watchdog/tegra_wdt.c
+@@ -0,0 +1,332 @@
++/*
++ * Copyright (c) 2014, NVIDIA CORPORATION.  All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/interrupt.h>
++#include <linux/io.h>
++#include <linux/of.h>
++#include <linux/platform_device.h>
++#include <linux/watchdog.h>
++
++/* minimum and maximum watchdog trigger timeout, in seconds */
++#define MIN_WDT_TIMEOUT			1
++#define MAX_WDT_TIMEOUT			255
++
++/*
++ * Base of the WDT registers, from the timer base address.  There are
++ * actually 5 watchdogs that can be configured (by pairing with an available
++ * timer), at bases 0x100 + (WDT ID) * 0x20, where WDT ID is 0 through 4.
++ * This driver only configures the first watchdog (WDT ID 0).
++ */
++#define WDT_BASE			0x100
++#define WDT_ID				0
++
++/*
++ * Register base of the timer that's selected for pairing with the watchdog.
++ * This driver arbitrarily uses timer 5, which is currently unused by
++ * other drivers (in particular, the Tegra clocksource driver).  If this
++ * needs to change, take care that the new timer is not used by the
++ * clocksource driver.
++ */
++#define WDT_TIMER_BASE			0x60
++#define WDT_TIMER_ID			5
++
++/* WDT registers */
++#define WDT_CFG				0x0
++#define WDT_CFG_PERIOD_SHIFT		4
++#define WDT_CFG_PERIOD_MASK		0xff
++#define WDT_CFG_INT_EN			(1 << 12)
++#define WDT_CFG_PMC2CAR_RST_EN		(1 << 15)
++#define WDT_STS				0x4
++#define WDT_STS_COUNT_SHIFT		4
++#define WDT_STS_COUNT_MASK		0xff
++#define WDT_STS_EXP_SHIFT		12
++#define WDT_STS_EXP_MASK		0x3
++#define WDT_CMD				0x8
++#define WDT_CMD_START_COUNTER		(1 << 0)
++#define WDT_CMD_DISABLE_COUNTER		(1 << 1)
++#define WDT_UNLOCK			(0xc)
++#define WDT_UNLOCK_PATTERN		(0xc45a << 0)
++
++/* Timer registers */
++#define TIMER_PTV			0x0
++#define TIMER_EN			(1 << 31)
++#define TIMER_PERIODIC			(1 << 30)
++
++struct tegra_wdt {
++	struct watchdog_device	wdd;
++	struct kref		kref;
++	void __iomem		*wdt_regs;
++	void __iomem		*tmr_regs;
++};
++
++#define WDT_HEARTBEAT 120
++static int heartbeat = WDT_HEARTBEAT;
++module_param(heartbeat, int, 0);
++MODULE_PARM_DESC(heartbeat,
++	"Watchdog heartbeats in seconds. (default = "
++	__MODULE_STRING(WDT_HEARTBEAT) ")");
++
++static bool nowayout = WATCHDOG_NOWAYOUT;
++module_param(nowayout, bool, 0);
++MODULE_PARM_DESC(nowayout,
++	"Watchdog cannot be stopped once started (default="
++	__MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
++
++static void tegra_wdt_release_resources(struct kref *r)
++{
++}
++
++static int tegra_wdt_start(struct watchdog_device *wdd)
++{
++	struct tegra_wdt *wdt = watchdog_get_drvdata(wdd);
++	u32 val;
++
++	/*
++	 * This thing has a fixed 1MHz clock.  Normally, we would set the
++	 * period to 1 second by writing 1000000ul, but the watchdog system
++	 * reset actually occurs on the 4th expiration of this counter,
++	 * so we set the period to 1/4 of this amount.
++	 */
++	val = 1000000ul / 4;
++	val |= (TIMER_EN | TIMER_PERIODIC);
++	writel(val, wdt->tmr_regs + TIMER_PTV);
++
++	/*
++	 * Set number of periods and start counter.
++	 *
++	 * Interrupt handler is not required for user space
++	 * WDT accesses, since the caller is responsible to ping the
++	 * WDT to reset the counter before expiration, through ioctls.
++	 */
++	val = WDT_TIMER_ID |
++	      (wdd->timeout << WDT_CFG_PERIOD_SHIFT) |
++	      WDT_CFG_PMC2CAR_RST_EN;
++	writel(val, wdt->wdt_regs + WDT_CFG);
++
++	writel(WDT_CMD_START_COUNTER, wdt->wdt_regs + WDT_CMD);
++
++	return 0;
++}
++
++static int tegra_wdt_stop(struct watchdog_device *wdd)
++{
++	struct tegra_wdt *wdt = watchdog_get_drvdata(wdd);
++
++	writel(WDT_UNLOCK_PATTERN, wdt->wdt_regs + WDT_UNLOCK);
++	writel(WDT_CMD_DISABLE_COUNTER, wdt->wdt_regs + WDT_CMD);
++	writel(0, wdt->tmr_regs + TIMER_PTV);
++
++	return 0;
++}
++
++static int tegra_wdt_ping(struct watchdog_device *wdd)
++{
++	struct tegra_wdt *wdt = watchdog_get_drvdata(wdd);
++
++	writel(WDT_CMD_START_COUNTER, wdt->wdt_regs + WDT_CMD);
++
++	return 0;
++}
++
++static int tegra_wdt_set_timeout(struct watchdog_device *wdd,
++				 unsigned int timeout)
++{
++	wdd->timeout = timeout;
++
++	if (watchdog_active(wdd))
++		return tegra_wdt_start(wdd);
++
++	return 0;
++}
++
++static unsigned int tegra_wdt_get_timeleft(struct watchdog_device *wdd)
++{
++	struct tegra_wdt *wdt = watchdog_get_drvdata(wdd);
++	u32 val;
++	int count;
++	int exp;
++
++	val = readl(wdt->wdt_regs + WDT_STS);
++
++	/* Current countdown (from timeout) */
++	count = (val >> WDT_STS_COUNT_SHIFT) & WDT_STS_COUNT_MASK;
++
++	/* Number of expirations (we are waiting for the 4th expiration) */
++	exp = (val >> WDT_STS_EXP_SHIFT) & WDT_STS_EXP_MASK;
++
++	/*
++	 * The entire thing is divided by 4 because we are ticking down 4 times
++	 * faster due to needing to wait for the 4th expiration.
++	 */
++	return (((3 - exp) * wdd->timeout) + count) / 4;
++}
++
++static void tegra_wdt_ref(struct watchdog_device *wdd)
++{
++	struct tegra_wdt *wdt = watchdog_get_drvdata(wdd);
++
++	kref_get(&wdt->kref);
++}
++
++static void tegra_wdt_unref(struct watchdog_device *wdd)
++{
++	struct tegra_wdt *wdt = watchdog_get_drvdata(wdd);
++
++	kref_put(&wdt->kref, tegra_wdt_release_resources);
++}
++
++static const struct watchdog_info tegra_wdt_info = {
++	.options	= WDIOF_SETTIMEOUT |
++			  WDIOF_MAGICCLOSE |
++			  WDIOF_KEEPALIVEPING,
++	.firmware_version = 0,
++	.identity	= "Tegra Watchdog",
++};
++
++static struct watchdog_ops tegra_wdt_ops = {
++	.owner = THIS_MODULE,
++	.start = tegra_wdt_start,
++	.stop = tegra_wdt_stop,
++	.ping = tegra_wdt_ping,
++	.set_timeout = tegra_wdt_set_timeout,
++	.get_timeleft = tegra_wdt_get_timeleft,
++	.ref = tegra_wdt_ref,
++	.unref = tegra_wdt_unref,
++};
++
++static int tegra_wdt_probe(struct platform_device *pdev)
++{
++	struct watchdog_device *wdd;
++	struct tegra_wdt *wdt;
++	struct resource *res;
++	void __iomem *regs;
++	int ret;
++
++	/* This is the timer base. */
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res) {
++		dev_err(&pdev->dev, "incorrect resources\n");
++		return -ENODEV;
++	}
++
++	regs = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(regs))
++		return PTR_ERR(regs);
++
++	/*
++	 * Allocate our watchdog driver data, which has the
++	 * struct watchdog_device nested within it.
++	 */
++	wdt = devm_kzalloc(&pdev->dev, sizeof(*wdt), GFP_KERNEL);
++	if (!wdt)
++		return -ENOMEM;
++
++	/* Initialize struct tegra_wdt. */
++	wdt->wdt_regs = regs + WDT_BASE;
++	wdt->tmr_regs = regs + WDT_TIMER_BASE;
++
++	/* Initialize struct watchdog_device. */
++	wdd = &wdt->wdd;
++	wdd->timeout = heartbeat;
++	wdd->info = &tegra_wdt_info;
++	wdd->ops = &tegra_wdt_ops;
++	wdd->min_timeout = MIN_WDT_TIMEOUT;
++	wdd->max_timeout = MAX_WDT_TIMEOUT;
++
++	watchdog_set_drvdata(wdd, wdt);
++
++	kref_init(&wdt->kref);
++
++	watchdog_set_nowayout(wdd, nowayout);
++
++	ret = watchdog_register_device(wdd);
++	if (ret) {
++		dev_err(&pdev->dev,
++			"failed to register watchdog device\n");
++		return ret;
++	}
++
++	platform_set_drvdata(pdev, wdt);
++
++	dev_info(&pdev->dev,
++		 "initialized (heartbeat = %d sec, nowayout = %d)\n",
++		 heartbeat, nowayout);
++
++	return 0;
++}
++
++static int tegra_wdt_remove(struct platform_device *pdev)
++{
++	struct tegra_wdt *wdt = platform_get_drvdata(pdev);
++
++	tegra_wdt_stop(&wdt->wdd);
++
++	watchdog_unregister_device(&wdt->wdd);
++
++	kref_put(&wdt->kref, tegra_wdt_release_resources);
++
++	dev_info(&pdev->dev, "removed wdt\n");
++
++	return 0;
++}
++
++#ifdef CONFIG_PM_SLEEP
++static int tegra_wdt_runtime_suspend(struct device *dev)
++{
++	struct tegra_wdt *wdt = dev_get_drvdata(dev);
++
++	if (watchdog_active(&wdt->wdd))
++		tegra_wdt_stop(&wdt->wdd);
++
++	return 0;
++}
++
++static int tegra_wdt_runtime_resume(struct device *dev)
++{
++	struct tegra_wdt *wdt = dev_get_drvdata(dev);
++
++	if (watchdog_active(&wdt->wdd))
++		tegra_wdt_start(&wdt->wdd);
++
++	return 0;
++}
++#endif
++
++static const struct of_device_id tegra_wdt_of_match[] = {
++	{ .compatible = "nvidia,tegra30-timer", },
++	{ },
++};
++MODULE_DEVICE_TABLE(of, tegra_wdt_of_match);
++
++static const struct dev_pm_ops tegra_wdt_pm_ops = {
++	SET_SYSTEM_SLEEP_PM_OPS(tegra_wdt_runtime_suspend,
++				tegra_wdt_runtime_resume)
++};
++
++static struct platform_driver tegra_wdt_driver = {
++	.probe		= tegra_wdt_probe,
++	.remove		= tegra_wdt_remove,
++	.driver		= {
++		.owner	= THIS_MODULE,
++		.name	= "tegra-wdt",
++		.pm	= &tegra_wdt_pm_ops,
++		.of_match_table = tegra_wdt_of_match,
++	},
++};
++module_platform_driver(tegra_wdt_driver);
++
++MODULE_AUTHOR("NVIDIA Corporation");
++MODULE_DESCRIPTION("Tegra Watchdog Driver");
++MODULE_LICENSE("GPL");
+-- 
+1.8.1.5
 
