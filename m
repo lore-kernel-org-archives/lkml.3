@@ -1,210 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757073AbaBFWQE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 17:16:04 -0500
-Received: from honeysuckle.london.02.net ([87.194.255.144]:57499 "EHLO
-	honeysuckle.london.02.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757007AbaBFWQC (ORCPT
+	id S1757116AbaBFWTU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 17:19:20 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53351 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752086AbaBFWTS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 17:16:02 -0500
-From: Mark Davies <junk@eslaf.co.uk>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Vince Weaver <vince@deater.net>, alan@lxorguk.ukuu.org.uk,
-        Ingo Molnar <mingo@kernel.org>, Stephane Eranian <eranian@google.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf,x86,p6: Add userspace RDPMC quirk for P6
-References: <20140205102718.GF3229@twins.programming.kicks-ass.net>
-	<alpine.DEB.2.02.1402051415190.16225@pianoman.cluster.toy>
-	<20140205192012.GL2936@laptop.programming.kicks-ass.net>
-	<20140205194851.GE5126@laptop.programming.kicks-ass.net>
-	<871tzgxc3y.fsf@gw.eslaf.co.uk>
-	<20140206203803.GL5002@laptop.programming.kicks-ass.net>
-Date: Thu, 06 Feb 2014 22:15:23 +0000
-In-Reply-To: <20140206203803.GL5002@laptop.programming.kicks-ass.net> (Peter
-	Zijlstra's message of "Thu, 6 Feb 2014 21:38:03 +0100")
-Message-ID: <87eh3fhoqs.fsf@gw.eslaf.co.uk>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Thu, 6 Feb 2014 17:19:18 -0500
+Date: Thu, 6 Feb 2014 14:18:24 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Johannes Weiner <hannes@cmpxchg.org>
+cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: mmotm 2014-02-05 list_lru_add lockdep splat
+In-Reply-To: <20140206164136.GC6963@cmpxchg.org>
+Message-ID: <alpine.LSU.2.11.1402061413330.27968@eggly.anvils>
+References: <alpine.LSU.2.11.1402051944210.27326@eggly.anvils> <20140206164136.GC6963@cmpxchg.org>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-That fixed it. Booted patched 3.4.78 with CONFIG_APM=y with no problem.
+On Thu, 6 Feb 2014, Johannes Weiner wrote:
+> On Wed, Feb 05, 2014 at 07:50:10PM -0800, Hugh Dickins wrote:
+> > ======================================================
+> > [ INFO: SOFTIRQ-safe -> SOFTIRQ-unsafe lock order detected ]
+> > 3.14.0-rc1-mm1 #1 Not tainted
+> > ------------------------------------------------------
+> > kswapd0/48 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
+> >  (&(&lru->node[i].lock)->rlock){+.+.-.}, at: [<ffffffff81117064>] list_lru_add+0x80/0xf4
+> > 
+> > s already holding:
+> >  (&(&mapping->tree_lock)->rlock){..-.-.}, at: [<ffffffff81108c63>] __remove_mapping+0x3b/0x12d
+> > which would create a new lock dependency:
+> >  (&(&mapping->tree_lock)->rlock){..-.-.} -> (&(&lru->node[i].lock)->rlock){+.+.-.}
+> 
+> Thanks for the report.  The first time I saw this on my own machine, I
+> misinterpreted it as a false positive (could have sworn the "possible
+> unsafe scenario" section looked different, too).
+> 
+> Looking at it again, there really is a deadlock scenario when the
+> shadow shrinker races with a page cache insertion or deletion and is
+> interrupted by the IO completion handler while holding the list_lru
+> lock:
+> 
+> >  Possible interrupt unsafe locking scenario:
+> > 
+> >        CPU0                    CPU1
+> >        ----                    ----
+> >   lock(&(&lru->node[i].lock)->rlock);
+> >                                local_irq_disable();
+> >                                lock(&(&mapping->tree_lock)->rlock);
+> >                                lock(&(&lru->node[i].lock)->rlock);
+> >   <Interrupt>
+> >     lock(&(&mapping->tree_lock)->rlock);
+> 
+> Could you please try with the following patch?
 
-dmesg contains the "Userspace RDPMC support disabled due to a CPU
-erratum" message
+Sure, that fixes it for me (with one trivial correction appended), thanks.
+But don't imagine I've given it anything as demanding as thought!
 
-"cat /sys/devices/cpu/rdpmc" gives "0"
+Hugh
 
-"echo 1 >/sys/devices/cpu/rdpmc" gives "bash: echo: write error: Unknown
-error 524" 
-
-Thanks for fixing it. How I missed the return statements in
-intel_pmu_init I don't know, probably got a bit over excited when I
-spotted what the problem was.
-
-Mark Davies
-
-On Thu, Feb 06 2014, Peter Zijlstra wrote:
-
-> On Thu, Feb 06, 2014 at 07:41:37PM +0000, Mark Davies wrote:
->> Peter
->> 
->> As I reported the problem I thought I better contribute by testing the
->> fix.
->> 
->> I took the patch below and managed to change the 3.4.78 code to match
->> and tried to boot my Pentium Pro system but it hung as before. After
->> some investigation I discovered the quirk is not being run, in fact no
->> quirks were being run in init_hw_perf_events as x86_pmu.quirks was NULL.
->> 
->> The problem as far as I can see is that the quirk is added to x86_pmu in
->> p6_pmu_init but then x86_pmu is reassigned at the end of that function
->> (x86_pmu = p6_pmu) resetting x86_pmu.quirks to NULL.
->
-> Right so far.
->
->> x86_pmu looks like
->> it is reassigned again in intel_pmu_init to either core_pmu or intel_pmu
->> after the call to p6_pmu_init so I am not sure which x86_pmu.quirks
->> init_hw_perf_events tries to use.
->
-> Note how intel_pmu_init() does: return p6_pmu_init(), so it will never
-> get to the x86_pmu assignment for the ARCH_PERFMON drivers.
->
-> Yep, thanks for testing and you're (mostly) quite right.
->
-> We can do the copy early though, if we return -ENODEV nothing will end
-> up using the x86_pmu anyway, so it doesn't matter what lives in there.
->
+> 
 > ---
-> Subject: perf,x86,p6: Add userspace RDPMC quirk for PPro
-> From: Peter Zijlstra <peterz@infradead.org>
-> Date: Wed, 5 Feb 2014 20:48:51 +0100
->
-> PPro machines can die hard when PCE gets enabled due to a CPU erratum.
-> The safe way it so disable it by default and keep it disabled.
->
-> See erratum 26 in:
->
-> http://download.intel.com/design/archives/processors/pro/docs/24268935.pdf
->
-> Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Stephane Eranian <eranian@google.com>
-> Cc: Vince Weaver <vince@deater.net>
-> Reported-by: Mark Davies <junk@eslaf.co.uk>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> From: Johannes Weiner <hannes@cmpxchg.org>
+> Subject: [patch] mm: keep page cache radix tree nodes in check fix
+> 
+> Hugh Dickin reports the following lockdep splat:
+> 
+> ======================================================
+> [ INFO: SOFTIRQ-safe -> SOFTIRQ-unsafe lock order detected ]
+> 3.14.0-rc1-mm1 #1 Not tainted
+> ------------------------------------------------------
+> kswapd0/48 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
+>  (&(&lru->node[i].lock)->rlock){+.+.-.}, at: [<ffffffff81117064>] list_lru_add+0x80/0xf4
+> 
+> s already holding:
+>  (&(&mapping->tree_lock)->rlock){..-.-.}, at: [<ffffffff81108c63>] __remove_mapping+0x3b/0x12d
+> which would create a new lock dependency:
+>  (&(&mapping->tree_lock)->rlock){..-.-.} -> (&(&lru->node[i].lock)->rlock){+.+.-.}
+> 
+> lru->node[i].lock nests inside the mapping->tree_lock when page cache
+> insertions and deletions add or remove radix tree nodes to the shadow
+> LRU list.
+> 
+> However, paths that only hold the IRQ-unsafe lru->node[i].lock, like
+> the shadow shrinker, can be interrupted at any time by the IO
+> completion handler, which in turn acquires the mapping->tree_lock.
+> This is a simple locking order inversion and can deadlock like so:
+> 
+> CPU#0: shadow shrinker          CPU#1: page cache modification
+> lru->node[i].lock
+>                                 mapping->tree_lock
+>                                 lru->node[i].lock
+> <interrupt>
+> mapping->tree_lock
+> 
+> Make the shadow lru->node[i].lock IRQ-safe to remove the order
+> dictated by interruption.  This slightly increases the IRQ-disabled
+> section in the shadow shrinker, but it still drops all locks and
+> enables IRQ after every reclaimed shadow radix tree node.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 > ---
->  arch/x86/kernel/cpu/perf_event.c    |    6 +++-
->  arch/x86/kernel/cpu/perf_event.h    |    1 
->  arch/x86/kernel/cpu/perf_event_p6.c |   48 ++++++++++++++++++++++++------------
->  3 files changed, 39 insertions(+), 16 deletions(-)
->
-> --- a/arch/x86/kernel/cpu/perf_event.c
-> +++ b/arch/x86/kernel/cpu/perf_event.c
-> @@ -1521,6 +1521,8 @@ static int __init init_hw_perf_events(vo
->  
->  	pr_cont("%s PMU driver.\n", x86_pmu.name);
->  
-> +	x86_pmu.attr_rdpmc = 1; /* enable userspace RDPMC usage by default */
-> +
->  	for (quirk = x86_pmu.quirks; quirk; quirk = quirk->next)
->  		quirk->func();
->  
-> @@ -1534,7 +1536,6 @@ static int __init init_hw_perf_events(vo
->  		__EVENT_CONSTRAINT(0, (1ULL << x86_pmu.num_counters) - 1,
->  				   0, x86_pmu.num_counters, 0, 0);
->  
-> -	x86_pmu.attr_rdpmc = 1; /* enable userspace RDPMC usage by default */
->  	x86_pmu_format_group.attrs = x86_pmu.format_attrs;
->  
->  	if (x86_pmu.event_attrs)
-> @@ -1820,6 +1821,9 @@ static ssize_t set_attr_rdpmc(struct dev
->  	if (ret)
->  		return ret;
->  
-> +	if (x86_pmu.attr_rdpmc_broken)
-> +		return -ENOTSUPP;
-> +
->  	if (!!val != !!x86_pmu.attr_rdpmc) {
->  		x86_pmu.attr_rdpmc = !!val;
->  		smp_call_function(change_rdpmc, (void *)val, 1);
-> --- a/arch/x86/kernel/cpu/perf_event.h
-> +++ b/arch/x86/kernel/cpu/perf_event.h
-> @@ -409,6 +409,7 @@ struct x86_pmu {
->  	/*
->  	 * sysfs attrs
->  	 */
-> +	int		attr_rdpmc_broken;
->  	int		attr_rdpmc;
->  	struct attribute **format_attrs;
->  	struct attribute **event_attrs;
-> --- a/arch/x86/kernel/cpu/perf_event_p6.c
-> +++ b/arch/x86/kernel/cpu/perf_event_p6.c
-> @@ -231,31 +231,49 @@ static __initconst const struct x86_pmu
->  
+>  include/linux/list_lru.h |  6 +++++-
+>  mm/list_lru.c            |  4 +++-
+>  mm/workingset.c          | 24 ++++++++++++++++++++----
+>  3 files changed, 28 insertions(+), 6 deletions(-)
+> 
+> diff --git a/include/linux/list_lru.h b/include/linux/list_lru.h
+> index b02fc233eadd..f3434533fbf8 100644
+> --- a/include/linux/list_lru.h
+> +++ b/include/linux/list_lru.h
+> @@ -34,7 +34,11 @@ struct list_lru {
 >  };
 >  
-> +static __init void p6_pmu_rdpmc_quirk(void)
+>  void list_lru_destroy(struct list_lru *lru);
+> -int list_lru_init(struct list_lru *lru);
+> +int list_lru_init_key(struct list_lru *lru, struct lock_class_key *key);
+> +static inline int list_lru_init(struct list_lru *lru)
 > +{
-> +	if (boot_cpu_data.x86_mask < 9) {
-> +		/*
-> +		 * PPro erratum 26; fixed in stepping 9 and above.
-> +		 */
-> +		pr_warn("Userspace RDPMC support disabled due to a CPU erratum\n");
-> +		x86_pmu.attr_rdpmc_broken = 1;
-> +		x86_pmu.attr_rdpmc = 0;
-> +	}
+> +	return list_lru_init_key(lru, NULL);
 > +}
-> +
->  __init int p6_pmu_init(void)
->  {
-> +	x86_pmu = p6_pmu;
-> +
->  	switch (boot_cpu_data.x86_model) {
-> -	case 1:
-> -	case 3:  /* Pentium Pro */
-> -	case 5:
-> -	case 6:  /* Pentium II */
-> -	case 7:
-> -	case 8:
-> -	case 11: /* Pentium III */
-> -	case 9:
-> -	case 13:
-> -		/* Pentium M */
-> +	case  1: /* Pentium Pro */
-> +		x86_add_quirk(p6_pmu_rdpmc_quirk);
-> +		break;
-> +
-> +	case  3: /* Pentium II - Klamath */
-> +	case  5: /* Pentium II - Deschutes */
-> +	case  6: /* Pentium II - Mendocino */
->  		break;
-> +
-> +	case  7: /* Pentium III - Katmai */
-> +	case  8: /* Pentium III - Coppermine */
-> +	case 10: /* Pentium III Xeon */
-> +	case 11: /* Pentium III - Tualatin */
-> +		break;
-> +
-> +	case  9: /* Pentium M - Banias */
-> +	case 13: /* Pentium M - Dothan */
-> +		break;
-> +
->  	default:
-> -		pr_cont("unsupported p6 CPU model %d ",
-> -			boot_cpu_data.x86_model);
-> +		pr_cont("unsupported p6 CPU model %d ", boot_cpu_data.x86_model);
->  		return -ENODEV;
->  	}
 >  
-> -	x86_pmu = p6_pmu;
-> -
->  	memcpy(hw_cache_event_ids, p6_hw_cache_event_ids,
->  		sizeof(hw_cache_event_ids));
->  
-> -
->  	return 0;
+>  /**
+>   * list_lru_add: add an element to the lru list's tail
+> diff --git a/mm/list_lru.c b/mm/list_lru.c
+> index 7f5b73e2513b..2a5b8fd45669 100644
+> --- a/mm/list_lru.c
+> +++ b/mm/list_lru.c
+> @@ -124,7 +124,7 @@ restart:
 >  }
+>  EXPORT_SYMBOL_GPL(list_lru_walk_node);
+>  
+> -int list_lru_init(struct list_lru *lru)
+> +int list_lru_init_key(struct list_lru *lru, struct lock_class_key *key)
+>  {
+>  	int i;
+>  	size_t size = sizeof(*lru->node) * nr_node_ids;
+> @@ -136,6 +136,8 @@ int list_lru_init(struct list_lru *lru)
+>  	nodes_clear(lru->active_nodes);
+>  	for (i = 0; i < nr_node_ids; i++) {
+>  		spin_lock_init(&lru->node[i].lock);
+> +		if (key)
+> +			lockdep_set_class(&lru->node[i].lock, key);
+>  		INIT_LIST_HEAD(&lru->node[i].list);
+>  		lru->node[i].nr_items = 0;
+>  	}
+> diff --git a/mm/workingset.c b/mm/workingset.c
+> index 33429c7ddec5..20aa16754305 100644
+> --- a/mm/workingset.c
+> +++ b/mm/workingset.c
+> @@ -273,7 +273,10 @@ static unsigned long count_shadow_nodes(struct shrinker *shrinker,
+>  	unsigned long max_nodes;
+>  	unsigned long pages;
+>  
+> +	local_irq_disable();
+>  	shadow_nodes = list_lru_count_node(&workingset_shadow_nodes, sc->nid);
+> +	local_irq_enable();
+> +
+>  	pages = node_present_pages(sc->nid);
+>  	/*
+>  	 * Active cache pages are limited to 50% of memory, and shadow
+> @@ -322,7 +325,7 @@ static enum lru_status shadow_lru_isolate(struct list_head *item,
+>  	mapping = node->private_data;
+>  
+>  	/* Coming from the list, invert the lock order */
+> -	if (!spin_trylock_irq(&mapping->tree_lock)) {
+> +	if (!spin_trylock(&mapping->tree_lock)) {
+>  		spin_unlock(lru_lock);
+>  		ret = LRU_RETRY;
+>  		goto out;
+> @@ -355,10 +358,12 @@ static enum lru_status shadow_lru_isolate(struct list_head *item,
+>  	if (!__radix_tree_delete_node(&mapping->page_tree, node))
+>  		BUG();
+>  
+> -	spin_unlock_irq(&mapping->tree_lock);
+> +	spin_unlock(&mapping->tree_lock);
+>  	ret = LRU_REMOVED_RETRY;
+>  out:
+> +	local_irq_enable();
+>  	cond_resched();
+> +	local_irq_disable();
+>  	spin_lock(lru_lock);
+>  	return ret;
+>  }
+> @@ -366,8 +371,13 @@ out:
+>  static unsigned long scan_shadow_nodes(struct shrinker *shrinker,
+>  				       struct shrink_control *sc)
+>  {
+> -	return list_lru_walk_node(&workingset_shadow_nodes, sc->nid,
+> +	unsigned long ret;
+> +
+> +	local_irq_disable();
+> +	ret =  list_lru_walk_node(&workingset_shadow_nodes, sc->nid,
+>  				  shadow_lru_isolate, NULL, &sc->nr_to_scan);
+> +	local_irq_enable();
+> +	return ret;
+>  }
+>  
+>  static struct shrinker workingset_shadow_shrinker = {
+> @@ -377,11 +387,17 @@ static struct shrinker workingset_shadow_shrinker = {
+>  	.flags = SHRINKER_NUMA_AWARE,
+>  };
+>  
+> +/*
+> + * Our list_lru->lock is IRQ-safe as it nests inside the IRQ-safe
+> + * mapping->tree_lock.
+> + */
+> +static struct lock_class_key shadow_nodes_key;
+> +
+>  static int __init workingset_init(void)
+>  {
+>  	int ret;
+>  
+> -	ret = list_lru_init(&workingset_shadow_nodes);
+> +	ret = list_lru_init_key(&workingset_shadow_nodes, &shadow_nodes_key);
+>  	if (ret)
+>  		goto err;
+>  	ret = register_shrinker(&workingset_shadow_shrinker);
+> -- 
+> 1.8.5.3
+
+--- hannes/mm/list_lru.c	2014-02-06 08:50:25.104032277 -0800
++++ hughd/mm/list_lru.c	2014-02-06 08:58:36.884043965 -0800
+@@ -143,7 +143,7 @@ int list_lru_init_key(struct list_lru *l
+ 	}
+ 	return 0;
+ }
+-EXPORT_SYMBOL_GPL(list_lru_init);
++EXPORT_SYMBOL_GPL(list_lru_init_key);
+ 
+ void list_lru_destroy(struct list_lru *lru)
+ {
