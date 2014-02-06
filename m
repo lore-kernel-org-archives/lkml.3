@@ -1,66 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756786AbaBFRD7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 12:03:59 -0500
-Received: from mail-pa0-f67.google.com ([209.85.220.67]:61650 "EHLO
-	mail-pa0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752882AbaBFRD5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 12:03:57 -0500
-Date: Thu, 6 Feb 2014 09:03:56 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Jim Davis <jim.epost@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, jdelvare@suse.de,
-        lm-sensors@lm-sensors.org
-Subject: Re: randconfig build error with next-20140206, in
- drivers/hwmon/ltc2945.c
-Message-ID: <20140206170356.GB25071@roeck-us.net>
-References: <CA+r1ZhgB-DpgshX24HmzuqZPQr5wsueg4GYACy-669RmTL4xRA@mail.gmail.com>
- <52F39718.9070205@roeck-us.net>
- <CAP=VYLrOBrkgnmC818a-Ke_UkDBsgMjbTx3WBZ2wqqPOmFMrCQ@mail.gmail.com>
+	id S1756809AbaBFRES (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 12:04:18 -0500
+Received: from fieldses.org ([174.143.236.118]:49264 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756793AbaBFREP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 12:04:15 -0500
+Date: Thu, 6 Feb 2014 12:03:48 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        Miklos Szeredi <mszeredi@suse.cz>, Harshula <hjayasur@redhat.com>,
+        hfuchi@redhat.com, Trond Myklebust <trondmy@gmail.com>
+Subject: Re: [PATCH] dcache: make d_splice_alias use d_materialise_unique
+Message-ID: <20140206170348.GD14575@fieldses.org>
+References: <20140115151749.GF23999@fieldses.org>
+ <20140117121723.GA18375@infradead.org>
+ <20140117153917.GA26636@fieldses.org>
+ <20140117210343.GD26636@fieldses.org>
+ <20140117212655.GE26636@fieldses.org>
+ <20140123212700.GA30466@fieldses.org>
+ <20140131184258.GN10323@ZenIV.linux.org.uk>
+ <20140131194758.GA24618@fieldses.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAP=VYLrOBrkgnmC818a-Ke_UkDBsgMjbTx3WBZ2wqqPOmFMrCQ@mail.gmail.com>
+In-Reply-To: <20140131194758.GA24618@fieldses.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 06, 2014 at 10:07:20AM -0500, Paul Gortmaker wrote:
-> On Thu, Feb 6, 2014 at 9:07 AM, Guenter Roeck <linux@roeck-us.net> wrote:
-> > On 02/06/2014 05:57 AM, Jim Davis wrote:
-> >>
-> >> Building with the attached random configuration file,
-> >>
-> >> drivers/built-in.o: In function `ltc2945_set_value':
-> >> ltc2945.c:(.text+0x58b1ad): undefined reference to `__udivdi3'
-> >> ltc2945.c:(.text+0x58b1cc): undefined reference to `__udivdi3'
-> >> ltc2945.c:(.text+0x58b1dd): undefined reference to `__udivdi3'
-> >> ltc2945.c:(.text+0x58b1fb): undefined reference to `__udivdi3'
-> >> make: *** [vmlinux] Error 1
-> >>
-> >
-> > I really love those auto-builders :-)
-> >
-> > Should be fixed in the next version of -next.
-> 
-> Looks like the same problem cropped up in mips allmodconfig, but
-> w/o the nice pointer to the line number in the source...
-> 
->   CC [M]  lib/notifier-error-inject.o
->   CC [M]  lib/pm-notifier-error-inject.o
-> ERROR: "__udivdi3" [drivers/hwmon/ltc2945.ko] undefined!
-> make[2]: *** [__modpost] Error 1
-> make[1]: *** [modules] Error 2
-> make: *** [sub-make] Error 2
-> 
+On Fri, Jan 31, 2014 at 02:47:58PM -0500, J. Bruce Fields wrote:
+> (Then one remaining thing I don't understand is how to make that fixing
+> up reliable.  Or is there some reason nobody hits the _EBUSY case of
+> __d_unalias?)
 
-Yeah, having 64 bit divides in 32 bit builds just isn't a good idea.
+In fact, a reproducer found thanks to Hideshi Yamaoka:
 
-Something is wrong with my auto-build scripts ... they should catch
-that kind of problem before it hits -next. I'll need to get that fixed.
+On server:
 
-Guenter
+	while true; do
+		mv /exports/DIR /exports/TO/DIR
+		mv /exports/TO/DIR /exports/DIR
+	done
+
+On client:
+
+	mount -olookupcache=pos /mnt
+
+	while true; do
+		ls /mnt/TO;
+	done
+
+Also on client:
+
+	while true; do
+		strace -e open cat /mnt/DIR/test.txt 2>&1 | grep EBUSY
+	done
+
+Once all three of those loops are running I hit
+
+	open("/mnt/DIR/test.txt", O_RDONLY)	= -1 EBUSY
+
+very quickly.
+
+The "lookupcache=pos" isn't really necessary but makes the reproducer
+more reliable.
+
+(Originally this was seen on a single client: the client itself was
+doing the renames but also continually killing the second mv.  I suspect
+that means the client sends the RENAME but then fails to update its
+dcache, the result being again that the client's dcache is out of sync
+with the server's tree and hence lookup is stuck trying to grab a dentry
+from another directory.)
+
+Is there some solution short of making ->lookup callers drop the i_mutex
+and retry???
+
+--b.
