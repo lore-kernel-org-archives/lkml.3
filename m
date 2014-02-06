@@ -1,82 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752530AbaBFOkM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 09:40:12 -0500
-Received: from mail-yh0-f43.google.com ([209.85.213.43]:38463 "EHLO
-	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751715AbaBFOkI (ORCPT
+	id S1752995AbaBFOmH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 09:42:07 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:10026 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751811AbaBFOmE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 09:40:08 -0500
-Date: Thu, 6 Feb 2014 11:40:01 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 0/3] Fix perf build breakages in 3.13
-Message-ID: <20140206144001.GA10660@ghostprotocols.net>
-References: <1391648361.3003.97.camel@deadeye.wl.decadent.org.uk>
- <20140206134817.GC8026@ghostprotocols.net>
- <1391695995.3003.108.camel@deadeye.wl.decadent.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1391695995.3003.108.camel@deadeye.wl.decadent.org.uk>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 6 Feb 2014 09:42:04 -0500
+X-AuditID: cbfec7f4-b7f796d000005a13-c7-52f39f398863
+Message-id: <52F39F36.30007@samsung.com>
+Date: Thu, 06 Feb 2014 15:41:58 +0100
+From: Tomasz Figa <t.figa@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.1.1
+MIME-version: 1.0
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        linux-crypto@vger.kernel.org, linux-samsung-soc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, vzapolskiy@gmail.com,
+        herbert@gondor.apana.org.au, naveenkrishna.ch@gmail.com,
+        cpgs@samsung.com, devicetree@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH 4/9 v5] crypto:s5p-sss: Kconfig: Let Exynos SoCs select SSS
+ driver
+References: <1389243595-13207-1-git-send-email-ch.naveen@samsung.com>
+ <1390987354-18665-1-git-send-email-ch.naveen@samsung.com>
+In-reply-to: <1390987354-18665-1-git-send-email-ch.naveen@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJLMWRmVeSWpSXmKPExsVy+t/xy7qW8z8HGfw6a2Zx9/lhRouXhzQt
+	5pxvYbGYf+Qcq0X3KxmL+/d+Mllc3jWHzWLG+X1MFou2/We2ODvnEJMDl8eWlTeZPHbOusvu
+	se2AqkffllWMHp83yQWwRnHZpKTmZJalFunbJXBl/D2cWPCBreLek6nMDYy3WbsYOTgkBEwk
+	Dj1z7GLkBDLFJC7cW8/WxcjFISSwlFHi2rclTBDOZ0aJ9obNzCBVvAIaEr2T/7OBNLMIqEp0
+	bw8ECbMJqEl8bnjEBmKLCkRI/J23nhGiXFDix+R7LCC2iEC5xL8ba8AWMAucYpSY3nQWrEEY
+	qKHl4F+oZY2MEpOmvgJLcAq4SUz6NBXMZhawllg5aRsjhC0vsXnNW+YJjAKzkCyZhaRsFpKy
+	BYzMqxhFU0uTC4qT0nMN9YoTc4tL89L1kvNzNzFCgv/LDsbFx6wOMQpwMCrx8G5Y/ylIiDWx
+	rLgy9xCjBAezkghvatPnICHelMTKqtSi/Pii0pzU4kOMTBycUg2MMdHsf8LzX3+fnn180S4/
+	txt82tOOGs9KmR7WuOt6/urXAunVM9/quD5c8P3qifsTdT+ftxdc9vDk5gdLP66S6sx2erTz
+	lM7/C4qLNvKvUg56sdfTqcj4oyIDL/Njbr4dm0TmK+0Qiul16jG3tzm3yVnd0/xUmS3b7kVn
+	mkXmz3+u1OCS+JkhXYmlOCPRUIu5qDgRAG7sWu9cAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Feb 06, 2014 at 02:13:15PM +0000, Ben Hutchings escreveu:
-> On Thu, 2014-02-06 at 10:48 -0300, Arnaldo Carvalho de Melo wrote:
-> > Em Thu, Feb 06, 2014 at 12:59:21AM +0000, Ben Hutchings escreveu:
-> > > perf no longer compiles on powerpc and sparc due to changes in the trace
-> > > sub-command.  This series fixes those compile errors; I compile-tested
-> > > in Debian sid on armhf, i386, powerpc and sparc.
-> > > 
-> > > I would much prefer not to revert the tty ioctl decoding but I think
-> > > it's going to take a much more sophisticated approach to do it right
-> > > across all supported architectures.
-> > 
-> > Second thought on the revert one:
-> > 
-> > Do you have a problem of switching the big hammer to one that makes this
-> > work just on x86/x86-64?
-> 
-> That seems reasonable as a temporary measure.
+Hi Naveen,
 
-Thank you, I'll do that then and hope to work on the right fix in the
-near future, if nobody does it first.
+On 29.01.2014 10:22, Naveen Krishna Chatradhi wrote:
+> From: Naveen Krishna Ch <ch.naveen@samsung.com>
+>
+> This patch modifies Kconfig such that ARCH_EXYNOS SoCs
+> which includes (Exynos4210, Exynos5250 and Exynos5420)
+> can also select Samsung SSS(Security SubSystem) driver.
+>
+> Signed-off-by: Naveen Krishna Ch <ch.naveen@samsung.com>
+> CC: Herbert Xu <herbert@gondor.apana.org.au>
+> CC: David S. Miller <davem@davemloft.net>
+> CC: Vladimir Zapolskiy <vzapolskiy@gmail.com>
+> TO: <linux-crypto@vger.kernel.org>
+> CC: <linux-samsung-soc@vger.kernel.org>
+> ---
+> Changes since v4:
+> none
+> Changes since v3:
+> Modified description to use "Exynos" instead of individual SoC name
+>   drivers/crypto/Kconfig |    6 +++---
+>   1 file changed, 3 insertions(+), 3 deletions(-)
 
-- Arnaldo
- 
-> Ben.
-> 
-> > That way at least those on these arches can have this while the correct
-> > solution is worked out.
-> > 
-> > - Arnaldo
-> >  
-> > > Ben.
-> > > 
-> > > Ben Hutchings (3):
-> > >   Revert "perf trace: Initial beautifier for ioctl's 'cmd' arg"
-> > >   perf trace: Add fallback definition of EFD_SEMAPHORE
-> > >   perf trace: Decode architecture-specific signal numbers
-> > > 
-> > >  tools/perf/builtin-trace.c | 48 ++++++++++++++--------------------------------
-> > >  1 file changed, 14 insertions(+), 34 deletions(-)
-> > > 
-> > > 
-> > > -- 
-> > > Ben Hutchings
-> > > It is a miracle that curiosity survives formal education. - Albert Einstein
-> > 
-> > 
-> 
-> -- 
-> Ben Hutchings
-> It is a miracle that curiosity survives formal education. - Albert Einstein
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 
-
+Best regards,
+Tomasz
