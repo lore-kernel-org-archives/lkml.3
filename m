@@ -1,94 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754623AbaBFEda (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 23:33:30 -0500
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:41388 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753942AbaBFEd2 (ORCPT
+	id S1754714AbaBFEo3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 23:44:29 -0500
+Received: from smtprelay0020.hostedemail.com ([216.40.44.20]:35661 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753942AbaBFEo1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 23:33:28 -0500
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFx70seh4VD+=ZKHrjTCrinG0Hq3=X6ygCeOeuNCSG8n8Q@mail.gmail.com>
-References: <CA+55aFzNxTtvNX7zqBELHs489e5mEx1sM=i=red=aQAGviXrNw@mail.gmail.com>
-	<CA+55aFxpBkTn3LvSzxFj7ZoxuY=Rrg0OoAVuk5dK-ZLsO8kk4A@mail.gmail.com>
-	<20140206005534.GA27848@node.dhcp.inet.fi>
-	<CA+55aFx70seh4VD+=ZKHrjTCrinG0Hq3=X6ygCeOeuNCSG8n8Q@mail.gmail.com>
-Date: Wed, 5 Feb 2014 20:33:27 -0800
-X-Google-Sender-Auth: y7Rnwh8PcKsP8hnQB-cXx4au9t4
-Message-ID: <CA+55aFwfGVCVouh5uap3UPy92vc4N9OrRRa-NpYT9ZMicU6w8w@mail.gmail.com>
-Subject: Re: [RFC] de-asmify the x86-64 system call slowpath
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ning Qu <quning@google.com>
-Content-Type: multipart/mixed; boundary=089e01294232f24eb904f1b55fdd
+	Wed, 5 Feb 2014 23:44:27 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:1960:2194:2199:2393:2559:2562:2741:2828:2901:3138:3139:3140:3141:3142:3354:3622:3865:3866:3867:3868:3870:3871:3874:4321:5007:7652:10004:10400:10848:11026:11232:11473:11658:11914:12043:12295:12296:12347:12438:12517:12519:12555:12740:13071,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: spark15_7de1a2007e137
+X-Filterd-Recvd-Size: 3646
+Message-ID: <1391661863.30094.56.camel@joe-AO722>
+Subject: Re: [PATCH] ieee80211: Print human-readable disassoc/deauth reason
+ codes
+From: Joe Perches <joe@perches.com>
+To: Calvin Owens <jcalvinowens@gmail.com>
+Cc: Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 05 Feb 2014 20:44:23 -0800
+In-Reply-To: <1391651088-31785-1-git-send-email-jcalvinowens@gmail.com>
+References: <1391651088-31785-1-git-send-email-jcalvinowens@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---089e01294232f24eb904f1b55fdd
-Content-Type: text/plain; charset=UTF-8
+On Wed, 2014-02-05 at 19:44 -0600, Calvin Owens wrote:
+> Create a function to return a descriptive string for each reason code,
+> and print that instead of the numeric value in the kernel log. These
+> codes are easily found on popular search engines, but one is generally
+> not able to access the internet when dealing with wireless connectivity
+> issues.
 
-On Wed, Feb 5, 2014 at 6:32 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> No, I was thinking "try to optimistically map 8 adjacent aligned pages
-> at a time" - that would be the same cacheline in the page tables, so
-> it would be fairly cheap if we couple it with a gang-lookup of the
-> pages in the page cache
+Hello Calvin.
 
-Doing the gang-lookup is hard, since it's all abstracted away, but the
-attached patch kind of tries to do what I described.
+Some suggestions below...
 
-This patch probably doesn't work, but something *like* this might be
-worth playing with.
+> diff --git a/net/mac80211/main.c b/net/mac80211/main.c
+[]
+> @@ -743,6 +743,72 @@ static int ieee80211_init_cipher_suites(struct ieee80211_local *local)
+>  	return 0;
+>  }
+>  
+> +static const char *reason_code_strings[49] = {
 
-Except I suspect the page-backed faults are actually the minority,
-judging by how high clear_page_c_e is in the profile it's probably
-mostly anonymous memory. I have no idea why I started with the (more
-complex) case of file-backed prefaulting. Oh well.
+static const char * const reason_etc...
 
-            Linus
+> +	"(RESERVED)",
+> +	"UNSPECIFIED",
 
---089e01294232f24eb904f1b55fdd
-Content-Type: text/plain; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hrbj4pla0
+etc..., but perhaps this thing below is fragile.
 
-IG1tL21lbW9yeS5jIHwgNDIgKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysr
-KystCiAxIGZpbGUgY2hhbmdlZCwgNDEgaW5zZXJ0aW9ucygrKSwgMSBkZWxldGlvbigtKQoKZGlm
-ZiAtLWdpdCBhL21tL21lbW9yeS5jIGIvbW0vbWVtb3J5LmMKaW5kZXggYmU2YTBjMGQ0YWUwLi5k
-NTJlYzZhMzQ0ZGMgMTAwNjQ0Ci0tLSBhL21tL21lbW9yeS5jCisrKyBiL21tL21lbW9yeS5jCkBA
-IC0zNDg3LDE1ICszNDg3LDU1IEBAIHVuY2hhcmdlX291dDoKIAlyZXR1cm4gcmV0OwogfQogCisj
-ZGVmaW5lIG5vX2ZhdWx0X2Fyb3VuZCh4KSAoeCAmIChWTV9GQVVMVF9FUlJPUiB8IFZNX0ZBVUxU
-X01BSk9SIHwgVk1fRkFVTFRfUkVUUlkpKQorI2RlZmluZSBGQVVMVF9BUk9VTkRfU0hJRlQgKDMp
-CisKK3N0YXRpYyB2b2lkIGZhdWx0X2Fyb3VuZChzdHJ1Y3QgbW1fc3RydWN0ICptbSwgc3RydWN0
-IHZtX2FyZWFfc3RydWN0ICp2bWEsCisJdW5zaWduZWQgbG9uZyBhZGRyZXNzLCBwbWRfdCAqcG1k
-KQoreworCWludCBuciA9IDEgPDwgRkFVTFRfQVJPVU5EX1NISUZUOworCisJYWRkcmVzcyAmPSBQ
-QUdFX01BU0sgPDwgRkFVTFRfQVJPVU5EX1NISUZUOworCWlmIChhZGRyZXNzIDwgdm1hLT52bV9z
-dGFydCkKKwkJcmV0dXJuOworCisJZG8geworCQlwdGVfdCAqcHRlOworCQlwdGVfdCBlbnRyeTsK
-KwkJcGdvZmZfdCBwZ29mZjsKKworCQlwdGUgPSBwdGVfb2Zmc2V0X21hcChwbWQsIGFkZHJlc3Mp
-OworCQllbnRyeSA9ICpwdGU7CisKKwkJcHRlX3VubWFwKHB0ZSk7CisJCWlmICghcHRlX25vbmUo
-ZW50cnkpKQorCQkJY29udGludWU7CisJCXBnb2ZmID0gKGFkZHJlc3MgLSB2bWEtPnZtX3N0YXJ0
-KSA+PiBQQUdFX1NISUZUOworCQlwZ29mZiArPSB2bWEtPnZtX3Bnb2ZmOworCQlpZiAobm9fZmF1
-bHRfYXJvdW5kKF9fZG9fZmF1bHQobW0sIHZtYSwgYWRkcmVzcywgcG1kLCBwZ29mZiwgMCwgZW50
-cnkpKSkKKwkJCWJyZWFrOworCX0gd2hpbGUgKGFkZHJlc3MgKz0gUEFHRV9TSVpFLCBhZGRyZXNz
-IDwgdm1hLT52bV9lbmQgJiYgLS1uciA+IDApOworfQorCiBzdGF0aWMgaW50IGRvX2xpbmVhcl9m
-YXVsdChzdHJ1Y3QgbW1fc3RydWN0ICptbSwgc3RydWN0IHZtX2FyZWFfc3RydWN0ICp2bWEsCiAJ
-CXVuc2lnbmVkIGxvbmcgYWRkcmVzcywgcHRlX3QgKnBhZ2VfdGFibGUsIHBtZF90ICpwbWQsCiAJ
-CXVuc2lnbmVkIGludCBmbGFncywgcHRlX3Qgb3JpZ19wdGUpCiB7CisJaW50IHJldDsKIAlwZ29m
-Zl90IHBnb2ZmID0gKCgoYWRkcmVzcyAmIFBBR0VfTUFTSykKIAkJCS0gdm1hLT52bV9zdGFydCkg
-Pj4gUEFHRV9TSElGVCkgKyB2bWEtPnZtX3Bnb2ZmOwogCiAJcHRlX3VubWFwKHBhZ2VfdGFibGUp
-OwotCXJldHVybiBfX2RvX2ZhdWx0KG1tLCB2bWEsIGFkZHJlc3MsIHBtZCwgcGdvZmYsIGZsYWdz
-LCBvcmlnX3B0ZSk7CisJcmV0ID0gX19kb19mYXVsdChtbSwgdm1hLCBhZGRyZXNzLCBwbWQsIHBn
-b2ZmLCBmbGFncywgb3JpZ19wdGUpOworCisJLyoKKwkgKiBJZiB0aGUgcGFnZSB3ZSB3ZXJlIGxv
-b2tpbmcgZm9yIHN1Y2NlZWRlZCB3aXRoIG5vIHJldHJpZXMsCisJICogc2VlIGlmIHdlIGNhbiBm
-YXVsdCBhcm91bmQgaXQgdG9vLi4KKwkgKi8KKwlpZiAoIW5vX2ZhdWx0X2Fyb3VuZChyZXQpICYm
-IChmbGFncyAmIEZBVUxUX0ZMQUdfQUxMT1dfUkVUUlkpKQorCQlmYXVsdF9hcm91bmQobW0sIHZt
-YSwgYWRkcmVzcywgcG1kKTsKKworCXJldHVybiByZXQ7CiB9CiAKIC8qCg==
---089e01294232f24eb904f1b55fdd--
+> +const char *ieee80211_get_reason_code_string(u16 reason_code)
+> +{
+> +	if (reason_code <= 24)
+> +		return reason_code_strings[reason_code];
+> +	else if (reason_code >= 32 && reason_code <= 39)
+> +		return reason_code_strings[reason_code - 7];
+> +	else if (reason_code == 45)
+> +		return reason_code_strings[33];
+> +	else if (reason_code >= 52 && reason_code <= 66)
+> +		return reason_code_strings[reason_code - 18];
+> +	else
+> +		return "(INVALID)";
+> +}
+
+Perhaps use a more common kernel style
+
+struct ieee80211_reason_descriptions {
+	u16		code;
+	const char *	desc;
+}
+
+and enumerate the reason codes with #defines and use a
+macro to populate the descriptions
+
+#define IEEE80211_REASON_RESERVED		0
+#define IEEE80211_REASON_UNSPECIFIED		1
+
+etc.
+
+#define POPULATE_IEEE_REASON(code)			\
+	{.code = IEEE80211_REASON_##code, .desc = #code}
+
+static const struct ieee80211_reason_descriptions reasons[] = {
+	POPULATE_IEEE_REASON(RESERVED),
+	POPULATE_IEEE_REASON(UNSPECIFIED),
+	[etc...]
+};
+
+So this function becomes something like:
+
+const char *ieee80211_get_reason_code_string(u16 reason_code)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(reasons); i++) {
+		if (reasons[i].code == reason_code)
+			return reasons[i].desc;
+	}
+
+	return "UNKNOWN";
+}
+
+This seems a lot less fragile.
+
+> diff --git a/net/mac80211/mlme.c b/net/mac80211/mlme.c
+[]
+> @@ -2231,8 +2231,8 @@ static void ieee80211_rx_mgmt_deauth(struct ieee80211_sub_if_data *sdata,
+>  
+>  	reason_code = le16_to_cpu(mgmt->u.deauth.reason_code);
+>  
+> -	sdata_info(sdata, "deauthenticated from %pM (Reason: %u)\n",
+> -		   bssid, reason_code);
+> +	sdata_info(sdata, "deauthenticated from %pM (reason: %s)\n",
+> +		   bssid, ieee80211_get_reason_code_string(reason_code));
+
+Perhaps
+
+	"%u:%s",
+	reason_code, ieee80211_get_reason_code_string(reason_code))
+
+might be better here and the other places.
+
