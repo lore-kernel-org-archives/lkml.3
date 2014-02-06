@@ -1,380 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754778AbaBFTrE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 14:47:04 -0500
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:42840 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751715AbaBFTrB (ORCPT
+	id S1754612AbaBFTsb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 14:48:31 -0500
+Received: from honeysuckle.london.02.net ([87.194.255.144]:44877 "EHLO
+	honeysuckle.london.02.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751339AbaBFTs3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 14:47:01 -0500
+	Thu, 6 Feb 2014 14:48:29 -0500
+X-Greylist: delayed 364 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Feb 2014 14:48:29 EST
+From: Mark Davies <junk@eslaf.co.uk>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Vince Weaver <vince@deater.net>, alan@lxorguk.ukuu.org.uk,
+        Ingo Molnar <mingo@kernel.org>, Stephane Eranian <eranian@google.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf,x86,p6: Add userspace RDPMC quirk for P6
+References: <20140205102718.GF3229@twins.programming.kicks-ass.net>
+	<alpine.DEB.2.02.1402051415190.16225@pianoman.cluster.toy>
+	<20140205192012.GL2936@laptop.programming.kicks-ass.net>
+	<20140205194851.GE5126@laptop.programming.kicks-ass.net>
+Date: Thu, 06 Feb 2014 19:41:37 +0000
+In-Reply-To: <20140205194851.GE5126@laptop.programming.kicks-ass.net> (Peter
+	Zijlstra's message of "Wed, 5 Feb 2014 20:48:51 +0100")
+Message-ID: <871tzgxc3y.fsf@gw.eslaf.co.uk>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <52F3E527.3090804@windriver.com>
-References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
- <1390339396-3479-55-git-send-email-paul.gortmaker@windriver.com>
- <CAK5ve-J+G6yH-E6bde-DXP7vNvdcevrH6nwvkot0n3cGi19WmA@mail.gmail.com> <52F3E527.3090804@windriver.com>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Thu, 6 Feb 2014 11:46:38 -0800
-Message-ID: <CAK5ve-+aS-yb_Lx1yhNcqSgdZWdEhnLTuZvtuhk7veMs32Z+3w@mail.gmail.com>
-Subject: Re: [PATCH 54/73] drivers/leds: delete non-required instances of
- include <linux/init.h>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 6, 2014 at 11:40 AM, Paul Gortmaker
-<paul.gortmaker@windriver.com> wrote:
-> On 14-02-06 02:28 PM, Bryan Wu wrote:
->> On Tue, Jan 21, 2014 at 1:22 PM, Paul Gortmaker
->> <paul.gortmaker@windriver.com> wrote:
->>> None of these files are actually using any __init type directives
->>> and hence don't need to include <linux/init.h>.  Most are just a
->>> left over from __devinit and __cpuinit removal, or simply due to
->>> code getting copied from one driver to the next.
->>>
->>
->> I will take this patch. Thanks,
->> -Bryan
->
-> The patches that weren't taken by maintainers before 3.14-rc1 were
-> encompassed in the cleanup pull request to Linus sent Tuesday.
->
-> http://www.spinics.net/lists/arm-kernel/msg304864.html
->
-> So, assuming he does pull it, you'll not have to do anything.
->
+Peter
 
-Sure, I will wait Linus pull and rebase my tree, then everything should be fine.
+As I reported the problem I thought I better contribute by testing the
+fix.
 
-Thanks,
--Bryan
+I took the patch below and managed to change the 3.4.78 code to match
+and tried to boot my Pentium Pro system but it hung as before. After
+some investigation I discovered the quirk is not being run, in fact no
+quirks were being run in init_hw_perf_events as x86_pmu.quirks was NULL.
 
-> --
+The problem as far as I can see is that the quirk is added to x86_pmu in
+p6_pmu_init but then x86_pmu is reassigned at the end of that function
+(x86_pmu = p6_pmu) resetting x86_pmu.quirks to NULL. x86_pmu looks like
+it is reassigned again in intel_pmu_init to either core_pmu or intel_pmu
+after the call to p6_pmu_init so I am not sure which x86_pmu.quirks
+init_hw_perf_events tries to use.
+
+Hopefully that makes sense.
+
+Mark Davies
+
+On Wed, Feb 05 2014, Peter Zijlstra wrote:
+
+> On Wed, Feb 05, 2014 at 08:20:12PM +0100, Peter Zijlstra wrote:
+>> On Wed, Feb 05, 2014 at 02:16:43PM -0500, Vince Weaver wrote:
+>> > On Wed, 5 Feb 2014, Peter Zijlstra wrote:
+>> > 
+>> > > P6 class machines can die hard when PCE gets enabled due to CPU
+>> > > errata. The safe way it so disable it by default and keep it disabled.
+>> > > 
+>> > > See errata 26:
+>> > 
+>> > so you take an errata applicable to a subset of Pentium Pro steppings and 
+>> > apply it to the whole p6 line (which includes the whole way up to Pentium 
+>> > III)?
+>> > 
+>> > Or am I missing something in the documentation you link to?
+>> 
+>> I forgot it went all the way to P-III, let me try and find the other
+>> erratas.
 >
->>
->>> Cc: Bryan Wu <cooloney@gmail.com>
->>> Cc: Richard Purdie <rpurdie@rpsys.net>
->>> Cc: linux-leds@vger.kernel.org
->>> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
->>> ---
->>>  drivers/leds/led-triggers.c       | 1 -
->>>  drivers/leds/leds-88pm860x.c      | 1 -
->>>  drivers/leds/leds-adp5520.c       | 1 -
->>>  drivers/leds/leds-asic3.c         | 1 -
->>>  drivers/leds/leds-blinkm.c        | 1 -
->>>  drivers/leds/leds-cobalt-qube.c   | 1 -
->>>  drivers/leds/leds-da903x.c        | 1 -
->>>  drivers/leds/leds-da9052.c        | 1 -
->>>  drivers/leds/leds-fsg.c           | 1 -
->>>  drivers/leds/leds-gpio.c          | 1 -
->>>  drivers/leds/leds-hp6xx.c         | 1 -
->>>  drivers/leds/leds-lm3533.c        | 1 -
->>>  drivers/leds/leds-lp5521.c        | 1 -
->>>  drivers/leds/leds-lp5523.c        | 1 -
->>>  drivers/leds/leds-lp5562.c        | 1 -
->>>  drivers/leds/leds-lt3593.c        | 1 -
->>>  drivers/leds/leds-mc13783.c       | 1 -
->>>  drivers/leds/leds-netxbig.c       | 1 -
->>>  drivers/leds/leds-ns2.c           | 1 -
->>>  drivers/leds/leds-ot200.c         | 1 -
->>>  drivers/leds/leds-pwm.c           | 1 -
->>>  drivers/leds/leds-s3c24xx.c       | 1 -
->>>  drivers/leds/leds-wm831x-status.c | 1 -
->>>  drivers/leds/leds-wm8350.c        | 1 -
->>>  24 files changed, 24 deletions(-)
->>>
->>> diff --git a/drivers/leds/led-triggers.c b/drivers/leds/led-triggers.c
->>> index e387f41..df1a7c1 100644
->>> --- a/drivers/leds/led-triggers.c
->>> +++ b/drivers/leds/led-triggers.c
->>> @@ -13,7 +13,6 @@
->>>
->>>  #include <linux/module.h>
->>>  #include <linux/kernel.h>
->>> -#include <linux/init.h>
->>>  #include <linux/list.h>
->>>  #include <linux/spinlock.h>
->>>  #include <linux/device.h>
->>> diff --git a/drivers/leds/leds-88pm860x.c b/drivers/leds/leds-88pm860x.c
->>> index 5f588c0..d1e1bca 100644
->>> --- a/drivers/leds/leds-88pm860x.c
->>> +++ b/drivers/leds/leds-88pm860x.c
->>> @@ -11,7 +11,6 @@
->>>   */
->>>
->>>  #include <linux/kernel.h>
->>> -#include <linux/init.h>
->>>  #include <linux/of.h>
->>>  #include <linux/platform_device.h>
->>>  #include <linux/i2c.h>
->>> diff --git a/drivers/leds/leds-adp5520.c b/drivers/leds/leds-adp5520.c
->>> index 7e311a1..86b5bdb 100644
->>> --- a/drivers/leds/leds-adp5520.c
->>> +++ b/drivers/leds/leds-adp5520.c
->>> @@ -15,7 +15,6 @@
->>>
->>>  #include <linux/module.h>
->>>  #include <linux/kernel.h>
->>> -#include <linux/init.h>
->>>  #include <linux/platform_device.h>
->>>  #include <linux/leds.h>
->>>  #include <linux/workqueue.h>
->>> diff --git a/drivers/leds/leds-asic3.c b/drivers/leds/leds-asic3.c
->>> index 6de216a..70c74a7 100644
->>> --- a/drivers/leds/leds-asic3.c
->>> +++ b/drivers/leds/leds-asic3.c
->>> @@ -7,7 +7,6 @@
->>>   */
->>>
->>>  #include <linux/kernel.h>
->>> -#include <linux/init.h>
->>>  #include <linux/platform_device.h>
->>>  #include <linux/leds.h>
->>>  #include <linux/slab.h>
->>> diff --git a/drivers/leds/leds-blinkm.c b/drivers/leds/leds-blinkm.c
->>> index 66d0a57..0c50860 100644
->>> --- a/drivers/leds/leds-blinkm.c
->>> +++ b/drivers/leds/leds-blinkm.c
->>> @@ -18,7 +18,6 @@
->>>   */
->>>
->>>  #include <linux/module.h>
->>> -#include <linux/init.h>
->>>  #include <linux/slab.h>
->>>  #include <linux/jiffies.h>
->>>  #include <linux/i2c.h>
->>> diff --git a/drivers/leds/leds-cobalt-qube.c b/drivers/leds/leds-cobalt-qube.c
->>> index 8abcb66..910339d 100644
->>> --- a/drivers/leds/leds-cobalt-qube.c
->>> +++ b/drivers/leds/leds-cobalt-qube.c
->>> @@ -3,7 +3,6 @@
->>>   *
->>>   * Control the Cobalt Qube/RaQ front LED
->>>   */
->>> -#include <linux/init.h>
->>>  #include <linux/io.h>
->>>  #include <linux/ioport.h>
->>>  #include <linux/leds.h>
->>> diff --git a/drivers/leds/leds-da903x.c b/drivers/leds/leds-da903x.c
->>> index 2a4b87f..35dffb1 100644
->>> --- a/drivers/leds/leds-da903x.c
->>> +++ b/drivers/leds/leds-da903x.c
->>> @@ -14,7 +14,6 @@
->>>
->>>  #include <linux/module.h>
->>>  #include <linux/kernel.h>
->>> -#include <linux/init.h>
->>>  #include <linux/platform_device.h>
->>>  #include <linux/leds.h>
->>>  #include <linux/workqueue.h>
->>> diff --git a/drivers/leds/leds-da9052.c b/drivers/leds/leds-da9052.c
->>> index 865d4fa..01486ad 100644
->>> --- a/drivers/leds/leds-da9052.c
->>> +++ b/drivers/leds/leds-da9052.c
->>> @@ -14,7 +14,6 @@
->>>
->>>  #include <linux/module.h>
->>>  #include <linux/kernel.h>
->>> -#include <linux/init.h>
->>>  #include <linux/platform_device.h>
->>>  #include <linux/leds.h>
->>>  #include <linux/workqueue.h>
->>> diff --git a/drivers/leds/leds-fsg.c b/drivers/leds/leds-fsg.c
->>> index b4d5a44..2b4dc73 100644
->>> --- a/drivers/leds/leds-fsg.c
->>> +++ b/drivers/leds/leds-fsg.c
->>> @@ -16,7 +16,6 @@
->>>   */
->>>
->>>  #include <linux/kernel.h>
->>> -#include <linux/init.h>
->>>  #include <linux/platform_device.h>
->>>  #include <linux/leds.h>
->>>  #include <linux/module.h>
->>> diff --git a/drivers/leds/leds-gpio.c b/drivers/leds/leds-gpio.c
->>> index 78b0e27..3f65a08 100644
->>> --- a/drivers/leds/leds-gpio.c
->>> +++ b/drivers/leds/leds-gpio.c
->>> @@ -11,7 +11,6 @@
->>>   *
->>>   */
->>>  #include <linux/kernel.h>
->>> -#include <linux/init.h>
->>>  #include <linux/platform_device.h>
->>>  #include <linux/gpio.h>
->>>  #include <linux/leds.h>
->>> diff --git a/drivers/leds/leds-hp6xx.c b/drivers/leds/leds-hp6xx.c
->>> index 366b605..d61a988 100644
->>> --- a/drivers/leds/leds-hp6xx.c
->>> +++ b/drivers/leds/leds-hp6xx.c
->>> @@ -12,7 +12,6 @@
->>>
->>>  #include <linux/module.h>
->>>  #include <linux/kernel.h>
->>> -#include <linux/init.h>
->>>  #include <linux/platform_device.h>
->>>  #include <linux/leds.h>
->>>  #include <asm/hd64461.h>
->>> diff --git a/drivers/leds/leds-lm3533.c b/drivers/leds/leds-lm3533.c
->>> index 027ede7..e2c642c11 100644
->>> --- a/drivers/leds/leds-lm3533.c
->>> +++ b/drivers/leds/leds-lm3533.c
->>> @@ -12,7 +12,6 @@
->>>   */
->>>
->>>  #include <linux/module.h>
->>> -#include <linux/init.h>
->>>  #include <linux/leds.h>
->>>  #include <linux/mfd/core.h>
->>>  #include <linux/mutex.h>
->>> diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
->>> index 2ec34cf..8ca197a 100644
->>> --- a/drivers/leds/leds-lp5521.c
->>> +++ b/drivers/leds/leds-lp5521.c
->>> @@ -25,7 +25,6 @@
->>>  #include <linux/delay.h>
->>>  #include <linux/firmware.h>
->>>  #include <linux/i2c.h>
->>> -#include <linux/init.h>
->>>  #include <linux/leds.h>
->>>  #include <linux/module.h>
->>>  #include <linux/mutex.h>
->>> diff --git a/drivers/leds/leds-lp5523.c b/drivers/leds/leds-lp5523.c
->>> index 4ade66a..cb5ed82 100644
->>> --- a/drivers/leds/leds-lp5523.c
->>> +++ b/drivers/leds/leds-lp5523.c
->>> @@ -25,7 +25,6 @@
->>>  #include <linux/delay.h>
->>>  #include <linux/firmware.h>
->>>  #include <linux/i2c.h>
->>> -#include <linux/init.h>
->>>  #include <linux/leds.h>
->>>  #include <linux/module.h>
->>>  #include <linux/mutex.h>
->>> diff --git a/drivers/leds/leds-lp5562.c b/drivers/leds/leds-lp5562.c
->>> index bf006f4..315d3ca 100644
->>> --- a/drivers/leds/leds-lp5562.c
->>> +++ b/drivers/leds/leds-lp5562.c
->>> @@ -13,7 +13,6 @@
->>>  #include <linux/delay.h>
->>>  #include <linux/firmware.h>
->>>  #include <linux/i2c.h>
->>> -#include <linux/init.h>
->>>  #include <linux/leds.h>
->>>  #include <linux/module.h>
->>>  #include <linux/mutex.h>
->>> diff --git a/drivers/leds/leds-lt3593.c b/drivers/leds/leds-lt3593.c
->>> index 3417e5b..059f5b1 100644
->>> --- a/drivers/leds/leds-lt3593.c
->>> +++ b/drivers/leds/leds-lt3593.c
->>> @@ -17,7 +17,6 @@
->>>   */
->>>
->>>  #include <linux/kernel.h>
->>> -#include <linux/init.h>
->>>  #include <linux/platform_device.h>
->>>  #include <linux/leds.h>
->>>  #include <linux/workqueue.h>
->>> diff --git a/drivers/leds/leds-mc13783.c b/drivers/leds/leds-mc13783.c
->>> index ca87a1b..dca34c7 100644
->>> --- a/drivers/leds/leds-mc13783.c
->>> +++ b/drivers/leds/leds-mc13783.c
->>> @@ -17,7 +17,6 @@
->>>
->>>  #include <linux/module.h>
->>>  #include <linux/kernel.h>
->>> -#include <linux/init.h>
->>>  #include <linux/platform_device.h>
->>>  #include <linux/leds.h>
->>>  #include <linux/workqueue.h>
->>> diff --git a/drivers/leds/leds-netxbig.c b/drivers/leds/leds-netxbig.c
->>> index 2f9f141..e97f443 100644
->>> --- a/drivers/leds/leds-netxbig.c
->>> +++ b/drivers/leds/leds-netxbig.c
->>> @@ -21,7 +21,6 @@
->>>   */
->>>
->>>  #include <linux/module.h>
->>> -#include <linux/init.h>
->>>  #include <linux/irq.h>
->>>  #include <linux/slab.h>
->>>  #include <linux/spinlock.h>
->>> diff --git a/drivers/leds/leds-ns2.c b/drivers/leds/leds-ns2.c
->>> index c7a4230..efa6258 100644
->>> --- a/drivers/leds/leds-ns2.c
->>> +++ b/drivers/leds/leds-ns2.c
->>> @@ -23,7 +23,6 @@
->>>   */
->>>
->>>  #include <linux/kernel.h>
->>> -#include <linux/init.h>
->>>  #include <linux/platform_device.h>
->>>  #include <linux/slab.h>
->>>  #include <linux/gpio.h>
->>> diff --git a/drivers/leds/leds-ot200.c b/drivers/leds/leds-ot200.c
->>> index 98cae52..c9d9060 100644
->>> --- a/drivers/leds/leds-ot200.c
->>> +++ b/drivers/leds/leds-ot200.c
->>> @@ -8,7 +8,6 @@
->>>   */
->>>
->>>  #include <linux/kernel.h>
->>> -#include <linux/init.h>
->>>  #include <linux/platform_device.h>
->>>  #include <linux/slab.h>
->>>  #include <linux/leds.h>
->>> diff --git a/drivers/leds/leds-pwm.c b/drivers/leds/leds-pwm.c
->>> index 6050474..dd17873 100644
->>> --- a/drivers/leds/leds-pwm.c
->>> +++ b/drivers/leds/leds-pwm.c
->>> @@ -14,7 +14,6 @@
->>>
->>>  #include <linux/module.h>
->>>  #include <linux/kernel.h>
->>> -#include <linux/init.h>
->>>  #include <linux/platform_device.h>
->>>  #include <linux/of_platform.h>
->>>  #include <linux/fb.h>
->>> diff --git a/drivers/leds/leds-s3c24xx.c b/drivers/leds/leds-s3c24xx.c
->>> index 98174e7..28988b7 100644
->>> --- a/drivers/leds/leds-s3c24xx.c
->>> +++ b/drivers/leds/leds-s3c24xx.c
->>> @@ -12,7 +12,6 @@
->>>  */
->>>
->>>  #include <linux/kernel.h>
->>> -#include <linux/init.h>
->>>  #include <linux/platform_device.h>
->>>  #include <linux/leds.h>
->>>  #include <linux/gpio.h>
->>> diff --git a/drivers/leds/leds-wm831x-status.c b/drivers/leds/leds-wm831x-status.c
->>> index 0a1a13f..e72c974 100644
->>> --- a/drivers/leds/leds-wm831x-status.c
->>> +++ b/drivers/leds/leds-wm831x-status.c
->>> @@ -10,7 +10,6 @@
->>>   */
->>>
->>>  #include <linux/kernel.h>
->>> -#include <linux/init.h>
->>>  #include <linux/platform_device.h>
->>>  #include <linux/slab.h>
->>>  #include <linux/leds.h>
->>> diff --git a/drivers/leds/leds-wm8350.c b/drivers/leds/leds-wm8350.c
->>> index 3f75fd2..4133ffe 100644
->>> --- a/drivers/leds/leds-wm8350.c
->>> +++ b/drivers/leds/leds-wm8350.c
->>> @@ -10,7 +10,6 @@
->>>   */
->>>
->>>  #include <linux/kernel.h>
->>> -#include <linux/init.h>
->>>  #include <linux/platform_device.h>
->>>  #include <linux/leds.h>
->>>  #include <linux/err.h>
->>> --
->>> 1.8.4.1
->>>
+> OK, Just checked the P-II errata and its not there anymore, so I suppose
+> only Family 6 model 1 should have this quirk.
+>
+> Updated patch below.
+>
+> ---
+> Subject: perf,x86,p6: Add userspace RDPMC quirk for PPro
+> From: Peter Zijlstra <peterz@infradead.org>
+> Date: Wed Feb 5 11:17:46 CET 2014
+>
+> PPro machines can die hard when PCE gets enabled due to CPU errata. The
+> safe way it so disable it by default and keep it disabled.
+>
+> See errata 26:
+>
+> http://download.intel.com/design/archives/processors/pro/docs/24268935.pdf
+>
+> Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+> Reported-by: Mark Davies <junk@eslaf.co.uk>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> Link: http://lkml.kernel.org/n/tip-jnbn0qpt3t7ogk4c2q79yq90@git.kernel.org
+> ---
+>  arch/x86/kernel/cpu/perf_event.c    |    6 +++++-
+>  arch/x86/kernel/cpu/perf_event.h    |    1 +
+>  arch/x86/kernel/cpu/perf_event_p6.c |   35 +++++++++++++++++++++++++----------
+>  3 files changed, 31 insertions(+), 11 deletions(-)
+>
+> --- a/arch/x86/kernel/cpu/perf_event.c
+> +++ b/arch/x86/kernel/cpu/perf_event.c
+> @@ -1521,6 +1521,8 @@ static int __init init_hw_perf_events(vo
+>  
+>  	pr_cont("%s PMU driver.\n", x86_pmu.name);
+>  
+> +	x86_pmu.attr_rdpmc = 1; /* enable userspace RDPMC usage by default */
+> +
+>  	for (quirk = x86_pmu.quirks; quirk; quirk = quirk->next)
+>  		quirk->func();
+>  
+> @@ -1534,7 +1536,6 @@ static int __init init_hw_perf_events(vo
+>  		__EVENT_CONSTRAINT(0, (1ULL << x86_pmu.num_counters) - 1,
+>  				   0, x86_pmu.num_counters, 0, 0);
+>  
+> -	x86_pmu.attr_rdpmc = 1; /* enable userspace RDPMC usage by default */
+>  	x86_pmu_format_group.attrs = x86_pmu.format_attrs;
+>  
+>  	if (x86_pmu.event_attrs)
+> @@ -1820,6 +1821,9 @@ static ssize_t set_attr_rdpmc(struct dev
+>  	if (ret)
+>  		return ret;
+>  
+> +	if (x86_pmu.attr_rdpmc_broken)
+> +		return -ENOTSUPP;
+> +
+>  	if (!!val != !!x86_pmu.attr_rdpmc) {
+>  		x86_pmu.attr_rdpmc = !!val;
+>  		smp_call_function(change_rdpmc, (void *)val, 1);
+> --- a/arch/x86/kernel/cpu/perf_event.h
+> +++ b/arch/x86/kernel/cpu/perf_event.h
+> @@ -409,6 +409,7 @@ struct x86_pmu {
+>  	/*
+>  	 * sysfs attrs
+>  	 */
+> +	int		attr_rdpmc_broken;
+>  	int		attr_rdpmc;
+>  	struct attribute **format_attrs;
+>  	struct attribute **event_attrs;
+> --- a/arch/x86/kernel/cpu/perf_event_p6.c
+> +++ b/arch/x86/kernel/cpu/perf_event_p6.c
+> @@ -231,20 +231,35 @@ static __initconst const struct x86_pmu
+>  
+>  };
+>  
+> +static __init void p6_pmu_rdpmc_quirk(void)
+> +{
+> +	pr_warn("Userspace RDPMC support disabled due to CPU errata\n");
+> +	x86_pmu.attr_rdpmc_broken = 1;
+> +	x86_pmu.attr_rdpmc = 0;
+> +}
+> +
+>  __init int p6_pmu_init(void)
+>  {
+>  	switch (boot_cpu_data.x86_model) {
+> -	case 1:
+> -	case 3:  /* Pentium Pro */
+> -	case 5:
+> -	case 6:  /* Pentium II */
+> -	case 7:
+> -	case 8:
+> -	case 11: /* Pentium III */
+> -	case 9:
+> -	case 13:
+> -		/* Pentium M */
+> +	case  1: /* Pentium Pro */
+> +		x86_add_quirk(p6_pmu_rdpmc_quirk);
+>  		break;
+> +
+> +	case  3: /* Pentium II - Klamath */
+> +	case  5: /* Pentium II - Deschutes */
+> +	case  6: /* Pentium II - Mendocino */
+> +		break;
+> +
+> +	case  7: /* Pentium III - Katmai */
+> +	case  8: /* Pentium III - Coppermine */
+> +	case 10: /* Pentium III Xeon */
+> +	case 11: /* Pentium III - Tualatin */
+> +		break;
+> +
+> +	case  9: /* Pentium M - Banias */
+> +	case 13: /* Pentium M - Dothan */
+> +		break;
+> +
+>  	default:
+>  		pr_cont("unsupported p6 CPU model %d ",
+>  			boot_cpu_data.x86_model);
