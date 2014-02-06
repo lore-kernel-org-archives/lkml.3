@@ -1,317 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755515AbaBFFy1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 00:54:27 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:59680 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755232AbaBFFyX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 00:54:23 -0500
-Subject: [PATCH V3 2/3] tick/cpuidle: Initialize hrtimer mode of broadcast
-To: rafael.j.wysocki@intel.com, linux-pm@vger.kernel.org, peterz@infradead.org,
-        fweisbec@gmail.com, daniel.lezcano@linaro.org,
-        linux-kernel@vger.kernel.org, paulus@samba.org,
-        benh@kernel.crashing.org, tglx@linutronix.de,
-        linuxppc-dev@lists.ozlabs.org, mingo@kernel.org
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: deepthi@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        svaidy@linux.vnet.ibm.com, srivatsa.bhat@linux.vnet.ibm.com
-Date: Thu, 06 Feb 2014 11:20:12 +0530
-Message-ID: <20140206055012.4595.55692.stgit@preeti>
-In-Reply-To: <20140206054158.4595.17827.stgit@preeti>
-References: <20140206054158.4595.17827.stgit@preeti>
-User-Agent: StGit/0.16-38-g167d
+	id S1751931AbaBFGC0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 01:02:26 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39965 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751361AbaBFGCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 01:02:23 -0500
+Message-ID: <52F32549.5010303@ti.com>
+Date: Thu, 6 Feb 2014 11:31:45 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Pratyush Anand <pratyush.anand@st.com>, <arnd@arndb.de>
+CC: <spear-devel@list.st.com>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V4 4/8] phy: st-miphy-40lp: Add skeleton driver
+References: <cover.1391661589.git.pratyush.anand@st.com> <8596e7596e0dfa9a487c4c2deb325bbdf785e55e.1391661589.git.pratyush.anand@st.com>
+In-Reply-To: <8596e7596e0dfa9a487c4c2deb325bbdf785e55e.1391661589.git.pratyush.anand@st.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14020605-1542-0000-0000-000005D14026
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+Hi,
 
-On some architectures, in certain CPU deep idle states the local timers stop.
-An external clock device is used to wakeup these CPUs. The kernel support for the
-wakeup of these CPUs is provided by the tick broadcast framework by using the
-external clock device as the wakeup source.
+On Thursday 06 February 2014 10:14 AM, Pratyush Anand wrote:
+> ST miphy-40lp supports PCIe, SATA and Super Speed USB. This driver adds
+> skeleton support for the same.
+> 
+> Currently phy ops are returning -EINVAL. They can be elaborated
+> depending on the SOC being supported in future.
+> 
+> Signed-off-by: Pratyush Anand <pratyush.anand@st.com>
+> Tested-by: Mohit Kumar <mohit.kumar@st.com>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Kishon Vijay Abraham I <kishon@ti.com>
+> Cc: spear-devel@list.st.com
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: devicetree@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  .../devicetree/bindings/phy/st-miphy40lp.txt       |  12 ++
+>  drivers/phy/Kconfig                                |   6 +
+>  drivers/phy/Makefile                               |   1 +
+>  drivers/phy/phy-miphy40lp.c                        | 174 +++++++++++++++++++++
+>  4 files changed, 193 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/phy/st-miphy40lp.txt
+>  create mode 100644 drivers/phy/phy-miphy40lp.c
+> 
+> diff --git a/Documentation/devicetree/bindings/phy/st-miphy40lp.txt b/Documentation/devicetree/bindings/phy/st-miphy40lp.txt
+> new file mode 100644
+> index 0000000..d0c7096
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/phy/st-miphy40lp.txt
+> @@ -0,0 +1,12 @@
+> +Required properties:
+> +- compatible : should be "st,miphy40lp-phy"
+> +	Other supported soc specific compatible:
+> +		"st,spear1310-miphy"
+> +		"st,spear1340-miphy"
+> +- reg : offset and length of the PHY register set.
+> +- misc: phandle for the syscon node to access misc registers
+> +- phy-id: Instance id of the phy.
+> +- #phy-cells : from the generic PHY bindings, must be 1.
+> +	- 1st cell: phandle to the phy node.
+> +	- 2nd cell: 0 if phy (in 1st cell) is to be used for SATA, 1 for PCIe
+> +	  and 2 for Super Speed USB.
+> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+> index afa2354..2f58993 100644
+> --- a/drivers/phy/Kconfig
+> +++ b/drivers/phy/Kconfig
+> @@ -64,4 +64,10 @@ config BCM_KONA_USB2_PHY
+>  	help
+>  	  Enable this to support the Broadcom Kona USB 2.0 PHY.
+>  
+> +config PHY_ST_MIPHY40LP
+> +	tristate "ST MIPHY 40LP driver"
+> +	help
+> +	  Support for ST MIPHY 40LP which can be used for PCIe, SATA and Super Speed USB.
+> +	select GENERIC_PHY
+> +
+>  endmenu
+> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
+> index b57c253..c061091 100644
+> --- a/drivers/phy/Makefile
+> +++ b/drivers/phy/Makefile
+> @@ -9,3 +9,4 @@ obj-$(CONFIG_PHY_EXYNOS_MIPI_VIDEO)	+= phy-exynos-mipi-video.o
+>  obj-$(CONFIG_PHY_MVEBU_SATA)		+= phy-mvebu-sata.o
+>  obj-$(CONFIG_OMAP_USB2)			+= phy-omap-usb2.o
+>  obj-$(CONFIG_TWL4030_USB)		+= phy-twl4030-usb.o
+> +obj-$(CONFIG_PHY_ST_MIPHY40LP)		+= phy-miphy40lp.o
+> diff --git a/drivers/phy/phy-miphy40lp.c b/drivers/phy/phy-miphy40lp.c
+> new file mode 100644
+> index 0000000..d478c14
+> --- /dev/null
+> +++ b/drivers/phy/phy-miphy40lp.c
+> @@ -0,0 +1,174 @@
+> +/*
+> + * ST MiPHY-40LP PHY driver
+> + *
+> + * Copyright (C) 2014 ST Microelectronics
+> + * Pratyush Anand <pratyush.anand@st.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + */
+> +
+> +#include <linux/delay.h>
+> +#include <linux/dma-mapping.h>
+> +#include <linux/kernel.h>
+> +#include <linux/mfd/syscon.h>
+> +#include <linux/module.h>
+> +#include <linux/of_device.h>
+> +#include <linux/phy/phy.h>
+> +#include <linux/regmap.h>
+> +
+> +enum phy_mode {
+> +	SATA,
+> +	PCIE,
+> +	SS_USB,
+> +};
+> +
+> +struct st_miphy40lp_priv {
+> +	/* regmap for any soc specific misc registers */
+> +	struct regmap		*misc;
+> +	/* phy struct pointer */
+> +	struct phy		*phy;
+> +	/* device node pointer */
+> +	struct device_node	*np;
+> +	/* phy mode: 0 for SATA 1 for PCIe and 2 for SS-USB */
+> +	enum phy_mode		mode;
+> +	/* instance id of this phy */
+> +	u32			id;
+> +};
+> +
+> +static int miphy40lp_init(struct phy *phy)
+> +{
+> +	return -EINVAL;
+> +}
+> +
+> +static int miphy40lp_exit(struct phy *phy)
+> +{
+> +	return -EINVAL;
+> +}
+> +
+> +static int miphy40lp_power_off(struct phy *phy)
+> +{
+> +	return -EINVAL;
+> +}
+> +
+> +static int miphy40lp_power_on(struct phy *phy)
+> +{
+> +	return -EINVAL;
+> +}
+> +
+> +static const struct of_device_id st_miphy40lp_of_match[] = {
+> +	{ .compatible = "st,miphy40lp-phy" },
+> +	{ },
+> +};
+> +MODULE_DEVICE_TABLE(of, st_miphy40lp_of_match);
+> +
+> +static struct phy_ops st_miphy40lp_ops = {
+> +	.init = miphy40lp_init,
+> +	.exit = miphy40lp_exit,
+> +	.power_off = miphy40lp_power_off,
+> +	.power_on = miphy40lp_power_on,
+> +	.owner		= THIS_MODULE,
 
-However not all implementations of architectures provide such an external
-clock device. This patch includes support in the broadcast framework to handle
-the wakeup of the CPUs in deep idle states on such systems by queuing a hrtimer
-on one of the CPUs, which is meant to handle the wakeup of CPUs in deep idle states.
+Would prefer to either align all the fields or align none. Here only owner is
+aligned.
+> +};
+> +
+> +#ifdef CONFIG_PM_SLEEP
+> +static int miphy40lp_suspend(struct device *dev)
+> +{
+> +	return -EINVAL;
+> +}
+> +
+> +static int miphy40lp_resume(struct device *dev)
+> +{
+> +	return -EINVAL;
+> +}
+> +#endif
+> +
+> +static SIMPLE_DEV_PM_OPS(miphy40lp_pm_ops, miphy40lp_suspend,
+> +		miphy40lp_resume);
+> +
+> +static struct phy *st_miphy40lp_xlate(struct device *dev,
+> +					struct of_phandle_args *args)
+> +{
+> +	struct st_miphy40lp_priv *phypriv = dev_get_drvdata(dev);
+> +
+> +	if (args->args_count < 1) {
+> +		dev_err(dev, "DT did not pass correct no of args\n");
+> +		return NULL;
+> +	}
+> +
+> +	phypriv->mode = args->args[0];
+> +
+> +	return phypriv->phy;
+> +}
+> +
+> +static int __init st_miphy40lp_probe(struct platform_device *pdev)
+> +{
+> +	struct device *dev = &pdev->dev;
+> +	struct st_miphy40lp_priv *phypriv;
+> +	struct phy_provider *phy_provider;
+> +
+> +	phypriv = devm_kzalloc(dev, sizeof(*phypriv), GFP_KERNEL);
+> +	if (!phypriv) {
+> +		dev_err(dev, "can't alloc miphy40lp private date memory\n");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	phypriv->np = dev->of_node;
+> +
+> +	phypriv->misc =
+> +		syscon_regmap_lookup_by_phandle(dev->of_node, "misc");
+> +	if (IS_ERR(phypriv->misc)) {
+> +		dev_err(dev, "failed to find misc regmap\n");
+> +		return PTR_ERR(phypriv->misc);
+> +	}
+> +
+> +	if (of_property_read_u32(dev->of_node, "phy-id", &phypriv->id)) {
+> +		dev_err(dev, "failed to find phy id\n");
+> +		return -EINVAL;
+> +	}
+Do we really need this phy id? How is it being used?
 
-This patchset introduces a pseudo clock device which can be registered by the
-archs as tick_broadcast_device in the absence of a real external clock
-device. Once registered, the broadcast framework will work as is for these
-architectures as long as the archs take care of the BROADCAST_ENTER
-notification failing for one of the CPUs. This CPU is made the stand by CPU to
-handle wakeup of the CPUs in deep idle and it *must not enter deep idle states*.
+> +
+> +	phy_provider = devm_of_phy_provider_register(dev, st_miphy40lp_xlate);
+> +	if (IS_ERR(phy_provider)) {
+> +		dev_err(dev, "failed to register phy provider\n");
+> +		return PTR_ERR(phy_provider);
+> +	}
 
-The CPU with the earliest wakeup is chosen to be this CPU. Hence this way the
-stand by CPU dynamically moves around and so does the hrtimer which is queued
-to trigger at the next earliest wakeup time. This is consistent with the case where
-an external clock device is present. The smp affinity of this clock device is
-set to the CPU with the earliest wakeup. This patchset handles the hotplug of
-the stand by CPU as well by moving the hrtimer on to the CPU handling the CPU_DEAD
-notification.
+phy_provider_register should be the last step in registering the PHY. Or your
+PHY call backs can be called before you create the PHY. Btw in your case you
+should call dev_set_drvdata before doing phy_provider_register.
+> +
+> +	phypriv->phy = devm_phy_create(dev, &st_miphy40lp_ops, NULL);
+> +	if (IS_ERR(phypriv->phy)) {
+> +		dev_err(dev, "failed to create SATA PCIe PHY\n");
+> +		return PTR_ERR(phypriv->phy);
+> +	}
+> +
+> +	dev_set_drvdata(dev, phypriv);
+> +	phy_set_drvdata(phypriv->phy, phypriv);
+> +
+> +	return 0;
+> +}
+> +
+> +static int __exit st_miphy40lp_remove(struct platform_device *pdev)
+> +{
+> +	return 0;
+> +}
 
-Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-[Added Changelog and code to handle reprogramming of hrtimer]
----
+I think you can remove this empty 'remove' callback.
 
- include/linux/clockchips.h           |    9 +++
- kernel/time/Makefile                 |    2 -
- kernel/time/tick-broadcast-hrtimer.c |  105 ++++++++++++++++++++++++++++++++++
- kernel/time/tick-broadcast.c         |   45 ++++++++++++++-
- 4 files changed, 159 insertions(+), 2 deletions(-)
- create mode 100644 kernel/time/tick-broadcast-hrtimer.c
-
-diff --git a/include/linux/clockchips.h b/include/linux/clockchips.h
-index e0c5a6c..dbe9e14 100644
---- a/include/linux/clockchips.h
-+++ b/include/linux/clockchips.h
-@@ -62,6 +62,11 @@ enum clock_event_mode {
- #define CLOCK_EVT_FEAT_DYNIRQ		0x000020
- #define CLOCK_EVT_FEAT_PERCPU		0x000040
- 
-+/*
-+ * Clockevent device is based on a hrtimer for broadcast
-+ */
-+#define CLOCK_EVT_FEAT_HRTIMER		0x000080
-+
- /**
-  * struct clock_event_device - clock event device descriptor
-  * @event_handler:	Assigned by the framework to be called by the low
-@@ -83,6 +88,7 @@ enum clock_event_mode {
-  * @name:		ptr to clock event name
-  * @rating:		variable to rate clock event devices
-  * @irq:		IRQ number (only for non CPU local devices)
-+ * @bound_on:		Bound on CPU
-  * @cpumask:		cpumask to indicate for which CPUs this device works
-  * @list:		list head for the management code
-  * @owner:		module reference
-@@ -113,6 +119,7 @@ struct clock_event_device {
- 	const char		*name;
- 	int			rating;
- 	int			irq;
-+	int			bound_on;
- 	const struct cpumask	*cpumask;
- 	struct list_head	list;
- 	struct module		*owner;
-@@ -180,9 +187,11 @@ extern int tick_receive_broadcast(void);
- #endif
- 
- #if defined(CONFIG_GENERIC_CLOCKEVENTS_BROADCAST) && defined(CONFIG_TICK_ONESHOT)
-+extern void tick_setup_hrtimer_broadcast(void);
- extern int tick_check_broadcast_expired(void);
- #else
- static inline int tick_check_broadcast_expired(void) { return 0; }
-+static void tick_setup_hrtimer_broadcast(void) {};
- #endif
- 
- #ifdef CONFIG_GENERIC_CLOCKEVENTS
-diff --git a/kernel/time/Makefile b/kernel/time/Makefile
-index 9250130..06151ef 100644
---- a/kernel/time/Makefile
-+++ b/kernel/time/Makefile
-@@ -3,7 +3,7 @@ obj-y += timeconv.o posix-clock.o alarmtimer.o
- 
- obj-$(CONFIG_GENERIC_CLOCKEVENTS_BUILD)		+= clockevents.o
- obj-$(CONFIG_GENERIC_CLOCKEVENTS)		+= tick-common.o
--obj-$(CONFIG_GENERIC_CLOCKEVENTS_BROADCAST)	+= tick-broadcast.o
-+obj-$(CONFIG_GENERIC_CLOCKEVENTS_BROADCAST)	+= tick-broadcast.o tick-broadcast-hrtimer.o
- obj-$(CONFIG_GENERIC_SCHED_CLOCK)		+= sched_clock.o
- obj-$(CONFIG_TICK_ONESHOT)			+= tick-oneshot.o
- obj-$(CONFIG_TICK_ONESHOT)			+= tick-sched.o
-diff --git a/kernel/time/tick-broadcast-hrtimer.c b/kernel/time/tick-broadcast-hrtimer.c
-new file mode 100644
-index 0000000..af1e119
---- /dev/null
-+++ b/kernel/time/tick-broadcast-hrtimer.c
-@@ -0,0 +1,105 @@
-+/*
-+ * linux/kernel/time/tick-broadcast-hrtimer.c
-+ * This file emulates a local clock event device
-+ * via a pseudo clock device.
-+ */
-+#include <linux/cpu.h>
-+#include <linux/err.h>
-+#include <linux/hrtimer.h>
-+#include <linux/interrupt.h>
-+#include <linux/percpu.h>
-+#include <linux/profile.h>
-+#include <linux/clockchips.h>
-+#include <linux/sched.h>
-+#include <linux/smp.h>
-+#include <linux/module.h>
-+
-+#include "tick-internal.h"
-+
-+static struct hrtimer bctimer;
-+
-+static void bc_set_mode(enum clock_event_mode mode,
-+			struct clock_event_device *bc)
-+{
-+	switch (mode) {
-+	case CLOCK_EVT_MODE_SHUTDOWN:
-+		/*
-+		 * Note, we cannot cancel the timer here as we might
-+		 * run into the following live lock scenario:
-+		 *
-+		 * cpu 0		cpu1
-+		 * lock(broadcast_lock);
-+		 *			hrtimer_interrupt()
-+		 *			bc_handler()
-+		 *			   tick_handle_oneshot_broadcast();
-+		 *			    lock(broadcast_lock);
-+		 * hrtimer_cancel()
-+		 *  wait_for_callback()
-+		 */
-+		hrtimer_try_to_cancel(&bctimer);
-+		break;
-+	default:
-+		break;
-+	}
-+}
-+
-+/*
-+ * This is called from the guts of the broadcast code when the cpu
-+ * which is about to enter idle has the earliest broadcast timer event.
-+ */
-+static int bc_set_next(ktime_t expires, struct clock_event_device *bc)
-+{
-+	/*
-+	 * We try to cancel the timer first. If the callback is on
-+	 * flight on some other cpu then we let it handle it. If we
-+	 * were able to cancel the timer nothing can rearm it as we
-+	 * own broadcast_lock.
-+	 *
-+	 * However we can also be called from the event handler of
-+	 * ce_broadcast_hrtimer itself when it expires. We cannot therefore
-+	 * restart the timer since it is on flight on the same CPU. But
-+	 * due to the same reason we can reset it.
-+	 */
-+	if (hrtimer_try_to_cancel(&bctimer) >= 0) {
-+		hrtimer_start(&bctimer, expires, HRTIMER_MODE_ABS_PINNED);
-+		/* Bind the "device" to the cpu */
-+		bc->bound_on = smp_processor_id();
-+	} else if (bc->bound_on == smp_processor_id()) {
-+		hrtimer_set_expires(&bctimer, expires);
-+	}
-+	return 0;
-+}
-+
-+static struct clock_event_device ce_broadcast_hrtimer = {
-+	.set_mode		= bc_set_mode,
-+	.set_next_ktime		= bc_set_next,
-+	.features		= CLOCK_EVT_FEAT_ONESHOT |
-+				  CLOCK_EVT_FEAT_KTIME |
-+				  CLOCK_EVT_FEAT_HRTIMER,
-+	.rating			= 0,
-+	.bound_on		= -1,
-+	.min_delta_ns		= 1,
-+	.max_delta_ns		= KTIME_MAX,
-+	.min_delta_ticks	= 1,
-+	.max_delta_ticks	= KTIME_MAX,
-+	.mult			= 1,
-+	.shift			= 0,
-+	.cpumask		= cpu_all_mask,
-+};
-+
-+static enum hrtimer_restart bc_handler(struct hrtimer *t)
-+{
-+	ce_broadcast_hrtimer.event_handler(&ce_broadcast_hrtimer);
-+
-+	if (ce_broadcast_hrtimer.next_event.tv64 == KTIME_MAX)
-+		return HRTIMER_NORESTART;
-+
-+	return HRTIMER_RESTART;
-+}
-+
-+void tick_setup_hrtimer_broadcast(void)
-+{
-+	hrtimer_init(&bctimer, CLOCK_MONOTONIC, HRTIMER_MODE_ABS);
-+	bctimer.function = bc_handler;
-+	clockevents_register_device(&ce_broadcast_hrtimer);
-+}
-diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-index ddf2ac2..1e46e62f 100644
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -630,6 +630,42 @@ again:
- 	raw_spin_unlock(&tick_broadcast_lock);
- }
- 
-+static int broadcast_needs_cpu(struct clock_event_device *bc, int cpu)
-+{
-+	if (!(bc->features & CLOCK_EVT_FEAT_HRTIMER))
-+		return 0;
-+	if (bc->next_event.tv64 == KTIME_MAX)
-+		return 0;
-+	return bc->bound_on == cpu ? -EBUSY : 0;
-+}
-+
-+static void broadcast_shutdown_local(struct clock_event_device *bc,
-+				     struct clock_event_device *dev)
-+{
-+	/*
-+	 * For hrtimer based broadcasting we cannot shutdown the cpu
-+	 * local device if our own event is the first one to expire or
-+	 * if we own the broadcast timer.
-+	 */
-+	if (bc->features & CLOCK_EVT_FEAT_HRTIMER) {
-+		if (broadcast_needs_cpu(bc, smp_processor_id()))
-+			return;
-+		if (dev->next_event.tv64 < bc->next_event.tv64)
-+			return;
-+	}
-+	clockevents_set_mode(dev, CLOCK_EVT_MODE_SHUTDOWN);
-+}
-+
-+static void broadcast_move_bc(int deadcpu)
-+{
-+	struct clock_event_device *bc = tick_broadcast_device.evtdev;
-+
-+	if (!bc || !broadcast_needs_cpu(bc, deadcpu))
-+		return;
-+	/* This moves the broadcast assignment to this cpu */
-+	clockevents_program_event(bc, bc->next_event, 1);
-+}
-+
- /*
-  * Powerstate information: The system enters/leaves a state, where
-  * affected devices might stop
-@@ -667,7 +703,7 @@ int tick_broadcast_oneshot_control(unsigned long reason)
- 	if (reason == CLOCK_EVT_NOTIFY_BROADCAST_ENTER) {
- 		if (!cpumask_test_and_set_cpu(cpu, tick_broadcast_oneshot_mask)) {
- 			WARN_ON_ONCE(cpumask_test_cpu(cpu, tick_broadcast_pending_mask));
--			clockevents_set_mode(dev, CLOCK_EVT_MODE_SHUTDOWN);
-+			broadcast_shutdown_local(bc, dev);
- 			/*
- 			 * We only reprogram the broadcast timer if we
- 			 * did not mark ourself in the force mask and
-@@ -680,6 +716,11 @@ int tick_broadcast_oneshot_control(unsigned long reason)
- 			    dev->next_event.tv64 < bc->next_event.tv64)
- 				tick_broadcast_set_event(bc, cpu, dev->next_event, 1);
- 		}
-+		/*
-+		 * If the current CPU owns the hrtimer broadcast
-+		 * mechanism, it cannot go deep idle.
-+		 */
-+		ret = broadcast_needs_cpu(bc, cpu);
- 	} else {
- 		if (cpumask_test_and_clear_cpu(cpu, tick_broadcast_oneshot_mask)) {
- 			clockevents_set_mode(dev, CLOCK_EVT_MODE_ONESHOT);
-@@ -853,6 +894,8 @@ void tick_shutdown_broadcast_oneshot(unsigned int *cpup)
- 	cpumask_clear_cpu(cpu, tick_broadcast_pending_mask);
- 	cpumask_clear_cpu(cpu, tick_broadcast_force_mask);
- 
-+	broadcast_move_bc(cpu);
-+
- 	raw_spin_unlock_irqrestore(&tick_broadcast_lock, flags);
- }
- 
-
+Thanks
+Kishon
