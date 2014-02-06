@@ -1,173 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756661AbaBFWL1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 17:11:27 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:36729 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753489AbaBFWLW (ORCPT
+	id S1757073AbaBFWQE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 17:16:04 -0500
+Received: from honeysuckle.london.02.net ([87.194.255.144]:57499 "EHLO
+	honeysuckle.london.02.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757007AbaBFWQC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 17:11:22 -0500
-Date: Thu, 6 Feb 2014 14:11:18 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Torvald Riegel <triegel@redhat.com>
-Cc: Will Deacon <will.deacon@arm.com>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-Message-ID: <20140206221117.GJ4250@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140206134825.305510953@infradead.org>
- <21984.1391711149@warthog.procyon.org.uk>
- <52F3DA85.1060209@arm.com>
- <20140206185910.GE27276@mudshark.cambridge.arm.com>
- <20140206192743.GH4250@linux.vnet.ibm.com>
- <1391721423.23421.3898.camel@triegel.csb>
+	Thu, 6 Feb 2014 17:16:02 -0500
+From: Mark Davies <junk@eslaf.co.uk>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Vince Weaver <vince@deater.net>, alan@lxorguk.ukuu.org.uk,
+        Ingo Molnar <mingo@kernel.org>, Stephane Eranian <eranian@google.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf,x86,p6: Add userspace RDPMC quirk for P6
+References: <20140205102718.GF3229@twins.programming.kicks-ass.net>
+	<alpine.DEB.2.02.1402051415190.16225@pianoman.cluster.toy>
+	<20140205192012.GL2936@laptop.programming.kicks-ass.net>
+	<20140205194851.GE5126@laptop.programming.kicks-ass.net>
+	<871tzgxc3y.fsf@gw.eslaf.co.uk>
+	<20140206203803.GL5002@laptop.programming.kicks-ass.net>
+Date: Thu, 06 Feb 2014 22:15:23 +0000
+In-Reply-To: <20140206203803.GL5002@laptop.programming.kicks-ass.net> (Peter
+	Zijlstra's message of "Thu, 6 Feb 2014 21:38:03 +0100")
+Message-ID: <87eh3fhoqs.fsf@gw.eslaf.co.uk>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1391721423.23421.3898.camel@triegel.csb>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14020622-1542-0000-0000-000005D6BB3D
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 06, 2014 at 10:17:03PM +0100, Torvald Riegel wrote:
-> On Thu, 2014-02-06 at 11:27 -0800, Paul E. McKenney wrote:
-> > On Thu, Feb 06, 2014 at 06:59:10PM +0000, Will Deacon wrote:
-> > > On Thu, Feb 06, 2014 at 06:55:01PM +0000, Ramana Radhakrishnan wrote:
-> > > > On 02/06/14 18:25, David Howells wrote:
-> > > > >
-> > > > > Is it worth considering a move towards using C11 atomics and barriers and
-> > > > > compiler intrinsics inside the kernel?  The compiler _ought_ to be able to do
-> > > > > these.
-> > > > 
-> > > > 
-> > > > It sounds interesting to me, if we can make it work properly and 
-> > > > reliably. + gcc@gcc.gnu.org for others in the GCC community to chip in.
-> > > 
-> > > Given my (albeit limited) experience playing with the C11 spec and GCC, I
-> > > really think this is a bad idea for the kernel. It seems that nobody really
-> > > agrees on exactly how the C11 atomics map to real architectural
-> > > instructions on anything but the trivial architectures. For example, should
-> > > the following code fire the assert?
-> > > 
-> > > 
-> > > extern atomic<int> foo, bar, baz;
-> > > 
-> > > void thread1(void)
-> > > {
-> > > 	foo.store(42, memory_order_relaxed);
-> > > 	bar.fetch_add(1, memory_order_seq_cst);
-> > > 	baz.store(42, memory_order_relaxed);
-> > > }
-> > > 
-> > > void thread2(void)
-> > > {
-> > > 	while (baz.load(memory_order_seq_cst) != 42) {
-> > > 		/* do nothing */
-> > > 	}
-> > > 
-> > > 	assert(foo.load(memory_order_seq_cst) == 42);
-> > > }
-> > > 
-> > > 
-> > > To answer that question, you need to go and look at the definitions of
-> > > synchronises-with, happens-before, dependency_ordered_before and a whole
-> > > pile of vaguely written waffle to realise that you don't know. Certainly,
-> > > the code that arm64 GCC currently spits out would allow the assertion to fire
-> > > on some microarchitectures.
-> > 
-> > Yep!  I believe that a memory_order_seq_cst fence in combination with the
-> > fetch_add() would do the trick on many architectures, however.  All of
-> > this is one reason that any C11 definitions need to be individually
-> > overridable by individual architectures.
-> 
-> "Overridable" in which sense?  Do you want to change the semantics on
-> the language level in the sense of altering the memory model, or rather
-> use a different implementation under the hood to, for example, fix
-> deficiencies in the compilers?
+That fixed it. Booted patched 3.4.78 with CONFIG_APM=y with no problem.
 
-We need the architecture maintainer to be able to select either an
-assembly-language implementation or a C11-atomics implementation for any
-given Linux-kernel operation.  For example, a given architecture might
-be able to use fetch_add(1, memory_order_relaxed) for atomic_inc() but
-assembly for atomic_add_return().  This is because atomic_inc() is not
-required to have any particular ordering properties, while as discussed
-previously, atomic_add_return() requires tighter ordering than the C11
-standard provides.
+dmesg contains the "Userspace RDPMC support disabled due to a CPU
+erratum" message
 
-> > > There are also so many ways to blow your head off it's untrue. For example,
-> > > cmpxchg takes a separate memory model parameter for failure and success, but
-> > > then there are restrictions on the sets you can use for each. It's not hard
-> > > to find well-known memory-ordering experts shouting "Just use
-> > > memory_model_seq_cst for everything, it's too hard otherwise". Then there's
-> > > the fun of load-consume vs load-acquire (arm64 GCC completely ignores consume
-> > > atm and optimises all of the data dependencies away) as well as the definition
-> > > of "data races", which seem to be used as an excuse to miscompile a program
-> > > at the earliest opportunity.
-> > 
-> > Trust me, rcu_dereference() is not going to be defined in terms of
-> > memory_order_consume until the compilers implement it both correctly and
-> > efficiently.  They are not there yet, and there is currently no shortage
-> > of compiler writers who would prefer to ignore memory_order_consume.
-> 
-> Do you have any input on
-> http://gcc.gnu.org/bugzilla/show_bug.cgi?id=59448?  In particular, the
-> language standard's definition of dependencies?
+"cat /sys/devices/cpu/rdpmc" gives "0"
 
-Let's see...  1.10p9 says that a dependency must be carried unless:
+"echo 1 >/sys/devices/cpu/rdpmc" gives "bash: echo: write error: Unknown
+error 524" 
 
-— B is an invocation of any specialization of std::kill_dependency (29.3), or
-— A is the left operand of a built-in logical AND (&&, see 5.14) or logical OR (||, see 5.15) operator,
-or
-— A is the left operand of a conditional (?:, see 5.16) operator, or
-— A is the left operand of the built-in comma (,) operator (5.18);
+Thanks for fixing it. How I missed the return statements in
+intel_pmu_init I don't know, probably got a bit over excited when I
+spotted what the problem was.
 
-So the use of "flag" before the "?" is ignored.  But the "flag - flag"
-after the "?" will carry a dependency, so the code fragment in 59448
-needs to do the ordering rather than just optimizing "flag - flag" out
-of existence.  One way to do that on both ARM and Power is to actually
-emit code for "flag - flag", but there are a number of other ways to
-make that work.
+Mark Davies
 
-BTW, there is some discussion on 1.10p9's handling of && and ||, and
-that clause is likely to change.  And yes, I am behind on analyzing
-usage in the Linux kernel to find out if Linux cares...
+On Thu, Feb 06 2014, Peter Zijlstra wrote:
 
-> > And rcu_dereference() will need per-arch overrides for some time during
-> > any transition to memory_order_consume.
-> > 
-> > > Trying to introduce system concepts (writes to devices, interrupts,
-> > > non-coherent agents) into this mess is going to be an uphill battle IMHO. I'd
-> > > just rather stick to the semantics we have and the asm volatile barriers.
-> > 
-> > And barrier() isn't going to go away any time soon, either.  And
-> > ACCESS_ONCE() needs to keep volatile semantics until there is some
-> > memory_order_whatever that prevents loads and stores from being coalesced.
-> 
-> I'd be happy to discuss something like this in ISO C++ SG1 (or has this
-> been discussed in the past already?).  But it needs to have a paper I
-> suppose.
-
-The current position of the usual suspects other than me is that this
-falls into the category of forward-progress guarantees, which are
-considers (again, by the usual suspects other than me) to be out
-of scope.
-
-> Will you be in Issaquah for the C++ meeting next week?
-
-Weather permitting, I will be there!
-
-							Thanx, Paul
-
+> On Thu, Feb 06, 2014 at 07:41:37PM +0000, Mark Davies wrote:
+>> Peter
+>> 
+>> As I reported the problem I thought I better contribute by testing the
+>> fix.
+>> 
+>> I took the patch below and managed to change the 3.4.78 code to match
+>> and tried to boot my Pentium Pro system but it hung as before. After
+>> some investigation I discovered the quirk is not being run, in fact no
+>> quirks were being run in init_hw_perf_events as x86_pmu.quirks was NULL.
+>> 
+>> The problem as far as I can see is that the quirk is added to x86_pmu in
+>> p6_pmu_init but then x86_pmu is reassigned at the end of that function
+>> (x86_pmu = p6_pmu) resetting x86_pmu.quirks to NULL.
+>
+> Right so far.
+>
+>> x86_pmu looks like
+>> it is reassigned again in intel_pmu_init to either core_pmu or intel_pmu
+>> after the call to p6_pmu_init so I am not sure which x86_pmu.quirks
+>> init_hw_perf_events tries to use.
+>
+> Note how intel_pmu_init() does: return p6_pmu_init(), so it will never
+> get to the x86_pmu assignment for the ARCH_PERFMON drivers.
+>
+> Yep, thanks for testing and you're (mostly) quite right.
+>
+> We can do the copy early though, if we return -ENODEV nothing will end
+> up using the x86_pmu anyway, so it doesn't matter what lives in there.
+>
+> ---
+> Subject: perf,x86,p6: Add userspace RDPMC quirk for PPro
+> From: Peter Zijlstra <peterz@infradead.org>
+> Date: Wed, 5 Feb 2014 20:48:51 +0100
+>
+> PPro machines can die hard when PCE gets enabled due to a CPU erratum.
+> The safe way it so disable it by default and keep it disabled.
+>
+> See erratum 26 in:
+>
+> http://download.intel.com/design/archives/processors/pro/docs/24268935.pdf
+>
+> Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Stephane Eranian <eranian@google.com>
+> Cc: Vince Weaver <vince@deater.net>
+> Reported-by: Mark Davies <junk@eslaf.co.uk>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> ---
+>  arch/x86/kernel/cpu/perf_event.c    |    6 +++-
+>  arch/x86/kernel/cpu/perf_event.h    |    1 
+>  arch/x86/kernel/cpu/perf_event_p6.c |   48 ++++++++++++++++++++++++------------
+>  3 files changed, 39 insertions(+), 16 deletions(-)
+>
+> --- a/arch/x86/kernel/cpu/perf_event.c
+> +++ b/arch/x86/kernel/cpu/perf_event.c
+> @@ -1521,6 +1521,8 @@ static int __init init_hw_perf_events(vo
+>  
+>  	pr_cont("%s PMU driver.\n", x86_pmu.name);
+>  
+> +	x86_pmu.attr_rdpmc = 1; /* enable userspace RDPMC usage by default */
+> +
+>  	for (quirk = x86_pmu.quirks; quirk; quirk = quirk->next)
+>  		quirk->func();
+>  
+> @@ -1534,7 +1536,6 @@ static int __init init_hw_perf_events(vo
+>  		__EVENT_CONSTRAINT(0, (1ULL << x86_pmu.num_counters) - 1,
+>  				   0, x86_pmu.num_counters, 0, 0);
+>  
+> -	x86_pmu.attr_rdpmc = 1; /* enable userspace RDPMC usage by default */
+>  	x86_pmu_format_group.attrs = x86_pmu.format_attrs;
+>  
+>  	if (x86_pmu.event_attrs)
+> @@ -1820,6 +1821,9 @@ static ssize_t set_attr_rdpmc(struct dev
+>  	if (ret)
+>  		return ret;
+>  
+> +	if (x86_pmu.attr_rdpmc_broken)
+> +		return -ENOTSUPP;
+> +
+>  	if (!!val != !!x86_pmu.attr_rdpmc) {
+>  		x86_pmu.attr_rdpmc = !!val;
+>  		smp_call_function(change_rdpmc, (void *)val, 1);
+> --- a/arch/x86/kernel/cpu/perf_event.h
+> +++ b/arch/x86/kernel/cpu/perf_event.h
+> @@ -409,6 +409,7 @@ struct x86_pmu {
+>  	/*
+>  	 * sysfs attrs
+>  	 */
+> +	int		attr_rdpmc_broken;
+>  	int		attr_rdpmc;
+>  	struct attribute **format_attrs;
+>  	struct attribute **event_attrs;
+> --- a/arch/x86/kernel/cpu/perf_event_p6.c
+> +++ b/arch/x86/kernel/cpu/perf_event_p6.c
+> @@ -231,31 +231,49 @@ static __initconst const struct x86_pmu
+>  
+>  };
+>  
+> +static __init void p6_pmu_rdpmc_quirk(void)
+> +{
+> +	if (boot_cpu_data.x86_mask < 9) {
+> +		/*
+> +		 * PPro erratum 26; fixed in stepping 9 and above.
+> +		 */
+> +		pr_warn("Userspace RDPMC support disabled due to a CPU erratum\n");
+> +		x86_pmu.attr_rdpmc_broken = 1;
+> +		x86_pmu.attr_rdpmc = 0;
+> +	}
+> +}
+> +
+>  __init int p6_pmu_init(void)
+>  {
+> +	x86_pmu = p6_pmu;
+> +
+>  	switch (boot_cpu_data.x86_model) {
+> -	case 1:
+> -	case 3:  /* Pentium Pro */
+> -	case 5:
+> -	case 6:  /* Pentium II */
+> -	case 7:
+> -	case 8:
+> -	case 11: /* Pentium III */
+> -	case 9:
+> -	case 13:
+> -		/* Pentium M */
+> +	case  1: /* Pentium Pro */
+> +		x86_add_quirk(p6_pmu_rdpmc_quirk);
+> +		break;
+> +
+> +	case  3: /* Pentium II - Klamath */
+> +	case  5: /* Pentium II - Deschutes */
+> +	case  6: /* Pentium II - Mendocino */
+>  		break;
+> +
+> +	case  7: /* Pentium III - Katmai */
+> +	case  8: /* Pentium III - Coppermine */
+> +	case 10: /* Pentium III Xeon */
+> +	case 11: /* Pentium III - Tualatin */
+> +		break;
+> +
+> +	case  9: /* Pentium M - Banias */
+> +	case 13: /* Pentium M - Dothan */
+> +		break;
+> +
+>  	default:
+> -		pr_cont("unsupported p6 CPU model %d ",
+> -			boot_cpu_data.x86_model);
+> +		pr_cont("unsupported p6 CPU model %d ", boot_cpu_data.x86_model);
+>  		return -ENODEV;
+>  	}
+>  
+> -	x86_pmu = p6_pmu;
+> -
+>  	memcpy(hw_cache_event_ids, p6_hw_cache_event_ids,
+>  		sizeof(hw_cache_event_ids));
+>  
+> -
+>  	return 0;
+>  }
