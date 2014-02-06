@@ -1,83 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744AbaBFDz6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 22:55:58 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:56149 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753876AbaBFDz4 (ORCPT
+	id S1754552AbaBFEFz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 23:05:55 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:34581 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752784AbaBFEFy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 22:55:56 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s163tqfS002525, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net] r8152: fix the submission of the interrupt transfer
-Date: Thu, 6 Feb 2014 11:55:48 +0800
-Message-ID: <1391658948-4456-1-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.8.4.2
+	Wed, 5 Feb 2014 23:05:54 -0500
+Date: Wed, 5 Feb 2014 20:05:51 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: LKML <linux-kernel@vger.kernel.org>, penberg@kernel.org, cl@linux.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH v2] slub: Do not assert not having lock in removing freed
+ partial
+In-Reply-To: <20140205222112.742169e0@gandalf.local.home>
+Message-ID: <alpine.DEB.2.02.1402052005350.18312@chino.kir.corp.google.com>
+References: <20140205222112.742169e0@gandalf.local.home>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.44]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The submission of the interrupt transfer should be done after setting
-the bit of WORK_ENABLE, otherwise the callback function would have
-the opportunity to be returned directly.
+On Wed, 5 Feb 2014, Steven Rostedt wrote:
 
-Clear the bit of WORK_ENABLE before killing the interrupt transfer.
+> Vladimir reported the following issue:
+> 
+> Commit c65c1877bd68 ("slub: use lockdep_assert_held") requires
+> remove_partial() to be called with n->list_lock held, but free_partial()
+> called from kmem_cache_close() on cache destruction does not follow this
+> rule, leading to a warning:
+> 
+>   WARNING: CPU: 0 PID: 2787 at mm/slub.c:1536 __kmem_cache_shutdown+0x1b2/0x1f0()
+>   Modules linked in:
+>   CPU: 0 PID: 2787 Comm: modprobe Tainted: G        W    3.14.0-rc1-mm1+ #1
+>   Hardware name:
+>    0000000000000600 ffff88003ae1dde8 ffffffff816d9583 0000000000000600
+>    0000000000000000 ffff88003ae1de28 ffffffff8107c107 0000000000000000
+>    ffff880037ab2b00 ffff88007c240d30 ffffea0001ee5280 ffffea0001ee52a0
+>   Call Trace:
+>    [<ffffffff816d9583>] dump_stack+0x51/0x6e
+>    [<ffffffff8107c107>] warn_slowpath_common+0x87/0xb0
+>    [<ffffffff8107c145>] warn_slowpath_null+0x15/0x20
+>    [<ffffffff811c7fe2>] __kmem_cache_shutdown+0x1b2/0x1f0
+>    [<ffffffff811908d3>] kmem_cache_destroy+0x43/0xf0
+>    [<ffffffffa013a123>] xfs_destroy_zones+0x103/0x110 [xfs]
+>    [<ffffffffa0192b54>] exit_xfs_fs+0x38/0x4e4 [xfs]
+>    [<ffffffff811036fa>] SyS_delete_module+0x19a/0x1f0
+>    [<ffffffff816dfcd8>] ? retint_swapgs+0x13/0x1b
+>    [<ffffffff810d2125>] ? trace_hardirqs_on_caller+0x105/0x1d0
+>    [<ffffffff81359efe>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+>    [<ffffffff816e8539>] system_call_fastpath+0x16/0x1b
+> 
+> 
+> His solution was to add a spinlock in order to quiet lockdep. Although
+> there would be no contention to adding the lock, that lock also
+> requires disabling of interrupts which will have a larger impact on the
+> system.
+> 
+> Instead of adding a spinlock to a location where it is not needed for
+> lockdep, make a __remove_partial() function that does not test if
+> the list_lock is held, as no one should have it due to it being freed.
+> 
+> Also added a __add_partial() function that does not do the lock validation
+> either, as it is not needed for the creation of the cache.
+> 
+> Suggested-by: David Rientjes <rientjes@google.com>
+> Reported-by: Vladimir Davydov <vdavydov@parallels.com>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r8152.c | 17 ++++++++---------
- 1 file changed, 8 insertions(+), 9 deletions(-)
+Acked-by: David Rientjes <rientjes@google.com>
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index e8fac73..d89dbe3 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -2273,22 +2273,21 @@ static int rtl8152_open(struct net_device *netdev)
- 	struct r8152 *tp = netdev_priv(netdev);
- 	int res = 0;
- 
-+	rtl8152_set_speed(tp, AUTONEG_ENABLE,
-+			  tp->mii.supports_gmii ? SPEED_1000 : SPEED_100,
-+			  DUPLEX_FULL);
-+	tp->speed = 0;
-+	netif_carrier_off(netdev);
-+	netif_start_queue(netdev);
-+	set_bit(WORK_ENABLE, &tp->flags);
- 	res = usb_submit_urb(tp->intr_urb, GFP_KERNEL);
- 	if (res) {
- 		if (res == -ENODEV)
- 			netif_device_detach(tp->netdev);
- 		netif_warn(tp, ifup, netdev, "intr_urb submit failed: %d\n",
- 			   res);
--		return res;
- 	}
- 
--	rtl8152_set_speed(tp, AUTONEG_ENABLE,
--			  tp->mii.supports_gmii ? SPEED_1000 : SPEED_100,
--			  DUPLEX_FULL);
--	tp->speed = 0;
--	netif_carrier_off(netdev);
--	netif_start_queue(netdev);
--	set_bit(WORK_ENABLE, &tp->flags);
- 
- 	return res;
- }
-@@ -2298,8 +2297,8 @@ static int rtl8152_close(struct net_device *netdev)
- 	struct r8152 *tp = netdev_priv(netdev);
- 	int res = 0;
- 
--	usb_kill_urb(tp->intr_urb);
- 	clear_bit(WORK_ENABLE, &tp->flags);
-+	usb_kill_urb(tp->intr_urb);
- 	cancel_delayed_work_sync(&tp->schedule);
- 	netif_stop_queue(netdev);
- 	tasklet_disable(&tp->tl);
--- 
-1.8.4.2
-
+Thanks Steven!
