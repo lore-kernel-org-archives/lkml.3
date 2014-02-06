@@ -1,93 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755760AbaBFSmq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 13:42:46 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:50468 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752782AbaBFSmo (ORCPT
+	id S1756197AbaBFSmt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 13:42:49 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:35074 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752782AbaBFSmr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 13:42:44 -0500
-Message-ID: <1391712162.10160.8.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: [PATCH] net: use __GFP_NORETRY for high order allocations
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: netdev <netdev@vger.kernel.org>, David Rientjes <rientjes@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 06 Feb 2014 10:42:42 -0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 6 Feb 2014 13:42:47 -0500
+Date: Thu, 6 Feb 2014 10:42:41 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, mingo@kernel.org, will.deacon@arm.com,
+        ramana.radhakrishnan@arm.com
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+Message-ID: <20140206184241.GF4250@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140206134825.305510953@infradead.org>
+ <21984.1391711149@warthog.procyon.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <21984.1391711149@warthog.procyon.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14020618-6688-0000-0000-0000062ACFDB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <edumazet@google.com>
+On Thu, Feb 06, 2014 at 06:25:49PM +0000, David Howells wrote:
+> 
+> Is it worth considering a move towards using C11 atomics and barriers and
+> compiler intrinsics inside the kernel?  The compiler _ought_ to be able to do
+> these.
 
-sock_alloc_send_pskb() & sk_page_frag_refill()
-have a loop trying high order allocations to prepare
-skb with low number of fragments as this increases performance.
+Makes sense to me!
 
-Problem is that under memory pressure/fragmentation, this can
-trigger OOM while the intent was only to try the high order
-allocations, then fallback to order-0 allocations.
+> One thing I'm not sure of, though, is how well gcc's atomics will cope with
+> interrupt handlers touching atomics on CPUs without suitable atomic
+> instructions - that said, userspace does have to deal with signals getting
+> underfoot. but then userspace can't normally disable interrupts.
 
-We had various reports from unexpected regressions.
+Perhaps make the C11 definitions so that any arch can override any
+specific definition?
 
-According to David, setting __GFP_NORETRY should be fine,
-as the asynchronous compaction is still enabled, and this
-will prevent OOM from kicking as in :
-
-CFSClientEventm invoked oom-killer: gfp_mask=0x42d0, order=3, oom_adj=0,
-oom_score_adj=0, oom_score_badness=2 (enabled),memcg_scoring=disabled
-CFSClientEventm 
-
-Call Trace:
- [<ffffffff8043766c>] dump_header+0xe1/0x23e
- [<ffffffff80437a02>] oom_kill_process+0x6a/0x323
- [<ffffffff80438443>] out_of_memory+0x4b3/0x50d
- [<ffffffff8043a4a6>] __alloc_pages_may_oom+0xa2/0xc7
- [<ffffffff80236f42>] __alloc_pages_nodemask+0x1002/0x17f0
- [<ffffffff8024bd23>] alloc_pages_current+0x103/0x2b0
- [<ffffffff8028567f>] sk_page_frag_refill+0x8f/0x160
- [<ffffffff80295fa0>] tcp_sendmsg+0x560/0xee0
- [<ffffffff802a5037>] inet_sendmsg+0x67/0x100
- [<ffffffff80283c9c>] __sock_sendmsg_nosec+0x6c/0x90
- [<ffffffff80283e85>] sock_sendmsg+0xc5/0xf0
- [<ffffffff802847b6>] __sys_sendmsg+0x136/0x430
- [<ffffffff80284ec8>] sys_sendmsg+0x88/0x110
- [<ffffffff80711472>] system_call_fastpath+0x16/0x1b
-Out of Memory: Kill process 2856 (bash) score 9999 or sacrifice child
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Acked-by: David Rientjes <rientjes@google.com>
----
- net/core/sock.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/net/core/sock.c b/net/core/sock.c
-index 0c127dcdf6a8..5b6a9431b017 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -1775,7 +1775,9 @@ struct sk_buff *sock_alloc_send_pskb(struct sock *sk, unsigned long header_len,
- 			while (order) {
- 				if (npages >= 1 << order) {
- 					page = alloc_pages(sk->sk_allocation |
--							   __GFP_COMP | __GFP_NOWARN,
-+							   __GFP_COMP |
-+							   __GFP_NOWARN |
-+							   __GFP_NORETRY,
- 							   order);
- 					if (page)
- 						goto fill_page;
-@@ -1845,7 +1847,7 @@ bool skb_page_frag_refill(unsigned int sz, struct page_frag *pfrag, gfp_t prio)
- 		gfp_t gfp = prio;
- 
- 		if (order)
--			gfp |= __GFP_COMP | __GFP_NOWARN;
-+			gfp |= __GFP_COMP | __GFP_NOWARN | __GFP_NORETRY;
- 		pfrag->page = alloc_pages(gfp, order);
- 		if (likely(pfrag->page)) {
- 			pfrag->offset = 0;
-
+							Thanx, Paul
 
