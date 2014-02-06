@@ -1,56 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756649AbaBFSzJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 13:55:09 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:47806 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753187AbaBFSzG convert rfc822-to-8bit (ORCPT
+	id S1756692AbaBFS72 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 13:59:28 -0500
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:62168 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753686AbaBFS71 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 13:55:06 -0500
-Message-ID: <52F3DA85.1060209@arm.com>
-Date: Thu, 06 Feb 2014 18:55:01 +0000
-From: Ramana Radhakrishnan <ramrad01@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Thu, 6 Feb 2014 13:59:27 -0500
+Date: Thu, 6 Feb 2014 19:59:23 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Glyn Normington <gnormington@gopivotal.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Attaching a cgroup subsystem to multiple hierarchies
+Message-ID: <20140206185923.GA2781@dhcp22.suse.cz>
+References: <050BD595-BE55-401D-9B61-E877FB9F06A8@gopivotal.com>
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-References: <20140206134825.305510953@infradead.org> <21984.1391711149@warthog.procyon.org.uk>
-In-Reply-To: <21984.1391711149@warthog.procyon.org.uk>
-X-OriginalArrivalTime: 06 Feb 2014 18:55:01.0805 (UTC) FILETIME=[F0A885D0:01CF236C]
-X-MC-Unique: 114020618550303001
-Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <050BD595-BE55-401D-9B61-E877FB9F06A8@gopivotal.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/14 18:25, David Howells wrote:
->
-> Is it worth considering a move towards using C11 atomics and barriers and
-> compiler intrinsics inside the kernel?  The compiler _ought_ to be able to do
-> these.
+On Wed 05-02-14 14:39:52, Glyn Normington wrote:
+> Reading cgroups.txt and casting around the net leads me to believe
+> that it is possible to attach a cgroup subsystem (e.g. memory) to
+> multiple hierarchies, but this seems to result in “mirrored”
+> hierarchies which are automatically kept in step with each other -
+> essentially it looks like the same hierarchy at multiple file system
+> paths.
+> 
+> Take the following interaction for example:
+> 
+> \begin{verbatim}
+> $ pwd   
+> /home/vagrant
+> $ mkdir mem1
+> $ mkdir mem2
+> $ sudo su
+> # mount -t cgroup -o memory none /home/vagrant/mem1
+> # mount -t cgroup -o memory none /home/vagrant/mem2
+> # cd mem1
+> # mkdir inst1  
+> # ls inst1 
+> cgroup.clone_children  memory.failcnt ...
+> # ls ../mem2
+> cgroup.clone_children  inst1 memory.limit_in_bytes ...
+> # cd inst1
+> # echo 1000000 > memory.limit_in_bytes 
+> # cat memory.limit_in_bytes 
+> 1003520
+> # cat ../../mem2/inst1/memory.limit_in_bytes 
+> 1003520
+> # echo $$ > tasks
+> # cat tasks
+> 1365
+> 1409
+> # cat ../../mem2/inst1/tasks
+> 1365
+> 1411
+> 
+> Is this working as intended?
 
+Yes, it doesn't make any sense to have two different views on the same
+controllers.
 
-It sounds interesting to me, if we can make it work properly and 
-reliably. + gcc@gcc.gnu.org for others in the GCC community to chip in.
+> Is there some other way to attach a subsystem to *distinct*
+> hierarchies?
 
->
-> One thing I'm not sure of, though, is how well gcc's atomics will cope with
-> interrupt handlers touching atomics on CPUs without suitable atomic
-> instructions - that said, userspace does have to deal with signals getting
-> underfoot. but then userspace can't normally disable interrupts.
->
-> David
->
+No.
 
-Ramana
+> Distinct hierarchies would allow distinct cgroups, distinct settings
+> (e.g. memory.limit_in_bytes) and distinct partitions of the tasks in
+> the system.
 
+Which one should be applied then?
+
+> 
+> Note: I don’t have a good use for this function - I’m simply
+> trying to reverse engineer the semantics of cgroups to get a precise
+> understanding.
+
+I think there is no need to reverse engineer ;)
+Documentation/cgroups/cgroups.txt in the kernel tree does give a decent
+description IMO.
+
+-- 
+Michal Hocko
+SUSE Labs
