@@ -1,72 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932483AbaBFIdB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 03:33:01 -0500
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:62904 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932439AbaBFIdA (ORCPT
+	id S1755673AbaBFIfZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 03:35:25 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:39386 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755232AbaBFIfX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 03:33:00 -0500
-MIME-Version: 1.0
-In-Reply-To: <000001cf230c$60ec1ca0$22c455e0$%han@samsung.com>
-References: <1391518634-6472-1-git-send-email-linus.walleij@linaro.org>
-	<000401cf222f$43263b20$c972b160$%han@samsung.com>
-	<CACRpkdbB8LFM0Vu8VRo4niqxwxUdS-c5gmmWaxbUTbnLCLZbMA@mail.gmail.com>
-	<000101cf2307$97a3c770$c6eb5650$%han@samsung.com>
-	<000001cf230c$60ec1ca0$22c455e0$%han@samsung.com>
-Date: Thu, 6 Feb 2014 09:32:59 +0100
-Message-ID: <CACRpkda6SFeDKftn7he++dbkuqHwMF5M5ZbucmiWfASfJq0GbA@mail.gmail.com>
-Subject: Re: [PATCH] backlight: add PWM dependencies
-From: Linus Walleij <linus.walleij@linaro.org>
+	Thu, 6 Feb 2014 03:35:23 -0500
+Date: Thu, 6 Feb 2014 09:31:53 +0100
+From: "'Maxime Ripard'" <maxime.ripard@free-electrons.com>
 To: Jingoo Han <jg1.han@samsung.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        "'Alexandre Belloni'" <alexandre.belloni@free-electrons.com>
+Subject: Re: [PATCH 05/12] backlight: hx8357: Remove unnecessary OOM messages
+Message-ID: <20140206083153.GE3192@lukather>
+References: <000101cf2313$6ef38e80$4cdaab80$%han@samsung.com>
+ <000601cf2314$4f66a9c0$ee33fd40$%han@samsung.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FN+gV9K+162wdwwF"
+Content-Disposition: inline
+In-Reply-To: <000601cf2314$4f66a9c0$ee33fd40$%han@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 6, 2014 at 8:23 AM, Jingoo Han <jg1.han@samsung.com> wrote:
 
-> In the case of "CONFIG_HAVE_PWM=y && CONFIG_PWM=n", it makes
-> the problem.
->
-> The HAVE_PWM symbol is only for legacy platforms that provide
-> the PWM API without using the generic framework. PXA looks to
-> use the generic PWM framework. Then, how about removing
-> "select HAVE_PWM" from PXA as below?
->
-> --- a/arch/arm/mach-pxa/Kconfig
-> +++ b/arch/arm/mach-pxa/Kconfig
-> @@ -7,7 +7,6 @@ comment "Intel/Marvell Dev Platforms (sorted by hardware release time)"
->  config MACH_PXA3XX_DT
->         bool "Support PXA3xx platforms from device tree"
->         select CPU_PXA300
-> -       select HAVE_PWM
->         select POWER_SUPPLY
->         select PXA3xx
->         select USE_OF
-> @@ -23,12 +22,10 @@ config ARCH_LUBBOCK
->
->  config MACH_MAINSTONE
->         bool "Intel HCDDBBVA0 Development Platform (aka Mainstone)"
-> -       select HAVE_PWM
->         select PXA27x
->
->  config MACH_ZYLONITE
->         bool
-> -       select HAVE_PWM
->         select PXA3xx
+--FN+gV9K+162wdwwF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Looks like the right solution to me.
+On Thu, Feb 06, 2014 at 05:20:35PM +0900, Jingoo Han wrote:
+> The site-specific OOM messages are unnecessary, because they
+> duplicate the MM subsystem generic OOM message.
+>=20
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 
-Yours,
-Linus Walleij
+Thanks!
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--FN+gV9K+162wdwwF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS80h4AAoJEBx+YmzsjxAgKVgP/j6OQ44jpw7ZdOsy/BluTie1
+lPfjGhs+MOaRZ9F7XfzxAxfNK7iNMjgIzZz8rTqor4JH+CUSETmlWvHC/R6rzKk0
+jjS78bJAMnmIQ7rsb5vyQquEydXFSEH3RaMvqTBCaB5GRPe/Enc8tWtVLrIAEePq
+Da60cGR6q1kHbSQub7nQyaSMlsE5CpLUgKMgC9tWAi+xH6LuVlSidsrk8AB/Z6TD
+J+ixtPT44K8LEQd3CWgvAA3oW9AVWoPv/edbyB/K5dXTEuDJwLiW50Ach2cjW/YF
+OwCaJIFwFnRMY8n7AN6ZoWEJrJnIu1yy/EMCUrLeqdlpRdhIn2wMROT+J0/lDPI8
+Exlbrkytj5f6CS5dKDCqClfRtF4aUf5BexEuTIvA+gZOM1We7q264l/kbSRGRNAj
+UtnaBbsG5JtUX36O+ttNLO6+0HLtLmJBDgUAGVRhq4WyMka8T6F7KyOpx+9xuL2r
+NJCQIe+VF6FCImWDd38O8vhx54TP6w/+vt0PsWo2dQpI1u0iaSNX39wzZ1ZI4gbg
+OvY2AH7Vow4U9LMZj8/tkyF2KtvUNVfvsmGFqdQd/Te49t0LDctCK7uXOl82G+nI
+7IJlnienfSrzYNKJHgmKf/gcusx3VebUSrirzaMumLkPwycT/C4ih2gV+bfuwiR3
+oux4jKqR9x1M1I/8zUuQ
+=N0V4
+-----END PGP SIGNATURE-----
+
+--FN+gV9K+162wdwwF--
