@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755075AbaBFEpz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 23:45:55 -0500
-Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:47677 "EHLO
-	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754921AbaBFEpw (ORCPT
+	id S1755181AbaBFEqA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 23:46:00 -0500
+Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:41271 "EHLO
+	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754954AbaBFEpy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 23:45:52 -0500
+	Wed, 5 Feb 2014 23:45:54 -0500
 From: Pratyush Anand <pratyush.anand@st.com>
 To: <arnd@arndb.de>
 Cc: Pratyush Anand <pratyush.anand@st.com>,
         Kishon Vijay Abraham I <kishon@ti.com>, <spear-devel@list.st.com>,
-        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH V4 4/8] phy: st-miphy-40lp: Add skeleton driver
-Date: Thu, 6 Feb 2014 10:14:51 +0530
-Message-ID: <8596e7596e0dfa9a487c4c2deb325bbdf785e55e.1391661589.git.pratyush.anand@st.com>
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH V4 6/8] phy: st-miphy-40lp: Add SPEAr1310 and SPEAr1340 PCIe phy support
+Date: Thu, 6 Feb 2014 10:14:53 +0530
+Message-ID: <dca9c501de8386003142b463469c3d267a049eeb.1391661589.git.pratyush.anand@st.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <cover.1391661589.git.pratyush.anand@st.com>
 References: <cover.1391661589.git.pratyush.anand@st.com>
@@ -25,11 +24,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ST miphy-40lp supports PCIe, SATA and Super Speed USB. This driver adds
-skeleton support for the same.
-
-Currently phy ops are returning -EINVAL. They can be elaborated
-depending on the SOC being supported in future.
+SPEAr1310 and SPEAr1340 uses miphy40lp phy for PCIe. This driver adds
+support for the same.
 
 Signed-off-by: Pratyush Anand <pratyush.anand@st.com>
 Tested-by: Mohit Kumar <mohit.kumar@st.com>
@@ -37,239 +33,235 @@ Cc: Arnd Bergmann <arnd@arndb.de>
 Cc: Kishon Vijay Abraham I <kishon@ti.com>
 Cc: spear-devel@list.st.com
 Cc: linux-arm-kernel@lists.infradead.org
-Cc: devicetree@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 ---
- .../devicetree/bindings/phy/st-miphy40lp.txt       |  12 ++
- drivers/phy/Kconfig                                |   6 +
- drivers/phy/Makefile                               |   1 +
- drivers/phy/phy-miphy40lp.c                        | 174 +++++++++++++++++++++
- 4 files changed, 193 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/phy/st-miphy40lp.txt
- create mode 100644 drivers/phy/phy-miphy40lp.c
+ drivers/phy/phy-miphy40lp.c | 178 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 178 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/phy/st-miphy40lp.txt b/Documentation/devicetree/bindings/phy/st-miphy40lp.txt
-new file mode 100644
-index 0000000..d0c7096
---- /dev/null
-+++ b/Documentation/devicetree/bindings/phy/st-miphy40lp.txt
-@@ -0,0 +1,12 @@
-+Required properties:
-+- compatible : should be "st,miphy40lp-phy"
-+	Other supported soc specific compatible:
-+		"st,spear1310-miphy"
-+		"st,spear1340-miphy"
-+- reg : offset and length of the PHY register set.
-+- misc: phandle for the syscon node to access misc registers
-+- phy-id: Instance id of the phy.
-+- #phy-cells : from the generic PHY bindings, must be 1.
-+	- 1st cell: phandle to the phy node.
-+	- 2nd cell: 0 if phy (in 1st cell) is to be used for SATA, 1 for PCIe
-+	  and 2 for Super Speed USB.
-diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-index afa2354..2f58993 100644
---- a/drivers/phy/Kconfig
-+++ b/drivers/phy/Kconfig
-@@ -64,4 +64,10 @@ config BCM_KONA_USB2_PHY
- 	help
- 	  Enable this to support the Broadcom Kona USB 2.0 PHY.
- 
-+config PHY_ST_MIPHY40LP
-+	tristate "ST MIPHY 40LP driver"
-+	help
-+	  Support for ST MIPHY 40LP which can be used for PCIe, SATA and Super Speed USB.
-+	select GENERIC_PHY
-+
- endmenu
-diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
-index b57c253..c061091 100644
---- a/drivers/phy/Makefile
-+++ b/drivers/phy/Makefile
-@@ -9,3 +9,4 @@ obj-$(CONFIG_PHY_EXYNOS_MIPI_VIDEO)	+= phy-exynos-mipi-video.o
- obj-$(CONFIG_PHY_MVEBU_SATA)		+= phy-mvebu-sata.o
- obj-$(CONFIG_OMAP_USB2)			+= phy-omap-usb2.o
- obj-$(CONFIG_TWL4030_USB)		+= phy-twl4030-usb.o
-+obj-$(CONFIG_PHY_ST_MIPHY40LP)		+= phy-miphy40lp.o
 diff --git a/drivers/phy/phy-miphy40lp.c b/drivers/phy/phy-miphy40lp.c
-new file mode 100644
-index 0000000..d478c14
---- /dev/null
+index cc7f45d..61e94be 100644
+--- a/drivers/phy/phy-miphy40lp.c
 +++ b/drivers/phy/phy-miphy40lp.c
-@@ -0,0 +1,174 @@
-+/*
-+ * ST MiPHY-40LP PHY driver
-+ *
-+ * Copyright (C) 2014 ST Microelectronics
-+ * Pratyush Anand <pratyush.anand@st.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
+@@ -9,6 +9,7 @@
+  * published by the Free Software Foundation.
+  *
+  * 04/02/2014: Adding support of SATA mode for SPEAr1340.
++ * 04/02/2014: Adding support of PCIe mode for SPEAr1340 and SPEAr1310
+  */
+ 
+ #include <linux/delay.h>
+@@ -73,6 +74,80 @@
+ 	#define SPEAR1340_PCIE_SATA_MIPHY_CFG_PCIE \
+ 			(SPEAR1340_MIPHY_OSC_BYPASS_EXT | \
+ 			SPEAR1340_MIPHY_PLL_RATIO_TOP(25))
++/* SPEAr1310 Registers */
++#define SPEAR1310_PCIE_SATA_CFG			0x3A4
++	#define SPEAR1310_PCIE_SATA2_SEL_PCIE		(0 << 31)
++	#define SPEAR1310_PCIE_SATA1_SEL_PCIE		(0 << 30)
++	#define SPEAR1310_PCIE_SATA0_SEL_PCIE		(0 << 29)
++	#define SPEAR1310_PCIE_SATA2_SEL_SATA		(1 << 31)
++	#define SPEAR1310_PCIE_SATA1_SEL_SATA		(1 << 30)
++	#define SPEAR1310_PCIE_SATA0_SEL_SATA		(1 << 29)
++	#define SPEAR1310_SATA2_CFG_TX_CLK_EN		(1 << 27)
++	#define SPEAR1310_SATA2_CFG_RX_CLK_EN		(1 << 26)
++	#define SPEAR1310_SATA2_CFG_POWERUP_RESET	(1 << 25)
++	#define SPEAR1310_SATA2_CFG_PM_CLK_EN		(1 << 24)
++	#define SPEAR1310_SATA1_CFG_TX_CLK_EN		(1 << 23)
++	#define SPEAR1310_SATA1_CFG_RX_CLK_EN		(1 << 22)
++	#define SPEAR1310_SATA1_CFG_POWERUP_RESET	(1 << 21)
++	#define SPEAR1310_SATA1_CFG_PM_CLK_EN		(1 << 20)
++	#define SPEAR1310_SATA0_CFG_TX_CLK_EN		(1 << 19)
++	#define SPEAR1310_SATA0_CFG_RX_CLK_EN		(1 << 18)
++	#define SPEAR1310_SATA0_CFG_POWERUP_RESET	(1 << 17)
++	#define SPEAR1310_SATA0_CFG_PM_CLK_EN		(1 << 16)
++	#define SPEAR1310_PCIE2_CFG_DEVICE_PRESENT	(1 << 11)
++	#define SPEAR1310_PCIE2_CFG_POWERUP_RESET	(1 << 10)
++	#define SPEAR1310_PCIE2_CFG_CORE_CLK_EN		(1 << 9)
++	#define SPEAR1310_PCIE2_CFG_AUX_CLK_EN		(1 << 8)
++	#define SPEAR1310_PCIE1_CFG_DEVICE_PRESENT	(1 << 7)
++	#define SPEAR1310_PCIE1_CFG_POWERUP_RESET	(1 << 6)
++	#define SPEAR1310_PCIE1_CFG_CORE_CLK_EN		(1 << 5)
++	#define SPEAR1310_PCIE1_CFG_AUX_CLK_EN		(1 << 4)
++	#define SPEAR1310_PCIE0_CFG_DEVICE_PRESENT	(1 << 3)
++	#define SPEAR1310_PCIE0_CFG_POWERUP_RESET	(1 << 2)
++	#define SPEAR1310_PCIE0_CFG_CORE_CLK_EN		(1 << 1)
++	#define SPEAR1310_PCIE0_CFG_AUX_CLK_EN		(1 << 0)
 +
-+#include <linux/delay.h>
-+#include <linux/dma-mapping.h>
-+#include <linux/kernel.h>
-+#include <linux/mfd/syscon.h>
-+#include <linux/module.h>
-+#include <linux/of_device.h>
-+#include <linux/phy/phy.h>
-+#include <linux/regmap.h>
++	#define SPEAR1310_PCIE_CFG_MASK(x) ((0xF << (x * 4)) | (1 << (x + 29)))
++	#define SPEAR1310_SATA_CFG_MASK(x) ((0xF << (x * 4 + 16)) | \
++			(1 << (x + 29)))
++	#define SPEAR1310_PCIE_CFG_VAL(x) \
++			(SPEAR1310_PCIE_SATA##x##_SEL_PCIE | \
++			SPEAR1310_PCIE##x##_CFG_AUX_CLK_EN | \
++			SPEAR1310_PCIE##x##_CFG_CORE_CLK_EN | \
++			SPEAR1310_PCIE##x##_CFG_POWERUP_RESET | \
++			SPEAR1310_PCIE##x##_CFG_DEVICE_PRESENT)
++	#define SPEAR1310_SATA_CFG_VAL(x) \
++			(SPEAR1310_PCIE_SATA##x##_SEL_SATA | \
++			SPEAR1310_SATA##x##_CFG_PM_CLK_EN | \
++			SPEAR1310_SATA##x##_CFG_POWERUP_RESET | \
++			SPEAR1310_SATA##x##_CFG_RX_CLK_EN | \
++			SPEAR1310_SATA##x##_CFG_TX_CLK_EN)
 +
-+enum phy_mode {
-+	SATA,
-+	PCIE,
-+	SS_USB,
-+};
++#define SPEAR1310_PCIE_MIPHY_CFG_1		0x3A8
++	#define SPEAR1310_MIPHY_DUAL_OSC_BYPASS_EXT	(1 << 31)
++	#define SPEAR1310_MIPHY_DUAL_CLK_REF_DIV2	(1 << 28)
++	#define SPEAR1310_MIPHY_DUAL_PLL_RATIO_TOP(x)	(x << 16)
++	#define SPEAR1310_MIPHY_SINGLE_OSC_BYPASS_EXT	(1 << 15)
++	#define SPEAR1310_MIPHY_SINGLE_CLK_REF_DIV2	(1 << 12)
++	#define SPEAR1310_MIPHY_SINGLE_PLL_RATIO_TOP(x)	(x << 0)
++	#define SPEAR1310_PCIE_SATA_MIPHY_CFG_SATA_MASK (0xFFFF)
++	#define SPEAR1310_PCIE_SATA_MIPHY_CFG_PCIE_MASK (0xFFFF << 16)
++	#define SPEAR1310_PCIE_SATA_MIPHY_CFG_SATA \
++			(SPEAR1310_MIPHY_DUAL_OSC_BYPASS_EXT | \
++			SPEAR1310_MIPHY_DUAL_CLK_REF_DIV2 | \
++			SPEAR1310_MIPHY_DUAL_PLL_RATIO_TOP(60) | \
++			SPEAR1310_MIPHY_SINGLE_OSC_BYPASS_EXT | \
++			SPEAR1310_MIPHY_SINGLE_CLK_REF_DIV2 | \
++			SPEAR1310_MIPHY_SINGLE_PLL_RATIO_TOP(60))
++	#define SPEAR1310_PCIE_SATA_MIPHY_CFG_SATA_25M_CRYSTAL_CLK \
++			(SPEAR1310_MIPHY_SINGLE_PLL_RATIO_TOP(120))
++	#define SPEAR1310_PCIE_SATA_MIPHY_CFG_PCIE \
++			(SPEAR1310_MIPHY_DUAL_OSC_BYPASS_EXT | \
++			SPEAR1310_MIPHY_DUAL_PLL_RATIO_TOP(25) | \
++			SPEAR1310_MIPHY_SINGLE_OSC_BYPASS_EXT | \
++			SPEAR1310_MIPHY_SINGLE_PLL_RATIO_TOP(25))
 +
-+struct st_miphy40lp_priv {
-+	/* regmap for any soc specific misc registers */
-+	struct regmap		*misc;
-+	/* phy struct pointer */
-+	struct phy		*phy;
-+	/* device node pointer */
-+	struct device_node	*np;
-+	/* phy mode: 0 for SATA 1 for PCIe and 2 for SS-USB */
-+	enum phy_mode		mode;
-+	/* instance id of this phy */
-+	u32			id;
-+};
-+
-+static int miphy40lp_init(struct phy *phy)
++#define SPEAR1310_PCIE_MIPHY_CFG_2		0x3AC
+ 
+ enum phy_mode {
+ 	SATA,
+@@ -181,6 +256,104 @@ static int sata_miphy_resume(struct st_miphy40lp_priv *phypriv)
+ 		return -EINVAL;
+ }
+ 
++static int spear1340_pcie_miphy_init(struct st_miphy40lp_priv *phypriv)
 +{
-+	return -EINVAL;
++	regmap_update_bits(phypriv->misc, SPEAR1340_PCIE_MIPHY_CFG,
++			SPEAR1340_PCIE_MIPHY_CFG_MASK,
++			SPEAR1340_PCIE_SATA_MIPHY_CFG_PCIE);
++	regmap_update_bits(phypriv->misc, SPEAR1340_PCIE_SATA_CFG,
++			SPEAR1340_PCIE_SATA_CFG_MASK, SPEAR1340_PCIE_CFG_VAL);
++
++	return 0;
 +}
 +
-+static int miphy40lp_exit(struct phy *phy)
++static int spear1340_pcie_miphy_exit(struct st_miphy40lp_priv *phypriv)
 +{
-+	return -EINVAL;
++	regmap_update_bits(phypriv->misc, SPEAR1340_PCIE_MIPHY_CFG,
++			SPEAR1340_PCIE_MIPHY_CFG_MASK, 0);
++	regmap_update_bits(phypriv->misc, SPEAR1340_PCIE_SATA_CFG,
++			SPEAR1340_PCIE_SATA_CFG_MASK, 0);
++
++	return 0;
 +}
 +
-+static int miphy40lp_power_off(struct phy *phy)
++static int spear1310_pcie_miphy_init(struct st_miphy40lp_priv *phypriv)
 +{
-+	return -EINVAL;
-+}
++	u32 mask, val;
 +
-+static int miphy40lp_power_on(struct phy *phy)
-+{
-+	return -EINVAL;
-+}
++	regmap_update_bits(phypriv->misc, SPEAR1310_PCIE_MIPHY_CFG_1,
++			SPEAR1310_PCIE_SATA_MIPHY_CFG_PCIE_MASK,
++			SPEAR1310_PCIE_SATA_MIPHY_CFG_PCIE);
 +
-+static const struct of_device_id st_miphy40lp_of_match[] = {
-+	{ .compatible = "st,miphy40lp-phy" },
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, st_miphy40lp_of_match);
-+
-+static struct phy_ops st_miphy40lp_ops = {
-+	.init = miphy40lp_init,
-+	.exit = miphy40lp_exit,
-+	.power_off = miphy40lp_power_off,
-+	.power_on = miphy40lp_power_on,
-+	.owner		= THIS_MODULE,
-+};
-+
-+#ifdef CONFIG_PM_SLEEP
-+static int miphy40lp_suspend(struct device *dev)
-+{
-+	return -EINVAL;
-+}
-+
-+static int miphy40lp_resume(struct device *dev)
-+{
-+	return -EINVAL;
-+}
-+#endif
-+
-+static SIMPLE_DEV_PM_OPS(miphy40lp_pm_ops, miphy40lp_suspend,
-+		miphy40lp_resume);
-+
-+static struct phy *st_miphy40lp_xlate(struct device *dev,
-+					struct of_phandle_args *args)
-+{
-+	struct st_miphy40lp_priv *phypriv = dev_get_drvdata(dev);
-+
-+	if (args->args_count < 1) {
-+		dev_err(dev, "DT did not pass correct no of args\n");
-+		return NULL;
-+	}
-+
-+	phypriv->mode = args->args[0];
-+
-+	return phypriv->phy;
-+}
-+
-+static int __init st_miphy40lp_probe(struct platform_device *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct st_miphy40lp_priv *phypriv;
-+	struct phy_provider *phy_provider;
-+
-+	phypriv = devm_kzalloc(dev, sizeof(*phypriv), GFP_KERNEL);
-+	if (!phypriv) {
-+		dev_err(dev, "can't alloc miphy40lp private date memory\n");
-+		return -ENOMEM;
-+	}
-+
-+	phypriv->np = dev->of_node;
-+
-+	phypriv->misc =
-+		syscon_regmap_lookup_by_phandle(dev->of_node, "misc");
-+	if (IS_ERR(phypriv->misc)) {
-+		dev_err(dev, "failed to find misc regmap\n");
-+		return PTR_ERR(phypriv->misc);
-+	}
-+
-+	if (of_property_read_u32(dev->of_node, "phy-id", &phypriv->id)) {
-+		dev_err(dev, "failed to find phy id\n");
++	switch (phypriv->id) {
++	case 0:
++		mask = SPEAR1310_PCIE_CFG_MASK(0);
++		val = SPEAR1310_PCIE_CFG_VAL(0);
++		break;
++	case 1:
++		mask = SPEAR1310_PCIE_CFG_MASK(1);
++		val = SPEAR1310_PCIE_CFG_VAL(1);
++		break;
++	case 2:
++		mask = SPEAR1310_PCIE_CFG_MASK(2);
++		val = SPEAR1310_PCIE_CFG_VAL(2);
++		break;
++	default:
 +		return -EINVAL;
 +	}
 +
-+	phy_provider = devm_of_phy_provider_register(dev, st_miphy40lp_xlate);
-+	if (IS_ERR(phy_provider)) {
-+		dev_err(dev, "failed to register phy provider\n");
-+		return PTR_ERR(phy_provider);
-+	}
-+
-+	phypriv->phy = devm_phy_create(dev, &st_miphy40lp_ops, NULL);
-+	if (IS_ERR(phypriv->phy)) {
-+		dev_err(dev, "failed to create SATA PCIe PHY\n");
-+		return PTR_ERR(phypriv->phy);
-+	}
-+
-+	dev_set_drvdata(dev, phypriv);
-+	phy_set_drvdata(phypriv->phy, phypriv);
++	regmap_update_bits(phypriv->misc, SPEAR1310_PCIE_SATA_CFG, mask, val);
 +
 +	return 0;
 +}
 +
-+static int __exit st_miphy40lp_remove(struct platform_device *pdev)
++static int spear1310_pcie_miphy_exit(struct st_miphy40lp_priv *phypriv)
 +{
++	u32 mask;
++
++	switch (phypriv->id) {
++	case 0:
++		mask = SPEAR1310_PCIE_CFG_MASK(0);
++		break;
++	case 1:
++		mask = SPEAR1310_PCIE_CFG_MASK(1);
++		break;
++	case 2:
++		mask = SPEAR1310_PCIE_CFG_MASK(2);
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	regmap_update_bits(phypriv->misc, SPEAR1310_PCIE_SATA_CFG,
++			SPEAR1310_PCIE_CFG_MASK(phypriv->id), 0);
++
++	regmap_update_bits(phypriv->misc, SPEAR1310_PCIE_MIPHY_CFG_1,
++			SPEAR1310_PCIE_SATA_MIPHY_CFG_PCIE_MASK, 0);
++
 +	return 0;
 +}
 +
-+static struct platform_driver st_miphy40lp_driver = {
-+	.remove		= __exit_p(st_miphy40lp_remove),
-+	.driver = {
-+		.name = "miphy40lp-phy",
-+		.owner = THIS_MODULE,
-+		.pm = &miphy40lp_pm_ops,
-+		.of_match_table = of_match_ptr(st_miphy40lp_of_match),
-+	},
-+};
-+
-+static int __init st_miphy40lp_init(void)
++static int pcie_miphy_init(struct st_miphy40lp_priv *phypriv)
 +{
-+
-+	return platform_driver_probe(&st_miphy40lp_driver,
-+				st_miphy40lp_probe);
++	if (of_device_is_compatible(phypriv->np, "st,spear1340-miphy"))
++		return spear1340_pcie_miphy_init(phypriv);
++	else if (of_device_is_compatible(phypriv->np, "st,spear1310-miphy"))
++		return spear1310_pcie_miphy_init(phypriv);
++	else
++		return -EINVAL;
 +}
-+module_init(st_miphy40lp_init);
 +
-+MODULE_DESCRIPTION("ST MIPHY-40LP driver");
-+MODULE_AUTHOR("Pratyush Anand <pratyush.anand@st.com>");
-+MODULE_LICENSE("GPL v2");
++static int pcie_miphy_exit(struct st_miphy40lp_priv *phypriv)
++{
++	if (of_device_is_compatible(phypriv->np, "st,spear1340-miphy"))
++		return spear1340_pcie_miphy_exit(phypriv);
++	else if (of_device_is_compatible(phypriv->np, "st,spear1310-miphy"))
++		return spear1310_pcie_miphy_exit(phypriv);
++	else
++		return -EINVAL;
++}
++
+ static int miphy40lp_init(struct phy *phy)
+ {
+ 	struct st_miphy40lp_priv *phypriv = phy_get_drvdata(phy);
+@@ -188,6 +361,8 @@ static int miphy40lp_init(struct phy *phy)
+ 	switch (phypriv->mode) {
+ 	case SATA:
+ 		return sata_miphy_init(phypriv);
++	case PCIE:
++		return pcie_miphy_init(phypriv);
+ 	default:
+ 		return -EINVAL;
+ 	}
+@@ -200,6 +375,8 @@ static int miphy40lp_exit(struct phy *phy)
+ 	switch (phypriv->mode) {
+ 	case SATA:
+ 		return sata_miphy_exit(phypriv);
++	case PCIE:
++		return pcie_miphy_exit(phypriv);
+ 	default:
+ 		return -EINVAL;
+ 	}
+@@ -232,6 +409,7 @@ static int miphy40lp_power_on(struct phy *phy)
+ static const struct of_device_id st_miphy40lp_of_match[] = {
+ 	{ .compatible = "st,miphy40lp-phy" },
+ 	{ .compatible = "st,spear1340-miphy" },
++	{ .compatible = "st,spear1310-miphy" },
+ 	{ },
+ };
+ MODULE_DEVICE_TABLE(of, st_miphy40lp_of_match);
 -- 
 1.8.1.2
 
