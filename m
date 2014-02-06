@@ -1,84 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755454AbaBFPEt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 10:04:49 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:43798 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755431AbaBFPEq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 10:04:46 -0500
-Date: Thu, 6 Feb 2014 07:04:16 -0800
-From: tip-bot for Mikulas Patocka <tipbot@zytor.com>
-Message-ID: <tip-80d767d770fd9c697e434fd080c2db7b5c60c6dd@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        mikulas@artax.karlin.mff.cuni.cz, tglx@linutronix.de,
-        mpatocka@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        mikulas@artax.karlin.mff.cuni.cz, tglx@linutronix.de,
-        mpatocka@redhat.com
-In-Reply-To: <alpine.LRH.2.02.1401241639100.23871@file01.intranet.prod.int.rdu2.redhat.com>
-References: <alpine.LRH.2.02.1401241639100.23871@file01.intranet.prod.int.rdu2.redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/urgent] time: Fix overflow when HZ is smaller than 60
-Git-Commit-ID: 80d767d770fd9c697e434fd080c2db7b5c60c6dd
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1755497AbaBFPFJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 10:05:09 -0500
+Received: from mga11.intel.com ([192.55.52.93]:29197 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754341AbaBFPFE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 10:05:04 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,793,1384329600"; 
+   d="scan'208";a="470851957"
+Date: Thu, 6 Feb 2014 17:11:17 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@kernel.org>, Bin Gao <bin.gao@linux.intel.com>,
+        linux-kernel@vger.kernel.org,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Subject: Re: [PATCH v3 1/2] x86, tsc: Fallback to normal calibration if fast
+ MSR calibration fails
+Message-ID: <20140206151117.GL18029@intel.com>
+References: <20140206054410.GB18884@gmail.com>
+ <1391687365-10922-1-git-send-email-mika.westerberg@linux.intel.com>
+ <alpine.DEB.2.02.1402061531310.21991@ionos.tec.linutronix.de>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 06 Feb 2014 07:04:24 -0800 (PST)
+In-Reply-To: <alpine.DEB.2.02.1402061531310.21991@ionos.tec.linutronix.de>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  80d767d770fd9c697e434fd080c2db7b5c60c6dd
-Gitweb:     http://git.kernel.org/tip/80d767d770fd9c697e434fd080c2db7b5c60c6dd
-Author:     Mikulas Patocka <mpatocka@redhat.com>
-AuthorDate: Fri, 24 Jan 2014 16:41:36 -0500
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Thu, 6 Feb 2014 16:01:40 +0100
+On Thu, Feb 06, 2014 at 03:34:18PM +0100, Thomas Gleixner wrote:
+> On Thu, 6 Feb 2014, Mika Westerberg wrote:
+> >  arch/x86/kernel/tsc.c | 7 ++++---
+> >  1 file changed, 4 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+> > index 19e5adb49a27..56facfc54575 100644
+> > --- a/arch/x86/kernel/tsc.c
+> > +++ b/arch/x86/kernel/tsc.c
+> > @@ -655,10 +655,11 @@ unsigned long native_calibrate_tsc(void)
+> >  	local_irq_save(flags);
+> >  	i = try_msr_calibrate_tsc(&fast_calibrate);
+> >  	local_irq_restore(flags);
+> > -	if (i >= 0) {
+> > -		if (i == 0)
+> > -			pr_warn("Fast TSC calibration using MSR failed\n");
+> > +	if (i > 0) {
+> >  		return fast_calibrate;
+> > +	} else if (i == 0) {
+> > +		pr_warn("Fast TSC calibration using MSR failed\n");
+> > +		/* Continue with the normal calibration */
+> >  	}
+> 
+> Bah. Can we please fix that proper. The whole 0,1,-1 return value from
+> try_msr_calibrate_tsc() is just horrible. Why not doing the obvious?
 
-time: Fix overflow when HZ is smaller than 60
+Yes, that looks better and works fine, thanks.
 
-When compiling for the IA-64 ski emulator, HZ is set to 32 because the
-emulation is slow and we don't want to waste too many cycles processing
-timers. Alpha also has an option to set HZ to 32.
-
-This causes integer underflow in
-kernel/time/jiffies.c:
-kernel/time/jiffies.c:66:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
-  .mult  = NSEC_PER_JIFFY << JIFFIES_SHIFT, /* details above */
-  ^
-
-This patch reduces the JIFFIES_SHIFT value to avoid the overflow.
-
-Signed-off-by: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
-Link: http://lkml.kernel.org/r/alpine.LRH.2.02.1401241639100.23871@file01.intranet.prod.int.rdu2.redhat.com
-Cc: stable@vger.kernel.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-
----
- kernel/time/jiffies.c | 6 ++++++
- 1 file changed, 6 insertions(+)
-
-diff --git a/kernel/time/jiffies.c b/kernel/time/jiffies.c
-index 7a925ba..a6a5bf5 100644
---- a/kernel/time/jiffies.c
-+++ b/kernel/time/jiffies.c
-@@ -51,7 +51,13 @@
-  * HZ shrinks, so values greater than 8 overflow 32bits when
-  * HZ=100.
-  */
-+#if HZ < 34
-+#define JIFFIES_SHIFT	6
-+#elif HZ < 67
-+#define JIFFIES_SHIFT	7
-+#else
- #define JIFFIES_SHIFT	8
-+#endif
- 
- static cycle_t jiffies_read(struct clocksource *cs)
- {
+Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
