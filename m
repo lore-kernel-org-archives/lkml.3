@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755471AbaBFFeG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 00:34:06 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:47543 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751794AbaBFFcU (ORCPT
+	id S1752245AbaBFFcT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 00:32:19 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:44302 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751794AbaBFFcO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 00:32:20 -0500
-Subject: [PATCH -tip v3 06/11] perf-probe: Use ref_reloc_sym based address
- instead of the symbol name
+	Thu, 6 Feb 2014 00:32:14 -0500
+Subject: [PATCH -tip v3 04/11] [CLEANUP] perf-probe: Unify
+ show_available_functions for uprobes/kprobes
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
@@ -17,8 +17,8 @@ Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
         "David A. Long" <dave.long@linaro.org>, yrl.pp-manager.tt@hitachi.com,
         Namhyung Kim <namhyung@kernel.org>
-Date: Thu, 06 Feb 2014 05:32:16 +0000
-Message-ID: <20140206053216.29635.22584.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
+Date: Thu, 06 Feb 2014 05:32:11 +0000
+Message-ID: <20140206053211.29635.20563.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
 In-Reply-To: <20140206053201.29635.99095.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
 References: <20140206053201.29635.99095.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
 User-Agent: StGit/0.16
@@ -29,176 +29,110 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since several local symbols can have same name (e.g. t_show),
-we need to use the relative address from the symbol referred by
-kmap->ref_reloc_sym instead of the target symbol name itself.
-Because the kernel address space layout randomize (kASLR) changes
-the absolute address of kernel symbols, we can't relay on the
-absolute address.
-Note that this works only with debuginfo.
-
-E.g. without this change;
-  ----
-  # ./perf probe -a "t_show \$vars"
-  Added new events:
-    probe:t_show         (on t_show with $vars)
-    probe:t_show_1       (on t_show with $vars)
-    probe:t_show_2       (on t_show with $vars)
-    probe:t_show_3       (on t_show with $vars)
-
-  You can now use it in all perf tools, such as:
-
-          perf record -e probe:t_show_3 -aR sleep 1
-  ----
-OK, we have 4 different t_show()s. All functions have
-different arguments as below;
-  ----
-  # cat /sys/kernel/debug/tracing/kprobe_events
-  p:probe/t_show t_show m=%di:u64 v=%si:u64
-  p:probe/t_show_1 t_show m=%di:u64 v=%si:u64 t=%si:u64
-  p:probe/t_show_2 t_show m=%di:u64 v=%si:u64 fmt=%si:u64
-  p:probe/t_show_3 t_show m=%di:u64 v=%si:u64 file=%si:u64
-  ----
-However, all of them have been put on the *same* address.
-  ----
-  # cat /sys/kernel/debug/kprobes/list
-  ffffffff810d9720  k  t_show+0x0    [DISABLED]
-  ffffffff810d9720  k  t_show+0x0    [DISABLED]
-  ffffffff810d9720  k  t_show+0x0    [DISABLED]
-  ffffffff810d9720  k  t_show+0x0    [DISABLED]
-  ----
-
-With this change;
-  ----
-  # ./perf probe -a "t_show \$vars"
-  Added new events:
-    probe:t_show         (on t_show with $vars)
-    probe:t_show_1       (on t_show with $vars)
-    probe:t_show_2       (on t_show with $vars)
-    probe:t_show_3       (on t_show with $vars)
-
-  You can now use it in all perf tools, such as:
-
-          perf record -e probe:t_show_3 -aR sleep 1
-
-  # cat /sys/kernel/debug/tracing/kprobe_events
-  p:probe/t_show _stext+889880 m=%di:u64 v=%si:u64
-  p:probe/t_show_1 _stext+928568 m=%di:u64 v=%si:u64 t=%si:u64
-  p:probe/t_show_2 _stext+969512 m=%di:u64 v=%si:u64 fmt=%si:u64
-  p:probe/t_show_3 _stext+1001416 m=%di:u64 v=%si:u64 file=%si:u64
-
-  # cat /sys/kernel/debug/kprobes/list
-  ffffffffb50d95e0  k  t_show+0x0    [DISABLED]
-  ffffffffb50e2d00  k  t_show+0x0    [DISABLED]
-  ffffffffb50f4990  k  t_show+0x0    [DISABLED]
-  ffffffffb50eccf0  k  t_show+0x0    [DISABLED]
-  ----
-This time, each event is put in different address
-correctly.
-
-Note that currently this doesn't support address-based
-probe on modules (thus the probes on modules are symbol
-based), since it requires relative address probe syntax
-for kprobe-tracer, and it isn't implemented yet.
-
-One more note, this allows us to put events on correct
-address, but --list option should be updated to show
-correct corresponding source code.
-
-Changes from v2:
-  - Refer kmap->ref_reloc_sym instead of "_stext".
-  - Refer map->reloc to catch up the kASLR perf fix.
-
-Changes from v1:
-  - Use _stext relative address instead of actual
-    absolute address recorded in debuginfo.
+Unify show_available_functions for uprobes/kprobes to cleanup
+and reduce the code. This also improves error messages.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 ---
- tools/perf/util/probe-event.c |   58 +++++++++++++++++++++++++++++++++++------
- 1 file changed, 49 insertions(+), 9 deletions(-)
+ tools/perf/util/probe-event.c |   72 +++++++++++++++--------------------------
+ 1 file changed, 26 insertions(+), 46 deletions(-)
 
 diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index de9fe90..1ce2cb9 100644
+index f70fd08..ace3ba3 100644
 --- a/tools/perf/util/probe-event.c
 +++ b/tools/perf/util/probe-event.c
-@@ -383,6 +383,51 @@ static int add_module_to_probe_trace_events(struct probe_trace_event *tevs,
- 	return ret;
+@@ -2323,66 +2323,46 @@ static int filter_available_functions(struct map *map __maybe_unused,
+ 	return 1;
  }
  
-+static struct ref_reloc_sym *__kernel_get_ref_reloc_sym(void)
-+{
-+	/* kmap->ref_reloc_sym should be set if host_machine is initialized */
-+	struct kmap *kmap;
-+
-+	kmap = map__kmap(host_machine->vmlinux_maps[MAP__FUNCTION]);
-+	return kmap->ref_reloc_sym;
-+}
-+
-+/* Post processing the probe events */
-+static int post_process_probe_trace_events(struct probe_trace_event *tevs,
-+					   int ntevs, const char *module,
-+					   bool uprobe)
-+{
-+	struct ref_reloc_sym *reloc_sym;
-+	char *tmp;
-+	int i;
-+
-+	if (uprobe)
-+		return add_exec_to_probe_trace_events(tevs, ntevs, module);
-+
-+	/* Note that currently ref_reloc_sym based probe is not for drivers */
-+	if (module)
-+		return add_module_to_probe_trace_events(tevs, ntevs, module);
-+
-+	reloc_sym = __kernel_get_ref_reloc_sym();
-+	if (!reloc_sym) {
-+		pr_warning("Relocated base symbol is not found!\n");
-+		return -EINVAL;
-+	}
-+
-+	for (i = 0; i < ntevs; i++) {
-+		if (tevs[i].point.address) {
-+			tmp = strdup(reloc_sym->name);
-+			if (!tmp)
-+				return -ENOMEM;
-+			free(tevs[i].point.symbol);
-+			tevs[i].point.symbol = tmp;
-+			tevs[i].point.offset = tevs[i].point.address -
-+					       reloc_sym->unrelocated_addr;
-+		}
-+	}
-+	return 0;
-+}
-+
- static void clear_probe_trace_events(struct probe_trace_event *tevs, int ntevs)
+-static int __show_available_funcs(struct map *map)
+-{
+-	if (map__load(map, filter_available_functions)) {
+-		pr_err("Failed to load map.\n");
+-		return -EINVAL;
+-	}
+-	if (!dso__sorted_by_name(map->dso, map->type))
+-		dso__sort_by_name(map->dso, map->type);
+-
+-	dso__fprintf_symbols_by_name(map->dso, map->type, stdout);
+-	return 0;
+-}
+-
+-static int available_kernel_funcs(const char *module)
++int show_available_funcs(const char *target, struct strfilter *_filter,
++					bool user)
  {
- 	int i;
-@@ -411,21 +456,16 @@ static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
- 		return 0;
+ 	struct map *map;
+ 	int ret;
+ 
+-	ret = init_symbol_maps(false);
++	ret = init_symbol_maps(user);
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	map = kernel_get_module_map(module);
++	/* Get a symbol map */
++	if (user)
++		map = dso__new_map(target);
++	else
++		map = kernel_get_module_map(target);
+ 	if (!map) {
+-		pr_err("Failed to find %s map.\n", (module) ? : "kernel");
++		pr_err("Failed to get a map for %s\n", (target) ? : "kernel");
+ 		return -EINVAL;
  	}
+-	ret = __show_available_funcs(map);
+-	exit_symbol_maps();
+-
+-	return ret;
+-}
+-
+-static int available_user_funcs(const char *target)
+-{
+-	struct map *map;
+-	int ret;
  
-+	pr_debug("Try to find probe point from debuginfo.\n");
- 	/* Searching trace events corresponding to a probe event */
- 	ntevs = debuginfo__find_trace_events(dinfo, pev, tevs, max_tevs);
+-	ret = init_symbol_maps(true);
+-	if (ret < 0)
+-		return ret;
+-
+-	map = dso__new_map(target);
+-	ret = __show_available_funcs(map);
+-	dso__delete(map->dso);
+-	map__delete(map);
+-	exit_symbol_maps();
+-	return ret;
+-}
+-
+-int show_available_funcs(const char *target, struct strfilter *_filter,
+-					bool user)
+-{
+-	setup_pager();
++	/* Load symbols with given filter */
+ 	available_func_filter = _filter;
++	if (map__load(map, filter_available_functions)) {
++		pr_err("Failed to load symbols in %s\n", (target) ? : "kernel");
++		goto end;
++	}
++	if (!dso__sorted_by_name(map->dso, map->type))
++		dso__sort_by_name(map->dso, map->type);
  
- 	debuginfo__delete(dinfo);
+-	if (!user)
+-		return available_kernel_funcs(target);
++	/* Show all (filtered) symbols */
++	setup_pager();
++	dso__fprintf_symbols_by_name(map->dso, map->type, stdout);
++end:
++	if (user) {
++		dso__delete(map->dso);
++		map__delete(map);
++	}
++	exit_symbol_maps();
  
- 	if (ntevs > 0) {	/* Succeeded to find trace events */
--		pr_debug("find %d probe_trace_events.\n", ntevs);
--		if (target) {
--			if (pev->uprobes)
--				ret = add_exec_to_probe_trace_events(*tevs,
--						 ntevs, target);
--			else
--				ret = add_module_to_probe_trace_events(*tevs,
--						 ntevs, target);
--		}
-+		pr_debug("Found %d probe_trace_events.\n", ntevs);
-+		ret = post_process_probe_trace_events(*tevs, ntevs,
-+							target, pev->uprobes);
- 		if (ret < 0) {
- 			clear_probe_trace_events(*tevs, ntevs);
- 			zfree(tevs);
+-	return available_user_funcs(target);
++	return ret;
+ }
+ 
+ /*
 
 
