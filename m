@@ -1,139 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932601AbaBFW0w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 17:26:52 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:37178 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757169AbaBFWYt (ORCPT
+	id S1756823AbaBFWb7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 17:31:59 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:65406 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752666AbaBFWb6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 17:24:49 -0500
-From: Kumar Gala <galak@codeaurora.org>
-To: linux-arm-msm@vger.kernel.org
-Cc: Kumar Gala <galak@codeaurora.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v3 1/5] ARM: msm: kill off hotplug.c
-Date: Thu,  6 Feb 2014 16:24:40 -0600
-Message-Id: <1391725484-6673-2-git-send-email-galak@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1391725484-6673-1-git-send-email-galak@codeaurora.org>
-References: <1391725484-6673-1-git-send-email-galak@codeaurora.org>
+	Thu, 6 Feb 2014 17:31:58 -0500
+Date: Thu, 6 Feb 2014 14:31:55 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andi Kleen <andi@firstfloor.org>
+cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [patch 1/4] x86, apic: Only use default_wait_for_init_deassert
+In-Reply-To: <87txcc57y2.fsf@tassilo.jf.intel.com>
+Message-ID: <alpine.DEB.2.02.1402061430420.29446@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1402042353030.7839@chino.kir.corp.google.com> <87txcc57y2.fsf@tassilo.jf.intel.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Right now hotplug.c only really implements msm_cpu_die as a wfi.  Just
-move that implementation into platsmp.c.  At the same time we use the
-existing wfi() instead of inline asm.
+On Thu, 6 Feb 2014, Andi Kleen wrote:
 
-Signed-off-by: Kumar Gala <galak@codeaurora.org>
----
- arch/arm/mach-msm/Makefile  |  1 -
- arch/arm/mach-msm/common.h  |  1 -
- arch/arm/mach-msm/hotplug.c | 51 ---------------------------------------------
- arch/arm/mach-msm/platsmp.c |  7 +++++++
- 4 files changed, 7 insertions(+), 53 deletions(-)
- delete mode 100644 arch/arm/mach-msm/hotplug.c
+> > es7000_wait_for_init_deassert() is functionally equivalent to 
+> > default_wait_for_init_deassert(), so remove the duplicate code and use
+> > only a single function.
+> 
+> It would surprise me if anyone uses the es7000 anymore -- it may be
+> reasonable to just deprecate the complete port.
+> 
 
-diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
-index 721f27f..8327f60 100644
---- a/arch/arm/mach-msm/Makefile
-+++ b/arch/arm/mach-msm/Makefile
-@@ -18,7 +18,6 @@ obj-$(CONFIG_MSM_SCM) += scm.o scm-boot.o
- 
- CFLAGS_scm.o :=$(call as-instr,.arch_extension sec,-DREQUIRES_SEC=1)
- 
--obj-$(CONFIG_HOTPLUG_CPU) += hotplug.o
- obj-$(CONFIG_SMP) += platsmp.o
- 
- obj-$(CONFIG_MACH_TROUT) += board-trout.o board-trout-gpio.o board-trout-mmc.o devices-msm7x00.o
-diff --git a/arch/arm/mach-msm/common.h b/arch/arm/mach-msm/common.h
-index 33c7725..0a4899b 100644
---- a/arch/arm/mach-msm/common.h
-+++ b/arch/arm/mach-msm/common.h
-@@ -24,7 +24,6 @@ extern void __iomem *__msm_ioremap_caller(phys_addr_t phys_addr, size_t size,
- 					  unsigned int mtype, void *caller);
- 
- extern struct smp_operations msm_smp_ops;
--extern void msm_cpu_die(unsigned int cpu);
- 
- struct msm_mmc_platform_data;
- 
-diff --git a/arch/arm/mach-msm/hotplug.c b/arch/arm/mach-msm/hotplug.c
-deleted file mode 100644
-index cea80fc..0000000
---- a/arch/arm/mach-msm/hotplug.c
-+++ /dev/null
-@@ -1,51 +0,0 @@
--/*
-- *  Copyright (C) 2002 ARM Ltd.
-- *  All Rights Reserved
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--#include <linux/kernel.h>
--#include <linux/errno.h>
--#include <linux/smp.h>
--
--#include <asm/smp_plat.h>
--
--#include "common.h"
--
--static inline void cpu_enter_lowpower(void)
--{
--}
--
--static inline void cpu_leave_lowpower(void)
--{
--}
--
--static inline void platform_do_lowpower(unsigned int cpu)
--{
--	asm("wfi"
--	    :
--	    :
--	    : "memory", "cc");
--}
--
--/*
-- * platform-specific code to shutdown a CPU
-- *
-- * Called with IRQs disabled
-- */
--void __ref msm_cpu_die(unsigned int cpu)
--{
--	/*
--	 * we're ready for shutdown now, so do it
--	 */
--	cpu_enter_lowpower();
--	platform_do_lowpower(cpu);
--
--	/*
--	 * bring this CPU back into the world of cache
--	 * coherency, and then restore interrupts
--	 */
--	cpu_leave_lowpower();
--}
-diff --git a/arch/arm/mach-msm/platsmp.c b/arch/arm/mach-msm/platsmp.c
-index 3721b31..251a91e 100644
---- a/arch/arm/mach-msm/platsmp.c
-+++ b/arch/arm/mach-msm/platsmp.c
-@@ -29,6 +29,13 @@ extern void secondary_startup(void);
- 
- static DEFINE_SPINLOCK(boot_lock);
- 
-+#ifdef CONFIG_HOTPLUG_CPU
-+static void __ref msm_cpu_die(unsigned int cpu)
-+{
-+	wfi();
-+}
-+#endif
-+
- static inline int get_core_count(void)
- {
- 	/* 1 + the PART[1:0] field of MIDR */
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+How do we usually do that?  Do we add a big fat warning for anyone who is 
+using it for a few releases or just yank support out entirely and see if 
+we're surprised?
