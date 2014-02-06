@@ -1,45 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753183AbaBFUuY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 15:50:24 -0500
-Received: from www.linutronix.de ([62.245.132.108]:37940 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751319AbaBFUuX (ORCPT
+	id S1754720AbaBFUvC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 15:51:02 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48960 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751339AbaBFUu7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 15:50:23 -0500
-Date: Thu, 6 Feb 2014 21:50:26 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Alexey Perevalov <a.perevalov@samsung.com>
-cc: John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
-        anton@enomsg.org, kyungmin.park@samsung.com, akpm@linux-foundation.org,
-        cw00.choi@samsung.com
-Subject: Re: [PATCH v2 0/3] Deferrable timers support for timerfd API
-In-Reply-To: <52F3C8A5.708@samsung.com>
-Message-ID: <alpine.DEB.2.02.1402062148440.21991@ionos.tec.linutronix.de>
-References: <1389609835-24377-1-git-send-email-a.perevalov@samsung.com> <52DEC6A3.9020600@linaro.org> <52E606D8.6000401@samsung.com> <alpine.DEB.2.02.1402041419420.24986@ionos.tec.linutronix.de> <52F1DDA8.90605@samsung.com> <alpine.DEB.2.02.1402051229260.24986@ionos.tec.linutronix.de>
- <52F2B504.5010403@linaro.org> <alpine.DEB.2.02.1402052306580.24986@ionos.tec.linutronix.de> <52F3C8A5.708@samsung.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Thu, 6 Feb 2014 15:50:59 -0500
+Date: Thu, 6 Feb 2014 12:50:58 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Joe Perches <joe@perches.com>, Kent Overstreet <kmo@daterainc.com>,
+        Neil Brown <neilb@suse.de>, linux-bcache@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Next <linux-next@vger.kernel.org>
+Subject: Re: [PATCH -next 2/2] bcache: Use max_t() when comparing different
+ types
+Message-Id: <20140206125058.8b5d884cca468b9850d5b538@linux-foundation.org>
+In-Reply-To: <CAMuHMdVJ8N7UHWz6aMdurwpKwafb_V0AS7MyUQWftiH9C-8b5A@mail.gmail.com>
+References: <1389776784-30825-1-git-send-email-geert@linux-m68k.org>
+	<1389776784-30825-2-git-send-email-geert@linux-m68k.org>
+	<1389783998.14001.22.camel@joe-AO722>
+	<CAMuHMdUv_xP-1A950i0U=Petaey-_VosSxh5sk44Gqti-ikY6w@mail.gmail.com>
+	<CAMuHMdVDdGBG0b2BY4PZRGWn-2ts-qz9_OdUdnAE9gMp_zP3jw@mail.gmail.com>
+	<1391677607.15777.2.camel@joe-AO722>
+	<20140206123824.ab35615f4561340d91255cf2@linux-foundation.org>
+	<CAMuHMdVJ8N7UHWz6aMdurwpKwafb_V0AS7MyUQWftiH9C-8b5A@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Feb 2014, Alexey Perevalov wrote:
-> On 02/06/2014 02:16 AM, Thomas Gleixner wrote:
-> As I truly understand, you decided - flags is better than new clockids, and
-> internals of timerfd could be a mix of timer_list and hrtimer.
+On Thu, 6 Feb 2014 21:45:36 +0100 Geert Uytterhoeven <geert@linux-m68k.org> wrote:
 
-NO, NO, NO, NO. There is no mix of timer_list and hrtimer. Either we
-add proper deferrable support to hrtimers or the whole thing is not
-going to happen at all. There is no way that we bring back timer_list
-to user space interfaces. Period.
+> > --- a/drivers/md/bcache/btree.c~bcache-drop-l-suffix-when-comparing-ssize_t-with-0-fix
+> > +++ a/drivers/md/bcache/btree.c
+> > @@ -1805,7 +1805,7 @@ static bool btree_insert_key(struct btre
+> >
+> >  static size_t insert_u64s_remaining(struct btree *b)
+> >  {
+> > -       ssize_t ret = bch_btree_keys_u64s_remaining(&b->keys);
+> > +       size_t ret = bch_btree_keys_u64s_remaining(&b->keys);
+> >
+> >         /*
+> >          * Might land in the middle of an existing extent and have to split it
+> > @@ -1813,7 +1813,7 @@ static size_t insert_u64s_remaining(stru
+> >         if (b->keys.ops->is_extents)
+> >                 ret -= KEY_MAX_U64S;
+> 
+> I think the reason is the line above: with size_t, ret may become a big
+> positive number when the subtraction wraps below zero.
 
-Thanks,
+Well, I assumed that case would be a bug - otherwise the programmer
+would have commented such a subtlety.  Wouldn't he?
 
-	tglx
+> >
+> > -       return max(ret, 0);
+> > +       return max_t(size_t, ret, 0);
+> 
+> That part is OK, cfr. my v1 (which I had planned to send out as v3 again).
 
-
+It needs to be ssize_t.
