@@ -1,45 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751949AbaBFOHk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 09:07:40 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:50572 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751653AbaBFOHU (ORCPT
+	id S1752188AbaBFOHo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 09:07:44 -0500
+Received: from mail-out.m-online.net ([212.18.0.10]:53277 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751837AbaBFOHm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 09:07:20 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <52F39718.9070205@roeck-us.net>
-Date: Thu, 06 Feb 2014 06:07:20 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 6 Feb 2014 09:07:42 -0500
+X-Auth-Info: 9dYiwu0tVXgPk6JjXN8Z73XsYwKwoyBC7/rYFUZH75s=
+From: Marek Vasut <marex@denx.de>
+To: Jingoo Han <jg1.han@samsung.com>
+Subject: Re: [PATCH 10/12] backlight: lms283gf05: Remove unnecessary OOM messages
+Date: Thu, 6 Feb 2014 14:34:22 +0100
+User-Agent: KMail/1.13.7 (Linux/3.10-2-amd64; KDE/4.11.3; x86_64; ; )
+Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+References: <000101cf2313$6ef38e80$4cdaab80$%han@samsung.com> <000b01cf2315$20cc9ec0$6265dc40$%han@samsung.com>
+In-Reply-To: <000b01cf2315$20cc9ec0$6265dc40$%han@samsung.com>
 MIME-Version: 1.0
-To: Jim Davis <jim.epost@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, jdelvare@suse.de,
-        lm-sensors@lm-sensors.org
-Subject: Re: randconfig build error with next-20140206, in drivers/hwmon/ltc2945.c
-References: <CA+r1ZhgB-DpgshX24HmzuqZPQr5wsueg4GYACy-669RmTL4xRA@mail.gmail.com>
-In-Reply-To: <CA+r1ZhgB-DpgshX24HmzuqZPQr5wsueg4GYACy-669RmTL4xRA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201402061434.22470.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/2014 05:57 AM, Jim Davis wrote:
-> Building with the attached random configuration file,
->
-> drivers/built-in.o: In function `ltc2945_set_value':
-> ltc2945.c:(.text+0x58b1ad): undefined reference to `__udivdi3'
-> ltc2945.c:(.text+0x58b1cc): undefined reference to `__udivdi3'
-> ltc2945.c:(.text+0x58b1dd): undefined reference to `__udivdi3'
-> ltc2945.c:(.text+0x58b1fb): undefined reference to `__udivdi3'
-> make: *** [vmlinux] Error 1
->
+On Thursday, February 06, 2014 at 09:26:26 AM, Jingoo Han wrote:
+> The site-specific OOM messages are unnecessary, because they
+> duplicate the MM subsystem generic OOM message.
+> 
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 
-I really love those auto-builders :-)
+Acked-by: Marek Vasut <marex@denx.de>
 
-Should be fixed in the next version of -next.
-
-Guenter
-
+Best regards,
+Marek Vasut
