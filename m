@@ -1,142 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754833AbaBFRmk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 12:42:40 -0500
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:65329 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752841AbaBFRmi (ORCPT
+	id S1755125AbaBFRo5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 12:44:57 -0500
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:6718 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751316AbaBFRo4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 12:42:38 -0500
-MIME-Version: 1.0
-In-Reply-To: <cover.1391661589.git.pratyush.anand@st.com>
-References: <cover.1391661589.git.pratyush.anand@st.com>
-Date: Thu, 6 Feb 2014 23:00:37 +0530
-Message-ID: <CAHM4w1mUdSHKE+zYh+ZFZe8gJGJx0s=LLUGgnxY7x0c+HEt0zQ@mail.gmail.com>
-Subject: Re: [PATCH V4 0/8]PCI:Add SPEAr13xx PCie support
-From: Pratyush Anand <pratyush.anand@gmail.com>
-To: Pratyush Anand <pratyush.anand@st.com>, Arnd Bergmann <arnd@arndb.de>
-Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        spear-devel <spear-devel@list.st.com>, linux-kernel@vger.kernel.org,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 6 Feb 2014 12:44:56 -0500
+Message-ID: <1391708691.3971.73.camel@j-VirtualBox>
+Subject: Re: [RFC][PATCH v2 5/5] mutex: Give spinners a chance to
+ spin_on_owner if need_resched() triggered while queued
+From: Jason Low <jason.low2@hp.com>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, mingo@redhat.com,
+        paulmck@linux.vnet.ibm.com, torvalds@linux-foundation.org,
+        tglx@linutronix.de, linux-kernel@vger.kernel.org, riel@redhat.com,
+        akpm@linux-foundation.org, davidlohr@hp.com, hpa@zytor.com,
+        andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
+        chegu_vinod@hp.com
+Date: Thu, 06 Feb 2014 09:44:51 -0800
+In-Reply-To: <52F2B0C2.8040408@hp.com>
+References: <1390936396-3962-1-git-send-email-jason.low2@hp.com>
+	 <1390936396-3962-6-git-send-email-jason.low2@hp.com>
+	 <20140128210753.GJ11314@laptop.programming.kicks-ass.net>
+	 <1390949495.2807.52.camel@j-VirtualBox>
+	 <20140129115142.GE9636@twins.programming.kicks-ass.net>
+	 <52F2B0C2.8040408@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+On Wed, 2014-02-05 at 16:44 -0500, Waiman Long wrote:
+> On 01/29/2014 06:51 AM, Peter Zijlstra wrote:
+> > On Tue, Jan 28, 2014 at 02:51:35PM -0800, Jason Low wrote:
+> >>> But urgh, nasty problem. Lemme ponder this a bit.
+> > OK, please have a very careful look at the below. It survived a boot
+> > with udev -- which usually stresses mutex contention enough to explode
+> > (in fact it did a few time when I got the contention/cancel path wrong),
+> > however I have not ran anything else on it.
+> >
+> > The below is an MCS variant that allows relatively cheap unqueueing. But
+> > its somewhat tricky and I might have gotten a case wrong, esp. the
+> > double concurrent cancel case got my head hurting (I didn't attempt a
+> > tripple unqueue).
+> >
+> > Applies to tip/master but does generate a few (harmless) compile
+> > warnings because I didn't fully clean up the mcs_spinlock vs m_spinlock
+> > thing.
+> >
+> > Also, there's a comment in the slowpath that bears consideration.
+> >
+> >
+> 
+> I have an alternative way of breaking out of the MCS lock waiting queue 
+> when need_resched() is set. I overload the locked flag to indicate a 
+> skipped node if negative. I run the patch through the AIM7 high-systime 
+> workload on a 4-socket server and it seemed to run fine.
+> 
+> Please check the following POC patch to see if you have any comment.
 
-Do you see any more improvement in this series.
+So one of the concerns I had with the approach of skipping nodes was
+that, under heavy contention, we potentially could cause optimistic
+spinning to be disabled on CPUs for a while since the nodes can't be
+used until they have been released. One advantage of the unqueuing
+method would be that nodes are usable after the spinners exit the MCS
+queue and go to sleep.
 
-Else we will send V5 (probably the final one) with modifications for
-Kishon's comment.
+Jason
 
-Regards
-Pratyush
-
-On Thu, Feb 6, 2014 at 10:14 AM, Pratyush Anand <pratyush.anand@st.com> wrote:
-> First three patches are improvement and fixes for SPEAr13xx support.
-> Patches 4-6 add miphy40lp skelten driver and support for spear1310/40 miphy
-> wrapper. Patch 7 add support for SPEAr13xx PCIe.
->
-> These pathes are tested with linux-3.14-rc1 with following patch on the top of
-> it:
-> Author: Balaji T K <balajitk@ti.com>
-> Date:   Mon Jan 20 16:41:27 2014 +0200
->
->     ata: ahci_platform: Manage SATA PHY
->
-> Tested with SPEAr1310 evaluation board:
->         - INTEL PRO 100/100 EP card
->         - USB xhci gen2 card
->         - Above cards connected through LeCROY PTC switch
->
-> Modifications for SATA are tested with SPEAr1340-evb board
->
-> Changes since v3:
-> - Phy driver renamed to phy-miphy40lp
-> - ahci phy hook patch used as suggested by Arnd
-> - Incorporated other minor comments from v3
->
-> Changes since v2:
-> - Incorporated comments to move SPEAr13xx PCIe and SATA phy specific routines to
->   the phy framework
-> - Modify ahci driver to include phy hooks
-> - phy-core driver modifications for subsys_initcall()
->
-> Changes since v1:
-> - Few patches of the series are already accepted and applied to mainline e.g.
->  pcie designware driver improvements,fixes for IO translation bug, PCIe dw
->  driver maintainer. So dropped these from v2.
-> - Incorporated comment to move the common/reset PCIe code to the seperate driver
-> - PCIe and SATA share common PHY configuration registers, so move SATA
->  platform code to the system config driver
-> Fourth patch is improves pcie designware driver and fixes the IO
-> translation bug. IO translation bug fix leads to the working of PCIe EP devices
-> connected to RC through switch.
->
-> PCIe driver support for SPEAr1310/40 platform board is added.
->
-> These patches are tested with SPEAr1310 evaluation board:
->         - INTEL PRO 100/100 EP card
->         - USB xhci gen2 card
->         - Above cards connected through LeCROY PTC switch
->
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: devicetree@vger.kernel.org
-> Cc: linux-ide@vger.kernel.org
-> Cc: linux-pci@vger.kernel.org
-> Cc: spear-devel@list.st.com
-> Cc: linux-kernel@vger.kernel.org
->
-> Mohit Kumar (2):
->   SPEAr13xx: defconfig: Update
->   MAINTAINERS: Add ST SPEAr13xx PCIe driver maintainer
->
-> Pratyush Anand (6):
->   clk: SPEAr13xx: Fix pcie clock name
->   SPEAr13xx: Fix static mapping table
->   phy: st-miphy-40lp: Add skeleton driver
->   SPEAr13xx: Fixup: Move SPEAr1340 SATA platform code to phy driver
->   phy: st-miphy-40lp: Add SPEAr1310 and SPEAr1340 PCIe phy support
->   pcie: SPEAr13xx: Add designware pcie support
->
->  .../devicetree/bindings/arm/spear-misc.txt         |   4 +
->  .../devicetree/bindings/pci/spear13xx-pcie.txt     |   7 +
->  .../devicetree/bindings/phy/st-miphy40lp.txt       |  12 +
->  MAINTAINERS                                        |   6 +
->  arch/arm/boot/dts/spear1310-evb.dts                |   4 +
->  arch/arm/boot/dts/spear1310.dtsi                   |  96 +++-
->  arch/arm/boot/dts/spear1340-evb.dts                |   4 +
->  arch/arm/boot/dts/spear1340.dtsi                   |  32 +-
->  arch/arm/boot/dts/spear13xx.dtsi                   |  10 +-
->  arch/arm/configs/spear13xx_defconfig               |  15 +
->  arch/arm/mach-spear/Kconfig                        |   3 +
->  arch/arm/mach-spear/include/mach/spear.h           |   4 +-
->  arch/arm/mach-spear/spear1340.c                    | 127 +----
->  arch/arm/mach-spear/spear13xx.c                    |   2 +-
->  drivers/clk/spear/spear1310_clock.c                |   6 +-
->  drivers/clk/spear/spear1340_clock.c                |   2 +-
->  drivers/pci/host/Kconfig                           |   5 +
->  drivers/pci/host/Makefile                          |   1 +
->  drivers/pci/host/pcie-spear13xx.c                  | 414 ++++++++++++++++
->  drivers/phy/Kconfig                                |   6 +
->  drivers/phy/Makefile                               |   1 +
->  drivers/phy/phy-miphy40lp.c                        | 544 +++++++++++++++++++++
->  22 files changed, 1166 insertions(+), 139 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/arm/spear-misc.txt
->  create mode 100644 Documentation/devicetree/bindings/pci/spear13xx-pcie.txt
->  create mode 100644 Documentation/devicetree/bindings/phy/st-miphy40lp.txt
->  create mode 100644 drivers/pci/host/pcie-spear13xx.c
->  create mode 100644 drivers/phy/phy-miphy40lp.c
->
-> --
-> 1.8.1.2
->
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
