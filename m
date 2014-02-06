@@ -1,43 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756868AbaBFVOh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 16:14:37 -0500
-Received: from www.linutronix.de ([62.245.132.108]:38120 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752045AbaBFVOg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 16:14:36 -0500
-Date: Thu, 6 Feb 2014 22:14:40 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Carlo Caione <carlo@caione.org>
-cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-sunxi@googlegroups.com, maxime.ripard@free-electrons.com,
-        hdegoede@redhat.com, emilio@elopez.com.ar
-Subject: Re: [PATCH] irq: Add new flag to ack level-triggered interrupts
- before unmasking
-In-Reply-To: <1391721117-27446-1-git-send-email-carlo@caione.org>
-Message-ID: <alpine.DEB.2.02.1402062213590.21991@ionos.tec.linutronix.de>
-References: <1391721117-27446-1-git-send-email-carlo@caione.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1754006AbaBFVRo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 16:17:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34298 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751175AbaBFVRk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 16:17:40 -0500
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Torvald Riegel <triegel@redhat.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Will Deacon <will.deacon@arm.com>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+In-Reply-To: <20140206192743.GH4250@linux.vnet.ibm.com>
+References: <20140206134825.305510953@infradead.org>
+	 <21984.1391711149@warthog.procyon.org.uk> <52F3DA85.1060209@arm.com>
+	 <20140206185910.GE27276@mudshark.cambridge.arm.com>
+	 <20140206192743.GH4250@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 06 Feb 2014 22:17:03 +0100
+Message-ID: <1391721423.23421.3898.camel@triegel.csb>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Feb 2014, Carlo Caione wrote:
+On Thu, 2014-02-06 at 11:27 -0800, Paul E. McKenney wrote:
+> On Thu, Feb 06, 2014 at 06:59:10PM +0000, Will Deacon wrote:
+> > On Thu, Feb 06, 2014 at 06:55:01PM +0000, Ramana Radhakrishnan wrote:
+> > > On 02/06/14 18:25, David Howells wrote:
+> > > >
+> > > > Is it worth considering a move towards using C11 atomics and barriers and
+> > > > compiler intrinsics inside the kernel?  The compiler _ought_ to be able to do
+> > > > these.
+> > > 
+> > > 
+> > > It sounds interesting to me, if we can make it work properly and 
+> > > reliably. + gcc@gcc.gnu.org for others in the GCC community to chip in.
+> > 
+> > Given my (albeit limited) experience playing with the C11 spec and GCC, I
+> > really think this is a bad idea for the kernel. It seems that nobody really
+> > agrees on exactly how the C11 atomics map to real architectural
+> > instructions on anything but the trivial architectures. For example, should
+> > the following code fire the assert?
+> > 
+> > 
+> > extern atomic<int> foo, bar, baz;
+> > 
+> > void thread1(void)
+> > {
+> > 	foo.store(42, memory_order_relaxed);
+> > 	bar.fetch_add(1, memory_order_seq_cst);
+> > 	baz.store(42, memory_order_relaxed);
+> > }
+> > 
+> > void thread2(void)
+> > {
+> > 	while (baz.load(memory_order_seq_cst) != 42) {
+> > 		/* do nothing */
+> > 	}
+> > 
+> > 	assert(foo.load(memory_order_seq_cst) == 42);
+> > }
+> > 
+> > 
+> > To answer that question, you need to go and look at the definitions of
+> > synchronises-with, happens-before, dependency_ordered_before and a whole
+> > pile of vaguely written waffle to realise that you don't know. Certainly,
+> > the code that arm64 GCC currently spits out would allow the assertion to fire
+> > on some microarchitectures.
+> 
+> Yep!  I believe that a memory_order_seq_cst fence in combination with the
+> fetch_add() would do the trick on many architectures, however.  All of
+> this is one reason that any C11 definitions need to be individually
+> overridable by individual architectures.
 
-> Several irqchip drivers require the level-triggered interrupt to be
-> acked before unmasking to avoid that a second interrupt is immediately
-> triggered. This small patch introduces a new irqchip flags that is used
-> to ack the IRQ line before it is unmasked.
+"Overridable" in which sense?  Do you want to change the semantics on
+the language level in the sense of altering the memory model, or rather
+use a different implementation under the hood to, for example, fix
+deficiencies in the compilers?
 
-And why are you not doing this in the unmask function of the affected
-chip in the first place?
- 
-Thanks,
+> > There are also so many ways to blow your head off it's untrue. For example,
+> > cmpxchg takes a separate memory model parameter for failure and success, but
+> > then there are restrictions on the sets you can use for each. It's not hard
+> > to find well-known memory-ordering experts shouting "Just use
+> > memory_model_seq_cst for everything, it's too hard otherwise". Then there's
+> > the fun of load-consume vs load-acquire (arm64 GCC completely ignores consume
+> > atm and optimises all of the data dependencies away) as well as the definition
+> > of "data races", which seem to be used as an excuse to miscompile a program
+> > at the earliest opportunity.
+> 
+> Trust me, rcu_dereference() is not going to be defined in terms of
+> memory_order_consume until the compilers implement it both correctly and
+> efficiently.  They are not there yet, and there is currently no shortage
+> of compiler writers who would prefer to ignore memory_order_consume.
 
-	tglx
+Do you have any input on
+http://gcc.gnu.org/bugzilla/show_bug.cgi?id=59448?  In particular, the
+language standard's definition of dependencies?
+
+> And rcu_dereference() will need per-arch overrides for some time during
+> any transition to memory_order_consume.
+> 
+> > Trying to introduce system concepts (writes to devices, interrupts,
+> > non-coherent agents) into this mess is going to be an uphill battle IMHO. I'd
+> > just rather stick to the semantics we have and the asm volatile barriers.
+> 
+> And barrier() isn't going to go away any time soon, either.  And
+> ACCESS_ONCE() needs to keep volatile semantics until there is some
+> memory_order_whatever that prevents loads and stores from being coalesced.
+
+I'd be happy to discuss something like this in ISO C++ SG1 (or has this
+been discussed in the past already?).  But it needs to have a paper I
+suppose.
+
+Will you be in Issaquah for the C++ meeting next week?
+
+
