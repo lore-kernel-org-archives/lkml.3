@@ -1,91 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526AbaBFOf0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 09:35:26 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51236 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750941AbaBFOfZ (ORCPT
+	id S1751617AbaBFOhF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 09:37:05 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:59086 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750706AbaBFOhC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 09:35:25 -0500
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        kernel@pengutronix.de, Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH] regulator: da9052: Add ramp speed information for the DVC regulators
-Date: Thu,  6 Feb 2014 15:35:21 +0100
-Message-Id: <1391697321-14231-1-git-send-email-p.zabel@pengutronix.de>
-X-Mailer: git-send-email 1.8.5.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 10.1.0.7
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Thu, 6 Feb 2014 09:37:02 -0500
+X-AuditID: cbfec7f5-b7fc96d000004885-7c-52f39e0b35ed
+Message-id: <52F39E08.7010906@samsung.com>
+Date: Thu, 06 Feb 2014 15:36:56 +0100
+From: Tomasz Figa <t.figa@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.1.1
+MIME-version: 1.0
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        linux-crypto@vger.kernel.org, linux-samsung-soc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, vzapolskiy@gmail.com,
+        herbert@gondor.apana.org.au, naveenkrishna.ch@gmail.com,
+        cpgs@samsung.com, devicetree@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH 2/9 v5] crypto:s5p-sss: Add device tree support
+References: <1389243541-13122-1-git-send-email-ch.naveen@samsung.com>
+ <1390987259-18581-1-git-send-email-ch.naveen@samsung.com>
+In-reply-to: <1390987259-18581-1-git-send-email-ch.naveen@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsVy+t/xK7rc8z4HGRz9KWdx9/lhRouXhzQt
+	5pxvYbGYf+Qcq0X3KxmL+/d+Mllc3jWHzWLG+X1MFou2/We2ODvnEJMDl8eWlTeZPHbOusvu
+	se2AqkffllWMHp83yQWwRnHZpKTmZJalFunbJXBlNBw6zFTwXbjixPJO9gbGSQJdjJwcEgIm
+	Ei/69jFB2GISF+6tZ+ti5OIQEljKKHHvzjEmCOczo0TTxqNsIFW8AloSp478ZAaxWQRUJda9
+	ecQCYrMJqEl8bngEViMqECHxd956Roh6QYkfk++B1YgIlEv8u7EGbAOzwClGielNZ8EahAWc
+	JSZuW8sOsa2RUWLWtPnsIAlOATeJO183gnUzC1hLrJy0jRHClpfYvOYt8wRGgVlIlsxCUjYL
+	SdkCRuZVjKKppckFxUnpuUZ6xYm5xaV56XrJ+bmbGCEx8HUH49JjVocYBTgYlXh4N6z/FCTE
+	mlhWXJl7iFGCg1lJhDe16XOQEG9KYmVValF+fFFpTmrxIUYmDk6pBsZj35Lj9a/8Oe+hxSd6
+	/JPnRNegelarVybsse+msrefDokUY0u6JOpi/88n/XC9osFiGXX5CuOWNTzKtl82bzrEf5ar
+	f6/QmkpJiUknr4dylS4St9+ze+3V59Ubt0sWrko8KJvWeeIVw5qrfe92ZZ4OjtT/qK+kwLL1
+	wErfu0dvprmar9pzO1+JpTgj0VCLuag4EQCgdRgSXwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some LDOs and DCDCs have a fixed ramp speed of 6.25 mV/µs. This patch adds
-the set_voltage_time_sel function to let consumers know about this.
+Hi Naveen,
 
-Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
----
- drivers/regulator/da9052-regulator.c | 27 +++++++++++++++++++++++++++
- 1 file changed, 27 insertions(+)
+On 29.01.2014 10:20, Naveen Krishna Chatradhi wrote:
+> This patch adds device tree support to the s5p-sss.c crypto driver.
+>
+> Also, Documentation under devicetree/bindings added.
+>
+> Signed-off-by: Naveen Krishna Ch <ch.naveen@samsung.com>
+> CC: Herbert Xu <herbert@gondor.apana.org.au>
+> CC: David S. Miller <davem@davemloft.net>
+> CC: Vladimir Zapolskiy <vzapolskiy@gmail.com>
+> TO: <linux-crypto@vger.kernel.org>
+> CC: <linux-samsung-soc@vger.kernel.org>
+> ---
+> Changes since v4:
+> Modified Documentation to give clock names and example for interrupts
+>
+> Changes since v3:
+> None
+>   .../devicetree/bindings/crypto/samsung-sss.txt     |   24 ++++++++++++++++++++
+>   drivers/crypto/s5p-sss.c                           |    8 +++++++
+>   2 files changed, 32 insertions(+)
+>   create mode 100644 Documentation/devicetree/bindings/crypto/samsung-sss.txt
+>
+> diff --git a/Documentation/devicetree/bindings/crypto/samsung-sss.txt b/Documentation/devicetree/bindings/crypto/samsung-sss.txt
+> new file mode 100644
+> index 0000000..d193084
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/crypto/samsung-sss.txt
+> @@ -0,0 +1,24 @@
+> +Samsung SoC SSS (Security SubSystem) module
+> +
+> +The SSS module in S5PV210 SoC supports the following:
+> +-- Feeder (FeedCtrl)
+> +-- Advanced Encryption Standard (AES)
+> +-- Data Encryption Standard (DES)/3DES
+> +-- Public Key Accelerator (PKA)
+> +-- SHA-1/SHA-256/MD5/HMAC (SHA-1/SHA-256/MD5)/PRNG
+> +-- PRNG: Pseudo Random Number Generator
+> +
+> +Required properties:
+> +
+> +- compatible : Should contain entries for this and backward compatible
+> +  SSS versions:
+> +  - "samsung,s5pv210-secss" for S5PV210 SoC.
+> +- reg : Offset and length of the register set for the module
+> +- interrupts : the interrupt-specifier for the SSS module.
+> +		Two interrupts "feed control and hash" in case of S5PV210
+> +	   Eg : interrupts = <0 feed-control 0> <0 hash 0>;
 
-diff --git a/drivers/regulator/da9052-regulator.c b/drivers/regulator/da9052-regulator.c
-index 3adeaef..e0dbfec 100644
---- a/drivers/regulator/da9052-regulator.c
-+++ b/drivers/regulator/da9052-regulator.c
-@@ -240,6 +240,31 @@ static int da9052_regulator_set_voltage_sel(struct regulator_dev *rdev,
- 	return ret;
- }
- 
-+static int da9052_regulator_set_voltage_time_sel(struct regulator_dev *rdev,
-+						 unsigned int old_sel,
-+						 unsigned int new_sel)
-+{
-+	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
-+	struct da9052_regulator_info *info = regulator->info;
-+	int id = rdev_get_id(rdev);
-+	int ret = 0;
-+
-+	/* The DVC controlled LDOs and DCDCs ramp with 6.25mV/µs after enabling
-+	 * the activate bit.
-+	 */
-+	switch (id) {
-+	case DA9052_ID_BUCK1:
-+	case DA9052_ID_BUCK2:
-+	case DA9052_ID_BUCK3:
-+	case DA9052_ID_LDO2:
-+	case DA9052_ID_LDO3:
-+		ret = (new_sel - old_sel) * info->step_uV / 6250;
-+		break;
-+	}
-+
-+	return ret;
-+}
-+
- static struct regulator_ops da9052_dcdc_ops = {
- 	.get_current_limit = da9052_dcdc_get_current_limit,
- 	.set_current_limit = da9052_dcdc_set_current_limit,
-@@ -248,6 +273,7 @@ static struct regulator_ops da9052_dcdc_ops = {
- 	.map_voltage = da9052_map_voltage,
- 	.get_voltage_sel = regulator_get_voltage_sel_regmap,
- 	.set_voltage_sel = da9052_regulator_set_voltage_sel,
-+	.set_voltage_time_sel = da9052_regulator_set_voltage_time_sel,
- 	.is_enabled = regulator_is_enabled_regmap,
- 	.enable = regulator_enable_regmap,
- 	.disable = regulator_disable_regmap,
-@@ -258,6 +284,7 @@ static struct regulator_ops da9052_ldo_ops = {
- 	.map_voltage = da9052_map_voltage,
- 	.get_voltage_sel = regulator_get_voltage_sel_regmap,
- 	.set_voltage_sel = da9052_regulator_set_voltage_sel,
-+	.set_voltage_time_sel = da9052_regulator_set_voltage_time_sel,
- 	.is_enabled = regulator_is_enabled_regmap,
- 	.enable = regulator_enable_regmap,
- 	.disable = regulator_disable_regmap,
--- 
-1.8.5.3
+Please rewrite the description of interrupts property sa follows:
 
+- interrupts : interrupt specifiers of SSS module interrupts, should
+   contain two entries:
+     - first : feed control interrupt,
+     - second : hash interrupt.
+
+Then in later patch adding support for Exynos, it shoudl be rewritten to:
+
+- interrupts : interrupt specifiers of SSS module interrupts, should
+   contain following entries:
+     - first : feed control interrupt (required for all variants),
+     - second : hash interrupt (required only for samsung,s5pv210-secss).
+
+Best regards,
+Tomasz
