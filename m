@@ -1,140 +1,375 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756675AbaBFTkG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 14:40:06 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:46634 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755055AbaBFTkB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755063AbaBFTkB (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 6 Feb 2014 14:40:01 -0500
-Date: Thu, 6 Feb 2014 11:39:38 -0800
-From: tip-bot for Borislav Petkov <tipbot@zytor.com>
-Message-ID: <tip-75a1ba5b2c529db60ca49626bcaf0bddf4548438@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        boris.ostrovsky@oracle.com, tglx@linutronix.de, bp@suse.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        boris.ostrovsky@oracle.com, tglx@linutronix.de, bp@suse.de
-In-Reply-To: <1391460104-7261-1-git-send-email-bp@alien8.de>
-References: <1391460104-7261-1-git-send-email-bp@alien8.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, microcode, AMD:
-  Unify valid container checks
-Git-Commit-ID: 75a1ba5b2c529db60ca49626bcaf0bddf4548438
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+Received: from mail.windriver.com ([147.11.1.11]:35510 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751296AbaBFTj7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 14:39:59 -0500
+Message-ID: <52F3E527.3090804@windriver.com>
+Date: Thu, 6 Feb 2014 14:40:23 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 06 Feb 2014 11:39:45 -0800 (PST)
+To: Bryan Wu <cooloney@gmail.com>
+CC: lkml <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>
+Subject: Re: [PATCH 54/73] drivers/leds: delete non-required instances of
+ include <linux/init.h>
+References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com> <1390339396-3479-55-git-send-email-paul.gortmaker@windriver.com> <CAK5ve-J+G6yH-E6bde-DXP7vNvdcevrH6nwvkot0n3cGi19WmA@mail.gmail.com>
+In-Reply-To: <CAK5ve-J+G6yH-E6bde-DXP7vNvdcevrH6nwvkot0n3cGi19WmA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  75a1ba5b2c529db60ca49626bcaf0bddf4548438
-Gitweb:     http://git.kernel.org/tip/75a1ba5b2c529db60ca49626bcaf0bddf4548438
-Author:     Borislav Petkov <bp@suse.de>
-AuthorDate: Mon, 3 Feb 2014 21:41:44 +0100
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Thu, 6 Feb 2014 11:11:19 -0800
+On 14-02-06 02:28 PM, Bryan Wu wrote:
+> On Tue, Jan 21, 2014 at 1:22 PM, Paul Gortmaker
+> <paul.gortmaker@windriver.com> wrote:
+>> None of these files are actually using any __init type directives
+>> and hence don't need to include <linux/init.h>.  Most are just a
+>> left over from __devinit and __cpuinit removal, or simply due to
+>> code getting copied from one driver to the next.
+>>
+> 
+> I will take this patch. Thanks,
+> -Bryan
 
-x86, microcode, AMD: Unify valid container checks
+The patches that weren't taken by maintainers before 3.14-rc1 were
+encompassed in the cleanup pull request to Linus sent Tuesday.
 
-For additional coverage, BorisO and friends unknowlingly did swap AMD
-microcode with Intel microcode blobs in order to see what happens. What
-did happen on 32-bit was
+http://www.spinics.net/lists/arm-kernel/msg304864.html
 
-[    5.722656] BUG: unable to handle kernel paging request at be3a6008
-[    5.722693] IP: [<c106d6b4>] load_microcode_amd+0x24/0x3f0
-[    5.722716] *pdpt = 0000000000000000 *pde = 0000000000000000
+So, assuming he does pull it, you'll not have to do anything.
 
-because there was a valid initrd there but without valid microcode in it
-and the container check happened *after* the relocated ramdisk handling
-on 32-bit, which was clearly wrong.
+Thanks,
+Paul.
+--
 
-While at it, take care of the ramdisk relocation on both 32- and 64-bit
-as it is done on both. Also, comment what we're doing because this code
-is a bit tricky.
-
-Reported-and-tested-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Link: http://lkml.kernel.org/r/1391460104-7261-1-git-send-email-bp@alien8.de
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/kernel/cpu/microcode/amd_early.c | 43 +++++++++++++++++++++----------
- 1 file changed, 29 insertions(+), 14 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/microcode/amd_early.c b/arch/x86/kernel/cpu/microcode/amd_early.c
-index 8384c0f..617a9e2 100644
---- a/arch/x86/kernel/cpu/microcode/amd_early.c
-+++ b/arch/x86/kernel/cpu/microcode/amd_early.c
-@@ -285,6 +285,15 @@ static void __init collect_cpu_sig_on_bsp(void *arg)
- 
- 	uci->cpu_sig.sig = cpuid_eax(0x00000001);
- }
-+
-+static void __init get_bsp_sig(void)
-+{
-+	unsigned int bsp = boot_cpu_data.cpu_index;
-+	struct ucode_cpu_info *uci = ucode_cpu_info + bsp;
-+
-+	if (!uci->cpu_sig.sig)
-+		smp_call_function_single(bsp, collect_cpu_sig_on_bsp, NULL, 1);
-+}
- #else
- void load_ucode_amd_ap(void)
- {
-@@ -337,31 +346,37 @@ void load_ucode_amd_ap(void)
- 
- int __init save_microcode_in_initrd_amd(void)
- {
-+	unsigned long cont;
- 	enum ucode_state ret;
- 	u32 eax;
- 
--#ifdef CONFIG_X86_32
--	unsigned int bsp = boot_cpu_data.cpu_index;
--	struct ucode_cpu_info *uci = ucode_cpu_info + bsp;
--
--	if (!uci->cpu_sig.sig)
--		smp_call_function_single(bsp, collect_cpu_sig_on_bsp, NULL, 1);
-+	if (!container)
-+		return -EINVAL;
- 
-+#ifdef CONFIG_X86_32
-+	get_bsp_sig();
-+	cont = (unsigned long)container;
-+#else
- 	/*
--	 * Take into account the fact that the ramdisk might get relocated
--	 * and therefore we need to recompute the container's position in
--	 * virtual memory space.
-+	 * We need the physical address of the container for both bitness since
-+	 * boot_params.hdr.ramdisk_image is a physical address.
- 	 */
--	container = (u8 *)(__va((u32)relocated_ramdisk) +
--			   ((u32)container - boot_params.hdr.ramdisk_image));
-+	cont = __pa(container);
- #endif
-+
-+	/*
-+	 * Take into account the fact that the ramdisk might get relocated and
-+	 * therefore we need to recompute the container's position in virtual
-+	 * memory space.
-+	 */
-+	if (relocated_ramdisk)
-+		container = (u8 *)(__va(relocated_ramdisk) +
-+			     (cont - boot_params.hdr.ramdisk_image));
-+
- 	if (ucode_new_rev)
- 		pr_info("microcode: updated early to new patch_level=0x%08x\n",
- 			ucode_new_rev);
- 
--	if (!container)
--		return -EINVAL;
--
- 	eax   = cpuid_eax(0x00000001);
- 	eax   = ((eax >> 8) & 0xf) + ((eax >> 20) & 0xff);
- 
+> 
+>> Cc: Bryan Wu <cooloney@gmail.com>
+>> Cc: Richard Purdie <rpurdie@rpsys.net>
+>> Cc: linux-leds@vger.kernel.org
+>> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+>> ---
+>>  drivers/leds/led-triggers.c       | 1 -
+>>  drivers/leds/leds-88pm860x.c      | 1 -
+>>  drivers/leds/leds-adp5520.c       | 1 -
+>>  drivers/leds/leds-asic3.c         | 1 -
+>>  drivers/leds/leds-blinkm.c        | 1 -
+>>  drivers/leds/leds-cobalt-qube.c   | 1 -
+>>  drivers/leds/leds-da903x.c        | 1 -
+>>  drivers/leds/leds-da9052.c        | 1 -
+>>  drivers/leds/leds-fsg.c           | 1 -
+>>  drivers/leds/leds-gpio.c          | 1 -
+>>  drivers/leds/leds-hp6xx.c         | 1 -
+>>  drivers/leds/leds-lm3533.c        | 1 -
+>>  drivers/leds/leds-lp5521.c        | 1 -
+>>  drivers/leds/leds-lp5523.c        | 1 -
+>>  drivers/leds/leds-lp5562.c        | 1 -
+>>  drivers/leds/leds-lt3593.c        | 1 -
+>>  drivers/leds/leds-mc13783.c       | 1 -
+>>  drivers/leds/leds-netxbig.c       | 1 -
+>>  drivers/leds/leds-ns2.c           | 1 -
+>>  drivers/leds/leds-ot200.c         | 1 -
+>>  drivers/leds/leds-pwm.c           | 1 -
+>>  drivers/leds/leds-s3c24xx.c       | 1 -
+>>  drivers/leds/leds-wm831x-status.c | 1 -
+>>  drivers/leds/leds-wm8350.c        | 1 -
+>>  24 files changed, 24 deletions(-)
+>>
+>> diff --git a/drivers/leds/led-triggers.c b/drivers/leds/led-triggers.c
+>> index e387f41..df1a7c1 100644
+>> --- a/drivers/leds/led-triggers.c
+>> +++ b/drivers/leds/led-triggers.c
+>> @@ -13,7 +13,6 @@
+>>
+>>  #include <linux/module.h>
+>>  #include <linux/kernel.h>
+>> -#include <linux/init.h>
+>>  #include <linux/list.h>
+>>  #include <linux/spinlock.h>
+>>  #include <linux/device.h>
+>> diff --git a/drivers/leds/leds-88pm860x.c b/drivers/leds/leds-88pm860x.c
+>> index 5f588c0..d1e1bca 100644
+>> --- a/drivers/leds/leds-88pm860x.c
+>> +++ b/drivers/leds/leds-88pm860x.c
+>> @@ -11,7 +11,6 @@
+>>   */
+>>
+>>  #include <linux/kernel.h>
+>> -#include <linux/init.h>
+>>  #include <linux/of.h>
+>>  #include <linux/platform_device.h>
+>>  #include <linux/i2c.h>
+>> diff --git a/drivers/leds/leds-adp5520.c b/drivers/leds/leds-adp5520.c
+>> index 7e311a1..86b5bdb 100644
+>> --- a/drivers/leds/leds-adp5520.c
+>> +++ b/drivers/leds/leds-adp5520.c
+>> @@ -15,7 +15,6 @@
+>>
+>>  #include <linux/module.h>
+>>  #include <linux/kernel.h>
+>> -#include <linux/init.h>
+>>  #include <linux/platform_device.h>
+>>  #include <linux/leds.h>
+>>  #include <linux/workqueue.h>
+>> diff --git a/drivers/leds/leds-asic3.c b/drivers/leds/leds-asic3.c
+>> index 6de216a..70c74a7 100644
+>> --- a/drivers/leds/leds-asic3.c
+>> +++ b/drivers/leds/leds-asic3.c
+>> @@ -7,7 +7,6 @@
+>>   */
+>>
+>>  #include <linux/kernel.h>
+>> -#include <linux/init.h>
+>>  #include <linux/platform_device.h>
+>>  #include <linux/leds.h>
+>>  #include <linux/slab.h>
+>> diff --git a/drivers/leds/leds-blinkm.c b/drivers/leds/leds-blinkm.c
+>> index 66d0a57..0c50860 100644
+>> --- a/drivers/leds/leds-blinkm.c
+>> +++ b/drivers/leds/leds-blinkm.c
+>> @@ -18,7 +18,6 @@
+>>   */
+>>
+>>  #include <linux/module.h>
+>> -#include <linux/init.h>
+>>  #include <linux/slab.h>
+>>  #include <linux/jiffies.h>
+>>  #include <linux/i2c.h>
+>> diff --git a/drivers/leds/leds-cobalt-qube.c b/drivers/leds/leds-cobalt-qube.c
+>> index 8abcb66..910339d 100644
+>> --- a/drivers/leds/leds-cobalt-qube.c
+>> +++ b/drivers/leds/leds-cobalt-qube.c
+>> @@ -3,7 +3,6 @@
+>>   *
+>>   * Control the Cobalt Qube/RaQ front LED
+>>   */
+>> -#include <linux/init.h>
+>>  #include <linux/io.h>
+>>  #include <linux/ioport.h>
+>>  #include <linux/leds.h>
+>> diff --git a/drivers/leds/leds-da903x.c b/drivers/leds/leds-da903x.c
+>> index 2a4b87f..35dffb1 100644
+>> --- a/drivers/leds/leds-da903x.c
+>> +++ b/drivers/leds/leds-da903x.c
+>> @@ -14,7 +14,6 @@
+>>
+>>  #include <linux/module.h>
+>>  #include <linux/kernel.h>
+>> -#include <linux/init.h>
+>>  #include <linux/platform_device.h>
+>>  #include <linux/leds.h>
+>>  #include <linux/workqueue.h>
+>> diff --git a/drivers/leds/leds-da9052.c b/drivers/leds/leds-da9052.c
+>> index 865d4fa..01486ad 100644
+>> --- a/drivers/leds/leds-da9052.c
+>> +++ b/drivers/leds/leds-da9052.c
+>> @@ -14,7 +14,6 @@
+>>
+>>  #include <linux/module.h>
+>>  #include <linux/kernel.h>
+>> -#include <linux/init.h>
+>>  #include <linux/platform_device.h>
+>>  #include <linux/leds.h>
+>>  #include <linux/workqueue.h>
+>> diff --git a/drivers/leds/leds-fsg.c b/drivers/leds/leds-fsg.c
+>> index b4d5a44..2b4dc73 100644
+>> --- a/drivers/leds/leds-fsg.c
+>> +++ b/drivers/leds/leds-fsg.c
+>> @@ -16,7 +16,6 @@
+>>   */
+>>
+>>  #include <linux/kernel.h>
+>> -#include <linux/init.h>
+>>  #include <linux/platform_device.h>
+>>  #include <linux/leds.h>
+>>  #include <linux/module.h>
+>> diff --git a/drivers/leds/leds-gpio.c b/drivers/leds/leds-gpio.c
+>> index 78b0e27..3f65a08 100644
+>> --- a/drivers/leds/leds-gpio.c
+>> +++ b/drivers/leds/leds-gpio.c
+>> @@ -11,7 +11,6 @@
+>>   *
+>>   */
+>>  #include <linux/kernel.h>
+>> -#include <linux/init.h>
+>>  #include <linux/platform_device.h>
+>>  #include <linux/gpio.h>
+>>  #include <linux/leds.h>
+>> diff --git a/drivers/leds/leds-hp6xx.c b/drivers/leds/leds-hp6xx.c
+>> index 366b605..d61a988 100644
+>> --- a/drivers/leds/leds-hp6xx.c
+>> +++ b/drivers/leds/leds-hp6xx.c
+>> @@ -12,7 +12,6 @@
+>>
+>>  #include <linux/module.h>
+>>  #include <linux/kernel.h>
+>> -#include <linux/init.h>
+>>  #include <linux/platform_device.h>
+>>  #include <linux/leds.h>
+>>  #include <asm/hd64461.h>
+>> diff --git a/drivers/leds/leds-lm3533.c b/drivers/leds/leds-lm3533.c
+>> index 027ede7..e2c642c11 100644
+>> --- a/drivers/leds/leds-lm3533.c
+>> +++ b/drivers/leds/leds-lm3533.c
+>> @@ -12,7 +12,6 @@
+>>   */
+>>
+>>  #include <linux/module.h>
+>> -#include <linux/init.h>
+>>  #include <linux/leds.h>
+>>  #include <linux/mfd/core.h>
+>>  #include <linux/mutex.h>
+>> diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
+>> index 2ec34cf..8ca197a 100644
+>> --- a/drivers/leds/leds-lp5521.c
+>> +++ b/drivers/leds/leds-lp5521.c
+>> @@ -25,7 +25,6 @@
+>>  #include <linux/delay.h>
+>>  #include <linux/firmware.h>
+>>  #include <linux/i2c.h>
+>> -#include <linux/init.h>
+>>  #include <linux/leds.h>
+>>  #include <linux/module.h>
+>>  #include <linux/mutex.h>
+>> diff --git a/drivers/leds/leds-lp5523.c b/drivers/leds/leds-lp5523.c
+>> index 4ade66a..cb5ed82 100644
+>> --- a/drivers/leds/leds-lp5523.c
+>> +++ b/drivers/leds/leds-lp5523.c
+>> @@ -25,7 +25,6 @@
+>>  #include <linux/delay.h>
+>>  #include <linux/firmware.h>
+>>  #include <linux/i2c.h>
+>> -#include <linux/init.h>
+>>  #include <linux/leds.h>
+>>  #include <linux/module.h>
+>>  #include <linux/mutex.h>
+>> diff --git a/drivers/leds/leds-lp5562.c b/drivers/leds/leds-lp5562.c
+>> index bf006f4..315d3ca 100644
+>> --- a/drivers/leds/leds-lp5562.c
+>> +++ b/drivers/leds/leds-lp5562.c
+>> @@ -13,7 +13,6 @@
+>>  #include <linux/delay.h>
+>>  #include <linux/firmware.h>
+>>  #include <linux/i2c.h>
+>> -#include <linux/init.h>
+>>  #include <linux/leds.h>
+>>  #include <linux/module.h>
+>>  #include <linux/mutex.h>
+>> diff --git a/drivers/leds/leds-lt3593.c b/drivers/leds/leds-lt3593.c
+>> index 3417e5b..059f5b1 100644
+>> --- a/drivers/leds/leds-lt3593.c
+>> +++ b/drivers/leds/leds-lt3593.c
+>> @@ -17,7 +17,6 @@
+>>   */
+>>
+>>  #include <linux/kernel.h>
+>> -#include <linux/init.h>
+>>  #include <linux/platform_device.h>
+>>  #include <linux/leds.h>
+>>  #include <linux/workqueue.h>
+>> diff --git a/drivers/leds/leds-mc13783.c b/drivers/leds/leds-mc13783.c
+>> index ca87a1b..dca34c7 100644
+>> --- a/drivers/leds/leds-mc13783.c
+>> +++ b/drivers/leds/leds-mc13783.c
+>> @@ -17,7 +17,6 @@
+>>
+>>  #include <linux/module.h>
+>>  #include <linux/kernel.h>
+>> -#include <linux/init.h>
+>>  #include <linux/platform_device.h>
+>>  #include <linux/leds.h>
+>>  #include <linux/workqueue.h>
+>> diff --git a/drivers/leds/leds-netxbig.c b/drivers/leds/leds-netxbig.c
+>> index 2f9f141..e97f443 100644
+>> --- a/drivers/leds/leds-netxbig.c
+>> +++ b/drivers/leds/leds-netxbig.c
+>> @@ -21,7 +21,6 @@
+>>   */
+>>
+>>  #include <linux/module.h>
+>> -#include <linux/init.h>
+>>  #include <linux/irq.h>
+>>  #include <linux/slab.h>
+>>  #include <linux/spinlock.h>
+>> diff --git a/drivers/leds/leds-ns2.c b/drivers/leds/leds-ns2.c
+>> index c7a4230..efa6258 100644
+>> --- a/drivers/leds/leds-ns2.c
+>> +++ b/drivers/leds/leds-ns2.c
+>> @@ -23,7 +23,6 @@
+>>   */
+>>
+>>  #include <linux/kernel.h>
+>> -#include <linux/init.h>
+>>  #include <linux/platform_device.h>
+>>  #include <linux/slab.h>
+>>  #include <linux/gpio.h>
+>> diff --git a/drivers/leds/leds-ot200.c b/drivers/leds/leds-ot200.c
+>> index 98cae52..c9d9060 100644
+>> --- a/drivers/leds/leds-ot200.c
+>> +++ b/drivers/leds/leds-ot200.c
+>> @@ -8,7 +8,6 @@
+>>   */
+>>
+>>  #include <linux/kernel.h>
+>> -#include <linux/init.h>
+>>  #include <linux/platform_device.h>
+>>  #include <linux/slab.h>
+>>  #include <linux/leds.h>
+>> diff --git a/drivers/leds/leds-pwm.c b/drivers/leds/leds-pwm.c
+>> index 6050474..dd17873 100644
+>> --- a/drivers/leds/leds-pwm.c
+>> +++ b/drivers/leds/leds-pwm.c
+>> @@ -14,7 +14,6 @@
+>>
+>>  #include <linux/module.h>
+>>  #include <linux/kernel.h>
+>> -#include <linux/init.h>
+>>  #include <linux/platform_device.h>
+>>  #include <linux/of_platform.h>
+>>  #include <linux/fb.h>
+>> diff --git a/drivers/leds/leds-s3c24xx.c b/drivers/leds/leds-s3c24xx.c
+>> index 98174e7..28988b7 100644
+>> --- a/drivers/leds/leds-s3c24xx.c
+>> +++ b/drivers/leds/leds-s3c24xx.c
+>> @@ -12,7 +12,6 @@
+>>  */
+>>
+>>  #include <linux/kernel.h>
+>> -#include <linux/init.h>
+>>  #include <linux/platform_device.h>
+>>  #include <linux/leds.h>
+>>  #include <linux/gpio.h>
+>> diff --git a/drivers/leds/leds-wm831x-status.c b/drivers/leds/leds-wm831x-status.c
+>> index 0a1a13f..e72c974 100644
+>> --- a/drivers/leds/leds-wm831x-status.c
+>> +++ b/drivers/leds/leds-wm831x-status.c
+>> @@ -10,7 +10,6 @@
+>>   */
+>>
+>>  #include <linux/kernel.h>
+>> -#include <linux/init.h>
+>>  #include <linux/platform_device.h>
+>>  #include <linux/slab.h>
+>>  #include <linux/leds.h>
+>> diff --git a/drivers/leds/leds-wm8350.c b/drivers/leds/leds-wm8350.c
+>> index 3f75fd2..4133ffe 100644
+>> --- a/drivers/leds/leds-wm8350.c
+>> +++ b/drivers/leds/leds-wm8350.c
+>> @@ -10,7 +10,6 @@
+>>   */
+>>
+>>  #include <linux/kernel.h>
+>> -#include <linux/init.h>
+>>  #include <linux/platform_device.h>
+>>  #include <linux/leds.h>
+>>  #include <linux/err.h>
+>> --
+>> 1.8.4.1
+>>
