@@ -1,413 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756527AbaBFNVY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 08:21:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41955 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751433AbaBFNVV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 08:21:21 -0500
-Date: Thu, 6 Feb 2014 14:21:19 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: akpm@linux-foundation.org
-Cc: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org
-Subject: since-3.13 branch opened for mm git tree (was: Re: mmotm
- 2014-02-05-15-56 uploaded)
-Message-ID: <20140206132119.GD20269@dhcp22.suse.cz>
-References: <20140205235719.A54A231C1DB@corp2gmr1-1.hot.corp.google.com>
+	id S1756314AbaBFNJZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 08:09:25 -0500
+Received: from vserver.eikelenboom.it ([84.200.39.61]:33477 "EHLO
+	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756197AbaBFNJW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 08:09:22 -0500
+Date: Thu, 6 Feb 2014 14:09:09 +0100
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <942972114.20140206140909@eikelenboom.it>
+To: Sander Eikelenboom <linux@eikelenboom.it>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Wei Liu <wei.liu2@citrix.com>
+CC: Dan Williams <dan.j.williams@intel.com>,
+        Francois Romieu <romieu@fr.zoreil.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: 3.14-mw regression: rtl8169 WARNING: DMA-API: exceeded 7 overlapping mappings of pfn 55ebe
+In-Reply-To: <84816226.20140206123631@eikelenboom.it>
+References: <1859471893.20140126115521@eikelenboom.it> <20140127000305.GA14236@electric-eye.fr.zoreil.com> <CAA9_cme2hgJ=jCDkPh5n5RP8fiJE-dVwbFr-apKv1=mNGPHYZg@mail.gmail.com> <84816226.20140206123631@eikelenboom.it>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140205235719.A54A231C1DB@corp2gmr1-1.hot.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have just created since-3.12 branch in mm git tree
-(http://git.kernel.org/?p=linux/kernel/git/mhocko/mm.git;a=summary). It
-is based on v3.12 tag in Linus tree and mmotm-2014-02-05-15-56.
-
-I have pulled some cgroup wide changes from Tejun as well but cgroupfs->kernfs
-changes are not there yet.
-
-As usual mmotm trees are tagged with signed tag
-(finger print BB43 1E25 7FB8 660F F2F1 D22D 48E2 09A2 B310 E347)
-
-The current shortlog says:
-Alex Williamson (1):
-      intel-iommu: fix off-by-one in pagetable freeing
-
-Andi Kleen (1):
-      numa: add a sysctl for numa_balancing
-
-Andrea Arcangeli (6):
-      mm: hugetlb: use get_page_foll() in follow_hugetlb_page()
-      mm: hugetlbfs: move the put/get_page slab and hugetlbfs optimization in a faster path
-      mm: thp: optimize compound_trans_huge
-      mm: tail page refcounting optimization for slab and hugetlbfs
-      mm: hugetlbfs: use __compound_tail_refcounted in __get_page_tail too
-      mm/hugetlb.c: defer PageHeadHuge() symbol export
-
-Andreas Sandberg (1):
-      mm/hugetlb.c: call MMU notifiers when copying a hugetlb page range
-
-Andrew Morton (5):
-      posix_acl: uninlining
-      mm/hugetlb.c: simplify PageHeadHuge() and PageHuge()
-      mm/swap.c: reorganize put_compound_page()
-      mm-hugetlb-improve-page-fault-scalability-fix
-      mm-vmstat-fix-up-zone-state-accounting-fix
-
-Axel Lin (2):
-      fs/ramfs/file-nommu.c: make ramfs_nommu_get_unmapped_area() and ramfs_nommu_mmap() static
-      fs/ramfs: move ramfs_aops to inode.c
-
-Corey Minyard (1):
-      fs/read_write.c:compat_readv(): remove bogus area verify
-
-Cyrill Gorcunov (1):
-      mm: ignore VM_SOFTDIRTY on VMA merging
-
-Dan Carpenter (1):
-      fs/compat_ioctl.c: fix an underflow issue (harmless)
-
-Dan Streetman (1):
-      mm/zswap.c: change params from hidden to ro
-
-Dan Williams (1):
-      dma-debug: introduce debug_dma_assert_idle()
-
-Dave Hansen (3):
-      mm: hugetlbfs: Add some VM_BUG_ON()s to catch non-hugetlbfs pages
-      mm: documentation: remove hopelessly out-of-date locking doc
-      mm: print more details for bad_page()
-
-David Rientjes (5):
-      mm, mempolicy: remove unneeded functions for UMA configs
-      mm, page_alloc: warn for non-blockable __GFP_NOFAIL allocation failure
-      mm, oom: prefer thread group leaders for display purposes
-      mm, compaction: ignore pageblock skip when manually invoking compaction
-      mm, hugetlb: mark some bootstrap functions as __init
-
-Davidlohr Bueso (4):
-      mm/mmap.c: add mlock_future_check() helper
-      mm/mlock: prepare params outside critical region
-      mm, hugetlb: fix race in region tracking
-      mm, hugetlb: improve page-fault scalability
-
-Fengguang Wu (1):
-      mm/rmap: fix coccinelle warnings
-
-Geert Uytterhoeven (2):
-      score: remove "select HAVE_GENERIC_HARDIRQS" again
-      mm: Make {,set}page_address() static inline if WANT_PAGE_VIRTUAL
-
-Goldwyn Rodrigues (7):
-      ocfs2: remove versioning information
-      ocfs2: add clustername to cluster connection
-      ocfs2: add DLM recovery callbacks
-      ocfs2: shift allocation ocfs2_live_connection to user_connect()
-      ocfs2: pass ocfs2_cluster_connection to ocfs2_this_node
-      ocfs2: framework for version LVB
-      ocfs2: use the new DLM operation callbacks while requesting new lockspace
-
-Grygorii Strashko (11):
-      mm/memblock: debug: correct displaying of upper memory boundary
-      mm/memblock: debug: don't free reserved array if !ARCH_DISCARD_MEMBLOCK
-      mm/bootmem: remove duplicated declaration of __free_pages_bootmem()
-      mm/memblock: remove unnecessary inclusions of bootmem.h
-      mm/memblock: drop WARN and use SMP_CACHE_BYTES as a default alignment
-      mm/memblock: reorder parameters of memblock_find_in_range_node
-      mm/memblock: switch to use NUMA_NO_NODE instead of MAX_NUMNODES
-      mm/hugetlb.c: use memblock apis for early memory allocations
-      mm/page_cgroup.c: use memblock apis for early memory allocations
-      x86/mm: memblock: switch to use NUMA_NO_NODE
-      mm/memblock: use WARN_ONCE when MAX_NUMNODES passed as input parameter
-
-Han Pingtian (2):
-      mm: prevent setting of a value less than 0 to min_free_kbytes
-      mm: show message when updating min_free_kbytes in thp
-
-Hugh Dickins (3):
-      cgroup: remove stray references to css_id
-      mm/memcg: fix last_dead_count memory wastage
-      mm/memcg: iteration skip memcgs not yet fully initialized
-
-Jamie Liu (1):
-      mm/swapfile.c: do not skip lowest_bit in scan_swap_map() scan loop
-
-Jan Kara (4):
-      inotify: provide function for name length rounding
-      fsnotify: do not share events between notification groups
-      fsnotify: remove .should_send_event callback
-      fsnotify: remove pointless NULL initializers
-
-Jerome Marchand (1):
-      mm: add overcommit_kbytes sysctl variable
-
-Jianguo Wu (1):
-      mm: do_mincore() cleanup
-
-Jianyu Zhan (1):
-      mm/vmalloc: interchage the implementation of vmalloc_to_{pfn,page}
-
-Jie Liu (3):
-      ocfs2: return EOPNOTSUPP if the device does not support discard
-      ocfs2: return EINVAL if the given range to discard is less than block size
-      ocfs2: adjust minlen with discard_granularity in the FITRIM ioctl
-
-Johannes Weiner (10):
-      mm: vmstat: fix UP zone state accounting
-      fs: cachefiles: use add_to_page_cache_lru()
-      lib: radix-tree: add radix_tree_delete_item()
-      mm: shmem: save one radix tree lookup when truncating swapped pages
-      mm: filemap: move radix tree hole searching here
-      mm + fs: prepare for non-page entries in page cache radix trees
-      mm + fs: store shadow entries in page cache
-      mm: thrash detection-based file cache sizing
-      lib: radix_tree: tree node interface
-      mm: keep page cache radix tree nodes in check
-
-Joonsoo Kim (16):
-      mm/rmap: recompute pgoff for huge page
-      mm/rmap: factor nonlinear handling out of try_to_unmap_file()
-      mm/rmap: factor lock function out of rmap_walk_anon()
-      mm/rmap: make rmap_walk to get the rmap_walk_control argument
-      mm/rmap: extend rmap_walk_xxx() to cope with different cases
-      mm/rmap: use rmap_walk() in try_to_unmap()
-      mm/rmap: use rmap_walk() in try_to_munlock()
-      mm/rmap: use rmap_walk() in page_referenced()
-      mm/rmap: use rmap_walk() in page_mkclean()
-      mm/migrate: correct failure handling if !hugepage_migration_support()
-      mm/migrate: remove putback_lru_pages, fix comment on putback_movable_pages
-      mm/migrate: remove unused function, fail_migrate_page()
-      mm, hugetlb: unify region structure handling
-      mm, hugetlb: improve, cleanup resv_map parameters
-      mm, hugetlb: remove resv_map_put
-      mm, hugetlb: use vma_resv_map() map types
-
-KOSAKI Motohiro (2):
-      mm: __set_page_dirty_nobuffers() uses spin_lock_irqsave() instead of spin_lock_irq()
-      mm: __set_page_dirty uses spin_lock_irqsave instead of spin_lock_irq
-
-Kirill A. Shutemov (1):
-      mm: create a separate slab for page->ptl allocation
-
-Mark Salter (10):
-      add generic fixmap.h
-      x86: use generic fixmap.h
-      hexagon: use generic fixmap.h
-      metag: use generic fixmap.h
-      microblaze: use generic fixmap.h
-      mips: use generic fixmap.h
-      powerpc: use generic fixmap.h
-      sh: use generic fixmap.h
-      tile: use generic fixmap.h
-      um: use generic fixmap.h
-
-Masanari Iida (1):
-      doc: cgroups: Fix typo in doc/cgroups
-
-Mel Gorman (9):
-      mm, show_mem: remove SHOW_MEM_FILTER_PAGE_COUNT
-      mm: numa: make NUMA-migrate related functions static
-      mm: numa: limit scope of lock for NUMA migrate rate limiting
-      mm: numa: trace tasks that fail migration due to rate limiting
-      mm: numa: do not automatically migrate KSM pages
-      sched: add tracepoints related to NUMA task migration
-      mm: compaction: trace compaction begin and end
-      mm: improve documentation of page_order
-      mm: optimize put_mems_allowed() usage
-
-Michal Hocko (4):
-      memcg, oom: lock mem_cgroup_print_oom_info
-      mm: new_vma_page() cannot see NULL vma for hugetlb pages
-      memcg: fix endless loop caused by mem_cgroup_iter
-      memcg: fix css reference leak and endless loop in mem_cgroup_iter
-
-Mike Frysinger (1):
-      uapi: convert u64 to __u64 in exported headers
-
-Naoya Horiguchi (3):
-      mm/migrate: add comment about permanent failure path
-      fs/proc/page.c: add PageAnon check to surely detect thp
-      mm/memory-failure.c: shift page lock from head page to tail page after thp split
-
-Nathan Zimmer (1):
-      mm/memory_hotplug.c: move register_memory_resource out of the lock_memory_hotplug
-
-Oleg Nesterov (6):
-      mm: thp: __get_page_tail_foll() can use get_huge_page_tail()
-      mm: thp: turn compound_head() into BUG_ON(!PageTail) in get_huge_page_tail()
-      introduce for_each_thread() to replace the buggy while_each_thread()
-      oom_kill: change oom_kill.c to use for_each_thread()
-      oom_kill: has_intersects_mems_allowed() needs rcu_read_lock()
-      oom_kill: add rcu_read_lock() into find_lock_task_mm()
-
-Paul Gortmaker (3):
-      fs/ramfs: don't use module_init for non-modular core code
-      mm/mm_init.c: make creation of the mm_kobj happen earlier than device_initcall
-      mm: audit/fix non-modular users of module_init in core code
-
-Philipp Hachtmann (3):
-      mm/nobootmem.c: add return value check in __alloc_memory_core_early()
-      mm: free memblock.memory in free_all_bootmem
-      mm/nobootmem: free_all_bootmem again
-
-Randy Dunlap (1):
-      Documentation/kernel-parameters.txt: fix memmap= language
-
-Rik van Riel (1):
-      /proc/meminfo: provide estimated available memory
-
-Santosh Shilimkar (15):
-      x86: memblock: set current limit to max low memory address
-      mm/memblock: add memblock memory allocation apis
-      init/main.c: use memblock apis for early memory allocations
-      kernel/printk/printk.c: use memblock apis for early memory allocations
-      mm/page_alloc.c: use memblock apis for early memory allocations
-      kernel/power/snapshot.c: use memblock apis for early memory allocations
-      lib/swiotlb.c: use memblock apis for early memory allocations
-      lib/cpumask.c: use memblock apis for early memory allocations
-      mm/sparse: use memblock apis for early memory allocations
-      mm/percpu.c: use memblock apis for early memory allocations
-      mm/memory_hotplug.c: use memblock apis for early memory allocations
-      drivers/firmware/memmap.c: use memblock apis for early memory allocations
-      arch/arm/kernel/: use memblock apis for early memory allocations
-      arch/arm/mm/init.c: use memblock apis for early memory allocations
-      arch/arm/mach-omap2/omap_hwmod.c: use memblock apis for early memory allocations
-
-Sasha Levin (1):
-      mm: dump page when hitting a VM_BUG_ON using VM_BUG_ON_PAGE
-
-SeongJae Park (1):
-      cgroup: trivial style updates
-
-Shaohua Li (1):
-      swap: add a simple detector for inappropriate swapin readahead
-
-Shawn Guo (1):
-      include/linux/genalloc.h: spinlock_t needs spinlock_types.h
-
-Tang Chen (7):
-      memblock, numa: introduce flags field into memblock
-      memblock, mem_hotplug: introduce MEMBLOCK_HOTPLUG flag to mark hotpluggable regions
-      memblock: make memblock_set_node() support different memblock_type
-      acpi, numa, mem_hotplug: mark hotpluggable memory in memblock
-      acpi, numa, mem_hotplug: mark all nodes the kernel resides un-hotpluggable
-      memblock, mem_hotplug: make memblock skip hotpluggable regions if needed
-      x86, numa, acpi, memory-hotplug: make movable_node have higher priority
-
-Tariq Saeed (1):
-      ocfs2: punch hole should return EINVAL if the length argument in ioctl is negative
-
-Tejun Heo (35):
-      cgroup, memcg: move cgroup_event implementation to memcg
-      memcg: cgroup_write_event_control() now knows @css is for memcg
-      cgroup, memcg: move cgroup->event_list[_lock] and event callbacks into memcg
-      memcg: remove cgroup_event->cft
-      memcg: make cgroup_event deal with mem_cgroup instead of cgroup_subsys_state
-      memcg: rename cgroup_event to mem_cgroup_event
-      cgroup: unexport cgroup_css() and remove __file_cft()
-      cgroup: don't skip seq_open on write only opens on pidlist files
-      cgroup: remove cftype->release()
-      cgroup: implement delayed destruction for cgroup_pidlist
-      cgroup: introduce struct cgroup_pidlist_open_file
-      cgroup: refactor cgroup_pidlist_find()
-      cgroup: remove cgroup_pidlist->rwsem
-      cgroup: load and release pidlists from seq_file start and stop respectively
-      cgroup: remove cgroup_pidlist->use_count
-      cgroup: don't guarantee cgroup.procs is sorted if sane_behavior
-      cgroup, sched: convert away from cftype->read_map()
-      cpuset: convert away from cftype->read()
-      memcg: convert away from cftype->read() and ->read_map()
-      netprio_cgroup: convert away from cftype->read_map()
-      hugetlb_cgroup: convert away from cftype->read()
-      cgroup: remove cftype->read(), ->read_map() and ->write()
-      cgroup: unify cgroup_write_X64() and cgroup_write_string()
-      cgroup: unify read path so that seq_file is always used
-      cgroup: generalize cgroup_pidlist_open_file
-      cgroup: attach cgroup_open_file to all cgroup files
-      cgroup: replace cftype->read_seq_string() with cftype->seq_show()
-      cgroup: unify pidlist and other file handling
-      cgroup: css iterations and css_from_dir() are safe under cgroup_mutex
-      cgroup: make for_each_subsys() useable under cgroup_root_mutex
-      cgroup: reorder operations in cgroup_create()
-      cgroup: combine css handling loops in cgroup_create()
-      cgroup: factor out cgroup_subsys_state creation into create_css()
-      cgroup: implement for_each_css()
-      cgroup: remove for_each_root_subsys()
-
-Vinayak Menon (1):
-      Documentation/trace/postprocess/trace-vmscan-postprocess.pl: fix the traceevent regex
-
-Vladimir Davydov (23):
-      fs/super.c: fix WARN on alloc_super() fail path
-      memcg: fix kmem_account_flags check in memcg_can_account_kmem()
-      memcg: make memcg_update_cache_sizes() static
-      cgroup: fix fail path in cgroup_load_subsys()
-      memcg: do not use vmalloc for mem_cgroup allocations
-      slab: clean up kmem_cache_create_memcg() error handling
-      memcg, slab: kmem_cache_create_memcg(): fix memleak on fail path
-      memcg, slab: clean up memcg cache initialization/destruction
-      memcg, slab: fix barrier usage when accessing memcg_caches
-      memcg: fix possible NULL deref while traversing memcg_slab_caches list
-      memcg, slab: fix races in per-memcg cache creation/destruction
-      memcg: get rid of kmem_cache_dup()
-      slab: do not panic if we fail to create memcg cache
-      memcg, slab: RCU protect memcg_params for root caches
-      memcg: remove KMEM_ACCOUNTED_ACTIVATED flag
-      memcg: rework memcg_update_kmem_limit synchronization
-      mm: vmscan: shrink all slab objects if tight on memory
-      mm: vmscan: call NUMA-unaware shrinkers irrespective of nodemask
-      memcg: remove unused code from kmem_cache_destroy_work_func
-      mm: vmscan: respect NUMA policy mask when shrinking slab on direct reclaim
-      mm: vmscan: move call to shrink_slab() to shrink_zones()
-      mm: vmscan: remove shrink_control arg from do_try_to_free_pages()
-      mm: vmscan: shrink_slab: rename max_pass -> freeable
-
-Vlastimil Babka (6):
-      mm: compaction: encapsulate defer reset logic
-      mm: compaction: reset cached scanner pfn's before reading them
-      mm: compaction: detect when scanners meet in isolate_freepages
-      mm: compaction: do not mark unmovable pageblocks as skipped in async compaction
-      mm: compaction: reset scanner positions immediately when they meet
-      mm: munlock: fix potential race with THP page split
-
-Wanlong Gao (1):
-      arch/sh/kernel/kgdb.c: add missing #include <linux/sched.h>
-
-Wanpeng Li (2):
-      mm/hwpoison: add '#' to hwpoison_inject
-      sched/numa: fix setting of cpupid on page migration twice
-
-Wei Yongjun (2):
-      ocfs2: fix sparse non static symbol warning
-      cgroup: fix missing unlock on error in cgroup_load_subsys()
-
-Weijie Yang (1):
-      mm/swap: fix race on swap_info reuse between swapoff and swapon
-
-Xishi Qiu (2):
-      lib/show_mem.c: show num_poisoned_pages when oom
-      doc/kmemcheck: add kmemcheck to kernel-parameters
-
-Yasuaki Ishimatsu (1):
-      mm: get rid of unnecessary pageblock scanning in setup_zone_migrate_reserve
-
-Yiwen Jiang (1):
-      ocfs2: fix NULL pointer dereference when dismount and ocfs2rec simultaneously
-
-Younger Liu (1):
-      ocfs2: remove redundant ocfs2_alloc_dinode_update_counts() and ocfs2_block_group_set_bits()
-
-Zhi Yong Wu (1):
-      mm, memory-failure: fix typo in me_pagecache_dirty()
-
-Zongxun Wang (1):
-      ocfs2: free allocated clusters if error occurs after ocfs2_claim_clusters
+Hmm ok that last message was false .. sorry for that .. it did happen again without r8169.use_dac=1, it just doesn't seem to happen all the time...
+
+Konrad / Wei, do you happen to know of any xen related change that went into 3.14 merge window that relates to dma / xen networking ?
+
+--
+Sander
+
+complete stacktrace:
+
+[  342.710738] ------------[ cut here ]------------
+[  342.726890] WARNING: CPU: 0 PID: 0 at lib/dma-debug.c:491 add_dma_entry+0x105/0x130()
+[  342.743210] DMA-API: exceeded 7 overlapping mappings of pfn 40b00
+[  342.759510] Modules linked in:
+[  342.775557] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.14.0-rc1-20140206-pcireset-net-btrevert+ #1
+[  342.791706] Hardware name: MSI MS-7640/890FXA-GD70 (MS-7640)  , BIOS V1.8B1 09/13/2010
+[  342.807627]  0000000000000009 ffff88005f603828 ffffffff81ad29fc ffffffff822134e0
+[  342.823430]  ffff88005f603878 ffff88005f603868 ffffffff810bdf62 ffff880000000000
+[  342.839081]  0000000000040b00 00000000ffffffef ffffffff822102e0 ffff8800592b9098
+[  342.854572] Call Trace:
+[  342.869748]  <IRQ>  [<ffffffff81ad29fc>] dump_stack+0x46/0x58
+[  342.884915]  [<ffffffff810bdf62>] warn_slowpath_common+0x82/0xb0
+[  342.899710]  [<ffffffff810be031>] warn_slowpath_fmt+0x41/0x50
+[  342.914395]  [<ffffffff8147853a>] ? active_pfn_read_overlap+0x3a/0x70
+[  342.929166]  [<ffffffff814792c5>] add_dma_entry+0x105/0x130
+[  342.943733]  [<ffffffff814796c6>] debug_dma_map_page+0x126/0x150
+[  342.957988]  [<ffffffff8171c8b6>] rtl8169_start_xmit+0x216/0xa20
+[  342.972306]  [<ffffffff8195f08f>] ? dev_queue_xmit_nit+0x1ef/0x260
+[  342.986523]  [<ffffffff8195eea0>] ? dev_loopback_xmit+0x1e0/0x1e0
+[  343.000689]  [<ffffffff819631e6>] dev_hard_start_xmit+0x2e6/0x4a0
+[  343.014466]  [<ffffffff81980f3e>] sch_direct_xmit+0xfe/0x280
+[  343.028052]  [<ffffffff819635dc>] __dev_queue_xmit+0x23c/0x630
+[  343.041338]  [<ffffffff819633a0>] ? dev_hard_start_xmit+0x4a0/0x4a0
+[  343.054483]  [<ffffffff81a0a334>] ? ip_output+0x54/0xf0
+[  343.067659]  [<ffffffff819639eb>] dev_queue_xmit+0xb/0x10
+[  343.080804]  [<ffffffff81a0890b>] ip_finish_output+0x2cb/0x670
+[  343.093746]  [<ffffffff81a0a334>] ? ip_output+0x54/0xf0
+[  343.106391]  [<ffffffff81a0a334>] ip_output+0x54/0xf0
+[  343.118683]  [<ffffffff81a05791>] ip_forward_finish+0x71/0x1a0
+[  343.130901]  [<ffffffff81a05a63>] ip_forward+0x1a3/0x440
+[  343.142829]  [<ffffffff810ffebb>] ? lock_is_held+0x8b/0xb0
+[  343.154346]  [<ffffffff81a035c0>] ip_rcv_finish+0x150/0x660
+[  343.165748]  [<ffffffff81a0406b>] ip_rcv+0x22b/0x370
+[  343.176838]  [<ffffffff81a60972>] ? packet_rcv_spkt+0x42/0x190
+[  343.187659]  [<ffffffff819609d2>] __netif_receive_skb_core+0x6d2/0x8a0
+[  343.198209]  [<ffffffff81960414>] ? __netif_receive_skb_core+0x114/0x8a0
+[  343.208819]  [<ffffffff81009010>] ? xen_clocksource_read+0x20/0x30
+[  343.219471]  [<ffffffff81116e49>] ? getnstimeofday+0x9/0x30
+[  343.229862]  [<ffffffff81960bbc>] __netif_receive_skb+0x1c/0x70
+[  343.239953]  [<ffffffff81960c2e>] netif_receive_skb_internal+0x1e/0xf0
+[  343.249908]  [<ffffffff81962110>] napi_gro_receive+0x70/0xa0
+[  343.259509]  [<ffffffff817198a3>] rtl8169_poll+0x2d3/0x680
+[  343.268982]  [<ffffffff81adcd2b>] ? _raw_spin_unlock_irq+0x2b/0x50
+[  343.278091]  [<ffffffff819610d1>] net_rx_action+0x161/0x260
+[  343.287056]  [<ffffffff810c28ec>] __do_softirq+0x12c/0x280
+[  343.295756]  [<ffffffff810c2da2>] irq_exit+0xa2/0xd0
+[  343.304235]  [<ffffffff814ffd5f>] xen_evtchn_do_upcall+0x2f/0x40
+[  343.312387]  [<ffffffff81adf15e>] xen_do_hypervisor_callback+0x1e/0x30
+[  343.320389]  <EOI>  [<ffffffff810013aa>] ? xen_hypercall_sched_op+0xa/0x20
+[  343.328171]  [<ffffffff810013aa>] ? xen_hypercall_sched_op+0xa/0x20
+[  343.335738]  [<ffffffff81008c70>] ? xen_safe_halt+0x10/0x20
+[  343.343142]  [<ffffffff81018748>] ? default_idle+0x18/0x20
+[  343.350202]  [<ffffffff81018f5e>] ? arch_cpu_idle+0x2e/0x40
+[  343.356994]  [<ffffffff8110b551>] ? cpu_startup_entry+0x91/0x1e0
+[  343.363658]  [<ffffffff81ac7d87>] ? rest_init+0xb7/0xc0
+[  343.369924]  [<ffffffff81ac7cd0>] ? csum_partial_copy_generic+0x170/0x170
+[  343.376057]  [<ffffffff8230ff1c>] ? start_kernel+0x409/0x416
+[  343.381972]  [<ffffffff8230f912>] ? repair_env_string+0x5e/0x5e
+[  343.387573]  [<ffffffff8230f5f8>] ? x86_64_start_reservations+0x2a/0x2c
+[  343.393152]  [<ffffffff82312e28>] ? xen_start_kernel+0x586/0x588
+[  343.398628] ---[ end trace 8379b598fb7ef5ee ]---
+
+
+
+
+
+Thursday, February 6, 2014, 12:36:31 PM, you wrote:
+
+> Hi Dan / Francois,
+
+> Didn't have time to test it before, but the patch doesn't seem to help.
+> I'm still getting the "DMA-API: exceeded 7 overlapping mappings of pfn 55ebe",
+> but i see now i forgot to mention i use r8169.use_dac=1 ...
+
+> Not using it seems to prevent the warning, but before 3.14 i have never seen this (with r8169.use_dac=1)
+
+> --
+> Sander
+
+> Wednesday, January 29, 2014, 4:06:24 AM, you wrote:
+
+>> On Sun, Jan 26, 2014 at 4:03 PM, Francois Romieu <romieu@fr.zoreil.com> wrote:
+>>> Sander Eikelenboom <linux@eikelenboom.it> :
+>>> [...]
+>>>> I have got a regression with a 3.14-mw kernel (last commit is 4ba9920e5e9c0e16b5ed24292d45322907bb9035):
+>>>> It looks like it's related to the rtl8169 ...
+>>>>
+>>>> --
+>>>> Sander
+>>>>
+>>>> Jan 26 11:36:26 serveerstertje kernel: [   89.105537] ------------[ cut here ]------------
+>>>> Jan 26 11:36:26 serveerstertje kernel: [   89.116779] WARNING: CPU: 0 PID: 0 at lib/dma-debug.c:491 add_dma_entry+0x103/0x130()
+>>>> Jan 26 11:36:26 serveerstertje kernel: [   89.128148] DMA-API: exceeded 7 overlapping mappings of pfn 55ebe
+>>>> Jan 26 11:36:26 serveerstertje kernel: [   89.139397] Modules linked in:
+>>>> Jan 26 11:36:26 serveerstertje kernel: [   89.150535] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.13.0-20140125-mw-pcireset+ #1
+>>>> Jan 26 11:36:26 serveerstertje kernel: [   89.161784] Hardware name: MSI MS-7640/890FXA-GD70 (MS-7640)  , BIOS V1.8B1 09/13/2010
+>>>> Jan 26 11:36:26 serveerstertje kernel: [   89.172965]  0000000000000009 ffff88005f603838 ffffffff81acbcfa ffffffff822134e0
+>>>> Jan 26 11:36:26 serveerstertje kernel: [   89.184156]  ffff88005f603888 ffff88005f603878 ffffffff810bdf62 ffff880000000000
+>>>> Jan 26 11:36:26 serveerstertje kernel: [   89.195186]  0000000000055ebe 00000000ffffffef 0000000000000200 ffff8800592ea098
+>>>> Jan 26 11:36:26 serveerstertje kernel: [   89.206227] Call Trace:
+>>>> Jan 26 11:36:26 serveerstertje kernel: [   89.217027]  <IRQ>  [<ffffffff81acbcfa>] dump_stack+0x46/0x58
+>>>> Jan 26 11:36:26 serveerstertje kernel: [   89.227907]  [<ffffffff810bdf62>] warn_slowpath_common+0x82/0xb0
+>>>> Jan 26 11:36:26 serveerstertje kernel: [   89.238678]  [<ffffffff810be031>] warn_slowpath_fmt+0x41/0x50
+>>>> Jan 26 11:36:26 serveerstertje kernel: [   89.249336]  [<ffffffff81471c5a>] ? active_pfn_read_overlap+0x3a/0x70
+>>>> Jan 26 11:36:26 serveerstertje kernel: [   89.259904]  [<ffffffff814729e3>] add_dma_entry+0x103/0x130
+>>>> Jan 26 11:36:26 serveerstertje kernel: [   89.270416]  [<ffffffff81472de6>] debug_dma_map_page+0x126/0x150
+>>>> Jan 26 11:36:26 serveerstertje kernel: [   89.280840]  [<ffffffff81714686>] rtl8169_start_xmit+0x216/0xa20
+>>> [r8169 and xen stuff]
+>>>
+>>> Dan, I miss the part of the debug code that tells where the mappings were
+>>> previously set.
+
+>> In this case it was a facepalm mistake on my part.  The mappings were
+>> not being properly accounted in the last revision of the patch I sent.
+>>  I copied you on the fix [1].
+
+>> --
+>> Dan
+
+>> [1]: http://marc.info/?l=linux-netdev&m=139096447627032&w=2
+
+
+
+
 -- 
-Michal Hocko
-SUSE Labs
+Best regards,
+ Sander                            mailto:linux@eikelenboom.it
+
