@@ -1,86 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756385AbaBFVir (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 16:38:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49243 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752109AbaBFVip (ORCPT
+	id S1757016AbaBFVjG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 16:39:06 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:58350 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756729AbaBFVjE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 16:38:45 -0500
-Date: Thu, 6 Feb 2014 13:39:53 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>,
-        Alexander Usyskin <alexander.usyskin@intel.com>
-Subject: Re: [PATCH 3.13 054/140] mei: use hbm idle state to prevent spurious
- resets
-Message-ID: <20140206213953.GA1524@kroah.com>
-References: <20140204211036.967663852@linuxfoundation.org>
- <20140204211038.509274283@linuxfoundation.org>
- <1391722055.22187.7.camel@x220>
+	Thu, 6 Feb 2014 16:39:04 -0500
+Date: Thu, 6 Feb 2014 13:39:01 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Joe Perches <joe@perches.com>
+cc: Eric Dumazet <eric.dumazet@gmail.com>, David Miller <davem@davemloft.net>,
+        netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] net: use __GFP_NORETRY for high order allocations
+In-Reply-To: <1391722444.15777.28.camel@joe-AO722>
+Message-ID: <alpine.DEB.2.02.1402061335280.12761@chino.kir.corp.google.com>
+References: <1391712162.10160.8.camel@edumazet-glaptop2.roam.corp.google.com> <1391718270.15777.20.camel@joe-AO722> <alpine.DEB.2.02.1402061302020.9567@chino.kir.corp.google.com> <1391722444.15777.28.camel@joe-AO722>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1391722055.22187.7.camel@x220>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 06, 2014 at 10:27:35PM +0100, Paul Bolle wrote:
-> On Tue, 2014-02-04 at 13:10 -0800, Greg Kroah-Hartman wrote:
-> > From: Tomas Winkler <tomas.winkler@intel.com>
-> > 
-> > commit 66ae460b13c31a176b41550259683c841a62af3e upstream.
-> > 
-> > When reset is caused by hbm protocol mismatch or timeout
-> > we might end up in an endless reset loop and hbm protocol
-> > will never sync
-> > 
-> > Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-> > Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
-> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > 
-> > ---
-> >  drivers/misc/mei/hbm.c       |   19 +++++++++++++++++++
-> >  drivers/misc/mei/hbm.h       |    1 +
-> >  drivers/misc/mei/init.c      |   12 ++++++++----
-> >  drivers/misc/mei/interrupt.c |   25 +++++++++++++++----------
-> >  4 files changed, 43 insertions(+), 14 deletions(-)
-> > 
-> > --- a/drivers/misc/mei/hbm.c
-> > +++ b/drivers/misc/mei/hbm.c
-> > [...]
-> > @@ -577,6 +588,14 @@ void mei_hbm_dispatch(struct mei_device
-> >  	mei_read_slots(dev, dev->rd_msg_buf, hdr->length);
-> >  	mei_msg = (struct mei_bus_message *)dev->rd_msg_buf;
-> >  
-> > +	/* ignore spurious message and prevent reset nesting
-> > +	 * hbm is put to idle during system reset
-> > +	 */
-> > +	if (dev->hbm_state == MEI_HBM_IDLE) {
-> > +		dev_dbg(&dev->pdev->dev, "hbm: state is idle ignore spurious messages\n");
-> > +		return 0;
-> > +	}
-> > +
-> >  	switch (mei_msg->hbm_cmd) {
-> >  	case HOST_START_RES_CMD:
-> >  		version_res = (struct hbm_host_version_response *)mei_msg;
+On Thu, 6 Feb 2014, Joe Perches wrote:
+
+> > If they absolutely require local memory to 
+> > currnet's cpu node then that would make sense,
 > 
-> This chunk triggers this, obviously correct, warning:
->     drivers/misc/mei/hbm.c: In function 'mei_hbm_dispatch':
->     drivers/misc/mei/hbm.c:596:3: warning: 'return' with a value, in function returning void [enabled by default
->        return 0;
->        ^
+> I presumed THISNODE would be used only with NORETRY
 > 
-> I know that v3.13.2 has just been released. Would it be worth the
-> trouble to submit a clean up patch (v3.13 specific, as in v3.14-rc1 this
-> function returns int)?
 
-Yes, feel free to send a patch to just remove the ' 0' from that return
-line and I'll queue it up.
+Unfortunately, that would avoid attempting to defragment or reclaim 
+remotely for the order-3 allocation and only allocate remotely for 
+order-0.
 
-thanks,
+So we have to make a decision here what is more important: allocating 
+high-order memory or local memory to current's cpu at this given time?
 
-greg k-h
+The policy of transparent hugepages, for example, is always to allocate 
+order-9 memory remotely instead of falling back to allocating a smallpage 
+locally.
+
+The original code never cared about local vs remote memory, so I don't 
+think there's any restriction to allocating remotely.  I also don't know 
+many allocators that do __GFP_THISNODE and care about local memory to 
+current's cpu at this point in time, usually users of that flag are 
+allocating memory that must be local to a specific node (for things like 
+kmem_cache_alloc_node()).
