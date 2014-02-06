@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756802AbaBFTVt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 14:21:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22603 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755214AbaBFTVs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 14:21:48 -0500
-Date: Thu, 6 Feb 2014 17:21:31 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: Stephane Eranian <eranian@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Jiri Olsa <jolsa@redhat.com>, Eric Dumazet <edumazet@google.com>
-Subject: Re: [BUG] perf top: --stdio causes continuous refresh
-Message-ID: <20140206192131.GA27665@infradead.org>
-References: <CABPqkBSkSbWvdRu3iEtNvHhfV4J4sALHvdd40hZTcGxLe576yQ@mail.gmail.com>
- <20140206135627.GA26955@infradead.org>
- <CABPqkBS5qLDYyyv=n8fT4K+hA3uRWYmQOZmO+n-UE9=X=cEFzQ@mail.gmail.com>
- <20140206140705.GB26955@infradead.org>
- <20140206140936.GC26955@infradead.org>
- <CABPqkBRwy=0pnmm657TwV25GiYbpkqC1E8+cUGLEUbqxO=Gusw@mail.gmail.com>
- <52F3CAE3.7060007@gmail.com>
+	id S1756898AbaBFTYx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 14:24:53 -0500
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:54472 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752551AbaBFTYu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 14:24:50 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52F3CAE3.7060007@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <1390218087-14597-1-git-send-email-b38343@freescale.com>
+References: <1390218087-14597-1-git-send-email-b38343@freescale.com>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Thu, 6 Feb 2014 11:24:28 -0800
+Message-ID: <CAK5ve-Km-STOFra=Z4G6wjOFgzeguvumhaWzUq_juYUD3Gwg1A@mail.gmail.com>
+Subject: Re: [PATCH v1 1/2] leds: leds-gpio: add retain-state-suspended property
+To: Robin Gong <b38343@freescale.com>
+Cc: Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>, galak@codeaurora.org,
+        Rob Landley <rob@landley.net>, "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        Rob Herring <robherring2@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Feb 06, 2014 at 10:48:19AM -0700, David Ahern escreveu:
-> On 2/6/14, 8:24 AM, Stephane Eranian wrote:
-> >On Thu, Feb 6, 2014 at 3:09 PM, Arnaldo Carvalho de Melo
-> >>>>I am using tip.git. Or try 3.11, 3.10.
-> >>
-> >>But my tests are on top of:
-> >>
-> >>[acme@ssdandy linux]$ uname -r
-> >>3.11.4-101.fc18.x86_64
-> >>
-> >>I thought it was a 3.14ish one, building one to try there...
-> >>
-> >The kernel must be 3.14-rcX, the tool can be any version.
-> 
-> 
-> I don't have time to do a git bisect, but I can narrow the window to
-> 3.13-rc6 and 3.14-rc1. Just happened to update a server yesterday.
-> perf-top --stdio runs fine on the former and shows the problem on
-> the latter.
+On Mon, Jan 20, 2014 at 3:41 AM, Robin Gong <b38343@freescale.com> wrote:
+> Some gpio-leds need retain the state even in suspend, such as charger led.
+> But this property missed in devicetree, add it.
+>
 
-Humm,
+Good catch, I just fold these 2 patches into one patch and applied.
+Thanks,
+-Bryan
 
-                /*
-                 * Either timeout expired or we got an EINTR due to
-                 * SIGWINCH, refresh screen in both cases.
-                 */
-                switch (poll(&stdin_poll, 1, delay_msecs)) {
 
-And poll is returning 1:
-
-   951.068 ( 0.002 ms): poll(ufds: 0x7ff660befbb0, nfds: 1, timeout_msecs: 2000) = 1
-
-Checking...
-
-- Arnaldo
+> Signed-off-by: Robin Gong <b38343@freescale.com>
+> ---
+>  drivers/leds/leds-gpio.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/leds/leds-gpio.c b/drivers/leds/leds-gpio.c
+> index 78b0e27..1bb3f1a 100644
+> --- a/drivers/leds/leds-gpio.c
+> +++ b/drivers/leds/leds-gpio.c
+> @@ -204,6 +204,9 @@ static struct gpio_leds_priv *gpio_leds_create_of(struct platform_device *pdev)
+>                                 led.default_state = LEDS_GPIO_DEFSTATE_OFF;
+>                 }
+>
+> +               if (of_get_property(child, "retain-state-suspended", NULL))
+> +                       led.retain_state_suspended = 1;
+> +
+>                 ret = create_gpio_led(&led, &priv->leds[priv->num_leds++],
+>                                       &pdev->dev, NULL);
+>                 if (ret < 0) {
+> --
+> 1.7.5.4
+>
+>
