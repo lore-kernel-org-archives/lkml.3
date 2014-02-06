@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756443AbaBFNlN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 08:41:13 -0500
-Received: from mail-yh0-f53.google.com ([209.85.213.53]:41407 "EHLO
-	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756067AbaBFNlL (ORCPT
+	id S932663AbaBFNs0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 08:48:26 -0500
+Received: from mail-yh0-f50.google.com ([209.85.213.50]:33221 "EHLO
+	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756217AbaBFNsY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 08:41:11 -0500
-Date: Thu, 6 Feb 2014 10:41:00 -0300
+	Thu, 6 Feb 2014 08:48:24 -0500
+Date: Thu, 6 Feb 2014 10:48:17 -0300
 From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 To: Ben Hutchings <ben@decadent.org.uk>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
         stable@vger.kernel.org
 Subject: Re: [PATCH 0/3] Fix perf build breakages in 3.13
-Message-ID: <20140206134100.GB8026@ghostprotocols.net>
+Message-ID: <20140206134817.GC8026@ghostprotocols.net>
 References: <1391648361.3003.97.camel@deadeye.wl.decadent.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -35,7 +35,13 @@ Em Thu, Feb 06, 2014 at 12:59:21AM +0000, Ben Hutchings escreveu:
 > it's going to take a much more sophisticated approach to do it right
 > across all supported architectures.
 
-Not a problem, we can work on that later, applying your series, thanks.
+Second thought on the revert one:
+
+Do you have a problem of switching the big hammer to one that makes this
+work just on x86/x86-64?
+
+That way at least those on these arches can have this while the correct
+solution is worked out.
 
 - Arnaldo
  
