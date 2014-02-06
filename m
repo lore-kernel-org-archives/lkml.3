@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756938AbaBFT7a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 14:59:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48711 "EHLO
+	id S1757063AbaBFUAk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 15:00:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48725 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750739AbaBFT71 (ORCPT
+	with ESMTP id S1750739AbaBFUAZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 14:59:27 -0500
-Date: Thu, 6 Feb 2014 12:00:36 -0800
+	Thu, 6 Feb 2014 15:00:25 -0500
+Date: Thu, 6 Feb 2014 12:01:34 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Linux 3.12.10
-Message-ID: <20140206200036.GA2121@kroah.com>
+Subject: Linux 3.13.2
+Message-ID: <20140206200134.GA2213@kroah.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9jxsPFA5p3P2qPhR"
+	protocol="application/pgp-signature"; boundary="WIyZ46R2i8wDzkSu"
 Content-Disposition: inline
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -24,18 +24,18 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---9jxsPFA5p3P2qPhR
+--WIyZ46R2i8wDzkSu
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-I'm announcing the release of the 3.12.10 kernel.
+I'm announcing the release of the 3.13.2 kernel.
 
-All users of the 3.12 kernel series must upgrade.
+All users of the 3.13 kernel series must upgrade.
 
-The updated 3.12.y git tree can be found at:
+The updated 3.13.y git tree can be found at:
 	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linu=
-x-3.12.y
+x-3.13.y
 and can be browsed at the normal kernel.org git web browser:
 	http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git;a=3Dsu=
 mmary
@@ -50,160 +50,169 @@ greg k-h
  Documentation/devicetree/bindings/i2c/i2c-mv64xxx.txt |    6=20
  Documentation/i2c/busses/i2c-piix4                    |    2=20
  Makefile                                              |    2=20
- arch/alpha/lib/csum_partial_copy.c                    |    9 -
+ arch/alpha/lib/csum_partial_copy.c                    |    9=20
  arch/arm/boot/dts/armada-370-xp.dtsi                  |    2=20
  arch/arm/boot/dts/at91sam9g45.dtsi                    |    2=20
  arch/arm/mach-at91/sam9_smc.c                         |    2=20
  arch/arm/mach-mvebu/Makefile                          |    2=20
- arch/arm/mach-mvebu/armada-370-xp.c                   |   32 ++++
- arch/arm/mach-mvebu/mvebu-soc-id.c                    |  119 ++++++++++++++
- arch/arm/mach-mvebu/mvebu-soc-id.h                    |   32 ++++
- arch/arm/net/bpf_jit_32.c                             |    6=20
+ arch/arm/mach-mvebu/armada-370-xp.c                   |   32 +
+ arch/arm/mach-mvebu/mvebu-soc-id.c                    |  119 ++++++
+ arch/arm/mach-mvebu/mvebu-soc-id.h                    |   32 +
  arch/parisc/include/asm/cacheflush.h                  |    2=20
  arch/parisc/include/asm/page.h                        |    3=20
- arch/parisc/kernel/cache.c                            |   14 +
- arch/powerpc/include/asm/topology.h                   |   10 +
+ arch/parisc/kernel/cache.c                            |   14=20
+ arch/powerpc/include/asm/topology.h                   |   10=20
  arch/powerpc/kernel/cacheinfo.c                       |    3=20
  arch/powerpc/kvm/book3s_hv.c                          |    7=20
  arch/powerpc/kvm/e500_mmu.c                           |    2=20
- arch/powerpc/mm/numa.c                                |   70 ++++++++
- arch/powerpc/net/bpf_jit_comp.c                       |    7=20
- arch/s390/include/uapi/asm/statfs.h                   |   10 -
+ arch/powerpc/mm/numa.c                                |   70 +++
+ arch/s390/include/asm/compat.h                        |    3=20
+ arch/s390/include/uapi/asm/statfs.h                   |   10=20
  arch/s390/kvm/diag.c                                  |    4=20
- arch/s390/net/bpf_jit_comp.c                          |   29 ++-
- arch/sparc/net/bpf_jit_comp.c                         |   17 +-
- arch/x86/include/asm/kvm_para.h                       |   33 +---
+ arch/s390/kvm/kvm-s390.c                              |   25 -
+ arch/s390/kvm/kvm-s390.h                              |    4=20
+ arch/s390/kvm/sigp.c                                  |   15=20
+ arch/x86/include/asm/kvm_para.h                       |   33 -
  arch/x86/include/uapi/asm/msr-index.h                 |    1=20
- arch/x86/kernel/cpu/amd.c                             |   10 +
- arch/x86/kernel/kvm.c                                 |   32 ++++
- arch/x86/kvm/i8254.c                                  |   18 ++
- arch/x86/kvm/lapic.c                                  |    5=20
+ arch/x86/kernel/cpu/amd.c                             |   10=20
+ arch/x86/kernel/kvm.c                                 |   32 +
+ arch/x86/kvm/i8254.c                                  |   18=20
+ arch/x86/kvm/lapic.c                                  |    3=20
  arch/x86/kvm/x86.c                                    |    3=20
  arch/x86/kvm/x86.h                                    |    2=20
- arch/x86/net/bpf_jit_comp.c                           |   14 +
  arch/x86/platform/efi/efi.c                           |    2=20
- drivers/ata/libata-core.c                             |   27 +++
- drivers/ata/libata-scsi.c                             |   18 +-
- drivers/ata/sata_mv.c                                 |   25 +++
+ drivers/ata/libata-core.c                             |   27 +
+ drivers/ata/libata-scsi.c                             |   18=20
+ drivers/ata/sata_mv.c                                 |   25 +
  drivers/char/tpm/tpm_i2c_stm_st33.c                   |    7=20
- drivers/char/tpm/tpm_ppi.c                            |    8 -
+ drivers/char/tpm/tpm_ppi.c                            |    8=20
  drivers/edac/e752x_edac.c                             |    4=20
- drivers/gpu/drm/nouveau/core/subdev/bios/init.c       |    8 -
  drivers/hwmon/k10temp.c                               |    1=20
  drivers/i2c/busses/Kconfig                            |    1=20
  drivers/i2c/busses/i2c-mv64xxx.c                      |    5=20
- drivers/i2c/busses/i2c-piix4.c                        |   28 ++-
- drivers/md/bcache/bset.c                              |   26 ++-
- drivers/md/raid5.c                                    |    1=20
+ drivers/i2c/busses/i2c-piix4.c                        |   28 +
+ drivers/md/bcache/bset.c                              |   26 +
  drivers/mfd/max77686.c                                |    2=20
- drivers/misc/mei/hbm.c                                |   19 ++
+ drivers/misc/mei/hbm.c                                |   19 +
  drivers/misc/mei/hbm.h                                |    1=20
- drivers/misc/mei/init.c                               |   12 +
- drivers/misc/mei/interrupt.c                          |   25 +--
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c       |   13 +
- drivers/net/ethernet/intel/e1000e/phy.c               |   10 -
- drivers/net/ethernet/via/via-rhine.c                  |    1=20
- drivers/net/usb/usbnet.c                              |    2=20
- drivers/net/vxlan.c                                   |   20 +-
+ drivers/misc/mei/init.c                               |   12=20
+ drivers/misc/mei/interrupt.c                          |   25 -
+ drivers/misc/mic/host/mic_device.h                    |    3=20
+ drivers/misc/mic/host/mic_main.c                      |    2=20
+ drivers/misc/mic/host/mic_virtio.c                    |    2=20
+ drivers/misc/mic/host/mic_x100.c                      |   36 +
+ drivers/mmc/host/sdhci-esdhc-imx.c                    |   12=20
+ drivers/mmc/host/sdhci-pci.c                          |    1=20
+ drivers/mmc/host/sdhci.c                              |   23 -
+ drivers/net/vxlan.c                                   |   20 -
  drivers/net/wireless/ath/ath9k/hw.c                   |    7=20
- drivers/net/wireless/ath/ath9k/recv.c                 |   25 +--
+ drivers/net/wireless/ath/ath9k/recv.c                 |   25 -
  drivers/net/wireless/b43/b43.h                        |    4=20
- drivers/net/wireless/b43/main.c                       |   27 ++-
+ drivers/net/wireless/b43/main.c                       |   27 -
  drivers/net/wireless/b43/xmit.c                       |    4=20
  drivers/net/wireless/b43legacy/main.c                 |    1=20
  drivers/net/wireless/iwlwifi/iwl-prph.h               |    4=20
  drivers/net/wireless/iwlwifi/mvm/ops.c                |    1=20
- drivers/net/wireless/iwlwifi/pcie/trans.c             |   22 ++
+ drivers/net/wireless/iwlwifi/pcie/trans.c             |   22 +
  drivers/net/wireless/mwifiex/fw.h                     |    2=20
  drivers/net/wireless/mwifiex/scan.c                   |    4=20
  drivers/net/wireless/rtlwifi/base.c                   |    3=20
- drivers/net/wireless/rtlwifi/core.c                   |   11 +
+ drivers/net/wireless/rtlwifi/core.c                   |   11=20
  drivers/net/wireless/rtlwifi/rtl8188ee/dm.c           |    2=20
- drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c     |   36 ++++
- drivers/net/wireless/rtlwifi/rtl8192c/dm_common.h     |   14 +
- drivers/net/wireless/rtlwifi/rtl8192cu/dm.c           |    9 +
+ drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c     |  327 ++++++++++++-=
+-----
+ drivers/net/wireless/rtlwifi/rtl8192c/dm_common.h     |   14=20
+ drivers/net/wireless/rtlwifi/rtl8192cu/dm.c           |    9=20
  drivers/net/wireless/rtlwifi/rtl8192cu/dm.h           |    3=20
- drivers/net/wireless/rtlwifi/rtl8192cu/rf.c           |   29 ++-
- drivers/net/wireless/rtlwifi/rtl8192cu/sw.c           |   17 +-
- drivers/net/wireless/rtlwifi/stats.c                  |   14 +
+ drivers/net/wireless/rtlwifi/rtl8192cu/rf.c           |   29 -
+ drivers/net/wireless/rtlwifi/rtl8192cu/sw.c           |   17=20
+ drivers/net/wireless/rtlwifi/stats.c                  |   14=20
  drivers/net/wireless/rtlwifi/usb.c                    |    4=20
- drivers/net/wireless/rtlwifi/wifi.h                   |   33 ++--
- drivers/net/xen-netfront.c                            |   88 +++--------
- drivers/parport/parport_pc.c                          |   10 -
- drivers/pinctrl/pinctrl-sunxi.c                       |   13 -
+ drivers/net/wireless/rtlwifi/wifi.h                   |   33 -
+ drivers/net/xen-netfront.c                            |   88 +---
+ drivers/parport/parport_pc.c                          |   10=20
+ drivers/pinctrl/pinctrl-sunxi.c                       |   13=20
  drivers/platform/x86/hp_accel.c                       |    1=20
- drivers/rtc/rtc-max8907.c                             |   11 -
+ drivers/rtc/rtc-max8907.c                             |   11=20
  drivers/scsi/bfa/bfad.c                               |    6=20
- drivers/scsi/virtio_scsi.c                            |   15 +
+ drivers/scsi/qla4xxx/ql4_os.c                         |   11=20
+ drivers/scsi/virtio_scsi.c                            |   15=20
  drivers/staging/lustre/lustre/ptlrpc/niobuf.c         |    6=20
  drivers/staging/rtl8712/usb_intf.c                    |    5=20
  drivers/staging/vt6656/baseband.c                     |    3=20
  drivers/staging/vt6656/card.c                         |    2=20
  drivers/staging/zram/zram_drv.c                       |    4=20
- drivers/target/iscsi/iscsi_target.c                   |   34 ++--
+ drivers/target/iscsi/iscsi_target.c                   |   34 +
  drivers/target/iscsi/iscsi_target_nego.c              |    2=20
+ drivers/tty/Kconfig                                   |    2=20
  drivers/tty/serial/8250/8250_core.c                   |    4=20
- drivers/tty/serial/8250/8250_pci.c                    |    8 -
- drivers/tty/serial/atmel_serial.c                     |   45 +++--
- drivers/usb/chipidea/ci.h                             |   26 +++
- drivers/usb/chipidea/ci_hdrc_imx.c                    |   32 +++-
+ drivers/tty/serial/8250/8250_pci.c                    |    8=20
+ drivers/tty/serial/atmel_serial.c                     |   45 +-
+ drivers/uio/uio.c                                     |    2=20
+ drivers/usb/chipidea/ci.h                             |   26 +
+ drivers/usb/chipidea/ci_hdrc_imx.c                    |   32 +
  drivers/usb/chipidea/core.c                           |    2=20
  drivers/usb/chipidea/host.c                           |    1=20
  drivers/usb/chipidea/otg.h                            |    6=20
- drivers/usb/chipidea/udc.c                            |   19 ++
+ drivers/usb/chipidea/udc.c                            |   19 -
+ drivers/usb/class/cdc-wdm.c                           |   70 ++-
  drivers/usb/core/config.c                             |    7=20
- drivers/usb/core/hub.c                                |   54 ++----
- drivers/usb/host/ehci.h                               |   18 ++
+ drivers/usb/core/hub.c                                |   53 --
+ drivers/usb/dwc3/dwc3-exynos.c                        |    1=20
+ drivers/usb/dwc3/dwc3-pci.c                           |    1=20
+ drivers/usb/host/ehci.h                               |   18=20
  drivers/usb/host/xhci-ring.c                          |    2=20
  drivers/usb/host/xhci.c                               |    7=20
  drivers/usb/host/xhci.h                               |    2=20
  drivers/usb/serial/cypress_m8.h                       |    2=20
- drivers/usb/serial/ftdi_sio.c                         |   17 +-
- drivers/usb/serial/option.c                           |   15 +
- drivers/usb/serial/pl2303.c                           |   34 +++-
+ drivers/usb/serial/ftdi_sio.c                         |   17=20
+ drivers/usb/serial/option.c                           |   15=20
+ drivers/usb/serial/pl2303.c                           |   34 +
  drivers/usb/storage/unusual_devs.h                    |    7=20
+ drivers/video/console/sticore.c                       |    2=20
+ drivers/xen/pci.c                                     |    2=20
  fs/btrfs/extent-tree.c                                |    2=20
+ fs/btrfs/inode.c                                      |   18=20
  fs/btrfs/ioctl.c                                      |    6=20
  fs/dcache.c                                           |    1=20
- fs/ext4/inline.c                                      |    8 -
- fs/hpfs/alloc.c                                       |   66 ++++++++
+ fs/ext4/inline.c                                      |    8=20
+ fs/hpfs/alloc.c                                       |   66 +++
  fs/hpfs/hpfs_fn.h                                     |    2=20
- fs/hpfs/super.c                                       |   29 ++-
+ fs/hpfs/super.c                                       |   29 +
  fs/mount.h                                            |    2=20
- include/linux/hugetlb.h                               |    6=20
  include/linux/libata.h                                |    2=20
+ include/linux/mmc/sdhci.h                             |    2=20
  include/linux/usb/chipidea.h                          |    1=20
- mm/hugetlb.c                                          |   17 ++
+ lib/fonts/Kconfig                                     |    6=20
  mm/mempolicy.c                                        |    2=20
- mm/swap.c                                             |  143 ++++++++++---=
------
- net/compat.c                                          |    9 -
- net/core/filter.c                                     |   30 ---
- net/ieee802154/nl-phy.c                               |    6=20
+ net/compat.c                                          |    9=20
  net/ipv4/fib_frontend.c                               |    2=20
- net/ipv4/inet_diag.c                                  |    4=20
  net/ipv4/ip_gre.c                                     |    2=20
  net/ipv4/ip_input.c                                   |    2=20
  net/ipv4/ip_tunnel.c                                  |    1=20
- net/ipv4/ipmr.c                                       |    7=20
- net/ipv4/tcp_metrics.c                                |   51 ++++--
  net/ipv6/ip6_input.c                                  |    2=20
- net/ipv6/ip6mr.c                                      |    7=20
- net/rds/ib_recv.c                                     |    7=20
+ security/integrity/ima/ima_template_lib.c             |    2=20
  sound/core/init.c                                     |    4=20
- sound/pci/Kconfig                                     |   12 +
+ sound/pci/Kconfig                                     |   12=20
  sound/pci/hda/hda_generic.c                           |    6=20
- sound/pci/hda/patch_analog.c                          |   22 +-
- sound/pci/hda/patch_hdmi.c                            |  100 +++++++++---
- sound/pci/hda/patch_realtek.c                         |   19 ++
+ sound/pci/hda/patch_analog.c                          |   22 -
+ sound/pci/hda/patch_hdmi.c                            |   40 +-
+ sound/pci/hda/patch_realtek.c                         |   51 ++
  sound/pci/rme9652/rme9652.c                           |    2=20
  sound/soc/codecs/adau1701.c                           |    2=20
- sound/soc/codecs/wm5110.c                             |   48 ++++++
+ sound/soc/codecs/tlv320aic32x4.c                      |    4=20
+ sound/soc/codecs/wm5110.c                             |   48 ++
  tools/perf/util/session.c                             |    7=20
- 153 files changed, 1608 insertions(+), 595 deletions(-)
+ 156 files changed, 1701 insertions(+), 625 deletions(-)
+
+Aaro Koskinen (1):
+      uio: fix devm_request_irq usage
 
 Adrien Verg=C3=A9 (1):
       ALSA: hda - Fix silent output on MacBook Air 1,1
+
+Aisheng Dong (1):
+      mmc: sdhci: fix lockdep error in tuning routine
 
 Alan Stern (1):
       USB: fix race between hub_disconnect and recursively_mark_NOTATTACHED
@@ -214,14 +223,8 @@ Amir Shehata (1):
 Amitkumar Karwar (1):
       mwifiex: add missing endian conversion for fw_tsf
 
-Andrea Arcangeli (1):
-      mm: hugetlbfs: fix hugetlbfs optimization
-
 Andreas Schwab (1):
       KVM: PPC: Book3S HV: use xics_wake_cpu only when defined
-
-Andrew Jones (1):
-      kvm: x86: fix apic_base enable check
 
 Andy Grover (1):
       target/iscsi: Fix network portal creation race
@@ -229,8 +232,8 @@ Andy Grover (1):
 Annie Li (1):
       xen-netfront: fix resource leak in netfront
 
-Anssi Hannula (1):
-      ALSA: hda - hdmi: introduce patch_nvhdmi()
+Anton Blanchard (1):
+      drivers/tty: ehv_bytechan fails to build as a module
 
 Aristeu Rozanski (1):
       e752x_edac: Fix pci_dev usage count
@@ -238,14 +241,16 @@ Aristeu Rozanski (1):
 Asias He (1):
       virtio-scsi: Fix hotcpu_notifier use-after-free with virtscsi_freeze
 
-Ben Hutchings (1):
+Ben Hutchings (2):
+      xen/pci: Fix build on non-x86
       xhci: Avoid infinite loop when sg urb requires too many trbs
 
 Bing Zhao (1):
       mwifiex: fix wrong 11ac bits setting in fw_cap_info
 
-Bj=C3=B8rn Mork (1):
-      net: usbnet: fix SG initialisation
+Bj=C3=B8rn Mork (2):
+      usb: cdc-wdm: avoid hanging on zero length reads
+      usb: cdc-wdm: resp_count can be 0 even if WDM_READ is set
 
 Borislav Petkov (1):
       x86, cpu, amd: Add workaround for family 16h, erratum 793
@@ -256,23 +261,25 @@ Charles Keepax (1):
 Chen-Yu Tsai (1):
       pinctrl: sunxi: Honor GPIO output initial vaules
 
-Christian Engelmayer (1):
-      ieee802154: Fix memory leak in ieee802154_add_iface()
-
-Christoph Paasch (1):
-      tcp: metrics: Avoid duplicate entries with the same destination-IP
+Chris Mason (1):
+      Btrfs: setup inode location during btrfs_init_inode_locked
 
 Colin Leitner (1):
       USB: ftdi_sio: added CS5 quirk for broken smartcard readers
 
-Dan Carpenter (1):
+Dan Carpenter (2):
       ALSA: bits vs bytes bug in snd_card_create()
+      SCSI: qla4xxx: overflow in qla4xxx_set_chap_entry()
+
+Dasaratharaman Chandramouli (1):
+      misc: mic: bug fix for interrupt acknowledgement in MSI/INTx case.
 
 Dave Young (1):
       x86/efi: Fix off-by-one bug in EFI Boot Services reservation
 
-David Ertman (1):
-      e1000e: fix compiler warnings
+David Cohen (2):
+      mmc: sdhci: add quirk for broken HS200 support
+      mmc: sdhci-pci: add broken HS200 quirk for Intel Merrifield
 
 David Rientjes (1):
       mm/mempolicy.c: fix mempolicy printing in numa_maps
@@ -282,6 +289,9 @@ David Sterba (1):
 
 Dominik Dingel (1):
       KVM: s390: ioeventfd: ignore leftmost bits
+
+Dong Aisheng (1):
+      mmc: sdhci-esdhc-imx: fix access hardirq-unsafe lock in atomic context
 
 Dongsheng Yang (1):
       perf kvm: Fix kvm report without guestmount.
@@ -297,18 +307,12 @@ Eliad Peller (1):
 Emmanuel Grumbach (1):
       iwlwifi: pcie: enable oscillator for L1 exit
 
-Eric Dumazet (1):
-      bpf: do not use reciprocal divide
-
 Eric W. Biederman (2):
       vfs: Remove second variable named error in __dentry_path
       vfs: Is mounted should be testing mnt_ns for NULL or error.
 
-Gerald Schaefer (1):
-      net: rds: fix per-cpu helper usage
-
 Greg Kroah-Hartman (1):
-      Linux 3.12.10
+      Linux 3.13.2
 
 Gregory CLEMENT (4):
       ARM: mvebu: Add support to get the ID and the revision of a SoC
@@ -316,23 +320,25 @@ Gregory CLEMENT (4):
       i2c: mv64xxx: Fix bus hang on A0 version of the Armada XP SoCs
       i2c: mv64xxx: Document the newly introduced Armada XP A0 compatible
 
-Hannes Frederic Sowa (1):
-      net: avoid reference counter overflows on fib_rules in multicast forw=
-arding
+Heikki Krogerus (1):
+      usb: dwc3: fix the glue drivers using the nop phy
 
 Heiko Carstens (3):
+      s390/compat: fix PSW32_USER_BITS definition
       KVM: s390: fix diagnose code extraction
       s390/uapi: fix struct statfs64 definition
-      s390/bpf,jit: fix 32 bit divisions, use unsigned divide instructions
 
-Helge Deller (1):
+Helge Deller (2):
+      parisc/sti_console: prefer Linux fonts over built-in ROM fonts
       parisc: fix cache-flushing
 
 Holger Eitzenberger (1):
       net: Fix memory leak if TPROXY used with TCP early demux
 
-Ilia Mirkin (1):
-      drm/nouveau/bios: fix offset calculation for BMPv1 bioses
+Hui Wang (3):
+      ALSA: hda - automute via amp instead of pinctl on some AIO models
+      ALSA: hda - add headset mic detect quirks for some Dell machines
+      ALSA: hda - add headset mic detect quirks for another Dell laptop
 
 Jack Pham (1):
       usb: xhci: Check for XHCI_PLAT in xhci_cleanup_msix()
@@ -354,7 +360,7 @@ Kent Overstreet (1):
 Krzysztof Kozlowski (1):
       mfd: max77686: Fix regmap resource leak on driver remove
 
-Larry Finger (17):
+Larry Finger (18):
       rtlwifi: rtl8192cu: Add new device ID
       rtlwifi: Update beacon statistics for USB driver
       rtlwifi: rtl8192c: Prevent reconnect attempts if not connected
@@ -367,6 +373,7 @@ Larry Finger (17):
       rtlwifi: rtl8192cu: Update the power index registers
       rtlwifi: rtl8192cu: Fix some code in RF handling
       rtlwifi: Add missing code to PWDB statics routine
+      rtlwifi: rtl8192c: Update dynamic gain calculations
       rtlwifi: rtl8188ee: Fix typo in code
       b43: Fix lockdep splat
       b43: Fix unload oops if firmware is not available
@@ -398,8 +405,9 @@ Marek Roszko (3):
 Mark Deneen (1):
       tty/serial: at91: reset rx_ring when port is shutdown
 
-Michal Schmidt (1):
-      bnx2x: fix DMA unmapping of TSO split BDs
+Markus Pargmann (2):
+      ASoC: codec: tlv320aic32x4: Fix regmap range config
+      ASoC: tlv320aic32x4: Fix regmap range_min
 
 Mihai Caraman (1):
       KVM: PPC: e500: Fix bad address type in deliver_tlb_misss()
@@ -413,13 +421,6 @@ Mikulas Patocka (2):
 
 Minchan Kim (1):
       zram: fix race between reset and flushing pending work
-
-Neal Cardwell (1):
-      inet_diag: fix inet_diag_dump_icsk() timewait socket state logic
-
-NeilBrown (1):
-      md/raid5: fix long-standing problem with bitmap handling on write fai=
-lure.
 
 Nicholas Bellinger (1):
       iscsi-target: Pre-allocate more tags to avoid ack starvation
@@ -457,8 +458,9 @@ Phil Pokorny (1):
 Rahul Bedarkar (1):
       USB: serial: add support for iBall 3.5G connect usb modem
 
-Richard Weinberger (1):
-      net,via-rhine: Fix tx_timeout handling
+Roberto Sassu (1):
+      ima: change the default hash algorithm to SHA1 in ima_eventdigest_ng_=
+init()
 
 Sarah Sharp (1):
       xhci: Set scatter-gather limit to avoid failed block writes.
@@ -500,6 +502,9 @@ Theodore Ts'o (1):
       ext4: avoid clearing beyond i_blocks when truncating an inline data f=
 ile
 
+Thomas Huth (1):
+      KVM: s390: Always store status during SIGP STOP_AND_STORE_STATUS
+
 Thomas Pugliese (1):
       usb: core: get config and string descriptors for unauthorized devices
 
@@ -522,25 +527,25 @@ ZHAO Gang (1):
       usb: option: add new zte 3g modem pids to option driver
 
 
---9jxsPFA5p3P2qPhR
+--WIyZ46R2i8wDzkSu
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJS8+nkAAoJEDjbvchgkmk+Xc8QAMJjscHFDr8EZulETlK7CWaz
-/egYx+IveTApQjMMIDr3S7nfkFKo1fDGSJVVRo/Ik+j25GuijFNJiEsebWBOvFgb
-Ufvdgz8JYsQVkiEmJ6fXYPCPFKf9Txh+JDoN+RTB3prlbyJCpZ0EsyFS3TqGDHbg
-M4dGHjRQMhH8Ic7P3IsbYldmN7QawisyG6S+9kQXupre/fr48iwqmUEVNcdwXbOy
-ppkmJ9U9NmLto444zSRiKN6NeeslSf09JZtbuZx+gp59zDqBrtreWxxtyRUSgslB
-9ZCe6huNF3AJR6+cz9sddDUd3napd6WjWFH2P8YYyxt3V3Pv2UnYoIECwa/eokgv
-nCagb2Xo8fQi7SUK1wItK6ZrUh20hxPuNK90jbVUDZHXcp2fcRgCe5G/HV2DhVAD
-N6ivSS8fAZM1Zvo+xU/noUaelpatLTOglg6bkDkdvTa+bO13lD5aYViPP1WLc0S/
-LY1BJTyLDhKS14abnX8yYSrU8HaFPuCoBHKGK88swAypmEdZM8oaoSWFzsb/TY89
-8I+z7iFuJ3AzaCnZUFTZIfmIDkNQ4Yw7L5HLVuP5dg8A2WXNZWtbopy0oj3BgAbE
-igknOpqgJcyivS2U6KzuQ7uLoJDFHN9FiWbSGxXHnIIaNh0ptewGQZo4/U+lEUzE
-fYypCpP5dVvmE/7E1grA
-=i1l5
+iQIcBAEBAgAGBQJS8+oeAAoJEDjbvchgkmk+yq8QAIBARiIkCjGfxt6wNXK+USja
+8++ltwp4nqpMcMG3UPGNiZvpubwRv5V9LVLVdUTglHT9CFALUrJtzKZ3tXg9Nv78
+4Fxj+XVkimC5hDmO01JDVPgZzFwd/fGh66jO7c1puBvPQdoH7HfKEJGUFq9gSnti
+m4WoXhtf4PqhayEo9sIjcFXiE7CWLQBJUBhjzd4pMZZjAlVUGImsPAPqrgof9IlJ
+5S0lg4fhFHAwG7thIeQSfmS7EyNhWR9GWF3wIeLPo7xBKN6HQE1fLZPwOEa4w7cD
+ZuA0KaO2Sw4H7IETYVVJ09q0wf+NMGzGIUdBkyEzPjVLVMsMPJ5+hf06rFsWPpNe
+fNZEaaZv8LB8MXyfit1+P9SZ6YgELA90QaOn6v6lExn8mZ94gVgUQyPseGMvkzwc
+K3WaBkDSrvoLJESgPNKPC4jJ2NZKBlLYs4uJ16MdWfwO1cTAz4Cgn9FdIN3EeHIc
+5HqhYLFNwwMfEXS733jReuCU7ehNhN9xjZ61ucWmvG7A6f7iV0bux3fvKBK5RG8K
+NWQkNBQ+5lgX8p7XLSqBCBHrZ+1HpT1YCD7g2na48l4hhZ200JEvdAVoByzRUfAZ
+Ymfy6f8Y6fW2BZECEUGff/GwAF3Pvja/D69lWZKuOXharXFjtB2R4b9cj0riKjLM
+tOdpT1rBuUbBz42qdbG9
+=Y62h
 -----END PGP SIGNATURE-----
 
---9jxsPFA5p3P2qPhR--
+--WIyZ46R2i8wDzkSu--
