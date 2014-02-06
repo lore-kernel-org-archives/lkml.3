@@ -1,48 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755868AbaBFPgo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 10:36:44 -0500
-Received: from qmta11.emeryville.ca.mail.comcast.net ([76.96.27.211]:49006
-	"EHLO qmta11.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751837AbaBFPgn (ORCPT
+	id S1755964AbaBFPhN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 10:37:13 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:58745 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755895AbaBFPhL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 10:36:43 -0500
-Date: Thu, 6 Feb 2014 09:36:40 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@nuc
-To: Vladimir Davydov <vdavydov@parallels.com>
-cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        penberg@kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH v2] slub: Do not assert not having lock in removing freed
- partial
-In-Reply-To: <52F32F46.8090205@parallels.com>
-Message-ID: <alpine.DEB.2.10.1402060936140.31869@nuc>
-References: <20140205222112.742169e0@gandalf.local.home> <52F32F46.8090205@parallels.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 6 Feb 2014 10:37:11 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Pratyush Anand <pratyush.anand@st.com>
+Subject: Re: [PATCH V4 6/8] phy: st-miphy-40lp: Add SPEAr1310 and SPEAr1340 PCIe phy support
+Date: Thu, 6 Feb 2014 16:37:05 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Kishon Vijay Abraham I <kishon@ti.com>, spear-devel@list.st.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <cover.1391661589.git.pratyush.anand@st.com> <dca9c501de8386003142b463469c3d267a049eeb.1391661589.git.pratyush.anand@st.com>
+In-Reply-To: <dca9c501de8386003142b463469c3d267a049eeb.1391661589.git.pratyush.anand@st.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201402061637.05414.arnd@arndb.de>
+X-Provags-ID: V02:K0:uC7zM+YIEedRlFUbg6KmHUUQqa8utpLkQLqObQrgtPj
+ mZ+kxwXOs5lS40hekjir8GaZMx3JbEfH02mJVJ0QcK59FIkUu3
+ EDgRd5nXTzq5I18hgXl4WGRInZWCXnEjuI+fXBRqaQG69kvv3H
+ ZZLkxlGVjU+ucW931++OOesMILUKjKlg6+jKsThSVbDnh61bZ7
+ wLVB/YFkLye2Wtu4nnwwaVmFuaWhtZpG1W7PoJZekGsBwYOphe
+ S2iqPFBcnNchKcN0Q7mntSkpdHI3fBSBHd69R9sY9RqdHEUDRH
+ sSfqr3s1UzkLRg6uzBeXuul7PCWRZXLspBoKtk2HCgIUUCaY0z
+ CXrDxGBE5zrDWTpHnEO0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Feb 2014, Vladimir Davydov wrote:
+On Thursday 06 February 2014, Pratyush Anand wrote:
+> +static int spear1310_pcie_miphy_exit(struct st_miphy40lp_priv *phypriv)
+> +{
+> +       u32 mask;
+> +
+> +       switch (phypriv->id) {
+> +       case 0:
+> +               mask = SPEAR1310_PCIE_CFG_MASK(0);
+> +               break;
+> +       case 1:
+> +               mask = SPEAR1310_PCIE_CFG_MASK(1);
+> +               break;
+> +       case 2:
+> +               mask = SPEAR1310_PCIE_CFG_MASK(2);
+> +               break;
+> +       default:
+> +               return -EINVAL;
+> +       }
+> +
+> +       regmap_update_bits(phypriv->misc, SPEAR1310_PCIE_SATA_CFG,
+> +                       SPEAR1310_PCIE_CFG_MASK(phypriv->id), 0);
+> +
+> +       regmap_update_bits(phypriv->misc, SPEAR1310_PCIE_MIPHY_CFG_1,
+> +                       SPEAR1310_PCIE_SATA_MIPHY_CFG_PCIE_MASK, 0);
+> +
+> +       return 0;
+> +}
 
-> > @@ -2906,12 +2916,10 @@ static void early_kmem_cache_node_alloc(
-> >  	inc_slabs_node(kmem_cache_node, node, page->objects);
-> >
-> >  	/*
-> > -	 * the lock is for lockdep's sake, not for any actual
-> > -	 * race protection
-> > +	 * No locks need to be taken here as it has just been
-> > +	 * initialized and there is no concurrent access.
-> >  	 */
-> > -	spin_lock(&n->list_lock);
-> > -	add_partial(n, page, DEACTIVATE_TO_HEAD);
-> > -	spin_unlock(&n->list_lock);
-> > +	__add_partial(n, page, DEACTIVATE_TO_HEAD);
-> >  }
+hmm, you set the mask based on the id, but then use the macro below
+and ignore the mask?
 
-Ahh.. Much better.
+> +
+> +static int pcie_miphy_init(struct st_miphy40lp_priv *phypriv)
+> +{
+> +       if (of_device_is_compatible(phypriv->np, "st,spear1340-miphy"))
+> +               return spear1340_pcie_miphy_init(phypriv);
+> +       else if (of_device_is_compatible(phypriv->np, "st,spear1310-miphy"))
+> +               return spear1310_pcie_miphy_init(phypriv);
+> +       else
+> +               return -EINVAL;
+> +}
+> +
+> +static int pcie_miphy_exit(struct st_miphy40lp_priv *phypriv)
+> +{
+> +       if (of_device_is_compatible(phypriv->np, "st,spear1340-miphy"))
+> +               return spear1340_pcie_miphy_exit(phypriv);
+> +       else if (of_device_is_compatible(phypriv->np, "st,spear1310-miphy"))
+> +               return spear1310_pcie_miphy_exit(phypriv);
+> +       else
+> +               return -EINVAL;
+> +}
 
-Acked-by: Christoph Lameter <cl@linux.com>
+I think it's better to make this code table-driven. Rather than checking
+'of_device_is_compatible()', it's much easier to add a .data field to
+the of_device_id array that describes the PHY. You can use .data to
+point to a structure containing per-device function pointers or
+(better) values and offsets to be used.
 
+	Arnd
