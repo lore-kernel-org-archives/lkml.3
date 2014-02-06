@@ -1,71 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754718AbaBFCcy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 21:32:54 -0500
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:34704 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753529AbaBFCcx (ORCPT
+	id S1754210AbaBFDJF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 22:09:05 -0500
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:20116 "EHLO
+	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750952AbaBFDJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 21:32:53 -0500
+	Wed, 5 Feb 2014 22:09:04 -0500
+Message-ID: <52F2FCB3.7090400@hp.com>
+Date: Wed, 05 Feb 2014 22:08:35 -0500
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-In-Reply-To: <20140206005534.GA27848@node.dhcp.inet.fi>
-References: <CA+55aFzNxTtvNX7zqBELHs489e5mEx1sM=i=red=aQAGviXrNw@mail.gmail.com>
-	<CA+55aFxpBkTn3LvSzxFj7ZoxuY=Rrg0OoAVuk5dK-ZLsO8kk4A@mail.gmail.com>
-	<20140206005534.GA27848@node.dhcp.inet.fi>
-Date: Wed, 5 Feb 2014 18:32:51 -0800
-X-Google-Sender-Auth: 8EMO4gzLvQfFaQwxfpQdFon4sQU
-Message-ID: <CA+55aFx70seh4VD+=ZKHrjTCrinG0Hq3=X6ygCeOeuNCSG8n8Q@mail.gmail.com>
-Subject: Re: [RFC] de-asmify the x86-64 system call slowpath
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ning Qu <quning@google.com>
-Content-Type: text/plain; charset=UTF-8
+To: Ingo Molnar <mingo@kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, aswin@hp.com,
+        Scott J Norton <scott.norton@hp.com>
+Subject: Re: [PATCH v11 0/4] Introducing a queue read/write lock implementation
+References: <1390537731-45996-1-git-send-email-Waiman.Long@hp.com> <20140130130453.GB2936@laptop.programming.kicks-ass.net> <20140130151715.GA5126@laptop.programming.kicks-ass.net> <20140131092616.GC5126@laptop.programming.kicks-ass.net> <52EBF276.1020505@hp.com> <20140131201401.GD2936@laptop.programming.kicks-ass.net> <52EC110D.4030509@hp.com> <20140202090357.GA1006@gmail.com>
+In-Reply-To: <20140202090357.GA1006@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 5, 2014 at 4:55 PM, Kirill A. Shutemov <kirill@shutemov.name> wrote:
+On 02/02/2014 04:03 AM, Ingo Molnar wrote:
+> * Waiman Long<waiman.long@hp.com>  wrote:
 >
-> One thing that could help is THP for file-backed pages. And there's
-> prototype with basic infrasturure and support for ramfs and
-> shmem/tmpfs (by Ning Qu). Work in progress.
+>> How about making the selection of MCS or ticket queuing either user
+>> configurable or depending on the setting of NR_CPUS, NUMA, etc?
+> No!
+>
+> There are lots of disadvantages to adding such CONFIG_NUMA Kconfig
+> variants for locking primitives:
+>
+>   - an doubling of the test matrix
+>
+>   - an doubling of the review matrix and a halving of effective review
+>     capacity: we've just about go the capacity to review and validate
+>     patches like this. Splitting out a 'only NUMA cares' variant is a
+>     non-starter really.
+>
+>   - but most importantly, there's absolutely no reason to not be fast
+>     on 128 CPU systems in the low contended case either! Sacrificing
+>     the low contended case with 'on 128 CPU systems it is the contended
+>     path that matters' is an idiotic argument.
+>
+> Essentially the only area were we allow Kconfig dependencies are
+> unyielding physical forces: such as lots of CPUs needing a wider CPU
+> mask.
+>
+> As Peter said it, the right solution is to fix the contended case. If
+> that also happens to speed up or better organize the uncondended code
+> then that's good, but it should not make it worse.
+>
+> Thanks,
+>
+> 	Ingo
 
-THP isn't really realistic for any general-purpose loads. 2MB pages
-are just too big of a granularity.
+You are right. I am trying to measure the performance impact of MCS 
+queuing has on a lightly contended system. I need to write some custom 
+test code to get that information. With that information, I may be able 
+to tune it to perform more or less on par with ticket lock.
 
-On a machine with just a few gigs (ie anything but big servers), you
-count the number of large pages in a few thousands. That makes
-fragmentation a big issue. Also, ELF sections aren't actually
-2MB-aligned, nor do you really want to throw away 9 bits of virtual
-address space randomization. Plus common binaries aren't even big
-enough. Look at "bash", which is a pig - it's still less than a
-megabyte as just the binary, with the code segment being 900kB or so
-for me. For something like "perl", it's even smaller, with a number of
-shared object files that get loaded dynamically etc.
+As for the additional cache line access of the MCS lock, I don't think 
+it is really an issued as the MCS node is allocated on local stack which 
+is likely to be in the cache anyway. I will report back when I have more 
+data.
 
-IOW, THP is completely useless for any kind of scripting. It can be
-good for individual large binaries that have long lifetimes (DB
-processes, HPC, stuff like that), but no, it is *not* the answer to
-complex loads. And almost certainly never will be.
+-Longman
 
-It's possible that some special case (glibc for example) could be
-reasonably hacked to use a THP code segment, but that sounds unlikely.
-And the virtual address randomization really gets hurt.
 
-No, I was thinking "try to optimistically map 8 adjacent aligned pages
-at a time" - that would be the same cacheline in the page tables, so
-it would be fairly cheap if we couple it with a gang-lookup of the
-pages in the page cache (or, for anonymous pages, by just
-optimistically trying to do an order-3 page allocation, and if that
-works, just map the 32kB allocation you got as eight individual
-pages).
-
-I know it's been discussed at some point, and I even have a dim memory
-of having seen some really ugly patches.
-
-             Linus
