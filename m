@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753888AbaBFOnW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 09:43:22 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:40619 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753253AbaBFOnU (ORCPT
+	id S1754281AbaBFOna (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 09:43:30 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:62815 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753253AbaBFOnW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 09:43:20 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140206135001.333583247@infradead.org>
-References: <20140206134825.305510953@infradead.org>
-	<20140206135001.333583247@infradead.org>
-Date: Thu, 6 Feb 2014 15:43:19 +0100
-X-Google-Sender-Auth: ih2fmysAPHv1Wbt9_m01CJ8WuxY
-Message-ID: <CAMuHMdV8BtrwfPWToxX5dUhtSQ4HP+UhWh10LM2voQ82pqcA+Q@mail.gmail.com>
-Subject: Re: [RFC][PATCH 5/5] arch: Sanitize atomic_t bitwise ops
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Will Deacon <will.deacon@arm.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 6 Feb 2014 09:43:22 -0500
+Message-Id: <20140206144127.181568017@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Thu, 06 Feb 2014 09:41:27 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 0/5] [GIT PULL] x86: Consolidate 32 and 64 bit thead_info (again)
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 6, 2014 at 2:48 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> --- a/arch/m68k/include/asm/atomic.h
-> +++ b/arch/m68k/include/asm/atomic.h
-> @@ -76,6 +76,9 @@ static inline int atomic_##op##_return(i
->
->  ATOMIC_OP(add, +=)
->  ATOMIC_OP(sub, -=)
-> +ATOMIC_OP(and, &=)
-> +ATOMIC_OP(or , |=)
-> +ATOMIC_OP(xor, ^=)
 
-This last one ain't gonna fly. Given
+Peter,
 
-static inline void atomic_##op(int i, atomic_t *v)                     \
-{                                                                      \
-       __asm__ __volatile__(#op "l %1,%0" : "+m" (*v) : ASM_DI (i));   \
-}
+Back in August 2011, I had a pull request to make the irq stack of
+i386 more like the x86_64 code. There seemed to be acceptance back
+then and you said you would even pull it after the merge window.
+But due to your travels it was forgotten (and I forgot about it too).
 
-from the previous patch, it'll generate the "xorl" mnemonic, which
-IIRC does not exist. It's called "eorl".
+http://lkml.kernel.org/r/20110806011102.721109343@goodmis.org
 
-Verified with m68k-linux-gnu-as:
+I stumbled on these changes again and noticed that they were never
+applied so I forward ported them with a few more adjustments.
 
-Error: Unknown operator -- statement `xorl %d0,%d1' ignored
+Hopefully they are still worth pulling. This time I waited till after
+the merge window to post :-)
 
-Gr{oetje,eeting}s,
+Please pull the latest tip/x86/core tree, which can be found at:
 
-                        Geert
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+tip/x86/core
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Head SHA1: 3132e107d608f8753240d82d61303c500fd515b4
+237dfcadc93749ca5cdd2f683f887c3dcf3a0c04
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+
+Steven Rostedt (4):
+      x86: Nuke the supervisor_stack field in i386 thread_info
+      x86: Prepare removal of previous_esp from i386 thread_info structure
+      x86: Keep thread_info on thread stack in x86_32
+      x86: Clean up dumpstack_64.c code
+
+Steven Rostedt (Red Hat) (1):
+      x86: Nuke GET_THREAD_INFO_WITH_ESP() macro for i386
+
+----
+ arch/x86/include/asm/processor.h   |   9 +++
+ arch/x86/include/asm/thread_info.h |  52 ++---------------
+ arch/x86/kernel/cpu/common.c       |   8 +--
+ arch/x86/kernel/dumpstack_32.c     |  44 ++++++++++++--
+ arch/x86/kernel/dumpstack_64.c     | 117 ++++++++++++++++++++++++++-----------
+ arch/x86/kernel/irq_32.c           |  79 ++++++++++++-------------
+ arch/x86/kernel/process_32.c       |   4 ++
+ arch/x86/kernel/ptrace.c           |   8 +--
+ arch/x86/kernel/smpboot.c          |   2 +-
+ 9 files changed, 188 insertions(+), 135 deletions(-)
