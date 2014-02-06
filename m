@@ -1,86 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755510AbaBFIO3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 03:14:29 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:55703 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753942AbaBFIOW (ORCPT
+	id S1755416AbaBFINt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 03:13:49 -0500
+Received: from mail-vb0-f51.google.com ([209.85.212.51]:62028 "EHLO
+	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752305AbaBFINr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 03:14:22 -0500
-X-AuditID: cbfee68e-b7f566d000002344-8a-52f3445b9163
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH 00/12] backlight: Remove unnecessary OOM messages
-Date: Thu, 06 Feb 2014 17:14:18 +0900
-Message-id: <000101cf2313$6ef38e80$4cdaab80$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac8jE27bRmoXkttyRH6rTI4zkLyyhg==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOIsWRmVeSWpSXmKPExsVy+t8zA91ol89BBscPCFrMWb+GzeLywkus
-	Fpd3zWFzYPY4MeM3i0ffllWMHp83yQUwR3HZpKTmZJalFunbJXBlTPu9h63gMk/Fxhez2RoY
-	/3B2MXJySAiYSDR+62OHsMUkLtxbz9bFyMUhJLCMUeL6uyUsMEXf962DSkxnlPjxcwsrSEJI
-	4BejxPerbCA2m4CaxJcvh4EmcXCICOhLtLVogJjMAi4SR6eJgFQICzhK7D70GKyCRUBVYv5h
-	fpAwr4CtxLeW24wQtqDEj8n3wLYyC2hJrN95nAnClpfYvOYtM0irhIC6xKO/uiBhEQE9iW8L
-	D0CViEjse/GOEeLgVewSL34GgdgsAgIS3yYfYoFolZXYdIAZokRS4uCKGywTGMVmIVk8C8ni
-	WUgWz0KyYQEjyypG0dSC5ILipPQiI73ixNzi0rx0veT83E2MkEjq28F484D1IcZkoPUTmaVE
-	k/OBkZhXEm9obGZkYWpiamxkbmlGmrCSOO+ih0lBQgLpiSWp2ampBalF8UWlOanFhxiZODil
-	GhhXrSsV2v7/2u73YjP/8xz9udn/7+oXn95c2Bvon27VZfH5Spik9JLfC1e4OR2P9wmdvNbG
-	MyHXS+mA9ZyLvRu2iSjHVnSdvuDgsc7UMWPhe64j8Vo7dA3Kb0qxmvCKN8ZvCjxYOylP1EHq
-	yZlNDM9Le1fuX8PwQyJnl7BOgPMShmyVVCmFh05KLMUZiYZazEXFiQBxNxImugIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmplleLIzCtJLcpLzFFi42I5/e+xoG60y+cgg42neC3mrF/DZnF54SVW
-	i8u75rA5MHucmPGbxaNvyypGj8+b5AKYoxoYbTJSE1NSixRS85LzUzLz0m2VvIPjneNNzQwM
-	dQ0tLcyVFPISc1NtlVx8AnTdMnOANikplCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0Jgusx
-	MkADCesYM6b93sNWcJmnYuOL2WwNjH84uxg5OSQETCS+71vHBmGLSVy4tx7I5uIQEpjOKPHj
-	5xZWkISQwC9Gie9XwYrYBNQkvnw5zN7FyMEhIqAv0daiAWIyC7hIHJ0mAlIhLOAosfvQY7AK
-	FgFVifmH+UHCvAK2Et9abjNC2IISPybfYwGxmQW0JNbvPM4EYctLbF7zlhmkVUJAXeLRX12Q
-	sIiAnsS3hQegSkQk9r14xziBUWAWkkmzkEyahWTSLCQtCxhZVjGKphYkFxQnpeca6RUn5haX
-	5qXrJefnbmIER+oz6R2MqxosDjEKcDAq8fBuWP8pSIg1say4MvcQowQHs5II71bzz0FCvCmJ
-	lVWpRfnxRaU5qcWHGJOB/pzILCWanA9MInkl8YbGJmZGlkZmFkYm5uakCSuJ8x5stQ4UEkhP
-	LEnNTk0tSC2C2cLEwSnVwKh+/nd057LvO7PVXDRLglZWBx+byLC+XqFwyX21a3f4l3+zmnm6
-	cMa5hKez36zee++kMe/hVVeV7p4+9SLtjf3Exyvrv08//HpO4tlS9X97miRm/H/2p8iBdVuL
-	nHjPFs41rfXZF852cCXyuNzy/3v8BO/VuQskq4ynHlrj5mKZZ7HgjEPVx/l3lFiKMxINtZiL
-	ihMBpfIDyBgDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 6 Feb 2014 03:13:47 -0500
+MIME-Version: 1.0
+In-Reply-To: <1391507999-31437-2-git-send-email-amit.grover@samsung.com>
+References: <52E0ED10.2020901@samsung.com> <1391507999-31437-1-git-send-email-amit.grover@samsung.com>
+ <1391507999-31437-2-git-send-email-amit.grover@samsung.com>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Thu, 6 Feb 2014 13:43:26 +0530
+Message-ID: <CA+V-a8sg6D-+688vFrmX=fFejWnzTO6G0seoC42CYf=8Ljrd6Q@mail.gmail.com>
+Subject: Re: [PATCH 1/2] [media] v4l2: Add settings for Horizontal and
+ Vertical MV Search Range
+To: Amit Grover <amit.grover@samsung.com>
+Cc: linux-media <linux-media@vger.kernel.org>,
+        LDOC <linux-doc@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Kamil Debski <k.debski@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Hans Verkuil <hverkuil@xs4all.nl>,
+        swaminathan <swaminath.p@samsung.com>,
+        Jeongtae Park <jtp.park@samsung.com>, Rrob@landley.net,
+        Andrey Smirnov <andrew.smirnov@gmail.com>,
+        Anatol Pomozov <anatol.pomozov@gmail.com>,
+        Jonathan McCrohan <jmccrohan@gmail.com>, Joe Perches <joe@perches.com>,
+        Andy Walls <awalls@md.metrocast.net>, Arun Kumar <arun.kk@samsung.com>,
+        austin.lobo@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The site-specific OOM messages are unnecessary, because they
-duplicate the MM subsystem generic OOM message. For example,
-k.alloc and v.alloc failures use dump_stack().
+On Tue, Feb 4, 2014 at 3:29 PM, Amit Grover <amit.grover@samsung.com> wrote:
+> Adding V4L2 controls for horizontal and vertical search range in pixels
+> for motion estimation module in video encoder.
+>
+> Signed-off-by: Swami Nathan <swaminath.p@samsung.com>
+> Signed-off-by: Amit Grover <amit.grover@samsung.com>
 
-Jingoo Han (12):
-      backlight: aat2870: Remove unnecessary OOM messages
-      backlight: adp8860: Remove unnecessary OOM messages
-      backlight: adp8870: Remove unnecessary OOM messages
-      backlight: corgi_lcd: Remove unnecessary OOM messages
-      backlight: hx8357: Remove unnecessary OOM messages
-      backlight: ili922x: Remove unnecessary OOM messages
-      backlight: ili9320: Remove unnecessary OOM messages
-      backlight: l4f00242t03: Remove unnecessary OOM messages
-      backlight: lm3533_bl: Remove unnecessary OOM messages
-      backlight: lms283gf05: Remove unnecessary OOM messages
-      backlight: platform_lcd: Remove unnecessary OOM messages
-      backlight: tps65217_bl: Remove unnecessary OOM messages
----
- drivers/video/backlight/aat2870_bl.c   |    2 --
- drivers/video/backlight/adp8860_bl.c   |    4 +---
- drivers/video/backlight/adp8870_bl.c   |    4 +---
- drivers/video/backlight/corgi_lcd.c    |    4 +---
- drivers/video/backlight/hx8357.c       |    4 +---
- drivers/video/backlight/ili922x.c      |    4 +---
- drivers/video/backlight/ili9320.c      |    4 +---
- drivers/video/backlight/l4f00242t03.c  |    5 +----
- drivers/video/backlight/lm3533_bl.c    |    5 +----
- drivers/video/backlight/lms283gf05.c   |    4 +---
- drivers/video/backlight/platform_lcd.c |    4 +---
- drivers/video/backlight/tps65217_bl.c  |    5 +----
- 12 files changed, 11 insertions(+), 38 deletions(-)
+Acked-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
+Regards,
+--Prabhakar Lad
 
+> ---
+>  Documentation/DocBook/media/v4l/controls.xml |   20 ++++++++++++++++++++
+>  drivers/media/v4l2-core/v4l2-ctrls.c         |    6 ++++++
+>  include/uapi/linux/v4l2-controls.h           |    2 ++
+>  3 files changed, 28 insertions(+)
+>
+> diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
+> index a5a3188..0e1770c 100644
+> --- a/Documentation/DocBook/media/v4l/controls.xml
+> +++ b/Documentation/DocBook/media/v4l/controls.xml
+> @@ -2258,6 +2258,26 @@ Applicable to the MPEG1, MPEG2, MPEG4 encoders.</entry>
+>  VBV buffer control.</entry>
+>               </row>
+>
+> +                 <row><entry></entry></row>
+> +             <row id=""v4l2-mpeg-video-hor-search-range">
+> +               <entry spanname="id"><constant>V4L2_CID_MPEG_VIDEO_MV_H_SEARCH_RANGE</constant>&nbsp;</entry>
+> +               <entry>integer</entry>
+> +             </row>
+> +               <row><entry spanname="descr">Horizontal search range defines maximum horizontal search area in pixels
+> +to search and match for the present Macroblock (MB) in the reference picture. This V4L2 control macro is used to set
+> +horizontal search range for motion estimation module in video encoder.</entry>
+> +             </row>
+> +
+> +                <row><entry></entry></row>
+> +             <row id="v4l2-mpeg-video-vert-search-range">
+> +               <entry spanname="id"><constant>V4L2_CID_MPEG_VIDEO_MV_V_SEARCH_RANGE</constant>&nbsp;</entry>
+> +               <entry>integer</entry>
+> +             </row>
+> +               <row><entry spanname="descr">Vertical search range defines maximum vertical search area in pixels
+> +to search and match for the present Macroblock (MB) in the reference picture. This V4L2 control macro is used to set
+> +vertical search range for motion estimation module in video encoder.</entry>
+> +             </row>
+> +
+>               <row><entry></entry></row>
+>               <row>
+>                 <entry spanname="id"><constant>V4L2_CID_MPEG_VIDEO_H264_CPB_SIZE</constant>&nbsp;</entry>
+> diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c b/drivers/media/v4l2-core/v4l2-ctrls.c
+> index 6ff002b..e9e12c4 100644
+> --- a/drivers/media/v4l2-core/v4l2-ctrls.c
+> +++ b/drivers/media/v4l2-core/v4l2-ctrls.c
+> @@ -735,6 +735,8 @@ const char *v4l2_ctrl_get_name(u32 id)
+>         case V4L2_CID_MPEG_VIDEO_DEC_PTS:                       return "Video Decoder PTS";
+>         case V4L2_CID_MPEG_VIDEO_DEC_FRAME:                     return "Video Decoder Frame Count";
+>         case V4L2_CID_MPEG_VIDEO_VBV_DELAY:                     return "Initial Delay for VBV Control";
+> +       case V4L2_CID_MPEG_VIDEO_MV_H_SEARCH_RANGE:             return "Horizontal MV Search Range";
+> +       case V4L2_CID_MPEG_VIDEO_MV_V_SEARCH_RANGE:             return "Vertical MV Search Range";
+>         case V4L2_CID_MPEG_VIDEO_REPEAT_SEQ_HEADER:             return "Repeat Sequence Header";
+>
+>         /* VPX controls */
+> @@ -910,6 +912,10 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
+>                 *min = 0;
+>                 *max = *step = 1;
+>                 break;
+> +       case V4L2_CID_MPEG_VIDEO_MV_H_SEARCH_RANGE:
+> +       case V4L2_CID_MPEG_VIDEO_MV_V_SEARCH_RANGE:
+> +               *type = V4L2_CTRL_TYPE_INTEGER;
+> +               break;
+>         case V4L2_CID_PAN_RESET:
+>         case V4L2_CID_TILT_RESET:
+>         case V4L2_CID_FLASH_STROBE:
+> diff --git a/include/uapi/linux/v4l2-controls.h b/include/uapi/linux/v4l2-controls.h
+> index 2cbe605..cda6fa0 100644
+> --- a/include/uapi/linux/v4l2-controls.h
+> +++ b/include/uapi/linux/v4l2-controls.h
+> @@ -376,6 +376,8 @@ enum v4l2_mpeg_video_multi_slice_mode {
+>  #define V4L2_CID_MPEG_VIDEO_DEC_FRAME                  (V4L2_CID_MPEG_BASE+224)
+>  #define V4L2_CID_MPEG_VIDEO_VBV_DELAY                  (V4L2_CID_MPEG_BASE+225)
+>  #define V4L2_CID_MPEG_VIDEO_REPEAT_SEQ_HEADER          (V4L2_CID_MPEG_BASE+226)
+> +#define V4L2_CID_MPEG_VIDEO_MV_H_SEARCH_RANGE          (V4L2_CID_MPEG_BASE+227)
+> +#define V4L2_CID_MPEG_VIDEO_MV_V_SEARCH_RANGE          (V4L2_CID_MPEG_BASE+228)
+>
+>  #define V4L2_CID_MPEG_VIDEO_H263_I_FRAME_QP            (V4L2_CID_MPEG_BASE+300)
+>  #define V4L2_CID_MPEG_VIDEO_H263_P_FRAME_QP            (V4L2_CID_MPEG_BASE+301)
+> --
+> 1.7.9.5
+>
