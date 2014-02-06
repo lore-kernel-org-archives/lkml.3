@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755497AbaBFPFJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 10:05:09 -0500
-Received: from mga11.intel.com ([192.55.52.93]:29197 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754341AbaBFPFE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 10:05:04 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,793,1384329600"; 
-   d="scan'208";a="470851957"
-Date: Thu, 6 Feb 2014 17:11:17 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@kernel.org>, Bin Gao <bin.gao@linux.intel.com>,
-        linux-kernel@vger.kernel.org,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Subject: Re: [PATCH v3 1/2] x86, tsc: Fallback to normal calibration if fast
- MSR calibration fails
-Message-ID: <20140206151117.GL18029@intel.com>
-References: <20140206054410.GB18884@gmail.com>
- <1391687365-10922-1-git-send-email-mika.westerberg@linux.intel.com>
- <alpine.DEB.2.02.1402061531310.21991@ionos.tec.linutronix.de>
+	id S1754858AbaBFPHx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 10:07:53 -0500
+Received: from mail-we0-f182.google.com ([74.125.82.182]:34891 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751336AbaBFPHv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 10:07:51 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1402061531310.21991@ionos.tec.linutronix.de>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52F39718.9070205@roeck-us.net>
+References: <CA+r1ZhgB-DpgshX24HmzuqZPQr5wsueg4GYACy-669RmTL4xRA@mail.gmail.com>
+ <52F39718.9070205@roeck-us.net>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Thu, 6 Feb 2014 10:07:20 -0500
+X-Google-Sender-Auth: vaZOy9C0A6jT8bb7YRnhqon7OwU
+Message-ID: <CAP=VYLrOBrkgnmC818a-Ke_UkDBsgMjbTx3WBZ2wqqPOmFMrCQ@mail.gmail.com>
+Subject: Re: randconfig build error with next-20140206, in drivers/hwmon/ltc2945.c
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Jim Davis <jim.epost@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, jdelvare@suse.de,
+        lm-sensors@lm-sensors.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 06, 2014 at 03:34:18PM +0100, Thomas Gleixner wrote:
-> On Thu, 6 Feb 2014, Mika Westerberg wrote:
-> >  arch/x86/kernel/tsc.c | 7 ++++---
-> >  1 file changed, 4 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-> > index 19e5adb49a27..56facfc54575 100644
-> > --- a/arch/x86/kernel/tsc.c
-> > +++ b/arch/x86/kernel/tsc.c
-> > @@ -655,10 +655,11 @@ unsigned long native_calibrate_tsc(void)
-> >  	local_irq_save(flags);
-> >  	i = try_msr_calibrate_tsc(&fast_calibrate);
-> >  	local_irq_restore(flags);
-> > -	if (i >= 0) {
-> > -		if (i == 0)
-> > -			pr_warn("Fast TSC calibration using MSR failed\n");
-> > +	if (i > 0) {
-> >  		return fast_calibrate;
-> > +	} else if (i == 0) {
-> > +		pr_warn("Fast TSC calibration using MSR failed\n");
-> > +		/* Continue with the normal calibration */
-> >  	}
-> 
-> Bah. Can we please fix that proper. The whole 0,1,-1 return value from
-> try_msr_calibrate_tsc() is just horrible. Why not doing the obvious?
+On Thu, Feb 6, 2014 at 9:07 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+> On 02/06/2014 05:57 AM, Jim Davis wrote:
+>>
+>> Building with the attached random configuration file,
+>>
+>> drivers/built-in.o: In function `ltc2945_set_value':
+>> ltc2945.c:(.text+0x58b1ad): undefined reference to `__udivdi3'
+>> ltc2945.c:(.text+0x58b1cc): undefined reference to `__udivdi3'
+>> ltc2945.c:(.text+0x58b1dd): undefined reference to `__udivdi3'
+>> ltc2945.c:(.text+0x58b1fb): undefined reference to `__udivdi3'
+>> make: *** [vmlinux] Error 1
+>>
+>
+> I really love those auto-builders :-)
+>
+> Should be fixed in the next version of -next.
 
-Yes, that looks better and works fine, thanks.
+Looks like the same problem cropped up in mips allmodconfig, but
+w/o the nice pointer to the line number in the source...
 
-Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+  CC [M]  lib/notifier-error-inject.o
+  CC [M]  lib/pm-notifier-error-inject.o
+ERROR: "__udivdi3" [drivers/hwmon/ltc2945.ko] undefined!
+make[2]: *** [__modpost] Error 1
+make[1]: *** [modules] Error 2
+make: *** [sub-make] Error 2
+
+http://kisskb.ellerman.id.au/kisskb/buildresult/10578301/
+
+I'll check back tomorrow :)
+
+Thanks,
+Paul.
+--
+
+>
+> Guenter
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-next" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
