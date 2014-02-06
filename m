@@ -1,94 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756765AbaBFTM6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 14:12:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20112 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751956AbaBFTMx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 14:12:53 -0500
-Message-ID: <52F3DEA4.5090806@redhat.com>
-Date: Thu, 06 Feb 2014 14:12:36 -0500
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] x86, irq: get correct available vectors for cpu disable
-References: <1390946045-2769-1-git-send-email-yinghai@kernel.org>
-In-Reply-To: <1390946045-2769-1-git-send-email-yinghai@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756876AbaBFTN1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 14:13:27 -0500
+Received: from qmta13.emeryville.ca.mail.comcast.net ([76.96.27.243]:42637
+	"EHLO qmta13.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756854AbaBFTNY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 14:13:24 -0500
+Date: Thu, 6 Feb 2014 13:13:20 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@nuc
+To: Vladimir Davydov <vdavydov@parallels.com>
+cc: penberg@kernel.org, akpm@linux-foundation.org, rientjes@google.com,
+        mhocko@suse.cz, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        devel@openvz.org
+Subject: Re: [PATCH RFC] slub: do not drop slab_mutex for
+ sysfs_slab_{add,remove}
+In-Reply-To: <52F3CF12.70905@parallels.com>
+Message-ID: <alpine.DEB.2.10.1402061312180.6137@nuc>
+References: <1391702294-27289-1-git-send-email-vdavydov@parallels.com> <alpine.DEB.2.10.1402061021180.4927@nuc> <52F3CF12.70905@parallels.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 6 Feb 2014, Vladimir Davydov wrote:
 
+> Hmm... IIUC the only function of concern is kobject_uevent() -
+> everything else called from sysfs_slab_{add,remove} is a mix of kmalloc,
+> kfree, mutex_lock/unlock - in short, nothing dangerous. There we do
+> call_usermodehelper(), but we do it with UMH_WAIT_EXEC, which means
+> "wait for exec only, but not for the process to complete". An exec
+> shouldn't issue any slab-related stuff AFAIU. At least, I tried to run
+> the patched kernel with lockdep enabled and got no warnings at all when
+> getting uevents about adding/removing caches. That's why I started to
+> doubt whether we really need this lock...
+>
+> Please correct me if I'm wrong.
 
-On 01/28/2014 04:54 PM, Yinghai Lu wrote:
-> used_vectors is a bitmap for vectors that are not tracked in per_cpu
-> vector_irq.
-> used_vectors contains information on the first 32 exceptions, the system vectors.
-> the IA32_SYSCALL_VECTOR (0x80), and the IRQ_MOVE_CLEANUP_VECTOR (0x20).
-> 
-> assign_irq_vectors() assigns vectors up to first_system_vector and
-> it will not use vectors that are set used_vectors.
-> 
-> This patch modifies the code to scan up to first_system_vector
-> and do a test on the used_vectors bitmap.
-> 
-> So count avaiable vectors correctly.
-> 
-> -v2: fix compiling problem.
-> -v3: update changelog and commets
-> 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> 
-> ---
->  arch/x86/kernel/irq.c |   18 ++++++++++++++++--
->  1 file changed, 16 insertions(+), 2 deletions(-)
-> 
-> Index: linux-2.6/arch/x86/kernel/irq.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/kernel/irq.c
-> +++ linux-2.6/arch/x86/kernel/irq.c
-> @@ -17,6 +17,7 @@
->  #include <asm/idle.h>
->  #include <asm/mce.h>
->  #include <asm/hw_irq.h>
-> +#include <asm/desc.h>
->  
->  #define CREATE_TRACE_POINTS
->  #include <asm/trace/irq_vectors.h>
-> @@ -321,8 +322,21 @@ int check_irq_vectors_for_cpu_disable(vo
->  	for_each_online_cpu(cpu) {
->  		if (cpu == this_cpu)
->  			continue;
-> -		for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS;
-> -		     vector++) {
-> +
-> +		/*
-> +		 * assign_irq_vector() only scan per_cpu vectors from
-> +		 * FIRST_EXTERNAL_VECTOR to first_system_vector.
-> +		 * It aslo skip vectors that are set in used_vectors bitmask.
+I have had this deadlock a couple of years ago. Sysfs seems to change over
+time. Not sure if that is still the case.
 
-"also" ... but not a big deal IMO.
+> > I would be very thankful, if you can get that actually working reliably
+> > without deadlock issues.
+>
+> If there is no choice rather than moving sysfs_slab_{add,remove} out of
+> the slab_mutex critical section, I'll have to do it that way. But first
+> I'd like to make sure it cannot be done with less footprint.
 
-Reviewed-by: Prarit Bhargava <prarit@redhat.com>
-Tested-by: Prarit Bhargava <prarit@redhat.com>
+I am all for holding the lock as long as possible.
 
-P.
-
-> +		 * used_vectors could have bits set for
-> +		 *	IA32_SYSCALL_VECTOR (0x80)
-> +		 *	IRQ_MOVE_CLEANUP_VECTOR (0x20)
-> +		 * Don't count those as available vectors.
-> +		 */
-> +		for (vector = FIRST_EXTERNAL_VECTOR;
-> +		     vector < first_system_vector; vector++) {
-> +			if (test_bit(vector, used_vectors))
-> +				continue;
-> +
->  			if (per_cpu(vector_irq, cpu)[vector] < 0)
->  				count++;
->  		}
