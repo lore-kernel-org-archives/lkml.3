@@ -1,96 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754979AbaBFPoX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 10:44:23 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45751 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750757AbaBFPoW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 10:44:22 -0500
-Message-ID: <52F3ADD4.7020907@suse.de>
-Date: Thu, 06 Feb 2014 16:44:20 +0100
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: systemd Mailing List <systemd-devel@lists.freedesktop.org>,
-        dh.herrmann@gmail.com, linux-kernel@vger.kernel.org,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay@vrfy.org>, Jiri Slaby <jslaby@suse.cz>,
-        Werner Fink <werner@suse.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: Re: [PATCHv2] tty: Set correct tty name in 'active' sysfs attribute
-References: <1391696863-62767-1-git-send-email-hare@suse.de> <20140206152947.GA19335@kroah.com>
-In-Reply-To: <20140206152947.GA19335@kroah.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+	id S1756071AbaBFPob (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 10:44:31 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:56744 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755216AbaBFPo2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 10:44:28 -0500
+Message-ID: <1391701458.5008.15.camel@pizza.hi.pengutronix.de>
+Subject: Re: [PATCH v3 1/2] Documentation: Add GPIO reset binding to reset
+ binding documentation
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de, Roger Quadros <rogerq@ti.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Date: Thu, 06 Feb 2014 16:44:18 +0100
+In-Reply-To: <1389353136.5854.13.camel@pizza.hi.pengutronix.de>
+References: <1389179464-11963-1-git-send-email-p.zabel@pengutronix.de>
+	 <201401081708.26679.arnd@arndb.de>
+	 <1389353136.5854.13.camel@pizza.hi.pengutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/2014 04:29 PM, Greg Kroah-Hartman wrote:
-> On Thu, Feb 06, 2014 at 03:27:43PM +0100, Hannes Reinecke wrote:
->> The 'active' sysfs attribute should refer to the currently
->> active tty devices the console is running on, not the currently
->> active console.
+Hi Arnd,
+
+Am Freitag, den 10.01.2014, 12:25 +0100 schrieb Philipp Zabel:
+> Hi Arnd,
 > 
-> That's not what Documentation/ABI/sysfs-tty says:
->                  Shows the list of currently configured                         
->                  console devices, like 'tty1 ttyS0'.                            
->                  The last entry in the file is the active                       
->                  device connected to /dev/console.                              
->                  The file supports poll() to detect virtual                     
->                  console switches.                         
+> Am Mittwoch, den 08.01.2014, 17:08 +0100 schrieb Arnd Bergmann:
+> > On Wednesday 08 January 2014, Philipp Zabel wrote:
+> > > += GPIO Reset consumers =
+> > > +
+> > > +For the common case of reset lines controlled by GPIOs, the GPIO binding
+> > > +documented in devicetree/bindings/gpio/gpio.txt should be used:
+> > > +
+> > > +Required properties:
+> > > +reset-gpios or         Reset GPIO using standard GPIO bindings,
+> > > +<name>-reset-gpios:    optionally named to specify the reset line
+> > > +
+> > > +Optional properties:
+> > > +reset-boot-asserted or         Boolean. If set, the corresponding reset is
+> > > +<name>-reset-boot-asserted:    initially asserted and should be kept that way
+> > > +                               until released by the driver.
+> > 
+> > I don't get this one. Why would you use a different reset binding for the case
+> > where the reset line is connected to the gpio controller rather than a
+> > specialized reset controller?
+> > 
+> > I was expecting to see the definition of a generic reset controller that
+> > in turn uses gpio lines, like
+> > 
+> > 
+> >         reset { 
+> >                 compatible = "gpio-reset";
+> >                 /* provides three reset lines through these GPIOs */
+> >                 gpios = <&gpioA 1 &gpioB 7 <gpioD 17>;
+> >                 #reset-cells = <1>;
+> >         };
+> > 
+> >         foo {
+> >                 ...
+> >                 resets = <&reset 0>; /* uses first reset line of the gpio-reset controller */
+> >         };
 > 
-The problem is indeed with 'console devices'. There is no such
-thing; you only have tty devices where the console is running on.
-
->> The console structure doesn't refer to any device in sysfs,
->> only the tty the console is running on has.
+> That is what I initially proposed...
 > 
-> That sentance doesn't make sense.
+> > I realize it would be a little more verbose, but it also seems more
+> > regular and wouldn't stand out from the rest of the reset interfaces.
 > 
->> So we need to print out the tty names in 'active', not
->> the console names.
+> ... but it can also be argued that GPIO resets shouldn't stand out from
+> other GPIOs.
 > 
-> But that doesn't match the documentation.
+> Mark Rutland spoke out against having a 'GPIO reset device' node in the
+> device tree:
 > 
-> What exactly are you trying to "fix" here?  What is the problem that the
-> current file has that is broken?  And as you are changing what this file
-> means, what will break if the information in the file changes?
+> http://comments.gmane.org/gmane.linux.drivers.devicetree/41596
 > 
-systemd is using the 'active' sysfs attribute to figure out on which
-_tty_ device to start a getty on.
-As soon as the console name and the tty name are different
-you have no means of figuring out which _device_ to open.
-AFAICS the console 'device' (ie the current entry in 'active')
-doesn't have _any_ equivalent in sysfs; it just so happens that for
-most console drivers the tty driver name is identical.
-But this is not a requirement, and fails for drivers which have a
-different device for the console and the tty.
+> and I see his point. Using different bindings for reset controller IPs
+> and for single GPIOs better describes the actual hardware and it is less
+> Linux specific: it still allows an OS without gpio-reset framework to
+> let each driver handle the GPIO itself.
+> 
+> Also Stephen Warren pointed out that we'll have to support the existing
+> GPIO bindings anyway: in the meantime there are a lot of GPIO resets in
+> various device trees that use the GPIO bindings.
+> 
+> regards
+> Philipp
 
-EG on S/390 the 3270 tty has the devices
+do you have further comments on this?
 
-/dev/3270/tty1
+I'd like to request a pull of the changes in
+http://git.pengutronix.de/?p=pza/linux.git;a=shortlog;h=refs/heads/reset/for_v3.15
+and I wonder whether I should submit that now without the GPIO patches
+or hold it back a bit and add them on top.
 
-but the console driver announces the name 'tty3270'.
-So as per current rules the 'active' attribute contains
+regards
+Philipp
 
-tty32700
-
-which correct as per documentation, but doesn't have _any_
-equivalent in sysfs.
-
-Martin has the grubby details here.
-
-But of course, the documentation should be updated to match the new
-behavior.
-
-Cheers,
-
-Hannes
--- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
