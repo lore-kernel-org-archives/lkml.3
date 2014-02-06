@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757023AbaBFSMA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 13:12:00 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:39556 "EHLO
+	id S1757010AbaBFSL7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 13:11:59 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:36360 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752278AbaBFSLM (ORCPT
+	by vger.kernel.org with ESMTP id S1752390AbaBFSLM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 6 Feb 2014 13:11:12 -0500
-Message-Id: <20140206181108.916703005@goodmis.org>
+Message-Id: <20140206181109.074624676@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 06 Feb 2014 12:39:11 -0500
+Date: Thu, 06 Feb 2014 12:39:12 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
@@ -18,10 +18,11 @@ Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Namhyung Kim <namhyung@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
         Li Zefan <lizefan@huawei.com>
-Subject: [RFC][PATCH 1/4] tracing: Move raw output code from macro to standalone function
+Subject: [RFC][PATCH 2/4] tracing: Move event storage for array from macro to standalone
+ function
 References: <20140206173910.029355947@goodmis.org>
-Content-Disposition: inline; filename=0001-tracing-Move-raw-output-code-from-macro-to-standalon.patch
-X-RR-Connecting-IP: 107.14.168.118:25
+Content-Disposition: inline; filename=0002-tracing-Move-event-storage-for-array-from-macro-to-s.patch
+X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,10 +30,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-The code for trace events to format the raw recorded event data
-into human readable format in the 'trace' file is repeated for every
-event in the system. When you have over 500 events, this can add up
-quite a bit.
+The code that shows array fields for events is defined for all events.
+This can add up quite a bit when you have over 500 events.
 
 By making helper functions in the core kernel to do the work
 instead, we can shrink the size of the kernel down a bit.
@@ -40,117 +39,149 @@ instead, we can shrink the size of the kernel down a bit.
 With a kernel configured with 502 events, the change in size was:
 
    text    data     bss     dec     hex filename
-12991007        1913568 9785344 24689919        178bcff /tmp/vmlinux.orig
-12990946        1913568 9785344 24689858        178bcc2 /tmp/vmlinux.patched
+12990946        1913568 9785344 24689858        178bcc2 /tmp/vmlinux
+12987390        1913504 9785344 24686238        178ae9e /tmp/vmlinux.patched
 
-Note, this version does not save as much as the version of this patch
-I had a few years ago. That is because in the mean time, commit
-f71130de5c7f ("tracing: Add a helper function for event print functions")
-did a lot of the work my original patch did. But this change helps
-slightly, and is part of a larger clean up to reduce the size much further.
+That's a total of 3556 bytes, which comes down to 7 bytes per event.
+Although it's not much, this code is just called at initialization of
+the events.
 
-Link: http://lkml.kernel.org/r/20120810034707.378538034@goodmis.org
+Link: http://lkml.kernel.org/r/20120810034708.084036335@goodmis.org
 
-Cc: Li Zefan <lizefan@huawei.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/ftrace_event.h |  5 +++++
- include/trace/ftrace.h       | 10 +---------
- kernel/trace/trace_output.c  | 31 +++++++++++++++++++++++++++++++
- 3 files changed, 37 insertions(+), 9 deletions(-)
+ include/linux/ftrace_event.h |  8 ++++----
+ include/trace/ftrace.h       | 12 ++++--------
+ kernel/trace/trace_events.c  |  6 ------
+ kernel/trace/trace_export.c  | 12 ++++--------
+ kernel/trace/trace_output.c  | 21 +++++++++++++++++++++
+ 5 files changed, 33 insertions(+), 26 deletions(-)
 
 diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 8c9b7a1..16b063c 100644
+index 16b063c..014090c 100644
 --- a/include/linux/ftrace_event.h
 +++ b/include/linux/ftrace_event.h
-@@ -162,6 +162,8 @@ void trace_current_buffer_discard_commit(struct ring_buffer *buffer,
+@@ -201,6 +201,10 @@ extern int ftrace_event_reg(struct ftrace_event_call *event,
+ int ftrace_output_event(struct trace_iterator *iter, struct ftrace_event_call *event,
+ 			char *fmt, ...);
  
- void tracing_record_cmdline(struct task_struct *tsk);
- 
-+int ftrace_output_call(struct trace_iterator *iter, char *name, char *fmt, ...);
-+
- struct event_filter;
- 
- enum trace_reg {
-@@ -196,6 +198,9 @@ struct ftrace_event_class {
- extern int ftrace_event_reg(struct ftrace_event_call *event,
- 			    enum trace_reg type, void *data);
- 
-+int ftrace_output_event(struct trace_iterator *iter, struct ftrace_event_call *event,
-+			char *fmt, ...);
++int ftrace_event_define_field(struct ftrace_event_call *call,
++			      char *type, int len, char *item, int offset,
++			      int field_size, int sign, int filter);
 +
  enum {
  	TRACE_EVENT_FL_FILTERED_BIT,
  	TRACE_EVENT_FL_CAP_ANY_BIT,
+@@ -361,10 +365,6 @@ enum {
+ 	FILTER_TRACE_FN,
+ };
+ 
+-#define EVENT_STORAGE_SIZE 128
+-extern struct mutex event_storage_mutex;
+-extern char event_storage[EVENT_STORAGE_SIZE];
+-
+ extern int trace_event_raw_init(struct ftrace_event_call *call);
+ extern int trace_define_field(struct ftrace_event_call *call, const char *type,
+ 			      const char *name, int offset, int size,
 diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index 5c38606..b482700 100644
+index b482700..c9c991f 100644
 --- a/include/trace/ftrace.h
 +++ b/include/trace/ftrace.h
-@@ -265,11 +265,9 @@ static notrace enum print_line_t					\
- ftrace_raw_output_##call(struct trace_iterator *iter, int flags,	\
- 			 struct trace_event *event)			\
- {									\
--	struct trace_seq *s = &iter->seq;				\
- 	struct ftrace_raw_##template *field;				\
- 	struct trace_entry *entry;					\
- 	struct trace_seq *p = &iter->tmp_seq;				\
--	int ret;							\
- 									\
- 	entry = iter->ent;						\
- 									\
-@@ -281,13 +279,7 @@ ftrace_raw_output_##call(struct trace_iterator *iter, int flags,	\
- 	field = (typeof(field))entry;					\
- 									\
- 	trace_seq_init(p);						\
--	ret = trace_seq_printf(s, "%s: ", #call);			\
--	if (ret)							\
--		ret = trace_seq_printf(s, print);			\
--	if (!ret)							\
--		return TRACE_TYPE_PARTIAL_LINE;				\
--									\
--	return TRACE_TYPE_HANDLED;					\
-+	return ftrace_output_call(iter, #call, print);			\
- }									\
- static struct trace_event_functions ftrace_event_type_funcs_##call = {	\
- 	.trace			= ftrace_raw_output_##call,		\
+@@ -302,15 +302,11 @@ static struct trace_event_functions ftrace_event_type_funcs_##call = {	\
+ #undef __array
+ #define __array(type, item, len)					\
+ 	do {								\
+-		mutex_lock(&event_storage_mutex);			\
+ 		BUILD_BUG_ON(len > MAX_FILTER_STR_VAL);			\
+-		snprintf(event_storage, sizeof(event_storage),		\
+-			 "%s[%d]", #type, len);				\
+-		ret = trace_define_field(event_call, event_storage, #item, \
+-				 offsetof(typeof(field), item),		\
+-				 sizeof(field.item),			\
+-				 is_signed_type(type), FILTER_OTHER);	\
+-		mutex_unlock(&event_storage_mutex);			\
++		ret = ftrace_event_define_field(event_call, #type, len,	\
++				#item, offsetof(typeof(field), item),   \
++				sizeof(field.item),			\
++			 	is_signed_type(type), FILTER_OTHER); \
+ 		if (ret)						\
+ 			return ret;					\
+ 	} while (0);
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index a11800a..86a47d9 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -27,12 +27,6 @@
+ 
+ DEFINE_MUTEX(event_mutex);
+ 
+-DEFINE_MUTEX(event_storage_mutex);
+-EXPORT_SYMBOL_GPL(event_storage_mutex);
+-
+-char event_storage[EVENT_STORAGE_SIZE];
+-EXPORT_SYMBOL_GPL(event_storage);
+-
+ LIST_HEAD(ftrace_events);
+ static LIST_HEAD(ftrace_common_fields);
+ 
+diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
+index 7c3e3e7..39c746c 100644
+--- a/kernel/trace/trace_export.c
++++ b/kernel/trace/trace_export.c
+@@ -96,14 +96,10 @@ static void __always_unused ____ftrace_check_##name(void)		\
+ #define __array(type, item, len)					\
+ 	do {								\
+ 		BUILD_BUG_ON(len > MAX_FILTER_STR_VAL);			\
+-		mutex_lock(&event_storage_mutex);			\
+-		snprintf(event_storage, sizeof(event_storage),		\
+-			 "%s[%d]", #type, len);				\
+-		ret = trace_define_field(event_call, event_storage, #item, \
+-				 offsetof(typeof(field), item),		\
+-				 sizeof(field.item),			\
+-				 is_signed_type(type), filter_type);	\
+-		mutex_unlock(&event_storage_mutex);			\
++		ret = ftrace_event_define_field(event_call, #type, len,	\
++				#item, offsetof(typeof(field), item),   \
++				sizeof(field.item),			\
++			 	is_signed_type(type), filter_type);	\
+ 		if (ret)						\
+ 			return ret;					\
+ 	} while (0);
 diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
-index ed32284..ca0e79e2 100644
+index ca0e79e2..ee8d748 100644
 --- a/kernel/trace/trace_output.c
 +++ b/kernel/trace/trace_output.c
-@@ -439,6 +439,37 @@ int ftrace_raw_output_prep(struct trace_iterator *iter,
- }
- EXPORT_SYMBOL(ftrace_raw_output_prep);
+@@ -20,6 +20,10 @@ static struct hlist_head event_hash[EVENT_HASHSIZE] __read_mostly;
  
-+static int ftrace_output_raw(struct trace_iterator *iter, char *name,
-+			     char *fmt, va_list ap)
+ static int next_event_type = __TRACE_LAST_TYPE + 1;
+ 
++#define EVENT_STORAGE_SIZE 128
++static DEFINE_MUTEX(event_storage_mutex);
++static char event_storage[EVENT_STORAGE_SIZE];
++
+ int trace_print_seq(struct seq_file *m, struct trace_seq *s)
+ {
+ 	int len = s->len >= PAGE_SIZE ? PAGE_SIZE - 1 : s->len;
+@@ -470,6 +474,23 @@ int ftrace_output_call(struct trace_iterator *iter, char *name, char *fmt, ...)
+ }
+ EXPORT_SYMBOL_GPL(ftrace_output_call);
+ 
++int ftrace_event_define_field(struct ftrace_event_call *call,
++			      char *type, int len, char *item, int offset,
++			      int field_size, int sign, int filter)
 +{
-+	struct trace_seq *s = &iter->seq;
 +	int ret;
 +
-+	ret = trace_seq_printf(s, "%s: ", name);
-+	if (!ret)
-+		return TRACE_TYPE_PARTIAL_LINE;
-+
-+	ret = trace_seq_vprintf(s, fmt, ap);
-+
-+	if (!ret)
-+		return TRACE_TYPE_PARTIAL_LINE;
-+
-+	return TRACE_TYPE_HANDLED;
-+}
-+
-+int ftrace_output_call(struct trace_iterator *iter, char *name, char *fmt, ...)
-+{
-+	va_list ap;
-+	int ret;
-+
-+	va_start(ap, fmt);
-+	ret = ftrace_output_raw(iter, name, fmt, ap);
-+	va_end(ap);
++	mutex_lock(&event_storage_mutex);
++	snprintf(event_storage, sizeof(event_storage),
++		 "%s[%d]", type, len);
++	ret = trace_define_field(call, event_storage, item, offset,
++				 field_size, sign, filter);
++	mutex_unlock(&event_storage_mutex);
 +
 +	return ret;
 +}
-+EXPORT_SYMBOL_GPL(ftrace_output_call);
++EXPORT_SYMBOL_GPL(ftrace_event_define_field);
 +
  #ifdef CONFIG_KRETPROBES
  static inline const char *kretprobed(const char *name)
