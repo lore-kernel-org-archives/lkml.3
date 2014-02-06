@@ -1,70 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754281AbaBFOna (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 09:43:30 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:62815 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753253AbaBFOnW (ORCPT
+	id S1754455AbaBFOnn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 09:43:43 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:46816 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754338AbaBFOnl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 09:43:22 -0500
-Message-Id: <20140206144127.181568017@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Thu, 06 Feb 2014 09:41:27 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
+	Thu, 6 Feb 2014 09:43:41 -0500
+From: Philipp Zabel <p.zabel@pengutronix.de>
 To: linux-kernel@vger.kernel.org
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 0/5] [GIT PULL] x86: Consolidate 32 and 64 bit thead_info (again)
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Cc: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Anson Huang <b20788@freescale.com>,
+        kernel@pengutronix.de, Philipp Zabel <p.zabel@pengutronix.de>
+Subject: [PATCH 1/2] regulator: anatop: Add power gating support to digital LDOs
+Date: Thu,  6 Feb 2014 15:43:32 +0100
+Message-Id: <1391697813-20091-1-git-send-email-p.zabel@pengutronix.de>
+X-Mailer: git-send-email 1.8.5.3
+X-SA-Exim-Connect-IP: 10.1.0.7
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The ARM, PU, and SOC LDOs in the i.MX6 PMU can completely gate
+their power output. Since power gating is configured by writing
+zero to the voltage target bitfield,, store a copy of the
+voltage selector to be restored when reenabling the regulator.
 
-Peter,
+Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+---
+ drivers/regulator/anatop-regulator.c | 59 +++++++++++++++++++++++++++++++++++-
+ 1 file changed, 58 insertions(+), 1 deletion(-)
 
-Back in August 2011, I had a pull request to make the irq stack of
-i386 more like the x86_64 code. There seemed to be acceptance back
-then and you said you would even pull it after the merge window.
-But due to your travels it was forgotten (and I forgot about it too).
+diff --git a/drivers/regulator/anatop-regulator.c b/drivers/regulator/anatop-regulator.c
+index c734d09..93a6413 100644
+--- a/drivers/regulator/anatop-regulator.c
++++ b/drivers/regulator/anatop-regulator.c
+@@ -34,6 +34,8 @@
+ #define LDO_RAMP_UP_UNIT_IN_CYCLES      64 /* 64 cycles per step */
+ #define LDO_RAMP_UP_FREQ_IN_MHZ         24 /* cycle based on 24M OSC */
+ 
++#define LDO_POWER_GATE			0x00
++
+ struct anatop_regulator {
+ 	const char *name;
+ 	u32 control_reg;
+@@ -48,17 +50,28 @@ struct anatop_regulator {
+ 	int max_voltage;
+ 	struct regulator_desc rdesc;
+ 	struct regulator_init_data *initdata;
++	int sel;
+ };
+ 
++static inline bool anatop_is_core_reg(struct anatop_regulator *anatop_reg)
++{
++	/* Only core regulators have the ramp up delay configuration. */
++	return anatop_reg->delay_bit_width;
++}
++
+ static int anatop_regmap_set_voltage_sel(struct regulator_dev *reg,
+ 					unsigned selector)
+ {
+ 	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
++	int ret;
+ 
+ 	if (!anatop_reg->control_reg)
+ 		return -ENOTSUPP;
+ 
+-	return regulator_set_voltage_sel_regmap(reg, selector);
++	ret = regulator_set_voltage_sel_regmap(reg, selector);
++	if (!ret)
++		anatop_reg->sel = selector;
++	return ret;
+ }
+ 
+ static int anatop_regmap_set_voltage_time_sel(struct regulator_dev *reg,
+@@ -97,7 +110,40 @@ static int anatop_regmap_get_voltage_sel(struct regulator_dev *reg)
+ 	return regulator_get_voltage_sel_regmap(reg);
+ }
+ 
++static int anatop_regmap_enable(struct regulator_dev *reg)
++{
++	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
++
++	if (!anatop_is_core_reg(anatop_reg))
++		return 0;
++
++	return regulator_set_voltage_sel_regmap(reg, anatop_reg->sel);
++}
++
++static int anatop_regmap_disable(struct regulator_dev *reg)
++{
++	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
++
++	if (!anatop_is_core_reg(anatop_reg))
++		return -ENOTSUPP;
++
++	return regulator_set_voltage_sel_regmap(reg, LDO_POWER_GATE);
++}
++
++static int anatop_regmap_is_enabled(struct regulator_dev *reg)
++{
++	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
++
++	if (!anatop_is_core_reg(anatop_reg))
++		return 1;
++
++	return regulator_get_voltage_sel_regmap(reg) != LDO_POWER_GATE;
++}
++
+ static struct regulator_ops anatop_rops = {
++	.enable = anatop_regmap_enable,
++	.disable = anatop_regmap_disable,
++	.is_enabled = anatop_regmap_is_enabled,
+ 	.set_voltage_sel = anatop_regmap_set_voltage_sel,
+ 	.set_voltage_time_sel = anatop_regmap_set_voltage_time_sel,
+ 	.get_voltage_sel = anatop_regmap_get_voltage_sel,
+@@ -116,6 +162,7 @@ static int anatop_regulator_probe(struct platform_device *pdev)
+ 	struct regulator_init_data *initdata;
+ 	struct regulator_config config = { };
+ 	int ret = 0;
++	u32 val;
+ 
+ 	initdata = of_get_regulator_init_data(dev, np);
+ 	sreg = devm_kzalloc(dev, sizeof(*sreg), GFP_KERNEL);
+@@ -199,6 +246,16 @@ static int anatop_regulator_probe(struct platform_device *pdev)
+ 	config.of_node = pdev->dev.of_node;
+ 	config.regmap = sreg->anatop;
+ 
++	if (sreg->control_reg && anatop_is_core_reg(sreg)) {
++		ret = regmap_read(config.regmap, rdesc->vsel_reg, &val);
++		if (ret) {
++			dev_err(dev, "failed to read initial state\n");
++			goto anatop_probe_end;
++		}
++
++		sreg->sel = (val & rdesc->vsel_mask) >> sreg->vol_bit_shift;
++	}
++
+ 	/* register regulator */
+ 	rdev = devm_regulator_register(dev, rdesc, &config);
+ 	if (IS_ERR(rdev)) {
+-- 
+1.8.5.3
 
-http://lkml.kernel.org/r/20110806011102.721109343@goodmis.org
-
-I stumbled on these changes again and noticed that they were never
-applied so I forward ported them with a few more adjustments.
-
-Hopefully they are still worth pulling. This time I waited till after
-the merge window to post :-)
-
-Please pull the latest tip/x86/core tree, which can be found at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-tip/x86/core
-
-Head SHA1: 3132e107d608f8753240d82d61303c500fd515b4
-237dfcadc93749ca5cdd2f683f887c3dcf3a0c04
-
-
-Steven Rostedt (4):
-      x86: Nuke the supervisor_stack field in i386 thread_info
-      x86: Prepare removal of previous_esp from i386 thread_info structure
-      x86: Keep thread_info on thread stack in x86_32
-      x86: Clean up dumpstack_64.c code
-
-Steven Rostedt (Red Hat) (1):
-      x86: Nuke GET_THREAD_INFO_WITH_ESP() macro for i386
-
-----
- arch/x86/include/asm/processor.h   |   9 +++
- arch/x86/include/asm/thread_info.h |  52 ++---------------
- arch/x86/kernel/cpu/common.c       |   8 +--
- arch/x86/kernel/dumpstack_32.c     |  44 ++++++++++++--
- arch/x86/kernel/dumpstack_64.c     | 117 ++++++++++++++++++++++++++-----------
- arch/x86/kernel/irq_32.c           |  79 ++++++++++++-------------
- arch/x86/kernel/process_32.c       |   4 ++
- arch/x86/kernel/ptrace.c           |   8 +--
- arch/x86/kernel/smpboot.c          |   2 +-
- 9 files changed, 188 insertions(+), 135 deletions(-)
