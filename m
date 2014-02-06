@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932620AbaBFNjM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 08:39:12 -0500
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:37489 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756241AbaBFNjL (ORCPT
+	id S1756443AbaBFNlN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 08:41:13 -0500
+Received: from mail-yh0-f53.google.com ([209.85.213.53]:41407 "EHLO
+	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756067AbaBFNlL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 08:39:11 -0500
-Date: Thu, 6 Feb 2014 10:38:57 -0300
+	Thu, 6 Feb 2014 08:41:11 -0500
+Date: Thu, 6 Feb 2014 10:41:00 -0300
 From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: Namhyung Kim <namhyung@kernel.org>, linux-kernel@vger.kernel.org,
-        Chad Paradis <chad.paradis@umit.maine.edu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [patch] perf tools: perf list broken on ARM
-Message-ID: <20140206133857.GA8026@ghostprotocols.net>
-References: <alpine.DEB.2.10.1312301536150.28814@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1401081629200.4410@vincent-weaver-1.um.maine.edu>
- <871u0hd0x4.fsf@sejong.aot.lge.com>
- <20140109121206.GA30069@ghostprotocols.net>
- <1389271023.1722.4.camel@leonhard>
- <20140109124845.GB30069@ghostprotocols.net>
- <alpine.DEB.2.10.1402051532250.14738@vincent-weaver-1.um.maine.edu>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 0/3] Fix perf build breakages in 3.13
+Message-ID: <20140206134100.GB8026@ghostprotocols.net>
+References: <1391648361.3003.97.camel@deadeye.wl.decadent.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1402051532250.14738@vincent-weaver-1.um.maine.edu>
+In-Reply-To: <1391648361.3003.97.camel@deadeye.wl.decadent.org.uk>
 X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Feb 05, 2014 at 03:34:42PM -0500, Vince Weaver escreveu:
-> > You are right, I saw that Author: line in the changeset comment, close
-> > to the start of the message and got confused, thanks for clarifying.
+Em Thu, Feb 06, 2014 at 12:59:21AM +0000, Ben Hutchings escreveu:
+> perf no longer compiles on powerpc and sparc due to changes in the trace
+> sub-command.  This series fixes those compile errors; I compile-tested
+> in Debian sid on armhf, i386, powerpc and sparc.
 > 
-> Do I need to re-send this patch?  It still applies cleanly to 3.14-rc1.
+> I would much prefer not to revert the tty ioctl decoding but I think
+> it's going to take a much more sophisticated approach to do it right
+> across all supported architectures.
 
-Sorry, picked it up now, will send it to Ingo today.
+Not a problem, we can work on that later, applying your series, thanks.
 
 - Arnaldo
+ 
+> Ben.
+> 
+> Ben Hutchings (3):
+>   Revert "perf trace: Initial beautifier for ioctl's 'cmd' arg"
+>   perf trace: Add fallback definition of EFD_SEMAPHORE
+>   perf trace: Decode architecture-specific signal numbers
+> 
+>  tools/perf/builtin-trace.c | 48 ++++++++++++++--------------------------------
+>  1 file changed, 14 insertions(+), 34 deletions(-)
+> 
+> 
+> -- 
+> Ben Hutchings
+> It is a miracle that curiosity survives formal education. - Albert Einstein
+
+
