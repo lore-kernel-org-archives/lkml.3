@@ -1,140 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756476AbaBFNbX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 08:31:23 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:50078 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756238AbaBFNbV (ORCPT
+	id S1756547AbaBFNbb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 08:31:31 -0500
+Received: from mail1.bemta3.messagelabs.com ([195.245.230.170]:46694 "EHLO
+	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756492AbaBFNb1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 08:31:21 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-d9-52f38ea79431
-Message-id: <52F38EA4.10805@samsung.com>
-Date: Thu, 06 Feb 2014 14:31:16 +0100
-From: Tomasz Figa <t.figa@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.1.1
-MIME-version: 1.0
-To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, linux-i2c@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
-        naveenkrishna.ch@gmail.com, kgene.kim@samsung.com,
-        grant.likely@secretlab.ca, w.sang@pengutronix.de,
-        linux-kernel@vger.kernel.org, taeggyun.ko@samsung.com, balbi@ti.com,
-        cpgs@samsung.com
-Subject: Re: [PATCH 1/2 v3] i2c: exynos5: add support for HSI2C on Exynos5260
- SoC
-References: <1385100851-32254-1-git-send-email-ch.naveen@samsung.com>
- <1391688408-8077-1-git-send-email-ch.naveen@samsung.com>
-In-reply-to: <1391688408-8077-1-git-send-email-ch.naveen@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGLMWRmVeSWpSXmKPExsVy+t/xq7rL+z4HGazYyWZx8H69xd3nhxkt
-	Xh7StDgw+yGrxaszG9ksehdcZbPY9Pgaq0XH3y+MFpd3zWGzmHF+H5PFom3/mS2e/Ady973e
-	yuzA67Fz1l12j81L6j3Oz1jI6NH/18Cjb8sqRo+fL3U8jt/YzuTxeZNcAEcUl01Kak5mWWqR
-	vl0CV8bH9rtsBRNlKib9vMnYwHhcrIuRk0NCwESifc5WFghbTOLCvfVsXYxcHEICSxklJjV8
-	YYVwPjNKNLRdZQSp4hXQkDj78zVTFyMHB4uAqsTu3aIgYTYBNYnPDY/YQGxRgQiJv/PWQ5UL
-	SvyYfA9sgYhAicSOJxfA4swC/UwSX05IgtjCAsESEzY9ZYHY1cAocbi1H2wQp4CrxPtt06Aa
-	rCVWTtoGZctLbF7zlnkCo8AsJDtmISmbhaRsASPzKkbR1NLkguKk9FxDveLE3OLSvHS95Pzc
-	TYyQuPmyg3HxMatDjAIcjEo8vBvWfwoSYk0sK67MPcQowcGsJMKb2vQ5SIg3JbGyKrUoP76o
-	NCe1+BAjEwenVAOjtXRauYV5ooZfVcmqmhv3luWYidmq56of8Lgut1HzV+oTz5l72Rm0zNjD
-	dp7+KHnNWufIu0VPF5eurOf2KXTd0P5k9iWXXIU1T9J3PD858+JOob1bJXde+Hnw4ot5x6xP
-	dgp2vJ+3aslUQ/sp11JCnf/8Kp/Hb+Lfsr108/4jaY/L573aZdHzUYmlOCPRUIu5qDgRAF3j
-	JYd5AgAA
+	Thu, 6 Feb 2014 08:31:27 -0500
+X-Env-Sender: Adam.Thomson.Opensource@diasemi.com
+X-Msg-Ref: server-4.tower-39.messagelabs.com!1391693483!11823852!1
+X-Originating-IP: [94.185.165.51]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.16; banners=-,-,-
+X-VirusChecked: Checked
+From: "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>
+To: Guenter Roeck <linux@roeck-us.net>,
+        "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>
+CC: Mark Brown <broonie@kernel.org>, Lee Jones <lee.jones@linaro.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>
+Subject: RE: [PATCH 0/8] da9055: Driver initialisation fixes, add DT support
+Thread-Topic: [PATCH 0/8] da9055: Driver initialisation fixes, add DT support
+Thread-Index: AQHPItX1UYPlsXnnXUG/ucZmMBjnFpqoG//wgAAbW4CAAAI1UA==
+Date: Thu, 6 Feb 2014 13:31:22 +0000
+Message-ID: <2E89032DDAA8B9408CB92943514A03376B7E36D8@SW-EX-MBX02.diasemi.com>
+References: <cover.1391614923.git.Adam.Thomson.Opensource@diasemi.com>
+ <20140206005406.GC1308@roeck-us.net>
+ <2E89032DDAA8B9408CB92943514A03376B7E368A@SW-EX-MBX02.diasemi.com>
+ <52F38CA1.8020806@roeck-us.net>
+In-Reply-To: <52F38CA1.8020806@roeck-us.net>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.20.27.23]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s16DVjLM005276
 
-Hi Naveen,
+On Thu, Feb 06, 2014 at 13:23:47PM +0000, Guenter Roeck wrote:
 
-On 06.02.2014 13:06, Naveen Krishna Chatradhi wrote:
-> This patch implements a variant struct to handle the differences
-> (like fifo_depths) in the HSI2C modules across SoCs.
->
-> Adds a new compatible to support HSI2C module on Exynos5260.
-> Also resets the module as an init sequence (Needed by Exynos5260).
->
-> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-> ---
-> Changes since v2:
-> 1. Used variant struct as suggested by Tomasz Figa.
-> 2. Change compatible strings from samsung,exynos5-hsi2c to
->     samsung,exynos5250-hsi2c based on the first SoC to see the feature.
-> 3. Using reset as init sequences.
-> 4. Merged the 2 patches into one.
->
->   .../devicetree/bindings/i2c/i2c-exynos5.txt        |    8 ++-
->   drivers/i2c/busses/i2c-exynos5.c                   |   64 ++++++++++++++++----
->   2 files changed, 58 insertions(+), 14 deletions(-)
->
-> diff --git a/Documentation/devicetree/bindings/i2c/i2c-exynos5.txt b/Documentation/devicetree/bindings/i2c/i2c-exynos5.txt
-> index 056732c..5bc4998 100644
-> --- a/Documentation/devicetree/bindings/i2c/i2c-exynos5.txt
-> +++ b/Documentation/devicetree/bindings/i2c/i2c-exynos5.txt
-> @@ -5,7 +5,11 @@ at various speeds ranging from 100khz to 3.4Mhz.
->
->   Required properties:
->     - compatible: value should be.
-> -      -> "samsung,exynos5-hsi2c", for i2c compatible with exynos5 hsi2c.
+> > What I could've done is use platform_get_irq_byname() and avoided using
+> > regmap_irq_get_virq() as I would already have the correct VIRQ to pass to
+> > request_threaded_irq(), but I figured that using regmap_irq_get_virq() made
+> > more sense at the time, and was unable to use both.
+> >
+> 
+> I may be missing something, but I think the problem may be that you are
+> doing two mappings instead of just one. I don't think you need to call
+> regmap_irq_get_virq() at all.
 
-Device tree bindings need to be backwards compatible, so you need to 
-keep this compatible string supported, just marked as (DEPRECATED).
-
-Driver-wise, it will use the same driver data / variant struct as 
-"samsung,exynos5250-hsi2c", just one more entry in OF match table is needed.
-
-> +	-> "samsung,exynos5250-hsi2c", for i2c compatible with HSI2C available
-> +				on Exynos5250 and Exynos5420 SoCs.
-> +	-> "samsung,exynos5260-hsi2c", for i2c compatible with HSI2C available
-> +				on Exynos5260 SoCs.
-> +
->     - reg: physical base address of the controller and length of memory mapped
->       region.
->     - interrupts: interrupt number to the cpu.
-> @@ -26,7 +30,7 @@ Optional properties:
->   Example:
->
->   hsi2c@12ca0000 {
-> -	compatible = "samsung,exynos5-hsi2c";
-> +	compatible = "samsung,exynos5250-hsi2c";
->   	reg = <0x12ca0000 0x100>;
->   	interrupts = <56>;
->   	clock-frequency = <100000>;
-
-[snip]
-
-> @@ -483,6 +514,7 @@ static void exynos5_i2c_message_start(struct exynos5_i2c *i2c, int stop)
->   	u32 i2c_auto_conf = 0;
->   	u32 fifo_ctl;
->   	unsigned long flags;
-> +	unsigned short trig_lvl;
->
->   	i2c_ctl = readl(i2c->regs + HSI2C_CTL);
->   	i2c_ctl &= ~(HSI2C_TXCHON | HSI2C_RXCHON);
-> @@ -493,13 +525,19 @@ static void exynos5_i2c_message_start(struct exynos5_i2c *i2c, int stop)
->
->   		i2c_auto_conf = HSI2C_READ_WRITE;
->
-> -		fifo_ctl |= HSI2C_RXFIFO_TRIGGER_LEVEL(HSI2C_DEF_TXFIFO_LVL);
-> +		trig_lvl = (i2c->msg->len > i2c->variant->fifo_depth) ?
-> +			(i2c->variant->fifo_depth * 3/4) : i2c->msg->len;
-> +		fifo_ctl |= HSI2C_RXFIFO_TRIGGER_LEVEL(trig_lvl);
-> +
-
-This is a rather serious semantic change, that doesn't look to belong to 
-this patch. If this is needed, it should be done in a separate patch.
-
->   		int_en |= (HSI2C_INT_RX_ALMOSTFULL_EN |
->   			HSI2C_INT_TRAILING_EN);
->   	} else {
->   		i2c_ctl |= HSI2C_TXCHON;
->
-> -		fifo_ctl |= HSI2C_TXFIFO_TRIGGER_LEVEL(HSI2C_DEF_RXFIFO_LVL);
-> +		trig_lvl = (i2c->msg->len > i2c->variant->fifo_depth) ?
-> +			(i2c->variant->fifo_depth * 1/4) : i2c->msg->len;
-> +		fifo_ctl |= HSI2C_TXFIFO_TRIGGER_LEVEL(trig_lvl);
-> +
-
-Ditto.
-
-Best regards,
-Tomasz
+Yes, you're correct. The issue was already there in the code and I was
+attempting to fix it. When I made the change I figured using only
+regmap_irq_get_virq() was the way to go, but seems like I chose the wrong
+option. Will make the changes (remove regmap_irq_get_virq()), test on both DT
+and non-DT platforms, and then will re-submit the patches.
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
