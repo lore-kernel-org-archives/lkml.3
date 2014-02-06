@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755806AbaBFJOX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 04:14:23 -0500
-Received: from smtp1-g21.free.fr ([212.27.42.1]:33541 "EHLO smtp1-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755703AbaBFJOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 04:14:18 -0500
-X-Mailbox-Line: From 1db1cec6e98c5cc764cc57e9f3753e4a38d21817 Mon Sep 17 00:00:00 2001
-From: Jean-Francois Moine <moinejf@free.fr>
-Date: Thu, 6 Feb 2014 09:41:48 +0100
-Subject: [PATCH] ALSA: pcm: export some constraint functions
-To: perex@perex.cz, tiwai@suse.de
-Cc: lars@metafoo.de, alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Message-Id: <20140206091402.5F54D940120@smtp1-g21.free.fr>
+	id S932439AbaBFJPZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 04:15:25 -0500
+Received: from mail-out.m-online.net ([212.18.0.10]:56752 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755174AbaBFJPV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 04:15:21 -0500
+X-Auth-Info: BGutzzvfoN0YJRbQi5bT2O7jyC7+nPq+z/20P5wUsdo=
+Message-ID: <52F352A4.7090500@denx.de>
+Date: Thu, 06 Feb 2014 10:15:16 +0100
+From: Stefano Babic <sbabic@denx.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Jingoo Han <jg1.han@samsung.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org, "'Stefano Babic'" <sbabic@denx.de>,
+        "'Anatolij Gustschin'" <agust@denx.de>
+Subject: Re: [PATCH 06/12] backlight: ili922x: Remove unnecessary OOM messages
+References: <000101cf2313$6ef38e80$4cdaab80$%han@samsung.com> <000701cf2314$78459d60$68d0d820$%han@samsung.com>
+In-Reply-To: <000701cf2314$78459d60$68d0d820$%han@samsung.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The functions snd_pcm_hw_constraint_mask() and
-snd_pcm_hw_constraint_mask64() are needed to add audio constraints
-to substreams at open/startup time.
-This patch makes them available to ALSA modules.
+Hi Jingoo,
 
-Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
----
- sound/core/pcm_lib.c | 2 ++
- 1 file changed, 2 insertions(+)
+On 06/02/2014 09:21, Jingoo Han wrote:
+> The site-specific OOM messages are unnecessary, because they
+> duplicate the MM subsystem generic OOM message.
+> 
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> ---
+>  drivers/video/backlight/ili922x.c |    4 +---
+>  1 file changed, 1 insertion(+), 3 deletions(-)
+> 
+> diff --git a/drivers/video/backlight/ili922x.c b/drivers/video/backlight/ili922x.c
+> index 73464e4..ea67fe1 100644
+> --- a/drivers/video/backlight/ili922x.c
+> +++ b/drivers/video/backlight/ili922x.c
+> @@ -482,10 +482,8 @@ static int ili922x_probe(struct spi_device *spi)
+>  	u16 reg = 0;
+>  
+>  	ili = devm_kzalloc(&spi->dev, sizeof(*ili), GFP_KERNEL);
+> -	if (!ili) {
+> -		dev_err(&spi->dev, "cannot alloc priv data\n");
+> +	if (!ili)
+>  		return -ENOMEM;
+> -	}
+>  
+>  	ili->spi = spi;
+>  	spi_set_drvdata(spi, ili);
+> 
 
-diff --git a/sound/core/pcm_lib.c b/sound/core/pcm_lib.c
-index a210467..aea4972 100644
---- a/sound/core/pcm_lib.c
-+++ b/sound/core/pcm_lib.c
-@@ -1219,6 +1219,7 @@ int snd_pcm_hw_constraint_mask(struct snd_pcm_runtime *runtime, snd_pcm_hw_param
- 		return -EINVAL;
- 	return 0;
- }
-+EXPORT_SYMBOL(snd_pcm_hw_constraint_mask);
- 
- /**
-  * snd_pcm_hw_constraint_mask64 - apply the given bitmap mask constraint
-@@ -1242,6 +1243,7 @@ int snd_pcm_hw_constraint_mask64(struct snd_pcm_runtime *runtime, snd_pcm_hw_par
- 		return -EINVAL;
- 	return 0;
- }
-+EXPORT_SYMBOL(snd_pcm_hw_constraint_mask64);
- 
- /**
-  * snd_pcm_hw_constraint_integer - apply an integer constraint to an interval
+Acked-by: Stefano Babic <sbabic@denx.de>
+
+Thanks !
+
+Best regards,
+Stefano Babic
+
 -- 
-1.9.rc1
-
+=====================================================================
+DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
+HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
+Phone: +49-8142-66989-53 Fax: +49-8142-66989-80 Email: sbabic@denx.de
+=====================================================================
