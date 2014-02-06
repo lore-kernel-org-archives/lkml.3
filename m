@@ -1,109 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756872AbaBFVdy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 16:33:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18015 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751319AbaBFVdw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 16:33:52 -0500
-Message-ID: <52F3FFBC.1010505@redhat.com>
-Date: Thu, 06 Feb 2014 16:33:48 -0500
-From: "Carlos O'Donell" <carlos@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Jan Moskyto Matejka <mq@suse.cz>, "David S. Miller" <davem@davemloft.net>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] inet: defines IPPROTO_* needed for module alias generation
-References: <1391685000-7346-1-git-send-email-mq@suse.cz>
-In-Reply-To: <1391685000-7346-1-git-send-email-mq@suse.cz>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756946AbaBFVeO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 16:34:14 -0500
+Received: from smtprelay0140.hostedemail.com ([216.40.44.140]:51844 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751319AbaBFVeK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 16:34:10 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:560:599:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2195:2198:2199:2200:2393:2553:2559:2562:2731:2828:3138:3139:3140:3141:3142:3354:3622:3865:3866:3867:3868:3871:3872:3874:4250:4321:5007:6119:7652:7903:8660:10004:10400:10450:10455:10848:11026:11232:11233:11658:11914:12043:12296:12438:12517:12519:12555:12740:13148:13230:19904:19999,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: hook38_40e3655418401
+X-Filterd-Recvd-Size: 3439
+Message-ID: <1391722444.15777.28.camel@joe-AO722>
+Subject: Re: [PATCH] net: use __GFP_NORETRY for high order allocations
+From: Joe Perches <joe@perches.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, David Miller <davem@davemloft.net>,
+        netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 06 Feb 2014 13:34:04 -0800
+In-Reply-To: <alpine.DEB.2.02.1402061302020.9567@chino.kir.corp.google.com>
+References: <1391712162.10160.8.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <1391718270.15777.20.camel@joe-AO722>
+	 <alpine.DEB.2.02.1402061302020.9567@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/2014 06:10 AM, Jan Moskyto Matejka wrote:
-> Commit cfd280c91253 ("net: sync some IP headers with glibc") changed a set of
-> define's to an enum (with no explanation why) which introduced a bug
-> in module mip6 where aliases are generated using the IPPROTO_* defines;
-> mip6 doesn't load if require_module called with the aliases from
-> xfrm_get_type().
-
-I wrote that code and I apologize for not giving a reason at
-the time.
-
-There are two reasons:
-
-* It makes the debuginfo better and debugging easier via the enum.
-
-* It harmonizes those headers with what is already in glibc.
-
-Harmonizing this header with glibc makes it easier for userspace
-to synchronize changes and perhaps eventually use the UAPI headers
-directly.
-
-> Reverting this change back to define's to fix the aliases.
+On Thu, 2014-02-06 at 13:03 -0800, David Rientjes wrote:
+> On Thu, 6 Feb 2014, Joe Perches wrote:
 > 
-> modinfo mip6 (before this change)
-> alias:          xfrm-type-10-IPPROTO_DSTOPTS
-> alias:          xfrm-type-10-IPPROTO_ROUTING
+> > On Thu, 2014-02-06 at 10:42 -0800, Eric Dumazet wrote:
+> > > sock_alloc_send_pskb() & sk_page_frag_refill()
+> > > have a loop trying high order allocations to prepare
+> > > skb with low number of fragments as this increases performance.
+> > > 
+> > > Problem is that under memory pressure/fragmentation, this can
+> > > trigger OOM while the intent was only to try the high order
+> > > allocations, then fallback to order-0 allocations.
+> > []
+> > > Call Trace:
+> > >  [<ffffffff8043766c>] dump_header+0xe1/0x23e
+> > >  [<ffffffff80437a02>] oom_kill_process+0x6a/0x323
+> > >  [<ffffffff80438443>] out_of_memory+0x4b3/0x50d
+> > >  [<ffffffff8043a4a6>] __alloc_pages_may_oom+0xa2/0xc7
+> > >  [<ffffffff80236f42>] __alloc_pages_nodemask+0x1002/0x17f0
+> > >  [<ffffffff8024bd23>] alloc_pages_current+0x103/0x2b0
+> > >  [<ffffffff8028567f>] sk_page_frag_refill+0x8f/0x160
+> > []
+> > > diff --git a/net/core/sock.c b/net/core/sock.c
+> > []
+> > > @@ -1775,7 +1775,9 @@ struct sk_buff *sock_alloc_send_pskb(struct sock *sk, unsigned long header_len,
+> > >  			while (order) {
+> > >  				if (npages >= 1 << order) {
+> > >  					page = alloc_pages(sk->sk_allocation |
+> > > -							   __GFP_COMP | __GFP_NOWARN,
+> > > +							   __GFP_COMP |
+> > > +							   __GFP_NOWARN |
+> > > +							   __GFP_NORETRY,
+> > >  							   order);
+> > >  					if (page)
+> > >  						goto fill_page;
+> > > @@ -1845,7 +1847,7 @@ bool skb_page_frag_refill(unsigned int sz, struct page_frag *pfrag, gfp_t prio)
+> > >  		gfp_t gfp = prio;
+> > >  
+> > >  		if (order)
+> > > -			gfp |= __GFP_COMP | __GFP_NOWARN;
+> > > +			gfp |= __GFP_COMP | __GFP_NOWARN | __GFP_NORETRY;
+> > 
+> > Perhaps add __GFP_THISNODE too ?
+> > 
 > 
-> modinfo mip6 (after this change)
-> alias:          xfrm-type-10-43
-> alias:          xfrm-type-10-60
+> How does __GFP_THISNODE have anything to do with avoiding oom killing due 
+> to high-order fragmentation?
 
-Instead of reverting these changes I suggest someone fix
-whatever is processing that information.
+I don't think it does.
 
-I do not condone the application of this patch for the
-above two reasons. Though you might argue that I should
-just make all debuggers and compilers better at dealing
-with DW_at_macro_info/DW_MACINFO_* debug info... and 
-you also would not be wrong.
+> If they absolutely require local memory to 
+> currnet's cpu node then that would make sense,
 
-I hope that answers your question.
+I presumed THISNODE would be used only with NORETRY
 
-> Signed-off-by: Jan Moskyto Matejka <mq@suse.cz>
-> ---
->  include/uapi/linux/in6.h | 23 +++++++----------------
->  1 file changed, 7 insertions(+), 16 deletions(-)
-> 
-> diff --git a/include/uapi/linux/in6.h b/include/uapi/linux/in6.h
-> index 633b93c..e9a1d2d97 100644
-> --- a/include/uapi/linux/in6.h
-> +++ b/include/uapi/linux/in6.h
-> @@ -128,22 +128,13 @@ struct in6_flowlabel_req {
->   *	IPV6 extension headers
->   */
->  #if __UAPI_DEF_IPPROTO_V6
-> -enum {
-> -  IPPROTO_HOPOPTS = 0,		/* IPv6 hop-by-hop options      */
-> -#define IPPROTO_HOPOPTS		IPPROTO_HOPOPTS
-> -  IPPROTO_ROUTING = 43,		/* IPv6 routing header          */
-> -#define IPPROTO_ROUTING		IPPROTO_ROUTING
-> -  IPPROTO_FRAGMENT = 44,	/* IPv6 fragmentation header    */
-> -#define IPPROTO_FRAGMENT	IPPROTO_FRAGMENT
-> -  IPPROTO_ICMPV6 = 58,		/* ICMPv6                       */
-> -#define IPPROTO_ICMPV6		IPPROTO_ICMPV6
-> -  IPPROTO_NONE = 59,		/* IPv6 no next header          */
-> -#define IPPROTO_NONE		IPPROTO_NONE
-> -  IPPROTO_DSTOPTS = 60,		/* IPv6 destination options     */
-> -#define IPPROTO_DSTOPTS		IPPROTO_DSTOPTS
-> -  IPPROTO_MH = 135,		/* IPv6 mobility header         */
-> -#define IPPROTO_MH		IPPROTO_MH
-> -};
-> +#define IPPROTO_HOPOPTS		0	/* IPv6 hop-by-hop options	*/
-> +#define IPPROTO_ROUTING		43	/* IPv6 routing header		*/
-> +#define IPPROTO_FRAGMENT	44	/* IPv6 fragmentation header	*/
-> +#define IPPROTO_ICMPV6		58	/* ICMPv6			*/
-> +#define IPPROTO_NONE		59	/* IPv6 no next header		*/
-> +#define IPPROTO_DSTOPTS		60	/* IPv6 destination options	*/
-> +#define IPPROTO_MH		135	/* IPv6 mobility header		*/
->  #endif /* __UAPI_DEF_IPPROTO_V6 */
->  
->  /*
-> 
+> but the fallback still 
+> allocates order-0 memory remotely and with __GFP_THISNODE on this attempt 
+> we wouldn't even attempt remote reclaim.
+any other alloc attempt could work on other cpus.
 
-Cheers,
-Carlos.
+It was just a thought, ignore it if it's a dumb thought.
+
