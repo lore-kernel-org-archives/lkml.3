@@ -1,43 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370AbaBFOzQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 09:55:16 -0500
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:31251
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751693AbaBFOzN (ORCPT
+	id S1752835AbaBFOzM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 09:55:12 -0500
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:54684 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751693AbaBFOzK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 09:55:13 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VS-1(zz98dIzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzzz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Thu, 6 Feb 2014 22:55:13 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: <linux-kernel@vger.kernel.org>
-CC: <alsa-devel@alsa-project.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: v3.14-rc1 locking bug in system suspend
-Message-ID: <20140206145509.GB6610@S2101-09.ap.freescale.net>
-References: <20140205145408.GA3708@S2101-09.ap.freescale.net>
+	Thu, 6 Feb 2014 09:55:10 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140205145408.GA3708@S2101-09.ap.freescale.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <1388728091-18564-8-git-send-email-zheng.z.yan@intel.com>
+References: <1388728091-18564-1-git-send-email-zheng.z.yan@intel.com>
+	<1388728091-18564-8-git-send-email-zheng.z.yan@intel.com>
+Date: Thu, 6 Feb 2014 15:55:08 +0100
+Message-ID: <CABPqkBSQ23iFC4vRaV2-MQudKsA3Yykom-y8_H_7UxOApR4GzA@mail.gmail.com>
+Subject: Re: [PATCH 07/14] perf: track number of events that use LBR callstack
+From: Stephane Eranian <eranian@google.com>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 05, 2014 at 10:54:10PM +0800, Shawn Guo wrote:
-> I start seeing the following locking bug on IMX6 with suspend operation
-> after moving to v3.14-rc1.  Before I start looking into the issue, I
-> would like to confirm if it's an IMX specific problem or one seen on
-> other platforms.  Please ask if you need more info.
+On Fri, Jan 3, 2014 at 6:48 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+> Later patch will use it to decide if the LBR stack should be saved/restored
+>
+You should describe better what this patch does. It should be repeated from
+the patch title at least.
 
-Sorry.  This is not a new bug of v3.14-rc1.  It's been there with
-v3.13-rc for a while.  It looks like there is something wrong in the
-use of power_lock in struct snd_card.  Will dig into it.
-
-Shawn
-
+> Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+> ---
+>  arch/x86/kernel/cpu/perf_event_intel_lbr.c | 21 ++++++++++++++++++++-
+>  1 file changed, 20 insertions(+), 1 deletion(-)
+>
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> index bdd8758..2137a9f 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> @@ -201,15 +201,27 @@ void intel_pmu_lbr_sched_task(struct perf_event_context *ctx, bool sched_in)
+>                 intel_pmu_lbr_reset();
+>  }
+>
+> +static inline bool branch_user_callstack(unsigned br_sel)
+> +{
+> +       return (br_sel & X86_BR_USER) && (br_sel & X86_BR_CALL_STACK);
+> +}
+> +
+>  void intel_pmu_lbr_enable(struct perf_event *event)
+>  {
+>         struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+> +       struct x86_perf_task_context *task_ctx;
+>
+>         if (!x86_pmu.lbr_nr)
+>                 return;
+>
+> +       cpuc = &__get_cpu_var(cpu_hw_events);
+> +       task_ctx = event->ctx ? event->ctx->task_ctx_data : NULL;
+> +
+>         cpuc->br_sel = event->hw.branch_reg.reg;
+>
+> +       if (branch_user_callstack(cpuc->br_sel))
+> +               task_ctx->lbr_callstack_users++;
+> +
+>         cpuc->lbr_users++;
+>         if (cpuc->lbr_users == 1)
+>                 perf_sched_cb_enable(event->ctx->pmu);
+> @@ -217,11 +229,18 @@ void intel_pmu_lbr_enable(struct perf_event *event)
+>
+>  void intel_pmu_lbr_disable(struct perf_event *event)
+>  {
+> -       struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+> +       struct cpu_hw_events *cpuc;
+> +       struct x86_perf_task_context *task_ctx;
+>
+>         if (!x86_pmu.lbr_nr)
+>                 return;
+>
+> +       cpuc = &__get_cpu_var(cpu_hw_events);
+> +       task_ctx = event->ctx ? event->ctx->task_ctx_data : NULL;
+> +
+> +       if (branch_user_callstack(cpuc->br_sel))
+> +               task_ctx->lbr_callstack_users--;
+> +
+>         cpuc->lbr_users--;
+>         WARN_ON_ONCE(cpuc->lbr_users < 0);
+>
+> --
+> 1.8.4.2
+>
