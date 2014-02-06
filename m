@@ -1,71 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756988AbaBFVe4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 16:34:56 -0500
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:53257 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756025AbaBFVey (ORCPT
+	id S1756385AbaBFVir (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 16:38:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49243 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752109AbaBFVip (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 16:34:54 -0500
+	Thu, 6 Feb 2014 16:38:45 -0500
+Date: Thu, 6 Feb 2014 13:39:53 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>,
+        Alexander Usyskin <alexander.usyskin@intel.com>
+Subject: Re: [PATCH 3.13 054/140] mei: use hbm idle state to prevent spurious
+ resets
+Message-ID: <20140206213953.GA1524@kroah.com>
+References: <20140204211036.967663852@linuxfoundation.org>
+ <20140204211038.509274283@linuxfoundation.org>
+ <1391722055.22187.7.camel@x220>
 MIME-Version: 1.0
-In-Reply-To: <20140206173158.6A2A14266DC@whiskey.americas.sgi.com>
-References: <20140206173158.6A2A14266DC@whiskey.americas.sgi.com>
-Date: Thu, 6 Feb 2014 13:34:53 -0800
-X-Google-Sender-Auth: _pz5cr3UFWa_mWLpaJ4KlNoWxvU
-Message-ID: <CA+55aFzxUtHWL1hPcNv-zUXFWzrZtKAsh_ZVotfFUvH1hqDrMg@mail.gmail.com>
-Subject: Re: [GIT PULL] XFS fix for 3.14-rc2
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Ben Myers <bpm@sgi.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        xfs@oss.sgi.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391722055.22187.7.camel@x220>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have no idea why you keep re-sending this.
+On Thu, Feb 06, 2014 at 10:27:35PM +0100, Paul Bolle wrote:
+> On Tue, 2014-02-04 at 13:10 -0800, Greg Kroah-Hartman wrote:
+> > From: Tomas Winkler <tomas.winkler@intel.com>
+> > 
+> > commit 66ae460b13c31a176b41550259683c841a62af3e upstream.
+> > 
+> > When reset is caused by hbm protocol mismatch or timeout
+> > we might end up in an endless reset loop and hbm protocol
+> > will never sync
+> > 
+> > Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+> > Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
+> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > 
+> > ---
+> >  drivers/misc/mei/hbm.c       |   19 +++++++++++++++++++
+> >  drivers/misc/mei/hbm.h       |    1 +
+> >  drivers/misc/mei/init.c      |   12 ++++++++----
+> >  drivers/misc/mei/interrupt.c |   25 +++++++++++++++----------
+> >  4 files changed, 43 insertions(+), 14 deletions(-)
+> > 
+> > --- a/drivers/misc/mei/hbm.c
+> > +++ b/drivers/misc/mei/hbm.c
+> > [...]
+> > @@ -577,6 +588,14 @@ void mei_hbm_dispatch(struct mei_device
+> >  	mei_read_slots(dev, dev->rd_msg_buf, hdr->length);
+> >  	mei_msg = (struct mei_bus_message *)dev->rd_msg_buf;
+> >  
+> > +	/* ignore spurious message and prevent reset nesting
+> > +	 * hbm is put to idle during system reset
+> > +	 */
+> > +	if (dev->hbm_state == MEI_HBM_IDLE) {
+> > +		dev_dbg(&dev->pdev->dev, "hbm: state is idle ignore spurious messages\n");
+> > +		return 0;
+> > +	}
+> > +
+> >  	switch (mei_msg->hbm_cmd) {
+> >  	case HOST_START_RES_CMD:
+> >  		version_res = (struct hbm_host_version_response *)mei_msg;
+> 
+> This chunk triggers this, obviously correct, warning:
+>     drivers/misc/mei/hbm.c: In function 'mei_hbm_dispatch':
+>     drivers/misc/mei/hbm.c:596:3: warning: 'return' with a value, in function returning void [enabled by default
+>        return 0;
+>        ^
+> 
+> I know that v3.13.2 has just been released. Would it be worth the
+> trouble to submit a clean up patch (v3.13 specific, as in v3.14-rc1 this
+> function returns int)?
 
-It got merged a week ago. See commit f1499382f114.
+Yes, feel free to send a patch to just remove the ' 0' from that return
+line and I'll queue it up.
 
-                Linus
+thanks,
 
-On Thu, Feb 6, 2014 at 9:31 AM, Ben Myers <bpm@sgi.com> wrote:
-> Hi Linus,
->
->    Please pull this xfs update for 3.14.  This is to allow logical sector sized
->    direct io on advanced format disks.  Eric expressed a desire to get this fix
->    in 3.14 because this bug affects some virtualization packages.
->
-> Thanks,
->         Ben
->
-> The following changes since commit bf3964c188d686424ff7b69a45941851b9f437f0:
->
->   Merge branch 'xfs-extent-list-locking-fixes' into for-next (2014-01-09 16:03:18 -0600)
->
-> are available in the git repository at:
->
->
->   git://oss.sgi.com/xfs/xfs.git tags/xfs-for-linus-v3.14-rc1-2
->
-> for you to fetch changes up to 7c71ee78031c248dca13fc94dea9a4cc217db6cf:
->
->   xfs: allow logical-sector sized O_DIRECT (2014-01-24 11:55:42 -0600)
->
-> ----------------------------------------------------------------
-> xfs: update #2 for v3.14-rc1
->
-> - allow logical sector sized direct io on 'advanced format' 4k/512 disk.
->
-> ----------------------------------------------------------------
-> Eric Sandeen (3):
->       xfs: clean up xfs_buftarg
->       xfs: rename xfs_buftarg structure members
->       xfs: allow logical-sector sized O_DIRECT
->
->  fs/xfs/xfs_buf.c   | 14 +++++++++-----
->  fs/xfs/xfs_buf.h   | 20 +++++++++++++++++---
->  fs/xfs/xfs_file.c  |  7 +++++--
->  fs/xfs/xfs_ioctl.c |  2 +-
->  4 files changed, 32 insertions(+), 11 deletions(-)
+greg k-h
