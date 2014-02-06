@@ -1,62 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753243AbaBFAEN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 19:04:13 -0500
-Received: from ozlabs.org ([203.10.76.45]:44569 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752571AbaBFAEM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 19:04:12 -0500
-Date: Thu, 6 Feb 2014 11:04:01 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: bad commits in the f2fs tree
-Message-Id: <20140206110401.7888b06cbd651b842404b902@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__6_Feb_2014_11_04_01_+1100_jr4GQ+Rlk6m_2+99"
+	id S1753740AbaBFAE6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 19:04:58 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:58086 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753251AbaBFAE5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 19:04:57 -0500
+X-Original-SENDERIP: 10.177.222.146
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Thu, 6 Feb 2014 09:05:04 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Greg Thelen <gthelen@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch v2] mm, compaction: avoid isolating pinned pages
+Message-ID: <20140206000504.GA17465@lge.com>
+References: <20140203095329.GH6732@suse.de>
+ <alpine.DEB.2.02.1402030231590.31061@chino.kir.corp.google.com>
+ <20140204000237.GA17331@lge.com>
+ <alpine.DEB.2.02.1402031610090.10778@chino.kir.corp.google.com>
+ <20140204015332.GA14779@lge.com>
+ <alpine.DEB.2.02.1402031755440.26347@chino.kir.corp.google.com>
+ <20140204021533.GA14924@lge.com>
+ <alpine.DEB.2.02.1402031848290.15032@chino.kir.corp.google.com>
+ <alpine.DEB.2.02.1402041842100.14045@chino.kir.corp.google.com>
+ <alpine.LSU.2.11.1402051232530.3440@eggly.anvils>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.11.1402051232530.3440@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__6_Feb_2014_11_04_01_+1100_jr4GQ+Rlk6m_2+99
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Feb 05, 2014 at 12:56:40PM -0800, Hugh Dickins wrote:
+> On Tue, 4 Feb 2014, David Rientjes wrote:
+> 
+> > Page migration will fail for memory that is pinned in memory with, for
+> > example, get_user_pages().  In this case, it is unnecessary to take
+> > zone->lru_lock or isolating the page and passing it to page migration
+> > which will ultimately fail.
+> > 
+> > This is a racy check, the page can still change from under us, but in
+> > that case we'll just fail later when attempting to move the page.
+> > 
+> > This avoids very expensive memory compaction when faulting transparent
+> > hugepages after pinning a lot of memory with a Mellanox driver.
+> > 
+> > On a 128GB machine and pinning ~120GB of memory, before this patch we
+> > see the enormous disparity in the number of page migration failures
+> > because of the pinning (from /proc/vmstat):
+> > 
+> > 	compact_pages_moved 8450
+> > 	compact_pagemigrate_failed 15614415
+> > 
+> > 0.05% of pages isolated are successfully migrated and explicitly 
+> > triggering memory compaction takes 102 seconds.  After the patch:
+> > 
+> > 	compact_pages_moved 9197
+> > 	compact_pagemigrate_failed 7
+> > 
+> > 99.9% of pages isolated are now successfully migrated in this 
+> > configuration and memory compaction takes less than one second.
+> > 
+> > Signed-off-by: David Rientjes <rientjes@google.com>
+> > ---
+> >  v2: address page count issue per Joonsoo
+> > 
+> >  mm/compaction.c | 9 +++++++++
+> >  1 file changed, 9 insertions(+)
+> > 
+> > diff --git a/mm/compaction.c b/mm/compaction.c
+> > --- a/mm/compaction.c
+> > +++ b/mm/compaction.c
+> > @@ -578,6 +578,15 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+> >  			continue;
+> >  		}
+> >  
+> > +		/*
+> > +		 * Migration will fail if an anonymous page is pinned in memory,
+> > +		 * so avoid taking lru_lock and isolating it unnecessarily in an
+> > +		 * admittedly racy check.
+> > +		 */
+> > +		if (!page_mapping(page) &&
+> > +		    page_count(page) > page_mapcount(page))
+> > +			continue;
+> > +
+> >  		/* Check if it is ok to still hold the lock */
+> >  		locked = compact_checklock_irqsave(&zone->lru_lock, &flags,
+> 
+> Much better, maybe good enough as an internal patch to fix a particular
+> problem you're seeing; but not yet good enough to go upstream.
+> 
+> Anonymous pages are not the only pages which might be pinned,
+> and your test doesn't mention PageAnon, so does not match your comment.
+> 
+> I've remembered is_page_cache_freeable() in mm/vmscan.c, which gives
+> more assurance that a page_count - page_has_private test is appropriate,
+> whatever the filesystem and migrate method to be used.
+> 
+> So I think the test you're looking for is
+> 
+> 		pincount = page_count(page) - page_mapcount(page);
+> 		if (page_mapping(page))
+> 			pincount -= 1 + page_has_private(page);
+> 		if (pincount > 0)
+> 			continue;
+> 
+> but please cross-check and test that out, it's easy to be off-by-one etc.
 
-Hi Jaegeuk,
+Hello, Hugh.
 
-Looking at the f2fs tree today, it has *copies* of several commits that
-are in Linus' tree (including b522196a6ffb "Linus 3.14-rc1" which is
-commit 38dbfb59d117 in Linus' tree).  I assume this happened when you
-tried to rewrite your tree. :-(
+I don't think that this is right.
+One of migratepage function, aio_migratepage(), pass extra count 1 to
+migrate_page_move_mapping(). So it can be migrated when pincount == 1 in
+above test.
 
-I can't use that tree, so will use the version of f2fs from next-20140105.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I think that we should not be aggressive here. This is just for prediction
+so that it is better not to skip apropriate pages at most. Just for anon case
+that we are sure easily is the right solution for me.
 
---Signature=_Thu__6_Feb_2014_11_04_01_+1100_jr4GQ+Rlk6m_2+99
-Content-Type: application/pgp-signature
+Thanks.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJS8tF1AAoJEMDTa8Ir7ZwVCi0P/jx8BpOovz5N/4lpzqHpm+x7
-RjuBVtshxfY00OT6riMM89tdsmyhUe9fLvVi3bslT428/o6Zbl60XyEJ0FHc5L8P
-ZMVlZVxIFnE2w8xXY+L2YOu/78hb1Tuume68IxVNY7sx/5F/40Bwc2j3KcmZbO3j
-7vPzJHtbvyWQ07rjIBZ07K6AzQ9+IsjvuqzvQwE8YAh94WTFLtarIliufeOmHmzw
-cXgx3cT5MsWa1bG8Y93f67JSQ6h5FiDihREAC+gcyPzJxvQ5a43xsk6T7ZFu/rjG
-sh5wd0QwF6AtNogkNiQYTXdFFuVi6vT5VSlL6Ti/kExXIxzJZjlWZ4JePu810wQf
-VnSp76gi5PproFtPhtBf+leyaPzZSKJDSnDFBgi7Cw6cPRACV5GAP+U/RKonUiiL
-plptFGbokXdaExJt71oXqoJ1ySI93pxoDSh/xoR6HOZVy9EMKHrrjPDx6NbhmfgM
-d/Up88myriQKFuwm+uPMNOC85cm3TLXp2U/3zDCCtI+6/51EcpSIzq1z0rBhqZCS
-K/n1TJdDNul/HjGajF3Lk2Vl+lrwjotu/Tp218ZuJEFNfOfevPa2jMruoQby3jZg
-Tp3Wl2eMYtcX8CY75cFtV/QRYSbwa4MB2M1plFaMqAerS5UbqCbO16Y10/lMbchx
-grN7FOQypj5c8HPCpm3P
-=jNlU
------END PGP SIGNATURE-----
-
---Signature=_Thu__6_Feb_2014_11_04_01_+1100_jr4GQ+Rlk6m_2+99--
+> 
+> For a moment I thought a PageWriteback test would be useful too,
+> but no, that should already appear in the pincount.
