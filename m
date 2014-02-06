@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754485AbaBFTVS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 14:21:18 -0500
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:44703 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751175AbaBFTVQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 14:21:16 -0500
+	id S1756802AbaBFTVt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 14:21:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22603 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755214AbaBFTVs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 14:21:48 -0500
+Date: Thu, 6 Feb 2014 17:21:31 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Stephane Eranian <eranian@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Jiri Olsa <jolsa@redhat.com>, Eric Dumazet <edumazet@google.com>
+Subject: Re: [BUG] perf top: --stdio causes continuous refresh
+Message-ID: <20140206192131.GA27665@infradead.org>
+References: <CABPqkBSkSbWvdRu3iEtNvHhfV4J4sALHvdd40hZTcGxLe576yQ@mail.gmail.com>
+ <20140206135627.GA26955@infradead.org>
+ <CABPqkBS5qLDYyyv=n8fT4K+hA3uRWYmQOZmO+n-UE9=X=cEFzQ@mail.gmail.com>
+ <20140206140705.GB26955@infradead.org>
+ <20140206140936.GC26955@infradead.org>
+ <CABPqkBRwy=0pnmm657TwV25GiYbpkqC1E8+cUGLEUbqxO=Gusw@mail.gmail.com>
+ <52F3CAE3.7060007@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <21984.1391711149@warthog.procyon.org.uk>
-References: <20140206134825.305510953@infradead.org>
-	<21984.1391711149@warthog.procyon.org.uk>
-Date: Thu, 6 Feb 2014 11:21:15 -0800
-X-Google-Sender-Auth: _cykKdiEhbSZA0WapmemLSUcDNU
-Message-ID: <CA+55aFxc+GSxP2xeS8D0p7pFuPHpk-Hs6in38cnJdNL62rxYFQ@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: David Howells <dhowells@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Will Deacon <will.deacon@arm.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        ramana.radhakrishnan@arm.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52F3CAE3.7060007@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 6, 2014 at 10:25 AM, David Howells <dhowells@redhat.com> wrote:
->
-> Is it worth considering a move towards using C11 atomics and barriers and
-> compiler intrinsics inside the kernel?  The compiler _ought_ to be able to do
-> these.
+Em Thu, Feb 06, 2014 at 10:48:19AM -0700, David Ahern escreveu:
+> On 2/6/14, 8:24 AM, Stephane Eranian wrote:
+> >On Thu, Feb 6, 2014 at 3:09 PM, Arnaldo Carvalho de Melo
+> >>>>I am using tip.git. Or try 3.11, 3.10.
+> >>
+> >>But my tests are on top of:
+> >>
+> >>[acme@ssdandy linux]$ uname -r
+> >>3.11.4-101.fc18.x86_64
+> >>
+> >>I thought it was a 3.14ish one, building one to try there...
+> >>
+> >The kernel must be 3.14-rcX, the tool can be any version.
+> 
+> 
+> I don't have time to do a git bisect, but I can narrow the window to
+> 3.13-rc6 and 3.14-rc1. Just happened to update a server yesterday.
+> perf-top --stdio runs fine on the former and shows the problem on
+> the latter.
 
-I think that's a bad idea as a generic implementation, but it's quite
-possibly worth doing on an architecture-by-architecture basis.
+Humm,
 
-The thing is, gcc builtins sometimes suck. Sometimes it's because
-certain architectures want particular gcc versions that don't do a
-good job, sometimes it's because the architecture doesn't lend itself
-to doing what we want done and we end up better off with some tweaked
-thing, sometimes it's because the language feature is just badly
-designed. I'm not convinced that the C11 people got things right.
+                /*
+                 * Either timeout expired or we got an EINTR due to
+                 * SIGWINCH, refresh screen in both cases.
+                 */
+                switch (poll(&stdin_poll, 1, delay_msecs)) {
 
-But in specific cases, maybe the architecture wants to use the
-builtin. And the gcc version checks are likely to be
-architecture-specific for a longish while. So some particular
-architectures might want to use them, but I really doubt it makes
-sense to make it the default with arch overrides.
+And poll is returning 1:
 
-                Linus
+   951.068 ( 0.002 ms): poll(ufds: 0x7ff660befbb0, nfds: 1, timeout_msecs: 2000) = 1
+
+Checking...
+
+- Arnaldo
