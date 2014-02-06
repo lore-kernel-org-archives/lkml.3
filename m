@@ -1,196 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755486AbaBFQlj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 11:41:39 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:46962 "EHLO mx2.suse.de"
+	id S1755709AbaBFQlo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 11:41:44 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:58118 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752232AbaBFQli (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 11:41:38 -0500
-Date: Thu, 6 Feb 2014 17:41:35 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: akpm@linux-foundation.org, rientjes@google.com, penberg@kernel.org,
-        cl@linux.com, glommer@gmail.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@openvz.org
-Subject: Re: [PATCH v2 3/7] memcg, slab: separate memcg vs root cache
- creation paths
-Message-ID: <20140206164135.GK20269@dhcp22.suse.cz>
-References: <cover.1391441746.git.vdavydov@parallels.com>
- <81a403327163facea2b4c7b720fdc0ef62dd1dbf.1391441746.git.vdavydov@parallels.com>
- <20140204160336.GL4890@dhcp22.suse.cz>
- <52F13D3C.801@parallels.com>
+	id S1752796AbaBFQll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 11:41:41 -0500
+Date: Thu, 6 Feb 2014 11:41:36 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: mmotm 2014-02-05 list_lru_add lockdep splat
+Message-ID: <20140206164136.GC6963@cmpxchg.org>
+References: <alpine.LSU.2.11.1402051944210.27326@eggly.anvils>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52F13D3C.801@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LSU.2.11.1402051944210.27326@eggly.anvils>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 04-02-14 23:19:24, Vladimir Davydov wrote:
-> On 02/04/2014 08:03 PM, Michal Hocko wrote:
-> > On Mon 03-02-14 19:54:38, Vladimir Davydov wrote:
-> >> Memcg-awareness turned kmem_cache_create() into a dirty interweaving of
-> >> memcg-only and except-for-memcg calls. To clean this up, let's create a
-> >> separate function handling memcg caches creation. Although this will
-> >> result in the two functions having several hunks of practically the same
-> >> code, I guess this is the case when readability fully covers the cost of
-> >> code duplication.
-> > I don't know. The code is apparently cleaner because calling a function
-> > with NULL memcg just to go via several if (memcg) branches is ugly as
-> > hell. But having a duplicated function like this calls for a problem
-> > later.
-> >
-> > Would it be possible to split kmem_cache_create into memcg independant
-> > part and do the rest in a single memcg branch?
-> 
-> May be, something like the patch attached?
-> 
-> >  
-> >> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-> >> ---
-> >>  include/linux/memcontrol.h |   14 ++---
-> >>  include/linux/slab.h       |    9 ++-
-> >>  mm/memcontrol.c            |   16 ++----
-> >>  mm/slab_common.c           |  130 ++++++++++++++++++++++++++------------------
-> >>  4 files changed, 90 insertions(+), 79 deletions(-)
-> >>
-> >> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> >> index 84e4801fc36c..de79a9617e09 100644
-> >> --- a/include/linux/memcontrol.h
-> >> +++ b/include/linux/memcontrol.h
-> >> @@ -500,8 +500,8 @@ int memcg_cache_id(struct mem_cgroup *memcg);
-> >>  
-> >>  char *memcg_create_cache_name(struct mem_cgroup *memcg,
-> >>  			      struct kmem_cache *root_cache);
-> >> -int memcg_alloc_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
-> >> -			     struct kmem_cache *root_cache);
-> >> +int memcg_alloc_cache_params(struct kmem_cache *s,
-> >> +		struct mem_cgroup *memcg, struct kmem_cache *root_cache);
-> > Why is the parameters ordering changed? It really doesn't help
-> > review the patch.
-> 
-> Oh, this is because seeing something like
-> 
-> memcg_alloc_cache_params(NULL, s, NULL);
-> 
-> hurts my brain :-) I prefer to have NULLs in the end.
+Hi Hugh,
 
-the function still allocates parameters for the given memcg and cache
-and needs a reference to root cache so the ordering kind of makes sense
-to me.
+On Wed, Feb 05, 2014 at 07:50:10PM -0800, Hugh Dickins wrote:
+> ======================================================
+> [ INFO: SOFTIRQ-safe -> SOFTIRQ-unsafe lock order detected ]
+> 3.14.0-rc1-mm1 #1 Not tainted
+> ------------------------------------------------------
+> kswapd0/48 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
+>  (&(&lru->node[i].lock)->rlock){+.+.-.}, at: [<ffffffff81117064>] list_lru_add+0x80/0xf4
+> 
+> s already holding:
+>  (&(&mapping->tree_lock)->rlock){..-.-.}, at: [<ffffffff81108c63>] __remove_mapping+0x3b/0x12d
+> which would create a new lock dependency:
+>  (&(&mapping->tree_lock)->rlock){..-.-.} -> (&(&lru->node[i].lock)->rlock){+.+.-.}
+
+Thanks for the report.  The first time I saw this on my own machine, I
+misinterpreted it as a false positive (could have sworn the "possible
+unsafe scenario" section looked different, too).
+
+Looking at it again, there really is a deadlock scenario when the
+shadow shrinker races with a page cache insertion or deletion and is
+interrupted by the IO completion handler while holding the list_lru
+lock:
+
+>  Possible interrupt unsafe locking scenario:
+> 
+>        CPU0                    CPU1
+>        ----                    ----
+>   lock(&(&lru->node[i].lock)->rlock);
+>                                local_irq_disable();
+>                                lock(&(&mapping->tree_lock)->rlock);
+>                                lock(&(&lru->node[i].lock)->rlock);
+>   <Interrupt>
+>     lock(&(&mapping->tree_lock)->rlock);
+
+Could you please try with the following patch?
+
+---
+From: Johannes Weiner <hannes@cmpxchg.org>
+Subject: [patch] mm: keep page cache radix tree nodes in check fix
+
+Hugh Dickin reports the following lockdep splat:
+
+======================================================
+[ INFO: SOFTIRQ-safe -> SOFTIRQ-unsafe lock order detected ]
+3.14.0-rc1-mm1 #1 Not tainted
+------------------------------------------------------
+kswapd0/48 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
+ (&(&lru->node[i].lock)->rlock){+.+.-.}, at: [<ffffffff81117064>] list_lru_add+0x80/0xf4
+
+s already holding:
+ (&(&mapping->tree_lock)->rlock){..-.-.}, at: [<ffffffff81108c63>] __remove_mapping+0x3b/0x12d
+which would create a new lock dependency:
+ (&(&mapping->tree_lock)->rlock){..-.-.} -> (&(&lru->node[i].lock)->rlock){+.+.-.}
+
+lru->node[i].lock nests inside the mapping->tree_lock when page cache
+insertions and deletions add or remove radix tree nodes to the shadow
+LRU list.
+
+However, paths that only hold the IRQ-unsafe lru->node[i].lock, like
+the shadow shrinker, can be interrupted at any time by the IO
+completion handler, which in turn acquires the mapping->tree_lock.
+This is a simple locking order inversion and can deadlock like so:
+
+CPU#0: shadow shrinker          CPU#1: page cache modification
+lru->node[i].lock
+                                mapping->tree_lock
+                                lru->node[i].lock
+<interrupt>
+mapping->tree_lock
+
+Make the shadow lru->node[i].lock IRQ-safe to remove the order
+dictated by interruption.  This slightly increases the IRQ-disabled
+section in the shadow shrinker, but it still drops all locks and
+enables IRQ after every reclaimed shadow radix tree node.
+
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ include/linux/list_lru.h |  6 +++++-
+ mm/list_lru.c            |  4 +++-
+ mm/workingset.c          | 24 ++++++++++++++++++++----
+ 3 files changed, 28 insertions(+), 6 deletions(-)
+
+diff --git a/include/linux/list_lru.h b/include/linux/list_lru.h
+index b02fc233eadd..f3434533fbf8 100644
+--- a/include/linux/list_lru.h
++++ b/include/linux/list_lru.h
+@@ -34,7 +34,11 @@ struct list_lru {
+ };
  
-> > Also what does `s' stand for and can we use a more
-> > descriptive name, please?
-> 
-> Yes, we can call it `cachep', but it would be too long :-/
-> 
-> `s' is the common name for a kmem_cache throughout mm/sl[au]b.c so I
-> guess it fits here. However, this function certainly needs a comment - I
-> guess I'll do it along with swapping the function parameters in a
-> separate patch.
-
-Yes, it seems that self explaining `s' is spread all over the place.
-
-> From 55f0916c794ad25a8bf45566f6d333bea956e0d4 Mon Sep 17 00:00:00 2001
-> From: Vladimir Davydov <vdavydov@parallels.com>
-> Date: Mon, 3 Feb 2014 19:18:22 +0400
-> Subject: [PATCH] memcg, slab: separate memcg vs root cache creation paths
-> 
-> Memcg-awareness turned kmem_cache_create() into a dirty interweaving of
-> memcg-only and except-for-memcg calls. To clean this up, let's create a
-> separate function handling memcg caches creation. Although this will
-> result in the two functions having several hunks of practically the same
-> code, I guess this is the case when readability fully covers the cost of
-> code duplication.
-> 
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-
-This looks better. The naming could still be little bit better because
-do_kmem_cache_create suggests that no memcg is involved but it at least
-reduced all the code duplication and nasty if(memcg) parts.
-
-Few minor comments bellow
-
-> ---
->  include/linux/slab.h |    9 ++-
->  mm/memcontrol.c      |   12 +---
->  mm/slab_common.c     |  174 +++++++++++++++++++++++++++-----------------------
->  3 files changed, 101 insertions(+), 94 deletions(-)
-> 
-> diff --git a/include/linux/slab.h b/include/linux/slab.h
-> index 9260abdd67df..e8c95d0bb879 100644
-> --- a/include/linux/slab.h
-> +++ b/include/linux/slab.h
-> @@ -113,11 +113,10 @@ void __init kmem_cache_init(void);
->  int slab_is_available(void);
->  
->  struct kmem_cache *kmem_cache_create(const char *, size_t, size_t,
-> -			unsigned long,
-> -			void (*)(void *));
-> -struct kmem_cache *
-> -kmem_cache_create_memcg(struct mem_cgroup *, const char *, size_t, size_t,
-> -			unsigned long, void (*)(void *), struct kmem_cache *);
-> +				     unsigned long, void (*)(void *));
-
-It is quite confusing when you mix formatting changes with other ones.
-
-[...]
-> diff --git a/mm/slab_common.c b/mm/slab_common.c
-> index 11857abf7057..6bee919ece80 100644
-> --- a/mm/slab_common.c
-> +++ b/mm/slab_common.c
-[...]
-> +int kmem_cache_create_memcg(struct mem_cgroup *memcg, struct kmem_cache *cachep)
->  {
-> -	return kmem_cache_create_memcg(NULL, name, size, align, flags, ctor, NULL);
-> +	struct kmem_cache *s;
-> +	int err;
-> +
-> +	get_online_cpus();
-> +	mutex_lock(&slab_mutex);
-> +
-> +	/*
-> +	 * Since per-memcg caches are created asynchronously on first
-> +	 * allocation (see memcg_kmem_get_cache()), several threads can try to
-> +	 * create the same cache, but only one of them may succeed.
-> +	 */
-> +	err = -EEXIST;
-
-Does it make any sense to report the error here? If we are racing then at
-least on part wins and the work is done.
-We should probably warn about errors which prevent from accounting but
-I do not think there is much more we can do so returning an error code
-from this function seems pointless. memcg_create_cache_work_func ignores
-the return value anyway.
-
-> +	if (cache_from_memcg_idx(cachep, memcg_cache_id(memcg)))
-> +		goto out_unlock;
-> +
-> +	s = do_kmem_cache_create(memcg_create_cache_name(memcg, cachep),
-> +			cachep->object_size, cachep->size, cachep->align,
-> +			cachep->flags & ~SLAB_PANIC, cachep->ctor,
-> +			memcg, cachep);
-> +	err = IS_ERR(s) ? PTR_ERR(s) : 0;
-> +	if (!err)
-> +		s->allocflags |= __GFP_KMEMCG;
-> +
-> +out_unlock:
-> +	mutex_unlock(&slab_mutex);
-> +	put_online_cpus();
-> +	return err;
->  }
-> -EXPORT_SYMBOL(kmem_cache_create);
-> +#endif /* CONFIG_MEMCG_KMEM */
->  
->  void kmem_cache_destroy(struct kmem_cache *s)
->  {
-> -- 
-> 1.7.10.4
-> 
-
-
+ void list_lru_destroy(struct list_lru *lru);
+-int list_lru_init(struct list_lru *lru);
++int list_lru_init_key(struct list_lru *lru, struct lock_class_key *key);
++static inline int list_lru_init(struct list_lru *lru)
++{
++	return list_lru_init_key(lru, NULL);
++}
+ 
+ /**
+  * list_lru_add: add an element to the lru list's tail
+diff --git a/mm/list_lru.c b/mm/list_lru.c
+index 7f5b73e2513b..2a5b8fd45669 100644
+--- a/mm/list_lru.c
++++ b/mm/list_lru.c
+@@ -124,7 +124,7 @@ restart:
+ }
+ EXPORT_SYMBOL_GPL(list_lru_walk_node);
+ 
+-int list_lru_init(struct list_lru *lru)
++int list_lru_init_key(struct list_lru *lru, struct lock_class_key *key)
+ {
+ 	int i;
+ 	size_t size = sizeof(*lru->node) * nr_node_ids;
+@@ -136,6 +136,8 @@ int list_lru_init(struct list_lru *lru)
+ 	nodes_clear(lru->active_nodes);
+ 	for (i = 0; i < nr_node_ids; i++) {
+ 		spin_lock_init(&lru->node[i].lock);
++		if (key)
++			lockdep_set_class(&lru->node[i].lock, key);
+ 		INIT_LIST_HEAD(&lru->node[i].list);
+ 		lru->node[i].nr_items = 0;
+ 	}
+diff --git a/mm/workingset.c b/mm/workingset.c
+index 33429c7ddec5..20aa16754305 100644
+--- a/mm/workingset.c
++++ b/mm/workingset.c
+@@ -273,7 +273,10 @@ static unsigned long count_shadow_nodes(struct shrinker *shrinker,
+ 	unsigned long max_nodes;
+ 	unsigned long pages;
+ 
++	local_irq_disable();
+ 	shadow_nodes = list_lru_count_node(&workingset_shadow_nodes, sc->nid);
++	local_irq_enable();
++
+ 	pages = node_present_pages(sc->nid);
+ 	/*
+ 	 * Active cache pages are limited to 50% of memory, and shadow
+@@ -322,7 +325,7 @@ static enum lru_status shadow_lru_isolate(struct list_head *item,
+ 	mapping = node->private_data;
+ 
+ 	/* Coming from the list, invert the lock order */
+-	if (!spin_trylock_irq(&mapping->tree_lock)) {
++	if (!spin_trylock(&mapping->tree_lock)) {
+ 		spin_unlock(lru_lock);
+ 		ret = LRU_RETRY;
+ 		goto out;
+@@ -355,10 +358,12 @@ static enum lru_status shadow_lru_isolate(struct list_head *item,
+ 	if (!__radix_tree_delete_node(&mapping->page_tree, node))
+ 		BUG();
+ 
+-	spin_unlock_irq(&mapping->tree_lock);
++	spin_unlock(&mapping->tree_lock);
+ 	ret = LRU_REMOVED_RETRY;
+ out:
++	local_irq_enable();
+ 	cond_resched();
++	local_irq_disable();
+ 	spin_lock(lru_lock);
+ 	return ret;
+ }
+@@ -366,8 +371,13 @@ out:
+ static unsigned long scan_shadow_nodes(struct shrinker *shrinker,
+ 				       struct shrink_control *sc)
+ {
+-	return list_lru_walk_node(&workingset_shadow_nodes, sc->nid,
++	unsigned long ret;
++
++	local_irq_disable();
++	ret =  list_lru_walk_node(&workingset_shadow_nodes, sc->nid,
+ 				  shadow_lru_isolate, NULL, &sc->nr_to_scan);
++	local_irq_enable();
++	return ret;
+ }
+ 
+ static struct shrinker workingset_shadow_shrinker = {
+@@ -377,11 +387,17 @@ static struct shrinker workingset_shadow_shrinker = {
+ 	.flags = SHRINKER_NUMA_AWARE,
+ };
+ 
++/*
++ * Our list_lru->lock is IRQ-safe as it nests inside the IRQ-safe
++ * mapping->tree_lock.
++ */
++static struct lock_class_key shadow_nodes_key;
++
+ static int __init workingset_init(void)
+ {
+ 	int ret;
+ 
+-	ret = list_lru_init(&workingset_shadow_nodes);
++	ret = list_lru_init_key(&workingset_shadow_nodes, &shadow_nodes_key);
+ 	if (ret)
+ 		goto err;
+ 	ret = register_shrinker(&workingset_shadow_shrinker);
 -- 
-Michal Hocko
-SUSE Labs
+1.8.5.3
+
