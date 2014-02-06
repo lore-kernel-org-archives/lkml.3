@@ -1,102 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756119AbaBFPq0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 10:46:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45932 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752026AbaBFPqY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 10:46:24 -0500
-Message-ID: <52F3AE4F.8060504@suse.de>
-Date: Thu, 06 Feb 2014 16:46:23 +0100
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1756187AbaBFPqu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 10:46:50 -0500
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:43503 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751611AbaBFPqs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 10:46:48 -0500
 MIME-Version: 1.0
-To: David Herrmann <dh.herrmann@gmail.com>
-CC: systemd Mailing List <systemd-devel@lists.freedesktop.org>,
-        Kay Sievers <kay@vrfy.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [systemd-devel] [PATCH] tty: Set correct tty name in 'active'
- sysfs attribute
-References: <1391595106-86957-1-git-send-email-hare@suse.de> <CANq1E4QM-SwAhBmgGgmKjAHaKW-QZ7GPBkKyrv_=ek1CFmRWEw@mail.gmail.com>
-In-Reply-To: <CANq1E4QM-SwAhBmgGgmKjAHaKW-QZ7GPBkKyrv_=ek1CFmRWEw@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1388728091-18564-13-git-send-email-zheng.z.yan@intel.com>
+References: <1388728091-18564-1-git-send-email-zheng.z.yan@intel.com>
+	<1388728091-18564-13-git-send-email-zheng.z.yan@intel.com>
+Date: Thu, 6 Feb 2014 16:46:47 +0100
+Message-ID: <CABPqkBSdwwFrDrCZXgVg58poQQwY77jtkaKNAkpH8Zqg4SSRRQ@mail.gmail.com>
+Subject: Re: [PATCH 12/14] perf, x86: use LBR call stack to get user callchain
+From: Stephane Eranian <eranian@google.com>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/05/2014 01:53 PM, David Herrmann wrote:
-> Hi
-> 
-> On Wed, Feb 5, 2014 at 11:11 AM, Hannes Reinecke <hare@suse.de> wrote:
->> The 'active' sysfs attribute should refer to the currently
->> active tty devices the console is running on, not the currently
->> active console.
->> The console structure doesn't refer to any device in sysfs,
->> only the tty the console is running on has.
->> So we need to print out the tty names in 'active', not
->> the console names.
->>
->> Cc: Lennart Poettering <lennart@poettering.net>
->> Cc: Kay Sievers <kay@vrfy.org>
->> Signed-off-by: Werner Fink <werner@suse.de>
->> Signed-off-by: Hannes Reinecke <hare@suse.de>
->> ---
->>  drivers/tty/tty_io.c | 14 ++++++++++++--
->>  1 file changed, 12 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
->> index c74a00a..17db8ca 100644
->> --- a/drivers/tty/tty_io.c
->> +++ b/drivers/tty/tty_io.c
->> @@ -3545,9 +3545,19 @@ static ssize_t show_cons_active(struct device *dev,
->>                 if (i >= ARRAY_SIZE(cs))
->>                         break;
->>         }
->> -       while (i--)
->> +       while (i--) {
->> +               const struct tty_driver *driver;
->> +               const char *name = cs[i]->name;
->> +               int index = cs[i]->index;
->> +
->> +               driver = cs[i]->device(cs[i], &index);
->> +               if (driver) {
->> +                       index += driver->name_base;
->> +                       name = driver->name;
->> +               }
->>                 count += sprintf(buf + count, "%s%d%c",
->> -                                cs[i]->name, cs[i]->index, i ? ' ':'\n');
->> +                                name, index, i ? ' ':'\n');
->> +       }
-> 
-> Nice catch and indeed, systemd already relies on these names to be
-> identical to their char-dev name. Fortunately, VTs and most serial
-> devices register the console with the same name as the TTY, so we're
-> fine.
-> Two minor nitpicks:
-> 1) Could you use tty_line_name() instead of sprintf()? It's in the
-> same file and avoids duplicating the name_base logic.
-Ok. Not that it makes the patch nicer, but hey.
+On Fri, Jan 3, 2014 at 6:48 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+> Haswell has a new feature that utilizes the existing Last Branch Record
+> facility to record call chains. When the feature is enabled, function
+> call will be collected as normal, but as return instructions are executed
+> the last captured branch record is popped from the on-chip LBR registers.
+> The LBR call stack facility can help perf to get call chains of progam
+> without frame pointer.
+>
+> This patch makes x86's perf_callchain_user() failback to LBR callstack
+> when there is no frame pointer in the user program.
+>
+> Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+> ---
+>  arch/x86/kernel/cpu/perf_event.c           | 33 ++++++++++++++++++++++++++----
+>  arch/x86/kernel/cpu/perf_event_intel.c     | 11 +++++++++-
+>  arch/x86/kernel/cpu/perf_event_intel_lbr.c |  2 ++
+>  include/linux/perf_event.h                 |  1 +
+>  4 files changed, 42 insertions(+), 5 deletions(-)
+>
+> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+> index 49128e6..1509340 100644
+> --- a/arch/x86/kernel/cpu/perf_event.c
+> +++ b/arch/x86/kernel/cpu/perf_event.c
+> @@ -1965,12 +1965,28 @@ static unsigned long get_segment_base(unsigned int segment)
+>         return get_desc_base(desc + idx);
+>  }
+>
+> +static inline void
+> +perf_callchain_lbr_callstack(struct perf_callchain_entry *entry,
+> +                            struct perf_sample_data *data)
+> +{
+> +       struct perf_branch_stack *br_stack = data->br_stack;
+> +
+> +       if (br_stack && br_stack->user_callstack) {
+> +               int i = 0;
+> +               while (i < br_stack->nr && entry->nr < PERF_MAX_STACK_DEPTH) {
+> +                       perf_callchain_store(entry, br_stack->entries[i].from);
+> +                       i++;
+> +               }
+> +       }
+> +}
+> +
+>  #ifdef CONFIG_COMPAT
+>
+>  #include <asm/compat.h>
+>
+>  static inline int
+> -perf_callchain_user32(struct pt_regs *regs, struct perf_callchain_entry *entry)
+> +perf_callchain_user32(struct perf_callchain_entry *entry,
+> +                     struct pt_regs *regs, struct perf_sample_data *data)
+>  {
+>         /* 32-bit process in 64-bit kernel. */
+>         unsigned long ss_base, cs_base;
+> @@ -1999,11 +2015,16 @@ perf_callchain_user32(struct pt_regs *regs, struct perf_callchain_entry *entry)
+>                 perf_callchain_store(entry, cs_base + frame.return_address);
+>                 fp = compat_ptr(ss_base + frame.next_frame);
+>         }
+> +
+> +       if (fp == compat_ptr(regs->bp))
+> +               perf_callchain_lbr_callstack(entry, data);
+> +
+>         return 1;
+>  }
+>  #else
+>  static inline int
+> -perf_callchain_user32(struct pt_regs *regs, struct perf_callchain_entry *entry)
+> +perf_callchain_user32(struct perf_callchain_entry *entry,
+> +                     struct pt_regs *regs, struct perf_sample_data *data)
+>  {
+>      return 0;
+>  }
+> @@ -2033,12 +2054,12 @@ void perf_callchain_user(struct perf_callchain_entry *entry,
+>         if (!current->mm)
+>                 return;
+>
+> -       if (perf_callchain_user32(regs, entry))
+> +       if (perf_callchain_user32(entry, regs, data))
+>                 return;
+>
+>         while (entry->nr < PERF_MAX_STACK_DEPTH) {
+>                 unsigned long bytes;
+> -               frame.next_frame             = NULL;
+> +               frame.next_frame = NULL;
+>                 frame.return_address = 0;
+>
+>                 bytes = copy_from_user_nmi(&frame, fp, sizeof(frame));
+> @@ -2051,6 +2072,10 @@ void perf_callchain_user(struct perf_callchain_entry *entry,
+>                 perf_callchain_store(entry, frame.return_address);
+>                 fp = frame.next_frame;
+>         }
+> +
+> +       /* try LBR callstack if there is no frame pointer */
+> +       if (fp == (void __user *)regs->bp)
+> +               perf_callchain_lbr_callstack(entry, data);
+>  }
+>
+>  /*
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+> index 722171c..8b7465c 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+> @@ -1030,6 +1030,14 @@ static __initconst const u64 slm_hw_cache_event_ids
+>   },
+>  };
+>
+> +static inline bool intel_pmu_needs_lbr_callstack(struct perf_event *event)
+> +{
+> +       if ((event->attr.sample_type & PERF_SAMPLE_CALLCHAIN) &&
+> +           (event->attr.branch_sample_type & PERF_SAMPLE_BRANCH_CALL_STACK))
+> +               return true;
+> +       return false;
+> +}
+> +
+>  static void intel_pmu_disable_all(void)
+>  {
+>         struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+> @@ -1398,7 +1406,8 @@ again:
+>
+>                 perf_sample_data_init(&data, 0, event->hw.last_period);
+>
+> -               if (has_branch_stack(event))
+> +               if (has_branch_stack(event) ||
+> +                   (event->ctx->task && intel_pmu_needs_lbr_callstack(event)))
 
-> 2) Does it make sense to print the console-name if ->device() returns
-> NULL? Seems weird if we print console-names and tty-names in the same
-> attribute. It's unlikely that it causes problems, but there might be
-> conflicts.
-> 
-This is basically a fallback; this is the old behaviour, which still
-might be called for when coming across a tty which just has a stub
-for the ->device callback.
-It's not that the '->device' callback is used that frequently, so I
-wouldn't be surprised here.
+Isn't event->ctx->task redundant here. I thought you were already allowing
+LBR_CALLSTACK only for per-process events. That should be checked during
+setup, no need to do it for each interrupt.
 
-Meanwhile I've sent a new patch, reviews are welcome there.
+Also it would be nicer to have:
+        if (needs_lbr_stack(event))
+                          data.br_stack = &cpuc->lbr_stack;
 
-Cheers,
+And you'd hide the two tests in that needs_lbr_stack() inline:
+   has_branch_stack() and has_lbr_callstack().
 
-Hannes
--- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
+That would be better for the eyes....
+
+
+>
+>                 if (perf_event_overflow(event, &data, regs))
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> index 51e1842..08e3ba1 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> @@ -718,6 +718,8 @@ intel_pmu_lbr_filter(struct cpu_hw_events *cpuc)
+>         int i, j, type;
+>         bool compress = false;
+>
+> +       cpuc->lbr_stack.user_callstack = branch_user_callstack(br_sel);
+> +
+>         /* if sampling all branches, then nothing to filter */
+>         if ((br_sel & X86_BR_ALL) == X86_BR_ALL)
+>                 return;
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index c442276..d2f0488 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -74,6 +74,7 @@ struct perf_raw_record {
+>   * recent branch.
+>   */
+>  struct perf_branch_stack {
+> +       bool                            user_callstack;
+>         __u64                           nr;
+>         struct perf_branch_entry        entries[0];
+>  };
+> --
+> 1.8.4.2
+>
