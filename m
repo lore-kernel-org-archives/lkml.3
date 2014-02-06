@@ -1,280 +1,581 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754811AbaBFGEQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 01:04:16 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:14638 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751189AbaBFGEO (ORCPT
+	id S1752058AbaBFGM5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 01:12:57 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:65236 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751619AbaBFGMy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 01:04:14 -0500
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfee691-b7efc6d0000039d3-76-52f325db5f69
-Content-transfer-encoding: 8BIT
-Message-id: <1391666564.25542.78.camel@kjgkr>
-Subject: Re: f2fs: f2fs unmount hangs if f2fs_init_acl() fails during mkdir
- syscall
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Reply-to: jaegeuk.kim@samsung.com
-To: Andrey Tsyvarev <tsyvarev@ispras.ru>
-Cc: linux-f2fs-devel@lists.sourceforge.net,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Thu, 06 Feb 2014 15:02:44 +0900
-In-reply-to: <52F320FC.50803@ispras.ru>
-References: <52F320FC.50803@ispras.ru>
-Organization: Samsung
-X-Mailer: Evolution 3.2.3-0ubuntu6
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEIsWRmVeSWpSXmKPExsVy+t8zfd07qp+DDJrNLC4tcre4vGsOm8Xy
-	y3EOzB4z/k1l9Ni94DOTx+dNcgHMUVw2Kak5mWWpRfp2CVwZF649Zi745VTx+2J9A+Nh0y5G
-	Tg4JAROJ0/+mMULYYhIX7q1n62Lk4hASWMYosf/VczaYotenprBCJKYzSjT+uMQEkuAVEJT4
-	MfkeSxcjBwezgLzEkUvZIGFmAXWJSfMWMUPUv2SU2Hd3CzNEva7Ehnk9rCC2sECoRMOSq+wg
-	vWwC2hKb9xuAhIUEFCXe7r8LViIioCGxeuZPJoiZkRL9UxaC2SwCqhIHP78CszmBdr15t4AV
-	oldNonX3D7Cb+QVEJQ4v3M4Mcb+SxO72TnaQeyQEdrFLHL3cyAwxSEDi2+RDYPdLCMhKbDoA
-	VS8pcXDFDZYJjBKzkHw5C+HLWUi+XMDIvIpRNLUguaA4Kb3IVK84Mbe4NC9dLzk/dxMjJL4m
-	7mC8f8D6EGMy0MaJzFKiyfnA+MwriTc0NjOyMDUxNTYytzQjTVhJnDf9UVKQkEB6Yklqdmpq
-	QWpRfFFpTmrxIUYmDk6pBsbib06rpGsO+06QmvQ7fkvZGuZraxJf7n/aVad091fviWff7V4J
-	rPj5rUe1pOats3J7y4UcG16ZZp+VmuaaFypWJ3xb9/+WqMOEh5tv7uv+UvpKx/GIcPilkg3L
-	2dPc/tX8vDvt0aHnxtf2W8y8z1/unbqi9OcU16Dl8/10H/JvDUjzDriyKeeREktxRqKhFnNR
-	cSIA2/ZuKcUCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAKsWRmVeSWpSXmKPExsVy+t9jQd3bqp+DDF5vtbC4tMjd4vKuOWwW
-	yy/HOTB7zPg3ldFj94LPTB6fN8kFMEc1MNpkpCampBYppOYl56dk5qXbKnkHxzvHm5oZGOoa
-	WlqYKynkJeam2iq5+AToumXmAO1RUihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesbEgTXY2SA
-	BhLWMWZcuPaYueCXU8Xvi/UNjIdNuxg5OSQETCRen5rCCmGLSVy4t56ti5GLQ0hgOqNE449L
-	TCAJXgFBiR+T77F0MXJwMAvISxy5lA0SZhZQl5g0bxEzRP1LRol9d7cwQ9TrSmyY1wM2VFgg
-	VKJhyVV2kF42AW2JzfsNQMJCAooSb/ffBSsREdCQWD3zJxPEzEiJ/ikLwWwWAVWJg59fgdmc
-	QLvevFvACtGrJtG6+wcbiM0vICpxeOF2Zoj7lSR2t3eyT2AUmoXk6lkIV89CcvUCRuZVjKKp
-	BckFxUnpuUZ6xYm5xaV56XrJ+bmbGMHx+0x6B+OqBotDjAIcjEo8vBvWfwoSYk0sK67MPcQo
-	wcGsJMJ78TlQiDclsbIqtSg/vqg0J7X4EGMy0OETmaVEk/OBqSWvJN7Q2MTMyNLIzMLIxNyc
-	NGElcd6DrdaBQgLpiSWp2ampBalFMFuYODilGhhtP0z3WXsujU/a7+2XCY8eub1P+Wzx7OCx
-	+YV/XK+zsew6OSdt/+qkueYsDll7lj/K92QPW8+80i9frOj1Ia6SkPtbT828cNYhMfFm/P/I
-	LXMUbFdcqX8mctPUWkrj2aXuzrobDe5d7To+JyTj/1ZvsXQRVNHuOzt923LLrTaOJzzlGzUV
-	TiYosRRnJBpqMRcVJwIAeEZdtyMDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 6 Feb 2014 01:12:54 -0500
+X-Originating-IP: 108.223.40.66
+Message-ID: <52F327E5.7070507@roeck-us.net>
+Date: Wed, 05 Feb 2014 22:12:53 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Andrew Chew <achew@nvidia.com>, wim@iguana.be, rob@landley.net,
+        swarren@wwwdotorg.org, thierry.reding@gmail.com,
+        grant.likely@linaro.org, robh+dt@kernel.org, abrestic@chromium.org,
+        dgreid@chromium.org, katierh@chromium.org
+CC: linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH v3 1/1] watchdog: Add tegra watchdog
+References: <1391657913-28608-1-git-send-email-achew@nvidia.com>
+In-Reply-To: <1391657913-28608-1-git-send-email-achew@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 02/05/2014 07:38 PM, Andrew Chew wrote:
+> Add a driver for the hardware watchdogs in NVIDIA Tegra SoCs (Tegra30 and
+> later).  This driver will configure one watchdog timer that will reset the
+> system in the case of a watchdog timeout.
+>
+> This driver binds to the nvidia,tegra30-timer device node and gets its
+> register base from there.
+>
+> Signed-off-by: Andrew Chew <achew@nvidia.com>
+> ---
+> Changes from V2:
+>
+> Applied all of Stephen Warren's comments.
+> Modified suspend callback by only stopping the watchdog timer if it was
+> currently active.
+> Added some logging during suspend/resume.
+>
+>   Documentation/watchdog/watchdog-parameters.txt |   5 +
+>   drivers/watchdog/Kconfig                       |  11 +
+>   drivers/watchdog/Makefile                      |   1 +
+>   drivers/watchdog/tegra_wdt.c                   | 371 +++++++++++++++++++++++++
+>   4 files changed, 388 insertions(+)
+>   create mode 100644 drivers/watchdog/tegra_wdt.c
+>
+> diff --git a/Documentation/watchdog/watchdog-parameters.txt b/Documentation/watchdog/watchdog-parameters.txt
+> index f9492fe..b39f355 100644
+> --- a/Documentation/watchdog/watchdog-parameters.txt
+> +++ b/Documentation/watchdog/watchdog-parameters.txt
+> @@ -325,6 +325,11 @@ soft_noboot: Softdog action, set to 1 to ignore reboots, 0 to reboot
+>   stmp3xxx_wdt:
+>   heartbeat: Watchdog heartbeat period in seconds from 1 to 4194304, default 19
+>   -------------------------------------------------
+> +tegra_wdt:
+> +heartbeat: Watchdog heartbeats in seconds. (default = 120)
+> +nowayout: Watchdog cannot be stopped once started
+> +	(default=kernel config parameter)
+> +-------------------------------------------------
+>   ts72xx_wdt:
+>   timeout: Watchdog timeout in seconds. (1 <= timeout <= 8, default=8)
+>   nowayout: Disable watchdog shutdown on close
+> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+> index 4c4c566..3aae2da 100644
+> --- a/drivers/watchdog/Kconfig
+> +++ b/drivers/watchdog/Kconfig
+> @@ -420,6 +420,17 @@ config SIRFSOC_WATCHDOG
+>   	  Support for CSR SiRFprimaII and SiRFatlasVI watchdog. When
+>   	  the watchdog triggers the system will be reset.
+>
+> +config TEGRA_WATCHDOG
+> +	tristate "Tegra watchdog"
+> +	depends on ARCH_TEGRA || COMPILE_TEST
 
-Thank you for the test and valuable report.
+Hope you tested this on a couple of platforms ?
 
-This bug was fixed recently by:
+> +	select WATCHDOG_CORE
+> +	help
+> +	  Say Y here to include support for the watchdog timer
+> +	  embedded in NVIDIA Tegra SoCs.
+> +
+> +	  To compile this driver as a module, choose M here: the
+> +	  module will be called tegra_wdt.
+> +
+>   # AVR32 Architecture
+>
+>   config AT32AP700X_WDT
+> diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
+> index 985a66c..1b5f3d5 100644
+> --- a/drivers/watchdog/Makefile
+> +++ b/drivers/watchdog/Makefile
+> @@ -58,6 +58,7 @@ obj-$(CONFIG_BCM2835_WDT) += bcm2835_wdt.o
+>   obj-$(CONFIG_MOXART_WDT) += moxart_wdt.o
+>   obj-$(CONFIG_SIRFSOC_WATCHDOG) += sirfsoc_wdt.o
+>   obj-$(CONFIG_BCM_KONA_WDT) += bcm_kona_wdt.o
+> +obj-$(CONFIG_TEGRA_WATCHDOG) += tegra_wdt.o
+>
+>   # AVR32 Architecture
+>   obj-$(CONFIG_AT32AP700X_WDT) += at32ap700x_wdt.o
+> diff --git a/drivers/watchdog/tegra_wdt.c b/drivers/watchdog/tegra_wdt.c
+> new file mode 100644
+> index 0000000..1314475
+> --- /dev/null
+> +++ b/drivers/watchdog/tegra_wdt.c
+> @@ -0,0 +1,371 @@
+> +/*
+> + * Copyright (c) 2013, NVIDIA CORPORATION.  All rights reserved.
+> + *
 
-commit 03dea3129d558bf5293a6e9f12777176619ac876
-Author: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Date:   Wed Feb 5 11:16:39 2014 +0900
+2014 ?
 
-    f2fs: fix to truncate dentry pages in the error case
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms and conditions of the GNU General Public License,
+> + * version 2, as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/io.h>
+> +#include <linux/of.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/miscdevice.h>
 
-You can find that from the tree:
-git://git.kernel.org/cgit/linux/kernel/git/jaegeuk/f2fs.git/log/?h=dev
+Not needed - also see below.
+
+> +#include <linux/watchdog.h>
+> +
+> +/* minimum and maximum watchdog trigger timeout, in seconds */
+> +#define MIN_WDT_TIMEOUT			1
+> +#define MAX_WDT_TIMEOUT			255
+> +
+> +/*
+> + * Base of the WDT registers, from the timer base address.  There are
+> + * actually 5 watchdogs that can be configured (by pairing with an available
+> + * timer), at bases 0x100 + (WDT ID) * 0x20, where WDT ID is 0 through 4.
+> + * This driver only configures the first watchdog (WDT ID 0).
+> + */
+> +#define WDT_BASE			0x100
+> +#define WDT_ID				0
+> +
+> +/*
+> + * Register base of the timer that's selected for pairing with the watchdog.
+> + * This driver arbitrarily uses timer 5, which is currently unused by
+> + * other drivers (in particular, the Tegra clocksource driver).  If this
+> + * needs to change, take care that the new timer is not used by the
+> + * clocksource driver.
+> + */
+> +#define WDT_TIMER_BASE			0x60
+> +#define WDT_TIMER_ID			5
+> +
+> +/* WDT registers */
+> +#define WDT_CFG				0x0
+> +#define WDT_CFG_PERIOD_SHIFT		4
+> +#define WDT_CFG_PERIOD_MASK		0xff
+> +#define WDT_CFG_INT_EN			(1 << 12)
+> +#define WDT_CFG_PMC2CAR_RST_EN		(1 << 15)
+> +#define WDT_STS				0x4
+> +#define WDT_STS_COUNT_SHIFT		4
+> +#define WDT_STS_COUNT_MASK		0xff
+> +#define WDT_STS_EXP_SHIFT		12
+> +#define WDT_STS_EXP_MASK		0x3
+> +#define WDT_CMD				0x8
+> +#define WDT_CMD_START_COUNTER		(1 << 0)
+> +#define WDT_CMD_DISABLE_COUNTER		(1 << 1)
+> +#define WDT_UNLOCK			(0xc)
+> +#define WDT_UNLOCK_PATTERN		(0xc45a << 0)
+> +
+> +/* Timer registers */
+> +#define TIMER_PTV			0x0
+> +#define TIMER_EN			(1 << 31)
+> +#define TIMER_PERIODIC			(1 << 30)
+> +
+> +struct tegra_wdt {
+> +	struct watchdog_device	wdd;
+> +	struct kref		kref;
+> +	void __iomem		*wdt_regs;
+> +	void __iomem		*tmr_regs;
+> +};
+> +
+> +#define WDT_HEARTBEAT 120
+> +static int heartbeat = WDT_HEARTBEAT;
+> +module_param(heartbeat, int, 0);
+> +MODULE_PARM_DESC(heartbeat, "Watchdog heartbeats in seconds. "
+> +	"(default = " __MODULE_STRING(WDT_HEARTBEAT) ")");
+
+I'd suggest to split this such that the chackpatch warning goes away.
+
+> +
+> +static bool nowayout = WATCHDOG_NOWAYOUT;
+> +module_param(nowayout, bool, 0);
+> +MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started "
+> +	"(default=" __MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
+
+Same here.
+
+> +
+> +static void tegra_wdt_release_resources(struct kref *r)
+> +{
+> +}
+> +
+> +static int tegra_wdt_start(struct watchdog_device *wdd)
+> +{
+> +	struct tegra_wdt *wdt = watchdog_get_drvdata(wdd);
+> +	u32 val;
+> +
+> +	/* This thing has a fixed 1MHz clock.  Normally, we would set the
+
+Multi-line comment coding style.
+
+> +	 * period to 1 second by writing 1000000ul, but the watchdog system
+> +	 * reset actually occurs on the 4th expiration of this counter,
+> +	 * so we set the period to 1/4 of this amount.
+> +	 */
+> +	val = 1000000ul / 4;
+> +	val |= (TIMER_EN | TIMER_PERIODIC);
+> +	writel(val, wdt->tmr_regs + TIMER_PTV);
+> +
+> +	/*
+> +	 * Set number of periods and start counter.
+> +	 *
+> +	 * Interrupt handler is not required for user space
+> +	 * WDT accesses, since the caller is responsible to ping the
+> +	 * WDT to reset the counter before expiration, through ioctls.
+> +	 */
+> +	val = WDT_TIMER_ID |
+> +	      (wdd->timeout << WDT_CFG_PERIOD_SHIFT) |
+> +	      WDT_CFG_PMC2CAR_RST_EN;
+> +	writel(val, wdt->wdt_regs + WDT_CFG);
+> +
+> +	writel(WDT_CMD_START_COUNTER, wdt->wdt_regs + WDT_CMD);
+> +
+> +	return 0;
+> +}
+> +
+> +static int tegra_wdt_stop(struct watchdog_device *wdd)
+> +{
+> +	struct tegra_wdt *wdt = watchdog_get_drvdata(wdd);
+> +
+> +	writel(WDT_UNLOCK_PATTERN, wdt->wdt_regs + WDT_UNLOCK);
+> +	writel(WDT_CMD_DISABLE_COUNTER, wdt->wdt_regs + WDT_CMD);
+> +	writel(0, wdt->tmr_regs + TIMER_PTV);
+> +
+> +	return 0;
+> +}
+> +
+> +static int tegra_wdt_ping(struct watchdog_device *wdd)
+> +{
+> +	struct tegra_wdt *wdt = watchdog_get_drvdata(wdd);
+> +
+> +	writel(WDT_CMD_START_COUNTER, wdt->wdt_regs + WDT_CMD);
+> +
+> +	return 0;
+> +}
+> +
+> +static int tegra_wdt_set_timeout(struct watchdog_device *wdd,
+> +				 unsigned int timeout)
+> +{
+> +	int ret;
+> +
+> +	ret = tegra_wdt_stop(wdd);
+> +	if (ret)
+> +		return ret;
+
+Unusual. Is it necessary to stop the wdt to change its timeout ?
+If so, might be worth a comment.
+
+> +
+> +	wdd->timeout = clamp_t(int, timeout, MIN_WDT_TIMEOUT, MAX_WDT_TIMEOUT);
+> +
+This is checked by the infrastructure.
+
+> +	if (watchdog_active(wdd))
+> +		return tegra_wdt_start(wdd);
+> +
+> +	return 0;
+> +}
+> +
+> +static unsigned int tegra_wdt_get_timeleft(struct watchdog_device *wdd)
+> +{
+> +	struct tegra_wdt *wdt = watchdog_get_drvdata(wdd);
+> +	u32 val;
+> +	int count;
+> +	int exp;
+> +
+> +	val = readl(wdt->wdt_regs + WDT_STS);
+> +
+> +	/* Current countdown (from timeout) */
+> +	count = (val >> WDT_STS_COUNT_SHIFT) & WDT_STS_COUNT_MASK;
+> +
+> +	/* Number of expirations (we are waiting for the 4th expiration) */
+> +	exp = (val >> WDT_STS_EXP_SHIFT) & WDT_STS_EXP_MASK;
+> +
+> +	/*
+> +	 * The entire thing is divided by 4 because we are ticking down 4 times
+> +	 * faster due to needing to wait for the 4th expiration.
+> +	 */
+> +	return (((3 - exp) * wdd->timeout) + count) / 4;
+> +}
+> +
+> +static void tegra_wdt_ref(struct watchdog_device *wdd)
+> +{
+> +	struct tegra_wdt *wdt = watchdog_get_drvdata(wdd);
+> +
+> +	kref_get(&wdt->kref);
+> +}
+> +
+> +static void tegra_wdt_unref(struct watchdog_device *wdd)
+> +{
+> +	struct tegra_wdt *wdt = watchdog_get_drvdata(wdd);
+> +
+> +	kref_put(&wdt->kref, tegra_wdt_release_resources);
+> +}
+> +
+> +static const struct watchdog_info tegra_wdt_info = {
+> +	.options	= WDIOF_SETTIMEOUT |
+> +			  WDIOF_MAGICCLOSE |
+> +			  WDIOF_KEEPALIVEPING,
+> +	.firmware_version = 0,
+> +	.identity	= "Tegra Watchdog",
+> +};
+> +
+> +static struct watchdog_ops tegra_wdt_ops = {
+> +	.owner = THIS_MODULE,
+> +	.start = tegra_wdt_start,
+> +	.stop = tegra_wdt_stop,
+> +	.ping = tegra_wdt_ping,
+> +	.set_timeout = tegra_wdt_set_timeout,
+> +	.get_timeleft = tegra_wdt_get_timeleft,
+> +	.ref = tegra_wdt_ref,
+> +	.ref = tegra_wdt_unref,
+
+I am quite at loss what the reference counting is for, but I guess
+I don't have to understand it ;-).
+
+Anyway, assigning the unref function to the ref variable definitely
+doesn't make much sense.
+
+> +};
+> +
+> +static int tegra_wdt_probe(struct platform_device *pdev)
+> +{
+> +	struct watchdog_device *wdd;
+> +	struct tegra_wdt *wdt;
+> +	struct resource *res;
+> +	void __iomem *regs;
+> +	int ret;
+> +
+> +	/* This is the timer base. */
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	if (!res) {
+> +		dev_err(&pdev->dev, "incorrect resources\n");
+> +		return -ENOENT;
+
+"No such file or directory" ? -ENODEV or -EINVAL seems more appropriate.
+
+Besides, devm_ioremap_resource() creates that same error message and
+returns -EINVAL.
+
+> +	}
+> +
+> +	regs = devm_ioremap_resource(&pdev->dev, res);
+> +	if (IS_ERR_OR_NULL(regs)) {
+
+Does not return NULL on error.
+
+> +		dev_err(&pdev->dev, "unable to map registers\n");
+
+devm_ioremap_resource() already creates an error message.
+No need to repeat it.
+
+> +		return -ENOMEM;
+
+	return PTR_ERR(regs);
+
+> +	}
+> +
+> +	/*
+> +	 * Allocate our watchdog driver data, which has the
+> +	 * struct watchdog_device nested within it.
+> +	 */
+> +	wdt = devm_kzalloc(&pdev->dev, sizeof(*wdt), GFP_KERNEL);
+> +	if (!wdt) {
+> +		dev_err(&pdev->dev, "out of memory\n");
+
+The memory allocation code already dumps an error message.
+No need to repeat it.
+
+> +		return -ENOMEM;
+> +	}
+> +
+> +	/* Initialize struct tegra_wdt. */
+> +	wdt->wdt_regs = regs + WDT_BASE;
+> +	wdt->tmr_regs = regs + WDT_TIMER_BASE;
+> +
+> +	/* Initialize struct watchdog_device. */
+> +	wdd = &wdt->wdd;
+> +	wdd->timeout = heartbeat;
+> +	wdd->info = &tegra_wdt_info;
+> +	wdd->ops = &tegra_wdt_ops;
+> +	wdd->min_timeout = MIN_WDT_TIMEOUT;
+> +	wdd->max_timeout = MAX_WDT_TIMEOUT;
+> +
+> +	watchdog_set_drvdata(wdd, wdt);
+> +
+> +	kref_init(&wdt->kref);
+> +
+> +	ret = tegra_wdt_stop(wdd);
+
+Sure you want to stop the watchdog if it is running ?
+If that is the case, chances are that it is running on purpose,
+eg if the watchdog is enabled in rommon/bios.
+
+Besides, this really defeats nowayout. Just unload the driver,
+load it again, and unload it again, and the watchdog is stopped.
+
+> +	if (ret) {
+
+tegra_wdt_stop() always returns 0. I don't think it makes much sense
+to have dummy error checking code each time you call it,
+
+
+> +		dev_err(&pdev->dev,
+> +			"failed to stop watchdog device\n");
+
+much less an error message which will never be displayed
+and just takes space in the code.
+
+> +		return ret;
+> +	}
+> +
+> +	watchdog_set_nowayout(wdd, nowayout);
+> +
+> +	ret = watchdog_register_device(wdd);
+> +	if (ret) {
+> +		dev_err(&pdev->dev,
+> +			"failed to register watchdog device\n");
+> +		return ret;
+> +	}
+> +
+> +	platform_set_drvdata(pdev, wdt);
+> +
+> +	dev_info(&pdev->dev,
+> +		 "initialized wdt %d, using timer %d\n", WDT_ID, WDT_TIMER_ID);
+
+I don't think writing those constants into the log provides much
+if any value.
+
+> +	dev_info(&pdev->dev,
+> +		 "enabled wdt %d (heartbeat = %d sec, nowayout = %d)\n",
+> +		 WDT_ID, heartbeat, nowayout);
+> +
+Seems to me you stopped the watchdog above. Sure, it is initialized, but
+I don't think you can claim that it is enabled.
+
+> +	return 0;
+> +}
+> +
+> +static int tegra_wdt_remove(struct platform_device *pdev)
+> +{
+> +	struct tegra_wdt *wdt = platform_get_drvdata(pdev);
+> +	int ret;
+> +
+> +	ret = tegra_wdt_stop(&wdt->wdd);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "failed to stop watchdog %d\n", WDT_ID);
+> +		return ret;
+> +	}
+> +
+> +	watchdog_unregister_device(&wdt->wdd);
+> +
+> +	kref_put(&wdt->kref, tegra_wdt_release_resources);
+> +
+> +	dev_info(&pdev->dev, "removed wdt %d\n", WDT_ID);
+> +
+Same as above - %d is always 0 and doesn't provide any value.
+If anything it is confising as it suggests that there might be
+a wdt 1 as well. Same applies everywhere else where you refer
+to wdt 0.
+
+> +	return 0;
+> +}
+> +
+> +#ifdef CONFIG_PM_SLEEP
+> +static int tegra_wdt_runtime_suspend(struct device *dev)
+> +{
+> +	struct tegra_wdt *wdt = dev_get_drvdata(dev);
+> +	int ret;
+> +
+> +	if (watchdog_active(&wdt->wdd)) {
+> +		dev_info(dev, "suspend, stopping watchdog timer\n");
+> +
+
+I don't think that is worth clogging the log for.
+
+> +		ret = tegra_wdt_stop(&wdt->wdd);
+> +		if (ret) {
+> +			dev_err(dev, "failed to stop watchdog %d\n", WDT_ID);
+> +			return ret;
+> +		}
+
+Same as above - this error checking and the message is really quite value-free.
+
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int tegra_wdt_runtime_resume(struct device *dev)
+> +{
+> +	struct tegra_wdt *wdt = dev_get_drvdata(dev);
+> +	int ret;
+> +
+> +	if (watchdog_active(&wdt->wdd)) {
+> +		dev_info(dev, "resume, restarting watchdog timer\n");
+> +
+Same here.
+
+> +		ret = tegra_wdt_start(&wdt->wdd);
+> +		if (ret) {
+> +			dev_err(dev, "failed to restart watchdog %d\n", WDT_ID);
+> +			return ret;
+> +		}
+
+Same here. Never happens.
+
+> +	}
+> +
+> +	return 0;
+> +}
+> +#endif
+> +
+> +static const struct of_device_id tegra_wdt_of_match[] = {
+> +	{ .compatible = "nvidia,tegra30-timer", },
+> +	{ },
+> +};
+> +MODULE_DEVICE_TABLE(of, tegra_wdt_of_match);
+> +
+> +static const struct dev_pm_ops tegra_wdt_pm_ops = {
+> +	SET_SYSTEM_SLEEP_PM_OPS(tegra_wdt_runtime_suspend,
+> +				tegra_wdt_runtime_resume)
+> +};
+> +
+> +static struct platform_driver tegra_wdt_driver = {
+> +	.probe		= tegra_wdt_probe,
+> +	.remove		= tegra_wdt_remove,
+> +	.driver		= {
+> +		.owner	= THIS_MODULE,
+> +		.name	= "tegra-wdt",
+> +		.pm	= &tegra_wdt_pm_ops,
+> +		.of_match_table = tegra_wdt_of_match,
+> +	},
+> +};
+> +module_platform_driver(tegra_wdt_driver);
+> +
+> +MODULE_AUTHOR("NVIDIA Corporation");
+> +MODULE_DESCRIPTION("Tegra Watchdog Driver");
+> +MODULE_LICENSE("GPL");
+> +MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
+>
+The MISCDEV alias is not needed. We just got rid of all those.
+Please don't re-introduce it.
 
 Thanks,
+Guenter
 
-2014-02-06 (목), 09:43 +0400, Andrey Tsyvarev:
-> Hello,
-> 
-> Testing f2fs (of linux-3.13) under fault simulation, we detected 
-> umount() hangs up after
-> mkdir()->
->    f2fs_add_link()->
->      init_inode_metadata()->
->        f2fs_init_acl()->
->          f2fs_get_acl()->
->            f2fs_getxattr()->
->              read_all_xattrs() fails.
-> 
-> Also there was a BUG_ON triggered after the fault in
-> mkdir()->
->    f2fs_add_link()->
->      init_inode_metadata()->
->        remove_inode_page() ->
->          f2fs_bug_on(inode->i_blocks != 0 && inode->i_blocks != 1);
-> 
-> In this case there are 2 blocks allocated, which are counted with 
-> inode->i_blocks field:
-> 
-> static struct page *init_inode_metadata(struct inode *inode,
->          struct inode *dir, const struct qstr *name)
-> {
->      struct page *page;
->      int err;
-> 
->      if (is_inode_flag_set(F2FS_I(inode), FI_NEW_INODE)) {
->          page = new_inode_page(inode, name); <----- First block is 
-> allocated for the inode
->          if (IS_ERR(page))
->              return page;
-> 
->          if (S_ISDIR(inode->i_mode)) {
->              err = make_empty_dir(inode, dir, page); <----- Second block 
-> is allocated for the inode
->              if (err)
->                  goto error;
->          }
-> 
->          err = f2fs_init_acl(inode, dir, page); <----- This call returns 
-> error
->          if (err)
->              goto error;
->          ...
->      } else {
->          ...
->      }
-> 
->      init_dent_inode(name, page);
-> 
->      /*
->       * This file should be checkpointed during fsync.
->       * We lost i_pino from now on.
->       */
->      if (is_inode_flag_set(F2FS_I(inode), FI_INC_LINK)) {
->          file_lost_pino(inode);
->          inc_nlink(inode);
->      }
->      return page;
-> 
-> error:
->      f2fs_put_page(page, 1);
->      remove_inode_page(inode); <----- Expects at most one block 
-> allocated for inode
->      return ERR_PTR(err);
-> }
-> 
-> Found by Linux File System Verification project (linuxtesting.org).
-> 
-> 
-> Here are some additional details.
-> 
-> F2fs-related kernel configuration is:
-> CONFIG_F2FS_FS=m
-> CONFIG_F2FS_STAT_FS=y
-> CONFIG_F2FS_FS_XATTR=y
-> CONFIG_F2FS_FS_POSIX_ACL=y
-> CONFIG_F2FS_FS_SECURITY=y
-> CONFIG_F2FS_CHECK_FS=y
-> 
-> 
-> BUG_ON log:
-> [  117.863869] kernel BUG at fs/f2fs/node.c:825!
-> [  117.863870] invalid opcode: 0000 [#1] SMP
-> [  117.863872] Modules linked in: f2fs kedr_fsim_indicator_common(OF) 
-> kedr_fsim_indicator_capable(OF)
-> kedr_fsim_indicator_kmalloc(OF) kedr_fsim_vmm(OF) kedr_fsim_mem_util(OF) 
-> kedr_fsim_capable(OF)
-> kedr_fsim_uaccess(OF) kedr_fsim_cmm(OF) kedr_fault_simulation(OF) 
-> kedr(OF) fuse nf_conntrack_netbios_ns
-> nf_conntrack_broadcast ipt_MASQUERADE ip6t_REJECT xt_conntrack 
-> ebtable_nat ebtable_broute bridge stp llc
-> ebtable_filter ebtables ip6table_nat nf_conntrack_ipv6 nf_defrag_ipv6 
-> nf_nat_ipv6 ip6table_mangle
-> ip6table_security ip6table_raw ip6table_filter ip6_tables iptable_nat 
-> nf_conntrack_ipv4 nf_defrag_ipv4
-> nf_nat_ipv4 nf_nat nf_conntrack iptable_mangle iptable_security 
-> iptable_raw microcode i2c_piix4 parport_pc
-> e1000 i2c_core parport ata_generic pata_acpi [last unloaded: kedr]
-> [  117.863894] CPU: 0 PID: 2766 Comm: fs-driver-tests Tainted: 
-> GF          O 3.13.0fs #2
-> [  117.863895] Hardware name: innotek GmbH VirtualBox/VirtualBox, BIOS 
-> VirtualBox 12/01/2006
-> [  117.863896] task: ffff8800001b6420 ti: ffff8800111ac000 task.ti: 
-> ffff8800111ac000
-> [  117.863897] RIP: 0010:[<ffffffffa01e03bf>] [<ffffffffa01e03bf>] 
-> remove_inode_page+0xbf/0xd0 [f2fs]
-> [  117.863901] RSP: 0018:ffff8800111ade08  EFLAGS: 00010202
-> [  117.863902] RAX: 0000000000000000 RBX: ffff8800125a0c30 RCX: 
-> ffff8800001b6a78
-> [  117.863903] RDX: ffff880000000000 RSI: ffffea00004b9780 RDI: 
-> ffff8800125a0c30
-> [  117.863903] RBP: ffff8800111ade50 R08: 0000000000000001 R09: 
-> 0000000000000000
-> [  117.863904] R10: 0000000000000006 R11: 000000000000000f R12: 
-> ffffea00004b9780
-> [  117.863905] R13: 0000000000000004 R14: ffffea00004b9780 R15: 
-> ffffea00004b97c0
-> [  117.863907] FS:  00007ff92dc9f740(0000) GS:ffff88003fc00000(0000) 
-> knlGS:0000000000000000
-> [  117.863908] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [  117.863909] CR2: 00007f6673415000 CR3: 000000003c628000 CR4: 
-> 00000000000006f0
-> [  117.863913] Stack:
-> [  117.863913]  00000000000041ff ffffea00004b97c0 ffff8800111ade50 
-> ffffffffa01e9ffa
-> [  117.863915]  ffffea00004b9780 ffff880000000000 ffff880012e5d000 
-> 0000000000000003
-> [  117.863917]  ffffea00004b9740 ffff8800111adec0 ffffffffa01d0d20 
-> ffff880012532948
-> [  117.863919] Call Trace:
-> [  117.863922]  [<ffffffffa01e9ffa>] ? f2fs_init_acl+0x10a/0x180 [f2fs]
-> [  117.863925]  [<ffffffffa01d0d20>] __f2fs_add_link+0x560/0x7c0 [f2fs]
-> [  117.863928]  [<ffffffffa01d3b8b>] f2fs_mkdir+0xbb/0x150 [f2fs]
-> [  117.863929]  [<ffffffff811cf4c7>] vfs_mkdir+0xb7/0x160
-> [  117.863931]  [<ffffffff811d010f>] SyS_mkdir+0x5f/0xc0
-> [  117.863933]  [<ffffffff8165bf29>] system_call_fastpath+0x16/0x1b
-> [  117.863934] Code: e6 49 8b 14 24 83 e2 01 74 23 4c 89 e7 89 45 bc e8 
-> f7 f9 f6 e0 4c 89 e7 e8 ff d1 f7
-> e0 8b 45 bc 48 83 c4 30 5b 41 5c 41 5d 5d c3 <0f> 0b e8 c8 9d 00 00 66 
-> 2e 0f 1f 84 00 00 00 00 00 0f 1f 44 00
-> [  117.863953] RIP  [<ffffffffa01e03bf>] remove_inode_page+0xbf/0xd0 [f2fs]
-> [  117.863956]  RSP <ffff8800111ade08>
-> 
-> There are several ways for simulate faults in kernel function calls, 
-> e.g. manual faults insertion,
-> fault injection kernel infrustructure.
-> In my tests I use KEDR framework (http://forge.ispras.ru/projects/kedr) 
-> for that purpose,
-> that is why kedr* modules are in the log above.
-> Call stack of the fault simulated is:
-> 
-> [  117.863789] KEDR FAULT SIMULATION: forcing a failure
-> [  117.863792] CPU: 0 PID: 2766 Comm: fs-driver-tests Tainted: 
-> GF          O 3.13.0fs #2
-> [  117.863794] Hardware name: innotek GmbH VirtualBox/VirtualBox, BIOS 
-> VirtualBox 12/01/2006
-> [  117.863795]  ffff8800111adce8 ffff8800111adcb0 ffffffff8164bd96 
-> 0000000000000001
-> [  117.863797]  ffff8800111adcd8 ffffffffa018ace2 ffffffffa018ac45 
-> ffffffffa01e8b54
-> [  117.863799]  0000000000001000 ffff8800111add18 ffffffffa0194816 
-> ffffffffa01e8b54
-> [  117.863801] Call Trace:
-> [  117.863806]  [<ffffffff8164bd96>] dump_stack+0x45/0x56
-> [  117.863810]  [<ffffffffa018ace2>] kedr_fsim_point_simulate+0xa2/0xb0 
-> [kedr_fault_simulation]
-> [  117.863812]  [<ffffffffa018ac45>] ? kedr_fsim_point_simulate+0x5/0xb0 
-> [kedr_fault_simulation]
-> [  117.863816]  [<ffffffffa01e8b54>] ? read_all_xattrs+0x3c4/0x3e0 [f2fs]
-> [  117.863819]  [<ffffffffa0194816>] kedr_repl___kmalloc+0x36/0x80 
-> [kedr_fsim_cmm]
-> [  117.863822]  [<ffffffffa01e8b54>] ? read_all_xattrs+0x3c4/0x3e0 [f2fs]
-> [  117.863824]  [<ffffffffa01955d2>] 
-> kedr_intermediate_func___kmalloc+0x72/0xd0 [kedr_fsim_cmm]
-> [  117.863826]  [<ffffffffa01e8b54>] ? read_all_xattrs+0x3c4/0x3e0 [f2fs]
-> [  117.863829]  [<ffffffffa01e8b54>] read_all_xattrs+0x3c4/0x3e0 [f2fs]
-> [  117.863832]  [<ffffffffa01e91d4>] f2fs_getxattr+0x44/0xf0 [f2fs]
-> [  117.863835]  [<ffffffffa01e9ba9>] f2fs_get_acl+0xe9/0x390 [f2fs]
-> [  117.863838]  [<ffffffffa01d99c9>] ? set_dirty_dir_page+0xb9/0xe0 [f2fs]
-> [  117.863841]  [<ffffffffa01e9ffa>] f2fs_init_acl+0x10a/0x180 [f2fs]
-> [  117.863843]  [<ffffffffa01d0ccc>] __f2fs_add_link+0x50c/0x7c0 [f2fs]
-> [  117.863846]  [<ffffffffa01d3b8b>] f2fs_mkdir+0xbb/0x150 [f2fs]
-> [  117.863849]  [<ffffffff811cf4c7>] vfs_mkdir+0xb7/0x160
-> [  117.863851]  [<ffffffff811d010f>] SyS_mkdir+0x5f/0xc0
-> [  117.863854]  [<ffffffff8165bf29>] system_call_fastpath+0x16/0x1b
-> 
-> --
-> Best regards,
-> Andrey Tsyvarev
-> Linux Verification Center, ISPRAS
-> web: http://linuxtesting.org
-> 
-> ---
-> Это сообщение свободно от вирусов и вредоносного ПО благодаря защите от вирусов avast!
-> http://www.avast.com
-> 
 
--- 
-Jaegeuk Kim
-Samsung
 
