@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932304AbaBFKvZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 05:51:25 -0500
-Received: from mga09.intel.com ([134.134.136.24]:64570 "EHLO mga09.intel.com"
+	id S932419AbaBFKv3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 05:51:29 -0500
+Received: from mga03.intel.com ([143.182.124.21]:32686 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755730AbaBFKvK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 05:51:10 -0500
+	id S932299AbaBFKvZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 05:51:25 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,793,1384329600"; 
-   d="scan'208";a="478983423"
+   d="scan'208";a="470754037"
 From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
@@ -18,9 +18,9 @@ Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
         Adrian Hunter <adrian.hunter@intel.com>,
         Matt Fleming <matt.fleming@intel.com>,
         Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: [PATCH v1 05/11] itrace: Add functionality to include traces in perf event samples
-Date: Thu,  6 Feb 2014 12:50:28 +0200
-Message-Id: <1391683834-29868-6-git-send-email-alexander.shishkin@linux.intel.com>
+Subject: [PATCH v1 06/11] itrace: Add functionality to include traces in process core dumps
+Date: Thu,  6 Feb 2014 12:50:29 +0200
+Message-Id: <1391683834-29868-7-git-send-email-alexander.shishkin@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.rc2
 In-Reply-To: <1391683834-29868-1-git-send-email-alexander.shishkin@linux.intel.com>
 References: <1391683834-29868-1-git-send-email-alexander.shishkin@linux.intel.com>
@@ -28,472 +28,599 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Trace data from itrace PMUs can be used to annotate other perf events
-by including it in sample records when PERF_SAMPLE_ITRACE flag is set. In
-this case, a PT kernel counter is created for each such event and trace data
-is retrieved from it and stored in the perf data stream.
+Per thread trace data that is provided by itrace PMUs can be included in
+process core dumps, which is controlled via a new rlimit parameter
+RLIMIT_ITRACE. This is done by a per-thread kernel counter that is
+created when this RLIMIT_ITRACE is set.
+
+The value of RLIMIT_ITRACE indicates the size of the per-thread elf note
+in a core dump and the buffer size used to collect corresponding trace.
 
 Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 ---
- include/linux/itrace.h          |  37 +++++++++
- include/linux/perf_event.h      |  15 ++++
- include/uapi/linux/perf_event.h |   5 +-
- kernel/events/core.c            |  35 +++++++++
- kernel/events/itrace.c          | 169 ++++++++++++++++++++++++++++++++++++++--
- 5 files changed, 252 insertions(+), 9 deletions(-)
+ fs/binfmt_elf.c                     |   6 +
+ fs/proc/base.c                      |   1 +
+ include/asm-generic/resource.h      |   1 +
+ include/linux/itrace.h              |  36 +++++
+ include/linux/perf_event.h          |   3 +
+ include/uapi/asm-generic/resource.h |   3 +-
+ include/uapi/linux/elf.h            |   1 +
+ kernel/events/itrace.c              | 289 +++++++++++++++++++++++++++++++++++-
+ kernel/exit.c                       |   3 +
+ kernel/sys.c                        |   5 +
+ 10 files changed, 343 insertions(+), 5 deletions(-)
 
+diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
+index 571a423..c7fcd49 100644
+--- a/fs/binfmt_elf.c
++++ b/fs/binfmt_elf.c
+@@ -34,6 +34,7 @@
+ #include <linux/utsname.h>
+ #include <linux/coredump.h>
+ #include <linux/sched.h>
++#include <linux/itrace.h>
+ #include <asm/uaccess.h>
+ #include <asm/param.h>
+ #include <asm/page.h>
+@@ -1576,6 +1577,8 @@ static int fill_thread_core_info(struct elf_thread_core_info *t,
+ 		}
+ 	}
+ 
++	*total += itrace_elf_note_size(t->task);
++
+ 	return 1;
+ }
+ 
+@@ -1608,6 +1611,7 @@ static int fill_note_info(struct elfhdr *elf, int phdrs,
+ 	for (i = 0; i < view->n; ++i)
+ 		if (view->regsets[i].core_note_type != 0)
+ 			++info->thread_notes;
++	info->thread_notes++; /* ITRACE */
+ 
+ 	/*
+ 	 * Sanity check.  We rely on regset 0 being in NT_PRSTATUS,
+@@ -1710,6 +1714,8 @@ static int write_note_info(struct elf_note_info *info,
+ 			    !writenote(&t->notes[i], cprm))
+ 				return 0;
+ 
++		itrace_elf_note_write(cprm, t->task);
++
+ 		first = 0;
+ 		t = t->next;
+ 	} while (t);
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 03c8d74..69935a9 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -471,6 +471,7 @@ static const struct limit_names lnames[RLIM_NLIMITS] = {
+ 	[RLIMIT_NICE] = {"Max nice priority", NULL},
+ 	[RLIMIT_RTPRIO] = {"Max realtime priority", NULL},
+ 	[RLIMIT_RTTIME] = {"Max realtime timeout", "us"},
++	[RLIMIT_ITRACE] = {"Max ITRACE buffer size", "bytes"},
+ };
+ 
+ /* Display limits for a process */
+diff --git a/include/asm-generic/resource.h b/include/asm-generic/resource.h
+index b4ea8f5..e6e5657 100644
+--- a/include/asm-generic/resource.h
++++ b/include/asm-generic/resource.h
+@@ -25,6 +25,7 @@
+ 	[RLIMIT_NICE]		= { 0, 0 },				\
+ 	[RLIMIT_RTPRIO]		= { 0, 0 },				\
+ 	[RLIMIT_RTTIME]		= {  RLIM_INFINITY,  RLIM_INFINITY },	\
++	[RLIMIT_ITRACE]		= {              0,  RLIM_INFINITY },	\
+ }
+ 
+ #endif
 diff --git a/include/linux/itrace.h b/include/linux/itrace.h
-index 735baaf4..6adbb32 100644
+index 6adbb32..c1eb6d3 100644
 --- a/include/linux/itrace.h
 +++ b/include/linux/itrace.h
-@@ -54,12 +54,27 @@ struct itrace_pmu {
+@@ -22,6 +22,7 @@
  
- 	int			(*event_init)(struct perf_event *event);
+ #include <linux/perf_event.h>
+ #include <linux/file.h>
++#include <linux/coredump.h>
  
-+	/*
-+	 * Calculate the size of a sample to be written out
-+	 */
-+	unsigned long		(*sample_trace)(struct perf_event *event,
-+						struct perf_sample_data *data);
+ extern struct ring_buffer_ops itrace_rb_ops;
+ 
+@@ -66,6 +67,19 @@ struct itrace_pmu {
+ 	void			(*sample_output)(struct perf_event *event,
+ 						 struct perf_output_handle *handle,
+ 						 struct perf_sample_data *data);
 +
 +	/*
-+	 * Write out a trace sample to the given output handle
++	 * Get the PMU-specific part of a core dump note
 +	 */
-+	void			(*sample_output)(struct perf_event *event,
-+						 struct perf_output_handle *handle,
-+						 struct perf_sample_data *data);
++	size_t			(*core_size)(struct perf_event *event);
++
++	/*
++	 * Write out the core dump note
++	 */
++	void			(*core_output)(struct coredump_params *cprm,
++					       struct perf_event *event,
++					       unsigned long len);
++	u64			coredump_config;
  	char			*name;
  };
  
- #define to_itrace_pmu(x) container_of((x), struct itrace_pmu, pmu)
- 
- #ifdef CONFIG_PERF_EVENTS
+@@ -95,6 +109,17 @@ extern unsigned long itrace_sampler_trace(struct perf_event *event,
+ extern void itrace_sampler_output(struct perf_event *event,
+ 				  struct perf_output_handle *handle,
+ 				  struct perf_sample_data *data);
 +
-+extern int itrace_kernel_event(struct perf_event *event,
-+			       struct task_struct *task);
- extern int itrace_inherit_event(struct perf_event *event,
- 				struct task_struct *task);
- extern void itrace_lost_data(struct perf_event *event, u64 offset);
-@@ -72,7 +87,17 @@ extern void itrace_wake_up(struct perf_event *event);
- 
- extern bool is_itrace_event(struct perf_event *event);
- 
-+extern int itrace_sampler_init(struct perf_event *event,
-+			       struct task_struct *task);
-+extern void itrace_sampler_fini(struct perf_event *event);
-+extern unsigned long itrace_sampler_trace(struct perf_event *event,
-+					  struct perf_sample_data *data);
-+extern void itrace_sampler_output(struct perf_event *event,
-+				  struct perf_output_handle *handle,
-+				  struct perf_sample_data *data);
++extern int update_itrace_rlimit(struct task_struct *, unsigned long);
++extern void exit_itrace(struct task_struct *);
++
++struct itrace_note {
++	u64	itrace_config;
++};
++
++extern size_t itrace_elf_note_size(struct task_struct *tsk);
++extern void itrace_elf_note_write(struct coredump_params *cprm,
++				  struct task_struct *task);
  #else
-+static int itrace_kernel_event(struct perf_event *event,
-+			       struct task_struct *task)	{ return 0; }
- static int itrace_inherit_event(struct perf_event *event,
- 				struct task_struct *task)	{ return 0; }
- static inline void
-@@ -84,6 +109,18 @@ itrace_event_installable(struct perf_event *event,
- 			 struct perf_event_context *ctx)	{ return -EINVAL; }
- static inline void itrace_wake_up(struct perf_event *event)	{}
- static inline bool is_itrace_event(struct perf_event *event)	{ return false; }
+ static int itrace_kernel_event(struct perf_event *event,
+ 			       struct task_struct *task)	{ return 0; }
+@@ -121,6 +146,17 @@ static inline void
+ itrace_sampler_output(struct perf_event *event,
+ 		      struct perf_output_handle *handle,
+ 		      struct perf_sample_data *data)		{}
 +
-+static inline int itrace_sampler_init(struct perf_event *event,
-+				      struct task_struct *task)	{}
++static inline int
++update_itrace_rlimit(struct task_struct *, unsigned long)	{ return -EINVAL; }
++static inline void exit_itrace(struct task_struct *)		{}
++
++static inline size_t
++itrace_elf_note_size(struct task_struct *tsk)			{ return 0; }
 +static inline void
-+itrace_sampler_fini(struct perf_event *event)			{}
-+static inline unsigned long
-+itrace_sampler_trace(struct perf_event *event,
-+		     struct perf_sample_data *data)		{ return 0; }
-+static inline void
-+itrace_sampler_output(struct perf_event *event,
-+		      struct perf_output_handle *handle,
-+		      struct perf_sample_data *data)		{}
++itrace_elf_note_write(struct coredump_params *cprm,
++		      struct task_struct *task)			{}
++
  #endif
  
  #endif /* _LINUX_PERF_EVENT_H */
 diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index b0147e0..11eb133 100644
+index 11eb133..8353d7f 100644
 --- a/include/linux/perf_event.h
 +++ b/include/linux/perf_event.h
-@@ -83,6 +83,12 @@ struct perf_regs_user {
- 	struct pt_regs	*regs;
+@@ -106,6 +106,9 @@ struct event_constraint;
+ enum perf_itrace_counter_type {
+ 	PERF_ITRACE_USER	= BIT(1),
+ 	PERF_ITRACE_SAMPLING	= BIT(2),
++	PERF_ITRACE_COREDUMP	= BIT(3),
++	PERF_ITRACE_KERNEL	= (PERF_ITRACE_SAMPLING | PERF_ITRACE_COREDUMP),
++	PERF_ITRACE_ANY		= (PERF_ITRACE_KERNEL | PERF_ITRACE_USER),
  };
  
-+struct perf_trace_record {
-+	u64		size;
-+	unsigned long	from;
-+	unsigned long	to;
-+};
-+
- struct task_struct;
- 
- /*
-@@ -97,6 +103,11 @@ struct hw_perf_event_extra {
- 
- struct event_constraint;
- 
-+enum perf_itrace_counter_type {
-+	PERF_ITRACE_USER	= BIT(1),
-+	PERF_ITRACE_SAMPLING	= BIT(2),
-+};
-+
  /**
-  * struct hw_perf_event - performance event hardware details:
-  */
-@@ -129,6 +140,7 @@ struct hw_perf_event {
- 		struct { /* itrace */
- 			struct file		*itrace_file;
- 			struct task_struct	*itrace_target;
-+			unsigned int		counter_type;
- 		};
- #ifdef CONFIG_HAVE_HW_BREAKPOINT
- 		struct { /* breakpoint */
-@@ -434,6 +446,7 @@ struct perf_event {
- 	perf_overflow_handler_t		overflow_handler;
- 	void				*overflow_handler_context;
- 
-+	struct perf_event		*trace_event;
- #ifdef CONFIG_EVENT_TRACING
- 	struct ftrace_event_call	*tp_event;
- 	struct event_filter		*filter;
-@@ -591,6 +604,7 @@ struct perf_sample_data {
- 	union  perf_mem_data_src	data_src;
- 	struct perf_callchain_entry	*callchain;
- 	struct perf_raw_record		*raw;
-+	struct perf_trace_record	trace;
- 	struct perf_branch_stack	*br_stack;
- 	struct perf_regs_user		regs_user;
- 	u64				stack_user_size;
-@@ -611,6 +625,7 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
- 	data->period = period;
- 	data->regs_user.abi = PERF_SAMPLE_REGS_ABI_NONE;
- 	data->regs_user.regs = NULL;
-+	data->trace.from = data->trace.to = data->trace.size = 0;
- 	data->stack_user_size = 0;
- 	data->weight = 0;
- 	data->data_src.val = 0;
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 2dd57db..a06cf4b 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -137,8 +137,9 @@ enum perf_event_sample_format {
- 	PERF_SAMPLE_DATA_SRC			= 1U << 15,
- 	PERF_SAMPLE_IDENTIFIER			= 1U << 16,
- 	PERF_SAMPLE_TRANSACTION			= 1U << 17,
-+	PERF_SAMPLE_ITRACE			= 1U << 18,
- 
--	PERF_SAMPLE_MAX = 1U << 18,		/* non-ABI */
-+	PERF_SAMPLE_MAX = 1U << 19,		/* non-ABI */
- };
+diff --git a/include/uapi/asm-generic/resource.h b/include/uapi/asm-generic/resource.h
+index f863428..073f413 100644
+--- a/include/uapi/asm-generic/resource.h
++++ b/include/uapi/asm-generic/resource.h
+@@ -45,7 +45,8 @@
+ 					   0-39 for nice level 19 .. -20 */
+ #define RLIMIT_RTPRIO		14	/* maximum realtime priority */
+ #define RLIMIT_RTTIME		15	/* timeout for RT tasks in us */
+-#define RLIM_NLIMITS		16
++#define RLIMIT_ITRACE		16	/* max itrace size */
++#define RLIM_NLIMITS		17
  
  /*
-@@ -689,6 +690,8 @@ enum perf_event_type {
- 	 *	{ u64			weight;   } && PERF_SAMPLE_WEIGHT
- 	 *	{ u64			data_src; } && PERF_SAMPLE_DATA_SRC
- 	 *	{ u64			transaction; } && PERF_SAMPLE_TRANSACTION
-+	 *	{ u64			size;
-+	 *	  char			data[size]; } && PERF_SAMPLE_ITRACE
- 	 * };
- 	 */
- 	PERF_RECORD_SAMPLE			= 9,
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index ff6e286..e1388a5 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -1576,6 +1576,9 @@ void perf_event_disable(struct perf_event *event)
- 	struct perf_event_context *ctx = event->ctx;
- 	struct task_struct *task = ctx->task;
- 
-+	if (event->trace_event)
-+		perf_event_disable(event->trace_event);
-+
- 	if (!task) {
- 		/*
- 		 * Disable the event on the cpu that it's on
-@@ -2070,6 +2073,8 @@ void perf_event_enable(struct perf_event *event)
- 	struct perf_event_context *ctx = event->ctx;
- 	struct task_struct *task = ctx->task;
- 
-+	if (event->trace_event)
-+		perf_event_enable(event->trace_event);
- 	if (!task) {
- 		/*
- 		 * Enable the event on the cpu that it's on
-@@ -3209,6 +3214,8 @@ static void unaccount_event(struct perf_event *event)
- 		static_key_slow_dec_deferred(&perf_sched_events);
- 	if (has_branch_stack(event))
- 		static_key_slow_dec_deferred(&perf_sched_events);
-+	if ((event->attr.sample_type & PERF_SAMPLE_ITRACE) && event->trace_event)
-+		itrace_sampler_fini(event);
- 
- 	unaccount_event_cpu(event, event->cpu);
- }
-@@ -4664,6 +4671,13 @@ void perf_output_sample(struct perf_output_handle *handle,
- 	if (sample_type & PERF_SAMPLE_TRANSACTION)
- 		perf_output_put(handle, data->txn);
- 
-+	if (sample_type & PERF_SAMPLE_ITRACE) {
-+		perf_output_put(handle, data->trace.size);
-+
-+		if (data->trace.size)
-+			itrace_sampler_output(event, handle, data);
-+	}
-+
- 	if (!event->attr.watermark) {
- 		int wakeup_events = event->attr.wakeup_events;
- 
-@@ -4771,6 +4785,14 @@ void perf_prepare_sample(struct perf_event_header *header,
- 		data->stack_user_size = stack_size;
- 		header->size += size;
- 	}
-+
-+	if (sample_type & PERF_SAMPLE_ITRACE) {
-+		u64 size = sizeof(u64);
-+
-+		size += itrace_sampler_trace(event, data);
-+
-+		header->size += size;
-+	}
- }
- 
- static void perf_event_output(struct perf_event *event,
-@@ -6795,6 +6817,15 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
- 			if (err)
- 				goto err_pmu;
- 		}
-+
-+		if (event->attr.sample_type & PERF_SAMPLE_ITRACE) {
-+			err = itrace_sampler_init(event, task);
-+			if (err) {
-+				/* XXX: either clean up callchain buffers too
-+				   or forbid them to go together */
-+				goto err_pmu;
-+			}
-+		}
- 	}
- 
- 	return event;
-@@ -7369,6 +7400,10 @@ perf_event_create_kernel_counter(struct perf_event_attr *attr, int cpu,
- 
- 	account_event(event);
- 
-+	err = itrace_kernel_event(event, task);
-+	if (err)
-+		goto err_free;
-+
- 	ctx = find_get_context(event->pmu, task, cpu);
- 	if (IS_ERR(ctx)) {
- 		err = PTR_ERR(ctx);
+  * SuS says limits have to be unsigned.
+diff --git a/include/uapi/linux/elf.h b/include/uapi/linux/elf.h
+index ef6103b..4bfbf66 100644
+--- a/include/uapi/linux/elf.h
++++ b/include/uapi/linux/elf.h
+@@ -369,6 +369,7 @@ typedef struct elf64_shdr {
+ #define NT_PRPSINFO	3
+ #define NT_TASKSTRUCT	4
+ #define NT_AUXV		6
++#define NT_ITRACE	7
+ /*
+  * Note to userspace developers: size of NT_SIGINFO note may increase
+  * in the future to accomodate more fields, don't assume it is fixed!
 diff --git a/kernel/events/itrace.c b/kernel/events/itrace.c
-index ec26373..f003530 100644
+index f003530..1cc9a36 100644
 --- a/kernel/events/itrace.c
 +++ b/kernel/events/itrace.c
-@@ -89,6 +89,22 @@ bool is_itrace_event(struct perf_event *event)
- 	return !!itrace_pmu_find(event->attr.type);
- }
+@@ -20,15 +20,21 @@
+ #undef DEBUG
  
-+static void itrace_event_destroy(struct perf_event *event)
-+{
-+	struct ring_buffer *rb = event->rb[PERF_RB_ITRACE];
+ #include <linux/kernel.h>
++#include <linux/sched.h>
+ #include <linux/perf_event.h>
+ #include <linux/itrace.h>
+ #include <linux/sizes.h>
++#include <linux/elf.h>
++#include <linux/coredump.h>
+ #include <linux/slab.h>
+ 
+ #include "internal.h"
+ 
+ static LIST_HEAD(itrace_pmus);
+ static DEFINE_MUTEX(itrace_pmus_mutex);
++static struct itrace_pmu *itrace_pmu_coredump;
 +
-+	if (!rb)
-+		return;
++#define CORE_OWNER "ITRACE"
+ 
+ struct static_key_deferred itrace_core_events __read_mostly;
+ 
+@@ -91,8 +97,12 @@ bool is_itrace_event(struct perf_event *event)
+ 
+ static void itrace_event_destroy(struct perf_event *event)
+ {
++	struct task_struct *task = event->hw.itrace_target;
+ 	struct ring_buffer *rb = event->rb[PERF_RB_ITRACE];
+ 
++	if (task && event->hw.counter_type == PERF_ITRACE_COREDUMP)
++		static_key_slow_dec_deferred(&itrace_core_events);
 +
-+	if (event->hw.counter_type != PERF_ITRACE_USER) {
-+		atomic_dec(&rb->mmap_count);
-+		atomic_dec(&event->mmap_count[PERF_RB_ITRACE]);
-+		ring_buffer_detach(event, rb);
-+		rcu_assign_pointer(event->rb[PERF_RB_ITRACE], NULL);
-+		ring_buffer_put(rb); /* should be last */
+ 	if (!rb)
+ 		return;
+ 
+@@ -268,6 +278,10 @@ int itrace_inherit_event(struct perf_event *event, struct task_struct *task)
+ 	}
+ 
+ 	event->hw.counter_type = parent->hw.counter_type;
++	if (event->hw.counter_type == PERF_ITRACE_COREDUMP) {
++		static_key_slow_inc(&itrace_core_events.key);
++		size = task_rlimit(task, RLIMIT_ITRACE);
 +	}
-+}
-+
- int itrace_event_installable(struct perf_event *event,
- 			     struct perf_event_context *ctx)
- {
-@@ -115,8 +131,16 @@ int itrace_event_installable(struct perf_event *event,
- static int itrace_event_init(struct perf_event *event)
- {
- 	struct itrace_pmu *ipmu = to_itrace_pmu(event->pmu);
-+	int ret;
  
--	return ipmu->event_init(event);
-+	ret = ipmu->event_init(event);
-+	if (ret)
-+		return ret;
-+
-+	event->destroy = itrace_event_destroy;
-+	event->hw.counter_type = PERF_ITRACE_USER;
-+
-+	return 0;
- }
- 
- static unsigned long itrace_rb_get_size(int nr_pages)
-@@ -214,9 +238,16 @@ out:
- 	mutex_unlock(&event->mmap_mutex);
- }
- 
-+static size_t roundup_buffer_size(u64 size)
-+{
-+	return 1ul << (__get_order(size) + PAGE_SHIFT);
-+}
-+
- int itrace_inherit_event(struct perf_event *event, struct task_struct *task)
- {
-+	size_t size = event->attr.itrace_sample_size;
- 	struct perf_event *parent = event->parent;
-+	struct ring_buffer *rb;
- 	struct itrace_pmu *ipmu;
- 
- 	if (!is_itrace_event(event))
-@@ -224,14 +255,59 @@ int itrace_inherit_event(struct perf_event *event, struct task_struct *task)
+ 	size = roundup_buffer_size(size);
+ 	rb = rb_alloc(event, size >> PAGE_SHIFT, 0, event->cpu, 0,
+@@ -294,10 +308,10 @@ int itrace_kernel_event(struct perf_event *event, struct task_struct *task)
  
  	ipmu = to_itrace_pmu(event->pmu);
  
--	/*
--	 * inherited user's counters should inherit buffers IF
--	 * they aren't cpu==-1
--	 */
--	if (parent->cpu == -1)
--		return -EINVAL;
-+	if (parent->hw.counter_type == PERF_ITRACE_USER) {
-+		/*
-+		 * inherited user's counters should inherit buffers IF
-+		 * they aren't cpu==-1
-+		 */
-+		if (parent->cpu == -1)
-+			return -EINVAL;
+-	if (!event->attr.itrace_sample_size)
+-		return 0;
+-
+-	size = roundup_buffer_size(event->attr.itrace_sample_size);
++	if (event->attr.itrace_sample_size)
++		size = roundup_buffer_size(event->attr.itrace_sample_size);
++	else
++		size = task_rlimit(task, RLIMIT_ITRACE);
+ 
+ 	rb = rb_alloc(event, size >> PAGE_SHIFT, 0, event->cpu, 0,
+ 		      &itrace_rb_ops);
+@@ -325,6 +339,104 @@ void itrace_wake_up(struct perf_event *event)
+ 	rcu_read_unlock();
+ }
+ 
++static ssize_t
++coredump_show(struct device *dev,
++	      struct device_attribute *attr,
++	      char *page)
++{
++	struct pmu *pmu = dev_get_drvdata(dev);
++	struct itrace_pmu *ipmu = to_itrace_pmu(pmu);
++	int ret;
 +
-+		itrace_set_output(event, parent);
-+		return 0;
-+	}
++	mutex_lock(&itrace_pmus_mutex);
++	ret = itrace_pmu_coredump == ipmu;
++	mutex_unlock(&itrace_pmus_mutex);
 +
-+	event->hw.counter_type = parent->hw.counter_type;
-+
-+	size = roundup_buffer_size(size);
-+	rb = rb_alloc(event, size >> PAGE_SHIFT, 0, event->cpu, 0,
-+		      &itrace_rb_ops);
-+	if (!rb)
-+		return -ENOMEM;
-+
-+	ring_buffer_attach(event, rb);
-+	rcu_assign_pointer(event->rb[PERF_RB_ITRACE], rb);
-+	atomic_set(&rb->mmap_count, 1);
-+	atomic_set(&event->mmap_count[PERF_RB_ITRACE], 1);
-+
-+	return 0;
++	return snprintf(page, PAGE_SIZE-1, "%d\n", ret);
 +}
 +
-+int itrace_kernel_event(struct perf_event *event, struct task_struct *task)
++static ssize_t
++coredump_store(struct device *dev,
++	       struct device_attribute *attr,
++	       const char *buf, size_t count)
 +{
-+	struct itrace_pmu *ipmu;
-+	struct ring_buffer *rb;
++	struct pmu *pmu = dev_get_drvdata(dev);
++	struct itrace_pmu *ipmu = to_itrace_pmu(pmu);
++
++	mutex_lock(&itrace_pmus_mutex);
++	if (ipmu->core_size && ipmu->core_output)
++		itrace_pmu_coredump = ipmu;
++	mutex_unlock(&itrace_pmus_mutex);
++
++	return count;
++}
++static DEVICE_ATTR_RW(coredump);
++
++static ssize_t
++coredump_config_show(struct device *dev,
++		     struct device_attribute *attr,
++		     char *page)
++{
++	struct pmu *pmu = dev_get_drvdata(dev);
++	struct itrace_pmu *ipmu = to_itrace_pmu(pmu);
++
++	return snprintf(page, PAGE_SIZE-1, "%016llx\n", ipmu->coredump_config);
++}
++
++static ssize_t
++coredump_config_store(struct device *dev,
++		      struct device_attribute *attr,
++		      const char *buf, size_t count)
++{
++	struct pmu *pmu = dev_get_drvdata(dev);
++	struct itrace_pmu *ipmu = to_itrace_pmu(pmu);
++	u64 config;
++	int ret;
++
++	ret = kstrtou64(buf, 0, &config);
++	if (ret)
++		return ret;
++
++	ipmu->coredump_config = config;
++
++	return count;
++}
++static DEVICE_ATTR_RW(coredump_config);
++
++static struct attribute *itrace_attrs[] = {
++	&dev_attr_coredump.attr,
++	&dev_attr_coredump_config.attr,
++	NULL,
++};
++
++struct attribute_group itrace_group = {
++	.attrs	= itrace_attrs,
++};
++
++static const struct attribute_group **
++itrace_get_attr_groups(const struct attribute_group **pgroups)
++{
++	const struct attribute_group **groups;
++	int i, ngroups;
 +	size_t size;
 +
-+	if (!is_itrace_event(event))
-+		return 0;
++	for (i = 0, ngroups = 2; pgroups[i]; i++, ngroups++)
++		;
++
++	size = sizeof(struct attribute_group *) * ngroups;
++	groups = kzalloc(size, GFP_KERNEL);
++	if (!groups)
++		goto out;
++
++	for (i = 0; pgroups[i]; i++)
++		groups[i] = pgroups[i];
++
++	groups[i] = &itrace_group;
++
++out:
++	return groups;
++}
++
+ int itrace_pmu_register(struct itrace_pmu *ipmu)
+ {
+ 	int ret;
+@@ -334,6 +446,7 @@ int itrace_pmu_register(struct itrace_pmu *ipmu)
  
--	itrace_set_output(event, parent);
-+	ipmu = to_itrace_pmu(event->pmu);
-+
-+	if (!event->attr.itrace_sample_size)
-+		return 0;
-+
-+	size = roundup_buffer_size(event->attr.itrace_sample_size);
-+
-+	rb = rb_alloc(event, size >> PAGE_SHIFT, 0, event->cpu, 0,
-+		      &itrace_rb_ops);
-+	if (!rb)
-+		return -ENOMEM;
-+
-+	ring_buffer_attach(event, rb);
-+	rcu_assign_pointer(event->rb[PERF_RB_ITRACE], rb);
-+	atomic_set(&rb->mmap_count, 1);
-+	atomic_set(&event->mmap_count[PERF_RB_ITRACE], 1);
+ 	ipmu->event_init = ipmu->pmu.event_init;
+ 	ipmu->pmu.event_init = itrace_event_init;
++	ipmu->pmu.attr_groups = itrace_get_attr_groups(ipmu->pmu.attr_groups);
  
- 	return 0;
- }
-@@ -269,3 +345,80 @@ int itrace_pmu_register(struct itrace_pmu *ipmu)
+ 	ret = perf_pmu_register(&ipmu->pmu, ipmu->name, -1);
+ 	if (ret)
+@@ -341,6 +454,8 @@ int itrace_pmu_register(struct itrace_pmu *ipmu)
+ 
+ 	mutex_lock(&itrace_pmus_mutex);
+ 	list_add_tail_rcu(&ipmu->entry, &itrace_pmus);
++	if (ipmu->core_size && ipmu->core_output)
++		itrace_pmu_coredump = ipmu;
+ 	mutex_unlock(&itrace_pmus_mutex);
  
  	return ret;
+@@ -422,3 +537,169 @@ void itrace_sampler_output(struct perf_event *event,
+ 	ipmu = to_itrace_pmu(tevt->pmu);
+ 	ipmu->sample_output(tevt, handle, data);
  }
 +
 +/*
-+ * Trace sample annotation
-+ * For events that have attr.sample_type & PERF_SAMPLE_ITRACE, perf calls here
-+ * to configure and obtain itrace samples.
++ * Core dump bits
++ *
++ * Various parts of the kernel will call here:
++ *   + do_prlimit(): to tell us that the user is trying to set RLIMIT_ITRACE
++ *   + various places in bitfmt_elf.c: to write out itrace notes
++ *   + do_exit(): to destroy the first core dump counter
++ *   + the rest (copy_process()/do_exit()) is taken care of by perf for us
 + */
 +
-+int itrace_sampler_init(struct perf_event *event, struct task_struct *task)
++static struct perf_event *
++itrace_find_task_event(struct task_struct *task, unsigned type)
 +{
-+	struct perf_event_attr attr;
-+	struct perf_event *tevt;
-+	struct itrace_pmu *ipmu;
++	struct perf_event_context *ctx;
++	struct perf_event *event = NULL;
 +
-+	ipmu = itrace_pmu_find(event->attr.itrace_sample_type);
-+	if (!ipmu || !ipmu->sample_trace || !ipmu->sample_output)
-+		return -ENOTSUPP;
++	rcu_read_lock();
++	ctx = rcu_dereference(task->perf_event_ctxp[perf_hw_context]);
++	if (!ctx)
++		goto out;
 +
-+	memset(&attr, 0, sizeof(attr));
-+	attr.type = ipmu->pmu.type;
-+	attr.config = 0;
-+	attr.sample_type = 0;
-+	attr.exclude_user = event->attr.exclude_user;
-+	attr.exclude_kernel = event->attr.exclude_kernel;
-+	attr.itrace_sample_size = event->attr.itrace_sample_size;
-+	attr.itrace_config = event->attr.itrace_config;
-+
-+	tevt = perf_event_create_kernel_counter(&attr, event->cpu, task, NULL, NULL);
-+	if (IS_ERR(tevt))
-+		return PTR_ERR(tevt);
-+
-+	if (!itrace_priv(tevt)) {
-+		perf_event_release_kernel(tevt);
-+		return -EINVAL;
++	list_for_each_entry_rcu(event, &ctx->event_list, event_entry) {
++		if (is_itrace_event(event) &&
++		    event->cpu == -1 &&
++		    !!(event->hw.counter_type & type))
++			goto out;
 +	}
 +
-+	event->trace_event = tevt;
-+	tevt->hw.counter_type = PERF_ITRACE_SAMPLING;
-+	if (event->state != PERF_EVENT_STATE_OFF)
-+		perf_event_enable(event->trace_event);
++	event = NULL;
++out:
++	rcu_read_unlock();
++
++	return event;
++}
++
++int update_itrace_rlimit(struct task_struct *task, unsigned long rlim)
++{
++	struct perf_event_attr attr;
++	struct perf_event *event;
++
++	event = itrace_find_task_event(task, PERF_ITRACE_ANY);
++	if (event) {
++		if (event->hw.counter_type != PERF_ITRACE_COREDUMP)
++			return -EINVAL;
++
++		perf_event_release_kernel(event);
++		static_key_slow_dec_deferred(&itrace_core_events);
++	}
++
++	if (!rlim)
++		return 0;
++
++	memset(&attr, 0, sizeof(attr));
++
++	mutex_lock(&itrace_pmus_mutex);
++	if (!itrace_pmu_coredump) {
++		mutex_unlock(&itrace_pmus_mutex);
++		return -ENOTSUPP;
++	}
++
++	attr.type = itrace_pmu_coredump->pmu.type;
++	attr.config = 0;
++	attr.sample_type = 0;
++	attr.exclude_kernel = 1;
++	attr.inherit = 1;
++	attr.itrace_config = itrace_pmu_coredump->coredump_config;
++
++	event = perf_event_create_kernel_counter(&attr, -1, task, NULL, NULL);
++	mutex_unlock(&itrace_pmus_mutex);
++
++	if (IS_ERR(event))
++		return PTR_ERR(event);
++
++	static_key_slow_inc(&itrace_core_events.key);
++
++	event->hw.counter_type = PERF_ITRACE_COREDUMP;
++	perf_event_enable(event);
 +
 +	return 0;
 +}
 +
-+void itrace_sampler_fini(struct perf_event *event)
++static void itrace_pmu_exit_task(struct task_struct *task)
 +{
-+	struct perf_event *tevt = event->trace_event;
++	struct perf_event *event;
 +
-+	perf_event_release_kernel(tevt);
-+	event->trace_event = NULL;
-+}
++	event = itrace_find_task_event(task, PERF_ITRACE_COREDUMP);
 +
-+unsigned long itrace_sampler_trace(struct perf_event *event,
-+				   struct perf_sample_data *data)
-+{
-+	struct perf_event *tevt = event->trace_event;
-+	struct itrace_pmu *ipmu;
-+
-+	if (!tevt)
-+		return 0;
-+
-+	ipmu = to_itrace_pmu(tevt->pmu);
-+	return ipmu->sample_trace(tevt, data);
-+}
-+
-+void itrace_sampler_output(struct perf_event *event,
-+			   struct perf_output_handle *handle,
-+			   struct perf_sample_data *data)
-+{
-+	struct perf_event *tevt = event->trace_event;
-+	struct itrace_pmu *ipmu;
-+
-+	if (!tevt || !data->trace.size)
++	/*
++	 * here we are only interested in kernel counters created by
++	 * update_itrace_rlimit(), inherited ones should be taken care of by
++	 * perf_event_exit_task(), sampling ones are taken care of by
++	 * itrace_sampler_fini().
++	 */
++	if (!event)
 +		return;
 +
-+	ipmu = to_itrace_pmu(tevt->pmu);
-+	ipmu->sample_output(tevt, handle, data);
++	if (!event->parent)
++		perf_event_release_kernel(event);
 +}
++
++void exit_itrace(struct task_struct *task)
++{
++	if (static_key_false(&itrace_core_events.key))
++		itrace_pmu_exit_task(task);
++}
++
++size_t itrace_elf_note_size(struct task_struct *task)
++{
++	struct itrace_pmu *ipmu;
++	struct perf_event *event = NULL;
++	size_t size = 0;
++
++	event = itrace_find_task_event(task, PERF_ITRACE_COREDUMP);
++	if (event) {
++		perf_event_disable(event);
++
++		ipmu = to_itrace_pmu(event->pmu);
++		size = ipmu->core_size(event);
++		size += task_rlimit(task, RLIMIT_ITRACE);
++		size = roundup(size + strlen(ipmu->name) + 1, 4);
++		size += sizeof(struct itrace_note) + sizeof(struct elf_note);
++		size += roundup(sizeof(CORE_OWNER), 4);
++	}
++
++	return size;
++}
++
++void itrace_elf_note_write(struct coredump_params *cprm,
++			   struct task_struct *task)
++{
++	struct perf_event *event;
++	struct itrace_note note;
++	struct itrace_pmu *ipmu;
++	struct elf_note en;
++	unsigned long rlim;
++	size_t pmu_len;
++
++	event = itrace_find_task_event(task, PERF_ITRACE_COREDUMP);
++	if (!event)
++		return;
++
++	ipmu = to_itrace_pmu(event->pmu);
++	pmu_len = strlen(ipmu->name) + 1;
++
++	rlim = task_rlimit(task, RLIMIT_ITRACE);
++
++	/* Elf note with name */
++	en.n_namesz = strlen(CORE_OWNER);
++	en.n_descsz = roundup(ipmu->core_size(event) + rlim + sizeof(note) +
++			      pmu_len, 4);
++	en.n_type = NT_ITRACE;
++	dump_emit(cprm, &en, sizeof(en));
++	dump_align(cprm, 4);
++	dump_emit(cprm, CORE_OWNER, sizeof(CORE_OWNER));
++	dump_align(cprm, 4);
++
++	/* ITRACE header */
++	note.itrace_config = event->attr.itrace_config;
++	dump_emit(cprm, &note, sizeof(note));
++	dump_emit(cprm, ipmu->name, pmu_len);
++
++	/* ITRACE PMU header + payload */
++	ipmu->core_output(cprm, event, rlim);
++	dump_align(cprm, 4);
++}
+diff --git a/kernel/exit.c b/kernel/exit.c
+index a949819..28138ef 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -48,6 +48,7 @@
+ #include <linux/fs_struct.h>
+ #include <linux/init_task.h>
+ #include <linux/perf_event.h>
++#include <linux/itrace.h>
+ #include <trace/events/sched.h>
+ #include <linux/hw_breakpoint.h>
+ #include <linux/oom.h>
+@@ -788,6 +789,8 @@ void do_exit(long code)
+ 	check_stack_usage();
+ 	exit_thread();
+ 
++	exit_itrace(tsk);
++
+ 	/*
+ 	 * Flush inherited counters to the parent - before the parent
+ 	 * gets woken up by child-exit notifications.
+diff --git a/kernel/sys.c b/kernel/sys.c
+index c723113..7651d6f 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -14,6 +14,7 @@
+ #include <linux/fs.h>
+ #include <linux/kmod.h>
+ #include <linux/perf_event.h>
++#include <linux/itrace.h>
+ #include <linux/resource.h>
+ #include <linux/kernel.h>
+ #include <linux/workqueue.h>
+@@ -1402,6 +1403,10 @@ int do_prlimit(struct task_struct *tsk, unsigned int resource,
+ 		update_rlimit_cpu(tsk, new_rlim->rlim_cur);
+ out:
+ 	read_unlock(&tasklist_lock);
++
++	if (!retval && new_rlim && resource == RLIMIT_ITRACE)
++		retval = update_itrace_rlimit(tsk, new_rlim->rlim_cur);
++
+ 	return retval;
+ }
+ 
 -- 
 1.8.5.2
 
