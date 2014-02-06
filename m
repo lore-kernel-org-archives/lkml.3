@@ -1,39 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755771AbaBFJVr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 04:21:47 -0500
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:45665 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755415AbaBFJVk (ORCPT
+	id S1755885AbaBFJ1z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 04:27:55 -0500
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:65029 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755503AbaBFJ1w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 04:21:40 -0500
+	Thu, 6 Feb 2014 04:27:52 -0500
 MIME-Version: 1.0
-In-Reply-To: <52F149F4.6040105@broadcom.com>
-References: <1391503770.19947.0.camel@phoenix>
-	<52F149F4.6040105@broadcom.com>
-Date: Thu, 6 Feb 2014 10:21:40 +0100
-Message-ID: <CACRpkdY4rQC30idfYP0bJHeHL-OMbH=oSNaKf8pBfUP1f+sYBg@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: capri: Make capri_pinctrl_probe static
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sherman Yin <syin@broadcom.com>
-Cc: Axel Lin <axel.lin@ingics.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Christian Daudt <bcm@fixthebug.org>
+In-Reply-To: <1389266554-23463-3-git-send-email-sachin.kamat@linaro.org>
+References: <1389266554-23463-1-git-send-email-sachin.kamat@linaro.org>
+	<1389266554-23463-3-git-send-email-sachin.kamat@linaro.org>
+Date: Thu, 6 Feb 2014 14:57:51 +0530
+Message-ID: <CAK9yfHzGdVfrjWKzy2fDJyBnTab-nmW4EUApZNnYCc1t=jxROQ@mail.gmail.com>
+Subject: Re: [PATCH v2 3/3] Documentation: mfd: Add binding document for S2MPA01
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>, Lee Jones <lee.jones@linaro.org>,
+        Sachin Kamat <sachin.kamat@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 4, 2014 at 9:13 PM, Sherman Yin <syin@broadcom.com> wrote:
-> On 14-02-04 12:49 AM, Axel Lin wrote:
->>
->> Signed-off-by: Axel Lin <axel.lin@ingics.com>
->>
-> Note that this will collide with the capri->bcm281xx renaming patches.
+Hi Mark,
+
+On 9 January 2014 16:52, Sachin Kamat <sachin.kamat@linaro.org> wrote:
+> Added initial binding documentation for S2MPA01 MFD.
 >
-> Linus, Christian, are those patches going in soon?
+> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+> ---
+> * Re-organised as suggested by Mark Rutland.
+> ---
+>  Documentation/devicetree/bindings/mfd/s2mpa01.txt |   86 +++++++++++++++++++++
+>  1 file changed, 86 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/mfd/s2mpa01.txt
+>
 
-I have ACKed it, expecting it to be funneled through ARM SoC.
+Gentle Ping.
 
-Yours,
-Linus Walleij
+-- 
+With warm regards,
+Sachin
