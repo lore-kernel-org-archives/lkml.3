@@ -1,102 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754985AbaBFVJO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 16:09:14 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:39751 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751426AbaBFVJL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 16:09:11 -0500
-From: Peter Wu <lekensteyn@gmail.com>
-To: Bastien Traverse <bastien.traverse@gmail.com>
-Cc: linux-kernel@vger.kernel.org, francis.moro@gmail.com,
-        linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Subject: Re: 3.12: ethernet controller missing after resuming from suspend to RAM
-Date: Thu, 06 Feb 2014 22:08:25 +0100
-Message-ID: <5898085.IKVHQGKOYn@al>
-User-Agent: KMail/4.12.2 (Linux/3.13.1-2.1-ARCH; KDE/4.12.2; x86_64; ; )
-In-Reply-To: <52F2CC7B.80406@gmail.com>
-References: <52F2CC7B.80406@gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1756303AbaBFVKX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 16:10:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38144 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752284AbaBFVKV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 16:10:21 -0500
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Torvald Riegel <triegel@redhat.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+In-Reply-To: <20140206185910.GE27276@mudshark.cambridge.arm.com>
+References: <20140206134825.305510953@infradead.org>
+	 <21984.1391711149@warthog.procyon.org.uk> <52F3DA85.1060209@arm.com>
+	 <20140206185910.GE27276@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 06 Feb 2014 22:09:25 +0100
+Message-ID: <1391720965.23421.3884.camel@triegel.csb>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 06 February 2014 00:42:51 Bastien Traverse wrote:
-> I just used my Ethernet NIC for the first time on an up-to-date
-> Archlinux; it was working fine until I suspended to RAM: on resume the
-> Realtek/Ethernet device had completely disappeared.
+On Thu, 2014-02-06 at 18:59 +0000, Will Deacon wrote:
+> On Thu, Feb 06, 2014 at 06:55:01PM +0000, Ramana Radhakrishnan wrote:
+> > On 02/06/14 18:25, David Howells wrote:
+> > >
+> > > Is it worth considering a move towards using C11 atomics and barriers and
+> > > compiler intrinsics inside the kernel?  The compiler _ought_ to be able to do
+> > > these.
+> > 
+> > 
+> > It sounds interesting to me, if we can make it work properly and 
+> > reliably. + gcc@gcc.gnu.org for others in the GCC community to chip in.
 > 
-> The two entries absent from lspci output after resume are:
-> $ sudo lspci -v
-[..]
-> 03:00.2 Ethernet controller: Realtek Semiconductor Co., Ltd.
-> RTL8111/8168/8411 PCI Express Gigabit Ethernet Controller (rev 0a)
->         Subsystem: CLEVO/KAPOK Computer Device 0540
->         Flags: bus master, fast devsel, latency 0, IRQ 45
->         I/O ports at e000 [size=256]
->         Memory at f0a04000 (64-bit, prefetchable) [size=4K]
->         Memory at f0a00000 (64-bit, prefetchable) [size=16K]
->         Capabilities: [40] Power Management version 3
->         Capabilities: [50] MSI: Enable+ Count=1/1 Maskable- 64bit+
->         Capabilities: [70] Express Endpoint, MSI 01
->         Capabilities: [b0] MSI-X: Enable- Count=4 Masked-
->         Capabilities: [d0] Vital Product Data
->         Capabilities: [100] Advanced Error Reporting
->         Capabilities: [160] Device Serial Number 02-00-00-00-68-4c-e0-00
->         Kernel driver in use: r8169
->         Kernel modules: r8169
+> Given my (albeit limited) experience playing with the C11 spec and GCC, I
+> really think this is a bad idea for the kernel.
 
-I also have an affected laptop where the network and MMC controller
-vanishes on resume. The laptop is also from Clevo, but a different
-model: Clevo B7130. I had no issues with my custom kernel
-configuration (latest version that I tested was 3.13.1), but at least
-the stock Arch kernels from 3.12.2 up to 3.12.6 and 3.13.1 are
-affected by this issue.
+I'm not going to comment on what's best for the kernel (simply because I
+don't work on it), but I disagree with several of your statements.
 
-Reproduce with:
+> It seems that nobody really
+> agrees on exactly how the C11 atomics map to real architectural
+> instructions on anything but the trivial architectures.
 
- 1. Boot system.
- 2. lspci -nnvt > lspci-nnvt.txt
- 3. Suspend system (lid close)
- 4. lspci -nnvt > lspci-nnvt2.txt
- 5. Observe missing network controller (see diff below).
+There's certainly different ways to implement the memory model and those
+have to be specified elsewhere, but I don't see how this differs much
+from other things specified in the ABI(s) for each architecture.
 
---- boot-3.13.1/lspci-nnvt.txt	2014-02-06 17:11:07.070625446 +0100
-+++ boot-3.13.1/lspci-nnvt2.txt	2014-02-06 17:11:19.843386871 +0100
-@@ -11,10 +11,7 @@
-              +-1a.0  Intel Corporation 5 Series/3400 Series Chipset USB2 Enhanced Host Controller [8086:3b3c]
-              +-1b.0  Intel Corporation 5 Series/3400 Series Chipset High Definition Audio [8086:3b56]
-              +-1c.0-[02-03]----00.0  NEC Corporation uPD720200 USB 3.0 Host Controller [1033:0194]
--             +-1c.1-[04]--+-00.0  JMicron Technology Corp. SD/MMC Host Controller [197b:2382]
--             |            +-00.2  JMicron Technology Corp. Standard SD Host Controller [197b:2381]
--             |            +-00.3  JMicron Technology Corp. MS Host Controller [197b:2383]
--             |            \-00.5  JMicron Technology Corp. JMC250 PCI Express Gigabit Ethernet Controller [197b:0250]
-+             +-1c.1-[04]--
-              +-1c.2-[05]----00.0  Intel Corporation Centrino Advanced-N 6200 [8086:422c]
-              +-1d.0  Intel Corporation 5 Series/3400 Series Chipset USB2 Enhanced Host Controller [8086:3b34]
-              +-1e.0-[06]--
+> For example, should
+> the following code fire the assert?
 
-The only difference now is the kernel config. I guess that it comes
-from CONFIG_HOTPLUG_PCI. In my non-broken config, it's unset. The
-Arch kernel sets CONFIG_HOTPLUG_PCI=y (and also
-CONFIG_HOTPLUG_PCI_ACPI=y).
+I don't see how your example (which is about what the language requires
+or not) relates to the statement about the mapping above?
 
-That guess is based on the additional messages I see with the broken config:
+> 
+> extern atomic<int> foo, bar, baz;
+> 
+> void thread1(void)
+> {
+> 	foo.store(42, memory_order_relaxed);
+> 	bar.fetch_add(1, memory_order_seq_cst);
+> 	baz.store(42, memory_order_relaxed);
+> }
+> 
+> void thread2(void)
+> {
+> 	while (baz.load(memory_order_seq_cst) != 42) {
+> 		/* do nothing */
+> 	}
+> 
+> 	assert(foo.load(memory_order_seq_cst) == 42);
+> }
+> 
 
-    [    1.033628] pci_hotplug: PCI Hot Plug PCI Core version: 0.5
-    [    1.033642] pciehp: PCI Express Hot Plug Controller Driver version: 0.4                                                                                                                                                       
-    ...
-    [  102.704377] iwlwifi 0000:05:00.0: no hotplug settings from platform
-    [  103.170193] xhci_hcd 0000:02:00.0: no hotplug settings from platform
-    [  103.229008] iwlwifi 0000:05:00.0: no hotplug settings from platform
+It's a good example.  My first gut feeling was that the assertion should
+never fire, but that was wrong because (as I seem to usually forget) the
+seq-cst total order is just a constraint but doesn't itself contribute
+to synchronizes-with -- but this is different for seq-cst fences.
 
-Before I start bisecting, do you have any ideas to debug this?
+> To answer that question, you need to go and look at the definitions of
+> synchronises-with, happens-before, dependency_ordered_before and a whole
+> pile of vaguely written waffle to realise that you don't know.
 
-The stock config of Arch Linux kernel 3.13.1-2-ARCH can be found on:
-https://projects.archlinux.org/svntogit/packages.git/tree/trunk/config.x86_64?h=packages/linux&id=0ea780ba731bd214db3007f57f54a3fad709a078
+Are you familiar with the formalization of the C11/C++11 model by Batty
+et al.?
+http://www.cl.cam.ac.uk/~mjb220/popl085ap-sewell.pdf
+http://www.cl.cam.ac.uk/~mjb220/n3132.pdf
 
-Regards,
-Peter
+They also have a nice tool that can run condensed examples and show you
+all allowed (and forbidden) executions (it runs in the browser, so is
+slow for larger examples), including nice annotated graphs for those:
+http://svr-pes20-cppmem.cl.cam.ac.uk/cppmem/
+
+It requires somewhat special syntax, but the following, which should be
+equivalent to your example above, runs just fine:
+
+int main() {
+  atomic_int foo = 0; 
+  atomic_int bar = 0; 
+  atomic_int baz = 0; 
+  {{{ {
+        foo.store(42, memory_order_relaxed);
+        bar.store(1, memory_order_seq_cst);
+        baz.store(42, memory_order_relaxed);
+      }
+  ||| {
+        r1=baz.load(memory_order_seq_cst).readsvalue(42);
+        r2=foo.load(memory_order_seq_cst).readsvalue(0);
+      }
+  }}};
+  return 0; }
+
+That yields 3 consistent executions for me, and likewise if the last
+readsvalue() is using 42 as argument.
+
+If you add a "fence(memory_order_seq_cst);" after the store to foo, the
+program can't observe != 42 for foo anymore, because the seq-cst fence
+is adding a synchronizes-with edge via the baz reads-from.
+
+I think this is a really neat tool, and very helpful to answer such
+questions as in your example.
+
+> Certainly,
+> the code that arm64 GCC currently spits out would allow the assertion to fire
+> on some microarchitectures.
+> 
+> There are also so many ways to blow your head off it's untrue. For example,
+> cmpxchg takes a separate memory model parameter for failure and success, but
+> then there are restrictions on the sets you can use for each.
+
+That's in there for the architectures without a single-instruction
+CAS/cmpxchg, I believe.
+
+> It's not hard
+> to find well-known memory-ordering experts shouting "Just use
+> memory_model_seq_cst for everything, it's too hard otherwise".
+
+Everyone I've heard saying this meant this as advice to people new to
+synchronization or just dealing infrequently with it.  The advice is the
+simple and safe fallback, and I don't think it's meant as an
+acknowledgment that the model itself would be too hard.  If the
+language's memory model is supposed to represent weak HW memory models
+to at least some extent, there's only so much you can do in terms of
+keeping it simple.  If all architectures had x86-like models, the
+language's model would certainly be simpler... :)
+
+> Then there's
+> the fun of load-consume vs load-acquire (arm64 GCC completely ignores consume
+> atm and optimises all of the data dependencies away)
+
+AFAIK consume memory order was added to model Power/ARM-specific
+behavior.  I agree that the way the standard specifies how dependencies
+are to be preserved is kind of vague (as far as I understand it).  See
+GCC PR 59448.
+
+> as well as the definition
+> of "data races", which seem to be used as an excuse to miscompile a program
+> at the earliest opportunity.
+
+No.  The purpose of this is to *not disallow* every optimization on
+non-synchronizing code.  Due to the assumption of data-race-free
+programs, the compiler can assume a sequential code sequence when no
+atomics are involved (and thus, keep applying optimizations for
+sequential code).
+
+Or is there something particular that you dislike about the
+specification of data races?
+
+> Trying to introduce system concepts (writes to devices, interrupts,
+> non-coherent agents) into this mess is going to be an uphill battle IMHO.
+
+That might very well be true.
+
+OTOH, if you whould need to model this uniformly across different
+architectures (ie, so that there is a intra-kernel-portable abstraction
+for those system concepts), you might as well try doing this by
+extending the C11/C++11 model.  Maybe that will not be successful or not
+really a good fit, though, but at least then it's clear why that's the
+case.
+
+> I'd
+> just rather stick to the semantics we have and the asm volatile barriers.
+> 
+> That's not to say I don't there's no room for improvement in what we have
+> in the kernel. Certainly, I'd welcome allowing more relaxed operations on
+> architectures that support them, but it needs to be something that at least
+> the different architecture maintainers can understand how to implement
+> efficiently behind an uncomplicated interface. I don't think that interface is
+> C11.
+
+IMHO, one thing worth considering is that for C/C++, the C11/C++11 is
+the only memory model that has widespread support.  So, even though it's
+a fairly weak memory model (unless you go for the "only seq-cst"
+beginners advice) and thus comes with a higher complexity, this model is
+what likely most people will be familiar with over time.  Deviating from
+the "standard" model can have valid reasons, but it also has a cost in
+that new contributors are more likely to be familiar with the "standard"
+model.
+
+Note that I won't claim that the C11/C++11 model is perfect -- there are
+a few rough edges there (e.g., the forward progress guarantees are (or
+used to be) a little coarse for my taste), and consume vs. dependencies
+worries me as well.  But, IMHO, overall it's the best C/C++ language
+model we have.
+
+
+Torvald
+
+
