@@ -1,82 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756865AbaBFSFd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 13:05:33 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:24294 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751942AbaBFSFc (ORCPT
+	id S1756879AbaBFSGP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 13:06:15 -0500
+Received: from relay.parallels.com ([195.214.232.42]:51095 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751711AbaBFSGN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 13:05:32 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+KjnKPDmFNEQzki6rs+88/YzTHSuINF40=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 60F6751F9DF
-Date: Thu, 6 Feb 2014 13:05:06 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Cc: Andrew Lunn <andrew@lunn.ch>, linux-kernel@vger.kernel.org,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH 0/3] irqchip: orion: bridge irq fixes for v3.14-rc1
-Message-ID: <20140206180506.GJ8533@titan.lakedaemon.net>
-References: <1390516686-2224-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <20140205045415.GN8533@titan.lakedaemon.net>
- <20140206171039.GC12542@localhost>
+	Thu, 6 Feb 2014 13:06:13 -0500
+Message-ID: <52F3CF12.70905@parallels.com>
+Date: Thu, 6 Feb 2014 22:06:10 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140206171039.GC12542@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Christoph Lameter <cl@linux.com>
+CC: <penberg@kernel.org>, <akpm@linux-foundation.org>, <rientjes@google.com>,
+        <mhocko@suse.cz>, <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <devel@openvz.org>
+Subject: Re: [PATCH RFC] slub: do not drop slab_mutex for sysfs_slab_{add,remove}
+References: <1391702294-27289-1-git-send-email-vdavydov@parallels.com> <alpine.DEB.2.10.1402061021180.4927@nuc>
+In-Reply-To: <alpine.DEB.2.10.1402061021180.4927@nuc>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.24.25.245]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 06, 2014 at 02:10:40PM -0300, Ezequiel Garcia wrote:
-> On Tue, Feb 04, 2014 at 11:54:15PM -0500, Jason Cooper wrote:
-> > On Thu, Jan 23, 2014 at 11:38:03PM +0100, Sebastian Hesselbarth wrote:
-> > > This is a small patch set to fix some shortcomings how Orion bridge
-> > > irqs are handled. The patches are based on v3.13-rc8 and should go
-> > > into v3.14. They can possibly also marked for -stable down to v3.10.
-> > > 
-> > > This patches are the result of a discussion about a stale watchdog irq,
-> > > that can accidentially trigger the watchdog's irq handler and cause a
-> > > reset [1].
-> > > 
-> > > The first patch will add a write to clear already pending interrupts
-> > > on init. The second patch replaces handle_level_irq with handle_edge_irq
-> > > which is more appropriate for bridge irqs which are edge-triggered.
-> > > The last patch finally, fixes stale interrupts by installing an
-> > > .irq_enable callback, that will clear a possible pending interrupt
-> > > before unmasking it.
-> > > 
-> > > [1] http://www.spinics.net/lists/arm-kernel/msg302106.html
-> > > 
-> > > Sebastian Hesselbarth (3):
-> > >   irqchip: orion: clear bridge cause register on init
-> > >   irqchip: orion: use handle_edge_irq on bridge irqs
-> > >   irqchip: orion: clear stale interrupts in irq_enable
-> > > 
-> > >  drivers/irqchip/irq-orion.c | 18 ++++++++++++++++--
-> > >  1 file changed, 16 insertions(+), 2 deletions(-)
-> > 
-> > Whole series applied to mvebu-next/irqchip-fixes (v2 for 3/3).  Once I
-> > see that the outstanding pull requests for mvebu/irqchip have been
-> > merged into mainline, I'll be changing the name of this branch to
-> > mvebu/irqchip-fixes.  I just don't want to upset the applecart atm.
-> > 
-> > Oh yeah, Cc'd for stable back to v3.10.
-> > 
-> 
-> If you want to pick this:
-> 
-> Tested-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+On 02/06/2014 08:22 PM, Christoph Lameter wrote:
+> On Thu, 6 Feb 2014, Vladimir Davydov wrote:
+>
+>> When creating/destroying a kmem cache, we do a lot of work holding the
+>> slab_mutex, but we drop it for sysfs_slab_{add,remove} for some reason.
+>> Since __kmem_cache_create and __kmem_cache_shutdown are extremely rare,
+>> I propose to simplify locking by calling sysfs_slab_{add,remove} w/o
+>> dropping the slab_mutex.
+> The problem is that sysfs does nasty things like spawning a process in
+> user space that may lead to something wanting to create slabs too. The
+> module may then hang waiting on the lock ...
 
-Added, thanks for testing!
+Hmm... IIUC the only function of concern is kobject_uevent() -
+everything else called from sysfs_slab_{add,remove} is a mix of kmalloc,
+kfree, mutex_lock/unlock - in short, nothing dangerous. There we do
+call_usermodehelper(), but we do it with UMH_WAIT_EXEC, which means
+"wait for exec only, but not for the process to complete". An exec
+shouldn't issue any slab-related stuff AFAIU. At least, I tried to run
+the patched kernel with lockdep enabled and got no warnings at all when
+getting uevents about adding/removing caches. That's why I started to
+doubt whether we really need this lock...
 
-thx,
+Please correct me if I'm wrong.
 
-Jason.
+> I would be very thankful, if you can get that actually working reliably
+> without deadlock issues.
+
+If there is no choice rather than moving sysfs_slab_{add,remove} out of
+the slab_mutex critical section, I'll have to do it that way. But first
+I'd like to make sure it cannot be done with less footprint.
+
+Thanks.
