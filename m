@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754564AbaBFPTl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 10:19:41 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:7694 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751224AbaBFPTk (ORCPT
+	id S1754385AbaBFPYJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 10:24:09 -0500
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:56406 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752176AbaBFPYH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 10:19:40 -0500
-Date: Thu, 6 Feb 2014 10:18:44 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        jovi.zhangwei@huawei.com, Tom Zanussi <tom.zanussi@linux.intel.com>
-Subject: Re: [PATCHSET 0/5] tracing/uprobes: Support multi buffer and event
- trigger
-Message-ID: <20140206101844.2e355469@gandalf.local.home>
-In-Reply-To: <877g9a316i.fsf@sejong.aot.lge.com>
-References: <1389946120-19610-1-git-send-email-namhyung@kernel.org>
-	<87mwi83hvf.fsf@sejong.aot.lge.com>
-	<20140203205828.4e5b1592@gandalf.local.home>
-	<877g9a316i.fsf@sejong.aot.lge.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Thu, 6 Feb 2014 10:24:07 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+In-Reply-To: <20140206140936.GC26955@infradead.org>
+References: <CABPqkBSkSbWvdRu3iEtNvHhfV4J4sALHvdd40hZTcGxLe576yQ@mail.gmail.com>
+	<20140206135627.GA26955@infradead.org>
+	<CABPqkBS5qLDYyyv=n8fT4K+hA3uRWYmQOZmO+n-UE9=X=cEFzQ@mail.gmail.com>
+	<20140206140705.GB26955@infradead.org>
+	<20140206140936.GC26955@infradead.org>
+Date: Thu, 6 Feb 2014 16:24:07 +0100
+Message-ID: <CABPqkBRwy=0pnmm657TwV25GiYbpkqC1E8+cUGLEUbqxO=Gusw@mail.gmail.com>
+Subject: Re: [BUG] perf top: --stdio causes continuous refresh
+From: Stephane Eranian <eranian@google.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>, Jiri Olsa <jolsa@redhat.com>,
+        Eric Dumazet <edumazet@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 05 Feb 2014 08:31:17 +0900
-Namhyung Kim <namhyung@kernel.org> wrote:
+On Thu, Feb 6, 2014 at 3:09 PM, Arnaldo Carvalho de Melo
+<acme@redhat.com> wrote:
+> Em Thu, Feb 06, 2014 at 12:07:05PM -0200, Arnaldo Carvalho de Melo escreveu:
+>> Em Thu, Feb 06, 2014 at 02:58:01PM +0100, Stephane Eranian escreveu:
+>> > On Thu, Feb 6, 2014 at 2:56 PM, Arnaldo Carvalho de Melo
+>> > <acme@redhat.com> wrote:
+>> > > Em Wed, Feb 05, 2014 at 10:25:09PM +0100, Stephane Eranian escreveu:
+>> > >> If you run perf top on 3.14 but you force --stdio mode, perf top
+>> > >> goes crazy and constantly refreshes the output.
+>>
+>> > >> It does that with many older versions of the perf as well on 3.14.
+>> > >> It runs fine with newt mode.
+>>
+>> > >> Works fine with my 3.11 kernel. So something must be broken
+>> > >> with 3.14.
+>>
+>> > >> Can you reproduce the problem as well?
+>>
+>> > > Not so far, using my perf/urgent branch:
+>>
+>> > I am using tip.git. Or try 3.11, 3.10.
+>
+> But my tests are on top of:
+>
+> [acme@ssdandy linux]$ uname -r
+> 3.11.4-101.fc18.x86_64
+>
+> I thought it was a 3.14ish one, building one to try there...
+>
+The kernel must be 3.14-rcX, the tool can be any version.
 
-> >
-> > Currently, I'm working on some bugs at work as well as some things I
-> > found in mainline. I'll be reviewing these when I get a chance.
-> 
-> Great, thanks!
-
-Just an update. I looked at them and ran them though some minor tests
-(nothing major yet) and they seem fine. I've added them to the end of
-my 3.15 queue, but I wont be posting those patches to linux-next until
-after 3.14-rc2, where I'll rebase that work on.
-
-Hopefully 3.14-rc2 will not introduce more bugs and have all the fixes
-of 3.14-rc1 requires. Makes testing my code easier, instead of having
-to keep adding "fixup" patches that fix other people's code in order to
-get my tests working.
-
--- Steve
-
+> - Arnaldo
