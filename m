@@ -1,231 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756221AbaBFPzA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 10:55:00 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49173 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751799AbaBFPy6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 10:54:58 -0500
-Message-ID: <1391702088.5008.19.camel@pizza.hi.pengutronix.de>
-Subject: Re: [RFC PATCH] gpiolib: make gpiod_direction_output take a logical
- value, add gpiod_direction_output_raw
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>
-Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Landley <rob@landley.net>, Arnd Bergmann <arnd@arndb.de>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        kernel@pengutronix.de
-Date: Thu, 06 Feb 2014 16:54:48 +0100
-In-Reply-To: <CAAVeFuJwmUc3vZa2zVc8FTmStLknXpeZ3Wbc8LE7jday6BFdeQ@mail.gmail.com>
-References: <1389094451-16628-1-git-send-email-p.zabel@pengutronix.de>
-	 <CAAVeFuJwmUc3vZa2zVc8FTmStLknXpeZ3Wbc8LE7jday6BFdeQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
+	id S1756251AbaBFP5P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 10:57:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46179 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752149AbaBFP5O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 10:57:14 -0500
+Message-ID: <52F3B0D6.6000308@suse.cz>
+Date: Thu, 06 Feb 2014 16:57:10 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Prarit Bhargava <prarit@redhat.com>, linux-kernel@vger.kernel.org
+CC: Andrew Morton <akpm@linux-foundation.org>, Kirill Tkhai <tkhai@yandex.ru>,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH] Makefile, CONFIG_MODVERSIONS, export RCS_FIND_IGNORE
+ and ignore *.mod.c files in tags creation
+References: <1391691102-23721-1-git-send-email-prarit@redhat.com>
+In-Reply-To: <1391691102-23721-1-git-send-email-prarit@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
-
-Am Sonntag, den 12.01.2014, 16:44 +0900 schrieb Alexandre Courbot:
-> Hi Philipp,
+On 2014-02-06 13:51, Prarit Bhargava wrote:
+> CONFIG_MODVERSIONS=y results in a .mod.c for every compiled file in the kernel.
+> Issuing a 'make cscope' on a compiled kernel tree results in the cscope files
+> containing *.mod.c files.
 > 
-> On Tue, Jan 7, 2014 at 8:34 PM, Philipp Zabel <p.zabel@pengutronix.de> wrote:
-> > The documentation was not clear about whether gpio_direction_output should take
-> > a logical value or the physical level on the output line, i.e. whether the
-> > ACTIVE_LOW status would be taken into account.
-> > This converts gpiod_direction_output to use the logical level and adds a new
-> > gpiod_direction_output_raw for the raw value.
+> [prarit@prarit linux]# make cscope
+> [prarit@prarit linux]# cat cscope.files | grep mod.c | wc -l
+> 4807
 > 
-> Thanks for taking the time to craft this! The patch seems to do
-> exactly what we discussed and looks good to me. Maybe Linus can let us
-> know what he thinks about it? Unless there are reasons against it, I
-> think this should be merged ASAP as we want to gpiod API to converge
-> to something stable ASAP.
+> These files are not useful for cscope and should be ignored.  For example,
 > 
-> Reviewed-by: Alexandre Courbot <acourbot@nvidia.com>
-
-could you have a look at this patch?
-
-thanks
-Philipp
-
-> > Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-> > ---
-> >  Documentation/gpio/consumer.txt |  1 +
-> >  drivers/gpio/gpiolib.c          | 67 +++++++++++++++++++++++++++++------------
-> >  include/asm-generic/gpio.h      |  2 +-
-> >  include/linux/gpio/consumer.h   |  7 +++++
-> >  4 files changed, 57 insertions(+), 20 deletions(-)
-> >
-> > diff --git a/Documentation/gpio/consumer.txt b/Documentation/gpio/consumer.txt
-> > index 07c74a3..4dc4809 100644
-> > --- a/Documentation/gpio/consumer.txt
-> > +++ b/Documentation/gpio/consumer.txt
-> > @@ -150,6 +150,7 @@ raw line value:
-> >         void gpiod_set_raw_value(struct gpio_desc *desc, int value)
-> >         int gpiod_get_raw_value_cansleep(const struct gpio_desc *desc)
-> >         void gpiod_set_raw_value_cansleep(struct gpio_desc *desc, int value)
-> > +       int gpiod_direction_output_raw(struct gpio_desc *desc, int value)
-> >
-> >  The active-low state of a GPIO can also be queried using the following call:
-> >
-> > diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-> > index 85f772c..f04f1e6 100644
-> > --- a/drivers/gpio/gpiolib.c
-> > +++ b/drivers/gpio/gpiolib.c
-> > @@ -330,9 +330,9 @@ static ssize_t gpio_direction_store(struct device *dev,
-> >         if (!test_bit(FLAG_EXPORT, &desc->flags))
-> >                 status = -EIO;
-> >         else if (sysfs_streq(buf, "high"))
-> > -               status = gpiod_direction_output(desc, 1);
-> > +               status = gpiod_direction_output_raw(desc, 1);
-> >         else if (sysfs_streq(buf, "out") || sysfs_streq(buf, "low"))
-> > -               status = gpiod_direction_output(desc, 0);
-> > +               status = gpiod_direction_output_raw(desc, 0);
-> >         else if (sysfs_streq(buf, "in"))
-> >                 status = gpiod_direction_input(desc);
-> >         else
-> > @@ -1579,7 +1579,7 @@ int gpio_request_one(unsigned gpio, unsigned long flags, const char *label)
-> >         if (flags & GPIOF_DIR_IN)
-> >                 err = gpiod_direction_input(desc);
-> >         else
-> > -               err = gpiod_direction_output(desc,
-> > +               err = gpiod_direction_output_raw(desc,
-> >                                 (flags & GPIOF_INIT_HIGH) ? 1 : 0);
-> >
-> >         if (err)
-> > @@ -1744,28 +1744,13 @@ fail:
-> >  }
-> >  EXPORT_SYMBOL_GPL(gpiod_direction_input);
-> >
-> > -/**
-> > - * gpiod_direction_output - set the GPIO direction to input
-> > - * @desc:      GPIO to set to output
-> > - * @value:     initial output value of the GPIO
-> > - *
-> > - * Set the direction of the passed GPIO to output, such as gpiod_set_value() can
-> > - * be called safely on it. The initial value of the output must be specified.
-> > - *
-> > - * Return 0 in case of success, else an error code.
-> > - */
-> > -int gpiod_direction_output(struct gpio_desc *desc, int value)
-> > +static int _gpiod_direction_output_raw(struct gpio_desc *desc, int value)
-> >  {
-> >         unsigned long           flags;
-> >         struct gpio_chip        *chip;
-> >         int                     status = -EINVAL;
-> >         int offset;
-> >
-> > -       if (!desc || !desc->chip) {
-> > -               pr_warn("%s: invalid GPIO\n", __func__);
-> > -               return -EINVAL;
-> > -       }
-> > -
-> >         /* GPIOs used for IRQs shall not be set as output */
-> >         if (test_bit(FLAG_USED_AS_IRQ, &desc->flags)) {
-> >                 gpiod_err(desc,
-> > @@ -1827,6 +1812,50 @@ fail:
-> >                 gpiod_dbg(desc, "%s: gpio status %d\n", __func__, status);
-> >         return status;
-> >  }
-> > +
-> > +/**
-> > + * gpiod_direction_output_raw - set the GPIO direction to output
-> > + * @desc:      GPIO to set to output
-> > + * @value:     initial output value of the GPIO
-> > + *
-> > + * Set the direction of the passed GPIO to output, such as gpiod_set_value() can
-> > + * be called safely on it. The initial value of the output must be specified
-> > + * as raw value on the physical line without regard for the ACTIVE_LOW status.
-> > + *
-> > + * Return 0 in case of success, else an error code.
-> > + */
-> > +int gpiod_direction_output_raw(struct gpio_desc *desc, int value)
-> > +{
-> > +       if (!desc || !desc->chip) {
-> > +               pr_warn("%s: invalid GPIO\n", __func__);
-> > +               return -EINVAL;
-> > +       }
-> > +       return _gpiod_direction_output_raw(desc, value);
-> > +}
-> > +EXPORT_SYMBOL_GPL(gpiod_direction_output_raw);
-> > +
-> > +/**
-> > + * gpiod_direction_output - set the GPIO direction to input
-> > + * @desc:      GPIO to set to output
-> > + * @value:     initial output value of the GPIO
-> > + *
-> > + * Set the direction of the passed GPIO to output, such as gpiod_set_value() can
-> > + * be called safely on it. The initial value of the output must be specified
-> > + * as the logical value of the GPIO, i.e. taking its ACTIVE_LOW status into
-> > + * account.
-> > + *
-> > + * Return 0 in case of success, else an error code.
-> > + */
-> > +int gpiod_direction_output(struct gpio_desc *desc, int value)
-> > +{
-> > +       if (!desc || !desc->chip) {
-> > +               pr_warn("%s: invalid GPIO\n", __func__);
-> > +               return -EINVAL;
-> > +       }
-> > +       if (test_bit(FLAG_ACTIVE_LOW, &desc->flags))
-> > +               value = !value;
-> > +       return _gpiod_direction_output_raw(desc, value);
-> > +}
-> >  EXPORT_SYMBOL_GPL(gpiod_direction_output);
-> >
-> >  /**
-> > diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
-> > index a5f56a0..23e3645 100644
-> > --- a/include/asm-generic/gpio.h
-> > +++ b/include/asm-generic/gpio.h
-> > @@ -69,7 +69,7 @@ static inline int gpio_direction_input(unsigned gpio)
-> >  }
-> >  static inline int gpio_direction_output(unsigned gpio, int value)
-> >  {
-> > -       return gpiod_direction_output(gpio_to_desc(gpio), value);
-> > +       return gpiod_direction_output_raw(gpio_to_desc(gpio), value);
-> >  }
-> >
-> >  static inline int gpio_set_debounce(unsigned gpio, unsigned debounce)
-> > diff --git a/include/linux/gpio/consumer.h b/include/linux/gpio/consumer.h
-> > index 4d34dbb..3879943 100644
-> > --- a/include/linux/gpio/consumer.h
-> > +++ b/include/linux/gpio/consumer.h
-> > @@ -36,6 +36,7 @@ void devm_gpiod_put(struct device *dev, struct gpio_desc *desc);
-> >  int gpiod_get_direction(const struct gpio_desc *desc);
-> >  int gpiod_direction_input(struct gpio_desc *desc);
-> >  int gpiod_direction_output(struct gpio_desc *desc, int value);
-> > +int gpiod_direction_output_raw(struct gpio_desc *desc, int value);
-> >
-> >  /* Value get/set from non-sleeping context */
-> >  int gpiod_get_value(const struct gpio_desc *desc);
-> > @@ -121,6 +122,12 @@ static inline int gpiod_direction_output(struct gpio_desc *desc, int value)
-> >         WARN_ON(1);
-> >         return -ENOSYS;
-> >  }
-> > +static inline int gpiod_direction_output_raw(struct gpio_desc *desc, int value)
-> > +{
-> > +       /* GPIO can never have been requested */
-> > +       WARN_ON(1);
-> > +       return -ENOSYS;
-> > +}
-> >
-> >
-> >  static inline int gpiod_get_value(const struct gpio_desc *desc)
-> > --
-> > 1.8.5.2
-> >
+>    #   line  filename / context / line
+>    1    105  arch/x86/kvm/kvm-intel.mod.c <<GLOBAL>>
+>              { 0x618911fc, __VMLINUX_SYMBOL_STR(numa_node) },
+>    2    508  drivers/block/mtip32xx/mtip32xx.h <<GLOBAL>>
+>              int numa_node;
+>    3     55  drivers/block/mtip32xx/mtip32xx.mod.c <<GLOBAL>>
+>              { 0x618911fc, __VMLINUX_SYMBOL_STR(numa_node) },
+>    4     37  drivers/cpufreq/acpi-cpufreq.mod.c <<GLOBAL>>
+>              { 0x618911fc, __VMLINUX_SYMBOL_STR(numa_node) },
+>    <snip>
 > 
+> Add an export to RCS_FIND_IGNORE so it can be used in scripts/tags.sh and
+> add explicitly ignore *.mod.c files.
 
+Thanks, applied to kbuild.git#misc. But next time, please use a shorter
+subject line. I changed it to "scripts/tags.sh: Ignore *.mod.c" so that
+it does not take two lines everywhere.
 
+Michal
