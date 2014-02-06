@@ -1,70 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752166AbaBFOjx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 09:39:53 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:53844 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752009AbaBFOju (ORCPT
+	id S1752530AbaBFOkM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 09:40:12 -0500
+Received: from mail-yh0-f43.google.com ([209.85.213.43]:38463 "EHLO
+	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751715AbaBFOkI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 09:39:50 -0500
-X-AuditID: cbfec7f5-b7fc96d000004885-a9-52f39eb42af6
-Message-id: <52F39EB0.4050702@samsung.com>
-Date: Thu, 06 Feb 2014 15:39:44 +0100
-From: Tomasz Figa <t.figa@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.1.1
-MIME-version: 1.0
-To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-crypto@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, vzapolskiy@gmail.com,
-        herbert@gondor.apana.org.au, naveenkrishna.ch@gmail.com,
-        cpgs@samsung.com, devicetree@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH 3/9 v5] crypto:s5p-sss: Add support for SSS module on Exynos
-References: <1389243569-13161-1-git-send-email-ch.naveen@samsung.com>
- <1390987294-18628-1-git-send-email-ch.naveen@samsung.com>
-In-reply-to: <1390987294-18628-1-git-send-email-ch.naveen@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNLMWRmVeSWpSXmKPExsVy+t/xy7pb5n0OMlizmsni7vPDjBYvD2la
-	zDnfwmIx/8g5VovuVzIW9+/9ZLK4vGsOm8WM8/uYLBZt+89scXbOISYHLo8tK28yeeycdZfd
-	Y9sBVY++LasYPT5vkgtgjeKySUnNySxLLdK3S+DKOHJyGkvBHvaKj18vsDQw/mXtYuTkkBAw
-	kZhx/BEjhC0mceHeerYuRi4OIYGljBIzF8yAcj4zSlxZ9YYdpIpXQEtiyy6IbhYBVYmHK6+B
-	xdkE1CQ+NzxiA7FFBSIk/s5bzwhRLyjxY/I9FhBbRKBc4t+NNWBDmQVOMUpMbzoL1iAsECDx
-	9d4zJohtjYwSN2fMBEpwcHAKuEk8O2QKUsMsYC2xctI2RghbXmLzmrfMExgFZiHZMQtJ2Swk
-	ZQsYmVcxiqaWJhcUJ6XnGukVJ+YWl+al6yXn525ihETA1x2MS49ZHWIU4GBU4uHdsP5TkBBr
-	YllxZe4hRgkOZiUR3tSmz0FCvCmJlVWpRfnxRaU5qcWHGJk4OKUaGPuLvz9ZebVrs/R+Le0Q
-	h0uCO5fJ8J95tqPP+tit/Ql/LsmVPimZ/zN5xym+rTcN+8K8zH8sapt3/B+v9d/7B+JizA/W
-	BH5dez23rW3yd6/7r480R6upGYh/NJ3yu/bNjzLWRYHb7DX2ZnvrtUud/W8d1VN9RIFn1aQp
-	m8uYvXz+x0n4VV3lt1diKc5INNRiLipOBACMEjZbXgIAAA==
+	Thu, 6 Feb 2014 09:40:08 -0500
+Date: Thu, 6 Feb 2014 11:40:01 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 0/3] Fix perf build breakages in 3.13
+Message-ID: <20140206144001.GA10660@ghostprotocols.net>
+References: <1391648361.3003.97.camel@deadeye.wl.decadent.org.uk>
+ <20140206134817.GC8026@ghostprotocols.net>
+ <1391695995.3003.108.camel@deadeye.wl.decadent.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391695995.3003.108.camel@deadeye.wl.decadent.org.uk>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Naveen,
+Em Thu, Feb 06, 2014 at 02:13:15PM +0000, Ben Hutchings escreveu:
+> On Thu, 2014-02-06 at 10:48 -0300, Arnaldo Carvalho de Melo wrote:
+> > Em Thu, Feb 06, 2014 at 12:59:21AM +0000, Ben Hutchings escreveu:
+> > > perf no longer compiles on powerpc and sparc due to changes in the trace
+> > > sub-command.  This series fixes those compile errors; I compile-tested
+> > > in Debian sid on armhf, i386, powerpc and sparc.
+> > > 
+> > > I would much prefer not to revert the tty ioctl decoding but I think
+> > > it's going to take a much more sophisticated approach to do it right
+> > > across all supported architectures.
+> > 
+> > Second thought on the revert one:
+> > 
+> > Do you have a problem of switching the big hammer to one that makes this
+> > work just on x86/x86-64?
+> 
+> That seems reasonable as a temporary measure.
 
-On 29.01.2014 10:21, Naveen Krishna Chatradhi wrote:
-> This patch adds new compatible and variant struct to support the SSS
-> module on Exynos4 (Exynos4210), Exynos5 (Exynos5420 and Exynos5250)
-> for which
-> 1. AES register are at an offset of 0x200 and
-> 2. hash interrupt is not available
->
-> Signed-off-by: Naveen Krishna Ch <ch.naveen@samsung.com>
-> CC: Herbert Xu <herbert@gondor.apana.org.au>
-> CC: David S. Miller <davem@davemloft.net>
-> CC: Vladimir Zapolskiy <vzapolskiy@gmail.com>
-> TO: <linux-crypto@vger.kernel.org>
-> CC: <linux-samsung-soc@vger.kernel.org>
-> ---
-> Changes since v4:
-> Fix rebase error because of the patch 2/9
->
->   .../devicetree/bindings/crypto/samsung-sss.txt     |   21 +++-
->   drivers/crypto/s5p-sss.c                           |  107 +++++++++++++++-----
->   2 files changed, 103 insertions(+), 25 deletions(-)
+Thank you, I'll do that then and hope to work on the right fix in the
+near future, if nobody does it first.
 
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+- Arnaldo
+ 
+> Ben.
+> 
+> > That way at least those on these arches can have this while the correct
+> > solution is worked out.
+> > 
+> > - Arnaldo
+> >  
+> > > Ben.
+> > > 
+> > > Ben Hutchings (3):
+> > >   Revert "perf trace: Initial beautifier for ioctl's 'cmd' arg"
+> > >   perf trace: Add fallback definition of EFD_SEMAPHORE
+> > >   perf trace: Decode architecture-specific signal numbers
+> > > 
+> > >  tools/perf/builtin-trace.c | 48 ++++++++++++++--------------------------------
+> > >  1 file changed, 14 insertions(+), 34 deletions(-)
+> > > 
+> > > 
+> > > -- 
+> > > Ben Hutchings
+> > > It is a miracle that curiosity survives formal education. - Albert Einstein
+> > 
+> > 
+> 
+> -- 
+> Ben Hutchings
+> It is a miracle that curiosity survives formal education. - Albert Einstein
 
-Best regards,
-Tomasz
+
