@@ -1,43 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755787AbaBFIhR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 03:37:17 -0500
-Received: from s3.sipsolutions.net ([144.76.43.152]:55331 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755374AbaBFIhO (ORCPT
+	id S1755879AbaBFIjL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 03:39:11 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:42812 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755538AbaBFIjJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 03:37:14 -0500
-Message-ID: <1391675824.12789.3.camel@jlt4.sipsolutions.net>
-Subject: Re: [PATCH] ieee80211: Print human-readable disassoc/deauth reason
- codes
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Calvin Owens <jcalvinowens@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 06 Feb 2014 09:37:04 +0100
-In-Reply-To: <1391651088-31785-1-git-send-email-jcalvinowens@gmail.com> (sfid-20140206_024518_181987_99107ED8)
-References: <1391651088-31785-1-git-send-email-jcalvinowens@gmail.com>
-	 (sfid-20140206_024518_181987_99107ED8)
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 6 Feb 2014 03:39:09 -0500
+Date: Thu, 6 Feb 2014 09:38:49 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Vladimir Davydov <vdavydov@parallels.com>, rientjes@google.com,
+        akpm@linux-foundation.org, penberg@kernel.org, cl@linux.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] slub: fix false-positive lockdep warning in
+ free_partial()
+Message-ID: <20140206083849.GS8874@twins.programming.kicks-ass.net>
+References: <52F1F25F.20402@parallels.com>
+ <1391588133-15469-1-git-send-email-vdavydov@parallels.com>
+ <20140205195837.GA6857@home.goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140205195837.GA6857@home.goodmis.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-02-05 at 19:44 -0600, Calvin Owens wrote:
-> Create a function to return a descriptive string for each reason code,
-> and print that instead of the numeric value in the kernel log. These
-> codes are easily found on popular search engines, but one is generally
-> not able to access the internet when dealing with wireless connectivity
-> issues.
+On Wed, Feb 05, 2014 at 02:58:37PM -0500, Steven Rostedt wrote:
+> On Wed, Feb 05, 2014 at 12:15:33PM +0400, Vladimir Davydov wrote:
+> > Commit c65c1877bd68 ("slub: use lockdep_assert_held") requires
+> > remove_partial() to be called with n->list_lock held, but free_partial()
+> > called from kmem_cache_close() on cache destruction does not follow this
+> > rule, leading to a warning:
+> > 
+> >   WARNING: CPU: 0 PID: 2787 at mm/slub.c:1536 __kmem_cache_shutdown+0x1b2/0x1f0()
+> >   Modules linked in:
+> >   CPU: 0 PID: 2787 Comm: modprobe Tainted: G        W    3.14.0-rc1-mm1+ #1
+> >   Hardware name:
+> >    0000000000000600 ffff88003ae1dde8 ffffffff816d9583 0000000000000600
+> >    0000000000000000 ffff88003ae1de28 ffffffff8107c107 0000000000000000
+> >    ffff880037ab2b00 ffff88007c240d30 ffffea0001ee5280 ffffea0001ee52a0
+> >   Call Trace:
+> >    [<ffffffff816d9583>] dump_stack+0x51/0x6e
+> >    [<ffffffff8107c107>] warn_slowpath_common+0x87/0xb0
+> >    [<ffffffff8107c145>] warn_slowpath_null+0x15/0x20
+> >    [<ffffffff811c7fe2>] __kmem_cache_shutdown+0x1b2/0x1f0
+> >    [<ffffffff811908d3>] kmem_cache_destroy+0x43/0xf0
+> >    [<ffffffffa013a123>] xfs_destroy_zones+0x103/0x110 [xfs]
+> >    [<ffffffffa0192b54>] exit_xfs_fs+0x38/0x4e4 [xfs]
+> >    [<ffffffff811036fa>] SyS_delete_module+0x19a/0x1f0
+> >    [<ffffffff816dfcd8>] ? retint_swapgs+0x13/0x1b
+> >    [<ffffffff810d2125>] ? trace_hardirqs_on_caller+0x105/0x1d0
+> >    [<ffffffff81359efe>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+> >    [<ffffffff816e8539>] system_call_fastpath+0x16/0x1b
+> > 
+> > Although this cannot actually result in a race, because on cache
+> > destruction there should not be any concurrent frees or allocations from
+> > the cache, let's add spin_lock/unlock to free_partial() just to keep
+> > lockdep happy.
+> 
+> Really? We are adding a spin lock for a case where it is not needed just to
+> quiet lockdep?
 
-I believe both iw and wpa_supplicant already have the reason code
-printout, and if you're diagnosing connectivity issues then you're
-probably using those anyway (e.g. iw event -t), so I don't really see
-much point in adding this to the kernel?
+We do that in other places too, its usually init code that thinks to
+'know' there is no concurrency, however since its init code its not
+performance critical in any way shape or fashion so we just stick to the
+'rules' and don't try to play games.
 
-johannes
+> Now if it really isn't needed, then why don't we do the following instead of
+> adding the overhead of taking a lock?
+> 
+> static inline
+> __remove_partial(struct kmem_cache_node *n, struct page *page)
+> {
+> 	list_del(&page->lru);
+> 	n->nr_partial--;
+> }
+> 
+> static inline remove_partial(struct kmem_cache_node *n,
+> 			     struct page *page)
+> {
+> 	lockdep_assert_held(&n->list_lock);
+> 	__remove_partial(n, page);
+> }
+> 
+> And then just call __remove_partial() where we don't need to check if the
+> lock is held or not with a big comment to it.
+> 
+> That, IMNSHO, is a much better solution.
 
+I would say yes if there's a performance angle, but in this case you're
+increasing the API footprint for an absolute slow path.
+kmem_cache_destroy() isn't something we call (or should call) often.
+
+That said, I don't care much, its up to Christoph and Pekka.
