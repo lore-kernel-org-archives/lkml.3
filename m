@@ -1,79 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754446AbaBFCI4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 21:08:56 -0500
-Received: from mga02.intel.com ([134.134.136.20]:35460 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752797AbaBFCIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 21:08:51 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,790,1384329600"; 
-   d="scan'208";a="478820782"
-Message-ID: <52F2EE9E.4070905@intel.com>
-Date: Thu, 06 Feb 2014 10:08:30 +0800
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1754547AbaBFCRQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 21:17:16 -0500
+Received: from fallback.hitachi.co.jp ([133.145.228.50]:49098 "EHLO
+	mailxx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753529AbaBFCRO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 21:17:14 -0500
+X-AuditID: 85900ec0-d1d29b9000001514-dc-52f2f0989746
+Subject: [PATCH] serial/uart: Add tunable RX interrupt trigger I/F of FIFO
+ buffers
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        yrl.pp-manager.tt@hitachi.com
+Date: Thu, 06 Feb 2014 11:16:55 +0900
+Message-ID: <20140206021655.8613.52786.stgit@yunodevel>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>,
-        Peter Zijlstra <peterz@infradead.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 06/14] perf, core: always switch pmu specific data during
- context switch
-References: <1388728091-18564-1-git-send-email-zheng.z.yan@intel.com>	<1388728091-18564-7-git-send-email-zheng.z.yan@intel.com>	<CABPqkBQS=kSyRb0hb7DSTAOmUpB03_Cq70Wi1NvHj+DAQc4FVQ@mail.gmail.com>	<20140205175528.GF5002@laptop.programming.kicks-ass.net> <CABPqkBTB3B817LBnY2pu0uLMhjHzJa8fL6a--iKe-2bKUxFZpQ@mail.gmail.com>
-In-Reply-To: <CABPqkBTB3B817LBnY2pu0uLMhjHzJa8fL6a--iKe-2bKUxFZpQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/2014 02:35 AM, Stephane Eranian wrote:
-> On Wed, Feb 5, 2014 at 6:55 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->> On Wed, Feb 05, 2014 at 06:19:27PM +0100, Stephane Eranian wrote:
->>> On Fri, Jan 3, 2014 at 6:48 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
->>>> If two tasks were both forked from the same parent task, Events in their perf
->>>> task contexts can be the same. Perf core optimizes context switch oout in this
->>>> case.
->>>>
->>>> Previous patch inroduces pmu specific data. The data is task specific, so we
->>>> should switch the data even when context switch is optimized out.
->>>>
->>> Reviwed-by: Stephane Eranian <eranian@google.com>
->>
->> You should look again.. that xchg() is an atomic op and a total waste of
->> time since the assignment back onto ctx->task_ctx_data is non-atomic.
->>
->> Complete fail there.
->>
-> I admit, it was not clear to me why the xchg().
+Add tunable RX interrupt trigger I/F of FIFO buffers.
+Serial devices are used as not only message communication devices but control
+or sending communication devices. For the latter uses, normally small data
+will be exchanged, so user applications want to receive data unit as soon as
+possible for real-time tendency. If we have a sensor which sends a 1 byte data
+each time and must control a device based on the sensor feedback, the RX
+interrupt should be triggered for each data.
 
-Sorry. I forget why I used xhcg(), maybe save a few lines of code.
+According to HW specification of serial UART devices, RX interrupt trigger
+can be changed, but the trigger is hard-coded. For example, RX interrupt trigger
+in 16550A can be set to 1, 4, 8, or 14 bytes for HW, but current driver sets
+the trigger to only 8bytes.
 
-Regards
-Yan, Zheng
+This patch makes a 16550A device change RX interrupt trigger from userland.
 
-> 
->>>> Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
->>>> ---
->>>>  kernel/events/core.c | 2 ++
->>>>  1 file changed, 2 insertions(+)
->>>>
->>>> diff --git a/kernel/events/core.c b/kernel/events/core.c
->>>> index b6650ab..d6d8dea 100644
->>>> --- a/kernel/events/core.c
->>>> +++ b/kernel/events/core.c
->>>> @@ -2319,6 +2319,8 @@ static void perf_event_context_sched_out(struct task_struct *task, int ctxn,
->>>>                         next->perf_event_ctxp[ctxn] = ctx;
->>>>                         ctx->task = next;
->>>>                         next_ctx->task = task;
->>>> +                       ctx->task_ctx_data = xchg(&next_ctx->task_ctx_data,
->>>> +                                                 ctx->task_ctx_data);
->>>>                         do_switch = 0;
->>>>
->>>>                         perf_event_sync_stat(ctx, next_ctx);
->>>> --
->>>> 1.8.4.2
->>>>
+<How to use>
+unsigned char rx_trig_byte = 1;
+fd = open(TTY_PASS, O_RDWR | O_NONBLOCK);
+ioctl(fd, TIOCSFIFOTRIG, &rx_trig_byte);
+read(fd, buf, size);
+
+<Support uart device>
+- 16550A (1, 4, 8, or 14 bytes)
+
+Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/tty/serial/8250/8250_core.c |   63 +++++++++++++++++++++++++++++++++++
+ include/uapi/asm-generic/ioctls.h   |    2 +
+ 2 files changed, 65 insertions(+)
+
+diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
+index 61ecd70..f51637a 100644
+--- a/drivers/tty/serial/8250/8250_core.c
++++ b/drivers/tty/serial/8250/8250_core.c
+@@ -2699,6 +2699,68 @@ serial8250_verify_port(struct uart_port *port, struct serial_struct *ser)
+ 	return 0;
+ }
+ 
++static int convert_val2rxtrig(struct uart_8250_port *up, unsigned char val)
++{
++	switch (up->port.type) {
++	case PORT_16550A:
++		if (val == 1)
++			return UART_FCR_R_TRIG_00;
++		else if (val == 4)
++			return UART_FCR_R_TRIG_01;
++		else if (val == 8)
++			return UART_FCR_R_TRIG_10;
++		else if (val == 14)
++			return UART_FCR_R_TRIG_11;
++		break;
++	default:
++		pr_info("Not support RX-trigger setting for this serial %u\n",
++			up->port.type);
++	}
++	return -EINVAL;
++}
++
++static int set_fifo_rx_trigger(struct uart_8250_port *up,
++			       unsigned char __user *uval)
++{
++	unsigned char fcr, val;
++	int rx_trig;
++
++	if (copy_from_user(&val, uval, sizeof(unsigned char)))
++		return -EFAULT;
++
++	rx_trig = convert_val2rxtrig(up, val);
++	if (rx_trig < 0)
++		return rx_trig;
++
++	fcr = uart_config[up->port.type].fcr;
++	serial8250_clear_fifos(up);
++	fcr &= ~UART_FCR_TRIGGER_MASK;
++	fcr |= (unsigned char)rx_trig;
++	serial_out(up, UART_FCR, fcr);
++	return 0;
++}
++
++static int
++serial8250_ioctl(struct uart_port *port, unsigned int cmd, unsigned long arg)
++{
++	struct uart_8250_port *up =
++		container_of(port, struct uart_8250_port, port);
++	void __user *uarg = (void __user *)arg;
++	int ret;
++
++	if (!(up->capabilities & UART_CAP_FIFO) || port->fifosize <= 1)
++		return -EINVAL;
++
++	switch (cmd) {
++	case TIOCSFIFORTRIG:
++		ret = set_fifo_rx_trigger(up, uarg);
++		break;
++	default:
++		ret = -ENOIOCTLCMD;
++	}
++	return ret;
++}
++
+ static const char *
+ serial8250_type(struct uart_port *port)
+ {
+@@ -2728,6 +2790,7 @@ static struct uart_ops serial8250_pops = {
+ 	.request_port	= serial8250_request_port,
+ 	.config_port	= serial8250_config_port,
+ 	.verify_port	= serial8250_verify_port,
++	.ioctl		= serial8250_ioctl,
+ #ifdef CONFIG_CONSOLE_POLL
+ 	.poll_get_char = serial8250_get_poll_char,
+ 	.poll_put_char = serial8250_put_poll_char,
+diff --git a/include/uapi/asm-generic/ioctls.h b/include/uapi/asm-generic/ioctls.h
+index 143dacb..d2e56a4 100644
+--- a/include/uapi/asm-generic/ioctls.h
++++ b/include/uapi/asm-generic/ioctls.h
+@@ -78,6 +78,8 @@
+ #define TIOCGPTLCK	_IOR('T', 0x39, int) /* Get Pty lock state */
+ #define TIOCGEXCL	_IOR('T', 0x40, int) /* Get exclusive mode state */
+ 
++#define TIOCSFIFORTRIG	0x5441
++
+ #define FIONCLEX	0x5450
+ #define FIOCLEX		0x5451
+ #define FIOASYNC	0x5452
 
