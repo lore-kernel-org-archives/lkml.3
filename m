@@ -1,226 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751909AbaBFFw7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 00:52:59 -0500
-Received: from smtp.ispras.ru ([83.149.199.79]:56450 "EHLO smtp.ispras.ru"
+	id S1755313AbaBFFxm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 00:53:42 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:40219 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750818AbaBFFw5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 00:52:57 -0500
-X-Greylist: delayed 569 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Feb 2014 00:52:57 EST
-Message-ID: <52F320FC.50803@ispras.ru>
-Date: Thu, 06 Feb 2014 09:43:24 +0400
-From: Andrey Tsyvarev <tsyvarev@ispras.ru>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1751922AbaBFFxk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 00:53:40 -0500
+Subject: [PATCH V3 1/3] time: Change the return type of clockevents_notify()
+ to integer
+To: rafael.j.wysocki@intel.com, linux-pm@vger.kernel.org, peterz@infradead.org,
+        fweisbec@gmail.com, daniel.lezcano@linaro.org,
+        linux-kernel@vger.kernel.org, paulus@samba.org,
+        benh@kernel.crashing.org, tglx@linutronix.de,
+        linuxppc-dev@lists.ozlabs.org, mingo@kernel.org
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: deepthi@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
+        svaidy@linux.vnet.ibm.com, srivatsa.bhat@linux.vnet.ibm.com
+Date: Thu, 06 Feb 2014 11:19:59 +0530
+Message-ID: <20140206054958.4595.27990.stgit@preeti>
+In-Reply-To: <20140206054158.4595.17827.stgit@preeti>
+References: <20140206054158.4595.17827.stgit@preeti>
+User-Agent: StGit/0.16-38-g167d
 MIME-Version: 1.0
-To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-CC: linux-f2fs-devel@lists.sourceforge.net,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: f2fs: f2fs unmount hangs if f2fs_init_acl() fails during mkdir syscall
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-Antivirus: avast! (VPS 140205-0, 05.02.2014), Outbound message
-X-Antivirus-Status: Clean
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14020605-7182-0000-0000-000009C4688F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+The broadcast framework can potentially be made use of by archs which do not have an
+external clock device as well. Then, it is required that one of the CPUs need
+to handle the broadcasting of wakeup IPIs to the CPUs in deep idle. As a
+result its local timers should remain functional all the time. For such
+a CPU, the BROADCAST_ENTER notification has to fail indicating that its clock
+device cannot be shutdown. To make way for this support, change the return
+type of tick_broadcast_oneshot_control() and hence clockevents_notify() to
+indicate such scenarios.
 
-Testing f2fs (of linux-3.13) under fault simulation, we detected 
-umount() hangs up after
-mkdir()->
-   f2fs_add_link()->
-     init_inode_metadata()->
-       f2fs_init_acl()->
-         f2fs_get_acl()->
-           f2fs_getxattr()->
-             read_all_xattrs() fails.
-
-Also there was a BUG_ON triggered after the fault in
-mkdir()->
-   f2fs_add_link()->
-     init_inode_metadata()->
-       remove_inode_page() ->
-         f2fs_bug_on(inode->i_blocks != 0 && inode->i_blocks != 1);
-
-In this case there are 2 blocks allocated, which are counted with 
-inode->i_blocks field:
-
-static struct page *init_inode_metadata(struct inode *inode,
-         struct inode *dir, const struct qstr *name)
-{
-     struct page *page;
-     int err;
-
-     if (is_inode_flag_set(F2FS_I(inode), FI_NEW_INODE)) {
-         page = new_inode_page(inode, name); <----- First block is 
-allocated for the inode
-         if (IS_ERR(page))
-             return page;
-
-         if (S_ISDIR(inode->i_mode)) {
-             err = make_empty_dir(inode, dir, page); <----- Second block 
-is allocated for the inode
-             if (err)
-                 goto error;
-         }
-
-         err = f2fs_init_acl(inode, dir, page); <----- This call returns 
-error
-         if (err)
-             goto error;
-         ...
-     } else {
-         ...
-     }
-
-     init_dent_inode(name, page);
-
-     /*
-      * This file should be checkpointed during fsync.
-      * We lost i_pino from now on.
-      */
-     if (is_inode_flag_set(F2FS_I(inode), FI_INC_LINK)) {
-         file_lost_pino(inode);
-         inc_nlink(inode);
-     }
-     return page;
-
-error:
-     f2fs_put_page(page, 1);
-     remove_inode_page(inode); <----- Expects at most one block 
-allocated for inode
-     return ERR_PTR(err);
-}
-
-Found by Linux File System Verification project (linuxtesting.org).
-
-
-Here are some additional details.
-
-F2fs-related kernel configuration is:
-CONFIG_F2FS_FS=m
-CONFIG_F2FS_STAT_FS=y
-CONFIG_F2FS_FS_XATTR=y
-CONFIG_F2FS_FS_POSIX_ACL=y
-CONFIG_F2FS_FS_SECURITY=y
-CONFIG_F2FS_CHECK_FS=y
-
-
-BUG_ON log:
-[  117.863869] kernel BUG at fs/f2fs/node.c:825!
-[  117.863870] invalid opcode: 0000 [#1] SMP
-[  117.863872] Modules linked in: f2fs kedr_fsim_indicator_common(OF) 
-kedr_fsim_indicator_capable(OF)
-kedr_fsim_indicator_kmalloc(OF) kedr_fsim_vmm(OF) kedr_fsim_mem_util(OF) 
-kedr_fsim_capable(OF)
-kedr_fsim_uaccess(OF) kedr_fsim_cmm(OF) kedr_fault_simulation(OF) 
-kedr(OF) fuse nf_conntrack_netbios_ns
-nf_conntrack_broadcast ipt_MASQUERADE ip6t_REJECT xt_conntrack 
-ebtable_nat ebtable_broute bridge stp llc
-ebtable_filter ebtables ip6table_nat nf_conntrack_ipv6 nf_defrag_ipv6 
-nf_nat_ipv6 ip6table_mangle
-ip6table_security ip6table_raw ip6table_filter ip6_tables iptable_nat 
-nf_conntrack_ipv4 nf_defrag_ipv4
-nf_nat_ipv4 nf_nat nf_conntrack iptable_mangle iptable_security 
-iptable_raw microcode i2c_piix4 parport_pc
-e1000 i2c_core parport ata_generic pata_acpi [last unloaded: kedr]
-[  117.863894] CPU: 0 PID: 2766 Comm: fs-driver-tests Tainted: 
-GF          O 3.13.0fs #2
-[  117.863895] Hardware name: innotek GmbH VirtualBox/VirtualBox, BIOS 
-VirtualBox 12/01/2006
-[  117.863896] task: ffff8800001b6420 ti: ffff8800111ac000 task.ti: 
-ffff8800111ac000
-[  117.863897] RIP: 0010:[<ffffffffa01e03bf>] [<ffffffffa01e03bf>] 
-remove_inode_page+0xbf/0xd0 [f2fs]
-[  117.863901] RSP: 0018:ffff8800111ade08  EFLAGS: 00010202
-[  117.863902] RAX: 0000000000000000 RBX: ffff8800125a0c30 RCX: 
-ffff8800001b6a78
-[  117.863903] RDX: ffff880000000000 RSI: ffffea00004b9780 RDI: 
-ffff8800125a0c30
-[  117.863903] RBP: ffff8800111ade50 R08: 0000000000000001 R09: 
-0000000000000000
-[  117.863904] R10: 0000000000000006 R11: 000000000000000f R12: 
-ffffea00004b9780
-[  117.863905] R13: 0000000000000004 R14: ffffea00004b9780 R15: 
-ffffea00004b97c0
-[  117.863907] FS:  00007ff92dc9f740(0000) GS:ffff88003fc00000(0000) 
-knlGS:0000000000000000
-[  117.863908] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  117.863909] CR2: 00007f6673415000 CR3: 000000003c628000 CR4: 
-00000000000006f0
-[  117.863913] Stack:
-[  117.863913]  00000000000041ff ffffea00004b97c0 ffff8800111ade50 
-ffffffffa01e9ffa
-[  117.863915]  ffffea00004b9780 ffff880000000000 ffff880012e5d000 
-0000000000000003
-[  117.863917]  ffffea00004b9740 ffff8800111adec0 ffffffffa01d0d20 
-ffff880012532948
-[  117.863919] Call Trace:
-[  117.863922]  [<ffffffffa01e9ffa>] ? f2fs_init_acl+0x10a/0x180 [f2fs]
-[  117.863925]  [<ffffffffa01d0d20>] __f2fs_add_link+0x560/0x7c0 [f2fs]
-[  117.863928]  [<ffffffffa01d3b8b>] f2fs_mkdir+0xbb/0x150 [f2fs]
-[  117.863929]  [<ffffffff811cf4c7>] vfs_mkdir+0xb7/0x160
-[  117.863931]  [<ffffffff811d010f>] SyS_mkdir+0x5f/0xc0
-[  117.863933]  [<ffffffff8165bf29>] system_call_fastpath+0x16/0x1b
-[  117.863934] Code: e6 49 8b 14 24 83 e2 01 74 23 4c 89 e7 89 45 bc e8 
-f7 f9 f6 e0 4c 89 e7 e8 ff d1 f7
-e0 8b 45 bc 48 83 c4 30 5b 41 5c 41 5d 5d c3 <0f> 0b e8 c8 9d 00 00 66 
-2e 0f 1f 84 00 00 00 00 00 0f 1f 44 00
-[  117.863953] RIP  [<ffffffffa01e03bf>] remove_inode_page+0xbf/0xd0 [f2fs]
-[  117.863956]  RSP <ffff8800111ade08>
-
-There are several ways for simulate faults in kernel function calls, 
-e.g. manual faults insertion,
-fault injection kernel infrustructure.
-In my tests I use KEDR framework (http://forge.ispras.ru/projects/kedr) 
-for that purpose,
-that is why kedr* modules are in the log above.
-Call stack of the fault simulated is:
-
-[  117.863789] KEDR FAULT SIMULATION: forcing a failure
-[  117.863792] CPU: 0 PID: 2766 Comm: fs-driver-tests Tainted: 
-GF          O 3.13.0fs #2
-[  117.863794] Hardware name: innotek GmbH VirtualBox/VirtualBox, BIOS 
-VirtualBox 12/01/2006
-[  117.863795]  ffff8800111adce8 ffff8800111adcb0 ffffffff8164bd96 
-0000000000000001
-[  117.863797]  ffff8800111adcd8 ffffffffa018ace2 ffffffffa018ac45 
-ffffffffa01e8b54
-[  117.863799]  0000000000001000 ffff8800111add18 ffffffffa0194816 
-ffffffffa01e8b54
-[  117.863801] Call Trace:
-[  117.863806]  [<ffffffff8164bd96>] dump_stack+0x45/0x56
-[  117.863810]  [<ffffffffa018ace2>] kedr_fsim_point_simulate+0xa2/0xb0 
-[kedr_fault_simulation]
-[  117.863812]  [<ffffffffa018ac45>] ? kedr_fsim_point_simulate+0x5/0xb0 
-[kedr_fault_simulation]
-[  117.863816]  [<ffffffffa01e8b54>] ? read_all_xattrs+0x3c4/0x3e0 [f2fs]
-[  117.863819]  [<ffffffffa0194816>] kedr_repl___kmalloc+0x36/0x80 
-[kedr_fsim_cmm]
-[  117.863822]  [<ffffffffa01e8b54>] ? read_all_xattrs+0x3c4/0x3e0 [f2fs]
-[  117.863824]  [<ffffffffa01955d2>] 
-kedr_intermediate_func___kmalloc+0x72/0xd0 [kedr_fsim_cmm]
-[  117.863826]  [<ffffffffa01e8b54>] ? read_all_xattrs+0x3c4/0x3e0 [f2fs]
-[  117.863829]  [<ffffffffa01e8b54>] read_all_xattrs+0x3c4/0x3e0 [f2fs]
-[  117.863832]  [<ffffffffa01e91d4>] f2fs_getxattr+0x44/0xf0 [f2fs]
-[  117.863835]  [<ffffffffa01e9ba9>] f2fs_get_acl+0xe9/0x390 [f2fs]
-[  117.863838]  [<ffffffffa01d99c9>] ? set_dirty_dir_page+0xb9/0xe0 [f2fs]
-[  117.863841]  [<ffffffffa01e9ffa>] f2fs_init_acl+0x10a/0x180 [f2fs]
-[  117.863843]  [<ffffffffa01d0ccc>] __f2fs_add_link+0x50c/0x7c0 [f2fs]
-[  117.863846]  [<ffffffffa01d3b8b>] f2fs_mkdir+0xbb/0x150 [f2fs]
-[  117.863849]  [<ffffffff811cf4c7>] vfs_mkdir+0xb7/0x160
-[  117.863851]  [<ffffffff811d010f>] SyS_mkdir+0x5f/0xc0
-[  117.863854]  [<ffffffff8165bf29>] system_call_fastpath+0x16/0x1b
-
---
-Best regards,
-Andrey Tsyvarev
-Linux Verification Center, ISPRAS
-web: http://linuxtesting.org
-
+Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
 ---
-Это сообщение свободно от вирусов и вредоносного ПО благодаря защите от вирусов avast!
-http://www.avast.com
+
+ include/linux/clockchips.h   |    6 +++---
+ kernel/time/clockevents.c    |    8 +++++---
+ kernel/time/tick-broadcast.c |    6 ++++--
+ kernel/time/tick-internal.h  |    6 +++---
+ 4 files changed, 15 insertions(+), 11 deletions(-)
+
+diff --git a/include/linux/clockchips.h b/include/linux/clockchips.h
+index 493aa02..e0c5a6c 100644
+--- a/include/linux/clockchips.h
++++ b/include/linux/clockchips.h
+@@ -186,9 +186,9 @@ static inline int tick_check_broadcast_expired(void) { return 0; }
+ #endif
+ 
+ #ifdef CONFIG_GENERIC_CLOCKEVENTS
+-extern void clockevents_notify(unsigned long reason, void *arg);
++extern int clockevents_notify(unsigned long reason, void *arg);
+ #else
+-static inline void clockevents_notify(unsigned long reason, void *arg) {}
++static inline int clockevents_notify(unsigned long reason, void *arg) { return 0; }
+ #endif
+ 
+ #else /* CONFIG_GENERIC_CLOCKEVENTS_BUILD */
+@@ -196,7 +196,7 @@ static inline void clockevents_notify(unsigned long reason, void *arg) {}
+ static inline void clockevents_suspend(void) {}
+ static inline void clockevents_resume(void) {}
+ 
+-static inline void clockevents_notify(unsigned long reason, void *arg) {}
++static inline int clockevents_notify(unsigned long reason, void *arg) { return 0; }
+ static inline int tick_check_broadcast_expired(void) { return 0; }
+ 
+ #endif
+diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
+index 086ad60..79b8685 100644
+--- a/kernel/time/clockevents.c
++++ b/kernel/time/clockevents.c
+@@ -524,12 +524,13 @@ void clockevents_resume(void)
+ #ifdef CONFIG_GENERIC_CLOCKEVENTS
+ /**
+  * clockevents_notify - notification about relevant events
++ * Returns 0 on success, any other value on error
+  */
+-void clockevents_notify(unsigned long reason, void *arg)
++int clockevents_notify(unsigned long reason, void *arg)
+ {
+ 	struct clock_event_device *dev, *tmp;
+ 	unsigned long flags;
+-	int cpu;
++	int cpu, ret = 0;
+ 
+ 	raw_spin_lock_irqsave(&clockevents_lock, flags);
+ 
+@@ -542,7 +543,7 @@ void clockevents_notify(unsigned long reason, void *arg)
+ 
+ 	case CLOCK_EVT_NOTIFY_BROADCAST_ENTER:
+ 	case CLOCK_EVT_NOTIFY_BROADCAST_EXIT:
+-		tick_broadcast_oneshot_control(reason);
++		ret = tick_broadcast_oneshot_control(reason);
+ 		break;
+ 
+ 	case CLOCK_EVT_NOTIFY_CPU_DYING:
+@@ -585,6 +586,7 @@ void clockevents_notify(unsigned long reason, void *arg)
+ 		break;
+ 	}
+ 	raw_spin_unlock_irqrestore(&clockevents_lock, flags);
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(clockevents_notify);
+ 
+diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+index 43780ab..ddf2ac2 100644
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -633,14 +633,15 @@ again:
+ /*
+  * Powerstate information: The system enters/leaves a state, where
+  * affected devices might stop
++ * Returns 0 on success, -EBUSY if the cpu is used to broadcast wakeups.
+  */
+-void tick_broadcast_oneshot_control(unsigned long reason)
++int tick_broadcast_oneshot_control(unsigned long reason)
+ {
+ 	struct clock_event_device *bc, *dev;
+ 	struct tick_device *td;
+ 	unsigned long flags;
+ 	ktime_t now;
+-	int cpu;
++	int cpu, ret = 0;
+ 
+ 	/*
+ 	 * Periodic mode does not care about the enter/exit of power
+@@ -746,6 +747,7 @@ void tick_broadcast_oneshot_control(unsigned long reason)
+ 	}
+ out:
+ 	raw_spin_unlock_irqrestore(&tick_broadcast_lock, flags);
++	return ret;
+ }
+ 
+ /*
+diff --git a/kernel/time/tick-internal.h b/kernel/time/tick-internal.h
+index 8329669..f0dc03c 100644
+--- a/kernel/time/tick-internal.h
++++ b/kernel/time/tick-internal.h
+@@ -46,7 +46,7 @@ extern int tick_switch_to_oneshot(void (*handler)(struct clock_event_device *));
+ extern void tick_resume_oneshot(void);
+ # ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
+ extern void tick_broadcast_setup_oneshot(struct clock_event_device *bc);
+-extern void tick_broadcast_oneshot_control(unsigned long reason);
++extern int tick_broadcast_oneshot_control(unsigned long reason);
+ extern void tick_broadcast_switch_to_oneshot(void);
+ extern void tick_shutdown_broadcast_oneshot(unsigned int *cpup);
+ extern int tick_resume_broadcast_oneshot(struct clock_event_device *bc);
+@@ -58,7 +58,7 @@ static inline void tick_broadcast_setup_oneshot(struct clock_event_device *bc)
+ {
+ 	BUG();
+ }
+-static inline void tick_broadcast_oneshot_control(unsigned long reason) { }
++static inline int tick_broadcast_oneshot_control(unsigned long reason) { return 0; }
+ static inline void tick_broadcast_switch_to_oneshot(void) { }
+ static inline void tick_shutdown_broadcast_oneshot(unsigned int *cpup) { }
+ static inline int tick_broadcast_oneshot_active(void) { return 0; }
+@@ -87,7 +87,7 @@ static inline void tick_broadcast_setup_oneshot(struct clock_event_device *bc)
+ {
+ 	BUG();
+ }
+-static inline void tick_broadcast_oneshot_control(unsigned long reason) { }
++static inline int tick_broadcast_oneshot_control(unsigned long reason) { return 0; }
+ static inline void tick_shutdown_broadcast_oneshot(unsigned int *cpup) { }
+ static inline int tick_resume_broadcast_oneshot(struct clock_event_device *bc)
+ {
 
