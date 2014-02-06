@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756879AbaBFSGP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 13:06:15 -0500
-Received: from relay.parallels.com ([195.214.232.42]:51095 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751711AbaBFSGN (ORCPT
+	id S1756894AbaBFSGW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 13:06:22 -0500
+Received: from mail1.bemta5.messagelabs.com ([195.245.231.153]:28036 "EHLO
+	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751711AbaBFSGT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 13:06:13 -0500
-Message-ID: <52F3CF12.70905@parallels.com>
-Date: Thu, 6 Feb 2014 22:06:10 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
+	Thu, 6 Feb 2014 13:06:19 -0500
+X-Env-Sender: Adam.Thomson.Opensource@diasemi.com
+X-Msg-Ref: server-12.tower-179.messagelabs.com!1391709809!22887069!2
+X-Originating-IP: [82.210.246.133]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.16; banners=-,-,-
+X-VirusChecked: Checked
+Message-ID: <36eb26fd1b41f2c1d679152b9df0eeaaeeab66fe.1391705989.git.Adam.Thomson.Opensource@diasemi.com>
+In-Reply-To: <cover.1391705989.git.Adam.Thomson.Opensource@diasemi.com>
+References: <cover.1391705989.git.Adam.Thomson.Opensource@diasemi.com>
+From: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+Date: Thu, 6 Feb 2014 18:03:15 +0000
+Subject: [PATCH v2 5/8] onkey: da9055: Remove use of regmap_irq_get_virq()
+To: Mark Brown <broonie@kernel.org>, Lee Jones <lee.jones@linaro.org>
+CC: <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Guenter Roeck <linux@roeck-us.net>
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: <penberg@kernel.org>, <akpm@linux-foundation.org>, <rientjes@google.com>,
-        <mhocko@suse.cz>, <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <devel@openvz.org>
-Subject: Re: [PATCH RFC] slub: do not drop slab_mutex for sysfs_slab_{add,remove}
-References: <1391702294-27289-1-git-send-email-vdavydov@parallels.com> <alpine.DEB.2.10.1402061021180.4927@nuc>
-In-Reply-To: <alpine.DEB.2.10.1402061021180.4927@nuc>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.24.25.245]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/2014 08:22 PM, Christoph Lameter wrote:
-> On Thu, 6 Feb 2014, Vladimir Davydov wrote:
->
->> When creating/destroying a kmem cache, we do a lot of work holding the
->> slab_mutex, but we drop it for sysfs_slab_{add,remove} for some reason.
->> Since __kmem_cache_create and __kmem_cache_shutdown are extremely rare,
->> I propose to simplify locking by calling sysfs_slab_{add,remove} w/o
->> dropping the slab_mutex.
-> The problem is that sysfs does nasty things like spawning a process in
-> user space that may lead to something wanting to create slabs too. The
-> module may then hang waiting on the lock ...
+Using platform_get_irq_byname() to retrieve the IRQ number
+returns the VIRQ number rather than the local IRQ number for
+the device. Passing that value then into regmap_irq_get_virq()
+causes a failure because the function is expecting the local
+IRQ number (e.g. 0, 1, 2, 3, etc). This patch removes use of
+regmap_irq_get_virq() to prevent this failure from happening.
 
-Hmm... IIUC the only function of concern is kobject_uevent() -
-everything else called from sysfs_slab_{add,remove} is a mix of kmalloc,
-kfree, mutex_lock/unlock - in short, nothing dangerous. There we do
-call_usermodehelper(), but we do it with UMH_WAIT_EXEC, which means
-"wait for exec only, but not for the process to complete". An exec
-shouldn't issue any slab-related stuff AFAIU. At least, I tried to run
-the patched kernel with lockdep enabled and got no warnings at all when
-getting uevents about adding/removing caches. That's why I started to
-doubt whether we really need this lock...
+Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+---
+ drivers/input/misc/da9055_onkey.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-Please correct me if I'm wrong.
+diff --git a/drivers/input/misc/da9055_onkey.c b/drivers/input/misc/da9055_onkey.c
+index 4b11ede..4765799 100644
+--- a/drivers/input/misc/da9055_onkey.c
++++ b/drivers/input/misc/da9055_onkey.c
+@@ -109,7 +109,6 @@ static int da9055_onkey_probe(struct platform_device *pdev)
 
-> I would be very thankful, if you can get that actually working reliably
-> without deadlock issues.
+ 	INIT_DELAYED_WORK(&onkey->work, da9055_onkey_work);
 
-If there is no choice rather than moving sysfs_slab_{add,remove} out of
-the slab_mutex critical section, I'll have to do it that way. But first
-I'd like to make sure it cannot be done with less footprint.
+-	irq = regmap_irq_get_virq(da9055->irq_data, irq);
+ 	err = request_threaded_irq(irq, NULL, da9055_onkey_irq,
+ 				   IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
+ 				   "ONKEY", onkey);
+--
+1.7.0.4
 
-Thanks.
