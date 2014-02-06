@@ -1,99 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754127AbaBFAiv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 19:38:51 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:56014 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753623AbaBFAis (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 19:38:48 -0500
-Date: Wed, 5 Feb 2014 18:35:26 -0600
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Cc: santosh.shilimkar@ti.com, rob@landley.net, linux@arm.linux.org.uk,
-        galak@codeaurora.org, mark.rutland@arm.com, devicetree@vger.kernel.org,
-        grygorii.strashko@ti.com, pawel.moll@arm.com,
-        ijc+devicetree@hellion.org.uk, daniel.lezcano@linaro.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        robh+dt@kernel.org, tglx@linutronix.de,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v5 1/3] clocksource: timer-keystone: introduce
- clocksource driver for Keystone
-Message-ID: <20140206003526.GQ20228@joshc.qualcomm.com>
-References: <1391608060-10760-1-git-send-email-ivan.khoronzhuk@ti.com>
- <1391608060-10760-2-git-send-email-ivan.khoronzhuk@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1391608060-10760-2-git-send-email-ivan.khoronzhuk@ti.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1754221AbaBFAjD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 19:39:03 -0500
+Received: from ozlabs.org ([203.10.76.45]:39367 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753623AbaBFAjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 19:39:01 -0500
+Date: Thu, 6 Feb 2014 11:38:45 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: jaegeuk.kim@samsung.com
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: bad commits in the f2fs tree
+Message-Id: <20140206113845.081b6847d8263f2fd37adefd@canb.auug.org.au>
+In-Reply-To: <1391646482.25542.72.camel@kjgkr>
+References: <20140206110401.7888b06cbd651b842404b902@canb.auug.org.au>
+	<1391646482.25542.72.camel@kjgkr>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__6_Feb_2014_11_38_45_+1100_gvJnKgqab+Ba0b67"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Ivan-
+--Signature=_Thu__6_Feb_2014_11_38_45_+1100_gvJnKgqab+Ba0b67
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, Feb 05, 2014 at 03:47:38PM +0200, Ivan Khoronzhuk wrote:
-> Add broadcast clock-event device for the Keystone arch.
-> 
-> The timer can be configured as a general-purpose 64-bit timer,
-> dual general-purpose 32-bit timers. When configured as dual 32-bit
-> timers, each half can operate in conjunction (chain mode) or
-> independently (unchained mode) of each other.
-> 
-> Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
-> Acked-by: Santosh shilimkar <santosh.shilimkar@ti.com>
-> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-> ---
->  drivers/clocksource/Makefile         |   1 +
->  drivers/clocksource/timer-keystone.c | 233 +++++++++++++++++++++++++++++++++++
->  2 files changed, 234 insertions(+)
->  create mode 100644 drivers/clocksource/timer-keystone.c
-> 
-> diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
-> index c7ca50a..4abe5aa 100644
-> --- a/drivers/clocksource/Makefile
-> +++ b/drivers/clocksource/Makefile
-> @@ -37,3 +37,4 @@ obj-$(CONFIG_ARM_ARCH_TIMER)		+= arm_arch_timer.o
->  obj-$(CONFIG_ARM_GLOBAL_TIMER)		+= arm_global_timer.o
->  obj-$(CONFIG_CLKSRC_METAG_GENERIC)	+= metag_generic.o
->  obj-$(CONFIG_ARCH_HAS_TICK_BROADCAST)	+= dummy_timer.o
-> +obj-$(CONFIG_ARCH_KEYSTONE)		+= timer-keystone.o
-> diff --git a/drivers/clocksource/timer-keystone.c b/drivers/clocksource/timer-keystone.c
-> new file mode 100644
-> index 0000000..2299666
-> --- /dev/null
-> +++ b/drivers/clocksource/timer-keystone.c
-> +static void __init keystone_timer_init(struct device_node *np)
-> +{
-> +	struct clock_event_device *event_dev = &timer.event_dev;
-> +	unsigned long rate;
-> +	struct clk *clk;
-> +	int irq, error;
-> +	u32 tgcr;
-> +
-> +	irq  = irq_of_parse_and_map(np, 0);
-> +	if (irq == NO_IRQ) {
-> +		pr_err("%s: failed to map interrupts\n", __func__);
-> +		return;
-> +	}
-> +
-> +	timer.base = of_iomap(np, 0);
-> +	if (!timer.base) {
-> +		pr_err("%s: failed to map registers\n", __func__);
-> +		return;
-> +	}
-> +
-> +	clk = of_clk_get(np, 0);
-> +	if (!clk) {
+Hi Jaegeuk,
 
-This condition should be IS_ERR(clk).
+On Thu, 06 Feb 2014 09:28:02 +0900 Jaegeuk Kim <jaegeuk.kim@samsung.com> wr=
+ote:
+>
+> 2014-02-06 (=EB=AA=A9), 11:04 +1100, Stephen Rothwell:
+> >=20
+> > Looking at the f2fs tree today, it has *copies* of several commits that
+> > are in Linus' tree (including b522196a6ffb "Linus 3.14-rc1" which is
+> > commit 38dbfb59d117 in Linus' tree).  I assume this happened when you
+> > tried to rewrite your tree. :-(
+>=20
+> I fixed that.
 
-> +		pr_err("%s: failed to get clock\n", __func__);
-> +		iounmap(timer.base);
-> +		return;
-> +	}
+I have refetched your tree and will use it today.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__6_Feb_2014_11_38_45_+1100_gvJnKgqab+Ba0b67
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJS8tmbAAoJEMDTa8Ir7ZwVqNkP/Av9ZAcga4vD8iAetDcVE4ot
+3TLDROdpc9Ug6zpGA9K4T4AVqud3A5aSW9YapnJrN/m3HrFy3XkcmCerw9EjcXmW
+BBZYoegmr33cpcRPE6rpZgg/IViRcVKGLysMYe3JGaTijCM4vBVgux3vwGidcvTT
+jyhblOPhYVwdLxQ+2JL/VQjqAU8G9drg8xLz3I24dW7X1GdYw0vuWW40BAhUqyzX
+0P7ZU2DhIIJumEHdUm5xswRwlAoPECd7wGcxg9oD6Ldz00a/TkzUA1u91mtYRsto
+CHPCl4CFiuFMZhKR25KN5owwWnW/sQ6QeppzNlqHx7ZxWWF4ZrzZXlACOGHB5ySc
+uoOcfgacj6U2z8ogHMj9I9xGUcJ4/eYr+03ahrZwyiKaoPjks7sii9PZfPHfl9qo
+uwW50KBgGK+DDa3hMemSNX6JUxoBYCgor7v4iGXphpeCvBL0VKDWuOPPjKgTqy8a
+mEnIxpRYD7DhHiJsu/znnud1Y8uNGKUqFphn0b4sX0FGosi9k4whYXtj+3jtw3w0
+L86uyJY7YpAguNERPoz2ejsRwHb4jFbewEs8UE031rsf7FS0qwaYZZkxi6lA3dEF
+vU/iwrhRlTSXO/Myp66h1Neh+YA0f4z1E5q0ymz08JeG2EX4vhL1eBeg7cKHHy9p
+2/i0IljDxd58QZyMwYVy
+=SGjN
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__6_Feb_2014_11_38_45_+1100_gvJnKgqab+Ba0b67--
