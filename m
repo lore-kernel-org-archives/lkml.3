@@ -1,128 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755416AbaBFINt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 03:13:49 -0500
-Received: from mail-vb0-f51.google.com ([209.85.212.51]:62028 "EHLO
-	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752305AbaBFINr (ORCPT
+	id S1755562AbaBFIQV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 03:16:21 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:56228 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753942AbaBFIQU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 03:13:47 -0500
-MIME-Version: 1.0
-In-Reply-To: <1391507999-31437-2-git-send-email-amit.grover@samsung.com>
-References: <52E0ED10.2020901@samsung.com> <1391507999-31437-1-git-send-email-amit.grover@samsung.com>
- <1391507999-31437-2-git-send-email-amit.grover@samsung.com>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Thu, 6 Feb 2014 13:43:26 +0530
-Message-ID: <CA+V-a8sg6D-+688vFrmX=fFejWnzTO6G0seoC42CYf=8Ljrd6Q@mail.gmail.com>
-Subject: Re: [PATCH 1/2] [media] v4l2: Add settings for Horizontal and
- Vertical MV Search Range
-To: Amit Grover <amit.grover@samsung.com>
-Cc: linux-media <linux-media@vger.kernel.org>,
-        LDOC <linux-doc@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Kamil Debski <k.debski@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Hans Verkuil <hverkuil@xs4all.nl>,
-        swaminathan <swaminath.p@samsung.com>,
-        Jeongtae Park <jtp.park@samsung.com>, Rrob@landley.net,
-        Andrey Smirnov <andrew.smirnov@gmail.com>,
-        Anatol Pomozov <anatol.pomozov@gmail.com>,
-        Jonathan McCrohan <jmccrohan@gmail.com>, Joe Perches <joe@perches.com>,
-        Andy Walls <awalls@md.metrocast.net>, Arun Kumar <arun.kk@samsung.com>,
-        austin.lobo@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 6 Feb 2014 03:16:20 -0500
+X-AuditID: cbfee691-b7efc6d0000039d3-00-52f344d2e2e8
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>,
+        "'Jin Park'" <jinyoungp@nvidia.com>
+References: <000101cf2313$6ef38e80$4cdaab80$%han@samsung.com>
+In-reply-to: <000101cf2313$6ef38e80$4cdaab80$%han@samsung.com>
+Subject: [PATCH 01/12] backlight: aat2870: Remove unnecessary OOM messages
+Date: Thu, 06 Feb 2014 17:16:18 +0900
+Message-id: <000201cf2313$b65183e0$22f48ba0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac8jE27bRmoXkttyRH6rTI4zkLyyhgAAAvEQ
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDIsWRmVeSWpSXmKPExsVy+t8zA91LLp+DDI51W1vMWb+GzeLywkus
+	Fls+nQSyds1hc2DxODHjN4tHb/M7No++LasYPT5vkgtgieKySUnNySxLLdK3S+DKmHf5PVNB
+	I1vFxF9pDYy/WLoYOTkkBEwkdp1oYYawxSQu3FvP1sXIxSEksIxRYsfNG4wwRTOOvGSHSExn
+	lPh9bT4LhPOLUaJ95gdWkCo2ATWJL18OA1VxcIgI6Eu0tWiAhJkFMiUmL7vEBmILCdhK7D59
+	EqycU8BOYtunViYQW1jAS+JDy012EJtFQFXi29O/YNfxAtV33mphhLAFJX5MvscCMVNLYv3O
+	40wQtrzE5jVvmUHWSgioSzz6qwsSFhEwkti4/QgrRImIxL4X7xhBTpYQOMcucXX7LRaIXQIS
+	3yYfYoHolZXYdAAaEJISB1fcYJnAKDELyeZZSDbPQrJ5FpIVCxhZVjGKphYkFxQnpReZ6hUn
+	5haX5qXrJefnbmKExOTEHYz3D1gfYkwGWj+RWUo0OR8Y03kl8YbGZkYWpiamxkbmlmakCSuJ
+	86Y/SgoSEkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnVwLjAOEL5iQTX77VTtvCwbKsJ06/bsL5R
+	3f1fXfw0vh9+ZamZL7humRpsC3zfsIcpVM588/VWvxRzrqvmUQs/aGUUa5/inZiievdpmW7a
+	Bh29/3waBVW7y97qlE5tvbBh7fwX6SvYXuYlznc9W7+HfU7hiz9O0gKSoXz76n63V7KnrPl+
+	8OArfSWW4oxEQy3mouJEAAR3X1rfAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJKsWRmVeSWpSXmKPExsVy+t9jQd1LLp+DDC5dN7eYs34Nm8XlhZdY
+	LbZ8Oglk7ZrD5sDicWLGbxaP3uZ3bB59W1YxenzeJBfAEtXAaJORmpiSWqSQmpecn5KZl26r
+	5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtFNJoSwxpxQoFJBYXKykb4dpQmiIm64F
+	TGOErm9IEFyPkQEaSFjHmDHv8numgka2iom/0hoYf7F0MXJySAiYSMw48pIdwhaTuHBvPVsX
+	IxeHkMB0Ronf1+azQDi/GCXaZ35gBaliE1CT+PLlMFAHB4eIgL5EW4sGSJhZIFNi8rJLbCC2
+	kICtxO7TJ8HKOQXsJLZ9amUCsYUFvCQ+tNwEW8YioCrx7elfsCN4geo7b7UwQtiCEj8m32OB
+	mKklsX7ncSYIW15i85q3zCBrJQTUJR791QUJiwgYSWzcfoQVokREYt+Ld4wTGIVmIZk0C8mk
+	WUgmzULSsoCRZRWjaGpBckFxUnqukV5xYm5xaV66XnJ+7iZGcMQ/k97BuKrB4hCjAAejEg/v
+	hvWfgoRYE8uKK3MPMUpwMCuJ8G41/xwkxJuSWFmVWpQfX1Sak1p8iDEZ6NGJzFKiyfnAZJRX
+	Em9obGJmZGlkZmFkYm5OmrCSOO/BVutAIYH0xJLU7NTUgtQimC1MHJxSDYzzJtrOnlv11m6e
+	ycFZb6v3ZW57N2uxau+lyzsC38ocjNh2acbiclbTqTFT1Zcrm4d0hmsd2swx6W9uXuZ31dZo
+	/z8RHEv3HvwVf7v5vphcxtKgx4wfolI2Pcg3fT7/nmub9OFCjZQIj6VLDLkNogsrt7UvfbWy
+	KOXs9/sTOw9JfjDue7xHX4JLiaU4I9FQi7moOBEARNRVYDwDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 4, 2014 at 3:29 PM, Amit Grover <amit.grover@samsung.com> wrote:
-> Adding V4L2 controls for horizontal and vertical search range in pixels
-> for motion estimation module in video encoder.
->
-> Signed-off-by: Swami Nathan <swaminath.p@samsung.com>
-> Signed-off-by: Amit Grover <amit.grover@samsung.com>
+The site-specific OOM messages are unnecessary, because they
+duplicate the MM subsystem generic OOM message.
 
-Acked-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/video/backlight/aat2870_bl.c |    2 --
+ 1 file changed, 2 deletions(-)
 
-Regards,
---Prabhakar Lad
+diff --git a/drivers/video/backlight/aat2870_bl.c b/drivers/video/backlight/aat2870_bl.c
+index ee0c0a9..ec5350f 100644
+--- a/drivers/video/backlight/aat2870_bl.c
++++ b/drivers/video/backlight/aat2870_bl.c
+@@ -149,8 +149,6 @@ static int aat2870_bl_probe(struct platform_device *pdev)
+ 				  sizeof(struct aat2870_bl_driver_data),
+ 				  GFP_KERNEL);
+ 	if (!aat2870_bl) {
+-		dev_err(&pdev->dev,
+-			"Failed to allocate memory for aat2870 backlight\n");
+ 		ret = -ENOMEM;
+ 		goto out;
+ 	}
+-- 
+1.7.10.4
 
-> ---
->  Documentation/DocBook/media/v4l/controls.xml |   20 ++++++++++++++++++++
->  drivers/media/v4l2-core/v4l2-ctrls.c         |    6 ++++++
->  include/uapi/linux/v4l2-controls.h           |    2 ++
->  3 files changed, 28 insertions(+)
->
-> diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
-> index a5a3188..0e1770c 100644
-> --- a/Documentation/DocBook/media/v4l/controls.xml
-> +++ b/Documentation/DocBook/media/v4l/controls.xml
-> @@ -2258,6 +2258,26 @@ Applicable to the MPEG1, MPEG2, MPEG4 encoders.</entry>
->  VBV buffer control.</entry>
->               </row>
->
-> +                 <row><entry></entry></row>
-> +             <row id=""v4l2-mpeg-video-hor-search-range">
-> +               <entry spanname="id"><constant>V4L2_CID_MPEG_VIDEO_MV_H_SEARCH_RANGE</constant>&nbsp;</entry>
-> +               <entry>integer</entry>
-> +             </row>
-> +               <row><entry spanname="descr">Horizontal search range defines maximum horizontal search area in pixels
-> +to search and match for the present Macroblock (MB) in the reference picture. This V4L2 control macro is used to set
-> +horizontal search range for motion estimation module in video encoder.</entry>
-> +             </row>
-> +
-> +                <row><entry></entry></row>
-> +             <row id="v4l2-mpeg-video-vert-search-range">
-> +               <entry spanname="id"><constant>V4L2_CID_MPEG_VIDEO_MV_V_SEARCH_RANGE</constant>&nbsp;</entry>
-> +               <entry>integer</entry>
-> +             </row>
-> +               <row><entry spanname="descr">Vertical search range defines maximum vertical search area in pixels
-> +to search and match for the present Macroblock (MB) in the reference picture. This V4L2 control macro is used to set
-> +vertical search range for motion estimation module in video encoder.</entry>
-> +             </row>
-> +
->               <row><entry></entry></row>
->               <row>
->                 <entry spanname="id"><constant>V4L2_CID_MPEG_VIDEO_H264_CPB_SIZE</constant>&nbsp;</entry>
-> diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c b/drivers/media/v4l2-core/v4l2-ctrls.c
-> index 6ff002b..e9e12c4 100644
-> --- a/drivers/media/v4l2-core/v4l2-ctrls.c
-> +++ b/drivers/media/v4l2-core/v4l2-ctrls.c
-> @@ -735,6 +735,8 @@ const char *v4l2_ctrl_get_name(u32 id)
->         case V4L2_CID_MPEG_VIDEO_DEC_PTS:                       return "Video Decoder PTS";
->         case V4L2_CID_MPEG_VIDEO_DEC_FRAME:                     return "Video Decoder Frame Count";
->         case V4L2_CID_MPEG_VIDEO_VBV_DELAY:                     return "Initial Delay for VBV Control";
-> +       case V4L2_CID_MPEG_VIDEO_MV_H_SEARCH_RANGE:             return "Horizontal MV Search Range";
-> +       case V4L2_CID_MPEG_VIDEO_MV_V_SEARCH_RANGE:             return "Vertical MV Search Range";
->         case V4L2_CID_MPEG_VIDEO_REPEAT_SEQ_HEADER:             return "Repeat Sequence Header";
->
->         /* VPX controls */
-> @@ -910,6 +912,10 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
->                 *min = 0;
->                 *max = *step = 1;
->                 break;
-> +       case V4L2_CID_MPEG_VIDEO_MV_H_SEARCH_RANGE:
-> +       case V4L2_CID_MPEG_VIDEO_MV_V_SEARCH_RANGE:
-> +               *type = V4L2_CTRL_TYPE_INTEGER;
-> +               break;
->         case V4L2_CID_PAN_RESET:
->         case V4L2_CID_TILT_RESET:
->         case V4L2_CID_FLASH_STROBE:
-> diff --git a/include/uapi/linux/v4l2-controls.h b/include/uapi/linux/v4l2-controls.h
-> index 2cbe605..cda6fa0 100644
-> --- a/include/uapi/linux/v4l2-controls.h
-> +++ b/include/uapi/linux/v4l2-controls.h
-> @@ -376,6 +376,8 @@ enum v4l2_mpeg_video_multi_slice_mode {
->  #define V4L2_CID_MPEG_VIDEO_DEC_FRAME                  (V4L2_CID_MPEG_BASE+224)
->  #define V4L2_CID_MPEG_VIDEO_VBV_DELAY                  (V4L2_CID_MPEG_BASE+225)
->  #define V4L2_CID_MPEG_VIDEO_REPEAT_SEQ_HEADER          (V4L2_CID_MPEG_BASE+226)
-> +#define V4L2_CID_MPEG_VIDEO_MV_H_SEARCH_RANGE          (V4L2_CID_MPEG_BASE+227)
-> +#define V4L2_CID_MPEG_VIDEO_MV_V_SEARCH_RANGE          (V4L2_CID_MPEG_BASE+228)
->
->  #define V4L2_CID_MPEG_VIDEO_H263_I_FRAME_QP            (V4L2_CID_MPEG_BASE+300)
->  #define V4L2_CID_MPEG_VIDEO_H263_P_FRAME_QP            (V4L2_CID_MPEG_BASE+301)
-> --
-> 1.7.9.5
->
+
