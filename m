@@ -1,186 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754612AbaBFTsb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 14:48:31 -0500
-Received: from honeysuckle.london.02.net ([87.194.255.144]:44877 "EHLO
-	honeysuckle.london.02.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751339AbaBFTs3 (ORCPT
+	id S1756371AbaBFTzs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 14:55:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48616 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751872AbaBFTzq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 14:48:29 -0500
-X-Greylist: delayed 364 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Feb 2014 14:48:29 EST
-From: Mark Davies <junk@eslaf.co.uk>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Vince Weaver <vince@deater.net>, alan@lxorguk.ukuu.org.uk,
-        Ingo Molnar <mingo@kernel.org>, Stephane Eranian <eranian@google.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf,x86,p6: Add userspace RDPMC quirk for P6
-References: <20140205102718.GF3229@twins.programming.kicks-ass.net>
-	<alpine.DEB.2.02.1402051415190.16225@pianoman.cluster.toy>
-	<20140205192012.GL2936@laptop.programming.kicks-ass.net>
-	<20140205194851.GE5126@laptop.programming.kicks-ass.net>
-Date: Thu, 06 Feb 2014 19:41:37 +0000
-In-Reply-To: <20140205194851.GE5126@laptop.programming.kicks-ass.net> (Peter
-	Zijlstra's message of "Wed, 5 Feb 2014 20:48:51 +0100")
-Message-ID: <871tzgxc3y.fsf@gw.eslaf.co.uk>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Thu, 6 Feb 2014 14:55:46 -0500
+Date: Thu, 6 Feb 2014 11:56:55 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
+Subject: Linux 3.4.79
+Message-ID: <20140206195655.GA1934@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ew6BAiZeqk4r7MaW"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter
 
-As I reported the problem I thought I better contribute by testing the
-fix.
+--ew6BAiZeqk4r7MaW
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I took the patch below and managed to change the 3.4.78 code to match
-and tried to boot my Pentium Pro system but it hung as before. After
-some investigation I discovered the quirk is not being run, in fact no
-quirks were being run in init_hw_perf_events as x86_pmu.quirks was NULL.
+I'm announcing the release of the 3.4.79 kernel.
 
-The problem as far as I can see is that the quirk is added to x86_pmu in
-p6_pmu_init but then x86_pmu is reassigned at the end of that function
-(x86_pmu = p6_pmu) resetting x86_pmu.quirks to NULL. x86_pmu looks like
-it is reassigned again in intel_pmu_init to either core_pmu or intel_pmu
-after the call to p6_pmu_init so I am not sure which x86_pmu.quirks
-init_hw_perf_events tries to use.
+All users of the 3.4 kernel series must upgrade.
 
-Hopefully that makes sense.
+The updated 3.4.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linu=
+x-3.4.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git;a=3Dsu=
+mmary
 
-Mark Davies
+thanks,
 
-On Wed, Feb 05 2014, Peter Zijlstra wrote:
+greg k-h
 
-> On Wed, Feb 05, 2014 at 08:20:12PM +0100, Peter Zijlstra wrote:
->> On Wed, Feb 05, 2014 at 02:16:43PM -0500, Vince Weaver wrote:
->> > On Wed, 5 Feb 2014, Peter Zijlstra wrote:
->> > 
->> > > P6 class machines can die hard when PCE gets enabled due to CPU
->> > > errata. The safe way it so disable it by default and keep it disabled.
->> > > 
->> > > See errata 26:
->> > 
->> > so you take an errata applicable to a subset of Pentium Pro steppings and 
->> > apply it to the whole p6 line (which includes the whole way up to Pentium 
->> > III)?
->> > 
->> > Or am I missing something in the documentation you link to?
->> 
->> I forgot it went all the way to P-III, let me try and find the other
->> erratas.
->
-> OK, Just checked the P-II errata and its not there anymore, so I suppose
-> only Family 6 model 1 should have this quirk.
->
-> Updated patch below.
->
-> ---
-> Subject: perf,x86,p6: Add userspace RDPMC quirk for PPro
-> From: Peter Zijlstra <peterz@infradead.org>
-> Date: Wed Feb 5 11:17:46 CET 2014
->
-> PPro machines can die hard when PCE gets enabled due to CPU errata. The
-> safe way it so disable it by default and keep it disabled.
->
-> See errata 26:
->
-> http://download.intel.com/design/archives/processors/pro/docs/24268935.pdf
->
-> Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-> Reported-by: Mark Davies <junk@eslaf.co.uk>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> Link: http://lkml.kernel.org/n/tip-jnbn0qpt3t7ogk4c2q79yq90@git.kernel.org
-> ---
->  arch/x86/kernel/cpu/perf_event.c    |    6 +++++-
->  arch/x86/kernel/cpu/perf_event.h    |    1 +
->  arch/x86/kernel/cpu/perf_event_p6.c |   35 +++++++++++++++++++++++++----------
->  3 files changed, 31 insertions(+), 11 deletions(-)
->
-> --- a/arch/x86/kernel/cpu/perf_event.c
-> +++ b/arch/x86/kernel/cpu/perf_event.c
-> @@ -1521,6 +1521,8 @@ static int __init init_hw_perf_events(vo
->  
->  	pr_cont("%s PMU driver.\n", x86_pmu.name);
->  
-> +	x86_pmu.attr_rdpmc = 1; /* enable userspace RDPMC usage by default */
-> +
->  	for (quirk = x86_pmu.quirks; quirk; quirk = quirk->next)
->  		quirk->func();
->  
-> @@ -1534,7 +1536,6 @@ static int __init init_hw_perf_events(vo
->  		__EVENT_CONSTRAINT(0, (1ULL << x86_pmu.num_counters) - 1,
->  				   0, x86_pmu.num_counters, 0, 0);
->  
-> -	x86_pmu.attr_rdpmc = 1; /* enable userspace RDPMC usage by default */
->  	x86_pmu_format_group.attrs = x86_pmu.format_attrs;
->  
->  	if (x86_pmu.event_attrs)
-> @@ -1820,6 +1821,9 @@ static ssize_t set_attr_rdpmc(struct dev
->  	if (ret)
->  		return ret;
->  
-> +	if (x86_pmu.attr_rdpmc_broken)
-> +		return -ENOTSUPP;
-> +
->  	if (!!val != !!x86_pmu.attr_rdpmc) {
->  		x86_pmu.attr_rdpmc = !!val;
->  		smp_call_function(change_rdpmc, (void *)val, 1);
-> --- a/arch/x86/kernel/cpu/perf_event.h
-> +++ b/arch/x86/kernel/cpu/perf_event.h
-> @@ -409,6 +409,7 @@ struct x86_pmu {
->  	/*
->  	 * sysfs attrs
->  	 */
-> +	int		attr_rdpmc_broken;
->  	int		attr_rdpmc;
->  	struct attribute **format_attrs;
->  	struct attribute **event_attrs;
-> --- a/arch/x86/kernel/cpu/perf_event_p6.c
-> +++ b/arch/x86/kernel/cpu/perf_event_p6.c
-> @@ -231,20 +231,35 @@ static __initconst const struct x86_pmu
->  
->  };
->  
-> +static __init void p6_pmu_rdpmc_quirk(void)
-> +{
-> +	pr_warn("Userspace RDPMC support disabled due to CPU errata\n");
-> +	x86_pmu.attr_rdpmc_broken = 1;
-> +	x86_pmu.attr_rdpmc = 0;
-> +}
-> +
->  __init int p6_pmu_init(void)
->  {
->  	switch (boot_cpu_data.x86_model) {
-> -	case 1:
-> -	case 3:  /* Pentium Pro */
-> -	case 5:
-> -	case 6:  /* Pentium II */
-> -	case 7:
-> -	case 8:
-> -	case 11: /* Pentium III */
-> -	case 9:
-> -	case 13:
-> -		/* Pentium M */
-> +	case  1: /* Pentium Pro */
-> +		x86_add_quirk(p6_pmu_rdpmc_quirk);
->  		break;
-> +
-> +	case  3: /* Pentium II - Klamath */
-> +	case  5: /* Pentium II - Deschutes */
-> +	case  6: /* Pentium II - Mendocino */
-> +		break;
-> +
-> +	case  7: /* Pentium III - Katmai */
-> +	case  8: /* Pentium III - Coppermine */
-> +	case 10: /* Pentium III Xeon */
-> +	case 11: /* Pentium III - Tualatin */
-> +		break;
-> +
-> +	case  9: /* Pentium M - Banias */
-> +	case 13: /* Pentium M - Dothan */
-> +		break;
-> +
->  	default:
->  		pr_cont("unsupported p6 CPU model %d ",
->  			boot_cpu_data.x86_model);
+------------
+
+ Makefile                                        |    2=20
+ arch/arm/mach-at91/sam9_smc.c                   |    2=20
+ arch/powerpc/kernel/cacheinfo.c                 |    3=20
+ arch/x86/kvm/lapic.c                            |    3=20
+ drivers/edac/e752x_edac.c                       |    4=20
+ drivers/md/raid5.c                              |    1=20
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c |   13 ++
+ drivers/net/ethernet/via/via-rhine.c            |    1=20
+ drivers/net/wireless/b43/b43.h                  |    4=20
+ drivers/net/wireless/b43/main.c                 |   27 +++---
+ drivers/net/wireless/b43/xmit.c                 |    4=20
+ drivers/net/wireless/b43legacy/main.c           |    1=20
+ drivers/net/wireless/rtlwifi/core.c             |    1=20
+ drivers/net/wireless/rtlwifi/rtl8192cu/rf.c     |   29 +++---
+ drivers/net/wireless/rtlwifi/rtl8192cu/sw.c     |    1=20
+ drivers/parport/parport_pc.c                    |   10 --
+ drivers/platform/x86/hp_accel.c                 |    1=20
+ drivers/scsi/bfa/bfad.c                         |    6 -
+ drivers/staging/rtl8712/usb_intf.c              |    5 +
+ drivers/staging/vt6656/baseband.c               |    3=20
+ drivers/target/iscsi/iscsi_target.c             |   34 ++++---
+ drivers/tty/serial/8250/8250_pci.c              |    4=20
+ drivers/tty/serial/atmel_serial.c               |   20 ++--
+ drivers/usb/core/config.c                       |    7 -
+ drivers/usb/core/hub.c                          |   40 +-------
+ drivers/usb/host/xhci.c                         |    3=20
+ drivers/usb/serial/cypress_m8.h                 |    2=20
+ drivers/usb/serial/option.c                     |   15 +++
+ drivers/usb/storage/unusual_devs.h              |    7 +
+ fs/btrfs/extent-tree.c                          |    2=20
+ include/linux/hugetlb.h                         |    6 +
+ mm/hugetlb.c                                    |   17 +++
+ mm/swap.c                                       |  107 +++++++++++++++++--=
+-----
+ net/compat.c                                    |    9 --
+ net/ipv4/inet_diag.c                            |    4=20
+ net/ipv4/ipmr.c                                 |    7 +
+ net/ipv6/ip6mr.c                                |    7 +
+ sound/pci/Kconfig                               |   12 ++
+ sound/pci/rme9652/rme9652.c                     |    2=20
+ sound/soc/codecs/adau1701.c                     |    2=20
+ 40 files changed, 274 insertions(+), 154 deletions(-)
+
+Andrea Arcangeli (1):
+      mm: hugetlbfs: fix hugetlbfs optimization
+
+Andy Grover (1):
+      target/iscsi: Fix network portal creation race
+
+Andy Honig (1):
+      KVM: x86: Fix potential divide by 0 in lapic (CVE-2013-6367)
+
+Aristeu Rozanski (1):
+      e752x_edac: Fix pci_dev usage count
+
+Greg Kroah-Hartman (1):
+      Linux 3.4.79
+
+Hannes Frederic Sowa (1):
+      net: avoid reference counter overflows on fib_rules in multicast forw=
+arding
+
+Jack Pham (1):
+      usb: xhci: Check for XHCI_PLAT in xhci_cleanup_msix()
+
+Jean-Jacques Hiblot (1):
+      ARM: at91: smc: bug fix in sam9_smc_cs_read()
+
+Johan Hovold (1):
+      USB: cypress_m8: fix ring-indicator detection and reporting
+
+Larry Finger (7):
+      rtlwifi: rtl8192cu: Add new device ID
+      rtlwifi: Set the link state
+      rtlwifi: rtl8192cu: Fix some code in RF handling
+      b43: Fix lockdep splat
+      b43: Fix unload oops if firmware is not available
+      b43legacy: Fix unload oops if firmware is not available
+      staging: r8712u: Set device type to wlan
+
+Lars-Peter Clausen (1):
+      ASoC: adau1701: Fix ADAU1701_SEROCTL_WORD_LEN_16 constant
+
+Malcolm Priestley (1):
+      staging: vt6656: [BUG] BBvUpdatePreEDThreshold Always set sensitivity=
+ on bScanning
+
+Marek Roszko (1):
+      tty/serial: at91: Handle shutdown more safely
+
+Michal Schmidt (1):
+      bnx2x: fix DMA unmapping of TSO split BDs
+
+Mikhail Zolotaryov (1):
+      USB: Nokia 502 is an unusual device
+
+Neal Cardwell (1):
+      inet_diag: fix inet_diag_dump_icsk() timewait socket state logic
+
+NeilBrown (1):
+      md/raid5: fix long-standing problem with bitmap handling on write fai=
+lure.
+
+PaX Team (1):
+      x86, x32: Correct invalid use of user timespec in the kernel
+
+Paul Mackerras (1):
+      powerpc: Make sure "cache" directory is removed when offlining cpu
+
+Rahul Bedarkar (1):
+      USB: serial: add support for iBall 3.5G connect usb modem
+
+Richard Weinberger (1):
+      net,via-rhine: Fix tx_timeout handling
+
+Sebastian Andrzej Siewior (1):
+      parport: parport_pc: remove double PCI ID for NetMos
+
+Takashi Iwai (3):
+      ALSA: rme9652: fix a missing comma in channel_map_9636_ds[]
+      ALSA: Enable CONFIG_ZONE_DMA for smaller PCI DMA masks
+      hp_accel: Add a new PnP ID HPQ6007 for new HP laptops
+
+Thomas Pugliese (1):
+      usb: core: get config and string descriptors for unauthorized devices
+
+Vijaya Mohan Guvva (1):
+      SCSI: bfa: Chinook quad port 16G FC HBA claim issue
+
+Wang Shilong (1):
+      Btrfs: handle EAGAIN case properly in btrfs_drop_snapshot()
+
+Yegor Yefremov (1):
+      serial: add support for 200 v3 series Titan card
+
+ZHAO Gang (1):
+      b43: fix the wrong assignment of status.freq in b43_rx()
+
+=E5=BC=A0=E5=90=9B (1):
+      usb: option: add new zte 3g modem pids to option driver
+
+
+--ew6BAiZeqk4r7MaW
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS8+kHAAoJEDjbvchgkmk+VTEP/1koVvFmqdODchX61l6ikmIe
+EWNvVGGNznPfO+yy/8IontaY+VKyEzJeLmOntbrmH9hetO1f8WDl1lNhfVyLv0U5
+orkv5gn0vvjeHwYhd8+4ODLkHxjPZ7aEPImcNHYSbQ0vAZBdSvZwz8MDZYgfJ9gD
+z/HHbZrsWgszup+NHhCLFqHUJvLLy6FmxPYq54UpaBmvcArJzTNAAB8otlXidDRI
+CbmamiC7J4ZsUeT3CP6/npFmNAnc8cZmc7vnyjhevP6y1/4un1C1dDII6pD7piYG
+4+Gw3uW12kNOoIyfor17LU6caJCYf4JmJKQVMg5Myo79lWjYA9DPi9h7BNuG1IQR
++Eoli3jHh26t5c1ilvwmzDo8Nm4EVI7B436VEAJhDU6AIFjNAOx1hZRPn2PLMIM2
+Dw4AteF5n/km3efCfcE7ArKlym3ZxY27ks2im63fSaYwn06+gONBp+8Ty1xxOBom
+QErBfbq8wsmCjyamAtGhZyMTT7dhnfU27qmd/JR29a9RZx+Gw9gioSSPlC2diYN3
+0RGKRLVxHvuEqRNMGvGycLDiv+hGhBFGUuAKwmvw4US+RAaItn8wB8Me7mhWUH67
+ga/cdAcjIiZleEi2OZTF+GdQV7Qtu0p2YA+vwtnylL6EjDKujste++0eKcgGNPfC
+s/UnNTQAF7XDFgVmpI9U
+=mJ9D
+-----END PGP SIGNATURE-----
+
+--ew6BAiZeqk4r7MaW--
