@@ -1,42 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751756AbaBKQRU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 11:17:20 -0500
-Received: from mail1.bemta14.messagelabs.com ([193.109.254.112]:34353 "EHLO
+	id S1751939AbaBKQS0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 11:18:26 -0500
+Received: from mail1.bemta14.messagelabs.com ([193.109.254.113]:46438 "EHLO
 	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751313AbaBKQRT (ORCPT
+	by vger.kernel.org with ESMTP id S1750984AbaBKQSZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 11:17:19 -0500
-X-Greylist: delayed 416 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 Feb 2014 11:17:19 EST
+	Tue, 11 Feb 2014 11:18:25 -0500
 X-Env-Sender: anthony.olech.opensource@diasemi.com
-X-Msg-Ref: server-13.tower-193.messagelabs.com!1392135018!11843342!1
+X-Msg-Ref: server-2.tower-194.messagelabs.com!1392135095!2802940!1
 X-Originating-IP: [82.210.246.133]
 X-StarScan-Received: 
 X-StarScan-Version: 6.9.16; banners=-,-,-
 X-VirusChecked: Checked
-Message-ID: <201402111610.s1BGAG67056463@swsrvapps-02.lan>
-From: Anthony Olech <anthony.olech.opensource@diasemi.com>
-Date: Tue, 11 Feb 2014 12:37:26 +0000
-Subject: [PATCH V1] rtc: da9052: Remove redundant private structure field
-To: Alessandro Zummo <a.zummo@towertech.it>
-CC: <rtc-linux@googlegroups.com>, <linux-kernel@vger.kernel.org>,
-        David Dajun Chen <david.chen@diasemi.com>
+Message-ID: <201402111611.s1BGBXkr056672@swsrvapps-02.lan>
+From: "Anthony Olech <anthony.olech.opensource@diasemi.com>" 
+	<Anthony.Olech.OpenSource@diasemi.com>
+Date: Thu, 6 Feb 2014 17:33:24 +0000
+Subject: [PATCH V2] mfd: da9052: Fix volatile register definition ommissions
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+CC: <linux-kernel@vger.kernel.org>, David Dajun Chen <david.chen@diasemi.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-remove redundant irq field in private rtc structure.
+Three of the PMIC registers have some bits that are changed
+autonomously by the PMIC itself (some time) after being set
+by some component driver of the DA9052 PMIC and hence they
+need to be marked as volatile so that the regmap API will
+not cache their values.
 
 Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
 Acked-by: David Dajun Chen <david.chen@diasemi.com>
 ---
 
-This patch is relative to linux-next repository tag next-20140210
+This patch is relative to linux-next repository tag next-20140206
 
-This issue was found when doing a code review whilst investigating
-a different problem.
+The problem was detected whilst running a scripted set of functional
+regression tests whilst investigating a different problem.
 
 This patch has been test compiled on an amd64 server for both x86
 and arm targets.
@@ -44,31 +47,31 @@ and arm targets.
 This patch has been spot verified using an SMDK6410 platform
 fly-wired to a Dialog da9053 EVB.
 
- drivers/rtc/rtc-da9052.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+The bug that this patch fixes affects two components of DA9052 namely:
 
-diff --git a/drivers/rtc/rtc-da9052.c b/drivers/rtc/rtc-da9052.c
-index 4385ca4..a1cbf64 100644
---- a/drivers/rtc/rtc-da9052.c
-+++ b/drivers/rtc/rtc-da9052.c
-@@ -26,7 +26,6 @@
- struct da9052_rtc {
- 	struct rtc_device *rtc;
- 	struct da9052 *da9052;
--	int irq;
- };
- 
- static int da9052_rtc_enable_alarm(struct da9052 *da9052, bool enable)
-@@ -240,8 +239,7 @@ static int da9052_rtc_probe(struct platform_device *pdev)
- 
- 	rtc->da9052 = dev_get_drvdata(pdev->dev.parent);
- 	platform_set_drvdata(pdev, rtc);
--	rtc->irq =  DA9052_IRQ_ALARM;
--	ret = da9052_request_irq(rtc->da9052, rtc->irq, "ALM",
-+	ret = da9052_request_irq(rtc->da9052, DA9052_IRQ_ALARM, "ALM",
- 				da9052_rtc_irq, rtc);
- 	if (ret != 0) {
- 		rtc_err(rtc->da9052, "irq registration failed: %d\n", ret);
+WATCHDOG - the first kick will work but sebsequent ones will not
+           thus the watchdog will timeout at 2 x interval.
+
+REGULATORS - the first change to any DA9052/DA9053  BUCK voltage
+             will be actioned, but sebsequent ones will not.
+
+ drivers/mfd/da9052-core.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/mfd/da9052-core.c b/drivers/mfd/da9052-core.c
+index 25838f1..e8af816 100644
+--- a/drivers/mfd/da9052-core.c
++++ b/drivers/mfd/da9052-core.c
+@@ -279,6 +279,9 @@ static bool da9052_reg_volatile(struct device *dev, unsigned int reg)
+ 	case DA9052_EVENT_B_REG:
+ 	case DA9052_EVENT_C_REG:
+ 	case DA9052_EVENT_D_REG:
++	case DA9052_CONTROL_B_REG:
++	case DA9052_CONTROL_D_REG:
++	case DA9052_SUPPLY_REG:
+ 	case DA9052_FAULTLOG_REG:
+ 	case DA9052_CHG_TIME_REG:
+ 	case DA9052_ADC_RES_L_REG:
 -- 
-end-of-patch for rtc: da9052: Remove redundant private structure field V1
+end-of-patch for mfd: da9052: Fix volatile register definition ommissions V2
 
