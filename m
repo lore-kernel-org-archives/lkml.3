@@ -1,247 +1,343 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754347AbaBFBii (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 20:38:38 -0500
-Received: from mga02.intel.com ([134.134.136.20]:63570 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753183AbaBFBih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 20:38:37 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,790,1384329600"; 
-   d="scan'208";a="478810617"
-Message-ID: <52F2E799.7@intel.com>
-Date: Thu, 06 Feb 2014 09:38:33 +0800
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1754503AbaBFBmF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 20:42:05 -0500
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:13239 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751769AbaBFBmD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 20:42:03 -0500
+From: Courtney Cavin <courtney.cavin@sonymobile.com>
+To: <rui.zhang@intel.com>, <eduardo.valentin@ti.com>
+CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <rob@landley.net>, <grant.likely@linaro.org>,
+        <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] thermal: add generic IIO channel thermal sensor driver
+Date: Wed, 5 Feb 2014 17:43:27 -0800
+Message-ID: <1391651007-29813-1-git-send-email-courtney.cavin@sonymobile.com>
+X-Mailer: git-send-email 1.8.1.5
 MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 02/14] perf, core: introduce pmu context switch callback
-References: <1388728091-18564-1-git-send-email-zheng.z.yan@intel.com>	<1388728091-18564-3-git-send-email-zheng.z.yan@intel.com> <CABPqkBR64vGwU72RMQmNBBqzqZde3Xbkr=QsMiVnKsvqRD2zMQ@mail.gmail.com>
-In-Reply-To: <CABPqkBR64vGwU72RMQmNBBqzqZde3Xbkr=QsMiVnKsvqRD2zMQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/2014 12:01 AM, Stephane Eranian wrote:
-> On Fri, Jan 3, 2014 at 6:47 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
->> The callback is invoked when process is scheduled in or out. It
->> provides mechanism for later patches to save/store the LBR stack.
->> It can also replace the flush branch stack callback.
->>
-> I think you need to say this callback may be invoked on context switches
-> with per-thread events attached. As far I understand, the callback cannot
-> be invoked for system-wide events.
+This driver is a generic method for using IIO ADC channels as thermal
+sensors.
 
-It's also invoked when there is only system-wide event. (the flush branch stack case)
+Signed-off-by: Courtney Cavin <courtney.cavin@sonymobile.com>
+---
+ .../devicetree/bindings/thermal/iio-thermal.txt    |  46 +++++
+ drivers/thermal/Kconfig                            |  13 ++
+ drivers/thermal/Makefile                           |   1 +
+ drivers/thermal/iio_thermal.c                      | 207 +++++++++++++++++++++
+ 4 files changed, 267 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/thermal/iio-thermal.txt
+ create mode 100644 drivers/thermal/iio_thermal.c
 
-Regards
-Yan, Zheng
-
-
-> 
->> To avoid unnecessary overhead, the callback is enabled dynamically
->>
->> Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
->> ---
->>  arch/x86/kernel/cpu/perf_event.c |  7 +++++
->>  arch/x86/kernel/cpu/perf_event.h |  4 +++
->>  include/linux/perf_event.h       |  8 ++++++
->>  kernel/events/core.c             | 60 +++++++++++++++++++++++++++++++++++++++-
->>  4 files changed, 78 insertions(+), 1 deletion(-)
->>
->> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
->> index 8e13293..6703d17 100644
->> --- a/arch/x86/kernel/cpu/perf_event.c
->> +++ b/arch/x86/kernel/cpu/perf_event.c
->> @@ -1846,6 +1846,12 @@ static const struct attribute_group *x86_pmu_attr_groups[] = {
->>         NULL,
->>  };
->>
->> +static void x86_pmu_sched_task(struct perf_event_context *ctx, bool sched_in)
->> +{
->> +       if (x86_pmu.sched_task)
->> +               x86_pmu.sched_task(ctx, sched_in);
->> +}
->> +
->>  static void x86_pmu_flush_branch_stack(void)
->>  {
->>         if (x86_pmu.flush_branch_stack)
->> @@ -1879,6 +1885,7 @@ static struct pmu pmu = {
->>
->>         .event_idx              = x86_pmu_event_idx,
->>         .flush_branch_stack     = x86_pmu_flush_branch_stack,
->> +       .sched_task             = x86_pmu_sched_task,
->>  };
->>
->>  void arch_perf_update_userpage(struct perf_event_mmap_page *userpg, u64 now)
->> diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
->> index 745f6fb..3fdb751 100644
->> --- a/arch/x86/kernel/cpu/perf_event.h
->> +++ b/arch/x86/kernel/cpu/perf_event.h
->> @@ -417,6 +417,8 @@ struct x86_pmu {
->>
->>         void            (*check_microcode)(void);
->>         void            (*flush_branch_stack)(void);
->> +       void            (*sched_task)(struct perf_event_context *ctx,
->> +                                     bool sched_in);
->>
->>         /*
->>          * Intel Arch Perfmon v2+
->> @@ -675,6 +677,8 @@ void intel_pmu_pebs_disable_all(void);
->>
->>  void intel_ds_init(void);
->>
->> +void intel_pmu_lbr_sched_task(struct perf_event_context *ctx, bool sched_in);
->> +
-> There is no mention of this function anywhere else. Should not be here.
-> 
->>  void intel_pmu_lbr_reset(void);
->>
->>  void intel_pmu_lbr_enable(struct perf_event *event);
->> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
->> index 8f4a70f..6a3e603 100644
->> --- a/include/linux/perf_event.h
->> +++ b/include/linux/perf_event.h
->> @@ -251,6 +251,12 @@ struct pmu {
->>          * flush branch stack on context-switches (needed in cpu-wide mode)
->>          */
->>         void (*flush_branch_stack)      (void);
->> +
->> +       /*
->> +        * PMU callback for context-switches. optional
->> +        */
->> +       void (*sched_task)              (struct perf_event_context *ctx,
->> +                                        bool sched_in);
->>  };
->>
->>  /**
->> @@ -546,6 +552,8 @@ extern void perf_event_delayed_put(struct task_struct *task);
->>  extern void perf_event_print_debug(void);
->>  extern void perf_pmu_disable(struct pmu *pmu);
->>  extern void perf_pmu_enable(struct pmu *pmu);
->> +extern void perf_sched_cb_disable(struct pmu *pmu);
->> +extern void perf_sched_cb_enable(struct pmu *pmu);
->>  extern int perf_event_task_disable(void);
->>  extern int perf_event_task_enable(void);
->>  extern int perf_event_refresh(struct perf_event *event, int refresh);
->> diff --git a/kernel/events/core.c b/kernel/events/core.c
->> index 89d34f9..d110a23 100644
->> --- a/kernel/events/core.c
->> +++ b/kernel/events/core.c
->> @@ -141,6 +141,7 @@ enum event_type_t {
->>  struct static_key_deferred perf_sched_events __read_mostly;
->>  static DEFINE_PER_CPU(atomic_t, perf_cgroup_events);
->>  static DEFINE_PER_CPU(atomic_t, perf_branch_stack_events);
->> +static DEFINE_PER_CPU(int, perf_sched_cb_usages);
->>
->>  static atomic_t nr_mmap_events __read_mostly;
->>  static atomic_t nr_comm_events __read_mostly;
->> @@ -150,6 +151,7 @@ static atomic_t nr_freq_events __read_mostly;
->>  static LIST_HEAD(pmus);
->>  static DEFINE_MUTEX(pmus_lock);
->>  static struct srcu_struct pmus_srcu;
->> +static struct idr pmu_idr;
->>
->>  /*
->>   * perf event paranoia level:
->> @@ -2327,6 +2329,57 @@ unlock:
->>         }
->>  }
->>
->> +void perf_sched_cb_disable(struct pmu *pmu)
->> +{
->> +       __get_cpu_var(perf_sched_cb_usages)--;
->> +}
->> +
->> +void perf_sched_cb_enable(struct pmu *pmu)
->> +{
->> +       __get_cpu_var(perf_sched_cb_usages)++;
->> +}
->> +
-> I think you want to use jump_labels instead of this to make
-> the callback optional. This is already used all over the place
-> in the generic code.
-> 
->> +/*
->> + * This function provides the context switch callback to the lower code
->> + * layer. It is invoked ONLY when the context switch callback is enabled.
->> + */
->> +static void perf_pmu_sched_task(struct task_struct *prev,
->> +                               struct task_struct *next,
->> +                               bool sched_in)
->> +{
->> +       struct perf_cpu_context *cpuctx;
->> +       struct pmu *pmu;
->> +       unsigned long flags;
->> +
->> +       if (prev == next)
->> +               return;
->> +
->> +       local_irq_save(flags);
->> +
->> +       rcu_read_lock();
->> +
->> +       pmu = idr_find(&pmu_idr, PERF_TYPE_RAW);
->> +
->> +       if (pmu && pmu->sched_task) {
->> +               cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
->> +               pmu = cpuctx->ctx.pmu;
->> +
->> +               perf_ctx_lock(cpuctx, cpuctx->task_ctx);
->> +
->> +               perf_pmu_disable(pmu);
->> +
->> +               pmu->sched_task(cpuctx->task_ctx, sched_in);
->> +
->> +               perf_pmu_enable(pmu);
->> +
->> +               perf_ctx_unlock(cpuctx, cpuctx->task_ctx);
->> +       }
->> +
->> +       rcu_read_unlock();
->> +
->> +       local_irq_restore(flags);
->> +}
->> +
->>  #define for_each_task_context_nr(ctxn)                                 \
->>         for ((ctxn) = 0; (ctxn) < perf_nr_task_contexts; (ctxn)++)
->>
->> @@ -2346,6 +2399,9 @@ void __perf_event_task_sched_out(struct task_struct *task,
->>  {
->>         int ctxn;
->>
->> +       if (__get_cpu_var(perf_sched_cb_usages))
->> +               perf_pmu_sched_task(task, next, false);
->> +
->>         for_each_task_context_nr(ctxn)
->>                 perf_event_context_sched_out(task, ctxn, next);
->>
->> @@ -2605,6 +2661,9 @@ void __perf_event_task_sched_in(struct task_struct *prev,
->>         /* check for system-wide branch_stack events */
->>         if (atomic_read(&__get_cpu_var(perf_branch_stack_events)))
->>                 perf_branch_stack_sched_in(prev, task);
->> +
->> +       if (__get_cpu_var(perf_sched_cb_usages))
->> +               perf_pmu_sched_task(prev, task, true);
->>  }
->>
->>  static u64 perf_calculate_period(struct perf_event *event, u64 nsec, u64 count)
->> @@ -6326,7 +6385,6 @@ static void free_pmu_context(struct pmu *pmu)
->>  out:
->>         mutex_unlock(&pmus_lock);
->>  }
->> -static struct idr pmu_idr;
->>
->>  static ssize_t
->>  type_show(struct device *dev, struct device_attribute *attr, char *page)
->> --
->> 1.8.4.2
->>
+diff --git a/Documentation/devicetree/bindings/thermal/iio-thermal.txt b/Documentation/devicetree/bindings/thermal/iio-thermal.txt
+new file mode 100644
+index 0000000..3be11b6
+--- /dev/null
++++ b/Documentation/devicetree/bindings/thermal/iio-thermal.txt
+@@ -0,0 +1,46 @@
++Generic IIO channel thermal sensor bindings
++
++compatible:
++	Usage: required
++	Type: string
++	Desc: compatible string, must be "iio-thermal"
++
++conversion-method:
++	Usage: required
++	Type: string
++	Desc: How to convert IIO voltage values to temperature, one of:
++		"interpolation" - interpolate between values in lookup table
++		"scalar" - use values as multiplier and divisor
++
++conversion-values:
++	Usage: required
++	Type: u32 array, 2-tuples
++	Desc: lookup table for conversion, for conversion-method:
++		"interpolation" - 2-tuples of < uV mK >; micro-volts to
++				  milli-kelvin; table must ascend
++		"scalar" - single scalar 2-tuple as < M D >; where:
++			   mK = uV * M / D
++
++io-channels:
++	Usage: required
++	Type: prop-encoded-array
++	Desc: See bindings/iio/iio-bindings.txt; must be a voltage channel
++
++Example:
++
++vadc: some_vadc {
++	compatible = "...";
++	#io-channel-cells = <1>;
++};
++
++iio-thermal {
++	compatible = "iio-thermal";
++	io-channels = <&vadc 0>;
++	conversion-method = "interpolation";
++	conversion-values = <
++		  30000 398200
++		 385000 318200
++		1738000 233200
++	>;
++};
++
+diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+index 35c0664..f83a8e8 100644
+--- a/drivers/thermal/Kconfig
++++ b/drivers/thermal/Kconfig
+@@ -114,6 +114,19 @@ config THERMAL_EMULATION
+ 	  because userland can easily disable the thermal policy by simply
+ 	  flooding this sysfs node with low temperature values.
+ 
++config IIO_THERMAL
++	tristate "Temperature sensor driver for generic IIO channels"
++	depends on IIO
++	depends on THERMAL_OF
++	help
++	  Support for generic IIO channels, such as ADCs.  This driver allows
++	  you to expose an IIO voltage channel as a thermal sensor.  This is
++	  implemented as a thermal sensor, not a thermal zone, and thus
++	  requires DT defined thermal infrastructure in order to be useful.
++
++	  If you aren't sure that you need this support, or haven't configured
++	  a thermal infrastructure in device tree, you should say 'N' here.
++
+ config IMX_THERMAL
+ 	tristate "Temperature sensor driver for Freescale i.MX SoCs"
+ 	depends on CPU_THERMAL
+diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
+index 54e4ec9..0ee2c92 100644
+--- a/drivers/thermal/Makefile
++++ b/drivers/thermal/Makefile
+@@ -25,6 +25,7 @@ obj-y				+= samsung/
+ obj-$(CONFIG_DOVE_THERMAL)  	+= dove_thermal.o
+ obj-$(CONFIG_DB8500_THERMAL)	+= db8500_thermal.o
+ obj-$(CONFIG_ARMADA_THERMAL)	+= armada_thermal.o
++obj-$(CONFIG_IIO_THERMAL)	+= iio_thermal.o
+ obj-$(CONFIG_IMX_THERMAL)	+= imx_thermal.o
+ obj-$(CONFIG_DB8500_CPUFREQ_COOLING)	+= db8500_cpufreq_cooling.o
+ obj-$(CONFIG_INTEL_POWERCLAMP)	+= intel_powerclamp.o
+diff --git a/drivers/thermal/iio_thermal.c b/drivers/thermal/iio_thermal.c
+new file mode 100644
+index 0000000..df21dbc
+--- /dev/null
++++ b/drivers/thermal/iio_thermal.c
+@@ -0,0 +1,207 @@
++/*
++ * An IIO channel based thermal sensor driver
++ *
++ * Copyright (C) 2014 Sony Mobile Communications, AB
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; version 2 of the License.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ */
++
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/iio/iio.h>
++#include <linux/iio/consumer.h>
++#include <linux/thermal.h>
++#include <linux/err.h>
++#include <linux/of.h>
++
++#define MILLIKELVIN_0C 273150
++
++struct iio_thermal_conv {
++	s32 *values;
++	int ntuple;
++	long (*convert)(const struct iio_thermal_conv *, int val);
++};
++
++struct iio_thermal {
++	struct thermal_zone_device *tz;
++	struct iio_channel *chan;
++	struct iio_thermal_conv conv;
++};
++
++static int iio_bsearch(const struct iio_thermal_conv *conv, s32 input)
++{
++	int h = conv->ntuple - 1;
++	int l = 0;
++
++	while (h - 1 > l) {
++		int m = (l + h) & ~1;
++		s32 v = conv->values[m];
++		if (v < input)
++			l = m >> 1;
++		else
++			h = m >> 1;
++	}
++
++	return h;
++}
++
++static long iio_thermal_interpolate(const struct iio_thermal_conv *conv, int v)
++{
++	int n;
++
++	n = iio_bsearch(conv, v);
++	if (n == 0 || n == conv->ntuple) {
++		BUG();
++	} else {
++		s32 *pts = &conv->values[(n-1)*2];
++		s32 sx = pts[3] - pts[1];
++		s32 sy = pts[2] - pts[0];
++		return sx * (v - pts[0]) / sy + pts[1];
++	}
++}
++
++static long iio_thermal_scale(const struct iio_thermal_conv *conv, int v)
++{
++	return div_s64((s64)v * conv->values[0], conv->values[1]);
++}
++
++static int iio_thermal_get_temp(void *pdata, long *value)
++{
++	struct iio_thermal *iio = pdata;
++	long temp;
++	int val;
++	int rc;
++
++	rc = iio_read_channel_processed(iio->chan, &val);
++	if (rc)
++		return rc;
++
++	temp = iio->conv.convert(&iio->conv, val);
++
++	/* thermal core wants milli-celsius; we deal in milli-kelvin */
++	temp = temp - MILLIKELVIN_0C;
++
++	/*
++	 * Although it would appear that the temperature value here is a
++	 * signed value for sensors, the underlying thermal zone core
++	 * doesn't deal with negative temperature. Cut this value off at 0C.
++	 */
++	*value = (temp < 0) ? 0 : temp;
++
++	return 0;
++}
++
++static int iio_thermal_probe(struct platform_device *pdev)
++{
++	struct iio_thermal *iio;
++	const void *values;
++	const char *type;
++	int rc;
++
++	dev_info(&pdev->dev, "registering IIO thermal device\n");
++	iio = devm_kzalloc(&pdev->dev, sizeof(*iio), GFP_KERNEL);
++	if (!iio)
++		return -ENOMEM;
++
++	values = of_get_property(pdev->dev.of_node,
++			"conversion-values", &iio->conv.ntuple);
++	if (values == NULL || (iio->conv.ntuple % (sizeof(u32) * 2)) != 0) {
++		dev_err(&pdev->dev, "invalid/missing conversion values\n");
++		return -EINVAL;
++	}
++	iio->conv.ntuple /= sizeof(u32) * 2;
++	iio->conv.values = devm_kzalloc(&pdev->dev,
++			sizeof(u32) * 2 * iio->conv.ntuple, GFP_KERNEL);
++	if (!iio->conv.values)
++		return -ENOMEM;
++
++	rc = of_property_read_u32_array(pdev->dev.of_node,
++			"conversion-values", (u32 *)iio->conv.values,
++			iio->conv.ntuple * 2);
++	if (rc) {
++		dev_err(&pdev->dev, "invalid/missing conversion values\n");
++		return -EINVAL;
++	}
++
++	rc = of_property_read_string(pdev->dev.of_node,
++			"conversion-method", &type);
++	if (rc) {
++		dev_err(&pdev->dev, "invalid/missing conversion method\n");
++		return rc;
++	}
++	if (!strcmp(type, "interpolation") && iio->conv.ntuple > 1) {
++		if (iio->conv.values[0] > iio->conv.values[2]) {
++			dev_err(&pdev->dev,
++					"conversion values should ascend\n");
++			return rc;
++		}
++		iio->conv.convert = iio_thermal_interpolate;
++	} else if (!strcmp(type, "scalar") && iio->conv.ntuple == 1) {
++		iio->conv.convert = iio_thermal_scale;
++	} else {
++		dev_err(&pdev->dev, "invalid conversion method for values\n");
++		return rc;
++	}
++
++	iio->chan = iio_channel_get(&pdev->dev, NULL);
++	if (IS_ERR(iio->chan)) {
++		dev_err(&pdev->dev, "invalid/missing iio channel\n");
++		return PTR_ERR(iio->chan);
++	}
++	if (iio->chan->channel->type != IIO_VOLTAGE) {
++		dev_err(&pdev->dev, "specified iio channel is not voltage\n");
++		iio_channel_release(iio->chan);
++		return -EINVAL;
++	}
++	platform_set_drvdata(pdev, iio);
++
++	iio->tz = thermal_zone_of_sensor_register(&pdev->dev, 0, iio,
++			iio_thermal_get_temp, NULL);
++	if (IS_ERR(iio->tz)) {
++		dev_err(&pdev->dev, "failed to register thermal sensor\n");
++		iio_channel_release(iio->chan);
++		return PTR_ERR(iio->tz);
++	}
++	dev_info(&pdev->dev, "successfully registered IIO thermal sensor\n");
++
++	return 0;
++}
++
++static int iio_thermal_remove(struct platform_device *pdev)
++{
++	struct iio_thermal *iio;
++
++	iio = platform_get_drvdata(pdev);
++
++	thermal_zone_of_sensor_unregister(&pdev->dev, iio->tz);
++	iio_channel_release(iio->chan);
++
++	return 0;
++}
++
++static const struct of_device_id iio_thermal_match[] = {
++	{ .compatible = "iio-thermal", },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, iio_thermal_match);
++
++static struct platform_driver iio_thermal = {
++	.driver = {
++		.name = "iio-thermal",
++		.owner = THIS_MODULE,
++		.of_match_table = iio_thermal_match,
++	},
++	.probe = iio_thermal_probe,
++	.remove = iio_thermal_remove,
++};
++module_platform_driver(iio_thermal);
++
++MODULE_DESCRIPTION("Thermal driver for IIO ADCs");
++MODULE_LICENSE("GPL v2");
+-- 
+1.8.1.5
 
