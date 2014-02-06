@@ -1,75 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755358AbaBFTgr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 14:36:47 -0500
-Received: from mail-la0-f45.google.com ([209.85.215.45]:34986 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751863AbaBFTgp (ORCPT
+	id S1756675AbaBFTkG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 14:40:06 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:46634 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755055AbaBFTkB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 14:36:45 -0500
+	Thu, 6 Feb 2014 14:40:01 -0500
+Date: Thu, 6 Feb 2014 11:39:38 -0800
+From: tip-bot for Borislav Petkov <tipbot@zytor.com>
+Message-ID: <tip-75a1ba5b2c529db60ca49626bcaf0bddf4548438@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        boris.ostrovsky@oracle.com, tglx@linutronix.de, bp@suse.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        boris.ostrovsky@oracle.com, tglx@linutronix.de, bp@suse.de
+In-Reply-To: <1391460104-7261-1-git-send-email-bp@alien8.de>
+References: <1391460104-7261-1-git-send-email-bp@alien8.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, microcode, AMD:
+  Unify valid container checks
+Git-Commit-ID: 75a1ba5b2c529db60ca49626bcaf0bddf4548438
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <20140109231339.GA20157@amd.pavel.ucw.cz>
-References: <20140107204233.GA22413@amd.pavel.ucw.cz> <20140109231339.GA20157@amd.pavel.ucw.cz>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Thu, 6 Feb 2014 11:36:23 -0800
-Message-ID: <CAK5ve-KhdWP0f9OwSt+5wAXmRVtHAQnxP4J+Wh1QdedPwVmxoQ@mail.gmail.com>
-Subject: Re: [trivial] Comment improvements for lp5523 and friend
-To: Pavel Machek <pavel@ucw.cz>
-Cc: "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, milo kim <milo.kim@ti.com>,
-        =?ISO-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
-        Sebastian Reichel <sre@debian.org>, Sebastian Reichel <sre@ring0.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 06 Feb 2014 11:39:45 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 9, 2014 at 3:13 PM, Pavel Machek <pavel@ucw.cz> wrote:
-> Add some comments that are not obvious from first look at the driver
-> to lp5523, fix typo in lp8501.
->
+Commit-ID:  75a1ba5b2c529db60ca49626bcaf0bddf4548438
+Gitweb:     http://git.kernel.org/tip/75a1ba5b2c529db60ca49626bcaf0bddf4548438
+Author:     Borislav Petkov <bp@suse.de>
+AuthorDate: Mon, 3 Feb 2014 21:41:44 +0100
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Thu, 6 Feb 2014 11:11:19 -0800
 
-Milo, can you take a look at this. If it's OK, I will take it.
+x86, microcode, AMD: Unify valid container checks
 
--Bryan
+For additional coverage, BorisO and friends unknowlingly did swap AMD
+microcode with Intel microcode blobs in order to see what happens. What
+did happen on 32-bit was
 
-> Signed-off-by: Pavel Machek <pavel@ucw.cz>
->
-> diff --git a/drivers/leds/leds-lp5523.c b/drivers/leds/leds-lp5523.c
-> index c00f55e4..ac64ebc 100644
-> --- a/drivers/leds/leds-lp5523.c
-> +++ b/drivers/leds/leds-lp5523.c
-> @@ -34,7 +34,15 @@
->
->  #include "leds-lp55xx-common.h"
->
-> -#define LP5523_PROGRAM_LENGTH          32
-> +#define LP5523_PROGRAM_LENGTH          32      /* bytes */
-> +/* Memory is used like this:
-> +   0x00 engine 1 program
-> +   0x10 engine 2 program
-> +   0x20 engine 3 program
-> +   0x30 engine 1 muxing info
-> +   0x40 engine 2 muxing info
-> +   0x50 engine 3 muxing info
-> +*/
->  #define LP5523_MAX_LEDS                        9
->
->  /* Registers */
-> index 8d55a780..ae5c6fe 100644
-> --- a/drivers/leds/leds-lp8501.c
-> +++ b/drivers/leds/leds-lp8501.c
-> @@ -262,7 +262,7 @@ static void lp8501_firmware_loaded(struct lp55xx_chip *chip)
->         }
->
->         /*
-> -        * Program momery sequence
-> +        * Program memory sequence
->          *  1) set engine mode to "LOAD"
->          *  2) write firmware data into program memory
->          */
->
-> --
-> (english) http://www.livejournal.com/~pavelmachek
-> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+[    5.722656] BUG: unable to handle kernel paging request at be3a6008
+[    5.722693] IP: [<c106d6b4>] load_microcode_amd+0x24/0x3f0
+[    5.722716] *pdpt = 0000000000000000 *pde = 0000000000000000
+
+because there was a valid initrd there but without valid microcode in it
+and the container check happened *after* the relocated ramdisk handling
+on 32-bit, which was clearly wrong.
+
+While at it, take care of the ramdisk relocation on both 32- and 64-bit
+as it is done on both. Also, comment what we're doing because this code
+is a bit tricky.
+
+Reported-and-tested-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Link: http://lkml.kernel.org/r/1391460104-7261-1-git-send-email-bp@alien8.de
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/kernel/cpu/microcode/amd_early.c | 43 +++++++++++++++++++++----------
+ 1 file changed, 29 insertions(+), 14 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/microcode/amd_early.c b/arch/x86/kernel/cpu/microcode/amd_early.c
+index 8384c0f..617a9e2 100644
+--- a/arch/x86/kernel/cpu/microcode/amd_early.c
++++ b/arch/x86/kernel/cpu/microcode/amd_early.c
+@@ -285,6 +285,15 @@ static void __init collect_cpu_sig_on_bsp(void *arg)
+ 
+ 	uci->cpu_sig.sig = cpuid_eax(0x00000001);
+ }
++
++static void __init get_bsp_sig(void)
++{
++	unsigned int bsp = boot_cpu_data.cpu_index;
++	struct ucode_cpu_info *uci = ucode_cpu_info + bsp;
++
++	if (!uci->cpu_sig.sig)
++		smp_call_function_single(bsp, collect_cpu_sig_on_bsp, NULL, 1);
++}
+ #else
+ void load_ucode_amd_ap(void)
+ {
+@@ -337,31 +346,37 @@ void load_ucode_amd_ap(void)
+ 
+ int __init save_microcode_in_initrd_amd(void)
+ {
++	unsigned long cont;
+ 	enum ucode_state ret;
+ 	u32 eax;
+ 
+-#ifdef CONFIG_X86_32
+-	unsigned int bsp = boot_cpu_data.cpu_index;
+-	struct ucode_cpu_info *uci = ucode_cpu_info + bsp;
+-
+-	if (!uci->cpu_sig.sig)
+-		smp_call_function_single(bsp, collect_cpu_sig_on_bsp, NULL, 1);
++	if (!container)
++		return -EINVAL;
+ 
++#ifdef CONFIG_X86_32
++	get_bsp_sig();
++	cont = (unsigned long)container;
++#else
+ 	/*
+-	 * Take into account the fact that the ramdisk might get relocated
+-	 * and therefore we need to recompute the container's position in
+-	 * virtual memory space.
++	 * We need the physical address of the container for both bitness since
++	 * boot_params.hdr.ramdisk_image is a physical address.
+ 	 */
+-	container = (u8 *)(__va((u32)relocated_ramdisk) +
+-			   ((u32)container - boot_params.hdr.ramdisk_image));
++	cont = __pa(container);
+ #endif
++
++	/*
++	 * Take into account the fact that the ramdisk might get relocated and
++	 * therefore we need to recompute the container's position in virtual
++	 * memory space.
++	 */
++	if (relocated_ramdisk)
++		container = (u8 *)(__va(relocated_ramdisk) +
++			     (cont - boot_params.hdr.ramdisk_image));
++
+ 	if (ucode_new_rev)
+ 		pr_info("microcode: updated early to new patch_level=0x%08x\n",
+ 			ucode_new_rev);
+ 
+-	if (!container)
+-		return -EINVAL;
+-
+ 	eax   = cpuid_eax(0x00000001);
+ 	eax   = ((eax >> 8) & 0xf) + ((eax >> 20) & 0xff);
+ 
