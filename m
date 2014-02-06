@@ -1,81 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756803AbaBFVxj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 16:53:39 -0500
-Received: from relay2.sgi.com ([192.48.179.30]:60501 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756102AbaBFVxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 16:53:38 -0500
-Date: Thu, 6 Feb 2014 15:53:32 -0600
-From: Ben Myers <bpm@sgi.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        xfs@oss.sgi.com
-Subject: Re: [GIT PULL] XFS fix for 3.14-rc2
-Message-ID: <20140206215332.GQ1935@sgi.com>
-References: <20140206173158.6A2A14266DC@whiskey.americas.sgi.com>
- <CA+55aFzxUtHWL1hPcNv-zUXFWzrZtKAsh_ZVotfFUvH1hqDrMg@mail.gmail.com>
+	id S1756961AbaBFVyf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 16:54:35 -0500
+Received: from www.linutronix.de ([62.245.132.108]:38269 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752497AbaBFVye (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 16:54:34 -0500
+Date: Thu, 6 Feb 2014 22:54:39 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Carlo Caione <carlo.caione@gmail.com>
+cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Hans De Goede <hdegoede@redhat.com>, emilio@elopez.com.ar,
+        linux-sunxi@googlegroups.com
+Subject: Re: [linux-sunxi] Re: [PATCH] irq: Add new flag to ack level-triggered
+ interrupts before unmasking
+In-Reply-To: <CAOQ7t2Z0agZdDZ_OQZPtXWXoi5NMTcOOZz04q6wEVNy0rxn4AA@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1402062229000.21991@ionos.tec.linutronix.de>
+References: <1391721117-27446-1-git-send-email-carlo@caione.org> <alpine.DEB.2.02.1402062213590.21991@ionos.tec.linutronix.de> <CAOQ7t2Z0agZdDZ_OQZPtXWXoi5NMTcOOZz04q6wEVNy0rxn4AA@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzxUtHWL1hPcNv-zUXFWzrZtKAsh_ZVotfFUvH1hqDrMg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 06, 2014 at 01:34:53PM -0800, Linus Torvalds wrote:
-> I have no idea why you keep re-sending this.
+On Thu, 6 Feb 2014, Carlo Caione wrote:
+> On Thu, Feb 6, 2014 at 10:14 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > On Thu, 6 Feb 2014, Carlo Caione wrote:
+> >
+> >> Several irqchip drivers require the level-triggered interrupt to be
+> >> acked before unmasking to avoid that a second interrupt is immediately
+> >> triggered. This small patch introduces a new irqchip flags that is used
+> >> to ack the IRQ line before it is unmasked.
+> >
+> > And why are you not doing this in the unmask function of the affected
+> > chip in the first place?
 > 
-> It got merged a week ago. See commit f1499382f114.
+> Because this is a common behavior of several irqchips (sunxi NMI
+> controller,  exynos, etc...) so I think it should be useful to have it
+> in the core instead of replicating the same code structure in all the
+> irqchip drivers.
 
-Ok, there it is.  Sorry for the noise.
+I'm all for making stuff generic, but you introduce this gem
+
++void ack_unmask_irq(struct irq_desc *desc)
++{
++       if ((desc->irq_data.chip->flags & IRQCHIP_ACK_ON_UNMASK) &&
++           (irqd_get_trigger_type(&desc->irq_data) & IRQ_TYPE_LEVEL_MASK) &&
++           desc->irq_data.chip->irq_ack)
+
+This is totally backwards.
+
+1) If level and edge are handled differently then you should provide
+   different chips.
+
+2) If a chip has IRQCHIP_ACK_ON_UNMASK set, then it better provides an
+   irq_ack callback.
+
+So why do you need this complex conditional?
+
++                       desc->irq_data.chip->irq_ack(&desc->irq_data);
++
++       unmask_irq(desc);
++}
+
+Now the even more confusing part is a single call site in
+irq_finalize_oneshot()
+
+        if (!desc->threads_oneshot && !irqd_irq_disabled(&desc->irq_data) &&
+            irqd_irq_masked(&desc->irq_data))
+-               unmask_irq(desc);
++               ack_unmask_irq(desc);
+
+
+But you completely fail to explain the rationale. 
+
+- Why is this only an issue for the threaded irq case? 
+
+- Why are other sites where interrupts are masked/unmasked not
+  affected?
+
+  IOW, why is the handle_level_irq() logic for a non threaded
+  interrupt different from the threaded case?
+
+  In the non threaded case we do:
+
+  interrupt();
+  mask_ack();
+  handle_irq();
+  unmask();
+  reti();
+
+  In the threaded case:
+
+  interrupt();
+  mask_ack();
+  wake_thread();
+  reti();
+  run_thread();
+  handle_irq();
+  unmask();
+
+  The difference between those scenarios is:
+
+  1) The timing is different
+
+  2) In the threaded case we return from the exception with the irq
+     line masked and reenable it later after the threaded handler has
+     run.
+
+Do you have any sensible explanation for that requirement to ack
+before unmask while you already acked on mask? And why this is only an
+issue in the threaded case?
+
+What's the context of the problem you are trying to solve?
 
 Thanks,
-	Ben	
 
-> On Thu, Feb 6, 2014 at 9:31 AM, Ben Myers <bpm@sgi.com> wrote:
-> > Hi Linus,
-> >
-> >    Please pull this xfs update for 3.14.  This is to allow logical sector sized
-> >    direct io on advanced format disks.  Eric expressed a desire to get this fix
-> >    in 3.14 because this bug affects some virtualization packages.
-> >
-> > Thanks,
-> >         Ben
-> >
-> > The following changes since commit bf3964c188d686424ff7b69a45941851b9f437f0:
-> >
-> >   Merge branch 'xfs-extent-list-locking-fixes' into for-next (2014-01-09 16:03:18 -0600)
-> >
-> > are available in the git repository at:
-> >
-> >
-> >   git://oss.sgi.com/xfs/xfs.git tags/xfs-for-linus-v3.14-rc1-2
-> >
-> > for you to fetch changes up to 7c71ee78031c248dca13fc94dea9a4cc217db6cf:
-> >
-> >   xfs: allow logical-sector sized O_DIRECT (2014-01-24 11:55:42 -0600)
-> >
-> > ----------------------------------------------------------------
-> > xfs: update #2 for v3.14-rc1
-> >
-> > - allow logical sector sized direct io on 'advanced format' 4k/512 disk.
-> >
-> > ----------------------------------------------------------------
-> > Eric Sandeen (3):
-> >       xfs: clean up xfs_buftarg
-> >       xfs: rename xfs_buftarg structure members
-> >       xfs: allow logical-sector sized O_DIRECT
-> >
-> >  fs/xfs/xfs_buf.c   | 14 +++++++++-----
-> >  fs/xfs/xfs_buf.h   | 20 +++++++++++++++++---
-> >  fs/xfs/xfs_file.c  |  7 +++++--
-> >  fs/xfs/xfs_ioctl.c |  2 +-
-> >  4 files changed, 32 insertions(+), 11 deletions(-)
-> 
-> _______________________________________________
-> xfs mailing list
-> xfs@oss.sgi.com
-> http://oss.sgi.com/mailman/listinfo/xfs
+	tglx
+
+
+
+
