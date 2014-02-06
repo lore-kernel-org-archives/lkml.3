@@ -1,78 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755693AbaBFPah (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 10:30:37 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:36399 "EHLO extserv.mm-sol.com"
+	id S1755767AbaBFPaq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 10:30:46 -0500
+Received: from ns.mm-sol.com ([37.157.136.199]:36416 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755533AbaBFPae (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 10:30:34 -0500
+	id S1755707AbaBFPan (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 10:30:43 -0500
 From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>, bjorn.andersson@sonymobile.com,
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: [PATCH 1/2] pinctrl-msm: Add SPI8 pin definitions
-Date: Thu,  6 Feb 2014 17:28:48 +0200
-Message-Id: <1391700529-11816-1-git-send-email-iivanov@mm-sol.com>
+Subject: [PATCH 2/2] ARM: dts: MSM8974: Add pinctrl node
+Date: Thu,  6 Feb 2014 17:28:49 +0200
+Message-Id: <1391700529-11816-2-git-send-email-iivanov@mm-sol.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1391700529-11816-1-git-send-email-iivanov@mm-sol.com>
+References: <1391700529-11816-1-git-send-email-iivanov@mm-sol.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-Add pin, group and function definitions for SPI#8
-controller.
+Add the pin control node and pin definitions of SPI8.
 
 Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
 ---
- drivers/pinctrl/pinctrl-msm8x74.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ arch/arm/boot/dts/qcom-msm8974.dtsi |   29 +++++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
 
-diff --git a/drivers/pinctrl/pinctrl-msm8x74.c b/drivers/pinctrl/pinctrl-msm8x74.c
-index f944bf2..9aeeb38 100644
---- a/drivers/pinctrl/pinctrl-msm8x74.c
-+++ b/drivers/pinctrl/pinctrl-msm8x74.c
-@@ -406,6 +406,7 @@ enum msm8x74_functions {
- 	MSM_MUX_blsp_i2c6,
- 	MSM_MUX_blsp_i2c11,
- 	MSM_MUX_blsp_spi1,
-+	MSM_MUX_blsp_spi8,
- 	MSM_MUX_blsp_uart2,
- 	MSM_MUX_blsp_uart8,
- 	MSM_MUX_slimbus,
-@@ -416,6 +417,9 @@ static const char * const blsp_i2c2_groups[] = { "gpio6", "gpio7" };
- static const char * const blsp_i2c6_groups[] = { "gpio29", "gpio30" };
- static const char * const blsp_i2c11_groups[] = { "gpio83", "gpio84" };
- static const char * const blsp_spi1_groups[] = { "gpio0", "gpio1", "gpio2", "gpio3" };
-+static const char * const blsp_spi8_groups[] = {
-+	"gpio45", "gpio46", "gpio47", "gpio48"
-+};
- static const char * const blsp_uart2_groups[] = { "gpio4", "gpio5" };
- static const char * const blsp_uart8_groups[] = { "gpio45", "gpio46" };
- static const char * const slimbus_groups[] = { "gpio70", "gpio71" };
-@@ -425,6 +429,7 @@ static const struct msm_function msm8x74_functions[] = {
- 	FUNCTION(blsp_i2c6),
- 	FUNCTION(blsp_i2c11),
- 	FUNCTION(blsp_spi1),
-+	FUNCTION(blsp_spi8),
- 	FUNCTION(blsp_uart2),
- 	FUNCTION(blsp_uart8),
- 	FUNCTION(slimbus),
-@@ -476,10 +481,10 @@ static const struct msm_pingroup msm8x74_groups[] = {
- 	PINGROUP(42,  NA, NA, NA, NA, NA, NA, NA),
- 	PINGROUP(43,  NA, NA, NA, NA, NA, NA, NA),
- 	PINGROUP(44,  NA, NA, NA, NA, NA, NA, NA),
--	PINGROUP(45,  NA, blsp_uart8, NA, NA, NA, NA, NA),
--	PINGROUP(46,  NA, blsp_uart8, NA, NA, NA, NA, NA),
--	PINGROUP(47,  NA, NA, NA, NA, NA, NA, NA),
--	PINGROUP(48,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(45,  blsp_spi8, blsp_uart8, NA, NA, NA, NA, NA),
-+	PINGROUP(46,  blsp_spi8, blsp_uart8, NA, NA, NA, NA, NA),
-+	PINGROUP(47,  blsp_spi8, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(48,  blsp_spi8, NA, NA, NA, NA, NA, NA),
- 	PINGROUP(49,  NA, NA, NA, NA, NA, NA, NA),
- 	PINGROUP(50,  NA, NA, NA, NA, NA, NA, NA),
- 	PINGROUP(51,  NA, NA, NA, NA, NA, NA, NA),
+diff --git a/arch/arm/boot/dts/qcom-msm8974.dtsi b/arch/arm/boot/dts/qcom-msm8974.dtsi
+index 9e5dadb..395603f 100644
+--- a/arch/arm/boot/dts/qcom-msm8974.dtsi
++++ b/arch/arm/boot/dts/qcom-msm8974.dtsi
+@@ -117,5 +117,34 @@
+ 			clocks = <&gcc GCC_BLSP1_UART2_APPS_CLK>, <&gcc GCC_BLSP1_AHB_CLK>;
+ 			clock-names = "core", "iface";
+ 		};
++
++		msmgpio: pinctrl@fd510000 {
++			compatible = "qcom,msm8974-pinctrl";
++			reg = <0xfd510000 0x4000>;
++			gpio-controller;
++			#gpio-cells = <2>;
++			interrupt-controller;
++			#interrupt-cells = <2>;
++			interrupts = <0 208 0>;
++
++			spi8_default: spi8_default {
++				mosi {
++					pins = "gpio45";
++					function = "blsp_spi8";
++				};
++				miso {
++					pins = "gpio46";
++					function = "blsp_spi8";
++				};
++				cs {
++					pins = "gpio47";
++					function = "blsp_spi8";
++				};
++				clk {
++					pins = "gpio48";
++					function = "blsp_spi8";
++				};
++			};
++		};
+ 	};
+ };
 -- 
 1.7.9.5
 
