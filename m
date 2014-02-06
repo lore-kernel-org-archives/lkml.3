@@ -1,74 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755446AbaBFQZy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 11:25:54 -0500
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:46388 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751481AbaBFQZw (ORCPT
+	id S1753825AbaBFQ2A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 11:28:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46349 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751426AbaBFQ17 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 11:25:52 -0500
-Date: Thu, 6 Feb 2014 11:27:19 -0500 (EST)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: linux-kernel@vger.kernel.org
-cc: trinity@vger.kernel.org
-Subject: x32 BUG found with perf_fuzzer
-Message-ID: <alpine.DEB.2.10.1402061122250.17478@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Thu, 6 Feb 2014 11:27:59 -0500
+Date: Thu, 6 Feb 2014 08:29:08 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Hannes Reinecke <hare@suse.de>
+Cc: systemd Mailing List <systemd-devel@lists.freedesktop.org>,
+        dh.herrmann@gmail.com, linux-kernel@vger.kernel.org,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay@vrfy.org>, Jiri Slaby <jslaby@suse.cz>,
+        Werner Fink <werner@suse.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: Re: [PATCHv2] tty: Set correct tty name in 'active' sysfs attribute
+Message-ID: <20140206162908.GA7443@kroah.com>
+References: <1391696863-62767-1-git-send-email-hare@suse.de>
+ <20140206152947.GA19335@kroah.com>
+ <52F3ADD4.7020907@suse.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52F3ADD4.7020907@suse.de>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Feb 06, 2014 at 04:44:20PM +0100, Hannes Reinecke wrote:
+> On 02/06/2014 04:29 PM, Greg Kroah-Hartman wrote:
+> > On Thu, Feb 06, 2014 at 03:27:43PM +0100, Hannes Reinecke wrote:
+> >> The 'active' sysfs attribute should refer to the currently
+> >> active tty devices the console is running on, not the currently
+> >> active console.
+> > 
+> > That's not what Documentation/ABI/sysfs-tty says:
+> >                  Shows the list of currently configured                         
+> >                  console devices, like 'tty1 ttyS0'.                            
+> >                  The last entry in the file is the active                       
+> >                  device connected to /dev/console.                              
+> >                  The file supports poll() to detect virtual                     
+> >                  console switches.                         
+> > 
+> The problem is indeed with 'console devices'. There is no such
+> thing; you only have tty devices where the console is running on.
+> 
+> >> The console structure doesn't refer to any device in sysfs,
+> >> only the tty the console is running on has.
+> > 
+> > That sentance doesn't make sense.
+> > 
+> >> So we need to print out the tty names in 'active', not
+> >> the console names.
+> > 
+> > But that doesn't match the documentation.
+> > 
+> > What exactly are you trying to "fix" here?  What is the problem that the
+> > current file has that is broken?  And as you are changing what this file
+> > means, what will break if the information in the file changes?
+> > 
+> systemd is using the 'active' sysfs attribute to figure out on which
+> _tty_ device to start a getty on.
+> As soon as the console name and the tty name are different
+> you have no means of figuring out which _device_ to open.
+> AFAICS the console 'device' (ie the current entry in 'active')
+> doesn't have _any_ equivalent in sysfs; it just so happens that for
+> most console drivers the tty driver name is identical.
+> But this is not a requirement, and fails for drivers which have a
+> different device for the console and the tty.
+> 
+> EG on S/390 the 3270 tty has the devices
+> 
+> /dev/3270/tty1
+> 
+> but the console driver announces the name 'tty3270'.
+> So as per current rules the 'active' attribute contains
+> 
+> tty32700
+> 
+> which correct as per documentation, but doesn't have _any_
+> equivalent in sysfs.
+> 
+> Martin has the grubby details here.
+> 
+> But of course, the documentation should be updated to match the new
+> behavior.
 
-In wake of the recent x32 bug reports, I tried compiling my perf_fuzzer in 
-x32 mode and running it.  It's turning up a lot of issues.  One was a 
-reboot with no debug messages.  
+Ok, care to send an updated version, that fixes the Documentation as
+well?  If Kay agrees that this is the correct solution, I'll be glad to
+take it.
 
-This is a core2 system running 3.14-rc1
+thanks,
 
-Here's the BUG message:
-
-[  150.555653] BUG: unable to handle kernel paging request at 0000000100000000
-[  150.556002] IP: [<0000000100000000>] 0x100000000
-[  150.556002] PGD 0 
-[  150.556002] Oops: 0010 [#1] SMP 
-[  150.556002] Modules linked in: cpufreq_userspace cpufreq_stats cpufreq_powersave cpufreq_conservative f71882fg mcs7830 usbnet acpi_cpufreq evdev psmouse serio_raw video coretemp pcspkr ohci_pci wmi ohci_hcd processor i2c_nforce2 button thermal_sys sg ehci_pci ehci_hcd sd_mod usbcore usb_common
-[  150.556002] CPU: 0 PID: 9165 Comm: perf_fuzzer Not tainted 3.14.0-rc1 #1
-[  150.556002] Hardware name: AOpen   DE7000/nMCP7ALPx-DE R1.06 Oct.19.2012, BIOS 080015  10/19/2012
-[  150.556002] task: ffff8800ca2c87e0 ti: ffff8800c4bc2000 task.ti: ffff8800c4bc2000
-[  150.556002] RIP: 0010:[<0000000100000000>]  [<0000000100000000>] 0x100000000
-[  150.556002] RSP: 0000:ffff8800c4bc3cb0  EFLAGS: 00010206
-[  150.556002] RAX: 0000000100000000 RBX: ffff8800c340e440 RCX: 000000000000073d
-[  150.556002] RDX: 0000000000000000 RSI: ffff880037ec2540 RDI: ffff8800c340e440
-[  150.556002] RBP: ffff880037ec2540 R08: ffff88011fbf6f40 R09: 0000000000000000
-[  150.556002] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
-[  150.556002] R13: 0077ffffffffffff R14: 0000000000000000 R15: 0000000000000009
-[  150.556002] FS:  0000000000000000(0000) GS:ffff88011fc00000(0000) knlGS:0000000000000000
-[  150.556002] CS:  0010 DS: 002b ES: 002b CR0: 000000008005003b
-[  150.556002] CR2: 0000000100000000 CR3: 0000000001a0c000 CR4: 00000000000407f0
-[  150.556002] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[  150.556002] DR3: 00000000022a1000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
-[  150.556002] Stack:
-[  150.556002]  ffffffff81102dd7 ffff880037ec2540 ffff880037fbc2c0 0000000000000000
-[  150.556002]  ffffffff81119c81 ffff8800cb2c0780 ffff8800ca2c87e0 ffff8800ca2c8de4
-[  150.556002]  ffff8800cb2c0780 0000000000000000 ffff8800cb2c07e0 0000000000000001
-[  150.556002] Call Trace:
-[  150.556002]  [<ffffffff81102dd7>] ? filp_close+0x36/0x65
-[  150.556002]  [<ffffffff81119c81>] ? put_files_struct+0x62/0xb2
-[  150.556002]  [<ffffffff8103dd08>] ? do_exit+0x3c9/0x959
-[  150.556002]  [<ffffffff810e2447>] ? __do_fault+0x355/0x392
-[  150.556002]  [<ffffffff8103e30d>] ? do_group_exit+0x75/0x9f
-[  150.556002]  [<ffffffff8104aaba>] ? get_signal_to_deliver+0x464/0x481
-[  150.556002]  [<ffffffff81002404>] ? do_signal+0x3a/0x5a7
-[  150.556002]  [<ffffffff814ea7b2>] ? trace_page_fault+0x22/0x30
-[  150.556002]  [<ffffffff81002996>] ? do_notify_resume+0x25/0x5e
-[  150.556002]  [<ffffffff814ea675>] ? retint_signal+0x3d/0x78
-[  150.556002] Code:  Bad RIP value.
-[  150.556002] RIP  [<0000000100000000>] 0x100000000
-[  150.556002]  RSP <ffff8800c4bc3cb0>
-[  150.556002] CR2: 0000000100000000
-[  150.556002] ---[ end trace c733264161a3819f ]---
-[  150.556002] Fixing recursive fault but reboot is needed!
-
+greg k-h
