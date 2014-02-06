@@ -1,152 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756596AbaBFQJo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 11:09:44 -0500
-Received: from relay1.sgi.com ([192.48.179.29]:46380 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751922AbaBFQJl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 11:09:41 -0500
-Date: Thu, 6 Feb 2014 10:09:39 -0600
-From: Nathan Zimmer <nzimmer@sgi.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Nathan Zimmer <nzimmer@sgi.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Xishi Qiu <qiuxishi@huawei.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jiang Liu <liuj97@gmail.com>, Hedi Berriche <hedi@sgi.com>,
-        Mike Travis <travis@sgi.com>
-Subject: Re: [RFC] Move the memory_notifier out of the memory_hotplug lock
-Message-ID: <20140206160939.GA107343@asylum.americas.sgi.com>
-References: <1391617743-150518-1-git-send-email-nzimmer@sgi.com> <alpine.DEB.2.02.1402051217520.5616@chino.kir.corp.google.com> <52F2C4F0.6080608@sgi.com> <alpine.DEB.2.02.1402051512490.24489@chino.kir.corp.google.com>
+	id S1756603AbaBFQLS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 11:11:18 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:48381 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752392AbaBFQLQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 11:11:16 -0500
+Message-ID: <52F3B2DF.3070104@linux.vnet.ibm.com>
+Date: Thu, 06 Feb 2014 21:35:51 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1402051512490.24489@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: paulus@samba.org, oleg@redhat.com, rusty@rustcorp.com.au,
+        peterz@infradead.org, tglx@linutronix.de, akpm@linux-foundation.org,
+        mingo@kernel.org, paulmck@linux.vnet.ibm.com, tj@kernel.org,
+        walken@google.com, ego@linux.vnet.ibm.com, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [PATCH 35/51] acpi-cpufreq: Fix CPU hotplug callback registration
+References: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com> <20140205221052.19080.77507.stgit@srivatsabhat.in.ibm.com> <6272120.pzpJuaTe2d@vostro.rjw.lan>
+In-Reply-To: <6272120.pzpJuaTe2d@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14020616-5140-0000-0000-00000485178D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 05, 2014 at 03:20:07PM -0800, David Rientjes wrote:
-> On Wed, 5 Feb 2014, Nathan Zimmer wrote:
+On 02/06/2014 06:13 PM, Rafael J. Wysocki wrote:
+> On Thursday, February 06, 2014 03:40:53 AM Srivatsa S. Bhat wrote:
+>> Subsystems that want to register CPU hotplug callbacks, as well as perform
+>> initialization for the CPUs that are already online, often do it as shown
+>> below:
+>>
+>> 	get_online_cpus();
+>>
+>> 	for_each_online_cpu(cpu)
+>> 		init_cpu(cpu);
+>>
+>> 	register_cpu_notifier(&foobar_cpu_notifier);
+>>
+>> 	put_online_cpus();
+>>
+>> This is wrong, since it is prone to ABBA deadlocks involving the
+>> cpu_add_remove_lock and the cpu_hotplug.lock (when running concurrently
+>> with CPU hotplug operations).
+>>
+>> Instead, the correct and race-free way of performing the callback
+>> registration is:
+>>
+>> 	cpu_maps_update_begin();
+>>
+>> 	for_each_online_cpu(cpu)
+>> 		init_cpu(cpu);
+>>
+>> 	/* Note the use of the double underscored version of the API */
+>> 	__register_cpu_notifier(&foobar_cpu_notifier);
+>>
+>> 	cpu_maps_update_done();
+>>
+>>
+>> Fix the acpi-cpufreq code by using this latter form of callback registration.
+>>
+>> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+>> Cc: Viresh Kumar <viresh.kumar@linaro.org>
+>> Cc: cpufreq@vger.kernel.org
+>> Cc: linux-pm@vger.kernel.org
+>> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 > 
-> > > That looks a little problematic, what happens if a nid is being brought
-> > > online and a registered callback does something like allocate resources
-> > > for the arg->status_change_nid and the above two hunks of this patch end
-> > > up racing?
-> > > 
-> > > Before, a registered callback would be guaranteed to see either a
-> > > MEMORY_CANCEL_ONLINE or MEMORY_ONLINE after it has already done
-> > > MEMORY_GOING_ONLINE.
-> > > 
-> > > With your patch, we could race and see one cpu doing MEMORY_GOING_ONLINE,
-> > > another cpu doing MEMORY_GOING_ONLINE, and then MEMORY_ONLINE and
-> > > MEMORY_CANCEL_ONLINE in either order.
-> > > 
-> > > So I think this patch will break most registered callbacks that actually
-> > > depend on lock_memory_hotplug(), it's a coarse lock for that reason.
-> > 
-> > Since the argument being passed in is the pfn and size it would be an issue
-> > only if two threads attepted to online the same piece of memory. Right?
-> > 
+> Looks OK to me.  How does it depend on the rest of your series?
 > 
-> No, I'm referring to registered callbacks that provide a resource for 
-> arg->status_change_nid.  An example would be the callbacks I added to the 
-> slub allocator in slab_memory_callback().  If we are now able to get a 
-> racy MEM_GOING_ONLINE -> MEM_GOING_ONLINE -> MEM_ONLINE -> 
-> MEM_CANCEL_ONLINE, which is possible with your patch _and_ the node being 
-> successfully onlined at the end, then we get a NULL pointer dereference 
-> because the kmem_cache_node for each slab cache has been freed.
+
+Thank you! Same here, every patch depends only on the first patch in
+the series. (Except the raid5 and the xen/balloon patches which don't
+have any dependency).
+
+But I'll be posting a v2 of this patchset soon with a rename of the
+API..
+
+Regards,
+Srivatsa S. Bhat
+
+>> ---
+>>
+>>  drivers/cpufreq/acpi-cpufreq.c |    7 ++++---
+>>  1 file changed, 4 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/cpufreq/acpi-cpufreq.c b/drivers/cpufreq/acpi-cpufreq.c
+>> index 18448a7..e2eb471 100644
+>> --- a/drivers/cpufreq/acpi-cpufreq.c
+>> +++ b/drivers/cpufreq/acpi-cpufreq.c
+>> @@ -907,15 +907,16 @@ static void __init acpi_cpufreq_boost_init(void)
+>>  
+>>  		acpi_cpufreq_driver.boost_supported = true;
+>>  		acpi_cpufreq_driver.boost_enabled = boost_state(0);
+>> -		get_online_cpus();
+>> +
+>> +		cpu_maps_update_begin();
+>>  
+>>  		/* Force all MSRs to the same value */
+>>  		boost_set_msrs(acpi_cpufreq_driver.boost_enabled,
+>>  			       cpu_online_mask);
+>>  
+>> -		register_cpu_notifier(&boost_nb);
+>> +		__register_cpu_notifier(&boost_nb);
+>>  
+>> -		put_online_cpus();
+>> +		cpu_maps_update_done();
+>>  	}
+>>  }
+>>  
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe cpufreq" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
-Ok I think I see now.  In my testing I had only been onlining parts of nodes.
-So all nodes were already had at least some memory online from the beginning.
-
-> > That seems very unlikely but if it can happen it needs to be protected
-> > against.
-> > 
-> 
-> The protection for registered memory online or offline callbacks is 
-> lock_memory_hotplug() which is eliminated with your patch, the locking for 
-> memory_notify() that you're citing is irrelevant.
-
-Would the race still exist if we left the position of the locks alone and 
-broke it up by nid, something like this?
 
 
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index ee37657..e797e21 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -913,7 +913,9 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages, int online_typ
- 	int ret;
- 	struct memory_notify arg;
- 
--	lock_memory_hotplug();
-+	nid = page_to_nid(pfn_to_page(pfn));
-+
-+	lock_memory_hotplug(nid);
- 	/*
- 	 * This doesn't need a lock to do pfn_to_page().
- 	 * The section can't be removed here because of the
-@@ -923,19 +925,19 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages, int online_typ
- 
- 	if ((zone_idx(zone) > ZONE_NORMAL || online_type == ONLINE_MOVABLE) &&
- 	    !can_online_high_movable(zone)) {
--		unlock_memory_hotplug();
-+		unlock_memory_hotplug(nid);
- 		return -1;
- 	}
- 
- 	if (online_type == ONLINE_KERNEL && zone_idx(zone) == ZONE_MOVABLE) {
- 		if (move_pfn_range_left(zone - 1, zone, pfn, pfn + nr_pages)) {
--			unlock_memory_hotplug();
-+			unlock_memory_hotplug(nid);
- 			return -1;
- 		}
- 	}
- 	if (online_type == ONLINE_MOVABLE && zone_idx(zone) == ZONE_MOVABLE - 1) {
- 		if (move_pfn_range_right(zone, zone + 1, pfn, pfn + nr_pages)) {
--			unlock_memory_hotplug();
-+			unlock_memory_hotplug(nid);
- 			return -1;
- 		}
- 	}
-@@ -947,13 +949,11 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages, int online_typ
- 	arg.nr_pages = nr_pages;
- 	node_states_check_changes_online(nr_pages, zone, &arg);
- 
--	nid = page_to_nid(pfn_to_page(pfn));
--
- 	ret = memory_notify(MEM_GOING_ONLINE, &arg);
- 	ret = notifier_to_errno(ret);
- 	if (ret) {
- 		memory_notify(MEM_CANCEL_ONLINE, &arg);
--		unlock_memory_hotplug();
-+		unlock_memory_hotplug(nid);
- 		return ret;
- 	}
- 	/*
-@@ -978,7 +978,7 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages, int online_typ
- 		       (((unsigned long long) pfn + nr_pages)
- 			    << PAGE_SHIFT) - 1);
- 		memory_notify(MEM_CANCEL_ONLINE, &arg);
--		unlock_memory_hotplug();
-+		unlock_memory_hotplug(nid);
- 		return ret;
- 	}
- 
-@@ -1006,7 +1006,7 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages, int online_typ
- 
- 	if (onlined_pages)
- 		memory_notify(MEM_ONLINE, &arg);
--	unlock_memory_hotplug();
-+	unlock_memory_hotplug(nid);
- 
- 	return 0;
- }
+-- 
+Regards,
+Srivatsa S. Bhat
 
