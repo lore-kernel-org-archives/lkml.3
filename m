@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756672AbaBFQph (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 11:45:37 -0500
-Received: from mail-lb0-f196.google.com ([209.85.217.196]:57451 "EHLO
-	mail-lb0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750739AbaBFQpg (ORCPT
+	id S1756700AbaBFQqD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 11:46:03 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:54912 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756678AbaBFQqA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 11:45:36 -0500
+	Thu, 6 Feb 2014 11:46:00 -0500
+Message-ID: <52F3BC41.1030901@wwwdotorg.org>
+Date: Thu, 06 Feb 2014 09:45:53 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Reply-To: drsalifmohammed23@gmail.com
-Date: Thu, 6 Feb 2014 17:20:02 +0100
-Message-ID: <CAMHHO55YC_DU46BpV0-NsQsJ9+LZBN=tbpZVtaaa6cKODpq9zg@mail.gmail.com>
-Subject: Dear Friend.
-From: "Dr. Salif Mohamed" <lotprm06@gmail.com>
-To: undisclosed-recipients:;
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Landley <rob@landley.net>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Danny Huang <dahuang@nvidia.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v3 3/6] misc: fuse: Add efuse driver for Tegra
+References: <1390952176-30402-1-git-send-email-pdeschrijver@nvidia.com> <1390952176-30402-4-git-send-email-pdeschrijver@nvidia.com> <52F28DE2.1040207@wwwdotorg.org> <20140206091114.GK19389@tbergstrom-lnx.Nvidia.com>
+In-Reply-To: <20140206091114.GK19389@tbergstrom-lnx.Nvidia.com>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Friend,
+On 02/06/2014 02:11 AM, Peter De Schrijver wrote:
+> On Wed, Feb 05, 2014 at 08:15:46PM +0100, Stephen Warren wrote:
+>> On 01/28/2014 04:36 PM, Peter De Schrijver wrote:
+>>> Implement fuse driver for Tegra20, Tegra30, Tegra114 and Tegra124.
 
-I know that this mail will come to you as a surprise since we have not
-known or met before now, but please, I would like you to treat it like
-blood brother affair and with the urgency and secrecy it requires. I
-am Dr. Salif Mohamed, an Audit staff of (B.O.A) Bank of Africa Burkina
-Faso.
+>>> diff --git a/Documentation/ABI/testing/sysfs-driver-tegra-fuse b/Documentation/ABI/testing/sysfs-driver-tegra-fuse
+>>> +What:		/sys/devices/*/<our-device>/fuse
+>>> +Date:		December 2013
+>>> +Contact:	Peter De Schrijver <pdeschrijver@nvidia.com>
+>>> +Description:	read-only access to the efuses on Tegra20, Tegra30, Tegra114
+>>> +		and Tegra124 SoC's from NVIDIA. The efuses contain write once
+>>> +		data programmed at the factory.
+>>> +Users:		any user space application which wants to read the efuses on
+>>> +		Tegra SoC's
+>>
+>> Surely this file should describe the format of the file, since that's
+>> part of the ABI too, right?
+>>
+> 
+> Part of the fuse data is ODM defined so possibly board specific.
 
-An investor (name with-held) died without naming any next of kin to
-his fund he deposited in my bank. The amount is $10.5M (Ten Million
-Five hundred Thousand Dollars) and banking regulation/legislation in
-Burkina Faso demands that I should notify the fiscal authorities after
-three years. The above set of facts underscores my reason to seek your
-permission to have you stand in as the next of kin to the deceased.
+I didn't mean the interpretation of which fuses mean what semantically,
+but rather the data format of the file. IIRC looking at the code, it's
+just a binary dump of the fuses, but it might be worth spelling out that
+it's a byte-oriented binary file, with fuse 0 in bit 0 of byte 0 etc.?
 
-This fund will be approved and released in your favour as the next of
-kin if only you will adhere to my instruction and cooperate with me in
-one accord.
-
-I have all the legal and banking details of the deceased client that
-will facilitate our putting you forward as the claimant/beneficiary of
-the funds and ultimately transfer of the $10.5M plus interest to any
-bank account nominated by you.
-
-I am prepared to compensate you with a 35% share of the total funds
-for your efforts. The final details will be given upon receipt an
-affirmation of your desire to participate.
-
-Please contact me immediately on (drsalifmohammed23@gmail.com) if you
-are interest in my proposal to enable me not to start scouting for
-another foreign partner.
-
-Thanks,
-Dr. Salif Mohamed.
