@@ -1,74 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756332AbaBFLqb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 06:46:31 -0500
-Received: from mail1.bemta14.messagelabs.com ([193.109.254.116]:26465 "EHLO
-	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756081AbaBFLq3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 06:46:29 -0500
-X-Env-Sender: Adam.Thomson.Opensource@diasemi.com
-X-Msg-Ref: server-14.tower-193.messagelabs.com!1391687186!10777890!1
-X-Originating-IP: [94.185.165.51]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.16; banners=-,-,-
-X-VirusChecked: Checked
-From: "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>
-To: Guenter Roeck <linux@roeck-us.net>,
-        "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>
-CC: Mark Brown <broonie@kernel.org>, Lee Jones <lee.jones@linaro.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>
-Subject: RE: [PATCH 0/8] da9055: Driver initialisation fixes, add DT support
-Thread-Topic: [PATCH 0/8] da9055: Driver initialisation fixes, add DT support
-Thread-Index: AQHPItX1UYPlsXnnXUG/ucZmMBjnFpqoG//w
-Date: Thu, 6 Feb 2014 11:46:25 +0000
-Message-ID: <2E89032DDAA8B9408CB92943514A03376B7E368A@SW-EX-MBX02.diasemi.com>
-References: <cover.1391614923.git.Adam.Thomson.Opensource@diasemi.com>
- <20140206005406.GC1308@roeck-us.net>
-In-Reply-To: <20140206005406.GC1308@roeck-us.net>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.20.27.23]
-Content-Type: text/plain; charset="utf-8"
+	id S1756364AbaBFLq5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 06:46:57 -0500
+Received: from mga01.intel.com ([192.55.52.88]:4115 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755766AbaBFLq4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 06:46:56 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,793,1384329600"; 
+   d="scan'208";a="470775467"
+Date: Thu, 6 Feb 2014 19:46:35 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [sched/preempt] INFO: rcu_sched self-detected stall on CPU { 1}
+Message-ID: <20140206114635.GA27429@localhost>
+References: <20140206095646.GE17971@localhost>
+ <20140206112731.GH4941@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140206112731.GH4941@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s16BkYvU004728
 
-On Thu, Feb 06, 2014 at 00:54:11AM +0000, Guenter Roeck wrote:
-
-> Adam,
+On Thu, Feb 06, 2014 at 12:27:31PM +0100, Peter Zijlstra wrote:
+> On Thu, Feb 06, 2014 at 05:56:46PM +0800, Fengguang Wu wrote:
+> > Hi Peter,
+> > 
+> > We noticed the below RCU stalls which will block the system.
+> > The problem is bisected to
+> > 
+> > commit 8cb75e0c4ec9786b81439761eac1d18d4a931af3
+> > Author:     Peter Zijlstra <peterz@infradead.org>
+> > AuthorDate: Wed Nov 20 12:22:37 2013 +0100
+> > Commit:     Ingo Molnar <mingo@kernel.org>
+> > CommitDate: Mon Jan 13 17:38:55 2014 +0100
+> > 
+> >     sched/preempt: Fix up missed PREEMPT_NEED_RESCHED folding
+> >     
+> >  arch/x86/include/asm/mwait.h |  2 +-
+> >  include/linux/preempt.h      | 15 +++++++++++++++
+> >  include/linux/sched.h        | 15 +++++++++++++++
+> >  kernel/cpu/idle.c            | 17 ++++++++++-------
+> >  kernel/sched/core.c          |  3 +--
+> >  5 files changed, 42 insertions(+), 10 deletions(-)
+> > 
+> > [   85.786775] INFO: rcu_sched self-detected stall on CPU { 1}  (t=15000 jiffies g=233 c=232 q=1940)
 > 
-> You don't really explain what the problem actually is. Can you elaborate ?
+> Did the initial kernel contain the below?
 
-Sorry, yes. For the conflicting device Ids, both the PMIC and the CODEC used
-the same I2C Id string, which meant if you tried to intiate both together on the
-same bus, then the second would fail.
+Nope, so I was testing some old tip sched/core..  Bisect log is
 
-For the removal of platform_get_irq_byname(), the reason for this was that it
-was conflicting with regmap_irq_get_virq() when the IRQ value returned from
-platform_get_irq_byname() was being passed to regmap_irq_get_virq(). The result
-for the code was that it would try to request a threaded IRQ using an invalid
-IRQ number (have also described this further in patch 0004 mail thread,
-https://lkml.org/lkml/2014/2/6/126).
+# good: [v3.13-rc1] Linux 3.13-rc1
+git bisect good v3.13-rc1
+# bad: [130816ce4d5f69167324f7272e70aa3d641677c6] sched, thermal: Clean up preempt_enable_no_resched() abuse
+git bisect bad 130816ce4d5f69167324f7272e70aa3d641677c6
+# good: [v3.13-rc1] Linux 3.13-rc1
+git bisect good v3.13-rc1
+# bad: [130816ce4d5f69167324f7272e70aa3d641677c6] sched, thermal: Clean up preempt_enable_no_resched() abuse
+git bisect bad 130816ce4d5f69167324f7272e70aa3d641677c6
+# skip: [fb00aca474405f4fa8a8519c3179fed722eabd83] rtmutex: Turn the plist into an rb-tree
+git bisect skip fb00aca474405f4fa8a8519c3179fed722eabd83
+# good: [c9c8986847d2f4fc474c10ee08afa57e7474096d] Merge branch 'x86/idle' into sched/core
+git bisect good c9c8986847d2f4fc474c10ee08afa57e7474096d
+# bad: [1774e9f3e5c8b38de3b3bc8bd0eacd280f655baf] sched, net: Clean up preempt_enable_no_resched() abuse
+git bisect bad 1774e9f3e5c8b38de3b3bc8bd0eacd280f655baf
+# bad: [8cb75e0c4ec9786b81439761eac1d18d4a931af3] sched/preempt: Fix up missed PREEMPT_NEED_RESCHED folding
+git bisect bad 8cb75e0c4ec9786b81439761eac1d18d4a931af3
+# first bad commit: [8cb75e0c4ec9786b81439761eac1d18d4a931af3] sched/preempt: Fix up missed PREEMPT_NEED_RESCHED folding
 
+Thanks,
+Fengguang
+
+> ---
+> commit 215393bc1fab3d61a5a296838bdffce22f27ffda
+> Author: Peter Zijlstra <peterz@infradead.org>
+> Date:   Wed Jan 22 11:24:35 2014 +0100
 > 
-> Also, I have been using platform_get_irq() to get the interrupt resource
-> in mfd client drivers and similar situations. Wouldn't this work here as well
-> if you don't want to use platform_get_irq_byname() ?
-
-What I could've done is use platform_get_irq_byname() and avoided using
-regmap_irq_get_virq() as I would already have the correct VIRQ to pass to
-request_threaded_irq(), but I figured that using regmap_irq_get_virq() made
-more sense at the time, and was unable to use both.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+>     sched/preempt/x86: Fix voluntary preempt for x86
+>     
+>     The #ifdef CONFIG_PREEMPT is both not needed and wrong.
+>     
+>     Its not required because asm/preempt.h should provide
+>     {set,clear}_preempt_need_resched() regardless and its wrong because
+>     for voluntary preempt we still rely on PREEMPT_NEED_RESCHED.
+>     
+>     Reported-and-Tested-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+>     Fixes: 8cb75e0c4ec9 ("sched/preempt: Fix up missed PREEMPT_NEED_RESCHED folding")
+>     Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+>     Cc: Dipankar Sarma <dipankar@in.ibm.com>
+>     Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+>     Link: http://lkml.kernel.org/r/20140122102435.GH31570@twins.programming.kicks-ass.net
+>     Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> 
+> diff --git a/include/linux/preempt.h b/include/linux/preempt.h
+> index 59749fc..de83b4e 100644
+> --- a/include/linux/preempt.h
+> +++ b/include/linux/preempt.h
+> @@ -134,7 +134,6 @@ do { \
+>  #undef preempt_check_resched
+>  #endif
+>  
+> -#ifdef CONFIG_PREEMPT
+>  #define preempt_set_need_resched() \
+>  do { \
+>  	set_preempt_need_resched(); \
+> @@ -144,10 +143,6 @@ do { \
+>  	if (tif_need_resched()) \
+>  		set_preempt_need_resched(); \
+>  } while (0)
+> -#else
+> -#define preempt_set_need_resched() do { } while (0)
+> -#define preempt_fold_need_resched() do { } while (0)
+> -#endif
+>  
+>  #ifdef CONFIG_PREEMPT_NOTIFIERS
+>  
