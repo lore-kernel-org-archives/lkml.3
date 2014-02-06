@@ -1,73 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754691AbaBFC2a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 21:28:30 -0500
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:6328 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754474AbaBFC22 (ORCPT
+	id S1754718AbaBFCcy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 21:32:54 -0500
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:34704 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753529AbaBFCcx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 21:28:28 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 05 Feb 2014 18:26:28 -0800
-Message-ID: <52F2F348.3000502@nvidia.com>
-Date: Thu, 6 Feb 2014 11:28:24 +0900
-From: Alexandre Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 5 Feb 2014 21:32:53 -0500
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Alexandre Courbot <gnurou@gmail.com>
-CC: Thierry Reding <thierry.reding@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/5] ARM: tegra: cpuidle: use firmware call for power
- down
-References: <1390299016-14105-1-git-send-email-acourbot@nvidia.com> <1390299016-14105-6-git-send-email-acourbot@nvidia.com> <52E02DCC.1000404@wwwdotorg.org> <CAAVeFuKLtC62+bujY4724hMV_6M8Ow0s=6zRn_M87VX4PHQgxA@mail.gmail.com> <52F266A2.1030503@wwwdotorg.org>
-In-Reply-To: <52F266A2.1030503@wwwdotorg.org>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140206005534.GA27848@node.dhcp.inet.fi>
+References: <CA+55aFzNxTtvNX7zqBELHs489e5mEx1sM=i=red=aQAGviXrNw@mail.gmail.com>
+	<CA+55aFxpBkTn3LvSzxFj7ZoxuY=Rrg0OoAVuk5dK-ZLsO8kk4A@mail.gmail.com>
+	<20140206005534.GA27848@node.dhcp.inet.fi>
+Date: Wed, 5 Feb 2014 18:32:51 -0800
+X-Google-Sender-Auth: 8EMO4gzLvQfFaQwxfpQdFon4sQU
+Message-ID: <CA+55aFx70seh4VD+=ZKHrjTCrinG0Hq3=X6ygCeOeuNCSG8n8Q@mail.gmail.com>
+Subject: Re: [RFC] de-asmify the x86-64 system call slowpath
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ning Qu <quning@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/2014 01:28 AM, Stephen Warren wrote:
-> On 01/23/2014 12:39 AM, Alexandre Courbot wrote:
->> On Thu, Jan 23, 2014 at 5:45 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
->>> On 01/21/2014 03:10 AM, Alexandre Courbot wrote:
->>>> Invoke the do_idle() firmware call before suspending a CPU so that the
->>>> underlying firmware (if any) can take necessary action.
->>>
->>>> diff --git a/arch/arm/mach-tegra/cpuidle-tegra114.c b/arch/arm/mach-tegra/cpuidle-tegra114.c
->>>
->>>> @@ -45,6 +46,8 @@ static int tegra114_idle_power_down(struct cpuidle_device *dev,
->>>>
->>>>        clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &dev->cpu);
->>>>
->>>> +     call_firmware_op(do_idle);
->>>> +
->>>>        cpu_suspend(0, tegra30_sleep_cpu_secondary_finish);
->>>>
->>>>        clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &dev->cpu);
->>>
->>> Don't you need to have the kernel also *not* do something when entering
->>> idle; doesn't the FW op replace some of the register writes that the
->>> kernel would otherwise be doing?
->>
->> It seems like the operation is actually to inform the firmware that we
->> are going to suspend the CPU. Downstream kernel also uses it that way.
->> But you are right in that we should expect do_idle() to actually
->> perform the suspend operation. Maybe a prepare_idle() operation should
->> be added to the firmware interface for this purpose?
+On Wed, Feb 5, 2014 at 4:55 PM, Kirill A. Shutemov <kirill@shutemov.name> wrote:
 >
-> That sounds like a reasonable change. Is it easy to plumb in?
+> One thing that could help is THP for file-backed pages. And there's
+> prototype with basic infrasturure and support for ramfs and
+> shmem/tmpfs (by Ning Qu). Work in progress.
 
-I think so. Will post a v2 of this soon.
+THP isn't really realistic for any general-purpose loads. 2MB pages
+are just too big of a granularity.
 
-Thanks,
-Alex.
+On a machine with just a few gigs (ie anything but big servers), you
+count the number of large pages in a few thousands. That makes
+fragmentation a big issue. Also, ELF sections aren't actually
+2MB-aligned, nor do you really want to throw away 9 bits of virtual
+address space randomization. Plus common binaries aren't even big
+enough. Look at "bash", which is a pig - it's still less than a
+megabyte as just the binary, with the code segment being 900kB or so
+for me. For something like "perl", it's even smaller, with a number of
+shared object files that get loaded dynamically etc.
 
+IOW, THP is completely useless for any kind of scripting. It can be
+good for individual large binaries that have long lifetimes (DB
+processes, HPC, stuff like that), but no, it is *not* the answer to
+complex loads. And almost certainly never will be.
 
+It's possible that some special case (glibc for example) could be
+reasonably hacked to use a THP code segment, but that sounds unlikely.
+And the virtual address randomization really gets hurt.
+
+No, I was thinking "try to optimistically map 8 adjacent aligned pages
+at a time" - that would be the same cacheline in the page tables, so
+it would be fairly cheap if we couple it with a gang-lookup of the
+pages in the page cache (or, for anonymous pages, by just
+optimistically trying to do an order-3 page allocation, and if that
+works, just map the 32kB allocation you got as eight individual
+pages).
+
+I know it's been discussed at some point, and I even have a dim memory
+of having seen some really ugly patches.
+
+             Linus
