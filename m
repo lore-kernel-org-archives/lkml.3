@@ -1,83 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754343AbaBFV1i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 16:27:38 -0500
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:64501 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751426AbaBFV1h (ORCPT
+	id S1755671AbaBFV3Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 16:29:16 -0500
+Received: from mail-vb0-f42.google.com ([209.85.212.42]:50262 "EHLO
+	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752086AbaBFV3O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 16:27:37 -0500
-Message-ID: <1391722055.22187.7.camel@x220>
-Subject: Re: [PATCH 3.13 054/140] mei: use hbm idle state to prevent
- spurious resets
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>,
-        Alexander Usyskin <alexander.usyskin@intel.com>
-Date: Thu, 06 Feb 2014 22:27:35 +0100
-In-Reply-To: <20140204211038.509274283@linuxfoundation.org>
-References: <20140204211036.967663852@linuxfoundation.org>
-	 <20140204211038.509274283@linuxfoundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 06 Feb 2014 21:27:35.0492 (UTC) FILETIME=[40AE5040:01CF2382]
-X-RcptDomain: vger.kernel.org
+	Thu, 6 Feb 2014 16:29:14 -0500
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFwfGVCVouh5uap3UPy92vc4N9OrRRa-NpYT9ZMicU6w8w@mail.gmail.com>
+References: <CA+55aFzNxTtvNX7zqBELHs489e5mEx1sM=i=red=aQAGviXrNw@mail.gmail.com>
+	<CA+55aFxpBkTn3LvSzxFj7ZoxuY=Rrg0OoAVuk5dK-ZLsO8kk4A@mail.gmail.com>
+	<20140206005534.GA27848@node.dhcp.inet.fi>
+	<CA+55aFx70seh4VD+=ZKHrjTCrinG0Hq3=X6ygCeOeuNCSG8n8Q@mail.gmail.com>
+	<CA+55aFwfGVCVouh5uap3UPy92vc4N9OrRRa-NpYT9ZMicU6w8w@mail.gmail.com>
+Date: Thu, 6 Feb 2014 13:29:13 -0800
+X-Google-Sender-Auth: oIPov5p0JmFYPXfOyE2VWd6zMjw
+Message-ID: <CA+55aFyq31f=30YeRbZbqgBFp13Zdk=Gb-UiLRqeR48MOfVwag@mail.gmail.com>
+Subject: Re: [RFC] de-asmify the x86-64 system call slowpath
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ning Qu <quning@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-02-04 at 13:10 -0800, Greg Kroah-Hartman wrote:
-> From: Tomas Winkler <tomas.winkler@intel.com>
-> 
-> commit 66ae460b13c31a176b41550259683c841a62af3e upstream.
-> 
-> When reset is caused by hbm protocol mismatch or timeout
-> we might end up in an endless reset loop and hbm protocol
-> will never sync
-> 
-> Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-> Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> 
-> ---
->  drivers/misc/mei/hbm.c       |   19 +++++++++++++++++++
->  drivers/misc/mei/hbm.h       |    1 +
->  drivers/misc/mei/init.c      |   12 ++++++++----
->  drivers/misc/mei/interrupt.c |   25 +++++++++++++++----------
->  4 files changed, 43 insertions(+), 14 deletions(-)
-> 
-> --- a/drivers/misc/mei/hbm.c
-> +++ b/drivers/misc/mei/hbm.c
-> [...]
-> @@ -577,6 +588,14 @@ void mei_hbm_dispatch(struct mei_device
->  	mei_read_slots(dev, dev->rd_msg_buf, hdr->length);
->  	mei_msg = (struct mei_bus_message *)dev->rd_msg_buf;
->  
-> +	/* ignore spurious message and prevent reset nesting
-> +	 * hbm is put to idle during system reset
-> +	 */
-> +	if (dev->hbm_state == MEI_HBM_IDLE) {
-> +		dev_dbg(&dev->pdev->dev, "hbm: state is idle ignore spurious messages\n");
-> +		return 0;
-> +	}
-> +
->  	switch (mei_msg->hbm_cmd) {
->  	case HOST_START_RES_CMD:
->  		version_res = (struct hbm_host_version_response *)mei_msg;
+On Wed, Feb 5, 2014 at 8:33 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> Doing the gang-lookup is hard, since it's all abstracted away, but the
+> attached patch kind of tries to do what I described.
+>
+> This patch probably doesn't work, but something *like* this might be
+> worth playing with.
 
-This chunk triggers this, obviously correct, warning:
-    drivers/misc/mei/hbm.c: In function 'mei_hbm_dispatch':
-    drivers/misc/mei/hbm.c:596:3: warning: 'return' with a value, in function returning void [enabled by default
-       return 0;
-       ^
+Interesting. Here are some pte fault statistics with and without the patch.
 
-I know that v3.13.2 has just been released. Would it be worth the
-trouble to submit a clean up patch (v3.13 specific, as in v3.14-rc1 this
-function returns int)?
+I added a few new count_vm_event() counters: PTEFAULT, PTEFILE,
+PTEANON, PTEWP, PTESPECULATIVE for the handle_pte_fault,
+do_linear_fault, do_anonymous_page, do_wp_page and the "let's
+speculatively fill the page tables" case.
 
+This is what the statistics look like for me doing a "make -j" of a
+fully built almodconfig build:
 
-Paul Bolle
+  5007450       ptefault
+  3272038       ptefile
+  1470242       pteanon
+   265121       ptewp
+        0       ptespeculative
 
+where obviously the ptespeculative count is zero, and I was wrong
+about anon faults being most common - the file mapping faults really
+are the most common for this load (it's fairly fork/exec heavy, I
+guess).
+
+This is what happens with that patch I posted:
+
+  2962090       ptefault
+  1195130       ptefile
+  1490460       pteanon
+   276479       ptewp
+  5690724       ptespeculative
+
+about 200k page faults went away, and the numbers make sense (ie they
+got removed from the ptefile column - the other number changes are
+just noise).
+
+Now, we filled 600k extra page table entries to do that (that
+ptespeculative number), so the "hitrate" for the speculative filling
+was basically about 33%. Which doesn't sound crazy - the code
+basically populates the 8 aligned pages around the faulting page.
+
+Now, because I didn't make this easily dynamically configurable I have
+no good way to really test timing, but the numbers says at least the
+concept works.
+
+Whether the reduced number of page faults and presumably better
+locality for the speculative prefilling makes up for the fact that 66%
+of the prefilled entries never get used is very debatable. But I think
+it's a somewhat interesting experiment, and the patch was certainly
+not hugely complicated.
+
+I should add a switch to turn this on/off and then do many builds in
+sequence to get some kind of idea of whether it actually changes
+performance. But if 5% of the overall time was literally spent on the
+*exception* part of the page fault (ie not counting all the work we do
+in the kernel), I think it's worth looking at this.
+
+                        Linus
