@@ -1,221 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754779AbaBFOou (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 09:44:50 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:45892 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753904AbaBFOnY (ORCPT
+	id S1753532AbaBFOnU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 09:43:20 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:10091 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751872AbaBFOnQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 09:43:24 -0500
-Message-Id: <20140206144322.086050042@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Thu, 06 Feb 2014 09:41:32 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Brian Gerst <brgerst@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH 5/5] x86: Clean up dumpstack_64.c code
-References: <20140206144127.181568017@goodmis.org>
-Content-Disposition: inline; filename=0005-x86-Clean-up-dumpstack_64.c-code.patch
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	Thu, 6 Feb 2014 09:43:16 -0500
+X-AuditID: cbfec7f5-b7fc96d000004885-1f-52f39f83c56a
+Message-id: <52F39F80.1090709@samsung.com>
+Date: Thu, 06 Feb 2014 15:43:12 +0100
+From: Tomasz Figa <t.figa@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.1.1
+MIME-version: 1.0
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        linux-crypto@vger.kernel.org, linux-samsung-soc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, vzapolskiy@gmail.com,
+        herbert@gondor.apana.org.au, naveenkrishna.ch@gmail.com,
+        cpgs@samsung.com, devicetree@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: [PATCH 5/9 v5] clk: samsung exynos5250/5420: Add gate clock for
+ SSS module
+References: <1389354229-31936-1-git-send-email-ch.naveen@samsung.com>
+ <1390987446-18784-1-git-send-email-ch.naveen@samsung.com>
+In-reply-to: <1390987446-18784-1-git-send-email-ch.naveen@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGLMWRmVeSWpSXmKPExsVy+t/xq7rN8z8HGZxqlLa4+/wwo8XLQ5oW
+	84+cY7XofiVj0bvgKpvF/Xs/mSwu75rDZjHj/D4mi0Xb/jNbnJ1ziMmBy2PnrLvsHtsOqHr0
+	bVnF6PF5k1wASxSXTUpqTmZZapG+XQJXRmvXMqaCOxwVv6ZUNjD+Z+ti5OSQEDCRePHoHiOE
+	LSZx4d56oDgXh5DAUkaJH2vPMkI4nxklNuzcDNbBK6AlcXXVFzCbRUBVouXfQmYQm01ATeJz
+	wyOwuKhAhMTfeesZIeoFJX5MvscCYosIlEv8u7EGbAOzwFFGicu7D7GDJIQFIiUmPPsKta2R
+	UWLZ5ENgHZwCbhLd55eCTWUWsJZYOWkbI4QtL7F5zVvmCYwCs5AsmYWkbBaSsgWMzKsYRVNL
+	kwuKk9JzjfSKE3OLS/PS9ZLzczcxQsL+6w7GpcesDjEKcDAq8fBuWP8pSIg1say4MvcQowQH
+	s5IIb2rT5yAh3pTEyqrUovz4otKc1OJDjEwcnFINjLcFdjmKlYbzeJtZidn9nPPx6xkTlbxE
+	9ZIDrVv0q9yzVFQPrzNOuvktfFbRpksNHm77PTY4H516LPDvvR2BH+s+zOOYNUPt51vVb8Et
+	fv6ntv9viSkKWn3rWdLGqr4LDu41vkt7Zy8y3VT4ZZlhd2DL3/vL0iNbXTmPGR/4Vsr0xXqy
+	wucHwUosxRmJhlrMRcWJAG2i3zRZAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+Hi Naveen,
 
-The dump_trace() function in dumpstack_64.c is hard to follow.
-The test for exception stack is processed differently than the
-test for irq stack, and the normal stack is outside completely.
+On 29.01.2014 10:24, Naveen Krishna Chatradhi wrote:
+> This patch adds gating clock for SSS(Security SubSystem)
+> module on Exynos5250/5420.
+>
+> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+> TO: <linux-samsung-soc@vger.kernel.org>
+> TO: Tomasz Figa <t.figa@samsung.com>
+> CC: Kukjin Kim <kgene.kim@samsung.com>
+> CC: <linux-crypto@vger.kernel.org>
+> ---
+> Changes since v4:
+> Use register GATE_IP_G2D instead of GATE_BUS_G2D for Exynos5420
+> Changes since v3:
+> 1. Rebased on to https://git.kernel.org/pub/scm/linux/kernel/git/tfiga/samsung-clk.git
+> 2. Added new ID for SSS clock on Exynos5250, with Documentation and
+> 3. Added gate clocks definitions for SSS on Exynos5420 and Exynos5250
+>   .../devicetree/bindings/clock/exynos5250-clock.txt |    1 +
+>   drivers/clk/samsung/clk-exynos5250.c               |    1 +
+>   drivers/clk/samsung/clk-exynos5420.c               |    4 ++++
+>   include/dt-bindings/clock/exynos5250.h             |    1 +
+>   4 files changed, 7 insertions(+)
 
-By restructuring this code to have all the stacks determined by
-a single function that returns an enum of the following:
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 
- STACK_IS_NORMAL
- STACK_IS_EXCEPTION
- STACK_IS_IRQ
- STACK_IS_UNKNOWN
-
-and has the logic of each within a switch statement.
-This should make the code much easier to read and understand.
-
-Link: http://lkml.kernel.org/r/20110806012354.684598995@goodmis.org
-
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Brian Gerst <brgerst@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- arch/x86/kernel/dumpstack_64.c | 117 +++++++++++++++++++++++++++++------------
- 1 file changed, 83 insertions(+), 34 deletions(-)
-
-diff --git a/arch/x86/kernel/dumpstack_64.c b/arch/x86/kernel/dumpstack_64.c
-index addb207..346b1df 100644
---- a/arch/x86/kernel/dumpstack_64.c
-+++ b/arch/x86/kernel/dumpstack_64.c
-@@ -104,6 +104,45 @@ in_irq_stack(unsigned long *stack, unsigned long *irq_stack,
- 	return (stack >= irq_stack && stack < irq_stack_end);
- }
- 
-+static const unsigned long irq_stack_size =
-+	(IRQ_STACK_SIZE - 64) / sizeof(unsigned long);
-+
-+enum stack_type {
-+	STACK_IS_UNKNOWN,
-+	STACK_IS_NORMAL,
-+	STACK_IS_EXCEPTION,
-+	STACK_IS_IRQ,
-+};
-+
-+static enum stack_type
-+analyze_stack(int cpu, struct task_struct *task,
-+	      unsigned long *stack, unsigned long **stack_end, char **id)
-+{
-+	unsigned long *irq_stack;
-+	unsigned long addr;
-+	unsigned used = 0;
-+
-+	addr = ((unsigned long)stack & (~(THREAD_SIZE - 1)));
-+	if ((unsigned long)task_stack_page(task) == addr)
-+		return STACK_IS_NORMAL;
-+
-+	*stack_end = in_exception_stack(cpu, (unsigned long)stack,
-+					 &used, id);
-+	if (*stack_end)
-+		return STACK_IS_EXCEPTION;
-+
-+	*stack_end = (unsigned long *)per_cpu(irq_stack_ptr, cpu);
-+	if (!*stack_end)
-+		return STACK_IS_UNKNOWN;
-+
-+	irq_stack = *stack_end - irq_stack_size;
-+
-+	if (in_irq_stack(stack, irq_stack, *stack_end))
-+		return STACK_IS_IRQ;
-+
-+	return STACK_IS_UNKNOWN;
-+}
-+
- /*
-  * x86-64 can have up to three kernel stacks:
-  * process stack
-@@ -116,12 +155,11 @@ void dump_trace(struct task_struct *task, struct pt_regs *regs,
- 		const struct stacktrace_ops *ops, void *data)
- {
- 	const unsigned cpu = get_cpu();
--	unsigned long *irq_stack_end =
--		(unsigned long *)per_cpu(irq_stack_ptr, cpu);
--	unsigned used = 0;
- 	struct thread_info *tinfo;
--	int graph = 0;
-+	unsigned long *irq_stack;
- 	unsigned long dummy;
-+	int graph = 0;
-+	int done = 0;
- 
- 	if (!task)
- 		task = current;
-@@ -143,49 +181,60 @@ void dump_trace(struct task_struct *task, struct pt_regs *regs,
- 	 * exceptions
- 	 */
- 	tinfo = task_thread_info(task);
--	for (;;) {
-+	while (!done) {
-+		unsigned long *stack_end;
-+		enum stack_type stype;
- 		char *id;
--		unsigned long *estack_end;
--		estack_end = in_exception_stack(cpu, (unsigned long)stack,
--						&used, &id);
- 
--		if (estack_end) {
-+		stype = analyze_stack(cpu, task, stack, &stack_end, &id);
-+
-+		/* Default finish unless specified to continue */
-+		done = 1;
-+
-+		switch (stype) {
-+
-+		/* Break out early if we are on the thread stack */
-+		case STACK_IS_NORMAL:
-+			break;
-+
-+		case STACK_IS_EXCEPTION:
-+
- 			if (ops->stack(data, id) < 0)
- 				break;
- 
- 			bp = ops->walk_stack(tinfo, stack, bp, ops,
--					     data, estack_end, &graph);
-+					     data, stack_end, &graph);
- 			ops->stack(data, "<EOE>");
- 			/*
- 			 * We link to the next stack via the
- 			 * second-to-last pointer (index -2 to end) in the
- 			 * exception stack:
- 			 */
--			stack = (unsigned long *) estack_end[-2];
--			continue;
--		}
--		if (irq_stack_end) {
--			unsigned long *irq_stack;
--			irq_stack = irq_stack_end -
--				(IRQ_STACK_SIZE - 64) / sizeof(*irq_stack);
--
--			if (in_irq_stack(stack, irq_stack, irq_stack_end)) {
--				if (ops->stack(data, "IRQ") < 0)
--					break;
--				bp = ops->walk_stack(tinfo, stack, bp,
--					ops, data, irq_stack_end, &graph);
--				/*
--				 * We link to the next stack (which would be
--				 * the process stack normally) the last
--				 * pointer (index -1 to end) in the IRQ stack:
--				 */
--				stack = (unsigned long *) (irq_stack_end[-1]);
--				irq_stack_end = NULL;
--				ops->stack(data, "EOI");
--				continue;
--			}
-+			stack = (unsigned long *) stack_end[-2];
-+			done = 0;
-+			break;
-+
-+		case STACK_IS_IRQ:
-+
-+			if (ops->stack(data, "IRQ") < 0)
-+				break;
-+			bp = ops->walk_stack(tinfo, stack, bp,
-+				     ops, data, stack_end, &graph);
-+			/*
-+			 * We link to the next stack (which would be
-+			 * the process stack normally) the last
-+			 * pointer (index -1 to end) in the IRQ stack:
-+			 */
-+			stack = (unsigned long *) (stack_end[-1]);
-+			irq_stack = stack_end - irq_stack_size;
-+			ops->stack(data, "EOI");
-+			done = 0;
-+			break;
-+
-+		case STACK_IS_UNKNOWN:
-+			ops->stack(data, "UNK");
-+			break;
- 		}
--		break;
- 	}
- 
- 	/*
--- 
-1.8.4.3
-
-
+Best regards,
+Tomasz
