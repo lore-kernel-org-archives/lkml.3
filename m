@@ -1,66 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752269AbaBGU2R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 15:28:17 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:20628 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751446AbaBGU2Q (ORCPT
+	id S1751897AbaBGUbc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 15:31:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58944 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751511AbaBGUbb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 15:28:16 -0500
-Date: Fri, 7 Feb 2014 15:28:14 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Wolfgang Grandegger <wg@grandegger.com>
-Subject: Re: [RFC - beta][PATCH] tracing: Introduce TRACE_MARKER() no
- argument trace event
-Message-ID: <20140207152814.16e263ab@gandalf.local.home>
-In-Reply-To: <20140207112357.35552998@gandalf.local.home>
-References: <20140207112357.35552998@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
+	Fri, 7 Feb 2014 15:31:31 -0500
+Date: Fri, 7 Feb 2014 12:31:29 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Rik van Riel <riel@redhat.com>, Dave Hansen <dave@sr71.net>,
+        Michal Hocko <mhocko@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] drop_caches: add some documentation and info message
+Message-Id: <20140207123129.84f9fb0aaf32f0e09c78851a@linux-foundation.org>
+In-Reply-To: <20140207181332.GG6963@cmpxchg.org>
+References: <1391794851-11412-1-git-send-email-hannes@cmpxchg.org>
+	<52F51E19.9000406@redhat.com>
+	<20140207181332.GG6963@cmpxchg.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 7 Feb 2014 11:23:57 -0500
-Steven Rostedt <rostedt@goodmis.org> wrote:
+On Fri, 7 Feb 2014 13:13:32 -0500 Johannes Weiner <hannes@cmpxchg.org> wrote:
 
-> 
-> The TRACE_MARKER() is basically an optimized version of TRACE_EVENT()
-> with no arguments. It can be enabled and disabled the same way as any
-> other event, and stays within the system it was created in.
-> 
-> Is this worth doing?
-> 
+> @@ -63,6 +64,9 @@ int drop_caches_sysctl_handler(ctl_table *table, int write,
+>  			iterate_supers(drop_pagecache_sb, NULL);
+>  		if (sysctl_drop_caches & 2)
+>  			drop_slab();
+> +		printk_ratelimited(KERN_INFO "%s (%d): dropped kernel caches: %d\n",
+> +				   current->comm, task_pid_nr(current),
+> +				   sysctl_drop_caches);
+>  	}
+>  	return 0;
+>  }
 
-I'm thinking no. And unless someone can give me a good reason that we
-should have such a thing, I will Nack my own patch!
+My concern with this is that there may be people whose
+other-party-provided software uses drop_caches.  Their machines will
+now sit there emitting log messages and there's nothing they can do
+about it, apart from whining at their vendors.
 
-Johannes,
 
-What's up with trace_iwlwifi_dev_irq()?  You are tracing it but not
-saving any information. There's obviously a reason for the
-iwl_pcie_isr() to be called (it's handling something). Does it do the
-exact same thing every time?  No variables are needed then?
+We could do something like this?
 
-What I'm trying to say is, if you go through the trouble of inserting a
-tracepoint into some location, might as well extract data from it.
-Otherwise you are wasting space in memory. If all you want to know is
-if the function was called or not, then simply use a kprobe or function
-trace that function (noinline to allow ftrace to trace it).
+--- a/fs/drop_caches.c~drop_caches-add-some-documentation-and-info-message-fix
++++ a/fs/drop_caches.c
+@@ -60,13 +60,17 @@ int drop_caches_sysctl_handler(ctl_table
+ 	if (ret)
+ 		return ret;
+ 	if (write) {
++		static int stfu;
++
+ 		if (sysctl_drop_caches & 1)
+ 			iterate_supers(drop_pagecache_sb, NULL);
+ 		if (sysctl_drop_caches & 2)
+ 			drop_slab();
+-		printk_ratelimited(KERN_INFO "%s (%d): dropped kernel caches: %d\n",
+-				   current->comm, task_pid_nr(current),
+-				   sysctl_drop_caches);
++		stfu |= sysctl_drop_caches & 4;
++		if (!stfu)
++			pr_info_ratelimited("%s (%d): dropped kernel caches: %d\n",
++					   current->comm, task_pid_nr(current),
++					   sysctl_drop_caches);
+ 	}
+ 	return 0;
+ }
+_
 
-Unless I get some feedback to why this is a good idea...
-
-Nacked-myself-by: Steven Rostedt <rostedt@goodmis.org>
-
--- Steve
+(note switch to pr_info_ratelimited)
