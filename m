@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755911AbaBGMgK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:36:10 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42021 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754858AbaBGLup (ORCPT
+	id S1755861AbaBGMgZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:36:25 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38635 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752120AbaBGMgV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:50:45 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Mikulas Patocka <mpatocka@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 131/233] dm: remove pointless kobject comparison in dm_get_from_kobject
-Date: Fri,  7 Feb 2014 11:45:50 +0000
-Message-Id: <1391773652-25214-132-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
-References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Fri, 7 Feb 2014 07:36:21 -0500
+Date: Fri, 7 Feb 2014 18:06:15 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Karsten Keil <isdn@linux-pingi.de>, netdev@vger.kernel.org,
+        josh@joshtriplett.org
+Subject: [PATCH 14/26] drivers: isdn: Mark function as static in w6692.c
+Message-ID: <a825533c7ef63682bb42113546fe1741f2c4a5a0.1390408517.git.rashika.kheria@gmail.com>
+References: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.4 -stable review patch.  If anyone has any objections, please let me know.
+Mark functions as static in hardware/mISDN/w6692.c because they ar enot
+used outside this file.
 
-------------------
+This eliminates the following warnings in hardware/mISDN/w6692.c:
+drivers/isdn/hardware/mISDN/w6692.c:851:6: warning: no previous prototype for ‘initW6692’ [-Wmissing-prototypes]
 
-From: Mikulas Patocka <mpatocka@redhat.com>
-
-commit 1ddd641ddcfa46d719189468b6856e9b17381a61 upstream.
-
-The comparison is always true and the compiler optimizes it out anyway.
-
-Milan offered additional context relative to the original commit
-784aae735d ("dm: add name and uuid to sysfs") which introduced the code:
-"I think it is just relict of some experiments before I committed this
-simple embedded sysfs kobj handling".
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Acked-by: Milan Broz <gmazyland@gmail.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-[ luis: 3.11.y prereq for:
-  - 2995fa7 "dm sysfs: fix a module unload race" ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- drivers/md/dm.c | 6 ------
- 1 file changed, 6 deletions(-)
+ drivers/isdn/hardware/mISDN/w6692.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/md/dm.c b/drivers/md/dm.c
-index 0cc1449..267495c 100644
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -2768,17 +2768,11 @@ struct kobject *dm_kobject(struct mapped_device *md)
- 	return &md->kobj;
+diff --git a/drivers/isdn/hardware/mISDN/w6692.c b/drivers/isdn/hardware/mISDN/w6692.c
+index de69f68..2e24a05 100644
+--- a/drivers/isdn/hardware/mISDN/w6692.c
++++ b/drivers/isdn/hardware/mISDN/w6692.c
+@@ -848,7 +848,7 @@ dbusy_timer_handler(struct dchannel *dch)
+ 	}
  }
  
--/*
-- * struct mapped_device should not be exported outside of dm.c
-- * so use this check to verify that kobj is part of md structure
-- */
- struct mapped_device *dm_get_from_kobject(struct kobject *kobj)
+-void initW6692(struct w6692_hw *card)
++static void initW6692(struct w6692_hw *card)
  {
- 	struct mapped_device *md;
+ 	u8	val;
  
- 	md = container_of(kobj, struct mapped_device, kobj);
--	if (&md->kobj != kobj)
--		return NULL;
- 
- 	if (test_bit(DMF_FREEING, &md->flags) ||
- 	    dm_deleting_md(md))
 -- 
-1.8.3.2
+1.7.9.5
 
