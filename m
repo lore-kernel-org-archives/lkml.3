@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753371AbaBGLZT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:25:19 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41145 "EHLO
+	id S1753636AbaBGL2s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:28:48 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41209 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753167AbaBGLZD (ORCPT
+	with ESMTP id S1753356AbaBGLZS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:25:03 -0500
+	Fri, 7 Feb 2014 06:25:18 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Neal Cardwell <ncardwell@google.com>, Eric Dumazet <edumazet@google.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 70/88] drm/radeon/DCE4+: clear bios scratch dpms bit (v2)
-Date: Fri,  7 Feb 2014 11:23:07 +0000
-Message-Id: <1391772205-22239-71-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 81/88] inet_diag: fix inet_diag_dump_icsk() timewait socket state logic
+Date: Fri,  7 Feb 2014 11:23:18 +0000
+Message-Id: <1391772205-22239-82-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
@@ -27,40 +27,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Neal Cardwell <ncardwell@google.com>
 
-commit 6802d4bad83f50081b2788698570218aaff8d10e upstream.
+[ Based upon upstream commit 70315d22d3c7383f9a508d0aab21e2eb35b2303a ]
 
-The BlankCrtc table in some DCE8 boards has some
-logic shortcuts for the vbios when this bit is set.
-Clear it for driver use.
+Fix inet_diag_dump_icsk() to reflect the fact that both TIME_WAIT and
+FIN_WAIT2 connections are represented by inet_timewait_sock (not just
+TIME_WAIT). Thus:
 
-v2: fix typo
+(a) We need to iterate through the time_wait buckets if the user wants
+either TIME_WAIT or FIN_WAIT2. (Before fixing this, "ss -nemoi state
+fin-wait-2" would not return any sockets, even if there were some in
+FIN_WAIT2.)
 
-Bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=73420
+(b) We need to check tw_substate to see if the user wants to dump
+sockets in the particular substate (TIME_WAIT or FIN_WAIT2) that a
+given connection is in. (Before fixing this, "ss -nemoi state
+time-wait" would actually return sockets in state FIN_WAIT2.)
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+An analogous fix is in v3.13: 70315d22d3c7383f9a508d0aab21e2eb35b2303a
+("inet_diag: fix inet_diag_dump_icsk() to use correct state for
+timewait sockets") but that patch is quite different because 3.13 code
+is very different in this area due to the unification of TCP hash
+tables in 05dbc7b ("tcp/dccp: remove twchain") in v3.13-rc1.
+
+I tested that this applies cleanly between v3.3 and v3.12, and tested
+that it works in both 3.3 and 3.12. It does not apply cleanly to 3.2
+and earlier (though it makes semantic sense), and semantically is not
+the right fix for 3.13 and beyond (as mentioned above).
+
+Signed-off-by: Neal Cardwell <ncardwell@google.com>
+Cc: Eric Dumazet <edumazet@google.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/radeon_atombios.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ net/ipv4/inet_diag.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_atombios.c b/drivers/gpu/drm/radeon/radeon_atombios.c
-index c54d295..6d0c32b 100644
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -2785,6 +2785,10 @@ void radeon_atom_initialize_bios_scratch_regs(struct drm_device *dev)
- 	/* tell the bios not to handle mode switching */
- 	bios_6_scratch |= ATOM_S6_ACC_BLOCK_DISPLAY_SWITCH;
+diff --git a/net/ipv4/inet_diag.c b/net/ipv4/inet_diag.c
+index e530c31..60e48d7 100644
+--- a/net/ipv4/inet_diag.c
++++ b/net/ipv4/inet_diag.c
+@@ -941,7 +941,7 @@ next_normal:
+ 			++num;
+ 		}
  
-+	/* clear the vbios dpms state */
-+	if (ASIC_IS_DCE4(rdev))
-+		bios_2_scratch &= ~ATOM_S2_DEVICE_DPMS_STATE;
-+
- 	if (rdev->family >= CHIP_R600) {
- 		WREG32(R600_BIOS_2_SCRATCH, bios_2_scratch);
- 		WREG32(R600_BIOS_6_SCRATCH, bios_6_scratch);
+-		if (r->idiag_states & TCPF_TIME_WAIT) {
++		if (r->idiag_states & (TCPF_TIME_WAIT | TCPF_FIN_WAIT2)) {
+ 			struct inet_timewait_sock *tw;
+ 
+ 			inet_twsk_for_each(tw, node,
+@@ -949,6 +949,8 @@ next_normal:
+ 
+ 				if (num < s_num)
+ 					goto next_dying;
++				if (!(r->idiag_states & (1 << tw->tw_substate)))
++					goto next_dying;
+ 				if (r->sdiag_family != AF_UNSPEC &&
+ 						tw->tw_family != r->sdiag_family)
+ 					goto next_dying;
 -- 
 1.8.3.2
 
