@@ -1,89 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751496AbaBGQg3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 11:36:29 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:3101 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751301AbaBGQg2 (ORCPT
+	id S1751500AbaBGQjG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 11:39:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57457 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751013AbaBGQjE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 11:36:28 -0500
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        <arm@kernel.org>
-CC: Boris BREZILLON <b.brezillon@overkiz.com>, <jjhiblot@traphandler.com>,
-        Bo Shen <voice.shen@atmel.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: [GIT PULL] at91: fixes for 3.14 #1
-Date: Fri, 7 Feb 2014 17:36:26 +0100
-Message-ID: <1391790986-31936-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
-Organization: atmel
+	Fri, 7 Feb 2014 11:39:04 -0500
+Date: Fri, 7 Feb 2014 08:40:13 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Seth Forshee <seth.forshee@canonical.com>, Jiri Slaby <jslaby@suse.cz>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] tty: Allow stealing of controlling ttys within user
+ namespaces
+Message-ID: <20140207164013.GA17653@kroah.com>
+References: <1390402431-6371-1-git-send-email-seth.forshee@canonical.com>
+ <8738kdq7ng.fsf@xmission.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8738kdq7ng.fsf@xmission.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd, Olof, Kevin,
+On Fri, Jan 24, 2014 at 03:31:15PM -0800, Eric W. Biederman wrote:
+> Seth Forshee <seth.forshee@canonical.com> writes:
+> 
+> > root is allowed to steal ttys from other sessions, but it
+> > requires system-wide CAP_SYS_ADMIN and therefore is not possible
+> > for root within a user namespace. This should be allowed so long
+> > as the process doing the stealing is privileged towards the
+> > session which currently owns the tty.
+> >
+> > Update this code to only require CAP_SYS_ADMIN in the user
+> > namespaces of the target session's tasks, allowing the tty to be
+> > stolen from sessions whose tasks are in the same or lesser
+> > privileged user namespaces.
+> 
+> This code looks essentially correct.  I would like to look at it a bit
+> more before we merge it, just to ensure something silly hasn't been
+> missed, but the only thing that concerns me at this point is are we
+> checking the proper per task bits.
+> 
+> The case I am currently worrying about is a task that does something
+> privileged drops perms sets dumpable and then calls setns() on the
+> userns.
+> 
+> So I think we may have to solve the dumpable problem at the same time as
+> we solve this issue.
+> 
+> Now I don't know if it makes sense to take this through the tty tree or
+> my userns tree.  I am inclined to take it through the userns tree simply
+> because I am reviewing it and I have seen the several failed attempts at
+> this but if Greg wants it in the tty tree I won't object.
 
-This is a first "fixes" series for AT91 on 3.14.
-The content is only DT-related and quite boring.
-I took the opportunity of this early "fixes" pull-request to collect
-some Documentation patches that were lying around and I guess that
-they can be merged by arm-soc nicely (addition of CCF to 2 drivers).
-A new board is added to the lot because it is dead simple and integrates
-well with the new sama5d36 SoC that we added earlier in this development cycle.
+No objection from me.
 
-Thanks, best regards,
+thanks,
 
-The following changes since commit 38dbfb59d1175ef458d006556061adeaa8751b72:
-
-  Linus 3.14-rc1 (2014-02-02 16:42:13 -0800)
-
-are available in the git repository at:
-
-  git://github.com/at91linux/linux-at91.git tags/at91-fixes
-
-for you to fetch changes up to b7c2b6157079811586180d13c44a1095b57c2d47:
-
-  ARM: at91: add Atmel's SAMA5D3 Xplained board (2014-02-07 17:20:39 +0100)
-
-----------------------------------------------------------------
-First series of AT91 fixes for 3.14.
-All of them are DT-related.
-- fixes for typos in i2c and ohci clocks
-- addition of a USB host node for at91sam9n12ek
-- 2 DT documentation updates that have been sent a long time ago
-- a new board based on the sama5d36 SoC
-
-----------------------------------------------------------------
-Bo Shen (1):
-      ARM: at91: enable USB host on at91sam9n12ek board
-
-Boris BREZILLON (3):
-      ARM: at91/dt: fix sama5d3 ohci hclk clock reference
-      mmc: atmel-mci: document clock properties
-      spi/atmel: document clock properties
-
-Jean-Jacques Hiblot (1):
-      ARM: at91/dt: sam9263: fix compatibility string for the I2C
-
-Nicolas Ferre (1):
-      ARM: at91: add Atmel's SAMA5D3 Xplained board
-
- .../devicetree/bindings/mmc/atmel-hsmci.txt        |   5 +
- .../devicetree/bindings/spi/spi_atmel.txt          |   5 +
- arch/arm/boot/dts/Makefile                         |   1 +
- arch/arm/boot/dts/at91-sama5d3_xplained.dts        | 229 +++++++++++++++++++++
- arch/arm/boot/dts/at91sam9263.dtsi                 |   2 +-
- arch/arm/boot/dts/at91sam9n12ek.dts                |   4 +
- arch/arm/boot/dts/sama5d3.dtsi                     |   2 +-
- 7 files changed, 246 insertions(+), 2 deletions(-)
- create mode 100644 arch/arm/boot/dts/at91-sama5d3_xplained.dts
-
--- 
-Nicolas Ferre
+greg k-h
