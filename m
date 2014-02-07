@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752428AbaBGPyg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 10:54:36 -0500
-Received: from gate.crashing.org ([63.228.1.57]:57780 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751699AbaBGPyf convert rfc822-to-8bit (ORCPT
+	id S1752797AbaBGP5n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 10:57:43 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:3806 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751831AbaBGP5m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 10:54:35 -0500
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
-Subject: Re: [PATCH] Convert powerpc simple spinlocks into ticket locks
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <20140207090248.GB26811@lst.de>
-Date: Fri, 7 Feb 2014 09:51:16 -0600
-Cc: Scott Wood <scottwood@freescale.com>, Tom Musta <tommusta@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org, Ingo Molnar <mingo@kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <87C29DBB-41E7-4B6C-9089-3C7756FBAE07@kernel.crashing.org>
-References: <20140206103736.GA18054@lst.de> <20140206163837.GT2936@laptop.programming.kicks-ass.net> <20140206173727.GA13048@lst.de> <1391717992.6733.232.camel@snotra.buserror.net> <20140207090248.GB26811@lst.de>
-To: Torsten Duwe <duwe@lst.de>
-X-Mailer: Apple Mail (2.1827)
+	Fri, 7 Feb 2014 10:57:42 -0500
+Date: Fri, 7 Feb 2014 10:57:40 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ben Myers <bpm@sgi.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        xfs@oss.sgi.com
+Subject: Re: [GIT PULL] XFS fix for 3.14-rc2
+Message-ID: <20140207155740.GB6857@home.goodmis.org>
+References: <20140206173158.6A2A14266DC@whiskey.americas.sgi.com>
+ <CA+55aFzxUtHWL1hPcNv-zUXFWzrZtKAsh_ZVotfFUvH1hqDrMg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzxUtHWL1hPcNv-zUXFWzrZtKAsh_ZVotfFUvH1hqDrMg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Feb 7, 2014, at 3:02 AM, Torsten Duwe <duwe@lst.de> wrote:
-
-> On Thu, Feb 06, 2014 at 02:19:52PM -0600, Scott Wood wrote:
->> On Thu, 2014-02-06 at 18:37 +0100, Torsten Duwe wrote:
->>> On Thu, Feb 06, 2014 at 05:38:37PM +0100, Peter Zijlstra wrote:
->> 
->>>> Can you pair lwarx with sthcx ? I couldn't immediately find the answer
->>>> in the PowerISA doc. If so I think you can do better by being able to
->>>> atomically load both tickets but only storing the head without affecting
->>>> the tail.
+On Thu, Feb 06, 2014 at 01:34:53PM -0800, Linus Torvalds wrote:
+> I have no idea why you keep re-sending this.
 > 
-> Can I simply write the half word, without a reservation, or will the HW caches
-> mess up the other half? Will it ruin the cache coherency on some (sub)architectures?
-
-The coherency should be fine, I just can’t remember if you’ll lose the reservation by doing this.
-
->> Plus, sthcx doesn't exist on all PPC chips.
+> It got merged a week ago. See commit f1499382f114.
 > 
-> Which ones are lacking it? Do all have at least a simple 16-bit store?
 
-Everything implements a simple 16-bit store, just not everything implements the store conditional of 16-bit data.
+Ben, you might want to subscribe to git-commits-head@vger.kernel.org
+and then add this to your .procmailrc:
 
-- k
+:0 H
+* List-id: <git-commits-head.vger.kernel.org>
+{
+        :0 B
+        * !Signed-off-by: Ben Myers <bpm@sgi.com>
+        /dev/null
+
+        :0 fw
+        | /bin/sed -e 's/^Subject: /Subject: [linus-commit]/'
+}
+
+
+Then you get a nice email when your commits are added to Linus's tree.
+
+-- Steve
+
