@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754940AbaBGMQN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:16:13 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42224 "EHLO
+	id S1753778AbaBGMQn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:16:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42218 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755156AbaBGLvh (ORCPT
+	with ESMTP id S1755148AbaBGLvg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:51:37 -0500
+	Fri, 7 Feb 2014 06:51:36 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Adrian Hunter <adrian.hunter@intel.com>, Chris Ball <chris@printf.net>,
+Cc: Todd Previte <tprevite@gmail.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 170/233] mmc: sdhci-pci: Fix possibility of chip->fixes being null
-Date: Fri,  7 Feb 2014 11:46:29 +0000
-Message-Id: <1391773652-25214-171-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 169/233] drm/i915: VLV2 - Fix hotplug detect bits
+Date: Fri,  7 Feb 2014 11:46:28 +0000
+Message-Id: <1391773652-25214-170-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -27,33 +27,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+From: Todd Previte <tprevite@gmail.com>
 
-commit 945be38caa287b177b8c17ffaae7754cab6a658f upstream.
+commit 232a6ee9af8adb185640f67fcaaa9014a9aa0573 upstream.
 
-It is possible for chip->fixes to be null.  Check before dereferencing it.
+Add new definitions for hotplug live status bits for VLV2 since they're
+in reverse order from the gen4x ones.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Signed-off-by: Chris Ball <chris@printf.net>
+Changelog:
+- Restored gen4 bit definitions
+- Added new definitions for VLV2
+- Added platform check for IS_VALLEYVIEW() in dp_detect to use the correct
+  bit defintions
+- Replaced a lost trailing brace for the added switch()
+
+Signed-off-by: Todd Previte <tprevite@gmail.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=73951
+[danvet: Switch to _VLV postfix instead of prefix and regroupg
+comments again so that the g4x warning is right next to those defines.
+Also add a _G4X suffix for those special ones. Also cc stable.]
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/mmc/host/sdhci-pci.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/i915/i915_reg.h | 10 +++++++---
+ drivers/gpu/drm/i915/intel_dp.c | 40 ++++++++++++++++++++++++++++------------
+ 2 files changed, 35 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
-index 33593e7..27ae563 100644
---- a/drivers/mmc/host/sdhci-pci.c
-+++ b/drivers/mmc/host/sdhci-pci.c
-@@ -1389,7 +1389,8 @@ static struct sdhci_pci_slot *sdhci_pci_probe_slot(
- 	 * from runtime suspend.  If it is not there, don't allow runtime PM.
- 	 * Note sdhci_pci_add_own_cd() sets slot->cd_gpio to -EINVAL on failure.
- 	 */
--	if (chip->fixes->own_cd_for_runtime_pm && !gpio_is_valid(slot->cd_gpio))
-+	if (chip->fixes && chip->fixes->own_cd_for_runtime_pm &&
-+	    !gpio_is_valid(slot->cd_gpio))
- 		chip->allow_runtime_pm = false;
+diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
+index c42d31c..42e89d7 100644
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -1865,9 +1865,13 @@
+  * Please check the detailed lore in the commit message for for experimental
+  * evidence.
+  */
+-#define   PORTD_HOTPLUG_LIVE_STATUS               (1 << 29)
+-#define   PORTC_HOTPLUG_LIVE_STATUS               (1 << 28)
+-#define   PORTB_HOTPLUG_LIVE_STATUS               (1 << 27)
++#define   PORTD_HOTPLUG_LIVE_STATUS_G4X		(1 << 29)
++#define   PORTC_HOTPLUG_LIVE_STATUS_G4X		(1 << 28)
++#define   PORTB_HOTPLUG_LIVE_STATUS_G4X		(1 << 27)
++/* VLV DP/HDMI bits again match Bspec */
++#define   PORTD_HOTPLUG_LIVE_STATUS_VLV		(1 << 27)
++#define   PORTC_HOTPLUG_LIVE_STATUS_VLV		(1 << 28)
++#define   PORTB_HOTPLUG_LIVE_STATUS_VLV		(1 << 29)
+ #define   PORTD_HOTPLUG_INT_STATUS		(3 << 21)
+ #define   PORTC_HOTPLUG_INT_STATUS		(3 << 19)
+ #define   PORTB_HOTPLUG_INT_STATUS		(3 << 17)
+diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
+index 96a410e..e7c46aa 100644
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -2518,18 +2518,34 @@ g4x_dp_detect(struct intel_dp *intel_dp)
+ 		return status;
+ 	}
  
- 	return slot;
+-	switch (intel_dig_port->port) {
+-	case PORT_B:
+-		bit = PORTB_HOTPLUG_LIVE_STATUS;
+-		break;
+-	case PORT_C:
+-		bit = PORTC_HOTPLUG_LIVE_STATUS;
+-		break;
+-	case PORT_D:
+-		bit = PORTD_HOTPLUG_LIVE_STATUS;
+-		break;
+-	default:
+-		return connector_status_unknown;
++	if (IS_VALLEYVIEW(dev)) {
++		switch (intel_dig_port->port) {
++		case PORT_B:
++			bit = PORTB_HOTPLUG_LIVE_STATUS_VLV;
++			break;
++		case PORT_C:
++			bit = PORTC_HOTPLUG_LIVE_STATUS_VLV;
++			break;
++		case PORT_D:
++			bit = PORTD_HOTPLUG_LIVE_STATUS_VLV;
++			break;
++		default:
++			return connector_status_unknown;
++		}
++	} else {
++		switch (intel_dig_port->port) {
++		case PORT_B:
++			bit = PORTB_HOTPLUG_LIVE_STATUS_G4X;
++			break;
++		case PORT_C:
++			bit = PORTC_HOTPLUG_LIVE_STATUS_G4X;
++			break;
++		case PORT_D:
++			bit = PORTD_HOTPLUG_LIVE_STATUS_G4X;
++			break;
++		default:
++			return connector_status_unknown;
++		}
+ 	}
+ 
+ 	if ((I915_READ(PORT_HOTPLUG_STAT) & bit) == 0)
 -- 
 1.8.3.2
 
