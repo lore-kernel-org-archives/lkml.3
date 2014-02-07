@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752157AbaBGBkd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 20:40:33 -0500
+	id S1752593AbaBGBkc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 20:40:32 -0500
 Received: from lgeamrelo01.lge.com ([156.147.1.125]:43104 "EHLO
 	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751439AbaBGBfn (ORCPT
+	with ESMTP id S1751540AbaBGBfp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 20:35:43 -0500
-X-AuditID: 9c93017d-b7b1fae00000636d-ab-52f4386dcc9a
+	Thu, 6 Feb 2014 20:35:45 -0500
+X-AuditID: 9c93017d-b7b1fae00000636d-bf-52f4386e5522
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Rodrigo Campos <rodrigo@sdfg.com.ar>, Andi Kleen <andi@firstfloor.org>,
         David Ahern <dsahern@gmail.com>
-Subject: [PATCH 04/21] perf hists: Accumulate hist entry stat based on the callchain
-Date: Fri,  7 Feb 2014 10:35:06 +0900
-Message-Id: <1391736923-30765-5-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 13/21] perf tools: Apply percent-limit to cumulative percentage
+Date: Fri,  7 Feb 2014 10:35:15 +0900
+Message-Id: <1391736923-30765-14-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1391736923-30765-1-git-send-email-namhyung@kernel.org>
 References: <1391736923-30765-1-git-send-email-namhyung@kernel.org>
@@ -27,164 +27,225 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Call __hists__add_entry() for each callchain node to get an
-accumulated stat for an entry.  Introduce new cumulative_iter ops to
-process them properly.
+If -g cumulative option is given, it needs to show entries which don't
+have self overhead.  So apply percent-limit to accumulated overhead
+percentage in this case.
 
 Tested-by: Arun Sharma <asharma@fb.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-report.c |  2 ++
- tools/perf/util/callchain.c |  3 +-
- tools/perf/util/hist.c      | 87 +++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/hist.h      |  1 +
- 4 files changed, 92 insertions(+), 1 deletion(-)
+ tools/perf/ui/browsers/hists.c | 33 +++++++++++----------------------
+ tools/perf/ui/gtk/hists.c      |  4 ++--
+ tools/perf/ui/stdio/hist.c     |  4 ++--
+ tools/perf/util/hist.h         |  1 +
+ tools/perf/util/sort.h         | 17 ++++++++++++++++-
+ 5 files changed, 32 insertions(+), 27 deletions(-)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 53b150fb9036..967ba75277fd 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -104,6 +104,8 @@ static int process_sample_event(struct perf_tool *tool,
- 		iter.ops = &hist_iter_branch;
- 	else if (rep->mem_mode)
- 		iter.ops = &hist_iter_mem;
-+	else if (symbol_conf.cumulate_callchain)
-+		iter.ops = &hist_iter_cumulative;
- 	else
- 		iter.ops = &hist_iter_normal;
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index c8e3a2e7b5c0..0a088535ebac 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -828,12 +828,12 @@ static unsigned int hist_browser__refresh(struct ui_browser *browser)
  
-diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index 8d9db454f1a9..35b12a06bc39 100644
---- a/tools/perf/util/callchain.c
-+++ b/tools/perf/util/callchain.c
-@@ -538,7 +538,8 @@ int sample__resolve_callchain(struct perf_sample *sample, struct symbol **parent
- 	if (sample->callchain == NULL)
- 		return 0;
+ 	for (nd = browser->top; nd; nd = rb_next(nd)) {
+ 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+-		float percent = h->stat.period * 100.0 /
+-					hb->hists->stats.total_period;
++		float percent;
  
--	if (symbol_conf.use_callchain || sort__has_parent) {
-+	if (symbol_conf.use_callchain || symbol_conf.cumulate_callchain ||
-+	    sort__has_parent) {
- 		return machine__resolve_callchain(al->machine, evsel, al->thread,
- 						  sample, parent, al, max_stack);
- 	}
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index db474526ba66..4691313f8748 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -705,6 +705,85 @@ iter_finish_normal_entry(struct hist_entry_iter *iter, struct addr_location *al)
+ 		if (h->filtered)
+ 			continue;
  
- 	return hist_entry__append_callchain(he, sample);
++		percent = hist_entry__get_percent_limit(h);
+ 		if (percent < hb->min_pcnt)
+ 			continue;
+ 
+@@ -846,18 +846,13 @@ static unsigned int hist_browser__refresh(struct ui_browser *browser)
  }
-+static int
-+iter_prepare_cumulative_entry(struct hist_entry_iter *iter __maybe_unused,
-+			      struct addr_location *al __maybe_unused)
-+{
-+	callchain_cursor_commit(&callchain_cursor);
-+	return 0;
-+}
-+
-+static int
-+iter_add_single_cumulative_entry(struct hist_entry_iter *iter,
-+				 struct addr_location *al)
-+{
-+	struct perf_evsel *evsel = iter->evsel;
-+	struct perf_sample *sample = iter->sample;
-+	struct hist_entry *he;
-+
-+	he = __hists__add_entry(&evsel->hists, al, iter->parent, NULL, NULL,
-+				sample->period, sample->weight,
-+				sample->transaction, true);
-+	if (he == NULL)
-+		return -ENOMEM;
-+
-+	return hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
-+}
-+
-+static int
-+iter_next_cumulative_entry(struct hist_entry_iter *iter,
-+			   struct addr_location *al)
-+{
-+	struct callchain_cursor_node *node;
-+
-+	node = callchain_cursor_current(&callchain_cursor);
-+	if (node == NULL)
-+		return 0;
-+
-+	al->map = node->map;
-+	al->sym = node->sym;
-+	if (node->map)
-+		al->addr = node->map->map_ip(node->map, node->ip);
-+	else
-+		al->addr = node->ip;
-+
-+	if (iter->hide_unresolved && al->sym == NULL)
-+		return 0;
-+
-+	callchain_cursor_advance(&callchain_cursor);
-+	return 1;
-+}
-+
-+static int
-+iter_add_next_cumulative_entry(struct hist_entry_iter *iter,
-+			       struct addr_location *al)
-+{
-+	struct perf_evsel *evsel = iter->evsel;
-+	struct perf_sample *sample = iter->sample;
-+	struct hist_entry *he;
-+
-+	he = __hists__add_entry(&evsel->hists, al, iter->parent, NULL, NULL,
-+				sample->period, sample->weight,
-+				sample->transaction, false);
-+	if (he == NULL)
-+		return -ENOMEM;
-+
-+	return hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
-+}
-+
-+static int
-+iter_finish_cumulative_entry(struct hist_entry_iter *iter,
-+			     struct addr_location *al __maybe_unused)
-+{
-+	struct perf_evsel *evsel = iter->evsel;
-+	struct perf_sample *sample = iter->sample;
-+
-+	evsel->hists.stats.total_period += sample->period;
-+	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
-+
-+	return 0;
-+}
-+
- const struct hist_iter_ops hist_iter_mem = {
- 	.prepare_entry 		= iter_prepare_mem_entry,
- 	.add_single_entry 	= iter_add_single_mem_entry,
-@@ -729,6 +808,14 @@ const struct hist_iter_ops hist_iter_normal = {
- 	.finish_entry 		= iter_finish_normal_entry,
- };
  
-+const struct hist_iter_ops hist_iter_cumulative = {
-+	.prepare_entry 		= iter_prepare_cumulative_entry,
-+	.add_single_entry 	= iter_add_single_cumulative_entry,
-+	.next_entry 		= iter_next_cumulative_entry,
-+	.add_next_entry 	= iter_add_next_cumulative_entry,
-+	.finish_entry 		= iter_finish_cumulative_entry,
-+};
-+
- int hist_entry_iter__add(struct hist_entry_iter *iter, struct addr_location *al,
- 			 struct perf_evsel *evsel, struct perf_sample *sample,
- 			 int max_stack_depth)
+ static struct rb_node *hists__filter_entries(struct rb_node *nd,
+-					     struct hists *hists,
+ 					     float min_pcnt)
+ {
+ 	while (nd != NULL) {
+ 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+-		float percent = h->stat.period * 100.0 /
+-					hists->stats.total_period;
++		float percent = hist_entry__get_percent_limit(h);
+ 
+-		if (percent < min_pcnt)
+-			return NULL;
+-
+-		if (!h->filtered)
++		if (!h->filtered && percent >= min_pcnt)
+ 			return nd;
+ 
+ 		nd = rb_next(nd);
+@@ -867,13 +862,11 @@ static struct rb_node *hists__filter_entries(struct rb_node *nd,
+ }
+ 
+ static struct rb_node *hists__filter_prev_entries(struct rb_node *nd,
+-						  struct hists *hists,
+ 						  float min_pcnt)
+ {
+ 	while (nd != NULL) {
+ 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+-		float percent = h->stat.period * 100.0 /
+-					hists->stats.total_period;
++		float percent = hist_entry__get_percent_limit(h);
+ 
+ 		if (!h->filtered && percent >= min_pcnt)
+ 			return nd;
+@@ -902,14 +895,14 @@ static void ui_browser__hists_seek(struct ui_browser *browser,
+ 	switch (whence) {
+ 	case SEEK_SET:
+ 		nd = hists__filter_entries(rb_first(browser->entries),
+-					   hb->hists, hb->min_pcnt);
++					   hb->min_pcnt);
+ 		break;
+ 	case SEEK_CUR:
+ 		nd = browser->top;
+ 		goto do_offset;
+ 	case SEEK_END:
+ 		nd = hists__filter_prev_entries(rb_last(browser->entries),
+-						hb->hists, hb->min_pcnt);
++						hb->min_pcnt);
+ 		first = false;
+ 		break;
+ 	default:
+@@ -952,8 +945,7 @@ do_offset:
+ 					break;
+ 				}
+ 			}
+-			nd = hists__filter_entries(rb_next(nd), hb->hists,
+-						   hb->min_pcnt);
++			nd = hists__filter_entries(rb_next(nd), hb->min_pcnt);
+ 			if (nd == NULL)
+ 				break;
+ 			--offset;
+@@ -986,7 +978,7 @@ do_offset:
+ 				}
+ 			}
+ 
+-			nd = hists__filter_prev_entries(rb_prev(nd), hb->hists,
++			nd = hists__filter_prev_entries(rb_prev(nd),
+ 							hb->min_pcnt);
+ 			if (nd == NULL)
+ 				break;
+@@ -1157,7 +1149,6 @@ static int hist_browser__fprintf_entry(struct hist_browser *browser,
+ static int hist_browser__fprintf(struct hist_browser *browser, FILE *fp)
+ {
+ 	struct rb_node *nd = hists__filter_entries(rb_first(browser->b.entries),
+-						   browser->hists,
+ 						   browser->min_pcnt);
+ 	int printed = 0;
+ 
+@@ -1165,8 +1156,7 @@ static int hist_browser__fprintf(struct hist_browser *browser, FILE *fp)
+ 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+ 
+ 		printed += hist_browser__fprintf_entry(browser, h, fp);
+-		nd = hists__filter_entries(rb_next(nd), browser->hists,
+-					   browser->min_pcnt);
++		nd = hists__filter_entries(rb_next(nd), browser->min_pcnt);
+ 	}
+ 
+ 	return printed;
+@@ -1390,8 +1380,7 @@ static void hist_browser__update_pcnt_entries(struct hist_browser *hb)
+ 
+ 	while (nd) {
+ 		nr_entries++;
+-		nd = hists__filter_entries(rb_next(nd), hb->hists,
+-					   hb->min_pcnt);
++		nd = hists__filter_entries(rb_next(nd), hb->min_pcnt);
+ 	}
+ 
+ 	hb->nr_pcnt_entries = nr_entries;
+diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
+index 49531c1c7121..ded22b4da677 100644
+--- a/tools/perf/ui/gtk/hists.c
++++ b/tools/perf/ui/gtk/hists.c
+@@ -296,12 +296,12 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
+ 	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
+ 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+ 		GtkTreeIter iter;
+-		float percent = h->stat.period * 100.0 /
+-					hists->stats.total_period;
++		float percent;
+ 
+ 		if (h->filtered)
+ 			continue;
+ 
++		percent = hist_entry__get_percent_limit(h);
+ 		if (percent < min_pcnt)
+ 			continue;
+ 
+diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
+index 831fbb77d1ff..b48c7ba49a1c 100644
+--- a/tools/perf/ui/stdio/hist.c
++++ b/tools/perf/ui/stdio/hist.c
+@@ -487,12 +487,12 @@ print_entries:
+ 
+ 	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
+ 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+-		float percent = h->stat.period * 100.0 /
+-					hists->stats.total_period;
++		float percent;
+ 
+ 		if (h->filtered)
+ 			continue;
+ 
++		percent = hist_entry__get_percent_limit(h);
+ 		if (percent < min_pcnt)
+ 			continue;
+ 
 diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 348448d983ec..6da98cb2ee7e 100644
+index 1b4fb71a0bf8..60e2ef2a4c6e 100644
 --- a/tools/perf/util/hist.h
 +++ b/tools/perf/util/hist.h
-@@ -112,6 +112,7 @@ struct hist_entry_iter {
- extern const struct hist_iter_ops hist_iter_normal;
- extern const struct hist_iter_ops hist_iter_branch;
- extern const struct hist_iter_ops hist_iter_mem;
-+extern const struct hist_iter_ops hist_iter_cumulative;
+@@ -132,6 +132,7 @@ int hist_entry__sort_snprintf(struct hist_entry *he, char *bf, size_t size,
+ 			      struct hists *hists);
+ void hist_entry__free(struct hist_entry *);
  
- struct hist_entry *__hists__add_entry(struct hists *hists,
- 				      struct addr_location *al,
++
+ void hists__output_resort(struct hists *hists);
+ void hists__collapse_resort(struct hists *hists, struct ui_progress *prog);
+ 
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index 309f2838a1b4..103748ba25f2 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -20,7 +20,7 @@
+ 
+ #include "parse-options.h"
+ #include "parse-events.h"
+-
++#include "hist.h"
+ #include "thread.h"
+ 
+ extern regex_t parent_regex;
+@@ -130,6 +130,21 @@ static inline void hist_entry__add_pair(struct hist_entry *pair,
+ 	list_add_tail(&pair->pairs.node, &he->pairs.head);
+ }
+ 
++static inline float hist_entry__get_percent_limit(struct hist_entry *he)
++{
++	u64 period = he->stat.period;
++	u64 total_period = he->hists->stats.total_period;
++
++	if (unlikely(total_period == 0))
++		return 0;
++
++	if (symbol_conf.cumulate_callchain)
++		period = he->stat_acc->period;
++
++	return period * 100.0 / total_period;
++}
++
++
+ enum sort_mode {
+ 	SORT_MODE__NORMAL,
+ 	SORT_MODE__BRANCH,
 -- 
 1.7.11.7
 
