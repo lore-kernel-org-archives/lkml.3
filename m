@@ -1,68 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752178AbaBGTeE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 14:34:04 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:48689 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751209AbaBGTeC (ORCPT
+	id S1752432AbaBGTgK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 14:36:10 -0500
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:48538 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751209AbaBGTgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 14:34:02 -0500
-Message-ID: <1391801805.1155.30.camel@haakon3.risingtidesystems.com>
-Subject: Re: [PATCH 0/4] minor blk-mq updates
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Date: Fri, 07 Feb 2014 11:36:45 -0800
-In-Reply-To: <20140207182235.659185141@bombadil.infradead.org>
-References: <20140207182235.659185141@bombadil.infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 7 Feb 2014 14:36:08 -0500
+Date: Fri, 7 Feb 2014 14:36:04 -0500
+From: Tejun Heo <tj@kernel.org>
+To: "Jason J. Herne" <jjherne@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: Re: Subject: Warning in workqueue.c
+Message-ID: <20140207193604.GA8833@htj.dyndns.org>
+References: <52F4F01C.1070800@linux.vnet.ibm.com>
+ <20140207165113.GD3304@htj.dyndns.org>
+ <52F51E10.8050208@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52F51E10.8050208@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-02-07 at 10:22 -0800, Christoph Hellwig wrote:
-> Hi Jens,
-> 
-> these small blk-mq core updates fell out of the scsi multiqueue work.
+Hello,
 
-That reminds me, the following blk-mq patch was required to get DIF
-working with scsi-mq.
+On Fri, Feb 07, 2014 at 12:55:28PM -0500, Jason J. Herne wrote:
+> [  644.517710] XXX: worker->flags=0x1 pool->flags=0x0 cpu=6 pool->cpu=4
+> [  731.367023] XXX: worker->flags=0x1 pool->flags=0x0 cpu=1 pool->cpu=7
 
-Jens, care to pick this up as well..?
+Sorry, still no idea how this can happen.  Can you please try the
+following?
 
---nab
+Thanks!
 
->From 1428a390cc16025f93905852777d4afd8aeba05d Mon Sep 17 00:00:00 2001
-From: Nicholas Bellinger <nab@linux-iscsi.org>
-Date: Sun, 22 Dec 2013 11:58:49 +0000
-Subject: blk-mq: Add bio_integrity setup to blk_mq_make_request
-
-This patch adds the missing bio_integrity_enabled() +
-bio_integrity_prep() setup into blk_mq_make_request()
-in order to use DIF protection with scsi-mq.
-
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Martin K. Petersen <martin.petersen@oracle.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
----
-diff --git a/block/blk-mq.c b/block/blk-mq.c
-index c79126e..a520c39 100644
---- a/block/blk-mq.c
-+++ b/block/blk-mq.c
-@@ -916,6 +916,11 @@ static void blk_mq_make_request(struct request_queue *q, struct bio *bio)
- 
- 	blk_queue_bounce(q, &bio);
- 
-+	if (bio_integrity_enabled(bio) && bio_integrity_prep(bio)) {
-+		bio_endio(bio, -EIO);
-+		return;
-+	}
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 82ef9f3..1b11ec0 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2151,9 +2151,27 @@ __acquires(&pool->lock)
+ 	 * necessary to avoid spurious warnings from rescuers servicing the
+ 	 * unbound or a disassociated pool.
+ 	 */
+-	WARN_ON_ONCE(!(worker->flags & WORKER_UNBOUND) &&
+-		     !(pool->flags & POOL_DISASSOCIATED) &&
+-		     raw_smp_processor_id() != pool->cpu);
++	if (WARN_ON_ONCE(!(worker->flags & WORKER_UNBOUND) &&
++			 !(pool->flags & POOL_DISASSOCIATED) &&
++			 raw_smp_processor_id() != pool->cpu)) {
++		static char buf[PAGE_SIZE];
++		unsigned long now = jiffies;
 +
- 	if (use_plug && blk_attempt_plug_merge(q, bio, &request_count))
- 		return;
++		pr_warning("XXX: worker->flags=0x%x pool->flags=0x%x cpu=%d pool->cpu=%d rescue_wq=%p\n",
++			   worker->flags, pool->flags, raw_smp_processor_id(),
++			   pool->cpu, worker->rescue_wq);
++		pr_warning("XXX: last_unbind=%ld last_rebind=%ld last_rebound_clear=%ld nr_exected_after_rebound_clear=%d\n",
++			   worker->last_unbind ? worker->last_unbind - now : 999,
++			   worker->last_rebind ? worker->last_rebind - now : 999,
++			   worker->last_rebound_clear ? worker->last_rebound_clear - now : 999,
++			   worker->nr_executed_after_rebound_clear);
++
++		cpulist_scnprintf(buf, sizeof(buf), &current->cpus_allowed);
++		pr_warning("XXX: cpus_allowed=%s\n", buf);
++
++		cpulist_scnprintf(buf, sizeof(buf), &worker->cpus_allowed_after_rebinding);
++		pr_warning("XXX: cpus_allowed_after_rebinding=%s\n", buf);
++	}
  
-
+ 	/*
+ 	 * A single work shouldn't be executed concurrently by
+@@ -2199,6 +2217,8 @@ __acquires(&pool->lock)
+ 	 */
+ 	set_work_pool_and_clear_pending(work, pool->id);
+ 
++	worker->nr_executed_after_rebound_clear++;
++
+ 	spin_unlock_irq(&pool->lock);
+ 
+ 	lock_map_acquire_read(&pwq->wq->lockdep_map);
+@@ -2321,6 +2341,10 @@ recheck:
+ 	 * management if applicable and concurrency management is restored
+ 	 * after being rebound.  See rebind_workers() for details.
+ 	 */
++	if (worker->flags & WORKER_REBOUND) {
++		worker->last_rebound_clear = jiffies;
++		worker->nr_executed_after_rebound_clear = 0;
++	}
+ 	worker_clr_flags(worker, WORKER_PREP | WORKER_REBOUND);
+ 
+ 	do {
+@@ -4576,8 +4600,10 @@ static void wq_unbind_fn(struct work_struct *work)
+ 		 * before the last CPU down must be on the cpu.  After
+ 		 * this, they may become diasporas.
+ 		 */
+-		for_each_pool_worker(worker, wi, pool)
++		for_each_pool_worker(worker, wi, pool) {
+ 			worker->flags |= WORKER_UNBOUND;
++			worker->last_unbind = jiffies;
++		}
+ 
+ 		pool->flags |= POOL_DISASSOCIATED;
+ 
+@@ -4633,9 +4659,13 @@ static void rebind_workers(struct worker_pool *pool)
+ 	 * of all workers first and then clear UNBOUND.  As we're called
+ 	 * from CPU_ONLINE, the following shouldn't fail.
+ 	 */
+-	for_each_pool_worker(worker, wi, pool)
++	for_each_pool_worker(worker, wi, pool) {
+ 		WARN_ON_ONCE(set_cpus_allowed_ptr(worker->task,
+ 						  pool->attrs->cpumask) < 0);
++		worker->last_rebind = jiffies;
++		cpumask_copy(&worker->cpus_allowed_after_rebinding,
++			     &worker->task->cpus_allowed);
++	}
+ 
+ 	spin_lock_irq(&pool->lock);
+ 
+diff --git a/kernel/workqueue_internal.h b/kernel/workqueue_internal.h
+index 7e2204d..95d68c4 100644
+--- a/kernel/workqueue_internal.h
++++ b/kernel/workqueue_internal.h
+@@ -50,6 +50,11 @@ struct worker {
+ 
+ 	/* used only by rescuers to point to the target workqueue */
+ 	struct workqueue_struct	*rescue_wq;	/* I: the workqueue to rescue */
++	unsigned long		last_unbind;
++	unsigned long		last_rebind;
++	unsigned long		last_rebound_clear;
++	int			nr_executed_after_rebound_clear;
++	cpumask_t		cpus_allowed_after_rebinding;
+ };
+ 
+ /**
