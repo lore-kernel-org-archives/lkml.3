@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755825AbaBGNCo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 08:02:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41779 "EHLO
+	id S1754646AbaBGLtg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:49:36 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41759 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753218AbaBGLth (ORCPT
+	with ESMTP id S1753218AbaBGLtc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:49:37 -0500
+	Fri, 7 Feb 2014 06:49:32 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel Santos <daniel.santos@pobox.com>, Mark Brown <broonie@linaro.org>,
+Cc: Mikhail Zolotaryov <lebon@lebon.org.ua>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 080/233] spidev: fix hang when transfer_one_message fails
-Date: Fri,  7 Feb 2014 11:44:59 +0000
-Message-Id: <1391773652-25214-81-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 076/233] USB: Nokia 502 is an unusual device
+Date: Fri,  7 Feb 2014 11:44:55 +0000
+Message-Id: <1391773652-25214-77-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -27,45 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Santos <daniel.santos@pobox.com>
+From: Mikhail Zolotaryov <lebon@lebon.org.ua>
 
-commit e120cc0dcf2880a4c5c0a6cb27b655600a1cfa1d upstream.
+commit 0e16114f2db4838251fb64f3b550996ad3585890 upstream.
 
-This corrects a problem in spi_pump_messages() that leads to an spi
-message hanging forever when a call to transfer_one_message() fails.
-This failure occurs in my MCP2210 driver when the cs_change bit is set
-on the last transfer in a message, an operation which the hardware does
-not support.
+The USB storage operation of Nokia Asha 502 Dual SIM smartphone running Asha
+Platform 1.1.1 is unreliable in respect of data consistency (i.e. transfered
+files are corrupted). A similar issue is described here:
+http://discussions.nokia.com/t5/Asha-and-other-Nokia-Series-30/Nokia-301-USB-transfers-and-corrupted-files/td-p/1974170
 
-Rationale
-Since the transfer_one_message() returns an int, we must presume that it
-may fail.  If transfer_one_message() should never fail, it should return
-void.  Thus, calls to transfer_one_message() should properly manage a
-failure.
+The workaround is (MAX_SECTORS_64):
+   rmmod usb_storage && modprobe usb_storage quirks=0421:06aa:m
 
-Fixes: ffbbdd21329f3 (spi: create a message queueing infrastructure)
-Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+The patch adds the tested device to the unusual list permanently.
+
+Signed-off-by: Mikhail Zolotaryov <lebon@lebon.org.ua>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/spi/spi.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/usb/storage/unusual_devs.h | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-index 978dda2..96310af 100644
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -584,7 +584,9 @@ static void spi_pump_messages(struct kthread_work *work)
- 	ret = master->transfer_one_message(master, master->cur_msg);
- 	if (ret) {
- 		dev_err(&master->dev,
--			"failed to transfer one message from queue\n");
-+			"failed to transfer one message from queue: %d\n", ret);
-+		master->cur_msg->status = ret;
-+		spi_finalize_current_message(master);
- 		return;
- 	}
- }
+diff --git a/drivers/usb/storage/unusual_devs.h b/drivers/usb/storage/unusual_devs.h
+index de32cfa..ad06255 100644
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -234,6 +234,13 @@ UNUSUAL_DEV(  0x0421, 0x0495, 0x0370, 0x0370,
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+ 		US_FL_MAX_SECTORS_64 ),
+ 
++/* Patch submitted by Mikhail Zolotaryov <lebon@lebon.org.ua> */
++UNUSUAL_DEV(  0x0421, 0x06aa, 0x1110, 0x1110,
++		"Nokia",
++		"502",
++		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
++		US_FL_MAX_SECTORS_64 ),
++
+ #ifdef NO_SDDR09
+ UNUSUAL_DEV(  0x0436, 0x0005, 0x0100, 0x0100,
+ 		"Microtech",
 -- 
 1.8.3.2
 
