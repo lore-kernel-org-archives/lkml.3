@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752045AbaBGREi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 12:04:38 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:58555 "EHLO zene.cmpxchg.org"
+	id S1752330AbaBGREo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 12:04:44 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:58567 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750993AbaBGREg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 12:04:36 -0500
+	id S1750993AbaBGREn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 12:04:43 -0500
 From: Johannes Weiner <hannes@cmpxchg.org>
 To: Michal Hocko <mhocko@suse.cz>
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [patch 3/8] memcg: update comment about charge reparenting on cgroup exit
-Date: Fri,  7 Feb 2014 12:04:20 -0500
-Message-Id: <1391792665-21678-4-git-send-email-hannes@cmpxchg.org>
+Subject: [patch 7/8] memcg: do not replicate get_mem_cgroup_from_mm in __mem_cgroup_try_charge
+Date: Fri,  7 Feb 2014 12:04:24 -0500
+Message-Id: <1391792665-21678-8-git-send-email-hannes@cmpxchg.org>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1391792665-21678-1-git-send-email-hannes@cmpxchg.org>
 References: <1391792665-21678-1-git-send-email-hannes@cmpxchg.org>
@@ -19,92 +19,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reparenting memory charges in the css_free() callback was meant as a
-temporary fix for charges that race with offlining, but after some
-follow-up discussion, it turns out that this is really the right place
-to reparent charges because it guarantees none are in-flight.
+From: Michal Hocko <mhocko@suse.cz>
 
-Make clear that the reparenting in css_offline() is an optimistic
-sweep of established charges because swapout records might hold up
-css_free() indefinitely, but that in fact the css_free() reparenting
-is the properly synchronized one.
+__mem_cgroup_try_charge duplicates get_mem_cgroup_from_mm for charges
+which came without a memcg. The only reason seems to be a tiny
+optimization when css_tryget is not called if the charge can be
+consumed from the stock. Nevertheless css_tryget is very cheap since
+it has been reworked to use per-cpu counting so this optimization
+doesn't give us anything these days.
 
+So let's drop the code duplication so that the code is more readable.
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
 Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 ---
- mm/memcontrol.c | 52 +++++++++++++++-------------------------------------
- 1 file changed, 15 insertions(+), 37 deletions(-)
+ mm/memcontrol.c | 50 ++++++--------------------------------------------
+ 1 file changed, 6 insertions(+), 44 deletions(-)
 
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 639cf58b2643..b8a96c7d1167 100644
+index 37946635655c..9eabe4473649 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -6600,51 +6600,29 @@ static void mem_cgroup_css_offline(struct cgroup_subsys_state *css)
- 	kmem_cgroup_css_offline(memcg);
+@@ -2731,52 +2731,14 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
+ again:
+ 	if (*ptr) { /* css should be a valid one */
+ 		memcg = *ptr;
+-		if (mem_cgroup_is_root(memcg))
+-			goto done;
+-		if (consume_stock(memcg, nr_pages))
+-			goto done;
+ 		css_get(&memcg->css);
+ 	} else {
+-		struct task_struct *p;
+-
+-		rcu_read_lock();
+-		p = rcu_dereference(mm->owner);
+-		/*
+-		 * Because we don't have task_lock(), "p" can exit.
+-		 * In that case, "memcg" can point to root or p can be NULL with
+-		 * race with swapoff. Then, we have small risk of mis-accouning.
+-		 * But such kind of mis-account by race always happens because
+-		 * we don't have cgroup_mutex(). It's overkill and we allo that
+-		 * small race, here.
+-		 * (*) swapoff at el will charge against mm-struct not against
+-		 * task-struct. So, mm->owner can be NULL.
+-		 */
+-		memcg = mem_cgroup_from_task(p);
+-		if (!memcg)
+-			memcg = root_mem_cgroup;
+-		if (mem_cgroup_is_root(memcg)) {
+-			rcu_read_unlock();
+-			goto done;
+-		}
+-		if (consume_stock(memcg, nr_pages)) {
+-			/*
+-			 * It seems dagerous to access memcg without css_get().
+-			 * But considering how consume_stok works, it's not
+-			 * necessary. If consume_stock success, some charges
+-			 * from this memcg are cached on this cpu. So, we
+-			 * don't need to call css_get()/css_tryget() before
+-			 * calling consume_stock().
+-			 */
+-			rcu_read_unlock();
+-			goto done;
+-		}
+-		/* after here, we may be blocked. we need to get refcnt */
+-		if (!css_tryget(&memcg->css)) {
+-			rcu_read_unlock();
+-			goto again;
+-		}
+-		rcu_read_unlock();
++		memcg = get_mem_cgroup_from_mm(mm);
+ 	}
++	if (mem_cgroup_is_root(memcg))
++		goto done;
++	if (consume_stock(memcg, nr_pages))
++		goto done;
  
- 	mem_cgroup_invalidate_reclaim_iterators(memcg);
--	mem_cgroup_reparent_charges(memcg);
- 	mem_cgroup_destroy_all_caches(memcg);
- 	vmpressure_cleanup(&memcg->vmpressure);
-+	/*
-+	 * Memcg gets css references while charging the res_counter,
-+	 * so we reparent charges in .css_free() when the references
-+	 * are gone and we know there are no in-flight charges.
-+	 *
-+	 * However, at this time, swapout records also hold css refs
-+	 * indefinitely beyond offlining, which prevent .css_free()
-+	 * from being called.  But after offlining, css_tryget() is
-+	 * disabled, which means that all the left-over page cache in
-+	 * the group would be stuck without being reclaimable.  Clear
-+	 * out all those already established charges optimistically
-+	 * here, and catch any raced charges in .css_free() later on.
-+	 */
-+	mem_cgroup_reparent_charges(memcg);
- }
+ 	do {
+ 		bool invoke_oom = oom && !nr_oom_retries;
+@@ -2812,8 +2774,8 @@ again:
  
- static void mem_cgroup_css_free(struct cgroup_subsys_state *css)
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
--	/*
--	 * XXX: css_offline() would be where we should reparent all
--	 * memory to prepare the cgroup for destruction.  However,
--	 * memcg does not do css_tryget() and res_counter charging
--	 * under the same RCU lock region, which means that charging
--	 * could race with offlining.  Offlining only happens to
--	 * cgroups with no tasks in them but charges can show up
--	 * without any tasks from the swapin path when the target
--	 * memcg is looked up from the swapout record and not from the
--	 * current task as it usually is.  A race like this can leak
--	 * charges and put pages with stale cgroup pointers into
--	 * circulation:
--	 *
--	 * #0                        #1
--	 *                           lookup_swap_cgroup_id()
--	 *                           rcu_read_lock()
--	 *                           mem_cgroup_lookup()
--	 *                           css_tryget()
--	 *                           rcu_read_unlock()
--	 * disable css_tryget()
--	 * call_rcu()
--	 *   offline_css()
--	 *     reparent_charges()
--	 *                           res_counter_charge()
--	 *                           css_put()
--	 *                             css_free()
--	 *                           pc->mem_cgroup = dead memcg
--	 *                           add page to lru
--	 *
--	 * The bulk of the charges are still moved in offline_css() to
--	 * avoid pinning a lot of pages in case a long-term reference
--	 * like a swapout record is deferring the css_free() to long
--	 * after offlining.  But this makes sure we catch any charges
--	 * made after offlining:
--	 */
--	mem_cgroup_reparent_charges(memcg);
- 
-+	mem_cgroup_reparent_charges(memcg);
- 	memcg_destroy_kmem(memcg);
- 	__mem_cgroup_free(memcg);
- }
+ 	if (batch > nr_pages)
+ 		refill_stock(memcg, batch - nr_pages);
+-	css_put(&memcg->css);
+ done:
++	css_put(&memcg->css);
+ 	*ptr = memcg;
+ 	return 0;
+ nomem:
 -- 
 1.8.5.3
 
