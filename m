@@ -1,65 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751500AbaBGQjG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 11:39:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57457 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751013AbaBGQjE (ORCPT
+	id S1751576AbaBGQkr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 11:40:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44037 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993AbaBGQkp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 11:39:04 -0500
-Date: Fri, 7 Feb 2014 08:40:13 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Seth Forshee <seth.forshee@canonical.com>, Jiri Slaby <jslaby@suse.cz>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] tty: Allow stealing of controlling ttys within user
- namespaces
-Message-ID: <20140207164013.GA17653@kroah.com>
-References: <1390402431-6371-1-git-send-email-seth.forshee@canonical.com>
- <8738kdq7ng.fsf@xmission.com>
+	Fri, 7 Feb 2014 11:40:45 -0500
+Date: Fri, 7 Feb 2014 16:40:36 +0000
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Levente Kurusa <levex@linux.com>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, kernel-team@lists.ubuntu.com,
+        Anssi Hannula <anssi.hannula@iki.fi>, Takashi Iwai <tiwai@suse.de>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH 3.11 229/233] ALSA: hda - hdmi: introduce patch_nvhdmi()
+Message-ID: <20140207164036.GC5499@hercules>
+References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
+ <1391773652-25214-230-git-send-email-luis.henriques@canonical.com>
+ <52F4CA77.5060007@linux.com>
+ <20140207143629.GB5499@hercules>
+ <52F507E9.9050502@wwwdotorg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <8738kdq7ng.fsf@xmission.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <52F507E9.9050502@wwwdotorg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 24, 2014 at 03:31:15PM -0800, Eric W. Biederman wrote:
-> Seth Forshee <seth.forshee@canonical.com> writes:
+On Fri, Feb 07, 2014 at 09:20:57AM -0700, Stephen Warren wrote:
+> On 02/07/2014 07:36 AM, Luis Henriques wrote:
+> > On Fri, Feb 07, 2014 at 12:58:47PM +0100, Levente Kurusa wrote:
+> >> Hi,
+> >>
+> >> On 02/07/2014 12:47 PM, Luis Henriques wrote:
+> >>> 3.11.10.4 -stable review patch.  If anyone has any objections, please let me know.
+> >>>  [...]
+> >>>  
+> >>> +static int patch_nvhdmi(struct hda_codec *codec)
+> >>> +{
+> >>> +	struct hdmi_spec *spec;
+> >>> +	int err;
+> >>> +
+> >>> +	err = patch_generic_hdmi(codec);
+> >>> +	if (err)
+> >>> +		return err;
+> >>> +
+> >>> +	spec = codec->spec;
+> >>> +
+> >>> +	return 0;
+> >>> +}
+> >>> [...]
+> >>
+> >> Is it just me or is it that the 'spec' variable has no use?
+> > 
+> > This does seem a little bit odd indeed.  I've picked the backport provided
+> > by Stephen, which has been queued for the 3.10 and 3.12 stable kernels as
+> > well.  The original patch actually modifies the ops field in the hdmi_spec
+> > struct, however this field doesn't exist in this kernel version.
+> > 
+> > Stephen, could you please comment?  Since this is just a partial backport
+> > of 611885bc963a ("ALSA: hda - hdmi: Disallow unsupported 2ch remapping on
+> > NVIDIA codecs"), I'm assuming this is correct -- although the spec
+> > variable could have been dropped.
 > 
-> > root is allowed to steal ttys from other sessions, but it
-> > requires system-wide CAP_SYS_ADMIN and therefore is not possible
-> > for root within a user namespace. This should be allowed so long
-> > as the process doing the stealing is privileged towards the
-> > session which currently owns the tty.
-> >
-> > Update this code to only require CAP_SYS_ADMIN in the user
-> > namespaces of the target session's tasks, allowing the tty to be
-> > stolen from sessions whose tasks are in the same or lesser
-> > privileged user namespaces.
-> 
-> This code looks essentially correct.  I would like to look at it a bit
-> more before we merge it, just to ensure something silly hasn't been
-> missed, but the only thing that concerns me at this point is are we
-> checking the proper per task bits.
-> 
-> The case I am currently worrying about is a task that does something
-> privileged drops perms sets dumpable and then calls setns() on the
-> userns.
-> 
-> So I think we may have to solve the dumpable problem at the same time as
-> we solve this issue.
-> 
-> Now I don't know if it makes sense to take this through the tty tree or
-> my userns tree.  I am inclined to take it through the userns tree simply
-> because I am reviewing it and I have seen the several failed attempts at
-> this but if Greg wants it in the tty tree I won't object.
+> The very next patch of mine to this file (in other stable releases)
+> makes use of the spec variable. I kept the addition of the spec variable
+> in this patch, even though it isn't used until the next patch, so that
+> it stayed as part of the backport of this patch which originally added
+> it, rather than moving it to the other patch I backported, and hence
+> mixing up multiple upstream patches in the same backported patch.
 
-No objection from me.
+Doh!  I've applied both of your two patches to the 3.11 kernel.  And while
+I first reviewed them, I've seen that detail and it made perfect sense ;)
 
-thanks,
+Anyway, thank you for your clarification.
 
-greg k-h
+Cheers,
+--
+Luis
