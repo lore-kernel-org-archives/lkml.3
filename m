@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932100AbaBGLsr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:48:47 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41608 "EHLO
+	id S932257AbaBGLtP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:49:15 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41705 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754486AbaBGLsk (ORCPT
+	with ESMTP id S932239AbaBGLtE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:48:40 -0500
+	Fri, 7 Feb 2014 06:49:04 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 046/233] rtlwifi: rtl8192cu: Add new firmware
-Date: Fri,  7 Feb 2014 11:44:25 +0000
-Message-Id: <1391773652-25214-47-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 066/233] [media] dib8000: make 32 bits read atomic
+Date: Fri,  7 Feb 2014 11:44:45 +0000
+Message-Id: <1391773652-25214-67-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -28,99 +27,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
-commit 62009b7f12793c932aaba0df946b04cb4a77d022 upstream.
+commit 5ac64ba12aca3bef18e61c866583155a3bbf81c4 upstream.
 
-Vendor driver rtl8188C_8192C_8192D_usb_linux_v3.4.2_3727.20120404 introduced
-new firmware for these chips. The code try for the new file, and fall back to
-the original firmware if the new file is not available.
+As the dvb-frontend kthread can be called anytime, it can race
+with some get status ioctl. So, it seems better to avoid one to
+race with the other while reading a 32 bits register.
+I can't see any other reason for having a mutex there at I2C, except
+to provide such kind of protection, as the I2C core already has a
+mutex to protect I2C transfers.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Note: instead of this approach, it could eventually remove the dib8000
+specific mutex for it, and either group the 4 ops into one xfer or
+to manually control the I2C mutex. The main advantage of the current
+approach is that the changes are smaller and more puntual.
+
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Acked-by: Patrick Boettcher <pboettcher@kernellabs.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/rtlwifi/core.c         | 10 ++++++++++
- drivers/net/wireless/rtlwifi/rtl8192cu/sw.c | 16 +++++++++++++---
- drivers/net/wireless/rtlwifi/wifi.h         |  1 +
- 3 files changed, 24 insertions(+), 3 deletions(-)
+ drivers/media/dvb-frontends/dib8000.c | 33 +++++++++++++++++++++++++--------
+ 1 file changed, 25 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/net/wireless/rtlwifi/core.c b/drivers/net/wireless/rtlwifi/core.c
-index 733b7ce..0f12cd3 100644
---- a/drivers/net/wireless/rtlwifi/core.c
-+++ b/drivers/net/wireless/rtlwifi/core.c
-@@ -46,10 +46,20 @@ void rtl_fw_cb(const struct firmware *firmware, void *context)
- 			 "Firmware callback routine entered!\n");
- 	complete(&rtlpriv->firmware_loading_complete);
- 	if (!firmware) {
-+		if (rtlpriv->cfg->alt_fw_name) {
-+			err = request_firmware(&firmware,
-+					       rtlpriv->cfg->alt_fw_name,
-+					       rtlpriv->io.dev);
-+			pr_info("Loading alternative firmware %s\n",
-+				rtlpriv->cfg->alt_fw_name);
-+			if (!err)
-+				goto found_alt;
-+		}
- 		pr_err("Firmware %s not available\n", rtlpriv->cfg->fw_name);
- 		rtlpriv->max_fw_size = 0;
- 		return;
- 	}
-+found_alt:
- 	if (firmware->size > rtlpriv->max_fw_size) {
- 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
- 			 "Firmware is too big!\n");
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-index 2bd5985..a5a1901 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-@@ -49,6 +49,9 @@ MODULE_AUTHOR("Larry Finger	<Larry.Finger@lwfinger.net>");
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("Realtek 8192C/8188C 802.11n USB wireless");
- MODULE_FIRMWARE("rtlwifi/rtl8192cufw.bin");
-+MODULE_FIRMWARE("rtlwifi/rtl8192cufw_A.bin");
-+MODULE_FIRMWARE("rtlwifi/rtl8192cufw_B.bin");
-+MODULE_FIRMWARE("rtlwifi/rtl8192cufw_TMSC.bin");
- 
- static int rtl92cu_init_sw_vars(struct ieee80211_hw *hw)
- {
-@@ -68,14 +71,21 @@ static int rtl92cu_init_sw_vars(struct ieee80211_hw *hw)
- 			 "Can't alloc buffer for fw\n");
- 		return 1;
- 	}
--
-+	if (IS_VENDOR_UMC_A_CUT(rtlpriv->rtlhal.version) &&
-+	    !IS_92C_SERIAL(rtlpriv->rtlhal.version)) {
-+		rtlpriv->cfg->fw_name = "rtlwifi/rtl8192cufw_A.bin";
-+	} else if (IS_81xxC_VENDOR_UMC_B_CUT(rtlpriv->rtlhal.version)) {
-+		rtlpriv->cfg->fw_name = "rtlwifi/rtl8192cufw_B.bin";
-+	} else {
-+		rtlpriv->cfg->fw_name = "rtlwifi/rtl8192cufw_TMSC.bin";
-+	}
-+	/* provide name of alternative file */
-+	rtlpriv->cfg->alt_fw_name = "rtlwifi/rtl8192cufw.bin";
- 	pr_info("Loading firmware %s\n", rtlpriv->cfg->fw_name);
- 	rtlpriv->max_fw_size = 0x4000;
- 	err = request_firmware_nowait(THIS_MODULE, 1,
- 				      rtlpriv->cfg->fw_name, rtlpriv->io.dev,
- 				      GFP_KERNEL, hw, rtl_fw_cb);
--
--
- 	return err;
+diff --git a/drivers/media/dvb-frontends/dib8000.c b/drivers/media/dvb-frontends/dib8000.c
+index 487c253..ccac846 100644
+--- a/drivers/media/dvb-frontends/dib8000.c
++++ b/drivers/media/dvb-frontends/dib8000.c
+@@ -157,15 +157,10 @@ static u16 dib8000_i2c_read16(struct i2c_device *i2c, u16 reg)
+ 	return ret;
  }
  
-diff --git a/drivers/net/wireless/rtlwifi/wifi.h b/drivers/net/wireless/rtlwifi/wifi.h
-index ad9c37a..224cf61 100644
---- a/drivers/net/wireless/rtlwifi/wifi.h
-+++ b/drivers/net/wireless/rtlwifi/wifi.h
-@@ -1806,6 +1806,7 @@ struct rtl_hal_cfg {
- 	bool write_readback;
- 	char *name;
- 	char *fw_name;
-+	char *alt_fw_name;
- 	struct rtl_hal_ops *ops;
- 	struct rtl_mod_params *mod_params;
- 	struct rtl_hal_usbint_cfg *usb_interface_cfg;
+-static u16 dib8000_read_word(struct dib8000_state *state, u16 reg)
++static u16 __dib8000_read_word(struct dib8000_state *state, u16 reg)
+ {
+ 	u16 ret;
+ 
+-	if (mutex_lock_interruptible(&state->i2c_buffer_lock) < 0) {
+-		dprintk("could not acquire lock");
+-		return 0;
+-	}
+-
+ 	state->i2c_write_buffer[0] = reg >> 8;
+ 	state->i2c_write_buffer[1] = reg & 0xff;
+ 
+@@ -183,6 +178,21 @@ static u16 dib8000_read_word(struct dib8000_state *state, u16 reg)
+ 		dprintk("i2c read error on %d", reg);
+ 
+ 	ret = (state->i2c_read_buffer[0] << 8) | state->i2c_read_buffer[1];
++
++	return ret;
++}
++
++static u16 dib8000_read_word(struct dib8000_state *state, u16 reg)
++{
++	u16 ret;
++
++	if (mutex_lock_interruptible(&state->i2c_buffer_lock) < 0) {
++		dprintk("could not acquire lock");
++		return 0;
++	}
++
++	ret = __dib8000_read_word(state, reg);
++
+ 	mutex_unlock(&state->i2c_buffer_lock);
+ 
+ 	return ret;
+@@ -192,8 +202,15 @@ static u32 dib8000_read32(struct dib8000_state *state, u16 reg)
+ {
+ 	u16 rw[2];
+ 
+-	rw[0] = dib8000_read_word(state, reg + 0);
+-	rw[1] = dib8000_read_word(state, reg + 1);
++	if (mutex_lock_interruptible(&state->i2c_buffer_lock) < 0) {
++		dprintk("could not acquire lock");
++		return 0;
++	}
++
++	rw[0] = __dib8000_read_word(state, reg + 0);
++	rw[1] = __dib8000_read_word(state, reg + 1);
++
++	mutex_unlock(&state->i2c_buffer_lock);
+ 
+ 	return ((rw[0] << 16) | (rw[1]));
+ }
 -- 
 1.8.3.2
 
