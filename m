@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932613AbaBGLxE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:53:04 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42588 "EHLO
+	id S1753518AbaBGLxl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:53:41 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42592 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932596AbaBGLxB (ORCPT
+	with ESMTP id S1751574AbaBGLxC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:53:01 -0500
+	Fri, 7 Feb 2014 06:53:02 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Borislav Petkov <bp@suse.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
+Cc: Steven Rostedt <rostedt@goodmis.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 232/233] x86, cpu, amd: Add workaround for family 16h, erratum 793
-Date: Fri,  7 Feb 2014 11:47:31 +0000
-Message-Id: <1391773652-25214-233-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 233/233] ftrace: Have function graph only trace based on global_ops filters
+Date: Fri,  7 Feb 2014 11:47:32 +0000
+Message-Id: <1391773652-25214-234-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -27,86 +27,187 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Borislav Petkov <bp@suse.de>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 3b56496865f9f7d9bcb2f93b44c63f274f08e3b6 upstream.
+commit 23a8e8441a0a74dd612edf81dc89d1600bc0a3d1 upstream.
 
-This adds the workaround for erratum 793 as a precaution in case not
-every BIOS implements it.  This addresses CVE-2013-6885.
+Doing some different tests, I discovered that function graph tracing, when
+filtered via the set_ftrace_filter and set_ftrace_notrace files, does
+not always keep with them if another function ftrace_ops is registered
+to trace functions.
 
-Erratum text:
+The reason is that function graph just happens to trace all functions
+that the function tracer enables. When there was only one user of
+function tracing, the function graph tracer did not need to worry about
+being called by functions that it did not want to trace. But now that there
+are other users, this becomes a problem.
 
-[Revision Guide for AMD Family 16h Models 00h-0Fh Processors,
-document 51810 Rev. 3.04 November 2013]
+For example, one just needs to do the following:
 
-793 Specific Combination of Writes to Write Combined Memory Types and
-Locked Instructions May Cause Core Hang
+ # cd /sys/kernel/debug/tracing
+ # echo schedule > set_ftrace_filter
+ # echo function_graph > current_tracer
+ # cat trace
+[..]
+ 0)               |  schedule() {
+ ------------------------------------------
+ 0)    <idle>-0    =>   rcu_pre-7
+ ------------------------------------------
 
-Description
+ 0) ! 2980.314 us |  }
+ 0)               |  schedule() {
+ ------------------------------------------
+ 0)   rcu_pre-7    =>    <idle>-0
+ ------------------------------------------
 
-Under a highly specific and detailed set of internal timing
-conditions, a locked instruction may trigger a timing sequence whereby
-the write to a write combined memory type is not flushed, causing the
-locked instruction to stall indefinitely.
+ 0) + 20.701 us   |  }
 
-Potential Effect on System
+ # echo 1 > /proc/sys/kernel/stack_tracer_enabled
+ # cat trace
+[..]
+ 1) + 20.825 us   |      }
+ 1) + 21.651 us   |    }
+ 1) + 30.924 us   |  } /* SyS_ioctl */
+ 1)               |  do_page_fault() {
+ 1)               |    __do_page_fault() {
+ 1)   0.274 us    |      down_read_trylock();
+ 1)   0.098 us    |      find_vma();
+ 1)               |      handle_mm_fault() {
+ 1)               |        _raw_spin_lock() {
+ 1)   0.102 us    |          preempt_count_add();
+ 1)   0.097 us    |          do_raw_spin_lock();
+ 1)   2.173 us    |        }
+ 1)               |        do_wp_page() {
+ 1)   0.079 us    |          vm_normal_page();
+ 1)   0.086 us    |          reuse_swap_page();
+ 1)   0.076 us    |          page_move_anon_rmap();
+ 1)               |          unlock_page() {
+ 1)   0.082 us    |            page_waitqueue();
+ 1)   0.086 us    |            __wake_up_bit();
+ 1)   1.801 us    |          }
+ 1)   0.075 us    |          ptep_set_access_flags();
+ 1)               |          _raw_spin_unlock() {
+ 1)   0.098 us    |            do_raw_spin_unlock();
+ 1)   0.105 us    |            preempt_count_sub();
+ 1)   1.884 us    |          }
+ 1)   9.149 us    |        }
+ 1) + 13.083 us   |      }
+ 1)   0.146 us    |      up_read();
 
-Processor core hang.
+When the stack tracer was enabled, it enabled all functions to be traced, which
+now the function graph tracer also traces. This is a side effect that should
+not occur.
 
-Suggested Workaround
+To fix this a test is added when the function tracing is changed, as well as when
+the graph tracer is enabled, to see if anything other than the ftrace global_ops
+function tracer is enabled. If so, then the graph tracer calls a test trampoline
+that will look at the function that is being traced and compare it with the
+filters defined by the global_ops.
 
-BIOS should set MSR
-C001_1020[15] = 1b.
+As an optimization, if there's no other function tracers registered, or if
+the only registered function tracers also use the global ops, the function
+graph infrastructure will call the registered function graph callback directly
+and not go through the test trampoline.
 
-Fix Planned
-
-No fix planned
-
-[ hpa: updated description, fixed typo in MSR name ]
-
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Link: http://lkml.kernel.org/r/20140114230711.GS29865@pd.tnic
-Tested-by: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Fixes: d2d45c7a03a2 "tracing: Have stack_tracer use a separate list of functions"
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/include/uapi/asm/msr-index.h |  1 +
- arch/x86/kernel/cpu/amd.c             | 10 ++++++++++
- 2 files changed, 11 insertions(+)
+ kernel/trace/ftrace.c | 45 ++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 44 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
-index bb04650..228d95f 100644
---- a/arch/x86/include/uapi/asm/msr-index.h
-+++ b/arch/x86/include/uapi/asm/msr-index.h
-@@ -182,6 +182,7 @@
- #define MSR_AMD64_PATCH_LOADER		0xc0010020
- #define MSR_AMD64_OSVW_ID_LENGTH	0xc0010140
- #define MSR_AMD64_OSVW_STATUS		0xc0010141
-+#define MSR_AMD64_LS_CFG		0xc0011020
- #define MSR_AMD64_DC_CFG		0xc0011022
- #define MSR_AMD64_BU_CFG2		0xc001102a
- #define MSR_AMD64_IBSFETCHCTL		0xc0011030
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index 08a0890..c2d6f50 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -508,6 +508,16 @@ static void early_init_amd(struct cpuinfo_x86 *c)
- 			set_cpu_cap(c, X86_FEATURE_EXTD_APICID);
- 	}
- #endif
-+
-+	/* F16h erratum 793, CVE-2013-6885 */
-+	if (c->x86 == 0x16 && c->x86_model <= 0xf) {
-+		u64 val;
-+
-+		rdmsrl(MSR_AMD64_LS_CFG, val);
-+		if (!(val & BIT(15)))
-+			wrmsrl(MSR_AMD64_LS_CFG, val | BIT(15));
-+	}
-+
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index c984033..0a88de7 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -278,6 +278,12 @@ static void update_global_ops(void)
+ 	global_ops.func = func;
  }
  
- static const int amd_erratum_383[];
++#ifdef CONFIG_FUNCTION_GRAPH_TRACER
++static void update_function_graph_func(void);
++#else
++static inline void update_function_graph_func(void) { }
++#endif
++
+ static void update_ftrace_function(void)
+ {
+ 	ftrace_func_t func;
+@@ -306,6 +312,8 @@ static void update_ftrace_function(void)
+ 		func = ftrace_ops_list_func;
+ 	}
+ 
++	update_function_graph_func();
++
+ 	ftrace_trace_function = func;
+ }
+ 
+@@ -4768,6 +4776,7 @@ int ftrace_graph_entry_stub(struct ftrace_graph_ent *trace)
+ trace_func_graph_ret_t ftrace_graph_return =
+ 			(trace_func_graph_ret_t)ftrace_stub;
+ trace_func_graph_ent_t ftrace_graph_entry = ftrace_graph_entry_stub;
++static trace_func_graph_ent_t __ftrace_graph_entry = ftrace_graph_entry_stub;
+ 
+ /* Try to assign a return stack array on FTRACE_RETSTACK_ALLOC_SIZE tasks. */
+ static int alloc_retstack_tasklist(struct ftrace_ret_stack **ret_stack_list)
+@@ -4909,6 +4918,30 @@ static struct ftrace_ops fgraph_ops __read_mostly = {
+ 				FTRACE_OPS_FL_RECURSION_SAFE,
+ };
+ 
++static int ftrace_graph_entry_test(struct ftrace_graph_ent *trace)
++{
++	if (!ftrace_ops_test(&global_ops, trace->func, NULL))
++		return 0;
++	return __ftrace_graph_entry(trace);
++}
++
++/*
++ * The function graph tracer should only trace the functions defined
++ * by set_ftrace_filter and set_ftrace_notrace. If another function
++ * tracer ops is registered, the graph tracer requires testing the
++ * function against the global ops, and not just trace any function
++ * that any ftrace_ops registered.
++ */
++static void update_function_graph_func(void)
++{
++	if (ftrace_ops_list == &ftrace_list_end ||
++	    (ftrace_ops_list == &global_ops &&
++	     global_ops.next == &ftrace_list_end))
++		ftrace_graph_entry = __ftrace_graph_entry;
++	else
++		ftrace_graph_entry = ftrace_graph_entry_test;
++}
++
+ int register_ftrace_graph(trace_func_graph_ret_t retfunc,
+ 			trace_func_graph_ent_t entryfunc)
+ {
+@@ -4933,7 +4966,16 @@ int register_ftrace_graph(trace_func_graph_ret_t retfunc,
+ 	}
+ 
+ 	ftrace_graph_return = retfunc;
+-	ftrace_graph_entry = entryfunc;
++
++	/*
++	 * Update the indirect function to the entryfunc, and the
++	 * function that gets called to the entry_test first. Then
++	 * call the update fgraph entry function to determine if
++	 * the entryfunc should be called directly or not.
++	 */
++	__ftrace_graph_entry = entryfunc;
++	ftrace_graph_entry = ftrace_graph_entry_test;
++	update_function_graph_func();
+ 
+ 	ret = ftrace_startup(&fgraph_ops, FTRACE_START_FUNC_RET);
+ 
+@@ -4952,6 +4994,7 @@ void unregister_ftrace_graph(void)
+ 	ftrace_graph_active--;
+ 	ftrace_graph_return = (trace_func_graph_ret_t)ftrace_stub;
+ 	ftrace_graph_entry = ftrace_graph_entry_stub;
++	__ftrace_graph_entry = ftrace_graph_entry_stub;
+ 	ftrace_shutdown(&fgraph_ops, FTRACE_STOP_FUNC_RET);
+ 	unregister_pm_notifier(&ftrace_suspend_notifier);
+ 	unregister_trace_sched_switch(ftrace_graph_probe_sched_switch, NULL);
 -- 
 1.8.3.2
 
