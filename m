@@ -1,53 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605AbaBGL2S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:28:18 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:45497 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753582AbaBGL2O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:28:14 -0500
-Date: Fri, 7 Feb 2014 12:28:09 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Imre Deak <imre.deak@intel.com>
-Cc: Jani Nikula <jani.nikula@linux.intel.com>, intel-gfx@lists.freedesktop.org,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: intel_sdvo_init: trying to register non-static key
-Message-ID: <20140207112809.GG24395@pd.tnic>
-References: <20140207093205.GA24395@pd.tnic>
- <87d2iz18vi.fsf@intel.com>
- <1391771542.5669.6.camel@intelbox>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1391771542.5669.6.camel@intelbox>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753371AbaBGLZT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:25:19 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41145 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753167AbaBGLZD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 06:25:03 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Alex Deucher <alexander.deucher@amd.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.5 70/88] drm/radeon/DCE4+: clear bios scratch dpms bit (v2)
+Date: Fri,  7 Feb 2014 11:23:07 +0000
+Message-Id: <1391772205-22239-71-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
+References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 07, 2014 at 01:12:22PM +0200, Imre Deak wrote:
-> On Fri, 2014-02-07 at 13:04 +0200, Jani Nikula wrote:
-> > Imre, is this the same i2c_del_adapter issue you're looking at? Any
-> > patches to try yet?
-> 
-> It looks like the same issue yes. The following patch fixed it for me:
-> 
-> http://patchwork.freedesktop.org/patch/18698/
-> 
-> I'm working on an improved version of this, but the main thing - to
-> remove the connector's sysfs entries before actually destroying the
-> encoder and connector objects - will remain the same as in the above
-> patch.
+3.5.7.30 -stable review patch.  If anyone has any objections, please let me know.
 
-You could shoot the final version my way so that I give it a run too.
+------------------
 
-Thanks.
+From: Alex Deucher <alexander.deucher@amd.com>
 
+commit 6802d4bad83f50081b2788698570218aaff8d10e upstream.
+
+The BlankCrtc table in some DCE8 boards has some
+logic shortcuts for the vbios when this bit is set.
+Clear it for driver use.
+
+v2: fix typo
+
+Bug:
+https://bugs.freedesktop.org/show_bug.cgi?id=73420
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/gpu/drm/radeon/radeon_atombios.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/gpu/drm/radeon/radeon_atombios.c b/drivers/gpu/drm/radeon/radeon_atombios.c
+index c54d295..6d0c32b 100644
+--- a/drivers/gpu/drm/radeon/radeon_atombios.c
++++ b/drivers/gpu/drm/radeon/radeon_atombios.c
+@@ -2785,6 +2785,10 @@ void radeon_atom_initialize_bios_scratch_regs(struct drm_device *dev)
+ 	/* tell the bios not to handle mode switching */
+ 	bios_6_scratch |= ATOM_S6_ACC_BLOCK_DISPLAY_SWITCH;
+ 
++	/* clear the vbios dpms state */
++	if (ASIC_IS_DCE4(rdev))
++		bios_2_scratch &= ~ATOM_S2_DEVICE_DPMS_STATE;
++
+ 	if (rdev->family >= CHIP_R600) {
+ 		WREG32(R600_BIOS_2_SCRATCH, bios_2_scratch);
+ 		WREG32(R600_BIOS_6_SCRATCH, bios_6_scratch);
 -- 
-Regards/Gruss,
-    Boris.
+1.8.3.2
 
-Sent from a fat crate under my desk. Formatting is fine.
---
