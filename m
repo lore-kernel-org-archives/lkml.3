@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753666AbaBGL3K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:29:10 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41205 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753253AbaBGLZR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753344AbaBGLZR (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 7 Feb 2014 06:25:17 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41160 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753253AbaBGLZH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 06:25:07 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alexandre Courbot <acourbot@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mark Brown <broonie@kernel.org>,
+Cc: Paul Mackerras <paulus@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 79/88] lib/decompressors: fix "no limit" output buffer length
-Date: Fri,  7 Feb 2014 11:23:16 +0000
-Message-Id: <1391772205-22239-80-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 69/88] powerpc: Make sure "cache" directory is removed when offlining cpu
+Date: Fri,  7 Feb 2014 11:23:06 +0000
+Message-Id: <1391772205-22239-70-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
@@ -31,64 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexandre Courbot <acourbot@nvidia.com>
+From: Paul Mackerras <paulus@samba.org>
 
-commit 1431574a1c4c669a0c198e4763627837416e4443 upstream.
+commit 91b973f90c1220d71923e7efe1e61f5329806380 upstream.
 
-When decompressing into memory, the output buffer length is set to some
-arbitrarily high value (0x7fffffff) to indicate the output is, virtually,
-unlimited in size.
+The code in remove_cache_dir() is supposed to remove the "cache"
+subdirectory from the sysfs directory for a CPU when that CPU is
+being offlined.  It tries to do this by calling kobject_put() on
+the kobject for the subdirectory.  However, the subdirectory only
+gets removed once the last reference goes away, and the reference
+being put here may well not be the last reference.  That means
+that the "cache" subdirectory may still exist when the offlining
+operation has finished.  If the same CPU subsequently gets onlined,
+the code tries to add a new "cache" subdirectory.  If the old
+subdirectory has not yet been removed, we get a WARN_ON in the
+sysfs code, with stack trace, and an error message printed on the
+console.  Further, we ultimately end up with an online cpu with no
+"cache" subdirectory.
 
-The problem with this is that some platforms have their physical memory at
-high physical addresses (0x80000000 or more), and that the output buffer
-address and its "unlimited" length cannot be added without overflowing.
-An example of this can be found in inflate_fast():
+This fixes it by doing an explicit kobject_del() at the point where
+we want the subdirectory to go away.  kobject_del() removes the sysfs
+directory even though the object still exists in memory.  The object
+will get freed at some point in the future.  A subsequent onlining
+operation can create a new sysfs directory, even if the old object
+still exists in memory, without causing any problems.
 
-/* next_out is the output buffer address */
-out = strm->next_out - OFF;
-/* avail_out is the output buffer size. end will overflow if the output
- * address is >= 0x80000104 */
-end = out + (strm->avail_out - 257);
-
-This has huge consequences on the performance of kernel decompression,
-since the following exit condition of inflate_fast() will be always true:
-
-} while (in < last && out < end);
-
-Indeed, "end" has overflowed and is now always lower than "out".  As a
-result, inflate_fast() will return after processing one single byte of
-input data, and will thus need to be called an unreasonably high number of
-times.  This probably went unnoticed because kernel decompression is fast
-enough even with this issue.
-
-Nonetheless, adjusting the output buffer length in such a way that the
-above pointer arithmetic never overflows results in a kernel decompression
-that is about 3 times faster on affected machines.
-
-Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-Tested-by: Jon Medhurst <tixy@linaro.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mark Brown <broonie@kernel.org>
+Signed-off-by: Paul Mackerras <paulus@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- lib/decompress_inflate.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/powerpc/kernel/cacheinfo.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/lib/decompress_inflate.c b/lib/decompress_inflate.c
-index 19ff89e..d619b28 100644
---- a/lib/decompress_inflate.c
-+++ b/lib/decompress_inflate.c
-@@ -48,7 +48,7 @@ STATIC int INIT gunzip(unsigned char *buf, int len,
- 		out_len = 0x8000; /* 32 K */
- 		out_buf = malloc(out_len);
- 	} else {
--		out_len = 0x7fffffff; /* no limit */
-+		out_len = ((size_t)~0) - (size_t)out_buf; /* no limit */
- 	}
- 	if (!out_buf) {
- 		error("Out of memory while allocating output buffer");
+diff --git a/arch/powerpc/kernel/cacheinfo.c b/arch/powerpc/kernel/cacheinfo.c
+index 92c6b00..b4437e8 100644
+--- a/arch/powerpc/kernel/cacheinfo.c
++++ b/arch/powerpc/kernel/cacheinfo.c
+@@ -788,6 +788,9 @@ static void remove_cache_dir(struct cache_dir *cache_dir)
+ {
+ 	remove_index_dirs(cache_dir);
+ 
++	/* Remove cache dir from sysfs */
++	kobject_del(cache_dir->kobj);
++
+ 	kobject_put(cache_dir->kobj);
+ 
+ 	kfree(cache_dir);
 -- 
 1.8.3.2
 
