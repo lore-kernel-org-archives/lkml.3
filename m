@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755860AbaBGNGH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 08:06:07 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41726 "EHLO
+	id S1753566AbaBGNGg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 08:06:36 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41727 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754574AbaBGLtY (ORCPT
+	with ESMTP id S1754572AbaBGLtY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 Feb 2014 06:49:24 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jack Pham <jackp@codeaurora.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+Cc: Antti Palosaari <crope@iki.fi>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 069/233] usb: xhci: Check for XHCI_PLAT in xhci_cleanup_msix()
-Date: Fri,  7 Feb 2014 11:44:48 +0000
-Message-Id: <1391773652-25214-70-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 070/233] [media] anysee: fix non-working E30 Combo Plus DVB-T
+Date: Fri,  7 Feb 2014 11:44:49 +0000
+Message-Id: <1391773652-25214-71-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -28,39 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jack Pham <jackp@codeaurora.org>
+From: Antti Palosaari <crope@iki.fi>
 
-commit 9005355af23856c55a5538c9024355785424821b upstream.
+commit c57f87e62368c33ebda11a4993380c8e5a19a5c5 upstream.
 
-If CONFIG_PCI is enabled, make sure xhci_cleanup_msix()
-doesn't try to free a bogus PCI IRQ or dereference an invalid
-pci_dev when the xHCI device is actually a platform_device.
+PLL was attached twice to frontend0 leaving frontend1 without a tuner.
+frontend0 is DVB-C and frontend1 is DVB-T.
 
-This patch should be backported to kernels as old as 3.9, that
-contain the commit 52fb61250a7a132b0cfb9f4a1060a1f3c49e5a25
-"xhci-plat: Don't enable legacy PCI interrupts."
-
-Signed-off-by: Jack Pham <jackp@codeaurora.org>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/host/xhci.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/media/usb/dvb-usb-v2/anysee.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 2047fb4..920e14b 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -316,6 +316,9 @@ static void xhci_cleanup_msix(struct xhci_hcd *xhci)
- 	struct usb_hcd *hcd = xhci_to_hcd(xhci);
- 	struct pci_dev *pdev = to_pci_dev(hcd->self.controller);
+diff --git a/drivers/media/usb/dvb-usb-v2/anysee.c b/drivers/media/usb/dvb-usb-v2/anysee.c
+index 90cfa35..eeab79b 100644
+--- a/drivers/media/usb/dvb-usb-v2/anysee.c
++++ b/drivers/media/usb/dvb-usb-v2/anysee.c
+@@ -442,6 +442,7 @@ static struct cxd2820r_config anysee_cxd2820r_config = {
+  * IOD[0] ZL10353 1=enabled
+  * IOE[0] tuner 0=enabled
+  * tuner is behind ZL10353 I2C-gate
++ * tuner is behind TDA10023 I2C-gate
+  *
+  * E7 TC VID=1c73 PID=861f HW=18 FW=0.7 AMTCI=0.5 "anysee-E7TC(LP)"
+  * PCB: 508TC (rev0.6)
+@@ -956,7 +957,7 @@ static int anysee_tuner_attach(struct dvb_usb_adapter *adap)
  
-+	if (xhci->quirks & XHCI_PLAT)
-+		return;
-+
- 	xhci_free_irq(xhci);
- 
- 	if (xhci->msix_entries) {
+ 		if (fe && adap->fe[1]) {
+ 			/* attach tuner for 2nd FE */
+-			fe = dvb_attach(dvb_pll_attach, adap->fe[0],
++			fe = dvb_attach(dvb_pll_attach, adap->fe[1],
+ 					(0xc0 >> 1), &d->i2c_adap,
+ 					DVB_PLL_SAMSUNG_DTOS403IH102A);
+ 		}
 -- 
 1.8.3.2
 
