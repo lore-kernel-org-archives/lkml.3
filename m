@@ -1,45 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529AbaBGTkc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 14:40:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43971 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751319AbaBGTkb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 14:40:31 -0500
-Message-ID: <52F5366D.9010300@redhat.com>
-Date: Fri, 07 Feb 2014 14:39:25 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1752981AbaBGTk7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 14:40:59 -0500
+Received: from cobra.newdream.net ([66.33.216.30]:50447 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751446AbaBGTk5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 14:40:57 -0500
+Date: Fri, 7 Feb 2014 11:40:57 -0800 (PST)
+From: Sage Weil <sage@inktank.com>
+X-X-Sender: sage@cobra.newdream.net
+To: torvalds@linux-foundation.org
+cc: ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] Ceph fixes for -rc2
+Message-ID: <alpine.DEB.2.00.1402071041250.26572@cobra.newdream.net>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Rafael Aquini <aquini@redhat.com>, linux-kernel@vger.kernel.org
-CC: trond.myklebust@primarydata.com, jstancek@redhat.com, jlayton@redhat.com,
-        mgorman@suse.de, linux-nfs@vger.kernel.org, akpm@linux-foundation.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm: fix page leak at nfs_symlink()
-References: <f4b3dc07dfa55bf7931de36b03aa9ef7e3ff0490.1391785222.git.aquini@redhat.com>
-In-Reply-To: <f4b3dc07dfa55bf7931de36b03aa9ef7e3ff0490.1391785222.git.aquini@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2014 10:19 AM, Rafael Aquini wrote:
-> Changes committed by "a0b8cab3 mm: remove lru parameter from
-> __pagevec_lru_add and remove parts of pagevec API" have introduced
-> a call to add_to_page_cache_lru() which causes a leak in nfs_symlink()
-> as now the page gets an extra refcount that is not dropped.
->
-> Jan Stancek observed and reported the leak effect while running test8 from
-> Connectathon Testsuite. After several iterations over the test case,
-> which creates several symlinks on a NFS mountpoint, the test system was
-> quickly getting into an out-of-memory scenario.
->
-> This patch fixes the page leak by dropping that extra refcount
-> add_to_page_cache_lru() is grabbing.
->
-> Signed-off-by: Jan Stancek <jstancek@redhat.com>
-> Signed-off-by: Rafael Aquini <aquini@redhat.com>
+Hi Linus,
 
-Acked-by: Rik van Riel <riel@redhat.com>
+Please pull the following fixes from
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
+
+There is an RBD fix for a crash due to the immutable bio changes, an error 
+path fix, and a locking fix in the recent redirect support.
+
+Thanks!
+sage
+
+----------------------------------------------------------------
+Ilya Dryomov (4):
+      libceph: fix error handling in ceph_osdc_init()
+      libceph: factor out logic from ceph_osdc_start_request()
+      libceph: take map_sem for read in handle_reply()
+      libceph: do not dereference a NULL bio pointer
+
+ net/ceph/messenger.c  |  8 +++--
+ net/ceph/osd_client.c | 84 +++++++++++++++++++++++++++++++++------------------
+ 2 files changed, 60 insertions(+), 32 deletions(-)
