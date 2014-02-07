@@ -1,68 +1,281 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753312AbaBGQ4d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 11:56:33 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:33002 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751897AbaBGQ43 (ORCPT
+	id S1753602AbaBGQ5A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 11:57:00 -0500
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:63302 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752222AbaBGQsd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 11:56:29 -0500
-Date: Fri, 7 Feb 2014 16:55:48 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Torvald Riegel <triegel@redhat.com>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-Message-ID: <20140207165548.GR5976@mudshark.cambridge.arm.com>
-References: <21984.1391711149@warthog.procyon.org.uk>
- <52F3DA85.1060209@arm.com>
- <20140206185910.GE27276@mudshark.cambridge.arm.com>
- <20140206192743.GH4250@linux.vnet.ibm.com>
- <1391721423.23421.3898.camel@triegel.csb>
- <20140206221117.GJ4250@linux.vnet.ibm.com>
- <1391730288.23421.4102.camel@triegel.csb>
- <20140207042051.GL4250@linux.vnet.ibm.com>
- <20140207074405.GM5002@laptop.programming.kicks-ass.net>
- <20140207165028.GO4250@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140207165028.GO4250@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 7 Feb 2014 11:48:33 -0500
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bfields@fieldses.org, hch@infradead.org, akpm@linux-foundation.org,
+        dhowells@redhat.com, zab@redhat.com, jack@suse.cz, luto@amacapital.net,
+        mszeredi@suse.cz
+Subject: [PATCH 03/13] vfs: rename: use common code for dir and non-dir
+Date: Fri,  7 Feb 2014 17:49:01 +0100
+Message-Id: <1391791751-2533-4-git-send-email-miklos@szeredi.hu>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1391791751-2533-1-git-send-email-miklos@szeredi.hu>
+References: <1391791751-2533-1-git-send-email-miklos@szeredi.hu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-On Fri, Feb 07, 2014 at 04:50:28PM +0000, Paul E. McKenney wrote:
-> On Fri, Feb 07, 2014 at 08:44:05AM +0100, Peter Zijlstra wrote:
-> > On Thu, Feb 06, 2014 at 08:20:51PM -0800, Paul E. McKenney wrote:
-> > > Hopefully some discussion of out-of-thin-air values as well.
-> > 
-> > Yes, absolutely shoot store speculation in the head already. Then drive
-> > a wooden stake through its hart.
-> > 
-> > C11/C++11 should not be allowed to claim itself a memory model until that
-> > is sorted.
-> 
-> There actually is a proposal being put forward, but it might not make ARM
-> and Power people happy because it involves adding a compare, a branch,
-> and an ISB/isync after every relaxed load...  Me, I agree with you,
-> much preferring the no-store-speculation approach.
+There's actually very little difference between vfs_rename_dir() and
+vfs_rename_other() so move both inline into vfs_rename() which still stays
+reasonably readable.
 
-Can you elaborate a bit on this please? We don't permit speculative stores
-in the ARM architecture, so it seems counter-intuitive that GCC needs to
-emit any additional instructions to prevent that from happening.
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+---
+ fs/namei.c | 187 +++++++++++++++++++++++++------------------------------------
+ 1 file changed, 75 insertions(+), 112 deletions(-)
 
-Stores can, of course, be observed out-of-order but that's a lot more
-reasonable :)
+diff --git a/fs/namei.c b/fs/namei.c
+index 1409090d0913..b6976bd59cbb 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -3946,7 +3946,27 @@ SYSCALL_DEFINE2(link, const char __user *, oldname, const char __user *, newname
+ 	return sys_linkat(AT_FDCWD, oldname, AT_FDCWD, newname, 0);
+ }
+ 
+-/*
++/**
++ * vfs_rename - rename a filesystem object
++ * @old_dir:	parent of source
++ * @old_dentry:	source
++ * @new_dir:	parent of destination
++ * @new_dentry:	destination
++ * @delegated_inode: returns an inode needing a delegation break
++ *
++ * The caller must hold multiple mutexes--see lock_rename()).
++ *
++ * If vfs_rename discovers a delegation in need of breaking at either
++ * the source or destination, it will return -EWOULDBLOCK and return a
++ * reference to the inode in delegated_inode.  The caller should then
++ * break the delegation and retry.  Because breaking a delegation may
++ * take a long time, the caller should drop all locks before doing
++ * so.
++ *
++ * Alternatively, a caller may pass NULL for delegated_inode.  This may
++ * be appropriate for callers that expect the underlying filesystem not
++ * to be NFS exported.
++ *
+  * The worst of all namespace operations - renaming directory. "Perverted"
+  * doesn't even start to describe it. Somebody in UCB had a heck of a trip...
+  * Problems:
+@@ -3974,19 +3994,39 @@ SYSCALL_DEFINE2(link, const char __user *, oldname, const char __user *, newname
+  *	   ->i_mutex on parents, which works but leads to some truly excessive
+  *	   locking].
+  */
+-static int vfs_rename_dir(struct inode *old_dir, struct dentry *old_dentry,
+-			  struct inode *new_dir, struct dentry *new_dentry)
++int vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
++	       struct inode *new_dir, struct dentry *new_dentry,
++	       struct inode **delegated_inode)
+ {
+-	int error = 0;
++	int error;
++	bool is_dir = d_is_dir(old_dentry);
++	const unsigned char *old_name;
++	struct inode *source = old_dentry->d_inode;
+ 	struct inode *target = new_dentry->d_inode;
+-	unsigned max_links = new_dir->i_sb->s_max_links;
++
++	if (source == target)
++		return 0;
++
++	error = may_delete(old_dir, old_dentry, is_dir);
++	if (error)
++		return error;
++
++	if (!target)
++		error = may_create(new_dir, new_dentry);
++	else
++		error = may_delete(new_dir, new_dentry, is_dir);
++	if (error)
++		return error;
++
++	if (!old_dir->i_op->rename)
++		return -EPERM;
+ 
+ 	/*
+ 	 * If we are going to change the parent - check write permissions,
+ 	 * we'll need to flip '..'.
+ 	 */
+-	if (new_dir != old_dir) {
+-		error = inode_permission(old_dentry->d_inode, MAY_WRITE);
++	if (is_dir && new_dir != old_dir) {
++		error = inode_permission(source, MAY_WRITE);
+ 		if (error)
+ 			return error;
+ 	}
+@@ -3995,134 +4035,57 @@ static int vfs_rename_dir(struct inode *old_dir, struct dentry *old_dentry,
+ 	if (error)
+ 		return error;
+ 
++	old_name = fsnotify_oldname_init(old_dentry->d_name.name);
+ 	dget(new_dentry);
+-	if (target)
++	if (!is_dir)
++		lock_two_nondirectories(source, target);
++	else if (target)
+ 		mutex_lock(&target->i_mutex);
+ 
+ 	error = -EBUSY;
+ 	if (d_mountpoint(old_dentry) || d_mountpoint(new_dentry))
+ 		goto out;
+ 
+-	error = -EMLINK;
+-	if (max_links && !target && new_dir != old_dir &&
+-	    new_dir->i_nlink >= max_links)
+-		goto out;
+-
+-	if (target)
+-		shrink_dcache_parent(new_dentry);
+-	error = old_dir->i_op->rename(old_dir, old_dentry, new_dir, new_dentry);
+-	if (error)
+-		goto out;
+-
+-	if (target) {
+-		target->i_flags |= S_DEAD;
+-		dont_mount(new_dentry);
+-	}
+-	if (!(old_dir->i_sb->s_type->fs_flags & FS_RENAME_DOES_D_MOVE))
+-		d_move(old_dentry, new_dentry);
+-out:
+-	if (target)
+-		mutex_unlock(&target->i_mutex);
+-	dput(new_dentry);
+-	return error;
+-}
+-
+-static int vfs_rename_other(struct inode *old_dir, struct dentry *old_dentry,
+-			    struct inode *new_dir, struct dentry *new_dentry,
+-			    struct inode **delegated_inode)
+-{
+-	struct inode *target = new_dentry->d_inode;
+-	struct inode *source = old_dentry->d_inode;
+-	int error;
+-
+-	error = security_inode_rename(old_dir, old_dentry, new_dir, new_dentry);
+-	if (error)
+-		return error;
+-
+-	dget(new_dentry);
+-	lock_two_nondirectories(source, target);
++	if (is_dir) {
++		unsigned max_links = new_dir->i_sb->s_max_links;
+ 
+-	error = -EBUSY;
+-	if (d_mountpoint(old_dentry)||d_mountpoint(new_dentry))
+-		goto out;
++		error = -EMLINK;
++		if (max_links && !target && new_dir != old_dir &&
++		    new_dir->i_nlink >= max_links)
++			goto out;
+ 
+-	error = try_break_deleg(source, delegated_inode);
+-	if (error)
+-		goto out;
+-	if (target) {
+-		error = try_break_deleg(target, delegated_inode);
++		if (target)
++			shrink_dcache_parent(new_dentry);
++	} else {
++		error = try_break_deleg(source, delegated_inode);
+ 		if (error)
+ 			goto out;
++		if (target) {
++			error = try_break_deleg(target, delegated_inode);
++			if (error)
++				goto out;
++		}
+ 	}
+ 	error = old_dir->i_op->rename(old_dir, old_dentry, new_dir, new_dentry);
+ 	if (error)
+ 		goto out;
+ 
+-	if (target)
++	if (target) {
++		if (is_dir)
++			target->i_flags |= S_DEAD;
+ 		dont_mount(new_dentry);
++	}
+ 	if (!(old_dir->i_sb->s_type->fs_flags & FS_RENAME_DOES_D_MOVE))
+ 		d_move(old_dentry, new_dentry);
+ out:
+-	unlock_two_nondirectories(source, target);
++	if (!is_dir)
++		unlock_two_nondirectories(source, target);
++	else if (target)
++		mutex_unlock(&target->i_mutex);
+ 	dput(new_dentry);
+-	return error;
+-}
+-
+-/**
+- * vfs_rename - rename a filesystem object
+- * @old_dir:	parent of source
+- * @old_dentry:	source
+- * @new_dir:	parent of destination
+- * @new_dentry:	destination
+- * @delegated_inode: returns an inode needing a delegation break
+- *
+- * The caller must hold multiple mutexes--see lock_rename()).
+- *
+- * If vfs_rename discovers a delegation in need of breaking at either
+- * the source or destination, it will return -EWOULDBLOCK and return a
+- * reference to the inode in delegated_inode.  The caller should then
+- * break the delegation and retry.  Because breaking a delegation may
+- * take a long time, the caller should drop all locks before doing
+- * so.
+- *
+- * Alternatively, a caller may pass NULL for delegated_inode.  This may
+- * be appropriate for callers that expect the underlying filesystem not
+- * to be NFS exported.
+- */
+-int vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
+-	       struct inode *new_dir, struct dentry *new_dentry,
+-	       struct inode **delegated_inode)
+-{
+-	int error;
+-	int is_dir = d_is_dir(old_dentry);
+-	const unsigned char *old_name;
+-
+-	if (old_dentry->d_inode == new_dentry->d_inode)
+- 		return 0;
+- 
+-	error = may_delete(old_dir, old_dentry, is_dir);
+-	if (error)
+-		return error;
+-
+-	if (!new_dentry->d_inode)
+-		error = may_create(new_dir, new_dentry);
+-	else
+-		error = may_delete(new_dir, new_dentry, is_dir);
+-	if (error)
+-		return error;
+-
+-	if (!old_dir->i_op->rename)
+-		return -EPERM;
+-
+-	old_name = fsnotify_oldname_init(old_dentry->d_name.name);
+-
+-	if (is_dir)
+-		error = vfs_rename_dir(old_dir,old_dentry,new_dir,new_dentry);
+-	else
+-		error = vfs_rename_other(old_dir,old_dentry,new_dir,new_dentry,delegated_inode);
+ 	if (!error)
+ 		fsnotify_move(old_dir, new_dir, old_name, is_dir,
+-			      new_dentry->d_inode, old_dentry);
++			      target, old_dentry);
+ 	fsnotify_oldname_free(old_name);
+ 
+ 	return error;
+-- 
+1.8.1.4
 
-Will
