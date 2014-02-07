@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752380AbaBGKHr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 05:07:47 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:35992 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752001AbaBGKFX (ORCPT
+	id S1752340AbaBGKHo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 05:07:44 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:28060 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751699AbaBGKFX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 Feb 2014 05:05:23 -0500
-X-AuditID: cbfec7f5-b7fc96d000004885-eb-52f4afdcf121
+X-AuditID: cbfec7f5-b7fc96d000004885-d4-52f4afd99565
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: MyungJoo Ham <myungjoo.ham@samsung.com>,
         Chanwoo Choi <cw00.choi@samsung.com>,
@@ -17,420 +17,692 @@ To: MyungJoo Ham <myungjoo.ham@samsung.com>,
 Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, Jenny Tc <jenny.tc@intel.com>
-Subject: [PATCH v2 14/15] charger: max14577: Configure battery-dependent
- settings from DTS
-Date: Fri, 07 Feb 2014 11:04:46 +0100
-Message-id: <1391767487-10017-15-git-send-email-k.kozlowski@samsung.com>
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH v2 08/15] mfd: max77836: Add max77836 support to max14577 driver
+Date: Fri, 07 Feb 2014 11:04:40 +0100
+Message-id: <1391767487-10017-9-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1391767487-10017-1-git-send-email-k.kozlowski@samsung.com>
 References: <1391767487-10017-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBLMWRmVeSWpSXmKPExsVy+t/xq7p31n8JMlj+09Ji44z1rBZTHz5h
-	s7j+5TmrxaQn75ktJq6czGyx9msPu8XrF4YWZ5vesFvc/3qU0WLT42usFpd3zWGzWHvkLrvF
-	7cYVbBanu1kd+Dx2zrrL7rF5hZbH4j0vmTw2repk87hzbQ+bx7yTgR6bl9R79G1ZxejxeZNc
-	AGcUl01Kak5mWWqRvl0CV8acLT2MBQsTKnZ9XcrcwPjev4uRg0NCwERi6ousLkZOIFNM4sK9
-	9WxdjFwcQgJLGSWaj65jhnD6mCQWzl3HBFLFJmAssXn5ErAqEYEWJon36/czgjjMAvuZJDY8
-	3g1WJSwQI3Fo3TUwm0VAVeLnr1ksIDavgIfE/actLBCrFSTmTLIBCXMChbc8OMcKYgsJuEv8
-	WtbDPoGRdwEjwypG0dTS5ILipPRcI73ixNzi0rx0veT83E2MkND9uoNx6TGrQ4wCHIxKPLyK
-	Kz4HCbEmlhVX5h5ilOBgVhLh1Vj7JUiINyWxsiq1KD++qDQntfgQIxMHp1QDY/66xd+kVWzL
-	Ja9atJpuPP5acl/+O7M+/Wfsm9r0fkaaXl9d7HP6s5FE+d7U65eePfsbH8rY6lDmns34qmW5
-	8LyrXm96ZxfqH1B4cLD9tgyHSp/ryfo3C2XbbZqf7M4/oLSgR22TywP/lUxLHjuGskgmXC1R
-	ufg7+I2Wt9IXEzYvm3e/38+cocRSnJFoqMVcVJwIAHkUsSA7AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplluLIzCtJLcpLzFFi42I5/e/4Vd2b678EGRy/qWaxccZ6VoupD5+w
+	WVz/8pzV4vULQ4uzTW/YLe5/PcposenxNVaLy7vmsFmsPXKX3eJ24wo2i9PdrA7cHptWdbJ5
+	3Lm2h81j3slAj81L6j36tqxi9Pi8SS6ALYrLJiU1J7MstUjfLoEro2PWB5aCz4cZKzZNfcTW
+	wHhuGWMXIyeHhICJxPopv1ggbDGJC/fWs3UxcnEICSxllLhx6xUjhNPHJHHq3H02kCo2AWOJ
+	zcuXgFWJCLQwSbxfvx9sFLPAUUaJJ8sMQWxhgQCJPVdbWEFsFgFViTeTJrKD2LwC7hKnHk0F
+	WscBtE5BYs4kG5Awp4CHxJYH58DKhYBKfi3rYZ/AyLuAkWEVo2hqaXJBcVJ6rpFecWJucWle
+	ul5yfu4mRkgQft3BuPSY1SFGAQ5GJR5exRWfg4RYE8uKK3MPMUpwMCuJ8Gqs/RIkxJuSWFmV
+	WpQfX1Sak1p8iJGJg1OqgTH77869d5kYuNyXKO0QWl5gtPPallN2E76khjaxS83Zaxqzw7zZ
+	fqNHwPfwU+Zre5sD39zQdgzP/aty7MiiYy0/DXo2tK56rZfLGjk7qviCqMAb58tVl/m2vdP+
+	25wrquIv0LCfvYe9mK378VUegdMPPrqk3Azf66Pka3Ay7nzG1ZPFQRZ+T5RYijMSDbWYi4oT
+	ASjMOWIgAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove hard-coded values for:
- - Fast Charge current,
- - End Of Charge current,
- - Fast Charge timer,
- - Overvoltage Protection Threshold,
- - Battery Constant Voltage,
-and use DTS to configure them. This allows using the max14577 charger
-driver with different batteries.
+Add Maxim 77836 support to max14577 driver. The chipsets have same MUIC
+component so the extcon, charger and regulators are almost the same. The
+max77836 however has also PMIC and Fuel Gauge.
 
-Now the charger driver requires valid configuration data from DTS. In
-case of wrong configuration data it fails during probe. Patch adds
-of_compatible to the charger mfd cell in MFD driver core.
+The MAX77836 uses three I2C slave addresses and has additional interrupts
+(related to PMIC and Fuel Gauge). It has also Interrupt Source register,
+just like MAX77686 and MAX77693.
+
+The MAX77836 PMIC's TOPSYS and INTSRC interrupts are reported in the
+PMIC block. The PMIC block has different I2C slave address and uses own
+regmap so another regmap_irq_chip is needed.
+
+Since we have two regmap_irq_chip, use shared interrupts on MAX77836.
+
+This patch adds additional defines and functions to the max14577 MFD core
+driver so the driver will handle both chipsets. Also this patch replaces
+"0x1 << N" with BIT(N) in defines for register masks.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 Cc: Kyungmin Park <kyungmin.park@samsung.com>
 Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Jenny Tc <jenny.tc@intel.com>
 ---
- drivers/mfd/max14577.c               |    5 +-
- drivers/power/max14577_charger.c     |  234 +++++++++++++++++++++++++++++-----
- include/linux/mfd/max14577-private.h |   10 ++
- include/linux/mfd/max14577.h         |    8 ++
- 4 files changed, 227 insertions(+), 30 deletions(-)
+ drivers/mfd/max14577.c               |  217 ++++++++++++++++++++++++++++++++--
+ include/linux/mfd/max14577-private.h |  175 +++++++++++++++++++--------
+ include/linux/mfd/max14577.h         |    7 +-
+ 3 files changed, 341 insertions(+), 58 deletions(-)
 
 diff --git a/drivers/mfd/max14577.c b/drivers/mfd/max14577.c
-index 3f5e30e8cf77..0cd444c4fdd0 100644
+index 772088cf3ab8..1463b17c11c3 100644
 --- a/drivers/mfd/max14577.c
 +++ b/drivers/mfd/max14577.c
-@@ -115,7 +115,10 @@ static struct mfd_cell max14577_devs[] = {
- 		.name = "max14577-regulator",
- 		.of_compatible = "maxim,max14577-regulator",
- 	},
--	{ .name = "max14577-charger", },
-+	{
-+		.name = "max14577-charger",
-+		.of_compatible = "maxim,max14577-charger",
-+	},
- };
- 
- static struct mfd_cell max77836_devs[] = {
-diff --git a/drivers/power/max14577_charger.c b/drivers/power/max14577_charger.c
-index 405f4d736337..882331a96298 100644
---- a/drivers/power/max14577_charger.c
-+++ b/drivers/power/max14577_charger.c
-@@ -19,6 +19,7 @@
- #include <linux/platform_device.h>
- #include <linux/power_supply.h>
- #include <linux/mfd/max14577-private.h>
-+#include <linux/mfd/max14577.h>
- 
- struct max14577_charger {
- 	struct device		*dev;
-@@ -27,6 +28,8 @@ struct max14577_charger {
- 
- 	unsigned int		charging_state;
- 	unsigned int		battery_state;
-+
-+	struct max14577_charger_platform_data	*pdata;
- };
- 
+@@ -1,7 +1,7 @@
  /*
-@@ -180,15 +183,106 @@ static int max14577_get_present(struct max14577_charger *chg)
- 	return 1;
+- * max14577.c - mfd core driver for the Maxim 14577
++ * max14577.c - mfd core driver for the Maxim 14577/77836
+  *
+- * Copyright (C) 2013 Samsung Electrnoics
++ * Copyright (C) 2014 Samsung Electrnoics
+  * Chanwoo Choi <cw00.choi@samsung.com>
+  * Krzysztof Kozlowski <k.kozlowski@samsung.com>
+  *
+@@ -37,11 +37,34 @@ static struct mfd_cell max14577_devs[] = {
+ 	{ .name = "max14577-charger", },
+ };
+ 
++static struct mfd_cell max77836_devs[] = {
++	{
++		.name = "max77836-muic",
++		.of_compatible = "maxim,max77836-muic",
++	},
++	{
++		.name = "max77836-regulator",
++		.of_compatible = "maxim,max77836-regulator",
++	},
++	{
++		.name = "max77836-charger",
++		.of_compatible = "maxim,max77836-charger",
++	},
++	{
++		.name = "max77836-battery",
++		.of_compatible = "maxim,max77836-battery",
++	},
++};
++
+ static struct of_device_id max14577_dt_match[] = {
+ 	{
+ 		.compatible = "maxim,max14577",
+ 		.data = (void *)MAXIM_DEVICE_TYPE_MAX14577,
+ 	},
++	{
++		.compatible = "maxim,max77836",
++		.data = (void *)MAXIM_DEVICE_TYPE_MAX77836,
++	},
+ 	{},
+ };
+ 
+@@ -56,6 +79,26 @@ static bool max14577_muic_volatile_reg(struct device *dev, unsigned int reg)
+ 	return false;
  }
  
-+static inline int max14577_init_constant_voltage(struct max14577_charger *chg,
-+		unsigned int uvolt)
++static bool max77836_muic_volatile_reg(struct device *dev, unsigned int reg)
 +{
-+	u8 reg_data;
++	/* Any max14577 volatile registers are also max77836 volatile. */
++	if (max14577_muic_volatile_reg(dev, reg))
++		return true;
 +
-+	if (uvolt < MAXIM_CHARGER_CONSTANT_VOLTAGE_MIN ||
-+			uvolt > MAXIM_CHARGER_CONSTANT_VOLTAGE_MAX)
-+		return -EINVAL;
-+
-+	if (uvolt == 4200000)
-+		reg_data = 0x0;
-+	else if (uvolt == MAXIM_CHARGER_CONSTANT_VOLTAGE_MAX)
-+		reg_data = 0x1f;
-+	else if (uvolt <= 4280000) {
-+		unsigned int val = uvolt;
-+
-+		val -= MAXIM_CHARGER_CONSTANT_VOLTAGE_MIN;
-+		val /= MAXIM_CHARGER_CONSTANT_VOLTAGE_STEP;
-+		if (uvolt <= 4180000)
-+			reg_data = 0x1 + val;
-+		else
-+			reg_data = val; /* Fix for gap between 4.18V and 4.22V */
-+	} else
-+		return -EINVAL;
-+
-+	reg_data <<= MAXIM_CHGCTRL3_MBCCVWRC_SHIFT;
-+
-+	return max14577_write_reg(chg->maxim_core->regmap_muic,
-+			MAXIM_CHG_REG_CHGCTRL3, reg_data);
-+}
-+
-+static inline int max14577_init_eoc(struct max14577_charger *chg,
-+		unsigned int uamp)
-+{
-+	unsigned int current_bits = 0xf;
-+	u8 reg_data;
-+
-+	switch (chg->maxim_core->dev_type) {
-+	case MAXIM_DEVICE_TYPE_MAX77836:
-+		if (uamp < 5000)
-+			return -EINVAL; /* Requested current is too low */
-+
-+		if (uamp == 7500)
-+			current_bits = 0x0;
-+		else if (uamp <= 50000) {
-+			current_bits = uamp / 5000;
-+		} else {
-+			uamp = min(uamp, 100000U) - 50000U;
-+			current_bits = 0xa + uamp / 10000;
-+		}
-+		break;
-+
-+	case MAXIM_DEVICE_TYPE_MAX14577:
++	switch (reg) {
++	case MAX77836_FG_REG_VCELL_MSB ... MAX77836_FG_REG_SOC_LSB:
++	case MAX77836_FG_REG_CRATE_MSB ... MAX77836_FG_REG_CRATE_LSB:
++	case MAX77836_FG_REG_STATUS_H ... MAX77836_FG_REG_STATUS_L:
++	case MAX77836_PMIC_REG_INTSRC:
++	case MAX77836_PMIC_REG_TOPSYS_INT:
++	case MAX77836_PMIC_REG_TOPSYS_STAT:
++		return true;
 +	default:
-+		if (uamp < MAX14577_CHARGER_EOC_CURRENT_LIMIT_MIN)
-+			return -EINVAL; /* Requested current is too low */
-+
-+		uamp = min(uamp, MAX14577_CHARGER_EOC_CURRENT_LIMIT_MAX);
-+		uamp -= MAX14577_CHARGER_EOC_CURRENT_LIMIT_MIN;
-+		current_bits = uamp / MAX14577_CHARGER_EOC_CURRENT_LIMIT_STEP;
 +		break;
 +	}
-+
-+	reg_data = current_bits << MAXIM_CHGCTRL5_EOCS_SHIFT;
-+
-+	return max14577_update_reg(chg->maxim_core->regmap_muic,
-+			MAXIM_CHG_REG_CHGCTRL5, MAXIM_CHGCTRL5_EOCS_MASK,
-+			reg_data);
++	return false;
 +}
 +
-+static inline int max14577_init_fast_charge(struct max14577_charger *chg,
-+		unsigned int uamp)
-+{
-+	u8 reg_data;
-+	int ret;
-+	const struct maxim_charger_current *limits =
-+		&maxim_charger_currents[chg->maxim_core->dev_type];
+ static const struct regmap_config max14577_muic_regmap_config = {
+ 	.reg_bits	= 8,
+ 	.val_bits	= 8,
+@@ -63,6 +106,13 @@ static const struct regmap_config max14577_muic_regmap_config = {
+ 	.max_register	= MAXIM_MUIC_REG_END,
+ };
+ 
++static const struct regmap_config max77836_pmic_regmap_config = {
++	.reg_bits	= 8,
++	.val_bits	= 8,
++	.volatile_reg	= max77836_muic_volatile_reg,
++	.max_register	= MAX77836_PMIC_REG_END,
++};
 +
-+	ret = maxim_charger_calc_reg_current(limits, uamp, uamp, &reg_data);
-+	if (ret) {
-+		dev_err(chg->dev, "Wrong value for fast charge: %u\n", uamp);
-+		return ret;
-+	}
+ static const struct regmap_irq max14577_irqs[] = {
+ 	/* INT1 interrupts */
+ 	{ .reg_offset = 0, .mask = MAXIM_INT1_ADC_MASK, },
+@@ -85,12 +135,56 @@ static const struct regmap_irq_chip max14577_irq_chip = {
+ 	.name			= "max14577",
+ 	.status_base		= MAXIM_MUIC_REG_INT1,
+ 	.mask_base		= MAXIM_MUIC_REG_INTMASK1,
+-	.mask_invert		= 1,
++	.mask_invert		= true,
+ 	.num_regs		= 3,
+ 	.irqs			= max14577_irqs,
+ 	.num_irqs		= ARRAY_SIZE(max14577_irqs),
+ };
+ 
++static const struct regmap_irq max77836_muic_irqs[] = {
++	/* INT1 interrupts */
++	{ .reg_offset = 0, .mask = MAXIM_INT1_ADC_MASK, },
++	{ .reg_offset = 0, .mask = MAXIM_INT1_ADCLOW_MASK, },
++	{ .reg_offset = 0, .mask = MAXIM_INT1_ADCERR_MASK, },
++	/* INT2 interrupts */
++	{ .reg_offset = 1, .mask = MAXIM_INT2_CHGTYP_MASK, },
++	{ .reg_offset = 1, .mask = MAXIM_INT2_CHGDETRUN_MASK, },
++	{ .reg_offset = 1, .mask = MAXIM_INT2_DCDTMR_MASK, },
++	{ .reg_offset = 1, .mask = MAXIM_INT2_DBCHG_MASK, },
++	{ .reg_offset = 1, .mask = MAXIM_INT2_VBVOLT_MASK, },
++	{ .reg_offset = 1, .mask = MAX77836_INT2_VIDRM_MASK, },
++	/* INT3 interrupts */
++	{ .reg_offset = 2, .mask = MAXIM_INT3_EOC_MASK, },
++	{ .reg_offset = 2, .mask = MAXIM_INT3_CGMBC_MASK, },
++	{ .reg_offset = 2, .mask = MAXIM_INT3_OVP_MASK, },
++	{ .reg_offset = 2, .mask = MAXIM_INT3_MBCCHGERR_MASK, },
++};
 +
-+	return max14577_update_reg(chg->maxim_core->regmap_muic,
-+			MAXIM_CHG_REG_CHGCTRL4,
-+			MAXIM_CHGCTRL4_MBCICHWRCL_MASK | MAXIM_CHGCTRL4_MBCICHWRCH_MASK,
-+			reg_data);
-+}
++static const struct regmap_irq_chip max77836_muic_irq_chip = {
++	.name			= "max77836-muic",
++	.status_base		= MAXIM_MUIC_REG_INT1,
++	.mask_base		= MAXIM_MUIC_REG_INTMASK1,
++	.mask_invert		= true,
++	.num_regs		= 3,
++	.irqs			= max77836_muic_irqs,
++	.num_irqs		= ARRAY_SIZE(max77836_muic_irqs),
++};
 +
- /*
-  * Sets charger registers to proper and safe default values.
-  * Some of these values are equal to defaults in MAX14577E
-  * data sheet but there are minor differences.
-  */
--static void max14577_charger_reg_init(struct max14577_charger *chg)
-+static int max14577_charger_reg_init(struct max14577_charger *chg)
++static const struct regmap_irq max77836_pmic_irqs[] = {
++	{ .reg_offset = 0, .mask = MAX77836_TOPSYS_INT_T120C_MASK, },
++	{ .reg_offset = 0, .mask = MAX77836_TOPSYS_INT_T140C_MASK, },
++};
++
++static const struct regmap_irq_chip max77836_pmic_irq_chip = {
++	.name			= "max77836-pmic",
++	.status_base		= MAX77836_PMIC_REG_TOPSYS_INT,
++	.mask_base		= MAX77836_PMIC_REG_TOPSYS_INT_MASK,
++	.mask_invert		= false,
++	.num_regs		= 1,
++	.irqs			= max77836_pmic_irqs,
++	.num_irqs		= ARRAY_SIZE(max77836_pmic_irqs),
++};
++
+ static void max14577_print_dev_type(struct maxim_core *maxim_core)
  {
- 	struct regmap *rmap = chg->maxim_core->regmap_muic;
- 	u8 reg_data;
+ 	u8 reg_data, vendor_id, device_id;
+@@ -113,6 +207,81 @@ static void max14577_print_dev_type(struct maxim_core *maxim_core)
+ 			maxim_core->dev_type, device_id, vendor_id);
+ }
+ 
++/*
++ * Max77836 specific initialization code for driver probe.
++ * Adds new I2C dummy device, regmap and regmap IRQ chip.
++ * Unmasks Interrupt Source register.
++ *
++ * On success returns 0.
++ * On failure returns errno and reverts any changes done so far (e.g. remove
++ * I2C dummy device), except masking the INT SRC register.
++ */
++static int max77836_init(struct maxim_core *maxim_core)
++{
 +	int ret;
- 
- 	/*
- 	 * Charger-Type Manual Detection, default off (set CHGTYPMAN to 0)
-@@ -198,12 +292,7 @@ static void max14577_charger_reg_init(struct max14577_charger *chg)
- 	reg_data = 0x1 << MAXIM_CDETCTRL1_CHGDETEN_SHIFT;
- 	max14577_update_reg(rmap, MAXIM_MUIC_REG_CDETCTRL1,
- 			MAXIM_CDETCTRL1_CHGDETEN_MASK |
--				MAXIM_CDETCTRL1_CHGTYPMAN_MASK,
--			reg_data);
--
--	/* Battery Fast-Charge Timer, set to: 6hrs */
--	reg_data = 0x3 << MAXIM_CHGCTRL1_TCHW_SHIFT;
--	max14577_write_reg(rmap, MAXIM_CHG_REG_CHGCTRL1, reg_data);
-+				MAXIM_CDETCTRL1_CHGTYPMAN_MASK, reg_data);
- 
- 	/*
- 	 * Wall-Adapter Rapid Charge, default on
-@@ -213,32 +302,57 @@ static void max14577_charger_reg_init(struct max14577_charger *chg)
- 	reg_data |= 0x1 << MAXIM_CHGCTRL2_MBCHOSTEN_SHIFT;
- 	max14577_write_reg(rmap, MAXIM_CHG_REG_CHGCTRL2, reg_data);
- 
--	/* Battery-Charger Constant Voltage (CV) Mode, set to: 4.35V */
--	reg_data = 0xf << MAXIM_CHGCTRL3_MBCCVWRC_SHIFT;
--	max14577_write_reg(rmap, MAXIM_CHG_REG_CHGCTRL3, reg_data);
--
--	/*
--	 * Fast Battery-Charge Current Low,
--	 * default 200-950mA (max14577) / 100-475mA (max77836)
--	 *
--	 * Fast Battery-Charge Current High,
--	 * set to 450mA (max14577) / 225mA (max77836)
--	 */
--	reg_data = 0x1 << MAXIM_CHGCTRL4_MBCICHWRCL_SHIFT;
--	reg_data |= 0x5 << MAXIM_CHGCTRL4_MBCICHWRCH_SHIFT;
--	max14577_write_reg(rmap, MAXIM_CHG_REG_CHGCTRL4, reg_data);
--
--	/* End-of-Charge Current, set to 50mA (max14577) / 7.5mA (max77836) */
--	reg_data = 0x0 << MAXIM_CHGCTRL5_EOCS_SHIFT;
--	max14577_write_reg(rmap, MAXIM_CHG_REG_CHGCTRL5, reg_data);
--
- 	/* Auto Charging Stop, default off */
- 	reg_data = 0x0 << MAXIM_CHGCTRL6_AUTOSTOP_SHIFT;
- 	max14577_write_reg(rmap, MAXIM_CHG_REG_CHGCTRL6, reg_data);
- 
--	/* Overvoltage-Protection Threshold, set to 6.5V */
--	reg_data = 0x2 << MAXIM_CHGCTRL7_OTPCGHCVS_SHIFT;
-+	ret = max14577_init_constant_voltage(chg, chg->pdata->constant_uvolt);
-+	if (ret)
-+		return ret;
++	u8 intsrc_mask;
 +
-+	ret = max14577_init_eoc(chg, chg->pdata->eoc_uamp);
-+	if (ret)
-+		return ret;
-+
-+	ret = max14577_init_fast_charge(chg, chg->pdata->fast_charge_uamp);
-+	if (ret)
-+		return ret;
-+
-+	/* Initialize Battery Fast-Charge Timer */
-+	switch (chg->pdata->fast_charge_timer) {
-+	case 5 ... 7:
-+		reg_data = chg->pdata->fast_charge_timer - 3;
-+		break;
-+	case 0:
-+		/* Disable */
-+		reg_data = 0x7;
-+	default:
-+		dev_err(chg->dev, "Wrong value for Fast-Charge Timer: %u\n",
-+				chg->pdata->fast_charge_timer);
-+		return -EINVAL;
++	maxim_core->i2c_pmic = i2c_new_dummy(maxim_core->i2c->adapter,
++			I2C_ADDR_PMIC);
++	if (!maxim_core->i2c_pmic) {
++		dev_err(maxim_core->dev, "Failed to register PMIC I2C device\n");
++		return -ENODEV;
 +	}
-+	reg_data <<= MAXIM_CHGCTRL1_TCHW_SHIFT;
-+	max14577_write_reg(rmap, MAXIM_CHG_REG_CHGCTRL1, reg_data);
++	i2c_set_clientdata(maxim_core->i2c_pmic, maxim_core);
 +
-+	/* Initialize Overvoltage-Protection Threshold */
-+	switch (chg->pdata->ovp_uvolt) {
-+	case 7500000:
-+		reg_data = 0x0;
-+		break;
-+	case 6000000:
-+	case 6500000:
-+	case 7000000:
-+		reg_data = 0x1 + (chg->pdata->ovp_uvolt - 6000000) / 500000;
-+		break;
-+	default:
-+		dev_err(chg->dev, "Wrong value for OVP: %u\n",
-+				chg->pdata->ovp_uvolt);
-+		return -EINVAL;
++	maxim_core->regmap_pmic = devm_regmap_init_i2c(maxim_core->i2c_pmic,
++			&max77836_pmic_regmap_config);
++	if (IS_ERR(maxim_core->regmap_pmic)) {
++		ret = PTR_ERR(maxim_core->regmap_pmic);
++		dev_err(maxim_core->dev, "Failed to allocate PMIC register map: %d\n",
++				ret);
++		goto err;
 +	}
-+	reg_data <<= MAXIM_CHGCTRL7_OTPCGHCVS_SHIFT;
- 	max14577_write_reg(rmap, MAXIM_CHG_REG_CHGCTRL7, reg_data);
++
++	/* Un-mask MAX77836 Interrupt Source register */
++	ret = max14577_read_reg(maxim_core->regmap_pmic,
++			MAX77836_PMIC_REG_INTSRC_MASK, &intsrc_mask);
++	if (ret < 0) {
++		dev_err(maxim_core->dev, "Failed to read PMIC register\n");
++		goto err;
++	}
++
++	intsrc_mask &= ~(MAX77836_INTSRC_MASK_TOP_INT_MASK);
++	intsrc_mask &= ~(MAX77836_INTSRC_MASK_MUIC_CHG_INT_MASK);
++	ret = max14577_write_reg(maxim_core->regmap_pmic,
++			MAX77836_PMIC_REG_INTSRC_MASK, intsrc_mask);
++	if (ret < 0) {
++		dev_err(maxim_core->dev, "Failed to write PMIC register\n");
++		goto err;
++	}
++
++	ret = regmap_add_irq_chip(maxim_core->regmap_pmic, maxim_core->irq,
++			IRQF_TRIGGER_FALLING | IRQF_ONESHOT | IRQF_SHARED,
++			0, &max77836_pmic_irq_chip,
++			&maxim_core->irq_data_pmic);
++	if (ret != 0) {
++		dev_err(maxim_core->dev, "Failed to request PMIC IRQ %d: %d\n",
++				maxim_core->irq, ret);
++		goto err;
++	}
 +
 +	return 0;
- }
- 
- /* Support property from charger */
-@@ -298,6 +412,58 @@ static int max14577_charger_get_property(struct power_supply *psy,
- 	return ret;
- }
- 
-+#ifdef CONFIG_OF
-+static struct max14577_charger_platform_data *max14577_charger_dt_init(
-+		struct platform_device *pdev)
-+{
-+	struct max14577_charger_platform_data *pdata;
-+	struct device_node *np = pdev->dev.of_node;
-+	int ret;
 +
-+	if (!np) {
-+		dev_err(&pdev->dev, "No charger OF node\n");
-+		return ERR_PTR(-EINVAL);
-+	}
++err:
++	i2c_unregister_device(maxim_core->i2c_pmic);
 +
-+	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
-+	if (!pdata) {
-+		dev_err(&pdev->dev, "Memory alloc for charger pdata failed\n");
-+		return ERR_PTR(-ENOMEM);
-+	}
-+
-+	ret = of_property_read_u32(np, "maxim,fast-charge-timer",
-+			&pdata->fast_charge_timer);
-+	if (ret)
-+		return ERR_PTR(ret);
-+
-+	ret = of_property_read_u32(np, "maxim,constant-uvolt",
-+			&pdata->constant_uvolt);
-+	if (ret)
-+		return ERR_PTR(ret);
-+
-+	ret = of_property_read_u32(np, "maxim,fast-charge-uamp",
-+			&pdata->fast_charge_uamp);
-+	if (ret)
-+		return ERR_PTR(ret);
-+
-+	ret = of_property_read_u32(np, "maxim,eoc-uamp", &pdata->eoc_uamp);
-+	if (ret)
-+		return ERR_PTR(ret);
-+
-+	ret = of_property_read_u32(np, "maxim,ovp-uvolt", &pdata->ovp_uvolt);
-+	if (ret)
-+		return ERR_PTR(ret);
-+
-+	return pdata;
++	return ret;
 +}
-+#else /* CONFIG_OF */
-+static struct max14577_charger_platform_data *max14577_charger_dt_init(
-+		struct platform_device *pdev)
-+{
-+	return NULL;
-+}
-+#endif /* CONFIG_OF */
 +
- static int max14577_charger_probe(struct platform_device *pdev)
++/*
++ * Max77836 specific de-initialization code for driver remove.
++ */
++static void max77836_remove(struct maxim_core *maxim_core)
++{
++	regmap_del_irq_chip(maxim_core->irq, maxim_core->irq_data_pmic);
++	i2c_unregister_device(maxim_core->i2c_pmic);
++}
++
+ static int max14577_i2c_probe(struct i2c_client *i2c,
+ 			      const struct i2c_device_id *id)
  {
- 	struct max14577_charger *chg;
-@@ -312,7 +478,13 @@ static int max14577_charger_probe(struct platform_device *pdev)
- 	chg->dev = &pdev->dev;
- 	chg->maxim_core = maxim_core;
+@@ -120,6 +289,10 @@ static int max14577_i2c_probe(struct i2c_client *i2c,
+ 	struct max14577_platform_data *pdata = dev_get_platdata(&i2c->dev);
+ 	struct device_node *np = i2c->dev.of_node;
+ 	int ret = 0;
++	const struct regmap_irq_chip *irq_chip;
++	struct mfd_cell *mfd_devs;
++	unsigned int mfd_devs_size;
++	int irq_flags;
  
--	max14577_charger_reg_init(chg);
-+	chg->pdata = max14577_charger_dt_init(pdev);
-+	if (IS_ERR_OR_NULL(chg->pdata))
-+		return PTR_ERR(chg->pdata);
+ 	if (np) {
+ 		pdata = devm_kzalloc(&i2c->dev, sizeof(*pdata), GFP_KERNEL);
+@@ -163,9 +336,24 @@ static int max14577_i2c_probe(struct i2c_client *i2c,
+ 
+ 	max14577_print_dev_type(maxim_core);
+ 
++	switch (maxim_core->dev_type) {
++	case MAXIM_DEVICE_TYPE_MAX77836:
++		irq_chip = &max77836_muic_irq_chip;
++		mfd_devs = max77836_devs;
++		mfd_devs_size = ARRAY_SIZE(max77836_devs);
++		irq_flags = IRQF_TRIGGER_FALLING | IRQF_ONESHOT | IRQF_SHARED;
++		break;
++	case MAXIM_DEVICE_TYPE_MAX14577:
++	default:
++		irq_chip = &max14577_irq_chip;
++		mfd_devs = max14577_devs;
++		mfd_devs_size = ARRAY_SIZE(max14577_devs);
++		irq_flags = IRQF_TRIGGER_FALLING | IRQF_ONESHOT;
++		break;
++	}
 +
-+	ret = max14577_charger_reg_init(chg);
-+	if (ret)
-+		return ret;
- 
- 	chg->charger.name = "max14577-charger",
- 	chg->charger.type = POWER_SUPPLY_TYPE_BATTERY,
-@@ -326,6 +498,10 @@ static int max14577_charger_probe(struct platform_device *pdev)
+ 	ret = regmap_add_irq_chip(maxim_core->regmap_muic, maxim_core->irq,
+-				  IRQF_TRIGGER_FALLING | IRQF_ONESHOT, 0,
+-				  &max14577_irq_chip,
++				  irq_flags, 0, irq_chip,
+ 				  &maxim_core->irq_data_muic);
+ 	if (ret != 0) {
+ 		dev_err(&i2c->dev, "Failed to request IRQ %d: %d\n",
+@@ -173,8 +361,15 @@ static int max14577_i2c_probe(struct i2c_client *i2c,
  		return ret;
  	}
  
-+	/* Check for valid values for charger */
-+	BUILD_BUG_ON(MAX14577_CHARGER_EOC_CURRENT_LIMIT_MIN +
-+			MAX14577_CHARGER_EOC_CURRENT_LIMIT_STEP * 0xf !=
-+			MAX14577_CHARGER_EOC_CURRENT_LIMIT_MAX);
+-	ret = mfd_add_devices(maxim_core->dev, -1, max14577_devs,
+-			ARRAY_SIZE(max14577_devs), NULL, 0,
++	/* Max77836 specific initialization code (additional regmap) */
++	if (maxim_core->dev_type == MAXIM_DEVICE_TYPE_MAX77836) {
++		ret = max77836_init(maxim_core);
++		if (ret < 0)
++			goto err_max77836;
++	}
++
++	ret = mfd_add_devices(maxim_core->dev, -1, mfd_devs,
++			mfd_devs_size, NULL, 0,
+ 			regmap_irq_get_domain(maxim_core->irq_data_muic));
+ 	if (ret < 0)
+ 		goto err_mfd;
+@@ -184,6 +379,9 @@ static int max14577_i2c_probe(struct i2c_client *i2c,
+ 	return 0;
+ 
+ err_mfd:
++	if (maxim_core->dev_type == MAXIM_DEVICE_TYPE_MAX77836)
++		max77836_remove(maxim_core);
++err_max77836:
+ 	regmap_del_irq_chip(maxim_core->irq, maxim_core->irq_data_muic);
+ 
+ 	return ret;
+@@ -195,12 +393,15 @@ static int max14577_i2c_remove(struct i2c_client *i2c)
+ 
+ 	mfd_remove_devices(maxim_core->dev);
+ 	regmap_del_irq_chip(maxim_core->irq, maxim_core->irq_data_muic);
++	if (maxim_core->dev_type == MAXIM_DEVICE_TYPE_MAX77836)
++		max77836_remove(maxim_core);
+ 
  	return 0;
  }
  
+ static const struct i2c_device_id max14577_i2c_id[] = {
+ 	{ "max14577", MAXIM_DEVICE_TYPE_MAX14577, },
++	{ "max77836", MAXIM_DEVICE_TYPE_MAX77836, },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(i2c, max14577_i2c_id);
+@@ -271,5 +472,5 @@ static void __exit max14577_i2c_exit(void)
+ module_exit(max14577_i2c_exit);
+ 
+ MODULE_AUTHOR("Chanwoo Choi <cw00.choi@samsung.com>, Krzysztof Kozlowski <k.kozlowski@samsung.com>");
+-MODULE_DESCRIPTION("MAXIM 14577 multi-function core driver");
++MODULE_DESCRIPTION("Maxim 14577/77836 multi-function core driver");
+ MODULE_LICENSE("GPL");
 diff --git a/include/linux/mfd/max14577-private.h b/include/linux/mfd/max14577-private.h
-index a8cd7de3526a..50cf70bec4d4 100644
+index afa4e525f9b7..472d5780ca50 100644
 --- a/include/linux/mfd/max14577-private.h
 +++ b/include/linux/mfd/max14577-private.h
-@@ -269,6 +269,16 @@ enum maxim_muic_charger_type {
- #define MAX77836_CHARGER_CURRENT_LIMIT_HIGH_STEP	 25000U
- #define MAX77836_CHARGER_CURRENT_LIMIT_MAX		475000U
+@@ -1,7 +1,7 @@
+ /*
+- * max14577-private.h - Common API for the Maxim 14577 internal sub chip
++ * max14577-private.h - Common API for the Maxim 14577/77836 internal sub chip
+  *
+- * Copyright (C) 2013 Samsung Electrnoics
++ * Copyright (C) 2014 Samsung Electrnoics
+  * Chanwoo Choi <cw00.choi@samsung.com>
+  * Krzysztof Kozlowski <k.kozlowski@samsung.com>
+  *
+@@ -22,9 +22,14 @@
+ #include <linux/i2c.h>
+ #include <linux/regmap.h>
  
-+/* MAX14577 charger End-Of-Charge current limits (as in MAXIM_CHGCTRL5 register), uA */
-+#define MAX14577_CHARGER_EOC_CURRENT_LIMIT_MIN		50000U
-+#define MAX14577_CHARGER_EOC_CURRENT_LIMIT_STEP		10000U
-+#define MAX14577_CHARGER_EOC_CURRENT_LIMIT_MAX		200000U
++#define I2C_ADDR_PMIC	(0x46 >> 1)
++#define I2C_ADDR_MUIC	(0x4A >> 1)
++#define I2C_ADDR_FG	(0x6C >> 1)
 +
-+/* MAX14577/MAX77836 Battery Constant Voltage (as in MAXIM_CHGCTRL3 register), uV */
-+#define MAXIM_CHARGER_CONSTANT_VOLTAGE_MIN		4000000U
-+#define MAXIM_CHARGER_CONSTANT_VOLTAGE_STEP		20000U
-+#define MAXIM_CHARGER_CONSTANT_VOLTAGE_MAX		4350000U
+ enum maxim_device_type {
+ 	MAXIM_DEVICE_TYPE_UNKNOWN	= 0,
+ 	MAXIM_DEVICE_TYPE_MAX14577,
++	MAXIM_DEVICE_TYPE_MAX77836,
+ 
+ 	MAXIM_DEVICE_TYPE_NUM,
+ };
+@@ -69,20 +74,21 @@ enum maxim_muic_charger_type {
+ };
+ 
+ /* MAX14577 interrupts */
+-#define MAXIM_INT1_ADC_MASK			(0x1 << 0)
+-#define MAXIM_INT1_ADCLOW_MASK			(0x1 << 1)
+-#define MAXIM_INT1_ADCERR_MASK			(0x1 << 2)
+-
+-#define MAXIM_INT2_CHGTYP_MASK			(0x1 << 0)
+-#define MAXIM_INT2_CHGDETRUN_MASK		(0x1 << 1)
+-#define MAXIM_INT2_DCDTMR_MASK			(0x1 << 2)
+-#define MAXIM_INT2_DBCHG_MASK			(0x1 << 3)
+-#define MAXIM_INT2_VBVOLT_MASK			(0x1 << 4)
+-
+-#define MAXIM_INT3_EOC_MASK			(0x1 << 0)
+-#define MAXIM_INT3_CGMBC_MASK			(0x1 << 1)
+-#define MAXIM_INT3_OVP_MASK			(0x1 << 2)
+-#define MAXIM_INT3_MBCCHGERR_MASK		(0x1 << 3)
++#define MAXIM_INT1_ADC_MASK		BIT(0)
++#define MAXIM_INT1_ADCLOW_MASK		BIT(1)
++#define MAXIM_INT1_ADCERR_MASK		BIT(2)
 +
++#define MAXIM_INT2_CHGTYP_MASK		BIT(0)
++#define MAXIM_INT2_CHGDETRUN_MASK	BIT(1)
++#define MAXIM_INT2_DCDTMR_MASK		BIT(2)
++#define MAXIM_INT2_DBCHG_MASK		BIT(3)
++#define MAXIM_INT2_VBVOLT_MASK		BIT(4)
++#define MAX77836_INT2_VIDRM_MASK	BIT(5)
++
++#define MAXIM_INT3_EOC_MASK		BIT(0)
++#define MAXIM_INT3_CGMBC_MASK		BIT(1)
++#define MAXIM_INT3_OVP_MASK		BIT(2)
++#define MAXIM_INT3_MBCCHGERR_MASK	BIT(3)
+ 
+ /* MAX14577 DEVICE ID register */
+ #define MAXIM_DEVID_VENDORID_SHIFT	0
+@@ -94,9 +100,11 @@ enum maxim_muic_charger_type {
+ #define MAXIM_STATUS1_ADC_SHIFT		0
+ #define MAXIM_STATUS1_ADCLOW_SHIFT	5
+ #define MAXIM_STATUS1_ADCERR_SHIFT	6
++#define MAX77836_STATUS1_ADC1K_SHIFT	7
+ #define MAXIM_STATUS1_ADC_MASK		(0x1f << MAXIM_STATUS1_ADC_SHIFT)
+-#define MAXIM_STATUS1_ADCLOW_MASK	(0x1 << MAXIM_STATUS1_ADCLOW_SHIFT)
+-#define MAXIM_STATUS1_ADCERR_MASK	(0x1 << MAXIM_STATUS1_ADCERR_SHIFT)
++#define MAXIM_STATUS1_ADCLOW_MASK	BIT(MAXIM_STATUS1_ADCLOW_SHIFT)
++#define MAXIM_STATUS1_ADCERR_MASK	BIT(MAXIM_STATUS1_ADCERR_SHIFT)
++#define MAX77836_STATUS1_ADC1K_MASK	BIT(MAX77836_STATUS1_ADC1K_SHIFT)
+ 
+ /* MAX14577 STATUS2 register */
+ #define MAXIM_STATUS2_CHGTYP_SHIFT	0
+@@ -104,21 +112,23 @@ enum maxim_muic_charger_type {
+ #define MAXIM_STATUS2_DCDTMR_SHIFT	4
+ #define MAXIM_STATUS2_DBCHG_SHIFT	5
+ #define MAXIM_STATUS2_VBVOLT_SHIFT	6
++#define MAX77836_STATUS2_VIDRM_SHIFT	7
+ #define MAXIM_STATUS2_CHGTYP_MASK	(0x7 << MAXIM_STATUS2_CHGTYP_SHIFT)
+-#define MAXIM_STATUS2_CHGDETRUN_MASK	(0x1 << MAXIM_STATUS2_CHGDETRUN_SHIFT)
+-#define MAXIM_STATUS2_DCDTMR_MASK	(0x1 << MAXIM_STATUS2_DCDTMR_SHIFT)
+-#define MAXIM_STATUS2_DBCHG_MASK	(0x1 << MAXIM_STATUS2_DBCHG_SHIFT)
+-#define MAXIM_STATUS2_VBVOLT_MASK	(0x1 << MAXIM_STATUS2_VBVOLT_SHIFT)
++#define MAXIM_STATUS2_CHGDETRUN_MASK	BIT(MAXIM_STATUS2_CHGDETRUN_SHIFT)
++#define MAXIM_STATUS2_DCDTMR_MASK	BIT(MAXIM_STATUS2_DCDTMR_SHIFT)
++#define MAXIM_STATUS2_DBCHG_MASK	BIT(MAXIM_STATUS2_DBCHG_SHIFT)
++#define MAXIM_STATUS2_VBVOLT_MASK	BIT(MAXIM_STATUS2_VBVOLT_SHIFT)
++#define MAX77836_STATUS2_VIDRM_MASK	BIT(MAX77836_STATUS2_VIDRM_SHIFT)
+ 
+ /* MAX14577 STATUS3 register */
+ #define MAXIM_STATUS3_EOC_SHIFT		0
+ #define MAXIM_STATUS3_CGMBC_SHIFT	1
+ #define MAXIM_STATUS3_OVP_SHIFT		2
+ #define MAXIM_STATUS3_MBCCHGERR_SHIFT	3
+-#define MAXIM_STATUS3_EOC_MASK		(0x1 << MAXIM_STATUS3_EOC_SHIFT)
+-#define MAXIM_STATUS3_CGMBC_MASK	(0x1 << MAXIM_STATUS3_CGMBC_SHIFT)
+-#define MAXIM_STATUS3_OVP_MASK		(0x1 << MAXIM_STATUS3_OVP_SHIFT)
+-#define MAXIM_STATUS3_MBCCHGERR_MASK	(0x1 << MAXIM_STATUS3_MBCCHGERR_SHIFT)
++#define MAXIM_STATUS3_EOC_MASK		BIT(MAXIM_STATUS3_EOC_SHIFT)
++#define MAXIM_STATUS3_CGMBC_MASK	BIT(MAXIM_STATUS3_CGMBC_SHIFT)
++#define MAXIM_STATUS3_OVP_MASK		BIT(MAXIM_STATUS3_OVP_SHIFT)
++#define MAXIM_STATUS3_MBCCHGERR_MASK	BIT(MAXIM_STATUS3_MBCCHGERR_SHIFT)
+ 
+ /* MAX14577 CONTROL1 register */
+ #define MAXIM_CONTROL1_COMN1SW_SHIFT	0
+@@ -127,8 +137,8 @@ enum maxim_muic_charger_type {
+ #define MAXIM_CONTROL1_IDBEN_SHIFT	7
+ #define MAXIM_CONTROL1_COMN1SW_MASK	(0x7 << MAXIM_CONTROL1_COMN1SW_SHIFT)
+ #define MAXIM_CONTROL1_COMP2SW_MASK	(0x7 << MAXIM_CONTROL1_COMP2SW_SHIFT)
+-#define MAXIM_CONTROL1_MICEN_MASK	(0x1 << MAXIM_CONTROL1_MICEN_SHIFT)
+-#define MAXIM_CONTROL1_IDBEN_MASK	(0x1 << MAXIM_CONTROL1_IDBEN_SHIFT)
++#define MAXIM_CONTROL1_MICEN_MASK	BIT(MAXIM_CONTROL1_MICEN_SHIFT)
++#define MAXIM_CONTROL1_IDBEN_MASK	BIT(MAXIM_CONTROL1_IDBEN_SHIFT)
+ 
+ #define MAXIM_CONTROL1_CLEAR_IDBEN_MICEN_MASK	(MAXIM_CONTROL1_COMN1SW_MASK | MAXIM_CONTROL1_COMP2SW_MASK)
+ #define MAXIM_CONTROL1_SW_USB		((1 << MAXIM_CONTROL1_COMP2SW_SHIFT) \
+@@ -149,14 +159,14 @@ enum maxim_muic_charger_type {
+ #define MAXIM_CONTROL2_ACCDET_SHIFT	5
+ #define MAXIM_CONTROL2_USBCPINT_SHIFT	6
+ #define MAXIM_CONTROL2_RCPS_SHIFT	7
+-#define MAXIM_CONTROL2_LOWPWR_MASK	(0x1 << MAXIM_CONTROL2_LOWPWR_SHIFT)
+-#define MAXIM_CONTROL2_ADCEN_MASK	(0x1 << MAXIM_CONTROL2_ADCEN_SHIFT)
+-#define MAXIM_CONTROL2_CPEN_MASK	(0x1 << MAXIM_CONTROL2_CPEN_SHIFT)
+-#define MAXIM_CONTROL2_SFOUTASRT_MASK	(0x1 << MAXIM_CONTROL2_SFOUTASRT_SHIFT)
+-#define MAXIM_CONTROL2_SFOUTORD_MASK	(0x1 << MAXIM_CONTROL2_SFOUTORD_SHIFT)
+-#define MAXIM_CONTROL2_ACCDET_MASK	(0x1 << MAXIM_CONTROL2_ACCDET_SHIFT)
+-#define MAXIM_CONTROL2_USBCPINT_MASK	(0x1 << MAXIM_CONTROL2_USBCPINT_SHIFT)
+-#define MAXIM_CONTROL2_RCPS_MASK	(0x1 << MAXIM_CONTROL2_RCPS_SHIFT)
++#define MAXIM_CONTROL2_LOWPWR_MASK	BIT(MAXIM_CONTROL2_LOWPWR_SHIFT)
++#define MAXIM_CONTROL2_ADCEN_MASK	BIT(MAXIM_CONTROL2_ADCEN_SHIFT)
++#define MAXIM_CONTROL2_CPEN_MASK	BIT(MAXIM_CONTROL2_CPEN_SHIFT)
++#define MAXIM_CONTROL2_SFOUTASRT_MASK	BIT(MAXIM_CONTROL2_SFOUTASRT_SHIFT)
++#define MAXIM_CONTROL2_SFOUTORD_MASK	BIT(MAXIM_CONTROL2_SFOUTORD_SHIFT)
++#define MAXIM_CONTROL2_ACCDET_MASK	BIT(MAXIM_CONTROL2_ACCDET_SHIFT)
++#define MAXIM_CONTROL2_USBCPINT_MASK	BIT(MAXIM_CONTROL2_USBCPINT_SHIFT)
++#define MAXIM_CONTROL2_RCPS_MASK	BIT(MAXIM_CONTROL2_RCPS_SHIFT)
+ 
+ #define MAXIM_CONTROL2_CPEN1_LOWPWR0	((1 << MAXIM_CONTROL2_CPEN_SHIFT) | \
+ 					(0 << MAXIM_CONTROL2_LOWPWR_SHIFT))
+@@ -180,14 +190,14 @@ enum maxim_muic_charger_type {
+ #define MAXIM_CDETCTRL1_DBEXIT_SHIFT	5
+ #define MAXIM_CDETCTRL1_DBIDLE_SHIFT	6
+ #define MAXIM_CDETCTRL1_CDPDET_SHIFT	7
+-#define MAXIM_CDETCTRL1_CHGDETEN_MASK	(0x1 << MAXIM_CDETCTRL1_CHGDETEN_SHIFT)
+-#define MAXIM_CDETCTRL1_CHGTYPMAN_MASK	(0x1 << MAXIM_CDETCTRL1_CHGTYPMAN_SHIFT)
+-#define MAXIM_CDETCTRL1_DCDEN_MASK	(0x1 << MAXIM_CDETCTRL1_DCDEN_SHIFT)
+-#define MAXIM_CDETCTRL1_DCD2SCT_MASK	(0x1 << MAXIM_CDETCTRL1_DCD2SCT_SHIFT)
+-#define MAXIM_CDETCTRL1_DCHKTM_MASK	(0x1 << MAXIM_CDETCTRL1_DCHKTM_SHIFT)
+-#define MAXIM_CDETCTRL1_DBEXIT_MASK	(0x1 << MAXIM_CDETCTRL1_DBEXIT_SHIFT)
+-#define MAXIM_CDETCTRL1_DBIDLE_MASK	(0x1 << MAXIM_CDETCTRL1_DBIDLE_SHIFT)
+-#define MAXIM_CDETCTRL1_CDPDET_MASK	(0x1 << MAXIM_CDETCTRL1_CDPDET_SHIFT)
++#define MAXIM_CDETCTRL1_CHGDETEN_MASK	BIT(MAXIM_CDETCTRL1_CHGDETEN_SHIFT)
++#define MAXIM_CDETCTRL1_CHGTYPMAN_MASK	BIT(MAXIM_CDETCTRL1_CHGTYPMAN_SHIFT)
++#define MAXIM_CDETCTRL1_DCDEN_MASK	BIT(MAXIM_CDETCTRL1_DCDEN_SHIFT)
++#define MAXIM_CDETCTRL1_DCD2SCT_MASK	BIT(MAXIM_CDETCTRL1_DCD2SCT_SHIFT)
++#define MAXIM_CDETCTRL1_DCHKTM_MASK	BIT(MAXIM_CDETCTRL1_DCHKTM_SHIFT)
++#define MAXIM_CDETCTRL1_DBEXIT_MASK	BIT(MAXIM_CDETCTRL1_DBEXIT_SHIFT)
++#define MAXIM_CDETCTRL1_DBIDLE_MASK	BIT(MAXIM_CDETCTRL1_DBIDLE_SHIFT)
++#define MAXIM_CDETCTRL1_CDPDET_MASK	BIT(MAXIM_CDETCTRL1_CDPDET_SHIFT)
+ 
+ /* MAX14577 MAXIM_CHGCTRL1 register */
+ #define MAXIM_CHGCTRL1_TCHW_SHIFT	4
+@@ -195,9 +205,9 @@ enum maxim_muic_charger_type {
+ 
+ /* MAX14577 MAXIM_CHGCTRL2 register */
+ #define MAXIM_CHGCTRL2_MBCHOSTEN_SHIFT	6
+-#define MAXIM_CHGCTRL2_MBCHOSTEN_MASK	(0x1 << MAXIM_CHGCTRL2_MBCHOSTEN_SHIFT)
++#define MAXIM_CHGCTRL2_MBCHOSTEN_MASK	BIT(MAXIM_CHGCTRL2_MBCHOSTEN_SHIFT)
+ #define MAXIM_CHGCTRL2_VCHGR_RC_SHIFT	7
+-#define MAXIM_CHGCTRL2_VCHGR_RC_MASK	(0x1 << MAXIM_CHGCTRL2_VCHGR_RC_SHIFT)
++#define MAXIM_CHGCTRL2_VCHGR_RC_MASK	BIT(MAXIM_CHGCTRL2_VCHGR_RC_SHIFT)
+ 
+ /* MAX14577 MAXIM_CHGCTRL3 register */
+ #define MAXIM_CHGCTRL3_MBCCVWRC_SHIFT	0
+@@ -207,7 +217,7 @@ enum maxim_muic_charger_type {
+ #define MAXIM_CHGCTRL4_MBCICHWRCH_SHIFT	0
+ #define MAXIM_CHGCTRL4_MBCICHWRCH_MASK	(0xf << MAXIM_CHGCTRL4_MBCICHWRCH_SHIFT)
+ #define MAXIM_CHGCTRL4_MBCICHWRCL_SHIFT	4
+-#define MAXIM_CHGCTRL4_MBCICHWRCL_MASK	(0x1 << MAXIM_CHGCTRL4_MBCICHWRCL_SHIFT)
++#define MAXIM_CHGCTRL4_MBCICHWRCL_MASK	BIT(MAXIM_CHGCTRL4_MBCICHWRCL_SHIFT)
+ 
+ /* MAX14577 MAXIM_CHGCTRL5 register */
+ #define MAXIM_CHGCTRL5_EOCS_SHIFT	0
+@@ -215,7 +225,7 @@ enum maxim_muic_charger_type {
+ 
+ /* MAX14577 MAXIM_CHGCTRL6 register */
+ #define MAXIM_CHGCTRL6_AUTOSTOP_SHIFT	5
+-#define MAXIM_CHGCTRL6_AUTOSTOP_MASK	(0x1 << MAXIM_CHGCTRL6_AUTOSTOP_SHIFT)
++#define MAXIM_CHGCTRL6_AUTOSTOP_MASK	BIT(MAXIM_CHGCTRL6_AUTOSTOP_SHIFT)
+ 
+ /* MAX14577 MAXIM_CHGCTRL7 register */
+ #define MAXIM_CHGCTRL7_OTPCGHCVS_SHIFT	0
+@@ -230,7 +240,69 @@ enum maxim_muic_charger_type {
  /* MAX14577 regulator SFOUT LDO voltage, fixed, uV */
  #define MAX14577_REGULATOR_SAFEOUT_VOLTAGE		4900000
  
-diff --git a/include/linux/mfd/max14577.h b/include/linux/mfd/max14577.h
-index 0df2fe329b83..b60febd6c53f 100644
---- a/include/linux/mfd/max14577.h
-+++ b/include/linux/mfd/max14577.h
-@@ -54,6 +54,14 @@ struct max14577_regulator_platform_data {
- 	struct device_node *of_node;
++/* Slave addr = 0x46: PMIC */
++enum max77836_pmic_reg {
++	MAX77836_PMIC_REG_PMIC_ID		= 0x20,
++	MAX77836_PMIC_REG_PMIC_REV		= 0x21,
++	MAX77836_PMIC_REG_INTSRC		= 0x22,
++	MAX77836_PMIC_REG_INTSRC_MASK		= 0x23,
++	MAX77836_PMIC_REG_TOPSYS_INT		= 0x24,
++	MAX77836_PMIC_REG_TOPSYS_INT_MASK	= 0x26,
++	MAX77836_PMIC_REG_TOPSYS_STAT		= 0x28,
++	MAX77836_PMIC_REG_MRSTB_CNTL		= 0x2A,
++	MAX77836_PMIC_REG_LSCNFG		= 0x2B,
++
++	MAX77836_LDO_REG_CNFG1_LDO1		= 0x51,
++	MAX77836_LDO_REG_CNFG2_LDO1		= 0x52,
++	MAX77836_LDO_REG_CNFG1_LDO2		= 0x53,
++	MAX77836_LDO_REG_CNFG2_LDO2		= 0x54,
++	MAX77836_LDO_REG_CNFG_LDO_BIAS		= 0x55,
++
++	MAX77836_COMP_REG_COMP1			= 0x60,
++
++	MAX77836_PMIC_REG_END,
++};
+ 
++#define MAX77836_INTSRC_MASK_TOP_INT_SHIFT	1
++#define MAX77836_INTSRC_MASK_MUIC_CHG_INT_SHIFT	3
++#define MAX77836_INTSRC_MASK_TOP_INT_MASK	BIT(MAX77836_INTSRC_MASK_TOP_INT_SHIFT)
++#define MAX77836_INTSRC_MASK_MUIC_CHG_INT_MASK	BIT(MAX77836_INTSRC_MASK_MUIC_CHG_INT_SHIFT)
++
++/* MAX77836 PMIC interrupts */
++#define MAX77836_TOPSYS_INT_T120C_SHIFT		0
++#define MAX77836_TOPSYS_INT_T140C_SHIFT		1
++#define MAX77836_TOPSYS_INT_T120C_MASK		BIT(MAX77836_TOPSYS_INT_T120C_SHIFT)
++#define MAX77836_TOPSYS_INT_T140C_MASK		BIT(MAX77836_TOPSYS_INT_T140C_SHIFT)
++
++/* Slave addr = 0x6C: Fuel-Gauge/Battery */
++enum max77836_fg_reg {
++	MAX77836_FG_REG_VCELL_MSB	= 0x02,
++	MAX77836_FG_REG_VCELL_LSB	= 0x03,
++	MAX77836_FG_REG_SOC_MSB		= 0x04,
++	MAX77836_FG_REG_SOC_LSB		= 0x05,
++	MAX77836_FG_REG_MODE_H		= 0x06,
++	MAX77836_FG_REG_MODE_L		= 0x07,
++	MAX77836_FG_REG_VERSION_MSB	= 0x08,
++	MAX77836_FG_REG_VERSION_LSB	= 0x09,
++	MAX77836_FG_REG_HIBRT_H		= 0x0A,
++	MAX77836_FG_REG_HIBRT_L		= 0x0B,
++	MAX77836_FG_REG_CONFIG_H	= 0x0C,
++	MAX77836_FG_REG_CONFIG_L	= 0x0D,
++	MAX77836_FG_REG_VALRT_MIN	= 0x14,
++	MAX77836_FG_REG_VALRT_MAX	= 0x15,
++	MAX77836_FG_REG_CRATE_MSB	= 0x16,
++	MAX77836_FG_REG_CRATE_LSB	= 0x17,
++	MAX77836_FG_REG_VRESET		= 0x18,
++	MAX77836_FG_REG_FGID		= 0x19,
++	MAX77836_FG_REG_STATUS_H	= 0x1A,
++	MAX77836_FG_REG_STATUS_L	= 0x1B,
++	/*
++	 * TODO: TABLE registers
++	 * TODO: CMD register
++	 */
++
++	MAX77836_FG_REG_END,
++};
+ 
+ enum maxim_irq {
+ 	/* INT1 */
+@@ -251,17 +323,24 @@ enum maxim_irq {
+ 	MAXIM_IRQ_INT3_OVP,
+ 	MAXIM_IRQ_INT3_MBCCHGERR,
+ 
++	/* TOPSYS_INT */
++	MAXIM_IRQ_TOPSYS_T140C,
++	MAXIM_IRQ_TOPSYS_T120C,
++
+ 	MAXIM_IRQ_NUM,
  };
  
-+struct max14577_charger_platform_data {
-+	unsigned int fast_charge_timer;
-+	unsigned int constant_uvolt;
-+	unsigned int fast_charge_uamp;
-+	unsigned int eoc_uamp;
-+	unsigned int ovp_uvolt;
-+};
-+
+ struct maxim_core {
+ 	struct device *dev;
+ 	struct i2c_client *i2c; /* Slave addr = 0x4A */
++	struct i2c_client *i2c_pmic; /* Slave addr = 0x46 */
+ 	enum maxim_device_type dev_type;
+ 
+ 	struct regmap *regmap_muic;
++	struct regmap *regmap_pmic;
+ 
+ 	struct regmap_irq_chip_data *irq_data_muic;
++	struct regmap_irq_chip_data *irq_data_pmic;
+ 	int irq;
+ };
+ 
+diff --git a/include/linux/mfd/max14577.h b/include/linux/mfd/max14577.h
+index 75301be5c548..6aad3f249fdd 100644
+--- a/include/linux/mfd/max14577.h
++++ b/include/linux/mfd/max14577.h
+@@ -1,7 +1,7 @@
  /*
-  * MAX14577 MFD platform data
+- * max14577.h - Driver for the Maxim 14577
++ * max14577.h - Driver for the Maxim 14577/77836
+  *
+- * Copyright (C) 2013 Samsung Electrnoics
++ * Copyright (C) 2014 Samsung Electrnoics
+  * Chanwoo Choi <cw00.choi@samsung.com>
+  * Krzysztof Kozlowski <k.kozlowski@samsung.com>
+  *
+@@ -20,6 +20,9 @@
+  * MAX14577 has MUIC, Charger devices.
+  * The devices share the same I2C bus and interrupt line
+  * included in this mfd driver.
++ *
++ * MAX77836 has additional PMIC and Fuel-Gauge on different I2C slave
++ * addresses.
   */
+ 
+ #ifndef __MAX14577_H__
 -- 
 1.7.9.5
 
