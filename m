@@ -1,109 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932534AbaBGLwY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:52:24 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42389 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755291AbaBGLwR (ORCPT
+	id S1755942AbaBGMDx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:03:53 -0500
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:41746 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753804AbaBGMDs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:52:17 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: PaX Team <pageexec@freemail.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 199/233] x86, x32: Correct invalid use of user timespec in the kernel
-Date: Fri,  7 Feb 2014 11:46:58 +0000
-Message-Id: <1391773652-25214-200-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
-References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Fri, 7 Feb 2014 07:03:48 -0500
+MIME-Version: 1.0
+In-Reply-To: <Pine.LNX.4.44L0.1402021108470.19760-100000@netrider.rowland.org>
+References: <1391311006-4138-1-git-send-email-zoran.markovic@linaro.org>
+	<Pine.LNX.4.44L0.1402021108470.19760-100000@netrider.rowland.org>
+Date: Fri, 7 Feb 2014 04:03:46 -0800
+Message-ID: <CAME+o4nK+hOs+TygwzVzDBTUMfF7dWs9WVg2FTMSt6neYckVtA@mail.gmail.com>
+Subject: Re: [RFC PATCHv2] usb: move hub init and LED blink work to power
+ efficient workqueue
+From: Zoran Markovic <zoran.markovic@linaro.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org,
+        Shaibal Dutta <shaibal.dutta@broadcom.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Xenia Ragiadakou <burzalodowa@gmail.com>,
+        Julius Werner <jwerner@chromium.org>,
+        Krzysztof Mazur <krzysiek@podlesie.net>,
+        Matthias Beyer <mail@beyermatthias.de>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Thomas Pugliese <thomas.pugliese@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.4 -stable review patch.  If anyone has any objections, please let me know.
+I believe there may still be use cases where you want to wake up the
+same CPU that scheduled the work.
 
-------------------
+Thanks for the Ack. Can you please queue this for 3.14?
 
-From: PaX Team <pageexec@freemail.hu>
+Regards, Zoran
 
-commit 2def2ef2ae5f3990aabdbe8a755911902707d268 upstream.
-
-The x32 case for the recvmsg() timout handling is broken:
-
-  asmlinkage long compat_sys_recvmmsg(int fd, struct compat_mmsghdr __user *mmsg,
-                                      unsigned int vlen, unsigned int flags,
-                                      struct compat_timespec __user *timeout)
-  {
-          int datagrams;
-          struct timespec ktspec;
-
-          if (flags & MSG_CMSG_COMPAT)
-                  return -EINVAL;
-
-          if (COMPAT_USE_64BIT_TIME)
-                  return __sys_recvmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
-                                        flags | MSG_CMSG_COMPAT,
-                                        (struct timespec *) timeout);
-          ...
-
-The timeout pointer parameter is provided by userland (hence the __user
-annotation) but for x32 syscalls it's simply cast to a kernel pointer
-and is passed to __sys_recvmmsg which will eventually directly
-dereference it for both reading and writing.  Other callers to
-__sys_recvmmsg properly copy from userland to the kernel first.
-
-The bug was introduced by commit ee4fa23c4bfc ("compat: Use
-COMPAT_USE_64BIT_TIME in net/compat.c") and should affect all kernels
-since 3.4 (and perhaps vendor kernels if they backported x32 support
-along with this code).
-
-Note that CONFIG_X86_X32_ABI gets enabled at build time and only if
-CONFIG_X86_X32 is enabled and ld can build x32 executables.
-
-Other uses of COMPAT_USE_64BIT_TIME seem fine.
-
-This addresses CVE-2014-0038.
-
-Signed-off-by: PaX Team <pageexec@freemail.hu>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- net/compat.c | 9 ++-------
- 1 file changed, 2 insertions(+), 7 deletions(-)
-
-diff --git a/net/compat.c b/net/compat.c
-index dd32e34..f50161f 100644
---- a/net/compat.c
-+++ b/net/compat.c
-@@ -780,21 +780,16 @@ asmlinkage long compat_sys_recvmmsg(int fd, struct compat_mmsghdr __user *mmsg,
- 	if (flags & MSG_CMSG_COMPAT)
- 		return -EINVAL;
- 
--	if (COMPAT_USE_64BIT_TIME)
--		return __sys_recvmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
--				      flags | MSG_CMSG_COMPAT,
--				      (struct timespec *) timeout);
--
- 	if (timeout == NULL)
- 		return __sys_recvmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
- 				      flags | MSG_CMSG_COMPAT, NULL);
- 
--	if (get_compat_timespec(&ktspec, timeout))
-+	if (compat_get_timespec(&ktspec, timeout))
- 		return -EFAULT;
- 
- 	datagrams = __sys_recvmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
- 				   flags | MSG_CMSG_COMPAT, &ktspec);
--	if (datagrams > 0 && put_compat_timespec(&ktspec, timeout))
-+	if (datagrams > 0 && compat_put_timespec(&ktspec, timeout))
- 		datagrams = -EFAULT;
- 
- 	return datagrams;
--- 
-1.8.3.2
-
+On 2 February 2014 08:10, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Sat, 1 Feb 2014, Zoran Markovic wrote:
+>
+>> From: Shaibal Dutta <shaibal.dutta@broadcom.com>
+>>
+>> Allow the scheduler to select the best CPU to handle hub initalization
+>> and LED blinking work. This extends idle residency times on idle CPUs
+>> and conserves power.
+>>
+>> This functionality is enabled when CONFIG_WQ_POWER_EFFICIENT is selected.
+>>
+>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> Cc: Alan Stern <stern@rowland.harvard.edu>
+>> Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+>> Cc: Xenia Ragiadakou <burzalodowa@gmail.com>
+>> Cc: Julius Werner <jwerner@chromium.org>
+>> Cc: Krzysztof Mazur <krzysiek@podlesie.net>
+>> Cc: Matthias Beyer <mail@beyermatthias.de>
+>> Cc: Dan Williams <dan.j.williams@intel.com>
+>> Cc: Mathias Nyman <mathias.nyman@linux.intel.com>
+>> Cc: Thomas Pugliese <thomas.pugliese@gmail.com>
+>> Signed-off-by: Shaibal Dutta <shaibal.dutta@broadcom.com>
+>> [zoran.markovic@linaro.org: Rebased to latest kernel. Added commit message.
+>> Changed reference from system to power efficient workqueue for LEDs in
+>> check_highspeed() and hub_port_connect_change().]
+>> Signed-off-by: Zoran Markovic <zoran.markovic@linaro.org>
+>
+> Acked-off-by: Alan Stern <stern@rowland.harvard.edu>
+>
+> Is there some reason why schedule_delayed_work() doesn't use the
+> power-efficient work queue by default?
+>
+> Alan Stern
+>
