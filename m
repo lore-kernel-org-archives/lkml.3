@@ -1,105 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754423AbaBGMSD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:18:03 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42199 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755097AbaBGLva (ORCPT
+	id S1755167AbaBGMSR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:18:17 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:54989 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753441AbaBGMSM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:51:30 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Ilia Mirkin <imirkin@alum.mit.edu>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 165/233] drm/nouveau/falcon: use vmalloc to create firwmare copies
-Date: Fri,  7 Feb 2014 11:46:24 +0000
-Message-Id: <1391773652-25214-166-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
-References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Fri, 7 Feb 2014 07:18:12 -0500
+Date: Fri, 7 Feb 2014 17:48:07 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Armin Schindler <mac@melware.de>, Karsten Keil <isdn@linux-pingi.de>,
+        netdev@vger.kernel.org, josh@joshtriplett.org
+Subject: [PATCH 01/26] drivers: isdn: Rectify typing error in xdi_msg.h
+Message-ID: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.4 -stable review patch.  If anyone has any objections, please let me know.
+Rectify typing error while including the guard for the header
+file xdi_msg.h so that proper guard is wrapped around the file
+to prevent it from being included more than once.
 
-------------------
-
-From: Ilia Mirkin <imirkin@alum.mit.edu>
-
-commit 90d6db1635d5e225623af2e2e859feb607345287 upstream.
-
-Some firmware images may be large (64K), so using kmalloc memory is
-inappropriate for them. Use vmalloc instead, to avoid high-order
-allocation failures.
-
-Signed-off-by: Ilia Mirkin <imirkin@alum.mit.edu>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- drivers/gpu/drm/nouveau/core/engine/falcon.c | 20 +++++++++++++++-----
- 1 file changed, 15 insertions(+), 5 deletions(-)
+ drivers/isdn/hardware/eicon/xdi_msg.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/nouveau/core/engine/falcon.c b/drivers/gpu/drm/nouveau/core/engine/falcon.c
-index e03fc8e..5e077e4 100644
---- a/drivers/gpu/drm/nouveau/core/engine/falcon.c
-+++ b/drivers/gpu/drm/nouveau/core/engine/falcon.c
-@@ -56,6 +56,16 @@ _nouveau_falcon_wr32(struct nouveau_object *object, u64 addr, u32 data)
- 	nv_wr32(falcon, falcon->addr + addr, data);
- }
+diff --git a/drivers/isdn/hardware/eicon/xdi_msg.h b/drivers/isdn/hardware/eicon/xdi_msg.h
+index 58368f7..2498c34 100644
+--- a/drivers/isdn/hardware/eicon/xdi_msg.h
++++ b/drivers/isdn/hardware/eicon/xdi_msg.h
+@@ -1,6 +1,6 @@
+ /* $Id: xdi_msg.h,v 1.1.2.2 2001/02/16 08:40:36 armin Exp $ */
  
-+static void *
-+vmemdup(const void *src, size_t len)
-+{
-+	void *p = vmalloc(len);
-+
-+	if (p)
-+		memcpy(p, src, len);
-+	return p;
-+}
-+
- int
- _nouveau_falcon_init(struct nouveau_object *object)
- {
-@@ -111,7 +121,7 @@ _nouveau_falcon_init(struct nouveau_object *object)
+-#ifndef __DIVA_XDI_UM_CFG_MESSSGE_H__
++#ifndef __DIVA_XDI_UM_CFG_MESSAGE_H__
+ #define __DIVA_XDI_UM_CFG_MESSAGE_H__
  
- 		ret = request_firmware(&fw, name, &device->pdev->dev);
- 		if (ret == 0) {
--			falcon->code.data = kmemdup(fw->data, fw->size, GFP_KERNEL);
-+			falcon->code.data = vmemdup(fw->data, fw->size);
- 			falcon->code.size = fw->size;
- 			falcon->data.data = NULL;
- 			falcon->data.size = 0;
-@@ -134,7 +144,7 @@ _nouveau_falcon_init(struct nouveau_object *object)
- 			return ret;
- 		}
- 
--		falcon->data.data = kmemdup(fw->data, fw->size, GFP_KERNEL);
-+		falcon->data.data = vmemdup(fw->data, fw->size);
- 		falcon->data.size = fw->size;
- 		release_firmware(fw);
- 		if (!falcon->data.data)
-@@ -149,7 +159,7 @@ _nouveau_falcon_init(struct nouveau_object *object)
- 			return ret;
- 		}
- 
--		falcon->code.data = kmemdup(fw->data, fw->size, GFP_KERNEL);
-+		falcon->code.data = vmemdup(fw->data, fw->size);
- 		falcon->code.size = fw->size;
- 		release_firmware(fw);
- 		if (!falcon->code.data)
-@@ -235,8 +245,8 @@ _nouveau_falcon_fini(struct nouveau_object *object, bool suspend)
- 	if (!suspend) {
- 		nouveau_gpuobj_ref(NULL, &falcon->core);
- 		if (falcon->external) {
--			kfree(falcon->data.data);
--			kfree(falcon->code.data);
-+			vfree(falcon->data.data);
-+			vfree(falcon->code.data);
- 			falcon->code.data = NULL;
- 		}
- 	}
+ /*
 -- 
-1.8.3.2
+1.7.9.5
 
