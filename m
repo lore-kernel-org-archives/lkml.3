@@ -1,47 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752166AbaBGWbq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 17:31:46 -0500
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:37945 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751418AbaBGWbo (ORCPT
+	id S1752199AbaBGWc3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 17:32:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59651 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751297AbaBGWc1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 17:31:44 -0500
+	Fri, 7 Feb 2014 17:32:27 -0500
+Date: Fri, 7 Feb 2014 14:33:37 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: rogerable@realtek.com
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Chris Ball <cjb@laptop.org>, Maxim Levitsky <maximlevitsky@gmail.com>,
+        Alex Dubov <oakad@yahoo.com>, Dan Carpenter <dan.carpenter@oracle.com>,
+        driverdev-devel@linuxdriverproject.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, wei_wang@realsil.com.cn
+Subject: Re: [PATCH v3 0/3] Add modules for realtek USB card reader
+Message-ID: <20140207223337.GA21142@kroah.com>
+References: <1391697307-23457-1-git-send-email-rogerable@realtek.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1402071721350.21991@ionos.tec.linutronix.de>
-References: <1391721117-27446-1-git-send-email-carlo@caione.org>
-	<alpine.DEB.2.02.1402062213590.21991@ionos.tec.linutronix.de>
-	<CAOQ7t2Z0agZdDZ_OQZPtXWXoi5NMTcOOZz04q6wEVNy0rxn4AA@mail.gmail.com>
-	<alpine.DEB.2.02.1402062229000.21991@ionos.tec.linutronix.de>
-	<CAOQ7t2bzz9vKh_5h2nF=m+JpeYVa=Ttd4XQgrAa6Lhdzjg_Qxw@mail.gmail.com>
-	<alpine.DEB.2.02.1402071121310.21991@ionos.tec.linutronix.de>
-	<CAOQ7t2b5qVTUXOB4iWAOoTehm=u6zxP0-zQmirSF0DvEk8KddQ@mail.gmail.com>
-	<alpine.DEB.2.02.1402071721350.21991@ionos.tec.linutronix.de>
-Date: Fri, 7 Feb 2014 23:31:43 +0100
-Message-ID: <CAOQ7t2ZfdjuDhtFVz-JvVA_UkGSPzpPAAv9ExZo6UGeshNBwfA@mail.gmail.com>
-Subject: Re: [linux-sunxi] Re: [PATCH] irq: Add new flag to ack
- level-triggered interrupts before unmasking
-From: Carlo Caione <carlo.caione@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Hans De Goede <hdegoede@redhat.com>, emilio@elopez.com.ar,
-        linux-sunxi@googlegroups.com, t.figa@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391697307-23457-1-git-send-email-rogerable@realtek.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 7, 2014 at 6:24 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> Not sure, really, but I tend to a core patch. Though we really want to
-> know whether the issue is threaded only or not. If it's a general
-> issue then this wants to go into unmask_irq() itself and not into an
-> extra unmask_threaded_irq() function.
+On Thu, Feb 06, 2014 at 10:35:04PM +0800, rogerable@realtek.com wrote:
+> From: Roger Tseng <rogerable@realtek.com>
+> 
+> This patchset adds modules to support Realtek USB vendor specific class flash
+> card reader: one base module in MFD subsystem and two host modules in both mmc
+> and memstick subsystems. The architecture is similar to rtsx_pci.
+> 
+> This work is done primarily to replace the staging driver: staging/rts5139,
+> which doesn't utilize mmc nor memstick subsystems. Once the patchset or its
+> revision is applied, we may need Greg's help to remove the staging one.
+> 
+> v2:
+> 1. Fix potential buffer overflow in rtsx_usb_seq_write_register()
+> 2. Remove unnecessary casting and messages
+> 3. Revise coding style and white spaces
+> 
+> v3:
+> 1. Fix MMC detection fail when under xhci
+> 2. Minor change of pm_runtime behavior in rtsx_usb_ms to prevent some rare
+>    freeze due to erroneous Memstick card(not MS-Pro)
+> 3. Further revise coding style as suggested in the thread of v2
+> 4. Using managed resources: devm_*
+> 5. Change license from "GPL v2 and later" to "GPL v2"
+> 
+> Roger Tseng (3):
+>   mfd: Add realtek USB card reader driver
+>   mmc: Add realtek USB sdmmc host driver
+>   memstick: Add realtek USB memstick host driver
 
-Unfortunately I cannot be sure whether the problem is still present
-for the non threaded case since in the hardware I have the NMI
-controller is only connected to the PMIC.
-Considering that I have no way of checking what do you suggest?
+Looks good to me, thanks for doing this work:
 
--- 
-Carlo Caione
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
