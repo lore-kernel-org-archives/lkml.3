@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753875AbaBGLmj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:42:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40999 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752885AbaBGLY1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752893AbaBGLY1 (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 7 Feb 2014 06:24:27 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40807 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751574AbaBGLXd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 06:23:33 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Paul Moore <pmoore@redhat.com>,
+Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
+        Kamal Mostafa <kamal@canonical.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 38/88] SELinux: Fix memory leak upon loading policy
-Date: Fri,  7 Feb 2014 11:22:35 +0000
-Message-Id: <1391772205-22239-39-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 01/88] ext4: fix deadlock when writing in ENOSPC conditions
+Date: Fri,  7 Feb 2014 11:21:58 +0000
+Message-Id: <1391772205-22239-2-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
@@ -28,81 +28,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+From: Jan Kara <jack@suse.cz>
 
-commit 8ed814602876bec9bad2649ca17f34b499357a1c upstream.
+commit 34cf865d54813aab3497838132fb1bbd293f4054 upstream.
 
-Hello.
+Akira-san has been reporting rare deadlocks of his machine when running
+xfstests test 269 on ext4 filesystem. The problem turned out to be in
+ext4_da_reserve_metadata() and ext4_da_reserve_space() which called
+ext4_should_retry_alloc() while holding i_data_sem. Since
+ext4_should_retry_alloc() can force a transaction commit, this is a
+lock ordering violation and leads to deadlocks.
 
-I got below leak with linux-3.10.0-54.0.1.el7.x86_64 .
+Fix the problem by just removing the retry loops. These functions should
+just report ENOSPC to the caller (e.g. ext4_da_write_begin()) and that
+function must take care of retrying after dropping all necessary locks.
 
-[  681.903890] kmemleak: 5538 new suspected memory leaks (see /sys/kernel/debug/kmemleak)
-
-Below is a patch, but I don't know whether we need special handing for undoing
-ebitmap_set_bit() call.
-----------
->>From fe97527a90fe95e2239dfbaa7558f0ed559c0992 Mon Sep 17 00:00:00 2001
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Mon, 6 Jan 2014 16:30:21 +0900
-Subject: [PATCH] SELinux: Fix memory leak upon loading policy
-
-Commit 2463c26d "SELinux: put name based create rules in a hashtable" did not
-check return value from hashtab_insert() in filename_trans_read(). It leaks
-memory if hashtab_insert() returns error.
-
-  unreferenced object 0xffff88005c9160d0 (size 8):
-    comm "systemd", pid 1, jiffies 4294688674 (age 235.265s)
-    hex dump (first 8 bytes):
-      57 0b 00 00 6b 6b 6b a5                          W...kkk.
-    backtrace:
-      [<ffffffff816604ae>] kmemleak_alloc+0x4e/0xb0
-      [<ffffffff811cba5e>] kmem_cache_alloc_trace+0x12e/0x360
-      [<ffffffff812aec5d>] policydb_read+0xd1d/0xf70
-      [<ffffffff812b345c>] security_load_policy+0x6c/0x500
-      [<ffffffff812a623c>] sel_write_load+0xac/0x750
-      [<ffffffff811eb680>] vfs_write+0xc0/0x1f0
-      [<ffffffff811ec08c>] SyS_write+0x4c/0xa0
-      [<ffffffff81690419>] system_call_fastpath+0x16/0x1b
-      [<ffffffffffffffff>] 0xffffffffffffffff
-
-However, we should not return EEXIST error to the caller, or the systemd will
-show below message and the boot sequence freezes.
-
-  systemd[1]: Failed to load SELinux policy. Freezing.
-
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Acked-by: Eric Paris <eparis@redhat.com>
-Signed-off-by: Paul Moore <pmoore@redhat.com>
+Reported-and-tested-by: Akira Fujita <a-fujita@rs.jp.nec.com>
+Reviewed-by: Zheng Liu <wenqing.lz@taobao.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+[ kamal: backport to 3.8 (no ext4_da_reserve_metadata) ]
+Cc: Kamal Mostafa <kamal@canonical.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- security/selinux/ss/policydb.c | 14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
+ fs/ext4/inode.c | 6 ------
+ 1 file changed, 6 deletions(-)
 
-diff --git a/security/selinux/ss/policydb.c b/security/selinux/ss/policydb.c
-index 9cd9b7c..142a59f 100644
---- a/security/selinux/ss/policydb.c
-+++ b/security/selinux/ss/policydb.c
-@@ -1941,7 +1941,19 @@ static int filename_trans_read(struct policydb *p, void *fp)
- 		if (rc)
- 			goto out;
- 
--		hashtab_insert(p->filename_trans, ft, otype);
-+		rc = hashtab_insert(p->filename_trans, ft, otype);
-+		if (rc) {
-+			/*
-+			 * Do not return -EEXIST to the caller, or the system
-+			 * will not boot.
-+			 */
-+			if (rc != -EEXIST)
-+				goto out;
-+			/* But free memory to avoid memory leak. */
-+			kfree(ft);
-+			kfree(name);
-+			kfree(otype);
-+		}
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index 8aacdda..efecfb7 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -1175,7 +1175,6 @@ static int ext4_journalled_write_end(struct file *file,
+  */
+ static int ext4_da_reserve_space(struct inode *inode, ext4_lblk_t lblock)
+ {
+-	int retries = 0;
+ 	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
+ 	struct ext4_inode_info *ei = EXT4_I(inode);
+ 	unsigned int md_needed;
+@@ -1197,7 +1196,6 @@ static int ext4_da_reserve_space(struct inode *inode, ext4_lblk_t lblock)
+ 	 * in order to allocate nrblocks
+ 	 * worse case is one extent per block
+ 	 */
+-repeat:
+ 	spin_lock(&ei->i_block_reservation_lock);
+ 	/*
+ 	 * ext4_calc_metadata_amount() has side effects, which we have
+@@ -1217,10 +1215,6 @@ repeat:
+ 		ei->i_da_metadata_calc_len = save_len;
+ 		ei->i_da_metadata_calc_last_lblock = save_last_lblock;
+ 		spin_unlock(&ei->i_block_reservation_lock);
+-		if (ext4_should_retry_alloc(inode->i_sb, &retries)) {
+-			yield();
+-			goto repeat;
+-		}
+ 		dquot_release_reservation_block(inode, EXT4_C2B(sbi, 1));
+ 		return -ENOSPC;
  	}
- 	hash_eval(p->filename_trans, "filenametr");
- 	return 0;
 -- 
 1.8.3.2
 
