@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752862AbaBGLYZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:24:25 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40864 "EHLO
+	id S1754072AbaBGLno (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:43:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41000 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752098AbaBGLXs (ORCPT
+	with ESMTP id S1752856AbaBGLYY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:23:48 -0500
+	Fri, 7 Feb 2014 06:24:24 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jon Medhurst <tixy@linaro.org>,
+Cc: Colin Leitner <colin.leitner@gmail.com>, Johan Hovold <jhovold@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 13/88] serial: amba-pl011: use port lock to guard control register access
-Date: Fri,  7 Feb 2014 11:22:10 +0000
-Message-Id: <1391772205-22239-14-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 40/88] USB: ftdi_sio: added CS5 quirk for broken smartcard readers
+Date: Fri,  7 Feb 2014 11:22:37 +0000
+Message-Id: <1391772205-22239-41-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
@@ -28,74 +28,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jon Medhurst <tixy@linaro.org>
+From: Colin Leitner <colin.leitner@googlemail.com>
 
-commit fe43390702a1b5741fdf217063b05c7612b38303 upstream.
+commit c1f15196ac3b541d084dc80a8fbd8a74c6a0bd44 upstream.
 
-When the pl011 is being used for a console, pl011_console_write forces
-the control register (CR) to enable the UART for transmission and then
-restores this to the original value afterwards. It does this while
-holding the port lock.
+Genuine FTDI chips support only CS7/8. A previous fix in commit
+8704211f65a2 ("USB: ftdi_sio: fixed handling of unsupported CSIZE
+setting") enforced this limitation and reported it back to userspace.
 
-Unfortunately, when the uart is started or shutdown - say in response to
-userland using the serial device for a terminal - then this updates the
-control register without any locking.
+However, certain types of smartcard readers depend on specific
+driver behaviour that requests 0 data bits (not 5) to change into a
+different operating mode if CS5 has been set.
 
-This means we can have
+This patch reenables this behaviour for all FTDI devices.
 
-  pl011_console_write   Save CR
-  pl011_startup         Initialise CR, e.g. enable receive
-  pl011_console_write   Restore old CR with receive not enabled
+Tagged to be added to stable, because it affects a lot of users of
+embedded systems which rely on these readers to work properly.
 
-this result is a serial port which doesn't respond to any input.
-
-A similar race in reverse could happen when the device is shutdown.
-
-We can fix these problems by taking the port lock when updating CR.
-
-Signed-off-by: Jon Medhurst <tixy@linaro.org>
+Reported-by: Heinrich Siebmanns <H.Siebmanns@t-online.de>
+Tested-by: Heinrich Siebmanns <H.Siebmanns@t-online.de>
+Signed-off-by: Colin Leitner <colin.leitner@gmail.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[ luis: backported to 3.5:
+  - adjusted context
+  - replace dev_dbg() by dbg() ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/tty/serial/amba-pl011.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/usb/serial/ftdi_sio.c | 17 +++++++++++++++--
+ 1 file changed, 15 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/tty/serial/amba-pl011.c b/drivers/tty/serial/amba-pl011.c
-index da8a37f..63b8217 100644
---- a/drivers/tty/serial/amba-pl011.c
-+++ b/drivers/tty/serial/amba-pl011.c
-@@ -1353,6 +1353,8 @@ static int pl011_startup(struct uart_port *port)
- 	/*
- 	 * Provoke TX FIFO interrupt into asserting.
- 	 */
-+	spin_lock_irq(&uap->port.lock);
-+
- 	cr = UART01x_CR_UARTEN | UART011_CR_TXE | UART011_CR_LBE;
- 	writew(cr, uap->port.membase + UART011_CR);
- 	writew(0, uap->port.membase + UART011_FBRD);
-@@ -1377,6 +1379,8 @@ static int pl011_startup(struct uart_port *port)
- 	cr |= UART01x_CR_UARTEN | UART011_CR_RXE | UART011_CR_TXE;
- 	writew(cr, uap->port.membase + UART011_CR);
- 
-+	spin_unlock_irq(&uap->port.lock);
-+
- 	/*
- 	 * initialise the old status of the modem signals
- 	 */
-@@ -1457,11 +1461,13 @@ static void pl011_shutdown(struct uart_port *port)
- 	 * it during startup().
- 	 */
- 	uap->autorts = false;
-+	spin_lock_irq(&uap->port.lock);
- 	cr = readw(uap->port.membase + UART011_CR);
- 	uap->old_cr = cr;
- 	cr &= UART011_CR_RTS | UART011_CR_DTR;
- 	cr |= UART01x_CR_UARTEN | UART011_CR_TXE;
- 	writew(cr, uap->port.membase + UART011_CR);
-+	spin_unlock_irq(&uap->port.lock);
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index 947da9d..82c392f 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -2162,10 +2162,20 @@ static void ftdi_set_termios(struct tty_struct *tty,
+ 	}
  
  	/*
- 	 * disable break condition and fifos
+-	 * All FTDI UART chips are limited to CS7/8. We won't pretend to
++	 * All FTDI UART chips are limited to CS7/8. We shouldn't pretend to
+ 	 * support CS5/6 and revert the CSIZE setting instead.
++	 *
++	 * CS5 however is used to control some smartcard readers which abuse
++	 * this limitation to switch modes. Original FTDI chips fall back to
++	 * eight data bits.
++	 *
++	 * TODO: Implement a quirk to only allow this with mentioned
++	 *       readers. One I know of (Argolis Smartreader V1)
++	 *       returns "USB smartcard server" as iInterface string.
++	 *       The vendor didn't bother with a custom VID/PID of
++	 *       course.
+ 	 */
+-	if ((C_CSIZE(tty) != CS8) && (C_CSIZE(tty) != CS7)) {
++	if (C_CSIZE(tty) == CS6) {
+ 		dev_warn(&port->dev, "requested CSIZE setting not supported\n");
+ 
+ 		termios->c_cflag &= ~CSIZE;
+@@ -2212,6 +2222,9 @@ no_skip:
+ 		urb_value |= FTDI_SIO_SET_DATA_PARITY_NONE;
+ 	}
+ 	switch (cflag & CSIZE) {
++	case CS5:
++		dbg("Setting CS5 quirk\n");
++		break;
+ 	case CS7:
+ 		urb_value |= 7;
+ 		dbg("Setting CS7\n");
 -- 
 1.8.3.2
 
