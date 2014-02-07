@@ -1,72 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753095AbaBGRXt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 12:23:49 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:45793 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752140AbaBGRXr convert rfc822-to-8bit (ORCPT
+	id S1753218AbaBGRYC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 12:24:02 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:36939 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752707AbaBGRX7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 12:23:47 -0500
-X-Originating-IP: 50.43.14.201
-Date: Fri, 7 Feb 2014 09:23:42 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Rashika Kheria <rashika.kheria@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org
-Subject: Re: [PATCH 3/3] sound: Move prototype declaration to header file
- oss/pas2.h from oss/pas2_card.c
-Message-ID: <20140207172341.GD7298@jtriplet-mobl1>
-References: <512472c7d96cf1c239ba3d0bc517891a7c2f9da1.1391791103.git.rashika.kheria@gmail.com>
- <3c35e9b980ccc0ca155214e8fad0dae24b20c5af.1391791103.git.rashika.kheria@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <3c35e9b980ccc0ca155214e8fad0dae24b20c5af.1391791103.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 7 Feb 2014 12:23:59 -0500
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Josh Triplett'" <josh@joshtriplett.org>
+CC: "'Rashika Kheria'" <rashika.kheria@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Armin Schindler" <mac@melware.de>, Karsten Keil <isdn@linux-pingi.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: RE: [PATCH 19/26] drivers: isdn: Move prototype declaration to
+ header file platform.h from diva_didd.c
+Thread-Topic: [PATCH 19/26] drivers: isdn: Move prototype declaration to
+ header file platform.h from diva_didd.c
+Thread-Index: AQHPJAIZEAfhJt2pSki9/NC6TGJzyJqpydjwgAA+egCAAAFN0A==
+Date: Fri, 7 Feb 2014 17:22:58 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F6BAC1C@AcuExch.aculab.com>
+References: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
+ <93d7188538418423685ecefaf3d2bb311b37be6e.1390408518.git.rashika.kheria@gmail.com>
+ <063D6719AE5E284EB5DD2968C1650D6D0F6BA76D@AcuExch.aculab.com>
+ <20140207171516.GA7298@jtriplet-mobl1>
+In-Reply-To: <20140207171516.GA7298@jtriplet-mobl1>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 07, 2014 at 10:16:31PM +0530, Rashika Kheria wrote:
-> Move prototype declaration of function to header file oss/pas2.h
-> from oss/pas2_card.c because it is used by more than one file.
+From: Josh Triplett
+> On Fri, Feb 07, 2014 at 01:33:46PM +0000, David Laight wrote:
+> > From: Rashika Kheria
+> > > Move prototype declarations of function to header file
+> > > hardware/eicon/platform.h because they are used by more than one file.
+> > >
+> > > This eliminates the following warnings in hardware/eicon/diddfunc.c:
+> > > drivers/isdn/hardware/eicon/diddfunc.c:95:12: warning: no previous prototype for diddfunc_init [-
+> > > Wmissing-prototypes]
+> > > drivers/isdn/hardware/eicon/diddfunc.c:110:13: warning: no previous prototype for diddfunc_finit
+> [-
+> > > Wmissing-prototypes]
+> > ...
+> > > diff --git a/drivers/isdn/hardware/eicon/diva_didd.c b/drivers/isdn/hardware/eicon/diva_didd.c
+> > > index fab6ccf..56d32a7 100644
+> > > --- a/drivers/isdn/hardware/eicon/diva_didd.c
+> > > +++ b/drivers/isdn/hardware/eicon/diva_didd.c
+> > > @@ -39,9 +39,6 @@ MODULE_LICENSE("GPL");
+> > >  #define DBG_MINIMUM  (DL_LOG + DL_FTL + DL_ERR)
+> > >  #define DBG_DEFAULT  (DBG_MINIMUM + DL_XLOG + DL_REG)
+> > >
+> > > -extern int diddfunc_init(void);
+> > > -extern void diddfunc_finit(void);
+> > > -
+> > >  extern void DIVA_DIDD_Read(void *, int);
+> >
+> > You should move that one as well.
+> > There really shouldn't be 'extern' definitions for any function in
+> > any C files since you want the compiler to check they are correct
+> > when the function itself is compiled.
 > 
-> This eliminates the following warnings in oss/pas2_mixer.c:
-> sound/oss/pas2_mixer.c:62:1: warning: no previous prototype for ‘mix_write’ [-Wmissing-prototypes]
-> 
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+> Absolutely, but as far as I can tell Rashika is doing this
+> incrementally, organized more by header than by source file, so I'd
+> expect a few externs in a source file to disappear at a time rather than
+> all in one patch.
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Unless any actual bugs are found, I'd have thought a single patch for
+each driver would be enough, maybe even one for the whole lot - depending
+on how they are maintained.
+The 26 patches already posted are a little excessive.
 
->  sound/oss/pas2.h      |    3 +++
->  sound/oss/pas2_card.c |    2 --
->  2 files changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/sound/oss/pas2.h b/sound/oss/pas2.h
-> index fa12c55..d19f757 100644
-> --- a/sound/oss/pas2.h
-> +++ b/sound/oss/pas2.h
-> @@ -15,3 +15,6 @@ int pas_init_mixer(void);
->  /*	From pas_midi.c */
->  void pas_midi_init(void);
->  void pas_midi_interrupt(void);
-> +
-> +/*	From pas2_mixer.c*/
-> +void mix_write(unsigned char data, int ioaddr);
-> diff --git a/sound/oss/pas2_card.c b/sound/oss/pas2_card.c
-> index 7004e24..b07954a 100644
-> --- a/sound/oss/pas2_card.c
-> +++ b/sound/oss/pas2_card.c
-> @@ -74,8 +74,6 @@ static char    *pas_model_names[] = {
->   * to support other than the default base address
->   */
->  
-> -extern void     mix_write(unsigned char data, int ioaddr);
-> -
->  unsigned char pas_read(int ioaddr)
->  {
->  	return inb(ioaddr + pas_translate_code);
-> -- 
-> 1.7.9.5
-> 
+	David
+
+
+
