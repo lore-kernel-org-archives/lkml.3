@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755803AbaBGNeq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 08:34:46 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:32808 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752162AbaBGNeo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 08:34:44 -0500
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Rashika Kheria'" <rashika.kheria@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Armin Schindler <mac@melware.de>, Karsten Keil <isdn@linux-pingi.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "josh@joshtriplett.org" <josh@joshtriplett.org>
-Subject: RE: [PATCH 19/26] drivers: isdn: Move prototype declaration to
- header file platform.h from diva_didd.c
-Thread-Topic: [PATCH 19/26] drivers: isdn: Move prototype declaration to
- header file platform.h from diva_didd.c
-Thread-Index: AQHPJAIZEAfhJt2pSki9/NC6TGJzyJqpydjw
-Date: Fri, 7 Feb 2014 13:33:46 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F6BA76D@AcuExch.aculab.com>
-References: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
- <93d7188538418423685ecefaf3d2bb311b37be6e.1390408518.git.rashika.kheria@gmail.com>
-In-Reply-To: <93d7188538418423685ecefaf3d2bb311b37be6e.1390408518.git.rashika.kheria@gmail.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1752727AbaBGNgh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 08:36:37 -0500
+Received: from ns.mm-sol.com ([37.157.136.199]:42184 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751736AbaBGNge (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 08:36:34 -0500
+Message-ID: <1391780118.27491.62.camel@iivanov-dev>
+Subject: Re: [PATCH RESEND 1/2] spi: qup: Add device tree bindings
+ information
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        linux-spi@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 07 Feb 2014 15:35:18 +0200
+In-Reply-To: <20140207131359.GM32298@sirena.org.uk>
+References: <20140206175059.GW32298@sirena.org.uk>
+	 <1391759007-25305-1-git-send-email-iivanov@mm-sol.com>
+	 <20140207122716.GH32298@sirena.org.uk>
+	 <1391778043.27491.61.camel@iivanov-dev>
+	 <20140207131359.GM32298@sirena.org.uk>
+Content-Type: text/plain; charset="us-ascii"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s17DYtYh015419
 
-From: Rashika Kheria
-> Move prototype declarations of function to header file
-> hardware/eicon/platform.h because they are used by more than one file.
+On Fri, 2014-02-07 at 13:13 +0000, Mark Brown wrote: 
+> On Fri, Feb 07, 2014 at 03:00:43PM +0200, Ivan T. Ivanov wrote:
+> > On Fri, 2014-02-07 at 12:27 +0000, Mark Brown wrote: 
 > 
-> This eliminates the following warnings in hardware/eicon/diddfunc.c:
-> drivers/isdn/hardware/eicon/diddfunc.c:95:12: warning: no previous prototype for diddfunc_init [-
-> Wmissing-prototypes]
-> drivers/isdn/hardware/eicon/diddfunc.c:110:13: warning: no previous prototype for diddfunc_finit [-
-> Wmissing-prototypes]
-...
-> diff --git a/drivers/isdn/hardware/eicon/diva_didd.c b/drivers/isdn/hardware/eicon/diva_didd.c
-> index fab6ccf..56d32a7 100644
-> --- a/drivers/isdn/hardware/eicon/diva_didd.c
-> +++ b/drivers/isdn/hardware/eicon/diva_didd.c
-> @@ -39,9 +39,6 @@ MODULE_LICENSE("GPL");
->  #define DBG_MINIMUM  (DL_LOG + DL_FTL + DL_ERR)
->  #define DBG_DEFAULT  (DBG_MINIMUM + DL_XLOG + DL_REG)
+> > > Please fix the formatting of this document so the lines are less than 80
+> > > columns, it's hard to read as is.  Otherwise this is fine.
 > 
-> -extern int diddfunc_init(void);
-> -extern void diddfunc_finit(void);
-> -
->  extern void DIVA_DIDD_Read(void *, int);
+> > File is looking fine in editor with smart tab support
+> 
+> I don't know what "smart tab support" is intended to be in this context
+> but whatever it is it's not working well in the e-mail you sent, bear in
+> mind that you're looking for a readable patch.
 
-You should move that one as well.
-There really shouldn't be 'extern' definitions for any function in
-any C files since you want the compiler to check they are correct
-when the function itself is compiled.
+Right. will fix it.
 
-	David
+Regards,
+Ivan
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
