@@ -1,135 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751666AbaBGKFI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 05:05:08 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:22480 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751150AbaBGKFE (ORCPT
+	id S1752837AbaBGKOG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 05:14:06 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:54943 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752508AbaBGKOD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 05:05:04 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-77-52f4afccc9dd
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v2 00/15] mfd: max14577: Add support for MAX77836
-Date: Fri, 07 Feb 2014 11:04:32 +0100
-Message-id: <1391767487-10017-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrAJMWRmVeSWpSXmKPExsVy+t/xq7pn1n8JMvi9w8hi44z1rBZTHz5h
-	s7j+5TmrxesXhhZnm96wW9z/epTRYtPja6wWl3fNYbNYe+Quu8XtxhVsFqe7WR24PTat6mTz
-	uHNtD5vHvJOBHpuX1Hv0bVnF6PF5k1wAWxSXTUpqTmZZapG+XQJXxqwutoId8hUdjfNYGxgf
-	SHQxcnJICJhILP/6mw3CFpO4cG89kM3FISSwlFFi/v5NLBBOH5PE+9MTmUGq2ASMJTYvXwJW
-	JSLQApRYv58RJMEscJRR4skywy5Gdg5hAUeJp5wgURYBVYk792+CtfIKuEu0Xv7E2sXIAbRM
-	QWLOJJsJjNwLGBlWMYqmliYXFCel5xrqFSfmFpfmpesl5+duYoSE0pcdjIuPWR1iFOBgVOLh
-	PbH0c5AQa2JZcWXuIUYJDmYlEV6NtV+ChHhTEiurUovy44tKc1KLDzEycXBKNTA2eR9/+1FI
-	07bCJ2MpkxzPiQczRZZcZVd83ZstWnD/iNyMI49fmQd9/rPRjqHv0KRZc09vYGHbzr6vbdGS
-	gBd7hcyENlkU8wffNee6t1XSIPXgXePPRyfm6j4PkitJC2RzMD6pxXFFmp3l62GROVcZ//Rz
-	CCmsu2Jo1XJl04zItV4Fb554pRgpsRRnJBpqMRcVJwIAyvQulQMCAAA=
+	Fri, 7 Feb 2014 05:14:03 -0500
+Date: Fri, 7 Feb 2014 02:13:59 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Fengguang Wu <fengguang.wu@intel.com>, Tejun Heo <tj@kernel.org>
+cc: Filipe David Borba Manana <fdmanana@gmail.com>, Chris Mason <clm@fb.com>,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [btrfs] BUG: unable to handle kernel NULL pointer dereference
+ at 0000000000000038
+In-Reply-To: <20140207023801.GC11051@localhost>
+Message-ID: <alpine.DEB.2.02.1402070213020.22146@chino.kir.corp.google.com>
+References: <20140207023801.GC11051@localhost>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, 7 Feb 2014, Fengguang Wu wrote:
 
+> [    1.625020] BTRFS: selftest: Running btrfs_split_item tests
+> [    1.627004] BTRFS: selftest: Running find delalloc tests
+> [    2.289182] tsc: Refined TSC clocksource calibration: 2299.967 MHz
+> [  292.084537] kthreadd invoked oom-killer: gfp_mask=0x3000d0, order=1, oom_score_adj=0
+> [  292.086439] kthreadd cpuset=
+> [  292.087072] BUG: unable to handle kernel NULL pointer dereference at 0000000000000038
+> [  292.087372] IP: [<ffffffff812119de>] pr_cont_kernfs_name+0x1b/0x6c
 
-This is second version of patchset adding support for MAX77836 device
-to the max14577 driver.
+This looks like a problem with the cpuset cgroup name, are you sure this 
+isn't related to the removal of cgroup->name?
 
-
-Changes since v1
-----------------
-1. Added ACK-s, reviews and tested-by tags.
-2. Removed applied patches (they were merged to the lunux-next tree).
-3. Applied comments from review (Lee Jones) to 5/15 (detection of device type)
-   and 8/15 (add max77836 support to max14577).
-4. Rebased on next tree.
-5. Added patch 13 and 14 (pointed by Jenny Tc):
-   - regulator/mfd: max14577: Export symbols for calculating charger current
-   - charger: max14577: Configure battery-dependent settings from DTS
-6. Updated bindings documentation with new charger bindings.
-Previous thread:
- - [PATCH 00/18] mfd: max14577: Add support for MAX77836
-   http://thread.gmane.org/gmane.linux.kernel/1636654/focus=1636674
-
-
-Description
------------
-The MAX77836 is almost the same as MAX14577. Basically it is an extended
-version of MAX14577. The chipsets have same MUIC component so the extcon,
-charger and regulators require only little adjustments. More changes were
-needed in the charger (because it uses lower charging current) and regulator
-drivers (because mentioned different charing current and additional
-regulators). The MAX77836 has also PMIC and Fuel Gauge (which is the same
-as MAX17040/17048 Fuel Gauge).
-
-The MAX77836 uses three I2C slave addresses and has additional interrupts
-(related to PMIC and Fuel Gauge). It has also Interrupt Source register,
-just like MAX77686 and MAX77693.
-
-The patchset is organized in following way:
-1. Patches from 1 to 7 prepare the driver for supporting MAX77836. They
-   mostly rename symbols and add additional logic related to different
-   device types.
-2. Patches from 8 to 12 add support for MAX77836.
-3. Patches 13 and 14 remove hard-coded charger configuration with DTS. They
-   were added after review on mailing lists.
-4. Patch 15 adds bindings documentation, which was not merged previously.
-   Here I tried to address also Tomasz Figa's comments from review.
-
-
-The patchset is based on linux-next tree and depends on patches from previous
-release which are already merged into next.
-Testing was done on 3.10.
-
-
-TODO: Merge max14577, max77686 and max77693 into one common driver. They are
-very similar.
-
-
-Best regards,
-Krzysztof Kozlowski
-
-
-Chanwoo Choi (1):
-  extcon: max14577: Change extcon name instead of static name according
-    to device type
-
-Krzysztof Kozlowski (14):
-  mfd: max14577: Rename and add MAX14577 symbols to prepare for
-    max77836
-  mfd: max14577: Rename state container to maxim_core
-  mfd: max14577: Add "muic" suffix to regmap and irq_chip
-  mfd: max14577: Add detection of device type
-  extcon: max14577: Add max14577 prefix to muic_irqs
-  extcon: max14577: Choose muic_irqs according to device type
-  mfd: max77836: Add max77836 support to max14577 driver
-  extcon: max14577: Add support for max77836
-  regulator: max14577: Add support for max77836 regulators
-  charger: max14577: Add support for MAX77836 charger
-  power: max17040: Add ID for max77836 Fuel Gauge block
-  regulator/mfd: max14577: Export symbols for calculating charger
-    current
-  charger: max14577: Configure battery-dependent settings from DTS
-  mfd: max14577: Add device tree bindings document
-
- Documentation/devicetree/bindings/mfd/max14577.txt |  149 +++++
- drivers/extcon/extcon-max14577.c                   |  274 ++++++----
- drivers/mfd/max14577.c                             |  475 +++++++++++++---
- drivers/power/max14577_charger.c                   |  360 +++++++++---
- drivers/power/max17040_battery.c                   |    1 +
- drivers/regulator/max14577.c                       |  279 +++++++---
- include/linux/mfd/max14577-private.h               |  578 ++++++++++++--------
- include/linux/mfd/max14577.h                       |   50 +-
- 8 files changed, 1632 insertions(+), 534 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mfd/max14577.txt
-
--- 
-1.7.9.5
-
+> [  292.087372] PGD 0 
+> [  292.087372] Oops: 0000 [#1] 
+> [  292.087372] Modules linked in:
+> [  292.087372] CPU: 0 PID: 2 Comm: kthreadd Not tainted 3.14.0-rc1-wl-ath-00978-g4830363 #2
+> [  292.087372] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+> [  292.087372] task: ffff880000148050 ti: ffff88000014a000 task.ti: ffff88000014a000
+> [  292.087372] RIP: 0010:[<ffffffff812119de>]  [<ffffffff812119de>] pr_cont_kernfs_name+0x1b/0x6c
+> [  292.087372] RSP: 0000:ffff88000014bb20  EFLAGS: 00010046
+> [  292.087372] RAX: 0000000000000282 RBX: 0000000000000000 RCX: 0000000000000002
+> [  292.087372] RDX: ffffffff812119de RSI: ffffffff8247d4a8 RDI: 0000000000000046
+> [  292.087372] RBP: ffff88000014bb30 R08: ffffffff82f31218 R09: 0000000000000000
+> [  292.087372] R10: 0000000000000000 R11: 0000000000000000 R12: ffffffff833c4ab8
+> [  292.087372] R13: 00000000003000d0 R14: 0000000000000001 R15: 0000000000000000
+> [  292.087372] FS:  0000000000000000(0000) GS:ffffffff82279000(0000) knlGS:0000000000000000
+> [  292.087372] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [  292.087372] CR2: 0000000000000038 CR3: 0000000002269000 CR4: 00000000000006b0
+> [  292.087372] Stack:
+> [  292.087372]  ffff880000148050 ffffffff833c4ab8 ffff88000014bb50 ffffffff8110836d
+> [  292.087372]  ffff880000148050 ffff880000148530 ffff88000014bbd0 ffffffff81ae2614
+> [  292.087372]  ffff880000148640 ffff88000014bb78 ffffffff810c7dd7 ffff88000014bb98
+> [  292.087372] Call Trace:
+> [  292.087372]  [<ffffffff8110836d>] cpuset_print_task_mems_allowed+0x65/0x8b
+> [  292.087372]  [<ffffffff81ae2614>] dump_header.isra.11+0x68/0x29a
+> [  292.087372]  [<ffffffff810c7dd7>] ? local_clock+0x2b/0x34
+> [  292.087372]  [<ffffffff810ce52b>] ? lock_release_holdtime+0xcf/0xdb
+> [  292.087372]  [<ffffffff811533d2>] ? out_of_memory+0x318/0x40f
+> [  292.087372]  [<ffffffff8115342d>] out_of_memory+0x373/0x40f
+> [  292.087372]  [<ffffffff8115324d>] ? out_of_memory+0x193/0x40f
+> [  292.087372]  [<ffffffff8115a0ac>] __alloc_pages_nodemask+0xdd1/0x12c4
+> [  292.087372]  [<ffffffff8100d301>] ? native_sched_clock+0xe4/0xfc
+> [  292.087372]  [<ffffffff81089519>] copy_process+0x21d/0x2115
+> [  292.087372]  [<ffffffff810b693e>] ? kthread_create_on_node+0x23e/0x23e
+> [  292.087372]  [<ffffffff8100d322>] ? sched_clock+0x9/0xd
+> [  292.087372]  [<ffffffff810c7aa7>] ? sched_clock_local.constprop.2+0x35/0xc8
+> [  292.087372]  [<ffffffff810360bf>] ? pvclock_clocksource_read+0x9b/0x140
+> [  292.087372]  [<ffffffff810b693e>] ? kthread_create_on_node+0x23e/0x23e
+> [  292.087372]  [<ffffffff8108b61c>] do_fork+0x105/0x4db
+> [  292.087372]  [<ffffffff810c7d54>] ? sched_clock_cpu+0xc9/0xdb
+> [  292.087372]  [<ffffffff810c7dd7>] ? local_clock+0x2b/0x34
+> [  292.087372]  [<ffffffff810ce52b>] ? lock_release_holdtime+0xcf/0xdb
+> [  292.087372]  [<ffffffff810b768d>] ? kthreadd+0x1b3/0x24a
+> [  292.087372]  [<ffffffff8108ba18>] kernel_thread+0x26/0x28
+> [  292.087372]  [<ffffffff810b76a1>] kthreadd+0x1c7/0x24a
+> [  292.087372]  [<ffffffff81afc50a>] ? ret_from_fork+0x7a/0xb0
+> [  292.087372]  [<ffffffff810b74da>] ? kthread_create_on_cpu+0x7a/0x7a
+> [  292.087372]  [<ffffffff81afc50a>] ret_from_fork+0x7a/0xb0
+> [  292.087372]  [<ffffffff810b74da>] ? kthread_create_on_cpu+0x7a/0x7a
+> [  292.087372] Code: 1c 92 8e 00 48 8b 45 e0 59 5b 41 5c 41 5d 5d c3 0f 1f 44 00 00 55 48 89 e5 41 54 53 48 89 fb 48 c7 c7 90 d4 47 82 e8 b1 8f 8e 00 <48> 83 7b 38 00 49 89 c4 74 06 48 8b 73 40 eb 07 48 c7 c6 48 fe 
+> [  292.087372] RIP  [<ffffffff812119de>] pr_cont_kernfs_name+0x1b/0x6c
+> [  292.087372]  RSP <ffff88000014bb20>
+> [  292.087372] CR2: 0000000000000038
+> [  292.087372] ---[ end trace df25444498a82119 ]---
+> [  292.087372] ---[ end trace df25444498a82119 ]---
+> 
+> git bisect start 483036322b45d800fd68cb028874b6cd4fee3dba 38dbfb59d1175ef458d006556061adeaa8751b72 --
+> git bisect  bad 50a557bc0d03997d9203d749b0304c54d2c6e5f5  # 02:20      0-      5  Merge 'cgroup/review-simplify' into devel-hourly-2014020601
+> git bisect  bad c04e036e53a39cf2986ddaaf5607ff011f9ea55b  # 03:14      0-      1  Merge 'pinctrl/for-next' into devel-hourly-2014020601
+> git bisect good 08ce20bd7ef9a08b74cdfe6fe454374be72b5825  # 03:58     25+      0  Merge 'pci/pci/msi' into devel-hourly-2014020601
+> git bisect good 4f86564c657669f69c9cc03151ef6f23ae9e2015  # 04:32     25+      0  Merge 'm68knommu/cf' into devel-hourly-2014020601
+> git bisect  bad 29ae23c20b538664beaea72bb0721ce2538b4ca9  # 04:50      0-     11  Merge 'm68knommu/cfmmu' into devel-hourly-2014020601
+> git bisect  bad bbce71dbd03db3cf6df7faba0132d87a1a055827  # 04:58      0-      3  Merge 'nfs/devel' into devel-hourly-2014020601
+> git bisect good 88a78a912ee059467ae6db7429a6efe4654620a5  # 06:16     25+      1  Merge branch 'acl_fixes' into linux-next
+> git bisect good 12b13835a0a8bfabea68741e1ab4d4a4cb77d037  # 06:36     25+      0  kbuild: don't enable DEBUG_INFO when building for COMPILE_TEST
+> git bisect  bad 1f35d872a0b9dd05de8f0e50fc2957bf74ea30f7  # 06:55      0-      9  NFS: Shrink nfs_inode by sharing storage for cookieverf and commit_info
+> git bisect  bad 878a876b2e10888afe53766dcca33f723ae20edc  # 07:16      0-      4  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs
+> git bisect good d7512f79fd6cb8e2d9b78770289df6391a867ca1  # 07:20     25+      0  Merge tag 'nfs-for-3.14-3' of git://git.linux-nfs.org/projects/trondmy/linux-nfs
+> git bisect  bad 9343224bfd4be6a02e6ae0c0d66426c955c7d76e  # 07:34      0-     12  Merge branch 'akpm' (patches from Andrew Morton)
+> git bisect  bad 0cc2aa51be9d2f2b001c0e070b2e5cdde89b39f4  # 07:47      0-     10  Add linux-next specific files for 20140206
+> 
+> Thanks,
+> Fengguang
+> 
