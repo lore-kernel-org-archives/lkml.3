@@ -1,81 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751805AbaBGWk5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 17:40:57 -0500
-Received: from fieldses.org ([174.143.236.118]:43663 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751362AbaBGWk4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 17:40:56 -0500
-Date: Fri, 7 Feb 2014 17:40:44 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, akpm@linux-foundation.org, dhowells@redhat.com,
-        zab@redhat.com, jack@suse.cz, luto@amacapital.net, mszeredi@suse.cz
-Subject: Re: [PATCH 08/13] vfs: add cross-rename
-Message-ID: <20140207224044.GC8801@fieldses.org>
-References: <1391791751-2533-1-git-send-email-miklos@szeredi.hu>
- <1391791751-2533-9-git-send-email-miklos@szeredi.hu>
+	id S1752054AbaBGWn6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 17:43:58 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:47426 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750744AbaBGWn4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 17:43:56 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1391791751-2533-9-git-send-email-miklos@szeredi.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D0F6B8BCA@AcuExch.aculab.com>
+References: <7510122.cayuQ6qt8r@wuerfel> <1389999459-9483-1-git-send-email-matthew.garrett@nebula.com>
+ <CAGVrzcZ4TFd=9KP+aoG47QbmqDJ1i23WBcEWDbzNRUfGmPvZHQ@mail.gmail.com> <063D6719AE5E284EB5DD2968C1650D6D0F6B8BCA@AcuExch.aculab.com>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Fri, 7 Feb 2014 14:43:15 -0800
+Message-ID: <CAGVrzcaht=ZVF9uu=VTaGBk4-ayRkYhOEpoWA4b2sprCaVrbKA@mail.gmail.com>
+Subject: Re: [PATCH V3] net/dt: Add support for overriding phy configuration
+ from device tree
+To: David Laight <David.Laight@aculab.com>
+Cc: Matthew Garrett <matthew.garrett@nebula.com>,
+        netdev <netdev@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 07, 2014 at 05:49:06PM +0100, Miklos Szeredi wrote:
-> From: Miklos Szeredi <mszeredi@suse.cz>
-> 
-> If flags contain RENAME_EXCHANGE then exchange source and destination files.
-> There's no restriction on the type of the files; e.g. a directory can be
-> exchanged with a symlink.
-> 
-> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-> Reviewed-by: Jan Kara <jack@suse.cz>
+2014-02-05 David Laight <David.Laight@aculab.com>:
+> From: Florian Fainelli
+>> It would be good to explain exactly how your hardware is broken
+>> exactly. I really do not think that such a fine-grained setting where
+>> you could disable, e.g: 100BaseT_Full, but allow 100BaseT_Half to
+>> remain usable makes that much sense. In general, Gigabit might be
+>> badly broken, but 100 and 10Mbits/sec should work fine. How about the
+>> MASTER-SLAVE bit, is overriding it really required?
+>
+> There are plenty of systems out there where you'd want to disable
+> either HDX or FDX modes.
+> The MAC unit has to know whether the PHY is in HDX or FDX in order
+> to work properly. Many do not need to know the speed - since the
+> PHY is responsible for the tx/rx fifo clock.
+> Getting the negotiated speed out of the PHY can be difficult, while
+> the ANAR can easily be set.
+> Unfortunately it is usually impossible to disable the 'fall-back'
+> 10M HDX.
 
-I don't see any problem with the delegation stuff.  Some random
-bikeshedding:
+The problem that I have with that approach in general is that:
 
-> @@ -2575,6 +2579,10 @@ static void __d_move(struct dentry * dentry, struct dentry * target)
->  
->  	/* Unhash the target: dput() will then get rid of it */
+- it bloats the code for a set of properties that are going to be used
+by hopefully a few percentage of the actual Device Trees out there
+- it puts no limits on what is acceptable/best-practice to be put in
+terms of configuration in the Device Tree, how about the 16x16 other
+register values out there which are standardized?
+- a PHY fixup should be registered based on the top-level compatible
+property for a given board where the specific PHY on a specific board
+is known to be broken
+- make things incredibly harder to debug than they are today
 
-I never understood the point of this comment.  It's not even right, is
-it?  And if anything this makes it less so.  Delete?
-
->  	__d_drop(target);
-> +	if (exchange) {
-> +		__d_rehash(target,
-> +			   d_hash(dentry->d_parent, dentry->d_name.hash));
-> +	}
->  
->  	list_del(&dentry->d_u.d_child);
->  	list_del(&target->d_u.d_child);
-...
-> @@ -4042,7 +4057,7 @@ int vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
->  
->  	old_name = fsnotify_oldname_init(old_dentry->d_name.name);
->  	dget(new_dentry);
-> -	if (!is_dir)
-> +	if (!is_dir || (flags & RENAME_EXCHANGE))
->  		lock_two_nondirectories(source, target);
->  	else if (target)
->  		mutex_lock(&target->i_mutex);
-
-I had to stop to think about that for a minute: OK, so in the normal
-rename case we still need to lock the to-be-deleted target, and
-lock_two_nondirectories won't do that for us because it ignores
-directories.  Got it.
-
-This feels a bit ugly but I don't have a better idea.
-
-> @@ -4051,25 +4066,25 @@ int vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
-
-Most of this function is under (flags & RENAME_EXCHANGE) conditionals at
-this point.  Have you looked at how much is duplicated if you split this
-into something like vfs_rename and vfs_exchange?
-
---b.
+I do acknowledge the need to have a solution to these problems, but
+this seems to duplicate existing mechanisms available (e.g: PHY
+fixups) without leveraging information that should be properly flagged
+in the Device Tree (board model, root-node compatible string etc...)
+to allow software to take corrective measures.
+-- 
+Florian
