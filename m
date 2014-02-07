@@ -1,48 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753779AbaBGLaN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:30:13 -0500
-Received: from www.linutronix.de ([62.245.132.108]:43290 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751734AbaBGLaI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753751AbaBGLaI (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 7 Feb 2014 06:30:08 -0500
-Date: Fri, 7 Feb 2014 12:30:06 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Clark Williams <williams@redhat.com>,
-        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-        John Kacur <jkacur@redhat.com>, Ulrich Obergfell <uobergfe@redhat.com>
-Subject: Re: [PATCH RT] rt: Make cpu_chill() use hrtimer instead of msleep()
-Message-ID: <20140207113006.GD23668@linutronix.de>
-References: <20140205115125.3cc950ce@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140205115125.3cc950ce@gandalf.local.home>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Received: from youngberry.canonical.com ([91.189.89.112]:41185 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751734AbaBGLZN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 06:25:13 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: PaX Team <pageexec@freemail.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.5 74/88] x86, x32: Correct invalid use of user timespec in the kernel
+Date: Fri,  7 Feb 2014 11:23:11 +0000
+Message-Id: <1391772205-22239-75-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
+References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt | 2014-02-05 11:51:25 [-0500]:
+3.5.7.30 -stable review patch.  If anyone has any objections, please let me know.
 
->Ulrich Obergfell pointed out that cpu_chill() calls msleep() which is woken
->up by the ksoftirqd running the TIMER softirq. But as the cpu_chill() is
->called from softirq context, it may block the ksoftirqd() from running, in
->which case, it may never wake up the msleep() causing the deadlock.
->
->I checked the vmcore, and irq/74-qla2xxx is stuck in the msleep() call,
->running on CPU 8. The one ksoftirqd that is stuck, happens to be the one that
->runs on CPU 8, and it is blocked on a lock held by irq/74-qla2xxx. As that
->ksoftirqd is the one that will wake up irq/74-qla2xxx, and it happens to be
->blocked on a lock that irq/74-qla2xxx holds, we have our deadlock.
+------------------
 
-could you please tell me which two locks are invovled here?
+From: PaX Team <pageexec@freemail.hu>
 
-Sebastian
+commit 2def2ef2ae5f3990aabdbe8a755911902707d268 upstream.
+
+The x32 case for the recvmsg() timout handling is broken:
+
+  asmlinkage long compat_sys_recvmmsg(int fd, struct compat_mmsghdr __user *mmsg,
+                                      unsigned int vlen, unsigned int flags,
+                                      struct compat_timespec __user *timeout)
+  {
+          int datagrams;
+          struct timespec ktspec;
+
+          if (flags & MSG_CMSG_COMPAT)
+                  return -EINVAL;
+
+          if (COMPAT_USE_64BIT_TIME)
+                  return __sys_recvmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
+                                        flags | MSG_CMSG_COMPAT,
+                                        (struct timespec *) timeout);
+          ...
+
+The timeout pointer parameter is provided by userland (hence the __user
+annotation) but for x32 syscalls it's simply cast to a kernel pointer
+and is passed to __sys_recvmmsg which will eventually directly
+dereference it for both reading and writing.  Other callers to
+__sys_recvmmsg properly copy from userland to the kernel first.
+
+The bug was introduced by commit ee4fa23c4bfc ("compat: Use
+COMPAT_USE_64BIT_TIME in net/compat.c") and should affect all kernels
+since 3.4 (and perhaps vendor kernels if they backported x32 support
+along with this code).
+
+Note that CONFIG_X86_X32_ABI gets enabled at build time and only if
+CONFIG_X86_X32 is enabled and ld can build x32 executables.
+
+Other uses of COMPAT_USE_64BIT_TIME seem fine.
+
+This addresses CVE-2014-0038.
+
+Signed-off-by: PaX Team <pageexec@freemail.hu>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ net/compat.c | 9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
+
+diff --git a/net/compat.c b/net/compat.c
+index 1d223d5..9c0fca1 100644
+--- a/net/compat.c
++++ b/net/compat.c
+@@ -781,21 +781,16 @@ asmlinkage long compat_sys_recvmmsg(int fd, struct compat_mmsghdr __user *mmsg,
+ 	if (flags & MSG_CMSG_COMPAT)
+ 		return -EINVAL;
+ 
+-	if (COMPAT_USE_64BIT_TIME)
+-		return __sys_recvmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
+-				      flags | MSG_CMSG_COMPAT,
+-				      (struct timespec *) timeout);
+-
+ 	if (timeout == NULL)
+ 		return __sys_recvmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
+ 				      flags | MSG_CMSG_COMPAT, NULL);
+ 
+-	if (get_compat_timespec(&ktspec, timeout))
++	if (compat_get_timespec(&ktspec, timeout))
+ 		return -EFAULT;
+ 
+ 	datagrams = __sys_recvmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
+ 				   flags | MSG_CMSG_COMPAT, &ktspec);
+-	if (datagrams > 0 && put_compat_timespec(&ktspec, timeout))
++	if (datagrams > 0 && compat_put_timespec(&ktspec, timeout))
+ 		datagrams = -EFAULT;
+ 
+ 	return datagrams;
+-- 
+1.8.3.2
+
