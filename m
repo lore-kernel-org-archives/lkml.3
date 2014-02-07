@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754049AbaBGLkT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:40:19 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41032 "EHLO
+	id S1752970AbaBGLYd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:24:33 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40882 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752172AbaBGLYe (ORCPT
+	with ESMTP id S1752172AbaBGLXx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:24:34 -0500
+	Fri, 7 Feb 2014 06:23:53 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 47/88] staging: r8712u: Set device type to wlan
-Date: Fri,  7 Feb 2014 11:22:44 +0000
-Message-Id: <1391772205-22239-48-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 16/88] rtlwifi: Set the link state
+Date: Fri,  7 Feb 2014 11:22:13 +0000
+Message-Id: <1391772205-22239-17-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
@@ -30,42 +30,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 3a21f00a5002b14e4aab52aef59d33ed28468a13 upstream.
+commit 619ce76f8bb850b57032501a39f26aa6c6731c70 upstream.
 
-The latest version of NetworkManager does not recognize the device as wireless
-without this change.
+The present code fails to set the linked state when an interface is
+added.
 
 Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ luis: backported to 3.5: adjusted context ]
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/staging/rtl8712/usb_intf.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/net/wireless/rtlwifi/core.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/staging/rtl8712/usb_intf.c b/drivers/staging/rtl8712/usb_intf.c
-index 1bc8097..d998c2f 100644
---- a/drivers/staging/rtl8712/usb_intf.c
-+++ b/drivers/staging/rtl8712/usb_intf.c
-@@ -361,6 +361,10 @@ static u8 key_2char2num(u8 hch, u8 lch)
- 	return (hex_to_bin(hch) << 4) | hex_to_bin(lch);
- }
- 
-+static const struct device_type wlan_type = {
-+	.name = "wlan",
-+};
-+
- /*
-  * drv_init() - a device potentially for us
-  *
-@@ -396,6 +400,7 @@ static int r871xu_drv_init(struct usb_interface *pusb_intf,
- 	padapter->pusb_intf = pusb_intf;
- 	usb_set_intfdata(pusb_intf, pnetdev);
- 	SET_NETDEV_DEV(pnetdev, &pusb_intf->dev);
-+	pnetdev->dev.type = &wlan_type;
- 	/* step 2. */
- 	padapter->dvobj_init = &r8712_usb_dvobj_init;
- 	padapter->dvobj_deinit = &r8712_usb_dvobj_deinit;
+diff --git a/drivers/net/wireless/rtlwifi/core.c b/drivers/net/wireless/rtlwifi/core.c
+index 60bf47d..e70333b 100644
+--- a/drivers/net/wireless/rtlwifi/core.c
++++ b/drivers/net/wireless/rtlwifi/core.c
+@@ -185,6 +185,7 @@ static int rtl_op_add_interface(struct ieee80211_hw *hw,
+ 					rtlpriv->cfg->maps
+ 					[RTL_IBSS_INT_MASKS]);
+ 		}
++		mac->link_state = MAC80211_LINKED;
+ 		break;
+ 	case NL80211_IFTYPE_ADHOC:
+ 		RT_TRACE(rtlpriv, COMP_MAC80211, DBG_LOUD,
 -- 
 1.8.3.2
 
