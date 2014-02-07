@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753510AbaBGMIN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:08:13 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42337 "EHLO
+	id S1753588AbaBGMIp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:08:45 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42316 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932498AbaBGLwF (ORCPT
+	with ESMTP id S932471AbaBGLv7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:52:05 -0500
+	Fri, 7 Feb 2014 06:51:59 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 191/233] mm/page-writeback.c: fix dirty_balance_reserve subtraction from dirtyable memory
-Date: Fri,  7 Feb 2014 11:46:50 +0000
-Message-Id: <1391773652-25214-192-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 178/233] vfs: Is mounted should be testing mnt_ns for NULL or error.
+Date: Fri,  7 Feb 2014 11:46:37 +0000
+Message-Id: <1391773652-25214-179-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -30,149 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Weiner <hannes@cmpxchg.org>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit a804552b9a15c931cfc2a92a2e0aed1add8b580a upstream.
+commit 260a459d2e39761fbd39803497205ce1690bc7b1 upstream.
 
-Tejun reported stuttering and latency spikes on a system where random
-tasks would enter direct reclaim and get stuck on dirty pages.  Around
-50% of memory was occupied by tmpfs backed by an SSD, and another disk
-(rotating) was reading and writing at max speed to shrink a partition.
+A bug was introduced with the is_mounted helper function in
+commit f7a99c5b7c8bd3d3f533c8b38274e33f3da9096e
+Author: Al Viro <viro@zeniv.linux.org.uk>
+Date:   Sat Jun 9 00:59:08 2012 -0400
 
-: The problem was pretty ridiculous.  It's a 8gig machine w/ one ssd and 10k
-: rpm harddrive and I could reliably reproduce constant stuttering every
-: several seconds for as long as buffered IO was going on on the hard drive
-: either with tmpfs occupying somewhere above 4gig or a test program which
-: allocates about the same amount of anon memory.  Although swap usage was
-: zero, turning off swap also made the problem go away too.
-:
-: The trigger conditions seem quite plausible - high anon memory usage w/
-: heavy buffered IO and swap configured - and it's highly likely that this
-: is happening in the wild too.  (this can happen with copying large files
-: to usb sticks too, right?)
+    get rid of ->mnt_longterm
 
-This patch (of 2):
+    it's enough to set ->mnt_ns of internal vfsmounts to something
+    distinct from all struct mnt_namespace out there; then we can
+    just use the check for ->mnt_ns != NULL in the fast path of
+    mntput_no_expire()
 
-The dirty_balance_reserve is an approximation of the fraction of free
-pages that the page allocator does not make available for page cache
-allocations.  As a result, it has to be taken into account when
-calculating the amount of "dirtyable memory", the baseline to which
-dirty_background_ratio and dirty_ratio are applied.
+    Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 
-However, currently the reserve is subtracted from the sum of free and
-reclaimable pages, which is non-sensical and leads to erroneous results
-when the system is dominated by unreclaimable pages and the
-dirty_balance_reserve is bigger than free+reclaimable.  In that case, at
-least the already allocated cache should be considered dirtyable.
+The intent was to test if the real_mount(vfsmount)->mnt_ns was
+NULL_OR_ERR but the code is actually testing real_mount(vfsmount)
+and always returning true.
 
-Fix the calculation by subtracting the reserve from the amount of free
-pages, then adding the reclaimable pages on top.
+The result is d_absolute_path returning paths it should be hiding.
 
-[akpm@linux-foundation.org: fix CONFIG_HIGHMEM build]
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Reported-by: Tejun Heo <tj@kernel.org>
-Tested-by: Tejun Heo <tj@kernel.org>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/page-writeback.c | 55 +++++++++++++++++++++++------------------------------
- 1 file changed, 24 insertions(+), 31 deletions(-)
+ fs/mount.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 241a746..1c21100 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -188,6 +188,25 @@ static unsigned long writeout_period_time = 0;
-  * global dirtyable memory first.
-  */
- 
-+/**
-+ * zone_dirtyable_memory - number of dirtyable pages in a zone
-+ * @zone: the zone
-+ *
-+ * Returns the zone's number of pages potentially available for dirty
-+ * page cache.  This is the base value for the per-zone dirty limits.
-+ */
-+static unsigned long zone_dirtyable_memory(struct zone *zone)
-+{
-+	unsigned long nr_pages;
-+
-+	nr_pages = zone_page_state(zone, NR_FREE_PAGES);
-+	nr_pages -= min(nr_pages, zone->dirty_balance_reserve);
-+
-+	nr_pages += zone_reclaimable_pages(zone);
-+
-+	return nr_pages;
-+}
-+
- static unsigned long highmem_dirtyable_memory(unsigned long total)
+diff --git a/fs/mount.h b/fs/mount.h
+index 64a8581..68d80bd 100644
+--- a/fs/mount.h
++++ b/fs/mount.h
+@@ -73,7 +73,7 @@ static inline int mnt_has_parent(struct mount *mnt)
+ static inline int is_mounted(struct vfsmount *mnt)
  {
- #ifdef CONFIG_HIGHMEM
-@@ -195,11 +214,9 @@ static unsigned long highmem_dirtyable_memory(unsigned long total)
- 	unsigned long x = 0;
- 
- 	for_each_node_state(node, N_HIGH_MEMORY) {
--		struct zone *z =
--			&NODE_DATA(node)->node_zones[ZONE_HIGHMEM];
-+		struct zone *z = &NODE_DATA(node)->node_zones[ZONE_HIGHMEM];
- 
--		x += zone_page_state(z, NR_FREE_PAGES) +
--		     zone_reclaimable_pages(z) - z->dirty_balance_reserve;
-+		x += zone_dirtyable_memory(z);
- 	}
- 	/*
- 	 * Unreclaimable memory (kernel memory or anonymous memory
-@@ -235,9 +252,11 @@ static unsigned long global_dirtyable_memory(void)
- {
- 	unsigned long x;
- 
--	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages();
-+	x = global_page_state(NR_FREE_PAGES);
- 	x -= min(x, dirty_balance_reserve);
- 
-+	x += global_reclaimable_pages();
-+
- 	if (!vm_highmem_is_dirtyable)
- 		x -= highmem_dirtyable_memory(x);
- 
-@@ -289,32 +308,6 @@ void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
+ 	/* neither detached nor internal? */
+-	return !IS_ERR_OR_NULL(real_mount(mnt));
++	return !IS_ERR_OR_NULL(real_mount(mnt)->mnt_ns);
  }
  
- /**
-- * zone_dirtyable_memory - number of dirtyable pages in a zone
-- * @zone: the zone
-- *
-- * Returns the zone's number of pages potentially available for dirty
-- * page cache.  This is the base value for the per-zone dirty limits.
-- */
--static unsigned long zone_dirtyable_memory(struct zone *zone)
--{
--	/*
--	 * The effective global number of dirtyable pages may exclude
--	 * highmem as a big-picture measure to keep the ratio between
--	 * dirty memory and lowmem reasonable.
--	 *
--	 * But this function is purely about the individual zone and a
--	 * highmem zone can hold its share of dirty pages, so we don't
--	 * care about vm_highmem_is_dirtyable here.
--	 */
--	unsigned long nr_pages = zone_page_state(zone, NR_FREE_PAGES) +
--		zone_reclaimable_pages(zone);
--
--	/* don't allow this to underflow */
--	nr_pages -= min(nr_pages, zone->dirty_balance_reserve);
--	return nr_pages;
--}
--
--/**
-  * zone_dirty_limit - maximum number of dirty pages allowed in a zone
-  * @zone: the zone
-  *
+ extern struct mount *__lookup_mnt(struct vfsmount *, struct dentry *, int);
 -- 
 1.8.3.2
 
