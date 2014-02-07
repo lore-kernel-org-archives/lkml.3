@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755303AbaBGMZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:25:56 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42132 "EHLO
+	id S1754965AbaBGLvH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:51:07 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42085 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752910AbaBGLvM (ORCPT
+	with ESMTP id S1754944AbaBGLu7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:51:12 -0500
+	Fri, 7 Feb 2014 06:50:59 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Bing Zhao <bzhao@marvell.com>, "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 151/233] drm/radeon/dpm: disable mclk switching on desktop RV770
-Date: Fri,  7 Feb 2014 11:46:10 +0000
-Message-Id: <1391773652-25214-152-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 141/233] mwifiex: fix wrong 11ac bits setting in fw_cap_info
+Date: Fri,  7 Feb 2014 11:46:00 +0000
+Message-Id: <1391773652-25214-142-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -27,41 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Bing Zhao <bzhao@marvell.com>
 
-commit 8097d94116d0c17e774ba4c8256e774018dc2a46 upstream.
+commit 1e202242ee1432d68a8bea4919b2ae0ef19d9e06 upstream.
 
-Mclk switching doesn't seem to work reliably on these
-cards.  Most RV770 boards specify the same mclk for all
-performance levels anyway so in most cases, this has
-no affect.
+bit 14 is actually reserved and bit 12 & 13 should be used for
+11ac capability in fw_cap_info.
 
-Bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=73067
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/rv770_dpm.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/net/wireless/mwifiex/fw.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/rv770_dpm.c b/drivers/gpu/drm/radeon/rv770_dpm.c
-index 4f17b31..a923ba9 100644
---- a/drivers/gpu/drm/radeon/rv770_dpm.c
-+++ b/drivers/gpu/drm/radeon/rv770_dpm.c
-@@ -2536,6 +2536,12 @@ bool rv770_dpm_vblank_too_short(struct radeon_device *rdev)
- 	    (rdev->pdev->subsystem_device == 0x1c42))
- 		switch_limit = 200;
+diff --git a/drivers/net/wireless/mwifiex/fw.h b/drivers/net/wireless/mwifiex/fw.h
+index 1b45aa5..f2cf3dc 100644
+--- a/drivers/net/wireless/mwifiex/fw.h
++++ b/drivers/net/wireless/mwifiex/fw.h
+@@ -228,7 +228,7 @@ enum MWIFIEX_802_11_PRIVACY_FILTER {
  
-+	/* RV770 */
-+	/* mclk switching doesn't seem to work reliably on desktop RV770s */
-+	if ((rdev->family == CHIP_RV770) &&
-+	    !(rdev->flags & RADEON_IS_MOBILITY))
-+		switch_limit = 0xffffffff; /* disable mclk switching */
-+
- 	if (vblank_time < switch_limit)
- 		return true;
- 	else
+ /* HW_SPEC fw_cap_info */
+ 
+-#define ISSUPP_11ACENABLED(fw_cap_info) (fw_cap_info & (BIT(13)|BIT(14)))
++#define ISSUPP_11ACENABLED(fw_cap_info) (fw_cap_info & (BIT(12)|BIT(13)))
+ 
+ #define GET_VHTCAP_CHWDSET(vht_cap_info)    ((vht_cap_info >> 2) & 0x3)
+ #define GET_VHTNSSMCS(mcs_mapset, nss) ((mcs_mapset >> (2 * (nss - 1))) & 0x3)
 -- 
 1.8.3.2
 
