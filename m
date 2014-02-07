@@ -1,76 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752552AbaBGP2x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 10:28:53 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40931 "EHLO mx2.suse.de"
+	id S1752279AbaBGPcj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 10:32:39 -0500
+Received: from mga01.intel.com ([192.55.52.88]:57827 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751439AbaBGP2v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 10:28:51 -0500
-Date: Fri, 7 Feb 2014 16:28:49 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: Hugh Dickins <hughd@google.com>,
-        Filipe Brandenburger <filbranden@google.com>,
-        Li Zefan <lizefan@huawei.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>,
-        Markus Blank-Burian <burian@muenster.de>,
-        Shawn Bohrer <shawn.bohrer@gmail.com>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] cgroup: use an ordered workqueue for cgroup destruction
-Message-ID: <20140207152849.GF5121@dhcp22.suse.cz>
-References: <alpine.LSU.2.11.1402061541560.31342@eggly.anvils>
- <20140207140402.GA3304@htj.dyndns.org>
- <20140207143740.GD5121@dhcp22.suse.cz>
- <20140207151341.GB3304@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140207151341.GB3304@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751439AbaBGPci (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 10:32:38 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,801,1384329600"; 
+   d="asc'?scan'208";a="477662463"
+Message-ID: <1391787126.5669.11.camel@intelbox>
+Subject: Re: intel_sdvo_init: trying to register non-static key
+From: Imre Deak <imre.deak@intel.com>
+Reply-To: imre.deak@intel.com
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Borislav Petkov <bp@alien8.de>, Jani Nikula <jani.nikula@linux.intel.com>,
+        intel-gfx@lists.freedesktop.org,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 07 Feb 2014 17:32:06 +0200
+In-Reply-To: <20140207145149.GZ17001@phenom.ffwll.local>
+References: <20140207093205.GA24395@pd.tnic> <87d2iz18vi.fsf@intel.com>
+	 <1391771542.5669.6.camel@intelbox> <20140207112809.GG24395@pd.tnic>
+	 <20140207145149.GZ17001@phenom.ffwll.local>
+Organization: Intel
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-gEdIJDiLO0xpk7IGsAF+"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 07-02-14 10:13:41, Tejun Heo wrote:
-> Hello, Michal.
-> 
-> On Fri, Feb 07, 2014 at 03:37:40PM +0100, Michal Hocko wrote:
-> > Hmm, this is a bit tricky. We cannot use memcg iterators to reach
-> > children because css_tryget would fail on them. We can use cgroup
-> > iterators instead, alright, and reparent pages from leafs but this all
-> > sounds like a lot of complications.
-> 
-> Hmmm... I think we're talking past each other here.  Why would the
-> parent need to reach down to the children?  Just bail out if it can't
-> make things down to zero and let the child when it finishes its own
-> cleaning walk up the tree propagating changes.  ->parent is always
-> accessible.  Would that be complicated too?
 
-This would be basically the option #2 bellow.
+--=-gEdIJDiLO0xpk7IGsAF+
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> > Another option would be weakening css_offline reparenting and do not
-> > insist on having 0 charges. We want to get rid of as many charges as
-> > possible but do not need to have all of them gone
-> > (http://marc.info/?l=linux-kernel&m=139161412932193&w=2). The last part
-> > would be reparenting to the upmost parent which is still online.
-> > 
-> > I guess this is implementable but I would prefer Hugh's fix for now and
-> > for stable.
-> 
-> Yeah, for -stable, I think Hugh's patch is good but I really don't
-> want to keep it long term.
+On Fri, 2014-02-07 at 15:51 +0100, Daniel Vetter wrote:
+> On Fri, Feb 07, 2014 at 12:28:09PM +0100, Borislav Petkov wrote:
+> > On Fri, Feb 07, 2014 at 01:12:22PM +0200, Imre Deak wrote:
+> > > On Fri, 2014-02-07 at 13:04 +0200, Jani Nikula wrote:
+> > > > Imre, is this the same i2c_del_adapter issue you're looking at? Any
+> > > > patches to try yet?
+> > >=20
+> > > It looks like the same issue yes. The following patch fixed it for me=
+:
+> > >=20
+> > > http://patchwork.freedesktop.org/patch/18698/
+> > >=20
+> > > I'm working on an improved version of this, but the main thing - to
+> > > remove the connector's sysfs entries before actually destroying the
+> > > encoder and connector objects - will remain the same as in the above
+> > > patch.
+> >=20
+> > You could shoot the final version my way so that I give it a run too.
+>=20
+> The final version will only change the code layout a bit, but not the
+> logic. So a tested-by from you for v1 would be helpful anyway, to make
+> really sure you've reported the same issue. If that's not the case then w=
+e
+> need to dig deeper, so better not to waste a few days waiting for v2.
 
-Based on our recent discussion regarding css_offline semantic we want to
-do some changes in that area. I thought we would simply update comments
-but considering this report css_offline needs some changes as well. I
-will look at it. The idea is to split mem_cgroup_reparent_charges into
-two parts. The core one which drains LRUs and would be called from
-mem_cgroup_css_offline and one which loops until all charges are gone
-for mem_cgroup_css_free. mem_cgroup_move_parent will need an update as
-well. It would have to go up the hierarchy to the first alive parent.
+I just realized it's a different issue, since it's on the init path.
+Also we set the drm device as the parent for the sdvo i2c adapter as
+opposed to the dp i2c adapter where it's the connector device. So the
+above patch won't help in Borislav's case. I'm looking into this issue
+anyway.
 
--- 
-Michal Hocko
-SUSE Labs
+--Imre=20
+
+> -Daniel
+
+
+--=-gEdIJDiLO0xpk7IGsAF+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQEcBAABAgAGBQJS9Px2AAoJEORIIAnNuWDFp+YH+wZ//z3cU0fiLcL80gndNjtk
+plgyaYhzoQAzKvHkimfpbtsDNIifd05AMFDiNSP9oOCMyHhUltjduOYMXnrOgyG4
+WYIhaeH9OeMMsw7b02n9Hbiw63T8MGYc90CYN5xejpxcciMCybzYZSoUVLBCbpuo
+jagw2EMsBRfnG9zaaHJb4ne0AZxVqQ+BJB+UnccWgWJzHb+LWg6l0DNeqeoMP5W0
+ALiDD931AmHB0ijMwp/i8faOjeLfWmuXqNOIZtEitdTpZj2VbprWoLwv3fcow0Cn
+vol+dmwZWX6D/gqTvTKezzSL5W2tZHF8tDuZqdCn4q6dnWAas0m/6kh160KWm8Y=
+=YDLZ
+-----END PGP SIGNATURE-----
+
+--=-gEdIJDiLO0xpk7IGsAF+--
+
