@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755313AbaBGNPw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 08:15:52 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41576 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754040AbaBGLsc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754446AbaBGLsc (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 7 Feb 2014 06:48:32 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41556 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754416AbaBGLs1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 06:48:27 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jon Medhurst <tixy@linaro.org>,
+Cc: H Hartley Sweeten <hsweeten@visionengravers.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 041/233] serial: amba-pl011: use port lock to guard control register access
-Date: Fri,  7 Feb 2014 11:44:20 +0000
-Message-Id: <1391773652-25214-42-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 037/233] staging: comedi: addi_apci_1032: fix subdevice type/flags bug
+Date: Fri,  7 Feb 2014 11:44:16 +0000
+Message-Id: <1391773652-25214-38-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -28,74 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jon Medhurst <tixy@linaro.org>
+From: H Hartley Sweeten <hsweeten@visionengravers.com>
 
-commit fe43390702a1b5741fdf217063b05c7612b38303 upstream.
+commit 90daf69a7a3f1d1a41018c799968a0bb896d65e0 upstream.
 
-When the pl011 is being used for a console, pl011_console_write forces
-the control register (CR) to enable the UART for transmission and then
-restores this to the original value afterwards. It does this while
-holding the port lock.
+The SDF_CMD_READ should be one of the s->subdev_flags not part of
+the s->type.
 
-Unfortunately, when the uart is started or shutdown - say in response to
-userland using the serial device for a terminal - then this updates the
-control register without any locking.
-
-This means we can have
-
-  pl011_console_write   Save CR
-  pl011_startup         Initialise CR, e.g. enable receive
-  pl011_console_write   Restore old CR with receive not enabled
-
-this result is a serial port which doesn't respond to any input.
-
-A similar race in reverse could happen when the device is shutdown.
-
-We can fix these problems by taking the port lock when updating CR.
-
-Signed-off-by: Jon Medhurst <tixy@linaro.org>
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/tty/serial/amba-pl011.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/staging/comedi/drivers/addi_apci_1032.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/tty/serial/amba-pl011.c b/drivers/tty/serial/amba-pl011.c
-index 28b35ad..7324301 100644
---- a/drivers/tty/serial/amba-pl011.c
-+++ b/drivers/tty/serial/amba-pl011.c
-@@ -1533,6 +1533,8 @@ static int pl011_startup(struct uart_port *port)
- 	/*
- 	 * Provoke TX FIFO interrupt into asserting.
- 	 */
-+	spin_lock_irq(&uap->port.lock);
-+
- 	cr = UART01x_CR_UARTEN | UART011_CR_TXE | UART011_CR_LBE;
- 	writew(cr, uap->port.membase + UART011_CR);
- 	writew(0, uap->port.membase + UART011_FBRD);
-@@ -1557,6 +1559,8 @@ static int pl011_startup(struct uart_port *port)
- 	cr |= UART01x_CR_UARTEN | UART011_CR_RXE | UART011_CR_TXE;
- 	writew(cr, uap->port.membase + UART011_CR);
- 
-+	spin_unlock_irq(&uap->port.lock);
-+
- 	/*
- 	 * initialise the old status of the modem signals
- 	 */
-@@ -1625,11 +1629,13 @@ static void pl011_shutdown(struct uart_port *port)
- 	 * it during startup().
- 	 */
- 	uap->autorts = false;
-+	spin_lock_irq(&uap->port.lock);
- 	cr = readw(uap->port.membase + UART011_CR);
- 	uap->old_cr = cr;
- 	cr &= UART011_CR_RTS | UART011_CR_DTR;
- 	cr |= UART01x_CR_UARTEN | UART011_CR_TXE;
- 	writew(cr, uap->port.membase + UART011_CR);
-+	spin_unlock_irq(&uap->port.lock);
- 
- 	/*
- 	 * disable break condition and fifos
+diff --git a/drivers/staging/comedi/drivers/addi_apci_1032.c b/drivers/staging/comedi/drivers/addi_apci_1032.c
+index 8a93542..ecc67a3 100644
+--- a/drivers/staging/comedi/drivers/addi_apci_1032.c
++++ b/drivers/staging/comedi/drivers/addi_apci_1032.c
+@@ -325,8 +325,8 @@ static int apci1032_auto_attach(struct comedi_device *dev,
+ 	s = &dev->subdevices[1];
+ 	if (dev->irq) {
+ 		dev->read_subdev = s;
+-		s->type		= COMEDI_SUBD_DI | SDF_CMD_READ;
+-		s->subdev_flags	= SDF_READABLE;
++		s->type		= COMEDI_SUBD_DI;
++		s->subdev_flags	= SDF_READABLE | SDF_CMD_READ;
+ 		s->n_chan	= 1;
+ 		s->maxdata	= 1;
+ 		s->range_table	= &range_digital;
 -- 
 1.8.3.2
 
