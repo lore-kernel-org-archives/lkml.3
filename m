@@ -1,85 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751000AbaBGGPw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 01:15:52 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:51541 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750707AbaBGGPv (ORCPT
+	id S1751382AbaBGGSJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 01:18:09 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:9462 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751232AbaBGGSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 01:15:51 -0500
-Message-ID: <52F47A03.2010805@huawei.com>
-Date: Fri, 7 Feb 2014 14:15:31 +0800
-From: Libo Chen <clbchenlibo.chen@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Fri, 7 Feb 2014 01:18:07 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 06 Feb 2014 22:16:32 -0800
+Message-ID: <52F47A9B.1060204@nvidia.com>
+Date: Fri, 7 Feb 2014 15:18:03 +0900
+From: jinyoungp <jinyoungp@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:27.0) Gecko/20100101 Thunderbird/27.0
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Eiichi Tsukata <eiichi.tsukata.xh@hitachi.com>
-CC: <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [PATCH v2] scsi: Add 'retry_timeout' to avoid infinite command
- retry
-References: <52F30B5E.8020202@hitachi.com>	 <20140207002241.11465.87367.stgit@ltc223.sdl.hitachi.co.jp> <1391752003.22335.67.camel@dabdike>
-In-Reply-To: <1391752003.22335.67.camel@dabdike>
-Content-Type: text/plain; charset="UTF-8"
+To: Jingoo Han <jg1.han@samsung.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 01/12] backlight: aat2870: Remove unnecessary OOM messages
+References: <000101cf2313$6ef38e80$4cdaab80$%han@samsung.com> <000201cf2313$b65183e0$22f48ba0$%han@samsung.com>
+In-Reply-To: <000201cf2313$b65183e0$22f48ba0$%han@samsung.com>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="EUC-KR"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.22.241]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/2/7 13:46, James Bottomley wrote:
-> On Fri, 2014-02-07 at 09:22 +0900, Eiichi Tsukata wrote:
->> Currently, scsi error handling in scsi_io_completion() tries to
->> unconditionally requeue scsi command when device keeps some error state.
->> For example, UNIT_ATTENTION causes infinite retry with
->> action == ACTION_RETRY.
->> This is because retryable errors are thought to be temporary and the scsi
->> device will soon recover from those errors. Normally, such retry policy is
->> appropriate because the device will soon recover from temporary error state.
-> 
-> 
-> 
->> But there is no guarantee that device is able to recover from error state
->> immediately. Actually, we've experienced an infinite retry on some hardware.
->> Therefore hardware error can results in infinite command retry loop.
-> 
-> Could you please add an analysis of the actual failure; which devices
-> and what conditions.
-> 
+Signed-off-by: Jinyoung Park <jinyoungp@nvidia.com>
 
-
-same question, can you explain?
-
->> This patch adds 'retry_timeout' sysfs attribute which limits the retry time
->> of each scsi command. This attribute is located in scsi sysfs directory
->> for example "/sys/bus/scsi/devices/X:X:X:X/" and value is in seconds.
->> Once scsi command retry time is longer than this timeout,
->> the command is treated as failure. 'retry_timeout' is set to '0' by default
->> which means no timeout set.
-> 
-> Don't do this ... you're mixing a feature (which you'd need to justify)
-> with an apparent bug fix.
-> 
-> Once you dump all the complexity, I think the patch boils down to a
-> simple check before the action switch in scsi_io_completion():
-> 
-> 	if (action !=  ACTION_FAIL &&
-> 	    time_before(cmd->jiffies_at_alloc + wait_for, jiffies)) {
-> 		action = ACTION_FAIL;
-> 		description = "command timed out";
-> 	}
-> 
-> 
-> James
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
-
+On 02/06/2014 05:16 PM, Jingoo Han wrote:
+> The site-specific OOM messages are unnecessary, because they
+> duplicate the MM subsystem generic OOM message.
+>
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> ---
+>  drivers/video/backlight/aat2870_bl.c |    2 --
+>  1 file changed, 2 deletions(-)
+>
+> diff --git a/drivers/video/backlight/aat2870_bl.c b/drivers/video/backlight/aat2870_bl.c
+> index ee0c0a9..ec5350f 100644
+> --- a/drivers/video/backlight/aat2870_bl.c
+> +++ b/drivers/video/backlight/aat2870_bl.c
+> @@ -149,8 +149,6 @@ static int aat2870_bl_probe(struct platform_device *pdev)
+>  				  sizeof(struct aat2870_bl_driver_data),
+>  				  GFP_KERNEL);
+>  	if (!aat2870_bl) {
+> -		dev_err(&pdev->dev,
+> -			"Failed to allocate memory for aat2870 backlight\n");
+>  		ret = -ENOMEM;
+>  		goto out;
+>  	}
 
