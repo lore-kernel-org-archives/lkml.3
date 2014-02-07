@@ -1,262 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932416AbaBGMez (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:34:55 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42027 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754876AbaBGLur (ORCPT
+	id S1755210AbaBGMf3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:35:29 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:47953 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752769AbaBGMfY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:50:47 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Mikulas Patocka <mpatocka@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 132/233] dm sysfs: fix a module unload race
-Date: Fri,  7 Feb 2014 11:45:51 +0000
-Message-Id: <1391773652-25214-133-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
-References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Fri, 7 Feb 2014 07:35:24 -0500
+Date: Fri, 7 Feb 2014 18:05:19 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Karsten Keil <isdn@linux-pingi.de>, netdev@vger.kernel.org,
+        josh@joshtriplett.org
+Subject: [PATCH 13/26] drivers: isdn: Mark functions as static in avmfritz.c
+Message-ID: <3215b0668fa427737d7850d6ee9e7c67075983d5.1390408517.git.rashika.kheria@gmail.com>
+References: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.4 -stable review patch.  If anyone has any objections, please let me know.
+Mark functions as static in hardware/mISDN/avmfritz.c because they are
+not used outside this file.
 
-------------------
+This eliminates the following warnings in hardware/mISDN/avmfritz.c:
+drivers/isdn/hardware/mISDN/avmfritz.c:288:1: warning: no previous prototype for ‘write_ctrl’ [-Wmissing-prototypes]
+drivers/isdn/hardware/mISDN/avmfritz.c:745:1: warning: no previous prototype for ‘clear_pending_hdlc_ints’ [-Wmissing-prototypes]
+drivers/isdn/hardware/mISDN/avmfritz.c:966:1: warning: no previous prototype for ‘setup_fritz’ [-Wmissing-prototypes]
 
-From: Mikulas Patocka <mpatocka@redhat.com>
-
-commit 2995fa78e423d7193f3b57835f6c1c75006a0315 upstream.
-
-This reverts commit be35f48610 ("dm: wait until embedded kobject is
-released before destroying a device") and provides an improved fix.
-
-The kobject release code that calls the completion must be placed in a
-non-module file, otherwise there is a module unload race (if the process
-calling dm_kobject_release is preempted and the DM module unloaded after
-the completion is triggered, but before dm_kobject_release returns).
-
-To fix this race, this patch moves the completion code to dm-builtin.c
-which is always compiled directly into the kernel if BLK_DEV_DM is
-selected.
-
-The patch introduces a new dm_kobject_holder structure, its purpose is
-to keep the completion and kobject in one place, so that it can be
-accessed from non-module code without the need to export the layout of
-struct mapped_device to that code.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- drivers/md/Kconfig      |  4 ++++
- drivers/md/Makefile     |  1 +
- drivers/md/dm-builtin.c | 48 ++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/md/dm-sysfs.c   |  5 -----
- drivers/md/dm.c         | 20 +++++---------------
- drivers/md/dm.h         | 17 ++++++++++++++++-
- 6 files changed, 74 insertions(+), 21 deletions(-)
- create mode 100644 drivers/md/dm-builtin.c
+ drivers/isdn/hardware/mISDN/avmfritz.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/md/Kconfig b/drivers/md/Kconfig
-index 30b426e..34d0097 100644
---- a/drivers/md/Kconfig
-+++ b/drivers/md/Kconfig
-@@ -176,8 +176,12 @@ config MD_FAULTY
- 
- source "drivers/md/bcache/Kconfig"
- 
-+config BLK_DEV_DM_BUILTIN
-+	boolean
-+
- config BLK_DEV_DM
- 	tristate "Device mapper support"
-+	select BLK_DEV_DM_BUILTIN
- 	---help---
- 	  Device-mapper is a low level volume manager.  It works by allowing
- 	  people to specify mappings for ranges of logical sectors.  Various
-diff --git a/drivers/md/Makefile b/drivers/md/Makefile
-index 5ef78ef..109b6bd 100644
---- a/drivers/md/Makefile
-+++ b/drivers/md/Makefile
-@@ -32,6 +32,7 @@ obj-$(CONFIG_MD_FAULTY)		+= faulty.o
- obj-$(CONFIG_BCACHE)		+= bcache/
- obj-$(CONFIG_BLK_DEV_MD)	+= md-mod.o
- obj-$(CONFIG_BLK_DEV_DM)	+= dm-mod.o
-+obj-$(CONFIG_BLK_DEV_DM_BUILTIN) += dm-builtin.o
- obj-$(CONFIG_DM_BUFIO)		+= dm-bufio.o
- obj-$(CONFIG_DM_BIO_PRISON)	+= dm-bio-prison.o
- obj-$(CONFIG_DM_CRYPT)		+= dm-crypt.o
-diff --git a/drivers/md/dm-builtin.c b/drivers/md/dm-builtin.c
-new file mode 100644
-index 0000000..6c9049c
---- /dev/null
-+++ b/drivers/md/dm-builtin.c
-@@ -0,0 +1,48 @@
-+#include "dm.h"
-+
-+/*
-+ * The kobject release method must not be placed in the module itself,
-+ * otherwise we are subject to module unload races.
-+ *
-+ * The release method is called when the last reference to the kobject is
-+ * dropped. It may be called by any other kernel code that drops the last
-+ * reference.
-+ *
-+ * The release method suffers from module unload race. We may prevent the
-+ * module from being unloaded at the start of the release method (using
-+ * increased module reference count or synchronizing against the release
-+ * method), however there is no way to prevent the module from being
-+ * unloaded at the end of the release method.
-+ *
-+ * If this code were placed in the dm module, the following race may
-+ * happen:
-+ *  1. Some other process takes a reference to dm kobject
-+ *  2. The user issues ioctl function to unload the dm device
-+ *  3. dm_sysfs_exit calls kobject_put, however the object is not released
-+ *     because of the other reference taken at step 1
-+ *  4. dm_sysfs_exit waits on the completion
-+ *  5. The other process that took the reference in step 1 drops it,
-+ *     dm_kobject_release is called from this process
-+ *  6. dm_kobject_release calls complete()
-+ *  7. a reschedule happens before dm_kobject_release returns
-+ *  8. dm_sysfs_exit continues, the dm device is unloaded, module reference
-+ *     count is decremented
-+ *  9. The user unloads the dm module
-+ * 10. The other process that was rescheduled in step 7 continues to run,
-+ *     it is now executing code in unloaded module, so it crashes
-+ *
-+ * Note that if the process that takes the foreign reference to dm kobject
-+ * has a low priority and the system is sufficiently loaded with
-+ * higher-priority processes that prevent the low-priority process from
-+ * being scheduled long enough, this bug may really happen.
-+ *
-+ * In order to fix this module unload race, we place the release method
-+ * into a helper code that is compiled directly into the kernel.
-+ */
-+
-+void dm_kobject_release(struct kobject *kobj)
-+{
-+	complete(dm_get_completion_from_kobject(kobj));
-+}
-+
-+EXPORT_SYMBOL(dm_kobject_release);
-diff --git a/drivers/md/dm-sysfs.c b/drivers/md/dm-sysfs.c
-index e0cc5d6..c62c5ab 100644
---- a/drivers/md/dm-sysfs.c
-+++ b/drivers/md/dm-sysfs.c
-@@ -79,11 +79,6 @@ static const struct sysfs_ops dm_sysfs_ops = {
- 	.show	= dm_attr_show,
- };
- 
--static void dm_kobject_release(struct kobject *kobj)
--{
--	complete(dm_get_completion_from_kobject(kobj));
--}
--
- /*
-  * dm kobject is embedded in mapped_device structure
-  * no need to define release function here
-diff --git a/drivers/md/dm.c b/drivers/md/dm.c
-index 267495c..a98a8ba 100644
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -193,11 +193,8 @@ struct mapped_device {
- 	/* forced geometry settings */
- 	struct hd_geometry geometry;
- 
--	/* sysfs handle */
--	struct kobject kobj;
--
--	/* wait until the kobject is released */
--	struct completion kobj_completion;
-+	/* kobject and completion */
-+	struct dm_kobject_holder kobj_holder;
- 
- 	/* zero-length flush that will be cloned and submitted to targets */
- 	struct bio flush_bio;
-@@ -1939,7 +1936,7 @@ static struct mapped_device *alloc_dev(int minor)
- 	init_waitqueue_head(&md->wait);
- 	INIT_WORK(&md->work, dm_wq_work);
- 	init_waitqueue_head(&md->eventq);
--	init_completion(&md->kobj_completion);
-+	init_completion(&md->kobj_holder.completion);
- 
- 	md->disk->major = _major;
- 	md->disk->first_minor = minor;
-@@ -2765,14 +2762,14 @@ struct gendisk *dm_disk(struct mapped_device *md)
- 
- struct kobject *dm_kobject(struct mapped_device *md)
- {
--	return &md->kobj;
-+	return &md->kobj_holder.kobj;
+diff --git a/drivers/isdn/hardware/mISDN/avmfritz.c b/drivers/isdn/hardware/mISDN/avmfritz.c
+index 292991c..e3fa1cd 100644
+--- a/drivers/isdn/hardware/mISDN/avmfritz.c
++++ b/drivers/isdn/hardware/mISDN/avmfritz.c
+@@ -284,7 +284,7 @@ __write_ctrl_pciv2(struct fritzcard *fc, struct hdlc_hw *hdlc, u32 channel) {
+ 					  AVM_HDLC_STATUS_1));
  }
  
- struct mapped_device *dm_get_from_kobject(struct kobject *kobj)
- {
- 	struct mapped_device *md;
- 
--	md = container_of(kobj, struct mapped_device, kobj);
-+	md = container_of(kobj, struct mapped_device, kobj_holder.kobj);
- 
- 	if (test_bit(DMF_FREEING, &md->flags) ||
- 	    dm_deleting_md(md))
-@@ -2782,13 +2779,6 @@ struct mapped_device *dm_get_from_kobject(struct kobject *kobj)
- 	return md;
+-void
++static void
+ write_ctrl(struct bchannel *bch, int which) {
+ 	struct fritzcard *fc = bch->hw;
+ 	struct hdlc_hw *hdlc;
+@@ -741,7 +741,7 @@ inithdlc(struct fritzcard *fc)
+ 	modehdlc(&fc->bch[1], -1);
  }
  
--struct completion *dm_get_completion_from_kobject(struct kobject *kobj)
--{
--	struct mapped_device *md = container_of(kobj, struct mapped_device, kobj);
--
--	return &md->kobj_completion;
--}
--
- int dm_suspended_md(struct mapped_device *md)
+-void
++static void
+ clear_pending_hdlc_ints(struct fritzcard *fc)
  {
- 	return test_bit(DMF_SUSPENDED, &md->flags);
-diff --git a/drivers/md/dm.h b/drivers/md/dm.h
-index 66cfb7d..9b3222f 100644
---- a/drivers/md/dm.h
-+++ b/drivers/md/dm.h
-@@ -16,6 +16,7 @@
- #include <linux/blkdev.h>
- #include <linux/hdreg.h>
- #include <linux/completion.h>
-+#include <linux/kobject.h>
+ 	u32 val;
+@@ -962,7 +962,7 @@ avm_dctrl(struct mISDNchannel *ch, u32 cmd, void *arg)
+ 	return err;
+ }
  
- /*
-  * Suspend feature flags
-@@ -126,11 +127,25 @@ void dm_interface_exit(void);
- /*
-  * sysfs interface
-  */
-+struct dm_kobject_holder {
-+	struct kobject kobj;
-+	struct completion completion;
-+};
-+
-+static inline struct completion *dm_get_completion_from_kobject(struct kobject *kobj)
-+{
-+	return &container_of(kobj, struct dm_kobject_holder, kobj)->completion;
-+}
-+
- int dm_sysfs_init(struct mapped_device *md);
- void dm_sysfs_exit(struct mapped_device *md);
- struct kobject *dm_kobject(struct mapped_device *md);
- struct mapped_device *dm_get_from_kobject(struct kobject *kobj);
--struct completion *dm_get_completion_from_kobject(struct kobject *kobj);
-+
-+/*
-+ * The kobject helper
-+ */
-+void dm_kobject_release(struct kobject *kobj);
- 
- /*
-  * Targets for linear and striped mappings
+-int
++static int
+ setup_fritz(struct fritzcard *fc)
+ {
+ 	u32 val, ver;
 -- 
-1.8.3.2
+1.7.9.5
 
