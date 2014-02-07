@@ -1,103 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755055AbaBGLvT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:51:19 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42120 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751785AbaBGLvI (ORCPT
+	id S1755032AbaBGLvS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:51:18 -0500
+Received: from www.linutronix.de ([62.245.132.108]:43529 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754967AbaBGLvI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 Feb 2014 06:51:08 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Adrian Hunter <adrian.hunter@intel.com>, Chris Ball <chris@printf.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 148/233] mmc: sdhci-pci: Fix BYT sd card getting stuck in runtime suspend
-Date: Fri,  7 Feb 2014 11:46:07 +0000
-Message-Id: <1391773652-25214-149-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
-References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+Date: Fri, 7 Feb 2014 12:51:12 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Carlo Caione <carlo.caione@gmail.com>
+cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Hans De Goede <hdegoede@redhat.com>, emilio@elopez.com.ar,
+        linux-sunxi@googlegroups.com, t.figa@samsung.com
+Subject: Re: [linux-sunxi] Re: [PATCH] irq: Add new flag to ack level-triggered
+ interrupts before unmasking
+In-Reply-To: <CAOQ7t2bzz9vKh_5h2nF=m+JpeYVa=Ttd4XQgrAa6Lhdzjg_Qxw@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1402071121310.21991@ionos.tec.linutronix.de>
+References: <1391721117-27446-1-git-send-email-carlo@caione.org> <alpine.DEB.2.02.1402062213590.21991@ionos.tec.linutronix.de> <CAOQ7t2Z0agZdDZ_OQZPtXWXoi5NMTcOOZz04q6wEVNy0rxn4AA@mail.gmail.com> <alpine.DEB.2.02.1402062229000.21991@ionos.tec.linutronix.de>
+ <CAOQ7t2bzz9vKh_5h2nF=m+JpeYVa=Ttd4XQgrAa6Lhdzjg_Qxw@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.4 -stable review patch.  If anyone has any objections, please let me know.
+On Fri, 7 Feb 2014, Carlo Caione wrote:
+> The context and the rationale is fully explained in this thread
+> http://www.spinics.net/lists/arm-kernel/msg299952.html and some
+> answers are already given along the thread especially by Hans here
+> http://www.spinics.net/lists/arm-kernel/msg303542.html
+> Shortly, the double interrupt problem as seen on sunxi NMI controller
+> (and other chips AFAIK) is specific for level-triggered interrupts
+> when the hard interrupt handler is not able to ACK the interrupts on
+> the originating device since this device can only be accessed via a
+> bus (in our case it was a PMIC on I2C).
+> This explains why my patch was specific for the threaded case and why
+> the ACK on mask is not really effective in actually acking the IRQs
+> (so that I need a second ACK before unmasking the line). In fact in
+> our case (PMIC connected via I2C with an interrupt line on a special
+> NMI controller) the implicit ACK done by the unmask is ignored if the
+> NMI line is still high, and to have the line going down we have to ACK
+> all the IRQs on the device accessing to it by I2C in the thread and
+> then ACK the NMI controller with the second ACK before the unmasking
+> callback.
 
-------------------
+I can't see why it would be specific for the threaded case.
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+The explanation says that the NMI chip is ignoring the ack on mask,
+which is basically the entry of the interrupt handler. Now it does not
+matter whether you are threaded or not. The interrupt line at the NMI
+controller is asserted in both cases. So the same issue should be
+visible for a non threaded interrupt, if the NMI controller really
+needs an ack on unmask. But there is another detail:
 
-commit 77a0122e0838663795651aa0beb2325156f98c09 upstream.
+	sunxi_sc_nmi_handle_irq()
+	chained_irq_enter()
+		NOP, because GIC uses EOI
 
-A host controller for a SD card may need a GPIO for card detect in order
-to wake up from runtime suspend when a card is inserted.  If that GPIO is
-not configured, then the host controller will not wake up.  Fix that for
-the affected devices by not enabling runtime PM unless the GPIO is
-successfully set up.
+	generic_handle_irq();
+		nmi->mask();		      
+		dev_handler();
+		nmi->unmask();
 
-This affects BYT sd card host controller which had runtime PM enabled from
-v3.11.  For completeness, the MFD sd card host controller is flagged also.
+	chained_irq_exit()
+		gic->eoi();
 
-The original patch before rebasing (see link below) was tested on v3.11.10
-and v3.12.4 although the patch applied with some offsets and fuzz.  The
-original patch is here:
+In the threaded case this looks like:
 
-    http://marc.info/?l=linux-mmc&m=138676702327057
+	sunxi_sc_nmi_handle_irq()
+	chained_irq_enter()
+		NOP, because GIC uses EOI
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Signed-off-by: Chris Ball <chris@printf.net>
-[ luis: backported to 3.11:
-  - struct sdhci_pci_fixes is defined in sdhci-pci.c, not in sdhci-pci.h ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/mmc/host/sdhci-pci.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+	generic_handle_irq();
+		nmi->mask();
+		wake_thread();
 
-diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
-index d7d6bc8..33593e7 100644
---- a/drivers/mmc/host/sdhci-pci.c
-+++ b/drivers/mmc/host/sdhci-pci.c
-@@ -59,6 +59,7 @@ struct sdhci_pci_fixes {
- 	unsigned int		quirks;
- 	unsigned int		quirks2;
- 	bool			allow_runtime_pm;
-+	bool			own_cd_for_runtime_pm;
- 
- 	int			(*probe) (struct sdhci_pci_chip *);
- 
-@@ -290,6 +291,7 @@ static const struct sdhci_pci_fixes sdhci_intel_mrst_hc1_hc2 = {
- static const struct sdhci_pci_fixes sdhci_intel_mfd_sd = {
- 	.quirks		= SDHCI_QUIRK_NO_ENDATTR_IN_NOPDESC,
- 	.allow_runtime_pm = true,
-+	.own_cd_for_runtime_pm = true,
- };
- 
- static const struct sdhci_pci_fixes sdhci_intel_mfd_sdio = {
-@@ -354,6 +356,7 @@ static const struct sdhci_pci_fixes sdhci_intel_byt_sdio = {
- static const struct sdhci_pci_fixes sdhci_intel_byt_sd = {
- 	.quirks2	= SDHCI_QUIRK2_CARD_ON_NEEDS_BUS_ON,
- 	.allow_runtime_pm = true,
-+	.own_cd_for_runtime_pm = true,
- };
- 
- /* O2Micro extra registers */
-@@ -1381,6 +1384,14 @@ static struct sdhci_pci_slot *sdhci_pci_probe_slot(
- 
- 	sdhci_pci_add_own_cd(slot);
- 
-+	/*
-+	 * Check if the chip needs a separate GPIO for card detect to wake up
-+	 * from runtime suspend.  If it is not there, don't allow runtime PM.
-+	 * Note sdhci_pci_add_own_cd() sets slot->cd_gpio to -EINVAL on failure.
-+	 */
-+	if (chip->fixes->own_cd_for_runtime_pm && !gpio_is_valid(slot->cd_gpio))
-+		chip->allow_runtime_pm = false;
-+
- 	return slot;
- 
- remove:
--- 
-1.8.3.2
+	chained_irq_exit()
+		gic->eoi();
 
+	run_thread()
+		dev_handler();
+		nmi->unmask();
+
+So the difference is that in the non threaded case the gic->eoi is
+called after the device interrupt has been cleared and the
+nmi->interrupt has been unmasked. And in the threaded case its the
+other way round. I have no idea how that stuff is connected internaly,
+but I suspect that the gic->eoi is related to this as it might
+actually ack the NMI chip, which of course only works in the non
+threaded case.
+
+Now back to your patch.
+
+I'm not against having a flag, but this should be done less convoluted
+and have proper names which make the use case clear along with a good
+technical explanation of the flag in the comment.
+
+unmask_and_ack() plus IRQCHIP_ACK_ON_UNMASK are not really telling
+what the heck is going on. You can restrict it to level irqs in the
+core, but please use the proper functions and not some opencoded
+hackery.
+
+Thanks,
+
+	tglx
