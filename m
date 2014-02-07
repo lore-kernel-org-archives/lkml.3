@@ -1,123 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755467AbaBGMKp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:10:45 -0500
-Received: from mga03.intel.com ([143.182.124.21]:21716 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755416AbaBGMKm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 07:10:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,800,1384329600"; 
-   d="scan'208";a="471323156"
-Date: Fri, 7 Feb 2014 20:10:38 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Tejun Heo <tj@kernel.org>, Filipe David Borba Manana <fdmanana@gmail.com>,
-        Chris Mason <clm@fb.com>, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [btrfs] BUG: unable to handle kernel NULL pointer dereference at
- 0000000000000038
-Message-ID: <20140207121038.GA1690@localhost>
-References: <20140207023801.GC11051@localhost>
- <alpine.DEB.2.02.1402070213020.22146@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1402070213020.22146@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932442AbaBGLv4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:51:56 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42287 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755228AbaBGLvx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 06:51:53 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Akash Goel <akash.goel@intel.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 182/233] drm/i915: Fix the offset issue for the stolen GEM objects
+Date: Fri,  7 Feb 2014 11:46:41 +0000
+Message-Id: <1391773652-25214-183-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
+References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 07, 2014 at 02:13:59AM -0800, David Rientjes wrote:
-> On Fri, 7 Feb 2014, Fengguang Wu wrote:
-> 
-> > [    1.625020] BTRFS: selftest: Running btrfs_split_item tests
-> > [    1.627004] BTRFS: selftest: Running find delalloc tests
-> > [    2.289182] tsc: Refined TSC clocksource calibration: 2299.967 MHz
-> > [  292.084537] kthreadd invoked oom-killer: gfp_mask=0x3000d0, order=1, oom_score_adj=0
-> > [  292.086439] kthreadd cpuset=
-> > [  292.087072] BUG: unable to handle kernel NULL pointer dereference at 0000000000000038
-> > [  292.087372] IP: [<ffffffff812119de>] pr_cont_kernfs_name+0x1b/0x6c
-> 
-> This looks like a problem with the cpuset cgroup name, are you sure this 
-> isn't related to the removal of cgroup->name?
+3.11.10.4 -stable review patch.  If anyone has any objections, please let me know.
 
-It looks not related to patch "cgroup: remove cgroup->name", because
-that patch lies in the cgroup tree and not contained in output of "git log BAD_COMMIT".
+------------------
 
-Thanks,
-Fengguang
+From: Akash Goel <akash.goel@intel.com>
 
-> > [  292.087372] PGD 0 
-> > [  292.087372] Oops: 0000 [#1] 
-> > [  292.087372] Modules linked in:
-> > [  292.087372] CPU: 0 PID: 2 Comm: kthreadd Not tainted 3.14.0-rc1-wl-ath-00978-g4830363 #2
-> > [  292.087372] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-> > [  292.087372] task: ffff880000148050 ti: ffff88000014a000 task.ti: ffff88000014a000
-> > [  292.087372] RIP: 0010:[<ffffffff812119de>]  [<ffffffff812119de>] pr_cont_kernfs_name+0x1b/0x6c
-> > [  292.087372] RSP: 0000:ffff88000014bb20  EFLAGS: 00010046
-> > [  292.087372] RAX: 0000000000000282 RBX: 0000000000000000 RCX: 0000000000000002
-> > [  292.087372] RDX: ffffffff812119de RSI: ffffffff8247d4a8 RDI: 0000000000000046
-> > [  292.087372] RBP: ffff88000014bb30 R08: ffffffff82f31218 R09: 0000000000000000
-> > [  292.087372] R10: 0000000000000000 R11: 0000000000000000 R12: ffffffff833c4ab8
-> > [  292.087372] R13: 00000000003000d0 R14: 0000000000000001 R15: 0000000000000000
-> > [  292.087372] FS:  0000000000000000(0000) GS:ffffffff82279000(0000) knlGS:0000000000000000
-> > [  292.087372] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> > [  292.087372] CR2: 0000000000000038 CR3: 0000000002269000 CR4: 00000000000006b0
-> > [  292.087372] Stack:
-> > [  292.087372]  ffff880000148050 ffffffff833c4ab8 ffff88000014bb50 ffffffff8110836d
-> > [  292.087372]  ffff880000148050 ffff880000148530 ffff88000014bbd0 ffffffff81ae2614
-> > [  292.087372]  ffff880000148640 ffff88000014bb78 ffffffff810c7dd7 ffff88000014bb98
-> > [  292.087372] Call Trace:
-> > [  292.087372]  [<ffffffff8110836d>] cpuset_print_task_mems_allowed+0x65/0x8b
-> > [  292.087372]  [<ffffffff81ae2614>] dump_header.isra.11+0x68/0x29a
-> > [  292.087372]  [<ffffffff810c7dd7>] ? local_clock+0x2b/0x34
-> > [  292.087372]  [<ffffffff810ce52b>] ? lock_release_holdtime+0xcf/0xdb
-> > [  292.087372]  [<ffffffff811533d2>] ? out_of_memory+0x318/0x40f
-> > [  292.087372]  [<ffffffff8115342d>] out_of_memory+0x373/0x40f
-> > [  292.087372]  [<ffffffff8115324d>] ? out_of_memory+0x193/0x40f
-> > [  292.087372]  [<ffffffff8115a0ac>] __alloc_pages_nodemask+0xdd1/0x12c4
-> > [  292.087372]  [<ffffffff8100d301>] ? native_sched_clock+0xe4/0xfc
-> > [  292.087372]  [<ffffffff81089519>] copy_process+0x21d/0x2115
-> > [  292.087372]  [<ffffffff810b693e>] ? kthread_create_on_node+0x23e/0x23e
-> > [  292.087372]  [<ffffffff8100d322>] ? sched_clock+0x9/0xd
-> > [  292.087372]  [<ffffffff810c7aa7>] ? sched_clock_local.constprop.2+0x35/0xc8
-> > [  292.087372]  [<ffffffff810360bf>] ? pvclock_clocksource_read+0x9b/0x140
-> > [  292.087372]  [<ffffffff810b693e>] ? kthread_create_on_node+0x23e/0x23e
-> > [  292.087372]  [<ffffffff8108b61c>] do_fork+0x105/0x4db
-> > [  292.087372]  [<ffffffff810c7d54>] ? sched_clock_cpu+0xc9/0xdb
-> > [  292.087372]  [<ffffffff810c7dd7>] ? local_clock+0x2b/0x34
-> > [  292.087372]  [<ffffffff810ce52b>] ? lock_release_holdtime+0xcf/0xdb
-> > [  292.087372]  [<ffffffff810b768d>] ? kthreadd+0x1b3/0x24a
-> > [  292.087372]  [<ffffffff8108ba18>] kernel_thread+0x26/0x28
-> > [  292.087372]  [<ffffffff810b76a1>] kthreadd+0x1c7/0x24a
-> > [  292.087372]  [<ffffffff81afc50a>] ? ret_from_fork+0x7a/0xb0
-> > [  292.087372]  [<ffffffff810b74da>] ? kthread_create_on_cpu+0x7a/0x7a
-> > [  292.087372]  [<ffffffff81afc50a>] ret_from_fork+0x7a/0xb0
-> > [  292.087372]  [<ffffffff810b74da>] ? kthread_create_on_cpu+0x7a/0x7a
-> > [  292.087372] Code: 1c 92 8e 00 48 8b 45 e0 59 5b 41 5c 41 5d 5d c3 0f 1f 44 00 00 55 48 89 e5 41 54 53 48 89 fb 48 c7 c7 90 d4 47 82 e8 b1 8f 8e 00 <48> 83 7b 38 00 49 89 c4 74 06 48 8b 73 40 eb 07 48 c7 c6 48 fe 
-> > [  292.087372] RIP  [<ffffffff812119de>] pr_cont_kernfs_name+0x1b/0x6c
-> > [  292.087372]  RSP <ffff88000014bb20>
-> > [  292.087372] CR2: 0000000000000038
-> > [  292.087372] ---[ end trace df25444498a82119 ]---
-> > [  292.087372] ---[ end trace df25444498a82119 ]---
-> > 
-> > git bisect start 483036322b45d800fd68cb028874b6cd4fee3dba 38dbfb59d1175ef458d006556061adeaa8751b72 --
-> > git bisect  bad 50a557bc0d03997d9203d749b0304c54d2c6e5f5  # 02:20      0-      5  Merge 'cgroup/review-simplify' into devel-hourly-2014020601
-> > git bisect  bad c04e036e53a39cf2986ddaaf5607ff011f9ea55b  # 03:14      0-      1  Merge 'pinctrl/for-next' into devel-hourly-2014020601
-> > git bisect good 08ce20bd7ef9a08b74cdfe6fe454374be72b5825  # 03:58     25+      0  Merge 'pci/pci/msi' into devel-hourly-2014020601
-> > git bisect good 4f86564c657669f69c9cc03151ef6f23ae9e2015  # 04:32     25+      0  Merge 'm68knommu/cf' into devel-hourly-2014020601
-> > git bisect  bad 29ae23c20b538664beaea72bb0721ce2538b4ca9  # 04:50      0-     11  Merge 'm68knommu/cfmmu' into devel-hourly-2014020601
-> > git bisect  bad bbce71dbd03db3cf6df7faba0132d87a1a055827  # 04:58      0-      3  Merge 'nfs/devel' into devel-hourly-2014020601
-> > git bisect good 88a78a912ee059467ae6db7429a6efe4654620a5  # 06:16     25+      1  Merge branch 'acl_fixes' into linux-next
-> > git bisect good 12b13835a0a8bfabea68741e1ab4d4a4cb77d037  # 06:36     25+      0  kbuild: don't enable DEBUG_INFO when building for COMPILE_TEST
-> > git bisect  bad 1f35d872a0b9dd05de8f0e50fc2957bf74ea30f7  # 06:55      0-      9  NFS: Shrink nfs_inode by sharing storage for cookieverf and commit_info
-> > git bisect  bad 878a876b2e10888afe53766dcca33f723ae20edc  # 07:16      0-      4  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs
-> > git bisect good d7512f79fd6cb8e2d9b78770289df6391a867ca1  # 07:20     25+      0  Merge tag 'nfs-for-3.14-3' of git://git.linux-nfs.org/projects/trondmy/linux-nfs
-> > git bisect  bad 9343224bfd4be6a02e6ae0c0d66426c955c7d76e  # 07:34      0-     12  Merge branch 'akpm' (patches from Andrew Morton)
-> > git bisect  bad 0cc2aa51be9d2f2b001c0e070b2e5cdde89b39f4  # 07:47      0-     10  Add linux-next specific files for 20140206
-> > 
-> > Thanks,
-> > Fengguang
-> > 
+commit ec14ba47791965d2c08e0a681ff44eacbf3c4553 upstream.
+
+The 'offset' field of the 'scatterlist' structure was wrongly
+programmed with the offset value from the base of stolen area,
+whereas this field indicates the offset from where the interested
+data starts within the first PAGE pointed to by 'scattterlist'
+structure. As a result when a new GEM object allocated from stolen
+area is mapped to GTT, it could lead to an overwrite of GTT entries
+as the page count calculation will go wrong, refer the function
+'sg_page_count'.
+
+v2: Modified the commit message. (Chris)
+
+Signed-off-by: Akash Goel <akash.goel@intel.com>
+Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=71908
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=69104
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/gpu/drm/i915/i915_gem_stolen.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/i915/i915_gem_stolen.c b/drivers/gpu/drm/i915/i915_gem_stolen.c
+index 982d473..4047e3b 100644
+--- a/drivers/gpu/drm/i915/i915_gem_stolen.c
++++ b/drivers/gpu/drm/i915/i915_gem_stolen.c
+@@ -234,7 +234,7 @@ i915_pages_create_for_stolen(struct drm_device *dev,
+ 	}
+ 
+ 	sg = st->sgl;
+-	sg->offset = offset;
++	sg->offset = 0;
+ 	sg->length = size;
+ 
+ 	sg_dma_address(sg) = (dma_addr_t)dev_priv->mm.stolen_base + offset;
+-- 
+1.8.3.2
+
