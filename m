@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754990AbaBGNA1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 08:00:27 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41801 "EHLO
+	id S1752922AbaBGLtm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:49:42 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41783 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754672AbaBGLto (ORCPT
+	with ESMTP id S1754657AbaBGLti (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:49:44 -0500
+	Fri, 7 Feb 2014 06:49:38 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Malcolm Priestley <tvboxspy@gmail.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+Cc: Peter Huewe <peterhuewe@gmx.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 085/233] [media] m88rs2000: add m88rs2000_set_carrieroffset
-Date: Fri,  7 Feb 2014 11:45:04 +0000
-Message-Id: <1391773652-25214-86-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 081/233] tpm/tpm_ppi: Do not compare strcmp(a,b) == -1
+Date: Fri,  7 Feb 2014 11:45:00 +0000
+Message-Id: <1391773652-25214-82-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -28,151 +27,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+From: Peter Huewe <PeterHuewe@gmx.de>
 
-commit 06af15d1b6f45c60358feab88004472e5428f01c upstream.
+commit 747d35bd9bb4ae6bd74b19baa5bbe32f3e0cee11 upstream.
 
-Set the carrier offset correctly using the default mclk values.
+Depending on the implementation strcmp might return the difference between
+two strings not only -1,0,1 consequently
+ if (strcmp (a,b) == -1)
+might lead to taking the wrong branch
 
-Add function m88rs2000_get_mclk to calculate the mclk value
-against crystal frequency which will later be used for
-other functions.
+-> compare with < 0  instead,
+which in any case is more canonical.
 
-Add function m88rs2000_set_carrieroffset to calculate
-and set the offset value.
-
-variable offset becomes a signed value.
-
-Register 0x86 is set the appropriate value according to
-remainder value of frequency % 192857 calculation as
-shown.
-
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/media/dvb-frontends/m88rs2000.c | 77 ++++++++++++++++++++++++---------
- drivers/media/dvb-frontends/m88rs2000.h |  2 +
- 2 files changed, 59 insertions(+), 20 deletions(-)
+ drivers/char/tpm/tpm_ppi.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/media/dvb-frontends/m88rs2000.c b/drivers/media/dvb-frontends/m88rs2000.c
-index 4da5272..8091653 100644
---- a/drivers/media/dvb-frontends/m88rs2000.c
-+++ b/drivers/media/dvb-frontends/m88rs2000.c
-@@ -110,6 +110,52 @@ static u8 m88rs2000_readreg(struct m88rs2000_state *state, u8 reg)
- 	return b1[0];
- }
+diff --git a/drivers/char/tpm/tpm_ppi.c b/drivers/char/tpm/tpm_ppi.c
+index 57a818b..811ad1e 100644
+--- a/drivers/char/tpm/tpm_ppi.c
++++ b/drivers/char/tpm/tpm_ppi.c
+@@ -172,7 +172,7 @@ static ssize_t tpm_store_ppi_request(struct device *dev,
+ 	 * is updated with function index from SUBREQ to SUBREQ2 since PPI
+ 	 * version 1.1
+ 	 */
+-	if (strcmp(version, "1.1") == -1)
++	if (strcmp(version, "1.1") < 0)
+ 		params[2].integer.value = TPM_PPI_FN_SUBREQ;
+ 	else
+ 		params[2].integer.value = TPM_PPI_FN_SUBREQ2;
+@@ -182,7 +182,7 @@ static ssize_t tpm_store_ppi_request(struct device *dev,
+ 	 * string/package type. For PPI version 1.0 and 1.1, use buffer type
+ 	 * for compatibility, and use package type since 1.2 according to spec.
+ 	 */
+-	if (strcmp(version, "1.2") == -1) {
++	if (strcmp(version, "1.2") < 0) {
+ 		params[3].type = ACPI_TYPE_BUFFER;
+ 		params[3].buffer.length = sizeof(req);
+ 		sscanf(buf, "%d", &req);
+@@ -248,7 +248,7 @@ static ssize_t tpm_show_ppi_transition_action(struct device *dev,
+ 	 * (e.g. Capella with PPI 1.0) need integer/string/buffer type, so for
+ 	 * compatibility, define params[3].type as buffer, if PPI version < 1.2
+ 	 */
+-	if (strcmp(version, "1.2") == -1) {
++	if (strcmp(version, "1.2") < 0) {
+ 		params[3].type = ACPI_TYPE_BUFFER;
+ 		params[3].buffer.length =  0;
+ 		params[3].buffer.pointer = NULL;
+@@ -390,7 +390,7 @@ static ssize_t show_ppi_operations(char *buf, u32 start, u32 end)
+ 	kfree(output.pointer);
+ 	output.length = ACPI_ALLOCATE_BUFFER;
+ 	output.pointer = NULL;
+-	if (strcmp(version, "1.2") == -1)
++	if (strcmp(version, "1.2") < 0)
+ 		return -EPERM;
  
-+static u32 m88rs2000_get_mclk(struct dvb_frontend *fe)
-+{
-+	struct m88rs2000_state *state = fe->demodulator_priv;
-+	u32 mclk;
-+	u8 reg;
-+	/* Must not be 0x00 or 0xff */
-+	reg = m88rs2000_readreg(state, 0x86);
-+	if (!reg || reg == 0xff)
-+		return 0;
-+
-+	reg /= 2;
-+	reg += 1;
-+
-+	mclk = (u32)(reg * RS2000_FE_CRYSTAL_KHZ + 28 / 2) / 28;
-+
-+	return mclk;
-+}
-+
-+static int m88rs2000_set_carrieroffset(struct dvb_frontend *fe, s16 offset)
-+{
-+	struct m88rs2000_state *state = fe->demodulator_priv;
-+	u32 mclk;
-+	s32 tmp;
-+	u8 reg;
-+	int ret;
-+
-+	mclk = m88rs2000_get_mclk(fe);
-+	if (!mclk)
-+		return -EINVAL;
-+
-+	tmp = (offset * 4096 + (s32)mclk / 2) / (s32)mclk;
-+	if (tmp < 0)
-+		tmp += 4096;
-+
-+	/* Carrier Offset */
-+	ret = m88rs2000_writereg(state, 0x9c, (u8)(tmp >> 4));
-+
-+	reg = m88rs2000_readreg(state, 0x9d);
-+	reg &= 0xf;
-+	reg |= (u8)(tmp & 0xf) << 4;
-+
-+	ret |= m88rs2000_writereg(state, 0x9d, reg);
-+
-+	return ret;
-+}
-+
- static int m88rs2000_set_symbolrate(struct dvb_frontend *fe, u32 srate)
- {
- 	struct m88rs2000_state *state = fe->demodulator_priv;
-@@ -540,9 +586,8 @@ static int m88rs2000_set_frontend(struct dvb_frontend *fe)
- 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
- 	fe_status_t status;
- 	int i, ret = 0;
--	s32 tmp;
- 	u32 tuner_freq;
--	u16 offset = 0;
-+	s16 offset = 0;
- 	u8 reg;
- 
- 	state->no_lock_count = 0;
-@@ -567,26 +612,18 @@ static int m88rs2000_set_frontend(struct dvb_frontend *fe)
- 	if (ret < 0)
- 		return -ENODEV;
- 
--	offset = tuner_freq - c->frequency;
-+	offset = (s16)((s32)tuner_freq - c->frequency);
- 
--	/* calculate offset assuming 96000kHz*/
--	tmp = offset;
--	tmp *= 65536;
--
--	tmp = (2 * tmp + 96000) / (2 * 96000);
--	if (tmp < 0)
--		tmp += 65536;
--
--	offset = tmp & 0xffff;
--
--	ret = m88rs2000_writereg(state, 0x9a, 0x30);
--	/* Unknown usually 0xc6 sometimes 0xc1 */
--	reg = m88rs2000_readreg(state, 0x86);
--	ret |= m88rs2000_writereg(state, 0x86, reg);
--	/* Offset lower nibble always 0 */
--	ret |= m88rs2000_writereg(state, 0x9c, (offset >> 8));
--	ret |= m88rs2000_writereg(state, 0x9d, offset & 0xf0);
-+	/* default mclk value 96.4285 * 2 * 1000 = 192857 */
-+	if (((c->frequency % 192857) >= (192857 - 3000)) ||
-+				(c->frequency % 192857) <= 3000)
-+		ret = m88rs2000_writereg(state, 0x86, 0xc2);
-+	else
-+		ret = m88rs2000_writereg(state, 0x86, 0xc6);
- 
-+	ret |= m88rs2000_set_carrieroffset(fe, offset);
-+	if (ret < 0)
-+		return -ENODEV;
- 
- 	/* Reset Demod */
- 	ret = m88rs2000_tab_set(state, fe_reset);
-diff --git a/drivers/media/dvb-frontends/m88rs2000.h b/drivers/media/dvb-frontends/m88rs2000.h
-index 14ce31e..0a50ea9 100644
---- a/drivers/media/dvb-frontends/m88rs2000.h
-+++ b/drivers/media/dvb-frontends/m88rs2000.h
-@@ -53,6 +53,8 @@ static inline struct dvb_frontend *m88rs2000_attach(
- }
- #endif /* CONFIG_DVB_M88RS2000 */
- 
-+#define RS2000_FE_CRYSTAL_KHZ 27000
-+
- enum {
- 	DEMOD_WRITE = 0x1,
- 	WRITE_DELAY = 0x10,
+ 	params[2].integer.value = TPM_PPI_FN_GETOPR;
 -- 
 1.8.3.2
 
