@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755949AbaBGNXY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 08:23:24 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41450 "EHLO
+	id S1754232AbaBGLr7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:47:59 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41437 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753728AbaBGLsA (ORCPT
+	with ESMTP id S1753728AbaBGLr4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:48:00 -0500
+	Fri, 7 Feb 2014 06:47:56 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Abhilash Kesavan <a.kesavan@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
+Cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Simon Horman <horms+renesas@verge.net.au>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 017/233] clk: samsung: exynos5250: Add CLK_IGNORE_UNUSED flag for the sysreg clock
-Date: Fri,  7 Feb 2014 11:43:56 +0000
-Message-Id: <1391773652-25214-18-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 014/233] ARM: shmobile: armadillo: Fix coherent DMA mask
+Date: Fri,  7 Feb 2014 11:43:53 +0000
+Message-Id: <1391773652-25214-15-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -27,38 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Abhilash Kesavan <a.kesavan@samsung.com>
+From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 
-commit 2feed5aecf5f367b92bd6b6e92afe9e3de466907 upstream.
+commit dcd740b645003b866d7eb30d13d34d0729cce9db upstream.
 
-The sysreg (system register) generates control signals for various blocks
-like disp1blk, i2c, mipi, usb etc. However, it gets disabled as an unused
-clock at boot-up. This can lead to failures in operation of above blocks,
-because they can not be configured properly if this clock is disabled.
+Commit 4dcfa60071b3d23f0181f27d8519f12e37cefbb9 ("ARM: DMA-API: better
+handing of DMA masks for coherent allocations") added an additional
+check to the coherent DMA mask that results in an error when the mask is
+larger than what dma_addr_t can address.
 
-Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
-Acked-by: Mike Turquette <mturquette@linaro.org>
-[t.figa: Updated patch description.]
-Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+Set the LCDC coherent DMA mask to DMA_BIT_MASK(32) instead of ~0 to fix
+the problem.
+
+Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Signed-off-by: Simon Horman <horms+renesas@verge.net.au>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/clk/samsung/clk-exynos5250.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/arm/mach-shmobile/board-armadillo800eva.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/clk/samsung/clk-exynos5250.c b/drivers/clk/samsung/clk-exynos5250.c
-index 6f767c5..ad9f97b 100644
---- a/drivers/clk/samsung/clk-exynos5250.c
-+++ b/drivers/clk/samsung/clk-exynos5250.c
-@@ -378,7 +378,8 @@ struct samsung_gate_clock exynos5250_gate_clks[] __initdata = {
- 	GATE(hsi2c2, "hsi2c2", "aclk66", GATE_IP_PERIC, 30, 0, 0),
- 	GATE(hsi2c3, "hsi2c3", "aclk66", GATE_IP_PERIC, 31, 0, 0),
- 	GATE(chipid, "chipid", "aclk66", GATE_IP_PERIS, 0, 0, 0),
--	GATE(sysreg, "sysreg", "aclk66", GATE_IP_PERIS, 1, 0, 0),
-+	GATE(sysreg, "sysreg", "aclk66",
-+			GATE_IP_PERIS, 1, CLK_IGNORE_UNUSED, 0),
- 	GATE(pmu, "pmu", "aclk66", GATE_IP_PERIS, 2, CLK_IGNORE_UNUSED, 0),
- 	GATE(tzpc0, "tzpc0", "aclk66", GATE_IP_PERIS, 6, 0, 0),
- 	GATE(tzpc1, "tzpc1", "aclk66", GATE_IP_PERIS, 7, 0, 0),
+diff --git a/arch/arm/mach-shmobile/board-armadillo800eva.c b/arch/arm/mach-shmobile/board-armadillo800eva.c
+index c5be60d..db474d1 100644
+--- a/arch/arm/mach-shmobile/board-armadillo800eva.c
++++ b/arch/arm/mach-shmobile/board-armadillo800eva.c
+@@ -438,7 +438,7 @@ static struct platform_device lcdc0_device = {
+ 	.id		= 0,
+ 	.dev	= {
+ 		.platform_data	= &lcdc0_info,
+-		.coherent_dma_mask = ~0,
++		.coherent_dma_mask = DMA_BIT_MASK(32),
+ 	},
+ };
+ 
+@@ -535,7 +535,7 @@ static struct platform_device hdmi_lcdc_device = {
+ 	.id		= 1,
+ 	.dev	= {
+ 		.platform_data	= &hdmi_lcdc_info,
+-		.coherent_dma_mask = ~0,
++		.coherent_dma_mask = DMA_BIT_MASK(32),
+ 	},
+ };
+ 
 -- 
 1.8.3.2
 
