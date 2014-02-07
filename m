@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751682AbaBGHy2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 02:54:28 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:18467 "EHLO
+	id S1751771AbaBGHzT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 02:55:19 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:18771 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774AbaBGHy1 (ORCPT
+	with ESMTP id S1750743AbaBGHzR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 02:54:27 -0500
-X-AuditID: cbfee68e-b7f566d000002344-08-52f4913153f9
+	Fri, 7 Feb 2014 02:55:17 -0500
+X-AuditID: cbfee68f-b7f156d00000276c-37-52f49164ea9a
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
-        rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH 0/4] rtc: Use devm_ioremap_resource()
-Date: Fri, 07 Feb 2014 16:54:25 +0900
-Message-id: <000401cf23d9$d1df6e30$759e4a90$%han@samsung.com>
+        rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>,
+        "'Linus Walleij'" <linus.walleij@linaro.org>
+References: <000401cf23d9$d1df6e30$759e4a90$%han@samsung.com>
+In-reply-to: <000401cf23d9$d1df6e30$759e4a90$%han@samsung.com>
+Subject: [PATCH 1/4] rtc: rtc-coh901331: Use devm_ioremap_resource()
+Date: Fri, 07 Feb 2014 16:55:15 +0900
+Message-id: <000501cf23d9$f0057a80$d0106f80$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac8j2dGo+e7pmAi4QKyN7t2QoeNN8w==
+Thread-index: Ac8j2dGo+e7pmAi4QKyN7t2QoeNN8wAAAW2Q
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLIsWRmVeSWpSXmKPExsVy+t8zA13DiV+CDE69VbRYcvEqu8Wc9WvY
-	LC4vvMRqcXnXHDaL/Z0djA6sHnsmnmTzODHjN4tH35ZVjB7T5/1k8vi8SS6ANYrLJiU1J7Ms
-	tUjfLoErY29nUcF31oqzrRoNjJ9Zuhg5OSQETCR+TtnPBmGLSVy4tx7I5uIQEljGKLGi7zwr
-	TNHdg5eYIBKLGCXmfeiAqvrFKLFk5zNGkCo2ATWJL18Os3cxcnCICOhLtLVogNQwC/QySpzp
-	3c0OUiMsYCrR2L+dGcRmEVCVONHfANbLK2Arsfb/NChbUOLH5Htg5zELaEms33mcCcKWl9i8
-	5i0zyHwJAXWJR391QcIiAnoSHw4sY4YoEZHY9+IdI8TRx9glbp3gglglIPFt8iEWiFZZiU0H
-	mCFKJCUOrrjBMoFRbBaSxbOQLJ6FZPEsJBsWMLKsYhRNLUguKE5KLzLSK07MLS7NS9dLzs/d
-	xAiJur4djDcPWB9iTAZaP5FZSjQ5Hxi1eSXxhsZmRhamJqbGRuaWZqQJK4nzLnqYFCQkkJ5Y
-	kpqdmlqQWhRfVJqTWnyIkYmDU6qBsVLw4dTTC1guTDHdEpkiNW/ps/Ni7Iz/S6S8FbMOufA3
-	RFqv4vl/8vFOg6OaaofFoo+u8DQ6UPNafa6sxGcj1ukr8/O+r10sPF0+7bOsWt+xrblr18rU
-	FP+aHxEkIKtwS/Vz+pQn+/6Vff32YMaNXNHYd8+m3zpwSSfObodgQummDbfaghkOpiuxFGck
-	GmoxFxUnAgCXzILr0AIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNKsWRmVeSWpSXmKPExsVy+t9jAV3DiV+CDL48kbVYcvEqu8Wc9WvY
-	LC4vvMRqcXnXHDaL/Z0djA6sHnsmnmTzODHjN4tH35ZVjB7T5/1k8vi8SS6ANaqB0SYjNTEl
-	tUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaLuSQlliTilQKCCx
-	uFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCOMWNvZ1HBd9aKs60aDYyfWboYOTkkBEwk7h68
-	xARhi0lcuLeerYuRi0NIYBGjxLwPHVDOL0aJJTufMYJUsQmoSXz5cpi9i5GDQ0RAX6KtRQOk
-	hlmgl1HiTO9udpAaYQFTicb+7cwgNouAqsSJ/gawXl4BW4m1/6dB2YISPybfA7uCWUBLYv3O
-	40wQtrzE5jVvmUHmSwioSzz6qwsSFhHQk/hwYBkzRImIxL4X7xgnMArMQjJpFpJJs5BMmoWk
-	ZQEjyypG0dSC5ILipPRcQ73ixNzi0rx0veT83E2M4Kh+JrWDcWWDxSFGAQ5GJR7eE0s/Bwmx
-	JpYVV+YeYpTgYFYS4f3Z8CVIiDclsbIqtSg/vqg0J7X4EGMy0KMTmaVEk/OBCSevJN7Q2MTM
-	yNLIzMLIxNycNGElcd4DrdaBQgLpiSWp2ampBalFMFuYODilGhgVzpTHsrue2BKcw+dy3GHZ
-	zCyjs8dFLbPm5yv//L7zs32VyW/pnVZpTwtVK45lP1q15NWRhOV8Ql8NH+hOnrpl+75fDbGv
-	U09dDn8RdUxS9X7q2/bI8GhPqd1reb85n+ItV1d8p7V8gfvGKazbb+29YW2uKrQzaUmKom69
-	1SLjOd1bGmeIeYQqsRRnJBpqMRcVJwIAs0yx6i4DAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrIIsWRmVeSWpSXmKPExsVy+t8zQ92UiV+CDA6sEbRYcvEqu8Wc9WvY
+	LC4vvMRqMeXPciaLy7vmsFns7+xgdGDz2DPxJJvHnWt72DxOzPjN4tG3ZRWjx/R5P5k8Pm+S
+	C2CL4rJJSc3JLEst0rdL4MqYuKqNqeAhd8Xlhd/ZGxifc3YxcnJICJhI7Dx9lA3CFpO4cG89
+	kM3FISSwjFHi192LbDBFK7Z+ZgKxhQQWMUpcWsMLUfSLUeLrx/9gCTYBNYkvXw6zdzFycIgI
+	6Eu0tWiA1DAL7GaUWL/2GCtEs63EwpedzCA2p4CdRP+ePrC4sICLROP8jewgNouAqkTrkRmM
+	IDYvUP3MnUuYIGxBiR+T77GA2MwCWhLrdx5ngrDlJTavecsMsldCQF3i0V9dkLCIgJHEyqlL
+	WSFKRCT2vXjHCHKPhMBHdomOK3tYIXYJSHybfIgFoldWYtMBZoh/JSUOrrjBMoFRYhaSzbOQ
+	bJ6FZPMsJCsWMLKsYhRNLUguKE5KLzLWK07MLS7NS9dLzs/dxAiJ3v4djHcPWB9iTAZaP5FZ
+	SjQ5Hxj9eSXxhsZmRhamJqbGRuaWZqQJK4nz3n+YFCQkkJ5YkpqdmlqQWhRfVJqTWnyIkYmD
+	U6qBMW7TCc9r2vfY3J9ckP3GkFM+R+/Po1VLP3x2WSHivlVC6qqe5hIewXNL/l9lWMrrGnXm
+	uJlP1t74vAjfuTG3z/pHvU+q+zR9somtrvAdjhuLL6/ieda7d6v/K7Ud3mXVrC7tGiqmR1Zz
+	frNK2VIgfLjt6Ydr5msyphbu2nI3Ium5JrNVXM37LCWW4oxEQy3mouJEAGVeSBj0AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHKsWRmVeSWpSXmKPExsVy+t9jAd2UiV+CDD428FosuXiV3WLO+jVs
+	FpcXXmK1mPJnOZPF5V1z2Cz2d3YwOrB57Jl4ks3jzrU9bB4nZvxm8ejbsorRY/q8n0wenzfJ
+	BbBFNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gDd
+	oaRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGPMmLiqjangIXfF5YXf2RsY
+	n3N2MXJySAiYSKzY+pkJwhaTuHBvPRuILSSwiFHi0hreLkYuIPsXo8TXj//BitgE1CS+fDnM
+	3sXIwSEioC/R1qIBUsMssJtRYv3aY6wQzbYSC192MoPYnAJ2Ev17+sDiwgIuEo3zN7KD2CwC
+	qhKtR2Ywgti8QPUzdy5hgrAFJX5MvscCYjMLaEms33mcCcKWl9i85i0zyF4JAXWJR391QcIi
+	AkYSK6cuZYUoEZHY9+Id4wRGoVlIJs1CMmkWkkmzkLQsYGRZxSiaWpBcUJyUnmukV5yYW1ya
+	l66XnJ+7iRGcGp5J72Bc1WBxiFGAg1GJh/fE0s9BQqyJZcWVuYcYJTiYlUR4fzZ8CRLiTUms
+	rEotyo8vKs1JLT7EmAz06ERmKdHkfGDayiuJNzQ2MTOyNDKzMDIxNydNWEmc92CrdaCQQHpi
+	SWp2ampBahHMFiYOTqkGRq3iRz/00xk4H7w6X/38UDP/zf2mRuFcm45tjZy7zb05obBH9XOQ
+	QbRiTzw3/69D/nPv9G/RPPuAL49976YVwfPmh3admaiiXlu1dIfOtRDZ9/Vb992R4WXMEdW9
+	NmH3hmuM9eK655+ZOx+NjYuovFbeHOAtocUf8EB48XHHgmNnkn+Zvlr3TYmlOCPRUIu5qDgR
+	APxM8glRAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -54,20 +58,51 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Use devm_ioremap_resource() in order to make the code simpler,
-because devm_ioremap_resource() includes devm_request_mem_region()
-and devm_ioremap(). Also, it checks the return value of
-platform_get_resource().
+and remove redundant return value check of platform_get_resource()
+because the value is checked by devm_ioremap_resource().
 
-Jingoo Han (4):
-      rtc: rtc-coh901331: Use devm_ioremap_resource()
-      rtc: rtc-davinci: Use devm_ioremap_resource()
-      rtc: rtc-jz4740: Use devm_ioremap_resource()
-      rtc: rtc-vt8500: Use devm_ioremap_resource()
-
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
  drivers/rtc/rtc-coh901331.c |   18 +++---------------
- drivers/rtc/rtc-davinci.c   |   29 ++++-------------------------
- drivers/rtc/rtc-jz4740.c    |   24 +++++++-----------------
- drivers/rtc/rtc-vt8500.c    |   28 +++++-----------------------
- 4 files changed, 19 insertions(+), 80 deletions(-)
+ 1 file changed, 3 insertions(+), 15 deletions(-)
+
+diff --git a/drivers/rtc/rtc-coh901331.c b/drivers/rtc/rtc-coh901331.c
+index 73f1575..869cae2 100644
+--- a/drivers/rtc/rtc-coh901331.c
++++ b/drivers/rtc/rtc-coh901331.c
+@@ -43,8 +43,6 @@
+ struct coh901331_port {
+ 	struct rtc_device *rtc;
+ 	struct clk *clk;
+-	u32 phybase;
+-	u32 physize;
+ 	void __iomem *virtbase;
+ 	int irq;
+ #ifdef CONFIG_PM_SLEEP
+@@ -173,19 +171,9 @@ static int __init coh901331_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res)
+-		return -ENOENT;
+-
+-	rtap->phybase = res->start;
+-	rtap->physize = resource_size(res);
+-
+-	if (devm_request_mem_region(&pdev->dev, rtap->phybase, rtap->physize,
+-				    "rtc-coh901331") == NULL)
+-		return -EBUSY;
+-
+-	rtap->virtbase = devm_ioremap(&pdev->dev, rtap->phybase, rtap->physize);
+-	if (!rtap->virtbase)
+-		return -ENOMEM;
++	rtap->virtbase  = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(rtap->virtbase))
++		return PTR_ERR(rtap->virtbase);
+ 
+ 	rtap->irq = platform_get_irq(pdev, 0);
+ 	if (devm_request_irq(&pdev->dev, rtap->irq, coh901331_interrupt, 0,
+-- 
+1.7.10.4
+
 
