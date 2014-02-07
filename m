@@ -1,91 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752654AbaBGRTK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 12:19:10 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:57032 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750993AbaBGRTI (ORCPT
+	id S1752721AbaBGRTy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 12:19:54 -0500
+Received: from 14.mo1.mail-out.ovh.net ([178.32.97.215]:56276 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751056AbaBGRTx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 12:19:08 -0500
-Date: Fri, 7 Feb 2014 18:19:00 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Torsten Duwe <duwe@lst.de>
-Cc: Scott Wood <scottwood@freescale.com>, linux-kernel@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
-        Tom Musta <tommusta@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH] Convert powerpc simple spinlocks into ticket locks
-Message-ID: <20140207171900.GS5002@laptop.programming.kicks-ass.net>
-References: <20140206163837.GT2936@laptop.programming.kicks-ass.net>
- <20140206173727.GA13048@lst.de>
- <1391717992.6733.232.camel@snotra.buserror.net>
- <20140207090248.GB26811@lst.de>
- <20140207103139.GP5002@laptop.programming.kicks-ass.net>
- <20140207104530.GG5126@laptop.programming.kicks-ass.net>
- <20140207114949.GA2107@lst.de>
- <20140207122837.GA3104@twins.programming.kicks-ass.net>
- <20140207151847.GB3104@twins.programming.kicks-ass.net>
- <20140207170845.GD2107@lst.de>
+	Fri, 7 Feb 2014 12:19:53 -0500
+X-Greylist: delayed 30961 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Feb 2014 12:19:53 EST
+Date: Fri, 7 Feb 2014 18:20:55 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        arm@kernel.org, Boris BREZILLON <b.brezillon@overkiz.com>,
+        jjhiblot@traphandler.com, Bo Shen <voice.shen@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: Re: [GIT PULL] at91: fixes for 3.14 #1
+Message-ID: <20140207172055.GC9558@ns203013.ovh.net>
+References: <1391790986-31936-1-git-send-email-nicolas.ferre@atmel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140207170845.GD2107@lst.de>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1391790986-31936-1-git-send-email-nicolas.ferre@atmel.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Ovh-Tracer-Id: 1598496392815487852
+X-Ovh-Remote: 91.121.171.124 (ns203013.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrjedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrjeehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 07, 2014 at 06:08:45PM +0100, Torsten Duwe wrote:
-> > static inline unsigned int xadd(unsigned int *v, unsigned int i)
-> > {
-> > 	int t, ret;
-> > 	
-> > 	__asm__ __volatile__ (
-> > "1:	lwarx	%0, 0, %4\n"
-> > "	mr	%1, %0\n"
-> > "	add	%0, %3, %0\n"
-> > "	stwcx.	%0, %0, %4\n"
-> > "	bne-	1b\n"
-> > 	: "=&r" (t), "=&r" (ret), "+m" (*v)
-> > 	: "r" (i), "r" (v)
-> > 	: "cc");
-> > 
-> > 	return ret;
-> > }
-> > 
-> I don't like this xadd thing -- it's so x86 ;)
-> x86 has its LOCK prefix, ppc has ll/sc.
-> That should be reflected somehow IMHO.
-
-Its the operational semantics I care about; this version is actually
-nicer in that it doesn't actually imply all sorts of barriers :-)
-
-> Maybe if xadd became mandatory for some kernel library.
-
-call it fetch_add() its not an uncommon operation and many people
-understand the semantics.
-
-But you can simply include the asm bits in ticket_lock() and be done
-with it. In that case you can also replace the add with an addi which
-might be a little more efficient.
-
-> > void ticket_unlock(tickets_t *lock)
-> > {
-> > 	ticket_t tail = lock->tail + 1;
-> > 
-> > 	/*
-> > 	 * The store is save against the xadd for it will make the ll/sc fail
-> > 	 * and try again. Aside from that PowerISA guarantees single-copy
-> > 	 * atomicy for half-word writes.
-> > 	 *
-> > 	 * And since only the lock owner will ever write the tail, we're good.
-> > 	 */
-> > 	smp_store_release(&lock->tail, tail);
-> > }
+On 17:36 Fri 07 Feb     , Nicolas Ferre wrote:
+> Arnd, Olof, Kevin,
 > 
-> Yeah, let's try that on top of v2 (just posted).
-> First, I want to see v2 work as nicely as v1 --
-> compiling a debug kernel takes a while...
+> This is a first "fixes" series for AT91 on 3.14.
+> The content is only DT-related and quite boring.
+> I took the opportunity of this early "fixes" pull-request to collect
+> some Documentation patches that were lying around and I guess that
+> they can be merged by arm-soc nicely (addition of CCF to 2 drivers).
+> A new board is added to the lot because it is dead simple and integrates
+> well with the new sama5d36 SoC that we added earlier in this development cycle.
+> 
+> Thanks, best regards,
+> 
+> The following changes since commit 38dbfb59d1175ef458d006556061adeaa8751b72:
+> 
+>   Linus 3.14-rc1 (2014-02-02 16:42:13 -0800)
+> 
+> are available in the git repository at:
+> 
+>   git://github.com/at91linux/linux-at91.git tags/at91-fixes
+> 
+> for you to fetch changes up to b7c2b6157079811586180d13c44a1095b57c2d47:
+> 
+>   ARM: at91: add Atmel's SAMA5D3 Xplained board (2014-02-07 17:20:39 +0100)
+> 
+> ----------------------------------------------------------------
+> First series of AT91 fixes for 3.14.
+> All of them are DT-related.
+> - fixes for typos in i2c and ohci clocks
+> - addition of a USB host node for at91sam9n12ek
+> - 2 DT documentation updates that have been sent a long time ago
+> - a new board based on the sama5d36 SoC
+> 
+> ----------------------------------------------------------------
+> Bo Shen (1):
+>       ARM: at91: enable USB host on at91sam9n12ek board
+> 
+> Boris BREZILLON (3):
+>       ARM: at91/dt: fix sama5d3 ohci hclk clock reference
+>       mmc: atmel-mci: document clock properties
+>       spi/atmel: document clock properties
+> 
+> Jean-Jacques Hiblot (1):
+>       ARM: at91/dt: sam9263: fix compatibility string for the I2C
+> 
+> Nicolas Ferre (1):
+>       ARM: at91: add Atmel's SAMA5D3 Xplained board
 
-Use a faster machine... it can be done < 1 minute :-)
+still comment on it please drop it on the PULL
+
+Best Regards,
+J.
+> 
+>  .../devicetree/bindings/mmc/atmel-hsmci.txt        |   5 +
+>  .../devicetree/bindings/spi/spi_atmel.txt          |   5 +
+>  arch/arm/boot/dts/Makefile                         |   1 +
+>  arch/arm/boot/dts/at91-sama5d3_xplained.dts        | 229 +++++++++++++++++++++
+>  arch/arm/boot/dts/at91sam9263.dtsi                 |   2 +-
+>  arch/arm/boot/dts/at91sam9n12ek.dts                |   4 +
+>  arch/arm/boot/dts/sama5d3.dtsi                     |   2 +-
+>  7 files changed, 246 insertions(+), 2 deletions(-)
+>  create mode 100644 arch/arm/boot/dts/at91-sama5d3_xplained.dts
+> 
+> -- 
+> Nicolas Ferre
