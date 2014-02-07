@@ -1,111 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590AbaBGLEL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:04:11 -0500
-Received: from vserver.eikelenboom.it ([84.200.39.61]:42168 "EHLO
-	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752011AbaBGLEG (ORCPT
+	id S1752629AbaBGLE2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:04:28 -0500
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:49987 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752504AbaBGLEY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:04:06 -0500
-Date: Fri, 7 Feb 2014 12:03:57 +0100
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <652007466.20140207120357@eikelenboom.it>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Tony Luck <tony.luck@intel.com>, Dave Airlie <airlied@redhat.com>,
-        Eiichiro Oiwa <eiichiro.oiwa.nm@hitachi.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel @ vger . kernel . org" <linux-kernel@vger.kernel.org>,
-        "linux-pci @ vger . kernel . org" <linux-pci@vger.kernel.org>,
-        <linux-ia64@vger.kernel.org>
-Subject: Re: [PATCH v2] Setting the IORESOURCE_ROM_SHADOW flag on a VGA card other than the primary prevents it from reading it's own rom. It will get the content of the shadowrom at C000 instead, which is of the primary VGA card and the driver of the secondary card will bail out.
-In-Reply-To: <20140203145205.GB2992@phenom.dumpdata.com>
-References: <20140130000831.GJ16825@google.com> <1391160503-11122-1-git-send-email-linux@eikelenboom.it> <20140203145205.GB2992@phenom.dumpdata.com>
+	Fri, 7 Feb 2014 06:04:24 -0500
+Message-ID: <52F4BCDC.2080005@linux.vnet.ibm.com>
+Date: Fri, 07 Feb 2014 16:30:44 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+CC: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linuxppc-dev@lists.ozlabs.org,
+        Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/2] PPC: powernv: remove redundant cpuidle_idle_call()
+References: <1391696188-14540-1-git-send-email-nicolas.pitre@linaro.org> <CAKnoXLxCAqKaniGOwegNcOarS4FpoNKDY5PxOhe6j4wdtUAkLQ@mail.gmail.com> <52F3BCFE.3010703@linux.vnet.ibm.com> <alpine.LFD.2.11.1402070105170.1906@knanqh.ubzr> <52F484D9.6020604@linux.vnet.ibm.com> <52F4AB54.801@linux.vnet.ibm.com>
+In-Reply-To: <52F4AB54.801@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14020711-3864-0000-0000-00000C4D5752
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+Hi Deepthi,
 
-Still trying to collect tested and acked-by's ..
+On 02/07/2014 03:15 PM, Deepthi Dharwar wrote:
+> Hi Preeti,
+> 
+> Thanks for the patch.
+> 
+> On 02/07/2014 12:31 PM, Preeti U Murthy wrote:
+>> Hi Nicolas,
+>>
+>> Find below the patch that will need to be squashed with this one.
+>> This patch is based on the mainline.Adding Deepthi, the author of
+>> the patch which introduced the powernv cpuidle driver. Deepthi,
+>> do you think the below patch looks right? We do not need to do an
+>> explicit local_irq_enable() since we are in the call path of
+>> cpuidle driver and that explicitly enables irqs on exit from
+>> idle states.
+> 
+> Yes, We enable irqs explicitly while entering snooze loop and we always
+> have interrupts enabled in the snooze state.
+> For NAP state, we exit out of this state with interrupts enabled so we
+> do not need an explicit enable of irqs.
+> 
+>> On 02/07/2014 06:47 AM, Nicolas Pitre wrote:
+>>> On Thu, 6 Feb 2014, Preeti U Murthy wrote:
+>>>
+>>>> Hi Daniel,
+>>>>
+>>>> On 02/06/2014 09:55 PM, Daniel Lezcano wrote:
+>>>>> Hi Nico,
+>>>>>
+>>>>>
+>>>>> On 6 February 2014 14:16, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+>>>>>
+>>>>>> The core idle loop now takes care of it.
+>>>>>>
+>>>>>> Signed-off-by: Nicolas Pitre <nico@linaro.org>
+>>>>>> ---
+>>>>>>  arch/powerpc/platforms/powernv/setup.c | 13 +------------
+>>>>>>  1 file changed, 1 insertion(+), 12 deletions(-)
+>>>>>>
+>>>>>> diff --git a/arch/powerpc/platforms/powernv/setup.c
+>>>>>> b/arch/powerpc/platforms/powernv/setup.c
+>>>>>> index 21166f65c9..a932feb290 100644
+>>>>>> --- a/arch/powerpc/platforms/powernv/setup.c
+>>>>>> +++ b/arch/powerpc/platforms/powernv/setup.c
+>>>>>> @@ -26,7 +26,6 @@
+>>>>>>  #include <linux/of_fdt.h>
+>>>>>>  #include <linux/interrupt.h>
+>>>>>>  #include <linux/bug.h>
+>>>>>> -#include <linux/cpuidle.h>
+>>>>>>
+>>>>>>  #include <asm/machdep.h>
+>>>>>>  #include <asm/firmware.h>
+>>>>>> @@ -217,16 +216,6 @@ static int __init pnv_probe(void)
+>>>>>>         return 1;
+>>>>>>  }
+>>>>>>
+>>>>>> -void powernv_idle(void)
+>>>>>> -{
+>>>>>> -       /* Hook to cpuidle framework if available, else
+>>>>>> -        * call on default platform idle code
+>>>>>> -        */
+>>>>>> -       if (cpuidle_idle_call()) {
+>>>>>> -               power7_idle();
+>>>>>> -       }
+>>>>>>
+>>
+>>  drivers/cpuidle/cpuidle-powernv.c |    4 ++++
+>>  1 file changed, 4 insertions(+)
+>>
+>> diff --git a/drivers/cpuidle/cpuidle-powernv.c b/drivers/cpuidle/cpuidle-powernv.c
+>> index 78fd174..130f081 100644
+>> --- a/drivers/cpuidle/cpuidle-powernv.c
+>> +++ b/drivers/cpuidle/cpuidle-powernv.c
+>> @@ -31,11 +31,13 @@ static int snooze_loop(struct cpuidle_device *dev,
+>>  	set_thread_flag(TIF_POLLING_NRFLAG);
+>>
+>>  	while (!need_resched()) {
+>> +		ppc64_runlatch_off();
+>                 ^^^^^^^^^^^^^^^
+> We could move this before the while() loop.
+> It would ideal to turn off latch when we enter snooze and
+> turn it on when we are about to exit, rather than doing
+> it over and over in the while loop.
 
-Dave,
-          In commit 6cf20beec4b91c240cf759b4db72669e251f1fc4 you changed pci_fixup_video saying:
-          "This fixes the switcheroo on my T410s."
-          Do you still have the machine and could you verify if it still works with this patch applied ?
+You are right, this can be moved out of the loop.
 
-Eiichiro,
-          Most of last major overhaul of pci_fixup_video was in commit 6b5c76b8e2ff204fa8d7201acce461188873bf2b saying:
-          "PCI: fix pci_fixup_video as it blows up on sparc64"
-          Is it possible for you to verify you can still boot on sparc64 with this patch applied ?
+Thanks
 
-Tony,
-          Since ia64's pci_fixup_video is also changed to be inline with x86, could you verify it still compiles and boots for you ?
-
-
-Konrad,
-          Thanks for reviewing and testing !
-
---
-Sander
-
-
-
-
-Monday, February 3, 2014, 3:52:05 PM, you wrote:
-
-> On Fri, Jan 31, 2014 at 10:28:22AM +0100, Sander Eikelenboom wrote:
->> Hi Bjorn / Tony,
->> 
->> I fixed up ia64 as well and brought it inline again with the x86 code,
->> but i don't have a ia64 machine, so that part is untested.
->> Perhaps Tony is able to review/test it ?
->> 
->> Sander
->> 
->> 
->> 
->> Setting the IORESOURCE_ROM_SHADOW flag on a VGA card other than the primary
->> prevents it from reading it's own rom. It will get the content of the shadowrom
->> at C000 instead, which is of the primary VGA card and the driver of the
->> secondary card will bail out.
->> 
->> Fix this by checking if the arch code or vga-arbitration has already
->> determined the vga_default_device, if so only apply the fix to this
->> primary video device and let the comment reflect this.
->> 
->> v2:
->>     - Fix pci_fixup_video both in x86 and ia64
->> 
->> 
->> Sander Eikelenboom (1):
->>   Setting the IORESOURCE_ROM_SHADOW flag on a VGA card other than the
->>     primary     prevents it from reading it's own rom. It will get the
->>     content of the shadowrom     at C000 instead, which is of the
->>     primary VGA card and the driver of the     secondary card will bail
->>     out.
-
-> Your editor mutilated your subject line. It ought to have been just
-> one line.
-
-> Anyhow, you can also add 'Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com'
-> on the patch for the x86 part.
-
-> The ia64 "looks" OK to me, but my ia64 box won't boot v3.11 or later
-> so I can't give it a 'Tested-by' yet.
-
->> 
->>  arch/ia64/pci/fixup.c |   24 +++++++++++++-----------
->>  arch/x86/pci/fixup.c  |   18 ++++++++++--------
->>  2 files changed, 23 insertions(+), 19 deletions(-)
->> 
->> -- 
->> 1.7.10.4
->> 
-
+Regards
+Preeti U Murthy
 
