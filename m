@@ -1,107 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752782AbaBGUVd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 15:21:33 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:58679 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751446AbaBGUVa (ORCPT
+	id S1752269AbaBGU2R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 15:28:17 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:20628 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751446AbaBGU2Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 15:21:30 -0500
-Date: Fri, 7 Feb 2014 12:20:44 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Tejun Heo <tj@kernel.org>
-cc: Hugh Dickins <hughd@google.com>,
-        Filipe Brandenburger <filbranden@google.com>,
-        Li Zefan <lizefan@huawei.com>,
+	Fri, 7 Feb 2014 15:28:16 -0500
+Date: Fri, 7 Feb 2014 15:28:14 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Berg <johannes@sipsolutions.net>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>,
-        Markus Blank-Burian <burian@muenster.de>,
-        Shawn Bohrer <shawn.bohrer@gmail.com>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] cgroup: use an ordered workqueue for cgroup
- destruction
-In-Reply-To: <20140207140402.GA3304@htj.dyndns.org>
-Message-ID: <alpine.LSU.2.11.1402071130250.333@eggly.anvils>
-References: <alpine.LSU.2.11.1402061541560.31342@eggly.anvils> <20140207140402.GA3304@htj.dyndns.org>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+        Wolfgang Grandegger <wg@grandegger.com>
+Subject: Re: [RFC - beta][PATCH] tracing: Introduce TRACE_MARKER() no
+ argument trace event
+Message-ID: <20140207152814.16e263ab@gandalf.local.home>
+In-Reply-To: <20140207112357.35552998@gandalf.local.home>
+References: <20140207112357.35552998@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
-
-On Fri, 7 Feb 2014, Tejun Heo wrote:
-> On Thu, Feb 06, 2014 at 03:56:01PM -0800, Hugh Dickins wrote:
-> > Sometimes the cleanup after memcg hierarchy testing gets stuck in
-> > mem_cgroup_reparent_charges(), unable to bring non-kmem usage down to 0.
-> > 
-> > There may turn out to be several causes, but a major cause is this: the
-> > workitem to offline parent can get run before workitem to offline child;
-> > parent's mem_cgroup_reparent_charges() circles around waiting for the
-> > child's pages to be reparented to its lrus, but it's holding cgroup_mutex
-> > which prevents the child from reaching its mem_cgroup_reparent_charges().
-> > 
-> > Just use an ordered workqueue for cgroup_destroy_wq.
-> 
-> Hmmm... I'm not really comfortable with this.  This would seal shut
-> any possiblity of increasing concurrency in that path, which is okay
-> now but I find the combination of such long term commitment and the
-> non-obviousness (it's not apparent from looking at memcg code why it
-> wouldn't deadlock) very unappealing.  Besides, the only reason
-> offline() is currently called under cgroup_mutex is history.  We can
-> move it out of cgroup_mutex right now.
-
-Thanks for taking the patch into your tree for now,
-and thanks to Michal and Hannes for supporting it.
-
-Yes, we're not sealing a door shut with this one-liner.  My first
-reaction to the deadlock was indeed, what's the cgroup_mutex for here?
-and I've seen enough deadlocks on cgroup_mutex (though most from this
-issue, I now believe) to welcome the idea of reducing its blanket use.
-
-But I think there are likely to be bumps along that road (just as
-there have been along the workqueue-ification road), so this ordered
-workqueue appears much the safer option for now.  Please rip it out
-again when the cgroup_mutex is safely removed from this path.
-
-(I've certainly written memcg code myself that "knows" it's already
-serialized by cgroup_mutex at the outer level: I think code that
-never reached anyone else's tree, but I'm not certain of that.)
+On Fri, 7 Feb 2014 11:23:57 -0500
+Steven Rostedt <rostedt@goodmis.org> wrote:
 
 > 
-> But even with offline being called outside cgroup_mutex, IIRC, the
-> described problem would still be able to deadlock as long as the tree
-> depth is deeper than max concurrency level of the destruction
-> workqueue.  Sure, we can give it large enough number but it's
-> generally nasty.
-
-You worry me there: I certainly don't want to be introducing new
-deadlocks.  You understand workqueues much better than most of us: I'm
-not sure what "max concurrency level of the destruction workqueue" is,
-but it sounds uncomfortably like an ordered workqueue's max_active 1.
-
-You don't return to this concern in the following mails of the thread:
-did you later decide that it actually won't be a problem?  I'll assume
-so for the moment, since you took the patch, but please reassure me.
-
+> The TRACE_MARKER() is basically an optimized version of TRACE_EVENT()
+> with no arguments. It can be enabled and disabled the same way as any
+> other event, and stays within the system it was created in.
 > 
-> One thing I don't get is why memcg has such reverse dependency at all.
-> Why does the parent wait for its descendants to do something during
-> offline?  Shouldn't it be able to just bail and let whatever
-> descendant which is stil busy propagate things upwards?  That's a
-> usual pattern we use to tree shutdowns anyway.  Would that be nasty to
-> implement in memcg?
+> Is this worth doing?
+> 
 
-I've no idea how nasty it would be to change memcg around, but Michal
-and Hannes appear very open to doing so.  I do think that memcg's current
-expectation is very reasonable: it's perfectly normal that a rmdir cannot
-succeed until the directory is empty, and to depend upon that fact; but
-the use of workqueue made some things asynchronous which were not before,
-which has led to some surprises.
+I'm thinking no. And unless someone can give me a good reason that we
+should have such a thing, I will Nack my own patch!
 
-Hugh
+Johannes,
+
+What's up with trace_iwlwifi_dev_irq()?  You are tracing it but not
+saving any information. There's obviously a reason for the
+iwl_pcie_isr() to be called (it's handling something). Does it do the
+exact same thing every time?  No variables are needed then?
+
+What I'm trying to say is, if you go through the trouble of inserting a
+tracepoint into some location, might as well extract data from it.
+Otherwise you are wasting space in memory. If all you want to know is
+if the function was called or not, then simply use a kprobe or function
+trace that function (noinline to allow ftrace to trace it).
+
+Unless I get some feedback to why this is a good idea...
+
+Nacked-myself-by: Steven Rostedt <rostedt@goodmis.org>
+
+-- Steve
