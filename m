@@ -1,73 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751529AbaBGQeR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 11:34:17 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38312 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051AbaBGQeP (ORCPT
+	id S1751496AbaBGQg3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 11:36:29 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:3101 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751301AbaBGQg2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 11:34:15 -0500
-Date: Fri, 7 Feb 2014 16:34:06 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Message-ID: <20140207163406.GC1757@sirena.org.uk>
-References: <1391767487-10017-1-git-send-email-k.kozlowski@samsung.com>
- <1391767487-10017-14-git-send-email-k.kozlowski@samsung.com>
+	Fri, 7 Feb 2014 11:36:28 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        <arm@kernel.org>
+CC: Boris BREZILLON <b.brezillon@overkiz.com>, <jjhiblot@traphandler.com>,
+        Bo Shen <voice.shen@atmel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: [GIT PULL] at91: fixes for 3.14 #1
+Date: Fri, 7 Feb 2014 17:36:26 +0100
+Message-ID: <1391790986-31936-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
+Organization: atmel
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NU0Ex4SbNnrxsi6C"
-Content-Disposition: inline
-In-Reply-To: <1391767487-10017-14-git-send-email-k.kozlowski@samsung.com>
-X-Cookie: Colors may fade.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 13/15] regulator/mfd: max14577: Export symbols for
- calculating charger current
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Arnd, Olof, Kevin,
 
---NU0Ex4SbNnrxsi6C
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This is a first "fixes" series for AT91 on 3.14.
+The content is only DT-related and quite boring.
+I took the opportunity of this early "fixes" pull-request to collect
+some Documentation patches that were lying around and I guess that
+they can be merged by arm-soc nicely (addition of CCF to 2 drivers).
+A new board is added to the lot because it is dead simple and integrates
+well with the new sama5d36 SoC that we added earlier in this development cycle.
 
-On Fri, Feb 07, 2014 at 11:04:45AM +0100, Krzysztof Kozlowski wrote:
-> This patch prepares for changing the max14577 charger driver to allow
-> configuring battery-dependent settings from DTS.
+Thanks, best regards,
 
-Acked-by: Mark Brown <broonie@linaro.org>
+The following changes since commit 38dbfb59d1175ef458d006556061adeaa8751b72:
 
---NU0Ex4SbNnrxsi6C
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+  Linus 3.14-rc1 (2014-02-02 16:42:13 -0800)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+are available in the git repository at:
 
-iQIcBAEBAgAGBQJS9Qr7AAoJELSic+t+oim905YP/RAASt2rAjvyB1K9/XJSxm+z
-5qyyxw6KDxacmy9X39E1oZTnYFpC4+Q8BIbjckhSaUEGirNIuPgPPuaxJIliNvna
-VuAqtHL9FOzeDWwHqyk4yEJMmb6/RqR/rQLy1jZN0q5gaYmm1WLpruaLvnK90lXO
-5LMYVCreIrg1muZ8tnH1wkvfTFXiiGuDHa6vTpQphc0FEY9BDBqDAt6wFGtbbsP3
-BUyEL9LlQ0ot3CeK7c+EGtO0TviwbZ5jLeFKQIGSWnLybVIP7/Vbmu2+6Zin11Sa
-cQZhBBll/klzOXq3qI317uTwMOwJfninxtkT4pkw+RP6fSbfLNVm86D9cJ6tgr9V
-JYr65khUNVIFH3VfnNPti72RB8wQ48KEi7NHYoLy1STFqpcksXkzF/fpklsI2PX5
-ODKdZtVDmdez+tydHTqBtYEISegTw4I/J/eUIZEOXxdoNcsDWxDF70MP2kq7r3hS
-JpjqnTQVx/Zd7/4Y9ZUA4g21FsfiY9bITQLkpLES1Rre1zYAIUVeKwTEZTL6Urmz
-LzazDp6u7Mf91Fxc0sJbEBS8z/3MApgrXhUSQDT5LqLSTWYG2q7Xd0KNJOA0bOZ7
-DY+c2cCSNBaIh57tJbOfrIDjENe/oevp6roWLm+RuRRIva8664BYX6IAnHsnbl6D
-WvnJFgywxMLJZKcuCnc3
-=SnxB
------END PGP SIGNATURE-----
+  git://github.com/at91linux/linux-at91.git tags/at91-fixes
 
---NU0Ex4SbNnrxsi6C--
+for you to fetch changes up to b7c2b6157079811586180d13c44a1095b57c2d47:
+
+  ARM: at91: add Atmel's SAMA5D3 Xplained board (2014-02-07 17:20:39 +0100)
+
+----------------------------------------------------------------
+First series of AT91 fixes for 3.14.
+All of them are DT-related.
+- fixes for typos in i2c and ohci clocks
+- addition of a USB host node for at91sam9n12ek
+- 2 DT documentation updates that have been sent a long time ago
+- a new board based on the sama5d36 SoC
+
+----------------------------------------------------------------
+Bo Shen (1):
+      ARM: at91: enable USB host on at91sam9n12ek board
+
+Boris BREZILLON (3):
+      ARM: at91/dt: fix sama5d3 ohci hclk clock reference
+      mmc: atmel-mci: document clock properties
+      spi/atmel: document clock properties
+
+Jean-Jacques Hiblot (1):
+      ARM: at91/dt: sam9263: fix compatibility string for the I2C
+
+Nicolas Ferre (1):
+      ARM: at91: add Atmel's SAMA5D3 Xplained board
+
+ .../devicetree/bindings/mmc/atmel-hsmci.txt        |   5 +
+ .../devicetree/bindings/spi/spi_atmel.txt          |   5 +
+ arch/arm/boot/dts/Makefile                         |   1 +
+ arch/arm/boot/dts/at91-sama5d3_xplained.dts        | 229 +++++++++++++++++++++
+ arch/arm/boot/dts/at91sam9263.dtsi                 |   2 +-
+ arch/arm/boot/dts/at91sam9n12ek.dts                |   4 +
+ arch/arm/boot/dts/sama5d3.dtsi                     |   2 +-
+ 7 files changed, 246 insertions(+), 2 deletions(-)
+ create mode 100644 arch/arm/boot/dts/at91-sama5d3_xplained.dts
+
+-- 
+Nicolas Ferre
