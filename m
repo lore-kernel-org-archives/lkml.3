@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752552AbaBGRP2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 12:15:28 -0500
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:49071 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136AbaBGRPZ (ORCPT
+	id S1752642AbaBGRQv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 12:16:51 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:43378 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065AbaBGRQu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 12:15:25 -0500
-X-Originating-IP: 50.43.14.201
-Date: Fri, 7 Feb 2014 09:15:16 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: David Laight <David.Laight@ACULAB.COM>
-Cc: "'Rashika Kheria'" <rashika.kheria@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Armin Schindler <mac@melware.de>, Karsten Keil <isdn@linux-pingi.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [PATCH 19/26] drivers: isdn: Move prototype declaration to
- header file platform.h from diva_didd.c
-Message-ID: <20140207171516.GA7298@jtriplet-mobl1>
-References: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
- <93d7188538418423685ecefaf3d2bb311b37be6e.1390408518.git.rashika.kheria@gmail.com>
- <063D6719AE5E284EB5DD2968C1650D6D0F6BA76D@AcuExch.aculab.com>
+	Fri, 7 Feb 2014 12:16:50 -0500
+Message-ID: <52F514FE.705@linaro.org>
+Date: Fri, 07 Feb 2014 09:16:46 -0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D0F6BA76D@AcuExch.aculab.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Colin Cross <ccross@android.com>,
+        Greg Hackmann <ghackmann@google.com>,
+        Prakash Kamliya <pkamliya@codeaurora.org>,
+        Alistair Strachan <alistair.strachan@imgtec.com>,
+        Todd Poynor <toddpoynor@google.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Android Kernel Team <kernel-team@android.com>
+Subject: Re: [PATCHv2 0/7] Staging fixes from the Android tree (for 3.14)
+References: <1391558920-31590-1-git-send-email-john.stultz@linaro.org> <20140207170350.GA18784@kroah.com>
+In-Reply-To: <20140207170350.GA18784@kroah.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 07, 2014 at 01:33:46PM +0000, David Laight wrote:
-> From: Rashika Kheria
-> > Move prototype declarations of function to header file
-> > hardware/eicon/platform.h because they are used by more than one file.
-> > 
-> > This eliminates the following warnings in hardware/eicon/diddfunc.c:
-> > drivers/isdn/hardware/eicon/diddfunc.c:95:12: warning: no previous prototype for diddfunc_init [-
-> > Wmissing-prototypes]
-> > drivers/isdn/hardware/eicon/diddfunc.c:110:13: warning: no previous prototype for diddfunc_finit [-
-> > Wmissing-prototypes]
-> ...
-> > diff --git a/drivers/isdn/hardware/eicon/diva_didd.c b/drivers/isdn/hardware/eicon/diva_didd.c
-> > index fab6ccf..56d32a7 100644
-> > --- a/drivers/isdn/hardware/eicon/diva_didd.c
-> > +++ b/drivers/isdn/hardware/eicon/diva_didd.c
-> > @@ -39,9 +39,6 @@ MODULE_LICENSE("GPL");
-> >  #define DBG_MINIMUM  (DL_LOG + DL_FTL + DL_ERR)
-> >  #define DBG_DEFAULT  (DBG_MINIMUM + DL_XLOG + DL_REG)
-> > 
-> > -extern int diddfunc_init(void);
-> > -extern void diddfunc_finit(void);
-> > -
-> >  extern void DIVA_DIDD_Read(void *, int);
-> 
-> You should move that one as well.
-> There really shouldn't be 'extern' definitions for any function in
-> any C files since you want the compiler to check they are correct
-> when the function itself is compiled.
+On 02/07/2014 09:03 AM, Greg KH wrote:
+> On Tue, Feb 04, 2014 at 04:08:33PM -0800, John Stultz wrote:
+>> I recently went through the AOSP common.git android/3.10 tree to
+>> try to pull fixes that haven't been submitted upstream. I've
+>> cherry picked those patches and submitted them for 3.15, but
+>> Greg requested the bugfixes to be submitted by themselves for
+>> 3.14.
+>>
+>> So here are the subset of changes that are bugfixes. There is
+>> one additional patch here which I missed in my last submission,
+>> but its a build warning fix, so I think its appropriate.
+>>
+>> If and when these are merged, I'll resubmit the rest of the
+>> queue (which has grown further as of today) for 3.15.
+>>
+>> Anyway, please let me know if there's any feedback or suggestions.
+> I seem to be missing patch 2/7 here.  Any idea where it went?
 
-Absolutely, but as far as I can tell Rashika is doing this
-incrementally, organized more by header than by source file, so I'd
-expect a few externs in a source file to disappear at a time rather than
-all in one patch.
+Huh. I see it in my lkml archive. The subject is:
+[PATCH 2/7] staging: sync: Signal pt before sync_timeline object gets
+destroyed
 
-- Josh Triplett
+https://lkml.org/lkml/2014/2/4/738
+
+Maybe check your spam folder? If you need I can bounce it to you again.
+
+thanks
+-john
