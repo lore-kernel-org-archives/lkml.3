@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932159AbaBGLsz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:48:55 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41657 "EHLO
+	id S1755321AbaBGNKX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 08:10:23 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41658 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932137AbaBGLsx (ORCPT
+	with ESMTP id S932142AbaBGLsx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 Feb 2014 06:48:53 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        David Binderman <dcb314@hotmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 057/233] NFSv4: OPEN must handle the NFS4ERR_IO return code correctly
-Date: Fri,  7 Feb 2014 11:44:36 +0000
-Message-Id: <1391773652-25214-58-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 056/233] rtlwifi: rtl8188ee: Fix typo in code
+Date: Fri,  7 Feb 2014 11:44:35 +0000
+Message-Id: <1391773652-25214-57-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -27,99 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit c7848f69ec4a8c03732cde5c949bd2aa711a9f4b upstream.
+commit f699273d6a624266ebc9198774f06ee64a3847a1 upstream.
 
-decode_op_hdr() cannot distinguish between an XDR decoding error and
-the perfectly valid errorcode NFS4ERR_IO. This is normally not a
-problem, but for the particular case of OPEN, we need to be able
-to increment the NFSv4 open sequence id when the server returns
-a valid response.
+The static analyser "cppcheck" shows the following typo:
+drivers/net/wireless/rtlwifi/rtl8188ee/dm.c:1081]: (style) Same expression on both sides of '!='.
 
-Reported-by: J Bruce Fields <bfields@fieldses.org>
-Link: http://lkml.kernel.org/r/20131204210356.GA19452@fieldses.org
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Reported-by: David Binderman <dcb314@hotmail.com>
+Cc: David Binderman <dcb314@hotmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/nfs/nfs4xdr.c | 47 +++++++++++++++++++++++++++++++----------------
- 1 file changed, 31 insertions(+), 16 deletions(-)
+ drivers/net/wireless/rtlwifi/rtl8188ee/dm.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/nfs/nfs4xdr.c b/fs/nfs/nfs4xdr.c
-index 3850b01..e24c755 100644
---- a/fs/nfs/nfs4xdr.c
-+++ b/fs/nfs/nfs4xdr.c
-@@ -3050,7 +3050,8 @@ out_overflow:
- 	return -EIO;
- }
+diff --git a/drivers/net/wireless/rtlwifi/rtl8188ee/dm.c b/drivers/net/wireless/rtlwifi/rtl8188ee/dm.c
+index 21a5cf0..a6184b6 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8188ee/dm.c
++++ b/drivers/net/wireless/rtlwifi/rtl8188ee/dm.c
+@@ -1078,7 +1078,7 @@ static void rtl88e_dm_txpower_tracking_callback_thermalmeter(struct ieee80211_hw
+ 				rtldm->swing_flag_ofdm = true;
+ 			}
  
--static int decode_op_hdr(struct xdr_stream *xdr, enum nfs_opnum4 expected)
-+static bool __decode_op_hdr(struct xdr_stream *xdr, enum nfs_opnum4 expected,
-+		int *nfs_retval)
- {
- 	__be32 *p;
- 	uint32_t opnum;
-@@ -3060,19 +3061,32 @@ static int decode_op_hdr(struct xdr_stream *xdr, enum nfs_opnum4 expected)
- 	if (unlikely(!p))
- 		goto out_overflow;
- 	opnum = be32_to_cpup(p++);
--	if (opnum != expected) {
--		dprintk("nfs: Server returned operation"
--			" %d but we issued a request for %d\n",
--				opnum, expected);
--		return -EIO;
--	}
-+	if (unlikely(opnum != expected))
-+		goto out_bad_operation;
- 	nfserr = be32_to_cpup(p);
--	if (nfserr != NFS_OK)
--		return nfs4_stat_to_errno(nfserr);
--	return 0;
-+	if (nfserr == NFS_OK)
-+		*nfs_retval = 0;
-+	else
-+		*nfs_retval = nfs4_stat_to_errno(nfserr);
-+	return true;
-+out_bad_operation:
-+	dprintk("nfs: Server returned operation"
-+		" %d but we issued a request for %d\n",
-+			opnum, expected);
-+	*nfs_retval = -EREMOTEIO;
-+	return false;
- out_overflow:
- 	print_overflow_msg(__func__, xdr);
--	return -EIO;
-+	*nfs_retval = -EIO;
-+	return false;
-+}
-+
-+static int decode_op_hdr(struct xdr_stream *xdr, enum nfs_opnum4 expected)
-+{
-+	int retval;
-+
-+	__decode_op_hdr(xdr, expected, &retval);
-+	return retval;
- }
- 
- /* Dummy routine */
-@@ -4954,11 +4968,12 @@ static int decode_open(struct xdr_stream *xdr, struct nfs_openres *res)
- 	uint32_t savewords, bmlen, i;
- 	int status;
- 
--	status = decode_op_hdr(xdr, OP_OPEN);
--	if (status != -EIO)
--		nfs_increment_open_seqid(status, res->seqid);
--	if (!status)
--		status = decode_stateid(xdr, &res->stateid);
-+	if (!__decode_op_hdr(xdr, OP_OPEN, &status))
-+		return status;
-+	nfs_increment_open_seqid(status, res->seqid);
-+	if (status)
-+		return status;
-+	status = decode_stateid(xdr, &res->stateid);
- 	if (unlikely(status))
- 		return status;
- 
+-			if (rtldm->swing_idx_cck != rtldm->swing_idx_cck) {
++			if (rtldm->swing_idx_cck_cur != rtldm->swing_idx_cck) {
+ 				rtldm->swing_idx_cck_cur = rtldm->swing_idx_cck;
+ 				rtldm->swing_flag_cck = true;
+ 			}
 -- 
 1.8.3.2
 
