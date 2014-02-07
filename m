@@ -1,58 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752580AbaBGOVz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 09:21:55 -0500
-Received: from www.linutronix.de ([62.245.132.108]:45757 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751438AbaBGOVx (ORCPT
+	id S1752579AbaBGOYq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 09:24:46 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:31384 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750868AbaBGOYo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 09:21:53 -0500
-Message-ID: <52F4EBFA.3040401@linutronix.de>
-Date: Fri, 07 Feb 2014 15:21:46 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.2.0
+	Fri, 7 Feb 2014 09:24:44 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18UZBWG4Q+5IDqFIMQoOVj+cPeUJU9GwXI=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 080CF520D38
+Date: Fri, 7 Feb 2014 09:24:30 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH] clk: respect the clock dependencies in of_clk_init
+Message-ID: <20140207142430.GU8533@titan.lakedaemon.net>
+References: <1391554766-11285-1-git-send-email-gregory.clement@free-electrons.com>
+ <52F4DA40.4090804@elopez.com.ar>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Clark Williams <williams@redhat.com>,
-        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-        John Kacur <jkacur@redhat.com>, Ulrich Obergfell <uobergfe@redhat.com>
-Subject: Re: [PATCH RT] rt: Make cpu_chill() use hrtimer instead of msleep()
-References: <20140205115125.3cc950ce@gandalf.local.home>	<20140207113006.GD23668@linutronix.de>	<20140207090834.72774272@gandalf.local.home> <20140207091313.097f9059@gandalf.local.home>
-In-Reply-To: <20140207091313.097f9059@gandalf.local.home>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <52F4DA40.4090804@elopez.com.ar>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2014 03:13 PM, Steven Rostedt wrote:
-> On Fri, 7 Feb 2014 09:08:34 -0500
-> Steven Rostedt <rostedt@goodmis.org> wrote:
-> 
-> 
->>> could you please tell me which two locks are invovled here?
-> 
-> I should have also stated that it was only one lock that was involved.
-> But the lock owner was doing a msleep() that requires a wakeup by
-> ksoftirqd to continue. If ksoftirqd happens to be blocked on a lock
-> held by the msleep() caller, then you have your deadlock.
+On Fri, Feb 07, 2014 at 10:06:08AM -0300, Emilio López wrote:
 
-That makes sense.
+[snip a great explanation]
 
-> It's best not to have any softirqs going to sleep requiring another
-> softirq to wake it up. Note, if we ever require a timer softirq to do a
-> cpu_chill() it will most definitely hit this deadlock.
+Guys, can I get some Tested-by's on this?
 
-Yes. And that sleep in softirq is also not really nice but this isn't
-new. Thanks for the patch & explanation.
+thx,
+
+Jason.
+
+> -----8<------
 > 
-> -- Steve
-
-Sebastian
+> From ffdb49506e3ce92090c15e1f9b37f4d465097ac1 Mon Sep 17 00:00:00 2001
+> From: =?UTF-8?q?Emilio=20L=C3=B3pez?= <emilio@elopez.com.ar>
+> Date: Thu, 6 Feb 2014 18:07:07 -0300
+> Subject: [PATCH] clk: mvebu: fix name dependency during registration time
+> 
+> Currently, mvebu_clk_gating_setup has a silly dependency on clock
+> registration order just to gather the parent clock name. This is
+> completely unnecesary, as it supports using an already provided name
+> via the clk_gating_soc_desc structs, and we can therefore solve this
+> issue with a 69+/- line patch. But, given that the parent name is
+> always "tclk" as default-hardcoded on mvebu_coreclk_setup(), we can
+> just default-hardcode it here too and get away with solving this
+> problem with a one-liner.
+> ---
+>  drivers/clk/mvebu/common.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/clk/mvebu/common.c b/drivers/clk/mvebu/common.c
+> index 25ceccf..6c63b43 100644
+> --- a/drivers/clk/mvebu/common.c
+> +++ b/drivers/clk/mvebu/common.c
+> @@ -121,7 +121,7 @@ void __init mvebu_clk_gating_setup(struct
+> device_node *np,
+>  	struct clk_gating_ctrl *ctrl;
+>  	struct clk *clk;
+>  	void __iomem *base;
+> -	const char *default_parent = NULL;
+> +	const char *default_parent = "tclk";
+>  	int n;
+> 
+>  	base = of_iomap(np, 0);
+> -- 
+> 1.8.5.3
