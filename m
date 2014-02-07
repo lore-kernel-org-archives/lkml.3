@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753229AbaBGT6y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 14:58:54 -0500
-Received: from www.linutronix.de ([62.245.132.108]:48246 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752654AbaBGT6w (ORCPT
+	id S1752481AbaBGUJc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 15:09:32 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:57976 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751589AbaBGUJb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 14:58:52 -0500
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 1/6] sched: Init idle->on_rq in init_idle()
-Date: Fri,  7 Feb 2014 20:58:37 +0100
-Message-Id: <1391803122-4425-2-git-send-email-bigeasy@linutronix.de>
-X-Mailer: git-send-email 1.9.rc1
-In-Reply-To: <1391803122-4425-1-git-send-email-bigeasy@linutronix.de>
-References: <1391803122-4425-1-git-send-email-bigeasy@linutronix.de>
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Fri, 7 Feb 2014 15:09:31 -0500
+From: Russell King <rmk+kernel@arm.linux.org.uk>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Jean-Francois Moine <moinejf@free.fr>
+Subject: [PATCH] drivers/base: fix devres handling for master device
+Message-Id: <E1WBrjr-0001Jr-Hc@rmk-PC.arm.linux.org.uk>
+Date: Fri, 07 Feb 2014 20:09:27 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+We weren't handling the devres issues for the master device failing a
+bind, or being unbound properly.  Add a devres group to contain these,
+and release the resources at the appropriate points.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 ---
- kernel/sched/core.c | 1 +
- 1 file changed, 1 insertion(+)
+Greg, if you'd be kind enough to queue this for an -rc release, it'd
+help plug a hole I discovered earlier this week in the component
+helper.  Thanks.
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index b46131e..64f75f9 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -4473,6 +4473,7 @@ void init_idle(struct task_struct *idle, int cpu)
- 	rcu_read_unlock();
+ drivers/base/component.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/drivers/base/component.c b/drivers/base/component.c
+index c53efe6c6d8e..c4778995cd72 100644
+--- a/drivers/base/component.c
++++ b/drivers/base/component.c
+@@ -133,9 +133,16 @@ static int try_to_bring_up_master(struct master *master,
+ 			goto out;
+ 		}
  
- 	rq->curr = rq->idle = idle;
-+	idle->on_rq = 1;
- #if defined(CONFIG_SMP)
- 	idle->on_cpu = 1;
- #endif
++		if (!devres_open_group(master->dev, NULL, GFP_KERNEL)) {
++			ret = -ENOMEM;
++			goto out;
++		}
++
+ 		/* Found all components */
+ 		ret = master->ops->bind(master->dev);
+ 		if (ret < 0) {
++			devres_release_group(master->dev, NULL);
++			dev_info(master->dev, "master bind failed: %d\n", ret);
+ 			master_remove_components(master);
+ 			goto out;
+ 		}
+@@ -166,6 +173,7 @@ static void take_down_master(struct master *master)
+ {
+ 	if (master->bound) {
+ 		master->ops->unbind(master->dev);
++		devres_release_group(master->dev, NULL);
+ 		master->bound = false;
+ 	}
+ 
 -- 
-1.9.rc1
+1.8.3.1
 
