@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755730AbaBGNAz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 08:00:55 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41791 "EHLO
+	id S1755763AbaBGNBf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 08:01:35 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41787 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932265AbaBGLtl (ORCPT
+	with ESMTP id S1754629AbaBGLtj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:49:41 -0500
+	Fri, 7 Feb 2014 06:49:39 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jeff Layton <jlayton@redhat.com>, "J. Bruce Fields" <bfields@redhat.com>,
+Cc: Peter Huewe <peterhuewe@gmx.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 083/233] sunrpc: don't wait for write before allowing reads from use-gss-proxy file
-Date: Fri,  7 Feb 2014 11:45:02 +0000
-Message-Id: <1391773652-25214-84-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 082/233] tpm/tpm_i2c_stm_st33: Check return code of get_burstcount
+Date: Fri,  7 Feb 2014 11:45:01 +0000
+Message-Id: <1391773652-25214-83-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -27,118 +27,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Peter Huewe <PeterHuewe@gmx.de>
 
-commit 1654a04cd702fd19c297c36300a6ab834cf8c072 upstream.
+commit 85c5e0d451125c6ddb78663972e40af810b83644 upstream.
 
-It doesn't make much sense to make reads from this procfile hang. As
-far as I can tell, only gssproxy itself will open this file and it
-never reads from it. Change it to just give the present setting of
-sn->use_gss_proxy without waiting for anything.
+The 'get_burstcount' function can in some circumstances 'return -EBUSY' which
+in tpm_stm_i2c_send is stored in an 'u32 burstcnt'
+thus converting the signed value into an unsigned value, resulting
+in 'burstcnt' being huge.
+Changing the type to u32 only does not solve the problem as the signed
+value is converted to an unsigned in I2C_WRITE_DATA, resulting in the
+same effect.
 
-Note that we do not want to call use_gss_proxy() in this codepath
-since an inopportune read of this file could cause it to be disabled
-prematurely.
+Thus
+-> Change type of burstcnt to u32 (the return type of get_burstcount)
+-> Add a check for the return value of 'get_burstcount' and propagate a
+potential error.
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+This makes also sense in the 'I2C_READ_DATA' case, where the there is no
+signed/unsigned conversion.
+
+found by coverity
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/sunrpc/auth_gss/gss_rpc_upcall.c |  2 --
- net/sunrpc/auth_gss/svcauth_gss.c    | 33 ++-------------------------------
- net/sunrpc/netns.h                   |  1 -
- 3 files changed, 2 insertions(+), 34 deletions(-)
+ drivers/char/tpm/tpm_i2c_stm_st33.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/net/sunrpc/auth_gss/gss_rpc_upcall.c b/net/sunrpc/auth_gss/gss_rpc_upcall.c
-index f1eb0d1..23fa3c1 100644
---- a/net/sunrpc/auth_gss/gss_rpc_upcall.c
-+++ b/net/sunrpc/auth_gss/gss_rpc_upcall.c
-@@ -137,7 +137,6 @@ void init_gssp_clnt(struct sunrpc_net *sn)
+diff --git a/drivers/char/tpm/tpm_i2c_stm_st33.c b/drivers/char/tpm/tpm_i2c_stm_st33.c
+index 5bb8e2d..156bd3c 100644
+--- a/drivers/char/tpm/tpm_i2c_stm_st33.c
++++ b/drivers/char/tpm/tpm_i2c_stm_st33.c
+@@ -410,6 +410,8 @@ static int recv_data(struct tpm_chip *chip, u8 *buf, size_t count)
+ 			     &chip->vendor.read_queue)
+ 	       == 0) {
+ 		burstcnt = get_burstcount(chip);
++		if (burstcnt < 0)
++			return burstcnt;
+ 		len = min_t(int, burstcnt, count - size);
+ 		I2C_READ_DATA(client, TPM_DATA_FIFO, buf + size, len);
+ 		size += len;
+@@ -451,7 +453,8 @@ static irqreturn_t tpm_ioserirq_handler(int irq, void *dev_id)
+ static int tpm_stm_i2c_send(struct tpm_chip *chip, unsigned char *buf,
+ 			    size_t len)
  {
- 	mutex_init(&sn->gssp_lock);
- 	sn->gssp_clnt = NULL;
--	init_waitqueue_head(&sn->gssp_wq);
- }
+-	u32 status, burstcnt = 0, i, size;
++	u32 status, i, size;
++	int burstcnt = 0;
+ 	int ret;
+ 	u8 data;
+ 	struct i2c_client *client;
+@@ -482,6 +485,8 @@ static int tpm_stm_i2c_send(struct tpm_chip *chip, unsigned char *buf,
  
- int set_gssp_clnt(struct net *net)
-@@ -154,7 +153,6 @@ int set_gssp_clnt(struct net *net)
- 		sn->gssp_clnt = clnt;
- 	}
- 	mutex_unlock(&sn->gssp_lock);
--	wake_up(&sn->gssp_wq);
- 	return ret;
- }
- 
-diff --git a/net/sunrpc/auth_gss/svcauth_gss.c b/net/sunrpc/auth_gss/svcauth_gss.c
-index 09fb638..e18be86 100644
---- a/net/sunrpc/auth_gss/svcauth_gss.c
-+++ b/net/sunrpc/auth_gss/svcauth_gss.c
-@@ -1295,34 +1295,9 @@ static int set_gss_proxy(struct net *net, int type)
- 	else
- 		ret = -EBUSY;
- 	spin_unlock(&use_gssp_lock);
--	wake_up(&sn->gssp_wq);
- 	return ret;
- }
- 
--static inline bool gssp_ready(struct sunrpc_net *sn)
--{
--	switch (sn->use_gss_proxy) {
--		case -1:
--			return false;
--		case 0:
--			return true;
--		case 1:
--			return sn->gssp_clnt;
--	}
--	WARN_ON_ONCE(1);
--	return false;
--}
--
--static int wait_for_gss_proxy(struct net *net, struct file *file)
--{
--	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
--
--	if (file->f_flags & O_NONBLOCK && !gssp_ready(sn))
--		return -EAGAIN;
--	return wait_event_interruptible(sn->gssp_wq, gssp_ready(sn));
--}
--
--
- static ssize_t write_gssp(struct file *file, const char __user *buf,
- 			 size_t count, loff_t *ppos)
- {
-@@ -1355,16 +1330,12 @@ static ssize_t read_gssp(struct file *file, char __user *buf,
- 			 size_t count, loff_t *ppos)
- {
- 	struct net *net = PDE_DATA(file_inode(file));
-+	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
- 	unsigned long p = *ppos;
- 	char tbuf[10];
- 	size_t len;
--	int ret;
--
--	ret = wait_for_gss_proxy(net, file);
--	if (ret)
--		return ret;
- 
--	snprintf(tbuf, sizeof(tbuf), "%d\n", use_gss_proxy(net));
-+	snprintf(tbuf, sizeof(tbuf), "%d\n", sn->use_gss_proxy);
- 	len = strlen(tbuf);
- 	if (p >= len)
- 		return 0;
-diff --git a/net/sunrpc/netns.h b/net/sunrpc/netns.h
-index 779742c..3a260e4 100644
---- a/net/sunrpc/netns.h
-+++ b/net/sunrpc/netns.h
-@@ -26,7 +26,6 @@ struct sunrpc_net {
- 	unsigned int rpcb_is_af_local : 1;
- 
- 	struct mutex gssp_lock;
--	wait_queue_head_t gssp_wq;
- 	struct rpc_clnt *gssp_clnt;
- 	int use_gss_proxy;
- 	int pipe_version;
+ 	for (i = 0; i < len - 1;) {
+ 		burstcnt = get_burstcount(chip);
++		if (burstcnt < 0)
++			return burstcnt;
+ 		size = min_t(int, len - i - 1, burstcnt);
+ 		ret = I2C_WRITE_DATA(client, TPM_DATA_FIFO, buf, size);
+ 		if (ret < 0)
 -- 
 1.8.3.2
 
