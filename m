@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754708AbaBGLtt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:49:49 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41809 "EHLO
+	id S1754769AbaBGLt7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:49:59 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41820 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754688AbaBGLtq (ORCPT
+	with ESMTP id S1753236AbaBGLtv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:49:46 -0500
+	Fri, 7 Feb 2014 06:49:51 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Mike Snitzer <snitzer@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 087/233] dm thin: initialize dm_thin_new_mapping returned by get_next_mapping
-Date: Fri,  7 Feb 2014 11:45:06 +0000
-Message-Id: <1391773652-25214-88-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 089/233] dm thin: fix set_pool_mode exposed pool operation races
+Date: Fri,  7 Feb 2014 11:45:08 +0000
+Message-Id: <1391773652-25214-90-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -29,82 +29,154 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mike Snitzer <snitzer@redhat.com>
 
-commit 16961b042db8cc5cf75d782b4255193ad56e1d4f upstream.
+commit 8b64e881eb40ac8b9bfcbce068a97eef819044ee upstream.
 
-As additional members are added to the dm_thin_new_mapping structure
-care should be taken to make sure they get initialized before use.
+The pool mode must not be switched until after the corresponding pool
+process_* methods have been established.  Otherwise, because
+set_pool_mode() isn't interlocked with the IO path for performance
+reasons, the IO path can end up executing process_* operations that
+don't match the mode.  This patch eliminates problems like the following
+(as seen on really fast PCIe SSD storage when transitioning the pool's
+mode from PM_READ_ONLY to PM_WRITE):
+
+kernel: device-mapper: thin: 253:2: reached low water mark for data device: sending event.
+kernel: device-mapper: thin: 253:2: no free data space available.
+kernel: device-mapper: thin: 253:2: switching pool to read-only mode
+kernel: device-mapper: thin: 253:2: switching pool to write mode
+kernel: ------------[ cut here ]------------
+kernel: WARNING: CPU: 11 PID: 7564 at drivers/md/dm-thin.c:995 handle_unserviceable_bio+0x146/0x160 [dm_thin_pool]()
+...
+kernel: Workqueue: dm-thin do_worker [dm_thin_pool]
+kernel: 00000000000003e3 ffff880308831cc8 ffffffff8152ebcb 00000000000003e3
+kernel: 0000000000000000 ffff880308831d08 ffffffff8104c46c ffff88032502a800
+kernel: ffff880036409000 ffff88030ec7ce00 0000000000000001 00000000ffffffc3
+kernel: Call Trace:
+kernel: [<ffffffff8152ebcb>] dump_stack+0x49/0x5e
+kernel: [<ffffffff8104c46c>] warn_slowpath_common+0x8c/0xc0
+kernel: [<ffffffff8104c4ba>] warn_slowpath_null+0x1a/0x20
+kernel: [<ffffffffa001e2c6>] handle_unserviceable_bio+0x146/0x160 [dm_thin_pool]
+kernel: [<ffffffffa001f276>] process_bio_read_only+0x136/0x180 [dm_thin_pool]
+kernel: [<ffffffffa0020b75>] process_deferred_bios+0xc5/0x230 [dm_thin_pool]
+kernel: [<ffffffffa0020d31>] do_worker+0x51/0x60 [dm_thin_pool]
+kernel: [<ffffffff81067823>] process_one_work+0x183/0x490
+kernel: [<ffffffff81068c70>] worker_thread+0x120/0x3a0
+kernel: [<ffffffff81068b50>] ? manage_workers+0x160/0x160
+kernel: [<ffffffff8106e86e>] kthread+0xce/0xf0
+kernel: [<ffffffff8106e7a0>] ? kthread_freezable_should_stop+0x70/0x70
+kernel: [<ffffffff8153b3ec>] ret_from_fork+0x7c/0xb0
+kernel: [<ffffffff8106e7a0>] ? kthread_freezable_should_stop+0x70/0x70
+kernel: ---[ end trace 3f00528e08ffa55c ]---
+kernel: device-mapper: thin: pool mode is PM_WRITE not PM_READ_ONLY like expected!?
+
+dm-thin.c:995 was the WARN_ON_ONCE(get_pool_mode(pool) != PM_READ_ONLY);
+at the top of handle_unserviceable_bio().  And as the additional
+debugging I had conveys: the pool mode was _not_ PM_READ_ONLY like
+expected, it was already PM_WRITE, yet pool->process_bio was still set
+to process_bio_read_only().
+
+Also, while fixing this up, reduce logging of redundant pool mode
+transitions by checking new_mode is different from old_mode.
 
 Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Acked-by: Joe Thornber <ejt@redhat.com>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/md/dm-thin.c | 17 ++++++-----------
- 1 file changed, 6 insertions(+), 11 deletions(-)
+ drivers/md/dm-thin.c | 41 +++++++++++++++++++++++++++++------------
+ 1 file changed, 29 insertions(+), 12 deletions(-)
 
 diff --git a/drivers/md/dm-thin.c b/drivers/md/dm-thin.c
-index 38c8a5f..754026b 100644
+index 18a9b12..0a9b087 100644
 --- a/drivers/md/dm-thin.c
 +++ b/drivers/md/dm-thin.c
-@@ -751,13 +751,17 @@ static int ensure_next_mapping(struct pool *pool)
- 
- static struct dm_thin_new_mapping *get_next_mapping(struct pool *pool)
- {
--	struct dm_thin_new_mapping *r = pool->next_mapping;
-+	struct dm_thin_new_mapping *m = pool->next_mapping;
- 
- 	BUG_ON(!pool->next_mapping);
- 
-+	memset(m, 0, sizeof(struct dm_thin_new_mapping));
-+	INIT_LIST_HEAD(&m->list);
-+	m->bio = NULL;
-+
- 	pool->next_mapping = NULL;
- 
--	return r;
-+	return m;
+@@ -1387,15 +1387,16 @@ static enum pool_mode get_pool_mode(struct pool *pool)
+ 	return pool->pf.mode;
  }
  
- static void schedule_copy(struct thin_c *tc, dm_block_t virt_block,
-@@ -769,15 +773,10 @@ static void schedule_copy(struct thin_c *tc, dm_block_t virt_block,
- 	struct pool *pool = tc->pool;
- 	struct dm_thin_new_mapping *m = get_next_mapping(pool);
+-static void set_pool_mode(struct pool *pool, enum pool_mode mode)
++static void set_pool_mode(struct pool *pool, enum pool_mode new_mode)
+ {
+ 	int r;
++	enum pool_mode old_mode = pool->pf.mode;
  
--	INIT_LIST_HEAD(&m->list);
--	m->quiesced = 0;
--	m->prepared = 0;
- 	m->tc = tc;
- 	m->virt_block = virt_block;
- 	m->data_block = data_dest;
- 	m->cell = cell;
--	m->err = 0;
--	m->bio = NULL;
+-	pool->pf.mode = mode;
+-
+-	switch (mode) {
++	switch (new_mode) {
+ 	case PM_FAIL:
+-		DMERR("switching pool to failure mode");
++		if (old_mode != new_mode)
++			DMERR("%s: switching pool to failure mode",
++			      dm_device_name(pool->pool_md));
+ 		dm_pool_metadata_read_only(pool->pmd);
+ 		pool->process_bio = process_bio_fail;
+ 		pool->process_discard = process_bio_fail;
+@@ -1404,11 +1405,15 @@ static void set_pool_mode(struct pool *pool, enum pool_mode mode)
+ 		break;
  
- 	if (!dm_deferred_set_add_work(pool->shared_read_ds, &m->list))
- 		m->quiesced = 1;
-@@ -840,15 +839,12 @@ static void schedule_zero(struct thin_c *tc, dm_block_t virt_block,
- 	struct pool *pool = tc->pool;
- 	struct dm_thin_new_mapping *m = get_next_mapping(pool);
+ 	case PM_READ_ONLY:
+-		DMERR("switching pool to read-only mode");
++		if (old_mode != new_mode)
++			DMERR("%s: switching pool to read-only mode",
++			      dm_device_name(pool->pool_md));
+ 		r = dm_pool_abort_metadata(pool->pmd);
+ 		if (r) {
+-			DMERR("aborting transaction failed");
+-			set_pool_mode(pool, PM_FAIL);
++			DMERR("%s: aborting transaction failed",
++			      dm_device_name(pool->pool_md));
++			new_mode = PM_FAIL;
++			set_pool_mode(pool, new_mode);
+ 		} else {
+ 			dm_pool_metadata_read_only(pool->pmd);
+ 			pool->process_bio = process_bio_read_only;
+@@ -1419,6 +1424,9 @@ static void set_pool_mode(struct pool *pool, enum pool_mode mode)
+ 		break;
  
--	INIT_LIST_HEAD(&m->list);
- 	m->quiesced = 1;
- 	m->prepared = 0;
- 	m->tc = tc;
- 	m->virt_block = virt_block;
- 	m->data_block = data_block;
- 	m->cell = cell;
--	m->err = 0;
--	m->bio = NULL;
+ 	case PM_WRITE:
++		if (old_mode != new_mode)
++			DMINFO("%s: switching pool to write mode",
++			       dm_device_name(pool->pool_md));
+ 		dm_pool_metadata_read_write(pool->pmd);
+ 		pool->process_bio = process_bio;
+ 		pool->process_discard = process_discard;
+@@ -1426,6 +1434,8 @@ static void set_pool_mode(struct pool *pool, enum pool_mode mode)
+ 		pool->process_prepared_discard = process_prepared_discard;
+ 		break;
+ 	}
++
++	pool->pf.mode = new_mode;
+ }
+ 
+ /*----------------------------------------------------------------*/
+@@ -1642,6 +1652,17 @@ static int bind_control_target(struct pool *pool, struct dm_target *ti)
+ 	enum pool_mode new_mode = pt->adjusted_pf.mode;
  
  	/*
- 	 * If the whole block of data is being overwritten or we are not
-@@ -1039,7 +1035,6 @@ static void process_discard(struct thin_c *tc, struct bio *bio)
- 			m->data_block = lookup_result.block;
- 			m->cell = cell;
- 			m->cell2 = cell2;
--			m->err = 0;
- 			m->bio = bio;
++	 * Don't change the pool's mode until set_pool_mode() below.
++	 * Otherwise the pool's process_* function pointers may
++	 * not match the desired pool mode.
++	 */
++	pt->adjusted_pf.mode = old_mode;
++
++	pool->ti = ti;
++	pool->pf = pt->adjusted_pf;
++	pool->low_water_blocks = pt->low_water_blocks;
++
++	/*
+ 	 * If we were in PM_FAIL mode, rollback of metadata failed.  We're
+ 	 * not going to recover without a thin_repair.  So we never let the
+ 	 * pool move out of the old mode.  On the other hand a PM_READ_ONLY
+@@ -1651,10 +1672,6 @@ static int bind_control_target(struct pool *pool, struct dm_target *ti)
+ 	if (old_mode == PM_FAIL)
+ 		new_mode = old_mode;
  
- 			if (!dm_deferred_set_add_work(pool->all_io_ds, &m->list)) {
+-	pool->ti = ti;
+-	pool->low_water_blocks = pt->low_water_blocks;
+-	pool->pf = pt->adjusted_pf;
+-
+ 	set_pool_mode(pool, new_mode);
+ 
+ 	return 0;
 -- 
 1.8.3.2
 
