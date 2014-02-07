@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756068AbaBGNc5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 08:32:57 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40915 "EHLO
+	id S1752272AbaBGLYC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:24:02 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40805 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752278AbaBGLYD (ORCPT
+	with ESMTP id S1751439AbaBGLXc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:24:03 -0500
+	Fri, 7 Feb 2014 06:23:32 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 24/88] [media] dib8000: make 32 bits read atomic
-Date: Fri,  7 Feb 2014 11:22:21 +0000
-Message-Id: <1391772205-22239-25-git-send-email-luis.henriques@canonical.com>
+Cc: Jan Kara <jack@suse.cz>, Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.5 02/88] writeback: Fix data corruption on NFS
+Date: Fri,  7 Feb 2014 11:21:59 +0000
+Message-Id: <1391772205-22239-3-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
@@ -27,94 +26,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 5ac64ba12aca3bef18e61c866583155a3bbf81c4 upstream.
+commit f9b0e058cbd04ada76b13afffa7e1df830543c24 upstream.
 
-As the dvb-frontend kthread can be called anytime, it can race
-with some get status ioctl. So, it seems better to avoid one to
-race with the other while reading a 32 bits register.
-I can't see any other reason for having a mutex there at I2C, except
-to provide such kind of protection, as the I2C core already has a
-mutex to protect I2C transfers.
+Commit 4f8ad655dbc8 "writeback: Refactor writeback_single_inode()" added
+a condition to skip clean inode. However this is wrong in WB_SYNC_ALL
+mode because there we also want to wait for outstanding writeback on
+possibly clean inode. This was causing occasional data corruption issues
+on NFS because it uses sync_inode() to make sure all outstanding writes
+are flushed to the server before truncating the inode and with
+sync_inode() returning prematurely file was sometimes extended back
+by an outstanding write after it was truncated.
 
-Note: instead of this approach, it could eventually remove the dib8000
-specific mutex for it, and either group the 4 ops into one xfer or
-to manually control the I2C mutex. The main advantage of the current
-approach is that the changes are smaller and more puntual.
+So modify the test to also check for pages under writeback in
+WB_SYNC_ALL mode.
 
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Acked-by: Patrick Boettcher <pboettcher@kernellabs.com>
-[ luis: backported to 3.5:
-  - file rename: drivers/media/dvb-frontends/dib8000.c ->
-    drivers/media/dvb/frontends/dib8000.c ]
+Fixes: 4f8ad655dbc82cf05d2edc11e66b78a42d38bf93
+Reported-and-tested-by: Dan Duval <dan.duval@oracle.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/media/dvb/frontends/dib8000.c | 33 +++++++++++++++++++++++++--------
- 1 file changed, 25 insertions(+), 8 deletions(-)
+ fs/fs-writeback.c | 15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/media/dvb/frontends/dib8000.c b/drivers/media/dvb/frontends/dib8000.c
-index 9ca34f4..0b8c1bb 100644
---- a/drivers/media/dvb/frontends/dib8000.c
-+++ b/drivers/media/dvb/frontends/dib8000.c
-@@ -118,15 +118,10 @@ static u16 dib8000_i2c_read16(struct i2c_device *i2c, u16 reg)
- 	return ret;
- }
- 
--static u16 dib8000_read_word(struct dib8000_state *state, u16 reg)
-+static u16 __dib8000_read_word(struct dib8000_state *state, u16 reg)
- {
- 	u16 ret;
- 
--	if (mutex_lock_interruptible(&state->i2c_buffer_lock) < 0) {
--		dprintk("could not acquire lock");
--		return 0;
--	}
--
- 	state->i2c_write_buffer[0] = reg >> 8;
- 	state->i2c_write_buffer[1] = reg & 0xff;
- 
-@@ -144,6 +139,21 @@ static u16 dib8000_read_word(struct dib8000_state *state, u16 reg)
- 		dprintk("i2c read error on %d", reg);
- 
- 	ret = (state->i2c_read_buffer[0] << 8) | state->i2c_read_buffer[1];
-+
-+	return ret;
-+}
-+
-+static u16 dib8000_read_word(struct dib8000_state *state, u16 reg)
-+{
-+	u16 ret;
-+
-+	if (mutex_lock_interruptible(&state->i2c_buffer_lock) < 0) {
-+		dprintk("could not acquire lock");
-+		return 0;
-+	}
-+
-+	ret = __dib8000_read_word(state, reg);
-+
- 	mutex_unlock(&state->i2c_buffer_lock);
- 
- 	return ret;
-@@ -153,8 +163,15 @@ static u32 dib8000_read32(struct dib8000_state *state, u16 reg)
- {
- 	u16 rw[2];
- 
--	rw[0] = dib8000_read_word(state, reg + 0);
--	rw[1] = dib8000_read_word(state, reg + 1);
-+	if (mutex_lock_interruptible(&state->i2c_buffer_lock) < 0) {
-+		dprintk("could not acquire lock");
-+		return 0;
-+	}
-+
-+	rw[0] = __dib8000_read_word(state, reg + 0);
-+	rw[1] = __dib8000_read_word(state, reg + 1);
-+
-+	mutex_unlock(&state->i2c_buffer_lock);
- 
- 	return ((rw[0] << 16) | (rw[1]));
- }
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index bf7e15d..554aeb7 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -523,13 +523,16 @@ writeback_single_inode(struct inode *inode, struct bdi_writeback *wb,
+ 	}
+ 	WARN_ON(inode->i_state & I_SYNC);
+ 	/*
+-	 * Skip inode if it is clean. We don't want to mess with writeback
+-	 * lists in this function since flusher thread may be doing for example
+-	 * sync in parallel and if we move the inode, it could get skipped. So
+-	 * here we make sure inode is on some writeback list and leave it there
+-	 * unless we have completely cleaned the inode.
++	 * Skip inode if it is clean and we have no outstanding writeback in
++	 * WB_SYNC_ALL mode. We don't want to mess with writeback lists in this
++	 * function since flusher thread may be doing for example sync in
++	 * parallel and if we move the inode, it could get skipped. So here we
++	 * make sure inode is on some writeback list and leave it there unless
++	 * we have completely cleaned the inode.
+ 	 */
+-	if (!(inode->i_state & I_DIRTY))
++	if (!(inode->i_state & I_DIRTY) &&
++	    (wbc->sync_mode != WB_SYNC_ALL ||
++	     !mapping_tagged(inode->i_mapping, PAGECACHE_TAG_WRITEBACK)))
+ 		goto out;
+ 	inode->i_state |= I_SYNC;
+ 	spin_unlock(&inode->i_lock);
 -- 
 1.8.3.2
 
