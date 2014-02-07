@@ -1,258 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753853AbaBGVeL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 16:34:11 -0500
-Received: from kolab.o2s.ch ([77.109.136.180]:46304 "EHLO kolab.o2s.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753792AbaBGVeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 16:34:07 -0500
-Subject: [PATCH v4 7/7] ARM: dts: sun5i: Add support for mmc
-To: devicetree@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Simon Baatz <gmbnomis@gmail.com>, Hans de Goede <hdegoede@redhat.com>,
-        Emilio =?utf-8?b?TMOzcGV6?= <emilio@elopez.com.ar>,
-        linux-mmc@vger.kernel.org, Chris Ball <chris@printf.net>,
-        linux-kernel@vger.kernel.org,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        linux-sunxi@googlegroups.com, Tejun Heo <tj@kernel.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        linux-arm-kernel@lists.infradead.org
-From: David =?utf-8?q?Lanzend=C3=B6rfer?= <david.lanzendoerfer@o2s.ch>
-Date: Fri, 07 Feb 2014 22:33:56 +0100
-Message-ID: <20140207213355.24624.76436.stgit@dizzy-6.o2s.ch>
-In-Reply-To: <20140207212709.24624.58619.stgit@dizzy-6.o2s.ch>
-References: <20140207212709.24624.58619.stgit@dizzy-6.o2s.ch>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+	id S1752847AbaBGVnb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 16:43:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59405 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751446AbaBGVna (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 16:43:30 -0500
+Date: Fri, 7 Feb 2014 13:43:29 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, gong.chen@linux.intel.com,
+        linux-mm@kvack.org, Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: Re: [PATCH] mm/memory-failure.c: move refcount only in
+ !MF_COUNT_INCREASED
+Message-Id: <20140207134329.a305b169351a2538ab03785f@linux-foundation.org>
+In-Reply-To: <52f54d29.89cfe00a.4277.4d3dSMTPIN_ADDED_BROKEN@mx.google.com>
+References: <52f54d29.89cfe00a.4277.4d3dSMTPIN_ADDED_BROKEN@mx.google.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: David Lanzendörfer <david.lanzendoerfer@o2s.ch>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
----
- arch/arm/boot/dts/sun5i-a10s-olinuxino-micro.dts |   30 +++++++++++++++
- arch/arm/boot/dts/sun5i-a10s.dtsi                |   44 ++++++++++++++++++++++
- arch/arm/boot/dts/sun5i-a13-olinuxino-micro.dts  |   15 ++++++++
- arch/arm/boot/dts/sun5i-a13-olinuxino.dts        |   15 ++++++++
- arch/arm/boot/dts/sun5i-a13.dtsi                 |   37 +++++++++++++++++++
- 5 files changed, 141 insertions(+)
+On Fri, 07 Feb 2014 16:16:04 -0500 Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
 
-diff --git a/arch/arm/boot/dts/sun5i-a10s-olinuxino-micro.dts b/arch/arm/boot/dts/sun5i-a10s-olinuxino-micro.dts
-index 3c9f8b3..7189adf55 100644
---- a/arch/arm/boot/dts/sun5i-a10s-olinuxino-micro.dts
-+++ b/arch/arm/boot/dts/sun5i-a10s-olinuxino-micro.dts
-@@ -34,7 +34,37 @@
- 			};
- 		};
- 
-+		mmc0: mmc@01c0f000 {
-+			pinctrl-names = "default", "default";
-+			pinctrl-0 = <&mmc0_pins_a>;
-+			pinctrl-1 = <&mmc0_cd_pin_olinuxino_micro>;
-+			cd-gpios = <&pio 6 1 0>; /* PG1 */
-+			status = "okay";
-+		};
-+
-+		mmc1: mmc@01c10000 {
-+			pinctrl-names = "default", "default";
-+			pinctrl-0 = <&mmc1_pins_a>;
-+			pinctrl-1 = <&mmc1_cd_pin_olinuxino_micro>;
-+			cd-gpios = <&pio 6 13 0>; /* PG13 */
-+			status = "okay";
-+		};
-+
- 		pinctrl@01c20800 {
-+			mmc0_cd_pin_olinuxino_micro: mmc0_cd_pin@0 {
-+				allwinner,pins = "PG1";
-+				allwinner,function = "gpio_in";
-+				allwinner,drive = <0>;
-+				allwinner,pull = <0>;
-+			};
-+
-+			mmc1_cd_pin_olinuxino_micro: mmc1_cd_pin@0 {
-+				allwinner,pins = "PG13";
-+				allwinner,function = "gpio_in";
-+				allwinner,drive = <0>;
-+				allwinner,pull = <0>;
-+			};
-+
- 			led_pins_olinuxino: led_pins@0 {
- 				allwinner,pins = "PE3";
- 				allwinner,function = "gpio_out";
-diff --git a/arch/arm/boot/dts/sun5i-a10s.dtsi b/arch/arm/boot/dts/sun5i-a10s.dtsi
-index ea16054..abff7f8 100644
---- a/arch/arm/boot/dts/sun5i-a10s.dtsi
-+++ b/arch/arm/boot/dts/sun5i-a10s.dtsi
-@@ -293,6 +293,36 @@
- 			#size-cells = <0>;
- 		};
- 
-+		mmc0: mmc@01c0f000 {
-+			compatible = "allwinner,sun5i-a13-mmc";
-+			reg = <0x01c0f000 0x1000>;
-+			clocks = <&ahb_gates 8>, <&mmc0_clk>;
-+			clock-names = "ahb", "mod";
-+			interrupts = <32>;
-+			bus-width = <4>;
-+			status = "disabled";
-+		};
-+
-+		mmc1: mmc@01c10000 {
-+			compatible = "allwinner,sun5i-a13-mmc";
-+			reg = <0x01c10000 0x1000>;
-+			clocks = <&ahb_gates 9>, <&mmc1_clk>;
-+			clock-names = "ahb", "mod";
-+			interrupts = <33>;
-+			bus-width = <4>;
-+			status = "disabled";
-+		};
-+
-+		mmc2: mmc@01c11000 {
-+			compatible = "allwinner,sun5i-a13-mmc";
-+			reg = <0x01c11000 0x1000>;
-+			clocks = <&ahb_gates 10>, <&mmc2_clk>;
-+			clock-names = "ahb", "mod";
-+			interrupts = <34>;
-+			bus-width = <4>;
-+			status = "disabled";
-+		};
-+
- 		intc: interrupt-controller@01c20400 {
- 			compatible = "allwinner,sun4i-ic";
- 			reg = <0x01c20400 0x400>;
-@@ -363,6 +393,20 @@
- 				allwinner,drive = <0>;
- 				allwinner,pull = <0>;
- 			};
-+
-+			mmc0_pins_a: mmc0@0 {
-+				allwinner,pins = "PF0","PF1","PF2","PF3","PF4","PF5";
-+				allwinner,function = "mmc0";
-+				allwinner,drive = <3>;
-+				allwinner,pull = <0>;
-+			};
-+
-+			mmc1_pins_a: mmc1@0 {
-+				allwinner,pins = "PG3","PG4","PG5","PG6","PG7","PG8";
-+				allwinner,function = "mmc1";
-+				allwinner,drive = <3>;
-+				allwinner,pull = <0>;
-+			};
- 		};
- 
- 		timer@01c20c00 {
-diff --git a/arch/arm/boot/dts/sun5i-a13-olinuxino-micro.dts b/arch/arm/boot/dts/sun5i-a13-olinuxino-micro.dts
-index fe2ce0a..6ae5867 100644
---- a/arch/arm/boot/dts/sun5i-a13-olinuxino-micro.dts
-+++ b/arch/arm/boot/dts/sun5i-a13-olinuxino-micro.dts
-@@ -20,7 +20,22 @@
- 	compatible = "olimex,a13-olinuxino-micro", "allwinner,sun5i-a13";
- 
- 	soc@01c00000 {
-+		mmc0: mmc@01c0f000 {
-+			pinctrl-names = "default", "default";
-+			pinctrl-0 = <&mmc0_pins_a>;
-+			pinctrl-1 = <&mmc0_cd_pin_olinuxinom>;
-+			cd-gpios = <&pio 6 0 0>; /* PG0 */
-+			status = "okay";
-+		};
-+
- 		pinctrl@01c20800 {
-+			mmc0_cd_pin_olinuxinom: mmc0_cd_pin@0 {
-+				allwinner,pins = "PG0";
-+				allwinner,function = "gpio_in";
-+				allwinner,drive = <0>;
-+				allwinner,pull = <0>;
-+			};
-+
- 			led_pins_olinuxinom: led_pins@0 {
- 				allwinner,pins = "PG9";
- 				allwinner,function = "gpio_out";
-diff --git a/arch/arm/boot/dts/sun5i-a13-olinuxino.dts b/arch/arm/boot/dts/sun5i-a13-olinuxino.dts
-index a4ba5ff..b23237b 100644
---- a/arch/arm/boot/dts/sun5i-a13-olinuxino.dts
-+++ b/arch/arm/boot/dts/sun5i-a13-olinuxino.dts
-@@ -19,7 +19,22 @@
- 	compatible = "olimex,a13-olinuxino", "allwinner,sun5i-a13";
- 
- 	soc@01c00000 {
-+		mmc0: mmc@01c0f000 {
-+			pinctrl-names = "default", "default";
-+			pinctrl-0 = <&mmc0_pins_a>;
-+			pinctrl-1 = <&mmc0_cd_pin_olinuxino>;
-+			cd-gpios = <&pio 6 0 0>; /* PG0 */
-+			status = "okay";
-+		};
-+
- 		pinctrl@01c20800 {
-+			mmc0_cd_pin_olinuxino: mmc0_cd_pin@0 {
-+				allwinner,pins = "PG0";
-+				allwinner,function = "gpio_in";
-+				allwinner,drive = <0>;
-+				allwinner,pull = <0>;
-+			};
-+
- 			led_pins_olinuxino: led_pins@0 {
- 				allwinner,pins = "PG9";
- 				allwinner,function = "gpio_out";
-diff --git a/arch/arm/boot/dts/sun5i-a13.dtsi b/arch/arm/boot/dts/sun5i-a13.dtsi
-index 320335a..5d71c82 100644
---- a/arch/arm/boot/dts/sun5i-a13.dtsi
-+++ b/arch/arm/boot/dts/sun5i-a13.dtsi
-@@ -274,6 +274,36 @@
- 		#size-cells = <1>;
- 		ranges;
- 
-+		mmc0: mmc@01c0f000 {
-+			compatible = "allwinner,sun5i-a13-mmc";
-+			reg = <0x01c0f000 0x1000>;
-+			clocks = <&ahb_gates 8>, <&mmc0_clk>;
-+			clock-names = "ahb", "mod";
-+			interrupts = <32>;
-+			bus-width = <4>;
-+			status = "disabled";
-+		};
-+
-+		mmc1: mmc@01c10000 {
-+			compatible = "allwinner,sun5i-a13-mmc";
-+			reg = <0x01c10000 0x1000>;
-+			clocks = <&ahb_gates 9>, <&mmc1_clk>;
-+			clock-names = "ahb", "mod";
-+			interrupts = <33>;
-+			bus-width = <4>;
-+			status = "disabled";
-+		};
-+
-+		mmc2: mmc@01c11000 {
-+			compatible = "allwinner,sun5i-a13-mmc";
-+			reg = <0x01c11000 0x1000>;
-+			clocks = <&ahb_gates 10>, <&mmc2_clk>;
-+			clock-names = "ahb", "mod";
-+			interrupts = <34>;
-+			bus-width = <4>;
-+			status = "disabled";
-+		};
-+
- 		intc: interrupt-controller@01c20400 {
- 			compatible = "allwinner,sun4i-ic";
- 			reg = <0x01c20400 0x400>;
-@@ -326,6 +356,13 @@
- 				allwinner,drive = <0>;
- 				allwinner,pull = <0>;
- 			};
-+
-+			mmc0_pins_a: mmc0@0 {
-+				allwinner,pins = "PF0","PF1","PF2","PF3","PF4","PF5";
-+				allwinner,function = "mmc0";
-+				allwinner,drive = <3>;
-+				allwinner,pull = <0>;
-+			};
- 		};
- 
- 		timer@01c20c00 {
+> # Resending due to sending failure. Sorry if you received twice.
+> ---
+> mce-test detected a test failure when injecting error to a thp tail page.
+> This is because we take page refcount of the tail page in madvise_hwpoison()
+> while the fix in commit a3e0f9e47d5e ("mm/memory-failure.c: transfer page
+> count from head page to tail page after split thp") assumes that we always
+> take refcount on the head page.
+> 
+> When a real memory error happens we take refcount on the head page where
+> memory_failure() is called without MF_COUNT_INCREASED set, so it seems to me
+> that testing memory error on thp tail page using madvise makes little sense.
+> 
+> This patch cancels moving refcount in !MF_COUNT_INCREASED for valid testing.
+> 
+> ...
+>
+> --- v3.14-rc1.orig/mm/memory-failure.c
+> +++ v3.14-rc1/mm/memory-failure.c
+> @@ -1042,8 +1042,10 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
+>  			 * to it. Similarly, page lock is shifted.
+>  			 */
+>  			if (hpage != p) {
+> -				put_page(hpage);
+> -				get_page(p);
+> +				if (!(flags && MF_COUNT_INCREASED)) {
+
+s/&&/&/
+
+Please carefully retest this, make sure that both cases are covered?
+
+> +					put_page(hpage);
+> +					get_page(p);
+> +				}
+>  				lock_page(p);
+>  				unlock_page(hpage);
+>  				*hpagep = p;
+
 
