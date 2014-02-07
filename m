@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753204AbaBGLYz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:24:55 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41098 "EHLO
+	id S1753247AbaBGLZC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:25:02 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41114 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753167AbaBGLYw (ORCPT
+	with ESMTP id S1753167AbaBGLY4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:24:52 -0500
+	Fri, 7 Feb 2014 06:24:56 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Miklos Szeredi <mszeredi@suse.cz>,
+Cc: Ira Weiny <ira.weiny@intel.com>, Roland Dreier <roland@purestorage.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 61/88] fuse: fix pipe_buf_operations
-Date: Fri,  7 Feb 2014 11:22:58 +0000
-Message-Id: <1391772205-22239-62-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 63/88] IB/qib: Fix QP check when looping back to/from QP1
+Date: Fri,  7 Feb 2014 11:23:00 +0000
+Message-Id: <1391772205-22239-64-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
@@ -27,161 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Ira Weiny <ira.weiny@intel.com>
 
-commit 28a625cbc2a14f17b83e47ef907b2658576a32aa upstream.
+commit 6e0ea9e6cbcead7fa8c76e3e3b9de4a50c5131c5 upstream.
 
-Having this struct in module memory could Oops when if the module is
-unloaded while the buffer still persists in a pipe.
+The GSI QP type is compatible with and should be allowed to send data
+to/from any UD QP.  This was found when testing ibacm on the same node
+as an SA.
 
-Since sock_pipe_buf_ops is essentially the same as fuse_dev_pipe_buf_steal
-merge them into nosteal_pipe_buf_ops (this is the same as
-default_pipe_buf_ops except stealing the page from the buffer is not
-allowed).
-
-Reported-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-[ luis: backported to 3.5: adjusted context ]
+Reviewed-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
+Signed-off-by: Ira Weiny <ira.weiny@intel.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/fuse/dev.c             | 22 +++++-----------------
- fs/splice.c               | 18 ++++++++++++++++++
- include/linux/pipe_fs_i.h |  2 ++
- net/core/skbuff.c         | 32 +-------------------------------
- 4 files changed, 26 insertions(+), 48 deletions(-)
+ drivers/infiniband/hw/qib/qib_ud.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
-index f4246cf..fd074cd 100644
---- a/fs/fuse/dev.c
-+++ b/fs/fuse/dev.c
-@@ -1199,22 +1199,6 @@ static ssize_t fuse_dev_read(struct kiocb *iocb, const struct iovec *iov,
- 	return fuse_dev_do_read(fc, file, &cs, iov_length(iov, nr_segs));
- }
+diff --git a/drivers/infiniband/hw/qib/qib_ud.c b/drivers/infiniband/hw/qib/qib_ud.c
+index a468bf2..9c96545 100644
+--- a/drivers/infiniband/hw/qib/qib_ud.c
++++ b/drivers/infiniband/hw/qib/qib_ud.c
+@@ -57,13 +57,20 @@ static void qib_ud_loopback(struct qib_qp *sqp, struct qib_swqe *swqe)
+ 	struct qib_sge *sge;
+ 	struct ib_wc wc;
+ 	u32 length;
++	enum ib_qp_type sqptype, dqptype;
  
--static int fuse_dev_pipe_buf_steal(struct pipe_inode_info *pipe,
--				   struct pipe_buffer *buf)
--{
--	return 1;
--}
--
--static const struct pipe_buf_operations fuse_dev_pipe_buf_ops = {
--	.can_merge = 0,
--	.map = generic_pipe_buf_map,
--	.unmap = generic_pipe_buf_unmap,
--	.confirm = generic_pipe_buf_confirm,
--	.release = generic_pipe_buf_release,
--	.steal = fuse_dev_pipe_buf_steal,
--	.get = generic_pipe_buf_get,
--};
--
- static ssize_t fuse_dev_splice_read(struct file *in, loff_t *ppos,
- 				    struct pipe_inode_info *pipe,
- 				    size_t len, unsigned int flags)
-@@ -1261,7 +1245,11 @@ static ssize_t fuse_dev_splice_read(struct file *in, loff_t *ppos,
- 		buf->page = bufs[page_nr].page;
- 		buf->offset = bufs[page_nr].offset;
- 		buf->len = bufs[page_nr].len;
--		buf->ops = &fuse_dev_pipe_buf_ops;
-+		/*
-+		 * Need to be careful about this.  Having buf->ops in module
-+		 * code can Oops if the buffer persists after module unload.
-+		 */
-+		buf->ops = &nosteal_pipe_buf_ops;
- 
- 		pipe->nrbufs++;
- 		page_nr++;
-diff --git a/fs/splice.c b/fs/splice.c
-index 6cb3acb..74ff4f0 100644
---- a/fs/splice.c
-+++ b/fs/splice.c
-@@ -553,6 +553,24 @@ static const struct pipe_buf_operations default_pipe_buf_ops = {
- 	.get = generic_pipe_buf_get,
- };
- 
-+static int generic_pipe_buf_nosteal(struct pipe_inode_info *pipe,
-+				    struct pipe_buffer *buf)
-+{
-+	return 1;
-+}
+ 	qp = qib_lookup_qpn(ibp, swqe->wr.wr.ud.remote_qpn);
+ 	if (!qp) {
+ 		ibp->n_pkt_drops++;
+ 		return;
+ 	}
+-	if (qp->ibqp.qp_type != sqp->ibqp.qp_type ||
 +
-+/* Pipe buffer operations for a socket and similar. */
-+const struct pipe_buf_operations nosteal_pipe_buf_ops = {
-+	.can_merge = 0,
-+	.map = generic_pipe_buf_map,
-+	.unmap = generic_pipe_buf_unmap,
-+	.confirm = generic_pipe_buf_confirm,
-+	.release = generic_pipe_buf_release,
-+	.steal = generic_pipe_buf_nosteal,
-+	.get = generic_pipe_buf_get,
-+};
-+EXPORT_SYMBOL(nosteal_pipe_buf_ops);
++	sqptype = sqp->ibqp.qp_type == IB_QPT_GSI ?
++			IB_QPT_UD : sqp->ibqp.qp_type;
++	dqptype = qp->ibqp.qp_type == IB_QPT_GSI ?
++			IB_QPT_UD : qp->ibqp.qp_type;
 +
- static ssize_t kernel_readv(struct file *file, const struct iovec *vec,
- 			    unsigned long vlen, loff_t offset)
- {
-diff --git a/include/linux/pipe_fs_i.h b/include/linux/pipe_fs_i.h
-index e1ac1ce..e51bbd3 100644
---- a/include/linux/pipe_fs_i.h
-+++ b/include/linux/pipe_fs_i.h
-@@ -158,6 +158,8 @@ int generic_pipe_buf_confirm(struct pipe_inode_info *, struct pipe_buffer *);
- int generic_pipe_buf_steal(struct pipe_inode_info *, struct pipe_buffer *);
- void generic_pipe_buf_release(struct pipe_inode_info *, struct pipe_buffer *);
- 
-+extern const struct pipe_buf_operations nosteal_pipe_buf_ops;
-+
- /* for F_SETPIPE_SZ and F_GETPIPE_SZ */
- long pipe_fcntl(struct file *, unsigned int, unsigned long arg);
- struct pipe_inode_info *get_pipe_info(struct file *file);
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index 7ed8ef3..1e37e1a 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -74,36 +74,6 @@
- struct kmem_cache *skbuff_head_cache __read_mostly;
- static struct kmem_cache *skbuff_fclone_cache __read_mostly;
- 
--static void sock_pipe_buf_release(struct pipe_inode_info *pipe,
--				  struct pipe_buffer *buf)
--{
--	put_page(buf->page);
--}
--
--static void sock_pipe_buf_get(struct pipe_inode_info *pipe,
--				struct pipe_buffer *buf)
--{
--	get_page(buf->page);
--}
--
--static int sock_pipe_buf_steal(struct pipe_inode_info *pipe,
--			       struct pipe_buffer *buf)
--{
--	return 1;
--}
--
--
--/* Pipe buffer operations for a socket. */
--static const struct pipe_buf_operations sock_pipe_buf_ops = {
--	.can_merge = 0,
--	.map = generic_pipe_buf_map,
--	.unmap = generic_pipe_buf_unmap,
--	.confirm = generic_pipe_buf_confirm,
--	.release = sock_pipe_buf_release,
--	.steal = sock_pipe_buf_steal,
--	.get = sock_pipe_buf_get,
--};
--
- /*
-  *	Keep out-of-line to prevent kernel bloat.
-  *	__builtin_return_address is not used because it is not always
-@@ -1710,7 +1680,7 @@ int skb_splice_bits(struct sk_buff *skb, unsigned int offset,
- 		.partial = partial,
- 		.nr_pages_max = MAX_SKB_FRAGS,
- 		.flags = flags,
--		.ops = &sock_pipe_buf_ops,
-+		.ops = &nosteal_pipe_buf_ops,
- 		.spd_release = sock_spd_release,
- 	};
- 	struct sk_buff *frag_iter;
++	if (dqptype != sqptype ||
+ 	    !(ib_qib_state_ops[qp->state] & QIB_PROCESS_RECV_OK)) {
+ 		ibp->n_pkt_drops++;
+ 		goto drop;
 -- 
 1.8.3.2
 
