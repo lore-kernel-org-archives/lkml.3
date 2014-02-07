@@ -1,67 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755089AbaBGMDS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:03:18 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:35410 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753322AbaBGMDP (ORCPT
+	id S932534AbaBGLwY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:52:24 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42389 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755291AbaBGLwR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 07:03:15 -0500
-Date: Fri, 7 Feb 2014 17:33:10 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Ingo Molnar <mingo@kernel.org>, Rik van Riel <riel@redhat.com>,
-        linux-mm@kvack.org, josh@joshtriplett.org
-Subject: [PATCH 2/9] mm: Mark functions as static in memory.c
-Message-ID: <2bd9a806eae6958a75de452ba1d09f5cb6e2f7bc.1391167128.git.rashika.kheria@gmail.com>
-References: <a7658fc8f2ab015bffe83de1448cc3db79d2a9fc.1391167128.git.rashika.kheria@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <a7658fc8f2ab015bffe83de1448cc3db79d2a9fc.1391167128.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 7 Feb 2014 06:52:17 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: PaX Team <pageexec@freemail.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 199/233] x86, x32: Correct invalid use of user timespec in the kernel
+Date: Fri,  7 Feb 2014 11:46:58 +0000
+Message-Id: <1391773652-25214-200-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
+References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark functions as static in memory.c because they are not used outside
-this file.
+3.11.10.4 -stable review patch.  If anyone has any objections, please let me know.
 
-This eliminates the following warnings in mm/memory.c:
-mm/memory.c:3530:5: warning: no previous prototype for ‘numa_migrate_prep’ [-Wmissing-prototypes]
-mm/memory.c:3545:5: warning: no previous prototype for ‘do_numa_page’ [-Wmissing-prototypes]
+------------------
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+From: PaX Team <pageexec@freemail.hu>
+
+commit 2def2ef2ae5f3990aabdbe8a755911902707d268 upstream.
+
+The x32 case for the recvmsg() timout handling is broken:
+
+  asmlinkage long compat_sys_recvmmsg(int fd, struct compat_mmsghdr __user *mmsg,
+                                      unsigned int vlen, unsigned int flags,
+                                      struct compat_timespec __user *timeout)
+  {
+          int datagrams;
+          struct timespec ktspec;
+
+          if (flags & MSG_CMSG_COMPAT)
+                  return -EINVAL;
+
+          if (COMPAT_USE_64BIT_TIME)
+                  return __sys_recvmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
+                                        flags | MSG_CMSG_COMPAT,
+                                        (struct timespec *) timeout);
+          ...
+
+The timeout pointer parameter is provided by userland (hence the __user
+annotation) but for x32 syscalls it's simply cast to a kernel pointer
+and is passed to __sys_recvmmsg which will eventually directly
+dereference it for both reading and writing.  Other callers to
+__sys_recvmmsg properly copy from userland to the kernel first.
+
+The bug was introduced by commit ee4fa23c4bfc ("compat: Use
+COMPAT_USE_64BIT_TIME in net/compat.c") and should affect all kernels
+since 3.4 (and perhaps vendor kernels if they backported x32 support
+along with this code).
+
+Note that CONFIG_X86_X32_ABI gets enabled at build time and only if
+CONFIG_X86_X32 is enabled and ld can build x32 executables.
+
+Other uses of COMPAT_USE_64BIT_TIME seem fine.
+
+This addresses CVE-2014-0038.
+
+Signed-off-by: PaX Team <pageexec@freemail.hu>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/memory.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/compat.c | 9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
 
-diff --git a/mm/memory.c b/mm/memory.c
-index 5d9025f..982c1ad 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3527,7 +3527,7 @@ static int do_nonlinear_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 	return __do_fault(mm, vma, address, pmd, pgoff, flags, orig_pte);
- }
+diff --git a/net/compat.c b/net/compat.c
+index dd32e34..f50161f 100644
+--- a/net/compat.c
++++ b/net/compat.c
+@@ -780,21 +780,16 @@ asmlinkage long compat_sys_recvmmsg(int fd, struct compat_mmsghdr __user *mmsg,
+ 	if (flags & MSG_CMSG_COMPAT)
+ 		return -EINVAL;
  
--int numa_migrate_prep(struct page *page, struct vm_area_struct *vma,
-+static int numa_migrate_prep(struct page *page, struct vm_area_struct *vma,
- 				unsigned long addr, int page_nid,
- 				int *flags)
- {
-@@ -3542,7 +3542,7 @@ int numa_migrate_prep(struct page *page, struct vm_area_struct *vma,
- 	return mpol_misplaced(page, vma, addr);
- }
+-	if (COMPAT_USE_64BIT_TIME)
+-		return __sys_recvmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
+-				      flags | MSG_CMSG_COMPAT,
+-				      (struct timespec *) timeout);
+-
+ 	if (timeout == NULL)
+ 		return __sys_recvmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
+ 				      flags | MSG_CMSG_COMPAT, NULL);
  
--int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
-+static int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 		   unsigned long addr, pte_t pte, pte_t *ptep, pmd_t *pmd)
- {
- 	struct page *page = NULL;
+-	if (get_compat_timespec(&ktspec, timeout))
++	if (compat_get_timespec(&ktspec, timeout))
+ 		return -EFAULT;
+ 
+ 	datagrams = __sys_recvmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
+ 				   flags | MSG_CMSG_COMPAT, &ktspec);
+-	if (datagrams > 0 && put_compat_timespec(&ktspec, timeout))
++	if (datagrams > 0 && compat_put_timespec(&ktspec, timeout))
+ 		datagrams = -EFAULT;
+ 
+ 	return datagrams;
 -- 
-1.7.9.5
+1.8.3.2
 
