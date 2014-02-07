@@ -1,121 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752940AbaBGOmB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 09:42:01 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:33772 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752684AbaBGOlI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 09:41:08 -0500
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Emil Goode'" <emilgoode@gmail.com>,
-        =?utf-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>
-CC: "'Igor Gnatenko'" <i.gnatenko.brain@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ming Lei <ming.lei@canonical.com>, Mark Brown <broonie@linaro.org>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Glen Turner <gdt@gdt.id.au>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] net: asix: fix bad header length bug
-Thread-Topic: [PATCH] net: asix: fix bad header length bug
-Thread-Index: AQHPI+hM9jIHqyBVlkS9F+g2/ALCs5qp0BoAgAAJosA=
-Date: Fri, 7 Feb 2014 14:40:07 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F6BA7AF@AcuExch.aculab.com>
-References: <1391691384-8486-1-git-send-email-emilgoode@gmail.com>
- <1391692768.2843.4.camel@X1Carbon.localdomain>
- <063D6719AE5E284EB5DD2968C1650D6D0F6B99F7@AcuExch.aculab.com>
- <20140206224121.GB5251@lianli> <87wqh7i7pf.fsf@nemi.mork.no>
- <20140207135320.GA4252@lianli>
-In-Reply-To: <20140207135320.GA4252@lianli>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="utf-8"
+	id S1752982AbaBGOmE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 09:42:04 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:55939 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752039AbaBGOkl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 09:40:41 -0500
+Date: Fri, 7 Feb 2014 06:40:28 -0800
+From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
+Message-ID: <tip-627ee7947e2e83ba565c31c5c9373d6e364b1ecd@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, soren.brinkmann@xilinx.com, hpa@zytor.com,
+        mingo@kernel.org, tglx@linutronix.de, michal.simek@xilinx.com,
+        daniel.lezcano@linaro.org
+Reply-To: mingo@kernel.org, hpa@zytor.com, soren.brinkmann@xilinx.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        daniel.lezcano@linaro.org, michal.simek@xilinx.com
+In-Reply-To: <1391466877-28908-2-git-send-email-soren.brinkmann@xilinx.com>
+References: <1391466877-28908-2-git-send-email-soren.brinkmann@xilinx.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/core] clockevents:
+  Serialize calls to clockevents_update_freq() in the core
+Git-Commit-ID: 627ee7947e2e83ba565c31c5c9373d6e364b1ecd
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Fri, 07 Feb 2014 06:40:34 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s17Eg6xn015843
 
-From: Emil Goode 
-> On Fri, Feb 07, 2014 at 10:38:04AM +0100, BjÃ¸rn Mork wrote:
-> > Emil Goode <emilgoode@gmail.com> writes:
-> > > On Thu, Feb 06, 2014 at 03:28:13PM +0000, David Laight wrote:
-> > >> From: Igor Gnatenko
-> > >> > On Thu, 2014-02-06 at 13:56 +0100, Emil Goode wrote:
-> > >> > > The AX88772B occasionally send rx packets that cross urb boundaries
-> > >> > > and the remaining partial packet is sent with no header.
-> > >> > > When the buffer with a partial packet is of less number of octets
-> > >> > > than the value of hard_header_len the buffer is discarded by the
-> > >> > > usbnet module. This is causing dropped packages and error messages
-> > >> > > in dmesg.
-> >
-> > > I will do some more digging in the code, but the test of skb->len
-> > > against hard_header_len is done already in the completion callback
-> > > function passed to usb_fill_bulk_urb so it seems that buffers of less
-> > > than hard_header_len number of octets will be dropped regardless.
-> >
-> > I am pretty sure you are right about this bug. And the exact same
-> > solution is already used by the cx82310_eth minidriver, so I don't see
-> > the problem.  Your fix is fine IMHO.  But you should apply it to all the
-> > devices using asix_rx_fixup_common(), not just the ax88772 ones.
-> >
-> > You could maybe make this a usbnet flag instead and create a generic
-> > solution in usbnet, but frankly I believe the number of flags and their
-> > meaning have exceeded drivers authors capabilities a long time ago.  At
-> > least mine, which are quite limited ;-)
-> >
-> > An example of that problem is another bloody obvious bug I noticed while
-> > looking at this driver: The 'struct driver_info ax88178_info' points to
-> > asix_rx_fixup_common without setting the FLAG_MULTI_PACKET.  This will
-> > result in usbnet rx_process() calling usbnet_skb_return() on skbs which
-> > are already consumed by the minidriver.  Not a big problem, but will
-> > give some odd results.  But if you allow skbs shorter than ETH_HLEN to
-> > slip through then it might go boom, so you should probably fix that as
-> > well.
-> >
-> >
-> > BjÃ¸rn
-> 
-> Yes I believe the patch is necessary, but maybe it would be nice with
-> a prettier solution rather than setting hard_header_len to 0 for all
-> devices with this behaviour. Perhaps it would be better to let each
-> driver that uses the usbnet module decide what skbs to discard?
-> 
-> What David describes seems to be another bug, but I don't think it is
-> related to this patch as I'm able to reproduce the bug without the patch
-> beeing applied by setting the mtu to pretty much any value other than
-> 1500 and using ping with a larger packet size than that mtu value.
+Commit-ID:  627ee7947e2e83ba565c31c5c9373d6e364b1ecd
+Gitweb:     http://git.kernel.org/tip/627ee7947e2e83ba565c31c5c9373d6e364b1ecd
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Mon, 3 Feb 2014 14:34:31 -0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Fri, 7 Feb 2014 15:34:28 +0100
 
-Yes - plenty of bugs if you just look for them!
+clockevents: Serialize calls to clockevents_update_freq() in the core
 
-I did a quick scan through the sub-drivers and although the usbnet code
-seems to treat the 'hard_header_len' as a constant to add to the mtu when
-allocating rx urb (when the driver doesn't set rx_urb_len), some of the
-sub-drivers seem to have three length, the rx header, tx header and hard_header,
-and set them separately (I've not just rechecked) - which may not exactly
-match what the usbnet code does is the lengths are different.
+We can identify the broadcast device in the core and serialize all
+callers including interrupts on a different CPU against the update.
+Also, disabling interrupts is moved into the core allowing callers to
+leave interrutps enabled when calling clockevents_update_freq().
 
-The ax88772b driver seems to support several different bits of silicon.
-Only some put multiple ethernet frames in a single urb, and only for these
-does the driver set the rx_urb_length to 2048.
-For the other silicon it relies on usbnet setting the rx urb size - so
-the hard_header_len better not be set to zero.
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: Soeren Brinkmann <soren.brinkmann@xilinx.com>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Michal Simek <michal.simek@xilinx.com>
+Link: http://lkml.kernel.org/r/1391466877-28908-2-git-send-email-soren.brinkmann@xilinx.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/time/clockevents.c    | 29 ++++++++++++++++++++++-------
+ kernel/time/tick-broadcast.c | 25 +++++++++++++++++++------
+ kernel/time/tick-internal.h  |  4 ++++
+ 3 files changed, 45 insertions(+), 13 deletions(-)
 
-Someone with some time to spare needs to modify usbnet to support page
-aligned rx buffers (probably 4k urb) and then build correctly formatted
-skb from them.
-
-At the moment the ax179_178a driver allocates 20kB urb which end up
-with an 0x40 byte offset into the page (so are probably 24k) and
-then cause alignment issues in the xhci driver which currently doesn't
-correctly handle non-aligned 64k address boundaries when the cross the
-ring end.
-
-	David
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
+index 086ad60..641d910 100644
+--- a/kernel/time/clockevents.c
++++ b/kernel/time/clockevents.c
+@@ -439,6 +439,16 @@ void clockevents_config_and_register(struct clock_event_device *dev,
+ }
+ EXPORT_SYMBOL_GPL(clockevents_config_and_register);
+ 
++int __clockevents_update_freq(struct clock_event_device *dev, u32 freq)
++{
++	clockevents_config(dev, freq);
++
++	if (dev->mode != CLOCK_EVT_MODE_ONESHOT)
++		return 0;
++
++	return clockevents_program_event(dev, dev->next_event, false);
++}
++
+ /**
+  * clockevents_update_freq - Update frequency and reprogram a clock event device.
+  * @dev:	device to modify
+@@ -446,17 +456,22 @@ EXPORT_SYMBOL_GPL(clockevents_config_and_register);
+  *
+  * Reconfigure and reprogram a clock event device in oneshot
+  * mode. Must be called on the cpu for which the device delivers per
+- * cpu timer events with interrupts disabled!  Returns 0 on success,
+- * -ETIME when the event is in the past.
++ * cpu timer events. If called for the broadcast device the core takes
++ * care of serialization.
++ *
++ * Returns 0 on success, -ETIME when the event is in the past.
+  */
+ int clockevents_update_freq(struct clock_event_device *dev, u32 freq)
+ {
+-	clockevents_config(dev, freq);
+-
+-	if (dev->mode != CLOCK_EVT_MODE_ONESHOT)
+-		return 0;
++	unsigned long flags;
++	int ret;
+ 
+-	return clockevents_program_event(dev, dev->next_event, false);
++	local_irq_save(flags);
++	ret = tick_broadcast_update_freq(dev, freq);
++	if (ret == -ENODEV)
++		ret = __clockevents_update_freq(dev, freq);
++	local_irq_restore(flags);
++	return ret;
+ }
+ 
+ /*
+diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+index 43780ab..003e6c3 100644
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -120,6 +120,19 @@ int tick_is_broadcast_device(struct clock_event_device *dev)
+ 	return (dev && tick_broadcast_device.evtdev == dev);
+ }
+ 
++int tick_broadcast_update_freq(struct clock_event_device *dev, u32 freq)
++{
++	int ret = -ENODEV;
++
++	if (tick_is_broadcast_device(dev)) {
++		raw_spin_lock(&tick_broadcast_lock);
++		ret = __clockevents_update_freq(dev, freq);
++		raw_spin_unlock(&tick_broadcast_lock);
++	}
++	return ret;
++}
++
++
+ static void err_broadcast(const struct cpumask *mask)
+ {
+ 	pr_crit_once("Failed to broadcast timer tick. Some CPUs may be unresponsive.\n");
+@@ -272,12 +285,8 @@ static void tick_do_broadcast(struct cpumask *mask)
+  */
+ static void tick_do_periodic_broadcast(void)
+ {
+-	raw_spin_lock(&tick_broadcast_lock);
+-
+ 	cpumask_and(tmpmask, cpu_online_mask, tick_broadcast_mask);
+ 	tick_do_broadcast(tmpmask);
+-
+-	raw_spin_unlock(&tick_broadcast_lock);
+ }
+ 
+ /*
+@@ -287,13 +296,15 @@ static void tick_handle_periodic_broadcast(struct clock_event_device *dev)
+ {
+ 	ktime_t next;
+ 
++	raw_spin_lock(&tick_broadcast_lock);
++
+ 	tick_do_periodic_broadcast();
+ 
+ 	/*
+ 	 * The device is in periodic mode. No reprogramming necessary:
+ 	 */
+ 	if (dev->mode == CLOCK_EVT_MODE_PERIODIC)
+-		return;
++		goto unlock;
+ 
+ 	/*
+ 	 * Setup the next period for devices, which do not have
+@@ -306,9 +317,11 @@ static void tick_handle_periodic_broadcast(struct clock_event_device *dev)
+ 		next = ktime_add(next, tick_period);
+ 
+ 		if (!clockevents_program_event(dev, next, false))
+-			return;
++			goto unlock;
+ 		tick_do_periodic_broadcast();
+ 	}
++unlock:
++	raw_spin_unlock(&tick_broadcast_lock);
+ }
+ 
+ /*
+diff --git a/kernel/time/tick-internal.h b/kernel/time/tick-internal.h
+index 8329669..26f1c0b 100644
+--- a/kernel/time/tick-internal.h
++++ b/kernel/time/tick-internal.h
+@@ -111,6 +111,7 @@ extern int tick_resume_broadcast(void);
+ extern void tick_broadcast_init(void);
+ extern void
+ tick_set_periodic_handler(struct clock_event_device *dev, int broadcast);
++int tick_broadcast_update_freq(struct clock_event_device *dev, u32 freq);
+ 
+ #else /* !BROADCAST */
+ 
+@@ -133,6 +134,8 @@ static inline void tick_shutdown_broadcast(unsigned int *cpup) { }
+ static inline void tick_suspend_broadcast(void) { }
+ static inline int tick_resume_broadcast(void) { return 0; }
+ static inline void tick_broadcast_init(void) { }
++static inline int tick_broadcast_update_freq(struct clock_event_device *dev,
++					     u32 freq) { return -ENODEV; }
+ 
+ /*
+  * Set the periodic handler in non broadcast mode
+@@ -154,5 +157,6 @@ static inline int tick_device_is_functional(struct clock_event_device *dev)
+ 
+ #endif
+ 
++int __clockevents_update_freq(struct clock_event_device *dev, u32 freq);
+ extern void do_timer(unsigned long ticks);
+ extern void update_wall_time(void);
