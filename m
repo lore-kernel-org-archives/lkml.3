@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755410AbaBGLws (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:52:48 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42523 "EHLO
+	id S1755594AbaBGL5h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:57:37 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42535 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755389AbaBGLwp (ORCPT
+	with ESMTP id S1755393AbaBGLwr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:52:45 -0500
+	Fri, 7 Feb 2014 06:52:47 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Patrick McHardy <kaber@trash.net>, Thomas Graf <tgraf@suug.ch>,
-        Julian Anastasov <ja@ssi.bg>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+Cc: Holger Eitzenberger <holger@eitzenberger.org>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 215/233] net: avoid reference counter overflows on fib_rules in multicast forwarding
-Date: Fri,  7 Feb 2014 11:47:14 +0000
-Message-Id: <1391773652-25214-216-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 222/233] net: Fix memory leak if TPROXY used with TCP early demux
+Date: Fri,  7 Feb 2014 11:47:21 +0000
+Message-Id: <1391773652-25214-223-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -30,78 +28,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Holger Eitzenberger <holger@eitzenberger.org>
 
-commit 95f4a45de1a0f172b35451fc52283290adb21f6e upstream.
+commit a452ce345d63ddf92cd101e4196569f8718ad319 upstream.
 
-Bob Falken reported that after 4G packets, multicast forwarding stopped
-working. This was because of a rule reference counter overflow which
-freed the rule as soon as the overflow happend.
+I see a memory leak when using a transparent HTTP proxy using TPROXY
+together with TCP early demux and Kernel v3.8.13.15 (Ubuntu stable):
 
-This patch solves this by adding the FIB_LOOKUP_NOREF flag to
-fib_rules_lookup calls. This is safe even from non-rcu locked sections
-as in this case the flag only implies not taking a reference to the rule,
-which we don't need at all.
+unreferenced object 0xffff88008cba4a40 (size 1696):
+  comm "softirq", pid 0, jiffies 4294944115 (age 8907.520s)
+  hex dump (first 32 bytes):
+    0a e0 20 6a 40 04 1b 37 92 be 32 e2 e8 b4 00 00  .. j@..7..2.....
+    02 00 07 01 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  backtrace:
+    [<ffffffff810b710a>] kmem_cache_alloc+0xad/0xb9
+    [<ffffffff81270185>] sk_prot_alloc+0x29/0xc5
+    [<ffffffff812702cf>] sk_clone_lock+0x14/0x283
+    [<ffffffff812aaf3a>] inet_csk_clone_lock+0xf/0x7b
+    [<ffffffff8129a893>] netlink_broadcast+0x14/0x16
+    [<ffffffff812c1573>] tcp_create_openreq_child+0x1b/0x4c3
+    [<ffffffff812c033e>] tcp_v4_syn_recv_sock+0x38/0x25d
+    [<ffffffff812c13e4>] tcp_check_req+0x25c/0x3d0
+    [<ffffffff812bf87a>] tcp_v4_do_rcv+0x287/0x40e
+    [<ffffffff812a08a7>] ip_route_input_noref+0x843/0xa55
+    [<ffffffff812bfeca>] tcp_v4_rcv+0x4c9/0x725
+    [<ffffffff812a26f4>] ip_local_deliver_finish+0xe9/0x154
+    [<ffffffff8127a927>] __netif_receive_skb+0x4b2/0x514
+    [<ffffffff8127aa77>] process_backlog+0xee/0x1c5
+    [<ffffffff8127c949>] net_rx_action+0xa7/0x200
+    [<ffffffff81209d86>] add_interrupt_randomness+0x39/0x157
 
-Rules only hold references to the namespace, which are guaranteed to be
-available during the call of the non-rcu protected function reg_vif_xmit
-because of the interface reference which itself holds a reference to
-the net namespace.
+But there are many more, resulting in the machine going OOM after some
+days.
 
-Fixes: f0ad0860d01e47 ("ipv4: ipmr: support multiple tables")
-Fixes: d1db275dd3f6e4 ("ipv6: ip6mr: support multiple tables")
-Reported-by: Bob Falken <NetFestivalHaveFun@gmx.com>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: Thomas Graf <tgraf@suug.ch>
-Cc: Julian Anastasov <ja@ssi.bg>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Acked-by: Eric Dumazet <edumazet@google.com>
+>From looking at the TPROXY code, and with help from Florian, I see
+that the memory leak is introduced in tcp_v4_early_demux():
+
+  void tcp_v4_early_demux(struct sk_buff *skb)
+  {
+    /* ... */
+
+    iph = ip_hdr(skb);
+    th = tcp_hdr(skb);
+
+    if (th->doff < sizeof(struct tcphdr) / 4)
+        return;
+
+    sk = __inet_lookup_established(dev_net(skb->dev), &tcp_hashinfo,
+                       iph->saddr, th->source,
+                       iph->daddr, ntohs(th->dest),
+                       skb->skb_iif);
+    if (sk) {
+        skb->sk = sk;
+
+where the socket is assigned unconditionally to skb->sk, also bumping
+the refcnt on it.  This is problematic, because in our case the skb
+has already a socket assigned in the TPROXY target.  This then results
+in the leak I see.
+
+The very same issue seems to be with IPv6, but haven't tested.
+
+Reviewed-by: Florian Westphal <fw@strlen.de>
+Signed-off-by: Holger Eitzenberger <holger@eitzenberger.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv4/ipmr.c  | 7 +++++--
- net/ipv6/ip6mr.c | 7 +++++--
- 2 files changed, 10 insertions(+), 4 deletions(-)
+ net/ipv4/ip_input.c  | 2 +-
+ net/ipv6/ip6_input.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/net/ipv4/ipmr.c b/net/ipv4/ipmr.c
-index 20cb33a..6fabc8d 100644
---- a/net/ipv4/ipmr.c
-+++ b/net/ipv4/ipmr.c
-@@ -157,9 +157,12 @@ static struct mr_table *ipmr_get_table(struct net *net, u32 id)
- static int ipmr_fib_lookup(struct net *net, struct flowi4 *flp4,
- 			   struct mr_table **mrt)
- {
--	struct ipmr_result res;
--	struct fib_lookup_arg arg = { .result = &res, };
- 	int err;
-+	struct ipmr_result res;
-+	struct fib_lookup_arg arg = {
-+		.result = &res,
-+		.flags = FIB_LOOKUP_NOREF,
-+	};
+diff --git a/net/ipv4/ip_input.c b/net/ipv4/ip_input.c
+index 15e3e68..0a22bb0 100644
+--- a/net/ipv4/ip_input.c
++++ b/net/ipv4/ip_input.c
+@@ -313,7 +313,7 @@ static int ip_rcv_finish(struct sk_buff *skb)
+ 	const struct iphdr *iph = ip_hdr(skb);
+ 	struct rtable *rt;
  
- 	err = fib_rules_lookup(net->ipv4.mr_rules_ops,
- 			       flowi4_to_flowi(flp4), 0, &arg);
-diff --git a/net/ipv6/ip6mr.c b/net/ipv6/ip6mr.c
-index 03986d3..0caf013 100644
---- a/net/ipv6/ip6mr.c
-+++ b/net/ipv6/ip6mr.c
-@@ -141,9 +141,12 @@ static struct mr6_table *ip6mr_get_table(struct net *net, u32 id)
- static int ip6mr_fib_lookup(struct net *net, struct flowi6 *flp6,
- 			    struct mr6_table **mrt)
- {
--	struct ip6mr_result res;
--	struct fib_lookup_arg arg = { .result = &res, };
- 	int err;
-+	struct ip6mr_result res;
-+	struct fib_lookup_arg arg = {
-+		.result = &res,
-+		.flags = FIB_LOOKUP_NOREF,
-+	};
+-	if (sysctl_ip_early_demux && !skb_dst(skb)) {
++	if (sysctl_ip_early_demux && !skb_dst(skb) && skb->sk == NULL) {
+ 		const struct net_protocol *ipprot;
+ 		int protocol = iph->protocol;
  
- 	err = fib_rules_lookup(net->ipv6.mr6_rules_ops,
- 			       flowi6_to_flowi(flp6), 0, &arg);
+diff --git a/net/ipv6/ip6_input.c b/net/ipv6/ip6_input.c
+index 2bab2aa..774b09c 100644
+--- a/net/ipv6/ip6_input.c
++++ b/net/ipv6/ip6_input.c
+@@ -49,7 +49,7 @@
+ 
+ int ip6_rcv_finish(struct sk_buff *skb)
+ {
+-	if (sysctl_ip_early_demux && !skb_dst(skb)) {
++	if (sysctl_ip_early_demux && !skb_dst(skb) && skb->sk == NULL) {
+ 		const struct inet6_protocol *ipprot;
+ 
+ 		ipprot = rcu_dereference(inet6_protos[ipv6_hdr(skb)->nexthdr]);
 -- 
 1.8.3.2
 
