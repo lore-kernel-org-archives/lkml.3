@@ -1,106 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755097AbaBGNPY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 08:15:24 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:53504 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754451AbaBGLsd (ORCPT
+	id S1755313AbaBGNPw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 08:15:52 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41576 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754040AbaBGLsc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:48:33 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Jiang Liu <jiang.liu@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Toshi Kani <toshi.kani@hp.com>, Yinghai Lu <yinghai@kernel.org>,
-        Yijing Wang <wangyijing@huawei.com>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        linux-acpi@vger.kernel.org, linux-hotplug@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [Patch v1] ACPI, x86: fix bug in associating hot-added CPUs with corresponding NUMA node
-Date: Fri, 07 Feb 2014 13:03:06 +0100
-Message-ID: <1440384.cOMzyfyUzg@vostro.rjw.lan>
-User-Agent: KMail/4.11.4 (Linux/3.13.0+; KDE/4.11.4; x86_64; ; )
-In-Reply-To: <52F4A4B9.2060006@linux.intel.com>
-References: <1390185115-26850-1-git-send-email-jiang.liu@linux.intel.com> <4676819.HL23G4Egmr@vostro.rjw.lan> <52F4A4B9.2060006@linux.intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Fri, 7 Feb 2014 06:48:32 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Jon Medhurst <tixy@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 041/233] serial: amba-pl011: use port lock to guard control register access
+Date: Fri,  7 Feb 2014 11:44:20 +0000
+Message-Id: <1391773652-25214-42-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
+References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, February 07, 2014 05:17:45 PM Jiang Liu wrote:
-> 
-> On 2014/2/5 8:14, Rafael J. Wysocki wrote:
-> > On Monday, January 20, 2014 10:31:54 AM Jiang Liu wrote:
-> >> Current ACPI cpu hotplug driver fails to associate hot-added CPUs with
-> >> corresponding NUMA node when doing socket online. The code path to
-> >> associate CPU with NUMA node is as below:
-> >> acpi_processor_add()
-> >>     ->acpi_processor_get_info()
-> >> 	->acpi_processor_hotadd_init()
-> >> 	    ->acpi_map_lsapic()
-> >> 		->_acpi_map_lsapic()
-> >> 		    ->acpi_map_cpu2node()
-> >> cpu_subsys_online()
-> >>     ->try_online_node()
-> >> 	->node_set_online()
-> >>
-> >> When doing socket online, a new NUMA node is introduced in addition to
-> >> hot-added CPU and memory device. And the new NUMA node is marked as
-> >> online when onlining hot-added CPUs through sysfs interface
-> >> /sys/devices/system/cpu/cpuxx/online.
-> >>
-> >> On the other hand, acpi_map_cpu2node() will only build the CPU to node
-> >> map if corresponding NUMA node is already online, so it always fails
-> >> to associate hot-added CPUs with corresponding NUMA node because the
-> >> NUMA node is still in offline state.
-> >>
-> >> For the fix, we could safely remove the "node_online(node)" check in
-> >> function acpi_map_cpu2node() because it's only called for hot-added CPUs
-> >> by acpi_processor_hotadd_init().
-> >>
-> >> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-> > 
-> > I wonder what the status here is?  Did this patch go anywhere?
-> Hi Rafael,
-> 	It's still in review stage, hasn't been accepted by any
-> maintainer yet.
+3.11.10.4 -stable review patch.  If anyone has any objections, please let me know.
 
-OK
+------------------
 
-Peter, are you fine with the patch below?
+From: Jon Medhurst <tixy@linaro.org>
 
-Rafael
+commit fe43390702a1b5741fdf217063b05c7612b38303 upstream.
 
+When the pl011 is being used for a console, pl011_console_write forces
+the control register (CR) to enable the UART for transmission and then
+restores this to the original value afterwards. It does this while
+holding the port lock.
 
-> > 
-> >> ---
-> >>  arch/x86/kernel/acpi/boot.c |    8 ++++----
-> >>  1 file changed, 4 insertions(+), 4 deletions(-)
-> >>
-> >> diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-> >> index 6c0b43b..7625de9 100644
-> >> --- a/arch/x86/kernel/acpi/boot.c
-> >> +++ b/arch/x86/kernel/acpi/boot.c
-> >> @@ -614,10 +614,10 @@ static void acpi_map_cpu2node(acpi_handle handle, int cpu, int physid)
-> >>  	int nid;
-> >>  
-> >>  	nid = acpi_get_node(handle);
-> >> -	if (nid == -1 || !node_online(nid))
-> >> -		return;
-> >> -	set_apicid_to_node(physid, nid);
-> >> -	numa_set_node(cpu, nid);
-> >> +	if (nid != -1) {
-> >> +		set_apicid_to_node(physid, nid);
-> >> +		numa_set_node(cpu, nid);
-> >> +	}
-> >>  #endif
-> >>  }
-> >>  
-> >>
-> > 
+Unfortunately, when the uart is started or shutdown - say in response to
+userland using the serial device for a terminal - then this updates the
+control register without any locking.
 
+This means we can have
+
+  pl011_console_write   Save CR
+  pl011_startup         Initialise CR, e.g. enable receive
+  pl011_console_write   Restore old CR with receive not enabled
+
+this result is a serial port which doesn't respond to any input.
+
+A similar race in reverse could happen when the device is shutdown.
+
+We can fix these problems by taking the port lock when updating CR.
+
+Signed-off-by: Jon Medhurst <tixy@linaro.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/tty/serial/amba-pl011.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/drivers/tty/serial/amba-pl011.c b/drivers/tty/serial/amba-pl011.c
+index 28b35ad..7324301 100644
+--- a/drivers/tty/serial/amba-pl011.c
++++ b/drivers/tty/serial/amba-pl011.c
+@@ -1533,6 +1533,8 @@ static int pl011_startup(struct uart_port *port)
+ 	/*
+ 	 * Provoke TX FIFO interrupt into asserting.
+ 	 */
++	spin_lock_irq(&uap->port.lock);
++
+ 	cr = UART01x_CR_UARTEN | UART011_CR_TXE | UART011_CR_LBE;
+ 	writew(cr, uap->port.membase + UART011_CR);
+ 	writew(0, uap->port.membase + UART011_FBRD);
+@@ -1557,6 +1559,8 @@ static int pl011_startup(struct uart_port *port)
+ 	cr |= UART01x_CR_UARTEN | UART011_CR_RXE | UART011_CR_TXE;
+ 	writew(cr, uap->port.membase + UART011_CR);
+ 
++	spin_unlock_irq(&uap->port.lock);
++
+ 	/*
+ 	 * initialise the old status of the modem signals
+ 	 */
+@@ -1625,11 +1629,13 @@ static void pl011_shutdown(struct uart_port *port)
+ 	 * it during startup().
+ 	 */
+ 	uap->autorts = false;
++	spin_lock_irq(&uap->port.lock);
+ 	cr = readw(uap->port.membase + UART011_CR);
+ 	uap->old_cr = cr;
+ 	cr &= UART011_CR_RTS | UART011_CR_DTR;
+ 	cr |= UART01x_CR_UARTEN | UART011_CR_TXE;
+ 	writew(cr, uap->port.membase + UART011_CR);
++	spin_unlock_irq(&uap->port.lock);
+ 
+ 	/*
+ 	 * disable break condition and fifos
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.8.3.2
+
