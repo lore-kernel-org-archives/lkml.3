@@ -1,130 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752596AbaBGQsh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 11:48:37 -0500
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:45303 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751673AbaBGQs2 (ORCPT
+	id S1753590AbaBGQzY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 11:55:24 -0500
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:42988 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752580AbaBGQsh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 11:48:28 -0500
+	Fri, 7 Feb 2014 11:48:37 -0500
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         bfields@fieldses.org, hch@infradead.org, akpm@linux-foundation.org,
         dhowells@redhat.com, zab@redhat.com, jack@suse.cz, luto@amacapital.net,
         mszeredi@suse.cz
-Subject: [PATCH 00/13] cross rename v4
-Date: Fri,  7 Feb 2014 17:48:58 +0100
-Message-Id: <1391791751-2533-1-git-send-email-miklos@szeredi.hu>
+Subject: [PATCH 05/13] vfs: add RENAME_NOREPLACE flag
+Date: Fri,  7 Feb 2014 17:49:03 +0100
+Message-Id: <1391791751-2533-6-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1391791751-2533-1-git-send-email-miklos@szeredi.hu>
+References: <1391791751-2533-1-git-send-email-miklos@szeredi.hu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes since the last version (based on Al's review):
+From: Miklos Szeredi <mszeredi@suse.cz>
 
- - cross-rename: fix locking of nondirectories for NFSv4
- - ext4: split cross-rename and plain rename into separate functions
- - introduce i_op->rename2 with flags, don't touch ->rename
- - last (optional) patch to merge ->rename2 back into ->rename
+If this flag is specified and the target of the rename exists then the
+rename syscall fails with EEXIST.
 
-The splitting of the ext4 implemetation was indeed a good idea as it uncovered a
-memory leak and small inconsistencies with the merged implementation.
+The VFS does the existence checking, so it is trivial to enable for most
+local filesystems.  This patch only enables it in ext4.
 
-Splitting out rename2 will lessen the code churn, but I think is ugly.  However
-this is a question of taste, last patch can be ommitted without loss of
-functionality.
+For network filesystems the VFS check is not enough as there may be a race
+between a remote create and the rename, so these filesystems need to handle
+this flag in their ->rename() implementations to ensure atomicity.
 
-Bruce, could you please review the locking and delegation thing in patch #8
-"vfs: add cross-rename"?
+Andy writes about why this is useful:
 
-Git tree is here:
+"The trivial answer: to eliminate the race condition from 'mv -i'.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git cross-rename
+Another answer: there's a common pattern to atomically create a file
+with contents: open a temporary file, write to it, optionally fsync
+it, close it, then link(2) it to the final name, then unlink the
+temporary file.
 
-Thanks,
-Miklos
+The reason to use link(2) is because it won't silently clobber the destination.
 
+This is annoying:
+ - It requires an extra system call that shouldn't be necessary.
+ - It doesn't work on (IMO sensible) filesystems that don't support
+hard links (e.g. vfat).
+ - It's not atomic -- there's an intermediate state where both files exist.
+ - It's ugly.
+
+The new rename flag will make this totally sensible.
+
+To be fair, on new enough kernels, you can also use O_TMPFILE and
+linkat to achieve the same thing even more cleanly."
+
+Suggested-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
-Miklos Szeredi (13):
-      vfs: add d_is_dir()
-      vfs: rename: move d_move() up
-      vfs: rename: use common code for dir and non-dir
-      vfs: add renameat2 syscall
-      vfs: add RENAME_NOREPLACE flag
-      security: add flags to rename hooks
-      vfs: lock_two_nondirectories: allow directory args
-      vfs: add cross-rename
-      ext4: rename: create ext4_renament structure for local vars
-      ext4: rename: move EMLINK check up
-      ext4: rename: split out helper functions
-      ext4: add cross rename support
-      vfs: merge rename2 into rename
+ fs/ext4/namei.c         | 11 +++++++++++
+ fs/namei.c              | 21 +++++++++++++--------
+ include/uapi/linux/fs.h |  2 ++
+ 3 files changed, 26 insertions(+), 8 deletions(-)
 
----
- Documentation/filesystems/Locking                  |   2 +-
- Documentation/filesystems/vfs.txt                  |  14 +-
- arch/x86/syscalls/syscall_64.tbl                   |   1 +
- .../lustre/lustre/include/linux/lustre_compat25.h  |   4 +-
- drivers/staging/lustre/lustre/llite/namei.c        |   3 +-
- drivers/staging/lustre/lustre/lvfs/lvfs_linux.c    |   2 +-
- fs/9p/v9fs.h                                       |   3 +-
- fs/9p/vfs_inode.c                                  |   4 +-
- fs/affs/affs.h                                     |   3 +-
- fs/affs/namei.c                                    |   3 +-
- fs/afs/dir.c                                       |   6 +-
- fs/bad_inode.c                                     |   3 +-
- fs/bfs/dir.c                                       |   3 +-
- fs/btrfs/inode.c                                   |   3 +-
- fs/cachefiles/namei.c                              |   4 +-
- fs/ceph/dir.c                                      |   3 +-
- fs/cifs/cifsfs.h                                   |   2 +-
- fs/cifs/inode.c                                    |   3 +-
- fs/coda/dir.c                                      |   8 +-
- fs/dcache.c                                        |  45 +-
- fs/debugfs/inode.c                                 |   2 +-
- fs/ecryptfs/inode.c                                |   5 +-
- fs/exofs/namei.c                                   |   3 +-
- fs/ext2/namei.c                                    |   5 +-
- fs/ext3/namei.c                                    |   5 +-
- fs/ext4/namei.c                                    | 483 +++++++++++++++------
- fs/ext4/super.c                                    |   6 +-
- fs/f2fs/namei.c                                    |   3 +-
- fs/fat/namei_msdos.c                               |   3 +-
- fs/fat/namei_vfat.c                                |   3 +-
- fs/fuse/dir.c                                      |   3 +-
- fs/gfs2/inode.c                                    |   3 +-
- fs/hfs/dir.c                                       |   3 +-
- fs/hfsplus/dir.c                                   |   3 +-
- fs/hostfs/hostfs_kern.c                            |   3 +-
- fs/hpfs/namei.c                                    |   3 +-
- fs/inode.c                                         |  20 +-
- fs/jffs2/dir.c                                     |   5 +-
- fs/jfs/namei.c                                     |   3 +-
- fs/kernfs/dir.c                                    |   3 +-
- fs/libfs.c                                         |   3 +-
- fs/logfs/dir.c                                     |   3 +-
- fs/minix/namei.c                                   |   5 +-
- fs/namei.c                                         | 310 +++++++------
- fs/ncpfs/dir.c                                     |   5 +-
- fs/nfs/dir.c                                       |   3 +-
- fs/nfs/internal.h                                  |   3 +-
- fs/nfsd/vfs.c                                      |   2 +-
- fs/nilfs2/namei.c                                  |   3 +-
- fs/ocfs2/namei.c                                   |   3 +-
- fs/omfs/dir.c                                      |   3 +-
- fs/reiserfs/namei.c                                |   3 +-
- fs/sysv/namei.c                                    |   5 +-
- fs/ubifs/dir.c                                     |   3 +-
- fs/udf/namei.c                                     |   3 +-
- fs/ufs/namei.c                                     |   3 +-
- fs/xfs/xfs_iops.c                                  |   3 +-
- include/linux/dcache.h                             |   8 +-
- include/linux/fs.h                                 |   7 +-
- include/linux/security.h                           |  12 +-
- include/uapi/linux/fs.h                            |   3 +
- kernel/cgroup.c                                    |   5 +-
- mm/shmem.c                                         |   2 +-
- security/security.c                                |  22 +-
- 64 files changed, 736 insertions(+), 372 deletions(-)
+diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
+index d050e043e884..5f19171b3e1f 100644
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -3204,6 +3204,16 @@ end_rename:
+ 	return retval;
+ }
+ 
++static int ext4_rename2(struct inode *old_dir, struct dentry *old_dentry,
++			struct inode *new_dir, struct dentry *new_dentry,
++			unsigned int flags)
++{
++	if (flags & ~RENAME_NOREPLACE)
++		return -EINVAL;
++
++	return ext4_rename(old_dir, old_dentry, new_dir, new_dentry);
++}
++
+ /*
+  * directories can handle most operations...
+  */
+@@ -3218,6 +3228,7 @@ const struct inode_operations ext4_dir_inode_operations = {
+ 	.mknod		= ext4_mknod,
+ 	.tmpfile	= ext4_tmpfile,
+ 	.rename		= ext4_rename,
++	.rename2	= ext4_rename2,
+ 	.setattr	= ext4_setattr,
+ 	.setxattr	= generic_setxattr,
+ 	.getxattr	= generic_getxattr,
+diff --git a/fs/namei.c b/fs/namei.c
+index 93a98a303db5..9031abac50b1 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -4115,7 +4115,7 @@ SYSCALL_DEFINE5(renameat2, int, olddfd, const char __user *, oldname,
+ 	bool should_retry = false;
+ 	int error;
+ 
+-	if (flags)
++	if (flags & ~RENAME_NOREPLACE)
+ 		return -EINVAL;
+ 
+ retry:
+@@ -4141,6 +4141,8 @@ retry:
+ 		goto exit2;
+ 
+ 	new_dir = newnd.path.dentry;
++	if (flags & RENAME_NOREPLACE)
++		error = -EEXIST;
+ 	if (newnd.last_type != LAST_NORM)
+ 		goto exit2;
+ 
+@@ -4163,22 +4165,25 @@ retry_deleg:
+ 	error = -ENOENT;
+ 	if (d_is_negative(old_dentry))
+ 		goto exit4;
++	new_dentry = lookup_hash(&newnd);
++	error = PTR_ERR(new_dentry);
++	if (IS_ERR(new_dentry))
++		goto exit4;
++	error = -EEXIST;
++	if ((flags & RENAME_NOREPLACE) && d_is_positive(new_dentry))
++		goto exit5;
+ 	/* unless the source is a directory trailing slashes give -ENOTDIR */
+ 	if (!d_is_dir(old_dentry)) {
+ 		error = -ENOTDIR;
+ 		if (oldnd.last.name[oldnd.last.len])
+-			goto exit4;
++			goto exit5;
+ 		if (newnd.last.name[newnd.last.len])
+-			goto exit4;
++			goto exit5;
+ 	}
+ 	/* source should not be ancestor of target */
+ 	error = -EINVAL;
+ 	if (old_dentry == trap)
+-		goto exit4;
+-	new_dentry = lookup_hash(&newnd);
+-	error = PTR_ERR(new_dentry);
+-	if (IS_ERR(new_dentry))
+-		goto exit4;
++		goto exit5;
+ 	/* target should not be an ancestor of source */
+ 	error = -ENOTEMPTY;
+ 	if (new_dentry == trap)
+diff --git a/include/uapi/linux/fs.h b/include/uapi/linux/fs.h
+index 6c28b61bb690..9250f4dd7d96 100644
+--- a/include/uapi/linux/fs.h
++++ b/include/uapi/linux/fs.h
+@@ -35,6 +35,8 @@
+ #define SEEK_HOLE	4	/* seek to the next hole */
+ #define SEEK_MAX	SEEK_HOLE
+ 
++#define RENAME_NOREPLACE	(1 << 0)	/* Don't overwrite target */
++
+ struct fstrim_range {
+ 	__u64 start;
+ 	__u64 len;
+-- 
+1.8.1.4
 
