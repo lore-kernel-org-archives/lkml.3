@@ -1,99 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751654AbaBGQsD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 11:48:03 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:52032 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751433AbaBGQr7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 11:47:59 -0500
-Date: Fri, 7 Feb 2014 08:47:52 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Torvald Riegel <triegel@redhat.com>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-Message-ID: <20140207164752.GN4250@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140206134825.305510953@infradead.org>
- <21984.1391711149@warthog.procyon.org.uk>
- <52F3DA85.1060209@arm.com>
- <20140206185910.GE27276@mudshark.cambridge.arm.com>
- <1391720965.23421.3884.camel@triegel.csb>
- <20140207120124.GF5976@mudshark.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140207120124.GF5976@mudshark.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14020716-3532-0000-0000-0000055A6284
+	id S1751951AbaBGQsX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 11:48:23 -0500
+Received: from mga01.intel.com ([192.55.52.88]:38292 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751770AbaBGQsV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 11:48:21 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,801,1384329600"; 
+   d="asc'?scan'208";a="471490366"
+Message-ID: <1391791674.21697.2.camel@intelbox>
+Subject: Re: intel_sdvo_init: trying to register non-static key
+From: Imre Deak <imre.deak@intel.com>
+Reply-To: imre.deak@intel.com
+To: Borislav Petkov <bp@alien8.de>
+Cc: Daniel Vetter <daniel@ffwll.ch>, Jani Nikula <jani.nikula@linux.intel.com>,
+        intel-gfx@lists.freedesktop.org,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 07 Feb 2014 18:47:54 +0200
+In-Reply-To: <20140207154911.GK24395@pd.tnic>
+References: <20140207093205.GA24395@pd.tnic> <87d2iz18vi.fsf@intel.com>
+	 <1391771542.5669.6.camel@intelbox> <20140207112809.GG24395@pd.tnic>
+	 <20140207145149.GZ17001@phenom.ffwll.local>
+	 <1391787126.5669.11.camel@intelbox> <20140207154911.GK24395@pd.tnic>
+Organization: Intel
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-6vlXWJ9hRpVp3iWWyqvy"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 07, 2014 at 12:01:25PM +0000, Will Deacon wrote:
-> Hello Torvald,
-> 
-> It looks like Paul clarified most of the points I was trying to make
-> (thanks Paul!), so I won't go back over them here.
-> 
-> On Thu, Feb 06, 2014 at 09:09:25PM +0000, Torvald Riegel wrote:
-> > Are you familiar with the formalization of the C11/C++11 model by Batty
-> > et al.?
-> > http://www.cl.cam.ac.uk/~mjb220/popl085ap-sewell.pdf
-> > http://www.cl.cam.ac.uk/~mjb220/n3132.pdf
-> > 
-> > They also have a nice tool that can run condensed examples and show you
-> > all allowed (and forbidden) executions (it runs in the browser, so is
-> > slow for larger examples), including nice annotated graphs for those:
-> > http://svr-pes20-cppmem.cl.cam.ac.uk/cppmem/
-> 
-> Thanks for the link, that's incredibly helpful. I've used ppcmem and armmem
-> in the past, but I didn't realise they have a version for C++11 too.
-> Actually, the armmem backend doesn't implement our atomic instructions or
-> the acquire/release accessors, so it's not been as useful as it could be.
-> I should probably try to learn OCaml...
 
-That would be very cool!
+--=-6vlXWJ9hRpVp3iWWyqvy
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Another option would be to recruit a grad student to take on that project
-for Peter Sewell.  He might already have one, for all I know.
+On Fri, 2014-02-07 at 16:49 +0100, Borislav Petkov wrote:
+> On Fri, Feb 07, 2014 at 05:32:06PM +0200, Imre Deak wrote:
+> > I just realized it's a different issue, since it's on the init path.
+> > Also we set the drm device as the parent for the sdvo i2c adapter as
+> > opposed to the dp i2c adapter where it's the connector device. So the
+> > above patch won't help in Borislav's case.
 
-> > IMHO, one thing worth considering is that for C/C++, the C11/C++11 is
-> > the only memory model that has widespread support.  So, even though it's
-> > a fairly weak memory model (unless you go for the "only seq-cst"
-> > beginners advice) and thus comes with a higher complexity, this model is
-> > what likely most people will be familiar with over time.  Deviating from
-> > the "standard" model can have valid reasons, but it also has a cost in
-> > that new contributors are more likely to be familiar with the "standard"
-> > model.
-> 
-> Indeed, I wasn't trying to write-off the C11 memory model as something we
-> can never use in the kernel. I just don't think the current situation is
-> anywhere close to usable for a project such as Linux. If a greater
-> understanding of the memory model does eventually manifest amongst C/C++
-> developers (by which I mean, the beginners advice is really treated as
-> such and there is a widespread intuition about ordering guarantees, as
-> opposed to the need to use formal tools), then surely the tools and libraries
-> will stabilise and provide uniform semantics across the 25+ architectures
-> that Linux currently supports. If *that* happens, this discussion is certainly
-> worth having again.
+Ok, not sure why the sdvo initialization fails, but the lockdep warning
+is probably fixed by the below patch. Could you try it and send a dmesg
+with drm.debug=3D0xe?
 
-And it is likely to be worthwhile even before then on a piecemeal
-basis, where architecture maintainers pick and choose which primitive
-is in inline assembly and which the compiler can deal with properly.
-For example, I bet that atomic_inc() can be implemented just fine by C11
-in the very near future.  However, atomic_add_return() is another story.
+diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
+index 5104cf5..bd6e18b 100644
+--- a/fs/kernfs/dir.c
++++ b/fs/kernfs/dir.c
+@@ -187,19 +187,23 @@ static void kernfs_deactivate(struct kernfs_node
+*kn)
+=20
+ 	kn->u.completion =3D (void *)&wait;
+=20
+-	rwsem_acquire(&kn->dep_map, 0, 0, _RET_IP_);
++	if (kn->flags & KERNFS_LOCKDEP)
++		rwsem_acquire(&kn->dep_map, 0, 0, _RET_IP_);
+ 	/* atomic_add_return() is a mb(), put_active() will always see
+ 	 * the updated kn->u.completion.
+ 	 */
+ 	v =3D atomic_add_return(KN_DEACTIVATED_BIAS, &kn->active);
+=20
+ 	if (v !=3D KN_DEACTIVATED_BIAS) {
+-		lock_contended(&kn->dep_map, _RET_IP_);
++		if (kn->flags & KERNFS_LOCKDEP)
++			lock_contended(&kn->dep_map, _RET_IP_);
+ 		wait_for_completion(&wait);
+ 	}
+=20
+-	lock_acquired(&kn->dep_map, _RET_IP_);
+-	rwsem_release(&kn->dep_map, 1, _RET_IP_);
++	if (kn->flags & KERNFS_LOCKDEP) {
++		lock_acquired(&kn->dep_map, _RET_IP_);
++		rwsem_release(&kn->dep_map, 1, _RET_IP_);
++	}
+ }
+=20
 
-							Thanx, Paul
+
+
+--=-6vlXWJ9hRpVp3iWWyqvy
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQEcBAABAgAGBQJS9Q46AAoJEORIIAnNuWDFgyIH/2l0DhaHdIJ07uwLz09CMhw5
+AAdb4nZF0Lgys6f/+rZdxZtcmMY4yNW6K4H2faiCwdNB6exgZGkaY8U3YOt+WDq1
+n/p0/Gvuaz17ZUQHB4tod3Rp4uKbrrk9S3S3/AxxvCHmhZAS3kYAJOA4L8EPDGMK
+U58BbSIDM005GmH+UTcVVEMXyTp7fjDF8TUZFzR/JGLDwm+fCAeVmjpMkSGLHuAm
+KtvGGbKiOjNiHiNq+jekySv0zYRwdpZn1nJF7rxES7glStZmP2ctXPhcuXvWRIy6
+BAtTG2xSJqCkDrrfrID9j5J3gTCea/NH/3XsyBAR/Gl1BfqBrYvrQy9HfMpkeFU=
+=3pxW
+-----END PGP SIGNATURE-----
+
+--=-6vlXWJ9hRpVp3iWWyqvy--
 
