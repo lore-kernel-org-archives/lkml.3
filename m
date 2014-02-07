@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753636AbaBGL2s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:28:48 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41209 "EHLO
+	id S1753666AbaBGL3K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:29:10 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41205 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753356AbaBGLZS (ORCPT
+	with ESMTP id S1753253AbaBGLZR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:25:18 -0500
+	Fri, 7 Feb 2014 06:25:17 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Neal Cardwell <ncardwell@google.com>, Eric Dumazet <edumazet@google.com>,
+Cc: Alexandre Courbot <acourbot@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mark Brown <broonie@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 81/88] inet_diag: fix inet_diag_dump_icsk() timewait socket state logic
-Date: Fri,  7 Feb 2014 11:23:18 +0000
-Message-Id: <1391772205-22239-82-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 79/88] lib/decompressors: fix "no limit" output buffer length
+Date: Fri,  7 Feb 2014 11:23:16 +0000
+Message-Id: <1391772205-22239-80-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
@@ -27,65 +31,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neal Cardwell <ncardwell@google.com>
+From: Alexandre Courbot <acourbot@nvidia.com>
 
-[ Based upon upstream commit 70315d22d3c7383f9a508d0aab21e2eb35b2303a ]
+commit 1431574a1c4c669a0c198e4763627837416e4443 upstream.
 
-Fix inet_diag_dump_icsk() to reflect the fact that both TIME_WAIT and
-FIN_WAIT2 connections are represented by inet_timewait_sock (not just
-TIME_WAIT). Thus:
+When decompressing into memory, the output buffer length is set to some
+arbitrarily high value (0x7fffffff) to indicate the output is, virtually,
+unlimited in size.
 
-(a) We need to iterate through the time_wait buckets if the user wants
-either TIME_WAIT or FIN_WAIT2. (Before fixing this, "ss -nemoi state
-fin-wait-2" would not return any sockets, even if there were some in
-FIN_WAIT2.)
+The problem with this is that some platforms have their physical memory at
+high physical addresses (0x80000000 or more), and that the output buffer
+address and its "unlimited" length cannot be added without overflowing.
+An example of this can be found in inflate_fast():
 
-(b) We need to check tw_substate to see if the user wants to dump
-sockets in the particular substate (TIME_WAIT or FIN_WAIT2) that a
-given connection is in. (Before fixing this, "ss -nemoi state
-time-wait" would actually return sockets in state FIN_WAIT2.)
+/* next_out is the output buffer address */
+out = strm->next_out - OFF;
+/* avail_out is the output buffer size. end will overflow if the output
+ * address is >= 0x80000104 */
+end = out + (strm->avail_out - 257);
 
-An analogous fix is in v3.13: 70315d22d3c7383f9a508d0aab21e2eb35b2303a
-("inet_diag: fix inet_diag_dump_icsk() to use correct state for
-timewait sockets") but that patch is quite different because 3.13 code
-is very different in this area due to the unification of TCP hash
-tables in 05dbc7b ("tcp/dccp: remove twchain") in v3.13-rc1.
+This has huge consequences on the performance of kernel decompression,
+since the following exit condition of inflate_fast() will be always true:
 
-I tested that this applies cleanly between v3.3 and v3.12, and tested
-that it works in both 3.3 and 3.12. It does not apply cleanly to 3.2
-and earlier (though it makes semantic sense), and semantically is not
-the right fix for 3.13 and beyond (as mentioned above).
+} while (in < last && out < end);
 
-Signed-off-by: Neal Cardwell <ncardwell@google.com>
-Cc: Eric Dumazet <edumazet@google.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
+Indeed, "end" has overflowed and is now always lower than "out".  As a
+result, inflate_fast() will return after processing one single byte of
+input data, and will thus need to be called an unreasonably high number of
+times.  This probably went unnoticed because kernel decompression is fast
+enough even with this issue.
+
+Nonetheless, adjusting the output buffer length in such a way that the
+above pointer arithmetic never overflows results in a kernel decompression
+that is about 3 times faster on affected machines.
+
+Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+Tested-by: Jon Medhurst <tixy@linaro.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mark Brown <broonie@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv4/inet_diag.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ lib/decompress_inflate.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/ipv4/inet_diag.c b/net/ipv4/inet_diag.c
-index e530c31..60e48d7 100644
---- a/net/ipv4/inet_diag.c
-+++ b/net/ipv4/inet_diag.c
-@@ -941,7 +941,7 @@ next_normal:
- 			++num;
- 		}
- 
--		if (r->idiag_states & TCPF_TIME_WAIT) {
-+		if (r->idiag_states & (TCPF_TIME_WAIT | TCPF_FIN_WAIT2)) {
- 			struct inet_timewait_sock *tw;
- 
- 			inet_twsk_for_each(tw, node,
-@@ -949,6 +949,8 @@ next_normal:
- 
- 				if (num < s_num)
- 					goto next_dying;
-+				if (!(r->idiag_states & (1 << tw->tw_substate)))
-+					goto next_dying;
- 				if (r->sdiag_family != AF_UNSPEC &&
- 						tw->tw_family != r->sdiag_family)
- 					goto next_dying;
+diff --git a/lib/decompress_inflate.c b/lib/decompress_inflate.c
+index 19ff89e..d619b28 100644
+--- a/lib/decompress_inflate.c
++++ b/lib/decompress_inflate.c
+@@ -48,7 +48,7 @@ STATIC int INIT gunzip(unsigned char *buf, int len,
+ 		out_len = 0x8000; /* 32 K */
+ 		out_buf = malloc(out_len);
+ 	} else {
+-		out_len = 0x7fffffff; /* no limit */
++		out_len = ((size_t)~0) - (size_t)out_buf; /* no limit */
+ 	}
+ 	if (!out_buf) {
+ 		error("Out of memory while allocating output buffer");
 -- 
 1.8.3.2
 
