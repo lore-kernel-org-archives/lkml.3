@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753261AbaBGVTK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 16:19:10 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:58985 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751689AbaBGVTJ (ORCPT
+	id S1752655AbaBGVXr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 16:23:47 -0500
+Received: from forward20.mail.yandex.net ([95.108.253.145]:51396 "EHLO
+	forward20.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751700AbaBGVXq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 16:19:09 -0500
-Date: Fri, 7 Feb 2014 13:19:07 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Kumar Gala <galak@codeaurora.org>
-Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/5] ARM: msm: kill off hotplug.c
-Message-ID: <20140207211907.GE12815@codeaurora.org>
-References: <1391553532-27001-1-git-send-email-galak@codeaurora.org>
- <1391553532-27001-2-git-send-email-galak@codeaurora.org>
- <20140204230707.GD20528@codeaurora.org>
- <CE29C478-50CA-4CC8-9E80-AA9C22D9B17F@codeaurora.org>
+	Fri, 7 Feb 2014 16:23:46 -0500
+From: zbr@ioremap.net
+Envelope-From: drustafa@yandex.ru
+To: David Fries <david@fries.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20140207055832.GN5342@spacedout.fries.net>
+References: <1391390104-31154-1-git-send-email-David@Fries.net>
+ <9071391471978@web15j.yandex.ru>
+ <20140204055131.GI5342@spacedout.fries.net>
+ <253061391557725@web20g.yandex.ru> <20140207055832.GN5342@spacedout.fries.net>
+Subject: Re: [PATCH 0/4] w1: refcnt fix, skip non-error send, docs
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CE29C478-50CA-4CC8-9E80-AA9C22D9B17F@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Message-Id: <7611391808223@web21g.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Sat, 08 Feb 2014 01:23:43 +0400
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=koi8-r
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/04, Kumar Gala wrote:
-> 
-> On Feb 4, 2014, at 5:07 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> 
-> > On 02/04, Kumar Gala wrote:
-> >> diff --git a/arch/arm/mach-msm/platsmp.c b/arch/arm/mach-msm/platsmp.c
-> >> index 3721b31..251a91e 100644
-> >> --- a/arch/arm/mach-msm/platsmp.c
-> >> +++ b/arch/arm/mach-msm/platsmp.c
-> >> @@ -29,6 +29,13 @@ extern void secondary_startup(void);
-> >> 
-> >> static DEFINE_SPINLOCK(boot_lock);
-> >> 
-> >> +#ifdef CONFIG_HOTPLUG_CPU
-> >> +static void __ref msm_cpu_die(unsigned int cpu)
-> > 
-> > We shouldn't need __ref anymore either right?
-> 
-> I think we might as cpu_die is still marked __ref so I think we need it.
-> 
+Hi
 
-Someone should remove __ref from cpu_die() as well. It was only
-ever there for __cpuinit but now that __cpuinit is gone it's
-useless.
+07.02.2014, 10:00, "David Fries" <david@fries.net>:
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+> Here's a patch to implement that. šIs this what you have in mind?
+>
+> From 4ed65d81b0121a8c191a9833d041484e9097198b Mon Sep 17 00:00:00 2001
+> From: David Fries <David@Fries.net>
+> Date: Thu, 6 Feb 2014 23:45:05 -0600
+> Subject: [PATCH] w1: correct cn_msg ack, no change or seq + 1
+>
+> Netlink messages sent from the kernel consists of kernel generated
+> notifications for adds or removes, the error message (also indicates
+> the message has been processed), and the messages that have data to
+> return. šThe cn_msg ack is left alone for the first two, and when
+> returning data it is the sequence number + 1. šModifying the code to
+> the protocol standard.
+>
+> Signed-off-by: David Fries <David@Fries.net>
+
+Yes, it looks right.
+Can you also check that protocol documentation is correct?
