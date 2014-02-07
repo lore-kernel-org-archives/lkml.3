@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751339AbaBGG3e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 01:29:34 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:40359 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750752AbaBGG3d (ORCPT
+	id S1751461AbaBGGoE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 01:44:04 -0500
+Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:35029 "EHLO
+	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750745AbaBGGoB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 01:29:33 -0500
-Date: Thu, 06 Feb 2014 22:29:32 -0800 (PST)
-Message-Id: <20140206.222932.292588043950970246.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: netdev@vger.kernel.org, rientjes@google.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: use __GFP_NORETRY for high order allocations
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1391712162.10160.8.camel@edumazet-glaptop2.roam.corp.google.com>
-References: <1391712162.10160.8.camel@edumazet-glaptop2.roam.corp.google.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Fri, 7 Feb 2014 01:44:01 -0500
+Date: Fri, 7 Feb 2014 12:13:12 +0530
+From: Pratyush Anand <pratyush.anand@st.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>,
+        spear-devel <spear-devel@list.st.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V4 6/8] phy: st-miphy-40lp: Add SPEAr1310 and SPEAr1340
+ PCIe phy support
+Message-ID: <20140207064312.GC2414@pratyush-vbox>
+References: <cover.1391661589.git.pratyush.anand@st.com>
+ <dca9c501de8386003142b463469c3d267a049eeb.1391661589.git.pratyush.anand@st.com>
+ <201402061637.05414.arnd@arndb.de>
+ <20140207035429.GB2414@pratyush-vbox>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140207035429.GB2414@pratyush-vbox>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Thu, 06 Feb 2014 10:42:42 -0800
+Hi Arnd,
 
-> From: Eric Dumazet <edumazet@google.com>
+On Fri, Feb 07, 2014 at 11:54:30AM +0800, Pratyush ANAND wrote:
+> Hi Arnd,
 > 
-> sock_alloc_send_pskb() & sk_page_frag_refill()
-> have a loop trying high order allocations to prepare
-> skb with low number of fragments as this increases performance.
-> 
-> Problem is that under memory pressure/fragmentation, this can
-> trigger OOM while the intent was only to try the high order
-> allocations, then fallback to order-0 allocations.
-> 
-> We had various reports from unexpected regressions.
-> 
-> According to David, setting __GFP_NORETRY should be fine,
-> as the asynchronous compaction is still enabled, and this
-> will prevent OOM from kicking as in :
- ...
-> Signed-off-by: Eric Dumazet <edumazet@google.com>
-> Acked-by: David Rientjes <rientjes@google.com>
+> On Thu, Feb 06, 2014 at 11:37:05PM +0800, Arnd Bergmann wrote:
+> > On Thursday 06 February 2014, Pratyush Anand wrote:
+> > 
 
-Applied, do we want this for -stable?
+[...]
+
+> > I think it's better to make this code table-driven. Rather than checking
+> > 'of_device_is_compatible()', it's much easier to add a .data field to
+> > the of_device_id array that describes the PHY. You can use .data to
+> > point to a structure containing per-device function pointers or
+> > (better) values and offsets to be used.
+
+values and offset would be good as long as we do not need to write on
+conditional read status. In our case its OK, as we do not need to
+write conditionally. But, would it be a good idea to go that way?
+
+Regards
+Pratyush
+
+> 
+> Sounds a better idea. will reduce code size a lot. Thanks.
+> 
+> Regards
+> Pratyush
+> 
+> > 
+> > 	Arnd
