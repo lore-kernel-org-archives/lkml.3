@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932408AbaBGLv3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:51:29 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42172 "EHLO
+	id S1755353AbaBGMTX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:19:23 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42191 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753610AbaBGLvX (ORCPT
+	with ESMTP id S932399AbaBGLv2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:51:23 -0500
+	Fri, 7 Feb 2014 06:51:28 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+Cc: Boaz Harrosh <bharrosh@panasas.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 160/233] s390/uapi: fix struct statfs64 definition
-Date: Fri,  7 Feb 2014 11:46:19 +0000
-Message-Id: <1391773652-25214-161-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 163/233] pnfs: Proper delay for NFS4ERR_RECALLCONFLICT in layout_get_done
+Date: Fri,  7 Feb 2014 11:46:22 +0000
+Message-Id: <1391773652-25214-164-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -28,46 +28,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: Boaz Harrosh <bharrosh@panasas.com>
 
-commit 4e078146dff728f4865270a47710d57797e81eb6 upstream.
+commit ed7e5423014ad89720fcf315c0b73f2c5d0c7bd2 upstream.
 
-With b8668fd0a7e1b59f "s390/uapi: change struct statfs[64] member types
-to unsigned values" the size of a couple of struct statfs64 member got
-incorrectly changed from 64 to 32 bit for 32 bit builds.
+An NFS4ERR_RECALLCONFLICT is returned by server from a GET_LAYOUT
+only when a Server Sent a RECALL do to that GET_LAYOUT, or
+the RECALL and GET_LAYOUT crossed on the wire.
+In any way this means we want to wait at most until in-flight IO
+is finished and the RECALL can be satisfied.
 
-Fix this by changing the type of couple of struct statfs64 members from
-unsigned long to unsigned long long.
-The definition of struct compat_statfs64 was correct however.
+So a proper wait here is more like 1/10 of a second, not 15 seconds
+like we have now. In case of a server bug we delay exponentially
+longer on each retry.
 
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Current code totally craps out performance of very large files on
+most pnfs-objects layouts, because of how the map changes when the
+file has grown into the next raid group.
+
+[Stable: This will patch back to 3.9. If there are earlier still
+ maintained trees, please tell me I'll send a patch]
+
+Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/s390/include/uapi/asm/statfs.h | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ fs/nfs/nfs4proc.c | 34 ++++++++++++++++++++++++++++++----
+ 1 file changed, 30 insertions(+), 4 deletions(-)
 
-diff --git a/arch/s390/include/uapi/asm/statfs.h b/arch/s390/include/uapi/asm/statfs.h
-index a61d538..471eb09 100644
---- a/arch/s390/include/uapi/asm/statfs.h
-+++ b/arch/s390/include/uapi/asm/statfs.h
-@@ -35,11 +35,11 @@ struct statfs {
- struct statfs64 {
- 	unsigned int	f_type;
- 	unsigned int	f_bsize;
--	unsigned long	f_blocks;
--	unsigned long	f_bfree;
--	unsigned long	f_bavail;
--	unsigned long	f_files;
--	unsigned long	f_ffree;
-+	unsigned long long f_blocks;
-+	unsigned long long f_bfree;
-+	unsigned long long f_bavail;
-+	unsigned long long f_files;
-+	unsigned long long f_ffree;
- 	__kernel_fsid_t f_fsid;
- 	unsigned int	f_namelen;
- 	unsigned int	f_frsize;
+diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+index bdaa5a1..64dd7c6 100644
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -6651,9 +6651,9 @@ static void nfs4_layoutget_done(struct rpc_task *task, void *calldata)
+ 	struct nfs_server *server = NFS_SERVER(inode);
+ 	struct pnfs_layout_hdr *lo;
+ 	struct nfs4_state *state = NULL;
+-	unsigned long timeo, giveup;
++	unsigned long timeo, now, giveup;
+ 
+-	dprintk("--> %s\n", __func__);
++	dprintk("--> %s tk_status => %d\n", __func__, -task->tk_status);
+ 
+ 	if (!nfs41_sequence_done(task, &lgp->res.seq_res))
+ 		goto out;
+@@ -6661,12 +6661,38 @@ static void nfs4_layoutget_done(struct rpc_task *task, void *calldata)
+ 	switch (task->tk_status) {
+ 	case 0:
+ 		goto out;
++	/*
++	 * NFS4ERR_LAYOUTTRYLATER is a conflict with another client
++	 * (or clients) writing to the same RAID stripe
++	 */
+ 	case -NFS4ERR_LAYOUTTRYLATER:
++	/*
++	 * NFS4ERR_RECALLCONFLICT is when conflict with self (must recall
++	 * existing layout before getting a new one).
++	 */
+ 	case -NFS4ERR_RECALLCONFLICT:
+ 		timeo = rpc_get_timeout(task->tk_client);
+ 		giveup = lgp->args.timestamp + timeo;
+-		if (time_after(giveup, jiffies))
+-			task->tk_status = -NFS4ERR_DELAY;
++		now = jiffies;
++		if (time_after(giveup, now)) {
++			unsigned long delay;
++
++			/* Delay for:
++			 * - Not less then NFS4_POLL_RETRY_MIN.
++			 * - One last time a jiffie before we give up
++			 * - exponential backoff (time_now minus start_attempt)
++			 */
++			delay = max_t(unsigned long, NFS4_POLL_RETRY_MIN,
++				    min((giveup - now - 1),
++					now - lgp->args.timestamp));
++
++			dprintk("%s: NFS4ERR_RECALLCONFLICT waiting %lu\n",
++				__func__, delay);
++			rpc_delay(task, delay);
++			task->tk_status = 0;
++			rpc_restart_call_prepare(task);
++			goto out; /* Do not call nfs4_async_handle_error() */
++		}
+ 		break;
+ 	case -NFS4ERR_EXPIRED:
+ 	case -NFS4ERR_BAD_STATEID:
 -- 
 1.8.3.2
 
