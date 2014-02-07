@@ -1,96 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847AbaBGQZO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 11:25:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31340 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751526AbaBGQZM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 11:25:12 -0500
-Date: Fri, 7 Feb 2014 11:24:09 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Kees Cook <keescook@chromium.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Cong Ding <dinggnu@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mathias Krause <minipli@googlemail.com>,
-        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Dave Young <dyoung@redhat.com>,
-        Kexec Mailing List <kexec@lists.infradead.org>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [GIT PULL] x86/kaslr for v3.14
-Message-ID: <20140207162408.GD6967@redhat.com>
-References: <201401201647.s0KGlZdh004167@tazenda.hos.anvin.org>
- <CAFLxGvxO1MPDDjEh3FU5Gv2-eb6zBJxYtTnKdABDTTpbMxxYAw@mail.gmail.com>
- <52E5EFAF.3060609@linux.intel.com>
- <CAFLxGvxJ0A6hZ52RWffkg_zXXScyPn10P4HcKvdAXfE43h32Eg@mail.gmail.com>
- <52E601DA.7010605@zytor.com>
- <20140130220708.GP9951@redhat.com>
- <CAGXu5jKp0j71ucE7uOWRa+gQM1Wzp=_KdByJK4XnACTwiCW4ow@mail.gmail.com>
- <20140207144914.GA5949@redhat.com>
- <52F503FD.8080607@linux.intel.com>
+	id S1752922AbaBGQZV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 11:25:21 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38275 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751779AbaBGQZR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 11:25:17 -0500
+Date: Fri, 7 Feb 2014 16:25:04 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+Cc: Lee Jones <lee.jones@linaro.org>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Guenter Roeck <linux@roeck-us.net>
+Message-ID: <20140207162504.GP32298@sirena.org.uk>
+References: <cover.1391705989.git.Adam.Thomson.Opensource@diasemi.com>
+ <9ec36c0633ae8291267be6802a34a469a34ae292.1391705989.git.Adam.Thomson.Opensource@diasemi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="T/M61er1Kkwq3bEY"
 Content-Disposition: inline
-In-Reply-To: <52F503FD.8080607@linux.intel.com>
+In-Reply-To: <9ec36c0633ae8291267be6802a34a469a34ae292.1391705989.git.Adam.Thomson.Opensource@diasemi.com>
+X-Cookie: Take it easy, we're in a hurry.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 2/8] ASoC: da9055: Add DT support for CODEC
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 07, 2014 at 08:04:13AM -0800, H. Peter Anvin wrote:
-> On 02/07/2014 06:49 AM, Vivek Goyal wrote:
-> > 
-> > Hi Kees,
-> > 
-> > Dave Young is testing kdump with kaslr enabled. He is facing some issues.
-> > 
-> > One issue he mentioned is that when second kernel boots, it might be
-> > placed in an area which is outside the reserved area for second kernel.
-> > 
-> > We reserve a certain memory for second kernel. And modify memory map of
-> > second kernel using memmap=exactmap parameter. Looks like kernel placement
-> > is happening before memmap=exactmap takes effect. And that seems to be
-> > the reason that second kernel can be placed outside the reserved memory.
-> > 
-> > IOW, memmap=exactmap and kaslr don't work together. Is it possible to
-> > first let memmap=exactmap take affect and then kaslr does its job. Or it
-> > is too late by the time memmap=exactmap is parsed.
-> > 
-> > As a workaround, Dave is currently using "nokaslr" command line parameter
-> > for second kernel. He is still facing issues where makedumpfile segment
-> > faults. He is looking into it further.
-> > 
-> > I thought I will atleast bring up with issue of memmap=exactmap and kaslr
-> > being incompatible.
-> > 
-> 
-> Yes, because memmap=exactmap gets parsed too late; kaslr assumes that
-> the e820 information passed to it is actually correct.
-> 
-> Yet another cause of breakage caused by the decision on the part of
-> kdump to rely on command-line options.
 
-[CC kexec mailing list]
+--T/M61er1Kkwq3bEY
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Ok, I think this is high time we change kexec-tools to not use
-memmap=exactmap and start passing modified memory map in bootparams. I
-think only concern with that change was backward compatibility of
-kexec-tools with older kernels.
+On Thu, Feb 06, 2014 at 06:03:09PM +0000, Adam Thomson wrote:
+> Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
 
-IIUC, only thing which will be impacted by this change is users of
-saved_max_pfn which determine the highest accessible pfn in first
-kernel. Some calgary IOMMU code seems to be the only user of it now.
+This doesn't apply against my current for-next or v3.14-rc1, can you
+please check and resend?
 
-So may be we can create a new command line option say --pass-memmap-cmdline
-to kexec-tools which forces old behavior and by default we pass memmap
-in bootparams.
+--T/M61er1Kkwq3bEY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Or create --do-not-pass-memmap-cmdline and new users will use it. Default
-will be old behavior.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-Thansk
-Vivek
+iQIcBAEBAgAGBQJS9QjdAAoJELSic+t+oim9HXIQAIwgonNLwZDfIo0Hp5d8gllr
+aPfkguLulmnm8WRk+ZTaFTdN2iATHwbJPiVdn6t/FKNTeiCfi6LQVycY5kgJTy5m
+6a2qeG1f/oP3HW+w0vGCsNq9oypCVVv/hUXZsvHZeEs2BKoYXWXnDdkr2qARJdpr
+0E/HP65Y8m8MCB3IxLCWxm9ensdNIDnyPu6+Uo0LhURLtxQkcgBsm4lA6uY7z0ky
+LIZQ6OX4DwgBqsBch+HNJzHri3rIZyp3wLP6rl5vqL2DOuvpQL+g9XhsOiqNcB48
+ZjuUQEgnrmMF4M2A6aPbcLvwWFJg8VRmVZiagpMGKQ5YxSdzoW9LwgBsyu07PDcI
+DIz/XMR1OZq0R0ucs+O77PDlOP1APBJxNh1BhNxO2f3ceXQozEjFVImIpPCni7Je
+L87ybaDKAYZWklq9YPS8Lc9r+7lt5aHiWOPaLq+h/7SySF0vvSeXTMCfrKANNE9M
+ki9jjxxWzN0XDTDO6WfD9un3uiSIUk6b/C75C0Ss15YiZRCpPQWMtBmzHTQIjK0F
+fS2th71WUlfmcQMhQaRrxDX4g7F/dVQo3RCCnDjH7juZbHLLnraSczZEtE4tOOkY
+gNbShfx2doKLeTchecPjY5swqCWadt/o1Oxi2MpTM954v1fpiRV+xM9/A+ACU0f0
+FcnQ17pDCT6/RkC120Dp
+=X5AX
+-----END PGP SIGNATURE-----
+
+--T/M61er1Kkwq3bEY--
