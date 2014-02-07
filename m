@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753437AbaBGLZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:25:27 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41228 "EHLO
+	id S1753414AbaBGLZX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:25:23 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41168 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753255AbaBGLZY (ORCPT
+	with ESMTP id S1753255AbaBGLZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:25:24 -0500
+	Fri, 7 Feb 2014 06:25:08 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Pugliese <thomas.pugliese@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 85/88] usb: core: get config and string descriptors for unauthorized devices
-Date: Fri,  7 Feb 2014 11:23:22 +0000
-Message-Id: <1391772205-22239-86-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 73/88] mm, oom: base root bonus on current usage
+Date: Fri,  7 Feb 2014 11:23:10 +0000
+Message-Id: <1391772205-22239-74-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
@@ -28,133 +29,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Pugliese <thomas.pugliese@gmail.com>
+From: David Rientjes <rientjes@google.com>
 
-commit 83e83ecb79a8225e79bc8e54e9aff3e0e27658a2 upstream.
+commit 778c14affaf94a9e4953179d3e13a544ccce7707 upstream.
 
-There is no need to skip querying the config and string descriptors for
-unauthorized WUSB devices when usb_new_device is called.  It is allowed
-by WUSB spec.  The only action that needs to be delayed until
-authorization time is the set config.  This change allows user mode
-tools to see the config and string descriptors earlier in enumeration
-which is needed for some WUSB devices to function properly on Android
-systems.  It also reduces the amount of divergent code paths needed
-for WUSB devices.
+A 3% of system memory bonus is sometimes too excessive in comparison to
+other processes.
 
-Signed-off-by: Thomas Pugliese <thomas.pugliese@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ luis: backported to 3.5: adjusted context ]
+With commit a63d83f427fb ("oom: badness heuristic rewrite"), the OOM
+killer tries to avoid killing privileged tasks by subtracting 3% of
+overall memory (system or cgroup) from their per-task consumption.  But
+as a result, all root tasks that consume less than 3% of overall memory
+are considered equal, and so it only takes 33+ privileged tasks pushing
+the system out of memory for the OOM killer to do something stupid and
+kill dhclient or other root-owned processes.  For example, on a 32G
+machine it can't tell the difference between the 1M agetty and the 10G
+fork bomb member.
+
+The changelog describes this 3% boost as the equivalent to the global
+overcommit limit being 3% higher for privileged tasks, but this is not
+the same as discounting 3% of overall memory from _every privileged task
+individually_ during OOM selection.
+
+Replace the 3% of system memory bonus with a 3% of current memory usage
+bonus.
+
+By giving root tasks a bonus that is proportional to their actual size,
+they remain comparable even when relatively small.  In the example
+above, the OOM killer will discount the 1M agetty's 256 badness points
+down to 179, and the 10G fork bomb's 262144 points down to 183500 points
+and make the right choice, instead of discounting both to 0 and killing
+agetty because it's first in the task list.
+
+Signed-off-by: David Rientjes <rientjes@google.com>
+Reported-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/core/config.c |  7 -------
- drivers/usb/core/hub.c    | 40 +++++++---------------------------------
- 2 files changed, 7 insertions(+), 40 deletions(-)
+ Documentation/filesystems/proc.txt | 4 ++--
+ mm/oom_kill.c                      | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/usb/core/config.c b/drivers/usb/core/config.c
-index 78609d3..6ed7e7c 100644
---- a/drivers/usb/core/config.c
-+++ b/drivers/usb/core/config.c
-@@ -651,10 +651,6 @@ void usb_destroy_configuration(struct usb_device *dev)
-  *
-  * hub-only!! ... and only in reset path, or usb_new_device()
-  * (used by real hubs and virtual root hubs)
-- *
-- * NOTE: if this is a WUSB device and is not authorized, we skip the
-- *       whole thing. A non-authorized USB device has no
-- *       configurations.
-  */
- int usb_get_configuration(struct usb_device *dev)
- {
-@@ -666,8 +662,6 @@ int usb_get_configuration(struct usb_device *dev)
- 	struct usb_config_descriptor *desc;
+diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
+index fb0a6ae..a3d5e7d 100644
+--- a/Documentation/filesystems/proc.txt
++++ b/Documentation/filesystems/proc.txt
+@@ -1333,8 +1333,8 @@ may allocate from based on an estimation of its current memory and swap use.
+ For example, if a task is using all allowed memory, its badness score will be
+ 1000.  If it is using half of its allowed memory, its score will be 500.
  
- 	cfgno = 0;
--	if (dev->authorized == 0)	/* Not really an error */
--		goto out_not_authorized;
- 	result = -ENOMEM;
- 	if (ncfg > USB_MAXCONFIG) {
- 		dev_warn(ddev, "too many configurations: %d, "
-@@ -749,7 +743,6 @@ int usb_get_configuration(struct usb_device *dev)
+-There is an additional factor included in the badness score: root
+-processes are given 3% extra memory over other tasks.
++There is an additional factor included in the badness score: the current memory
++and swap usage is discounted by 3% for root processes.
  
- err:
- 	kfree(desc);
--out_not_authorized:
- 	dev->descriptor.bNumConfigurations = cfgno;
- err2:
- 	if (result == -ENOMEM)
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index 5e67525..d13f9a7 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -2146,18 +2146,13 @@ static int usb_enumerate_device(struct usb_device *udev)
- 			goto fail;
- 		}
- 	}
--	if (udev->wusb == 1 && udev->authorized == 0) {
--		udev->product = kstrdup("n/a (unauthorized)", GFP_KERNEL);
--		udev->manufacturer = kstrdup("n/a (unauthorized)", GFP_KERNEL);
--		udev->serial = kstrdup("n/a (unauthorized)", GFP_KERNEL);
--	}
--	else {
--		/* read the standard strings and cache them if present */
--		udev->product = usb_cache_string(udev, udev->descriptor.iProduct);
--		udev->manufacturer = usb_cache_string(udev,
--						      udev->descriptor.iManufacturer);
--		udev->serial = usb_cache_string(udev, udev->descriptor.iSerialNumber);
--	}
-+
-+	/* read the standard strings and cache them if present */
-+	udev->product = usb_cache_string(udev, udev->descriptor.iProduct);
-+	udev->manufacturer = usb_cache_string(udev,
-+					      udev->descriptor.iManufacturer);
-+	udev->serial = usb_cache_string(udev, udev->descriptor.iSerialNumber);
-+
- 	err = usb_enumerate_device_otg(udev);
- fail:
- 	return err;
-@@ -2311,16 +2306,6 @@ int usb_deauthorize_device(struct usb_device *usb_dev)
- 	usb_dev->authorized = 0;
- 	usb_set_configuration(usb_dev, -1);
- 
--	kfree(usb_dev->product);
--	usb_dev->product = kstrdup("n/a (unauthorized)", GFP_KERNEL);
--	kfree(usb_dev->manufacturer);
--	usb_dev->manufacturer = kstrdup("n/a (unauthorized)", GFP_KERNEL);
--	kfree(usb_dev->serial);
--	usb_dev->serial = kstrdup("n/a (unauthorized)", GFP_KERNEL);
--
--	usb_destroy_configuration(usb_dev);
--	usb_dev->descriptor.bNumConfigurations = 0;
--
- out_unauthorized:
- 	usb_unlock_device(usb_dev);
- 	return 0;
-@@ -2348,17 +2333,7 @@ int usb_authorize_device(struct usb_device *usb_dev)
- 		goto error_device_descriptor;
- 	}
- 
--	kfree(usb_dev->product);
--	usb_dev->product = NULL;
--	kfree(usb_dev->manufacturer);
--	usb_dev->manufacturer = NULL;
--	kfree(usb_dev->serial);
--	usb_dev->serial = NULL;
--
- 	usb_dev->authorized = 1;
--	result = usb_enumerate_device(usb_dev);
--	if (result < 0)
--		goto error_enumerate;
- 	/* Choose and set the configuration.  This registers the interfaces
- 	 * with the driver core and lets interface drivers bind to them.
+ The amount of "allowed" memory depends on the context in which the oom killer
+ was called.  If it is due to the memory assigned to the allocating task's cpuset
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index b45c813..0eba956 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -212,7 +212,7 @@ unsigned long oom_badness(struct task_struct *p, struct mem_cgroup *memcg,
+ 	 * implementation used by LSMs.
  	 */
-@@ -2374,7 +2349,6 @@ int usb_authorize_device(struct usb_device *usb_dev)
- 	}
- 	dev_info(&usb_dev->dev, "authorized to connect\n");
+ 	if (has_capability_noaudit(p, CAP_SYS_ADMIN))
+-		adj -= 30;
++		points -= (points * 3) / 100;
  
--error_enumerate:
- error_device_descriptor:
- 	usb_autosuspend_device(usb_dev);
- error_autoresume:
+ 	/* Normalize to oom_score_adj units */
+ 	adj *= totalpages / 1000;
 -- 
 1.8.3.2
 
