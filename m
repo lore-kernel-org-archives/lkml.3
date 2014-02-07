@@ -1,72 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755927AbaBGMie (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:38:34 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:42308 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754851AbaBGMia (ORCPT
+	id S1755870AbaBGMi3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:38:29 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41995 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754851AbaBGLui (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 07:38:30 -0500
-Date: Fri, 7 Feb 2014 18:08:23 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Karsten Keil <isdn@linux-pingi.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Kees Cook <keescook@chromium.org>, netdev@vger.kernel.org,
-        josh@joshtriplett.org
-Subject: [PATCH 16/26] drivers: isdn: Move prototype declarations to
- appropriate header file hscx.h from elsa_ser.c
-Message-ID: <e32c0193b53196909f461a3f54cd8c196619b696.1390408517.git.rashika.kheria@gmail.com>
-References: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 7 Feb 2014 06:50:38 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Luiz Capitulino <lcapitulino@redhat.com>, Dan Duval <dan.duval@oracle.com>,
+        Chuck Anderson <chuck.anderson@oracle.com>,
+        Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 125/233] audit: reset audit backlog wait time after error recovery
+Date: Fri,  7 Feb 2014 11:45:44 +0000
+Message-Id: <1391773652-25214-126-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
+References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move prototype declarations of functions to header file hisax/hscx.h
-because they are used by more than one file.
+3.11.10.4 -stable review patch.  If anyone has any objections, please let me know.
 
-This eliminates the following warnings in hisax/hscx.c:
-drivers/isdn/hisax/hscx.c:96:1: warning: no previous prototype for ‘hscx_l2l1’ [-Wmissing-prototypes]
-drivers/isdn/hisax/hscx.c:175:1: warning: no previous prototype for ‘open_hscxstate’ [-Wmissing-prototypes]
+------------------
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+From: Richard Guy Briggs <rgb@redhat.com>
+
+commit e789e561a50de0aaa8c695662d97aaa5eac9d55f upstream.
+
+When the audit queue overflows and times out (audit_backlog_wait_time), the
+audit queue overflow timeout is set to zero.  Once the audit queue overflow
+timeout condition recovers, the timeout should be reset to the original value.
+
+See also:
+	https://lkml.org/lkml/2013/9/2/473
+
+Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
+Signed-off-by: Dan Duval <dan.duval@oracle.com>
+Signed-off-by: Chuck Anderson <chuck.anderson@oracle.com>
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+Signed-off-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/isdn/hisax/elsa_ser.c |    2 --
- drivers/isdn/hisax/hscx.h     |    2 ++
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ kernel/audit.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/isdn/hisax/elsa_ser.c b/drivers/isdn/hisax/elsa_ser.c
-index 3f84dd8..0d5ccd2 100644
---- a/drivers/isdn/hisax/elsa_ser.c
-+++ b/drivers/isdn/hisax/elsa_ser.c
-@@ -419,9 +419,7 @@ static void rs_interrupt_elsa(struct IsdnCardState *cs)
- #endif
- }
+diff --git a/kernel/audit.c b/kernel/audit.c
+index 7ddfd8a..6def25f 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -103,7 +103,8 @@ static int	audit_rate_limit;
  
--extern int open_hscxstate(struct IsdnCardState *cs, struct BCState *bcs);
- extern void modehscx(struct BCState *bcs, int mode, int bc);
--extern void hscx_l2l1(struct PStack *st, int pr, void *arg);
+ /* Number of outstanding audit_buffers allowed. */
+ static int	audit_backlog_limit = 64;
+-static int	audit_backlog_wait_time = 60 * HZ;
++#define AUDIT_BACKLOG_WAIT_TIME (60 * HZ)
++static int	audit_backlog_wait_time = AUDIT_BACKLOG_WAIT_TIME;
+ static int	audit_backlog_wait_overflow = 0;
  
- static void
- close_elsastate(struct BCState *bcs)
-diff --git a/drivers/isdn/hisax/hscx.h b/drivers/isdn/hisax/hscx.h
-index 1148b4b..e99db24 100644
---- a/drivers/isdn/hisax/hscx.h
-+++ b/drivers/isdn/hisax/hscx.h
-@@ -39,3 +39,5 @@ extern void modehscx(struct BCState *bcs, int mode, int bc);
- extern void clear_pending_hscx_ints(struct IsdnCardState *cs);
- extern void inithscx(struct IsdnCardState *cs);
- extern void inithscxisac(struct IsdnCardState *cs, int part);
-+extern void hscx_l2l1(struct PStack *st, int pr, void *arg);
-+extern int open_hscxstate(struct IsdnCardState *cs, struct BCState *bcs);
+ /* The identity of the user shutting down the audit system. */
+@@ -1135,6 +1136,8 @@ struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask,
+ 		return NULL;
+ 	}
+ 
++	audit_backlog_wait_time = AUDIT_BACKLOG_WAIT_TIME;
++
+ 	ab = audit_buffer_alloc(ctx, gfp_mask, type);
+ 	if (!ab) {
+ 		audit_log_lost("out of memory in audit_log_start");
 -- 
-1.7.9.5
+1.8.3.2
 
