@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755807AbaBGMat (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:30:49 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42078 "EHLO
+	id S1754924AbaBGLu4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:50:56 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42036 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753528AbaBGLu5 (ORCPT
+	with ESMTP id S1753128AbaBGLut (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:50:57 -0500
+	Fri, 7 Feb 2014 06:50:49 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dave Airlie <airlied@redhat.com>,
+Cc: Philip Pokorny <ppokorny@penguincomputing.com>,
+        Guenter Roeck <linux@roeck-us.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 140/233] drm/mgag200: fix oops in cursor code.
-Date: Fri,  7 Feb 2014 11:45:59 +0000
-Message-Id: <1391773652-25214-141-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 133/233] hwmon: (k10temp) Add support for Kaveri CPUs
+Date: Fri,  7 Feb 2014 11:45:52 +0000
+Message-Id: <1391773652-25214-134-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -27,45 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Airlie <airlied@redhat.com>
+From: Phil Pokorny <ppokorny@penguincomputing.com>
 
-commit 53dac830537b51df555ba5e7ebb236705b7eaa7c upstream.
+commit d303b1b5fbb688282bbf72a534b9dfed7af9fe4f upstream.
 
-In some cases we enter the cursor code with file_priv = NULL causing an oops,
-we also can try to unpin something that isn't pinned, and this is a good fix for it.
+Add new PCI ID to support new model "Kaveri" family.
 
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Philip Pokorny <ppokorny@penguincomputing.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/mgag200/mgag200_cursor.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/hwmon/k10temp.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/gpu/drm/mgag200/mgag200_cursor.c b/drivers/gpu/drm/mgag200/mgag200_cursor.c
-index 801731a..9f9780b 100644
---- a/drivers/gpu/drm/mgag200/mgag200_cursor.c
-+++ b/drivers/gpu/drm/mgag200/mgag200_cursor.c
-@@ -22,8 +22,10 @@ static void mga_hide_cursor(struct mga_device *mdev)
- {
- 	WREG8(MGA_CURPOSXL, 0);
- 	WREG8(MGA_CURPOSXH, 0);
--	mgag200_bo_unpin(mdev->cursor.pixels_1);
--	mgag200_bo_unpin(mdev->cursor.pixels_2);
-+	if (mdev->cursor.pixels_1->pin_count)
-+		mgag200_bo_unpin(mdev->cursor.pixels_1);
-+	if (mdev->cursor.pixels_2->pin_count)
-+		mgag200_bo_unpin(mdev->cursor.pixels_2);
- }
- 
- int mga_crtc_cursor_set(struct drm_crtc *crtc,
-@@ -32,7 +34,7 @@ int mga_crtc_cursor_set(struct drm_crtc *crtc,
- 			uint32_t width,
- 			uint32_t height)
- {
--	struct drm_device *dev = (struct drm_device *)file_priv->minor->dev;
-+	struct drm_device *dev = crtc->dev;
- 	struct mga_device *mdev = (struct mga_device *)dev->dev_private;
- 	struct mgag200_bo *pixels_1 = mdev->cursor.pixels_1;
- 	struct mgag200_bo *pixels_2 = mdev->cursor.pixels_2;
+diff --git a/drivers/hwmon/k10temp.c b/drivers/hwmon/k10temp.c
+index e633856..9bcf175 100644
+--- a/drivers/hwmon/k10temp.c
++++ b/drivers/hwmon/k10temp.c
+@@ -211,6 +211,7 @@ static DEFINE_PCI_DEVICE_TABLE(k10temp_id_table) = {
+ 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_CNB17H_F3) },
+ 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F3) },
+ 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M10H_F3) },
++	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M30H_NB_F3) },
+ 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_NB_F3) },
+ 	{}
+ };
 -- 
 1.8.3.2
 
