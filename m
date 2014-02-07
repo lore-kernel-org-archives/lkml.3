@@ -1,108 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754689AbaBGLtq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:49:46 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41797 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753300AbaBGLtn (ORCPT
+	id S1755282AbaBGM6s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:58:48 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:37803 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751461AbaBGM6n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:49:43 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-        Mika Kuoppala <mika.kuoppala@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 084/233] drm/i915: Flush outstanding requests before allocating new seqno
-Date: Fri,  7 Feb 2014 11:45:03 +0000
-Message-Id: <1391773652-25214-85-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
-References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Fri, 7 Feb 2014 07:58:43 -0500
+Date: Fri, 7 Feb 2014 12:58:31 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Guenter Roeck <linux@roeck-us.net>
+Message-ID: <20140207125831.GL32298@sirena.org.uk>
+References: <cover.1391705989.git.Adam.Thomson.Opensource@diasemi.com>
+ <6a398d176b0b2bf8792d27bd5e2995fd96afb32d.1391705989.git.Adam.Thomson.Opensource@diasemi.com>
+ <20140207105657.GL14727@lee--X1>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+IojnoBMdP/qo3gc"
+Content-Disposition: inline
+In-Reply-To: <20140207105657.GL14727@lee--X1>
+X-Cookie: Take it easy, we're in a hurry.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 1/8] ASoC: da9055: Fix device registration of PMIC and
+ CODEC devices
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.4 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--+IojnoBMdP/qo3gc
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+On Fri, Feb 07, 2014 at 10:56:57AM +0000, Lee Jones wrote:
 
-commit 304d695c3dc8eb65206b9eaf16f8d1a41510d1cf upstream.
+> > +/*
+> > + * DO NOT change the device Ids. The naming is intentionally specific as both
+> > + * the PMIC and CODEC parts of this chip are instantiated separately as I2C
+> > + * devices (both have configurable I2C addresses, and are to all intents and
+> > + * purposes separate). As a result there are specific DA9055 ids for PMIC
+> > + * and CODEC, which must be different to operate together.
+> > + */
 
-In very rare cases (such as a memory failure stress test) it is possible
-to fill the entire ring without emitting a request. Under this
-circumstance, the outstanding request is flushed and waited upon. After
-space on the ring is cleared, we return to emitting the new command -
-except that we just cleared the seqno allocated for this operation and
-trigger the sanity check that a request is only ever emitted with a
-valid seqno. The fix is to rearrange the code to make sure the
-allocation of the seqno for this operation is after any required flushes
-of outstanding operations.
+> I'm not sure this comment is required.
 
-The bug exists since the preallocation was introduced in
-commit 9d7730914f4cd496e356acfab95b41075aa8eae8
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Tue Nov 27 16:22:52 2012 +0000
+They are, we've already had the suffixes removed from both PMIC and
+CODEC drivers by people doing code review causing the drivers to fail to
+load for several kernel releases (this should be tagged to stable as a
+result).
 
-    drm/i915: Preallocate next seqno before touching the ring
+> Most device IDs are named this way.
 
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Mika Kuoppala <mika.kuoppala@intel.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Reviewed-by: Jani Nikula <jani.nikula@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/gpu/drm/i915/intel_ringbuffer.c | 12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+Having the suffix on a subdevice would be normal but it's not normal for
+the primary I2C device, usually you can just put the part number in.
 
-diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c b/drivers/gpu/drm/i915/intel_ringbuffer.c
-index 079ef01..9e171c2 100644
---- a/drivers/gpu/drm/i915/intel_ringbuffer.c
-+++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
-@@ -1557,8 +1557,8 @@ intel_ring_alloc_seqno(struct intel_ring_buffer *ring)
- 	return i915_gem_get_seqno(ring->dev, &ring->outstanding_lazy_request);
- }
- 
--static int __intel_ring_begin(struct intel_ring_buffer *ring,
--			      int bytes)
-+static int __intel_ring_prepare(struct intel_ring_buffer *ring,
-+				int bytes)
- {
- 	int ret;
- 
-@@ -1574,7 +1574,6 @@ static int __intel_ring_begin(struct intel_ring_buffer *ring,
- 			return ret;
- 	}
- 
--	ring->space -= bytes;
- 	return 0;
- }
- 
-@@ -1589,12 +1588,17 @@ int intel_ring_begin(struct intel_ring_buffer *ring,
- 	if (ret)
- 		return ret;
- 
-+	ret = __intel_ring_prepare(ring, num_dwords * sizeof(uint32_t));
-+	if (ret)
-+		return ret;
-+
- 	/* Preallocate the olr before touching the ring */
- 	ret = intel_ring_alloc_seqno(ring);
- 	if (ret)
- 		return ret;
- 
--	return __intel_ring_begin(ring, num_dwords * sizeof(uint32_t));
-+	ring->space -= num_dwords * sizeof(uint32_t);
-+	return 0;
- }
- 
- void intel_ring_init_seqno(struct intel_ring_buffer *ring, u32 seqno)
--- 
-1.8.3.2
+--+IojnoBMdP/qo3gc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS9Nh0AAoJELSic+t+oim99loP/ij+WZiRpWPTJR3oSmGFkKko
+p89l4D93sB+ovRJaq8g6Rs7+ArknmFv8UW7UcAuTPWS1P99JAJi9+XSmLhz7i2rB
+bwWPIFPnwb8UMR1OeVlb8Ph2Ej+5CC4iPctoeaWsxPvNnrVp0bUiY0sGwLK/Z2hQ
+PhVQFH1OgcPMK48ISHtOaT1ENDWWS2znF/Aj9FY4q4zgMym/2eAGezxoDH3Z7H+w
+7Bvzy6W6azWwmqPR+0MRzkwu3JjUCrt2fOBfVclGs8XEuUHENNqyDND7/uuv/Ny7
+AQwRa128efWSovKbE89uGiVG/crvjdslFrf+f3AsxVrsAWWNeHtzcs3eEF+HMDOa
+HOMquXXCEj4xJjcjqgynO1KVywjkPu1PJneQ2hINVvB4rf5ci+ByvBkRUpJd+tIF
+pIpOODsmUICpJYZoyZE6V0SH2RgPjYkIYE5a4kfe9K7JM7KHQNT8nHIfNZm9rYqc
+HxGVvh7q0BHLevFFk/ka71wNWbR0yZ9Iw5NNWQbxwwYLBPeAOep/BhOTVZ79bpbL
+Xnu+QU1BlnYmmm9BuqYPHpASFrI/kRVxqLk6X2PEvFytvXUqCUJmc4U0KUeko8Z3
+zn1/gBhH+B0pV9FjvSMeL4Y/ZR6jDGy8W2pQDHoYefGxWpYFaRZYDVvkxKQZLYHm
+kwzJGtJZpfxmBfBD2TGh
+=DYFT
+-----END PGP SIGNATURE-----
+
+--+IojnoBMdP/qo3gc--
