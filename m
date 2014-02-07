@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753891AbaBGLvp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:51:45 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42245 "EHLO
+	id S932487AbaBGLwA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:52:00 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42305 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753660AbaBGLvn (ORCPT
+	with ESMTP id S932445AbaBGLv5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:51:43 -0500
+	Fri, 7 Feb 2014 06:51:57 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Greg Thelen <gthelen@google.com>,
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@redhat.com>, Ralf Baechle <ralf@linux-mips.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 174/233] memcg: fix endless loop caused by mem_cgroup_iter
-Date: Fri,  7 Feb 2014 11:46:33 +0000
-Message-Id: <1391773652-25214-175-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 181/233] compat: fix sys_fanotify_mark
+Date: Fri,  7 Feb 2014 11:46:40 +0000
+Message-Id: <1391773652-25214-182-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -30,100 +32,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Hocko <mhocko@suse.cz>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-commit ecc736fc3c71c411a9d201d8588c9e7e049e5d8c upstream.
+commit 592f6b842f64e416c7598a1b97c649b34241e22d upstream.
 
-Hugh has reported an endless loop when the hardlimit reclaim sees the
-same group all the time.  This might happen when the reclaim races with
-the memcg removal.
+Commit 91c2e0bcae72 ("unify compat fanotify_mark(2), switch to
+COMPAT_SYSCALL_DEFINE") added a new unified compat fanotify_mark syscall
+to be used by all architectures.
 
-shrink_zone
-                                                [rmdir root]
-  mem_cgroup_iter(root, NULL, reclaim)
-    // prev = NULL
-    rcu_read_lock()
-    mem_cgroup_iter_load
-      last_visited = iter->last_visited   // gets root || NULL
-      css_tryget(last_visited)            // failed
-      last_visited = NULL                 [1]
-    memcg = root = __mem_cgroup_iter_next(root, NULL)
-    mem_cgroup_iter_update
-      iter->last_visited = root;
-    reclaim->generation = iter->generation
+Unfortunately the unified version merges the split mask parameter in a
+wrong way: the lower and higher word got swapped.
 
- mem_cgroup_iter(root, root, reclaim)
-   // prev = root
-   rcu_read_lock
-    mem_cgroup_iter_load
-      last_visited = iter->last_visited   // gets root
-      css_tryget(last_visited)            // failed
-    [1]
+This was discovered with glibc's tst-fanotify test case.
 
-The issue seemed to be introduced by commit 5f5781619718 ("memcg: relax
-memcg iter caching") which has replaced unconditional css_get/css_put by
-css_tryget/css_put for the cached iterator.
-
-This patch fixes the issue by skipping css_tryget on the root of the
-tree walk in mem_cgroup_iter_load and symmetrically doesn't release it
-in mem_cgroup_iter_update.
-
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Reported-by: Hugh Dickins <hughd@google.com>
-Tested-by: Hugh Dickins <hughd@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Greg Thelen <gthelen@google.com>
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Reported-by: Andreas Krebbel <krebbel@linux.vnet.ibm.com>
+Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
+Acked-by: "David S. Miller" <davem@davemloft.net>
+Acked-by: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/memcontrol.c | 17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
+ fs/notify/fanotify/fanotify_user.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index b5f353f..bb13089 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1148,7 +1148,15 @@ mem_cgroup_iter_load(struct mem_cgroup_reclaim_iter *iter,
- 	if (iter->last_dead_count == *sequence) {
- 		smp_rmb();
- 		position = iter->last_visited;
--		if (position && !css_tryget(&position->css))
-+
-+		/*
-+		 * We cannot take a reference to root because we might race
-+		 * with root removal and returning NULL would end up in
-+		 * an endless loop on the iterator user level when root
-+		 * would be returned all the time.
-+		 */
-+		if (position && position != root &&
-+				!css_tryget(&position->css))
- 			position = NULL;
- 	}
- 	return position;
-@@ -1157,9 +1165,11 @@ mem_cgroup_iter_load(struct mem_cgroup_reclaim_iter *iter,
- static void mem_cgroup_iter_update(struct mem_cgroup_reclaim_iter *iter,
- 				   struct mem_cgroup *last_visited,
- 				   struct mem_cgroup *new_position,
-+				   struct mem_cgroup *root,
- 				   int sequence)
+diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
+index e44cb64..6663511 100644
+--- a/fs/notify/fanotify/fanotify_user.c
++++ b/fs/notify/fanotify/fanotify_user.c
+@@ -888,9 +888,9 @@ COMPAT_SYSCALL_DEFINE6(fanotify_mark,
  {
--	if (last_visited)
-+	/* root reference counting symmetric to mem_cgroup_iter_load */
-+	if (last_visited && last_visited != root)
- 		css_put(&last_visited->css);
- 	/*
- 	 * We store the sequence count from the time @last_visited was
-@@ -1234,7 +1244,8 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
- 		memcg = __mem_cgroup_iter_next(root, last_visited);
- 
- 		if (reclaim) {
--			mem_cgroup_iter_update(iter, last_visited, memcg, seq);
-+			mem_cgroup_iter_update(iter, last_visited, memcg, root,
-+					seq);
- 
- 			if (!memcg)
- 				iter->generation++;
+ 	return sys_fanotify_mark(fanotify_fd, flags,
+ #ifdef __BIG_ENDIAN
+-				((__u64)mask1 << 32) | mask0,
+-#else
+ 				((__u64)mask0 << 32) | mask1,
++#else
++				((__u64)mask1 << 32) | mask0,
+ #endif
+ 				 dfd, pathname);
+ }
 -- 
 1.8.3.2
 
