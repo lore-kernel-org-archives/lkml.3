@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751907AbaBGH7V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 02:59:21 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:34259 "EHLO
+	id S1751939AbaBGIAO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 03:00:14 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:34486 "EHLO
 	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750729AbaBGH7T (ORCPT
+	with ESMTP id S1751482AbaBGIAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 02:59:19 -0500
-X-AuditID: cbfee68e-b7f566d000002344-5b-52f49256bc33
+	Fri, 7 Feb 2014 03:00:12 -0500
+X-AuditID: cbfee691-b7efc6d0000039d3-d5-52f4928b99b9
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
-        rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>,
-        "'Tony Prisk'" <linux@prisktech.co.nz>
-References: <000401cf23d9$d1df6e30$759e4a90$%han@samsung.com>
-In-reply-to: <000401cf23d9$d1df6e30$759e4a90$%han@samsung.com>
-Subject: [PATCH 4/4] rtc: rtc-vt8500: Use devm_ioremap_resource()
-Date: Fri, 07 Feb 2014 16:59:18 +0900
-Message-id: <000801cf23da$808dc0d0$81a94270$%han@samsung.com>
+        rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH 00/10] rtc: Remove unnecessary OOM messages
+Date: Fri, 07 Feb 2014 17:00:11 +0900
+Message-id: <000901cf23da$a04cbca0$e0e635e0$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac8j2dGo+e7pmAi4QKyN7t2QoeNN8wAAJHNw
+Thread-index: Ac8j2qAzLOfgRWJTRVWYElXe2alJBA==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEIsWRmVeSWpSXmKPExsVy+t8zI92wSV+CDO6vULRYcvEqu8Wc9WvY
-	LC4vvMRqcXnXHDaLlssrmC32d3YwOrB57Jl4ks3jxIzfLB7n/7ewe/RtWcXoMX3eTyaPz5vk
-	AtiiuGxSUnMyy1KL9O0SuDJ6zy5kLdgkVLGp5ypjA+MU/i5GTg4JAROJ9Y2z2CBsMYkL99YD
-	2VwcQgLLGCUmT5zADFP0v+8YE0RiOqPE/43TWSCcX4wSTafuMYJUsQmoSXz5cpi9i5GDQ0RA
-	X6KtRQOkhllgK6PEowtH2EFqhARsJRa+7ASbyilgJ9G/p48VxBYWcJTYdmY22BwWAVWJGXsv
-	gdXwAtVvvd/OAmELSvyYfA/MZhbQkli/8zgThC0vsXnNW2aQvRIC6hKP/uqChEUEjCQ+L30E
-	VS4ise/FO0aQeyQEvrJLrFnawQ6xS0Di2+RDLBC9shKbDkA9LClxcMUNlgmMErOQbJ6FZPMs
-	JJtnIVmxgJFlFaNoakFyQXFSepGRXnFibnFpXrpecn7uJkZI/PbtYLx5wPoQYzLQ+onMUqLJ
-	+cD4zyuJNzQ2M7IwNTE1NjK3NCNNWEmcd9HDpCAhgfTEktTs1NSC1KL4otKc1OJDjEwcnFIN
-	jCtfhh09v8Rnz5mDhT5Lc1vVAvX1/V4bb5g1R2aa3vP/upWl0zTe/t4XWndqjp0bh6f+kaJ1
-	anFTZoSkCe+IfvxXgU2N6Zba+hn/ReeK9U5P5m94xn57x+6/x+IDuAKNVUW2icusNUw2tX20
-	kiFww5vIif3J37KnxT9Je5IxeWdCazSTeJilrRJLcUaioRZzUXEiAEmQqC/1AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPKsWRmVeSWpSXmKPExsVy+t9jQd2wSV+CDNa1ylosuXiV3WLO+jVs
-	FpcXXmK1uLxrDptFy+UVzBb7OzsYHdg89kw8yeZxYsZvFo/z/1vYPfq2rGL0mD7vJ5PH501y
-	AWxRDYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUB3
-	KCmUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ6xgzes8uZC3YJFSxqecqYwPj
-	FP4uRk4OCQETif99x5ggbDGJC/fWs3UxcnEICUxnlPi/cToLhPOLUaLp1D1GkCo2ATWJL18O
-	s3cxcnCICOhLtLVogNQwC2xllHh04Qg7SI2QgK3EwpedzCA2p4CdRP+ePlYQW1jAUWLbmdlg
-	c1gEVCVm7L0EVsMLVL/1fjsLhC0o8WPyPTCbWUBLYv3O40wQtrzE5jVvmUH2SgioSzz6qwsS
-	FhEwkvi89BFUuYjEvhfvGCcwCs1CMmkWkkmzkEyahaRlASPLKkbR1ILkguKk9FxDveLE3OLS
-	vHS95PzcTYzg5PBMagfjygaLQ4wCHIxKPLwnln4OEmJNLCuuzD3EKMHBrCTC+7PhS5AQb0pi
-	ZVVqUX58UWlOavEhxmSgRycyS4km5wMTV15JvKGxiZmRpZGZhZGJuTlpwkrivAdarQOFBNIT
-	S1KzU1MLUotgtjBxcEo1MBa8ELzxeuGKrg/b4vrsbq/MtJ+0TejPxi3r0749901cpnn04Fzm
-	EF7FG8rrlU/OCTly6N0sufTdHvrr1JSX3eydJ6z8Yv3tHROsTA03edp/Tp8vv99F6P2yblu5
-	PUFvvp97vUHs3RnuDVz7JA9aPly6yo0ppvvhDH1F2X+XVecHZyzXzZ06f+0uJZbijERDLeai
-	4kQAAYCQflIDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPIsWRmVeSWpSXmKPExsVy+t8zI93uSV+CDD5cMLJYcvEqu8Wc9WvY
+	LC4vvMRqcXnXHDaL/Z0djA6sHnsmnmTzODHjN4tH35ZVjB7T5/1k8vi8SS6ANYrLJiU1J7Ms
+	tUjfLoErY9qldSwFjzkrbjf8Zm5g3MHexcjJISFgIjHj42QoW0ziwr31bF2MXBxCAssYJZ7e
+	7WKBKfoz6xsziC0ksIhR4tJKNYiiX4wSDZufs4Ik2ATUJL58OQw0iYNDREBfoq1FA6SGWaCX
+	UeJM726wDcIC1hIPZ54Hs1kEVCXun93IBmLzCthKXNs8nxHCFpT4Mfke2GJmAS2J9TuPM0HY
+	8hKb17xlBpkvIaAu8eivLkhYREBPYs+8ZVDlIhL7XrxjBNkrIXCMXeLHjnZmiF0CEt8mH2KB
+	6JWV2HSAGeIvSYmDK26wTGAUm4Vk8ywkm2ch2TwLyYoFjCyrGEVTC5ILipPSi0z1ihNzi0vz
+	0vWS83M3MUIib+IOxvsHrA8xJgOtn8gsJZqcD4zcvJJ4Q2MzIwtTE1NjI3NLM9KElcR50x8l
+	BQkJpCeWpGanphakFsUXleakFh9iZOLglGpgFPllt+fodY8/TEWsKYwFe97lTdzN/7FaSfye
+	P/ds7XtTDmw0ZLdbK6t0//zpEtX+kNnq+5oXrNLjdzHrDEg1qvlzapvbTrGrGZsfpwnL19br
+	td2ctsi7bUWAxncjxxtRwtOyI5nS/qk1ZTdt2B500PStQPaKfSIWLKYTmEwqE9U75BM9cq4o
+	sRRnJBpqMRcVJwIA7xThc9ICAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDKsWRmVeSWpSXmKPExsVy+t9jAd3uSV+CDLqX6lksuXiV3WLO+jVs
+	FpcXXmK1uLxrDpvF/s4ORgdWjz0TT7J5nJjxm8Wjb8sqRo/p834yeXzeJBfAGtXAaJORmpiS
+	WqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtF1JoSwxpxQoFJBY
+	XKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjHmDHt0jqWgsecFbcbfjM3MO5g72Lk5JAQMJH4
+	M+sbM4QtJnHh3no2EFtIYBGjxKWVal2MXED2L0aJhs3PWUESbAJqEl++HAZq5uAQEdCXaGvR
+	AKlhFuhllDjTuxtsqLCAtcTDmefBbBYBVYn7ZzeCDeUVsJW4tnk+I4QtKPFj8j0WEJtZQEti
+	/c7jTBC2vMTmNW+ZQeZLCKhLPPqrCxIWEdCT2DNvGVS5iMS+F+8YJzAKzEIyaRaSSbOQTJqF
+	pGUBI8sqRtHUguSC4qT0XEO94sTc4tK8dL3k/NxNjOC4fia1g3Flg8UhRgEORiUe3hNLPwcJ
+	sSaWFVfmHmKU4GBWEuH92fAlSIg3JbGyKrUoP76oNCe1+BBjMtCjE5mlRJPzgSknryTe0NjE
+	zMjSyMzCyMTcnDRhJXHeA63WgUIC6YklqdmpqQWpRTBbmDg4pRoY47a+PXTz7ukL67/GbxYK
+	09Mr4qxTnjZLIn5K2JFJKzJ2XI1glyxhYOSrWqzCWeiuuWHnR56UoL9zQh11fxxhEGB5EjX5
+	3GQ717nNv86Lbm5oyd+v/FB7tmNZHtf5hJf/dsif5QmceWkd13qfm5XXlobfmGd3cINcU1vo
+	pdt3nJZ+zb3GyV5bpsRSnJFoqMVcVJwIAIcQ28IvAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -57,76 +53,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_ioremap_resource() in order to make the code simpler,
-and move 'struct resource *res' from 'struct vt8500_rtc' to
-vt8500_rtc_probe() because the 'res' variable is used only in
-vt8500_rtc_probe().
+The site-specific OOM messages are unnecessary, because they
+duplicate the MM subsystem generic OOM message. For example,
+k.alloc and v.alloc failures use dump_stack().
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+Jingoo Han (10):
+      rtc: rtc-at32ap700x: Remove unnecessary OOM messages
+      rtc: rtc-davinci: Remove unnecessary OOM messages
+      rtc: rtc-ds1390: Remove unnecessary OOM messages
+      rtc: rtc-lpc32xx: Remove unnecessary OOM messages
+      rtc: rtc-moxart: Remove unnecessary OOM messages
+      rtc: rtc-nuc900: Remove unnecessary OOM messages
+      rtc: rtc-pm8xxx: Remove unnecessary OOM messages
+      rtc: rtc-rx8025: Remove unnecessary OOM messages
+      rtc: rtc-sirfsoc: Remove unnecessary OOM messages
+      rtc: rtc-spear: Remove unnecessary OOM messages
 ---
- drivers/rtc/rtc-vt8500.c |   28 +++++-----------------------
- 1 file changed, 5 insertions(+), 23 deletions(-)
-
-diff --git a/drivers/rtc/rtc-vt8500.c b/drivers/rtc/rtc-vt8500.c
-index df2ef3e..051da96 100644
---- a/drivers/rtc/rtc-vt8500.c
-+++ b/drivers/rtc/rtc-vt8500.c
-@@ -79,7 +79,6 @@
- 
- struct vt8500_rtc {
- 	void __iomem		*regbase;
--	struct resource		*res;
- 	int			irq_alarm;
- 	struct rtc_device	*rtc;
- 	spinlock_t		lock;		/* Protects this structure */
-@@ -209,6 +208,7 @@ static const struct rtc_class_ops vt8500_rtc_ops = {
- static int vt8500_rtc_probe(struct platform_device *pdev)
- {
- 	struct vt8500_rtc *vt8500_rtc;
-+	struct resource	*res;
- 	int ret;
- 
- 	vt8500_rtc = devm_kzalloc(&pdev->dev,
-@@ -219,34 +219,16 @@ static int vt8500_rtc_probe(struct platform_device *pdev)
- 	spin_lock_init(&vt8500_rtc->lock);
- 	platform_set_drvdata(pdev, vt8500_rtc);
- 
--	vt8500_rtc->res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!vt8500_rtc->res) {
--		dev_err(&pdev->dev, "No I/O memory resource defined\n");
--		return -ENXIO;
--	}
--
- 	vt8500_rtc->irq_alarm = platform_get_irq(pdev, 0);
- 	if (vt8500_rtc->irq_alarm < 0) {
- 		dev_err(&pdev->dev, "No alarm IRQ resource defined\n");
- 		return vt8500_rtc->irq_alarm;
- 	}
- 
--	vt8500_rtc->res = devm_request_mem_region(&pdev->dev,
--					vt8500_rtc->res->start,
--					resource_size(vt8500_rtc->res),
--					"vt8500-rtc");
--	if (vt8500_rtc->res == NULL) {
--		dev_err(&pdev->dev, "failed to request I/O memory\n");
--		return -EBUSY;
--	}
--
--	vt8500_rtc->regbase = devm_ioremap(&pdev->dev, vt8500_rtc->res->start,
--				      resource_size(vt8500_rtc->res));
--	if (!vt8500_rtc->regbase) {
--		dev_err(&pdev->dev, "Unable to map RTC I/O memory\n");
--		ret = -EBUSY;
--		goto err_return;
--	}
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	vt8500_rtc->regbase = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(vt8500_rtc->regbase))
-+		return PTR_ERR(vt8500_rtc->regbase);
- 
- 	/* Enable RTC and set it to 24-hour mode */
- 	writel(VT8500_RTC_CR_ENABLE,
--- 
-1.7.10.4
-
+ drivers/rtc/rtc-at32ap700x.c |    4 +---
+ drivers/rtc/rtc-davinci.c    |    4 +---
+ drivers/rtc/rtc-ds1390.c     |    5 ++---
+ drivers/rtc/rtc-lpc32xx.c    |    5 ++---
+ drivers/rtc/rtc-moxart.c     |    4 +---
+ drivers/rtc/rtc-nuc900.c     |    5 ++---
+ drivers/rtc/rtc-pm8xxx.c     |    4 +---
+ drivers/rtc/rtc-rx8025.c     |    1 -
+ drivers/rtc/rtc-sirfsoc.c    |    6 +-----
+ drivers/rtc/rtc-spear.c      |    4 +---
+ 10 files changed, 12 insertions(+), 30 deletions(-)
 
