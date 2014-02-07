@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754022AbaBGLip (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:38:45 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41049 "EHLO
+	id S1753999AbaBGLin (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:38:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41053 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753015AbaBGLYj (ORCPT
+	with ESMTP id S1753027AbaBGLYj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 Feb 2014 06:24:39 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Chris Ball <cjb@laptop.org>,
+Cc: Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 49/88] mmc: atmel-mci: fix timeout errors in SDIO mode when using DMA
-Date: Fri,  7 Feb 2014 11:22:46 +0000
-Message-Id: <1391772205-22239-50-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 51/88] mwifiex: add missing endian conversion for fw_tsf
+Date: Fri,  7 Feb 2014 11:22:48 +0000
+Message-Id: <1391772205-22239-52-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
@@ -28,52 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ludovic Desroches <ludovic.desroches@atmel.com>
+From: Amitkumar Karwar <akarwar@marvell.com>
 
-commit 66b512eda74d59b17eac04c4da1b38d82059e6c9 upstream.
+commit 9795229752c31da0c5f8a7dc4c827665327b52f9 upstream.
 
-With some SDIO devices, timeout errors can happen when reading data.
-To solve this issue, the DMA transfer has to be activated before sending
-the command to the device. This order is incorrect in PDC mode. So we
-have to take care if we are using DMA or PDC to know when to send the
-MMC command.
+It is u64 data received from firmware. Little endian to cpu
+conversion is required here.
 
-Signed-off-by: Ludovic Desroches <ludovic.desroches@atmel.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/mmc/host/atmel-mci.c | 13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ drivers/net/wireless/mwifiex/scan.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
-index ac472be..e27632e 100644
---- a/drivers/mmc/host/atmel-mci.c
-+++ b/drivers/mmc/host/atmel-mci.c
-@@ -1106,11 +1106,22 @@ static void atmci_start_request(struct atmel_mci *host,
- 	iflags |= ATMCI_CMDRDY;
- 	cmd = mrq->cmd;
- 	cmdflags = atmci_prepare_command(slot->mmc, cmd);
--	atmci_send_command(host, cmd, cmdflags);
-+
-+	/*
-+	 * DMA transfer should be started before sending the command to avoid
-+	 * unexpected errors especially for read operations in SDIO mode.
-+	 * Unfortunately, in PDC mode, command has to be sent before starting
-+	 * the transfer.
-+	 */
-+	if (host->submit_data != &atmci_submit_data_dma)
-+		atmci_send_command(host, cmd, cmdflags);
- 
- 	if (data)
- 		host->submit_data(host, data);
- 
-+	if (host->submit_data == &atmci_submit_data_dma)
-+		atmci_send_command(host, cmd, cmdflags);
-+
- 	if (mrq->stop) {
- 		host->stop_cmdr = atmci_prepare_command(slot->mmc, mrq->stop);
- 		host->stop_cmdr |= ATMCI_CMDR_STOP_XFER;
+diff --git a/drivers/net/wireless/mwifiex/scan.c b/drivers/net/wireless/mwifiex/scan.c
+index 9ca1b9c..fee62b7 100644
+--- a/drivers/net/wireless/mwifiex/scan.c
++++ b/drivers/net/wireless/mwifiex/scan.c
+@@ -1603,7 +1603,7 @@ int mwifiex_ret_802_11_scan(struct mwifiex_private *priv,
+ 		const u8 *ie_buf;
+ 		size_t ie_len;
+ 		u16 channel = 0;
+-		u64 fw_tsf = 0;
++		__le64 fw_tsf = 0;
+ 		u16 beacon_size = 0;
+ 		u32 curr_bcn_bytes;
+ 		u32 freq;
+@@ -1731,7 +1731,7 @@ int mwifiex_ret_802_11_scan(struct mwifiex_private *priv,
+ 					      ie_buf, ie_len, rssi, GFP_KERNEL);
+ 				bss_priv = (struct mwifiex_bss_priv *)bss->priv;
+ 				bss_priv->band = band;
+-				bss_priv->fw_tsf = fw_tsf;
++				bss_priv->fw_tsf = le64_to_cpu(fw_tsf);
+ 				if (priv->media_connected &&
+ 				    !memcmp(bssid,
+ 					    priv->curr_bss_params.bss_descriptor
 -- 
 1.8.3.2
 
