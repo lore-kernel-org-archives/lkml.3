@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753990AbaBGLiS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:38:18 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41060 "EHLO
+	id S1754022AbaBGLip (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:38:45 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41049 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753042AbaBGLYl (ORCPT
+	with ESMTP id S1753015AbaBGLYj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:24:41 -0500
+	Fri, 7 Feb 2014 06:24:39 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Chris Ball <cjb@laptop.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 52/88] b43: Fix lockdep splat
-Date: Fri,  7 Feb 2014 11:22:49 +0000
-Message-Id: <1391772205-22239-53-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 49/88] mmc: atmel-mci: fix timeout errors in SDIO mode when using DMA
+Date: Fri,  7 Feb 2014 11:22:46 +0000
+Message-Id: <1391772205-22239-50-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
@@ -28,105 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Ludovic Desroches <ludovic.desroches@atmel.com>
 
-commit 09164043f63c947a49797750a09ca1cd7c31108e upstream.
+commit 66b512eda74d59b17eac04c4da1b38d82059e6c9 upstream.
 
-In https://bugzilla.kernel.org/show_bug.cgi?id=67561, a locking dependency is reported
-when b43 is used with hostapd, and rfkill is used to kill the radio output.
+With some SDIO devices, timeout errors can happen when reading data.
+To solve this issue, the DMA transfer has to be activated before sending
+the command to the device. This order is incorrect in PDC mode. So we
+have to take care if we are using DMA or PDC to know when to send the
+MMC command.
 
-The lockdep splat (in part) is as follows:
-
-======================================================
-[ INFO: possible circular locking dependency detected ]
-3.12.0 #1 Not tainted
--------------------------------------------------------
-rfkill/10040 is trying to acquire lock:
- (rtnl_mutex){+.+.+.}, at: [<ffffffff8146f282>] rtnl_lock+0x12/0x20
-
-but task is already holding lock:
- (rfkill_global_mutex){+.+.+.}, at: [<ffffffffa04832ca>] rfkill_fop_write+0x6a/0x170 [rfkill]
-
---snip--
-
-Chain exists of:
-  rtnl_mutex --> misc_mtx --> rfkill_global_mutex
-
-The fix is to move the initialization of the hardware random number generator
-outside the code range covered by the rtnl_mutex.
-
-Reported-by: yury <urykhy@gmail.com>
-Tested-by: yury <urykhy@gmail.com>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/b43/main.c | 17 +++++++++++------
- 1 file changed, 11 insertions(+), 6 deletions(-)
+ drivers/mmc/host/atmel-mci.c | 13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/b43/main.c b/drivers/net/wireless/b43/main.c
-index 5b349da..d7d2db9 100644
---- a/drivers/net/wireless/b43/main.c
-+++ b/drivers/net/wireless/b43/main.c
-@@ -2415,6 +2415,7 @@ error:
- 
- static int b43_one_core_attach(struct b43_bus_dev *dev, struct b43_wl *wl);
- static void b43_one_core_detach(struct b43_bus_dev *dev);
-+static int b43_rng_init(struct b43_wl *wl);
- 
- static void b43_request_firmware(struct work_struct *work)
- {
-@@ -2466,6 +2467,10 @@ start_ieee80211:
- 		goto err_one_core_detach;
- 	wl->hw_registred = true;
- 	b43_leds_register(wl->current_dev);
+diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
+index ac472be..e27632e 100644
+--- a/drivers/mmc/host/atmel-mci.c
++++ b/drivers/mmc/host/atmel-mci.c
+@@ -1106,11 +1106,22 @@ static void atmci_start_request(struct atmel_mci *host,
+ 	iflags |= ATMCI_CMDRDY;
+ 	cmd = mrq->cmd;
+ 	cmdflags = atmci_prepare_command(slot->mmc, cmd);
+-	atmci_send_command(host, cmd, cmdflags);
 +
-+	/* Register HW RNG driver */
-+	b43_rng_init(wl);
++	/*
++	 * DMA transfer should be started before sending the command to avoid
++	 * unexpected errors especially for read operations in SDIO mode.
++	 * Unfortunately, in PDC mode, command has to be sent before starting
++	 * the transfer.
++	 */
++	if (host->submit_data != &atmci_submit_data_dma)
++		atmci_send_command(host, cmd, cmdflags);
+ 
+ 	if (data)
+ 		host->submit_data(host, data);
+ 
++	if (host->submit_data == &atmci_submit_data_dma)
++		atmci_send_command(host, cmd, cmdflags);
 +
- 	goto out;
- 
- err_one_core_detach:
-@@ -4595,9 +4600,6 @@ static void b43_wireless_core_exit(struct b43_wldev *dev)
- 	if (!dev || b43_status(dev) != B43_STAT_INITIALIZED)
- 		return;
- 
--	/* Unregister HW RNG driver */
--	b43_rng_exit(dev->wl);
--
- 	b43_set_status(dev, B43_STAT_UNINIT);
- 
- 	/* Stop the microcode PSM. */
-@@ -4740,9 +4742,6 @@ static int b43_wireless_core_init(struct b43_wldev *dev)
- 
- 	b43_set_status(dev, B43_STAT_INITIALIZED);
- 
--	/* Register HW RNG driver */
--	b43_rng_init(dev->wl);
--
- out:
- 	return err;
- 
-@@ -5403,6 +5402,9 @@ static void b43_bcma_remove(struct bcma_device *core)
- 
- 	b43_one_core_detach(wldev->dev);
- 
-+	/* Unregister HW RNG driver */
-+	b43_rng_exit(wl);
-+
- 	b43_leds_unregister(wl);
- 
- 	ieee80211_free_hw(wl->hw);
-@@ -5480,6 +5482,9 @@ static void b43_ssb_remove(struct ssb_device *sdev)
- 
- 	b43_one_core_detach(dev);
- 
-+	/* Unregister HW RNG driver */
-+	b43_rng_exit(wl);
-+
- 	if (list_empty(&wl->devlist)) {
- 		b43_leds_unregister(wl);
- 		/* Last core on the chip unregistered.
+ 	if (mrq->stop) {
+ 		host->stop_cmdr = atmci_prepare_command(slot->mmc, mrq->stop);
+ 		host->stop_cmdr |= ATMCI_CMDR_STOP_XFER;
 -- 
 1.8.3.2
 
