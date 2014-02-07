@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753022AbaBGSY3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 13:24:29 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:35112 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751387AbaBGSXU (ORCPT
+	id S1751529AbaBGSfW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 13:35:22 -0500
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:60324 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751209AbaBGSfU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 13:23:20 -0500
-Message-Id: <20140207182319.951261274@bombadil.infradead.org>
-User-Agent: quilt/0.60-1
-Date: Fri, 07 Feb 2014 10:22:38 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: [PATCH 3/4] blk-mq: handle dma_drain_size
-References: <20140207182235.659185141@bombadil.infradead.org>
-Content-Disposition: inline; filename=0003-blk-mq-handle-dma_drain_size.patch
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 7 Feb 2014 13:35:20 -0500
+MIME-Version: 1.0
+In-Reply-To: <CACRpkdY4rQC30idfYP0bJHeHL-OMbH=oSNaKf8pBfUP1f+sYBg@mail.gmail.com>
+References: <1391503770.19947.0.camel@phoenix>
+	<52F149F4.6040105@broadcom.com>
+	<CACRpkdY4rQC30idfYP0bJHeHL-OMbH=oSNaKf8pBfUP1f+sYBg@mail.gmail.com>
+Date: Fri, 7 Feb 2014 10:35:19 -0800
+Message-ID: <CAEPRUYroQYzxsW-WirQ9ZW9XsSvnO7aSxun7JZoF1=3iONu-rQ@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: capri: Make capri_pinctrl_probe static
+From: Christian Daudt <bcm@fixthebug.org>
+To: Linus Walleij <linus.walleij@linaro.org>, Olof Johansson <olof@lixom.net>,
+        Matt Porter <mporter@linaro.org>
+Cc: Sherman Yin <syin@broadcom.com>, Axel Lin <axel.lin@ingics.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make blk-mq handle the dma_drain_size field the same way as the old request
-path.
+On Thu, Feb 6, 2014 at 1:21 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Tue, Feb 4, 2014 at 9:13 PM, Sherman Yin <syin@broadcom.com> wrote:
+>> On 14-02-04 12:49 AM, Axel Lin wrote:
+>>>
+>>> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+>>>
+>> Note that this will collide with the capri->bcm281xx renaming patches.
+>>
+>> Linus, Christian, are those patches going in soon?
+>
+> I have ACKed it, expecting it to be funneled through ARM SoC.
+>
+> Yours,
+> Linus Walleij
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
----
- block/blk-mq.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+Linus, just to confirm. the bcm_defconfig portion is the only one
+going through armsoc right ?
 
-diff --git a/block/blk-mq.c b/block/blk-mq.c
-index 40fc4dd..35800e1 100644
---- a/block/blk-mq.c
-+++ b/block/blk-mq.c
-@@ -561,6 +561,16 @@ static void __blk_mq_run_hw_queue(struct blk_mq_hw_ctx *hctx)
- 		list_del_init(&rq->queuelist);
- 		blk_mq_start_request(rq);
- 
-+		if (q->dma_drain_size && blk_rq_bytes(rq)) {
-+			/*
-+			 * make sure space for the drain appears we
-+			 * know we can do this because max_hw_segments
-+			 * has been adjusted to be one fewer than the
-+			 * device can handle
-+			 */
-+			rq->nr_phys_segments++;
-+		}
-+
- 		/*
- 		 * Last request in the series. Flag it as such, this
- 		 * enables drivers to know when IO should be kicked off,
--- 
-1.7.10.4
-
-
+ thanks,
+   csd
