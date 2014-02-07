@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753452AbaBGMGB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:06:01 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42397 "EHLO
+	id S1753489AbaBGMGh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:06:37 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42359 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752988AbaBGLwS (ORCPT
+	with ESMTP id S1755272AbaBGLwL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:52:18 -0500
+	Fri, 7 Feb 2014 06:52:11 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andrey Vagin <avagin@openvz.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Pavel Emelyanov <xemul@parallels.com>, Borislav Petkov <bp@suse.de>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Andy Grover <agrover@redhat.com>, Nicholas Bellinger <nab@linux-iscsi.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 197/233] mm: don't lose the SOFT_DIRTY flag on mprotect
-Date: Fri,  7 Feb 2014 11:46:56 +0000
-Message-Id: <1391773652-25214-198-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 195/233] target/iscsi: Fix network portal creation race
+Date: Fri,  7 Feb 2014 11:46:54 +0000
+Message-Id: <1391773652-25214-196-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -32,54 +27,152 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrey Vagin <avagin@openvz.org>
+From: Andy Grover <agrover@redhat.com>
 
-commit 24f91eba18bbfdb27e71a1aae5b3a61b67fcd091 upstream.
+commit ee291e63293146db64668e8d65eb35c97e8324f4 upstream.
 
-The SOFT_DIRTY bit shows that the content of memory was changed after a
-defined point in the past.  mprotect() doesn't change the content of
-memory, so it must not change the SOFT_DIRTY bit.
+When creating network portals rapidly, such as when restoring a
+configuration, LIO's code to reuse existing portals can return a false
+negative if the thread hasn't run yet and set np_thread_state to
+ISCSI_NP_THREAD_ACTIVE. This causes an error in the network stack
+when attempting to bind to the same address/port.
 
-This bug causes a malfunction: on the first iteration all pages are
-dumped.  On other iterations only pages with the SOFT_DIRTY bit are
-dumped.  So if the SOFT_DIRTY bit is cleared from a page by mistake, the
-page is not dumped and its content will be restored incorrectly.
+This patch sets NP_THREAD_ACTIVE before the np is placed on g_np_list,
+so even if the thread hasn't run yet, iscsit_get_np will return the
+existing np.
 
-This patch does nothing with _PAGE_SWP_SOFT_DIRTY, becase pte_modify()
-is called only for present pages.
+Also, convert np_lock -> np_mutex + hold across adding new net portal
+to g_np_list to prevent a race where two threads may attempt to create
+the same network portal, resulting in one of them failing.
 
-Fixes commit 0f8975ec4db2 ("mm: soft-dirty bits for user memory changes
-tracking").
+(nab: Add missing mutex_unlocks in iscsit_add_np failure paths)
+(DanC: Fix incorrect spin_unlock -> spin_unlock_bh)
 
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
-Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: Wen Congyang <wency@cn.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Andy Grover <agrover@redhat.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/include/asm/pgtable_types.h | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/target/iscsi/iscsi_target.c | 34 +++++++++++++++++++++-------------
+ 1 file changed, 21 insertions(+), 13 deletions(-)
 
-diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-index f4843e0..4e700b1 100644
---- a/arch/x86/include/asm/pgtable_types.h
-+++ b/arch/x86/include/asm/pgtable_types.h
-@@ -118,7 +118,8 @@
+diff --git a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
+index db96e21..9c6136e 100644
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -54,7 +54,7 @@
+ static LIST_HEAD(g_tiqn_list);
+ static LIST_HEAD(g_np_list);
+ static DEFINE_SPINLOCK(tiqn_lock);
+-static DEFINE_SPINLOCK(np_lock);
++static DEFINE_MUTEX(np_lock);
  
- /* Set of bits not changed in pte_modify */
- #define _PAGE_CHG_MASK	(PTE_PFN_MASK | _PAGE_PCD | _PAGE_PWT |		\
--			 _PAGE_SPECIAL | _PAGE_ACCESSED | _PAGE_DIRTY)
-+			 _PAGE_SPECIAL | _PAGE_ACCESSED | _PAGE_DIRTY |	\
-+			 _PAGE_SOFT_DIRTY)
- #define _HPAGE_CHG_MASK (_PAGE_CHG_MASK | _PAGE_PSE)
+ static struct idr tiqn_idr;
+ struct idr sess_idr;
+@@ -303,6 +303,9 @@ bool iscsit_check_np_match(
+ 	return false;
+ }
  
- #define _PAGE_CACHE_MASK	(_PAGE_PCD | _PAGE_PWT)
++/*
++ * Called with mutex np_lock held
++ */
+ static struct iscsi_np *iscsit_get_np(
+ 	struct __kernel_sockaddr_storage *sockaddr,
+ 	int network_transport)
+@@ -310,11 +313,10 @@ static struct iscsi_np *iscsit_get_np(
+ 	struct iscsi_np *np;
+ 	bool match;
+ 
+-	spin_lock_bh(&np_lock);
+ 	list_for_each_entry(np, &g_np_list, np_list) {
+-		spin_lock(&np->np_thread_lock);
++		spin_lock_bh(&np->np_thread_lock);
+ 		if (np->np_thread_state != ISCSI_NP_THREAD_ACTIVE) {
+-			spin_unlock(&np->np_thread_lock);
++			spin_unlock_bh(&np->np_thread_lock);
+ 			continue;
+ 		}
+ 
+@@ -326,13 +328,11 @@ static struct iscsi_np *iscsit_get_np(
+ 			 * while iscsi_tpg_add_network_portal() is called.
+ 			 */
+ 			np->np_exports++;
+-			spin_unlock(&np->np_thread_lock);
+-			spin_unlock_bh(&np_lock);
++			spin_unlock_bh(&np->np_thread_lock);
+ 			return np;
+ 		}
+-		spin_unlock(&np->np_thread_lock);
++		spin_unlock_bh(&np->np_thread_lock);
+ 	}
+-	spin_unlock_bh(&np_lock);
+ 
+ 	return NULL;
+ }
+@@ -346,16 +346,22 @@ struct iscsi_np *iscsit_add_np(
+ 	struct sockaddr_in6 *sock_in6;
+ 	struct iscsi_np *np;
+ 	int ret;
++
++	mutex_lock(&np_lock);
++
+ 	/*
+ 	 * Locate the existing struct iscsi_np if already active..
+ 	 */
+ 	np = iscsit_get_np(sockaddr, network_transport);
+-	if (np)
++	if (np) {
++		mutex_unlock(&np_lock);
+ 		return np;
++	}
+ 
+ 	np = kzalloc(sizeof(struct iscsi_np), GFP_KERNEL);
+ 	if (!np) {
+ 		pr_err("Unable to allocate memory for struct iscsi_np\n");
++		mutex_unlock(&np_lock);
+ 		return ERR_PTR(-ENOMEM);
+ 	}
+ 
+@@ -378,6 +384,7 @@ struct iscsi_np *iscsit_add_np(
+ 	ret = iscsi_target_setup_login_socket(np, sockaddr);
+ 	if (ret != 0) {
+ 		kfree(np);
++		mutex_unlock(&np_lock);
+ 		return ERR_PTR(ret);
+ 	}
+ 
+@@ -386,6 +393,7 @@ struct iscsi_np *iscsit_add_np(
+ 		pr_err("Unable to create kthread: iscsi_np\n");
+ 		ret = PTR_ERR(np->np_thread);
+ 		kfree(np);
++		mutex_unlock(&np_lock);
+ 		return ERR_PTR(ret);
+ 	}
+ 	/*
+@@ -396,10 +404,10 @@ struct iscsi_np *iscsit_add_np(
+ 	 * point because iscsi_np has not been added to g_np_list yet.
+ 	 */
+ 	np->np_exports = 1;
++	np->np_thread_state = ISCSI_NP_THREAD_ACTIVE;
+ 
+-	spin_lock_bh(&np_lock);
+ 	list_add_tail(&np->np_list, &g_np_list);
+-	spin_unlock_bh(&np_lock);
++	mutex_unlock(&np_lock);
+ 
+ 	pr_debug("CORE[0] - Added Network Portal: %s:%hu on %s\n",
+ 		np->np_ip, np->np_port, np->np_transport->name);
+@@ -469,9 +477,9 @@ int iscsit_del_np(struct iscsi_np *np)
+ 
+ 	np->np_transport->iscsit_free_np(np);
+ 
+-	spin_lock_bh(&np_lock);
++	mutex_lock(&np_lock);
+ 	list_del(&np->np_list);
+-	spin_unlock_bh(&np_lock);
++	mutex_unlock(&np_lock);
+ 
+ 	pr_debug("CORE[0] - Removed Network Portal: %s:%hu on %s\n",
+ 		np->np_ip, np->np_port, np->np_transport->name);
 -- 
 1.8.3.2
 
