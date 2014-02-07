@@ -1,40 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751728AbaBGRgn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 12:36:43 -0500
-Received: from fieldses.org ([174.143.236.118]:57584 "EHLO fieldses.org"
+	id S1751722AbaBGRlc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 12:41:32 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:58585 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750993AbaBGRgl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 12:36:41 -0500
-Date: Fri, 7 Feb 2014 12:36:36 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, akpm@linux-foundation.org, dhowells@redhat.com,
-        zab@redhat.com, jack@suse.cz, luto@amacapital.net, mszeredi@suse.cz
-Subject: Re: [PATCH 01/13] vfs: add d_is_dir()
-Message-ID: <20140207173636.GA8801@fieldses.org>
-References: <1391791751-2533-1-git-send-email-miklos@szeredi.hu>
- <1391791751-2533-2-git-send-email-miklos@szeredi.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1391791751-2533-2-git-send-email-miklos@szeredi.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751136AbaBGRlb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 12:41:31 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dave Hansen <dave@sr71.net>, Michal Hocko <mhocko@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch] drop_caches: add some documentation and info message
+Date: Fri,  7 Feb 2014 12:40:51 -0500
+Message-Id: <1391794851-11412-1-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 07, 2014 at 05:48:59PM +0100, Miklos Szeredi wrote:
-> From: Miklos Szeredi <mszeredi@suse.cz>
-> 
-> Add d_is_dir(dentry) helper which is analogous to S_ISDIR().
+From: Dave Hansen <dave@linux.vnet.ibm.com>
 
-While trying to get up to speed I notice that these flags were
-introduced by b18825a7c8e37a7cf6abb97a12a6ad71af160de7 "VFS: Put a small
-type field into struct dentry::d_flags" whose changelog tells me "what"
-but not "why".  So out of curiosity: was that some kind of optimization,
-or was there some other reason for it?
+There is plenty of anecdotal evidence and a load of blog posts
+suggesting that using "drop_caches" periodically keeps your system
+running in "tip top shape".  Perhaps adding some kernel documentation
+will increase the amount of accurate data on its use.
 
---b.
+If we are not shrinking caches effectively, then we have real bugs.
+Using drop_caches will simply mask the bugs and make them harder to
+find, but certainly does not fix them, nor is it an appropriate
+"workaround" to limit the size of the caches.  On the contrary, there
+have been bug reports on issues that turned out to be misguided use of
+cache dropping.
+
+Dropping caches is a very drastic and disruptive operation that is
+good for debugging and running tests, but if it creates bug reports
+from production use, kernel developers should be aware of its use.
+
+Add a bit more documentation about it, and add a little KERN_NOTICE.
+
+[akpm@linux-foundation.org: checkpatch fixes]
+Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ Documentation/sysctl/vm.txt | 33 +++++++++++++++++++++++++++------
+ fs/drop_caches.c            |  4 ++++
+ 2 files changed, 31 insertions(+), 6 deletions(-)
+
+diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
+index d614a9b6a280..36278c610a5f 100644
+--- a/Documentation/sysctl/vm.txt
++++ b/Documentation/sysctl/vm.txt
+@@ -175,18 +175,39 @@ Setting this to zero disables periodic writeback altogether.
+ 
+ drop_caches
+ 
+-Writing to this will cause the kernel to drop clean caches, dentries and
+-inodes from memory, causing that memory to become free.
++Writing to this will cause the kernel to drop clean caches, as well as
++reclaimable slab objects like dentries and inodes.  Once dropped, their
++memory becomes free.
+ 
+ To free pagecache:
+ 	echo 1 > /proc/sys/vm/drop_caches
+-To free dentries and inodes:
++To free reclaimable slab objects (includes dentries and inodes):
+ 	echo 2 > /proc/sys/vm/drop_caches
+-To free pagecache, dentries and inodes:
++To free slab objects and pagecache:
+ 	echo 3 > /proc/sys/vm/drop_caches
+ 
+-As this is a non-destructive operation and dirty objects are not freeable, the
+-user should run `sync' first.
++This is a non-destructive operation and will not free any dirty objects.
++To increase the number of objects freed by this operation, the user may run
++`sync' prior to writing to /proc/sys/vm/drop_caches.  This will minimize the
++number of dirty objects on the system and create more candidates to be
++dropped.
++
++This file is not a means to control the growth of the various kernel caches
++(inodes, dentries, pagecache, etc...)  These objects are automatically
++reclaimed by the kernel when memory is needed elsewhere on the system.
++
++Use of this file can cause performance problems.  Since it discards cached
++objects, it may cost a significant amount of I/O and CPU to recreate the
++dropped objects, especially if they were under heavy use.  Because of this,
++use outside of a testing or debugging environment is not recommended.
++
++You may see informational messages in your kernel log when this file is
++used:
++
++	cat (1234): dropped kernel caches: 3
++
++These are informational only.  They do not mean that anything is wrong
++with your system.
+ 
+ ==============================================================
+ 
+diff --git a/fs/drop_caches.c b/fs/drop_caches.c
+index 9fd702f5bfb2..3579d391e950 100644
+--- a/fs/drop_caches.c
++++ b/fs/drop_caches.c
+@@ -5,6 +5,7 @@
+ #include <linux/kernel.h>
+ #include <linux/mm.h>
+ #include <linux/fs.h>
++#include <linux/ratelimit.h>
+ #include <linux/writeback.h>
+ #include <linux/sysctl.h>
+ #include <linux/gfp.h>
+@@ -59,6 +60,9 @@ int drop_caches_sysctl_handler(ctl_table *table, int write,
+ 	if (ret)
+ 		return ret;
+ 	if (write) {
++		printk_ratelimited(KERN_INFO "%s (%d): dropped kernel caches: %d\n",
++				   current->comm, task_pid_nr(current),
++				   sysctl_drop_caches);
+ 		if (sysctl_drop_caches & 1)
+ 			iterate_supers(drop_pagecache_sb, NULL);
+ 		if (sysctl_drop_caches & 2)
+-- 
+1.8.5.3
+
