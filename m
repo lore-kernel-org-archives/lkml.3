@@ -1,40 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754964AbaBGMvr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:51:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39462 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753412AbaBGMvX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 07:51:23 -0500
-Message-ID: <52F4D6BE.5060609@redhat.com>
-Date: Fri, 07 Feb 2014 07:51:10 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Rashika Kheria <rashika.kheria@gmail.com>, linux-kernel@vger.kernel.org
-CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
-        linux-mm@kvack.org, josh@joshtriplett.org
-Subject: Re: [PATCH 1/9] mm: Mark function as static in compaction.c
-References: <a7658fc8f2ab015bffe83de1448cc3db79d2a9fc.1391167128.git.rashika.kheria@gmail.com>
-In-Reply-To: <a7658fc8f2ab015bffe83de1448cc3db79d2a9fc.1391167128.git.rashika.kheria@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1756116AbaBGMwY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:52:24 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41882 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753030AbaBGLuI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 06:50:08 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Malcolm Priestley <tvboxspy@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 103/233] staging: vt6656: CARDqGetNextTBTT correct uLowNextTBTT
+Date: Fri,  7 Feb 2014 11:45:22 +0000
+Message-Id: <1391773652-25214-104-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
+References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2014 07:01 AM, Rashika Kheria wrote:
-> Mark function as static in compaction.c because it is not used outside
-> this file.
-> 
-> This eliminates the following warning from mm/compaction.c:
-> mm/compaction.c:1190:9: warning: no previous prototype for ‘sysfs_compact_node’ [-Wmissing-prototypes
-> 
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+3.11.10.4 -stable review patch.  If anyone has any objections, please let me know.
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+------------------
 
+From: Malcolm Priestley <tvboxspy@gmail.com>
+
+commit 9acec059c0cef0bf086c738f4c0b1f4447782a48 upstream.
+
+value uLowNextTBTT yields wrong value.
+
+ULL is needed with qwTSF
+
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/staging/vt6656/card.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/staging/vt6656/card.c b/drivers/staging/vt6656/card.c
+index 24291ae..0beb246 100644
+--- a/drivers/staging/vt6656/card.c
++++ b/drivers/staging/vt6656/card.c
+@@ -761,7 +761,7 @@ u64 CARDqGetNextTBTT(u64 qwTSF, u16 wBeaconInterval)
+ 
+     uBeaconInterval = wBeaconInterval * 1024;
+     // Next TBTT = ((local_current_TSF / beacon_interval) + 1 ) * beacon_interval
+-	uLowNextTBTT = ((qwTSF & 0xffffffffU) >> 10) << 10;
++	uLowNextTBTT = ((qwTSF & 0xffffffffULL) >> 10) << 10;
+ 	uLowRemain = (uLowNextTBTT) % uBeaconInterval;
+ 	uHighRemain = ((0x80000000 % uBeaconInterval) * 2 * (u32)(qwTSF >> 32))
+ 		% uBeaconInterval;
 -- 
-All rights reversed
+1.8.3.2
+
