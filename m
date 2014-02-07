@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752629AbaBGMNX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:13:23 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42272 "EHLO
+	id S1752959AbaBGMNn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:13:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42267 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753660AbaBGLvt (ORCPT
+	with ESMTP id S1755195AbaBGLvr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:51:49 -0500
+	Fri, 7 Feb 2014 06:51:47 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andreas Schwab <schwab@linux-m68k.org>, Alexander Graf <agraf@suse.de>,
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 179/233] KVM: PPC: Book3S HV: use xics_wake_cpu only when defined
-Date: Fri,  7 Feb 2014 11:46:38 +0000
-Message-Id: <1391773652-25214-180-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 173/233] mm/memory-failure.c: shift page lock from head page to tail page after thp split
+Date: Fri,  7 Feb 2014 11:46:32 +0000
+Message-Id: <1391773652-25214-174-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -27,46 +31,143 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Schwab <schwab@linux-m68k.org>
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-commit 48eaef0518a565d3852e301c860e1af6a6db5a84 upstream.
+commit 54b9dd14d09f24927285359a227aa363ce46089e upstream.
 
-Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
-Signed-off-by: Alexander Graf <agraf@suse.de>
+After thp split in hwpoison_user_mappings(), we hold page lock on the
+raw error page only between try_to_unmap, hence we are in danger of race
+condition.
+
+I found in the RHEL7 MCE-relay testing that we have "bad page" error
+when a memory error happens on a thp tail page used by qemu-kvm:
+
+  Triggering MCE exception on CPU 10
+  mce: [Hardware Error]: Machine check events logged
+  MCE exception done on CPU 10
+  MCE 0x38c535: Killing qemu-kvm:8418 due to hardware memory corruption
+  MCE 0x38c535: dirty LRU page recovery: Recovered
+  qemu-kvm[8418]: segfault at 20 ip 00007ffb0f0f229a sp 00007fffd6bc5240 error 4 in qemu-kvm[7ffb0ef14000+420000]
+  BUG: Bad page state in process qemu-kvm  pfn:38c400
+  page:ffffea000e310000 count:0 mapcount:0 mapping:          (null) index:0x7ffae3c00
+  page flags: 0x2fffff0008001d(locked|referenced|uptodate|dirty|swapbacked)
+  Modules linked in: hwpoison_inject mce_inject vhost_net macvtap macvlan ...
+  CPU: 0 PID: 8418 Comm: qemu-kvm Tainted: G   M        --------------   3.10.0-54.0.1.el7.mce_test_fixed.x86_64 #1
+  Hardware name: NEC NEC Express5800/R120b-1 [N8100-1719F]/MS-91E7-001, BIOS 4.6.3C19 02/10/2011
+  Call Trace:
+    dump_stack+0x19/0x1b
+    bad_page.part.59+0xcf/0xe8
+    free_pages_prepare+0x148/0x160
+    free_hot_cold_page+0x31/0x140
+    free_hot_cold_page_list+0x46/0xa0
+    release_pages+0x1c1/0x200
+    free_pages_and_swap_cache+0xad/0xd0
+    tlb_flush_mmu.part.46+0x4c/0x90
+    tlb_finish_mmu+0x55/0x60
+    exit_mmap+0xcb/0x170
+    mmput+0x67/0xf0
+    vhost_dev_cleanup+0x231/0x260 [vhost_net]
+    vhost_net_release+0x3f/0x90 [vhost_net]
+    __fput+0xe9/0x270
+    ____fput+0xe/0x10
+    task_work_run+0xc4/0xe0
+    do_exit+0x2bb/0xa40
+    do_group_exit+0x3f/0xa0
+    get_signal_to_deliver+0x1d0/0x6e0
+    do_signal+0x48/0x5e0
+    do_notify_resume+0x71/0xc0
+    retint_signal+0x48/0x8c
+
+The reason of this bug is that a page fault happens before unlocking the
+head page at the end of memory_failure().  This strange page fault is
+trying to access to address 0x20 and I'm not sure why qemu-kvm does
+this, but anyway as a result the SIGSEGV makes qemu-kvm exit and on the
+way we catch the bad page bug/warning because we try to free a locked
+page (which was the former head page.)
+
+To fix this, this patch suggests to shift page lock from head page to
+tail page just after thp split.  SIGSEGV still happens, but it affects
+only error affected VMs, not a whole system.
+
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/powerpc/kvm/book3s_hv.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ mm/memory-failure.c | 21 +++++++++++----------
+ 1 file changed, 11 insertions(+), 10 deletions(-)
 
-diff --git a/arch/powerpc/kvm/book3s_hv.c b/arch/powerpc/kvm/book3s_hv.c
-index 7629cd3..5648808 100644
---- a/arch/powerpc/kvm/book3s_hv.c
-+++ b/arch/powerpc/kvm/book3s_hv.c
-@@ -82,10 +82,13 @@ void kvmppc_fast_vcpu_kick(struct kvm_vcpu *vcpu)
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index e79f395..bfee485 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -854,14 +854,14 @@ static int page_action(struct page_state *ps, struct page *p,
+  * the pages and send SIGBUS to the processes if the data was dirty.
+  */
+ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
+-				  int trapno, int flags)
++				  int trapno, int flags, struct page **hpagep)
+ {
+ 	enum ttu_flags ttu = TTU_UNMAP | TTU_IGNORE_MLOCK | TTU_IGNORE_ACCESS;
+ 	struct address_space *mapping;
+ 	LIST_HEAD(tokill);
+ 	int ret;
+ 	int kill = 1, forcekill;
+-	struct page *hpage = compound_head(p);
++	struct page *hpage = *hpagep;
+ 	struct page *ppage;
  
- 	/* CPU points to the first thread of the core */
- 	if (cpu != me && cpu >= 0 && cpu < nr_cpu_ids) {
-+#ifdef CONFIG_KVM_XICS
- 		int real_cpu = cpu + vcpu->arch.ptid;
- 		if (paca[real_cpu].kvm_hstate.xics_phys)
- 			xics_wake_cpu(real_cpu);
--		else if (cpu_online(cpu))
-+		else
-+#endif
-+		if (cpu_online(cpu))
- 			smp_send_reschedule(cpu);
- 	}
- 	put_cpu();
-@@ -1090,7 +1093,9 @@ static void kvmppc_start_thread(struct kvm_vcpu *vcpu)
- 	smp_wmb();
- #if defined(CONFIG_PPC_ICP_NATIVE) && defined(CONFIG_SMP)
- 	if (vcpu->arch.ptid) {
-+#ifdef CONFIG_KVM_XICS
- 		xics_wake_cpu(cpu);
-+#endif
- 		++vc->n_woken;
- 	}
- #endif
+ 	if (PageReserved(p) || PageSlab(p))
+@@ -940,11 +940,14 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
+ 			 * We pinned the head page for hwpoison handling,
+ 			 * now we split the thp and we are interested in
+ 			 * the hwpoisoned raw page, so move the refcount
+-			 * to it.
++			 * to it. Similarly, page lock is shifted.
+ 			 */
+ 			if (hpage != p) {
+ 				put_page(hpage);
+ 				get_page(p);
++				lock_page(p);
++				unlock_page(hpage);
++				*hpagep = p;
+ 			}
+ 			/* THP is split, so ppage should be the real poisoned page. */
+ 			ppage = p;
+@@ -962,17 +965,11 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
+ 	if (kill)
+ 		collect_procs(ppage, &tokill);
+ 
+-	if (hpage != ppage)
+-		lock_page(ppage);
+-
+ 	ret = try_to_unmap(ppage, ttu);
+ 	if (ret != SWAP_SUCCESS)
+ 		printk(KERN_ERR "MCE %#lx: failed to unmap page (mapcount=%d)\n",
+ 				pfn, page_mapcount(ppage));
+ 
+-	if (hpage != ppage)
+-		unlock_page(ppage);
+-
+ 	/*
+ 	 * Now that the dirty bit has been propagated to the
+ 	 * struct page and all unmaps done we can decide if
+@@ -1189,8 +1186,12 @@ int memory_failure(unsigned long pfn, int trapno, int flags)
+ 	/*
+ 	 * Now take care of user space mappings.
+ 	 * Abort on fail: __delete_from_page_cache() assumes unmapped page.
++	 *
++	 * When the raw error page is thp tail page, hpage points to the raw
++	 * page after thp split.
+ 	 */
+-	if (hwpoison_user_mappings(p, pfn, trapno, flags) != SWAP_SUCCESS) {
++	if (hwpoison_user_mappings(p, pfn, trapno, flags, &hpage)
++	    != SWAP_SUCCESS) {
+ 		printk(KERN_ERR "MCE %#lx: cannot unmap page, give up\n", pfn);
+ 		res = -EBUSY;
+ 		goto out;
 -- 
 1.8.3.2
 
