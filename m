@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754080AbaBGLzU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:55:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42561 "EHLO
+	id S1755447AbaBGLwx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:52:53 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42525 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755458AbaBGLwz (ORCPT
+	with ESMTP id S1752951AbaBGLwp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:52:55 -0500
+	Fri, 7 Feb 2014 06:52:45 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Marek Roszko <mark.roszko@gmail.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Duan Jiong <duanj.fnst@cn.fujitsu.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 227/233] tty/serial: at91: Handle shutdown more safely
-Date: Fri,  7 Feb 2014 11:47:26 +0000
-Message-Id: <1391773652-25214-228-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 220/233] ip_tunnel: clear IPCB in ip_tunnel_xmit() in case dst_link_failure() is called
+Date: Fri,  7 Feb 2014 11:47:19 +0000
+Message-Id: <1391773652-25214-221-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -29,76 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marek Roszko <mark.roszko@gmail.com>
+From: Duan Jiong <duanj.fnst@cn.fujitsu.com>
 
-commit 0cc7c6c7916b1b6f34350ff1473b80b9f7e459c0 upstream.
+commit 11c21a307d79ea5f6b6fc0d3dfdeda271e5e65f6 upstream.
 
-Interrupts were being cleaned up late in the shutdown handler, it is possible
-that an interrupt can occur and schedule a tasklet that runs after the port is
-cleaned up. There is a null dereference due to this race condition with the
-following stacktrace:
+commit a622260254ee48("ip_tunnel: fix kernel panic with icmp_dest_unreach")
+clear IPCB in ip_tunnel_xmit()  , or else skb->cb[] may contain garbage from
+GSO segmentation layer.
 
-[<c02092b0>] (atmel_tasklet_func+0x514/0x814) from [<c001fd34>] (tasklet_action+0x70/0xa8)
-[<c001fd34>] (tasklet_action+0x70/0xa8) from [<c001f60c>] (__do_softirq+0x90/0x144)
-[<c001f60c>] (__do_softirq+0x90/0x144) from [<c001fa18>] (irq_exit+0x40/0x4c)
-[<c001fa18>] (irq_exit+0x40/0x4c) from [<c000e298>] (handle_IRQ+0x64/0x84)
-[<c000e298>] (handle_IRQ+0x64/0x84) from [<c000d6c0>] (__irq_svc+0x40/0x50)
-[<c000d6c0>] (__irq_svc+0x40/0x50) from [<c0208060>] (atmel_rx_dma_release+0x88/0xb8)
-[<c0208060>] (atmel_rx_dma_release+0x88/0xb8) from [<c0209740>] (atmel_shutdown+0x104/0x160)
-[<c0209740>] (atmel_shutdown+0x104/0x160) from [<c0205e8c>] (uart_port_shutdown+0x2c/0x38)
+But commit 0e6fbc5b6c621("ip_tunnels: extend iptunnel_xmit()") refactor codes,
+and it clear IPCB behind the dst_link_failure().
 
-Signed-off-by: Marek Roszko <mark.roszko@gmail.com>
-Acked-by: Leilei Zhao <leilei.zhao@atmel.com>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+So clear IPCB in ip_tunnel_xmit() just like commti a622260254ee48("ip_tunnel:
+fix kernel panic with icmp_dest_unreach").
+
+Signed-off-by: Duan Jiong <duanj.fnst@cn.fujitsu.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/tty/serial/atmel_serial.c | 20 +++++++++++++-------
- 1 file changed, 13 insertions(+), 7 deletions(-)
+ net/ipv4/ip_tunnel.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
-index 691265f..b70276d 100644
---- a/drivers/tty/serial/atmel_serial.c
-+++ b/drivers/tty/serial/atmel_serial.c
-@@ -1022,12 +1022,24 @@ static int atmel_startup(struct uart_port *port)
- static void atmel_shutdown(struct uart_port *port)
- {
- 	struct atmel_uart_port *atmel_port = to_atmel_uart_port(port);
-+
- 	/*
--	 * Ensure everything is stopped.
-+	 * Clear out any scheduled tasklets before
-+	 * we destroy the buffers
-+	 */
-+	tasklet_kill(&atmel_port->tasklet);
-+
-+	/*
-+	 * Ensure everything is stopped and
-+	 * disable all interrupts, port and break condition.
- 	 */
- 	atmel_stop_rx(port);
- 	atmel_stop_tx(port);
+diff --git a/net/ipv4/ip_tunnel.c b/net/ipv4/ip_tunnel.c
+index ffc2108..b6829f4 100644
+--- a/net/ipv4/ip_tunnel.c
++++ b/net/ipv4/ip_tunnel.c
+@@ -621,6 +621,7 @@ void ip_tunnel_xmit(struct sk_buff *skb, struct net_device *dev,
+ 				tunnel->err_time + IPTUNNEL_ERR_TIMEO)) {
+ 			tunnel->err_count--;
  
-+	UART_PUT_CR(port, ATMEL_US_RSTSTA);
-+	UART_PUT_IDR(port, -1);
-+
-+
- 	/*
- 	 * Shut-down the DMA.
- 	 */
-@@ -1054,12 +1066,6 @@ static void atmel_shutdown(struct uart_port *port)
- 	}
- 
- 	/*
--	 * Disable all interrupts, port and break condition.
--	 */
--	UART_PUT_CR(port, ATMEL_US_RSTSTA);
--	UART_PUT_IDR(port, -1);
--
--	/*
- 	 * Free the interrupt
- 	 */
- 	free_irq(port->irq, port);
++			memset(IPCB(skb), 0, sizeof(*IPCB(skb)));
+ 			dst_link_failure(skb);
+ 		} else
+ 			tunnel->err_count = 0;
 -- 
 1.8.3.2
 
