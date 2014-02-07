@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847AbaBGPU7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 10:20:59 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:42735 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751961AbaBGPU6 (ORCPT
+	id S1752911AbaBGPWG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 10:22:06 -0500
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:58101 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752691AbaBGPWD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 10:20:58 -0500
-Date: Fri, 7 Feb 2014 10:20:57 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Zoran Markovic <zoran.markovic@linaro.org>
-cc: lkml <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        Shaibal Dutta <shaibal.dutta@broadcom.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Xenia Ragiadakou <burzalodowa@gmail.com>,
-        Julius Werner <jwerner@chromium.org>,
-        Krzysztof Mazur <krzysiek@podlesie.net>,
-        Matthias Beyer <mail@beyermatthias.de>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Thomas Pugliese <thomas.pugliese@gmail.com>
-Subject: Re: [RFC PATCHv2] usb: move hub init and LED blink work to power
- efficient workqueue
-In-Reply-To: <CAME+o4nK+hOs+TygwzVzDBTUMfF7dWs9WVg2FTMSt6neYckVtA@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1402071018400.1326-100000@iolanthe.rowland.org>
+	Fri, 7 Feb 2014 10:22:03 -0500
+Date: Fri, 7 Feb 2014 10:21:58 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Filipe Brandenburger <filbranden@google.com>,
+        Li Zefan <lizefan@huawei.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>,
+        Markus Blank-Burian <burian@muenster.de>,
+        Shawn Bohrer <shawn.bohrer@gmail.com>, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] cgroup: use an ordered workqueue for cgroup destruction
+Message-ID: <20140207152158.GC3304@htj.dyndns.org>
+References: <alpine.LSU.2.11.1402061541560.31342@eggly.anvils>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.11.1402061541560.31342@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please don't top-post.
+On Thu, Feb 06, 2014 at 03:56:01PM -0800, Hugh Dickins wrote:
+> Sometimes the cleanup after memcg hierarchy testing gets stuck in
+> mem_cgroup_reparent_charges(), unable to bring non-kmem usage down to 0.
+> 
+> There may turn out to be several causes, but a major cause is this: the
+> workitem to offline parent can get run before workitem to offline child;
+> parent's mem_cgroup_reparent_charges() circles around waiting for the
+> child's pages to be reparented to its lrus, but it's holding cgroup_mutex
+> which prevents the child from reaching its mem_cgroup_reparent_charges().
+> 
+> Just use an ordered workqueue for cgroup_destroy_wq.
+> 
+> Fixes: e5fca243abae ("cgroup: use a dedicated workqueue for cgroup destruction")
+> Suggested-by: Filipe Brandenburger <filbranden@google.com>
+> Signed-off-by: Hugh Dickins <hughd@google.com>
+> Cc: stable@vger.kernel.org # 3.10+
 
-On Fri, 7 Feb 2014, Zoran Markovic wrote:
+Applied to cgroup/for-3.14-fixes with comment updated to indicate that
+this is temporary.
 
-> I believe there may still be use cases where you want to wake up the
-> same CPU that scheduled the work.
+Thanks.
 
-Won't the majority of cases not care which CPU is used?  Therefore,
-shouldn't the default behavior be to use the power-efficient work
-queue?
-
-> Thanks for the Ack. Can you please queue this for 3.14?
-
-That's up to Greg KH.  He may decide it's not important enough to go 
-into 3.14, and delay it until 3.15.
-
-Alan Stern
-
+-- 
+tejun
