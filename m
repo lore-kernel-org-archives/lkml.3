@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752861AbaBGTa7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 14:30:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47757 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751463AbaBGTa6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 14:30:58 -0500
-Message-ID: <52F53425.7060308@redhat.com>
-Date: Fri, 07 Feb 2014 14:29:41 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Dave Hansen <dave@sr71.net>,
-        Michal Hocko <mhocko@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] drop_caches: add some documentation and info message
-References: <1391794851-11412-1-git-send-email-hannes@cmpxchg.org> <52F51E19.9000406@redhat.com> <20140207181332.GG6963@cmpxchg.org>
-In-Reply-To: <20140207181332.GG6963@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1752178AbaBGTeE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 14:34:04 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:48689 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751209AbaBGTeC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 14:34:02 -0500
+Message-ID: <1391801805.1155.30.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH 0/4] minor blk-mq updates
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Date: Fri, 07 Feb 2014 11:36:45 -0800
+In-Reply-To: <20140207182235.659185141@bombadil.infradead.org>
+References: <20140207182235.659185141@bombadil.infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2014 01:13 PM, Johannes Weiner wrote:
+On Fri, 2014-02-07 at 10:22 -0800, Christoph Hellwig wrote:
+> Hi Jens,
+> 
+> these small blk-mq core updates fell out of the scsi multiqueue work.
 
->> Would it be better to print this after the operation
->> has completed?
->
-> It would make more sense grammatically :-) Either way is fine with me,
-> updated below to inform after the fact.
+That reminds me, the following blk-mq patch was required to get DIF
+working with scsi-mq.
 
-Well, in principle the operation could take an arbitrarily
-long time, so there are some minor concerns besides
-grammatical correctness, too :)
+Jens, care to pick this up as well..?
 
-Thanks for updating the patch.
+--nab
 
-> ---
-> From: Dave Hansen <dave@linux.vnet.ibm.com>
-> Date: Fri, 12 Oct 2012 14:30:54 +0200
-> Subject: [patch] drop_caches: add some documentation and info message
+>From 1428a390cc16025f93905852777d4afd8aeba05d Mon Sep 17 00:00:00 2001
+From: Nicholas Bellinger <nab@linux-iscsi.org>
+Date: Sun, 22 Dec 2013 11:58:49 +0000
+Subject: blk-mq: Add bio_integrity setup to blk_mq_make_request
 
-> Dropping caches is a very drastic and disruptive operation that is
-> good for debugging and running tests, but if it creates bug reports
-> from production use, kernel developers should be aware of its use.
->
-> Add a bit more documentation about it, and add a little KERN_NOTICE.
->
-> [akpm@linux-foundation.org: checkpatch fixes]
-> Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+This patch adds the missing bio_integrity_enabled() +
+bio_integrity_prep() setup into blk_mq_make_request()
+in order to use DIF protection with scsi-mq.
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Martin K. Petersen <martin.petersen@oracle.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+---
+diff --git a/block/blk-mq.c b/block/blk-mq.c
+index c79126e..a520c39 100644
+--- a/block/blk-mq.c
++++ b/block/blk-mq.c
+@@ -916,6 +916,11 @@ static void blk_mq_make_request(struct request_queue *q, struct bio *bio)
+ 
+ 	blk_queue_bounce(q, &bio);
+ 
++	if (bio_integrity_enabled(bio) && bio_integrity_prep(bio)) {
++		bio_endio(bio, -EIO);
++		return;
++	}
++
+ 	if (use_plug && blk_attempt_plug_merge(q, bio, &request_count))
+ 		return;
+ 
 
