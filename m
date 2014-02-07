@@ -1,151 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752707AbaBGSKb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 13:10:31 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:49233 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751468AbaBGSK3 (ORCPT
+	id S1753143AbaBGSM4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 13:12:56 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38418 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752111AbaBGSMx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 13:10:29 -0500
-Message-ID: <52F52189.5090506@free-electrons.com>
-Date: Fri, 07 Feb 2014 19:10:17 +0100
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 7 Feb 2014 13:12:53 -0500
+Date: Fri, 7 Feb 2014 17:52:34 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Andy Gross <agross@codeaurora.org>
+Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linux-spi@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Alok Chauhan <alokc@codeaurora.org>,
+        Gilad Avidov <gavidov@codeaurora.org>,
+        Kiran Gunda <kgunda@codeaurora.org>,
+        Sagar Dharia <sdharia@codeaurora.org>
+Message-ID: <20140207175234.GJ1757@sirena.org.uk>
+References: <1391705868-20091-1-git-send-email-iivanov@mm-sol.com>
+ <1391705868-20091-3-git-send-email-iivanov@mm-sol.com>
+ <20140207073952.GA2610@qualcomm.com>
+ <1391766753.27491.60.camel@iivanov-dev>
+ <20140207173207.GA19974@qualcomm.com>
 MIME-Version: 1.0
-To: =?UTF-8?B?RW1pbGlvIEzDs3Bleg==?= <emilio@elopez.com.ar>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>
-CC: Mike Turquette <mturquette@linaro.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH] clk: respect the clock dependencies in of_clk_init
-References: <1391554766-11285-1-git-send-email-gregory.clement@free-electrons.com> <52F4DA40.4090804@elopez.com.ar> <20140207142430.GU8533@titan.lakedaemon.net> <20140207144325.GA8218@localhost> <52F4F279.6010006@free-electrons.com> <52F4F502.2010703@elopez.com.ar> <52F4F7EF.7090900@free-electrons.com> <52F506E4.8070900@elopez.com.ar>
-In-Reply-To: <52F506E4.8070900@elopez.com.ar>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="GvznHscUikHnwW2p"
+Content-Disposition: inline
+In-Reply-To: <20140207173207.GA19974@qualcomm.com>
+X-Cookie: Colors may fade.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/2] spi: Add Qualcomm QUP SPI controller support
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/2014 17:16, Emilio López wrote:
-> Hi Gregory,
-> 
-> El 07/02/14 12:12, Gregory CLEMENT escribió:
->> On 07/02/2014 16:00, Emilio López wrote:
->>> El 07/02/14 11:49, Gregory CLEMENT escribió:
->>>> On 07/02/2014 15:43, Ezequiel Garcia wrote:
->>>>> On Fri, Feb 07, 2014 at 09:24:30AM -0500, Jason Cooper wrote:
->>>>>> On Fri, Feb 07, 2014 at 10:06:08AM -0300, Emilio López wrote:
->>>>>>
->>>>>> [snip a great explanation]
->>>>>>
->>>>>> Guys, can I get some Tested-by's on this?
->>>>>>
->>>>>
->>>>> In case someone missed Emilio's comment about it, I gave his oneliner
->>>>> a test on A370 Reference Design. It worked just as well as Sebastian's.
->>>>
->>>> Well ok it's working but this patch is not better than Sebastian, it is
->>>> even worth. I don't think it is a good idea at all to totally ignore the
->>>> information given by the device tree.
->>>
->>> With a bit more work, you can replace the clk_get magic with a call to
->>> of_clk_get_parent_name() or similar to be able to keep overriding stuff
->>> from DT. This way it would completely match the behaviour on
->>> mvebu_coreclk_setup (default to "tclk", allow overriding with DT).
->>>
->>
->> I think you didn't have a look on our implementation:
-> 
-> I did, several times in fact.
-> 
->> the name of the clock
->> are created by the driver during the initialization.
-> 
-> The name of the clock is always "tclk", as hardcoded on the driver, 
-> unless overridden via clock-output-names from DT (see 
-> mvebu_coreclk_setup). Currently none of your DT that I can see does 
-> this, so in practice it's always "tclk".
 
-It's not because currently we always use "tclk" that we should not use
-the information given by the device tree. Else it will be very
-misleading to have a information written in the dts and doing something
-else in the code.
+--GvznHscUikHnwW2p
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 
->> That's why we need that
->> the parent clock are initialized before the gating clock.
-> 
-> You don't really *need* that. The driver just does that because it may 
+On Fri, Feb 07, 2014 at 11:32:07AM -0600, Andy Gross wrote:
+> On Fri, Feb 07, 2014 at 11:52:33AM +0200, Ivan T. Ivanov wrote:
 
-We need it, see my comment in your code.
+To repeat what I said in my earlier e-mail please delete irrelevant
+context from your mails so any new content you are including is
+discoverable.
 
-> have been convenient at the time and it worked. Defaulting to "tclk" on 
-> mvebu_clk_gating_setup and overriding it if it turns out it has some 
-> other name on the DT (just like on mvebu_coreclk_setup!) should work as 
-> well, and doesn't require complex, bloaty, dependency management.
-> 
-> Rough, untested patch below, so you get the idea.
-> 
-> Cheers,
-> 
-> Emilio
-> 
-> 
-> 
-> ---
->   drivers/clk/mvebu/common.c | 13 +++++++------
->   1 file changed, 7 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/clk/mvebu/common.c b/drivers/clk/mvebu/common.c
-> index 25ceccf..730625b 100644
-> --- a/drivers/clk/mvebu/common.c
-> +++ b/drivers/clk/mvebu/common.c
-> @@ -119,19 +119,20 @@ void __init mvebu_clk_gating_setup(struct 
-> device_node *np,
->   				   const struct clk_gating_soc_desc *desc)
->   {
->   	struct clk_gating_ctrl *ctrl;
-> -	struct clk *clk;
->   	void __iomem *base;
-> -	const char *default_parent = NULL;
-> +	struct of_phandle_args clkspec;
-> +	const char *default_parent = "tclk";
->   	int n;
-> 
->   	base = of_iomap(np, 0);
->   	if (WARN_ON(!base))
->   		return;
-> 
-> -	clk = of_clk_get(np, 0);
-> -	if (!IS_ERR(clk)) {
-> -		default_parent = __clk_get_name(clk);
-> -		clk_put(clk);
-> +	if (!of_parse_phandle_with_args(np, "clocks", "#clock-cells", 0, 
-> &clkspec)) {
-> +		of_property_read_string_index(clkspec.np, "clock-output-names",
-> +					      clkspec.args_count ? clkspec.args[0] : 0,
-> +					      &default_parent);
-> +		of_node_put(clkspec.np);
+> > Did you see any particular issue with the implementation=20
+> > or this is just because this platform didn't have support=20
+> > for power management? =20
 
-OK here you duplicate the code from of_clk_get_parent_name, I wonder why
-you didn't use the function.But whatever.
+> The platform doesn't have support for PM right now.  So it's probably bet=
+ter to
+> remove all this and revisit later when it is in place.
 
-Here you will get default_parent = "mvebu-sar" which is the name of the node, you
-can't have "tclk" because this name is not in the device tree, but it will be
-created by the initialization of the core clocks.
+No, runtime PM does not require any platform support at all and is good
+practice - look at what the driver is doing with it, it's useful as-is.
 
->   	}
-> 
->   	ctrl = kzalloc(sizeof(*ctrl), GFP_KERNEL);
-> 
+--GvznHscUikHnwW2p
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
--- 
-Gregory Clement, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+iQIcBAEBAgAGBQJS9R1fAAoJELSic+t+oim9OmUP/iHNbNDHKHr6AV3Pv+4I4l+e
+MM8ISSMCTNSU6FLtema15sFFco2ECZSDwB6zuirSA91/gUu/GrOsaKrQbsx8ejLI
+gJUadbM06VqrqP0Tu0dBLkth/pD0qP9a5+nxI2dDnU1MiaIOL3WLhReHX4kyYStG
+7NZeLSSxwwtA78Y3jvotoLutkzy9FHgNAypEK5Muf9QKd+Wbxeo1uys7Ic8l49em
+Tyyyk+yJHhr20UqXUHaSSZxlxWJCYErlKOI42Xy0ZmZd1cGKUiNC1OOViOwJ7K8U
+DmhFbN5+jrrkCqjtXfTi2cshMsGqZ4XqMvfipsHMTBGRLrRuTo4iEKmcITpU7hIr
+LMQSjmOlC62fi+SE8DfjKF/istWFVFaVXMa63BzmNl9nQIdkQFHpxeWx+Cy5xiT8
+xfOPDArdcxy10M6FpUt8VrwO1EebR9FhY2Y8gG1nJQYOx1Wf19ivkM2WchJXZhym
+NVX6A9lR104lEiShxkZxz8aLVzc6Cf+j+kUQRFwWnLM8j74f3w4mbRsuNhL8Uq6X
+7lq/qs7hy4LUL/H8S9/5ywA+8JY1eYCEPDbrtCg++TCHkf/9ntWLIlrs0grfWNHf
+VrS0Q98ypFegOhoKgi0Wa2tHJxBxJYERQ0+KJuE3SNse7yg+4I6CWL/z1QIw7V+0
+8WH2WpLnCYr4R9v33bui
+=pgCV
+-----END PGP SIGNATURE-----
+
+--GvznHscUikHnwW2p--
