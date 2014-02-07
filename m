@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753870AbaBGLd4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:33:56 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41106 "EHLO
+	id S1753880AbaBGLeR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:34:17 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41109 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753070AbaBGLYy (ORCPT
+	with ESMTP id S1753059AbaBGLYy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 Feb 2014 06:24:54 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>, Joerg Roedel <joro@8bytes.org>,
+Cc: Takashi Iwai <tiwai@suse.de>, Jiri Slaby <jslaby@suse.cz>,
+        David Airlie <airlied@linux.ie>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Airlie <airlied@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 60/88] intel-iommu: fix off-by-one in pagetable freeing
-Date: Fri,  7 Feb 2014 11:22:57 +0000
-Message-Id: <1391772205-22239-61-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 62/88] drm/cirrus: correct register values for 16bpp
+Date: Fri,  7 Feb 2014 11:22:59 +0000
+Message-Id: <1391772205-22239-63-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
@@ -30,63 +30,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Williamson <alex.williamson@redhat.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 08336fd218e087cc4fcc458e6b6dcafe8702b098 upstream.
+commit 2510538fa000dd13a3e57b79bf073ffb1748976c upstream.
 
-dma_pte_free_level() has an off-by-one error when checking whether a pte
-is completely covered by a range.  Take for example the case of
-attempting to free pfn 0x0 - 0x1ff, ie.  512 entries covering the first
-2M superpage.
+When the mode is set with 16bpp on QEMU, the output gets totally broken.
+The culprit is the bogus register values set for 16bpp, which was likely
+copied from from a wrong place.
 
-The level_size() is 0x200 and we test:
+Addresses https://bugzilla.novell.com/show_bug.cgi?id=799216
 
-  static void dma_pte_free_level(...
-	...
-
-	if (!(0 > 0 || 0x1ff < 0 + 0x200)) {
-		...
-	}
-
-Clearly the 2nd test is true, which means we fail to take the branch to
-clear and free the pagetable entry.  As a result, we're leaking
-pagetables and failing to install new pages over the range.
-
-This was found with a PCI device assigned to a QEMU guest using vfio-pci
-without a VGA device present.  The first 1M of guest address space is
-mapped with various combinations of 4K pages, but eventually the range
-is entirely freed and replaced with a 2M contiguous mapping.
-intel-iommu errors out with something like:
-
-  ERROR: DMA PTE for vPFN 0x0 already set (to 5c2b8003 not 849c00083)
-
-In this case 5c2b8003 is the pointer to the previous leaf page that was
-neither freed nor cleared and 849c00083 is the superpage entry that
-we're trying to replace it with.
-
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Joerg Roedel <joro@8bytes.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: David Airlie <airlied@linux.ie>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/iommu/intel-iommu.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/cirrus/cirrus_mode.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index f3535d9..2052974 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -914,7 +914,7 @@ static void dma_pte_free_level(struct dmar_domain *domain, int level,
- 
- 		/* If range covers entire pagetable, free it */
- 		if (!(start_pfn > level_pfn ||
--		      last_pfn < level_pfn + level_size(level))) {
-+		      last_pfn < level_pfn + level_size(level) - 1)) {
- 			dma_clear_pte(pte);
- 			domain_flush_cache(domain, pte, sizeof(*pte));
- 			free_pgtable_page(level_pte);
+diff --git a/drivers/gpu/drm/cirrus/cirrus_mode.c b/drivers/gpu/drm/cirrus/cirrus_mode.c
+index 100f630..93d4fef 100644
+--- a/drivers/gpu/drm/cirrus/cirrus_mode.c
++++ b/drivers/gpu/drm/cirrus/cirrus_mode.c
+@@ -274,8 +274,8 @@ static int cirrus_crtc_mode_set(struct drm_crtc *crtc,
+ 		sr07 |= 0x11;
+ 		break;
+ 	case 16:
+-		sr07 |= 0xc1;
+-		hdr = 0xc0;
++		sr07 |= 0x17;
++		hdr = 0xc1;
+ 		break;
+ 	case 24:
+ 		sr07 |= 0x15;
 -- 
 1.8.3.2
 
