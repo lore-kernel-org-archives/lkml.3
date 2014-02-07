@@ -1,79 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755251AbaBGLwJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:52:09 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42322 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932486AbaBGLwA (ORCPT
+	id S1753180AbaBGMHQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:07:16 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:42032 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752998AbaBGMHK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:52:00 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Paul Mackerras <paulus@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 187/233] powerpc: Make sure "cache" directory is removed when offlining cpu
-Date: Fri,  7 Feb 2014 11:46:46 +0000
-Message-Id: <1391773652-25214-188-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
-References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Fri, 7 Feb 2014 07:07:10 -0500
+Date: Fri, 7 Feb 2014 17:37:05 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Rashika Kheria <rashika.kheria@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>, linux-mm@kvack.org,
+        josh@joshtriplett.org
+Subject: [PATCH 4/9] mm: Mark function as static in process_vm_access.c
+Message-ID: <cd2e33f9fd5b160ef5108273d7dbabd8259c4f07.1391167128.git.rashika.kheria@gmail.com>
+References: <a7658fc8f2ab015bffe83de1448cc3db79d2a9fc.1391167128.git.rashika.kheria@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <a7658fc8f2ab015bffe83de1448cc3db79d2a9fc.1391167128.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.4 -stable review patch.  If anyone has any objections, please let me know.
+Mark function as static in process_vm_access.c because it is not used
+outside this file.
 
-------------------
+This eliminates the following warning in mm/process_vm_access.c:
+mm/process_vm_access.c:416:1: warning: no previous prototype for ‘compat_process_vm_rw’ [-Wmissing-prototypes]
 
-From: Paul Mackerras <paulus@samba.org>
-
-commit 91b973f90c1220d71923e7efe1e61f5329806380 upstream.
-
-The code in remove_cache_dir() is supposed to remove the "cache"
-subdirectory from the sysfs directory for a CPU when that CPU is
-being offlined.  It tries to do this by calling kobject_put() on
-the kobject for the subdirectory.  However, the subdirectory only
-gets removed once the last reference goes away, and the reference
-being put here may well not be the last reference.  That means
-that the "cache" subdirectory may still exist when the offlining
-operation has finished.  If the same CPU subsequently gets onlined,
-the code tries to add a new "cache" subdirectory.  If the old
-subdirectory has not yet been removed, we get a WARN_ON in the
-sysfs code, with stack trace, and an error message printed on the
-console.  Further, we ultimately end up with an online cpu with no
-"cache" subdirectory.
-
-This fixes it by doing an explicit kobject_del() at the point where
-we want the subdirectory to go away.  kobject_del() removes the sysfs
-directory even though the object still exists in memory.  The object
-will get freed at some point in the future.  A subsequent onlining
-operation can create a new sysfs directory, even if the old object
-still exists in memory, without causing any problems.
-
-Signed-off-by: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- arch/powerpc/kernel/cacheinfo.c | 3 +++
- 1 file changed, 3 insertions(+)
+ mm/process_vm_access.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/powerpc/kernel/cacheinfo.c b/arch/powerpc/kernel/cacheinfo.c
-index 9262cf2..2eab23c 100644
---- a/arch/powerpc/kernel/cacheinfo.c
-+++ b/arch/powerpc/kernel/cacheinfo.c
-@@ -794,6 +794,9 @@ static void remove_cache_dir(struct cache_dir *cache_dir)
- {
- 	remove_index_dirs(cache_dir);
+diff --git a/mm/process_vm_access.c b/mm/process_vm_access.c
+index fd26d04..f3aabbd 100644
+--- a/mm/process_vm_access.c
++++ b/mm/process_vm_access.c
+@@ -412,7 +412,7 @@ SYSCALL_DEFINE6(process_vm_writev, pid_t, pid,
  
-+	/* Remove cache dir from sysfs */
-+	kobject_del(cache_dir->kobj);
-+
- 	kobject_put(cache_dir->kobj);
+ #ifdef CONFIG_COMPAT
  
- 	kfree(cache_dir);
+-asmlinkage ssize_t
++static asmlinkage ssize_t
+ compat_process_vm_rw(compat_pid_t pid,
+ 		     const struct compat_iovec __user *lvec,
+ 		     unsigned long liovcnt,
 -- 
-1.8.3.2
+1.7.9.5
 
