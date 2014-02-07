@@ -1,127 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751198AbaBGHFd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 02:05:33 -0500
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:45147 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708AbaBGHFb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 02:05:31 -0500
-Message-ID: <52F484D9.6020604@linux.vnet.ibm.com>
-Date: Fri, 07 Feb 2014 12:31:45 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1751246AbaBGHMD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 02:12:03 -0500
+Received: from mail.precitec.de ([85.115.17.50]:29519 "EHLO mail.precitec.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750708AbaBGHMB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 02:12:01 -0500
+X-Greylist: delayed 351 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Feb 2014 02:12:01 EST
+X-CTCH-RefID: str=0001.0A0C0208.52F485DD.01B5,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+From: Bockholdt Arne <a.bockholdt@precitec-optronik.de>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Fengguang Wu <fengguang.wu@intel.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [sched/preempt] INFO: rcu_sched self-detected stall on CPU { 1}
+Thread-Topic: [sched/preempt] INFO: rcu_sched self-detected stall on CPU { 1}
+Thread-Index: AQHPIyHyPOWZ9aSzg0Cc3cR9rBWeq5qoBdGAgAAFU4CAAAY8gIAAAtoAgAE63wA=
+Date: Fri, 7 Feb 2014 07:06:04 +0000
+Message-ID: <1391756764.3973.56.camel@po-d-abo-ubu>
+References: <20140206095646.GE17971@localhost>
+	 <20140206112731.GH4941@twins.programming.kicks-ass.net>
+	 <20140206114635.GA27429@localhost> <1391688533.8136.8.camel@po-d-abo-ubu>
+	 <20140206121906.GJ4941@twins.programming.kicks-ass.net>
+In-Reply-To: <20140206121906.GJ4941@twins.programming.kicks-ass.net>
+Accept-Language: en-US, de-DE
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.168.201.50]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <A460173C8DF01E48B31678A5750FD3F6@precitecgroup.com>
 MIME-Version: 1.0
-To: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-CC: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linuxppc-dev@lists.ozlabs.org,
-        Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/2] PPC: powernv: remove redundant cpuidle_idle_call()
-References: <1391696188-14540-1-git-send-email-nicolas.pitre@linaro.org> <CAKnoXLxCAqKaniGOwegNcOarS4FpoNKDY5PxOhe6j4wdtUAkLQ@mail.gmail.com> <52F3BCFE.3010703@linux.vnet.ibm.com> <alpine.LFD.2.11.1402070105170.1906@knanqh.ubzr>
-In-Reply-To: <alpine.LFD.2.11.1402070105170.1906@knanqh.ubzr>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14020707-1396-0000-0000-00000440E752
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s177CDnX010655
 
-Hi Nicolas,
-
-Find below the patch that will need to be squashed with this one.
-This patch is based on the mainline.Adding Deepthi, the author of
-the patch which introduced the powernv cpuidle driver. Deepthi,
-do you think the below patch looks right? We do not need to do an
-explicit local_irq_enable() since we are in the call path of
-cpuidle driver and that explicitly enables irqs on exit from
-idle states.
-
-On 02/07/2014 06:47 AM, Nicolas Pitre wrote:
-> On Thu, 6 Feb 2014, Preeti U Murthy wrote:
+On Thu, 2014-02-06 at 13:19 +0100, Peter Zijlstra wrote: 
+> On Thu, Feb 06, 2014 at 12:08:54PM +0000, Bockholdt Arne wrote:
+> > This on a a Intel Rangeley Silvermont Atom 8 core machine running kernel
+> > 3.13.1/i386 as KVM host with several KVM guests. Tested with the same
+> > configuration on kernel 3.12.9 and 3.11.6 without the stall. The stall
+> > is 100% reproducible when the KVM guests are under load.
+> > Kernel 3.13.1 does NOT contain the patch below AFAIK.
 > 
->> Hi Daniel,
->>
->> On 02/06/2014 09:55 PM, Daniel Lezcano wrote:
->>> Hi Nico,
->>>
->>>
->>> On 6 February 2014 14:16, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
->>>
->>>> The core idle loop now takes care of it.
->>>>
->>>> Signed-off-by: Nicolas Pitre <nico@linaro.org>
->>>> ---
->>>>  arch/powerpc/platforms/powernv/setup.c | 13 +------------
->>>>  1 file changed, 1 insertion(+), 12 deletions(-)
->>>>
->>>> diff --git a/arch/powerpc/platforms/powernv/setup.c
->>>> b/arch/powerpc/platforms/powernv/setup.c
->>>> index 21166f65c9..a932feb290 100644
->>>> --- a/arch/powerpc/platforms/powernv/setup.c
->>>> +++ b/arch/powerpc/platforms/powernv/setup.c
->>>> @@ -26,7 +26,6 @@
->>>>  #include <linux/of_fdt.h>
->>>>  #include <linux/interrupt.h>
->>>>  #include <linux/bug.h>
->>>> -#include <linux/cpuidle.h>
->>>>
->>>>  #include <asm/machdep.h>
->>>>  #include <asm/firmware.h>
->>>> @@ -217,16 +216,6 @@ static int __init pnv_probe(void)
->>>>         return 1;
->>>>  }
->>>>
->>>> -void powernv_idle(void)
->>>> -{
->>>> -       /* Hook to cpuidle framework if available, else
->>>> -        * call on default platform idle code
->>>> -        */
->>>> -       if (cpuidle_idle_call()) {
->>>> -               power7_idle();
->>>> -       }
->>>>
+> 3.13 doesn't include 8cb75e0c4ec9786b81439761eac1d18d4a931af3 either.
+> 
+> can you try a recent linux.git? Also, can you test with a 64bit kernel
+> too?
 
- drivers/cpuidle/cpuidle-powernv.c |    4 ++++
- 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/cpuidle/cpuidle-powernv.c b/drivers/cpuidle/cpuidle-powernv.c
-index 78fd174..130f081 100644
---- a/drivers/cpuidle/cpuidle-powernv.c
-+++ b/drivers/cpuidle/cpuidle-powernv.c
-@@ -31,11 +31,13 @@ static int snooze_loop(struct cpuidle_device *dev,
- 	set_thread_flag(TIF_POLLING_NRFLAG);
- 
- 	while (!need_resched()) {
-+		ppc64_runlatch_off();
- 		HMT_low();
- 		HMT_very_low();
- 	}
- 
- 	HMT_medium();
-+	ppc64_runlatch_on();
- 	clear_thread_flag(TIF_POLLING_NRFLAG);
- 	smp_mb();
- 	return index;
-@@ -45,7 +47,9 @@ static int nap_loop(struct cpuidle_device *dev,
- 			struct cpuidle_driver *drv,
- 			int index)
- {
-+	ppc64_runlatch_off();
- 	power7_idle();
-+	ppc64_runlatch_on();
- 	return index;
- }
- 
-Thanks
+The machine isn't exactly a test box but I've tried to run the latest Linus 3.14-rc git and got an error about a symbol version mismatch (see below). I will try it again at the weekend when there is more time for tests like this.
 
-Regards
-Preeti U Murthy
+Feb  6 21:25:45 kvm-server kernel: [    3.479594] usbhid: disagrees about version of symbol schedule_timeout
+Feb  6 21:25:45 kvm-server kernel: [    3.479599] usbhid: Unknown symbol schedule_timeout (err -22)
+Feb  6 21:25:45 kvm-server kernel: [    3.479819] usbhid: disagrees about version of symbol schedule_timeout
+Feb  6 21:25:45 kvm-server kernel: [    3.479823] usbhid: Unknown symbol schedule_timeout (err -22)
+Feb  6 21:25:45 kvm-server kernel: [    3.668097] EXT4-fs (sdc1): mounted filesystem with ordered data mode. Opts: (null)
+Feb  6 21:25:45 kvm-server kernel: [    3.884211] random: init urandom read with 84 bits of entropy available
+Feb  6 21:25:45 kvm-server kernel: [    4.180695] random: nonblocking pool is initialized
+Feb  6 21:25:45 kvm-server kernel: [    4.213268] EXT4-fs (sdc1): re-mounted. Opts: errors=remount-ro,discard
+Feb  6 21:25:45 kvm-server kernel: [    4.262349] i801_smbus 0000:00:1f.3: SMBus using PCI Interrupt
+Feb  6 21:25:45 kvm-server kernel: [    4.282062] ismt_smbus 0000:00:13.0: irq 53 for MSI/MSI-X
+Feb  6 21:25:45 kvm-server kernel: [    4.289796] pps_core: disagrees about version of symbol schedule_timeout
+Feb  6 21:25:45 kvm-server kernel: [    4.289803] pps_core: Unknown symbol schedule_timeout (err -22)
+Feb  6 21:25:45 kvm-server kernel: [    4.292363] pps_core: disagrees about version of symbol schedule_timeout
 
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
