@@ -1,91 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755763AbaBGNBf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 08:01:35 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41787 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754629AbaBGLtj (ORCPT
+	id S1755788AbaBGNB4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 08:01:56 -0500
+Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:60435 "EHLO
+	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752926AbaBGNBx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:49:39 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Peter Huewe <peterhuewe@gmx.de>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 082/233] tpm/tpm_i2c_stm_st33: Check return code of get_burstcount
-Date: Fri,  7 Feb 2014 11:45:01 +0000
-Message-Id: <1391773652-25214-83-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
-References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Fri, 7 Feb 2014 08:01:53 -0500
+Message-ID: <52F4D76F.8070301@st.com>
+Date: Fri, 7 Feb 2014 12:54:07 +0000
+From: srinivas kandagatla <srinivas.kandagatla@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: <linux-arm-kernel@lists.infradead.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <kernel@stlinux.com>, Arnd Bergmann <arnd@arndb.de>,
+        <stephen.gallimore@st.com>, Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH v2 0/6] ARM: STi reset controller support
+References: <1389696613-19683-1-git-send-email-srinivas.kandagatla@st.com>	 <1391437665-11913-1-git-send-email-srinivas.kandagatla@st.com> <1391592486.11239.4.camel@pizza.hi.pengutronix.de>
+In-Reply-To: <1391592486.11239.4.camel@pizza.hi.pengutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.65.51.147]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.4 -stable review patch.  If anyone has any objections, please let me know.
+Hi Philipp,
+Thankyou for looking at the patches.
 
-------------------
 
-From: Peter Huewe <PeterHuewe@gmx.de>
+On 05/02/14 09:28, Philipp Zabel wrote:
+> Hi Srinivas,
+> 
+...
+> 
+> the patchset looks good to me for the soft resets. But for the powerdown
+> bits I am wondering whether the reset controller API is the right
+> abstraction. Depending on whether those bits really just put the IPs
+> into reset or there is some power gating / sequencing involved,
+> shouldn't this rather be handled as a set of pm domains?
 
-commit 85c5e0d451125c6ddb78663972e40af810b83644 upstream.
+The hardware name of these control signals into the devices is
+slightly unfortunate and a bit misleading. We do not generally
+have separate power domains for peripheral devices in our
+current STB SoCs, in the sense that the voltage cannot actually be
+removed from individual devices. In the USB case we believe the
+powerdown signals internally gate off two of the three
+incoming clocks to most of the USB controller's logic blocks,
+essentially holding the device in a disabled (enable/disable
+might have been a better name for the signal) state.
 
-The 'get_burstcount' function can in some circumstances 'return -EBUSY' which
-in tpm_stm_i2c_send is stored in an 'u32 burstcnt'
-thus converting the signed value into an unsigned value, resulting
-in 'burstcnt' being huge.
-Changing the type to u32 only does not solve the problem as the signed
-value is converted to an unsigned in I2C_WRITE_DATA, resulting in the
-same effect.
+The primary requirement to manipulate these signals is to bring
+the device out of its cold boot default powerdown/disabled/reset
+(whatever you want to call it) state when the device is probed or
+after a SoC wide power loss when resuming from PM_SUSPEND_MEM.
 
-Thus
--> Change type of burstcnt to u32 (the return type of get_burstcount)
--> Add a check for the return value of 'get_burstcount' and propagate a
-potential error.
 
-This makes also sense in the 'I2C_READ_DATA' case, where the there is no
-signed/unsigned conversion.
+> I see that for example on STiH415 there are both soft resets and
+> powerdown bits for USB[012].
 
-found by coverity
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/char/tpm/tpm_i2c_stm_st33.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+Our IPs typically have two or sometimes three signals going into
+them, controlled from outside of the IP block itself (typically using
+SoC global system configuration registers) that you could view
+as "reset-a-like"; that is toggling each of the signals puts the IP
+into a state where it is in some way unusable and then back to
+being useable again. The reset controller API appeared to be the
+natural abstraction for the drivers to be given access to such control
+signals, regardless of the precise effect the signals have on the
+device's internal state.
 
-diff --git a/drivers/char/tpm/tpm_i2c_stm_st33.c b/drivers/char/tpm/tpm_i2c_stm_st33.c
-index 5bb8e2d..156bd3c 100644
---- a/drivers/char/tpm/tpm_i2c_stm_st33.c
-+++ b/drivers/char/tpm/tpm_i2c_stm_st33.c
-@@ -410,6 +410,8 @@ static int recv_data(struct tpm_chip *chip, u8 *buf, size_t count)
- 			     &chip->vendor.read_queue)
- 	       == 0) {
- 		burstcnt = get_burstcount(chip);
-+		if (burstcnt < 0)
-+			return burstcnt;
- 		len = min_t(int, burstcnt, count - size);
- 		I2C_READ_DATA(client, TPM_DATA_FIFO, buf + size, len);
- 		size += len;
-@@ -451,7 +453,8 @@ static irqreturn_t tpm_ioserirq_handler(int irq, void *dev_id)
- static int tpm_stm_i2c_send(struct tpm_chip *chip, unsigned char *buf,
- 			    size_t len)
- {
--	u32 status, burstcnt = 0, i, size;
-+	u32 status, i, size;
-+	int burstcnt = 0;
- 	int ret;
- 	u8 data;
- 	struct i2c_client *client;
-@@ -482,6 +485,8 @@ static int tpm_stm_i2c_send(struct tpm_chip *chip, unsigned char *buf,
- 
- 	for (i = 0; i < len - 1;) {
- 		burstcnt = get_burstcount(chip);
-+		if (burstcnt < 0)
-+			return burstcnt;
- 		size = min_t(int, len - i - 1, burstcnt);
- 		ret = I2C_WRITE_DATA(client, TPM_DATA_FIFO, buf, size);
- 		if (ret < 0)
--- 
-1.8.3.2
+With regards to sequencing between these signals; it is the case that
+there is a likely sequencing because at least in the USB case it is
+thought that the "powerdown" stops the clock going to the reset chain
+logic. But we did not see that as an issue as the reset controller
+framework allows for multiple named "reset" lines being defined for
+a device through its DT attributes. The driver knows which signal
+is which and what each does, because it asks for them by name;
+therefore, it knows how to impose any required ordering when changing
+the state of those signals.
+
+
+Thanks,
+srini
 
