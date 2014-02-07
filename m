@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752718AbaBGBkg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 20:40:36 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:63046 "EHLO
+	id S1752673AbaBGBke (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 20:40:34 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:50477 "EHLO
 	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774AbaBGBfm (ORCPT
+	with ESMTP id S1751426AbaBGBfn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 20:35:42 -0500
-X-AuditID: 9c93017d-b7b1fae00000636d-a6-52f4386d2085
+	Thu, 6 Feb 2014 20:35:43 -0500
+X-AuditID: 9c93017d-b7b1fae00000636d-a9-52f4386d80c6
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Rodrigo Campos <rodrigo@sdfg.com.ar>, Andi Kleen <andi@firstfloor.org>,
         David Ahern <dsahern@gmail.com>
-Subject: [PATCH 02/21] perf hists: Add support for accumulated stat of hist entry
-Date: Fri,  7 Feb 2014 10:35:04 +0900
-Message-Id: <1391736923-30765-3-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 03/21] perf hists: Check if accumulated when adding a hist entry
+Date: Fri,  7 Feb 2014 10:35:05 +0900
+Message-Id: <1391736923-30765-4-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1391736923-30765-1-git-send-email-namhyung@kernel.org>
 References: <1391736923-30765-1-git-send-email-namhyung@kernel.org>
@@ -27,128 +27,216 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Maintain accumulated stat information in hist_entry->stat_acc if
-symbol_conf.cumulate_callchain is set.  Fields in ->stat_acc have same
-vaules initially, and will be updated as callchain is processed later.
+To support callchain accumulation, @entry should be recognized if it's
+accumulated or not when add_hist_entry() called.  The period of an
+accumulated entry should be added to ->stat_acc but not ->stat. Add
+@sample_self arg for that.
 
 Tested-by: Arun Sharma <asharma@fb.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/hist.c   | 28 ++++++++++++++++++++++++++--
- tools/perf/util/sort.h   |  1 +
- tools/perf/util/symbol.h |  1 +
- 3 files changed, 28 insertions(+), 2 deletions(-)
+ tools/perf/builtin-annotate.c |  3 ++-
+ tools/perf/builtin-diff.c     |  2 +-
+ tools/perf/builtin-top.c      |  2 +-
+ tools/perf/tests/hists_link.c |  4 ++--
+ tools/perf/util/hist.c        | 29 ++++++++++++++++++-----------
+ tools/perf/util/hist.h        |  3 ++-
+ 6 files changed, 26 insertions(+), 17 deletions(-)
 
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index 0da603b79b61..70b2d52c3b2e 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -65,7 +65,8 @@ static int perf_evsel__add_sample(struct perf_evsel *evsel,
+ 		return 0;
+ 	}
+ 
+-	he = __hists__add_entry(&evsel->hists, al, NULL, NULL, NULL, 1, 1, 0);
++	he = __hists__add_entry(&evsel->hists, al, NULL, NULL, NULL, 1, 1, 0,
++				true);
+ 	if (he == NULL)
+ 		return -ENOMEM;
+ 
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index a77e31246c00..93912add75b5 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -308,7 +308,7 @@ static int hists__add_entry(struct hists *hists,
+ 			    u64 weight, u64 transaction)
+ {
+ 	if (__hists__add_entry(hists, al, NULL, NULL, NULL, period, weight,
+-			       transaction) != NULL)
++			       transaction, true) != NULL)
+ 		return 0;
+ 	return -ENOMEM;
+ }
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index ed99ec4a309f..40e430530168 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -245,7 +245,7 @@ static struct hist_entry *perf_evsel__add_hist_entry(struct perf_evsel *evsel,
+ 	pthread_mutex_lock(&evsel->hists.lock);
+ 	he = __hists__add_entry(&evsel->hists, al, NULL, NULL, NULL,
+ 				sample->period, sample->weight,
+-				sample->transaction);
++				sample->transaction, true);
+ 	pthread_mutex_unlock(&evsel->hists.lock);
+ 	if (he == NULL)
+ 		return NULL;
+diff --git a/tools/perf/tests/hists_link.c b/tools/perf/tests/hists_link.c
+index 2b6519e0e36f..e4e931ec1dbb 100644
+--- a/tools/perf/tests/hists_link.c
++++ b/tools/perf/tests/hists_link.c
+@@ -223,7 +223,7 @@ static int add_hist_entries(struct perf_evlist *evlist, struct machine *machine)
+ 				goto out;
+ 
+ 			he = __hists__add_entry(&evsel->hists, &al, NULL,
+-						NULL, NULL, 1, 1, 0);
++						NULL, NULL, 1, 1, 0, true);
+ 			if (he == NULL)
+ 				goto out;
+ 
+@@ -246,7 +246,7 @@ static int add_hist_entries(struct perf_evlist *evlist, struct machine *machine)
+ 				goto out;
+ 
+ 			he = __hists__add_entry(&evsel->hists, &al, NULL,
+-						NULL, NULL, 1, 1, 0);
++						NULL, NULL, 1, 1, 0, true);
+ 			if (he == NULL)
+ 				goto out;
+ 
 diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index e7a6d9091455..4119a9dd665f 100644
+index 4119a9dd665f..db474526ba66 100644
 --- a/tools/perf/util/hist.c
 +++ b/tools/perf/util/hist.c
-@@ -238,6 +238,8 @@ static bool hists__decay_entry(struct hists *hists, struct hist_entry *he)
- 		return true;
+@@ -279,7 +279,8 @@ void hists__decay_entries(struct hists *hists, bool zap_user, bool zap_kernel)
+  * histogram, sorted on item, collects periods
+  */
  
- 	he_stat__decay(&he->stat);
-+	if (symbol_conf.cumulate_callchain)
-+		he_stat__decay(he->stat_acc);
- 
- 	if (!he->filtered)
- 		hists->stats.total_period -= prev_period - he->stat.period;
-@@ -279,12 +281,26 @@ void hists__decay_entries(struct hists *hists, bool zap_user, bool zap_kernel)
- 
- static struct hist_entry *hist_entry__new(struct hist_entry *template)
+-static struct hist_entry *hist_entry__new(struct hist_entry *template)
++static struct hist_entry *hist_entry__new(struct hist_entry *template,
++					  bool sample_self)
  {
--	size_t callchain_size = symbol_conf.use_callchain ? sizeof(struct callchain_root) : 0;
--	struct hist_entry *he = zalloc(sizeof(*he) + callchain_size);
-+	size_t callchain_size = 0;
-+	struct hist_entry *he;
-+
-+	if (symbol_conf.use_callchain || symbol_conf.cumulate_callchain)
-+		callchain_size = sizeof(struct callchain_root);
-+
-+	he = zalloc(sizeof(*he) + callchain_size);
- 
- 	if (he != NULL) {
- 		*he = *template;
- 
-+		if (symbol_conf.cumulate_callchain) {
-+			he->stat_acc = malloc(sizeof(he->stat));
-+			if (he->stat_acc == NULL) {
-+				free(he);
-+				return NULL;
-+			}
-+			memcpy(he->stat_acc, &he->stat, sizeof(he->stat));
-+		}
-+
- 		if (he->ms.map)
- 			he->ms.map->referenced = true;
- 
-@@ -296,6 +312,7 @@ static struct hist_entry *hist_entry__new(struct hist_entry *template)
- 			 */
- 			he->branch_info = malloc(sizeof(*he->branch_info));
- 			if (he->branch_info == NULL) {
-+				free(he->stat_acc);
- 				free(he);
+ 	size_t callchain_size = 0;
+ 	struct hist_entry *he;
+@@ -299,6 +300,8 @@ static struct hist_entry *hist_entry__new(struct hist_entry *template)
  				return NULL;
  			}
-@@ -368,6 +385,8 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
+ 			memcpy(he->stat_acc, &he->stat, sizeof(he->stat));
++			if (!sample_self)
++				memset(&he->stat, 0, sizeof(he->stat));
+ 		}
+ 
+ 		if (he->ms.map)
+@@ -360,7 +363,8 @@ static u8 symbol__parent_filter(const struct symbol *parent)
+ 
+ static struct hist_entry *add_hist_entry(struct hists *hists,
+ 					 struct hist_entry *entry,
+-					 struct addr_location *al)
++					 struct addr_location *al,
++					 bool sample_self)
+ {
+ 	struct rb_node **p;
+ 	struct rb_node *parent = NULL;
+@@ -384,7 +388,8 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
+ 		cmp = hist_entry__cmp(he, entry);
  
  		if (!cmp) {
- 			he_stat__add_period(&he->stat, period, weight);
-+			if (symbol_conf.cumulate_callchain)
-+				he_stat__add_period(he->stat_acc, period, weight);
+-			he_stat__add_period(&he->stat, period, weight);
++			if (sample_self)
++				he_stat__add_period(&he->stat, period, weight);
+ 			if (symbol_conf.cumulate_callchain)
+ 				he_stat__add_period(he->stat_acc, period, weight);
  
- 			/*
- 			 * This mem info was allocated from sample__resolve_mem
-@@ -404,6 +423,8 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
+@@ -414,7 +419,7 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
+ 			p = &(*p)->rb_right;
+ 	}
+ 
+-	he = hist_entry__new(entry);
++	he = hist_entry__new(entry, sample_self);
+ 	if (!he)
+ 		return NULL;
+ 
+@@ -422,7 +427,8 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
+ 	rb_link_node(&he->rb_node_in, parent, p);
  	rb_insert_color(&he->rb_node_in, hists->entries_in);
  out:
- 	he_stat__add_cpumode_period(&he->stat, al->cpumode, period);
-+	if (symbol_conf.cumulate_callchain)
-+		he_stat__add_cpumode_period(he->stat_acc, al->cpumode, period);
+-	he_stat__add_cpumode_period(&he->stat, al->cpumode, period);
++	if (sample_self)
++		he_stat__add_cpumode_period(&he->stat, al->cpumode, period);
+ 	if (symbol_conf.cumulate_callchain)
+ 		he_stat__add_cpumode_period(he->stat_acc, al->cpumode, period);
  	return he;
- }
- 
-@@ -775,6 +796,7 @@ void hist_entry__free(struct hist_entry *he)
+@@ -433,7 +439,8 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
+ 				      struct symbol *sym_parent,
+ 				      struct branch_info *bi,
+ 				      struct mem_info *mi,
+-				      u64 period, u64 weight, u64 transaction)
++				      u64 period, u64 weight, u64 transaction,
++				      bool sample_self)
  {
- 	zfree(&he->branch_info);
- 	zfree(&he->mem_info);
-+	zfree(&he->stat_acc);
- 	free_srcline(he->srcline);
- 	free(he);
+ 	struct hist_entry entry = {
+ 		.thread	= al->thread,
+@@ -458,7 +465,7 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
+ 		.transaction = transaction,
+ 	};
+ 
+-	return add_hist_entry(hists, &entry, al);
++	return add_hist_entry(hists, &entry, al, sample_self);
  }
-@@ -800,6 +822,8 @@ static bool hists__collapse_insert_entry(struct hists *hists __maybe_unused,
  
- 		if (!cmp) {
- 			he_stat__add_stat(&iter->stat, &he->stat);
-+			if (symbol_conf.cumulate_callchain)
-+				he_stat__add_stat(iter->stat_acc, he->stat_acc);
+ static int
+@@ -511,7 +518,7 @@ iter_add_single_mem_entry(struct hist_entry_iter *iter, struct addr_location *al
+ 	 * and the he_stat__add_period() function.
+ 	 */
+ 	he = __hists__add_entry(&iter->evsel->hists, al, iter->parent, NULL, mi,
+-				cost, cost, 0);
++				cost, cost, 0, true);
+ 	if (!he)
+ 		return -ENOMEM;
  
- 			if (symbol_conf.use_callchain) {
- 				callchain_cursor_reset(&callchain_cursor);
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 43e5ff42a609..309f2838a1b4 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -81,6 +81,7 @@ struct hist_entry {
- 		struct list_head head;
- 	} pairs;
- 	struct he_stat		stat;
-+	struct he_stat		*stat_acc;
- 	struct map_symbol	ms;
- 	struct thread		*thread;
- 	struct comm		*comm;
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index fffe2888a1c7..410d01da1546 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -97,6 +97,7 @@ struct symbol_conf {
- 			show_nr_samples,
- 			show_total_period,
- 			use_callchain,
-+			cumulate_callchain,
- 			exclude_other,
- 			show_cpu_utilization,
- 			initialized,
+@@ -622,7 +629,7 @@ iter_add_next_branch_entry(struct hist_entry_iter *iter, struct addr_location *a
+ 	 * and not events sampled. Thus we use a pseudo period of 1.
+ 	 */
+ 	he = __hists__add_entry(&evsel->hists, al, iter->parent, &bi[i], NULL,
+-				1, 1, 0);
++				1, 1, 0, true);
+ 	if (he == NULL)
+ 		return -ENOMEM;
+ 
+@@ -668,7 +675,7 @@ iter_add_single_normal_entry(struct hist_entry_iter *iter, struct addr_location
+ 
+ 	he = __hists__add_entry(&evsel->hists, al, iter->parent, NULL, NULL,
+ 				sample->period, sample->weight,
+-				sample->transaction);
++				sample->transaction, true);
+ 	if (he == NULL)
+ 		return -ENOMEM;
+ 
+@@ -1170,7 +1177,7 @@ static struct hist_entry *hists__add_dummy_entry(struct hists *hists,
+ 			p = &(*p)->rb_right;
+ 	}
+ 
+-	he = hist_entry__new(pair);
++	he = hist_entry__new(pair, true);
+ 	if (he) {
+ 		memset(&he->stat, 0, sizeof(he->stat));
+ 		he->hists = hists;
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 49fe04bf10ee..348448d983ec 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -118,7 +118,8 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
+ 				      struct symbol *parent,
+ 				      struct branch_info *bi,
+ 				      struct mem_info *mi, u64 period,
+-				      u64 weight, u64 transaction);
++				      u64 weight, u64 transaction,
++				      bool sample_self);
+ int hist_entry_iter__add(struct hist_entry_iter *iter, struct addr_location *al,
+ 			 struct perf_evsel *evsel, struct perf_sample *sample,
+ 			 int max_stack_depth);
 -- 
 1.7.11.7
 
