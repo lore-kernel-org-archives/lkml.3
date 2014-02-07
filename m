@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932413AbaBGLvb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:51:31 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42168 "EHLO
+	id S1754423AbaBGMSD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:18:03 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42199 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753467AbaBGLvX (ORCPT
+	with ESMTP id S1755097AbaBGLva (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:51:23 -0500
+	Fri, 7 Feb 2014 06:51:30 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>, Joerg Roedel <joro@8bytes.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Ilia Mirkin <imirkin@alum.mit.edu>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 158/233] intel-iommu: fix off-by-one in pagetable freeing
-Date: Fri,  7 Feb 2014 11:46:17 +0000
-Message-Id: <1391773652-25214-159-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 165/233] drm/nouveau/falcon: use vmalloc to create firwmare copies
+Date: Fri,  7 Feb 2014 11:46:24 +0000
+Message-Id: <1391773652-25214-166-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -30,63 +27,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Williamson <alex.williamson@redhat.com>
+From: Ilia Mirkin <imirkin@alum.mit.edu>
 
-commit 08336fd218e087cc4fcc458e6b6dcafe8702b098 upstream.
+commit 90d6db1635d5e225623af2e2e859feb607345287 upstream.
 
-dma_pte_free_level() has an off-by-one error when checking whether a pte
-is completely covered by a range.  Take for example the case of
-attempting to free pfn 0x0 - 0x1ff, ie.  512 entries covering the first
-2M superpage.
+Some firmware images may be large (64K), so using kmalloc memory is
+inappropriate for them. Use vmalloc instead, to avoid high-order
+allocation failures.
 
-The level_size() is 0x200 and we test:
-
-  static void dma_pte_free_level(...
-	...
-
-	if (!(0 > 0 || 0x1ff < 0 + 0x200)) {
-		...
-	}
-
-Clearly the 2nd test is true, which means we fail to take the branch to
-clear and free the pagetable entry.  As a result, we're leaking
-pagetables and failing to install new pages over the range.
-
-This was found with a PCI device assigned to a QEMU guest using vfio-pci
-without a VGA device present.  The first 1M of guest address space is
-mapped with various combinations of 4K pages, but eventually the range
-is entirely freed and replaced with a 2M contiguous mapping.
-intel-iommu errors out with something like:
-
-  ERROR: DMA PTE for vPFN 0x0 already set (to 5c2b8003 not 849c00083)
-
-In this case 5c2b8003 is the pointer to the previous leaf page that was
-neither freed nor cleared and 849c00083 is the superpage entry that
-we're trying to replace it with.
-
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Joerg Roedel <joro@8bytes.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Ilia Mirkin <imirkin@alum.mit.edu>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/iommu/intel-iommu.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/nouveau/core/engine/falcon.c | 20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 40203ad..cae5a08 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -917,7 +917,7 @@ static void dma_pte_free_level(struct dmar_domain *domain, int level,
+diff --git a/drivers/gpu/drm/nouveau/core/engine/falcon.c b/drivers/gpu/drm/nouveau/core/engine/falcon.c
+index e03fc8e..5e077e4 100644
+--- a/drivers/gpu/drm/nouveau/core/engine/falcon.c
++++ b/drivers/gpu/drm/nouveau/core/engine/falcon.c
+@@ -56,6 +56,16 @@ _nouveau_falcon_wr32(struct nouveau_object *object, u64 addr, u32 data)
+ 	nv_wr32(falcon, falcon->addr + addr, data);
+ }
  
- 		/* If range covers entire pagetable, free it */
- 		if (!(start_pfn > level_pfn ||
--		      last_pfn < level_pfn + level_size(level))) {
-+		      last_pfn < level_pfn + level_size(level) - 1)) {
- 			dma_clear_pte(pte);
- 			domain_flush_cache(domain, pte, sizeof(*pte));
- 			free_pgtable_page(level_pte);
++static void *
++vmemdup(const void *src, size_t len)
++{
++	void *p = vmalloc(len);
++
++	if (p)
++		memcpy(p, src, len);
++	return p;
++}
++
+ int
+ _nouveau_falcon_init(struct nouveau_object *object)
+ {
+@@ -111,7 +121,7 @@ _nouveau_falcon_init(struct nouveau_object *object)
+ 
+ 		ret = request_firmware(&fw, name, &device->pdev->dev);
+ 		if (ret == 0) {
+-			falcon->code.data = kmemdup(fw->data, fw->size, GFP_KERNEL);
++			falcon->code.data = vmemdup(fw->data, fw->size);
+ 			falcon->code.size = fw->size;
+ 			falcon->data.data = NULL;
+ 			falcon->data.size = 0;
+@@ -134,7 +144,7 @@ _nouveau_falcon_init(struct nouveau_object *object)
+ 			return ret;
+ 		}
+ 
+-		falcon->data.data = kmemdup(fw->data, fw->size, GFP_KERNEL);
++		falcon->data.data = vmemdup(fw->data, fw->size);
+ 		falcon->data.size = fw->size;
+ 		release_firmware(fw);
+ 		if (!falcon->data.data)
+@@ -149,7 +159,7 @@ _nouveau_falcon_init(struct nouveau_object *object)
+ 			return ret;
+ 		}
+ 
+-		falcon->code.data = kmemdup(fw->data, fw->size, GFP_KERNEL);
++		falcon->code.data = vmemdup(fw->data, fw->size);
+ 		falcon->code.size = fw->size;
+ 		release_firmware(fw);
+ 		if (!falcon->code.data)
+@@ -235,8 +245,8 @@ _nouveau_falcon_fini(struct nouveau_object *object, bool suspend)
+ 	if (!suspend) {
+ 		nouveau_gpuobj_ref(NULL, &falcon->core);
+ 		if (falcon->external) {
+-			kfree(falcon->data.data);
+-			kfree(falcon->code.data);
++			vfree(falcon->data.data);
++			vfree(falcon->code.data);
+ 			falcon->code.data = NULL;
+ 		}
+ 	}
 -- 
 1.8.3.2
 
