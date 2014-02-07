@@ -1,183 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753920AbaBGLgb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:36:31 -0500
-Received: from smtp-vbr7.xs4all.nl ([194.109.24.27]:4806 "EHLO
-	smtp-vbr7.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753745AbaBGLg2 (ORCPT
+	id S1753080AbaBGLYp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:24:45 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40900 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752191AbaBGLX6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:36:28 -0500
-Message-ID: <52F4C51A.90002@xs4all.nl>
-Date: Fri, 07 Feb 2014 12:35:54 +0100
-From: Hans Verkuil <hverkuil@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-kernel@vger.kernel.org, Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH, RFC 07/30] [media] radio-cadet: avoid interruptible_sleep_on
- race
-References: <1388664474-1710039-1-git-send-email-arnd@arndb.de> <201401171528.02016.arnd@arndb.de> <52F4A82C.7010104@xs4all.nl> <55674412.rAimUmdW3X@wuerfel>
-In-Reply-To: <55674412.rAimUmdW3X@wuerfel>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 7 Feb 2014 06:23:58 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Maximilian Attems <maks@stro.at>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.5 20/88] parport: parport_pc: remove double PCI ID for NetMos
+Date: Fri,  7 Feb 2014 11:22:17 +0000
+Message-Id: <1391772205-22239-21-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
+References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2014 11:17 AM, Arnd Bergmann wrote:
-> On Friday 07 February 2014 10:32:28 Hans Verkuil wrote:
->>         mutex_lock(&dev->lock);
->>         if (dev->rdsstat == 0)
->>                 cadet_start_rds(dev);
->> -       if (dev->rdsin == dev->rdsout) {
->> +       while (dev->rdsin == dev->rdsout) {
->>                 if (file->f_flags & O_NONBLOCK) {
->>                         i = -EWOULDBLOCK;
->>                         goto unlock;
->>                 }
->>                 mutex_unlock(&dev->lock);
->> -               interruptible_sleep_on(&dev->read_queue);
->> +               if (wait_event_interruptible(&dev->read_queue,
->> +                                            dev->rdsin != dev->rdsout))
->> +                       return -EINTR;
->>                 mutex_lock(&dev->lock);
->>         }
->>         while (i < count && dev->rdsin != dev->rdsout)
->>
-> 
-> This will normally work, but now the mutex is no longer
-> protecting the shared access to the dev->rdsin and
-> dev->rdsout variables, which was evidently the intention
-> of the author of the original code.
-> 
-> AFAICT, the possible result is a similar race as before:
-> if once CPU changes dev->rdsin after the process in
-> cadet_read dropped the lock, the wakeup may get lost.
-> 
-> It's quite possible this race never happens in practice,
-> but the code is probably still wrong.
-> 
-> If you think we don't actually need the lock to check
-> "dev->rdsin != dev->rdsout", the code can be simplified
-> further, to
-> 
-> 	if ((dev->rdsin == dev->rdsout) && (file->f_flags & O_NONBLOCK)) {
-> 	        return -EWOULDBLOCK;
-> 	i = wait_event_interruptible(&dev->read_queue, dev->rdsin != dev->rdsout);
-> 	if (i)
-> 		return i;
-> 	
-> 	Arnd
-> 
+3.5.7.30 -stable review patch.  If anyone has any objections, please let me know.
 
-OK, let's try again. This patch is getting bigger and bigger, but it is always
-nice to know that your ISA card that almost no one else in the world has is really,
-really working well. :-)
+------------------
 
-Regards,
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-	Hans
+commit d6a484520c5572a4170fa915109ccfc0c38f5008 upstream.
 
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+In commit 85747f ("PATCH] parport: add NetMOS 9805 support") Max added
+the PCI ID for NetMOS 9805 based on a Debian bug report from 2k4 which
+was at the v2.4.26 time frame. The patch made into 2.6.14.
+Shortly before that patch akpm merged commit 296d3c783b ("[PATCH] Support
+NetMOS based PCI cards providing serial and parallel ports") which made
+into v2.6.9-rc1.
+Now we have two different entries for the same PCI id.
+I have here the NetMos 9805 which claims to support SPP/EPP/ECP mode.
+This patch takes Max's entry for titan_1284p1 (base != -1 specifies the
+ioport for ECP mode) and replaces akpm's entry for netmos_9805 which
+specified -1 (=none). Both share the same PCI-ID (my card has subsystem
+0x1000 / 0x0020 so it should match PCI_ANY).
 
-diff --git a/drivers/media/radio/radio-cadet.c b/drivers/media/radio/radio-cadet.c
-index 545c04c..d27e8b2 100644
---- a/drivers/media/radio/radio-cadet.c
-+++ b/drivers/media/radio/radio-cadet.c
-@@ -270,6 +270,16 @@ reset_rds:
- 	outb(inb(dev->io + 1) & 0x7f, dev->io + 1);
- }
- 
-+static bool cadet_has_rds_data(struct cadet *dev)
-+{
-+	bool result;
-+	
-+	mutex_lock(&dev->lock);
-+	result = dev->rdsin != dev->rdsout;
-+	mutex_unlock(&dev->lock);
-+	return result;
-+}
-+
- 
- static void cadet_handler(unsigned long data)
- {
-@@ -279,13 +289,12 @@ static void cadet_handler(unsigned long data)
- 	if (mutex_trylock(&dev->lock)) {
- 		outb(0x3, dev->io);       /* Select RDS Decoder Control */
- 		if ((inb(dev->io + 1) & 0x20) != 0)
--			printk(KERN_CRIT "cadet: RDS fifo overflow\n");
-+			pr_err("cadet: RDS fifo overflow\n");
- 		outb(0x80, dev->io);      /* Select RDS fifo */
-+
- 		while ((inb(dev->io) & 0x80) != 0) {
- 			dev->rdsbuf[dev->rdsin] = inb(dev->io + 1);
--			if (dev->rdsin + 1 == dev->rdsout)
--				printk(KERN_WARNING "cadet: RDS buffer overflow\n");
--			else
-+			if (dev->rdsin + 1 != dev->rdsout)
- 				dev->rdsin++;
- 		}
- 		mutex_unlock(&dev->lock);
-@@ -294,7 +303,7 @@ static void cadet_handler(unsigned long data)
- 	/*
- 	 * Service pending read
- 	 */
--	if (dev->rdsin != dev->rdsout)
-+	if (cadet_has_rds_data(dev))
- 		wake_up_interruptible(&dev->read_queue);
- 
- 	/*
-@@ -327,22 +336,21 @@ static ssize_t cadet_read(struct file *file, char __user *data, size_t count, lo
- 	mutex_lock(&dev->lock);
- 	if (dev->rdsstat == 0)
- 		cadet_start_rds(dev);
--	if (dev->rdsin == dev->rdsout) {
--		if (file->f_flags & O_NONBLOCK) {
--			i = -EWOULDBLOCK;
--			goto unlock;
--		}
--		mutex_unlock(&dev->lock);
--		interruptible_sleep_on(&dev->read_queue);
--		mutex_lock(&dev->lock);
--	}
-+	mutex_unlock(&dev->lock);
-+
-+	if (!cadet_has_rds_data(dev) && (file->f_flags & O_NONBLOCK))
-+		return -EWOULDBLOCK;
-+	i = wait_event_interruptible(dev->read_queue, cadet_has_rds_data(dev));
-+	if (i)
-+		return i;
-+
-+	mutex_lock(&dev->lock);
- 	while (i < count && dev->rdsin != dev->rdsout)
- 		readbuf[i++] = dev->rdsbuf[dev->rdsout++];
-+	mutex_unlock(&dev->lock);
- 
- 	if (i && copy_to_user(data, readbuf, i))
--		i = -EFAULT;
--unlock:
--	mutex_unlock(&dev->lock);
-+		return -EFAULT;
- 	return i;
- }
- 
-@@ -352,7 +360,7 @@ static int vidioc_querycap(struct file *file, void *priv,
- {
- 	strlcpy(v->driver, "ADS Cadet", sizeof(v->driver));
- 	strlcpy(v->card, "ADS Cadet", sizeof(v->card));
--	strlcpy(v->bus_info, "ISA", sizeof(v->bus_info));
-+	strlcpy(v->bus_info, "ISA:radio-cadet", sizeof(v->bus_info));
- 	v->device_caps = V4L2_CAP_TUNER | V4L2_CAP_RADIO |
- 			  V4L2_CAP_READWRITE | V4L2_CAP_RDS_CAPTURE;
- 	v->capabilities = v->device_caps | V4L2_CAP_DEVICE_CAPS;
-@@ -491,7 +499,7 @@ static unsigned int cadet_poll(struct file *file, struct poll_table_struct *wait
- 			cadet_start_rds(dev);
- 		mutex_unlock(&dev->lock);
- 	}
--	if (dev->rdsin != dev->rdsout)
-+	if (cadet_has_rds_data(dev))
- 		res |= POLLIN | POLLRDNORM;
- 	return res;
- }
+While here I also drop the entry for titan_1284p2 which is the same as
+netmos_9815.
+
+Cc: Maximilian Attems <maks@stro.at>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/parport/parport_pc.c | 10 ++--------
+ 1 file changed, 2 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/parport/parport_pc.c b/drivers/parport/parport_pc.c
+index 5abffe5..978bc77 100644
+--- a/drivers/parport/parport_pc.c
++++ b/drivers/parport/parport_pc.c
+@@ -2599,8 +2599,6 @@ enum parport_pc_pci_cards {
+ 	syba_2p_epp,
+ 	syba_1p_ecp,
+ 	titan_010l,
+-	titan_1284p1,
+-	titan_1284p2,
+ 	avlab_1p,
+ 	avlab_2p,
+ 	oxsemi_952,
+@@ -2659,8 +2657,6 @@ static struct parport_pc_pci {
+ 	/* syba_2p_epp AP138B */	{ 2, { { 0, 0x078 }, { 0, 0x178 }, } },
+ 	/* syba_1p_ecp W83787 */	{ 1, { { 0, 0x078 }, } },
+ 	/* titan_010l */		{ 1, { { 3, -1 }, } },
+-	/* titan_1284p1 */              { 1, { { 0, 1 }, } },
+-	/* titan_1284p2 */		{ 2, { { 0, 1 }, { 2, 3 }, } },
+ 	/* avlab_1p		*/	{ 1, { { 0, 1}, } },
+ 	/* avlab_2p		*/	{ 2, { { 0, 1}, { 2, 3 },} },
+ 	/* The Oxford Semi cards are unusual: 954 doesn't support ECP,
+@@ -2676,8 +2672,8 @@ static struct parport_pc_pci {
+ 	/* netmos_9705 */               { 1, { { 0, -1 }, } },
+ 	/* netmos_9715 */               { 2, { { 0, 1 }, { 2, 3 },} },
+ 	/* netmos_9755 */               { 2, { { 0, 1 }, { 2, 3 },} },
+-	/* netmos_9805 */               { 1, { { 0, -1 }, } },
+-	/* netmos_9815 */               { 2, { { 0, -1 }, { 2, -1 }, } },
++	/* netmos_9805 */		{ 1, { { 0, 1 }, } },
++	/* netmos_9815 */		{ 2, { { 0, 1 }, { 2, 3 }, } },
+ 	/* netmos_9901 */               { 1, { { 0, -1 }, } },
+ 	/* netmos_9865 */               { 1, { { 0, -1 }, } },
+ 	/* quatech_sppxp100 */		{ 1, { { 0, 1 }, } },
+@@ -2721,8 +2717,6 @@ static const struct pci_device_id parport_pc_pci_tbl[] = {
+ 	  PCI_ANY_ID, PCI_ANY_ID, 0, 0, syba_1p_ecp },
+ 	{ PCI_VENDOR_ID_TITAN, PCI_DEVICE_ID_TITAN_010L,
+ 	  PCI_ANY_ID, PCI_ANY_ID, 0, 0, titan_010l },
+-	{ 0x9710, 0x9805, 0x1000, 0x0010, 0, 0, titan_1284p1 },
+-	{ 0x9710, 0x9815, 0x1000, 0x0020, 0, 0, titan_1284p2 },
+ 	/* PCI_VENDOR_ID_AVLAB/Intek21 has another bunch of cards ...*/
+ 	/* AFAVLAB_TK9902 */
+ 	{ 0x14db, 0x2120, PCI_ANY_ID, PCI_ANY_ID, 0, 0, avlab_1p},
+-- 
+1.8.3.2
 
