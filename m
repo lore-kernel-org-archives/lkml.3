@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755917AbaBGMDG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:03:06 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42424 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932541AbaBGLwZ (ORCPT
+	id S1755089AbaBGMDS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:03:18 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:35410 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753322AbaBGMDP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:52:25 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Aristeu Rozanski <aris@redhat.com>, Borislav Petkov <bp@suse.de>,
-        Jean Delvare <jdelvare@suse.de>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 206/233] e752x_edac: Fix pci_dev usage count
-Date: Fri,  7 Feb 2014 11:47:05 +0000
-Message-Id: <1391773652-25214-207-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
-References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Fri, 7 Feb 2014 07:03:15 -0500
+Date: Fri, 7 Feb 2014 17:33:10 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Ingo Molnar <mingo@kernel.org>, Rik van Riel <riel@redhat.com>,
+        linux-mm@kvack.org, josh@joshtriplett.org
+Subject: [PATCH 2/9] mm: Mark functions as static in memory.c
+Message-ID: <2bd9a806eae6958a75de452ba1d09f5cb6e2f7bc.1391167128.git.rashika.kheria@gmail.com>
+References: <a7658fc8f2ab015bffe83de1448cc3db79d2a9fc.1391167128.git.rashika.kheria@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <a7658fc8f2ab015bffe83de1448cc3db79d2a9fc.1391167128.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.4 -stable review patch.  If anyone has any objections, please let me know.
+Mark functions as static in memory.c because they are not used outside
+this file.
 
-------------------
+This eliminates the following warnings in mm/memory.c:
+mm/memory.c:3530:5: warning: no previous prototype for ‘numa_migrate_prep’ [-Wmissing-prototypes]
+mm/memory.c:3545:5: warning: no previous prototype for ‘do_numa_page’ [-Wmissing-prototypes]
 
-From: Aristeu Rozanski <aris@redhat.com>
-
-commit 90ed4988b8c030d65b41b7d13140e9376dc6ec5a upstream.
-
-In case the device 0, function 1 is not found using pci_get_device(),
-pci_scan_single_device() will be used but, differently than
-pci_get_device(), it allocates a pci_dev but doesn't does bump the usage
-count on the pci_dev and after few module removals and loads the pci_dev
-will be freed.
-
-Signed-off-by: Aristeu Rozanski <aris@redhat.com>
-Reviewed-by: mark gross <mark.gross@intel.com>
-Link: http://lkml.kernel.org/r/20131205153755.GL4545@redhat.com
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Cc: Jean Delvare <jdelvare@suse.de>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- drivers/edac/e752x_edac.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ mm/memory.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/edac/e752x_edac.c b/drivers/edac/e752x_edac.c
-index 644fec5..f1e9d7b 100644
---- a/drivers/edac/e752x_edac.c
-+++ b/drivers/edac/e752x_edac.c
-@@ -1182,9 +1182,11 @@ static int e752x_get_devs(struct pci_dev *pdev, int dev_idx,
- 	pvt->bridge_ck = pci_get_device(PCI_VENDOR_ID_INTEL,
- 				pvt->dev_info->err_dev, pvt->bridge_ck);
+diff --git a/mm/memory.c b/mm/memory.c
+index 5d9025f..982c1ad 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3527,7 +3527,7 @@ static int do_nonlinear_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	return __do_fault(mm, vma, address, pmd, pgoff, flags, orig_pte);
+ }
  
--	if (pvt->bridge_ck == NULL)
-+	if (pvt->bridge_ck == NULL) {
- 		pvt->bridge_ck = pci_scan_single_device(pdev->bus,
- 							PCI_DEVFN(0, 1));
-+		pci_dev_get(pvt->bridge_ck);
-+	}
+-int numa_migrate_prep(struct page *page, struct vm_area_struct *vma,
++static int numa_migrate_prep(struct page *page, struct vm_area_struct *vma,
+ 				unsigned long addr, int page_nid,
+ 				int *flags)
+ {
+@@ -3542,7 +3542,7 @@ int numa_migrate_prep(struct page *page, struct vm_area_struct *vma,
+ 	return mpol_misplaced(page, vma, addr);
+ }
  
- 	if (pvt->bridge_ck == NULL) {
- 		e752x_printk(KERN_ERR, "error reporting device not found:"
+-int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
++static int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		   unsigned long addr, pte_t pte, pte_t *ptep, pmd_t *pmd)
+ {
+ 	struct page *page = NULL;
 -- 
-1.8.3.2
+1.7.9.5
 
