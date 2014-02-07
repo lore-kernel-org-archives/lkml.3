@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753924AbaBGLrS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:47:18 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40967 "EHLO
+	id S1752659AbaBGLYO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:24:14 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40834 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752067AbaBGLYP (ORCPT
+	with ESMTP id S1752067AbaBGLXm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:24:15 -0500
+	Fri, 7 Feb 2014 06:23:42 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 33/88] USB: cypress_m8: fix ring-indicator detection and reporting
-Date: Fri,  7 Feb 2014 11:22:30 +0000
-Message-Id: <1391772205-22239-34-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 09/88] vfs: In d_path don't call d_dname on a mount point
+Date: Fri,  7 Feb 2014 11:22:06 +0000
+Message-Id: <1391772205-22239-10-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
@@ -28,36 +27,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit 440ebadeae9298d7de3d4d105342691841ec88d0 upstream.
+commit f48cfddc6729ef133933062320039808bafa6f45 upstream.
 
-Fix ring-indicator (RI) status-bit definition, which was defined as CTS,
-effectively preventing RI-changes from being detected while reporting
-false RI status.
+Aditya Kali (adityakali@google.com) wrote:
+> Commit bf056bfa80596a5d14b26b17276a56a0dcb080e5:
+> "proc: Fix the namespace inode permission checks." converted
+> the namespace files into symlinks. The same commit changed
+> the way namespace bind mounts appear in /proc/mounts:
+>   $ mount --bind /proc/self/ns/ipc /mnt/ipc
+> Originally:
+>   $ cat /proc/mounts | grep ipc
+>   proc /mnt/ipc proc rw,nosuid,nodev,noexec 0 0
+>
+> After commit bf056bfa80596a5d14b26b17276a56a0dcb080e5:
+>   $ cat /proc/mounts | grep ipc
+>   proc ipc:[4026531839] proc rw,nosuid,nodev,noexec 0 0
+>
+> This breaks userspace which expects the 2nd field in
+> /proc/mounts to be a valid path.
 
-This bug predates git.
+The symlink /proc/<pid>/ns/{ipc,mnt,net,pid,user,uts} point to
+dentries allocated with d_alloc_pseudo that we can mount, and
+that have interesting names printed out with d_dname.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+When these files are bind mounted /proc/mounts is not currently
+displaying the mount point correctly because d_dname is called instead
+of just displaying the path where the file is mounted.
+
+Solve this by adding an explicit check to distinguish mounted pseudo
+inodes and unmounted pseudo inodes.  Unmounted pseudo inodes always
+use mount of their filesstem as the mnt_root  in their path making
+these two cases easy to distinguish.
+
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+Reported-by: Aditya Kali <adityakali@google.com>
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/cypress_m8.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/dcache.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/serial/cypress_m8.h b/drivers/usb/serial/cypress_m8.h
-index b461311..ce13e61 100644
---- a/drivers/usb/serial/cypress_m8.h
-+++ b/drivers/usb/serial/cypress_m8.h
-@@ -63,7 +63,7 @@
- #define UART_DSR	0x20	/* data set ready - flow control - device to host */
- #define CONTROL_RTS	0x10	/* request to send - flow control - host to device */
- #define UART_CTS	0x10	/* clear to send - flow control - device to host */
--#define UART_RI		0x10	/* ring indicator - modem - device to host */
-+#define UART_RI		0x80	/* ring indicator - modem - device to host */
- #define UART_CD		0x40	/* carrier detect - modem - device to host */
- #define CYP_ERROR	0x08	/* received from input report - device to host */
- /* Note - the below has nothing to do with the "feature report" reset */
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 9b36632..6269583 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -2737,8 +2737,13 @@ char *d_path(const struct path *path, char *buf, int buflen)
+ 	 * thus don't need to be hashed.  They also don't need a name until a
+ 	 * user wants to identify the object in /proc/pid/fd/.  The little hack
+ 	 * below allows us to generate a name for these objects on demand:
++	 *
++	 * Some pseudo inodes are mountable.  When they are mounted
++	 * path->dentry == path->mnt->mnt_root.  In that case don't call d_dname
++	 * and instead have d_path return the mounted path.
+ 	 */
+-	if (path->dentry->d_op && path->dentry->d_op->d_dname)
++	if (path->dentry->d_op && path->dentry->d_op->d_dname &&
++	    (!IS_ROOT(path->dentry) || path->dentry != path->mnt->mnt_root))
+ 		return path->dentry->d_op->d_dname(path->dentry, buf, buflen);
+ 
+ 	get_fs_root(current->fs, &root);
 -- 
 1.8.3.2
 
