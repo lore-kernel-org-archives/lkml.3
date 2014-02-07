@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753210AbaBGLZi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:25:38 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41254 "EHLO
+	id S1753521AbaBGLZg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:25:36 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41253 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753443AbaBGLZ2 (ORCPT
+	with ESMTP id S1753255AbaBGLZ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 Feb 2014 06:25:28 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Josh Triplett <josh@joshtriplett.org>, Len Brown <len.brown@intel.com>,
+Cc: Li Zefan <lizefan@huawei.com>, Pekka Enberg <penberg@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 88/88] turbostat: Use GCC's CPUID functions to support PIC
-Date: Fri,  7 Feb 2014 11:23:25 +0000
-Message-Id: <1391772205-22239-89-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 87/88] slub: Fix calculation of cpu slabs
+Date: Fri,  7 Feb 2014 11:23:24 +0000
+Message-Id: <1391772205-22239-88-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,87 +27,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Triplett <josh@joshtriplett.org>
+From: Li Zefan <lizefan@huawei.com>
 
-commit 2b92865e648ce04a39fda4f903784a5d01ecb0dc upstream.
+commit 8afb1474db4701d1ab80cd8251137a3260e6913e upstream.
 
-turbostat uses inline assembly to call cpuid.  On 32-bit x86, on systems
-that have certain security features enabled by default that make -fPIC
-the default, this causes a build error:
+  /sys/kernel/slab/:t-0000048 # cat cpu_slabs
+  231 N0=16 N1=215
+  /sys/kernel/slab/:t-0000048 # cat slabs
+  145 N0=36 N1=109
 
-turbostat.c: In function ‘check_cpuid’:
-turbostat.c:1906:2: error: PIC register clobbered by ‘ebx’ in ‘asm’
-  asm("cpuid" : "=a" (fms), "=c" (ecx), "=d" (edx) : "a" (1) : "ebx");
-  ^
+See, the number of slabs is smaller than that of cpu slabs.
 
-GCC provides a header cpuid.h, containing a __get_cpuid function that
-works with both PIC and non-PIC.  (On PIC, it saves and restores ebx
-around the cpuid instruction.)  Use that instead.
+The bug was introduced by commit 49e2258586b423684f03c278149ab46d8f8b6700
+("slub: per cpu cache for partial pages").
 
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
-Signed-off-by: Len Brown <len.brown@intel.com>
+We should use page->pages instead of page->pobjects when calculating
+the number of cpu partial slabs. This also fixes the mapping of slabs
+and nodes.
+
+As there's no variable storing the number of total/active objects in
+cpu partial slabs, and we don't have user interfaces requiring those
+statistics, I just add WARN_ON for those cases.
+
+Acked-by: Christoph Lameter <cl@linux.com>
+Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- tools/power/x86/turbostat/turbostat.c | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ mm/slub.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/tools/power/x86/turbostat/turbostat.c b/tools/power/x86/turbostat/turbostat.c
-index 16de7ad..43a7bda 100644
---- a/tools/power/x86/turbostat/turbostat.c
-+++ b/tools/power/x86/turbostat/turbostat.c
-@@ -34,6 +34,7 @@
- #include <string.h>
- #include <ctype.h>
- #include <sched.h>
-+#include <cpuid.h>
+diff --git a/mm/slub.c b/mm/slub.c
+index 8c691fa..ca056a6 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -4520,7 +4520,13 @@ static ssize_t show_slab_objects(struct kmem_cache *s,
+ 			page = c->partial;
  
- #define MSR_TSC	0x10
- #define MSR_NEHALEM_PLATFORM_INFO	0xCE
-@@ -955,7 +956,7 @@ void check_cpuid()
- 
- 	eax = ebx = ecx = edx = 0;
- 
--	asm("cpuid" : "=a" (max_level), "=b" (ebx), "=c" (ecx), "=d" (edx) : "a" (0));
-+	__get_cpuid(0, &max_level, &ebx, &ecx, &edx);
- 
- 	if (ebx == 0x756e6547 && edx == 0x49656e69 && ecx == 0x6c65746e)
- 		genuine_intel = 1;
-@@ -964,7 +965,7 @@ void check_cpuid()
- 		fprintf(stderr, "%.4s%.4s%.4s ",
- 			(char *)&ebx, (char *)&edx, (char *)&ecx);
- 
--	asm("cpuid" : "=a" (fms), "=c" (ecx), "=d" (edx) : "a" (1) : "ebx");
-+	__get_cpuid(1, &fms, &ebx, &ecx, &edx);
- 	family = (fms >> 8) & 0xf;
- 	model = (fms >> 4) & 0xf;
- 	stepping = fms & 0xf;
-@@ -986,7 +987,7 @@ void check_cpuid()
- 	 * This check is valid for both Intel and AMD.
- 	 */
- 	ebx = ecx = edx = 0;
--	asm("cpuid" : "=a" (max_level), "=b" (ebx), "=c" (ecx), "=d" (edx) : "a" (0x80000000));
-+	__get_cpuid(0x80000000, &max_level, &ebx, &ecx, &edx);
- 
- 	if (max_level < 0x80000007) {
- 		fprintf(stderr, "CPUID: no invariant TSC (max_level 0x%x)\n", max_level);
-@@ -997,7 +998,7 @@ void check_cpuid()
- 	 * Non-Stop TSC is advertised by CPUID.EAX=0x80000007: EDX.bit8
- 	 * this check is valid for both Intel and AMD
- 	 */
--	asm("cpuid" : "=a" (eax), "=b" (ebx), "=c" (ecx), "=d" (edx) : "a" (0x80000007));
-+	__get_cpuid(0x80000007, &eax, &ebx, &ecx, &edx);
- 	has_invariant_tsc = edx & (1 << 8);
- 
- 	if (!has_invariant_tsc) {
-@@ -1010,7 +1011,7 @@ void check_cpuid()
- 	 * this check is valid for both Intel and AMD
- 	 */
- 
--	asm("cpuid" : "=a" (eax), "=b" (ebx), "=c" (ecx), "=d" (edx) : "a" (0x6));
-+	__get_cpuid(0x6, &eax, &ebx, &ecx, &edx);
- 	has_aperf = ecx & (1 << 0);
- 	if (!has_aperf) {
- 		fprintf(stderr, "No APERF MSR\n");
+ 			if (page) {
+-				x = page->pobjects;
++				node = page_to_nid(page);
++				if (flags & SO_TOTAL)
++					WARN_ON_ONCE(1);
++				else if (flags & SO_OBJECTS)
++					WARN_ON_ONCE(1);
++				else
++					x = page->pages;
+ 				total += x;
+ 				nodes[node] += x;
+ 			}
 -- 
 1.8.3.2
 
