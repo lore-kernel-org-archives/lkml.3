@@ -1,166 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755857AbaBGMe2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:34:28 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:45282 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752801AbaBGMeY (ORCPT
+	id S932416AbaBGMez (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:34:55 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42027 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754876AbaBGLur (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 07:34:24 -0500
-Date: Fri, 7 Feb 2014 18:04:18 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Karsten Keil <isdn@linux-pingi.de>, netdev@vger.kernel.org,
-        josh@joshtriplett.org
-Subject: [PATCH 12/26] drivers: isdn: Mark functions as static and remove
- unused function in hfcmulti.c
-Message-ID: <430c97088237a37ba8cea6e786171ee47b96d4c9.1390408517.git.rashika.kheria@gmail.com>
-References: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 7 Feb 2014 06:50:47 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Mikulas Patocka <mpatocka@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 132/233] dm sysfs: fix a module unload race
+Date: Fri,  7 Feb 2014 11:45:51 +0000
+Message-Id: <1391773652-25214-133-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
+References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark functions as static in hardware/mISDN/hfcmulti.c because they are
-not used outside this file. Remove unused function from
-hardware/mISDN/hfcmulti.c.
+3.11.10.4 -stable review patch.  If anyone has any objections, please let me know.
 
-This eliminates the following warnings in hardware/mISDN/hfcmulti.c:
-drivers/isdn/hardware/mISDN/hfcmulti.c:568:1: warning: no previous prototype for ‘enablepcibridge’ [-Wmissing-prototypes]
-drivers/isdn/hardware/mISDN/hfcmulti.c:574:1: warning: no previous prototype for ‘disablepcibridge’ [-Wmissing-prototypes]
-drivers/isdn/hardware/mISDN/hfcmulti.c:580:1: warning: no previous prototype for ‘readpcibridge’ [-Wmissing-prototypes]
-drivers/isdn/hardware/mISDN/hfcmulti.c:608:1: warning: no previous prototype for ‘writepcibridge’ [-Wmissing-prototypes]
-drivers/isdn/hardware/mISDN/hfcmulti.c:638:1: warning: no previous prototype for ‘cpld_set_reg’ [-Wmissing-prototypes]
-drivers/isdn/hardware/mISDN/hfcmulti.c:645:1: warning: no previous prototype for ‘cpld_write_reg’ [-Wmissing-prototypes]
-drivers/isdn/hardware/mISDN/hfcmulti.c:657:1: warning: no previous prototype for ‘cpld_read_reg’ [-Wmissing-prototypes]
-drivers/isdn/hardware/mISDN/hfcmulti.c:674:1: warning: no previous prototype for ‘vpm_write_address’ [-Wmissing-prototypes]
-drivers/isdn/hardware/mISDN/hfcmulti.c:681:1: warning: no previous prototype for ‘vpm_read_address’ [-Wmissing-prototypes]
-drivers/isdn/hardware/mISDN/hfcmulti.c:695:1: warning: no previous prototype for ‘vpm_in’ [-Wmissing-prototypes]
-drivers/isdn/hardware/mISDN/hfcmulti.c:716:1: warning: no previous prototype for ‘vpm_out’ [-Wmissing-prototypes]
-drivers/isdn/hardware/mISDN/hfcmulti.c:1028:1: warning: no previous prototype for ‘plxsd_checksync’ [-Wmissing-prototypes]
+------------------
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+From: Mikulas Patocka <mpatocka@redhat.com>
+
+commit 2995fa78e423d7193f3b57835f6c1c75006a0315 upstream.
+
+This reverts commit be35f48610 ("dm: wait until embedded kobject is
+released before destroying a device") and provides an improved fix.
+
+The kobject release code that calls the completion must be placed in a
+non-module file, otherwise there is a module unload race (if the process
+calling dm_kobject_release is preempted and the DM module unloaded after
+the completion is triggered, but before dm_kobject_release returns).
+
+To fix this race, this patch moves the completion code to dm-builtin.c
+which is always compiled directly into the kernel if BLK_DEV_DM is
+selected.
+
+The patch introduces a new dm_kobject_holder structure, its purpose is
+to keep the completion and kobject in one place, so that it can be
+accessed from non-module code without the need to export the layout of
+struct mapped_device to that code.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/isdn/hardware/mISDN/hfcmulti.c |   36 ++++++++++----------------------
- 1 file changed, 11 insertions(+), 25 deletions(-)
+ drivers/md/Kconfig      |  4 ++++
+ drivers/md/Makefile     |  1 +
+ drivers/md/dm-builtin.c | 48 ++++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/md/dm-sysfs.c   |  5 -----
+ drivers/md/dm.c         | 20 +++++---------------
+ drivers/md/dm.h         | 17 ++++++++++++++++-
+ 6 files changed, 74 insertions(+), 21 deletions(-)
+ create mode 100644 drivers/md/dm-builtin.c
 
-diff --git a/drivers/isdn/hardware/mISDN/hfcmulti.c b/drivers/isdn/hardware/mISDN/hfcmulti.c
-index 28543d7..0c4021d 100644
---- a/drivers/isdn/hardware/mISDN/hfcmulti.c
-+++ b/drivers/isdn/hardware/mISDN/hfcmulti.c
-@@ -564,19 +564,19 @@ disable_hwirq(struct hfc_multi *hc)
- #define	MAX_TDM_CHAN 32
+diff --git a/drivers/md/Kconfig b/drivers/md/Kconfig
+index 30b426e..34d0097 100644
+--- a/drivers/md/Kconfig
++++ b/drivers/md/Kconfig
+@@ -176,8 +176,12 @@ config MD_FAULTY
  
+ source "drivers/md/bcache/Kconfig"
  
--inline void
-+static inline void
- enablepcibridge(struct hfc_multi *c)
- {
- 	HFC_outb(c, R_BRG_PCM_CFG, (0x0 << 6) | 0x3); /* was _io before */
- }
++config BLK_DEV_DM_BUILTIN
++	boolean
++
+ config BLK_DEV_DM
+ 	tristate "Device mapper support"
++	select BLK_DEV_DM_BUILTIN
+ 	---help---
+ 	  Device-mapper is a low level volume manager.  It works by allowing
+ 	  people to specify mappings for ranges of logical sectors.  Various
+diff --git a/drivers/md/Makefile b/drivers/md/Makefile
+index 5ef78ef..109b6bd 100644
+--- a/drivers/md/Makefile
++++ b/drivers/md/Makefile
+@@ -32,6 +32,7 @@ obj-$(CONFIG_MD_FAULTY)		+= faulty.o
+ obj-$(CONFIG_BCACHE)		+= bcache/
+ obj-$(CONFIG_BLK_DEV_MD)	+= md-mod.o
+ obj-$(CONFIG_BLK_DEV_DM)	+= dm-mod.o
++obj-$(CONFIG_BLK_DEV_DM_BUILTIN) += dm-builtin.o
+ obj-$(CONFIG_DM_BUFIO)		+= dm-bufio.o
+ obj-$(CONFIG_DM_BIO_PRISON)	+= dm-bio-prison.o
+ obj-$(CONFIG_DM_CRYPT)		+= dm-crypt.o
+diff --git a/drivers/md/dm-builtin.c b/drivers/md/dm-builtin.c
+new file mode 100644
+index 0000000..6c9049c
+--- /dev/null
++++ b/drivers/md/dm-builtin.c
+@@ -0,0 +1,48 @@
++#include "dm.h"
++
++/*
++ * The kobject release method must not be placed in the module itself,
++ * otherwise we are subject to module unload races.
++ *
++ * The release method is called when the last reference to the kobject is
++ * dropped. It may be called by any other kernel code that drops the last
++ * reference.
++ *
++ * The release method suffers from module unload race. We may prevent the
++ * module from being unloaded at the start of the release method (using
++ * increased module reference count or synchronizing against the release
++ * method), however there is no way to prevent the module from being
++ * unloaded at the end of the release method.
++ *
++ * If this code were placed in the dm module, the following race may
++ * happen:
++ *  1. Some other process takes a reference to dm kobject
++ *  2. The user issues ioctl function to unload the dm device
++ *  3. dm_sysfs_exit calls kobject_put, however the object is not released
++ *     because of the other reference taken at step 1
++ *  4. dm_sysfs_exit waits on the completion
++ *  5. The other process that took the reference in step 1 drops it,
++ *     dm_kobject_release is called from this process
++ *  6. dm_kobject_release calls complete()
++ *  7. a reschedule happens before dm_kobject_release returns
++ *  8. dm_sysfs_exit continues, the dm device is unloaded, module reference
++ *     count is decremented
++ *  9. The user unloads the dm module
++ * 10. The other process that was rescheduled in step 7 continues to run,
++ *     it is now executing code in unloaded module, so it crashes
++ *
++ * Note that if the process that takes the foreign reference to dm kobject
++ * has a low priority and the system is sufficiently loaded with
++ * higher-priority processes that prevent the low-priority process from
++ * being scheduled long enough, this bug may really happen.
++ *
++ * In order to fix this module unload race, we place the release method
++ * into a helper code that is compiled directly into the kernel.
++ */
++
++void dm_kobject_release(struct kobject *kobj)
++{
++	complete(dm_get_completion_from_kobject(kobj));
++}
++
++EXPORT_SYMBOL(dm_kobject_release);
+diff --git a/drivers/md/dm-sysfs.c b/drivers/md/dm-sysfs.c
+index e0cc5d6..c62c5ab 100644
+--- a/drivers/md/dm-sysfs.c
++++ b/drivers/md/dm-sysfs.c
+@@ -79,11 +79,6 @@ static const struct sysfs_ops dm_sysfs_ops = {
+ 	.show	= dm_attr_show,
+ };
  
--inline void
-+static inline void
- disablepcibridge(struct hfc_multi *c)
- {
- 	HFC_outb(c, R_BRG_PCM_CFG, (0x0 << 6) | 0x2); /* was _io before */
- }
- 
--inline unsigned char
-+static inline unsigned char
- readpcibridge(struct hfc_multi *hc, unsigned char address)
- {
- 	unsigned short cipv;
-@@ -604,7 +604,7 @@ readpcibridge(struct hfc_multi *hc, unsigned char address)
- 	return data;
- }
- 
--inline void
-+static inline void
- writepcibridge(struct hfc_multi *hc, unsigned char address, unsigned char data)
- {
- 	unsigned short cipv;
-@@ -634,14 +634,14 @@ writepcibridge(struct hfc_multi *hc, unsigned char address, unsigned char data)
- 	outl(datav, hc->pci_iobase);
- }
- 
--inline void
-+static inline void
- cpld_set_reg(struct hfc_multi *hc, unsigned char reg)
- {
- 	/* Do data pin read low byte */
- 	HFC_outb(hc, R_GPIO_OUT1, reg);
- }
- 
--inline void
-+static inline void
- cpld_write_reg(struct hfc_multi *hc, unsigned char reg, unsigned char val)
- {
- 	cpld_set_reg(hc, reg);
-@@ -653,7 +653,7 @@ cpld_write_reg(struct hfc_multi *hc, unsigned char reg, unsigned char val)
- 	return;
- }
- 
--inline unsigned char
-+static inline unsigned char
- cpld_read_reg(struct hfc_multi *hc, unsigned char reg)
- {
- 	unsigned char bytein;
-@@ -670,28 +670,14 @@ cpld_read_reg(struct hfc_multi *hc, unsigned char reg)
- 	return bytein;
- }
- 
--inline void
-+static inline void
- vpm_write_address(struct hfc_multi *hc, unsigned short addr)
- {
- 	cpld_write_reg(hc, 0, 0xff & addr);
- 	cpld_write_reg(hc, 1, 0x01 & (addr >> 8));
- }
- 
--inline unsigned short
--vpm_read_address(struct hfc_multi *c)
+-static void dm_kobject_release(struct kobject *kobj)
 -{
--	unsigned short addr;
--	unsigned short highbit;
--
--	addr = cpld_read_reg(c, 0);
--	highbit = cpld_read_reg(c, 1);
--
--	addr = addr | (highbit << 8);
--
--	return addr & 0x1ff;
+-	complete(dm_get_completion_from_kobject(kobj));
 -}
 -
--inline unsigned char
-+static inline unsigned char
- vpm_in(struct hfc_multi *c, int which, unsigned short addr)
+ /*
+  * dm kobject is embedded in mapped_device structure
+  * no need to define release function here
+diff --git a/drivers/md/dm.c b/drivers/md/dm.c
+index 267495c..a98a8ba 100644
+--- a/drivers/md/dm.c
++++ b/drivers/md/dm.c
+@@ -193,11 +193,8 @@ struct mapped_device {
+ 	/* forced geometry settings */
+ 	struct hd_geometry geometry;
+ 
+-	/* sysfs handle */
+-	struct kobject kobj;
+-
+-	/* wait until the kobject is released */
+-	struct completion kobj_completion;
++	/* kobject and completion */
++	struct dm_kobject_holder kobj_holder;
+ 
+ 	/* zero-length flush that will be cloned and submitted to targets */
+ 	struct bio flush_bio;
+@@ -1939,7 +1936,7 @@ static struct mapped_device *alloc_dev(int minor)
+ 	init_waitqueue_head(&md->wait);
+ 	INIT_WORK(&md->work, dm_wq_work);
+ 	init_waitqueue_head(&md->eventq);
+-	init_completion(&md->kobj_completion);
++	init_completion(&md->kobj_holder.completion);
+ 
+ 	md->disk->major = _major;
+ 	md->disk->first_minor = minor;
+@@ -2765,14 +2762,14 @@ struct gendisk *dm_disk(struct mapped_device *md)
+ 
+ struct kobject *dm_kobject(struct mapped_device *md)
  {
- 	unsigned char res;
-@@ -712,7 +698,7 @@ vpm_in(struct hfc_multi *c, int which, unsigned short addr)
- 	return res;
+-	return &md->kobj;
++	return &md->kobj_holder.kobj;
  }
  
--inline void
-+static inline void
- vpm_out(struct hfc_multi *c, int which, unsigned short addr,
- 	unsigned char data)
+ struct mapped_device *dm_get_from_kobject(struct kobject *kobj)
  {
-@@ -1024,7 +1010,7 @@ hfcmulti_resync(struct hfc_multi *locked, struct hfc_multi *newmaster, int rm)
+ 	struct mapped_device *md;
+ 
+-	md = container_of(kobj, struct mapped_device, kobj);
++	md = container_of(kobj, struct mapped_device, kobj_holder.kobj);
+ 
+ 	if (test_bit(DMF_FREEING, &md->flags) ||
+ 	    dm_deleting_md(md))
+@@ -2782,13 +2779,6 @@ struct mapped_device *dm_get_from_kobject(struct kobject *kobj)
+ 	return md;
  }
  
- /* This must be called AND hc must be locked irqsave!!! */
--inline void
-+static inline void
- plxsd_checksync(struct hfc_multi *hc, int rm)
+-struct completion *dm_get_completion_from_kobject(struct kobject *kobj)
+-{
+-	struct mapped_device *md = container_of(kobj, struct mapped_device, kobj);
+-
+-	return &md->kobj_completion;
+-}
+-
+ int dm_suspended_md(struct mapped_device *md)
  {
- 	if (hc->syncronized) {
+ 	return test_bit(DMF_SUSPENDED, &md->flags);
+diff --git a/drivers/md/dm.h b/drivers/md/dm.h
+index 66cfb7d..9b3222f 100644
+--- a/drivers/md/dm.h
++++ b/drivers/md/dm.h
+@@ -16,6 +16,7 @@
+ #include <linux/blkdev.h>
+ #include <linux/hdreg.h>
+ #include <linux/completion.h>
++#include <linux/kobject.h>
+ 
+ /*
+  * Suspend feature flags
+@@ -126,11 +127,25 @@ void dm_interface_exit(void);
+ /*
+  * sysfs interface
+  */
++struct dm_kobject_holder {
++	struct kobject kobj;
++	struct completion completion;
++};
++
++static inline struct completion *dm_get_completion_from_kobject(struct kobject *kobj)
++{
++	return &container_of(kobj, struct dm_kobject_holder, kobj)->completion;
++}
++
+ int dm_sysfs_init(struct mapped_device *md);
+ void dm_sysfs_exit(struct mapped_device *md);
+ struct kobject *dm_kobject(struct mapped_device *md);
+ struct mapped_device *dm_get_from_kobject(struct kobject *kobj);
+-struct completion *dm_get_completion_from_kobject(struct kobject *kobj);
++
++/*
++ * The kobject helper
++ */
++void dm_kobject_release(struct kobject *kobj);
+ 
+ /*
+  * Targets for linear and striped mappings
 -- 
-1.7.9.5
+1.8.3.2
 
