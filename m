@@ -1,75 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751620AbaBGS40 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 13:56:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58249 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751233AbaBGS4Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 13:56:25 -0500
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Thomas Renninger <trenn@suse.de>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Alan Cox <alan@linux.intel.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Subject: [PATCH] tools, cpupower Fix error condition in cmd_freq_set()
-Date: Fri,  7 Feb 2014 13:55:53 -0500
-Message-Id: <1391799353-19517-1-git-send-email-prarit@redhat.com>
+	id S1752148AbaBGS6U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 13:58:20 -0500
+Received: from order.stressinduktion.org ([87.106.68.36]:38393 "EHLO
+	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751805AbaBGS6S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 13:58:18 -0500
+Date: Fri, 7 Feb 2014 19:58:16 +0100
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Daniel Borkmann <borkmann@iogearbox.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Michel Lespinasse <walken@google.com>, linux-mm <linux-mm@kvack.org>,
+        Jared Hulbert <jaredeh@gmail.com>, netdev <netdev@vger.kernel.org>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        John David Anglin <dave.anglin@bell.net>,
+        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Carsten Otte <cotte@de.ibm.com>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [BUG] at include/linux/page-flags.h:415 (PageTransHuge)
+Message-ID: <20140207185816.GA7764@order.stressinduktion.org>
+Mail-Followup-To: Vlastimil Babka <vbabka@suse.cz>,
+	Daniel Borkmann <borkmann@iogearbox.net>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	Michel Lespinasse <walken@google.com>,
+	linux-mm <linux-mm@kvack.org>, Jared Hulbert <jaredeh@gmail.com>,
+	netdev <netdev@vger.kernel.org>,
+	Thomas Hellstrom <thellstrom@vmware.com>,
+	John David Anglin <dave.anglin@bell.net>,
+	HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+	Konstantin Khlebnikov <khlebnikov@openvz.org>,
+	Carsten Otte <cotte@de.ibm.com>,
+	Peter Zijlstra <peterz@infradead.org>
+References: <52D03A9E.2030309@iogearbox.net> <20140110222248.4e8419ca.akpm@linux-foundation.org> <52D147F1.3040803@iogearbox.net> <52D3BCE9.4020405@suse.cz> <52D3D060.1010301@iogearbox.net> <52D69AB4.6000309@suse.cz> <52D6B213.4020602@iogearbox.net> <52EBB5E6.8010007@suse.cz>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <52EBB5E6.8010007@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On a system which has only 4.00GHz set as the only available frequency,
+Hi!
 
-[root@amd-pike-05 ~]# cpupower frequency-info
-<snip>
-  current policy: frequency should be within 4.00 GHz and 4.00 GHz.
-                  The governor "userspace" may decide which speed to use
-                  within this range.
-<snip>
+On Fri, Jan 31, 2014 at 03:40:38PM +0100, Vlastimil Babka wrote:
+> From: Vlastimil Babka <vbabka@suse.cz>
+> Date: Fri, 31 Jan 2014 11:50:21 +0100
+> Subject: [PATCH] mm: include VM_MIXEDMAP flag in the VM_SPECIAL list to avoid
+>  m(un)locking
+> 
+> Daniel Borkmann reported a bug with VM_BUG_ON assertions failing where
+> munlock_vma_pages_range() thinks it's unexpectedly in the middle of a THP page.
+> This can be reproduced in tools/testing/selftests/net/ by running make and
+> then ./psock_tpacket.
+> 
+> The problem is that an order=2 compound page (allocated by
+> alloc_one_pg_vec_page() is part of the munlocked VM_MIXEDMAP vma (mapped by
+> packet_mmap()) and mistaken for a THP page and assumed to be order=9.
+> 
+> The checks for THP in munlock came with commit ff6a6da60b89 ("mm: accelerate
+> munlock() treatment of THP pages"), i.e. since 3.9, but did not trigger a bug.
+> It just makes munlock_vma_pages_range() skip such compound pages until the next
+> 512-pages-aligned page, when it encounters a head page. This is however not a
+> problem for vma's where mlocking has no effect anyway, but it can distort the
+> accounting.
+> Since commit 7225522bb ("mm: munlock: batch non-THP page isolation and
+> munlock+putback using pagevec") this can trigger a VM_BUG_ON in PageTransHuge()
+> check.
+> 
+> This patch fixes the issue by adding VM_MIXEDMAP flag to VM_SPECIAL - a list of
+> flags that make vma's non-mlockable and non-mergeable. The reasoning is that
+> VM_MIXEDMAP vma's are similar to VM_PFNMAP, which is already on the VM_SPECIAL
+> list, and both are intended for non-LRU pages where mlocking makes no sense
+> anyway.
 
-setting the frequency to 2.8GHz does not return an error.
+I also ran into this problem and wanted to ask what the status of this
+patch is? Does it need further testing? I can surely help with that. ;)
 
-[root@amd-pike-05 ~]# cpupower frequency-set --freq 2800MHz
-Setting cpu: 0
-Setting cpu: 1
-Setting cpu: 2
-Setting cpu: 3
-Setting cpu: 4
-Setting cpu: 5
-Setting cpu: 6
-Setting cpu: 7
-[root@amd-pike-05 ~]#
+Thanks,
 
-The frequency set error should stop with an error message after the first
-failure.  Fix the error return in cmd_freq_set() to read errors as less
-than zero.
-
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-Cc: Dominik Brodowski <linux@dominikbrodowski.net>
-Cc: Thomas Renninger <trenn@suse.de>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Cc: Alan Cox <alan@linux.intel.com>
-Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
----
- tools/power/cpupower/utils/cpufreq-set.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/tools/power/cpupower/utils/cpufreq-set.c b/tools/power/cpupower/utils/cpufreq-set.c
-index a416de8..e5f78623 100644
---- a/tools/power/cpupower/utils/cpufreq-set.c
-+++ b/tools/power/cpupower/utils/cpufreq-set.c
-@@ -320,7 +320,7 @@ int cmd_freq_set(int argc, char **argv)
- 
- 		printf(_("Setting cpu: %d\n"), cpu);
- 		ret = do_one_cpu(cpu, &new_pol, freq, policychange);
--		if (ret)
-+		if (ret < 0)
- 			break;
- 	}
- 
--- 
-1.7.9.3
+  Hannes
 
