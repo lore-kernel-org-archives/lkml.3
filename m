@@ -1,62 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753736AbaBGLaG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:30:06 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41189 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753292AbaBGLZN (ORCPT
+	id S1753817AbaBGLbR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:31:17 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:58190 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753800AbaBGLbO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:25:13 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 77/88] KVM: s390: fix diagnose code extraction
-Date: Fri,  7 Feb 2014 11:23:14 +0000
-Message-Id: <1391772205-22239-78-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
-References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Fri, 7 Feb 2014 06:31:14 -0500
+Date: Fri, 7 Feb 2014 11:30:46 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 1/7] ARM: perf_event: Support percpu irqs for the CPU
+ PMU
+Message-ID: <20140207113046.GD5976@mudshark.cambridge.arm.com>
+References: <1389808535-23852-1-git-send-email-sboyd@codeaurora.org>
+ <1389808535-23852-2-git-send-email-sboyd@codeaurora.org>
+ <20140115205427.GB26193@codeaurora.org>
+ <20140117150411.GI16003@mudshark.cambridge.arm.com>
+ <52D96E5C.4040506@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52D96E5C.4040506@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.30 -stable review patch.  If anyone has any objections, please let me know.
+Hi Stephen,
 
-------------------
+I just remembered about this series.
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+On Fri, Jan 17, 2014 at 05:54:36PM +0000, Stephen Boyd wrote:
+> On 01/17/14 07:04, Will Deacon wrote:
+> > Hi Stephen,
+> >
+> > On Wed, Jan 15, 2014 at 08:54:27PM +0000, Stephen Boyd wrote:
+> >> On 01/15, Stephen Boyd wrote:
+> >>> diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+> >>> index 789d846a9184..e76750980b38 100644
+> >>> --- a/arch/arm/kernel/perf_event.c
+> >>> +++ b/arch/arm/kernel/perf_event.c
+> >>> @@ -295,9 +297,15 @@ validate_group(struct perf_event *event)
+> >>>  
+> >>>  static irqreturn_t armpmu_dispatch_irq(int irq, void *dev)
+> >>>  {
+> >>> -	struct arm_pmu *armpmu = (struct arm_pmu *) dev;
+> >>> -	struct platform_device *plat_device = armpmu->plat_device;
+> >>> -	struct arm_pmu_platdata *plat = dev_get_platdata(&plat_device->dev);
+> >>> +	struct arm_pmu *armpmu;
+> >>> +	struct platform_device *plat_device;
+> >>> +	struct arm_pmu_platdata *plat;
+> >>> +
+> >>> +	if (irq_is_percpu(irq))
+> >>> +		dev = *(struct arm_pmu_cpu **)dev;
+> >> Oh. I just realized that struct arm_pmu_cpu doesn't even exist. This
+> >> still compiles though because we're dealing with a void pointer.
+> >>
+> >> Perhaps its better to just do
+> >>
+> >> 	dev = *(void **)dev;
+> >>
+> >> here. Can you fix that up when applying? Otherwise I'll do it on
+> >> the next send if there are more comments.
+> > Shouldn't that actually be some per_cpu accessor like this_cpu_ptr?
+> >
+> 
+> Nope. The genirq layer unwraps the per_cpu pointer and passes it to the
+> handler.
 
-commit 743db27c526e0f31cc507959d662e97e2048a86f upstream.
+I think we resolved all the questions/issues that came up during review.
+Please can you send a new version that I can take into my tree for 3.15?
 
-The diagnose code to be used is the contents of the base register (if not
-zero), plus the displacement. The current code ignores the base register
-contents. So let's fix that...
+Cheers,
 
-Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- arch/s390/kvm/diag.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/s390/kvm/diag.c b/arch/s390/kvm/diag.c
-index b23d9ac..e071600 100644
---- a/arch/s390/kvm/diag.c
-+++ b/arch/s390/kvm/diag.c
-@@ -103,7 +103,7 @@ static int __diag_ipl_functions(struct kvm_vcpu *vcpu)
- 
- int kvm_s390_handle_diag(struct kvm_vcpu *vcpu)
- {
--	int code = (vcpu->arch.sie_block->ipb & 0xfff0000) >> 16;
-+	int code = kvm_s390_get_base_disp_rs(vcpu) & 0xffff;
- 
- 	switch (code) {
- 	case 0x10:
--- 
-1.8.3.2
-
+Will
