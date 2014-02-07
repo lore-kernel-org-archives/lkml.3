@@ -1,99 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752228AbaBGRMg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 12:12:36 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:56852 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751909AbaBGRMe (ORCPT
+	id S1752252AbaBGROR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 12:14:17 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:33759 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751346AbaBGROO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 12:12:34 -0500
-Date: Fri, 7 Feb 2014 18:12:24 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Torsten Duwe <duwe@lst.de>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Scott Wood <scottwood@freescale.com>, Tom Musta <tommusta@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v2] powerpc ticket locks
-Message-ID: <20140207171224.GR5002@laptop.programming.kicks-ass.net>
-References: <20140207165801.GC2107@lst.de>
+	Fri, 7 Feb 2014 12:14:14 -0500
+Date: Fri, 7 Feb 2014 17:13:36 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Torvald Riegel <triegel@redhat.com>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+Message-ID: <20140207171336.GU5976@mudshark.cambridge.arm.com>
+References: <20140206185910.GE27276@mudshark.cambridge.arm.com>
+ <20140206192743.GH4250@linux.vnet.ibm.com>
+ <1391721423.23421.3898.camel@triegel.csb>
+ <20140206221117.GJ4250@linux.vnet.ibm.com>
+ <1391730288.23421.4102.camel@triegel.csb>
+ <20140207042051.GL4250@linux.vnet.ibm.com>
+ <20140207074405.GM5002@laptop.programming.kicks-ass.net>
+ <20140207165028.GO4250@linux.vnet.ibm.com>
+ <20140207165548.GR5976@mudshark.cambridge.arm.com>
+ <20140207170654.GQ5002@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140207165801.GC2107@lst.de>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140207170654.GQ5002@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 07, 2014 at 05:58:01PM +0100, Torsten Duwe wrote:
-> +static __always_inline void arch_spin_lock(arch_spinlock_t *lock)
->  {
-> +	register struct __raw_tickets old, tmp,
-> +		inc = { .tail = TICKET_LOCK_INC };
-> +
->  	CLEAR_IO_SYNC;
-> +	__asm__ __volatile__(
-> +"1:	lwarx	%0,0,%4		# arch_spin_lock\n"
-> +"	add	%1,%3,%0\n"
-> +	PPC405_ERR77(0, "%4")
-> +"	stwcx.	%1,0,%4\n"
-> +"	bne-	1b"
-> +	: "=&r" (old), "=&r" (tmp), "+m" (lock->tickets)
-> +	: "r" (inc), "r" (&lock->tickets)
-> +	: "cc");
-> +
-> +	if (likely(old.head == old.tail))
-> +		goto out;
+On Fri, Feb 07, 2014 at 05:06:54PM +0000, Peter Zijlstra wrote:
+> On Fri, Feb 07, 2014 at 04:55:48PM +0000, Will Deacon wrote:
+> > Hi Paul,
+> > 
+> > On Fri, Feb 07, 2014 at 04:50:28PM +0000, Paul E. McKenney wrote:
+> > > On Fri, Feb 07, 2014 at 08:44:05AM +0100, Peter Zijlstra wrote:
+> > > > On Thu, Feb 06, 2014 at 08:20:51PM -0800, Paul E. McKenney wrote:
+> > > > > Hopefully some discussion of out-of-thin-air values as well.
+> > > > 
+> > > > Yes, absolutely shoot store speculation in the head already. Then drive
+> > > > a wooden stake through its hart.
+> > > > 
+> > > > C11/C++11 should not be allowed to claim itself a memory model until that
+> > > > is sorted.
+> > > 
+> > > There actually is a proposal being put forward, but it might not make ARM
+> > > and Power people happy because it involves adding a compare, a branch,
+> > > and an ISB/isync after every relaxed load...  Me, I agree with you,
+> > > much preferring the no-store-speculation approach.
+> > 
+> > Can you elaborate a bit on this please? We don't permit speculative stores
+> > in the ARM architecture, so it seems counter-intuitive that GCC needs to
+> > emit any additional instructions to prevent that from happening.
+> > 
+> > Stores can, of course, be observed out-of-order but that's a lot more
+> > reasonable :)
+> 
+> This is more about the compiler speculating on stores; imagine:
+> 
+>   if (x)
+>   	y = 1;
+>   else
+>   	y = 2;
+> 
+> The compiler is allowed to change that into:
+> 
+>   y = 2;
+>   if (x)
+>   	y = 1;
+> 
+> Which is of course a big problem when you want to rely on the ordering.
 
-I would have expected an lwsync someplace hereabouts.
+Understood, but that doesn't explain why Paul wants to add ISB/isync
+instructions which affect the *CPU* rather than the compiler!
 
-> +	for (;;) {
-> +		unsigned count = 100;
-> +
->  		do {
-> +			if (ACCESS_ONCE(lock->tickets.head) == old.tail)
-> +				goto out;
->  			HMT_low();
->  			if (SHARED_PROCESSOR)
->  				__spin_yield(lock);
-> +		} while (--count);
->  		HMT_medium();
->  	}
-> +out:
-> +#if defined(CONFIG_PPC_SPLPAR)
-> +	lock->holder = LOCK_TOKEN;
-> +#endif
-> +	barrier();	/* make sure nothing creeps before the lock is taken */
->  }
->  
->  static inline
-
-> @@ -147,10 +220,21 @@ void arch_spin_lock_flags(arch_spinlock_t *lock, unsigned long flags)
->  
->  static inline void arch_spin_unlock(arch_spinlock_t *lock)
->  {
-> +	arch_spinlock_t old, new;
-> +
-> +#if defined(CONFIG_PPC_SPLPAR)
-> +	lock->holder = 0;
-> +#endif
-> +	do {
-> +		old.tickets = ACCESS_ONCE(lock->tickets);
-> +		new.tickets.head = old.tickets.head + TICKET_LOCK_INC;
-> +		new.tickets.tail = old.tickets.tail;
-> +	} while (unlikely(__arch_spin_cmpxchg_eq(lock,
-> +						 old.head_tail,
-> +						 new.head_tail)));
->  	SYNC_IO;
->  	__asm__ __volatile__("# arch_spin_unlock\n\t"
->  				PPC_RELEASE_BARRIER: : :"memory");
-
-Doens't your cmpxchg_eq not already imply a lwsync?
-
-> -	lock->slock = 0;
->  }
-
-I'm still failing to see why you need an ll/sc pair for unlock.
+Will
