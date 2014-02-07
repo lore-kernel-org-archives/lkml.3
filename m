@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754446AbaBGLsc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:48:32 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41556 "EHLO
+	id S1755394AbaBGNQU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 08:16:20 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41571 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754416AbaBGLs1 (ORCPT
+	with ESMTP id S1754435AbaBGLsb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:48:27 -0500
+	Fri, 7 Feb 2014 06:48:31 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 037/233] staging: comedi: addi_apci_1032: fix subdevice type/flags bug
-Date: Fri,  7 Feb 2014 11:44:16 +0000
-Message-Id: <1391773652-25214-38-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 040/233] thp: fix copy_page_rep GPF by testing is_huge_zero_pmd once only
+Date: Fri,  7 Feb 2014 11:44:19 +0000
+Message-Id: <1391773652-25214-41-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -28,36 +28,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: H Hartley Sweeten <hsweeten@visionengravers.com>
+From: Hugh Dickins <hughd@google.com>
 
-commit 90daf69a7a3f1d1a41018c799968a0bb896d65e0 upstream.
+commit eecc1e426d681351a6026a7d3e7d225f38955b6c upstream.
 
-The SDF_CMD_READ should be one of the s->subdev_flags not part of
-the s->type.
+We see General Protection Fault on RSI in copy_page_rep: that RSI is
+what you get from a NULL struct page pointer.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+  RIP: 0010:[<ffffffff81154955>]  [<ffffffff81154955>] copy_page_rep+0x5/0x10
+  RSP: 0000:ffff880136e15c00  EFLAGS: 00010286
+  RAX: ffff880000000000 RBX: ffff880136e14000 RCX: 0000000000000200
+  RDX: 6db6db6db6db6db7 RSI: db73880000000000 RDI: ffff880dd0c00000
+  RBP: ffff880136e15c18 R08: 0000000000000200 R09: 000000000005987c
+  R10: 000000000005987c R11: 0000000000000200 R12: 0000000000000001
+  R13: ffffea00305aa000 R14: 0000000000000000 R15: 0000000000000000
+  FS:  00007f195752f700(0000) GS:ffff880c7fc20000(0000) knlGS:0000000000000000
+  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+  CR2: 0000000093010000 CR3: 00000001458e1000 CR4: 00000000000027e0
+  Call Trace:
+    copy_user_huge_page+0x93/0xab
+    do_huge_pmd_wp_page+0x710/0x815
+    handle_mm_fault+0x15d8/0x1d70
+    __do_page_fault+0x14d/0x840
+    do_page_fault+0x2f/0x90
+    page_fault+0x22/0x30
+
+do_huge_pmd_wp_page() tests is_huge_zero_pmd(orig_pmd) four times: but
+since shrink_huge_zero_page() can free the huge_zero_page, and we have
+no hold of our own on it here (except where the fourth test holds
+page_table_lock and has checked pmd_same), it's possible for it to
+answer yes the first time, but no to the second or third test.  Change
+all those last three to tests for NULL page.
+
+(Note: this is not the same issue as trinity's DEBUG_PAGEALLOC BUG
+in copy_page_rep with RSI: ffff88009c422000, reported by Sasha Levin
+in https://lkml.org/lkml/2013/3/29/103.  I believe that one is due
+to the source page being split, and a tail page freed, while copy
+is in progress; and not a problem without DEBUG_PAGEALLOC, since
+the pmd_same check will prevent a miscopy from being made visible.)
+
+Fixes: 97ae17497e99 ("thp: implement refcounting for huge zero page")
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ luis: backported to 3.11: based on hughd's backport to 3.10.27 ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/staging/comedi/drivers/addi_apci_1032.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ mm/huge_memory.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/addi_apci_1032.c b/drivers/staging/comedi/drivers/addi_apci_1032.c
-index 8a93542..ecc67a3 100644
---- a/drivers/staging/comedi/drivers/addi_apci_1032.c
-+++ b/drivers/staging/comedi/drivers/addi_apci_1032.c
-@@ -325,8 +325,8 @@ static int apci1032_auto_attach(struct comedi_device *dev,
- 	s = &dev->subdevices[1];
- 	if (dev->irq) {
- 		dev->read_subdev = s;
--		s->type		= COMEDI_SUBD_DI | SDF_CMD_READ;
--		s->subdev_flags	= SDF_READABLE;
-+		s->type		= COMEDI_SUBD_DI;
-+		s->subdev_flags	= SDF_READABLE | SDF_CMD_READ;
- 		s->n_chan	= 1;
- 		s->maxdata	= 1;
- 		s->range_table	= &range_digital;
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 31950d6..5e91a87 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1170,7 +1170,7 @@ alloc:
+ 
+ 	if (unlikely(!new_page)) {
+ 		count_vm_event(THP_FAULT_FALLBACK);
+-		if (is_huge_zero_pmd(orig_pmd)) {
++		if (!page) {
+ 			ret = do_huge_pmd_wp_zero_page_fallback(mm, vma,
+ 					address, pmd, orig_pmd, haddr);
+ 		} else {
+@@ -1194,7 +1194,7 @@ alloc:
+ 		goto out;
+ 	}
+ 
+-	if (is_huge_zero_pmd(orig_pmd))
++	if (!page)
+ 		clear_huge_page(new_page, haddr, HPAGE_PMD_NR);
+ 	else
+ 		copy_user_huge_page(new_page, page, haddr, vma, HPAGE_PMD_NR);
+@@ -1219,7 +1219,7 @@ alloc:
+ 		page_add_new_anon_rmap(new_page, vma, haddr);
+ 		set_pmd_at(mm, haddr, pmd, entry);
+ 		update_mmu_cache_pmd(vma, address, pmd);
+-		if (is_huge_zero_pmd(orig_pmd)) {
++		if (!page) {
+ 			add_mm_counter(mm, MM_ANONPAGES, HPAGE_PMD_NR);
+ 			put_huge_zero_page();
+ 		} else {
 -- 
 1.8.3.2
 
