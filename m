@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756028AbaBGMoj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:44:39 -0500
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:51959 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753450AbaBGMog (ORCPT
+	id S932411AbaBGMpN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:45:13 -0500
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:54977 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752952AbaBGMpI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 07:44:36 -0500
-Date: Fri, 7 Feb 2014 18:14:29 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Armin Schindler <mac@melware.de>, Karsten Keil <isdn@linux-pingi.de>,
-        netdev@vger.kernel.org, josh@joshtriplett.org
-Subject: [PATCH 21/26] drivers: isdn: Move prototype declaration to header
- file platform.h from os_4bri.c
-Message-ID: <ba35e8744d30d59c93c19452ae0a9af4e428a4ce.1390408518.git.rashika.kheria@gmail.com>
-References: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
+	Fri, 7 Feb 2014 07:45:08 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1389522649-1753-1-git-send-email-geert@linux-m68k.org>
+References: <1389522649-1753-1-git-send-email-geert@linux-m68k.org>
+Date: Fri, 7 Feb 2014 13:45:07 +0100
+X-Google-Sender-Auth: ASIVvpJknDBvwVWHYmSdav62NXw
+Message-ID: <CAMuHMdUYc8Ceid2z3c2Bm1ZDteu2iV-O4cPX4LdxiTnzhsh_Rw@mail.gmail.com>
+Subject: Re: [PATCH] sh: sh7757: switch RSPI clock to dev ID match
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linux-sh list <linux-sh@vger.kernel.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
+        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move prototype declaration of functions to header file
-hardware/eicon/platform.h because they are used by more than one file.
+On Sun, Jan 12, 2014 at 11:30 AM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+>
+> Switch the RSPI MSTP clock on SH7757 from a con ID match to a dev ID
+> match, so we can start looking it up using clk_get() with a NULL ID.
+>
+> Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+> ---
+> Untested, as I don't have the hardware, but this is a prerequisite for
+> "spi: rspi: Use NULL as the clock ID".
 
-This eliminates the following warnings in hardware/eicon/s_4bri.c:
-drivers/isdn/hardware/eicon/s_4bri.c:128:6: warning: no previous prototype for ‘start_qBri_hardware’ [-Wmissing-prototypes]
-drivers/isdn/hardware/eicon/s_4bri.c:275:5: warning: no previous prototype for ‘qBri_FPGA_download’ [-Wmissing-prototypes]
-drivers/isdn/hardware/eicon/s_4bri.c:487:6: warning: no previous prototype for ‘prepare_qBri_functions’ [-Wmissing-prototypes]
-drivers/isdn/hardware/eicon/s_4bri.c:496:6: warning: no previous prototype for ‘prepare_qBri2_functions’ [-Wmissing-prototypes]
+Is there anyone who can test this?
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- drivers/isdn/hardware/eicon/os_4bri.c  |    9 ---------
- drivers/isdn/hardware/eicon/platform.h |    5 +++++
- 2 files changed, 5 insertions(+), 9 deletions(-)
+"spi: rspi: Use NULL as the clock ID" is queued for v3.15:
+https://git.kernel.org/cgit/linux/kernel/git/broonie/spi.git/commit/drivers/spi/spi-rspi.c?h=for-next&id=29f397b739ceef90c8b848f6579cbacd088e896e
+and this patch should go in first.
 
-diff --git a/drivers/isdn/hardware/eicon/os_4bri.c b/drivers/isdn/hardware/eicon/os_4bri.c
-index 54f7033..287ceee 100644
---- a/drivers/isdn/hardware/eicon/os_4bri.c
-+++ b/drivers/isdn/hardware/eicon/os_4bri.c
-@@ -23,15 +23,6 @@ static void *diva_xdiLoadFileFile = NULL;
- static dword diva_xdiLoadFileLength = 0;
- 
- /*
--**  IMPORTS
--*/
--extern void prepare_qBri_functions(PISDN_ADAPTER IoAdapter);
--extern void prepare_qBri2_functions(PISDN_ADAPTER IoAdapter);
--
--extern int qBri_FPGA_download(PISDN_ADAPTER IoAdapter);
--extern void start_qBri_hardware(PISDN_ADAPTER IoAdapter);
--
--/*
- **  LOCALS
- */
- static unsigned long _4bri_bar_length[4] = {
-diff --git a/drivers/isdn/hardware/eicon/platform.h b/drivers/isdn/hardware/eicon/platform.h
-index a507cea..af3d0a6 100644
---- a/drivers/isdn/hardware/eicon/platform.h
-+++ b/drivers/isdn/hardware/eicon/platform.h
-@@ -187,6 +187,11 @@ void diddfunc_finit(void);
- 
- void prepare_maestra_functions(PISDN_ADAPTER IoAdapter);
- 
-+void start_qBri_hardware(PISDN_ADAPTER IoAdapter);
-+void prepare_qBri_functions(PISDN_ADAPTER IoAdapter);
-+void prepare_qBri2_functions(PISDN_ADAPTER IoAdapter);
-+int qBri_FPGA_download(PISDN_ADAPTER IoAdapter);
-+
- /*
- ** use skbuffs for message buffer
- */
--- 
-1.7.9.5
+Thanks!
 
+>  arch/sh/kernel/cpu/sh4a/clock-sh7757.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/arch/sh/kernel/cpu/sh4a/clock-sh7757.c b/arch/sh/kernel/cpu/sh4a/clock-sh7757.c
+> index e84a43229b9c..5c0e3c335161 100644
+> --- a/arch/sh/kernel/cpu/sh4a/clock-sh7757.c
+> +++ b/arch/sh/kernel/cpu/sh4a/clock-sh7757.c
+> @@ -132,7 +132,7 @@ static struct clk_lookup lookups[] = {
+>         CLKDEV_CON_ID("usb_fck", &mstp_clks[MSTP103]),
+>         CLKDEV_DEV_ID("renesas_usbhs.0", &mstp_clks[MSTP102]),
+>         CLKDEV_CON_ID("mmc0", &mstp_clks[MSTP220]),
+> -       CLKDEV_CON_ID("rspi2", &mstp_clks[MSTP127]),
+> +       CLKDEV_DEV_ID("rspi.2", &mstp_clks[MSTP127]),
+>  };
+>
+>  int __init arch_clk_init(void)
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
