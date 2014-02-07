@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752995AbaBGLYg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:24:36 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40887 "EHLO
+	id S1753163AbaBGLYv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:24:51 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41071 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752174AbaBGLXy (ORCPT
+	with ESMTP id S1753059AbaBGLYo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:23:54 -0500
+	Fri, 7 Feb 2014 06:24:44 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Larry Finger <Larry.Finger@lwfinger.net>,
         "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 17/88] rtlwifi: rtl8192c: Add new definitions in the dm_common header
-Date: Fri,  7 Feb 2014 11:22:14 +0000
-Message-Id: <1391772205-22239-18-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 54/88] b43legacy: Fix unload oops if firmware is not available
+Date: Fri,  7 Feb 2014 11:22:51 +0000
+Message-Id: <1391772205-22239-55-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
@@ -30,48 +30,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit c908c74e005de780fddbe8cb6fcd44803f5d4b74 upstream.
+commit 452028665312672c6ba9e16a19248ee00ead9400 upstream.
 
-Changes in the gain-control mechanism will require some changes in the header.
+The asyncronous firmware load uses a completion struct to hold firmware
+processing until the user-space routines are up and running. There is.
+however, a problem in that the waiter is nevered canceled during teardown.
+As a result, unloading the driver when firmware is not available causes an oops.
 
 Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/rtlwifi/rtl8192c/dm_common.h | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ drivers/net/wireless/b43legacy/main.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.h b/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.h
-index 518e208..4f232a0 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.h
-+++ b/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.h
-@@ -91,6 +91,17 @@
- #define TX_POWER_NEAR_FIELD_THRESH_LVL2		74
- #define TX_POWER_NEAR_FIELD_THRESH_LVL1		67
+diff --git a/drivers/net/wireless/b43legacy/main.c b/drivers/net/wireless/b43legacy/main.c
+index 0366dcc..2a1c348 100644
+--- a/drivers/net/wireless/b43legacy/main.c
++++ b/drivers/net/wireless/b43legacy/main.c
+@@ -3917,6 +3917,7 @@ static void b43legacy_remove(struct ssb_device *dev)
+ 	 * as the ieee80211 unreg will destroy the workqueue. */
+ 	cancel_work_sync(&wldev->restart_work);
+ 	cancel_work_sync(&wl->firmware_load);
++	complete(&wldev->fw_load_complete);
  
-+#define DYNAMIC_FUNC_DISABLE			0x0
-+#define DYNAMIC_FUNC_DIG			BIT(0)
-+#define DYNAMIC_FUNC_HP				BIT(1)
-+#define DYNAMIC_FUNC_SS				BIT(2) /*Tx Power Tracking*/
-+#define DYNAMIC_FUNC_BT				BIT(3)
-+#define DYNAMIC_FUNC_ANT_DIV			BIT(4)
-+
-+#define	RSSI_CCK				0
-+#define	RSSI_OFDM				1
-+#define	RSSI_DEFAULT				2
-+
- struct swat_t {
- 	u8 failure_cnt;
- 	u8 try_flag;
-@@ -167,5 +178,8 @@ void rtl92c_phy_lc_calibrate(struct ieee80211_hw *hw);
- void rtl92c_phy_iq_calibrate(struct ieee80211_hw *hw, bool recovery);
- void rtl92c_dm_dynamic_txpower(struct ieee80211_hw *hw);
- void rtl92c_dm_bt_coexist(struct ieee80211_hw *hw);
-+void dm_savepowerindex(struct ieee80211_hw *hw);
-+void dm_writepowerindex(struct ieee80211_hw *hw, u8 value);
-+void dm_restorepowerindex(struct ieee80211_hw *hw);
- 
- #endif
+ 	B43legacy_WARN_ON(!wl);
+ 	if (!wldev->fw.ucode)
 -- 
 1.8.3.2
 
