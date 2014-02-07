@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755204AbaBGNEo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 08:04:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41749 "EHLO
+	id S1753725AbaBGNFk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 08:05:40 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41732 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753632AbaBGLt3 (ORCPT
+	with ESMTP id S1753020AbaBGLt0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:49:29 -0500
+	Fri, 7 Feb 2014 06:49:26 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michael Grzeschik <m.grzeschik@pengutronix.de>,
-        Brian Norris <computersforpeace@gmail.com>,
+Cc: Dave Young <dyoung@redhat.com>, Matt Fleming <matt.fleming@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 074/233] mtd: mxc_nand: remove duplicated ecc_stats counting
-Date: Fri,  7 Feb 2014 11:44:53 +0000
-Message-Id: <1391773652-25214-75-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 071/233] x86/efi: Fix off-by-one bug in EFI Boot Services reservation
+Date: Fri,  7 Feb 2014 11:44:50 +0000
+Message-Id: <1391773652-25214-72-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -28,32 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Grzeschik <m.grzeschik@pengutronix.de>
+From: Dave Young <dyoung@redhat.com>
 
-commit 0566477762f9e174e97af347ee9c865f908a5647 upstream.
+commit a7f84f03f660d93574ac88835d056c0d6468aebe upstream.
 
-The ecc_stats.corrected count variable will already be incremented in
-the above framework-layer just after this callback.
+Current code check boot service region with kernel text region by:
+start+size >= __pa_symbol(_text)
+The end of the above region should be start + size - 1 instead.
 
-Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+I see this problem in ovmf + Fedora 19 grub boot:
+text start: 1000000 md start: 800000 md size: 800000
+
+Signed-off-by: Dave Young <dyoung@redhat.com>
+Acked-by: Borislav Petkov <bp@suse.de>
+Acked-by: Toshi Kani <toshi.kani@hp.com>
+Tested-by: Toshi Kani <toshi.kani@hp.com>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/mtd/nand/mxc_nand.c | 1 -
- 1 file changed, 1 deletion(-)
+ arch/x86/platform/efi/efi.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/mtd/nand/mxc_nand.c b/drivers/mtd/nand/mxc_nand.c
-index 07e5784..9896b63 100644
---- a/drivers/mtd/nand/mxc_nand.c
-+++ b/drivers/mtd/nand/mxc_nand.c
-@@ -676,7 +676,6 @@ static int mxc_nand_correct_data_v2_v3(struct mtd_info *mtd, u_char *dat,
- 		ecc_stat >>= 4;
- 	} while (--no_subpages);
- 
--	mtd->ecc_stats.corrected += ret;
- 	pr_debug("%d Symbol Correctable RS-ECC Error\n", ret);
- 
- 	return ret;
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 220fa52..f19284d 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -440,7 +440,7 @@ void __init efi_reserve_boot_services(void)
+ 		 * - Not within any part of the kernel
+ 		 * - Not the bios reserved area
+ 		*/
+-		if ((start+size >= __pa_symbol(_text)
++		if ((start + size > __pa_symbol(_text)
+ 				&& start <= __pa_symbol(_end)) ||
+ 			!e820_all_mapped(start, start+size, E820_RAM) ||
+ 			memblock_is_region_reserved(start, size)) {
 -- 
 1.8.3.2
 
