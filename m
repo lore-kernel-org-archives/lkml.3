@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751951AbaBGSrc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 13:47:32 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:45971 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751233AbaBGSrb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 13:47:31 -0500
-Date: Sat, 8 Feb 2014 00:16:53 +0530
-From: Gautham R Shenoy <ego@linux.vnet.ibm.com>
+	id S1751620AbaBGS40 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 13:56:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58249 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751233AbaBGS4Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 13:56:25 -0500
+From: Prarit Bhargava <prarit@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, penberg@kernel.org
-Subject: [PATCH] slub: Hold list_lock unconditionally before the call to
- add_full.
-Message-ID: <20140207184653.GA5799@in.ibm.com>
-Reply-To: ego@linux.vnet.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14020718-6688-0000-0000-000006330A27
+Cc: Prarit Bhargava <prarit@redhat.com>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Thomas Renninger <trenn@suse.de>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Alan Cox <alan@linux.intel.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Subject: [PATCH] tools, cpupower Fix error condition in cmd_freq_set()
+Date: Fri,  7 Feb 2014 13:55:53 -0500
+Message-Id: <1391799353-19517-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On a system which has only 4.00GHz set as the only available frequency,
 
->From the lockdep annotation and the comment that existed before the
-lockdep annotations were introduced, 
-mm/slub.c:add_full(s, n, page) expects to be called with n->list_lock
-held.
+[root@amd-pike-05 ~]# cpupower frequency-info
+<snip>
+  current policy: frequency should be within 4.00 GHz and 4.00 GHz.
+                  The governor "userspace" may decide which speed to use
+                  within this range.
+<snip>
 
-However, there's a call path in deactivate_slab() when
+setting the frequency to 2.8GHz does not return an error.
 
-	 (new.inuse || n->nr_partial <= s->min_partial) &&
-	 !(new.freelist) &&
-         !(kmem_cache_debug(s))
+[root@amd-pike-05 ~]# cpupower frequency-set --freq 2800MHz
+Setting cpu: 0
+Setting cpu: 1
+Setting cpu: 2
+Setting cpu: 3
+Setting cpu: 4
+Setting cpu: 5
+Setting cpu: 6
+Setting cpu: 7
+[root@amd-pike-05 ~]#
 
-which ends up calling add_full() without holding
-n->list_lock.
+The frequency set error should stop with an error message after the first
+failure.  Fix the error return in cmd_freq_set() to read errors as less
+than zero.
 
-This was discovered while onlining/offlining cpus in 3.14-rc1 due to
-the lockdep annotations added by commit
-c65c1877bd6826ce0d9713d76e30a7bed8e49f38.
-
-Fix this by unconditionally taking the lock
-irrespective of the state of kmem_cache_debug(s).
-
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Signed-off-by: Gautham R. Shenoy <ego@linux.vnet.ibm.com>
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Cc: Dominik Brodowski <linux@dominikbrodowski.net>
+Cc: Thomas Renninger <trenn@suse.de>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Cc: Alan Cox <alan@linux.intel.com>
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
 ---
- mm/slub.c | 2 +-
+ tools/power/cpupower/utils/cpufreq-set.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/mm/slub.c b/mm/slub.c
-index 7e3e045..1f723f7 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -1882,7 +1882,7 @@ redo:
- 		}
- 	} else {
- 		m = M_FULL;
--		if (kmem_cache_debug(s) && !lock) {
-+		if (!lock) {
- 			lock = 1;
- 			/*
- 			 * This also ensures that the scanning of full
+diff --git a/tools/power/cpupower/utils/cpufreq-set.c b/tools/power/cpupower/utils/cpufreq-set.c
+index a416de8..e5f78623 100644
+--- a/tools/power/cpupower/utils/cpufreq-set.c
++++ b/tools/power/cpupower/utils/cpufreq-set.c
+@@ -320,7 +320,7 @@ int cmd_freq_set(int argc, char **argv)
+ 
+ 		printf(_("Setting cpu: %d\n"), cpu);
+ 		ret = do_one_cpu(cpu, &new_pol, freq, policychange);
+-		if (ret)
++		if (ret < 0)
+ 			break;
+ 	}
+ 
 -- 
-1.8.3.1
+1.7.9.3
 
