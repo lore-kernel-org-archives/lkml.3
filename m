@@ -1,66 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753343AbaBGRm3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 12:42:29 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:33003 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752962AbaBGRmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 12:42:25 -0500
-Date: Fri, 7 Feb 2014 18:42:19 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: "Alexandra N. Kossovsky" <Alexandra.Kossovsky@oktetlabs.ru>
-Cc: Matt Fleming <matt@console-pimps.org>, Bjorn Helgaas <bhelgaas@google.com>,
+	id S1753184AbaBGRmN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 12:42:13 -0500
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:41354 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752841AbaBGRmG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 12:42:06 -0500
+X-Originating-IP: 50.43.14.201
+Date: Fri, 7 Feb 2014 09:41:55 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: "'Rashika Kheria'" <rashika.kheria@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>
-Subject: Re: 3.13.0: crash on boot
-Message-ID: <20140207174219.GA17003@pd.tnic>
-References: <20140131083707.GA9968@oktetlabs.ru>
- <CAErSpo6PaX2BcTqF4GD5ez3wDaPizUCNZJEjy_5EozAd3epoaA@mail.gmail.com>
- <20140203144120.GA15384@console-pimps.org>
- <20140204133046.GA24536@oktetlabs.ru>
- <20140205013206.GA5711@pd.tnic>
- <20140207090043.GB24536@oktetlabs.ru>
- <20140207144447.GJ24395@pd.tnic>
- <20140207172618.GA8385@sanechka.spb.ru>
+        Armin Schindler <mac@melware.de>, Karsten Keil <isdn@linux-pingi.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [PATCH 19/26] drivers: isdn: Move prototype declaration to
+ header file platform.h from diva_didd.c
+Message-ID: <20140207174155.GG7298@jtriplet-mobl1>
+References: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
+ <93d7188538418423685ecefaf3d2bb311b37be6e.1390408518.git.rashika.kheria@gmail.com>
+ <063D6719AE5E284EB5DD2968C1650D6D0F6BA76D@AcuExch.aculab.com>
+ <20140207171516.GA7298@jtriplet-mobl1>
+ <063D6719AE5E284EB5DD2968C1650D6D0F6BAC1C@AcuExch.aculab.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140207172618.GA8385@sanechka.spb.ru>
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D0F6BAC1C@AcuExch.aculab.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 07, 2014 at 09:26:18PM +0400, Alexandra N. Kossovsky wrote:
-> On Feb 07 15:44, Borislav Petkov wrote:
-> > On Fri, Feb 07, 2014 at 01:00:45PM +0400, Alexandra N. Kossovsky wrote:
-> > > > Btw, did this box boot any kernels successfully in EFI mode at all?
-> > > 
-> > > Yes.  It booted, for example, the same 3.13 kernel from Debian - without
-> > > debug options.
+On Fri, Feb 07, 2014 at 05:22:58PM +0000, David Laight wrote:
+> From: Josh Triplett
+> > On Fri, Feb 07, 2014 at 01:33:46PM +0000, David Laight wrote:
+> > > From: Rashika Kheria
+> > > > Move prototype declarations of function to header file
+> > > > hardware/eicon/platform.h because they are used by more than one file.
+> > > >
+> > > > This eliminates the following warnings in hardware/eicon/diddfunc.c:
+> > > > drivers/isdn/hardware/eicon/diddfunc.c:95:12: warning: no previous prototype for diddfunc_init [-
+> > > > Wmissing-prototypes]
+> > > > drivers/isdn/hardware/eicon/diddfunc.c:110:13: warning: no previous prototype for diddfunc_finit
+> > [-
+> > > > Wmissing-prototypes]
+> > > ...
+> > > > diff --git a/drivers/isdn/hardware/eicon/diva_didd.c b/drivers/isdn/hardware/eicon/diva_didd.c
+> > > > index fab6ccf..56d32a7 100644
+> > > > --- a/drivers/isdn/hardware/eicon/diva_didd.c
+> > > > +++ b/drivers/isdn/hardware/eicon/diva_didd.c
+> > > > @@ -39,9 +39,6 @@ MODULE_LICENSE("GPL");
+> > > >  #define DBG_MINIMUM  (DL_LOG + DL_FTL + DL_ERR)
+> > > >  #define DBG_DEFAULT  (DBG_MINIMUM + DL_XLOG + DL_REG)
+> > > >
+> > > > -extern int diddfunc_init(void);
+> > > > -extern void diddfunc_finit(void);
+> > > > -
+> > > >  extern void DIVA_DIDD_Read(void *, int);
+> > >
+> > > You should move that one as well.
+> > > There really shouldn't be 'extern' definitions for any function in
+> > > any C files since you want the compiler to check they are correct
+> > > when the function itself is compiled.
 > > 
-> > Huh, what debug options?
+> > Absolutely, but as far as I can tell Rashika is doing this
+> > incrementally, organized more by header than by source file, so I'd
+> > expect a few externs in a source file to disappear at a time rather than
+> > all in one patch.
 > 
-> Debug options in the kernel config.
+> Unless any actual bugs are found, I'd have thought a single patch for
+> each driver would be enough, maybe even one for the whole lot - depending
+> on how they are maintained.
+> The 26 patches already posted are a little excessive.
 
-Thanks, I'll take a look. I just had another idea which you could try
-in the meantime:
+These types of patches often seem to generate a non-trivial amount of
+feedback (for instance, due to driver-specific organizational issues),
+and breaking them up by groups of warnings has tended to avoid excessive
+churn and review difficulty on a larger patch.  Certainly as a reviewer
+unfamiliar with isdn, I found this patch series far easier to review
+than a larger patch would have been.
 
-Checkout latest Linus kernel and merge
-
-git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git#next
-
-into it, enable CONFIG_EFI_PGT_DUMP and try booting then. Catch dmesg
-too and send it to me.
-
-If anything above is unclear, please ask.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+- Josh Triplett
