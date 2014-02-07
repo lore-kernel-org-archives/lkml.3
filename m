@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752942AbaBGLYb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:24:31 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40875 "EHLO
+	id S1753444AbaBGLla (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:41:30 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41022 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752162AbaBGLXv (ORCPT
+	with ESMTP id S1752163AbaBGLYa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:23:51 -0500
+	Fri, 7 Feb 2014 06:24:30 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 14/88] rtlwifi: rtl8192cu: Fix W=1 build warning
-Date: Fri,  7 Feb 2014 11:22:11 +0000
-Message-Id: <1391772205-22239-15-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 45/88] radeon/pm: Guard access to rdev->pm.power_state array
+Date: Fri,  7 Feb 2014 11:22:42 +0000
+Message-Id: <1391772205-22239-46-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
@@ -31,34 +31,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>
 
-commit 0b948341f398646b0d59d746800fbbf3656886e7 upstream.
+commit 370169516e736edad3b3c5aa49858058f8b55195 upstream.
 
-When this driver is built with "make W=1", the following warning is output:
+It's never allocated on systems without an ATOMBIOS or COMBIOS ROM.
 
-drivers/net/wireless/rtlwifi/rtl8192cu/sw.c:56:6: warning: variable ‘err’ set but not used [-Wunused-but-set-variable]
+Should fix an oops I encountered while resetting the GPU after a lockup
+on my PowerBook with an RV350.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Michel Dänzer <michel.daenzer@amd.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/sw.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/radeon_pm.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-index 5212ad2..873754b 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-@@ -76,7 +76,7 @@ static int rtl92cu_init_sw_vars(struct ieee80211_hw *hw)
- 				      GFP_KERNEL, hw, rtl_fw_cb);
- 
- 
--	return 0;
-+	return err;
- }
- 
- static void rtl92cu_deinit_sw_vars(struct ieee80211_hw *hw)
+diff --git a/drivers/gpu/drm/radeon/radeon_pm.c b/drivers/gpu/drm/radeon/radeon_pm.c
+index c7f3d6c..bb51395 100644
+--- a/drivers/gpu/drm/radeon/radeon_pm.c
++++ b/drivers/gpu/drm/radeon/radeon_pm.c
+@@ -575,8 +575,10 @@ void radeon_pm_resume(struct radeon_device *rdev)
+ 	rdev->pm.current_clock_mode_index = 0;
+ 	rdev->pm.current_sclk = rdev->pm.default_sclk;
+ 	rdev->pm.current_mclk = rdev->pm.default_mclk;
+-	rdev->pm.current_vddc = rdev->pm.power_state[rdev->pm.default_power_state_index].clock_info[0].voltage.voltage;
+-	rdev->pm.current_vddci = rdev->pm.power_state[rdev->pm.default_power_state_index].clock_info[0].voltage.vddci;
++	if (rdev->pm.power_state) {
++		rdev->pm.current_vddc = rdev->pm.power_state[rdev->pm.default_power_state_index].clock_info[0].voltage.voltage;
++		rdev->pm.current_vddci = rdev->pm.power_state[rdev->pm.default_power_state_index].clock_info[0].voltage.vddci;
++	}
+ 	if (rdev->pm.pm_method == PM_METHOD_DYNPM
+ 	    && rdev->pm.dynpm_state == DYNPM_STATE_SUSPENDED) {
+ 		rdev->pm.dynpm_state = DYNPM_STATE_ACTIVE;
 -- 
 1.8.3.2
 
