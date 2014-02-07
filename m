@@ -1,27 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752910AbaBGUz1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 15:55:27 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:41364 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751732AbaBGUzZ (ORCPT
+	id S1753113AbaBGU4P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 15:56:15 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:53231 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751732AbaBGU4N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 15:55:25 -0500
-Date: Fri, 7 Feb 2014 12:55:22 -0800 (PST)
+	Fri, 7 Feb 2014 15:56:13 -0500
+Date: Fri, 7 Feb 2014 12:56:11 -0800 (PST)
 From: David Rientjes <rientjes@google.com>
 X-X-Sender: rientjes@chino.kir.corp.google.com
 To: Rashika Kheria <rashika.kheria@gmail.com>
 cc: linux-kernel@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
         Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        cgroups@vger.kernel.org, linux-mm@kvack.org, josh@joshtriplett.org
-Subject: Re: [PATCH 6/9] mm: Mark function as static in memcontrol.c
-In-Reply-To: <0dbbc0fe4360069993ef8a9ca179f30482610270.1391167128.git.rashika.kheria@gmail.com>
-Message-ID: <alpine.DEB.2.02.1402071254410.4212@chino.kir.corp.google.com>
-References: <a7658fc8f2ab015bffe83de1448cc3db79d2a9fc.1391167128.git.rashika.kheria@gmail.com> <0dbbc0fe4360069993ef8a9ca179f30482610270.1391167128.git.rashika.kheria@gmail.com>
+        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.linux-foundation.org, josh@joshtriplett.org
+Subject: Re: [PATCH 7/9] mm: Mark functions as static in page_cgroup.c
+In-Reply-To: <6054d570fc83c3d4f3de240d6da488f876e21450.1391167128.git.rashika.kheria@gmail.com>
+Message-ID: <alpine.DEB.2.02.1402071255590.4212@chino.kir.corp.google.com>
+References: <a7658fc8f2ab015bffe83de1448cc3db79d2a9fc.1391167128.git.rashika.kheria@gmail.com> <6054d570fc83c3d4f3de240d6da488f876e21450.1391167128.git.rashika.kheria@gmail.com>
 User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="531381512-204402537-1391806523=:4212"
+Content-Type: MULTIPART/MIXED; BOUNDARY="531381512-2145918811-1391806572=:4212"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,21 +31,22 @@ X-Mailing-List: linux-kernel@vger.kernel.org
   This message is in MIME format.  The first part should be readable text,
   while the remaining parts are likely unreadable without MIME-aware tools.
 
---531381512-204402537-1391806523=:4212
+--531381512-2145918811-1391806572=:4212
 Content-Type: TEXT/PLAIN; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 
 On Fri, 7 Feb 2014, Rashika Kheria wrote:
 
-> Mark function as static in memcontrol.c because it is not used outside
-> this file.
+> Mark functions as static in page_cgroup.c because they are not used
+> outside this file.
 > 
-> This also eliminates the following warning in memcontrol.c:
-> mm/memcontrol.c:3089:5: warning: no previous prototype for ‘memcg_update_cache_sizes’ [-Wmissing-prototypes]
+> This eliminates the following warning in mm/page_cgroup.c:
+> mm/page_cgroup.c:177:6: warning: no previous prototype for ‘__free_page_cgroup’ [-Wmissing-prototypes]
+> mm/page_cgroup.c:190:15: warning: no previous prototype for ‘online_page_cgroup’ [-Wmissing-prototypes]
+> mm/page_cgroup.c:225:15: warning: no previous prototype for ‘offline_page_cgroup’ [-Wmissing-prototypes]
 > 
 > Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-memcg_update_cache_sizes() was removed in commit d6441637709b ("memcg: 
-rework memcg_update_kmem_limit synchronization") for 3.14-rc1.
---531381512-204402537-1391806523=:4212--
+Acked-by: David Rientjes <rientjes@google.com>
+--531381512-2145918811-1391806572=:4212--
