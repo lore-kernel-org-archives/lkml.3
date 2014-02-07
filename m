@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754503AbaBGLso (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:48:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41613 "EHLO
+	id S932100AbaBGLsr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:48:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41608 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752989AbaBGLsl (ORCPT
+	with ESMTP id S1754486AbaBGLsk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:48:41 -0500
+	Fri, 7 Feb 2014 06:48:40 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Larry Finger <Larry.Finger@lwfinger.net>,
         "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 047/233] rtlwifi: Redo register save locations
-Date: Fri,  7 Feb 2014 11:44:26 +0000
-Message-Id: <1391773652-25214-48-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 046/233] rtlwifi: rtl8192cu: Add new firmware
+Date: Fri,  7 Feb 2014 11:44:25 +0000
+Message-Id: <1391773652-25214-47-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -30,101 +30,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit b9a758a8c905fc59e783ae91ad645452d877ea88 upstream.
+commit 62009b7f12793c932aaba0df946b04cb4a77d022 upstream.
 
-The initial USB driver did not use some register save locations in the
-private data storage. To save some memory, a union was used to overlay these
-variables with USB I/O components. In an update of the gain-control code,
-these register save locations are now needed for USB drivers.
+Vendor driver rtl8188C_8192C_8192D_usb_linux_v3.4.2_3727.20120404 introduced
+new firmware for these chips. The code try for the new file, and fall back to
+the original firmware if the new file is not available.
 
 Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/rtlwifi/wifi.h | 32 ++++++++++++++++----------------
- 1 file changed, 16 insertions(+), 16 deletions(-)
+ drivers/net/wireless/rtlwifi/core.c         | 10 ++++++++++
+ drivers/net/wireless/rtlwifi/rtl8192cu/sw.c | 16 +++++++++++++---
+ drivers/net/wireless/rtlwifi/wifi.h         |  1 +
+ 3 files changed, 24 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/net/wireless/rtlwifi/core.c b/drivers/net/wireless/rtlwifi/core.c
+index 733b7ce..0f12cd3 100644
+--- a/drivers/net/wireless/rtlwifi/core.c
++++ b/drivers/net/wireless/rtlwifi/core.c
+@@ -46,10 +46,20 @@ void rtl_fw_cb(const struct firmware *firmware, void *context)
+ 			 "Firmware callback routine entered!\n");
+ 	complete(&rtlpriv->firmware_loading_complete);
+ 	if (!firmware) {
++		if (rtlpriv->cfg->alt_fw_name) {
++			err = request_firmware(&firmware,
++					       rtlpriv->cfg->alt_fw_name,
++					       rtlpriv->io.dev);
++			pr_info("Loading alternative firmware %s\n",
++				rtlpriv->cfg->alt_fw_name);
++			if (!err)
++				goto found_alt;
++		}
+ 		pr_err("Firmware %s not available\n", rtlpriv->cfg->fw_name);
+ 		rtlpriv->max_fw_size = 0;
+ 		return;
+ 	}
++found_alt:
+ 	if (firmware->size > rtlpriv->max_fw_size) {
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
+ 			 "Firmware is too big!\n");
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
+index 2bd5985..a5a1901 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
+@@ -49,6 +49,9 @@ MODULE_AUTHOR("Larry Finger	<Larry.Finger@lwfinger.net>");
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Realtek 8192C/8188C 802.11n USB wireless");
+ MODULE_FIRMWARE("rtlwifi/rtl8192cufw.bin");
++MODULE_FIRMWARE("rtlwifi/rtl8192cufw_A.bin");
++MODULE_FIRMWARE("rtlwifi/rtl8192cufw_B.bin");
++MODULE_FIRMWARE("rtlwifi/rtl8192cufw_TMSC.bin");
+ 
+ static int rtl92cu_init_sw_vars(struct ieee80211_hw *hw)
+ {
+@@ -68,14 +71,21 @@ static int rtl92cu_init_sw_vars(struct ieee80211_hw *hw)
+ 			 "Can't alloc buffer for fw\n");
+ 		return 1;
+ 	}
+-
++	if (IS_VENDOR_UMC_A_CUT(rtlpriv->rtlhal.version) &&
++	    !IS_92C_SERIAL(rtlpriv->rtlhal.version)) {
++		rtlpriv->cfg->fw_name = "rtlwifi/rtl8192cufw_A.bin";
++	} else if (IS_81xxC_VENDOR_UMC_B_CUT(rtlpriv->rtlhal.version)) {
++		rtlpriv->cfg->fw_name = "rtlwifi/rtl8192cufw_B.bin";
++	} else {
++		rtlpriv->cfg->fw_name = "rtlwifi/rtl8192cufw_TMSC.bin";
++	}
++	/* provide name of alternative file */
++	rtlpriv->cfg->alt_fw_name = "rtlwifi/rtl8192cufw.bin";
+ 	pr_info("Loading firmware %s\n", rtlpriv->cfg->fw_name);
+ 	rtlpriv->max_fw_size = 0x4000;
+ 	err = request_firmware_nowait(THIS_MODULE, 1,
+ 				      rtlpriv->cfg->fw_name, rtlpriv->io.dev,
+ 				      GFP_KERNEL, hw, rtl_fw_cb);
+-
+-
+ 	return err;
+ }
+ 
 diff --git a/drivers/net/wireless/rtlwifi/wifi.h b/drivers/net/wireless/rtlwifi/wifi.h
-index 224cf61..e576a927 100644
+index ad9c37a..224cf61 100644
 --- a/drivers/net/wireless/rtlwifi/wifi.h
 +++ b/drivers/net/wireless/rtlwifi/wifi.h
-@@ -1035,6 +1035,7 @@ struct rtl_ht_agg {
- 
- struct rssi_sta {
- 	long undec_sm_pwdb;
-+	long undec_sm_cck;
- };
- 
- struct rtl_tid_data {
-@@ -1325,8 +1326,10 @@ struct fast_ant_training {
- struct rtl_dm {
- 	/*PHY status for Dynamic Management */
- 	long entry_min_undec_sm_pwdb;
-+	long undec_sm_cck;
- 	long undec_sm_pwdb;	/*out dm */
- 	long entry_max_undec_sm_pwdb;
-+	s32 ofdm_pkt_cnt;
- 	bool dm_initialgain_enable;
- 	bool dynamic_txpower_enable;
- 	bool current_turbo_edca;
-@@ -1341,6 +1344,7 @@ struct rtl_dm {
- 	bool inform_fw_driverctrldm;
- 	bool current_mrc_switch;
- 	u8 txpowercount;
-+	u8 powerindex_backup[6];
- 
- 	u8 thermalvalue_rxgain;
- 	u8 thermalvalue_iqk;
-@@ -1352,7 +1356,9 @@ struct rtl_dm {
- 	bool done_txpower;
- 	u8 dynamic_txhighpower_lvl;	/*Tx high power level */
- 	u8 dm_flag;		/*Indicate each dynamic mechanism's status. */
-+	u8 dm_flag_tmp;
- 	u8 dm_type;
-+	u8 dm_rssi_sel;
- 	u8 txpower_track_control;
- 	bool interrupt_migration;
- 	bool disable_tx_int;
-@@ -1951,6 +1957,7 @@ struct dig_t {
- 	u8 pre_ccastate;
- 	u8 cur_ccasate;
- 	u8 large_fa_hit;
-+	u8 dig_dynamic_min;
- 	u8 forbidden_igi;
- 	u8 dig_state;
- 	u8 dig_highpwrstate;
-@@ -2031,22 +2038,15 @@ struct rtl_priv {
- 	struct dig_t dm_digtable;
- 	struct ps_t dm_pstable;
- 
--	/* section shared by individual drivers */
--	union {
--		struct {	/* data buffer pointer for USB reads */
--			__le32 *usb_data;
--			int usb_data_index;
--			bool initialized;
--		};
--		struct {	/* section for 8723ae */
--			bool reg_init;	/* true if regs saved */
--			u32 reg_874;
--			u32 reg_c70;
--			u32 reg_85c;
--			u32 reg_a74;
--			bool bt_operation_on;
--		};
--	};
-+	u32 reg_874;
-+	u32 reg_c70;
-+	u32 reg_85c;
-+	u32 reg_a74;
-+	bool reg_init;	/* true if regs saved */
-+	bool bt_operation_on;
-+	__le32 *usb_data;
-+	int usb_data_index;
-+	bool initialized;
- 	bool enter_ps;	/* true when entering PS */
- 	u8 rate_mask[5];
- 
+@@ -1806,6 +1806,7 @@ struct rtl_hal_cfg {
+ 	bool write_readback;
+ 	char *name;
+ 	char *fw_name;
++	char *alt_fw_name;
+ 	struct rtl_hal_ops *ops;
+ 	struct rtl_mod_params *mod_params;
+ 	struct rtl_hal_usbint_cfg *usb_interface_cfg;
 -- 
 1.8.3.2
 
