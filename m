@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751721AbaBGBfr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 20:35:47 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:43104 "EHLO
+	id S1752573AbaBGBjv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 20:39:51 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:64100 "EHLO
 	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751515AbaBGBfo (ORCPT
+	with ESMTP id S1751597AbaBGBfq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 20:35:44 -0500
-X-AuditID: 9c93017d-b7b1fae00000636d-b8-52f4386da6db
+	Thu, 6 Feb 2014 20:35:46 -0500
+X-AuditID: 9c93017d-b7b1fae00000636d-c1-52f4386e0486
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Rodrigo Campos <rodrigo@sdfg.com.ar>, Andi Kleen <andi@firstfloor.org>,
         David Ahern <dsahern@gmail.com>
-Subject: [PATCH 09/21] perf hists: Sort hist entries by accumulated period
-Date: Fri,  7 Feb 2014 10:35:11 +0900
-Message-Id: <1391736923-30765-10-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 15/21] perf report: Add --children option
+Date: Fri,  7 Feb 2014 10:35:17 +0900
+Message-Id: <1391736923-30765-16-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1391736923-30765-1-git-send-email-namhyung@kernel.org>
 References: <1391736923-30765-1-git-send-email-namhyung@kernel.org>
@@ -27,42 +27,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When callchain accumulation is requested, we need to sort the entries
-by accumulated period value.  When accumulated periods of two entries
-are same (i.e. single path callchain) put the caller above since
-accumulation tends to put callers on higher position for obvious
-reason.
+The --children option is for showing accumulated overhead (period)
+value as well as self overhead.
 
 Tested-by: Arun Sharma <asharma@fb.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/hist.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ tools/perf/Documentation/perf-report.txt |  5 +++++
+ tools/perf/builtin-report.c              | 10 ++++++++++
+ 2 files changed, 15 insertions(+)
 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index af99ab33bcd4..d7912a5c14dc 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -1063,6 +1063,18 @@ static int hist_entry__sort_on_period(struct hist_entry *a,
- 	struct hist_entry *pair;
- 	u64 *periods_a, *periods_b;
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index 8eab8a4bdeb8..710fc8b18f6b 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -141,6 +141,11 @@ OPTIONS
+ 
+ 	Default: fractal,0.5,callee,function.
+ 
++--children::
++	Accumulate callchain of children to parent entry so that then can
++	show up in the output.  The output will have a new "Children" column
++	and will be sorted on the data.  It requires callchains are recorded.
++
+ --max-stack::
+ 	Set the stack depth limit when parsing the callchain, anything
+ 	beyond the specified depth will be ignored. This is a trade-off
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 967ba75277fd..fba27e2e1491 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -172,6 +172,14 @@ static int report__setup_sample_type(struct report *rep)
+ 			}
+ 	}
  
 +	if (symbol_conf.cumulate_callchain) {
-+		/*
-+		 * Put caller above callee when they have equal period.
-+		 */
-+		if (a->stat_acc->period != b->stat_acc->period)
-+			return a->stat_acc->period > b->stat_acc->period ? 1 : -1;
-+
-+		if (a->callchain->max_depth != b->callchain->max_depth)
-+			return a->callchain->max_depth < b->callchain->max_depth ?
-+				1 : -1;
++		/* Silently ignore if callchain is missing */
++		if (!(sample_type & PERF_SAMPLE_CALLCHAIN)) {
++			symbol_conf.cumulate_callchain = false;
++			perf_hpp__cancel_cumulate();
++		}
 +	}
 +
- 	ret = period_cmp(a->stat.period, b->stat.period);
- 	if (ret || !symbol_conf.event_group)
- 		return ret;
+ 	if (sort__mode == SORT_MODE__BRANCH) {
+ 		if (!is_pipe &&
+ 		    !(sample_type & PERF_SAMPLE_BRANCH_STACK)) {
+@@ -636,6 +644,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_CALLBACK_DEFAULT('g', "call-graph", &report, "output_type,min_percent[,print_limit],call_order",
+ 		     "Display callchains using output_type (graph, flat, fractal, or none) , min percent threshold, optional print limit, callchain order, key (function or address). "
+ 		     "Default: fractal,0.5,callee,function", &parse_callchain_opt, callchain_default_opt),
++	OPT_BOOLEAN(0, "children", &symbol_conf.cumulate_callchain,
++		    "Accumulate callchains of children and show total overhead as well"),
+ 	OPT_INTEGER(0, "max-stack", &report.max_stack,
+ 		    "Set the maximum stack depth when parsing the callchain, "
+ 		    "anything beyond the specified depth will be ignored. "
 -- 
 1.7.11.7
 
