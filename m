@@ -1,93 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754047AbaBGMYH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:24:07 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42140 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754990AbaBGLvO (ORCPT
+	id S1753163AbaBGMYT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:24:19 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:39554 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752652AbaBGMYN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:51:14 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 153/233] drm/radeon: set the full cache bit for fences on r7xx+
-Date: Fri,  7 Feb 2014 11:46:12 +0000
-Message-Id: <1391773652-25214-154-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
-References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Fri, 7 Feb 2014 07:24:13 -0500
+Date: Fri, 7 Feb 2014 17:54:08 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Armin Schindler <mac@melware.de>, Karsten Keil <isdn@linux-pingi.de>,
+        netdev@vger.kernel.org, josh@joshtriplett.org
+Subject: [PATCH 05/26] drivers: isdn: Move prototype declarations to header
+ file capifunc.h from message.c
+Message-ID: <1f531b30ed44af6d6c8c65e6b16dbfa204c48d9e.1390408514.git.rashika.kheria@gmail.com>
+References: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.4 -stable review patch.  If anyone has any objections, please let me know.
+Move prototype declaration of functions to header file
+hardware/eicon/capifunc.h because they are used by more than one file.
 
-------------------
+This eliminates the following warnings in hardware/eicon/capifunc.c:
+drivers/isdn/hardware/eicon/capifunc.c:113:6: warning: no previous prototype for ‘MapController’ [-Wmissing-prototypes]
+drivers/isdn/hardware/eicon/capifunc.c:188:7: warning: no previous prototype for ‘TransmitBufferSet’ [-Wmissing-prototypes]
+drivers/isdn/hardware/eicon/capifunc.c:195:7: warning: no previous prototype for ‘TransmitBufferGet’ [-Wmissing-prototypes]
+drivers/isdn/hardware/eicon/capifunc.c:203:6: warning: no previous prototype for ‘TransmitBufferFree’ [-Wmissing-prototypes]
+drivers/isdn/hardware/eicon/capifunc.c:209:7: warning: no previous prototype for ‘ReceiveBufferGet’ [-Wmissing-prototypes]
+drivers/isdn/hardware/eicon/capifunc.c:217:6: warning: no previous prototype for ‘api_remove_complete’ [-Wmissing-prototypes]
+drivers/isdn/hardware/eicon/capifunc.c:225:6: warning: no previous prototype for ‘sendf’ [-Wmissing-prototypes]
+drivers/isdn/hardware/eicon/capifunc.c:1115:5: warning: no previous prototype for ‘fax_head_line_time’ [-Wmissing-prototypes]
 
-From: Alex Deucher <alexander.deucher@amd.com>
-
-commit d45b964a22cad962d3ede1eba8d24f5cee7b2a92 upstream.
-
-Needed to properly flush the read caches for fences.
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- drivers/gpu/drm/radeon/r600.c  | 13 +++++++------
- drivers/gpu/drm/radeon/r600d.h |  1 +
- 2 files changed, 8 insertions(+), 6 deletions(-)
+ drivers/isdn/hardware/eicon/capifunc.h |    8 ++++++++
+ drivers/isdn/hardware/eicon/message.c  |   12 +-----------
+ 2 files changed, 9 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/r600.c b/drivers/gpu/drm/radeon/r600.c
-index c2d7eb6..30320a5 100644
---- a/drivers/gpu/drm/radeon/r600.c
-+++ b/drivers/gpu/drm/radeon/r600.c
-@@ -2989,14 +2989,17 @@ void r600_fence_ring_emit(struct radeon_device *rdev,
- 			  struct radeon_fence *fence)
- {
- 	struct radeon_ring *ring = &rdev->ring[fence->ring];
-+	u32 cp_coher_cntl = PACKET3_TC_ACTION_ENA | PACKET3_VC_ACTION_ENA |
-+		PACKET3_SH_ACTION_ENA;
-+
-+	if (rdev->family >= CHIP_RV770)
-+		cp_coher_cntl |= PACKET3_FULL_CACHE_ENA;
+diff --git a/drivers/isdn/hardware/eicon/capifunc.h b/drivers/isdn/hardware/eicon/capifunc.h
+index e96c45b..fb7091e 100644
+--- a/drivers/isdn/hardware/eicon/capifunc.h
++++ b/drivers/isdn/hardware/eicon/capifunc.h
+@@ -36,5 +36,13 @@ typedef struct _diva_card {
+  */
+ int init_capifunc(void);
+ void finit_capifunc(void);
++byte MapController(byte);
++void *TransmitBufferSet(APPL *appl, dword ref);
++void *TransmitBufferGet(APPL *appl, void *p);
++void TransmitBufferFree(APPL *appl, void *p);
++void *ReceiveBufferGet(APPL *appl, int Num);
++void api_remove_complete(void);
++void sendf(APPL *, word, dword, word, byte *, ...);
++int fax_head_line_time(char *buffer);
  
- 	if (rdev->wb.use_event) {
- 		u64 addr = rdev->fence_drv[fence->ring].gpu_addr;
- 		/* flush read cache over gart */
- 		radeon_ring_write(ring, PACKET3(PACKET3_SURFACE_SYNC, 3));
--		radeon_ring_write(ring, PACKET3_TC_ACTION_ENA |
--					PACKET3_VC_ACTION_ENA |
--					PACKET3_SH_ACTION_ENA);
-+		radeon_ring_write(ring, cp_coher_cntl);
- 		radeon_ring_write(ring, 0xFFFFFFFF);
- 		radeon_ring_write(ring, 0);
- 		radeon_ring_write(ring, 10); /* poll interval */
-@@ -3010,9 +3013,7 @@ void r600_fence_ring_emit(struct radeon_device *rdev,
- 	} else {
- 		/* flush read cache over gart */
- 		radeon_ring_write(ring, PACKET3(PACKET3_SURFACE_SYNC, 3));
--		radeon_ring_write(ring, PACKET3_TC_ACTION_ENA |
--					PACKET3_VC_ACTION_ENA |
--					PACKET3_SH_ACTION_ENA);
-+		radeon_ring_write(ring, cp_coher_cntl);
- 		radeon_ring_write(ring, 0xFFFFFFFF);
- 		radeon_ring_write(ring, 0);
- 		radeon_ring_write(ring, 10); /* poll interval */
-diff --git a/drivers/gpu/drm/radeon/r600d.h b/drivers/gpu/drm/radeon/r600d.h
-index d079cb1..4dae42c 100644
---- a/drivers/gpu/drm/radeon/r600d.h
-+++ b/drivers/gpu/drm/radeon/r600d.h
-@@ -1511,6 +1511,7 @@
- #              define PACKET3_CP_DMA_CMD_DAIC      (1 << 29)
- #define	PACKET3_SURFACE_SYNC				0x43
- #              define PACKET3_CB0_DEST_BASE_ENA    (1 << 6)
-+#              define PACKET3_FULL_CACHE_ENA       (1 << 20) /* r7xx+ only */
- #              define PACKET3_TC_ACTION_ENA        (1 << 23)
- #              define PACKET3_VC_ACTION_ENA        (1 << 24)
- #              define PACKET3_CB_ACTION_ENA        (1 << 25)
+ #endif /* __CAPIFUNC_H__ */
+diff --git a/drivers/isdn/hardware/eicon/message.c b/drivers/isdn/hardware/eicon/message.c
+index a82e542..062cb7b 100644
+--- a/drivers/isdn/hardware/eicon/message.c
++++ b/drivers/isdn/hardware/eicon/message.c
+@@ -32,6 +32,7 @@
+ #include "pc.h"
+ #include "capi20.h"
+ #include "divacapi.h"
++#include "capifunc.h"
+ #include "mdm_msg.h"
+ #include "divasync.h"
+ 
+@@ -84,7 +85,6 @@ static void api_save_msg(API_PARSE *in, byte *format, API_SAVE *out);
+ static void api_load_msg(API_SAVE *in, API_PARSE *out);
+ 
+ word api_remove_start(void);
+-void api_remove_complete(void);
+ 
+ static void plci_remove(PLCI *);
+ static void diva_get_extended_adapter_features(DIVA_CAPI_ADAPTER *a);
+@@ -224,20 +224,10 @@ static void diva_free_dma_descriptor(PLCI *plci, int nr);
+ /* external function prototypes                                     */
+ /*------------------------------------------------------------------*/
+ 
+-extern byte MapController(byte);
+ extern byte UnMapController(byte);
+ #define MapId(Id)(((Id) & 0xffffff00L) | MapController((byte)(Id)))
+ #define UnMapId(Id)(((Id) & 0xffffff00L) | UnMapController((byte)(Id)))
+ 
+-void sendf(APPL *, word, dword, word, byte *, ...);
+-void *TransmitBufferSet(APPL *appl, dword ref);
+-void *TransmitBufferGet(APPL *appl, void *p);
+-void TransmitBufferFree(APPL *appl, void *p);
+-void *ReceiveBufferGet(APPL *appl, int Num);
+-
+-int fax_head_line_time(char *buffer);
+-
+-
+ /*------------------------------------------------------------------*/
+ /* Global data definitions                                          */
+ /*------------------------------------------------------------------*/
 -- 
-1.8.3.2
+1.7.9.5
 
