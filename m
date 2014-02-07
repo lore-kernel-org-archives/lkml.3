@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753551AbaBGLk4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:40:56 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41026 "EHLO
+	id S1752942AbaBGLYb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:24:31 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40875 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752948AbaBGLYc (ORCPT
+	with ESMTP id S1752162AbaBGLXv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:24:32 -0500
+	Fri, 7 Feb 2014 06:23:51 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Marek=20Ol=C5=A1=C3=A1k?= <marek.olsak@amd.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 46/88] drm/radeon: skip colorbuffer checking if COLOR_INFO.FORMAT is set to INVALID
-Date: Fri,  7 Feb 2014 11:22:43 +0000
-Message-Id: <1391772205-22239-47-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 14/88] rtlwifi: rtl8192cu: Fix W=1 build warning
+Date: Fri,  7 Feb 2014 11:22:11 +0000
+Message-Id: <1391772205-22239-15-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
@@ -31,53 +31,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Marek=20Ol=C5=A1=C3=A1k?= <marek.olsak@amd.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 56492e0fac2dbaf7735ffd66b206a90624917789 upstream.
+commit 0b948341f398646b0d59d746800fbbf3656886e7 upstream.
 
-This fixes a bug which was causing rejections of valid GPU commands
-from userspace.
+When this driver is built with "make W=1", the following warning is output:
 
-Signed-off-by: Marek Olšák <marek.olsak@amd.com>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+drivers/net/wireless/rtlwifi/rtl8192cu/sw.c:56:6: warning: variable ‘err’ set but not used [-Wunused-but-set-variable]
+
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/evergreen_cs.c | 5 ++++-
- drivers/gpu/drm/radeon/r600_cs.c      | 5 ++++-
- 2 files changed, 8 insertions(+), 2 deletions(-)
+ drivers/net/wireless/rtlwifi/rtl8192cu/sw.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/evergreen_cs.c b/drivers/gpu/drm/radeon/evergreen_cs.c
-index 4324c0d..64bc1fa 100644
---- a/drivers/gpu/drm/radeon/evergreen_cs.c
-+++ b/drivers/gpu/drm/radeon/evergreen_cs.c
-@@ -942,7 +942,10 @@ static int evergreen_cs_track_check(struct radeon_cs_parser *p)
- 	if (track->cb_dirty) {
- 		tmp = track->cb_target_mask;
- 		for (i = 0; i < 8; i++) {
--			if ((tmp >> (i * 4)) & 0xF) {
-+			u32 format = G_028C70_FORMAT(track->cb_color_info[i]);
-+
-+			if (format != V_028C70_COLOR_INVALID &&
-+			    (tmp >> (i * 4)) & 0xF) {
- 				/* at least one component is enabled */
- 				if (track->cb_color_bo[i] == NULL) {
- 					dev_warn(p->dev, "%s:%d mask 0x%08X | 0x%08X no cb for %d\n",
-diff --git a/drivers/gpu/drm/radeon/r600_cs.c b/drivers/gpu/drm/radeon/r600_cs.c
-index c05e88a..d11c75e 100644
---- a/drivers/gpu/drm/radeon/r600_cs.c
-+++ b/drivers/gpu/drm/radeon/r600_cs.c
-@@ -747,7 +747,10 @@ static int r600_cs_track_check(struct radeon_cs_parser *p)
- 	if (track->cb_dirty) {
- 		tmp = track->cb_target_mask;
- 		for (i = 0; i < 8; i++) {
--			if ((tmp >> (i * 4)) & 0xF) {
-+			u32 format = G_0280A0_FORMAT(track->cb_color_info[i]);
-+
-+			if (format != V_0280A0_COLOR_INVALID &&
-+			    (tmp >> (i * 4)) & 0xF) {
- 				/* at least one component is enabled */
- 				if (track->cb_color_bo[i] == NULL) {
- 					dev_warn(p->dev, "%s:%d mask 0x%08X | 0x%08X no cb for %d\n",
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
+index 5212ad2..873754b 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
+@@ -76,7 +76,7 @@ static int rtl92cu_init_sw_vars(struct ieee80211_hw *hw)
+ 				      GFP_KERNEL, hw, rtl_fw_cb);
+ 
+ 
+-	return 0;
++	return err;
+ }
+ 
+ static void rtl92cu_deinit_sw_vars(struct ieee80211_hw *hw)
 -- 
 1.8.3.2
 
