@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753276AbaBGVcy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 16:32:54 -0500
-Received: from kolab.o2s.ch ([77.109.136.180]:46195 "EHLO kolab.o2s.ch"
+	id S1753469AbaBGVdG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 16:33:06 -0500
+Received: from kolab.o2s.ch ([77.109.136.180]:46216 "EHLO kolab.o2s.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752981AbaBGVcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 16:32:48 -0500
-Subject: [PATCH v4 1/7] clk: sunxi: factors: automatic reparenting support
+	id S1752009AbaBGVdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 16:33:01 -0500
+Subject: [PATCH v4 2/7] clk: sunxi: Implement MMC phase control
 To: devicetree@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>,
         Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
         Mike Turquette <mturquette@linaro.org>,
@@ -20,8 +20,8 @@ To: devicetree@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>,
         Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
         linux-arm-kernel@lists.infradead.org
 From: David =?utf-8?q?Lanzend=C3=B6rfer?= <david.lanzendoerfer@o2s.ch>
-Date: Fri, 07 Feb 2014 22:32:38 +0100
-Message-ID: <20140207213237.24624.80810.stgit@dizzy-6.o2s.ch>
+Date: Fri, 07 Feb 2014 22:32:51 +0100
+Message-ID: <20140207213251.24624.97232.stgit@dizzy-6.o2s.ch>
 In-Reply-To: <20140207212709.24624.58619.stgit@dizzy-6.o2s.ch>
 References: <20140207212709.24624.58619.stgit@dizzy-6.o2s.ch>
 User-Agent: StGit/0.16
@@ -34,66 +34,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Emilio López <emilio@elopez.com.ar>
 
-This commit implements .determine_rate, so that our factor clocks can be
-reparented when needed.
-
 Signed-off-by: Emilio López <emilio@elopez.com.ar>
 ---
- drivers/clk/sunxi/clk-factors.c |   36 ++++++++++++++++++++++++++++++++++++
- 1 file changed, 36 insertions(+)
+ drivers/clk/sunxi/clk-sunxi.c |   35 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
 
-diff --git a/drivers/clk/sunxi/clk-factors.c b/drivers/clk/sunxi/clk-factors.c
-index 9e23264..3806d97 100644
---- a/drivers/clk/sunxi/clk-factors.c
-+++ b/drivers/clk/sunxi/clk-factors.c
-@@ -77,6 +77,41 @@ static long clk_factors_round_rate(struct clk_hw *hw, unsigned long rate,
- 	return rate;
- }
+diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
+index abb6c5a..33b9977 100644
+--- a/drivers/clk/sunxi/clk-sunxi.c
++++ b/drivers/clk/sunxi/clk-sunxi.c
+@@ -377,6 +377,41 @@ static void sun7i_a20_get_out_factors(u32 *freq, u32 parent_rate,
  
-+static long clk_factors_determine_rate(struct clk_hw *hw, unsigned long rate,
-+				       unsigned long *best_parent_rate,
-+				       struct clk **best_parent_p)
+ 
+ /**
++ * clk_sunxi_mmc_phase_control() - configures MMC clock phase control
++ */
++
++void clk_sunxi_mmc_phase_control(struct clk_hw *hw, u8 sample, u8 output)
 +{
-+	struct clk *clk = hw->clk, *parent, *best_parent = NULL;
-+	int i, num_parents;
-+	unsigned long parent_rate, best = 0, child_rate, best_child_rate = 0;
++	#define to_clk_composite(_hw) container_of(_hw, struct clk_composite, hw)
++	#define to_clk_factors(_hw) container_of(_hw, struct clk_factors, hw)
 +
-+	/* find the parent that can help provide the fastest rate <= rate */
-+	num_parents = __clk_get_num_parents(clk);
-+	for (i = 0; i < num_parents; i++) {
-+		parent = clk_get_parent_by_index(clk, i);
-+		if (!parent)
-+			continue;
-+		if (__clk_get_flags(clk) & CLK_SET_RATE_PARENT)
-+			parent_rate = __clk_round_rate(parent, rate);
-+		else
-+			parent_rate = __clk_get_rate(parent);
++	struct clk_composite *composite = to_clk_composite(hw);
++	struct clk_hw *rate_hw = composite->rate_hw;
++	struct clk_factors *factors = to_clk_factors(rate_hw);
++	unsigned long flags = 0;
++	u32 reg;
 +
-+		child_rate = clk_factors_round_rate(hw, rate, &parent_rate);
++	if (factors->lock)
++		spin_lock_irqsave(factors->lock, flags);
 +
-+		if (child_rate <= rate && child_rate > best_child_rate) {
-+			best_parent = parent;
-+			best = parent_rate;
-+			best_child_rate = child_rate;
-+		}
-+	}
++	reg = readl(factors->reg);
 +
-+	if (best_parent)
-+		*best_parent_p = best_parent;
-+	*best_parent_rate = best;
++	/* set sample clock phase control */
++	reg &= ~(0x7 << 20);
++	reg |= ((sample & 0x7) << 20);
 +
-+	return best_child_rate;
++	/* set output clock phase control */
++	reg &= ~(0x7 << 8);
++	reg |= ((output & 0x7) << 8);
++
++	writel(reg, factors->reg);
++
++	if (factors->lock)
++		spin_unlock_irqrestore(factors->lock, flags);
 +}
 +
- static int clk_factors_set_rate(struct clk_hw *hw, unsigned long rate,
- 				unsigned long parent_rate)
- {
-@@ -113,6 +148,7 @@ static int clk_factors_set_rate(struct clk_hw *hw, unsigned long rate,
- }
++
++/**
+  * sunxi_factors_clk_setup() - Setup function for factor clocks
+  */
  
- const struct clk_ops clk_factors_ops = {
-+	.determine_rate = clk_factors_determine_rate,
- 	.recalc_rate = clk_factors_recalc_rate,
- 	.round_rate = clk_factors_round_rate,
- 	.set_rate = clk_factors_set_rate,
 
