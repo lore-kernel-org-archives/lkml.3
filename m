@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754090AbaBGM4b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:56:31 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41841 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754711AbaBGLt4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754730AbaBGLt4 (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 7 Feb 2014 06:49:56 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41826 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754711AbaBGLtw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 06:49:52 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Colin Leitner <colin.leitner@gmail.com>, Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Paul Moore <pmoore@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 094/233] USB: ftdi_sio: added CS5 quirk for broken smartcard readers
-Date: Fri,  7 Feb 2014 11:45:13 +0000
-Message-Id: <1391773652-25214-95-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 090/233] SELinux: Fix memory leak upon loading policy
+Date: Fri,  7 Feb 2014 11:45:09 +0000
+Message-Id: <1391773652-25214-91-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -28,70 +28,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Colin Leitner <colin.leitner@googlemail.com>
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 
-commit c1f15196ac3b541d084dc80a8fbd8a74c6a0bd44 upstream.
+commit 8ed814602876bec9bad2649ca17f34b499357a1c upstream.
 
-Genuine FTDI chips support only CS7/8. A previous fix in commit
-8704211f65a2 ("USB: ftdi_sio: fixed handling of unsupported CSIZE
-setting") enforced this limitation and reported it back to userspace.
+Hello.
 
-However, certain types of smartcard readers depend on specific
-driver behaviour that requests 0 data bits (not 5) to change into a
-different operating mode if CS5 has been set.
+I got below leak with linux-3.10.0-54.0.1.el7.x86_64 .
 
-This patch reenables this behaviour for all FTDI devices.
+[  681.903890] kmemleak: 5538 new suspected memory leaks (see /sys/kernel/debug/kmemleak)
 
-Tagged to be added to stable, because it affects a lot of users of
-embedded systems which rely on these readers to work properly.
+Below is a patch, but I don't know whether we need special handing for undoing
+ebitmap_set_bit() call.
+----------
+>>From fe97527a90fe95e2239dfbaa7558f0ed559c0992 Mon Sep 17 00:00:00 2001
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Date: Mon, 6 Jan 2014 16:30:21 +0900
+Subject: [PATCH] SELinux: Fix memory leak upon loading policy
 
-Reported-by: Heinrich Siebmanns <H.Siebmanns@t-online.de>
-Tested-by: Heinrich Siebmanns <H.Siebmanns@t-online.de>
-Signed-off-by: Colin Leitner <colin.leitner@gmail.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Commit 2463c26d "SELinux: put name based create rules in a hashtable" did not
+check return value from hashtab_insert() in filename_trans_read(). It leaks
+memory if hashtab_insert() returns error.
+
+  unreferenced object 0xffff88005c9160d0 (size 8):
+    comm "systemd", pid 1, jiffies 4294688674 (age 235.265s)
+    hex dump (first 8 bytes):
+      57 0b 00 00 6b 6b 6b a5                          W...kkk.
+    backtrace:
+      [<ffffffff816604ae>] kmemleak_alloc+0x4e/0xb0
+      [<ffffffff811cba5e>] kmem_cache_alloc_trace+0x12e/0x360
+      [<ffffffff812aec5d>] policydb_read+0xd1d/0xf70
+      [<ffffffff812b345c>] security_load_policy+0x6c/0x500
+      [<ffffffff812a623c>] sel_write_load+0xac/0x750
+      [<ffffffff811eb680>] vfs_write+0xc0/0x1f0
+      [<ffffffff811ec08c>] SyS_write+0x4c/0xa0
+      [<ffffffff81690419>] system_call_fastpath+0x16/0x1b
+      [<ffffffffffffffff>] 0xffffffffffffffff
+
+However, we should not return EEXIST error to the caller, or the systemd will
+show below message and the boot sequence freezes.
+
+  systemd[1]: Failed to load SELinux policy. Freezing.
+
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Acked-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/ftdi_sio.c | 17 +++++++++++++++--
- 1 file changed, 15 insertions(+), 2 deletions(-)
+ security/selinux/ss/policydb.c | 14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index 92549cc..089248c 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -2132,10 +2132,20 @@ static void ftdi_set_termios(struct tty_struct *tty,
- 	}
+diff --git a/security/selinux/ss/policydb.c b/security/selinux/ss/policydb.c
+index c8adde3..7e5bced 100644
+--- a/security/selinux/ss/policydb.c
++++ b/security/selinux/ss/policydb.c
+@@ -1941,7 +1941,19 @@ static int filename_trans_read(struct policydb *p, void *fp)
+ 		if (rc)
+ 			goto out;
  
- 	/*
--	 * All FTDI UART chips are limited to CS7/8. We won't pretend to
-+	 * All FTDI UART chips are limited to CS7/8. We shouldn't pretend to
- 	 * support CS5/6 and revert the CSIZE setting instead.
-+	 *
-+	 * CS5 however is used to control some smartcard readers which abuse
-+	 * this limitation to switch modes. Original FTDI chips fall back to
-+	 * eight data bits.
-+	 *
-+	 * TODO: Implement a quirk to only allow this with mentioned
-+	 *       readers. One I know of (Argolis Smartreader V1)
-+	 *       returns "USB smartcard server" as iInterface string.
-+	 *       The vendor didn't bother with a custom VID/PID of
-+	 *       course.
- 	 */
--	if ((C_CSIZE(tty) != CS8) && (C_CSIZE(tty) != CS7)) {
-+	if (C_CSIZE(tty) == CS6) {
- 		dev_warn(ddev, "requested CSIZE setting not supported\n");
- 
- 		termios->c_cflag &= ~CSIZE;
-@@ -2182,6 +2192,9 @@ no_skip:
- 		urb_value |= FTDI_SIO_SET_DATA_PARITY_NONE;
+-		hashtab_insert(p->filename_trans, ft, otype);
++		rc = hashtab_insert(p->filename_trans, ft, otype);
++		if (rc) {
++			/*
++			 * Do not return -EEXIST to the caller, or the system
++			 * will not boot.
++			 */
++			if (rc != -EEXIST)
++				goto out;
++			/* But free memory to avoid memory leak. */
++			kfree(ft);
++			kfree(name);
++			kfree(otype);
++		}
  	}
- 	switch (cflag & CSIZE) {
-+	case CS5:
-+		dev_dbg(ddev, "Setting CS5 quirk\n");
-+		break;
- 	case CS7:
- 		urb_value |= 7;
- 		dev_dbg(ddev, "Setting CS7\n");
+ 	hash_eval(p->filename_trans, "filenametr");
+ 	return 0;
 -- 
 1.8.3.2
 
