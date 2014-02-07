@@ -1,84 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752966AbaBGPpj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 10:45:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7119 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752907AbaBGPph (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 10:45:37 -0500
-Date: Fri, 7 Feb 2014 13:45:24 -0200
-From: Rafael Aquini <aquini@redhat.com>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: linux-kernel@vger.kernel.org, trond.myklebust@primarydata.com,
-        jstancek@redhat.com, mgorman@suse.de, riel@redhat.com,
-        linux-nfs@vger.kernel.org, akpm@linux-foundation.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm: fix page leak at nfs_symlink()
-Message-ID: <20140207154523.GB30718@localhost.localdomain>
-References: <f4b3dc07dfa55bf7931de36b03aa9ef7e3ff0490.1391785222.git.aquini@redhat.com>
- <20140207103924.25ec5baa@tlielax.poochiereds.net>
+	id S1753053AbaBGPqe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 10:46:34 -0500
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:55406 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751705AbaBGPqc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 10:46:32 -0500
+Message-ID: <52F4FFD5.5070808@lwfinger.net>
+Date: Fri, 07 Feb 2014 09:46:29 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140207103924.25ec5baa@tlielax.poochiereds.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Kalle Valo <kvalo@adurom.com>, Johannes Berg <johannes@sipsolutions.net>
+CC: Calvin Owens <jcalvinowens@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ieee80211: Print human-readable disassoc/deauth reason
+ codes
+References: <1391651088-31785-1-git-send-email-jcalvinowens@gmail.com>	<1391675824.12789.3.camel@jlt4.sipsolutions.net> <87r47fkrsj.fsf@purkki.adurom.net>
+In-Reply-To: <87r47fkrsj.fsf@purkki.adurom.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 07, 2014 at 10:39:24AM -0500, Jeff Layton wrote:
-> On Fri,  7 Feb 2014 13:19:54 -0200
-> Rafael Aquini <aquini@redhat.com> wrote:
-> 
-> > Changes committed by "a0b8cab3 mm: remove lru parameter from
-> > __pagevec_lru_add and remove parts of pagevec API" have introduced
-> > a call to add_to_page_cache_lru() which causes a leak in nfs_symlink() 
-> > as now the page gets an extra refcount that is not dropped.
-> > 
-> > Jan Stancek observed and reported the leak effect while running test8 from
-> > Connectathon Testsuite. After several iterations over the test case,
-> > which creates several symlinks on a NFS mountpoint, the test system was
-> > quickly getting into an out-of-memory scenario.
-> > 
-> > This patch fixes the page leak by dropping that extra refcount 
-> > add_to_page_cache_lru() is grabbing. 
-> > 
-> > Signed-off-by: Jan Stancek <jstancek@redhat.com>
-> > Signed-off-by: Rafael Aquini <aquini@redhat.com>
-> > ---
-> >  fs/nfs/dir.c | 5 +++++
-> >  1 file changed, 5 insertions(+)
-> > 
-> > diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-> > index be38b57..4a48fe4 100644
-> > --- a/fs/nfs/dir.c
-> > +++ b/fs/nfs/dir.c
-> > @@ -1846,6 +1846,11 @@ int nfs_symlink(struct inode *dir, struct dentry *dentry, const char *symname)
-> >  							GFP_KERNEL)) {
-> >  		SetPageUptodate(page);
-> >  		unlock_page(page);
-> > +		/*
-> > +		 * add_to_page_cache_lru() grabs an extra page refcount.
-> > +		 * Drop it here to avoid leaking this page later.
-> > +		 */
-> > +		page_cache_release(page);
-> >  	} else
-> >  		__free_page(page);
-> >  
-> 
-> Looks reasonable as an interim fix and should almost certainly go to
-> stable.
-> 
-> Longer term, I think it would be best from an API standpoint to fix
-> add_to_page_cache_lru not to take this extra reference (or to have it
-> drop it itself) and fix up the callers accordingly. That seems like a
-> trap for the unwary...
+On 02/07/2014 06:53 AM, Kalle Valo wrote:
+> Johannes Berg <johannes@sipsolutions.net> writes:
 >
+>> On Wed, 2014-02-05 at 19:44 -0600, Calvin Owens wrote:
+>>> Create a function to return a descriptive string for each reason code,
+>>> and print that instead of the numeric value in the kernel log. These
+>>> codes are easily found on popular search engines, but one is generally
+>>> not able to access the internet when dealing with wireless connectivity
+>>> issues.
+>>
+>> I believe both iw and wpa_supplicant already have the reason code
+>> printout, and if you're diagnosing connectivity issues then you're
+>> probably using those anyway (e.g. iw event -t), so I don't really see
+>> much point in adding this to the kernel?
+>
+> FWIW I find this useful. When I have connection problems I rarely look
+> at wpasupplicant, mostly I'm so lazy that I just check from the kernel
+> log what's happening. Just my 0.02 EUR.
 
-100% agreed. I'll look into the long term approach you suggested, but as
-you mentioned, the interim fix is the reasonable thing to go with now, for
-mainline and stable.
+I would also find it useful. I assist with wireless problems on the openSUSE 
+Forum, and there we are lucky if we get dmesg output. When we do and it contains 
+a deauthentication reason, I always need to bring up a web page to interpret the 
+output. With this change, one step could be skipped.
 
-Thanks for looking into it Jeff.
 
--- Rafael 
+
