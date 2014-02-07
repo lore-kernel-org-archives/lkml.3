@@ -1,75 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752554AbaBGPk3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 10:40:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1774 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751898AbaBGPk1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 10:40:27 -0500
-Date: Fri, 7 Feb 2014 10:39:24 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: Rafael Aquini <aquini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, trond.myklebust@primarydata.com,
-        jstancek@redhat.com, mgorman@suse.de, riel@redhat.com,
-        linux-nfs@vger.kernel.org, akpm@linux-foundation.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm: fix page leak at nfs_symlink()
-Message-ID: <20140207103924.25ec5baa@tlielax.poochiereds.net>
-In-Reply-To: <f4b3dc07dfa55bf7931de36b03aa9ef7e3ff0490.1391785222.git.aquini@redhat.com>
-References: <f4b3dc07dfa55bf7931de36b03aa9ef7e3ff0490.1391785222.git.aquini@redhat.com>
+	id S1752655AbaBGPlH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 10:41:07 -0500
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:51640 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751955AbaBGPlF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 10:41:05 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.DEB.2.02.1402071121310.21991@ionos.tec.linutronix.de>
+References: <1391721117-27446-1-git-send-email-carlo@caione.org>
+	<alpine.DEB.2.02.1402062213590.21991@ionos.tec.linutronix.de>
+	<CAOQ7t2Z0agZdDZ_OQZPtXWXoi5NMTcOOZz04q6wEVNy0rxn4AA@mail.gmail.com>
+	<alpine.DEB.2.02.1402062229000.21991@ionos.tec.linutronix.de>
+	<CAOQ7t2bzz9vKh_5h2nF=m+JpeYVa=Ttd4XQgrAa6Lhdzjg_Qxw@mail.gmail.com>
+	<alpine.DEB.2.02.1402071121310.21991@ionos.tec.linutronix.de>
+Date: Fri, 7 Feb 2014 16:41:03 +0100
+Message-ID: <CAOQ7t2b5qVTUXOB4iWAOoTehm=u6zxP0-zQmirSF0DvEk8KddQ@mail.gmail.com>
+Subject: Re: [linux-sunxi] Re: [PATCH] irq: Add new flag to ack
+ level-triggered interrupts before unmasking
+From: Carlo Caione <carlo.caione@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Hans De Goede <hdegoede@redhat.com>, emilio@elopez.com.ar,
+        linux-sunxi@googlegroups.com, t.figa@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  7 Feb 2014 13:19:54 -0200
-Rafael Aquini <aquini@redhat.com> wrote:
+On Fri, Feb 7, 2014 at 12:51 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> I can't see why it would be specific for the threaded case.
+>
+> The explanation says that the NMI chip is ignoring the ack on mask,
+> which is basically the entry of the interrupt handler. Now it does not
+> matter whether you are threaded or not. The interrupt line at the NMI
+> controller is asserted in both cases. So the same issue should be
+> visible for a non threaded interrupt, if the NMI controller really
+> needs an ack on unmask.
 
-> Changes committed by "a0b8cab3 mm: remove lru parameter from
-> __pagevec_lru_add and remove parts of pagevec API" have introduced
-> a call to add_to_page_cache_lru() which causes a leak in nfs_symlink() 
-> as now the page gets an extra refcount that is not dropped.
-> 
-> Jan Stancek observed and reported the leak effect while running test8 from
-> Connectathon Testsuite. After several iterations over the test case,
-> which creates several symlinks on a NFS mountpoint, the test system was
-> quickly getting into an out-of-memory scenario.
-> 
-> This patch fixes the page leak by dropping that extra refcount 
-> add_to_page_cache_lru() is grabbing. 
-> 
-> Signed-off-by: Jan Stancek <jstancek@redhat.com>
-> Signed-off-by: Rafael Aquini <aquini@redhat.com>
-> ---
->  fs/nfs/dir.c | 5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-> index be38b57..4a48fe4 100644
-> --- a/fs/nfs/dir.c
-> +++ b/fs/nfs/dir.c
-> @@ -1846,6 +1846,11 @@ int nfs_symlink(struct inode *dir, struct dentry *dentry, const char *symname)
->  							GFP_KERNEL)) {
->  		SetPageUptodate(page);
->  		unlock_page(page);
-> +		/*
-> +		 * add_to_page_cache_lru() grabs an extra page refcount.
-> +		 * Drop it here to avoid leaking this page later.
-> +		 */
-> +		page_cache_release(page);
->  	} else
->  		__free_page(page);
->  
+Yes, you are right. I was focusing on the threaded case because it was
+the only case I have experienced with the hardware I have.
+The problem should be there also for the non threaded case (even
+though I don't know how to double check this).
+At this point I suspect that here the problem is that ACKing the NMI
+controller without ACKing ahead the device connected always fails (or
+at least is useless and the pending flag is not cleared), so when I
+unmask later the irqchip I have a spurious interrupt. That's why I
+need another ACK for the NMI controller _after_ having ACKed at device
+level.
 
-Looks reasonable as an interim fix and should almost certainly go to
-stable.
+> But there is another detail:
+>
+>         sunxi_sc_nmi_handle_irq()
+>         chained_irq_enter()
+>                 NOP, because GIC uses EOI
+>
+>         generic_handle_irq();
+>                 nmi->mask();
+>                 dev_handler();
+>                 nmi->unmask();
+>
+>         chained_irq_exit()
+>                 gic->eoi();
+>
+> In the threaded case this looks like:
+>
+>         sunxi_sc_nmi_handle_irq()
+>         chained_irq_enter()
+>                 NOP, because GIC uses EOI
+>
+>         generic_handle_irq();
+>                 nmi->mask();
+>                 wake_thread();
+>
+>         chained_irq_exit()
+>                 gic->eoi();
+>
+>         run_thread()
+>                 dev_handler();
+>                 nmi->unmask();
+>
+> So the difference is that in the non threaded case the gic->eoi is
+> called after the device interrupt has been cleared and the
+> nmi->interrupt has been unmasked. And in the threaded case its the
+> other way round. I have no idea how that stuff is connected internaly,
+> but I suspect that the gic->eoi is related to this as it might
+> actually ack the NMI chip, which of course only works in the non
+> threaded case.
 
-Longer term, I think it would be best from an API standpoint to fix
-add_to_page_cache_lru not to take this extra reference (or to have it
-drop it itself) and fix up the callers accordingly. That seems like a
-trap for the unwary...
+Yeah, no really difference between threaded and non threaded.
+For the record, from a mail exchange with Allwinner's engineers: "the
+NMI module is a signal conversion module. It catches the NMI pin's
+state and generates irq to GIC", so GIC does not really ACK anything.
+BTW being a dummy "signal conversion module" this is probably why I
+still need to clear the pending status even though my IRQ line has
+already been cleared.
+
+> Now back to your patch.
+>
+> I'm not against having a flag, but this should be done less convoluted
+> and have proper names which make the use case clear along with a good
+> technical explanation of the flag in the comment.
+
+Ok, at this point do you think that a patch in the core could be
+useful or is it better to stick with modifying the unmask callback?
+
+> unmask_and_ack() plus IRQCHIP_ACK_ON_UNMASK are not really telling
+> what the heck is going on. You can restrict it to level irqs in the
+> core, but please use the proper functions and not some opencoded
+> hackery.
+
+I'll do in case of v2.
+
+Thanks,
 
 -- 
-Jeff Layton <jlayton@redhat.com>
+Carlo Caione
