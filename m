@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753369AbaBGVIU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 16:08:20 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:57831 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752580AbaBGVIS (ORCPT
+	id S1753520AbaBGVJN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 16:09:13 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35353 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752408AbaBGVJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 16:08:18 -0500
-Date: Fri, 7 Feb 2014 13:08:17 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-arm-msm@vger.kernel.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH v2 02/10] genirq: Add devm_request_any_context_irq()
-Message-ID: <20140207210816.GD12815@codeaurora.org>
-References: <1388709460-19222-1-git-send-email-sboyd@codeaurora.org>
- <1388709460-19222-3-git-send-email-sboyd@codeaurora.org>
- <52CB2D29.3050107@codeaurora.org>
- <52D5A266.5000504@codeaurora.org>
+	Fri, 7 Feb 2014 16:09:11 -0500
+Date: Fri, 7 Feb 2014 22:09:05 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/6] sched: Init idle->on_rq in init_idle()
+Message-ID: <20140207210905.GV5002@laptop.programming.kicks-ass.net>
+References: <1391803122-4425-1-git-send-email-bigeasy@linutronix.de>
+ <1391803122-4425-2-git-send-email-bigeasy@linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52D5A266.5000504@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1391803122-4425-2-git-send-email-bigeasy@linutronix.de>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14, Stephen Boyd wrote:
-> On 01/06/14 14:24, Stephen Boyd wrote:
-> > On 01/02/14 16:37, Stephen Boyd wrote:
-> >> Some drivers use request_any_context_irq() but there isn't a
-> >> devm_* function for it. Add one so that these drivers don't need
-> >> to explicitly free the irq on driver detach.
-> >>
-> >> Cc: Thomas Gleixner <tglx@linutronix.de>
-> >> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> > Thomas, can you please review this patch?
+On Fri, Feb 07, 2014 at 08:58:37PM +0100, Sebastian Andrzej Siewior wrote:
+> From: Thomas Gleixner <tglx@linutronix.de>
+
+Distinct lack of rationale here.
+
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> ---
+>  kernel/sched/core.c | 1 +
+>  1 file changed, 1 insertion(+)
 > 
-> ping?
-
-ping?
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index b46131e..64f75f9 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -4473,6 +4473,7 @@ void init_idle(struct task_struct *idle, int cpu)
+>  	rcu_read_unlock();
+>  
+>  	rq->curr = rq->idle = idle;
+> +	idle->on_rq = 1;
+>  #if defined(CONFIG_SMP)
+>  	idle->on_cpu = 1;
+>  #endif
+> -- 
+> 1.9.rc1
+> 
