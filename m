@@ -1,95 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752279AbaBGPcj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 10:32:39 -0500
-Received: from mga01.intel.com ([192.55.52.88]:57827 "EHLO mga01.intel.com"
+	id S1752554AbaBGPk3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 10:40:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1774 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751439AbaBGPci (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 10:32:38 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,801,1384329600"; 
-   d="asc'?scan'208";a="477662463"
-Message-ID: <1391787126.5669.11.camel@intelbox>
-Subject: Re: intel_sdvo_init: trying to register non-static key
-From: Imre Deak <imre.deak@intel.com>
-Reply-To: imre.deak@intel.com
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: Borislav Petkov <bp@alien8.de>, Jani Nikula <jani.nikula@linux.intel.com>,
-        intel-gfx@lists.freedesktop.org,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 07 Feb 2014 17:32:06 +0200
-In-Reply-To: <20140207145149.GZ17001@phenom.ffwll.local>
-References: <20140207093205.GA24395@pd.tnic> <87d2iz18vi.fsf@intel.com>
-	 <1391771542.5669.6.camel@intelbox> <20140207112809.GG24395@pd.tnic>
-	 <20140207145149.GZ17001@phenom.ffwll.local>
-Organization: Intel
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-gEdIJDiLO0xpk7IGsAF+"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1751898AbaBGPk1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 10:40:27 -0500
+Date: Fri, 7 Feb 2014 10:39:24 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, trond.myklebust@primarydata.com,
+        jstancek@redhat.com, mgorman@suse.de, riel@redhat.com,
+        linux-nfs@vger.kernel.org, akpm@linux-foundation.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] mm: fix page leak at nfs_symlink()
+Message-ID: <20140207103924.25ec5baa@tlielax.poochiereds.net>
+In-Reply-To: <f4b3dc07dfa55bf7931de36b03aa9ef7e3ff0490.1391785222.git.aquini@redhat.com>
+References: <f4b3dc07dfa55bf7931de36b03aa9ef7e3ff0490.1391785222.git.aquini@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri,  7 Feb 2014 13:19:54 -0200
+Rafael Aquini <aquini@redhat.com> wrote:
 
---=-gEdIJDiLO0xpk7IGsAF+
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> Changes committed by "a0b8cab3 mm: remove lru parameter from
+> __pagevec_lru_add and remove parts of pagevec API" have introduced
+> a call to add_to_page_cache_lru() which causes a leak in nfs_symlink() 
+> as now the page gets an extra refcount that is not dropped.
+> 
+> Jan Stancek observed and reported the leak effect while running test8 from
+> Connectathon Testsuite. After several iterations over the test case,
+> which creates several symlinks on a NFS mountpoint, the test system was
+> quickly getting into an out-of-memory scenario.
+> 
+> This patch fixes the page leak by dropping that extra refcount 
+> add_to_page_cache_lru() is grabbing. 
+> 
+> Signed-off-by: Jan Stancek <jstancek@redhat.com>
+> Signed-off-by: Rafael Aquini <aquini@redhat.com>
+> ---
+>  fs/nfs/dir.c | 5 +++++
+>  1 file changed, 5 insertions(+)
+> 
+> diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+> index be38b57..4a48fe4 100644
+> --- a/fs/nfs/dir.c
+> +++ b/fs/nfs/dir.c
+> @@ -1846,6 +1846,11 @@ int nfs_symlink(struct inode *dir, struct dentry *dentry, const char *symname)
+>  							GFP_KERNEL)) {
+>  		SetPageUptodate(page);
+>  		unlock_page(page);
+> +		/*
+> +		 * add_to_page_cache_lru() grabs an extra page refcount.
+> +		 * Drop it here to avoid leaking this page later.
+> +		 */
+> +		page_cache_release(page);
+>  	} else
+>  		__free_page(page);
+>  
 
-On Fri, 2014-02-07 at 15:51 +0100, Daniel Vetter wrote:
-> On Fri, Feb 07, 2014 at 12:28:09PM +0100, Borislav Petkov wrote:
-> > On Fri, Feb 07, 2014 at 01:12:22PM +0200, Imre Deak wrote:
-> > > On Fri, 2014-02-07 at 13:04 +0200, Jani Nikula wrote:
-> > > > Imre, is this the same i2c_del_adapter issue you're looking at? Any
-> > > > patches to try yet?
-> > >=20
-> > > It looks like the same issue yes. The following patch fixed it for me=
-:
-> > >=20
-> > > http://patchwork.freedesktop.org/patch/18698/
-> > >=20
-> > > I'm working on an improved version of this, but the main thing - to
-> > > remove the connector's sysfs entries before actually destroying the
-> > > encoder and connector objects - will remain the same as in the above
-> > > patch.
-> >=20
-> > You could shoot the final version my way so that I give it a run too.
->=20
-> The final version will only change the code layout a bit, but not the
-> logic. So a tested-by from you for v1 would be helpful anyway, to make
-> really sure you've reported the same issue. If that's not the case then w=
-e
-> need to dig deeper, so better not to waste a few days waiting for v2.
+Looks reasonable as an interim fix and should almost certainly go to
+stable.
 
-I just realized it's a different issue, since it's on the init path.
-Also we set the drm device as the parent for the sdvo i2c adapter as
-opposed to the dp i2c adapter where it's the connector device. So the
-above patch won't help in Borislav's case. I'm looking into this issue
-anyway.
+Longer term, I think it would be best from an API standpoint to fix
+add_to_page_cache_lru not to take this extra reference (or to have it
+drop it itself) and fix up the callers accordingly. That seems like a
+trap for the unwary...
 
---Imre=20
-
-> -Daniel
-
-
---=-gEdIJDiLO0xpk7IGsAF+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQEcBAABAgAGBQJS9Px2AAoJEORIIAnNuWDFp+YH+wZ//z3cU0fiLcL80gndNjtk
-plgyaYhzoQAzKvHkimfpbtsDNIifd05AMFDiNSP9oOCMyHhUltjduOYMXnrOgyG4
-WYIhaeH9OeMMsw7b02n9Hbiw63T8MGYc90CYN5xejpxcciMCybzYZSoUVLBCbpuo
-jagw2EMsBRfnG9zaaHJb4ne0AZxVqQ+BJB+UnccWgWJzHb+LWg6l0DNeqeoMP5W0
-ALiDD931AmHB0ijMwp/i8faOjeLfWmuXqNOIZtEitdTpZj2VbprWoLwv3fcow0Cn
-vol+dmwZWX6D/gqTvTKezzSL5W2tZHF8tDuZqdCn4q6dnWAas0m/6kh160KWm8Y=
-=YDLZ
------END PGP SIGNATURE-----
-
---=-gEdIJDiLO0xpk7IGsAF+--
-
+-- 
+Jeff Layton <jlayton@redhat.com>
