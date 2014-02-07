@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754271AbaBGMJn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:09:43 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42311 "EHLO
+	id S1754880AbaBGMKK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:10:10 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42309 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932462AbaBGLv6 (ORCPT
+	with ESMTP id S932454AbaBGLv5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:51:58 -0500
+	Fri, 7 Feb 2014 06:51:57 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dave Airlie <airlied@redhat.com>,
+Cc: Mark Brown <broonie@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 186/233] drm: ast,cirrus,mgag200: use drm_can_sleep
-Date: Fri,  7 Feb 2014 11:46:45 +0000
-Message-Id: <1391773652-25214-187-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 185/233] ACPI / init: Flag use of ACPI and ACPI idioms for power supplies to regulator API
+Date: Fri,  7 Feb 2014 11:46:44 +0000
+Message-Id: <1391773652-25214-186-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -27,62 +28,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Airlie <airlied@redhat.com>
+From: Mark Brown <broonie@linaro.org>
 
-commit f4b4718b61d1d5a7442a4fd6863ea80c3a10e508 upstream.
+commit 49a12877d2777cadcb838981c3c4f5a424aef310 upstream.
 
-these 3 were checking in_interrupt but we have situations where
-calling vunmap under this could cause a BUG to be hit in
-smp_call_function_many. Use the drm_can_sleep macro instead,
-which should stop this path from been taken in this case.
+There is currently no facility in ACPI to express the hookup of voltage
+regulators, the expectation is that the regulators that exist in the
+system will be handled transparently by firmware if they need software
+control at all. This means that if for some reason the regulator API is
+enabled on such a system it should assume that any supplies that devices
+need are provided by the system at all relevant times without any software
+intervention.
 
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Tell the regulator core to make this assumption by calling
+regulator_has_full_constraints(). Do this as soon as we know we are using
+ACPI so that the information is available to the regulator core as early
+as possible. This will cause the regulator core to pretend that there is
+an always on regulator supplying any supply that is requested but that has
+not otherwise been mapped which is the behaviour expected on a system with
+ACPI.
+
+Should the ability to specify regulators be added in future revisions of
+ACPI then once we have support for ACPI mappings in the kernel the same
+assumptions will apply. It is also likely that systems will default to a
+mode of operation which does not require any interpretation of these
+mappings in order to be compatible with existing operating system releases
+so it should remain safe to make these assumptions even if the mappings
+exist but are not supported by the kernel.
+
+Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/ast/ast_fb.c          | 2 +-
- drivers/gpu/drm/cirrus/cirrus_fbdev.c | 2 +-
- drivers/gpu/drm/mgag200/mgag200_fb.c  | 2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/acpi/bus.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/drivers/gpu/drm/ast/ast_fb.c b/drivers/gpu/drm/ast/ast_fb.c
-index 7b33e14..3f65dd6 100644
---- a/drivers/gpu/drm/ast/ast_fb.c
-+++ b/drivers/gpu/drm/ast/ast_fb.c
-@@ -65,7 +65,7 @@ static void ast_dirty_update(struct ast_fbdev *afbdev,
- 	 * then the BO is being moved and we should
- 	 * store up the damage until later.
- 	 */
--	if (!in_interrupt())
-+	if (!drm_can_sleep())
- 		ret = ast_bo_reserve(bo, true);
- 	if (ret) {
- 		if (ret != -EBUSY)
-diff --git a/drivers/gpu/drm/cirrus/cirrus_fbdev.c b/drivers/gpu/drm/cirrus/cirrus_fbdev.c
-index b27e956..6c16de3 100644
---- a/drivers/gpu/drm/cirrus/cirrus_fbdev.c
-+++ b/drivers/gpu/drm/cirrus/cirrus_fbdev.c
-@@ -39,7 +39,7 @@ static void cirrus_dirty_update(struct cirrus_fbdev *afbdev,
- 	 * then the BO is being moved and we should
- 	 * store up the damage until later.
- 	 */
--	if (!in_interrupt())
-+	if (!drm_can_sleep())
- 		ret = cirrus_bo_reserve(bo, true);
- 	if (ret) {
- 		if (ret != -EBUSY)
-diff --git a/drivers/gpu/drm/mgag200/mgag200_fb.c b/drivers/gpu/drm/mgag200/mgag200_fb.c
-index 964f58c..17cea9f 100644
---- a/drivers/gpu/drm/mgag200/mgag200_fb.c
-+++ b/drivers/gpu/drm/mgag200/mgag200_fb.c
-@@ -41,7 +41,7 @@ static void mga_dirty_update(struct mga_fbdev *mfbdev,
- 	 * then the BO is being moved and we should
- 	 * store up the damage until later.
- 	 */
--	if (!in_interrupt())
-+	if (!drm_can_sleep())
- 		ret = mgag200_bo_reserve(bo, true);
- 	if (ret) {
- 		if (ret != -EBUSY)
+diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
+index a5bb33b..80d8a23 100644
+--- a/drivers/acpi/bus.c
++++ b/drivers/acpi/bus.c
+@@ -33,6 +33,7 @@
+ #include <linux/proc_fs.h>
+ #include <linux/acpi.h>
+ #include <linux/slab.h>
++#include <linux/regulator/machine.h>
+ #ifdef CONFIG_X86
+ #include <asm/mpspec.h>
+ #endif
+@@ -704,6 +705,14 @@ void __init acpi_early_init(void)
+ 		goto error0;
+ 	}
+ 
++	/*
++	 * If the system is using ACPI then we can be reasonably
++	 * confident that any regulators are managed by the firmware
++	 * so tell the regulator core it has everything it needs to
++	 * know.
++	 */
++	regulator_has_full_constraints();
++
+ 	return;
+ 
+       error0:
 -- 
 1.8.3.2
 
