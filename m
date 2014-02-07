@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753751AbaBGLaI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:30:08 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41185 "EHLO
+	id S1753736AbaBGLaG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:30:06 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41189 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751734AbaBGLZN (ORCPT
+	with ESMTP id S1753292AbaBGLZN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 Feb 2014 06:25:13 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: PaX Team <pageexec@freemail.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 74/88] x86, x32: Correct invalid use of user timespec in the kernel
-Date: Fri,  7 Feb 2014 11:23:11 +0000
-Message-Id: <1391772205-22239-75-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 77/88] KVM: s390: fix diagnose code extraction
+Date: Fri,  7 Feb 2014 11:23:14 +0000
+Message-Id: <1391772205-22239-78-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
@@ -28,82 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: PaX Team <pageexec@freemail.hu>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-commit 2def2ef2ae5f3990aabdbe8a755911902707d268 upstream.
+commit 743db27c526e0f31cc507959d662e97e2048a86f upstream.
 
-The x32 case for the recvmsg() timout handling is broken:
+The diagnose code to be used is the contents of the base register (if not
+zero), plus the displacement. The current code ignores the base register
+contents. So let's fix that...
 
-  asmlinkage long compat_sys_recvmmsg(int fd, struct compat_mmsghdr __user *mmsg,
-                                      unsigned int vlen, unsigned int flags,
-                                      struct compat_timespec __user *timeout)
-  {
-          int datagrams;
-          struct timespec ktspec;
-
-          if (flags & MSG_CMSG_COMPAT)
-                  return -EINVAL;
-
-          if (COMPAT_USE_64BIT_TIME)
-                  return __sys_recvmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
-                                        flags | MSG_CMSG_COMPAT,
-                                        (struct timespec *) timeout);
-          ...
-
-The timeout pointer parameter is provided by userland (hence the __user
-annotation) but for x32 syscalls it's simply cast to a kernel pointer
-and is passed to __sys_recvmmsg which will eventually directly
-dereference it for both reading and writing.  Other callers to
-__sys_recvmmsg properly copy from userland to the kernel first.
-
-The bug was introduced by commit ee4fa23c4bfc ("compat: Use
-COMPAT_USE_64BIT_TIME in net/compat.c") and should affect all kernels
-since 3.4 (and perhaps vendor kernels if they backported x32 support
-along with this code).
-
-Note that CONFIG_X86_X32_ABI gets enabled at build time and only if
-CONFIG_X86_X32 is enabled and ld can build x32 executables.
-
-Other uses of COMPAT_USE_64BIT_TIME seem fine.
-
-This addresses CVE-2014-0038.
-
-Signed-off-by: PaX Team <pageexec@freemail.hu>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/compat.c | 9 ++-------
- 1 file changed, 2 insertions(+), 7 deletions(-)
+ arch/s390/kvm/diag.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/compat.c b/net/compat.c
-index 1d223d5..9c0fca1 100644
---- a/net/compat.c
-+++ b/net/compat.c
-@@ -781,21 +781,16 @@ asmlinkage long compat_sys_recvmmsg(int fd, struct compat_mmsghdr __user *mmsg,
- 	if (flags & MSG_CMSG_COMPAT)
- 		return -EINVAL;
+diff --git a/arch/s390/kvm/diag.c b/arch/s390/kvm/diag.c
+index b23d9ac..e071600 100644
+--- a/arch/s390/kvm/diag.c
++++ b/arch/s390/kvm/diag.c
+@@ -103,7 +103,7 @@ static int __diag_ipl_functions(struct kvm_vcpu *vcpu)
  
--	if (COMPAT_USE_64BIT_TIME)
--		return __sys_recvmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
--				      flags | MSG_CMSG_COMPAT,
--				      (struct timespec *) timeout);
--
- 	if (timeout == NULL)
- 		return __sys_recvmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
- 				      flags | MSG_CMSG_COMPAT, NULL);
+ int kvm_s390_handle_diag(struct kvm_vcpu *vcpu)
+ {
+-	int code = (vcpu->arch.sie_block->ipb & 0xfff0000) >> 16;
++	int code = kvm_s390_get_base_disp_rs(vcpu) & 0xffff;
  
--	if (get_compat_timespec(&ktspec, timeout))
-+	if (compat_get_timespec(&ktspec, timeout))
- 		return -EFAULT;
- 
- 	datagrams = __sys_recvmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
- 				   flags | MSG_CMSG_COMPAT, &ktspec);
--	if (datagrams > 0 && put_compat_timespec(&ktspec, timeout))
-+	if (datagrams > 0 && compat_put_timespec(&ktspec, timeout))
- 		datagrams = -EFAULT;
- 
- 	return datagrams;
+ 	switch (code) {
+ 	case 0x10:
 -- 
 1.8.3.2
 
