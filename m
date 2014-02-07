@@ -1,118 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753787AbaBGMjc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:39:32 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41988 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754841AbaBGLuh (ORCPT
+	id S1755936AbaBGMkn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:40:43 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:43663 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754275AbaBGMkh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:50:37 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: robert.hodaszi@digi.com, Peter Chen <peter.chen@freescale.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 123/233] usb: chipidea: imx: set CI_HDRC_IMX28_WRITE_FIX for imx28
-Date: Fri,  7 Feb 2014 11:45:42 +0000
-Message-Id: <1391773652-25214-124-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
-References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Fri, 7 Feb 2014 07:40:37 -0500
+X-AuditID: cbfec7f4-b7f796d000005a13-01-52f4d4423d59
+Message-id: <1391776833.16500.1.camel@AMDC1943>
+Subject: Re: [PATCH v3 1/2] regulator: s5m8767: Use GPIO for controlling
+ Buck9/eMMC
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Date: Fri, 07 Feb 2014 13:40:33 +0100
+In-reply-to: <20140127202524.GQ11841@sirena.org.uk>
+References: <1390570678-30686-1-git-send-email-k.kozlowski@samsung.com>
+ <1390570678-30686-2-git-send-email-k.kozlowski@samsung.com>
+ <20140127202524.GQ11841@sirena.org.uk>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.2.3-0ubuntu6
+Content-transfer-encoding: 7bit
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNLMWRmVeSWpSXmKPExsVy+t/xK7pOV74EGXQvMrfYOGM9q8XUh0/Y
+	LOYfOcdqcbbpDbvF/a9HGS2+Xelgsri8aw6bxYzz+5gs1h65y25x8k8vo8XpblaLiyu+MDnw
+	eOycdZfdY9OqTjaPO9f2sHnMOxno0bdlFaPH501yAWxRXDYpqTmZZalF+nYJXBm7H95iKljM
+	XPF6Wg9jA+MJpi5GTg4JAROJR48fMULYYhIX7q1n62Lk4hASWMooMX3rC1YI5zOjxPrT7UBV
+	HBy8AvoSt37xgTQIC4RKLGs7zwxiswkYS2xevoQNxBYRUJa4+n0vC0gvs8AmZokZZ0+xgyRY
+	BFQljl3ZA2ZzAjXc6JvBCLFgHaPEr3VNYCcxC6hLTJq3iBniJCWJ3e2d7BBxeYnNa96CxXkF
+	BCV+TL7HMoFRYBaSlllIymYhKVvAyLyKUTS1NLmgOCk911CvODG3uDQvXS85P3cTIyRCvuxg
+	XHzM6hCjAAejEg/viaWfg4RYE8uKK3MPMUpwMCuJ8J6+8CVIiDclsbIqtSg/vqg0J7X4ECMT
+	B6dUA+M6Xa9+5cT/i9k0bt070bFw5tTmtjpPFqcDX2+wL5R5xOByOTzm5D/FIIPgNQ80HgTO
+	jZP0XtQReOfJ7Aj1vVf3+3BIZ5oK6MyQ0LPU16las4Dn9ox/3W7OT95lRi1O8LwgJdtksaPd
+	3v/lxqV8ZV7hmnemR+Q1dbzZt2n5plXrhPpWlz+faafEUpyRaKjFXFScCABWwrDibgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.4 -stable review patch.  If anyone has any objections, please let me know.
+Hi Mark,
 
-------------------
+On Mon, 2014-01-27 at 20:25 +0000, Mark Brown wrote:
+> On Fri, Jan 24, 2014 at 02:37:57PM +0100, Krzysztof Kozlowski wrote:
+> > Add support for GPIO control (enable/disable) over Buck9. The Buck9
+> > Converter is used as a supply for eMMC Host Controller.
+> 
+> Applied, thanks.
 
-From: Peter Chen <peter.chen@freescale.com>
+I can't find these patches in your tree. Did you applied them or am I
+missing something?
 
-commit 1071055e2a118a81c0b300d7f4af7eba3f7a7c82 upstream.
-
-Due to imx28 needs ARM swp instruction for writing, we set
-CI_HDRC_IMX28_WRITE_FIX for imx28.
-
-This patch is needed for stable tree 3.11+
-
-Cc: robert.hodaszi@digi.com
-Signed-off-by: Peter Chen <peter.chen@freescale.com>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
-Tested-by: Marc Kleine-Budde <mkl@pengutronix.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ luis: backported to 3.11: adjusted context ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/usb/chipidea/ci_hdrc_imx.c | 32 ++++++++++++++++++++++++++------
- 1 file changed, 26 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/usb/chipidea/ci_hdrc_imx.c b/drivers/usb/chipidea/ci_hdrc_imx.c
-index 14362c0..87e310f 100644
---- a/drivers/usb/chipidea/ci_hdrc_imx.c
-+++ b/drivers/usb/chipidea/ci_hdrc_imx.c
-@@ -27,6 +27,26 @@
- #define pdev_to_phy(pdev) \
- 	((struct usb_phy *)platform_get_drvdata(pdev))
- 
-+#define CI_HDRC_IMX_IMX28_WRITE_FIX BIT(0)
-+
-+struct ci_hdrc_imx_platform_flag {
-+	unsigned int flags;
-+};
-+
-+static const struct ci_hdrc_imx_platform_flag imx27_usb_data = {
-+};
-+
-+static const struct ci_hdrc_imx_platform_flag imx28_usb_data = {
-+	.flags = CI_HDRC_IMX_IMX28_WRITE_FIX,
-+};
-+
-+static const struct of_device_id ci_hdrc_imx_dt_ids[] = {
-+	{ .compatible = "fsl,imx28-usb", .data = &imx28_usb_data},
-+	{ .compatible = "fsl,imx27-usb", .data = &imx27_usb_data},
-+	{ /* sentinel */ }
-+};
-+MODULE_DEVICE_TABLE(of, ci_hdrc_imx_dt_ids);
-+
- struct ci_hdrc_imx_data {
- 	struct usb_phy *phy;
- 	struct platform_device *ci_pdev;
-@@ -98,6 +118,9 @@ static int ci_hdrc_imx_probe(struct platform_device *pdev)
- 	};
- 	struct resource *res;
- 	int ret;
-+	const struct of_device_id *of_id =
-+			of_match_device(ci_hdrc_imx_dt_ids, &pdev->dev);
-+	const struct ci_hdrc_imx_platform_flag *imx_platform_flag = of_id->data;
- 
- 	if (of_find_property(pdev->dev.of_node, "fsl,usbmisc", NULL)
- 		&& !usbmisc_ops)
-@@ -157,6 +180,9 @@ static int ci_hdrc_imx_probe(struct platform_device *pdev)
- 
- 	pdata.phy = data->phy;
- 
-+	if (imx_platform_flag->flags & CI_HDRC_IMX_IMX28_WRITE_FIX)
-+		pdata.flags |= CI_HDRC_IMX28_WRITE_FIX;
-+
- 	if (!pdev->dev.dma_mask)
- 		pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
- 	if (!pdev->dev.coherent_dma_mask)
-@@ -228,12 +254,6 @@ static int ci_hdrc_imx_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
--static const struct of_device_id ci_hdrc_imx_dt_ids[] = {
--	{ .compatible = "fsl,imx27-usb", },
--	{ /* sentinel */ }
--};
--MODULE_DEVICE_TABLE(of, ci_hdrc_imx_dt_ids);
--
- static struct platform_driver ci_hdrc_imx_driver = {
- 	.probe = ci_hdrc_imx_probe,
- 	.remove = ci_hdrc_imx_remove,
--- 
-1.8.3.2
+Best regards,
+Krzysztof
 
