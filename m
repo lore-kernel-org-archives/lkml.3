@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753954AbaBGLhN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:37:13 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41069 "EHLO
+	id S1753822AbaBGLhw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:37:52 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41065 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753053AbaBGLYo (ORCPT
+	with ESMTP id S1752176AbaBGLYn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:24:44 -0500
+	Fri, 7 Feb 2014 06:24:43 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Weston Andros Adamson <dros@primarydata.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 55/88] nfs4.1: properly handle ENOTSUP in SECINFO_NO_NAME
-Date: Fri,  7 Feb 2014 11:22:52 +0000
-Message-Id: <1391772205-22239-56-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 53/88] b43: Fix unload oops if firmware is not available
+Date: Fri,  7 Feb 2014 11:22:50 +0000
+Message-Id: <1391772205-22239-54-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
@@ -28,46 +28,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Weston Andros Adamson <dros@primarydata.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 78b19bae0813bd6f921ca58490196abd101297bd upstream.
+commit 0673effd41dba323d6a280ef37b5ef29f3f5a653 upstream.
 
-Don't check for -NFS4ERR_NOTSUPP, it's already been mapped to -ENOTSUPP
-by nfs4_stat_to_errno.
+The asyncronous firmware load uses a completion struct to hold firmware
+processing until the user-space routines are up and running. There is.
+however, a problem in that the waiter is nevered canceled during teardown.
+As a result, unloading the driver when firmware is not available causes an oops.
 
-This allows the client to mount v4.1 servers that don't support
-SECINFO_NO_NAME by falling back to the "guess and check" method of
-nfs4_find_root_sec.
+To be able to access the completion structure at teardown, it had to be moved
+into the b43_wldev structure.
 
-Signed-off-by: Weston Andros Adamson <dros@primarydata.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+This patch also fixes a typo in a comment.
+
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/nfs/nfs4proc.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/wireless/b43/b43.h  |  4 ++--
+ drivers/net/wireless/b43/main.c | 10 +++++-----
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index 4bb79e7..69fd66a 100644
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -6578,7 +6578,7 @@ nfs41_proc_secinfo_no_name(struct nfs_server *server, struct nfs_fh *fhandle,
- 		switch (err) {
- 		case 0:
- 		case -NFS4ERR_WRONGSEC:
--		case -NFS4ERR_NOTSUPP:
-+		case -ENOTSUPP:
- 			goto out;
- 		default:
- 			err = nfs4_handle_exception(server, err, &exception);
-@@ -6610,7 +6610,7 @@ nfs41_find_root_sec(struct nfs_server *server, struct nfs_fh *fhandle,
- 	 * Fall back on "guess and check" method if
- 	 * the server doesn't support SECINFO_NO_NAME
- 	 */
--	if (err == -NFS4ERR_WRONGSEC || err == -NFS4ERR_NOTSUPP) {
-+	if (err == -NFS4ERR_WRONGSEC || err == -ENOTSUPP) {
- 		err = nfs4_find_root_sec(server, fhandle, info);
- 		goto out_freepage;
+diff --git a/drivers/net/wireless/b43/b43.h b/drivers/net/wireless/b43/b43.h
+index ac593ab..9f6a983 100644
+--- a/drivers/net/wireless/b43/b43.h
++++ b/drivers/net/wireless/b43/b43.h
+@@ -719,8 +719,6 @@ enum b43_firmware_file_type {
+ struct b43_request_fw_context {
+ 	/* The device we are requesting the fw for. */
+ 	struct b43_wldev *dev;
+-	/* a completion event structure needed if this call is asynchronous */
+-	struct completion fw_load_complete;
+ 	/* a pointer to the firmware object */
+ 	const struct firmware *blob;
+ 	/* The type of firmware to request. */
+@@ -797,6 +795,8 @@ enum {
+ struct b43_wldev {
+ 	struct b43_bus_dev *dev;
+ 	struct b43_wl *wl;
++	/* a completion event structure needed if this call is asynchronous */
++	struct completion fw_load_complete;
+ 
+ 	/* The device initialization status.
+ 	 * Use b43_status() to query. */
+diff --git a/drivers/net/wireless/b43/main.c b/drivers/net/wireless/b43/main.c
+index d7d2db9..71c72d1 100644
+--- a/drivers/net/wireless/b43/main.c
++++ b/drivers/net/wireless/b43/main.c
+@@ -2061,6 +2061,7 @@ void b43_do_release_fw(struct b43_firmware_file *fw)
+ 
+ static void b43_release_firmware(struct b43_wldev *dev)
+ {
++	complete(&dev->fw_load_complete);
+ 	b43_do_release_fw(&dev->fw.ucode);
+ 	b43_do_release_fw(&dev->fw.pcm);
+ 	b43_do_release_fw(&dev->fw.initvals);
+@@ -2086,7 +2087,7 @@ static void b43_fw_cb(const struct firmware *firmware, void *context)
+ 	struct b43_request_fw_context *ctx = context;
+ 
+ 	ctx->blob = firmware;
+-	complete(&ctx->fw_load_complete);
++	complete(&ctx->dev->fw_load_complete);
+ }
+ 
+ int b43_do_request_fw(struct b43_request_fw_context *ctx,
+@@ -2133,7 +2134,7 @@ int b43_do_request_fw(struct b43_request_fw_context *ctx,
  	}
+ 	if (async) {
+ 		/* do this part asynchronously */
+-		init_completion(&ctx->fw_load_complete);
++		init_completion(&ctx->dev->fw_load_complete);
+ 		err = request_firmware_nowait(THIS_MODULE, 1, ctx->fwname,
+ 					      ctx->dev->dev->dev, GFP_KERNEL,
+ 					      ctx, b43_fw_cb);
+@@ -2141,12 +2142,11 @@ int b43_do_request_fw(struct b43_request_fw_context *ctx,
+ 			pr_err("Unable to load firmware\n");
+ 			return err;
+ 		}
+-		/* stall here until fw ready */
+-		wait_for_completion(&ctx->fw_load_complete);
++		wait_for_completion(&ctx->dev->fw_load_complete);
+ 		if (ctx->blob)
+ 			goto fw_ready;
+ 	/* On some ARM systems, the async request will fail, but the next sync
+-	 * request works. For this reason, we dall through here
++	 * request works. For this reason, we fall through here
+ 	 */
+ 	}
+ 	err = request_firmware(&ctx->blob, ctx->fwname,
 -- 
 1.8.3.2
 
