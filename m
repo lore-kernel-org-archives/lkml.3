@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753276AbaBGMHw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:07:52 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42342 "EHLO
+	id S1753510AbaBGMIN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:08:13 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42337 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932502AbaBGLwG (ORCPT
+	with ESMTP id S932498AbaBGLwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:52:06 -0500
+	Fri, 7 Feb 2014 06:52:05 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 192/233] mm: numa: initialise numa balancing after jump label initialisation
-Date: Fri,  7 Feb 2014 11:46:51 +0000
-Message-Id: <1391773652-25214-193-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 191/233] mm/page-writeback.c: fix dirty_balance_reserve subtraction from dirtyable memory
+Date: Fri,  7 Feb 2014 11:46:50 +0000
+Message-Id: <1391773652-25214-192-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -28,76 +30,149 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Johannes Weiner <hannes@cmpxchg.org>
 
-commit c297663c0b3930491a3cb2aba4b6e5a7159c3503 upstream.
+commit a804552b9a15c931cfc2a92a2e0aed1add8b580a upstream.
 
-The command line parsing takes place before jump labels are initialised
-which generates a warning if numa_balancing= is specified and
-CONFIG_JUMP_LABEL is set.
+Tejun reported stuttering and latency spikes on a system where random
+tasks would enter direct reclaim and get stuck on dirty pages.  Around
+50% of memory was occupied by tmpfs backed by an SSD, and another disk
+(rotating) was reading and writing at max speed to shrink a partition.
 
-On older kernels before commit c4b2c0c5f647 ("static_key: WARN on usage
-before jump_label_init was called") the kernel would have crashed.  This
-patch enables automatic numa balancing later in the initialisation
-process if numa_balancing= is specified.
+: The problem was pretty ridiculous.  It's a 8gig machine w/ one ssd and 10k
+: rpm harddrive and I could reliably reproduce constant stuttering every
+: several seconds for as long as buffered IO was going on on the hard drive
+: either with tmpfs occupying somewhere above 4gig or a test program which
+: allocates about the same amount of anon memory.  Although swap usage was
+: zero, turning off swap also made the problem go away too.
+:
+: The trigger conditions seem quite plausible - high anon memory usage w/
+: heavy buffered IO and swap configured - and it's highly likely that this
+: is happening in the wild too.  (this can happen with copying large files
+: to usb sticks too, right?)
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Rik van Riel <riel@redhat.com>
+This patch (of 2):
+
+The dirty_balance_reserve is an approximation of the fraction of free
+pages that the page allocator does not make available for page cache
+allocations.  As a result, it has to be taken into account when
+calculating the amount of "dirtyable memory", the baseline to which
+dirty_background_ratio and dirty_ratio are applied.
+
+However, currently the reserve is subtracted from the sum of free and
+reclaimable pages, which is non-sensical and leads to erroneous results
+when the system is dominated by unreclaimable pages and the
+dirty_balance_reserve is bigger than free+reclaimable.  In that case, at
+least the already allocated cache should be considered dirtyable.
+
+Fix the calculation by subtracting the reserve from the amount of free
+pages, then adding the reclaimable pages on top.
+
+[akpm@linux-foundation.org: fix CONFIG_HIGHMEM build]
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Reported-by: Tejun Heo <tj@kernel.org>
+Tested-by: Tejun Heo <tj@kernel.org>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/mempolicy.c | 17 +++++++++++------
- 1 file changed, 11 insertions(+), 6 deletions(-)
+ mm/page-writeback.c | 55 +++++++++++++++++++++++------------------------------
+ 1 file changed, 24 insertions(+), 31 deletions(-)
 
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 4baf12e..bfa95cf 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2524,7 +2524,7 @@ void mpol_free_shared_policy(struct shared_policy *p)
- }
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 241a746..1c21100 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -188,6 +188,25 @@ static unsigned long writeout_period_time = 0;
+  * global dirtyable memory first.
+  */
  
- #ifdef CONFIG_NUMA_BALANCING
--static bool __initdata numabalancing_override;
-+static int __initdata numabalancing_override;
- 
- static void __init check_numabalancing_enable(void)
- {
-@@ -2533,9 +2533,15 @@ static void __init check_numabalancing_enable(void)
- 	if (IS_ENABLED(CONFIG_NUMA_BALANCING_DEFAULT_ENABLED))
- 		numabalancing_default = true;
- 
-+	/* Parsed by setup_numabalancing. override == 1 enables, -1 disables */
-+	if (numabalancing_override)
-+		set_numabalancing_state(numabalancing_override == 1);
++/**
++ * zone_dirtyable_memory - number of dirtyable pages in a zone
++ * @zone: the zone
++ *
++ * Returns the zone's number of pages potentially available for dirty
++ * page cache.  This is the base value for the per-zone dirty limits.
++ */
++static unsigned long zone_dirtyable_memory(struct zone *zone)
++{
++	unsigned long nr_pages;
 +
- 	if (nr_node_ids > 1 && !numabalancing_override) {
--		printk(KERN_INFO "Enabling automatic NUMA balancing. "
--			"Configure with numa_balancing= or sysctl");
-+		printk(KERN_INFO "%s automatic NUMA balancing. "
-+			"Configure with numa_balancing= or the "
-+			"kernel.numa_balancing sysctl",
-+			numabalancing_default ? "Enabling" : "Disabling");
- 		set_numabalancing_state(numabalancing_default);
- 	}
- }
-@@ -2545,13 +2551,12 @@ static int __init setup_numabalancing(char *str)
- 	int ret = 0;
- 	if (!str)
- 		goto out;
--	numabalancing_override = true;
++	nr_pages = zone_page_state(zone, NR_FREE_PAGES);
++	nr_pages -= min(nr_pages, zone->dirty_balance_reserve);
++
++	nr_pages += zone_reclaimable_pages(zone);
++
++	return nr_pages;
++}
++
+ static unsigned long highmem_dirtyable_memory(unsigned long total)
+ {
+ #ifdef CONFIG_HIGHMEM
+@@ -195,11 +214,9 @@ static unsigned long highmem_dirtyable_memory(unsigned long total)
+ 	unsigned long x = 0;
  
- 	if (!strcmp(str, "enable")) {
--		set_numabalancing_state(true);
-+		numabalancing_override = 1;
- 		ret = 1;
- 	} else if (!strcmp(str, "disable")) {
--		set_numabalancing_state(false);
-+		numabalancing_override = -1;
- 		ret = 1;
+ 	for_each_node_state(node, N_HIGH_MEMORY) {
+-		struct zone *z =
+-			&NODE_DATA(node)->node_zones[ZONE_HIGHMEM];
++		struct zone *z = &NODE_DATA(node)->node_zones[ZONE_HIGHMEM];
+ 
+-		x += zone_page_state(z, NR_FREE_PAGES) +
+-		     zone_reclaimable_pages(z) - z->dirty_balance_reserve;
++		x += zone_dirtyable_memory(z);
  	}
- out:
+ 	/*
+ 	 * Unreclaimable memory (kernel memory or anonymous memory
+@@ -235,9 +252,11 @@ static unsigned long global_dirtyable_memory(void)
+ {
+ 	unsigned long x;
+ 
+-	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages();
++	x = global_page_state(NR_FREE_PAGES);
+ 	x -= min(x, dirty_balance_reserve);
+ 
++	x += global_reclaimable_pages();
++
+ 	if (!vm_highmem_is_dirtyable)
+ 		x -= highmem_dirtyable_memory(x);
+ 
+@@ -289,32 +308,6 @@ void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
+ }
+ 
+ /**
+- * zone_dirtyable_memory - number of dirtyable pages in a zone
+- * @zone: the zone
+- *
+- * Returns the zone's number of pages potentially available for dirty
+- * page cache.  This is the base value for the per-zone dirty limits.
+- */
+-static unsigned long zone_dirtyable_memory(struct zone *zone)
+-{
+-	/*
+-	 * The effective global number of dirtyable pages may exclude
+-	 * highmem as a big-picture measure to keep the ratio between
+-	 * dirty memory and lowmem reasonable.
+-	 *
+-	 * But this function is purely about the individual zone and a
+-	 * highmem zone can hold its share of dirty pages, so we don't
+-	 * care about vm_highmem_is_dirtyable here.
+-	 */
+-	unsigned long nr_pages = zone_page_state(zone, NR_FREE_PAGES) +
+-		zone_reclaimable_pages(zone);
+-
+-	/* don't allow this to underflow */
+-	nr_pages -= min(nr_pages, zone->dirty_balance_reserve);
+-	return nr_pages;
+-}
+-
+-/**
+  * zone_dirty_limit - maximum number of dirty pages allowed in a zone
+  * @zone: the zone
+  *
 -- 
 1.8.3.2
 
