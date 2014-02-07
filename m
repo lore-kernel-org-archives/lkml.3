@@ -1,89 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751697AbaBGRbS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 12:31:18 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38396 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750993AbaBGRbQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 12:31:16 -0500
-Date: Fri, 7 Feb 2014 17:31:08 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Josh Cartwright <joshc@codeaurora.org>
-Cc: Kumar Gala <galak@codeaurora.org>, "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, linux-spi@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Alok Chauhan <alokc@codeaurora.org>,
-        Gilad Avidov <gavidov@codeaurora.org>,
-        Kiran Gunda <kgunda@codeaurora.org>,
-        Sagar Dharia <sdharia@codeaurora.org>,
-        Andy Gross <agross@codeaurora.org>
-Message-ID: <20140207173108.GH1757@sirena.org.uk>
-References: <1391705868-20091-1-git-send-email-iivanov@mm-sol.com>
- <1391705868-20091-3-git-send-email-iivanov@mm-sol.com>
- <20140207073952.GA2610@qualcomm.com>
- <20140207165127.GV20228@joshc.qualcomm.com>
- <20140207171834.GF1757@sirena.org.uk>
- <20140207172051.GW20228@joshc.qualcomm.com>
+	id S1752232AbaBGRcE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 12:32:04 -0500
+Received: from mga09.intel.com ([134.134.136.24]:51364 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751136AbaBGRcB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 12:32:01 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,802,1384329600"; 
+   d="scan'208";a="479748325"
+Date: Fri, 7 Feb 2014 09:32:00 -0800
+From: Andi Kleen <ak@linux.intel.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ning Qu <quning@google.com>, Dave Hansen <dave.hansen@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>
+Subject: Re: [RFC, PATCH] mm: map few pages around fault address if they are
+ in page cache
+Message-ID: <20140207173200.GC12219@tassilo.jf.intel.com>
+References: <CA+55aFzNxTtvNX7zqBELHs489e5mEx1sM=i=red=aQAGviXrNw@mail.gmail.com>
+ <CA+55aFxpBkTn3LvSzxFj7ZoxuY=Rrg0OoAVuk5dK-ZLsO8kk4A@mail.gmail.com>
+ <20140206005534.GA27848@node.dhcp.inet.fi>
+ <CA+55aFx70seh4VD+=ZKHrjTCrinG0Hq3=X6ygCeOeuNCSG8n8Q@mail.gmail.com>
+ <CA+55aFwfGVCVouh5uap3UPy92vc4N9OrRRa-NpYT9ZMicU6w8w@mail.gmail.com>
+ <CA+55aFyq31f=30YeRbZbqgBFp13Zdk=Gb-UiLRqeR48MOfVwag@mail.gmail.com>
+ <20140206222450.GA8823@node.dhcp.inet.fi>
+ <CA+55aFysEbwfzJxVbZY6X+eEZ5KSgO5b8-S_a=-nrLj0sQfecA@mail.gmail.com>
+ <20140207154232.GA18611@node.dhcp.inet.fi>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Bg2esWel0ueIH/G/"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140207172051.GW20228@joshc.qualcomm.com>
-X-Cookie: Colors may fade.
+In-Reply-To: <20140207154232.GA18611@node.dhcp.inet.fi>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/2] spi: Add Qualcomm QUP SPI controller support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> I haven't tested it much, but my kvm boots. There're few places where code
+> should be fixed. __do_fault() and filemap_fault() are too ugly and need to
+> be cleaned.
+> 
+> I don't have any performance data yet.
+> 
+> Any thoughts?
 
---Bg2esWel0ueIH/G/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+It seems very drastic to do it unconditionally. How about at least a simple
+stream detection heuristic and perhaps also madvise?
 
-On Fri, Feb 07, 2014 at 11:20:51AM -0600, Josh Cartwright wrote:
-> On Fri, Feb 07, 2014 at 05:18:34PM +0000, Mark Brown wrote:
-> > On Fri, Feb 07, 2014 at 10:51:27AM -0600, Josh Cartwright wrote:
+There are some extreme cases where workloads could use a lot more memory
+than before, if they access their memory sparsely in the right pattern.
 
-> > > 	config SPI_QUP
-> > > 		tristate "Qualcomm SPI Support with QUP interface"
-> > > 		depends on OF
-> > > 		depends on ARM
-
-> > Does this really depend on ARM?  If so why?
-
-> The ARM dependency is there for the use of _relaxed io accessor
-> variants.
-
-That's not ARM only and I thought we were getting generic versions of it
-anyway?  ARMv8, MIPS, Microblaze, Hexagon and SH also define it.
-
---Bg2esWel0ueIH/G/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS9RhZAAoJELSic+t+oim9s0EP/2uIi5MFABswcCqy3YRi3CFL
-5e9W7eWe6WJSdgS9kVFJdCqRY586ZT8VpbWyKWFwX2amAum611BoB0CoiO2gAHoD
-WGBIzDDdVt3lrich4N9+VDxrCnOiTX+ceoVpI+9tRP6N3FKhr8eDuU2QN3DK4C1q
-ZCw76NeybQX9BwKiS/Npd8invMgW005GU9f2WKgJGVR6Y/LrKmcBlfUr9R/14855
-F0rFo3/I/dwAa/ZjvUHR3p19klhOUYrmiydKULNtqUOVEUw70EyJy/tfn+GRQPVG
-gt7DmF7ji0FrTqUXTQz/dwL0n8WqpKiPKyT+Dfc6g8d/dNy4BGac8e6ehdXpqGb0
-oGGknhlyI03JeB0mQ+WOpToJgYvjbzPmwftiSPsMX9mVUjUT6POoao8BZ5hRa9dx
-WwHlFtV8nO+pHouP5WPX4wL6/Rc5dlkErMAcURE7sgWiBl6wJ8NZhQBgXE62amdZ
-0FcQVO/L8E3SCjWX1hOhp5WlPOPr0JK2piMtQFKx2uZF0+iLMn+VDpIptTt1DUYe
-yJYbdvdCTsGGgKeooaZC/aiblYsmbWk9x2lFZfI410n6Hvsyus1O0Vu++vFoyoLk
-0gxAPYv9r0VD+ZPiqeZgLcitgIywRdeYTTOc+WzNAuWgKRw15h2QilHV3YLTLD/q
-ndA1zvzCPtFiqhjHhaof
-=Bbch
------END PGP SIGNATURE-----
-
---Bg2esWel0ueIH/G/--
+-Andi
