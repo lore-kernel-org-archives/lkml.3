@@ -1,45 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752981AbaBGTk7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 14:40:59 -0500
-Received: from cobra.newdream.net ([66.33.216.30]:50447 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751446AbaBGTk5 (ORCPT
+	id S1753079AbaBGTog (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 14:44:36 -0500
+Received: from mail-yh0-f50.google.com ([209.85.213.50]:34331 "EHLO
+	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751589AbaBGTod (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 14:40:57 -0500
-Date: Fri, 7 Feb 2014 11:40:57 -0800 (PST)
-From: Sage Weil <sage@inktank.com>
-X-X-Sender: sage@cobra.newdream.net
-To: torvalds@linux-foundation.org
-cc: ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] Ceph fixes for -rc2
-Message-ID: <alpine.DEB.2.00.1402071041250.26572@cobra.newdream.net>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 7 Feb 2014 14:44:33 -0500
+Message-ID: <52F53642.3030606@gmail.com>
+Date: Fri, 07 Feb 2014 11:38:42 -0800
+From: Frank Rowand <frowand.list@gmail.com>
+Reply-To: frowand.list@gmail.com
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Joe Perches <joe@perches.com>
+CC: Stephen Boyd <sboyd@codeaurora.org>,
+        Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, Saravana Kannan <skannan@codeaurora.org>
+Subject: Re: [PATCH v5 00/14] Add support for MSM's mmio clock/reset controller
+References: <1389811654-21397-1-git-send-email-sboyd@codeaurora.org>  <52F45DEE.8020400@gmail.com> <1391749891.15777.31.camel@joe-AO722>
+In-Reply-To: <1391749891.15777.31.camel@joe-AO722>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 2/6/2014 9:11 PM, Joe Perches wrote:
+> On Thu, 2014-02-06 at 20:15 -0800, Frank Rowand wrote:
+>> On 1/15/2014 10:47 AM, Stephen Boyd wrote:
+>>> The first breaks a reset-controller include ordering requirement. It got
+>>> an ack so I think we're ok for it to go through the clock tree.
+>>>
+>>
+>> < snip >
+>>
+>> checkpatch is whining about patches
+>>
+>>   4
+>>   5
+>>   6
+>>   7
+>>   8
+>>
+>> (Just for completeness if someone thinks I did not check all the patches,
+>> it also whines about patch 11, but I think the whining should be ignored,
+>> and it whines about patch 1 but I think that might be a checkpatch bug.)
+> 
+> Hi Frank.
+> 
+> For patch 1, what checkpatch bug might that be?
 
-Please pull the following fixes from
+see below
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
+> 
+> I think all the checkpatch whinges in patch 11 are correct.
 
-There is an RBD fix for a crash due to the immutable bio changes, an error 
-path fix, and a locking fix in the recent redirect support.
+Agreed on patch 11, judgement call on whether to ignore the warnings.
 
-Thanks!
-sage
+> 
+> I didn't check any of 4-8.
 
-----------------------------------------------------------------
-Ilya Dryomov (4):
-      libceph: fix error handling in ceph_osdc_init()
-      libceph: factor out logic from ceph_osdc_start_request()
-      libceph: take map_sem for read in handle_reply()
-      libceph: do not dereference a NULL bio pointer
+Hi Joe,
 
- net/ceph/messenger.c  |  8 +++--
- net/ceph/osd_client.c | 84 +++++++++++++++++++++++++++++++++------------------
- 2 files changed, 60 insertions(+), 32 deletions(-)
+Thanks for jumping in.  I did not want to bother you until I dug a little
+deeper into the warning to see if I was just misunderstanding something.
+
+Sorry, it is patch 2, not patch 1 ("[PATCH v5 02/14] clk: Add set_rate_and_parent() op"):
+
+   WARNING: Multiple spaces after return type
+   #188: FILE: include/linux/clk-provider.h:154:
+   +       int             (*set_rate_and_parent)(struct clk_hw *hw,
+
+   total: 0 errors, 1 warnings, 152 lines checked
+
+-Frank
+
