@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752520AbaBGOt6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 09:49:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40624 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751620AbaBGOtz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 09:49:55 -0500
-Date: Fri, 7 Feb 2014 09:49:15 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Cong Ding <dinggnu@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mathias Krause <minipli@googlemail.com>,
-        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Dave Young <dyoung@redhat.com>
-Subject: Re: [GIT PULL] x86/kaslr for v3.14
-Message-ID: <20140207144914.GA5949@redhat.com>
-References: <201401201647.s0KGlZdh004167@tazenda.hos.anvin.org>
- <CAFLxGvxO1MPDDjEh3FU5Gv2-eb6zBJxYtTnKdABDTTpbMxxYAw@mail.gmail.com>
- <52E5EFAF.3060609@linux.intel.com>
- <CAFLxGvxJ0A6hZ52RWffkg_zXXScyPn10P4HcKvdAXfE43h32Eg@mail.gmail.com>
- <52E601DA.7010605@zytor.com>
- <20140130220708.GP9951@redhat.com>
- <CAGXu5jKp0j71ucE7uOWRa+gQM1Wzp=_KdByJK4XnACTwiCW4ow@mail.gmail.com>
+	id S1752676AbaBGOv5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 09:51:57 -0500
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:38355 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751736AbaBGOv4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 09:51:56 -0500
+Date: Fri, 7 Feb 2014 15:51:49 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Imre Deak <imre.deak@intel.com>, Jani Nikula <jani.nikula@linux.intel.com>,
+        intel-gfx@lists.freedesktop.org,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: intel_sdvo_init: trying to register non-static key
+Message-ID: <20140207145149.GZ17001@phenom.ffwll.local>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Imre Deak <imre.deak@intel.com>,
+	Jani Nikula <jani.nikula@linux.intel.com>,
+	intel-gfx@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
+	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+References: <20140207093205.GA24395@pd.tnic>
+ <87d2iz18vi.fsf@intel.com>
+ <1391771542.5669.6.camel@intelbox>
+ <20140207112809.GG24395@pd.tnic>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAGXu5jKp0j71ucE7uOWRa+gQM1Wzp=_KdByJK4XnACTwiCW4ow@mail.gmail.com>
+In-Reply-To: <20140207112809.GG24395@pd.tnic>
+X-Operating-System: Linux phenom 3.12.0+
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 31, 2014 at 08:57:03AM -0800, Kees Cook wrote:
+On Fri, Feb 07, 2014 at 12:28:09PM +0100, Borislav Petkov wrote:
+> On Fri, Feb 07, 2014 at 01:12:22PM +0200, Imre Deak wrote:
+> > On Fri, 2014-02-07 at 13:04 +0200, Jani Nikula wrote:
+> > > Imre, is this the same i2c_del_adapter issue you're looking at? Any
+> > > patches to try yet?
+> > 
+> > It looks like the same issue yes. The following patch fixed it for me:
+> > 
+> > http://patchwork.freedesktop.org/patch/18698/
+> > 
+> > I'm working on an improved version of this, but the main thing - to
+> > remove the connector's sysfs entries before actually destroying the
+> > encoder and connector objects - will remain the same as in the above
+> > patch.
+> 
+> You could shoot the final version my way so that I give it a run too.
 
-[..]
-> I have no intention of that. Mentioned earlier in the thread, hiding
-> it from root will be pretty ugly/hard/pointless:
-> https://lkml.org/lkml/2014/1/27/287
-> I would like to just keep the offset out of dmesg.
-
-[ CC Dave Young ]
-
-Hi Kees,
-
-Dave Young is testing kdump with kaslr enabled. He is facing some issues.
-
-One issue he mentioned is that when second kernel boots, it might be
-placed in an area which is outside the reserved area for second kernel.
-
-We reserve a certain memory for second kernel. And modify memory map of
-second kernel using memmap=exactmap parameter. Looks like kernel placement
-is happening before memmap=exactmap takes effect. And that seems to be
-the reason that second kernel can be placed outside the reserved memory.
-
-IOW, memmap=exactmap and kaslr don't work together. Is it possible to
-first let memmap=exactmap take affect and then kaslr does its job. Or it
-is too late by the time memmap=exactmap is parsed.
-
-As a workaround, Dave is currently using "nokaslr" command line parameter
-for second kernel. He is still facing issues where makedumpfile segment
-faults. He is looking into it further.
-
-I thought I will atleast bring up with issue of memmap=exactmap and kaslr
-being incompatible.
-
-Thanks
-Vivek
+The final version will only change the code layout a bit, but not the
+logic. So a tested-by from you for v1 would be helpful anyway, to make
+really sure you've reported the same issue. If that's not the case then we
+need to dig deeper, so better not to waste a few days waiting for v2.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
