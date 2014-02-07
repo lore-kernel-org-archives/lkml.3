@@ -1,29 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755715AbaBGMAf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:00:35 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42467 "EHLO
+	id S1755881AbaBGMBS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:01:18 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42464 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755320AbaBGLwc (ORCPT
+	with ESMTP id S932556AbaBGLwb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:52:32 -0500
+	Fri, 7 Feb 2014 06:52:31 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: =?UTF-8?q?Frank=20Sch=C3=A4fer?= <fschaefer.oss@googlemail.com>,
+        Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 194/233] fs/compat: fix lookup_dcookie() parameter handling
-Date: Fri,  7 Feb 2014 11:46:53 +0000
-Message-Id: <1391773652-25214-195-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 210/233] USB: pl2303: fix data corruption on termios updates
+Date: Fri,  7 Feb 2014 11:47:09 +0000
+Message-Id: <1391773652-25214-211-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -33,58 +32,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit d8d14bd09cddbaf0168d61af638455a26bd027ff upstream.
+commit 623c8263376c0b8a4b0c220232e7313d762cd0cc upstream.
 
-Commit d5dc77bfeeab ("consolidate compat lookup_dcookie()") coverted all
-architectures to the new compat_sys_lookup_dcookie() syscall.
+Some PL2303 devices are known to lose bytes if you change serial
+settings even to the same values as before. Avoid this by comparing the
+encoded settings with the previsouly used ones before configuring the
+device.
 
-The "len" paramater of the new compat syscall must have the type
-compat_size_t in order to enforce zero extension for architectures where
-the ABI requires that the caller of a function performed zero and/or
-sign extension to 64 bit of all parameters.
+The common case was fixed by commit bf5e5834bffc6 ("pl2303: Fix mode
+switching regression"), but this problem was still possible to trigger,
+for instance, by using the TCSETS2-interface to repeatedly request
+115201 baud, which gets mapped to 115200 and thus always triggers a
+settings update.
 
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Frank Schäfer <fschaefer.oss@googlemail.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/dcookies.c          | 2 +-
- include/linux/compat.h | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/serial/pl2303.c | 33 +++++++++++++++++++++++++--------
+ 1 file changed, 25 insertions(+), 8 deletions(-)
 
-diff --git a/fs/dcookies.c b/fs/dcookies.c
-index ab5954b..ac44a69 100644
---- a/fs/dcookies.c
-+++ b/fs/dcookies.c
-@@ -204,7 +204,7 @@ out:
- }
+diff --git a/drivers/usb/serial/pl2303.c b/drivers/usb/serial/pl2303.c
+index 28088cc..0852bb3 100644
+--- a/drivers/usb/serial/pl2303.c
++++ b/drivers/usb/serial/pl2303.c
+@@ -141,6 +141,8 @@ struct pl2303_private {
+ 	spinlock_t lock;
+ 	u8 line_control;
+ 	u8 line_status;
++
++	u8 line_settings[7];
+ };
  
- #ifdef CONFIG_COMPAT
--COMPAT_SYSCALL_DEFINE4(lookup_dcookie, u32, w0, u32, w1, char __user *, buf, size_t, len)
-+COMPAT_SYSCALL_DEFINE4(lookup_dcookie, u32, w0, u32, w1, char __user *, buf, compat_size_t, len)
- {
- #ifdef __BIG_ENDIAN
- 	return sys_lookup_dcookie(((u64)w0 << 32) | w1, buf, len);
-diff --git a/include/linux/compat.h b/include/linux/compat.h
-index caa5385..df70600 100644
---- a/include/linux/compat.h
-+++ b/include/linux/compat.h
-@@ -421,7 +421,7 @@ extern long compat_arch_ptrace(struct task_struct *child, compat_long_t request,
- asmlinkage long compat_sys_ptrace(compat_long_t request, compat_long_t pid,
- 				  compat_long_t addr, compat_long_t data);
+ static int pl2303_vendor_read(__u16 value, __u16 index,
+@@ -280,10 +282,6 @@ static void pl2303_set_termios(struct tty_struct *tty,
+ 	int baud_floor, baud_ceil;
+ 	int k;
  
--asmlinkage long compat_sys_lookup_dcookie(u32, u32, char __user *, size_t);
-+asmlinkage long compat_sys_lookup_dcookie(u32, u32, char __user *, compat_size_t);
- /*
-  * epoll (fs/eventpoll.c) compat bits follow ...
-  */
+-	/* The PL2303 is reported to lose bytes if you change
+-	   serial settings even to the same values as before. Thus
+-	   we actually need to filter in this specific case */
+-
+ 	if (old_termios && !tty_termios_hw_change(&tty->termios, old_termios))
+ 		return;
+ 
+@@ -420,10 +418,29 @@ static void pl2303_set_termios(struct tty_struct *tty,
+ 		dev_dbg(&port->dev, "parity = none\n");
+ 	}
+ 
+-	i = usb_control_msg(serial->dev, usb_sndctrlpipe(serial->dev, 0),
+-			    SET_LINE_REQUEST, SET_LINE_REQUEST_TYPE,
+-			    0, 0, buf, 7, 100);
+-	dev_dbg(&port->dev, "0x21:0x20:0:0  %d\n", i);
++	/*
++	 * Some PL2303 are known to lose bytes if you change serial settings
++	 * even to the same values as before. Thus we actually need to filter
++	 * in this specific case.
++	 *
++	 * Note that the tty_termios_hw_change check above is not sufficient
++	 * as a previously requested baud rate may differ from the one
++	 * actually used (and stored in old_termios).
++	 *
++	 * NOTE: No additional locking needed for line_settings as it is
++	 *       only used in set_termios, which is serialised against itself.
++	 */
++	if (!old_termios || memcmp(buf, priv->line_settings, 7)) {
++		i = usb_control_msg(serial->dev,
++				    usb_sndctrlpipe(serial->dev, 0),
++				    SET_LINE_REQUEST, SET_LINE_REQUEST_TYPE,
++				    0, 0, buf, 7, 100);
++
++		dev_dbg(&port->dev, "0x21:0x20:0:0  %d\n", i);
++
++		if (i == 7)
++			memcpy(priv->line_settings, buf, 7);
++	}
+ 
+ 	/* change control lines if we are switching to or from B0 */
+ 	spin_lock_irqsave(&priv->lock, flags);
 -- 
 1.8.3.2
 
