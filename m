@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753047AbaBGLYm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:24:42 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40892 "EHLO
+	id S1753990AbaBGLiS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:38:18 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41060 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752176AbaBGLXz (ORCPT
+	with ESMTP id S1753042AbaBGLYl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:23:55 -0500
+	Fri, 7 Feb 2014 06:24:41 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 19/88] NFSv4: OPEN must handle the NFS4ERR_IO return code correctly
-Date: Fri,  7 Feb 2014 11:22:16 +0000
-Message-Id: <1391772205-22239-20-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 52/88] b43: Fix lockdep splat
+Date: Fri,  7 Feb 2014 11:22:49 +0000
+Message-Id: <1391772205-22239-53-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
@@ -27,99 +28,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit c7848f69ec4a8c03732cde5c949bd2aa711a9f4b upstream.
+commit 09164043f63c947a49797750a09ca1cd7c31108e upstream.
 
-decode_op_hdr() cannot distinguish between an XDR decoding error and
-the perfectly valid errorcode NFS4ERR_IO. This is normally not a
-problem, but for the particular case of OPEN, we need to be able
-to increment the NFSv4 open sequence id when the server returns
-a valid response.
+In https://bugzilla.kernel.org/show_bug.cgi?id=67561, a locking dependency is reported
+when b43 is used with hostapd, and rfkill is used to kill the radio output.
 
-Reported-by: J Bruce Fields <bfields@fieldses.org>
-Link: http://lkml.kernel.org/r/20131204210356.GA19452@fieldses.org
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+The lockdep splat (in part) is as follows:
+
+======================================================
+[ INFO: possible circular locking dependency detected ]
+3.12.0 #1 Not tainted
+-------------------------------------------------------
+rfkill/10040 is trying to acquire lock:
+ (rtnl_mutex){+.+.+.}, at: [<ffffffff8146f282>] rtnl_lock+0x12/0x20
+
+but task is already holding lock:
+ (rfkill_global_mutex){+.+.+.}, at: [<ffffffffa04832ca>] rfkill_fop_write+0x6a/0x170 [rfkill]
+
+--snip--
+
+Chain exists of:
+  rtnl_mutex --> misc_mtx --> rfkill_global_mutex
+
+The fix is to move the initialization of the hardware random number generator
+outside the code range covered by the rtnl_mutex.
+
+Reported-by: yury <urykhy@gmail.com>
+Tested-by: yury <urykhy@gmail.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/nfs/nfs4xdr.c | 47 +++++++++++++++++++++++++++++++----------------
- 1 file changed, 31 insertions(+), 16 deletions(-)
+ drivers/net/wireless/b43/main.c | 17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
 
-diff --git a/fs/nfs/nfs4xdr.c b/fs/nfs/nfs4xdr.c
-index cfce99b..9e2d9a4 100644
---- a/fs/nfs/nfs4xdr.c
-+++ b/fs/nfs/nfs4xdr.c
-@@ -3011,7 +3011,8 @@ out_overflow:
- 	return -EIO;
- }
+diff --git a/drivers/net/wireless/b43/main.c b/drivers/net/wireless/b43/main.c
+index 5b349da..d7d2db9 100644
+--- a/drivers/net/wireless/b43/main.c
++++ b/drivers/net/wireless/b43/main.c
+@@ -2415,6 +2415,7 @@ error:
  
--static int decode_op_hdr(struct xdr_stream *xdr, enum nfs_opnum4 expected)
-+static bool __decode_op_hdr(struct xdr_stream *xdr, enum nfs_opnum4 expected,
-+		int *nfs_retval)
+ static int b43_one_core_attach(struct b43_bus_dev *dev, struct b43_wl *wl);
+ static void b43_one_core_detach(struct b43_bus_dev *dev);
++static int b43_rng_init(struct b43_wl *wl);
+ 
+ static void b43_request_firmware(struct work_struct *work)
  {
- 	__be32 *p;
- 	uint32_t opnum;
-@@ -3021,19 +3022,32 @@ static int decode_op_hdr(struct xdr_stream *xdr, enum nfs_opnum4 expected)
- 	if (unlikely(!p))
- 		goto out_overflow;
- 	opnum = be32_to_cpup(p++);
--	if (opnum != expected) {
--		dprintk("nfs: Server returned operation"
--			" %d but we issued a request for %d\n",
--				opnum, expected);
--		return -EIO;
--	}
-+	if (unlikely(opnum != expected))
-+		goto out_bad_operation;
- 	nfserr = be32_to_cpup(p);
--	if (nfserr != NFS_OK)
--		return nfs4_stat_to_errno(nfserr);
--	return 0;
-+	if (nfserr == NFS_OK)
-+		*nfs_retval = 0;
-+	else
-+		*nfs_retval = nfs4_stat_to_errno(nfserr);
-+	return true;
-+out_bad_operation:
-+	dprintk("nfs: Server returned operation"
-+		" %d but we issued a request for %d\n",
-+			opnum, expected);
-+	*nfs_retval = -EREMOTEIO;
-+	return false;
- out_overflow:
- 	print_overflow_msg(__func__, xdr);
--	return -EIO;
-+	*nfs_retval = -EIO;
-+	return false;
-+}
+@@ -2466,6 +2467,10 @@ start_ieee80211:
+ 		goto err_one_core_detach;
+ 	wl->hw_registred = true;
+ 	b43_leds_register(wl->current_dev);
 +
-+static int decode_op_hdr(struct xdr_stream *xdr, enum nfs_opnum4 expected)
-+{
-+	int retval;
++	/* Register HW RNG driver */
++	b43_rng_init(wl);
 +
-+	__decode_op_hdr(xdr, expected, &retval);
-+	return retval;
- }
+ 	goto out;
  
- /* Dummy routine */
-@@ -4848,11 +4862,12 @@ static int decode_open(struct xdr_stream *xdr, struct nfs_openres *res)
- 	uint32_t savewords, bmlen, i;
- 	int status;
+ err_one_core_detach:
+@@ -4595,9 +4600,6 @@ static void b43_wireless_core_exit(struct b43_wldev *dev)
+ 	if (!dev || b43_status(dev) != B43_STAT_INITIALIZED)
+ 		return;
  
--	status = decode_op_hdr(xdr, OP_OPEN);
--	if (status != -EIO)
--		nfs_increment_open_seqid(status, res->seqid);
--	if (!status)
--		status = decode_stateid(xdr, &res->stateid);
-+	if (!__decode_op_hdr(xdr, OP_OPEN, &status))
-+		return status;
-+	nfs_increment_open_seqid(status, res->seqid);
-+	if (status)
-+		return status;
-+	status = decode_stateid(xdr, &res->stateid);
- 	if (unlikely(status))
- 		return status;
+-	/* Unregister HW RNG driver */
+-	b43_rng_exit(dev->wl);
+-
+ 	b43_set_status(dev, B43_STAT_UNINIT);
  
+ 	/* Stop the microcode PSM. */
+@@ -4740,9 +4742,6 @@ static int b43_wireless_core_init(struct b43_wldev *dev)
+ 
+ 	b43_set_status(dev, B43_STAT_INITIALIZED);
+ 
+-	/* Register HW RNG driver */
+-	b43_rng_init(dev->wl);
+-
+ out:
+ 	return err;
+ 
+@@ -5403,6 +5402,9 @@ static void b43_bcma_remove(struct bcma_device *core)
+ 
+ 	b43_one_core_detach(wldev->dev);
+ 
++	/* Unregister HW RNG driver */
++	b43_rng_exit(wl);
++
+ 	b43_leds_unregister(wl);
+ 
+ 	ieee80211_free_hw(wl->hw);
+@@ -5480,6 +5482,9 @@ static void b43_ssb_remove(struct ssb_device *sdev)
+ 
+ 	b43_one_core_detach(dev);
+ 
++	/* Unregister HW RNG driver */
++	b43_rng_exit(wl);
++
+ 	if (list_empty(&wl->devlist)) {
+ 		b43_leds_unregister(wl);
+ 		/* Last core on the chip unregistered.
 -- 
 1.8.3.2
 
