@@ -1,77 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751540AbaBGEJj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 23:09:39 -0500
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:57603 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751336AbaBGEJh (ORCPT
+	id S1751420AbaBGEPy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 23:15:54 -0500
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:49932 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751056AbaBGEPw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 23:09:37 -0500
+	Thu, 6 Feb 2014 23:15:52 -0500
+Message-ID: <52F45DEE.8020400@gmail.com>
+Date: Thu, 06 Feb 2014 20:15:42 -0800
+From: Frank Rowand <frowand.list@gmail.com>
+Reply-To: frowand.list@gmail.com
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <20140205221052.19080.77507.stgit@srivatsabhat.in.ibm.com>
-References: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com>
-	<20140205221052.19080.77507.stgit@srivatsabhat.in.ibm.com>
-Date: Fri, 7 Feb 2014 09:39:36 +0530
-Message-ID: <CAKohpok4XOS19XVfpth+8AYnL3D_35=VMMqefSnQLFy1DRDDrQ@mail.gmail.com>
-Subject: Re: [PATCH 35/51] acpi-cpufreq: Fix CPU hotplug callback registration
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Paul Mackerras <paulus@samba.org>, oleg@redhat.com, rusty@rustcorp.com.au,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>, Tejun Heo <tj@kernel.org>,
-        walken@google.com, ego@linux.vnet.ibm.com,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, Saravana Kannan <skannan@codeaurora.org>
+Subject: Re: [PATCH v5 00/14] Add support for MSM's mmio clock/reset controller
+References: <1389811654-21397-1-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1389811654-21397-1-git-send-email-sboyd@codeaurora.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6 February 2014 03:40, Srivatsa S. Bhat
-<srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> Subsystems that want to register CPU hotplug callbacks, as well as perform
-> initialization for the CPUs that are already online, often do it as shown
-> below:
->
->         get_online_cpus();
->
->         for_each_online_cpu(cpu)
->                 init_cpu(cpu);
->
->         register_cpu_notifier(&foobar_cpu_notifier);
->
->         put_online_cpus();
->
-> This is wrong, since it is prone to ABBA deadlocks involving the
-> cpu_add_remove_lock and the cpu_hotplug.lock (when running concurrently
-> with CPU hotplug operations).
->
-> Instead, the correct and race-free way of performing the callback
-> registration is:
->
->         cpu_maps_update_begin();
->
->         for_each_online_cpu(cpu)
->                 init_cpu(cpu);
->
->         /* Note the use of the double underscored version of the API */
->         __register_cpu_notifier(&foobar_cpu_notifier);
->
->         cpu_maps_update_done();
->
->
-> Fix the acpi-cpufreq code by using this latter form of callback registration.
->
-> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-> Cc: Viresh Kumar <viresh.kumar@linaro.org>
-> Cc: cpufreq@vger.kernel.org
-> Cc: linux-pm@vger.kernel.org
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+On 1/15/2014 10:47 AM, Stephen Boyd wrote:
+> The first breaks a reset-controller include ordering requirement. It got
+> an ack so I think we're ok for it to go through the clock tree.
+> 
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+< snip >
+
+checkpatch is whining about patches
+
+  4
+  5
+  6
+  7
+  8
+
+(Just for completeness if someone thinks I did not check all the patches,
+it also whines about patch 11, but I think the whining should be ignored,
+and it whines about patch 1 but I think that might be a checkpatch bug.)
+
+-Frank
+
