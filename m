@@ -1,61 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199AbaBGWc3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 17:32:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59651 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751297AbaBGWc1 (ORCPT
+	id S1751620AbaBGWfk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 17:35:40 -0500
+Received: from forward17.mail.yandex.net ([95.108.253.142]:48675 "EHLO
+	forward17.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750744AbaBGWfj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 17:32:27 -0500
-Date: Fri, 7 Feb 2014 14:33:37 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: rogerable@realtek.com
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Chris Ball <cjb@laptop.org>, Maxim Levitsky <maximlevitsky@gmail.com>,
-        Alex Dubov <oakad@yahoo.com>, Dan Carpenter <dan.carpenter@oracle.com>,
-        driverdev-devel@linuxdriverproject.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, wei_wang@realsil.com.cn
-Subject: Re: [PATCH v3 0/3] Add modules for realtek USB card reader
-Message-ID: <20140207223337.GA21142@kroah.com>
-References: <1391697307-23457-1-git-send-email-rogerable@realtek.com>
+	Fri, 7 Feb 2014 17:35:39 -0500
+From: zbr@ioremap.net
+Envelope-From: drustafa@yandex.ru
+To: David Fries <david@fries.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20140207222345.GR5452@spacedout.fries.net>
+References: <1391390104-31154-1-git-send-email-David@Fries.net>
+ <9071391471978@web15j.yandex.ru>
+ <20140204055131.GI5342@spacedout.fries.net>
+ <253061391557725@web20g.yandex.ru>
+ <20140207055832.GN5342@spacedout.fries.net>
+ <7611391808223@web21g.yandex.ru> <20140207222345.GR5452@spacedout.fries.net>
+Subject: Re: [PATCH 0/4] w1: refcnt fix, skip non-error send, docs
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1391697307-23457-1-git-send-email-rogerable@realtek.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Message-Id: <44271391812536@web21g.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Sat, 08 Feb 2014 02:35:36 +0400
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=koi8-r
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 06, 2014 at 10:35:04PM +0800, rogerable@realtek.com wrote:
-> From: Roger Tseng <rogerable@realtek.com>
-> 
-> This patchset adds modules to support Realtek USB vendor specific class flash
-> card reader: one base module in MFD subsystem and two host modules in both mmc
-> and memstick subsystems. The architecture is similar to rtsx_pci.
-> 
-> This work is done primarily to replace the staging driver: staging/rts5139,
-> which doesn't utilize mmc nor memstick subsystems. Once the patchset or its
-> revision is applied, we may need Greg's help to remove the staging one.
-> 
-> v2:
-> 1. Fix potential buffer overflow in rtsx_usb_seq_write_register()
-> 2. Remove unnecessary casting and messages
-> 3. Revise coding style and white spaces
-> 
-> v3:
-> 1. Fix MMC detection fail when under xhci
-> 2. Minor change of pm_runtime behavior in rtsx_usb_ms to prevent some rare
->    freeze due to erroneous Memstick card(not MS-Pro)
-> 3. Further revise coding style as suggested in the thread of v2
-> 4. Using managed resources: devm_*
-> 5. Change license from "GPL v2 and later" to "GPL v2"
-> 
-> Roger Tseng (3):
->   mfd: Add realtek USB card reader driver
->   mmc: Add realtek USB sdmmc host driver
->   memstick: Add realtek USB memstick host driver
 
-Looks good to me, thanks for doing this work:
 
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+08.02.2014, 02:25, "David Fries" <david@fries.net>:
+
+>> šCan you also check that protocol documentation is correct?
+>
+> Documentation/connector/connector.txt ? šI found it a little unclear,
+> I'll see what I can do.
+
+No, I meant Documentation/w1
