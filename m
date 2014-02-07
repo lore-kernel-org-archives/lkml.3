@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752481AbaBGBjV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 20:39:21 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:63761 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751582AbaBGBfr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1751721AbaBGBfr (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 6 Feb 2014 20:35:47 -0500
-X-AuditID: 9c93017d-b7b1fae00000636d-c3-52f4386ed30b
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:43104 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751515AbaBGBfo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 20:35:44 -0500
+X-AuditID: 9c93017d-b7b1fae00000636d-b8-52f4386da6db
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Rodrigo Campos <rodrigo@sdfg.com.ar>, Andi Kleen <andi@firstfloor.org>,
         David Ahern <dsahern@gmail.com>
-Subject: [PATCH 17/21] perf tools: Add callback function to hist_entry_iter
-Date: Fri,  7 Feb 2014 10:35:19 +0900
-Message-Id: <1391736923-30765-18-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 09/21] perf hists: Sort hist entries by accumulated period
+Date: Fri,  7 Feb 2014 10:35:11 +0900
+Message-Id: <1391736923-30765-10-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1391736923-30765-1-git-send-email-namhyung@kernel.org>
 References: <1391736923-30765-1-git-send-email-namhyung@kernel.org>
@@ -27,223 +27,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The new ->add_entry_cb() will be called after an entry was added to
-the histogram.  It's used for code sharing between perf report and
-perf top.  Note that ops->add_*_entry() should set iter->he properly
-in order to call the ->add_entry_cb.
-
-Also pass @arg to the callback function.  It'll be used by perf top
-later.
+When callchain accumulation is requested, we need to sort the entries
+by accumulated period value.  When accumulated periods of two entries
+are same (i.e. single path callchain) put the caller above since
+accumulation tends to put callers on higher position for obvious
+reason.
 
 Tested-by: Arun Sharma <asharma@fb.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-report.c | 31 ++++++++++++++++++++++++++++---
- tools/perf/util/hist.c      | 44 ++++++++++++++++++++++++--------------------
- tools/perf/util/hist.h      |  5 ++++-
- 3 files changed, 56 insertions(+), 24 deletions(-)
+ tools/perf/util/hist.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 48d2981877b1..066354fc00de 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -79,6 +79,27 @@ static int report__config(const char *var, const char *value, void *cb)
- 	return perf_default_config(var, value, cb);
- }
- 
-+static int hist_iter_cb(struct hist_entry_iter *iter,
-+			struct addr_location *al, bool single,
-+			void *arg __maybe_unused)
-+{
-+	int err;
-+	struct hist_entry *he = iter->he;
-+	struct perf_evsel *evsel = iter->evsel;
-+	struct perf_sample *sample = iter->sample;
-+
-+	err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
-+
-+	if (!single)
-+		goto out;
-+
-+	evsel->hists.stats.total_period += sample->period;
-+	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
-+
-+out:
-+	return err;
-+}
-+
- static int process_sample_event(struct perf_tool *tool,
- 				union perf_event *event,
- 				struct perf_sample *sample,
-@@ -108,15 +129,19 @@ static int process_sample_event(struct perf_tool *tool,
- 		iter.ops = &hist_iter_branch;
- 	else if (rep->mem_mode)
- 		iter.ops = &hist_iter_mem;
--	else if (symbol_conf.cumulate_callchain)
-+	else if (symbol_conf.cumulate_callchain) {
- 		iter.ops = &hist_iter_cumulative;
--	else
-+		iter.add_entry_cb = hist_iter_cb;
-+	} else {
- 		iter.ops = &hist_iter_normal;
-+		iter.add_entry_cb = hist_iter_cb;
-+	}
- 
- 	if (al.map != NULL)
- 		al.map->dso->hit = 1;
- 
--	ret = hist_entry_iter__add(&iter, &al, evsel, sample, rep->max_stack);
-+	ret = hist_entry_iter__add(&iter, &al, evsel, sample, rep->max_stack,
-+				   NULL);
- 	if (ret < 0)
- 		pr_debug("problem adding hist entry, skipping event\n");
- 
 diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index d7912a5c14dc..688700bab4c4 100644
+index af99ab33bcd4..d7912a5c14dc 100644
 --- a/tools/perf/util/hist.c
 +++ b/tools/perf/util/hist.c
-@@ -684,11 +684,10 @@ iter_add_single_normal_entry(struct hist_entry_iter *iter, struct addr_location
- }
+@@ -1063,6 +1063,18 @@ static int hist_entry__sort_on_period(struct hist_entry *a,
+ 	struct hist_entry *pair;
+ 	u64 *periods_a, *periods_b;
  
- static int
--iter_finish_normal_entry(struct hist_entry_iter *iter, struct addr_location *al)
-+iter_finish_normal_entry(struct hist_entry_iter *iter,
-+			 struct addr_location *al __maybe_unused)
- {
--	int err;
- 	struct hist_entry *he = iter->he;
--	struct perf_evsel *evsel = iter->evsel;
- 	struct perf_sample *sample = iter->sample;
- 
- 	if (he == NULL)
-@@ -696,13 +695,6 @@ iter_finish_normal_entry(struct hist_entry_iter *iter, struct addr_location *al)
- 
- 	iter->he = NULL;
- 
--	err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
--	if (err)
--		return err;
--
--	evsel->hists.stats.total_period += sample->period;
--	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
--
- 	return hist_entry__append_callchain(he, sample);
- }
- static int
-@@ -743,6 +735,7 @@ iter_add_single_cumulative_entry(struct hist_entry_iter *iter,
- 	if (he == NULL)
- 		return -ENOMEM;
- 
-+	iter->he = he;
- 	he_cache[iter->curr++] = he;
- 
- 	callchain_append(he->callchain, &callchain_cursor, sample->period);
-@@ -753,7 +746,7 @@ iter_add_single_cumulative_entry(struct hist_entry_iter *iter,
- 	 */
- 	callchain_cursor_commit(&callchain_cursor);
- 
--	return hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
-+	return 0;
- }
- 
- static int
-@@ -800,8 +793,11 @@ iter_add_next_cumulative_entry(struct hist_entry_iter *iter,
- 	 * It's possible that it has cycles or recursive calls.
- 	 */
- 	for (i = 0; i < iter->curr; i++) {
--		if (hist_entry__cmp(he_cache[i], &he_tmp) == 0)
-+		if (hist_entry__cmp(he_cache[i], &he_tmp) == 0) {
-+			/* to avoid calling callback function */
-+			iter->he = NULL;
- 			return 0;
-+		}
- 	}
- 
- 	he = __hists__add_entry(&evsel->hists, al, iter->parent, NULL, NULL,
-@@ -810,24 +806,20 @@ iter_add_next_cumulative_entry(struct hist_entry_iter *iter,
- 	if (he == NULL)
- 		return -ENOMEM;
- 
-+	iter->he = he;
- 	he_cache[iter->curr++] = he;
- 
- 	callchain_append(he->callchain, &cursor, sample->period);
- 
--	return hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
-+	return 0;
- }
- 
- static int
- iter_finish_cumulative_entry(struct hist_entry_iter *iter,
- 			     struct addr_location *al __maybe_unused)
- {
--	struct perf_evsel *evsel = iter->evsel;
--	struct perf_sample *sample = iter->sample;
--
--	evsel->hists.stats.total_period += sample->period;
--	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
--
- 	zfree(&iter->priv);
-+	iter->he = NULL;
- 	return 0;
- }
- 
-@@ -865,7 +857,7 @@ const struct hist_iter_ops hist_iter_cumulative = {
- 
- int hist_entry_iter__add(struct hist_entry_iter *iter, struct addr_location *al,
- 			 struct perf_evsel *evsel, struct perf_sample *sample,
--			 int max_stack_depth)
-+			 int max_stack_depth, void *arg)
- {
- 	int err, err2;
- 
-@@ -885,10 +877,22 @@ int hist_entry_iter__add(struct hist_entry_iter *iter, struct addr_location *al,
- 	if (err)
- 		goto out;
- 
-+	if (iter->he && iter->add_entry_cb) {
-+		err = iter->add_entry_cb(iter, al, true, arg);
-+		if (err)
-+			goto out;
++	if (symbol_conf.cumulate_callchain) {
++		/*
++		 * Put caller above callee when they have equal period.
++		 */
++		if (a->stat_acc->period != b->stat_acc->period)
++			return a->stat_acc->period > b->stat_acc->period ? 1 : -1;
++
++		if (a->callchain->max_depth != b->callchain->max_depth)
++			return a->callchain->max_depth < b->callchain->max_depth ?
++				1 : -1;
 +	}
 +
- 	while (iter->ops->next_entry(iter, al)) {
- 		err = iter->ops->add_next_entry(iter, al);
- 		if (err)
- 			break;
-+
-+		if (iter->he && iter->add_entry_cb) {
-+			err = iter->add_entry_cb(iter, al, false, arg);
-+			if (err)
-+				goto out;
-+		}
- 	}
- 
- out:
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index a02342141db9..28a88ea6e5ce 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -107,6 +107,9 @@ struct hist_entry_iter {
- 	void *priv;
- 
- 	const struct hist_iter_ops *ops;
-+	/* user-defined callback function (optional) */
-+	int (*add_entry_cb)(struct hist_entry_iter *iter,
-+			    struct addr_location *al, bool single, void *arg);
- };
- 
- extern const struct hist_iter_ops hist_iter_normal;
-@@ -123,7 +126,7 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
- 				      bool sample_self);
- int hist_entry_iter__add(struct hist_entry_iter *iter, struct addr_location *al,
- 			 struct perf_evsel *evsel, struct perf_sample *sample,
--			 int max_stack_depth);
-+			 int max_stack_depth, void *arg);
- 
- int64_t hist_entry__cmp(struct hist_entry *left, struct hist_entry *right);
- int64_t hist_entry__collapse(struct hist_entry *left, struct hist_entry *right);
+ 	ret = period_cmp(a->stat.period, b->stat.period);
+ 	if (ret || !symbol_conf.event_group)
+ 		return ret;
 -- 
 1.7.11.7
 
