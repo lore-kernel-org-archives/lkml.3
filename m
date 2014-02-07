@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755755AbaBGN1h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 08:27:37 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41385 "EHLO
+	id S1755328AbaBGN1g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 08:27:36 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41387 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752084AbaBGLrm (ORCPT
+	with ESMTP id S1753732AbaBGLrm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 Feb 2014 06:47:42 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>,
-        Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
-        Richard Cochran <richardcochran@gmail.com>,
+Cc: Wei-Chun Chao <weichunc@plumgrid.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 002/233] arc_emac: fix potential use after free
-Date: Fri,  7 Feb 2014 11:43:41 +0000
-Message-Id: <1391773652-25214-3-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 003/233] ipv4: fix tunneled VM traffic over hw VXLAN/GRE GSO NIC
+Date: Fri,  7 Feb 2014 11:43:42 +0000
+Message-Id: <1391773652-25214-4-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -30,48 +28,187 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Wei-Chun Chao <weichunc@plumgrid.com>
 
-commit 37ec274e9713eafc2ba6c4471420f06cb8f68ecf upstream.
+commit 7a7ffbabf99445704be01bff5d7e360da908cf8e upstream.
 
-Signed-off-by: Eric Dumazet <edumazet@google.com>
+VM to VM GSO traffic is broken if it goes through VXLAN or GRE
+tunnel and the physical NIC on the host supports hardware VXLAN/GRE
+GSO offload (e.g. bnx2x and next-gen mlx4).
 
-skb_tx_timestamp(skb) should be called _before_ TX completion
-has a chance to trigger, otherwise it is too late and we access
-freed memory.
+Two issues -
+(VXLAN) VM traffic has SKB_GSO_DODGY and SKB_GSO_UDP_TUNNEL with
+SKB_GSO_TCP/UDP set depending on the inner protocol. GSO header
+integrity check fails in udp4_ufo_fragment if inner protocol is
+TCP. Also gso_segs is calculated incorrectly using skb->len that
+includes tunnel header. Fix: robust check should only be applied
+to the inner packet.
 
-Fixes: e4f2379db6c6 ("ethernet/arc/arc_emac - Add new driver")
-From: Eric Dumazet <edumazet@google.com>
-Cc: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
-Cc: Richard Cochran <richardcochran@gmail.com>
+(VXLAN & GRE) Once GSO header integrity check passes, NULL segs
+is returned and the original skb is sent to hardware. However the
+tunnel header is already pulled. Fix: tunnel header needs to be
+restored so that hardware can perform GSO properly on the original
+packet.
+
+Signed-off-by: Wei-Chun Chao <weichunc@plumgrid.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/arc/emac_main.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/linux/netdevice.h | 13 +++++++++++++
+ net/ipv4/gre_offload.c    | 11 +++++++----
+ net/ipv4/udp.c            |  6 +++++-
+ net/ipv4/udp_offload.c    | 37 +++++++++++++++++++------------------
+ 4 files changed, 44 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/net/ethernet/arc/emac_main.c b/drivers/net/ethernet/arc/emac_main.c
-index 9e16014..4fc96d6 100644
---- a/drivers/net/ethernet/arc/emac_main.c
-+++ b/drivers/net/ethernet/arc/emac_main.c
-@@ -565,6 +565,8 @@ static int arc_emac_tx(struct sk_buff *skb, struct net_device *ndev)
- 	/* Make sure pointer to data buffer is set */
- 	wmb();
- 
-+	skb_tx_timestamp(skb);
-+
- 	*info = cpu_to_le32(FOR_EMAC | FIRST_OR_LAST_MASK | len);
- 
- 	/* Increment index to point to the next BD */
-@@ -579,8 +581,6 @@ static int arc_emac_tx(struct sk_buff *skb, struct net_device *ndev)
- 
- 	arc_reg_set(priv, R_STATUS, TXPL_MASK);
- 
--	skb_tx_timestamp(skb);
--
- 	return NETDEV_TX_OK;
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index 1ffe7d7..324521b 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -2879,6 +2879,19 @@ static inline void netif_set_gso_max_size(struct net_device *dev,
+ 	dev->gso_max_size = size;
  }
  
++static inline void skb_gso_error_unwind(struct sk_buff *skb, __be16 protocol,
++					int pulled_hlen, u16 mac_offset,
++					int mac_len)
++{
++	skb->protocol = protocol;
++	skb->encapsulation = 1;
++	skb_push(skb, pulled_hlen);
++	skb_reset_transport_header(skb);
++	skb->mac_header = mac_offset;
++	skb->network_header = skb->mac_header + mac_len;
++	skb->mac_len = mac_len;
++}
++
+ static inline bool netif_is_bond_master(struct net_device *dev)
+ {
+ 	return dev->flags & IFF_MASTER && dev->priv_flags & IFF_BONDING;
+diff --git a/net/ipv4/gre_offload.c b/net/ipv4/gre_offload.c
+index 55e6bfb..db98705 100644
+--- a/net/ipv4/gre_offload.c
++++ b/net/ipv4/gre_offload.c
+@@ -28,6 +28,7 @@ static struct sk_buff *gre_gso_segment(struct sk_buff *skb,
+ 	netdev_features_t enc_features;
+ 	int ghl = GRE_HEADER_SECTION;
+ 	struct gre_base_hdr *greh;
++	u16 mac_offset = skb->mac_header;
+ 	int mac_len = skb->mac_len;
+ 	__be16 protocol = skb->protocol;
+ 	int tnl_hlen;
+@@ -57,13 +58,13 @@ static struct sk_buff *gre_gso_segment(struct sk_buff *skb,
+ 	} else
+ 		csum = false;
+ 
++	if (unlikely(!pskb_may_pull(skb, ghl)))
++		goto out;
++
+ 	/* setup inner skb. */
+ 	skb->protocol = greh->protocol;
+ 	skb->encapsulation = 0;
+ 
+-	if (unlikely(!pskb_may_pull(skb, ghl)))
+-		goto out;
+-
+ 	__skb_pull(skb, ghl);
+ 	skb_reset_mac_header(skb);
+ 	skb_set_network_header(skb, skb_inner_network_offset(skb));
+@@ -72,8 +73,10 @@ static struct sk_buff *gre_gso_segment(struct sk_buff *skb,
+ 	/* segment inner packet. */
+ 	enc_features = skb->dev->hw_enc_features & netif_skb_features(skb);
+ 	segs = skb_mac_gso_segment(skb, enc_features);
+-	if (!segs || IS_ERR(segs))
++	if (!segs || IS_ERR(segs)) {
++		skb_gso_error_unwind(skb, protocol, ghl, mac_offset, mac_len);
+ 		goto out;
++	}
+ 
+ 	skb = segs;
+ 	tnl_hlen = skb_tnl_header_len(skb);
+diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
+index b30deb9..e85a25c 100644
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -2293,6 +2293,7 @@ struct sk_buff *skb_udp_tunnel_segment(struct sk_buff *skb,
+ 				       netdev_features_t features)
+ {
+ 	struct sk_buff *segs = ERR_PTR(-EINVAL);
++	u16 mac_offset = skb->mac_header;
+ 	int mac_len = skb->mac_len;
+ 	int tnl_hlen = skb_inner_mac_header(skb) - skb_transport_header(skb);
+ 	__be16 protocol = skb->protocol;
+@@ -2312,8 +2313,11 @@ struct sk_buff *skb_udp_tunnel_segment(struct sk_buff *skb,
+ 	/* segment inner packet. */
+ 	enc_features = skb->dev->hw_enc_features & netif_skb_features(skb);
+ 	segs = skb_mac_gso_segment(skb, enc_features);
+-	if (!segs || IS_ERR(segs))
++	if (!segs || IS_ERR(segs)) {
++		skb_gso_error_unwind(skb, protocol, tnl_hlen, mac_offset,
++				     mac_len);
+ 		goto out;
++	}
+ 
+ 	outer_hlen = skb_tnl_header_len(skb);
+ 	skb = segs;
+diff --git a/net/ipv4/udp_offload.c b/net/ipv4/udp_offload.c
+index f35ecca..6b809e4 100644
+--- a/net/ipv4/udp_offload.c
++++ b/net/ipv4/udp_offload.c
+@@ -41,6 +41,14 @@ static struct sk_buff *udp4_ufo_fragment(struct sk_buff *skb,
+ {
+ 	struct sk_buff *segs = ERR_PTR(-EINVAL);
+ 	unsigned int mss;
++	int offset;
++	__wsum csum;
++
++	if (skb->encapsulation &&
++	    skb_shinfo(skb)->gso_type & SKB_GSO_UDP_TUNNEL) {
++		segs = skb_udp_tunnel_segment(skb, features);
++		goto out;
++	}
+ 
+ 	mss = skb_shinfo(skb)->gso_size;
+ 	if (unlikely(skb->len <= mss))
+@@ -62,27 +70,20 @@ static struct sk_buff *udp4_ufo_fragment(struct sk_buff *skb,
+ 		goto out;
+ 	}
+ 
++	/* Do software UFO. Complete and fill in the UDP checksum as
++	 * HW cannot do checksum of UDP packets sent as multiple
++	 * IP fragments.
++	 */
++	offset = skb_checksum_start_offset(skb);
++	csum = skb_checksum(skb, offset, skb->len - offset, 0);
++	offset += skb->csum_offset;
++	*(__sum16 *)(skb->data + offset) = csum_fold(csum);
++	skb->ip_summed = CHECKSUM_NONE;
++
+ 	/* Fragment the skb. IP headers of the fragments are updated in
+ 	 * inet_gso_segment()
+ 	 */
+-	if (skb->encapsulation && skb_shinfo(skb)->gso_type & SKB_GSO_UDP_TUNNEL)
+-		segs = skb_udp_tunnel_segment(skb, features);
+-	else {
+-		int offset;
+-		__wsum csum;
+-
+-		/* Do software UFO. Complete and fill in the UDP checksum as
+-		 * HW cannot do checksum of UDP packets sent as multiple
+-		 * IP fragments.
+-		 */
+-		offset = skb_checksum_start_offset(skb);
+-		csum = skb_checksum(skb, offset, skb->len - offset, 0);
+-		offset += skb->csum_offset;
+-		*(__sum16 *)(skb->data + offset) = csum_fold(csum);
+-		skb->ip_summed = CHECKSUM_NONE;
+-
+-		segs = skb_segment(skb, features);
+-	}
++	segs = skb_segment(skb, features);
+ out:
+ 	return segs;
+ }
 -- 
 1.8.3.2
 
