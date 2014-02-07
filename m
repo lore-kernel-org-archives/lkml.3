@@ -1,80 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752842AbaBGRGj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 12:06:39 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:58552 "EHLO zene.cmpxchg.org"
+	id S1752988AbaBGRHL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 12:07:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42771 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751632AbaBGREe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 12:04:34 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
+	id S1751383AbaBGRHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 12:07:09 -0500
+Date: Fri, 7 Feb 2014 18:07:08 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [patch 2/8] mm: memcg: remove mem_cgroup_move_account_page_stat()
-Date: Fri,  7 Feb 2014 12:04:19 -0500
-Message-Id: <1391792665-21678-3-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1391792665-21678-1-git-send-email-hannes@cmpxchg.org>
+Subject: Re: [patch 0/8] memcg: charge path cleanups
+Message-ID: <20140207170708.GI5121@dhcp22.suse.cz>
 References: <1391792665-21678-1-git-send-email-hannes@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391792665-21678-1-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It used to disable preemption and run sanity checks but now it's only
-taking a number out of one percpu counter and putting it into another.
-Do this directly in the callsite and save the indirection.
+On Fri 07-02-14 12:04:17, Johannes Weiner wrote:
+> Hi Michal,
+> 
+> I took some of your patches and combined them with the charge path
+> cleanups I already had and the changes I made after our discussion.
+> 
+> I'm really happy about where this is going:
+> 
+>  mm/memcontrol.c | 298 ++++++++++++++++--------------------------------------
+>  1 file changed, 87 insertions(+), 211 deletions(-)
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
- mm/memcontrol.c | 28 ++++++++++++----------------
- 1 file changed, 12 insertions(+), 16 deletions(-)
+The diffstat looks really nice. I will not get to the patches earlier
+than on Monday.
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index befb3dd9d46c..639cf58b2643 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -3776,16 +3776,6 @@ void mem_cgroup_split_huge_fixup(struct page *head)
- }
- #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
- 
--static void mem_cgroup_move_account_page_stat(struct mem_cgroup *from,
--					      struct mem_cgroup *to,
--					      unsigned int nr_pages,
--					      enum mem_cgroup_stat_index idx)
--{
--	/* Update stat data for mem_cgroup */
--	__this_cpu_sub(from->stat->count[idx], nr_pages);
--	__this_cpu_add(to->stat->count[idx], nr_pages);
--}
--
- /**
-  * mem_cgroup_move_account - move account of the page
-  * @page: the page
-@@ -3831,13 +3821,19 @@ static int mem_cgroup_move_account(struct page *page,
- 
- 	move_lock_mem_cgroup(from, &flags);
- 
--	if (!anon && page_mapped(page))
--		mem_cgroup_move_account_page_stat(from, to, nr_pages,
--			MEM_CGROUP_STAT_FILE_MAPPED);
-+	if (!anon && page_mapped(page)) {
-+		__this_cpu_sub(from->stat->count[MEM_CGROUP_STAT_FILE_MAPPED],
-+			       nr_pages);
-+		__this_cpu_add(to->stat->count[MEM_CGROUP_STAT_FILE_MAPPED],
-+			       nr_pages);
-+	}
- 
--	if (PageWriteback(page))
--		mem_cgroup_move_account_page_stat(from, to, nr_pages,
--			MEM_CGROUP_STAT_WRITEBACK);
-+	if (PageWriteback(page)) {
-+		__this_cpu_sub(from->stat->count[MEM_CGROUP_STAT_WRITEBACK],
-+			       nr_pages);
-+		__this_cpu_add(to->stat->count[MEM_CGROUP_STAT_WRITEBACK],
-+			       nr_pages);
-+	}
- 
- 	mem_cgroup_charge_statistics(from, page, anon, -nr_pages);
- 
+> let me know what you think!
+> 
+> Johannes
+> 
+
 -- 
-1.8.5.3
-
+Michal Hocko
+SUSE Labs
