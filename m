@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756020AbaBGN2y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 08:28:54 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40957 "EHLO
+	id S1755406AbaBGN3X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 08:29:23 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40952 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752574AbaBGLYM (ORCPT
+	with ESMTP id S1752552AbaBGLYL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:24:12 -0500
+	Fri, 7 Feb 2014 06:24:11 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Rahul Bedarkar <rahulbedarkar89@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
+        David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 31/88] USB: serial: add support for iBall 3.5G connect usb modem
-Date: Fri,  7 Feb 2014 11:22:28 +0000
-Message-Id: <1391772205-22239-32-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 28/88] perf kvm: Fix kvm report without guestmount.
+Date: Fri,  7 Feb 2014 11:22:25 +0000
+Message-Id: <1391772205-22239-29-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,59 +29,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rahul Bedarkar <rahulbedarkar89@gmail.com>
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
 
-commit 7d5c1b9c7cb5ec8e52b1adc65c484a923a8ea6c3 upstream.
+commit ad85ace07a05062ef6b59c35a5e80b6eaee1eee6 upstream.
 
-Add support for iBall 3.5G connect usb modem.
+Currently, if we use perf kvm --guestkallsyms --guestmodules report, we
+can not get the perf information from perf data file. All sample are
+shown as unknown.
 
-$lsusb
-Bus 002 Device 006: ID 1c9e:9605 OMEGA TECHNOLOGY
+Reproducing steps:
+	# perf kvm --guestkallsyms /tmp/kallsyms --guestmodules /tmp/modules record -a sleep 1
+	[ perf record: Woken up 1 times to write data ]
+	[ perf record: Captured and wrote 0.624 MB perf.data.guest (~27260 samples) ]
+	# perf kvm --guestkallsyms /tmp/kallsyms --guestmodules /tmp/modules report |grep %
+	   100.00%  [guest/6471]  [unknown]         [g] 0xffffffff8164f330
 
-$usb-devices
-T:  Bus=02 Lev=01 Prnt=01 Port=00 Cnt=01 Dev#=  6 Spd=480 MxCh= 0
-D:  Ver= 2.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS=64 #Cfgs=  1
-P:  Vendor=1c9e ProdID=9605 Rev=00.00
-S:  Manufacturer=USB Modem
-S:  Product=USB Modem
-S:  SerialNumber=1234567890ABCDEF
-C:  #Ifs= 5 Cfg#= 1 Atr=e0 MxPwr=500mA
-I:  If#= 0 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-I:  If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-I:  If#= 3 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-I:  If#= 4 Alt= 0 #EPs= 2 Cls=08(stor.) Sub=06 Prot=50 Driver=usb-storage
+This bug was introduced by 207b57926 (perf kvm: Fix regression with guest machine creation).
+In original code, it uses perf_session__find_machine(), it means we deliver symbol to machine
+which has the same pid, if no machine found, deliver it to *default* guest. But if we use
+perf_session__findnew_machine() here, if no machine was found, new machine with pid will be built
+and added. Then the default guest which with pid == 0 will never get a symbol.
 
-Signed-off-by: Rahul Bedarkar <rahulbedarkar89@gmail.com>
-Suggested-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+And because the new machine initialized here has no kernel map created, the symbol delivered to
+it will be marked as "unknown".
+
+This patch here is to revert commit 207b57926 and fix the SEGFAULT bug in another way.
+
+Verification steps:
+	# ./perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules record -a sleep 1
+	[ perf record: Woken up 1 times to write data ]
+	[ perf record: Captured and wrote 0.651 MB perf.data.guest (~28437 samples) ]
+	# ./perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules report |grep %
+	    22.64%    :6471  [guest.kernel.kallsyms]  [g] update_rq_clock.part.70
+	    19.99%    :6471  [guest.kernel.kallsyms]  [g] d_free
+	    18.46%    :6471  [guest.kernel.kallsyms]  [g] bio_phys_segments
+	    16.25%    :6471  [guest.kernel.kallsyms]  [g] dequeue_task
+	    12.78%    :6471  [guest.kernel.kallsyms]  [g] __switch_to
+	     7.91%    :6471  [guest.kernel.kallsyms]  [g] scheduler_tick
+	     1.75%    :6471  [guest.kernel.kallsyms]  [g] native_apic_mem_write
+	     0.21%    :6471  [guest.kernel.kallsyms]  [g] apic_timer_interrupt
+
+Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Acked-by: David Ahern <dsahern@gmail.com>
+Cc: David Ahern <dsahern@gmail.com>
+Link: http://lkml.kernel.org/r/1387564907-3045-1-git-send-email-yangds.fnst@cn.fujitsu.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/option.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ tools/perf/util/session.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index 94af767..83b50db 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -325,6 +325,9 @@ static void option_instat_callback(struct urb *urb);
-  * It seems to contain a Qualcomm QSC6240/6290 chipset            */
- #define FOUR_G_SYSTEMS_PRODUCT_W14		0x9603
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 56142d0..b21bc79 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -917,6 +917,7 @@ static struct machine *
+ 					       union perf_event *event)
+ {
+ 	const u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
++	struct machine *machine;
  
-+/* iBall 3.5G connect wireless modem */
-+#define IBALL_3_5G_CONNECT			0x9605
-+
- /* Zoom */
- #define ZOOM_PRODUCT_4597			0x9607
+ 	if (cpumode == PERF_RECORD_MISC_GUEST_KERNEL && perf_guest) {
+ 		u32 pid;
+@@ -926,7 +927,11 @@ static struct machine *
+ 		else
+ 			pid = event->ip.pid;
  
-@@ -1520,6 +1523,7 @@ static const struct usb_device_id option_ids[] = {
-   	  .driver_info = (kernel_ulong_t)&four_g_w14_blacklist
-   	},
- 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, ZOOM_PRODUCT_4597) },
-+	{ USB_DEVICE(LONGCHEER_VENDOR_ID, IBALL_3_5G_CONNECT) },
- 	{ USB_DEVICE(HAIER_VENDOR_ID, HAIER_PRODUCT_CE100) },
- 	/* Pirelli  */
- 	{ USB_DEVICE(PIRELLI_VENDOR_ID, PIRELLI_PRODUCT_C100_1)},
+-		return perf_session__findnew_machine(session, pid);
++		machine = perf_session__find_machine(session, pid);
++		if (!machine)
++			machine = perf_session__findnew_machine(session,
++						DEFAULT_GUEST_KERNEL_ID);
++		return machine;
+ 	}
+ 
+ 	return perf_session__find_host_machine(session);
 -- 
 1.8.3.2
 
