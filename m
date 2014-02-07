@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755870AbaBGMi3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:38:29 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41995 "EHLO
+	id S1754939AbaBGMi1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:38:27 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42009 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754851AbaBGLui (ORCPT
+	with ESMTP id S1754861AbaBGLul (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:50:38 -0500
+	Fri, 7 Feb 2014 06:50:41 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Luiz Capitulino <lcapitulino@redhat.com>, Dan Duval <dan.duval@oracle.com>,
-        Chuck Anderson <chuck.anderson@oracle.com>,
-        Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>,
+Cc: Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Kevin Hilman <khilman@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 125/233] audit: reset audit backlog wait time after error recovery
-Date: Fri,  7 Feb 2014 11:45:44 +0000
-Message-Id: <1391773652-25214-126-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 128/233] ARM: at91: smc: bug fix in sam9_smc_cs_read()
+Date: Fri,  7 Feb 2014 11:45:47 +0000
+Message-Id: <1391773652-25214-129-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -29,50 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Guy Briggs <rgb@redhat.com>
+From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
 
-commit e789e561a50de0aaa8c695662d97aaa5eac9d55f upstream.
+commit 1588c51cf6d782e63a8719681d905ef0ac22ee62 upstream.
 
-When the audit queue overflows and times out (audit_backlog_wait_time), the
-audit queue overflow timeout is set to zero.  Once the audit queue overflow
-timeout condition recovers, the timeout should be reset to the original value.
+There was a copy/paste error when reading the nwe_pulse value.
 
-See also:
-	https://lkml.org/lkml/2013/9/2/473
-
-Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
-Signed-off-by: Dan Duval <dan.duval@oracle.com>
-Signed-off-by: Chuck Anderson <chuck.anderson@oracle.com>
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-Signed-off-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Acked-by: Boris BREZILLON <b.brezillon@overkiz.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Kevin Hilman <khilman@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/audit.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ arch/arm/mach-at91/sam9_smc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/audit.c b/kernel/audit.c
-index 7ddfd8a..6def25f 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -103,7 +103,8 @@ static int	audit_rate_limit;
+diff --git a/arch/arm/mach-at91/sam9_smc.c b/arch/arm/mach-at91/sam9_smc.c
+index 99a0a1d..b26156b 100644
+--- a/arch/arm/mach-at91/sam9_smc.c
++++ b/arch/arm/mach-at91/sam9_smc.c
+@@ -101,7 +101,7 @@ static void sam9_smc_cs_read(void __iomem *base,
+ 	/* Pulse register */
+ 	val = __raw_readl(base + AT91_SMC_PULSE);
  
- /* Number of outstanding audit_buffers allowed. */
- static int	audit_backlog_limit = 64;
--static int	audit_backlog_wait_time = 60 * HZ;
-+#define AUDIT_BACKLOG_WAIT_TIME (60 * HZ)
-+static int	audit_backlog_wait_time = AUDIT_BACKLOG_WAIT_TIME;
- static int	audit_backlog_wait_overflow = 0;
- 
- /* The identity of the user shutting down the audit system. */
-@@ -1135,6 +1136,8 @@ struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask,
- 		return NULL;
- 	}
- 
-+	audit_backlog_wait_time = AUDIT_BACKLOG_WAIT_TIME;
-+
- 	ab = audit_buffer_alloc(ctx, gfp_mask, type);
- 	if (!ab) {
- 		audit_log_lost("out of memory in audit_log_start");
+-	config->nwe_setup = val & AT91_SMC_NWEPULSE;
++	config->nwe_pulse = val & AT91_SMC_NWEPULSE;
+ 	config->ncs_write_pulse = (val & AT91_SMC_NCS_WRPULSE) >> 8;
+ 	config->nrd_pulse = (val & AT91_SMC_NRDPULSE) >> 16;
+ 	config->ncs_read_pulse = (val & AT91_SMC_NCS_RDPULSE) >> 24;
 -- 
 1.8.3.2
 
