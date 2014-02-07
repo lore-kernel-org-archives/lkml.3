@@ -1,84 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753260AbaBGOGB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 09:06:01 -0500
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:50475 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752084AbaBGOGA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 09:06:00 -0500
+	id S1753406AbaBGOGS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 09:06:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50082 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752084AbaBGOGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 09:06:16 -0500
+Message-ID: <52F4E83A.1060109@redhat.com>
+Date: Fri, 07 Feb 2014 15:05:46 +0100
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-X-Originating-IP: [84.73.67.144]
-In-Reply-To: <alpine.LNX.2.00.1402071437400.24838@pobox.suse.cz>
-References: <alpine.DEB.2.00.1401300249130.13810@skynet.skynet.ie>
-	<alpine.LRH.2.00.1401301648050.15677@twin.jikos.cz>
-	<alpine.LNX.2.00.1402071052470.24838@pobox.suse.cz>
-	<87a9e318m6.fsf@intel.com>
-	<alpine.LNX.2.00.1402071437400.24838@pobox.suse.cz>
-Date: Fri, 7 Feb 2014 15:05:59 +0100
-Message-ID: <CAKMK7uGf0=13HpkeZf1WouutkB+kOpyT4NHXaXMVg5j6wEh_pQ@mail.gmail.com>
-Subject: Re: [git pull] drm next tree
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Jani Nikula <jani.nikula@intel.com>, Dave Airlie <airlied@linux.ie>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: =?ISO-8859-1?Q?David_Lanzend=F6rfer?= <david.lanzendoerfer@o2s.ch>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Adding basic support for the INet-97F_Rev_02 board
+References: <9275469.c2bJ2hMSsV@dizzy-6.o2s.ch>
+In-Reply-To: <9275469.c2bJ2hMSsV@dizzy-6.o2s.ch>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 7, 2014 at 2:40 PM, Jiri Kosina <jkosina@suse.cz> wrote:
-> On Fri, 7 Feb 2014, Jani Nikula wrote:
->
->> >> >   git://people.freedesktop.org/~airlied/linux drm-next
->> >> [ ... snip ... ]
->> >> > Daniel Vetter (59):
->> >> [ ... snip ... ]
->> >> >       drm/i915: dp aux irq support for g4x/vlv
->> >>
->> >> This commit causes all kinds of havoc on my ThinkPad x200s. It results in
->> > [ ... snip ... ]
->> >
->> > Not having received any response, I suggest the following for 3.14
->>
->> Daniel, it's your commit this bisects to...
->>
->> If we end up having to revert, I'd just touch the has_aux_irq part, for
->> example:
->>
->> diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
->> index 5ede4e8..464c047 100644
->> --- a/drivers/gpu/drm/i915/intel_dp.c
->> +++ b/drivers/gpu/drm/i915/intel_dp.c
->> @@ -404,7 +404,7 @@ intel_dp_aux_ch(struct intel_dp *intel_dp,
->>       int i, ret, recv_bytes;
->>       uint32_t status;
->>       int try, precharge, clock = 0;
->> -     bool has_aux_irq = true;
->> +     bool has_aux_irq = INTEL_INFO(dev)->gen >= 5;
->>       uint32_t timeout;
->>
->>       /* dp aux is extremely sensitive to irq latency, hence request the
->
-> That, obviously, works for my system as well. Feel free to add
->
->         Reported-and-tested-by: Jiri Kosina <jkosina@suse.cz>
->
-> if you are going with this instead of the revert.
+Hi David,
 
-Sorry for missing your report here. Before we disable this again for
-gen4 I want to make sure that it's the same irq misrouting issue which
-was already the cause for the gmbus irq mess. Can you please boot with
-pci=nomsi (so that i915 uses irq16)?
+Thanks for the patch, I've added it to my sunxi-devel tree.
 
-If that's confirmed then I think we should add the same comment we've
-added in intel_i2c.c to this code so that no one dares to wake this
-dragon again. I'll do that when I commit the fix.
+It seems this has been missed by Maxime, because you did not send it directly
+to him. Can you please rebase it one 3.14-rc1, and then send it directly to
+Maxime Ripard, with the relevant mailinglists in the CC?
 
-Thanks, Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Thanks & Regards,
+
+Hans
+
+
+On 01/23/2014 08:38 PM, David Lanzendörfer wrote:
+> This patch adds basic support for the INet-97F_Rev_02 board found in various
+> low cost consumer tablet devices (http://linux-sunxi.org/INet-97F_Rev_02)
+>
+> Signed-off-by: David Lanzendörfer <david.lanzendoerfer@o2s.ch>
+> ---
+>   arch/arm/boot/dts/Makefile                |   1 +
+>   arch/arm/boot/dts/sun4i-a10-inet97fv2.dts | 106
+> ++++++++++++++++++++++++++++++
+>   2 files changed, 107 insertions(+)
+>   create mode 100644 arch/arm/boot/dts/sun4i-a10-inet97fv2.dts
+>
+> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+> index b663ed7..57ec008 100644
+> --- a/arch/arm/boot/dts/Makefile
+> +++ b/arch/arm/boot/dts/Makefile
+> @@ -253,6 +253,7 @@ dtb-$(CONFIG_ARCH_SUNXI) += \
+>   	sun4i-a10-cubieboard.dtb \
+>   	sun4i-a10-mini-xplus.dtb \
+>   	sun4i-a10-hackberry.dtb \
+> +	sun4i-a10-inet97fv2.dtb \
+>   	sun5i-a10s-olinuxino-micro.dtb \
+>   	sun5i-a13-olinuxino.dtb \
+>   	sun5i-a13-olinuxino-micro.dtb \
+> diff --git a/arch/arm/boot/dts/sun4i-a10-inet97fv2.dts
+> b/arch/arm/boot/dts/sun4i-a10-inet97fv2.dts
+> new file mode 100644
+> index 0000000..82b4306
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/sun4i-a10-inet97fv2.dts
+> @@ -0,0 +1,106 @@
+> +/*
+> + * Copyright 2014 Open Source Support GmbH
+> + *
+> + * David Lanzendörfer <david.lanzendoerfer@o2s.ch>
+> + *
+> + * The code contained herein is licensed under the GNU General Public
+> + * License. You may obtain a copy of the GNU General Public License
+> + * Version 2 or later at the following locations:
+> + *
+> + * http://www.opensource.org/licenses/gpl-license.html
+> + * http://www.gnu.org/copyleft/gpl.html
+> + */
+> +
+> +/dts-v1/;
+> +/include/ "sun4i-a10.dtsi"
+> +
+> +/ {
+> +	model = "INet-97F Rev 02";
+> +	compatible = "primux,inet97fv2", "allwinner,sun4i-a10";
+> +
+> +	aliases {
+> +		serial0 = &uart0;
+> +	};
+> +
+> +	soc@01c00000 {
+> +		mmc0: mmc@01c0f000 {
+> +			pinctrl-names = "default";
+> +			pinctrl-0 = <&mmc0_pins_a>;
+> +			pinctrl-1 = <&mmc0_cd_pin_inet97fv2>;
+> +			cd-gpios = <&pio 7 1 0>; /* PH1 */
+> +			cd-mode = <1>;
+> +			status = "okay";
+> +		};
+> +
+> +		pinctrl@01c20800 {
+> +			mmc0_cd_pin_inet97fv2: mmc0_cd_pin@0 {
+> +				allwinner,pins = "PH1";
+> +				allwinner,function = "gpio_in";
+> +				allwinner,drive = <0>;
+> +				allwinner,pull = <0>;
+> +			};
+> +
+> +			usb1_vbus_pin: usb1_vbus_pin@0 {
+> +					allwinner,pins = "PH6";
+> +					allwinner,function = "gpio_out";
+> +					allwinner,drive = <0>;
+> +					allwinner,pull = <2>;
+> +			};
+> +
+> +			usb2_vbus_pin: usb2_vbus_pin@0 {
+> +					allwinner,pins = "PH3";
+> +					allwinner,function = "gpio_out";
+> +					allwinner,drive = <0>;
+> +					allwinner,pull = <2>;
+> +			};
+> +		};
+> +
+> +		uart0: serial@01c28000 {
+> +			pinctrl-names = "default";
+> +			pinctrl-0 = <&uart0_pins_a>;
+> +			status = "okay";
+> +		};
+> +
+> +		i2c0: i2c@01c2ac00 {
+> +			pinctrl-names = "default";
+> +			pinctrl-0 = <&i2c0_pins_a>;
+> +			status = "okay";
+> +		};
+> +
+> +		ehci0: ehci0@0x01c14000 {
+> +			vbus-supply = <&reg_usb1_vbus>;
+> +			status = "okay";
+> +		};
+> +
+> +		ehci1: ehci1@0x01c1c000 {
+> +			vbus-supply = <&reg_usb2_vbus>;
+> +			status = "okay";
+> +		};
+> +	};
+> +
+> +	regulators {
+> +		compatible = "simple-bus";
+> +
+> +		reg_usb1_vbus: usb1-vbus {
+> +			compatible = "regulator-fixed";
+> +			pinctrl-names = "default";
+> +			pinctrl-0 = <&usb1_vbus_pin>;
+> +			regulator-name = "usb1-vbus";
+> +			regulator-min-microvolt = <5000000>;
+> +			regulator-max-microvolt = <5000000>;
+> +			enable-active-high;
+> +			gpio = <&pio 7 6 0>;
+> +		};
+> +
+> +		reg_usb2_vbus: usb2-vbus {
+> +			compatible = "regulator-fixed";
+> +			pinctrl-names = "default";
+> +			pinctrl-0 = <&usb2_vbus_pin>;
+> +			regulator-name = "usb2-vbus";
+> +			regulator-min-microvolt = <5000000>;
+> +			regulator-max-microvolt = <5000000>;
+> +			enable-active-high;
+> +			gpio = <&pio 7 3 0>;
+> +		};
+> +	};
+> +};
+>
