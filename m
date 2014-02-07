@@ -1,166 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752138AbaBGBIP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 20:08:15 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:50614 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751901AbaBGBIM (ORCPT
+	id S1751400AbaBGBSC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 20:18:02 -0500
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:51868 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750704AbaBGBR7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 20:08:12 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Linux PM list <linux-pm@vger.kernel.org>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+	Thu, 6 Feb 2014 20:17:59 -0500
+Date: Fri, 7 Feb 2014 01:17:57 +0000 (GMT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         LKML <linux-kernel@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [Update][PATCH v3 5/6] ACPI / LPSS: Support for device latency tolerance PM QoS
-Date: Fri, 07 Feb 2014 02:22:44 +0100
-Message-ID: <2498422.rdG59AvNsc@vostro.rjw.lan>
-User-Agent: KMail/4.11.4 (Linux/3.13.0+; KDE/4.11.4; x86_64; ; )
-In-Reply-To: <1730614.QEN8YiXxIm@vostro.rjw.lan>
-References: <5434847.aCyiWHNRe7@vostro.rjw.lan> <1550670.IB7tE3uSq4@vostro.rjw.lan> <1730614.QEN8YiXxIm@vostro.rjw.lan>
+        Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>,
+        linuxppc-dev@lists.ozlabs.org,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
+Subject: Re: [PATCH 1/2] PPC: powernv: remove redundant cpuidle_idle_call()
+In-Reply-To: <52F3BCFE.3010703@linux.vnet.ibm.com>
+Message-ID: <alpine.LFD.2.11.1402070105170.1906@knanqh.ubzr>
+References: <1391696188-14540-1-git-send-email-nicolas.pitre@linaro.org> <CAKnoXLxCAqKaniGOwegNcOarS4FpoNKDY5PxOhe6j4wdtUAkLQ@mail.gmail.com> <52F3BCFE.3010703@linux.vnet.ibm.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Subject: ACPI / LPSS: Support for device latency tolerance PM QoS
+On Thu, 6 Feb 2014, Preeti U Murthy wrote:
 
-Add a new routine, acpi_lpss_set_ltr(), for setting latency tolerance
-values for LPSS devices having LTR (Latency Tolerance Reporting)
-registers.  Add .bind()/.unbind() callbacks to lpss_handler to set
-the LPSS devices' power.set_latency_tolerance callback pointers to
-acpi_lpss_set_ltr() during device addition and to clear them on
-device removal, respectively.
+> Hi Daniel,
+> 
+> On 02/06/2014 09:55 PM, Daniel Lezcano wrote:
+> > Hi Nico,
+> > 
+> > 
+> > On 6 February 2014 14:16, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+> > 
+> >> The core idle loop now takes care of it.
+> >>
+> >> Signed-off-by: Nicolas Pitre <nico@linaro.org>
+> >> ---
+> >>  arch/powerpc/platforms/powernv/setup.c | 13 +------------
+> >>  1 file changed, 1 insertion(+), 12 deletions(-)
+> >>
+> >> diff --git a/arch/powerpc/platforms/powernv/setup.c
+> >> b/arch/powerpc/platforms/powernv/setup.c
+> >> index 21166f65c9..a932feb290 100644
+> >> --- a/arch/powerpc/platforms/powernv/setup.c
+> >> +++ b/arch/powerpc/platforms/powernv/setup.c
+> >> @@ -26,7 +26,6 @@
+> >>  #include <linux/of_fdt.h>
+> >>  #include <linux/interrupt.h>
+> >>  #include <linux/bug.h>
+> >> -#include <linux/cpuidle.h>
+> >>
+> >>  #include <asm/machdep.h>
+> >>  #include <asm/firmware.h>
+> >> @@ -217,16 +216,6 @@ static int __init pnv_probe(void)
+> >>         return 1;
+> >>  }
+> >>
+> >> -void powernv_idle(void)
+> >> -{
+> >> -       /* Hook to cpuidle framework if available, else
+> >> -        * call on default platform idle code
+> >> -        */
+> >> -       if (cpuidle_idle_call()) {
+> >> -               power7_idle();
+> >> -       }
+> >>
+> > 
+> > The cpuidle_idle_call is called from arch_cpu_idle in
+> > arch/powerpc/kernel/idle.c between a ppc64_runlatch_off|on section.
+> > Shouldn't the cpuidle-powernv driver call these functions when entering
+> > idle ?
+> 
+> Yes they should, I will send out a patch that does that ontop of this.
+> There have been cpuidle driver cleanups for powernv and pseries in this
+> merge window. While no change would be required in the pseries cpuidle
+> driver as a result of Nicolas's cleanup, we would need to add the
+> ppc64_runlatch_on and off functions before and after the entry into the
+> powernv idle states.
 
-That will cause the device latency tolerance PM QoS to work for
-the devices in question as documented.
+What about creating arch_cpu_idle_enter() and arch_cpu_idle_exit() in 
+arch/powerpc/kernel/idle.c and calling ppc64_runlatch_off() and 
+ppc64_runlatch_on() respectively from there instead?  Would that work?  
+That would make the idle consolidation much easier afterwards.
 
-This changeset includes a fix from Mika Westerberg.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
-
-acpi_lpss_bind() has to check pdata->dev_desc->ltr_required or it will
-enable LTR on systems where it may not work.
-
----
- drivers/acpi/acpi_lpss.c |   71 ++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 70 insertions(+), 1 deletion(-)
-
-Index: linux-pm/drivers/acpi/acpi_lpss.c
-===================================================================
---- linux-pm.orig/drivers/acpi/acpi_lpss.c
-+++ linux-pm/drivers/acpi/acpi_lpss.c
-@@ -33,6 +33,13 @@ ACPI_MODULE_NAME("acpi_lpss");
- #define LPSS_GENERAL_UART_RTS_OVRD	BIT(3)
- #define LPSS_SW_LTR			0x10
- #define LPSS_AUTO_LTR			0x14
-+#define LPSS_LTR_SNOOP_REQ		BIT(15)
-+#define LPSS_LTR_SNOOP_MASK		0x0000FFFF
-+#define LPSS_LTR_SNOOP_LAT_1US		0x800
-+#define LPSS_LTR_SNOOP_LAT_32US		0xC00
-+#define LPSS_LTR_SNOOP_LAT_SHIFT	5
-+#define LPSS_LTR_SNOOP_LAT_CUTOFF	3000
-+#define LPSS_LTR_MAX_VAL		0x3FF
- #define LPSS_TX_INT			0x20
- #define LPSS_TX_INT_MASK		BIT(1)
- 
-@@ -315,6 +322,17 @@ static int acpi_lpss_create_device(struc
- 	return ret;
- }
- 
-+static u32 __lpss_reg_read(struct lpss_private_data *pdata, unsigned int reg)
-+{
-+	return readl(pdata->mmio_base + pdata->dev_desc->prv_offset + reg);
-+}
-+
-+static void __lpss_reg_write(u32 val, struct lpss_private_data *pdata,
-+			     unsigned int reg)
-+{
-+	writel(val, pdata->mmio_base + pdata->dev_desc->prv_offset + reg);
-+}
-+
- static int lpss_reg_read(struct device *dev, unsigned int reg, u32 *val)
- {
- 	struct acpi_device *adev;
-@@ -336,7 +354,7 @@ static int lpss_reg_read(struct device *
- 		ret = -ENODEV;
- 		goto out;
- 	}
--	*val = readl(pdata->mmio_base + pdata->dev_desc->prv_offset + reg);
-+	*val = __lpss_reg_read(pdata, reg);
- 
-  out:
- 	spin_unlock_irqrestore(&dev->power.lock, flags);
-@@ -389,6 +407,37 @@ static struct attribute_group lpss_attr_
- 	.name = "lpss_ltr",
- };
- 
-+static void acpi_lpss_set_ltr(struct device *dev, s32 val)
-+{
-+	struct lpss_private_data *pdata = acpi_driver_data(ACPI_COMPANION(dev));
-+	u32 ltr_mode, ltr_val;
-+
-+	ltr_mode = __lpss_reg_read(pdata, LPSS_GENERAL);
-+	if (val < 0) {
-+		if (ltr_mode & LPSS_GENERAL_LTR_MODE_SW) {
-+			ltr_mode &= ~LPSS_GENERAL_LTR_MODE_SW;
-+			__lpss_reg_write(ltr_mode, pdata, LPSS_GENERAL);
-+		}
-+		return;
-+	}
-+	ltr_val = __lpss_reg_read(pdata, LPSS_SW_LTR) & ~LPSS_LTR_SNOOP_MASK;
-+	if (val >= LPSS_LTR_SNOOP_LAT_CUTOFF) {
-+		ltr_val |= LPSS_LTR_SNOOP_LAT_32US;
-+		val = LPSS_LTR_MAX_VAL;
-+	} else if (val > LPSS_LTR_MAX_VAL) {
-+		ltr_val |= LPSS_LTR_SNOOP_LAT_32US | LPSS_LTR_SNOOP_REQ;
-+		val >>= LPSS_LTR_SNOOP_LAT_SHIFT;
-+	} else {
-+		ltr_val |= LPSS_LTR_SNOOP_LAT_1US | LPSS_LTR_SNOOP_REQ;
-+	}
-+	ltr_val |= val;
-+	__lpss_reg_write(ltr_val, pdata, LPSS_SW_LTR);
-+	if (!(ltr_mode & LPSS_GENERAL_LTR_MODE_SW)) {
-+		ltr_mode |= LPSS_GENERAL_LTR_MODE_SW;
-+		__lpss_reg_write(ltr_mode, pdata, LPSS_GENERAL);
-+	}
-+}
-+
- static int acpi_lpss_platform_notify(struct notifier_block *nb,
- 				     unsigned long action, void *data)
- {
-@@ -426,9 +475,29 @@ static struct notifier_block acpi_lpss_n
- 	.notifier_call = acpi_lpss_platform_notify,
- };
- 
-+static void acpi_lpss_bind(struct device *dev)
-+{
-+	struct lpss_private_data *pdata = acpi_driver_data(ACPI_COMPANION(dev));
-+
-+	if (!pdata || !pdata->mmio_base || !pdata->dev_desc->ltr_required)
-+		return;
-+
-+	if (pdata->mmio_size >= pdata->dev_desc->prv_offset + LPSS_LTR_SIZE)
-+		dev->power.set_latency_tolerance = acpi_lpss_set_ltr;
-+	else
-+		dev_err(dev, "MMIO size insufficient to access LTR\n");
-+}
-+
-+static void acpi_lpss_unbind(struct device *dev)
-+{
-+	dev->power.set_latency_tolerance = NULL;
-+}
-+
- static struct acpi_scan_handler lpss_handler = {
- 	.ids = acpi_lpss_device_ids,
- 	.attach = acpi_lpss_create_device,
-+	.bind = acpi_lpss_bind,
-+	.unbind = acpi_lpss_unbind,
- };
- 
- void __init acpi_lpss_init(void)
-
+Nicolas
