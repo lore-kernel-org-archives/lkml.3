@@ -1,98 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751824AbaBGJOX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 04:14:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8941 "EHLO mx1.redhat.com"
+	id S1751931AbaBGJOf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 04:14:35 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60921 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751738AbaBGJOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 04:14:18 -0500
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-From: Torvald Riegel <triegel@redhat.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Will Deacon <will.deacon@arm.com>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-In-Reply-To: <20140207040628.GK4250@linux.vnet.ibm.com>
-References: <20140206134825.305510953@infradead.org>
-	 <21984.1391711149@warthog.procyon.org.uk> <52F3DA85.1060209@arm.com>
-	 <20140206185910.GE27276@mudshark.cambridge.arm.com>
-	 <1391720965.23421.3884.camel@triegel.csb>
-	 <20140206215521.GI4250@linux.vnet.ibm.com>
-	 <1391727502.23421.4017.camel@triegel.csb>
-	 <20140207040628.GK4250@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 07 Feb 2014 10:13:40 +0100
-Message-ID: <1391764420.23421.4226.camel@triegel.csb>
-Mime-Version: 1.0
+	id S1751288AbaBGJOb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 04:14:31 -0500
+Message-ID: <52F4A3F2.1050809@suse.cz>
+Date: Fri, 07 Feb 2014 10:14:26 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: Mel Gorman <mgorman@suse.de>, Joonsoo Kim <js1304@gmail.com>,
+        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5] compaction related commits
+References: <1391749726-28910-1-git-send-email-iamjoonsoo.kim@lge.com>
+In-Reply-To: <1391749726-28910-1-git-send-email-iamjoonsoo.kim@lge.com>
+Content-Type: text/plain; charset=ISO-8859-2
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-02-06 at 20:06 -0800, Paul E. McKenney wrote:
-> On Thu, Feb 06, 2014 at 11:58:22PM +0100, Torvald Riegel wrote:
-> > On Thu, 2014-02-06 at 13:55 -0800, Paul E. McKenney wrote:
-> > > On Thu, Feb 06, 2014 at 10:09:25PM +0100, Torvald Riegel wrote:
-> > > > On Thu, 2014-02-06 at 18:59 +0000, Will Deacon wrote:
-> > > > > To answer that question, you need to go and look at the definitions of
-> > > > > synchronises-with, happens-before, dependency_ordered_before and a whole
-> > > > > pile of vaguely written waffle to realise that you don't know.
-> > > > 
-> > > > Are you familiar with the formalization of the C11/C++11 model by Batty
-> > > > et al.?
-> > > > http://www.cl.cam.ac.uk/~mjb220/popl085ap-sewell.pdf
-> > > > http://www.cl.cam.ac.uk/~mjb220/n3132.pdf
-> > > > 
-> > > > They also have a nice tool that can run condensed examples and show you
-> > > > all allowed (and forbidden) executions (it runs in the browser, so is
-> > > > slow for larger examples), including nice annotated graphs for those:
-> > > > http://svr-pes20-cppmem.cl.cam.ac.uk/cppmem/
-> > > > 
-> > > > It requires somewhat special syntax, but the following, which should be
-> > > > equivalent to your example above, runs just fine:
-> > > > 
-> > > > int main() {
-> > > >   atomic_int foo = 0; 
-> > > >   atomic_int bar = 0; 
-> > > >   atomic_int baz = 0; 
-> > > >   {{{ {
-> > > >         foo.store(42, memory_order_relaxed);
-> > > >         bar.store(1, memory_order_seq_cst);
-> > > >         baz.store(42, memory_order_relaxed);
-> > > >       }
-> > > >   ||| {
-> > > >         r1=baz.load(memory_order_seq_cst).readsvalue(42);
-> > > >         r2=foo.load(memory_order_seq_cst).readsvalue(0);
-> > > >       }
-> > > >   }}};
-> > > >   return 0; }
-> > > > 
-> > > > That yields 3 consistent executions for me, and likewise if the last
-> > > > readsvalue() is using 42 as argument.
-> > > > 
-> > > > If you add a "fence(memory_order_seq_cst);" after the store to foo, the
-> > > > program can't observe != 42 for foo anymore, because the seq-cst fence
-> > > > is adding a synchronizes-with edge via the baz reads-from.
-> > > > 
-> > > > I think this is a really neat tool, and very helpful to answer such
-> > > > questions as in your example.
-> > > 
-> > > Hmmm...  The tool doesn't seem to like fetch_add().  But let's assume that
-> > > your substitution of store() for fetch_add() is correct.  Then this shows
-> > > that we cannot substitute fetch_add() for atomic_add_return().
-> > 
-> > It should be in this example, I believe.
+On 02/07/2014 06:08 AM, Joonsoo Kim wrote:
+> This patchset is related to the compaction.
 > 
-> You lost me on this one.
+> patch 1 fixes contrary implementation of the purpose of compaction.
+> patch 2~4 are for optimization.
+> patch 5 is just for clean-up.
+> 
+> I tested this patchset with stress-highalloc benchmark on Mel's mmtest
+> and cannot find any regression in terms of success rate. And I find
+> much reduced system time. Below is result of 3 runs.
 
-I mean that in this example, substituting fetch_add() with store()
-should not change meaning, given that what the fetch_add reads-from
-seems irrelevant.
+What was the memory size? Mel told me this test shouldn't be run with more than 4GB.
+
+> * Before
+> time :: stress-highalloc 3276.26 user 740.52 system 1664.79 elapsed
+> time :: stress-highalloc 3640.71 user 771.32 system 1633.83 elapsed
+> time :: stress-highalloc 3691.64 user 775.44 system 1638.05 elapsed
+> 
+> avg system: 1645 s
+> 
+> * After
+> time :: stress-highalloc 3225.51 user 732.40 system 1542.76 elapsed
+> time :: stress-highalloc 3524.31 user 749.63 system 1512.88 elapsed
+> time :: stress-highalloc 3610.55 user 757.20 system 1505.70 elapsed
+> 
+> avg system: 1519 s
+> 
+> That is 7% reduced system time.
+
+Why not post the whole compare-mmtests output? There are more metrics in there and extra
+eyes never hurt.
+
+Vlastimil
+
+> Thanks.
+> 
+> Joonsoo Kim (5):
+>   mm/compaction: disallow high-order page for migration target
+>   mm/compaction: do not call suitable_migration_target() on every page
+>   mm/compaction: change the timing to check to drop the spinlock
+>   mm/compaction: check pageblock suitability once per pageblock
+>   mm/compaction: clean-up code on success of ballon isolation
+> 
+>  mm/compaction.c |   75 +++++++++++++++++++++++++++++--------------------------
+>  1 file changed, 39 insertions(+), 36 deletions(-)
+> 
 
