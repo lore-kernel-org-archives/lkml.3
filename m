@@ -1,76 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932420AbaBGMql (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:46:41 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:57346 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753222AbaBGMqj (ORCPT
+	id S932372AbaBGLuZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:50:25 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41920 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932347AbaBGLuV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 07:46:39 -0500
-Date: Fri, 7 Feb 2014 18:16:34 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Armin Schindler <mac@melware.de>, Karsten Keil <isdn@linux-pingi.de>,
-        netdev@vger.kernel.org, josh@joshtriplett.org
-Subject: [PATCH 23/26] drivers: isdn: Move prototype declaration to header
- file platform.h from divamnt.c
-Message-ID: <be2e88206b9ca92090b57eb2981dfe606b0c824b.1390408519.git.rashika.kheria@gmail.com>
-References: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 7 Feb 2014 06:50:21 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Chris Ball <cjb@laptop.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 112/233] mmc: atmel-mci: fix timeout errors in SDIO mode when using DMA
+Date: Fri,  7 Feb 2014 11:45:31 +0000
+Message-Id: <1391773652-25214-113-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
+References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move prototype declaration of functions to header file
-hardware/eicon/platform.h because they are used by more than one file.
+3.11.10.4 -stable review patch.  If anyone has any objections, please let me know.
 
-This eliminates the following warnings in hardware/eicon/mntfunc.c:
-drivers/isdn/hardware/eicon/mntfunc.c:136:5: warning: no previous prototype for ‘maint_read_write’ [-Wmissing-prototypes]
-drivers/isdn/hardware/eicon/mntfunc.c:303:12: warning: no previous prototype for ‘mntfunc_init’ [-Wmissing-prototypes]
-drivers/isdn/hardware/eicon/mntfunc.c:351:13: warning: no previous prototype for ‘mntfunc_finit’ [-Wmissing-prototypes]
+------------------
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+From: Ludovic Desroches <ludovic.desroches@atmel.com>
+
+commit 66b512eda74d59b17eac04c4da1b38d82059e6c9 upstream.
+
+With some SDIO devices, timeout errors can happen when reading data.
+To solve this issue, the DMA transfer has to be activated before sending
+the command to the device. This order is incorrect in PDC mode. So we
+have to take care if we are using DMA or PDC to know when to send the
+MMC command.
+
+Signed-off-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Chris Ball <cjb@laptop.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/isdn/hardware/eicon/divamnt.c  |    4 ----
- drivers/isdn/hardware/eicon/platform.h |    4 ++++
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/mmc/host/atmel-mci.c | 13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/isdn/hardware/eicon/divamnt.c b/drivers/isdn/hardware/eicon/divamnt.c
-index 48db08d..02a1d0d 100644
---- a/drivers/isdn/hardware/eicon/divamnt.c
-+++ b/drivers/isdn/hardware/eicon/divamnt.c
-@@ -47,10 +47,6 @@ static wait_queue_head_t msgwaitq;
- static unsigned long opened;
- static struct timeval start_time;
- 
--extern int mntfunc_init(int *, void **, unsigned long);
--extern void mntfunc_finit(void);
--extern int maint_read_write(void __user *buf, int count);
--
- /*
-  *  helper functions
-  */
-diff --git a/drivers/isdn/hardware/eicon/platform.h b/drivers/isdn/hardware/eicon/platform.h
-index f26f6cb..6bec7db 100644
---- a/drivers/isdn/hardware/eicon/platform.h
-+++ b/drivers/isdn/hardware/eicon/platform.h
-@@ -195,6 +195,10 @@ int qBri_FPGA_download(PISDN_ADAPTER IoAdapter);
- void prepare_pri_functions(PISDN_ADAPTER IoAdapter);
- void prepare_pri2_functions(PISDN_ADAPTER IoAdapter);
- 
-+int mntfunc_init(int *, void **, unsigned long);
-+void mntfunc_finit(void);
-+int maint_read_write(void __user *buf, int count);
+diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
+index 78d7e47..5fd8c2b 100644
+--- a/drivers/mmc/host/atmel-mci.c
++++ b/drivers/mmc/host/atmel-mci.c
+@@ -1186,11 +1186,22 @@ static void atmci_start_request(struct atmel_mci *host,
+ 	iflags |= ATMCI_CMDRDY;
+ 	cmd = mrq->cmd;
+ 	cmdflags = atmci_prepare_command(slot->mmc, cmd);
+-	atmci_send_command(host, cmd, cmdflags);
 +
- /*
- ** use skbuffs for message buffer
- */
++	/*
++	 * DMA transfer should be started before sending the command to avoid
++	 * unexpected errors especially for read operations in SDIO mode.
++	 * Unfortunately, in PDC mode, command has to be sent before starting
++	 * the transfer.
++	 */
++	if (host->submit_data != &atmci_submit_data_dma)
++		atmci_send_command(host, cmd, cmdflags);
+ 
+ 	if (data)
+ 		host->submit_data(host, data);
+ 
++	if (host->submit_data == &atmci_submit_data_dma)
++		atmci_send_command(host, cmd, cmdflags);
++
+ 	if (mrq->stop) {
+ 		host->stop_cmdr = atmci_prepare_command(slot->mmc, mrq->stop);
+ 		host->stop_cmdr |= ATMCI_CMDR_STOP_XFER;
 -- 
-1.7.9.5
+1.8.3.2
 
