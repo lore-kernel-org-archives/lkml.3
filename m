@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752073AbaBGBfy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 20:35:54 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:63046 "EHLO
+	id S1752039AbaBGBfx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 20:35:53 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:64100 "EHLO
 	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751500AbaBGBfo (ORCPT
+	with ESMTP id S1751521AbaBGBfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 6 Feb 2014 20:35:44 -0500
-X-AuditID: 9c93017d-b7b1fae00000636d-b2-52f4386de038
+X-AuditID: 9c93017d-b7b1fae00000636d-ba-52f4386df3d8
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Rodrigo Campos <rodrigo@sdfg.com.ar>, Andi Kleen <andi@firstfloor.org>,
         David Ahern <dsahern@gmail.com>
-Subject: [PATCH 07/21] perf callchain: Add callchain_cursor_snapshot()
-Date: Fri,  7 Feb 2014 10:35:09 +0900
-Message-Id: <1391736923-30765-8-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 10/21] perf ui/hist: Add support to accumulated hist stat
+Date: Fri,  7 Feb 2014 10:35:12 +0900
+Message-Id: <1391736923-30765-11-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1391736923-30765-1-git-send-email-namhyung@kernel.org>
 References: <1391736923-30765-1-git-send-email-namhyung@kernel.org>
@@ -27,34 +27,123 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The callchain_cursor_snapshot() is for saving current status of the
-callchain.  It'll be used to accumulate callchain information for each node.
+Print accumulated stat of a hist entry if requested.
 
 Tested-by: Arun Sharma <asharma@fb.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/callchain.h | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ tools/perf/ui/hist.c   | 45 +++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/hist.h |  1 +
+ 2 files changed, 46 insertions(+)
 
-diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
-index 66faae21370d..bbd63dfbe112 100644
---- a/tools/perf/util/callchain.h
-+++ b/tools/perf/util/callchain.h
-@@ -159,4 +159,13 @@ int fill_callchain_info(struct addr_location *al, struct callchain_cursor_node *
- 			bool hide_unresolved);
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index 78f4c92e9b73..eb9c07bcdb01 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -129,6 +129,28 @@ static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
+ 			  scnprintf, true);					\
+ }
  
- extern const char record_callchain_help[];
-+
-+static inline void callchain_cursor_snapshot(struct callchain_cursor *dest,
-+					     struct callchain_cursor *src)
-+{
-+	*dest = *src;
-+
-+	dest->first = src->curr;
-+	dest->nr -= src->pos;
++#define __HPP_COLOR_ACC_PERCENT_FN(_type, _field)				\
++static u64 he_get_acc_##_field(struct hist_entry *he)				\
++{										\
++	return he->stat_acc->_field;						\
++}										\
++										\
++static int hpp__color_acc_##_type(struct perf_hpp_fmt *fmt __maybe_unused,	\
++			      struct perf_hpp *hpp, struct hist_entry *he) 	\
++{										\
++	return __hpp__fmt(hpp, he, he_get_acc_##_field, " %6.2f%%",		\
++			  (hpp_snprint_fn)percent_color_snprintf, true);	\
 +}
- #endif	/* __PERF_CALLCHAIN_H */
++
++#define __HPP_ENTRY_ACC_PERCENT_FN(_type, _field)				\
++static int hpp__entry_acc_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,	\
++			      struct perf_hpp *hpp, struct hist_entry *he) 	\
++{										\
++	const char *fmt = symbol_conf.field_sep ? " %.2f" : " %6.2f%%";		\
++	return __hpp__fmt(hpp, he, he_get_acc_##_field, fmt,			\
++			  scnprintf, true);					\
++}
++
+ #define __HPP_ENTRY_RAW_FN(_type, _field)					\
+ static u64 he_get_raw_##_field(struct hist_entry *he)				\
+ {										\
+@@ -148,17 +170,25 @@ __HPP_WIDTH_FN(_type, _min_width, _unit_width)				\
+ __HPP_COLOR_PERCENT_FN(_type, _field)					\
+ __HPP_ENTRY_PERCENT_FN(_type, _field)
+ 
++#define HPP_PERCENT_ACC_FNS(_type, _str, _field, _min_width, _unit_width)\
++__HPP_HEADER_FN(_type, _str, _min_width, _unit_width)			\
++__HPP_WIDTH_FN(_type, _min_width, _unit_width)				\
++__HPP_COLOR_ACC_PERCENT_FN(_type, _field)				\
++__HPP_ENTRY_ACC_PERCENT_FN(_type, _field)
++
+ #define HPP_RAW_FNS(_type, _str, _field, _min_width, _unit_width)	\
+ __HPP_HEADER_FN(_type, _str, _min_width, _unit_width)			\
+ __HPP_WIDTH_FN(_type, _min_width, _unit_width)				\
+ __HPP_ENTRY_RAW_FN(_type, _field)
+ 
++__HPP_HEADER_FN(overhead_self, "Self", 8, 8)
+ 
+ HPP_PERCENT_FNS(overhead, "Overhead", period, 8, 8)
+ HPP_PERCENT_FNS(overhead_sys, "sys", period_sys, 8, 8)
+ HPP_PERCENT_FNS(overhead_us, "usr", period_us, 8, 8)
+ HPP_PERCENT_FNS(overhead_guest_sys, "guest sys", period_guest_sys, 9, 8)
+ HPP_PERCENT_FNS(overhead_guest_us, "guest usr", period_guest_us, 9, 8)
++HPP_PERCENT_ACC_FNS(overhead_acc, "Children", period, 8, 8)
+ 
+ HPP_RAW_FNS(samples, "Samples", nr_events, 12, 12)
+ HPP_RAW_FNS(period, "Period", period, 12, 12)
+@@ -171,6 +201,14 @@ HPP_RAW_FNS(period, "Period", period, 12, 12)
+ 		.entry	= hpp__entry_ ## _name		\
+ 	}
+ 
++#define HPP__COLOR_ACC_PRINT_FNS(_name)			\
++	{						\
++		.header	= hpp__header_ ## _name,	\
++		.width	= hpp__width_ ## _name,		\
++		.color	= hpp__color_acc_ ## _name,	\
++		.entry	= hpp__entry_acc_ ## _name	\
++	}
++
+ #define HPP__PRINT_FNS(_name)				\
+ 	{						\
+ 		.header	= hpp__header_ ## _name,	\
+@@ -184,6 +222,7 @@ struct perf_hpp_fmt perf_hpp__format[] = {
+ 	HPP__COLOR_PRINT_FNS(overhead_us),
+ 	HPP__COLOR_PRINT_FNS(overhead_guest_sys),
+ 	HPP__COLOR_PRINT_FNS(overhead_guest_us),
++	HPP__COLOR_ACC_PRINT_FNS(overhead_acc),
+ 	HPP__PRINT_FNS(samples),
+ 	HPP__PRINT_FNS(period)
+ };
+@@ -208,6 +247,12 @@ void perf_hpp__init(void)
+ {
+ 	perf_hpp__column_enable(PERF_HPP__OVERHEAD);
+ 
++	if (symbol_conf.cumulate_callchain) {
++		perf_hpp__format[PERF_HPP__OVERHEAD].header =
++						hpp__header_overhead_self;
++		perf_hpp__column_enable(PERF_HPP__OVERHEAD_ACC);
++	}
++
+ 	if (symbol_conf.show_cpu_utilization) {
+ 		perf_hpp__column_enable(PERF_HPP__OVERHEAD_SYS);
+ 		perf_hpp__column_enable(PERF_HPP__OVERHEAD_US);
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 6da98cb2ee7e..1b4fb71a0bf8 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -191,6 +191,7 @@ enum {
+ 	PERF_HPP__OVERHEAD_US,
+ 	PERF_HPP__OVERHEAD_GUEST_SYS,
+ 	PERF_HPP__OVERHEAD_GUEST_US,
++	PERF_HPP__OVERHEAD_ACC,
+ 	PERF_HPP__SAMPLES,
+ 	PERF_HPP__PERIOD,
+ 
 -- 
 1.7.11.7
 
