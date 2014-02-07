@@ -1,110 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751806AbaBGKie (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 05:38:34 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34683 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751317AbaBGKid (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 05:38:33 -0500
-From: Hannes Reinecke <hare@suse.de>
-To: systemd-devel@lists.freedesktop.org
-Cc: linux-kernel@vger.kernel.org, Hannes Reinecke <hare@suse.de>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay@vrfy.org>,
-        Greg Kroah-Hartmann <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, David Herrmann <dh.herrmann@gmail.com>,
-        Werner Fink <werner@suse.de>
-Subject: [PATCHv3] tty: Set correct tty name in 'active' sysfs attribute
-Date: Fri,  7 Feb 2014 11:38:30 +0100
-Message-Id: <1391769510-123271-1-git-send-email-hare@suse.de>
-X-Mailer: git-send-email 1.7.12.4
+	id S1752039AbaBGKjp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 05:39:45 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:50797 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751068AbaBGKjn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 05:39:43 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Roger Quadros <rogerq@ti.com>
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>, kishon@ti.com,
+        Tejun Heo <tj@kernel.org>, balbi@ti.com, bcousson@baylibre.com,
+        tony@atomide.com, balajitk@ti.com, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Hans de Goede <hdegoede@redhat.com>
+Subject: Re: [RFC PATCH 08/15] ata: ahci_platform: Manage SATA PHY
+Date: Fri, 07 Feb 2014 11:39:03 +0100
+Message-ID: <463926864.ALblgUKdgH@wuerfel>
+User-Agent: KMail/4.11.3 (Linux/3.11.0-15-generic; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <52F4B682.2000201@ti.com>
+References: <1379595943-14622-1-git-send-email-rogerq@ti.com> <5240492D.6060204@ti.com> <52F4B682.2000201@ti.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:Cjb87jOFoEfZ0zE3peceIgyQxf9LtFoAcjrLNMNxm3X
+ 4RNZW1uVCHmaEmS+QTepk2iaT9Ek52guUPO6Kt6Fx2jwJtldYE
+ w8H6WGpFKiazQTWoD/RR3EjkcdY6n3KIxbFObzpAxNzDzaNqKK
+ bll8gNKaWBYaetB6hwg4WL0gjLcy/xLDOdUm+Y6GwwKUwjHLac
+ BfxZ7m/wzBujH7TG/qMZUKwRlaL1qrTOci9KTrZIPJK6f3w9sr
+ Jnb0wJTZCalDtCwBWNdS0I3Z+nvNoXRgtith/jg0qnV574yyT1
+ 5m9aoT9MPFJjk7498m1Iw44T0KoSArG9rblLYxIxYKTzOxiFak
+ VU9ELgH7F5cn5VWSNqN0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 'active' sysfs attribute should refer to the currently
-active tty devices the console is running on, not the currently
-active console.
-The console structure doesn't refer to any device in sysfs,
-only the tty the console is running on has.
-So we need to print out the tty names in 'active', not
-the console names.
+On Friday 07 February 2014 12:33:38 Roger Quadros wrote:
+> 
+> This means we need to make CONFIG_SATA_AHCI_PLATFORM depend on CONFIG_GENERIC_PHY or
+> select it.
+> 
+> OR
+> 
+> Generic PHY layer must be fixed so that the API's are always built in.
+> 
+> What is the better option? I believe making the PHY API's always built in is the better option.
+> 
 
-Cc: Lennart Poettering <lennart@poettering.net>
-Cc: Kay Sievers <kay@vrfy.org>
-Cc: Greg Kroah-Hartmann <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>
-Cc: David Herrmann <dh.herrmann@gmail.com>
-Signed-off-by: Werner Fink <werner@suse.de>
-Signed-off-by: Hannes Reinecke <hare@suse.de>
----
- Documentation/ABI/testing/sysfs-tty |  3 ++-
- drivers/tty/tty_io.c                | 25 ++++++++++++++++++-------
- 2 files changed, 20 insertions(+), 8 deletions(-)
+CONFIG_SATA_AHCI_PLATFORM should do
 
-diff --git a/Documentation/ABI/testing/sysfs-tty b/Documentation/ABI/testing/sysfs-tty
-index ad22fb0..a2ccec3 100644
---- a/Documentation/ABI/testing/sysfs-tty
-+++ b/Documentation/ABI/testing/sysfs-tty
-@@ -3,7 +3,8 @@ Date:		Nov 2010
- Contact:	Kay Sievers <kay.sievers@vrfy.org>
- Description:
- 		 Shows the list of currently configured
--		 console devices, like 'tty1 ttyS0'.
-+		 tty devices used for the console,
-+		 like 'tty1 ttyS0'.
- 		 The last entry in the file is the active
- 		 device connected to /dev/console.
- 		 The file supports poll() to detect virtual
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index c74a00a..bd2715a 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -1267,16 +1267,17 @@ static void pty_line_name(struct tty_driver *driver, int index, char *p)
-  *	@p: output buffer of at least 7 bytes
-  *
-  *	Generate a name from a driver reference and write it to the output
-- *	buffer.
-+ *	buffer. Return the number of bytes written.
-  *
-  *	Locking: None
-  */
--static void tty_line_name(struct tty_driver *driver, int index, char *p)
-+static ssize_t tty_line_name(struct tty_driver *driver, int index, char *p)
- {
- 	if (driver->flags & TTY_DRIVER_UNNUMBERED_NODE)
--		strcpy(p, driver->name);
-+		return sprintf(p, "%s", driver->name);
- 	else
--		sprintf(p, "%s%d", driver->name, index + driver->name_base);
-+		return sprintf(p, "%s%d", driver->name,
-+			       index + driver->name_base);
- }
- 
- /**
-@@ -3545,9 +3546,19 @@ static ssize_t show_cons_active(struct device *dev,
- 		if (i >= ARRAY_SIZE(cs))
- 			break;
- 	}
--	while (i--)
--		count += sprintf(buf + count, "%s%d%c",
--				 cs[i]->name, cs[i]->index, i ? ' ':'\n');
-+	while (i--) {
-+		struct tty_driver *driver;
-+		const char *name = cs[i]->name;
-+		int index = cs[i]->index;
-+
-+		driver = cs[i]->device(cs[i], &index);
-+		if (driver) {
-+			count += tty_line_name(driver, index, buf + count);
-+			count += sprintf(buf + count, "%c", i ? ' ':'\n');
-+		} else
-+			count += sprintf(buf + count, "%s%d%c",
-+					 name, index, i ? ' ':'\n');
-+	}
- 	console_unlock();
- 
- 	return count;
--- 
-1.7.12.4
+	"depends on CONFIG_GENERIC_PHY || !CONFIG_GENERIC_PHY"
 
+which is the Kconfig way of saying that if CONFIG_GENERIC_PHY is a module,
+CONFIG_SATA_AHCI_PLATFORM needs to be a module as well.
+
+	Arnd
