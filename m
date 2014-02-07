@@ -1,49 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755167AbaBGMSR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:18:17 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:54989 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753441AbaBGMSM (ORCPT
+	id S1755065AbaBGMSx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:18:53 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42195 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932404AbaBGLv3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 07:18:12 -0500
-Date: Fri, 7 Feb 2014 17:48:07 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Armin Schindler <mac@melware.de>, Karsten Keil <isdn@linux-pingi.de>,
-        netdev@vger.kernel.org, josh@joshtriplett.org
-Subject: [PATCH 01/26] drivers: isdn: Rectify typing error in xdi_msg.h
-Message-ID: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 7 Feb 2014 06:51:29 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 164/233] drm/nouveau: fix m2mf copy to tiled gart
+Date: Fri,  7 Feb 2014 11:46:23 +0000
+Message-Id: <1391773652-25214-165-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
+References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rectify typing error while including the guard for the header
-file xdi_msg.h so that proper guard is wrapped around the file
-to prevent it from being included more than once.
+3.11.10.4 -stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+------------------
+
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+
+commit ce8f7699f2b6ffe4aa8368b8d9d370875accaa5f upstream.
+
+Commit de7b7d59d54852c introduced tiled GART, but a linear copy is
+still performed. This may result in errors on eviction, fix it by
+checking tiling from memtype.
+
+Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/isdn/hardware/eicon/xdi_msg.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/nouveau/nouveau_bo.c | 33 ++++++++-------------------------
+ 1 file changed, 8 insertions(+), 25 deletions(-)
 
-diff --git a/drivers/isdn/hardware/eicon/xdi_msg.h b/drivers/isdn/hardware/eicon/xdi_msg.h
-index 58368f7..2498c34 100644
---- a/drivers/isdn/hardware/eicon/xdi_msg.h
-+++ b/drivers/isdn/hardware/eicon/xdi_msg.h
-@@ -1,6 +1,6 @@
- /* $Id: xdi_msg.h,v 1.1.2.2 2001/02/16 08:40:36 armin Exp $ */
+diff --git a/drivers/gpu/drm/nouveau/nouveau_bo.c b/drivers/gpu/drm/nouveau/nouveau_bo.c
+index af20fba..2821c14 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_bo.c
++++ b/drivers/gpu/drm/nouveau/nouveau_bo.c
+@@ -802,25 +802,25 @@ nv50_bo_move_m2mf(struct nouveau_channel *chan, struct ttm_buffer_object *bo,
+ 		  struct ttm_mem_reg *old_mem, struct ttm_mem_reg *new_mem)
+ {
+ 	struct nouveau_mem *node = old_mem->mm_node;
+-	struct nouveau_bo *nvbo = nouveau_bo(bo);
+ 	u64 length = (new_mem->num_pages << PAGE_SHIFT);
+ 	u64 src_offset = node->vma[0].offset;
+ 	u64 dst_offset = node->vma[1].offset;
++	int src_tiled = !!node->memtype;
++	int dst_tiled = !!((struct nouveau_mem *)new_mem->mm_node)->memtype;
+ 	int ret;
  
--#ifndef __DIVA_XDI_UM_CFG_MESSSGE_H__
-+#ifndef __DIVA_XDI_UM_CFG_MESSAGE_H__
- #define __DIVA_XDI_UM_CFG_MESSAGE_H__
+ 	while (length) {
+ 		u32 amount, stride, height;
  
- /*
++		ret = RING_SPACE(chan, 18 + 6 * (src_tiled + dst_tiled));
++		if (ret)
++			return ret;
++
+ 		amount  = min(length, (u64)(4 * 1024 * 1024));
+ 		stride  = 16 * 4;
+ 		height  = amount / stride;
+ 
+-		if (old_mem->mem_type == TTM_PL_VRAM &&
+-		    nouveau_bo_tile_layout(nvbo)) {
+-			ret = RING_SPACE(chan, 8);
+-			if (ret)
+-				return ret;
+-
++		if (src_tiled) {
+ 			BEGIN_NV04(chan, NvSubCopy, 0x0200, 7);
+ 			OUT_RING  (chan, 0);
+ 			OUT_RING  (chan, 0);
+@@ -830,19 +830,10 @@ nv50_bo_move_m2mf(struct nouveau_channel *chan, struct ttm_buffer_object *bo,
+ 			OUT_RING  (chan, 0);
+ 			OUT_RING  (chan, 0);
+ 		} else {
+-			ret = RING_SPACE(chan, 2);
+-			if (ret)
+-				return ret;
+-
+ 			BEGIN_NV04(chan, NvSubCopy, 0x0200, 1);
+ 			OUT_RING  (chan, 1);
+ 		}
+-		if (new_mem->mem_type == TTM_PL_VRAM &&
+-		    nouveau_bo_tile_layout(nvbo)) {
+-			ret = RING_SPACE(chan, 8);
+-			if (ret)
+-				return ret;
+-
++		if (dst_tiled) {
+ 			BEGIN_NV04(chan, NvSubCopy, 0x021c, 7);
+ 			OUT_RING  (chan, 0);
+ 			OUT_RING  (chan, 0);
+@@ -852,18 +843,10 @@ nv50_bo_move_m2mf(struct nouveau_channel *chan, struct ttm_buffer_object *bo,
+ 			OUT_RING  (chan, 0);
+ 			OUT_RING  (chan, 0);
+ 		} else {
+-			ret = RING_SPACE(chan, 2);
+-			if (ret)
+-				return ret;
+-
+ 			BEGIN_NV04(chan, NvSubCopy, 0x021c, 1);
+ 			OUT_RING  (chan, 1);
+ 		}
+ 
+-		ret = RING_SPACE(chan, 14);
+-		if (ret)
+-			return ret;
+-
+ 		BEGIN_NV04(chan, NvSubCopy, 0x0238, 2);
+ 		OUT_RING  (chan, upper_32_bits(src_offset));
+ 		OUT_RING  (chan, upper_32_bits(dst_offset));
 -- 
-1.7.9.5
+1.8.3.2
 
