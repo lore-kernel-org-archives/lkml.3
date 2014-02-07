@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752893AbaBGLY1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:24:27 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40807 "EHLO
+	id S1753725AbaBGLnY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:43:24 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41008 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751574AbaBGLXd (ORCPT
+	with ESMTP id S1752873AbaBGLY0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:23:33 -0500
+	Fri, 7 Feb 2014 06:24:26 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
-        Kamal Mostafa <kamal@canonical.com>,
+Cc: Mikulas Patocka <mpatocka@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 01/88] ext4: fix deadlock when writing in ENOSPC conditions
-Date: Fri,  7 Feb 2014 11:21:58 +0000
-Message-Id: <1391772205-22239-2-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 42/88] dm: wait until embedded kobject is released before destroying a device
+Date: Fri,  7 Feb 2014 11:22:39 +0000
+Message-Id: <1391772205-22239-43-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
@@ -28,63 +27,132 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 34cf865d54813aab3497838132fb1bbd293f4054 upstream.
+commit be35f486108227e10fe5d96fd42fb2b344c59983 upstream.
 
-Akira-san has been reporting rare deadlocks of his machine when running
-xfstests test 269 on ext4 filesystem. The problem turned out to be in
-ext4_da_reserve_metadata() and ext4_da_reserve_space() which called
-ext4_should_retry_alloc() while holding i_data_sem. Since
-ext4_should_retry_alloc() can force a transaction commit, this is a
-lock ordering violation and leads to deadlocks.
+There may be other parts of the kernel holding a reference on the dm
+kobject.  We must wait until all references are dropped before
+deallocating the mapped_device structure.
 
-Fix the problem by just removing the retry loops. These functions should
-just report ENOSPC to the caller (e.g. ext4_da_write_begin()) and that
-function must take care of retrying after dropping all necessary locks.
+The dm_kobject_release method signals that all references are dropped
+via completion.  But dm_kobject_release doesn't free the kobject (which
+is embedded in the mapped_device structure).
 
-Reported-and-tested-by: Akira Fujita <a-fujita@rs.jp.nec.com>
-Reviewed-by: Zheng Liu <wenqing.lz@taobao.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-[ kamal: backport to 3.8 (no ext4_da_reserve_metadata) ]
-Cc: Kamal Mostafa <kamal@canonical.com>
+This is the sequence of operations:
+* when destroying a DM device, call kobject_put from dm_sysfs_exit
+* wait until all users stop using the kobject, when it happens the
+  release method is called
+* the release method signals the completion and should return without
+  delay
+* the dm device removal code that waits on the completion continues
+* the dm device removal code drops the dm_mod reference the device had
+* the dm device removal code frees the mapped_device structure that
+  contains the kobject
+
+Using kobject this way should avoid the module unload race that was
+mentioned at the beginning of this thread:
+https://lkml.org/lkml/2014/1/4/83
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/ext4/inode.c | 6 ------
- 1 file changed, 6 deletions(-)
+ drivers/md/dm-sysfs.c | 10 +++++++++-
+ drivers/md/dm.c       | 11 +++++++++++
+ drivers/md/dm.h       |  2 ++
+ 3 files changed, 22 insertions(+), 1 deletion(-)
 
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 8aacdda..efecfb7 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -1175,7 +1175,6 @@ static int ext4_journalled_write_end(struct file *file,
+diff --git a/drivers/md/dm-sysfs.c b/drivers/md/dm-sysfs.c
+index 84d2b91..e0cc5d6 100644
+--- a/drivers/md/dm-sysfs.c
++++ b/drivers/md/dm-sysfs.c
+@@ -79,6 +79,11 @@ static const struct sysfs_ops dm_sysfs_ops = {
+ 	.show	= dm_attr_show,
+ };
+ 
++static void dm_kobject_release(struct kobject *kobj)
++{
++	complete(dm_get_completion_from_kobject(kobj));
++}
++
+ /*
+  * dm kobject is embedded in mapped_device structure
+  * no need to define release function here
+@@ -86,6 +91,7 @@ static const struct sysfs_ops dm_sysfs_ops = {
+ static struct kobj_type dm_ktype = {
+ 	.sysfs_ops	= &dm_sysfs_ops,
+ 	.default_attrs	= dm_attrs,
++	.release	= dm_kobject_release,
+ };
+ 
+ /*
+@@ -104,5 +110,7 @@ int dm_sysfs_init(struct mapped_device *md)
   */
- static int ext4_da_reserve_space(struct inode *inode, ext4_lblk_t lblock)
+ void dm_sysfs_exit(struct mapped_device *md)
  {
--	int retries = 0;
- 	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
- 	struct ext4_inode_info *ei = EXT4_I(inode);
- 	unsigned int md_needed;
-@@ -1197,7 +1196,6 @@ static int ext4_da_reserve_space(struct inode *inode, ext4_lblk_t lblock)
- 	 * in order to allocate nrblocks
- 	 * worse case is one extent per block
- 	 */
--repeat:
- 	spin_lock(&ei->i_block_reservation_lock);
- 	/*
- 	 * ext4_calc_metadata_amount() has side effects, which we have
-@@ -1217,10 +1215,6 @@ repeat:
- 		ei->i_da_metadata_calc_len = save_len;
- 		ei->i_da_metadata_calc_last_lblock = save_last_lblock;
- 		spin_unlock(&ei->i_block_reservation_lock);
--		if (ext4_should_retry_alloc(inode->i_sb, &retries)) {
--			yield();
--			goto repeat;
--		}
- 		dquot_release_reservation_block(inode, EXT4_C2B(sbi, 1));
- 		return -ENOSPC;
- 	}
+-	kobject_put(dm_kobject(md));
++	struct kobject *kobj = dm_kobject(md);
++	kobject_put(kobj);
++	wait_for_completion(dm_get_completion_from_kobject(kobj));
+ }
+diff --git a/drivers/md/dm.c b/drivers/md/dm.c
+index 9a7290b..062f89a 100644
+--- a/drivers/md/dm.c
++++ b/drivers/md/dm.c
+@@ -194,6 +194,9 @@ struct mapped_device {
+ 	/* sysfs handle */
+ 	struct kobject kobj;
+ 
++	/* wait until the kobject is released */
++	struct completion kobj_completion;
++
+ 	/* zero-length flush that will be cloned and submitted to targets */
+ 	struct bio flush_bio;
+ };
+@@ -1898,6 +1901,7 @@ static struct mapped_device *alloc_dev(int minor)
+ 	init_waitqueue_head(&md->wait);
+ 	INIT_WORK(&md->work, dm_wq_work);
+ 	init_waitqueue_head(&md->eventq);
++	init_completion(&md->kobj_completion);
+ 
+ 	md->disk->major = _major;
+ 	md->disk->first_minor = minor;
+@@ -2712,6 +2716,13 @@ struct mapped_device *dm_get_from_kobject(struct kobject *kobj)
+ 	return md;
+ }
+ 
++struct completion *dm_get_completion_from_kobject(struct kobject *kobj)
++{
++	struct mapped_device *md = container_of(kobj, struct mapped_device, kobj);
++
++	return &md->kobj_completion;
++}
++
+ int dm_suspended_md(struct mapped_device *md)
+ {
+ 	return test_bit(DMF_SUSPENDED, &md->flags);
+diff --git a/drivers/md/dm.h b/drivers/md/dm.h
+index b7dacd5..1174e96 100644
+--- a/drivers/md/dm.h
++++ b/drivers/md/dm.h
+@@ -15,6 +15,7 @@
+ #include <linux/list.h>
+ #include <linux/blkdev.h>
+ #include <linux/hdreg.h>
++#include <linux/completion.h>
+ 
+ /*
+  * Suspend feature flags
+@@ -123,6 +124,7 @@ int dm_sysfs_init(struct mapped_device *md);
+ void dm_sysfs_exit(struct mapped_device *md);
+ struct kobject *dm_kobject(struct mapped_device *md);
+ struct mapped_device *dm_get_from_kobject(struct kobject *kobj);
++struct completion *dm_get_completion_from_kobject(struct kobject *kobj);
+ 
+ /*
+  * Targets for linear and striped mappings
 -- 
 1.8.3.2
 
