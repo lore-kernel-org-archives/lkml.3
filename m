@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755863AbaBGMBR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:01:17 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42465 "EHLO
+	id S932576AbaBGLwa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:52:30 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42433 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753590AbaBGLwb (ORCPT
+	with ESMTP id S932556AbaBGLw0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:52:31 -0500
+	Fri, 7 Feb 2014 06:52:26 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Rientjes <rientjes@google.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: David Ertman <davidx.m.ertman@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 209/233] mm/mempolicy.c: fix mempolicy printing in numa_maps
-Date: Fri,  7 Feb 2014 11:47:08 +0000
-Message-Id: <1391773652-25214-210-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 207/233] e1000e: fix compiler warnings
+Date: Fri,  7 Feb 2014 11:47:06 +0000
+Message-Id: <1391773652-25214-208-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -30,47 +28,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Rientjes <rientjes@google.com>
+From: David Ertman <davidx.m.ertman@intel.com>
 
-commit 8790c71a18e5d2d93532ae250bcf5eddbba729cd upstream.
+commit 9e6c3b63399dd424d33a34e08b77f2cab0b84cdc upstream.
 
-As a result of commit 5606e3877ad8 ("mm: numa: Migrate on reference
-policy"), /proc/<pid>/numa_maps prints the mempolicy for any <pid> as
-"prefer:N" for the local node, N, of the process reading the file.
+This patch is to fix a compiler warning of __bad_udelay due to a value
+of >999 being passed as a parameter to udelay() in the function
+e1000e_phy_has_link_generic().  This affects the gcc compiler when
+it is given a flag of -O3 and the icc compiler.
 
-This should only be printed when the mempolicy of <pid> is
-MPOL_PREFERRED for node N.
+This patch is also making the change from mdelay() to msleep() in the
+same function, since it was determined though code inspection that this
+function is never called in atomic context.
 
-If the process is actually only using the default mempolicy for local
-node allocation, make sure "default" is printed as expected.
-
-Signed-off-by: David Rientjes <rientjes@google.com>
-Reported-by: Robert Lippert <rlippert@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ luis: backported to 3.11: used David Rientjes's backport to 3.10 and
-  3.12 stable trees. ]
+Signed-off-by: David Ertman <davidx.m.ertman@intel.com>
+Acked-by: Bruce Allan <bruce.w.allan@intel.com>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/mempolicy.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/intel/e1000e/phy.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index bfa95cf..bfb3238 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2806,7 +2806,7 @@ int mpol_to_str(char *buffer, int maxlen, struct mempolicy *pol)
- 	 */
- 	VM_BUG_ON(maxlen < strlen("interleave") + strlen("relative") + 16);
- 
--	if (!pol || pol == &default_policy)
-+	if (!pol || pol == &default_policy || (pol->flags & MPOL_F_MORON))
- 		mode = MPOL_DEFAULT;
- 	else
- 		mode = pol->mode;
+diff --git a/drivers/net/ethernet/intel/e1000e/phy.c b/drivers/net/ethernet/intel/e1000e/phy.c
+index da2be59..20e71f4 100644
+--- a/drivers/net/ethernet/intel/e1000e/phy.c
++++ b/drivers/net/ethernet/intel/e1000e/phy.c
+@@ -1757,19 +1757,23 @@ s32 e1000e_phy_has_link_generic(struct e1000_hw *hw, u32 iterations,
+ 		 * it across the board.
+ 		 */
+ 		ret_val = e1e_rphy(hw, MII_BMSR, &phy_status);
+-		if (ret_val)
++		if (ret_val) {
+ 			/* If the first read fails, another entity may have
+ 			 * ownership of the resources, wait and try again to
+ 			 * see if they have relinquished the resources yet.
+ 			 */
+-			udelay(usec_interval);
++			if (usec_interval >= 1000)
++				msleep(usec_interval / 1000);
++			else
++				udelay(usec_interval);
++		}
+ 		ret_val = e1e_rphy(hw, MII_BMSR, &phy_status);
+ 		if (ret_val)
+ 			break;
+ 		if (phy_status & BMSR_LSTATUS)
+ 			break;
+ 		if (usec_interval >= 1000)
+-			mdelay(usec_interval / 1000);
++			msleep(usec_interval / 1000);
+ 		else
+ 			udelay(usec_interval);
+ 	}
 -- 
 1.8.3.2
 
