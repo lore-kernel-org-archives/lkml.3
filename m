@@ -1,147 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751961AbaBGJps (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 04:45:48 -0500
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:47895 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751068AbaBGJpo (ORCPT
+	id S1751968AbaBGJrv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 04:47:51 -0500
+Received: from smtp-vbr1.xs4all.nl ([194.109.24.21]:4419 "EHLO
+	smtp-vbr1.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751356AbaBGJrt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 04:45:44 -0500
-Message-ID: <52F4AB54.801@linux.vnet.ibm.com>
-Date: Fri, 07 Feb 2014 15:15:56 +0530
-From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Fri, 7 Feb 2014 04:47:49 -0500
+Message-ID: <52F4ABA2.5000905@xs4all.nl>
+Date: Fri, 07 Feb 2014 10:47:14 +0100
+From: Hans Verkuil <hverkuil@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-CC: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linuxppc-dev@lists.ozlabs.org,
-        Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/2] PPC: powernv: remove redundant cpuidle_idle_call()
-References: <1391696188-14540-1-git-send-email-nicolas.pitre@linaro.org> <CAKnoXLxCAqKaniGOwegNcOarS4FpoNKDY5PxOhe6j4wdtUAkLQ@mail.gmail.com> <52F3BCFE.3010703@linux.vnet.ibm.com> <alpine.LFD.2.11.1402070105170.1906@knanqh.ubzr> <52F484D9.6020604@linux.vnet.ibm.com>
-In-Reply-To: <52F484D9.6020604@linux.vnet.ibm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: linux-kernel@vger.kernel.org, Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        linux-media@vger.kernel.org
+Subject: Re: [PATCH, RFC 07/30] [media] radio-cadet: avoid interruptible_sleep_on
+ race
+References: <1388664474-1710039-1-git-send-email-arnd@arndb.de> <1388664474-1710039-8-git-send-email-arnd@arndb.de> <52D90A2F.2030903@xs4all.nl> <201401171528.02016.arnd@arndb.de> <52F4A82C.7010104@xs4all.nl>
+In-Reply-To: <52F4A82C.7010104@xs4all.nl>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14020709-5490-0000-0000-000004E83330
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Preeti,
-
-Thanks for the patch.
-
-On 02/07/2014 12:31 PM, Preeti U Murthy wrote:
-> Hi Nicolas,
+On 02/07/2014 10:32 AM, Hans Verkuil wrote:
+> Hi Arnd!
 > 
-> Find below the patch that will need to be squashed with this one.
-> This patch is based on the mainline.Adding Deepthi, the author of
-> the patch which introduced the powernv cpuidle driver. Deepthi,
-> do you think the below patch looks right? We do not need to do an
-> explicit local_irq_enable() since we are in the call path of
-> cpuidle driver and that explicitly enables irqs on exit from
-> idle states.
-
-Yes, We enable irqs explicitly while entering snooze loop and we always
-have interrupts enabled in the snooze state.
-For NAP state, we exit out of this state with interrupts enabled so we
-do not need an explicit enable of irqs.
-
-> On 02/07/2014 06:47 AM, Nicolas Pitre wrote:
->> On Thu, 6 Feb 2014, Preeti U Murthy wrote:
->>
->>> Hi Daniel,
+> On 01/17/2014 03:28 PM, Arnd Bergmann wrote:
+>> On Friday 17 January 2014, Hans Verkuil wrote:
+>>>> @@ -323,25 +324,32 @@ static ssize_t cadet_read(struct file *file, char __user *data, size_t count, lo
+>>>>       struct cadet *dev = video_drvdata(file);
+>>>>       unsigned char readbuf[RDS_BUFFER];
+>>>>       int i = 0;
+>>>> +     DEFINE_WAIT(wait);
+>>>>  
+>>>>       mutex_lock(&dev->lock);
+>>>>       if (dev->rdsstat == 0)
+>>>>               cadet_start_rds(dev);
+>>>> -     if (dev->rdsin == dev->rdsout) {
+>>>> +     while (1) {
+>>>> +             prepare_to_wait(&dev->read_queue, &wait, TASK_INTERRUPTIBLE);
+>>>> +             if (dev->rdsin != dev->rdsout)
+>>>> +                     break;
+>>>> +
+>>>>               if (file->f_flags & O_NONBLOCK) {
+>>>>                       i = -EWOULDBLOCK;
+>>>>                       goto unlock;
+>>>>               }
+>>>>               mutex_unlock(&dev->lock);
+>>>> -             interruptible_sleep_on(&dev->read_queue);
+>>>> +             schedule();
+>>>>               mutex_lock(&dev->lock);
+>>>>       }
+>>>> +
 >>>
->>> On 02/06/2014 09:55 PM, Daniel Lezcano wrote:
->>>> Hi Nico,
->>>>
->>>>
->>>> On 6 February 2014 14:16, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
->>>>
->>>>> The core idle loop now takes care of it.
->>>>>
->>>>> Signed-off-by: Nicolas Pitre <nico@linaro.org>
->>>>> ---
->>>>>  arch/powerpc/platforms/powernv/setup.c | 13 +------------
->>>>>  1 file changed, 1 insertion(+), 12 deletions(-)
->>>>>
->>>>> diff --git a/arch/powerpc/platforms/powernv/setup.c
->>>>> b/arch/powerpc/platforms/powernv/setup.c
->>>>> index 21166f65c9..a932feb290 100644
->>>>> --- a/arch/powerpc/platforms/powernv/setup.c
->>>>> +++ b/arch/powerpc/platforms/powernv/setup.c
->>>>> @@ -26,7 +26,6 @@
->>>>>  #include <linux/of_fdt.h>
->>>>>  #include <linux/interrupt.h>
->>>>>  #include <linux/bug.h>
->>>>> -#include <linux/cpuidle.h>
->>>>>
->>>>>  #include <asm/machdep.h>
->>>>>  #include <asm/firmware.h>
->>>>> @@ -217,16 +216,6 @@ static int __init pnv_probe(void)
->>>>>         return 1;
->>>>>  }
->>>>>
->>>>> -void powernv_idle(void)
->>>>> -{
->>>>> -       /* Hook to cpuidle framework if available, else
->>>>> -        * call on default platform idle code
->>>>> -        */
->>>>> -       if (cpuidle_idle_call()) {
->>>>> -               power7_idle();
->>>>> -       }
->>>>>
+>>> This seems overly complicated. Isn't it enough to replace interruptible_sleep_on
+>>> by 'wait_event_interruptible(&dev->read_queue, dev->rdsin != dev->rdsout);'?
+>>>
+>>> Or am I missing something subtle?
+>>
+>> The existing code sleeps with &dev->lock released because the cadet_handler()
+>> function needs to grab (and release) the same lock before it can wake up
+>> the reader thread.
+>>
+>> Doing the simple wait_event_interruptible() would result in a deadlock here.
 > 
->  drivers/cpuidle/cpuidle-powernv.c |    4 ++++
->  1 file changed, 4 insertions(+)
+> I don't see it. I propose this patch:
 > 
-> diff --git a/drivers/cpuidle/cpuidle-powernv.c b/drivers/cpuidle/cpuidle-powernv.c
-> index 78fd174..130f081 100644
-> --- a/drivers/cpuidle/cpuidle-powernv.c
-> +++ b/drivers/cpuidle/cpuidle-powernv.c
-> @@ -31,11 +31,13 @@ static int snooze_loop(struct cpuidle_device *dev,
->  	set_thread_flag(TIF_POLLING_NRFLAG);
+> Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
 > 
->  	while (!need_resched()) {
-> +		ppc64_runlatch_off();
-                ^^^^^^^^^^^^^^^
-We could move this before the while() loop.
-It would ideal to turn off latch when we enter snooze and
-turn it on when we are about to exit, rather than doing
-it over and over in the while loop.
+> diff --git a/drivers/media/radio/radio-cadet.c b/drivers/media/radio/radio-cadet.c
+> index 545c04c..2f658c6 100644
+> --- a/drivers/media/radio/radio-cadet.c
+> +++ b/drivers/media/radio/radio-cadet.c
+> @@ -327,13 +327,15 @@ static ssize_t cadet_read(struct file *file, char __user *data, size_t count, lo
+>  	mutex_lock(&dev->lock);
+>  	if (dev->rdsstat == 0)
+>  		cadet_start_rds(dev);
+> -	if (dev->rdsin == dev->rdsout) {
+> +	while (dev->rdsin == dev->rdsout) {
+>  		if (file->f_flags & O_NONBLOCK) {
+>  			i = -EWOULDBLOCK;
+>  			goto unlock;
+>  		}
+>  		mutex_unlock(&dev->lock);
+> -		interruptible_sleep_on(&dev->read_queue);
+> +		if (wait_event_interruptible(&dev->read_queue,
 
->  		HMT_low();
->  		HMT_very_low();
+Oops, that's without an '&' before dev->read_queue. I forgot to update my
+patch before posting, sorry about that.
+
+	Hans
+
+> +					     dev->rdsin != dev->rdsout))
+> +			return -EINTR;
+>  		mutex_lock(&dev->lock);
 >  	}
+>  	while (i < count && dev->rdsin != dev->rdsout)
 > 
->  	HMT_medium();
-> +	ppc64_runlatch_on();
->  	clear_thread_flag(TIF_POLLING_NRFLAG);
->  	smp_mb();
->  	return index;
-> @@ -45,7 +47,9 @@ static int nap_loop(struct cpuidle_device *dev,
->  			struct cpuidle_driver *drv,
->  			int index)
->  {
-> +	ppc64_runlatch_off();
->  	power7_idle();
-> +	ppc64_runlatch_on();
->  	return index;
->  }
+> Tested with my radio-cadet card.
 > 
-> Thanks
+> This looks good to me. If I am still missing something, let me know!
 > 
-> Regards
-> Preeti U Murthy
+> Regards,
 > 
-
-Regards,
-Deepthi
+> 	Hans
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
