@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753080AbaBGLYp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:24:45 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40900 "EHLO
+	id S1753954AbaBGLhN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:37:13 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41069 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752191AbaBGLX6 (ORCPT
+	with ESMTP id S1753053AbaBGLYo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:23:58 -0500
+	Fri, 7 Feb 2014 06:24:44 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Maximilian Attems <maks@stro.at>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Weston Andros Adamson <dros@primarydata.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 20/88] parport: parport_pc: remove double PCI ID for NetMos
-Date: Fri,  7 Feb 2014 11:22:17 +0000
-Message-Id: <1391772205-22239-21-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 55/88] nfs4.1: properly handle ENOTSUP in SECINFO_NO_NAME
+Date: Fri,  7 Feb 2014 11:22:52 +0000
+Message-Id: <1391772205-22239-56-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
@@ -30,77 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+From: Weston Andros Adamson <dros@primarydata.com>
 
-commit d6a484520c5572a4170fa915109ccfc0c38f5008 upstream.
+commit 78b19bae0813bd6f921ca58490196abd101297bd upstream.
 
-In commit 85747f ("PATCH] parport: add NetMOS 9805 support") Max added
-the PCI ID for NetMOS 9805 based on a Debian bug report from 2k4 which
-was at the v2.4.26 time frame. The patch made into 2.6.14.
-Shortly before that patch akpm merged commit 296d3c783b ("[PATCH] Support
-NetMOS based PCI cards providing serial and parallel ports") which made
-into v2.6.9-rc1.
-Now we have two different entries for the same PCI id.
-I have here the NetMos 9805 which claims to support SPP/EPP/ECP mode.
-This patch takes Max's entry for titan_1284p1 (base != -1 specifies the
-ioport for ECP mode) and replaces akpm's entry for netmos_9805 which
-specified -1 (=none). Both share the same PCI-ID (my card has subsystem
-0x1000 / 0x0020 so it should match PCI_ANY).
+Don't check for -NFS4ERR_NOTSUPP, it's already been mapped to -ENOTSUPP
+by nfs4_stat_to_errno.
 
-While here I also drop the entry for titan_1284p2 which is the same as
-netmos_9815.
+This allows the client to mount v4.1 servers that don't support
+SECINFO_NO_NAME by falling back to the "guess and check" method of
+nfs4_find_root_sec.
 
-Cc: Maximilian Attems <maks@stro.at>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Weston Andros Adamson <dros@primarydata.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/parport/parport_pc.c | 10 ++--------
- 1 file changed, 2 insertions(+), 8 deletions(-)
+ fs/nfs/nfs4proc.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/parport/parport_pc.c b/drivers/parport/parport_pc.c
-index 5abffe5..978bc77 100644
---- a/drivers/parport/parport_pc.c
-+++ b/drivers/parport/parport_pc.c
-@@ -2599,8 +2599,6 @@ enum parport_pc_pci_cards {
- 	syba_2p_epp,
- 	syba_1p_ecp,
- 	titan_010l,
--	titan_1284p1,
--	titan_1284p2,
- 	avlab_1p,
- 	avlab_2p,
- 	oxsemi_952,
-@@ -2659,8 +2657,6 @@ static struct parport_pc_pci {
- 	/* syba_2p_epp AP138B */	{ 2, { { 0, 0x078 }, { 0, 0x178 }, } },
- 	/* syba_1p_ecp W83787 */	{ 1, { { 0, 0x078 }, } },
- 	/* titan_010l */		{ 1, { { 3, -1 }, } },
--	/* titan_1284p1 */              { 1, { { 0, 1 }, } },
--	/* titan_1284p2 */		{ 2, { { 0, 1 }, { 2, 3 }, } },
- 	/* avlab_1p		*/	{ 1, { { 0, 1}, } },
- 	/* avlab_2p		*/	{ 2, { { 0, 1}, { 2, 3 },} },
- 	/* The Oxford Semi cards are unusual: 954 doesn't support ECP,
-@@ -2676,8 +2672,8 @@ static struct parport_pc_pci {
- 	/* netmos_9705 */               { 1, { { 0, -1 }, } },
- 	/* netmos_9715 */               { 2, { { 0, 1 }, { 2, 3 },} },
- 	/* netmos_9755 */               { 2, { { 0, 1 }, { 2, 3 },} },
--	/* netmos_9805 */               { 1, { { 0, -1 }, } },
--	/* netmos_9815 */               { 2, { { 0, -1 }, { 2, -1 }, } },
-+	/* netmos_9805 */		{ 1, { { 0, 1 }, } },
-+	/* netmos_9815 */		{ 2, { { 0, 1 }, { 2, 3 }, } },
- 	/* netmos_9901 */               { 1, { { 0, -1 }, } },
- 	/* netmos_9865 */               { 1, { { 0, -1 }, } },
- 	/* quatech_sppxp100 */		{ 1, { { 0, 1 }, } },
-@@ -2721,8 +2717,6 @@ static const struct pci_device_id parport_pc_pci_tbl[] = {
- 	  PCI_ANY_ID, PCI_ANY_ID, 0, 0, syba_1p_ecp },
- 	{ PCI_VENDOR_ID_TITAN, PCI_DEVICE_ID_TITAN_010L,
- 	  PCI_ANY_ID, PCI_ANY_ID, 0, 0, titan_010l },
--	{ 0x9710, 0x9805, 0x1000, 0x0010, 0, 0, titan_1284p1 },
--	{ 0x9710, 0x9815, 0x1000, 0x0020, 0, 0, titan_1284p2 },
- 	/* PCI_VENDOR_ID_AVLAB/Intek21 has another bunch of cards ...*/
- 	/* AFAVLAB_TK9902 */
- 	{ 0x14db, 0x2120, PCI_ANY_ID, PCI_ANY_ID, 0, 0, avlab_1p},
+diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+index 4bb79e7..69fd66a 100644
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -6578,7 +6578,7 @@ nfs41_proc_secinfo_no_name(struct nfs_server *server, struct nfs_fh *fhandle,
+ 		switch (err) {
+ 		case 0:
+ 		case -NFS4ERR_WRONGSEC:
+-		case -NFS4ERR_NOTSUPP:
++		case -ENOTSUPP:
+ 			goto out;
+ 		default:
+ 			err = nfs4_handle_exception(server, err, &exception);
+@@ -6610,7 +6610,7 @@ nfs41_find_root_sec(struct nfs_server *server, struct nfs_fh *fhandle,
+ 	 * Fall back on "guess and check" method if
+ 	 * the server doesn't support SECINFO_NO_NAME
+ 	 */
+-	if (err == -NFS4ERR_WRONGSEC || err == -NFS4ERR_NOTSUPP) {
++	if (err == -NFS4ERR_WRONGSEC || err == -ENOTSUPP) {
+ 		err = nfs4_find_root_sec(server, fhandle, info);
+ 		goto out_freepage;
+ 	}
 -- 
 1.8.3.2
 
