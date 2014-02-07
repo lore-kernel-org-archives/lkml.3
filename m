@@ -1,84 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218AbaBGRYC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 12:24:02 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:36939 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752707AbaBGRX7 convert rfc822-to-8bit (ORCPT
+	id S1753264AbaBGRYS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 12:24:18 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:39764 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752403AbaBGRYO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 12:23:59 -0500
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Josh Triplett'" <josh@joshtriplett.org>
-CC: "'Rashika Kheria'" <rashika.kheria@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Armin Schindler" <mac@melware.de>, Karsten Keil <isdn@linux-pingi.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: RE: [PATCH 19/26] drivers: isdn: Move prototype declaration to
- header file platform.h from diva_didd.c
-Thread-Topic: [PATCH 19/26] drivers: isdn: Move prototype declaration to
- header file platform.h from diva_didd.c
-Thread-Index: AQHPJAIZEAfhJt2pSki9/NC6TGJzyJqpydjwgAA+egCAAAFN0A==
-Date: Fri, 7 Feb 2014 17:22:58 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F6BAC1C@AcuExch.aculab.com>
-References: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
- <93d7188538418423685ecefaf3d2bb311b37be6e.1390408518.git.rashika.kheria@gmail.com>
- <063D6719AE5E284EB5DD2968C1650D6D0F6BA76D@AcuExch.aculab.com>
- <20140207171516.GA7298@jtriplet-mobl1>
-In-Reply-To: <20140207171516.GA7298@jtriplet-mobl1>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Fri, 7 Feb 2014 12:24:14 -0500
+Date: Fri, 7 Feb 2014 11:20:51 -0600
+From: Josh Cartwright <joshc@codeaurora.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Kumar Gala <galak@codeaurora.org>, "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linux-spi@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Alok Chauhan <alokc@codeaurora.org>,
+        Gilad Avidov <gavidov@codeaurora.org>,
+        Kiran Gunda <kgunda@codeaurora.org>,
+        Sagar Dharia <sdharia@codeaurora.org>,
+        Andy Gross <agross@codeaurora.org>
+Subject: Re: [PATCH 2/2] spi: Add Qualcomm QUP SPI controller support
+Message-ID: <20140207172051.GW20228@joshc.qualcomm.com>
+References: <1391705868-20091-1-git-send-email-iivanov@mm-sol.com>
+ <1391705868-20091-3-git-send-email-iivanov@mm-sol.com>
+ <20140207073952.GA2610@qualcomm.com>
+ <20140207165127.GV20228@joshc.qualcomm.com>
+ <20140207171834.GF1757@sirena.org.uk>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140207171834.GF1757@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Josh Triplett
-> On Fri, Feb 07, 2014 at 01:33:46PM +0000, David Laight wrote:
-> > From: Rashika Kheria
-> > > Move prototype declarations of function to header file
-> > > hardware/eicon/platform.h because they are used by more than one file.
-> > >
-> > > This eliminates the following warnings in hardware/eicon/diddfunc.c:
-> > > drivers/isdn/hardware/eicon/diddfunc.c:95:12: warning: no previous prototype for diddfunc_init [-
-> > > Wmissing-prototypes]
-> > > drivers/isdn/hardware/eicon/diddfunc.c:110:13: warning: no previous prototype for diddfunc_finit
-> [-
-> > > Wmissing-prototypes]
-> > ...
-> > > diff --git a/drivers/isdn/hardware/eicon/diva_didd.c b/drivers/isdn/hardware/eicon/diva_didd.c
-> > > index fab6ccf..56d32a7 100644
-> > > --- a/drivers/isdn/hardware/eicon/diva_didd.c
-> > > +++ b/drivers/isdn/hardware/eicon/diva_didd.c
-> > > @@ -39,9 +39,6 @@ MODULE_LICENSE("GPL");
-> > >  #define DBG_MINIMUM  (DL_LOG + DL_FTL + DL_ERR)
-> > >  #define DBG_DEFAULT  (DBG_MINIMUM + DL_XLOG + DL_REG)
-> > >
-> > > -extern int diddfunc_init(void);
-> > > -extern void diddfunc_finit(void);
-> > > -
-> > >  extern void DIVA_DIDD_Read(void *, int);
-> >
-> > You should move that one as well.
-> > There really shouldn't be 'extern' definitions for any function in
-> > any C files since you want the compiler to check they are correct
-> > when the function itself is compiled.
+Hey Mark-
+
+On Fri, Feb 07, 2014 at 05:18:34PM +0000, Mark Brown wrote:
+> On Fri, Feb 07, 2014 at 10:51:27AM -0600, Josh Cartwright wrote:
 > 
-> Absolutely, but as far as I can tell Rashika is doing this
-> incrementally, organized more by header than by source file, so I'd
-> expect a few externs in a source file to disappear at a time rather than
-> all in one patch.
+> > 	config SPI_QUP
+> > 		tristate "Qualcomm SPI Support with QUP interface"
+> > 		depends on OF
+> > 		depends on ARM
+> 
+> Does this really depend on ARM?  If so why?
 
-Unless any actual bugs are found, I'd have thought a single patch for
-each driver would be enough, maybe even one for the whole lot - depending
-on how they are maintained.
-The 26 patches already posted are a little excessive.
+The ARM dependency is there for the use of _relaxed io accessor
+variants.
 
-	David
+> > 		depends on ARCH_MSM_DT || COMPILE_TEST
+> 
+> > With Kumar's pending the ARCH_MSM_DT -> ARCH_QCOM rename, we'll
+> > introduce a arm-soc/spi tree dependency here that we'll need to keep
+> > track of.
+> 
+> It seems simpler to just depend on MSM_DT || ARCH_QCOM or whatever.
 
+ARCH_MSM_DT is going away, so maybe this is the best option for the
+short term (a later patch can remove ARCH_MSM_DT from here at some point
+in the future).
 
+  Josh
 
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
