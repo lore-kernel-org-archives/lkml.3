@@ -1,107 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754517AbaBGNrv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 08:47:51 -0500
-Received: from mga02.intel.com ([134.134.136.20]:44760 "EHLO mga02.intel.com"
+	id S1754546AbaBGNtY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 08:49:24 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:41674 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753867AbaBGNq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 08:46:26 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,800,1384329600"; 
-   d="scan'208";a="479633327"
-From: sagar.a.kamble@intel.com
-To: intel-gfx@lists.freedesktop.org
-Cc: vijay.a.purushothaman@intel.com, airlied@linux.ie, daniel.vetter@ffwll.ch,
-        jani.nikula@linux.intel.com, tomi.valkeinen@ti.com, airlied@redhat.com,
-        robdclark@gmail.com, archit@ti.com, gregkh@linuxfoundation.org,
-        joe@perches.com, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
-	<ville.syrjala@linux.intel.com>
-Subject: [PATCH v4 06/11] drm: Add drm_rotation_simplify()
-Date: Fri,  7 Feb 2014 19:15:11 +0530
-Message-Id: <1391780716-21896-7-git-send-email-sagar.a.kamble@intel.com>
-X-Mailer: git-send-email 1.8.5
-In-Reply-To: <1391780716-21896-1-git-send-email-sagar.a.kamble@intel.com>
-References: <1391780716-21896-1-git-send-email-sagar.a.kamble@intel.com>
+	id S1751521AbaBGNtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 08:49:22 -0500
+Message-ID: <52F4E45B.1020107@ti.com>
+Date: Fri, 7 Feb 2014 15:49:15 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Christoph Fritz <chf.fritz@googlemail.com>, Tero Kristo <t-kristo@ti.com>
+CC: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <pali.rohar@gmail.com>, <pavel@ucw.cz>,
+        Nishanth Menon <nm@ti.com>
+Subject: Re: OMAP: clock DT conversion issues with omap36xx
+References: <52E697C0.6000202@gmail.com> <1390848104.4936.62.camel@mars>	 <52E772A3.4090401@ti.com> <1390901735.2963.8.camel@lovely>	 <52E77D03.8090001@ti.com>  <52E7B361.2030601@ti.com>	 <1390928565.4904.88.camel@mars> <1390994505.5023.32.camel@mars>	 <52F10C3D.7000507@ti.com> <1391767923.4937.110.camel@mars>
+In-Reply-To: <1391767923.4937.110.camel@mars>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="NcpriOprTl94TspshvlCtVsBcVD13T1eW"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ville Syrjälä <ville.syrjala@linux.intel.com>
+--NcpriOprTl94TspshvlCtVsBcVD13T1eW
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-drm_rotation_simplify() can be used to eliminate unsupported rotation
-flags. It will check if any unsupported flags are present, and if so
-it will modify the rotation to an alternate form by adding 180 degrees
-to rotation angle, and flipping the reflect x and y bits. The hope is
-that this identity transform will eliminate the unsupported flags.
+Hi,
 
-Of course that might not result in any more supported rotation, so
-the caller is still responsible for checking the result afterwards.
+On 07/02/14 12:12, Christoph Fritz wrote:
 
-Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
----
- drivers/gpu/drm/drm_crtc.c | 30 ++++++++++++++++++++++++++++++
- include/drm/drm_crtc.h     |  2 ++
- 2 files changed, 32 insertions(+)
+> Yes, your patch fixes the issues for sys_clkout2. Thanks! If you want,
+> you can add my:
+> Tested-by: Christoph Fritz <chf.fritz@googlemail.com>
+>=20
+> Below is my clock fix for dss:
+>=20
+> From b90a62128068e1b6b0ba2a11c5cc0c8e587cf301 Mon Sep 17 00:00:00 2001
+> From: Christoph Fritz <chf.fritz@googlemail.com>
+> Date: Fri, 7 Feb 2014 10:51:15 +0100
+> Subject: [PATCH] ARM: dts: omap36xx: fix dpll4_m4_ck tree
+>=20
+> OMAP36xx has different hardware implementation for the dpll4_m4_ck tree=
 
-diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
-index e7bbbad..30e0008 100644
---- a/drivers/gpu/drm/drm_crtc.c
-+++ b/drivers/gpu/drm/drm_crtc.c
-@@ -4006,6 +4006,36 @@ int drm_format_vert_chroma_subsampling(uint32_t format)
- EXPORT_SYMBOL(drm_format_vert_chroma_subsampling);
- 
- /**
-+ * drm_rotation_simplify() - Try to simplify the rotation
-+ * @rotation: Rotation to be simplified
-+ * @supported_rotations: Supported rotations
-+ *
-+ * Attempt to simplify the rotation to a form that is supported.
-+ * Eg. if the hardware supports everything except DRM_REFLECT_X
-+ * one could call this function like this:
-+ *
-+ * drm_rotation_simplify(rotation, BIT(DRM_ROTATE_0) |
-+ *                       BIT(DRM_ROTATE_90) | BIT(DRM_ROTATE_180) |
-+ *                       BIT(DRM_ROTATE_270) | BIT(DRM_REFLECT_Y));
-+ *
-+ * to eliminate the DRM_ROTATE_X flag. Depending on what kind of
-+ * transforms the hardware supports, this function may not
-+ * be able to produce a supported transform, so the caller should
-+ * check the result afterwards.
-+ */
-+unsigned int drm_rotation_simplify(unsigned int rotation,
-+				   unsigned int supported_rotations)
-+{
-+	if (rotation & ~supported_rotations) {
-+		rotation ^= BIT(DRM_REFLECT_X) | BIT(DRM_REFLECT_Y);
-+		rotation = (rotation & ~0xf) | BIT((ffs(rotation & 0xf) + 1) % 4);
-+	}
-+
-+	return rotation;
-+}
-+EXPORT_SYMBOL(drm_rotation_simplify);
-+
-+/**
-  * drm_mode_config_init - initialize DRM mode_configuration structure
-  * @dev: DRM device
-  *
-diff --git a/include/drm/drm_crtc.h b/include/drm/drm_crtc.h
-index 4b3ac70..18f2eed 100644
---- a/include/drm/drm_crtc.h
-+++ b/include/drm/drm_crtc.h
-@@ -1185,6 +1185,8 @@ extern int drm_format_vert_chroma_subsampling(uint32_t format);
- extern const char *drm_get_format_name(uint32_t format);
- extern struct drm_property *drm_mode_create_rotation_property(struct drm_device *dev,
- 							      unsigned int supported_rotations);
-+extern unsigned int drm_rotation_simplify(unsigned int rotation,
-+					  unsigned int supported_rotations);
- 
- /* Helpers */
- static inline struct drm_crtc *drm_crtc_find(struct drm_device *dev,
--- 
-1.8.5
+> compared to other OMAP3 variants. Reflect this properly in the dts file=
+=2E
 
+I rebased the DSS DT branch on top of v3.14-rc1, and I'm trying to get
+beagle-xM working. Pinmuxing was wrong, but after fixing that, the
+clk_set_rate for dss fclk failed. I applied Tero's and your patches, but
+now when starting omapdss I see:
+
+[   19.704193] omap clock: module associated with clock
+dss1_alwon_fck_3430es2 didn't enable in 1000
+00 tries
+
+I wonder if I'm still missing some patch?
+
+ Tomi
+
+
+
+--NcpriOprTl94TspshvlCtVsBcVD13T1eW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJS9ORbAAoJEPo9qoy8lh71iPoQAKAfom2Pza7m6QY8ueOJ8lID
+V97/UDuFJoJZTYzYY04HDWifVdGfDH1sz89lRaZ0xSbBf1wSr/foLr0xuWUQOaIr
+pT7N5SywBsNw2jG+aRhp0XoqdSY0Pdw8tq/m4fz+vrP2L64/V9eTEtgUgT5Ctz3B
+0fEWgCv6tOEUPLq+NidMZO3iQQEtkUY0lAWxdxQSNFbGGbVkH2iGLeouRta85ncN
+DLAbBKmYRhMmciWT16Wf+hmDxfrr3dodecnRoM6iTqaZkf3+lhnaaojKhF49Pegj
+XZUuhoyJKrml5Xoo8wAFSMRP3ceYl/GUGiI1HG3JUXftvHB9nfJI9y9gZCOGQZXi
+6oVR2kSRAeVQd+MUy7O1UQA4SE5ROF5E6aqrtBkSLmUhjQjCRRluZJNXyKVpb5uW
+Z/MH/Jn0EyEU7Ga/2Klq2VYqh4rOXFkQoE5IANgTY3AJ+N6yPd2/RRmzTQKc+4NI
+wnm1xojcVCNQ9uaN2By5v2mU5qxfuOsX2ltjY8qgthpboVlTkqlg9MKQJPzLgYFY
+feX/owhk1KQZV81TMDOHaQREphoO1N0ynD2BL/YNOhd9rHdh0nbqoVKbtAty8wYs
+xEWARf2Qd8ewM6GHRCsREsWMqT57JsqKCLHEEL+WFMziZRPb3aHV/v1BH7V0qsHz
+kEx1qvhTRIwhkSZ3nF5g
+=tZKF
+-----END PGP SIGNATURE-----
+
+--NcpriOprTl94TspshvlCtVsBcVD13T1eW--
