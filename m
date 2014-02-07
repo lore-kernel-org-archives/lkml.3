@@ -1,57 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751898AbaBFX6W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 18:58:22 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:59258 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077AbaBFX6T (ORCPT
+	id S1751966AbaBFX7Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 18:59:25 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:44744 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751494AbaBFX7X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 18:58:19 -0500
-Date: Thu, 6 Feb 2014 15:58:17 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Damien Ramonda <damien.ramonda@intel.com>, Jan Kara <jack@suse.cz>,
-        Linus <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH V5] mm readahead: Fix readahead fail for no local
- memory and limit readahead pages
-In-Reply-To: <alpine.DEB.2.02.1402061537180.3441@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.02.1402061557210.5061@chino.kir.corp.google.com>
-References: <1390388025-1418-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com> <20140206145105.27dec37b16f24e4ac5fd90ce@linux-foundation.org> <alpine.DEB.2.02.1402061456290.31828@chino.kir.corp.google.com> <20140206152219.45c2039e5092c8ea1c31fd38@linux-foundation.org>
- <alpine.DEB.2.02.1402061537180.3441@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 6 Feb 2014 18:59:23 -0500
+Message-ID: <1391731323.14985.56.camel@haakon3.risingtidesystems.com>
+Subject: Re: linux rdma 3.14 merge plans
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Roland Dreier <roland@kernel.org>
+Cc: Or Gerlitz <or.gerlitz@gmail.com>, Hefty Sean <sean.hefty@intel.com>,
+        linux-rdma <linux-rdma@vger.kernel.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        target-devel <target-devel@vger.kernel.org>,
+        Sagi Grimberg <sagig@mellanox.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Thu, 06 Feb 2014 16:02:03 -0800
+In-Reply-To: <1390375658.5567.917.camel@haakon3.risingtidesystems.com>
+References: <CAJZOPZ+4yQ-sT=ks7+eiJjkxOjy5w=BmG16JVcUPiuVsof7qEA@mail.gmail.com>
+	 <CAG4TOxOMmvFWnkU3DBn33rscEKh2_YfbUCKY=iY8PCVN3+nEsA@mail.gmail.com>
+	 <52CD1C68.4050406@mellanox.com>
+	 <1389645171.5567.459.camel@haakon3.risingtidesystems.com>
+	 <1389820541.5567.543.camel@haakon3.risingtidesystems.com>
+	 <CAG4TOxNa32sLxifPx_f8sW04B_qSh01WWfWjRvam6fjvFLDXSQ@mail.gmail.com>
+	 <1389906852.5567.668.camel@haakon3.risingtidesystems.com>
+	 <CAG4TOxPeYQ=e5LdJft1Hkx8donUQjJaKDEAv3iRLGxPYJQ_b9w@mail.gmail.com>
+	 <1390102949.5567.749.camel@haakon3.risingtidesystems.com>
+	 <52DBB4F1.4020400@mellanox.com>
+	 <CAJZOPZJFbcTh2zO8mos0M+gv0LW-Gmh877Vxe4tLvfPX19oqTw@mail.gmail.com>
+	 <CAJZOPZLuz-Z59agBd0Q9J2=sSG-F+Y8MrJkoGbtiF5M+CnKU1g@mail.gmail.com>
+	 <CAG4TOxPLEfyWsUDf4_371u=_=tOgW2v5J4zSz8xx73DfziZOZg@mail.gmail.com>
+	 <1390375658.5567.917.camel@haakon3.risingtidesystems.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Feb 2014, David Rientjes wrote:
+Hi Roland,
 
-> > > > > +#define MAX_REMOTE_READAHEAD   4096UL
+On Tue, 2014-01-21 at 23:27 -0800, Nicholas A. Bellinger wrote:
+> Roland & Co,
+> 
+> On Tue, 2014-01-21 at 16:43 -0800, Roland Dreier wrote:
+> > On Tue, Jan 21, 2014 at 2:00 PM, Or Gerlitz <or.gerlitz@gmail.com> wrote:
+> > > Roland, ping! the signature patches were posted > three months ago. We
+> > > deserve a response from the maintainer that goes beyond "I need to
+> > > think on that".
+> > >
+> > > Responsiveness was stated by Linus to be the #1 requirement from
+> > > kernel maintainers.
+> > 
+> > Or, I'm not sure what response you're after from me.  Linus has also
+> > said that maintainers should say "no" a lot more
+> > (http://lwn.net/Articles/571995/) so maybe you want me to say, "No, I
+> > won't merge this patch set, since it adds a bunch of complexity to
+> > support a feature no one really cares about."  Is that it? 
+> 
+> The patch set proposed by Sagi + Or is modest in terms of LOC to core IB
+> code, and includes mostly mlx5 specific driver changes that enables HW
+> offloads.
+> 
+> > (And yes I
+> > am skeptical about this stuff — I work at an enterprise storage
+> > company and even here it's hard to find anyone who cares about
+> > DIF/DIX, especially offload features that stop it from being
+> > end-to-end)
+> > 
+> 
+> My understanding is most HBAs capable of T10 PI offload in DIX PASS +
+> VERIFY mode are already implementing DIX INSERT + STRIP modes in various
+> capacities to support legacy environments.
+> 
+> Beyond the DIX INSERT + STRIP case for enterprise storage, the amount of
+> FC + SAS HBAs that already support T10 PI metadata is substantial.
+> 
+> > I'm sure you're not expecting me to say, "Sure, I'll merge it without
+> > understanding the problem it's solving or how it's doing that,"
+> > especially given the your recent history of pushing me to merge stuff
+> > like the IP-RoCE patches back when they broke the userspace ABI.
+> 
+> With the merge window now upon us, there is a understandable reluctance
+> to merge new features.  Given the amount of time the series has spent on
+> the list, it is however a good candidate to consider for an exception.
+> 
+> Short of that, are you planning to accept the series for the next round
+> once the current merge window closes..?
+> 
+> We'd really like to start enabling fabrics with these types of offloads
+> for v3.15. 
+> 
 
-> Normally it wouldn't matter because there's no significant downside to it 
-> racing, things like mempolicies which use numa_node_id() extensively would 
-> result in, oops, a page allocation on the wrong node.
-> 
-> This stands out to me, though, because you're expecting the calculation to 
-> be correct for a specific node.
-> 
-> The patch is still wrong, though, it should just do
-> 
-> 	int node = ACCESS_ONCE(numa_mem_id());
-> 	return min(nr, (node_page_state(node, NR_INACTIVE_FILE) +
-> 		        node_page_state(node, NR_FREE_PAGES)) / 2);
-> 
-> since we want to readahead based on the cpu's local node, the comment 
-> saying we're reading ahead onto "remote memory" is wrong since a 
-> memoryless node has local affinity to numa_mem_id().
-> 
+Now with the initial DIF backend taraget support in place for v3.14-rc1
+code, we'd like to move forward on iser-target related pieces for T10
+PI.
 
-Oops, forgot about the MAX_REMOTE_READAHEAD which needs to be factored in 
-as well, but this handles the bound on local node's statistics.
+Can you give us an estimate of when you'll have some time to give
+feedback on the outstanding patches..?
+
+--nab
+
