@@ -1,109 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751918AbaBGXQl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 18:16:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45968 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751346AbaBGXQk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 18:16:40 -0500
-Date: Sat, 8 Feb 2014 07:16:26 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Kees Cook <keescook@chromium.org>,
-        Cong Ding <dinggnu@gmail.com>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        Kexec Mailing List <kexec@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mathias Krause <minipli@googlemail.com>,
-        Michael Davidson <md@google.com>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [GIT PULL] x86/kaslr for v3.14
-Message-ID: <20140207231626.GA3840@dhcp-16-126.nay.redhat.com>
-References: <201401201647.s0KGlZdh004167@tazenda.hos.anvin.org>
- <CAFLxGvxO1MPDDjEh3FU5Gv2-eb6zBJxYtTnKdABDTTpbMxxYAw@mail.gmail.com>
- <52E5EFAF.3060609@linux.intel.com>
- <CAFLxGvxJ0A6hZ52RWffkg_zXXScyPn10P4HcKvdAXfE43h32Eg@mail.gmail.com>
- <52E601DA.7010605@zytor.com>
- <20140130220708.GP9951@redhat.com>
- <CAGXu5jKp0j71ucE7uOWRa+gQM1Wzp=_KdByJK4XnACTwiCW4ow@mail.gmail.com>
- <20140207144914.GA5949@redhat.com>
- <52F503FD.8080607@linux.intel.com>
- <20140207162408.GD6967@redhat.com>
+	id S1751975AbaBGXRe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 18:17:34 -0500
+Received: from mail-pd0-f194.google.com ([209.85.192.194]:37167 "EHLO
+	mail-pd0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751234AbaBGXRc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 18:17:32 -0500
+Date: Fri, 7 Feb 2014 15:17:31 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Michal Simek <monstr@monstr.eu>
+Cc: microblaze-uclinux@itee.uq.edu.au, linux-kernel@vger.kernel.org,
+        qemu-devel@nongnu.org
+Subject: Commit 34b9c07a3 (microblaze: Disable stack protection from
+ bootloader) causing qemu crash
+Message-ID: <20140207231731.GA8647@roeck-us.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140207162408.GD6967@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/14 at 11:24am, Vivek Goyal wrote:
-> On Fri, Feb 07, 2014 at 08:04:13AM -0800, H. Peter Anvin wrote:
-> > On 02/07/2014 06:49 AM, Vivek Goyal wrote:
-> > > 
-> > > Hi Kees,
-> > > 
-> > > Dave Young is testing kdump with kaslr enabled. He is facing some issues.
-> > > 
-> > > One issue he mentioned is that when second kernel boots, it might be
-> > > placed in an area which is outside the reserved area for second kernel.
-> > > 
-> > > We reserve a certain memory for second kernel. And modify memory map of
-> > > second kernel using memmap=exactmap parameter. Looks like kernel placement
-> > > is happening before memmap=exactmap takes effect. And that seems to be
-> > > the reason that second kernel can be placed outside the reserved memory.
-> > > 
-> > > IOW, memmap=exactmap and kaslr don't work together. Is it possible to
-> > > first let memmap=exactmap take affect and then kaslr does its job. Or it
-> > > is too late by the time memmap=exactmap is parsed.
-> > > 
-> > > As a workaround, Dave is currently using "nokaslr" command line parameter
-> > > for second kernel. He is still facing issues where makedumpfile segment
-> > > faults. He is looking into it further.
-> > > 
-> > > I thought I will atleast bring up with issue of memmap=exactmap and kaslr
-> > > being incompatible.
-> > > 
-> > 
-> > Yes, because memmap=exactmap gets parsed too late; kaslr assumes that
-> > the e820 information passed to it is actually correct.
-> > 
-> > Yet another cause of breakage caused by the decision on the part of
-> > kdump to rely on command-line options.
-> 
-> [CC kexec mailing list]
-> 
-> Ok, I think this is high time we change kexec-tools to not use
-> memmap=exactmap and start passing modified memory map in bootparams. I
-> think only concern with that change was backward compatibility of
-> kexec-tools with older kernels.
-> 
-> IIUC, only thing which will be impacted by this change is users of
-> saved_max_pfn which determine the highest accessible pfn in first
-> kernel. Some calgary IOMMU code seems to be the only user of it now.
-> 
-> So may be we can create a new command line option say --pass-memmap-cmdline
-> to kexec-tools which forces old behavior and by default we pass memmap
-> in bootparams.
-> 
-> Or create --do-not-pass-memmap-cmdline and new users will use it. Default
-> will be old behavior.
+Michal,
 
-Hi Vivek,
+commit 34b9c07a3 (microblaze: Disable stack protection from bootloader) results
+in the following qemu crash in 3.14-rc1.
 
-Chaowang <chaowang@redhat.com> is looking into passing setup_data SETUP_E820_EXT
-instead of using exactmap. Previously Thomas Renninger tried passing them in e820.
-I did not find the old thread, but I remember it's not enough because of the
-128 entries limitation. 
+/opt/buildbot/bin/qemu-system-microblaze -M petalogix-s3adsp1800 -kernel arch/microblaze/boot/linux.bin -no-reboot -append "console=ttyUL0,115200 " -nographic
+qemu: fatal: fetching nop sequence
 
-In case for kaslr, I agree that it do not make sense for kdump kernel. IMHO it's
-better to disable it automaticlly for kdump kernel but we can use the nokaslr
-as workaround for now. 
+IN: PC=20
+rmsr=4300 resr=7 rear=c0389fe8 debug=0 imm=ffffffd0 iflags=0 fsr=0
+btaken=1 btarget=c03a9f24 mode=kernel(saved=kernel) eip=512 ie=0
+r00=00000000 r01=c0389fcc r02=c0386a52 r03=000000c0
+r04=00004100 r05=9052fab4 r06=00000000 r07=90530ab4
+r08=00000000 r09=00400000 r10=00400000 r11=c03a9f24
+r12=00621000 r13=40aef0c0 r14=00000000 r15=c0000294
+r16=00000000 r17=c03a9f28 r18=00000000 r19=00000000
+r20=00000000 r21=00000000 r22=00000000 r23=00000000
+r24=00000000 r25=00000000 r26=00000000 r27=00000000
+r28=00000000 r29=00400000 r30=00000300 r31=c03932d4
 
-Thanks
-Dave
+
+Aborted (core dumped)
+
+I have seen this with qemu 1.6.0 and 1.7.0.
+
+Reverting the patch solves the problem.
+
+Is this a qemu bug, a bug in the code, or a bug in my configuration ?
+Any idea what I can do about it ?
+
+Thanks,
+Guenter
