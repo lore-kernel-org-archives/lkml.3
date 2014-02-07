@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932287AbaBGLuC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:50:02 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41854 "EHLO
+	id S1755105AbaBGMyo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:54:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41858 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753236AbaBGLuA (ORCPT
+	with ESMTP id S1753981AbaBGLuB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:50:00 -0500
+	Fri, 7 Feb 2014 06:50:01 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 097/233] dm space map common: make sure new space is used during extend
-Date: Fri,  7 Feb 2014 11:45:16 +0000
-Message-Id: <1391773652-25214-98-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 098/233] dm space map metadata: fix extending the space map
+Date: Fri,  7 Feb 2014 11:45:17 +0000
+Message-Id: <1391773652-25214-99-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -29,53 +29,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Joe Thornber <ejt@redhat.com>
 
-commit 12c91a5c2d2a8e8cc40a9552313e1e7b0a2d9ee3 upstream.
+commit 7e664b3dec431eebf0c5df5ff704d6197634cf35 upstream.
 
-When extending a low level space map we should update nr_blocks at
-the start so the new space is used for the index entries.
+When extending a metadata space map we should do the first commit whilst
+still in bootstrap mode -- a mode where all blocks get allocated in the
+new area.
 
-Otherwise extend can fail, e.g.: sm_metadata_extend call sequence
-that fails:
- -> sm_ll_extend
-    -> dm_tm_new_block -> dm_sm_new_block -> sm_bootstrap_new_block
-    => returns -ENOSPC because smm->begin == smm->ll.nr_blocks
+That way the commit overhead is allocated from the newly added space.
+Otherwise we risk running out of space.
+
+With this fix, and the previous commit "dm space map common: make sure
+new space is used during extend", the following device mapper testsuite
+test passes:
+ dmtest run --suite thin-provisioning -n /resize_metadata_no_io/
 
 Signed-off-by: Joe Thornber <ejt@redhat.com>
 Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/md/persistent-data/dm-space-map-common.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/md/persistent-data/dm-space-map-metadata.c | 18 +++++++++++++-----
+ 1 file changed, 13 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/md/persistent-data/dm-space-map-common.c b/drivers/md/persistent-data/dm-space-map-common.c
-index 3e7a88d..0d24037 100644
---- a/drivers/md/persistent-data/dm-space-map-common.c
-+++ b/drivers/md/persistent-data/dm-space-map-common.c
-@@ -245,6 +245,10 @@ int sm_ll_extend(struct ll_disk *ll, dm_block_t extra_blocks)
- 		return -EINVAL;
- 	}
+diff --git a/drivers/md/persistent-data/dm-space-map-metadata.c b/drivers/md/persistent-data/dm-space-map-metadata.c
+index 58fc1ee..f04d92f 100644
+--- a/drivers/md/persistent-data/dm-space-map-metadata.c
++++ b/drivers/md/persistent-data/dm-space-map-metadata.c
+@@ -608,20 +608,28 @@ static int sm_metadata_extend(struct dm_space_map *sm, dm_block_t extra_blocks)
+ 	 * Flick into a mode where all blocks get allocated in the new area.
+ 	 */
+ 	smm->begin = old_len;
+-	memcpy(&smm->sm, &bootstrap_ops, sizeof(smm->sm));
++	memcpy(sm, &bootstrap_ops, sizeof(*sm));
  
-+	/*
-+	 * We need to set this before the dm_tm_new_block() call below.
-+	 */
-+	ll->nr_blocks = nr_blocks;
- 	for (i = old_blocks; i < blocks; i++) {
- 		struct dm_block *b;
- 		struct disk_index_entry idx;
-@@ -252,6 +256,7 @@ int sm_ll_extend(struct ll_disk *ll, dm_block_t extra_blocks)
- 		r = dm_tm_new_block(ll->tm, &dm_sm_bitmap_validator, &b);
- 		if (r < 0)
- 			return r;
+ 	/*
+ 	 * Extend.
+ 	 */
+ 	r = sm_ll_extend(&smm->ll, extra_blocks);
++	if (r)
++		goto out;
 +
- 		idx.blocknr = cpu_to_le64(dm_block_location(b));
++	for (i = old_len; !r && i < smm->begin; i++) {
++		r = sm_ll_inc(&smm->ll, i, &ev);
++		if (r)
++			goto out;
++	}
  
- 		r = dm_tm_unlock(ll->tm, b);
-@@ -266,7 +271,6 @@ int sm_ll_extend(struct ll_disk *ll, dm_block_t extra_blocks)
- 			return r;
- 	}
- 
--	ll->nr_blocks = nr_blocks;
- 	return 0;
++	r = sm_metadata_commit(sm);
++
++out:
+ 	/*
+ 	 * Switch back to normal behaviour.
+ 	 */
+-	memcpy(&smm->sm, &ops, sizeof(smm->sm));
+-	for (i = old_len; !r && i < smm->begin; i++)
+-		r = sm_ll_inc(&smm->ll, i, &ev);
+-
++	memcpy(sm, &ops, sizeof(*sm));
+ 	return r;
  }
  
 -- 
