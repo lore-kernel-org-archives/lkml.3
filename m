@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751980AbaBGKov (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 05:44:51 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:45985 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751416AbaBGKot (ORCPT
+	id S1752120AbaBGKpk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 05:45:40 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:44028 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752011AbaBGKpj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 05:44:49 -0500
-Message-ID: <52F4B8FD.1030106@ti.com>
-Date: Fri, 7 Feb 2014 12:44:13 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 7 Feb 2014 05:45:39 -0500
+Date: Fri, 7 Feb 2014 11:45:30 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Torsten Duwe <duwe@lst.de>
+Cc: Scott Wood <scottwood@freescale.com>, linux-kernel@vger.kernel.org,
+        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
+        Tom Musta <tommusta@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH] Convert powerpc simple spinlocks into ticket locks
+Message-ID: <20140207104530.GG5126@laptop.programming.kicks-ass.net>
+References: <20140206103736.GA18054@lst.de>
+ <20140206163837.GT2936@laptop.programming.kicks-ass.net>
+ <20140206173727.GA13048@lst.de>
+ <1391717992.6733.232.camel@snotra.buserror.net>
+ <20140207090248.GB26811@lst.de>
+ <20140207103139.GP5002@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>, <kishon@ti.com>,
-        Tejun Heo <tj@kernel.org>, <balbi@ti.com>, <bcousson@baylibre.com>,
-        <tony@atomide.com>, <balajitk@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-ide@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        Hans de Goede <hdegoede@redhat.com>
-Subject: Re: [RFC PATCH 08/15] ata: ahci_platform: Manage SATA PHY
-References: <1379595943-14622-1-git-send-email-rogerq@ti.com> <5240492D.6060204@ti.com> <52F4B682.2000201@ti.com> <463926864.ALblgUKdgH@wuerfel>
-In-Reply-To: <463926864.ALblgUKdgH@wuerfel>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140207103139.GP5002@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2014 12:39 PM, Arnd Bergmann wrote:
-> On Friday 07 February 2014 12:33:38 Roger Quadros wrote:
->>
->> This means we need to make CONFIG_SATA_AHCI_PLATFORM depend on CONFIG_GENERIC_PHY or
->> select it.
->>
->> OR
->>
->> Generic PHY layer must be fixed so that the API's are always built in.
->>
->> What is the better option? I believe making the PHY API's always built in is the better option.
->>
+On Fri, Feb 07, 2014 at 11:31:39AM +0100, Peter Zijlstra wrote:
+> Anyway, what might work is something like (please forgive my ppc asm, I
+> can barely read the thing, I've never before attempted writing it):
 > 
-> CONFIG_SATA_AHCI_PLATFORM should do
-> 
-> 	"depends on CONFIG_GENERIC_PHY || !CONFIG_GENERIC_PHY"
-> 
-> which is the Kconfig way of saying that if CONFIG_GENERIC_PHY is a module,
-> CONFIG_SATA_AHCI_PLATFORM needs to be a module as well.
-> 
+> lock:
+> 1:	lharx	%0, 0, &head
+> 	mov	%1, %0
+> 	addic	%0, %0, 1
+> 	stwcd   %0, 0, &head
+> 	bne-	1b
+> 2:	lhax	%0, 0, &tail
 
-Ah, that's neat. Thanks :).
+That might need to be lhz too, I'm confused on all the load variants.
 
-cheers,
--roger
+> 	lwsync
+> 	cmp	0, %0, %0
 
+	cmp	0, %0, %1
+
+So we compare the &tail load to the xadd return %1 above.
+
+> 	bne-	2b
+> 
+> 
+> unlock:
+> 	lhz	%0, 0, &tail
+> 	addic	%0, %0, 1
+> 	lwsync
+> 	sth	%0, 0, &tail
+> 
