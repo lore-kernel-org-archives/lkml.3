@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754294AbaBGLsJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:48:09 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41468 "EHLO
+	id S932316AbaBGNVp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 08:21:45 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41480 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754207AbaBGLsF (ORCPT
+	with ESMTP id S1754280AbaBGLsI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:48:05 -0500
+	Fri, 7 Feb 2014 06:48:08 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jan Kara <jack@suse.cz>, Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 021/233] writeback: Fix data corruption on NFS
-Date: Fri,  7 Feb 2014 11:44:00 +0000
-Message-Id: <1391773652-25214-22-git-send-email-luis.henriques@canonical.com>
+Cc: Paulo Zanoni <paulo.r.zanoni@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 022/233] drm/i915: fix DDI PLLs HW state readout code
+Date: Fri,  7 Feb 2014 11:44:01 +0000
+Message-Id: <1391773652-25214-23-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -26,57 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Paulo Zanoni <paulo.r.zanoni@intel.com>
 
-commit f9b0e058cbd04ada76b13afffa7e1df830543c24 upstream.
+commit 0882dae983707455e97479e5e904e37673517ebc upstream.
 
-Commit 4f8ad655dbc8 "writeback: Refactor writeback_single_inode()" added
-a condition to skip clean inode. However this is wrong in WB_SYNC_ALL
-mode because there we also want to wait for outstanding writeback on
-possibly clean inode. This was causing occasional data corruption issues
-on NFS because it uses sync_inode() to make sure all outstanding writes
-are flushed to the server before truncating the inode and with
-sync_inode() returning prematurely file was sometimes extended back
-by an outstanding write after it was truncated.
+Properly zero the refcounts and crtc->ddi_pll_set so the previous HW
+state doesn't affect the result of reading the current HW state.
 
-So modify the test to also check for pages under writeback in
-WB_SYNC_ALL mode.
+This fixes WARNs about WRPLL refcount if we have an HDMI monitor on
+HSW and then suspend/resume.
 
-Fixes: 4f8ad655dbc82cf05d2edc11e66b78a42d38bf93
-Reported-and-tested-by: Dan Duval <dan.duval@oracle.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=64379
+Tested-by: Qingshuai Tian <qingshuai.tian@intel.com>
+Signed-off-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/fs-writeback.c | 15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/i915/intel_ddi.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index 68851ff..52e5934 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -508,13 +508,16 @@ writeback_single_inode(struct inode *inode, struct bdi_writeback *wb,
- 	}
- 	WARN_ON(inode->i_state & I_SYNC);
- 	/*
--	 * Skip inode if it is clean. We don't want to mess with writeback
--	 * lists in this function since flusher thread may be doing for example
--	 * sync in parallel and if we move the inode, it could get skipped. So
--	 * here we make sure inode is on some writeback list and leave it there
--	 * unless we have completely cleaned the inode.
-+	 * Skip inode if it is clean and we have no outstanding writeback in
-+	 * WB_SYNC_ALL mode. We don't want to mess with writeback lists in this
-+	 * function since flusher thread may be doing for example sync in
-+	 * parallel and if we move the inode, it could get skipped. So here we
-+	 * make sure inode is on some writeback list and leave it there unless
-+	 * we have completely cleaned the inode.
- 	 */
--	if (!(inode->i_state & I_DIRTY))
-+	if (!(inode->i_state & I_DIRTY) &&
-+	    (wbc->sync_mode != WB_SYNC_ALL ||
-+	     !mapping_tagged(inode->i_mapping, PAGECACHE_TAG_WRITEBACK)))
- 		goto out;
- 	inode->i_state |= I_SYNC;
- 	spin_unlock(&inode->i_lock);
+diff --git a/drivers/gpu/drm/i915/intel_ddi.c b/drivers/gpu/drm/i915/intel_ddi.c
+index e9af22a..029a165 100644
+--- a/drivers/gpu/drm/i915/intel_ddi.c
++++ b/drivers/gpu/drm/i915/intel_ddi.c
+@@ -978,12 +978,18 @@ void intel_ddi_setup_hw_pll_state(struct drm_device *dev)
+ 	enum pipe pipe;
+ 	struct intel_crtc *intel_crtc;
+ 
++	dev_priv->ddi_plls.spll_refcount = 0;
++	dev_priv->ddi_plls.wrpll1_refcount = 0;
++	dev_priv->ddi_plls.wrpll2_refcount = 0;
++
+ 	for_each_pipe(pipe) {
+ 		intel_crtc =
+ 			to_intel_crtc(dev_priv->pipe_to_crtc_mapping[pipe]);
+ 
+-		if (!intel_crtc->active)
++		if (!intel_crtc->active) {
++			intel_crtc->ddi_pll_sel = PORT_CLK_SEL_NONE;
+ 			continue;
++		}
+ 
+ 		intel_crtc->ddi_pll_sel = intel_ddi_get_crtc_pll(dev_priv,
+ 								 pipe);
 -- 
 1.8.3.2
 
