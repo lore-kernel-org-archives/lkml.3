@@ -1,40 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300AbaBGVL5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 16:11:57 -0500
-Received: from sabe.cs.wisc.edu ([128.105.6.20]:42257 "EHLO sabe.cs.wisc.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752407AbaBGVLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 16:11:55 -0500
-Message-ID: <52F54C04.4010807@cs.wisc.edu>
-Date: Fri, 07 Feb 2014 15:11:32 -0600
-From: Mike Christie <michaelc@cs.wisc.edu>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130917 Thunderbird/17.0.9
-MIME-Version: 1.0
-To: Michele Baldessari <michele@acksyn.org>
-CC: open-iscsi@googlegroups.com, trivial@kernel.org, chorn@redhat.com,
+	id S1753468AbaBGVNK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 16:13:10 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:33723 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751546AbaBGVNI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 16:13:08 -0500
+Date: Fri, 7 Feb 2014 13:13:06 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Fengguang Wu <fengguang.wu@intel.com>
+cc: Tejun Heo <tj@kernel.org>, Filipe David Borba Manana <fdmanana@gmail.com>,
+        Chris Mason <clm@fb.com>, linux-btrfs@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix the arguments order of a few iscsi_conn_printk()
- calls
-References: <1391789933-15062-1-git-send-email-michele@acksyn.org>
-In-Reply-To: <1391789933-15062-1-git-send-email-michele@acksyn.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: Re: [btrfs] BUG: unable to handle kernel NULL pointer dereference
+ at 0000000000000038
+In-Reply-To: <20140207121038.GA1690@localhost>
+Message-ID: <alpine.DEB.2.02.1402071307590.4212@chino.kir.corp.google.com>
+References: <20140207023801.GC11051@localhost> <alpine.DEB.2.02.1402070213020.22146@chino.kir.corp.google.com> <20140207121038.GA1690@localhost>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2014 10:18 AM, Michele Baldessari wrote:
-> A few places had the opcode and itt arguments reversed.
-> Fix the order.
+On Fri, 7 Feb 2014, Fengguang Wu wrote:
+
+> On Fri, Feb 07, 2014 at 02:13:59AM -0800, David Rientjes wrote:
+> > On Fri, 7 Feb 2014, Fengguang Wu wrote:
+> > 
+> > > [    1.625020] BTRFS: selftest: Running btrfs_split_item tests
+> > > [    1.627004] BTRFS: selftest: Running find delalloc tests
+> > > [    2.289182] tsc: Refined TSC clocksource calibration: 2299.967 MHz
+> > > [  292.084537] kthreadd invoked oom-killer: gfp_mask=0x3000d0, order=1, oom_score_adj=0
+> > > [  292.086439] kthreadd cpuset=
+> > > [  292.087072] BUG: unable to handle kernel NULL pointer dereference at 0000000000000038
+> > > [  292.087372] IP: [<ffffffff812119de>] pr_cont_kernfs_name+0x1b/0x6c
+> > 
+> > This looks like a problem with the cpuset cgroup name, are you sure this 
+> > isn't related to the removal of cgroup->name?
 > 
-> Reported-by: Josef Moellers <josef.moellers@ts.fujitsu.com>
-> Signed-off-by: Michele Baldessari <michele@acksyn.org>
+> It looks not related to patch "cgroup: remove cgroup->name", because
+> that patch lies in the cgroup tree and not contained in output of "git log BAD_COMMIT".
+> 
 
+It's dying on pr_cont_kernfs_name which is some tree that has "kernfs: 
+implement kernfs_get_parent(), kernfs_name/path() and friends", which is 
+not in linux-next, and is obviously printing the cpuset cgroup name.
 
-Thanks. I just acked a patch to do the same:
-https://lkml.org/lkml/2014/1/8/754
-
-Have you been hitting that code and with what target and what type of
-command?
-
+It doesn't look like it has anything at all to do with btrfs or why they 
+would care about this failure.
