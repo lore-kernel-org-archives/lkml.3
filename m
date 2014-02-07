@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755550AbaBGMXo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:23:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42144 "EHLO
+	id S1754989AbaBGLvO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:51:14 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42124 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754998AbaBGLvP (ORCPT
+	with ESMTP id S1753508AbaBGLvJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:51:15 -0500
+	Fri, 7 Feb 2014 06:51:09 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Lee Jones <lee.jones@linaro.org>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 154/233] mfd: max77686: Fix regmap resource leak on driver remove
-Date: Fri,  7 Feb 2014 11:46:13 +0000
-Message-Id: <1391773652-25214-155-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 149/233] drm/radeon: disable ss on DP for DCE3.x
+Date: Fri,  7 Feb 2014 11:46:08 +0000
+Message-Id: <1391773652-25214-150-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -28,37 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 74142ffc0b52cfe6f9d2f6f34a5f3eedbfe3ce51 upstream.
+commit d8e24525094200601236fa64a54cf73e3d682f2e upstream.
 
-The regmap used by max77686 MFD driver was not freed with regmap_exit()
-on driver exit. This lead to leak of resources.
+Seems to cause problems with certain DP monitors.
 
-Replace regmap_init_i2c() call in driver probe with initialization of
-managed register map so the regmap will be properly freed by the device
-management code.
+Bug:
+https://bugs.freedesktop.org/show_bug.cgi?id=40699
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/mfd/max77686.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/atombios_crtc.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
-index f27a218..541b240 100644
---- a/drivers/mfd/max77686.c
-+++ b/drivers/mfd/max77686.c
-@@ -103,7 +103,7 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
- 	max77686->irq_gpio = pdata->irq_gpio;
- 	max77686->irq = i2c->irq;
- 
--	max77686->regmap = regmap_init_i2c(i2c, &max77686_regmap_config);
-+	max77686->regmap = devm_regmap_init_i2c(i2c, &max77686_regmap_config);
- 	if (IS_ERR(max77686->regmap)) {
- 		ret = PTR_ERR(max77686->regmap);
- 		dev_err(max77686->dev, "Failed to allocate register map: %d\n",
+diff --git a/drivers/gpu/drm/radeon/atombios_crtc.c b/drivers/gpu/drm/radeon/atombios_crtc.c
+index 8b92676..ed8bc9d 100644
+--- a/drivers/gpu/drm/radeon/atombios_crtc.c
++++ b/drivers/gpu/drm/radeon/atombios_crtc.c
+@@ -938,11 +938,14 @@ static bool atombios_crtc_prepare_pll(struct drm_crtc *crtc, struct drm_display_
+ 							radeon_atombios_get_ppll_ss_info(rdev,
+ 											 &radeon_crtc->ss,
+ 											 ATOM_DP_SS_ID1);
+-				} else
++				} else {
+ 					radeon_crtc->ss_enabled =
+ 						radeon_atombios_get_ppll_ss_info(rdev,
+ 										 &radeon_crtc->ss,
+ 										 ATOM_DP_SS_ID1);
++				}
++				/* disable spread spectrum on DCE3 DP */
++				radeon_crtc->ss_enabled = false;
+ 			}
+ 			break;
+ 		case ATOM_ENCODER_MODE_LVDS:
 -- 
 1.8.3.2
 
