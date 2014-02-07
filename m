@@ -1,129 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752629AbaBGLE2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:04:28 -0500
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:49987 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752504AbaBGLEY (ORCPT
+	id S1752126AbaBGLCo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:02:44 -0500
+Received: from eu1sys200aog122.obsmtp.com ([207.126.144.153]:60248 "EHLO
+	eu1sys200aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751461AbaBGLCl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:04:24 -0500
-Message-ID: <52F4BCDC.2080005@linux.vnet.ibm.com>
-Date: Fri, 07 Feb 2014 16:30:44 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Fri, 7 Feb 2014 06:02:41 -0500
+From: <srinivas.kandagatla@st.com>
+To: <netdev@vger.kernel.org>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <kernel@stlinux.com>, <davem@davemloft.net>
+Subject: [PATCH v2 0/3] net: stmmac: Add STi GMAC ethernet
+Date: Fri, 7 Feb 2014 10:54:15 +0000
+Message-ID: <1391770455-24291-1-git-send-email-srinivas.kandagatla@st.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1391428787-27143-1-git-send-email-srinivas.kandagatla@st.com>
+References: <1391428787-27143-1-git-send-email-srinivas.kandagatla@st.com>
 MIME-Version: 1.0
-To: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-CC: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linuxppc-dev@lists.ozlabs.org,
-        Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/2] PPC: powernv: remove redundant cpuidle_idle_call()
-References: <1391696188-14540-1-git-send-email-nicolas.pitre@linaro.org> <CAKnoXLxCAqKaniGOwegNcOarS4FpoNKDY5PxOhe6j4wdtUAkLQ@mail.gmail.com> <52F3BCFE.3010703@linux.vnet.ibm.com> <alpine.LFD.2.11.1402070105170.1906@knanqh.ubzr> <52F484D9.6020604@linux.vnet.ibm.com> <52F4AB54.801@linux.vnet.ibm.com>
-In-Reply-To: <52F4AB54.801@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14020711-3864-0000-0000-00000C4D5752
+Content-Type: text/plain
+X-Originating-IP: [10.65.51.147]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Deepthi,
+From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 
-On 02/07/2014 03:15 PM, Deepthi Dharwar wrote:
-> Hi Preeti,
-> 
-> Thanks for the patch.
-> 
-> On 02/07/2014 12:31 PM, Preeti U Murthy wrote:
->> Hi Nicolas,
->>
->> Find below the patch that will need to be squashed with this one.
->> This patch is based on the mainline.Adding Deepthi, the author of
->> the patch which introduced the powernv cpuidle driver. Deepthi,
->> do you think the below patch looks right? We do not need to do an
->> explicit local_irq_enable() since we are in the call path of
->> cpuidle driver and that explicitly enables irqs on exit from
->> idle states.
-> 
-> Yes, We enable irqs explicitly while entering snooze loop and we always
-> have interrupts enabled in the snooze state.
-> For NAP state, we exit out of this state with interrupts enabled so we
-> do not need an explicit enable of irqs.
-> 
->> On 02/07/2014 06:47 AM, Nicolas Pitre wrote:
->>> On Thu, 6 Feb 2014, Preeti U Murthy wrote:
->>>
->>>> Hi Daniel,
->>>>
->>>> On 02/06/2014 09:55 PM, Daniel Lezcano wrote:
->>>>> Hi Nico,
->>>>>
->>>>>
->>>>> On 6 February 2014 14:16, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
->>>>>
->>>>>> The core idle loop now takes care of it.
->>>>>>
->>>>>> Signed-off-by: Nicolas Pitre <nico@linaro.org>
->>>>>> ---
->>>>>>  arch/powerpc/platforms/powernv/setup.c | 13 +------------
->>>>>>  1 file changed, 1 insertion(+), 12 deletions(-)
->>>>>>
->>>>>> diff --git a/arch/powerpc/platforms/powernv/setup.c
->>>>>> b/arch/powerpc/platforms/powernv/setup.c
->>>>>> index 21166f65c9..a932feb290 100644
->>>>>> --- a/arch/powerpc/platforms/powernv/setup.c
->>>>>> +++ b/arch/powerpc/platforms/powernv/setup.c
->>>>>> @@ -26,7 +26,6 @@
->>>>>>  #include <linux/of_fdt.h>
->>>>>>  #include <linux/interrupt.h>
->>>>>>  #include <linux/bug.h>
->>>>>> -#include <linux/cpuidle.h>
->>>>>>
->>>>>>  #include <asm/machdep.h>
->>>>>>  #include <asm/firmware.h>
->>>>>> @@ -217,16 +216,6 @@ static int __init pnv_probe(void)
->>>>>>         return 1;
->>>>>>  }
->>>>>>
->>>>>> -void powernv_idle(void)
->>>>>> -{
->>>>>> -       /* Hook to cpuidle framework if available, else
->>>>>> -        * call on default platform idle code
->>>>>> -        */
->>>>>> -       if (cpuidle_idle_call()) {
->>>>>> -               power7_idle();
->>>>>> -       }
->>>>>>
->>
->>  drivers/cpuidle/cpuidle-powernv.c |    4 ++++
->>  1 file changed, 4 insertions(+)
->>
->> diff --git a/drivers/cpuidle/cpuidle-powernv.c b/drivers/cpuidle/cpuidle-powernv.c
->> index 78fd174..130f081 100644
->> --- a/drivers/cpuidle/cpuidle-powernv.c
->> +++ b/drivers/cpuidle/cpuidle-powernv.c
->> @@ -31,11 +31,13 @@ static int snooze_loop(struct cpuidle_device *dev,
->>  	set_thread_flag(TIF_POLLING_NRFLAG);
->>
->>  	while (!need_resched()) {
->> +		ppc64_runlatch_off();
->                 ^^^^^^^^^^^^^^^
-> We could move this before the while() loop.
-> It would ideal to turn off latch when we enter snooze and
-> turn it on when we are about to exit, rather than doing
-> it over and over in the while loop.
+Hi All,
 
-You are right, this can be moved out of the loop.
+This patch series adds Ethernet support to STi series SOCs STiH415 and STiH416.
+STi SOC series integrates dwmac IP from synopsis, however there is a hardware
+glue on top of this standard IP, this glue needs to configured before the
+actual dwmac can be used.  Also the glue logic needs re-configuring when the
+link speed changes, This is because the clk source can change as the link
+speed changes.
 
-Thanks
+This patch just adds STi specific callbacks into of_data for configuring the
+glue layer.
 
-Regards
-Preeti U Murthy
+I have rebased my original patches (http://lkml.org/lkml/2013/11/12/243)
+to latest stmmac which updates callbacks to suit glue drivers like this.
+
+These patches are tested on b2000 and B2020 with STiH415 and STiH416.
+
+Changes since v1:
+	- fixed multi-line function call format as suggested by David Miller.
+
+Dave, Can I request you to take the first patch via net tree for v3.15, I can
+request Arnd or Olof to take the DT patches via the arm-soc tree for v3.15.
+
+Thanks,
+srini
+
+Srinivas Kandagatla (3):
+  net: stmmac:sti: Add STi SOC glue driver.
+  ARM: STi: Add STiH415 ethernet support.
+  ARM: STi: Add STiH416 ethernet support.
+
+ .../devicetree/bindings/net/sti-dwmac.txt          |   58 ++++
+ arch/arm/boot/dts/stih415-clock.dtsi               |   14 +
+ arch/arm/boot/dts/stih415-pinctrl.dtsi             |  121 +++++++
+ arch/arm/boot/dts/stih415.dtsi                     |   48 +++
+ arch/arm/boot/dts/stih416-clock.dtsi               |   14 +
+ arch/arm/boot/dts/stih416-pinctrl.dtsi             |  109 +++++++
+ arch/arm/boot/dts/stih416.dtsi                     |   44 +++
+ arch/arm/boot/dts/stih41x-b2000.dtsi               |   22 ++
+ arch/arm/boot/dts/stih41x-b2020.dtsi               |   26 ++
+ drivers/net/ethernet/stmicro/stmmac/Kconfig        |   11 +
+ drivers/net/ethernet/stmicro/stmmac/Makefile       |    1 +
+ drivers/net/ethernet/stmicro/stmmac/dwmac-sti.c    |  331 ++++++++++++++++++++
+ drivers/net/ethernet/stmicro/stmmac/stmmac.h       |    3 +
+ .../net/ethernet/stmicro/stmmac/stmmac_platform.c  |    5 +
+ 14 files changed, 807 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/net/sti-dwmac.txt
+ create mode 100644 drivers/net/ethernet/stmicro/stmmac/dwmac-sti.c
+
+-- 
+1.7.9.5
 
