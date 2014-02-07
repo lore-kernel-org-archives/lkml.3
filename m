@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932319AbaBGLuN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:50:13 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41872 "EHLO
+	id S932484AbaBGMtM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:49:12 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41906 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753283AbaBGLuF (ORCPT
+	with ESMTP id S1754802AbaBGLuP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:50:05 -0500
+	Fri, 7 Feb 2014 06:50:15 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kamil Debski <k.debski@samsung.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 101/233] radeon/pm: Guard access to rdev->pm.power_state array
-Date: Fri,  7 Feb 2014 11:45:20 +0000
-Message-Id: <1391773652-25214-102-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 109/233] [media] media: s5p_mfc: remove s5p_mfc_get_node_type() function
+Date: Fri,  7 Feb 2014 11:45:28 +0000
+Message-Id: <1391773652-25214-110-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,39 +29,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>
+From: Marek Szyprowski <m.szyprowski@samsung.com>
 
-commit 370169516e736edad3b3c5aa49858058f8b55195 upstream.
+commit b80cb8dc4162bc954cc71efec192ed89f2061573 upstream.
 
-It's never allocated on systems without an ATOMBIOS or COMBIOS ROM.
+s5p_mfc_get_node_type() relies on get_index() helper function, which in
+turn relies on video_device index numbers assigned on driver
+registration. All this code is not really needed, because there is
+already access to respective video_device structures via common
+s5p_mfc_dev structure. This fixes the issues introduced by patch
+1056e4388b0454917a512618c8416a98628fc9ce ("v4l2-dev: Fix race condition
+on __video_register_device"), which has been merged in v3.12-rc1.
 
-Should fix an oops I encountered while resetting the GPU after a lockup
-on my PowerBook with an RV350.
-
-Signed-off-by: Michel Dänzer <michel.daenzer@amd.com>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Signed-off-by: Kamil Debski <k.debski@samsung.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/radeon_pm.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/media/platform/s5p-mfc/s5p_mfc.c        | 28 +++++++------------------
+ drivers/media/platform/s5p-mfc/s5p_mfc_common.h |  9 --------
+ 2 files changed, 7 insertions(+), 30 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_pm.c b/drivers/gpu/drm/radeon/radeon_pm.c
-index 459eb7d..418ca53 100644
---- a/drivers/gpu/drm/radeon/radeon_pm.c
-+++ b/drivers/gpu/drm/radeon/radeon_pm.c
-@@ -938,8 +938,10 @@ static void radeon_pm_resume_old(struct radeon_device *rdev)
- 	rdev->pm.current_clock_mode_index = 0;
- 	rdev->pm.current_sclk = rdev->pm.default_sclk;
- 	rdev->pm.current_mclk = rdev->pm.default_mclk;
--	rdev->pm.current_vddc = rdev->pm.power_state[rdev->pm.default_power_state_index].clock_info[0].voltage.voltage;
--	rdev->pm.current_vddci = rdev->pm.power_state[rdev->pm.default_power_state_index].clock_info[0].voltage.vddci;
-+	if (rdev->pm.power_state) {
-+		rdev->pm.current_vddc = rdev->pm.power_state[rdev->pm.default_power_state_index].clock_info[0].voltage.voltage;
-+		rdev->pm.current_vddci = rdev->pm.power_state[rdev->pm.default_power_state_index].clock_info[0].voltage.vddci;
-+	}
- 	if (rdev->pm.pm_method == PM_METHOD_DYNPM
- 	    && rdev->pm.dynpm_state == DYNPM_STATE_SUSPENDED) {
- 		rdev->pm.dynpm_state = DYNPM_STATE_ACTIVE;
+diff --git a/drivers/media/platform/s5p-mfc/s5p_mfc.c b/drivers/media/platform/s5p-mfc/s5p_mfc.c
+index a130dcd..ac76f8b 100644
+--- a/drivers/media/platform/s5p-mfc/s5p_mfc.c
++++ b/drivers/media/platform/s5p-mfc/s5p_mfc.c
+@@ -177,21 +177,6 @@ unlock:
+ 		mutex_unlock(&dev->mfc_mutex);
+ }
+ 
+-static enum s5p_mfc_node_type s5p_mfc_get_node_type(struct file *file)
+-{
+-	struct video_device *vdev = video_devdata(file);
+-
+-	if (!vdev) {
+-		mfc_err("failed to get video_device");
+-		return MFCNODE_INVALID;
+-	}
+-	if (vdev->index == 0)
+-		return MFCNODE_DECODER;
+-	else if (vdev->index == 1)
+-		return MFCNODE_ENCODER;
+-	return MFCNODE_INVALID;
+-}
+-
+ static void s5p_mfc_clear_int_flags(struct s5p_mfc_dev *dev)
+ {
+ 	mfc_write(dev, 0, S5P_FIMV_RISC_HOST_INT);
+@@ -701,6 +686,7 @@ irq_cleanup_hw:
+ /* Open an MFC node */
+ static int s5p_mfc_open(struct file *file)
+ {
++	struct video_device *vdev = video_devdata(file);
+ 	struct s5p_mfc_dev *dev = video_drvdata(file);
+ 	struct s5p_mfc_ctx *ctx = NULL;
+ 	struct vb2_queue *q;
+@@ -738,7 +724,7 @@ static int s5p_mfc_open(struct file *file)
+ 	/* Mark context as idle */
+ 	clear_work_bit_irqsave(ctx);
+ 	dev->ctx[ctx->num] = ctx;
+-	if (s5p_mfc_get_node_type(file) == MFCNODE_DECODER) {
++	if (vdev == dev->vfd_dec) {
+ 		ctx->type = MFCINST_DECODER;
+ 		ctx->c_ops = get_dec_codec_ops();
+ 		s5p_mfc_dec_init(ctx);
+@@ -748,7 +734,7 @@ static int s5p_mfc_open(struct file *file)
+ 			mfc_err("Failed to setup mfc controls\n");
+ 			goto err_ctrls_setup;
+ 		}
+-	} else if (s5p_mfc_get_node_type(file) == MFCNODE_ENCODER) {
++	} else if (vdev == dev->vfd_enc) {
+ 		ctx->type = MFCINST_ENCODER;
+ 		ctx->c_ops = get_enc_codec_ops();
+ 		/* only for encoder */
+@@ -793,10 +779,10 @@ static int s5p_mfc_open(struct file *file)
+ 	q = &ctx->vq_dst;
+ 	q->type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
+ 	q->drv_priv = &ctx->fh;
+-	if (s5p_mfc_get_node_type(file) == MFCNODE_DECODER) {
++	if (vdev == dev->vfd_dec) {
+ 		q->io_modes = VB2_MMAP;
+ 		q->ops = get_dec_queue_ops();
+-	} else if (s5p_mfc_get_node_type(file) == MFCNODE_ENCODER) {
++	} else if (vdev == dev->vfd_enc) {
+ 		q->io_modes = VB2_MMAP | VB2_USERPTR;
+ 		q->ops = get_enc_queue_ops();
+ 	} else {
+@@ -815,10 +801,10 @@ static int s5p_mfc_open(struct file *file)
+ 	q->type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
+ 	q->io_modes = VB2_MMAP;
+ 	q->drv_priv = &ctx->fh;
+-	if (s5p_mfc_get_node_type(file) == MFCNODE_DECODER) {
++	if (vdev == dev->vfd_dec) {
+ 		q->io_modes = VB2_MMAP;
+ 		q->ops = get_dec_queue_ops();
+-	} else if (s5p_mfc_get_node_type(file) == MFCNODE_ENCODER) {
++	} else if (vdev == dev->vfd_enc) {
+ 		q->io_modes = VB2_MMAP | VB2_USERPTR;
+ 		q->ops = get_enc_queue_ops();
+ 	} else {
+diff --git a/drivers/media/platform/s5p-mfc/s5p_mfc_common.h b/drivers/media/platform/s5p-mfc/s5p_mfc_common.h
+index ef4074c..f804c1f 100644
+--- a/drivers/media/platform/s5p-mfc/s5p_mfc_common.h
++++ b/drivers/media/platform/s5p-mfc/s5p_mfc_common.h
+@@ -113,15 +113,6 @@ enum s5p_mfc_fmt_type {
+ };
+ 
+ /**
+- * enum s5p_mfc_node_type - The type of an MFC device node.
+- */
+-enum s5p_mfc_node_type {
+-	MFCNODE_INVALID = -1,
+-	MFCNODE_DECODER = 0,
+-	MFCNODE_ENCODER = 1,
+-};
+-
+-/**
+  * enum s5p_mfc_inst_type - The type of an MFC instance.
+  */
+ enum s5p_mfc_inst_type {
 -- 
 1.8.3.2
 
