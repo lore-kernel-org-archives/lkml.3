@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753704AbaBGL3p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:29:45 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41194 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753312AbaBGLZO (ORCPT
+	id S1753779AbaBGLaN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:30:13 -0500
+Received: from www.linutronix.de ([62.245.132.108]:43290 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751734AbaBGLaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:25:14 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Aristeu Rozanski <aris@redhat.com>, Borislav Petkov <bp@suse.de>,
-        Jean Delvare <jdelvare@suse.de>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 78/88] e752x_edac: Fix pci_dev usage count
-Date: Fri,  7 Feb 2014 11:23:15 +0000
-Message-Id: <1391772205-22239-79-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
-References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Fri, 7 Feb 2014 06:30:08 -0500
+Date: Fri, 7 Feb 2014 12:30:06 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Clark Williams <williams@redhat.com>,
+        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
+        John Kacur <jkacur@redhat.com>, Ulrich Obergfell <uobergfe@redhat.com>
+Subject: Re: [PATCH RT] rt: Make cpu_chill() use hrtimer instead of msleep()
+Message-ID: <20140207113006.GD23668@linutronix.de>
+References: <20140205115125.3cc950ce@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140205115125.3cc950ce@gandalf.local.home>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.30 -stable review patch.  If anyone has any objections, please let me know.
+* Steven Rostedt | 2014-02-05 11:51:25 [-0500]:
 
-------------------
+>Ulrich Obergfell pointed out that cpu_chill() calls msleep() which is woken
+>up by the ksoftirqd running the TIMER softirq. But as the cpu_chill() is
+>called from softirq context, it may block the ksoftirqd() from running, in
+>which case, it may never wake up the msleep() causing the deadlock.
+>
+>I checked the vmcore, and irq/74-qla2xxx is stuck in the msleep() call,
+>running on CPU 8. The one ksoftirqd that is stuck, happens to be the one that
+>runs on CPU 8, and it is blocked on a lock held by irq/74-qla2xxx. As that
+>ksoftirqd is the one that will wake up irq/74-qla2xxx, and it happens to be
+>blocked on a lock that irq/74-qla2xxx holds, we have our deadlock.
 
-From: Aristeu Rozanski <aris@redhat.com>
+could you please tell me which two locks are invovled here?
 
-commit 90ed4988b8c030d65b41b7d13140e9376dc6ec5a upstream.
-
-In case the device 0, function 1 is not found using pci_get_device(),
-pci_scan_single_device() will be used but, differently than
-pci_get_device(), it allocates a pci_dev but doesn't does bump the usage
-count on the pci_dev and after few module removals and loads the pci_dev
-will be freed.
-
-Signed-off-by: Aristeu Rozanski <aris@redhat.com>
-Reviewed-by: mark gross <mark.gross@intel.com>
-Link: http://lkml.kernel.org/r/20131205153755.GL4545@redhat.com
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Cc: Jean Delvare <jdelvare@suse.de>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/edac/e752x_edac.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/edac/e752x_edac.c b/drivers/edac/e752x_edac.c
-index 3186512..847f248 100644
---- a/drivers/edac/e752x_edac.c
-+++ b/drivers/edac/e752x_edac.c
-@@ -1182,9 +1182,11 @@ static int e752x_get_devs(struct pci_dev *pdev, int dev_idx,
- 	pvt->bridge_ck = pci_get_device(PCI_VENDOR_ID_INTEL,
- 				pvt->dev_info->err_dev, pvt->bridge_ck);
- 
--	if (pvt->bridge_ck == NULL)
-+	if (pvt->bridge_ck == NULL) {
- 		pvt->bridge_ck = pci_scan_single_device(pdev->bus,
- 							PCI_DEVFN(0, 1));
-+		pci_dev_get(pvt->bridge_ck);
-+	}
- 
- 	if (pvt->bridge_ck == NULL) {
- 		e752x_printk(KERN_ERR, "error reporting device not found:"
--- 
-1.8.3.2
-
+Sebastian
