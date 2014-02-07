@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753518AbaBGLxl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:53:41 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42592 "EHLO
+	id S932599AbaBGLxB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:53:01 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42577 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751574AbaBGLxC (ORCPT
+	with ESMTP id S1753245AbaBGLw6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:53:02 -0500
+	Fri, 7 Feb 2014 06:52:58 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Steven Rostedt <rostedt@goodmis.org>,
+Cc: Anssi Hannula <anssi.hannula@iki.fi>, Takashi Iwai <tiwai@suse.de>,
+        Stephen Warren <swarren@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 233/233] ftrace: Have function graph only trace based on global_ops filters
-Date: Fri,  7 Feb 2014 11:47:32 +0000
-Message-Id: <1391773652-25214-234-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 229/233] ALSA: hda - hdmi: introduce patch_nvhdmi()
+Date: Fri,  7 Feb 2014 11:47:28 +0000
+Message-Id: <1391773652-25214-230-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -27,187 +29,113 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Anssi Hannula <anssi.hannula@iki.fi>
 
-commit 23a8e8441a0a74dd612edf81dc89d1600bc0a3d1 upstream.
+(This is a backport of *part* of upstream 611885bc963a "ALSA: hda -
+hdmi: Disallow unsupported 2ch remapping on NVIDIA codecs" to stable
+3.10 through 3.12. Later stable already contain all of the original
+patch.)
 
-Doing some different tests, I discovered that function graph tracing, when
-filtered via the set_ftrace_filter and set_ftrace_notrace files, does
-not always keep with them if another function ftrace_ops is registered
-to trace functions.
+Mainline commit 611885bc963a "ALSA: hda - hdmi: Disallow unsupported 2ch
+remapping on NVIDIA codecs" introduces function patch_nvhdmi(). That
+function is edited by 75fae117a5db "ALSA: hda/hdmi - allow PIN_OUT to be
+dynamically enabled". In order to backport the PIN_OUT patch, I am first
+back-porting just the addition of function patch_nvhdmi(), so that the
+conflicts applying the PIN_OUT patch are simplified.
 
-The reason is that function graph just happens to trace all functions
-that the function tracer enables. When there was only one user of
-function tracing, the function graph tracer did not need to worry about
-being called by functions that it did not want to trace. But now that there
-are other users, this becomes a problem.
+Ideally, one might backport all of 611885bc963a. However, that commit
+doesn't apply to stable kernels, since it relies on a chain of other
+patches which implement new features.
 
-For example, one just needs to do the following:
-
- # cd /sys/kernel/debug/tracing
- # echo schedule > set_ftrace_filter
- # echo function_graph > current_tracer
- # cat trace
-[..]
- 0)               |  schedule() {
- ------------------------------------------
- 0)    <idle>-0    =>   rcu_pre-7
- ------------------------------------------
-
- 0) ! 2980.314 us |  }
- 0)               |  schedule() {
- ------------------------------------------
- 0)   rcu_pre-7    =>    <idle>-0
- ------------------------------------------
-
- 0) + 20.701 us   |  }
-
- # echo 1 > /proc/sys/kernel/stack_tracer_enabled
- # cat trace
-[..]
- 1) + 20.825 us   |      }
- 1) + 21.651 us   |    }
- 1) + 30.924 us   |  } /* SyS_ioctl */
- 1)               |  do_page_fault() {
- 1)               |    __do_page_fault() {
- 1)   0.274 us    |      down_read_trylock();
- 1)   0.098 us    |      find_vma();
- 1)               |      handle_mm_fault() {
- 1)               |        _raw_spin_lock() {
- 1)   0.102 us    |          preempt_count_add();
- 1)   0.097 us    |          do_raw_spin_lock();
- 1)   2.173 us    |        }
- 1)               |        do_wp_page() {
- 1)   0.079 us    |          vm_normal_page();
- 1)   0.086 us    |          reuse_swap_page();
- 1)   0.076 us    |          page_move_anon_rmap();
- 1)               |          unlock_page() {
- 1)   0.082 us    |            page_waitqueue();
- 1)   0.086 us    |            __wake_up_bit();
- 1)   1.801 us    |          }
- 1)   0.075 us    |          ptep_set_access_flags();
- 1)               |          _raw_spin_unlock() {
- 1)   0.098 us    |            do_raw_spin_unlock();
- 1)   0.105 us    |            preempt_count_sub();
- 1)   1.884 us    |          }
- 1)   9.149 us    |        }
- 1) + 13.083 us   |      }
- 1)   0.146 us    |      up_read();
-
-When the stack tracer was enabled, it enabled all functions to be traced, which
-now the function graph tracer also traces. This is a side effect that should
-not occur.
-
-To fix this a test is added when the function tracing is changed, as well as when
-the graph tracer is enabled, to see if anything other than the ftrace global_ops
-function tracer is enabled. If so, then the graph tracer calls a test trampoline
-that will look at the function that is being traced and compare it with the
-filters defined by the global_ops.
-
-As an optimization, if there's no other function tracers registered, or if
-the only registered function tracers also use the global ops, the function
-graph infrastructure will call the registered function graph callback directly
-and not go through the test trampoline.
-
-Fixes: d2d45c7a03a2 "tracing: Have stack_tracer use a separate list of functions"
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-[ luis: backported to 3.11: adjusted context ]
+Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+[swarren, extracted just a small part of the original patch]
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/trace/ftrace.c | 45 ++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 44 insertions(+), 1 deletion(-)
+ sound/pci/hda/patch_hdmi.c | 60 ++++++++++++++++++++++++++++------------------
+ 1 file changed, 37 insertions(+), 23 deletions(-)
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index c984033..0a88de7 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -278,6 +278,12 @@ static void update_global_ops(void)
- 	global_ops.func = func;
+diff --git a/sound/pci/hda/patch_hdmi.c b/sound/pci/hda/patch_hdmi.c
+index 0b36c63..7f4c726 100644
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -2562,6 +2562,20 @@ static int patch_nvhdmi_8ch_7x(struct hda_codec *codec)
+ 	return 0;
  }
  
-+#ifdef CONFIG_FUNCTION_GRAPH_TRACER
-+static void update_function_graph_func(void);
-+#else
-+static inline void update_function_graph_func(void) { }
-+#endif
-+
- static void update_ftrace_function(void)
- {
- 	ftrace_func_t func;
-@@ -306,6 +312,8 @@ static void update_ftrace_function(void)
- 		func = ftrace_ops_list_func;
- 	}
- 
-+	update_function_graph_func();
-+
- 	ftrace_trace_function = func;
- }
- 
-@@ -4768,6 +4776,7 @@ int ftrace_graph_entry_stub(struct ftrace_graph_ent *trace)
- trace_func_graph_ret_t ftrace_graph_return =
- 			(trace_func_graph_ret_t)ftrace_stub;
- trace_func_graph_ent_t ftrace_graph_entry = ftrace_graph_entry_stub;
-+static trace_func_graph_ent_t __ftrace_graph_entry = ftrace_graph_entry_stub;
- 
- /* Try to assign a return stack array on FTRACE_RETSTACK_ALLOC_SIZE tasks. */
- static int alloc_retstack_tasklist(struct ftrace_ret_stack **ret_stack_list)
-@@ -4909,6 +4918,30 @@ static struct ftrace_ops fgraph_ops __read_mostly = {
- 				FTRACE_OPS_FL_RECURSION_SAFE,
- };
- 
-+static int ftrace_graph_entry_test(struct ftrace_graph_ent *trace)
++static int patch_nvhdmi(struct hda_codec *codec)
 +{
-+	if (!ftrace_ops_test(&global_ops, trace->func, NULL))
-+		return 0;
-+	return __ftrace_graph_entry(trace);
++	struct hdmi_spec *spec;
++	int err;
++
++	err = patch_generic_hdmi(codec);
++	if (err)
++		return err;
++
++	spec = codec->spec;
++
++	return 0;
 +}
 +
-+/*
-+ * The function graph tracer should only trace the functions defined
-+ * by set_ftrace_filter and set_ftrace_notrace. If another function
-+ * tracer ops is registered, the graph tracer requires testing the
-+ * function against the global ops, and not just trace any function
-+ * that any ftrace_ops registered.
-+ */
-+static void update_function_graph_func(void)
-+{
-+	if (ftrace_ops_list == &ftrace_list_end ||
-+	    (ftrace_ops_list == &global_ops &&
-+	     global_ops.next == &ftrace_list_end))
-+		ftrace_graph_entry = __ftrace_graph_entry;
-+	else
-+		ftrace_graph_entry = ftrace_graph_entry_test;
-+}
-+
- int register_ftrace_graph(trace_func_graph_ret_t retfunc,
- 			trace_func_graph_ent_t entryfunc)
- {
-@@ -4933,7 +4966,16 @@ int register_ftrace_graph(trace_func_graph_ret_t retfunc,
- 	}
- 
- 	ftrace_graph_return = retfunc;
--	ftrace_graph_entry = entryfunc;
-+
-+	/*
-+	 * Update the indirect function to the entryfunc, and the
-+	 * function that gets called to the entry_test first. Then
-+	 * call the update fgraph entry function to determine if
-+	 * the entryfunc should be called directly or not.
-+	 */
-+	__ftrace_graph_entry = entryfunc;
-+	ftrace_graph_entry = ftrace_graph_entry_test;
-+	update_function_graph_func();
- 
- 	ret = ftrace_startup(&fgraph_ops, FTRACE_START_FUNC_RET);
- 
-@@ -4952,6 +4994,7 @@ void unregister_ftrace_graph(void)
- 	ftrace_graph_active--;
- 	ftrace_graph_return = (trace_func_graph_ret_t)ftrace_stub;
- 	ftrace_graph_entry = ftrace_graph_entry_stub;
-+	__ftrace_graph_entry = ftrace_graph_entry_stub;
- 	ftrace_shutdown(&fgraph_ops, FTRACE_STOP_FUNC_RET);
- 	unregister_pm_notifier(&ftrace_suspend_notifier);
- 	unregister_trace_sched_switch(ftrace_graph_probe_sched_switch, NULL);
+ /*
+  * ATI-specific implementations
+  *
+@@ -2634,30 +2648,30 @@ static const struct hda_codec_preset snd_hda_preset_hdmi[] = {
+ { .id = 0x10de0005, .name = "MCP77/78 HDMI",	.patch = patch_nvhdmi_8ch_7x },
+ { .id = 0x10de0006, .name = "MCP77/78 HDMI",	.patch = patch_nvhdmi_8ch_7x },
+ { .id = 0x10de0007, .name = "MCP79/7A HDMI",	.patch = patch_nvhdmi_8ch_7x },
+-{ .id = 0x10de000a, .name = "GPU 0a HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de000b, .name = "GPU 0b HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de000c, .name = "MCP89 HDMI",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de000d, .name = "GPU 0d HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0010, .name = "GPU 10 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0011, .name = "GPU 11 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0012, .name = "GPU 12 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0013, .name = "GPU 13 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0014, .name = "GPU 14 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0015, .name = "GPU 15 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0016, .name = "GPU 16 HDMI/DP",	.patch = patch_generic_hdmi },
++{ .id = 0x10de000a, .name = "GPU 0a HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de000b, .name = "GPU 0b HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de000c, .name = "MCP89 HDMI",	.patch = patch_nvhdmi },
++{ .id = 0x10de000d, .name = "GPU 0d HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0010, .name = "GPU 10 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0011, .name = "GPU 11 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0012, .name = "GPU 12 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0013, .name = "GPU 13 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0014, .name = "GPU 14 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0015, .name = "GPU 15 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0016, .name = "GPU 16 HDMI/DP",	.patch = patch_nvhdmi },
+ /* 17 is known to be absent */
+-{ .id = 0x10de0018, .name = "GPU 18 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0019, .name = "GPU 19 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de001a, .name = "GPU 1a HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de001b, .name = "GPU 1b HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de001c, .name = "GPU 1c HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0040, .name = "GPU 40 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0041, .name = "GPU 41 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0042, .name = "GPU 42 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0043, .name = "GPU 43 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0044, .name = "GPU 44 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0051, .name = "GPU 51 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0060, .name = "GPU 60 HDMI/DP",	.patch = patch_generic_hdmi },
++{ .id = 0x10de0018, .name = "GPU 18 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0019, .name = "GPU 19 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de001a, .name = "GPU 1a HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de001b, .name = "GPU 1b HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de001c, .name = "GPU 1c HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0040, .name = "GPU 40 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0041, .name = "GPU 41 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0042, .name = "GPU 42 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0043, .name = "GPU 43 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0044, .name = "GPU 44 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0051, .name = "GPU 51 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0060, .name = "GPU 60 HDMI/DP",	.patch = patch_nvhdmi },
+ { .id = 0x10de0067, .name = "MCP67 HDMI",	.patch = patch_nvhdmi_2ch },
+ { .id = 0x10de8001, .name = "MCP73 HDMI",	.patch = patch_nvhdmi_2ch },
+ { .id = 0x11069f80, .name = "VX900 HDMI/DP",	.patch = patch_via_hdmi },
 -- 
 1.8.3.2
 
