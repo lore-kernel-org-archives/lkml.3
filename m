@@ -1,58 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752147AbaBGTB4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 14:01:56 -0500
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:61251 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750993AbaBGTBz (ORCPT
+	id S1752041AbaBGTGH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 14:06:07 -0500
+Received: from mail-bn1blp0183.outbound.protection.outlook.com ([207.46.163.183]:49647
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750993AbaBGTGF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 14:01:55 -0500
+	Fri, 7 Feb 2014 14:06:05 -0500
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: RE: Drivers/hv
+Thread-Topic: Drivers/hv
+Thread-Index: AQHPHQPV07dRQOxvPUWFtrQXaUUm5ZqcNHQAgA4ABrA=
+Date: Fri, 7 Feb 2014 19:06:00 +0000
+Message-ID: <dcabbfad2fe24769a3d2ade8315fa016@BY2PR03MB299.namprd03.prod.outlook.com>
+References: <1391011049-10795-1-git-send-email-kys@microsoft.com>
+ <20140129211532.GA9095@kroah.com>
+In-Reply-To: <20140129211532.GA9095@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [131.107.174.206]
+x-o365ent-eop-header: Message processed by -  O365_ENT: Allow from ranges
+ (Engineering ONLY)
+x-forefront-prvs: 011579F31F
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(189002)(199002)(24454002)(51704005)(13464003)(377454003)(81542001)(81342001)(63696002)(94946001)(4396001)(66066001)(86362001)(81686001)(65816001)(76482001)(51856001)(80022001)(46102001)(47446002)(74876001)(90146001)(53806001)(54356001)(94316002)(79102001)(86612001)(83072002)(69226001)(87266001)(80976001)(76786001)(76796001)(93516002)(85852003)(87936001)(33646001)(2656002)(92566001)(54316002)(56776001)(74316001)(76576001)(19580405001)(93136001)(19580395003)(74366001)(74662001)(47976001)(81816001)(85306002)(83322001)(47736001)(74706001)(49866001)(56816005)(50986001)(31966008)(74502001)(77982001)(59766001)(95416001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB300;H:BY2PR03MB299.namprd03.prod.outlook.com;CLIP:131.107.174.206;FPR:FACFC152.9E03542A.59F1BBA8.C4E1C9F8.201E7;InfoNoRecordsMX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <CAEPRUYroQYzxsW-WirQ9ZW9XsSvnO7aSxun7JZoF1=3iONu-rQ@mail.gmail.com>
-References: <1391503770.19947.0.camel@phoenix>
-	<52F149F4.6040105@broadcom.com>
-	<CACRpkdY4rQC30idfYP0bJHeHL-OMbH=oSNaKf8pBfUP1f+sYBg@mail.gmail.com>
-	<CAEPRUYroQYzxsW-WirQ9ZW9XsSvnO7aSxun7JZoF1=3iONu-rQ@mail.gmail.com>
-Date: Fri, 7 Feb 2014 11:01:54 -0800
-Message-ID: <CAEPRUYqYq5g_98xnegKg7KLczkttVwOp3_+uEO1cRQE5GoP-fg@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: capri: Make capri_pinctrl_probe static
-From: Christian Daudt <bcm@fixthebug.org>
-To: Linus Walleij <linus.walleij@linaro.org>, Olof Johansson <olof@lixom.net>,
-        Matt Porter <mporter@linaro.org>
-Cc: Sherman Yin <syin@broadcom.com>, Axel Lin <axel.lin@ingics.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 7, 2014 at 10:35 AM, Christian Daudt <bcm@fixthebug.org> wrote:
-> On Thu, Feb 6, 2014 at 1:21 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
->> On Tue, Feb 4, 2014 at 9:13 PM, Sherman Yin <syin@broadcom.com> wrote:
->>> On 14-02-04 12:49 AM, Axel Lin wrote:
->>>>
->>>> Signed-off-by: Axel Lin <axel.lin@ingics.com>
->>>>
->>> Note that this will collide with the capri->bcm281xx renaming patches.
->>>
->>> Linus, Christian, are those patches going in soon?
->>
->> I have ACKed it, expecting it to be funneled through ARM SoC.
->>
->> Yours,
->> Linus Walleij
->
-> Linus, just to confirm. the bcm_defconfig portion is the only one
-> going through armsoc right ?
->
->  thanks,
->    csd
 
-Linus,
- Sorry for the noise. I just had a chat with Olof on irc and it is
-probably best to revert to v1 and push a single patch through, either
-through pinctrl or armsoc. If you have further patches for 3.14 could
-you pull this one in along with it ? If not then I'll ask Olof to pull
-it in instead.
- thanks,
-   csd
+
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> Sent: Wednesday, January 29, 2014 1:16 PM
+> To: KY Srinivasan
+> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
+> apw@canonical.com; jasowang@redhat.com
+> Subject: Re: Drivers/hv
+> 
+> On Wed, Jan 29, 2014 at 07:57:29AM -0800, K. Y. Srinivasan wrote:
+> >
+> > Greg,
+> >
+> > Some time back I had sent a buch of patches for
+> > Hyper-V drivers. Are they still in the queue or should I resend
+> > them.
+> 
+> Which specific patches are you referring to?  I can't take anything
+> until after 3.14-rc1 is out, and I do see a few from you in my queue, so
+> if you want to resend, please do, but note I will not get to them until
+> sometime late next week at the earliest.
+
+I saw that you committed two (hv) patches earlier today. There are still a few more
+patches that are not committed yet; should I resend those?
+
+Regards,
+
+K. Y  
