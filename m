@@ -1,157 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529AbaBGKIb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 05:08:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34122 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752491AbaBGKIZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 05:08:25 -0500
-Date: Fri, 7 Feb 2014 11:08:22 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Dave Airlie <airlied@linux.ie>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org, Jani Nikula <jani.nikula@intel.com>
-Subject: Re: [git pull] drm next tree
-In-Reply-To: <alpine.LRH.2.00.1401301648050.15677@twin.jikos.cz>
-Message-ID: <alpine.LNX.2.00.1402071052470.24838@pobox.suse.cz>
-References: <alpine.DEB.2.00.1401300249130.13810@skynet.skynet.ie> <alpine.LRH.2.00.1401301648050.15677@twin.jikos.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752571AbaBGKIt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 05:08:49 -0500
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:53892 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752491AbaBGKIr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 05:08:47 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <alpine.DEB.2.02.1402062229000.21991@ionos.tec.linutronix.de>
+References: <1391721117-27446-1-git-send-email-carlo@caione.org>
+	<alpine.DEB.2.02.1402062213590.21991@ionos.tec.linutronix.de>
+	<CAOQ7t2Z0agZdDZ_OQZPtXWXoi5NMTcOOZz04q6wEVNy0rxn4AA@mail.gmail.com>
+	<alpine.DEB.2.02.1402062229000.21991@ionos.tec.linutronix.de>
+Date: Fri, 7 Feb 2014 11:08:46 +0100
+Message-ID: <CAOQ7t2bzz9vKh_5h2nF=m+JpeYVa=Ttd4XQgrAa6Lhdzjg_Qxw@mail.gmail.com>
+Subject: Re: [linux-sunxi] Re: [PATCH] irq: Add new flag to ack
+ level-triggered interrupts before unmasking
+From: Carlo Caione <carlo.caione@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Hans De Goede <hdegoede@redhat.com>, emilio@elopez.com.ar,
+        linux-sunxi@googlegroups.com, t.figa@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 Jan 2014, Jiri Kosina wrote:
+On Thu, Feb 6, 2014 at 10:54 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Thu, 6 Feb 2014, Carlo Caione wrote:
+>> On Thu, Feb 6, 2014 at 10:14 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>> > On Thu, 6 Feb 2014, Carlo Caione wrote:
+>> >
+>> >> Several irqchip drivers require the level-triggered interrupt to be
+>> >> acked before unmasking to avoid that a second interrupt is immediately
+>> >> triggered. This small patch introduces a new irqchip flags that is used
+>> >> to ack the IRQ line before it is unmasked.
+>> >
+>> > And why are you not doing this in the unmask function of the affected
+>> > chip in the first place?
+>>
+>> Because this is a common behavior of several irqchips (sunxi NMI
+>> controller,  exynos, etc...) so I think it should be useful to have it
+>> in the core instead of replicating the same code structure in all the
+>> irqchip drivers.
+>
+> I'm all for making stuff generic, but you introduce this gem
+>
+> +void ack_unmask_irq(struct irq_desc *desc)
+> +{
+> +       if ((desc->irq_data.chip->flags & IRQCHIP_ACK_ON_UNMASK) &&
+> +           (irqd_get_trigger_type(&desc->irq_data) & IRQ_TYPE_LEVEL_MASK) &&
+> +           desc->irq_data.chip->irq_ack)
+>
+> This is totally backwards.
+>
+> 1) If level and edge are handled differently then you should provide
+>    different chips.
 
-> >   git://people.freedesktop.org/~airlied/linux drm-next
-> [ ... snip ... ]
-> > Daniel Vetter (59):
-> [ ... snip ... ]
-> >       drm/i915: dp aux irq support for g4x/vlv
-> 
-> This commit causes all kinds of havoc on my ThinkPad x200s. It results in
-[ ... snip ... ]
+Agree. I was trying to use the flag to trigger a different behavior
+since AFAIK the problem of the IRQ retrigger is specific for
+level-triggered interrupts.
 
-Not having received any response, I suggest the following for 3.14
+> 2) If a chip has IRQCHIP_ACK_ON_UNMASK set, then it better provides an
+>    irq_ack callback.
 
+The check on irq_ack is done to be sure that the irq_ack callback is
+really defined by the irqchip driver before calling it.
 
+> So why do you need this complex conditional?
 
+I wanted to be sure to be in the right case: level-triggered interrupt
+with the flag defined in the driver (and the ack callback correctly
+defined).
+To the best of my knowledge this is the only case in which a flag like
+ IRQCHIP_ACK_ON_UNMASK could make sense.
 
-From: Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH] Revert "drm/i915: dp aux irq support for g4x/vlv"
+> +                       desc->irq_data.chip->irq_ack(&desc->irq_data);
+> +
+> +       unmask_irq(desc);
+> +}
+>
+> Now the even more confusing part is a single call site in
+> irq_finalize_oneshot()
+>
+>         if (!desc->threads_oneshot && !irqd_irq_disabled(&desc->irq_data) &&
+>             irqd_irq_masked(&desc->irq_data))
+> -               unmask_irq(desc);
+> +               ack_unmask_irq(desc);
+>
+>
+> But you completely fail to explain the rationale.
 
-This reverts commit 4aeebd7443e36b0a40032e518a9338f48bd27efc.
+You are right. I'll try to clarify it,
 
-Conflicts:
+> - Why is this only an issue for the threaded irq case?
+>
+> - Why are other sites where interrupts are masked/unmasked not
+>   affected?
 
-	drivers/gpu/drm/i915/i915_reg.h
+<snip>
 
-This commit causes all kinds of havoc on my ThinkPad x200s. It results in
+> Do you have any sensible explanation for that requirement to ack
+> before unmask while you already acked on mask? And why this is only an
+> issue in the threaded case?
+>
+> What's the context of the problem you are trying to solve?
 
- irq 16: nobody cared (try booting with the "irqpoll" option)
- CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.12.0-00854-g4aeebd7 #1
- Hardware name: LENOVO 7470BN2/7470BN2, BIOS 6DET38WW (2.02 ) 12/19/2008
-  ffff8800795186c0 ffff88007c203e08 ffffffff81582503 ffff88007c203e38
-  ffffffff810a6a98 ffff88007c203e88 ffff880079518600 0000000000000000
-  0000000000000010 ffff88007c203e78 ffffffff810a6d43 00000010ffc4af9d
- Call Trace:
-  <IRQ>  [<ffffffff81582503>] dump_stack+0x7a/0x97
-  [<ffffffff810a6a98>] __report_bad_irq+0x38/0xf0
-  [<ffffffff810a6d43>] note_interrupt+0x1f3/0x240
-  [<ffffffff810a42d2>] handle_irq_event_percpu+0x142/0x220
-  [<ffffffff810a43f9>] handle_irq_event+0x49/0x70
-  [<ffffffff810a7561>] handle_fasteoi_irq+0x61/0x100
-  [<ffffffff81004a89>] handle_irq+0x59/0x150
-  [<ffffffff81052b6e>] ? _local_bh_enable+0xe/0x10
-  [<ffffffff81052bf1>] ? irq_enter+0x81/0x90
-  [<ffffffff8100403b>] do_IRQ+0x5b/0xe0
-  [<ffffffff81588aaf>] common_interrupt+0x6f/0x6f
-  <EOI>  [<ffffffff81588b5c>] ? retint_restore_args+0xe/0xe
-  [<ffffffff8146c767>] ? poll_idle+0x47/0x90
-  [<ffffffff8146c740>] ? poll_idle+0x20/0x90
-  [<ffffffff810acd96>] ? ktime_get+0x56/0xd0
-  [<ffffffff8146c7f0>] cpuidle_enter_state+0x40/0xd0
-  [<ffffffff8146cc0a>] cpuidle_idle_call+0x10a/0x160
-  [<ffffffff8100b7b9>] arch_cpu_idle+0x9/0x30
-  [<ffffffff810a370b>] cpu_idle_loop+0x8b/0x270
-  [<ffffffff810a390e>] cpu_startup_entry+0x1e/0x20
-  [<ffffffff8157a0c3>] rest_init+0xd3/0xe0
-  [<ffffffff81579ff0>] ? csum_partial_copy_generic+0x170/0x170
-  [<ffffffff81ad905c>] start_kernel+0x3b3/0x461
-  [<ffffffff81ad8a96>] ? repair_env_string+0x58/0x58
-  [<ffffffff81ad84d1>] x86_64_start_reservations+0x1b/0x32
-  [<ffffffff81ad8622>] x86_64_start_kernel+0x13a/0x141
- handlers:
- [<ffffffffa00acbc0>] usb_hcd_irq [usbcore]
- Disabling IRQ #16
+The context and the rationale is fully explained in this thread
+http://www.spinics.net/lists/arm-kernel/msg299952.html and some
+answers are already given along the thread especially by Hans here
+http://www.spinics.net/lists/arm-kernel/msg303542.html
+Shortly, the double interrupt problem as seen on sunxi NMI controller
+(and other chips AFAIK) is specific for level-triggered interrupts
+when the hard interrupt handler is not able to ACK the interrupts on
+the originating device since this device can only be accessed via a
+bus (in our case it was a PMIC on I2C).
+This explains why my patch was specific for the threaded case and why
+the ACK on mask is not really effective in actually acking the IRQs
+(so that I need a second ACK before unmasking the line). In fact in
+our case (PMIC connected via I2C with an interrupt line on a special
+NMI controller) the implicit ACK done by the unmask is ignored if the
+NMI line is still high, and to have the line going down we have to ACK
+all the IRQs on the device accessing to it by I2C in the thread and
+then ACK the NMI controller with the second ACK before the unmasking
+callback.
+I hope this clarifies a bit.
 
-and things go south afterwards (the machine hangs randomly, I/O is 
-horribly slow, etc).
+Thank you,
 
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-
----
- drivers/gpu/drm/i915/i915_irq.c |    7 -------
- drivers/gpu/drm/i915/i915_reg.h |    5 -----
- drivers/gpu/drm/i915/intel_dp.c |    2 +-
- 3 files changed, 1 insertions(+), 13 deletions(-)
-
-diff --git a/drivers/gpu/drm/i915/i915_irq.c b/drivers/gpu/drm/i915/i915_irq.c
-index 17d8fcb..b7fae5b 100644
---- a/drivers/gpu/drm/i915/i915_irq.c
-+++ b/drivers/gpu/drm/i915/i915_irq.c
-@@ -1480,9 +1480,6 @@ static irqreturn_t valleyview_irq_handler(int irq, void *arg)
- 
- 			intel_hpd_irq_handler(dev, hotplug_trigger, hpd_status_i915);
- 
--			if (hotplug_status & DP_AUX_CHANNEL_MASK_INT_STATUS_G4X)
--				dp_aux_irq_handler(dev);
--
- 			I915_WRITE(PORT_HOTPLUG_STAT, hotplug_status);
- 			I915_READ(PORT_HOTPLUG_STAT);
- 		}
-@@ -3670,10 +3667,6 @@ static irqreturn_t i965_irq_handler(int irq, void *arg)
- 			intel_hpd_irq_handler(dev, hotplug_trigger,
- 					      IS_G4X(dev) ? hpd_status_g4x : hpd_status_i915);
- 
--			if (IS_G4X(dev) &&
--			    (hotplug_status & DP_AUX_CHANNEL_MASK_INT_STATUS_G4X))
--				dp_aux_irq_handler(dev);
--
- 			I915_WRITE(PORT_HOTPLUG_STAT, hotplug_status);
- 			I915_READ(PORT_HOTPLUG_STAT);
- 		}
-diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
-index a48b7ca..94b4cd5 100644
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -2139,11 +2139,6 @@
- #define   CRT_HOTPLUG_MONITOR_COLOR		(3 << 8)
- #define   CRT_HOTPLUG_MONITOR_MONO		(2 << 8)
- #define   CRT_HOTPLUG_MONITOR_NONE		(0 << 8)
--#define   DP_AUX_CHANNEL_D_INT_STATUS_G4X	(1 << 6)
--#define   DP_AUX_CHANNEL_C_INT_STATUS_G4X	(1 << 5)
--#define   DP_AUX_CHANNEL_B_INT_STATUS_G4X	(1 << 4)
--#define   DP_AUX_CHANNEL_MASK_INT_STATUS_G4X	(7 << 4)
--
- /* SDVO is different across gen3/4 */
- #define   SDVOC_HOTPLUG_INT_STATUS_G4X		(1 << 3)
- #define   SDVOB_HOTPLUG_INT_STATUS_G4X		(1 << 2)
-diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
-index 5ede4e8..464c047 100644
---- a/drivers/gpu/drm/i915/intel_dp.c
-+++ b/drivers/gpu/drm/i915/intel_dp.c
-@@ -404,7 +404,7 @@ intel_dp_aux_ch(struct intel_dp *intel_dp,
- 	int i, ret, recv_bytes;
- 	uint32_t status;
- 	int try, precharge, clock = 0;
--	bool has_aux_irq = true;
-+	bool has_aux_irq = INTEL_INFO(dev)->gen >= 5 && !IS_VALLEYVIEW(dev);
- 	uint32_t timeout;
- 
- 	/* dp aux is extremely sensitive to irq latency, hence request the
 -- 
-Jiri Kosina
-SUSE Labs
+Carlo Caione
