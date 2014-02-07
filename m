@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752727AbaBGNgh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 08:36:37 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:42184 "EHLO extserv.mm-sol.com"
+	id S1753031AbaBGNky (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 08:40:54 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38775 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751736AbaBGNge (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 08:36:34 -0500
-Message-ID: <1391780118.27491.62.camel@iivanov-dev>
-Subject: Re: [PATCH RESEND 1/2] spi: qup: Add device tree bindings
- information
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        linux-spi@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 07 Feb 2014 15:35:18 +0200
-In-Reply-To: <20140207131359.GM32298@sirena.org.uk>
-References: <20140206175059.GW32298@sirena.org.uk>
-	 <1391759007-25305-1-git-send-email-iivanov@mm-sol.com>
-	 <20140207122716.GH32298@sirena.org.uk>
-	 <1391778043.27491.61.camel@iivanov-dev>
-	 <20140207131359.GM32298@sirena.org.uk>
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752180AbaBGNkx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 08:40:53 -0500
+Date: Fri, 7 Feb 2014 14:40:48 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Jani Nikula <jani.nikula@intel.com>
+cc: Dave Airlie <airlied@linux.ie>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Subject: Re: [git pull] drm next tree
+In-Reply-To: <87a9e318m6.fsf@intel.com>
+Message-ID: <alpine.LNX.2.00.1402071437400.24838@pobox.suse.cz>
+References: <alpine.DEB.2.00.1401300249130.13810@skynet.skynet.ie> <alpine.LRH.2.00.1401301648050.15677@twin.jikos.cz> <alpine.LNX.2.00.1402071052470.24838@pobox.suse.cz> <87a9e318m6.fsf@intel.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-02-07 at 13:13 +0000, Mark Brown wrote: 
-> On Fri, Feb 07, 2014 at 03:00:43PM +0200, Ivan T. Ivanov wrote:
-> > On Fri, 2014-02-07 at 12:27 +0000, Mark Brown wrote: 
+On Fri, 7 Feb 2014, Jani Nikula wrote:
+
+> >> >   git://people.freedesktop.org/~airlied/linux drm-next
+> >> [ ... snip ... ]
+> >> > Daniel Vetter (59):
+> >> [ ... snip ... ]
+> >> >       drm/i915: dp aux irq support for g4x/vlv
+> >> 
+> >> This commit causes all kinds of havoc on my ThinkPad x200s. It results in
+> > [ ... snip ... ]
+> >
+> > Not having received any response, I suggest the following for 3.14
 > 
-> > > Please fix the formatting of this document so the lines are less than 80
-> > > columns, it's hard to read as is.  Otherwise this is fine.
+> Daniel, it's your commit this bisects to...
 > 
-> > File is looking fine in editor with smart tab support
+> If we end up having to revert, I'd just touch the has_aux_irq part, for
+> example:
 > 
-> I don't know what "smart tab support" is intended to be in this context
-> but whatever it is it's not working well in the e-mail you sent, bear in
-> mind that you're looking for a readable patch.
+> diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
+> index 5ede4e8..464c047 100644
+> --- a/drivers/gpu/drm/i915/intel_dp.c
+> +++ b/drivers/gpu/drm/i915/intel_dp.c
+> @@ -404,7 +404,7 @@ intel_dp_aux_ch(struct intel_dp *intel_dp,
+>  	int i, ret, recv_bytes;
+>  	uint32_t status;
+>  	int try, precharge, clock = 0;
+> -	bool has_aux_irq = true;
+> +	bool has_aux_irq = INTEL_INFO(dev)->gen >= 5;
+>  	uint32_t timeout;
+> 
+>  	/* dp aux is extremely sensitive to irq latency, hence request the
 
-Right. will fix it.
+That, obviously, works for my system as well. Feel free to add
 
-Regards,
-Ivan
+	Reported-and-tested-by: Jiri Kosina <jkosina@suse.cz>
 
+if you are going with this instead of the revert.
 
+-- 
+Jiri Kosina
+SUSE Labs
