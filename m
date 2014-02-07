@@ -1,85 +1,409 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751700AbaBGShQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 13:37:16 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44609 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751209AbaBGShN (ORCPT
+	id S1752009AbaBGSko (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 13:40:44 -0500
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:33925 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751209AbaBGSkn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 13:37:13 -0500
-Date: Fri, 7 Feb 2014 18:37:07 +0000
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Daniel Santos <danielfsantos@att.net>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com, Daniel Santos <daniel.santos@pobox.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: Re: [PATCH 3.5 36/88] spidev: fix hang when transfer_one_message
- fails
-Message-ID: <20140207183707.GD5499@hercules>
-References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
- <1391772205-22239-37-git-send-email-luis.henriques@canonical.com>
- <52F5234B.404@att.net>
+	Fri, 7 Feb 2014 13:40:43 -0500
+Date: Fri, 7 Feb 2014 13:40:31 -0500
+From: Tejun Heo <tj@kernel.org>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH v2 09/10] kernfs: implement kernfs_get_parent(),
+ kernfs_name/path() and friends
+Message-ID: <20140207184031.GB12815@htj.dyndns.org>
+References: <1391454557-32376-1-git-send-email-tj@kernel.org>
+ <1391454557-32376-10-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52F5234B.404@att.net>
+In-Reply-To: <1391454557-32376-10-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 07, 2014 at 12:17:47PM -0600, Daniel Santos wrote:
-> On 02/07/2014 05:22 AM, Luis Henriques wrote:
-> >3.5.7.30 -stable review patch.  If anyone has any objections, please let me know.
-> >
-> >------------------
-> >
-> >From: Daniel Santos <daniel.santos@pobox.com>
-> >
-> >commit e120cc0dcf2880a4c5c0a6cb27b655600a1cfa1d upstream.
-> >
-> >This corrects a problem in spi_pump_messages() that leads to an spi
-> >message hanging forever when a call to transfer_one_message() fails.
-> >This failure occurs in my MCP2210 driver when the cs_change bit is set
-> >on the last transfer in a message, an operation which the hardware does
-> >not support.
-> >
-> >Rationale
-> >Since the transfer_one_message() returns an int, we must presume that it
-> >may fail.  If transfer_one_message() should never fail, it should return
-> >void.  Thus, calls to transfer_one_message() should properly manage a
-> >failure.
-> >
-> >Fixes: ffbbdd21329f3 (spi: create a message queueing infrastructure)
-> >Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
-> >Signed-off-by: Mark Brown <broonie@linaro.org>
-> >Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
-> >---
-> >  drivers/spi/spi.c | 4 +++-
-> >  1 file changed, 3 insertions(+), 1 deletion(-)
-> >
-> >diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-> >index 1041cb8..40f528b 100644
-> >--- a/drivers/spi/spi.c
-> >+++ b/drivers/spi/spi.c
-> >@@ -574,7 +574,9 @@ static void spi_pump_messages(struct kthread_work *work)
-> >  	ret = master->transfer_one_message(master, master->cur_msg);
-> >  	if (ret) {
-> >  		dev_err(&master->dev,
-> >-			"failed to transfer one message from queue\n");
-> >+			"failed to transfer one message from queue: %d\n", ret);
-> >+		master->cur_msg->status = ret;
-> >+		spi_finalize_current_message(master);
-> >  		return;
-> >  	}
-> >  }
-> 
-> This isn't a good patch and is reverted by a later patch. I'm not
-> sure what the protocol for this is, but either skip this patch or
-> include the one that reverts it.
+>From 8a753c7a38b909f95e98ecfdffa8343e79ed4256 Mon Sep 17 00:00:00 2001
+From: Tejun Heo <tj@kernel.org>
+Date: Fri, 7 Feb 2014 13:32:07 -0500
 
-Great, thanks.  I will drop this patch both in the 3.5 and 3.11
-kernels.
+kernfs_node->parent and ->name are currently marked as "published"
+indicating that kernfs users may access them directly; however, those
+fields may get updated by kernfs_rename[_ns]() and unrestricted access
+may lead to erroneous values or oops.
 
-Cheers,
---
-Luis
+Protect ->parent and ->name updates with a irq-safe spinlock
+kernfs_rename_lock and implement the following accessors for these
+fields.
+
+* kernfs_name()		- format the node's name into the specified buffer
+* kernfs_path()		- format the node's path into the specified buffer
+* pr_cont_kernfs_name()	- pr_cont a node's name (doesn't need buffer)
+* pr_cont_kernfs_path()	- pr_cont a node's path (doesn't need buffer)
+* kernfs_get_parent()	- pin and return a node's parent
+
+All can be called under any context.  The recursive sysfs_pathname()
+in fs/sysfs/dir.c is replaced with kernfs_path() and
+sysfs_rename_dir_ns() is updated to use kernfs_get_parent() instead of
+dereferencing parent directly.
+
+v2: Dummy definition of kernfs_path() for !CONFIG_KERNFS was missing
+    static inline making it cause a lot of build warnings.  Add it.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ fs/kernfs/dir.c        | 175 ++++++++++++++++++++++++++++++++++++++++++++++---
+ fs/sysfs/dir.c         |  44 ++++---------
+ include/linux/kernfs.h |  26 +++++++-
+ 3 files changed, 203 insertions(+), 42 deletions(-)
+
+diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
+index 42a250f..a347792 100644
+--- a/fs/kernfs/dir.c
++++ b/fs/kernfs/dir.c
+@@ -19,6 +19,8 @@
+ #include "kernfs-internal.h"
+ 
+ DEFINE_MUTEX(kernfs_mutex);
++static DEFINE_SPINLOCK(kernfs_rename_lock);	/* kn->parent and ->name */
++static char kernfs_pr_cont_buf[PATH_MAX];	/* protected by rename_lock */
+ 
+ #define rb_to_kn(X) rb_entry((X), struct kernfs_node, rb)
+ 
+@@ -37,6 +39,141 @@ static bool kernfs_lockdep(struct kernfs_node *kn)
+ #endif
+ }
+ 
++static int kernfs_name_locked(struct kernfs_node *kn, char *buf, size_t buflen)
++{
++	return strlcpy(buf, kn->parent ? kn->name : "/", buflen);
++}
++
++static char * __must_check kernfs_path_locked(struct kernfs_node *kn, char *buf,
++					      size_t buflen)
++{
++	char *p = buf + buflen;
++	int len;
++
++	*--p = '\0';
++
++	do {
++		len = strlen(kn->name);
++		if (p - buf < len + 1) {
++			buf[0] = '\0';
++			p = NULL;
++			break;
++		}
++		p -= len;
++		memcpy(p, kn->name, len);
++		*--p = '/';
++		kn = kn->parent;
++	} while (kn && kn->parent);
++
++	return p;
++}
++
++/**
++ * kernfs_name - obtain the name of a given node
++ * @kn: kernfs_node of interest
++ * @buf: buffer to copy @kn's name into
++ * @buflen: size of @buf
++ *
++ * Copies the name of @kn into @buf of @buflen bytes.  The behavior is
++ * similar to strlcpy().  It returns the length of @kn's name and if @buf
++ * isn't long enough, it's filled upto @buflen-1 and nul terminated.
++ *
++ * This function can be called from any context.
++ */
++int kernfs_name(struct kernfs_node *kn, char *buf, size_t buflen)
++{
++	unsigned long flags;
++	int ret;
++
++	spin_lock_irqsave(&kernfs_rename_lock, flags);
++	ret = kernfs_name_locked(kn, buf, buflen);
++	spin_unlock_irqrestore(&kernfs_rename_lock, flags);
++	return ret;
++}
++
++/**
++ * kernfs_path - build full path of a given node
++ * @kn: kernfs_node of interest
++ * @buf: buffer to copy @kn's name into
++ * @buflen: size of @buf
++ *
++ * Builds and returns the full path of @kn in @buf of @buflen bytes.  The
++ * path is built from the end of @buf so the returned pointer usually
++ * doesn't match @buf.  If @buf isn't long enough, @buf is nul terminated
++ * and %NULL is returned.
++ */
++char *kernfs_path(struct kernfs_node *kn, char *buf, size_t buflen)
++{
++	unsigned long flags;
++	char *p;
++
++	spin_lock_irqsave(&kernfs_rename_lock, flags);
++	p = kernfs_path_locked(kn, buf, buflen);
++	spin_unlock_irqrestore(&kernfs_rename_lock, flags);
++	return p;
++}
++
++/**
++ * pr_cont_kernfs_name - pr_cont name of a kernfs_node
++ * @kn: kernfs_node of interest
++ *
++ * This function can be called from any context.
++ */
++void pr_cont_kernfs_name(struct kernfs_node *kn)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&kernfs_rename_lock, flags);
++
++	kernfs_name_locked(kn, kernfs_pr_cont_buf, sizeof(kernfs_pr_cont_buf));
++	pr_cont("%s", kernfs_pr_cont_buf);
++
++	spin_unlock_irqrestore(&kernfs_rename_lock, flags);
++}
++
++/**
++ * pr_cont_kernfs_path - pr_cont path of a kernfs_node
++ * @kn: kernfs_node of interest
++ *
++ * This function can be called from any context.
++ */
++void pr_cont_kernfs_path(struct kernfs_node *kn)
++{
++	unsigned long flags;
++	char *p;
++
++	spin_lock_irqsave(&kernfs_rename_lock, flags);
++
++	p = kernfs_path_locked(kn, kernfs_pr_cont_buf,
++			       sizeof(kernfs_pr_cont_buf));
++	if (p)
++		pr_cont("%s", p);
++	else
++		pr_cont("<name too long>");
++
++	spin_unlock_irqrestore(&kernfs_rename_lock, flags);
++}
++
++/**
++ * kernfs_get_parent - determine the parent node and pin it
++ * @kn: kernfs_node of interest
++ *
++ * Determines @kn's parent, pins and returns it.  This function can be
++ * called from any context.
++ */
++struct kernfs_node *kernfs_get_parent(struct kernfs_node *kn)
++{
++	struct kernfs_node *parent;
++	unsigned long flags;
++
++	spin_lock_irqsave(&kernfs_rename_lock, flags);
++	parent = kn->parent;
++	kernfs_get(parent);
++	spin_unlock_irqrestore(&kernfs_rename_lock, flags);
++
++	return parent;
++}
++
+ /**
+  *	kernfs_name_hash
+  *	@name: Null terminated string to hash
+@@ -1103,8 +1240,14 @@ int kernfs_remove_by_name_ns(struct kernfs_node *parent, const char *name,
+ int kernfs_rename_ns(struct kernfs_node *kn, struct kernfs_node *new_parent,
+ 		     const char *new_name, const void *new_ns)
+ {
++	struct kernfs_node *old_parent;
++	const char *old_name = NULL;
+ 	int error;
+ 
++	/* can't move or rename root */
++	if (!kn->parent)
++		return -EINVAL;
++
+ 	mutex_lock(&kernfs_mutex);
+ 
+ 	error = -ENOENT;
+@@ -1126,13 +1269,8 @@ int kernfs_rename_ns(struct kernfs_node *kn, struct kernfs_node *new_parent,
+ 		new_name = kstrdup(new_name, GFP_KERNEL);
+ 		if (!new_name)
+ 			goto out;
+-
+-		if (kn->flags & KERNFS_STATIC_NAME)
+-			kn->flags &= ~KERNFS_STATIC_NAME;
+-		else
+-			kfree(kn->name);
+-
+-		kn->name = new_name;
++	} else {
++		new_name = NULL;
+ 	}
+ 
+ 	/*
+@@ -1140,12 +1278,29 @@ int kernfs_rename_ns(struct kernfs_node *kn, struct kernfs_node *new_parent,
+ 	 */
+ 	kernfs_unlink_sibling(kn);
+ 	kernfs_get(new_parent);
+-	kernfs_put(kn->parent);
+-	kn->ns = new_ns;
+-	kn->hash = kernfs_name_hash(kn->name, kn->ns);
++
++	/* rename_lock protects ->parent and ->name accessors */
++	spin_lock_irq(&kernfs_rename_lock);
++
++	old_parent = kn->parent;
+ 	kn->parent = new_parent;
++
++	kn->ns = new_ns;
++	if (new_name) {
++		if (!(kn->flags & KERNFS_STATIC_NAME))
++			old_name = kn->name;
++		kn->flags &= ~KERNFS_STATIC_NAME;
++		kn->name = new_name;
++	}
++
++	spin_unlock_irq(&kernfs_rename_lock);
++
++	kn->hash = kernfs_name_hash(new_name, new_ns);
+ 	kernfs_link_sibling(kn);
+ 
++	kernfs_put(old_parent);
++	kfree(old_name);
++
+ 	error = 0;
+  out:
+ 	mutex_unlock(&kernfs_mutex);
+diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
+index ee0d761..0b45ff4 100644
+--- a/fs/sysfs/dir.c
++++ b/fs/sysfs/dir.c
+@@ -19,39 +19,18 @@
+ 
+ DEFINE_SPINLOCK(sysfs_symlink_target_lock);
+ 
+-/**
+- *	sysfs_pathname - return full path to sysfs dirent
+- *	@kn: kernfs_node whose path we want
+- *	@path: caller allocated buffer of size PATH_MAX
+- *
+- *	Gives the name "/" to the sysfs_root entry; any path returned
+- *	is relative to wherever sysfs is mounted.
+- */
+-static char *sysfs_pathname(struct kernfs_node *kn, char *path)
+-{
+-	if (kn->parent) {
+-		sysfs_pathname(kn->parent, path);
+-		strlcat(path, "/", PATH_MAX);
+-	}
+-	strlcat(path, kn->name, PATH_MAX);
+-	return path;
+-}
+-
+ void sysfs_warn_dup(struct kernfs_node *parent, const char *name)
+ {
+-	char *path;
++	char *buf, *path = NULL;
+ 
+-	path = kzalloc(PATH_MAX, GFP_KERNEL);
+-	if (path) {
+-		sysfs_pathname(parent, path);
+-		strlcat(path, "/", PATH_MAX);
+-		strlcat(path, name, PATH_MAX);
+-	}
++	buf = kzalloc(PATH_MAX, GFP_KERNEL);
++	if (buf)
++		path = kernfs_path(parent, buf, PATH_MAX);
+ 
+-	WARN(1, KERN_WARNING "sysfs: cannot create duplicate filename '%s'\n",
+-	     path ? path : name);
++	WARN(1, KERN_WARNING "sysfs: cannot create duplicate filename '%s/%s'\n",
++	     path, name);
+ 
+-	kfree(path);
++	kfree(buf);
+ }
+ 
+ /**
+@@ -122,9 +101,13 @@ void sysfs_remove_dir(struct kobject *kobj)
+ int sysfs_rename_dir_ns(struct kobject *kobj, const char *new_name,
+ 			const void *new_ns)
+ {
+-	struct kernfs_node *parent = kobj->sd->parent;
++	struct kernfs_node *parent;
++	int ret;
+ 
+-	return kernfs_rename_ns(kobj->sd, parent, new_name, new_ns);
++	parent = kernfs_get_parent(kobj->sd);
++	ret = kernfs_rename_ns(kobj->sd, parent, new_name, new_ns);
++	kernfs_put(parent);
++	return ret;
+ }
+ 
+ int sysfs_move_dir_ns(struct kobject *kobj, struct kobject *new_parent_kobj,
+@@ -133,7 +116,6 @@ int sysfs_move_dir_ns(struct kobject *kobj, struct kobject *new_parent_kobj,
+ 	struct kernfs_node *kn = kobj->sd;
+ 	struct kernfs_node *new_parent;
+ 
+-	BUG_ON(!kn->parent);
+ 	new_parent = new_parent_kobj && new_parent_kobj->sd ?
+ 		new_parent_kobj->sd : sysfs_root_kn;
+ 
+diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
+index 9c89904..8736ee8 100644
+--- a/include/linux/kernfs.h
++++ b/include/linux/kernfs.h
+@@ -91,7 +91,12 @@ struct kernfs_node {
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ 	struct lockdep_map	dep_map;
+ #endif
+-	/* the following two fields are published */
++	/*
++	 * Use kernfs_get_parent() and kernfs_name/path() instead of
++	 * accessing the following two fields directly.  If the node is
++	 * never moved to a different parent, it is safe to access the
++	 * parent directly.
++	 */
+ 	struct kernfs_node	*parent;
+ 	const char		*name;
+ 
+@@ -229,6 +234,12 @@ static inline bool kernfs_ns_enabled(struct kernfs_node *kn)
+ 	return kn->flags & KERNFS_NS;
+ }
+ 
++int kernfs_name(struct kernfs_node *kn, char *buf, size_t buflen);
++char * __must_check kernfs_path(struct kernfs_node *kn, char *buf,
++				size_t buflen);
++void pr_cont_kernfs_name(struct kernfs_node *kn);
++void pr_cont_kernfs_path(struct kernfs_node *kn);
++struct kernfs_node *kernfs_get_parent(struct kernfs_node *kn);
+ struct kernfs_node *kernfs_find_and_get_ns(struct kernfs_node *parent,
+ 					   const char *name, const void *ns);
+ void kernfs_get(struct kernfs_node *kn);
+@@ -283,6 +294,19 @@ static inline void kernfs_enable_ns(struct kernfs_node *kn) { }
+ static inline bool kernfs_ns_enabled(struct kernfs_node *kn)
+ { return false; }
+ 
++static inline int kernfs_name(struct kernfs_node *kn, char *buf, size_t buflen)
++{ return -ENOSYS; }
++
++static inline char * __must_check kernfs_path(struct kernfs_node *kn, char *buf,
++					      size_t buflen)
++{ return NULL; }
++
++static inline void pr_cont_kernfs_name(struct kernfs_node *kn) { }
++static inline void pr_cont_kernfs_path(struct kernfs_node *kn) { }
++
++static inline struct kernfs_node *kernfs_get_parent(struct kernfs_node *kn)
++{ return NULL; }
++
+ static inline struct kernfs_node *
+ kernfs_find_and_get_ns(struct kernfs_node *parent, const char *name,
+ 		       const void *ns)
+-- 
+1.8.5.3
+
