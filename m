@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753822AbaBGLhw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:37:52 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41065 "EHLO
+	id S1753047AbaBGLYm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:24:42 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40892 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752176AbaBGLYn (ORCPT
+	with ESMTP id S1752176AbaBGLXz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:24:43 -0500
+	Fri, 7 Feb 2014 06:23:55 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 53/88] b43: Fix unload oops if firmware is not available
-Date: Fri,  7 Feb 2014 11:22:50 +0000
-Message-Id: <1391772205-22239-54-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 19/88] NFSv4: OPEN must handle the NFS4ERR_IO return code correctly
+Date: Fri,  7 Feb 2014 11:22:16 +0000
+Message-Id: <1391772205-22239-20-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
@@ -28,95 +27,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 0673effd41dba323d6a280ef37b5ef29f3f5a653 upstream.
+commit c7848f69ec4a8c03732cde5c949bd2aa711a9f4b upstream.
 
-The asyncronous firmware load uses a completion struct to hold firmware
-processing until the user-space routines are up and running. There is.
-however, a problem in that the waiter is nevered canceled during teardown.
-As a result, unloading the driver when firmware is not available causes an oops.
+decode_op_hdr() cannot distinguish between an XDR decoding error and
+the perfectly valid errorcode NFS4ERR_IO. This is normally not a
+problem, but for the particular case of OPEN, we need to be able
+to increment the NFSv4 open sequence id when the server returns
+a valid response.
 
-To be able to access the completion structure at teardown, it had to be moved
-into the b43_wldev structure.
-
-This patch also fixes a typo in a comment.
-
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: J Bruce Fields <bfields@fieldses.org>
+Link: http://lkml.kernel.org/r/20131204210356.GA19452@fieldses.org
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/b43/b43.h  |  4 ++--
- drivers/net/wireless/b43/main.c | 10 +++++-----
- 2 files changed, 7 insertions(+), 7 deletions(-)
+ fs/nfs/nfs4xdr.c | 47 +++++++++++++++++++++++++++++++----------------
+ 1 file changed, 31 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/net/wireless/b43/b43.h b/drivers/net/wireless/b43/b43.h
-index ac593ab..9f6a983 100644
---- a/drivers/net/wireless/b43/b43.h
-+++ b/drivers/net/wireless/b43/b43.h
-@@ -719,8 +719,6 @@ enum b43_firmware_file_type {
- struct b43_request_fw_context {
- 	/* The device we are requesting the fw for. */
- 	struct b43_wldev *dev;
--	/* a completion event structure needed if this call is asynchronous */
--	struct completion fw_load_complete;
- 	/* a pointer to the firmware object */
- 	const struct firmware *blob;
- 	/* The type of firmware to request. */
-@@ -797,6 +795,8 @@ enum {
- struct b43_wldev {
- 	struct b43_bus_dev *dev;
- 	struct b43_wl *wl;
-+	/* a completion event structure needed if this call is asynchronous */
-+	struct completion fw_load_complete;
- 
- 	/* The device initialization status.
- 	 * Use b43_status() to query. */
-diff --git a/drivers/net/wireless/b43/main.c b/drivers/net/wireless/b43/main.c
-index d7d2db9..71c72d1 100644
---- a/drivers/net/wireless/b43/main.c
-+++ b/drivers/net/wireless/b43/main.c
-@@ -2061,6 +2061,7 @@ void b43_do_release_fw(struct b43_firmware_file *fw)
- 
- static void b43_release_firmware(struct b43_wldev *dev)
- {
-+	complete(&dev->fw_load_complete);
- 	b43_do_release_fw(&dev->fw.ucode);
- 	b43_do_release_fw(&dev->fw.pcm);
- 	b43_do_release_fw(&dev->fw.initvals);
-@@ -2086,7 +2087,7 @@ static void b43_fw_cb(const struct firmware *firmware, void *context)
- 	struct b43_request_fw_context *ctx = context;
- 
- 	ctx->blob = firmware;
--	complete(&ctx->fw_load_complete);
-+	complete(&ctx->dev->fw_load_complete);
+diff --git a/fs/nfs/nfs4xdr.c b/fs/nfs/nfs4xdr.c
+index cfce99b..9e2d9a4 100644
+--- a/fs/nfs/nfs4xdr.c
++++ b/fs/nfs/nfs4xdr.c
+@@ -3011,7 +3011,8 @@ out_overflow:
+ 	return -EIO;
  }
  
- int b43_do_request_fw(struct b43_request_fw_context *ctx,
-@@ -2133,7 +2134,7 @@ int b43_do_request_fw(struct b43_request_fw_context *ctx,
- 	}
- 	if (async) {
- 		/* do this part asynchronously */
--		init_completion(&ctx->fw_load_complete);
-+		init_completion(&ctx->dev->fw_load_complete);
- 		err = request_firmware_nowait(THIS_MODULE, 1, ctx->fwname,
- 					      ctx->dev->dev->dev, GFP_KERNEL,
- 					      ctx, b43_fw_cb);
-@@ -2141,12 +2142,11 @@ int b43_do_request_fw(struct b43_request_fw_context *ctx,
- 			pr_err("Unable to load firmware\n");
- 			return err;
- 		}
--		/* stall here until fw ready */
--		wait_for_completion(&ctx->fw_load_complete);
-+		wait_for_completion(&ctx->dev->fw_load_complete);
- 		if (ctx->blob)
- 			goto fw_ready;
- 	/* On some ARM systems, the async request will fail, but the next sync
--	 * request works. For this reason, we dall through here
-+	 * request works. For this reason, we fall through here
- 	 */
- 	}
- 	err = request_firmware(&ctx->blob, ctx->fwname,
+-static int decode_op_hdr(struct xdr_stream *xdr, enum nfs_opnum4 expected)
++static bool __decode_op_hdr(struct xdr_stream *xdr, enum nfs_opnum4 expected,
++		int *nfs_retval)
+ {
+ 	__be32 *p;
+ 	uint32_t opnum;
+@@ -3021,19 +3022,32 @@ static int decode_op_hdr(struct xdr_stream *xdr, enum nfs_opnum4 expected)
+ 	if (unlikely(!p))
+ 		goto out_overflow;
+ 	opnum = be32_to_cpup(p++);
+-	if (opnum != expected) {
+-		dprintk("nfs: Server returned operation"
+-			" %d but we issued a request for %d\n",
+-				opnum, expected);
+-		return -EIO;
+-	}
++	if (unlikely(opnum != expected))
++		goto out_bad_operation;
+ 	nfserr = be32_to_cpup(p);
+-	if (nfserr != NFS_OK)
+-		return nfs4_stat_to_errno(nfserr);
+-	return 0;
++	if (nfserr == NFS_OK)
++		*nfs_retval = 0;
++	else
++		*nfs_retval = nfs4_stat_to_errno(nfserr);
++	return true;
++out_bad_operation:
++	dprintk("nfs: Server returned operation"
++		" %d but we issued a request for %d\n",
++			opnum, expected);
++	*nfs_retval = -EREMOTEIO;
++	return false;
+ out_overflow:
+ 	print_overflow_msg(__func__, xdr);
+-	return -EIO;
++	*nfs_retval = -EIO;
++	return false;
++}
++
++static int decode_op_hdr(struct xdr_stream *xdr, enum nfs_opnum4 expected)
++{
++	int retval;
++
++	__decode_op_hdr(xdr, expected, &retval);
++	return retval;
+ }
+ 
+ /* Dummy routine */
+@@ -4848,11 +4862,12 @@ static int decode_open(struct xdr_stream *xdr, struct nfs_openres *res)
+ 	uint32_t savewords, bmlen, i;
+ 	int status;
+ 
+-	status = decode_op_hdr(xdr, OP_OPEN);
+-	if (status != -EIO)
+-		nfs_increment_open_seqid(status, res->seqid);
+-	if (!status)
+-		status = decode_stateid(xdr, &res->stateid);
++	if (!__decode_op_hdr(xdr, OP_OPEN, &status))
++		return status;
++	nfs_increment_open_seqid(status, res->seqid);
++	if (status)
++		return status;
++	status = decode_stateid(xdr, &res->stateid);
+ 	if (unlikely(status))
+ 		return status;
+ 
 -- 
 1.8.3.2
 
