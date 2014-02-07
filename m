@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754268AbaBGNMy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 08:12:54 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41620 "EHLO
+	id S1753468AbaBGLsk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:48:40 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41586 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754488AbaBGLsn (ORCPT
+	with ESMTP id S932079AbaBGLsf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:48:43 -0500
+	Fri, 7 Feb 2014 06:48:35 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 048/233] rtlwifi: Set the link state
-Date: Fri,  7 Feb 2014 11:44:27 +0000
-Message-Id: <1391773652-25214-49-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 043/233] KVM: s390: fix diagnose code extraction
+Date: Fri,  7 Feb 2014 11:44:22 +0000
+Message-Id: <1391773652-25214-44-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -28,32 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-commit 619ce76f8bb850b57032501a39f26aa6c6731c70 upstream.
+commit 743db27c526e0f31cc507959d662e97e2048a86f upstream.
 
-The present code fails to set the linked state when an interface is
-added.
+The diagnose code to be used is the contents of the base register (if not
+zero), plus the displacement. The current code ignores the base register
+contents. So let's fix that...
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/rtlwifi/core.c | 1 +
- 1 file changed, 1 insertion(+)
+ arch/s390/kvm/diag.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/rtlwifi/core.c b/drivers/net/wireless/rtlwifi/core.c
-index 0f12cd3..3550e8a 100644
---- a/drivers/net/wireless/rtlwifi/core.c
-+++ b/drivers/net/wireless/rtlwifi/core.c
-@@ -194,6 +194,7 @@ static int rtl_op_add_interface(struct ieee80211_hw *hw,
- 					rtlpriv->cfg->maps
- 					[RTL_IBSS_INT_MASKS]);
- 		}
-+		mac->link_state = MAC80211_LINKED;
- 		break;
- 	case NL80211_IFTYPE_ADHOC:
- 		RT_TRACE(rtlpriv, COMP_MAC80211, DBG_LOUD,
+diff --git a/arch/s390/kvm/diag.c b/arch/s390/kvm/diag.c
+index 3074475..0ae0ea6 100644
+--- a/arch/s390/kvm/diag.c
++++ b/arch/s390/kvm/diag.c
+@@ -130,7 +130,7 @@ static int __diag_virtio_hypercall(struct kvm_vcpu *vcpu)
+ 
+ int kvm_s390_handle_diag(struct kvm_vcpu *vcpu)
+ {
+-	int code = (vcpu->arch.sie_block->ipb & 0xfff0000) >> 16;
++	int code = kvm_s390_get_base_disp_rs(vcpu) & 0xffff;
+ 
+ 	if (vcpu->arch.sie_block->gpsw.mask & PSW_MASK_PSTATE)
+ 		return kvm_s390_inject_program_int(vcpu, PGM_PRIVILEGED_OP);
 -- 
 1.8.3.2
 
