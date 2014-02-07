@@ -1,82 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751664AbaBGEXu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 23:23:50 -0500
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:38384 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751056AbaBGEXs (ORCPT
+	id S1751853AbaBGEYd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 23:24:33 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:41257 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751056AbaBGEYc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 23:23:48 -0500
+	Thu, 6 Feb 2014 23:24:32 -0500
+Date: Thu, 6 Feb 2014 20:24:27 -0800
+From: Matt Wilson <msw@linux.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>, mrushton@amazon.com,
+        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
+        msw@amazon.com, Roger Pau Monne <roger.pau@citrix.com>
+Subject: Re: [Xen-devel] [PATCH v2 0/4] xen-blk: bug fixes
+Message-ID: <20140207042427.GA28057@u109add4315675089e695.ant.amazon.com>
+References: <1391509575-3949-1-git-send-email-roger.pau@citrix.com>
+ <20140204151501.GA1781@andromeda.dapyr.net>
+ <20140206045729.GA15901@u109add4315675089e695.ant.amazon.com>
+ <20140206162004.GA22864@konrad-lan.dumpdata.com>
 MIME-Version: 1.0
-In-Reply-To: <87ppn0v3i2.fsf@devron.myhome.or.jp>
-References: <1387953050-2692-1-git-send-email-linkinjeon@gmail.com>
-	<87ioswx1xq.fsf@devron.myhome.or.jp>
-	<CAKYAXd91w8rtXpq45Ckj+6kGWAnn9Gj80EezpomyXO6+yggivQ@mail.gmail.com>
-	<87y51rue2a.fsf@devron.myhome.or.jp>
-	<87txcfudzu.fsf@devron.myhome.or.jp>
-	<CAKYAXd91uHuT=Dze9BHY_LjHq2tB=HO83fxeRsnWzt-vRcwoyA@mail.gmail.com>
-	<87ppn0v3i2.fsf@devron.myhome.or.jp>
-Date: Fri, 7 Feb 2014 13:23:47 +0900
-Message-ID: <CAKYAXd9aTdk=21jTxtMcTjpxH9VuqrCTGgyTDkzD2NYKaGKB3g@mail.gmail.com>
-Subject: Re: [PATCH v3 1/6] fat: add i_disksize to represent uninitialized size
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140206162004.GA22864@konrad-lan.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-02-06, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
-> Namjae Jeon <linkinjeon@gmail.com> writes:
->
->>>> fat_fill_inode() just set i_disksize to i_size. So, it is not aligned
->>>> by
->>>> cluster size or block size.
->>>>
->>>> E.g. ->mmu_private = 500. Then, cont_write_begin() can set
->>>> ->mmu_private
->>>> to 512 on some case. In this case, fat_get_block() will not be called,
->>>> because no new allocation.
->>>>
->>>> If this is true, it would be possible to have ->mmu_private == 512 and
->>>> ->i_disksize == 500.
->>>>
->>>> I'm missing something?
->>>
->>> BTW, even if above was right, I'm not checking whether updating
->>> ->i_disksize after cont_write_begin() is right fix or not.
->> I understand your concern. these can be mismatched.  But, when
->> checking your doubt, I can not find any side effect.  I think that
->> there is no issue regardless of alignment of two value, in the
->> cont_write_begin.  Could you please share any point I am missing ?  If
->> you suggest checking point or test method, I can check more and share
->> the result.
->
-> I'm not checking whether it is wrong or not. But, like you said,
-> ->mmu_private > ->i_disksize is wrong in theory.
->
-> Although, it might have no real problem.
->
-> So, how about to set ->i_disksize to aligned by blocksize at first
-> (i.e. when initializing the inode)?
-Yes, It is good idea.
->
-> This may change the behavior when ->mmu_private is not aligned to
-> blocksize in current patchset. But, in theory, it is right state
-> (between ->mmu_private and ->i_disksize is uninitialized). I guess, we
-> can do it with small adjustments, and keep state valid in theory too.
-Right.
->
-> This is just a my guess, so it might be wrong though. I guess, worth to
-> try to consider.
-Okay, I will include it in next patch-set after checking.
+On Thu, Feb 06, 2014 at 11:20:04AM -0500, Konrad Rzeszutek Wilk wrote:
+> On Wed, Feb 05, 2014 at 08:57:30PM -0800, Matt Wilson wrote:
+> > On Tue, Feb 04, 2014 at 11:15:01AM -0400, Konrad Rzeszutek Wilk wrote:
+> > > On Tue, Feb 04, 2014 at 11:26:11AM +0100, Roger Pau Monne wrote:
+> > > > This series contain blkback bug fixes for memory leaks (patches 1 and 
+> > > > 2) and a race (patch 3). Patch 4 removes blkif_request_segment_aligned 
+> > > > since its memory layout is exactly the same as blkif_request_segment 
+> > > > and should introduce no functional change.
+> > > > 
+> > > > All patches should be backported to stable branches, although the last 
+> > > > one is not a functional change it will still be nice to have it for 
+> > > > code correctness.
+> > > 
+> > > Matt and Matt, could you guys kindly take a look as well? Thank you!
+> > 
+> > Matt R. did some testing today and set up additional tests to run
+> > overnight. He'll follow up after the overnight tests complete.
+> 
+> Thank you!
 
-Thanks for your review!
->
-> Thanks.
-> --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
->
+Just in case the various mailing list software ate Matt's messages, he
+sent the following:
+
+[PATCH v2 2/4] xen-blkback: fix memory leaks
+Tested-by: Matt Rushton <mrushton@amazon.com>
+Reviewed-by: Matt Rushton <mrushton@amazon.com>
+
+[PATCH v2 3/4] xen-blkback: fix shutdown race
+Tested-by: Matt Rushton <mrushton@amazon.com>
+Reviewed-by: Matt Rushton <mrushton@amazon.com>
+
+[PATCH v2 4/4] xen-blkif: drop struct blkif_request_segment_aligned
+Tested-by: Matt Rushton <mrushton@amazon.com>
+
+I've separately sent suggestions to Matt on how to setup his mailer to
+format messages per list etiquette and how to avoid breaking message
+threading.
+
+--msw
