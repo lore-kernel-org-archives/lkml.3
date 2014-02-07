@@ -1,106 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751951AbaBGQsX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 11:48:23 -0500
-Received: from mga01.intel.com ([192.55.52.88]:38292 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751770AbaBGQsV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 11:48:21 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,801,1384329600"; 
-   d="asc'?scan'208";a="471490366"
-Message-ID: <1391791674.21697.2.camel@intelbox>
-Subject: Re: intel_sdvo_init: trying to register non-static key
-From: Imre Deak <imre.deak@intel.com>
-Reply-To: imre.deak@intel.com
-To: Borislav Petkov <bp@alien8.de>
-Cc: Daniel Vetter <daniel@ffwll.ch>, Jani Nikula <jani.nikula@linux.intel.com>,
-        intel-gfx@lists.freedesktop.org,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 07 Feb 2014 18:47:54 +0200
-In-Reply-To: <20140207154911.GK24395@pd.tnic>
-References: <20140207093205.GA24395@pd.tnic> <87d2iz18vi.fsf@intel.com>
-	 <1391771542.5669.6.camel@intelbox> <20140207112809.GG24395@pd.tnic>
-	 <20140207145149.GZ17001@phenom.ffwll.local>
-	 <1391787126.5669.11.camel@intelbox> <20140207154911.GK24395@pd.tnic>
-Organization: Intel
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-6vlXWJ9hRpVp3iWWyqvy"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1752694AbaBGQsj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 11:48:39 -0500
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:37487 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752100AbaBGQsb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 11:48:31 -0500
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bfields@fieldses.org, hch@infradead.org, akpm@linux-foundation.org,
+        dhowells@redhat.com, zab@redhat.com, jack@suse.cz, luto@amacapital.net,
+        mszeredi@suse.cz
+Subject: [PATCH 02/13] vfs: rename: move d_move() up
+Date: Fri,  7 Feb 2014 17:49:00 +0100
+Message-Id: <1391791751-2533-3-git-send-email-miklos@szeredi.hu>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1391791751-2533-1-git-send-email-miklos@szeredi.hu>
+References: <1391791751-2533-1-git-send-email-miklos@szeredi.hu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Miklos Szeredi <mszeredi@suse.cz>
 
---=-6vlXWJ9hRpVp3iWWyqvy
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Move the d_move() in vfs_rename_dir() up, similarly to how it's done in
+vfs_rename_other().  The next patch will consolidate these two functions
+and this is the only structural difference between them.
 
-On Fri, 2014-02-07 at 16:49 +0100, Borislav Petkov wrote:
-> On Fri, Feb 07, 2014 at 05:32:06PM +0200, Imre Deak wrote:
-> > I just realized it's a different issue, since it's on the init path.
-> > Also we set the drm device as the parent for the sdvo i2c adapter as
-> > opposed to the dp i2c adapter where it's the connector device. So the
-> > above patch won't help in Borislav's case.
+I'm not sure if doing the d_move() after the dput is even valid.  But there
+may be a logical explanation for that.  But moving the d_move() before the
+dput() (and the mutex_unlock()) should definitely not hurt.
 
-Ok, not sure why the sdvo initialization fails, but the lockdep warning
-is probably fixed by the below patch. Could you try it and send a dmesg
-with drm.debug=3D0xe?
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+---
+ fs/namei.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
-index 5104cf5..bd6e18b 100644
---- a/fs/kernfs/dir.c
-+++ b/fs/kernfs/dir.c
-@@ -187,19 +187,23 @@ static void kernfs_deactivate(struct kernfs_node
-*kn)
-=20
- 	kn->u.completion =3D (void *)&wait;
-=20
--	rwsem_acquire(&kn->dep_map, 0, 0, _RET_IP_);
-+	if (kn->flags & KERNFS_LOCKDEP)
-+		rwsem_acquire(&kn->dep_map, 0, 0, _RET_IP_);
- 	/* atomic_add_return() is a mb(), put_active() will always see
- 	 * the updated kn->u.completion.
- 	 */
- 	v =3D atomic_add_return(KN_DEACTIVATED_BIAS, &kn->active);
-=20
- 	if (v !=3D KN_DEACTIVATED_BIAS) {
--		lock_contended(&kn->dep_map, _RET_IP_);
-+		if (kn->flags & KERNFS_LOCKDEP)
-+			lock_contended(&kn->dep_map, _RET_IP_);
- 		wait_for_completion(&wait);
+diff --git a/fs/namei.c b/fs/namei.c
+index 258c06ae26a7..1409090d0913 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -4018,13 +4018,12 @@ static int vfs_rename_dir(struct inode *old_dir, struct dentry *old_dentry,
+ 		target->i_flags |= S_DEAD;
+ 		dont_mount(new_dentry);
  	}
-=20
--	lock_acquired(&kn->dep_map, _RET_IP_);
--	rwsem_release(&kn->dep_map, 1, _RET_IP_);
-+	if (kn->flags & KERNFS_LOCKDEP) {
-+		lock_acquired(&kn->dep_map, _RET_IP_);
-+		rwsem_release(&kn->dep_map, 1, _RET_IP_);
-+	}
++	if (!(old_dir->i_sb->s_type->fs_flags & FS_RENAME_DOES_D_MOVE))
++		d_move(old_dentry, new_dentry);
+ out:
+ 	if (target)
+ 		mutex_unlock(&target->i_mutex);
+ 	dput(new_dentry);
+-	if (!error)
+-		if (!(old_dir->i_sb->s_type->fs_flags & FS_RENAME_DOES_D_MOVE))
+-			d_move(old_dentry,new_dentry);
+ 	return error;
  }
-=20
-
-
-
---=-6vlXWJ9hRpVp3iWWyqvy
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQEcBAABAgAGBQJS9Q46AAoJEORIIAnNuWDFgyIH/2l0DhaHdIJ07uwLz09CMhw5
-AAdb4nZF0Lgys6f/+rZdxZtcmMY4yNW6K4H2faiCwdNB6exgZGkaY8U3YOt+WDq1
-n/p0/Gvuaz17ZUQHB4tod3Rp4uKbrrk9S3S3/AxxvCHmhZAS3kYAJOA4L8EPDGMK
-U58BbSIDM005GmH+UTcVVEMXyTp7fjDF8TUZFzR/JGLDwm+fCAeVmjpMkSGLHuAm
-KtvGGbKiOjNiHiNq+jekySv0zYRwdpZn1nJF7rxES7glStZmP2ctXPhcuXvWRIy6
-BAtTG2xSJqCkDrrfrID9j5J3gTCea/NH/3XsyBAR/Gl1BfqBrYvrQy9HfMpkeFU=
-=3pxW
------END PGP SIGNATURE-----
-
---=-6vlXWJ9hRpVp3iWWyqvy--
+ 
+-- 
+1.8.1.4
 
