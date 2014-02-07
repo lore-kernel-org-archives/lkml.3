@@ -1,76 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755558AbaBGM0x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:26:53 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42109 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753701AbaBGLvF (ORCPT
+	id S932260AbaBGM1i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:27:38 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:44445 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752998AbaBGM1f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:51:05 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 146/233] NFSv4.1: Handle errors correctly in nfs41_walk_client_list
-Date: Fri,  7 Feb 2014 11:46:05 +0000
-Message-Id: <1391773652-25214-147-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
-References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Fri, 7 Feb 2014 07:27:35 -0500
+Date: Fri, 7 Feb 2014 17:57:30 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Armin Schindler <mac@melware.de>, Karsten Keil <isdn@linux-pingi.de>,
+        netdev@vger.kernel.org, josh@joshtriplett.org
+Subject: [PATCH 08/26] drivers: isdn: Move prototype declaration to header
+ file platform.h from divasmain.c and divasproc.c
+Message-ID: <4cb5fd91772555252cb638933c703ace2dfb181f.1390408515.git.rashika.kheria@gmail.com>
+References: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.4 -stable review patch.  If anyone has any objections, please let me know.
+Move prototype declarations of functions to header file
+hardware/eicon/platform.h because they are used by more than one file.
 
-------------------
+This eliminates the following warnings in hardware/eicon/divasfunc.c:
+drivers/isdn/hardware/eicon/divasfunc.c:49:6: warning: no previous prototype for ‘diva_get_vserial_number’ [-Wmissing-prototypes]
+drivers/isdn/hardware/eicon/divasfunc.c:212:12: warning: no previous prototype for ‘divasfunc_init’ [-Wmissing-prototypes]
+drivers/isdn/hardware/eicon/divasfunc.c:233:6: warning: no previous prototype for ‘divasfunc_exit’ [-Wmissing-prototypes]
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-
-commit 64590daa9e0dfb3aad89e3ab9230683b76211d5b upstream.
-
-Both nfs41_walk_client_list and nfs40_walk_client_list expect the
-'status' variable to be set to the value -NFS4ERR_STALE_CLIENTID
-if the loop fails to find a match.
-The problem is that the 'pos->cl_cons_state > NFS_CS_READY' changes
-the value of 'status', and sets it either to the value '0' (which
-indicates success), or to the value EINTR.
-
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- fs/nfs/nfs4client.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/isdn/hardware/eicon/divasmain.c |    3 ---
+ drivers/isdn/hardware/eicon/divasproc.c |    1 -
+ drivers/isdn/hardware/eicon/platform.h  |    4 ++++
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/fs/nfs/nfs4client.c b/fs/nfs/nfs4client.c
-index 90dce91..3ae4d8c 100644
---- a/fs/nfs/nfs4client.c
-+++ b/fs/nfs/nfs4client.c
-@@ -329,9 +329,10 @@ int nfs40_walk_client_list(struct nfs_client *new,
- 			prev = pos;
+diff --git a/drivers/isdn/hardware/eicon/divasmain.c b/drivers/isdn/hardware/eicon/divasmain.c
+index a2e0ed6..83a788f 100644
+--- a/drivers/isdn/hardware/eicon/divasmain.c
++++ b/drivers/isdn/hardware/eicon/divasmain.c
+@@ -58,9 +58,6 @@ char *DRIVERRELEASE_DIVAS = "2.0";
+ extern irqreturn_t diva_os_irq_wrapper(int irq, void *context);
+ extern int create_divas_proc(void);
+ extern void remove_divas_proc(void);
+-extern void diva_get_vserial_number(PISDN_ADAPTER IoAdapter, char *buf);
+-extern int divasfunc_init(int dbgmask);
+-extern void divasfunc_exit(void);
  
- 			status = nfs_wait_client_init_complete(pos);
--			spin_lock(&nn->nfs_client_lock);
- 			if (status < 0)
--				continue;
-+				goto out;
-+			status = -NFS4ERR_STALE_CLIENTID;
-+			spin_lock(&nn->nfs_client_lock);
- 		}
- 		if (pos->cl_cons_state != NFS_CS_READY)
- 			continue;
-@@ -469,7 +470,8 @@ int nfs41_walk_client_list(struct nfs_client *new,
- 			}
- 			spin_lock(&nn->nfs_client_lock);
- 			if (status < 0)
--				continue;
-+				break;
-+			status = -NFS4ERR_STALE_CLIENTID;
- 		}
- 		if (pos->cl_cons_state != NFS_CS_READY)
- 			continue;
+ typedef struct _diva_os_thread_dpc {
+ 	struct tasklet_struct divas_task;
+diff --git a/drivers/isdn/hardware/eicon/divasproc.c b/drivers/isdn/hardware/eicon/divasproc.c
+index edb7f39..9161393 100644
+--- a/drivers/isdn/hardware/eicon/divasproc.c
++++ b/drivers/isdn/hardware/eicon/divasproc.c
+@@ -34,7 +34,6 @@
+ 
+ 
+ extern PISDN_ADAPTER IoAdapters[MAX_ADAPTER];
+-extern void diva_get_vserial_number(PISDN_ADAPTER IoAdapter, char *buf);
+ 
+ /*********************************************************
+  ** Functions for /proc interface / File operations
+diff --git a/drivers/isdn/hardware/eicon/platform.h b/drivers/isdn/hardware/eicon/platform.h
+index e861857..ef329e0 100644
+--- a/drivers/isdn/hardware/eicon/platform.h
++++ b/drivers/isdn/hardware/eicon/platform.h
+@@ -158,6 +158,10 @@ void divas_get_version(char *);
+ void diva_xdi_didd_register_adapter(int card);
+ void diva_xdi_didd_remove_adapter(int card);
+ 
++void diva_get_vserial_number(PISDN_ADAPTER IoAdapter, char *buf);
++int divasfunc_init(int dbgmask);
++void divasfunc_exit(void);
++
+ /*
+ ** memory allocation
+ */
 -- 
-1.8.3.2
+1.7.9.5
 
