@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754065AbaBGLmk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:42:40 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41009 "EHLO
+	id S1753875AbaBGLmj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:42:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40999 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752877AbaBGLY1 (ORCPT
+	with ESMTP id S1752885AbaBGLY1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 Feb 2014 06:24:27 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Paul Moore <pmoore@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 41/88] serial: 8250: enable UART_BUG_NOMSR for Tegra
-Date: Fri,  7 Feb 2014 11:22:38 +0000
-Message-Id: <1391772205-22239-42-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 38/88] SELinux: Fix memory leak upon loading policy
+Date: Fri,  7 Feb 2014 11:22:35 +0000
+Message-Id: <1391772205-22239-39-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
@@ -28,70 +28,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Warren <swarren@nvidia.com>
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 
-commit 3685f19e07802ec4207b52465c408f185b66490e upstream.
+commit 8ed814602876bec9bad2649ca17f34b499357a1c upstream.
 
-Tegra chips have 4 or 5 identical UART modules embedded. UARTs C..E have
-their MODEM-control signals tied off to a static state. However UARTs A
-and B can optionally route those signals to/from package pins, depending
-on the exact pinmux configuration.
+Hello.
 
-When these signals are not routed to package pins, false interrupts may
-trigger either temporarily, or permanently, all while not showing up in
-the IIR; it will read as NO_INT. This will eventually lead to the UART
-IRQ being disabled due to unhandled interrupts. When this happens, the
-kernel may print e.g.:
+I got below leak with linux-3.10.0-54.0.1.el7.x86_64 .
 
-    irq 68: nobody cared (try booting with the "irqpoll" option)
+[  681.903890] kmemleak: 5538 new suspected memory leaks (see /sys/kernel/debug/kmemleak)
 
-In order to prevent this, enable UART_BUG_NOMSR. This prevents
-UART_IER_MSI from being enabled, which prevents the false interrupts
-from triggering.
+Below is a patch, but I don't know whether we need special handing for undoing
+ebitmap_set_bit() call.
+----------
+>>From fe97527a90fe95e2239dfbaa7558f0ed559c0992 Mon Sep 17 00:00:00 2001
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Date: Mon, 6 Jan 2014 16:30:21 +0900
+Subject: [PATCH] SELinux: Fix memory leak upon loading policy
 
-In practice, this is not needed under any of the following conditions:
+Commit 2463c26d "SELinux: put name based create rules in a hashtable" did not
+check return value from hashtab_insert() in filename_trans_read(). It leaks
+memory if hashtab_insert() returns error.
 
-* On Tegra chips after Tegra30, since the HW bug has apparently been
-  fixed.
+  unreferenced object 0xffff88005c9160d0 (size 8):
+    comm "systemd", pid 1, jiffies 4294688674 (age 235.265s)
+    hex dump (first 8 bytes):
+      57 0b 00 00 6b 6b 6b a5                          W...kkk.
+    backtrace:
+      [<ffffffff816604ae>] kmemleak_alloc+0x4e/0xb0
+      [<ffffffff811cba5e>] kmem_cache_alloc_trace+0x12e/0x360
+      [<ffffffff812aec5d>] policydb_read+0xd1d/0xf70
+      [<ffffffff812b345c>] security_load_policy+0x6c/0x500
+      [<ffffffff812a623c>] sel_write_load+0xac/0x750
+      [<ffffffff811eb680>] vfs_write+0xc0/0x1f0
+      [<ffffffff811ec08c>] SyS_write+0x4c/0xa0
+      [<ffffffff81690419>] system_call_fastpath+0x16/0x1b
+      [<ffffffffffffffff>] 0xffffffffffffffff
 
-* On UARTs C..E since their MODEM control signals are tied to the correct
-  static state which doesn't trigger the issue.
+However, we should not return EEXIST error to the caller, or the systemd will
+show below message and the boot sequence freezes.
 
-* On UARTs A..B if the MODEM control signals are routed out to package
-  pins, since they will then carry valid signals.
+  systemd[1]: Failed to load SELinux policy. Freezing.
 
-However, we ignore these exceptions for now, since they are only relevant
-if a board actually hooks up more than a 4-wire UART, and no currently
-supported board does this. If we ever support a board that does, we can
-refine the algorithm that enables UART_BUG_NOMSR to take those exceptions
-into account, and/or read a flag from DT/... that indicates that the
-board has hooked up and pinmux'd more than a 4-wire UART.
-
-Reported-by: Olof Johansson <olof@lixom.net> # autotester
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ luis: backported to 3.5:
-  - file rename: 8250_core.c -> 8250.c ]
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Acked-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/tty/serial/8250/8250.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ security/selinux/ss/policydb.c | 14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/tty/serial/8250/8250.c b/drivers/tty/serial/8250/8250.c
-index d9e2594..899c2b9 100644
---- a/drivers/tty/serial/8250/8250.c
-+++ b/drivers/tty/serial/8250/8250.c
-@@ -2615,6 +2615,10 @@ static void serial8250_config_port(struct uart_port *port, int flags)
- 	if (port->type == PORT_16550A && port->iotype == UPIO_AU)
- 		up->bugs |= UART_BUG_NOMSR;
+diff --git a/security/selinux/ss/policydb.c b/security/selinux/ss/policydb.c
+index 9cd9b7c..142a59f 100644
+--- a/security/selinux/ss/policydb.c
++++ b/security/selinux/ss/policydb.c
+@@ -1941,7 +1941,19 @@ static int filename_trans_read(struct policydb *p, void *fp)
+ 		if (rc)
+ 			goto out;
  
-+	/* HW bugs may trigger IRQ while IIR == NO_INT */
-+	if (port->type == PORT_TEGRA)
-+		up->bugs |= UART_BUG_NOMSR;
-+
- 	if (port->type != PORT_UNKNOWN && flags & UART_CONFIG_IRQ)
- 		autoconfig_irq(up);
- 
+-		hashtab_insert(p->filename_trans, ft, otype);
++		rc = hashtab_insert(p->filename_trans, ft, otype);
++		if (rc) {
++			/*
++			 * Do not return -EEXIST to the caller, or the system
++			 * will not boot.
++			 */
++			if (rc != -EEXIST)
++				goto out;
++			/* But free memory to avoid memory leak. */
++			kfree(ft);
++			kfree(name);
++			kfree(otype);
++		}
+ 	}
+ 	hash_eval(p->filename_trans, "filenametr");
+ 	return 0;
 -- 
 1.8.3.2
 
