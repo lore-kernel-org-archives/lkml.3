@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752039AbaBGKjp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 05:39:45 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:50797 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751068AbaBGKjn (ORCPT
+	id S1752069AbaBGKlN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 05:41:13 -0500
+Received: from www.linutronix.de ([62.245.132.108]:42873 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751699AbaBGKlM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 05:39:43 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Roger Quadros <rogerq@ti.com>
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>, kishon@ti.com,
-        Tejun Heo <tj@kernel.org>, balbi@ti.com, bcousson@baylibre.com,
-        tony@atomide.com, balajitk@ti.com, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>
-Subject: Re: [RFC PATCH 08/15] ata: ahci_platform: Manage SATA PHY
-Date: Fri, 07 Feb 2014 11:39:03 +0100
-Message-ID: <463926864.ALblgUKdgH@wuerfel>
-User-Agent: KMail/4.11.3 (Linux/3.11.0-15-generic; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <52F4B682.2000201@ti.com>
-References: <1379595943-14622-1-git-send-email-rogerq@ti.com> <5240492D.6060204@ti.com> <52F4B682.2000201@ti.com>
+	Fri, 7 Feb 2014 05:41:12 -0500
+Date: Fri, 7 Feb 2014 11:41:07 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Nicholas Mc Guire <der.herr@hofr.at>
+Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, rostedt@goodmis.org,
+        John Kacur <jkacur@redhat.com>
+Subject: Re: [ANNOUNCE] 3.12.9-rt13
+Message-ID: <20140207104107.GC23668@linutronix.de>
+References: <20140203194841.GA17108@linutronix.de>
+ <20140205092657.GA21590@opentech.at>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:Cjb87jOFoEfZ0zE3peceIgyQxf9LtFoAcjrLNMNxm3X
- 4RNZW1uVCHmaEmS+QTepk2iaT9Ek52guUPO6Kt6Fx2jwJtldYE
- w8H6WGpFKiazQTWoD/RR3EjkcdY6n3KIxbFObzpAxNzDzaNqKK
- bll8gNKaWBYaetB6hwg4WL0gjLcy/xLDOdUm+Y6GwwKUwjHLac
- BfxZ7m/wzBujH7TG/qMZUKwRlaL1qrTOci9KTrZIPJK6f3w9sr
- Jnb0wJTZCalDtCwBWNdS0I3Z+nvNoXRgtith/jg0qnV574yyT1
- 5m9aoT9MPFJjk7498m1Iw44T0KoSArG9rblLYxIxYKTzOxiFak
- VU9ELgH7F5cn5VWSNqN0=
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140205092657.GA21590@opentech.at>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 07 February 2014 12:33:38 Roger Quadros wrote:
-> 
-> This means we need to make CONFIG_SATA_AHCI_PLATFORM depend on CONFIG_GENERIC_PHY or
-> select it.
-> 
-> OR
-> 
-> Generic PHY layer must be fixed so that the API's are always built in.
-> 
-> What is the better option? I believe making the PHY API's always built in is the better option.
-> 
+* Nicholas Mc Guire | 2014-02-05 10:26:57 [+0100]:
 
-CONFIG_SATA_AHCI_PLATFORM should do
+>Sorry - this one causes a build failure with PREEMPT_RT_BASE=y and 
+>PREEMPT_RT_FULL not set.
 
-	"depends on CONFIG_GENERIC_PHY || !CONFIG_GENERIC_PHY"
+At some point we are going to drop PREEMPT_RT_BASE because it was only
+meant for debugging in the beginning. However I don't know when this
+will be.
 
-which is the Kconfig way of saying that if CONFIG_GENERIC_PHY is a module,
-CONFIG_SATA_AHCI_PLATFORM needs to be a module as well.
+>The patch below fixes this build failure for 3.12.9-rt13.
+>
+>Not sure what the clean way of resolving this is - this patch proposes to
+>move the spin_*_local into linux/locallock.h and map to spin_*lock for
+>the "CONFIG_PREEMPT_RT_FULL not set" case.
+>
+>This was build tested with Preempt none,voluntary,low-lat,base,full and 
+>otherweise got only limited testing.
+>
+>I'm also not sure if putting the rt specific locks into locallock.h in 
+>this way is the proper way to deal with this #include dependency.
 
-	Arnd
+I think I keep it that way. However I split into two patches and add the
+spin_lock_local => rt_spin_lock mapping in the rt-add-rt-locks.patch
+where the locks are introduced.
+
+Sebastian
