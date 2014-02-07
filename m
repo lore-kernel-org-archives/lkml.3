@@ -1,134 +1,277 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752571AbaBGKIt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 05:08:49 -0500
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:53892 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752491AbaBGKIr (ORCPT
+	id S1752644AbaBGKJe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 05:09:34 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:30169 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751898AbaBGKFT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 05:08:47 -0500
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1402062229000.21991@ionos.tec.linutronix.de>
-References: <1391721117-27446-1-git-send-email-carlo@caione.org>
-	<alpine.DEB.2.02.1402062213590.21991@ionos.tec.linutronix.de>
-	<CAOQ7t2Z0agZdDZ_OQZPtXWXoi5NMTcOOZz04q6wEVNy0rxn4AA@mail.gmail.com>
-	<alpine.DEB.2.02.1402062229000.21991@ionos.tec.linutronix.de>
-Date: Fri, 7 Feb 2014 11:08:46 +0100
-Message-ID: <CAOQ7t2bzz9vKh_5h2nF=m+JpeYVa=Ttd4XQgrAa6Lhdzjg_Qxw@mail.gmail.com>
-Subject: Re: [linux-sunxi] Re: [PATCH] irq: Add new flag to ack
- level-triggered interrupts before unmasking
-From: Carlo Caione <carlo.caione@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Hans De Goede <hdegoede@redhat.com>, emilio@elopez.com.ar,
-        linux-sunxi@googlegroups.com, t.figa@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 7 Feb 2014 05:05:19 -0500
+X-AuditID: cbfec7f5-b7fc96d000004885-da-52f4afda145c
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH v2 09/15] extcon: max14577: Add support for max77836
+Date: Fri, 07 Feb 2014 11:04:41 +0100
+Message-id: <1391767487-10017-10-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <1391767487-10017-1-git-send-email-k.kozlowski@samsung.com>
+References: <1391767487-10017-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmluLIzCtJLcpLzFFi42I5/e/4Vd1b678EGfxYzmWxccZ6VoupD5+w
+	WVz/8pzV4vULQ4uzTW/YLe5/PcposenxNVaLy7vmsFmsPXKX3eJ24wo2i9PdrA7cHptWdbJ5
+	3Lm2h81j3slAj81L6j36tqxi9Pi8SS6ALYrLJiU1J7MstUjfLoErY/XuQywF+x0qPn3ZzdLA
+	uMG0i5GTQ0LAROLO133MELaYxIV769m6GLk4hASWMkrs3/6YCcLpY5I48+oEK0gVm4CxxObl
+	S8CqRARamCTer9/PCJJgFjjKKPFkmSGILSzgIvGybzpYA4uAqkTrs0tgNbwCHhJnL90AmsoB
+	tE5BYs4kG5AwJ1B4y4NzYOVCAu4Sv5b1sE9g5F3AyLCKUTS1NLmgOCk910ivODG3uDQvXS85
+	P3cTIyQAv+5gXHrM6hCjAAejEg+v4orPQUKsiWXFlbmHGCU4mJVEeDXWfgkS4k1JrKxKLcqP
+	LyrNSS0+xMjEwSnVwNgoqcnjV37kdMTWWw07rDuLq9ZMNu2Z6F/tZv5Jlfnli0vbOKaXybd9
+	+pfgo6kqX+sgcL/tc+PEjJdVCyvcbuhvXG0myvTlUBZf5Pnk2zuZ+sIPpMQsn31HQPe1w3Wv
+	xrj9i9USfnWcYvzv6+n5KLp5V7p6rpm0pse6uT9Xh7WdF5+mvOJnkhJLcUaioRZzUXEiANGW
+	YQ4eAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 6, 2014 at 10:54 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Thu, 6 Feb 2014, Carlo Caione wrote:
->> On Thu, Feb 6, 2014 at 10:14 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
->> > On Thu, 6 Feb 2014, Carlo Caione wrote:
->> >
->> >> Several irqchip drivers require the level-triggered interrupt to be
->> >> acked before unmasking to avoid that a second interrupt is immediately
->> >> triggered. This small patch introduces a new irqchip flags that is used
->> >> to ack the IRQ line before it is unmasked.
->> >
->> > And why are you not doing this in the unmask function of the affected
->> > chip in the first place?
->>
->> Because this is a common behavior of several irqchips (sunxi NMI
->> controller,  exynos, etc...) so I think it should be useful to have it
->> in the core instead of replicating the same code structure in all the
->> irqchip drivers.
->
-> I'm all for making stuff generic, but you introduce this gem
->
-> +void ack_unmask_irq(struct irq_desc *desc)
-> +{
-> +       if ((desc->irq_data.chip->flags & IRQCHIP_ACK_ON_UNMASK) &&
-> +           (irqd_get_trigger_type(&desc->irq_data) & IRQ_TYPE_LEVEL_MASK) &&
-> +           desc->irq_data.chip->irq_ack)
->
-> This is totally backwards.
->
-> 1) If level and edge are handled differently then you should provide
->    different chips.
+Add support for MAX77836 chipset to the max14577 extcon driver. The
+MAX77836 MUIC has additional interrupts (VIDRM, ADC1K) so IRQ handling
+is split up into two functions: max14577_parse_irq() and
+max77836_parse_irq().
 
-Agree. I was trying to use the flag to trigger a different behavior
-since AFAIK the problem of the IRQ retrigger is specific for
-level-triggered interrupts.
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+Acked-by: Lee Jones <lee.jones@linaro.org>
+Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
+Tested-by: Chanwoo Choi <cw00.choi@samsung.com>
+---
+ drivers/extcon/extcon-max14577.c     |  109 ++++++++++++++++++++++++++++------
+ drivers/mfd/max14577.c               |    1 +
+ include/linux/mfd/max14577-private.h |    3 +
+ 3 files changed, 94 insertions(+), 19 deletions(-)
 
-> 2) If a chip has IRQCHIP_ACK_ON_UNMASK set, then it better provides an
->    irq_ack callback.
-
-The check on irq_ack is done to be sure that the irq_ack callback is
-really defined by the irqchip driver before calling it.
-
-> So why do you need this complex conditional?
-
-I wanted to be sure to be in the right case: level-triggered interrupt
-with the flag defined in the driver (and the ack callback correctly
-defined).
-To the best of my knowledge this is the only case in which a flag like
- IRQCHIP_ACK_ON_UNMASK could make sense.
-
-> +                       desc->irq_data.chip->irq_ack(&desc->irq_data);
-> +
-> +       unmask_irq(desc);
-> +}
->
-> Now the even more confusing part is a single call site in
-> irq_finalize_oneshot()
->
->         if (!desc->threads_oneshot && !irqd_irq_disabled(&desc->irq_data) &&
->             irqd_irq_masked(&desc->irq_data))
-> -               unmask_irq(desc);
-> +               ack_unmask_irq(desc);
->
->
-> But you completely fail to explain the rationale.
-
-You are right. I'll try to clarify it,
-
-> - Why is this only an issue for the threaded irq case?
->
-> - Why are other sites where interrupts are masked/unmasked not
->   affected?
-
-<snip>
-
-> Do you have any sensible explanation for that requirement to ack
-> before unmask while you already acked on mask? And why this is only an
-> issue in the threaded case?
->
-> What's the context of the problem you are trying to solve?
-
-The context and the rationale is fully explained in this thread
-http://www.spinics.net/lists/arm-kernel/msg299952.html and some
-answers are already given along the thread especially by Hans here
-http://www.spinics.net/lists/arm-kernel/msg303542.html
-Shortly, the double interrupt problem as seen on sunxi NMI controller
-(and other chips AFAIK) is specific for level-triggered interrupts
-when the hard interrupt handler is not able to ACK the interrupts on
-the originating device since this device can only be accessed via a
-bus (in our case it was a PMIC on I2C).
-This explains why my patch was specific for the threaded case and why
-the ACK on mask is not really effective in actually acking the IRQs
-(so that I need a second ACK before unmasking the line). In fact in
-our case (PMIC connected via I2C with an interrupt line on a special
-NMI controller) the implicit ACK done by the unmask is ignored if the
-NMI line is still high, and to have the line going down we have to ACK
-all the IRQs on the device accessing to it by I2C in the thread and
-then ACK the NMI controller with the second ACK before the unmasking
-callback.
-I hope this clarifies a bit.
-
-Thank you,
-
+diff --git a/drivers/extcon/extcon-max14577.c b/drivers/extcon/extcon-max14577.c
+index e986a9b92b60..82ac6b0fb1bc 100644
+--- a/drivers/extcon/extcon-max14577.c
++++ b/drivers/extcon/extcon-max14577.c
+@@ -1,8 +1,9 @@
+ /*
+- * extcon-max14577.c - MAX14577 extcon driver to support MAX14577 MUIC
++ * extcon-max14577.c - MAX14577/77836 extcon driver to support MUIC
+  *
+- * Copyright (C) 2013 Samsung Electrnoics
++ * Copyright (C) 2013,2014 Samsung Electrnoics
+  * Chanwoo Choi <cw00.choi@samsung.com>
++ * Krzysztof Kozlowski <k.kozlowski@samsung.com>
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -62,6 +63,19 @@ static struct max14577_muic_irq max14577_muic_irqs[] = {
+ 	{ MAXIM_IRQ_INT2_VBVOLT,	"muic-VBVOLT" },
+ };
+ 
++static struct max14577_muic_irq max77836_muic_irqs[] = {
++	{ MAXIM_IRQ_INT1_ADC,		"muic-ADC" },
++	{ MAXIM_IRQ_INT1_ADCLOW,	"muic-ADCLOW" },
++	{ MAXIM_IRQ_INT1_ADCERR,	"muic-ADCError" },
++	{ MAX77836_IRQ_INT1_ADC1K,	"muic-ADC1K" },
++	{ MAXIM_IRQ_INT2_CHGTYP,	"muic-CHGTYP" },
++	{ MAXIM_IRQ_INT2_CHGDETRUN,	"muic-CHGDETRUN" },
++	{ MAXIM_IRQ_INT2_DCDTMR,	"muic-DCDTMR" },
++	{ MAXIM_IRQ_INT2_DBCHG,		"muic-DBCHG" },
++	{ MAXIM_IRQ_INT2_VBVOLT,	"muic-VBVOLT" },
++	{ MAX77836_IRQ_INT2_VIDRM,	"muic-VIDRM" },
++};
++
+ struct max14577_muic_info {
+ 	struct device *dev;
+ 	struct maxim_core *maxim_core;
+@@ -532,21 +546,12 @@ static void max14577_muic_irq_work(struct work_struct *work)
+ 	return;
+ }
+ 
+-static irqreturn_t max14577_muic_irq_handler(int irq, void *data)
++/*
++ * Sets irq_adc or irq_chg in max14577_muic_info and returns 1.
++ * Returns 0 if irq_type does not match registered IRQ for this device type.
++ */
++static int max14577_parse_irq(struct max14577_muic_info *info, int irq_type)
+ {
+-	struct max14577_muic_info *info = data;
+-	int i, irq_type = -1;
+-
+-	/*
+-	 * We may be called multiple times for different nested IRQ-s.
+-	 * Including changes in INT1_ADC and INT2_CGHTYP at once.
+-	 * However we only need to know whether it was ADC, charger
+-	 * or both interrupts so decode IRQ and turn on proper flags.
+-	 */
+-	for (i = 0; i < info->muic_irqs_num; i++)
+-		if (irq == info->muic_irqs[i].virq)
+-			irq_type = info->muic_irqs[i].irq;
+-
+ 	switch (irq_type) {
+ 	case MAXIM_IRQ_INT1_ADC:
+ 	case MAXIM_IRQ_INT1_ADCLOW:
+@@ -554,7 +559,7 @@ static irqreturn_t max14577_muic_irq_handler(int irq, void *data)
+ 		/* Handle all of accessory except for
+ 		   type of charger accessory */
+ 		info->irq_adc = true;
+-		break;
++		return 1;
+ 	case MAXIM_IRQ_INT2_CHGTYP:
+ 	case MAXIM_IRQ_INT2_CHGDETRUN:
+ 	case MAXIM_IRQ_INT2_DCDTMR:
+@@ -562,8 +567,62 @@ static irqreturn_t max14577_muic_irq_handler(int irq, void *data)
+ 	case MAXIM_IRQ_INT2_VBVOLT:
+ 		/* Handle charger accessory */
+ 		info->irq_chg = true;
++		return 1;
++	default:
++		return 0;
++	}
++}
++
++/*
++ * Sets irq_adc or irq_chg in max14577_muic_info and returns 1.
++ * Returns 0 if irq_type does not match registered IRQ for this device type.
++ */
++static int max77836_parse_irq(struct max14577_muic_info *info, int irq_type)
++{
++	/* First check common max14577 interrupts */
++	if (max14577_parse_irq(info, irq_type))
++		return 1;
++
++	switch (irq_type) {
++	case MAX77836_IRQ_INT1_ADC1K:
++		info->irq_adc = true;
++		return 1;
++	case MAX77836_IRQ_INT2_VIDRM:
++		/* Handle charger accessory */
++		info->irq_chg = true;
++		return 1;
++	default:
++		return 0;
++	}
++}
++
++static irqreturn_t max14577_muic_irq_handler(int irq, void *data)
++{
++	struct max14577_muic_info *info = data;
++	int i, irq_type = -1;
++	bool irq_parsed;
++
++	/*
++	 * We may be called multiple times for different nested IRQ-s.
++	 * Including changes in INT1_ADC and INT2_CGHTYP at once.
++	 * However we only need to know whether it was ADC, charger
++	 * or both interrupts so decode IRQ and turn on proper flags.
++	 */
++	for (i = 0; i < info->muic_irqs_num; i++)
++		if (irq == info->muic_irqs[i].virq)
++			irq_type = info->muic_irqs[i].irq;
++
++	switch (info->maxim_core->dev_type) {
++	case MAXIM_DEVICE_TYPE_MAX77836:
++		irq_parsed = max77836_parse_irq(info, irq_type);
+ 		break;
++	case MAXIM_DEVICE_TYPE_MAX14577:
+ 	default:
++		irq_parsed = max14577_parse_irq(info, irq_type);
++		break;
++	}
++
++	if (!irq_parsed) {
+ 		dev_err(info->dev, "muic interrupt: irq %d occurred, skipped\n",
+ 				irq_type);
+ 		return IRQ_HANDLED;
+@@ -649,6 +708,10 @@ static int max14577_muic_probe(struct platform_device *pdev)
+ 	INIT_WORK(&info->irq_work, max14577_muic_irq_work);
+ 
+ 	switch (maxim_core->dev_type) {
++	case MAXIM_DEVICE_TYPE_MAX77836:
++		info->muic_irqs = max77836_muic_irqs;
++		info->muic_irqs_num = ARRAY_SIZE(max77836_muic_irqs);
++		break;
+ 	case MAXIM_DEVICE_TYPE_MAX14577:
+ 	default:
+ 		info->muic_irqs = max14577_muic_irqs;
+@@ -748,6 +811,13 @@ static int max14577_muic_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++static const struct platform_device_id max14577_muic_id[] = {
++	{ "max14577-muic", MAXIM_DEVICE_TYPE_MAX14577, },
++	{ "max77836-muic", MAXIM_DEVICE_TYPE_MAX77836, },
++	{ }
++};
++MODULE_DEVICE_TABLE(platform, max14577_muic_id);
++
+ static struct platform_driver max14577_muic_driver = {
+ 	.driver		= {
+ 		.name	= "max14577-muic",
+@@ -755,11 +825,12 @@ static struct platform_driver max14577_muic_driver = {
+ 	},
+ 	.probe		= max14577_muic_probe,
+ 	.remove		= max14577_muic_remove,
++	.id_table	= max14577_muic_id,
+ };
+ 
+ module_platform_driver(max14577_muic_driver);
+ 
+-MODULE_DESCRIPTION("MAXIM 14577 Extcon driver");
+-MODULE_AUTHOR("Chanwoo Choi <cw00.choi@samsung.com>");
++MODULE_DESCRIPTION("Maxim 14577/77836 Extcon driver");
++MODULE_AUTHOR("Chanwoo Choi <cw00.choi@samsung.com>, Krzysztof Kozlowski <k.kozlowski@samsung.com>");
+ MODULE_LICENSE("GPL");
+ MODULE_ALIAS("platform:extcon-max14577");
+diff --git a/drivers/mfd/max14577.c b/drivers/mfd/max14577.c
+index 1463b17c11c3..08a2ceff3822 100644
+--- a/drivers/mfd/max14577.c
++++ b/drivers/mfd/max14577.c
+@@ -146,6 +146,7 @@ static const struct regmap_irq max77836_muic_irqs[] = {
+ 	{ .reg_offset = 0, .mask = MAXIM_INT1_ADC_MASK, },
+ 	{ .reg_offset = 0, .mask = MAXIM_INT1_ADCLOW_MASK, },
+ 	{ .reg_offset = 0, .mask = MAXIM_INT1_ADCERR_MASK, },
++	{ .reg_offset = 0, .mask = MAX77836_INT1_ADC1K_MASK, },
+ 	/* INT2 interrupts */
+ 	{ .reg_offset = 1, .mask = MAXIM_INT2_CHGTYP_MASK, },
+ 	{ .reg_offset = 1, .mask = MAXIM_INT2_CHGDETRUN_MASK, },
+diff --git a/include/linux/mfd/max14577-private.h b/include/linux/mfd/max14577-private.h
+index 472d5780ca50..aae9382a41cb 100644
+--- a/include/linux/mfd/max14577-private.h
++++ b/include/linux/mfd/max14577-private.h
+@@ -77,6 +77,7 @@ enum maxim_muic_charger_type {
+ #define MAXIM_INT1_ADC_MASK		BIT(0)
+ #define MAXIM_INT1_ADCLOW_MASK		BIT(1)
+ #define MAXIM_INT1_ADCERR_MASK		BIT(2)
++#define MAX77836_INT1_ADC1K_MASK	BIT(3)
+ 
+ #define MAXIM_INT2_CHGTYP_MASK		BIT(0)
+ #define MAXIM_INT2_CHGDETRUN_MASK	BIT(1)
+@@ -309,6 +310,7 @@ enum maxim_irq {
+ 	MAXIM_IRQ_INT1_ADC,
+ 	MAXIM_IRQ_INT1_ADCLOW,
+ 	MAXIM_IRQ_INT1_ADCERR,
++	MAX77836_IRQ_INT1_ADC1K,
+ 
+ 	/* INT2 */
+ 	MAXIM_IRQ_INT2_CHGTYP,
+@@ -316,6 +318,7 @@ enum maxim_irq {
+ 	MAXIM_IRQ_INT2_DCDTMR,
+ 	MAXIM_IRQ_INT2_DBCHG,
+ 	MAXIM_IRQ_INT2_VBVOLT,
++	MAX77836_IRQ_INT2_VIDRM,
+ 
+ 	/* INT3 */
+ 	MAXIM_IRQ_INT3_EOC,
 -- 
-Carlo Caione
+1.7.9.5
+
