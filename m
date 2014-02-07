@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932551AbaBGLw0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:52:26 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42391 "EHLO
+	id S1755917AbaBGMDG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:03:06 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42424 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754041AbaBGLwR (ORCPT
+	with ESMTP id S932541AbaBGLwZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:52:17 -0500
+	Fri, 7 Feb 2014 06:52:25 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>,
+Cc: Aristeu Rozanski <aris@redhat.com>, Borislav Petkov <bp@suse.de>,
+        Jean Delvare <jdelvare@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 200/233] parisc: fix cache-flushing
-Date: Fri,  7 Feb 2014 11:46:59 +0000
-Message-Id: <1391773652-25214-201-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 206/233] e752x_edac: Fix pci_dev usage count
+Date: Fri,  7 Feb 2014 11:47:05 +0000
+Message-Id: <1391773652-25214-207-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -27,87 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Helge Deller <deller@gmx.de>
+From: Aristeu Rozanski <aris@redhat.com>
 
-commit 57737c49dd72c96cfbcd4f66559f3ffc399aeb4f upstream.
+commit 90ed4988b8c030d65b41b7d13140e9376dc6ec5a upstream.
 
-This commit:
-f8dae00684d678afa13041ef170cecfd1297ed40: parisc: Ensure full cache coherency for kmap/kunmap
-caused negative caching side-effects, e.g. hanging processes with expect and
-too many inequivalent alias messages from flush_dcache_page() on Debian 5 systems.
+In case the device 0, function 1 is not found using pci_get_device(),
+pci_scan_single_device() will be used but, differently than
+pci_get_device(), it allocates a pci_dev but doesn't does bump the usage
+count on the pci_dev and after few module removals and loads the pci_dev
+will be freed.
 
-This patch now partly reverts it and has been in production use on our debian buildd
-makeservers since a week without any major problems.
-
-Signed-off-by: Helge Deller <deller@gmx.de>
-Signed-off-by: John David Anglin <dave.anglin@bell.net>
-Signed-off-by: Helge Deller <deller@gmx.de>
+Signed-off-by: Aristeu Rozanski <aris@redhat.com>
+Reviewed-by: mark gross <mark.gross@intel.com>
+Link: http://lkml.kernel.org/r/20131205153755.GL4545@redhat.com
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Cc: Jean Delvare <jdelvare@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/parisc/include/asm/cacheflush.h |  2 --
- arch/parisc/include/asm/page.h       |  3 ++-
- arch/parisc/kernel/cache.c           | 14 ++++++++++++++
- 3 files changed, 16 insertions(+), 3 deletions(-)
+ drivers/edac/e752x_edac.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/arch/parisc/include/asm/cacheflush.h b/arch/parisc/include/asm/cacheflush.h
-index 2f9b751..de65f66 100644
---- a/arch/parisc/include/asm/cacheflush.h
-+++ b/arch/parisc/include/asm/cacheflush.h
-@@ -132,7 +132,6 @@ void mark_rodata_ro(void);
- static inline void *kmap(struct page *page)
- {
- 	might_sleep();
--	flush_dcache_page(page);
- 	return page_address(page);
- }
+diff --git a/drivers/edac/e752x_edac.c b/drivers/edac/e752x_edac.c
+index 644fec5..f1e9d7b 100644
+--- a/drivers/edac/e752x_edac.c
++++ b/drivers/edac/e752x_edac.c
+@@ -1182,9 +1182,11 @@ static int e752x_get_devs(struct pci_dev *pdev, int dev_idx,
+ 	pvt->bridge_ck = pci_get_device(PCI_VENDOR_ID_INTEL,
+ 				pvt->dev_info->err_dev, pvt->bridge_ck);
  
-@@ -144,7 +143,6 @@ static inline void kunmap(struct page *page)
- static inline void *kmap_atomic(struct page *page)
- {
- 	pagefault_disable();
--	flush_dcache_page(page);
- 	return page_address(page);
- }
+-	if (pvt->bridge_ck == NULL)
++	if (pvt->bridge_ck == NULL) {
+ 		pvt->bridge_ck = pci_scan_single_device(pdev->bus,
+ 							PCI_DEVFN(0, 1));
++		pci_dev_get(pvt->bridge_ck);
++	}
  
-diff --git a/arch/parisc/include/asm/page.h b/arch/parisc/include/asm/page.h
-index c53fc63..637fe03 100644
---- a/arch/parisc/include/asm/page.h
-+++ b/arch/parisc/include/asm/page.h
-@@ -29,7 +29,8 @@ struct page;
- void clear_page_asm(void *page);
- void copy_page_asm(void *to, void *from);
- #define clear_user_page(vto, vaddr, page) clear_page_asm(vto)
--#define copy_user_page(vto, vfrom, vaddr, page) copy_page_asm(vto, vfrom)
-+void copy_user_page(void *vto, void *vfrom, unsigned long vaddr,
-+			struct page *pg);
- 
- /* #define CONFIG_PARISC_TMPALIAS */
- 
-diff --git a/arch/parisc/kernel/cache.c b/arch/parisc/kernel/cache.c
-index a725455..ac87a40 100644
---- a/arch/parisc/kernel/cache.c
-+++ b/arch/parisc/kernel/cache.c
-@@ -388,6 +388,20 @@ void flush_kernel_dcache_page_addr(void *addr)
- }
- EXPORT_SYMBOL(flush_kernel_dcache_page_addr);
- 
-+void copy_user_page(void *vto, void *vfrom, unsigned long vaddr,
-+	struct page *pg)
-+{
-+       /* Copy using kernel mapping.  No coherency is needed (all in
-+	  kunmap) for the `to' page.  However, the `from' page needs to
-+	  be flushed through a mapping equivalent to the user mapping
-+	  before it can be accessed through the kernel mapping. */
-+	preempt_disable();
-+	flush_dcache_page_asm(__pa(vfrom), vaddr);
-+	preempt_enable();
-+	copy_page_asm(vto, vfrom);
-+}
-+EXPORT_SYMBOL(copy_user_page);
-+
- void purge_tlb_entries(struct mm_struct *mm, unsigned long addr)
- {
- 	unsigned long flags;
+ 	if (pvt->bridge_ck == NULL) {
+ 		e752x_printk(KERN_ERR, "error reporting device not found:"
 -- 
 1.8.3.2
 
