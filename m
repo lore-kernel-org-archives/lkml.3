@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753574AbaBGLc4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:32:56 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41128 "EHLO
+	id S1753603AbaBGLde (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:33:34 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41118 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753213AbaBGLY7 (ORCPT
+	with ESMTP id S1753211AbaBGLY4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:24:59 -0500
+	Fri, 7 Feb 2014 06:24:56 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mihai Caraman <mihai.caraman@freescale.com>,
-        Alexander Graf <agraf@suse.de>,
+Cc: Boaz Harrosh <bharrosh@panasas.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 66/88] KVM: PPC: e500: Fix bad address type in deliver_tlb_misss()
-Date: Fri,  7 Feb 2014 11:23:03 +0000
-Message-Id: <1391772205-22239-67-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 64/88] ore: Fix wrong math in allocation of per device BIO
+Date: Fri,  7 Feb 2014 11:23:01 +0000
+Message-Id: <1391772205-22239-65-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
@@ -28,35 +27,136 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mihai Caraman <mihai.caraman@freescale.com>
+From: Boaz Harrosh <bharrosh@panasas.com>
 
-commit 70713fe315ed14cd1bb07d1a7f33e973d136ae3d upstream.
+commit aad560b7f63b495f48a7232fd086c5913a676e6f upstream.
 
-Use gva_t instead of unsigned int for eaddr in deliver_tlb_miss().
+At IO preparation we calculate the max pages at each device and
+allocate a BIO per device of that size. The calculation was wrong
+on some unaligned corner cases offset/length combination and would
+make prepare return with -ENOMEM. This would be bad for pnfs-objects
+that would in that case IO through MDS. And fatal for exofs were it
+would fail writes with EIO.
 
-Signed-off-by: Mihai Caraman <mihai.caraman@freescale.com>
-Signed-off-by: Alexander Graf <agraf@suse.de>
-[ luis: backported to 3.5:
-  - kvmppc_e500_deliver_tlb_miss() is defined in arch/powerpc/kvm/e500_tlb.c
-    on the 3.5 kernel]
+Fix it by doing the proper math, that will work in all cases. (I
+ran a test with all possible offset/length combinations this time
+round).
+
+Also when reading we do not need to allocate for the parity units
+since we jump over them.
+
+Also lower the max_io_length to take into account the parity pages
+so not to allocate BIOs bigger than PAGE_SIZE
+
+Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/powerpc/kvm/e500_tlb.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/exofs/ore.c         | 37 +++++++++++++++++++++++++------------
+ include/scsi/osd_ore.h |  1 +
+ 2 files changed, 26 insertions(+), 12 deletions(-)
 
-diff --git a/arch/powerpc/kvm/e500_tlb.c b/arch/powerpc/kvm/e500_tlb.c
-index 3580a0c..5871b4e 100644
---- a/arch/powerpc/kvm/e500_tlb.c
-+++ b/arch/powerpc/kvm/e500_tlb.c
-@@ -358,7 +358,7 @@ static void clear_tlb_refs(struct kvmppc_vcpu_e500 *vcpu_e500)
- }
+diff --git a/fs/exofs/ore.c b/fs/exofs/ore.c
+index 1585db1..a73bc26 100644
+--- a/fs/exofs/ore.c
++++ b/fs/exofs/ore.c
+@@ -103,7 +103,7 @@ int ore_verify_layout(unsigned total_comps, struct ore_layout *layout)
  
- static inline void kvmppc_e500_deliver_tlb_miss(struct kvm_vcpu *vcpu,
--		unsigned int eaddr, int as)
-+		gva_t eaddr, int as)
- {
- 	struct kvmppc_vcpu_e500 *vcpu_e500 = to_e500(vcpu);
- 	unsigned int victim, tsized;
+ 	layout->max_io_length =
+ 		(BIO_MAX_PAGES_KMALLOC * PAGE_SIZE - layout->stripe_unit) *
+-							layout->group_width;
++					(layout->group_width - layout->parity);
+ 	if (layout->parity) {
+ 		unsigned stripe_length =
+ 				(layout->group_width - layout->parity) *
+@@ -286,7 +286,8 @@ int  ore_get_rw_state(struct ore_layout *layout, struct ore_components *oc,
+ 	if (length) {
+ 		ore_calc_stripe_info(layout, offset, length, &ios->si);
+ 		ios->length = ios->si.length;
+-		ios->nr_pages = (ios->length + PAGE_SIZE - 1) / PAGE_SIZE;
++		ios->nr_pages = ((ios->offset & (PAGE_SIZE - 1)) +
++				 ios->length + PAGE_SIZE - 1) / PAGE_SIZE;
+ 		if (layout->parity)
+ 			_ore_post_alloc_raid_stuff(ios);
+ 	}
+@@ -536,6 +537,7 @@ void ore_calc_stripe_info(struct ore_layout *layout, u64 file_offset,
+ 	u64	H = LmodS - G * T;
+ 
+ 	u32	N = div_u64(H, U);
++	u32	Nlast;
+ 
+ 	/* "H - (N * U)" is just "H % U" so it's bound to u32 */
+ 	u32	C = (u32)(H - (N * U)) / stripe_unit + G * group_width;
+@@ -568,6 +570,10 @@ void ore_calc_stripe_info(struct ore_layout *layout, u64 file_offset,
+ 	si->length = T - H;
+ 	if (si->length > length)
+ 		si->length = length;
++
++	Nlast = div_u64(H + si->length + U - 1, U);
++	si->maxdevUnits = Nlast - N;
++
+ 	si->M = M;
+ }
+ EXPORT_SYMBOL(ore_calc_stripe_info);
+@@ -583,13 +589,16 @@ int _ore_add_stripe_unit(struct ore_io_state *ios,  unsigned *cur_pg,
+ 	int ret;
+ 
+ 	if (per_dev->bio == NULL) {
+-		unsigned pages_in_stripe = ios->layout->group_width *
+-					(ios->layout->stripe_unit / PAGE_SIZE);
+-		unsigned nr_pages = ios->nr_pages * ios->layout->group_width /
+-					(ios->layout->group_width -
+-					 ios->layout->parity);
+-		unsigned bio_size = (nr_pages + pages_in_stripe) /
+-					ios->layout->group_width;
++		unsigned bio_size;
++
++		if (!ios->reading) {
++			bio_size = ios->si.maxdevUnits;
++		} else {
++			bio_size = (ios->si.maxdevUnits + 1) *
++			     (ios->layout->group_width - ios->layout->parity) /
++			     ios->layout->group_width;
++		}
++		bio_size *= (ios->layout->stripe_unit / PAGE_SIZE);
+ 
+ 		per_dev->bio = bio_kmalloc(GFP_KERNEL, bio_size);
+ 		if (unlikely(!per_dev->bio)) {
+@@ -609,8 +618,12 @@ int _ore_add_stripe_unit(struct ore_io_state *ios,  unsigned *cur_pg,
+ 		added_len = bio_add_pc_page(q, per_dev->bio, pages[pg],
+ 					    pglen, pgbase);
+ 		if (unlikely(pglen != added_len)) {
+-			ORE_DBGMSG("Failed bio_add_pc_page bi_vcnt=%u\n",
+-				   per_dev->bio->bi_vcnt);
++			/* If bi_vcnt == bi_max then this is a SW BUG */
++			ORE_DBGMSG("Failed bio_add_pc_page bi_vcnt=0x%x "
++				   "bi_max=0x%x BIO_MAX=0x%x cur_len=0x%x\n",
++				   per_dev->bio->bi_vcnt,
++				   per_dev->bio->bi_max_vecs,
++				   BIO_MAX_PAGES_KMALLOC, cur_len);
+ 			ret = -ENOMEM;
+ 			goto out;
+ 		}
+@@ -1099,7 +1112,7 @@ int ore_truncate(struct ore_layout *layout, struct ore_components *oc,
+ 		size_attr->attr = g_attr_logical_length;
+ 		size_attr->attr.val_ptr = &size_attr->newsize;
+ 
+-		ORE_DBGMSG("trunc(0x%llx) obj_offset=0x%llx dev=%d\n",
++		ORE_DBGMSG2("trunc(0x%llx) obj_offset=0x%llx dev=%d\n",
+ 			     _LLU(oc->comps->obj.id), _LLU(obj_size), i);
+ 		ret = _truncate_mirrors(ios, i * ios->layout->mirrors_p1,
+ 					&size_attr->attr);
+diff --git a/include/scsi/osd_ore.h b/include/scsi/osd_ore.h
+index a5f9b96..6ca3265 100644
+--- a/include/scsi/osd_ore.h
++++ b/include/scsi/osd_ore.h
+@@ -102,6 +102,7 @@ struct ore_striping_info {
+ 	unsigned unit_off;
+ 	unsigned cur_pg;
+ 	unsigned cur_comp;
++	unsigned maxdevUnits;
+ };
+ 
+ struct ore_io_state;
 -- 
 1.8.3.2
 
