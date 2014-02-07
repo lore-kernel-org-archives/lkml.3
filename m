@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755881AbaBGMBS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:01:18 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42464 "EHLO
+	id S1755863AbaBGMBR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:01:17 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42465 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932556AbaBGLwb (ORCPT
+	with ESMTP id S1753590AbaBGLwb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 Feb 2014 06:52:31 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Frank=20Sch=C3=A4fer?= <fschaefer.oss@googlemail.com>,
-        Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: David Rientjes <rientjes@google.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 210/233] USB: pl2303: fix data corruption on termios updates
-Date: Fri,  7 Feb 2014 11:47:09 +0000
-Message-Id: <1391773652-25214-211-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 209/233] mm/mempolicy.c: fix mempolicy printing in numa_maps
+Date: Fri,  7 Feb 2014 11:47:08 +0000
+Message-Id: <1391773652-25214-210-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,87 +30,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: David Rientjes <rientjes@google.com>
 
-commit 623c8263376c0b8a4b0c220232e7313d762cd0cc upstream.
+commit 8790c71a18e5d2d93532ae250bcf5eddbba729cd upstream.
 
-Some PL2303 devices are known to lose bytes if you change serial
-settings even to the same values as before. Avoid this by comparing the
-encoded settings with the previsouly used ones before configuring the
-device.
+As a result of commit 5606e3877ad8 ("mm: numa: Migrate on reference
+policy"), /proc/<pid>/numa_maps prints the mempolicy for any <pid> as
+"prefer:N" for the local node, N, of the process reading the file.
 
-The common case was fixed by commit bf5e5834bffc6 ("pl2303: Fix mode
-switching regression"), but this problem was still possible to trigger,
-for instance, by using the TCSETS2-interface to repeatedly request
-115201 baud, which gets mapped to 115200 and thus always triggers a
-settings update.
+This should only be printed when the mempolicy of <pid> is
+MPOL_PREFERRED for node N.
 
-Cc: Frank Schäfer <fschaefer.oss@googlemail.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+If the process is actually only using the default mempolicy for local
+node allocation, make sure "default" is printed as expected.
+
+Signed-off-by: David Rientjes <rientjes@google.com>
+Reported-by: Robert Lippert <rlippert@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ luis: backported to 3.11: used David Rientjes's backport to 3.10 and
+  3.12 stable trees. ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/pl2303.c | 33 +++++++++++++++++++++++++--------
- 1 file changed, 25 insertions(+), 8 deletions(-)
+ mm/mempolicy.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/usb/serial/pl2303.c b/drivers/usb/serial/pl2303.c
-index 28088cc..0852bb3 100644
---- a/drivers/usb/serial/pl2303.c
-+++ b/drivers/usb/serial/pl2303.c
-@@ -141,6 +141,8 @@ struct pl2303_private {
- 	spinlock_t lock;
- 	u8 line_control;
- 	u8 line_status;
-+
-+	u8 line_settings[7];
- };
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index bfa95cf..bfb3238 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -2806,7 +2806,7 @@ int mpol_to_str(char *buffer, int maxlen, struct mempolicy *pol)
+ 	 */
+ 	VM_BUG_ON(maxlen < strlen("interleave") + strlen("relative") + 16);
  
- static int pl2303_vendor_read(__u16 value, __u16 index,
-@@ -280,10 +282,6 @@ static void pl2303_set_termios(struct tty_struct *tty,
- 	int baud_floor, baud_ceil;
- 	int k;
- 
--	/* The PL2303 is reported to lose bytes if you change
--	   serial settings even to the same values as before. Thus
--	   we actually need to filter in this specific case */
--
- 	if (old_termios && !tty_termios_hw_change(&tty->termios, old_termios))
- 		return;
- 
-@@ -420,10 +418,29 @@ static void pl2303_set_termios(struct tty_struct *tty,
- 		dev_dbg(&port->dev, "parity = none\n");
- 	}
- 
--	i = usb_control_msg(serial->dev, usb_sndctrlpipe(serial->dev, 0),
--			    SET_LINE_REQUEST, SET_LINE_REQUEST_TYPE,
--			    0, 0, buf, 7, 100);
--	dev_dbg(&port->dev, "0x21:0x20:0:0  %d\n", i);
-+	/*
-+	 * Some PL2303 are known to lose bytes if you change serial settings
-+	 * even to the same values as before. Thus we actually need to filter
-+	 * in this specific case.
-+	 *
-+	 * Note that the tty_termios_hw_change check above is not sufficient
-+	 * as a previously requested baud rate may differ from the one
-+	 * actually used (and stored in old_termios).
-+	 *
-+	 * NOTE: No additional locking needed for line_settings as it is
-+	 *       only used in set_termios, which is serialised against itself.
-+	 */
-+	if (!old_termios || memcmp(buf, priv->line_settings, 7)) {
-+		i = usb_control_msg(serial->dev,
-+				    usb_sndctrlpipe(serial->dev, 0),
-+				    SET_LINE_REQUEST, SET_LINE_REQUEST_TYPE,
-+				    0, 0, buf, 7, 100);
-+
-+		dev_dbg(&port->dev, "0x21:0x20:0:0  %d\n", i);
-+
-+		if (i == 7)
-+			memcpy(priv->line_settings, buf, 7);
-+	}
- 
- 	/* change control lines if we are switching to or from B0 */
- 	spin_lock_irqsave(&priv->lock, flags);
+-	if (!pol || pol == &default_policy)
++	if (!pol || pol == &default_policy || (pol->flags & MPOL_F_MORON))
+ 		mode = MPOL_DEFAULT;
+ 	else
+ 		mode = pol->mode;
 -- 
 1.8.3.2
 
