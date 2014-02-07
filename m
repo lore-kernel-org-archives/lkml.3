@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754141AbaBGLrq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:47:46 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41396 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754124AbaBGLro (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754123AbaBGLro (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 7 Feb 2014 06:47:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41379 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752869AbaBGLrl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 06:47:41 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ben Hutchings <bhutchings@solarflare.com>,
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, Jiri Pirko <jiri@resnulli.us>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 005/233] sfc: PTP: Moderate log message on event queue overflow
-Date: Fri,  7 Feb 2014 11:43:44 +0000
-Message-Id: <1391773652-25214-6-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 001/233] br: fix use of ->rx_handler_data in code executed on non-rx_handler path
+Date: Fri,  7 Feb 2014 11:43:40 +0000
+Message-Id: <1391773652-25214-2-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -27,95 +28,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Laurence Evans <levans@solarflare.com>
+From: Jiri Pirko <jiri@resnulli.us>
 
-commit f32116003c39f3a6815215a7512e1ea8d1e4bbc7 upstream.
+commit 859828c0ea476b42f3a93d69d117aaba90994b6f upstream.
 
-Limit syslog flood if a PTP packet storm occurs.
+br_stp_rcv() is reached by non-rx_handler path. That means there is no
+guarantee that dev is bridge port and therefore simple NULL check of
+->rx_handler_data is not enough. There is need to check if dev is really
+bridge port and since only rcu read lock is held here, do it by checking
+->rx_handler pointer.
 
-Fixes: 7c236c43b838 ('sfc: Add support for IEEE-1588 PTP')
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+Note that synchronize_net() in netdev_rx_handler_unregister() ensures
+this approach as valid.
+
+Introduced originally by:
+commit f350a0a87374418635689471606454abc7beaa3a
+  "bridge: use rx_handler_data pointer to store net_bridge_port pointer"
+
+Fixed but not in the best way by:
+commit b5ed54e94d324f17c97852296d61a143f01b227a
+  "bridge: fix RCU races with bridge port"
+
+Reintroduced by:
+commit 716ec052d2280d511e10e90ad54a86f5b5d4dcc2
+  "bridge: fix NULL pointer deref of br_port_get_rcu"
+
+Please apply to stable trees as well. Thanks.
+
+RH bugzilla reference: https://bugzilla.redhat.com/show_bug.cgi?id=1025770
+
+Reported-by: Laine Stump <laine@redhat.com>
+Debugged-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Jiri Pirko <jiri@resnulli.us>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/sfc/ptp.c | 23 +++++++++++++++++++++--
- 1 file changed, 21 insertions(+), 2 deletions(-)
+ net/bridge/br_private.h  | 10 ++++++++++
+ net/bridge/br_stp_bpdu.c |  2 +-
+ 2 files changed, 11 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/ethernet/sfc/ptp.c b/drivers/net/ethernet/sfc/ptp.c
-index 6ddec68..d5a5192 100644
---- a/drivers/net/ethernet/sfc/ptp.c
-+++ b/drivers/net/ethernet/sfc/ptp.c
-@@ -220,6 +220,7 @@ struct efx_ptp_timeset {
-  * @evt_list: List of MC receive events awaiting packets
-  * @evt_free_list: List of free events
-  * @evt_lock: Lock for manipulating evt_list and evt_free_list
-+ * @evt_overflow: Boolean indicating that event list has overflowed
-  * @rx_evts: Instantiated events (on evt_list and evt_free_list)
-  * @workwq: Work queue for processing pending PTP operations
-  * @work: Work task
-@@ -270,6 +271,7 @@ struct efx_ptp_data {
- 	struct list_head evt_list;
- 	struct list_head evt_free_list;
- 	spinlock_t evt_lock;
-+	bool evt_overflow;
- 	struct efx_ptp_event_rx rx_evts[MAX_RECEIVE_EVENTS];
- 	struct workqueue_struct *workwq;
- 	struct work_struct work;
-@@ -628,6 +630,11 @@ static void efx_ptp_drop_time_expired_events(struct efx_nic *efx)
- 			}
- 		}
- 	}
-+	/* If the event overflow flag is set and the event list is now empty
-+	 * clear the flag to re-enable the overflow warning message.
-+	 */
-+	if (ptp->evt_overflow && list_empty(&ptp->evt_list))
-+		ptp->evt_overflow = false;
- 	spin_unlock_bh(&ptp->evt_lock);
- }
+diff --git a/net/bridge/br_private.h b/net/bridge/br_private.h
+index aa05bd8..a70bb90 100644
+--- a/net/bridge/br_private.h
++++ b/net/bridge/br_private.h
+@@ -452,6 +452,16 @@ extern netdev_features_t br_features_recompute(struct net_bridge *br,
+ extern int br_handle_frame_finish(struct sk_buff *skb);
+ extern rx_handler_result_t br_handle_frame(struct sk_buff **pskb);
  
-@@ -669,6 +676,11 @@ static enum ptp_packet_state efx_ptp_match_rx(struct efx_nic *efx,
- 			break;
- 		}
- 	}
-+	/* If the event overflow flag is set and the event list is now empty
-+	 * clear the flag to re-enable the overflow warning message.
-+	 */
-+	if (ptp->evt_overflow && list_empty(&ptp->evt_list))
-+		ptp->evt_overflow = false;
- 	spin_unlock_bh(&ptp->evt_lock);
++static inline bool br_rx_handler_check_rcu(const struct net_device *dev)
++{
++	return rcu_dereference(dev->rx_handler) == br_handle_frame;
++}
++
++static inline struct net_bridge_port *br_port_get_check_rcu(const struct net_device *dev)
++{
++	return br_rx_handler_check_rcu(dev) ? br_port_get_rcu(dev) : NULL;
++}
++
+ /* br_ioctl.c */
+ extern int br_dev_ioctl(struct net_device *dev, struct ifreq *rq, int cmd);
+ extern int br_ioctl_deviceless_stub(struct net *net, unsigned int cmd, void __user *arg);
+diff --git a/net/bridge/br_stp_bpdu.c b/net/bridge/br_stp_bpdu.c
+index 8660ea3..bdb459d 100644
+--- a/net/bridge/br_stp_bpdu.c
++++ b/net/bridge/br_stp_bpdu.c
+@@ -153,7 +153,7 @@ void br_stp_rcv(const struct stp_proto *proto, struct sk_buff *skb,
+ 	if (buf[0] != 0 || buf[1] != 0 || buf[2] != 0)
+ 		goto err;
  
- 	return rc;
-@@ -802,6 +814,7 @@ static int efx_ptp_stop(struct efx_nic *efx)
- 	list_for_each_safe(cursor, next, &efx->ptp_data->evt_list) {
- 		list_move(cursor, &efx->ptp_data->evt_free_list);
- 	}
-+	ptp->evt_overflow = false;
- 	spin_unlock_bh(&efx->ptp_data->evt_lock);
+-	p = br_port_get_rcu(dev);
++	p = br_port_get_check_rcu(dev);
+ 	if (!p)
+ 		goto err;
  
- 	return rc;
-@@ -894,6 +907,7 @@ static int efx_ptp_probe_channel(struct efx_channel *channel)
- 	spin_lock_init(&ptp->evt_lock);
- 	for (pos = 0; pos < MAX_RECEIVE_EVENTS; pos++)
- 		list_add(&ptp->rx_evts[pos].link, &ptp->evt_free_list);
-+	ptp->evt_overflow = false;
- 
- 	ptp->phc_clock_info.owner = THIS_MODULE;
- 	snprintf(ptp->phc_clock_info.name,
-@@ -1292,8 +1306,13 @@ static void ptp_event_rx(struct efx_nic *efx, struct efx_ptp_data *ptp)
- 		list_add_tail(&evt->link, &ptp->evt_list);
- 
- 		queue_work(ptp->workwq, &ptp->work);
--	} else {
--		netif_err(efx, rx_err, efx->net_dev, "No free PTP event");
-+	} else if (!ptp->evt_overflow) {
-+		/* Log a warning message and set the event overflow flag.
-+		 * The message won't be logged again until the event queue
-+		 * becomes empty.
-+		 */
-+		netif_err(efx, rx_err, efx->net_dev, "PTP event queue overflow\n");
-+		ptp->evt_overflow = true;
- 	}
- 	spin_unlock_bh(&ptp->evt_lock);
- }
 -- 
 1.8.3.2
 
