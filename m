@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755105AbaBGMyo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:54:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41858 "EHLO
+	id S1754935AbaBGMzO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:55:14 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41850 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753981AbaBGLuB (ORCPT
+	with ESMTP id S1754760AbaBGLt7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:50:01 -0500
+	Fri, 7 Feb 2014 06:49:59 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
+Cc: Mikulas Patocka <mpatocka@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 098/233] dm space map metadata: fix extending the space map
-Date: Fri,  7 Feb 2014 11:45:17 +0000
-Message-Id: <1391773652-25214-99-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 096/233] dm: wait until embedded kobject is released before destroying a device
+Date: Fri,  7 Feb 2014 11:45:15 +0000
+Message-Id: <1391773652-25214-97-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -27,67 +27,131 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Thornber <ejt@redhat.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 7e664b3dec431eebf0c5df5ff704d6197634cf35 upstream.
+commit be35f486108227e10fe5d96fd42fb2b344c59983 upstream.
 
-When extending a metadata space map we should do the first commit whilst
-still in bootstrap mode -- a mode where all blocks get allocated in the
-new area.
+There may be other parts of the kernel holding a reference on the dm
+kobject.  We must wait until all references are dropped before
+deallocating the mapped_device structure.
 
-That way the commit overhead is allocated from the newly added space.
-Otherwise we risk running out of space.
+The dm_kobject_release method signals that all references are dropped
+via completion.  But dm_kobject_release doesn't free the kobject (which
+is embedded in the mapped_device structure).
 
-With this fix, and the previous commit "dm space map common: make sure
-new space is used during extend", the following device mapper testsuite
-test passes:
- dmtest run --suite thin-provisioning -n /resize_metadata_no_io/
+This is the sequence of operations:
+* when destroying a DM device, call kobject_put from dm_sysfs_exit
+* wait until all users stop using the kobject, when it happens the
+  release method is called
+* the release method signals the completion and should return without
+  delay
+* the dm device removal code that waits on the completion continues
+* the dm device removal code drops the dm_mod reference the device had
+* the dm device removal code frees the mapped_device structure that
+  contains the kobject
 
-Signed-off-by: Joe Thornber <ejt@redhat.com>
+Using kobject this way should avoid the module unload race that was
+mentioned at the beginning of this thread:
+https://lkml.org/lkml/2014/1/4/83
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
 Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/md/persistent-data/dm-space-map-metadata.c | 18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
+ drivers/md/dm-sysfs.c | 10 +++++++++-
+ drivers/md/dm.c       | 11 +++++++++++
+ drivers/md/dm.h       |  2 ++
+ 3 files changed, 22 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/md/persistent-data/dm-space-map-metadata.c b/drivers/md/persistent-data/dm-space-map-metadata.c
-index 58fc1ee..f04d92f 100644
---- a/drivers/md/persistent-data/dm-space-map-metadata.c
-+++ b/drivers/md/persistent-data/dm-space-map-metadata.c
-@@ -608,20 +608,28 @@ static int sm_metadata_extend(struct dm_space_map *sm, dm_block_t extra_blocks)
- 	 * Flick into a mode where all blocks get allocated in the new area.
- 	 */
- 	smm->begin = old_len;
--	memcpy(&smm->sm, &bootstrap_ops, sizeof(smm->sm));
-+	memcpy(sm, &bootstrap_ops, sizeof(*sm));
+diff --git a/drivers/md/dm-sysfs.c b/drivers/md/dm-sysfs.c
+index 84d2b91..e0cc5d6 100644
+--- a/drivers/md/dm-sysfs.c
++++ b/drivers/md/dm-sysfs.c
+@@ -79,6 +79,11 @@ static const struct sysfs_ops dm_sysfs_ops = {
+ 	.show	= dm_attr_show,
+ };
  
- 	/*
- 	 * Extend.
- 	 */
- 	r = sm_ll_extend(&smm->ll, extra_blocks);
-+	if (r)
-+		goto out;
++static void dm_kobject_release(struct kobject *kobj)
++{
++	complete(dm_get_completion_from_kobject(kobj));
++}
 +
-+	for (i = old_len; !r && i < smm->begin; i++) {
-+		r = sm_ll_inc(&smm->ll, i, &ev);
-+		if (r)
-+			goto out;
-+	}
+ /*
+  * dm kobject is embedded in mapped_device structure
+  * no need to define release function here
+@@ -86,6 +91,7 @@ static const struct sysfs_ops dm_sysfs_ops = {
+ static struct kobj_type dm_ktype = {
+ 	.sysfs_ops	= &dm_sysfs_ops,
+ 	.default_attrs	= dm_attrs,
++	.release	= dm_kobject_release,
+ };
  
-+	r = sm_metadata_commit(sm);
+ /*
+@@ -104,5 +110,7 @@ int dm_sysfs_init(struct mapped_device *md)
+  */
+ void dm_sysfs_exit(struct mapped_device *md)
+ {
+-	kobject_put(dm_kobject(md));
++	struct kobject *kobj = dm_kobject(md);
++	kobject_put(kobj);
++	wait_for_completion(dm_get_completion_from_kobject(kobj));
+ }
+diff --git a/drivers/md/dm.c b/drivers/md/dm.c
+index 995e1fc..0cc1449 100644
+--- a/drivers/md/dm.c
++++ b/drivers/md/dm.c
+@@ -196,6 +196,9 @@ struct mapped_device {
+ 	/* sysfs handle */
+ 	struct kobject kobj;
+ 
++	/* wait until the kobject is released */
++	struct completion kobj_completion;
 +
-+out:
- 	/*
- 	 * Switch back to normal behaviour.
- 	 */
--	memcpy(&smm->sm, &ops, sizeof(smm->sm));
--	for (i = old_len; !r && i < smm->begin; i++)
--		r = sm_ll_inc(&smm->ll, i, &ev);
--
-+	memcpy(sm, &ops, sizeof(*sm));
- 	return r;
+ 	/* zero-length flush that will be cloned and submitted to targets */
+ 	struct bio flush_bio;
+ };
+@@ -1936,6 +1939,7 @@ static struct mapped_device *alloc_dev(int minor)
+ 	init_waitqueue_head(&md->wait);
+ 	INIT_WORK(&md->work, dm_wq_work);
+ 	init_waitqueue_head(&md->eventq);
++	init_completion(&md->kobj_completion);
+ 
+ 	md->disk->major = _major;
+ 	md->disk->first_minor = minor;
+@@ -2784,6 +2788,13 @@ struct mapped_device *dm_get_from_kobject(struct kobject *kobj)
+ 	return md;
  }
  
++struct completion *dm_get_completion_from_kobject(struct kobject *kobj)
++{
++	struct mapped_device *md = container_of(kobj, struct mapped_device, kobj);
++
++	return &md->kobj_completion;
++}
++
+ int dm_suspended_md(struct mapped_device *md)
+ {
+ 	return test_bit(DMF_SUSPENDED, &md->flags);
+diff --git a/drivers/md/dm.h b/drivers/md/dm.h
+index 45b97da..66cfb7d 100644
+--- a/drivers/md/dm.h
++++ b/drivers/md/dm.h
+@@ -15,6 +15,7 @@
+ #include <linux/list.h>
+ #include <linux/blkdev.h>
+ #include <linux/hdreg.h>
++#include <linux/completion.h>
+ 
+ /*
+  * Suspend feature flags
+@@ -129,6 +130,7 @@ int dm_sysfs_init(struct mapped_device *md);
+ void dm_sysfs_exit(struct mapped_device *md);
+ struct kobject *dm_kobject(struct mapped_device *md);
+ struct mapped_device *dm_get_from_kobject(struct kobject *kobj);
++struct completion *dm_get_completion_from_kobject(struct kobject *kobj);
+ 
+ /*
+  * Targets for linear and striped mappings
 -- 
 1.8.3.2
 
