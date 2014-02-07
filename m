@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753917AbaBGMt5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:49:57 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41898 "EHLO
+	id S1756093AbaBGMvY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:51:24 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41893 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932314AbaBGLuN (ORCPT
+	with ESMTP id S1753236AbaBGLuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:50:13 -0500
+	Fri, 7 Feb 2014 06:50:12 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 105/233] staging: r8712u: Set device type to wlan
-Date: Fri,  7 Feb 2014 11:45:24 +0000
-Message-Id: <1391773652-25214-106-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 106/233] ALSA: Enable CONFIG_ZONE_DMA for smaller PCI DMA masks
+Date: Fri,  7 Feb 2014 11:45:25 +0000
+Message-Id: <1391773652-25214-107-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -28,44 +27,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 3a21f00a5002b14e4aab52aef59d33ed28468a13 upstream.
+commit 80ab8eae70e51d578ebbeb228e0f7a562471b8b7 upstream.
 
-The latest version of NetworkManager does not recognize the device as wireless
-without this change.
+The PCI devices with DMA masks smaller than 32bit should enable
+CONFIG_ZONE_DMA.  Since the recent change of page allocator, page
+allocations via dma_alloc_coherent() with the limited DMA mask bits
+may fail more frequently, ended up with no available buffers, when
+CONFIG_ZONE_DMA isn't enabled.  With CONFIG_ZONE_DMA, the system has
+much more chance to obtain such pages.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ luis: backported to 3.11: adjusted context ]
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=68221
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/staging/rtl8712/usb_intf.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ sound/pci/Kconfig | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-diff --git a/drivers/staging/rtl8712/usb_intf.c b/drivers/staging/rtl8712/usb_intf.c
-index c812d6c7..e3a005d 100644
---- a/drivers/staging/rtl8712/usb_intf.c
-+++ b/drivers/staging/rtl8712/usb_intf.c
-@@ -358,6 +358,10 @@ static u8 key_2char2num(u8 hch, u8 lch)
- 	return (hex_to_bin(hch) << 4) | hex_to_bin(lch);
- }
+diff --git a/sound/pci/Kconfig b/sound/pci/Kconfig
+index fe6fa93..daac7c7 100644
+--- a/sound/pci/Kconfig
++++ b/sound/pci/Kconfig
+@@ -30,6 +30,7 @@ config SND_ALS300
+ 	select SND_PCM
+ 	select SND_AC97_CODEC
+ 	select SND_OPL3_LIB
++	select ZONE_DMA
+ 	help
+ 	  Say 'Y' or 'M' to include support for Avance Logic ALS300/ALS300+
  
-+static const struct device_type wlan_type = {
-+	.name = "wlan",
-+};
-+
- /*
-  * drv_init() - a device potentially for us
-  *
-@@ -393,6 +397,7 @@ static int r871xu_drv_init(struct usb_interface *pusb_intf,
- 	padapter->pusb_intf = pusb_intf;
- 	usb_set_intfdata(pusb_intf, pnetdev);
- 	SET_NETDEV_DEV(pnetdev, &pusb_intf->dev);
-+	pnetdev->dev.type = &wlan_type;
- 	/* step 2. */
- 	padapter->dvobj_init = &r8712_usb_dvobj_init;
- 	padapter->dvobj_deinit = &r8712_usb_dvobj_deinit;
+@@ -54,6 +55,7 @@ config SND_ALI5451
+ 	tristate "ALi M5451 PCI Audio Controller"
+ 	select SND_MPU401_UART
+ 	select SND_AC97_CODEC
++	select ZONE_DMA
+ 	help
+ 	  Say Y here to include support for the integrated AC97 sound
+ 	  device on motherboards using the ALi M5451 Audio Controller
+@@ -158,6 +160,7 @@ config SND_AZT3328
+ 	select SND_PCM
+ 	select SND_RAWMIDI
+ 	select SND_AC97_CODEC
++	select ZONE_DMA
+ 	help
+ 	  Say Y here to include support for Aztech AZF3328 (PCI168)
+ 	  soundcards.
+@@ -463,6 +466,7 @@ config SND_EMU10K1
+ 	select SND_HWDEP
+ 	select SND_RAWMIDI
+ 	select SND_AC97_CODEC
++	select ZONE_DMA
+ 	help
+ 	  Say Y to include support for Sound Blaster PCI 512, Live!,
+ 	  Audigy and E-mu APS (partially supported) soundcards.
+@@ -478,6 +482,7 @@ config SND_EMU10K1X
+ 	tristate "Emu10k1X (Dell OEM Version)"
+ 	select SND_AC97_CODEC
+ 	select SND_RAWMIDI
++	select ZONE_DMA
+ 	help
+ 	  Say Y here to include support for the Dell OEM version of the
+ 	  Sound Blaster Live!.
+@@ -511,6 +516,7 @@ config SND_ES1938
+ 	select SND_OPL3_LIB
+ 	select SND_MPU401_UART
+ 	select SND_AC97_CODEC
++	select ZONE_DMA
+ 	help
+ 	  Say Y here to include support for soundcards based on ESS Solo-1
+ 	  (ES1938, ES1946, ES1969) chips.
+@@ -522,6 +528,7 @@ config SND_ES1968
+ 	tristate "ESS ES1968/1978 (Maestro-1/2/2E)"
+ 	select SND_MPU401_UART
+ 	select SND_AC97_CODEC
++	select ZONE_DMA
+ 	help
+ 	  Say Y here to include support for soundcards based on ESS Maestro
+ 	  1/2/2E chips.
+@@ -603,6 +610,7 @@ config SND_ICE1712
+ 	select SND_MPU401_UART
+ 	select SND_AC97_CODEC
+ 	select BITREVERSE
++	select ZONE_DMA
+ 	help
+ 	  Say Y here to include support for soundcards based on the
+ 	  ICE1712 (Envy24) chip.
+@@ -690,6 +698,7 @@ config SND_LX6464ES
+ config SND_MAESTRO3
+ 	tristate "ESS Allegro/Maestro3"
+ 	select SND_AC97_CODEC
++	select ZONE_DMA
+ 	help
+ 	  Say Y here to include support for soundcards based on ESS Maestro 3
+ 	  (Allegro) chips.
+@@ -786,6 +795,7 @@ config SND_SIS7019
+ 	tristate "SiS 7019 Audio Accelerator"
+ 	depends on X86 && !X86_64
+ 	select SND_AC97_CODEC
++	select ZONE_DMA
+ 	help
+ 	  Say Y here to include support for the SiS 7019 Audio Accelerator.
+ 
+@@ -797,6 +807,7 @@ config SND_SONICVIBES
+ 	select SND_OPL3_LIB
+ 	select SND_MPU401_UART
+ 	select SND_AC97_CODEC
++	select ZONE_DMA
+ 	help
+ 	  Say Y here to include support for soundcards based on the S3
+ 	  SonicVibes chip.
+@@ -808,6 +819,7 @@ config SND_TRIDENT
+ 	tristate "Trident 4D-Wave DX/NX; SiS 7018"
+ 	select SND_MPU401_UART
+ 	select SND_AC97_CODEC
++	select ZONE_DMA
+ 	help
+ 	  Say Y here to include support for soundcards based on Trident
+ 	  4D-Wave DX/NX or SiS 7018 chips.
 -- 
 1.8.3.2
 
