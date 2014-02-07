@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753023AbaBGLYj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:24:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40893 "EHLO
+	id S1753749AbaBGLjX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:39:23 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41048 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752180AbaBGLXz (ORCPT
+	with ESMTP id S1753014AbaBGLYi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:23:55 -0500
+	Fri, 7 Feb 2014 06:24:38 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Larry Finger <Larry.Finger@lwfinger.net>,
         "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 18/88] rtlwifi: rtl8192cu: Fix some code in RF handling
-Date: Fri,  7 Feb 2014 11:22:15 +0000
-Message-Id: <1391772205-22239-19-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 50/88] rtlwifi: rtl8192cu: Add new device ID
+Date: Fri,  7 Feb 2014 11:22:47 +0000
+Message-Id: <1391772205-22239-51-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
@@ -30,69 +30,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit e9b0784bb9de3152e787ee779868c626b137fb3b upstream.
+commit f87f960b2fb802f26ee3b00c19320e57a9c583ff upstream.
 
+Reported-by: Jan Prinsloo <janroot@gmail.com>
+Tested-by: Jan Prinsloo <janroot@gmail.com>
 Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/rf.c | 29 ++++++++++++++++-------------
- 1 file changed, 16 insertions(+), 13 deletions(-)
+ drivers/net/wireless/rtlwifi/rtl8192cu/sw.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/rf.c b/drivers/net/wireless/rtlwifi/rtl8192cu/rf.c
-index 4763426..bbe9a78 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/rf.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/rf.c
-@@ -85,17 +85,15 @@ void rtl92cu_phy_rf6052_set_cck_txpower(struct ieee80211_hw *hw,
- 	if (mac->act_scanning) {
- 		tx_agc[RF90_PATH_A] = 0x3f3f3f3f;
- 		tx_agc[RF90_PATH_B] = 0x3f3f3f3f;
--		if (turbo_scanoff) {
--			for (idx1 = RF90_PATH_A; idx1 <= RF90_PATH_B; idx1++) {
--				tx_agc[idx1] = ppowerlevel[idx1] |
--				    (ppowerlevel[idx1] << 8) |
--				    (ppowerlevel[idx1] << 16) |
--				    (ppowerlevel[idx1] << 24);
--				if (rtlhal->interface == INTF_USB) {
--					if (tx_agc[idx1] > 0x20 &&
--					    rtlefuse->external_pa)
--						tx_agc[idx1] = 0x20;
--				}
-+		for (idx1 = RF90_PATH_A; idx1 <= RF90_PATH_B; idx1++) {
-+			tx_agc[idx1] = ppowerlevel[idx1] |
-+			    (ppowerlevel[idx1] << 8) |
-+			    (ppowerlevel[idx1] << 16) |
-+			    (ppowerlevel[idx1] << 24);
-+			if (rtlhal->interface == INTF_USB) {
-+				if (tx_agc[idx1] > 0x20 &&
-+				    rtlefuse->external_pa)
-+					tx_agc[idx1] = 0x20;
- 			}
- 		}
- 	} else {
-@@ -107,7 +105,7 @@ void rtl92cu_phy_rf6052_set_cck_txpower(struct ieee80211_hw *hw,
- 			   TXHIGHPWRLEVEL_LEVEL2) {
- 			tx_agc[RF90_PATH_A] = 0x00000000;
- 			tx_agc[RF90_PATH_B] = 0x00000000;
--		} else{
-+		} else {
- 			for (idx1 = RF90_PATH_A; idx1 <= RF90_PATH_B; idx1++) {
- 				tx_agc[idx1] = ppowerlevel[idx1] |
- 				    (ppowerlevel[idx1] << 8) |
-@@ -379,7 +377,12 @@ static void _rtl92c_write_ofdm_power_reg(struct ieee80211_hw *hw,
- 			    regoffset == RTXAGC_B_MCS07_MCS04)
- 				regoffset = 0xc98;
- 			for (i = 0; i < 3; i++) {
--				writeVal = (writeVal > 6) ? (writeVal - 6) : 0;
-+				if (i != 2)
-+					writeVal = (writeVal > 8) ?
-+						   (writeVal - 8) : 0;
-+				else
-+					writeVal = (writeVal > 6) ?
-+						   (writeVal - 6) : 0;
- 				rtl_write_byte(rtlpriv, (u32)(regoffset + i),
- 					      (u8)writeVal);
- 			}
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
+index 07ab292..6245563 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
+@@ -316,6 +316,7 @@ static struct usb_device_id rtl8192c_usb_ids[] = {
+ 	{RTL_USB_DEVICE(0x0bda, 0x5088, rtl92cu_hal_cfg)}, /*Thinkware-CC&C*/
+ 	{RTL_USB_DEVICE(0x0df6, 0x0052, rtl92cu_hal_cfg)}, /*Sitecom - Edimax*/
+ 	{RTL_USB_DEVICE(0x0df6, 0x005c, rtl92cu_hal_cfg)}, /*Sitecom - Edimax*/
++	{RTL_USB_DEVICE(0x0df6, 0x0077, rtl92cu_hal_cfg)}, /*Sitecom-WLA2100V2*/
+ 	{RTL_USB_DEVICE(0x0eb0, 0x9071, rtl92cu_hal_cfg)}, /*NO Brand - Etop*/
+ 	{RTL_USB_DEVICE(0x4856, 0x0091, rtl92cu_hal_cfg)}, /*NetweeN - Feixun*/
+ 	/* HP - Lite-On ,8188CUS Slim Combo */
 -- 
 1.8.3.2
 
