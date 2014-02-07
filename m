@@ -1,153 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932484AbaBGMtM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:49:12 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41906 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754802AbaBGLuP (ORCPT
+	id S932462AbaBGMtJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:49:09 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:34798 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754078AbaBGMtG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:50:15 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kamil Debski <k.debski@samsung.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 109/233] [media] media: s5p_mfc: remove s5p_mfc_get_node_type() function
-Date: Fri,  7 Feb 2014 11:45:28 +0000
-Message-Id: <1391773652-25214-110-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
-References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Fri, 7 Feb 2014 07:49:06 -0500
+Date: Fri, 7 Feb 2014 18:18:58 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Armin Schindler <mac@melware.de>, Karsten Keil <isdn@linux-pingi.de>,
+        netdev@vger.kernel.org, josh@joshtriplett.org
+Subject: [PATCH 25/26] drivers: isdn: Move prototype declaration to header
+ file dadapter.h
+Message-ID: <fa09a161cd57206bfac7f3ea2817fb6d535c727c.1390408520.git.rashika.kheria@gmail.com>
+References: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.4 -stable review patch.  If anyone has any objections, please let me know.
+Move prototype declaration of functions to header file
+hardware/eicon/dadapter.h because they are used by more than one file.
 
-------------------
+This eliminates the following warning in hardware/eicon/dadapter.c:
+drivers/isdn/hardware/eicon/dadapter.c:361:22: warning: no previous prototype for ‘DIVA_DIDD_Read’ [-Wmissing-prototypes]
 
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-
-commit b80cb8dc4162bc954cc71efec192ed89f2061573 upstream.
-
-s5p_mfc_get_node_type() relies on get_index() helper function, which in
-turn relies on video_device index numbers assigned on driver
-registration. All this code is not really needed, because there is
-already access to respective video_device structures via common
-s5p_mfc_dev structure. This fixes the issues introduced by patch
-1056e4388b0454917a512618c8416a98628fc9ce ("v4l2-dev: Fix race condition
-on __video_register_device"), which has been merged in v3.12-rc1.
-
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-Signed-off-by: Kamil Debski <k.debski@samsung.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- drivers/media/platform/s5p-mfc/s5p_mfc.c        | 28 +++++++------------------
- drivers/media/platform/s5p-mfc/s5p_mfc_common.h |  9 --------
- 2 files changed, 7 insertions(+), 30 deletions(-)
+ drivers/isdn/hardware/eicon/capifunc.c  |    3 +--
+ drivers/isdn/hardware/eicon/dadapter.h  |    1 +
+ drivers/isdn/hardware/eicon/diddfunc.c  |    1 -
+ drivers/isdn/hardware/eicon/diva_didd.c |    2 --
+ drivers/isdn/hardware/eicon/divasfunc.c |    3 +--
+ drivers/isdn/hardware/eicon/idifunc.c   |    3 +--
+ drivers/isdn/hardware/eicon/mntfunc.c   |    3 +--
+ 7 files changed, 5 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/media/platform/s5p-mfc/s5p_mfc.c b/drivers/media/platform/s5p-mfc/s5p_mfc.c
-index a130dcd..ac76f8b 100644
---- a/drivers/media/platform/s5p-mfc/s5p_mfc.c
-+++ b/drivers/media/platform/s5p-mfc/s5p_mfc.c
-@@ -177,21 +177,6 @@ unlock:
- 		mutex_unlock(&dev->mfc_mutex);
- }
+diff --git a/drivers/isdn/hardware/eicon/capifunc.c b/drivers/isdn/hardware/eicon/capifunc.c
+index 639d70f..3bcb602 100644
+--- a/drivers/isdn/hardware/eicon/capifunc.c
++++ b/drivers/isdn/hardware/eicon/capifunc.c
+@@ -18,6 +18,7 @@
+ #include "divacapi.h"
+ #include "divasync.h"
+ #include "capifunc.h"
++#include "dadapter.h"
  
--static enum s5p_mfc_node_type s5p_mfc_get_node_type(struct file *file)
--{
--	struct video_device *vdev = video_devdata(file);
--
--	if (!vdev) {
--		mfc_err("failed to get video_device");
--		return MFCNODE_INVALID;
--	}
--	if (vdev->index == 0)
--		return MFCNODE_DECODER;
--	else if (vdev->index == 1)
--		return MFCNODE_ENCODER;
--	return MFCNODE_INVALID;
--}
--
- static void s5p_mfc_clear_int_flags(struct s5p_mfc_dev *dev)
- {
- 	mfc_write(dev, 0, S5P_FIMV_RISC_HOST_INT);
-@@ -701,6 +686,7 @@ irq_cleanup_hw:
- /* Open an MFC node */
- static int s5p_mfc_open(struct file *file)
- {
-+	struct video_device *vdev = video_devdata(file);
- 	struct s5p_mfc_dev *dev = video_drvdata(file);
- 	struct s5p_mfc_ctx *ctx = NULL;
- 	struct vb2_queue *q;
-@@ -738,7 +724,7 @@ static int s5p_mfc_open(struct file *file)
- 	/* Mark context as idle */
- 	clear_work_bit_irqsave(ctx);
- 	dev->ctx[ctx->num] = ctx;
--	if (s5p_mfc_get_node_type(file) == MFCNODE_DECODER) {
-+	if (vdev == dev->vfd_dec) {
- 		ctx->type = MFCINST_DECODER;
- 		ctx->c_ops = get_dec_codec_ops();
- 		s5p_mfc_dec_init(ctx);
-@@ -748,7 +734,7 @@ static int s5p_mfc_open(struct file *file)
- 			mfc_err("Failed to setup mfc controls\n");
- 			goto err_ctrls_setup;
- 		}
--	} else if (s5p_mfc_get_node_type(file) == MFCNODE_ENCODER) {
-+	} else if (vdev == dev->vfd_enc) {
- 		ctx->type = MFCINST_ENCODER;
- 		ctx->c_ops = get_enc_codec_ops();
- 		/* only for encoder */
-@@ -793,10 +779,10 @@ static int s5p_mfc_open(struct file *file)
- 	q = &ctx->vq_dst;
- 	q->type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
- 	q->drv_priv = &ctx->fh;
--	if (s5p_mfc_get_node_type(file) == MFCNODE_DECODER) {
-+	if (vdev == dev->vfd_dec) {
- 		q->io_modes = VB2_MMAP;
- 		q->ops = get_dec_queue_ops();
--	} else if (s5p_mfc_get_node_type(file) == MFCNODE_ENCODER) {
-+	} else if (vdev == dev->vfd_enc) {
- 		q->io_modes = VB2_MMAP | VB2_USERPTR;
- 		q->ops = get_enc_queue_ops();
- 	} else {
-@@ -815,10 +801,10 @@ static int s5p_mfc_open(struct file *file)
- 	q->type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
- 	q->io_modes = VB2_MMAP;
- 	q->drv_priv = &ctx->fh;
--	if (s5p_mfc_get_node_type(file) == MFCNODE_DECODER) {
-+	if (vdev == dev->vfd_dec) {
- 		q->io_modes = VB2_MMAP;
- 		q->ops = get_dec_queue_ops();
--	} else if (s5p_mfc_get_node_type(file) == MFCNODE_ENCODER) {
-+	} else if (vdev == dev->vfd_enc) {
- 		q->io_modes = VB2_MMAP | VB2_USERPTR;
- 		q->ops = get_enc_queue_ops();
- 	} else {
-diff --git a/drivers/media/platform/s5p-mfc/s5p_mfc_common.h b/drivers/media/platform/s5p-mfc/s5p_mfc_common.h
-index ef4074c..f804c1f 100644
---- a/drivers/media/platform/s5p-mfc/s5p_mfc_common.h
-+++ b/drivers/media/platform/s5p-mfc/s5p_mfc_common.h
-@@ -113,15 +113,6 @@ enum s5p_mfc_fmt_type {
- };
+ #define DBG_MINIMUM  (DL_LOG + DL_FTL + DL_ERR)
+ #define DBG_DEFAULT  (DBG_MINIMUM + DL_XLOG + DL_REG)
+@@ -55,8 +56,6 @@ static char *diva_procinfo(struct capi_ctr *);
+ static u16 diva_send_message(struct capi_ctr *,
+ 			     diva_os_message_buffer_s *);
  
- /**
-- * enum s5p_mfc_node_type - The type of an MFC device node.
-- */
--enum s5p_mfc_node_type {
--	MFCNODE_INVALID = -1,
--	MFCNODE_DECODER = 0,
--	MFCNODE_ENCODER = 1,
--};
+-extern void DIVA_DIDD_Read(DESCRIPTOR *, int);
 -
--/**
-  * enum s5p_mfc_inst_type - The type of an MFC instance.
+ /*
+  * debug
   */
- enum s5p_mfc_inst_type {
+diff --git a/drivers/isdn/hardware/eicon/dadapter.h b/drivers/isdn/hardware/eicon/dadapter.h
+index 5540f46..f6cdebf 100644
+--- a/drivers/isdn/hardware/eicon/dadapter.h
++++ b/drivers/isdn/hardware/eicon/dadapter.h
+@@ -28,6 +28,7 @@
+ 
+ void diva_didd_load_time_init(void);
+ void diva_didd_load_time_finit(void);
++void IDI_CALL_LINK_T DIVA_DIDD_Read(void IDI_CALL_ENTITY_T *buffer, int length);
+ 
+ #define NEW_MAX_DESCRIPTORS     64
+ 
+diff --git a/drivers/isdn/hardware/eicon/diddfunc.c b/drivers/isdn/hardware/eicon/diddfunc.c
+index b0b23ed..a8a229f 100644
+--- a/drivers/isdn/hardware/eicon/diddfunc.c
++++ b/drivers/isdn/hardware/eicon/diddfunc.c
+@@ -20,7 +20,6 @@
+ #define DBG_DEFAULT  (DBG_MINIMUM + DL_XLOG + DL_REG)
+ 
+ 
+-extern void DIVA_DIDD_Read(void *, int);
+ extern char *DRIVERRELEASE_DIDD;
+ static dword notify_handle;
+ static DESCRIPTOR _DAdapter;
+diff --git a/drivers/isdn/hardware/eicon/diva_didd.c b/drivers/isdn/hardware/eicon/diva_didd.c
+index 56d32a7..b8e525f 100644
+--- a/drivers/isdn/hardware/eicon/diva_didd.c
++++ b/drivers/isdn/hardware/eicon/diva_didd.c
+@@ -39,8 +39,6 @@ MODULE_LICENSE("GPL");
+ #define DBG_MINIMUM  (DL_LOG + DL_FTL + DL_ERR)
+ #define DBG_DEFAULT  (DBG_MINIMUM + DL_XLOG + DL_REG)
+ 
+-extern void DIVA_DIDD_Read(void *, int);
+-
+ static struct proc_dir_entry *proc_didd;
+ struct proc_dir_entry *proc_net_eicon = NULL;
+ 
+diff --git a/drivers/isdn/hardware/eicon/divasfunc.c b/drivers/isdn/hardware/eicon/divasfunc.c
+index 4be5f88..a5d44d0 100644
+--- a/drivers/isdn/hardware/eicon/divasfunc.c
++++ b/drivers/isdn/hardware/eicon/divasfunc.c
+@@ -17,14 +17,13 @@
+ #include "divasync.h"
+ #include "diva.h"
+ #include "xdi_vers.h"
++#include "dadapter.h"
+ 
+ #define DBG_MINIMUM  (DL_LOG + DL_FTL + DL_ERR)
+ #define DBG_DEFAULT  (DBG_MINIMUM + DL_XLOG + DL_REG)
+ 
+ static int debugmask;
+ 
+-extern void DIVA_DIDD_Read(void *, int);
+-
+ extern PISDN_ADAPTER IoAdapters[MAX_ADAPTER];
+ 
+ extern char *DRIVERRELEASE_DIVAS;
+diff --git a/drivers/isdn/hardware/eicon/idifunc.c b/drivers/isdn/hardware/eicon/idifunc.c
+index bacab74..dc79095 100644
+--- a/drivers/isdn/hardware/eicon/idifunc.c
++++ b/drivers/isdn/hardware/eicon/idifunc.c
+@@ -15,14 +15,13 @@
+ #include "divasync.h"
+ #include "um_xdi.h"
+ #include "um_idi.h"
++#include "dadapter.h"
+ 
+ #define DBG_MINIMUM  (DL_LOG + DL_FTL + DL_ERR)
+ #define DBG_DEFAULT  (DBG_MINIMUM + DL_XLOG + DL_REG)
+ 
+ extern char *DRIVERRELEASE_IDI;
+ 
+-extern void DIVA_DIDD_Read(void *, int);
+-
+ static dword notify_handle;
+ static DESCRIPTOR DAdapter;
+ static DESCRIPTOR MAdapter;
+diff --git a/drivers/isdn/hardware/eicon/mntfunc.c b/drivers/isdn/hardware/eicon/mntfunc.c
+index e304a1d..be47431 100644
+--- a/drivers/isdn/hardware/eicon/mntfunc.c
++++ b/drivers/isdn/hardware/eicon/mntfunc.c
+@@ -15,14 +15,13 @@
+ #include "di_defs.h"
+ #include "divasync.h"
+ #include "debug_if.h"
++#include "dadapter.h"
+ 
+ extern char *DRIVERRELEASE_MNT;
+ 
+ #define DBG_MINIMUM  (DL_LOG + DL_FTL + DL_ERR)
+ #define DBG_DEFAULT  (DBG_MINIMUM + DL_XLOG + DL_REG)
+ 
+-extern void DIVA_DIDD_Read(void *, int);
+-
+ static dword notify_handle;
+ static DESCRIPTOR DAdapter;
+ static DESCRIPTOR MAdapter;
 -- 
-1.8.3.2
+1.7.9.5
 
