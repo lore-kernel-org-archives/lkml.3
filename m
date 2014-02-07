@@ -1,96 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752910AbaBGRHI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 12:07:08 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:56708 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751383AbaBGRHF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 12:07:05 -0500
-Date: Fri, 7 Feb 2014 18:06:54 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Torvald Riegel <triegel@redhat.com>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-Message-ID: <20140207170654.GQ5002@laptop.programming.kicks-ass.net>
-References: <52F3DA85.1060209@arm.com>
- <20140206185910.GE27276@mudshark.cambridge.arm.com>
- <20140206192743.GH4250@linux.vnet.ibm.com>
- <1391721423.23421.3898.camel@triegel.csb>
- <20140206221117.GJ4250@linux.vnet.ibm.com>
- <1391730288.23421.4102.camel@triegel.csb>
- <20140207042051.GL4250@linux.vnet.ibm.com>
- <20140207074405.GM5002@laptop.programming.kicks-ass.net>
- <20140207165028.GO4250@linux.vnet.ibm.com>
- <20140207165548.GR5976@mudshark.cambridge.arm.com>
+	id S1751689AbaBGRIu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 12:08:50 -0500
+Received: from verein.lst.de ([213.95.11.211]:44622 "EHLO newverein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750775AbaBGRIt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 12:08:49 -0500
+Date: Fri, 7 Feb 2014 18:08:45 +0100
+From: Torsten Duwe <duwe@lst.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Scott Wood <scottwood@freescale.com>, linux-kernel@vger.kernel.org,
+        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
+        Tom Musta <tommusta@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH] Convert powerpc simple spinlocks into ticket locks
+Message-ID: <20140207170845.GD2107@lst.de>
+References: <20140206103736.GA18054@lst.de> <20140206163837.GT2936@laptop.programming.kicks-ass.net> <20140206173727.GA13048@lst.de> <1391717992.6733.232.camel@snotra.buserror.net> <20140207090248.GB26811@lst.de> <20140207103139.GP5002@laptop.programming.kicks-ass.net> <20140207104530.GG5126@laptop.programming.kicks-ass.net> <20140207114949.GA2107@lst.de> <20140207122837.GA3104@twins.programming.kicks-ass.net> <20140207151847.GB3104@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140207165548.GR5976@mudshark.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140207151847.GB3104@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 07, 2014 at 04:55:48PM +0000, Will Deacon wrote:
-> Hi Paul,
+On Fri, Feb 07, 2014 at 04:18:47PM +0100, Peter Zijlstra wrote:
+> On Fri, Feb 07, 2014 at 01:28:37PM +0100, Peter Zijlstra wrote:
+> > Anyway, you can do a version with lwarx/stwcx if you're looking get rid
+> > of lharx.
 > 
-> On Fri, Feb 07, 2014 at 04:50:28PM +0000, Paul E. McKenney wrote:
-> > On Fri, Feb 07, 2014 at 08:44:05AM +0100, Peter Zijlstra wrote:
-> > > On Thu, Feb 06, 2014 at 08:20:51PM -0800, Paul E. McKenney wrote:
-> > > > Hopefully some discussion of out-of-thin-air values as well.
-> > > 
-> > > Yes, absolutely shoot store speculation in the head already. Then drive
-> > > a wooden stake through its hart.
-> > > 
-> > > C11/C++11 should not be allowed to claim itself a memory model until that
-> > > is sorted.
-> > 
-> > There actually is a proposal being put forward, but it might not make ARM
-> > and Power people happy because it involves adding a compare, a branch,
-> > and an ISB/isync after every relaxed load...  Me, I agree with you,
-> > much preferring the no-store-speculation approach.
+> the below seems to compile into relatively ok asm. It can be done better
+> if you write the entire thing by hand though.
+
+[...]
+
 > 
-> Can you elaborate a bit on this please? We don't permit speculative stores
-> in the ARM architecture, so it seems counter-intuitive that GCC needs to
-> emit any additional instructions to prevent that from happening.
+> static inline unsigned int xadd(unsigned int *v, unsigned int i)
+> {
+> 	int t, ret;
+> 	
+> 	__asm__ __volatile__ (
+> "1:	lwarx	%0, 0, %4\n"
+> "	mr	%1, %0\n"
+> "	add	%0, %3, %0\n"
+> "	stwcx.	%0, %0, %4\n"
+> "	bne-	1b\n"
+> 	: "=&r" (t), "=&r" (ret), "+m" (*v)
+> 	: "r" (i), "r" (v)
+> 	: "cc");
 > 
-> Stores can, of course, be observed out-of-order but that's a lot more
-> reasonable :)
+> 	return ret;
+> }
+> 
+I don't like this xadd thing -- it's so x86 ;)
+x86 has its LOCK prefix, ppc has ll/sc.
+That should be reflected somehow IMHO.
 
-This is more about the compiler speculating on stores; imagine:
+Maybe if xadd became mandatory for some kernel library.
 
-  if (x)
-  	y = 1;
-  else
-  	y = 2;
+> 
+> void ticket_unlock(tickets_t *lock)
+> {
+> 	ticket_t tail = lock->tail + 1;
+> 
+> 	/*
+> 	 * The store is save against the xadd for it will make the ll/sc fail
+> 	 * and try again. Aside from that PowerISA guarantees single-copy
+> 	 * atomicy for half-word writes.
+> 	 *
+> 	 * And since only the lock owner will ever write the tail, we're good.
+> 	 */
+> 	smp_store_release(&lock->tail, tail);
+> }
 
-The compiler is allowed to change that into:
+Yeah, let's try that on top of v2 (just posted).
+First, I want to see v2 work as nicely as v1 --
+compiling a debug kernel takes a while...
 
-  y = 2;
-  if (x)
-  	y = 1;
-
-Which is of course a big problem when you want to rely on the ordering.
-
-There's further problems where things like memset() can write outside
-the specified address range. Examples are memset() using single
-instructions to wipe entire cachelines and then 'restoring' the tail
-bit.
-
-While valid for single threaded, its a complete disaster for concurrent
-code.
-
-There's more, but it all boils down to doing stores you don't expect in
-a 'sane' concurrent environment and/or don't respect the control flow.
-
+	Torsten
 
