@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753180AbaBGMHQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:07:16 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:42032 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752998AbaBGMHK (ORCPT
+	id S932505AbaBGLwG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:52:06 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42326 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753011AbaBGLwC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 07:07:10 -0500
-Date: Fri, 7 Feb 2014 17:37:05 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Rashika Kheria <rashika.kheria@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>, linux-mm@kvack.org,
-        josh@joshtriplett.org
-Subject: [PATCH 4/9] mm: Mark function as static in process_vm_access.c
-Message-ID: <cd2e33f9fd5b160ef5108273d7dbabd8259c4f07.1391167128.git.rashika.kheria@gmail.com>
-References: <a7658fc8f2ab015bffe83de1448cc3db79d2a9fc.1391167128.git.rashika.kheria@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <a7658fc8f2ab015bffe83de1448cc3db79d2a9fc.1391167128.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 7 Feb 2014 06:52:02 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Alex Deucher <alexander.deucher@amd.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 189/233] drm/radeon/DCE4+: clear bios scratch dpms bit (v2)
+Date: Fri,  7 Feb 2014 11:46:48 +0000
+Message-Id: <1391773652-25214-190-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
+References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark function as static in process_vm_access.c because it is not used
-outside this file.
+3.11.10.4 -stable review patch.  If anyone has any objections, please let me know.
 
-This eliminates the following warning in mm/process_vm_access.c:
-mm/process_vm_access.c:416:1: warning: no previous prototype for ‘compat_process_vm_rw’ [-Wmissing-prototypes]
+------------------
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+From: Alex Deucher <alexander.deucher@amd.com>
+
+commit 6802d4bad83f50081b2788698570218aaff8d10e upstream.
+
+The BlankCrtc table in some DCE8 boards has some
+logic shortcuts for the vbios when this bit is set.
+Clear it for driver use.
+
+v2: fix typo
+
+Bug:
+https://bugs.freedesktop.org/show_bug.cgi?id=73420
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/process_vm_access.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/radeon_atombios.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/mm/process_vm_access.c b/mm/process_vm_access.c
-index fd26d04..f3aabbd 100644
---- a/mm/process_vm_access.c
-+++ b/mm/process_vm_access.c
-@@ -412,7 +412,7 @@ SYSCALL_DEFINE6(process_vm_writev, pid_t, pid,
+diff --git a/drivers/gpu/drm/radeon/radeon_atombios.c b/drivers/gpu/drm/radeon/radeon_atombios.c
+index 2ab4b35..811d101 100644
+--- a/drivers/gpu/drm/radeon/radeon_atombios.c
++++ b/drivers/gpu/drm/radeon/radeon_atombios.c
+@@ -3781,6 +3781,10 @@ void radeon_atom_initialize_bios_scratch_regs(struct drm_device *dev)
+ 	/* tell the bios not to handle mode switching */
+ 	bios_6_scratch |= ATOM_S6_ACC_BLOCK_DISPLAY_SWITCH;
  
- #ifdef CONFIG_COMPAT
- 
--asmlinkage ssize_t
-+static asmlinkage ssize_t
- compat_process_vm_rw(compat_pid_t pid,
- 		     const struct compat_iovec __user *lvec,
- 		     unsigned long liovcnt,
++	/* clear the vbios dpms state */
++	if (ASIC_IS_DCE4(rdev))
++		bios_2_scratch &= ~ATOM_S2_DEVICE_DPMS_STATE;
++
+ 	if (rdev->family >= CHIP_R600) {
+ 		WREG32(R600_BIOS_2_SCRATCH, bios_2_scratch);
+ 		WREG32(R600_BIOS_6_SCRATCH, bios_6_scratch);
 -- 
-1.7.9.5
+1.8.3.2
 
