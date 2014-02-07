@@ -1,74 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752144AbaBGKgf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 05:36:35 -0500
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:57109 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751760AbaBGKgc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 05:36:32 -0500
-Message-ID: <52F4B8A4.70405@linux.vnet.ibm.com>
-Date: Fri, 07 Feb 2014 16:12:44 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Fengguang Wu <fengguang.wu@intel.com>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Damien Ramonda <damien.ramonda@intel.com>, Jan Kara <jack@suse.cz>,
-        Linus <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH V5] mm readahead: Fix readahead fail for no local
- memory and limit readahead pages
-References: <1390388025-1418-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com> <20140206145105.27dec37b16f24e4ac5fd90ce@linux-foundation.org> <alpine.DEB.2.02.1402061456290.31828@chino.kir.corp.google.com> <20140206152219.45c2039e5092c8ea1c31fd38@linux-foundation.org> <alpine.DEB.2.02.1402061537180.3441@chino.kir.corp.google.com> <alpine.DEB.2.02.1402061557210.5061@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1402061557210.5061@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14020710-9574-0000-0000-00000BD5158A
+	id S1751806AbaBGKie (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 05:38:34 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34683 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751317AbaBGKid (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 05:38:33 -0500
+From: Hannes Reinecke <hare@suse.de>
+To: systemd-devel@lists.freedesktop.org
+Cc: linux-kernel@vger.kernel.org, Hannes Reinecke <hare@suse.de>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay@vrfy.org>,
+        Greg Kroah-Hartmann <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, David Herrmann <dh.herrmann@gmail.com>,
+        Werner Fink <werner@suse.de>
+Subject: [PATCHv3] tty: Set correct tty name in 'active' sysfs attribute
+Date: Fri,  7 Feb 2014 11:38:30 +0100
+Message-Id: <1391769510-123271-1-git-send-email-hare@suse.de>
+X-Mailer: git-send-email 1.7.12.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2014 05:28 AM, David Rientjes wrote:
-> On Thu, 6 Feb 2014, David Rientjes wrote:
->
->>>>>> +#define MAX_REMOTE_READAHEAD   4096UL
->
->> Normally it wouldn't matter because there's no significant downside to it
->> racing, things like mempolicies which use numa_node_id() extensively would
->> result in, oops, a page allocation on the wrong node.
->>
->> This stands out to me, though, because you're expecting the calculation to
->> be correct for a specific node.
->>
->> The patch is still wrong, though, it should just do
->>
->> 	int node = ACCESS_ONCE(numa_mem_id());
->> 	return min(nr, (node_page_state(node, NR_INACTIVE_FILE) +
->> 		        node_page_state(node, NR_FREE_PAGES)) / 2);
->>
->> since we want to readahead based on the cpu's local node, the comment
->> saying we're reading ahead onto "remote memory" is wrong since a
->> memoryless node has local affinity to numa_mem_id().
->>
->
-> Oops, forgot about the MAX_REMOTE_READAHEAD which needs to be factored in
-> as well, but this handles the bound on local node's statistics.
->
+The 'active' sysfs attribute should refer to the currently
+active tty devices the console is running on, not the currently
+active console.
+The console structure doesn't refer to any device in sysfs,
+only the tty the console is running on has.
+So we need to print out the tty names in 'active', not
+the console names.
 
-So following discussion TODO for my patch is:
+Cc: Lennart Poettering <lennart@poettering.net>
+Cc: Kay Sievers <kay@vrfy.org>
+Cc: Greg Kroah-Hartmann <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Cc: David Herrmann <dh.herrmann@gmail.com>
+Signed-off-by: Werner Fink <werner@suse.de>
+Signed-off-by: Hannes Reinecke <hare@suse.de>
+---
+ Documentation/ABI/testing/sysfs-tty |  3 ++-
+ drivers/tty/tty_io.c                | 25 ++++++++++++++++++-------
+ 2 files changed, 20 insertions(+), 8 deletions(-)
 
-1) Update the changelog with user visible impact of the patch.
-(Andrew's suggestion)
-2) Add ACCESS_ONCE to numa_node_id().
-3) Change the "readahead into remote memory" part of the documentation
-which is misleading.
-
-( I feel no need to add numa_mem_id() since we would specifically limit
-the readahead with MAX_REMOTE_READAHEAD in memoryless cpu cases).
+diff --git a/Documentation/ABI/testing/sysfs-tty b/Documentation/ABI/testing/sysfs-tty
+index ad22fb0..a2ccec3 100644
+--- a/Documentation/ABI/testing/sysfs-tty
++++ b/Documentation/ABI/testing/sysfs-tty
+@@ -3,7 +3,8 @@ Date:		Nov 2010
+ Contact:	Kay Sievers <kay.sievers@vrfy.org>
+ Description:
+ 		 Shows the list of currently configured
+-		 console devices, like 'tty1 ttyS0'.
++		 tty devices used for the console,
++		 like 'tty1 ttyS0'.
+ 		 The last entry in the file is the active
+ 		 device connected to /dev/console.
+ 		 The file supports poll() to detect virtual
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index c74a00a..bd2715a 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -1267,16 +1267,17 @@ static void pty_line_name(struct tty_driver *driver, int index, char *p)
+  *	@p: output buffer of at least 7 bytes
+  *
+  *	Generate a name from a driver reference and write it to the output
+- *	buffer.
++ *	buffer. Return the number of bytes written.
+  *
+  *	Locking: None
+  */
+-static void tty_line_name(struct tty_driver *driver, int index, char *p)
++static ssize_t tty_line_name(struct tty_driver *driver, int index, char *p)
+ {
+ 	if (driver->flags & TTY_DRIVER_UNNUMBERED_NODE)
+-		strcpy(p, driver->name);
++		return sprintf(p, "%s", driver->name);
+ 	else
+-		sprintf(p, "%s%d", driver->name, index + driver->name_base);
++		return sprintf(p, "%s%d", driver->name,
++			       index + driver->name_base);
+ }
+ 
+ /**
+@@ -3545,9 +3546,19 @@ static ssize_t show_cons_active(struct device *dev,
+ 		if (i >= ARRAY_SIZE(cs))
+ 			break;
+ 	}
+-	while (i--)
+-		count += sprintf(buf + count, "%s%d%c",
+-				 cs[i]->name, cs[i]->index, i ? ' ':'\n');
++	while (i--) {
++		struct tty_driver *driver;
++		const char *name = cs[i]->name;
++		int index = cs[i]->index;
++
++		driver = cs[i]->device(cs[i], &index);
++		if (driver) {
++			count += tty_line_name(driver, index, buf + count);
++			count += sprintf(buf + count, "%c", i ? ' ':'\n');
++		} else
++			count += sprintf(buf + count, "%s%d%c",
++					 name, index, i ? ' ':'\n');
++	}
+ 	console_unlock();
+ 
+ 	return count;
+-- 
+1.7.12.4
 
