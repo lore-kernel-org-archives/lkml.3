@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753753AbaBGLmS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:42:18 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41013 "EHLO
+	id S1754065AbaBGLmk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:42:40 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41009 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752894AbaBGLY2 (ORCPT
+	with ESMTP id S1752877AbaBGLY1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:24:28 -0500
+	Fri, 7 Feb 2014 06:24:27 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
+Cc: Stephen Warren <swarren@nvidia.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 43/88] dm space map common: make sure new space is used during extend
-Date: Fri,  7 Feb 2014 11:22:40 +0000
-Message-Id: <1391772205-22239-44-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 41/88] serial: 8250: enable UART_BUG_NOMSR for Tegra
+Date: Fri,  7 Feb 2014 11:22:38 +0000
+Message-Id: <1391772205-22239-42-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
@@ -27,56 +28,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Thornber <ejt@redhat.com>
+From: Stephen Warren <swarren@nvidia.com>
 
-commit 12c91a5c2d2a8e8cc40a9552313e1e7b0a2d9ee3 upstream.
+commit 3685f19e07802ec4207b52465c408f185b66490e upstream.
 
-When extending a low level space map we should update nr_blocks at
-the start so the new space is used for the index entries.
+Tegra chips have 4 or 5 identical UART modules embedded. UARTs C..E have
+their MODEM-control signals tied off to a static state. However UARTs A
+and B can optionally route those signals to/from package pins, depending
+on the exact pinmux configuration.
 
-Otherwise extend can fail, e.g.: sm_metadata_extend call sequence
-that fails:
- -> sm_ll_extend
-    -> dm_tm_new_block -> dm_sm_new_block -> sm_bootstrap_new_block
-    => returns -ENOSPC because smm->begin == smm->ll.nr_blocks
+When these signals are not routed to package pins, false interrupts may
+trigger either temporarily, or permanently, all while not showing up in
+the IIR; it will read as NO_INT. This will eventually lead to the UART
+IRQ being disabled due to unhandled interrupts. When this happens, the
+kernel may print e.g.:
 
-Signed-off-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+    irq 68: nobody cared (try booting with the "irqpoll" option)
+
+In order to prevent this, enable UART_BUG_NOMSR. This prevents
+UART_IER_MSI from being enabled, which prevents the false interrupts
+from triggering.
+
+In practice, this is not needed under any of the following conditions:
+
+* On Tegra chips after Tegra30, since the HW bug has apparently been
+  fixed.
+
+* On UARTs C..E since their MODEM control signals are tied to the correct
+  static state which doesn't trigger the issue.
+
+* On UARTs A..B if the MODEM control signals are routed out to package
+  pins, since they will then carry valid signals.
+
+However, we ignore these exceptions for now, since they are only relevant
+if a board actually hooks up more than a 4-wire UART, and no currently
+supported board does this. If we ever support a board that does, we can
+refine the algorithm that enables UART_BUG_NOMSR to take those exceptions
+into account, and/or read a flag from DT/... that indicates that the
+board has hooked up and pinmux'd more than a 4-wire UART.
+
+Reported-by: Olof Johansson <olof@lixom.net> # autotester
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[ luis: backported to 3.5:
+  - file rename: 8250_core.c -> 8250.c ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/md/persistent-data/dm-space-map-common.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/tty/serial/8250/8250.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/md/persistent-data/dm-space-map-common.c b/drivers/md/persistent-data/dm-space-map-common.c
-index ff3beed..79c02d9 100644
---- a/drivers/md/persistent-data/dm-space-map-common.c
-+++ b/drivers/md/persistent-data/dm-space-map-common.c
-@@ -244,6 +244,10 @@ int sm_ll_extend(struct ll_disk *ll, dm_block_t extra_blocks)
- 		return -EINVAL;
- 	}
+diff --git a/drivers/tty/serial/8250/8250.c b/drivers/tty/serial/8250/8250.c
+index d9e2594..899c2b9 100644
+--- a/drivers/tty/serial/8250/8250.c
++++ b/drivers/tty/serial/8250/8250.c
+@@ -2615,6 +2615,10 @@ static void serial8250_config_port(struct uart_port *port, int flags)
+ 	if (port->type == PORT_16550A && port->iotype == UPIO_AU)
+ 		up->bugs |= UART_BUG_NOMSR;
  
-+	/*
-+	 * We need to set this before the dm_tm_new_block() call below.
-+	 */
-+	ll->nr_blocks = nr_blocks;
- 	for (i = old_blocks; i < blocks; i++) {
- 		struct dm_block *b;
- 		struct disk_index_entry idx;
-@@ -251,6 +255,7 @@ int sm_ll_extend(struct ll_disk *ll, dm_block_t extra_blocks)
- 		r = dm_tm_new_block(ll->tm, &dm_sm_bitmap_validator, &b);
- 		if (r < 0)
- 			return r;
++	/* HW bugs may trigger IRQ while IIR == NO_INT */
++	if (port->type == PORT_TEGRA)
++		up->bugs |= UART_BUG_NOMSR;
 +
- 		idx.blocknr = cpu_to_le64(dm_block_location(b));
- 
- 		r = dm_tm_unlock(ll->tm, b);
-@@ -265,7 +270,6 @@ int sm_ll_extend(struct ll_disk *ll, dm_block_t extra_blocks)
- 			return r;
- 	}
- 
--	ll->nr_blocks = nr_blocks;
- 	return 0;
- }
+ 	if (port->type != PORT_UNKNOWN && flags & UART_CONFIG_IRQ)
+ 		autoconfig_irq(up);
  
 -- 
 1.8.3.2
