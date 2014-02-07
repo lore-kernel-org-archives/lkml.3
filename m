@@ -1,81 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751323AbaBGCIR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 21:08:17 -0500
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:10447 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750774AbaBGCIP (ORCPT
+	id S1751480AbaBGCKJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 21:10:09 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:56900 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751150AbaBGCKH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 21:08:15 -0500
-Date: Thu, 6 Feb 2014 18:09:50 -0800
-From: Courtney Cavin <courtney.cavin@sonymobile.com>
-To: Laura Abbott <lauraa@codeaurora.org>
-CC: Russell King <linux@arm.linux.org.uk>, David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Rob Herring <robherring2@gmail.com>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: Re: [PATCHv2 2/2] arm: Get rid of meminfo
-Message-ID: <20140207020949.GQ1706@sonymobile.com>
-References: <1391558551-31395-1-git-send-email-lauraa@codeaurora.org>
- <1391558551-31395-3-git-send-email-lauraa@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1391558551-31395-3-git-send-email-lauraa@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 6 Feb 2014 21:10:07 -0500
+Message-ID: <1391738996.10160.38.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH] net: use __GFP_NORETRY for high order allocations
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 06 Feb 2014 18:09:56 -0800
+In-Reply-To: <87txcbisr8.fsf@xmission.com>
+References: <1391712162.10160.8.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <87txcbisr8.fsf@xmission.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 05, 2014 at 01:02:31AM +0100, Laura Abbott wrote:
-> memblock is now fully integrated into the kernel and is the prefered
-> method for tracking memory. Rather than reinvent the wheel with
-> meminfo, migrate to using memblock directly instead of meminfo as
-> an intermediate.
+On Thu, 2014-02-06 at 18:03 -0800, Eric W. Biederman wrote:
+> Eric Dumazet <eric.dumazet@gmail.com> writes:
 > 
-> Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
-[...]
-> diff --git a/arch/arm/mach-pxa/spitz.c b/arch/arm/mach-pxa/spitz.c
-> index 0b11c1a..51d814e 100644
-> --- a/arch/arm/mach-pxa/spitz.c
-> +++ b/arch/arm/mach-pxa/spitz.c
-> @@ -32,6 +32,7 @@
->  #include <linux/io.h>
->  #include <linux/module.h>
->  #include <linux/reboot.h>
-> +#include <linux/memblock.h>
+> > From: Eric Dumazet <edumazet@google.com>
+> >
+> > sock_alloc_send_pskb() & sk_page_frag_refill()
+> > have a loop trying high order allocations to prepare
+> > skb with low number of fragments as this increases performance.
+> >
+> > Problem is that under memory pressure/fragmentation, this can
+> > trigger OOM while the intent was only to try the high order
+> > allocations, then fallback to order-0 allocations.
+> >
+> > We had various reports from unexpected regressions.
+> >
+> > According to David, setting __GFP_NORETRY should be fine,
+> > as the asynchronous compaction is still enabled, and this
+> > will prevent OOM from kicking as in :
+> >
+> > CFSClientEventm invoked oom-killer: gfp_mask=0x42d0, order=3, oom_adj=0,
+> > oom_score_adj=0, oom_score_badness=2 (enabled),memcg_scoring=disabled
+> > CFSClientEventm 
+> >
+> > Call Trace:
+> >  [<ffffffff8043766c>] dump_header+0xe1/0x23e
+> >  [<ffffffff80437a02>] oom_kill_process+0x6a/0x323
+> >  [<ffffffff80438443>] out_of_memory+0x4b3/0x50d
+> >  [<ffffffff8043a4a6>] __alloc_pages_may_oom+0xa2/0xc7
+> >  [<ffffffff80236f42>] __alloc_pages_nodemask+0x1002/0x17f0
+> >  [<ffffffff8024bd23>] alloc_pages_current+0x103/0x2b0
+> >  [<ffffffff8028567f>] sk_page_frag_refill+0x8f/0x160
+> >  [<ffffffff80295fa0>] tcp_sendmsg+0x560/0xee0
+> >  [<ffffffff802a5037>] inet_sendmsg+0x67/0x100
+> >  [<ffffffff80283c9c>] __sock_sendmsg_nosec+0x6c/0x90
+> >  [<ffffffff80283e85>] sock_sendmsg+0xc5/0xf0
+> >  [<ffffffff802847b6>] __sys_sendmsg+0x136/0x430
+> >  [<ffffffff80284ec8>] sys_sendmsg+0x88/0x110
+> >  [<ffffffff80711472>] system_call_fastpath+0x16/0x1b
+> > Out of Memory: Kill process 2856 (bash) score 9999 or sacrifice child
+> >
+> > Signed-off-by: Eric Dumazet <edumazet@google.com>
+> > Acked-by: David Rientjes <rientjes@google.com>
+> Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
 > 
->  #include <asm/setup.h>
->  #include <asm/mach-types.h>
-> @@ -971,13 +972,9 @@ static void __init spitz_init(void)
->         spitz_i2c_init();
->  }
-> 
-> -static void __init spitz_fixup(struct tag *tags, char **cmdline,
-> -                              struct meminfo *mi)
-> +static void __init spitz_fixup(struct tag *tags, char **cmdline)
->  {
-> -       sharpsl_save_param();
-> -       mi->nr_banks = 1;
-> -       mi->bank[0].start = 0xa0000000;
-> -       mi->bank[0].size = (64*1024*1024);
-> +       memblock_addr(0xa0000000, SZ_64M);
+> I have seen similiar order 3 allocation failures as well and reached the
+> same conclusion that __GFP_NORETRY was the solution.
 
-memblock_add() ?
+Thanks Eric !
 
--Courtney
+
