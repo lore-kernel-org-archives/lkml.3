@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754664AbaBGLtj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:49:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41768 "EHLO
+	id S1754708AbaBGLtt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:49:49 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41809 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754629AbaBGLte (ORCPT
+	with ESMTP id S1754688AbaBGLtq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:49:34 -0500
+	Fri, 7 Feb 2014 06:49:46 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>,
+Cc: Mike Snitzer <snitzer@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 078/233] ALSA: rme9652: fix a missing comma in channel_map_9636_ds[]
-Date: Fri,  7 Feb 2014 11:44:57 +0000
-Message-Id: <1391773652-25214-79-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 087/233] dm thin: initialize dm_thin_new_mapping returned by get_next_mapping
+Date: Fri,  7 Feb 2014 11:45:06 +0000
+Message-Id: <1391773652-25214-88-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -27,34 +27,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Mike Snitzer <snitzer@redhat.com>
 
-commit 770bd4bf2e664939a9dacd3d26ec9ff7a3933210 upstream.
+commit 16961b042db8cc5cf75d782b4255193ad56e1d4f upstream.
 
-The lack of comma leads to the wrong channel for an SPDIF channel.
-Unfortunately this wasn't caught by compiler because it's still a
-valid expression.
+As additional members are added to the dm_thin_new_mapping structure
+care should be taken to make sure they get initialized before use.
 
-Reported-by: Alexander Aristov <aristov.alexander@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Acked-by: Joe Thornber <ejt@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/pci/rme9652/rme9652.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/dm-thin.c | 17 ++++++-----------
+ 1 file changed, 6 insertions(+), 11 deletions(-)
 
-diff --git a/sound/pci/rme9652/rme9652.c b/sound/pci/rme9652/rme9652.c
-index b96d9e1..3717f2d 100644
---- a/sound/pci/rme9652/rme9652.c
-+++ b/sound/pci/rme9652/rme9652.c
-@@ -285,7 +285,7 @@ static char channel_map_9636_ds[26] = {
- 	/* ADAT channels are remapped */
- 	1, 3, 5, 7, 9, 11, 13, 15,
- 	/* channels 8 and 9 are S/PDIF */
--	24, 25
-+	24, 25,
- 	/* others don't exist */
- 	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
- };
+diff --git a/drivers/md/dm-thin.c b/drivers/md/dm-thin.c
+index 38c8a5f..754026b 100644
+--- a/drivers/md/dm-thin.c
++++ b/drivers/md/dm-thin.c
+@@ -751,13 +751,17 @@ static int ensure_next_mapping(struct pool *pool)
+ 
+ static struct dm_thin_new_mapping *get_next_mapping(struct pool *pool)
+ {
+-	struct dm_thin_new_mapping *r = pool->next_mapping;
++	struct dm_thin_new_mapping *m = pool->next_mapping;
+ 
+ 	BUG_ON(!pool->next_mapping);
+ 
++	memset(m, 0, sizeof(struct dm_thin_new_mapping));
++	INIT_LIST_HEAD(&m->list);
++	m->bio = NULL;
++
+ 	pool->next_mapping = NULL;
+ 
+-	return r;
++	return m;
+ }
+ 
+ static void schedule_copy(struct thin_c *tc, dm_block_t virt_block,
+@@ -769,15 +773,10 @@ static void schedule_copy(struct thin_c *tc, dm_block_t virt_block,
+ 	struct pool *pool = tc->pool;
+ 	struct dm_thin_new_mapping *m = get_next_mapping(pool);
+ 
+-	INIT_LIST_HEAD(&m->list);
+-	m->quiesced = 0;
+-	m->prepared = 0;
+ 	m->tc = tc;
+ 	m->virt_block = virt_block;
+ 	m->data_block = data_dest;
+ 	m->cell = cell;
+-	m->err = 0;
+-	m->bio = NULL;
+ 
+ 	if (!dm_deferred_set_add_work(pool->shared_read_ds, &m->list))
+ 		m->quiesced = 1;
+@@ -840,15 +839,12 @@ static void schedule_zero(struct thin_c *tc, dm_block_t virt_block,
+ 	struct pool *pool = tc->pool;
+ 	struct dm_thin_new_mapping *m = get_next_mapping(pool);
+ 
+-	INIT_LIST_HEAD(&m->list);
+ 	m->quiesced = 1;
+ 	m->prepared = 0;
+ 	m->tc = tc;
+ 	m->virt_block = virt_block;
+ 	m->data_block = data_block;
+ 	m->cell = cell;
+-	m->err = 0;
+-	m->bio = NULL;
+ 
+ 	/*
+ 	 * If the whole block of data is being overwritten or we are not
+@@ -1039,7 +1035,6 @@ static void process_discard(struct thin_c *tc, struct bio *bio)
+ 			m->data_block = lookup_result.block;
+ 			m->cell = cell;
+ 			m->cell2 = cell2;
+-			m->err = 0;
+ 			m->bio = bio;
+ 
+ 			if (!dm_deferred_set_add_work(pool->all_io_ds, &m->list)) {
 -- 
 1.8.3.2
 
