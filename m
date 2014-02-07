@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753027AbaBGMFM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:05:12 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42399 "EHLO
+	id S1752894AbaBGMFK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:05:10 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42403 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755294AbaBGLwT (ORCPT
+	with ESMTP id S1755304AbaBGLwT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 Feb 2014 06:52:19 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Andrew Jones <drjones@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        =?UTF-8?q?Radim=20Kr=C4=8Dm=C3=A1=C5=99?= <rkrcmar@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 201/233] hpfs: remember free space
-Date: Fri,  7 Feb 2014 11:47:00 +0000
-Message-Id: <1391773652-25214-202-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 202/233] kvm: x86: fix apic_base enable check
+Date: Fri,  7 Feb 2014 11:47:01 +0000
+Message-Id: <1391773652-25214-203-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,238 +31,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+From: Andrew Jones <drjones@redhat.com>
 
-commit 2cbe5c76fc5e38e9af4b709593146e4b8272b69e upstream.
+commit 0dce7cd67fd9055c4a2ff278f8af1431e646d346 upstream.
 
-Previously, hpfs scanned all bitmaps each time the user asked for free
-space using statfs.  This patch changes it so that hpfs scans the
-bitmaps only once, remembes the free space and on next invocation of
-statfs it returns the value instantly.
+Commit e66d2ae7c67bd moved the assignment
+vcpu->arch.apic_base = value above a condition with
+(vcpu->arch.apic_base ^ value), causing that check
+to always fail. Use old_value, vcpu->arch.apic_base's
+old value, in the condition instead.
 
-New versions of wine are hammering on the statfs syscall very heavily,
-making some games unplayable when they're stored on hpfs, with load
-times in minutes.
-
-This should be backported to the stable kernels because it fixes
-user-visible problem (excessive level load times in wine).
-
-Signed-off-by: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Andrew Jones <drjones@redhat.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Radim Krčmář <rkrcmar@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/hpfs/alloc.c   | 66 +++++++++++++++++++++++++++++++++++++++++++++++++++++--
- fs/hpfs/hpfs_fn.h |  2 +-
- fs/hpfs/super.c   | 29 ++++++++++++++++++------
- 3 files changed, 87 insertions(+), 10 deletions(-)
+ arch/x86/kvm/lapic.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/hpfs/alloc.c b/fs/hpfs/alloc.c
-index cdb84a8..58b5106 100644
---- a/fs/hpfs/alloc.c
-+++ b/fs/hpfs/alloc.c
-@@ -8,6 +8,58 @@
+diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
+index f213cbc..256816b 100644
+--- a/arch/x86/kvm/lapic.c
++++ b/arch/x86/kvm/lapic.c
+@@ -1366,7 +1366,7 @@ void kvm_lapic_set_base(struct kvm_vcpu *vcpu, u64 value)
+ 	vcpu->arch.apic_base = value;
  
- #include "hpfs_fn.h"
- 
-+static void hpfs_claim_alloc(struct super_block *s, secno sec)
-+{
-+	struct hpfs_sb_info *sbi = hpfs_sb(s);
-+	if (sbi->sb_n_free != (unsigned)-1) {
-+		if (unlikely(!sbi->sb_n_free)) {
-+			hpfs_error(s, "free count underflow, allocating sector %08x", sec);
-+			sbi->sb_n_free = -1;
-+			return;
-+		}
-+		sbi->sb_n_free--;
-+	}
-+}
-+
-+static void hpfs_claim_free(struct super_block *s, secno sec)
-+{
-+	struct hpfs_sb_info *sbi = hpfs_sb(s);
-+	if (sbi->sb_n_free != (unsigned)-1) {
-+		if (unlikely(sbi->sb_n_free >= sbi->sb_fs_size)) {
-+			hpfs_error(s, "free count overflow, freeing sector %08x", sec);
-+			sbi->sb_n_free = -1;
-+			return;
-+		}
-+		sbi->sb_n_free++;
-+	}
-+}
-+
-+static void hpfs_claim_dirband_alloc(struct super_block *s, secno sec)
-+{
-+	struct hpfs_sb_info *sbi = hpfs_sb(s);
-+	if (sbi->sb_n_free_dnodes != (unsigned)-1) {
-+		if (unlikely(!sbi->sb_n_free_dnodes)) {
-+			hpfs_error(s, "dirband free count underflow, allocating sector %08x", sec);
-+			sbi->sb_n_free_dnodes = -1;
-+			return;
-+		}
-+		sbi->sb_n_free_dnodes--;
-+	}
-+}
-+
-+static void hpfs_claim_dirband_free(struct super_block *s, secno sec)
-+{
-+	struct hpfs_sb_info *sbi = hpfs_sb(s);
-+	if (sbi->sb_n_free_dnodes != (unsigned)-1) {
-+		if (unlikely(sbi->sb_n_free_dnodes >= sbi->sb_dirband_size / 4)) {
-+			hpfs_error(s, "dirband free count overflow, freeing sector %08x", sec);
-+			sbi->sb_n_free_dnodes = -1;
-+			return;
-+		}
-+		sbi->sb_n_free_dnodes++;
-+	}
-+}
-+
- /*
-  * Check if a sector is allocated in bitmap
-  * This is really slow. Turned on only if chk==2
-@@ -203,9 +255,15 @@ secno hpfs_alloc_sector(struct super_block *s, secno near, unsigned n, int forwa
- 	}
- 	sec = 0;
- 	ret:
-+	if (sec) {
-+		i = 0;
-+		do
-+			hpfs_claim_alloc(s, sec + i);
-+		while (unlikely(++i < n));
-+	}
- 	if (sec && f_p) {
- 		for (i = 0; i < forward; i++) {
--			if (!hpfs_alloc_if_possible(s, sec + i + 1)) {
-+			if (!hpfs_alloc_if_possible(s, sec + n + i)) {
- 				hpfs_error(s, "Prealloc doesn't work! Wanted %d, allocated at %08x, can't allocate %d", forward, sec, i);
- 				sec = 0;
- 				break;
-@@ -228,6 +286,7 @@ static secno alloc_in_dirband(struct super_block *s, secno near)
- 	nr >>= 2;
- 	sec = alloc_in_bmp(s, (~0x3fff) | nr, 1, 0);
- 	if (!sec) return 0;
-+	hpfs_claim_dirband_alloc(s, sec);
- 	return ((sec & 0x3fff) << 2) + sbi->sb_dirband_start;
- }
- 
-@@ -242,6 +301,7 @@ int hpfs_alloc_if_possible(struct super_block *s, secno sec)
- 		bmp[(sec & 0x3fff) >> 5] &= cpu_to_le32(~(1 << (sec & 0x1f)));
- 		hpfs_mark_4buffers_dirty(&qbh);
- 		hpfs_brelse4(&qbh);
-+		hpfs_claim_alloc(s, sec);
- 		return 1;
- 	}
- 	hpfs_brelse4(&qbh);
-@@ -275,6 +335,7 @@ void hpfs_free_sectors(struct super_block *s, secno sec, unsigned n)
- 		return;
- 	}
- 	bmp[(sec & 0x3fff) >> 5] |= cpu_to_le32(1 << (sec & 0x1f));
-+	hpfs_claim_free(s, sec);
- 	if (!--n) {
- 		hpfs_mark_4buffers_dirty(&qbh);
- 		hpfs_brelse4(&qbh);
-@@ -359,6 +420,7 @@ void hpfs_free_dnode(struct super_block *s, dnode_secno dno)
- 		bmp[ssec >> 5] |= cpu_to_le32(1 << (ssec & 0x1f));
- 		hpfs_mark_4buffers_dirty(&qbh);
- 		hpfs_brelse4(&qbh);
-+		hpfs_claim_dirband_free(s, dno);
- 	}
- }
- 
-@@ -366,7 +428,7 @@ struct dnode *hpfs_alloc_dnode(struct super_block *s, secno near,
- 			 dnode_secno *dno, struct quad_buffer_head *qbh)
- {
- 	struct dnode *d;
--	if (hpfs_count_one_bitmap(s, hpfs_sb(s)->sb_dmap) > FREE_DNODES_ADD) {
-+	if (hpfs_get_free_dnodes(s) > FREE_DNODES_ADD) {
- 		if (!(*dno = alloc_in_dirband(s, near)))
- 			if (!(*dno = hpfs_alloc_sector(s, near, 4, 0))) return NULL;
- 	} else {
-diff --git a/fs/hpfs/hpfs_fn.h b/fs/hpfs/hpfs_fn.h
-index 1b39863..c65f0bf 100644
---- a/fs/hpfs/hpfs_fn.h
-+++ b/fs/hpfs/hpfs_fn.h
-@@ -311,7 +311,7 @@ static inline struct hpfs_sb_info *hpfs_sb(struct super_block *sb)
- __printf(2, 3)
- void hpfs_error(struct super_block *, const char *, ...);
- int hpfs_stop_cycles(struct super_block *, int, int *, int *, char *);
--unsigned hpfs_count_one_bitmap(struct super_block *, secno);
-+unsigned hpfs_get_free_dnodes(struct super_block *);
- 
- /*
-  * local time (HPFS) to GMT (Unix)
-diff --git a/fs/hpfs/super.c b/fs/hpfs/super.c
-index 4334cda..3d6f897 100644
---- a/fs/hpfs/super.c
-+++ b/fs/hpfs/super.c
-@@ -115,7 +115,7 @@ static void hpfs_put_super(struct super_block *s)
- 	kfree(sbi);
- }
- 
--unsigned hpfs_count_one_bitmap(struct super_block *s, secno secno)
-+static unsigned hpfs_count_one_bitmap(struct super_block *s, secno secno)
- {
- 	struct quad_buffer_head qbh;
- 	unsigned long *bits;
-@@ -123,7 +123,7 @@ unsigned hpfs_count_one_bitmap(struct super_block *s, secno secno)
- 
- 	bits = hpfs_map_4sectors(s, secno, &qbh, 0);
- 	if (!bits)
--		return 0;
-+		return (unsigned)-1;
- 	count = bitmap_weight(bits, 2048 * BITS_PER_BYTE);
- 	hpfs_brelse4(&qbh);
- 	return count;
-@@ -138,30 +138,45 @@ static unsigned count_bitmaps(struct super_block *s)
- 		hpfs_prefetch_bitmap(s, n);
- 	}
- 	for (n = 0; n < n_bands; n++) {
-+		unsigned c;
- 		hpfs_prefetch_bitmap(s, n + COUNT_RD_AHEAD);
--		count += hpfs_count_one_bitmap(s, le32_to_cpu(hpfs_sb(s)->sb_bmp_dir[n]));
-+		c = hpfs_count_one_bitmap(s, le32_to_cpu(hpfs_sb(s)->sb_bmp_dir[n]));
-+		if (c != (unsigned)-1)
-+			count += c;
- 	}
- 	return count;
- }
- 
-+unsigned hpfs_get_free_dnodes(struct super_block *s)
-+{
-+	struct hpfs_sb_info *sbi = hpfs_sb(s);
-+	if (sbi->sb_n_free_dnodes == (unsigned)-1) {
-+		unsigned c = hpfs_count_one_bitmap(s, sbi->sb_dmap);
-+		if (c == (unsigned)-1)
-+			return 0;
-+		sbi->sb_n_free_dnodes = c;
-+	}
-+	return sbi->sb_n_free_dnodes;
-+}
-+
- static int hpfs_statfs(struct dentry *dentry, struct kstatfs *buf)
- {
- 	struct super_block *s = dentry->d_sb;
- 	struct hpfs_sb_info *sbi = hpfs_sb(s);
- 	u64 id = huge_encode_dev(s->s_bdev->bd_dev);
-+
- 	hpfs_lock(s);
- 
--	/*if (sbi->sb_n_free == -1) {*/
-+	if (sbi->sb_n_free == (unsigned)-1)
- 		sbi->sb_n_free = count_bitmaps(s);
--		sbi->sb_n_free_dnodes = hpfs_count_one_bitmap(s, sbi->sb_dmap);
--	/*}*/
-+
- 	buf->f_type = s->s_magic;
- 	buf->f_bsize = 512;
- 	buf->f_blocks = sbi->sb_fs_size;
- 	buf->f_bfree = sbi->sb_n_free;
- 	buf->f_bavail = sbi->sb_n_free;
- 	buf->f_files = sbi->sb_dirband_size / 4;
--	buf->f_ffree = sbi->sb_n_free_dnodes;
-+	buf->f_ffree = hpfs_get_free_dnodes(s);
- 	buf->f_fsid.val[0] = (u32)id;
- 	buf->f_fsid.val[1] = (u32)(id >> 32);
- 	buf->f_namelen = 254;
+ 	/* update jump label if enable bit changes */
+-	if ((vcpu->arch.apic_base ^ value) & MSR_IA32_APICBASE_ENABLE) {
++	if ((old_value ^ value) & MSR_IA32_APICBASE_ENABLE) {
+ 		if (value & MSR_IA32_APICBASE_ENABLE)
+ 			static_key_slow_dec_deferred(&apic_hw_disabled);
+ 		else
 -- 
 1.8.3.2
 
