@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754412AbaBGLs1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:48:27 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41530 "EHLO
+	id S1755331AbaBGNRt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 08:17:49 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41549 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754338AbaBGLsV (ORCPT
+	with ESMTP id S1754394AbaBGLs0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:48:21 -0500
+	Fri, 7 Feb 2014 06:48:26 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "David S. Miller" <davem@davemloft.net>,
+Cc: H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 033/233] net: rds: fix per-cpu helper usage
-Date: Fri,  7 Feb 2014 11:44:12 +0000
-Message-Id: <1391773652-25214-34-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 036/233] staging: comedi: adl_pci9111: fix incorrect irq passed to request_irq()
+Date: Fri,  7 Feb 2014 11:44:15 +0000
+Message-Id: <1391773652-25214-37-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -27,56 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+From: H Hartley Sweeten <hsweeten@visionengravers.com>
 
-commit c196403b79aa241c3fefb3ee5bb328aa7c5cc860 upstream.
+commit 48108fe3daa0d142f9b97178fdb23704ea3a407b upstream.
 
-commit ae4b46e9d "net: rds: use this_cpu_* per-cpu helper" broke per-cpu
-handling for rds. chpfirst is the result of __this_cpu_read(), so it is
-an absolute pointer and not __percpu. Therefore, __this_cpu_write()
-should not operate on chpfirst, but rather on cache->percpu->first, just
-like __this_cpu_read() did before.
+The dev->irq passed to request_irq() will always be 0 when the auto_attach
+function is called. The pcidev->irq should be used instead to get the correct
+irq number.
 
-Signed-off-byd Gerald Schaefer <gerald.schaefer@de.ibm.com>
-
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/rds/ib_recv.c | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ drivers/staging/comedi/drivers/adl_pci9111.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/rds/ib_recv.c b/net/rds/ib_recv.c
-index 8eb9501..b7ebe23 100644
---- a/net/rds/ib_recv.c
-+++ b/net/rds/ib_recv.c
-@@ -421,8 +421,7 @@ static void rds_ib_recv_cache_put(struct list_head *new_item,
- 				 struct rds_ib_refill_cache *cache)
- {
- 	unsigned long flags;
--	struct list_head *old;
--	struct list_head __percpu *chpfirst;
-+	struct list_head *old, *chpfirst;
+diff --git a/drivers/staging/comedi/drivers/adl_pci9111.c b/drivers/staging/comedi/drivers/adl_pci9111.c
+index af51c74..98f7167 100644
+--- a/drivers/staging/comedi/drivers/adl_pci9111.c
++++ b/drivers/staging/comedi/drivers/adl_pci9111.c
+@@ -869,7 +869,7 @@ static int pci9111_auto_attach(struct comedi_device *dev,
+ 	pci9111_reset(dev);
  
- 	local_irq_save(flags);
- 
-@@ -432,7 +431,7 @@ static void rds_ib_recv_cache_put(struct list_head *new_item,
- 	else /* put on front */
- 		list_add_tail(new_item, chpfirst);
- 
--	__this_cpu_write(chpfirst, new_item);
-+	__this_cpu_write(cache->percpu->first, new_item);
- 	__this_cpu_inc(cache->percpu->count);
- 
- 	if (__this_cpu_read(cache->percpu->count) < RDS_IB_RECYCLE_BATCH_COUNT)
-@@ -452,7 +451,7 @@ static void rds_ib_recv_cache_put(struct list_head *new_item,
- 	} while (old);
- 
- 
--	__this_cpu_write(chpfirst, NULL);
-+	__this_cpu_write(cache->percpu->first, NULL);
- 	__this_cpu_write(cache->percpu->count, 0);
- end:
- 	local_irq_restore(flags);
+ 	if (pcidev->irq > 0) {
+-		ret = request_irq(dev->irq, pci9111_interrupt,
++		ret = request_irq(pcidev->irq, pci9111_interrupt,
+ 				  IRQF_SHARED, dev->board_name, dev);
+ 		if (ret)
+ 			return ret;
 -- 
 1.8.3.2
 
