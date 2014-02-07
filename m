@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489AbaBGMGh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:06:37 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42359 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755272AbaBGLwL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755269AbaBGLwL (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 7 Feb 2014 06:52:11 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42330 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753222AbaBGLwD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 06:52:03 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andy Grover <agrover@redhat.com>, Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 195/233] target/iscsi: Fix network portal creation race
-Date: Fri,  7 Feb 2014 11:46:54 +0000
-Message-Id: <1391773652-25214-196-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 190/233] drm/radeon/dce8: workaround for atom BlankCrtc table
+Date: Fri,  7 Feb 2014 11:46:49 +0000
+Message-Id: <1391773652-25214-191-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -27,152 +27,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Grover <agrover@redhat.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit ee291e63293146db64668e8d65eb35c97e8324f4 upstream.
+commit 78fe9e545ce6d510b979dc2d8e14096a279fc519 upstream.
 
-When creating network portals rapidly, such as when restoring a
-configuration, LIO's code to reuse existing portals can return a false
-negative if the thread hasn't run yet and set np_thread_state to
-ISCSI_NP_THREAD_ACTIVE. This causes an error in the network stack
-when attempting to bind to the same address/port.
+Some DCE8 boards have a funky BlankCrtc table that results
+in a timeout when trying to blank the display.  The
+timeout is harmless (all operations needed from the table
+are complete), but wastes time and is confusing to users so
+work around it.
 
-This patch sets NP_THREAD_ACTIVE before the np is placed on g_np_list,
-so even if the thread hasn't run yet, iscsit_get_np will return the
-existing np.
+bug:
+https://bugs.freedesktop.org/show_bug.cgi?id=73420
 
-Also, convert np_lock -> np_mutex + hold across adding new net portal
-to g_np_list to prevent a race where two threads may attempt to create
-the same network portal, resulting in one of them failing.
-
-(nab: Add missing mutex_unlocks in iscsit_add_np failure paths)
-(DanC: Fix incorrect spin_unlock -> spin_unlock_bh)
-
-Signed-off-by: Andy Grover <agrover@redhat.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/target/iscsi/iscsi_target.c | 34 +++++++++++++++++++++-------------
- 1 file changed, 21 insertions(+), 13 deletions(-)
+ drivers/gpu/drm/radeon/atombios_crtc.c | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
-diff --git a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
-index db96e21..9c6136e 100644
---- a/drivers/target/iscsi/iscsi_target.c
-+++ b/drivers/target/iscsi/iscsi_target.c
-@@ -54,7 +54,7 @@
- static LIST_HEAD(g_tiqn_list);
- static LIST_HEAD(g_np_list);
- static DEFINE_SPINLOCK(tiqn_lock);
--static DEFINE_SPINLOCK(np_lock);
-+static DEFINE_MUTEX(np_lock);
- 
- static struct idr tiqn_idr;
- struct idr sess_idr;
-@@ -303,6 +303,9 @@ bool iscsit_check_np_match(
- 	return false;
+diff --git a/drivers/gpu/drm/radeon/atombios_crtc.c b/drivers/gpu/drm/radeon/atombios_crtc.c
+index ed8bc9d..aee7242 100644
+--- a/drivers/gpu/drm/radeon/atombios_crtc.c
++++ b/drivers/gpu/drm/radeon/atombios_crtc.c
+@@ -209,6 +209,16 @@ static void atombios_enable_crtc_memreq(struct drm_crtc *crtc, int state)
+ 	atom_execute_table(rdev->mode_info.atom_context, index, (uint32_t *)&args);
  }
  
-+/*
-+ * Called with mutex np_lock held
-+ */
- static struct iscsi_np *iscsit_get_np(
- 	struct __kernel_sockaddr_storage *sockaddr,
- 	int network_transport)
-@@ -310,11 +313,10 @@ static struct iscsi_np *iscsit_get_np(
- 	struct iscsi_np *np;
- 	bool match;
- 
--	spin_lock_bh(&np_lock);
- 	list_for_each_entry(np, &g_np_list, np_list) {
--		spin_lock(&np->np_thread_lock);
-+		spin_lock_bh(&np->np_thread_lock);
- 		if (np->np_thread_state != ISCSI_NP_THREAD_ACTIVE) {
--			spin_unlock(&np->np_thread_lock);
-+			spin_unlock_bh(&np->np_thread_lock);
- 			continue;
- 		}
- 
-@@ -326,13 +328,11 @@ static struct iscsi_np *iscsit_get_np(
- 			 * while iscsi_tpg_add_network_portal() is called.
- 			 */
- 			np->np_exports++;
--			spin_unlock(&np->np_thread_lock);
--			spin_unlock_bh(&np_lock);
-+			spin_unlock_bh(&np->np_thread_lock);
- 			return np;
- 		}
--		spin_unlock(&np->np_thread_lock);
-+		spin_unlock_bh(&np->np_thread_lock);
- 	}
--	spin_unlock_bh(&np_lock);
- 
- 	return NULL;
- }
-@@ -346,16 +346,22 @@ struct iscsi_np *iscsit_add_np(
- 	struct sockaddr_in6 *sock_in6;
- 	struct iscsi_np *np;
- 	int ret;
++static const u32 vga_control_regs[6] =
++{
++	AVIVO_D1VGA_CONTROL,
++	AVIVO_D2VGA_CONTROL,
++	EVERGREEN_D3VGA_CONTROL,
++	EVERGREEN_D4VGA_CONTROL,
++	EVERGREEN_D5VGA_CONTROL,
++	EVERGREEN_D6VGA_CONTROL,
++};
 +
-+	mutex_lock(&np_lock);
-+
- 	/*
- 	 * Locate the existing struct iscsi_np if already active..
- 	 */
- 	np = iscsit_get_np(sockaddr, network_transport);
--	if (np)
-+	if (np) {
-+		mutex_unlock(&np_lock);
- 		return np;
+ static void atombios_blank_crtc(struct drm_crtc *crtc, int state)
+ {
+ 	struct radeon_crtc *radeon_crtc = to_radeon_crtc(crtc);
+@@ -216,13 +226,23 @@ static void atombios_blank_crtc(struct drm_crtc *crtc, int state)
+ 	struct radeon_device *rdev = dev->dev_private;
+ 	int index = GetIndexIntoMasterTable(COMMAND, BlankCRTC);
+ 	BLANK_CRTC_PS_ALLOCATION args;
++	u32 vga_control = 0;
+ 
+ 	memset(&args, 0, sizeof(args));
+ 
++	if (ASIC_IS_DCE8(rdev)) {
++		vga_control = RREG32(vga_control_regs[radeon_crtc->crtc_id]);
++		WREG32(vga_control_regs[radeon_crtc->crtc_id], vga_control | 1);
 +	}
++
+ 	args.ucCRTC = radeon_crtc->crtc_id;
+ 	args.ucBlanking = state;
  
- 	np = kzalloc(sizeof(struct iscsi_np), GFP_KERNEL);
- 	if (!np) {
- 		pr_err("Unable to allocate memory for struct iscsi_np\n");
-+		mutex_unlock(&np_lock);
- 		return ERR_PTR(-ENOMEM);
- 	}
+ 	atom_execute_table(rdev->mode_info.atom_context, index, (uint32_t *)&args);
++
++	if (ASIC_IS_DCE8(rdev)) {
++		WREG32(vga_control_regs[radeon_crtc->crtc_id], vga_control);
++	}
+ }
  
-@@ -378,6 +384,7 @@ struct iscsi_np *iscsit_add_np(
- 	ret = iscsi_target_setup_login_socket(np, sockaddr);
- 	if (ret != 0) {
- 		kfree(np);
-+		mutex_unlock(&np_lock);
- 		return ERR_PTR(ret);
- 	}
- 
-@@ -386,6 +393,7 @@ struct iscsi_np *iscsit_add_np(
- 		pr_err("Unable to create kthread: iscsi_np\n");
- 		ret = PTR_ERR(np->np_thread);
- 		kfree(np);
-+		mutex_unlock(&np_lock);
- 		return ERR_PTR(ret);
- 	}
- 	/*
-@@ -396,10 +404,10 @@ struct iscsi_np *iscsit_add_np(
- 	 * point because iscsi_np has not been added to g_np_list yet.
- 	 */
- 	np->np_exports = 1;
-+	np->np_thread_state = ISCSI_NP_THREAD_ACTIVE;
- 
--	spin_lock_bh(&np_lock);
- 	list_add_tail(&np->np_list, &g_np_list);
--	spin_unlock_bh(&np_lock);
-+	mutex_unlock(&np_lock);
- 
- 	pr_debug("CORE[0] - Added Network Portal: %s:%hu on %s\n",
- 		np->np_ip, np->np_port, np->np_transport->name);
-@@ -469,9 +477,9 @@ int iscsit_del_np(struct iscsi_np *np)
- 
- 	np->np_transport->iscsit_free_np(np);
- 
--	spin_lock_bh(&np_lock);
-+	mutex_lock(&np_lock);
- 	list_del(&np->np_list);
--	spin_unlock_bh(&np_lock);
-+	mutex_unlock(&np_lock);
- 
- 	pr_debug("CORE[0] - Removed Network Portal: %s:%hu on %s\n",
- 		np->np_ip, np->np_port, np->np_transport->name);
+ static void atombios_powergate_crtc(struct drm_crtc *crtc, int state)
 -- 
 1.8.3.2
 
