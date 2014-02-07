@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752736AbaBGLYR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:24:17 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40848 "EHLO
+	id S1752705AbaBGLYQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:24:16 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40839 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752082AbaBGLXp (ORCPT
+	with ESMTP id S1752079AbaBGLXn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:23:45 -0500
+	Fri, 7 Feb 2014 06:23:43 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ian Abbott <abbotti@mev.co.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Andreas Rohner <andreas.rohner@gmx.net>,
+        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 11/88] staging: comedi: 8255_pci: fix for newer PCI-DIO48H
-Date: Fri,  7 Feb 2014 11:22:08 +0000
-Message-Id: <1391772205-22239-12-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 07/88] nilfs2: fix segctor bug that causes file system corruption
+Date: Fri,  7 Feb 2014 11:22:04 +0000
+Message-Id: <1391772205-22239-8-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
@@ -28,94 +30,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Andreas Rohner <andreas.rohner@gmx.net>
 
-commit 0283f7a100882684ad32b768f9f1ad81658a0b92 upstream.
+commit 70f2fe3a26248724d8a5019681a869abdaf3e89a upstream.
 
-At some point, Measurement Computing / ComputerBoards redesigned the
-PCI-DIO48H to use a PLX PCI interface chip instead of an AMCC chip.
-This meant they had to put their hardware registers in the PCI BAR 2
-region instead of PCI BAR 1.  Unfortunately, they kept the same PCI
-device ID for the new design.  This means the driver recognizes the
-newer cards, but doesn't work (and is likely to screw up the local
-configuration registers of the PLX chip) because it's using the wrong
-region.
+There is a bug in the function nilfs_segctor_collect, which results in
+active data being written to a segment, that is marked as clean.  It is
+possible, that this segment is selected for a later segment
+construction, whereby the old data is overwritten.
 
-Since  the PCI subvendor and subdevice IDs were both zero on the old
-design, but are the same as the vendor and device on the new design, we
-can tell the old design and new design apart easily enough.  Split the
-existing entry for the PCI-DIO48H in `pci_8255_boards[]` into two new
-entries, referenced by different entries in the PCI device ID table
-`pci_8255_pci_table[]`.  Use the same board name for both entries.
+The problem shows itself with the following kernel log message:
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-Acked-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ Ian: Applies to 3.4.y and 3.5.y (Ubuntu Extended Stable).
-  Note that other changes make this patch somewhat different to the
-  upstream commit, but it fixes the same problem. ]
+  nilfs_sufile_do_cancel_free: segment 6533 must be clean
+
+Usually a few hours later the file system gets corrupted:
+
+  NILFS: bad btree node (blocknr=8748107): level = 0, flags = 0x0, nchildren = 0
+  NILFS error (device sdc1): nilfs_bmap_last_key: broken bmap (inode number=114660)
+
+The issue can be reproduced with a file system that is nearly full and
+with the cleaner running, while some IO intensive task is running.
+Although it is quite hard to reproduce.
+
+This is what happens:
+
+ 1. The cleaner starts the segment construction
+ 2. nilfs_segctor_collect is called
+ 3. sc_stage is on NILFS_ST_SUFILE and segments are freed
+ 4. sc_stage is on NILFS_ST_DAT current segment is full
+ 5. nilfs_segctor_extend_segments is called, which
+    allocates a new segment
+ 6. The new segment is one of the segments freed in step 3
+ 7. nilfs_sufile_cancel_freev is called and produces an error message
+ 8. Loop around and the collection starts again
+ 9. sc_stage is on NILFS_ST_SUFILE and segments are freed
+    including the newly allocated segment, which will contain active
+    data and can be allocated at a later time
+10. A few hours later another segment construction allocates the
+    segment and causes file system corruption
+
+This can be prevented by simply reordering the statements.  If
+nilfs_sufile_cancel_freev is called before nilfs_segctor_extend_segments
+the freed segments are marked as dirty and cannot be allocated any more.
+
+Signed-off-by: Andreas Rohner <andreas.rohner@gmx.net>
+Reviewed-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Tested-by: Andreas Rohner <andreas.rohner@gmx.net>
+Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/staging/comedi/drivers/cb_pcidio.c | 21 ++++++++-------------
- 1 file changed, 8 insertions(+), 13 deletions(-)
+ fs/nilfs2/segment.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/cb_pcidio.c b/drivers/staging/comedi/drivers/cb_pcidio.c
-index 713132c..d4f7fda 100644
---- a/drivers/staging/comedi/drivers/cb_pcidio.c
-+++ b/drivers/staging/comedi/drivers/cb_pcidio.c
-@@ -56,10 +56,6 @@ struct pcidio_board {
- 	const char *name;	/*  name of the board */
- 	int dev_id;
- 	int n_8255;		/*  number of 8255 chips on board */
+diff --git a/fs/nilfs2/segment.c b/fs/nilfs2/segment.c
+index 8992b33..e0a5a18 100644
+--- a/fs/nilfs2/segment.c
++++ b/fs/nilfs2/segment.c
+@@ -1437,17 +1437,19 @@ static int nilfs_segctor_collect(struct nilfs_sc_info *sci,
+ 
+ 		nilfs_clear_logs(&sci->sc_segbufs);
+ 
+-		err = nilfs_segctor_extend_segments(sci, nilfs, nadd);
+-		if (unlikely(err))
+-			return err;
 -
--	/*  indices of base address regions */
--	int pcicontroler_badrindex;
--	int dioregs_badrindex;
- };
- 
- static const struct pcidio_board pcidio_boards[] = {
-@@ -67,22 +63,16 @@ static const struct pcidio_board pcidio_boards[] = {
- 	 .name = "pci-dio24",
- 	 .dev_id = 0x0028,
- 	 .n_8255 = 1,
--	 .pcicontroler_badrindex = 1,
--	 .dioregs_badrindex = 2,
- 	 },
- 	{
- 	 .name = "pci-dio24h",
- 	 .dev_id = 0x0014,
- 	 .n_8255 = 1,
--	 .pcicontroler_badrindex = 1,
--	 .dioregs_badrindex = 2,
- 	 },
- 	{
- 	 .name = "pci-dio48h",
- 	 .dev_id = 0x000b,
- 	 .n_8255 = 2,
--	 .pcicontroler_badrindex = 0,
--	 .dioregs_badrindex = 1,
- 	 },
- };
- 
-@@ -173,10 +163,15 @@ found:
- 	if (comedi_pci_enable(pcidev, thisboard->name))
- 		return -EIO;
- 
--	devpriv->dio_reg_base
--	    =
-+	/*
-+	 * Use PCI BAR 2 region if non-zero length, else use PCI BAR 1 region.
-+	 * PCI BAR 1 is only used for older PCI-DIO48H boards.  At some point
-+	 * the PCI-DIO48H was redesigned to use the same PCI interface chip
-+	 * (and same PCI BAR region) as the other boards.
-+	 */
-+	devpriv->dio_reg_base =
- 	    pci_resource_start(devpriv->pci_dev,
--			       pcidio_boards[index].dioregs_badrindex);
-+			       (pci_resource_len(pcidev, 2) ? 2 : 1));
- 
- /*
-  * Allocate the subdevice structures.  alloc_subdevice() is a
+ 		if (sci->sc_stage.flags & NILFS_CF_SUFREED) {
+ 			err = nilfs_sufile_cancel_freev(nilfs->ns_sufile,
+ 							sci->sc_freesegs,
+ 							sci->sc_nfreesegs,
+ 							NULL);
+ 			WARN_ON(err); /* do not happen */
++			sci->sc_stage.flags &= ~NILFS_CF_SUFREED;
+ 		}
++
++		err = nilfs_segctor_extend_segments(sci, nilfs, nadd);
++		if (unlikely(err))
++			return err;
++
+ 		nadd = min_t(int, nadd << 1, SC_MAX_SEGDELTA);
+ 		sci->sc_stage = prev_stage;
+ 	}
 -- 
 1.8.3.2
 
