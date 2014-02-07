@@ -1,167 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752499AbaBGLDc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:03:32 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:50321 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752449AbaBGLD0 (ORCPT
+	id S1752590AbaBGLEL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:04:11 -0500
+Received: from vserver.eikelenboom.it ([84.200.39.61]:42168 "EHLO
+	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752011AbaBGLEG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:03:26 -0500
-Date: Fri, 7 Feb 2014 11:03:20 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
-Cc: Mark Brown <broonie@kernel.org>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: Re: [PATCH v2 3/8] mfd: da9055: Add DT support for PMIC
-Message-ID: <20140207110320.GM14727@lee--X1>
-References: <cover.1391705989.git.Adam.Thomson.Opensource@diasemi.com>
- <46f41a14205ac39de3adb8c87d2a6dba557ad8d1.1391705989.git.Adam.Thomson.Opensource@diasemi.com>
+	Fri, 7 Feb 2014 06:04:06 -0500
+Date: Fri, 7 Feb 2014 12:03:57 +0100
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <652007466.20140207120357@eikelenboom.it>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Tony Luck <tony.luck@intel.com>, Dave Airlie <airlied@redhat.com>,
+        Eiichiro Oiwa <eiichiro.oiwa.nm@hitachi.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel @ vger . kernel . org" <linux-kernel@vger.kernel.org>,
+        "linux-pci @ vger . kernel . org" <linux-pci@vger.kernel.org>,
+        <linux-ia64@vger.kernel.org>
+Subject: Re: [PATCH v2] Setting the IORESOURCE_ROM_SHADOW flag on a VGA card other than the primary prevents it from reading it's own rom. It will get the content of the shadowrom at C000 instead, which is of the primary VGA card and the driver of the secondary card will bail out.
+In-Reply-To: <20140203145205.GB2992@phenom.dumpdata.com>
+References: <20140130000831.GJ16825@google.com> <1391160503-11122-1-git-send-email-linux@eikelenboom.it> <20140203145205.GB2992@phenom.dumpdata.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <46f41a14205ac39de3adb8c87d2a6dba557ad8d1.1391705989.git.Adam.Thomson.Opensource@diasemi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
-> ---
->  Documentation/devicetree/bindings/mfd/da9055.txt |   73 ++++++++++++++++++++++
->  drivers/mfd/da9055-i2c.c                         |    8 +++
+Hi All,
 
-Can you break this up please.
+Still trying to collect tested and acked-by's ..
 
-Bindings should be separate to the binding document.
+Dave,
+          In commit 6cf20beec4b91c240cf759b4db72669e251f1fc4 you changed pci_fixup_video saying:
+          "This fixes the switcheroo on my T410s."
+          Do you still have the machine and could you verify if it still works with this patch applied ?
 
->  2 files changed, 81 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/mfd/da9055.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/mfd/da9055.txt b/Documentation/devicetree/bindings/mfd/da9055.txt
-> new file mode 100644
-> index 0000000..f903c3f
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/mfd/da9055.txt
-> @@ -0,0 +1,73 @@
-> +* Dialog DA9055 Power Management Integrated Circuit (PMIC)
-> +
-> +DA9055 consists of a large and varied group of sub-devices (I2C Only):
-> +
-> +Device			 Supply Names	 Description
-> +------			 ------------	 -----------
-> +da9055-gpio		:		: GPIOs
-> +da9055-regulator	:		: Regulators
-> +da9055-onkey		:		: On key
-> +da9055-rtc		:		: RTC
-> +da9055-hwmon		:		: ADC
-> +da9055-watchdog		:		: Watchdog
-> +
-> +The CODEC device in DA9055 has a separate, configurable I2C address and so
-> +is instantiated separately from the PMIC.
-> +
-> +For details on accompanying CODEC I2C device, see the following:
-> +Documentation/devicetree/bindings/sound/da9055.txt
-> +
-> +======
-> +
-> +Required properties:
-> +- compatible : Should be "dlg,da9055-pmic"
-> +- reg: Specifies the I2C slave address (defaults to 0x5a but can be modified)
-> +- interrupt-parent: Specifies the phandle of the interrupt controller to which
-> +  the IRQs from da9055 are delivered to.
-> +- interrupts: IRQ line info for da9055 chip.
-> +- interrupt-controller: da9055 has internal IRQs (has own IRQ domain).
-> +- #interrupt-cells: Should be 1, is the local IRQ number for da9055.
-> +
-> +Sub-nodes:
-> +- regulators : Contain the regulator nodes. The DA9055 regulators are
-> +  bound using their names as listed below:
-> +
-> +    buck1     : regulator BUCK1
-> +    buck2     : regulator BUCK2
-> +    ldo1      : regulator LDO1
-> +    ldo2      : regulator LDO2
-> +    ldo3      : regulator LDO3
-> +    ldo4      : regulator LDO4
-> +    ldo5      : regulator LDO5
-> +    ldo6      : regulator LDO6
-> +
-> +  The bindings details of individual regulator device can be found in:
-> +  Documentation/devicetree/bindings/regulator/regulator.txt
-> +
-> +
-> +Example:
-> +
-> +	pmic: da9055-pmic@5a {
-> +		compatible = "dlg,da9055-pmic";
-> +		reg = <0x5a>;
-> +		interrupt-parent = <&intc>;
-> +		interrupts = <5 0x8>;
-> +		interrupt-controller;
-> +		#interrupt-cells = <1>;
-> +
-> +		regulators {
-> +			buck1: BUCK1 {
-> +				regulator-min-microvolt = <725000>;
-> +				regulator-max-microvolt = <2075000>;
-> +			};
-> +
-> +			buck2: BUCK2 {
-> +				regulator-min-microvolt = <925000>;
-> +				regulator-max-microvolt = <2500000>;
-> +			};
-> +			ldo1: LDO1 {
-> +				regulator-min-microvolt = <900000>;
-> +				regulator-max-microvolt = <3300000>;
-> +			};
-> +		};
-> +	};
-> diff --git a/drivers/mfd/da9055-i2c.c b/drivers/mfd/da9055-i2c.c
-> index 8103e43..366a3e2 100644
-> --- a/drivers/mfd/da9055-i2c.c
-> +++ b/drivers/mfd/da9055-i2c.c
-> @@ -15,6 +15,8 @@
->  #include <linux/device.h>
->  #include <linux/i2c.h>
->  #include <linux/err.h>
-> +#include <linux/of.h>
-> +#include <linux/of_device.h>
-> 
->  #include <linux/mfd/da9055/core.h>
-> 
-> @@ -66,6 +68,11 @@ static struct i2c_device_id da9055_i2c_id[] = {
->  };
->  MODULE_DEVICE_TABLE(i2c, da9055_i2c_id);
-> 
-> +static const struct of_device_id da9055_of_match[] = {
-> +	{ .compatible = "dlg,da9055-pmic", .data = (void *)&da9055_i2c_id[0] },
+Eiichiro,
+          Most of last major overhaul of pci_fixup_video was in commit 6b5c76b8e2ff204fa8d7201acce461188873bf2b saying:
+          "PCI: fix pci_fixup_video as it blows up on sparc64"
+          Is it possible for you to verify you can still boot on sparc64 with this patch applied ?
 
-Entangling the i2c_device_id table with the of_device_id table sounds
-a bit too wacky for my liking. Where do you even use it?
+Tony,
+          Since ia64's pci_fixup_video is also changed to be inline with x86, could you verify it still compiles and boots for you ?
 
-> +	{ }
-> +};
-> +
->  static struct i2c_driver da9055_i2c_driver = {
->  	.probe = da9055_i2c_probe,
->  	.remove = da9055_i2c_remove,
-> @@ -73,6 +80,7 @@ static struct i2c_driver da9055_i2c_driver = {
->  	.driver = {
->  		.name = "da9055-pmic",
->  		.owner = THIS_MODULE,
-> +		.of_match_table = of_match_ptr(da9055_of_match),
->  	},
->  };
-> 
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Konrad,
+          Thanks for reviewing and testing !
+
+--
+Sander
+
+
+
+
+Monday, February 3, 2014, 3:52:05 PM, you wrote:
+
+> On Fri, Jan 31, 2014 at 10:28:22AM +0100, Sander Eikelenboom wrote:
+>> Hi Bjorn / Tony,
+>> 
+>> I fixed up ia64 as well and brought it inline again with the x86 code,
+>> but i don't have a ia64 machine, so that part is untested.
+>> Perhaps Tony is able to review/test it ?
+>> 
+>> Sander
+>> 
+>> 
+>> 
+>> Setting the IORESOURCE_ROM_SHADOW flag on a VGA card other than the primary
+>> prevents it from reading it's own rom. It will get the content of the shadowrom
+>> at C000 instead, which is of the primary VGA card and the driver of the
+>> secondary card will bail out.
+>> 
+>> Fix this by checking if the arch code or vga-arbitration has already
+>> determined the vga_default_device, if so only apply the fix to this
+>> primary video device and let the comment reflect this.
+>> 
+>> v2:
+>>     - Fix pci_fixup_video both in x86 and ia64
+>> 
+>> 
+>> Sander Eikelenboom (1):
+>>   Setting the IORESOURCE_ROM_SHADOW flag on a VGA card other than the
+>>     primary     prevents it from reading it's own rom. It will get the
+>>     content of the shadowrom     at C000 instead, which is of the
+>>     primary VGA card and the driver of the     secondary card will bail
+>>     out.
+
+> Your editor mutilated your subject line. It ought to have been just
+> one line.
+
+> Anyhow, you can also add 'Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com'
+> on the patch for the x86 part.
+
+> The ia64 "looks" OK to me, but my ia64 box won't boot v3.11 or later
+> so I can't give it a 'Tested-by' yet.
+
+>> 
+>>  arch/ia64/pci/fixup.c |   24 +++++++++++++-----------
+>>  arch/x86/pci/fixup.c  |   18 ++++++++++--------
+>>  2 files changed, 23 insertions(+), 19 deletions(-)
+>> 
+>> -- 
+>> 1.7.10.4
+>> 
+
+
