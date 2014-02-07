@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753778AbaBGMQn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:16:43 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42218 "EHLO
+	id S1753826AbaBGMRL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:17:11 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42208 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755148AbaBGLvg (ORCPT
+	with ESMTP id S1755123AbaBGLvd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:51:36 -0500
+	Fri, 7 Feb 2014 06:51:33 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Todd Previte <tprevite@gmail.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+Cc: Boaz Harrosh <bharrosh@panasas.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 169/233] drm/i915: VLV2 - Fix hotplug detect bits
-Date: Fri,  7 Feb 2014 11:46:28 +0000
-Message-Id: <1391773652-25214-170-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 167/233] ore: Fix wrong math in allocation of per device BIO
+Date: Fri,  7 Feb 2014 11:46:26 +0000
+Message-Id: <1391773652-25214-168-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -27,104 +27,136 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Todd Previte <tprevite@gmail.com>
+From: Boaz Harrosh <bharrosh@panasas.com>
 
-commit 232a6ee9af8adb185640f67fcaaa9014a9aa0573 upstream.
+commit aad560b7f63b495f48a7232fd086c5913a676e6f upstream.
 
-Add new definitions for hotplug live status bits for VLV2 since they're
-in reverse order from the gen4x ones.
+At IO preparation we calculate the max pages at each device and
+allocate a BIO per device of that size. The calculation was wrong
+on some unaligned corner cases offset/length combination and would
+make prepare return with -ENOMEM. This would be bad for pnfs-objects
+that would in that case IO through MDS. And fatal for exofs were it
+would fail writes with EIO.
 
-Changelog:
-- Restored gen4 bit definitions
-- Added new definitions for VLV2
-- Added platform check for IS_VALLEYVIEW() in dp_detect to use the correct
-  bit defintions
-- Replaced a lost trailing brace for the added switch()
+Fix it by doing the proper math, that will work in all cases. (I
+ran a test with all possible offset/length combinations this time
+round).
 
-Signed-off-by: Todd Previte <tprevite@gmail.com>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=73951
-[danvet: Switch to _VLV postfix instead of prefix and regroupg
-comments again so that the g4x warning is right next to those defines.
-Also add a _G4X suffix for those special ones. Also cc stable.]
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Also when reading we do not need to allocate for the parity units
+since we jump over them.
+
+Also lower the max_io_length to take into account the parity pages
+so not to allocate BIOs bigger than PAGE_SIZE
+
+Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/i915/i915_reg.h | 10 +++++++---
- drivers/gpu/drm/i915/intel_dp.c | 40 ++++++++++++++++++++++++++++------------
- 2 files changed, 35 insertions(+), 15 deletions(-)
+ fs/exofs/ore.c         | 37 +++++++++++++++++++++++++------------
+ include/scsi/osd_ore.h |  1 +
+ 2 files changed, 26 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
-index c42d31c..42e89d7 100644
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -1865,9 +1865,13 @@
-  * Please check the detailed lore in the commit message for for experimental
-  * evidence.
-  */
--#define   PORTD_HOTPLUG_LIVE_STATUS               (1 << 29)
--#define   PORTC_HOTPLUG_LIVE_STATUS               (1 << 28)
--#define   PORTB_HOTPLUG_LIVE_STATUS               (1 << 27)
-+#define   PORTD_HOTPLUG_LIVE_STATUS_G4X		(1 << 29)
-+#define   PORTC_HOTPLUG_LIVE_STATUS_G4X		(1 << 28)
-+#define   PORTB_HOTPLUG_LIVE_STATUS_G4X		(1 << 27)
-+/* VLV DP/HDMI bits again match Bspec */
-+#define   PORTD_HOTPLUG_LIVE_STATUS_VLV		(1 << 27)
-+#define   PORTC_HOTPLUG_LIVE_STATUS_VLV		(1 << 28)
-+#define   PORTB_HOTPLUG_LIVE_STATUS_VLV		(1 << 29)
- #define   PORTD_HOTPLUG_INT_STATUS		(3 << 21)
- #define   PORTC_HOTPLUG_INT_STATUS		(3 << 19)
- #define   PORTB_HOTPLUG_INT_STATUS		(3 << 17)
-diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
-index 96a410e..e7c46aa 100644
---- a/drivers/gpu/drm/i915/intel_dp.c
-+++ b/drivers/gpu/drm/i915/intel_dp.c
-@@ -2518,18 +2518,34 @@ g4x_dp_detect(struct intel_dp *intel_dp)
- 		return status;
- 	}
+diff --git a/fs/exofs/ore.c b/fs/exofs/ore.c
+index b744228..85cde3e 100644
+--- a/fs/exofs/ore.c
++++ b/fs/exofs/ore.c
+@@ -103,7 +103,7 @@ int ore_verify_layout(unsigned total_comps, struct ore_layout *layout)
  
--	switch (intel_dig_port->port) {
--	case PORT_B:
--		bit = PORTB_HOTPLUG_LIVE_STATUS;
--		break;
--	case PORT_C:
--		bit = PORTC_HOTPLUG_LIVE_STATUS;
--		break;
--	case PORT_D:
--		bit = PORTD_HOTPLUG_LIVE_STATUS;
--		break;
--	default:
--		return connector_status_unknown;
-+	if (IS_VALLEYVIEW(dev)) {
-+		switch (intel_dig_port->port) {
-+		case PORT_B:
-+			bit = PORTB_HOTPLUG_LIVE_STATUS_VLV;
-+			break;
-+		case PORT_C:
-+			bit = PORTC_HOTPLUG_LIVE_STATUS_VLV;
-+			break;
-+		case PORT_D:
-+			bit = PORTD_HOTPLUG_LIVE_STATUS_VLV;
-+			break;
-+		default:
-+			return connector_status_unknown;
-+		}
-+	} else {
-+		switch (intel_dig_port->port) {
-+		case PORT_B:
-+			bit = PORTB_HOTPLUG_LIVE_STATUS_G4X;
-+			break;
-+		case PORT_C:
-+			bit = PORTC_HOTPLUG_LIVE_STATUS_G4X;
-+			break;
-+		case PORT_D:
-+			bit = PORTD_HOTPLUG_LIVE_STATUS_G4X;
-+			break;
-+		default:
-+			return connector_status_unknown;
-+		}
+ 	layout->max_io_length =
+ 		(BIO_MAX_PAGES_KMALLOC * PAGE_SIZE - layout->stripe_unit) *
+-							layout->group_width;
++					(layout->group_width - layout->parity);
+ 	if (layout->parity) {
+ 		unsigned stripe_length =
+ 				(layout->group_width - layout->parity) *
+@@ -286,7 +286,8 @@ int  ore_get_rw_state(struct ore_layout *layout, struct ore_components *oc,
+ 	if (length) {
+ 		ore_calc_stripe_info(layout, offset, length, &ios->si);
+ 		ios->length = ios->si.length;
+-		ios->nr_pages = (ios->length + PAGE_SIZE - 1) / PAGE_SIZE;
++		ios->nr_pages = ((ios->offset & (PAGE_SIZE - 1)) +
++				 ios->length + PAGE_SIZE - 1) / PAGE_SIZE;
+ 		if (layout->parity)
+ 			_ore_post_alloc_raid_stuff(ios);
  	}
+@@ -536,6 +537,7 @@ void ore_calc_stripe_info(struct ore_layout *layout, u64 file_offset,
+ 	u64	H = LmodS - G * T;
  
- 	if ((I915_READ(PORT_HOTPLUG_STAT) & bit) == 0)
+ 	u32	N = div_u64(H, U);
++	u32	Nlast;
+ 
+ 	/* "H - (N * U)" is just "H % U" so it's bound to u32 */
+ 	u32	C = (u32)(H - (N * U)) / stripe_unit + G * group_width;
+@@ -568,6 +570,10 @@ void ore_calc_stripe_info(struct ore_layout *layout, u64 file_offset,
+ 	si->length = T - H;
+ 	if (si->length > length)
+ 		si->length = length;
++
++	Nlast = div_u64(H + si->length + U - 1, U);
++	si->maxdevUnits = Nlast - N;
++
+ 	si->M = M;
+ }
+ EXPORT_SYMBOL(ore_calc_stripe_info);
+@@ -583,13 +589,16 @@ int _ore_add_stripe_unit(struct ore_io_state *ios,  unsigned *cur_pg,
+ 	int ret;
+ 
+ 	if (per_dev->bio == NULL) {
+-		unsigned pages_in_stripe = ios->layout->group_width *
+-					(ios->layout->stripe_unit / PAGE_SIZE);
+-		unsigned nr_pages = ios->nr_pages * ios->layout->group_width /
+-					(ios->layout->group_width -
+-					 ios->layout->parity);
+-		unsigned bio_size = (nr_pages + pages_in_stripe) /
+-					ios->layout->group_width;
++		unsigned bio_size;
++
++		if (!ios->reading) {
++			bio_size = ios->si.maxdevUnits;
++		} else {
++			bio_size = (ios->si.maxdevUnits + 1) *
++			     (ios->layout->group_width - ios->layout->parity) /
++			     ios->layout->group_width;
++		}
++		bio_size *= (ios->layout->stripe_unit / PAGE_SIZE);
+ 
+ 		per_dev->bio = bio_kmalloc(GFP_KERNEL, bio_size);
+ 		if (unlikely(!per_dev->bio)) {
+@@ -609,8 +618,12 @@ int _ore_add_stripe_unit(struct ore_io_state *ios,  unsigned *cur_pg,
+ 		added_len = bio_add_pc_page(q, per_dev->bio, pages[pg],
+ 					    pglen, pgbase);
+ 		if (unlikely(pglen != added_len)) {
+-			ORE_DBGMSG("Failed bio_add_pc_page bi_vcnt=%u\n",
+-				   per_dev->bio->bi_vcnt);
++			/* If bi_vcnt == bi_max then this is a SW BUG */
++			ORE_DBGMSG("Failed bio_add_pc_page bi_vcnt=0x%x "
++				   "bi_max=0x%x BIO_MAX=0x%x cur_len=0x%x\n",
++				   per_dev->bio->bi_vcnt,
++				   per_dev->bio->bi_max_vecs,
++				   BIO_MAX_PAGES_KMALLOC, cur_len);
+ 			ret = -ENOMEM;
+ 			goto out;
+ 		}
+@@ -1098,7 +1111,7 @@ int ore_truncate(struct ore_layout *layout, struct ore_components *oc,
+ 		size_attr->attr = g_attr_logical_length;
+ 		size_attr->attr.val_ptr = &size_attr->newsize;
+ 
+-		ORE_DBGMSG("trunc(0x%llx) obj_offset=0x%llx dev=%d\n",
++		ORE_DBGMSG2("trunc(0x%llx) obj_offset=0x%llx dev=%d\n",
+ 			     _LLU(oc->comps->obj.id), _LLU(obj_size), i);
+ 		ret = _truncate_mirrors(ios, i * ios->layout->mirrors_p1,
+ 					&size_attr->attr);
+diff --git a/include/scsi/osd_ore.h b/include/scsi/osd_ore.h
+index a5f9b96..6ca3265 100644
+--- a/include/scsi/osd_ore.h
++++ b/include/scsi/osd_ore.h
+@@ -102,6 +102,7 @@ struct ore_striping_info {
+ 	unsigned unit_off;
+ 	unsigned cur_pg;
+ 	unsigned cur_comp;
++	unsigned maxdevUnits;
+ };
+ 
+ struct ore_io_state;
 -- 
 1.8.3.2
 
