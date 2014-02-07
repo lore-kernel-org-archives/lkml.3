@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754072AbaBGLno (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:43:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41000 "EHLO
+	id S1752835AbaBGLYW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:24:22 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40859 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752856AbaBGLYY (ORCPT
+	with ESMTP id S1752092AbaBGLXq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:24:24 -0500
+	Fri, 7 Feb 2014 06:23:46 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Colin Leitner <colin.leitner@gmail.com>, Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Jianguo Wu <wujianguo@huawei.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 40/88] USB: ftdi_sio: added CS5 quirk for broken smartcard readers
-Date: Fri,  7 Feb 2014 11:22:37 +0000
-Message-Id: <1391772205-22239-41-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 12/88] mm/memory-failure.c: recheck PageHuge() after hugetlb page migrate successfully
+Date: Fri,  7 Feb 2014 11:22:09 +0000
+Message-Id: <1391772205-22239-13-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
@@ -28,73 +29,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Colin Leitner <colin.leitner@googlemail.com>
+From: Jianguo Wu <wujianguo@huawei.com>
 
-commit c1f15196ac3b541d084dc80a8fbd8a74c6a0bd44 upstream.
+commit a49ecbcd7b0d5a1cda7d60e03df402dd0ef76ac8 upstream.
 
-Genuine FTDI chips support only CS7/8. A previous fix in commit
-8704211f65a2 ("USB: ftdi_sio: fixed handling of unsupported CSIZE
-setting") enforced this limitation and reported it back to userspace.
+After a successful hugetlb page migration by soft offline, the source
+page will either be freed into hugepage_freelists or buddy(over-commit
+page).  If page is in buddy, page_hstate(page) will be NULL.  It will
+hit a NULL pointer dereference in dequeue_hwpoisoned_huge_page().
 
-However, certain types of smartcard readers depend on specific
-driver behaviour that requests 0 data bits (not 5) to change into a
-different operating mode if CS5 has been set.
+  BUG: unable to handle kernel NULL pointer dereference at 0000000000000058
+  IP: [<ffffffff81163761>] dequeue_hwpoisoned_huge_page+0x131/0x1d0
+  PGD c23762067 PUD c24be2067 PMD 0
+  Oops: 0000 [#1] SMP
 
-This patch reenables this behaviour for all FTDI devices.
+So check PageHuge(page) after call migrate_pages() successfully.
 
-Tagged to be added to stable, because it affects a lot of users of
-embedded systems which rely on these readers to work properly.
-
-Reported-by: Heinrich Siebmanns <H.Siebmanns@t-online.de>
-Tested-by: Heinrich Siebmanns <H.Siebmanns@t-online.de>
-Signed-off-by: Colin Leitner <colin.leitner@gmail.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ luis: backported to 3.5:
-  - adjusted context
-  - replace dev_dbg() by dbg() ]
+Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+Tested-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[wujg: backport to 3.4:
+ - adjust context
+ - s/num_poisoned_pages/mce_bad_pages/]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/ftdi_sio.c | 17 +++++++++++++++--
- 1 file changed, 15 insertions(+), 2 deletions(-)
+ mm/memory-failure.c | 16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index 947da9d..82c392f 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -2162,10 +2162,20 @@ static void ftdi_set_termios(struct tty_struct *tty,
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index 1bf1092..5eb3f727 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1447,10 +1447,18 @@ static int soft_offline_huge_page(struct page *page, int flags)
+ 		return ret;
  	}
- 
- 	/*
--	 * All FTDI UART chips are limited to CS7/8. We won't pretend to
-+	 * All FTDI UART chips are limited to CS7/8. We shouldn't pretend to
- 	 * support CS5/6 and revert the CSIZE setting instead.
-+	 *
-+	 * CS5 however is used to control some smartcard readers which abuse
-+	 * this limitation to switch modes. Original FTDI chips fall back to
-+	 * eight data bits.
-+	 *
-+	 * TODO: Implement a quirk to only allow this with mentioned
-+	 *       readers. One I know of (Argolis Smartreader V1)
-+	 *       returns "USB smartcard server" as iInterface string.
-+	 *       The vendor didn't bother with a custom VID/PID of
-+	 *       course.
- 	 */
--	if ((C_CSIZE(tty) != CS8) && (C_CSIZE(tty) != CS7)) {
-+	if (C_CSIZE(tty) == CS6) {
- 		dev_warn(&port->dev, "requested CSIZE setting not supported\n");
- 
- 		termios->c_cflag &= ~CSIZE;
-@@ -2212,6 +2222,9 @@ no_skip:
- 		urb_value |= FTDI_SIO_SET_DATA_PARITY_NONE;
- 	}
- 	switch (cflag & CSIZE) {
-+	case CS5:
-+		dbg("Setting CS5 quirk\n");
-+		break;
- 	case CS7:
- 		urb_value |= 7;
- 		dbg("Setting CS7\n");
+ done:
+-	if (!PageHWPoison(hpage))
+-		atomic_long_add(1 << compound_trans_order(hpage), &mce_bad_pages);
+-	set_page_hwpoison_huge_page(hpage);
+-	dequeue_hwpoisoned_huge_page(hpage);
++	/* overcommit hugetlb page will be freed to buddy */
++	if (PageHuge(hpage)) {
++		if (!PageHWPoison(hpage))
++			atomic_long_add(1 << compound_trans_order(hpage),
++					&mce_bad_pages);
++		set_page_hwpoison_huge_page(hpage);
++		dequeue_hwpoisoned_huge_page(hpage);
++	} else {
++		SetPageHWPoison(page);
++		atomic_long_inc(&mce_bad_pages);
++	}
++
+ 	/* keep elevated page count for bad page */
+ 	return ret;
+ }
 -- 
 1.8.3.2
 
