@@ -1,51 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752379AbaBGONQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 09:13:16 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:43082 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751785AbaBGONP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 09:13:15 -0500
-Date: Fri, 7 Feb 2014 09:13:13 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Clark Williams <williams@redhat.com>,
-        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-        John Kacur <jkacur@redhat.com>, Ulrich Obergfell <uobergfe@redhat.com>
-Subject: Re: [PATCH RT] rt: Make cpu_chill() use hrtimer instead of msleep()
-Message-ID: <20140207091313.097f9059@gandalf.local.home>
-In-Reply-To: <20140207090834.72774272@gandalf.local.home>
-References: <20140205115125.3cc950ce@gandalf.local.home>
-	<20140207113006.GD23668@linutronix.de>
-	<20140207090834.72774272@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	id S1752475AbaBGOP1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 09:15:27 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39552 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751699AbaBGOP0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 09:15:26 -0500
+Date: Fri, 7 Feb 2014 15:15:22 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+cc: Jani Nikula <jani.nikula@intel.com>, Dave Airlie <airlied@linux.ie>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Subject: Re: [git pull] drm next tree
+In-Reply-To: <CAKMK7uGf0=13HpkeZf1WouutkB+kOpyT4NHXaXMVg5j6wEh_pQ@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1402071514240.24838@pobox.suse.cz>
+References: <alpine.DEB.2.00.1401300249130.13810@skynet.skynet.ie> <alpine.LRH.2.00.1401301648050.15677@twin.jikos.cz> <alpine.LNX.2.00.1402071052470.24838@pobox.suse.cz> <87a9e318m6.fsf@intel.com> <alpine.LNX.2.00.1402071437400.24838@pobox.suse.cz>
+ <CAKMK7uGf0=13HpkeZf1WouutkB+kOpyT4NHXaXMVg5j6wEh_pQ@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 7 Feb 2014 09:08:34 -0500
-Steven Rostedt <rostedt@goodmis.org> wrote:
+On Fri, 7 Feb 2014, Daniel Vetter wrote:
 
+> Sorry for missing your report here. Before we disable this again for
+> gen4 I want to make sure that it's the same irq misrouting issue which
+> was already the cause for the gmbus irq mess. Can you please boot with
+> pci=nomsi (so that i915 uses irq16)?
+> 
+> If that's confirmed then I think we should add the same comment we've
+> added in intel_i2c.c to this code so that no one dares to wake this
+> dragon again. I'll do that when I commit the fix.
 
-> > could you please tell me which two locks are invovled here?
+Confirmed, with MSI disabled, i915 is using IRQ 16 and everything is 
+working well.
 
-I should have also stated that it was only one lock that was involved.
-But the lock owner was doing a msleep() that requires a wakeup by
-ksoftirqd to continue. If ksoftirqd happens to be blocked on a lock
-held by the msleep() caller, then you have your deadlock.
-
-It's best not to have any softirqs going to sleep requiring another
-softirq to wake it up. Note, if we ever require a timer softirq to do a
-cpu_chill() it will most definitely hit this deadlock.
-
--- Steve
+-- 
+Jiri Kosina
+SUSE Labs
