@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932508AbaBGLwU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:52:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42378 "EHLO
+	id S1753027AbaBGMFM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:05:12 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42399 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754061AbaBGLwO (ORCPT
+	with ESMTP id S1755294AbaBGLwT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:52:14 -0500
+	Fri, 7 Feb 2014 06:52:19 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
+Cc: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 198/233] mm, oom: base root bonus on current usage
-Date: Fri,  7 Feb 2014 11:46:57 +0000
-Message-Id: <1391773652-25214-199-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 201/233] hpfs: remember free space
+Date: Fri,  7 Feb 2014 11:47:00 +0000
+Message-Id: <1391773652-25214-202-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -29,78 +28,238 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Rientjes <rientjes@google.com>
+From: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
 
-commit 778c14affaf94a9e4953179d3e13a544ccce7707 upstream.
+commit 2cbe5c76fc5e38e9af4b709593146e4b8272b69e upstream.
 
-A 3% of system memory bonus is sometimes too excessive in comparison to
-other processes.
+Previously, hpfs scanned all bitmaps each time the user asked for free
+space using statfs.  This patch changes it so that hpfs scans the
+bitmaps only once, remembes the free space and on next invocation of
+statfs it returns the value instantly.
 
-With commit a63d83f427fb ("oom: badness heuristic rewrite"), the OOM
-killer tries to avoid killing privileged tasks by subtracting 3% of
-overall memory (system or cgroup) from their per-task consumption.  But
-as a result, all root tasks that consume less than 3% of overall memory
-are considered equal, and so it only takes 33+ privileged tasks pushing
-the system out of memory for the OOM killer to do something stupid and
-kill dhclient or other root-owned processes.  For example, on a 32G
-machine it can't tell the difference between the 1M agetty and the 10G
-fork bomb member.
+New versions of wine are hammering on the statfs syscall very heavily,
+making some games unplayable when they're stored on hpfs, with load
+times in minutes.
 
-The changelog describes this 3% boost as the equivalent to the global
-overcommit limit being 3% higher for privileged tasks, but this is not
-the same as discounting 3% of overall memory from _every privileged task
-individually_ during OOM selection.
+This should be backported to the stable kernels because it fixes
+user-visible problem (excessive level load times in wine).
 
-Replace the 3% of system memory bonus with a 3% of current memory usage
-bonus.
-
-By giving root tasks a bonus that is proportional to their actual size,
-they remain comparable even when relatively small.  In the example
-above, the OOM killer will discount the 1M agetty's 256 badness points
-down to 179, and the 10G fork bomb's 262144 points down to 183500 points
-and make the right choice, instead of discounting both to 0 and killing
-agetty because it's first in the task list.
-
-Signed-off-by: David Rientjes <rientjes@google.com>
-Reported-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- Documentation/filesystems/proc.txt | 4 ++--
- mm/oom_kill.c                      | 2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ fs/hpfs/alloc.c   | 66 +++++++++++++++++++++++++++++++++++++++++++++++++++++--
+ fs/hpfs/hpfs_fn.h |  2 +-
+ fs/hpfs/super.c   | 29 ++++++++++++++++++------
+ 3 files changed, 87 insertions(+), 10 deletions(-)
 
-diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
-index fcc22c9..9198f01 100644
---- a/Documentation/filesystems/proc.txt
-+++ b/Documentation/filesystems/proc.txt
-@@ -1377,8 +1377,8 @@ may allocate from based on an estimation of its current memory and swap use.
- For example, if a task is using all allowed memory, its badness score will be
- 1000.  If it is using half of its allowed memory, its score will be 500.
+diff --git a/fs/hpfs/alloc.c b/fs/hpfs/alloc.c
+index cdb84a8..58b5106 100644
+--- a/fs/hpfs/alloc.c
++++ b/fs/hpfs/alloc.c
+@@ -8,6 +8,58 @@
  
--There is an additional factor included in the badness score: root
--processes are given 3% extra memory over other tasks.
-+There is an additional factor included in the badness score: the current memory
-+and swap usage is discounted by 3% for root processes.
+ #include "hpfs_fn.h"
  
- The amount of "allowed" memory depends on the context in which the oom killer
- was called.  If it is due to the memory assigned to the allocating task's cpuset
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index 79e451a..dfa94ed 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -170,7 +170,7 @@ unsigned long oom_badness(struct task_struct *p, struct mem_cgroup *memcg,
- 	 * implementation used by LSMs.
- 	 */
- 	if (has_capability_noaudit(p, CAP_SYS_ADMIN))
--		adj -= 30;
-+		points -= (points * 3) / 100;
++static void hpfs_claim_alloc(struct super_block *s, secno sec)
++{
++	struct hpfs_sb_info *sbi = hpfs_sb(s);
++	if (sbi->sb_n_free != (unsigned)-1) {
++		if (unlikely(!sbi->sb_n_free)) {
++			hpfs_error(s, "free count underflow, allocating sector %08x", sec);
++			sbi->sb_n_free = -1;
++			return;
++		}
++		sbi->sb_n_free--;
++	}
++}
++
++static void hpfs_claim_free(struct super_block *s, secno sec)
++{
++	struct hpfs_sb_info *sbi = hpfs_sb(s);
++	if (sbi->sb_n_free != (unsigned)-1) {
++		if (unlikely(sbi->sb_n_free >= sbi->sb_fs_size)) {
++			hpfs_error(s, "free count overflow, freeing sector %08x", sec);
++			sbi->sb_n_free = -1;
++			return;
++		}
++		sbi->sb_n_free++;
++	}
++}
++
++static void hpfs_claim_dirband_alloc(struct super_block *s, secno sec)
++{
++	struct hpfs_sb_info *sbi = hpfs_sb(s);
++	if (sbi->sb_n_free_dnodes != (unsigned)-1) {
++		if (unlikely(!sbi->sb_n_free_dnodes)) {
++			hpfs_error(s, "dirband free count underflow, allocating sector %08x", sec);
++			sbi->sb_n_free_dnodes = -1;
++			return;
++		}
++		sbi->sb_n_free_dnodes--;
++	}
++}
++
++static void hpfs_claim_dirband_free(struct super_block *s, secno sec)
++{
++	struct hpfs_sb_info *sbi = hpfs_sb(s);
++	if (sbi->sb_n_free_dnodes != (unsigned)-1) {
++		if (unlikely(sbi->sb_n_free_dnodes >= sbi->sb_dirband_size / 4)) {
++			hpfs_error(s, "dirband free count overflow, freeing sector %08x", sec);
++			sbi->sb_n_free_dnodes = -1;
++			return;
++		}
++		sbi->sb_n_free_dnodes++;
++	}
++}
++
+ /*
+  * Check if a sector is allocated in bitmap
+  * This is really slow. Turned on only if chk==2
+@@ -203,9 +255,15 @@ secno hpfs_alloc_sector(struct super_block *s, secno near, unsigned n, int forwa
+ 	}
+ 	sec = 0;
+ 	ret:
++	if (sec) {
++		i = 0;
++		do
++			hpfs_claim_alloc(s, sec + i);
++		while (unlikely(++i < n));
++	}
+ 	if (sec && f_p) {
+ 		for (i = 0; i < forward; i++) {
+-			if (!hpfs_alloc_if_possible(s, sec + i + 1)) {
++			if (!hpfs_alloc_if_possible(s, sec + n + i)) {
+ 				hpfs_error(s, "Prealloc doesn't work! Wanted %d, allocated at %08x, can't allocate %d", forward, sec, i);
+ 				sec = 0;
+ 				break;
+@@ -228,6 +286,7 @@ static secno alloc_in_dirband(struct super_block *s, secno near)
+ 	nr >>= 2;
+ 	sec = alloc_in_bmp(s, (~0x3fff) | nr, 1, 0);
+ 	if (!sec) return 0;
++	hpfs_claim_dirband_alloc(s, sec);
+ 	return ((sec & 0x3fff) << 2) + sbi->sb_dirband_start;
+ }
  
- 	/* Normalize to oom_score_adj units */
- 	adj *= totalpages / 1000;
+@@ -242,6 +301,7 @@ int hpfs_alloc_if_possible(struct super_block *s, secno sec)
+ 		bmp[(sec & 0x3fff) >> 5] &= cpu_to_le32(~(1 << (sec & 0x1f)));
+ 		hpfs_mark_4buffers_dirty(&qbh);
+ 		hpfs_brelse4(&qbh);
++		hpfs_claim_alloc(s, sec);
+ 		return 1;
+ 	}
+ 	hpfs_brelse4(&qbh);
+@@ -275,6 +335,7 @@ void hpfs_free_sectors(struct super_block *s, secno sec, unsigned n)
+ 		return;
+ 	}
+ 	bmp[(sec & 0x3fff) >> 5] |= cpu_to_le32(1 << (sec & 0x1f));
++	hpfs_claim_free(s, sec);
+ 	if (!--n) {
+ 		hpfs_mark_4buffers_dirty(&qbh);
+ 		hpfs_brelse4(&qbh);
+@@ -359,6 +420,7 @@ void hpfs_free_dnode(struct super_block *s, dnode_secno dno)
+ 		bmp[ssec >> 5] |= cpu_to_le32(1 << (ssec & 0x1f));
+ 		hpfs_mark_4buffers_dirty(&qbh);
+ 		hpfs_brelse4(&qbh);
++		hpfs_claim_dirband_free(s, dno);
+ 	}
+ }
+ 
+@@ -366,7 +428,7 @@ struct dnode *hpfs_alloc_dnode(struct super_block *s, secno near,
+ 			 dnode_secno *dno, struct quad_buffer_head *qbh)
+ {
+ 	struct dnode *d;
+-	if (hpfs_count_one_bitmap(s, hpfs_sb(s)->sb_dmap) > FREE_DNODES_ADD) {
++	if (hpfs_get_free_dnodes(s) > FREE_DNODES_ADD) {
+ 		if (!(*dno = alloc_in_dirband(s, near)))
+ 			if (!(*dno = hpfs_alloc_sector(s, near, 4, 0))) return NULL;
+ 	} else {
+diff --git a/fs/hpfs/hpfs_fn.h b/fs/hpfs/hpfs_fn.h
+index 1b39863..c65f0bf 100644
+--- a/fs/hpfs/hpfs_fn.h
++++ b/fs/hpfs/hpfs_fn.h
+@@ -311,7 +311,7 @@ static inline struct hpfs_sb_info *hpfs_sb(struct super_block *sb)
+ __printf(2, 3)
+ void hpfs_error(struct super_block *, const char *, ...);
+ int hpfs_stop_cycles(struct super_block *, int, int *, int *, char *);
+-unsigned hpfs_count_one_bitmap(struct super_block *, secno);
++unsigned hpfs_get_free_dnodes(struct super_block *);
+ 
+ /*
+  * local time (HPFS) to GMT (Unix)
+diff --git a/fs/hpfs/super.c b/fs/hpfs/super.c
+index 4334cda..3d6f897 100644
+--- a/fs/hpfs/super.c
++++ b/fs/hpfs/super.c
+@@ -115,7 +115,7 @@ static void hpfs_put_super(struct super_block *s)
+ 	kfree(sbi);
+ }
+ 
+-unsigned hpfs_count_one_bitmap(struct super_block *s, secno secno)
++static unsigned hpfs_count_one_bitmap(struct super_block *s, secno secno)
+ {
+ 	struct quad_buffer_head qbh;
+ 	unsigned long *bits;
+@@ -123,7 +123,7 @@ unsigned hpfs_count_one_bitmap(struct super_block *s, secno secno)
+ 
+ 	bits = hpfs_map_4sectors(s, secno, &qbh, 0);
+ 	if (!bits)
+-		return 0;
++		return (unsigned)-1;
+ 	count = bitmap_weight(bits, 2048 * BITS_PER_BYTE);
+ 	hpfs_brelse4(&qbh);
+ 	return count;
+@@ -138,30 +138,45 @@ static unsigned count_bitmaps(struct super_block *s)
+ 		hpfs_prefetch_bitmap(s, n);
+ 	}
+ 	for (n = 0; n < n_bands; n++) {
++		unsigned c;
+ 		hpfs_prefetch_bitmap(s, n + COUNT_RD_AHEAD);
+-		count += hpfs_count_one_bitmap(s, le32_to_cpu(hpfs_sb(s)->sb_bmp_dir[n]));
++		c = hpfs_count_one_bitmap(s, le32_to_cpu(hpfs_sb(s)->sb_bmp_dir[n]));
++		if (c != (unsigned)-1)
++			count += c;
+ 	}
+ 	return count;
+ }
+ 
++unsigned hpfs_get_free_dnodes(struct super_block *s)
++{
++	struct hpfs_sb_info *sbi = hpfs_sb(s);
++	if (sbi->sb_n_free_dnodes == (unsigned)-1) {
++		unsigned c = hpfs_count_one_bitmap(s, sbi->sb_dmap);
++		if (c == (unsigned)-1)
++			return 0;
++		sbi->sb_n_free_dnodes = c;
++	}
++	return sbi->sb_n_free_dnodes;
++}
++
+ static int hpfs_statfs(struct dentry *dentry, struct kstatfs *buf)
+ {
+ 	struct super_block *s = dentry->d_sb;
+ 	struct hpfs_sb_info *sbi = hpfs_sb(s);
+ 	u64 id = huge_encode_dev(s->s_bdev->bd_dev);
++
+ 	hpfs_lock(s);
+ 
+-	/*if (sbi->sb_n_free == -1) {*/
++	if (sbi->sb_n_free == (unsigned)-1)
+ 		sbi->sb_n_free = count_bitmaps(s);
+-		sbi->sb_n_free_dnodes = hpfs_count_one_bitmap(s, sbi->sb_dmap);
+-	/*}*/
++
+ 	buf->f_type = s->s_magic;
+ 	buf->f_bsize = 512;
+ 	buf->f_blocks = sbi->sb_fs_size;
+ 	buf->f_bfree = sbi->sb_n_free;
+ 	buf->f_bavail = sbi->sb_n_free;
+ 	buf->f_files = sbi->sb_dirband_size / 4;
+-	buf->f_ffree = sbi->sb_n_free_dnodes;
++	buf->f_ffree = hpfs_get_free_dnodes(s);
+ 	buf->f_fsid.val[0] = (u32)id;
+ 	buf->f_fsid.val[1] = (u32)(id >> 32);
+ 	buf->f_namelen = 254;
 -- 
 1.8.3.2
 
