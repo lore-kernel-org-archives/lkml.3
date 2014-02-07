@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753469AbaBGLZb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:25:31 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41246 "EHLO
+	id S1753437AbaBGLZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:25:27 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41228 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753441AbaBGLZ2 (ORCPT
+	with ESMTP id S1753255AbaBGLZY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:25:28 -0500
+	Fri, 7 Feb 2014 06:25:24 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Patrick McHardy <kaber@trash.net>, Thomas Graf <tgraf@suug.ch>,
-        Julian Anastasov <ja@ssi.bg>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Thomas Pugliese <thomas.pugliese@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 82/88] net: avoid reference counter overflows on fib_rules in multicast forwarding
-Date: Fri,  7 Feb 2014 11:23:19 +0000
-Message-Id: <1391772205-22239-83-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 85/88] usb: core: get config and string descriptors for unauthorized devices
+Date: Fri,  7 Feb 2014 11:23:22 +0000
+Message-Id: <1391772205-22239-86-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
@@ -30,78 +28,133 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Thomas Pugliese <thomas.pugliese@gmail.com>
 
-commit 95f4a45de1a0f172b35451fc52283290adb21f6e upstream.
+commit 83e83ecb79a8225e79bc8e54e9aff3e0e27658a2 upstream.
 
-Bob Falken reported that after 4G packets, multicast forwarding stopped
-working. This was because of a rule reference counter overflow which
-freed the rule as soon as the overflow happend.
+There is no need to skip querying the config and string descriptors for
+unauthorized WUSB devices when usb_new_device is called.  It is allowed
+by WUSB spec.  The only action that needs to be delayed until
+authorization time is the set config.  This change allows user mode
+tools to see the config and string descriptors earlier in enumeration
+which is needed for some WUSB devices to function properly on Android
+systems.  It also reduces the amount of divergent code paths needed
+for WUSB devices.
 
-This patch solves this by adding the FIB_LOOKUP_NOREF flag to
-fib_rules_lookup calls. This is safe even from non-rcu locked sections
-as in this case the flag only implies not taking a reference to the rule,
-which we don't need at all.
-
-Rules only hold references to the namespace, which are guaranteed to be
-available during the call of the non-rcu protected function reg_vif_xmit
-because of the interface reference which itself holds a reference to
-the net namespace.
-
-Fixes: f0ad0860d01e47 ("ipv4: ipmr: support multiple tables")
-Fixes: d1db275dd3f6e4 ("ipv6: ip6mr: support multiple tables")
-Reported-by: Bob Falken <NetFestivalHaveFun@gmx.com>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: Thomas Graf <tgraf@suug.ch>
-Cc: Julian Anastasov <ja@ssi.bg>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Thomas Pugliese <thomas.pugliese@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv4/ipmr.c  | 7 +++++--
- net/ipv6/ip6mr.c | 7 +++++--
- 2 files changed, 10 insertions(+), 4 deletions(-)
+ drivers/usb/core/config.c |  7 -------
+ drivers/usb/core/hub.c    | 40 +++++++---------------------------------
+ 2 files changed, 7 insertions(+), 40 deletions(-)
 
-diff --git a/net/ipv4/ipmr.c b/net/ipv4/ipmr.c
-index f780fa3..7fa2594 100644
---- a/net/ipv4/ipmr.c
-+++ b/net/ipv4/ipmr.c
-@@ -154,9 +154,12 @@ static struct mr_table *ipmr_get_table(struct net *net, u32 id)
- static int ipmr_fib_lookup(struct net *net, struct flowi4 *flp4,
- 			   struct mr_table **mrt)
+diff --git a/drivers/usb/core/config.c b/drivers/usb/core/config.c
+index 78609d3..6ed7e7c 100644
+--- a/drivers/usb/core/config.c
++++ b/drivers/usb/core/config.c
+@@ -651,10 +651,6 @@ void usb_destroy_configuration(struct usb_device *dev)
+  *
+  * hub-only!! ... and only in reset path, or usb_new_device()
+  * (used by real hubs and virtual root hubs)
+- *
+- * NOTE: if this is a WUSB device and is not authorized, we skip the
+- *       whole thing. A non-authorized USB device has no
+- *       configurations.
+  */
+ int usb_get_configuration(struct usb_device *dev)
  {
--	struct ipmr_result res;
--	struct fib_lookup_arg arg = { .result = &res, };
- 	int err;
-+	struct ipmr_result res;
-+	struct fib_lookup_arg arg = {
-+		.result = &res,
-+		.flags = FIB_LOOKUP_NOREF,
-+	};
+@@ -666,8 +662,6 @@ int usb_get_configuration(struct usb_device *dev)
+ 	struct usb_config_descriptor *desc;
  
- 	err = fib_rules_lookup(net->ipv4.mr_rules_ops,
- 			       flowi4_to_flowi(flp4), 0, &arg);
-diff --git a/net/ipv6/ip6mr.c b/net/ipv6/ip6mr.c
-index 65dff8a..2df3e4a 100644
---- a/net/ipv6/ip6mr.c
-+++ b/net/ipv6/ip6mr.c
-@@ -138,9 +138,12 @@ static struct mr6_table *ip6mr_get_table(struct net *net, u32 id)
- static int ip6mr_fib_lookup(struct net *net, struct flowi6 *flp6,
- 			    struct mr6_table **mrt)
- {
--	struct ip6mr_result res;
--	struct fib_lookup_arg arg = { .result = &res, };
- 	int err;
-+	struct ip6mr_result res;
-+	struct fib_lookup_arg arg = {
-+		.result = &res,
-+		.flags = FIB_LOOKUP_NOREF,
-+	};
+ 	cfgno = 0;
+-	if (dev->authorized == 0)	/* Not really an error */
+-		goto out_not_authorized;
+ 	result = -ENOMEM;
+ 	if (ncfg > USB_MAXCONFIG) {
+ 		dev_warn(ddev, "too many configurations: %d, "
+@@ -749,7 +743,6 @@ int usb_get_configuration(struct usb_device *dev)
  
- 	err = fib_rules_lookup(net->ipv6.mr6_rules_ops,
- 			       flowi6_to_flowi(flp6), 0, &arg);
+ err:
+ 	kfree(desc);
+-out_not_authorized:
+ 	dev->descriptor.bNumConfigurations = cfgno;
+ err2:
+ 	if (result == -ENOMEM)
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index 5e67525..d13f9a7 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -2146,18 +2146,13 @@ static int usb_enumerate_device(struct usb_device *udev)
+ 			goto fail;
+ 		}
+ 	}
+-	if (udev->wusb == 1 && udev->authorized == 0) {
+-		udev->product = kstrdup("n/a (unauthorized)", GFP_KERNEL);
+-		udev->manufacturer = kstrdup("n/a (unauthorized)", GFP_KERNEL);
+-		udev->serial = kstrdup("n/a (unauthorized)", GFP_KERNEL);
+-	}
+-	else {
+-		/* read the standard strings and cache them if present */
+-		udev->product = usb_cache_string(udev, udev->descriptor.iProduct);
+-		udev->manufacturer = usb_cache_string(udev,
+-						      udev->descriptor.iManufacturer);
+-		udev->serial = usb_cache_string(udev, udev->descriptor.iSerialNumber);
+-	}
++
++	/* read the standard strings and cache them if present */
++	udev->product = usb_cache_string(udev, udev->descriptor.iProduct);
++	udev->manufacturer = usb_cache_string(udev,
++					      udev->descriptor.iManufacturer);
++	udev->serial = usb_cache_string(udev, udev->descriptor.iSerialNumber);
++
+ 	err = usb_enumerate_device_otg(udev);
+ fail:
+ 	return err;
+@@ -2311,16 +2306,6 @@ int usb_deauthorize_device(struct usb_device *usb_dev)
+ 	usb_dev->authorized = 0;
+ 	usb_set_configuration(usb_dev, -1);
+ 
+-	kfree(usb_dev->product);
+-	usb_dev->product = kstrdup("n/a (unauthorized)", GFP_KERNEL);
+-	kfree(usb_dev->manufacturer);
+-	usb_dev->manufacturer = kstrdup("n/a (unauthorized)", GFP_KERNEL);
+-	kfree(usb_dev->serial);
+-	usb_dev->serial = kstrdup("n/a (unauthorized)", GFP_KERNEL);
+-
+-	usb_destroy_configuration(usb_dev);
+-	usb_dev->descriptor.bNumConfigurations = 0;
+-
+ out_unauthorized:
+ 	usb_unlock_device(usb_dev);
+ 	return 0;
+@@ -2348,17 +2333,7 @@ int usb_authorize_device(struct usb_device *usb_dev)
+ 		goto error_device_descriptor;
+ 	}
+ 
+-	kfree(usb_dev->product);
+-	usb_dev->product = NULL;
+-	kfree(usb_dev->manufacturer);
+-	usb_dev->manufacturer = NULL;
+-	kfree(usb_dev->serial);
+-	usb_dev->serial = NULL;
+-
+ 	usb_dev->authorized = 1;
+-	result = usb_enumerate_device(usb_dev);
+-	if (result < 0)
+-		goto error_enumerate;
+ 	/* Choose and set the configuration.  This registers the interfaces
+ 	 * with the driver core and lets interface drivers bind to them.
+ 	 */
+@@ -2374,7 +2349,6 @@ int usb_authorize_device(struct usb_device *usb_dev)
+ 	}
+ 	dev_info(&usb_dev->dev, "authorized to connect\n");
+ 
+-error_enumerate:
+ error_device_descriptor:
+ 	usb_autosuspend_device(usb_dev);
+ error_autoresume:
 -- 
 1.8.3.2
 
