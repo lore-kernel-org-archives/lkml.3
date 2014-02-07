@@ -1,108 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751907AbaBGXJO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 18:09:14 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:55745 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751514AbaBGXJM (ORCPT
+	id S1751580AbaBGXPi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 18:15:38 -0500
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:62722 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750913AbaBGXPh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 18:09:12 -0500
-Date: Fri, 7 Feb 2014 15:09:09 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Josh Triplett <josh@joshtriplett.org>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org
-Subject: Re: [PATCH 9/9] mm: Remove ifdef condition in include/linux/mm.h
-In-Reply-To: <20140207143050.6bd35ed5c670a3ca143ba59a@linux-foundation.org>
-Message-ID: <alpine.DEB.2.02.1402071503120.24644@chino.kir.corp.google.com>
-References: <a7658fc8f2ab015bffe83de1448cc3db79d2a9fc.1391167128.git.rashika.kheria@gmail.com> <63adb3b97f2869d4c7e76d17ef4aa76b8cf599f3.1391167128.git.rashika.kheria@gmail.com> <alpine.DEB.2.02.1402071304080.4212@chino.kir.corp.google.com>
- <20140207210705.GB13604@jtriplet-mobl1> <alpine.DEB.2.02.1402071314180.4212@chino.kir.corp.google.com> <20140207143050.6bd35ed5c670a3ca143ba59a@linux-foundation.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 7 Feb 2014 18:15:37 -0500
+Message-ID: <52F56913.4090109@gmail.com>
+Date: Sat, 08 Feb 2014 00:15:31 +0100
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>
+CC: =?UTF-8?B?RW1pbGlvIEzDs3Bleg==?= <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] clk: respect the clock dependencies in of_clk_init
+References: <1391554766-11285-1-git-send-email-gregory.clement@free-electrons.com> <52F4DA40.4090804@elopez.com.ar> <20140207142430.GU8533@titan.lakedaemon.net> <20140207144325.GA8218@localhost> <52F4F279.6010006@free-electrons.com>
+In-Reply-To: <52F4F279.6010006@free-electrons.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 7 Feb 2014, Andrew Morton wrote:
+On 02/07/2014 03:49 PM, Gregory CLEMENT wrote:
+> On 07/02/2014 15:43, Ezequiel Garcia wrote:
+>> On Fri, Feb 07, 2014 at 09:24:30AM -0500, Jason Cooper wrote:
+>>> On Fri, Feb 07, 2014 at 10:06:08AM -0300, Emilio López wrote:
+>>>
+>>> [snip a great explanation]
+>>>
+>>> Guys, can I get some Tested-by's on this?
+>>>
+>>
+>> In case someone missed Emilio's comment about it, I gave his oneliner
+>> a test on A370 Reference Design. It worked just as well as Sebastian's.
+>
+> Well ok it's working but this patch is not better than Sebastian, it is
+> even worth. I don't think it is a good idea at all to totally ignore the
 
-> > > > > diff --git a/include/linux/mm.h b/include/linux/mm.h
-> > > > > index 1cedd00..5f8348f 100644
-> > > > > --- a/include/linux/mm.h
-> > > > > +++ b/include/linux/mm.h
-> > > > > @@ -1589,10 +1589,8 @@ static inline int __early_pfn_to_nid(unsigned long pfn)
-> > > > >  #else
-> > > > >  /* please see mm/page_alloc.c */
-> > > > >  extern int __meminit early_pfn_to_nid(unsigned long pfn);
-> > > > > -#ifdef CONFIG_HAVE_ARCH_EARLY_PFN_TO_NID
-> > > > >  /* there is a per-arch backend function. */
-> > > > >  extern int __meminit __early_pfn_to_nid(unsigned long pfn);
-> > > > > -#endif /* CONFIG_HAVE_ARCH_EARLY_PFN_TO_NID */
-> > > > >  #endif
-> > > > >  
-> > > > >  extern void set_dma_reserve(unsigned long new_dma_reserve);
-> > > > 
-> > > > Wouldn't it be better to just declare the __early_pfn_to_nid() in 
-> > > > mm/page_alloc.c to be static?
-> > > 
-> > > Won't that break the ability to override that function in
-> > > architecture-specific code (as arch/ia64/mm/numa.c does)?
-> > > 
-> > 
-> > Why?  CONFIG_HAVE_ARCH_EARLY_PFN_TO_NID should define where this function 
-> > is defined so ia64 should have it set and the definition which I'm 
-> > suggesting be static is only compiled when this is undefined in 
-> > mm/page_alloc.c.  I'm not sure why we'd want to be messing with the 
-> > declaration?
-> 
-> __early_pfn_to_nid() must be global if it is implemented in arch/. 
-> 
+Tstststs.. Gregory please re-read the above slooooowly.. and think about
+where you'd put me in.
 
-Why??  If CONFIG_HAVE_ARCH_EARLY_PFN_TO_NID then, yes, we need it to be 
-global.  Otherwise it's perfectly fine just being static in file scope.  
-This causes the compilation unit to break when you compile it, not wait 
-until vmlinux and find undefined references.
+Hint: "this patch", "not better than", "even worse". ;)
 
-I see no reason it can't be done like this in mm/page_alloc.c:
+> information given by the device tree.
 
-	#ifdef CONFIG_HAVE_ARCH_EARLY_PFN_TO_NID
-	extern int __meminit __early_pfn_to_nid(unsigned long pfn);
-	#else
-	static int __meminit __early_pfn_to_nid(unsigned long pfn)
-	{
-		...
-	}
+Actually, I have no strong opinion about how we fix the issue now. 
+Emilio's patch is short and very suitable for a fix. I'll test later
+this weekend.
 
-or delcare __early_pfn_to_nid() to have __attribute__((weak)) and override 
-it when CONFIG_HAVE_ARCH_EARLY_PFN_TO_NID (and get rid of the pointless 
-CONFIG option entirely at that point).
+For the long run, I definitely prefer probe ordering within clk frame
+work or even better some early_device stuff.
 
-Both of these options look much better than
+>> Tested-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+>>
+>>>> -----8<------
+>>>>
+>>>>  From ffdb49506e3ce92090c15e1f9b37f4d465097ac1 Mon Sep 17 00:00:00 2001
+>>>> From: =?UTF-8?q?Emilio=20L=C3=B3pez?= <emilio@elopez.com.ar>
+>>>> Date: Thu, 6 Feb 2014 18:07:07 -0300
+>>>> Subject: [PATCH] clk: mvebu: fix name dependency during registration time
+>>>>
+>>>> Currently, mvebu_clk_gating_setup has a silly dependency on clock
+>>>> registration order just to gather the parent clock name. This is
 
-	include/linux/mm.h:
+Of course, the dependency is not silly but we are just ignoring that
+some clocks actually have a different parent clock. As long as we are
+not interested in the frequency and they all depend on a fixed-clock
+it makes no difference. Also, on some gates, we do some tweaking, e.g.
+on Dove there is a clock gate for the GBE ip that we loop back to the
+GBE PHY gate.. some day I may be so bored to get it straight.
 
-	#if !defined(CONFIG_HAVE_MEMBLOCK_NODE_MAP) && \
-	    !defined(CONFIG_HAVE_ARCH_EARLY_PFN_TO_NID)
-	static inline int __early_pfn_to_nid(unsigned long pfn)
-	{
-	        return 0;
-	}
-	#else
-	/* please see mm/page_alloc.c */
-	extern int __meminit early_pfn_to_nid(unsigned long pfn);
-	#ifdef CONFIG_HAVE_ARCH_EARLY_PFN_TO_NID
-	/* there is a per-arch backend function. */
-	extern int __meminit __early_pfn_to_nid(unsigned long pfn);
-	#endif /* CONFIG_HAVE_ARCH_EARLY_PFN_TO_NID */
-	#endif
+>>>> completely unnecesary, as it supports using an already provided name
+>>>> via the clk_gating_soc_desc structs, and we can therefore solve this
+>>>> issue with a 69+/- line patch. But, given that the parent name is
+>>>> always "tclk" as default-hardcoded on mvebu_coreclk_setup(), we can
+>>>> just default-hardcode it here too and get away with solving this
+>>>> problem with a one-liner.
 
-where all this confusion is originating from.
+I agree with the default hard-coded "tclk" for now. But in general,
+clocking can become very nasty and rather than coding the whole fscking
+clock tree like the imx clock tree beast does, it would be much more
+readable to be able separate the clock drivers into different parts.
 
-It's obviously up to your taste in how to proceed, but the latter looks 
-sloppy to me and is the reason we have so many unreferenced prototypes in 
-header files.
+Sebastian
+
+>>>> ---
+>>>>   drivers/clk/mvebu/common.c | 2 +-
+>>>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>>>
+>>>> diff --git a/drivers/clk/mvebu/common.c b/drivers/clk/mvebu/common.c
+>>>> index 25ceccf..6c63b43 100644
+>>>> --- a/drivers/clk/mvebu/common.c
+>>>> +++ b/drivers/clk/mvebu/common.c
+>>>> @@ -121,7 +121,7 @@ void __init mvebu_clk_gating_setup(struct
+>>>> device_node *np,
+>>>>   	struct clk_gating_ctrl *ctrl;
+>>>>   	struct clk *clk;
+>>>>   	void __iomem *base;
+>>>> -	const char *default_parent = NULL;
+>>>> +	const char *default_parent = "tclk";
+>>>>   	int n;
+>>>>
+>>>>   	base = of_iomap(np, 0);
+>>>> --
+>>>> 1.8.5.3
+
+
