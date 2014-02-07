@@ -1,119 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754737AbaBGMB6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:01:58 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42450 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754041AbaBGLw3 (ORCPT
+	id S1755898AbaBGMCM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:02:12 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:58948 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753277AbaBGMCI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:52:29 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 208/233] powerpc: thp: Fix crash on mremap
-Date: Fri,  7 Feb 2014 11:47:07 +0000
-Message-Id: <1391773652-25214-209-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
-References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Fri, 7 Feb 2014 07:02:08 -0500
+Date: Fri, 7 Feb 2014 12:01:25 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Torvald Riegel <triegel@redhat.com>
+Cc: Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+Message-ID: <20140207120124.GF5976@mudshark.cambridge.arm.com>
+References: <20140206134825.305510953@infradead.org>
+ <21984.1391711149@warthog.procyon.org.uk>
+ <52F3DA85.1060209@arm.com>
+ <20140206185910.GE27276@mudshark.cambridge.arm.com>
+ <1391720965.23421.3884.camel@triegel.csb>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391720965.23421.3884.camel@triegel.csb>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.4 -stable review patch.  If anyone has any objections, please let me know.
+Hello Torvald,
 
-------------------
+It looks like Paul clarified most of the points I was trying to make
+(thanks Paul!), so I won't go back over them here.
 
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+On Thu, Feb 06, 2014 at 09:09:25PM +0000, Torvald Riegel wrote:
+> Are you familiar with the formalization of the C11/C++11 model by Batty
+> et al.?
+> http://www.cl.cam.ac.uk/~mjb220/popl085ap-sewell.pdf
+> http://www.cl.cam.ac.uk/~mjb220/n3132.pdf
+> 
+> They also have a nice tool that can run condensed examples and show you
+> all allowed (and forbidden) executions (it runs in the browser, so is
+> slow for larger examples), including nice annotated graphs for those:
+> http://svr-pes20-cppmem.cl.cam.ac.uk/cppmem/
 
-commit b3084f4db3aeb991c507ca774337c7e7893ed04f upstream.
+Thanks for the link, that's incredibly helpful. I've used ppcmem and armmem
+in the past, but I didn't realise they have a version for C++11 too.
+Actually, the armmem backend doesn't implement our atomic instructions or
+the acquire/release accessors, so it's not been as useful as it could be.
+I should probably try to learn OCaml...
 
-This patch fix the below crash
+> IMHO, one thing worth considering is that for C/C++, the C11/C++11 is
+> the only memory model that has widespread support.  So, even though it's
+> a fairly weak memory model (unless you go for the "only seq-cst"
+> beginners advice) and thus comes with a higher complexity, this model is
+> what likely most people will be familiar with over time.  Deviating from
+> the "standard" model can have valid reasons, but it also has a cost in
+> that new contributors are more likely to be familiar with the "standard"
+> model.
 
-NIP [c00000000004cee4] .__hash_page_thp+0x2a4/0x440
-LR [c0000000000439ac] .hash_page+0x18c/0x5e0
-...
-Call Trace:
-[c000000736103c40] [00001ffffb000000] 0x1ffffb000000(unreliable)
-[437908.479693] [c000000736103d50] [c0000000000439ac] .hash_page+0x18c/0x5e0
-[437908.479699] [c000000736103e30] [c00000000000924c] .do_hash_page+0x4c/0x58
+Indeed, I wasn't trying to write-off the C11 memory model as something we
+can never use in the kernel. I just don't think the current situation is
+anywhere close to usable for a project such as Linux. If a greater
+understanding of the memory model does eventually manifest amongst C/C++
+developers (by which I mean, the beginners advice is really treated as
+such and there is a widespread intuition about ordering guarantees, as
+opposed to the need to use formal tools), then surely the tools and libraries
+will stabilise and provide uniform semantics across the 25+ architectures
+that Linux currently supports. If *that* happens, this discussion is certainly
+worth having again.
 
-On ppc64 we use the pgtable for storing the hpte slot information and
-store address to the pgtable at a constant offset (PTRS_PER_PMD) from
-pmd. On mremap, when we switch the pmd, we need to withdraw and deposit
-the pgtable again, so that we find the pgtable at PTRS_PER_PMD offset
-from new pmd.
-
-We also want to move the withdraw and deposit before the set_pmd so
-that, when page fault find the pmd as trans huge we can be sure that
-pgtable can be located at the offset.
-
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-[ aneesh: variant of upstream SHA1: b3084f4db3aeb991c507ca774337c7e7893ed04f
-  for 3.11 stable series ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- arch/Kconfig                           |  3 +++
- arch/powerpc/platforms/Kconfig.cputype |  1 +
- mm/huge_memory.c                       | 12 ++++++++++++
- 3 files changed, 16 insertions(+)
-
-diff --git a/arch/Kconfig b/arch/Kconfig
-index 1feb169..c5863b3 100644
---- a/arch/Kconfig
-+++ b/arch/Kconfig
-@@ -368,6 +368,9 @@ config HAVE_ARCH_TRANSPARENT_HUGEPAGE
- config HAVE_ARCH_SOFT_DIRTY
- 	bool
- 
-+config ARCH_THP_MOVE_PMD_ALWAYS_WITHDRAW
-+	bool
-+
- config HAVE_MOD_ARCH_SPECIFIC
- 	bool
- 	help
-diff --git a/arch/powerpc/platforms/Kconfig.cputype b/arch/powerpc/platforms/Kconfig.cputype
-index 47d9a03..d11a34b 100644
---- a/arch/powerpc/platforms/Kconfig.cputype
-+++ b/arch/powerpc/platforms/Kconfig.cputype
-@@ -71,6 +71,7 @@ config PPC_BOOK3S_64
- 	select PPC_FPU
- 	select PPC_HAVE_PMU_SUPPORT
- 	select SYS_SUPPORTS_HUGETLBFS
-+	select ARCH_THP_MOVE_PMD_ALWAYS_WITHDRAW
- 	select HAVE_ARCH_TRANSPARENT_HUGEPAGE if PPC_64K_PAGES
- 
- config PPC_BOOK3E_64
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 5e91a87..46a02bf 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1486,8 +1486,20 @@ int move_huge_pmd(struct vm_area_struct *vma, struct vm_area_struct *new_vma,
- 
- 	ret = __pmd_trans_huge_lock(old_pmd, vma);
- 	if (ret == 1) {
-+#ifdef CONFIG_ARCH_THP_MOVE_PMD_ALWAYS_WITHDRAW
-+		pgtable_t pgtable;
-+#endif
- 		pmd = pmdp_get_and_clear(mm, old_addr, old_pmd);
- 		VM_BUG_ON(!pmd_none(*new_pmd));
-+#ifdef CONFIG_ARCH_THP_MOVE_PMD_ALWAYS_WITHDRAW
-+		/*
-+		 * Archs like ppc64 use pgtable to store per pmd
-+		 * specific information. So when we switch the pmd,
-+		 * we should also withdraw and deposit the pgtable
-+		 */
-+		pgtable = pgtable_trans_huge_withdraw(mm, old_pmd);
-+		pgtable_trans_huge_deposit(mm, new_pmd, pgtable);
-+#endif
- 		set_pmd_at(mm, new_addr, new_pmd, pmd_mksoft_dirty(pmd));
- 		spin_unlock(&mm->page_table_lock);
- 	}
--- 
-1.8.3.2
-
+Will
