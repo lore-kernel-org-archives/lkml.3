@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753393AbaBGLZV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:25:21 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41139 "EHLO
+	id S1753576AbaBGL2H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:28:07 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41211 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753233AbaBGLZB (ORCPT
+	with ESMTP id S1753361AbaBGLZT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:25:01 -0500
+	Fri, 7 Feb 2014 06:25:19 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mark Brown <broonie@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Michal Schmidt <mschmidt@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 68/88] ACPI / init: Flag use of ACPI and ACPI idioms for power supplies to regulator API
-Date: Fri,  7 Feb 2014 11:23:05 +0000
-Message-Id: <1391772205-22239-69-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 80/88] bnx2x: fix DMA unmapping of TSO split BDs
+Date: Fri,  7 Feb 2014 11:23:17 +0000
+Message-Id: <1391772205-22239-81-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
@@ -28,68 +28,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@linaro.org>
+From: Michal Schmidt <mschmidt@redhat.com>
 
-commit 49a12877d2777cadcb838981c3c4f5a424aef310 upstream.
+commit 95e92fd40c967c363ad66b2fd1ce4dcd68132e54 upstream.
 
-There is currently no facility in ACPI to express the hookup of voltage
-regulators, the expectation is that the regulators that exist in the
-system will be handled transparently by firmware if they need software
-control at all. This means that if for some reason the regulator API is
-enabled on such a system it should assume that any supplies that devices
-need are provided by the system at all relevant times without any software
-intervention.
+bnx2x triggers warnings with CONFIG_DMA_API_DEBUG=y:
 
-Tell the regulator core to make this assumption by calling
-regulator_has_full_constraints(). Do this as soon as we know we are using
-ACPI so that the information is available to the regulator core as early
-as possible. This will cause the regulator core to pretend that there is
-an always on regulator supplying any supply that is requested but that has
-not otherwise been mapped which is the behaviour expected on a system with
-ACPI.
+  WARNING: CPU: 0 PID: 2253 at lib/dma-debug.c:887 check_unmap+0xf8/0x920()
+  bnx2x 0000:28:00.0: DMA-API: device driver frees DMA memory with
+  different size [device address=0x00000000da2b389e] [map size=1490 bytes]
+  [unmap size=66 bytes]
 
-Should the ability to specify regulators be added in future revisions of
-ACPI then once we have support for ACPI mappings in the kernel the same
-assumptions will apply. It is also likely that systems will default to a
-mode of operation which does not require any interpretation of these
-mappings in order to be compatible with existing operating system releases
-so it should remain safe to make these assumptions even if the mappings
-exist but are not supported by the kernel.
+The reason is that bnx2x splits a TSO BD into two BDs (headers + data)
+using one DMA mapping for both, but it uses only the length of the first
+BD when unmapping.
 
-Signed-off-by: Mark Brown <broonie@linaro.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+This patch fixes the bug by unmapping the whole length of the two BDs.
+
+Signed-off-by: Michal Schmidt <mschmidt@redhat.com>
+Reviewed-by: Eric Dumazet <edumazet@google.com>
+Acked-by: Dmitry Kravkov <dmitry@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/acpi/bus.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c | 13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
-index 54a5732..bb5aab4 100644
---- a/drivers/acpi/bus.c
-+++ b/drivers/acpi/bus.c
-@@ -33,6 +33,7 @@
- #include <linux/proc_fs.h>
- #include <linux/acpi.h>
- #include <linux/slab.h>
-+#include <linux/regulator/machine.h>
- #ifdef CONFIG_X86
- #include <asm/mpspec.h>
- #endif
-@@ -957,6 +958,14 @@ void __init acpi_early_init(void)
- 		goto error0;
+diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
+index 27c2843..67d34eb 100644
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
+@@ -70,6 +70,7 @@ static u16 bnx2x_free_tx_pkt(struct bnx2x *bp, struct bnx2x_fp_txdata *txdata,
+ 	struct sk_buff *skb = tx_buf->skb;
+ 	u16 bd_idx = TX_BD(tx_buf->first_bd), new_cons;
+ 	int nbd;
++	u16 split_bd_len = 0;
+ 
+ 	/* prefetch skb end pointer to speedup dev_kfree_skb() */
+ 	prefetch(&skb->end);
+@@ -77,10 +78,7 @@ static u16 bnx2x_free_tx_pkt(struct bnx2x *bp, struct bnx2x_fp_txdata *txdata,
+ 	DP(NETIF_MSG_TX_DONE, "fp[%d]: pkt_idx %d  buff @(%p)->skb %p\n",
+ 	   txdata->txq_index, idx, tx_buf, skb);
+ 
+-	/* unmap first bd */
+ 	tx_start_bd = &txdata->tx_desc_ring[bd_idx].start_bd;
+-	dma_unmap_single(&bp->pdev->dev, BD_UNMAP_ADDR(tx_start_bd),
+-			 BD_UNMAP_LEN(tx_start_bd), DMA_TO_DEVICE);
+ 
+ 
+ 	nbd = le16_to_cpu(tx_start_bd->nbd) - 1;
+@@ -99,12 +97,19 @@ static u16 bnx2x_free_tx_pkt(struct bnx2x *bp, struct bnx2x_fp_txdata *txdata,
+ 	--nbd;
+ 	bd_idx = TX_BD(NEXT_TX_IDX(bd_idx));
+ 
+-	/* ...and the TSO split header bd since they have no mapping */
++	/* TSO headers+data bds share a common mapping. See bnx2x_tx_split() */
+ 	if (tx_buf->flags & BNX2X_TSO_SPLIT_BD) {
++		tx_data_bd = &txdata->tx_desc_ring[bd_idx].reg_bd;
++		split_bd_len = BD_UNMAP_LEN(tx_data_bd);
+ 		--nbd;
+ 		bd_idx = TX_BD(NEXT_TX_IDX(bd_idx));
  	}
  
-+	/*
-+	 * If the system is using ACPI then we can be reasonably
-+	 * confident that any regulators are managed by the firmware
-+	 * so tell the regulator core it has everything it needs to
-+	 * know.
-+	 */
-+	regulator_has_full_constraints();
++	/* unmap first bd */
++	dma_unmap_single(&bp->pdev->dev, BD_UNMAP_ADDR(tx_start_bd),
++			 BD_UNMAP_LEN(tx_start_bd) + split_bd_len,
++			 DMA_TO_DEVICE);
 +
- 	return;
+ 	/* now free frags */
+ 	while (nbd > 0) {
  
-       error0:
 -- 
 1.8.3.2
 
