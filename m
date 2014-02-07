@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752272AbaBGLYC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:24:02 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40805 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751439AbaBGLXc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:23:32 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Jan Kara <jack@suse.cz>, Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 02/88] writeback: Fix data corruption on NFS
-Date: Fri,  7 Feb 2014 11:21:59 +0000
-Message-Id: <1391772205-22239-3-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
-References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	id S1755803AbaBGNeq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 08:34:46 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:32808 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752162AbaBGNeo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 08:34:44 -0500
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Rashika Kheria'" <rashika.kheria@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Armin Schindler <mac@melware.de>, Karsten Keil <isdn@linux-pingi.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "josh@joshtriplett.org" <josh@joshtriplett.org>
+Subject: RE: [PATCH 19/26] drivers: isdn: Move prototype declaration to
+ header file platform.h from diva_didd.c
+Thread-Topic: [PATCH 19/26] drivers: isdn: Move prototype declaration to
+ header file platform.h from diva_didd.c
+Thread-Index: AQHPJAIZEAfhJt2pSki9/NC6TGJzyJqpydjw
+Date: Fri, 7 Feb 2014 13:33:46 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F6BA76D@AcuExch.aculab.com>
+References: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
+ <93d7188538418423685ecefaf3d2bb311b37be6e.1390408518.git.rashika.kheria@gmail.com>
+In-Reply-To: <93d7188538418423685ecefaf3d2bb311b37be6e.1390408518.git.rashika.kheria@gmail.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s17DYtYh015419
 
-3.5.7.30 -stable review patch.  If anyone has any objections, please let me know.
+From: Rashika Kheria
+> Move prototype declarations of function to header file
+> hardware/eicon/platform.h because they are used by more than one file.
+> 
+> This eliminates the following warnings in hardware/eicon/diddfunc.c:
+> drivers/isdn/hardware/eicon/diddfunc.c:95:12: warning: no previous prototype for diddfunc_init [-
+> Wmissing-prototypes]
+> drivers/isdn/hardware/eicon/diddfunc.c:110:13: warning: no previous prototype for diddfunc_finit [-
+> Wmissing-prototypes]
+...
+> diff --git a/drivers/isdn/hardware/eicon/diva_didd.c b/drivers/isdn/hardware/eicon/diva_didd.c
+> index fab6ccf..56d32a7 100644
+> --- a/drivers/isdn/hardware/eicon/diva_didd.c
+> +++ b/drivers/isdn/hardware/eicon/diva_didd.c
+> @@ -39,9 +39,6 @@ MODULE_LICENSE("GPL");
+>  #define DBG_MINIMUM  (DL_LOG + DL_FTL + DL_ERR)
+>  #define DBG_DEFAULT  (DBG_MINIMUM + DL_XLOG + DL_REG)
+> 
+> -extern int diddfunc_init(void);
+> -extern void diddfunc_finit(void);
+> -
+>  extern void DIVA_DIDD_Read(void *, int);
 
-------------------
+You should move that one as well.
+There really shouldn't be 'extern' definitions for any function in
+any C files since you want the compiler to check they are correct
+when the function itself is compiled.
 
-From: Jan Kara <jack@suse.cz>
+	David
 
-commit f9b0e058cbd04ada76b13afffa7e1df830543c24 upstream.
-
-Commit 4f8ad655dbc8 "writeback: Refactor writeback_single_inode()" added
-a condition to skip clean inode. However this is wrong in WB_SYNC_ALL
-mode because there we also want to wait for outstanding writeback on
-possibly clean inode. This was causing occasional data corruption issues
-on NFS because it uses sync_inode() to make sure all outstanding writes
-are flushed to the server before truncating the inode and with
-sync_inode() returning prematurely file was sometimes extended back
-by an outstanding write after it was truncated.
-
-So modify the test to also check for pages under writeback in
-WB_SYNC_ALL mode.
-
-Fixes: 4f8ad655dbc82cf05d2edc11e66b78a42d38bf93
-Reported-and-tested-by: Dan Duval <dan.duval@oracle.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- fs/fs-writeback.c | 15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
-
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index bf7e15d..554aeb7 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -523,13 +523,16 @@ writeback_single_inode(struct inode *inode, struct bdi_writeback *wb,
- 	}
- 	WARN_ON(inode->i_state & I_SYNC);
- 	/*
--	 * Skip inode if it is clean. We don't want to mess with writeback
--	 * lists in this function since flusher thread may be doing for example
--	 * sync in parallel and if we move the inode, it could get skipped. So
--	 * here we make sure inode is on some writeback list and leave it there
--	 * unless we have completely cleaned the inode.
-+	 * Skip inode if it is clean and we have no outstanding writeback in
-+	 * WB_SYNC_ALL mode. We don't want to mess with writeback lists in this
-+	 * function since flusher thread may be doing for example sync in
-+	 * parallel and if we move the inode, it could get skipped. So here we
-+	 * make sure inode is on some writeback list and leave it there unless
-+	 * we have completely cleaned the inode.
- 	 */
--	if (!(inode->i_state & I_DIRTY))
-+	if (!(inode->i_state & I_DIRTY) &&
-+	    (wbc->sync_mode != WB_SYNC_ALL ||
-+	     !mapping_tagged(inode->i_mapping, PAGECACHE_TAG_WRITEBACK)))
- 		goto out;
- 	inode->i_state |= I_SYNC;
- 	spin_unlock(&inode->i_lock);
--- 
-1.8.3.2
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
