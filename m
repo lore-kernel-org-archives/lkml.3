@@ -1,98 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751496AbaBGDN7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Feb 2014 22:13:59 -0500
-Received: from m12-15.163.com ([220.181.12.15]:42549 "EHLO m12-15.163.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751051AbaBGDN5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Feb 2014 22:13:57 -0500
-Date: Fri, 7 Feb 2014 11:13:07 +0800
-From: "=?utf-8?B?bGl1anVubGlhbmdfbGps?=" <liujunliang_ljl@163.com>
-To: "=?utf-8?B?Sm9lIFBlcmNoZXM=?=" <joe@perches.com>
-Cc: "=?utf-8?B?ZGF2ZW0=?=" <davem@davemloft.net>,
-        "=?utf-8?B?aG9ybXM=?=" <horms@verge.net.au>,
-        "=?utf-8?B?cm9taWV1?=" <romieu@fr.zoreil.com>,
-        "=?utf-8?B?Z3JlZ2to?=" <gregkh@linuxfoundation.org>,
-        "=?utf-8?B?bmV0ZGV2?=" <netdev@vger.kernel.org>,
-        "=?utf-8?B?bGludXgtdXNi?=" <linux-usb@vger.kernel.org>,
-        "=?utf-8?B?bGludXgta2VybmVs?=" <linux-kernel@vger.kernel.org>,
-        "=?utf-8?B?c3VuaGVjaGVuZw==?=" <sunhecheng@vip.126.com>
-References: <1390898200-9925-1-git-send-email-liujunliang_ljl@163.com>,
- <1390899572.20150.97.camel@joe-AO722>
-Subject: =?utf-8?B?UmU6IFJlOiBbUEFUQ0hdIFVTQjJORVQgOiBTUjk4MDAgOiBPbmUgY2hpcCBVU0IyLjAgVVNCMk5FVCBTUjk4MDBEZXZpY2UgRHJpdmVyIFN1cHBvcnQ=?=
-Message-ID: <201402071113053122628@163.com>
-X-mailer: Foxmail 6, 15, 201, 22 [cn]
-Mime-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-X-CM-TRANSID: D8CowECZDUA_T_RSiTeuAQ--.487S2
-X-Coremail-Antispam: 1Uf129KBjvJXoW7KryUtw4fAr4fGw4rAryrWFg_yoW8XrWkpa
-	s7KF1Fyws7Wr13tw1avrs5G3s8Xr4UG343Way5KrWFvF1DZr93Gan8W34jg3W7KryrAw1Y
-	vw4jvay7uws5urJanT9S1TB71UUUUUUqnTZGkaVYY2UrUUUUjbIjqfuFe4nvWSU5nxnvy2
-	9KBjDUYxBIdaVFxhVjvjDU0xZFpf9x07je385UUUUU=
-X-Originating-IP: [119.123.180.76]
-X-CM-SenderInfo: xolxy3pqolt0hjboyzi6rwjhhfrp/1tbiLwQqX1EAJxK96QABsv
+	id S1751432AbaBGDgL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Feb 2014 22:36:11 -0500
+Received: from mail-ob0-f202.google.com ([209.85.214.202]:41740 "EHLO
+	mail-ob0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751134AbaBGDgJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Feb 2014 22:36:09 -0500
+From: Hsin-Yu Chao <hychao@chromium.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Dylan Reid <dgreid@chromium.org>,
+        Chih-Chung Chang <chihchung@chromium.org>, Xi Wang <xi.wang@gmail.com>,
+        Hsin-Yu Chao <hychao@chromium.org>,
+        Ian Minett <ian_minett@creativelabs.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] ALSA: hda/ca0132 - Fix recording from mode id 0x8
+Date: Fri,  7 Feb 2014 11:35:30 +0800
+Message-Id: <1391744130-15043-2-git-send-email-hychao@chromium.org>
+X-Mailer: git-send-email 1.9.0.rc1.175.g0b1dcb5
+In-Reply-To: <1391744130-15043-1-git-send-email-hychao@chromium.org>
+References: <1391744130-15043-1-git-send-email-hychao@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s173EEYQ009553
 
-Dear Joe Ôºö
+The Chromebook Pixel has a microphone under the keyboard that
+is attached to node id 0x8. Before this fix, recording would
+always go to the main internal mic (node id 0x7).
 
-		I'm sorry that I reply so late, because I have just spent new chinese year.
+Signed-off-by: Hsin-Yu Chao <hychao@chromium.org>
+Reviewed-by: Dylan Reid <dgreid@chromium.org>
+---
+ sound/pci/hda/patch_ca0132.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-		I will resubmit SR9800 Driver today.
-
-		Thanks a lot.
-
-
-2014-02-07 
-
-
-
-liujunliang_ljl 
-
-
-
-Âèë‰ª∂‰∫∫Ôºö Joe Perches 
-ÂèëÈÄÅÊó∂Èó¥Ôºö 2014-01-28  16:59:38 
-Êî∂‰ª∂‰∫∫Ôºö liujunliang_ljl 
-ÊäÑÈÄÅÔºö davem; horms; romieu; gregkh; netdev; linux-usb; linux-kernel; sunhecheng 
-‰∏ªÈ¢òÔºö Re: [PATCH] USB2NET : SR9800 : One chip USB2.0 USB2NET SR9800Device Driver Support 
+diff --git a/sound/pci/hda/patch_ca0132.c b/sound/pci/hda/patch_ca0132.c
+index 59104dc..d5aabce 100644
+--- a/sound/pci/hda/patch_ca0132.c
++++ b/sound/pci/hda/patch_ca0132.c
+@@ -2770,9 +2770,7 @@ static int ca0132_capture_pcm_prepare(struct hda_pcm_stream *hinfo,
+ 					unsigned int format,
+ 					struct snd_pcm_substream *substream)
+ {
+-	struct ca0132_spec *spec = codec->spec;
+-
+-	snd_hda_codec_setup_stream(codec, spec->adcs[substream->number],
++	snd_hda_codec_setup_stream(codec, hinfo->nid,
+ 				   stream_tag, 0, format);
  
-On Tue, 2014-01-28 at 16:36 +0800, liujunliang_ljl@163.com wrote:
-> From: Liu Junliang <liujunliang_ljl@163.com>
-trivial comments...
-> diff --git a/drivers/net/usb/sr9800.c b/drivers/net/usb/sr9800.c
-[]
-> +static int sr_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
-> +{
-[]
-> + if (size != ((~header >> 16) & 0x07ff)) {
-> + netdev_err(dev->net,
-> +    "sr_rx_fixup() Bad Header Length\n");
-printks with embedded functions names are
-generally better using "%s: ", __func__
-netdev_err(dev->net, "%s: Bad header length\n",
-   __func__);
-[]
-> + netdev_err(dev->net,
-> +    "sr_rx_fixup() Bad RX Length %d\n", size);
-etc.
-> + if (skb->len != offset) {
-> + netdev_err(dev->net, "sr_rx_fixup() Bad SKB Length %d\n",
-> +    skb->len);
-etc.
-[]
-> +static inline int sr9800_set_default_mode(struct usbnet *dev)
-> +{
-rather a big function to inline
-[]
-> + if (ret < 0) {
-> + netdev_dbg(dev->net, "Write IPG,IPG1,IPG2 failed: %d", ret);
-missing newline terminations
-> + netdev_dbg(dev->net, "RX_CTL is 0x%04x after all initializations",
-> +    rx_ctl);
-etc...
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+ 	return 0;
+-- 
+1.9.0.rc1.175.g0b1dcb5
+
