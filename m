@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754856AbaBGLuj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:50:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41973 "EHLO
+	id S1754885AbaBGLur (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:50:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42002 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753041AbaBGLuf (ORCPT
+	with ESMTP id S1754860AbaBGLuk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:50:35 -0500
+	Fri, 7 Feb 2014 06:50:40 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: robert.hodaszi@digi.com, Peter Chen <peter.chen@freescale.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 121/233] usb: ehci: add freescale imx28 special write register method
-Date: Fri,  7 Feb 2014 11:45:40 +0000
-Message-Id: <1391773652-25214-122-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 126/233] audit: correct a type mismatch in audit_syscall_exit()
+Date: Fri,  7 Feb 2014 11:45:45 +0000
+Message-Id: <1391773652-25214-127-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -29,78 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Chen <peter.chen@freescale.com>
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
 
-commit feffe09f510c475df082546815f9e4a573f6a233 upstream.
+commit 06bdadd7634551cfe8ce071fe44d0311b3033d9e upstream.
 
-According to Freescale imx28 Errata, "ENGR119653 USB: ARM to USB
-register error issue", All USB register write operations must
-use the ARM SWP instruction. So, we implement a special ehci_write
-for imx28.
+audit_syscall_exit() saves a result of regs_return_value() in intermediate
+"int" variable and passes it to __audit_syscall_exit(), which expects its
+second argument as a "long" value.  This will result in truncating the
+value returned by a system call and making a wrong audit record.
 
-Discussion for it at below:
-http://marc.info/?l=linux-usb&m=137996395529294&w=2
+I don't know why gcc compiler doesn't complain about this, but anyway it
+causes a problem at runtime on arm64 (and probably most 64-bit archs).
 
-Without this patcheset, imx28 works unstable at high AHB bus loading.
-If the bus loading is not high, the imx28 usb can work well at the most
-of time. There is a IC errata for this problem, usually, we consider
-IC errata is a problem not a new feature, and this workaround is needed
-for that, so we need to add them to stable tree 3.11+.
-
-Cc: robert.hodaszi@digi.com
-Signed-off-by: Peter Chen <peter.chen@freescale.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
-Tested-by: Marc Kleine-Budde <mkl@pengutronix.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Eric Paris <eparis@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Eric Paris <eparis@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/host/ehci.h | 18 +++++++++++++++++-
- 1 file changed, 17 insertions(+), 1 deletion(-)
+ include/linux/audit.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/usb/host/ehci.h b/drivers/usb/host/ehci.h
-index 64f9a08..77b34cf 100644
---- a/drivers/usb/host/ehci.h
-+++ b/drivers/usb/host/ehci.h
-@@ -200,6 +200,7 @@ struct ehci_hcd {			/* one per controller */
- 	unsigned		has_synopsys_hc_bug:1; /* Synopsys HC */
- 	unsigned		frame_index_bug:1; /* MosChip (AKA NetMos) */
- 	unsigned		need_oc_pp_cycle:1; /* MPC834X port power */
-+	unsigned		imx28_write_fix:1; /* For Freescale i.MX28 */
- 
- 	/* required for usb32 quirk */
- 	#define OHCI_CTRL_HCFS          (3 << 6)
-@@ -675,6 +676,18 @@ static inline unsigned int ehci_readl(const struct ehci_hcd *ehci,
- #endif
- }
- 
-+#ifdef CONFIG_SOC_IMX28
-+static inline void imx28_ehci_writel(const unsigned int val,
-+		volatile __u32 __iomem *addr)
-+{
-+	__asm__ ("swp %0, %0, [%1]" : : "r"(val), "r"(addr));
-+}
-+#else
-+static inline void imx28_ehci_writel(const unsigned int val,
-+		volatile __u32 __iomem *addr)
-+{
-+}
-+#endif
- static inline void ehci_writel(const struct ehci_hcd *ehci,
- 		const unsigned int val, __u32 __iomem *regs)
+diff --git a/include/linux/audit.h b/include/linux/audit.h
+index 729a4d1..4fb28b2 100644
+--- a/include/linux/audit.h
++++ b/include/linux/audit.h
+@@ -135,7 +135,7 @@ static inline void audit_syscall_exit(void *pt_regs)
  {
-@@ -683,7 +696,10 @@ static inline void ehci_writel(const struct ehci_hcd *ehci,
- 		writel_be(val, regs) :
- 		writel(val, regs);
- #else
--	writel(val, regs);
-+	if (ehci->imx28_write_fix)
-+		imx28_ehci_writel(val, regs);
-+	else
-+		writel(val, regs);
- #endif
- }
+ 	if (unlikely(current->audit_context)) {
+ 		int success = is_syscall_success(pt_regs);
+-		int return_code = regs_return_value(pt_regs);
++		long return_code = regs_return_value(pt_regs);
  
+ 		__audit_syscall_exit(success, return_code);
+ 	}
 -- 
 1.8.3.2
 
