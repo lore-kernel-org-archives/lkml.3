@@ -1,322 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752629AbaBGQYC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 11:24:02 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:58696 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751526AbaBGQYA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 11:24:00 -0500
-Date: Fri, 7 Feb 2014 11:23:57 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Wolfgang Grandegger <wg@grandegger.com>
-Subject: [RFC - beta][PATCH] tracing: Introduce TRACE_MARKER() no argument
- trace event
-Message-ID: <20140207112357.35552998@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	id S1752847AbaBGQZO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 11:25:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31340 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751526AbaBGQZM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 11:25:12 -0500
+Date: Fri, 7 Feb 2014 11:24:09 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Kees Cook <keescook@chromium.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Cong Ding <dinggnu@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mathias Krause <minipli@googlemail.com>,
+        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Dave Young <dyoung@redhat.com>,
+        Kexec Mailing List <kexec@lists.infradead.org>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [GIT PULL] x86/kaslr for v3.14
+Message-ID: <20140207162408.GD6967@redhat.com>
+References: <201401201647.s0KGlZdh004167@tazenda.hos.anvin.org>
+ <CAFLxGvxO1MPDDjEh3FU5Gv2-eb6zBJxYtTnKdABDTTpbMxxYAw@mail.gmail.com>
+ <52E5EFAF.3060609@linux.intel.com>
+ <CAFLxGvxJ0A6hZ52RWffkg_zXXScyPn10P4HcKvdAXfE43h32Eg@mail.gmail.com>
+ <52E601DA.7010605@zytor.com>
+ <20140130220708.GP9951@redhat.com>
+ <CAGXu5jKp0j71ucE7uOWRa+gQM1Wzp=_KdByJK4XnACTwiCW4ow@mail.gmail.com>
+ <20140207144914.GA5949@redhat.com>
+ <52F503FD.8080607@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52F503FD.8080607@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A while back ago, Wolfgang (and others) have asked about the ability to
-add a trace event that recorder no data other than the fact that the
-trace event was hit.
+On Fri, Feb 07, 2014 at 08:04:13AM -0800, H. Peter Anvin wrote:
+> On 02/07/2014 06:49 AM, Vivek Goyal wrote:
+> > 
+> > Hi Kees,
+> > 
+> > Dave Young is testing kdump with kaslr enabled. He is facing some issues.
+> > 
+> > One issue he mentioned is that when second kernel boots, it might be
+> > placed in an area which is outside the reserved area for second kernel.
+> > 
+> > We reserve a certain memory for second kernel. And modify memory map of
+> > second kernel using memmap=exactmap parameter. Looks like kernel placement
+> > is happening before memmap=exactmap takes effect. And that seems to be
+> > the reason that second kernel can be placed outside the reserved memory.
+> > 
+> > IOW, memmap=exactmap and kaslr don't work together. Is it possible to
+> > first let memmap=exactmap take affect and then kaslr does its job. Or it
+> > is too late by the time memmap=exactmap is parsed.
+> > 
+> > As a workaround, Dave is currently using "nokaslr" command line parameter
+> > for second kernel. He is still facing issues where makedumpfile segment
+> > faults. He is looking into it further.
+> > 
+> > I thought I will atleast bring up with issue of memmap=exactmap and kaslr
+> > being incompatible.
+> > 
+> 
+> Yes, because memmap=exactmap gets parsed too late; kaslr assumes that
+> the e820 information passed to it is actually correct.
+> 
+> Yet another cause of breakage caused by the decision on the part of
+> kdump to rely on command-line options.
 
-I've been reluctant to do so, but I noticed that one already exists in
-the iwlwifi tracepoints (iwlwifi_dev_irq) where it does a wasteful:
+[CC kexec mailing list]
 
-        /* TP_printk("") doesn't compile */
-        TP_printk("%d", 0)
+Ok, I think this is high time we change kexec-tools to not use
+memmap=exactmap and start passing modified memory map in bootparams. I
+think only concern with that change was backward compatibility of
+kexec-tools with older kernels.
 
-The reason this is wasteful, is that there's a lot of code generated by
-the TRACE_EVENT() macros that end up basically being nops.
+IIUC, only thing which will be impacted by this change is users of
+saved_max_pfn which determine the highest accessible pfn in first
+kernel. Some calgary IOMMU code seems to be the only user of it now.
 
-I figured I would instead create a TRACE_MARKER(name, print) that would
-be something like:
+So may be we can create a new command line option say --pass-memmap-cmdline
+to kexec-tools which forces old behavior and by default we pass memmap
+in bootparams.
 
-Added to tracepoint header:
+Or create --do-not-pass-memmap-cmdline and new users will use it. Default
+will be old behavior.
 
- TRACE_MARKER(tpname, "Show this message");
-
-Then you have:
-
-	trace_tpname();
-
-in the code.
-
-Notice that the tracepoint function (trace_<name>()) has no arguments.
-That's because the message is stored in the tracepoint (in one place)
-and is printed when the tracepoint is read. That is, the message isn't
-even recorded in the ring buffer.
-
-It still shows up in the tracepoint format file:
-
-name: tpname
-ID: 281
-format:
-	field:unsigned short common_type;	offset:0;	size:2;	signed:0;
-	field:unsigned char common_flags;	offset:2;	size:1;	signed:0;
-	field:unsigned char common_preempt_count;	offset:3;	size:1;	signed:0;
-	field:int common_pid;	offset:4;	size:4;	signed:1;
-
-
-print fmt: "Show this message"
-
-The TRACE_MARKER() is basically an optimized version of TRACE_EVENT()
-with no arguments. It can be enabled and disabled the same way as any
-other event, and stays within the system it was created in.
-
-Is this worth doing?
-
-Attached is a patch that implements this idea, but it is very much in a
-beta form. It requires comments, documentation, updates to perf, etc.
-
--- Steve
-
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 884d8ad..e464511 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -526,6 +526,12 @@ extern int trace_define_field(struct ftrace_event_call *call, const char *type,
- 			      int is_signed, int filter_type);
- extern int trace_add_event_call(struct ftrace_event_call *call);
- extern int trace_remove_event_call(struct ftrace_event_call *call);
-+extern void ftrace_raw_event_trace_marker(void *data);
-+
-+struct ftrace_raw_trace_marker {
-+	struct trace_entry	ent;
-+};
-+extern struct trace_event_functions ftrace_event_type_funcs_trace_marker;
- 
- #define is_signed_type(type)	(((type)(-1)) < (type)1)
- 
-diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
-index accc497..171e3aa 100644
---- a/include/linux/tracepoint.h
-+++ b/include/linux/tracepoint.h
-@@ -399,6 +399,9 @@ static inline void tracepoint_synchronize_unregister(void)
- 	DECLARE_TRACE_CONDITION(name, PARAMS(proto),		\
- 				PARAMS(args), PARAMS(cond))
- 
-+#define TRACE_MARKER(name, print)				\
-+	DECLARE_TRACE_NOARGS(name)
-+
- #define TRACE_EVENT_FLAGS(event, flag)
- 
- #define TRACE_EVENT_PERF_PERM(event, expr...)
-diff --git a/include/trace/define_trace.h b/include/trace/define_trace.h
-index 02e1003..773d05a 100644
---- a/include/trace/define_trace.h
-+++ b/include/trace/define_trace.h
-@@ -60,6 +60,10 @@
- #define DECLARE_TRACE(name, proto, args)	\
- 	DEFINE_TRACE(name)
- 
-+#undef TRACE_MARKER
-+#define TRACE_MARKER(name, print)		\
-+	DEFINE_TRACE(name)
-+
- #undef TRACE_INCLUDE
- #undef __TRACE_INCLUDE
- 
-@@ -93,6 +97,7 @@
- #undef TRACE_EVENT
- #undef TRACE_EVENT_FN
- #undef TRACE_EVENT_CONDITION
-+#undef TRACE_MARKER
- #undef DECLARE_EVENT_CLASS
- #undef DEFINE_EVENT
- #undef DEFINE_EVENT_FN
-diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
-index 67e1bbf..fab482f 100644
---- a/include/trace/events/sched.h
-+++ b/include/trace/events/sched.h
-@@ -8,6 +8,10 @@
- #include <linux/tracepoint.h>
- #include <linux/binfmts.h>
- 
-+TRACE_MARKER(sched_mark1, "This is a test");
-+
-+TRACE_MARKER(sched_mark2, "This is another test");
-+
- /*
-  * Tracepoint for calling kthread_stop, performed to end a kthread:
-  */
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index 623ddf3..85e2740 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -18,6 +18,23 @@
- 
- #include <linux/ftrace_event.h>
- 
-+#ifdef TRACE_SYSTEM
-+#define __TRACE_MARKER_CLASS(system) event_trace_marker_class_##system
-+#define TRACE_MARKER_CLASS(system) __TRACE_MARKER_CLASS(system)
-+/*
-+ * Each system has its own trace marker class, but gcc will compile it
-+ * out if it is not referenced.
-+ */
-+static struct ftrace_event_class __maybe_unused
-+TRACE_MARKER_CLASS(TRACE_SYSTEM) = {
-+	.system		= __stringify(TRACE_SYSTEM),
-+	.fields		= LIST_HEAD_INIT(TRACE_MARKER_CLASS(TRACE_SYSTEM).fields),
-+	.raw_init	= trace_event_raw_init,
-+	.probe		= ftrace_raw_event_trace_marker,
-+	.reg		= ftrace_event_reg,
-+};
-+#endif
-+
- /*
-  * DECLARE_EVENT_CLASS can be used to add a generic function
-  * handlers for events. That is, if all events have the same
-@@ -94,6 +111,10 @@
- #define TRACE_EVENT_PERF_PERM(name, expr...)				\
- 	__TRACE_EVENT_PERF_PERM(name, expr)
- 
-+#undef TRACE_MARKER
-+#define TRACE_MARKER(name, print)				\
-+	DEFINE_EVENT(unused, name, unsued, unused)
-+
- #include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
- 
- 
-@@ -147,6 +168,9 @@
- #undef TRACE_EVENT_PERF_PERM
- #define TRACE_EVENT_PERF_PERM(event, expr...)
- 
-+#undef TRACE_MARKER
-+#define TRACE_MARKER(name, print)
-+
- #include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
- 
- /*
-@@ -626,6 +650,22 @@ static struct ftrace_event_call __used event_##call = {			\
- static struct ftrace_event_call __used					\
- __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
- 
-+
-+#undef TRACE_MARKER
-+#define TRACE_MARKER(call, print)					\
-+									\
-+static const char print_fmt_##call[] = "\"" print "\"";			\
-+									\
-+static struct ftrace_event_call __used event_##call = {			\
-+	.name			= #call,				\
-+	.class			= &TRACE_MARKER_CLASS(TRACE_SYSTEM),	\
-+	.event.funcs		= &ftrace_event_type_funcs_trace_marker,\
-+	.print_fmt		= print_fmt_##call,			\
-+};									\
-+static struct ftrace_event_call __used					\
-+__attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
-+
-+
- #include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
- 
- 
-@@ -650,6 +690,9 @@ __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
- #undef __perf_task
- #define __perf_task(t)	(__pe.task = (t))
- 
-+#undef TRACE_MARKER
-+#define TRACE_MARKER(name, print)
-+
- #undef DECLARE_EVENT_CLASS
- #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
- static notrace void							\
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index b46131e..00bcf93 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2656,6 +2656,7 @@ static void __sched __schedule(void)
- 	struct rq *rq;
- 	int cpu;
- 
-+	trace_sched_mark1();
- need_resched:
- 	preempt_disable();
- 	cpu = smp_processor_id();
-@@ -2848,6 +2849,7 @@ asmlinkage void __sched preempt_schedule_irq(void)
- int default_wake_function(wait_queue_t *curr, unsigned mode, int wake_flags,
- 			  void *key)
- {
-+	trace_sched_mark2();
- 	return try_to_wake_up(curr->private, mode, wake_flags);
- }
- EXPORT_SYMBOL(default_wake_function);
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 22826c7..f82c936 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -86,6 +86,51 @@ __find_event_field(struct list_head *head, char *name)
- 	return NULL;
- }
- 
-+/* TRACE_MARKER() class */
-+
-+enum print_line_t
-+ftrace_raw_output_trace_marker(struct trace_iterator *iter, int flags,
-+			       struct trace_event *trace_event)
-+{
-+	struct ftrace_event_call *event_call;
-+	struct trace_seq *s = &iter->seq;
-+	int ret;
-+
-+	ret = ftrace_raw_output_prep(iter, trace_event);
-+	if (ret)
-+		return ret;
-+
-+	event_call = container_of(trace_event, typeof(*event_call), event);
-+
-+	ret = trace_seq_printf(s, "%s\n", event_call->print_fmt);
-+	if (!ret)
-+		return TRACE_TYPE_PARTIAL_LINE;
-+
-+	return TRACE_TYPE_HANDLED;
-+}
-+
-+struct trace_event_functions ftrace_event_type_funcs_trace_marker = {
-+	.trace			= ftrace_raw_output_trace_marker,
-+};
-+
-+void ftrace_raw_event_trace_marker(void *data)
-+{
-+	struct ftrace_event_file *ftrace_file = data;
-+	struct ftrace_event_call *event_call = ftrace_file->event_call;
-+	struct ftrace_event_buffer fbuffer;
-+	struct ftrace_raw_trace_marker *entry;
-+
-+	if (ftrace_trigger_soft_disabled(ftrace_file))
-+		return;
-+
-+	entry = ftrace_event_buffer_reserve(&fbuffer, ftrace_file,
-+				event_call->event.type, sizeof(*entry));
-+	if (!entry)
-+		return;
-+	ftrace_event_buffer_commit(&fbuffer, event_call);
-+}
-+
-+
- struct ftrace_event_field *
- trace_find_event_field(struct ftrace_event_call *call, char *name)
- {
-@@ -1533,7 +1578,7 @@ event_create_dir(struct dentry *parent, struct ftrace_event_file *file)
- 	 * the fields if they are not already defined.
- 	 */
- 	head = trace_get_fields(call);
--	if (list_empty(head)) {
-+	if (list_empty(head) && call->class->define_fields) {
- 		ret = call->class->define_fields(call);
- 		if (ret < 0) {
- 			pr_warning("Could not initialize trace point"
+Thansk
+Vivek
