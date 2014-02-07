@@ -1,85 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753506AbaBGVN7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 16:13:59 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:58607 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752147AbaBGVN5 (ORCPT
+	id S1753087AbaBGVPd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 16:15:33 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:42815 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751897AbaBGVPb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 16:13:57 -0500
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Rohit Vaswani <rvaswani@codeaurora.org>,
-        David Brown <davidb@codeaurora.org>, Kumar Gala <galak@codeaurora.org>,
-        devicetree@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH v2 10/9] ARM: msm: Remove board-dt.c
-Date: Fri,  7 Feb 2014 13:13:55 -0800
-Message-Id: <1391807635-27038-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.5.2.228.g8f9f19c
-In-Reply-To: <1387845593-10050-1-git-send-email-sboyd@codeaurora.org>
-References: <1387845593-10050-1-git-send-email-sboyd@codeaurora.org>
+	Fri, 7 Feb 2014 16:15:31 -0500
+Date: Fri, 7 Feb 2014 13:15:29 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Josh Triplett <josh@joshtriplett.org>
+cc: Rashika Kheria <rashika.kheria@gmail.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org
+Subject: Re: [PATCH 9/9] mm: Remove ifdef condition in include/linux/mm.h
+In-Reply-To: <20140207210705.GB13604@jtriplet-mobl1>
+Message-ID: <alpine.DEB.2.02.1402071314180.4212@chino.kir.corp.google.com>
+References: <a7658fc8f2ab015bffe83de1448cc3db79d2a9fc.1391167128.git.rashika.kheria@gmail.com> <63adb3b97f2869d4c7e76d17ef4aa76b8cf599f3.1391167128.git.rashika.kheria@gmail.com> <alpine.DEB.2.02.1402071304080.4212@chino.kir.corp.google.com>
+ <20140207210705.GB13604@jtriplet-mobl1>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The default machine descriptor satisfies our needs now that the
-SMP ops are set based on the enable-method in devicetree and we're
-part of the multiplatform kernel. Drop this file.
+On Fri, 7 Feb 2014, Josh Triplett wrote:
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/arm/mach-msm/Makefile   |  1 -
- arch/arm/mach-msm/board-dt.c | 27 ---------------------------
- 2 files changed, 28 deletions(-)
- delete mode 100644 arch/arm/mach-msm/board-dt.c
+> > > diff --git a/include/linux/mm.h b/include/linux/mm.h
+> > > index 1cedd00..5f8348f 100644
+> > > --- a/include/linux/mm.h
+> > > +++ b/include/linux/mm.h
+> > > @@ -1589,10 +1589,8 @@ static inline int __early_pfn_to_nid(unsigned long pfn)
+> > >  #else
+> > >  /* please see mm/page_alloc.c */
+> > >  extern int __meminit early_pfn_to_nid(unsigned long pfn);
+> > > -#ifdef CONFIG_HAVE_ARCH_EARLY_PFN_TO_NID
+> > >  /* there is a per-arch backend function. */
+> > >  extern int __meminit __early_pfn_to_nid(unsigned long pfn);
+> > > -#endif /* CONFIG_HAVE_ARCH_EARLY_PFN_TO_NID */
+> > >  #endif
+> > >  
+> > >  extern void set_dma_reserve(unsigned long new_dma_reserve);
+> > 
+> > Wouldn't it be better to just declare the __early_pfn_to_nid() in 
+> > mm/page_alloc.c to be static?
+> 
+> Won't that break the ability to override that function in
+> architecture-specific code (as arch/ia64/mm/numa.c does)?
+> 
 
-diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
-index 721f27f50d96..e6b33cca67c2 100644
---- a/arch/arm/mach-msm/Makefile
-+++ b/arch/arm/mach-msm/Makefile
-@@ -26,6 +26,5 @@ obj-$(CONFIG_MACH_TROUT) += board-trout.o board-trout-gpio.o board-trout-mmc.o b
- obj-$(CONFIG_MACH_HALIBUT) += board-halibut.o devices-msm7x00.o
- obj-$(CONFIG_ARCH_MSM7X30) += board-msm7x30.o devices-msm7x30.o
- obj-$(CONFIG_ARCH_QSD8X50) += board-qsd8x50.o devices-qsd8x50.o
--obj-$(CONFIG_ARCH_MSM_DT) += board-dt.o
- obj-$(CONFIG_MSM_GPIOMUX) += gpiomux.o
- obj-$(CONFIG_ARCH_QSD8X50) += gpiomux-8x50.o
-diff --git a/arch/arm/mach-msm/board-dt.c b/arch/arm/mach-msm/board-dt.c
-deleted file mode 100644
-index 1e3af2ba9981..000000000000
---- a/arch/arm/mach-msm/board-dt.c
-+++ /dev/null
-@@ -1,27 +0,0 @@
--/* Copyright (c) 2010-2012,2013 The Linux Foundation. All rights reserved.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 and
-- * only version 2 as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- */
--
--#include <linux/init.h>
--
--#include <asm/mach/arch.h>
--
--static const char * const msm_dt_match[] __initconst = {
--	"qcom,msm8660-fluid",
--	"qcom,msm8660-surf",
--	"qcom,msm8960-cdp",
--	"qcom,apq8074-dragonboard",
--	NULL
--};
--
--DT_MACHINE_START(MSM_DT, "Qualcomm MSM (Flattened Device Tree)")
--	.dt_compat = msm_dt_match,
--MACHINE_END
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+Why?  CONFIG_HAVE_ARCH_EARLY_PFN_TO_NID should define where this function 
+is defined so ia64 should have it set and the definition which I'm 
+suggesting be static is only compiled when this is undefined in 
+mm/page_alloc.c.  I'm not sure why we'd want to be messing with the 
+declaration?
