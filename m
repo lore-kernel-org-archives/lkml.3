@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756040AbaBGMr0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:47:26 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41937 "EHLO
+	id S1753880AbaBGMrq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:47:46 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41932 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932362AbaBGLuZ (ORCPT
+	with ESMTP id S932358AbaBGLuZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 Feb 2014 06:50:25 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+Cc: Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
         "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 114/233] rtlwifi: rtl8192cu: Add new device ID
-Date: Fri,  7 Feb 2014 11:45:33 +0000
-Message-Id: <1391773652-25214-115-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 115/233] mwifiex: add missing endian conversion for fw_tsf
+Date: Fri,  7 Feb 2014 11:45:34 +0000
+Message-Id: <1391773652-25214-116-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -28,31 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Amitkumar Karwar <akarwar@marvell.com>
 
-commit f87f960b2fb802f26ee3b00c19320e57a9c583ff upstream.
+commit 9795229752c31da0c5f8a7dc4c827665327b52f9 upstream.
 
-Reported-by: Jan Prinsloo <janroot@gmail.com>
-Tested-by: Jan Prinsloo <janroot@gmail.com>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+It is u64 data received from firmware. Little endian to cpu
+conversion is required here.
+
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/sw.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/mwifiex/scan.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-index a5a1901..8188dcb 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-@@ -316,6 +316,7 @@ static struct usb_device_id rtl8192c_usb_ids[] = {
- 	{RTL_USB_DEVICE(0x0bda, 0x5088, rtl92cu_hal_cfg)}, /*Thinkware-CC&C*/
- 	{RTL_USB_DEVICE(0x0df6, 0x0052, rtl92cu_hal_cfg)}, /*Sitecom - Edimax*/
- 	{RTL_USB_DEVICE(0x0df6, 0x005c, rtl92cu_hal_cfg)}, /*Sitecom - Edimax*/
-+	{RTL_USB_DEVICE(0x0df6, 0x0077, rtl92cu_hal_cfg)}, /*Sitecom-WLA2100V2*/
- 	{RTL_USB_DEVICE(0x0eb0, 0x9071, rtl92cu_hal_cfg)}, /*NO Brand - Etop*/
- 	{RTL_USB_DEVICE(0x4856, 0x0091, rtl92cu_hal_cfg)}, /*NetweeN - Feixun*/
- 	/* HP - Lite-On ,8188CUS Slim Combo */
+diff --git a/drivers/net/wireless/mwifiex/scan.c b/drivers/net/wireless/mwifiex/scan.c
+index c447d9b..41f72c6 100644
+--- a/drivers/net/wireless/mwifiex/scan.c
++++ b/drivers/net/wireless/mwifiex/scan.c
+@@ -1652,7 +1652,7 @@ int mwifiex_ret_802_11_scan(struct mwifiex_private *priv,
+ 		const u8 *ie_buf;
+ 		size_t ie_len;
+ 		u16 channel = 0;
+-		u64 fw_tsf = 0;
++		__le64 fw_tsf = 0;
+ 		u16 beacon_size = 0;
+ 		u32 curr_bcn_bytes;
+ 		u32 freq;
+@@ -1786,7 +1786,7 @@ int mwifiex_ret_802_11_scan(struct mwifiex_private *priv,
+ 					      ie_buf, ie_len, rssi, GFP_KERNEL);
+ 				bss_priv = (struct mwifiex_bss_priv *)bss->priv;
+ 				bss_priv->band = band;
+-				bss_priv->fw_tsf = fw_tsf;
++				bss_priv->fw_tsf = le64_to_cpu(fw_tsf);
+ 				if (priv->media_connected &&
+ 				    !memcmp(bssid,
+ 					    priv->curr_bss_params.bss_descriptor
 -- 
 1.8.3.2
 
