@@ -1,130 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752481AbaBGKIU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 05:08:20 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:51821 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752427AbaBGKIQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 05:08:16 -0500
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-To: will.deacon@arm.com
-Cc: viro@zeniv.linux.org.uk, eparis@redhat.com, rgb@redhat.com,
-        catalin.marinas@arm.com, arndb@arndb.de,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        linux-kernel@vger.kernel.org, linux-audit@redhat.com,
-        patches@linaro.org, AKASHI Takahiro <takahiro.akashi@linaro.org>
-Subject: [PATCH] arm64: make a single hook to syscall_trace() for all syscall features
-Date: Fri,  7 Feb 2014 19:07:31 +0900
-Message-Id: <1391767651-5296-1-git-send-email-takahiro.akashi@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <52F199D3.2060409@linaro.org>
-References: <52F199D3.2060409@linaro.org>
+	id S1752529AbaBGKIb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 05:08:31 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34122 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752491AbaBGKIZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 05:08:25 -0500
+Date: Fri, 7 Feb 2014 11:08:22 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Dave Airlie <airlied@linux.ie>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org, Jani Nikula <jani.nikula@intel.com>
+Subject: Re: [git pull] drm next tree
+In-Reply-To: <alpine.LRH.2.00.1401301648050.15677@twin.jikos.cz>
+Message-ID: <alpine.LNX.2.00.1402071052470.24838@pobox.suse.cz>
+References: <alpine.DEB.2.00.1401300249130.13810@skynet.skynet.ie> <alpine.LRH.2.00.1401301648050.15677@twin.jikos.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently syscall_trace() is called only for ptrace.
-With additional TIF_xx flags introduced, it is now called in all the cases
-of audit, ftrace and seccomp in addition to ptrace.
-Those features will be implemented later, but it's safe to include them
-now because they can not be turned on anyway.
+On Thu, 30 Jan 2014, Jiri Kosina wrote:
 
-Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+> >   git://people.freedesktop.org/~airlied/linux drm-next
+> [ ... snip ... ]
+> > Daniel Vetter (59):
+> [ ... snip ... ]
+> >       drm/i915: dp aux irq support for g4x/vlv
+> 
+> This commit causes all kinds of havoc on my ThinkPad x200s. It results in
+[ ... snip ... ]
+
+Not having received any response, I suggest the following for 3.14
+
+
+
+
+From: Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH] Revert "drm/i915: dp aux irq support for g4x/vlv"
+
+This reverts commit 4aeebd7443e36b0a40032e518a9338f48bd27efc.
+
+Conflicts:
+
+	drivers/gpu/drm/i915/i915_reg.h
+
+This commit causes all kinds of havoc on my ThinkPad x200s. It results in
+
+ irq 16: nobody cared (try booting with the "irqpoll" option)
+ CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.12.0-00854-g4aeebd7 #1
+ Hardware name: LENOVO 7470BN2/7470BN2, BIOS 6DET38WW (2.02 ) 12/19/2008
+  ffff8800795186c0 ffff88007c203e08 ffffffff81582503 ffff88007c203e38
+  ffffffff810a6a98 ffff88007c203e88 ffff880079518600 0000000000000000
+  0000000000000010 ffff88007c203e78 ffffffff810a6d43 00000010ffc4af9d
+ Call Trace:
+  <IRQ>  [<ffffffff81582503>] dump_stack+0x7a/0x97
+  [<ffffffff810a6a98>] __report_bad_irq+0x38/0xf0
+  [<ffffffff810a6d43>] note_interrupt+0x1f3/0x240
+  [<ffffffff810a42d2>] handle_irq_event_percpu+0x142/0x220
+  [<ffffffff810a43f9>] handle_irq_event+0x49/0x70
+  [<ffffffff810a7561>] handle_fasteoi_irq+0x61/0x100
+  [<ffffffff81004a89>] handle_irq+0x59/0x150
+  [<ffffffff81052b6e>] ? _local_bh_enable+0xe/0x10
+  [<ffffffff81052bf1>] ? irq_enter+0x81/0x90
+  [<ffffffff8100403b>] do_IRQ+0x5b/0xe0
+  [<ffffffff81588aaf>] common_interrupt+0x6f/0x6f
+  <EOI>  [<ffffffff81588b5c>] ? retint_restore_args+0xe/0xe
+  [<ffffffff8146c767>] ? poll_idle+0x47/0x90
+  [<ffffffff8146c740>] ? poll_idle+0x20/0x90
+  [<ffffffff810acd96>] ? ktime_get+0x56/0xd0
+  [<ffffffff8146c7f0>] cpuidle_enter_state+0x40/0xd0
+  [<ffffffff8146cc0a>] cpuidle_idle_call+0x10a/0x160
+  [<ffffffff8100b7b9>] arch_cpu_idle+0x9/0x30
+  [<ffffffff810a370b>] cpu_idle_loop+0x8b/0x270
+  [<ffffffff810a390e>] cpu_startup_entry+0x1e/0x20
+  [<ffffffff8157a0c3>] rest_init+0xd3/0xe0
+  [<ffffffff81579ff0>] ? csum_partial_copy_generic+0x170/0x170
+  [<ffffffff81ad905c>] start_kernel+0x3b3/0x461
+  [<ffffffff81ad8a96>] ? repair_env_string+0x58/0x58
+  [<ffffffff81ad84d1>] x86_64_start_reservations+0x1b/0x32
+  [<ffffffff81ad8622>] x86_64_start_kernel+0x13a/0x141
+ handlers:
+ [<ffffffffa00acbc0>] usb_hcd_irq [usbcore]
+ Disabling IRQ #16
+
+and things go south afterwards (the machine hangs randomly, I/O is 
+horribly slow, etc).
+
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+
 ---
- arch/arm64/include/asm/thread_info.h |   13 +++++++++++++
- arch/arm64/kernel/entry.S            |    5 +++--
- arch/arm64/kernel/ptrace.c           |   11 +++++------
- 3 files changed, 21 insertions(+), 8 deletions(-)
+ drivers/gpu/drm/i915/i915_irq.c |    7 -------
+ drivers/gpu/drm/i915/i915_reg.h |    5 -----
+ drivers/gpu/drm/i915/intel_dp.c |    2 +-
+ 3 files changed, 1 insertions(+), 13 deletions(-)
 
-diff --git a/arch/arm64/include/asm/thread_info.h b/arch/arm64/include/asm/thread_info.h
-index 720e70b..c3df797 100644
---- a/arch/arm64/include/asm/thread_info.h
-+++ b/arch/arm64/include/asm/thread_info.h
-@@ -91,6 +91,9 @@ static inline struct thread_info *current_thread_info(void)
- /*
-  * thread information flags:
-  *  TIF_SYSCALL_TRACE	- syscall trace active
-+ *  TIF_SYSCALL_TRACEPOINT - syscall tracepoint for ftrace
-+ *  TIF_SYSCALL_AUDIT	- syscall auditing
-+ *  TIF_SECOMP		- syscall secure computing
-  *  TIF_SIGPENDING	- signal pending
-  *  TIF_NEED_RESCHED	- rescheduling necessary
-  *  TIF_NOTIFY_RESUME	- callback before returning to user
-@@ -101,6 +104,9 @@ static inline struct thread_info *current_thread_info(void)
- #define TIF_NEED_RESCHED	1
- #define TIF_NOTIFY_RESUME	2	/* callback before returning to user */
- #define TIF_SYSCALL_TRACE	8
-+#define TIF_SYSCALL_AUDIT	9
-+#define TIF_SYSCALL_TRACEPOINT	10
-+#define TIF_SECCOMP		11
- #define TIF_POLLING_NRFLAG	16
- #define TIF_MEMDIE		18	/* is terminating due to OOM killer */
- #define TIF_FREEZE		19
-@@ -112,10 +118,17 @@ static inline struct thread_info *current_thread_info(void)
- #define _TIF_SIGPENDING		(1 << TIF_SIGPENDING)
- #define _TIF_NEED_RESCHED	(1 << TIF_NEED_RESCHED)
- #define _TIF_NOTIFY_RESUME	(1 << TIF_NOTIFY_RESUME)
-+#define _TIF_SYSCALL_TRACE	(1 << TIF_SYSCALL_TRACE)
-+#define _TIF_SYSCALL_AUDIT	(1 << TIF_SYSCALL_AUDIT)
-+#define _TIF_SYSCALL_TRACEPOINT	(1 << TIF_SYSCALL_TRACEPOINT)
-+#define _TIF_SECCOMP		(1 << TIF_SECCOMP)
- #define _TIF_32BIT		(1 << TIF_32BIT)
+diff --git a/drivers/gpu/drm/i915/i915_irq.c b/drivers/gpu/drm/i915/i915_irq.c
+index 17d8fcb..b7fae5b 100644
+--- a/drivers/gpu/drm/i915/i915_irq.c
++++ b/drivers/gpu/drm/i915/i915_irq.c
+@@ -1480,9 +1480,6 @@ static irqreturn_t valleyview_irq_handler(int irq, void *arg)
  
- #define _TIF_WORK_MASK		(_TIF_NEED_RESCHED | _TIF_SIGPENDING | \
- 				 _TIF_NOTIFY_RESUME)
+ 			intel_hpd_irq_handler(dev, hotplug_trigger, hpd_status_i915);
  
-+#define _TIF_WORK_SYSCALL	(_TIF_SYSCALL_TRACE | _TIF_SYSCALL_AUDIT | \
-+				 _TIF_SYSCALL_TRACEPOINT | _TIF_SECCOMP)
-+
- #endif /* __KERNEL__ */
- #endif /* __ASM_THREAD_INFO_H */
-diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
-index 39ac630..c94b2ab 100644
---- a/arch/arm64/kernel/entry.S
-+++ b/arch/arm64/kernel/entry.S
-@@ -631,8 +631,9 @@ el0_svc_naked:					// compat entry point
- 	enable_irq
- 
- 	get_thread_info tsk
--	ldr	x16, [tsk, #TI_FLAGS]		// check for syscall tracing
--	tbnz	x16, #TIF_SYSCALL_TRACE, __sys_trace // are we tracing syscalls?
-+	ldr	x16, [tsk, #TI_FLAGS]		// check for syscall hooks
-+	tst	x16, #_TIF_WORK_SYSCALL
-+	b.ne	__sys_trace
- 	adr	lr, ret_fast_syscall		// return address
- 	cmp     scno, sc_nr                     // check upper syscall limit
- 	b.hs	ni_sys
-diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
-index 6a8928b..64ce39f 100644
---- a/arch/arm64/kernel/ptrace.c
-+++ b/arch/arm64/kernel/ptrace.c
-@@ -1062,9 +1062,6 @@ asmlinkage int syscall_trace(int dir, struct pt_regs *regs)
- {
- 	unsigned long saved_reg;
- 
--	if (!test_thread_flag(TIF_SYSCALL_TRACE))
--		return regs->syscallno;
+-			if (hotplug_status & DP_AUX_CHANNEL_MASK_INT_STATUS_G4X)
+-				dp_aux_irq_handler(dev);
 -
- 	if (is_compat_task()) {
- 		/* AArch32 uses ip (r12) for scratch */
- 		saved_reg = regs->regs[12];
-@@ -1078,10 +1075,12 @@ asmlinkage int syscall_trace(int dir, struct pt_regs *regs)
- 		regs->regs[7] = dir;
- 	}
+ 			I915_WRITE(PORT_HOTPLUG_STAT, hotplug_status);
+ 			I915_READ(PORT_HOTPLUG_STAT);
+ 		}
+@@ -3670,10 +3667,6 @@ static irqreturn_t i965_irq_handler(int irq, void *arg)
+ 			intel_hpd_irq_handler(dev, hotplug_trigger,
+ 					      IS_G4X(dev) ? hpd_status_g4x : hpd_status_i915);
  
--	if (dir)
-+	if (dir) {
- 		tracehook_report_syscall_exit(regs, 0);
--	else if (tracehook_report_syscall_entry(regs))
--		regs->syscallno = ~0UL;
-+	} else {
-+		if (tracehook_report_syscall_entry(regs))
-+			regs->syscallno = ~0UL;
-+	}
+-			if (IS_G4X(dev) &&
+-			    (hotplug_status & DP_AUX_CHANNEL_MASK_INT_STATUS_G4X))
+-				dp_aux_irq_handler(dev);
+-
+ 			I915_WRITE(PORT_HOTPLUG_STAT, hotplug_status);
+ 			I915_READ(PORT_HOTPLUG_STAT);
+ 		}
+diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
+index a48b7ca..94b4cd5 100644
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -2139,11 +2139,6 @@
+ #define   CRT_HOTPLUG_MONITOR_COLOR		(3 << 8)
+ #define   CRT_HOTPLUG_MONITOR_MONO		(2 << 8)
+ #define   CRT_HOTPLUG_MONITOR_NONE		(0 << 8)
+-#define   DP_AUX_CHANNEL_D_INT_STATUS_G4X	(1 << 6)
+-#define   DP_AUX_CHANNEL_C_INT_STATUS_G4X	(1 << 5)
+-#define   DP_AUX_CHANNEL_B_INT_STATUS_G4X	(1 << 4)
+-#define   DP_AUX_CHANNEL_MASK_INT_STATUS_G4X	(7 << 4)
+-
+ /* SDVO is different across gen3/4 */
+ #define   SDVOC_HOTPLUG_INT_STATUS_G4X		(1 << 3)
+ #define   SDVOB_HOTPLUG_INT_STATUS_G4X		(1 << 2)
+diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
+index 5ede4e8..464c047 100644
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -404,7 +404,7 @@ intel_dp_aux_ch(struct intel_dp *intel_dp,
+ 	int i, ret, recv_bytes;
+ 	uint32_t status;
+ 	int try, precharge, clock = 0;
+-	bool has_aux_irq = true;
++	bool has_aux_irq = INTEL_INFO(dev)->gen >= 5 && !IS_VALLEYVIEW(dev);
+ 	uint32_t timeout;
  
- 	if (is_compat_task())
- 		regs->regs[12] = saved_reg;
+ 	/* dp aux is extremely sensitive to irq latency, hence request the
 -- 
-1.7.9.5
-
+Jiri Kosina
+SUSE Labs
