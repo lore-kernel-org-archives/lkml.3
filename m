@@ -1,358 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752878AbaBGOlg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 09:41:36 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:55988 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751736AbaBGOld (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 09:41:33 -0500
-Date: Fri, 7 Feb 2014 06:41:19 -0800
-From: tip-bot for Preeti U Murthy <tipbot@zytor.com>
-Message-ID: <tip-5d1638acb9f62fa7eb0c07cb85318bbe1f13b227@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        preeti@linux.vnet.ibm.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        preeti@linux.vnet.ibm.com, tglx@linutronix.de
-In-Reply-To: <20140207080632.17187.80532.stgit@preeti.in.ibm.com>
-References: <20140207080632.17187.80532.stgit@preeti.in.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] tick: Introduce hrtimer based broadcast
-Git-Commit-ID: 5d1638acb9f62fa7eb0c07cb85318bbe1f13b227
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1752940AbaBGOmB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 09:42:01 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:33772 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752684AbaBGOlI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 09:41:08 -0500
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Emil Goode'" <emilgoode@gmail.com>,
+        =?utf-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>
+CC: "'Igor Gnatenko'" <i.gnatenko.brain@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ming Lei <ming.lei@canonical.com>, Mark Brown <broonie@linaro.org>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Glen Turner <gdt@gdt.id.au>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] net: asix: fix bad header length bug
+Thread-Topic: [PATCH] net: asix: fix bad header length bug
+Thread-Index: AQHPI+hM9jIHqyBVlkS9F+g2/ALCs5qp0BoAgAAJosA=
+Date: Fri, 7 Feb 2014 14:40:07 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F6BA7AF@AcuExch.aculab.com>
+References: <1391691384-8486-1-git-send-email-emilgoode@gmail.com>
+ <1391692768.2843.4.camel@X1Carbon.localdomain>
+ <063D6719AE5E284EB5DD2968C1650D6D0F6B99F7@AcuExch.aculab.com>
+ <20140206224121.GB5251@lianli> <87wqh7i7pf.fsf@nemi.mork.no>
+ <20140207135320.GA4252@lianli>
+In-Reply-To: <20140207135320.GA4252@lianli>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Fri, 07 Feb 2014 06:41:26 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s17Eg6xn015843
 
-Commit-ID:  5d1638acb9f62fa7eb0c07cb85318bbe1f13b227
-Gitweb:     http://git.kernel.org/tip/5d1638acb9f62fa7eb0c07cb85318bbe1f13b227
-Author:     Preeti U Murthy <preeti@linux.vnet.ibm.com>
-AuthorDate: Fri, 7 Feb 2014 13:36:32 +0530
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Fri, 7 Feb 2014 15:34:29 +0100
+From: Emil Goode 
+> On Fri, Feb 07, 2014 at 10:38:04AM +0100, Bj√∏rn Mork wrote:
+> > Emil Goode <emilgoode@gmail.com> writes:
+> > > On Thu, Feb 06, 2014 at 03:28:13PM +0000, David Laight wrote:
+> > >> From: Igor Gnatenko
+> > >> > On Thu, 2014-02-06 at 13:56 +0100, Emil Goode wrote:
+> > >> > > The AX88772B occasionally send rx packets that cross urb boundaries
+> > >> > > and the remaining partial packet is sent with no header.
+> > >> > > When the buffer with a partial packet is of less number of octets
+> > >> > > than the value of hard_header_len the buffer is discarded by the
+> > >> > > usbnet module. This is causing dropped packages and error messages
+> > >> > > in dmesg.
+> >
+> > > I will do some more digging in the code, but the test of skb->len
+> > > against hard_header_len is done already in the completion callback
+> > > function passed to usb_fill_bulk_urb so it seems that buffers of less
+> > > than hard_header_len number of octets will be dropped regardless.
+> >
+> > I am pretty sure you are right about this bug. And the exact same
+> > solution is already used by the cx82310_eth minidriver, so I don't see
+> > the problem.  Your fix is fine IMHO.  But you should apply it to all the
+> > devices using asix_rx_fixup_common(), not just the ax88772 ones.
+> >
+> > You could maybe make this a usbnet flag instead and create a generic
+> > solution in usbnet, but frankly I believe the number of flags and their
+> > meaning have exceeded drivers authors capabilities a long time ago.  At
+> > least mine, which are quite limited ;-)
+> >
+> > An example of that problem is another bloody obvious bug I noticed while
+> > looking at this driver: The 'struct driver_info ax88178_info' points to
+> > asix_rx_fixup_common without setting the FLAG_MULTI_PACKET.  This will
+> > result in usbnet rx_process() calling usbnet_skb_return() on skbs which
+> > are already consumed by the minidriver.  Not a big problem, but will
+> > give some odd results.  But if you allow skbs shorter than ETH_HLEN to
+> > slip through then it might go boom, so you should probably fix that as
+> > well.
+> >
+> >
+> > Bj√∏rn
+> 
+> Yes I believe the patch is necessary, but maybe it would be nice with
+> a prettier solution rather than setting hard_header_len to 0 for all
+> devices with this behaviour. Perhaps it would be better to let each
+> driver that uses the usbnet module decide what skbs to discard?
+> 
+> What David describes seems to be another bug, but I don't think it is
+> related to this patch as I'm able to reproduce the bug without the patch
+> beeing applied by setting the mtu to pretty much any value other than
+> 1500 and using ping with a larger packet size than that mtu value.
 
-tick: Introduce hrtimer based broadcast
+Yes - plenty of bugs if you just look for them!
 
-On some architectures, in certain CPU deep idle states the local timers stop.
-An external clock device is used to wakeup these CPUs. The kernel support for the
-wakeup of these CPUs is provided by the tick broadcast framework by using the
-external clock device as the wakeup source.
+I did a quick scan through the sub-drivers and although the usbnet code
+seems to treat the 'hard_header_len' as a constant to add to the mtu when
+allocating rx urb (when the driver doesn't set rx_urb_len), some of the
+sub-drivers seem to have three length, the rx header, tx header and hard_header,
+and set them separately (I've not just rechecked) - which may not exactly
+match what the usbnet code does is the lengths are different.
 
-However not all implementations of architectures provide such an external
-clock device. This patch includes support in the broadcast framework to handle
-the wakeup of the CPUs in deep idle states on such systems by queuing a hrtimer
-on one of the CPUs, which is meant to handle the wakeup of CPUs in deep idle states.
+The ax88772b driver seems to support several different bits of silicon.
+Only some put multiple ethernet frames in a single urb, and only for these
+does the driver set the rx_urb_length to 2048.
+For the other silicon it relies on usbnet setting the rx urb size - so
+the hard_header_len better not be set to zero.
 
-This patchset introduces a pseudo clock device which can be registered by the
-archs as tick_broadcast_device in the absence of a real external clock
-device. Once registered, the broadcast framework will work as is for these
-architectures as long as the archs take care of the BROADCAST_ENTER
-notification failing for one of the CPUs. This CPU is made the stand by CPU to
-handle wakeup of the CPUs in deep idle and it *must not enter deep idle states*.
+Someone with some time to spare needs to modify usbnet to support page
+aligned rx buffers (probably 4k urb) and then build correctly formatted
+skb from them.
 
-The CPU with the earliest wakeup is chosen to be this CPU. Hence this way the
-stand by CPU dynamically moves around and so does the hrtimer which is queued
-to trigger at the next earliest wakeup time. This is consistent with the case where
-an external clock device is present. The smp affinity of this clock device is
-set to the CPU with the earliest wakeup. This patchset handles the hotplug of
-the stand by CPU as well by moving the hrtimer on to the CPU handling the CPU_DEAD
-notification.
+At the moment the ax179_178a driver allocates 20kB urb which end up
+with an 0x40 byte offset into the page (so are probably 24k) and
+then cause alignment issues in the xhci driver which currently doesn't
+correctly handle non-aligned 64k address boundaries when the cross the
+ring end.
 
-Originally-from: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: deepthi@linux.vnet.ibm.com
-Cc: paulmck@linux.vnet.ibm.com
-Cc: fweisbec@gmail.com
-Cc: paulus@samba.org
-Cc: srivatsa.bhat@linux.vnet.ibm.com
-Cc: svaidy@linux.vnet.ibm.com
-Cc: peterz@infradead.org
-Cc: benh@kernel.crashing.org
-Cc: rafael.j.wysocki@intel.com
-Cc: linuxppc-dev@lists.ozlabs.org
-Link: http://lkml.kernel.org/r/20140207080632.17187.80532.stgit@preeti.in.ibm.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- include/linux/clockchips.h           |   9 +++
- kernel/time/Makefile                 |   2 +-
- kernel/time/tick-broadcast-hrtimer.c | 106 +++++++++++++++++++++++++++++++++++
- kernel/time/tick-broadcast.c         |  54 +++++++++++++++++-
- 4 files changed, 167 insertions(+), 4 deletions(-)
+	David
 
-diff --git a/include/linux/clockchips.h b/include/linux/clockchips.h
-index e0c5a6c..dbe9e14 100644
---- a/include/linux/clockchips.h
-+++ b/include/linux/clockchips.h
-@@ -62,6 +62,11 @@ enum clock_event_mode {
- #define CLOCK_EVT_FEAT_DYNIRQ		0x000020
- #define CLOCK_EVT_FEAT_PERCPU		0x000040
- 
-+/*
-+ * Clockevent device is based on a hrtimer for broadcast
-+ */
-+#define CLOCK_EVT_FEAT_HRTIMER		0x000080
-+
- /**
-  * struct clock_event_device - clock event device descriptor
-  * @event_handler:	Assigned by the framework to be called by the low
-@@ -83,6 +88,7 @@ enum clock_event_mode {
-  * @name:		ptr to clock event name
-  * @rating:		variable to rate clock event devices
-  * @irq:		IRQ number (only for non CPU local devices)
-+ * @bound_on:		Bound on CPU
-  * @cpumask:		cpumask to indicate for which CPUs this device works
-  * @list:		list head for the management code
-  * @owner:		module reference
-@@ -113,6 +119,7 @@ struct clock_event_device {
- 	const char		*name;
- 	int			rating;
- 	int			irq;
-+	int			bound_on;
- 	const struct cpumask	*cpumask;
- 	struct list_head	list;
- 	struct module		*owner;
-@@ -180,9 +187,11 @@ extern int tick_receive_broadcast(void);
- #endif
- 
- #if defined(CONFIG_GENERIC_CLOCKEVENTS_BROADCAST) && defined(CONFIG_TICK_ONESHOT)
-+extern void tick_setup_hrtimer_broadcast(void);
- extern int tick_check_broadcast_expired(void);
- #else
- static inline int tick_check_broadcast_expired(void) { return 0; }
-+static void tick_setup_hrtimer_broadcast(void) {};
- #endif
- 
- #ifdef CONFIG_GENERIC_CLOCKEVENTS
-diff --git a/kernel/time/Makefile b/kernel/time/Makefile
-index 9250130..06151ef 100644
---- a/kernel/time/Makefile
-+++ b/kernel/time/Makefile
-@@ -3,7 +3,7 @@ obj-y += timeconv.o posix-clock.o alarmtimer.o
- 
- obj-$(CONFIG_GENERIC_CLOCKEVENTS_BUILD)		+= clockevents.o
- obj-$(CONFIG_GENERIC_CLOCKEVENTS)		+= tick-common.o
--obj-$(CONFIG_GENERIC_CLOCKEVENTS_BROADCAST)	+= tick-broadcast.o
-+obj-$(CONFIG_GENERIC_CLOCKEVENTS_BROADCAST)	+= tick-broadcast.o tick-broadcast-hrtimer.o
- obj-$(CONFIG_GENERIC_SCHED_CLOCK)		+= sched_clock.o
- obj-$(CONFIG_TICK_ONESHOT)			+= tick-oneshot.o
- obj-$(CONFIG_TICK_ONESHOT)			+= tick-sched.o
-diff --git a/kernel/time/tick-broadcast-hrtimer.c b/kernel/time/tick-broadcast-hrtimer.c
-new file mode 100644
-index 0000000..9242527
---- /dev/null
-+++ b/kernel/time/tick-broadcast-hrtimer.c
-@@ -0,0 +1,106 @@
-+/*
-+ * linux/kernel/time/tick-broadcast-hrtimer.c
-+ * This file emulates a local clock event device
-+ * via a pseudo clock device.
-+ */
-+#include <linux/cpu.h>
-+#include <linux/err.h>
-+#include <linux/hrtimer.h>
-+#include <linux/interrupt.h>
-+#include <linux/percpu.h>
-+#include <linux/profile.h>
-+#include <linux/clockchips.h>
-+#include <linux/sched.h>
-+#include <linux/smp.h>
-+#include <linux/module.h>
-+
-+#include "tick-internal.h"
-+
-+static struct hrtimer bctimer;
-+
-+static void bc_set_mode(enum clock_event_mode mode,
-+			struct clock_event_device *bc)
-+{
-+	switch (mode) {
-+	case CLOCK_EVT_MODE_SHUTDOWN:
-+		/*
-+		 * Note, we cannot cancel the timer here as we might
-+		 * run into the following live lock scenario:
-+		 *
-+		 * cpu 0		cpu1
-+		 * lock(broadcast_lock);
-+		 *			hrtimer_interrupt()
-+		 *			bc_handler()
-+		 *			   tick_handle_oneshot_broadcast();
-+		 *			    lock(broadcast_lock);
-+		 * hrtimer_cancel()
-+		 *  wait_for_callback()
-+		 */
-+		hrtimer_try_to_cancel(&bctimer);
-+		break;
-+	default:
-+		break;
-+	}
-+}
-+
-+/*
-+ * This is called from the guts of the broadcast code when the cpu
-+ * which is about to enter idle has the earliest broadcast timer event.
-+ */
-+static int bc_set_next(ktime_t expires, struct clock_event_device *bc)
-+{
-+	/*
-+	 * We try to cancel the timer first. If the callback is on
-+	 * flight on some other cpu then we let it handle it. If we
-+	 * were able to cancel the timer nothing can rearm it as we
-+	 * own broadcast_lock.
-+	 *
-+	 * However we can also be called from the event handler of
-+	 * ce_broadcast_hrtimer itself when it expires. We cannot
-+	 * restart the timer because we are in the callback, but we
-+	 * can set the expiry time and let the callback return
-+	 * HRTIMER_RESTART.
-+	 */
-+	if (hrtimer_try_to_cancel(&bctimer) >= 0) {
-+		hrtimer_start(&bctimer, expires, HRTIMER_MODE_ABS_PINNED);
-+		/* Bind the "device" to the cpu */
-+		bc->bound_on = smp_processor_id();
-+	} else if (bc->bound_on == smp_processor_id()) {
-+		hrtimer_set_expires(&bctimer, expires);
-+	}
-+	return 0;
-+}
-+
-+static struct clock_event_device ce_broadcast_hrtimer = {
-+	.set_mode		= bc_set_mode,
-+	.set_next_ktime		= bc_set_next,
-+	.features		= CLOCK_EVT_FEAT_ONESHOT |
-+				  CLOCK_EVT_FEAT_KTIME |
-+				  CLOCK_EVT_FEAT_HRTIMER,
-+	.rating			= 0,
-+	.bound_on		= -1,
-+	.min_delta_ns		= 1,
-+	.max_delta_ns		= KTIME_MAX,
-+	.min_delta_ticks	= 1,
-+	.max_delta_ticks	= KTIME_MAX,
-+	.mult			= 1,
-+	.shift			= 0,
-+	.cpumask		= cpu_all_mask,
-+};
-+
-+static enum hrtimer_restart bc_handler(struct hrtimer *t)
-+{
-+	ce_broadcast_hrtimer.event_handler(&ce_broadcast_hrtimer);
-+
-+	if (ce_broadcast_hrtimer.next_event.tv64 == KTIME_MAX)
-+		return HRTIMER_NORESTART;
-+
-+	return HRTIMER_RESTART;
-+}
-+
-+void tick_setup_hrtimer_broadcast(void)
-+{
-+	hrtimer_init(&bctimer, CLOCK_MONOTONIC, HRTIMER_MODE_ABS);
-+	bctimer.function = bc_handler;
-+	clockevents_register_device(&ce_broadcast_hrtimer);
-+}
-diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-index 84c8fd9..63c7b2d 100644
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -643,6 +643,42 @@ again:
- 	raw_spin_unlock(&tick_broadcast_lock);
- }
- 
-+static int broadcast_needs_cpu(struct clock_event_device *bc, int cpu)
-+{
-+	if (!(bc->features & CLOCK_EVT_FEAT_HRTIMER))
-+		return 0;
-+	if (bc->next_event.tv64 == KTIME_MAX)
-+		return 0;
-+	return bc->bound_on == cpu ? -EBUSY : 0;
-+}
-+
-+static void broadcast_shutdown_local(struct clock_event_device *bc,
-+				     struct clock_event_device *dev)
-+{
-+	/*
-+	 * For hrtimer based broadcasting we cannot shutdown the cpu
-+	 * local device if our own event is the first one to expire or
-+	 * if we own the broadcast timer.
-+	 */
-+	if (bc->features & CLOCK_EVT_FEAT_HRTIMER) {
-+		if (broadcast_needs_cpu(bc, smp_processor_id()))
-+			return;
-+		if (dev->next_event.tv64 < bc->next_event.tv64)
-+			return;
-+	}
-+	clockevents_set_mode(dev, CLOCK_EVT_MODE_SHUTDOWN);
-+}
-+
-+static void broadcast_move_bc(int deadcpu)
-+{
-+	struct clock_event_device *bc = tick_broadcast_device.evtdev;
-+
-+	if (!bc || !broadcast_needs_cpu(bc, deadcpu))
-+		return;
-+	/* This moves the broadcast assignment to this cpu */
-+	clockevents_program_event(bc, bc->next_event, 1);
-+}
-+
- /*
-  * Powerstate information: The system enters/leaves a state, where
-  * affected devices might stop
-@@ -661,7 +697,7 @@ int tick_broadcast_oneshot_control(unsigned long reason)
- 	 * states
- 	 */
- 	if (tick_broadcast_device.mode == TICKDEV_MODE_PERIODIC)
--		return;
-+		return 0;
- 
- 	/*
- 	 * We are called with preemtion disabled from the depth of the
-@@ -672,7 +708,7 @@ int tick_broadcast_oneshot_control(unsigned long reason)
- 	dev = td->evtdev;
- 
- 	if (!(dev->features & CLOCK_EVT_FEAT_C3STOP))
--		return;
-+		return 0;
- 
- 	bc = tick_broadcast_device.evtdev;
- 
-@@ -680,7 +716,7 @@ int tick_broadcast_oneshot_control(unsigned long reason)
- 	if (reason == CLOCK_EVT_NOTIFY_BROADCAST_ENTER) {
- 		if (!cpumask_test_and_set_cpu(cpu, tick_broadcast_oneshot_mask)) {
- 			WARN_ON_ONCE(cpumask_test_cpu(cpu, tick_broadcast_pending_mask));
--			clockevents_set_mode(dev, CLOCK_EVT_MODE_SHUTDOWN);
-+			broadcast_shutdown_local(bc, dev);
- 			/*
- 			 * We only reprogram the broadcast timer if we
- 			 * did not mark ourself in the force mask and
-@@ -693,6 +729,16 @@ int tick_broadcast_oneshot_control(unsigned long reason)
- 			    dev->next_event.tv64 < bc->next_event.tv64)
- 				tick_broadcast_set_event(bc, cpu, dev->next_event, 1);
- 		}
-+		/*
-+		 * If the current CPU owns the hrtimer broadcast
-+		 * mechanism, it cannot go deep idle and we remove the
-+		 * CPU from the broadcast mask. We don't have to go
-+		 * through the EXIT path as the local timer is not
-+		 * shutdown.
-+		 */
-+		ret = broadcast_needs_cpu(bc, cpu);
-+		if (ret)
-+			cpumask_clear_cpu(cpu, tick_broadcast_oneshot_mask);
- 	} else {
- 		if (cpumask_test_and_clear_cpu(cpu, tick_broadcast_oneshot_mask)) {
- 			clockevents_set_mode(dev, CLOCK_EVT_MODE_ONESHOT);
-@@ -866,6 +912,8 @@ void tick_shutdown_broadcast_oneshot(unsigned int *cpup)
- 	cpumask_clear_cpu(cpu, tick_broadcast_pending_mask);
- 	cpumask_clear_cpu(cpu, tick_broadcast_force_mask);
- 
-+	broadcast_move_bc(cpu);
-+
- 	raw_spin_unlock_irqrestore(&tick_broadcast_lock, flags);
- }
- 
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
