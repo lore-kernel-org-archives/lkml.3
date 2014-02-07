@@ -1,54 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752177AbaBGKSX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 05:18:23 -0500
-Received: from mga09.intel.com ([134.134.136.24]:42298 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751823AbaBGKST (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 05:18:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,799,1384329600"; 
-   d="scan'208";a="479536304"
-Date: Fri, 7 Feb 2014 12:25:23 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Aaron Lu <aaron.lu@intel.com>
-Cc: linux-acpi@vger.kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI / video: Add HP EliteBook Revolve 810 to the
- blacklist
-Message-ID: <20140207102523.GO18029@intel.com>
-References: <1391425156-27821-1-git-send-email-mika.westerberg@linux.intel.com>
- <52F43716.7020008@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52F43716.7020008@intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752124AbaBGKTT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 05:19:19 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:37680 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751476AbaBGKTR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 05:19:17 -0500
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
+        catalin.marinas@arm.com, will.deacon@arm.com,
+        gkulkarni@caviumnetworks.com, tim.bird@sonymobile.com
+Cc: arndb@arndb.de, linux-arm-kernel@lists.infradead.org,
+        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
+        patches@linaro.org, AKASHI Takahiro <takahiro.akashi@linaro.org>
+Subject: [PATCH v3 0/6] arm64: Add ftrace support
+Date: Fri,  7 Feb 2014 19:18:50 +0900
+Message-Id: <1391768336-5642-1-git-send-email-takahiro.akashi@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1382598488-13511-1-git-send-email-takahiro.akashi@linaro.org>
+References: <1382598488-13511-1-git-send-email-takahiro.akashi@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 07, 2014 at 09:29:58AM +0800, Aaron Lu wrote:
-> On 02/03/2014 06:59 PM, Mika Westerberg wrote:
-> > On HP EliteBook Revolve 810 the ACPI backlight device doesn't work as
-> > expected. For example when resuming from system sleep, it seems to lose
-> > backlight settings.
-> > 
-> > Forcing Intel driver fixes the problem so add this machine the ACPI
-> > video detect blacklist.
-> 
-> For reference's purpose, can you please file a bug to kernel bugzilla
-> under the ACPI/Power-Video category and attach the acpidump and dmesg
-> there? Thanks.
+This is my third version of patchset for ftrace support.
+There was another implementation from Cavium network, but both of us agreed
+to use my patchset as future base. He is supposed to review this code, too.
 
-Done, the bug is here:
+The only issue that I had some concern on was "fault protection" code
+in prepare_ftrace_return(). With discussions with Steven and Tim (as author
+of arm ftrace), I removed that code since I'm not quite sure about possibility
+of "fault" occurrences in this function.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=70231
+The code is tested on ARMv8 Fast Model with the following tracers & events:
+     function tracer with dynamic ftrace
+     function graph tracer with dynamic ftrace
+     syscall tracepoint
+     irqsoff & preemptirqsoff (which use CALLER_ADDRx)
+and also verified with in-kernel tests, FTRACE_SELFTEST, FTRACE_STARTUP_TEST
+and EVENT_TRACE_TEST_SYSCALLS.
 
-I noticed that using only the acpi_video0 for tuning backlight works but if
-I use intel_backlight directly, on resume I get values from acpi_video0
-instead. I'm not really familiar how this is supposed to work, though so
-please let me know if I'm missing something.
+Please be careful:
+* elf.h on cross-build host must have AArch64 definitions, EM_AARCH64 and
+  R_AARCH64_ABS64, to compile recordmcount utility. See [4/6].
+  [4/6] also gets warnings from checkpatch, but they are based on the
+  original's coding style.
+* This patch may conflict with my audit patch because both changes the same
+  location in syscall_trace(). I expect the functions are called in this
+  order:
+  On entry,
+     * tracehook_report_syscall(ENTER)
+     * trace_sys_enter()
+     * audit_syscall_entry()
+  On exit,
+     * audit_sysscall_exit()
+     * trace_sys_exit()
+     * tracehook_report_syscall(EXIT) 
 
-Thanks.
+Changes from v1 to v2:
+* splitted one patch into some pieces for easier review
+  (especially function tracer + dynamic ftrace + CALLER_ADDRx)
+* put return_address() in a separate file
+* renamed __mcount to _mcount (it was my mistake)
+* changed stackframe handling to get parent's frame pointer
+* removed ARCH_SUPPORTS_FTRACE_OPS
+* switched to "hotpatch" interfaces from Huawai
+* revised descriptions in comments
+
+Changes from v2 to v3:
+* optimized register usages in asm (by not saving x0, x1, and x2)
+* removed "fault protection" code in prepare_ftrace_return()
+* rewrote ftrace_modify_code() using "hotpatch" interfaces
+* revised descriptions in comments
+
+AKASHI Takahiro (6):
+  arm64: Add ftrace support
+  arm64: ftrace: Add dynamic ftrace support
+  arm64: ftrace: Add CALLER_ADDRx macros
+  ftrace: Add arm64 support to recordmcount
+  arm64: ftrace: Add system call tracepoint
+  arm64: Add 'notrace' attribute to unwind_frame() for ftrace
+
+ arch/arm64/Kconfig                 |    6 +
+ arch/arm64/include/asm/ftrace.h    |   54 +++++++++
+ arch/arm64/include/asm/syscall.h   |    1 +
+ arch/arm64/include/asm/unistd.h    |    2 +
+ arch/arm64/kernel/Makefile         |    9 +-
+ arch/arm64/kernel/arm64ksyms.c     |    4 +
+ arch/arm64/kernel/entry-ftrace.S   |  215 ++++++++++++++++++++++++++++++++++++
+ arch/arm64/kernel/ftrace.c         |  177 +++++++++++++++++++++++++++++
+ arch/arm64/kernel/ptrace.c         |    5 +
+ arch/arm64/kernel/return_address.c |   55 +++++++++
+ arch/arm64/kernel/stacktrace.c     |    2 +-
+ scripts/recordmcount.c             |    4 +
+ scripts/recordmcount.pl            |    5 +
+ 13 files changed, 537 insertions(+), 2 deletions(-)
+ create mode 100644 arch/arm64/include/asm/ftrace.h
+ create mode 100644 arch/arm64/kernel/entry-ftrace.S
+ create mode 100644 arch/arm64/kernel/ftrace.c
+ create mode 100644 arch/arm64/kernel/return_address.c
+
+-- 
+1.7.9.5
+
