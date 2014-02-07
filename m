@@ -1,148 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752759AbaBGLYS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:24:18 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40852 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752084AbaBGLXq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:23:46 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Mikulas Patocka <mpatocka@redhat.com>,
-        John David Anglin <dave.anglin@bell.net>,
-        Andi Kleen <ak@linux.intel.com>, Christoph Lameter <cl@linux.com>,
-        Helge Deller <deller@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 08/88] mm: fix crash when using XFS on loopback
-Date: Fri,  7 Feb 2014 11:22:05 +0000
-Message-Id: <1391772205-22239-9-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
-References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	id S1753360AbaBGLqA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:46:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3183 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752176AbaBGLp5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 06:45:57 -0500
+Date: Fri, 7 Feb 2014 12:45:59 +0100
+From: Miroslav Lichvar <mlichvar@redhat.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>
+Subject: Re: [PATCH] [RFC] timekeeping: Rework frequency adjustments to work
+ better w/ nohz
+Message-ID: <20140207114559.GA30949@localhost>
+References: <1389067023-13541-1-git-send-email-john.stultz@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389067023-13541-1-git-send-email-john.stultz@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.30 -stable review patch.  If anyone has any objections, please let me know.
+On Mon, Jan 06, 2014 at 07:57:03PM -0800, John Stultz wrote:
+> Got a few cycles to take another look at this, and tried to address
+> Miroslav's latest comments. Please let me know if you have further
+> thoughts!
 
-------------------
+I've had finally some time to look at this, sorry for the delay.
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+> I also dropped the tk->ntp_error adjustments, as I've never quite
+> been able to recall how that was correct, and it doesn't seem to 
+> have any affect in the simulator. Will have to proceed carefully
+> with testing here.
 
-commit 03e5ac2fc3bf6f4140db0371e8bb4243b24e3e02 upstream.
+I see some effect of the ntp_error correction in the simulator, but it
+seems rather disruptive than helpful. Perhaps the correction was meant
+to account the fact that for the ntp_error accumulation ntp_tick
+should change at the time when mult is changed instead of start of the
+tick. I tried to find that correction and came up with this:
 
-Commit 8456a648cf44 ("slab: use struct page for slab management") causes
-a crash in the LVM2 testsuite on PA-RISC (the crashing test is
-fsadm.sh).  The testsuite doesn't crash on 3.12, crashes on 3.13-rc1 and
-later.
+(ntp_tick1 - ntp_tick2) * offset / interval + offset
 
- Bad Address (null pointer deref?): Code=15 regs=000000413edd89a0 (Addr=000006202224647d)
- CPU: 3 PID: 24008 Comm: loop0 Not tainted 3.13.0-rc6 #5
- task: 00000001bf3c0048 ti: 000000413edd8000 task.ti: 000000413edd8000
+That doesn't look usable. But I don't think it's really necessary to
+have any correction for that and I'm for dropping that line from the
+code as your patch does.
 
-      YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
- PSW: 00001000000001101111100100001110 Not tainted
- r00-03  000000ff0806f90e 00000000405c8de0 000000004013e6c0 000000413edd83f0
- r04-07  00000000405a95e0 0000000000000200 00000001414735f0 00000001bf349e40
- r08-11  0000000010fe3d10 0000000000000001 00000040829c7778 000000413efd9000
- r12-15  0000000000000000 000000004060d800 0000000010fe3000 0000000010fe3000
- r16-19  000000413edd82a0 00000041078ddbc0 0000000000000010 0000000000000001
- r20-23  0008f3d0d83a8000 0000000000000000 00000040829c7778 0000000000000080
- r24-27  00000001bf349e40 00000001bf349e40 202d66202224640d 00000000405a95e0
- r28-31  202d662022246465 000000413edd88f0 000000413edd89a0 0000000000000001
- sr00-03  000000000532c000 0000000000000000 0000000000000000 000000000532c000
- sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+Anyway, it seems there is a different problem in the code. I modified
+the simulator to see how the code works when the clocksource frequency
+is not divisible by HZ. With TSC_FREQ set to 3579545 (acpi_pm freq)
+ntp_error doesn't settle down and the clock has a large frequency
+error.
 
- IASQ: 0000000000000000 0000000000000000 IAOQ: 00000000401fe42c 00000000401fe430
-  IIR: 539c0030    ISR: 00000000202d6000  IOR: 000006202224647d
-  CPU:        3   CR30: 000000413edd8000 CR31: 0000000000000000
-  ORIG_R28: 00000000405a95e0
-  IAOQ[0]: vma_interval_tree_iter_first+0x14/0x48
-  IAOQ[1]: vma_interval_tree_iter_first+0x18/0x48
-  RP(r2): flush_dcache_page+0x128/0x388
- Backtrace:
-   flush_dcache_page+0x128/0x388
-   lo_splice_actor+0x90/0x148 [loop]
-   splice_from_pipe_feed+0xc0/0x1d0
-   __splice_from_pipe+0xac/0xc0
-   lo_direct_splice_actor+0x1c/0x70 [loop]
-   splice_direct_to_actor+0xec/0x228
-   lo_receive+0xe4/0x298 [loop]
-   loop_thread+0x478/0x640 [loop]
-   kthread+0x134/0x168
-   end_fault_vector+0x20/0x28
-   xfs_setsize_buftarg+0x0/0x90 [xfs]
+On top of your patch, this fixes the problem for me:
 
- Kernel panic - not syncing: Bad Address (null pointer deref?)
+--- a/kernel/time/timekeeping.c  
++++ b/kernel/time/timekeeping.c
+@@ -1065,7 +1065,7 @@ static __always_inline void timekeeping_freqadjust(struct timekeeper *tk,  
+  
+        /* Calculate current error per tick */
+        tick_error = ntp_tick_length() >> tk->ntp_error_shift;
+-       tick_error -= tk->xtime_interval;
++       tick_error -= tk->xtime_interval + tk->xtime_remainder;
 
-Commit 8456a648cf44 changes the page structure so that the slab
-subsystem reuses the page->mapping field.
+        /* Don't worry about correcting it if its small */
+        if (likely(abs(tick_error) < 2*interval))
 
-The crash happens in the following way:
- * XFS allocates some memory from slab and issues a bio to read data
-   into it.
- * the bio is sent to the loopback device.
- * lo_receive creates an actor and calls splice_direct_to_actor.
- * lo_splice_actor copies data to the target page.
- * lo_splice_actor calls flush_dcache_page because the page may be
-   mapped by userspace.  In that case we need to flush the kernel cache.
- * flush_dcache_page asks for the list of userspace mappings, however
-   that page->mapping field is reused by the slab subsystem for a
-   different purpose.  This causes the crash.
+My patch has this problem too. The original code seems to be affected
+to some extent, it's able to converge to the correct frequency, but
+there is some residual ntp error. Adding xtime_remainder to
+timekeeping_bigadjust() fixes that.
 
-Note that other architectures without coherent caches (sparc, arm, mips)
-also call page_mapping from flush_dcache_page, so they may crash in the
-same way.
+I've some comments on the performance of the proposed code, I'll send
+them in a separate mail later.
 
-This patch fixes this bug by testing if the page is a slab page in
-page_mapping and returning NULL if it is.
+Thanks,
 
-The patch also fixes VM_BUG_ON(PageSlab(page)) that could happen in
-earlier kernels in the same scenario on architectures without cache
-coherence when CONFIG_DEBUG_VM is enabled - so it should be backported
-to stable kernels.
-
-In the old kernels, the function page_mapping is placed in
-include/linux/mm.h, so you should modify the patch accordingly when
-backporting it.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Cc: John David Anglin <dave.anglin@bell.net>]
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Christoph Lameter <cl@linux.com>
-Acked-by: Pekka Enberg <penberg@kernel.org>
-Reviewed-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Helge Deller <deller@gmx.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ luis: backported to 3.5:
-  - file rename: mm/util.c -> include/linux/mm.h ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- include/linux/mm.h | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
-
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 53eb728..23a80570 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -791,7 +791,10 @@ static inline struct address_space *page_mapping(struct page *page)
- {
- 	struct address_space *mapping = page->mapping;
- 
--	VM_BUG_ON(PageSlab(page));
-+	/* This happens if someone calls flush_dcache_page on slab page */
-+	if (unlikely(PageSlab(page)))
-+		return NULL;
-+
- 	if (unlikely(PageSwapCache(page)))
- 		mapping = &swapper_space;
- 	else if ((unsigned long)mapping & PAGE_MAPPING_ANON)
 -- 
-1.8.3.2
-
+Miroslav Lichvar
