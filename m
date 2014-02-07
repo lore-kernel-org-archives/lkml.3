@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932439AbaBGMst (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:48:49 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41910 "EHLO
+	id S932319AbaBGLuN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:50:13 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41872 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932323AbaBGLuR (ORCPT
+	with ESMTP id S1753283AbaBGLuF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:50:17 -0500
+	Fri, 7 Feb 2014 06:50:05 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eliad Peller <eliadx.peller@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+Cc: =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 110/233] iwlwifi: mvm: fix missing cleanup in .start() error path
-Date: Fri,  7 Feb 2014 11:45:29 +0000
-Message-Id: <1391773652-25214-111-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 101/233] radeon/pm: Guard access to rdev->pm.power_state array
+Date: Fri,  7 Feb 2014 11:45:20 +0000
+Message-Id: <1391773652-25214-102-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,37 +31,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eliad Peller <eliadx.peller@intel.com>
+From: =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>
 
-commit 91b0d1198417cf4fd9a7bd4138b6909f0b359099 upstream.
+commit 370169516e736edad3b3c5aa49858058f8b55195 upstream.
 
-Cleanup of iwl_mvm_leds was missing in case of error,
-resulting in the following warning:
+It's never allocated on systems without an ATOMBIOS or COMBIOS ROM.
 
-WARNING: at lib/kobject.c:196 kobject_add_internal+0x1f4/0x210()
-kobject_add_internal failed for phy0-led with -EEXIST, don't try to register things with the same name in the same directory.
+Should fix an oops I encountered while resetting the GPU after a lockup
+on my PowerBook with an RV350.
 
-which prevents further reloads of the driver.
-
-Signed-off-by: Eliad Peller <eliadx.peller@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Michel Dänzer <michel.daenzer@amd.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/iwlwifi/mvm/ops.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/radeon/radeon_pm.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/iwlwifi/mvm/ops.c b/drivers/net/wireless/iwlwifi/mvm/ops.c
-index af79a14..0a677b5 100644
---- a/drivers/net/wireless/iwlwifi/mvm/ops.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/ops.c
-@@ -435,6 +435,7 @@ iwl_op_mode_mvm_start(struct iwl_trans *trans, const struct iwl_cfg *cfg,
- 
-  out_unregister:
- 	ieee80211_unregister_hw(mvm->hw);
-+	iwl_mvm_leds_exit(mvm);
-  out_free:
- 	iwl_phy_db_free(mvm->phy_db);
- 	kfree(mvm->scan_cmd);
+diff --git a/drivers/gpu/drm/radeon/radeon_pm.c b/drivers/gpu/drm/radeon/radeon_pm.c
+index 459eb7d..418ca53 100644
+--- a/drivers/gpu/drm/radeon/radeon_pm.c
++++ b/drivers/gpu/drm/radeon/radeon_pm.c
+@@ -938,8 +938,10 @@ static void radeon_pm_resume_old(struct radeon_device *rdev)
+ 	rdev->pm.current_clock_mode_index = 0;
+ 	rdev->pm.current_sclk = rdev->pm.default_sclk;
+ 	rdev->pm.current_mclk = rdev->pm.default_mclk;
+-	rdev->pm.current_vddc = rdev->pm.power_state[rdev->pm.default_power_state_index].clock_info[0].voltage.voltage;
+-	rdev->pm.current_vddci = rdev->pm.power_state[rdev->pm.default_power_state_index].clock_info[0].voltage.vddci;
++	if (rdev->pm.power_state) {
++		rdev->pm.current_vddc = rdev->pm.power_state[rdev->pm.default_power_state_index].clock_info[0].voltage.voltage;
++		rdev->pm.current_vddci = rdev->pm.power_state[rdev->pm.default_power_state_index].clock_info[0].voltage.vddci;
++	}
+ 	if (rdev->pm.pm_method == PM_METHOD_DYNPM
+ 	    && rdev->pm.dynpm_state == DYNPM_STATE_SUSPENDED) {
+ 		rdev->pm.dynpm_state = DYNPM_STATE_ACTIVE;
 -- 
 1.8.3.2
 
