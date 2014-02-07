@@ -1,75 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751907AbaBGJno (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 04:43:44 -0500
-Received: from canardo.mork.no ([148.122.252.1]:40767 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751356AbaBGJnl convert rfc822-to-8bit (ORCPT
+	id S1751961AbaBGJps (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 04:45:48 -0500
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:47895 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751068AbaBGJpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 04:43:41 -0500
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Emil Goode <emilgoode@gmail.com>
-Cc: David Laight <David.Laight@ACULAB.COM>,
-        "'Igor Gnatenko'" <i.gnatenko.brain@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ming Lei <ming.lei@canonical.com>, Mark Brown <broonie@linaro.org>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Glen Turner <gdt@gdt.id.au>,
-        "linux-usb\@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "netdev\@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] net: asix: fix bad header length bug
-Organization: m
-References: <1391691384-8486-1-git-send-email-emilgoode@gmail.com>
-	<1391692768.2843.4.camel@X1Carbon.localdomain>
-	<063D6719AE5E284EB5DD2968C1650D6D0F6B99F7@AcuExch.aculab.com>
-	<20140206224121.GB5251@lianli>
-Date: Fri, 07 Feb 2014 10:38:04 +0100
-In-Reply-To: <20140206224121.GB5251@lianli> (Emil Goode's message of "Thu, 6
-	Feb 2014 23:41:21 +0100")
-Message-ID: <87wqh7i7pf.fsf@nemi.mork.no>
-User-Agent: Gnus/5.130009 (Ma Gnus v0.9) Emacs/23.4 (gnu/linux)
+	Fri, 7 Feb 2014 04:45:44 -0500
+Message-ID: <52F4AB54.801@linux.vnet.ibm.com>
+Date: Fri, 07 Feb 2014 15:15:56 +0530
+From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+CC: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linuxppc-dev@lists.ozlabs.org,
+        Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/2] PPC: powernv: remove redundant cpuidle_idle_call()
+References: <1391696188-14540-1-git-send-email-nicolas.pitre@linaro.org> <CAKnoXLxCAqKaniGOwegNcOarS4FpoNKDY5PxOhe6j4wdtUAkLQ@mail.gmail.com> <52F3BCFE.3010703@linux.vnet.ibm.com> <alpine.LFD.2.11.1402070105170.1906@knanqh.ubzr> <52F484D9.6020604@linux.vnet.ibm.com>
+In-Reply-To: <52F484D9.6020604@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14020709-5490-0000-0000-000004E83330
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Emil Goode <emilgoode@gmail.com> writes:
-> On Thu, Feb 06, 2014 at 03:28:13PM +0000, David Laight wrote:
->> From: Igor Gnatenko
->> > On Thu, 2014-02-06 at 13:56 +0100, Emil Goode wrote:
->> > > The AX88772B occasionally send rx packets that cross urb boundaries
->> > > and the remaining partial packet is sent with no header.
->> > > When the buffer with a partial packet is of less number of octets
->> > > than the value of hard_header_len the buffer is discarded by the
->> > > usbnet module. This is causing dropped packages and error messages
->> > > in dmesg.
+Hi Preeti,
 
-> I will do some more digging in the code, but the test of skb->len
-> against hard_header_len is done already in the completion callback
-> function passed to usb_fill_bulk_urb so it seems that buffers of less
-> than hard_header_len number of octets will be dropped regardless.
+Thanks for the patch.
 
-I am pretty sure you are right about this bug. And the exact same
-solution is already used by the cx82310_eth minidriver, so I don't see
-the problem.  Your fix is fine IMHO.  But you should apply it to all the
-devices using asix_rx_fixup_common(), not just the ax88772 ones.
+On 02/07/2014 12:31 PM, Preeti U Murthy wrote:
+> Hi Nicolas,
+> 
+> Find below the patch that will need to be squashed with this one.
+> This patch is based on the mainline.Adding Deepthi, the author of
+> the patch which introduced the powernv cpuidle driver. Deepthi,
+> do you think the below patch looks right? We do not need to do an
+> explicit local_irq_enable() since we are in the call path of
+> cpuidle driver and that explicitly enables irqs on exit from
+> idle states.
 
-You could maybe make this a usbnet flag instead and create a generic
-solution in usbnet, but frankly I believe the number of flags and their
-meaning have exceeded drivers authors capabilities a long time ago.  At
-least mine, which are quite limited ;-)
+Yes, We enable irqs explicitly while entering snooze loop and we always
+have interrupts enabled in the snooze state.
+For NAP state, we exit out of this state with interrupts enabled so we
+do not need an explicit enable of irqs.
 
-An example of that problem is another bloody obvious bug I noticed while
-looking at this driver: The 'struct driver_info ax88178_info' points to
-asix_rx_fixup_common without setting the FLAG_MULTI_PACKET.  This will
-result in usbnet rx_process() calling usbnet_skb_return() on skbs which
-are already consumed by the minidriver.  Not a big problem, but will
-give some odd results.  But if you allow skbs shorter than ETH_HLEN to
-slip through then it might go boom, so you should probably fix that as
-well.
+> On 02/07/2014 06:47 AM, Nicolas Pitre wrote:
+>> On Thu, 6 Feb 2014, Preeti U Murthy wrote:
+>>
+>>> Hi Daniel,
+>>>
+>>> On 02/06/2014 09:55 PM, Daniel Lezcano wrote:
+>>>> Hi Nico,
+>>>>
+>>>>
+>>>> On 6 February 2014 14:16, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+>>>>
+>>>>> The core idle loop now takes care of it.
+>>>>>
+>>>>> Signed-off-by: Nicolas Pitre <nico@linaro.org>
+>>>>> ---
+>>>>>  arch/powerpc/platforms/powernv/setup.c | 13 +------------
+>>>>>  1 file changed, 1 insertion(+), 12 deletions(-)
+>>>>>
+>>>>> diff --git a/arch/powerpc/platforms/powernv/setup.c
+>>>>> b/arch/powerpc/platforms/powernv/setup.c
+>>>>> index 21166f65c9..a932feb290 100644
+>>>>> --- a/arch/powerpc/platforms/powernv/setup.c
+>>>>> +++ b/arch/powerpc/platforms/powernv/setup.c
+>>>>> @@ -26,7 +26,6 @@
+>>>>>  #include <linux/of_fdt.h>
+>>>>>  #include <linux/interrupt.h>
+>>>>>  #include <linux/bug.h>
+>>>>> -#include <linux/cpuidle.h>
+>>>>>
+>>>>>  #include <asm/machdep.h>
+>>>>>  #include <asm/firmware.h>
+>>>>> @@ -217,16 +216,6 @@ static int __init pnv_probe(void)
+>>>>>         return 1;
+>>>>>  }
+>>>>>
+>>>>> -void powernv_idle(void)
+>>>>> -{
+>>>>> -       /* Hook to cpuidle framework if available, else
+>>>>> -        * call on default platform idle code
+>>>>> -        */
+>>>>> -       if (cpuidle_idle_call()) {
+>>>>> -               power7_idle();
+>>>>> -       }
+>>>>>
+> 
+>  drivers/cpuidle/cpuidle-powernv.c |    4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> diff --git a/drivers/cpuidle/cpuidle-powernv.c b/drivers/cpuidle/cpuidle-powernv.c
+> index 78fd174..130f081 100644
+> --- a/drivers/cpuidle/cpuidle-powernv.c
+> +++ b/drivers/cpuidle/cpuidle-powernv.c
+> @@ -31,11 +31,13 @@ static int snooze_loop(struct cpuidle_device *dev,
+>  	set_thread_flag(TIF_POLLING_NRFLAG);
+> 
+>  	while (!need_resched()) {
+> +		ppc64_runlatch_off();
+                ^^^^^^^^^^^^^^^
+We could move this before the while() loop.
+It would ideal to turn off latch when we enter snooze and
+turn it on when we are about to exit, rather than doing
+it over and over in the while loop.
 
+>  		HMT_low();
+>  		HMT_very_low();
+>  	}
+> 
+>  	HMT_medium();
+> +	ppc64_runlatch_on();
+>  	clear_thread_flag(TIF_POLLING_NRFLAG);
+>  	smp_mb();
+>  	return index;
+> @@ -45,7 +47,9 @@ static int nap_loop(struct cpuidle_device *dev,
+>  			struct cpuidle_driver *drv,
+>  			int index)
+>  {
+> +	ppc64_runlatch_off();
+>  	power7_idle();
+> +	ppc64_runlatch_on();
+>  	return index;
+>  }
+> 
+> Thanks
+> 
+> Regards
+> Preeti U Murthy
+> 
 
-Bjørn
+Regards,
+Deepthi
+
