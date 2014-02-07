@@ -1,71 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041AbaBGTGH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 14:06:07 -0500
-Received: from mail-bn1blp0183.outbound.protection.outlook.com ([207.46.163.183]:49647
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750993AbaBGTGF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 14:06:05 -0500
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>
-Subject: RE: Drivers/hv
-Thread-Topic: Drivers/hv
-Thread-Index: AQHPHQPV07dRQOxvPUWFtrQXaUUm5ZqcNHQAgA4ABrA=
-Date: Fri, 7 Feb 2014 19:06:00 +0000
-Message-ID: <dcabbfad2fe24769a3d2ade8315fa016@BY2PR03MB299.namprd03.prod.outlook.com>
-References: <1391011049-10795-1-git-send-email-kys@microsoft.com>
- <20140129211532.GA9095@kroah.com>
-In-Reply-To: <20140129211532.GA9095@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [131.107.174.206]
-x-o365ent-eop-header: Message processed by -  O365_ENT: Allow from ranges
- (Engineering ONLY)
-x-forefront-prvs: 011579F31F
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(189002)(199002)(24454002)(51704005)(13464003)(377454003)(81542001)(81342001)(63696002)(94946001)(4396001)(66066001)(86362001)(81686001)(65816001)(76482001)(51856001)(80022001)(46102001)(47446002)(74876001)(90146001)(53806001)(54356001)(94316002)(79102001)(86612001)(83072002)(69226001)(87266001)(80976001)(76786001)(76796001)(93516002)(85852003)(87936001)(33646001)(2656002)(92566001)(54316002)(56776001)(74316001)(76576001)(19580405001)(93136001)(19580395003)(74366001)(74662001)(47976001)(81816001)(85306002)(83322001)(47736001)(74706001)(49866001)(56816005)(50986001)(31966008)(74502001)(77982001)(59766001)(95416001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB300;H:BY2PR03MB299.namprd03.prod.outlook.com;CLIP:131.107.174.206;FPR:FACFC152.9E03542A.59F1BBA8.C4E1C9F8.201E7;InfoNoRecordsMX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752166AbaBGTHN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 14:07:13 -0500
+Received: from mga01.intel.com ([192.55.52.88]:49569 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751013AbaBGTHL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 14:07:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,802,1384329600"; 
+   d="scan'208";a="477759048"
+Message-ID: <52F52EDA.4080007@linux.intel.com>
+Date: Fri, 07 Feb 2014 11:07:06 -0800
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.com
+To: Vivek Goyal <vgoyal@redhat.com>, Kees Cook <keescook@chromium.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Cong Ding <dinggnu@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mathias Krause <minipli@googlemail.com>,
+        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Dave Young <dyoung@redhat.com>
+Subject: Re: [GIT PULL] x86/kaslr for v3.14
+References: <201401201647.s0KGlZdh004167@tazenda.hos.anvin.org> <CAFLxGvxO1MPDDjEh3FU5Gv2-eb6zBJxYtTnKdABDTTpbMxxYAw@mail.gmail.com> <52E5EFAF.3060609@linux.intel.com> <CAFLxGvxJ0A6hZ52RWffkg_zXXScyPn10P4HcKvdAXfE43h32Eg@mail.gmail.com> <52E601DA.7010605@zytor.com> <20140130220708.GP9951@redhat.com> <CAGXu5jKp0j71ucE7uOWRa+gQM1Wzp=_KdByJK4XnACTwiCW4ow@mail.gmail.com> <20140207144914.GA5949@redhat.com>
+In-Reply-To: <20140207144914.GA5949@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> Sent: Wednesday, January 29, 2014 1:16 PM
-> To: KY Srinivasan
-> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
-> apw@canonical.com; jasowang@redhat.com
-> Subject: Re: Drivers/hv
+On 02/07/2014 06:49 AM, Vivek Goyal wrote:
 > 
-> On Wed, Jan 29, 2014 at 07:57:29AM -0800, K. Y. Srinivasan wrote:
-> >
-> > Greg,
-> >
-> > Some time back I had sent a buch of patches for
-> > Hyper-V drivers. Are they still in the queue or should I resend
-> > them.
+> As a workaround, Dave is currently using "nokaslr" command line parameter
+> for second kernel. He is still facing issues where makedumpfile segment
+> faults. He is looking into it further.
 > 
-> Which specific patches are you referring to?  I can't take anything
-> until after 3.14-rc1 is out, and I do see a few from you in my queue, so
-> if you want to resend, please do, but note I will not get to them until
-> sometime late next week at the earliest.
 
-I saw that you committed two (hv) patches earlier today. There are still a few more
-patches that are not committed yet; should I resend those?
+Now, let's state this: kaslr for kdump is almost certainly useless (the
+amount of reserved memory is not enough to provide any meaningful
+randomization, so any randomization needs to happen during the memory
+reservation phase.)  So disabling kaslr in the kdump kernel is entirely
+appropriate.
 
-Regards,
+	-hpa
 
-K. Y  
+
