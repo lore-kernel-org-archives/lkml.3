@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754356AbaBGLsT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:48:19 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41510 "EHLO
+	id S1755547AbaBGNSo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 08:18:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41533 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753748AbaBGLsR (ORCPT
+	with ESMTP id S1754363AbaBGLsW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:48:17 -0500
+	Fri, 7 Feb 2014 06:48:22 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andreas Rohner <andreas.rohner@gmx.net>,
-        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
-        Andrew Morton <akpm@linux-foundation.org>,
+Cc: Robert Richter <rric@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 029/233] nilfs2: fix segctor bug that causes file system corruption
-Date: Fri,  7 Feb 2014 11:44:08 +0000
-Message-Id: <1391773652-25214-30-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 032/233] perf/x86/amd/ibs: Fix waking up from S3 for AMD family 10h
+Date: Fri,  7 Feb 2014 11:44:11 +0000
+Message-Id: <1391773652-25214-33-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -30,88 +29,138 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Rohner <andreas.rohner@gmx.net>
+From: Robert Richter <rric@kernel.org>
 
-commit 70f2fe3a26248724d8a5019681a869abdaf3e89a upstream.
+commit bee09ed91cacdbffdbcd3b05de8409c77ec9fcd6 upstream.
 
-There is a bug in the function nilfs_segctor_collect, which results in
-active data being written to a segment, that is marked as clean.  It is
-possible, that this segment is selected for a later segment
-construction, whereby the old data is overwritten.
+On AMD family 10h we see following error messages while waking up from
+S3 for all non-boot CPUs leading to a failed IBS initialization:
 
-The problem shows itself with the following kernel log message:
+ Enabling non-boot CPUs ...
+ smpboot: Booting Node 0 Processor 1 APIC 0x1
+ [Firmware Bug]: cpu 1, try to use APIC500 (LVT offset 0) for vector 0x400, but the register is already in use for vector 0xf9 on another cpu
+ perf: IBS APIC setup failed on cpu #1
+ process: Switch to broadcast mode on CPU1
+ CPU1 is up
+ ...
+ ACPI: Waking up from system sleep state S3
 
-  nilfs_sufile_do_cancel_free: segment 6533 must be clean
+Reason for this is that during suspend the LVT offset for the IBS
+vector gets lost and needs to be reinialized while resuming.
 
-Usually a few hours later the file system gets corrupted:
+The offset is read from the IBSCTL msr. On family 10h the offset needs
+to be 1 as offset 0 is used for the MCE threshold interrupt, but
+firmware assings it for IBS to 0 too. The kernel needs to reprogram
+the vector. The msr is a readonly node msr, but a new value can be
+written via pci config space access. The reinitialization is
+implemented for family 10h in setup_ibs_ctl() which is forced during
+IBS setup.
 
-  NILFS: bad btree node (blocknr=8748107): level = 0, flags = 0x0, nchildren = 0
-  NILFS error (device sdc1): nilfs_bmap_last_key: broken bmap (inode number=114660)
+This patch fixes IBS setup after waking up from S3 by adding
+resume/supend hooks for the boot cpu which does the offset
+reinitialization.
 
-The issue can be reproduced with a file system that is nearly full and
-with the cleaner running, while some IO intensive task is running.
-Although it is quite hard to reproduce.
+Marking it as stable to let distros pick up this fix.
 
-This is what happens:
-
- 1. The cleaner starts the segment construction
- 2. nilfs_segctor_collect is called
- 3. sc_stage is on NILFS_ST_SUFILE and segments are freed
- 4. sc_stage is on NILFS_ST_DAT current segment is full
- 5. nilfs_segctor_extend_segments is called, which
-    allocates a new segment
- 6. The new segment is one of the segments freed in step 3
- 7. nilfs_sufile_cancel_freev is called and produces an error message
- 8. Loop around and the collection starts again
- 9. sc_stage is on NILFS_ST_SUFILE and segments are freed
-    including the newly allocated segment, which will contain active
-    data and can be allocated at a later time
-10. A few hours later another segment construction allocates the
-    segment and causes file system corruption
-
-This can be prevented by simply reordering the statements.  If
-nilfs_sufile_cancel_freev is called before nilfs_segctor_extend_segments
-the freed segments are marked as dirty and cannot be allocated any more.
-
-Signed-off-by: Andreas Rohner <andreas.rohner@gmx.net>
-Reviewed-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Tested-by: Andreas Rohner <andreas.rohner@gmx.net>
-Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Robert Richter <rric@kernel.org>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1389797849-5565-1-git-send-email-rric.net@gmail.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/nilfs2/segment.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ arch/x86/kernel/cpu/perf_event_amd_ibs.c | 53 +++++++++++++++++++++++++++-----
+ 1 file changed, 45 insertions(+), 8 deletions(-)
 
-diff --git a/fs/nilfs2/segment.c b/fs/nilfs2/segment.c
-index 9f6b486..a1a1916 100644
---- a/fs/nilfs2/segment.c
-+++ b/fs/nilfs2/segment.c
-@@ -1440,17 +1440,19 @@ static int nilfs_segctor_collect(struct nilfs_sc_info *sci,
+diff --git a/arch/x86/kernel/cpu/perf_event_amd_ibs.c b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
+index e09f0bf..4b8e4d3 100644
+--- a/arch/x86/kernel/cpu/perf_event_amd_ibs.c
++++ b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
+@@ -10,6 +10,7 @@
+ #include <linux/module.h>
+ #include <linux/pci.h>
+ #include <linux/ptrace.h>
++#include <linux/syscore_ops.h>
  
- 		nilfs_clear_logs(&sci->sc_segbufs);
+ #include <asm/apic.h>
  
--		err = nilfs_segctor_extend_segments(sci, nilfs, nadd);
--		if (unlikely(err))
--			return err;
--
- 		if (sci->sc_stage.flags & NILFS_CF_SUFREED) {
- 			err = nilfs_sufile_cancel_freev(nilfs->ns_sufile,
- 							sci->sc_freesegs,
- 							sci->sc_nfreesegs,
- 							NULL);
- 			WARN_ON(err); /* do not happen */
-+			sci->sc_stage.flags &= ~NILFS_CF_SUFREED;
- 		}
+@@ -816,6 +817,18 @@ out:
+ 	return ret;
+ }
+ 
++static void ibs_eilvt_setup(void)
++{
++	/*
++	 * Force LVT offset assignment for family 10h: The offsets are
++	 * not assigned by the BIOS for this family, so the OS is
++	 * responsible for doing it. If the OS assignment fails, fall
++	 * back to BIOS settings and try to setup this.
++	 */
++	if (boot_cpu_data.x86 == 0x10)
++		force_ibs_eilvt_setup();
++}
 +
-+		err = nilfs_segctor_extend_segments(sci, nilfs, nadd);
-+		if (unlikely(err))
-+			return err;
+ static inline int get_ibs_lvt_offset(void)
+ {
+ 	u64 val;
+@@ -851,6 +864,36 @@ static void clear_APIC_ibs(void *dummy)
+ 		setup_APIC_eilvt(offset, 0, APIC_EILVT_MSG_FIX, 1);
+ }
+ 
++#ifdef CONFIG_PM
 +
- 		nadd = min_t(int, nadd << 1, SC_MAX_SEGDELTA);
- 		sci->sc_stage = prev_stage;
- 	}
++static int perf_ibs_suspend(void)
++{
++	clear_APIC_ibs(NULL);
++	return 0;
++}
++
++static void perf_ibs_resume(void)
++{
++	ibs_eilvt_setup();
++	setup_APIC_ibs(NULL);
++}
++
++static struct syscore_ops perf_ibs_syscore_ops = {
++	.resume		= perf_ibs_resume,
++	.suspend	= perf_ibs_suspend,
++};
++
++static void perf_ibs_pm_init(void)
++{
++	register_syscore_ops(&perf_ibs_syscore_ops);
++}
++
++#else
++
++static inline void perf_ibs_pm_init(void) { }
++
++#endif
++
+ static int
+ perf_ibs_cpu_notifier(struct notifier_block *self, unsigned long action, void *hcpu)
+ {
+@@ -877,18 +920,12 @@ static __init int amd_ibs_init(void)
+ 	if (!caps)
+ 		return -ENODEV;	/* ibs not supported by the cpu */
+ 
+-	/*
+-	 * Force LVT offset assignment for family 10h: The offsets are
+-	 * not assigned by the BIOS for this family, so the OS is
+-	 * responsible for doing it. If the OS assignment fails, fall
+-	 * back to BIOS settings and try to setup this.
+-	 */
+-	if (boot_cpu_data.x86 == 0x10)
+-		force_ibs_eilvt_setup();
++	ibs_eilvt_setup();
+ 
+ 	if (!ibs_eilvt_valid())
+ 		goto out;
+ 
++	perf_ibs_pm_init();
+ 	get_online_cpus();
+ 	ibs_caps = caps;
+ 	/* make ibs_caps visible to other cpus: */
 -- 
 1.8.3.2
 
