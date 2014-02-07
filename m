@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756062AbaBGNbX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 08:31:23 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40935 "EHLO
+	id S1752362AbaBGLYF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:24:05 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40811 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752372AbaBGLYG (ORCPT
+	with ESMTP id S1751956AbaBGLXe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:24:06 -0500
+	Fri, 7 Feb 2014 06:23:34 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jack Pham <jackp@codeaurora.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 26/88] usb: xhci: Check for XHCI_PLAT in xhci_cleanup_msix()
-Date: Fri,  7 Feb 2014 11:22:23 +0000
-Message-Id: <1391772205-22239-27-git-send-email-luis.henriques@canonical.com>
+Cc: NeilBrown <neilb@suse.de>, Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.5 03/88] md/raid5: Fix possible confusion when multiple write errors occur.
+Date: Fri,  7 Feb 2014 11:22:00 +0000
+Message-Id: <1391772205-22239-4-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
@@ -28,39 +26,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jack Pham <jackp@codeaurora.org>
+From: NeilBrown <neilb@suse.de>
 
-commit 9005355af23856c55a5538c9024355785424821b upstream.
+commit 1cc03eb93245e63b0b7a7832165efdc52e25b4e6 upstream.
 
-If CONFIG_PCI is enabled, make sure xhci_cleanup_msix()
-doesn't try to free a bogus PCI IRQ or dereference an invalid
-pci_dev when the xHCI device is actually a platform_device.
+commit 5d8c71f9e5fbdd95650be00294d238e27a363b5c
+    md: raid5 crash during degradation
 
-This patch should be backported to kernels as old as 3.9, that
-contain the commit 52fb61250a7a132b0cfb9f4a1060a1f3c49e5a25
-"xhci-plat: Don't enable legacy PCI interrupts."
+Fixed a crash in an overly simplistic way which could leave
+R5_WriteError or R5_MadeGood set in the stripe cache for devices
+for which it is no longer relevant.
+When those devices are removed and spares added the flags are still
+set and can cause incorrect behaviour.
 
-Signed-off-by: Jack Pham <jackp@codeaurora.org>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+commit 14a75d3e07c784c004b4b44b34af996b8e4ac453
+    md/raid5: preferentially read from replacement device if possible.
+
+Fixed the same bug if a more effective way, so we can now revert
+the original commit.
+
+Reported-and-tested-by: Alexander Lyakas <alex.bolshoy@gmail.com>
+Fixes: 5d8c71f9e5fbdd95650be00294d238e27a363b5c
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/host/xhci.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/md/raid5.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 8ef76d2..0d4c7e4 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -315,6 +315,9 @@ static void xhci_cleanup_msix(struct xhci_hcd *xhci)
- 	struct usb_hcd *hcd = xhci_to_hcd(xhci);
- 	struct pci_dev *pdev = to_pci_dev(hcd->self.controller);
+diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
+index ecf09ec..4ee5324 100644
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -3284,7 +3284,7 @@ static void analyse_stripe(struct stripe_head *sh, struct stripe_head_state *s)
+ 			 */
+ 			set_bit(R5_Insync, &dev->flags);
  
-+	if (xhci->quirks & XHCI_PLAT)
-+		return;
-+
- 	xhci_free_irq(xhci);
- 
- 	if (xhci->msix_entries) {
+-		if (rdev && test_bit(R5_WriteError, &dev->flags)) {
++		if (test_bit(R5_WriteError, &dev->flags)) {
+ 			/* This flag does not apply to '.replacement'
+ 			 * only to .rdev, so make sure to check that*/
+ 			struct md_rdev *rdev2 = rcu_dereference(
+@@ -3297,7 +3297,7 @@ static void analyse_stripe(struct stripe_head *sh, struct stripe_head_state *s)
+ 			} else
+ 				clear_bit(R5_WriteError, &dev->flags);
+ 		}
+-		if (rdev && test_bit(R5_MadeGood, &dev->flags)) {
++		if (test_bit(R5_MadeGood, &dev->flags)) {
+ 			/* This flag does not apply to '.replacement'
+ 			 * only to .rdev, so make sure to check that*/
+ 			struct md_rdev *rdev2 = rcu_dereference(
 -- 
 1.8.3.2
 
