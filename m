@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755212AbaBGLvv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:51:51 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42262 "EHLO
+	id S1752401AbaBGMMm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:12:42 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42277 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755175AbaBGLvr (ORCPT
+	with ESMTP id S1755201AbaBGLvu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:51:47 -0500
+	Fri, 7 Feb 2014 06:51:50 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
+Cc: Mihai Caraman <mihai.caraman@freescale.com>,
+        Alexander Graf <agraf@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 177/233] i915: remove pm_qos request on error
-Date: Fri,  7 Feb 2014 11:46:36 +0000
-Message-Id: <1391773652-25214-178-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 180/233] KVM: PPC: e500: Fix bad address type in deliver_tlb_misss()
+Date: Fri,  7 Feb 2014 11:46:39 +0000
+Message-Id: <1391773652-25214-181-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -28,51 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Mihai Caraman <mihai.caraman@freescale.com>
 
-commit 22accca01713b13dac386ca90b787aadf88f6551 upstream.
+commit 70713fe315ed14cd1bb07d1a7f33e973d136ae3d upstream.
 
-Not removing pm qos request and free memory for it can cause crash,
-when some other driver use pm qos. For example, this oops:
+Use gva_t instead of unsigned int for eaddr in deliver_tlb_miss().
 
-BUG: unable to handle kernel paging request at fffffffffffffff8
-IP: [<ffffffff81307a6b>] plist_add+0x5b/0xd0
-Call Trace:
- [<ffffffff810acf25>] pm_qos_update_target+0x125/0x1e0
- [<ffffffff810ad071>] pm_qos_add_request+0x91/0x100
- [<ffffffffa053ec14>] e1000_open+0xe4/0x5b0 [e1000e]
-
-was caused by earlier i915 probe failure:
-
-[drm:i915_report_and_clear_eir] *ERROR* EIR stuck: 0x00000010, masking
-[drm:init_ring_common] *ERROR* render ring initialization failed ctl 0001f001 head 00003004 tail 00000000 start 00003000
-[drm:i915_driver_load] *ERROR* failed to init modeset
-i915: probe of 0000:00:02.0 failed with error -5
-
-Bug report:
-http://bugzilla.redhat.com/show_bug.cgi?id=1057533
-
-Reported-by: Giandomenico De Tullio <ghisha@gmail.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-[danvet: Drop unnecessary code movement.]
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Mihai Caraman <mihai.caraman@freescale.com>
+Signed-off-by: Alexander Graf <agraf@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/i915/i915_dma.c | 1 +
- 1 file changed, 1 insertion(+)
+ arch/powerpc/kvm/e500_mmu.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
-index 0c956e9..58c3db8 100644
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@ -1675,6 +1675,7 @@ out_gem_unload:
+diff --git a/arch/powerpc/kvm/e500_mmu.c b/arch/powerpc/kvm/e500_mmu.c
+index 6d6f153..c17600d 100644
+--- a/arch/powerpc/kvm/e500_mmu.c
++++ b/arch/powerpc/kvm/e500_mmu.c
+@@ -127,7 +127,7 @@ static int kvmppc_e500_tlb_index(struct kvmppc_vcpu_e500 *vcpu_e500,
+ }
  
- 	intel_teardown_gmbus(dev);
- 	intel_teardown_mchbar(dev);
-+	pm_qos_remove_request(&dev_priv->pm_qos);
- 	destroy_workqueue(dev_priv->wq);
- out_mtrrfree:
- 	arch_phys_wc_del(dev_priv->mm.gtt_mtrr);
+ static inline void kvmppc_e500_deliver_tlb_miss(struct kvm_vcpu *vcpu,
+-		unsigned int eaddr, int as)
++		gva_t eaddr, int as)
+ {
+ 	struct kvmppc_vcpu_e500 *vcpu_e500 = to_e500(vcpu);
+ 	unsigned int victim, tsized;
 -- 
 1.8.3.2
 
