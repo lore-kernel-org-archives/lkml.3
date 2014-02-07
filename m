@@ -1,103 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753576AbaBGL2H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:28:07 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41211 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753361AbaBGLZT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:25:19 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Michal Schmidt <mschmidt@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 80/88] bnx2x: fix DMA unmapping of TSO split BDs
-Date: Fri,  7 Feb 2014 11:23:17 +0000
-Message-Id: <1391772205-22239-81-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
-References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	id S1753605AbaBGL2S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:28:18 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:45497 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753582AbaBGL2O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 06:28:14 -0500
+Date: Fri, 7 Feb 2014 12:28:09 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Imre Deak <imre.deak@intel.com>
+Cc: Jani Nikula <jani.nikula@linux.intel.com>, intel-gfx@lists.freedesktop.org,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: intel_sdvo_init: trying to register non-static key
+Message-ID: <20140207112809.GG24395@pd.tnic>
+References: <20140207093205.GA24395@pd.tnic>
+ <87d2iz18vi.fsf@intel.com>
+ <1391771542.5669.6.camel@intelbox>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1391771542.5669.6.camel@intelbox>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.30 -stable review patch.  If anyone has any objections, please let me know.
+On Fri, Feb 07, 2014 at 01:12:22PM +0200, Imre Deak wrote:
+> On Fri, 2014-02-07 at 13:04 +0200, Jani Nikula wrote:
+> > Imre, is this the same i2c_del_adapter issue you're looking at? Any
+> > patches to try yet?
+> 
+> It looks like the same issue yes. The following patch fixed it for me:
+> 
+> http://patchwork.freedesktop.org/patch/18698/
+> 
+> I'm working on an improved version of this, but the main thing - to
+> remove the connector's sysfs entries before actually destroying the
+> encoder and connector objects - will remain the same as in the above
+> patch.
 
-------------------
+You could shoot the final version my way so that I give it a run too.
 
-From: Michal Schmidt <mschmidt@redhat.com>
+Thanks.
 
-commit 95e92fd40c967c363ad66b2fd1ce4dcd68132e54 upstream.
-
-bnx2x triggers warnings with CONFIG_DMA_API_DEBUG=y:
-
-  WARNING: CPU: 0 PID: 2253 at lib/dma-debug.c:887 check_unmap+0xf8/0x920()
-  bnx2x 0000:28:00.0: DMA-API: device driver frees DMA memory with
-  different size [device address=0x00000000da2b389e] [map size=1490 bytes]
-  [unmap size=66 bytes]
-
-The reason is that bnx2x splits a TSO BD into two BDs (headers + data)
-using one DMA mapping for both, but it uses only the length of the first
-BD when unmapping.
-
-This patch fixes the bug by unmapping the whole length of the two BDs.
-
-Signed-off-by: Michal Schmidt <mschmidt@redhat.com>
-Reviewed-by: Eric Dumazet <edumazet@google.com>
-Acked-by: Dmitry Kravkov <dmitry@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c | 13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-index 27c2843..67d34eb 100644
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-@@ -70,6 +70,7 @@ static u16 bnx2x_free_tx_pkt(struct bnx2x *bp, struct bnx2x_fp_txdata *txdata,
- 	struct sk_buff *skb = tx_buf->skb;
- 	u16 bd_idx = TX_BD(tx_buf->first_bd), new_cons;
- 	int nbd;
-+	u16 split_bd_len = 0;
- 
- 	/* prefetch skb end pointer to speedup dev_kfree_skb() */
- 	prefetch(&skb->end);
-@@ -77,10 +78,7 @@ static u16 bnx2x_free_tx_pkt(struct bnx2x *bp, struct bnx2x_fp_txdata *txdata,
- 	DP(NETIF_MSG_TX_DONE, "fp[%d]: pkt_idx %d  buff @(%p)->skb %p\n",
- 	   txdata->txq_index, idx, tx_buf, skb);
- 
--	/* unmap first bd */
- 	tx_start_bd = &txdata->tx_desc_ring[bd_idx].start_bd;
--	dma_unmap_single(&bp->pdev->dev, BD_UNMAP_ADDR(tx_start_bd),
--			 BD_UNMAP_LEN(tx_start_bd), DMA_TO_DEVICE);
- 
- 
- 	nbd = le16_to_cpu(tx_start_bd->nbd) - 1;
-@@ -99,12 +97,19 @@ static u16 bnx2x_free_tx_pkt(struct bnx2x *bp, struct bnx2x_fp_txdata *txdata,
- 	--nbd;
- 	bd_idx = TX_BD(NEXT_TX_IDX(bd_idx));
- 
--	/* ...and the TSO split header bd since they have no mapping */
-+	/* TSO headers+data bds share a common mapping. See bnx2x_tx_split() */
- 	if (tx_buf->flags & BNX2X_TSO_SPLIT_BD) {
-+		tx_data_bd = &txdata->tx_desc_ring[bd_idx].reg_bd;
-+		split_bd_len = BD_UNMAP_LEN(tx_data_bd);
- 		--nbd;
- 		bd_idx = TX_BD(NEXT_TX_IDX(bd_idx));
- 	}
- 
-+	/* unmap first bd */
-+	dma_unmap_single(&bp->pdev->dev, BD_UNMAP_ADDR(tx_start_bd),
-+			 BD_UNMAP_LEN(tx_start_bd) + split_bd_len,
-+			 DMA_TO_DEVICE);
-+
- 	/* now free frags */
- 	while (nbd > 0) {
- 
 -- 
-1.8.3.2
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
