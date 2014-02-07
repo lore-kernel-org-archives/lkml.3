@@ -1,45 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753091AbaBGTvt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 14:51:49 -0500
-Received: from nm14-vm5.bullet.mail.ir2.yahoo.com ([212.82.96.193]:28896 "EHLO
-	nm14-vm5.bullet.mail.ir2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751572AbaBGTvs convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 14:51:48 -0500
-X-Greylist: delayed 396 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Feb 2014 14:51:48 EST
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 904771.66248.bm@omp1005.mail.ir2.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.co.uk;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:Message-ID:Date:From:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=5L/7yx5l5CFemq8POm+rFJeJHOmV/U8AcIK5rpkNi9YOPDhQ09mGv8nsqnC35CX6L1d9DOS2GCyzrAfMlBLSgAsPCQID1vGqbvCp+PdIVQKX52zKh4yj7LhWoweBrpxfxOk0zzjU+8xUIh3vVhBHhT3WWdKYxNC7KbnoVqe89tk=;
-X-YMail-OSG: ERXTq30VM1nx9pwL.HHqCg1SqW2g6TNPMztnpVElt2x_YKE
- LEKAsmdYOl0RJeeMicBCri7CS.ztcklRKq6uzw8DCkZ.moAGGSrCc31wJPah
- jjBI80eHTfwUaBJvfAk0sHyjF0Z8F6_ZoSDb8IvRN4yiNw4empWyznRlXxWe
- kh5Oxz97CwHlZmLeUIAvz92JJ.nh1l8ascIYvYxkFfaYKUgUVooBwLIAER62
- 7ezggqIRUNJUqK7BPOAc5WFj_plNPtXfXtAk2b9YRlkYTf6lyAOXkJZemcSl
- 9XcR7LE4AV8pS_2wfnnwNN9xr4RryIJATlPwDYSQK2EgBpJ.4KvTchHqs6m8
- 08qTMlj2kRpNpOVm_YNEa9D2GFkXNH0tyd8PsD2nZPRwJJKBqCchFP9JPWWQ
- Cu0Rr0ck0yDe5Vr2QvmP3ZMN2VW37TJSKo0zyfyNRcOiBgGqLBQEB.7r29pV
- _wYiEP6w4HoqMLdmYizDsXh_E_FEATcxCG4yLLHagiAL9.UqkJCfSJ65aJxk
- g
-X-Rocket-MIMEInfo: 002.001,DQpIZWxsbywNCk5pY2UgdG8gcmVhY2ggeW91Li4hIEhvdyBhcmUgeW91IGRvaW5nIGhvcGUgeW91IGFyZSBkb2luZyBwcmV0dHkgZ3JlYXQuIEkgYW0gUml0YSBTbWl0aCwgRmVtYWxlLCAyN3llYXJzIG9mIGFnZSBmcm9tIEJvc3RvbiBpbiB0aGUgVW5pdGVkIFN0YXRlIG9mIEFtZXJpY2EsIEkgd29yayBpbiBhIE5vbiBHb3Zlcm5tZW50YWwgT3JnYW5pemF0aW9uLChZTUNBKS4gSG93ZXZlciBpZiB5b3Ugd2lzaCB0aGF0IHdlIGtub3cgZWFjaCBvdGhlciBiZXR0ZXIga2luZGx5IHJlYWNoIG1lIGJhY2sgdGgBMAEBAQE-
-X-Mailer: YahooMailClassic/402 YahooMailWebService/0.8.175.632
-Message-ID: <1391802310.9373.YahooMailBasic@web171804.mail.ir2.yahoo.com>
-Date: Fri, 7 Feb 2014 19:45:10 +0000 (GMT)
-From: Rita Smith <ritasmith864@yahoo.co.uk>
-Subject: Hi dear.
-To: undisclosed recipients:;
+	id S1753277AbaBGTxS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 14:53:18 -0500
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:43338 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751013AbaBGTxR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 14:53:17 -0500
+Date: Fri, 7 Feb 2014 14:53:13 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Imre Deak <imre.deak@intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kernfs: skip lockdep annotation always if ignore_lockdep
+ is set
+Message-ID: <20140207195313.GB8833@htj.dyndns.org>
+References: <1391802421-7829-1-git-send-email-imre.deak@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391802421-7829-1-git-send-email-imre.deak@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Feb 07, 2014 at 09:47:01PM +0200, Imre Deak wrote:
+> We skip lockdep annotations for sysfs attributes with ignore_lockdep
+> set. An exception is kernfs_deactivate where we annotate even in this
+> case. Since the lockdep map key needed for the annotation is not
+> initialized whenever ignore_lockdep is set, we'll get a warning for
+> the uninitialized key.
+> 
+> Note that this happens since,
+> 
+> commit 517e64f57883bd63c5a4ab8b3d0d3ed68c55d0cf
+> Author: Tejun Heo <tj@kernel.org>
+> Date:   Thu Nov 28 14:54:29 2013 -0500
+> 
+> Before this change we had a valid key even in case of ignore_lockdep, so
+> the annotation in kernfs_deactivate worked, or at least didn't produce
+> the above warning. Fix this by skipping the annotation whenever
+> ignore_lockdep is set.
+> 
+> The actual attribute triggering the bug was 'delete_device' in
+> drivers/i2c/i2c-core.c, for the backtrace see the reference below.
 
-Hello,
-Nice to reach you..! How are you doing hope you are doing pretty great. I am Rita Smith, Female, 27years of age from Boston in the United State of America, I work in a Non Governmental Organization,(YMCA). However if you wish that we know each other better kindly reach me back through my email . Bye for now and remain in touch.
-Rita.
+I think Greg already has about the same patch queued.
 
+  http://lkml.kernel.org/g/20140129170403.GJ30842@htj.dyndns.org
+
+Thanks.
+
+-- 
+tejun
