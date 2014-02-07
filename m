@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932084AbaBGLsf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:48:35 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41562 "EHLO
+	id S1754503AbaBGLso (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:48:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41613 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754338AbaBGLs2 (ORCPT
+	with ESMTP id S1752989AbaBGLsl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:48:28 -0500
+	Fri, 7 Feb 2014 06:48:41 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 038/233] mm: Make {,set}page_address() static inline if WANT_PAGE_VIRTUAL
-Date: Fri,  7 Feb 2014 11:44:17 +0000
-Message-Id: <1391773652-25214-39-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 047/233] rtlwifi: Redo register save locations
+Date: Fri,  7 Feb 2014 11:44:26 +0000
+Message-Id: <1391773652-25214-48-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -29,59 +28,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Geert Uytterhoeven <geert@linux-m68k.org>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit f92f455f67fef27929e6043499414605b0c94872 upstream.
+commit b9a758a8c905fc59e783ae91ad645452d877ea88 upstream.
 
-{,set}page_address() are macros if WANT_PAGE_VIRTUAL.  If
-!WANT_PAGE_VIRTUAL, they're plain C functions.
+The initial USB driver did not use some register save locations in the
+private data storage. To save some memory, a union was used to overlay these
+variables with USB I/O components. In an update of the gain-control code,
+these register save locations are now needed for USB drivers.
 
-If someone calls them with a void *, this pointer is auto-converted to
-struct page * if !WANT_PAGE_VIRTUAL, but causes a build failure on
-architectures using WANT_PAGE_VIRTUAL (arc, m68k and sparc64):
-
-  drivers/md/bcache/bset.c: In function `__btree_sort':
-  drivers/md/bcache/bset.c:1190: warning: dereferencing `void *' pointer
-  drivers/md/bcache/bset.c:1190: error: request for member `virtual' in something not a structure or union
-
-Convert them to static inline functions to fix this.  There are already
-plenty of users of struct page members inside <linux/mm.h>, so there's
-no reason to keep them as macros.
-
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-Tested-by: Guenter Roeck <linux@roeck-us.net>
-Tested-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/linux/mm.h | 13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ drivers/net/wireless/rtlwifi/wifi.h | 32 ++++++++++++++++----------------
+ 1 file changed, 16 insertions(+), 16 deletions(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index f022460..a6154b1 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -769,11 +769,14 @@ static __always_inline void *lowmem_page_address(const struct page *page)
- #endif
+diff --git a/drivers/net/wireless/rtlwifi/wifi.h b/drivers/net/wireless/rtlwifi/wifi.h
+index 224cf61..e576a927 100644
+--- a/drivers/net/wireless/rtlwifi/wifi.h
++++ b/drivers/net/wireless/rtlwifi/wifi.h
+@@ -1035,6 +1035,7 @@ struct rtl_ht_agg {
  
- #if defined(WANT_PAGE_VIRTUAL)
--#define page_address(page) ((page)->virtual)
--#define set_page_address(page, address)			\
--	do {						\
--		(page)->virtual = (address);		\
--	} while(0)
-+static inline void *page_address(const struct page *page)
-+{
-+	return page->virtual;
-+}
-+static inline void set_page_address(struct page *page, void *address)
-+{
-+	page->virtual = address;
-+}
- #define page_address_init()  do { } while(0)
- #endif
+ struct rssi_sta {
+ 	long undec_sm_pwdb;
++	long undec_sm_cck;
+ };
+ 
+ struct rtl_tid_data {
+@@ -1325,8 +1326,10 @@ struct fast_ant_training {
+ struct rtl_dm {
+ 	/*PHY status for Dynamic Management */
+ 	long entry_min_undec_sm_pwdb;
++	long undec_sm_cck;
+ 	long undec_sm_pwdb;	/*out dm */
+ 	long entry_max_undec_sm_pwdb;
++	s32 ofdm_pkt_cnt;
+ 	bool dm_initialgain_enable;
+ 	bool dynamic_txpower_enable;
+ 	bool current_turbo_edca;
+@@ -1341,6 +1344,7 @@ struct rtl_dm {
+ 	bool inform_fw_driverctrldm;
+ 	bool current_mrc_switch;
+ 	u8 txpowercount;
++	u8 powerindex_backup[6];
+ 
+ 	u8 thermalvalue_rxgain;
+ 	u8 thermalvalue_iqk;
+@@ -1352,7 +1356,9 @@ struct rtl_dm {
+ 	bool done_txpower;
+ 	u8 dynamic_txhighpower_lvl;	/*Tx high power level */
+ 	u8 dm_flag;		/*Indicate each dynamic mechanism's status. */
++	u8 dm_flag_tmp;
+ 	u8 dm_type;
++	u8 dm_rssi_sel;
+ 	u8 txpower_track_control;
+ 	bool interrupt_migration;
+ 	bool disable_tx_int;
+@@ -1951,6 +1957,7 @@ struct dig_t {
+ 	u8 pre_ccastate;
+ 	u8 cur_ccasate;
+ 	u8 large_fa_hit;
++	u8 dig_dynamic_min;
+ 	u8 forbidden_igi;
+ 	u8 dig_state;
+ 	u8 dig_highpwrstate;
+@@ -2031,22 +2038,15 @@ struct rtl_priv {
+ 	struct dig_t dm_digtable;
+ 	struct ps_t dm_pstable;
+ 
+-	/* section shared by individual drivers */
+-	union {
+-		struct {	/* data buffer pointer for USB reads */
+-			__le32 *usb_data;
+-			int usb_data_index;
+-			bool initialized;
+-		};
+-		struct {	/* section for 8723ae */
+-			bool reg_init;	/* true if regs saved */
+-			u32 reg_874;
+-			u32 reg_c70;
+-			u32 reg_85c;
+-			u32 reg_a74;
+-			bool bt_operation_on;
+-		};
+-	};
++	u32 reg_874;
++	u32 reg_c70;
++	u32 reg_85c;
++	u32 reg_a74;
++	bool reg_init;	/* true if regs saved */
++	bool bt_operation_on;
++	__le32 *usb_data;
++	int usb_data_index;
++	bool initialized;
+ 	bool enter_ps;	/* true when entering PS */
+ 	u8 rate_mask[5];
  
 -- 
 1.8.3.2
