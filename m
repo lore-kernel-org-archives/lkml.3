@@ -1,105 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752412AbaBGUfQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 15:35:16 -0500
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:42234 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751446AbaBGUfM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 15:35:12 -0500
-Date: Fri, 7 Feb 2014 15:35:08 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Filipe Brandenburger <filbranden@google.com>,
-        Li Zefan <lizefan@huawei.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>,
-        Markus Blank-Burian <burian@muenster.de>,
-        Shawn Bohrer <shawn.bohrer@gmail.com>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] cgroup: use an ordered workqueue for cgroup destruction
-Message-ID: <20140207203508.GC8833@htj.dyndns.org>
-References: <alpine.LSU.2.11.1402061541560.31342@eggly.anvils>
- <20140207140402.GA3304@htj.dyndns.org>
- <alpine.LSU.2.11.1402071130250.333@eggly.anvils>
+	id S1752481AbaBGUjy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 15:39:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34820 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751500AbaBGUjx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 15:39:53 -0500
+Message-ID: <52F54484.8000009@redhat.com>
+Date: Fri, 07 Feb 2014 15:39:32 -0500
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1402071130250.333@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Prarit Bhargava <prarit@redhat.com>
+CC: linux-kernel@vger.kernel.org,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Thomas Renninger <trenn@suse.de>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Alan Cox <alan@linux.intel.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH] tools, cpupower Fix error condition in cmd_freq_set()
+References: <1391799353-19517-1-git-send-email-prarit@redhat.com>
+In-Reply-To: <1391799353-19517-1-git-send-email-prarit@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Hugh.
 
-On Fri, Feb 07, 2014 at 12:20:44PM -0800, Hugh Dickins wrote:
-> > But even with offline being called outside cgroup_mutex, IIRC, the
-> > described problem would still be able to deadlock as long as the tree
-> > depth is deeper than max concurrency level of the destruction
-> > workqueue.  Sure, we can give it large enough number but it's
-> > generally nasty.
+
+On 02/07/2014 01:55 PM, Prarit Bhargava wrote:
+> On a system which has only 4.00GHz set as the only available frequency,
 > 
-> You worry me there: I certainly don't want to be introducing new
-> deadlocks.  You understand workqueues much better than most of us: I'm
-> not sure what "max concurrency level of the destruction workqueue" is,
-> but it sounds uncomfortably like an ordered workqueue's max_active 1.
-
-Ooh, max_active is always a finite number.  The only reason we usually
-don't worry about it is because they are large enough for the existing
-dependency chains to cause deadlocks.  The theoretical problem with
-cgroup is that the dependency chain can grow arbitrarily long and
-multiple removals along different subhierarchies can overlap which
-means that there can be multiple long dependency chains among work
-items.  The probability would be extremely low but deadlock might be
-possible even with relatively high max_active.
-
-Besides, the reason we reduced max_active in the first place was
-because destruction work items tend to just stack up without any
-actual concurrency benefits, so increasing concurrncy level seems a
-bit nasty to me (but probably a lot of those traffic jam was from
-cgroup_mutex and once we take that out of the picture, it could become
-fine).
-
-> You don't return to this concern in the following mails of the thread:
-> did you later decide that it actually won't be a problem?  I'll assume
-> so for the moment, since you took the patch, but please reassure me.
-
-I was just worrying about a different solution where we take
-css_offline invocation outside of cgroup_mutex and bumping up
-max_active.  There's nothing to worry about your patch.  Sorry about
-not being clear.  :)
-
-> > One thing I don't get is why memcg has such reverse dependency at all.
-> > Why does the parent wait for its descendants to do something during
-> > offline?  Shouldn't it be able to just bail and let whatever
-> > descendant which is stil busy propagate things upwards?  That's a
-> > usual pattern we use to tree shutdowns anyway.  Would that be nasty to
-> > implement in memcg?
+> [root@amd-pike-05 ~]# cpupower frequency-info
+> <snip>
+>   current policy: frequency should be within 4.00 GHz and 4.00 GHz.
+>                   The governor "userspace" may decide which speed to use
+>                   within this range.
+> <snip>
 > 
-> I've no idea how nasty it would be to change memcg around, but Michal
-> and Hannes appear very open to doing so.  I do think that memcg's current
-> expectation is very reasonable: it's perfectly normal that a rmdir cannot
-> succeed until the directory is empty, and to depend upon that fact; but
-> the use of workqueue made some things asynchronous which were not before,
-> which has led to some surprises.
+> setting the frequency to 2.8GHz does not return an error.
+> 
+> [root@amd-pike-05 ~]# cpupower frequency-set --freq 2800MHz
+> Setting cpu: 0
+> Setting cpu: 1
+> Setting cpu: 2
+> Setting cpu: 3
+> Setting cpu: 4
+> Setting cpu: 5
+> Setting cpu: 6
+> Setting cpu: 7
+> [root@amd-pike-05 ~]#
+> 
+> The frequency set error should stop with an error message after the first
+> failure.  Fix the error return in cmd_freq_set() to read errors as less
+> than zero.
+> 
+> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+> Cc: Dominik Brodowski <linux@dominikbrodowski.net>
+> Cc: Thomas Renninger <trenn@suse.de>
+> Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+> Cc: Alan Cox <alan@linux.intel.com>
+> Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+> ---
+>  tools/power/cpupower/utils/cpufreq-set.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/tools/power/cpupower/utils/cpufreq-set.c b/tools/power/cpupower/utils/cpufreq-set.c
+> index a416de8..e5f78623 100644
+> --- a/tools/power/cpupower/utils/cpufreq-set.c
+> +++ b/tools/power/cpupower/utils/cpufreq-set.c
+> @@ -320,7 +320,7 @@ int cmd_freq_set(int argc, char **argv)
+>  
+>  		printf(_("Setting cpu: %d\n"), cpu);
+>  		ret = do_one_cpu(cpu, &new_pol, freq, policychange);
+> -		if (ret)
+> +		if (ret < 0)
 
-Maybe.  The thing is that ->css_offline() isn't really comparable to
-rmdir.  ->css_free() is and is fully ordered through refcnts as one
-would expect.  Whether ->css_offline() should be ordered similarly so
-that the parent's offline is called iff all its children finished
-offlining, I'm not sure.  Maybe it'd be something nice to have but I
-kinda wanna keep the offline hook and its usages simple and limited.
-It's not where the actual destruction should happen.  It's just a
-notification to get ready.
+Self-nack ... this won't work.
 
-Looks like Johannes's patch is headed towards that direction - moving
-destruction from ->css_offline to ->css_free(), so if that works out,
-I think we should be good for the time being.
-
-Thanks!
-
--- 
-tejun
+P.
+>  			break;
+>  	}
+>  
