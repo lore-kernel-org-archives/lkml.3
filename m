@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755225AbaBGMt7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:49:59 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41897 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932310AbaBGLuN (ORCPT
+	id S1755241AbaBGMuT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:50:19 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:55989 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754802AbaBGMt6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:50:13 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 107/233] [media] nxt200x: increase write buffer size
-Date: Fri,  7 Feb 2014 11:45:26 +0000
-Message-Id: <1391773652-25214-108-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
-References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Fri, 7 Feb 2014 07:49:58 -0500
+Date: Fri, 7 Feb 2014 18:19:53 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Armin Schindler <mac@melware.de>, Karsten Keil <isdn@linux-pingi.de>,
+        netdev@vger.kernel.org, josh@joshtriplett.org
+Subject: [PATCH 26/26] drivers: isdn: Move prototype declaration to header
+ file platform.h from divasmain.c
+Message-ID: <03ee99107b3f4f0683055b6d0f0a0a6d53801dca.1390408520.git.rashika.kheria@gmail.com>
+References: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.4 -stable review patch.  If anyone has any objections, please let me know.
+Move prototype declaration of functions to header file
+hardware/eicon/platform.h because they are used by more than one file.
 
-------------------
+This elliminates the following warnings in hardware/eicon/divasproc.c:
+drivers/isdn/hardware/eicon/divasproc.c:125:5: warning: no previous prototype for ‘create_divas_proc’ [-Wmissing-prototypes]
+drivers/isdn/hardware/eicon/divasproc.c:135:6: warning: no previous prototype for ‘remove_divas_proc’ [-Wmissing-prototypes]
 
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
-
-commit fa1e1de6bb679f2c86da3311bbafee7eaf78f125 upstream.
-
-The buffer size on nxt200x is not enough:
-
-	...
-	> Dec 20 10:52:04 rich kernel: [   31.747949] nxt200x: nxt200x_writebytes: i2c wr reg=002c: len=255 is too big!
-	...
-
-Increase it to 256 bytes.
-
-Reported-by: Rich Freeman <rich0@gentoo.org>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- drivers/media/dvb-frontends/nxt200x.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/isdn/hardware/eicon/divasmain.c |    3 ---
+ drivers/isdn/hardware/eicon/platform.h  |    2 ++
+ 2 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/media/dvb-frontends/nxt200x.c b/drivers/media/dvb-frontends/nxt200x.c
-index fbca985..4bf0575 100644
---- a/drivers/media/dvb-frontends/nxt200x.c
-+++ b/drivers/media/dvb-frontends/nxt200x.c
-@@ -40,7 +40,7 @@
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+diff --git a/drivers/isdn/hardware/eicon/divasmain.c b/drivers/isdn/hardware/eicon/divasmain.c
+index 6b15670..3b1e5bc 100644
+--- a/drivers/isdn/hardware/eicon/divasmain.c
++++ b/drivers/isdn/hardware/eicon/divasmain.c
+@@ -55,9 +55,6 @@ static char *DRIVERLNAME = "divas";
+ static char *DEVNAME = "Divas";
+ char *DRIVERRELEASE_DIVAS = "2.0";
  
- /* Max transfer size done by I2C transfer functions */
--#define MAX_XFER_SIZE  64
-+#define MAX_XFER_SIZE  256
+-extern int create_divas_proc(void);
+-extern void remove_divas_proc(void);
+-
+ typedef struct _diva_os_thread_dpc {
+ 	struct tasklet_struct divas_task;
+ 	diva_os_soft_isr_t *psoft_isr;
+diff --git a/drivers/isdn/hardware/eicon/platform.h b/drivers/isdn/hardware/eicon/platform.h
+index 6bec7db..800b8bd 100644
+--- a/drivers/isdn/hardware/eicon/platform.h
++++ b/drivers/isdn/hardware/eicon/platform.h
+@@ -161,6 +161,8 @@ void diva_xdi_didd_remove_adapter(int card);
+ void diva_get_vserial_number(PISDN_ADAPTER IoAdapter, char *buf);
+ int divasfunc_init(int dbgmask);
+ void divasfunc_exit(void);
++int create_divas_proc(void);
++void remove_divas_proc(void);
  
- #define NXT2002_DEFAULT_FIRMWARE "dvb-fe-nxt2002.fw"
- #define NXT2004_DEFAULT_FIRMWARE "dvb-fe-nxt2004.fw"
+ /*
+ ** memory allocation
 -- 
-1.8.3.2
+1.7.9.5
 
