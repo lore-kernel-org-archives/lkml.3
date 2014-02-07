@@ -1,42 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755522AbaBGNQt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 08:16:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15795 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755292AbaBGNQr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 08:16:47 -0500
-Message-ID: <52F4DCB0.7050500@redhat.com>
-Date: Fri, 07 Feb 2014 08:16:32 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Rashika Kheria <rashika.kheria@gmail.com>, linux-kernel@vger.kernel.org
-CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-mm@kvack.org,
-        josh@joshtriplett.org
-Subject: Re: [PATCH 5/9] mm: Mark functions as static in migrate.c
-References: <a7658fc8f2ab015bffe83de1448cc3db79d2a9fc.1391167128.git.rashika.kheria@gmail.com> <2f62d7bb34ad1797b2990524239d4de90f8073a4.1391167128.git.rashika.kheria@gmail.com>
-In-Reply-To: <2f62d7bb34ad1797b2990524239d4de90f8073a4.1391167128.git.rashika.kheria@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1754412AbaBGLs1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:48:27 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41530 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754338AbaBGLsV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 06:48:21 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 033/233] net: rds: fix per-cpu helper usage
+Date: Fri,  7 Feb 2014 11:44:12 +0000
+Message-Id: <1391773652-25214-34-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
+References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2014 07:08 AM, Rashika Kheria wrote:
-> Mark functions as static in migrate.c because they are not used outside
-> this file.
-> 
-> This eliminates the following warnings in mm/migrate.c:
-> mm/migrate.c:1595:6: warning: no previous prototype for ‘numamigrate_update_ratelimit’ [-Wmissing-prototypes]
-> mm/migrate.c:1619:5: warning: no previous prototype for ‘numamigrate_isolate_page’ [-Wmissing-prototypes]
-> 
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+3.11.10.4 -stable review patch.  If anyone has any objections, please let me know.
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+------------------
 
+From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+
+commit c196403b79aa241c3fefb3ee5bb328aa7c5cc860 upstream.
+
+commit ae4b46e9d "net: rds: use this_cpu_* per-cpu helper" broke per-cpu
+handling for rds. chpfirst is the result of __this_cpu_read(), so it is
+an absolute pointer and not __percpu. Therefore, __this_cpu_write()
+should not operate on chpfirst, but rather on cache->percpu->first, just
+like __this_cpu_read() did before.
+
+Signed-off-byd Gerald Schaefer <gerald.schaefer@de.ibm.com>
+
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ net/rds/ib_recv.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/net/rds/ib_recv.c b/net/rds/ib_recv.c
+index 8eb9501..b7ebe23 100644
+--- a/net/rds/ib_recv.c
++++ b/net/rds/ib_recv.c
+@@ -421,8 +421,7 @@ static void rds_ib_recv_cache_put(struct list_head *new_item,
+ 				 struct rds_ib_refill_cache *cache)
+ {
+ 	unsigned long flags;
+-	struct list_head *old;
+-	struct list_head __percpu *chpfirst;
++	struct list_head *old, *chpfirst;
+ 
+ 	local_irq_save(flags);
+ 
+@@ -432,7 +431,7 @@ static void rds_ib_recv_cache_put(struct list_head *new_item,
+ 	else /* put on front */
+ 		list_add_tail(new_item, chpfirst);
+ 
+-	__this_cpu_write(chpfirst, new_item);
++	__this_cpu_write(cache->percpu->first, new_item);
+ 	__this_cpu_inc(cache->percpu->count);
+ 
+ 	if (__this_cpu_read(cache->percpu->count) < RDS_IB_RECYCLE_BATCH_COUNT)
+@@ -452,7 +451,7 @@ static void rds_ib_recv_cache_put(struct list_head *new_item,
+ 	} while (old);
+ 
+ 
+-	__this_cpu_write(chpfirst, NULL);
++	__this_cpu_write(cache->percpu->first, NULL);
+ 	__this_cpu_write(cache->percpu->count, 0);
+ end:
+ 	local_irq_restore(flags);
 -- 
-All rights reversed
+1.8.3.2
+
