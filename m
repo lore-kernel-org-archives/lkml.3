@@ -1,142 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754119AbaBGLpH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:45:07 -0500
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:48251 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754105AbaBGLpD (ORCPT
+	id S1752759AbaBGLYS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:24:18 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40852 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752084AbaBGLXq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:45:03 -0500
-Message-ID: <52F4C666.4050308@linux.vnet.ibm.com>
-Date: Fri, 07 Feb 2014 17:11:26 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-CC: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH 1/2] PPC: powernv: remove redundant cpuidle_idle_call()
-References: <1391696188-14540-1-git-send-email-nicolas.pitre@linaro.org> <CAKnoXLxCAqKaniGOwegNcOarS4FpoNKDY5PxOhe6j4wdtUAkLQ@mail.gmail.com> <52F3BCFE.3010703@linux.vnet.ibm.com> <alpine.LFD.2.11.1402070105170.1906@knanqh.ubzr> <52F46EB3.5080403@linux.vnet.ibm.com> <alpine.LFD.2.11.1402071022490.1906@knanqh.ubzr>
-In-Reply-To: <alpine.LFD.2.11.1402071022490.1906@knanqh.ubzr>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14020711-5490-0000-0000-000004E84EC8
+	Fri, 7 Feb 2014 06:23:46 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Mikulas Patocka <mpatocka@redhat.com>,
+        John David Anglin <dave.anglin@bell.net>,
+        Andi Kleen <ak@linux.intel.com>, Christoph Lameter <cl@linux.com>,
+        Helge Deller <deller@gmx.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.5 08/88] mm: fix crash when using XFS on loopback
+Date: Fri,  7 Feb 2014 11:22:05 +0000
+Message-Id: <1391772205-22239-9-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
+References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nicolas,
+3.5.7.30 -stable review patch.  If anyone has any objections, please let me know.
 
-On 02/07/2014 04:18 PM, Nicolas Pitre wrote:
-> On Fri, 7 Feb 2014, Preeti U Murthy wrote:
-> 
->> Hi Nicolas,
->>
->> On 02/07/2014 06:47 AM, Nicolas Pitre wrote:
->>>
->>> What about creating arch_cpu_idle_enter() and arch_cpu_idle_exit() in 
->>> arch/powerpc/kernel/idle.c and calling ppc64_runlatch_off() and 
->>> ppc64_runlatch_on() respectively from there instead?  Would that work?  
->>> That would make the idle consolidation much easier afterwards.
->>
->> I would not suggest doing this. The ppc64_runlatch_*() routines need to
->> be called when we are sure that the cpu is about to enter or has exit an
->> idle state. Moving the ppc64_runlatch_on() routine to
->> arch_cpu_idle_enter() for instance is not a good idea because there are
->> places where the cpu can decide not to enter any idle state before the
->> call to cpuidle_idle_call() itself. In that case communicating
->> prematurely that we are in an idle state would not be a good idea.
->>
->> So its best to add the ppc64_runlatch_* calls in the powernv cpuidle
->> driver IMO. We could however create idle_loop_prologue/epilogue()
->> variants inside it so that in addition to the runlatch routines we could
->> potentially add more such similar routines that are powernv specific.
->>   If there are cases where there is work to be done prior to and post an
->> entry into an idle state common to both pseries and powernv, we will
->> probably put them in arch_cpu_idle_enter/exit(). But the runlatch
->> routines are not suitable to be moved there as far as I can see.
-> 
-> OK.
-> 
-> However, one thing we need to do as much as possible is to remove those 
-> loops based on need_resched() from idle backend drivers.  A somewhat 
-> common pattern is:
-> 
-> my_idle()
-> {
-> 	/* interrupts disabled on entry */
-> 	while (!need_resched()) {
-> 		lowpower_wait_for_interrupts();
-> 		local_irq_enable();
-> 		/* IRQ serviced from here */
-> 		local_irq_disable();
-> 	}
-> 	local_irq_enable();
-> 	/* interrupts enabled on exit */
-> }
-> 
-> To be able to keep statistics on the actual idleness of the CPU we'd 
-> need for all idle backends to always return to generic code on every 
-> interrupt similar to this:
-> 
-> my_idle()
-> {
-> 	/* interrupts disabled on entry */
-> 	lowpower_wait_for_interrupts();
+------------------
 
-You can do this for the idle states which do not have the polling
-nature. IOW, these idle states are capable of doing what you describe as
-"wait_for_interrupts". They do some kind of spinning at the hardware
-level with interrupts enabled. A reschedule IPI or any other interrupt
-will wake them up to enter the generic idle loop where they check for
-the cause of the interrupt.
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-But observe the idle state "snooze" on powerpc. The power that this idle
-state saves is through the lowering of the thread priority of the CPU.
-After it lowers the thread priority, it is done. It cannot
-"wait_for_interrupts". It will exit my_idle(). It is now upto the
-generic idle loop to increase the thread priority if the need_resched
-flag is set. Only an interrupt routine can increase the thread priority.
-Else we will need to do it explicitly. And in such states which have a
-polling nature, the cpu will not receive a reschedule IPI.
+commit 03e5ac2fc3bf6f4140db0371e8bb4243b24e3e02 upstream.
 
-That is why in the snooze_loop() we poll on need_resched. If it is set
-we up the priority of the thread using HMT_MEDIUM() and then exit the
-my_idle() loop. In case of interrupts, the priority gets automatically
-increased.
+Commit 8456a648cf44 ("slab: use struct page for slab management") causes
+a crash in the LVM2 testsuite on PA-RISC (the crashing test is
+fsadm.sh).  The testsuite doesn't crash on 3.12, crashes on 3.13-rc1 and
+later.
 
-This might not be required to be done for similar idle routines on other
-archs but this is the consequence of applying this idea of simplified
-cpuidle backend driver on powerpc.
+ Bad Address (null pointer deref?): Code=15 regs=000000413edd89a0 (Addr=000006202224647d)
+ CPU: 3 PID: 24008 Comm: loop0 Not tainted 3.13.0-rc6 #5
+ task: 00000001bf3c0048 ti: 000000413edd8000 task.ti: 000000413edd8000
 
-I would say you could let the backend cpuidle drivers be in this regard,
-it could complicate the generic idle loop IMO depending on how the
-polling states are implemented in each architecture.
+      YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+ PSW: 00001000000001101111100100001110 Not tainted
+ r00-03  000000ff0806f90e 00000000405c8de0 000000004013e6c0 000000413edd83f0
+ r04-07  00000000405a95e0 0000000000000200 00000001414735f0 00000001bf349e40
+ r08-11  0000000010fe3d10 0000000000000001 00000040829c7778 000000413efd9000
+ r12-15  0000000000000000 000000004060d800 0000000010fe3000 0000000010fe3000
+ r16-19  000000413edd82a0 00000041078ddbc0 0000000000000010 0000000000000001
+ r20-23  0008f3d0d83a8000 0000000000000000 00000040829c7778 0000000000000080
+ r24-27  00000001bf349e40 00000001bf349e40 202d66202224640d 00000000405a95e0
+ r28-31  202d662022246465 000000413edd88f0 000000413edd89a0 0000000000000001
+ sr00-03  000000000532c000 0000000000000000 0000000000000000 000000000532c000
+ sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
 
+ IASQ: 0000000000000000 0000000000000000 IAOQ: 00000000401fe42c 00000000401fe430
+  IIR: 539c0030    ISR: 00000000202d6000  IOR: 000006202224647d
+  CPU:        3   CR30: 000000413edd8000 CR31: 0000000000000000
+  ORIG_R28: 00000000405a95e0
+  IAOQ[0]: vma_interval_tree_iter_first+0x14/0x48
+  IAOQ[1]: vma_interval_tree_iter_first+0x18/0x48
+  RP(r2): flush_dcache_page+0x128/0x388
+ Backtrace:
+   flush_dcache_page+0x128/0x388
+   lo_splice_actor+0x90/0x148 [loop]
+   splice_from_pipe_feed+0xc0/0x1d0
+   __splice_from_pipe+0xac/0xc0
+   lo_direct_splice_actor+0x1c/0x70 [loop]
+   splice_direct_to_actor+0xec/0x228
+   lo_receive+0xe4/0x298 [loop]
+   loop_thread+0x478/0x640 [loop]
+   kthread+0x134/0x168
+   end_fault_vector+0x20/0x28
+   xfs_setsize_buftarg+0x0/0x90 [xfs]
 
-> The generic code would be responsible for dealing with need_resched() 
-> and call back into the backend right away if necessary after updating 
-> some stats.
-> 
-> Do you see a problem with the runlatch calls happening around each 
-> interrrupt from such a simplified idle backend?
+ Kernel panic - not syncing: Bad Address (null pointer deref?)
 
-The runlatch calls could be moved outside the loop.They do not need to
-be called each time.
+Commit 8456a648cf44 changes the page structure so that the slab
+subsystem reuses the page->mapping field.
 
-Thanks
+The crash happens in the following way:
+ * XFS allocates some memory from slab and issues a bio to read data
+   into it.
+ * the bio is sent to the loopback device.
+ * lo_receive creates an actor and calls splice_direct_to_actor.
+ * lo_splice_actor copies data to the target page.
+ * lo_splice_actor calls flush_dcache_page because the page may be
+   mapped by userspace.  In that case we need to flush the kernel cache.
+ * flush_dcache_page asks for the list of userspace mappings, however
+   that page->mapping field is reused by the slab subsystem for a
+   different purpose.  This causes the crash.
 
-Regards
-Preeti U Murthy
-> 
-> 
-> Nicolas
-> 
+Note that other architectures without coherent caches (sparc, arm, mips)
+also call page_mapping from flush_dcache_page, so they may crash in the
+same way.
+
+This patch fixes this bug by testing if the page is a slab page in
+page_mapping and returning NULL if it is.
+
+The patch also fixes VM_BUG_ON(PageSlab(page)) that could happen in
+earlier kernels in the same scenario on architectures without cache
+coherence when CONFIG_DEBUG_VM is enabled - so it should be backported
+to stable kernels.
+
+In the old kernels, the function page_mapping is placed in
+include/linux/mm.h, so you should modify the patch accordingly when
+backporting it.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Cc: John David Anglin <dave.anglin@bell.net>]
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Christoph Lameter <cl@linux.com>
+Acked-by: Pekka Enberg <penberg@kernel.org>
+Reviewed-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Helge Deller <deller@gmx.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ luis: backported to 3.5:
+  - file rename: mm/util.c -> include/linux/mm.h ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ include/linux/mm.h | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 53eb728..23a80570 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -791,7 +791,10 @@ static inline struct address_space *page_mapping(struct page *page)
+ {
+ 	struct address_space *mapping = page->mapping;
+ 
+-	VM_BUG_ON(PageSlab(page));
++	/* This happens if someone calls flush_dcache_page on slab page */
++	if (unlikely(PageSlab(page)))
++		return NULL;
++
+ 	if (unlikely(PageSwapCache(page)))
+ 		mapping = &swapper_space;
+ 	else if ((unsigned long)mapping & PAGE_MAPPING_ANON)
+-- 
+1.8.3.2
 
