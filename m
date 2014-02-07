@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753908AbaBGLfZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:35:25 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41084 "EHLO
+	id S1753888AbaBGLfY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:35:24 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41086 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753101AbaBGLYs (ORCPT
+	with ESMTP id S1750868AbaBGLYs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 Feb 2014 06:24:48 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 58/88] drm/radeon: set the full cache bit for fences on r7xx+
-Date: Fri,  7 Feb 2014 11:22:55 +0000
-Message-Id: <1391772205-22239-59-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 56/88] audit: correct a type mismatch in audit_syscall_exit()
+Date: Fri,  7 Feb 2014 11:22:53 +0000
+Message-Id: <1391772205-22239-57-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
@@ -27,67 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
 
-commit d45b964a22cad962d3ede1eba8d24f5cee7b2a92 upstream.
+commit 06bdadd7634551cfe8ce071fe44d0311b3033d9e upstream.
 
-Needed to properly flush the read caches for fences.
+audit_syscall_exit() saves a result of regs_return_value() in intermediate
+"int" variable and passes it to __audit_syscall_exit(), which expects its
+second argument as a "long" value.  This will result in truncating the
+value returned by a system call and making a wrong audit record.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+I don't know why gcc compiler doesn't complain about this, but anyway it
+causes a problem at runtime on arm64 (and probably most 64-bit archs).
+
+Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Eric Paris <eparis@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Eric Paris <eparis@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/r600.c  | 13 +++++++------
- drivers/gpu/drm/radeon/r600d.h |  1 +
- 2 files changed, 8 insertions(+), 6 deletions(-)
+ include/linux/audit.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/r600.c b/drivers/gpu/drm/radeon/r600.c
-index 3458d4a..ec1a029 100644
---- a/drivers/gpu/drm/radeon/r600.c
-+++ b/drivers/gpu/drm/radeon/r600.c
-@@ -2249,14 +2249,17 @@ void r600_fence_ring_emit(struct radeon_device *rdev,
- 			  struct radeon_fence *fence)
+diff --git a/include/linux/audit.h b/include/linux/audit.h
+index 41b4e49..8858e95 100644
+--- a/include/linux/audit.h
++++ b/include/linux/audit.h
+@@ -488,7 +488,7 @@ static inline void audit_syscall_exit(void *pt_regs)
  {
- 	struct radeon_ring *ring = &rdev->ring[fence->ring];
-+	u32 cp_coher_cntl = PACKET3_TC_ACTION_ENA | PACKET3_VC_ACTION_ENA |
-+		PACKET3_SH_ACTION_ENA;
-+
-+	if (rdev->family >= CHIP_RV770)
-+		cp_coher_cntl |= PACKET3_FULL_CACHE_ENA;
+ 	if (unlikely(current->audit_context)) {
+ 		int success = is_syscall_success(pt_regs);
+-		int return_code = regs_return_value(pt_regs);
++		long return_code = regs_return_value(pt_regs);
  
- 	if (rdev->wb.use_event) {
- 		u64 addr = rdev->fence_drv[fence->ring].gpu_addr;
- 		/* flush read cache over gart */
- 		radeon_ring_write(ring, PACKET3(PACKET3_SURFACE_SYNC, 3));
--		radeon_ring_write(ring, PACKET3_TC_ACTION_ENA |
--					PACKET3_VC_ACTION_ENA |
--					PACKET3_SH_ACTION_ENA);
-+		radeon_ring_write(ring, cp_coher_cntl);
- 		radeon_ring_write(ring, 0xFFFFFFFF);
- 		radeon_ring_write(ring, 0);
- 		radeon_ring_write(ring, 10); /* poll interval */
-@@ -2270,9 +2273,7 @@ void r600_fence_ring_emit(struct radeon_device *rdev,
- 	} else {
- 		/* flush read cache over gart */
- 		radeon_ring_write(ring, PACKET3(PACKET3_SURFACE_SYNC, 3));
--		radeon_ring_write(ring, PACKET3_TC_ACTION_ENA |
--					PACKET3_VC_ACTION_ENA |
--					PACKET3_SH_ACTION_ENA);
-+		radeon_ring_write(ring, cp_coher_cntl);
- 		radeon_ring_write(ring, 0xFFFFFFFF);
- 		radeon_ring_write(ring, 0);
- 		radeon_ring_write(ring, 10); /* poll interval */
-diff --git a/drivers/gpu/drm/radeon/r600d.h b/drivers/gpu/drm/radeon/r600d.h
-index 025fd5b..6dea105 100644
---- a/drivers/gpu/drm/radeon/r600d.h
-+++ b/drivers/gpu/drm/radeon/r600d.h
-@@ -1108,6 +1108,7 @@
- #define	PACKET3_INDIRECT_BUFFER				0x32
- #define	PACKET3_SURFACE_SYNC				0x43
- #              define PACKET3_CB0_DEST_BASE_ENA    (1 << 6)
-+#              define PACKET3_FULL_CACHE_ENA       (1 << 20) /* r7xx+ only */
- #              define PACKET3_TC_ACTION_ENA        (1 << 23)
- #              define PACKET3_VC_ACTION_ENA        (1 << 24)
- #              define PACKET3_CB_ACTION_ENA        (1 << 25)
+ 		__audit_syscall_exit(success, return_code);
+ 	}
 -- 
 1.8.3.2
 
