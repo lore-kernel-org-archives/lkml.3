@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754814AbaBGLua (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:50:30 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41924 "EHLO
+	id S1754856AbaBGLuj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:50:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41973 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932350AbaBGLuV (ORCPT
+	with ESMTP id S1753041AbaBGLuf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:50:21 -0500
+	Fri, 7 Feb 2014 06:50:35 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Steven Rostedt <rostedt@goodmis.org>,
+Cc: robert.hodaszi@digi.com, Peter Chen <peter.chen@freescale.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 113/233] ftrace: Fix synchronization location disabling and freeing ftrace_ops
-Date: Fri,  7 Feb 2014 11:45:32 +0000
-Message-Id: <1391773652-25214-114-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 121/233] usb: ehci: add freescale imx28 special write register method
+Date: Fri,  7 Feb 2014 11:45:40 +0000
+Message-Id: <1391773652-25214-122-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -27,111 +29,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Peter Chen <peter.chen@freescale.com>
 
-commit a4c35ed241129dd142be4cadb1e5a474a56d5464 upstream.
+commit feffe09f510c475df082546815f9e4a573f6a233 upstream.
 
-The synchronization needed after ftrace_ops are unregistered must happen
-after the callback is disabled from becing called by functions.
+According to Freescale imx28 Errata, "ENGR119653 USB: ARM to USB
+register error issue", All USB register write operations must
+use the ARM SWP instruction. So, we implement a special ehci_write
+for imx28.
 
-The current location happens after the function is being removed from the
-internal lists, but not after the function callbacks were disabled, leaving
-the functions susceptible of being called after their callbacks are freed.
+Discussion for it at below:
+http://marc.info/?l=linux-usb&m=137996395529294&w=2
 
-This affects perf and any externel users of function tracing (LTTng and
-SystemTap).
+Without this patcheset, imx28 works unstable at high AHB bus loading.
+If the bus loading is not high, the imx28 usb can work well at the most
+of time. There is a IC errata for this problem, usually, we consider
+IC errata is a problem not a new feature, and this workaround is needed
+for that, so we need to add them to stable tree 3.11+.
 
-Fixes: cdbe61bfe704 "ftrace: Allow dynamically allocated function tracers"
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: robert.hodaszi@digi.com
+Signed-off-by: Peter Chen <peter.chen@freescale.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Tested-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/trace/ftrace.c | 58 ++++++++++++++++++++++++++++-----------------------
- 1 file changed, 32 insertions(+), 26 deletions(-)
+ drivers/usb/host/ehci.h | 18 +++++++++++++++++-
+ 1 file changed, 17 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index f1dd607..c984033 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -439,20 +439,6 @@ static int __unregister_ftrace_function(struct ftrace_ops *ops)
- 	} else if (ops->flags & FTRACE_OPS_FL_CONTROL) {
- 		ret = remove_ftrace_list_ops(&ftrace_control_list,
- 					     &control_ops, ops);
--		if (!ret) {
--			/*
--			 * The ftrace_ops is now removed from the list,
--			 * so there'll be no new users. We must ensure
--			 * all current users are done before we free
--			 * the control data.
--			 * Note synchronize_sched() is not enough, as we
--			 * use preempt_disable() to do RCU, but the function
--			 * tracer can be called where RCU is not active
--			 * (before user_exit()).
--			 */
--			schedule_on_each_cpu(ftrace_sync);
--			control_ops_free(ops);
--		}
- 	} else
- 		ret = remove_ftrace_ops(&ftrace_ops_list, ops);
+diff --git a/drivers/usb/host/ehci.h b/drivers/usb/host/ehci.h
+index 64f9a08..77b34cf 100644
+--- a/drivers/usb/host/ehci.h
++++ b/drivers/usb/host/ehci.h
+@@ -200,6 +200,7 @@ struct ehci_hcd {			/* one per controller */
+ 	unsigned		has_synopsys_hc_bug:1; /* Synopsys HC */
+ 	unsigned		frame_index_bug:1; /* MosChip (AKA NetMos) */
+ 	unsigned		need_oc_pp_cycle:1; /* MPC834X port power */
++	unsigned		imx28_write_fix:1; /* For Freescale i.MX28 */
  
-@@ -462,17 +448,6 @@ static int __unregister_ftrace_function(struct ftrace_ops *ops)
- 	if (ftrace_enabled)
- 		update_ftrace_function();
- 
--	/*
--	 * Dynamic ops may be freed, we must make sure that all
--	 * callers are done before leaving this function.
--	 *
--	 * Again, normal synchronize_sched() is not good enough.
--	 * We need to do a hard force of sched synchronization.
--	 */
--	if (ops->flags & FTRACE_OPS_FL_DYNAMIC)
--		schedule_on_each_cpu(ftrace_sync);
--
--
- 	return 0;
+ 	/* required for usb32 quirk */
+ 	#define OHCI_CTRL_HCFS          (3 << 6)
+@@ -675,6 +676,18 @@ static inline unsigned int ehci_readl(const struct ehci_hcd *ehci,
+ #endif
  }
  
-@@ -2141,10 +2116,41 @@ static int ftrace_shutdown(struct ftrace_ops *ops, int command)
- 		command |= FTRACE_UPDATE_TRACE_FUNC;
- 	}
- 
--	if (!command || !ftrace_enabled)
-+	if (!command || !ftrace_enabled) {
-+		/*
-+		 * If these are control ops, they still need their
-+		 * per_cpu field freed. Since, function tracing is
-+		 * not currently active, we can just free them
-+		 * without synchronizing all CPUs.
-+		 */
-+		if (ops->flags & FTRACE_OPS_FL_CONTROL)
-+			control_ops_free(ops);
- 		return 0;
-+	}
- 
- 	ftrace_run_update_code(command);
-+
-+	/*
-+	 * Dynamic ops may be freed, we must make sure that all
-+	 * callers are done before leaving this function.
-+	 * The same goes for freeing the per_cpu data of the control
-+	 * ops.
-+	 *
-+	 * Again, normal synchronize_sched() is not good enough.
-+	 * We need to do a hard force of sched synchronization.
-+	 * This is because we use preempt_disable() to do RCU, but
-+	 * the function tracers can be called where RCU is not watching
-+	 * (like before user_exit()). We can not rely on the RCU
-+	 * infrastructure to do the synchronization, thus we must do it
-+	 * ourselves.
-+	 */
-+	if (ops->flags & (FTRACE_OPS_FL_DYNAMIC | FTRACE_OPS_FL_CONTROL)) {
-+		schedule_on_each_cpu(ftrace_sync);
-+
-+		if (ops->flags & FTRACE_OPS_FL_CONTROL)
-+			control_ops_free(ops);
-+	}
-+
- 	return 0;
++#ifdef CONFIG_SOC_IMX28
++static inline void imx28_ehci_writel(const unsigned int val,
++		volatile __u32 __iomem *addr)
++{
++	__asm__ ("swp %0, %0, [%1]" : : "r"(val), "r"(addr));
++}
++#else
++static inline void imx28_ehci_writel(const unsigned int val,
++		volatile __u32 __iomem *addr)
++{
++}
++#endif
+ static inline void ehci_writel(const struct ehci_hcd *ehci,
+ 		const unsigned int val, __u32 __iomem *regs)
+ {
+@@ -683,7 +696,10 @@ static inline void ehci_writel(const struct ehci_hcd *ehci,
+ 		writel_be(val, regs) :
+ 		writel(val, regs);
+ #else
+-	writel(val, regs);
++	if (ehci->imx28_write_fix)
++		imx28_ehci_writel(val, regs);
++	else
++		writel(val, regs);
+ #endif
  }
  
 -- 
