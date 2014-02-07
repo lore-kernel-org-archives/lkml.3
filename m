@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753414AbaBGLZX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:25:23 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41168 "EHLO
+	id S1752011AbaBGL1g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:27:36 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41220 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753255AbaBGLZI (ORCPT
+	with ESMTP id S1753233AbaBGLZW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:25:08 -0500
+	Fri, 7 Feb 2014 06:25:22 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Richard Weinberger <richard@nod.at>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 73/88] mm, oom: base root bonus on current usage
-Date: Fri,  7 Feb 2014 11:23:10 +0000
-Message-Id: <1391772205-22239-74-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 83/88] net,via-rhine: Fix tx_timeout handling
+Date: Fri,  7 Feb 2014 11:23:20 +0000
+Message-Id: <1391772205-22239-84-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
@@ -29,78 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Rientjes <rientjes@google.com>
+From: Richard Weinberger <richard@nod.at>
 
-commit 778c14affaf94a9e4953179d3e13a544ccce7707 upstream.
+commit a926592f5e4e900f3fa903298c4619a131e60963 upstream.
 
-A 3% of system memory bonus is sometimes too excessive in comparison to
-other processes.
+rhine_reset_task() misses to disable the tx scheduler upon reset,
+this can lead to a crash if work is still scheduled while we're resetting
+the tx queue.
 
-With commit a63d83f427fb ("oom: badness heuristic rewrite"), the OOM
-killer tries to avoid killing privileged tasks by subtracting 3% of
-overall memory (system or cgroup) from their per-task consumption.  But
-as a result, all root tasks that consume less than 3% of overall memory
-are considered equal, and so it only takes 33+ privileged tasks pushing
-the system out of memory for the OOM killer to do something stupid and
-kill dhclient or other root-owned processes.  For example, on a 32G
-machine it can't tell the difference between the 1M agetty and the 10G
-fork bomb member.
+Fixes:
+[   93.591707] BUG: unable to handle kernel NULL pointer dereference at 0000004c
+[   93.595514] IP: [<c119d10d>] rhine_napipoll+0x491/0x6
 
-The changelog describes this 3% boost as the equivalent to the global
-overcommit limit being 3% higher for privileged tasks, but this is not
-the same as discounting 3% of overall memory from _every privileged task
-individually_ during OOM selection.
-
-Replace the 3% of system memory bonus with a 3% of current memory usage
-bonus.
-
-By giving root tasks a bonus that is proportional to their actual size,
-they remain comparable even when relatively small.  In the example
-above, the OOM killer will discount the 1M agetty's 256 badness points
-down to 179, and the 10G fork bomb's 262144 points down to 183500 points
-and make the right choice, instead of discounting both to 0 and killing
-agetty because it's first in the task list.
-
-Signed-off-by: David Rientjes <rientjes@google.com>
-Reported-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Richard Weinberger <richard@nod.at>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- Documentation/filesystems/proc.txt | 4 ++--
- mm/oom_kill.c                      | 2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/net/ethernet/via/via-rhine.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
-index fb0a6ae..a3d5e7d 100644
---- a/Documentation/filesystems/proc.txt
-+++ b/Documentation/filesystems/proc.txt
-@@ -1333,8 +1333,8 @@ may allocate from based on an estimation of its current memory and swap use.
- For example, if a task is using all allowed memory, its badness score will be
- 1000.  If it is using half of its allowed memory, its score will be 500.
+diff --git a/drivers/net/ethernet/via/via-rhine.c b/drivers/net/ethernet/via/via-rhine.c
+index 4c1099e..5aa8caa 100644
+--- a/drivers/net/ethernet/via/via-rhine.c
++++ b/drivers/net/ethernet/via/via-rhine.c
+@@ -1601,6 +1601,7 @@ static void rhine_reset_task(struct work_struct *work)
+ 		goto out_unlock;
  
--There is an additional factor included in the badness score: root
--processes are given 3% extra memory over other tasks.
-+There is an additional factor included in the badness score: the current memory
-+and swap usage is discounted by 3% for root processes.
+ 	napi_disable(&rp->napi);
++	netif_tx_disable(dev);
+ 	spin_lock_bh(&rp->lock);
  
- The amount of "allowed" memory depends on the context in which the oom killer
- was called.  If it is due to the memory assigned to the allocating task's cpuset
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index b45c813..0eba956 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -212,7 +212,7 @@ unsigned long oom_badness(struct task_struct *p, struct mem_cgroup *memcg,
- 	 * implementation used by LSMs.
- 	 */
- 	if (has_capability_noaudit(p, CAP_SYS_ADMIN))
--		adj -= 30;
-+		points -= (points * 3) / 100;
- 
- 	/* Normalize to oom_score_adj units */
- 	adj *= totalpages / 1000;
+ 	/* clear all descriptors */
 -- 
 1.8.3.2
 
