@@ -1,70 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752782AbaBGQVE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 11:21:04 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:39538 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751985AbaBGQVB (ORCPT
+	id S1752903AbaBGQVN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 11:21:13 -0500
+Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:54428 "EHLO
+	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752579AbaBGQVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 11:21:01 -0500
-Message-ID: <52F507E9.9050502@wwwdotorg.org>
-Date: Fri, 07 Feb 2014 09:20:57 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Luis Henriques <luis.henriques@canonical.com>,
-        Levente Kurusa <levex@linux.com>
-CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com, Anssi Hannula <anssi.hannula@iki.fi>,
-        Takashi Iwai <tiwai@suse.de>, Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH 3.11 229/233] ALSA: hda - hdmi: introduce patch_nvhdmi()
-References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com> <1391773652-25214-230-git-send-email-luis.henriques@canonical.com> <52F4CA77.5060007@linux.com> <20140207143629.GB5499@hercules>
-In-Reply-To: <20140207143629.GB5499@hercules>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 7 Feb 2014 11:21:08 -0500
+From: Fabrice GASNIER <fabrice.gasnier@st.com>
+To: linux@arm.linux.org.uk, u.kleine-koenig@pengutronix.de,
+        jonathan.austin@arm.com, catalin.marinas@arm.com, will.deacon@arm.com,
+        nico@linaro.org, sboyd@codeaurora.org, marc.zyngier@arm.com,
+        ben.dooks@codethink.co.uk, vgupta@synopsys.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: maxime.coquelin@st.com
+Subject: [RFC PATCH]  ARM: Enable imprecise external aborts earlier
+Date: Fri,  7 Feb 2014 17:19:14 +0100
+Message-Id: <1391789955-26927-1-git-send-email-fabrice.gasnier@st.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2014 07:36 AM, Luis Henriques wrote:
-> On Fri, Feb 07, 2014 at 12:58:47PM +0100, Levente Kurusa wrote:
->> Hi,
->>
->> On 02/07/2014 12:47 PM, Luis Henriques wrote:
->>> 3.11.10.4 -stable review patch.  If anyone has any objections, please let me know.
->>>  [...]
->>>  
->>> +static int patch_nvhdmi(struct hda_codec *codec)
->>> +{
->>> +	struct hdmi_spec *spec;
->>> +	int err;
->>> +
->>> +	err = patch_generic_hdmi(codec);
->>> +	if (err)
->>> +		return err;
->>> +
->>> +	spec = codec->spec;
->>> +
->>> +	return 0;
->>> +}
->>> [...]
->>
->> Is it just me or is it that the 'spec' variable has no use?
-> 
-> This does seem a little bit odd indeed.  I've picked the backport provided
-> by Stephen, which has been queued for the 3.10 and 3.12 stable kernels as
-> well.  The original patch actually modifies the ops field in the hdmi_spec
-> struct, however this field doesn't exist in this kernel version.
-> 
-> Stephen, could you please comment?  Since this is just a partial backport
-> of 611885bc963a ("ALSA: hda - hdmi: Disallow unsupported 2ch remapping on
-> NVIDIA codecs"), I'm assuming this is correct -- although the spec
-> variable could have been dropped.
+Some HW / drivers like PCIe use imprecise aborts on ARM to detect ports
+that are behind a switch, by using: hook_fault_code(16+6, ...);
 
-The very next patch of mine to this file (in other stable releases)
-makes use of the spec variable. I kept the addition of the spec variable
-in this patch, even though it isn't used until the next patch, so that
-it stayed as part of the backport of this patch which originally added
-it, rather than moving it to the other patch I backported, and hence
-mixing up multiple upstream patches in the same backported patch.
+At PCIe bus enumeration, imprecise aborts are not enabled. Imprecise
+aborts are enabled late during bootup process, when userland
+init starts. It seems unmasked later when starting userland init
+process (e.g. when CPSR.A bit on arm is cleared). Aborts are deferred
+until then.
+
+Enable imprecise external aborts earlier during bootup.
+
+Reference :
+http://marc.info/?l=linux-arm-kernel&m=139118404708291&w=2
+
+Fabrice Gasnier (1):
+  ARM: Add imprecise abort enable/disable macro
+
+ arch/arm/include/asm/irqflags.h |   33 +++++++++++++++++++++++++++++++++
+ arch/arm/kernel/smp.c           |    1 +
+ arch/arm/kernel/traps.c         |    4 ++++
+ 3 files changed, 38 insertions(+)
+
+-- 
+1.7.9.5
+
