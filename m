@@ -1,61 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841AbaBGRq4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 12:46:56 -0500
-Received: from relay1.mentorg.com ([192.94.38.131]:35733 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751403AbaBGRqy (ORCPT
+	id S1753621AbaBGRsY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 12:48:24 -0500
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:55963 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751468AbaBGRsW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 12:46:54 -0500
-Date: Fri, 7 Feb 2014 17:46:41 +0000
-From: "Joseph S. Myers" <joseph@codesourcery.com>
-X-X-Sender: jsm28@digraph.polyomino.org.uk
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Will Deacon <will.deacon@arm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Torvald Riegel <triegel@redhat.com>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-In-Reply-To: <20140207170654.GQ5002@laptop.programming.kicks-ass.net>
-Message-ID: <Pine.LNX.4.64.1402071740330.7304@digraph.polyomino.org.uk>
-References: <52F3DA85.1060209@arm.com> <20140206185910.GE27276@mudshark.cambridge.arm.com>
- <20140206192743.GH4250@linux.vnet.ibm.com> <1391721423.23421.3898.camel@triegel.csb>
- <20140206221117.GJ4250@linux.vnet.ibm.com> <1391730288.23421.4102.camel@triegel.csb>
- <20140207042051.GL4250@linux.vnet.ibm.com> <20140207074405.GM5002@laptop.programming.kicks-ass.net>
- <20140207165028.GO4250@linux.vnet.ibm.com> <20140207165548.GR5976@mudshark.cambridge.arm.com>
- <20140207170654.GQ5002@laptop.programming.kicks-ass.net>
+	Fri, 7 Feb 2014 12:48:22 -0500
+Message-ID: <52F52A97.1010001@cogentembedded.com>
+Date: Fri, 07 Feb 2014 21:48:55 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-OriginalArrivalTime: 07 Feb 2014 17:46:44.0892 (UTC) FILETIME=[911EF5C0:01CF242C]
+To: Rashika Kheria <rashika.kheria@gmail.com>, linux-kernel@vger.kernel.org
+CC: Armin Schindler <mac@melware.de>, Karsten Keil <isdn@linux-pingi.de>,
+        netdev@vger.kernel.org, josh@joshtriplett.org
+Subject: Re: [PATCH 01/26] drivers: isdn: Rectify typing error in xdi_msg.h
+References: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
+In-Reply-To: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 7 Feb 2014, Peter Zijlstra wrote:
+Hello.
 
-> There's further problems where things like memset() can write outside
-> the specified address range. Examples are memset() using single
-> instructions to wipe entire cachelines and then 'restoring' the tail
-> bit.
+On 02/07/2014 03:18 PM, Rashika Kheria wrote:
 
-If memset (or any C library function) modifies bytes it's not permitted to 
-modify in the abstract machine, that's a simple bug and should be reported 
-as usual.  We've made GCC follow that part of the memory model by default 
-(so a store to a non-bit-field structure field doesn't do a 
-read-modify-write to a word containing another field, for example) and I 
-think it's pretty obvious that glibc should do so as well.
+> Rectify typing error while including the guard for the header
+> file xdi_msg.h so that proper guard is wrapped around the file
+> to prevent it from being included more than once.
 
-(Of course, memset is not an atomic operation, and you need to allow for 
-that if you use it on an _Atomic object - which is I think valid, unless 
-the object is also volatile, but perhaps ill-advised.)
+> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
--- 
-Joseph S. Myers
-joseph@codesourcery.com
+    You need to specify "eicon: " in the patch subjects, else there's an 
+impression you're modifying the generic ISDN code instead of the concrete 
+driver. You might as well drop "drivers:".
+
+WBR, Sergei
+
