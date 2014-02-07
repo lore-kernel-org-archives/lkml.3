@@ -1,83 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755630AbaBGM2w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:28:52 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:47105 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752901AbaBGM2s (ORCPT
+	id S1755647AbaBGM33 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:29:29 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:56038 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753169AbaBGM2i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 07:28:48 -0500
-Date: Fri, 7 Feb 2014 13:28:37 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Torsten Duwe <duwe@lst.de>
-Cc: Scott Wood <scottwood@freescale.com>, linux-kernel@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
-        Tom Musta <tommusta@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH] Convert powerpc simple spinlocks into ticket locks
-Message-ID: <20140207122837.GA3104@twins.programming.kicks-ass.net>
-References: <20140206103736.GA18054@lst.de>
- <20140206163837.GT2936@laptop.programming.kicks-ass.net>
- <20140206173727.GA13048@lst.de>
- <1391717992.6733.232.camel@snotra.buserror.net>
- <20140207090248.GB26811@lst.de>
- <20140207103139.GP5002@laptop.programming.kicks-ass.net>
- <20140207104530.GG5126@laptop.programming.kicks-ass.net>
- <20140207114949.GA2107@lst.de>
+	Fri, 7 Feb 2014 07:28:38 -0500
+Date: Fri, 7 Feb 2014 17:58:32 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Armin Schindler <mac@melware.de>, Karsten Keil <isdn@linux-pingi.de>,
+        netdev@vger.kernel.org, josh@joshtriplett.org
+Subject: [PATCH 09/26] drivers: isdn: Include appropriate header file in
+ diva.c
+Message-ID: <d1f2a6a9c34f0e96cd2d24cd240f334a48864cff.1390408516.git.rashika.kheria@gmail.com>
+References: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140207114949.GA2107@lst.de>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 07, 2014 at 12:49:49PM +0100, Torsten Duwe wrote:
-> On Fri, Feb 07, 2014 at 11:45:30AM +0100, Peter Zijlstra wrote:
-> > 
-> > That might need to be lhz too, I'm confused on all the load variants.
-> 
-> ;-)
-> 
-> > > unlock:
-> > > 	lhz	%0, 0, &tail
-> > > 	addic	%0, %0, 1
-> 
-> No carry with this one, I'd say.
+Include appropriate header file helpers.h in hardware/eicon/diva.c
+because it defines function declared in the header file.
 
-Right you are, add immediate it is.
+This eliminates the following warning in hardware/eicon/diva.c:
+drivers/isdn/hardware/eicon/diva.c:655:6: warning: no previous prototype for ‘xdiFreeFile’ [-Wmissing-prototypes]
 
-> Besides, unlock increments the head.
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+ drivers/isdn/hardware/eicon/diva.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-No, unlock increments the tail, lock increments the head and waits until
-the tail matches the pre-inc value.
+diff --git a/drivers/isdn/hardware/eicon/diva.c b/drivers/isdn/hardware/eicon/diva.c
+index d91dd58..6f28797 100644
+--- a/drivers/isdn/hardware/eicon/diva.c
++++ b/drivers/isdn/hardware/eicon/diva.c
+@@ -17,6 +17,7 @@
+ #include "xdi_adapter.h"
+ #include "diva_pci.h"
+ #include "diva.h"
++#include "helpers.h"
+ 
+ #ifdef CONFIG_ISDN_DIVAS_PRIPCI
+ #include "os_pri.h"
+-- 
+1.7.9.5
 
-That said, why do the atomic_inc() primitives do an carry add? (that's
-where I borrowed it from).
-
-> > > 	lwsync
-> > > 	sth	%0, 0, &tail
-> > > 
-> 
-> Given the beauty and simplicity of this, may I ask Ingo:
-> you signed off 314cdbefd1fd0a7acf3780e9628465b77ea6a836;
-> can you explain why head and tail must live on the same cache
-> line? Or is it just a space saver? I just ported it to ppc,
-> I didn't think about alternatives.
-
-spinlock_t should, ideally, be 32bits.
-
-> What about
-> 
-> atomic_t tail;
-> volatile int head; ?
-> 
-> Admittedly, that's usually 8 bytes instead of 4...
-
-That still won't straddle a cacheline unless you do weird alignement
-things which will bloat all the various data structures more still.
-
-Anyway, you can do a version with lwarx/stwcx if you're looking get rid
-of lharx.
