@@ -1,115 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751968AbaBGJrv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 04:47:51 -0500
-Received: from smtp-vbr1.xs4all.nl ([194.109.24.21]:4419 "EHLO
-	smtp-vbr1.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751356AbaBGJrt (ORCPT
+	id S1751768AbaBGJuk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 04:50:40 -0500
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:38936 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751280AbaBGJuh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 04:47:49 -0500
-Message-ID: <52F4ABA2.5000905@xs4all.nl>
-Date: Fri, 07 Feb 2014 10:47:14 +0100
-From: Hans Verkuil <hverkuil@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	Fri, 7 Feb 2014 04:50:37 -0500
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-kernel@vger.kernel.org, Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH, RFC 07/30] [media] radio-cadet: avoid interruptible_sleep_on
- race
-References: <1388664474-1710039-1-git-send-email-arnd@arndb.de> <1388664474-1710039-8-git-send-email-arnd@arndb.de> <52D90A2F.2030903@xs4all.nl> <201401171528.02016.arnd@arndb.de> <52F4A82C.7010104@xs4all.nl>
-In-Reply-To: <52F4A82C.7010104@xs4all.nl>
+In-Reply-To: <1391696188-14540-2-git-send-email-nicolas.pitre@linaro.org>
+References: <1391696188-14540-1-git-send-email-nicolas.pitre@linaro.org> <1391696188-14540-2-git-send-email-nicolas.pitre@linaro.org>
+From: Catalin Marinas <catalin.marinas@arm.com>
+Date: Fri, 7 Feb 2014 09:50:17 +0000
+X-Google-Sender-Auth: 7-SOPqSyp-asLxlhGqc_rK_4CyU
+Message-ID: <CAHkRjk7O4L9SaZVJqWxwbtpp6Qiy5ageQLa8hz4Wepe4LzagLw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] ARM64: powernv: remove redundant cpuidle_idle_call()
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        linuxppc-dev@lists.ozlabs.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2014 10:32 AM, Hans Verkuil wrote:
-> Hi Arnd!
-> 
-> On 01/17/2014 03:28 PM, Arnd Bergmann wrote:
->> On Friday 17 January 2014, Hans Verkuil wrote:
->>>> @@ -323,25 +324,32 @@ static ssize_t cadet_read(struct file *file, char __user *data, size_t count, lo
->>>>       struct cadet *dev = video_drvdata(file);
->>>>       unsigned char readbuf[RDS_BUFFER];
->>>>       int i = 0;
->>>> +     DEFINE_WAIT(wait);
->>>>  
->>>>       mutex_lock(&dev->lock);
->>>>       if (dev->rdsstat == 0)
->>>>               cadet_start_rds(dev);
->>>> -     if (dev->rdsin == dev->rdsout) {
->>>> +     while (1) {
->>>> +             prepare_to_wait(&dev->read_queue, &wait, TASK_INTERRUPTIBLE);
->>>> +             if (dev->rdsin != dev->rdsout)
->>>> +                     break;
->>>> +
->>>>               if (file->f_flags & O_NONBLOCK) {
->>>>                       i = -EWOULDBLOCK;
->>>>                       goto unlock;
->>>>               }
->>>>               mutex_unlock(&dev->lock);
->>>> -             interruptible_sleep_on(&dev->read_queue);
->>>> +             schedule();
->>>>               mutex_lock(&dev->lock);
->>>>       }
->>>> +
->>>
->>> This seems overly complicated. Isn't it enough to replace interruptible_sleep_on
->>> by 'wait_event_interruptible(&dev->read_queue, dev->rdsin != dev->rdsout);'?
->>>
->>> Or am I missing something subtle?
->>
->> The existing code sleeps with &dev->lock released because the cadet_handler()
->> function needs to grab (and release) the same lock before it can wake up
->> the reader thread.
->>
->> Doing the simple wait_event_interruptible() would result in a deadlock here.
-> 
-> I don't see it. I propose this patch:
-> 
-> Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-> 
-> diff --git a/drivers/media/radio/radio-cadet.c b/drivers/media/radio/radio-cadet.c
-> index 545c04c..2f658c6 100644
-> --- a/drivers/media/radio/radio-cadet.c
-> +++ b/drivers/media/radio/radio-cadet.c
-> @@ -327,13 +327,15 @@ static ssize_t cadet_read(struct file *file, char __user *data, size_t count, lo
->  	mutex_lock(&dev->lock);
->  	if (dev->rdsstat == 0)
->  		cadet_start_rds(dev);
-> -	if (dev->rdsin == dev->rdsout) {
-> +	while (dev->rdsin == dev->rdsout) {
->  		if (file->f_flags & O_NONBLOCK) {
->  			i = -EWOULDBLOCK;
->  			goto unlock;
->  		}
->  		mutex_unlock(&dev->lock);
-> -		interruptible_sleep_on(&dev->read_queue);
-> +		if (wait_event_interruptible(&dev->read_queue,
+On 6 February 2014 14:16, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+> The core idle loop now takes care of it.
+>
+> Signed-off-by: Nicolas Pitre <nico@linaro.org>
 
-Oops, that's without an '&' before dev->read_queue. I forgot to update my
-patch before posting, sorry about that.
-
-	Hans
-
-> +					     dev->rdsin != dev->rdsout))
-> +			return -EINTR;
->  		mutex_lock(&dev->lock);
->  	}
->  	while (i < count && dev->rdsin != dev->rdsout)
-> 
-> Tested with my radio-cadet card.
-> 
-> This looks good to me. If I am still missing something, let me know!
-> 
-> Regards,
-> 
-> 	Hans
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
