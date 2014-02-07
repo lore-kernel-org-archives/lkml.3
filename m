@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755125AbaBGLvd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:51:33 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42179 "EHLO
+	id S932413AbaBGLvb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:51:31 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42168 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755078AbaBGLvZ (ORCPT
+	with ESMTP id S1753467AbaBGLvX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:51:25 -0500
+	Fri, 7 Feb 2014 06:51:23 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
+Cc: Alex Williamson <alex.williamson@redhat.com>,
+        David Woodhouse <dwmw2@infradead.org>, Joerg Roedel <joro@8bytes.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 159/233] arch/sh/kernel/kgdb.c: add missing #include <linux/sched.h>
-Date: Fri,  7 Feb 2014 11:46:18 +0000
-Message-Id: <1391773652-25214-160-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 158/233] intel-iommu: fix off-by-one in pagetable freeing
+Date: Fri,  7 Feb 2014 11:46:17 +0000
+Message-Id: <1391773652-25214-159-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -30,45 +30,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+From: Alex Williamson <alex.williamson@redhat.com>
 
-commit 53a52f17d96c8d47c79a7dafa81426317e89c7c1 upstream.
+commit 08336fd218e087cc4fcc458e6b6dcafe8702b098 upstream.
 
-  arch/sh/kernel/kgdb.c: In function 'sleeping_thread_to_gdb_regs':
-  arch/sh/kernel/kgdb.c:225:32: error: implicit declaration of function 'task_stack_page' [-Werror=implicit-function-declaration]
-  arch/sh/kernel/kgdb.c:242:23: error: dereferencing pointer to incomplete type
-  arch/sh/kernel/kgdb.c:243:22: error: dereferencing pointer to incomplete type
-  arch/sh/kernel/kgdb.c: In function 'singlestep_trap_handler':
-  arch/sh/kernel/kgdb.c:310:27: error: 'SIGTRAP' undeclared (first use in this function)
-  arch/sh/kernel/kgdb.c:310:27: note: each undeclared identifier is reported only once for each function it appears in
+dma_pte_free_level() has an off-by-one error when checking whether a pte
+is completely covered by a range.  Take for example the case of
+attempting to free pfn 0x0 - 0x1ff, ie.  512 entries covering the first
+2M superpage.
 
-This was introduced by commit 16559ae48c76 ("kgdb: remove #include
-<linux/serial_8250.h> from kgdb.h").
+The level_size() is 0x200 and we test:
 
-[geert@linux-m68k.org: reworded and reformatted]
-Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+  static void dma_pte_free_level(...
+	...
+
+	if (!(0 > 0 || 0x1ff < 0 + 0x200)) {
+		...
+	}
+
+Clearly the 2nd test is true, which means we fail to take the branch to
+clear and free the pagetable entry.  As a result, we're leaking
+pagetables and failing to install new pages over the range.
+
+This was found with a PCI device assigned to a QEMU guest using vfio-pci
+without a VGA device present.  The first 1M of guest address space is
+mapped with various combinations of 4K pages, but eventually the range
+is entirely freed and replaced with a 2M contiguous mapping.
+intel-iommu errors out with something like:
+
+  ERROR: DMA PTE for vPFN 0x0 already set (to 5c2b8003 not 849c00083)
+
+In this case 5c2b8003 is the pointer to the previous leaf page that was
+neither freed nor cleared and 849c00083 is the superpage entry that
+we're trying to replace it with.
+
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Joerg Roedel <joro@8bytes.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/sh/kernel/kgdb.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/iommu/intel-iommu.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/sh/kernel/kgdb.c b/arch/sh/kernel/kgdb.c
-index 38b3139..adad46e 100644
---- a/arch/sh/kernel/kgdb.c
-+++ b/arch/sh/kernel/kgdb.c
-@@ -13,6 +13,7 @@
- #include <linux/kdebug.h>
- #include <linux/irq.h>
- #include <linux/io.h>
-+#include <linux/sched.h>
- #include <asm/cacheflush.h>
- #include <asm/traps.h>
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index 40203ad..cae5a08 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -917,7 +917,7 @@ static void dma_pte_free_level(struct dmar_domain *domain, int level,
  
+ 		/* If range covers entire pagetable, free it */
+ 		if (!(start_pfn > level_pfn ||
+-		      last_pfn < level_pfn + level_size(level))) {
++		      last_pfn < level_pfn + level_size(level) - 1)) {
+ 			dma_clear_pte(pte);
+ 			domain_flush_cache(domain, pte, sizeof(*pte));
+ 			free_pgtable_page(level_pte);
 -- 
 1.8.3.2
 
