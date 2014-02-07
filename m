@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468AbaBGLsk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:48:40 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41586 "EHLO
+	id S1754692AbaBGNNY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 08:13:24 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41603 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932079AbaBGLsf (ORCPT
+	with ESMTP id S1754425AbaBGLsj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:48:35 -0500
+	Fri, 7 Feb 2014 06:48:39 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 043/233] KVM: s390: fix diagnose code extraction
-Date: Fri,  7 Feb 2014 11:44:22 +0000
-Message-Id: <1391773652-25214-44-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 045/233] rtlwifi: rtl8192c: Prevent reconnect attempts if not connected
+Date: Fri,  7 Feb 2014 11:44:24 +0000
+Message-Id: <1391773652-25214-46-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -28,35 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 743db27c526e0f31cc507959d662e97e2048a86f upstream.
+commit 8fd77aec1a9d6f4328fc0244f21932114e066df3 upstream.
 
-The diagnose code to be used is the contents of the base register (if not
-zero), plus the displacement. The current code ignores the base register
-contents. So let's fix that...
+This driver has a watchdog timer that attempts to reconnect when beacon frames
+are not seen for 6 seconds. This patch disables that reconnect whenever the
+device has never been connected.
 
-Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/s390/kvm/diag.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/rtlwifi/base.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/s390/kvm/diag.c b/arch/s390/kvm/diag.c
-index 3074475..0ae0ea6 100644
---- a/arch/s390/kvm/diag.c
-+++ b/arch/s390/kvm/diag.c
-@@ -130,7 +130,7 @@ static int __diag_virtio_hypercall(struct kvm_vcpu *vcpu)
- 
- int kvm_s390_handle_diag(struct kvm_vcpu *vcpu)
- {
--	int code = (vcpu->arch.sie_block->ipb & 0xfff0000) >> 16;
-+	int code = kvm_s390_get_base_disp_rs(vcpu) & 0xffff;
- 
- 	if (vcpu->arch.sie_block->gpsw.mask & PSW_MASK_PSTATE)
- 		return kvm_s390_inject_program_int(vcpu, PGM_PRIVILEGED_OP);
+diff --git a/drivers/net/wireless/rtlwifi/base.c b/drivers/net/wireless/rtlwifi/base.c
+index 3333b04..e83d671 100644
+--- a/drivers/net/wireless/rtlwifi/base.c
++++ b/drivers/net/wireless/rtlwifi/base.c
+@@ -1437,7 +1437,8 @@ void rtl_watchdog_wq_callback(void *data)
+ 			/* if we can't recv beacon for 6s, we should
+ 			 * reconnect this AP
+ 			 */
+-			if (rtlpriv->link_info.roam_times >= 3) {
++			if ((rtlpriv->link_info.roam_times >= 3) &&
++			    !is_zero_ether_addr(rtlpriv->mac80211.bssid)) {
+ 				RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
+ 					 "AP off, try to reconnect now\n");
+ 				rtlpriv->link_info.roam_times = 0;
 -- 
 1.8.3.2
 
