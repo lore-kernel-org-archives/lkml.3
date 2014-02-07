@@ -1,24 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755336AbaBGLwe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:52:34 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42428 "EHLO
+	id S1755706AbaBGMAA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:00:00 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42471 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932554AbaBGLw0 (ORCPT
+	with ESMTP id S1753254AbaBGLwc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:52:26 -0500
+	Fri, 7 Feb 2014 06:52:32 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alexandre Courbot <acourbot@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mark Brown <broonie@kernel.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 205/233] lib/decompressors: fix "no limit" output buffer length
-Date: Fri,  7 Feb 2014 11:47:04 +0000
-Message-Id: <1391773652-25214-206-git-send-email-luis.henriques@canonical.com>
+Cc: Tejun Heo <tj@kernel.org>, Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 211/233] libata: disable LPM for some WD SATA-I devices
+Date: Fri,  7 Feb 2014 11:47:10 +0000
+Message-Id: <1391773652-25214-212-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -31,64 +26,142 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexandre Courbot <acourbot@nvidia.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit 1431574a1c4c669a0c198e4763627837416e4443 upstream.
+commit ecd75ad514d73efc1bbcc5f10a13566c3ace5f53 upstream.
 
-When decompressing into memory, the output buffer length is set to some
-arbitrarily high value (0x7fffffff) to indicate the output is, virtually,
-unlimited in size.
+For some reason, some early WD drives spin up and down drives
+erratically when the link is put into slumber mode which can reduce
+the life expectancy of the device significantly.  Unfortunately, we
+don't have full list of devices and given the nature of the issue it'd
+be better to err on the side of false positives than the other way
+around.  Let's disable LPM on all WD devices which match one of the
+known problematic model prefixes and are SATA-I.
 
-The problem with this is that some platforms have their physical memory at
-high physical addresses (0x80000000 or more), and that the output buffer
-address and its "unlimited" length cannot be added without overflowing.
-An example of this can be found in inflate_fast():
+As horkage list doesn't support matching SATA capabilities, this is
+implemented as two horkages - WD_BROKEN_LPM and NOLPM.  The former is
+set for the known prefixes and sets the latter if the matched device
+is SATA-I.
 
-/* next_out is the output buffer address */
-out = strm->next_out - OFF;
-/* avail_out is the output buffer size. end will overflow if the output
- * address is >= 0x80000104 */
-end = out + (strm->avail_out - 257);
+Note that this isn't optimal as this disables all LPM operations and
+partial link power state reportedly works fine on these; however, the
+way LPM is implemented in libata makes it difficult to precisely map
+libata LPM setting to specific link power state.  Well, these devices
+are already fairly outdated.  Let's just disable whole LPM for now.
 
-This has huge consequences on the performance of kernel decompression,
-since the following exit condition of inflate_fast() will be always true:
-
-} while (in < last && out < end);
-
-Indeed, "end" has overflowed and is now always lower than "out".  As a
-result, inflate_fast() will return after processing one single byte of
-input data, and will thus need to be called an unreasonably high number of
-times.  This probably went unnoticed because kernel decompression is fast
-enough even with this issue.
-
-Nonetheless, adjusting the output buffer length in such a way that the
-above pointer arithmetic never overflows results in a kernel decompression
-that is about 3 times faster on affected machines.
-
-Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-Tested-by: Jon Medhurst <tixy@linaro.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mark Brown <broonie@kernel.org>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-and-tested-by: Nikos Barkas <levelwol@gmail.com>
+Reported-and-tested-by: Ioannis Barkas <risc4all@yahoo.com>
+References: https://bugzilla.kernel.org/show_bug.cgi?id=57211
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- lib/decompress_inflate.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/ata/libata-core.c | 27 +++++++++++++++++++++++++++
+ drivers/ata/libata-scsi.c | 18 +++++++++++++++---
+ include/linux/libata.h    |  2 ++
+ 3 files changed, 44 insertions(+), 3 deletions(-)
 
-diff --git a/lib/decompress_inflate.c b/lib/decompress_inflate.c
-index 19ff89e..d619b28 100644
---- a/lib/decompress_inflate.c
-+++ b/lib/decompress_inflate.c
-@@ -48,7 +48,7 @@ STATIC int INIT gunzip(unsigned char *buf, int len,
- 		out_len = 0x8000; /* 32 K */
- 		out_buf = malloc(out_len);
- 	} else {
--		out_len = 0x7fffffff; /* no limit */
-+		out_len = ((size_t)~0) - (size_t)out_buf; /* no limit */
- 	}
- 	if (!out_buf) {
- 		error("Out of memory while allocating output buffer");
+diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+index bfd727a..71e85c2 100644
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -2199,6 +2199,16 @@ int ata_dev_configure(struct ata_device *dev)
+ 	if (rc)
+ 		return rc;
+ 
++	/* some WD SATA-1 drives have issues with LPM, turn on NOLPM for them */
++	if ((dev->horkage & ATA_HORKAGE_WD_BROKEN_LPM) &&
++	    (id[ATA_ID_SATA_CAPABILITY] & 0xe) == 0x2)
++		dev->horkage |= ATA_HORKAGE_NOLPM;
++
++	if (dev->horkage & ATA_HORKAGE_NOLPM) {
++		ata_dev_warn(dev, "LPM support broken, forcing max_power\n");
++		dev->link->ap->target_lpm_policy = ATA_LPM_MAX_POWER;
++	}
++
+ 	/* let ACPI work its magic */
+ 	rc = ata_acpi_on_devcfg(dev);
+ 	if (rc)
+@@ -4189,6 +4199,23 @@ static const struct ata_blacklist_entry ata_device_blacklist [] = {
+ 	{ "PIONEER DVD-RW  DVR-212D",	NULL,	ATA_HORKAGE_NOSETXFER },
+ 	{ "PIONEER DVD-RW  DVR-216D",	NULL,	ATA_HORKAGE_NOSETXFER },
+ 
++	/*
++	 * Some WD SATA-I drives spin up and down erratically when the link
++	 * is put into the slumber mode.  We don't have full list of the
++	 * affected devices.  Disable LPM if the device matches one of the
++	 * known prefixes and is SATA-1.  As a side effect LPM partial is
++	 * lost too.
++	 *
++	 * https://bugzilla.kernel.org/show_bug.cgi?id=57211
++	 */
++	{ "WDC WD800JD-*",		NULL,	ATA_HORKAGE_WD_BROKEN_LPM },
++	{ "WDC WD1200JD-*",		NULL,	ATA_HORKAGE_WD_BROKEN_LPM },
++	{ "WDC WD1600JD-*",		NULL,	ATA_HORKAGE_WD_BROKEN_LPM },
++	{ "WDC WD2000JD-*",		NULL,	ATA_HORKAGE_WD_BROKEN_LPM },
++	{ "WDC WD2500JD-*",		NULL,	ATA_HORKAGE_WD_BROKEN_LPM },
++	{ "WDC WD3000JD-*",		NULL,	ATA_HORKAGE_WD_BROKEN_LPM },
++	{ "WDC WD3200JD-*",		NULL,	ATA_HORKAGE_WD_BROKEN_LPM },
++
+ 	/* End Marker */
+ 	{ }
+ };
+diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
+index df64fca..38a5a75 100644
+--- a/drivers/ata/libata-scsi.c
++++ b/drivers/ata/libata-scsi.c
+@@ -112,12 +112,14 @@ static const char *ata_lpm_policy_names[] = {
+ 	[ATA_LPM_MIN_POWER]	= "min_power",
+ };
+ 
+-static ssize_t ata_scsi_lpm_store(struct device *dev,
++static ssize_t ata_scsi_lpm_store(struct device *device,
+ 				  struct device_attribute *attr,
+ 				  const char *buf, size_t count)
+ {
+-	struct Scsi_Host *shost = class_to_shost(dev);
++	struct Scsi_Host *shost = class_to_shost(device);
+ 	struct ata_port *ap = ata_shost_to_port(shost);
++	struct ata_link *link;
++	struct ata_device *dev;
+ 	enum ata_lpm_policy policy;
+ 	unsigned long flags;
+ 
+@@ -133,10 +135,20 @@ static ssize_t ata_scsi_lpm_store(struct device *dev,
+ 		return -EINVAL;
+ 
+ 	spin_lock_irqsave(ap->lock, flags);
++
++	ata_for_each_link(link, ap, EDGE) {
++		ata_for_each_dev(dev, &ap->link, ENABLED) {
++			if (dev->horkage & ATA_HORKAGE_NOLPM) {
++				count = -EOPNOTSUPP;
++				goto out_unlock;
++			}
++		}
++	}
++
+ 	ap->target_lpm_policy = policy;
+ 	ata_port_schedule_eh(ap);
++out_unlock:
+ 	spin_unlock_irqrestore(ap->lock, flags);
+-
+ 	return count;
+ }
+ 
+diff --git a/include/linux/libata.h b/include/linux/libata.h
+index 4ea55bb..611d733 100644
+--- a/include/linux/libata.h
++++ b/include/linux/libata.h
+@@ -400,6 +400,8 @@ enum {
+ 	ATA_HORKAGE_DUMP_ID	= (1 << 16),	/* dump IDENTIFY data */
+ 	ATA_HORKAGE_MAX_SEC_LBA48 = (1 << 17),	/* Set max sects to 65535 */
+ 	ATA_HORKAGE_ATAPI_DMADIR = (1 << 18),	/* device requires dmadir */
++	ATA_HORKAGE_NOLPM	= (1 << 20),	/* don't use LPM */
++	ATA_HORKAGE_WD_BROKEN_LPM = (1 << 21),	/* some WDs have broken LPM */
+ 
+ 	 /* DMA mask for user DMA control: User visible values; DO NOT
+ 	    renumber */
 -- 
 1.8.3.2
 
