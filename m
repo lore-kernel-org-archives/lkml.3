@@ -1,93 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754546AbaBGNtY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 08:49:24 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:41674 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751521AbaBGNtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 08:49:22 -0500
-Message-ID: <52F4E45B.1020107@ti.com>
-Date: Fri, 7 Feb 2014 15:49:15 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1754449AbaBGNwY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 08:52:24 -0500
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:32909 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752085AbaBGNwV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 08:52:21 -0500
+Date: Fri, 7 Feb 2014 14:53:20 +0100
+From: Emil Goode <emilgoode@gmail.com>
+To: =?utf-8?B?QmrDuHJu?= Mork <bjorn@mork.no>
+Cc: David Laight <David.Laight@ACULAB.COM>,
+        "'Igor Gnatenko'" <i.gnatenko.brain@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ming Lei <ming.lei@canonical.com>, Mark Brown <broonie@linaro.org>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Glen Turner <gdt@gdt.id.au>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] net: asix: fix bad header length bug
+Message-ID: <20140207135320.GA4252@lianli>
+References: <1391691384-8486-1-git-send-email-emilgoode@gmail.com>
+ <1391692768.2843.4.camel@X1Carbon.localdomain>
+ <063D6719AE5E284EB5DD2968C1650D6D0F6B99F7@AcuExch.aculab.com>
+ <20140206224121.GB5251@lianli>
+ <87wqh7i7pf.fsf@nemi.mork.no>
 MIME-Version: 1.0
-To: Christoph Fritz <chf.fritz@googlemail.com>, Tero Kristo <t-kristo@ti.com>
-CC: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <pali.rohar@gmail.com>, <pavel@ucw.cz>,
-        Nishanth Menon <nm@ti.com>
-Subject: Re: OMAP: clock DT conversion issues with omap36xx
-References: <52E697C0.6000202@gmail.com> <1390848104.4936.62.camel@mars>	 <52E772A3.4090401@ti.com> <1390901735.2963.8.camel@lovely>	 <52E77D03.8090001@ti.com>  <52E7B361.2030601@ti.com>	 <1390928565.4904.88.camel@mars> <1390994505.5023.32.camel@mars>	 <52F10C3D.7000507@ti.com> <1391767923.4937.110.camel@mars>
-In-Reply-To: <1391767923.4937.110.camel@mars>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="NcpriOprTl94TspshvlCtVsBcVD13T1eW"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <87wqh7i7pf.fsf@nemi.mork.no>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---NcpriOprTl94TspshvlCtVsBcVD13T1eW
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Fri, Feb 07, 2014 at 10:38:04AM +0100, Bjørn Mork wrote:
+> Emil Goode <emilgoode@gmail.com> writes:
+> > On Thu, Feb 06, 2014 at 03:28:13PM +0000, David Laight wrote:
+> >> From: Igor Gnatenko
+> >> > On Thu, 2014-02-06 at 13:56 +0100, Emil Goode wrote:
+> >> > > The AX88772B occasionally send rx packets that cross urb boundaries
+> >> > > and the remaining partial packet is sent with no header.
+> >> > > When the buffer with a partial packet is of less number of octets
+> >> > > than the value of hard_header_len the buffer is discarded by the
+> >> > > usbnet module. This is causing dropped packages and error messages
+> >> > > in dmesg.
+> 
+> > I will do some more digging in the code, but the test of skb->len
+> > against hard_header_len is done already in the completion callback
+> > function passed to usb_fill_bulk_urb so it seems that buffers of less
+> > than hard_header_len number of octets will be dropped regardless.
+> 
+> I am pretty sure you are right about this bug. And the exact same
+> solution is already used by the cx82310_eth minidriver, so I don't see
+> the problem.  Your fix is fine IMHO.  But you should apply it to all the
+> devices using asix_rx_fixup_common(), not just the ax88772 ones.
+> 
+> You could maybe make this a usbnet flag instead and create a generic
+> solution in usbnet, but frankly I believe the number of flags and their
+> meaning have exceeded drivers authors capabilities a long time ago.  At
+> least mine, which are quite limited ;-)
+> 
+> An example of that problem is another bloody obvious bug I noticed while
+> looking at this driver: The 'struct driver_info ax88178_info' points to
+> asix_rx_fixup_common without setting the FLAG_MULTI_PACKET.  This will
+> result in usbnet rx_process() calling usbnet_skb_return() on skbs which
+> are already consumed by the minidriver.  Not a big problem, but will
+> give some odd results.  But if you allow skbs shorter than ETH_HLEN to
+> slip through then it might go boom, so you should probably fix that as
+> well.
+> 
+> 
+> Bjørn
 
-Hi,
+Yes I believe the patch is necessary, but maybe it would be nice with
+a prettier solution rather than setting hard_header_len to 0 for all
+devices with this behaviour. Perhaps it would be better to let each
+driver that uses the usbnet module decide what skbs to discard?
 
-On 07/02/14 12:12, Christoph Fritz wrote:
+What David describes seems to be another bug, but I don't think it is
+related to this patch as I'm able to reproduce the bug without the patch
+beeing applied by setting the mtu to pretty much any value other than 
+1500 and using ping with a larger packet size than that mtu value.
 
-> Yes, your patch fixes the issues for sys_clkout2. Thanks! If you want,
-> you can add my:
-> Tested-by: Christoph Fritz <chf.fritz@googlemail.com>
->=20
-> Below is my clock fix for dss:
->=20
-> From b90a62128068e1b6b0ba2a11c5cc0c8e587cf301 Mon Sep 17 00:00:00 2001
-> From: Christoph Fritz <chf.fritz@googlemail.com>
-> Date: Fri, 7 Feb 2014 10:51:15 +0100
-> Subject: [PATCH] ARM: dts: omap36xx: fix dpll4_m4_ck tree
->=20
-> OMAP36xx has different hardware implementation for the dpll4_m4_ck tree=
+Best regards,
 
-> compared to other OMAP3 variants. Reflect this properly in the dts file=
-=2E
-
-I rebased the DSS DT branch on top of v3.14-rc1, and I'm trying to get
-beagle-xM working. Pinmuxing was wrong, but after fixing that, the
-clk_set_rate for dss fclk failed. I applied Tero's and your patches, but
-now when starting omapdss I see:
-
-[   19.704193] omap clock: module associated with clock
-dss1_alwon_fck_3430es2 didn't enable in 1000
-00 tries
-
-I wonder if I'm still missing some patch?
-
- Tomi
-
-
-
---NcpriOprTl94TspshvlCtVsBcVD13T1eW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJS9ORbAAoJEPo9qoy8lh71iPoQAKAfom2Pza7m6QY8ueOJ8lID
-V97/UDuFJoJZTYzYY04HDWifVdGfDH1sz89lRaZ0xSbBf1wSr/foLr0xuWUQOaIr
-pT7N5SywBsNw2jG+aRhp0XoqdSY0Pdw8tq/m4fz+vrP2L64/V9eTEtgUgT5Ctz3B
-0fEWgCv6tOEUPLq+NidMZO3iQQEtkUY0lAWxdxQSNFbGGbVkH2iGLeouRta85ncN
-DLAbBKmYRhMmciWT16Wf+hmDxfrr3dodecnRoM6iTqaZkf3+lhnaaojKhF49Pegj
-XZUuhoyJKrml5Xoo8wAFSMRP3ceYl/GUGiI1HG3JUXftvHB9nfJI9y9gZCOGQZXi
-6oVR2kSRAeVQd+MUy7O1UQA4SE5ROF5E6aqrtBkSLmUhjQjCRRluZJNXyKVpb5uW
-Z/MH/Jn0EyEU7Ga/2Klq2VYqh4rOXFkQoE5IANgTY3AJ+N6yPd2/RRmzTQKc+4NI
-wnm1xojcVCNQ9uaN2By5v2mU5qxfuOsX2ltjY8qgthpboVlTkqlg9MKQJPzLgYFY
-feX/owhk1KQZV81TMDOHaQREphoO1N0ynD2BL/YNOhd9rHdh0nbqoVKbtAty8wYs
-xEWARf2Qd8ewM6GHRCsREsWMqT57JsqKCLHEEL+WFMziZRPb3aHV/v1BH7V0qsHz
-kEx1qvhTRIwhkSZ3nF5g
-=tZKF
------END PGP SIGNATURE-----
-
---NcpriOprTl94TspshvlCtVsBcVD13T1eW--
+Emil Goode
