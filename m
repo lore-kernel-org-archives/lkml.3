@@ -1,30 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932592AbaBGLwg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:52:36 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42443 "EHLO
+	id S1755386AbaBGLwo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:52:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42500 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932557AbaBGLw2 (ORCPT
+	with ESMTP id S1752951AbaBGLwl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:52:28 -0500
+	Fri, 7 Feb 2014 06:52:41 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Khalid Aziz <khalid.aziz@oracle.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Pravin Shelar <pshelar@nicira.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Christoph Lameter <cl@linux.com>, Johannes Weiner <jweiner@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Guillaume Morin <guillaume@morinfr.org>,
+Cc: Christoph Paasch <christoph.paasch@uclouvain.be>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 203/233] mm: hugetlbfs: fix hugetlbfs optimization
-Date: Fri,  7 Feb 2014 11:47:02 +0000
-Message-Id: <1391773652-25214-204-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 217/233] tcp: metrics: Avoid duplicate entries with the same destination-IP
+Date: Fri,  7 Feb 2014 11:47:16 +0000
+Message-Id: <1391773652-25214-218-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -37,319 +28,131 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+From: Christoph Paasch <christoph.paasch@uclouvain.be>
 
-commit 27c73ae759774e63313c1fbfeb17ba076cea64c5 upstream.
+commit 77f99ad16a07aa062c2d30fae57b1fee456f6ef6 upstream.
 
-Commit 7cb2ef56e6a8 ("mm: fix aio performance regression for database
-caused by THP") can cause dereference of a dangling pointer if
-split_huge_page runs during PageHuge() if there are updates to the
-tail_page->private field.
+Because the tcp-metrics is an RCU-list, it may be that two
+soft-interrupts are inside __tcp_get_metrics() for the same
+destination-IP at the same time. If this destination-IP is not yet part of
+the tcp-metrics, both soft-interrupts will end up in tcpm_new and create
+a new entry for this IP.
+So, we will have two tcp-metrics with the same destination-IP in the list.
 
-Also it is repeating compound_head twice for hugetlbfs and it is running
-compound_head+compound_trans_head for THP when a single one is needed in
-both cases.
+This patch checks twice __tcp_get_metrics(). First without holding the
+lock, then while holding the lock. The second one is there to confirm
+that the entry has not been added by another soft-irq while waiting for
+the spin-lock.
 
-The new code within the PageSlab() check doesn't need to verify that the
-THP page size is never bigger than the smallest hugetlbfs page size, to
-avoid memory corruption.
-
-A longstanding theoretical race condition was found while fixing the
-above (see the change right after the skip_unlock label, that is
-relevant for the compound_lock path too).
-
-By re-establishing the _mapcount tail refcounting for all compound
-pages, this also fixes the below problem:
-
-  echo 0 >/sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages
-
-  BUG: Bad page state in process bash  pfn:59a01
-  page:ffffea000139b038 count:0 mapcount:10 mapping:          (null) index:0x0
-  page flags: 0x1c00000000008000(tail)
-  Modules linked in:
-  CPU: 6 PID: 2018 Comm: bash Not tainted 3.12.0+ #25
-  Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-  Call Trace:
-    dump_stack+0x55/0x76
-    bad_page+0xd5/0x130
-    free_pages_prepare+0x213/0x280
-    __free_pages+0x36/0x80
-    update_and_free_page+0xc1/0xd0
-    free_pool_huge_page+0xc2/0xe0
-    set_max_huge_pages.part.58+0x14c/0x220
-    nr_hugepages_store_common.isra.60+0xd0/0xf0
-    nr_hugepages_store+0x13/0x20
-    kobj_attr_store+0xf/0x20
-    sysfs_write_file+0x189/0x1e0
-    vfs_write+0xc5/0x1f0
-    SyS_write+0x55/0xb0
-    system_call_fastpath+0x16/0x1b
-
-Signed-off-by: Khalid Aziz <khalid.aziz@oracle.com>
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Tested-by: Khalid Aziz <khalid.aziz@oracle.com>
-Cc: Pravin Shelar <pshelar@nicira.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Ben Hutchings <bhutchings@solarflare.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Johannes Weiner <jweiner@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Minchan Kim <minchan@kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Guillaume Morin <guillaume@morinfr.org>
+Fixes: 51c5d0c4b169b (tcp: Maintain dynamic metrics in local cache.)
+Signed-off-by: Christoph Paasch <christoph.paasch@uclouvain.be>
+Reviewed-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/linux/hugetlb.h |   6 ++
- mm/hugetlb.c            |  17 ++++++
- mm/swap.c               | 143 ++++++++++++++++++++++++++++--------------------
- 3 files changed, 106 insertions(+), 60 deletions(-)
+ net/ipv4/tcp_metrics.c | 51 +++++++++++++++++++++++++++++++-------------------
+ 1 file changed, 32 insertions(+), 19 deletions(-)
 
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-index c2b1801..b92dca8 100644
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -31,6 +31,7 @@ struct hugepage_subpool *hugepage_new_subpool(long nr_blocks);
- void hugepage_put_subpool(struct hugepage_subpool *spool);
+diff --git a/net/ipv4/tcp_metrics.c b/net/ipv4/tcp_metrics.c
+index 306dbd9..b500d2d 100644
+--- a/net/ipv4/tcp_metrics.c
++++ b/net/ipv4/tcp_metrics.c
+@@ -22,6 +22,9 @@
  
- int PageHuge(struct page *page);
-+int PageHeadHuge(struct page *page_head);
+ int sysctl_tcp_nometrics_save __read_mostly;
  
- void reset_vma_resv_huge_pages(struct vm_area_struct *vma);
- int hugetlb_sysctl_handler(struct ctl_table *, int, void __user *, size_t *, loff_t *);
-@@ -101,6 +102,11 @@ static inline int PageHuge(struct page *page)
- 	return 0;
- }
- 
-+static inline int PageHeadHuge(struct page *page_head)
-+{
-+	return 0;
-+}
++static struct tcp_metrics_block *__tcp_get_metrics(const struct inetpeer_addr *addr,
++						   struct net *net, unsigned int hash);
 +
- static inline void reset_vma_resv_huge_pages(struct vm_area_struct *vma)
- {
- }
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index b60f330..4cf641f 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -690,6 +690,23 @@ int PageHuge(struct page *page)
- }
- EXPORT_SYMBOL_GPL(PageHuge);
- 
-+/*
-+ * PageHeadHuge() only returns true for hugetlbfs head page, but not for
-+ * normal or transparent huge pages.
-+ */
-+int PageHeadHuge(struct page *page_head)
-+{
-+	compound_page_dtor *dtor;
-+
-+	if (!PageHead(page_head))
-+		return 0;
-+
-+	dtor = get_compound_page_dtor(page_head);
-+
-+	return dtor == free_huge_page;
-+}
-+EXPORT_SYMBOL_GPL(PageHeadHuge);
-+
- pgoff_t __basepage_index(struct page *page)
- {
- 	struct page *page_head = compound_head(page);
-diff --git a/mm/swap.c b/mm/swap.c
-index c899502..1e5b6c6 100644
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -82,19 +82,6 @@ static void __put_compound_page(struct page *page)
- 
- static void put_compound_page(struct page *page)
- {
--	/*
--	 * hugetlbfs pages cannot be split from under us.  If this is a
--	 * hugetlbfs page, check refcount on head page and release the page if
--	 * the refcount becomes zero.
--	 */
--	if (PageHuge(page)) {
--		page = compound_head(page);
--		if (put_page_testzero(page))
--			__put_compound_page(page);
--
--		return;
--	}
--
- 	if (unlikely(PageTail(page))) {
- 		/* __split_huge_page_refcount can run under us */
- 		struct page *page_head = compound_trans_head(page);
-@@ -111,14 +98,31 @@ static void put_compound_page(struct page *page)
- 			 * still hot on arches that do not support
- 			 * this_cpu_cmpxchg_double().
- 			 */
--			if (PageSlab(page_head)) {
--				if (PageTail(page)) {
-+			if (PageSlab(page_head) || PageHeadHuge(page_head)) {
-+				if (likely(PageTail(page))) {
-+					/*
-+					 * __split_huge_page_refcount
-+					 * cannot race here.
-+					 */
-+					VM_BUG_ON(!PageHead(page_head));
-+					atomic_dec(&page->_mapcount);
- 					if (put_page_testzero(page_head))
- 						VM_BUG_ON(1);
--
--					atomic_dec(&page->_mapcount);
--					goto skip_lock_tail;
-+					if (put_page_testzero(page_head))
-+						__put_compound_page(page_head);
-+					return;
- 				} else
-+					/*
-+					 * __split_huge_page_refcount
-+					 * run before us, "page" was a
-+					 * THP tail. The split
-+					 * page_head has been freed
-+					 * and reallocated as slab or
-+					 * hugetlbfs page of smaller
-+					 * order (only possible if
-+					 * reallocated as slab on
-+					 * x86).
-+					 */
- 					goto skip_lock;
- 			}
- 			/*
-@@ -132,8 +136,27 @@ static void put_compound_page(struct page *page)
- 				/* __split_huge_page_refcount run before us */
- 				compound_unlock_irqrestore(page_head, flags);
- skip_lock:
--				if (put_page_testzero(page_head))
--					__put_single_page(page_head);
-+				if (put_page_testzero(page_head)) {
-+					/*
-+					 * The head page may have been
-+					 * freed and reallocated as a
-+					 * compound page of smaller
-+					 * order and then freed again.
-+					 * All we know is that it
-+					 * cannot have become: a THP
-+					 * page, a compound page of
-+					 * higher order, a tail page.
-+					 * That is because we still
-+					 * hold the refcount of the
-+					 * split THP tail and
-+					 * page_head was the THP head
-+					 * before the split.
-+					 */
-+					if (PageHead(page_head))
-+						__put_compound_page(page_head);
-+					else
-+						__put_single_page(page_head);
-+				}
- out_put_single:
- 				if (put_page_testzero(page))
- 					__put_single_page(page);
-@@ -155,7 +178,6 @@ out_put_single:
- 			VM_BUG_ON(atomic_read(&page->_count) != 0);
- 			compound_unlock_irqrestore(page_head, flags);
- 
--skip_lock_tail:
- 			if (put_page_testzero(page_head)) {
- 				if (PageHead(page_head))
- 					__put_compound_page(page_head);
-@@ -198,51 +220,52 @@ bool __get_page_tail(struct page *page)
- 	 * proper PT lock that already serializes against
- 	 * split_huge_page().
- 	 */
-+	unsigned long flags;
- 	bool got = false;
--	struct page *page_head;
--
--	/*
--	 * If this is a hugetlbfs page it cannot be split under us.  Simply
--	 * increment refcount for the head page.
--	 */
--	if (PageHuge(page)) {
--		page_head = compound_head(page);
--		atomic_inc(&page_head->_count);
--		got = true;
--	} else {
--		unsigned long flags;
-+	struct page *page_head = compound_trans_head(page);
- 
--		page_head = compound_trans_head(page);
--		if (likely(page != page_head &&
--					get_page_unless_zero(page_head))) {
--
--			/* Ref to put_compound_page() comment. */
--			if (PageSlab(page_head)) {
--				if (likely(PageTail(page))) {
--					__get_page_tail_foll(page, false);
--					return true;
--				} else {
--					put_page(page_head);
--					return false;
--				}
--			}
--
--			/*
--			 * page_head wasn't a dangling pointer but it
--			 * may not be a head page anymore by the time
--			 * we obtain the lock. That is ok as long as it
--			 * can't be freed from under us.
--			 */
--			flags = compound_lock_irqsave(page_head);
--			/* here __split_huge_page_refcount won't run anymore */
-+	if (likely(page != page_head && get_page_unless_zero(page_head))) {
-+		/* Ref to put_compound_page() comment. */
-+		if (PageSlab(page_head) || PageHeadHuge(page_head)) {
- 			if (likely(PageTail(page))) {
-+				/*
-+				 * This is a hugetlbfs page or a slab
-+				 * page. __split_huge_page_refcount
-+				 * cannot race here.
-+				 */
-+				VM_BUG_ON(!PageHead(page_head));
- 				__get_page_tail_foll(page, false);
--				got = true;
--			}
--			compound_unlock_irqrestore(page_head, flags);
--			if (unlikely(!got))
-+				return true;
-+			} else {
-+				/*
-+				 * __split_huge_page_refcount run
-+				 * before us, "page" was a THP
-+				 * tail. The split page_head has been
-+				 * freed and reallocated as slab or
-+				 * hugetlbfs page of smaller order
-+				 * (only possible if reallocated as
-+				 * slab on x86).
-+				 */
- 				put_page(page_head);
-+				return false;
-+			}
-+		}
-+
-+		/*
-+		 * page_head wasn't a dangling pointer but it
-+		 * may not be a head page anymore by the time
-+		 * we obtain the lock. That is ok as long as it
-+		 * can't be freed from under us.
-+		 */
-+		flags = compound_lock_irqsave(page_head);
-+		/* here __split_huge_page_refcount won't run anymore */
-+		if (likely(PageTail(page))) {
-+			__get_page_tail_foll(page, false);
-+			got = true;
- 		}
-+		compound_unlock_irqrestore(page_head, flags);
-+		if (unlikely(!got))
-+			put_page(page_head);
+ struct tcp_fastopen_metrics {
+ 	u16	mss;
+ 	u16	syn_loss:10;		/* Recurring Fast Open SYN losses */
+@@ -130,16 +133,41 @@ static void tcpm_suck_dst(struct tcp_metrics_block *tm, struct dst_entry *dst,
  	}
- 	return got;
  }
+ 
++#define TCP_METRICS_TIMEOUT		(60 * 60 * HZ)
++
++static void tcpm_check_stamp(struct tcp_metrics_block *tm, struct dst_entry *dst)
++{
++	if (tm && unlikely(time_after(jiffies, tm->tcpm_stamp + TCP_METRICS_TIMEOUT)))
++		tcpm_suck_dst(tm, dst, false);
++}
++
++#define TCP_METRICS_RECLAIM_DEPTH	5
++#define TCP_METRICS_RECLAIM_PTR		(struct tcp_metrics_block *) 0x1UL
++
+ static struct tcp_metrics_block *tcpm_new(struct dst_entry *dst,
+ 					  struct inetpeer_addr *addr,
+-					  unsigned int hash,
+-					  bool reclaim)
++					  unsigned int hash)
+ {
+ 	struct tcp_metrics_block *tm;
+ 	struct net *net;
++	bool reclaim = false;
+ 
+ 	spin_lock_bh(&tcp_metrics_lock);
+ 	net = dev_net(dst->dev);
++
++	/* While waiting for the spin-lock the cache might have been populated
++	 * with this entry and so we have to check again.
++	 */
++	tm = __tcp_get_metrics(addr, net, hash);
++	if (tm == TCP_METRICS_RECLAIM_PTR) {
++		reclaim = true;
++		tm = NULL;
++	}
++	if (tm) {
++		tcpm_check_stamp(tm, dst);
++		goto out_unlock;
++	}
++
+ 	if (unlikely(reclaim)) {
+ 		struct tcp_metrics_block *oldest;
+ 
+@@ -169,17 +197,6 @@ out_unlock:
+ 	return tm;
+ }
+ 
+-#define TCP_METRICS_TIMEOUT		(60 * 60 * HZ)
+-
+-static void tcpm_check_stamp(struct tcp_metrics_block *tm, struct dst_entry *dst)
+-{
+-	if (tm && unlikely(time_after(jiffies, tm->tcpm_stamp + TCP_METRICS_TIMEOUT)))
+-		tcpm_suck_dst(tm, dst, false);
+-}
+-
+-#define TCP_METRICS_RECLAIM_DEPTH	5
+-#define TCP_METRICS_RECLAIM_PTR		(struct tcp_metrics_block *) 0x1UL
+-
+ static struct tcp_metrics_block *tcp_get_encode(struct tcp_metrics_block *tm, int depth)
+ {
+ 	if (tm)
+@@ -280,7 +297,6 @@ static struct tcp_metrics_block *tcp_get_metrics(struct sock *sk,
+ 	struct inetpeer_addr addr;
+ 	unsigned int hash;
+ 	struct net *net;
+-	bool reclaim;
+ 
+ 	addr.family = sk->sk_family;
+ 	switch (addr.family) {
+@@ -300,13 +316,10 @@ static struct tcp_metrics_block *tcp_get_metrics(struct sock *sk,
+ 	hash = hash_32(hash, net->ipv4.tcp_metrics_hash_log);
+ 
+ 	tm = __tcp_get_metrics(&addr, net, hash);
+-	reclaim = false;
+-	if (tm == TCP_METRICS_RECLAIM_PTR) {
+-		reclaim = true;
++	if (tm == TCP_METRICS_RECLAIM_PTR)
+ 		tm = NULL;
+-	}
+ 	if (!tm && create)
+-		tm = tcpm_new(dst, &addr, hash, reclaim);
++		tm = tcpm_new(dst, &addr, hash);
+ 	else
+ 		tcpm_check_stamp(tm, dst);
+ 
 -- 
 1.8.3.2
 
