@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752166AbaBGTHN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 14:07:13 -0500
-Received: from mga01.intel.com ([192.55.52.88]:49569 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751013AbaBGTHL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 14:07:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,802,1384329600"; 
-   d="scan'208";a="477759048"
-Message-ID: <52F52EDA.4080007@linux.intel.com>
-Date: Fri, 07 Feb 2014 11:07:06 -0800
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751897AbaBGTLP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 14:11:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58608 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751150AbaBGTLO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 14:11:14 -0500
+Date: Fri, 7 Feb 2014 11:12:23 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: Re: Drivers/hv
+Message-ID: <20140207191223.GA8580@kroah.com>
+References: <1391011049-10795-1-git-send-email-kys@microsoft.com>
+ <20140129211532.GA9095@kroah.com>
+ <dcabbfad2fe24769a3d2ade8315fa016@BY2PR03MB299.namprd03.prod.outlook.com>
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>, Kees Cook <keescook@chromium.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Cong Ding <dinggnu@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mathias Krause <minipli@googlemail.com>,
-        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Dave Young <dyoung@redhat.com>
-Subject: Re: [GIT PULL] x86/kaslr for v3.14
-References: <201401201647.s0KGlZdh004167@tazenda.hos.anvin.org> <CAFLxGvxO1MPDDjEh3FU5Gv2-eb6zBJxYtTnKdABDTTpbMxxYAw@mail.gmail.com> <52E5EFAF.3060609@linux.intel.com> <CAFLxGvxJ0A6hZ52RWffkg_zXXScyPn10P4HcKvdAXfE43h32Eg@mail.gmail.com> <52E601DA.7010605@zytor.com> <20140130220708.GP9951@redhat.com> <CAGXu5jKp0j71ucE7uOWRa+gQM1Wzp=_KdByJK4XnACTwiCW4ow@mail.gmail.com> <20140207144914.GA5949@redhat.com>
-In-Reply-To: <20140207144914.GA5949@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <dcabbfad2fe24769a3d2ade8315fa016@BY2PR03MB299.namprd03.prod.outlook.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2014 06:49 AM, Vivek Goyal wrote:
+On Fri, Feb 07, 2014 at 07:06:00PM +0000, KY Srinivasan wrote:
 > 
-> As a workaround, Dave is currently using "nokaslr" command line parameter
-> for second kernel. He is still facing issues where makedumpfile segment
-> faults. He is looking into it further.
 > 
+> > -----Original Message-----
+> > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> > Sent: Wednesday, January 29, 2014 1:16 PM
+> > To: KY Srinivasan
+> > Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
+> > apw@canonical.com; jasowang@redhat.com
+> > Subject: Re: Drivers/hv
+> > 
+> > On Wed, Jan 29, 2014 at 07:57:29AM -0800, K. Y. Srinivasan wrote:
+> > >
+> > > Greg,
+> > >
+> > > Some time back I had sent a buch of patches for
+> > > Hyper-V drivers. Are they still in the queue or should I resend
+> > > them.
+> > 
+> > Which specific patches are you referring to?  I can't take anything
+> > until after 3.14-rc1 is out, and I do see a few from you in my queue, so
+> > if you want to resend, please do, but note I will not get to them until
+> > sometime late next week at the earliest.
+> 
+> I saw that you committed two (hv) patches earlier today. There are still a few more
+> patches that are not committed yet; should I resend those?
 
-Now, let's state this: kaslr for kdump is almost certainly useless (the
-amount of reserved memory is not enough to provide any meaningful
-randomization, so any randomization needs to happen during the memory
-reservation phase.)  So disabling kaslr in the kdump kernel is entirely
-appropriate.
+No, I am slowly going through my backlog (over 800 patches).  I applied
+the ones that are needed for 3.14 at the moment, will catch with the
+rest later, please give me a chance...
 
-	-hpa
-
-
+greg k-h
