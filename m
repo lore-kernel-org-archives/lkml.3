@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755594AbaBGL5h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:57:37 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42535 "EHLO
+	id S1755610AbaBGL55 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:57:57 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42514 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755393AbaBGLwr (ORCPT
+	with ESMTP id S1755372AbaBGLwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:52:47 -0500
+	Fri, 7 Feb 2014 06:52:43 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Holger Eitzenberger <holger@eitzenberger.org>,
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 222/233] net: Fix memory leak if TPROXY used with TCP early demux
-Date: Fri,  7 Feb 2014 11:47:21 +0000
-Message-Id: <1391773652-25214-223-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 219/233] s390/bpf,jit: fix 32 bit divisions, use unsigned divide instructions
+Date: Fri,  7 Feb 2014 11:47:18 +0000
+Message-Id: <1391773652-25214-220-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -28,101 +28,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Holger Eitzenberger <holger@eitzenberger.org>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-commit a452ce345d63ddf92cd101e4196569f8718ad319 upstream.
+commit 3af57f78c38131b7a66e2b01e06fdacae01992a3 upstream.
 
-I see a memory leak when using a transparent HTTP proxy using TPROXY
-together with TCP early demux and Kernel v3.8.13.15 (Ubuntu stable):
+The s390 bpf jit compiler emits the signed divide instructions "dr" and "d"
+for unsigned divisions.
+This can cause problems: the dividend will be zero extended to a 64 bit value
+and the divisor is the 32 bit signed value as specified A or X accumulator,
+even though A and X are supposed to be treated as unsigned values.
 
-unreferenced object 0xffff88008cba4a40 (size 1696):
-  comm "softirq", pid 0, jiffies 4294944115 (age 8907.520s)
-  hex dump (first 32 bytes):
-    0a e0 20 6a 40 04 1b 37 92 be 32 e2 e8 b4 00 00  .. j@..7..2.....
-    02 00 07 01 00 00 00 00 00 00 00 00 00 00 00 00  ................
-  backtrace:
-    [<ffffffff810b710a>] kmem_cache_alloc+0xad/0xb9
-    [<ffffffff81270185>] sk_prot_alloc+0x29/0xc5
-    [<ffffffff812702cf>] sk_clone_lock+0x14/0x283
-    [<ffffffff812aaf3a>] inet_csk_clone_lock+0xf/0x7b
-    [<ffffffff8129a893>] netlink_broadcast+0x14/0x16
-    [<ffffffff812c1573>] tcp_create_openreq_child+0x1b/0x4c3
-    [<ffffffff812c033e>] tcp_v4_syn_recv_sock+0x38/0x25d
-    [<ffffffff812c13e4>] tcp_check_req+0x25c/0x3d0
-    [<ffffffff812bf87a>] tcp_v4_do_rcv+0x287/0x40e
-    [<ffffffff812a08a7>] ip_route_input_noref+0x843/0xa55
-    [<ffffffff812bfeca>] tcp_v4_rcv+0x4c9/0x725
-    [<ffffffff812a26f4>] ip_local_deliver_finish+0xe9/0x154
-    [<ffffffff8127a927>] __netif_receive_skb+0x4b2/0x514
-    [<ffffffff8127aa77>] process_backlog+0xee/0x1c5
-    [<ffffffff8127c949>] net_rx_action+0xa7/0x200
-    [<ffffffff81209d86>] add_interrupt_randomness+0x39/0x157
+The divide instrunctions will generate an exception if the result cannot be
+expressed with a 32 bit signed value.
+This is the case if e.g. the dividend is 0xffffffff and the divisor either 1
+or also 0xffffffff (signed: -1).
 
-But there are many more, resulting in the machine going OOM after some
-days.
+To avoid all these issues simply use unsigned divide instructions.
 
->From looking at the TPROXY code, and with help from Florian, I see
-that the memory leak is introduced in tcp_v4_early_demux():
-
-  void tcp_v4_early_demux(struct sk_buff *skb)
-  {
-    /* ... */
-
-    iph = ip_hdr(skb);
-    th = tcp_hdr(skb);
-
-    if (th->doff < sizeof(struct tcphdr) / 4)
-        return;
-
-    sk = __inet_lookup_established(dev_net(skb->dev), &tcp_hashinfo,
-                       iph->saddr, th->source,
-                       iph->daddr, ntohs(th->dest),
-                       skb->skb_iif);
-    if (sk) {
-        skb->sk = sk;
-
-where the socket is assigned unconditionally to skb->sk, also bumping
-the refcnt on it.  This is problematic, because in our case the skb
-has already a socket assigned in the TPROXY target.  This then results
-in the leak I see.
-
-The very same issue seems to be with IPv6, but haven't tested.
-
-Reviewed-by: Florian Westphal <fw@strlen.de>
-Signed-off-by: Holger Eitzenberger <holger@eitzenberger.org>
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv4/ip_input.c  | 2 +-
- net/ipv6/ip6_input.c | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ arch/s390/net/bpf_jit_comp.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/net/ipv4/ip_input.c b/net/ipv4/ip_input.c
-index 15e3e68..0a22bb0 100644
---- a/net/ipv4/ip_input.c
-+++ b/net/ipv4/ip_input.c
-@@ -313,7 +313,7 @@ static int ip_rcv_finish(struct sk_buff *skb)
- 	const struct iphdr *iph = ip_hdr(skb);
- 	struct rtable *rt;
- 
--	if (sysctl_ip_early_demux && !skb_dst(skb)) {
-+	if (sysctl_ip_early_demux && !skb_dst(skb) && skb->sk == NULL) {
- 		const struct net_protocol *ipprot;
- 		int protocol = iph->protocol;
- 
-diff --git a/net/ipv6/ip6_input.c b/net/ipv6/ip6_input.c
-index 2bab2aa..774b09c 100644
---- a/net/ipv6/ip6_input.c
-+++ b/net/ipv6/ip6_input.c
-@@ -49,7 +49,7 @@
- 
- int ip6_rcv_finish(struct sk_buff *skb)
- {
--	if (sysctl_ip_early_demux && !skb_dst(skb)) {
-+	if (sysctl_ip_early_demux && !skb_dst(skb) && skb->sk == NULL) {
- 		const struct inet6_protocol *ipprot;
- 
- 		ipprot = rcu_dereference(inet6_protos[ipv6_hdr(skb)->nexthdr]);
+diff --git a/arch/s390/net/bpf_jit_comp.c b/arch/s390/net/bpf_jit_comp.c
+index e1ca241..3d613b8 100644
+--- a/arch/s390/net/bpf_jit_comp.c
++++ b/arch/s390/net/bpf_jit_comp.c
+@@ -368,16 +368,16 @@ static int bpf_jit_insn(struct bpf_jit *jit, struct sock_filter *filter,
+ 		EMIT4_PCREL(0xa7840000, (jit->ret0_ip - jit->prg));
+ 		/* lhi %r4,0 */
+ 		EMIT4(0xa7480000);
+-		/* dr %r4,%r12 */
+-		EMIT2(0x1d4c);
++		/* dlr %r4,%r12 */
++		EMIT4(0xb997004c);
+ 		break;
+ 	case BPF_S_ALU_DIV_K: /* A /= K */
+ 		if (K == 1)
+ 			break;
+ 		/* lhi %r4,0 */
+ 		EMIT4(0xa7480000);
+-		/* d %r4,<d(K)>(%r13) */
+-		EMIT4_DISP(0x5d40d000, EMIT_CONST(K));
++		/* dl %r4,<d(K)>(%r13) */
++		EMIT6_DISP(0xe340d000, 0x0097, EMIT_CONST(K));
+ 		break;
+ 	case BPF_S_ALU_MOD_X: /* A %= X */
+ 		jit->seen |= SEEN_XREG | SEEN_RET0;
+@@ -387,8 +387,8 @@ static int bpf_jit_insn(struct bpf_jit *jit, struct sock_filter *filter,
+ 		EMIT4_PCREL(0xa7840000, (jit->ret0_ip - jit->prg));
+ 		/* lhi %r4,0 */
+ 		EMIT4(0xa7480000);
+-		/* dr %r4,%r12 */
+-		EMIT2(0x1d4c);
++		/* dlr %r4,%r12 */
++		EMIT4(0xb997004c);
+ 		/* lr %r5,%r4 */
+ 		EMIT2(0x1854);
+ 		break;
+@@ -400,8 +400,8 @@ static int bpf_jit_insn(struct bpf_jit *jit, struct sock_filter *filter,
+ 		}
+ 		/* lhi %r4,0 */
+ 		EMIT4(0xa7480000);
+-		/* d %r4,<d(K)>(%r13) */
+-		EMIT4_DISP(0x5d40d000, EMIT_CONST(K));
++		/* dl %r4,<d(K)>(%r13) */
++		EMIT6_DISP(0xe340d000, 0x0097, EMIT_CONST(K));
+ 		/* lr %r5,%r4 */
+ 		EMIT2(0x1854);
+ 		break;
 -- 
 1.8.3.2
 
