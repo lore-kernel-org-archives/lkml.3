@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753344AbaBGLZR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:25:17 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41160 "EHLO
+	id S1753704AbaBGL3p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:29:45 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41194 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753253AbaBGLZH (ORCPT
+	with ESMTP id S1753312AbaBGLZO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:25:07 -0500
+	Fri, 7 Feb 2014 06:25:14 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Paul Mackerras <paulus@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Aristeu Rozanski <aris@redhat.com>, Borislav Petkov <bp@suse.de>,
+        Jean Delvare <jdelvare@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 69/88] powerpc: Make sure "cache" directory is removed when offlining cpu
-Date: Fri,  7 Feb 2014 11:23:06 +0000
-Message-Id: <1391772205-22239-70-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 78/88] e752x_edac: Fix pci_dev usage count
+Date: Fri,  7 Feb 2014 11:23:15 +0000
+Message-Id: <1391772205-22239-79-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
@@ -28,52 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Mackerras <paulus@samba.org>
+From: Aristeu Rozanski <aris@redhat.com>
 
-commit 91b973f90c1220d71923e7efe1e61f5329806380 upstream.
+commit 90ed4988b8c030d65b41b7d13140e9376dc6ec5a upstream.
 
-The code in remove_cache_dir() is supposed to remove the "cache"
-subdirectory from the sysfs directory for a CPU when that CPU is
-being offlined.  It tries to do this by calling kobject_put() on
-the kobject for the subdirectory.  However, the subdirectory only
-gets removed once the last reference goes away, and the reference
-being put here may well not be the last reference.  That means
-that the "cache" subdirectory may still exist when the offlining
-operation has finished.  If the same CPU subsequently gets onlined,
-the code tries to add a new "cache" subdirectory.  If the old
-subdirectory has not yet been removed, we get a WARN_ON in the
-sysfs code, with stack trace, and an error message printed on the
-console.  Further, we ultimately end up with an online cpu with no
-"cache" subdirectory.
+In case the device 0, function 1 is not found using pci_get_device(),
+pci_scan_single_device() will be used but, differently than
+pci_get_device(), it allocates a pci_dev but doesn't does bump the usage
+count on the pci_dev and after few module removals and loads the pci_dev
+will be freed.
 
-This fixes it by doing an explicit kobject_del() at the point where
-we want the subdirectory to go away.  kobject_del() removes the sysfs
-directory even though the object still exists in memory.  The object
-will get freed at some point in the future.  A subsequent onlining
-operation can create a new sysfs directory, even if the old object
-still exists in memory, without causing any problems.
-
-Signed-off-by: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Aristeu Rozanski <aris@redhat.com>
+Reviewed-by: mark gross <mark.gross@intel.com>
+Link: http://lkml.kernel.org/r/20131205153755.GL4545@redhat.com
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Cc: Jean Delvare <jdelvare@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/powerpc/kernel/cacheinfo.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/edac/e752x_edac.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/arch/powerpc/kernel/cacheinfo.c b/arch/powerpc/kernel/cacheinfo.c
-index 92c6b00..b4437e8 100644
---- a/arch/powerpc/kernel/cacheinfo.c
-+++ b/arch/powerpc/kernel/cacheinfo.c
-@@ -788,6 +788,9 @@ static void remove_cache_dir(struct cache_dir *cache_dir)
- {
- 	remove_index_dirs(cache_dir);
+diff --git a/drivers/edac/e752x_edac.c b/drivers/edac/e752x_edac.c
+index 3186512..847f248 100644
+--- a/drivers/edac/e752x_edac.c
++++ b/drivers/edac/e752x_edac.c
+@@ -1182,9 +1182,11 @@ static int e752x_get_devs(struct pci_dev *pdev, int dev_idx,
+ 	pvt->bridge_ck = pci_get_device(PCI_VENDOR_ID_INTEL,
+ 				pvt->dev_info->err_dev, pvt->bridge_ck);
  
-+	/* Remove cache dir from sysfs */
-+	kobject_del(cache_dir->kobj);
-+
- 	kobject_put(cache_dir->kobj);
+-	if (pvt->bridge_ck == NULL)
++	if (pvt->bridge_ck == NULL) {
+ 		pvt->bridge_ck = pci_scan_single_device(pdev->bus,
+ 							PCI_DEVFN(0, 1));
++		pci_dev_get(pvt->bridge_ck);
++	}
  
- 	kfree(cache_dir);
+ 	if (pvt->bridge_ck == NULL) {
+ 		e752x_printk(KERN_ERR, "error reporting device not found:"
 -- 
 1.8.3.2
 
