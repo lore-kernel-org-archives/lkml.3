@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755669AbaBGNTw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 08:19:52 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41504 "EHLO
+	id S1754315AbaBGLsL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:48:11 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41464 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754327AbaBGLsP (ORCPT
+	with ESMTP id S1753748AbaBGLsF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:48:15 -0500
+	Fri, 7 Feb 2014 06:48:05 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
+Cc: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
+        James Bottomley <JBottomley@Parallels.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 028/233] hwmon: (coretemp) Fix truncated name of alarm attributes
-Date: Fri,  7 Feb 2014 11:44:07 +0000
-Message-Id: <1391773652-25214-29-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 019/233] [SCSI] sd: Reduce buffer size for vpd request
+Date: Fri,  7 Feb 2014 11:43:58 +0000
+Message-Id: <1391773652-25214-20-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -27,36 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <khali@linux-fr.org>
+From: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
 
-commit 3f9aec7610b39521c7c69d754de7265f6994c194 upstream.
+commit af73623f5f10eb3832c87a169b28f7df040a875b upstream.
 
-When the core number exceeds 9, the size of the buffer storing the
-alarm attribute name is insufficient and the attribute name is
-truncated. This causes libsensors to skip these attributes as the
-truncated name is not recognized.
+Somehow older areca firmware versions have issues with
+scsi_get_vpd_page() and a large buffer, the firmware
+seems to crash and the scsi error-handler will start endless
+recovery retries.
+Limiting the buf-size to 64-bytes fixes this issue with older
+firmware versions (<1.49 for my controller).
 
-Reported-by: Andreas Hollmann <hollmann@in.tum.de>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Fixes a regression with areca controllers and older firmware versions
+introduced by commit: 66c28f97120e8a621afd5aa7a31c4b85c547d33d
+
+Reported-by: Nix <nix@esperi.org.uk>
+Tested-by: Nix <nix@esperi.org.uk>
+Signed-off-by: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+Acked-by: Martin K. Petersen <martin.petersen@oracle.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hwmon/coretemp.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/scsi/sd.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
-index 2e5e2dc..f269b0a 100644
---- a/drivers/hwmon/coretemp.c
-+++ b/drivers/hwmon/coretemp.c
-@@ -52,7 +52,7 @@ MODULE_PARM_DESC(tjmax, "TjMax value in degrees Celsius");
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index a873795..23e0673 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -2644,13 +2644,16 @@ static void sd_read_write_same(struct scsi_disk *sdkp, unsigned char *buffer)
+ 	}
  
- #define BASE_SYSFS_ATTR_NO	2	/* Sysfs Base attr no for coretemp */
- #define NUM_REAL_CORES		32	/* Number of Real cores per cpu */
--#define CORETEMP_NAME_LENGTH	17	/* String Length of attrs */
-+#define CORETEMP_NAME_LENGTH	19	/* String Length of attrs */
- #define MAX_CORE_ATTRS		4	/* Maximum no of basic attrs */
- #define TOTAL_ATTRS		(MAX_CORE_ATTRS + 1)
- #define MAX_CORE_DATA		(NUM_REAL_CORES + BASE_SYSFS_ATTR_NO)
+ 	if (scsi_report_opcode(sdev, buffer, SD_BUF_SIZE, INQUIRY) < 0) {
++		/* too large values might cause issues with arcmsr */
++		int vpd_buf_len = 64;
++
+ 		sdev->no_report_opcodes = 1;
+ 
+ 		/* Disable WRITE SAME if REPORT SUPPORTED OPERATION
+ 		 * CODES is unsupported and the device has an ATA
+ 		 * Information VPD page (SAT).
+ 		 */
+-		if (!scsi_get_vpd_page(sdev, 0x89, buffer, SD_BUF_SIZE))
++		if (!scsi_get_vpd_page(sdev, 0x89, buffer, vpd_buf_len))
+ 			sdev->no_write_same = 1;
+ 	}
+ 
 -- 
 1.8.3.2
 
