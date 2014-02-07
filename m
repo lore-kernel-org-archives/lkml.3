@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755936AbaBGMkn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:40:43 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:43663 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754275AbaBGMkh (ORCPT
+	id S1754835AbaBGLud (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:50:33 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41957 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754813AbaBGLua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 07:40:37 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-01-52f4d4423d59
-Message-id: <1391776833.16500.1.camel@AMDC1943>
-Subject: Re: [PATCH v3 1/2] regulator: s5m8767: Use GPIO for controlling
- Buck9/eMMC
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Date: Fri, 07 Feb 2014 13:40:33 +0100
-In-reply-to: <20140127202524.GQ11841@sirena.org.uk>
-References: <1390570678-30686-1-git-send-email-k.kozlowski@samsung.com>
- <1390570678-30686-2-git-send-email-k.kozlowski@samsung.com>
- <20140127202524.GQ11841@sirena.org.uk>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.2.3-0ubuntu6
-Content-transfer-encoding: 7bit
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNLMWRmVeSWpSXmKPExsVy+t/xK7pOV74EGXQvMrfYOGM9q8XUh0/Y
-	LOYfOcdqcbbpDbvF/a9HGS2+Xelgsri8aw6bxYzz+5gs1h65y25x8k8vo8XpblaLiyu+MDnw
-	eOycdZfdY9OqTjaPO9f2sHnMOxno0bdlFaPH501yAWxRXDYpqTmZZalF+nYJXBm7H95iKljM
-	XPF6Wg9jA+MJpi5GTg4JAROJR48fMULYYhIX7q1n62Lk4hASWMooMX3rC1YI5zOjxPrT7UBV
-	HBy8AvoSt37xgTQIC4RKLGs7zwxiswkYS2xevoQNxBYRUJa4+n0vC0gvs8AmZokZZ0+xgyRY
-	BFQljl3ZA2ZzAjXc6JvBCLFgHaPEr3VNYCcxC6hLTJq3iBniJCWJ3e2d7BBxeYnNa96CxXkF
-	BCV+TL7HMoFRYBaSlllIymYhKVvAyLyKUTS1NLmgOCk911CvODG3uDQvXS85P3cTIyRCvuxg
-	XHzM6hCjAAejEg/viaWfg4RYE8uKK3MPMUpwMCuJ8J6+8CVIiDclsbIqtSg/vqg0J7X4ECMT
-	B6dUA+M6Xa9+5cT/i9k0bt070bFw5tTmtjpPFqcDX2+wL5R5xOByOTzm5D/FIIPgNQ80HgTO
-	jZP0XtQReOfJ7Aj1vVf3+3BIZ5oK6MyQ0LPU16las4Dn9ox/3W7OT95lRi1O8LwgJdtksaPd
-	3v/lxqV8ZV7hmnemR+Q1dbzZt2n5plXrhPpWlz+faafEUpyRaKjFXFScCABWwrDibgIAAA==
+	Fri, 7 Feb 2014 06:50:30 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Weston Andros Adamson <dros@primarydata.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 120/233] nfs4.1: properly handle ENOTSUP in SECINFO_NO_NAME
+Date: Fri,  7 Feb 2014 11:45:39 +0000
+Message-Id: <1391773652-25214-121-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
+References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+3.11.10.4 -stable review patch.  If anyone has any objections, please let me know.
 
-On Mon, 2014-01-27 at 20:25 +0000, Mark Brown wrote:
-> On Fri, Jan 24, 2014 at 02:37:57PM +0100, Krzysztof Kozlowski wrote:
-> > Add support for GPIO control (enable/disable) over Buck9. The Buck9
-> > Converter is used as a supply for eMMC Host Controller.
-> 
-> Applied, thanks.
+------------------
 
-I can't find these patches in your tree. Did you applied them or am I
-missing something?
+From: Weston Andros Adamson <dros@primarydata.com>
 
-Best regards,
-Krzysztof
+commit 78b19bae0813bd6f921ca58490196abd101297bd upstream.
+
+Don't check for -NFS4ERR_NOTSUPP, it's already been mapped to -ENOTSUPP
+by nfs4_stat_to_errno.
+
+This allows the client to mount v4.1 servers that don't support
+SECINFO_NO_NAME by falling back to the "guess and check" method of
+nfs4_find_root_sec.
+
+Signed-off-by: Weston Andros Adamson <dros@primarydata.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ fs/nfs/nfs4proc.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+index a1e1f2f..bdaa5a1 100644
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -7109,7 +7109,7 @@ nfs41_proc_secinfo_no_name(struct nfs_server *server, struct nfs_fh *fhandle,
+ 		switch (err) {
+ 		case 0:
+ 		case -NFS4ERR_WRONGSEC:
+-		case -NFS4ERR_NOTSUPP:
++		case -ENOTSUPP:
+ 			goto out;
+ 		default:
+ 			err = nfs4_handle_exception(server, err, &exception);
+@@ -7141,7 +7141,7 @@ nfs41_find_root_sec(struct nfs_server *server, struct nfs_fh *fhandle,
+ 	 * Fall back on "guess and check" method if
+ 	 * the server doesn't support SECINFO_NO_NAME
+ 	 */
+-	if (err == -NFS4ERR_WRONGSEC || err == -NFS4ERR_NOTSUPP) {
++	if (err == -NFS4ERR_WRONGSEC || err == -ENOTSUPP) {
+ 		err = nfs4_find_root_sec(server, fhandle, info);
+ 		goto out_freepage;
+ 	}
+-- 
+1.8.3.2
 
