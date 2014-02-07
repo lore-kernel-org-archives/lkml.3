@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752450AbaBGKUF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 05:20:05 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:57002 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752410AbaBGKUA (ORCPT
+	id S1752481AbaBGKUN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 05:20:13 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:39281 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751872AbaBGKUI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 05:20:00 -0500
+	Fri, 7 Feb 2014 05:20:08 -0500
 From: AKASHI Takahiro <takahiro.akashi@linaro.org>
 To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
         catalin.marinas@arm.com, will.deacon@arm.com,
@@ -14,9 +14,9 @@ To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
 Cc: arndb@arndb.de, linux-arm-kernel@lists.infradead.org,
         linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
         patches@linaro.org, AKASHI Takahiro <takahiro.akashi@linaro.org>
-Subject: [PATCH v3 4/6] ftrace: Add arm64 support to recordmcount
-Date: Fri,  7 Feb 2014 19:18:54 +0900
-Message-Id: <1391768336-5642-5-git-send-email-takahiro.akashi@linaro.org>
+Subject: [PATCH v3 5/6] arm64: ftrace: Add system call tracepoint
+Date: Fri,  7 Feb 2014 19:18:55 +0900
+Message-Id: <1391768336-5642-6-git-send-email-takahiro.akashi@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391768336-5642-1-git-send-email-takahiro.akashi@linaro.org>
 References: <1382598488-13511-1-git-send-email-takahiro.akashi@linaro.org>
@@ -25,75 +25,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recordmcount utility under scripts is run, after compiling each object,
-to find out all the locations of calling _mcount() and put them into
-specific seciton named __mcount_loc.
-Then linker collects all such information into a table in the kernel image
-(between __start_mcount_loc and __stop_mcount_loc) for later use by ftrace.
-
-This patch adds arm64 specific definitions to identify such locations.
-There are two types of implementation, C and Perl. On arm64, only C version
-is used to build the kernel now that CONFIG_HAVE_C_RECORDMCOUNT is on.
-But Perl version is also maintained.
+This patch allows system call entry or exit to be traced as ftrace events,
+ie. sys_enter_*/sys_exit_*, if CONFIG_FTRACE_SYSCALLS is enabled.
+Those events appear and can be controlled under
+    ${sysfs}/tracing/events/syscalls/
 
 Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
 ---
- arch/arm64/Kconfig      |    2 ++
- scripts/recordmcount.c  |    4 ++++
- scripts/recordmcount.pl |    5 +++++
- 3 files changed, 11 insertions(+)
+ arch/arm64/Kconfig               |    1 +
+ arch/arm64/include/asm/syscall.h |    1 +
+ arch/arm64/include/asm/unistd.h  |    2 ++
+ arch/arm64/kernel/ptrace.c       |    5 +++++
+ 4 files changed, 9 insertions(+)
 
 diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index 4d81791..43fce76 100644
+index 43fce76..9bdaf5c 100644
 --- a/arch/arm64/Kconfig
 +++ b/arch/arm64/Kconfig
-@@ -27,6 +27,7 @@ config ARM64
- 	select HARDIRQS_SW_RESEND
- 	select HAVE_ARCH_JUMP_LABEL
- 	select HAVE_ARCH_TRACEHOOK
-+	select HAVE_C_RECORDMCOUNT
- 	select HAVE_DEBUG_BUGVERBOSE
- 	select HAVE_DEBUG_KMEMLEAK
- 	select HAVE_DMA_API_DEBUG
-@@ -34,6 +35,7 @@ config ARM64
- 	select HAVE_DMA_CONTIGUOUS
- 	select HAVE_DYNAMIC_FTRACE
- 	select HAVE_EFFICIENT_UNALIGNED_ACCESS
-+	select HAVE_FTRACE_MCOUNT_RECORD
- 	select HAVE_FUNCTION_TRACER
- 	select HAVE_FUNCTION_GRAPH_TRACER
- 	select HAVE_GENERIC_DMA_COHERENT
-diff --git a/scripts/recordmcount.c b/scripts/recordmcount.c
-index 9c22317..b92d9f7 100644
---- a/scripts/recordmcount.c
-+++ b/scripts/recordmcount.c
-@@ -347,6 +347,10 @@ do_file(char const *const fname)
- 	case EM_ARM:	 reltype = R_ARM_ABS32;
- 			 altmcount = "__gnu_mcount_nc";
- 			 break;
-+	case EM_AARCH64:
-+			 reltype = R_AARCH64_ABS64;
-+			 altmcount = "_mcount";
-+			 break;
- 	case EM_IA_64:	 reltype = R_IA64_IMM64;   gpfx = '_'; break;
- 	case EM_METAG:	 reltype = R_METAG_ADDR32;
- 			 altmcount = "_mcount_wrapper";
-diff --git a/scripts/recordmcount.pl b/scripts/recordmcount.pl
-index 91280b8..397b6b8 100755
---- a/scripts/recordmcount.pl
-+++ b/scripts/recordmcount.pl
-@@ -279,6 +279,11 @@ if ($arch eq "x86_64") {
-     $mcount_regex = "^\\s*([0-9a-fA-F]+):\\s*R_ARM_(CALL|PC24|THM_CALL)" .
- 			"\\s+(__gnu_mcount_nc|mcount)\$";
+@@ -42,6 +42,7 @@ config ARM64
+ 	select HAVE_HW_BREAKPOINT if PERF_EVENTS
+ 	select HAVE_MEMBLOCK
+ 	select HAVE_PERF_EVENTS
++	select HAVE_SYSCALL_TRACEPOINTS
+ 	select IRQ_DOMAIN
+ 	select MODULES_USE_ELF_RELA
+ 	select NO_BOOTMEM
+diff --git a/arch/arm64/include/asm/syscall.h b/arch/arm64/include/asm/syscall.h
+index 70ba9d4..383771e 100644
+--- a/arch/arm64/include/asm/syscall.h
++++ b/arch/arm64/include/asm/syscall.h
+@@ -18,6 +18,7 @@
  
-+} elsif ($arch eq "arm64") {
-+    $alignment = 3;
-+    $section_type = '%progbits';
-+    $mcount_regex = "^\\s*([0-9a-fA-F]+):\\s*R_AARCH64_CALL26\\s+_mcount\$";
-+    $type = ".quad";
- } elsif ($arch eq "ia64") {
-     $mcount_regex = "^\\s*([0-9a-fA-F]+):.*\\s_mcount\$";
-     $type = "data8";
+ #include <linux/err.h>
+ 
++extern const void *sys_call_table[];
+ 
+ static inline int syscall_get_nr(struct task_struct *task,
+ 				 struct pt_regs *regs)
+diff --git a/arch/arm64/include/asm/unistd.h b/arch/arm64/include/asm/unistd.h
+index 82ce217..c335479 100644
+--- a/arch/arm64/include/asm/unistd.h
++++ b/arch/arm64/include/asm/unistd.h
+@@ -28,3 +28,5 @@
+ #endif
+ #define __ARCH_WANT_SYS_CLONE
+ #include <uapi/asm/unistd.h>
++
++#define NR_syscalls (__NR_syscalls)
+diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
+index 64ce39f..f4c3c4e 100644
+--- a/arch/arm64/kernel/ptrace.c
++++ b/arch/arm64/kernel/ptrace.c
+@@ -41,6 +41,9 @@
+ #include <asm/traps.h>
+ #include <asm/system_misc.h>
+ 
++#define CREATE_TRACE_POINTS
++#include <trace/events/syscalls.h>
++
+ /*
+  * TODO: does not yet catch signals sent when the child dies.
+  * in exit.c or in signal.c.
+@@ -1076,10 +1079,12 @@ asmlinkage int syscall_trace(int dir, struct pt_regs *regs)
+ 	}
+ 
+ 	if (dir) {
++		trace_sys_exit(regs, regs->syscallno);
+ 		tracehook_report_syscall_exit(regs, 0);
+ 	} else {
+ 		if (tracehook_report_syscall_entry(regs))
+ 			regs->syscallno = ~0UL;
++		trace_sys_enter(regs, regs->syscallno);
+ 	}
+ 
+ 	if (is_compat_task())
 -- 
 1.7.9.5
 
