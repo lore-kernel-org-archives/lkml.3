@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932342AbaBGLuT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:50:19 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41903 "EHLO
+	id S1754814AbaBGLua (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:50:30 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41924 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753283AbaBGLuP (ORCPT
+	with ESMTP id S932350AbaBGLuV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:50:15 -0500
+	Fri, 7 Feb 2014 06:50:21 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Mark Brown <broonie@linaro.org>,
+Cc: Steven Rostedt <rostedt@goodmis.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 108/233] spi/pxa2xx: initialize DMA channels to -1 to prevent inadvertent match
-Date: Fri,  7 Feb 2014 11:45:27 +0000
-Message-Id: <1391773652-25214-109-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 113/233] ftrace: Fix synchronization location disabling and freeing ftrace_ops
+Date: Fri,  7 Feb 2014 11:45:32 +0000
+Message-Id: <1391773652-25214-114-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -28,40 +27,113 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 483c319188c74e82b29a0ed7a7fa7065570f2193 upstream.
+commit a4c35ed241129dd142be4cadb1e5a474a56d5464 upstream.
 
-Commit cddb339badb0 (spi/pxa2xx: convert to dma_request_slave_channel_compat())
-converted the driver to use ACPI provided DMA helpers but it forgot to
-initialize the platform data for the channels to -1. Failing to do so will
-result inadvertent match in the filter function because 0 is a valid
-channel number.
+The synchronization needed after ftrace_ops are unregistered must happen
+after the callback is disabled from becing called by functions.
 
-Prevent this from happening by initializing both platform data channels
-correctly to -1.
+The current location happens after the function is being removed from the
+internal lists, but not after the function callbacks were disabled, leaving
+the functions susceptible of being called after their callbacks are freed.
 
-Fixes: cddb339badb0 (spi/pxa2xx: convert to dma_request_slave_channel_compat())
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+This affects perf and any externel users of function tracing (LTTng and
+SystemTap).
+
+Fixes: cdbe61bfe704 "ftrace: Allow dynamically allocated function tracers"
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/spi/spi-pxa2xx.c | 2 ++
- 1 file changed, 2 insertions(+)
+ kernel/trace/ftrace.c | 58 ++++++++++++++++++++++++++++-----------------------
+ 1 file changed, 32 insertions(+), 26 deletions(-)
 
-diff --git a/drivers/spi/spi-pxa2xx.c b/drivers/spi/spi-pxa2xx.c
-index 46e481f..b0e1331 100644
---- a/drivers/spi/spi-pxa2xx.c
-+++ b/drivers/spi/spi-pxa2xx.c
-@@ -1064,6 +1064,8 @@ pxa2xx_spi_acpi_get_pdata(struct platform_device *pdev)
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index f1dd607..c984033 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -439,20 +439,6 @@ static int __unregister_ftrace_function(struct ftrace_ops *ops)
+ 	} else if (ops->flags & FTRACE_OPS_FL_CONTROL) {
+ 		ret = remove_ftrace_list_ops(&ftrace_control_list,
+ 					     &control_ops, ops);
+-		if (!ret) {
+-			/*
+-			 * The ftrace_ops is now removed from the list,
+-			 * so there'll be no new users. We must ensure
+-			 * all current users are done before we free
+-			 * the control data.
+-			 * Note synchronize_sched() is not enough, as we
+-			 * use preempt_disable() to do RCU, but the function
+-			 * tracer can be called where RCU is not active
+-			 * (before user_exit()).
+-			 */
+-			schedule_on_each_cpu(ftrace_sync);
+-			control_ops_free(ops);
+-		}
+ 	} else
+ 		ret = remove_ftrace_ops(&ftrace_ops_list, ops);
  
- 	pdata->num_chipselect = 1;
- 	pdata->enable_dma = true;
-+	pdata->tx_chan_id = -1;
-+	pdata->rx_chan_id = -1;
+@@ -462,17 +448,6 @@ static int __unregister_ftrace_function(struct ftrace_ops *ops)
+ 	if (ftrace_enabled)
+ 		update_ftrace_function();
  
- 	return pdata;
+-	/*
+-	 * Dynamic ops may be freed, we must make sure that all
+-	 * callers are done before leaving this function.
+-	 *
+-	 * Again, normal synchronize_sched() is not good enough.
+-	 * We need to do a hard force of sched synchronization.
+-	 */
+-	if (ops->flags & FTRACE_OPS_FL_DYNAMIC)
+-		schedule_on_each_cpu(ftrace_sync);
+-
+-
+ 	return 0;
  }
+ 
+@@ -2141,10 +2116,41 @@ static int ftrace_shutdown(struct ftrace_ops *ops, int command)
+ 		command |= FTRACE_UPDATE_TRACE_FUNC;
+ 	}
+ 
+-	if (!command || !ftrace_enabled)
++	if (!command || !ftrace_enabled) {
++		/*
++		 * If these are control ops, they still need their
++		 * per_cpu field freed. Since, function tracing is
++		 * not currently active, we can just free them
++		 * without synchronizing all CPUs.
++		 */
++		if (ops->flags & FTRACE_OPS_FL_CONTROL)
++			control_ops_free(ops);
+ 		return 0;
++	}
+ 
+ 	ftrace_run_update_code(command);
++
++	/*
++	 * Dynamic ops may be freed, we must make sure that all
++	 * callers are done before leaving this function.
++	 * The same goes for freeing the per_cpu data of the control
++	 * ops.
++	 *
++	 * Again, normal synchronize_sched() is not good enough.
++	 * We need to do a hard force of sched synchronization.
++	 * This is because we use preempt_disable() to do RCU, but
++	 * the function tracers can be called where RCU is not watching
++	 * (like before user_exit()). We can not rely on the RCU
++	 * infrastructure to do the synchronization, thus we must do it
++	 * ourselves.
++	 */
++	if (ops->flags & (FTRACE_OPS_FL_DYNAMIC | FTRACE_OPS_FL_CONTROL)) {
++		schedule_on_each_cpu(ftrace_sync);
++
++		if (ops->flags & FTRACE_OPS_FL_CONTROL)
++			control_ops_free(ops);
++	}
++
+ 	return 0;
+ }
+ 
 -- 
 1.8.3.2
 
