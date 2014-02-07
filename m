@@ -1,114 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751889AbaBGJVr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 04:21:47 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:44867 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751339AbaBGJVo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 04:21:44 -0500
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
-Subject: Re: Attaching a cgroup subsystem to multiple hierarchies
-From: Glyn Normington <gnormington@gopivotal.com>
-In-Reply-To: <20140206185923.GA2781@dhcp22.suse.cz>
-Date: Fri, 7 Feb 2014 09:21:42 +0000
-Content-Transfer-Encoding: 8BIT
-Message-Id: <1C806CEE-B69E-4F47-A33F-BC8CE4865223@gopivotal.com>
-References: <050BD595-BE55-401D-9B61-E877FB9F06A8@gopivotal.com> <20140206185923.GA2781@dhcp22.suse.cz>
-To: linux-kernel@vger.kernel.org
-X-Mailer: Apple Mail (2.1827)
+	id S1751655AbaBGJaU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 04:30:20 -0500
+Received: from mga01.intel.com ([192.55.52.88]:56312 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750868AbaBGJaR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 04:30:17 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,799,1384329600"; 
+   d="scan'208";a="477459994"
+Message-ID: <52F4A7A3.1040402@linux.intel.com>
+Date: Fri, 07 Feb 2014 17:30:11 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Nathan Zimmer <nzimmer@sgi.com>, David Rientjes <rientjes@google.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Xishi Qiu <qiuxishi@huawei.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jiang Liu <liuj97@gmail.com>, Hedi Berriche <hedi@sgi.com>,
+        Mike Travis <travis@sgi.com>
+Subject: Re: [RFC] Move the memory_notifier out of the memory_hotplug lock
+References: <1391617743-150518-1-git-send-email-nzimmer@sgi.com> <alpine.DEB.2.02.1402051217520.5616@chino.kir.corp.google.com> <52F2C4F0.6080608@sgi.com> <alpine.DEB.2.02.1402051512490.24489@chino.kir.corp.google.com> <20140206160939.GA107343@asylum.americas.sgi.com>
+In-Reply-To: <20140206160939.GA107343@asylum.americas.sgi.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michal
+Hi Nathan,
+	I feel some registered memory hotplug notification callbacks
+may have an assumption that they will be serialized by the memory
+hotplug framework. If we relax the lock semantics, we need to scan
+all those callbacks and make sure they are safe.
+	And it's easy for user to trigger concurrent online/offline
+requests through sysfs interfaces. So it would be better to keep
+strict lock semantics.
+Thanks!
+Gerry
 
-On 6 Feb 2014, at 18:59, Michal Hocko <mhocko@suse.cz> wrote:
-
-> On Wed 05-02-14 14:39:52, Glyn Normington wrote:
->> Reading cgroups.txt and casting around the net leads me to believe
->> that it is possible to attach a cgroup subsystem (e.g. memory) to
->> multiple hierarchies, but this seems to result in “mirrored”
->> hierarchies which are automatically kept in step with each other -
->> essentially it looks like the same hierarchy at multiple file system
->> paths.
->> 
->> Take the following interaction for example:
->> 
->> \begin{verbatim}
->> $ pwd   
->> /home/vagrant
->> $ mkdir mem1
->> $ mkdir mem2
->> $ sudo su
->> # mount -t cgroup -o memory none /home/vagrant/mem1
->> # mount -t cgroup -o memory none /home/vagrant/mem2
->> # cd mem1
->> # mkdir inst1  
->> # ls inst1 
->> cgroup.clone_children  memory.failcnt ...
->> # ls ../mem2
->> cgroup.clone_children  inst1 memory.limit_in_bytes ...
->> # cd inst1
->> # echo 1000000 > memory.limit_in_bytes 
->> # cat memory.limit_in_bytes 
->> 1003520
->> # cat ../../mem2/inst1/memory.limit_in_bytes 
->> 1003520
->> # echo $$ > tasks
->> # cat tasks
->> 1365
->> 1409
->> # cat ../../mem2/inst1/tasks
->> 1365
->> 1411
->> 
->> Is this working as intended?
+On 2014/2/7 0:09, Nathan Zimmer wrote:
+> On Wed, Feb 05, 2014 at 03:20:07PM -0800, David Rientjes wrote:
+>> On Wed, 5 Feb 2014, Nathan Zimmer wrote:
+>>
+>>>> That looks a little problematic, what happens if a nid is being brought
+>>>> online and a registered callback does something like allocate resources
+>>>> for the arg->status_change_nid and the above two hunks of this patch end
+>>>> up racing?
+>>>>
+>>>> Before, a registered callback would be guaranteed to see either a
+>>>> MEMORY_CANCEL_ONLINE or MEMORY_ONLINE after it has already done
+>>>> MEMORY_GOING_ONLINE.
+>>>>
+>>>> With your patch, we could race and see one cpu doing MEMORY_GOING_ONLINE,
+>>>> another cpu doing MEMORY_GOING_ONLINE, and then MEMORY_ONLINE and
+>>>> MEMORY_CANCEL_ONLINE in either order.
+>>>>
+>>>> So I think this patch will break most registered callbacks that actually
+>>>> depend on lock_memory_hotplug(), it's a coarse lock for that reason.
+>>>
+>>> Since the argument being passed in is the pfn and size it would be an issue
+>>> only if two threads attepted to online the same piece of memory. Right?
+>>>
+>>
+>> No, I'm referring to registered callbacks that provide a resource for 
+>> arg->status_change_nid.  An example would be the callbacks I added to the 
+>> slub allocator in slab_memory_callback().  If we are now able to get a 
+>> racy MEM_GOING_ONLINE -> MEM_GOING_ONLINE -> MEM_ONLINE -> 
+>> MEM_CANCEL_ONLINE, which is possible with your patch _and_ the node being 
+>> successfully onlined at the end, then we get a NULL pointer dereference 
+>> because the kmem_cache_node for each slab cache has been freed.
+>>
+> Ok I think I see now.  In my testing I had only been onlining parts of nodes.
+> So all nodes were already had at least some memory online from the beginning.
 > 
-> Yes, it doesn't make any sense to have two different views on the same
-> controllers.
-
-Then wouldn’t it be better for the second mount to fail?
-
+>>> That seems very unlikely but if it can happen it needs to be protected
+>>> against.
+>>>
+>>
+>> The protection for registered memory online or offline callbacks is 
+>> lock_memory_hotplug() which is eliminated with your patch, the locking for 
+>> memory_notify() that you're citing is irrelevant.
 > 
->> Is there some other way to attach a subsystem to *distinct*
->> hierarchies?
+> Would the race still exist if we left the position of the locks alone and 
+> broke it up by nid, something like this?
 > 
-> No.
 > 
->> Distinct hierarchies would allow distinct cgroups, distinct settings
->> (e.g. memory.limit_in_bytes) and distinct partitions of the tasks in
->> the system.
+> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+> index ee37657..e797e21 100644
+> --- a/mm/memory_hotplug.c
+> +++ b/mm/memory_hotplug.c
+> @@ -913,7 +913,9 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages, int online_typ
+>  	int ret;
+>  	struct memory_notify arg;
+>  
+> -	lock_memory_hotplug();
+> +	nid = page_to_nid(pfn_to_page(pfn));
+> +
+> +	lock_memory_hotplug(nid);
+>  	/*
+>  	 * This doesn't need a lock to do pfn_to_page().
+>  	 * The section can't be removed here because of the
+> @@ -923,19 +925,19 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages, int online_typ
+>  
+>  	if ((zone_idx(zone) > ZONE_NORMAL || online_type == ONLINE_MOVABLE) &&
+>  	    !can_online_high_movable(zone)) {
+> -		unlock_memory_hotplug();
+> +		unlock_memory_hotplug(nid);
+>  		return -1;
+>  	}
+>  
+>  	if (online_type == ONLINE_KERNEL && zone_idx(zone) == ZONE_MOVABLE) {
+>  		if (move_pfn_range_left(zone - 1, zone, pfn, pfn + nr_pages)) {
+> -			unlock_memory_hotplug();
+> +			unlock_memory_hotplug(nid);
+>  			return -1;
+>  		}
+>  	}
+>  	if (online_type == ONLINE_MOVABLE && zone_idx(zone) == ZONE_MOVABLE - 1) {
+>  		if (move_pfn_range_right(zone, zone + 1, pfn, pfn + nr_pages)) {
+> -			unlock_memory_hotplug();
+> +			unlock_memory_hotplug(nid);
+>  			return -1;
+>  		}
+>  	}
+> @@ -947,13 +949,11 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages, int online_typ
+>  	arg.nr_pages = nr_pages;
+>  	node_states_check_changes_online(nr_pages, zone, &arg);
+>  
+> -	nid = page_to_nid(pfn_to_page(pfn));
+> -
+>  	ret = memory_notify(MEM_GOING_ONLINE, &arg);
+>  	ret = notifier_to_errno(ret);
+>  	if (ret) {
+>  		memory_notify(MEM_CANCEL_ONLINE, &arg);
+> -		unlock_memory_hotplug();
+> +		unlock_memory_hotplug(nid);
+>  		return ret;
+>  	}
+>  	/*
+> @@ -978,7 +978,7 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages, int online_typ
+>  		       (((unsigned long long) pfn + nr_pages)
+>  			    << PAGE_SHIFT) - 1);
+>  		memory_notify(MEM_CANCEL_ONLINE, &arg);
+> -		unlock_memory_hotplug();
+> +		unlock_memory_hotplug(nid);
+>  		return ret;
+>  	}
+>  
+> @@ -1006,7 +1006,7 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages, int online_typ
+>  
+>  	if (onlined_pages)
+>  		memory_notify(MEM_ONLINE, &arg);
+> -	unlock_memory_hotplug();
+> +	unlock_memory_hotplug(nid);
+>  
+>  	return 0;
+>  }
 > 
-> Which one should be applied then?
-
-Good question. All of them, I would say: the constraints due to distinct settings would be ANDed together.
-
-The implementation would be more complex and less efficient as a subsystem's resources consumed by a process would need charging against each hierarchy to which the subsystem was attached.
-
-I very much doubt this would be worth implementing and I’m not at all suggesting it.
-
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
->> 
->> Note: I don’t have a good use for this function - I’m simply
->> trying to reverse engineer the semantics of cgroups to get a precise
->> understanding.
-> 
-> I think there is no need to reverse engineer ;)
-> Documentation/cgroups/cgroups.txt in the kernel tree does give a decent
-> description IMO.
-
-I disagree. For example, cgroups.txt does not clearly state whether or not a single subsystem may be attached to distinct hierarchies.
-
-This seems to have caused confusion elsewhere. For example, Red Hat write “… a single subsystem can be attached to two hierarchies if both of those hierarchies have only that subsystem attached.” ([1]).
-
-> 
-> -- 
-> Michal Hocko
-> SUSE Labs
-
-Regards,
-Glyn
-
-[1] See “Rule 2” on p. 10 of https://access.redhat.com/site/documentation/en-US/Red_Hat_Enterprise_Linux/6/pdf/Resource_Management_Guide/Red_Hat_Enterprise_Linux-6-Resource_Management_Guide-en-US.pdf
