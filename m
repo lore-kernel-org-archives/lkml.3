@@ -1,80 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753535AbaBGRoZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 12:44:25 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:58591 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753412AbaBGRoV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 12:44:21 -0500
-Date: Fri, 7 Feb 2014 12:44:17 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: mmotm 2014-02-05 list_lru_add lockdep splat
-Message-ID: <20140207174417.GF6963@cmpxchg.org>
-References: <alpine.LSU.2.11.1402051944210.27326@eggly.anvils>
- <20140206164136.GC6963@cmpxchg.org>
- <alpine.LSU.2.11.1402061413330.27968@eggly.anvils>
+	id S1752841AbaBGRq4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 12:46:56 -0500
+Received: from relay1.mentorg.com ([192.94.38.131]:35733 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751403AbaBGRqy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 12:46:54 -0500
+Date: Fri, 7 Feb 2014 17:46:41 +0000
+From: "Joseph S. Myers" <joseph@codesourcery.com>
+X-X-Sender: jsm28@digraph.polyomino.org.uk
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Will Deacon <will.deacon@arm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Torvald Riegel <triegel@redhat.com>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+In-Reply-To: <20140207170654.GQ5002@laptop.programming.kicks-ass.net>
+Message-ID: <Pine.LNX.4.64.1402071740330.7304@digraph.polyomino.org.uk>
+References: <52F3DA85.1060209@arm.com> <20140206185910.GE27276@mudshark.cambridge.arm.com>
+ <20140206192743.GH4250@linux.vnet.ibm.com> <1391721423.23421.3898.camel@triegel.csb>
+ <20140206221117.GJ4250@linux.vnet.ibm.com> <1391730288.23421.4102.camel@triegel.csb>
+ <20140207042051.GL4250@linux.vnet.ibm.com> <20140207074405.GM5002@laptop.programming.kicks-ass.net>
+ <20140207165028.GO4250@linux.vnet.ibm.com> <20140207165548.GR5976@mudshark.cambridge.arm.com>
+ <20140207170654.GQ5002@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1402061413330.27968@eggly.anvils>
+Content-Type: text/plain; charset="US-ASCII"
+X-OriginalArrivalTime: 07 Feb 2014 17:46:44.0892 (UTC) FILETIME=[911EF5C0:01CF242C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 06, 2014 at 02:18:24PM -0800, Hugh Dickins wrote:
-> On Thu, 6 Feb 2014, Johannes Weiner wrote:
-> > On Wed, Feb 05, 2014 at 07:50:10PM -0800, Hugh Dickins wrote:
-> > > ======================================================
-> > > [ INFO: SOFTIRQ-safe -> SOFTIRQ-unsafe lock order detected ]
-> > > 3.14.0-rc1-mm1 #1 Not tainted
-> > > ------------------------------------------------------
-> > > kswapd0/48 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
-> > >  (&(&lru->node[i].lock)->rlock){+.+.-.}, at: [<ffffffff81117064>] list_lru_add+0x80/0xf4
-> > > 
-> > > s already holding:
-> > >  (&(&mapping->tree_lock)->rlock){..-.-.}, at: [<ffffffff81108c63>] __remove_mapping+0x3b/0x12d
-> > > which would create a new lock dependency:
-> > >  (&(&mapping->tree_lock)->rlock){..-.-.} -> (&(&lru->node[i].lock)->rlock){+.+.-.}
-> > 
-> > Thanks for the report.  The first time I saw this on my own machine, I
-> > misinterpreted it as a false positive (could have sworn the "possible
-> > unsafe scenario" section looked different, too).
-> > 
-> > Looking at it again, there really is a deadlock scenario when the
-> > shadow shrinker races with a page cache insertion or deletion and is
-> > interrupted by the IO completion handler while holding the list_lru
-> > lock:
-> > 
-> > >  Possible interrupt unsafe locking scenario:
-> > > 
-> > >        CPU0                    CPU1
-> > >        ----                    ----
-> > >   lock(&(&lru->node[i].lock)->rlock);
-> > >                                local_irq_disable();
-> > >                                lock(&(&mapping->tree_lock)->rlock);
-> > >                                lock(&(&lru->node[i].lock)->rlock);
-> > >   <Interrupt>
-> > >     lock(&(&mapping->tree_lock)->rlock);
-> > 
-> > Could you please try with the following patch?
-> 
-> Sure, that fixes it for me (with one trivial correction appended), thanks.
-> But don't imagine I've given it anything as demanding as thought!
->
-> --- hannes/mm/list_lru.c	2014-02-06 08:50:25.104032277 -0800
-> +++ hughd/mm/list_lru.c	2014-02-06 08:58:36.884043965 -0800
-> @@ -143,7 +143,7 @@ int list_lru_init_key(struct list_lru *l
->  	}
->  	return 0;
->  }
-> -EXPORT_SYMBOL_GPL(list_lru_init);
-> +EXPORT_SYMBOL_GPL(list_lru_init_key);
->  
->  void list_lru_destroy(struct list_lru *lru)
->  {
+On Fri, 7 Feb 2014, Peter Zijlstra wrote:
 
-Oops, yes, I usually do non-modular builds.  Thanks, will merge this
-into the above patch unless Andrew beats me to it.
+> There's further problems where things like memset() can write outside
+> the specified address range. Examples are memset() using single
+> instructions to wipe entire cachelines and then 'restoring' the tail
+> bit.
+
+If memset (or any C library function) modifies bytes it's not permitted to 
+modify in the abstract machine, that's a simple bug and should be reported 
+as usual.  We've made GCC follow that part of the memory model by default 
+(so a store to a non-bit-field structure field doesn't do a 
+read-modify-write to a word containing another field, for example) and I 
+think it's pretty obvious that glibc should do so as well.
+
+(Of course, memset is not an atomic operation, and you need to allow for 
+that if you use it on an _Atomic object - which is I think valid, unless 
+the object is also volatile, but perhaps ill-advised.)
+
+-- 
+Joseph S. Myers
+joseph@codesourcery.com
