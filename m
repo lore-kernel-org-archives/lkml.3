@@ -1,68 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755834AbaBGMcI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:32:08 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:60404 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755220AbaBGMcC (ORCPT
+	id S1754906AbaBGLux (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:50:53 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42035 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752911AbaBGLut (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 07:32:02 -0500
-Date: Fri, 7 Feb 2014 17:56:21 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Armin Schindler <mac@melware.de>, Karsten Keil <isdn@linux-pingi.de>,
-        netdev@vger.kernel.org, josh@joshtriplett.org
-Subject: [PATCH 07/26] drivers: isdn: Move prototype declaration to header
- file platform.h from divasproc.c
-Message-ID: <b29a188ce0a77d8e536258ef25745c82492e8f44.1390408515.git.rashika.kheria@gmail.com>
-References: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 7 Feb 2014 06:50:49 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 134/233] KVM: x86: limit PIT timer frequency
+Date: Fri,  7 Feb 2014 11:45:53 +0000
+Message-Id: <1391773652-25214-135-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
+References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move prototype declaration of functions to header file
-hardware/eicon/platform.h because they are used by more than one file.
+3.11.10.4 -stable review patch.  If anyone has any objections, please let me know.
 
-This eliminates the following warnings in hardware/eicon/divasmain.c:
-drivers/isdn/hardware/eicon/divasmain.c:190:6: warning: no previous prototype for ‘divas_get_version’ [-Wmissing-prototypes]
+------------------
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+From: Marcelo Tosatti <mtosatti@redhat.com>
+
+commit 9ed96e87c5748de4c2807ef17e81287c7304186c upstream.
+
+Limit PIT timer frequency similarly to the limit applied by
+LAPIC timer.
+
+Reviewed-by: Jan Kiszka <jan.kiszka@siemens.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/isdn/hardware/eicon/divasproc.c |    1 -
- drivers/isdn/hardware/eicon/platform.h  |    1 +
- 2 files changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kvm/i8254.c | 18 ++++++++++++++++++
+ arch/x86/kvm/lapic.c |  3 ---
+ arch/x86/kvm/x86.c   |  3 +++
+ arch/x86/kvm/x86.h   |  2 ++
+ 4 files changed, 23 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/isdn/hardware/eicon/divasproc.c b/drivers/isdn/hardware/eicon/divasproc.c
-index 56ce98a..edb7f39 100644
---- a/drivers/isdn/hardware/eicon/divasproc.c
-+++ b/drivers/isdn/hardware/eicon/divasproc.c
-@@ -34,7 +34,6 @@
+diff --git a/arch/x86/kvm/i8254.c b/arch/x86/kvm/i8254.c
+index 412a5aa..518d864 100644
+--- a/arch/x86/kvm/i8254.c
++++ b/arch/x86/kvm/i8254.c
+@@ -37,6 +37,7 @@
  
+ #include "irq.h"
+ #include "i8254.h"
++#include "x86.h"
  
- extern PISDN_ADAPTER IoAdapters[MAX_ADAPTER];
--extern void divas_get_version(char *);
- extern void diva_get_vserial_number(PISDN_ADAPTER IoAdapter, char *buf);
+ #ifndef CONFIG_X86_64
+ #define mod_64(x, y) ((x) - (y) * div64_u64(x, y))
+@@ -349,6 +350,23 @@ static void create_pit_timer(struct kvm *kvm, u32 val, int is_period)
+ 	atomic_set(&ps->pending, 0);
+ 	ps->irq_ack = 1;
  
- /*********************************************************
-diff --git a/drivers/isdn/hardware/eicon/platform.h b/drivers/isdn/hardware/eicon/platform.h
-index cdfbb19..e861857 100644
---- a/drivers/isdn/hardware/eicon/platform.h
-+++ b/drivers/isdn/hardware/eicon/platform.h
-@@ -150,6 +150,7 @@ struct _diva_os_timer;
- struct _ISDN_ADAPTER;
++	/*
++	 * Do not allow the guest to program periodic timers with small
++	 * interval, since the hrtimers are not throttled by the host
++	 * scheduler.
++	 */
++	if (ps->is_periodic) {
++		s64 min_period = min_timer_period_us * 1000LL;
++
++		if (ps->period < min_period) {
++			pr_info_ratelimited(
++			    "kvm: requested %lld ns "
++			    "i8254 timer period limited to %lld ns\n",
++			    ps->period, min_period);
++			ps->period = min_period;
++		}
++	}
++
+ 	hrtimer_start(&ps->timer, ktime_add_ns(ktime_get(), interval),
+ 		      HRTIMER_MODE_ABS);
+ }
+diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
+index dedd7c2..f213cbc 100644
+--- a/arch/x86/kvm/lapic.c
++++ b/arch/x86/kvm/lapic.c
+@@ -71,9 +71,6 @@
+ #define VEC_POS(v) ((v) & (32 - 1))
+ #define REG_POS(v) (((v) >> 5) << 4)
  
- void diva_log_info(unsigned char *, ...);
-+void divas_get_version(char *);
+-static unsigned int min_timer_period_us = 500;
+-module_param(min_timer_period_us, uint, S_IRUGO | S_IWUSR);
+-
+ static inline void apic_set_reg(struct kvm_lapic *apic, int reg_off, u32 val)
+ {
+ 	*((u32 *) (apic->regs + reg_off)) = val;
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 34e2e19..6740fbf 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -94,6 +94,9 @@ EXPORT_SYMBOL_GPL(kvm_x86_ops);
+ static bool ignore_msrs = 0;
+ module_param(ignore_msrs, bool, S_IRUGO | S_IWUSR);
  
- /*
- **  XDI DIDD Interface
++unsigned int min_timer_period_us = 500;
++module_param(min_timer_period_us, uint, S_IRUGO | S_IWUSR);
++
+ bool kvm_has_tsc_control;
+ EXPORT_SYMBOL_GPL(kvm_has_tsc_control);
+ u32  kvm_max_guest_tsc_khz;
+diff --git a/arch/x86/kvm/x86.h b/arch/x86/kvm/x86.h
+index e224f7a..3186542 100644
+--- a/arch/x86/kvm/x86.h
++++ b/arch/x86/kvm/x86.h
+@@ -124,5 +124,7 @@ int kvm_write_guest_virt_system(struct x86_emulate_ctxt *ctxt,
+ 
+ extern u64 host_xcr0;
+ 
++extern unsigned int min_timer_period_us;
++
+ extern struct static_key kvm_no_apic_vcpu;
+ #endif
 -- 
-1.7.9.5
+1.8.3.2
 
