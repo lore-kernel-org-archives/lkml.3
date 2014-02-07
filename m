@@ -1,124 +1,524 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751776AbaBGLBg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:01:36 -0500
-Received: from mga09.intel.com ([134.134.136.24]:14882 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750868AbaBGLBe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:01:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,799,1384329600"; 
-   d="scan'208";a="451261441"
-From: Jani Nikula <jani.nikula@linux.intel.com>
-To: Borislav Petkov <bp@alien8.de>, Imre Deak <imre.deak@intel.com>,
-        intel-gfx@lists.freedesktop.org
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: intel_sdvo_init: trying to register non-static key
-In-Reply-To: <20140207093205.GA24395@pd.tnic>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-References: <20140207093205.GA24395@pd.tnic>
-User-Agent: Notmuch/0.17+61~gab0de040c7c1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Fri, 07 Feb 2014 13:04:49 +0200
-Message-ID: <87d2iz18vi.fsf@intel.com>
+	id S1752206AbaBGLCp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:02:45 -0500
+Received: from eu1sys200aog125.obsmtp.com ([207.126.144.159]:55465 "EHLO
+	eu1sys200aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751474AbaBGLCl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 06:02:41 -0500
+From: <srinivas.kandagatla@st.com>
+To: <netdev@vger.kernel.org>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <kernel@stlinux.com>, <davem@davemloft.net>
+Subject: [PATCH v2 1/3] net: stmmac:sti: Add STi SOC glue driver.
+Date: Fri, 7 Feb 2014 10:55:25 +0000
+Message-ID: <1391770525-24349-1-git-send-email-srinivas.kandagatla@st.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1391770455-24291-1-git-send-email-srinivas.kandagatla@st.com>
+References: <1391770455-24291-1-git-send-email-srinivas.kandagatla@st.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain
+X-Originating-IP: [10.65.51.147]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 
-Imre, is this the same i2c_del_adapter issue you're looking at? Any
-patches to try yet?
+STi series SOCs have a glue layer on top of the synopsis gmac IP, this
+glue layer needs to be configured before the gmac driver starts using
+the IP.
 
-BR,
-Jani.
+This patch adds a support to this glue layer which is configured via
+stmmac setup, init, exit callbacks.
 
+Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+---
+ .../devicetree/bindings/net/sti-dwmac.txt          |   58 ++++
+ drivers/net/ethernet/stmicro/stmmac/Kconfig        |   11 +
+ drivers/net/ethernet/stmicro/stmmac/Makefile       |    1 +
+ drivers/net/ethernet/stmicro/stmmac/dwmac-sti.c    |  331 ++++++++++++++++++++
+ drivers/net/ethernet/stmicro/stmmac/stmmac.h       |    3 +
+ .../net/ethernet/stmicro/stmmac/stmmac_platform.c  |    5 +
+ 6 files changed, 409 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/net/sti-dwmac.txt
+ create mode 100644 drivers/net/ethernet/stmicro/stmmac/dwmac-sti.c
 
-On Fri, 07 Feb 2014, Borislav Petkov <bp@alien8.de> wrote:
-> Hi guys,
->
-> so I'm seeing this on rc1 + tip during boot:
->
-> [    0.558106] Linux agpgart interface v0.103
-> [    0.558283] [drm] Initialized drm 1.1.0 20060810
-> [    0.562280] [drm] Memory usable by graphics device = 2048M
-> [    0.632301] i915 0000:00:02.0: irq 42 for MSI/MSI-X
-> [    0.632401] [drm] Supports vblank timestamp caching Rev 2 (21.10.2013).
-> [    0.632485] [drm] Driver supports precise vblank timestamp query.
-> [    0.633200] vgaarb: device changed decodes: PCI:0000:00:02.0,olddecodes=io+mem,decodes=io+mem:owns=io+mem
-> [    0.655917] INFO: trying to register non-static key.
-> [    0.656003] the code is fine but needs lockdep annotation.
-> [    0.656083] turning off the locking correctness validator.
-> [    0.656165] CPU: 1 PID: 1 Comm: swapper/0 Not tainted 3.14.0-rc1+ #1
-> [    0.656248] Hardware name: LENOVO 2320CTO/2320CTO, BIOS G2ET86WW (2.06 ) 11/13/2012
-> [    0.656348]  ffff880213ca8000 ffff880213d01518 ffffffff8160ffa8 ffffffff810ad3c1
-> [    0.656641]  ffff8800cabc7560 ffff880213d01618 ffffffff8109e7c7 ffff880213ca8000
-> [    0.656929]  ffff880213ca8780 0000000000000000 0000000000000000 ffff880200000000
-> [    0.657216] Call Trace:
-> [    0.657295]  [<ffffffff8160ffa8>] dump_stack+0x4f/0x7c
-> [    0.657378]  [<ffffffff810ad3c1>] ? console_unlock+0x2a1/0x450
-> [    0.657465]  [<ffffffff8109e7c7>] __lock_acquire+0x1b57/0x1d50
-> [    0.657551]  [<ffffffff8109f8b4>] ? mark_held_locks+0x74/0x140
-> [    0.657637]  [<ffffffff8109fbfe>] ? debug_check_no_locks_freed+0x8e/0x160
-> [    0.657724]  [<ffffffff8109ae23>] ? lockdep_init_map+0xb3/0x570
-> [    0.657809]  [<ffffffff8109fa9d>] ? trace_hardirqs_on_caller+0x11d/0x1e0
-> [    0.657897]  [<ffffffff811fb0f8>] ? kernfs_addrm_finish+0x38/0x60
-> [    0.657982]  [<ffffffff8109efd7>] lock_acquire+0x87/0x130
-> [    0.658062]  [<ffffffff811fb0f8>] ? kernfs_addrm_finish+0x38/0x60
-> [    0.658148]  [<ffffffff811fa8fe>] kernfs_deactivate+0x10e/0x150
-> [    0.658232]  [<ffffffff811fb0f8>] ? kernfs_addrm_finish+0x38/0x60
-> [    0.658318]  [<ffffffff811fb0f8>] kernfs_addrm_finish+0x38/0x60
-> [    0.658404]  [<ffffffff811fb358>] kernfs_remove_by_name_ns+0x58/0xb0
-> [    0.658490]  [<ffffffff811f8fd1>] remove_files.isra.1+0x41/0x80
-> [    0.658574]  [<ffffffff811f92d0>] sysfs_remove_group+0x50/0xb0
-> [    0.658659]  [<ffffffff811f936b>] sysfs_remove_groups+0x3b/0x60
-> [    0.658746]  [<ffffffff81417ecb>] device_remove_attrs+0x5b/0x80
-> [    0.658832]  [<ffffffff814185a5>] device_del+0x125/0x1c0
-> [    0.658915]  [<ffffffff81418656>] device_unregister+0x16/0x30
-> [    0.659000]  [<ffffffff814e89da>] i2c_del_adapter+0x1ba/0x270
-> [    0.659086]  [<ffffffff813ea916>] intel_sdvo_init+0x1f6/0x820
-> [    0.659172]  [<ffffffff8161c641>] ? preempt_count_sub+0xb1/0x100
-> [    0.659258]  [<ffffffff816184ab>] ? _raw_spin_unlock_irqrestore+0x4b/0x80
-> [    0.659347]  [<ffffffff81406823>] ? gen6_read32+0x63/0x170
-> [    0.659431]  [<ffffffff813d260d>] intel_modeset_init+0xb3d/0x1010
-> [    0.659519]  [<ffffffff813f5539>] ? intel_power_domains_init_hw+0xa9/0x110
-> [    0.659606]  [<ffffffff813978cf>] i915_driver_load+0xd5f/0xeb0
-> [    0.659692]  [<ffffffff8137d58a>] drm_dev_register+0x8a/0x190
-> [    0.659777]  [<ffffffff8137fc99>] drm_get_pci_dev+0xf9/0x230
-> [    0.659861]  [<ffffffff81393ccb>] i915_pci_probe+0x3b/0x60
-> [    0.659945]  [<ffffffff812d385e>] local_pci_probe+0x4e/0xa0
-> [    0.660029]  [<ffffffff81417699>] ? get_device+0x19/0x20
-> [    0.660110]  [<ffffffff812d4cb1>] pci_device_probe+0xe1/0x130
-> [    0.660194]  [<ffffffff8141c00b>] driver_probe_device+0x7b/0x240
-> [    0.660279]  [<ffffffff8141c27b>] __driver_attach+0xab/0xb0
-> [    0.660363]  [<ffffffff8141c1d0>] ? driver_probe_device+0x240/0x240
-> [    0.660448]  [<ffffffff8141a35e>] bus_for_each_dev+0x5e/0x90
-> [    0.660532]  [<ffffffff8141bb1e>] driver_attach+0x1e/0x20
-> [    0.660615]  [<ffffffff8141b697>] bus_add_driver+0x117/0x230
-> [    0.660698]  [<ffffffff8141c974>] driver_register+0x64/0xf0
-> [    0.660780]  [<ffffffff812d3bf4>] __pci_register_driver+0x64/0x70
-> [    0.660869]  [<ffffffff81d34280>] ? ftrace_define_fields_drm_vblank_event+0x6d/0x6d
-> [    0.660970]  [<ffffffff8137fee5>] drm_pci_init+0x115/0x130
-> [    0.661054]  [<ffffffff81d34280>] ? ftrace_define_fields_drm_vblank_event+0x6d/0x6d
-> [    0.661157]  [<ffffffff81d342ea>] i915_init+0x6a/0x6c
-> [    0.661241]  [<ffffffff8100027e>] do_one_initcall+0x4e/0x170
-> [    0.661328]  [<ffffffff81070800>] ? parse_args+0xb0/0x360
-> [    0.661412]  [<ffffffff81cf9fbe>] kernel_init_freeable+0x106/0x19a
-> [    0.661497]  [<ffffffff81cf983b>] ? do_early_param+0x86/0x86
-> [    0.661580]  [<ffffffff81606bf0>] ? rest_init+0xd0/0xd0
-> [    0.661663]  [<ffffffff81606bfe>] kernel_init+0xe/0x130
-> [    0.661746]  [<ffffffff81620cec>] ret_from_fork+0x7c/0xb0
-> [    0.661828]  [<ffffffff81606bf0>] ? rest_init+0xd0/0xd0
-> [    0.747947] [drm] GMBUS [i915 gmbus dpb] timed out, falling back to bit banging on pin 5
-> [    0.758745] fbcon: inteldrmfb (fb0) is primary device
->
-> -- 
-> Regards/Gruss,
->     Boris.
->
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
-
+diff --git a/Documentation/devicetree/bindings/net/sti-dwmac.txt b/Documentation/devicetree/bindings/net/sti-dwmac.txt
+new file mode 100644
+index 0000000..3dd3d0b
+--- /dev/null
++++ b/Documentation/devicetree/bindings/net/sti-dwmac.txt
+@@ -0,0 +1,58 @@
++STMicroelectronics SoC DWMAC glue layer controller
++
++The device node has following properties.
++
++Required properties:
++ - compatible	: Can be "st,stih415-dwmac", "st,stih416-dwmac" or
++   "st,stid127-dwmac".
++ - reg		: Offset of the glue configuration register map in system
++   configuration regmap pointed by st,syscon property and size.
++
++ - reg-names	: Should be "sti-ethconf".
++
++ - st,syscon	: Should be phandle to system configuration node which
++   encompases this glue registers.
++
++ - st,tx-retime-src: On STi Parts for Giga bit speeds, 125Mhz clocks can be
++   wired up in from different sources. One via TXCLK pin and other via CLK_125
++   pin. This wiring is totally board dependent. However the retiming glue
++   logic should be configured accordingly. Possible values for this property
++
++	   "txclk" - if 125Mhz clock is wired up via txclk line.
++	   "clk_125" - if 125Mhz clock is wired up via clk_125 line.
++
++   This property is only valid for Giga bit setup( GMII, RGMII), and it is
++   un-used for non-giga bit (MII and RMII) setups. Also note that internal
++   clockgen can not generate stable 125Mhz clock.
++
++ - st,ext-phyclk: This boolean property indicates who is generating the clock
++  for tx and rx. This property is only valid for RMII case where the clock can
++  be generated from the MAC or PHY.
++
++ - clock-names: should be "sti-ethclk".
++ - clocks: Should point to ethernet clockgen which can generate phyclk.
++
++
++Example:
++
++ethernet0: dwmac@fe810000 {
++	device_type 	= "network";
++	compatible	= "st,stih416-dwmac", "snps,dwmac", "snps,dwmac-3.710";
++	reg 		= <0xfe810000 0x8000>, <0x8bc 0x4>;
++	reg-names	= "stmmaceth", "sti-ethconf";
++	interrupts	= <0 133 0>, <0 134 0>, <0 135 0>;
++	interrupt-names	= "macirq", "eth_wake_irq", "eth_lpi";
++	phy-mode	= "mii";
++
++	st,syscon	= <&syscfg_rear>;
++
++	snps,pbl 	= <32>;
++	snps,mixed-burst;
++
++	resets		= <&softreset STIH416_ETH0_SOFTRESET>;
++	reset-names	= "stmmaceth";
++	pinctrl-0	= <&pinctrl_mii0>;
++	pinctrl-names 	= "default";
++	clocks		= <&CLK_S_GMAC0_PHY>;
++	clock-names	= "stmmaceth";
++};
+diff --git a/drivers/net/ethernet/stmicro/stmmac/Kconfig b/drivers/net/ethernet/stmicro/stmmac/Kconfig
+index e2f202e..f2d7c70 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/Kconfig
++++ b/drivers/net/ethernet/stmicro/stmmac/Kconfig
+@@ -37,6 +37,17 @@ config DWMAC_SUNXI
+ 	  stmmac device driver. This driver is used for A20/A31
+ 	  GMAC 	  ethernet controller.
+ 
++config DWMAC_STI
++	bool "STi GMAC support"
++	depends on STMMAC_PLATFORM && ARCH_STI
++	default y
++	---help---
++	  Support for ethernet controller on STi SOCs.
++
++	  This selects STi SoC glue layer support for the stmmac
++	  device driver. This driver is used on for the STi series
++	  SOCs GMAC ethernet controller.
++
+ config STMMAC_PCI
+ 	bool "STMMAC PCI bus support"
+ 	depends on STMMAC_ETH && PCI
+diff --git a/drivers/net/ethernet/stmicro/stmmac/Makefile b/drivers/net/ethernet/stmicro/stmmac/Makefile
+index ecadece..dcef287 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/Makefile
++++ b/drivers/net/ethernet/stmicro/stmmac/Makefile
+@@ -2,6 +2,7 @@ obj-$(CONFIG_STMMAC_ETH) += stmmac.o
+ stmmac-$(CONFIG_STMMAC_PLATFORM) += stmmac_platform.o
+ stmmac-$(CONFIG_STMMAC_PCI) += stmmac_pci.o
+ stmmac-$(CONFIG_DWMAC_SUNXI) += dwmac-sunxi.o
++stmmac-$(CONFIG_DWMAC_STI) += dwmac-sti.o
+ stmmac-objs:= stmmac_main.o stmmac_ethtool.o stmmac_mdio.o ring_mode.o	\
+ 	      chain_mode.o dwmac_lib.o dwmac1000_core.o  dwmac1000_dma.o \
+ 	      dwmac100_core.o dwmac100_dma.o enh_desc.o  norm_desc.o \
+diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac-sti.c b/drivers/net/ethernet/stmicro/stmmac/dwmac-sti.c
+new file mode 100644
+index 0000000..47113c2
+--- /dev/null
++++ b/drivers/net/ethernet/stmicro/stmmac/dwmac-sti.c
+@@ -0,0 +1,331 @@
++/**
++ * dwmac-sti.c - STMicroelectronics DWMAC Specific Glue layer
++ *
++ * Copyright (C) 2003-2014 STMicroelectronics (R&D) Limited
++ * Author: Srinivas Kandagatla <srinivas.kandagatla@st.com>
++ *
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#include <linux/kernel.h>
++#include <linux/slab.h>
++#include <linux/platform_device.h>
++#include <linux/stmmac.h>
++#include <linux/phy.h>
++#include <linux/mfd/syscon.h>
++#include <linux/regmap.h>
++#include <linux/clk.h>
++#include <linux/of.h>
++#include <linux/of_net.h>
++
++/**
++ *			STi GMAC glue logic.
++ *			--------------------
++ *
++ *		 _
++ *		|  \
++ *	--------|0  \ ETH_SEL_INTERNAL_NOTEXT_PHYCLK
++ * phyclk	|    |___________________________________________
++ *		|    |	|			(phyclk-in)
++ *	--------|1  /	|
++ * int-clk	|_ /	|
++ *			|	 _
++ *			|	|  \
++ *			|_______|0  \ ETH_SEL_TX_RETIME_CLK
++ *				|    |___________________________
++ *				|    |		(tx-retime-clk)
++ *			 _______|1  /
++ *			|	|_ /
++ *		 _	|
++ *		|  \	|
++ *	--------|0  \	|
++ * clk_125	|    |__|
++ *		|    |	ETH_SEL_TXCLK_NOT_CLK125
++ *	--------|1  /
++ * txclk	|_ /
++ *
++ *
++ * ETH_SEL_INTERNAL_NOTEXT_PHYCLK is valid only for RMII where PHY can
++ * generate 50MHz clock or MAC can generate it.
++ * This bit is configured by "st,ext-phyclk" property.
++ *
++ * ETH_SEL_TXCLK_NOT_CLK125 is only valid for gigabit modes, where the 125Mhz
++ * clock either comes from clk-125 pin or txclk pin. This configuration is
++ * totally driven by the board wiring. This bit is configured by
++ * "st,tx-retime-src" property.
++ *
++ * TXCLK configuration is different for different phy interface modes
++ * and changes according to link speed in modes like RGMII.
++ *
++ * Below table summarizes the clock requirement and clock sources for
++ * supported phy interface modes with link speeds.
++ * ________________________________________________
++ *|  PHY_MODE	| 1000 Mbit Link | 100 Mbit Link   |
++ * ------------------------------------------------
++ *|	MII	|	n/a	 |	25Mhz	   |
++ *|		|		 |	txclk	   |
++ * ------------------------------------------------
++ *|	GMII	|     125Mhz	 |	25Mhz	   |
++ *|		|  clk-125/txclk |	txclk	   |
++ * ------------------------------------------------
++ *|	RGMII	|     125Mhz	 |	25Mhz	   |
++ *|		|  clk-125/txclk |	clkgen     |
++ * ------------------------------------------------
++ *|	RMII	|	n/a	 |	25Mhz	   |
++ *|		|		 |clkgen/phyclk-in |
++ * ------------------------------------------------
++ *
++ * TX lines are always retimed with a clk, which can vary depending
++ * on the board configuration. Below is the table of these bits
++ * in eth configuration register depending on source of retime clk.
++ *
++ *---------------------------------------------------------------
++ * src	 | tx_rt_clk	| int_not_ext_phyclk	| txclk_n_clk125|
++ *---------------------------------------------------------------
++ * txclk |	0	|	n/a		|	1	|
++ *---------------------------------------------------------------
++ * ck_125|	0	|	n/a		|	0	|
++ *---------------------------------------------------------------
++ * phyclk|	1	|	0		|	n/a	|
++ *---------------------------------------------------------------
++ * clkgen|	1	|	1		|	n/a	|
++ *---------------------------------------------------------------
++ */
++
++ /* Register definition */
++
++ /* 3 bits [8:6]
++ *  [6:6]	ETH_SEL_TXCLK_NOT_CLK125
++ *  [7:7]	ETH_SEL_INTERNAL_NOTEXT_PHYCLK
++ *  [8:8]	ETH_SEL_TX_RETIME_CLK
++ *
++ */
++
++#define TX_RETIME_SRC_MASK		GENMASK(8, 6)
++#define ETH_SEL_TX_RETIME_CLK		BIT(8)
++#define ETH_SEL_INTERNAL_NOTEXT_PHYCLK	BIT(7)
++#define ETH_SEL_TXCLK_NOT_CLK125	BIT(6)
++
++#define ENMII_MASK			GENMASK(5, 5)
++#define ENMII				BIT(5)
++
++/**
++ * 3 bits [4:2]
++ *	000-GMII/MII
++ *	001-RGMII
++ *	010-SGMII
++ *	100-RMII
++*/
++#define MII_PHY_SEL_MASK		GENMASK(4, 2)
++#define ETH_PHY_SEL_RMII		BIT(4)
++#define ETH_PHY_SEL_SGMII		BIT(3)
++#define ETH_PHY_SEL_RGMII		BIT(2)
++#define ETH_PHY_SEL_GMII		0x0
++#define ETH_PHY_SEL_MII			0x0
++
++#define IS_PHY_IF_MODE_RGMII(iface)	(iface == PHY_INTERFACE_MODE_RGMII || \
++			iface == PHY_INTERFACE_MODE_RGMII_ID || \
++			iface == PHY_INTERFACE_MODE_RGMII_RXID || \
++			iface == PHY_INTERFACE_MODE_RGMII_TXID)
++
++#define IS_PHY_IF_MODE_GBIT(iface)	(IS_PHY_IF_MODE_RGMII(iface) || \
++			iface == PHY_INTERFACE_MODE_GMII)
++
++struct sti_dwmac {
++	int	interface;
++	bool	ext_phyclk;
++	bool	is_tx_retime_src_clk_125;
++	struct clk *clk;
++	int	reg;
++	struct	device *dev;
++	struct	regmap *regmap;
++};
++
++static u32 phy_intf_sels[] = {
++	[PHY_INTERFACE_MODE_MII]	= ETH_PHY_SEL_MII,
++	[PHY_INTERFACE_MODE_GMII]	= ETH_PHY_SEL_GMII,
++	[PHY_INTERFACE_MODE_RGMII]	= ETH_PHY_SEL_RGMII,
++	[PHY_INTERFACE_MODE_RGMII_ID]	= ETH_PHY_SEL_RGMII,
++	[PHY_INTERFACE_MODE_SGMII]	= ETH_PHY_SEL_SGMII,
++	[PHY_INTERFACE_MODE_RMII]	= ETH_PHY_SEL_RMII,
++};
++
++enum {
++	TX_RETIME_SRC_NA = 0,
++	TX_RETIME_SRC_TXCLK = 1,
++	TX_RETIME_SRC_CLK_125,
++	TX_RETIME_SRC_PHYCLK,
++	TX_RETIME_SRC_CLKGEN,
++};
++
++static const char * const tx_retime_srcs[] = {
++	[TX_RETIME_SRC_NA]		= "",
++	[TX_RETIME_SRC_TXCLK]		= "txclk",
++	[TX_RETIME_SRC_CLK_125]		= "clk_125",
++	[TX_RETIME_SRC_PHYCLK]		= "phyclk",
++	[TX_RETIME_SRC_CLKGEN]		= "clkgen",
++};
++
++static u32 tx_retime_val[] = {
++	[TX_RETIME_SRC_TXCLK]	= ETH_SEL_TXCLK_NOT_CLK125,
++	[TX_RETIME_SRC_CLK_125]	= 0x0,
++	[TX_RETIME_SRC_PHYCLK]	= ETH_SEL_TX_RETIME_CLK,
++	[TX_RETIME_SRC_CLKGEN]	= ETH_SEL_TX_RETIME_CLK |
++				ETH_SEL_INTERNAL_NOTEXT_PHYCLK,
++};
++
++static void setup_retime_src(struct sti_dwmac *dwmac, u32 spd)
++{
++	u32 src = 0, freq = 0;
++
++	if (spd == SPEED_100) {
++		if (dwmac->interface == PHY_INTERFACE_MODE_MII ||
++			dwmac->interface == PHY_INTERFACE_MODE_GMII) {
++				src = TX_RETIME_SRC_TXCLK;
++		} else if (dwmac->interface == PHY_INTERFACE_MODE_RMII) {
++			if (dwmac->ext_phyclk) {
++				src = TX_RETIME_SRC_PHYCLK;
++			} else {
++				src = TX_RETIME_SRC_CLKGEN;
++				freq = 50000000;
++			}
++
++		} else if (IS_PHY_IF_MODE_RGMII(dwmac->interface)) {
++			src = TX_RETIME_SRC_CLKGEN;
++			freq = 25000000;
++		}
++
++		if (src == TX_RETIME_SRC_CLKGEN && dwmac->clk)
++			clk_set_rate(dwmac->clk, freq);
++
++	} else if (spd == SPEED_1000) {
++		if (dwmac->is_tx_retime_src_clk_125)
++			src = TX_RETIME_SRC_CLK_125;
++		else
++			src = TX_RETIME_SRC_TXCLK;
++	}
++
++	regmap_update_bits(dwmac->regmap, dwmac->reg,
++			   TX_RETIME_SRC_MASK, tx_retime_val[src]);
++}
++
++static void sti_dwmac_exit(struct platform_device *pdev, void *priv)
++{
++	struct sti_dwmac *dwmac = priv;
++
++	if (dwmac->clk)
++		clk_disable_unprepare(dwmac->clk);
++}
++
++static void sti_fix_mac_speed(void *priv, unsigned int spd)
++{
++	struct sti_dwmac *dwmac = priv;
++	setup_retime_src(dwmac, spd);
++	return;
++}
++
++static int sti_dwmac_parse_data(struct sti_dwmac *dwmac,
++		struct platform_device *pdev)
++{
++	struct resource *res;
++	struct device *dev	= &pdev->dev;
++	struct device_node *np	= dev->of_node;
++	struct regmap	*regmap;
++	int err;
++
++	if (!np)
++		return -EINVAL;
++
++	res = platform_get_resource_byname(pdev,
++					   IORESOURCE_MEM, "sti-ethconf");
++	if (!res)
++		return -ENODATA;
++
++	regmap = syscon_regmap_lookup_by_phandle(np, "st,syscon");
++	if (IS_ERR(regmap))
++		return PTR_ERR(regmap);
++
++	dwmac->dev = dev;
++	dwmac->interface = of_get_phy_mode(np);
++	dwmac->regmap = regmap;
++	dwmac->reg = res->start;
++	dwmac->ext_phyclk = of_property_read_bool(np, "st,ext-phyclk");
++
++	dwmac->is_tx_retime_src_clk_125 = false;
++
++	if (IS_PHY_IF_MODE_GBIT(dwmac->interface)) {
++		const char *rs;
++		err = of_property_read_string(np, "st,tx-retime-src", &rs);
++		if (err < 0) {
++			dev_err(dev, "st,tx-retime-src not specified\n");
++			return err;
++		}
++
++		if (!strcasecmp(rs, "clk_125"))
++			dwmac->is_tx_retime_src_clk_125 = true;
++
++	}
++
++	dwmac->clk = devm_clk_get(dev, "sti-ethclk");
++
++	if (IS_ERR(dwmac->clk))
++		dwmac->clk = NULL;
++
++	return 0;
++}
++
++static int sti_dwmac_init(struct platform_device *pdev, void *priv)
++{
++	struct sti_dwmac *dwmac = priv;
++	struct regmap *regmap = dwmac->regmap;
++	int iface = dwmac->interface;
++	u32 reg = dwmac->reg;
++	u32 val, spd;
++
++	if (dwmac->clk)
++		clk_prepare_enable(dwmac->clk);
++
++	regmap_update_bits(regmap, reg, MII_PHY_SEL_MASK,
++			   phy_intf_sels[iface]);
++
++	val = (iface == PHY_INTERFACE_MODE_REVMII) ? 0 : ENMII;
++	regmap_update_bits(regmap, reg, ENMII_MASK, val);
++
++	if (IS_PHY_IF_MODE_GBIT(iface))
++		spd = SPEED_1000;
++	else
++		spd = SPEED_100;
++
++	setup_retime_src(dwmac, spd);
++
++	return 0;
++}
++
++static void *sti_dwmac_setup(struct platform_device *pdev)
++{
++	struct sti_dwmac	*dwmac;
++	int ret;
++
++	dwmac = devm_kzalloc(&pdev->dev, sizeof(*dwmac), GFP_KERNEL);
++	if (!dwmac)
++		return ERR_PTR(-ENOMEM);
++
++	ret = sti_dwmac_parse_data(dwmac, pdev);
++	if (ret) {
++		dev_err(&pdev->dev, "Unable to parse OF data\n");
++		return ERR_PTR(ret);
++	}
++
++	return dwmac;
++}
++
++const struct stmmac_of_data sti_gmac_data = {
++	.fix_mac_speed = sti_fix_mac_speed,
++	.setup = sti_dwmac_setup,
++	.init = sti_dwmac_init,
++	.exit = sti_dwmac_exit,
++};
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac.h b/drivers/net/ethernet/stmicro/stmmac/stmmac.h
+index d9af26e..f9e60d7 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac.h
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac.h
+@@ -133,6 +133,9 @@ bool stmmac_eee_init(struct stmmac_priv *priv);
+ #ifdef CONFIG_DWMAC_SUNXI
+ extern const struct stmmac_of_data sun7i_gmac_data;
+ #endif
++#ifdef CONFIG_DWMAC_STI
++extern const struct stmmac_of_data sti_gmac_data;
++#endif
+ extern struct platform_driver stmmac_pltfr_driver;
+ static inline int stmmac_register_platform(void)
+ {
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+index 5884a7d..c61bc72b 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+@@ -33,6 +33,11 @@ static const struct of_device_id stmmac_dt_ids[] = {
+ #ifdef CONFIG_DWMAC_SUNXI
+ 	{ .compatible = "allwinner,sun7i-a20-gmac", .data = &sun7i_gmac_data},
+ #endif
++#ifdef CONFIG_DWMAC_STI
++	{ .compatible = "st,stih415-dwmac", .data = &sti_gmac_data},
++	{ .compatible = "st,stih416-dwmac", .data = &sti_gmac_data},
++	{ .compatible = "st,stih127-dwmac", .data = &sti_gmac_data},
++#endif
+ 	/* SoC specific glue layers should come before generic bindings */
+ 	{ .compatible = "st,spear600-gmac"},
+ 	{ .compatible = "snps,dwmac-3.610"},
 -- 
-Jani Nikula, Intel Open Source Technology Center
+1.7.9.5
+
