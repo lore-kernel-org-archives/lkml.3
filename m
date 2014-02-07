@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752783AbaBGPUv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 10:20:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64220 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751961AbaBGPUt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 10:20:49 -0500
-From: Rafael Aquini <aquini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: trond.myklebust@primarydata.com, jstancek@redhat.com, jlayton@redhat.com,
-        mgorman@suse.de, riel@redhat.com, linux-nfs@vger.kernel.org,
-        akpm@linux-foundation.org, linux-mm@kvack.org
-Subject: [PATCH] mm: fix page leak at nfs_symlink()
-Date: Fri,  7 Feb 2014 13:19:54 -0200
-Message-Id: <f4b3dc07dfa55bf7931de36b03aa9ef7e3ff0490.1391785222.git.aquini@redhat.com>
+	id S1752847AbaBGPU7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 10:20:59 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:42735 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751961AbaBGPU6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 10:20:58 -0500
+Date: Fri, 7 Feb 2014 10:20:57 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Zoran Markovic <zoran.markovic@linaro.org>
+cc: lkml <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        Shaibal Dutta <shaibal.dutta@broadcom.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Xenia Ragiadakou <burzalodowa@gmail.com>,
+        Julius Werner <jwerner@chromium.org>,
+        Krzysztof Mazur <krzysiek@podlesie.net>,
+        Matthias Beyer <mail@beyermatthias.de>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Thomas Pugliese <thomas.pugliese@gmail.com>
+Subject: Re: [RFC PATCHv2] usb: move hub init and LED blink work to power
+ efficient workqueue
+In-Reply-To: <CAME+o4nK+hOs+TygwzVzDBTUMfF7dWs9WVg2FTMSt6neYckVtA@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1402071018400.1326-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes committed by "a0b8cab3 mm: remove lru parameter from
-__pagevec_lru_add and remove parts of pagevec API" have introduced
-a call to add_to_page_cache_lru() which causes a leak in nfs_symlink() 
-as now the page gets an extra refcount that is not dropped.
+Please don't top-post.
 
-Jan Stancek observed and reported the leak effect while running test8 from
-Connectathon Testsuite. After several iterations over the test case,
-which creates several symlinks on a NFS mountpoint, the test system was
-quickly getting into an out-of-memory scenario.
+On Fri, 7 Feb 2014, Zoran Markovic wrote:
 
-This patch fixes the page leak by dropping that extra refcount 
-add_to_page_cache_lru() is grabbing. 
+> I believe there may still be use cases where you want to wake up the
+> same CPU that scheduled the work.
 
-Signed-off-by: Jan Stancek <jstancek@redhat.com>
-Signed-off-by: Rafael Aquini <aquini@redhat.com>
----
- fs/nfs/dir.c | 5 +++++
- 1 file changed, 5 insertions(+)
+Won't the majority of cases not care which CPU is used?  Therefore,
+shouldn't the default behavior be to use the power-efficient work
+queue?
 
-diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-index be38b57..4a48fe4 100644
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -1846,6 +1846,11 @@ int nfs_symlink(struct inode *dir, struct dentry *dentry, const char *symname)
- 							GFP_KERNEL)) {
- 		SetPageUptodate(page);
- 		unlock_page(page);
-+		/*
-+		 * add_to_page_cache_lru() grabs an extra page refcount.
-+		 * Drop it here to avoid leaking this page later.
-+		 */
-+		page_cache_release(page);
- 	} else
- 		__free_page(page);
- 
--- 
-1.8.5.3
+> Thanks for the Ack. Can you please queue this for 3.14?
+
+That's up to Greg KH.  He may decide it's not important enough to go 
+into 3.14, and delay it until 3.15.
+
+Alan Stern
 
