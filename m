@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753450AbaBGQ4B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 11:56:01 -0500
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:40769 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752059AbaBGQsg (ORCPT
+	id S1751387AbaBGQsf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 11:48:35 -0500
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:51403 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751770AbaBGQs3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 11:48:36 -0500
+	Fri, 7 Feb 2014 11:48:29 -0500
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         bfields@fieldses.org, hch@infradead.org, akpm@linux-foundation.org,
         dhowells@redhat.com, zab@redhat.com, jack@suse.cz, luto@amacapital.net,
         mszeredi@suse.cz
-Subject: [PATCH 04/13] vfs: add renameat2 syscall
-Date: Fri,  7 Feb 2014 17:49:02 +0100
-Message-Id: <1391791751-2533-5-git-send-email-miklos@szeredi.hu>
+Subject: [PATCH 01/13] vfs: add d_is_dir()
+Date: Fri,  7 Feb 2014 17:48:59 +0100
+Message-Id: <1391791751-2533-2-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1391791751-2533-1-git-send-email-miklos@szeredi.hu>
 References: <1391791751-2533-1-git-send-email-miklos@szeredi.hu>
@@ -25,287 +25,136 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-Add new renameat2 syscall, which is the same as renameat with an added
-flags argument.
+Add d_is_dir(dentry) helper which is analogous to S_ISDIR().
 
-Pass flags to vfs_rename() and to i_op->rename() as well.
+To avoid confusion, rename d_is_directory() to d_can_lookup().
 
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- Documentation/filesystems/Locking                  |  6 +++-
- Documentation/filesystems/vfs.txt                  | 16 ++++++++++
- arch/x86/syscalls/syscall_64.tbl                   |  1 +
- .../lustre/lustre/include/linux/lustre_compat25.h  |  4 +--
- drivers/staging/lustre/lustre/lvfs/lvfs_linux.c    |  2 +-
- fs/cachefiles/namei.c                              |  2 +-
- fs/ecryptfs/inode.c                                |  2 +-
- fs/namei.c                                         | 34 +++++++++++++++++-----
- fs/nfsd/vfs.c                                      |  2 +-
- include/linux/fs.h                                 |  4 ++-
- 10 files changed, 58 insertions(+), 15 deletions(-)
+ fs/namei.c             | 23 +++++++++++------------
+ include/linux/dcache.h |  7 ++++++-
+ 2 files changed, 17 insertions(+), 13 deletions(-)
 
-diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
-index 5b0c083d7c0e..f424e0e5b46b 100644
---- a/Documentation/filesystems/Locking
-+++ b/Documentation/filesystems/Locking
-@@ -47,6 +47,8 @@ prototypes:
- 	int (*mknod) (struct inode *,struct dentry *,umode_t,dev_t);
- 	int (*rename) (struct inode *, struct dentry *,
- 			struct inode *, struct dentry *);
-+	int (*rename2) (struct inode *, struct dentry *,
-+			struct inode *, struct dentry *, unsigned int);
- 	int (*readlink) (struct dentry *, char __user *,int);
- 	void * (*follow_link) (struct dentry *, struct nameidata *);
- 	void (*put_link) (struct dentry *, struct nameidata *, void *);
-@@ -78,6 +80,7 @@ mkdir:		yes
- unlink:		yes (both)
- rmdir:		yes (both)	(see below)
- rename:		yes (all)	(see below)
-+rename2:	yes (all)	(see below)
- readlink:	no
- follow_link:	no
- put_link:	no
-@@ -96,7 +99,8 @@ tmpfile:	no
- 
- 	Additionally, ->rmdir(), ->unlink() and ->rename() have ->i_mutex on
- victim.
--	cross-directory ->rename() has (per-superblock) ->s_vfs_rename_sem.
-+	cross-directory ->rename() and rename2() has (per-superblock)
-+->s_vfs_rename_sem.
- 
- See Documentation/filesystems/directory-locking for more detailed discussion
- of the locking scheme for directory operations.
-diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
-index c53784c119c8..94eb86287bcb 100644
---- a/Documentation/filesystems/vfs.txt
-+++ b/Documentation/filesystems/vfs.txt
-@@ -347,6 +347,8 @@ struct inode_operations {
- 	int (*mknod) (struct inode *,struct dentry *,umode_t,dev_t);
- 	int (*rename) (struct inode *, struct dentry *,
- 			struct inode *, struct dentry *);
-+	int (*rename2) (struct inode *, struct dentry *,
-+			struct inode *, struct dentry *, unsigned int);
- 	int (*readlink) (struct dentry *, char __user *,int);
-         void * (*follow_link) (struct dentry *, struct nameidata *);
-         void (*put_link) (struct dentry *, struct nameidata *, void *);
-@@ -414,6 +416,20 @@ otherwise noted.
-   rename: called by the rename(2) system call to rename the object to
- 	have the parent and name given by the second inode and dentry.
- 
-+  rename2: this has an additional flags argument compared to rename.
-+	If no flags are supported by the filesystem then this method
-+	need not be implemented.  If some flags are supported then the
-+	filesystem must return -EINVAL for any unsupported or unknown
-+	flags.  Currently the following flags are implemented:
-+	(1) RENAME_NOREPLACE: this flag indicates that if the target
-+	of the rename exists the rename should fail with -EEXIST
-+	instead of replacing the target.  The VFS already checks for
-+	existence, so for local filesystems the RENAME_NOREPLACE
-+	implementation is equivalent to plain rename.
-+	(2) RENAME_EXCHANGE: exchange source and target.  Both must
-+	exist; this is checked by the VFS.  Unlike plain rename,
-+	source and target may be of different type.
-+
-   readlink: called by the readlink(2) system call. Only required if
- 	you want to support reading symbolic links
- 
-diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
-index a12bddc7ccea..04376ac3d9ef 100644
---- a/arch/x86/syscalls/syscall_64.tbl
-+++ b/arch/x86/syscalls/syscall_64.tbl
-@@ -322,6 +322,7 @@
- 313	common	finit_module		sys_finit_module
- 314	common	sched_setattr		sys_sched_setattr
- 315	common	sched_getattr		sys_sched_getattr
-+316	common	renameat2		sys_renameat2
- 
- #
- # x32-specific system call numbers start at 512 to avoid cache impact
-diff --git a/drivers/staging/lustre/lustre/include/linux/lustre_compat25.h b/drivers/staging/lustre/lustre/include/linux/lustre_compat25.h
-index eefdb8d061b1..81cc7a0134bb 100644
---- a/drivers/staging/lustre/lustre/include/linux/lustre_compat25.h
-+++ b/drivers/staging/lustre/lustre/include/linux/lustre_compat25.h
-@@ -105,8 +105,8 @@ static inline void ll_set_fs_pwd(struct fs_struct *fs, struct vfsmount *mnt,
- #define ll_vfs_unlink(inode,entry,mnt)	  vfs_unlink(inode,entry)
- #define ll_vfs_mknod(dir,entry,mnt,mode,dev)    vfs_mknod(dir,entry,mode,dev)
- #define ll_security_inode_unlink(dir,entry,mnt) security_inode_unlink(dir,entry)
--#define ll_vfs_rename(old,old_dir,mnt,new,new_dir,mnt1,delegated_inode) \
--		vfs_rename(old,old_dir,new,new_dir,delegated_inode)
-+#define ll_vfs_rename(old, old_dir, mnt, new, new_dir, mnt1) \
-+		vfs_rename(old, old_dir, new, new_dir, NULL, 0)
- 
- #define cfs_bio_io_error(a,b)   bio_io_error((a))
- #define cfs_bio_endio(a,b,c)    bio_endio((a),(c))
-diff --git a/drivers/staging/lustre/lustre/lvfs/lvfs_linux.c b/drivers/staging/lustre/lustre/lvfs/lvfs_linux.c
-index 428ffd8c37b7..d50822be3230 100644
---- a/drivers/staging/lustre/lustre/lvfs/lvfs_linux.c
-+++ b/drivers/staging/lustre/lustre/lvfs/lvfs_linux.c
-@@ -223,7 +223,7 @@ int lustre_rename(struct dentry *dir, struct vfsmount *mnt,
- 		GOTO(put_old, err = PTR_ERR(dchild_new));
- 
- 	err = ll_vfs_rename(dir->d_inode, dchild_old, mnt,
--			    dir->d_inode, dchild_new, mnt, NULL);
-+			    dir->d_inode, dchild_new, mnt);
- 
- 	dput(dchild_new);
- put_old:
-diff --git a/fs/cachefiles/namei.c b/fs/cachefiles/namei.c
-index ca65f39dc8dc..31088a969351 100644
---- a/fs/cachefiles/namei.c
-+++ b/fs/cachefiles/namei.c
-@@ -396,7 +396,7 @@ try_again:
- 		cachefiles_io_error(cache, "Rename security error %d", ret);
- 	} else {
- 		ret = vfs_rename(dir->d_inode, rep,
--				 cache->graveyard->d_inode, grave, NULL);
-+				 cache->graveyard->d_inode, grave, NULL, 0);
- 		if (ret != 0 && ret != -ENOMEM)
- 			cachefiles_io_error(cache,
- 					    "Rename failed with error %d", ret);
-diff --git a/fs/ecryptfs/inode.c b/fs/ecryptfs/inode.c
-index b167ca48b8ee..d4a9431ec73c 100644
---- a/fs/ecryptfs/inode.c
-+++ b/fs/ecryptfs/inode.c
-@@ -641,7 +641,7 @@ ecryptfs_rename(struct inode *old_dir, struct dentry *old_dentry,
- 	}
- 	rc = vfs_rename(lower_old_dir_dentry->d_inode, lower_old_dentry,
- 			lower_new_dir_dentry->d_inode, lower_new_dentry,
--			NULL);
-+			NULL, 0);
- 	if (rc)
- 		goto out_lock;
- 	if (target_inode)
 diff --git a/fs/namei.c b/fs/namei.c
-index b6976bd59cbb..93a98a303db5 100644
+index d580df2e6804..258c06ae26a7 100644
 --- a/fs/namei.c
 +++ b/fs/namei.c
-@@ -3953,6 +3953,7 @@ SYSCALL_DEFINE2(link, const char __user *, oldname, const char __user *, newname
-  * @new_dir:	parent of destination
-  * @new_dentry:	destination
-  * @delegated_inode: returns an inode needing a delegation break
-+ * @flags:	rename flags
-  *
-  * The caller must hold multiple mutexes--see lock_rename()).
-  *
-@@ -3996,7 +3997,7 @@ SYSCALL_DEFINE2(link, const char __user *, oldname, const char __user *, newname
-  */
- int vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
- 	       struct inode *new_dir, struct dentry *new_dentry,
--	       struct inode **delegated_inode)
-+	       struct inode **delegated_inode, unsigned int flags)
- {
- 	int error;
- 	bool is_dir = d_is_dir(old_dentry);
-@@ -4021,6 +4022,9 @@ int vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
- 	if (!old_dir->i_op->rename)
- 		return -EPERM;
- 
-+	if (flags && !old_dir->i_op->rename2)
-+		return -EINVAL;
-+
- 	/*
- 	 * If we are going to change the parent - check write permissions,
- 	 * we'll need to flip '..'.
-@@ -4066,7 +4070,13 @@ int vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
- 				goto out;
+@@ -1769,7 +1769,7 @@ static int link_path_walk(const char *name, struct nameidata *nd)
+ 			if (err)
+ 				return err;
  		}
+-		if (!d_is_directory(nd->path.dentry)) {
++		if (!d_can_lookup(nd->path.dentry)) {
+ 			err = -ENOTDIR; 
+ 			break;
+ 		}
+@@ -1790,7 +1790,7 @@ static int path_init(int dfd, const char *name, unsigned int flags,
+ 		struct dentry *root = nd->root.dentry;
+ 		struct inode *inode = root->d_inode;
+ 		if (*name) {
+-			if (!d_is_directory(root))
++			if (!d_can_lookup(root))
+ 				return -ENOTDIR;
+ 			retval = inode_permission(inode, MAY_EXEC);
+ 			if (retval)
+@@ -1846,7 +1846,7 @@ static int path_init(int dfd, const char *name, unsigned int flags,
+ 		dentry = f.file->f_path.dentry;
+ 
+ 		if (*name) {
+-			if (!d_is_directory(dentry)) {
++			if (!d_can_lookup(dentry)) {
+ 				fdput(f);
+ 				return -ENOTDIR;
+ 			}
+@@ -1928,7 +1928,7 @@ static int path_lookupat(int dfd, const char *name,
+ 		err = complete_walk(nd);
+ 
+ 	if (!err && nd->flags & LOOKUP_DIRECTORY) {
+-		if (!d_is_directory(nd->path.dentry)) {
++		if (!d_can_lookup(nd->path.dentry)) {
+ 			path_put(&nd->path);
+ 			err = -ENOTDIR;
+ 		}
+@@ -2387,11 +2387,11 @@ static int may_delete(struct inode *dir, struct dentry *victim, bool isdir)
+ 	    IS_IMMUTABLE(inode) || IS_SWAPFILE(inode))
+ 		return -EPERM;
+ 	if (isdir) {
+-		if (!d_is_directory(victim) && !d_is_autodir(victim))
++		if (!d_is_dir(victim))
+ 			return -ENOTDIR;
+ 		if (IS_ROOT(victim))
+ 			return -EBUSY;
+-	} else if (d_is_directory(victim) || d_is_autodir(victim))
++	} else if (d_is_dir(victim))
+ 		return -EISDIR;
+ 	if (IS_DEADDIR(dir))
+ 		return -ENOENT;
+@@ -2989,11 +2989,10 @@ finish_open:
  	}
--	error = old_dir->i_op->rename(old_dir, old_dentry, new_dir, new_dentry);
-+	if (!flags) {
-+		error = old_dir->i_op->rename(old_dir, old_dentry,
-+					      new_dir, new_dentry);
-+	} else {
-+		error = old_dir->i_op->rename2(old_dir, old_dentry,
-+					       new_dir, new_dentry, flags);
-+	}
- 	if (error)
+ 	audit_inode(name, nd->path.dentry, 0);
+ 	error = -EISDIR;
+-	if ((open_flag & O_CREAT) &&
+-	    (d_is_directory(nd->path.dentry) || d_is_autodir(nd->path.dentry)))
++	if ((open_flag & O_CREAT) && d_is_dir(nd->path.dentry))
  		goto out;
- 
-@@ -4091,8 +4101,8 @@ out:
- 	return error;
- }
- 
--SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
--		int, newdfd, const char __user *, newname)
-+SYSCALL_DEFINE5(renameat2, int, olddfd, const char __user *, oldname,
-+		int, newdfd, const char __user *, newname, unsigned int, flags)
+ 	error = -ENOTDIR;
+-	if ((nd->flags & LOOKUP_DIRECTORY) && !d_is_directory(nd->path.dentry))
++	if ((nd->flags & LOOKUP_DIRECTORY) && !d_can_lookup(nd->path.dentry))
+ 		goto out;
+ 	if (!S_ISREG(nd->inode->i_mode))
+ 		will_truncate = false;
+@@ -3717,7 +3716,7 @@ exit1:
+ slashes:
+ 	if (d_is_negative(dentry))
+ 		error = -ENOENT;
+-	else if (d_is_directory(dentry) || d_is_autodir(dentry))
++	else if (d_is_dir(dentry))
+ 		error = -EISDIR;
+ 	else
+ 		error = -ENOTDIR;
+@@ -4096,7 +4095,7 @@ int vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	       struct inode **delegated_inode)
  {
- 	struct dentry *old_dir, *new_dir;
- 	struct dentry *old_dentry, *new_dentry;
-@@ -4104,6 +4114,10 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
- 	unsigned int lookup_flags = 0;
- 	bool should_retry = false;
  	int error;
-+
-+	if (flags)
-+		return -EINVAL;
-+
- retry:
- 	from = user_path_parent(olddfd, oldname, &oldnd, lookup_flags);
- 	if (IS_ERR(from)) {
-@@ -4175,8 +4189,8 @@ retry_deleg:
- 	if (error)
- 		goto exit5;
- 	error = vfs_rename(old_dir->d_inode, old_dentry,
--				   new_dir->d_inode, new_dentry,
--				   &delegated_inode);
-+			   new_dir->d_inode, new_dentry,
-+			   &delegated_inode, flags);
- exit5:
- 	dput(new_dentry);
- exit4:
-@@ -4206,9 +4220,15 @@ exit:
- 	return error;
+-	int is_dir = d_is_directory(old_dentry) || d_is_autodir(old_dentry);
++	int is_dir = d_is_dir(old_dentry);
+ 	const unsigned char *old_name;
+ 
+ 	if (old_dentry->d_inode == new_dentry->d_inode)
+@@ -4189,7 +4188,7 @@ retry_deleg:
+ 	if (d_is_negative(old_dentry))
+ 		goto exit4;
+ 	/* unless the source is a directory trailing slashes give -ENOTDIR */
+-	if (!d_is_directory(old_dentry) && !d_is_autodir(old_dentry)) {
++	if (!d_is_dir(old_dentry)) {
+ 		error = -ENOTDIR;
+ 		if (oldnd.last.name[oldnd.last.len])
+ 			goto exit4;
+diff --git a/include/linux/dcache.h b/include/linux/dcache.h
+index bf72e9ac6de0..3b50cac7ccb3 100644
+--- a/include/linux/dcache.h
++++ b/include/linux/dcache.h
+@@ -429,7 +429,7 @@ static inline unsigned __d_entry_type(const struct dentry *dentry)
+ 	return dentry->d_flags & DCACHE_ENTRY_TYPE;
  }
  
-+SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
-+		int, newdfd, const char __user *, newname)
+-static inline bool d_is_directory(const struct dentry *dentry)
++static inline bool d_can_lookup(const struct dentry *dentry)
+ {
+ 	return __d_entry_type(dentry) == DCACHE_DIRECTORY_TYPE;
+ }
+@@ -439,6 +439,11 @@ static inline bool d_is_autodir(const struct dentry *dentry)
+ 	return __d_entry_type(dentry) == DCACHE_AUTODIR_TYPE;
+ }
+ 
++static inline bool d_is_dir(const struct dentry *dentry)
 +{
-+	return sys_renameat2(olddfd, oldname, newdfd, newname, 0);
++	return d_can_lookup(dentry) || d_is_autodir(dentry);
 +}
 +
- SYSCALL_DEFINE2(rename, const char __user *, oldname, const char __user *, newname)
+ static inline bool d_is_symlink(const struct dentry *dentry)
  {
--	return sys_renameat(AT_FDCWD, oldname, AT_FDCWD, newname);
-+	return sys_renameat2(AT_FDCWD, oldname, AT_FDCWD, newname, 0);
- }
- 
- int vfs_readlink(struct dentry *dentry, char __user *buffer, int buflen, const char *link)
-diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
-index 017d3cb5e99b..f88df9c1336d 100644
---- a/fs/nfsd/vfs.c
-+++ b/fs/nfsd/vfs.c
-@@ -1693,7 +1693,7 @@ nfsd_rename(struct svc_rqst *rqstp, struct svc_fh *ffhp, char *fname, int flen,
- 	if (ffhp->fh_export->ex_path.dentry != tfhp->fh_export->ex_path.dentry)
- 		goto out_dput_new;
- 
--	host_err = vfs_rename(fdir, odentry, tdir, ndentry, NULL);
-+	host_err = vfs_rename(fdir, odentry, tdir, ndentry, NULL, 0);
- 	if (!host_err) {
- 		host_err = commit_metadata(tfhp);
- 		if (!host_err)
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 09f553c59813..4fbdfae87410 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1456,7 +1456,7 @@ extern int vfs_symlink(struct inode *, struct dentry *, const char *);
- extern int vfs_link(struct dentry *, struct inode *, struct dentry *, struct inode **);
- extern int vfs_rmdir(struct inode *, struct dentry *);
- extern int vfs_unlink(struct inode *, struct dentry *, struct inode **);
--extern int vfs_rename(struct inode *, struct dentry *, struct inode *, struct dentry *, struct inode **);
-+extern int vfs_rename(struct inode *, struct dentry *, struct inode *, struct dentry *, struct inode **, unsigned int);
- 
- /*
-  * VFS dentry helper functions.
-@@ -1567,6 +1567,8 @@ struct inode_operations {
- 	int (*mknod) (struct inode *,struct dentry *,umode_t,dev_t);
- 	int (*rename) (struct inode *, struct dentry *,
- 			struct inode *, struct dentry *);
-+	int (*rename2) (struct inode *, struct dentry *,
-+			struct inode *, struct dentry *, unsigned int);
- 	int (*setattr) (struct dentry *, struct iattr *);
- 	int (*getattr) (struct vfsmount *mnt, struct dentry *, struct kstat *);
- 	int (*setxattr) (struct dentry *, const char *,const void *,size_t,int);
+ 	return __d_entry_type(dentry) == DCACHE_SYMLINK_TYPE;
 -- 
 1.8.1.4
 
