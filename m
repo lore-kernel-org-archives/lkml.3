@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751948AbaBGFZr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 00:25:47 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:24373 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751895AbaBGFZp (ORCPT
+	id S1751538AbaBGF04 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 00:26:56 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:41398 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750726AbaBGF0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 00:25:45 -0500
-X-AuditID: cbfee68e-b7f566d000002344-b1-52f46e58eff0
+	Fri, 7 Feb 2014 00:26:54 -0500
+X-AuditID: cbfee691-b7efc6d0000039d3-48-52f46e9c6390
 From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
 To: linux-crypto@vger.kernel.org, linux-samsung-soc@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, vzapolskiy@gmail.com,
         herbert@gondor.apana.org.au, naveenkrishna.ch@gmail.com,
         cpgs@samsung.com
-Subject: [PATCH 7/9 v6] crypto:s5p-sss: validate iv before memcpy
-Date: Fri, 07 Feb 2014 10:55:27 +0530
-Message-id: <1391750727-27496-1-git-send-email-ch.naveen@samsung.com>
+Subject: [PATCH 8/9 v6] crypto:s5p-sss: Use clk_prepare/clk_unprepare
+Date: Fri, 07 Feb 2014 10:56:36 +0530
+Message-id: <1391750796-27528-1-git-send-email-ch.naveen@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1389243640-13282-1-git-send-email-ch.naveen@samsung.com>
-References: <1389243640-13282-1-git-send-email-ch.naveen@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrHLMWRmVeSWpSXmKPExsWyRsSkTjci70uQwawGfouXhzQtul/JWNy/
-	95PJ4vKuOWwWM87vY7JYtO0/s8XZOYeYHNg9ds66y+6x7YCqR9+WVYwenzfJBbBEcdmkpOZk
-	lqUW6dslcGW8f9vMXHCErWL7xL2sDYxbWbsYOTkkBEwkLm1bzAxhi0lcuLeerYuRi0NIYCmj
-	xMd7N9hhip6/n8UCkZjOKLF96Seoqn4miQ8fX4NVsQmYSRxctBrMFhFwlvjdvAZsBbNAM6PE
-	j9lgtrCAo8T5exvBalgEVCX2Pz4PZvMKuEocfNIHVMMBtE1BYs4kG5Awp4CbxNbLT8BKhIBK
-	5py4ygyyV0Kgm11i1+nHLBBzBCS+TT7EAtErK7HpANQ3khIHV9xgmcAovICRYRWjaGpBckFx
-	UnqRkV5xYm5xaV66XnJ+7iZGYFif/vesbwfjzQPWhxiTgcZNZJYSTc4HxkVeSbyhsZmRhamJ
-	qbGRuaUZacJK4ryLHiYFCQmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamCcMffUhV0RZ7Jyl0bf
-	Up02zUDs7WT5J2JCAl6P3aP9PqQaq09yuiVwV039UJPstucHs7Z83vZbMirL51coT1HUFjZv
-	7Y9TLzmmijtFdD986cH9cdGOJWWiluu8vhZ3BGi/jZS6cz3D9mnOhBPz5mcv4RW672fvVKdg
-	f2if+mlZ0STdP1652eeUWIozEg21mIuKEwHprMKxgQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNIsWRmVeSWpSXmKPExsVy+t9jQd2IvC9BBr+3slm8PKRp0f1KxuL+
-	vZ9MFpd3zWGzmHF+H5PFom3/mS3OzjnE5MDusXPWXXaPbQdUPfq2rGL0+LxJLoAlqoHRJiM1
-	MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwdov5JCWWJOKVAo
-	ILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsIYx4/3bZuaCI2wV2yfuZW1g3MraxcjJISFg
-	IvH8/SwWCFtM4sK99WxdjFwcQgLTGSW2L/0E5fQzSXz4+JodpIpNwEzi4KLVYLaIgLPE7+Y1
-	YJOYBZoZJX7MBrOFBRwlzt/bCFbDIqAqsf/xeTCbV8BV4uCTPqAaDqBtChJzJtmAhDkF3CS2
-	Xn4CViIEVDLnxFXmCYy8CxgZVjGKphYkFxQnpeca6hUn5haX5qXrJefnbmIER80zqR2MKxss
-	DjEKcDAq8fCeWPo5SIg1say4MvcQowQHs5IIL3fClyAh3pTEyqrUovz4otKc1OJDjMlAR01k
-	lhJNzgdGdF5JvKGxibmpsamliYWJmSVpwkrivAdarQOFBNITS1KzU1MLUotgtjBxcEo1MM5j
-	kFzZ8nrq0iUTQ/sEyg8r/OK/L+kWJSs7UTrt96eQKVO0nr7aptl1/NQfXzcOmXn5lzQM716d
-	IO4bY/fTQ6rtZ1D3lwZG6XOZs11b7Ws/57tr2YZJ6zdqHQlecTj77lUuO9OuAjYRFzdNl4ft
-	rk9vGy+1Y16v+VineEK47kH5zT+/K074osRSnJFoqMVcVJwIAJLXldLeAgAA
+In-reply-to: <1389354331-32142-1-git-send-email-ch.naveen@samsung.com>
+References: <1389354331-32142-1-git-send-email-ch.naveen@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDLMWRmVeSWpSXmKPExsWyRsSkSndO3pcgg4a5ZhYvD2ladL+Ssbh/
+	7yeTxeVdc9gsZpzfx2SxaNt/Zouzcw4xObB77Jx1l91j2wFVj74tqxg9Pm+SC2CJ4rJJSc3J
+	LEst0rdL4MrYeXQec8EErorFe5exNjCu5ehi5OSQEDCReDrxDjuELSZx4d56NhBbSGApo8TS
+	3ckwNcvfNjF1MXIBxRcxSmxc9RjK6WeSuN1yFKybTcBM4uCi1WC2iICzxO/mNawgNrNAM6PE
+	j9lANgeHsICrxLwWsAUsAqoSV98tYAaxeYHCPy6dYgQpkRBQkJgzyQYkzCngJnF/xisWiHtc
+	JR5OncAKslZCoJ9doq/vCwvEHAGJb5MPsUD0ykpsOsAMcbOkxMEVN1gmMAovYGRYxSiaWpBc
+	UJyUXmSqV5yYW1yal66XnJ+7iREY0qf/PZu4g/H+AetDjMlA4yYyS4km5wNjIq8k3tDYzMjC
+	1MTU2Mjc0ow0YSVx3vRHSUFCAumJJanZqakFqUXxRaU5qcWHGJk4OKUaGMPj5pv+vjyteFPI
+	fDXm0xXbOfUrnjt/3HvrbanVmjR93WMHUx/wGu8w/Xs88catJ98ErDo/ssxukj3Cu3qH6t40
+	2TO/Qm4sYVboyE+MNlO8lnX2WA/LiSvbDbZF/p9bUHczbKZxgp5xp8/RaR0tL+92+wVGzzjZ
+	UiXuJ5A4rTd8c13+nvC0ICWW4oxEQy3mouJEAL3eYHF/AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFIsWRmVeSWpSXmKPExsVy+t9jAd05eV+CDJYc0rd4eUjTovuVjMX9
+	ez+ZLC7vmsNmMeP8PiaLRdv+M1ucnXOIyYHdY+esu+we2w6oevRtWcXo8XmTXABLVAOjTUZq
+	YkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7QfiWFssScUqBQ
+	QGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYQ1jxs6j85gLJnBVLN67jLWBcS1HFyMnh4SA
+	icTyt01MELaYxIV769m6GLk4hAQWMUpsXPWYCcLpZ5K43XKUHaSKTcBM4uCi1WC2iICzxO/m
+	NawgNrNAM6PEj9lANgeHsICrxLwWNpAwi4CqxNV3C5hBbF6g8I9LpxhBSiQEFCTmTLIBCXMK
+	uEncn/GKBcQWAip5OHUC6wRG3gWMDKsYRVMLkguKk9JzDfWKE3OLS/PS9ZLzczcxgmPmmdQO
+	xpUNFocYBTgYlXh4Tyz9HCTEmlhWXJl7iFGCg1lJhJc74UuQEG9KYmVValF+fFFpTmrxIcZk
+	oKMmMkuJJucD4zmvJN7Q2MTc1NjU0sTCxMySNGElcd4DrdaBQgLpiSWp2ampBalFMFuYODil
+	GhgPp+WHTnY6MyvDLfpiwPF4A2NWE3cvoUVxOb6iUzLv5lhfe6ig5fCW50ncRTNmgbh4BoPU
+	njg98WVvwhduzgm3ZJjX3HP8DWfvO2MdCY+QLLY3zGynvOTj3t85LslbfXmH16yQ5sXv64uT
+	rtwr3iBWt7REyePxn+D9m9QOqP/bU7NAynR2jBJLcUaioRZzUXEiAA79fFLdAgAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -49,8 +49,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds code to validate "iv" buffer before trying to
-memcpy the contents
+This patch set adds use of clk_prepare/clk_unprepare as
+required by generic clock framework.
 
 Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
 Reviewed-by: Tomasz Figa <t.figa@samsung.com>
@@ -58,23 +58,44 @@ Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 changes since v5:
 None
 
- drivers/crypto/s5p-sss.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/crypto/s5p-sss.c |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/crypto/s5p-sss.c b/drivers/crypto/s5p-sss.c
-index da1c8943..a890273 100644
+index a890273..d35a477 100644
 --- a/drivers/crypto/s5p-sss.c
 +++ b/drivers/crypto/s5p-sss.c
-@@ -380,7 +380,8 @@ static void s5p_set_aes(struct s5p_aes_dev *dev,
- {
- 	void __iomem *keystart;
+@@ -648,7 +648,11 @@ static int s5p_aes_probe(struct platform_device *pdev)
+ 		return -ENOENT;
+ 	}
  
--	memcpy(dev->aes_ioaddr + SSS_REG_AES_IV_DATA (0), iv, 0x10);
-+	if (iv)
-+		memcpy(dev->aes_ioaddr + SSS_REG_AES_IV_DATA (0), iv, 0x10);
+-	clk_enable(pdata->clk);
++	err = clk_prepare_enable(pdata->clk);
++	if (err < 0) {
++		dev_err(dev, "Enabling SSS clk failed, err %d\n", err);
++		return err;
++	}
  
- 	if (keylen == AES_KEYSIZE_256)
- 		keystart = dev->aes_ioaddr + SSS_REG_AES_KEY_DATA(0);
+ 	spin_lock_init(&pdata->lock);
+ 	pdata->ioaddr = devm_ioremap(dev, res->start,
+@@ -711,7 +715,7 @@ static int s5p_aes_probe(struct platform_device *pdev)
+ 	tasklet_kill(&pdata->tasklet);
+ 
+  err_irq:
+-	clk_disable(pdata->clk);
++	clk_disable_unprepare(pdata->clk);
+ 
+ 	s5p_dev = NULL;
+ 
+@@ -731,7 +735,7 @@ static int s5p_aes_remove(struct platform_device *pdev)
+ 
+ 	tasklet_kill(&pdata->tasklet);
+ 
+-	clk_disable(pdata->clk);
++	clk_disable_unprepare(pdata->clk);
+ 
+ 	s5p_dev = NULL;
+ 
 -- 
 1.7.9.5
 
