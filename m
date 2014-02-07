@@ -1,158 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357AbaBGSNs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 13:13:48 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:58606 "EHLO zene.cmpxchg.org"
+	id S1753448AbaBGSOB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 13:14:01 -0500
+Received: from mga02.intel.com ([134.134.136.20]:62047 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751526AbaBGSNr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 13:13:47 -0500
-Date: Fri, 7 Feb 2014 13:13:32 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Dave Hansen <dave@sr71.net>,
-        Michal Hocko <mhocko@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] drop_caches: add some documentation and info message
-Message-ID: <20140207181332.GG6963@cmpxchg.org>
-References: <1391794851-11412-1-git-send-email-hannes@cmpxchg.org>
- <52F51E19.9000406@redhat.com>
+	id S1753376AbaBGSN7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 13:13:59 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,802,1384329600"; 
+   d="scan'208";a="451511214"
+Date: Fri, 7 Feb 2014 10:11:39 -0800
+From: Andi Kleen <ak@linux.intel.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ning Qu <quning@google.com>, Dave Hansen <dave.hansen@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>
+Subject: Re: [RFC, PATCH] mm: map few pages around fault address if they are
+ in page cache
+Message-ID: <20140207181139.GD12219@tassilo.jf.intel.com>
+References: <CA+55aFxpBkTn3LvSzxFj7ZoxuY=Rrg0OoAVuk5dK-ZLsO8kk4A@mail.gmail.com>
+ <20140206005534.GA27848@node.dhcp.inet.fi>
+ <CA+55aFx70seh4VD+=ZKHrjTCrinG0Hq3=X6ygCeOeuNCSG8n8Q@mail.gmail.com>
+ <CA+55aFwfGVCVouh5uap3UPy92vc4N9OrRRa-NpYT9ZMicU6w8w@mail.gmail.com>
+ <CA+55aFyq31f=30YeRbZbqgBFp13Zdk=Gb-UiLRqeR48MOfVwag@mail.gmail.com>
+ <20140206222450.GA8823@node.dhcp.inet.fi>
+ <CA+55aFysEbwfzJxVbZY6X+eEZ5KSgO5b8-S_a=-nrLj0sQfecA@mail.gmail.com>
+ <20140207154232.GA18611@node.dhcp.inet.fi>
+ <20140207173200.GC12219@tassilo.jf.intel.com>
+ <20140207175622.GA14953@node.dhcp.inet.fi>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52F51E19.9000406@redhat.com>
+In-Reply-To: <20140207175622.GA14953@node.dhcp.inet.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 07, 2014 at 12:55:37PM -0500, Rik van Riel wrote:
-> On 02/07/2014 12:40 PM, Johannes Weiner wrote:
+> > There are some extreme cases where workloads could use a lot more memory
+> > than before, if they access their memory sparsely in the right pattern.
 > 
-> >@@ -59,6 +60,9 @@ int drop_caches_sysctl_handler(ctl_table *table, int write,
-> >  	if (ret)
-> >  		return ret;
-> >  	if (write) {
-> >+		printk_ratelimited(KERN_INFO "%s (%d): dropped kernel caches: %d\n",
-> >+				   current->comm, task_pid_nr(current),
-> >+				   sysctl_drop_caches);
-> >  		if (sysctl_drop_caches & 1)
-> >  			iterate_supers(drop_pagecache_sb, NULL);
-> >  		if (sysctl_drop_caches & 2)
-> >
-> 
-> Would it be better to print this after the operation
-> has completed?
+> Have you noticied that we don't actually allocate any memory: only reuse
+> what's already there. Sure, it will increase VmSize, but do we care?
 
-It would make more sense grammatically :-) Either way is fine with me,
-updated below to inform after the fact.
+Good point. With that probably readahead is overkill, agree.
 
----
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-Date: Fri, 12 Oct 2012 14:30:54 +0200
-Subject: [patch] drop_caches: add some documentation and info message
+We would need it though if we ever do it for anonymous.
 
-There is plenty of anecdotal evidence and a load of blog posts
-suggesting that using "drop_caches" periodically keeps your system
-running in "tip top shape".  Perhaps adding some kernel documentation
-will increase the amount of accurate data on its use.
+-Andi
 
-If we are not shrinking caches effectively, then we have real bugs.
-Using drop_caches will simply mask the bugs and make them harder to
-find, but certainly does not fix them, nor is it an appropriate
-"workaround" to limit the size of the caches.  On the contrary, there
-have been bug reports on issues that turned out to be misguided use of
-cache dropping.
-
-Dropping caches is a very drastic and disruptive operation that is
-good for debugging and running tests, but if it creates bug reports
-from production use, kernel developers should be aware of its use.
-
-Add a bit more documentation about it, and add a little KERN_NOTICE.
-
-[akpm@linux-foundation.org: checkpatch fixes]
-Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
- Documentation/sysctl/vm.txt | 33 +++++++++++++++++++++++++++------
- fs/drop_caches.c            |  4 ++++
- 2 files changed, 31 insertions(+), 6 deletions(-)
-
-diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
-index d614a9b6a280..36278c610a5f 100644
---- a/Documentation/sysctl/vm.txt
-+++ b/Documentation/sysctl/vm.txt
-@@ -175,18 +175,39 @@ Setting this to zero disables periodic writeback altogether.
- 
- drop_caches
- 
--Writing to this will cause the kernel to drop clean caches, dentries and
--inodes from memory, causing that memory to become free.
-+Writing to this will cause the kernel to drop clean caches, as well as
-+reclaimable slab objects like dentries and inodes.  Once dropped, their
-+memory becomes free.
- 
- To free pagecache:
- 	echo 1 > /proc/sys/vm/drop_caches
--To free dentries and inodes:
-+To free reclaimable slab objects (includes dentries and inodes):
- 	echo 2 > /proc/sys/vm/drop_caches
--To free pagecache, dentries and inodes:
-+To free slab objects and pagecache:
- 	echo 3 > /proc/sys/vm/drop_caches
- 
--As this is a non-destructive operation and dirty objects are not freeable, the
--user should run `sync' first.
-+This is a non-destructive operation and will not free any dirty objects.
-+To increase the number of objects freed by this operation, the user may run
-+`sync' prior to writing to /proc/sys/vm/drop_caches.  This will minimize the
-+number of dirty objects on the system and create more candidates to be
-+dropped.
-+
-+This file is not a means to control the growth of the various kernel caches
-+(inodes, dentries, pagecache, etc...)  These objects are automatically
-+reclaimed by the kernel when memory is needed elsewhere on the system.
-+
-+Use of this file can cause performance problems.  Since it discards cached
-+objects, it may cost a significant amount of I/O and CPU to recreate the
-+dropped objects, especially if they were under heavy use.  Because of this,
-+use outside of a testing or debugging environment is not recommended.
-+
-+You may see informational messages in your kernel log when this file is
-+used:
-+
-+	cat (1234): dropped kernel caches: 3
-+
-+These are informational only.  They do not mean that anything is wrong
-+with your system.
- 
- ==============================================================
- 
-diff --git a/fs/drop_caches.c b/fs/drop_caches.c
-index 9fd702f5bfb2..02ae3386e08f 100644
---- a/fs/drop_caches.c
-+++ b/fs/drop_caches.c
-@@ -5,6 +5,7 @@
- #include <linux/kernel.h>
- #include <linux/mm.h>
- #include <linux/fs.h>
-+#include <linux/ratelimit.h>
- #include <linux/writeback.h>
- #include <linux/sysctl.h>
- #include <linux/gfp.h>
-@@ -63,6 +64,9 @@ int drop_caches_sysctl_handler(ctl_table *table, int write,
- 			iterate_supers(drop_pagecache_sb, NULL);
- 		if (sysctl_drop_caches & 2)
- 			drop_slab();
-+		printk_ratelimited(KERN_INFO "%s (%d): dropped kernel caches: %d\n",
-+				   current->comm, task_pid_nr(current),
-+				   sysctl_drop_caches);
- 	}
- 	return 0;
- }
 -- 
-1.8.5.3
-
+ak@linux.intel.com -- Speaking for myself only
