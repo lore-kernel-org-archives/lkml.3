@@ -1,60 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751824AbaBGJld (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 04:41:33 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:59768 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751317AbaBGJla (ORCPT
+	id S1751907AbaBGJno (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 04:43:44 -0500
+Received: from canardo.mork.no ([148.122.252.1]:40767 "EHLO canardo.mork.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751356AbaBGJnl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 04:41:30 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jingoo Han <jg1.han@samsung.com>
-Subject: Re: [PATCH] backlight: add PWM dependencies
-Date: Fri, 7 Feb 2014 10:40:57 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: "'Thierry Reding'" <thierry.reding@gmail.com>,
-        "'Linus Walleij'" <linus.walleij@linaro.org>,
-        "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
-        "'Eric Miao'" <eric.y.miao@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-pwm@vger.kernel.org
-References: <1391518634-6472-1-git-send-email-linus.walleij@linaro.org> <201402061708.05845.arnd@arndb.de> <000d01cf23b1$7c1f8de0$745ea9a0$%han@samsung.com>
-In-Reply-To: <000d01cf23b1$7c1f8de0$745ea9a0$%han@samsung.com>
+	Fri, 7 Feb 2014 04:43:41 -0500
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: Emil Goode <emilgoode@gmail.com>
+Cc: David Laight <David.Laight@ACULAB.COM>,
+        "'Igor Gnatenko'" <i.gnatenko.brain@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ming Lei <ming.lei@canonical.com>, Mark Brown <broonie@linaro.org>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Glen Turner <gdt@gdt.id.au>,
+        "linux-usb\@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "netdev\@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] net: asix: fix bad header length bug
+Organization: m
+References: <1391691384-8486-1-git-send-email-emilgoode@gmail.com>
+	<1391692768.2843.4.camel@X1Carbon.localdomain>
+	<063D6719AE5E284EB5DD2968C1650D6D0F6B99F7@AcuExch.aculab.com>
+	<20140206224121.GB5251@lianli>
+Date: Fri, 07 Feb 2014 10:38:04 +0100
+In-Reply-To: <20140206224121.GB5251@lianli> (Emil Goode's message of "Thu, 6
+	Feb 2014 23:41:21 +0100")
+Message-ID: <87wqh7i7pf.fsf@nemi.mork.no>
+User-Agent: Gnus/5.130009 (Ma Gnus v0.9) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201402071040.58087.arnd@arndb.de>
-X-Provags-ID: V02:K0:X5/u3LSn0QpryvG6eXioaExW91lsuJL2sSpuSC2gK1Y
- +FoENPyzQugbI/6wc6azzsH0eKEyix4fqm4ehI/Al73rak5t9x
- dKloL1fs8aQlbm6Z1tSnoEYMQ+4bVWAiac9LjtbEbQ9dtXXavI
- 07se0l7SZfcIYqX2nZ5kL9fUCfZr7qu2rcKIMVNznDPqoJr2Hq
- HXnwzP600dKw1JnQqfUAzYTr/yc0LpPOv73EVI6XklJwFP5oC+
- GspkQHI+qgy31zBCmRa5tTF8nuA6e20E2DSkIhnl9ezJ/2pC2D
- CPQr/2VMq2lK2Q2elOK0yKNZLighaCnwFAsex5PDHi/Z3iUVnI
- Ql9tcTqS4In0kQi1/tjI=
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 07 February 2014, Jingoo Han wrote:
-> How about the following?
-> 
->   [PATCH 1/7] ARM: pxa: don't select HAVE_PWM
->   [PATCH 2/7] ARM: lpc32xx: don't select HAVE_PWM
->   [PATCH 3/7] ARM: remove HAVE_PWM config option
->   [PATCH 4/7] MIPS: jz4740: don't select HAVE_PWM
->   [PATCH 5/7] Input: max8997_haptic: remove HAVE_PWM dependencies
->   [PATCH 6/7] Input: pwm-beepe: remove HAVE_PWM dependencies
->   [PATCH 7/7] pwm: don't use IS_ENABLED(CONFIG_HAVE_PWM)
-> 
-> I would like to merge it through PWM tree.
-> After merging these patches, all HAVE_PWM will be removed from
-> the mainline kernel. Thank you. :-)
+Emil Goode <emilgoode@gmail.com> writes:
+> On Thu, Feb 06, 2014 at 03:28:13PM +0000, David Laight wrote:
+>> From: Igor Gnatenko
+>> > On Thu, 2014-02-06 at 13:56 +0100, Emil Goode wrote:
+>> > > The AX88772B occasionally send rx packets that cross urb boundaries
+>> > > and the remaining partial packet is sent with no header.
+>> > > When the buffer with a partial packet is of less number of octets
+>> > > than the value of hard_header_len the buffer is discarded by the
+>> > > usbnet module. This is causing dropped packages and error messages
+>> > > in dmesg.
 
-Sounds godo to me, thanks a lot for taking care of this!
-I don't see any inter-dependencies between the various patches,
-so we could also take the first three through the arm-soc tree
-to avoid conflicts with other changes (or possibly the third
-one through rmk's ARM tree, if he prefers).
+> I will do some more digging in the code, but the test of skb->len
+> against hard_header_len is done already in the completion callback
+> function passed to usb_fill_bulk_urb so it seems that buffers of less
+> than hard_header_len number of octets will be dropped regardless.
 
-	Arnd
+I am pretty sure you are right about this bug. And the exact same
+solution is already used by the cx82310_eth minidriver, so I don't see
+the problem.  Your fix is fine IMHO.  But you should apply it to all the
+devices using asix_rx_fixup_common(), not just the ax88772 ones.
+
+You could maybe make this a usbnet flag instead and create a generic
+solution in usbnet, but frankly I believe the number of flags and their
+meaning have exceeded drivers authors capabilities a long time ago.  At
+least mine, which are quite limited ;-)
+
+An example of that problem is another bloody obvious bug I noticed while
+looking at this driver: The 'struct driver_info ax88178_info' points to
+asix_rx_fixup_common without setting the FLAG_MULTI_PACKET.  This will
+result in usbnet rx_process() calling usbnet_skb_return() on skbs which
+are already consumed by the minidriver.  Not a big problem, but will
+give some odd results.  But if you allow skbs shorter than ETH_HLEN to
+slip through then it might go boom, so you should probably fix that as
+well.
+
+
+Bjørn
