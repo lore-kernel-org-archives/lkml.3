@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753537AbaBGT7U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 14:59:20 -0500
-Received: from www.linutronix.de ([62.245.132.108]:48265 "EHLO
+	id S1753441AbaBGT7L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 14:59:11 -0500
+Received: from www.linutronix.de ([62.245.132.108]:48259 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752376AbaBGT7Q (ORCPT
+	with ESMTP id S1752532AbaBGT7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 14:59:16 -0500
+	Fri, 7 Feb 2014 14:59:08 -0500
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 5/6] sched: Queue RT tasks to head when prio drops
-Date: Fri,  7 Feb 2014 20:58:41 +0100
-Message-Id: <1391803122-4425-6-git-send-email-bigeasy@linutronix.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: A pile of sched patches
+Date: Fri,  7 Feb 2014 20:58:36 +0100
+Message-Id: <1391803122-4425-1-git-send-email-bigeasy@linutronix.de>
 X-Mailer: git-send-email 1.9.rc1
-In-Reply-To: <1391803122-4425-1-git-send-email-bigeasy@linutronix.de>
-References: <1391803122-4425-1-git-send-email-bigeasy@linutronix.de>
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -25,74 +21,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+These patches were sitting -RT for quite some time. I think they sneaked
+in during the v3.10 time frame.
+Three are of them fix bugs and are marked for stable. The other three
+improve might_sleep() debuging / output.
 
-The following scenario does not work correctly:
-
-Runqueue of CPUx contains two runnable and pinned tasks:
- T1: SCHED_FIFO, prio 80
- T2: SCHED_FIFO, prio 80
-
-T1 is on the cpu and executes the following syscalls (classic priority
-ceiling scenario):
-
- sys_sched_setscheduler(pid(T1), SCHED_FIFO, .prio = 90);
- ...
- sys_sched_setscheduler(pid(T1), SCHED_FIFO, .prio = 80);
- ...
-
-Now T1 gets preempted by T3 (SCHED_FIFO, prio 95). After T3 goes back
-to sleep the scheduler picks T2. Surprise!
-
-The same happens w/o actual preemption when T1 is forced into the
-scheduler due to a sporadic NEED_RESCHED event. The scheduler invokes
-pick_next_task() which returns T2. So T1 gets preempted and scheduled
-out.
-
-This happens because sched_setscheduler() dequeues T1 from the prio 90
-list and then enqueues it on the tail of the prio 80 list behind T2.
-This violates the POSIX spec and surprises user space which relies on
-the guarantee that SCHED_FIFO tasks are not scheduled out unless they
-give the CPU up voluntarily or are preempted by a higher priority
-task. In the latter case the preempted task must get back on the CPU
-after the preempting task schedules out again.
-
-We fixed a similar issue already in commit 60db48c (sched: Queue a
-deboosted task to the head of the RT prio queue). The same treatment
-is necessary for sched_setscheduler(). So enqueue to head of the prio
-bucket list if the priority of the task is lowered.
-
-It might be possible that existing user space relies on the current
-behaviour, but it can be considered highly unlikely due to the corner
-case nature of the application scenario.
-
-Cc: stable@vger.kernel.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- kernel/sched/core.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index a4c06a8..d0e7825 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -3472,8 +3472,13 @@ static int __sched_setscheduler(struct task_struct *p,
- 
- 	if (running)
- 		p->sched_class->set_curr_task(rq);
--	if (on_rq)
--		enqueue_task(rq, p, 0);
-+	if (on_rq) {
-+		/*
-+		 * We enqueue to tail when the priority of a task is
-+		 * increased (user space view).
-+		 */
-+		enqueue_task(rq, p, oldprio <= p->prio ? ENQUEUE_HEAD : 0);
-+	}
- 
- 	check_class_changed(rq, p, prev_class, oldprio);
- 	task_rq_unlock(rq, p, &flags);
--- 
-1.9.rc1
+Sebastian
 
