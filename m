@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755575AbaBGM0y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:26:54 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42107 "EHLO
+	id S1755558AbaBGM0x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:26:53 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42109 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751979AbaBGLvF (ORCPT
+	with ESMTP id S1753701AbaBGLvF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 Feb 2014 06:51:05 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Josh Triplett <josh@joshtriplett.org>, Len Brown <len.brown@intel.com>,
+Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 145/233] turbostat: Use GCC's CPUID functions to support PIC
-Date: Fri,  7 Feb 2014 11:46:04 +0000
-Message-Id: <1391773652-25214-146-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 146/233] NFSv4.1: Handle errors correctly in nfs41_walk_client_list
+Date: Fri,  7 Feb 2014 11:46:05 +0000
+Message-Id: <1391773652-25214-147-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,87 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Triplett <josh@joshtriplett.org>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit 2b92865e648ce04a39fda4f903784a5d01ecb0dc upstream.
+commit 64590daa9e0dfb3aad89e3ab9230683b76211d5b upstream.
 
-turbostat uses inline assembly to call cpuid.  On 32-bit x86, on systems
-that have certain security features enabled by default that make -fPIC
-the default, this causes a build error:
+Both nfs41_walk_client_list and nfs40_walk_client_list expect the
+'status' variable to be set to the value -NFS4ERR_STALE_CLIENTID
+if the loop fails to find a match.
+The problem is that the 'pos->cl_cons_state > NFS_CS_READY' changes
+the value of 'status', and sets it either to the value '0' (which
+indicates success), or to the value EINTR.
 
-turbostat.c: In function ‘check_cpuid’:
-turbostat.c:1906:2: error: PIC register clobbered by ‘ebx’ in ‘asm’
-  asm("cpuid" : "=a" (fms), "=c" (ecx), "=d" (edx) : "a" (1) : "ebx");
-  ^
-
-GCC provides a header cpuid.h, containing a __get_cpuid function that
-works with both PIC and non-PIC.  (On PIC, it saves and restores ebx
-around the cpuid instruction.)  Use that instead.
-
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
-Signed-off-by: Len Brown <len.brown@intel.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- tools/power/x86/turbostat/turbostat.c | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ fs/nfs/nfs4client.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/tools/power/x86/turbostat/turbostat.c b/tools/power/x86/turbostat/turbostat.c
-index 5bf4a67..6a7ee5f 100644
---- a/tools/power/x86/turbostat/turbostat.c
-+++ b/tools/power/x86/turbostat/turbostat.c
-@@ -35,6 +35,7 @@
- #include <string.h>
- #include <ctype.h>
- #include <sched.h>
-+#include <cpuid.h>
+diff --git a/fs/nfs/nfs4client.c b/fs/nfs/nfs4client.c
+index 90dce91..3ae4d8c 100644
+--- a/fs/nfs/nfs4client.c
++++ b/fs/nfs/nfs4client.c
+@@ -329,9 +329,10 @@ int nfs40_walk_client_list(struct nfs_client *new,
+ 			prev = pos;
  
- char *proc_stat = "/proc/stat";
- unsigned int interval_sec = 5;	/* set with -i interval_sec */
-@@ -1894,7 +1895,7 @@ void check_cpuid()
- 
- 	eax = ebx = ecx = edx = 0;
- 
--	asm("cpuid" : "=a" (max_level), "=b" (ebx), "=c" (ecx), "=d" (edx) : "a" (0));
-+	__get_cpuid(0, &max_level, &ebx, &ecx, &edx);
- 
- 	if (ebx == 0x756e6547 && edx == 0x49656e69 && ecx == 0x6c65746e)
- 		genuine_intel = 1;
-@@ -1903,7 +1904,7 @@ void check_cpuid()
- 		fprintf(stderr, "CPUID(0): %.4s%.4s%.4s ",
- 			(char *)&ebx, (char *)&edx, (char *)&ecx);
- 
--	asm("cpuid" : "=a" (fms), "=c" (ecx), "=d" (edx) : "a" (1) : "ebx");
-+	__get_cpuid(1, &fms, &ebx, &ecx, &edx);
- 	family = (fms >> 8) & 0xf;
- 	model = (fms >> 4) & 0xf;
- 	stepping = fms & 0xf;
-@@ -1925,7 +1926,7 @@ void check_cpuid()
- 	 * This check is valid for both Intel and AMD.
- 	 */
- 	ebx = ecx = edx = 0;
--	asm("cpuid" : "=a" (max_level), "=b" (ebx), "=c" (ecx), "=d" (edx) : "a" (0x80000000));
-+	__get_cpuid(0x80000000, &max_level, &ebx, &ecx, &edx);
- 
- 	if (max_level < 0x80000007) {
- 		fprintf(stderr, "CPUID: no invariant TSC (max_level 0x%x)\n", max_level);
-@@ -1936,7 +1937,7 @@ void check_cpuid()
- 	 * Non-Stop TSC is advertised by CPUID.EAX=0x80000007: EDX.bit8
- 	 * this check is valid for both Intel and AMD
- 	 */
--	asm("cpuid" : "=a" (eax), "=b" (ebx), "=c" (ecx), "=d" (edx) : "a" (0x80000007));
-+	__get_cpuid(0x80000007, &eax, &ebx, &ecx, &edx);
- 	has_invariant_tsc = edx & (1 << 8);
- 
- 	if (!has_invariant_tsc) {
-@@ -1949,7 +1950,7 @@ void check_cpuid()
- 	 * this check is valid for both Intel and AMD
- 	 */
- 
--	asm("cpuid" : "=a" (eax), "=b" (ebx), "=c" (ecx), "=d" (edx) : "a" (0x6));
-+	__get_cpuid(0x6, &eax, &ebx, &ecx, &edx);
- 	has_aperf = ecx & (1 << 0);
- 	do_dts = eax & (1 << 0);
- 	do_ptm = eax & (1 << 6);
+ 			status = nfs_wait_client_init_complete(pos);
+-			spin_lock(&nn->nfs_client_lock);
+ 			if (status < 0)
+-				continue;
++				goto out;
++			status = -NFS4ERR_STALE_CLIENTID;
++			spin_lock(&nn->nfs_client_lock);
+ 		}
+ 		if (pos->cl_cons_state != NFS_CS_READY)
+ 			continue;
+@@ -469,7 +470,8 @@ int nfs41_walk_client_list(struct nfs_client *new,
+ 			}
+ 			spin_lock(&nn->nfs_client_lock);
+ 			if (status < 0)
+-				continue;
++				break;
++			status = -NFS4ERR_STALE_CLIENTID;
+ 		}
+ 		if (pos->cl_cons_state != NFS_CS_READY)
+ 			continue;
 -- 
 1.8.3.2
 
