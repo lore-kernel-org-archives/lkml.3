@@ -1,301 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753309AbaBGQuO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 11:50:14 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50362 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753276AbaBGQuI (ORCPT
+	id S1753542AbaBGQxJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 11:53:09 -0500
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:37280 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752964AbaBGQsx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 11:50:08 -0500
-From: Sudeep Holla <sudeep.holla@arm.com>
-To: linux-kernel@vger.kernel.org
-Cc: sudeep.holla@arm.com, Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH RFC/RFT v2 8/8] ARM: kernel: add outer cache support for cacheinfo implementation
-Date: Fri,  7 Feb 2014 16:49:23 +0000
-Message-Id: <1391791763-28518-9-git-send-email-sudeep.holla@arm.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1391791763-28518-1-git-send-email-sudeep.holla@arm.com>
-References: <1391791763-28518-1-git-send-email-sudeep.holla@arm.com>
+	Fri, 7 Feb 2014 11:48:53 -0500
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bfields@fieldses.org, hch@infradead.org, akpm@linux-foundation.org,
+        dhowells@redhat.com, zab@redhat.com, jack@suse.cz, luto@amacapital.net,
+        mszeredi@suse.cz
+Subject: [PATCH 12/13] ext4: add cross rename support
+Date: Fri,  7 Feb 2014 17:49:10 +0100
+Message-Id: <1391791751-2533-13-git-send-email-miklos@szeredi.hu>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1391791751-2533-1-git-send-email-miklos@szeredi.hu>
+References: <1391791751-2533-1-git-send-email-miklos@szeredi.hu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sudeep Holla <sudeep.holla@arm.com>
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-In order to support outer cache in the cacheinfo infrastructure, a new
-function 'get_info' is added to outer_cache_fns. This function is used
-to get the outer cache information namely: line size, number of ways of
-associativity and number of sets.
+Implement RENAME_EXCHANGE flag in renameat2 syscall.
 
-This patch adds 'get_info' supports to all L2 cache implementations on
-ARM except Marvell's Feroceon L2 cache.
-
-Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- arch/arm/include/asm/outercache.h | 13 +++++++++++++
- arch/arm/kernel/cacheinfo.c       | 22 +++++++++++++++++++++-
- arch/arm/mm/cache-l2x0.c          | 14 ++++++++++++++
- arch/arm/mm/cache-tauros2.c       | 35 +++++++++++++++++++++++++++++++++++
- arch/arm/mm/cache-xsc3l2.c        | 15 +++++++++++++++
- 5 files changed, 98 insertions(+), 1 deletion(-)
+ fs/ext4/namei.c | 139 +++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 138 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/include/asm/outercache.h b/arch/arm/include/asm/outercache.h
-index f94784f..1471ff2 100644
---- a/arch/arm/include/asm/outercache.h
-+++ b/arch/arm/include/asm/outercache.h
-@@ -23,7 +23,14 @@
+diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
+index 75f1bde43dcc..1cb84f78909e 100644
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -3004,6 +3004,8 @@ struct ext4_renament {
+ 	struct inode *dir;
+ 	struct dentry *dentry;
+ 	struct inode *inode;
++	bool is_dir;
++	int dir_nlink_delta;
  
- #include <linux/types.h>
- 
-+struct outer_cache_info {
-+	unsigned int num_ways;
-+	unsigned int num_sets;
-+	unsigned int line_size;
-+};
-+
- struct outer_cache_fns {
-+	void (*get_info)(struct outer_cache_info *info);
- 	void (*inv_range)(unsigned long, unsigned long);
- 	void (*clean_range)(unsigned long, unsigned long);
- 	void (*flush_range)(unsigned long, unsigned long);
-@@ -41,6 +48,11 @@ extern struct outer_cache_fns outer_cache;
- 
- #ifdef CONFIG_OUTER_CACHE
- 
-+static inline void outer_get_info(struct outer_cache_info *info)
-+{
-+	if (outer_cache.get_info)
-+		outer_cache.get_info(info);
-+}
- static inline void outer_inv_range(phys_addr_t start, phys_addr_t end)
- {
- 	if (outer_cache.inv_range)
-@@ -83,6 +95,7 @@ static inline void outer_resume(void)
- 
- #else
- 
-+static inline void outer_get_info(struct outer_cache_info *info) { }
- static inline void outer_inv_range(phys_addr_t start, phys_addr_t end)
- { }
- static inline void outer_clean_range(phys_addr_t start, phys_addr_t end)
-diff --git a/arch/arm/kernel/cacheinfo.c b/arch/arm/kernel/cacheinfo.c
-index 10045b7..4463833 100644
---- a/arch/arm/kernel/cacheinfo.c
-+++ b/arch/arm/kernel/cacheinfo.c
-@@ -16,6 +16,7 @@
- #include <linux/of.h>
- 
- #include <asm/cputype.h>
-+#include <asm/outercache.h>
- #include <asm/processor.h>
- 
- #if __LINUX_ARM_ARCH__ < 7 /* pre ARMv7 */
-@@ -175,11 +176,27 @@ static void __ci_leaf_init(enum cache_type type,
- 
- #endif
- 
-+static void __outer_ci_leaf_init(struct cache_info *this_leaf)
-+{
-+	struct outer_cache_info info;
-+
-+	outer_get_info(&info);
-+
-+	this_leaf->type = CACHE_TYPE_UNIFIED;/* record it as Unified */
-+	this_leaf->ways_of_associativity = info.num_ways;
-+	this_leaf->number_of_sets = info.num_sets;
-+	this_leaf->coherency_line_size = info.line_size;
-+	this_leaf->size = info.num_ways * info.num_sets * info.line_size;
-+}
-+
- static void ci_leaf_init(struct cache_info *this_leaf,
- 			 enum cache_type type, unsigned int level)
- {
- 	this_leaf->level = level;
--	__ci_leaf_init(type, this_leaf);
-+	if (type == CACHE_TYPE_NOCACHE)	/* must be outer cache */
-+		__outer_ci_leaf_init(this_leaf);
-+	else
-+		__ci_leaf_init(type, this_leaf);
- }
- 
- int init_cache_level(unsigned int cpu)
-@@ -201,6 +218,9 @@ int init_cache_level(unsigned int cpu)
- 	this_cpu_ci->num_levels = level - 1;
- 	this_cpu_ci->num_leaves = leaves;
- 
-+	if (IS_ENABLED(CONFIG_OUTER_CACHE) && outer_cache.get_info)
-+		this_cpu_ci->num_leaves++, this_cpu_ci->num_levels++;
-+
- 	return 0;
- }
- 
-diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
-index 7abde2ce..b850771 100644
---- a/arch/arm/mm/cache-l2x0.c
-+++ b/arch/arm/mm/cache-l2x0.c
-@@ -183,6 +183,15 @@ static void l2x0_inv_all(void)
- 	raw_spin_unlock_irqrestore(&l2x0_lock, flags);
- }
- 
-+static void l2x0_getinfo(struct outer_cache_info *info)
-+{
-+	if (!info)
-+		return;
-+	info->num_ways = get_count_order(l2x0_way_mask);
-+	info->line_size = CACHE_LINE_SIZE;
-+	info->num_sets = l2x0_size / (info->num_ways * CACHE_LINE_SIZE);
-+}
-+
- static void l2x0_inv_range(unsigned long start, unsigned long end)
- {
- 	void __iomem *base = l2x0_base;
-@@ -416,6 +425,7 @@ void __init l2x0_init(void __iomem *base, u32 aux_val, u32 aux_mask)
- 		outer_cache.flush_all = l2x0_flush_all;
- 		outer_cache.inv_all = l2x0_inv_all;
- 		outer_cache.disable = l2x0_disable;
-+		outer_cache.get_info = l2x0_getinfo;
+ 	/* entry for "dentry" */
+ 	struct buffer_head *bh;
+@@ -3135,6 +3137,17 @@ static void ext4_rename_delete(handle_t *handle, struct ext4_renament *ent)
  	}
- 
- 	pr_info("%s cache controller enabled\n", type);
-@@ -886,6 +896,7 @@ static const struct l2x0_of_data pl310_data = {
- 		.flush_all   = l2x0_flush_all,
- 		.inv_all     = l2x0_inv_all,
- 		.disable     = l2x0_disable,
-+		.get_info    = l2x0_getinfo,
- 	},
- };
- 
-@@ -901,6 +912,7 @@ static const struct l2x0_of_data l2x0_data = {
- 		.flush_all   = l2x0_flush_all,
- 		.inv_all     = l2x0_inv_all,
- 		.disable     = l2x0_disable,
-+		.get_info    = l2x0_getinfo,
- 	},
- };
- 
-@@ -916,6 +928,7 @@ static const struct l2x0_of_data aurora_with_outer_data = {
- 		.flush_all   = l2x0_flush_all,
- 		.inv_all     = l2x0_inv_all,
- 		.disable     = l2x0_disable,
-+		.get_info    = l2x0_getinfo,
- 	},
- };
- 
-@@ -948,6 +961,7 @@ static const struct l2x0_of_data bcm_l2x0_data = {
- 		.flush_all   = l2x0_flush_all,
- 		.inv_all     = l2x0_inv_all,
- 		.disable     = l2x0_disable,
-+		.get_info    = l2x0_getinfo,
- 	},
- };
- 
-diff --git a/arch/arm/mm/cache-tauros2.c b/arch/arm/mm/cache-tauros2.c
-index 1be0f4e..3a43401 100644
---- a/arch/arm/mm/cache-tauros2.c
-+++ b/arch/arm/mm/cache-tauros2.c
-@@ -60,6 +60,7 @@ static inline void tauros2_inv_pa(unsigned long addr)
-  * noninclusive.
-  */
- #define CACHE_LINE_SIZE		32
-+#define CACHE_LINE_SHIFT	5
- 
- static void tauros2_inv_range(unsigned long start, unsigned long end)
- {
-@@ -131,6 +132,38 @@ static void tauros2_resume(void)
- 	"mcr	p15, 0, %0, c1, c0, 0 @Enable L2 Cache\n\t"
- 	: : "r" (0x0));
- }
-+
-+/*
-+ *  +----------------------------------------+
-+ *  | 11 10 9  8 | 7  6  5  4  3 | 2 |  1  0 |
-+ *  +----------------------------------------+
-+ *  |  way size  | associativity | - |line_sz|
-+ *  +----------------------------------------+
-+ */
-+#define L2CTR_ASSOCIAT_SHIFT	3
-+#define L2CTR_ASSOCIAT_MASK	0x1F
-+#define L2CTR_WAYSIZE_SHIFT	8
-+#define L2CTR_WAYSIZE_MASK	0xF
-+#define CACHE_WAY_PER_SET(l2ctr)	\
-+	(((l2_ctr) >> L2CTR_ASSOCIAT_SHIFT) & L2CTR_ASSOCIAT_MASK)
-+#define CACHE_WAY_SIZE(l2ctr)		\
-+	(8192 << (((l2ctr) >> L2CTR_WAYSIZE_SHIFT) & L2CTR_WAYSIZE_MASK))
-+#define CACHE_SET_SIZE(l2ctr)	(CACHE_WAY_SIZE(l2ctr) >> CACHE_LINE_SHIFT)
-+
-+static void tauros2_getinfo(struct outer_cache_info *info)
-+{
-+	unsigned int l2_ctr;
-+
-+	if (!info)
-+		return;
-+
-+	__asm__("mrc p15, 1, %0, c0, c0, 1" : "=r" (l2_ctr));
-+
-+	info->line_size = CACHE_LINE_SIZE;
-+	info->num_ways = CACHE_WAY_PER_SET(l2_ctr);
-+	info->num_sets = CACHE_SET_SIZE(l2_ctr);
-+}
-+
- #endif
- 
- static inline u32 __init read_extra_features(void)
-@@ -226,6 +259,7 @@ static void __init tauros2_internal_init(unsigned int features)
- 		outer_cache.flush_range = tauros2_flush_range;
- 		outer_cache.disable = tauros2_disable;
- 		outer_cache.resume = tauros2_resume;
-+		outer_cache.get_info = tauros2_getinfo;
- 	}
- #endif
- 
-@@ -253,6 +287,7 @@ static void __init tauros2_internal_init(unsigned int features)
- 		outer_cache.flush_range = tauros2_flush_range;
- 		outer_cache.disable = tauros2_disable;
- 		outer_cache.resume = tauros2_resume;
-+		outer_cache.get_info = tauros2_getinfo;
- 	}
- #endif
- 
-diff --git a/arch/arm/mm/cache-xsc3l2.c b/arch/arm/mm/cache-xsc3l2.c
-index 6c3edeb..353c642 100644
---- a/arch/arm/mm/cache-xsc3l2.c
-+++ b/arch/arm/mm/cache-xsc3l2.c
-@@ -201,6 +201,20 @@ static void xsc3_l2_flush_range(unsigned long start, unsigned long end)
- 	dsb();
  }
  
-+static void xsc3_l2_getinfo(struct outer_cache_info *info)
++static void ext4_update_dir_count(handle_t *handle, struct ext4_renament *ent)
 +{
-+	unsigned long l2ctype;
-+
-+	if (!info)
-+		return;
-+
-+	__asm__("mrc p15, 1, %0, c0, c0, 1" : "=r" (l2ctype));
-+
-+	info->num_ways = CACHE_WAY_PER_SET;
-+	info->line_size = CACHE_LINE_SIZE;
-+	info->num_sets = CACHE_SET_SIZE(l2ctype);
++	if (ent->dir_nlink_delta) {
++		if (ent->dir_nlink_delta == -1)
++			ext4_dec_count(handle, ent->dir);
++		else
++			ext4_inc_count(handle, ent->dir);
++		ext4_mark_inode_dirty(handle, ent->dir);
++	}
 +}
 +
- static int __init xsc3_l2_init(void)
- {
- 	if (!cpu_is_xsc3() || !xsc3_l2_present())
-@@ -213,6 +227,7 @@ static int __init xsc3_l2_init(void)
- 		outer_cache.inv_range = xsc3_l2_inv_range;
- 		outer_cache.clean_range = xsc3_l2_clean_range;
- 		outer_cache.flush_range = xsc3_l2_flush_range;
-+		outer_cache.get_info    = xsc3_l2_getinfo;
- 	}
+ /*
+  * Anybody can rename anything with this: the permission checks are left to the
+  * higher-level routines.
+@@ -3274,13 +3287,137 @@ end_rename:
+ 	return retval;
+ }
  
- 	return 0;
++static int ext4_cross_rename(struct inode *old_dir, struct dentry *old_dentry,
++			     struct inode *new_dir, struct dentry *new_dentry)
++{
++	handle_t *handle = NULL;
++	struct ext4_renament old = {
++		.dir = old_dir,
++		.dentry = old_dentry,
++		.inode = old_dentry->d_inode,
++	};
++	struct ext4_renament new = {
++		.dir = new_dir,
++		.dentry = new_dentry,
++		.inode = new_dentry->d_inode,
++	};
++	u8 new_file_type;
++	int retval;
++
++	dquot_initialize(old.dir);
++	dquot_initialize(new.dir);
++
++	old.bh = ext4_find_entry(old.dir, &old.dentry->d_name,
++				 &old.de, &old.inlined);
++	/*
++	 *  Check for inode number is _not_ due to possible IO errors.
++	 *  We might rmdir the source, keep it as pwd of some process
++	 *  and merrily kill the link to whatever was created under the
++	 *  same name. Goodbye sticky bit ;-<
++	 */
++	retval = -ENOENT;
++	if (!old.bh || le32_to_cpu(old.de->inode) != old.inode->i_ino)
++		goto end_rename;
++
++	new.bh = ext4_find_entry(new.dir, &new.dentry->d_name,
++				 &new.de, &new.inlined);
++
++	/* RENAME_EXCHANGE case: old *and* new must both exist */
++	if (!new.bh || le32_to_cpu(new.de->inode) != new.inode->i_ino)
++		goto end_rename;
++
++	handle = ext4_journal_start(old.dir, EXT4_HT_DIR,
++		(2 * EXT4_DATA_TRANS_BLOCKS(old.dir->i_sb) +
++		 2 * EXT4_INDEX_EXTRA_TRANS_BLOCKS + 2));
++	if (IS_ERR(handle))
++		return PTR_ERR(handle);
++
++	if (IS_DIRSYNC(old.dir) || IS_DIRSYNC(new.dir))
++		ext4_handle_sync(handle);
++
++	if (S_ISDIR(old.inode->i_mode)) {
++		old.is_dir = true;
++		retval = ext4_rename_dir_prepare(handle, &old);
++		if (retval)
++			goto end_rename;
++	}
++	if (S_ISDIR(new.inode->i_mode)) {
++		new.is_dir = true;
++		retval = ext4_rename_dir_prepare(handle, &new);
++		if (retval)
++			goto end_rename;
++	}
++
++	/*
++	 * Other than the special case of overwriting a directory, parents'
++	 * nlink only needs to be modified if this is a cross directory rename.
++	 */
++	if (old.dir != new.dir && old.is_dir != new.is_dir) {
++		old.dir_nlink_delta = old.is_dir ? -1 : 1;
++		new.dir_nlink_delta = -old.dir_nlink_delta;
++		retval = -EMLINK;
++		if ((old.dir_nlink_delta > 0 && EXT4_DIR_LINK_MAX(old.dir)) ||
++		    (new.dir_nlink_delta > 0 && EXT4_DIR_LINK_MAX(new.dir)))
++			goto end_rename;
++	}
++
++	new_file_type = new.de->file_type;
++	retval = ext4_setent(handle, &new, old.inode->i_ino, old.de->file_type);
++	if (retval)
++		goto end_rename;
++
++	retval = ext4_setent(handle, &old, new.inode->i_ino, new_file_type);
++	if (retval)
++		goto end_rename;
++
++	/*
++	 * Like most other Unix systems, set the ctime for inodes on a
++	 * rename.
++	 */
++	old.inode->i_ctime = ext4_current_time(old.inode);
++	new.inode->i_ctime = ext4_current_time(new.inode);
++	ext4_mark_inode_dirty(handle, old.inode);
++	ext4_mark_inode_dirty(handle, new.inode);
++
++	if (old.dir_bh) {
++		retval = ext4_rename_dir_finish(handle, &old, new.dir->i_ino);
++		if (retval)
++			goto end_rename;
++	}
++	if (new.dir_bh) {
++		retval = ext4_rename_dir_finish(handle, &new, old.dir->i_ino);
++		if (retval)
++			goto end_rename;
++	}
++	ext4_update_dir_count(handle, &old);
++	ext4_update_dir_count(handle, &new);
++	retval = 0;
++
++end_rename:
++	brelse(old.dir_bh);
++	brelse(new.dir_bh);
++	brelse(old.bh);
++	brelse(new.bh);
++	if (handle)
++		ext4_journal_stop(handle);
++	return retval;
++}
++
+ static int ext4_rename2(struct inode *old_dir, struct dentry *old_dentry,
+ 			struct inode *new_dir, struct dentry *new_dentry,
+ 			unsigned int flags)
+ {
+-	if (flags & ~RENAME_NOREPLACE)
++	if (flags & ~(RENAME_NOREPLACE | RENAME_EXCHANGE))
+ 		return -EINVAL;
+ 
++	if (flags & RENAME_EXCHANGE) {
++		return ext4_cross_rename(old_dir, old_dentry,
++					 new_dir, new_dentry);
++	}
++	/*
++	 * Existence checking was done by the VFS, otherwise "RENAME_NOREPLACE"
++	 * is equivalent to regular rename.
++	 */
+ 	return ext4_rename(old_dir, old_dentry, new_dir, new_dentry);
+ }
+ 
 -- 
-1.8.3.2
+1.8.1.4
 
