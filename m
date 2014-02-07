@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705AbaBGLYQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:24:16 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40839 "EHLO
+	id S1753645AbaBGLqw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:46:52 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40971 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752079AbaBGLXn (ORCPT
+	with ESMTP id S1752686AbaBGLYP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:23:43 -0500
+	Fri, 7 Feb 2014 06:24:15 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andreas Rohner <andreas.rohner@gmx.net>,
-        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 07/88] nilfs2: fix segctor bug that causes file system corruption
-Date: Fri,  7 Feb 2014 11:22:04 +0000
-Message-Id: <1391772205-22239-8-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 34/88] ALSA: rme9652: fix a missing comma in channel_map_9636_ds[]
+Date: Fri,  7 Feb 2014 11:22:31 +0000
+Message-Id: <1391772205-22239-35-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
@@ -30,88 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Rohner <andreas.rohner@gmx.net>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 70f2fe3a26248724d8a5019681a869abdaf3e89a upstream.
+commit 770bd4bf2e664939a9dacd3d26ec9ff7a3933210 upstream.
 
-There is a bug in the function nilfs_segctor_collect, which results in
-active data being written to a segment, that is marked as clean.  It is
-possible, that this segment is selected for a later segment
-construction, whereby the old data is overwritten.
+The lack of comma leads to the wrong channel for an SPDIF channel.
+Unfortunately this wasn't caught by compiler because it's still a
+valid expression.
 
-The problem shows itself with the following kernel log message:
-
-  nilfs_sufile_do_cancel_free: segment 6533 must be clean
-
-Usually a few hours later the file system gets corrupted:
-
-  NILFS: bad btree node (blocknr=8748107): level = 0, flags = 0x0, nchildren = 0
-  NILFS error (device sdc1): nilfs_bmap_last_key: broken bmap (inode number=114660)
-
-The issue can be reproduced with a file system that is nearly full and
-with the cleaner running, while some IO intensive task is running.
-Although it is quite hard to reproduce.
-
-This is what happens:
-
- 1. The cleaner starts the segment construction
- 2. nilfs_segctor_collect is called
- 3. sc_stage is on NILFS_ST_SUFILE and segments are freed
- 4. sc_stage is on NILFS_ST_DAT current segment is full
- 5. nilfs_segctor_extend_segments is called, which
-    allocates a new segment
- 6. The new segment is one of the segments freed in step 3
- 7. nilfs_sufile_cancel_freev is called and produces an error message
- 8. Loop around and the collection starts again
- 9. sc_stage is on NILFS_ST_SUFILE and segments are freed
-    including the newly allocated segment, which will contain active
-    data and can be allocated at a later time
-10. A few hours later another segment construction allocates the
-    segment and causes file system corruption
-
-This can be prevented by simply reordering the statements.  If
-nilfs_sufile_cancel_freev is called before nilfs_segctor_extend_segments
-the freed segments are marked as dirty and cannot be allocated any more.
-
-Signed-off-by: Andreas Rohner <andreas.rohner@gmx.net>
-Reviewed-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Tested-by: Andreas Rohner <andreas.rohner@gmx.net>
-Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Alexander Aristov <aristov.alexander@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/nilfs2/segment.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ sound/pci/rme9652/rme9652.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/nilfs2/segment.c b/fs/nilfs2/segment.c
-index 8992b33..e0a5a18 100644
---- a/fs/nilfs2/segment.c
-+++ b/fs/nilfs2/segment.c
-@@ -1437,17 +1437,19 @@ static int nilfs_segctor_collect(struct nilfs_sc_info *sci,
- 
- 		nilfs_clear_logs(&sci->sc_segbufs);
- 
--		err = nilfs_segctor_extend_segments(sci, nilfs, nadd);
--		if (unlikely(err))
--			return err;
--
- 		if (sci->sc_stage.flags & NILFS_CF_SUFREED) {
- 			err = nilfs_sufile_cancel_freev(nilfs->ns_sufile,
- 							sci->sc_freesegs,
- 							sci->sc_nfreesegs,
- 							NULL);
- 			WARN_ON(err); /* do not happen */
-+			sci->sc_stage.flags &= ~NILFS_CF_SUFREED;
- 		}
-+
-+		err = nilfs_segctor_extend_segments(sci, nilfs, nadd);
-+		if (unlikely(err))
-+			return err;
-+
- 		nadd = min_t(int, nadd << 1, SC_MAX_SEGDELTA);
- 		sci->sc_stage = prev_stage;
- 	}
+diff --git a/sound/pci/rme9652/rme9652.c b/sound/pci/rme9652/rme9652.c
+index a15fc10..1b3ce88 100644
+--- a/sound/pci/rme9652/rme9652.c
++++ b/sound/pci/rme9652/rme9652.c
+@@ -285,7 +285,7 @@ static char channel_map_9636_ds[26] = {
+ 	/* ADAT channels are remapped */
+ 	1, 3, 5, 7, 9, 11, 13, 15,
+ 	/* channels 8 and 9 are S/PDIF */
+-	24, 25
++	24, 25,
+ 	/* others don't exist */
+ 	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+ };
 -- 
 1.8.3.2
 
