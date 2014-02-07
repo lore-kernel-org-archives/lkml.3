@@ -1,62 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753384AbaBGUwf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 15:52:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59049 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751546AbaBGUwe (ORCPT
+	id S1752910AbaBGUz1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 15:55:27 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:41364 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751732AbaBGUzZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 15:52:34 -0500
-Date: Fri, 7 Feb 2014 12:52:33 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: mmotm 2014-02-05 list_lru_add lockdep splat
-Message-Id: <20140207125233.4b84482453da6a656ff427dd@linux-foundation.org>
-In-Reply-To: <20140206164136.GC6963@cmpxchg.org>
-References: <alpine.LSU.2.11.1402051944210.27326@eggly.anvils>
-	<20140206164136.GC6963@cmpxchg.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 7 Feb 2014 15:55:25 -0500
+Date: Fri, 7 Feb 2014 12:55:22 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Rashika Kheria <rashika.kheria@gmail.com>
+cc: linux-kernel@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        cgroups@vger.kernel.org, linux-mm@kvack.org, josh@joshtriplett.org
+Subject: Re: [PATCH 6/9] mm: Mark function as static in memcontrol.c
+In-Reply-To: <0dbbc0fe4360069993ef8a9ca179f30482610270.1391167128.git.rashika.kheria@gmail.com>
+Message-ID: <alpine.DEB.2.02.1402071254410.4212@chino.kir.corp.google.com>
+References: <a7658fc8f2ab015bffe83de1448cc3db79d2a9fc.1391167128.git.rashika.kheria@gmail.com> <0dbbc0fe4360069993ef8a9ca179f30482610270.1391167128.git.rashika.kheria@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="531381512-204402537-1391806523=:4212"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Feb 2014 11:41:36 -0500 Johannes Weiner <hannes@cmpxchg.org> wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
+--531381512-204402537-1391806523=:4212
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+
+On Fri, 7 Feb 2014, Rashika Kheria wrote:
+
+> Mark function as static in memcontrol.c because it is not used outside
+> this file.
 > 
-> Make the shadow lru->node[i].lock IRQ-safe to remove the order
-> dictated by interruption.  This slightly increases the IRQ-disabled
-> section in the shadow shrinker, but it still drops all locks and
-> enables IRQ after every reclaimed shadow radix tree node.
+> This also eliminates the following warning in memcontrol.c:
+> mm/memcontrol.c:3089:5: warning: no previous prototype for ‘memcg_update_cache_sizes’ [-Wmissing-prototypes]
 > 
-> ...
->
-> --- a/mm/workingset.c
-> +++ b/mm/workingset.c
-> @@ -273,7 +273,10 @@ static unsigned long count_shadow_nodes(struct shrinker *shrinker,
->  	unsigned long max_nodes;
->  	unsigned long pages;
->  
-> +	local_irq_disable();
->  	shadow_nodes = list_lru_count_node(&workingset_shadow_nodes, sc->nid);
-> +	local_irq_enable();
+> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-This is a bit ugly-looking.
-
-A reader will look at that and wonder why the heck we're disabling
-interrupts here.  Against what?  Is there some way in which we can
-clarify this?
-
-Perhaps adding list_lru_count_node_irq[save] and
-list_lru_walk_node_irq[save] would be better - is it reasonable to
-assume this is the only caller of the list_lru code which will ever
-want irq-safe treatment?
-
-This is all somewhat a side-effect of list_lru implementing its own
-locking rather than requiring caller-provided locking.  It's always a
-mistake.
-
+memcg_update_cache_sizes() was removed in commit d6441637709b ("memcg: 
+rework memcg_update_kmem_limit synchronization") for 3.14-rc1.
+--531381512-204402537-1391806523=:4212--
