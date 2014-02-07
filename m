@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755229AbaBGLvx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:51:53 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42256 "EHLO
+	id S1755212AbaBGLvv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:51:51 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42262 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755179AbaBGLvp (ORCPT
+	with ESMTP id S1755175AbaBGLvr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:51:45 -0500
+	Fri, 7 Feb 2014 06:51:47 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Adrien=20Verg=C3=A9?= <adrienverge@gmail.com>,
-        Takashi Iwai <tiwai@suse.de>,
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 176/233] ALSA: hda - Fix silent output on MacBook Air 1,1
-Date: Fri,  7 Feb 2014 11:46:35 +0000
-Message-Id: <1391773652-25214-177-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 177/233] i915: remove pm_qos request on error
+Date: Fri,  7 Feb 2014 11:46:36 +0000
+Message-Id: <1391773652-25214-178-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,76 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Adrien=20Verg=C3=A9?= <adrienverge@gmail.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit e7729a415315fcd9516912050d85d5aaebcededc upstream.
+commit 22accca01713b13dac386ca90b787aadf88f6551 upstream.
 
-Similarly to other Apple products, MBA 1,1 needs a specific quirk.
-Pin 0x18 must be set to VREF_50 to have sound output.  This was no
-longer done since commit 1a97b7f, resulting in a mute built-in speaker.
+Not removing pm qos request and free memory for it can cause crash,
+when some other driver use pm qos. For example, this oops:
 
-This patch corrects the regression by creating a fixup for the MBA 1,1.
+BUG: unable to handle kernel paging request at fffffffffffffff8
+IP: [<ffffffff81307a6b>] plist_add+0x5b/0xd0
+Call Trace:
+ [<ffffffff810acf25>] pm_qos_update_target+0x125/0x1e0
+ [<ffffffff810ad071>] pm_qos_add_request+0x91/0x100
+ [<ffffffffa053ec14>] e1000_open+0xe4/0x5b0 [e1000e]
 
-Fixes: 1a97b7f22774 ("ALSA: hda/realtek - Remove the last static quirks for ALC882")
-Tested-by: Adrien Vergé <adrienverge@gmail.com>
-Signed-off-by: Adrien Vergé <adrienverge@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+was caused by earlier i915 probe failure:
+
+[drm:i915_report_and_clear_eir] *ERROR* EIR stuck: 0x00000010, masking
+[drm:init_ring_common] *ERROR* render ring initialization failed ctl 0001f001 head 00003004 tail 00000000 start 00003000
+[drm:i915_driver_load] *ERROR* failed to init modeset
+i915: probe of 0000:00:02.0 failed with error -5
+
+Bug report:
+http://bugzilla.redhat.com/show_bug.cgi?id=1057533
+
+Reported-by: Giandomenico De Tullio <ghisha@gmail.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+[danvet: Drop unnecessary code movement.]
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/pci/hda/patch_realtek.c | 19 ++++++++++++++++++-
- 1 file changed, 18 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/i915/i915_dma.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index e0bafd8..cd4cbad 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -1767,6 +1767,7 @@ enum {
- 	ALC889_FIXUP_DAC_ROUTE,
- 	ALC889_FIXUP_MBP_VREF,
- 	ALC889_FIXUP_IMAC91_VREF,
-+	ALC889_FIXUP_MBA11_VREF,
- 	ALC889_FIXUP_MBA21_VREF,
- 	ALC882_FIXUP_INV_DMIC,
- 	ALC882_FIXUP_NO_PRIMARY_HP,
-@@ -1896,6 +1897,16 @@ static void alc889_fixup_imac91_vref(struct hda_codec *codec,
- 		alc889_fixup_mac_pins(codec, nids, ARRAY_SIZE(nids));
- }
+diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
+index 0c956e9..58c3db8 100644
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@ -1675,6 +1675,7 @@ out_gem_unload:
  
-+/* Set VREF on speaker pins on mba11 */
-+static void alc889_fixup_mba11_vref(struct hda_codec *codec,
-+				    const struct hda_fixup *fix, int action)
-+{
-+	static hda_nid_t nids[1] = { 0x18 };
-+
-+	if (action == HDA_FIXUP_ACT_INIT)
-+		alc889_fixup_mac_pins(codec, nids, ARRAY_SIZE(nids));
-+}
-+
- /* Set VREF on speaker pins on mba21 */
- static void alc889_fixup_mba21_vref(struct hda_codec *codec,
- 				    const struct hda_fixup *fix, int action)
-@@ -2100,6 +2111,12 @@ static const struct hda_fixup alc882_fixups[] = {
- 		.chained = true,
- 		.chain_id = ALC882_FIXUP_GPIO1,
- 	},
-+	[ALC889_FIXUP_MBA11_VREF] = {
-+		.type = HDA_FIXUP_FUNC,
-+		.v.func = alc889_fixup_mba11_vref,
-+		.chained = true,
-+		.chain_id = ALC889_FIXUP_MBP_VREF,
-+	},
- 	[ALC889_FIXUP_MBA21_VREF] = {
- 		.type = HDA_FIXUP_FUNC,
- 		.v.func = alc889_fixup_mba21_vref,
-@@ -2169,7 +2186,7 @@ static const struct snd_pci_quirk alc882_fixup_tbl[] = {
- 	SND_PCI_QUIRK(0x106b, 0x2c00, "MacbookPro rev3", ALC889_FIXUP_MBP_VREF),
- 	SND_PCI_QUIRK(0x106b, 0x3000, "iMac", ALC889_FIXUP_MBP_VREF),
- 	SND_PCI_QUIRK(0x106b, 0x3200, "iMac 7,1 Aluminum", ALC882_FIXUP_EAPD),
--	SND_PCI_QUIRK(0x106b, 0x3400, "MacBookAir 1,1", ALC889_FIXUP_MBP_VREF),
-+	SND_PCI_QUIRK(0x106b, 0x3400, "MacBookAir 1,1", ALC889_FIXUP_MBA11_VREF),
- 	SND_PCI_QUIRK(0x106b, 0x3500, "MacBookAir 2,1", ALC889_FIXUP_MBA21_VREF),
- 	SND_PCI_QUIRK(0x106b, 0x3600, "Macbook 3,1", ALC889_FIXUP_MBP_VREF),
- 	SND_PCI_QUIRK(0x106b, 0x3800, "MacbookPro 4,1", ALC889_FIXUP_MBP_VREF),
+ 	intel_teardown_gmbus(dev);
+ 	intel_teardown_mchbar(dev);
++	pm_qos_remove_request(&dev_priv->pm_qos);
+ 	destroy_workqueue(dev_priv->wq);
+ out_mtrrfree:
+ 	arch_phys_wc_del(dev_priv->mm.gtt_mtrr);
 -- 
 1.8.3.2
 
