@@ -1,53 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753520AbaBGVJN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 16:09:13 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35353 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752408AbaBGVJL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 16:09:11 -0500
-Date: Fri, 7 Feb 2014 22:09:05 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] sched: Init idle->on_rq in init_idle()
-Message-ID: <20140207210905.GV5002@laptop.programming.kicks-ass.net>
-References: <1391803122-4425-1-git-send-email-bigeasy@linutronix.de>
- <1391803122-4425-2-git-send-email-bigeasy@linutronix.de>
+	id S1753300AbaBGVL5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 16:11:57 -0500
+Received: from sabe.cs.wisc.edu ([128.105.6.20]:42257 "EHLO sabe.cs.wisc.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752407AbaBGVLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 16:11:55 -0500
+Message-ID: <52F54C04.4010807@cs.wisc.edu>
+Date: Fri, 07 Feb 2014 15:11:32 -0600
+From: Mike Christie <michaelc@cs.wisc.edu>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130917 Thunderbird/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1391803122-4425-2-git-send-email-bigeasy@linutronix.de>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Michele Baldessari <michele@acksyn.org>
+CC: open-iscsi@googlegroups.com, trivial@kernel.org, chorn@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix the arguments order of a few iscsi_conn_printk()
+ calls
+References: <1391789933-15062-1-git-send-email-michele@acksyn.org>
+In-Reply-To: <1391789933-15062-1-git-send-email-michele@acksyn.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 07, 2014 at 08:58:37PM +0100, Sebastian Andrzej Siewior wrote:
-> From: Thomas Gleixner <tglx@linutronix.de>
-
-Distinct lack of rationale here.
-
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> ---
->  kernel/sched/core.c | 1 +
->  1 file changed, 1 insertion(+)
+On 02/07/2014 10:18 AM, Michele Baldessari wrote:
+> A few places had the opcode and itt arguments reversed.
+> Fix the order.
 > 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index b46131e..64f75f9 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -4473,6 +4473,7 @@ void init_idle(struct task_struct *idle, int cpu)
->  	rcu_read_unlock();
->  
->  	rq->curr = rq->idle = idle;
-> +	idle->on_rq = 1;
->  #if defined(CONFIG_SMP)
->  	idle->on_cpu = 1;
->  #endif
-> -- 
-> 1.9.rc1
-> 
+> Reported-by: Josef Moellers <josef.moellers@ts.fujitsu.com>
+> Signed-off-by: Michele Baldessari <michele@acksyn.org>
+
+
+Thanks. I just acked a patch to do the same:
+https://lkml.org/lkml/2014/1/8/754
+
+Have you been hitting that code and with what target and what type of
+command?
+
