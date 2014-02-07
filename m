@@ -1,61 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753087AbaBGVPd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 16:15:33 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:42815 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751897AbaBGVPb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 16:15:31 -0500
-Date: Fri, 7 Feb 2014 13:15:29 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Josh Triplett <josh@joshtriplett.org>
-cc: Rashika Kheria <rashika.kheria@gmail.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org
-Subject: Re: [PATCH 9/9] mm: Remove ifdef condition in include/linux/mm.h
-In-Reply-To: <20140207210705.GB13604@jtriplet-mobl1>
-Message-ID: <alpine.DEB.2.02.1402071314180.4212@chino.kir.corp.google.com>
-References: <a7658fc8f2ab015bffe83de1448cc3db79d2a9fc.1391167128.git.rashika.kheria@gmail.com> <63adb3b97f2869d4c7e76d17ef4aa76b8cf599f3.1391167128.git.rashika.kheria@gmail.com> <alpine.DEB.2.02.1402071304080.4212@chino.kir.corp.google.com>
- <20140207210705.GB13604@jtriplet-mobl1>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753416AbaBGVQy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 16:16:54 -0500
+Received: from fieldses.org ([174.143.236.118]:56841 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751463AbaBGVQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 16:16:52 -0500
+Date: Fri, 7 Feb 2014 16:16:44 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hch@infradead.org, akpm@linux-foundation.org, dhowells@redhat.com,
+        zab@redhat.com, jack@suse.cz, luto@amacapital.net, mszeredi@suse.cz
+Subject: Re: [PATCH 07/13] vfs: lock_two_nondirectories: allow directory args
+Message-ID: <20140207211644.GB8801@fieldses.org>
+References: <1391791751-2533-1-git-send-email-miklos@szeredi.hu>
+ <1391791751-2533-8-git-send-email-miklos@szeredi.hu>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391791751-2533-8-git-send-email-miklos@szeredi.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 7 Feb 2014, Josh Triplett wrote:
-
-> > > diff --git a/include/linux/mm.h b/include/linux/mm.h
-> > > index 1cedd00..5f8348f 100644
-> > > --- a/include/linux/mm.h
-> > > +++ b/include/linux/mm.h
-> > > @@ -1589,10 +1589,8 @@ static inline int __early_pfn_to_nid(unsigned long pfn)
-> > >  #else
-> > >  /* please see mm/page_alloc.c */
-> > >  extern int __meminit early_pfn_to_nid(unsigned long pfn);
-> > > -#ifdef CONFIG_HAVE_ARCH_EARLY_PFN_TO_NID
-> > >  /* there is a per-arch backend function. */
-> > >  extern int __meminit __early_pfn_to_nid(unsigned long pfn);
-> > > -#endif /* CONFIG_HAVE_ARCH_EARLY_PFN_TO_NID */
-> > >  #endif
-> > >  
-> > >  extern void set_dma_reserve(unsigned long new_dma_reserve);
-> > 
-> > Wouldn't it be better to just declare the __early_pfn_to_nid() in 
-> > mm/page_alloc.c to be static?
+On Fri, Feb 07, 2014 at 05:49:05PM +0100, Miklos Szeredi wrote:
+> From: Miklos Szeredi <mszeredi@suse.cz>
 > 
-> Won't that break the ability to override that function in
-> architecture-specific code (as arch/ia64/mm/numa.c does)?
+> lock_two_nondirectories warned if either of its args was a directory.
+> Instead just ignore the directory args.  This is needed for locking in
+> cross rename.
 > 
+> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+> ---
+>  fs/inode.c | 20 ++++++++++++--------
+>  1 file changed, 12 insertions(+), 8 deletions(-)
+> 
+> diff --git a/fs/inode.c b/fs/inode.c
+> index 4bcdad3c9361..763010771cf4 100644
+> --- a/fs/inode.c
+> +++ b/fs/inode.c
+> @@ -944,18 +944,21 @@ EXPORT_SYMBOL(unlock_new_inode);
+>  
+>  /**
+>   * lock_two_nondirectories - take two i_mutexes on non-directory objects
+> + *
+> + * If either or both arguments are directories, then ignore those.
+> + * Therefore zero, one or two objects may be locked by this function.
+> + *
+>   * @inode1: first inode to lock
+>   * @inode2: second inode to lock
+>   */
+>  void lock_two_nondirectories(struct inode *inode1, struct inode *inode2)
+>  {
+> -	WARN_ON_ONCE(S_ISDIR(inode1->i_mode));
+> -	if (inode1 == inode2 || !inode2) {
+> +	if (S_ISDIR(inode1->i_mode)) {
+> +		if (inode2 && !S_ISDIR(inode2->i_mode))
+> +			mutex_lock(&inode2->i_mutex);
+> +	} else if (inode1 == inode2 || !inode2 || S_ISDIR(inode2->i_mode)) {
+>  		mutex_lock(&inode1->i_mutex);
+> -		return;
+> -	}
+> -	WARN_ON_ONCE(S_ISDIR(inode2->i_mode));
+> -	if (inode1 < inode2) {
+> +	} else if (inode1 < inode2) {
+>  		mutex_lock(&inode1->i_mutex);
+>  		mutex_lock_nested(&inode2->i_mutex, I_MUTEX_NONDIR2);
+>  	} else {
 
-Why?  CONFIG_HAVE_ARCH_EARLY_PFN_TO_NID should define where this function 
-is defined so ia64 should have it set and the definition which I'm 
-suggesting be static is only compiled when this is undefined in 
-mm/page_alloc.c.  I'm not sure why we'd want to be messing with the 
-declaration?
+Nit: I find the conditionals here a little complicated.
+
+Would something like this be clearer? (Untested):
+
+	if (inode1 > inode2)
+		swap(inode1, inode2);
+
+	if (inode1 && !S_ISDIR(inode1->i_mode))
+		mutex_lock(&inode1->i_mutex);
+
+	if (inode2 && !S_ISDIR(inode2->i_mode) && inode2 != inode1)
+		mutex_lock_nested(&inode2->i_mutex, I_MUTEX_NONDIR2);
+
+--b.
+
+diff --git a/fs/inode.c b/fs/inode.c
+index 4bcdad3..94e41c8 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -944,24 +944,23 @@ EXPORT_SYMBOL(unlock_new_inode);
+ 
+ /**
+  * lock_two_nondirectories - take two i_mutexes on non-directory objects
++ *
++ * Lock any non-NULL argument that is not a directory.
++ * Zero, one or two objects may be locked by this function.
++ *
+  * @inode1: first inode to lock
+  * @inode2: second inode to lock
+  */
+ void lock_two_nondirectories(struct inode *inode1, struct inode *inode2)
+ {
+-	WARN_ON_ONCE(S_ISDIR(inode1->i_mode));
+-	if (inode1 == inode2 || !inode2) {
+-		mutex_lock(&inode1->i_mutex);
+-		return;
+-	}
+-	WARN_ON_ONCE(S_ISDIR(inode2->i_mode));
+-	if (inode1 < inode2) {
++	if (inode1 > inode2)
++		swap(inode1, inode2);
++
++	if (inode1 && !S_ISDIR(inode1->i_mode))
+ 		mutex_lock(&inode1->i_mutex);
++
++	if (inode2 && !S_ISDIR(inode2->i_mode) && inode2 != inode1)
+ 		mutex_lock_nested(&inode2->i_mutex, I_MUTEX_NONDIR2);
+-	} else {
+-		mutex_lock(&inode2->i_mutex);
+-		mutex_lock_nested(&inode1->i_mutex, I_MUTEX_NONDIR2);
+-	}
+ }
+ EXPORT_SYMBOL(lock_two_nondirectories);
+ 
+@@ -972,8 +971,9 @@ EXPORT_SYMBOL(lock_two_nondirectories);
+  */
+ void unlock_two_nondirectories(struct inode *inode1, struct inode *inode2)
+ {
+-	mutex_unlock(&inode1->i_mutex);
+-	if (inode2 && inode2 != inode1)
++	if (inode1 && !S_ISDIR(inode1->i_mode))
++		mutex_unlock(&inode1->i_mutex);
++	if (inode2 && !S_ISDIR(inode2->i_mode) && inode2 != inode1)
+ 		mutex_unlock(&inode2->i_mutex);
+ }
+ EXPORT_SYMBOL(unlock_two_nondirectories);
