@@ -1,68 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752721AbaBGOqf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 09:46:35 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:54070 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751901AbaBGOqd (ORCPT
+	id S1752216AbaBGOtq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 09:49:46 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:47729 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751476AbaBGOtp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 09:46:33 -0500
-Message-ID: <1391784386.5475.103.camel@marge.simpson.net>
-Subject: Re: [ANNOUNCE] 3.12.9-rt13
-From: Mike Galbraith <bitbucket@online.de>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, rostedt@goodmis.org,
-        John Kacur <jkacur@redhat.com>
-Date: Fri, 07 Feb 2014 15:46:26 +0100
-In-Reply-To: <20140207085701.GB23668@linutronix.de>
-References: <20140203194841.GA17108@linutronix.de>
-	 <1391526218.5532.33.camel@marge.simpson.net>
-	 <20140207085701.GB23668@linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:esQ+a7OVkupeNtosEVL5GZJpdIEdg8EVgOuaOEmsWDV
- Exa8FTw4Sdyop2lSh8WsOIqtTcQrG92PVEuZOOfwylWTMkzH8r
- ao7vboTY5tcd4vA6MT1DaoI8RnUPRV88wFGdpbtXY2xim1hyBG
- gUcrNKTDxNRvGA4JaBAWkmtmqs/Howcxbb1U2Myw1il7VRlMsx
- n8d4Yz/XuCiI+2zdYmfl5CC4auntKLxxS2TM9B96RSOP5vd1kr
- Ws5P2inCYqJb3+cu/+JY2lvz2fOhAhktH2wD0mRRho2gcs0jOA
- 5ooUTm3xnItLGQ4b2TRTlrTSeUVZf0XaMwpBk93E4AqjyU+91H
- tawMrBIYGLIXlIY/a/UVh93oUeWl77RH9g75g3+wo9WpalUQQ1
- tM69pqnpXI26A==
+	Fri, 7 Feb 2014 09:49:45 -0500
+Message-ID: <52F4F279.6010006@free-electrons.com>
+Date: Fri, 07 Feb 2014 15:49:29 +0100
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>
+CC: =?UTF-8?B?RW1pbGlvIEzDs3Bleg==?= <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH] clk: respect the clock dependencies in of_clk_init
+References: <1391554766-11285-1-git-send-email-gregory.clement@free-electrons.com> <52F4DA40.4090804@elopez.com.ar> <20140207142430.GU8533@titan.lakedaemon.net> <20140207144325.GA8218@localhost>
+In-Reply-To: <20140207144325.GA8218@localhost>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-02-07 at 09:57 +0100, Sebastian Andrzej Siewior wrote: 
-> * Mike Galbraith | 2014-02-04 16:03:38 [+0100]:
+On 07/02/2014 15:43, Ezequiel Garcia wrote:
+> On Fri, Feb 07, 2014 at 09:24:30AM -0500, Jason Cooper wrote:
+>> On Fri, Feb 07, 2014 at 10:06:08AM -0300, Emilio López wrote:
+>>
+>> [snip a great explanation]
+>>
+>> Guys, can I get some Tested-by's on this?
+>>
 > 
-> >On Mon, 2014-02-03 at 20:48 +0100, Sebastian Andrzej Siewior wrote:
-> >
-> >> Known issues:
-> >
-> >> Mike said that it caused two of his 64 CPUs to spin for five minutes
-> >>         doing nothing. Therefore it is disabled in the queue. Everyone
-> >>         who wants test it may do so :)
-> >
-> >I put rt13 on an 8 socket Opetron (48 core) box, with patch enabled.  It
-> >box did NOT reproduce the hangs the 8 socket (1 node, bleh) DL980 did.
-> >
-> >Nor did it explode running hotplug stress, but then it deadlocks before
-> >BOOM would have happened on the DL980.  kdump isn't working properly on
-> >this box (not an rt issue, userspace), so..
+> In case someone missed Emilio's comment about it, I gave his oneliner
+> a test on A370 Reference Design. It worked just as well as Sebastian's.
+
+Well ok it's working but this patch is not better than Sebastian, it is
+even worth. I don't think it is a good idea at all to totally ignore the
+information given by the device tree.
+
 > 
-> Okay, so this is at some point good news. Thank you.
+> Tested-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+> 
+>>> -----8<------
+>>>
+>>> From ffdb49506e3ce92090c15e1f9b37f4d465097ac1 Mon Sep 17 00:00:00 2001
+>>> From: =?UTF-8?q?Emilio=20L=C3=B3pez?= <emilio@elopez.com.ar>
+>>> Date: Thu, 6 Feb 2014 18:07:07 -0300
+>>> Subject: [PATCH] clk: mvebu: fix name dependency during registration time
+>>>
+>>> Currently, mvebu_clk_gating_setup has a silly dependency on clock
+>>> registration order just to gather the parent clock name. This is
+>>> completely unnecesary, as it supports using an already provided name
+>>> via the clk_gating_soc_desc structs, and we can therefore solve this
+>>> issue with a 69+/- line patch. But, given that the parent name is
+>>> always "tclk" as default-hardcoded on mvebu_coreclk_setup(), we can
+>>> just default-hardcode it here too and get away with solving this
+>>> problem with a one-liner.
+>>> ---
+>>>  drivers/clk/mvebu/common.c | 2 +-
+>>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>>
+>>> diff --git a/drivers/clk/mvebu/common.c b/drivers/clk/mvebu/common.c
+>>> index 25ceccf..6c63b43 100644
+>>> --- a/drivers/clk/mvebu/common.c
+>>> +++ b/drivers/clk/mvebu/common.c
+>>> @@ -121,7 +121,7 @@ void __init mvebu_clk_gating_setup(struct
+>>> device_node *np,
+>>>  	struct clk_gating_ctrl *ctrl;
+>>>  	struct clk *clk;
+>>>  	void __iomem *base;
+>>> -	const char *default_parent = NULL;
+>>> +	const char *default_parent = "tclk";
+>>>  	int n;
+>>>
+>>>  	base = of_iomap(np, 0);
+>>> -- 
+>>> 1.8.5.3
+> 
 
-I've been letting other big boxen play around the clock distro build
-slave and whatnot, with no sign of trouble.
 
-I'm raising an eyebrow in the general direction of DL980 test box.  Its
-microscopic, and more importantly, unsupported, memory configuration
-might be more than a mere performance hindrance.
-
--Mike
-
+-- 
+Gregory Clement, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
