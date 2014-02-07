@@ -1,74 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755333AbaBGMTV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:19:21 -0500
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:38409 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754179AbaBGMTO (ORCPT
+	id S1755372AbaBGMUH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:20:07 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42186 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753379AbaBGLv1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 07:19:14 -0500
-Date: Fri, 7 Feb 2014 17:49:09 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Armin Schindler <mac@melware.de>, Karsten Keil <isdn@linux-pingi.de>,
-        netdev@vger.kernel.org, josh@joshtriplett.org
-Subject: [PATCH 02/26] drivers: isdn: Move prototype declaration to header
- file um_idi.h from um_idi.c
-Message-ID: <a38afb37d39385b9dc4eac5c351b7b46048a873e.1390408513.git.rashika.kheria@gmail.com>
-References: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 7 Feb 2014 06:51:27 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Takashi Iwai <tiwai@suse.de>, Jiri Slaby <jslaby@suse.cz>,
+        David Airlie <airlied@linux.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Airlie <airlied@redhat.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 162/233] drm/cirrus: correct register values for 16bpp
+Date: Fri,  7 Feb 2014 11:46:21 +0000
+Message-Id: <1391773652-25214-163-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
+References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move prototype declaration of functions to header file
-hardware/eicon/um_idi.h because they are used by more than one file.
+3.11.10.4 -stable review patch.  If anyone has any objections, please let me know.
 
-This eliminates the following warnings in hardware/eicon/divasi.c:
-drivers/isdn/hardware/eicon/divasi.c:446:6: warning: no previous prototype for ‘diva_os_wakeup_read’ [-Wmissing-prototypes]
-drivers/isdn/hardware/eicon/divasi.c:453:6: warning: no previous prototype for ‘diva_os_wakeup_close’ [-Wmissing-prototypes]
+------------------
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+From: Takashi Iwai <tiwai@suse.de>
+
+commit 2510538fa000dd13a3e57b79bf073ffb1748976c upstream.
+
+When the mode is set with 16bpp on QEMU, the output gets totally broken.
+The culprit is the bogus register values set for 16bpp, which was likely
+copied from from a wrong place.
+
+Addresses https://bugzilla.novell.com/show_bug.cgi?id=799216
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: David Airlie <airlied@linux.ie>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/isdn/hardware/eicon/um_idi.c |    5 -----
- drivers/isdn/hardware/eicon/um_idi.h |    2 ++
- 2 files changed, 2 insertions(+), 5 deletions(-)
+ drivers/gpu/drm/cirrus/cirrus_mode.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/isdn/hardware/eicon/um_idi.c b/drivers/isdn/hardware/eicon/um_idi.c
-index e151971..676663a 100644
---- a/drivers/isdn/hardware/eicon/um_idi.c
-+++ b/drivers/isdn/hardware/eicon/um_idi.c
-@@ -14,11 +14,6 @@
- #define DIVAS_MAX_XDI_ADAPTERS	64
- 
- /* --------------------------------------------------------------------------
--   IMPORTS
--   -------------------------------------------------------------------------- */
--extern void diva_os_wakeup_read(void *os_context);
--extern void diva_os_wakeup_close(void *os_context);
--/* --------------------------------------------------------------------------
-    LOCALS
-    -------------------------------------------------------------------------- */
- static LIST_HEAD(adapter_q);
-diff --git a/drivers/isdn/hardware/eicon/um_idi.h b/drivers/isdn/hardware/eicon/um_idi.h
-index ffb88f7..00ca1e7 100644
---- a/drivers/isdn/hardware/eicon/um_idi.h
-+++ b/drivers/isdn/hardware/eicon/um_idi.h
-@@ -34,6 +34,8 @@ int diva_um_idi_write(void *entity,
- int diva_user_mode_idi_ind_ready(void *entity, void *os_handle);
- void *diva_um_id_get_os_context(void *entity);
- int diva_os_get_context_size(void);
-+void diva_os_wakeup_read(void *os_context);
-+void diva_os_wakeup_close(void *os_context);
- int divas_um_idi_entity_assigned(void *entity);
- int divas_um_idi_entity_start_remove(void *entity);
- 
+diff --git a/drivers/gpu/drm/cirrus/cirrus_mode.c b/drivers/gpu/drm/cirrus/cirrus_mode.c
+index 60685b2..379a47e 100644
+--- a/drivers/gpu/drm/cirrus/cirrus_mode.c
++++ b/drivers/gpu/drm/cirrus/cirrus_mode.c
+@@ -273,8 +273,8 @@ static int cirrus_crtc_mode_set(struct drm_crtc *crtc,
+ 		sr07 |= 0x11;
+ 		break;
+ 	case 16:
+-		sr07 |= 0xc1;
+-		hdr = 0xc0;
++		sr07 |= 0x17;
++		hdr = 0xc1;
+ 		break;
+ 	case 24:
+ 		sr07 |= 0x15;
 -- 
-1.7.9.5
+1.8.3.2
 
