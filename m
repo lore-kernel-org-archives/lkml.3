@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755165AbaBGLvh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:51:37 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42213 "EHLO
+	id S932429AbaBGLvl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:51:41 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42228 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755136AbaBGLve (ORCPT
+	with ESMTP id S1755136AbaBGLvi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:51:34 -0500
+	Fri, 7 Feb 2014 06:51:38 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, Takashi Iwai <tiwai@suse.de>,
+Cc: Steven Rostedt <rostedt@goodmis.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 168/233] ALSA: bits vs bytes bug in snd_card_create()
-Date: Fri,  7 Feb 2014 11:46:27 +0000
-Message-Id: <1391773652-25214-169-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 171/233] tracing: Check if tracing is enabled in trace_puts()
+Date: Fri,  7 Feb 2014 11:46:30 +0000
+Message-Id: <1391773652-25214-172-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -27,46 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 4c3773eda49c872a3034382f8ec3080002e715bf upstream.
+commit 3132e107d608f8753240d82d61303c500fd515b4 upstream.
 
-The test here is intended intended to prevent shift wrapping bugs when
-we do "1U << idx2".  We should consider the number of bits in a u32
-instead of the number of bytes.
+If trace_puts() is used very early in boot up, it can crash the machine
+if it is called before the ring buffer is allocated. If a trace_printk()
+is used with no arguments, then it will be converted into a trace_puts()
+and suffer the same fate.
 
-[fix another chunk similarly by tiwai]
-
-Fixes: 7bb2491b35a2 ('ALSA: Add kconfig to specify the max card numbers')
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Fixes: 09ae72348ecc "tracing: Add trace_puts() for even faster trace_printk() tracing"
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/core/init.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/trace/trace.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/sound/core/init.c b/sound/core/init.c
-index 6b90871..d047851 100644
---- a/sound/core/init.c
-+++ b/sound/core/init.c
-@@ -170,7 +170,7 @@ int snd_card_create(int idx, const char *xid,
- 	if (idx < 0) {
- 		for (idx2 = 0; idx2 < SNDRV_CARDS; idx2++) {
- 			/* idx == -1 == 0xffff means: take any free slot */
--			if (idx2 < sizeof(int) && !(idx & (1U << idx2)))
-+			if (idx2 < 32 && !(idx & (1U << idx2)))
- 				continue;
- 			if (!test_bit(idx2, snd_cards_lock)) {
- 				if (module_slot_match(module, idx2)) {
-@@ -183,7 +183,7 @@ int snd_card_create(int idx, const char *xid,
- 	if (idx < 0) {
- 		for (idx2 = 0; idx2 < SNDRV_CARDS; idx2++) {
- 			/* idx == -1 == 0xffff means: take any free slot */
--			if (idx2 < sizeof(int) && !(idx & (1U << idx2)))
-+			if (idx2 < 32 && !(idx & (1U << idx2)))
- 				continue;
- 			if (!test_bit(idx2, snd_cards_lock)) {
- 				if (!slots[idx2] || !*slots[idx2]) {
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 878785b..f788ecf 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -435,6 +435,9 @@ int __trace_puts(unsigned long ip, const char *str, int size)
+ 	unsigned long irq_flags;
+ 	int alloc;
+ 
++	if (unlikely(tracing_selftest_running || tracing_disabled))
++		return 0;
++
+ 	alloc = sizeof(*entry) + size + 2; /* possible \n added */
+ 
+ 	local_save_flags(irq_flags);
+@@ -475,6 +478,9 @@ int __trace_bputs(unsigned long ip, const char *str)
+ 	unsigned long irq_flags;
+ 	int size = sizeof(struct bputs_entry);
+ 
++	if (unlikely(tracing_selftest_running || tracing_disabled))
++		return 0;
++
+ 	local_save_flags(irq_flags);
+ 	buffer = global_trace.trace_buffer.buffer;
+ 	event = trace_buffer_lock_reserve(buffer, TRACE_BPUTS, size,
 -- 
 1.8.3.2
 
