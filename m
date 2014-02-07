@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752228AbaBGOoW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 09:44:22 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:52210 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751439AbaBGOoV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 09:44:21 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: AKASHI Takahiro <takahiro.akashi@linaro.org>, wad@chromium.org,
-        catalin.marinas@arm.com, will.deacon@arm.com,
-        linaro-kernel@lists.linaro.org, patches@linaro.org, arndb@arndb.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] arm64: Add seccomp support
-Date: Fri, 07 Feb 2014 15:44:15 +0100
-Message-ID: <2659759.AA5HtBcWYl@wuerfel>
-User-Agent: KMail/4.11.3 (Linux/3.11.0-15-generic; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <1391767892-5395-2-git-send-email-takahiro.akashi@linaro.org>
-References: <1391767892-5395-1-git-send-email-takahiro.akashi@linaro.org> <1391767892-5395-2-git-send-email-takahiro.akashi@linaro.org>
+	id S1752877AbaBGOor (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 09:44:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40352 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752305AbaBGOoq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 09:44:46 -0500
+Date: Fri, 7 Feb 2014 15:46:40 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>,
+        linux-wireless@vger.kernel.org, wil6210@qca.qualcomm.com,
+        linux-pci@vger.kernel.org
+Subject: [PATCH] wil6210: Fix switch operator "missing break?" warning
+Message-ID: <20140207144639.GA10939@dhcp-26-207.brq.redhat.com>
+References: <cover.1389904166.git.agordeev@redhat.com>
+ <aedc9b7eb82232204a7d65b4c7d3302ba6ba3892.1389904167.git.agordeev@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:JfQEvkfEhBeJOFvk05V3Uom6Yb8mF8pus1Af7xKZTUP
- 81OjGqALLQpfSyLaGNba1lYyEE5pyEAA6gDYt9i0ewsTWOykau
- NoImWBBFIFmClvQZqrH0B9xKciHxtKtoUI0LoJyVO+4U9A5Tyk
- vNYr9HEmUL0cRcyLBMRwpT2WLsODaLrA0aOqImRf2H+NsnyBpc
- qwb/Fek08wjkjT5clj1JO7fIYZLA3suFv002ukIPFaItb9qdYA
- BDCXExAGeo+GVn9vl7zL98v54H1ybshRhYcQzhhIy/p7jkjx5u
- B09S4qqeY3kY1YneUJijAPp9cH7sbl+xAT8TPsbDEnRsMxR6da
- AN7st8dfffMXzKtM4f2w=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <aedc9b7eb82232204a7d65b4c7d3302ba6ba3892.1389904167.git.agordeev@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 07 February 2014 19:11:31 AKASHI Takahiro wrote:
-> diff --git a/arch/arm64/include/asm/seccomp.h b/arch/arm64/include/asm/seccomp.h
-> new file mode 100644
-> index 0000000..3482155
-> --- /dev/null
-> +++ b/arch/arm64/include/asm/seccomp.h
-> @@ -0,0 +1,28 @@
-> +/*
-> + * arch/arm64/include/asm/seccomp.h
-> + *
-> + * Copyright (C) 2014 Linaro Limited
-> + * Author: AKASHI Takahiro <takahiro.akashi@linaro.org>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +#ifndef _ASM_SECCOMP_H
-> +#define _ASM_SECCOMP_H
-> +
-> +#include <asm/unistd.h>
-> +
-> +#ifdef CONFIG_COMPAT
-> +#define __NR_seccomp_read_32           __NR_compat_read
-> +#define __NR_seccomp_write_32          __NR_compat_write
-> +#define __NR_seccomp_exit_32           __NR_compat_exit
-> +#define __NR_seccomp_sigreturn_32      __NR_compat_sigreturn
-> +#endif /* CONFIG_COMPAT */
-> +
-> +#define __NR_seccomp_read              __NR_read
-> +#define __NR_seccomp_write             __NR_write
-> +#define __NR_seccomp_exit              __NR_exit
-> +#define __NR_seccomp_sigreturn         __NR_rt_sigreturn
-> +
-> +#endif /* _ASM_SECCOMP_H */
-> 
+This update fixes a warning introduced with commit bc977ba1
+("wil6210: Use pci_enable_msi_range() instead of pci_enable_msi_block()")
 
-This file looks extremely generic and can be shared by every
-architecture other than MIPS for all I can tell.
+drivers/net/wireless/ath/wil6210/pcie_bus.c:65 wil_if_pcie_enable()
+warn: missing break? reassigning 'use_msi'
 
-Please add it to include/asm-generic instead of arch/arm64,
-and add a line to arch/arm64/include/asm/Kbuild.
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+---
+ drivers/net/wireless/ath/wil6210/pcie_bus.c |   12 ++++--------
+ 1 files changed, 4 insertions(+), 8 deletions(-)
 
-	Arnd
+diff --git a/drivers/net/wireless/ath/wil6210/pcie_bus.c b/drivers/net/wireless/ath/wil6210/pcie_bus.c
+index 4e1bf54..e1c8cc4 100644
+--- a/drivers/net/wireless/ath/wil6210/pcie_bus.c
++++ b/drivers/net/wireless/ath/wil6210/pcie_bus.c
+@@ -51,16 +51,12 @@ static int wil_if_pcie_enable(struct wil6210_priv *wil)
+ 		use_msi = 1;
+ 	}
+ 
+-	switch (use_msi) {
+-	case 3:
+-		if (pci_enable_msi_range(pdev, 3, 3) > 0)
+-			break;
++	if (use_msi == 3 && pci_enable_msi_range(pdev, 3, 3) < 0) {
+ 		wil_err(wil, "3 MSI mode failed, try 1 MSI\n");
+ 		use_msi = 1;
+-		/* fallthrough */
+-	case 1:
+-		if (!pci_enable_msi(pdev))
+-			break;
++	}
++
++	if (use_msi == 1 && pci_enable_msi(pdev)) {
+ 		wil_err(wil, "pci_enable_msi failed, use INTx\n");
+ 		use_msi = 0;
+ 	}
+-- 
+1.7.7.6
+
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
