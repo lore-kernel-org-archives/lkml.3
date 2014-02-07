@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751433AbaBGX1Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 18:27:16 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:32909 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051AbaBGX1N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 18:27:13 -0500
-Message-ID: <1391815794.1155.68.camel@haakon3.risingtidesystems.com>
-Subject: Re: Linux 3.13.2
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@vger.kernel.org, lwn@lwn.net,
-        Jiri Slaby <jslaby@suse.cz>,
-        target-devel <target-devel@vger.kernel.org>
-Date: Fri, 07 Feb 2014 15:29:54 -0800
-In-Reply-To: <20140206200134.GA2213@kroah.com>
-References: <20140206200134.GA2213@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751625AbaBGX2r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 18:28:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31340 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751150AbaBGX2q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 18:28:46 -0500
+Date: Sat, 8 Feb 2014 07:28:15 +0800
+From: Dave Young <dyoung@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Kees Cook <keescook@chromium.org>, Cong Ding <dinggnu@gmail.com>,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        Kexec Mailing List <kexec@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mathias Krause <minipli@googlemail.com>,
+        Michael Davidson <md@google.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [GIT PULL] x86/kaslr for v3.14
+Message-ID: <20140207232815.GD3840@dhcp-16-126.nay.redhat.com>
+References: <52E5EFAF.3060609@linux.intel.com>
+ <CAFLxGvxJ0A6hZ52RWffkg_zXXScyPn10P4HcKvdAXfE43h32Eg@mail.gmail.com>
+ <52E601DA.7010605@zytor.com>
+ <20140130220708.GP9951@redhat.com>
+ <CAGXu5jKp0j71ucE7uOWRa+gQM1Wzp=_KdByJK4XnACTwiCW4ow@mail.gmail.com>
+ <20140207144914.GA5949@redhat.com>
+ <52F503FD.8080607@linux.intel.com>
+ <20140207162408.GD6967@redhat.com>
+ <20140207231626.GA3840@dhcp-16-126.nay.redhat.com>
+ <52F56A40.60707@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52F56A40.60707@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-02-06 at 12:01 -0800, Greg KH wrote:
-> I'm announcing the release of the 3.13.2 kernel.
+On 02/07/14 at 03:20pm, H. Peter Anvin wrote:
+> On 02/07/2014 03:16 PM, Dave Young wrote:
+> > 
+> > Hi Vivek,
+> > 
+> > Chaowang <chaowang@redhat.com> is looking into passing setup_data SETUP_E820_EXT
+> > instead of using exactmap. Previously Thomas Renninger tried passing them in e820.
+> > I did not find the old thread, but I remember it's not enough because of the
+> > 128 entries limitation. 
+> > 
 > 
-> All users of the 3.13 kernel series must upgrade.
+> THERE IS NO SUCH LIMITATION.
 > 
-> The updated 3.13.y git tree can be found at:
-> 	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.13.y
-> and can be browsed at the normal kernel.org git web browser:
-> 	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
-> 
-> thanks,
-> 
-> greg k-h
-> 
+> Only 128 slots fit in struct boot_params, but additional entries can be
+> added to the setup_data linked list.
 
-Hi Greg,
-
-I noticed that the following two target upstream patches in v3.14-rc1
-did not make it into v3.13.y or stable-queue.git:
-
-commit 6f6b5d1ec56acdeab0503d2b823f6f88a0af493e
-Author: Kent Overstreet <kmo@daterainc.com>
-Date:   Sun Jan 19 08:26:37 2014 +0000
-
-    percpu_ida: Make percpu_ida_alloc + callers accept task state bitmask
-
-commit 555b270e25b0279b98083518a85f4b1da144a181
-Author: Nicholas Bellinger <nab@linux-iscsi.org>
-Date:   Mon Jan 20 03:36:24 2014 +0000
-
-    iscsi-target: Fix connection reset hang with percpu_ida_alloc
-
-These two patches have been respun for v3.13.y code here:
-
-http://www.spinics.net/lists/target-devel/msg06191.html
-http://www.spinics.net/lists/target-devel/msg06192.html
-
-Please apply for v3.13.y ASAP.
-
-Thank you,
-
---nab
-
+Ok, I did not describe it right, I actually means the space limit. Thanks for
+clarifying. 
