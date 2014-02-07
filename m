@@ -1,111 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755451AbaBGMnc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:43:32 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41951 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753283AbaBGLu3 (ORCPT
+	id S1755988AbaBGMnn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:43:43 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:42906 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754064AbaBGMnh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:50:29 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 119/233] iwlwifi: pcie: enable oscillator for L1 exit
-Date: Fri,  7 Feb 2014 11:45:38 +0000
-Message-Id: <1391773652-25214-120-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
-References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Fri, 7 Feb 2014 07:43:37 -0500
+Date: Fri, 7 Feb 2014 18:13:31 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Armin Schindler <mac@melware.de>, Karsten Keil <isdn@linux-pingi.de>,
+        netdev@vger.kernel.org, josh@joshtriplett.org
+Subject: [PATCH 20/26] drivers: isdn: Move prototype declaration to header
+ file platform.h from os_bri.c
+Message-ID: <12fda898932a31976ad618bfd170ccff77b675ac.1390408518.git.rashika.kheria@gmail.com>
+References: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.4 -stable review patch.  If anyone has any objections, please let me know.
+Move prototype declaration of function to header file because they are
+used by more than one file.
 
-------------------
+This eliminates the following warnings in hardware/eicon/s_bri.c:
+drivers/isdn/hardware/eicon/s_bri.c:163:6: warning: no previous prototype for ‘prepare_maestra_functions’ [-Wmissing-prototypes]
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-
-commit 2d93aee152b1758a94a18fe15d72153ba73b5679 upstream.
-
-Enabling the oscillator consumes slightly more power (100uA)
-but allows to make sure that we exit from L1 on time.
-
-Not doing so might lead to a PCIe specification violation
-since we might wake up from L1 at the wrong time.
-This issue has been identified on 3160 and 7260 only.
-On older NICs L1 off is not enabled, on newer NICs (7265),
-the issue is fixed.
-
-When the bug occurs the user sees that the NIC has
-disappeared from the PCI bridge, any access to the device
-returns 0xff.
-
-This fixes:
-	https://bugzilla.kernel.org/show_bug.cgi?id=64541
-
-and has been extensively discussed here:
-	http://markmail.org/thread/mfmpzqt3r333n4bo
-
-Fixes: 99cd47142399 ("iwlwifi: add 7000 series device configuration")
-Reported-and-tested-by: wzyboy <wzyboy@wzyboy.org>
-Reviewed-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- drivers/net/wireless/iwlwifi/iwl-prph.h   |  4 ++++
- drivers/net/wireless/iwlwifi/pcie/trans.c | 22 ++++++++++++++++++++++
- 2 files changed, 26 insertions(+)
+ drivers/isdn/hardware/eicon/os_bri.c   |    5 -----
+ drivers/isdn/hardware/eicon/platform.h |    2 ++
+ 2 files changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/net/wireless/iwlwifi/iwl-prph.h b/drivers/net/wireless/iwlwifi/iwl-prph.h
-index ff8cc75..4e6dfba 100644
---- a/drivers/net/wireless/iwlwifi/iwl-prph.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-prph.h
-@@ -272,4 +272,8 @@ static inline unsigned int SCD_QUEUE_STATUS_BITS(unsigned int chnl)
+diff --git a/drivers/isdn/hardware/eicon/os_bri.c b/drivers/isdn/hardware/eicon/os_bri.c
+index c7a45e6..b61e335 100644
+--- a/drivers/isdn/hardware/eicon/os_bri.c
++++ b/drivers/isdn/hardware/eicon/os_bri.c
+@@ -20,11 +20,6 @@
+ #include "diva.h"
  
- /*********************** END TX SCHEDULER *************************************/
+ /*
+-**  IMPORTS
+-*/
+-extern void prepare_maestra_functions(PISDN_ADAPTER IoAdapter);
+-
+-/*
+ **  LOCALS
+ */
+ static int bri_bar_length[3] = {
+diff --git a/drivers/isdn/hardware/eicon/platform.h b/drivers/isdn/hardware/eicon/platform.h
+index d648ab7..a507cea 100644
+--- a/drivers/isdn/hardware/eicon/platform.h
++++ b/drivers/isdn/hardware/eicon/platform.h
+@@ -185,6 +185,8 @@ void idifunc_finit(void);
+ int diddfunc_init(void);
+ void diddfunc_finit(void);
  
-+/* Oscillator clock */
-+#define OSC_CLK				(0xa04068)
-+#define OSC_CLK_FORCE_CONTROL		(0x8)
++void prepare_maestra_functions(PISDN_ADAPTER IoAdapter);
 +
- #endif				/* __iwl_prph_h__ */
-diff --git a/drivers/net/wireless/iwlwifi/pcie/trans.c b/drivers/net/wireless/iwlwifi/pcie/trans.c
-index ca06967..6c61ee5 100644
---- a/drivers/net/wireless/iwlwifi/pcie/trans.c
-+++ b/drivers/net/wireless/iwlwifi/pcie/trans.c
-@@ -206,6 +206,28 @@ static int iwl_pcie_apm_init(struct iwl_trans *trans)
- 		goto out;
- 	}
- 
-+	if (trans->cfg->host_interrupt_operation_mode) {
-+		/*
-+		 * This is a bit of an abuse - This is needed for 7260 / 3160
-+		 * only check host_interrupt_operation_mode even if this is
-+		 * not related to host_interrupt_operation_mode.
-+		 *
-+		 * Enable the oscillator to count wake up time for L1 exit. This
-+		 * consumes slightly more power (100uA) - but allows to be sure
-+		 * that we wake up from L1 on time.
-+		 *
-+		 * This looks weird: read twice the same register, discard the
-+		 * value, set a bit, and yet again, read that same register
-+		 * just to discard the value. But that's the way the hardware
-+		 * seems to like it.
-+		 */
-+		iwl_read_prph(trans, OSC_CLK);
-+		iwl_read_prph(trans, OSC_CLK);
-+		iwl_set_bits_prph(trans, OSC_CLK, OSC_CLK_FORCE_CONTROL);
-+		iwl_read_prph(trans, OSC_CLK);
-+		iwl_read_prph(trans, OSC_CLK);
-+	}
-+
- 	/*
- 	 * Enable DMA clock and wait for it to stabilize.
- 	 *
+ /*
+ ** use skbuffs for message buffer
+ */
 -- 
-1.8.3.2
+1.7.9.5
 
