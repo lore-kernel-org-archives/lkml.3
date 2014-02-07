@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753888AbaBGLfY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:35:24 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41086 "EHLO
+	id S1753103AbaBGLYr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:24:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40905 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750868AbaBGLYs (ORCPT
+	with ESMTP id S1750868AbaBGLX6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:24:48 -0500
+	Fri, 7 Feb 2014 06:23:58 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+Cc: Malcolm Priestley <tvboxspy@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 56/88] audit: correct a type mismatch in audit_syscall_exit()
-Date: Fri,  7 Feb 2014 11:22:53 +0000
-Message-Id: <1391772205-22239-57-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 21/88] staging: vt6656: [BUG] BBvUpdatePreEDThreshold Always set sensitivity on bScanning
+Date: Fri,  7 Feb 2014 11:22:18 +0000
+Message-Id: <1391772205-22239-22-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
 References: <1391772205-22239-1-git-send-email-luis.henriques@canonical.com>
@@ -29,41 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+From: Malcolm Priestley <tvboxspy@gmail.com>
 
-commit 06bdadd7634551cfe8ce071fe44d0311b3033d9e upstream.
+commit 8f248dae133668bfb8e9379b4b3f0571c858b24a upstream.
 
-audit_syscall_exit() saves a result of regs_return_value() in intermediate
-"int" variable and passes it to __audit_syscall_exit(), which expects its
-second argument as a "long" value.  This will result in truncating the
-value returned by a system call and making a wrong audit record.
+byBBPreEDIndex value is initially 0, this means that from
+cold BBvUpdatePreEDThreshold is never set.
 
-I don't know why gcc compiler doesn't complain about this, but anyway it
-causes a problem at runtime on arm64 (and probably most 64-bit archs).
+This means that sensitivity may be in an ambiguous state,
+failing to scan any wireless points or at least distant ones.
 
-Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Eric Paris <eparis@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/linux/audit.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/vt6656/baseband.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
-diff --git a/include/linux/audit.h b/include/linux/audit.h
-index 41b4e49..8858e95 100644
---- a/include/linux/audit.h
-+++ b/include/linux/audit.h
-@@ -488,7 +488,7 @@ static inline void audit_syscall_exit(void *pt_regs)
- {
- 	if (unlikely(current->audit_context)) {
- 		int success = is_syscall_success(pt_regs);
--		int return_code = regs_return_value(pt_regs);
-+		long return_code = regs_return_value(pt_regs);
+diff --git a/drivers/staging/vt6656/baseband.c b/drivers/staging/vt6656/baseband.c
+index 858e2a8..4034281 100644
+--- a/drivers/staging/vt6656/baseband.c
++++ b/drivers/staging/vt6656/baseband.c
+@@ -1634,7 +1634,6 @@ BBvUpdatePreEDThreshold(
  
- 		__audit_syscall_exit(success, return_code);
- 	}
+             if( bScanning )
+             {   // need Max sensitivity //RSSI -69, -70,....
+-                if(pDevice->byBBPreEDIndex == 0) break;
+                 pDevice->byBBPreEDIndex = 0;
+                 ControlvWriteByte(pDevice, MESSAGE_REQUEST_BBREG, 0xC9, 0x00); //CR201(0xC9)
+                 ControlvWriteByte(pDevice, MESSAGE_REQUEST_BBREG, 0xCE, 0x30); //CR206(0xCE)
+@@ -1777,7 +1776,6 @@ BBvUpdatePreEDThreshold(
+ 
+             if( bScanning )
+             {   // need Max sensitivity  //RSSI -69, -70, ...
+-                if(pDevice->byBBPreEDIndex == 0) break;
+                 pDevice->byBBPreEDIndex = 0;
+                 ControlvWriteByte(pDevice, MESSAGE_REQUEST_BBREG, 0xC9, 0x00); //CR201(0xC9)
+                 ControlvWriteByte(pDevice, MESSAGE_REQUEST_BBREG, 0xCE, 0x24); //CR206(0xCE)
+@@ -1929,7 +1927,6 @@ BBvUpdatePreEDThreshold(
+         case RF_VT3342A0: //RobertYu:20060627, testing table
+             if( bScanning )
+             {   // need Max sensitivity  //RSSI -67, -68, ...
+-                if(pDevice->byBBPreEDIndex == 0) break;
+                 pDevice->byBBPreEDIndex = 0;
+                 ControlvWriteByte(pDevice, MESSAGE_REQUEST_BBREG, 0xC9, 0x00); //CR201(0xC9)
+                 ControlvWriteByte(pDevice, MESSAGE_REQUEST_BBREG, 0xCE, 0x38); //CR206(0xCE)
 -- 
 1.8.3.2
 
