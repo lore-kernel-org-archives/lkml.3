@@ -1,102 +1,534 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751488AbaBGIbK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 03:31:10 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:41954 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157AbaBGIbI (ORCPT
+	id S1751416AbaBGIlQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 03:41:16 -0500
+Received: from 3.mo1.mail-out.ovh.net ([46.105.60.232]:56162 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751127AbaBGIlO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 03:31:08 -0500
-X-AuditID: cbfee690-b7f266d00000287c-41-52f499ca4447
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Lars-Peter Clausen'" <lars@metafoo.de>
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        "'Alessandro Zummo'" <a.zummo@towertech.it>,
-        rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>,
-        "'Thierry Reding'" <thierry.reding@gmail.com>
-References: <000401cf23d9$d1df6e30$759e4a90$%han@samsung.com>
- <000701cf23da$688e1b60$39aa5220$%han@samsung.com> <52F495A4.70400@metafoo.de>
-In-reply-to: <52F495A4.70400@metafoo.de>
-Subject: Re: [PATCH 3/4] rtc: rtc-jz4740: Use devm_ioremap_resource()
-Date: Fri, 07 Feb 2014 17:31:06 +0900
-Message-id: <001801cf23de$f1b708d0$d5251a70$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac8j3LMB8e5hdYe+SQOOT2rkAV/UAgAAPnTQ
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrHIsWRmVeSWpSXmKPExsVy+t8zfd1TM78EGbRPMrRYcvEqu8Wc9WvY
-	LC4vvMRqsWTyfFaLy7vmsFns7+xgtPi5ax6LA7vHzll32T32TDzJ5nFixm8WjyVvDrF69G1Z
-	xegxfd5PJo/Pm+QC2KO4bFJSczLLUov07RK4MtZ8/s9YcImjYvHGPYwNjB/Yuhg5OSQETCSa
-	NyxlgrDFJC7cWw8U5+IQEljGKLF71W8WmKKunSeYIRKLGCWm9G9nhXB+MUq8mnuFHaSKTUBN
-	4suXw2C2iICWxNRvb8GKmAVeAo2aNBtqbi+jxI++TYwgVZwCGhIHJn5iBbGFBVwlFqxpZwax
-	WQRUJfZuuAu2m1fAVuLbtrtsELagxI/J98DizEAb1u88zgRhy0tsXvMWqJcD6FZ1iUd/dSGO
-	MJLY3HKTHaJERGLfi3eMIDdICPxkl7i4eAs7xC4BiW+TD7FA9MpKbDrADPGypMTBFTdYJjBK
-	zEKyeRaSzbOQbJ6FZMUCRpZVjKKpBckFxUnpRSZ6xYm5xaV56XrJ+bmbGCFxPWEH470D1ocY
-	k4HWT2SWEk3OB6aFvJJ4Q2MzIwtTE1NjI3NLM9KElcR51R4lBQkJpCeWpGanphakFsUXleak
-	Fh9iZOLglGpgVL4Y8/LPme6+d2+3pDtrVKxm+d/EJrbmB3uOwiUTZs0QL2Njd7O/E760qr4o
-	XR+r7fyT2+jR/Gn38nS4JP2mW/Zv25q5ZkXmLO0LXDP2/7lkeThtC4uYbb/YL/0/HGbT85Iu
-	X1c7/LRWSmBxpavKC44l3mznP/0Ommay9tpjNZ/bUge3rdvSrcRSnJFoqMVcVJwIAAPthLUB	AwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNKsWRmVeSWpSXmKPExsVy+t9jAd1TM78EGTSe0bFYcvEqu8Wc9WvY
-	LC4vvMRqsWTyfFaLy7vmsFns7+xgtPi5ax6LA7vHzll32T32TDzJ5nFixm8WjyVvDrF69G1Z
-	xegxfd5PJo/Pm+QC2KMaGG0yUhNTUosUUvOS81My89JtlbyD453jTc0MDHUNLS3MlRTyEnNT
-	bZVcfAJ03TJzgC5SUihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesbEgTXY2SABhLWMWas+fyf
-	seASR8XijXsYGxg/sHUxcnJICJhIdO08wQxhi0lcuLceKM7FISSwiFFiSv92VgjnF6PEq7lX
-	2EGq2ATUJL58OQxmiwhoSUz99hasiFngJaPE7kmzodp7GSV+9G1iBKniFNCQODDxEyuILSzg
-	KrFgTTvYPhYBVYm9G+6ygNi8ArYS37bdZYOwBSV+TL4HFmcG2rB+53EmCFteYvOat0C9HEC3
-	qks8+qsLcYSRxOaWm+wQJSIS+168Y5zAKDQLyaRZSCbNQjJpFpKWBYwsqxhFUwuSC4qT0nON
-	9IoTc4tL89L1kvNzNzGCk8Yz6R2MqxosDjEKcDAq8fB2ApOJEGtiWXFl7iFGCQ5mJRHeyTOA
-	QrwpiZVVqUX58UWlOanFhxiTgR6dyCwlmpwPTGh5JfGGxiZmRpZGZhZGJubmpAkrifMebLUO
-	FBJITyxJzU5NLUgtgtnCxMEp1cDYetQv6oLGwVO+5yJC/5+M3PT+XJbv4rZ9Wc+XvXPI8sxW
-	7FY25uiynePpH2w5U/Sko7Sja6f7+as3HVaZVB0yW6p5lkGK89s5/eCEzcHLVSVmn0qpNbxn
-	Wbi6ObooK9fbiGEPn1Tpl7obfS9+rvM2eVn8sodbxHt70c/TvDuOvNuzKSZzTqESS3FGoqEW
-	c1FxIgCOU/X8XgMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Fri, 7 Feb 2014 03:41:14 -0500
+Date: Fri, 7 Feb 2014 09:42:28 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Cc: nicolas.ferre@atmel.com, b.brezillon@overkiz.com, arnd@arndb.de,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 07/12] at91: dt: smc: Added smc bus driver
+Message-ID: <20140207084228.GA9558@ns203013.ovh.net>
+References: <1389270709-32662-1-git-send-email-jjhiblot@traphandler.com>
+ <1389270709-32662-8-git-send-email-jjhiblot@traphandler.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389270709-32662-8-git-send-email-jjhiblot@traphandler.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Ovh-Tracer-Id: 11251962194924579673
+X-Ovh-Remote: 91.121.171.124 (ns203013.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrjedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrjeehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, February 07, 2014 5:13 PM, Lars-Peter Clausen wrote:
-> On 02/07/2014 08:58 AM, Jingoo Han wrote:
-> [...]
-> > -	rtc->base = devm_ioremap_nocache(&pdev->dev, rtc->mem->start,
-> > -					resource_size(rtc->mem));
-> > -	if (!rtc->base) {
-> > -		dev_err(&pdev->dev, "Failed to ioremap mmio memory\n");
-> > -		return -EBUSY;
-> > -	}
-> > +	mem->flags &= ~IORESOURCE_CACHEABLE;
+On 13:31 Thu 09 Jan     , Jean-Jacques Hiblot wrote:
+> The EBI/SMC external interface is used to access external peripherals (NAND
+> and Ethernet controller in the case of sam9261ek). Different configurations and
+> timings are required for those peripherals. This bus driver can be used to
+> setup the bus timings/configuration from the device tree.
+> It currently accepts timings in clock period and in nanoseconds.
 > 
-> You shouldn't be modifying the resource, strictly speaking it is not owned
-> by the device. And IORESOURCE_CACHEABLE is never set for this device anyway.
+> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+> ---
 
-(+cc Thierry Reding)
+NACK on the binding
 
-Hi Lars-Peter Clausen,
+will comment on the patch
 
-Do you mean that resource's flags should NOT be modified by the
-device driver, right?
-Then, without 'mem->flags &= ~IORESOURCE_CACHEABLE', is it possible 
-that devm_ioremap_nocache() can be called at devm_ioremap_resource()?
-
-Thierry,
-Do you have any comments on this?
-
-Thank you.
-
-Best regards,
-Jingoo Han
-
+Best Regards,
+J.
+>  drivers/memory/Kconfig     |  10 ++
+>  drivers/memory/Makefile    |   1 +
+>  drivers/memory/atmel-smc.c | 431 +++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 442 insertions(+)
+>  create mode 100644 drivers/memory/atmel-smc.c
 > 
-> > +	rtc->base = devm_ioremap_resource(&pdev->dev, mem);
-> > +	if (IS_ERR(rtc->base))
-> > +		return PTR_ERR(rtc->base);
-> >
-> >   	spin_lock_init(&rtc->lock);
-> >
-> >
-
+> diff --git a/drivers/memory/Kconfig b/drivers/memory/Kconfig
+> index 29a11db..fbdfd63 100644
+> --- a/drivers/memory/Kconfig
+> +++ b/drivers/memory/Kconfig
+> @@ -50,4 +50,14 @@ config TEGRA30_MC
+>  	  analysis, especially for IOMMU/SMMU(System Memory Management
+>  	  Unit) module.
+>  
+> +config ATMEL_SMC
+> +	bool "Atmel SMC/EBI driver"
+> +	default y
+> +	depends on SOC_AT91SAM9 && OF
+> +	help
+> +	  Driver for Atmel SMC/EBI controller.
+> +	  Used to configure the EBI (external bus interface) when the device-
+> +	  tree is used. This bus supports NANDs, external ethernet controller,
+> +	  SRAMs, ATA devices, etc.
+> +
+>  endif
+> diff --git a/drivers/memory/Makefile b/drivers/memory/Makefile
+> index 969d923..101abc4 100644
+> --- a/drivers/memory/Makefile
+> +++ b/drivers/memory/Makefile
+> @@ -9,3 +9,4 @@ obj-$(CONFIG_TI_EMIF)		+= emif.o
+>  obj-$(CONFIG_MVEBU_DEVBUS)	+= mvebu-devbus.o
+>  obj-$(CONFIG_TEGRA20_MC)	+= tegra20-mc.o
+>  obj-$(CONFIG_TEGRA30_MC)	+= tegra30-mc.o
+> +obj-$(CONFIG_ATMEL_SMC)        += atmel-smc.o
+> diff --git a/drivers/memory/atmel-smc.c b/drivers/memory/atmel-smc.c
+> new file mode 100644
+> index 0000000..0a1d9ba
+> --- /dev/null
+> +++ b/drivers/memory/atmel-smc.c
+> @@ -0,0 +1,431 @@
+> +/*
+> + * EBI driver for Atmel SAM9 chips
+> + * inspired by the fsl weim bus driver
+> + *
+> + * Copyright (C) 2013 JJ Hiblot.
+> + *
+> + * This file is licensed under the terms of the GNU General Public
+> + * License version 2. This program is licensed "as is" without any
+> + * warranty of any kind, whether express or implied.
+> + */
+> +#include <linux/module.h>
+> +#include <linux/clk.h>
+> +#include <linux/io.h>
+> +#include <linux/of_device.h>
+> +#include <mach/at91sam9_smc.h>
+> +
+> +struct  smc_data {
+> +	struct clk *bus_clk;
+> +	void __iomem *base;
+> +	struct device *dev;
+> +};
+> +
+> +struct at91_smc_devtype {
+> +	unsigned int	cs_count;
+> +};
+> +
+> +static const struct at91_smc_devtype sam9261_smc_devtype = {
+> +	.cs_count	= 6,
+> +};
+> +
+> +static const struct of_device_id smc_id_table[] = {
+> +	{ .compatible = "atmel,at91sam9261-smc", .data = &sam9261_smc_devtype},
+> +	{ }
+> +};
+> +MODULE_DEVICE_TABLE(of, smc_id_table);
+> +
+> +struct smc_parameters_type {
+> +	const char *name;
+> +	u16 width;
+> +	u16 shift;
+> +};
+> +
+> +static const struct smc_parameters_type smc_parameters[] = {
+> +	{"smc,burst_size",	2, 28},
+> +	{"smc,burst_enabled",	1, 24},
+> +	{"smc,tdf_mode",	1, 20},
+> +	{"smc,bus_width",	2, 12},
+> +	{"smc,byte_access_type", 1,  8},
+> +	{"smc,nwait_mode",	2,  4},
+> +	{"smc,write_mode",	1,  0},
+> +	{"smc,read_mode",	1,  1},
+> +	{NULL}
+> +};
+> +
+> +static int get_mode_register_from_dt(struct smc_data *smc,
+> +				     struct device_node *np,
+> +				     struct sam9_smc_config *cfg)
+> +{
+> +	int ret;
+> +	u32 val;
+> +	struct device *dev = smc->dev;
+> +	const struct smc_parameters_type *p = smc_parameters;
+> +	u32 mode = cfg->mode;
+> +
+> +	while (p->name) {
+> +		ret = of_property_read_u32(np, p->name , &val);
+> +		if (ret == -EINVAL) {
+> +			dev_dbg(dev, "%s: property %s not set.\n", np->name,
+> +				p->name);
+> +			p++;
+> +			continue;
+> +		} else if (ret) {
+> +			dev_err(dev, "%s: can't get property %s.\n", np->name,
+> +				p->name);
+> +			return ret;
+> +		}
+> +		if (val >= (1<<p->width)) {
+> +			dev_err(dev, "%s: property %s out of range.\n",
+> +				np->name, p->name);
+> +			return -ERANGE;
+> +		}
+> +		mode &= ~(((1<<p->width)-1) << p->shift);
+> +		mode |= (val << p->shift);
+> +		p++;
+> +	}
+> +	cfg->mode = mode;
+> +	return 0;
+> +}
+> +
+> +static int generic_timing_from_dt(struct smc_data *smc, struct device_node *np,
+> +				  struct sam9_smc_config *cfg)
+> +{
+> +	u32 val;
+> +
+> +	if (!of_property_read_u32(np, "smc,ncs_read_setup" , &val))
+> +		cfg->ncs_read_setup = val;
+> +
+> +	if (!of_property_read_u32(np, "smc,nrd_setup" , &val))
+> +		cfg->nrd_setup = val;
+> +
+> +	if (!of_property_read_u32(np, "smc,ncs_write_setup" , &val))
+> +		cfg->ncs_write_setup = val;
+> +
+> +	if (!of_property_read_u32(np, "smc,nwe_setup" , &val))
+> +		cfg->nwe_setup = val;
+> +
+> +	if (!of_property_read_u32(np, "smc,ncs_read_pulse" , &val))
+> +		cfg->ncs_read_pulse = val;
+> +
+> +	if (!of_property_read_u32(np, "smc,nrd_pulse" , &val))
+> +		cfg->nrd_pulse = val;
+> +
+> +	if (!of_property_read_u32(np, "smc,ncs_write_pulse" , &val))
+> +		cfg->ncs_write_pulse = val;
+> +
+> +	if (!of_property_read_u32(np, "smc,nwe_pulse" , &val))
+> +		cfg->nwe_pulse = val;
+> +
+> +	if (!of_property_read_u32(np, "smc,read_cycle" , &val))
+> +		cfg->read_cycle = val;
+> +
+> +	if (!of_property_read_u32(np, "smc,write_cycle" , &val))
+> +		cfg->write_cycle = val;
+> +
+> +	if (!of_property_read_u32(np, "smc,tdf_cycles" , &val))
+> +		cfg->tdf_cycles = val;
+> +
+> +	return get_mode_register_from_dt(smc, np, cfg);
+> +}
+> +
+> +/* convert the time in ns in a number of clock cycles */
+> +static u32 ns_to_cycles(u32 ns, u32 clk)
+> +{
+> +	/*
+> +	 * convert the clk to kHz for the rest of the calculation to avoid
+> +	 * overflow
+> +	 */
+> +	u32 clk_kHz = clk / 1000;
+> +	u32 ncycles = ((ns * clk_kHz) + 1000000 - 1) / 1000000;
+> +	return ncycles;
+> +}
+> +
+> +static u32 cycles_to_coded_cycle(u32 cycles, int a, int b)
+> +{
+> +	u32 mask_high = (1 << a) - 1;
+> +	u32 mask_low = (1 << b) - 1;
+> +	u32 coded;
+> +
+> +	/* check if the value can be described with the coded format */
+> +	if (cycles & (mask_high & ~mask_low)) {
+> +		/* not representable. we need to round up */
+> +		cycles |= mask_high;
+> +		cycles += 1;
+> +	}
+> +	/* Now the value can be represented in the coded format */
+> +	coded = (cycles & ~mask_high) >> (a - b);
+> +	coded |= (cycles & mask_low);
+> +	return coded;
+> +}
+> +
+> +static u32 ns_to_rw_cycles(u32 ns, u32 clk)
+> +{
+> +	return cycles_to_coded_cycle(ns_to_cycles(ns, clk), 8, 7);
+> +}
+> +
+> +static u32 ns_to_pulse_cycles(u32 ns, u32 clk)
+> +{
+> +	return cycles_to_coded_cycle(ns_to_cycles(ns, clk), 8, 6);
+> +}
+> +
+> +static u32 ns_to_setup_cycles(u32 ns, u32 clk)
+> +{
+> +	return cycles_to_coded_cycle(ns_to_cycles(ns, clk), 7, 5);
+> +}
+> +
+> +static u32 cycles_to_ns(u32 cycles, u32 clk)
+> +{
+> +	/*
+> +	 * convert the clk to kHz for the rest of the calculation to avoid
+> +	 * overflow
+> +	 */
+> +	u32 clk_kHz = clk / 1000;
+> +	return (cycles * 1000000) / clk_kHz;
+> +}
+> +
+> +static u32 coded_cycle_to_cycles(u32 coded, int a, int b)
+> +{
+> +	u32 cycles = (coded >> b) << a;
+> +	u32 mask_low = (1 << b) - 1;
+> +	cycles |= (coded & mask_low);
+> +	return cycles;
+> +}
+> +
+> +static u32 rw_cycles_to_ns(u32 reg, u32 clk)
+> +{
+> +	return cycles_to_ns(coded_cycle_to_cycles(reg, 8, 7), clk);
+> +}
+> +
+> +static u32 pulse_cycles_to_ns(u32 reg, u32 clk)
+> +{
+> +	return cycles_to_ns(coded_cycle_to_cycles(reg, 8, 6), clk);
+> +}
+> +
+> +static u32 setup_cycles_to_ns(u32 reg, u32 clk)
+> +{
+> +	return cycles_to_ns(coded_cycle_to_cycles(reg, 7, 5), clk);
+> +}
+> +
+> +static void dump_timing(struct smc_data *smc, struct sam9_smc_config *config)
+> +{
+> +	u32 freq = clk_get_rate(smc->bus_clk);
+> +	struct device *dev = smc->dev;
+> +
+> +#define DUMP(fn, y)	dev_info(dev, "%s : 0x%x (%d ns)\n", #y, config->y,\
+> +				 fn(config->y, freq))
+> +#define DUMP_PULSE(y)	DUMP(pulse_cycles_to_ns, y)
+> +#define DUMP_RWCYCLE(y)	DUMP(rw_cycles_to_ns, y)
+> +#define DUMP_SETUP(y)	DUMP(setup_cycles_to_ns, y)
+> +#define DUMP_SIMPLE(y)	DUMP(cycles_to_ns, y)
+> +
+> +	DUMP_SETUP(nwe_setup);
+> +	DUMP_SETUP(ncs_write_setup);
+> +	DUMP_SETUP(nrd_setup);
+> +	DUMP_SETUP(ncs_read_setup);
+> +	DUMP_PULSE(nwe_pulse);
+> +	DUMP_PULSE(ncs_write_pulse);
+> +	DUMP_PULSE(nrd_pulse);
+> +	DUMP_PULSE(ncs_read_pulse);
+> +	DUMP_RWCYCLE(write_cycle);
+> +	DUMP_RWCYCLE(read_cycle);
+> +	DUMP_SIMPLE(tdf_cycles);
+> +}
+> +
+> +static int ns_timing_from_dt(struct smc_data *smc, struct device_node *np,
+> +			     struct sam9_smc_config *cfg)
+> +{
+> +	u32 t_ns;
+> +	u32 freq = clk_get_rate(smc->bus_clk);
+> +
+> +	if (!of_property_read_u32(np, "smc,ncs_read_setup" , &t_ns))
+> +		cfg->ncs_read_setup = ns_to_setup_cycles(t_ns, freq);
+> +
+> +	if (!of_property_read_u32(np, "smc,nrd_setup" , &t_ns))
+> +		cfg->nrd_setup = ns_to_setup_cycles(t_ns, freq);
+> +
+> +	if (!of_property_read_u32(np, "smc,ncs_write_setup" , &t_ns))
+> +		cfg->ncs_write_setup = ns_to_setup_cycles(t_ns, freq);
+> +
+> +	if (!of_property_read_u32(np, "smc,nwe_setup" , &t_ns))
+> +		cfg->nwe_setup = ns_to_setup_cycles(t_ns, freq);
+> +
+> +	if (!of_property_read_u32(np, "smc,ncs_read_pulse" , &t_ns))
+> +		cfg->ncs_read_pulse = ns_to_pulse_cycles(t_ns, freq);
+> +
+> +	if (!of_property_read_u32(np, "smc,nrd_pulse" , &t_ns))
+> +		cfg->nrd_pulse = ns_to_pulse_cycles(t_ns, freq);
+> +
+> +	if (!of_property_read_u32(np, "smc,ncs_write_pulse" , &t_ns))
+> +		cfg->ncs_write_pulse = ns_to_pulse_cycles(t_ns, freq);
+> +
+> +	if (!of_property_read_u32(np, "smc,nwe_pulse" , &t_ns))
+> +		cfg->nwe_pulse = ns_to_pulse_cycles(t_ns, freq);
+> +
+> +	if (!of_property_read_u32(np, "smc,read_cycle" , &t_ns))
+> +		cfg->read_cycle = ns_to_rw_cycles(t_ns, freq);
+> +
+> +	if (!of_property_read_u32(np, "smc,write_cycle" , &t_ns))
+> +		cfg->write_cycle = ns_to_rw_cycles(t_ns, freq);
+> +
+> +	if (!of_property_read_u32(np, "smc,tdf_cycles" , &t_ns))
+> +		cfg->tdf_cycles = ns_to_cycles(t_ns, freq);
+> +
+> +	return get_mode_register_from_dt(smc, np, cfg);
+> +}
+> +
+> +struct converter {
+> +	const char *name;
+> +	int (*fn) (struct smc_data *smc, struct device_node *np,
+> +		   struct sam9_smc_config *cfg);
+> +};
+> +static const struct converter converters[] = {
+> +	{"raw", generic_timing_from_dt},
+> +	{"nanosec", ns_timing_from_dt},
+> +};
+> +
+> +/* Parse and set the timing for this device. */
+> +static int smc_timing_setup(struct smc_data *smc, struct device_node *np,
+> +		const struct at91_smc_devtype *devtype)
+> +{
+> +	int ret;
+> +	u32 cs;
+> +	int i;
+> +	struct device *dev = smc->dev;
+> +	const struct converter *converter;
+> +	const char *converter_name = NULL;
+> +	struct sam9_smc_config cfg;
+> +
+> +	ret = of_property_read_u32(np, "smc,cs" , &cs);
+> +	if (ret < 0) {
+> +		dev_err(dev, "missing mandatory property : smc,cs\n");
+> +		return ret;
+> +	}
+> +	if (cs >= devtype->cs_count) {
+> +		dev_err(dev, "invalid value for property smc,cs (=%d)."
+> +		"Must be in range 0 to %d\n", cs, devtype->cs_count-1);
+> +		return -EINVAL;
+> +	}
+> +
+> +	of_property_read_string(np, "smc,converter", &converter_name);
+> +	if (converter_name) {
+> +		for (i = 0; i < ARRAY_SIZE(converters); i++)
+> +			if (strcmp(converters[i].name, converter_name) == 0)
+> +				converter = &converters[i];
+> +		if (!converter) {
+> +			dev_info(dev, "unknown converter. aborting\n");
+> +			return -EINVAL;
+> +		}
+> +	} else {
+> +		dev_dbg(dev, "cs %d: no smc converter provided. using "
+> +		"raw register values\n", cs);
+> +		converter = &converters[0];
+> +	}
+> +	dev_dbg(dev, "cs %d using converter : %s\n", cs, converter->name);
+> +	sam9_smc_cs_read(smc->base + (0x10 * cs), &cfg);
+> +	converter->fn(smc, np, &cfg);
+> +	ret = sam9_smc_check_cs_configuration(&cfg);
+> +	if (ret < 0) {
+> +		dev_info(dev, "invalid smc configuration for cs %d."
+> +		"clipping values\n", cs);
+> +		sam9_smc_clip_cs_configuration(&cfg);
+> +		dump_timing(smc, &cfg);
+> +	}
+> +#ifdef DEBUG
+> +	else
+> +		dump_timing(smc, &cfg);
+> +#endif
+> +
+> +	sam9_smc_cs_configure(smc->base + (0x10 * cs), &cfg);
+> +	return 0;
+> +}
+> +
+> +static int smc_parse_dt(struct smc_data *smc)
+> +{
+> +	struct device *dev = smc->dev;
+> +	const struct of_device_id *of_id = of_match_device(smc_id_table, dev);
+> +	const struct at91_smc_devtype *devtype = of_id->data;
+> +	struct device_node *child;
+> +	int ret;
+> +
+> +	for_each_child_of_node(dev->of_node, child) {
+> +		if (!child->name)
+> +			continue;
+> +		if (!of_device_is_available(child))
+> +			continue;
+> +		ret = smc_timing_setup(smc, child, devtype);
+> +		if (ret) {
+> +			static struct property status = {
+> +				.name = "status",
+> +				.value = "disabled",
+> +				.length = sizeof("disabled"),
+> +			};
+> +			dev_err(dev, "%s set timing failed. This node will be disabled.\n",
+> +				child->full_name);
+> +			ret = of_update_property(child, &status);
+> +			if (ret < 0) {
+> +				dev_err(dev, "can't disable %s. aborting probe\n",
+> +				child->full_name);
+> +				break;
+> +			}
+> +		}
+> +	}
+> +
+> +	ret = of_platform_populate(dev->of_node, of_default_bus_match_table,
+> +				   NULL, dev);
+> +	if (ret)
+> +		dev_err(dev, "%s fail to create devices.\n",
+> +			dev->of_node->full_name);
+> +
+> +	return ret;
+> +}
+> +
+> +static int smc_probe(struct platform_device *pdev)
+> +{
+> +	struct resource *res;
+> +	int ret;
+> +	void __iomem *base;
+> +	struct clk *clk;
+> +	struct smc_data *smc = devm_kzalloc(&pdev->dev, sizeof(struct smc_data),
+> +					    GFP_KERNEL);
+> +
+> +	if (!smc)
+> +		return -ENOMEM;
+> +
+> +	smc->dev = &pdev->dev;
+> +
+> +	/* get the resource */
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	base = devm_request_and_ioremap(&pdev->dev, res);
+> +	if (IS_ERR(base)) {
+> +		dev_err(&pdev->dev, "can't map SMC base address\n");
+> +		return PTR_ERR(base);
+> +	}
+> +
+> +	/* get the clock */
+> +	clk = devm_clk_get(&pdev->dev, "smc");
+> +	if (IS_ERR(clk))
+> +		return PTR_ERR(clk);
+> +
+> +	smc->bus_clk = clk;
+> +	smc->base = base;
+> +
+> +	/* parse the device node */
+> +	ret = smc_parse_dt(smc);
+> +	if (!ret)
+> +		dev_info(&pdev->dev, "Driver registered.\n");
+> +
+> +	return ret;
+> +}
+> +
+> +static struct platform_driver smc_driver = {
+> +	.driver = {
+> +		.name		= "atmel-smc",
+> +		.owner		= THIS_MODULE,
+> +		.of_match_table	= smc_id_table,
+> +	},
+> +};
+> +module_platform_driver_probe(smc_driver, smc_probe);
+> +
+> +MODULE_AUTHOR("JJ Hiblot");
+> +MODULE_DESCRIPTION("Atmel's SMC/EBI driver");
+> +MODULE_LICENSE("GPL");
+> -- 
+> 1.8.5.2
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
