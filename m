@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755454AbaBGMU3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 07:20:29 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:52712 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755396AbaBGMUX (ORCPT
+	id S1755446AbaBGMV1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 07:21:27 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:36231 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751901AbaBGMVY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 07:20:23 -0500
-Date: Fri, 7 Feb 2014 17:50:18 +0530
+	Fri, 7 Feb 2014 07:21:24 -0500
+Date: Fri, 7 Feb 2014 17:51:18 +0530
 From: Rashika Kheria <rashika.kheria@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Armin Schindler <mac@melware.de>, Karsten Keil <isdn@linux-pingi.de>,
         netdev@vger.kernel.org, josh@joshtriplett.org
-Subject: [PATCH 03/26] drivers: isdn: Move prototype declarations to header
- file um_idi.h from idifunc.c
-Message-ID: <9690fa7234af4562d710b03a3ad88d7ab2894a17.1390408514.git.rashika.kheria@gmail.com>
+Subject: [PATCH 04/26] drivers: isdn: Add prototype declaration to header
+ file platform.h from capifunc.c
+Message-ID: <3e85b310587ff4346191ad1dc19aaeee5ddb8240.1390408514.git.rashika.kheria@gmail.com>
 References: <3cb4d7892ba5a0c0936b3a1e2c9c991a6dbc3229.1390408513.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
@@ -26,45 +26,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move prototype declaration of functions to header file
+Move prototype declarations of function to header file
 hardware/eicon/um_idi.h because they are used by more than one file.
 
-This eliminates the following warnings in hardware/eicon/divasi.c:
-drivers/isdn/hardware/eicon/divasi.c:446:6: warning: no previous prototype for ‘diva_os_wakeup_read’ [-Wmissing-prototypes]
-drivers/isdn/hardware/eicon/divasi.c:453:6: warning: no previous prototype for ‘diva_os_wakeup_close’ [-Wmissing-prototypes]
+This eliminates the following warnings in hardware/eicon/um_idi.c:
+drivers/isdn/hardware/eicon/um_idi.c:83:6: warning: no previous prototype for ‘diva_user_mode_idi_remove_adapter’ [-Wmissing-prototypes]
+drivers/isdn/hardware/eicon/um_idi.c:121:5: warning: no previous prototype for ‘diva_user_mode_idi_create_adapter’ [-Wmissing-prototypes]
 
 Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- drivers/isdn/hardware/eicon/idifunc.c |    2 --
- drivers/isdn/hardware/eicon/um_idi.h  |    2 ++
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/isdn/hardware/eicon/capifunc.c |    1 -
+ drivers/isdn/hardware/eicon/platform.h |    4 ++++
+ 2 files changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/isdn/hardware/eicon/idifunc.c b/drivers/isdn/hardware/eicon/idifunc.c
-index fef6586..bacab74 100644
---- a/drivers/isdn/hardware/eicon/idifunc.c
-+++ b/drivers/isdn/hardware/eicon/idifunc.c
-@@ -22,8 +22,6 @@
- extern char *DRIVERRELEASE_IDI;
+diff --git a/drivers/isdn/hardware/eicon/capifunc.c b/drivers/isdn/hardware/eicon/capifunc.c
+index 7a0bdbd..8991b0c 100644
+--- a/drivers/isdn/hardware/eicon/capifunc.c
++++ b/drivers/isdn/hardware/eicon/capifunc.c
+@@ -55,7 +55,6 @@ static void diva_release_appl(struct capi_ctr *, __u16);
+ static char *diva_procinfo(struct capi_ctr *);
+ static u16 diva_send_message(struct capi_ctr *,
+ 			     diva_os_message_buffer_s *);
+-extern void diva_os_set_controller_struct(struct capi_ctr *);
  
- extern void DIVA_DIDD_Read(void *, int);
--extern int diva_user_mode_idi_create_adapter(const DESCRIPTOR *, int);
--extern void diva_user_mode_idi_remove_adapter(int);
+ extern void DIVA_DIDD_Read(DESCRIPTOR *, int);
  
- static dword notify_handle;
- static DESCRIPTOR DAdapter;
-diff --git a/drivers/isdn/hardware/eicon/um_idi.h b/drivers/isdn/hardware/eicon/um_idi.h
-index 00ca1e7..e973809 100644
---- a/drivers/isdn/hardware/eicon/um_idi.h
-+++ b/drivers/isdn/hardware/eicon/um_idi.h
-@@ -41,5 +41,7 @@ int divas_um_idi_entity_start_remove(void *entity);
+diff --git a/drivers/isdn/hardware/eicon/platform.h b/drivers/isdn/hardware/eicon/platform.h
+index b2edb75..cdfbb19 100644
+--- a/drivers/isdn/hardware/eicon/platform.h
++++ b/drivers/isdn/hardware/eicon/platform.h
+@@ -28,6 +28,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/delay.h>
+ #include <linux/list.h>
++#include <linux/isdn/capilli.h>
+ #include <asm/types.h>
+ #include <asm/io.h>
  
- void diva_um_idi_start_wdog(void *entity);
- void diva_um_idi_stop_wdog(void *entity);
-+void diva_user_mode_idi_remove_adapter(int);
-+int diva_user_mode_idi_create_adapter(const DESCRIPTOR *, int);
+@@ -179,6 +180,9 @@ static __inline__ void diva_os_free(unsigned long flags, void *ptr)
+ typedef struct sk_buff diva_os_message_buffer_s;
+ diva_os_message_buffer_s *diva_os_alloc_message_buffer(unsigned long size, void **data_buf);
+ void diva_os_free_message_buffer(diva_os_message_buffer_s *dmb);
++
++void diva_os_set_controller_struct(struct capi_ctr *);
++
+ #define DIVA_MESSAGE_BUFFER_LEN(x) x->len
+ #define DIVA_MESSAGE_BUFFER_DATA(x) x->data
  
- #endif
 -- 
 1.7.9.5
 
