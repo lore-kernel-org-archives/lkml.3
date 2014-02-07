@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755814AbaBGNCH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 08:02:07 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:39889 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753037AbaBGNB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 08:01:59 -0500
-Message-ID: <1391778043.27491.61.camel@iivanov-dev>
-Subject: Re: [PATCH RESEND 1/2] spi: qup: Add device tree bindings
- information
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        linux-spi@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 07 Feb 2014 15:00:43 +0200
-In-Reply-To: <20140207122716.GH32298@sirena.org.uk>
-References: <20140206175059.GW32298@sirena.org.uk>
-	 <1391759007-25305-1-git-send-email-iivanov@mm-sol.com>
-	 <20140207122716.GH32298@sirena.org.uk>
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755825AbaBGNCo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 08:02:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41779 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753218AbaBGLth (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 06:49:37 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Daniel Santos <daniel.santos@pobox.com>, Mark Brown <broonie@linaro.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 080/233] spidev: fix hang when transfer_one_message fails
+Date: Fri,  7 Feb 2014 11:44:59 +0000
+Message-Id: <1391773652-25214-81-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
+References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.11.10.4 -stable review patch.  If anyone has any objections, please let me know.
 
-On Fri, 2014-02-07 at 12:27 +0000, Mark Brown wrote: 
-> On Fri, Feb 07, 2014 at 09:43:27AM +0200, Ivan T. Ivanov wrote:
-> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> > 
-> > The Qualcomm Universal Peripheral (QUP) core is an
-> > AHB slave that provides a common data path (an output
-> > FIFO and an input FIFO) for serial peripheral interface
-> > (SPI) mini-core.
-> 
-> Please fix the formatting of this document so the lines are less than 80
-> columns, it's hard to read as is.  Otherwise this is fine.
+------------------
 
-File is looking fine in editor with smart tab support
+From: Daniel Santos <daniel.santos@pobox.com>
 
-Regards,
-Ivan
+commit e120cc0dcf2880a4c5c0a6cb27b655600a1cfa1d upstream.
 
+This corrects a problem in spi_pump_messages() that leads to an spi
+message hanging forever when a call to transfer_one_message() fails.
+This failure occurs in my MCP2210 driver when the cs_change bit is set
+on the last transfer in a message, an operation which the hardware does
+not support.
+
+Rationale
+Since the transfer_one_message() returns an int, we must presume that it
+may fail.  If transfer_one_message() should never fail, it should return
+void.  Thus, calls to transfer_one_message() should properly manage a
+failure.
+
+Fixes: ffbbdd21329f3 (spi: create a message queueing infrastructure)
+Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/spi/spi.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+index 978dda2..96310af 100644
+--- a/drivers/spi/spi.c
++++ b/drivers/spi/spi.c
+@@ -584,7 +584,9 @@ static void spi_pump_messages(struct kthread_work *work)
+ 	ret = master->transfer_one_message(master, master->cur_msg);
+ 	if (ret) {
+ 		dev_err(&master->dev,
+-			"failed to transfer one message from queue\n");
++			"failed to transfer one message from queue: %d\n", ret);
++		master->cur_msg->status = ret;
++		spi_finalize_current_message(master);
+ 		return;
+ 	}
+ }
+-- 
+1.8.3.2
 
