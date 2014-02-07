@@ -1,53 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676AbaBGQVh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 11:21:37 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41915 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752458AbaBGQVf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 11:21:35 -0500
-Date: Fri, 7 Feb 2014 16:21:31 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Rafael Aquini <aquini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, trond.myklebust@primarydata.com,
-        jstancek@redhat.com, jlayton@redhat.com, riel@redhat.com,
-        linux-nfs@vger.kernel.org, akpm@linux-foundation.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm: fix page leak at nfs_symlink()
-Message-ID: <20140207162131.GY6732@suse.de>
-References: <f4b3dc07dfa55bf7931de36b03aa9ef7e3ff0490.1391785222.git.aquini@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <f4b3dc07dfa55bf7931de36b03aa9ef7e3ff0490.1391785222.git.aquini@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752822AbaBGQVL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 11:21:11 -0500
+Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:51493 "EHLO
+	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752144AbaBGQVI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 11:21:08 -0500
+From: Fabrice GASNIER <fabrice.gasnier@st.com>
+To: linux@arm.linux.org.uk, u.kleine-koenig@pengutronix.de,
+        jonathan.austin@arm.com, catalin.marinas@arm.com, will.deacon@arm.com,
+        nico@linaro.org, sboyd@codeaurora.org, marc.zyngier@arm.com,
+        ben.dooks@codethink.co.uk, vgupta@synopsys.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: maxime.coquelin@st.com
+Subject: [RFC PATCH] ARM: Add imprecise abort enable/disable macro
+Date: Fri,  7 Feb 2014 17:19:15 +0100
+Message-Id: <1391789955-26927-2-git-send-email-fabrice.gasnier@st.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1391789955-26927-1-git-send-email-fabrice.gasnier@st.com>
+References: <1391789955-26927-1-git-send-email-fabrice.gasnier@st.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 07, 2014 at 01:19:54PM -0200, Rafael Aquini wrote:
-> Changes committed by "a0b8cab3 mm: remove lru parameter from
-> __pagevec_lru_add and remove parts of pagevec API" have introduced
-> a call to add_to_page_cache_lru() which causes a leak in nfs_symlink() 
-> as now the page gets an extra refcount that is not dropped.
-> 
-> Jan Stancek observed and reported the leak effect while running test8 from
-> Connectathon Testsuite. After several iterations over the test case,
-> which creates several symlinks on a NFS mountpoint, the test system was
-> quickly getting into an out-of-memory scenario.
-> 
-> This patch fixes the page leak by dropping that extra refcount 
-> add_to_page_cache_lru() is grabbing. 
-> 
-> Signed-off-by: Jan Stancek <jstancek@redhat.com>
-> Signed-off-by: Rafael Aquini <aquini@redhat.com>
+This patch adds imprecise abort enable/disable macros.
+It also enables imprecise aborts when starting kernel.
 
-Thanks.
+Signed-off-by: Fabrice Gasnier <fabrice.gasnier@st.com>
+---
+ arch/arm/include/asm/irqflags.h |   33 +++++++++++++++++++++++++++++++++
+ arch/arm/kernel/smp.c           |    1 +
+ arch/arm/kernel/traps.c         |    4 ++++
+ 3 files changed, 38 insertions(+)
 
-Acked-by: Mel Gorman <mgorman@suse.de>
-
-It should be cc'd for stable for 3.11 and later kernels.
-
+diff --git a/arch/arm/include/asm/irqflags.h b/arch/arm/include/asm/irqflags.h
+index 3b763d6..82e3834 100644
+--- a/arch/arm/include/asm/irqflags.h
++++ b/arch/arm/include/asm/irqflags.h
+@@ -51,6 +51,9 @@ static inline void arch_local_irq_disable(void)
+ 
+ #define local_fiq_enable()  __asm__("cpsie f	@ __stf" : : : "memory", "cc")
+ #define local_fiq_disable() __asm__("cpsid f	@ __clf" : : : "memory", "cc")
++
++#define local_abt_enable()  __asm__("cpsie a	@ __sta" : : : "memory", "cc")
++#define local_abt_disable() __asm__("cpsid a	@ __cla" : : : "memory", "cc")
+ #else
+ 
+ /*
+@@ -130,6 +133,36 @@ static inline void arch_local_irq_disable(void)
+ 	: "memory", "cc");					\
+ 	})
+ 
++/*
++ * Enable Aborts
++ */
++#define local_abt_enable()					\
++	({							\
++		unsigned long temp;				\
++	__asm__ __volatile__(					\
++	"mrs	%0, cpsr		@ sta\n"		\
++"	bic	%0, %0, %1\n"					\
++"	msr	cpsr_c, %0"					\
++	: "=r" (temp)						\
++	: "r" (PSR_A_BIT)					\
++	: "memory", "cc");					\
++	})
++
++/*
++ * Disable Aborts
++ */
++#define local_abt_disable()					\
++	({							\
++		unsigned long temp;				\
++	__asm__ __volatile__(					\
++	"mrs	%0, cpsr		@ cla\n"		\
++"	orr	%0, %0, %1\n"					\
++"	msr	cpsr_c, %0"					\
++	: "=r" (temp)						\
++	: "r" (PSR_A_BIT)					\
++	: "memory", "cc");					\
++	})
++
+ #endif
+ 
+ /*
+diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+index dc894ab..c2093cb 100644
+--- a/arch/arm/kernel/smp.c
++++ b/arch/arm/kernel/smp.c
+@@ -377,6 +377,7 @@ asmlinkage void secondary_start_kernel(void)
+ 
+ 	local_irq_enable();
+ 	local_fiq_enable();
++	local_abt_enable();
+ 
+ 	/*
+ 	 * OK, it's off to the idle thread for us
+diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
+index 4636d56..ef15709 100644
+--- a/arch/arm/kernel/traps.c
++++ b/arch/arm/kernel/traps.c
+@@ -900,6 +900,10 @@ void __init early_trap_init(void *vectors_base)
+ 
+ 	flush_icache_range(vectors, vectors + PAGE_SIZE * 2);
+ 	modify_domain(DOMAIN_USER, DOMAIN_CLIENT);
++
++	/* Enable imprecise aborts */
++	local_abt_enable();
++
+ #else /* ifndef CONFIG_CPU_V7M */
+ 	/*
+ 	 * on V7-M there is no need to copy the vector table to a dedicated
 -- 
-Mel Gorman
-SUSE Labs
+1.7.9.5
+
