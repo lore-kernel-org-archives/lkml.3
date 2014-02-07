@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752124AbaBGKTT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 05:19:19 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:37680 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751476AbaBGKTR (ORCPT
+	id S1752246AbaBGKTf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 05:19:35 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:44312 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751699AbaBGKTd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 05:19:17 -0500
+	Fri, 7 Feb 2014 05:19:33 -0500
 From: AKASHI Takahiro <takahiro.akashi@linaro.org>
 To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
         catalin.marinas@arm.com, will.deacon@arm.com,
@@ -14,93 +14,375 @@ To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
 Cc: arndb@arndb.de, linux-arm-kernel@lists.infradead.org,
         linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
         patches@linaro.org, AKASHI Takahiro <takahiro.akashi@linaro.org>
-Subject: [PATCH v3 0/6] arm64: Add ftrace support
-Date: Fri,  7 Feb 2014 19:18:50 +0900
-Message-Id: <1391768336-5642-1-git-send-email-takahiro.akashi@linaro.org>
+Subject: [PATCH v3 1/6] arm64: Add ftrace support
+Date: Fri,  7 Feb 2014 19:18:51 +0900
+Message-Id: <1391768336-5642-2-git-send-email-takahiro.akashi@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1382598488-13511-1-git-send-email-takahiro.akashi@linaro.org>
+In-Reply-To: <1391768336-5642-1-git-send-email-takahiro.akashi@linaro.org>
 References: <1382598488-13511-1-git-send-email-takahiro.akashi@linaro.org>
+ <1391768336-5642-1-git-send-email-takahiro.akashi@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is my third version of patchset for ftrace support.
-There was another implementation from Cavium network, but both of us agreed
-to use my patchset as future base. He is supposed to review this code, too.
+This patch implements arm64 specific part to support function tracers,
+such as function (CONFIG_FUNCTION_TRACER), function_graph
+(CONFIG_FUNCTION_GRAPH_TRACER) and function profiler
+(CONFIG_FUNCTION_PROFILER).
 
-The only issue that I had some concern on was "fault protection" code
-in prepare_ftrace_return(). With discussions with Steven and Tim (as author
-of arm ftrace), I removed that code since I'm not quite sure about possibility
-of "fault" occurrences in this function.
+With 'function' tracer, all the functions in the kernel are traced with
+timestamps in ${sysfs}/tracing/trace. If function_graph tracer is
+specified, call graph is generated.
 
-The code is tested on ARMv8 Fast Model with the following tracers & events:
-     function tracer with dynamic ftrace
-     function graph tracer with dynamic ftrace
-     syscall tracepoint
-     irqsoff & preemptirqsoff (which use CALLER_ADDRx)
-and also verified with in-kernel tests, FTRACE_SELFTEST, FTRACE_STARTUP_TEST
-and EVENT_TRACE_TEST_SYSCALLS.
+The kernel must be compiled with -pg option so that _mcount() is inserted
+at the beginning of functions. This function is called on every function's
+entry as long as tracing is enabled.
+In addition, function_graph tracer also needs to be able to probe function's
+exit. ftrace_graph_caller() & return_to_handler do this by faking link
+register's value to intercept function's return path.
 
-Please be careful:
-* elf.h on cross-build host must have AArch64 definitions, EM_AARCH64 and
-  R_AARCH64_ABS64, to compile recordmcount utility. See [4/6].
-  [4/6] also gets warnings from checkpatch, but they are based on the
-  original's coding style.
-* This patch may conflict with my audit patch because both changes the same
-  location in syscall_trace(). I expect the functions are called in this
-  order:
-  On entry,
-     * tracehook_report_syscall(ENTER)
-     * trace_sys_enter()
-     * audit_syscall_entry()
-  On exit,
-     * audit_sysscall_exit()
-     * trace_sys_exit()
-     * tracehook_report_syscall(EXIT) 
+More details on architecture specific requirements are described in
+Documentation/trace/ftrace-design.txt.
 
-Changes from v1 to v2:
-* splitted one patch into some pieces for easier review
-  (especially function tracer + dynamic ftrace + CALLER_ADDRx)
-* put return_address() in a separate file
-* renamed __mcount to _mcount (it was my mistake)
-* changed stackframe handling to get parent's frame pointer
-* removed ARCH_SUPPORTS_FTRACE_OPS
-* switched to "hotpatch" interfaces from Huawai
-* revised descriptions in comments
-
-Changes from v2 to v3:
-* optimized register usages in asm (by not saving x0, x1, and x2)
-* removed "fault protection" code in prepare_ftrace_return()
-* rewrote ftrace_modify_code() using "hotpatch" interfaces
-* revised descriptions in comments
-
-AKASHI Takahiro (6):
-  arm64: Add ftrace support
-  arm64: ftrace: Add dynamic ftrace support
-  arm64: ftrace: Add CALLER_ADDRx macros
-  ftrace: Add arm64 support to recordmcount
-  arm64: ftrace: Add system call tracepoint
-  arm64: Add 'notrace' attribute to unwind_frame() for ftrace
-
- arch/arm64/Kconfig                 |    6 +
- arch/arm64/include/asm/ftrace.h    |   54 +++++++++
- arch/arm64/include/asm/syscall.h   |    1 +
- arch/arm64/include/asm/unistd.h    |    2 +
- arch/arm64/kernel/Makefile         |    9 +-
- arch/arm64/kernel/arm64ksyms.c     |    4 +
- arch/arm64/kernel/entry-ftrace.S   |  215 ++++++++++++++++++++++++++++++++++++
- arch/arm64/kernel/ftrace.c         |  177 +++++++++++++++++++++++++++++
- arch/arm64/kernel/ptrace.c         |    5 +
- arch/arm64/kernel/return_address.c |   55 +++++++++
- arch/arm64/kernel/stacktrace.c     |    2 +-
- scripts/recordmcount.c             |    4 +
- scripts/recordmcount.pl            |    5 +
- 13 files changed, 537 insertions(+), 2 deletions(-)
+Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+---
+ arch/arm64/Kconfig               |    2 +
+ arch/arm64/include/asm/ftrace.h  |   23 +++++
+ arch/arm64/kernel/Makefile       |    6 ++
+ arch/arm64/kernel/arm64ksyms.c   |    4 +
+ arch/arm64/kernel/entry-ftrace.S |  172 ++++++++++++++++++++++++++++++++++++++
+ arch/arm64/kernel/ftrace.c       |   64 ++++++++++++++
+ 6 files changed, 271 insertions(+)
  create mode 100644 arch/arm64/include/asm/ftrace.h
  create mode 100644 arch/arm64/kernel/entry-ftrace.S
  create mode 100644 arch/arm64/kernel/ftrace.c
- create mode 100644 arch/arm64/kernel/return_address.c
 
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index dd4327f..332e50c 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -33,6 +33,8 @@ config ARM64
+ 	select HAVE_DMA_ATTRS
+ 	select HAVE_DMA_CONTIGUOUS
+ 	select HAVE_EFFICIENT_UNALIGNED_ACCESS
++	select HAVE_FUNCTION_TRACER
++	select HAVE_FUNCTION_GRAPH_TRACER
+ 	select HAVE_GENERIC_DMA_COHERENT
+ 	select HAVE_HW_BREAKPOINT if PERF_EVENTS
+ 	select HAVE_MEMBLOCK
+diff --git a/arch/arm64/include/asm/ftrace.h b/arch/arm64/include/asm/ftrace.h
+new file mode 100644
+index 0000000..0d5dfdb
+--- /dev/null
++++ b/arch/arm64/include/asm/ftrace.h
+@@ -0,0 +1,23 @@
++/*
++ * arch/arm64/include/asm/ftrace.h
++ *
++ * Copyright (C) 2013 Linaro Limited
++ * Author: AKASHI Takahiro <takahiro.akashi@linaro.org>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#ifndef __ASM_FTRACE_H
++#define __ASM_FTRACE_H
++
++#ifdef CONFIG_FUNCTION_TRACER
++#define MCOUNT_ADDR		((unsigned long)_mcount)
++#define MCOUNT_INSN_SIZE	4 /* sizeof mcount call */
++
++#ifndef __ASSEMBLY__
++extern void _mcount(unsigned long);
++#endif /* __ASSEMBLY__ */
++#endif /* CONFIG_FUNCTION_TRACER */
++
++#endif /* __ASM_FTRACE_H */
+diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
+index 2d4554b..ca921fb 100644
+--- a/arch/arm64/kernel/Makefile
++++ b/arch/arm64/kernel/Makefile
+@@ -5,6 +5,11 @@
+ CPPFLAGS_vmlinux.lds	:= -DTEXT_OFFSET=$(TEXT_OFFSET)
+ AFLAGS_head.o		:= -DTEXT_OFFSET=$(TEXT_OFFSET)
+ 
++ifdef CONFIG_FUNCTION_TRACER
++CFLAGS_REMOVE_ftrace.o = -pg
++CFLAGS_REMOVE_insn.o = -pg
++endif
++
+ # Object file lists.
+ arm64-obj-y		:= cputable.o debug-monitors.o entry.o irq.o fpsimd.o	\
+ 			   entry-fpsimd.o process.o ptrace.o setup.o signal.o	\
+@@ -13,6 +18,7 @@ arm64-obj-y		:= cputable.o debug-monitors.o entry.o irq.o fpsimd.o	\
+ 
+ arm64-obj-$(CONFIG_COMPAT)		+= sys32.o kuser32.o signal32.o 	\
+ 					   sys_compat.o
++arm64-obj-$(CONFIG_FUNCTION_TRACER)	+= ftrace.o entry-ftrace.o
+ arm64-obj-$(CONFIG_MODULES)		+= arm64ksyms.o module.o
+ arm64-obj-$(CONFIG_SMP)			+= smp.o smp_spin_table.o
+ arm64-obj-$(CONFIG_HW_PERF_EVENTS)	+= perf_event.o
+diff --git a/arch/arm64/kernel/arm64ksyms.c b/arch/arm64/kernel/arm64ksyms.c
+index 338b568..7f0512f 100644
+--- a/arch/arm64/kernel/arm64ksyms.c
++++ b/arch/arm64/kernel/arm64ksyms.c
+@@ -56,3 +56,7 @@ EXPORT_SYMBOL(clear_bit);
+ EXPORT_SYMBOL(test_and_clear_bit);
+ EXPORT_SYMBOL(change_bit);
+ EXPORT_SYMBOL(test_and_change_bit);
++
++#ifdef CONFIG_FUNCTION_TRACER
++EXPORT_SYMBOL(_mcount);
++#endif
+diff --git a/arch/arm64/kernel/entry-ftrace.S b/arch/arm64/kernel/entry-ftrace.S
+new file mode 100644
+index 0000000..065f426
+--- /dev/null
++++ b/arch/arm64/kernel/entry-ftrace.S
+@@ -0,0 +1,172 @@
++/*
++ * arch/arm64/kernel/entry-ftrace.S
++ *
++ * Copyright (C) 2013 Linaro Limited
++ * Author: AKASHI Takahiro <takahiro.akashi@linaro.org>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/linkage.h>
++#include <asm/ftrace.h>
++
++/*
++ * Gcc with -pg will put the following code in the beginning of each function:
++ *      mov x0, x30
++ *      bl _mcount
++ *	[function's body ...]
++ * "bl _mcount" may be replaced to "bl ftrace_caller" or NOP if dynamic
++ * ftrace is enabled.
++ *
++ * Please note that x0 as an argument will not be used here because we can
++ * get lr(x30) of insturmented function at any time by winding up call stack
++ * as long as the kernel is compiled without -fomit-frame-pointer.
++ * (or CONFIG_FRAME_POINTER, this is forced on arm64)
++ *
++ * stack layout after mcount_enter:
++ *
++ *   0 ---------------------------------------- sp of _mcount()
++ *      x29: fp of instrumented function	fp is not winded
++ *     --------------------
++ *      x30: lr of _mcount() (= instrumented function's pc)
++ * +16 ---------------------------------------- sp of instrumented function
++ *
++ *     ....
++ *
++ * +xx ---------------------------------------- fp of instrumented function
++ *      x29: fp of parent
++ *     --------------------
++ *      x30: lr of insturmented function (= parent's pc)
++ *     --------------------
++ *      xxx
++ */
++
++	.macro mcount_enter
++	stp	x29, x30, [sp, #-48]!
++	.endm
++
++	.macro mcount_exit
++	ldp	x29, x30, [sp], #48
++	ret
++	.endm
++
++	.macro mcount_adjust_addr rd, rn
++	sub	\rd, \rn, #MCOUNT_INSN_SIZE
++	.endm
++
++	/* for instrumented function's parent */
++	.macro mcount_get_parent_fp reg
++	ldr	\reg, [sp]
++	ldr	\reg, [\reg]
++	.endm
++
++	/* for instrumented function */
++	.macro mcount_get_pc0 reg
++	mcount_adjust_addr	\reg, x30
++	.endm
++
++	.macro mcount_get_pc reg
++	ldr	\reg, [sp, #8]
++	mcount_adjust_addr	\reg, \reg
++	.endm
++
++	.macro mcount_get_lr reg
++	ldr	\reg, [sp]
++	ldr	\reg, [\reg, #8]
++	mcount_adjust_addr	\reg, \reg
++	.endm
++
++	.macro mcount_get_saved_lr_addr reg
++	ldr	\reg, [sp]
++	add	\reg, \reg, #8
++	.endm
++
++/*
++ * void _mcount(unsigned long return_address)
++ * @return_address: return address to instrumented function
++ *
++ * This function makes calls, if enabled, to:
++ *     - tracer function to probe instrumented function's entry,
++ *     - ftrace_graph_caller to set up an exit hook
++ */
++ENTRY(_mcount)
++#ifdef CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST
++	ldr	x0, =ftrace_trace_stop
++	ldr	x0, [x0]		// if ftrace_trace_stop
++	ret				//   return;
++#endif
++	mcount_enter
++
++	ldr	x0, =ftrace_trace_function
++	ldr	x2, [x0]
++	adr	x0, ftrace_stub
++	cmp	x0, x2			// if (ftrace_trace_function
++	b.eq	skip_ftrace_call	//     != ftrace_stub) {
++
++	mcount_get_pc	x0		//       function's pc
++	mcount_get_lr	x1		//       function's lr (= parent's pc)
++	blr	x2			//   (*ftrace_trace_function)(pc, lr);
++
++#ifndef CONFIG_FUNCTION_GRAPH_TRACER
++skip_ftrace_call:			//   return;
++	mcount_exit			// }
++#else
++	mcount_exit			//   return;
++					// }
++skip_ftrace_call:
++	ldr	x1, =ftrace_graph_return
++	ldr	x2, [x1]		//   if ((ftrace_graph_return
++	cmp	x0, x2			//        != ftrace_stub)
++	b.ne	ftrace_graph_caller
++
++	ldr	x1, =ftrace_graph_entry	//     || (ftrace_graph_entry
++	ldr	x2, [x1]		//        != ftrace_graph_entry_stub))
++	ldr	x0, =ftrace_graph_entry_stub
++	cmp	x0, x2
++	b.ne	ftrace_graph_caller	//     ftrace_graph_caller();
++
++	mcount_exit
++#endif /* CONFIG_FUNCTION_GRAPH_TRACER */
++ENDPROC(_mcount)
++
++ENTRY(ftrace_stub)
++	ret
++ENDPROC(ftrace_stub)
++
++#ifdef CONFIG_FUNCTION_GRAPH_TRACER
++/*
++ * void ftrace_graph_caller(void)
++ *
++ * Called from _mcount() or ftrace_caller() when function_graph tracer is
++ * selected.
++ * This function w/ prepare_ftrace_return() fakes link register's value on
++ * the call stack in order to intercept instrumented function's return path
++ * and run return_to_handler() later on its exit.
++ */
++ENTRY(ftrace_graph_caller)
++	mcount_get_saved_lr_addr  x0	//     pointer to function's saved lr
++	mcount_get_pc		  x1	//     function's pc
++	mcount_get_parent_fp	  x2	//     parent's fp
++	bl	prepare_ftrace_return	// prepare_ftrace_return(&lr, pc, fp)
++
++	mcount_exit
++ENDPROC(ftrace_graph_caller)
++
++/*
++ * void return_to_handler(void)
++ *
++ * Run ftrace_return_to_handler() before going back to parent.
++ * @fp is checked against the value passed by ftrace_graph_caller()
++ * only when CONFIG_FUNCTION_GRAPH_FP_TEST is enabled.
++ */
++	.global return_to_handler
++return_to_handler:
++	str	x0, [sp, #-16]!
++	mov	x0, x29			//     parent's fp
++	bl	ftrace_return_to_handler// addr = ftrace_return_to_hander(fp);
++	mov	x30, x0			// restore the original return address
++	ldr	x0, [sp], #16
++	ret
++#endif /* CONFIG_FUNCTION_GRAPH_TRACER */
+diff --git a/arch/arm64/kernel/ftrace.c b/arch/arm64/kernel/ftrace.c
+new file mode 100644
+index 0000000..a559ab8
+--- /dev/null
++++ b/arch/arm64/kernel/ftrace.c
+@@ -0,0 +1,64 @@
++/*
++ * arch/arm64/kernel/ftrace.c
++ *
++ * Copyright (C) 2013 Linaro Limited
++ * Author: AKASHI Takahiro <takahiro.akashi@linaro.org>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/ftrace.h>
++#include <linux/swab.h>
++#include <linux/uaccess.h>
++
++#include <asm/cacheflush.h>
++#include <asm/ftrace.h>
++#include <asm/insn.h>
++
++#ifdef CONFIG_FUNCTION_GRAPH_TRACER
++/*
++ * function_graph tracer expects ftrace_return_to_handler() to be called
++ * on the way back to parent. For this purpose, this function is called
++ * in _mcount() or ftrace_caller() to replace return address (*parent) on
++ * the call stack to return_to_handler.
++ *
++ * Note that @frame_pointer is used only for sanity check later.
++ */
++void prepare_ftrace_return(unsigned long *parent, unsigned long self_addr,
++			   unsigned long frame_pointer)
++{
++	unsigned long return_hooker = (unsigned long)&return_to_handler;
++	unsigned long old;
++	struct ftrace_graph_ent trace;
++	int err;
++
++	if (unlikely(atomic_read(&current->tracing_graph_pause)))
++		return;
++
++	/*
++	 * Note:
++	 * No protection against faulting at *parent, which may be seen
++	 * on other archs. It's unlikely on AArch64.
++	 */
++	old = *parent;
++	*parent = return_hooker;
++
++	trace.func = self_addr;
++	trace.depth = current->curr_ret_stack + 1;
++
++	/* Only trace if the calling function expects to */
++	if (!ftrace_graph_entry(&trace)) {
++		*parent = old;
++		return;
++	}
++
++	err = ftrace_push_return_trace(old, self_addr, &trace.depth,
++				       frame_pointer);
++	if (err == -EBUSY) {
++		*parent = old;
++		return;
++	}
++}
++#endif /* CONFIG_FUNCTION_GRAPH_TRACER */
 -- 
 1.7.9.5
 
