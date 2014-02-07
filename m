@@ -1,321 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751980AbaBGIAc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 03:00:32 -0500
-Received: from 3.mo1.mail-out.ovh.net ([46.105.60.232]:44682 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751950AbaBGIA3 (ORCPT
+	id S1751556AbaBGICH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 03:02:07 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:14889 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750743AbaBGICF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 03:00:29 -0500
-Date: Fri, 7 Feb 2014 09:01:42 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>,
-        linux-kernel@vger.kernel.org,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: Re: [PATCH v2] ARM: at91: add Atmel's SAMA5D3 Xplained board
-Message-ID: <20140207080142.GR9558@ns203013.ovh.net>
-References: <20140204203054.GA21958@ldesroches-Latitude-E6320>
- <1391589347-26019-1-git-send-email-nicolas.ferre@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1391589347-26019-1-git-send-email-nicolas.ferre@atmel.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Ovh-Tracer-Id: 10563755878065810284
-X-Ovh-Remote: 91.121.171.124 (ns203013.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrjedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrjeehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Fri, 7 Feb 2014 03:02:05 -0500
+X-AuditID: cbfee68e-b7f566d000002344-48-52f492fb708f
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
+        rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>,
+        "'Hans-Christian Egtvedt'" <egtvedt@samfundet.no>
+References: <000901cf23da$a04cbca0$e0e635e0$%han@samsung.com>
+In-reply-to: <000901cf23da$a04cbca0$e0e635e0$%han@samsung.com>
+Subject: [PATCH 01/10] rtc: rtc-at32ap700x: Remove unnecessary OOM messages
+Date: Fri, 07 Feb 2014 17:02:02 +0900
+Message-id: <000a01cf23da$e2b2e010$a818a030$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac8j2qAzLOfgRWJTRVWYElXe2alJBAAAAwPw
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEIsWRmVeSWpSXmKPExsVy+t8zA93fk74EGfxYzmOx5OJVdos569ew
+	WXSve8RucXnhJVaLy7vmsFns7+xgdGDz2DPxJJvHiRm/WTwWnfrM7tG3ZRWjx/R5P5k8Pm+S
+	C2CL4rJJSc3JLEst0rdL4MrY3nCOqWApW8Xd9z+YGhinsXYxcnJICJhI3F5wEMoWk7hwbz1b
+	FyMXh5DAMkaJPZ332WCKHu74zgqRWMQo8fntHSjnF6NE4499TCBVbAJqEl++HGbvYuTgEBHQ
+	l2hr0QCpYRY4wCixZvY3sBohAVuJX5+XgK3jFLCTWHTiLJgtLOAtMePKLTCbRUBV4kLvA7B6
+	XqD6K01HGSFsQYkfk++xgNjMAloS63ceZ4Kw5SU2r3nLDLJXQkBd4tFfXZCwiICRxKxt3ewQ
+	JSIS+168YwS5R0LgI7vEgunTWSB2CUh8m3yIBaJXVmLTAWaIhyUlDq64wTKBUWIWks2zkGye
+	hWTzLCQrFjCyrGIUTS1ILihOSi8y0itOzC0uzUvXS87P3cQIid++HYw3D1gfYkwGWj+RWUo0
+	OR8Y/3kl8YbGZkYWpiamxkbmlmakCSuJ8y56mBQkJJCeWJKanZpakFoUX1Sak1p8iJGJg1Oq
+	gXH27R/XT17/sCeyh3VFgfLaW2e3NE2W71Do+8n55eqWla+ipyfG1wi90NiqOGntrs9t/L7m
+	a35/+rac+bDd1FN/N1R0O554UpiS6hYZUyL3qOH62XveYW43FopOqkr31Jsj5u4cd/vTs/vn
+	apieHt92Mf0Xf9GiAqWvin8uJkdXJNyb03aQ93uCEktxRqKhFnNRcSIAf+vU1vUCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPKsWRmVeSWpSXmKPExsVy+t9jAd3fk74EGXzazWGx5OJVdos569ew
+	WXSve8RucXnhJVaLy7vmsFns7+xgdGDz2DPxJJvHiRm/WTwWnfrM7tG3ZRWjx/R5P5k8Pm+S
+	C2CLamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAG6
+	Q0mhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeYsb3hHFPBUraKu+9/MDUw
+	TmPtYuTkkBAwkXi44zuULSZx4d56ti5GLg4hgUWMEp/f3mGFcH4xSjT+2McEUsUmoCbx5cth
+	9i5GDg4RAX2JthYNkBpmgQOMEmtmfwOrERKwlfj1eQnYVE4BO4lFJ86C2cIC3hIzrtwCs1kE
+	VCUu9D4Aq+cFqr/SdJQRwhaU+DH5HguIzSygJbF+53EmCFteYvOat8wgeyUE1CUe/dUFCYsI
+	GEnM2tbNDlEiIrHvxTvGCYxCs5BMmoVk0iwkk2YhaVnAyLKKUTS1ILmgOCk910ivODG3uDQv
+	XS85P3cTIzg5PJPewbiqweIQowAHoxIP74mln4OEWBPLiitzDzFKcDArifD+bPgSJMSbklhZ
+	lVqUH19UmpNafIgxGejRicxSosn5wMSVVxJvaGxiZmRpZGZhZGJuTpqwkjjvwVbrQCGB9MSS
+	1OzU1ILUIpgtTBycUg2MM0N6BXT/f5SU95U5fSh4+Q2jaS4vL/T1Pd7rKu1QPD+ztG+q7YSA
+	N03P9kcIr7Db93ui9NmP9w5MfGjyge3+Sr8FvDntfyf947L+Yn9727Nmx2gXwWTT3nX7pvtN
+	kWyPcQ5Z92J//R6jzcfT2zefvVzLb+9pfVTq9Yw3B+9fvdH5L63TsmqxjBJLcUaioRZzUXEi
+	AGkNSUpSAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09:35 Wed 05 Feb     , Nicolas Ferre wrote:
-> Add DT file for new SAMA5D3 Xpained board.
-> This board is based on Atmel's SAMA5D36 Cortex-A5 SoC.
-> 
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> ---
->  arch/arm/boot/dts/Makefile                  |   1 +
->  arch/arm/boot/dts/at91-sama5d3_xplained.dts | 233 ++++++++++++++++++++++++++++
->  2 files changed, 234 insertions(+)
->  create mode 100644 arch/arm/boot/dts/at91-sama5d3_xplained.dts
-> 
-> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-> index b9d6a8b485e0..6d1e43d46187 100644
-> --- a/arch/arm/boot/dts/Makefile
-> +++ b/arch/arm/boot/dts/Makefile
-> @@ -38,6 +38,7 @@ dtb-$(CONFIG_ARCH_AT91) += at91sam9g35ek.dtb
->  dtb-$(CONFIG_ARCH_AT91) += at91sam9x25ek.dtb
->  dtb-$(CONFIG_ARCH_AT91) += at91sam9x35ek.dtb
->  # sama5d3
-> +dtb-$(CONFIG_ARCH_AT91)	+= at91-sama5d3_xplained.dtb
->  dtb-$(CONFIG_ARCH_AT91)	+= sama5d31ek.dtb
->  dtb-$(CONFIG_ARCH_AT91)	+= sama5d33ek.dtb
->  dtb-$(CONFIG_ARCH_AT91)	+= sama5d34ek.dtb
-> diff --git a/arch/arm/boot/dts/at91-sama5d3_xplained.dts b/arch/arm/boot/dts/at91-sama5d3_xplained.dts
-> new file mode 100644
-> index 000000000000..fb1349ca60a4
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/at91-sama5d3_xplained.dts
-> @@ -0,0 +1,233 @@
-> +/*
-> + * at91-sama5d3_xplained.dts - Device Tree file for the SAMA5D3 Xplained board
-> + *
-> + *  Copyright (C) 2014 Atmel,
-> + *		  2014 Nicolas Ferre <nicolas.ferre@atmel.com>
-> + *
-> + * Licensed under GPLv2 or later.
-> + */
-> +/dts-v1/;
-> +#include "sama5d36.dtsi"
-> +
-> +/ {
-> +	model = "SAMA5D3 Xplained";
-> +	compatible = "atmel,sama5d3-xplained", "atmel,sama5d3", "atmel,sama5";
-> +
-> +	chosen {
-> +		bootargs = "console=ttyS0,115200";
-can you describe it via linux,stdout
-> +	};
-> +
-> +	memory {
-> +		reg = <0x20000000 0x10000000>;
-> +	};
-> +
-> +	ahb {
-> +		apb {
-> +			mmc0: mmc@f0000000 {
-> +				pinc§trl-names = "default";
-?? this is SoC should never been seen here
-> +				pinctrl-0 = <&pinctrl_mmc0_clk_cmd_dat0 &pinctrl_mmc0_dat1_3 &pinctrl_mmc0_dat4_7 &pinctrl_mmc0_cd>;
-> +				status = "okay";
-> +				slot@0 {
-> +					reg = <0>;
-> +					bus-width = <8>;
-> +					cd-gpios = <&pioE 0 GPIO_ACTIVE_LOW>;
-> +				};
-> +			};
-> +
-> +			spi0: spi@f0004000 {
-> +				cs-gpios = <&pioD 13 0>, <0>, <0>, <0>;
-if you use only one CS no need to specified all
+The site-specific OOM messages are unnecessary, because they
+duplicate the MM subsystem generic OOM message.
 
-we need to add macro per SoC for the hw CS used as GPIO so it's more clear
-> +				status = "okay";
-> +			};
-> +
-> +			can0: can@f000c000 {
-> +				status = "okay";
-> +			};
-> +
-> +			i2c0: i2c@f0014000 {
-> +				status = "okay";
-> +			};
-> +
-> +			i2c1: i2c@f0018000 {
-> +				status = "okay";
-> +			};
-> +
-> +			macb0: ethernet@f0028000 {
-> +				phy-mode = "rgmii";
-> +				status = "okay";
-> +			};
-> +
-> +			usart0: serial@f001c000 {
-> +				status = "okay";
-> +			};
-> +
-> +			usart1: serial@f0020000 {
-> +				pinctrl-names = "default";
-same as mmc
-> +				pinctrl-0 = <&pinctrl_usart1 &pinctrl_usart1_rts_cts>;
-> +				status = "okay";
-> +			};
-> +
-> +			uart0: serial@f0024000 {
-> +				status = "okay";
-> +			};
-> +
-> +			mmc1: mmc@f8000000 {
-> +				pinctrl-names = "default";
-ditto
-> +				pinctrl-0 = <&pinctrl_mmc1_clk_cmd_dat0 &pinctrl_mmc1_dat1_3 &pinctrl_mmc1_cd>;
-> +				status = "okay";
-> +				slot@0 {
-> +					reg = <0>;
-> +					bus-width = <4>;
-> +					cd-gpios = <&pioE 1 GPIO_ACTIVE_HIGH>;
-> +				};
-> +			};
-> +
-> +			spi1: spi@f8008000 {
-> +				cs-gpios = <&pioC 25 0>, <0>, <0>, <&pioD 16 0>;
-> +				status = "okay";
-> +			};
-> +
-> +			adc0: adc@f8018000 {
-> +				pinctrl-names = "default";
-ditto
-> +				pinctrl-0 = <
-> +					&pinctrl_adc0_adtrg
-> +					&pinctrl_adc0_ad0
-> +					&pinctrl_adc0_ad1
-> +					&pinctrl_adc0_ad2
-> +					&pinctrl_adc0_ad3
-> +					&pinctrl_adc0_ad4
-> +					&pinctrl_adc0_ad5
-> +					&pinctrl_adc0_ad6
-> +					&pinctrl_adc0_ad7
-> +					&pinctrl_adc0_ad8
-> +					&pinctrl_adc0_ad9
-> +					>;
-> +				status = "okay";
-> +			};
-> +
-> +			i2c2: i2c@f801c000 {
-> +				dmas = <0>, <0>;	/* Do not use DMA for i2c2 */
-why?
-> +				status = "okay";
-> +			};
-> +
-> +			macb1: ethernet@f802c000 {
-> +				phy-mode = "rmii";
-> +				status = "okay";
-> +			};
-> +
-> +			dbgu: serial@ffffee00 {
-> +				status = "okay";
-> +			};
-> +
-> +			pinctrl@fffff200 {
-> +				board {
-> +					pinctrl_mmc0_cd: mmc0_cd {
-> +						atmel,pins =
-> +							<AT91_PIOE 0 AT91_PERIPH_GPIO AT91_PINCTRL_PULL_UP_DEGLITCH>;
-> +					};
-> +
-> +					pinctrl_mmc1_cd: mmc1_cd {
-> +						atmel,pins =
-> +							<AT91_PIOE 1 AT91_PERIPH_GPIO AT91_PINCTRL_PULL_UP_DEGLITCH>;
-> +					};
-> +
-> +					pinctrl_usba_vbus: usba_vbus {
-> +						atmel,pins =
-> +							<AT91_PIOE 9 AT91_PERIPH_GPIO AT91_PINCTRL_DEGLITCH>;	/* PE9, conflicts with A9 */
-in this case we should have ifdef so we could choose what we want via make
-file
-> +					};
-> +				};
-> +			};
-> +
-> +			pmc: pmc@fffffc00 {
-> +				main: mainck {
-> +					clock-frequency = <12000000>;
-> +				};
-> +			};
-> +		};
-> +
-> +		nand0: nand@60000000 {
-> +			nand-bus-width = <8>;
-> +			nand-ecc-mode = "hw";
-> +			atmel,has-pmecc;
-> +			atmel,pmecc-cap = <4>;
-> +			atmel,pmecc-sector-size = <512>;
-> +			nand-on-flash-bbt;
-> +			status = "okay";
-> +
-> +			at91bootstrap@0 {
-> +				label = "at91bootstrap";
-> +				reg = <0x0 0x40000>;
-> +			};
-> +
-> +			bootloader@40000 {
-> +				label = "bootloader";
-> +				reg = <0x40000 0x80000>;
-> +			};
-> +
-> +			bootloaderenv@c0000 {
-> +				label = "bootloader env";
-> +				reg = <0xc0000 0xc0000>;
-> +			};
-> +
-> +			dtb@180000 {
-> +				label = "device tree";
-> +				reg = <0x180000 0x80000>;
-> +			};
-> +
-> +			kernel@200000 {
-> +				label = "kernel";
-> +				reg = <0x200000 0x600000>;
-> +			};
-> +
-> +			rootfs@800000 {
-> +				label = "rootfs";
-> +				reg = <0x800000 0x0f800000>;
-> +			};
-more I read this partition more it's seems wrong those days
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/rtc/rtc-at32ap700x.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-we really need to switch to UBI
-> +		};
-> +
-> +		usb0: gadget@00500000 {
-> +			atmel,vbus-gpio = <&pioE 9 GPIO_ACTIVE_HIGH>;	/* PE9, conflicts with A9 */
-> +			pinctrl-names = "default";
-> +			pinctrl-0 = <&pinctrl_usba_vbus>;
-> +			status = "okay";
-> +		};
-> +
-> +		usb1: ohci@00600000 {
-> +			num-ports = <3>;
-> +			atmel,vbus-gpio = <0
-> +					   &pioE 3 GPIO_ACTIVE_LOW
-> +					   &pioE 4 GPIO_ACTIVE_LOW
-> +					  >;
-> +			status = "okay";
-> +		};
-> +
-> +		usb2: ehci@00700000 {
-> +			status = "okay";
-> +		};
-> +	};
-> +
-> +	gpio_keys {
-> +		compatible = "gpio-keys";
-> +
-> +		bp3 {
-> +			label = "PB_USER";
-> +			gpios = <&pioE 29 GPIO_ACTIVE_LOW>;
-> +			linux,code = <0x104>;
-> +			gpio-key,wakeup;
-> +		};
-> +	};
-> +
-> +	leds {
-> +		compatible = "gpio-leds";
-> +
-> +		d2 {
-> +			label = "d2";
-> +			gpios = <&pioE 23 GPIO_ACTIVE_LOW>;	/* PE23, conflicts with A23, CTS2 */
-> +			linux,default-trigger = "heartbeat";
-> +		};
-> +
-> +		d3 {
-> +			label = "d3";
-> +			gpios = <&pioE 24 GPIO_ACTIVE_HIGH>;
-> +		};
-> +	};
-> +};
-> -- 
-> 1.8.2.2
-> 
+diff --git a/drivers/rtc/rtc-at32ap700x.c b/drivers/rtc/rtc-at32ap700x.c
+index 3161ab5..aee3387 100644
+--- a/drivers/rtc/rtc-at32ap700x.c
++++ b/drivers/rtc/rtc-at32ap700x.c
+@@ -204,10 +204,8 @@ static int __init at32_rtc_probe(struct platform_device *pdev)
+ 
+ 	rtc = devm_kzalloc(&pdev->dev, sizeof(struct rtc_at32ap700x),
+ 			   GFP_KERNEL);
+-	if (!rtc) {
+-		dev_dbg(&pdev->dev, "out of memory\n");
++	if (!rtc)
+ 		return -ENOMEM;
+-	}
+ 
+ 	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (!regs) {
+-- 
+1.7.10.4
+
+
