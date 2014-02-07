@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754674AbaBGNJp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 08:09:45 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41671 "EHLO
+	id S932159AbaBGLsz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 06:48:55 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41657 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932137AbaBGLs4 (ORCPT
+	with ESMTP id S932137AbaBGLsx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:48:56 -0500
+	Fri, 7 Feb 2014 06:48:53 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Maximilian Attems <maks@stro.at>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 059/233] parport: parport_pc: remove double PCI ID for NetMos
-Date: Fri,  7 Feb 2014 11:44:38 +0000
-Message-Id: <1391773652-25214-60-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 057/233] NFSv4: OPEN must handle the NFS4ERR_IO return code correctly
+Date: Fri,  7 Feb 2014 11:44:36 +0000
+Message-Id: <1391773652-25214-58-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
@@ -30,77 +27,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit d6a484520c5572a4170fa915109ccfc0c38f5008 upstream.
+commit c7848f69ec4a8c03732cde5c949bd2aa711a9f4b upstream.
 
-In commit 85747f ("PATCH] parport: add NetMOS 9805 support") Max added
-the PCI ID for NetMOS 9805 based on a Debian bug report from 2k4 which
-was at the v2.4.26 time frame. The patch made into 2.6.14.
-Shortly before that patch akpm merged commit 296d3c783b ("[PATCH] Support
-NetMOS based PCI cards providing serial and parallel ports") which made
-into v2.6.9-rc1.
-Now we have two different entries for the same PCI id.
-I have here the NetMos 9805 which claims to support SPP/EPP/ECP mode.
-This patch takes Max's entry for titan_1284p1 (base != -1 specifies the
-ioport for ECP mode) and replaces akpm's entry for netmos_9805 which
-specified -1 (=none). Both share the same PCI-ID (my card has subsystem
-0x1000 / 0x0020 so it should match PCI_ANY).
+decode_op_hdr() cannot distinguish between an XDR decoding error and
+the perfectly valid errorcode NFS4ERR_IO. This is normally not a
+problem, but for the particular case of OPEN, we need to be able
+to increment the NFSv4 open sequence id when the server returns
+a valid response.
 
-While here I also drop the entry for titan_1284p2 which is the same as
-netmos_9815.
-
-Cc: Maximilian Attems <maks@stro.at>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Reported-by: J Bruce Fields <bfields@fieldses.org>
+Link: http://lkml.kernel.org/r/20131204210356.GA19452@fieldses.org
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/parport/parport_pc.c | 10 ++--------
- 1 file changed, 2 insertions(+), 8 deletions(-)
+ fs/nfs/nfs4xdr.c | 47 +++++++++++++++++++++++++++++++----------------
+ 1 file changed, 31 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/parport/parport_pc.c b/drivers/parport/parport_pc.c
-index 903e128..b0a0d53 100644
---- a/drivers/parport/parport_pc.c
-+++ b/drivers/parport/parport_pc.c
-@@ -2596,8 +2596,6 @@ enum parport_pc_pci_cards {
- 	syba_2p_epp,
- 	syba_1p_ecp,
- 	titan_010l,
--	titan_1284p1,
--	titan_1284p2,
- 	avlab_1p,
- 	avlab_2p,
- 	oxsemi_952,
-@@ -2656,8 +2654,6 @@ static struct parport_pc_pci {
- 	/* syba_2p_epp AP138B */	{ 2, { { 0, 0x078 }, { 0, 0x178 }, } },
- 	/* syba_1p_ecp W83787 */	{ 1, { { 0, 0x078 }, } },
- 	/* titan_010l */		{ 1, { { 3, -1 }, } },
--	/* titan_1284p1 */              { 1, { { 0, 1 }, } },
--	/* titan_1284p2 */		{ 2, { { 0, 1 }, { 2, 3 }, } },
- 	/* avlab_1p		*/	{ 1, { { 0, 1}, } },
- 	/* avlab_2p		*/	{ 2, { { 0, 1}, { 2, 3 },} },
- 	/* The Oxford Semi cards are unusual: 954 doesn't support ECP,
-@@ -2673,8 +2669,8 @@ static struct parport_pc_pci {
- 	/* netmos_9705 */               { 1, { { 0, -1 }, } },
- 	/* netmos_9715 */               { 2, { { 0, 1 }, { 2, 3 },} },
- 	/* netmos_9755 */               { 2, { { 0, 1 }, { 2, 3 },} },
--	/* netmos_9805 */               { 1, { { 0, -1 }, } },
--	/* netmos_9815 */               { 2, { { 0, -1 }, { 2, -1 }, } },
-+	/* netmos_9805 */		{ 1, { { 0, 1 }, } },
-+	/* netmos_9815 */		{ 2, { { 0, 1 }, { 2, 3 }, } },
- 	/* netmos_9901 */               { 1, { { 0, -1 }, } },
- 	/* netmos_9865 */               { 1, { { 0, -1 }, } },
- 	/* quatech_sppxp100 */		{ 1, { { 0, 1 }, } },
-@@ -2718,8 +2714,6 @@ static const struct pci_device_id parport_pc_pci_tbl[] = {
- 	  PCI_ANY_ID, PCI_ANY_ID, 0, 0, syba_1p_ecp },
- 	{ PCI_VENDOR_ID_TITAN, PCI_DEVICE_ID_TITAN_010L,
- 	  PCI_ANY_ID, PCI_ANY_ID, 0, 0, titan_010l },
--	{ 0x9710, 0x9805, 0x1000, 0x0010, 0, 0, titan_1284p1 },
--	{ 0x9710, 0x9815, 0x1000, 0x0020, 0, 0, titan_1284p2 },
- 	/* PCI_VENDOR_ID_AVLAB/Intek21 has another bunch of cards ...*/
- 	/* AFAVLAB_TK9902 */
- 	{ 0x14db, 0x2120, PCI_ANY_ID, PCI_ANY_ID, 0, 0, avlab_1p},
+diff --git a/fs/nfs/nfs4xdr.c b/fs/nfs/nfs4xdr.c
+index 3850b01..e24c755 100644
+--- a/fs/nfs/nfs4xdr.c
++++ b/fs/nfs/nfs4xdr.c
+@@ -3050,7 +3050,8 @@ out_overflow:
+ 	return -EIO;
+ }
+ 
+-static int decode_op_hdr(struct xdr_stream *xdr, enum nfs_opnum4 expected)
++static bool __decode_op_hdr(struct xdr_stream *xdr, enum nfs_opnum4 expected,
++		int *nfs_retval)
+ {
+ 	__be32 *p;
+ 	uint32_t opnum;
+@@ -3060,19 +3061,32 @@ static int decode_op_hdr(struct xdr_stream *xdr, enum nfs_opnum4 expected)
+ 	if (unlikely(!p))
+ 		goto out_overflow;
+ 	opnum = be32_to_cpup(p++);
+-	if (opnum != expected) {
+-		dprintk("nfs: Server returned operation"
+-			" %d but we issued a request for %d\n",
+-				opnum, expected);
+-		return -EIO;
+-	}
++	if (unlikely(opnum != expected))
++		goto out_bad_operation;
+ 	nfserr = be32_to_cpup(p);
+-	if (nfserr != NFS_OK)
+-		return nfs4_stat_to_errno(nfserr);
+-	return 0;
++	if (nfserr == NFS_OK)
++		*nfs_retval = 0;
++	else
++		*nfs_retval = nfs4_stat_to_errno(nfserr);
++	return true;
++out_bad_operation:
++	dprintk("nfs: Server returned operation"
++		" %d but we issued a request for %d\n",
++			opnum, expected);
++	*nfs_retval = -EREMOTEIO;
++	return false;
+ out_overflow:
+ 	print_overflow_msg(__func__, xdr);
+-	return -EIO;
++	*nfs_retval = -EIO;
++	return false;
++}
++
++static int decode_op_hdr(struct xdr_stream *xdr, enum nfs_opnum4 expected)
++{
++	int retval;
++
++	__decode_op_hdr(xdr, expected, &retval);
++	return retval;
+ }
+ 
+ /* Dummy routine */
+@@ -4954,11 +4968,12 @@ static int decode_open(struct xdr_stream *xdr, struct nfs_openres *res)
+ 	uint32_t savewords, bmlen, i;
+ 	int status;
+ 
+-	status = decode_op_hdr(xdr, OP_OPEN);
+-	if (status != -EIO)
+-		nfs_increment_open_seqid(status, res->seqid);
+-	if (!status)
+-		status = decode_stateid(xdr, &res->stateid);
++	if (!__decode_op_hdr(xdr, OP_OPEN, &status))
++		return status;
++	nfs_increment_open_seqid(status, res->seqid);
++	if (status)
++		return status;
++	status = decode_stateid(xdr, &res->stateid);
+ 	if (unlikely(status))
+ 		return status;
+ 
 -- 
 1.8.3.2
 
