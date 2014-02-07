@@ -1,92 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753092AbaBGQyy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 11:54:54 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:37057 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751294AbaBGQyv (ORCPT
+	id S1752596AbaBGQsh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 11:48:37 -0500
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:45303 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751673AbaBGQs2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 11:54:51 -0500
-Date: Fri, 7 Feb 2014 10:51:27 -0600
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Kumar Gala <galak@codeaurora.org>
-Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>, Mark Brown <broonie@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, linux-spi@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Alok Chauhan <alokc@codeaurora.org>,
-        Gilad Avidov <gavidov@codeaurora.org>,
-        Kiran Gunda <kgunda@codeaurora.org>,
-        Sagar Dharia <sdharia@codeaurora.org>,
-        Andy Gross <agross@codeaurora.org>
-Subject: Re: [PATCH 2/2] spi: Add Qualcomm QUP SPI controller support
-Message-ID: <20140207165127.GV20228@joshc.qualcomm.com>
-References: <1391705868-20091-1-git-send-email-iivanov@mm-sol.com>
- <1391705868-20091-3-git-send-email-iivanov@mm-sol.com>
- <20140207073952.GA2610@qualcomm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140207073952.GA2610@qualcomm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Fri, 7 Feb 2014 11:48:28 -0500
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bfields@fieldses.org, hch@infradead.org, akpm@linux-foundation.org,
+        dhowells@redhat.com, zab@redhat.com, jack@suse.cz, luto@amacapital.net,
+        mszeredi@suse.cz
+Subject: [PATCH 00/13] cross rename v4
+Date: Fri,  7 Feb 2014 17:48:58 +0100
+Message-Id: <1391791751-2533-1-git-send-email-miklos@szeredi.hu>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 07, 2014 at 01:39:52AM -0600, Andy Gross wrote:
-> On Thu, Feb 06, 2014 at 06:57:48PM +0200, Ivan T. Ivanov wrote:
-> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> > 
-> > Qualcomm Universal Peripheral (QUP) core is an AHB slave that
-> > provides a common data path (an output FIFO and an input FIFO)
-> > for serial peripheral interface (SPI) mini-core. SPI in master mode
-> > support up to 50MHz, up to four chip selects, and a programmable
-> > data path from 4 bits to 32 bits; MODE0..3 protocols
-> > 
-> > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> > Cc: Alok Chauhan <alokc@codeaurora.org>
-> > Cc: Gilad Avidov <gavidov@codeaurora.org>
-> > Cc: Kiran Gunda <kgunda@codeaurora.org>
-> > Cc: Sagar Dharia <sdharia@codeaurora.org>
-> > ---
-> >  drivers/spi/Kconfig   |   14 +
-> >  drivers/spi/Makefile  |    1 +
-> >  drivers/spi/spi-qup.c |  898 +++++++++++++++++++++++++++++++++++++++++++++++++
-> >  3 files changed, 913 insertions(+)
-> >  create mode 100644 drivers/spi/spi-qup.c
-> > 
-> > diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
-> > index ba9310b..bf8ce6b 100644
-> > --- a/drivers/spi/Kconfig
-> > +++ b/drivers/spi/Kconfig
-> > @@ -381,6 +381,20 @@ config SPI_RSPI
-> >  	help
-> >  	  SPI driver for Renesas RSPI blocks.
-> >  
-> > +config SPI_QUP
-> > +	tristate "Qualcomm SPI Support with QUP interface"
-> > +	depends on ARCH_MSM
-> 
-> I'd change to ARCH_MSM_DT.  This ensures the OF component is there.
+Changes since the last version (based on Al's review):
 
-I'd rather explicitly include the CONFIG_OF dependency, but I'm not too
-opinionated.
+ - cross-rename: fix locking of nondirectories for NFSv4
+ - ext4: split cross-rename and plain rename into separate functions
+ - introduce i_op->rename2 with flags, don't touch ->rename
+ - last (optional) patch to merge ->rename2 back into ->rename
 
-	config SPI_QUP
-		tristate "Qualcomm SPI Support with QUP interface"
-		depends on OF
-		depends on ARM
-		depends on ARCH_MSM_DT || COMPILE_TEST
+The splitting of the ext4 implemetation was indeed a good idea as it uncovered a
+memory leak and small inconsistencies with the merged implementation.
 
-With Kumar's pending the ARCH_MSM_DT -> ARCH_QCOM rename, we'll
-introduce a arm-soc/spi tree dependency here that we'll need to keep
-track of.
+Splitting out rename2 will lessen the code churn, but I think is ugly.  However
+this is a question of taste, last patch can be ommitted without loss of
+functionality.
 
-Kumar-
+Bruce, could you please review the locking and delegation thing in patch #8
+"vfs: add cross-rename"?
 
-How would you like to handle this?  Would it make sense for this to go
-through the SPI tree with depending on ARCH_QCOM instead of ARCH_MSM_DT?
+Git tree is here:
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+  git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git cross-rename
+
+Thanks,
+Miklos
+
+---
+Miklos Szeredi (13):
+      vfs: add d_is_dir()
+      vfs: rename: move d_move() up
+      vfs: rename: use common code for dir and non-dir
+      vfs: add renameat2 syscall
+      vfs: add RENAME_NOREPLACE flag
+      security: add flags to rename hooks
+      vfs: lock_two_nondirectories: allow directory args
+      vfs: add cross-rename
+      ext4: rename: create ext4_renament structure for local vars
+      ext4: rename: move EMLINK check up
+      ext4: rename: split out helper functions
+      ext4: add cross rename support
+      vfs: merge rename2 into rename
+
+---
+ Documentation/filesystems/Locking                  |   2 +-
+ Documentation/filesystems/vfs.txt                  |  14 +-
+ arch/x86/syscalls/syscall_64.tbl                   |   1 +
+ .../lustre/lustre/include/linux/lustre_compat25.h  |   4 +-
+ drivers/staging/lustre/lustre/llite/namei.c        |   3 +-
+ drivers/staging/lustre/lustre/lvfs/lvfs_linux.c    |   2 +-
+ fs/9p/v9fs.h                                       |   3 +-
+ fs/9p/vfs_inode.c                                  |   4 +-
+ fs/affs/affs.h                                     |   3 +-
+ fs/affs/namei.c                                    |   3 +-
+ fs/afs/dir.c                                       |   6 +-
+ fs/bad_inode.c                                     |   3 +-
+ fs/bfs/dir.c                                       |   3 +-
+ fs/btrfs/inode.c                                   |   3 +-
+ fs/cachefiles/namei.c                              |   4 +-
+ fs/ceph/dir.c                                      |   3 +-
+ fs/cifs/cifsfs.h                                   |   2 +-
+ fs/cifs/inode.c                                    |   3 +-
+ fs/coda/dir.c                                      |   8 +-
+ fs/dcache.c                                        |  45 +-
+ fs/debugfs/inode.c                                 |   2 +-
+ fs/ecryptfs/inode.c                                |   5 +-
+ fs/exofs/namei.c                                   |   3 +-
+ fs/ext2/namei.c                                    |   5 +-
+ fs/ext3/namei.c                                    |   5 +-
+ fs/ext4/namei.c                                    | 483 +++++++++++++++------
+ fs/ext4/super.c                                    |   6 +-
+ fs/f2fs/namei.c                                    |   3 +-
+ fs/fat/namei_msdos.c                               |   3 +-
+ fs/fat/namei_vfat.c                                |   3 +-
+ fs/fuse/dir.c                                      |   3 +-
+ fs/gfs2/inode.c                                    |   3 +-
+ fs/hfs/dir.c                                       |   3 +-
+ fs/hfsplus/dir.c                                   |   3 +-
+ fs/hostfs/hostfs_kern.c                            |   3 +-
+ fs/hpfs/namei.c                                    |   3 +-
+ fs/inode.c                                         |  20 +-
+ fs/jffs2/dir.c                                     |   5 +-
+ fs/jfs/namei.c                                     |   3 +-
+ fs/kernfs/dir.c                                    |   3 +-
+ fs/libfs.c                                         |   3 +-
+ fs/logfs/dir.c                                     |   3 +-
+ fs/minix/namei.c                                   |   5 +-
+ fs/namei.c                                         | 310 +++++++------
+ fs/ncpfs/dir.c                                     |   5 +-
+ fs/nfs/dir.c                                       |   3 +-
+ fs/nfs/internal.h                                  |   3 +-
+ fs/nfsd/vfs.c                                      |   2 +-
+ fs/nilfs2/namei.c                                  |   3 +-
+ fs/ocfs2/namei.c                                   |   3 +-
+ fs/omfs/dir.c                                      |   3 +-
+ fs/reiserfs/namei.c                                |   3 +-
+ fs/sysv/namei.c                                    |   5 +-
+ fs/ubifs/dir.c                                     |   3 +-
+ fs/udf/namei.c                                     |   3 +-
+ fs/ufs/namei.c                                     |   3 +-
+ fs/xfs/xfs_iops.c                                  |   3 +-
+ include/linux/dcache.h                             |   8 +-
+ include/linux/fs.h                                 |   7 +-
+ include/linux/security.h                           |  12 +-
+ include/uapi/linux/fs.h                            |   3 +
+ kernel/cgroup.c                                    |   5 +-
+ mm/shmem.c                                         |   2 +-
+ security/security.c                                |  22 +-
+ 64 files changed, 736 insertions(+), 372 deletions(-)
+
