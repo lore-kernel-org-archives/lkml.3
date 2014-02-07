@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932286AbaBGNVo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 08:21:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41482 "EHLO
+	id S1755494AbaBGNW2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 08:22:28 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41471 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754284AbaBGLsI (ORCPT
+	with ESMTP id S1754008AbaBGLsG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 06:48:08 -0500
+	Fri, 7 Feb 2014 06:48:06 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
-	<ville.syrjala@linux.intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
+Cc: Daniel Borkmann <dborkman@redhat.com>, Harald Welte <laforge@gnumonks.org>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 023/233] drm/i915: Don't grab crtc mutexes in intel_modeset_gem_init()
-Date: Fri,  7 Feb 2014 11:44:02 +0000
-Message-Id: <1391773652-25214-24-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 020/233] netfilter: nf_nat: fix access to uninitialized buffer in IRC NAT helper
+Date: Fri,  7 Feb 2014 11:43:59 +0000
+Message-Id: <1391773652-25214-21-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
 References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,51 +28,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= <ville.syrjala@linux.intel.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit 7ad228b11ec26a820291c9f5a1168d6176580dc1 upstream.
+commit 2690d97ade05c5325cbf7c72b94b90d265659886 upstream.
 
-When the pipe A force quirk is applied the code will attempt to grab
-a crtc mutex during intel_modeset_setup_hw_state(). If we're already
-holding all crtc mutexes this will obviously deadlock every time.
+Commit 5901b6be885e attempted to introduce IPv6 support into
+IRC NAT helper. By doing so, the following code seemed to be removed
+by accident:
 
-So instead of using drm_modeset_lock_all() just grab the
-mode_config.mutex. This is enough to avoid the unlocked mutex warnings
-from certain lower level functions.
+  ip = ntohl(exp->master->tuplehash[IP_CT_DIR_REPLY].tuple.dst.u3.ip);
+  sprintf(buffer, "%u %u", ip, port);
+  pr_debug("nf_nat_irc: inserting '%s' == %pI4, port %u\n", buffer, &ip, port);
 
-The regression was introduced in:
+This leads to the fact that buffer[] was left uninitialized and
+contained some stack value. When we call nf_nat_mangle_tcp_packet(),
+we call strlen(buffer) on excatly this uninitialized buffer. If we
+are unlucky and the skb has enough tailroom, we overwrite resp. leak
+contents with values that sit on our stack into the packet and send
+that out to the receiver.
 
- commit 027476642811f8559cbe00ef6cc54db230e48a20
- Author: Ville Syrjälä <ville.syrjala@linux.intel.com>
- Date:   Mon Dec 2 11:08:06 2013 +0200
+Since the rather informal DCC spec [1] does not seem to specify
+IPv6 support right now, we log such occurences so that admins can
+act accordingly, and drop the packet. I've looked into XChat source,
+and IPv6 is not supported there: addresses are in u32 and print
+via %u format string.
 
-    drm/i915: Take modeset locks around intel_modeset_setup_hw_state()
+Therefore, restore old behaviour as in IPv4, use snprintf(). The
+IRC helper does not support IPv6 by now. By this, we can safely use
+strlen(buffer) in nf_nat_mangle_tcp_packet() and prevent a buffer
+overflow. Also simplify some code as we now have ct variable anyway.
 
-Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
-[danvet: Add cc: stable since the offending commit has that, too.]
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+  [1] http://www.irchelp.org/irchelp/rfc/ctcpspec.html
+
+Fixes: 5901b6be885e ("netfilter: nf_nat: support IPv6 in IRC NAT helper")
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Cc: Harald Welte <laforge@gnumonks.org>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_display.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/netfilter/nf_nat_irc.c | 32 +++++++++++++++++++++++++++-----
+ 1 file changed, 27 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index cfe124a..0e3f213 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -9993,10 +9993,10 @@ void intel_modeset_gem_init(struct drm_device *dev)
+diff --git a/net/netfilter/nf_nat_irc.c b/net/netfilter/nf_nat_irc.c
+index f02b360..1fb2258 100644
+--- a/net/netfilter/nf_nat_irc.c
++++ b/net/netfilter/nf_nat_irc.c
+@@ -34,10 +34,14 @@ static unsigned int help(struct sk_buff *skb,
+ 			 struct nf_conntrack_expect *exp)
+ {
+ 	char buffer[sizeof("4294967296 65635")];
++	struct nf_conn *ct = exp->master;
++	union nf_inet_addr newaddr;
+ 	u_int16_t port;
+ 	unsigned int ret;
  
- 	intel_setup_overlay(dev);
+ 	/* Reply comes from server. */
++	newaddr = ct->tuplehash[IP_CT_DIR_REPLY].tuple.dst.u3;
++
+ 	exp->saved_proto.tcp.port = exp->tuple.dst.u.tcp.port;
+ 	exp->dir = IP_CT_DIR_REPLY;
+ 	exp->expectfn = nf_nat_follow_master;
+@@ -57,17 +61,35 @@ static unsigned int help(struct sk_buff *skb,
+ 	}
  
--	drm_modeset_lock_all(dev);
-+	mutex_lock(&dev->mode_config.mutex);
- 	drm_mode_config_reset(dev);
- 	intel_modeset_setup_hw_state(dev, false);
--	drm_modeset_unlock_all(dev);
-+	mutex_unlock(&dev->mode_config.mutex);
+ 	if (port == 0) {
+-		nf_ct_helper_log(skb, exp->master, "all ports in use");
++		nf_ct_helper_log(skb, ct, "all ports in use");
+ 		return NF_DROP;
+ 	}
+ 
+-	ret = nf_nat_mangle_tcp_packet(skb, exp->master, ctinfo,
+-				       protoff, matchoff, matchlen, buffer,
+-				       strlen(buffer));
++	/* strlen("\1DCC CHAT chat AAAAAAAA P\1\n")=27
++	 * strlen("\1DCC SCHAT chat AAAAAAAA P\1\n")=28
++	 * strlen("\1DCC SEND F AAAAAAAA P S\1\n")=26
++	 * strlen("\1DCC MOVE F AAAAAAAA P S\1\n")=26
++	 * strlen("\1DCC TSEND F AAAAAAAA P S\1\n")=27
++	 *
++	 * AAAAAAAAA: bound addr (1.0.0.0==16777216, min 8 digits,
++	 *                        255.255.255.255==4294967296, 10 digits)
++	 * P:         bound port (min 1 d, max 5d (65635))
++	 * F:         filename   (min 1 d )
++	 * S:         size       (min 1 d )
++	 * 0x01, \n:  terminators
++	 */
++	/* AAA = "us", ie. where server normally talks to. */
++	snprintf(buffer, sizeof(buffer), "%u %u", ntohl(newaddr.ip), port);
++	pr_debug("nf_nat_irc: inserting '%s' == %pI4, port %u\n",
++		 buffer, &newaddr.ip, port);
++
++	ret = nf_nat_mangle_tcp_packet(skb, ct, ctinfo, protoff, matchoff,
++				       matchlen, buffer, strlen(buffer));
+ 	if (ret != NF_ACCEPT) {
+-		nf_ct_helper_log(skb, exp->master, "cannot mangle packet");
++		nf_ct_helper_log(skb, ct, "cannot mangle packet");
+ 		nf_ct_unexpect_related(exp);
+ 	}
++
+ 	return ret;
  }
  
- void intel_modeset_cleanup(struct drm_device *dev)
 -- 
 1.8.3.2
 
