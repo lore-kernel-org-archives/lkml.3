@@ -1,92 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752330AbaBGSmA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 13:42:00 -0500
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:33001 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751438AbaBGSl6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 13:41:58 -0500
-Date: Fri, 7 Feb 2014 13:41:47 -0500
-From: Tejun Heo <tj@kernel.org>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, Fengguang Wu <fengguang.wu@intel.com>
-Subject: [PATCH 9.5/10] sysfs, kobject: add sysfs wrapper for
- kernfs_enable_ns()
-Message-ID: <20140207184147.GC12815@htj.dyndns.org>
-References: <1391454557-32376-1-git-send-email-tj@kernel.org>
+	id S1752575AbaBGSmV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 13:42:21 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:5550 "EHLO SMTP02.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751511AbaBGSmT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 13:42:19 -0500
+X-IronPort-AV: E=Sophos;i="4.95,802,1384300800"; 
+   d="scan'208";a="99060107"
+Message-ID: <52F52908.4080205@citrix.com>
+Date: Fri, 7 Feb 2014 18:42:16 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1391454557-32376-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
+        <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
+        =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>,
+        Jan Beulich <jbeulich@suse.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        <stefano.stabellini@eu.citrix.com>
+Subject: Re: [Xen-devel] [PATCH v8] xen/grant-table: Avoid m2p_override during
+ mapping
+References: <1391691376-21471-1-git-send-email-zoltan.kiss@citrix.com>
+In-Reply-To: <1391691376-21471-1-git-send-email-zoltan.kiss@citrix.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 5de4dc5a029516985b6ee9add23b4bacbbea490d Mon Sep 17 00:00:00 2001
-From: Tejun Heo <tj@kernel.org>
-Date: Fri, 7 Feb 2014 13:32:07 -0500
+On 06/02/14 12:56, Zoltan Kiss wrote:
+> The grant mapping API does m2p_override unnecessarily: only gntdev needs it,
+> for blkback and future netback patches it just cause a lock contention, as
+> those pages never go to userspace. Therefore this series does the following:
+> - the original functions were renamed to __gnttab_[un]map_refs, with a new
+>   parameter m2p_override
+> - based on m2p_override either they follow the original behaviour, or just set
+>   the private flag and call set_phys_to_machine
+> - gnttab_[un]map_refs are now a wrapper to call __gnttab_[un]map_refs with
+>   m2p_override false
+> - a new function gnttab_[un]map_refs_userspace provides the old behaviour
+> - it cuts out common parts from m2p_*_override functions to
+>   *_foreign_p2m_mapping functions
+> 
+> It also removes a stray space from page.h and change ret to 0 if
+> XENFEAT_auto_translated_physmap, as that is the only possible return value
+> there.
+> 
+> v2:
 
-Currently, kobject is invoking kernfs_enable_ns() directly.  This is
-fine now as sysfs and kernfs are enabled and disabled together.  If
-sysfs is disabled, kernfs_enable_ns() is switched to dummy
-implementation too and everything is fine; however, kernfs will soon
-have its own config option CONFIG_KERNFS and !SYSFS && KERNFS will be
-possible, which can make kobject call into non-dummy
-kernfs_enable_ns() with NULL kernfs_node pointers leading to an oops.
+Please put this version information after the '---' marker.  It doesn't
+need to end up in the commit message.
 
-Introduce sysfs_enable_ns() which is a wrapper around
-kernfs_enable_ns() so that it can be made a noop depending only on
-CONFIG_SYSFS regardless of the planned CONFIG_KERNFS.
+> @@ -955,10 +957,12 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+>  			set_phys_to_machine(map_ops[i].host_addr >> PAGE_SHIFT,
+>  					map_ops[i].dev_bus_addr >> PAGE_SHIFT);
+>  		}
+> -		return ret;
+> +		return 0;
+>  	}
+>  
+> -	if (!in_interrupt() && paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
+> +	if (m2p_override &&
+> +	    !in_interrupt() &&
+> +	    paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
+>  		arch_enter_lazy_mmu_mode();
+>  		lazy = true;
+>  	}
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
----
- include/linux/sysfs.h | 9 +++++++++
- lib/kobject.c         | 2 +-
- 2 files changed, 10 insertions(+), 1 deletion(-)
+I think this block and the loop should be in an arch-specific function
+(e.g., set_foreign_p2m_mappings(), but I would like to hear Stefano's
+opinion.
 
-diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
-index 14df054..fdaa0c6 100644
---- a/include/linux/sysfs.h
-+++ b/include/linux/sysfs.h
-@@ -244,6 +244,11 @@ void sysfs_notify(struct kobject *kobj, const char *dir, const char *attr);
- 
- int __must_check sysfs_init(void);
- 
-+static inline void sysfs_enable_ns(struct kernfs_node *kn)
-+{
-+	return kernfs_enable_ns(kn);
-+}
-+
- #else /* CONFIG_SYSFS */
- 
- static inline int sysfs_create_dir_ns(struct kobject *kobj, const void *ns)
-@@ -416,6 +421,10 @@ static inline int __must_check sysfs_init(void)
- 	return 0;
- }
- 
-+static inline void sysfs_enable_ns(struct kernfs_node *kn)
-+{
-+}
-+
- #endif /* CONFIG_SYSFS */
- 
- static inline int __must_check sysfs_create_file(struct kobject *kobj,
-diff --git a/lib/kobject.c b/lib/kobject.c
-index cb14aea..58751bb 100644
---- a/lib/kobject.c
-+++ b/lib/kobject.c
-@@ -94,7 +94,7 @@ static int create_dir(struct kobject *kobj)
- 		BUG_ON(ops->type >= KOBJ_NS_TYPES);
- 		BUG_ON(!kobj_ns_type_registered(ops->type));
- 
--		kernfs_enable_ns(kobj->sd);
-+		sysfs_enable_ns(kobj->sd);
- 	}
- 
- 	return 0;
--- 
-1.8.5.3
+Similarly for clear_foreign_p2m_mappings().
 
+David
