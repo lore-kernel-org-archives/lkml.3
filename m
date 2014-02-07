@@ -1,106 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932630AbaBGLxI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 06:53:08 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:63585 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752894AbaBGLxE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932613AbaBGLxE (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 7 Feb 2014 06:53:04 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: linux-pm@vger.kernel.org, peterz@infradead.org, benh@kernel.crashing.org,
-        rafael.j.wysocki@intel.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, linuxppc-dev@lists.ozlabs.org, mingo@kernel.org,
-        deepthi@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        fweisbec@gmail.com, paulus@samba.org, srivatsa.bhat@linux.vnet.ibm.com,
-        svaidy@linux.vnet.ibm.com
-Subject: Re: [PATCH V4 3/3] time/cpuidle:Handle failed call to BROADCAST_ENTER on archs with CPUIDLE_FLAG_TIMER_STOP set
-Date: Fri, 07 Feb 2014 13:07:36 +0100
-Message-ID: <4923497.uFDEGdljgG@vostro.rjw.lan>
-User-Agent: KMail/4.11.4 (Linux/3.13.0+; KDE/4.11.4; x86_64; ; )
-In-Reply-To: <20140207080652.17187.66344.stgit@preeti.in.ibm.com>
-References: <20140207075618.17187.20149.stgit@preeti.in.ibm.com> <20140207080652.17187.66344.stgit@preeti.in.ibm.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Received: from youngberry.canonical.com ([91.189.89.112]:42588 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932596AbaBGLxB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 06:53:01 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Borislav Petkov <bp@suse.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 232/233] x86, cpu, amd: Add workaround for family 16h, erratum 793
+Date: Fri,  7 Feb 2014 11:47:31 +0000
+Message-Id: <1391773652-25214-233-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
+References: <1391773652-25214-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, February 07, 2014 01:36:52 PM Preeti U Murthy wrote:
-> Some archs set the CPUIDLE_FLAG_TIMER_STOP flag for idle states in which the
-> local timers stop. The cpuidle_idle_call() currently handles such idle states
-> by calling into the broadcast framework so as to wakeup CPUs at their next
-> wakeup event. With the hrtimer mode of broadcast, the BROADCAST_ENTER call
-> into the broadcast frameowork can fail for archs that do not have an external
-> clock device to handle wakeups and the CPU in question has to thus be made
-> the stand by CPU. This patch handles such cases by failing the call into
-> cpuidle so that the arch can take some default action. The arch will certainly
-> not enter a similar idle state because a failed cpuidle call will also implicitly
-> indicate that the broadcast framework has not registered this CPU to be woken up.
-> Hence we are safe if we fail the cpuidle call.
-> 
-> In the process move the functions that trace idle statistics just before and
-> after the entry and exit into idle states respectively. In other
-> scenarios where the call to cpuidle fails, we end up not tracing idle
-> entry and exit since a decision on an idle state could not be taken. Similarly
-> when the call to broadcast framework fails, we skip tracing idle statistics
-> because we are in no further position to take a decision on an alternative
-> idle state to enter into.
-> 
-> Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+3.11.10.4 -stable review patch.  If anyone has any objections, please let me know.
 
-Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+------------------
 
-> ---
-> 
->  drivers/cpuidle/cpuidle.c |   14 ++++++++------
->  1 file changed, 8 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-> index a55e68f..8beb0f02 100644
-> --- a/drivers/cpuidle/cpuidle.c
-> +++ b/drivers/cpuidle/cpuidle.c
-> @@ -140,12 +140,14 @@ int cpuidle_idle_call(void)
->  		return 0;
->  	}
->  
-> -	trace_cpu_idle_rcuidle(next_state, dev->cpu);
-> -
->  	broadcast = !!(drv->states[next_state].flags & CPUIDLE_FLAG_TIMER_STOP);
->  
-> -	if (broadcast)
-> -		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &dev->cpu);
-> +	if (broadcast &&
-> +		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &dev->cpu))
-> +		return -EBUSY;
-> +
-> +
-> +	trace_cpu_idle_rcuidle(next_state, dev->cpu);
->  
->  	if (cpuidle_state_is_coupled(dev, drv, next_state))
->  		entered_state = cpuidle_enter_state_coupled(dev, drv,
-> @@ -153,11 +155,11 @@ int cpuidle_idle_call(void)
->  	else
->  		entered_state = cpuidle_enter_state(dev, drv, next_state);
->  
-> +	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, dev->cpu);
-> +
->  	if (broadcast)
->  		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &dev->cpu);
->  
-> -	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, dev->cpu);
-> -
->  	/* give the governor an opportunity to reflect on the outcome */
->  	if (cpuidle_curr_governor->reflect)
->  		cpuidle_curr_governor->reflect(dev, entered_state);
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+From: Borislav Petkov <bp@suse.de>
 
+commit 3b56496865f9f7d9bcb2f93b44c63f274f08e3b6 upstream.
+
+This adds the workaround for erratum 793 as a precaution in case not
+every BIOS implements it.  This addresses CVE-2013-6885.
+
+Erratum text:
+
+[Revision Guide for AMD Family 16h Models 00h-0Fh Processors,
+document 51810 Rev. 3.04 November 2013]
+
+793 Specific Combination of Writes to Write Combined Memory Types and
+Locked Instructions May Cause Core Hang
+
+Description
+
+Under a highly specific and detailed set of internal timing
+conditions, a locked instruction may trigger a timing sequence whereby
+the write to a write combined memory type is not flushed, causing the
+locked instruction to stall indefinitely.
+
+Potential Effect on System
+
+Processor core hang.
+
+Suggested Workaround
+
+BIOS should set MSR
+C001_1020[15] = 1b.
+
+Fix Planned
+
+No fix planned
+
+[ hpa: updated description, fixed typo in MSR name ]
+
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Link: http://lkml.kernel.org/r/20140114230711.GS29865@pd.tnic
+Tested-by: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ arch/x86/include/uapi/asm/msr-index.h |  1 +
+ arch/x86/kernel/cpu/amd.c             | 10 ++++++++++
+ 2 files changed, 11 insertions(+)
+
+diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
+index bb04650..228d95f 100644
+--- a/arch/x86/include/uapi/asm/msr-index.h
++++ b/arch/x86/include/uapi/asm/msr-index.h
+@@ -182,6 +182,7 @@
+ #define MSR_AMD64_PATCH_LOADER		0xc0010020
+ #define MSR_AMD64_OSVW_ID_LENGTH	0xc0010140
+ #define MSR_AMD64_OSVW_STATUS		0xc0010141
++#define MSR_AMD64_LS_CFG		0xc0011020
+ #define MSR_AMD64_DC_CFG		0xc0011022
+ #define MSR_AMD64_BU_CFG2		0xc001102a
+ #define MSR_AMD64_IBSFETCHCTL		0xc0011030
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 08a0890..c2d6f50 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -508,6 +508,16 @@ static void early_init_amd(struct cpuinfo_x86 *c)
+ 			set_cpu_cap(c, X86_FEATURE_EXTD_APICID);
+ 	}
+ #endif
++
++	/* F16h erratum 793, CVE-2013-6885 */
++	if (c->x86 == 0x16 && c->x86_model <= 0xf) {
++		u64 val;
++
++		rdmsrl(MSR_AMD64_LS_CFG, val);
++		if (!(val & BIT(15)))
++			wrmsrl(MSR_AMD64_LS_CFG, val | BIT(15));
++	}
++
+ }
+ 
+ static const int amd_erratum_383[];
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.8.3.2
+
