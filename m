@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753766AbaBGVCn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 16:02:43 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:56758 "EHLO
+	id S1753897AbaBGVDG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 16:03:06 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:56746 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753047AbaBGVB2 (ORCPT
+	with ESMTP id S1751576AbaBGVB1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 16:01:28 -0500
+	Fri, 7 Feb 2014 16:01:27 -0500
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: Will Deacon <will.deacon@arm.com>
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Neil Leeder <nleeder@codeaurora.org>,
-        Ashwin Chaugule <ashwinc@codeaurora.org>
-Subject: [PATCH v3 3/7] ARM: perf_event: Add basic support for Krait CPU PMUs
-Date: Fri,  7 Feb 2014 13:01:21 -0800
-Message-Id: <1391806885-24210-4-git-send-email-sboyd@codeaurora.org>
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v3 1/7] ARM: perf_event: Support percpu irqs for the CPU PMU
+Date: Fri,  7 Feb 2014 13:01:19 -0800
+Message-Id: <1391806885-24210-2-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.5.2.228.g8f9f19c
 In-Reply-To: <1391806885-24210-1-git-send-email-sboyd@codeaurora.org>
 References: <1391806885-24210-1-git-send-email-sboyd@codeaurora.org>
@@ -23,228 +21,196 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add basic support for the Krait CPU PMU. This allows us to use
-the architected functionality of the PMU.
+Some CPU PMUs are wired up with one PPI for all the CPUs instead
+of with a different SPI for each CPU. Add support for these
+devices.
 
-This is based on code originally written by Ashwin Chaugule and
-Neil Leeder [1].
-
-[1] https://www.codeaurora.org/cgit/quic/la/kernel/msm/tree/arch/arm/kernel/perf_event_msm_krait.c?h=msm-3.4
-
-Cc: Neil Leeder <nleeder@codeaurora.org>
-Cc: Ashwin Chaugule <ashwinc@codeaurora.org>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- arch/arm/kernel/perf_event_cpu.c |   1 +
- arch/arm/kernel/perf_event_v7.c  | 164 +++++++++++++++++++++++++++++++++++++++
- 2 files changed, 165 insertions(+)
+ arch/arm/kernel/perf_event.c     | 14 ++++--
+ arch/arm/kernel/perf_event_cpu.c | 97 ++++++++++++++++++++++++++++------------
+ 2 files changed, 80 insertions(+), 31 deletions(-)
 
+diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+index 789d846a9184..b0c8489018d3 100644
+--- a/arch/arm/kernel/perf_event.c
++++ b/arch/arm/kernel/perf_event.c
+@@ -16,6 +16,8 @@
+ #include <linux/platform_device.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/uaccess.h>
++#include <linux/irq.h>
++#include <linux/irqdesc.h>
+ 
+ #include <asm/irq_regs.h>
+ #include <asm/pmu.h>
+@@ -295,9 +297,15 @@ validate_group(struct perf_event *event)
+ 
+ static irqreturn_t armpmu_dispatch_irq(int irq, void *dev)
+ {
+-	struct arm_pmu *armpmu = (struct arm_pmu *) dev;
+-	struct platform_device *plat_device = armpmu->plat_device;
+-	struct arm_pmu_platdata *plat = dev_get_platdata(&plat_device->dev);
++	struct arm_pmu *armpmu;
++	struct platform_device *plat_device;
++	struct arm_pmu_platdata *plat;
++
++	if (irq_is_percpu(irq))
++		dev = *(void **)dev;
++	armpmu = dev;
++	plat_device = armpmu->plat_device;
++	plat = dev_get_platdata(&plat_device->dev);
+ 
+ 	if (plat && plat->handle_irq)
+ 		return plat->handle_irq(irq, dev, armpmu->handle_irq);
 diff --git a/arch/arm/kernel/perf_event_cpu.c b/arch/arm/kernel/perf_event_cpu.c
-index 68d02ca0ca1b..ed571d386c0b 100644
+index 20d553c9f5e2..6efd8aab15df 100644
 --- a/arch/arm/kernel/perf_event_cpu.c
 +++ b/arch/arm/kernel/perf_event_cpu.c
-@@ -229,6 +229,7 @@ static struct of_device_id cpu_pmu_of_device_ids[] = {
- 	{.compatible = "arm,arm11mpcore-pmu",	.data = armv6mpcore_pmu_init},
- 	{.compatible = "arm,arm1176-pmu",	.data = armv6pmu_init},
- 	{.compatible = "arm,arm1136-pmu",	.data = armv6pmu_init},
-+	{.compatible = "qcom,krait-pmu",	.data = krait_pmu_init},
- 	{},
- };
+@@ -25,6 +25,8 @@
+ #include <linux/platform_device.h>
+ #include <linux/slab.h>
+ #include <linux/spinlock.h>
++#include <linux/irq.h>
++#include <linux/irqdesc.h>
  
-diff --git a/arch/arm/kernel/perf_event_v7.c b/arch/arm/kernel/perf_event_v7.c
-index 039cffb053a7..16386b1d27a8 100644
---- a/arch/arm/kernel/perf_event_v7.c
-+++ b/arch/arm/kernel/perf_event_v7.c
-@@ -732,6 +732,138 @@ static const unsigned armv7_a7_perf_cache_map[PERF_COUNT_HW_CACHE_MAX]
- };
+ #include <asm/cputype.h>
+ #include <asm/irq_regs.h>
+@@ -33,6 +35,7 @@
+ /* Set at runtime when we know what CPU type we are. */
+ static struct arm_pmu *cpu_pmu;
  
- /*
-+ * Krait HW events mapping
-+ */
-+static const unsigned krait_perf_map[PERF_COUNT_HW_MAX] = {
-+	[PERF_COUNT_HW_CPU_CYCLES]	    = ARMV7_PERFCTR_CPU_CYCLES,
-+	[PERF_COUNT_HW_INSTRUCTIONS]	    = ARMV7_PERFCTR_INSTR_EXECUTED,
-+	[PERF_COUNT_HW_CACHE_REFERENCES]    = HW_OP_UNSUPPORTED,
-+	[PERF_COUNT_HW_CACHE_MISSES]	    = HW_OP_UNSUPPORTED,
-+	[PERF_COUNT_HW_BRANCH_INSTRUCTIONS] = ARMV7_PERFCTR_PC_WRITE,
-+	[PERF_COUNT_HW_BRANCH_MISSES]	    = ARMV7_PERFCTR_PC_BRANCH_MIS_PRED,
-+	[PERF_COUNT_HW_BUS_CYCLES]	    = ARMV7_PERFCTR_CLOCK_CYCLES,
-+};
-+
-+static const unsigned krait_perf_map_no_branch[PERF_COUNT_HW_MAX] = {
-+	[PERF_COUNT_HW_CPU_CYCLES]	    = ARMV7_PERFCTR_CPU_CYCLES,
-+	[PERF_COUNT_HW_INSTRUCTIONS]	    = ARMV7_PERFCTR_INSTR_EXECUTED,
-+	[PERF_COUNT_HW_CACHE_REFERENCES]    = HW_OP_UNSUPPORTED,
-+	[PERF_COUNT_HW_CACHE_MISSES]	    = HW_OP_UNSUPPORTED,
-+	[PERF_COUNT_HW_BRANCH_INSTRUCTIONS] = HW_OP_UNSUPPORTED,
-+	[PERF_COUNT_HW_BRANCH_MISSES]	    = ARMV7_PERFCTR_PC_BRANCH_MIS_PRED,
-+	[PERF_COUNT_HW_BUS_CYCLES]	    = ARMV7_PERFCTR_CLOCK_CYCLES,
-+};
-+
-+static const unsigned krait_perf_cache_map[PERF_COUNT_HW_CACHE_MAX]
-+					  [PERF_COUNT_HW_CACHE_OP_MAX]
-+					  [PERF_COUNT_HW_CACHE_RESULT_MAX] = {
-+	[C(L1D)] = {
-+		/*
-+		 * The performance counters don't differentiate between read
-+		 * and write accesses/misses so this isn't strictly correct,
-+		 * but it's the best we can do. Writes and reads get
-+		 * combined.
-+		 */
-+		[C(OP_READ)] = {
-+			[C(RESULT_ACCESS)]	= ARMV7_PERFCTR_L1_DCACHE_ACCESS,
-+			[C(RESULT_MISS)]	= ARMV7_PERFCTR_L1_DCACHE_REFILL,
-+		},
-+		[C(OP_WRITE)] = {
-+			[C(RESULT_ACCESS)]	= ARMV7_PERFCTR_L1_DCACHE_ACCESS,
-+			[C(RESULT_MISS)]	= ARMV7_PERFCTR_L1_DCACHE_REFILL,
-+		},
-+		[C(OP_PREFETCH)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+	},
-+	[C(L1I)] = {
-+		[C(OP_READ)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_WRITE)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_PREFETCH)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+	},
-+	[C(LL)] = {
-+		[C(OP_READ)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_WRITE)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_PREFETCH)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+	},
-+	[C(DTLB)] = {
-+		[C(OP_READ)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_WRITE)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_PREFETCH)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+	},
-+	[C(ITLB)] = {
-+		[C(OP_READ)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_WRITE)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_PREFETCH)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+	},
-+	[C(BPU)] = {
-+		[C(OP_READ)] = {
-+			[C(RESULT_ACCESS)]	= ARMV7_PERFCTR_PC_BRANCH_PRED,
-+			[C(RESULT_MISS)]	= ARMV7_PERFCTR_PC_BRANCH_MIS_PRED,
-+		},
-+		[C(OP_WRITE)] = {
-+			[C(RESULT_ACCESS)]	= ARMV7_PERFCTR_PC_BRANCH_PRED,
-+			[C(RESULT_MISS)]	= ARMV7_PERFCTR_PC_BRANCH_MIS_PRED,
-+		},
-+		[C(OP_PREFETCH)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+	},
-+	[C(NODE)] = {
-+		[C(OP_READ)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_WRITE)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+		[C(OP_PREFETCH)] = {
-+			[C(RESULT_ACCESS)]	= CACHE_OP_UNSUPPORTED,
-+			[C(RESULT_MISS)]	= CACHE_OP_UNSUPPORTED,
-+		},
-+	},
-+};
-+
-+/*
-  * Perf Events' indices
-  */
- #define	ARMV7_IDX_CYCLE_COUNTER	0
-@@ -1212,6 +1344,18 @@ static int armv7_a7_map_event(struct perf_event *event)
- 				&armv7_a7_perf_cache_map, 0xFF);
++static DEFINE_PER_CPU(struct arm_pmu *, percpu_pmu);
+ static DEFINE_PER_CPU(struct perf_event * [ARMPMU_MAX_HWEVENTS], hw_events);
+ static DEFINE_PER_CPU(unsigned long [BITS_TO_LONGS(ARMPMU_MAX_HWEVENTS)], used_mask);
+ static DEFINE_PER_CPU(struct pmu_hw_events, cpu_hw_events);
+@@ -71,6 +74,26 @@ static struct pmu_hw_events *cpu_pmu_get_cpu_events(void)
+ 	return this_cpu_ptr(&cpu_hw_events);
  }
  
-+static int krait_map_event(struct perf_event *event)
++static void cpu_pmu_enable_percpu_irq(void *data)
 +{
-+	return armpmu_map_event(event, &krait_perf_map,
-+				&krait_perf_cache_map, 0xFFFFF);
++	struct arm_pmu *cpu_pmu = data;
++	struct platform_device *pmu_device = cpu_pmu->plat_device;
++	int irq = platform_get_irq(pmu_device, 0);
++
++	enable_percpu_irq(irq, IRQ_TYPE_NONE);
++	cpumask_set_cpu(smp_processor_id(), &cpu_pmu->active_irqs);
 +}
 +
-+static int krait_map_event_no_branch(struct perf_event *event)
++static void cpu_pmu_disable_percpu_irq(void *data)
 +{
-+	return armpmu_map_event(event, &krait_perf_map_no_branch,
-+				&krait_perf_cache_map, 0xFFFFF);
++	struct arm_pmu *cpu_pmu = data;
++	struct platform_device *pmu_device = cpu_pmu->plat_device;
++	int irq = platform_get_irq(pmu_device, 0);
++
++	cpumask_clear_cpu(smp_processor_id(), &cpu_pmu->active_irqs);
++	disable_percpu_irq(irq);
 +}
 +
- static void armv7pmu_init(struct arm_pmu *cpu_pmu)
+ static void cpu_pmu_free_irq(struct arm_pmu *cpu_pmu)
  {
- 	cpu_pmu->handle_irq	= armv7pmu_handle_irq;
-@@ -1283,6 +1427,21 @@ static int armv7_a7_pmu_init(struct arm_pmu *cpu_pmu)
- 	cpu_pmu->set_event_filter = armv7pmu_set_event_filter;
+ 	int i, irq, irqs;
+@@ -78,12 +101,18 @@ static void cpu_pmu_free_irq(struct arm_pmu *cpu_pmu)
+ 
+ 	irqs = min(pmu_device->num_resources, num_possible_cpus());
+ 
+-	for (i = 0; i < irqs; ++i) {
+-		if (!cpumask_test_and_clear_cpu(i, &cpu_pmu->active_irqs))
+-			continue;
+-		irq = platform_get_irq(pmu_device, i);
+-		if (irq >= 0)
+-			free_irq(irq, cpu_pmu);
++	irq = platform_get_irq(pmu_device, 0);
++	if (irq >= 0 && irq_is_percpu(irq)) {
++		on_each_cpu(cpu_pmu_disable_percpu_irq, cpu_pmu, 1);
++		free_percpu_irq(irq, &percpu_pmu);
++	} else {
++		for (i = 0; i < irqs; ++i) {
++			if (!cpumask_test_and_clear_cpu(i, &cpu_pmu->active_irqs))
++				continue;
++			irq = platform_get_irq(pmu_device, i);
++			if (irq >= 0)
++				free_irq(irq, cpu_pmu);
++		}
+ 	}
+ }
+ 
+@@ -101,33 +130,44 @@ static int cpu_pmu_request_irq(struct arm_pmu *cpu_pmu, irq_handler_t handler)
+ 		return -ENODEV;
+ 	}
+ 
+-	for (i = 0; i < irqs; ++i) {
+-		err = 0;
+-		irq = platform_get_irq(pmu_device, i);
+-		if (irq < 0)
+-			continue;
+-
+-		/*
+-		 * If we have a single PMU interrupt that we can't shift,
+-		 * assume that we're running on a uniprocessor machine and
+-		 * continue. Otherwise, continue without this interrupt.
+-		 */
+-		if (irq_set_affinity(irq, cpumask_of(i)) && irqs > 1) {
+-			pr_warning("unable to set irq affinity (irq=%d, cpu=%u)\n",
+-				    irq, i);
+-			continue;
+-		}
+-
+-		err = request_irq(irq, handler,
+-				  IRQF_NOBALANCING | IRQF_NO_THREAD, "arm-pmu",
+-				  cpu_pmu);
++	irq = platform_get_irq(pmu_device, 0);
++	if (irq >= 0 && irq_is_percpu(irq)) {
++		err = request_percpu_irq(irq, handler, "arm-pmu", &percpu_pmu);
+ 		if (err) {
+ 			pr_err("unable to request IRQ%d for ARM PMU counters\n",
+ 				irq);
+ 			return err;
+ 		}
+-
+-		cpumask_set_cpu(i, &cpu_pmu->active_irqs);
++		on_each_cpu(cpu_pmu_enable_percpu_irq, cpu_pmu, 1);
++	} else {
++		for (i = 0; i < irqs; ++i) {
++			err = 0;
++			irq = platform_get_irq(pmu_device, i);
++			if (irq < 0)
++				continue;
++
++			/*
++			 * If we have a single PMU interrupt that we can't shift,
++			 * assume that we're running on a uniprocessor machine and
++			 * continue. Otherwise, continue without this interrupt.
++			 */
++			if (irq_set_affinity(irq, cpumask_of(i)) && irqs > 1) {
++				pr_warning("unable to set irq affinity (irq=%d, cpu=%u)\n",
++					    irq, i);
++				continue;
++			}
++
++			err = request_irq(irq, handler,
++					  IRQF_NOBALANCING | IRQF_NO_THREAD, "arm-pmu",
++					  cpu_pmu);
++			if (err) {
++				pr_err("unable to request IRQ%d for ARM PMU counters\n",
++					irq);
++				return err;
++			}
++
++			cpumask_set_cpu(i, &cpu_pmu->active_irqs);
++		}
+ 	}
+ 
  	return 0;
- }
-+
-+static int krait_pmu_init(struct arm_pmu *cpu_pmu)
-+{
-+	armv7pmu_init(cpu_pmu);
-+	cpu_pmu->name		= "ARMv7 Krait";
-+	/* Some early versions of Krait don't support PC write events */
-+	if (of_property_read_bool(cpu_pmu->plat_device->dev.of_node,
-+				  "qcom,no-pc-write"))
-+		cpu_pmu->map_event = krait_map_event_no_branch;
-+	else
-+		cpu_pmu->map_event = krait_map_event;
-+	cpu_pmu->num_events	= armv7_read_num_pmnc_events();
-+	cpu_pmu->set_event_filter = armv7pmu_set_event_filter;
-+	return 0;
-+}
- #else
- static inline int armv7_a8_pmu_init(struct arm_pmu *cpu_pmu)
- {
-@@ -1308,4 +1467,9 @@ static inline int armv7_a7_pmu_init(struct arm_pmu *cpu_pmu)
- {
- 	return -ENODEV;
- }
-+
-+static inline int krait_pmu_init(struct arm_pmu *cpu_pmu)
-+{
-+	return -ENODEV;
-+}
- #endif	/* CONFIG_CPU_V7 */
+@@ -141,6 +181,7 @@ static void cpu_pmu_init(struct arm_pmu *cpu_pmu)
+ 		events->events = per_cpu(hw_events, cpu);
+ 		events->used_mask = per_cpu(used_mask, cpu);
+ 		raw_spin_lock_init(&events->pmu_lock);
++		per_cpu(percpu_pmu, cpu) = cpu_pmu;
+ 	}
+ 
+ 	cpu_pmu->get_hw_events	= cpu_pmu_get_cpu_events;
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
