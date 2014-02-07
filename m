@@ -1,102 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751992AbaBGJdF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 04:33:05 -0500
-Received: from smtp-vbr12.xs4all.nl ([194.109.24.32]:2935 "EHLO
-	smtp-vbr12.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751771AbaBGJdC (ORCPT
+	id S1752055AbaBGJdo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 04:33:44 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:33362 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751771AbaBGJdj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 04:33:02 -0500
-Message-ID: <52F4A82C.7010104@xs4all.nl>
-Date: Fri, 07 Feb 2014 10:32:28 +0100
-From: Hans Verkuil <hverkuil@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	Fri, 7 Feb 2014 04:33:39 -0500
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-kernel@vger.kernel.org, Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH, RFC 07/30] [media] radio-cadet: avoid interruptible_sleep_on
- race
-References: <1388664474-1710039-1-git-send-email-arnd@arndb.de> <1388664474-1710039-8-git-send-email-arnd@arndb.de> <52D90A2F.2030903@xs4all.nl> <201401171528.02016.arnd@arndb.de>
-In-Reply-To: <201401171528.02016.arnd@arndb.de>
+In-Reply-To: <1388642820.3739.80.camel@rzhang1-mobl4>
+References: <1383828154-428-1-git-send-email-ch.naveen@samsung.com> <1388642820.3739.80.camel@rzhang1-mobl4>
+From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
+Date: Fri, 7 Feb 2014 15:03:18 +0530
+Message-ID: <CAHfPSqCftzo8ud=K9Lv4Y_q9+wW+23ZPnbTxXpwsBWOXHXLucg@mail.gmail.com>
+Subject: Re: [PATCH] thermal: exynos: handle gate clock for misplaced TRIMINFO register
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>, linux-pm@vger.kernel.org,
+        eduardo.valentin@ti.com,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, amit.daniel@samsung.com,
+        Kukjin Kim <kgene.kim@samsung.com>, devicetree@vger.kernel.org,
+        b.zolnierkie@samsung.com, cpgs@samsung.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd!
+Hello All,
 
-On 01/17/2014 03:28 PM, Arnd Bergmann wrote:
-> On Friday 17 January 2014, Hans Verkuil wrote:
->>> @@ -323,25 +324,32 @@ static ssize_t cadet_read(struct file *file, char __user *data, size_t count, lo
->>>       struct cadet *dev = video_drvdata(file);
->>>       unsigned char readbuf[RDS_BUFFER];
->>>       int i = 0;
->>> +     DEFINE_WAIT(wait);
->>>  
->>>       mutex_lock(&dev->lock);
->>>       if (dev->rdsstat == 0)
->>>               cadet_start_rds(dev);
->>> -     if (dev->rdsin == dev->rdsout) {
->>> +     while (1) {
->>> +             prepare_to_wait(&dev->read_queue, &wait, TASK_INTERRUPTIBLE);
->>> +             if (dev->rdsin != dev->rdsout)
->>> +                     break;
->>> +
->>>               if (file->f_flags & O_NONBLOCK) {
->>>                       i = -EWOULDBLOCK;
->>>                       goto unlock;
->>>               }
->>>               mutex_unlock(&dev->lock);
->>> -             interruptible_sleep_on(&dev->read_queue);
->>> +             schedule();
->>>               mutex_lock(&dev->lock);
->>>       }
->>> +
+On 2 January 2014 11:37, Zhang Rui <rui.zhang@intel.com> wrote:
+> On Thu, 2013-11-07 at 18:12 +0530, Naveen Krishna Chatradhi wrote:
+>> On Exynos5420 the TMU(4) for GPU has a seperate clock enable bit from
+>> the other TMU channels(0 ~ 3). Hence, accessing TRIMINFO for base_second
+>> should be acompanied by enabling the respective clock.
 >>
->> This seems overly complicated. Isn't it enough to replace interruptible_sleep_on
->> by 'wait_event_interruptible(&dev->read_queue, dev->rdsin != dev->rdsout);'?
+>> This patch which allow for a "clk_sec" clock to be specified in the
+>> device-tree which will be ungated when accessing the TRIMINFO register.
 >>
->> Or am I missing something subtle?
-> 
-> The existing code sleeps with &dev->lock released because the cadet_handler()
-> function needs to grab (and release) the same lock before it can wake up
-> the reader thread.
-> 
-> Doing the simple wait_event_interruptible() would result in a deadlock here.
+>> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+>> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+>
+> Eduardo,
+>
+> what do you think of this patch?
+>
+> thanks,
+> rui
+>> ---
+>>  drivers/thermal/samsung/exynos_tmu.c |   24 +++++++++++++++++++++++-
+>>  1 file changed, 23 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
+>> index b54825a..33edd1a 100644
+>> --- a/drivers/thermal/samsung/exynos_tmu.c
+>> +++ b/drivers/thermal/samsung/exynos_tmu.c
+>> @@ -47,6 +47,7 @@
+>>   * @irq_work: pointer to the irq work structure.
+>>   * @lock: lock to implement synchronization.
+>>   * @clk: pointer to the clock structure.
+>> + * @clk_sec: pointer to the clock structure for accessing the base_second.
+>>   * @temp_error1: fused value of the first point trim.
+>>   * @temp_error2: fused value of the second point trim.
+>>   * @regulator: pointer to the TMU regulator structure.
+>> @@ -61,7 +62,7 @@ struct exynos_tmu_data {
+>>       enum soc_type soc;
+>>       struct work_struct irq_work;
+>>       struct mutex lock;
+>> -     struct clk *clk;
+>> +     struct clk *clk, *clk_sec;
+>>       u8 temp_error1, temp_error2;
+>>       struct regulator *regulator;
+>>       struct thermal_sensor_conf *reg_conf;
+>> @@ -152,6 +153,8 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+>>
+>>       mutex_lock(&data->lock);
+>>       clk_enable(data->clk);
+>> +     if (!IS_ERR(data->clk_sec))
+>> +             clk_enable(data->clk_sec);
+>>
+>>       if (TMU_SUPPORTS(pdata, READY_STATUS)) {
+>>               status = readb(data->base + reg->tmu_status);
+>> @@ -306,6 +309,8 @@ skip_calib_data:
+>>  out:
+>>       clk_disable(data->clk);
+>>       mutex_unlock(&data->lock);
+>> +     if (!IS_ERR(data->clk_sec))
+>> +             clk_disable(data->clk_sec);
+>>
+>>       return ret;
+>>  }
+>> @@ -457,12 +462,16 @@ static void exynos_tmu_work(struct work_struct *work)
+>>       const struct exynos_tmu_registers *reg = pdata->registers;
+>>       unsigned int val_irq, val_type;
+>>
+>> +     if (!IS_ERR(data->clk_sec))
+>> +             clk_enable(data->clk_sec);
+>>       /* Find which sensor generated this interrupt */
+>>       if (reg->tmu_irqstatus) {
+>>               val_type = readl(data->base_second + reg->tmu_irqstatus);
+>>               if (!((val_type >> data->id) & 0x1))
+>>                       goto out;
+>>       }
+>> +     if (!IS_ERR(data->clk_sec))
+>> +             clk_disable(data->clk_sec);
+>>
+>>       exynos_report_trigger(data->reg_conf);
+>>       mutex_lock(&data->lock);
+>> @@ -641,6 +650,15 @@ static int exynos_tmu_probe(struct platform_device *pdev)
+>>       if (ret)
+>>               return ret;
+>>
+>> +     data->clk_sec = devm_clk_get(&pdev->dev, "tmu_apbif_sec");
+>> +     if (!IS_ERR(data->clk_sec)) {
+>> +             ret = clk_prepare(data->clk_sec);
+>> +             if (ret) {
+>> +                     dev_err(&pdev->dev, "Failed to get clock\n");
+>> +                     return  PTR_ERR(data->clk_sec);
+>> +             }
+>> +     }
+>> +
+>>       if (pdata->type == SOC_ARCH_EXYNOS4210 ||
+>>           pdata->type == SOC_ARCH_EXYNOS4412 ||
+>>           pdata->type == SOC_ARCH_EXYNOS5250 ||
+>> @@ -713,6 +731,8 @@ static int exynos_tmu_probe(struct platform_device *pdev)
+>>       return 0;
+>>  err_clk:
+>>       clk_unprepare(data->clk);
+>> +     if (!IS_ERR(data->clk_sec))
+>> +             clk_unprepare(data->clk_sec);
+>>       return ret;
+>>  }
+>>
+>> @@ -725,6 +745,8 @@ static int exynos_tmu_remove(struct platform_device *pdev)
+>>       exynos_unregister_thermal(data->reg_conf);
+>>
+>>       clk_unprepare(data->clk);
+>> +     if (!IS_ERR(data->clk_sec))
+>> +             clk_unprepare(data->clk_sec);
+>>
+>>       if (!IS_ERR(data->regulator))
+>>               regulator_disable(data->regulator);
+>
+>
+Ping.
 
-I don't see it. I propose this patch:
 
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
 
-diff --git a/drivers/media/radio/radio-cadet.c b/drivers/media/radio/radio-cadet.c
-index 545c04c..2f658c6 100644
---- a/drivers/media/radio/radio-cadet.c
-+++ b/drivers/media/radio/radio-cadet.c
-@@ -327,13 +327,15 @@ static ssize_t cadet_read(struct file *file, char __user *data, size_t count, lo
- 	mutex_lock(&dev->lock);
- 	if (dev->rdsstat == 0)
- 		cadet_start_rds(dev);
--	if (dev->rdsin == dev->rdsout) {
-+	while (dev->rdsin == dev->rdsout) {
- 		if (file->f_flags & O_NONBLOCK) {
- 			i = -EWOULDBLOCK;
- 			goto unlock;
- 		}
- 		mutex_unlock(&dev->lock);
--		interruptible_sleep_on(&dev->read_queue);
-+		if (wait_event_interruptible(&dev->read_queue,
-+					     dev->rdsin != dev->rdsout))
-+			return -EINTR;
- 		mutex_lock(&dev->lock);
- 	}
- 	while (i < count && dev->rdsin != dev->rdsout)
-
-Tested with my radio-cadet card.
-
-This looks good to me. If I am still missing something, let me know!
-
-Regards,
-
-	Hans
+-- 
+Shine bright,
+(: Nav :)
