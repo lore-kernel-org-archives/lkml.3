@@ -1,55 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751825AbaBHOsz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 09:48:55 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:49661 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751272AbaBHOsy (ORCPT
+	id S1751722AbaBHPAH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 10:00:07 -0500
+Received: from infra.glanzmann.de ([88.198.249.254]:60849 "EHLO
+	infra.glanzmann.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751272AbaBHPAF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 09:48:54 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: linux-acpi@vger.kernel.org, patches@linaro.org,
-        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org
-Subject: Re: [PATCH 1/2] ACPI / processor: Replace hard-coded "ACPI0007" with ACPI_PROCESSOR_DEVICE_HID
-Date: Sat, 08 Feb 2014 16:03:29 +0100
-Message-ID: <3206968.bZnklzZdTg@vostro.rjw.lan>
-User-Agent: KMail/4.11.4 (Linux/3.13.0+; KDE/4.11.4; x86_64; ; )
-In-Reply-To: <1391863586-3157-1-git-send-email-hanjun.guo@linaro.org>
-References: <1391863586-3157-1-git-send-email-hanjun.guo@linaro.org>
+	Sat, 8 Feb 2014 10:00:05 -0500
+Date: Sat, 8 Feb 2014 16:00:01 +0100
+From: Thomas Glanzmann <thomas@glanzmann.de>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: John Ogness <john.ogness@linutronix.de>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        Linux Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: REGRESSION f54b311142a92ea2e42598e347b84e1655caf8e3 tcp auto
+ corking slows down iSCSI file system creation by factor of 70 [WAS: 4 TB
+ VMFS creation takes 15 minutes vs 26 seconds]
+Message-ID: <20140208150001.GI20512@glanzmann.de>
+Mail-Followup-To: Eric Dumazet <eric.dumazet@gmail.com>,
+	John Ogness <john.ogness@linutronix.de>,
+	Eric Dumazet <edumazet@google.com>,
+	"David S. Miller" <davem@davemloft.net>,
+	"Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+	target-devel <target-devel@vger.kernel.org>,
+	Linux Network Development <netdev@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <20140207075536.GB17815@glanzmann.de>
+ <1391801597.1155.28.camel@haakon3.risingtidesystems.com>
+ <20140207205142.GA8609@glanzmann.de>
+ <20140208093808.GD16336@glanzmann.de>
+ <1391865273.10160.76.camel@edumazet-glaptop2.roam.corp.google.com>
+ <1391866389.10160.80.camel@edumazet-glaptop2.roam.corp.google.com>
+ <1391867404.10160.88.camel@edumazet-glaptop2.roam.corp.google.com>
+ <1391868816.10160.93.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20140208141905.GG20512@glanzmann.de>
+ <1391869805.10160.97.camel@edumazet-glaptop2.roam.corp.google.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391869805.10160.97.camel@edumazet-glaptop2.roam.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, February 08, 2014 08:46:25 PM Hanjun Guo wrote:
-> Replace "ACPI0007" with ACPI_PROCESSOR_DEVICE_HID to improve code
-> readability.
-> 
-> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
-> ---
->  drivers/acpi/processor_core.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/acpi/processor_core.c b/drivers/acpi/processor_core.c
-> index a4eea9a..849cfd6 100644
-> --- a/drivers/acpi/processor_core.c
-> +++ b/drivers/acpi/processor_core.c
-> @@ -390,5 +390,6 @@ void __init acpi_early_processor_set_pdc(void)
->  	acpi_walk_namespace(ACPI_TYPE_PROCESSOR, ACPI_ROOT_OBJECT,
->  			    ACPI_UINT32_MAX,
->  			    early_init_pdc, NULL, NULL, NULL);
-> -	acpi_get_devices("ACPI0007", early_init_pdc, NULL, NULL);
-> +	acpi_get_devices(ACPI_PROCESSOR_DEVICE_HID,
-> +				early_init_pdc, NULL, NULL);
+Hello Eric,
 
-Please don't break this line (I know it will exceed 80 characters).
+> Idea would be to set this flag when calling sendmsg() of the 48 bytes
+> of the header, and not set it on the sendmsg() of the 512 bytes of the
+> payload.
 
->  }
-> 
+I see.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> iscsi_sw_tcp_xmit_segment() already adds MSG_MORE, but
+> it would be nice to add a new _initial_ flags parameter to
+> iscsi_sw_tcp_xmit_segment()
+
+This is for the iscsi initiator implementation. I'm interested in iSCSI
+target code, but I already found it and experiemented a little bit, but
+I need to dig deeper if I want to prepare a patch.
+
+Cheers,
+        Thomas
