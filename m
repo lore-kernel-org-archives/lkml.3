@@ -1,261 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751625AbaBHLET (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 06:04:19 -0500
-Received: from [125.89.61.122] ([125.89.61.122]:11988 "EHLO
-	mz-mail03.meizu.com" rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751386AbaBHLEM (ORCPT
+	id S1751525AbaBHLZK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 06:25:10 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:40865 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751228AbaBHLZH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 06:04:12 -0500
-From: <falcon@meizu.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <gregkh@linuxfoundation.org>
-Subject: [PATCH 2/2] async: Allow to group the asynced device probings
-Date: Sat, 8 Feb 2014 19:05:39 +0800
-Message-ID: <1391857539-27782-2-git-send-email-falcon@meizu.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1391857539-27782-1-git-send-email-falcon@meizu.com>
-References: <1391857539-27782-1-git-send-email-falcon@meizu.com>
+	Sat, 8 Feb 2014 06:25:07 -0500
+Message-ID: <52F6142C.3060701@kernel.org>
+Date: Sat, 08 Feb 2014 11:25:32 +0000
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.16.11.179]
+To: Lars-Peter Clausen <lars@metafoo.de>,
+        Marcus Folkesson <marcus.folkesson@gmail.com>
+CC: Sachin Kamat <sachin.kamat@linaro.org>, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] iio: adis16400: Set timestamp as the last element in
+ chan_spec
+References: <marcus.folkesson@gmail.com> <1390562644-25124-1-git-send-email-marcus.folkesson@gmail.com> <1390562644-25124-2-git-send-email-marcus.folkesson@gmail.com> <52E26E9A.9040002@metafoo.de>
+In-Reply-To: <52E26E9A.9040002@metafoo.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wu Zhangjin <falcon@meizu.com>
+On 24/01/14 13:46, Lars-Peter Clausen wrote:
+> On 01/24/2014 12:24 PM, Marcus Folkesson wrote:
+>> This is necessary since timestamp is calculated as the last element
+>> in iio_compute_scan_bytes().
+>>
+>> Signed-off-by: Marcus Folkesson <marcus.folkesson@gmail.com>
+>
+> Looks good, thanks.
+>
+> Acked-by: Lars-Peter Clausen
+Applied with some fuzz to fixes-togreg.  Also marked for stable.
 
-[*Note*: NOT applicable, only for comments.]
+Thanks
 
-This allows to schedule a group of probings in order.
+Jonathan
 
-Usage:
-
-If the probing of driver2 depends on the probing of driver1, we can put them
-into a group, here put them into a group named domain 1, they will be probed in
-the linking order.
-
-...
-
-static struct platform_driver first_driver = {
- 	.probe = first_driver_probe,
- 	.driver		= {
- 		.name	= "first driver",
-+		.async_probe = 1,
-+		.async_domain = 1,
- 	},
- };
-
-...
-
-static struct platform_driver second_driver = {
- 	.probe = second_driver_probe,
- 	.driver		= {
- 		.name	= "second_driver",
-+		.async_probe = 1,
-+		.async_domain = 1,
- 	},
- };
-
-...
-
-With this feature, it is possible to async different class of drivers, for
-example, put all sound drivers into domain 2, put all display/video drivers
-into domain 3, and sensors domain 4, network drivers domain 5 and so forth.
-
-*TODO*:
-
- o To share the existing wait_for_device_probe(), register all async domains
- with registered=1. But it is too early than our wait_for_async_probe_domain().
-
- o It may be possible to async the whole kernel initcalls(except the one
- before scheduler available) with more complicated group features, currently,
- this implementation only allows to group the probings linearly, but the real
- dependencies of the probings are more complicated, to solve this issue, group
- the probings in a *tree* architecture may work.
-
-Signed-off-by: Wu Zhangjin <falcon@meizu.com>
----
- drivers/base/dd.c      |  101 ++++++++++++++++++++++++++++++++++++++++++++++--
- include/linux/device.h |    1 +
- init/main.c            |    4 ++
- 3 files changed, 103 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/base/dd.c b/drivers/base/dd.c
-index 357f36e..025d8a9 100644
---- a/drivers/base/dd.c
-+++ b/drivers/base/dd.c
-@@ -358,11 +358,52 @@ void wait_for_device_probe(void)
- }
- EXPORT_SYMBOL_GPL(wait_for_device_probe);
- 
-+struct async_domain_structure {
-+	/* Data Elements */
-+	struct async_domain domain;
-+	unsigned int domain_id;
-+	unsigned int domain_members;
-+	struct completion domain_order;
-+	char *last_drv;
-+	/* List Link */
-+	struct list_head list;
-+};
-+
- struct stupid_thread_structure {
- 	struct device_driver *drv;
- 	struct device *dev;
-+	struct async_domain_structure *domain;
-+	unsigned int wait:1;
- };
- 
-+static LIST_HEAD(async_domain_list);
-+
-+/* Create the domain list based on the ids, the same ids share the same domain.  */
-+struct async_domain_structure *get_async_domain(unsigned int domain_id)
-+{
-+	struct async_domain_structure *domain;
-+
-+	/* Check if our list exist, If exist, return it */
-+	if (!list_empty(&async_domain_list)) {
-+		list_for_each_entry(domain, &async_domain_list, list)
-+			if (domain->domain_id == domain_id) {
-+				domain->domain_members++;
-+				return domain;
-+			}
-+	}
-+
-+	/* If not exist, add a new one  */
-+	domain = kzalloc(sizeof(struct async_domain_structure), GFP_KERNEL);
-+	domain->domain_id = domain_id;
-+	domain->domain_members = 1;
-+	init_completion(&domain->domain_order);
-+	INIT_LIST_HEAD(&domain->domain.pending);
-+	domain->domain.registered = 0;
-+	list_add(&domain->list, &async_domain_list);
-+
-+	return domain;
-+}
-+
- /**
-  * driver_probe_device - attempt to bind device & driver together
-  * @drv: driver to bind a device to
-@@ -379,12 +420,57 @@ static void __driver_probe_device(void *void_data, async_cookie_t cookie)
- 	struct stupid_thread_structure *data = void_data;
- 	struct device_driver *drv = data->drv;
- 	struct device *dev = data->dev;
-+	struct async_domain_structure *domain = data->domain;
-+	unsigned int wait = data->wait;
-+
-+	/* Wait for the previous one */
-+	if (wait) {
-+		pr_info("%s: %s: wait for %s\n", __func__, drv->name, (char *)domain->last_drv);
-+		wait_for_completion_interruptible(&domain->domain_order);
-+	}
-+
-+	if (domain)
-+		domain->last_drv = (char *)drv->name;
- 
- 	pm_runtime_barrier(dev);
- 	really_probe(dev, drv);
- 	pm_request_idle(dev);
- 
- 	kfree(data);
-+
-+	/* Finish */
-+	if (domain) {
-+		pr_info("%s: %s: complete device probing\n", __func__, drv->name);
-+		complete(&domain->domain_order);
-+	}
-+}
-+
-+void wait_for_async_probe_in_domain(void)
-+{
-+	struct async_domain_structure *domain;
-+
-+	pr_info("%s: Wait for all asynced probe devices\n", __func__);
-+	list_for_each_entry(domain, &async_domain_list, list) {
-+		pr_debug("%s: Wait for domain %d\n", __func__, domain->domain_id);
-+		async_synchronize_full_domain(&domain->domain);
-+		pr_debug("%s: Release the data struct for domain %d\n", __func__, domain->domain_id);
-+		kfree(domain);
-+	}
-+}
-+
-+static inline void async_probe_in_domain(void *void_data)
-+{
-+	struct stupid_thread_structure *data = void_data;
-+	struct device_driver *drv = data->drv;
-+	async_cookie_t cookie;
-+	struct async_domain_structure *domain;
-+
-+	/* Schedule the device in the specified domain */
-+	domain = data->domain;
-+	data->wait = (domain->domain_members > 1) ? 1 : 0;
-+	pr_debug("%s: %s: members = %d, wait = %d\n", __func__, drv->name, domain->domain_members, data->wait);
-+	cookie = async_schedule_domain(__driver_probe_device, data, &domain->domain);
-+	pr_info("%s: async call %s driver, cookie is %llu, domain is %d\n", __func__, drv->name, cookie, drv->async_domain);
- }
- 
- int driver_probe_device(struct device_driver *drv, struct device *dev)
-@@ -400,13 +486,22 @@ int driver_probe_device(struct device_driver *drv, struct device *dev)
- 		 drv->bus->name, __func__, dev_name(dev), drv->name);
- 
- 	if (drv->async_probe) {
--		data = kmalloc(sizeof(*data), GFP_KERNEL);
-+		data = kzalloc(sizeof(struct stupid_thread_structure), GFP_KERNEL);
- 		data->drv = drv;
- 		data->dev = dev;
- 
--		cookie = async_schedule(__driver_probe_device, data);
--		pr_info("%s: async call %s driver, cookie is %llu\n", __func__, drv->name, cookie);
-+		if (!drv->async_domain) {
-+			data->domain = NULL;
-+			cookie = async_schedule(__driver_probe_device, data);
-+			pr_info("%s: async call %s driver, cookie is %llu\n", __func__, drv->name, cookie);
-+		} else {
-+			/* Probe the device with domain specified */
-+			pr_info("%s: async_probe_in_domain() %s\n", __func__, drv->name);
-+			data->domain = get_async_domain(drv->async_domain);
-+			async_probe_in_domain(data);
-+		}
- 	} else {
-+		pr_debug("%s: Probe %s\n", __func__, drv->name);
- 		pm_runtime_barrier(dev);
- 		ret = really_probe(dev, drv);
- 		pm_request_idle(dev);
-diff --git a/include/linux/device.h b/include/linux/device.h
-index f39ee48..3806947 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -248,6 +248,7 @@ struct device_driver {
- 
- 	struct driver_private *p;
- 
-+	unsigned int async_domain;
- 	unsigned int async_probe:1;
- };
- 
-diff --git a/init/main.c b/init/main.c
-index febc511..4271b7b 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -836,6 +836,8 @@ static int try_to_run_init_process(const char *init_filename)
- 
- static noinline void __init kernel_init_freeable(void);
- 
-+extern void wait_for_async_probe_in_domain(void);
-+
- static int __ref kernel_init(void *unused)
- {
- 	int ret;
-@@ -843,6 +845,8 @@ static int __ref kernel_init(void *unused)
- 	kernel_init_freeable();
- 	/* need to finish all async __init code before freeing the memory */
- 	async_synchronize_full();
-+	wait_for_async_probe_in_domain();
-+
- 	free_initmem();
- 	mark_rodata_ro();
- 	system_state = SYSTEM_RUNNING;
--- 
-1.7.10.4
+>
+> That said, I think we should try to modify the core code so that the scan
+> index for the timestamp is auto assigned to be always the last one.
+I'd be happy with such a change.  Note we need to be careful not to block other
+positions of timestamps coming from hardware timestamp generators, but for software
+time stamps it would make sense just to automate always having them at the end.
+>
+>> ---
+>>   drivers/iio/imu/adis16400.h      |    1 +
+>>   drivers/iio/imu/adis16400_core.c |   10 +++++-----
+>>   2 files changed, 6 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/drivers/iio/imu/adis16400.h b/drivers/iio/imu/adis16400.h
+>> index 2f8f9d6..0916bf6 100644
+>> --- a/drivers/iio/imu/adis16400.h
+>> +++ b/drivers/iio/imu/adis16400.h
+>> @@ -189,6 +189,7 @@ enum {
+>>   	ADIS16300_SCAN_INCLI_X,
+>>   	ADIS16300_SCAN_INCLI_Y,
+>>   	ADIS16400_SCAN_ADC,
+>> +	ADIS16400_SCAN_TIMESTAMP,
+>>   };
+>>
+>>   #ifdef CONFIG_IIO_BUFFER
+>> diff --git a/drivers/iio/imu/adis16400_core.c b/drivers/iio/imu/adis16400_core.c
+>> index 3fb7757..7f98657 100644
+>> --- a/drivers/iio/imu/adis16400_core.c
+>> +++ b/drivers/iio/imu/adis16400_core.c
+>> @@ -632,7 +632,7 @@ static const struct iio_chan_spec adis16400_channels[] = {
+>>   	ADIS16400_MAGN_CHAN(Z, ADIS16400_ZMAGN_OUT, 14),
+>>   	ADIS16400_TEMP_CHAN(ADIS16400_TEMP_OUT, 12),
+>>   	ADIS16400_AUX_ADC_CHAN(ADIS16400_AUX_ADC, 12),
+>> -	IIO_CHAN_SOFT_TIMESTAMP(12)
+>> +	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
+>>   };
+>>
+>>   static const struct iio_chan_spec adis16448_channels[] = {
+>> @@ -654,7 +654,7 @@ static const struct iio_chan_spec adis16448_channels[] = {
+>>   		.scan_type = IIO_ST('s', 16, 16, 0),
+>>   	},
+>>   	ADIS16400_TEMP_CHAN(ADIS16448_TEMP_OUT, 12),
+>> -	IIO_CHAN_SOFT_TIMESTAMP(11)
+>> +	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
+>>   };
+>>
+>>   static const struct iio_chan_spec adis16350_channels[] = {
+>> @@ -672,7 +672,7 @@ static const struct iio_chan_spec adis16350_channels[] = {
+>>   	ADIS16400_MOD_TEMP_CHAN(X, ADIS16350_XTEMP_OUT, 12),
+>>   	ADIS16400_MOD_TEMP_CHAN(Y, ADIS16350_YTEMP_OUT, 12),
+>>   	ADIS16400_MOD_TEMP_CHAN(Z, ADIS16350_ZTEMP_OUT, 12),
+>> -	IIO_CHAN_SOFT_TIMESTAMP(11)
+>> +	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
+>>   };
+>>
+>>   static const struct iio_chan_spec adis16300_channels[] = {
+>> @@ -685,7 +685,7 @@ static const struct iio_chan_spec adis16300_channels[] = {
+>>   	ADIS16400_AUX_ADC_CHAN(ADIS16300_AUX_ADC, 12),
+>>   	ADIS16400_INCLI_CHAN(X, ADIS16300_PITCH_OUT, 13),
+>>   	ADIS16400_INCLI_CHAN(Y, ADIS16300_ROLL_OUT, 13),
+>> -	IIO_CHAN_SOFT_TIMESTAMP(14)
+>> +	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
+>>   };
+>>
+>>   static const struct iio_chan_spec adis16334_channels[] = {
+>> @@ -696,7 +696,7 @@ static const struct iio_chan_spec adis16334_channels[] = {
+>>   	ADIS16400_ACCEL_CHAN(Y, ADIS16400_YACCL_OUT, 14),
+>>   	ADIS16400_ACCEL_CHAN(Z, ADIS16400_ZACCL_OUT, 14),
+>>   	ADIS16400_TEMP_CHAN(ADIS16350_XTEMP_OUT, 12),
+>> -	IIO_CHAN_SOFT_TIMESTAMP(8)
+>> +	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
+>>   };
+>>
+>>   static struct attribute *adis16400_attributes[] = {
+>>
+>
 
