@@ -1,59 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751537AbaBHMeX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 07:34:23 -0500
-Received: from mail-we0-f173.google.com ([74.125.82.173]:43965 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751170AbaBHMeT (ORCPT
+	id S1751689AbaBHMef (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 07:34:35 -0500
+Received: from mail-we0-f172.google.com ([74.125.82.172]:53621 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751438AbaBHMeW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 07:34:19 -0500
+	Sat, 8 Feb 2014 07:34:22 -0500
 From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
 To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
         akpm@linux-foundation.org, linux-arch@vger.kernel.org
 Cc: torvalds@linux-foundation.org, Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Subject: [PATCH v2 0/2] generic CPU feature based udev module autoprobing
-Date: Sat,  8 Feb 2014 13:34:08 +0100
-Message-Id: <1391862850-24620-1-git-send-email-ard.biesheuvel@linaro.org>
+Subject: [PATCH v2 2/2] x86: align x86 arch with generic CPU modalias handling
+Date: Sat,  8 Feb 2014 13:34:10 +0100
+Message-Id: <1391862850-24620-3-git-send-email-ard.biesheuvel@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1391862850-24620-1-git-send-email-ard.biesheuvel@linaro.org>
+References: <1391862850-24620-1-git-send-email-ard.biesheuvel@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series implements a generic way to wire up udev module autoprobing to
-optional CPU features.
+The x86 CPU feature modalias handling existed before it was reimplemented
+generically. This patch aligns the x86 handling so that it
+(a) reuses some more code that is now generic;
+(b) uses the generic format for the modalias module metadata entry, i.e., it
+    now uses 'cpu:type:x86,venVVVVfamFFFFmodMMMM:feature:,XXXX,YYYY' instead of
+    the 'x86cpu:vendor:VVVV:family:FFFF:model:MMMM:feature:,XXXX,YYYY' that was
+    used before.
 
-Patch #1 implements the actual generic part. It relies on the include file
-<asm/cpufeature.h> to be supplied by the architecture to map CPU features to
-the number based scheme used by modalias.
+Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Acked-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/Kconfig                  |  4 +---
+ arch/x86/include/asm/cpufeature.h |  7 +++++++
+ arch/x86/kernel/cpu/match.c       | 42 ---------------------------------------
+ drivers/base/Kconfig              |  5 -----
+ drivers/base/cpu.c                | 10 +++-------
+ include/linux/cpu.h               |  7 -------
+ scripts/mod/file2alias.c          | 10 +++++-----
+ 7 files changed, 16 insertions(+), 69 deletions(-)
 
-Patch #2 aligns x86 with the generic code. As x86 allows matching on CPU vendor,
-family and model IDs, it still retains much of the original code for creating
-the module metadata.
-
-Changes since v1:
-- squashed into 2 patches, all the generic bits are now added in patch #1 and
-  all alignment of the x86 code with the newly introduced generic code is done
-  in patch #2
-- add more elaborate commit message for patch #1
-- added hpa's ack on patch #2
-
-Ard Biesheuvel (2):
-  cpu: add generic support for CPU feature based module autoloading
-  x86: align x86 arch with generic CPU modalias handling
-
- arch/x86/Kconfig                  |  4 +--
- arch/x86/include/asm/cpufeature.h |  7 +++++
- arch/x86/kernel/cpu/match.c       | 42 ---------------------------
- drivers/base/Kconfig              |  3 ++
- drivers/base/cpu.c                | 46 ++++++++++++++++++++++++++----
- include/linux/cpu.h               |  7 -----
- include/linux/cpufeature.h        | 60 +++++++++++++++++++++++++++++++++++++++
- include/linux/mod_devicetable.h   |  9 ++++++
- scripts/mod/devicetable-offsets.c |  3 ++
- scripts/mod/file2alias.c          | 20 +++++++++----
- 10 files changed, 139 insertions(+), 62 deletions(-)
- create mode 100644 include/linux/cpufeature.h
-
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 940e50e..7d3b790 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -127,6 +127,7 @@ config X86
+ 	select HAVE_DEBUG_STACKOVERFLOW
+ 	select HAVE_IRQ_EXIT_ON_IRQ_STACK if X86_64
+ 	select HAVE_CC_STACKPROTECTOR
++	select GENERIC_CPU_AUTOPROBE
+ 
+ config INSTRUCTION_DECODER
+ 	def_bool y
+@@ -195,9 +196,6 @@ config ARCH_HAS_CPU_RELAX
+ config ARCH_HAS_CACHE_LINE_SIZE
+ 	def_bool y
+ 
+-config ARCH_HAS_CPU_AUTOPROBE
+-	def_bool y
+-
+ config HAVE_SETUP_PER_CPU_AREA
+ 	def_bool y
+ 
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index e099f95..d86dc3d 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -541,6 +541,13 @@ static __always_inline __pure bool _static_cpu_has_safe(u16 bit)
+ #define static_cpu_has_bug(bit)	static_cpu_has((bit))
+ #define boot_cpu_has_bug(bit)	cpu_has_bug(&boot_cpu_data, (bit))
+ 
++#define MAX_CPU_FEATURES	(NCAPINTS * 32)
++#define cpu_have_feature	boot_cpu_has
++
++#define CPU_FEATURE_TYPEFMT	"x86,ven%04Xfam%04Xmod%04X"
++#define CPU_FEATURE_TYPEVAL	boot_cpu_data.x86_vendor, boot_cpu_data.x86, \
++				boot_cpu_data.x86_model
++
+ #endif /* defined(__KERNEL__) && !defined(__ASSEMBLY__) */
+ 
+ #endif /* _ASM_X86_CPUFEATURE_H */
+diff --git a/arch/x86/kernel/cpu/match.c b/arch/x86/kernel/cpu/match.c
+index 3656537..afa9f0d 100644
+--- a/arch/x86/kernel/cpu/match.c
++++ b/arch/x86/kernel/cpu/match.c
+@@ -47,45 +47,3 @@ const struct x86_cpu_id *x86_match_cpu(const struct x86_cpu_id *match)
+ 	return NULL;
+ }
+ EXPORT_SYMBOL(x86_match_cpu);
+-
+-ssize_t arch_print_cpu_modalias(struct device *dev,
+-				struct device_attribute *attr,
+-				char *bufptr)
+-{
+-	int size = PAGE_SIZE;
+-	int i, n;
+-	char *buf = bufptr;
+-
+-	n = snprintf(buf, size, "x86cpu:vendor:%04X:family:%04X:"
+-		     "model:%04X:feature:",
+-		boot_cpu_data.x86_vendor,
+-		boot_cpu_data.x86,
+-		boot_cpu_data.x86_model);
+-	size -= n;
+-	buf += n;
+-	size -= 1;
+-	for (i = 0; i < NCAPINTS*32; i++) {
+-		if (boot_cpu_has(i)) {
+-			n = snprintf(buf, size, ",%04X", i);
+-			if (n >= size) {
+-				WARN(1, "x86 features overflow page\n");
+-				break;
+-			}
+-			size -= n;
+-			buf += n;
+-		}
+-	}
+-	*buf++ = '\n';
+-	return buf - bufptr;
+-}
+-
+-int arch_cpu_uevent(struct device *dev, struct kobj_uevent_env *env)
+-{
+-	char *buf = kzalloc(PAGE_SIZE, GFP_KERNEL);
+-	if (buf) {
+-		arch_print_cpu_modalias(NULL, NULL, buf);
+-		add_uevent_var(env, "MODALIAS=%s", buf);
+-		kfree(buf);
+-	}
+-	return 0;
+-}
+diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
+index 3f0d373..8fa8dea 100644
+--- a/drivers/base/Kconfig
++++ b/drivers/base/Kconfig
+@@ -185,13 +185,8 @@ config GENERIC_CPU_DEVICES
+ 	bool
+ 	default n
+ 
+-config HAVE_CPU_AUTOPROBE
+-	def_bool ARCH_HAS_CPU_AUTOPROBE
+-
+ config GENERIC_CPU_AUTOPROBE
+ 	bool
+-	depends on !ARCH_HAS_CPU_AUTOPROBE
+-	select HAVE_CPU_AUTOPROBE
+ 
+ config SOC_BUS
+ 	bool
+diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+index 8a38bf8..006b1bc 100644
+--- a/drivers/base/cpu.c
++++ b/drivers/base/cpu.c
+@@ -287,7 +287,6 @@ static void cpu_device_release(struct device *dev)
+ 	 */
+ }
+ 
+-#ifdef CONFIG_HAVE_CPU_AUTOPROBE
+ #ifdef CONFIG_GENERIC_CPU_AUTOPROBE
+ static ssize_t print_cpu_modalias(struct device *dev,
+ 				  struct device_attribute *attr,
+@@ -310,9 +309,6 @@ static ssize_t print_cpu_modalias(struct device *dev,
+ 	buf[n++] = '\n';
+ 	return n;
+ }
+-#else
+-#define print_cpu_modalias	arch_print_cpu_modalias
+-#endif
+ 
+ static int cpu_uevent(struct device *dev, struct kobj_uevent_env *env)
+ {
+@@ -346,7 +342,7 @@ int register_cpu(struct cpu *cpu, int num)
+ 	cpu->dev.offline_disabled = !cpu->hotpluggable;
+ 	cpu->dev.offline = !cpu_online(num);
+ 	cpu->dev.of_node = of_get_cpu_node(num, NULL);
+-#ifdef CONFIG_HAVE_CPU_AUTOPROBE
++#ifdef CONFIG_GENERIC_CPU_AUTOPROBE
+ 	cpu->dev.bus->uevent = cpu_uevent;
+ #endif
+ 	cpu->dev.groups = common_cpu_attr_groups;
+@@ -370,7 +366,7 @@ struct device *get_cpu_device(unsigned cpu)
+ }
+ EXPORT_SYMBOL_GPL(get_cpu_device);
+ 
+-#ifdef CONFIG_HAVE_CPU_AUTOPROBE
++#ifdef CONFIG_GENERIC_CPU_AUTOPROBE
+ static DEVICE_ATTR(modalias, 0444, print_cpu_modalias, NULL);
+ #endif
+ 
+@@ -384,7 +380,7 @@ static struct attribute *cpu_root_attrs[] = {
+ 	&cpu_attrs[2].attr.attr,
+ 	&dev_attr_kernel_max.attr,
+ 	&dev_attr_offline.attr,
+-#ifdef CONFIG_HAVE_CPU_AUTOPROBE
++#ifdef CONFIG_GENERIC_CPU_AUTOPROBE
+ 	&dev_attr_modalias.attr,
+ #endif
+ 	NULL
+diff --git a/include/linux/cpu.h b/include/linux/cpu.h
+index 03e235ad..03e962e 100644
+--- a/include/linux/cpu.h
++++ b/include/linux/cpu.h
+@@ -46,13 +46,6 @@ extern ssize_t arch_cpu_release(const char *, size_t);
+ #endif
+ struct notifier_block;
+ 
+-#ifdef CONFIG_ARCH_HAS_CPU_AUTOPROBE
+-extern int arch_cpu_uevent(struct device *dev, struct kobj_uevent_env *env);
+-extern ssize_t arch_print_cpu_modalias(struct device *dev,
+-				       struct device_attribute *attr,
+-				       char *bufptr);
+-#endif
+-
+ /*
+  * CPU notifier priorities.
+  */
+diff --git a/scripts/mod/file2alias.c b/scripts/mod/file2alias.c
+index 8a69005..5fdad83 100644
+--- a/scripts/mod/file2alias.c
++++ b/scripts/mod/file2alias.c
+@@ -1110,7 +1110,7 @@ static int do_amba_entry(const char *filename,
+ }
+ ADD_TO_DEVTABLE("amba", amba_id, do_amba_entry);
+ 
+-/* LOOKS like x86cpu:vendor:VVVV:family:FFFF:model:MMMM:feature:*,FEAT,*
++/* LOOKS like cpu:type:x86,venVVVVfamFFFFmodMMMM:feature:*,FEAT,*
+  * All fields are numbers. It would be nicer to use strings for vendor
+  * and feature, but getting those out of the build system here is too
+  * complicated.
+@@ -1124,10 +1124,10 @@ static int do_x86cpu_entry(const char *filename, void *symval,
+ 	DEF_FIELD(symval, x86_cpu_id, model);
+ 	DEF_FIELD(symval, x86_cpu_id, vendor);
+ 
+-	strcpy(alias, "x86cpu:");
+-	ADD(alias, "vendor:",  vendor != X86_VENDOR_ANY, vendor);
+-	ADD(alias, ":family:", family != X86_FAMILY_ANY, family);
+-	ADD(alias, ":model:",  model  != X86_MODEL_ANY,  model);
++	strcpy(alias, "cpu:type:x86,");
++	ADD(alias, "ven", vendor != X86_VENDOR_ANY, vendor);
++	ADD(alias, "fam", family != X86_FAMILY_ANY, family);
++	ADD(alias, "mod", model  != X86_MODEL_ANY,  model);
+ 	strcat(alias, ":feature:*");
+ 	if (feature != X86_FEATURE_ANY)
+ 		sprintf(alias + strlen(alias), "%04X*", feature);
 -- 
 1.8.3.2
 
