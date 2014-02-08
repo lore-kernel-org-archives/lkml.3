@@ -1,50 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004AbaBHSAZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 13:00:25 -0500
-Received: from ud10.udmedia.de ([194.117.254.50]:57467 "EHLO
+	id S1752069AbaBHSBL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 13:01:11 -0500
+Received: from ud10.udmedia.de ([194.117.254.50]:57647 "EHLO
 	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751433AbaBHSAY (ORCPT
+	with ESMTP id S1751433AbaBHSBJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 13:00:24 -0500
-Date: Sat, 8 Feb 2014 19:00:20 +0100
+	Sat, 8 Feb 2014 13:01:09 -0500
+Date: Sat, 8 Feb 2014 19:01:07 +0100
 From: Markus Trippelsdorf <markus@trippelsdorf.de>
 To: Andi Kleen <ak@linux.intel.com>
 Cc: mmarek@suse.cz, linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH 5/6] kbuild: Use single pass kallsyms
-Message-ID: <20140208180020.GB401@x4>
+Subject: Re: [PATCH 4/6] kbuild: Support padding in kallsyms tables
+Message-ID: <20140208180107.GC401@x4>
 References: <1391845840-28514-1-git-send-email-ak@linux.intel.com>
- <1391845840-28514-5-git-send-email-ak@linux.intel.com>
- <20140208091920.GA400@x4>
- <20140208160143.GF12219@tassilo.jf.intel.com>
+ <1391845840-28514-4-git-send-email-ak@linux.intel.com>
+ <20140208121241.GA401@x4>
+ <20140208174645.GH12219@tassilo.jf.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140208160143.GF12219@tassilo.jf.intel.com>
+In-Reply-To: <20140208174645.GH12219@tassilo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014.02.08 at 08:01 -0800, Andi Kleen wrote:
-> > diff --git a/scripts/link-vmlinux.sh b/scripts/link-vmlinux.sh
-> > index 4c5435f420a6..06469556c580 100644
-> > --- a/scripts/link-vmlinux.sh
-> > +++ b/scripts/link-vmlinux.sh
-> > @@ -213,7 +213,7 @@ if [ -n "${CONFIG_KALLSYMS}" ] ; then
-> >  
-> >  	info PATCHFILE vmlinux
-> >  	OFF=$(${OBJDUMP} --section-headers vmlinux |
-> > -	     gawk -f ./source/scripts/elf_file_offset \
-> > +	     gawk -f ./scripts/elf_file_offset \
+On 2014.02.08 at 09:46 -0800, Andi Kleen wrote:
+> > With attached config I get:
+> > 
+> >   KSYM    .tmp_kallsyms2.o
+> > kallsyms: address pointers padding too short: 24495 missing
+> >   OBJCOPY .tmp_kallsyms2.bin
+> >   PATCHFILE vmlinux
+> > Not enough padding in vmlinux for new kallsyms, missing 192120
+> > Makefile:840: recipe for target 'vmlinux' failed
 > 
-> I think that would break with object dirs (which was what I used),
-> because the scripts there only has some executables.
-> 
-> Really need ${srcdir}, but it would need to be exported first.
-> 
-> This should work:
+> Nice test case thanks.  This should fix it.
 
-Yes. The patch fixes the issue. 
+Yes. The build completes successfully now.
 Thanks.
 
 -- 
