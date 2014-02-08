@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752184AbaBHQR2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 11:17:28 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:54879 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751814AbaBHQPq (ORCPT
+	id S1752219AbaBHQRv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 11:17:51 -0500
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:39258 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751438AbaBHQPp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 11:15:46 -0500
+	Sat, 8 Feb 2014 11:15:45 -0500
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 11/13] cgroup: misc preps for kernfs conversion
-Date: Sat,  8 Feb 2014 11:15:25 -0500
-Message-Id: <1391876127-7134-12-git-send-email-tj@kernel.org>
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Wu Fengguang <fengguang.wu@intel.com>
+Subject: [PATCH 10/13] cgroup: introduce cgroup_ino()
+Date: Sat,  8 Feb 2014 11:15:24 -0500
+Message-Id: <1391876127-7134-11-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1391876127-7134-1-git-send-email-tj@kernel.org>
 References: <1391876127-7134-1-git-send-email-tj@kernel.org>
@@ -21,264 +23,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Un-inline seq_css().  After kernfs conversion, the function will
-  need to dereference internal data structures.
+mm/memory-failure.c::hwpoison_filter_task() has been reaching into
+cgroup to extract the associated ino to be used as a filtering
+criterion.  This is an implementation detail which shouldn't be
+depended upon from outside cgroup proper and is about to change with
+the scheduled kernfs conversion.
 
-* Add cgroup_get/put_root() and replace direct super_block->s_active
-  manipulatinos with them.  These will be converted to kernfs_root
-  refcnting.
-
-* Add cgroup_get/put() and replace dget/put() on cgrp->dentry with
-  them.  These will be converted to kernfs refcnting.
-
-* Update current_css_set_cg_links_read() to use cgroup_name() instead
-  of reaching into the dentry name.  The end result is the same.
-
-These changes don't make functional differences but will make
-transition to kernfs easier.
+This patch introduces a proper interface to determine the associated
+ino, cgroup_ino(), and updates hwpoison_filter_task() to use it
+instead of reaching directly into cgroup.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
 ---
- include/linux/cgroup.h |  8 ++---
- kernel/cgroup.c        | 85 +++++++++++++++++++++++++++++++-------------------
- 2 files changed, 55 insertions(+), 38 deletions(-)
+ include/linux/cgroup.h | 9 +++++++++
+ kernel/cgroup.c        | 5 ++++-
+ mm/memory-failure.c    | 8 ++------
+ 3 files changed, 15 insertions(+), 7 deletions(-)
 
 diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 15b7839..4740cba 100644
+index 1e4f9e2..15b7839 100644
 --- a/include/linux/cgroup.h
 +++ b/include/linux/cgroup.h
-@@ -514,18 +514,14 @@ static inline ino_t cgroup_ino(struct cgroup *cgrp)
- 		return 0;
+@@ -505,6 +505,15 @@ static inline const char *cgroup_name(const struct cgroup *cgrp)
+ 	return rcu_dereference(cgrp->name)->name;
  }
  
--static inline struct cgroup_subsys_state *seq_css(struct seq_file *seq)
--{
--	struct cgroup_open_file *of = seq->private;
--	return of->cfe->css;
--}
--
- static inline struct cftype *seq_cft(struct seq_file *seq)
++/* returns ino associated with a cgroup, 0 indicates unmounted root */
++static inline ino_t cgroup_ino(struct cgroup *cgrp)
++{
++	if (cgrp->dentry)
++		return cgrp->dentry->d_inode->i_ino;
++	else
++		return 0;
++}
++
+ static inline struct cgroup_subsys_state *seq_css(struct seq_file *seq)
  {
  	struct cgroup_open_file *of = seq->private;
- 	return of->cfe->type;
- }
- 
-+struct cgroup_subsys_state *seq_css(struct seq_file *seq);
-+
- int cgroup_add_cftypes(struct cgroup_subsys *ss, struct cftype *cfts);
- int cgroup_rm_cftypes(struct cftype *cfts);
- 
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index e81e4c9..fd4a528 100644
+index bfbb207..e81e4c9 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -169,6 +169,7 @@ static int need_forkexit_callback __read_mostly;
+@@ -792,7 +792,10 @@ static struct inode *cgroup_new_inode(umode_t mode, struct super_block *sb)
+ 	struct inode *inode = new_inode(sb);
  
- static struct cftype cgroup_base_files[];
+ 	if (inode) {
+-		inode->i_ino = get_next_ino();
++		do {
++			/* ino 0 is reserved for dummy_root */
++			inode->i_ino = get_next_ino();
++		} while (!inode->i_ino);
+ 		inode->i_mode = mode;
+ 		inode->i_uid = current_fsuid();
+ 		inode->i_gid = current_fsgid();
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index 4f08a2d..9b5933c 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -145,14 +145,10 @@ static int hwpoison_filter_task(struct page *p)
+ 		return -EINVAL;
  
-+static void cgroup_put(struct cgroup *cgrp);
- static void cgroup_destroy_css_killed(struct cgroup *cgrp);
- static int cgroup_destroy_locked(struct cgroup *cgrp);
- static int cgroup_addrm_files(struct cgroup *cgrp, struct cftype cfts[],
-@@ -204,6 +205,13 @@ static inline bool cgroup_is_dead(const struct cgroup *cgrp)
- 	return test_bit(CGRP_DEAD, &cgrp->flags);
- }
- 
-+struct cgroup_subsys_state *seq_css(struct seq_file *seq)
-+{
-+	struct cgroup_open_file *of = seq->private;
-+	return of->cfe->css;
-+}
-+EXPORT_SYMBOL_GPL(seq_css);
-+
- /**
-  * cgroup_is_descendant - test ancestry
-  * @cgrp: the cgroup to be tested
-@@ -682,6 +690,16 @@ static struct css_set *find_css_set(struct css_set *old_cset,
- 	return cset;
- }
- 
-+static void cgroup_get_root(struct cgroupfs_root *root)
-+{
-+	atomic_inc(&root->sb->s_active);
-+}
-+
-+static void cgroup_put_root(struct cgroupfs_root *root)
-+{
-+	deactivate_super(root->sb);
-+}
-+
- /*
-  * Return the cgroup for "task" from the given hierarchy. Must be
-  * called with cgroup_mutex held.
-@@ -837,18 +855,14 @@ static void cgroup_free_fn(struct work_struct *work)
- 	mutex_unlock(&cgroup_mutex);
- 
- 	/*
--	 * We get a ref to the parent's dentry, and put the ref when
--	 * this cgroup is being freed, so it's guaranteed that the
--	 * parent won't be destroyed before its children.
-+	 * We get a ref to the parent, and put the ref when this cgroup is
-+	 * being freed, so it's guaranteed that the parent won't be
-+	 * destroyed before its children.
- 	 */
--	dput(cgrp->parent->dentry);
-+	cgroup_put(cgrp->parent);
- 
--	/*
--	 * Drop the active superblock reference that we took when we
--	 * created the cgroup. This will free cgrp->root, if we are
--	 * holding the last reference to @sb.
--	 */
--	deactivate_super(cgrp->root->sb);
-+	/* put the root reference that we took when we created the cgroup */
-+	cgroup_put_root(cgrp->root);
- 
- 	cgroup_pidlist_destroy_all(cgrp);
- 
-@@ -866,6 +880,11 @@ static void cgroup_free_rcu(struct rcu_head *head)
- 	queue_work(cgroup_destroy_wq, &cgrp->destroy_work);
- }
- 
-+static void cgroup_get(struct cgroup *cgrp)
-+{
-+	dget(cgrp->dentry);
-+}
-+
- static void cgroup_diput(struct dentry *dentry, struct inode *inode)
- {
- 	/* is dentry a directory ? if so, kfree() associated cgroup */
-@@ -897,6 +916,11 @@ static void cgroup_diput(struct dentry *dentry, struct inode *inode)
- 	iput(inode);
- }
- 
-+static void cgroup_put(struct cgroup *cgrp)
-+{
-+	dput(cgrp->dentry);
-+}
-+
- static void remove_dir(struct dentry *d)
- {
- 	struct dentry *parent = dget(d->d_parent);
-@@ -2722,7 +2746,7 @@ static int cgroup_cfts_commit(struct cftype *cfts, bool is_add)
- 	struct cgroup_subsys *ss = cfts[0].ss;
- 	struct cgroup *root = &ss->root->top_cgroup;
- 	struct super_block *sb = ss->root->sb;
--	struct dentry *prev = NULL;
-+	struct cgroup *prev = NULL;
- 	struct inode *inode;
- 	struct cgroup_subsys_state *css;
- 	u64 update_before;
-@@ -2752,9 +2776,10 @@ static int cgroup_cfts_commit(struct cftype *cfts, bool is_add)
- 			continue;
- 
- 		inode = cgrp->dentry->d_inode;
--		dget(cgrp->dentry);
--		dput(prev);
--		prev = cgrp->dentry;
-+		cgroup_get(cgrp);
-+		if (prev)
-+			cgroup_put(prev);
-+		prev = cgrp;
- 
- 		mutex_unlock(&cgroup_tree_mutex);
- 		mutex_lock(&inode->i_mutex);
-@@ -2766,8 +2791,8 @@ static int cgroup_cfts_commit(struct cftype *cfts, bool is_add)
- 			break;
- 	}
- 	mutex_unlock(&cgroup_tree_mutex);
--	dput(prev);
--	deactivate_super(sb);
-+	cgroup_put(prev);
-+	cgroup_put_root(ss->root);
- 	return ret;
- }
- 
-@@ -3861,11 +3886,9 @@ static int cgroup_write_notify_on_release(struct cgroup_subsys_state *css,
-  */
- static void cgroup_dput(struct cgroup *cgrp)
- {
--	struct super_block *sb = cgrp->root->sb;
+ 	css = mem_cgroup_css(mem);
+-	/* root_mem_cgroup has NULL dentries */
+-	if (!css->cgroup->dentry)
+-		return -EINVAL;
 -
--	atomic_inc(&sb->s_active);
--	dput(cgrp->dentry);
--	deactivate_super(sb);
-+	cgroup_get_root(cgrp->root);
-+	cgroup_put(cgrp);
-+	cgroup_put_root(cgrp->root);
- }
+-	ino = css->cgroup->dentry->d_inode->i_ino;
++	ino = cgroup_ino(css->cgroup);
+ 	css_put(css);
  
- static u64 cgroup_clone_children_read(struct cgroup_subsys_state *css,
-@@ -4116,7 +4139,7 @@ static int create_css(struct cgroup *cgrp, struct cgroup_subsys *ss)
- 	if (err)
- 		goto err_free;
+-	if (ino != hwpoison_filter_memcg)
++	if (!ino || ino != hwpoison_filter_memcg)
+ 		return -EINVAL;
  
--	dget(cgrp->dentry);
-+	cgroup_get(cgrp);
- 	css_get(css->parent);
- 
- 	if (ss->broken_hierarchy && !ss->warned_broken_hierarchy &&
-@@ -4195,7 +4218,7 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 	 * can be done outside cgroup_mutex, since the sb can't
- 	 * disappear while someone has an open control file on the
- 	 * fs */
--	atomic_inc(&sb->s_active);
-+	cgroup_get_root(root);
- 
- 	init_cgroup_housekeeping(cgrp);
- 
-@@ -4229,7 +4252,7 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 	root->number_of_cgroups++;
- 
- 	/* hold a ref to the parent's dentry */
--	dget(parent->dentry);
-+	cgroup_get(parent);
- 
- 	/*
- 	 * @cgrp is now fully operational.  If something fails after this
-@@ -4259,7 +4282,7 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- err_unlock:
- 	mutex_unlock(&cgroup_mutex);
- 	/* Release the reference count that we took on the superblock */
--	deactivate_super(sb);
-+	cgroup_put_root(root);
- err_unlock_tree:
- 	mutex_unlock(&cgroup_tree_mutex);
- 	idr_remove(&root->cgroup_idr, cgrp->id);
-@@ -4491,7 +4514,6 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
- static void cgroup_destroy_css_killed(struct cgroup *cgrp)
- {
- 	struct cgroup *parent = cgrp->parent;
--	struct dentry *d = cgrp->dentry;
- 
- 	lockdep_assert_held(&cgroup_tree_mutex);
- 	lockdep_assert_held(&cgroup_mutex);
-@@ -4499,7 +4521,7 @@ static void cgroup_destroy_css_killed(struct cgroup *cgrp)
- 	/* delete this cgroup from parent->children */
- 	list_del_rcu(&cgrp->sibling);
- 
--	dput(d);
-+	cgroup_put(cgrp);
- 
- 	set_bit(CGRP_RELEASABLE, &parent->flags);
- 	check_for_release(parent);
-@@ -5159,12 +5181,11 @@ static int current_css_set_cg_links_read(struct seq_file *seq, void *v)
- 	cset = rcu_dereference(current->cgroups);
- 	list_for_each_entry(link, &cset->cgrp_links, cgrp_link) {
- 		struct cgroup *c = link->cgrp;
--		const char *name;
-+		const char *name = "?";
-+
-+		if (c != cgroup_dummy_top)
-+			name = cgroup_name(c);
- 
--		if (c->dentry)
--			name = c->dentry->d_name.name;
--		else
--			name = "?";
- 		seq_printf(seq, "Root %d group %s\n",
- 			   c->root->hierarchy_id, name);
- 	}
+ 	return 0;
 -- 
 1.8.5.3
 
