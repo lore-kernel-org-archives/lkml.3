@@ -1,167 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751786AbaBHVgO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 16:36:14 -0500
-Received: from infra.glanzmann.de ([88.198.249.254]:32963 "EHLO
-	infra.glanzmann.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751022AbaBHVgM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 16:36:12 -0500
-Date: Sat, 8 Feb 2014 22:36:08 +0100
-From: Thomas Glanzmann <thomas@glanzmann.de>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: John Ogness <john.ogness@linutronix.de>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        Linux Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: REGRESSION f54b311142a92ea2e42598e347b84e1655caf8e3 tcp auto
- corking slows down iSCSI file system creation by factor of 70 [WAS: 4 TB
- VMFS creation takes 15 minutes vs 26 seconds]
-Message-ID: <20140208213608.GA24328@glanzmann.de>
-Mail-Followup-To: Eric Dumazet <eric.dumazet@gmail.com>,
-	John Ogness <john.ogness@linutronix.de>,
-	Eric Dumazet <edumazet@google.com>,
-	"David S. Miller" <davem@davemloft.net>,
-	"Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-	target-devel <target-devel@vger.kernel.org>,
-	Linux Network Development <netdev@vger.kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <1391867404.10160.88.camel@edumazet-glaptop2.roam.corp.google.com>
- <1391868816.10160.93.camel@edumazet-glaptop2.roam.corp.google.com>
- <20140208141905.GG20512@glanzmann.de>
- <1391869805.10160.97.camel@edumazet-glaptop2.roam.corp.google.com>
- <20140208150001.GI20512@glanzmann.de>
- <1391871986.10160.105.camel@edumazet-glaptop2.roam.corp.google.com>
- <20140208165732.GB22359@glanzmann.de>
- <1391879318.10160.108.camel@edumazet-glaptop2.roam.corp.google.com>
- <20140208171531.GA23798@glanzmann.de>
- <1391886759.10160.114.camel@edumazet-glaptop2.roam.corp.google.com>
+	id S1751488AbaBHVoU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 16:44:20 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:42798 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751022AbaBHVoT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Feb 2014 16:44:19 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20140208202124.GK12219@tassilo.jf.intel.com>
+References: <1391846481-31491-1-git-send-email-ak@linux.intel.com> <1391846481-31491-2-git-send-email-ak@linux.intel.com> <52F67CD7.5090609@zytor.com> <20140208202124.GK12219@tassilo.jf.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1391886759.10160.114.camel@edumazet-glaptop2.roam.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH 02/17] x86, lto: Disable fancy hweight optimizations for LTO v2
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Sat, 08 Feb 2014 13:43:29 -0800
+To: Andi Kleen <ak@linux.intel.com>
+CC: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org, x86@kernel.org
+Message-ID: <bbf468ff-4a69-4e51-afc4-d894f459ded7@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Eric,
+That's fine.
 
-> I was simply thinking about something like :
-> (might need further changes, but I guess this should solve your case)
+On February 8, 2014 12:21:24 PM PST, Andi Kleen <ak@linux.intel.com> wrote:
+>On Sat, Feb 08, 2014 at 10:52:07AM -0800, H. Peter Anvin wrote:
+>> On 02/08/2014 12:01 AM, Andi Kleen wrote:
+>> > The fancy x86 hweight uses different compiler options for the
+>> > hweight file. This does not work with LTO. Just disable the
+>optimization
+>> > with LTO
+>> 
+>> No, I'm going to NAK this.  This means not using the POPCNT
+>instruction
+>> if LTO is enabled, and that really isn't an acceptable option.
+>
+>I thought the use was obscure?
+>
+>Ok, suppose can just disable LTO for the file.
+>The only drawback is that the functions will not be optimized away when
+>not used, as they'll need to be __visible.
+>
+>-Andi
 
-thank you for your patch. It did not apply on top of Linux tip, so I put
-in the changes manually and fixed up another call to tx_data that your
-forgot in your initial patch to make it apply.
-
-I gave it another run, can you confirm that it now behaves better?
-
-https://thomas.glanzmann.de/tmp/tcp_auto_corking_on_patched_tcp_more.pcap.bz2
-
-And look at that roundtrip graph it is perfect. Also filesystem is now
-created in 3 seconds instead of 4.
-
-https://thomas.glanzmann.de/tmp/screenshot-mini-2014-02-08-22:34:57.png
-
-Nab, do you consider this patch for upstream? Would you take if I clean
-it up?
-
-Cheers,
-        Thomas
-
-PS: I'm asleep for the next 8 hours.
-
-diff --git a/drivers/target/iscsi/iscsi_target_util.c b/drivers/target/iscsi/iscsi_target_util.c
-index e655b04..0eb9681 100644
---- a/drivers/target/iscsi/iscsi_target_util.c
-+++ b/drivers/target/iscsi/iscsi_target_util.c
-@@ -1168,7 +1168,7 @@ send_data:
- 		iov_count = cmd->iov_misc_count;
- 	}
- 
--	tx_sent = tx_data(conn, &iov[0], iov_count, tx_size);
-+	tx_sent = tx_data(conn, &iov[0], iov_count, tx_size, 0);
- 	if (tx_size != tx_sent) {
- 		if (tx_sent == -EAGAIN) {
- 			pr_err("tx_data() returned -EAGAIN\n");
-@@ -1199,7 +1199,8 @@ send_hdr:
- 	iov.iov_base = cmd->pdu;
- 	iov.iov_len = tx_hdr_size;
- 
--	tx_sent = tx_data(conn, &iov, 1, tx_hdr_size);
-+	data_len = cmd->tx_size - tx_hdr_size - cmd->padding;
-+        tx_sent = tx_data(conn, &iov, 1, tx_hdr_size, data_len ? MSG_MORE : 0);
- 	if (tx_hdr_size != tx_sent) {
- 		if (tx_sent == -EAGAIN) {
- 			pr_err("tx_data() returned -EAGAIN\n");
-@@ -1208,7 +1209,6 @@ send_hdr:
- 		return -1;
- 	}
- 
--	data_len = cmd->tx_size - tx_hdr_size - cmd->padding;
- 	/*
- 	 * Set iov_off used by padding and data digest tx_data() calls below
- 	 * in order to determine proper offset into cmd->iov_data[]
-@@ -1252,7 +1252,8 @@ send_padding:
- 	if (cmd->padding) {
- 		struct kvec *iov_p = &cmd->iov_data[iov_off++];
- 
--		tx_sent = tx_data(conn, iov_p, 1, cmd->padding);
-+		tx_sent = tx_data(conn, iov_p, 1, cmd->padding,
-+			          conn->conn_ops->DataDigest ? MSG_MORE : 0);
- 		if (cmd->padding != tx_sent) {
- 			if (tx_sent == -EAGAIN) {
- 				pr_err("tx_data() returned -EAGAIN\n");
-@@ -1266,7 +1267,7 @@ send_datacrc:
- 	if (conn->conn_ops->DataDigest) {
- 		struct kvec *iov_d = &cmd->iov_data[iov_off];
- 
--		tx_sent = tx_data(conn, iov_d, 1, ISCSI_CRC_LEN);
-+		tx_sent = tx_data(conn, iov_d, 1, ISCSI_CRC_LEN, 0);
- 		if (ISCSI_CRC_LEN != tx_sent) {
- 			if (tx_sent == -EAGAIN) {
- 				pr_err("tx_data() returned -EAGAIN\n");
-@@ -1352,11 +1353,13 @@ static int iscsit_do_rx_data(
- 
- static int iscsit_do_tx_data(
- 	struct iscsi_conn *conn,
--	struct iscsi_data_count *count)
-+	struct iscsi_data_count *count,
-+	int flags)
- {
- 	int data = count->data_length, total_tx = 0, tx_loop = 0, iov_len;
- 	struct kvec *iov_p;
- 	struct msghdr msg;
-+        struct msghdr msg = { .msg_flags = flags };
- 
- 	if (!conn || !conn->sock || !conn->conn_ops)
- 		return -1;
-@@ -1366,8 +1369,6 @@ static int iscsit_do_tx_data(
- 		return -1;
- 	}
- 
--	memset(&msg, 0, sizeof(struct msghdr));
--
- 	iov_p = count->iov;
- 	iov_len = count->iov_count;
- 
-@@ -1411,7 +1412,8 @@ int tx_data(
- 	struct iscsi_conn *conn,
- 	struct kvec *iov,
- 	int iov_count,
--	int data)
-+	int data,
-+	int flags)
- {
- 	struct iscsi_data_count c;
- 
-@@ -1424,7 +1426,7 @@ int tx_data(
- 	c.data_length = data;
- 	c.type = ISCSI_TX_DATA;
- 
--	return iscsit_do_tx_data(conn, &c);
-+	return iscsit_do_tx_data(conn, &c, flags);
- }
+-- 
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
