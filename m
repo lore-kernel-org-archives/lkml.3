@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751988AbaBHUEu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 15:04:50 -0500
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:57140 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751232AbaBHUEt convert rfc822-to-8bit (ORCPT
+	id S1752032AbaBHUEy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 15:04:54 -0500
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:57184 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751996AbaBHUEw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 15:04:49 -0500
-X-Originating-IP: 50.43.14.201
-Date: Sat, 8 Feb 2014 12:04:43 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Rashika Kheria <rashika.kheria@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Dmitry Tarnyagin <dmitry.tarnyagin@lockless.no>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Subject: Re: [PATCH 02/13] net: Include appropriate header file in
- caif/caif_dev.c
-Message-ID: <20140208200443.GB20885@leaf>
-References: <6f029c895035908595957fb16ab445c82793c77d.1391888654.git.rashika.kheria@gmail.com>
- <30885a464918e0f7cbb55b5c521a048f3e369c27.1391888654.git.rashika.kheria@gmail.com>
+	Sat, 8 Feb 2014 15:04:52 -0500
+X-Greylist: delayed 302 seconds by postgrey-1.27 at vger.kernel.org; Sat, 08 Feb 2014 15:04:51 EST
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <30885a464918e0f7cbb55b5c521a048f3e369c27.1391888654.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [84.73.67.144]
+In-Reply-To: <1391886379.2669.11.camel@x41>
+References: <1391886379.2669.11.camel@x41>
+Date: Sat, 8 Feb 2014 20:59:48 +0100
+Message-ID: <CAKMK7uE6Gaq-ghgWJ+6Qyn7hrGzAMOHyGT9KQQJ+ij7omPV2Ew@mail.gmail.com>
+Subject: Re: agp/intel: can't ioremap flush page - no chipset flushing
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        =?ISO-8859-1?Q?Ville_Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, David Airlie <airlied@linux.ie>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 09, 2014 at 01:19:43AM +0530, Rashika Kheria wrote:
-> Include appropriate header file net/caif/caif_dev.h in caif/caif_dev.c
-> because it has prototype declarations of function defined in
-> caif/caif_dev.c.
-> 
-> This eliminates the following file in caif/caif_dev.c:
-> net/caif/caif_dev.c:303:6: warning: no previous prototype for ‘caif_enroll_dev’ [-Wmissing-prototypes]
-> 
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+On Sat, Feb 8, 2014 at 8:06 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> 0) Booting v3.14-rc1 on an (outdated) ThinkPad X41 triggers a kernel
+> error:
+>     pci 0000:00:02.0: can't ioremap flush page - no chipset flushing
+>
+> That is this pci device:
+>      lspci | grep 00:02.0
+>      00:02.0 VGA compatible controller: Intel Corporation Mobile 915GM/GMS/910GML Express Graphics Controller (rev 03)
+>
+> I can't remember seeing that error before. It is apparently printed by
+> drivers/char/agp/intel-gtt.c. (So I've sent this message to the people
+> touching that file between v3.13 and v3.14-rc1. No, I haven't yet
+> pinpointed a specific commit.)
+>
+> 1) What am I supposed to do to make this error go away?
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Hm, if this is really a regression between 3.13 and 3.14-rc1 then I
+don't see any quick candidates - relevant functions in intel-gtt.c
+seem unchanged.
 
->  net/caif/caif_dev.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/net/caif/caif_dev.c b/net/caif/caif_dev.c
-> index 4dca159..edbca46 100644
-> --- a/net/caif/caif_dev.c
-> +++ b/net/caif/caif_dev.c
-> @@ -22,6 +22,7 @@
->  #include <net/pkt_sched.h>
->  #include <net/caif/caif_device.h>
->  #include <net/caif/caif_layer.h>
-> +#include <net/caif/caif_dev.h>
->  #include <net/caif/cfpkt.h>
->  #include <net/caif/cfcnfg.h>
->  #include <net/caif/cfserl.h>
-> -- 
-> 1.7.9.5
-> 
+So probably a bisect is what we need here. Note that this could also
+be due to resource handling changes in the driver/pci core, so you
+can't restrict the bisect really. But before going down this route it
+would be worth to check out the resource allocations of both kernels.
+Can you please attach /proc/iomem for both 3.13 and 3.14-rc1
+
+Adding more mailing lists.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
