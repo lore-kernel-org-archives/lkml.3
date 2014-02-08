@@ -1,145 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752673AbaBHQVx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 11:21:53 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:42855 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752371AbaBHQSs (ORCPT
+	id S1752694AbaBHQWT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 11:22:19 -0500
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:62509 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751898AbaBHQPf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 11:18:48 -0500
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Jens Axboe <jens.axboe@oracle.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 01/11] block: Stop abusing csd.list for fifo_time
-Date: Sat,  8 Feb 2014 17:18:30 +0100
-Message-Id: <1391876320-25068-2-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1391876320-25068-1-git-send-email-fweisbec@gmail.com>
-References: <1391876320-25068-1-git-send-email-fweisbec@gmail.com>
+	Sat, 8 Feb 2014 11:15:35 -0500
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 03/13] cgroup: release cgroup_mutex over file removals
+Date: Sat,  8 Feb 2014 11:15:17 -0500
+Message-Id: <1391876127-7134-4-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1391876127-7134-1-git-send-email-tj@kernel.org>
+References: <1391876127-7134-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Kara <jack@suse.cz>
+Now that cftypes and all tree modification operations are protected by
+cgroup_tree_mutex, we can drop cgroup_mutex while deleting files and
+directories.  Drop cgroup_mutex over removals.
 
-Block layer currently abuses rq->csd.list.next for storing fifo_time.
-That is a terrible hack and completely unnecessary as well. Union
-achieves the same space saving in a cleaner way.
+This doesn't make any noticeable difference now but is to help kernfs
+conversion.  In kernfs, removals are sync points which drain in-flight
+operations as those operations would grab cgroup_mutex, trying to
+delete under cgroup_mutex would deadlock.  This can be resolved by
+just holding the outer cgroup_tree_mutex which nests outside both
+kernfs active reference and cgroup_mutex.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jens Axboe <jens.axboe@oracle.com>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- block/cfq-iosched.c      | 8 ++++----
- block/deadline-iosched.c | 8 ++++----
- include/linux/blkdev.h   | 1 +
- include/linux/elevator.h | 6 ------
- 4 files changed, 9 insertions(+), 14 deletions(-)
+ kernel/cgroup.c | 15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index 744833b..5873e4a 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -2367,10 +2367,10 @@ cfq_merged_requests(struct request_queue *q, struct request *rq,
- 	 * reposition in fifo if next is older than rq
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index e41987d..908ad96 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -974,7 +974,9 @@ static int rebind_subsystems(struct cgroupfs_root *root,
+ 	 * Nothing can fail from this point on.  Remove files for the
+ 	 * removed subsystems and rebind each subsystem.
  	 */
- 	if (!list_empty(&rq->queuelist) && !list_empty(&next->queuelist) &&
--	    time_before(rq_fifo_time(next), rq_fifo_time(rq)) &&
-+	    time_before(next->fifo_time, rq->fifo_time) &&
- 	    cfqq == RQ_CFQQ(next)) {
- 		list_move(&rq->queuelist, &next->queuelist);
--		rq_set_fifo_time(rq, rq_fifo_time(next));
-+		rq->fifo_time = next->fifo_time;
++	mutex_unlock(&cgroup_mutex);
+ 	cgroup_clear_dir(cgrp, removed_mask);
++	mutex_lock(&cgroup_mutex);
+ 
+ 	for_each_subsys(ss, i) {
+ 		unsigned long bit = 1UL << i;
+@@ -2694,10 +2696,11 @@ static int cgroup_cfts_commit(struct cftype *cfts, bool is_add)
+ 	u64 update_before;
+ 	int ret = 0;
+ 
++	mutex_unlock(&cgroup_mutex);
++
+ 	/* %NULL @cfts indicates abort and don't bother if @ss isn't attached */
+ 	if (!cfts || ss->root == &cgroup_dummy_root ||
+ 	    !atomic_inc_not_zero(&sb->s_active)) {
+-		mutex_unlock(&cgroup_mutex);
+ 		mutex_unlock(&cgroup_tree_mutex);
+ 		return 0;
  	}
+@@ -2721,18 +2724,15 @@ static int cgroup_cfts_commit(struct cftype *cfts, bool is_add)
+ 		dput(prev);
+ 		prev = cgrp->dentry;
  
- 	if (cfqq->next_rq == next)
-@@ -2814,7 +2814,7 @@ static struct request *cfq_check_fifo(struct cfq_queue *cfqq)
- 		return NULL;
- 
- 	rq = rq_entry_fifo(cfqq->fifo.next);
--	if (time_before(jiffies, rq_fifo_time(rq)))
-+	if (time_before(jiffies, rq->fifo_time))
- 		rq = NULL;
- 
- 	cfq_log_cfqq(cfqq->cfqd, cfqq, "fifo=%p", rq);
-@@ -3927,7 +3927,7 @@ static void cfq_insert_request(struct request_queue *q, struct request *rq)
- 	cfq_log_cfqq(cfqd, cfqq, "insert_request");
- 	cfq_init_prio_data(cfqq, RQ_CIC(rq));
- 
--	rq_set_fifo_time(rq, jiffies + cfqd->cfq_fifo_expire[rq_is_sync(rq)]);
-+	rq->fifo_time = jiffies + cfqd->cfq_fifo_expire[rq_is_sync(rq)];
- 	list_add_tail(&rq->queuelist, &cfqq->fifo);
- 	cfq_add_rq_rb(rq);
- 	cfqg_stats_update_io_add(RQ_CFQG(rq), cfqd->serving_group,
-diff --git a/block/deadline-iosched.c b/block/deadline-iosched.c
-index 9ef6640..a753df2 100644
---- a/block/deadline-iosched.c
-+++ b/block/deadline-iosched.c
-@@ -106,7 +106,7 @@ deadline_add_request(struct request_queue *q, struct request *rq)
- 	/*
- 	 * set expire time and add to fifo list
- 	 */
--	rq_set_fifo_time(rq, jiffies + dd->fifo_expire[data_dir]);
-+	rq->fifo_time = jiffies + dd->fifo_expire[data_dir];
- 	list_add_tail(&rq->queuelist, &dd->fifo_list[data_dir]);
- }
- 
-@@ -174,9 +174,9 @@ deadline_merged_requests(struct request_queue *q, struct request *req,
- 	 * and move into next position (next will be deleted) in fifo
- 	 */
- 	if (!list_empty(&req->queuelist) && !list_empty(&next->queuelist)) {
--		if (time_before(rq_fifo_time(next), rq_fifo_time(req))) {
-+		if (time_before(next->fifo_time, req->fifo_time)) {
- 			list_move(&req->queuelist, &next->queuelist);
--			rq_set_fifo_time(req, rq_fifo_time(next));
-+			req->fifo_time = next->fifo_time;
- 		}
+-		mutex_unlock(&cgroup_mutex);
+ 		mutex_unlock(&cgroup_tree_mutex);
+ 		mutex_lock(&inode->i_mutex);
+ 		mutex_lock(&cgroup_tree_mutex);
+-		mutex_lock(&cgroup_mutex);
+ 		if (cgrp->serial_nr < update_before && !cgroup_is_dead(cgrp))
+ 			ret = cgroup_addrm_files(cgrp, cfts, is_add);
+ 		mutex_unlock(&inode->i_mutex);
+ 		if (ret)
+ 			break;
  	}
- 
-@@ -230,7 +230,7 @@ static inline int deadline_check_fifo(struct deadline_data *dd, int ddir)
+-	mutex_unlock(&cgroup_mutex);
+ 	mutex_unlock(&cgroup_tree_mutex);
+ 	dput(prev);
+ 	deactivate_super(sb);
+@@ -4385,10 +4385,13 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
  	/*
- 	 * rq is expired!
+ 	 * Initiate massacre of all css's.  cgroup_destroy_css_killed()
+ 	 * will be invoked to perform the rest of destruction once the
+-	 * percpu refs of all css's are confirmed to be killed.
++	 * percpu refs of all css's are confirmed to be killed.  This
++	 * involves removing the subsystem's files, drop cgroup_mutex.
  	 */
--	if (time_after_eq(jiffies, rq_fifo_time(rq)))
-+	if (time_after_eq(jiffies, rq->fifo_time))
- 		return 1;
++	mutex_unlock(&cgroup_mutex);
+ 	for_each_css(css, ssid, cgrp)
+ 		kill_css(css);
++	mutex_lock(&cgroup_mutex);
+ 
+ 	/*
+ 	 * Mark @cgrp dead.  This prevents further task migration and child
+@@ -4419,9 +4422,11 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
+ 	 * puts the base ref but we aren't quite done with @cgrp yet, so
+ 	 * hold onto it.
+ 	 */
++	mutex_unlock(&cgroup_mutex);
+ 	cgroup_addrm_files(cgrp, cgroup_base_files, false);
+ 	dget(d);
+ 	cgroup_d_remove_dir(d);
++	mutex_lock(&cgroup_mutex);
  
  	return 0;
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 8678c43..dda98e3 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -99,6 +99,7 @@ struct request {
- 	union {
- 		struct call_single_data csd;
- 		struct work_struct mq_flush_data;
-+		unsigned long fifo_time;
- 	};
- 
- 	struct request_queue *q;
-diff --git a/include/linux/elevator.h b/include/linux/elevator.h
-index 306dd8c..0bdfd46 100644
---- a/include/linux/elevator.h
-+++ b/include/linux/elevator.h
-@@ -202,12 +202,6 @@ enum {
- #define rq_end_sector(rq)	(blk_rq_pos(rq) + blk_rq_sectors(rq))
- #define rb_entry_rq(node)	rb_entry((node), struct request, rb_node)
- 
--/*
-- * Hack to reuse the csd.list list_head as the fifo time holder while
-- * the request is in the io scheduler. Saves an unsigned long in rq.
-- */
--#define rq_fifo_time(rq)	((unsigned long) (rq)->csd.list.next)
--#define rq_set_fifo_time(rq,exp)	((rq)->csd.list.next = (void *) (exp))
- #define rq_entry_fifo(ptr)	list_entry((ptr), struct request, queuelist)
- #define rq_fifo_clear(rq)	do {		\
- 	list_del_init(&(rq)->queuelist);	\
+ };
 -- 
-1.8.3.1
+1.8.5.3
 
