@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752049AbaBHH4W (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 02:56:22 -0500
-Received: from mga09.intel.com ([134.134.136.24]:27308 "EHLO mga09.intel.com"
+	id S1752071AbaBHH4p (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 02:56:45 -0500
+Received: from mga01.intel.com ([192.55.52.88]:13411 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751721AbaBHHw7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 02:52:59 -0500
+	id S1751701AbaBHHw6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Feb 2014 02:52:58 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,805,1384329600"; 
-   d="scan'208";a="480008631"
+   d="scan'208";a="477987527"
 From: Andi Kleen <ak@linux.intel.com>
 To: akpm@linux-foundation.org
 Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 11/14] asmlinkage, x86: Fix 32bit memcpy for LTO
-Date: Sat,  8 Feb 2014 08:52:07 +0100
-Message-Id: <1391845930-28580-11-git-send-email-ak@linux.intel.com>
+        Andi Kleen <ak@linux.intel.com>, Douglas_Warzecha@dell.com
+Subject: [PATCH 13/14] initconst: Fix initconst mistake in dcdbas
+Date: Sat,  8 Feb 2014 08:52:09 +0100
+Message-Id: <1391845930-28580-13-git-send-email-ak@linux.intel.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391845930-28580-1-git-send-email-ak@linux.intel.com>
 References: <1391845930-28580-1-git-send-email-ak@linux.intel.com>
@@ -23,44 +23,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These functions can be called implicitely from gcc, and thus need to be
-visible.
+const must be __initconst
 
-Cc: x86@kernel.org
+Cc: Douglas_Warzecha@dell.com
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/lib/memcpy_32.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/firmware/dcdbas.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/lib/memcpy_32.c b/arch/x86/lib/memcpy_32.c
-index e78761d..a404b4b 100644
---- a/arch/x86/lib/memcpy_32.c
-+++ b/arch/x86/lib/memcpy_32.c
-@@ -4,7 +4,7 @@
- #undef memcpy
- #undef memset
+diff --git a/drivers/firmware/dcdbas.c b/drivers/firmware/dcdbas.c
+index 1b5e8e4..7160c43 100644
+--- a/drivers/firmware/dcdbas.c
++++ b/drivers/firmware/dcdbas.c
+@@ -584,7 +584,7 @@ static struct platform_driver dcdbas_driver = {
+ 	.remove		= dcdbas_remove,
+ };
  
--void *memcpy(void *to, const void *from, size_t n)
-+__visible void *memcpy(void *to, const void *from, size_t n)
- {
- #ifdef CONFIG_X86_USE_3DNOW
- 	return __memcpy3d(to, from, n);
-@@ -14,13 +14,13 @@ void *memcpy(void *to, const void *from, size_t n)
- }
- EXPORT_SYMBOL(memcpy);
- 
--void *memset(void *s, int c, size_t count)
-+__visible void *memset(void *s, int c, size_t count)
- {
- 	return __memset(s, c, count);
- }
- EXPORT_SYMBOL(memset);
- 
--void *memmove(void *dest, const void *src, size_t n)
-+__visible void *memmove(void *dest, const void *src, size_t n)
- {
- 	int d0,d1,d2,d3,d4,d5;
- 	char *ret = dest;
+-static const struct platform_device_info dcdbas_dev_info __initdata = {
++static const struct platform_device_info dcdbas_dev_info __initconst = {
+ 	.name		= DRIVER_NAME,
+ 	.id		= -1,
+ 	.dma_mask	= DMA_BIT_MASK(32),
 -- 
 1.8.5.2
 
