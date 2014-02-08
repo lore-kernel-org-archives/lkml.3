@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751709AbaBHVBP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 16:01:15 -0500
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:65429 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751400AbaBHVBO (ORCPT
+	id S1751968AbaBHVBu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 16:01:50 -0500
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:54303 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751782AbaBHVBY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 16:01:14 -0500
-From: Raymond Wanyoike <raymond.wanyoike@gmail.com>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, bjorn@mork.no,
-        Raymond Wanyoike <raymond.wanyoike@gmail.com>
-Subject: [RFC] net: qmi_wwan: add ZTE MF667
-Date: Sun,  9 Feb 2014 00:01:02 +0300
-Message-Id: <1391893262-25092-1-git-send-email-raymond.wanyoike@gmail.com>
-X-Mailer: git-send-email 1.8.5.4
+	Sat, 8 Feb 2014 16:01:24 -0500
+Message-ID: <1391893281.19595.3.camel@x220>
+Subject: [PATCH] spi: omap2: use SUPERH, not SH
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Sat, 08 Feb 2014 22:01:21 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 08 Feb 2014 21:01:22.0211 (UTC) FILETIME=[EBC22F30:01CF2510]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver description files give these descriptions to the vendor specific
-ports on this modem:
+Commit 0079aae0f1e6 ("spi: omap2: Add build dependencies for
+writel_relaxed()") added an optional Kconfig dependency on SH. That
+Kconfig symbol doesn't exist. Apparently SUPERH was intended. Use that.
 
- VID_19D2&PID_1270&MI_00: "ZTE MF667 Diagnostics Port"
- VID_19D2&PID_1270&MI_01: "ZTE MF667 AT Port"
- VID_19D2&PID_1270&MI_02: "ZTE MF667 ATExt2 Port"
- VID_19D2&PID_1270&MI_03: "ZTE MF667 ATExt Port"
- VID_19D2&PID_1270&MI_04: "ZTE MF667 USB Modem"
- VID_19D2&PID_1270&MI_05: "ZTE MF667 Network Adapter"
-
-Signed-off-by: Raymond Wanyoike <raymond.wanyoike@gmail.com>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
- drivers/net/usb/qmi_wwan.c | 1 +
- 1 file changed, 1 insertion(+)
+Basically untested.
 
-diff --git a/drivers/net/usb/qmi_wwan.c b/drivers/net/usb/qmi_wwan.c
-index 23bdd5b..47b0295 100644
---- a/drivers/net/usb/qmi_wwan.c
-+++ b/drivers/net/usb/qmi_wwan.c
-@@ -712,6 +712,7 @@ static const struct usb_device_id products[] = {
- 	{QMI_FIXED_INTF(0x19d2, 0x1255, 3)},
- 	{QMI_FIXED_INTF(0x19d2, 0x1255, 4)},
- 	{QMI_FIXED_INTF(0x19d2, 0x1256, 4)},
-+	{QMI_FIXED_INTF(0x19d2, 0x1270, 5)},	/* ZTE MF667 */
- 	{QMI_FIXED_INTF(0x19d2, 0x1401, 2)},
- 	{QMI_FIXED_INTF(0x19d2, 0x1402, 2)},	/* ZTE MF60 */
- 	{QMI_FIXED_INTF(0x19d2, 0x1424, 2)},
+ drivers/spi/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
+index ba9310b..205dbfe 100644
+--- a/drivers/spi/Kconfig
++++ b/drivers/spi/Kconfig
+@@ -307,7 +307,7 @@ config SPI_OMAP_UWIRE
+ 
+ config SPI_OMAP24XX
+ 	tristate "McSPI driver for OMAP"
+-	depends on ARM || ARM64 || AVR32 || HEXAGON || MIPS || SH
++	depends on ARM || ARM64 || AVR32 || HEXAGON || MIPS || SUPERH
+ 	depends on ARCH_OMAP2PLUS || COMPILE_TEST
+ 	help
+ 	  SPI master controller for OMAP24XX and later Multichannel SPI
 -- 
-1.8.5.4
+1.8.5.3
 
