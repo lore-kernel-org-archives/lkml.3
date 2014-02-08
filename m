@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751365AbaBHXOq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 18:14:46 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:29839 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751125AbaBHXOp (ORCPT
+	id S1751434AbaBHXjQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 18:39:16 -0500
+Received: from smtp.gentoo.org ([140.211.166.183]:51225 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751170AbaBHXjP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 18:14:45 -0500
-Message-ID: <52F6BA4E.9080305@oracle.com>
-Date: Sat, 08 Feb 2014 18:14:22 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Wang Nan <wangnan0@huawei.com>, linux-kernel@vger.kernel.org
-CC: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Geng Hui <hui.geng@huawei.com>
-Subject: Re: [PATCH resend 1/2] liblockdep: Use realpath for srctree and objtree
-References: <1390730778-30366-1-git-send-email-wangnan0@huawei.com> <1391823820-11154-1-git-send-email-wangnan0@huawei.com>
-In-Reply-To: <1391823820-11154-1-git-send-email-wangnan0@huawei.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Sat, 8 Feb 2014 18:39:15 -0500
+References: <1391886730-19667-1-git-send-email-ryao@gentoo.org> <1391886730-19667-2-git-send-email-ryao@gentoo.org> <CA+55aFx8TzOnW9xPFA4Ox-yFiSUo=cEqeQUmgw_JWjDNEZep8Q@mail.gmail.com> <52F68C67.6050606@gentoo.org> <CA+55aFw2BGS-sPYM1xkO7MfZ_-u=7nF4RYFmoCM99rkL=PxvpA@mail.gmail.com> <52F6972C.2030307@gentoo.org> <CA+55aFzzxcrLrUaCrzFbwS_74B2iHd3OvQ=WC-DR-rqpOA0j0A@mail.gmail.com>
+Mime-Version: 1.0 (1.0)
+In-Reply-To: <CA+55aFzzxcrLrUaCrzFbwS_74B2iHd3OvQ=WC-DR-rqpOA0j0A@mail.gmail.com>
+Content-Type: text/plain;
+	charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Message-Id: <F8F0FCFB-1123-4374-BF69-A77BB3AF800A@gentoo.org>
+Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Eric Van Hensbergen <ericvh@gmail.com>,
+        Ron Minnich <rminnich@sandia.gov>, Latchesar Ionkov <lucho@ionkov.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        V9FS Develooper Mailing List 
+	<v9fs-developer@lists.sourceforge.net>,
+        Linux Netdev Mailing List <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Matthew Thode <mthode@mthode.org>
+X-Mailer: iPad Mail (10B146)
+From: Richard Yao <ryao@gentoo.org>
+Subject: Re: [PATCH 1/2] mm/vmalloc: export is_vmalloc_or_module_addr
+Date: Sat, 8 Feb 2014 18:39:12 -0500
+To: Linus Torvalds <torvalds@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wang,
+On Feb 8, 2014, at 5:24 PM, Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-Thanks! I've picked it up and will send it in the next pull request.
+> On Sat, Feb 8, 2014 at 12:44 PM, Richard Yao <ryao@gentoo.org> wrote:
+>> 
+>> However, is_vmalloc_addr() only applies to the vmalloc region. While all
+>> architectures load kernel modules into virtual memory (to my knowledge),
+>> some architectures do not load them into the vmalloc region.
+> 
+> So?
+> 
+> People shouldn't do IO to module data, so who cares if something is a
+> module address or not?
+> 
+> The thing is, even module *loading* doesn't do IO to the magic module
+> addresses - it loads the module data into regular vmalloc space, and
+> then copies it into the final location separately.
+> 
+> And no module should ever do any IO on random static data (and
+> certainly not on code).
+> 
+> So there is _zero_ reason for a driver or a filesystem to use
+> is_vmalloc_or_module_addr(). It's just not a valid question to ask.
+> 
+> If somebody uses module data/code addresses, we're *better* off with a
+> oops or other nasty behavior than to try to make it "work".
+> 
+>            Linus
 
-
-Thanks,
-Sasha
-
-On 02/07/2014 08:43 PM, Wang Nan wrote:
-> If BUILD_SRC or CURDIR contains tailing '/', the file names passed to gcc will
-> contain '//'. It will be contained .o's in debuginfo, then confuse debugedit:
->
-> https://bugzilla.redhat.com/show_bug.cgi?id=304121
->
-> This patch uses realpath command to makesure potential tailing '/'s are removed.
->
-> Signed-off-by: Wang Nan <wangnan0@huawei.com>
-> Acked-by: Sasha Levin <sasha.levin@oracle.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Geng Hui <hui.geng@huawei.com>
->
-> ---
->   tools/lib/lockdep/Makefile | 4 ++--
->   1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/tools/lib/lockdep/Makefile b/tools/lib/lockdep/Makefile
-> index da8b7aa..e638dd5 100644
-> --- a/tools/lib/lockdep/Makefile
-> +++ b/tools/lib/lockdep/Makefile
-> @@ -87,8 +87,8 @@ endif # BUILD_SRC
->   # We process the rest of the Makefile if this is the final invocation of make
->   ifeq ($(skip-makefile),)
->
-> -srctree		:= $(if $(BUILD_SRC),$(BUILD_SRC),$(CURDIR))
-> -objtree		:= $(CURDIR)
-> +srctree		:= $(realpath $(if $(BUILD_SRC),$(BUILD_SRC),$(CURDIR)))
-> +objtree		:= $(realpath $(CURDIR))
->   src		:= $(srctree)
->   obj		:= $(objtree)
->
->
-
+I will modify this to use is_vmalloc_addr() and send it back to the appropriate subsystem maintainer(s). Thank-you for taking the time to write that explanation.
