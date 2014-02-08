@@ -1,574 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751172AbaBHHlI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 02:41:08 -0500
-Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:14532 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750811AbaBHHlG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 02:41:06 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zze0eahzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h1155h)
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <broonie@kernel.org>, <lgirdwood@gmail.com>
-CC: <perex@perex.cz>, <tiwai@suse.de>, <alsa-devel@alsa-project.org>,
-        <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>,
-        Nicolin Chen <Guangyu.Chen@freescale.com>
-Subject: [PATCH v2] ASoC: fsl-sai: convert to use regmap API for Freeacale SAI
-Date: Sat, 8 Feb 2014 14:38:28 +0800
-Message-ID: <1391841508-14025-1-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 1.8.0
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+	id S1751224AbaBHHv1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 02:51:27 -0500
+Received: from mga01.intel.com ([192.55.52.88]:63847 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750773AbaBHHvZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Feb 2014 02:51:25 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,805,1384329600"; 
+   d="scan'208";a="477987216"
+From: Andi Kleen <ak@linux.intel.com>
+To: mmarek@suse.cz
+Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 1/6] kbuild: Remove relocations from kallsyms table
+Date: Sat,  8 Feb 2014 08:50:35 +0100
+Message-Id: <1391845840-28514-1-git-send-email-ak@linux.intel.com>
+X-Mailer: git-send-email 1.8.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: Nicolin Chen <Guangyu.Chen@freescale.com>
+Remove the ELF relocations from the kallsyms_address[] table.
+Instead we just store offsets to _text and relocate that while
+accessing the kallsyms table. This is done with a new
+kallsyms_offsets[] table. With these changes .tmp_kallsyms*.o
+becomes relocation free.
+
+In theory this would also allow to shrink the kallsyms table
+on 64bit by using offsets.
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
+ kernel/kallsyms.c  | 27 ++++++++++++++++-----------
+ scripts/kallsyms.c | 18 ++++++------------
+ 2 files changed, 22 insertions(+), 23 deletions(-)
 
-This version applies against sound-3.14-rc1.
-
-
- sound/soc/fsl/fsl_sai.c | 255 +++++++++++++++++++++++++++---------------------
- sound/soc/fsl/fsl_sai.h |  47 +++++----
- 2 files changed, 166 insertions(+), 136 deletions(-)
-
-diff --git a/sound/soc/fsl/fsl_sai.c b/sound/soc/fsl/fsl_sai.c
-index cdd3fa8..faa65af 100644
---- a/sound/soc/fsl/fsl_sai.c
-+++ b/sound/soc/fsl/fsl_sai.c
-@@ -15,6 +15,7 @@
- #include <linux/dmaengine.h>
- #include <linux/module.h>
- #include <linux/of_address.h>
-+#include <linux/regmap.h>
- #include <linux/slab.h>
- #include <sound/core.h>
- #include <sound/dmaengine_pcm.h>
-@@ -22,34 +23,6 @@
+diff --git a/kernel/kallsyms.c b/kernel/kallsyms.c
+index 3127ad5..e7d7844 100644
+--- a/kernel/kallsyms.c
++++ b/kernel/kallsyms.c
+@@ -36,7 +36,7 @@
+  * These will be re-linked against their real values
+  * during the second link stage.
+  */
+-extern const unsigned long kallsyms_addresses[] __attribute__((weak));
++extern const long kallsyms_offsets[] __attribute__((weak));
+ extern const u8 kallsyms_names[] __attribute__((weak));
  
- #include "fsl_sai.h"
+ /*
+@@ -51,6 +51,11 @@ extern const u16 kallsyms_token_index[] __attribute__((weak));
  
--static inline u32 sai_readl(struct fsl_sai *sai,
--		const void __iomem *addr)
--{
--	u32 val;
--
--	val = __raw_readl(addr);
--
--	if (likely(sai->big_endian_regs))
--		val = be32_to_cpu(val);
--	else
--		val = le32_to_cpu(val);
--	rmb();
--
--	return val;
--}
--
--static inline void sai_writel(struct fsl_sai *sai,
--		u32 val, void __iomem *addr)
--{
--	wmb();
--	if (likely(sai->big_endian_regs))
--		val = cpu_to_be32(val);
--	else
--		val = cpu_to_le32(val);
--
--	__raw_writel(val, addr);
--}
--
- static int fsl_sai_set_dai_sysclk_tr(struct snd_soc_dai *cpu_dai,
- 		int clk_id, unsigned int freq, int fsl_dir)
- {
-@@ -61,7 +34,8 @@ static int fsl_sai_set_dai_sysclk_tr(struct snd_soc_dai *cpu_dai,
- 	else
- 		reg_cr2 = FSL_SAI_RCR2;
+ extern const unsigned long kallsyms_markers[] __attribute__((weak));
  
--	val_cr2 = sai_readl(sai, sai->base + reg_cr2);
-+	regmap_read(sai->regmap, reg_cr2, &val_cr2);
++static inline unsigned long kallsyms_address(int ind)
++{
++	return (unsigned long)RELOC_HIDE(&_text, kallsyms_offsets[ind]);
++}
 +
- 	val_cr2 &= ~FSL_SAI_CR2_MSEL_MASK;
- 
- 	switch (clk_id) {
-@@ -81,7 +55,7 @@ static int fsl_sai_set_dai_sysclk_tr(struct snd_soc_dai *cpu_dai,
- 		return -EINVAL;
- 	}
- 
--	sai_writel(sai, val_cr2, sai->base + reg_cr2);
-+	regmap_write(sai->regmap, reg_cr2, val_cr2);
- 
- 	return 0;
- }
-@@ -89,32 +63,22 @@ static int fsl_sai_set_dai_sysclk_tr(struct snd_soc_dai *cpu_dai,
- static int fsl_sai_set_dai_sysclk(struct snd_soc_dai *cpu_dai,
- 		int clk_id, unsigned int freq, int dir)
+ static inline int is_kernel_inittext(unsigned long addr)
  {
--	struct fsl_sai *sai = snd_soc_dai_get_drvdata(cpu_dai);
- 	int ret;
+ 	if (addr >= (unsigned long)_sinittext
+@@ -186,7 +191,7 @@ unsigned long kallsyms_lookup_name(const char *name)
+ 		off = kallsyms_expand_symbol(off, namebuf, ARRAY_SIZE(namebuf));
  
- 	if (dir == SND_SOC_CLOCK_IN)
- 		return 0;
- 
--	ret = clk_prepare_enable(sai->clk);
--	if (ret)
--		return ret;
--
- 	ret = fsl_sai_set_dai_sysclk_tr(cpu_dai, clk_id, freq,
- 					FSL_FMT_TRANSMITTER);
- 	if (ret) {
- 		dev_err(cpu_dai->dev, "Cannot set tx sysclk: %d\n", ret);
--		goto err_clk;
-+		return ret;
+ 		if (strcmp(namebuf, name) == 0)
+-			return kallsyms_addresses[i];
++			return kallsyms_address(i);
  	}
- 
- 	ret = fsl_sai_set_dai_sysclk_tr(cpu_dai, clk_id, freq,
- 					FSL_FMT_RECEIVER);
--	if (ret) {
-+	if (ret)
- 		dev_err(cpu_dai->dev, "Cannot set rx sysclk: %d\n", ret);
--		goto err_clk;
--	}
--
--err_clk:
--	clk_disable_unprepare(sai->clk);
- 
- 	return ret;
+ 	return module_kallsyms_lookup_name(name);
  }
-@@ -133,8 +97,8 @@ static int fsl_sai_set_dai_fmt_tr(struct snd_soc_dai *cpu_dai,
- 		reg_cr4 = FSL_SAI_RCR4;
+@@ -203,7 +208,7 @@ int kallsyms_on_each_symbol(int (*fn)(void *, const char *, struct module *,
+ 
+ 	for (i = 0, off = 0; i < kallsyms_num_syms; i++) {
+ 		off = kallsyms_expand_symbol(off, namebuf, ARRAY_SIZE(namebuf));
+-		ret = fn(data, namebuf, NULL, kallsyms_addresses[i]);
++		ret = fn(data, namebuf, NULL, kallsyms_address(i));
+ 		if (ret != 0)
+ 			return ret;
  	}
+@@ -219,15 +224,15 @@ static unsigned long get_symbol_pos(unsigned long addr,
+ 	unsigned long i, low, high, mid;
  
--	val_cr2 = sai_readl(sai, sai->base + reg_cr2);
--	val_cr4 = sai_readl(sai, sai->base + reg_cr4);
-+	regmap_read(sai->regmap, reg_cr2, &val_cr2);
-+	regmap_read(sai->regmap, reg_cr4, &val_cr4);
+ 	/* This kernel should never had been booted. */
+-	BUG_ON(!kallsyms_addresses);
++	BUG_ON(!kallsyms_offsets);
  
- 	if (sai->big_endian_data)
- 		val_cr4 &= ~FSL_SAI_CR4_MF;
-@@ -183,35 +147,25 @@ static int fsl_sai_set_dai_fmt_tr(struct snd_soc_dai *cpu_dai,
- 		return -EINVAL;
- 	}
+-	/* Do a binary search on the sorted kallsyms_addresses array. */
++	/* Do a binary search on the sorted kallsyms_offsets array. */
+ 	low = 0;
+ 	high = kallsyms_num_syms;
  
--	sai_writel(sai, val_cr2, sai->base + reg_cr2);
--	sai_writel(sai, val_cr4, sai->base + reg_cr4);
-+	regmap_write(sai->regmap, reg_cr2, val_cr2);
-+	regmap_write(sai->regmap, reg_cr4, val_cr4);
+ 	while (high - low > 1) {
+ 		mid = low + (high - low) / 2;
+-		if (kallsyms_addresses[mid] <= addr)
++		if (kallsyms_address(mid) <= addr)
+ 			low = mid;
+ 		else
+ 			high = mid;
+@@ -237,15 +242,15 @@ static unsigned long get_symbol_pos(unsigned long addr,
+ 	 * Search for the first aliased symbol. Aliased
+ 	 * symbols are symbols with the same address.
+ 	 */
+-	while (low && kallsyms_addresses[low-1] == kallsyms_addresses[low])
++	while (low && kallsyms_address(low - 1) == kallsyms_address(low))
+ 		--low;
  
- 	return 0;
- }
+-	symbol_start = kallsyms_addresses[low];
++	symbol_start = kallsyms_address(low);
  
- static int fsl_sai_set_dai_fmt(struct snd_soc_dai *cpu_dai, unsigned int fmt)
- {
--	struct fsl_sai *sai = snd_soc_dai_get_drvdata(cpu_dai);
- 	int ret;
- 
--	ret = clk_prepare_enable(sai->clk);
--	if (ret)
--		return ret;
--
- 	ret = fsl_sai_set_dai_fmt_tr(cpu_dai, fmt, FSL_FMT_TRANSMITTER);
- 	if (ret) {
- 		dev_err(cpu_dai->dev, "Cannot set tx format: %d\n", ret);
--		goto err_clk;
-+		return ret;
- 	}
- 
- 	ret = fsl_sai_set_dai_fmt_tr(cpu_dai, fmt, FSL_FMT_RECEIVER);
--	if (ret) {
-+	if (ret)
- 		dev_err(cpu_dai->dev, "Cannot set rx format: %d\n", ret);
--		goto err_clk;
--	}
--
--err_clk:
--	clk_disable_unprepare(sai->clk);
- 
- 	return ret;
- }
-@@ -235,11 +189,12 @@ static int fsl_sai_hw_params(struct snd_pcm_substream *substream,
- 		reg_mr = FSL_SAI_RMR;
- 	}
- 
--	val_cr4 = sai_readl(sai, sai->base + reg_cr4);
-+	regmap_read(sai->regmap, reg_cr4, &val_cr4);
-+	regmap_read(sai->regmap, reg_cr4, &val_cr5);
-+
- 	val_cr4 &= ~FSL_SAI_CR4_SYWD_MASK;
- 	val_cr4 &= ~FSL_SAI_CR4_FRSZ_MASK;
- 
--	val_cr5 = sai_readl(sai, sai->base + reg_cr5);
- 	val_cr5 &= ~FSL_SAI_CR5_WNW_MASK;
- 	val_cr5 &= ~FSL_SAI_CR5_W0W_MASK;
- 	val_cr5 &= ~FSL_SAI_CR5_FBT_MASK;
-@@ -257,9 +212,9 @@ static int fsl_sai_hw_params(struct snd_pcm_substream *substream,
- 	val_cr4 |= FSL_SAI_CR4_FRSZ(channels);
- 	val_mr = ~0UL - ((1 << channels) - 1);
- 
--	sai_writel(sai, val_cr4, sai->base + reg_cr4);
--	sai_writel(sai, val_cr5, sai->base + reg_cr5);
--	sai_writel(sai, val_mr, sai->base + reg_mr);
-+	regmap_write(sai->regmap, reg_cr4, val_cr4);
-+	regmap_write(sai->regmap, reg_cr5, val_cr5);
-+	regmap_write(sai->regmap, reg_mr, val_mr);
- 
- 	return 0;
- }
-@@ -268,44 +223,34 @@ static int fsl_sai_trigger(struct snd_pcm_substream *substream, int cmd,
- 		struct snd_soc_dai *cpu_dai)
- {
- 	struct fsl_sai *sai = snd_soc_dai_get_drvdata(cpu_dai);
--	u32 tcsr, rcsr, val_cr2, val_cr3, reg_cr3;
--
--	val_cr2 = sai_readl(sai, sai->base + FSL_SAI_TCR2);
--	val_cr2 &= ~FSL_SAI_CR2_SYNC;
--	sai_writel(sai, val_cr2, sai->base + FSL_SAI_TCR2);
-+	u32 tcsr, rcsr;
- 
--	val_cr2 = sai_readl(sai, sai->base + FSL_SAI_RCR2);
--	val_cr2 |= FSL_SAI_CR2_SYNC;
--	sai_writel(sai, val_cr2, sai->base + FSL_SAI_RCR2);
-+	regmap_update_bits(sai->regmap, FSL_SAI_TCR2, FSL_SAI_CR2_SYNC,
-+			   ~FSL_SAI_CR2_SYNC);
-+	regmap_update_bits(sai->regmap, FSL_SAI_RCR2, FSL_SAI_CR2_SYNC,
-+			   FSL_SAI_CR2_SYNC);
- 
--	tcsr = sai_readl(sai, sai->base + FSL_SAI_TCSR);
--	rcsr = sai_readl(sai, sai->base + FSL_SAI_RCSR);
-+	regmap_read(sai->regmap, FSL_SAI_TCSR, &tcsr);
-+	regmap_read(sai->regmap, FSL_SAI_RCSR, &rcsr);
- 
- 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
- 		tcsr |= FSL_SAI_CSR_FRDE;
- 		rcsr &= ~FSL_SAI_CSR_FRDE;
--		reg_cr3 = FSL_SAI_TCR3;
- 	} else {
- 		rcsr |= FSL_SAI_CSR_FRDE;
- 		tcsr &= ~FSL_SAI_CSR_FRDE;
--		reg_cr3 = FSL_SAI_RCR3;
- 	}
- 
--	val_cr3 = sai_readl(sai, sai->base + reg_cr3);
--
- 	switch (cmd) {
- 	case SNDRV_PCM_TRIGGER_START:
- 	case SNDRV_PCM_TRIGGER_RESUME:
- 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
- 		tcsr |= FSL_SAI_CSR_TERE;
- 		rcsr |= FSL_SAI_CSR_TERE;
--		val_cr3 |= FSL_SAI_CR3_TRCE;
- 
--		sai_writel(sai, val_cr3, sai->base + reg_cr3);
--		sai_writel(sai, rcsr, sai->base + FSL_SAI_RCSR);
--		sai_writel(sai, tcsr, sai->base + FSL_SAI_TCSR);
-+		regmap_write(sai->regmap, FSL_SAI_RCSR, rcsr);
-+		regmap_write(sai->regmap, FSL_SAI_TCSR, tcsr);
- 		break;
--
- 	case SNDRV_PCM_TRIGGER_STOP:
- 	case SNDRV_PCM_TRIGGER_SUSPEND:
- 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
-@@ -314,11 +259,8 @@ static int fsl_sai_trigger(struct snd_pcm_substream *substream, int cmd,
- 			rcsr &= ~FSL_SAI_CSR_TERE;
+ 	/* Search for next non-aliased symbol. */
+ 	for (i = low + 1; i < kallsyms_num_syms; i++) {
+-		if (kallsyms_addresses[i] > symbol_start) {
+-			symbol_end = kallsyms_addresses[i];
++		if (kallsyms_address(i) > symbol_start) {
++			symbol_end = kallsyms_address(i);
+ 			break;
  		}
- 
--		val_cr3 &= ~FSL_SAI_CR3_TRCE;
--
--		sai_writel(sai, tcsr, sai->base + FSL_SAI_TCSR);
--		sai_writel(sai, rcsr, sai->base + FSL_SAI_RCSR);
--		sai_writel(sai, val_cr3, sai->base + reg_cr3);
-+		regmap_write(sai->regmap, FSL_SAI_TCSR, tcsr);
-+		regmap_write(sai->regmap, FSL_SAI_RCSR, rcsr);
- 		break;
- 	default:
- 		return -EINVAL;
-@@ -331,16 +273,32 @@ static int fsl_sai_startup(struct snd_pcm_substream *substream,
- 		struct snd_soc_dai *cpu_dai)
- {
- 	struct fsl_sai *sai = snd_soc_dai_get_drvdata(cpu_dai);
-+	u32 reg;
- 
--	return clk_prepare_enable(sai->clk);
-+	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-+		reg = FSL_SAI_TCR3;
-+	else
-+		reg = FSL_SAI_RCR3;
-+
-+	regmap_update_bits(sai->regmap, reg, FSL_SAI_CR3_TRCE,
-+			   FSL_SAI_CR3_TRCE);
-+
-+	return 0;
- }
- 
- static void fsl_sai_shutdown(struct snd_pcm_substream *substream,
- 		struct snd_soc_dai *cpu_dai)
- {
- 	struct fsl_sai *sai = snd_soc_dai_get_drvdata(cpu_dai);
-+	u32 reg;
-+
-+	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-+		reg = FSL_SAI_TCR3;
-+	else
-+		reg = FSL_SAI_RCR3;
- 
--	clk_disable_unprepare(sai->clk);
-+	regmap_update_bits(sai->regmap, reg, FSL_SAI_CR3_TRCE,
-+			   ~FSL_SAI_CR3_TRCE);
- }
- 
- static const struct snd_soc_dai_ops fsl_sai_pcm_dai_ops = {
-@@ -355,18 +313,13 @@ static const struct snd_soc_dai_ops fsl_sai_pcm_dai_ops = {
- static int fsl_sai_dai_probe(struct snd_soc_dai *cpu_dai)
- {
- 	struct fsl_sai *sai = dev_get_drvdata(cpu_dai->dev);
--	int ret;
--
--	ret = clk_prepare_enable(sai->clk);
--	if (ret)
--		return ret;
- 
--	sai_writel(sai, 0x0, sai->base + FSL_SAI_RCSR);
--	sai_writel(sai, 0x0, sai->base + FSL_SAI_TCSR);
--	sai_writel(sai, FSL_SAI_MAXBURST_TX * 2, sai->base + FSL_SAI_TCR1);
--	sai_writel(sai, FSL_SAI_MAXBURST_RX - 1, sai->base + FSL_SAI_RCR1);
--
--	clk_disable_unprepare(sai->clk);
-+	regmap_update_bits(sai->regmap, FSL_SAI_TCSR, 0xffffffff, 0x0);
-+	regmap_update_bits(sai->regmap, FSL_SAI_RCSR, 0xffffffff, 0x0);
-+	regmap_update_bits(sai->regmap, FSL_SAI_TCR1, FSL_SAI_CR1_RFW_MASK,
-+			   FSL_SAI_MAXBURST_TX * 2);
-+	regmap_update_bits(sai->regmap, FSL_SAI_RCR1, FSL_SAI_CR1_RFW_MASK,
-+			   FSL_SAI_MAXBURST_RX - 1);
- 
- 	snd_soc_dai_init_dma_data(cpu_dai, &sai->dma_params_tx,
- 				&sai->dma_params_rx);
-@@ -397,26 +350,109 @@ static const struct snd_soc_component_driver fsl_component = {
- 	.name           = "fsl-sai",
- };
- 
-+static bool fsl_sai_readable_reg(struct device *dev, unsigned int reg)
-+{
-+	switch (reg) {
-+	case FSL_SAI_TCSR:
-+	case FSL_SAI_TCR1:
-+	case FSL_SAI_TCR2:
-+	case FSL_SAI_TCR3:
-+	case FSL_SAI_TCR4:
-+	case FSL_SAI_TCR5:
-+	case FSL_SAI_TFR:
-+	case FSL_SAI_TMR:
-+	case FSL_SAI_RCSR:
-+	case FSL_SAI_RCR1:
-+	case FSL_SAI_RCR2:
-+	case FSL_SAI_RCR3:
-+	case FSL_SAI_RCR4:
-+	case FSL_SAI_RCR5:
-+	case FSL_SAI_RDR:
-+	case FSL_SAI_RFR:
-+	case FSL_SAI_RMR:
-+		return true;
-+	default:
-+		return false;
-+	}
-+}
-+
-+static bool fsl_sai_volatile_reg(struct device *dev, unsigned int reg)
-+{
-+	switch (reg) {
-+	case FSL_SAI_TFR:
-+	case FSL_SAI_RFR:
-+	case FSL_SAI_TDR:
-+	case FSL_SAI_RDR:
-+		return true;
-+	default:
-+		return false;
-+	}
-+
-+}
-+
-+static bool fsl_sai_writeable_reg(struct device *dev, unsigned int reg)
-+{
-+	switch (reg) {
-+	case FSL_SAI_TCSR:
-+	case FSL_SAI_TCR1:
-+	case FSL_SAI_TCR2:
-+	case FSL_SAI_TCR3:
-+	case FSL_SAI_TCR4:
-+	case FSL_SAI_TCR5:
-+	case FSL_SAI_TDR:
-+	case FSL_SAI_TMR:
-+	case FSL_SAI_RCSR:
-+	case FSL_SAI_RCR1:
-+	case FSL_SAI_RCR2:
-+	case FSL_SAI_RCR3:
-+	case FSL_SAI_RCR4:
-+	case FSL_SAI_RCR5:
-+	case FSL_SAI_RMR:
-+		return true;
-+	default:
-+		return false;
-+	}
-+}
-+
-+static struct regmap_config fsl_sai_regmap_config = {
-+	.reg_bits = 32,
-+	.reg_stride = 4,
-+	.val_bits = 32,
-+
-+	.max_register = FSL_SAI_RMR,
-+	.readable_reg = fsl_sai_readable_reg,
-+	.volatile_reg = fsl_sai_volatile_reg,
-+	.writeable_reg = fsl_sai_writeable_reg,
-+};
-+
- static int fsl_sai_probe(struct platform_device *pdev)
- {
- 	struct device_node *np = pdev->dev.of_node;
- 	struct fsl_sai *sai;
- 	struct resource *res;
-+	void __iomem *base;
- 	int ret;
- 
- 	sai = devm_kzalloc(&pdev->dev, sizeof(*sai), GFP_KERNEL);
- 	if (!sai)
- 		return -ENOMEM;
- 
-+	sai->big_endian_regs = of_property_read_bool(np, "big-endian-regs");
-+	if (sai->big_endian_regs)
-+		fsl_sai_regmap_config.val_format_endian = REGMAP_ENDIAN_BIG;
-+
-+	sai->big_endian_data = of_property_read_bool(np, "big-endian-data");
-+
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	sai->base = devm_ioremap_resource(&pdev->dev, res);
--	if (IS_ERR(sai->base))
--		return PTR_ERR(sai->base);
--
--	sai->clk = devm_clk_get(&pdev->dev, "sai");
--	if (IS_ERR(sai->clk)) {
--		dev_err(&pdev->dev, "Cannot get SAI's clock\n");
--		return PTR_ERR(sai->clk);
-+	base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(base))
-+		return PTR_ERR(base);
-+
-+	sai->regmap = devm_regmap_init_mmio_clk(&pdev->dev,
-+			"sai", base, &fsl_sai_regmap_config);
-+	if (IS_ERR(sai->regmap)) {
-+		dev_err(&pdev->dev, "regmap init failed\n");
-+		return PTR_ERR(sai->regmap);
  	}
+@@ -469,7 +474,7 @@ static unsigned long get_ksymbol_core(struct kallsym_iter *iter)
+ 	unsigned off = iter->nameoff;
  
- 	sai->dma_params_rx.addr = res->start + FSL_SAI_RDR;
-@@ -424,9 +460,6 @@ static int fsl_sai_probe(struct platform_device *pdev)
- 	sai->dma_params_rx.maxburst = FSL_SAI_MAXBURST_RX;
- 	sai->dma_params_tx.maxburst = FSL_SAI_MAXBURST_TX;
+ 	iter->module_name[0] = '\0';
+-	iter->value = kallsyms_addresses[iter->pos];
++	iter->value = kallsyms_address(iter->pos);
  
--	sai->big_endian_regs = of_property_read_bool(np, "big-endian-regs");
--	sai->big_endian_data = of_property_read_bool(np, "big-endian-data");
--
- 	platform_set_drvdata(pdev, sai);
+ 	iter->type = kallsyms_get_symbol_type(off);
  
- 	ret = devm_snd_soc_register_component(&pdev->dev, &fsl_component,
-diff --git a/sound/soc/fsl/fsl_sai.h b/sound/soc/fsl/fsl_sai.h
-index 41bb62e..1571459 100644
---- a/sound/soc/fsl/fsl_sai.h
-+++ b/sound/soc/fsl/fsl_sai.h
-@@ -15,31 +15,36 @@
- 			 SNDRV_PCM_FMTBIT_S20_3LE |\
- 			 SNDRV_PCM_FMTBIT_S24_LE)
+diff --git a/scripts/kallsyms.c b/scripts/kallsyms.c
+index 10085de..56f5986 100644
+--- a/scripts/kallsyms.c
++++ b/scripts/kallsyms.c
+@@ -190,7 +190,7 @@ static int symbol_valid(struct sym_entry *s)
+ 	 * specified so exclude them to get a stable symbol list.
+ 	 */
+ 	static char *special_symbols[] = {
+-		"kallsyms_addresses",
++		"kallsyms_offsets",
+ 		"kallsyms_num_syms",
+ 		"kallsyms_names",
+ 		"kallsyms_markers",
+@@ -322,19 +322,13 @@ static void write_src(void)
+ 	 * symbols that are declared static and are private to their
+ 	 * .o files.  This prevents .tmp_kallsyms.o or any other
+ 	 * object from referencing them.
++	 *
++	 * We do the offsets to _text now in kallsyms.c at runtime,
++	 * to get a relocationless symbol table.
+ 	 */
+-	output_label("kallsyms_addresses");
++	output_label("kallsyms_offsets");
+ 	for (i = 0; i < table_cnt; i++) {
+-		if (toupper(table[i].sym[0]) != 'A') {
+-			if (_text <= table[i].addr)
+-				printf("\tPTR\t_text + %#llx\n",
+-					table[i].addr - _text);
+-			else
+-				printf("\tPTR\t_text - %#llx\n",
+-					_text - table[i].addr);
+-		} else {
+-			printf("\tPTR\t%#llx\n", table[i].addr);
+-		}
++		printf("\tPTR\t%#llx\n", table[i].addr - _text);
+ 	}
+ 	printf("\n");
  
-+/* SAI Register Map Register */
-+#define FSL_SAI_TCSR	0x00 /* SAI Transmit Control */
-+#define FSL_SAI_TCR1	0x04 /* SAI Transmit Configuration 1 */
-+#define FSL_SAI_TCR2	0x08 /* SAI Transmit Configuration 2 */
-+#define FSL_SAI_TCR3	0x0c /* SAI Transmit Configuration 3 */
-+#define FSL_SAI_TCR4	0x10 /* SAI Transmit Configuration 4 */
-+#define FSL_SAI_TCR5	0x14 /* SAI Transmit Configuration 5 */
-+#define FSL_SAI_TDR	0x20 /* SAI Transmit Data */
-+#define FSL_SAI_TFR	0x40 /* SAI Transmit FIFO */
-+#define FSL_SAI_TMR	0x60 /* SAI Transmit Mask */
-+#define FSL_SAI_RCSR	0x80 /* SAI Receive Control */
-+#define FSL_SAI_RCR1	0x84 /* SAI Receive Configuration 1 */
-+#define FSL_SAI_RCR2	0x88 /* SAI Receive Configuration 2 */
-+#define FSL_SAI_RCR3	0x8c /* SAI Receive Configuration 3 */
-+#define FSL_SAI_RCR4	0x90 /* SAI Receive Configuration 4 */
-+#define FSL_SAI_RCR5	0x94 /* SAI Receive Configuration 5 */
-+#define FSL_SAI_RDR	0xa0 /* SAI Receive Data */
-+#define FSL_SAI_RFR	0xc0 /* SAI Receive FIFO */
-+#define FSL_SAI_RMR	0xe0 /* SAI Receive Mask */
-+
- /* SAI Transmit/Recieve Control Register */
--#define FSL_SAI_TCSR		0x00
--#define FSL_SAI_RCSR		0x80
- #define FSL_SAI_CSR_TERE	BIT(31)
- #define FSL_SAI_CSR_FWF		BIT(17)
- #define FSL_SAI_CSR_FRIE	BIT(8)
- #define FSL_SAI_CSR_FRDE	BIT(0)
- 
--/* SAI Transmit Data/FIFO/MASK Register */
--#define FSL_SAI_TDR		0x20
--#define FSL_SAI_TFR		0x40
--#define FSL_SAI_TMR		0x60
--
--/* SAI Recieve Data/FIFO/MASK Register */
--#define FSL_SAI_RDR		0xa0
--#define FSL_SAI_RFR		0xc0
--#define FSL_SAI_RMR		0xe0
--
- /* SAI Transmit and Recieve Configuration 1 Register */
--#define FSL_SAI_TCR1		0x04
--#define FSL_SAI_RCR1		0x84
-+#define FSL_SAI_CR1_RFW_MASK	0x1f
- 
- /* SAI Transmit and Recieve Configuration 2 Register */
--#define FSL_SAI_TCR2		0x08
--#define FSL_SAI_RCR2		0x88
- #define FSL_SAI_CR2_SYNC	BIT(30)
- #define FSL_SAI_CR2_MSEL_MASK	(0xff << 26)
- #define FSL_SAI_CR2_MSEL_BUS	0
-@@ -50,15 +55,11 @@
- #define FSL_SAI_CR2_BCD_MSTR	BIT(24)
- 
- /* SAI Transmit and Recieve Configuration 3 Register */
--#define FSL_SAI_TCR3		0x0c
--#define FSL_SAI_RCR3		0x8c
- #define FSL_SAI_CR3_TRCE	BIT(16)
- #define FSL_SAI_CR3_WDFL(x)	(x)
- #define FSL_SAI_CR3_WDFL_MASK	0x1f
- 
- /* SAI Transmit and Recieve Configuration 4 Register */
--#define FSL_SAI_TCR4		0x10
--#define FSL_SAI_RCR4		0x90
- #define FSL_SAI_CR4_FRSZ(x)	(((x) - 1) << 16)
- #define FSL_SAI_CR4_FRSZ_MASK	(0x1f << 16)
- #define FSL_SAI_CR4_SYWD(x)	(((x) - 1) << 8)
-@@ -69,8 +70,6 @@
- #define FSL_SAI_CR4_FSD_MSTR	BIT(0)
- 
- /* SAI Transmit and Recieve Configuration 5 Register */
--#define FSL_SAI_TCR5		0x14
--#define FSL_SAI_RCR5		0x94
- #define FSL_SAI_CR5_WNW(x)	(((x) - 1) << 24)
- #define FSL_SAI_CR5_WNW_MASK	(0x1f << 24)
- #define FSL_SAI_CR5_W0W(x)	(((x) - 1) << 16)
-@@ -100,9 +99,7 @@
- #define FSL_SAI_MAXBURST_RX 6
- 
- struct fsl_sai {
--	struct clk *clk;
--
--	void __iomem *base;
-+	struct regmap *regmap;
- 
- 	bool big_endian_regs;
- 	bool big_endian_data;
 -- 
-1.8.4
-
+1.8.5.2
 
