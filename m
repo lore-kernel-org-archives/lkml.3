@@ -1,412 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752119AbaBHVav (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 16:30:51 -0500
-Received: from www84.your-server.de ([213.133.104.84]:55164 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751102AbaBHV2c (ORCPT
+	id S1751529AbaBHVe3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 16:34:29 -0500
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:36847 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750863AbaBHVe2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 16:28:32 -0500
-From: stefani@seibold.net
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        ak@linux.intel.com, aarcange@redhat.com, john.stultz@linaro.org,
-        luto@amacapital.net, xemul@parallels.com, gorcunov@openvz.org,
-        andriy.shevchenko@linux.intel.com
-Cc: Martin.Runge@rohde-schwarz.com, Andreas.Brief@rohde-schwarz.com,
-        Stefani Seibold <stefani@seibold.net>
-Subject: [PATCH v13 9/9] Add 32 bit VDSO time support for 64 bit kernel
-Date: Sat,  8 Feb 2014 22:29:11 +0100
-Message-Id: <1391894951-6381-10-git-send-email-stefani@seibold.net>
-X-Mailer: git-send-email 1.8.5.4
-In-Reply-To: <1391894951-6381-1-git-send-email-stefani@seibold.net>
-References: <1391894951-6381-1-git-send-email-stefani@seibold.net>
-X-Authenticated-Sender: stefani@seibold.net
+	Sat, 8 Feb 2014 16:34:28 -0500
+From: Peter Wu <lekensteyn@gmail.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Bastien Traverse <bastien.traverse@gmail.com>,
+        linux-kernel@vger.kernel.org, francis.moro@gmail.com,
+        linux-pm@vger.kernel.org
+Subject: Re: 3.12: ethernet controller missing after resuming from suspend to RAM
+Date: Sat, 08 Feb 2014 22:34:23 +0100
+Message-ID: <2773460.zRzOP7I6SW@al>
+User-Agent: KMail/4.12.2 (Linux/3.13.2-custom; KDE/4.12.2; x86_64; ; )
+In-Reply-To: <6111963.dPYocWnfhd@vostro.rjw.lan>
+References: <52F2CC7B.80406@gmail.com> <8389318.FWd8nDZBjU@al> <6111963.dPYocWnfhd@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefani Seibold <stefani@seibold.net>
+On Saturday 08 February 2014 16:01:36 Rafael J. Wysocki wrote:
+> It looks like we fail to resume the device, then, for some reason.
+> 
+> That may be a PCIe link issue or something similar.
+> 
+> Is this a regression for you?  If so, what's the last kernel that didn't
+> have this problem?  Does 3.13.y (as released by Greg, without and distro
+> "improvements") have it too?
 
-This patch add the VDSO time support for the IA32 Emulation Layer.
+It was a regression from 3.11.x to 3.12 (and it is still broken with 3.13).
+Due to some mistakes from my side, I have tested more configs:
 
-Due the nature of the kernel headers and the LP64 compiler where the
-size of a long and a pointer differs against a 32 bit compiler, there
-is some type hacking necessary for optimal performance.
+(based on Arch Linux 3.13.1 x86_64 config)
+(a) 3.13.2 with CONFIG_HOTPLUG_PCI=y, but CONFIG_HOTPLUG_PCI_ACPI=n works.
+(b) 3.13.2 with CONFIG_HOTPLUG_PCI=y and CONFIG_HOTPLUG_PCI_ACPI=y is broken.
+(c) 3.13.2 with CONFIG_HOTPLUG_PCI=n still works.
+(my stripped config)
+(d) 3.13.2 with CONFIG_HOTPLUG_PCI=y, but CONFIG_HOTPLUG_PCI_ACPI=n works.
 
-The vsyscall_gtod_data struture must be a rearranged to serve 32- and
-64-bit code access at the same time:
+With CONFIG_HOTPLUG_PCI_ACPI=y, the only difference in dmesg is:
 
-- The seqcount_t was replaced by an unsigned, this makes the
-  vsyscall_gtod_data intedepend of kernel configuration and internal functions.
-- All kernel internal structures are replaced by fix size elements
-  which works for 32- and 64-bit access
-- The inner struct clock was removed to pack the whole struct.
+(during boot)
+acpiphp: ACPI Hot Plug PCI Controller Driver version: 0.5
+(after resume)
+iwlwifi 0000:05:00.0: no hotplug settings from platform
+xhci_hcd 0000:02:00.0: no hotplug settings from platform
+ (here, NetworkManager complains that a device has gone)
+iwlwifi 0000:05:00.0: no hotplug settings from platform
 
-The "unsigned seq" would be handled by functions derivated from seqcount_t.
+Of course, with config (b), the ethernet adapter vanishes while it is still
+present with configs (a), (c) and (d).
 
-Conflicts:
-	arch/x86/vdso/vclock_gettime.c
+Time to do a bisect?
 
-Signed-off-by: Stefani Seibold <stefani@seibold.net>
----
- arch/x86/include/asm/vgtod.h          | 69 +++++++++++++++++++++++++++-------
- arch/x86/kernel/vsyscall_gtod.c       | 33 ++++++++++------
- arch/x86/vdso/vclock_gettime.c        | 71 +++++++++++++++++------------------
- arch/x86/vdso/vdso32/vclock_gettime.c |  7 ++++
- 4 files changed, 118 insertions(+), 62 deletions(-)
-
-diff --git a/arch/x86/include/asm/vgtod.h b/arch/x86/include/asm/vgtod.h
-index 46e24d3..abb9e45 100644
---- a/arch/x86/include/asm/vgtod.h
-+++ b/arch/x86/include/asm/vgtod.h
-@@ -4,27 +4,70 @@
- #include <asm/vsyscall.h>
- #include <linux/clocksource.h>
- 
-+#ifdef CONFIG_X86_64
-+typedef u64 gtod_long_t;
-+#else
-+typedef u32 gtod_long_t;
-+#endif
-+/*
-+ * vsyscall_gtod_data will be accessed by 32 and 64 bit code at the same time
-+ * so be carefull by modifying this structure.
-+ */
- struct vsyscall_gtod_data {
--	seqcount_t	seq;
-+	unsigned seq;
- 
--	struct { /* extract of a clocksource struct */
--		int vclock_mode;
--		cycle_t	cycle_last;
--		cycle_t	mask;
--		u32	mult;
--		u32	shift;
--	} clock;
-+	int vclock_mode;
-+	cycle_t	cycle_last;
-+	cycle_t	mask;
-+	u32	mult;
-+	u32	shift;
- 
- 	/* open coded 'struct timespec' */
--	time_t		wall_time_sec;
- 	u64		wall_time_snsec;
-+	gtod_long_t	wall_time_sec;
-+	gtod_long_t	monotonic_time_sec;
- 	u64		monotonic_time_snsec;
--	time_t		monotonic_time_sec;
-+	gtod_long_t	wall_time_coarse_sec;
-+	gtod_long_t	wall_time_coarse_nsec;
-+	gtod_long_t	monotonic_time_coarse_sec;
-+	gtod_long_t	monotonic_time_coarse_nsec;
- 
--	struct timezone sys_tz;
--	struct timespec wall_time_coarse;
--	struct timespec monotonic_time_coarse;
-+	int		tz_minuteswest;
-+	int		tz_dsttime;
- };
- extern struct vsyscall_gtod_data vsyscall_gtod_data;
- 
-+static inline unsigned gtod_read_begin(const struct vsyscall_gtod_data *s)
-+{
-+	unsigned ret;
-+
-+repeat:
-+	ret = ACCESS_ONCE(s->seq);
-+	if (unlikely(ret & 1)) {
-+		cpu_relax();
-+		goto repeat;
-+	}
-+	smp_rmb();
-+	return ret;
-+}
-+
-+static inline int gtod_read_retry(const struct vsyscall_gtod_data *s,
-+					unsigned start)
-+{
-+	smp_rmb();
-+	return unlikely(s->seq != start);
-+}
-+
-+static inline void gtod_write_begin(struct vsyscall_gtod_data *s)
-+{
-+	++s->seq;
-+	smp_wmb();
-+}
-+
-+static inline void gtod_write_end(struct vsyscall_gtod_data *s)
-+{
-+	smp_wmb();
-+	++s->seq;
-+}
-+
- #endif /* _ASM_X86_VGTOD_H */
-diff --git a/arch/x86/kernel/vsyscall_gtod.c b/arch/x86/kernel/vsyscall_gtod.c
-index 91862a4..973dcc4 100644
---- a/arch/x86/kernel/vsyscall_gtod.c
-+++ b/arch/x86/kernel/vsyscall_gtod.c
-@@ -4,6 +4,7 @@
-  *
-  *  Modified for x86 32 bit architecture by
-  *  Stefani Seibold <stefani@seibold.net>
-+ *  sponsored by Rohde & Schwarz GmbH & Co. KG Munich/Germany
-  *
-  *  Thanks to hpa@transmeta.com for some useful hint.
-  *  Special thanks to Ingo Molnar for his early experience with
-@@ -18,21 +19,22 @@ DEFINE_VVAR(struct vsyscall_gtod_data, vsyscall_gtod_data);
- 
- void update_vsyscall_tz(void)
- {
--	vsyscall_gtod_data.sys_tz = sys_tz;
-+	vsyscall_gtod_data.tz_minuteswest = sys_tz.tz_minuteswest;
-+	vsyscall_gtod_data.tz_dsttime = sys_tz.tz_dsttime;
- }
- 
- void update_vsyscall(struct timekeeper *tk)
- {
- 	struct vsyscall_gtod_data *vdata = &vsyscall_gtod_data;
- 
--	write_seqcount_begin(&vdata->seq);
-+	gtod_write_begin(vdata);
- 
- 	/* copy vsyscall data */
--	vdata->clock.vclock_mode	= tk->clock->archdata.vclock_mode;
--	vdata->clock.cycle_last		= tk->clock->cycle_last;
--	vdata->clock.mask		= tk->clock->mask;
--	vdata->clock.mult		= tk->mult;
--	vdata->clock.shift		= tk->shift;
-+	vdata->vclock_mode	= tk->clock->archdata.vclock_mode;
-+	vdata->cycle_last	= tk->clock->cycle_last;
-+	vdata->mask		= tk->clock->mask;
-+	vdata->mult		= tk->mult;
-+	vdata->shift		= tk->shift;
- 
- 	vdata->wall_time_sec		= tk->xtime_sec;
- 	vdata->wall_time_snsec		= tk->xtime_nsec;
-@@ -49,12 +51,19 @@ void update_vsyscall(struct timekeeper *tk)
- 		vdata->monotonic_time_sec++;
- 	}
- 
--	vdata->wall_time_coarse.tv_sec	= tk->xtime_sec;
--	vdata->wall_time_coarse.tv_nsec	= (long)(tk->xtime_nsec >> tk->shift);
-+	vdata->wall_time_coarse_sec	= tk->xtime_sec;
-+	vdata->wall_time_coarse_nsec	= (long)(tk->xtime_nsec >> tk->shift);
- 
--	vdata->monotonic_time_coarse	= timespec_add(vdata->wall_time_coarse,
--							tk->wall_to_monotonic);
-+	vdata->monotonic_time_coarse_sec =
-+		vdata->wall_time_coarse_sec + tk->wall_to_monotonic.tv_sec;
-+	vdata->monotonic_time_coarse_nsec =
-+		vdata->wall_time_coarse_nsec + tk->wall_to_monotonic.tv_nsec;
- 
--	write_seqcount_end(&vdata->seq);
-+	while (vdata->monotonic_time_coarse_nsec >= NSEC_PER_SEC) {
-+		vdata->monotonic_time_coarse_nsec -= NSEC_PER_SEC;
-+		vdata->monotonic_time_coarse_sec++;
-+	}
-+
-+	gtod_write_end(vdata);
- }
- 
-diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
-index 0511e3d..c1d9346 100644
---- a/arch/x86/vdso/vclock_gettime.c
-+++ b/arch/x86/vdso/vclock_gettime.c
-@@ -74,13 +74,12 @@ notrace static long vdso_fallback_gettime(long clock, struct timespec *ts)
- 		"call VDSO32_vsyscall \n"
- 		"pop %%ebx \n"
- 		: "=a" (ret)
--		: "0" (__NR_clock_gettime), "d" (clock), "c" (ts)
-+		: "0" (__NR_ia32_clock_gettime), "d" (clock), "c" (ts)
- 		: "memory");
- 	return ret;
- }
- 
--notrace static long vdso_fallback_gtod(struct timeval *tv,
--		struct timezone *tz)
-+notrace static long vdso_fallback_gtod(struct timeval *tv, struct timezone *tz)
- {
- 	long ret;
- 
-@@ -90,7 +89,7 @@ notrace static long vdso_fallback_gtod(struct timeval *tv,
- 		"call VDSO32_vsyscall \n"
- 		"pop %%ebx \n"
- 		: "=a" (ret)
--		: "0" (__NR_gettimeofday), "d" (tv), "c" (tz)
-+		: "0" (__NR_ia32_gettimeofday), "d" (tv), "c" (tz)
- 		: "memory");
- 	return ret;
- }
-@@ -157,7 +156,7 @@ static notrace cycle_t vread_pvclock(int *mode)
- 		*mode = VCLOCK_NONE;
- 
- 	/* refer to tsc.c read_tsc() comment for rationale */
--	last = gtod->clock.cycle_last;
-+	last = gtod->cycle_last;
- 
- 	if (likely(ret >= last))
- 		return ret;
-@@ -181,7 +180,7 @@ notrace static cycle_t vread_tsc(void)
- 	rdtsc_barrier();
- 	ret = (cycle_t)vget_cycles();
- 
--	last = gtod->clock.cycle_last;
-+	last = gtod->cycle_last;
- 
- 	if (likely(ret >= last))
- 		return ret;
-@@ -202,20 +201,20 @@ notrace static inline u64 vgetsns(int *mode)
- {
- 	u64 v;
- 	cycles_t cycles;
--	if (gtod->clock.vclock_mode == VCLOCK_TSC)
-+	if (gtod->vclock_mode == VCLOCK_TSC)
- 		cycles = vread_tsc();
- #ifdef CONFIG_HPET_TIMER
--	else if (gtod->clock.vclock_mode == VCLOCK_HPET)
-+	else if (gtod->vclock_mode == VCLOCK_HPET)
- 		cycles = vread_hpet();
- #endif
- #ifdef CONFIG_PARAVIRT_CLOCK
--	else if (gtod->clock.vclock_mode == VCLOCK_PVCLOCK)
-+	else if (gtod->vclock_mode == VCLOCK_PVCLOCK)
- 		cycles = vread_pvclock(mode);
- #endif
- 	else
- 		return 0;
--	v = (cycles - gtod->clock.cycle_last) & gtod->clock.mask;
--	return v * gtod->clock.mult;
-+	v = (cycles - gtod->cycle_last) & gtod->mask;
-+	return v * gtod->mult;
- }
- 
- /* Code size doesn't matter (vdso is 4k anyway) and this is faster. */
-@@ -225,17 +224,18 @@ notrace static int __always_inline do_realtime(struct timespec *ts)
- 	u64 ns;
- 	int mode;
- 
--	ts->tv_nsec = 0;
- 	do {
--		seq = raw_read_seqcount_begin(&gtod->seq);
--		mode = gtod->clock.vclock_mode;
-+		seq = gtod_read_begin(gtod);
-+		mode = gtod->vclock_mode;
- 		ts->tv_sec = gtod->wall_time_sec;
- 		ns = gtod->wall_time_snsec;
- 		ns += vgetsns(&mode);
--		ns >>= gtod->clock.shift;
--	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
-+		ns >>= gtod->shift;
-+	} while (unlikely(gtod_read_retry(gtod, seq)));
-+
-+	ts->tv_sec += __iter_div_u64_rem(ns, NSEC_PER_SEC, &ns);
-+	ts->tv_nsec = ns;
- 
--	timespec_add_ns(ts, ns);
- 	return mode;
- }
- 
-@@ -245,16 +245,17 @@ notrace static int do_monotonic(struct timespec *ts)
- 	u64 ns;
- 	int mode;
- 
--	ts->tv_nsec = 0;
- 	do {
--		seq = raw_read_seqcount_begin(&gtod->seq);
--		mode = gtod->clock.vclock_mode;
-+		seq = gtod_read_begin(gtod);
-+		mode = gtod->vclock_mode;
- 		ts->tv_sec = gtod->monotonic_time_sec;
- 		ns = gtod->monotonic_time_snsec;
- 		ns += vgetsns(&mode);
--		ns >>= gtod->clock.shift;
--	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
--	timespec_add_ns(ts, ns);
-+		ns >>= gtod->shift;
-+	} while (unlikely(gtod_read_retry(gtod, seq)));
-+
-+	ts->tv_sec += __iter_div_u64_rem(ns, NSEC_PER_SEC, &ns);
-+	ts->tv_nsec = ns;
- 
- 	return mode;
- }
-@@ -263,20 +264,20 @@ notrace static void do_realtime_coarse(struct timespec *ts)
- {
- 	unsigned long seq;
- 	do {
--		seq = raw_read_seqcount_begin(&gtod->seq);
--		ts->tv_sec = gtod->wall_time_coarse.tv_sec;
--		ts->tv_nsec = gtod->wall_time_coarse.tv_nsec;
--	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
-+		seq = gtod_read_begin(gtod);
-+		ts->tv_sec = gtod->wall_time_coarse_sec;
-+		ts->tv_nsec = gtod->wall_time_coarse_nsec;
-+	} while (unlikely(gtod_read_retry(gtod, seq)));
- }
- 
- notrace static void do_monotonic_coarse(struct timespec *ts)
- {
- 	unsigned long seq;
- 	do {
--		seq = raw_read_seqcount_begin(&gtod->seq);
--		ts->tv_sec = gtod->monotonic_time_coarse.tv_sec;
--		ts->tv_nsec = gtod->monotonic_time_coarse.tv_nsec;
--	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
-+		seq = gtod_read_begin(gtod);
-+		ts->tv_sec = gtod->monotonic_time_coarse_sec;
-+		ts->tv_nsec = gtod->monotonic_time_coarse_nsec;
-+	} while (unlikely(gtod_read_retry(gtod, seq)));
- }
- 
- notrace int __vdso_clock_gettime(clockid_t clock, struct timespec *ts)
-@@ -310,17 +311,13 @@ int clock_gettime(clockid_t, struct timespec *)
- notrace int __vdso_gettimeofday(struct timeval *tv, struct timezone *tz)
- {
- 	if (likely(tv != NULL)) {
--		BUILD_BUG_ON(offsetof(struct timeval, tv_usec) !=
--			     offsetof(struct timespec, tv_nsec) ||
--			     sizeof(*tv) != sizeof(struct timespec));
- 		if (unlikely(do_realtime((struct timespec *)tv) == VCLOCK_NONE))
- 			return vdso_fallback_gtod(tv, tz);
- 		tv->tv_usec /= 1000;
- 	}
- 	if (unlikely(tz != NULL)) {
--		/* Avoid memcpy. Some old compilers fail to inline it */
--		tz->tz_minuteswest = gtod->sys_tz.tz_minuteswest;
--		tz->tz_dsttime = gtod->sys_tz.tz_dsttime;
-+		tz->tz_minuteswest = gtod->tz_minuteswest;
-+		tz->tz_dsttime = gtod->tz_dsttime;
- 	}
- 
- 	return 0;
-diff --git a/arch/x86/vdso/vdso32/vclock_gettime.c b/arch/x86/vdso/vdso32/vclock_gettime.c
-index fab4ec6..b6df952 100644
---- a/arch/x86/vdso/vdso32/vclock_gettime.c
-+++ b/arch/x86/vdso/vdso32/vclock_gettime.c
-@@ -2,6 +2,8 @@
- 
- #ifdef CONFIG_X86_64
- 
-+#include <generated/asm/unistd_32_ia32.h>
-+
- #define _ASM_X86_PAGE_H
- 
- #define __pa(x)                0
-@@ -10,6 +12,11 @@
- #undef CONFIG_ILLEGAL_POINTER_VALUE
- #define CONFIG_ILLEGAL_POINTER_VALUE   0
- 
-+#else
-+
-+#define __NR_ia32_clock_gettime	__NR_clock_gettime
-+#define __NR_ia32_gettimeofday	__NR_gettimeofday
-+
- #endif
- 
- #include "../vclock_gettime.c"
--- 
-1.8.5.4
+Peter
 
