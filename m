@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752162AbaBHQQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 11:16:56 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:55136 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751833AbaBHQPs (ORCPT
+	id S1751996AbaBHQPr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 11:15:47 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:57748 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751833AbaBHQPd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 11:15:48 -0500
+	Sat, 8 Feb 2014 11:15:33 -0500
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 12/13] cgroup: relocate functions in preparation of kernfs conversion
-Date: Sat,  8 Feb 2014 11:15:26 -0500
-Message-Id: <1391876127-7134-13-git-send-email-tj@kernel.org>
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH 01/13] cgroup: improve css_from_dir() into css_tryget_from_dir()
+Date: Sat,  8 Feb 2014 11:15:15 -0500
+Message-Id: <1391876127-7134-2-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1391876127-7134-1-git-send-email-tj@kernel.org>
 References: <1391876127-7134-1-git-send-email-tj@kernel.org>
@@ -21,309 +26,180 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Relocate cgroup_init/exit_root_id(), cgroup_free_root(),
-cgroup_kill_sb() and cgroup_file_name() in preparation of kernfs
-conversion.
+css_from_dir() returns the matching css (cgroup_subsys_state) given a
+dentry and subsystem.  The function doesn't pin the css before
+returning and requires the caller to be holding RCU read lock or
+cgroup_mutex and handling pinning on the caller side.
 
-These are pure relocations to make kernfs conversion easier to follow.
+Given that users of the function are likely to want to pin the
+returned css (both existing users do) and that getting and putting
+css's are very cheap, there's no reason for the interface to be tricky
+like this.
+
+Rename css_from_dir() to css_tryget_from_dir() and make it try to pin
+the found css and return it only if pinning succeeded.  The callers
+are updated so that they no longer do RCU locking and pinning around
+the function and just use the returned css.
+
+This will also ease converting cgroup to kernfs.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Balbir Singh <bsingharora@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- kernel/cgroup.c | 232 ++++++++++++++++++++++++++++----------------------------
- 1 file changed, 117 insertions(+), 115 deletions(-)
+ include/linux/cgroup.h |  4 ++--
+ kernel/cgroup.c        | 25 ++++++++++++++++---------
+ kernel/events/core.c   | 17 +----------------
+ mm/memcontrol.c        | 16 +++++++---------
+ 4 files changed, 26 insertions(+), 36 deletions(-)
 
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 198c7fc..2255639 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -823,8 +823,8 @@ int css_scan_tasks(struct cgroup_subsys_state *css,
+ int cgroup_attach_task_all(struct task_struct *from, struct task_struct *);
+ int cgroup_transfer_tasks(struct cgroup *to, struct cgroup *from);
+ 
+-struct cgroup_subsys_state *css_from_dir(struct dentry *dentry,
+-					 struct cgroup_subsys *ss);
++struct cgroup_subsys_state *css_tryget_from_dir(struct dentry *dentry,
++						struct cgroup_subsys *ss);
+ 
+ #else /* !CONFIG_CGROUPS */
+ 
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index fd4a528..992c2ba 100644
+index f5bbe58..57eb942 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -170,6 +170,8 @@ static int need_forkexit_callback __read_mostly;
- static struct cftype cgroup_base_files[];
+@@ -4976,28 +4976,35 @@ static int __init cgroup_disable(char *str)
+ __setup("cgroup_disable=", cgroup_disable);
  
- static void cgroup_put(struct cgroup *cgrp);
-+static int rebind_subsystems(struct cgroupfs_root *root,
-+			     unsigned long added_mask, unsigned removed_mask);
- static void cgroup_destroy_css_killed(struct cgroup *cgrp);
- static int cgroup_destroy_locked(struct cgroup *cgrp);
- static int cgroup_addrm_files(struct cgroup *cgrp, struct cftype cfts[],
-@@ -690,6 +692,42 @@ static struct css_set *find_css_set(struct css_set *old_cset,
- 	return cset;
- }
- 
-+static int cgroup_init_root_id(struct cgroupfs_root *root, int start, int end)
-+{
-+	int id;
-+
-+	lockdep_assert_held(&cgroup_mutex);
-+
-+	id = idr_alloc_cyclic(&cgroup_hierarchy_idr, root, start, end,
-+			      GFP_KERNEL);
-+	if (id < 0)
-+		return id;
-+
-+	root->hierarchy_id = id;
-+	return 0;
-+}
-+
-+static void cgroup_exit_root_id(struct cgroupfs_root *root)
-+{
-+	lockdep_assert_held(&cgroup_mutex);
-+
-+	if (root->hierarchy_id) {
-+		idr_remove(&cgroup_hierarchy_idr, root->hierarchy_id);
-+		root->hierarchy_id = 0;
-+	}
-+}
-+
-+static void cgroup_free_root(struct cgroupfs_root *root)
-+{
-+	if (root) {
-+		/* hierarhcy ID shoulid already have been released */
-+		WARN_ON_ONCE(root->hierarchy_id);
-+
-+		idr_destroy(&root->cgroup_idr);
-+		kfree(root);
-+	}
-+}
-+
- static void cgroup_get_root(struct cgroupfs_root *root)
+ /**
+- * css_from_dir - get corresponding css from the dentry of a cgroup dir
++ * css_tryget_from_dir - get corresponding css from the dentry of a cgroup dir
+  * @dentry: directory dentry of interest
+  * @ss: subsystem of interest
+  *
+- * Must be called under cgroup_mutex or RCU read lock.  The caller is
+- * responsible for pinning the returned css if it needs to be accessed
+- * outside the critical section.
++ * If @dentry is a directory for a cgroup which has @ss enabled on it, try
++ * to get the corresponding css and return it.  If such css doesn't exist
++ * or can't be pinned, an ERR_PTR value is returned.
+  */
+-struct cgroup_subsys_state *css_from_dir(struct dentry *dentry,
+-					 struct cgroup_subsys *ss)
++struct cgroup_subsys_state *css_tryget_from_dir(struct dentry *dentry,
++						struct cgroup_subsys *ss)
  {
- 	atomic_inc(&root->sb->s_active);
-@@ -700,6 +738,59 @@ static void cgroup_put_root(struct cgroupfs_root *root)
- 	deactivate_super(root->sb);
+ 	struct cgroup *cgrp;
+-
+-	cgroup_assert_mutex_or_rcu_locked();
++	struct cgroup_subsys_state *css;
+ 
+ 	/* is @dentry a cgroup dir? */
+ 	if (!dentry->d_inode ||
+ 	    dentry->d_inode->i_op != &cgroup_dir_inode_operations)
+ 		return ERR_PTR(-EBADF);
+ 
++	rcu_read_lock();
++
+ 	cgrp = __d_cgrp(dentry);
+-	return cgroup_css(cgrp, ss) ?: ERR_PTR(-ENOENT);
++	css = cgroup_css(cgrp, ss);
++
++	if (!css || !css_tryget(css))
++		css = ERR_PTR(-ENOENT);
++
++	rcu_read_unlock();
++	return css;
  }
  
-+static void cgroup_kill_sb(struct super_block *sb)
-+{
-+	struct cgroupfs_root *root = sb->s_fs_info;
-+	struct cgroup *cgrp = &root->top_cgroup;
-+	struct cgrp_cset_link *link, *tmp_link;
-+	int ret;
-+
-+	BUG_ON(!root);
-+
-+	BUG_ON(root->number_of_cgroups != 1);
-+	BUG_ON(!list_empty(&cgrp->children));
-+
-+	mutex_lock(&cgrp->dentry->d_inode->i_mutex);
-+	mutex_lock(&cgroup_tree_mutex);
-+	mutex_lock(&cgroup_mutex);
-+
-+	/* Rebind all subsystems back to the default hierarchy */
-+	if (root->flags & CGRP_ROOT_SUBSYS_BOUND) {
-+		ret = rebind_subsystems(root, 0, root->subsys_mask);
-+		/* Shouldn't be able to fail ... */
-+		BUG_ON(ret);
-+	}
-+
-+	/*
-+	 * Release all the links from cset_links to this hierarchy's
-+	 * root cgroup
-+	 */
-+	write_lock(&css_set_lock);
-+
-+	list_for_each_entry_safe(link, tmp_link, &cgrp->cset_links, cset_link) {
-+		list_del(&link->cset_link);
-+		list_del(&link->cgrp_link);
-+		kfree(link);
-+	}
-+	write_unlock(&css_set_lock);
-+
-+	if (!list_empty(&root->root_list)) {
-+		list_del(&root->root_list);
-+		cgroup_root_count--;
-+	}
-+
-+	cgroup_exit_root_id(root);
-+
-+	mutex_unlock(&cgroup_mutex);
-+	mutex_unlock(&cgroup_tree_mutex);
-+	mutex_unlock(&cgrp->dentry->d_inode->i_mutex);
-+
-+	simple_xattrs_free(&cgrp->xattrs);
-+
-+	kill_litter_super(sb);
-+	cgroup_free_root(root);
-+}
-+
- /*
-  * Return the cgroup for "task" from the given hierarchy. Must be
-  * called with cgroup_mutex held.
-@@ -846,6 +937,32 @@ static char *cgroup_file_name(struct cgroup *cgrp, const struct cftype *cft,
- 	return buf;
+ /**
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 6490373..a3c3ab5 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -370,11 +370,6 @@ perf_cgroup_match(struct perf_event *event)
+ 				    event->cgrp->css.cgroup);
  }
  
-+/**
-+ * cgroup_file_mode - deduce file mode of a control file
-+ * @cft: the control file in question
-+ *
-+ * returns cft->mode if ->mode is not 0
-+ * returns S_IRUGO|S_IWUSR if it has both a read and a write handler
-+ * returns S_IRUGO if it has only a read handler
-+ * returns S_IWUSR if it has only a write hander
-+ */
-+static umode_t cgroup_file_mode(const struct cftype *cft)
-+{
-+	umode_t mode = 0;
-+
-+	if (cft->mode)
-+		return cft->mode;
-+
-+	if (cft->read_u64 || cft->read_s64 || cft->seq_show)
-+		mode |= S_IRUGO;
-+
-+	if (cft->write_u64 || cft->write_s64 || cft->write_string ||
-+	    cft->trigger)
-+		mode |= S_IWUSR;
-+
-+	return mode;
-+}
-+
- static void cgroup_free_fn(struct work_struct *work)
- {
- 	struct cgroup *cgrp = container_of(work, struct cgroup, destroy_work);
-@@ -1356,31 +1473,6 @@ static void init_cgroup_root(struct cgroupfs_root *root)
- 	idr_init(&root->cgroup_idr);
- }
- 
--static int cgroup_init_root_id(struct cgroupfs_root *root, int start, int end)
+-static inline bool perf_tryget_cgroup(struct perf_event *event)
 -{
--	int id;
--
--	lockdep_assert_held(&cgroup_mutex);
--
--	id = idr_alloc_cyclic(&cgroup_hierarchy_idr, root, start, end,
--			      GFP_KERNEL);
--	if (id < 0)
--		return id;
--
--	root->hierarchy_id = id;
--	return 0;
+-	return css_tryget(&event->cgrp->css);
 -}
 -
--static void cgroup_exit_root_id(struct cgroupfs_root *root)
--{
--	lockdep_assert_held(&cgroup_mutex);
--
--	if (root->hierarchy_id) {
--		idr_remove(&cgroup_hierarchy_idr, root->hierarchy_id);
--		root->hierarchy_id = 0;
--	}
--}
--
- static int cgroup_test_super(struct super_block *sb, void *data)
+ static inline void perf_put_cgroup(struct perf_event *event)
  {
- 	struct cgroup_sb_opts *opts = data;
-@@ -1433,17 +1525,6 @@ static struct cgroupfs_root *cgroup_root_from_opts(struct cgroup_sb_opts *opts)
- 	return root;
- }
+ 	css_put(&event->cgrp->css);
+@@ -593,9 +588,7 @@ static inline int perf_cgroup_connect(int fd, struct perf_event *event,
+ 	if (!f.file)
+ 		return -EBADF;
  
--static void cgroup_free_root(struct cgroupfs_root *root)
--{
--	if (root) {
--		/* hierarhcy ID shoulid already have been released */
--		WARN_ON_ONCE(root->hierarchy_id);
+-	rcu_read_lock();
 -
--		idr_destroy(&root->cgroup_idr);
--		kfree(root);
--	}
--}
--
- static int cgroup_set_super(struct super_block *sb, void *data)
- {
- 	int ret;
-@@ -1689,59 +1770,6 @@ out_unlock:
- 		return ERR_PTR(ret);
- }
+-	css = css_from_dir(f.file->f_dentry, &perf_event_cgrp_subsys);
++	css = css_tryget_from_dir(f.file->f_dentry, &perf_event_cgrp_subsys);
+ 	if (IS_ERR(css)) {
+ 		ret = PTR_ERR(css);
+ 		goto out;
+@@ -604,13 +597,6 @@ static inline int perf_cgroup_connect(int fd, struct perf_event *event,
+ 	cgrp = container_of(css, struct perf_cgroup, css);
+ 	event->cgrp = cgrp;
  
--static void cgroup_kill_sb(struct super_block *sb)
--{
--	struct cgroupfs_root *root = sb->s_fs_info;
--	struct cgroup *cgrp = &root->top_cgroup;
--	struct cgrp_cset_link *link, *tmp_link;
--	int ret;
--
--	BUG_ON(!root);
--
--	BUG_ON(root->number_of_cgroups != 1);
--	BUG_ON(!list_empty(&cgrp->children));
--
--	mutex_lock(&cgrp->dentry->d_inode->i_mutex);
--	mutex_lock(&cgroup_tree_mutex);
--	mutex_lock(&cgroup_mutex);
--
--	/* Rebind all subsystems back to the default hierarchy */
--	if (root->flags & CGRP_ROOT_SUBSYS_BOUND) {
--		ret = rebind_subsystems(root, 0, root->subsys_mask);
--		/* Shouldn't be able to fail ... */
--		BUG_ON(ret);
+-	/* must be done before we fput() the file */
+-	if (!perf_tryget_cgroup(event)) {
+-		event->cgrp = NULL;
+-		ret = -ENOENT;
+-		goto out;
 -	}
 -
--	/*
--	 * Release all the links from cset_links to this hierarchy's
--	 * root cgroup
--	 */
--	write_lock(&css_set_lock);
--
--	list_for_each_entry_safe(link, tmp_link, &cgrp->cset_links, cset_link) {
--		list_del(&link->cset_link);
--		list_del(&link->cgrp_link);
--		kfree(link);
--	}
--	write_unlock(&css_set_lock);
--
--	if (!list_empty(&root->root_list)) {
--		list_del(&root->root_list);
--		cgroup_root_count--;
--	}
--
--	cgroup_exit_root_id(root);
--
--	mutex_unlock(&cgroup_mutex);
--	mutex_unlock(&cgroup_tree_mutex);
--	mutex_unlock(&cgrp->dentry->d_inode->i_mutex);
--
--	simple_xattrs_free(&cgrp->xattrs);
--
--	kill_litter_super(sb);
--	cgroup_free_root(root);
--}
--
- static struct file_system_type cgroup_fs_type = {
- 	.name = "cgroup",
- 	.mount = cgroup_mount,
-@@ -2617,32 +2645,6 @@ static int cgroup_create_file(struct dentry *dentry, umode_t mode,
- 	return 0;
+ 	/*
+ 	 * all events in a group must monitor
+ 	 * the same cgroup because a task belongs
+@@ -621,7 +607,6 @@ static inline int perf_cgroup_connect(int fd, struct perf_event *event,
+ 		ret = -EINVAL;
+ 	}
+ out:
+-	rcu_read_unlock();
+ 	fdput(f);
+ 	return ret;
  }
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 04a97bc..102ab48 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -6183,17 +6183,15 @@ static int memcg_write_event_control(struct cgroup_subsys_state *css,
+ 	 * automatically removed on cgroup destruction but the removal is
+ 	 * asynchronous, so take an extra ref on @css.
+ 	 */
+-	rcu_read_lock();
+-
++	cfile_css = css_tryget_from_dir(cfile.file->f_dentry->d_parent,
++					&memory_cgrp_subsys);
+ 	ret = -EINVAL;
+-	cfile_css = css_from_dir(cfile.file->f_dentry->d_parent,
+-				 &memory_cgrp_subsys);
+-	if (cfile_css == css && css_tryget(css))
+-		ret = 0;
+-
+-	rcu_read_unlock();
+-	if (ret)
++	if (IS_ERR(cfile_css))
+ 		goto out_put_cfile;
++	if (cfile_css != css) {
++		css_put(cfile_css);
++		goto out_put_cfile;
++	}
  
--/**
-- * cgroup_file_mode - deduce file mode of a control file
-- * @cft: the control file in question
-- *
-- * returns cft->mode if ->mode is not 0
-- * returns S_IRUGO|S_IWUSR if it has both a read and a write handler
-- * returns S_IRUGO if it has only a read handler
-- * returns S_IWUSR if it has only a write hander
-- */
--static umode_t cgroup_file_mode(const struct cftype *cft)
--{
--	umode_t mode = 0;
--
--	if (cft->mode)
--		return cft->mode;
--
--	if (cft->read_u64 || cft->read_s64 || cft->seq_show)
--		mode |= S_IRUGO;
--
--	if (cft->write_u64 || cft->write_s64 || cft->write_string ||
--	    cft->trigger)
--		mode |= S_IWUSR;
--
--	return mode;
--}
--
- static int cgroup_add_file(struct cgroup *cgrp, struct cftype *cft)
- {
- 	struct dentry *dir = cgrp->dentry;
+ 	ret = event->register_event(memcg, event->eventfd, buffer);
+ 	if (ret)
 -- 
 1.8.5.3
 
