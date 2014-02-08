@@ -1,84 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751234AbaBHEzn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 23:55:43 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:54135 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750985AbaBHEzm (ORCPT
+	id S1751383AbaBHE6Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 23:58:16 -0500
+Received: from co9ehsobe001.messaging.microsoft.com ([207.46.163.24]:27443
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751271AbaBHE6P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 23:55:42 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <52F5B8CE.1000808@roeck-us.net>
-Date: Fri, 07 Feb 2014 20:55:42 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 7 Feb 2014 23:58:15 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzzz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Sat, 8 Feb 2014 12:58:29 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: <linux-kernel@vger.kernel.org>
+CC: <alsa-devel@alsa-project.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [alsa-devel] v3.14-rc1 locking bug in system suspend
+Message-ID: <20140208045824.GB10195@S2101-09.ap.freescale.net>
+References: <20140205145408.GA3708@S2101-09.ap.freescale.net>
+ <20140206145509.GB6610@S2101-09.ap.freescale.net>
 MIME-Version: 1.0
-To: Huacai Chen <chenhuacai@gmail.com>
-CC: Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        Paul Burton <paul.burton@imgtec.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Commit 597ce1723 (MIPS: Support for 64-bit FP with O32 binaries)
- causing qemu hang with mips64 kernels
-References: <52F5A6EE.7020000@roeck-us.net> <CAAhV-H7GbarXPb2uye1jiH+caAL4vWTVBeGY77Yf0tvdpGJtiA@mail.gmail.com>
-In-Reply-To: <CAAhV-H7GbarXPb2uye1jiH+caAL4vWTVBeGY77Yf0tvdpGJtiA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140206145509.GB6610@S2101-09.ap.freescale.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2014 07:57 PM, Huacai Chen wrote:
-> Hi,
->
-> Maybe you can try this:
-> http://patchwork.linux-mips.org/patch/6506/
-> http://patchwork.linux-mips.org/patch/6507/
->
-With those two patches applied the problem is gone.
+On Thu, Feb 06, 2014 at 10:55:13PM +0800, Shawn Guo wrote:
+> On Wed, Feb 05, 2014 at 10:54:10PM +0800, Shawn Guo wrote:
+> > I start seeing the following locking bug on IMX6 with suspend operation
+> > after moving to v3.14-rc1.  Before I start looking into the issue, I
+> > would like to confirm if it's an IMX specific problem or one seen on
+> > other platforms.  Please ask if you need more info.
+> 
+> Sorry.  This is not a new bug of v3.14-rc1.  It's been there with
+> v3.13-rc for a while.  It looks like there is something wrong in the
+> use of power_lock in struct snd_card.  Will dig into it.
 
-Thanks a lot!
+Okay.  This is an IMX specific problem caused by audio driver.  I will
+send a fix to alsa-devel list shortly.
 
-Guenter
-
-> On Sat, Feb 8, 2014 at 11:39 AM, Guenter Roeck <linux@roeck-us.net> wrote:
->>
->> Hi all,
->>
->> in 3.14-rc1, my mips64 qemu test fails. The image boots and then hangs.
->> Bisect points to commit 597ce1723 (MIPS: Support for 64-bit FP with O32
->> binaries).
->> Reverting this commit fixes the problem. Disabling MIPS_O32_FP64_SUPPORT
->> in my test image does _not_ solve the problem. The qemu version does not
->> seem
->> to make a difference; I tested with qemu 1.6.0 and 1.7.0.
->>
->> Console log output is available in
->> http://server.roeck-us.net:8010/builders/qemu-mips64-master/builds/34/steps/buildcommand/logs/stdio
->>
->> When the problem is seen, the emulation hangs as can be seen in the log,
->> and the qemu process consumes 100% CPU until it is killed.
->>
->> qemu command line is
->>
->> qemu-system-mips64 -kernel vmlinux -M malta -hda
->> core-image-minimal-qemumips64.ext3 \
->> -vga cirrus -usb -usbdevice wacom-tablet -no-reboot -m 128 --append
->> "root=/dev/hda \
->> rw mem=128M console=ttyS0 console=tty" -nographic
->>
->> The same configuration works fine with earlier kernels. I'll be happy to
->> provide
->> the detailed configuration as well as the root file system for testing if
->> needed.
->>
->> Obviously I have no idea if this is a problem with the patch or with qemu.
->> If there is anything I can do to help tracking down the problem further,
->> please let me know.
->>
->> Thanks,
->> Guenter
->>
->
->
+Shawn
 
