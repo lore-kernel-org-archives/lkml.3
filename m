@@ -1,48 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752048AbaBHQ7X (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 11:59:23 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:35429 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751453AbaBHQ7W (ORCPT
+	id S1751917AbaBHRIm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 12:08:42 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:44241 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751453AbaBHRIj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 11:59:22 -0500
-Message-ID: <52F66260.6020903@oracle.com>
-Date: Sat, 08 Feb 2014 10:59:12 -0600
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        JFS Discussion <jfs-discussion@lists.sourceforge.net>
-Subject: [GIT PULL] jfs for 3.14-rc2
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 8 Feb 2014 12:08:39 -0500
+Message-ID: <1391879318.10160.108.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: REGRESSION f54b311142a92ea2e42598e347b84e1655caf8e3 tcp auto
+ corking slows down iSCSI file system creation by factor of 70 [WAS: 4 TB
+ VMFS creation takes 15 minutes vs 26 seconds]
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Thomas Glanzmann <thomas@glanzmann.de>
+Cc: John Ogness <john.ogness@linutronix.de>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        Linux Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Sat, 08 Feb 2014 09:08:38 -0800
+In-Reply-To: <20140208165732.GB22359@glanzmann.de>
+References: <20140207205142.GA8609@glanzmann.de>
+	 <20140208093808.GD16336@glanzmann.de>
+	 <1391865273.10160.76.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <1391866389.10160.80.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <1391867404.10160.88.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <1391868816.10160.93.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <20140208141905.GG20512@glanzmann.de>
+	 <1391869805.10160.97.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <20140208150001.GI20512@glanzmann.de>
+	 <1391871986.10160.105.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <20140208165732.GB22359@glanzmann.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 41f76d8bee06be5a9b301ebf13f61a719ba548c4:
+On Sat, 2014-02-08 at 17:57 +0100, Thomas Glanzmann wrote:
+> Hello Eric,
+> 
+> > Note : We did some patches in the MSG_MORE logic for sendpage(), but
+> > in your case I do not think its related
+> > (git grep -n MSG_SENDPAGE_NOTLAST ) if you are curious
+> 
+> thank you for the pointer. The iSCSI target code actually uses sendpage
+> whenever it can.
 
-  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client (2014-02-07 12:35:56 -0800)
+Yep, but the problem (at least on your pcap), is about sending the 48
+bytes headers in  TCP segment of its own, then the 512 byte payload in a
+separate segment.
 
-are available in the git repository at:
+I suspect the sendpage() is only used for the payload. No need for
+MSG_MORE here.
+
+The MSG_MORE would need to be set on the first part (48 bytes header),
+so that TCP stack will defer the push of the segment at the time the 512
+bytes payload is added.
 
 
-  git://github.com/kleikamp/linux-shaggy.git tags/jfs-3.14-rc2
 
-for you to fetch changes up to c18f7b51200c3c8b76c63e391f9995b65ace9c83:
 
-  jfs: fix generic posix ACL regression (2014-02-08 10:50:58 -0600)
-
-----------------------------------------------------------------
-Fix regression
-
-----------------------------------------------------------------
-Dave Kleikamp (1):
-      jfs: fix generic posix ACL regression
-
- fs/jfs/xattr.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
