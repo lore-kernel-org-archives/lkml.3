@@ -1,77 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751883AbaBHPCh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 10:02:37 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:56276 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751767AbaBHPCg (ORCPT
+	id S1751933AbaBHPEO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 10:04:14 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:39687 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751424AbaBHPEM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 10:02:36 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ACPI / dock: Use acpi_device_enumerated() to check if dock is present
-Date: Sat, 08 Feb 2014 16:17:10 +0100
-Message-ID: <11510342.Z0olNXfrHj@vostro.rjw.lan>
-User-Agent: KMail/4.11.4 (Linux/3.13.0+; KDE/4.11.4; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Sat, 8 Feb 2014 10:04:12 -0500
+Message-ID: <1391871850.10160.103.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH] tcp: disable auto corking by default
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Thomas Glanzmann <thomas@glanzmann.de>
+Cc: Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        Linux Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Sat, 08 Feb 2014 07:04:10 -0800
+In-Reply-To: <20140208091944.GB16336@glanzmann.de>
+References: <20140206153640.GB4103@glanzmann.de>
+	 <1391727771.14985.41.camel@haakon3.risingtidesystems.com>
+	 <20140207051500.GB10916@glanzmann.de> <20140207075536.GB17815@glanzmann.de>
+	 <1391801597.1155.28.camel@haakon3.risingtidesystems.com>
+	 <20140207205142.GA8609@glanzmann.de> <20140208091828.GA16336@glanzmann.de>
+	 <20140208091944.GB16336@glanzmann.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Sat, 2014-02-08 at 10:19 +0100, Thomas Glanzmann wrote:
+> When using auto corking with iSCSI the round trip time at least increases by
+> factor 25 probably more. Other protocols are very likely also effected.
+> 
+> Signed-off-by: Thomas Glanzmann <thomas@glanzmann.de>
+> ---
+>  net/ipv4/tcp.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-After commit 202317a573b2 (ACPI / scan: Add acpi_device objects for
-all device nodes in the namespace) acpi_bus_get_device() will always
-return 0 for dock devices in dock_notify(), so the dock station
-docking code under ACPI_NOTIFY_DEVICE_CHECK will never be executed
-and docking will not work as a result of that.
+I think there is no hurry.
 
-Fix the problem by making dock_notify() use acpi_device_enumerated()
-to check the presence of the device instead of checking the return
-value of acpi_bus_get_device().
+We should let auto corking on during 3.14 development cycle so that we
+can fix the bugs, and thing of some optimizations.
 
-Fixes: 202317a573b2 (ACPI / scan: Add acpi_device objects for all device nodes in the namespace)
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
+auto cork gives a strong incentive to applications to use
+TCP_CORK/MSG_MORE to avoid overhead of sending multiple small segments.
 
-Hi All,
+In the normal case, the extra delay is something like 10 us, so if an
+application is really hit by this delay, its a strong sign it could be
+improved, especially if auto corking is off.
 
-If I'm not mistaken, ACPI dock station docking is broken in 3.14-rc1 and this
-patch should fix it.
+Lets wait the end of 3.14 dev cycle before considering this patch.
 
-Can anyone who happens to own a dock station with ACPI-based dock/undock
-signaling verify this for me, please?
+Don't shoot the messenger :)
 
-Rafael
+Thanks !
 
----
- drivers/acpi/dock.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-Index: linux-pm/drivers/acpi/dock.c
-===================================================================
---- linux-pm.orig/drivers/acpi/dock.c
-+++ linux-pm/drivers/acpi/dock.c
-@@ -609,7 +609,7 @@ static int handle_eject_request(struct d
- static void dock_notify(struct dock_station *ds, u32 event)
- {
- 	acpi_handle handle = ds->handle;
--	struct acpi_device *ad;
-+	struct acpi_device *adev = NULL;
- 	int surprise_removal = 0;
- 
- 	/*
-@@ -632,7 +632,8 @@ static void dock_notify(struct dock_stat
- 	switch (event) {
- 	case ACPI_NOTIFY_BUS_CHECK:
- 	case ACPI_NOTIFY_DEVICE_CHECK:
--		if (!dock_in_progress(ds) && acpi_bus_get_device(handle, &ad)) {
-+		acpi_bus_get_device(handle, &adev);
-+		if (!dock_in_progress(ds) && !acpi_device_enumerated(adev)) {
- 			begin_dock(ds);
- 			dock(ds);
- 			if (!dock_present(ds)) {
 
