@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752168AbaBHQjE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 11:39:04 -0500
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:60632 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752067AbaBHQip (ORCPT
+	id S1752180AbaBHQjd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 11:39:33 -0500
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:64958 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752060AbaBHQio (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 11:38:45 -0500
+	Sat, 8 Feb 2014 11:38:44 -0500
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 8/8] cgroup: remove cgroupfs_root->refcnt
-Date: Sat,  8 Feb 2014 11:38:29 -0500
-Message-Id: <1391877509-10855-9-git-send-email-tj@kernel.org>
+Subject: [PATCH 7/8] cgroup: rename cgroupfs_root->number_of_cgroups to ->nr_cgrps and make it atomic_t
+Date: Sat,  8 Feb 2014 11:38:28 -0500
+Message-Id: <1391877509-10855-8-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1391877509-10855-1-git-send-email-tj@kernel.org>
 References: <1391877509-10855-1-git-send-email-tj@kernel.org>
@@ -21,214 +21,112 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, cgroupfs_root and its ->top_cgroup are separated reference
-counted and the latter's is ignored.  There's no reason to do this
-separately.  This patch removes cgroupfs_root->refcnt and destroys
-cgroupfs_root when the top_cgroup is released.
+root->number_of_cgroups is currently an integer protected with
+cgroup_mutex.  Except for sanity checks and proc reporting, the only
+place it's used is to check whether the root has any child during
+remount; however, this is a bit flawed as the counter is not
+decremented when the cgroup is unlinked but when it's released,
+meaning that there could be an extended period where all cgroups are
+removed but remount is still not allowed because some internal objects
+are lingering.  While not perfect either, it'd be better to use
+emptiness test on root->top_cgroup.children.
 
-* cgroup_put() updated to ignore cgroup_is_dead() test for top
-  cgroups.  cgroup_free_fn() updated to handle root destruction when
-  releasing a top cgroup.
-
-* As root destruction is now bounced through cgroup destruction, it is
-  asynchronous.  Update cgroup_mount() so that it waits for pending
-  release which is currently implemented using msleep().  Converting
-  this to proper wait_queue isn't hard but likely unnecessary.
+This patch updates cgroup_remount() to test top_cgroup's children
+instead, which makes number_of_cgroups only actual usage statistics
+printing in proc implemented in proc_cgroupstats_show().  Let's
+shorten its name and make it an atomic_t so that we don't have to
+worry about its synchronization.  It's purely auxiliary at this point.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- include/linux/cgroup.h |  4 +--
- kernel/cgroup.c        | 86 ++++++++++++++++++++++----------------------------
- 2 files changed, 39 insertions(+), 51 deletions(-)
+ include/linux/cgroup.h |  4 ++--
+ kernel/cgroup.c        | 16 +++++++---------
+ 2 files changed, 9 insertions(+), 11 deletions(-)
 
 diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index b14abaf..6756c23 100644
+index 8202abb..b14abaf 100644
 --- a/include/linux/cgroup.h
 +++ b/include/linux/cgroup.h
-@@ -280,12 +280,10 @@ struct cgroupfs_root {
- 	/* The bitmask of subsystems attached to this hierarchy */
- 	unsigned long subsys_mask;
- 
--	atomic_t refcnt;
--
- 	/* Unique id for this hierarchy. */
- 	int hierarchy_id;
- 
--	/* The root cgroup for this hierarchy */
-+	/* The root cgroup.  Root is destroyed on its release. */
+@@ -288,8 +288,8 @@ struct cgroupfs_root {
+ 	/* The root cgroup for this hierarchy */
  	struct cgroup top_cgroup;
  
- 	/* Number of cgroups in the hierarchy, used only for /proc/cgroups */
+-	/* Tracks how many cgroups are currently defined in hierarchy.*/
+-	int number_of_cgroups;
++	/* Number of cgroups in the hierarchy, used only for /proc/cgroups */
++	atomic_t nr_cgrps;
+ 
+ 	/* A list running through the active hierarchies */
+ 	struct list_head root_list;
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 13a8d2a..4c53e90 100644
+index a48f4ca..13a8d2a 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -53,6 +53,7 @@
- #include <linux/vmalloc.h> /* TODO: replace with more sophisticated array */
- #include <linux/flex_array.h> /* used in cgroup_attach_task */
- #include <linux/kthread.h>
-+#include <linux/delay.h>
- 
- #include <linux/atomic.h>
- 
-@@ -728,37 +729,16 @@ static void cgroup_free_root(struct cgroupfs_root *root)
+@@ -758,7 +758,7 @@ static void cgroup_put_root(struct cgroupfs_root *root)
  	}
- }
- 
--static void cgroup_get_root(struct cgroupfs_root *root)
--{
--	/*
--	 * The caller must ensure that @root is alive, which can be
--	 * achieved by holding a ref on one of the member cgroups or
--	 * following a registered reference to @root while holding
--	 * cgroup_tree_mutex.
--	 */
--	WARN_ON_ONCE(atomic_read(&root->refcnt) <= 0);
--	atomic_inc(&root->refcnt);
--}
--
--static void cgroup_put_root(struct cgroupfs_root *root)
-+static void cgroup_destroy_root(struct cgroupfs_root *root)
- {
- 	struct cgroup *cgrp = &root->top_cgroup;
- 	struct cgrp_cset_link *link, *tmp_link;
- 	int ret;
- 
--	/*
--	 * @root's refcnt reaching zero and its deregistration should be
--	 * atomic w.r.t. cgroup_tree_mutex.  This ensures that
--	 * cgroup_get_root() is safe to invoke if @root is registered.
--	 */
- 	mutex_lock(&cgroup_tree_mutex);
--	if (!atomic_dec_and_test(&root->refcnt)) {
--		mutex_unlock(&cgroup_tree_mutex);
--		return;
--	}
  	mutex_lock(&cgroup_mutex);
  
--	BUG_ON(atomic_read(&root->nr_cgrps) != 1);
-+	BUG_ON(atomic_read(&root->nr_cgrps));
+-	BUG_ON(root->number_of_cgroups != 1);
++	BUG_ON(atomic_read(&root->nr_cgrps) != 1);
  	BUG_ON(!list_empty(&cgrp->children));
  
  	/* Rebind all subsystems back to the default hierarchy */
-@@ -929,21 +909,24 @@ static void cgroup_free_fn(struct work_struct *work)
+@@ -928,9 +928,7 @@ static void cgroup_free_fn(struct work_struct *work)
+ {
  	struct cgroup *cgrp = container_of(work, struct cgroup, destroy_work);
  
- 	atomic_dec(&cgrp->root->nr_cgrps);
--
--	/*
--	 * We get a ref to the parent, and put the ref when this cgroup is
--	 * being freed, so it's guaranteed that the parent won't be
--	 * destroyed before its children.
--	 */
--	cgroup_put(cgrp->parent);
--
--	/* put the root reference that we took when we created the cgroup */
--	cgroup_put_root(cgrp->root);
--
- 	cgroup_pidlist_destroy_all(cgrp);
- 
--	kernfs_put(cgrp->kn);
--	kfree(cgrp);
-+	if (cgrp->parent) {
-+		/*
-+		 * We get a ref to the parent, and put the ref when this
-+		 * cgroup is being freed, so it's guaranteed that the
-+		 * parent won't be destroyed before its children.
-+		 */
-+		cgroup_put(cgrp->parent);
-+		kernfs_put(cgrp->kn);
-+		kfree(cgrp);
-+	} else {
-+		/*
-+		 * This is top cgroup's refcnt reaching zero, which
-+		 * indicates that the root should be released.
-+		 */
-+		cgroup_destroy_root(cgrp->root);
-+	}
- }
- 
- static void cgroup_free_rcu(struct rcu_head *head)
-@@ -965,7 +948,7 @@ static void cgroup_put(struct cgroup *cgrp)
- {
- 	if (!atomic_dec_and_test(&cgrp->refcnt))
- 		return;
--	if (WARN_ON_ONCE(!cgroup_is_dead(cgrp)))
-+	if (WARN_ON_ONCE(cgrp->parent && !cgroup_is_dead(cgrp)))
- 		return;
+-	mutex_lock(&cgroup_mutex);
+-	cgrp->root->number_of_cgroups--;
+-	mutex_unlock(&cgroup_mutex);
++	atomic_dec(&cgrp->root->nr_cgrps);
  
  	/*
-@@ -1354,7 +1337,6 @@ static void init_cgroup_root(struct cgroupfs_root *root)
- {
- 	struct cgroup *cgrp = &root->top_cgroup;
- 
--	atomic_set(&root->refcnt, 1);
- 	INIT_LIST_HEAD(&root->root_list);
- 	atomic_set(&root->nr_cgrps, 1);
- 	cgrp->root = root;
-@@ -1483,7 +1465,7 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
- 	struct cgroup_sb_opts opts;
- 	struct dentry *dentry;
- 	int ret;
--
-+retry:
- 	mutex_lock(&cgroup_tree_mutex);
- 	mutex_lock(&cgroup_mutex);
- 
-@@ -1529,7 +1511,21 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
- 			}
- 		}
- 
--		cgroup_get_root(root);
-+		/*
-+		 * A root's lifetime is governed by its top cgroup.  Zero
-+		 * ref indicate that the root is being destroyed.  Wait for
-+		 * destruction to complete so that the subsystems are free.
-+		 * We can use wait_queue for the wait but this path is
-+		 * super cold.  Let's just sleep for a bit and retry.
-+		 */
-+		if (!atomic_inc_not_zero(&root->top_cgroup.refcnt)) {
-+			mutex_unlock(&cgroup_mutex);
-+			mutex_unlock(&cgroup_tree_mutex);
-+			msleep(10);
-+			goto retry;
-+		}
-+
-+		ret = 0;
- 		goto out_unlock;
+ 	 * We get a ref to the parent, and put the ref when this cgroup is
+@@ -1318,7 +1316,7 @@ static int cgroup_remount(struct kernfs_root *kf_root, int *flags, char *data)
  	}
  
-@@ -1556,7 +1552,7 @@ out_unlock:
+ 	/* remounting is not allowed for populated hierarchies */
+-	if (root->number_of_cgroups > 1) {
++	if (!list_empty(&root->top_cgroup.children)) {
+ 		ret = -EBUSY;
+ 		goto out_unlock;
+ 	}
+@@ -1358,7 +1356,7 @@ static void init_cgroup_root(struct cgroupfs_root *root)
  
- 	dentry = kernfs_mount(fs_type, flags, root->kf_root);
- 	if (IS_ERR(dentry))
--		cgroup_put_root(root);
-+		cgroup_put(&root->top_cgroup);
- 	return dentry;
- }
+ 	atomic_set(&root->refcnt, 1);
+ 	INIT_LIST_HEAD(&root->root_list);
+-	root->number_of_cgroups = 1;
++	atomic_set(&root->nr_cgrps, 1);
+ 	cgrp->root = root;
+ 	init_cgroup_housekeeping(cgrp);
+ 	idr_init(&root->cgroup_idr);
+@@ -1461,7 +1459,7 @@ static int cgroup_setup_root(struct cgroupfs_root *root)
+ 	write_unlock(&css_set_lock);
  
-@@ -1565,7 +1561,7 @@ static void cgroup_kill_sb(struct super_block *sb)
- 	struct kernfs_root *kf_root = kernfs_root_from_sb(sb);
- 	struct cgroupfs_root *root = cgroup_root_from_kf(kf_root);
+ 	BUG_ON(!list_empty(&root_cgrp->children));
+-	BUG_ON(root->number_of_cgroups != 1);
++	BUG_ON(atomic_read(&root->nr_cgrps) != 1);
  
--	cgroup_put_root(root);
-+	cgroup_put(&root->top_cgroup);
- 	kernfs_kill_sb(sb);
- }
+ 	kernfs_activate(root_cgrp->kn);
+ 	ret = 0;
+@@ -3707,7 +3705,7 @@ static long cgroup_create(struct cgroup *parent, const char *name,
  
-@@ -3706,12 +3702,6 @@ static long cgroup_create(struct cgroup *parent, const char *name,
  	/* allocation complete, commit to creation */
  	list_add_tail_rcu(&cgrp->sibling, &cgrp->parent->children);
- 	atomic_inc(&root->nr_cgrps);
--
--	/*
--	 * Grab a reference on the root and parent so that they don't get
--	 * deleted while there are child cgroups.
--	 */
--	cgroup_get_root(root);
- 	cgroup_get(parent);
+-	root->number_of_cgroups++;
++	atomic_inc(&root->nr_cgrps);
  
  	/*
+ 	 * Grab a reference on the root and parent so that they don't get
+@@ -4279,7 +4277,7 @@ static int proc_cgroupstats_show(struct seq_file *m, void *v)
+ 	for_each_subsys(ss, i)
+ 		seq_printf(m, "%s\t%d\t%d\t%d\n",
+ 			   ss->name, ss->root->hierarchy_id,
+-			   ss->root->number_of_cgroups, !ss->disabled);
++			   atomic_read(&ss->root->nr_cgrps), !ss->disabled);
+ 
+ 	mutex_unlock(&cgroup_mutex);
+ 	return 0;
 -- 
 1.8.5.3
 
