@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751396AbaBHTLN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 14:11:13 -0500
-Received: from smtp.gentoo.org ([140.211.166.183]:38962 "EHLO smtp.gentoo.org"
+	id S1751613AbaBHTMQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 14:12:16 -0500
+Received: from smtp.gentoo.org ([140.211.166.183]:39017 "EHLO smtp.gentoo.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751224AbaBHTLK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 14:11:10 -0500
+	id S1751014AbaBHTMN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Feb 2014 14:12:13 -0500
 From: Richard Yao <ryao@gentoo.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Eric Van Hensbergen <ericvh@gmail.com>, Ron Minnich <rminnich@sandia.gov>,
@@ -18,38 +18,43 @@ Cc: Eric Van Hensbergen <ericvh@gmail.com>, Ron Minnich <rminnich@sandia.gov>,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
         Will Deacon <will.deacon@arm.com>,
         Christopher Covington <cov@codeaurora.org>,
-        Brian Behlendorf <behlendorf1@llnl.gov>,
         Matthew Thode <mthode@mthode.org>
-Subject: [PATCH 0/2] Attention by Linus Torvalds needed to export symbol he wrote
-Date: Sat,  8 Feb 2014 14:11:01 -0500
-Message-Id: <1391886663-19583-1-git-send-email-ryao@gentoo.org>
+Subject: [PATCH 1/2] mm/vmalloc: export is_vmalloc_or_module_addr
+Date: Sat,  8 Feb 2014 14:12:09 -0500
+Message-Id: <1391886730-19667-2-git-send-email-ryao@gentoo.org>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1391886730-19667-1-git-send-email-ryao@gentoo.org>
+References: <1391886730-19667-1-git-send-email-ryao@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Linus,
-
-Loading kernel modules off 9p-virtio in a Linux guest causes VM termination
-because of a page fault in unmapped memory, so I wrote a patch to fix it. Dave
-Miller initially accepted it, but then rejected it because it calls an
-unexported symbol from a kernel module, which breaks the build when
-CONFIG_NET_9P_VIRTIO=m is set in the kernel config:
+9p-virtio needs is_vmalloc_or_module_addr exported before a patch can be
+merged to prevent the virtio zero-copy routines from triggering a
+hypervisor page fault when loading kernel modules:
 
 https://groups.google.com/forum/#!topic/linux.kernel/eRR7AyLE29Y
 
->From what I can tell, I need the original author of a symbol to sign-off on any
-patch exporting it. git blame says that the original author is you, so I am
-sending this pull request to you for approval.
+Without this export, the kernel build breaks with that patch applied and
+CONFIG_NET_9P_VIRTIO=m. With this export in place, all is well.
 
-Richard Yao (2):
-  mm/vmalloc: export is_vmalloc_or_module_addr
-  9p/trans_virtio.c: Fix broken zero-copy on vmalloc() buffers
+Signed-off-by: Richard Yao <ryao@gentoo.org>
+---
+ mm/vmalloc.c | 1 +
+ 1 file changed, 1 insertion(+)
 
- mm/vmalloc.c          | 1 +
- net/9p/trans_virtio.c | 5 ++++-
- 2 files changed, 5 insertions(+), 1 deletion(-)
-
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index 0fdf968..8a2e54f 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -218,6 +218,7 @@ int is_vmalloc_or_module_addr(const void *x)
+ #endif
+ 	return is_vmalloc_addr(x);
+ }
++EXPORT_SYMBOL(is_vmalloc_or_module_addr);
+ 
+ /*
+  * Walk a vmap address to the struct page it maps.
 -- 
 1.8.3.2
 
