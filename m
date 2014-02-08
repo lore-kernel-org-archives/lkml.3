@@ -1,217 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751606AbaBHLd7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 06:33:59 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:35452 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751140AbaBHLd5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 06:33:57 -0500
-From: Laszlo Papp <lpapp@kde.org>
-To: lee.jones@linaro.org
-Cc: linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
-        Laszlo Papp <lpapp@kde.org>
-Subject: [PATCH v2] mfd: MAX6650/6651 support
-Date: Sat,  8 Feb 2014 11:33:39 +0000
-Message-Id: <1391859219-3102-1-git-send-email-lpapp@kde.org>
-X-Mailer: git-send-email 1.8.5.4
+	id S1751620AbaBHLj0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 06:39:26 -0500
+Received: from hofr.at ([212.69.189.236]:60547 "EHLO mail.hofr.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751140AbaBHLjY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Feb 2014 06:39:24 -0500
+Date: Sat, 8 Feb 2014 12:39:20 +0100
+From: Nicholas Mc Guire <der.herr@hofr.at>
+To: linux-rt-users@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, rostedt@goodmis.org, tglx@linutronix.de,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Andreas Platschek <platschek@ict.tuwien.ac.at>
+Subject: [PATCH RT] Cleanup of unnecessary do while 0 in api mappings
+Message-ID: <20140208113920.GA3861@opentech.at>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MAX6650/MAX6651 chip is a multi-function device with I2C busses. The
-chip includes fan-speed regulators and monitors, GPIO, and alarm.
 
-This patch is an initial release of a MAX6650/6651 MFD driver that
-supports to enable the chip with its primary I2C bus that will connect
-the hwmon, and then the gpio devices for now.
+Cleanup of unnecessary do while 0 in api mappings
 
-Signed-off-by: Laszlo Papp <lpapp@kde.org>
+With the migration pushdonw a few of the do{ }while(0)
+loops became obsolete but got left over - this patch 
+only removes this fallout.
+
+Patch applies on top of 3.12.9-rt13
+
+Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
 ---
- drivers/mfd/Kconfig                 | 11 +++++
- drivers/mfd/Makefile                |  1 +
- drivers/mfd/max665x.c               | 88 +++++++++++++++++++++++++++++++++++++
- include/linux/mfd/max665x-private.h | 42 ++++++++++++++++++
- 4 files changed, 142 insertions(+)
- create mode 100644 drivers/mfd/max665x.c
- create mode 100644 include/linux/mfd/max665x-private.h
+ include/linux/rwlock_rt.h |   20 ++++----------------
+ 1 files changed, 4 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 49bb445..e25be62 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -368,6 +368,17 @@ config MFD_MAX8907
- 	  accessing the device; additional drivers must be enabled in order
- 	  to use the functionality of the device.
+diff --git a/include/linux/rwlock_rt.h b/include/linux/rwlock_rt.h
+index e85a5df..4c729ce 100644
+--- a/include/linux/rwlock_rt.h
++++ b/include/linux/rwlock_rt.h
+@@ -42,10 +42,7 @@ extern void __rt_rwlock_init(rwlock_t *rwlock, char *name, struct lock_class_key
+ 		flags = rt_write_lock_irqsave(lock);	\
+ 	} while (0)
  
-+config MFD_MAX665X
-+	bool "Maxim Semiconductor MAX6650/MAX6651 Support"
-+	select MFD_CORE
-+	depends on I2C
-+	select REGMAP_I2C
-+	help
-+	  Say yes here to support for Maxim Semiconductor MAX6650/MAX6651. This is
-+	  a fan speed regulator and monitor IC. This driver provies common support
-+	  for accessing the device, additional drivers must be enabled in order to
-+	  use the functionality of the device.
-+
- config MFD_MAX8925
- 	bool "Maxim Semiconductor MAX8925 PMIC Support"
- 	depends on I2C=y
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 5aea5ef..63668c5 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -111,6 +111,7 @@ obj-$(CONFIG_MFD_DA9055)	+= da9055.o
- da9063-objs			:= da9063-core.o da9063-irq.o da9063-i2c.o
- obj-$(CONFIG_MFD_DA9063)	+= da9063.o
+-#define read_lock(lock)					\
+-	do {						\
+-		rt_read_lock(lock);			\
+-	} while (0)
++#define read_lock(lock)		rt_read_lock(lock)
  
-+obj-$(CONFIG_MFD_MAX665X)	+= max665x.o
- obj-$(CONFIG_MFD_MAX14577)	+= max14577.o
- obj-$(CONFIG_MFD_MAX77686)	+= max77686.o max77686-irq.o
- obj-$(CONFIG_MFD_MAX77693)	+= max77693.o max77693-irq.o
-diff --git a/drivers/mfd/max665x.c b/drivers/mfd/max665x.c
-new file mode 100644
-index 0000000..395373fe
---- /dev/null
-+++ b/drivers/mfd/max665x.c
-@@ -0,0 +1,88 @@
-+/*
-+ * Device access for MAX6650-MAX6651
-+ *
-+ * Copyright(c) 2013 Polatis Ltd.
-+ *
-+ * Author: Laszlo Papp <laszlo.papp@polatis.com>
-+ *
-+ *  This program is free software; you can redistribute  it and/or modify it
-+ *  under  the terms of  the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the  License, or (at your
-+ *  option) any later version.
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/mfd/core.h>
-+#include <linux/module.h>
-+#include <linux/i2c.h>
-+
-+#include <linux/mfd/max665x-private.h>
-+
-+static struct mfd_cell max665x_devs[] = {
-+	{ .name = "max6651-gpio", },
-+	{ .name = "max6650", }, /* hwmon driver */
-+	{},
-+};
-+
-+const struct regmap_config max665x_regmap_config = {
-+	.reg_bits = 5,
-+};
-+
-+static int max665x_probe(struct i2c_client *i2c,
-+			    const struct i2c_device_id *id)
-+{
-+	struct max665x_dev *max665x;
-+	int ret;
-+
-+	max665x = devm_kzalloc(&i2c->dev, sizeof(*max665x), GFP_KERNEL);
-+	if (!max665x)
-+		return -ENOMEM;
-+
-+	i2c_set_clientdata(i2c, max665x);
-+	max665x->dev = &i2c->dev;
-+	max665x->i2c = i2c;
-+	max665x->map = regmap_init_i2c(i2c, &max665x_regmap_config);
-+
-+	mutex_init(&max665x->iolock);
-+
-+	ret = mfd_add_devices(max665x->dev, -1, max665x_devs,
-+			ARRAY_SIZE(max665x_devs),
-+			NULL, 0, NULL);
-+
-+	if (ret < 0)
-+		dev_err(max665x->dev, "failed to register child devices\n");
-+
-+	return ret;
-+}
-+
-+static int max665x_remove(struct i2c_client *i2c)
-+{
-+	struct max665x_dev *max665x = i2c_get_clientdata(i2c);
-+
-+	mfd_remove_devices(max665x->dev);
-+
-+	return 0;
-+}
-+
-+static const struct i2c_device_id max665x_id[] = {
-+	{ "max6650", TYPE_MAX6650 },
-+	{ "max6651", TYPE_MAX6651 },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(i2c, max665x_id);
-+
-+static struct i2c_driver max665x_driver = {
-+	.driver = {
-+		.name = "max665x",
-+		.owner = THIS_MODULE,
-+	},
-+	.probe = max665x_probe,
-+	.remove = max665x_remove,
-+	.id_table = max665x_id,
-+};
-+
-+module_i2c_driver(max665x_driver);
-+
-+MODULE_AUTHOR("Laszlo Papp <laszlo.papp@polatis.com>");
-+MODULE_DESCRIPTION("MAX6650-MAX6651 MFD");
-+MODULE_LICENSE("GPL");
-diff --git a/include/linux/mfd/max665x-private.h b/include/linux/mfd/max665x-private.h
-new file mode 100644
-index 0000000..92da00c
---- /dev/null
-+++ b/include/linux/mfd/max665x-private.h
-@@ -0,0 +1,42 @@
-+/*
-+ * max665x-private.h - Driver for the Maxim 6650/6651
-+ *
-+ * Copyright 2013 Polatis Ltd.
-+ *
-+ * Author: Milo Kim <laszlo.papp@polatis.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#ifndef __LINUX_MFD_MAX665X_PRIVATE_H
-+#define __LINUX_MFD_MAX665X_PRIVATE_H
-+
-+#include <linux/i2c.h>
-+#include <linux/export.h>
-+#include <linux/regmap.h>
-+
-+struct max665x_dev {
-+	struct device *dev;
-+	struct mutex iolock;
-+
-+	struct i2c_client *i2c;
-+	struct regmap     *map;
-+
-+	int type;
-+};
-+
-+enum max665x_types {
-+	TYPE_MAX6650,
-+	TYPE_MAX6651,
-+};
-+
-+#endif
+ #define read_lock_bh(lock)				\
+ 	do {						\
+@@ -55,10 +52,7 @@ extern void __rt_rwlock_init(rwlock_t *rwlock, char *name, struct lock_class_key
+ 
+ #define read_lock_irq(lock)	read_lock(lock)
+ 
+-#define write_lock(lock)				\
+-	do {						\
+-		rt_write_lock(lock);			\
+-	} while (0)
++#define write_lock(lock)	rt_write_lock(lock)
+ 
+ #define write_lock_bh(lock)				\
+ 	do {						\
+@@ -68,10 +62,7 @@ extern void __rt_rwlock_init(rwlock_t *rwlock, char *name, struct lock_class_key
+ 
+ #define write_lock_irq(lock)	write_lock(lock)
+ 
+-#define read_unlock(lock)				\
+-	do {						\
+-		rt_read_unlock(lock);			\
+-	} while (0)
++#define read_unlock(lock)	rt_read_unlock(lock)
+ 
+ #define read_unlock_bh(lock)				\
+ 	do {						\
+@@ -81,10 +72,7 @@ extern void __rt_rwlock_init(rwlock_t *rwlock, char *name, struct lock_class_key
+ 
+ #define read_unlock_irq(lock)	read_unlock(lock)
+ 
+-#define write_unlock(lock)				\
+-	do {						\
+-		rt_write_unlock(lock);			\
+-	} while (0)
++#define write_unlock(lock)	rt_write_unlock(lock)
+ 
+ #define write_unlock_bh(lock)				\
+ 	do {						\
 -- 
-1.8.5.4
+1.7.2.5
 
