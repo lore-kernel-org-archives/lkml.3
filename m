@@ -1,34 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751400AbaBHGTm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 01:19:42 -0500
-Received: from smtp13.mailbonus.biz ([192.3.19.28]:37385 "EHLO smtp3.kxtaa.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751316AbaBHGTl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 01:19:41 -0500
-X-Greylist: delayed 571 seconds by postgrey-1.27 at vger.kernel.org; Sat, 08 Feb 2014 01:19:40 EST
-Date: Sat, 8 Feb 2014 14:10:08 +0800
-From: "Iris" <war3@smtp3.kxtaa.net>
-Reply-To: alina@tjdekay.com
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: Welding Electrode/Welding Wire/Sintered Flux
-Message-ID: <201402081410086870278@smtp3.kxtaa.net>
-X-Mailer: Foxmail 6, 10, 201, 20 [cn]
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="GB2312"
+	id S1751071AbaBHGfV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 01:35:21 -0500
+Received: from elasmtp-banded.atl.sa.earthlink.net ([209.86.89.70]:36925 "EHLO
+	elasmtp-banded.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750748AbaBHGfU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Feb 2014 01:35:20 -0500
+X-Greylist: delayed 626 seconds by postgrey-1.27 at vger.kernel.org; Sat, 08 Feb 2014 01:35:19 EST
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=dk20050327; d=mindspring.com;
+  b=DAc5V9XIXz9DbUwu5WcMy++gZQkHCpksHTNRCrOAgDR4TlPbRZSpubHkI5NQA4n+;
+  h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-ELNK-Trace:X-Originating-IP;
+Date: Sat, 8 Feb 2014 01:22:25 -0500
+From: Bill Fink <billfink@mindspring.com>
+To: Marek Belisko <marek@goldelico.com>
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
+        linville@tuxdriver.com, johannes@sipsolutions.net, davem@davemloft.net,
+        grant.likely@linaro.org, neilb@suse.de, hns@goldelico.com,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH] net: rfkill-regulator: Add devicetree support.
+Message-Id: <20140208012225.d7a311c7.billfink@mindspring.com>
+In-Reply-To: <1391802529-29861-1-git-send-email-marek@goldelico.com>
+References: <1391802529-29861-1-git-send-email-marek@goldelico.com>
+X-Mailer: Sylpheed 2.6.0 (GTK+ 2.16.6; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-ELNK-Trace: c598f748b88b6fd49c7f779228e2f6aeda0071232e20db4df68acaa64afcddb27586aa0eefb35c45350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
+X-Originating-IP: 71.179.3.200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s186Jl9o019943
 
-Dear Manager,
+On Fri,  7 Feb 2014, Marek Belisko wrote:
 
-I'm Iris. Our company dealding welding materials for many years. Mainly products are Welding Electrode/Welding Wire/Sintered Flux , with diferent size and type.
+> Signed-off-by: NeilBrown <neilb@suse.de>
+> Signed-off-by: Marek Belisko <marek@goldelico.com>
+> ---
+> Based on Neil's patch and extend for documentation and bindings include.
+> 
+>  .../bindings/net/rfkill/rfkill-relugator.txt       | 28 ++++++++++++++++
 
-Should you have any questions, pls do not hesitate to contact me. Best price will be supplied to you.
+                                  ^^^^^^^^^
+                                  Typo in file name.
 
-Tks & br,
+					-Bill
 
-Irisÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
+
+>  include/dt-bindings/net/rfkill-regulator.h         | 23 +++++++++++++
+>  net/rfkill/rfkill-regulator.c                      | 38 ++++++++++++++++++++++
+>  3 files changed, 89 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/net/rfkill/rfkill-relugator.txt
+>  create mode 100644 include/dt-bindings/net/rfkill-regulator.h
+> 
+> diff --git a/Documentation/devicetree/bindings/net/rfkill/rfkill-relugator.txt b/Documentation/devicetree/bindings/net/rfkill/rfkill-relugator.txt
+> new file mode 100644
+> index 0000000..cdb7dd7
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/net/rfkill/rfkill-relugator.txt
+> @@ -0,0 +1,28 @@
+> +Regulator consumer for rfkill devices
+> +
+> +Required properties:
+> +- compatible   : Must be "rfkill-regulator".
+> +- label  : Name of rfkill device.
+> +- type  : Type of rfkill device.
+> +
+> +Possible values (defined in include/dt-bindings/net/rfkill-regulator.h):
+> +	RFKILL_TYPE_ALL
+> +	RFKILL_TYPE_WLAN
+> +	RFKILL_TYPE_BLUETOOTH
+> +	RFKILL_TYPE_UWB
+> +	RFKILL_TYPE_WIMAX
+> +	RFKILL_TYPE_WWAN
+> +	RFKILL_TYPE_GPS
+> +	RFKILL_TYPE_FM
+> +	RFKILL_TYPE_NFC
+> +
+> +- vrfkill-supply - regulator device.
+> +
+> +Example:
+> +	gps-rfkill {
+> +		compatible = "rfkill-regulator";
+> +		label = "GPS";
+> +		type = <RFKILL_TYPE_GPS>;
+> +		vrfkill-supply = <&reg>;
+> +	};
+> +
