@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751383AbaBHE6Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 23:58:16 -0500
-Received: from co9ehsobe001.messaging.microsoft.com ([207.46.163.24]:27443
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751271AbaBHE6P (ORCPT
+	id S1750862AbaBHFCe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 00:02:34 -0500
+Received: from nm4-vm5.bullet.mail.gq1.yahoo.com ([98.136.218.164]:40981 "EHLO
+	nm4-vm5.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750717AbaBHFCc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 23:58:15 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzzz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Sat, 8 Feb 2014 12:58:29 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: <linux-kernel@vger.kernel.org>
-CC: <alsa-devel@alsa-project.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [alsa-devel] v3.14-rc1 locking bug in system suspend
-Message-ID: <20140208045824.GB10195@S2101-09.ap.freescale.net>
-References: <20140205145408.GA3708@S2101-09.ap.freescale.net>
- <20140206145509.GB6610@S2101-09.ap.freescale.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140206145509.GB6610@S2101-09.ap.freescale.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	Sat, 8 Feb 2014 00:02:32 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=gcom1024; d=yahoo.com;
+	b=l0nRgGyGRsLpTj7O0Ufj4seHrKF+lKHGdoyFWXI44xMTA5BixfTmGh4Oi9PKvorJcwaA3djQNkNwyuZhxDiyYGbKNSZOHckoHDi5CTDTHP3Z5sUfLN79YYGJViunqXF5h8LYWJYKkEvOEEVKEUyICoA/ao+ngD3p7hbWow/ty8Q=;
+X-Yahoo-Newman-Id: 225290.3987.bm@smtp223.mail.gq1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: dVqKtQIVM1kzBbTu5H7SE6GNei77ho9HGlQPO4x47j8L83E
+ JiIgvo4FqyMWEJZOZ5PmaumTT246Mvg6ttxLF0p5LldlFnoXL5HFZoQS4lhs
+ T9x1aThu6hJFWQNyT.Rq0suqX8u4lXU6vo7qmKSN56J_zb_O8zxbpPFEuyVA
+ 15Y13eQllvUvomJfmByvEKtGYV3k8oU010TQ0VEkdgplVjZkWxI2Pwsowbwv
+ IhR6YiIoLNLzr4baBU71XO6h7m7b.NK04yPGlJR9B2LZqmQT4pxx9HGSLERt
+ w.An2X5DJpsQvCjPrPT0a.reRZDkAFOyiAu6hI0eWLls.IIftMo4WUPQoF1K
+ uOu.CWIneF7TpvSywHnRV59Zncp2AdCyTW.6b7G75Z9TDprBjLxxf6EPqnsM
+ 1ISxLU4yhZN84bPgULIiHgaekwmppGtpRJs2oHuo2wjxJ3BDi3V3ZlEpPKMe
+ KvkGz19net6X6fk59am55Z1a7wlulPau_pGd1KqHrlsgcUqw3FJFAYxAKCpr
+ 9awE8IzKJcSuk7QxU5UsVO4TiGo7RNGulKHgJZUH40bsT1HJH0g--
+X-Yahoo-SMTP: Ua.BYCGswBCLcNpMqiQEtkMTjL08M6XQy5ZdmA--
+X-Rocket-Received: from localhost.localdomain (chase.southwood@50.129.102.163 with plain [98.138.105.21])
+        by smtp223.mail.gq1.yahoo.com with SMTP; 08 Feb 2014 05:02:32 +0000 UTC
+From: Chase Southwood <chase.southwood@yahoo.com>
+To: gregkh@linuxfoundation.org
+Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Chase Southwood <chase.southwood@yahoo.com>
+Subject: [PATCH] Staging: comedi: fix memory leak in comedi_bond.c
+Date: Fri,  7 Feb 2014 23:02:27 -0600
+Message-Id: <1391835747-3714-1-git-send-email-chase.southwood@yahoo.com>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 06, 2014 at 10:55:13PM +0800, Shawn Guo wrote:
-> On Wed, Feb 05, 2014 at 10:54:10PM +0800, Shawn Guo wrote:
-> > I start seeing the following locking bug on IMX6 with suspend operation
-> > after moving to v3.14-rc1.  Before I start looking into the issue, I
-> > would like to confirm if it's an IMX specific problem or one seen on
-> > other platforms.  Please ask if you need more info.
-> 
-> Sorry.  This is not a new bug of v3.14-rc1.  It's been there with
-> v3.13-rc for a while.  It looks like there is something wrong in the
-> use of power_lock in struct snd_card.  Will dig into it.
+We allocate bdev and then krealloc the devs pointer in order to add bdev
+at the end of the devpriv->devs array list.  But if for some reason this
+krealloc fails, we need to free bdev before returning an error otherwise
+this memory is leaked.
 
-Okay.  This is an IMX specific problem caused by audio driver.  I will
-send a fix to alsa-devel list shortly.
+Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
+---
+ drivers/staging/comedi/drivers/comedi_bond.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-Shawn
+diff --git a/drivers/staging/comedi/drivers/comedi_bond.c b/drivers/staging/comedi/drivers/comedi_bond.c
+index 51a59e5..406aedb 100644
+--- a/drivers/staging/comedi/drivers/comedi_bond.c
++++ b/drivers/staging/comedi/drivers/comedi_bond.c
+@@ -254,6 +254,7 @@ static int do_dev_config(struct comedi_device *dev, struct comedi_devconfig *it)
+ 			if (!devs) {
+ 				dev_err(dev->class_dev,
+ 					"Could not allocate memory. Out of memory?\n");
++				kfree(bdev);
+ 				return -ENOMEM;
+ 			}
+ 			devpriv->devs = devs;
+-- 
+1.8.5.3
 
