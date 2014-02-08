@@ -1,83 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751907AbaBHTOR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 14:14:17 -0500
-Received: from mail-la0-f51.google.com ([209.85.215.51]:45459 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751022AbaBHTOP (ORCPT
+	id S1751361AbaBHTlz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 14:41:55 -0500
+Received: from SpacedOut.fries.net ([67.64.210.234]:48396 "EHLO
+	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051AbaBHTly (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 14:14:15 -0500
-Message-ID: <52F6822B.1000804@cogentembedded.com>
-Date: Sat, 08 Feb 2014 23:14:51 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Sat, 8 Feb 2014 14:41:54 -0500
+Date: Sat, 8 Feb 2014 13:37:38 -0600
+From: David Fries <David@Fries.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, kbuild@01.org,
+        Evgeniy Polyakov <zbr@ioremap.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Revert ds1wm.c from "w1: hold bus_mutex in netlink and
+ search"
+Message-ID: <20140208193738.GV5342@spacedout.fries.net>
+References: <20140208074733.GZ26776@mwanda>
+ <20140208160358.GQ5342@spacedout.fries.net>
+ <20140208182846.GD10892@kroah.com>
+ <20140208183055.GT5342@spacedout.fries.net>
+ <20140208184450.GA5400@kroah.com>
+ <20140208191859.GU5342@spacedout.fries.net>
+ <20140208193513.GA13359@kroah.com>
 MIME-Version: 1.0
-To: shaobingqing <shaobingqing@bwstor.com.cn>, trond.myklebust@primarydata.com,
-        bfields@redhat.com, davem@davemloft.net
-CC: linux-nfs@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] SUNRPC: Allow one callback request to be received
- from two sk_buff
-References: <no> <1391826543-3102-1-git-send-email-shaobingqing@bwstor.com.cn>
-In-Reply-To: <1391826543-3102-1-git-send-email-shaobingqing@bwstor.com.cn>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140208193513.GA13359@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.9 (SpacedOut.fries.net [127.0.0.1]); Sat, 08 Feb 2014 13:37:40 -0600 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+This reverts ds1wm.c from commit d3a8a9dbb903c73a7ec2deae4c9b7d74b6834f4c.
+Of the three files changed ds1wm.c ds2490.c and w1_netlink.c, it turns out
+ds1wm.c was locking bus_mutex, but inside the loop and I missed it.
+Reverting ds1wm.c to the previous version.
 
-On 08-02-2014 6:29, shaobingqing wrote:
+Signed-off-by: David Fries <David@Fries.net>
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+---
+ drivers/w1/masters/ds1wm.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-> In current code, there only one struct rpc_rqst is prealloced. If one
-> callback request is received from two sk_buff, the xprt_alloc_bc_request
-> would be execute two times with the same transport->xid. The first time
-> xprt_alloc_bc_request will alloc one struct rpc_rqst and the TCP_RCV_COPY_DATA
-> bit of transport->tcp_flags will not be cleared. The second time
-> xprt_alloc_bc_request could not alloc struct rpc_rqst any more and NULL
-> pointer will be returned, then xprt_force_disconnect occur. I think one
-> callback request can be allowed to be received from two sk_buff.
-
-> Signed-off-by: shaobingqing <shaobingqing@bwstor.com.cn>
-[...]
-
-> diff --git a/include/linux/sunrpc/xprt.h b/include/linux/sunrpc/xprt.h
-> index cec7b9b..82bfe01 100644
-> --- a/include/linux/sunrpc/xprt.h
-> +++ b/include/linux/sunrpc/xprt.h
-> @@ -211,6 +211,7 @@ struct rpc_xprt {
->   						 * items */
->   	struct list_head	bc_pa_list;	/* List of preallocated
->   						 * backchannel rpc_rqst's */
-> +	struct rpc_rqst	*req_first;
-
-    Please align the variable name with the ones above and below.
-
->   #endif /* CONFIG_SUNRPC_BACKCHANNEL */
->   	struct list_head	recv;
->
-[...]
-> diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
-> index ee03d35..c43dca4 100644
-> --- a/net/sunrpc/xprtsock.c
-> +++ b/net/sunrpc/xprtsock.c
-> @@ -1272,7 +1272,16 @@ static inline int xs_tcp_read_callback(struct rpc_xprt *xprt,
->   				container_of(xprt, struct sock_xprt, xprt);
->   	struct rpc_rqst *req;
->
-> -	req = xprt_alloc_bc_request(xprt);
-> +	if (xprt->req_first != NULL &&
-> +			xprt->req_first->rq_xid == transport->tcp_xid) {
-
-    The continuation line should be aligned right under 'xprt' on the broken 
-up line, according to the networking coding style.
-
-> +		req = xprt->req_first;
-> +	} else if (xprt->req_first != NULL &&
-> +			xprt->req_first->rq_xid != transport->tcp_xid) {
-
-    Same here.
-
-WBR, Sergei
+diff --git a/drivers/w1/masters/ds1wm.c b/drivers/w1/masters/ds1wm.c
+index b077b8b..02df3b1 100644
+--- a/drivers/w1/masters/ds1wm.c
++++ b/drivers/w1/masters/ds1wm.c
+@@ -326,14 +326,13 @@ static void ds1wm_search(void *data, struct w1_master *master_dev,
+ 	unsigned slaves_found = 0;
+ 	unsigned int pass = 0;
+ 
+-	mutex_lock(&master_dev->bus_mutex);
+ 	dev_dbg(&ds1wm_data->pdev->dev, "search begin\n");
+ 	while (true) {
+ 		++pass;
+ 		if (pass > 100) {
+ 			dev_dbg(&ds1wm_data->pdev->dev,
+ 				"too many attempts (100), search aborted\n");
+-			break;
++			return;
+ 		}
+ 
+ 		mutex_lock(&master_dev->bus_mutex);
+@@ -440,7 +439,6 @@ static void ds1wm_search(void *data, struct w1_master *master_dev,
+ 	dev_dbg(&ds1wm_data->pdev->dev,
+ 		"pass: %d total: %d search done ms d bit pos: %d\n", pass,
+ 		slaves_found, ms_discrep_bit);
+-	mutex_unlock(&master_dev->bus_mutex);
+ }
+ 
+ /* --------------------------------------------------------------------- */
+-- 
+1.7.10.4
 
