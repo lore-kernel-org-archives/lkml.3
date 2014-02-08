@@ -1,63 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751529AbaBHVe3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 16:34:29 -0500
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:36847 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750863AbaBHVe2 (ORCPT
+	id S1751786AbaBHVgO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 16:36:14 -0500
+Received: from infra.glanzmann.de ([88.198.249.254]:32963 "EHLO
+	infra.glanzmann.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751022AbaBHVgM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 16:34:28 -0500
-From: Peter Wu <lekensteyn@gmail.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Bastien Traverse <bastien.traverse@gmail.com>,
-        linux-kernel@vger.kernel.org, francis.moro@gmail.com,
-        linux-pm@vger.kernel.org
-Subject: Re: 3.12: ethernet controller missing after resuming from suspend to RAM
-Date: Sat, 08 Feb 2014 22:34:23 +0100
-Message-ID: <2773460.zRzOP7I6SW@al>
-User-Agent: KMail/4.12.2 (Linux/3.13.2-custom; KDE/4.12.2; x86_64; ; )
-In-Reply-To: <6111963.dPYocWnfhd@vostro.rjw.lan>
-References: <52F2CC7B.80406@gmail.com> <8389318.FWd8nDZBjU@al> <6111963.dPYocWnfhd@vostro.rjw.lan>
+	Sat, 8 Feb 2014 16:36:12 -0500
+Date: Sat, 8 Feb 2014 22:36:08 +0100
+From: Thomas Glanzmann <thomas@glanzmann.de>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: John Ogness <john.ogness@linutronix.de>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        Linux Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: REGRESSION f54b311142a92ea2e42598e347b84e1655caf8e3 tcp auto
+ corking slows down iSCSI file system creation by factor of 70 [WAS: 4 TB
+ VMFS creation takes 15 minutes vs 26 seconds]
+Message-ID: <20140208213608.GA24328@glanzmann.de>
+Mail-Followup-To: Eric Dumazet <eric.dumazet@gmail.com>,
+	John Ogness <john.ogness@linutronix.de>,
+	Eric Dumazet <edumazet@google.com>,
+	"David S. Miller" <davem@davemloft.net>,
+	"Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+	target-devel <target-devel@vger.kernel.org>,
+	Linux Network Development <netdev@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <1391867404.10160.88.camel@edumazet-glaptop2.roam.corp.google.com>
+ <1391868816.10160.93.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20140208141905.GG20512@glanzmann.de>
+ <1391869805.10160.97.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20140208150001.GI20512@glanzmann.de>
+ <1391871986.10160.105.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20140208165732.GB22359@glanzmann.de>
+ <1391879318.10160.108.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20140208171531.GA23798@glanzmann.de>
+ <1391886759.10160.114.camel@edumazet-glaptop2.roam.corp.google.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391886759.10160.114.camel@edumazet-glaptop2.roam.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 08 February 2014 16:01:36 Rafael J. Wysocki wrote:
-> It looks like we fail to resume the device, then, for some reason.
-> 
-> That may be a PCIe link issue or something similar.
-> 
-> Is this a regression for you?  If so, what's the last kernel that didn't
-> have this problem?  Does 3.13.y (as released by Greg, without and distro
-> "improvements") have it too?
+Hello Eric,
 
-It was a regression from 3.11.x to 3.12 (and it is still broken with 3.13).
-Due to some mistakes from my side, I have tested more configs:
+> I was simply thinking about something like :
+> (might need further changes, but I guess this should solve your case)
 
-(based on Arch Linux 3.13.1 x86_64 config)
-(a) 3.13.2 with CONFIG_HOTPLUG_PCI=y, but CONFIG_HOTPLUG_PCI_ACPI=n works.
-(b) 3.13.2 with CONFIG_HOTPLUG_PCI=y and CONFIG_HOTPLUG_PCI_ACPI=y is broken.
-(c) 3.13.2 with CONFIG_HOTPLUG_PCI=n still works.
-(my stripped config)
-(d) 3.13.2 with CONFIG_HOTPLUG_PCI=y, but CONFIG_HOTPLUG_PCI_ACPI=n works.
+thank you for your patch. It did not apply on top of Linux tip, so I put
+in the changes manually and fixed up another call to tx_data that your
+forgot in your initial patch to make it apply.
 
-With CONFIG_HOTPLUG_PCI_ACPI=y, the only difference in dmesg is:
+I gave it another run, can you confirm that it now behaves better?
 
-(during boot)
-acpiphp: ACPI Hot Plug PCI Controller Driver version: 0.5
-(after resume)
-iwlwifi 0000:05:00.0: no hotplug settings from platform
-xhci_hcd 0000:02:00.0: no hotplug settings from platform
- (here, NetworkManager complains that a device has gone)
-iwlwifi 0000:05:00.0: no hotplug settings from platform
+https://thomas.glanzmann.de/tmp/tcp_auto_corking_on_patched_tcp_more.pcap.bz2
 
-Of course, with config (b), the ethernet adapter vanishes while it is still
-present with configs (a), (c) and (d).
+And look at that roundtrip graph it is perfect. Also filesystem is now
+created in 3 seconds instead of 4.
 
-Time to do a bisect?
+https://thomas.glanzmann.de/tmp/screenshot-mini-2014-02-08-22:34:57.png
 
-Peter
+Nab, do you consider this patch for upstream? Would you take if I clean
+it up?
 
+Cheers,
+        Thomas
+
+PS: I'm asleep for the next 8 hours.
+
+diff --git a/drivers/target/iscsi/iscsi_target_util.c b/drivers/target/iscsi/iscsi_target_util.c
+index e655b04..0eb9681 100644
+--- a/drivers/target/iscsi/iscsi_target_util.c
++++ b/drivers/target/iscsi/iscsi_target_util.c
+@@ -1168,7 +1168,7 @@ send_data:
+ 		iov_count = cmd->iov_misc_count;
+ 	}
+ 
+-	tx_sent = tx_data(conn, &iov[0], iov_count, tx_size);
++	tx_sent = tx_data(conn, &iov[0], iov_count, tx_size, 0);
+ 	if (tx_size != tx_sent) {
+ 		if (tx_sent == -EAGAIN) {
+ 			pr_err("tx_data() returned -EAGAIN\n");
+@@ -1199,7 +1199,8 @@ send_hdr:
+ 	iov.iov_base = cmd->pdu;
+ 	iov.iov_len = tx_hdr_size;
+ 
+-	tx_sent = tx_data(conn, &iov, 1, tx_hdr_size);
++	data_len = cmd->tx_size - tx_hdr_size - cmd->padding;
++        tx_sent = tx_data(conn, &iov, 1, tx_hdr_size, data_len ? MSG_MORE : 0);
+ 	if (tx_hdr_size != tx_sent) {
+ 		if (tx_sent == -EAGAIN) {
+ 			pr_err("tx_data() returned -EAGAIN\n");
+@@ -1208,7 +1209,6 @@ send_hdr:
+ 		return -1;
+ 	}
+ 
+-	data_len = cmd->tx_size - tx_hdr_size - cmd->padding;
+ 	/*
+ 	 * Set iov_off used by padding and data digest tx_data() calls below
+ 	 * in order to determine proper offset into cmd->iov_data[]
+@@ -1252,7 +1252,8 @@ send_padding:
+ 	if (cmd->padding) {
+ 		struct kvec *iov_p = &cmd->iov_data[iov_off++];
+ 
+-		tx_sent = tx_data(conn, iov_p, 1, cmd->padding);
++		tx_sent = tx_data(conn, iov_p, 1, cmd->padding,
++			          conn->conn_ops->DataDigest ? MSG_MORE : 0);
+ 		if (cmd->padding != tx_sent) {
+ 			if (tx_sent == -EAGAIN) {
+ 				pr_err("tx_data() returned -EAGAIN\n");
+@@ -1266,7 +1267,7 @@ send_datacrc:
+ 	if (conn->conn_ops->DataDigest) {
+ 		struct kvec *iov_d = &cmd->iov_data[iov_off];
+ 
+-		tx_sent = tx_data(conn, iov_d, 1, ISCSI_CRC_LEN);
++		tx_sent = tx_data(conn, iov_d, 1, ISCSI_CRC_LEN, 0);
+ 		if (ISCSI_CRC_LEN != tx_sent) {
+ 			if (tx_sent == -EAGAIN) {
+ 				pr_err("tx_data() returned -EAGAIN\n");
+@@ -1352,11 +1353,13 @@ static int iscsit_do_rx_data(
+ 
+ static int iscsit_do_tx_data(
+ 	struct iscsi_conn *conn,
+-	struct iscsi_data_count *count)
++	struct iscsi_data_count *count,
++	int flags)
+ {
+ 	int data = count->data_length, total_tx = 0, tx_loop = 0, iov_len;
+ 	struct kvec *iov_p;
+ 	struct msghdr msg;
++        struct msghdr msg = { .msg_flags = flags };
+ 
+ 	if (!conn || !conn->sock || !conn->conn_ops)
+ 		return -1;
+@@ -1366,8 +1369,6 @@ static int iscsit_do_tx_data(
+ 		return -1;
+ 	}
+ 
+-	memset(&msg, 0, sizeof(struct msghdr));
+-
+ 	iov_p = count->iov;
+ 	iov_len = count->iov_count;
+ 
+@@ -1411,7 +1412,8 @@ int tx_data(
+ 	struct iscsi_conn *conn,
+ 	struct kvec *iov,
+ 	int iov_count,
+-	int data)
++	int data,
++	int flags)
+ {
+ 	struct iscsi_data_count c;
+ 
+@@ -1424,7 +1426,7 @@ int tx_data(
+ 	c.data_length = data;
+ 	c.type = ISCSI_TX_DATA;
+ 
+-	return iscsit_do_tx_data(conn, &c);
++	return iscsit_do_tx_data(conn, &c, flags);
+ }
