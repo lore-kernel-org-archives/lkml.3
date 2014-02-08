@@ -1,45 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751294AbaBHGCe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 01:02:34 -0500
-Received: from mail-we0-f179.google.com ([74.125.82.179]:57532 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750748AbaBHGCd (ORCPT
+	id S1751038AbaBHGSp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 01:18:45 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:22855 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750748AbaBHGSo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 01:02:33 -0500
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH] ARM: smp_twd: Set the CLOCK_EVT_FEAT_PERCPU flag
-Date: Fri,  7 Feb 2014 22:02:09 -0800
-Message-Id: <1391839329-30971-1-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 1.8.5.4
+	Sat, 8 Feb 2014 01:18:44 -0500
+Message-ID: <52F5CBF6.4060901@huawei.com>
+Date: Sat, 8 Feb 2014 14:17:26 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/2] sched/rt: Remove leaf_rt_rq_list from struct rq
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The twd timers are per CPU devices. Set the corresponding flag to mark
-them as such.
+This is a leftover from commit e23ee74777f389369431d77390c4b09332ce026a
+("sched/rt: Simplify pull_rt_task() logic and remove .leaf_rt_rq_list").
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
 ---
- arch/arm/kernel/smp_twd.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/sched/core.c  | 1 -
+ kernel/sched/sched.h | 4 ----
+ 2 files changed, 5 deletions(-)
 
-diff --git a/arch/arm/kernel/smp_twd.c b/arch/arm/kernel/smp_twd.c
-index 6591e26fc13f..85407473c97d 100644
---- a/arch/arm/kernel/smp_twd.c
-+++ b/arch/arm/kernel/smp_twd.c
-@@ -294,7 +294,7 @@ static void twd_timer_setup(void)
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index a88f4a4..1f7d88a 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -6277,7 +6277,6 @@ void __init sched_init(void)
  
- 	clk->name = "local_timer";
- 	clk->features = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT |
--			CLOCK_EVT_FEAT_C3STOP;
-+			CLOCK_EVT_FEAT_C3STOP | CLOCK_EVT_FEAT_PERCPU;
- 	clk->rating = 350;
- 	clk->set_mode = twd_set_mode;
- 	clk->set_next_event = twd_set_next_event;
+ 		rq->rt.rt_runtime = def_rt_bandwidth.rt_runtime;
+ #ifdef CONFIG_RT_GROUP_SCHED
+-		INIT_LIST_HEAD(&rq->leaf_rt_rq_list);
+ 		init_tg_rt_entry(&root_task_group, &rq->rt, NULL, i, NULL);
+ #endif
+ 
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 88c85b2..1c83665 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -438,10 +438,6 @@ struct rq {
+ 	struct list_head leaf_cfs_rq_list;
+ #endif /* CONFIG_FAIR_GROUP_SCHED */
+ 
+-#ifdef CONFIG_RT_GROUP_SCHED
+-	struct list_head leaf_rt_rq_list;
+-#endif
+-
+ 	/*
+ 	 * This is part of a global counter where only the total sum
+ 	 * over all CPUs matters. A task can increase this counter on
 -- 
-1.8.5.4
-
+1.8.0.2
