@@ -1,81 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751999AbaBHVTN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 16:19:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:17878 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751400AbaBHVTM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 16:19:12 -0500
-Date: Sat, 8 Feb 2014 22:18:50 +0100
-From: Veaceslav Falico <vfalico@redhat.com>
-To: Rashika Kheria <rashika.kheria@gmail.com>
-Cc: linux-kernel@vger.kernel.org, josh@joshtriplett.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        Jiri Pirko <jiri@resnulli.us>, Pravin B Shelar <pshelar@nicira.com>,
-        Cong Wang <amwang@redhat.com>, netdev@vger.kernel.org
-Subject: Re: [PATCH 04/13] net: Mark functions as static in core/dev.c
-Message-ID: <20140208211850.GB1205@redhat.com>
-References: <6f029c895035908595957fb16ab445c82793c77d.1391888654.git.rashika.kheria@gmail.com>
- <ccd9586270a8ebb87aeadc10feff52857b7f907c.1391888654.git.rashika.kheria@gmail.com>
+	id S1752071AbaBHVTY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 16:19:24 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:46242 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752015AbaBHVTW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Feb 2014 16:19:22 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <ccd9586270a8ebb87aeadc10feff52857b7f907c.1391888654.git.rashika.kheria@gmail.com>
+In-Reply-To: <1391893281.19595.3.camel@x220>
+References: <1391893281.19595.3.camel@x220>
+Date: Sat, 8 Feb 2014 22:19:21 +0100
+X-Google-Sender-Auth: fP6yfV5YIYTjpdks5TzYZqBiN9M
+Message-ID: <CAMuHMdXV3N5ReDDkp2PEfF0sOFJxQw0pECBGgWmrg9Ex6YE-LQ@mail.gmail.com>
+Subject: Re: [PATCH] spi: omap2: use SUPERH, not SH
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Mark Brown <broonie@kernel.org>, linux-spi <linux-spi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 09, 2014 at 01:23:45AM +0530, Rashika Kheria wrote:
->Mark functions as static in core/dev.c because they are not used outside
->this file.
+On Sat, Feb 8, 2014 at 10:01 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> Commit 0079aae0f1e6 ("spi: omap2: Add build dependencies for
+> writel_relaxed()") added an optional Kconfig dependency on SH. That
+> Kconfig symbol doesn't exist. Apparently SUPERH was intended. Use that.
 >
->This eliminates the following warning in core/dev.c:
->net/core/dev.c:2806:5: warning: no previous prototype for ‘__dev_queue_xmit’ [-Wmissing-prototypes]
->net/core/dev.c:4640:5: warning: no previous prototype for ‘netdev_adjacent_sysfs_add’ [-Wmissing-prototypes]
->net/core/dev.c:4650:6: warning: no previous prototype for ‘netdev_adjacent_sysfs_del’ [-Wmissing-prototypes]
->
->Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 
-Reviewed-by: Veaceslav Falico <vfalico@redhat.com>
+Nice catch!
 
->---
-> net/core/dev.c |    6 +++---
-> 1 file changed, 3 insertions(+), 3 deletions(-)
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+
+BTW, MICROBLAZE can be added as well. It got writel_relaxed() in
+v3.14-rc1.
+
+> ---
+> Basically untested.
 >
->diff --git a/net/core/dev.c b/net/core/dev.c
->index 3721db7..4ad1b78 100644
->--- a/net/core/dev.c
->+++ b/net/core/dev.c
->@@ -2803,7 +2803,7 @@ EXPORT_SYMBOL(dev_loopback_xmit);
->  *      the BH enable code must have IRQs enabled so that it will not deadlock.
->  *          --BLG
->  */
->-int __dev_queue_xmit(struct sk_buff *skb, void *accel_priv)
->+static int __dev_queue_xmit(struct sk_buff *skb, void *accel_priv)
-> {
-> 	struct net_device *dev = skb->dev;
-> 	struct netdev_queue *txq;
->@@ -4637,7 +4637,7 @@ struct net_device *netdev_master_upper_dev_get_rcu(struct net_device *dev)
-> }
-> EXPORT_SYMBOL(netdev_master_upper_dev_get_rcu);
+>  drivers/spi/Kconfig | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 >
->-int netdev_adjacent_sysfs_add(struct net_device *dev,
->+static int netdev_adjacent_sysfs_add(struct net_device *dev,
-> 			      struct net_device *adj_dev,
-> 			      struct list_head *dev_list)
-> {
->@@ -4647,7 +4647,7 @@ int netdev_adjacent_sysfs_add(struct net_device *dev,
-> 	return sysfs_create_link(&(dev->dev.kobj), &(adj_dev->dev.kobj),
-> 				 linkname);
-> }
->-void netdev_adjacent_sysfs_del(struct net_device *dev,
->+static void netdev_adjacent_sysfs_del(struct net_device *dev,
-> 			       char *name,
-> 			       struct list_head *dev_list)
-> {
->-- 
->1.7.9.5
+> diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
+> index ba9310b..205dbfe 100644
+> --- a/drivers/spi/Kconfig
+> +++ b/drivers/spi/Kconfig
+> @@ -307,7 +307,7 @@ config SPI_OMAP_UWIRE
 >
+>  config SPI_OMAP24XX
+>         tristate "McSPI driver for OMAP"
+> -       depends on ARM || ARM64 || AVR32 || HEXAGON || MIPS || SH
+> +       depends on ARM || ARM64 || AVR32 || HEXAGON || MIPS || SUPERH
+>         depends on ARCH_OMAP2PLUS || COMPILE_TEST
+>         help
+>           SPI master controller for OMAP24XX and later Multichannel SPI
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
