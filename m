@@ -1,162 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751434AbaBHJSi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 04:18:38 -0500
-Received: from infra.glanzmann.de ([88.198.249.254]:60531 "EHLO
-	infra.glanzmann.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751063AbaBHJSd (ORCPT
+	id S1751523AbaBHJT1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 04:19:27 -0500
+Received: from ud10.udmedia.de ([194.117.254.50]:38999 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751453AbaBHJTY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 04:18:33 -0500
-Date: Sat, 8 Feb 2014 10:18:28 +0100
-From: Thomas Glanzmann <thomas@glanzmann.de>
-To: Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        Linux Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: REGRESSION f54b311142a92ea2e42598e347b84e1655caf8e3 tcp auto corking
- slows down iSCSI file system creation by factor of 70 [WAS: 4 TB VMFS
- creation takes 15 minutes vs 26 seconds]
-Message-ID: <20140208091828.GA16336@glanzmann.de>
-Mail-Followup-To: Eric Dumazet <edumazet@google.com>,
-	"David S. Miller" <davem@davemloft.net>,
-	"Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-	target-devel <target-devel@vger.kernel.org>,
-	Linux Network Development <netdev@vger.kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <20140206153640.GB4103@glanzmann.de>
- <1391727771.14985.41.camel@haakon3.risingtidesystems.com>
- <20140207051500.GB10916@glanzmann.de>
- <20140207075536.GB17815@glanzmann.de>
- <1391801597.1155.28.camel@haakon3.risingtidesystems.com>
- <20140207205142.GA8609@glanzmann.de>
+	Sat, 8 Feb 2014 04:19:24 -0500
+Date: Sat, 8 Feb 2014 10:19:20 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: mmarek@suse.cz, linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH 5/6] kbuild: Use single pass kallsyms
+Message-ID: <20140208091920.GA400@x4>
+References: <1391845840-28514-1-git-send-email-ak@linux.intel.com>
+ <1391845840-28514-5-git-send-email-ak@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140207205142.GA8609@glanzmann.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1391845840-28514-5-git-send-email-ak@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Eric,
+On 2014.02.08 at 08:50 +0100, Andi Kleen wrote:
+> -vmlinux_link "${kallsymso}" vmlinux
+> +vmlinux_link "${kallsymsso}" vmlinux
+> +if [ -n "${CONFIG_KALLSYMS}" ] ; then
+> +	# Now regenerate the kallsyms table and patch it into the
+> +	# previously linked file. We tell kallsyms to pad it
+> +	# to the previous length, so that no symbol changes.
+> +	info KALLSYMS2 .tmp_kallsyms2.o
+> +	kallsyms vmlinux .tmp_kallsyms2.o $(<.kallsyms_pad)
+> +
+> +	info OBJCOPY .tmp_kallsyms2.bin
+> +	${OBJCOPY} -O binary .tmp_kallsyms2.o .tmp_kallsyms2.bin
+> +
+> +	info PATCHFILE vmlinux
+> +	OFF=$(${OBJDUMP} --section-headers vmlinux |
+> +	     gawk -f ./source/scripts/elf_file_offset \
+> +	-v section=.kallsyms -v filesize=$(stat -c%s .tmp_kallsyms2.bin) )
+> +	if [ -z "$OFF" ] ; then
+> +		echo "Cannot find .kallsyms section in vmlinux binary"
+> +		exit 1
+> +	fi
+> +	scripts/patchfile vmlinux $OFF .tmp_kallsyms2.bin
+> +fi
 
-> * Thomas Glanzmann <thomas@glanzmann.de> [2014-02-07 08:55]:
-> > Creating a 4 TB VMFS filesystem over iSCSI takes 24 seconds on 3.12
-> > and 15 minutes on 3.14.0-rc2+.
+This causes: 
+ gawk: fatal: can't open source file `./source/scripts/elf_file_offset' for reading (No such file or directory)
 
-* Nicholas A. Bellinger <nab@linux-iscsi.org> [2014-02-07 20:30]:
-> Would it be possible to try a couple of different stable kernel
-> versions to help track this down?
+diff --git a/scripts/link-vmlinux.sh b/scripts/link-vmlinux.sh
+index 4c5435f420a6..06469556c580 100644
+--- a/scripts/link-vmlinux.sh
++++ b/scripts/link-vmlinux.sh
+@@ -213,7 +213,7 @@ if [ -n "${CONFIG_KALLSYMS}" ] ; then
+ 
+ 	info PATCHFILE vmlinux
+ 	OFF=$(${OBJDUMP} --section-headers vmlinux |
+-	     gawk -f ./source/scripts/elf_file_offset \
++	     gawk -f ./scripts/elf_file_offset \
+ 	-v section=.kallsyms -v filesize=$(stat -c%s .tmp_kallsyms2.bin) )
+ 	if [ -z "$OFF" ] ; then
+ 		echo "Cannot find .kallsyms section in vmlinux binary"
 
-I bisected[1] it and found the offending commit f54b311 tcp auto corking
-[2] 'if we have a small send and a previous packet is already in the
-qdisc or device queue, defer until TX completion or we get more data.'
-- Description by David S. Miller
-
-I gathered a pcap with tcp_autocorking on and off.
-
-On: - took 4 seconds to create a 500 GB VMFS file system
-https://thomas.glanzmann.de/tmp/tcp_auto_corking_on.pcap.bz2
-https://thomas.glanzmann.de/tmp/screenshot-mini-2014-02-08-09:45:43.png
-https://thomas.glanzmann.de/tmp/screenshot-mini-2014-02-08-09:52:28.png
-
-Off: - took 2 minutes 24 seconds to create a 500 GB VMFS file system
-sysctl net.ipv4.tcp_autocorking=0
-https://thomas.glanzmann.de/tmp/tcp_auto_corking_off.pcap.bz2
-https://thomas.glanzmann.de/tmp/screenshot-mini-2014-02-08-09:46:34.png
-https://thomas.glanzmann.de/tmp/screenshot-mini-2014-02-08-09:53:17.png
-
-First graph can be generated by opening bunziping the file, opening it
-in wireshark and select Statistics > IO Grap and change the unit to
-Bytes/Tick. The second graph can be generated by selecting Statistics >
-TCP Stream Graph > Round Trip Time.
-
-You can also see that the round trip time increases by factor 25 at
-least.
-
-I once saw a similar problem with dealyed ACK packets of the
-paravirtulized network driver in xen it caused that the tcp window
-filled up and slowed down the throughput from 30 MB/s to less than 100
-KB/s the symptom was that the login to a Windows desktop took more than
-10 minutes while it used to be below 30 seconds because the profile of
-the user was loaded slowly from a CIFS server. At that time the culprit
-were also delayed small packets: ACK packets in the CIFS case. However I
-only proofed iSCSI regression so far for tcp auto corking but assume we
-will see many others if we leave it enabled.
-
-I found the problem by doing the following:
-        - I compiled kernel by executing the following commands:
-                yes '' | make oldconfig
-                time make -j 24
-                / make modules_install
-                / mkinitramfs -o /boot/initrd.img-bisect <version>
-
-        - I cleaned the iSCSI configuration after each test by issuing:
-                /etc/init.d/target stop
-                rm /iscsi?/* /etc/target/*
-
-        - I configured iSCSI after each reboot
-                cat > lio-v101.conf <<EOF
-set global auto_cd_after_create=false
-/backstores/fileio create shared-01.v101.campusvl.de /iscsi1/shared-01.v101.campusvl.de size=500G buffered=true
-
-/iscsi create iqn.2013-03.de.campusvl.v101.storage:shared-01.v101.campusvl.de
-/iscsi/iqn.2013-03.de.campusvl.v101.storage:shared-01.v101.campusvl.de/tpgt1/portals create 10.101.99.4
-/iscsi/iqn.2013-03.de.campusvl.v101.storage:shared-01.v101.campusvl.de/tpgt1/portals create 10.101.99.5
-/iscsi/iqn.2013-03.de.campusvl.v101.storage:shared-01.v101.campusvl.de/tpgt1/portals create 10.102.99.4
-/iscsi/iqn.2013-03.de.campusvl.v101.storage:shared-01.v101.campusvl.de/tpgt1/portals create 10.102.99.5
-/iscsi/iqn.2013-03.de.campusvl.v101.storage:shared-01.v101.campusvl.de/tpgt1/luns create /backstores/fileio/shared-01.v101.campusvl.de lun=10
-/iscsi/iqn.2013-03.de.campusvl.v101.storage:shared-01.v101.campusvl.de/tpgt1/ set attribute authentication=0 demo_mode_write_protect=0 generate_node_acls=1 cache_dynamic_acls=1
-
-saveconfig
-yes
-EOF
-                targetcli < lio-v101.conf
-                And configured a fresh booted ESXi 5.5.0 1331820 via autodeploy
-                to the iSCSI target, configured the portal, rescanned and
-                created a 500 GB VMFS 5 filesystem and noticed the time if it
-                was longer than 2 minutes it was bad if it was below 10 seconds
-                it was good.
-                git bisect good/bad
-
-My network config is:
-
-auto bond0
-iface bond0 inet static
-       address 10.100.4.62
-       netmask 255.255.0.0
-       gateway 10.100.0.1
-       slaves eth0 eth1
-       bond-mode 802.3ad
-       bond-miimon 100
-
-auto bond0.101
-iface bond0.101 inet static
-       address 10.101.99.4
-       netmask 255.255.0.0
-
-auto bond1
-iface bond1 inet static
-       address 10.100.5.62
-       netmask 255.255.0.0
-       slaves eth2 eth3
-       bond-mode 802.3ad
-       bond-miimon 100
-
-auto bond1.101
-iface bond1.101 inet static
-       address 10.101.99.5
-       netmask 255.255.0.0
-
-I propose to disable tcp_autocorking by default because it obviously degrades
-iSCSI performance and probably many other protocols. Also the commit mentions
-that applications can explicitly disable auto corking we probably should do
-that for the iSCSI target, but I don't know how. Anyone?
-
-[1] http://pbot.rmdir.de/a65q6MjgV36tZnn5jS-DUQ
-[2] https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=f54b311142a92ea2e42598e347b84e1655caf8e3
-
-Cheers,
-        Thomas
+-- 
+Markus
