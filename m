@@ -1,69 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751942AbaBHPGo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 10:06:44 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:57349 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751334AbaBHPGm (ORCPT
+	id S1751999AbaBHPH7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 10:07:59 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:63288 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751833AbaBHPHz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 10:06:42 -0500
-Message-ID: <1391871986.10160.105.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: REGRESSION f54b311142a92ea2e42598e347b84e1655caf8e3 tcp auto
- corking slows down iSCSI file system creation by factor of 70 [WAS: 4 TB
- VMFS creation takes 15 minutes vs 26 seconds]
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Thomas Glanzmann <thomas@glanzmann.de>
-Cc: John Ogness <john.ogness@linutronix.de>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        Linux Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Sat, 08 Feb 2014 07:06:26 -0800
-In-Reply-To: <20140208150001.GI20512@glanzmann.de>
-References: <20140207075536.GB17815@glanzmann.de>
-	 <1391801597.1155.28.camel@haakon3.risingtidesystems.com>
-	 <20140207205142.GA8609@glanzmann.de> <20140208093808.GD16336@glanzmann.de>
-	 <1391865273.10160.76.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <1391866389.10160.80.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <1391867404.10160.88.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <1391868816.10160.93.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <20140208141905.GG20512@glanzmann.de>
-	 <1391869805.10160.97.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <20140208150001.GI20512@glanzmann.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sat, 8 Feb 2014 10:07:55 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: Linux PCI <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ACPI / hotplug / PCI: Execute _EJ0 under the ACPI scan lock
+Date: Sat, 08 Feb 2014 16:22:30 +0100
+Message-ID: <1629492.WLGZp2sePX@vostro.rjw.lan>
+User-Agent: KMail/4.11.4 (Linux/3.13.0+; KDE/4.11.4; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-02-08 at 16:00 +0100, Thomas Glanzmann wrote:
-> Hello Eric,
-> 
-> > Idea would be to set this flag when calling sendmsg() of the 48 bytes
-> > of the header, and not set it on the sendmsg() of the 512 bytes of the
-> > payload.
-> 
-> I see.
-> 
-> > iscsi_sw_tcp_xmit_segment() already adds MSG_MORE, but
-> > it would be nice to add a new _initial_ flags parameter to
-> > iscsi_sw_tcp_xmit_segment()
-> 
-> This is for the iscsi initiator implementation. I'm interested in iSCSI
-> target code, but I already found it and experiemented a little bit, but
-> I need to dig deeper if I want to prepare a patch.
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Fantastic !
+Since acpi_device_hotplug() assumes that ACPI handles of device
+objects passed to it will not become invalid while acpi_scan_lock
+is being held, make acpiphp_disable_slot() acquire acpi_scan_lock,
+because it generally causes _EJ0 to be executed for one of the
+devices in the slot and that may cause its ACPI handle to become
+invalid.
 
-Let me know if you want some help.
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
 
-Note : We did some patches in the MSG_MORE logic for sendpage(), but in
-your case I do not think its related
+Hi All,
 
-(git grep -n MSG_SENDPAGE_NOTLAST ) if you are curious
+This change is not necessary in 3.14-rc (it wouldn't hurt, though), but it
+closes a (mostly theoretical) race on top of the changes I've queued up for
+3.15 in linux-next.
 
+Thanks,
+Rafael
+
+---
+ drivers/pci/hotplug/acpiphp_glue.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
+
+Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+===================================================================
+--- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
++++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+@@ -1007,9 +1007,15 @@ int acpiphp_disable_slot(struct acpiphp_
+ {
+ 	int ret;
+ 
++	/*
++	 * Acquire acpi_scan_lock to ensure that the execution of _EJ0 in
++	 * acpiphp_disable_and_eject_slot() will be synchronized properly.
++	 */
++	acpi_scan_lock_acquire();
+ 	pci_lock_rescan_remove();
+ 	ret = acpiphp_disable_and_eject_slot(slot);
+ 	pci_unlock_rescan_remove();
++	acpi_scan_lock_release();
+ 	return ret;
+ }
+ 
 
