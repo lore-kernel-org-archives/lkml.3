@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752452AbaBHQSv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 11:18:51 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:39837 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752369AbaBHQSt (ORCPT
+	id S1752501AbaBHQSz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 11:18:55 -0500
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:35073 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752369AbaBHQSw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 11:18:49 -0500
+	Sat, 8 Feb 2014 11:18:52 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
         Christoph Hellwig <hch@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Jan Kara <jack@suse.cz>, Jens Axboe <jens.axboe@oracle.com>
-Subject: [PATCH 02/11] block: Remove useless IPI struct initialization
-Date: Sat,  8 Feb 2014 17:18:31 +0100
-Message-Id: <1391876320-25068-3-git-send-email-fweisbec@gmail.com>
+        Jens Axboe <jens.axboe@oracle.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 04/11] smp: Iterate functions through llist_for_each_entry_safe()
+Date: Sat,  8 Feb 2014 17:18:33 +0100
+Message-Id: <1391876320-25068-5-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1391876320-25068-1-git-send-email-fweisbec@gmail.com>
 References: <1391876320-25068-1-git-send-email-fweisbec@gmail.com>
@@ -23,37 +23,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rq_fifo_clear() reset the csd.list through INIT_LIST_HEAD for no clear
-purpose. The csd.list doesn't need to be initialized as a list head
-because it's only ever used as a list node.
+From: Jan Kara <jack@suse.cz>
 
-Lets remove this useless initialization.
+The IPI function llist iteration is open coded. Lets simplify this
+with using an llist iterator.
 
+Also we want to keep the iteration safe against possible
+csd.llist->next value reuse from the IPI handler. At least the block
+subsystem used to do such things so lets stay careful and use
+llist_for_each_entry_safe().
+
+Signed-off-by: Jan Kara <jack@suse.cz>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Christoph Hellwig <hch@infradead.org>
 Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jan Kara <jack@suse.cz>
 Cc: Jens Axboe <jens.axboe@oracle.com>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- include/linux/elevator.h | 5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ kernel/smp.c | 12 +++---------
+ 1 file changed, 3 insertions(+), 9 deletions(-)
 
-diff --git a/include/linux/elevator.h b/include/linux/elevator.h
-index 0bdfd46..df63bd3 100644
---- a/include/linux/elevator.h
-+++ b/include/linux/elevator.h
-@@ -203,10 +203,7 @@ enum {
- #define rb_entry_rq(node)	rb_entry((node), struct request, rb_node)
+diff --git a/kernel/smp.c b/kernel/smp.c
+index ffee35b..e3852de 100644
+--- a/kernel/smp.c
++++ b/kernel/smp.c
+@@ -151,7 +151,8 @@ static void generic_exec_single(int cpu, struct call_single_data *csd, int wait)
+  */
+ void generic_smp_call_function_single_interrupt(void)
+ {
+-	struct llist_node *entry, *next;
++	struct llist_node *entry;
++	struct call_single_data *csd, *csd_next;
  
- #define rq_entry_fifo(ptr)	list_entry((ptr), struct request, queuelist)
--#define rq_fifo_clear(rq)	do {		\
--	list_del_init(&(rq)->queuelist);	\
--	INIT_LIST_HEAD(&(rq)->csd.list);	\
--	} while (0)
-+#define rq_fifo_clear(rq)	list_del_init(&(rq)->queuelist)
+ 	/*
+ 	 * Shouldn't receive this interrupt on a cpu that is not yet online.
+@@ -161,16 +162,9 @@ void generic_smp_call_function_single_interrupt(void)
+ 	entry = llist_del_all(&__get_cpu_var(call_single_queue));
+ 	entry = llist_reverse_order(entry);
  
- #else /* CONFIG_BLOCK */
+-	while (entry) {
+-		struct call_single_data *csd;
+-
+-		next = entry->next;
+-
+-		csd = llist_entry(entry, struct call_single_data, llist);
++	llist_for_each_entry_safe(csd, csd_next, entry, llist) {
+ 		csd->func(csd->info);
+ 		csd_unlock(csd);
+-
+-		entry = next;
+ 	}
+ }
  
 -- 
 1.8.3.1
