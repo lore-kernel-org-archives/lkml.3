@@ -1,109 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751234AbaBHBZa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 20:25:30 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:53422 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751052AbaBHBZ2 (ORCPT
+	id S1751125AbaBHBrM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 20:47:12 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:32690 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750706AbaBHBrL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 20:25:28 -0500
-X-Originating-IP: 50.43.14.201
-Date: Fri, 7 Feb 2014 17:25:16 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org
-Subject: Re: [PATCH 9/9] mm: Remove ifdef condition in include/linux/mm.h
-Message-ID: <20140208012515.GA18890@jtriplet-mobl1>
-References: <a7658fc8f2ab015bffe83de1448cc3db79d2a9fc.1391167128.git.rashika.kheria@gmail.com>
- <63adb3b97f2869d4c7e76d17ef4aa76b8cf599f3.1391167128.git.rashika.kheria@gmail.com>
- <alpine.DEB.2.02.1402071304080.4212@chino.kir.corp.google.com>
- <20140207210705.GB13604@jtriplet-mobl1>
- <alpine.DEB.2.02.1402071314180.4212@chino.kir.corp.google.com>
- <20140207143050.6bd35ed5c670a3ca143ba59a@linux-foundation.org>
- <alpine.DEB.2.02.1402071503120.24644@chino.kir.corp.google.com>
- <20140207232711.GA16836@jtriplet-mobl1>
- <alpine.DEB.2.02.1402071654560.775@chino.kir.corp.google.com>
+	Fri, 7 Feb 2014 20:47:11 -0500
+From: Wang Nan <wangnan0@huawei.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Sasha Levin <sasha.levin@oracle.com>, Wang Nan <wangnan0@huawei.com>,
+        "Ingo Molnar" <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Geng Hui" <hui.geng@huawei.com>
+Subject: [PATCH resend 1/2] liblockdep: Use realpath for srctree and objtree
+Date: Sat, 8 Feb 2014 09:43:40 +0800
+Message-ID: <1391823820-11154-1-git-send-email-wangnan0@huawei.com>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1390730778-30366-1-git-send-email-wangnan0@huawei.com>
+References: <1390730778-30366-1-git-send-email-wangnan0@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1402071654560.775@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.247]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 07, 2014 at 05:02:02PM -0800, David Rientjes wrote:
-> On Fri, 7 Feb 2014, Josh Triplett wrote:
-> 
-> > > Why??  If CONFIG_HAVE_ARCH_EARLY_PFN_TO_NID then, yes, we need it to be 
-> > > global.  Otherwise it's perfectly fine just being static in file scope.  
-> > > This causes the compilation unit to break when you compile it, not wait 
-> > > until vmlinux and find undefined references.
-> > > 
-> > > I see no reason it can't be done like this in mm/page_alloc.c:
-> > > 
-> > > 	#ifdef CONFIG_HAVE_ARCH_EARLY_PFN_TO_NID
-> > > 	extern int __meminit __early_pfn_to_nid(unsigned long pfn);
-> > 
-> > No, a .c file should not have an extern declaration in it.  This should
-> > live in an appropriate header file, to be included in both page_alloc.c
-> > and any arch file that defines an overriding function.
-> > 
-> 
-> Ok, so you have religious beliefs about extern being used in files ending 
-> in .c and don't mind the 2900 occurrences of it in the kernel tree and 
-> desire 14 line obfuscation in header files with comments to what is being 
-> defined in .c files such as "please see mm/page_alloc.c" as mm.h has.  
+If BUILD_SRC or CURDIR contains tailing '/', the file names passed to gcc will
+contain '//'. It will be contained .o's in debuginfo, then confuse debugedit:
 
-I (and many others) have very specific technical objections to not
-having the same prototype seen by both the definition and use of a
-function: that helps keep the prototype in sync with the definition(s),
-helps keep all definitions in sync if there are multiple such
-definitions, and eliminates -Wmissing-prototype warnings (which in
-addition to those benefits also help detect functions that should be
-made static or eliminated).
+https://bugzilla.redhat.com/show_bug.cgi?id=304121
 
-And as mentioned before, those 14 lines can be significantly simplified;
-Rashika's patch already does one such simplification.
+This patch uses realpath command to makesure potential tailing '/'s are removed.
 
-Those 2900 occurrences should go away as well, and Rashika's previous
-patches have already fixed many of them.
+Signed-off-by: Wang Nan <wangnan0@huawei.com>
+Acked-by: Sasha Levin <sasha.levin@oracle.com> 
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Geng Hui <hui.geng@huawei.com>
 
-> > > Both of these options look much better than
-> > > 
-> > > 	include/linux/mm.h:
-> > > 
-> > > 	#if !defined(CONFIG_HAVE_MEMBLOCK_NODE_MAP) && \
-> > > 	    !defined(CONFIG_HAVE_ARCH_EARLY_PFN_TO_NID)
-> > > 	static inline int __early_pfn_to_nid(unsigned long pfn)
-> > > 	{
-> > > 	        return 0;
-> > > 	}
-> > > 	#else
-> > > 	/* please see mm/page_alloc.c */
-> > > 	extern int __meminit early_pfn_to_nid(unsigned long pfn);
-> > > 	#ifdef CONFIG_HAVE_ARCH_EARLY_PFN_TO_NID
-> > > 	/* there is a per-arch backend function. */
-> > > 	extern int __meminit __early_pfn_to_nid(unsigned long pfn);
-> > > 	#endif /* CONFIG_HAVE_ARCH_EARLY_PFN_TO_NID */
-> > > 	#endif
-> > > 
-> > > where all this confusion is originating from.
-> > 
-> > The proposal is to first simplify those ifdefs by eliminating the inner
-> > one in the #else; I agree with Andrew that we ought to go ahead and take
-> > that step given the patch at hand, and then figure out if there's an
-> > additional simplification possible.
-> > 
-> 
-> If additional simplification is possible?  Yeah, it's __weak which is 
-> designed for this purpose.
+---
+ tools/lib/lockdep/Makefile | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-No objections here if someone wants to write that patch.
+diff --git a/tools/lib/lockdep/Makefile b/tools/lib/lockdep/Makefile
+index da8b7aa..e638dd5 100644
+--- a/tools/lib/lockdep/Makefile
++++ b/tools/lib/lockdep/Makefile
+@@ -87,8 +87,8 @@ endif # BUILD_SRC
+ # We process the rest of the Makefile if this is the final invocation of make
+ ifeq ($(skip-makefile),)
+ 
+-srctree		:= $(if $(BUILD_SRC),$(BUILD_SRC),$(CURDIR))
+-objtree		:= $(CURDIR)
++srctree		:= $(realpath $(if $(BUILD_SRC),$(BUILD_SRC),$(CURDIR)))
++objtree		:= $(realpath $(CURDIR))
+ src		:= $(srctree)
+ obj		:= $(objtree)
+ 
+-- 
+1.8.4
 
-- Josh Triplett
