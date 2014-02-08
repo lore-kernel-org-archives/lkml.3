@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751382AbaBHD0L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 22:26:11 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:52964 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750985AbaBHD0I (ORCPT
+	id S1751274AbaBHDj1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 22:39:27 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:55924 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750985AbaBHDj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 22:26:08 -0500
-Date: Fri, 7 Feb 2014 19:26:07 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Kumar Gala <galak@codeaurora.org>
-Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 3/5] ARM: qcom: Split Qualcomm support into legacy
- and multiplatform
-Message-ID: <20140208032607.GC10784@codeaurora.org>
-References: <1391725484-6673-1-git-send-email-galak@codeaurora.org>
- <1391725484-6673-4-git-send-email-galak@codeaurora.org>
+	Fri, 7 Feb 2014 22:39:26 -0500
+X-Originating-IP: 108.223.40.66
+Message-ID: <52F5A6EE.7020000@roeck-us.net>
+Date: Fri, 07 Feb 2014 19:39:26 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1391725484-6673-4-git-send-email-galak@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Linux MIPS Mailing List <linux-mips@linux-mips.org>
+CC: Paul Burton <paul.burton@imgtec.com>, Ralf Baechle <ralf@linux-mips.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Commit 597ce1723 (MIPS: Support for 64-bit FP with O32 binaries)
+ causing qemu hang with mips64 kernels
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06, Kumar Gala wrote:
-> diff --git a/arch/arm/mach-msm/platsmp.c b/arch/arm/mach-qcom/platsmp.c
-> similarity index 98%
-> rename from arch/arm/mach-msm/platsmp.c
-> rename to arch/arm/mach-qcom/platsmp.c
-> index 251a91e..67823a7 100644
-> --- a/arch/arm/mach-msm/platsmp.c
-> +++ b/arch/arm/mach-qcom/platsmp.c
-> @@ -2,6 +2,7 @@
->   *  Copyright (C) 2002 ARM Ltd.
->   *  All Rights Reserved
->   *  Copyright (c) 2010, Code Aurora Forum. All rights reserved.
-> + *  Copyright (c) 2014 The Linux Foundation. All rights reserved.
 
-We should replace the Code Aurora Forum copyright with Linux
-Foundation here.
+Hi all,
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+in 3.14-rc1, my mips64 qemu test fails. The image boots and then hangs.
+Bisect points to commit 597ce1723 (MIPS: Support for 64-bit FP with O32 binaries).
+Reverting this commit fixes the problem. Disabling MIPS_O32_FP64_SUPPORT
+in my test image does _not_ solve the problem. The qemu version does not seem
+to make a difference; I tested with qemu 1.6.0 and 1.7.0.
+
+Console log output is available in
+http://server.roeck-us.net:8010/builders/qemu-mips64-master/builds/34/steps/buildcommand/logs/stdio
+
+When the problem is seen, the emulation hangs as can be seen in the log,
+and the qemu process consumes 100% CPU until it is killed.
+
+qemu command line is
+
+qemu-system-mips64 -kernel vmlinux -M malta -hda core-image-minimal-qemumips64.ext3 \
+-vga cirrus -usb -usbdevice wacom-tablet -no-reboot -m 128 --append "root=/dev/hda \
+rw mem=128M console=ttyS0 console=tty" -nographic
+
+The same configuration works fine with earlier kernels. I'll be happy to provide
+the detailed configuration as well as the root file system for testing if needed.
+
+Obviously I have no idea if this is a problem with the patch or with qemu.
+If there is anything I can do to help tracking down the problem further,
+please let me know.
+
+Thanks,
+Guenter
