@@ -1,97 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751403AbaBHCeU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 21:34:20 -0500
-Received: from mx.bwstor.com.cn ([211.103.180.228]:32825 "EHLO mx.bwstor.cn"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751004AbaBHCeT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 21:34:19 -0500
-From: shaobingqing <shaobingqing@bwstor.com.cn>
-To: trond.myklebust@primarydata.com, bfields@redhat.com, davem@davemloft.net
-Cc: linux-nfs@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        shaobingqing <shaobingqing@bwstor.com.cn>
-Subject: [PATCH v2] SUNRPC: Allow one callback request to be received from two sk_buff
-Date: Sat,  8 Feb 2014 10:29:03 +0800
-Message-Id: <1391826543-3102-1-git-send-email-shaobingqing@bwstor.com.cn>
-X-Mailer: git-send-email 1.7.4.2
-In-Reply-To: <no>
-References: <no>
+	id S1751223AbaBHCm6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 21:42:58 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:51310 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750756AbaBHCmz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Feb 2014 21:42:55 -0500
+Date: Fri, 7 Feb 2014 18:42:54 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Andy Gross <agross@codeaurora.org>
+Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
+        dmaengine@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [Patch v5 1/2] dmaengine: add Qualcomm BAM dma driver
+Message-ID: <20140208024254.GA10784@codeaurora.org>
+References: <1391546556-27702-1-git-send-email-agross@codeaurora.org>
+ <1391546556-27702-2-git-send-email-agross@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391546556-27702-2-git-send-email-agross@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In current code, there only one struct rpc_rqst is prealloced. If one
-callback request is received from two sk_buff, the xprt_alloc_bc_request
-would be execute two times with the same transport->xid. The first time
-xprt_alloc_bc_request will alloc one struct rpc_rqst and the TCP_RCV_COPY_DATA
-bit of transport->tcp_flags will not be cleared. The second time
-xprt_alloc_bc_request could not alloc struct rpc_rqst any more and NULL
-pointer will be returned, then xprt_force_disconnect occur. I think one
-callback request can be allowed to be received from two sk_buff.
+On 02/04, Andy Gross wrote:
+> diff --git a/drivers/dma/qcom_bam_dma.c b/drivers/dma/qcom_bam_dma.c
+> new file mode 100644
+> index 0000000..214250c
+> --- /dev/null
+> +++ b/drivers/dma/qcom_bam_dma.c
+> @@ -0,0 +1,1066 @@
+> +/*
+> + * QCOM BAM DMA engine driver
 
-Signed-off-by: shaobingqing <shaobingqing@bwstor.com.cn>
----
- include/linux/sunrpc/xprt.h |    1 +
- net/sunrpc/xprt.c           |    1 +
- net/sunrpc/xprtsock.c       |   13 ++++++++++++-
- 3 files changed, 14 insertions(+), 1 deletions(-)
+Can you please move this down into the comment below?
 
-diff --git a/include/linux/sunrpc/xprt.h b/include/linux/sunrpc/xprt.h
-index cec7b9b..82bfe01 100644
---- a/include/linux/sunrpc/xprt.h
-+++ b/include/linux/sunrpc/xprt.h
-@@ -211,6 +211,7 @@ struct rpc_xprt {
- 						 * items */
- 	struct list_head	bc_pa_list;	/* List of preallocated
- 						 * backchannel rpc_rqst's */
-+	struct rpc_rqst	*req_first;
- #endif /* CONFIG_SUNRPC_BACKCHANNEL */
- 	struct list_head	recv;
- 
-diff --git a/net/sunrpc/xprt.c b/net/sunrpc/xprt.c
-index 095363e..93ad8bc 100644
---- a/net/sunrpc/xprt.c
-+++ b/net/sunrpc/xprt.c
-@@ -1256,6 +1256,7 @@ static void xprt_init(struct rpc_xprt *xprt, struct net *net)
- #if defined(CONFIG_SUNRPC_BACKCHANNEL)
- 	spin_lock_init(&xprt->bc_pa_lock);
- 	INIT_LIST_HEAD(&xprt->bc_pa_list);
-+	xprt->req_first = NULL;
- #endif /* CONFIG_SUNRPC_BACKCHANNEL */
- 
- 	xprt->last_used = jiffies;
-diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
-index ee03d35..c43dca4 100644
---- a/net/sunrpc/xprtsock.c
-+++ b/net/sunrpc/xprtsock.c
-@@ -1272,7 +1272,16 @@ static inline int xs_tcp_read_callback(struct rpc_xprt *xprt,
- 				container_of(xprt, struct sock_xprt, xprt);
- 	struct rpc_rqst *req;
- 
--	req = xprt_alloc_bc_request(xprt);
-+	if (xprt->req_first != NULL &&
-+			xprt->req_first->rq_xid == transport->tcp_xid) {
-+		req = xprt->req_first;
-+	} else if (xprt->req_first != NULL &&
-+			xprt->req_first->rq_xid != transport->tcp_xid) {
-+		xprt_free_bc_request(xprt);
-+		req = xprt_alloc_bc_request(xprt);
-+	} else {
-+		req = xprt_alloc_bc_request(xprt);
-+	}
- 	if (req == NULL) {
- 		printk(KERN_WARNING "Callback slot table overflowed\n");
- 		xprt_force_disconnect(xprt);
-@@ -1297,6 +1306,8 @@ static inline int xs_tcp_read_callback(struct rpc_xprt *xprt,
- 		list_add(&req->rq_bc_list, &bc_serv->sv_cb_list);
- 		spin_unlock(&bc_serv->sv_cb_lock);
- 		wake_up(&bc_serv->sv_cb_waitq);
-+	} else {
-+		xprt->req_first = req;
- 	}
- 
- 	req->rq_private_buf.len = transport->tcp_copied;
+> + *
+> + * Copyright (c) 2013-2014, The Linux Foundation. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 and
+> + * only version 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+
+And split this out into its own comment block? I think this will
+make the lawyers happier.
+
+> + *
+> + * QCOM BAM DMA blocks are distributed amongst a number of the on-chip
+> + * peripherals on the MSM 8x74.  The configuration of the channels are dependent
+> + * on the way they are hard wired to that specific peripheral.  The peripheral
+> + * device tree entries specify the configuration of each channel.
+> + *
+> + * The DMA controller requires the use of external memory for storage of the
+> + * hardware descriptors for each channel.  The descriptor FIFO is accessed as a
+> + * circular buffer and operations are managed according to the offset within the
+> + * FIFO.  After pipe/channel reset, all of the pipe registers and internal state
+> + * are back to defaults.
+> + *
+> + * During DMA operations, we write descriptors to the FIFO, being careful to
+> + * handle wrapping and then write the last FIFO offset to that channel's
+> + * P_EVNT_REG register to kick off the transaction.  The P_SW_OFSTS register
+> + * indicates the current FIFO offset that is being processed, so there is some
+> + * indication of where the hardware is currently working.
+> + */
+[...]
+> +
+> +/* PIPE CTRL */
+> +#define	P_EN			BIT(1)
+
+           ^^^^
+Nitpick: Weird tab here?
+
+> +
+> +/**
+> + * bam_start_dma - start next transaction
+> + * @bchan - bam dma channel
+> + *
+> + * Note: must hold bam dma channel vc.lock
+
+You can use lockdep_assert_held() here to document this
+requirement and test for it at runtime.
+
+> + */
+> +static void bam_start_dma(struct bam_chan *bchan)
+
 -- 
-1.7.4.2
-
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
