@@ -1,162 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751805AbaBHTMr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 14:12:47 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:41676 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751736AbaBHTMm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 14:12:42 -0500
-Message-ID: <1391886759.10160.114.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: REGRESSION f54b311142a92ea2e42598e347b84e1655caf8e3 tcp auto
- corking slows down iSCSI file system creation by factor of 70 [WAS: 4 TB
- VMFS creation takes 15 minutes vs 26 seconds]
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Thomas Glanzmann <thomas@glanzmann.de>
-Cc: John Ogness <john.ogness@linutronix.de>,
-        Eric Dumazet <edumazet@google.com>,
+	id S1750985AbaBHTMN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 14:12:13 -0500
+Received: from smtp.gentoo.org ([140.211.166.183]:39007 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750862AbaBHTMM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Feb 2014 14:12:12 -0500
+From: Richard Yao <ryao@gentoo.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Eric Van Hensbergen <ericvh@gmail.com>, Ron Minnich <rminnich@sandia.gov>,
+        Latchesar Ionkov <lucho@ionkov.net>,
         "David S. Miller" <davem@davemloft.net>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        Linux Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Sat, 08 Feb 2014 11:12:39 -0800
-In-Reply-To: <20140208171531.GA23798@glanzmann.de>
-References: <1391865273.10160.76.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <1391866389.10160.80.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <1391867404.10160.88.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <1391868816.10160.93.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <20140208141905.GG20512@glanzmann.de>
-	 <1391869805.10160.97.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <20140208150001.GI20512@glanzmann.de>
-	 <1391871986.10160.105.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <20140208165732.GB22359@glanzmann.de>
-	 <1391879318.10160.108.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <20140208171531.GA23798@glanzmann.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+        V9FS Develooper Mailing List 
+	<v9fs-developer@lists.sourceforge.net>,
+        Linux Netdev Mailing List <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Matthew Thode <mthode@mthode.org>
+Subject: [PATCH 0/2] Attention by Linus Torvalds needed to export symbol he wrote
+Date: Sat,  8 Feb 2014 14:12:08 -0500
+Message-Id: <1391886730-19667-1-git-send-email-ryao@gentoo.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-02-08 at 18:15 +0100, Thomas Glanzmann wrote:
+Dear Linus,
 
-> The iSCSI target uses one function to send all outbound data. So in
-> order to do it right every function that is sending data in multiple
-> chunks need to mark it correctly. Of course someone could also do some
-> wild guessing and saying that everything that is below 512 Bytes gets
-> pushed out. I wonder what Nab has to say about this?
+Loading kernel modules off 9p-virtio in a Linux guest causes VM termination
+because of a page fault in unmapped memory, so I wrote a patch to fix it. Dave
+Miller initially accepted it, but then rejected it because it calls an
+unexported symbol from a kernel module, which breaks the build when
+CONFIG_NET_9P_VIRTIO=m is set in the kernel config:
 
-I was simply thinking about something like :
-(might need further changes, but I guess this should solve your case)
+https://groups.google.com/forum/#!topic/linux.kernel/eRR7AyLE29Y
 
-diff --git a/drivers/target/iscsi/iscsi_target_util.c b/drivers/target/iscsi/iscsi_target_util.c
-index 0819e688a398..44f0d62a88d6 100644
---- a/drivers/target/iscsi/iscsi_target_util.c
-+++ b/drivers/target/iscsi/iscsi_target_util.c
-@@ -1165,7 +1165,7 @@ send_data:
- 		iov_count = cmd->iov_misc_count;
- 	}
- 
--	tx_sent = tx_data(conn, &iov[0], iov_count, tx_size);
-+	tx_sent = tx_data(conn, &iov[0], iov_count, tx_size, 0);
- 	if (tx_size != tx_sent) {
- 		if (tx_sent == -EAGAIN) {
- 			pr_err("tx_data() returned -EAGAIN\n");
-@@ -1196,7 +1196,8 @@ send_hdr:
- 	iov.iov_base = cmd->pdu;
- 	iov.iov_len = tx_hdr_size;
- 
--	tx_sent = tx_data(conn, &iov, 1, tx_hdr_size);
-+	data_len = cmd->tx_size - tx_hdr_size - cmd->padding;
-+	tx_sent = tx_data(conn, &iov, 1, tx_hdr_size, data_len ? MSG_MORE : 0);
- 	if (tx_hdr_size != tx_sent) {
- 		if (tx_sent == -EAGAIN) {
- 			pr_err("tx_data() returned -EAGAIN\n");
-@@ -1205,7 +1206,6 @@ send_hdr:
- 		return -1;
- 	}
- 
--	data_len = cmd->tx_size - tx_hdr_size - cmd->padding;
- 	/*
- 	 * Set iov_off used by padding and data digest tx_data() calls below
- 	 * in order to determine proper offset into cmd->iov_data[]
-@@ -1249,7 +1249,8 @@ send_padding:
- 	if (cmd->padding) {
- 		struct kvec *iov_p = &cmd->iov_data[iov_off++];
- 
--		tx_sent = tx_data(conn, iov_p, 1, cmd->padding);
-+		tx_sent = tx_data(conn, iov_p, 1, cmd->padding,
-+				  conn->conn_ops->DataDigest ? MSG_MORE : 0);
- 		if (cmd->padding != tx_sent) {
- 			if (tx_sent == -EAGAIN) {
- 				pr_err("tx_data() returned -EAGAIN\n");
-@@ -1263,7 +1264,7 @@ send_datacrc:
- 	if (conn->conn_ops->DataDigest) {
- 		struct kvec *iov_d = &cmd->iov_data[iov_off];
- 
--		tx_sent = tx_data(conn, iov_d, 1, ISCSI_CRC_LEN);
-+		tx_sent = tx_data(conn, iov_d, 1, ISCSI_CRC_LEN, 0);
- 		if (ISCSI_CRC_LEN != tx_sent) {
- 			if (tx_sent == -EAGAIN) {
- 				pr_err("tx_data() returned -EAGAIN\n");
-@@ -1349,11 +1350,12 @@ static int iscsit_do_rx_data(
- 
- static int iscsit_do_tx_data(
- 	struct iscsi_conn *conn,
--	struct iscsi_data_count *count)
-+	struct iscsi_data_count *count,
-+	int flags)
- {
- 	int data = count->data_length, total_tx = 0, tx_loop = 0, iov_len;
- 	struct kvec *iov_p;
--	struct msghdr msg;
-+	struct msghdr msg = { .msg_flags = flags };
- 
- 	if (!conn || !conn->sock || !conn->conn_ops)
- 		return -1;
-@@ -1363,8 +1365,6 @@ static int iscsit_do_tx_data(
- 		return -1;
- 	}
- 
--	memset(&msg, 0, sizeof(struct msghdr));
--
- 	iov_p = count->iov;
- 	iov_len = count->iov_count;
- 
-@@ -1408,7 +1408,8 @@ int tx_data(
- 	struct iscsi_conn *conn,
- 	struct kvec *iov,
- 	int iov_count,
--	int data)
-+	int data,
-+	int flags)
- {
- 	struct iscsi_data_count c;
- 
-@@ -1421,7 +1422,7 @@ int tx_data(
- 	c.data_length = data;
- 	c.type = ISCSI_TX_DATA;
- 
--	return iscsit_do_tx_data(conn, &c);
-+	return iscsit_do_tx_data(conn, &c, flags);
- }
- 
- void iscsit_collect_login_stats(
-diff --git a/drivers/target/iscsi/iscsi_target_util.h b/drivers/target/iscsi/iscsi_target_util.h
-index e4fc34a02f57..1b4f06801adc 100644
---- a/drivers/target/iscsi/iscsi_target_util.h
-+++ b/drivers/target/iscsi/iscsi_target_util.h
-@@ -54,7 +54,7 @@ extern int iscsit_print_dev_to_proc(char *, char **, off_t, int);
- extern int iscsit_print_sessions_to_proc(char *, char **, off_t, int);
- extern int iscsit_print_tpg_to_proc(char *, char **, off_t, int);
- extern int rx_data(struct iscsi_conn *, struct kvec *, int, int);
--extern int tx_data(struct iscsi_conn *, struct kvec *, int, int);
-+extern int tx_data(struct iscsi_conn *, struct kvec *, int, int, int);
- extern void iscsit_collect_login_stats(struct iscsi_conn *, u8, u8);
- extern struct iscsi_tiqn *iscsit_snmp_get_tiqn(struct iscsi_conn *);
- 
+>From what I can tell, I need the original author of a symbol to sign-off on any
+patch exporting it. git blame says that the original author is you, so I am
+sending this pull request to you for approval.
 
+Richard Yao (2):
+  mm/vmalloc: export is_vmalloc_or_module_addr
+  9p/trans_virtio.c: Fix broken zero-copy on vmalloc() buffers
+
+ mm/vmalloc.c          | 1 +
+ net/9p/trans_virtio.c | 5 ++++-
+ 2 files changed, 5 insertions(+), 1 deletion(-)
+
+-- 
+1.8.3.2
 
