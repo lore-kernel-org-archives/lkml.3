@@ -1,51 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751287AbaBHGSw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 01:18:52 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:50926 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751052AbaBHGSs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 01:18:48 -0500
-Message-ID: <52F5CC09.1080502@huawei.com>
-Date: Sat, 8 Feb 2014 14:17:45 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1751400AbaBHGTm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 01:19:42 -0500
+Received: from smtp13.mailbonus.biz ([192.3.19.28]:37385 "EHLO smtp3.kxtaa.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751316AbaBHGTl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Feb 2014 01:19:41 -0500
+X-Greylist: delayed 571 seconds by postgrey-1.27 at vger.kernel.org; Sat, 08 Feb 2014 01:19:40 EST
+Date: Sat, 8 Feb 2014 14:10:08 +0800
+From: "Iris" <war3@smtp3.kxtaa.net>
+Reply-To: alina@tjdekay.com
+To: "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: Welding Electrode/Welding Wire/Sintered Flux
+Message-ID: <201402081410086870278@smtp3.kxtaa.net>
+X-Mailer: Foxmail 6, 10, 201, 20 [cn]
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] sched/rt: Make init_sched_rt_calss() __init
-References: <52F5CBF6.4060901@huawei.com>
-In-Reply-To: <52F5CBF6.4060901@huawei.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain;
+	charset="GB2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s186Jl9o019943
 
-It's a bootstrap function.
+Dear Manager,
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- kernel/sched/rt.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I'm Iris. Our company dealding welding materials for many years. Mainly products are Welding Electrode/Welding Wire/Sintered Flux , with diferent size and type.
 
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 1c40655..e45ec9a 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -1825,7 +1825,7 @@ static void switched_from_rt(struct rq *rq, struct task_struct *p)
- 		resched_task(rq->curr);
- }
- 
--void init_sched_rt_class(void)
-+void __init init_sched_rt_class(void)
- {
- 	unsigned int i;
- 
--- 
-1.8.0.2
+Should you have any questions, pls do not hesitate to contact me. Best price will be supplied to you.
+
+Tks & br,
+
+Irisÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
