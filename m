@@ -1,58 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752188AbaBHSiL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 13:38:11 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:39287 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752039AbaBHSiK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 13:38:10 -0500
-X-Originating-IP: 50.43.14.201
-Date: Sat, 8 Feb 2014 10:38:04 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Rashika Kheria <rashika.kheria@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH 2/2] block: Mark function as static in blk-throttle.c
-Message-ID: <20140208183804.GC14801@leaf>
-References: <7dce86ade62eada14e58bb334bb9b7bd87627b68.1391876538.git.rashika.kheria@gmail.com>
- <44a81d7a082f5e30aaa7a2428421beddbc934293.1391876538.git.rashika.kheria@gmail.com>
+	id S1752087AbaBHSwe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 13:52:34 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:40667 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751991AbaBHSwc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Feb 2014 13:52:32 -0500
+Message-ID: <52F67CD7.5090609@zytor.com>
+Date: Sat, 08 Feb 2014 10:52:07 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <44a81d7a082f5e30aaa7a2428421beddbc934293.1391876538.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
+To: Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org
+CC: linux-kbuild@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH 02/17] x86, lto: Disable fancy hweight optimizations for
+ LTO v2
+References: <1391846481-31491-1-git-send-email-ak@linux.intel.com> <1391846481-31491-2-git-send-email-ak@linux.intel.com>
+In-Reply-To: <1391846481-31491-2-git-send-email-ak@linux.intel.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 08, 2014 at 09:56:21PM +0530, Rashika Kheria wrote:
-> Mark functions as static in blk-throttle.c because it is not used
-> outside this file.
-> 
-> This eliminates the following warning in blk-throttle.c:
-> block/blk-throttle.c:1261:6: warning: no previous prototype for ‘blk_throtl_dispatch_work_fn’ [-Wmissing-prototypes]
-> 
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+On 02/08/2014 12:01 AM, Andi Kleen wrote:
+> The fancy x86 hweight uses different compiler options for the
+> hweight file. This does not work with LTO. Just disable the optimization
+> with LTO
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+No, I'm going to NAK this.  This means not using the POPCNT instruction
+if LTO is enabled, and that really isn't an acceptable option.
 
->  block/blk-throttle.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-> index 1474c3a..0face33 100644
-> --- a/block/blk-throttle.c
-> +++ b/block/blk-throttle.c
-> @@ -1258,7 +1258,7 @@ out_unlock:
->   * of throtl_data->service_queue.  Those bio's are ready and issued by this
->   * function.
->   */
-> -void blk_throtl_dispatch_work_fn(struct work_struct *work)
-> +static void blk_throtl_dispatch_work_fn(struct work_struct *work)
->  {
->  	struct throtl_data *td = container_of(work, struct throtl_data,
->  					      dispatch_work);
-> -- 
-> 1.7.9.5
-> 
+	-hpa
+
+
