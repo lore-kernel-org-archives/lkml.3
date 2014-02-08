@@ -1,37 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752059AbaBHUpZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 15:45:25 -0500
-Received: from fieldses.org ([174.143.236.118]:40098 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751452AbaBHUpX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 15:45:23 -0500
-Date: Sat, 8 Feb 2014 15:45:22 -0500
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org
-Subject: memory corruption after "Fix race when checking i_size on direct i/o
- read"
-Message-ID: <20140208204522.GG8801@fieldses.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-From: "J. Bruce Fields" <bfields@fieldses.org>
+	id S1751709AbaBHVBP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 16:01:15 -0500
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:65429 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751400AbaBHVBO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Feb 2014 16:01:14 -0500
+From: Raymond Wanyoike <raymond.wanyoike@gmail.com>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, bjorn@mork.no,
+        Raymond Wanyoike <raymond.wanyoike@gmail.com>
+Subject: [RFC] net: qmi_wwan: add ZTE MF667
+Date: Sun,  9 Feb 2014 00:01:02 +0300
+Message-Id: <1391893262-25092-1-git-send-email-raymond.wanyoike@gmail.com>
+X-Mailer: git-send-email 1.8.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm getting warnings about corruption of the kmalloc-32 slab on an nfs
-server while running some regression tests.
+The driver description files give these descriptions to the vendor specific
+ports on this modem:
 
-A bisect lands on 9fe55eea7e4b444bafc42fa0000cc2d1d2847275 "Fix race
-when checking i_size on direct i/o read".  Is there any known problem
-here?
+ VID_19D2&PID_1270&MI_00: "ZTE MF667 Diagnostics Port"
+ VID_19D2&PID_1270&MI_01: "ZTE MF667 AT Port"
+ VID_19D2&PID_1270&MI_02: "ZTE MF667 ATExt2 Port"
+ VID_19D2&PID_1270&MI_03: "ZTE MF667 ATExt Port"
+ VID_19D2&PID_1270&MI_04: "ZTE MF667 USB Modem"
+ VID_19D2&PID_1270&MI_05: "ZTE MF667 Network Adapter"
 
-It doesn't reproduce immediately and it's possible I could have made a
-mistake on the bisect.
+Signed-off-by: Raymond Wanyoike <raymond.wanyoike@gmail.com>
+---
+ drivers/net/usb/qmi_wwan.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-I'll verify and try to narrow down the reproducer.
+diff --git a/drivers/net/usb/qmi_wwan.c b/drivers/net/usb/qmi_wwan.c
+index 23bdd5b..47b0295 100644
+--- a/drivers/net/usb/qmi_wwan.c
++++ b/drivers/net/usb/qmi_wwan.c
+@@ -712,6 +712,7 @@ static const struct usb_device_id products[] = {
+ 	{QMI_FIXED_INTF(0x19d2, 0x1255, 3)},
+ 	{QMI_FIXED_INTF(0x19d2, 0x1255, 4)},
+ 	{QMI_FIXED_INTF(0x19d2, 0x1256, 4)},
++	{QMI_FIXED_INTF(0x19d2, 0x1270, 5)},	/* ZTE MF667 */
+ 	{QMI_FIXED_INTF(0x19d2, 0x1401, 2)},
+ 	{QMI_FIXED_INTF(0x19d2, 0x1402, 2)},	/* ZTE MF60 */
+ 	{QMI_FIXED_INTF(0x19d2, 0x1424, 2)},
+-- 
+1.8.5.4
 
---b.
