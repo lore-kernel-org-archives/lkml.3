@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044AbaBHQPt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 11:15:49 -0500
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:42809 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751959AbaBHQPh (ORCPT
+	id S1752162AbaBHQQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 11:16:56 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:55136 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751833AbaBHQPs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 11:15:37 -0500
+	Sat, 8 Feb 2014 11:15:48 -0500
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 05/13] cgroup: factor out cgroup_setup_root() from cgroup_mount()
-Date: Sat,  8 Feb 2014 11:15:19 -0500
-Message-Id: <1391876127-7134-6-git-send-email-tj@kernel.org>
+Subject: [PATCH 12/13] cgroup: relocate functions in preparation of kernfs conversion
+Date: Sat,  8 Feb 2014 11:15:26 -0500
+Message-Id: <1391876127-7134-13-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1391876127-7134-1-git-send-email-tj@kernel.org>
 References: <1391876127-7134-1-git-send-email-tj@kernel.org>
@@ -21,268 +21,309 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Factor out new root initialization into cgroup_setup_root() from
-cgroup_mount().  This makes it easier to follow and will ease kernfs
+Relocate cgroup_init/exit_root_id(), cgroup_free_root(),
+cgroup_kill_sb() and cgroup_file_name() in preparation of kernfs
 conversion.
+
+These are pure relocations to make kernfs conversion easier to follow.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- kernel/cgroup.c | 211 ++++++++++++++++++++++++++++++--------------------------
- 1 file changed, 113 insertions(+), 98 deletions(-)
+ kernel/cgroup.c | 232 ++++++++++++++++++++++++++++----------------------------
+ 1 file changed, 117 insertions(+), 115 deletions(-)
 
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index d88393c..8a9548c 100644
+index fd4a528..992c2ba 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -1453,17 +1453,126 @@ static int cgroup_get_rootdir(struct super_block *sb)
- 	return 0;
+@@ -170,6 +170,8 @@ static int need_forkexit_callback __read_mostly;
+ static struct cftype cgroup_base_files[];
+ 
+ static void cgroup_put(struct cgroup *cgrp);
++static int rebind_subsystems(struct cgroupfs_root *root,
++			     unsigned long added_mask, unsigned removed_mask);
+ static void cgroup_destroy_css_killed(struct cgroup *cgrp);
+ static int cgroup_destroy_locked(struct cgroup *cgrp);
+ static int cgroup_addrm_files(struct cgroup *cgrp, struct cftype cfts[],
+@@ -690,6 +692,42 @@ static struct css_set *find_css_set(struct css_set *old_cset,
+ 	return cset;
  }
  
-+static int cgroup_setup_root(struct cgroupfs_root *root)
++static int cgroup_init_root_id(struct cgroupfs_root *root, int start, int end)
 +{
-+	LIST_HEAD(tmp_links);
-+	struct super_block *sb = root->sb;
-+	struct cgroup *root_cgrp = &root->top_cgroup;
-+	struct cgroupfs_root *existing_root;
-+	struct css_set *cset;
-+	struct inode *inode;
-+	const struct cred *cred;
-+	int i, ret;
++	int id;
 +
-+	lockdep_assert_held(&cgroup_tree_mutex);
 +	lockdep_assert_held(&cgroup_mutex);
-+	BUG_ON(sb->s_root != NULL);
 +
-+	mutex_unlock(&cgroup_mutex);
-+	mutex_unlock(&cgroup_tree_mutex);
++	id = idr_alloc_cyclic(&cgroup_hierarchy_idr, root, start, end,
++			      GFP_KERNEL);
++	if (id < 0)
++		return id;
 +
-+	ret = cgroup_get_rootdir(sb);
-+	if (ret) {
-+		mutex_lock(&cgroup_tree_mutex);
-+		mutex_lock(&cgroup_mutex);
-+		return ret;
++	root->hierarchy_id = id;
++	return 0;
++}
++
++static void cgroup_exit_root_id(struct cgroupfs_root *root)
++{
++	lockdep_assert_held(&cgroup_mutex);
++
++	if (root->hierarchy_id) {
++		idr_remove(&cgroup_hierarchy_idr, root->hierarchy_id);
++		root->hierarchy_id = 0;
 +	}
-+	inode = sb->s_root->d_inode;
++}
 +
-+	mutex_lock(&inode->i_mutex);
++static void cgroup_free_root(struct cgroupfs_root *root)
++{
++	if (root) {
++		/* hierarhcy ID shoulid already have been released */
++		WARN_ON_ONCE(root->hierarchy_id);
++
++		idr_destroy(&root->cgroup_idr);
++		kfree(root);
++	}
++}
++
+ static void cgroup_get_root(struct cgroupfs_root *root)
+ {
+ 	atomic_inc(&root->sb->s_active);
+@@ -700,6 +738,59 @@ static void cgroup_put_root(struct cgroupfs_root *root)
+ 	deactivate_super(root->sb);
+ }
+ 
++static void cgroup_kill_sb(struct super_block *sb)
++{
++	struct cgroupfs_root *root = sb->s_fs_info;
++	struct cgroup *cgrp = &root->top_cgroup;
++	struct cgrp_cset_link *link, *tmp_link;
++	int ret;
++
++	BUG_ON(!root);
++
++	BUG_ON(root->number_of_cgroups != 1);
++	BUG_ON(!list_empty(&cgrp->children));
++
++	mutex_lock(&cgrp->dentry->d_inode->i_mutex);
 +	mutex_lock(&cgroup_tree_mutex);
 +	mutex_lock(&cgroup_mutex);
 +
-+	ret = idr_alloc(&root->cgroup_idr, root_cgrp, 0, 1, GFP_KERNEL);
-+	if (ret < 0)
-+		goto out_unlock;
-+	root_cgrp->id = ret;
-+
-+	/* check for name clashes with existing mounts */
-+	ret = -EBUSY;
-+	if (strlen(root->name))
-+		for_each_active_root(existing_root)
-+			if (!strcmp(existing_root->name, root->name))
-+				goto out_unlock;
++	/* Rebind all subsystems back to the default hierarchy */
++	if (root->flags & CGRP_ROOT_SUBSYS_BOUND) {
++		ret = rebind_subsystems(root, 0, root->subsys_mask);
++		/* Shouldn't be able to fail ... */
++		BUG_ON(ret);
++	}
 +
 +	/*
-+	 * We're accessing css_set_count without locking css_set_lock here,
-+	 * but that's OK - it can only be increased by someone holding
-+	 * cgroup_lock, and that's us. The worst that can happen is that we
-+	 * have some link structures left over
-+	 */
-+	ret = allocate_cgrp_cset_links(css_set_count, &tmp_links);
-+	if (ret)
-+		goto out_unlock;
-+
-+	/* ID 0 is reserved for dummy root, 1 for unified hierarchy */
-+	ret = cgroup_init_root_id(root, 2, 0);
-+	if (ret)
-+		goto out_unlock;
-+
-+	sb->s_root->d_fsdata = root_cgrp;
-+	root_cgrp->dentry = sb->s_root;
-+
-+	/*
-+	 * We're inside get_sb() and will call lookup_one_len() to create
-+	 * the root files, which doesn't work if SELinux is in use.  The
-+	 * following cred dancing somehow works around it.  See 2ce9738ba
-+	 * ("cgroupfs: use init_cred when populating new cgroupfs mount")
-+	 * for more details.
-+	 */
-+	cred = override_creds(&init_cred);
-+
-+	ret = cgroup_addrm_files(root_cgrp, cgroup_base_files, true);
-+	if (ret)
-+		goto rm_base_files;
-+
-+	ret = rebind_subsystems(root, root->subsys_mask, 0);
-+	if (ret)
-+		goto rm_base_files;
-+
-+	revert_creds(cred);
-+
-+	/*
-+	 * There must be no failure case after here, since rebinding takes
-+	 * care of subsystems' refcounts, which are explicitly dropped in
-+	 * the failure exit path.
-+	 */
-+	list_add(&root->root_list, &cgroup_roots);
-+	cgroup_root_count++;
-+
-+	/*
-+	 * Link the top cgroup in this hierarchy into all the css_set
-+	 * objects.
++	 * Release all the links from cset_links to this hierarchy's
++	 * root cgroup
 +	 */
 +	write_lock(&css_set_lock);
-+	hash_for_each(css_set_table, i, cset, hlist)
-+		link_css_set(&tmp_links, cset, root_cgrp);
++
++	list_for_each_entry_safe(link, tmp_link, &cgrp->cset_links, cset_link) {
++		list_del(&link->cset_link);
++		list_del(&link->cgrp_link);
++		kfree(link);
++	}
 +	write_unlock(&css_set_lock);
 +
-+	BUG_ON(!list_empty(&root_cgrp->children));
-+	BUG_ON(root->number_of_cgroups != 1);
++	if (!list_empty(&root->root_list)) {
++		list_del(&root->root_list);
++		cgroup_root_count--;
++	}
 +
-+	ret = 0;
-+	goto out_unlock;
-+
-+rm_base_files:
-+	cgroup_addrm_files(&root->top_cgroup, cgroup_base_files, false);
-+	revert_creds(cred);
 +	cgroup_exit_root_id(root);
-+out_unlock:
-+	mutex_unlock(&inode->i_mutex);
-+	free_cgrp_cset_links(&tmp_links);
-+	return ret;
++
++	mutex_unlock(&cgroup_mutex);
++	mutex_unlock(&cgroup_tree_mutex);
++	mutex_unlock(&cgrp->dentry->d_inode->i_mutex);
++
++	simple_xattrs_free(&cgrp->xattrs);
++
++	kill_litter_super(sb);
++	cgroup_free_root(root);
 +}
 +
- static struct dentry *cgroup_mount(struct file_system_type *fs_type,
- 			 int flags, const char *unused_dev_name,
- 			 void *data)
+ /*
+  * Return the cgroup for "task" from the given hierarchy. Must be
+  * called with cgroup_mutex held.
+@@ -846,6 +937,32 @@ static char *cgroup_file_name(struct cgroup *cgrp, const struct cftype *cft,
+ 	return buf;
+ }
+ 
++/**
++ * cgroup_file_mode - deduce file mode of a control file
++ * @cft: the control file in question
++ *
++ * returns cft->mode if ->mode is not 0
++ * returns S_IRUGO|S_IWUSR if it has both a read and a write handler
++ * returns S_IRUGO if it has only a read handler
++ * returns S_IWUSR if it has only a write hander
++ */
++static umode_t cgroup_file_mode(const struct cftype *cft)
++{
++	umode_t mode = 0;
++
++	if (cft->mode)
++		return cft->mode;
++
++	if (cft->read_u64 || cft->read_s64 || cft->seq_show)
++		mode |= S_IRUGO;
++
++	if (cft->write_u64 || cft->write_s64 || cft->write_string ||
++	    cft->trigger)
++		mode |= S_IWUSR;
++
++	return mode;
++}
++
+ static void cgroup_free_fn(struct work_struct *work)
  {
--	LIST_HEAD(tmp_links);
- 	struct super_block *sb = NULL;
--	struct inode *inode = NULL;
- 	struct cgroupfs_root *root = NULL;
- 	struct cgroup_sb_opts opts;
- 	struct cgroupfs_root *new_root;
--	const struct cred *cred;
+ 	struct cgroup *cgrp = container_of(work, struct cgroup, destroy_work);
+@@ -1356,31 +1473,6 @@ static void init_cgroup_root(struct cgroupfs_root *root)
+ 	idr_init(&root->cgroup_idr);
+ }
+ 
+-static int cgroup_init_root_id(struct cgroupfs_root *root, int start, int end)
+-{
+-	int id;
+-
+-	lockdep_assert_held(&cgroup_mutex);
+-
+-	id = idr_alloc_cyclic(&cgroup_hierarchy_idr, root, start, end,
+-			      GFP_KERNEL);
+-	if (id < 0)
+-		return id;
+-
+-	root->hierarchy_id = id;
+-	return 0;
+-}
+-
+-static void cgroup_exit_root_id(struct cgroupfs_root *root)
+-{
+-	lockdep_assert_held(&cgroup_mutex);
+-
+-	if (root->hierarchy_id) {
+-		idr_remove(&cgroup_hierarchy_idr, root->hierarchy_id);
+-		root->hierarchy_id = 0;
+-	}
+-}
+-
+ static int cgroup_test_super(struct super_block *sb, void *data)
+ {
+ 	struct cgroup_sb_opts *opts = data;
+@@ -1433,17 +1525,6 @@ static struct cgroupfs_root *cgroup_root_from_opts(struct cgroup_sb_opts *opts)
+ 	return root;
+ }
+ 
+-static void cgroup_free_root(struct cgroupfs_root *root)
+-{
+-	if (root) {
+-		/* hierarhcy ID shoulid already have been released */
+-		WARN_ON_ONCE(root->hierarchy_id);
+-
+-		idr_destroy(&root->cgroup_idr);
+-		kfree(root);
+-	}
+-}
+-
+ static int cgroup_set_super(struct super_block *sb, void *data)
+ {
  	int ret;
+@@ -1689,59 +1770,6 @@ out_unlock:
+ 		return ERR_PTR(ret);
+ }
  
- 	mutex_lock(&cgroup_tree_mutex);
-@@ -1500,94 +1609,9 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
- 	root = sb->s_fs_info;
- 	BUG_ON(!root);
- 	if (root == opts.new_root) {
--		/* We used the new root structure, so this is a new hierarchy */
--		struct cgroup *root_cgrp = &root->top_cgroup;
--		struct cgroupfs_root *existing_root;
--		int i;
--		struct css_set *cset;
+-static void cgroup_kill_sb(struct super_block *sb)
+-{
+-	struct cgroupfs_root *root = sb->s_fs_info;
+-	struct cgroup *cgrp = &root->top_cgroup;
+-	struct cgrp_cset_link *link, *tmp_link;
+-	int ret;
 -
--		BUG_ON(sb->s_root != NULL);
+-	BUG_ON(!root);
 -
--		mutex_unlock(&cgroup_mutex);
--		mutex_unlock(&cgroup_tree_mutex);
+-	BUG_ON(root->number_of_cgroups != 1);
+-	BUG_ON(!list_empty(&cgrp->children));
 -
--		ret = cgroup_get_rootdir(sb);
-+		ret = cgroup_setup_root(root);
- 		if (ret)
- 			goto out_unlock;
--		inode = sb->s_root->d_inode;
+-	mutex_lock(&cgrp->dentry->d_inode->i_mutex);
+-	mutex_lock(&cgroup_tree_mutex);
+-	mutex_lock(&cgroup_mutex);
 -
--		mutex_lock(&inode->i_mutex);
--		mutex_lock(&cgroup_tree_mutex);
--		mutex_lock(&cgroup_mutex);
+-	/* Rebind all subsystems back to the default hierarchy */
+-	if (root->flags & CGRP_ROOT_SUBSYS_BOUND) {
+-		ret = rebind_subsystems(root, 0, root->subsys_mask);
+-		/* Shouldn't be able to fail ... */
+-		BUG_ON(ret);
+-	}
 -
--		ret = idr_alloc(&root->cgroup_idr, root_cgrp, 0, 1, GFP_KERNEL);
--		if (ret < 0)
--			goto out_unlock;
--		root_cgrp->id = ret;
+-	/*
+-	 * Release all the links from cset_links to this hierarchy's
+-	 * root cgroup
+-	 */
+-	write_lock(&css_set_lock);
 -
--		/* Check for name clashes with existing mounts */
--		ret = -EBUSY;
--		if (strlen(root->name))
--			for_each_active_root(existing_root)
--				if (!strcmp(existing_root->name, root->name))
--					goto out_unlock;
+-	list_for_each_entry_safe(link, tmp_link, &cgrp->cset_links, cset_link) {
+-		list_del(&link->cset_link);
+-		list_del(&link->cgrp_link);
+-		kfree(link);
+-	}
+-	write_unlock(&css_set_lock);
 -
--		/*
--		 * We're accessing css_set_count without locking
--		 * css_set_lock here, but that's OK - it can only be
--		 * increased by someone holding cgroup_lock, and
--		 * that's us. The worst that can happen is that we
--		 * have some link structures left over
--		 */
--		ret = allocate_cgrp_cset_links(css_set_count, &tmp_links);
--		if (ret)
--			goto out_unlock;
+-	if (!list_empty(&root->root_list)) {
+-		list_del(&root->root_list);
+-		cgroup_root_count--;
+-	}
 -
--		/* ID 0 is reserved for dummy root, 1 for unified hierarchy */
--		ret = cgroup_init_root_id(root, 2, 0);
--		if (ret)
--			goto out_unlock;
--
--		sb->s_root->d_fsdata = root_cgrp;
--		root_cgrp->dentry = sb->s_root;
--
--		/*
--		 * We're inside get_sb() and will call lookup_one_len() to
--		 * create the root files, which doesn't work if SELinux is
--		 * in use.  The following cred dancing somehow works around
--		 * it.  See 2ce9738ba ("cgroupfs: use init_cred when
--		 * populating new cgroupfs mount") for more details.
--		 */
--		cred = override_creds(&init_cred);
--
--		ret = cgroup_addrm_files(root_cgrp, cgroup_base_files, true);
--		if (ret)
--			goto rm_base_files;
--
--		ret = rebind_subsystems(root, root->subsys_mask, 0);
--		if (ret)
--			goto rm_base_files;
--
--		revert_creds(cred);
--
--		/*
--		 * There must be no failure case after here, since rebinding
--		 * takes care of subsystems' refcounts, which are explicitly
--		 * dropped in the failure exit path.
--		 */
--
--		list_add(&root->root_list, &cgroup_roots);
--		cgroup_root_count++;
--
--		/* Link the top cgroup in this hierarchy into all
--		 * the css_set objects */
--		write_lock(&css_set_lock);
--		hash_for_each(css_set_table, i, cset, hlist)
--			link_css_set(&tmp_links, cset, root_cgrp);
--		write_unlock(&css_set_lock);
--
--		BUG_ON(!list_empty(&root_cgrp->children));
--		BUG_ON(root->number_of_cgroups != 1);
- 	} else {
- 		/*
- 		 * We re-used an existing hierarchy - the new root (if
-@@ -1607,22 +1631,13 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
- 	}
- 
- 	ret = 0;
--	goto out_unlock;
--
--rm_base_files:
--	cgroup_addrm_files(&root->top_cgroup, cgroup_base_files, false);
--	revert_creds(cred);
 -	cgroup_exit_root_id(root);
- out_unlock:
- 	mutex_unlock(&cgroup_mutex);
- 	mutex_unlock(&cgroup_tree_mutex);
--	if (inode)
--		mutex_unlock(&inode->i_mutex);
+-
+-	mutex_unlock(&cgroup_mutex);
+-	mutex_unlock(&cgroup_tree_mutex);
+-	mutex_unlock(&cgrp->dentry->d_inode->i_mutex);
+-
+-	simple_xattrs_free(&cgrp->xattrs);
+-
+-	kill_litter_super(sb);
+-	cgroup_free_root(root);
+-}
+-
+ static struct file_system_type cgroup_fs_type = {
+ 	.name = "cgroup",
+ 	.mount = cgroup_mount,
+@@ -2617,32 +2645,6 @@ static int cgroup_create_file(struct dentry *dentry, umode_t mode,
+ 	return 0;
+ }
  
- 	if (ret && !IS_ERR_OR_NULL(sb))
- 		deactivate_locked_super(sb);
- 
--	free_cgrp_cset_links(&tmp_links);
- 	kfree(opts.release_agent);
- 	kfree(opts.name);
- 
+-/**
+- * cgroup_file_mode - deduce file mode of a control file
+- * @cft: the control file in question
+- *
+- * returns cft->mode if ->mode is not 0
+- * returns S_IRUGO|S_IWUSR if it has both a read and a write handler
+- * returns S_IRUGO if it has only a read handler
+- * returns S_IWUSR if it has only a write hander
+- */
+-static umode_t cgroup_file_mode(const struct cftype *cft)
+-{
+-	umode_t mode = 0;
+-
+-	if (cft->mode)
+-		return cft->mode;
+-
+-	if (cft->read_u64 || cft->read_s64 || cft->seq_show)
+-		mode |= S_IRUGO;
+-
+-	if (cft->write_u64 || cft->write_s64 || cft->write_string ||
+-	    cft->trigger)
+-		mode |= S_IWUSR;
+-
+-	return mode;
+-}
+-
+ static int cgroup_add_file(struct cgroup *cgrp, struct cftype *cft)
+ {
+ 	struct dentry *dir = cgrp->dentry;
 -- 
 1.8.5.3
 
