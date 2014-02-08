@@ -1,69 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751721AbaBHT4d (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 14:56:33 -0500
-Received: from isrv.corpit.ru ([86.62.121.231]:40347 "EHLO isrv.corpit.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751487AbaBHT4c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 14:56:32 -0500
-Message-ID: <52F68BEF.5030305@msgid.tls.msk.ru>
-Date: Sat, 08 Feb 2014 23:56:31 +0400
-From: Michael Tokarev <mjt@tls.msk.ru>
-Organization: Telecom Service, JSC
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	id S1751802AbaBHT6N (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 14:58:13 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:37769 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751370AbaBHT6L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Feb 2014 14:58:11 -0500
+Date: Sun, 9 Feb 2014 01:28:07 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        Gao feng <gaofeng@cn.fujitsu.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steffen Hurrle <steffen@hurrle.net>, Jiri Pirko <jiri@resnulli.us>,
+        netdev@vger.kernel.org, linux-decnet-user@lists.sourceforge.net,
+        josh@joshtriplett.org
+Subject: [PATCH 06/13] net: Move prototype declaration to appropriate header
+ file from decnet/af_decnet.c
+Message-ID: <46f32476c8361e104aa27cebb3425b4926f5ad57.1391888654.git.rashika.kheria@gmail.com>
+References: <6f029c895035908595957fb16ab445c82793c77d.1391888654.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
-To: Linux-kernel <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org
-Subject: screen goes blank when loading gma500_gfx (atom D2500)
-X-Enigmail-Version: 1.5.1
-OpenPGP: id=804465C5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <6f029c895035908595957fb16ab445c82793c77d.1391888654.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Move prototype declaration of functions to header file include/net/dn_route.h
+from net/decnet/af_decnet.c because it is used by more than one file.
 
-Today I rebooted my router into a new kernel and noticed that
-the screen goes blank after booting the system (initial bootup
-messages are visible).  After some debugging it turns out that
-the screen goes blank when loading gma500_gfx module.
+This eliminates the following warning in net/decnet/dn_route.c:
+net/decnet/dn_route.c:629:5: warning: no previous prototype for ‘dn_route_rcv’ [-Wmissing-prototypes]
 
-This is an intel D2500CC motherboard with Atom D5200 built-in,
-with a monitor connected to a VGA port, the following vga device
-is reported by lspci:
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+---
+ include/net/dn_route.h |    2 ++
+ net/decnet/af_decnet.c |    2 --
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-00:02.0 VGA compatible controller: Intel Corporation Atom Processor D2xxx/N2xxx Integrated Graphics Controller (rev 09)
+diff --git a/include/net/dn_route.h b/include/net/dn_route.h
+index b409ad6..55df993 100644
+--- a/include/net/dn_route.h
++++ b/include/net/dn_route.h
+@@ -20,6 +20,8 @@ int dn_route_output_sock(struct dst_entry __rcu **pprt, struct flowidn *,
+ 			 struct sock *sk, int flags);
+ int dn_cache_dump(struct sk_buff *skb, struct netlink_callback *cb);
+ void dn_rt_cache_flush(int delay);
++int dn_route_rcv(struct sk_buff *skb, struct net_device *dev,
++		 struct packet_type *pt, struct net_device *orig_dev);
+ 
+ /* Masks for flags field */
+ #define DN_RT_F_PID 0x07 /* Mask for packet type                      */
+diff --git a/net/decnet/af_decnet.c b/net/decnet/af_decnet.c
+index 2954dcb..24d9193 100644
+--- a/net/decnet/af_decnet.c
++++ b/net/decnet/af_decnet.c
+@@ -2104,8 +2104,6 @@ static struct notifier_block dn_dev_notifier = {
+ 	.notifier_call = dn_device_event,
+ };
+ 
+-extern int dn_route_rcv(struct sk_buff *, struct net_device *, struct packet_type *, struct net_device *);
+-
+ static struct packet_type dn_dix_packet_type __read_mostly = {
+ 	.type =		cpu_to_be16(ETH_P_DNA_RT),
+ 	.func =		dn_route_rcv,
+-- 
+1.7.9.5
 
-Here are the dmesg output after loading gma500_gfx:
-
-[  176.427071] Linux agpgart interface v0.103
-[  176.452914] [drm] Initialized drm 1.1.0 20060810
-[  176.476037] gma500 0000:00:02.0: setting latency timer to 64
-[  176.476216] gma500 0000:00:02.0: irq 50 for MSI/MSI-X
-[  176.491675] acpi device:29: registered as cooling_device2
-[  176.492041] ACPI: Video Device [GFX0] (multi-head: yes  rom: no  post: no)
-[  176.492169] input: Video Bus as /devices/LNXSYSTM:00/device:00/PNP0A08:00/LNXVIDEO:00/input/input11
-[  176.492357] [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
-[  176.492396] [drm] No driver support for vblank timestamp query.
-[  176.607485] gma500 0000:00:02.0: trying to get vblank count for disabled pipe 1
-[  176.607531] gma500 0000:00:02.0: trying to get vblank count for disabled pipe 1
-[  176.806078] [drm] Initialized gma500 1.0.0 2011-06-06 for 0000:00:02.0 on minor 0
-
-which does not look bad or suspicious to me.
-
-fbcon is loaded so it isn't an issue.
-
-I tried 3.10 kernel initially (the above messages are from it), next
-I tried 3.13 kernel too, and that one behaves exactly the same.
-
-As far as I remember, this system never worked with graphics well.
-Previous kernel (from which I updated) was 3.2 which had no
-gma500 module (local build).
-
-What are the steps to debug this further?
-
-Thanks,
-
-/mjt
