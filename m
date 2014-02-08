@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751125AbaBHBrM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 20:47:12 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:32690 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750706AbaBHBrL (ORCPT
+	id S1751383AbaBHBrx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 20:47:53 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:63617 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751334AbaBHBrw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 20:47:11 -0500
+	Fri, 7 Feb 2014 20:47:52 -0500
 From: Wang Nan <wangnan0@huawei.com>
 To: <linux-kernel@vger.kernel.org>
-CC: Sasha Levin <sasha.levin@oracle.com>, Wang Nan <wangnan0@huawei.com>,
-        "Ingo Molnar" <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Geng Hui" <hui.geng@huawei.com>
-Subject: [PATCH resend 1/2] liblockdep: Use realpath for srctree and objtree
-Date: Sat, 8 Feb 2014 09:43:40 +0800
-Message-ID: <1391823820-11154-1-git-send-email-wangnan0@huawei.com>
+CC: Jiri Olsa <jolsa@redhat.com>, Wang Nan <wangnan0@huawei.com>,
+        "Arnaldo Carvalho de Melo" <acme@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        Geng Hui <hui.geng@huawei.com>
+Subject: [PATCH resend 2/2] tools lib traceevent: Use realpath for srctree and objtree
+Date: Sat, 8 Feb 2014 09:44:56 +0800
+Message-ID: <1391823896-11277-1-git-send-email-wangnan0@huawei.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1390730778-30366-1-git-send-email-wangnan0@huawei.com>
 References: <1390730778-30366-1-git-send-email-wangnan0@huawei.com>
@@ -35,20 +37,23 @@ https://bugzilla.redhat.com/show_bug.cgi?id=304121
 This patch uses realpath command to makesure potential tailing '/'s are removed.
 
 Signed-off-by: Wang Nan <wangnan0@huawei.com>
-Acked-by: Sasha Levin <sasha.levin@oracle.com> 
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Geng Hui <hui.geng@huawei.com>
 
 ---
- tools/lib/lockdep/Makefile | 4 ++--
+ tools/lib/traceevent/Makefile | 4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/tools/lib/lockdep/Makefile b/tools/lib/lockdep/Makefile
-index da8b7aa..e638dd5 100644
---- a/tools/lib/lockdep/Makefile
-+++ b/tools/lib/lockdep/Makefile
-@@ -87,8 +87,8 @@ endif # BUILD_SRC
+diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
+index 005c9cc..5bb281c 100644
+--- a/tools/lib/traceevent/Makefile
++++ b/tools/lib/traceevent/Makefile
+@@ -107,8 +107,8 @@ endif # BUILD_SRC
  # We process the rest of the Makefile if this is the final invocation of make
  ifeq ($(skip-makefile),)
  
