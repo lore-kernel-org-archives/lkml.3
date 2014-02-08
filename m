@@ -1,82 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751763AbaBHOTK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 09:19:10 -0500
-Received: from infra.glanzmann.de ([88.198.249.254]:60816 "EHLO
-	infra.glanzmann.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751170AbaBHOTI (ORCPT
+	id S1751852AbaBHOWP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 09:22:15 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:56042 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751770AbaBHOWN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 09:19:08 -0500
-Date: Sat, 8 Feb 2014 15:19:05 +0100
-From: Thomas Glanzmann <thomas@glanzmann.de>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: John Ogness <john.ogness@linutronix.de>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        Linux Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: REGRESSION f54b311142a92ea2e42598e347b84e1655caf8e3 tcp auto
- corking slows down iSCSI file system creation by factor of 70 [WAS: 4 TB
- VMFS creation takes 15 minutes vs 26 seconds]
-Message-ID: <20140208141905.GG20512@glanzmann.de>
-Mail-Followup-To: Eric Dumazet <eric.dumazet@gmail.com>,
-	John Ogness <john.ogness@linutronix.de>,
-	Eric Dumazet <edumazet@google.com>,
-	"David S. Miller" <davem@davemloft.net>,
-	"Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-	target-devel <target-devel@vger.kernel.org>,
-	Linux Network Development <netdev@vger.kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <1391727771.14985.41.camel@haakon3.risingtidesystems.com>
- <20140207051500.GB10916@glanzmann.de>
- <20140207075536.GB17815@glanzmann.de>
- <1391801597.1155.28.camel@haakon3.risingtidesystems.com>
- <20140207205142.GA8609@glanzmann.de>
- <20140208093808.GD16336@glanzmann.de>
- <1391865273.10160.76.camel@edumazet-glaptop2.roam.corp.google.com>
- <1391866389.10160.80.camel@edumazet-glaptop2.roam.corp.google.com>
- <1391867404.10160.88.camel@edumazet-glaptop2.roam.corp.google.com>
- <1391868816.10160.93.camel@edumazet-glaptop2.roam.corp.google.com>
+	Sat, 8 Feb 2014 09:22:13 -0500
+Date: Sat, 8 Feb 2014 14:22:08 +0000
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Tanmay Inamdar <tinamdar@apm.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] pci: Add support for creating a generic host_bridge from
+ device tree
+Message-ID: <20140208142207.GR4993@e106497-lin.cambridge.arm.com>
+Mail-Followup-To: Tanmay Inamdar <tinamdar@apm.com>,
+	Arnd Bergmann <arnd@arndb.de>,
+	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	linaro-kernel <linaro-kernel@lists.linaro.org>,
+	linux-pci <linux-pci@vger.kernel.org>,
+	Will Deacon <Will.Deacon@arm.com>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Catalin Marinas <Catalin.Marinas@arm.com>,
+	Bjorn Helgaas <bhelgaas@google.com>,
+	LAKML <linux-arm-kernel@lists.infradead.org>
+References: <1391452428-22917-1-git-send-email-Liviu.Dudau@arm.com>
+ <1391452428-22917-2-git-send-email-Liviu.Dudau@arm.com>
+ <7398333.9L5KlyFggU@wuerfel>
+ <CACoXjckKRQfR3CbC1JpgbhOumED+OqiMh1_Y73-h6q=ByMNanw@mail.gmail.com>
+ <20140206101814.GA4993@e106497-lin.cambridge.arm.com>
+ <CACoXjcnTHgtBDesqFUOca1nf34HvNGAV0vP9AEB5xV1mvcRGfw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <CACoXjcnTHgtBDesqFUOca1nf34HvNGAV0vP9AEB5xV1mvcRGfw@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 08 Feb 2014 14:22:08.0370 (UTC) FILETIME=[26281D20:01CF24D9]
+X-MC-Unique: 114020814221001201
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <1391868816.10160.93.camel@edumazet-glaptop2.roam.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Eric,
+On Sat, Feb 08, 2014 at 12:21:56AM +0000, Tanmay Inamdar wrote:
+> On Thu, Feb 6, 2014 at 2:18 AM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+> > On Wed, Feb 05, 2014 at 10:26:27PM +0000, Tanmay Inamdar wrote:
+> >> Hello Liviu,
+> >>
+> >> I did not get the first email of this particular patch on any of
+> >> subscribed mailing lists (don't know why), hence replying here.
+> >
+> > Strange, it shows in the MARC and GMANE archive for linux-pci, probably
+> > a hickup on your receiving side?
+> >
+> >>
+> >> +struct pci_host_bridge *
+> >> +pci_host_bridge_of_init(struct device *parent, int busno, struct pci_ops *ops,
+> >> + void *host_data, struct list_head *resources)
+> >> +{
+> >> + struct pci_bus *root_bus;
+> >> + struct pci_host_bridge *bridge;
+> >> +
+> >> + /* first parse the host bridge bus ranges */
+> >> + if (pci_host_bridge_of_get_ranges(parent->of_node, resources))
+> >> + return NULL;
+> >> +
+> >> + /* then create the root bus */
+> >> + root_bus = pci_create_root_bus(parent, busno, ops, host_data, resources);
+> >> + if (!root_bus)
+> >> + return NULL;
+> >> +
+> >> + bridge = to_pci_host_bridge(root_bus->bridge);
+> >> +
+> >> + return bridge;
+> >> +}
+> >>
+> >> You are keeping the domain_nr inside pci_host_bridge structure. In
+> >> above API, domain_nr is required in 'pci_find_bus' function called
+> >> from 'pci_create_root_bus'. Since the bridge is allocated after
+> >> creating root bus, 'pci_find_bus' always gets domain_nr as 0. This
+> >> will cause problem for scanning multiple domains.
+> >
+> > Good catch. I was switching between creating a pci_controller in arch/arm64 and
+> > adding the needed bits in pci_host_bridge. After internal review I've decided to
+> > add the domain_nr to pci_host_bridge, but forgot to update the code everywhere.
+> >
+> > Thanks for reviewing this, will fix in v2.
+> >
+> > Do you find porting to the new API straight forward?
+> 
+> It is quite straight forward for MEM regions but for IO regions it is
+> not. You always assume IO resource starting at 0x0. IMO, this will
+> cause problem for systems with multiple ports / IO windows. You can
+> take a look at 'drivers/pci/host/pcie-designware.c'.
+> 
+> Also the manipulations of addresses for IO_RESOURCES can be dangerous.
+> It can make some value negative. For example if my PCI IO range starts
+> in 32 bit address range say 0x8000_0000 with CPU address
+> 0xb0_8000_0000, window->offset after manipulation will become
+> negative.
+> 
+> Personally I would like to do get all the PCI and CPU addresses from
+> my device tree as is and do the 'pci_add_resource_offset'. This will
+> help me setup my regions correctly without any further arithmetic.
+> Please let me know what you think.
 
-> > BTW this problem demonstrates there is room for improvement in iCSCI,
-> > using MSG_MORE to avoid sending two small segments in separate frames.
+Yes, that parsing code of ranges is incorrect in light of the current discussion. I
+will try to propose a fix in the v2 series.
 
-> With the fix, new pcap is more explicit about this suboptimal behavior :
+Regarding your PCI IO range: if your bus address starts at 0x8000_0000, would
+that not cause problems with devices that use less than 32bits for address
+decoding? It is a rather unusual setup, I believe the x86 world (even PCI spec?)
+mandates IO bus ranges in the first 16MB of address range?
 
-> 05:34:16.280900 IP 10.101.0.13.41531 > 10.101.99.5.3260: Flags [.], ack 54353, win 514, options [nop,nop,TS val 1732452 ecr 4294935370], length 0
-> 05:34:16.280949 IP 10.101.0.13.41531 > 10.101.99.5.3260: Flags [P.], seq 5328:5376, ack 54353, win 514, options [nop,nop,TS val 1732452 ecr 4294935370], length 48
+Best regards,
+Liviu
 
-> 05:34:16.280982 IP 10.101.99.5.3260 > 10.101.0.13.41531: Flags [P.], seq 54353:54401, ack 5376, win 235, options [nop,nop,TS val 4294935370 ecr 1732452], length 48
-> 05:34:16.281000 IP 10.101.99.5.3260 > 10.101.0.13.41531: Flags [P.], seq 54401:54913, ack 5376, win 235, options [nop,nop,TS val 4294935370 ecr 1732452], length 512
+> 
+> >
+> > Best regards,
+> > Liviu
+> >
+> >>
+> >>
+> >> On Mon, Feb 3, 2014 at 10:46 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> >> > On Monday 03 February 2014 18:33:48 Liviu Dudau wrote:
+> >> >> +/**
+> >> >> + * pci_host_bridge_of_get_ranges - Parse PCI host bridge resources from DT
+> >> >> + * @dev: device node of the host bridge having the range property
+> >> >> + * @resources: list where the range of resources will be added after DT parsing
+> >> >> + *
+> >> >> + * This function will parse the "ranges" property of a PCI host bridge device
+> >> >> + * node and setup the resource mapping based on its content. It is expected
+> >> >> + * that the property conforms with the Power ePAPR document.
+> >> >> + *
+> >> >> + * Each architecture will then apply their filtering based on the limitations
+> >> >> + * of each platform. One general restriction seems to be the number of IO space
+> >> >> + * ranges, the PCI framework makes intensive use of struct resource management,
+> >> >> + * and for IORESOURCE_IO types they can only be requested if they are contained
+> >> >> + * within the global ioport_resource, so that should be limited to one IO space
+> >> >> + * range.
+> >> >
+> >> > Actually we have quite a different set of restrictions around I/O space on ARM32
+> >> > at the moment: Each host bridge can have its own 64KB range in an arbitrary
+> >> > location on MMIO space, and the total must not exceed 2MB of I/O space.
+> >> >
+> >> >> + */
+> >> >> +static int pci_host_bridge_of_get_ranges(struct device_node *dev,
+> >> >> +                                     struct list_head *resources)
+> >> >> +{
+> >> >> +     struct resource *res;
+> >> >> +     struct of_pci_range range;
+> >> >> +     struct of_pci_range_parser parser;
+> >> >> +     int err;
+> >> >> +
+> >> >> +     pr_info("PCI host bridge %s ranges:\n", dev->full_name);
+> >> >> +
+> >> >> +     /* Check for ranges property */
+> >> >> +     err = of_pci_range_parser_init(&parser, dev);
+> >> >> +     if (err)
+> >> >> +             return err;
+> >> >> +
+> >> >> +     pr_debug("Parsing ranges property...\n");
+> >> >> +     for_each_of_pci_range(&parser, &range) {
+> >> >> +             /* Read next ranges element */
+> >> >> +             pr_debug("pci_space: 0x%08x pci_addr:0x%016llx ",
+> >> >> +                             range.pci_space, range.pci_addr);
+> >> >> +             pr_debug("cpu_addr:0x%016llx size:0x%016llx\n",
+> >> >> +                                     range.cpu_addr, range.size);
+> >> >> +
+> >> >> +             /* If we failed translation or got a zero-sized region
+> >> >> +              * (some FW try to feed us with non sensical zero sized regions
+> >> >> +              * such as power3 which look like some kind of attempt
+> >> >> +              * at exposing the VGA memory hole) then skip this range
+> >> >> +              */
+> >> >> +             if (range.cpu_addr == OF_BAD_ADDR || range.size == 0)
+> >> >> +                     continue;
+> >> >> +
+> >> >> +             res = kzalloc(sizeof(struct resource), GFP_KERNEL);
+> >> >> +             if (!res) {
+> >> >> +                     err = -ENOMEM;
+> >> >> +                     goto bridge_ranges_nomem;
+> >> >> +             }
+> >> >> +
+> >> >> +             of_pci_range_to_resource(&range, dev, res);
+> >> >> +
+> >> >> +             pci_add_resource_offset(resources, res,
+> >> >> +                             range.cpu_addr - range.pci_addr);
+> >> >> +     }
+> >> >
+> >> > I believe of_pci_range_to_resource() will return the MMIO aperture for the
+> >> > I/O space window here, which is not what you are supposed to pass into
+> >> > pci_add_resource_offset.
+> >> >
+> >> >> +EXPORT_SYMBOL(pci_host_bridge_of_init);
+> >> >
+> >> > EXPORT_SYMBOL_GPL
+> >> >
+> >> >> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> >> >> index 6e34498..16febae 100644
+> >> >> --- a/drivers/pci/probe.c
+> >> >> +++ b/drivers/pci/probe.c
+> >> >> @@ -1787,6 +1787,17 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+> >> >>       list_for_each_entry_safe(window, n, resources, list) {
+> >> >>               list_move_tail(&window->list, &bridge->windows);
+> >> >>               res = window->res;
+> >> >> +             /*
+> >> >> +              * IO resources are stored in the kernel with a CPU start
+> >> >> +              * address of zero. Adjust the data accordingly and remember
+> >> >> +              * the offset
+> >> >> +              */
+> >> >> +             if (resource_type(res) == IORESOURCE_IO) {
+> >> >> +                     bridge->io_offset = res->start;
+> >> >> +                     res->end -= res->start;
+> >> >> +                     window->offset -= res->start;
+> >> >> +                     res->start = 0;
+> >> >> +             }
+> >> >>               offset = window->offset;
+> >> >>               if (res->flags & IORESOURCE_BUS)
+> >> >
+> >> > Won't this break all existing host bridges?
+> >> >
+> >> >         Arnd
+> >> >
+> >> > _______________________________________________
+> >> > linux-arm-kernel mailing list
+> >> > linux-arm-kernel@lists.infradead.org
+> >> > http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> >>
+> >
+> > --
+> > ====================
+> > | I would like to |
+> > | fix the world,  |
+> > | but they're not |
+> > | giving me the   |
+> >  \ source code!  /
+> >   ---------------
+> >     ¯\_(ツ)_/¯
+> >
+> > -- IMPORTANT NOTICE: The contents of this email and any attachments are confidential and may also be privileged. If you are not the intended recipient, please notify the sender immediately and do not disclose the contents to any other person, use it for any purpose, or store or copy the information in any medium.  Thank you.
+> >
+> > ARM Limited, Registered office 110 Fulbourn Road, Cambridge CB1 9NJ, Registered in England & Wales, Company No:  2557590
+> > ARM Holdings plc, Registered office 110 Fulbourn Road, Cambridge CB1 9NJ, Registered in England & Wales, Company No:  2548782
+> >
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-> 05:34:16.281107 IP 10.101.0.13.41531 > 10.101.99.5.3260: Flags [.], ack 54913, win 514, options [nop,nop,TS val 1732452 ecr 4294935370], length 0
-> 05:34:16.281157 IP 10.101.0.13.41531 > 10.101.99.5.3260: Flags [P.], seq 5376:5424, ack 54913, win 514, options [nop,nop,TS val 1732452 ecr 4294935370], length 48
+-- 
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
 
-> 05:34:16.281190 IP 10.101.99.5.3260 > 10.101.0.13.41531: Flags [P.], seq 54913:54961, ack 5424, win 235, options [nop,nop,TS val 4294935370 ecr 1732452], length 48
-> 05:34:16.281208 IP 10.101.99.5.3260 > 10.101.0.13.41531: Flags [P.], seq 54961:55473, ack 5424, win 235, options [nop,nop,TS val 4294935370 ecr 1732452], length 512
-
-> 05:34:16.281337 IP 10.101.0.13.41531 > 10.101.99.5.3260: Flags [.], ack 55473, win 514, options [nop,nop,TS val 1732452 ecr 4294935370], length 0
-> 05:34:16.281390 IP 10.101.0.13.41531 > 10.101.99.5.3260: Flags [P.], seq 5424:5472, ack 55473, win 514, options [nop,nop,TS val 1732452 ecr 4294935370], length 48
-
-> 05:34:16.281423 IP 10.101.99.5.3260 > 10.101.0.13.41531: Flags [P.], seq 55473:55521, ack 5472, win 235, options [nop,nop,TS val 4294935370 ecr 1732452], length 48
-> 05:34:16.281440 IP 10.101.99.5.3260 > 10.101.0.13.41531: Flags [P.], seq 55521:56033, ack 5472, win 235, options [nop,nop,TS val 4294935370 ecr 1732452], length 512
-
-I get the idea. However I'm a little bit confused, when I do a 'git grep
-MSG_MORE' I don't see much references in the Linux kernel who use it at
-all. So do you have an example for me where this flags needs to be
-applied?
-
-Cheers,
-        Thomas
