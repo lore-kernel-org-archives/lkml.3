@@ -1,71 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752399AbaBHQSt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 11:18:49 -0500
-Received: from mail-we0-f178.google.com ([74.125.82.178]:33989 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752366AbaBHQSr (ORCPT
+	id S1752673AbaBHQVx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 11:21:53 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:42855 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752371AbaBHQSs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 11:18:47 -0500
+	Sat, 8 Feb 2014 11:18:48 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
         Christoph Hellwig <hch@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Jan Kara <jack@suse.cz>, Jens Axboe <jens.axboe@oracle.com>,
-        Don Zickus <dzickus@redhat.com>, Michal Hocko <mhocko@suse.cz>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [RFC PATCH 00/11] smp: Single IPI cleanups
-Date: Sat,  8 Feb 2014 17:18:29 +0100
-Message-Id: <1391876320-25068-1-git-send-email-fweisbec@gmail.com>
+        Jens Axboe <jens.axboe@oracle.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 01/11] block: Stop abusing csd.list for fifo_time
+Date: Sat,  8 Feb 2014 17:18:30 +0100
+Message-Id: <1391876320-25068-2-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1391876320-25068-1-git-send-email-fweisbec@gmail.com>
+References: <1391876320-25068-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Jan Kara <jack@suse.cz>
 
-Here is a batch of cleanups on the generic single IPI code. I've
-gathered a few patches from Jan, split up some, and added a few more
-so that __smp_call_function_single() becomes less obscure.
+Block layer currently abuses rq->csd.list.next for storing fifo_time.
+That is a terrible hack and completely unnecessary as well. Union
+achieves the same space saving in a cleaner way.
 
-Comments?
-
-git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-	core/ipi-rfc
-
-Thanks,
-	Frederic
+Signed-off-by: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Christoph Hellwig <hch@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jens Axboe <jens.axboe@oracle.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
+ block/cfq-iosched.c      | 8 ++++----
+ block/deadline-iosched.c | 8 ++++----
+ include/linux/blkdev.h   | 1 +
+ include/linux/elevator.h | 6 ------
+ 4 files changed, 9 insertions(+), 14 deletions(-)
 
-Frederic Weisbecker (6):
-      block: Remove useless IPI struct initialization
-      smp: Consolidate the various smp_call_function_single() declensions
-      smp: Move __smp_call_function_single() below its safe version
-      watchdog: Simplify a little the IPI call
-      smp: Remove wait argument from __smp_call_function_single()
-      smp: Enhance and precise the role & requirements of __smp_call_function_single()
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index 744833b..5873e4a 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -2367,10 +2367,10 @@ cfq_merged_requests(struct request_queue *q, struct request *rq,
+ 	 * reposition in fifo if next is older than rq
+ 	 */
+ 	if (!list_empty(&rq->queuelist) && !list_empty(&next->queuelist) &&
+-	    time_before(rq_fifo_time(next), rq_fifo_time(rq)) &&
++	    time_before(next->fifo_time, rq->fifo_time) &&
+ 	    cfqq == RQ_CFQQ(next)) {
+ 		list_move(&rq->queuelist, &next->queuelist);
+-		rq_set_fifo_time(rq, rq_fifo_time(next));
++		rq->fifo_time = next->fifo_time;
+ 	}
+ 
+ 	if (cfqq->next_rq == next)
+@@ -2814,7 +2814,7 @@ static struct request *cfq_check_fifo(struct cfq_queue *cfqq)
+ 		return NULL;
+ 
+ 	rq = rq_entry_fifo(cfqq->fifo.next);
+-	if (time_before(jiffies, rq_fifo_time(rq)))
++	if (time_before(jiffies, rq->fifo_time))
+ 		rq = NULL;
+ 
+ 	cfq_log_cfqq(cfqq->cfqd, cfqq, "fifo=%p", rq);
+@@ -3927,7 +3927,7 @@ static void cfq_insert_request(struct request_queue *q, struct request *rq)
+ 	cfq_log_cfqq(cfqd, cfqq, "insert_request");
+ 	cfq_init_prio_data(cfqq, RQ_CIC(rq));
+ 
+-	rq_set_fifo_time(rq, jiffies + cfqd->cfq_fifo_expire[rq_is_sync(rq)]);
++	rq->fifo_time = jiffies + cfqd->cfq_fifo_expire[rq_is_sync(rq)];
+ 	list_add_tail(&rq->queuelist, &cfqq->fifo);
+ 	cfq_add_rq_rb(rq);
+ 	cfqg_stats_update_io_add(RQ_CFQG(rq), cfqd->serving_group,
+diff --git a/block/deadline-iosched.c b/block/deadline-iosched.c
+index 9ef6640..a753df2 100644
+--- a/block/deadline-iosched.c
++++ b/block/deadline-iosched.c
+@@ -106,7 +106,7 @@ deadline_add_request(struct request_queue *q, struct request *rq)
+ 	/*
+ 	 * set expire time and add to fifo list
+ 	 */
+-	rq_set_fifo_time(rq, jiffies + dd->fifo_expire[data_dir]);
++	rq->fifo_time = jiffies + dd->fifo_expire[data_dir];
+ 	list_add_tail(&rq->queuelist, &dd->fifo_list[data_dir]);
+ }
+ 
+@@ -174,9 +174,9 @@ deadline_merged_requests(struct request_queue *q, struct request *req,
+ 	 * and move into next position (next will be deleted) in fifo
+ 	 */
+ 	if (!list_empty(&req->queuelist) && !list_empty(&next->queuelist)) {
+-		if (time_before(rq_fifo_time(next), rq_fifo_time(req))) {
++		if (time_before(next->fifo_time, req->fifo_time)) {
+ 			list_move(&req->queuelist, &next->queuelist);
+-			rq_set_fifo_time(req, rq_fifo_time(next));
++			req->fifo_time = next->fifo_time;
+ 		}
+ 	}
+ 
+@@ -230,7 +230,7 @@ static inline int deadline_check_fifo(struct deadline_data *dd, int ddir)
+ 	/*
+ 	 * rq is expired!
+ 	 */
+-	if (time_after_eq(jiffies, rq_fifo_time(rq)))
++	if (time_after_eq(jiffies, rq->fifo_time))
+ 		return 1;
+ 
+ 	return 0;
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 8678c43..dda98e3 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -99,6 +99,7 @@ struct request {
+ 	union {
+ 		struct call_single_data csd;
+ 		struct work_struct mq_flush_data;
++		unsigned long fifo_time;
+ 	};
+ 
+ 	struct request_queue *q;
+diff --git a/include/linux/elevator.h b/include/linux/elevator.h
+index 306dd8c..0bdfd46 100644
+--- a/include/linux/elevator.h
++++ b/include/linux/elevator.h
+@@ -202,12 +202,6 @@ enum {
+ #define rq_end_sector(rq)	(blk_rq_pos(rq) + blk_rq_sectors(rq))
+ #define rb_entry_rq(node)	rb_entry((node), struct request, rb_node)
+ 
+-/*
+- * Hack to reuse the csd.list list_head as the fifo time holder while
+- * the request is in the io scheduler. Saves an unsigned long in rq.
+- */
+-#define rq_fifo_time(rq)	((unsigned long) (rq)->csd.list.next)
+-#define rq_set_fifo_time(rq,exp)	((rq)->csd.list.next = (void *) (exp))
+ #define rq_entry_fifo(ptr)	list_entry((ptr), struct request, queuelist)
+ #define rq_fifo_clear(rq)	do {		\
+ 	list_del_init(&(rq)->queuelist);	\
+-- 
+1.8.3.1
 
-Jan Kara (5):
-      block: Stop abusing csd.list for fifo_time
-      block: Stop abusing rq->csd.list in blk-softirq
-      smp: Iterate functions through llist_for_each_entry_safe()
-      smp: Remove unused list_head from csd
-      smp: Teach __smp_call_function_single() to check for offline cpus
-
-
- block/blk-mq.c            |   2 +-
- block/blk-softirq.c       |  19 ++++---
- block/cfq-iosched.c       |   8 +--
- block/deadline-iosched.c  |   8 +--
- drivers/block/null_blk.c  |   2 +-
- drivers/cpuidle/coupled.c |   2 +-
- include/linux/blkdev.h    |   1 +
- include/linux/elevator.h  |  11 +---
- include/linux/smp.h       |   8 +--
- kernel/sched/core.c       |   2 +-
- kernel/smp.c              | 139 ++++++++++++++++++++++------------------------
- kernel/up.c               |   4 +-
- kernel/watchdog.c         |   3 +-
- net/core/dev.c            |   2 +-
- 14 files changed, 97 insertions(+), 114 deletions(-)
