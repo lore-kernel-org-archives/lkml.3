@@ -1,120 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751525AbaBHLZK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 06:25:10 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:40865 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751228AbaBHLZH (ORCPT
+	id S1751606AbaBHLd7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 06:33:59 -0500
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:35452 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751140AbaBHLd5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 06:25:07 -0500
-Message-ID: <52F6142C.3060701@kernel.org>
-Date: Sat, 08 Feb 2014 11:25:32 +0000
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>,
-        Marcus Folkesson <marcus.folkesson@gmail.com>
-CC: Sachin Kamat <sachin.kamat@linaro.org>, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] iio: adis16400: Set timestamp as the last element in
- chan_spec
-References: <marcus.folkesson@gmail.com> <1390562644-25124-1-git-send-email-marcus.folkesson@gmail.com> <1390562644-25124-2-git-send-email-marcus.folkesson@gmail.com> <52E26E9A.9040002@metafoo.de>
-In-Reply-To: <52E26E9A.9040002@metafoo.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sat, 8 Feb 2014 06:33:57 -0500
+From: Laszlo Papp <lpapp@kde.org>
+To: lee.jones@linaro.org
+Cc: linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
+        Laszlo Papp <lpapp@kde.org>
+Subject: [PATCH v2] mfd: MAX6650/6651 support
+Date: Sat,  8 Feb 2014 11:33:39 +0000
+Message-Id: <1391859219-3102-1-git-send-email-lpapp@kde.org>
+X-Mailer: git-send-email 1.8.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/01/14 13:46, Lars-Peter Clausen wrote:
-> On 01/24/2014 12:24 PM, Marcus Folkesson wrote:
->> This is necessary since timestamp is calculated as the last element
->> in iio_compute_scan_bytes().
->>
->> Signed-off-by: Marcus Folkesson <marcus.folkesson@gmail.com>
->
-> Looks good, thanks.
->
-> Acked-by: Lars-Peter Clausen
-Applied with some fuzz to fixes-togreg.  Also marked for stable.
+MAX6650/MAX6651 chip is a multi-function device with I2C busses. The
+chip includes fan-speed regulators and monitors, GPIO, and alarm.
 
-Thanks
+This patch is an initial release of a MAX6650/6651 MFD driver that
+supports to enable the chip with its primary I2C bus that will connect
+the hwmon, and then the gpio devices for now.
 
-Jonathan
+Signed-off-by: Laszlo Papp <lpapp@kde.org>
+---
+ drivers/mfd/Kconfig                 | 11 +++++
+ drivers/mfd/Makefile                |  1 +
+ drivers/mfd/max665x.c               | 88 +++++++++++++++++++++++++++++++++++++
+ include/linux/mfd/max665x-private.h | 42 ++++++++++++++++++
+ 4 files changed, 142 insertions(+)
+ create mode 100644 drivers/mfd/max665x.c
+ create mode 100644 include/linux/mfd/max665x-private.h
 
->
-> That said, I think we should try to modify the core code so that the scan
-> index for the timestamp is auto assigned to be always the last one.
-I'd be happy with such a change.  Note we need to be careful not to block other
-positions of timestamps coming from hardware timestamp generators, but for software
-time stamps it would make sense just to automate always having them at the end.
->
->> ---
->>   drivers/iio/imu/adis16400.h      |    1 +
->>   drivers/iio/imu/adis16400_core.c |   10 +++++-----
->>   2 files changed, 6 insertions(+), 5 deletions(-)
->>
->> diff --git a/drivers/iio/imu/adis16400.h b/drivers/iio/imu/adis16400.h
->> index 2f8f9d6..0916bf6 100644
->> --- a/drivers/iio/imu/adis16400.h
->> +++ b/drivers/iio/imu/adis16400.h
->> @@ -189,6 +189,7 @@ enum {
->>   	ADIS16300_SCAN_INCLI_X,
->>   	ADIS16300_SCAN_INCLI_Y,
->>   	ADIS16400_SCAN_ADC,
->> +	ADIS16400_SCAN_TIMESTAMP,
->>   };
->>
->>   #ifdef CONFIG_IIO_BUFFER
->> diff --git a/drivers/iio/imu/adis16400_core.c b/drivers/iio/imu/adis16400_core.c
->> index 3fb7757..7f98657 100644
->> --- a/drivers/iio/imu/adis16400_core.c
->> +++ b/drivers/iio/imu/adis16400_core.c
->> @@ -632,7 +632,7 @@ static const struct iio_chan_spec adis16400_channels[] = {
->>   	ADIS16400_MAGN_CHAN(Z, ADIS16400_ZMAGN_OUT, 14),
->>   	ADIS16400_TEMP_CHAN(ADIS16400_TEMP_OUT, 12),
->>   	ADIS16400_AUX_ADC_CHAN(ADIS16400_AUX_ADC, 12),
->> -	IIO_CHAN_SOFT_TIMESTAMP(12)
->> +	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
->>   };
->>
->>   static const struct iio_chan_spec adis16448_channels[] = {
->> @@ -654,7 +654,7 @@ static const struct iio_chan_spec adis16448_channels[] = {
->>   		.scan_type = IIO_ST('s', 16, 16, 0),
->>   	},
->>   	ADIS16400_TEMP_CHAN(ADIS16448_TEMP_OUT, 12),
->> -	IIO_CHAN_SOFT_TIMESTAMP(11)
->> +	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
->>   };
->>
->>   static const struct iio_chan_spec adis16350_channels[] = {
->> @@ -672,7 +672,7 @@ static const struct iio_chan_spec adis16350_channels[] = {
->>   	ADIS16400_MOD_TEMP_CHAN(X, ADIS16350_XTEMP_OUT, 12),
->>   	ADIS16400_MOD_TEMP_CHAN(Y, ADIS16350_YTEMP_OUT, 12),
->>   	ADIS16400_MOD_TEMP_CHAN(Z, ADIS16350_ZTEMP_OUT, 12),
->> -	IIO_CHAN_SOFT_TIMESTAMP(11)
->> +	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
->>   };
->>
->>   static const struct iio_chan_spec adis16300_channels[] = {
->> @@ -685,7 +685,7 @@ static const struct iio_chan_spec adis16300_channels[] = {
->>   	ADIS16400_AUX_ADC_CHAN(ADIS16300_AUX_ADC, 12),
->>   	ADIS16400_INCLI_CHAN(X, ADIS16300_PITCH_OUT, 13),
->>   	ADIS16400_INCLI_CHAN(Y, ADIS16300_ROLL_OUT, 13),
->> -	IIO_CHAN_SOFT_TIMESTAMP(14)
->> +	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
->>   };
->>
->>   static const struct iio_chan_spec adis16334_channels[] = {
->> @@ -696,7 +696,7 @@ static const struct iio_chan_spec adis16334_channels[] = {
->>   	ADIS16400_ACCEL_CHAN(Y, ADIS16400_YACCL_OUT, 14),
->>   	ADIS16400_ACCEL_CHAN(Z, ADIS16400_ZACCL_OUT, 14),
->>   	ADIS16400_TEMP_CHAN(ADIS16350_XTEMP_OUT, 12),
->> -	IIO_CHAN_SOFT_TIMESTAMP(8)
->> +	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
->>   };
->>
->>   static struct attribute *adis16400_attributes[] = {
->>
->
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 49bb445..e25be62 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -368,6 +368,17 @@ config MFD_MAX8907
+ 	  accessing the device; additional drivers must be enabled in order
+ 	  to use the functionality of the device.
+ 
++config MFD_MAX665X
++	bool "Maxim Semiconductor MAX6650/MAX6651 Support"
++	select MFD_CORE
++	depends on I2C
++	select REGMAP_I2C
++	help
++	  Say yes here to support for Maxim Semiconductor MAX6650/MAX6651. This is
++	  a fan speed regulator and monitor IC. This driver provies common support
++	  for accessing the device, additional drivers must be enabled in order to
++	  use the functionality of the device.
++
+ config MFD_MAX8925
+ 	bool "Maxim Semiconductor MAX8925 PMIC Support"
+ 	depends on I2C=y
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index 5aea5ef..63668c5 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -111,6 +111,7 @@ obj-$(CONFIG_MFD_DA9055)	+= da9055.o
+ da9063-objs			:= da9063-core.o da9063-irq.o da9063-i2c.o
+ obj-$(CONFIG_MFD_DA9063)	+= da9063.o
+ 
++obj-$(CONFIG_MFD_MAX665X)	+= max665x.o
+ obj-$(CONFIG_MFD_MAX14577)	+= max14577.o
+ obj-$(CONFIG_MFD_MAX77686)	+= max77686.o max77686-irq.o
+ obj-$(CONFIG_MFD_MAX77693)	+= max77693.o max77693-irq.o
+diff --git a/drivers/mfd/max665x.c b/drivers/mfd/max665x.c
+new file mode 100644
+index 0000000..395373fe
+--- /dev/null
++++ b/drivers/mfd/max665x.c
+@@ -0,0 +1,88 @@
++/*
++ * Device access for MAX6650-MAX6651
++ *
++ * Copyright(c) 2013 Polatis Ltd.
++ *
++ * Author: Laszlo Papp <laszlo.papp@polatis.com>
++ *
++ *  This program is free software; you can redistribute  it and/or modify it
++ *  under  the terms of  the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the  License, or (at your
++ *  option) any later version.
++ */
++
++#include <linux/device.h>
++#include <linux/mfd/core.h>
++#include <linux/module.h>
++#include <linux/i2c.h>
++
++#include <linux/mfd/max665x-private.h>
++
++static struct mfd_cell max665x_devs[] = {
++	{ .name = "max6651-gpio", },
++	{ .name = "max6650", }, /* hwmon driver */
++	{},
++};
++
++const struct regmap_config max665x_regmap_config = {
++	.reg_bits = 5,
++};
++
++static int max665x_probe(struct i2c_client *i2c,
++			    const struct i2c_device_id *id)
++{
++	struct max665x_dev *max665x;
++	int ret;
++
++	max665x = devm_kzalloc(&i2c->dev, sizeof(*max665x), GFP_KERNEL);
++	if (!max665x)
++		return -ENOMEM;
++
++	i2c_set_clientdata(i2c, max665x);
++	max665x->dev = &i2c->dev;
++	max665x->i2c = i2c;
++	max665x->map = regmap_init_i2c(i2c, &max665x_regmap_config);
++
++	mutex_init(&max665x->iolock);
++
++	ret = mfd_add_devices(max665x->dev, -1, max665x_devs,
++			ARRAY_SIZE(max665x_devs),
++			NULL, 0, NULL);
++
++	if (ret < 0)
++		dev_err(max665x->dev, "failed to register child devices\n");
++
++	return ret;
++}
++
++static int max665x_remove(struct i2c_client *i2c)
++{
++	struct max665x_dev *max665x = i2c_get_clientdata(i2c);
++
++	mfd_remove_devices(max665x->dev);
++
++	return 0;
++}
++
++static const struct i2c_device_id max665x_id[] = {
++	{ "max6650", TYPE_MAX6650 },
++	{ "max6651", TYPE_MAX6651 },
++	{},
++};
++MODULE_DEVICE_TABLE(i2c, max665x_id);
++
++static struct i2c_driver max665x_driver = {
++	.driver = {
++		.name = "max665x",
++		.owner = THIS_MODULE,
++	},
++	.probe = max665x_probe,
++	.remove = max665x_remove,
++	.id_table = max665x_id,
++};
++
++module_i2c_driver(max665x_driver);
++
++MODULE_AUTHOR("Laszlo Papp <laszlo.papp@polatis.com>");
++MODULE_DESCRIPTION("MAX6650-MAX6651 MFD");
++MODULE_LICENSE("GPL");
+diff --git a/include/linux/mfd/max665x-private.h b/include/linux/mfd/max665x-private.h
+new file mode 100644
+index 0000000..92da00c
+--- /dev/null
++++ b/include/linux/mfd/max665x-private.h
+@@ -0,0 +1,42 @@
++/*
++ * max665x-private.h - Driver for the Maxim 6650/6651
++ *
++ * Copyright 2013 Polatis Ltd.
++ *
++ * Author: Milo Kim <laszlo.papp@polatis.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#ifndef __LINUX_MFD_MAX665X_PRIVATE_H
++#define __LINUX_MFD_MAX665X_PRIVATE_H
++
++#include <linux/i2c.h>
++#include <linux/export.h>
++#include <linux/regmap.h>
++
++struct max665x_dev {
++	struct device *dev;
++	struct mutex iolock;
++
++	struct i2c_client *i2c;
++	struct regmap     *map;
++
++	int type;
++};
++
++enum max665x_types {
++	TYPE_MAX6650,
++	TYPE_MAX6651,
++};
++
++#endif
+-- 
+1.8.5.4
 
