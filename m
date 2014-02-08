@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752644AbaBHQVI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 11:21:08 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:45638 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752410AbaBHQSv (ORCPT
+	id S1752133AbaBHQVG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 11:21:06 -0500
+Received: from mail-we0-f173.google.com ([74.125.82.173]:56240 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752460AbaBHQSx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 11:18:51 -0500
+	Sat, 8 Feb 2014 11:18:53 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
         Christoph Hellwig <hch@infradead.org>, Ingo Molnar <mingo@kernel.org>,
         Jens Axboe <jens.axboe@oracle.com>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 03/11] block: Stop abusing rq->csd.list in blk-softirq
-Date: Sat,  8 Feb 2014 17:18:32 +0100
-Message-Id: <1391876320-25068-4-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 05/11] smp: Remove unused list_head from csd
+Date: Sat,  8 Feb 2014 17:18:34 +0100
+Message-Id: <1391876320-25068-6-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1391876320-25068-1-git-send-email-fweisbec@gmail.com>
 References: <1391876320-25068-1-git-send-email-fweisbec@gmail.com>
@@ -25,11 +25,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jan Kara <jack@suse.cz>
 
-Abusing rq->csd.list for a list of requests to complete is rather ugly.
-We use rq->queuelist instead which is much cleaner. It is safe because
-queuelist is used by the block layer only for requests waiting to be
-submitted to a device. Thus it is unused when irq reports the request IO
-is finished.
+Now that we got rid of all the remaining code which fiddled with csd.list,
+lets remove it.
 
 Signed-off-by: Jan Kara <jack@suse.cz>
 Cc: Andrew Morton <akpm@linux-foundation.org>
@@ -38,59 +35,25 @@ Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jens Axboe <jens.axboe@oracle.com>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- block/blk-softirq.c | 17 +++++++++++------
- 1 file changed, 11 insertions(+), 6 deletions(-)
+ include/linux/smp.h | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-diff --git a/block/blk-softirq.c b/block/blk-softirq.c
-index 57790c1..b5c37d9 100644
---- a/block/blk-softirq.c
-+++ b/block/blk-softirq.c
-@@ -30,8 +30,8 @@ static void blk_done_softirq(struct softirq_action *h)
- 	while (!list_empty(&local_list)) {
- 		struct request *rq;
+diff --git a/include/linux/smp.h b/include/linux/smp.h
+index 3834f43..9a1b8ba 100644
+--- a/include/linux/smp.h
++++ b/include/linux/smp.h
+@@ -17,10 +17,7 @@ extern void cpu_idle(void);
  
--		rq = list_entry(local_list.next, struct request, csd.list);
--		list_del_init(&rq->csd.list);
-+		rq = list_entry(local_list.next, struct request, queuelist);
-+		list_del_init(&rq->queuelist);
- 		rq->q->softirq_done_fn(rq);
- 	}
- }
-@@ -45,9 +45,14 @@ static void trigger_softirq(void *data)
- 
- 	local_irq_save(flags);
- 	list = this_cpu_ptr(&blk_cpu_done);
--	list_add_tail(&rq->csd.list, list);
-+	/*
-+	 * We reuse queuelist for a list of requests to process. Since the
-+	 * queuelist is used by the block layer only for requests waiting to be
-+	 * submitted to the device it is unused now.
-+	 */
-+	list_add_tail(&rq->queuelist, list);
- 
--	if (list->next == &rq->csd.list)
-+	if (list->next == &rq->queuelist)
- 		raise_softirq_irqoff(BLOCK_SOFTIRQ);
- 
- 	local_irq_restore(flags);
-@@ -136,7 +141,7 @@ void __blk_complete_request(struct request *req)
- 		struct list_head *list;
- do_local:
- 		list = this_cpu_ptr(&blk_cpu_done);
--		list_add_tail(&req->csd.list, list);
-+		list_add_tail(&req->queuelist, list);
- 
- 		/*
- 		 * if the list only contains our just added request,
-@@ -144,7 +149,7 @@ do_local:
- 		 * entries there, someone already raised the irq but it
- 		 * hasn't run yet.
- 		 */
--		if (list->next == &req->csd.list)
-+		if (list->next == &req->queuelist)
- 			raise_softirq_irqoff(BLOCK_SOFTIRQ);
- 	} else if (raise_blk_irq(ccpu, req))
- 		goto do_local;
+ typedef void (*smp_call_func_t)(void *info);
+ struct call_single_data {
+-	union {
+-		struct list_head list;
+-		struct llist_node llist;
+-	};
++	struct llist_node llist;
+ 	smp_call_func_t func;
+ 	void *info;
+ 	u16 flags;
 -- 
 1.8.3.1
 
