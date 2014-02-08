@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752132AbaBHS57 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 13:57:59 -0500
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:43606 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752025AbaBHS56 (ORCPT
+	id S1752123AbaBHTGX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 14:06:23 -0500
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:58291 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752002AbaBHTGW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 13:57:58 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAMVG2stJPQhdmhVDJY8a93xjAWUtNptBbTv=KhAswBNfE+ECYA@mail.gmail.com>
-References: <CAMVG2suzT1vphjHAUFCsbVBsd22U69jzQaKVwnEyGLBu6eGOSw@mail.gmail.com>
-	<CAKb7Uvh8jPNcXAfVYkdC3y0wQ7icc52Cid_fN5bpvdBf12KPag@mail.gmail.com>
-	<CAMVG2stJPQhdmhVDJY8a93xjAWUtNptBbTv=KhAswBNfE+ECYA@mail.gmail.com>
-Date: Sat, 8 Feb 2014 13:57:57 -0500
-X-Google-Sender-Auth: RY6JlxeqGwJS9koWkzuq6HTbprw
-Message-ID: <CAKb7Uvh=SQVhxOVEf5bFqhbiythcH4S+xP4OsXjF0xCsVjVk0Q@mail.gmail.com>
-Subject: Re: nouveau graphical corruption in 3.13.2
-From: Ilia Mirkin <imirkin@alum.mit.edu>
-To: Daniel J Blueman <daniel@quora.org>
-Cc: "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Dave Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 8 Feb 2014 14:06:22 -0500
+Message-ID: <1391886379.2669.11.camel@x41>
+Subject: agp/intel: can't ioremap flush page - no chipset flushing
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Ville =?ISO-8859-1?Q?Syrj=E4l=E4?= 
+	<ville.syrjala@linux.intel.com>,
+        Yinghai Lu <yinghai@kernel.org>
+Cc: David Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org
+Date: Sat, 08 Feb 2014 20:06:19 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 08 Feb 2014 19:06:20.0964 (UTC) FILETIME=[DA4B7640:01CF2500]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 8, 2014 at 10:38 AM, Daniel J Blueman <daniel@quora.org> wrote:
-> Interestingly, there was graphical failure booting 3.6.11, even
-> nvidia-current fails to initialise, but these two issues could be due
-> to running the Xorg stack in Ubuntu 14.04 pre-release. Using
-> nouveau.noaccel=1 works great for the first X session, but after
-> logging out, lightdm and the next session experiences this consistent
-> screen corruption:
->
-> http://quora.org/nouveau-corruption.jpg
+0) Booting v3.14-rc1 on an (outdated) ThinkPad X41 triggers a kernel
+error:
+    pci 0000:00:02.0: can't ioremap flush page - no chipset flushing
 
-Does that just happen in 3.6.11 or even in 3.13? If the latter, that
-points to some key lack of understanding of... something. With
-noaccel, we're not using pgraph or anything fancy -- it's just a
-framebuffer, basically. So if we can't even render _that_ right...
+That is this pci device:
+     lspci | grep 00:02.0
+     00:02.0 VGA compatible controller: Intel Corporation Mobile 915GM/GMS/910GML Express Graphics Controller (rev 03)
 
-Hopefully someone else will pipe up re your other issues -- my
-knowledge base on this is exhausted :(
+I can't remember seeing that error before. It is apparently printed by
+drivers/char/agp/intel-gtt.c. (So I've sent this message to the people
+touching that file between v3.13 and v3.14-rc1. No, I haven't yet
+pinpointed a specific commit.)
 
-  -ilia
+1) What am I supposed to do to make this error go away?
+
+
+Paul Bolle
+
