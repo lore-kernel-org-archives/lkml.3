@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752123AbaBHTGX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 14:06:23 -0500
-Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:58291 "EHLO
-	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752002AbaBHTGW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 14:06:22 -0500
-Message-ID: <1391886379.2669.11.camel@x41>
-Subject: agp/intel: can't ioremap flush page - no chipset flushing
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Ville =?ISO-8859-1?Q?Syrj=E4l=E4?= 
-	<ville.syrjala@linux.intel.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Cc: David Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org
-Date: Sat, 08 Feb 2014 20:06:19 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 08 Feb 2014 19:06:20.0964 (UTC) FILETIME=[DA4B7640:01CF2500]
-X-RcptDomain: vger.kernel.org
+	id S1751396AbaBHTLN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 14:11:13 -0500
+Received: from smtp.gentoo.org ([140.211.166.183]:38962 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751224AbaBHTLK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Feb 2014 14:11:10 -0500
+From: Richard Yao <ryao@gentoo.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Eric Van Hensbergen <ericvh@gmail.com>, Ron Minnich <rminnich@sandia.gov>,
+        Latchesar Ionkov <lucho@ionkov.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        V9FS Develooper Mailing List 
+	<v9fs-developer@lists.sourceforge.net>,
+        Linux Netdev Mailing List <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Brian Behlendorf <behlendorf1@llnl.gov>,
+        Matthew Thode <mthode@mthode.org>
+Subject: [PATCH 0/2] Attention by Linus Torvalds needed to export symbol he wrote
+Date: Sat,  8 Feb 2014 14:11:01 -0500
+Message-Id: <1391886663-19583-1-git-send-email-ryao@gentoo.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-0) Booting v3.14-rc1 on an (outdated) ThinkPad X41 triggers a kernel
-error:
-    pci 0000:00:02.0: can't ioremap flush page - no chipset flushing
+Dear Linus,
 
-That is this pci device:
-     lspci | grep 00:02.0
-     00:02.0 VGA compatible controller: Intel Corporation Mobile 915GM/GMS/910GML Express Graphics Controller (rev 03)
+Loading kernel modules off 9p-virtio in a Linux guest causes VM termination
+because of a page fault in unmapped memory, so I wrote a patch to fix it. Dave
+Miller initially accepted it, but then rejected it because it calls an
+unexported symbol from a kernel module, which breaks the build when
+CONFIG_NET_9P_VIRTIO=m is set in the kernel config:
 
-I can't remember seeing that error before. It is apparently printed by
-drivers/char/agp/intel-gtt.c. (So I've sent this message to the people
-touching that file between v3.13 and v3.14-rc1. No, I haven't yet
-pinpointed a specific commit.)
+https://groups.google.com/forum/#!topic/linux.kernel/eRR7AyLE29Y
 
-1) What am I supposed to do to make this error go away?
+>From what I can tell, I need the original author of a symbol to sign-off on any
+patch exporting it. git blame says that the original author is you, so I am
+sending this pull request to you for approval.
 
+Richard Yao (2):
+  mm/vmalloc: export is_vmalloc_or_module_addr
+  9p/trans_virtio.c: Fix broken zero-copy on vmalloc() buffers
 
-Paul Bolle
+ mm/vmalloc.c          | 1 +
+ net/9p/trans_virtio.c | 5 ++++-
+ 2 files changed, 5 insertions(+), 1 deletion(-)
+
+-- 
+1.8.3.2
 
