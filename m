@@ -1,54 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750985AbaBHTMN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 14:12:13 -0500
-Received: from smtp.gentoo.org ([140.211.166.183]:39007 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750862AbaBHTMM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 14:12:12 -0500
-From: Richard Yao <ryao@gentoo.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Eric Van Hensbergen <ericvh@gmail.com>, Ron Minnich <rminnich@sandia.gov>,
-        Latchesar Ionkov <lucho@ionkov.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        V9FS Develooper Mailing List 
-	<v9fs-developer@lists.sourceforge.net>,
-        Linux Netdev Mailing List <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Matthew Thode <mthode@mthode.org>
-Subject: [PATCH 0/2] Attention by Linus Torvalds needed to export symbol he wrote
-Date: Sat,  8 Feb 2014 14:12:08 -0500
-Message-Id: <1391886730-19667-1-git-send-email-ryao@gentoo.org>
-X-Mailer: git-send-email 1.8.3.2
+	id S1751907AbaBHTOR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 14:14:17 -0500
+Received: from mail-la0-f51.google.com ([209.85.215.51]:45459 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751022AbaBHTOP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Feb 2014 14:14:15 -0500
+Message-ID: <52F6822B.1000804@cogentembedded.com>
+Date: Sat, 08 Feb 2014 23:14:51 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: shaobingqing <shaobingqing@bwstor.com.cn>, trond.myklebust@primarydata.com,
+        bfields@redhat.com, davem@davemloft.net
+CC: linux-nfs@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] SUNRPC: Allow one callback request to be received
+ from two sk_buff
+References: <no> <1391826543-3102-1-git-send-email-shaobingqing@bwstor.com.cn>
+In-Reply-To: <1391826543-3102-1-git-send-email-shaobingqing@bwstor.com.cn>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Linus,
+Hello.
 
-Loading kernel modules off 9p-virtio in a Linux guest causes VM termination
-because of a page fault in unmapped memory, so I wrote a patch to fix it. Dave
-Miller initially accepted it, but then rejected it because it calls an
-unexported symbol from a kernel module, which breaks the build when
-CONFIG_NET_9P_VIRTIO=m is set in the kernel config:
+On 08-02-2014 6:29, shaobingqing wrote:
 
-https://groups.google.com/forum/#!topic/linux.kernel/eRR7AyLE29Y
+> In current code, there only one struct rpc_rqst is prealloced. If one
+> callback request is received from two sk_buff, the xprt_alloc_bc_request
+> would be execute two times with the same transport->xid. The first time
+> xprt_alloc_bc_request will alloc one struct rpc_rqst and the TCP_RCV_COPY_DATA
+> bit of transport->tcp_flags will not be cleared. The second time
+> xprt_alloc_bc_request could not alloc struct rpc_rqst any more and NULL
+> pointer will be returned, then xprt_force_disconnect occur. I think one
+> callback request can be allowed to be received from two sk_buff.
 
->From what I can tell, I need the original author of a symbol to sign-off on any
-patch exporting it. git blame says that the original author is you, so I am
-sending this pull request to you for approval.
+> Signed-off-by: shaobingqing <shaobingqing@bwstor.com.cn>
+[...]
 
-Richard Yao (2):
-  mm/vmalloc: export is_vmalloc_or_module_addr
-  9p/trans_virtio.c: Fix broken zero-copy on vmalloc() buffers
+> diff --git a/include/linux/sunrpc/xprt.h b/include/linux/sunrpc/xprt.h
+> index cec7b9b..82bfe01 100644
+> --- a/include/linux/sunrpc/xprt.h
+> +++ b/include/linux/sunrpc/xprt.h
+> @@ -211,6 +211,7 @@ struct rpc_xprt {
+>   						 * items */
+>   	struct list_head	bc_pa_list;	/* List of preallocated
+>   						 * backchannel rpc_rqst's */
+> +	struct rpc_rqst	*req_first;
 
- mm/vmalloc.c          | 1 +
- net/9p/trans_virtio.c | 5 ++++-
- 2 files changed, 5 insertions(+), 1 deletion(-)
+    Please align the variable name with the ones above and below.
 
--- 
-1.8.3.2
+>   #endif /* CONFIG_SUNRPC_BACKCHANNEL */
+>   	struct list_head	recv;
+>
+[...]
+> diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
+> index ee03d35..c43dca4 100644
+> --- a/net/sunrpc/xprtsock.c
+> +++ b/net/sunrpc/xprtsock.c
+> @@ -1272,7 +1272,16 @@ static inline int xs_tcp_read_callback(struct rpc_xprt *xprt,
+>   				container_of(xprt, struct sock_xprt, xprt);
+>   	struct rpc_rqst *req;
+>
+> -	req = xprt_alloc_bc_request(xprt);
+> +	if (xprt->req_first != NULL &&
+> +			xprt->req_first->rq_xid == transport->tcp_xid) {
+
+    The continuation line should be aligned right under 'xprt' on the broken 
+up line, according to the networking coding style.
+
+> +		req = xprt->req_first;
+> +	} else if (xprt->req_first != NULL &&
+> +			xprt->req_first->rq_xid != transport->tcp_xid) {
+
+    Same here.
+
+WBR, Sergei
 
