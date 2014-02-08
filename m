@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751383AbaBHBrx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Feb 2014 20:47:53 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:63617 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751334AbaBHBrw (ORCPT
+	id S1751393AbaBHBxI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Feb 2014 20:53:08 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:55665 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750756AbaBHBxH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Feb 2014 20:47:52 -0500
-From: Wang Nan <wangnan0@huawei.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Jiri Olsa <jolsa@redhat.com>, Wang Nan <wangnan0@huawei.com>,
-        "Arnaldo Carvalho de Melo" <acme@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        Geng Hui <hui.geng@huawei.com>
-Subject: [PATCH resend 2/2] tools lib traceevent: Use realpath for srctree and objtree
-Date: Sat, 8 Feb 2014 09:44:56 +0800
-Message-ID: <1391823896-11277-1-git-send-email-wangnan0@huawei.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1390730778-30366-1-git-send-email-wangnan0@huawei.com>
-References: <1390730778-30366-1-git-send-email-wangnan0@huawei.com>
+	Fri, 7 Feb 2014 20:53:07 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
+In-Reply-To: <20140207174315.GA11384@kroah.com>
+References: <1390397779-30975-1-git-send-email-bergwolf@gmail.com>
+ <1390397779-30975-7-git-send-email-bergwolf@gmail.com> <20140207174315.GA11384@kroah.com>
+From: Peng Tao <bergwolf@gmail.com>
+Date: Sat, 8 Feb 2014 09:52:44 +0800
+Message-ID: <CA+a=Yy56eT1wa48DXCkS3KM4pzRFtzvq1GKAttZD6uRkuJ9_9A@mail.gmail.com>
+Subject: Re: [PATCH v2 RESEND 6/8] staging/lustre/obdclass: remove extra break
+ in class_process_config
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Artem Blagodarenko <artem_blagodarenko@xyratex.com>,
+        Andreas Dilger <andreas.dilger@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If BUILD_SRC or CURDIR contains tailing '/', the file names passed to gcc will
-contain '//'. It will be contained .o's in debuginfo, then confuse debugedit:
+On Sat, Feb 8, 2014 at 1:43 AM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Wed, Jan 22, 2014 at 09:36:17PM +0800, Peng Tao wrote:
+>> From: Artem Blagodarenko <artem_blagodarenko@xyratex.com>
+>>
+>> This is only part of the original Lustre commit, splitted to do the
+>> cleanup work.
+>>
+>> Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-3155
+>> Lustre-change: http://review.whamcloud.com/6025
+>> Signed-off-by: Artem Blagodarenko <artem_blagodarenko@xyratex.com>
+>> Reviewed-by: Andreas Dilger <andreas.dilger@intel.com>
+>> Reviewed-by: Emoly Liu <emoly.liu@intel.com>
+>> Signed-off-by: Peng Tao <bergwolf@gmail.com>
+>> Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
+>> ---
+>>  .../staging/lustre/lustre/obdclass/obd_config.c    |    4 ----
+>>  1 file changed, 4 deletions(-)
+>>
+>> diff --git a/drivers/staging/lustre/lustre/obdclass/obd_config.c b/drivers/staging/lustre/lustre/obdclass/obd_config.c
+>> index 27f56c0..fd08f1d 100644
+>> --- a/drivers/staging/lustre/lustre/obdclass/obd_config.c
+>> +++ b/drivers/staging/lustre/lustre/obdclass/obd_config.c
+>> @@ -1226,24 +1226,20 @@ int class_process_config(struct lustre_cfg *lcfg)
+>>       case LCFG_POOL_NEW: {
+>>               err = obd_pool_new(obd, lustre_cfg_string(lcfg, 2));
+>>               GOTO(out, err = 0);
+>> -             break;
+>
+> This confuses the static checkers.  Just fix up the GOTO logic (hint,
+> remove it!) and then it will be "obvious" that the break can go away.
+> But for now, please leave it, unless you want to have someone just put
+> it back...
+Got it.
 
-https://bugzilla.redhat.com/show_bug.cgi?id=304121
-
-This patch uses realpath command to makesure potential tailing '/'s are removed.
-
-Signed-off-by: Wang Nan <wangnan0@huawei.com>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Geng Hui <hui.geng@huawei.com>
-
----
- tools/lib/traceevent/Makefile | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
-index 005c9cc..5bb281c 100644
---- a/tools/lib/traceevent/Makefile
-+++ b/tools/lib/traceevent/Makefile
-@@ -107,8 +107,8 @@ endif # BUILD_SRC
- # We process the rest of the Makefile if this is the final invocation of make
- ifeq ($(skip-makefile),)
- 
--srctree		:= $(if $(BUILD_SRC),$(BUILD_SRC),$(CURDIR))
--objtree		:= $(CURDIR)
-+srctree		:= $(realpath $(if $(BUILD_SRC),$(BUILD_SRC),$(CURDIR)))
-+objtree		:= $(realpath $(CURDIR))
- src		:= $(srctree)
- obj		:= $(objtree)
- 
--- 
-1.8.4
-
+Thanks,
+Tao
