@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752752AbaBISwF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 13:52:05 -0500
+	id S1752815AbaBISwj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 13:52:39 -0500
 Received: from mail.sigma-star.at ([95.130.255.111]:62418 "EHLO
 	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752262AbaBISsi (ORCPT
+	with ESMTP id S1752246AbaBISsg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 13:48:38 -0500
+	Sun, 9 Feb 2014 13:48:36 -0500
 From: Richard Weinberger <richard@nod.at>
-To: David Howells <dhowells@redhat.com>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        linux-am33-list@redhat.com (moderated list:PANASONIC MN10300...),
+To: Chen Liqin <liqin.linux@gmail.com>, Lennox Wu <lennox.wu@gmail.com>,
         linux-kernel@vger.kernel.org (open list)
 Cc: Richard Weinberger <richard@nod.at>
-Subject: [PATCH 18/28] Remove MN10300_PROC_MN2WS0038
-Date: Sun,  9 Feb 2014 19:47:56 +0100
-Message-Id: <1391971686-9517-19-git-send-email-richard@nod.at>
+Subject: [PATCH 16/28] Remove GENERIC_HAS_IOMAP
+Date: Sun,  9 Feb 2014 19:47:54 +0100
+Message-Id: <1391971686-9517-17-git-send-email-richard@nod.at>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1391971686-9517-1-git-send-email-richard@nod.at>
 References: <1391971686-9517-1-git-send-email-richard@nod.at>
@@ -27,22 +25,33 @@ The symbol is an orphan, get rid of it.
 
 Signed-off-by: Richard Weinberger <richard@nod.at>
 ---
- arch/mn10300/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/score/Kconfig | 3 ---
+ 1 file changed, 3 deletions(-)
 
-diff --git a/arch/mn10300/Kconfig b/arch/mn10300/Kconfig
-index a648de1..4434b54 100644
---- a/arch/mn10300/Kconfig
-+++ b/arch/mn10300/Kconfig
-@@ -181,7 +181,7 @@ endmenu
- config SMP
- 	bool "Symmetric multi-processing support"
- 	default y
--	depends on MN10300_PROC_MN2WS0038 || MN10300_PROC_MN2WS0050
-+	depends on MN10300_PROC_MN2WS0050
- 	---help---
- 	  This enables support for systems with more than one CPU. If you have
- 	  a system with only one CPU, say N. If you have a system with more
+diff --git a/arch/score/Kconfig b/arch/score/Kconfig
+index c75d06a..c7a7b65 100644
+--- a/arch/score/Kconfig
++++ b/arch/score/Kconfig
+@@ -23,19 +23,16 @@ config ARCH_SCORE7
+ 	bool "SCORE7 processor"
+ 	select SYS_SUPPORTS_32BIT_KERNEL
+ 	select CPU_SCORE7
+-	select GENERIC_HAS_IOMAP
+ 
+ config MACH_SPCT6600
+ 	bool "SPCT6600 series based machines"
+ 	select SYS_SUPPORTS_32BIT_KERNEL
+ 	select CPU_SCORE7
+-	select GENERIC_HAS_IOMAP
+ 
+ config SCORE_SIM
+ 	bool "Score simulator"
+ 	select SYS_SUPPORTS_32BIT_KERNEL
+ 	select CPU_SCORE7
+-	select GENERIC_HAS_IOMAP
+ endchoice
+ 
+ endmenu
 -- 
 1.8.4.2
 
