@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751973AbaBINJR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 08:09:17 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:53144 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360AbaBINJQ (ORCPT
+	id S1752131AbaBINKZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 08:10:25 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:51912 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751365AbaBINKY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 08:09:16 -0500
-Date: Sun, 9 Feb 2014 18:39:11 +0530
+	Sun, 9 Feb 2014 08:10:24 -0500
+Date: Sun, 9 Feb 2014 18:40:19 +0530
 From: Rashika Kheria <rashika.kheria@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+Cc: Steven Whitehouse <swhiteho@redhat.com>, cluster-devel@redhat.com,
         josh@joshtriplett.org
-Subject: [PATCH 09/21] fs: Mark function as static in ext3/xattr_security.c
-Message-ID: <bcf66d9631e4094a46e539950331f79289e4d85a.1391949868.git.rashika.kheria@gmail.com>
+Subject: [PATCH 10/21] fs: Mark functions as static in gfs2/rgrp.c
+Message-ID: <ea8cd448204387985f76078b8649168baaf81ab4.1391949868.git.rashika.kheria@gmail.com>
 References: <b572932c3e016c55e596686283036316a1aacd2f.1391949868.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
@@ -26,34 +25,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark function as static in ext3/xattr_security.c because it is not used
+Mark functions as static in gfs2/rgrp.c because they are not used
 outside this file.
 
-This eliminates the following warning in ext3/xattr_security.c:
-fs/ext3/xattr_security.c:46:5: warning: no previous prototype for ‘ext3_initxattrs’ [-Wmissing-prototypes]
+This eliminates the following warning in gfs2/rgrp.c:
+fs/gfs2/rgrp.c:1092:5: warning: no previous prototype for ‘gfs2_rgrp_bh_get’ [-Wmissing-prototypes]
+fs/gfs2/rgrp.c:1157:5: warning: no previous prototype for ‘update_rgrp_lvb’ [-Wmissing-prototypes]
 
 Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- fs/ext3/xattr_security.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ fs/gfs2/rgrp.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/ext3/xattr_security.c b/fs/ext3/xattr_security.c
-index 3387664..722c2bf 100644
---- a/fs/ext3/xattr_security.c
-+++ b/fs/ext3/xattr_security.c
-@@ -43,8 +43,9 @@ ext3_xattr_security_set(struct dentry *dentry, const char *name,
- 			      name, value, size, flags);
+diff --git a/fs/gfs2/rgrp.c b/fs/gfs2/rgrp.c
+index a1da213..551b9e9 100644
+--- a/fs/gfs2/rgrp.c
++++ b/fs/gfs2/rgrp.c
+@@ -1102,7 +1102,7 @@ static u32 count_unlinked(struct gfs2_rgrpd *rgd)
+  * Returns: errno
+  */
+ 
+-int gfs2_rgrp_bh_get(struct gfs2_rgrpd *rgd)
++static int gfs2_rgrp_bh_get(struct gfs2_rgrpd *rgd)
+ {
+ 	struct gfs2_sbd *sdp = rgd->rd_sbd;
+ 	struct gfs2_glock *gl = rgd->rd_gl;
+@@ -1169,7 +1169,7 @@ fail:
+ 	return error;
  }
  
--int ext3_initxattrs(struct inode *inode, const struct xattr *xattr_array,
--		    void *fs_info)
-+static int ext3_initxattrs(struct inode *inode,
-+			   const struct xattr *xattr_array,
-+			   void *fs_info)
+-int update_rgrp_lvb(struct gfs2_rgrpd *rgd)
++static int update_rgrp_lvb(struct gfs2_rgrpd *rgd)
  {
- 	const struct xattr *xattr;
- 	handle_t *handle = fs_info;
+ 	u32 rl_flags;
+ 
 -- 
 1.7.9.5
 
