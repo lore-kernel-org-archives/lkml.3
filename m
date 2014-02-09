@@ -1,107 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751773AbaBINc2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 08:32:28 -0500
-Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:54195 "EHLO
-	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751360AbaBINc0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 08:32:26 -0500
-Message-ID: <1391952745.25424.6.camel@x220>
-Subject: [PATCH] MIPS: Replace CONFIG_MIPS64 and CONFIG_MIPS32_R2
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Date: Sun, 09 Feb 2014 14:32:25 +0100
+	id S1752149AbaBINc5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 08:32:57 -0500
+Received: from know-smtprelay-omc-2.server.virginmedia.net ([80.0.253.66]:55762
+	"EHLO know-smtprelay-omc-2.server.virginmedia.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751396AbaBINc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Feb 2014 08:32:56 -0500
+X-Originating-IP: [81.99.114.138]
+X-Spam: 0
+X-Authority: v=2.1 cv=L4GTQoj8 c=1 sm=1 tr=0 a=rTb9Q+mClrhkGV9Ah9iRIA==:117
+ a=rTb9Q+mClrhkGV9Ah9iRIA==:17 a=N1CowNylAAAA:8 a=fopZr8Ys9qIA:10
+ a=IkcTkHD0fZMA:10 a=i-oMMPxEfaEA:10 a=nlyIqT4kGldfwkGLb18A:9 a=QEXdDO2ut3YA:10
+Message-ID: <1391952760.6036.10.camel@artifact>
+Subject: Re: [Intel-gfx] agp/intel: can't ioremap flush page - no chipset
+ flushing
+From: Steven Newbury <steve@snewbury.org.uk>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, David Airlie <airlied@linux.ie>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
+Date: Sun, 09 Feb 2014 13:32:40 +0000
+In-Reply-To: <1391952344.25424.4.camel@x220>
+References: <1391886379.2669.11.camel@x41>
+	 <CAKMK7uE6Gaq-ghgWJ+6Qyn7hrGzAMOHyGT9KQQJ+ij7omPV2Ew@mail.gmail.com>
+	 <1391890927.1882.5.camel@x41>
+	 <CAKMK7uFx2kksGgnuy9e0xiQRKpt=_+44O1V4wbX5yNBocvjBkg@mail.gmail.com>
+	 <1391951759.6036.7.camel@artifact> <1391952344.25424.4.camel@x220>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+X-Mailer: Evolution 3.11.4 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 09 Feb 2014 13:32:25.0570 (UTC) FILETIME=[5EAEB420:01CF259B]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 597ce1723e0f ("MIPS: Support for 64-bit FP with O32 binaries")
-introduced references to two undefined Kconfig macros. CONFIG_MIPS32_R2
-should clearly be replaced with CONFIG_CPU_MIPS32_R2. And CONFIG_MIPS64
-should apparently be replaced with CONFIG_64BIT.
+On Sun, 2014-02-09 at 14:25 +0100, Paul Bolle wrote:
+> On Sun, 2014-02-09 at 13:15 +0000, Steven Newbury wrote:
+> > PCI resource allocation is undergoing some changes at the moment, it's
+> > definitely a bug if the Flush Page isn't getting allocated.  I'm looking
+> > forward to hopefully getting pci_bus_alloc_resource_fit() behaviour in
+> > mainline, it will provide much better resource allocation in the 32 bit
+> > PCI address space, and prevent problems like this from cropping up.
+> > 
+> > See Yinghai Lu's for-pci-res-alloc branch.
+> > 
+> > I've been carrying the changes in my local tree, but right now the
+> > upstream PCI changes are quite extensive.  He's planning on rebasing the
+> > branch soon.
+> 
+> Does this mean I might be better of not bisecting this just yet? Or are
+> these changes targeted at v3.15 (or later)?
+> 
+> 
+> Paul Bolle
+> 
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Untested!
-
- arch/mips/include/asm/asmmacro.h | 4 ++--
- arch/mips/include/asm/fpu.h      | 2 +-
- arch/mips/kernel/r4k_fpu.S       | 8 ++++----
- 3 files changed, 7 insertions(+), 7 deletions(-)
-
-diff --git a/arch/mips/include/asm/asmmacro.h b/arch/mips/include/asm/asmmacro.h
-index 3220c93..69a9a22 100644
---- a/arch/mips/include/asm/asmmacro.h
-+++ b/arch/mips/include/asm/asmmacro.h
-@@ -106,7 +106,7 @@
- 	.endm
- 
- 	.macro	fpu_save_double thread status tmp
--#if defined(CONFIG_MIPS64) || defined(CONFIG_CPU_MIPS32_R2)
-+#if defined(CONFIG_64BIT) || defined(CONFIG_CPU_MIPS32_R2)
- 	sll	\tmp, \status, 5
- 	bgez	\tmp, 10f
- 	fpu_save_16odd \thread
-@@ -159,7 +159,7 @@
- 	.endm
- 
- 	.macro	fpu_restore_double thread status tmp
--#if defined(CONFIG_MIPS64) || defined(CONFIG_CPU_MIPS32_R2)
-+#if defined(CONFIG_64BIT) || defined(CONFIG_CPU_MIPS32_R2)
- 	sll	\tmp, \status, 5
- 	bgez	\tmp, 10f				# 16 register mode?
- 
-diff --git a/arch/mips/include/asm/fpu.h b/arch/mips/include/asm/fpu.h
-index cfe092f..f80a07e 100644
---- a/arch/mips/include/asm/fpu.h
-+++ b/arch/mips/include/asm/fpu.h
-@@ -57,7 +57,7 @@ static inline int __enable_fpu(enum fpu_mode mode)
- 		return 0;
- 
- 	case FPU_64BIT:
--#if !(defined(CONFIG_CPU_MIPS32_R2) || defined(CONFIG_MIPS64))
-+#if !(defined(CONFIG_CPU_MIPS32_R2) || defined(CONFIG_64BIT))
- 		/* we only have a 32-bit FPU */
- 		return SIGFPE;
- #endif
-diff --git a/arch/mips/kernel/r4k_fpu.S b/arch/mips/kernel/r4k_fpu.S
-index 253b2fb..841ffc2 100644
---- a/arch/mips/kernel/r4k_fpu.S
-+++ b/arch/mips/kernel/r4k_fpu.S
-@@ -35,9 +35,9 @@
- LEAF(_save_fp_context)
- 	cfc1	t1, fcr31
- 
--#if defined(CONFIG_64BIT) || defined(CONFIG_MIPS32_R2)
-+#if defined(CONFIG_64BIT) || defined(CONFIG_CPU_MIPS32_R2)
- 	.set	push
--#ifdef CONFIG_MIPS32_R2
-+#ifdef CONFIG_CPU_MIPS32_R2
- 	.set	mips64r2
- 	mfc0	t0, CP0_STATUS
- 	sll	t0, t0, 5
-@@ -148,9 +148,9 @@ LEAF(_save_fp_context32)
- LEAF(_restore_fp_context)
- 	EX	lw t0, SC_FPC_CSR(a0)
- 
--#if defined(CONFIG_64BIT) || defined(CONFIG_MIPS32_R2)
-+#if defined(CONFIG_64BIT) || defined(CONFIG_CPU_MIPS32_R2)
- 	.set	push
--#ifdef CONFIG_MIPS32_R2
-+#ifdef CONFIG_CPU_MIPS32_R2
- 	.set	mips64r2
- 	mfc0	t0, CP0_STATUS
- 	sll	t0, t0, 5
--- 
-1.8.5.3
-
+It's an aside really for now.  The bug has probably been introduced by
+the recent pci allocation changes so it should be easier for you to
+bisect, hopefully.
 
 
