@@ -1,57 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752162AbaBINeE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 08:34:04 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56193 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751365AbaBINeB (ORCPT
+	id S1752191AbaBINeo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 08:34:44 -0500
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:55580 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751365AbaBINen convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 08:34:01 -0500
-Date: Sun, 9 Feb 2014 19:03:54 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, Vivek Goyal <vgoyal@redhat.com>,
-        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        Qais Yousef <qais.yousef@imgtec.com>, josh@joshtriplett.org
-Subject: [PATCH 21/21] fs: Move prototype declaration to appropriate header
- file
-Message-ID: <94bd5f839212612524d7b8dc2d6a6d4ed96b42da.1391952682.git.rashika.kheria@gmail.com>
+	Sun, 9 Feb 2014 08:34:43 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <764a2eddc09cb8670d757cd4170d44d41b3971e0.1391949868.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1391780716-21896-5-git-send-email-sagar.a.kamble@intel.com>
+References: <1391780716-21896-1-git-send-email-sagar.a.kamble@intel.com>
+	<1391780716-21896-5-git-send-email-sagar.a.kamble@intel.com>
+Date: Sun, 9 Feb 2014 08:34:43 -0500
+Message-ID: <CAF6AEGu9i2i0TStPQsy7YFbode_WHnEeo7vn5tHsigHkmbi72w@mail.gmail.com>
+Subject: Re: [PATCH v4 04/11] drm/omap: Switch omapdrm over to drm_mode_create_rotation_property()
+From: Rob Clark <robdclark@gmail.com>
+To: sagar.a.kamble@intel.com
+Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        vijay.a.purushothaman@intel.com, David Airlie <airlied@linux.ie>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        "Valkeinen, Tomi" <tomi.valkeinen@ti.com>,
+        "airlied@redhat.com" <airlied@redhat.com>,
+        Archit Taneja <archit@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, joe@perches.com,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        =?ISO-8859-1?Q?Ville_Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move prototype declaration to header file include/linux/crash_dump.h
-because it is used by more than file.
+On Fri, Feb 7, 2014 at 8:45 AM,  <sagar.a.kamble@intel.com> wrote:
+> From: Ville Syrjälä <ville.syrjala@linux.intel.com>
+>
+> Use the new drm_mode_create_rotation_property() in omapdrm.
+>
+> Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
 
-This eliminates the following warning in proc/vmcore.c:
-fs/proc/vmcore.c:1088:6: warning: no previous prototype for â€˜vmcore_cleanupâ€™ [-Wmissing-prototypes]
+Reviewed-by: Rob Clark <robdclark@gmail.com>
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- include/linux/crash_dump.h |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/include/linux/crash_dump.h b/include/linux/crash_dump.h
-index 7032518..72ab536 100644
---- a/include/linux/crash_dump.h
-+++ b/include/linux/crash_dump.h
-@@ -25,6 +25,7 @@ extern int __weak remap_oldmem_pfn_range(struct vm_area_struct *vma,
- 
- extern ssize_t copy_oldmem_page(unsigned long, char *, size_t,
- 						unsigned long, int);
-+void vmcore_cleanup(void);
- 
- /* Architecture code defines this if there are other possible ELF
-  * machine types, e.g. on bi-arch capable hardware. */
--- 
-1.7.9.5
-
+> ---
+>  drivers/gpu/drm/omapdrm/omap_plane.c | 17 +++++++----------
+>  1 file changed, 7 insertions(+), 10 deletions(-)
+>
+> diff --git a/drivers/gpu/drm/omapdrm/omap_plane.c b/drivers/gpu/drm/omapdrm/omap_plane.c
+> index 046d5e6..fee8f35 100644
+> --- a/drivers/gpu/drm/omapdrm/omap_plane.c
+> +++ b/drivers/gpu/drm/omapdrm/omap_plane.c
+> @@ -300,16 +300,13 @@ void omap_plane_install_properties(struct drm_plane *plane,
+>         if (priv->has_dmm) {
+>                 prop = priv->rotation_prop;
+>                 if (!prop) {
+> -                       const struct drm_prop_enum_list props[] = {
+> -                                       { DRM_ROTATE_0,   "rotate-0" },
+> -                                       { DRM_ROTATE_90,  "rotate-90" },
+> -                                       { DRM_ROTATE_180, "rotate-180" },
+> -                                       { DRM_ROTATE_270, "rotate-270" },
+> -                                       { DRM_REFLECT_X,  "reflect-x" },
+> -                                       { DRM_REFLECT_Y,  "reflect-y" },
+> -                       };
+> -                       prop = drm_property_create_bitmask(dev, 0, "rotation",
+> -                                       props, ARRAY_SIZE(props));
+> +                       prop = drm_mode_create_rotation_property(dev,
+> +                                                                BIT(DRM_ROTATE_0) |
+> +                                                                BIT(DRM_ROTATE_90) |
+> +                                                                BIT(DRM_ROTATE_180) |
+> +                                                                BIT(DRM_ROTATE_270) |
+> +                                                                BIT(DRM_REFLECT_X) |
+> +                                                                BIT(DRM_REFLECT_Y));
+>                         if (prop == NULL)
+>                                 return;
+>                         priv->rotation_prop = prop;
+> --
+> 1.8.5
+>
