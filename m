@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752213AbaBIWjQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 17:39:16 -0500
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:65160 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751707AbaBIWiz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 17:38:55 -0500
-Message-ID: <1391985532.25855.88.camel@x220>
-Subject: Re: [PATCH 26/28] Remove LOCAL_TIMERS
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Richard Weinberger <richard@nod.at>
-Cc: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "moderated list:ARM SUB-ARCHITECT..." 
-	<linux-arm-kernel@lists.infradead.org>,
-        "open list:ARM/SHMOBILE ARM..." <linux-sh@vger.kernel.org>,
+	id S1752261AbaBIWlt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 17:41:49 -0500
+Received: from mail.wdtv.com ([66.118.69.84]:44822 "EHLO mail.wdtv.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751707AbaBIWls (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Feb 2014 17:41:48 -0500
+From: Gene Heskett <gheskett@wdtv.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Subject: Re: [PATCH 24/28] Remove DEPRECATED
+Date: Sun, 9 Feb 2014 17:41:46 -0500
+Cc: Richard Weinberger <richard@nod.at>, Guenter Roeck <linux@roeck-us.net>,
+        David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        "moderated list:PANASONIC MN10300..." <linux-am33-list@redhat.com>,
         open list <linux-kernel@vger.kernel.org>
-Date: Sun, 09 Feb 2014 23:38:52 +0100
-In-Reply-To: <1391971686-9517-27-git-send-email-richard@nod.at>
-References: <1391971686-9517-1-git-send-email-richard@nod.at>
-	 <1391971686-9517-27-git-send-email-richard@nod.at>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
+References: <1391971686-9517-1-git-send-email-richard@nod.at> <201402091654.25697.gheskett@wdtv.com> <1391983888.25855.73.camel@x220>
+In-Reply-To: <1391983888.25855.73.camel@x220>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="windows-1256"
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 09 Feb 2014 22:38:53.0038 (UTC) FILETIME=[B58948E0:01CF25E7]
-X-RcptDomain: vger.kernel.org
+Message-Id: <201402091741.46390.gheskett@wdtv.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-02-09 at 19:48 +0100, Richard Weinberger wrote:
-> The symbol is an orphan, get rid of it.
+On Sunday 09 February 2014, Paul Bolle wrote:
+>On Sun, 2014-02-09 at 16:54 -0500, Gene Heskett wrote:
+>> And much of it is in a bad make oldconfig that I can't date, but all of
+>> the multimedia stuff has been stripped and I can no longer use my
+>> pcHDTV3000 card as just one for instance.  I just tested it, using an
+>> oldconfig that contained several hundred bits and pieces under the
+>> ATSC & DVB headers, after the oldconfig was done, all that was
+>> stripped from the new one, every trace of it.  That was working code
+>> guys, what the hell?  Kconfig could have problems, but the oldconfig
+>> output being stripped is a much larger one.  First problems first. 
+>> Then you can really see how fubared kconfig is.
+>
+>What has this got to do with an invalid Kconfig dependency in
+>arch/mn10300?
+>
+>
+>Paul Bolle
 
-Orphaned a year ago, see commit 060f3043e5e ("ARM: smp: Remove local
-timer API"). But this one got added after that, in the same relase
-cycle.
+Probably not much Paul,I was trying to point out a much bigger problem for 
+many of us at least on the x86 machinery, who seem to have accepted that 
+support of their machinery has now apparently been deprecated, by something 
+in the make oldconfig region.  The arch/mn10300 problem is completely lost 
+in the noise of this breakage to the x86 people.  And I dare say there are 
+more of us by a factor of at least 100.
 
-> Signed-off-by: Richard Weinberger <richard@nod.at>
+Cheers, Gene
+-- 
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
+Genes Web page <http://geneslinuxbox.net:6309/gene>
 
-This gets my
-    Acked-by: Paul Bolle <pebolle@tiscali.nl>
-
-as it's correct (we're dropping a nop) but I'd appreciate it if you'd
-resend with the above info added. That would easy review by others too.
-
-
-Paul Bolle
-
->  arch/arm/mach-shmobile/Kconfig | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/arch/arm/mach-shmobile/Kconfig b/arch/arm/mach-shmobile/Kconfig
-> index 3386406..c055388 100644
-> --- a/arch/arm/mach-shmobile/Kconfig
-> +++ b/arch/arm/mach-shmobile/Kconfig
-> @@ -8,7 +8,6 @@ config ARCH_SHMOBILE_MULTI
->  	select CPU_V7
->  	select GENERIC_CLOCKEVENTS
->  	select HAVE_ARM_SCU if SMP
-> -	select HAVE_ARM_TWD if LOCAL_TIMERS
->  	select HAVE_SMP
->  	select ARM_GIC
->  	select MIGHT_HAVE_CACHE_L2X0
-
+NOTICE: Will pay 100 USD for an HP-4815A defective but
+complete probe assembly.
 
