@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752371AbaBISsp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 13:48:45 -0500
-Received: from mail.sigma-star.at ([95.130.255.111]:62425 "EHLO
+	id S1752556AbaBIStt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 13:49:49 -0500
+Received: from mail.sigma-star.at ([95.130.255.111]:62426 "EHLO
 	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752317AbaBISsm (ORCPT
+	with ESMTP id S1752356AbaBISso (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 13:48:42 -0500
+	Sun, 9 Feb 2014 13:48:44 -0500
 From: Richard Weinberger <richard@nod.at>
-To: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org (open list:USB GADGET/PERIPH...),
+To: Vineet Gupta <vgupta@synopsys.com>,
         linux-kernel@vger.kernel.org (open list)
 Cc: Richard Weinberger <richard@nod.at>
-Subject: [PATCH 23/28] Remove MACH_OMAP_H4_OTG
-Date: Sun,  9 Feb 2014 19:48:01 +0100
-Message-Id: <1391971686-9517-24-git-send-email-richard@nod.at>
+Subject: [PATCH 27/28] Remove ARC_HAS_COH_RTSC
+Date: Sun,  9 Feb 2014 19:48:05 +0100
+Message-Id: <1391971686-9517-28-git-send-email-richard@nod.at>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1391971686-9517-1-git-send-email-richard@nod.at>
 References: <1391971686-9517-1-git-send-email-richard@nod.at>
@@ -27,22 +25,21 @@ The symbol is an orphan, get rid of it.
 
 Signed-off-by: Richard Weinberger <richard@nod.at>
 ---
- drivers/usb/gadget/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arc/plat-arcfpga/Kconfig | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
-index 8154165..42f017a 100644
---- a/drivers/usb/gadget/Kconfig
-+++ b/drivers/usb/gadget/Kconfig
-@@ -226,7 +226,7 @@ config USB_GR_UDC
- config USB_OMAP
- 	tristate "OMAP USB Device Controller"
- 	depends on ARCH_OMAP1
--	select ISP1301_OMAP if MACH_OMAP_H2 || MACH_OMAP_H3 || MACH_OMAP_H4_OTG
-+	select ISP1301_OMAP if MACH_OMAP_H2 || MACH_OMAP_H3
+diff --git a/arch/arc/plat-arcfpga/Kconfig b/arch/arc/plat-arcfpga/Kconfig
+index 295cefe..33058aa 100644
+--- a/arch/arc/plat-arcfpga/Kconfig
++++ b/arch/arc/plat-arcfpga/Kconfig
+@@ -33,7 +33,6 @@ config ISS_SMP_EXTN
+ 	bool "ARC SMP Extensions (ISS Models only)"
+ 	default n
+ 	depends on SMP
+-	select ARC_HAS_COH_RTSC
  	help
- 	   Many Texas Instruments OMAP processors have flexible full
- 	   speed USB device controllers, with support for up to 30
+ 	  SMP Extensions to ARC700, in a "simulation only" Model, supported in
+ 	  ARC ISS (Instruction Set Simulator).
 -- 
 1.8.4.2
 
