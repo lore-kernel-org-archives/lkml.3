@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526AbaBIWtR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 17:49:17 -0500
-Received: from smtprelay0037.hostedemail.com ([216.40.44.37]:47738 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752463AbaBIWtD (ORCPT
+	id S1752554AbaBIWtj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 17:49:39 -0500
+Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:51931 "EHLO
+	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752085AbaBIWtg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 17:49:03 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1345:1359:1437:1534:1541:1711:1714:1730:1747:1777:1792:2194:2198:2199:2200:2393:2559:2562:3138:3139:3140:3141:3142:3350:3867:4321:5007:6261:6642:8603:10004:10026:10848:11026:11473:11658:11914:12296:12438:12517:12519:12555:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: stew09_148cec4b25d25
-X-Filterd-Recvd-Size: 1855
-From: Joe Perches <joe@perches.com>
-To: Petr Vandrovec <petr@vandrovec.name>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/5] ncpfs: inode: Fix mismatch printk formats and arguments
-Date: Sun,  9 Feb 2014 14:48:49 -0800
-Message-Id: <657527db716fde052f68a9cbc626d10b731bd039.1391985629.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
-In-Reply-To: <cover.1391985629.git.joe@perches.com>
-References: <cover.1391985629.git.joe@perches.com>
+	Sun, 9 Feb 2014 17:49:36 -0500
+Message-ID: <1391986174.25855.95.camel@x220>
+Subject: Re: [PATCH 28/28] Remove LOCAL_TIMERS
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Richard Weinberger <richard@nod.at>
+Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
+        "open list:OMAP SUPPORT" <linux-omap@vger.kernel.org>,
+        "moderated list:ARM SUB-ARCHITECT..." 
+	<linux-arm-kernel@lists.infradead.org>,
+        open list <linux-kernel@vger.kernel.org>
+Date: Sun, 09 Feb 2014 23:49:34 +0100
+In-Reply-To: <1391971686-9517-29-git-send-email-richard@nod.at>
+References: <1391971686-9517-1-git-send-email-richard@nod.at>
+	 <1391971686-9517-29-git-send-email-richard@nod.at>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 09 Feb 2014 22:49:35.0133 (UTC) FILETIME=[344134D0:01CF25E9]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Conversions to ncp_dbg showed some format/argument mismatches
-so fix them.
+On Sun, 2014-02-09 at 19:48 +0100, Richard Weinberger wrote:
+> The symbol is an orphan, get rid of it.
+> 
+> Signed-off-by: Richard Weinberger <richard@nod.at>
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- fs/ncpfs/inode.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Merge with 26/28? Anyhow, my comments are basically identical to those
+on that patch. So:
+    Acked-by: Paul Bolle <pebolle@tiscali.nl>
 
-diff --git a/fs/ncpfs/inode.c b/fs/ncpfs/inode.c
-index 513b5cf..a65b974 100644
---- a/fs/ncpfs/inode.c
-+++ b/fs/ncpfs/inode.c
-@@ -682,7 +682,7 @@ static int ncp_fill_super(struct super_block *sb, void *raw_data, int silent)
- 	ncp_unlock_server(server);
- 	if (error < 0)
- 		goto out_rxbuf;
--	ncp_dbg(1, "NCP_SBP(sb) = %x\n", (int) NCP_SBP(sb));
-+	ncp_dbg(1, "NCP_SBP(sb) = %p\n", NCP_SBP(sb));
- 
- 	error = -EMSGSIZE;	/* -EREMOTESIDEINCOMPATIBLE */
- #ifdef CONFIG_NCPFS_PACKET_SIGNING
-@@ -985,7 +985,7 @@ int ncp_notify_change(struct dentry *dentry, struct iattr *attr)
- 	if ((attr->ia_valid & ATTR_SIZE) != 0) {
- 		int written;
- 
--		ncp_dbg(1, "trying to change size to %ld\n", attr->ia_size);
-+		ncp_dbg(1, "trying to change size to %llu\n", attr->ia_size);
- 
- 		if ((result = ncp_make_open(inode, O_WRONLY)) < 0) {
- 			result = -EACCES;
--- 
-1.8.1.2.459.gbcd45b4.dirty
+
+Paul Bolle 
+
+>  arch/arm/mach-omap2/Kconfig | 1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
+> index 653b489..2817f1f 100644
+> --- a/arch/arm/mach-omap2/Kconfig
+> +++ b/arch/arm/mach-omap2/Kconfig
+> @@ -54,7 +54,6 @@ config SOC_OMAP5
+>  	select ARM_GIC
+>  	select CPU_V7
+>  	select HAVE_ARM_SCU if SMP
+> -	select HAVE_ARM_TWD if LOCAL_TIMERS
+>  	select HAVE_SMP
+>  	select HAVE_ARM_ARCH_TIMER
+>  	select ARM_ERRATA_798181 if SMP
+
 
