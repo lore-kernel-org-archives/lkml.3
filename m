@@ -1,160 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752759AbaBIN5V (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 08:57:21 -0500
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:53145 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752292AbaBINxC (ORCPT
+	id S1752261AbaBINw5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 08:52:57 -0500
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:37807 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751473AbaBINwz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 08:53:02 -0500
+	Sun, 9 Feb 2014 08:52:55 -0500
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 03/16] cgroup: enable task_cg_lists on the first cgroup mount
-Date: Sun,  9 Feb 2014 08:52:31 -0500
-Message-Id: <1391953964-22088-4-git-send-email-tj@kernel.org>
+        linux-kernel@vger.kernel.org
+Subject: [PATCHSET cgroup/for-3.15] cgroup: more cleanups
+Date: Sun,  9 Feb 2014 08:52:28 -0500
+Message-Id: <1391953964-22088-1-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1391953964-22088-1-git-send-email-tj@kernel.org>
-References: <1391953964-22088-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tasks are not linked on their css_sets until cgroup task iteration is
-actually used.  This is to avoid incurring overhead on the fork and
-exit paths for systems which have cgroup compiled in but don't use it.
+Hello,
 
-This lazy binding also affects the task migration path.  It has to be
-careful so that it doesn't link tasks to css_sets when task_cg_lists
-linking is not enabled yet.  Unfortunately, this conditional linking
-in the migration path interferes with planned migration updates.
+This series contains assorted cleanups which also prepare for the
+planned migration taskset handling update.
 
-This patch moves the lazy binding a bit earlier, to the first cgroup
-mount.  It's a clear indication that cgroup is being used on the
-system and task_cg_lists linking is highly likely to be enabled soon
-anyway through "tasks" and "cgroup.procs" files.
+This patchset contains the following sixteen patches.
 
-This allows cgroup_task_migrate() to always link @tsk->cg_list.  Note
-that it may still race with cgroup_post_fork() but who wins that race
-is inconsequential.
+ 0001-cgroup-disallow-xattr-release_agent-and-name-if-sane.patch
+ 0002-cgroup-drop-CGRP_ROOT_SUBSYS_BOUND.patch
+ 0003-cgroup-enable-task_cg_lists-on-the-first-cgroup-moun.patch
+ 0004-cgroup-relocate-cgroup_enable_task_cg_lists.patch
+ 0005-cgroup-implement-cgroup_has_tasks-and-unexport-cgrou.patch
+ 0006-cgroup-reimplement-cgroup_transfer_tasks-without-usi.patch
+ 0007-cgroup-make-css_set_lock-a-rwsem-and-rename-it-to-cs.patch
+ 0008-cpuset-use-css_task_iter_start-next-end-instead-of-c.patch
+ 0009-cgroup-remove-css_scan_tasks.patch
+ 0010-cgroup-separate-out-put_css_set_locked-and-remove-pu.patch
+ 0011-cgroup-move-css_set_rwsem-locking-outside-of-cgroup_.patch
+ 0012-cgroup-drop-skip_css-from-cgroup_taskset_for_each.patch
+ 0013-cpuset-don-t-use-cgroup_taskset_cur_css.patch
+ 0014-cgroup-remove-cgroup_taskset_cur_css-and-cgroup_task.patch
+ 0015-cgroup-cosmetic-updates-to-cgroup_attach_task.patch
+ 0016-cgroup-unexport-functions.patch
 
-While at it, make use_task_css_set_links a bool, add sanity checks in
-cgroup_enable_task_cg_lists() and css_task_iter_start(), and update
-the former so that it's guaranteed and assumes to run only once.
+The notables ones are
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- kernel/cgroup.c | 40 +++++++++++++++++++++++++++-------------
- 1 file changed, 27 insertions(+), 13 deletions(-)
+ 0003-0004 move task_cg_list enabling to the first mount instead of
+ the first css task iteration.
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index caed061..efae7e2 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -173,6 +173,7 @@ static int cgroup_destroy_locked(struct cgroup *cgrp);
- static int cgroup_addrm_files(struct cgroup *cgrp, struct cftype cfts[],
- 			      bool is_add);
- static void cgroup_pidlist_destroy_all(struct cgroup *cgrp);
-+static void cgroup_enable_task_cg_lists(void);
- 
- /**
-  * cgroup_css - obtain a cgroup's css for the specified subsystem
-@@ -375,7 +376,7 @@ static unsigned long css_set_hash(struct cgroup_subsys_state *css[])
-  * fork()/exit() overhead for people who have cgroups compiled into their
-  * kernel but not actually in use.
-  */
--static int use_task_css_set_links __read_mostly;
-+static bool use_task_css_set_links __read_mostly;
- 
- static void __put_css_set(struct css_set *cset, int taskexit)
- {
-@@ -1439,6 +1440,13 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
- 	struct cgroup_sb_opts opts;
- 	struct dentry *dentry;
- 	int ret;
-+
-+	/*
-+	 * The first time anyone tries to mount a cgroup, enable the list
-+	 * linking each css_set to its tasks and fix up all existing tasks.
-+	 */
-+	if (!use_task_css_set_links)
-+		cgroup_enable_task_cg_lists();
- retry:
- 	mutex_lock(&cgroup_tree_mutex);
- 	mutex_lock(&cgroup_mutex);
-@@ -1692,8 +1700,7 @@ static void cgroup_task_migrate(struct cgroup *old_cgrp,
- 
- 	/* Update the css_set linked lists if we're using them */
- 	write_lock(&css_set_lock);
--	if (!list_empty(&tsk->cg_list))
--		list_move(&tsk->cg_list, &new_cset->tasks);
-+	list_move(&tsk->cg_list, &new_cset->tasks);
- 	write_unlock(&css_set_lock);
- 
- 	/*
-@@ -2360,13 +2367,19 @@ int cgroup_task_count(const struct cgroup *cgrp)
-  * To reduce the fork() overhead for systems that are not actually using
-  * their cgroups capability, we don't maintain the lists running through
-  * each css_set to its tasks until we see the list actually used - in other
-- * words after the first call to css_task_iter_start().
-+ * words after the first mount.
-  */
- static void cgroup_enable_task_cg_lists(void)
- {
- 	struct task_struct *p, *g;
-+
- 	write_lock(&css_set_lock);
--	use_task_css_set_links = 1;
-+
-+	if (use_task_css_set_links)
-+		goto out_unlock;
-+
-+	use_task_css_set_links = true;
-+
- 	/*
- 	 * We need tasklist_lock because RCU is not safe against
- 	 * while_each_thread(). Besides, a forking task that has passed
-@@ -2377,16 +2390,22 @@ static void cgroup_enable_task_cg_lists(void)
- 	read_lock(&tasklist_lock);
- 	do_each_thread(g, p) {
- 		task_lock(p);
-+
-+		WARN_ON_ONCE(!list_empty(&p->cg_list) ||
-+			     task_css_set(p) != &init_css_set);
-+
- 		/*
- 		 * We should check if the process is exiting, otherwise
- 		 * it will race with cgroup_exit() in that the list
- 		 * entry won't be deleted though the process has exited.
- 		 */
--		if (!(p->flags & PF_EXITING) && list_empty(&p->cg_list))
-+		if (!(p->flags & PF_EXITING))
- 			list_add(&p->cg_list, &task_css_set(p)->tasks);
-+
- 		task_unlock(p);
- 	} while_each_thread(g, p);
- 	read_unlock(&tasklist_lock);
-+out_unlock:
- 	write_unlock(&css_set_lock);
- }
- 
-@@ -2619,13 +2638,8 @@ void css_task_iter_start(struct cgroup_subsys_state *css,
- 			 struct css_task_iter *it)
- 	__acquires(css_set_lock)
- {
--	/*
--	 * The first time anyone tries to iterate across a css, we need to
--	 * enable the list linking each css_set to its tasks, and fix up
--	 * all existing tasks.
--	 */
--	if (!use_task_css_set_links)
--		cgroup_enable_task_cg_lists();
-+	/* no one should try to iterate before mounting cgroups */
-+	WARN_ON_ONCE(!use_task_css_set_links);
- 
- 	read_lock(&css_set_lock);
- 
--- 
-1.8.5.3
+ 0005-0009 make css_set_lock a rwsem so that css_task_iter allows
+ blocking during iteration and removes css_scan_tasks().
 
+ 0010-0015 clean up migration path to prepare for the planned
+ migration taskset handling update.
+
+This patchset is on top of
+
+  cgroup/for-3.15 f7cef064aa01 ("Merge branch 'driver-core-next' into cgroup/for-3.15")
++ [1] [PATCHSET v2 cgroup/for-3.15] cgroup: convert to kernfs
++ [2] [PATCHSET v2 cgroup/for-3.15] cgroup: cleanups after kernfs conversion
+
+and also available in the following git branch.
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-moar-cleanups
+
+diffstat follows.
+
+ block/blk-cgroup.c           |    2 
+ include/linux/cgroup.h       |   33 --
+ kernel/cgroup.c              |  579 ++++++++++++++-----------------------------
+ kernel/cgroup_freezer.c      |    2 
+ kernel/cpuset.c              |  201 ++++----------
+ kernel/events/core.c         |    2 
+ kernel/sched/core.c          |    4 
+ mm/memcontrol.c              |    4 
+ net/core/netclassid_cgroup.c |    2 
+ net/core/netprio_cgroup.c    |    2 
+ 10 files changed, 278 insertions(+), 553 deletions(-)
+
+Thanks.
+
+--
+tejun
+
+[1] http://lkml.kernel.org/g/1391876127-7134-1-git-send-email-tj@kernel.org
+[2] http://lkml.kernel.org/g/1391877509-10855-1-git-send-email-tj@kernel.org
