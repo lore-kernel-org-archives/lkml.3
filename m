@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131AbaBINKZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 08:10:25 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:51912 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751365AbaBINKY (ORCPT
+	id S1752216AbaBINL2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 08:11:28 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:44852 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751420AbaBINL0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 08:10:24 -0500
-Date: Sun, 9 Feb 2014 18:40:19 +0530
+	Sun, 9 Feb 2014 08:11:26 -0500
+Date: Sun, 9 Feb 2014 18:41:21 +0530
 From: Rashika Kheria <rashika.kheria@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: Steven Whitehouse <swhiteho@redhat.com>, cluster-devel@redhat.com,
+Cc: "Theodore Ts'o" <tytso@mit.edu>, linux-ext4@vger.kernel.org,
         josh@joshtriplett.org
-Subject: [PATCH 10/21] fs: Mark functions as static in gfs2/rgrp.c
-Message-ID: <ea8cd448204387985f76078b8649168baaf81ab4.1391949868.git.rashika.kheria@gmail.com>
+Subject: [PATCH 11/21] fs: Mark functions as static in jbd2/journal.c
+Message-ID: <b13f571ff87a2ee1942578a97b00823373e9bd79.1391949868.git.rashika.kheria@gmail.com>
 References: <b572932c3e016c55e596686283036316a1aacd2f.1391949868.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
@@ -25,41 +25,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark functions as static in gfs2/rgrp.c because they are not used
+Mark functions as static in jbd2/journal.c because they are not used
 outside this file.
 
-This eliminates the following warning in gfs2/rgrp.c:
-fs/gfs2/rgrp.c:1092:5: warning: no previous prototype for ‘gfs2_rgrp_bh_get’ [-Wmissing-prototypes]
-fs/gfs2/rgrp.c:1157:5: warning: no previous prototype for ‘update_rgrp_lvb’ [-Wmissing-prototypes]
+This eliminates the following warning in jbd2/journal.c:
+fs/jbd2/journal.c:125:5: warning: no previous prototype for ‘jbd2_verify_csum_type’ [-Wmissing-prototypes]
+fs/jbd2/journal.c:146:5: warning: no previous prototype for ‘jbd2_superblock_csum_verify’ [-Wmissing-prototypes]
+fs/jbd2/journal.c:154:6: warning: no previous prototype for ‘jbd2_superblock_csum_set’ [-Wmissing-prototypes]
 
 Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- fs/gfs2/rgrp.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/jbd2/journal.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/fs/gfs2/rgrp.c b/fs/gfs2/rgrp.c
-index a1da213..551b9e9 100644
---- a/fs/gfs2/rgrp.c
-+++ b/fs/gfs2/rgrp.c
-@@ -1102,7 +1102,7 @@ static u32 count_unlinked(struct gfs2_rgrpd *rgd)
-  * Returns: errno
-  */
+diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
+index 5fa344a..244b6f6 100644
+--- a/fs/jbd2/journal.c
++++ b/fs/jbd2/journal.c
+@@ -122,7 +122,7 @@ EXPORT_SYMBOL(__jbd2_debug);
+ #endif
  
--int gfs2_rgrp_bh_get(struct gfs2_rgrpd *rgd)
-+static int gfs2_rgrp_bh_get(struct gfs2_rgrpd *rgd)
+ /* Checksumming functions */
+-int jbd2_verify_csum_type(journal_t *j, journal_superblock_t *sb)
++static int jbd2_verify_csum_type(journal_t *j, journal_superblock_t *sb)
  {
- 	struct gfs2_sbd *sdp = rgd->rd_sbd;
- 	struct gfs2_glock *gl = rgd->rd_gl;
-@@ -1169,7 +1169,7 @@ fail:
- 	return error;
+ 	if (!JBD2_HAS_INCOMPAT_FEATURE(j, JBD2_FEATURE_INCOMPAT_CSUM_V2))
+ 		return 1;
+@@ -143,7 +143,7 @@ static __be32 jbd2_superblock_csum(journal_t *j, journal_superblock_t *sb)
+ 	return cpu_to_be32(csum);
  }
  
--int update_rgrp_lvb(struct gfs2_rgrpd *rgd)
-+static int update_rgrp_lvb(struct gfs2_rgrpd *rgd)
+-int jbd2_superblock_csum_verify(journal_t *j, journal_superblock_t *sb)
++static int jbd2_superblock_csum_verify(journal_t *j, journal_superblock_t *sb)
  {
- 	u32 rl_flags;
+ 	if (!JBD2_HAS_INCOMPAT_FEATURE(j, JBD2_FEATURE_INCOMPAT_CSUM_V2))
+ 		return 1;
+@@ -151,7 +151,7 @@ int jbd2_superblock_csum_verify(journal_t *j, journal_superblock_t *sb)
+ 	return sb->s_checksum == jbd2_superblock_csum(j, sb);
+ }
  
+-void jbd2_superblock_csum_set(journal_t *j, journal_superblock_t *sb)
++static void jbd2_superblock_csum_set(journal_t *j, journal_superblock_t *sb)
+ {
+ 	if (!JBD2_HAS_INCOMPAT_FEATURE(j, JBD2_FEATURE_INCOMPAT_CSUM_V2))
+ 		return;
 -- 
 1.7.9.5
 
