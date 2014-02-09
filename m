@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752160AbaBIUDG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 15:03:06 -0500
-Received: from b.ns.miles-group.at ([95.130.255.144]:1661 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752070AbaBIUDD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 15:03:03 -0500
-Message-ID: <52F7DEF4.3050006@nod.at>
-Date: Sun, 09 Feb 2014 21:03:00 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Hans Verkuil <hverkuil@xs4all.nl>
-CC: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        "open list:MEDIA INPUT INFRA..." <linux-media@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        Paul Bolle <pebolle@tiscali.nl>
-Subject: Re: [PATCH 19/28] Remove SI4713
-References: <1391971686-9517-1-git-send-email-richard@nod.at> <1391971686-9517-20-git-send-email-richard@nod.at> <52F7D363.2080108@xs4all.nl>
-In-Reply-To: <52F7D363.2080108@xs4all.nl>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752181AbaBIUDX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 15:03:23 -0500
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:57827 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752070AbaBIUDV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Feb 2014 15:03:21 -0500
+Message-ID: <1391976161.25855.16.camel@x220>
+Subject: Re: [PATCH 03/28] Remove MACH_BCM2708
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Richard Weinberger <richard@nod.at>
+Cc: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>,
+        "open list:DMA GENERIC OFFLO..." <dmaengine@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Date: Sun, 09 Feb 2014 21:02:41 +0100
+In-Reply-To: <1391971686-9517-4-git-send-email-richard@nod.at>
+References: <1391971686-9517-1-git-send-email-richard@nod.at>
+	 <1391971686-9517-4-git-send-email-richard@nod.at>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 09 Feb 2014 20:02:41.0668 (UTC) FILETIME=[E3C3B440:01CF25D1]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-Am 09.02.2014 20:13, schrieb Hans Verkuil:
-> On 02/09/2014 07:47 PM, Richard Weinberger wrote:
->> The symbol is an orphan, get rid of it.
+On Sun, 2014-02-09 at 19:47 +0100, Richard Weinberger wrote:
+> The symbol is an orphan, get rid of it.
 > 
-> NACK.
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+> ---
+>  drivers/dma/Kconfig | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> It's not an orphan, it's a typo. It should be I2C_SI4713.
-> 
-> Paul, Richard, let me handle this. I'll make a patch for this tomorrow (I believe
-> there was a report about a missing I2C dependency as well) and make sure it ends
-> up in a pull request for 3.14.
+> diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+> index 9bed1a2..e4382ec 100644
+> --- a/drivers/dma/Kconfig
+> +++ b/drivers/dma/Kconfig
+> @@ -308,7 +308,7 @@ config DMA_OMAP
+>  
+>  config DMA_BCM2835
+>  	tristate "BCM2835 DMA engine support"
+> -	depends on (ARCH_BCM2835 || MACH_BCM2708)
+> +	depends on ARCH_BCM2835
+>  	select DMA_ENGINE
+>  	select DMA_VIRTUAL_CHANNELS
+>  
 
-This is perfectly fine. Thanks for sorting this out!
+I sent an identical patch (with a more verbose explanation) a few hours
+ago. But I'm fine with this one too.
 
-Thanks,
-//richard
+
+Paul Bolle
+
