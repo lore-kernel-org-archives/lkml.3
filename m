@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752531AbaBIStO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 13:49:14 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:43043 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752438AbaBIStL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 13:49:11 -0500
-Date: Sun, 9 Feb 2014 19:49:06 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Daniel Exner <dex@dragonslave.de>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: Poor network performance x86_64.. also with 3.13
-Message-ID: <20140209184906.GC8487@pd.tnic>
-References: <52DAD66F.7080306@dragonslave.de>
- <20140118195026.GA15543@pd.tnic>
- <52DB0439.2060905@dragonslave.de>
- <52DDA2CD.9040001@dragonslave.de>
- <20140120223752.GA3057@pd.tnic>
- <20140209160511.2f67866f@Mycroft>
- <20140209153107.GA8614@pd.tnic>
- <1391969674.10160.134.camel@edumazet-glaptop2.roam.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1391969674.10160.134.camel@edumazet-glaptop2.roam.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752371AbaBISsp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 13:48:45 -0500
+Received: from mail.sigma-star.at ([95.130.255.111]:62425 "EHLO
+	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752317AbaBISsm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Feb 2014 13:48:42 -0500
+From: Richard Weinberger <richard@nod.at>
+To: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org (open list:USB GADGET/PERIPH...),
+        linux-kernel@vger.kernel.org (open list)
+Cc: Richard Weinberger <richard@nod.at>
+Subject: [PATCH 23/28] Remove MACH_OMAP_H4_OTG
+Date: Sun,  9 Feb 2014 19:48:01 +0100
+Message-Id: <1391971686-9517-24-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1391971686-9517-1-git-send-email-richard@nod.at>
+References: <1391971686-9517-1-git-send-email-richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 09, 2014 at 10:14:34AM -0800, Eric Dumazet wrote:
-> tcp_rmem[2] = 16777
-> 
-> Come on, the 640KB barrier was broken a long time ago ;)
-> 
-> Feel free to investigate, I wont ;)
+The symbol is an orphan, get rid of it.
 
-Me too - it's not like I don't have anything else to do. :-)
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ drivers/usb/gadget/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I was just wondering why 3.10 was fine even with these settings and 3.12
-wasn't. Here's the original report:
-
-"I recently upgraded the Kernel from version 3.10 to latest stable
-3.12.8, did the usual "make oldconfig" (resulting config attached).
-
-But now I noticed some _really_ low network performance."
-
-Link: http://lkml.kernel.org/r/52DAD66F.7080306@dragonslave.de
-
+diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
+index 8154165..42f017a 100644
+--- a/drivers/usb/gadget/Kconfig
++++ b/drivers/usb/gadget/Kconfig
+@@ -226,7 +226,7 @@ config USB_GR_UDC
+ config USB_OMAP
+ 	tristate "OMAP USB Device Controller"
+ 	depends on ARCH_OMAP1
+-	select ISP1301_OMAP if MACH_OMAP_H2 || MACH_OMAP_H3 || MACH_OMAP_H4_OTG
++	select ISP1301_OMAP if MACH_OMAP_H2 || MACH_OMAP_H3
+ 	help
+ 	   Many Texas Instruments OMAP processors have flexible full
+ 	   speed USB device controllers, with support for up to 30
 -- 
-Regards/Gruss,
-    Boris.
+1.8.4.2
 
-Sent from a fat crate under my desk. Formatting is fine.
---
