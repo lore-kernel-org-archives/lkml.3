@@ -1,79 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752074AbaBIO4i (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 09:56:38 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:47121 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751948AbaBIO4h (ORCPT
+	id S1751851AbaBIPH4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 10:07:56 -0500
+Received: from infra.glanzmann.de ([88.198.249.254]:33742 "EHLO
+	infra.glanzmann.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751424AbaBIPHx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 09:56:37 -0500
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org, josh@joshtriplett.org,
-        "David S. Miller" <davem@davemloft.net>,
+	Sun, 9 Feb 2014 10:07:53 -0500
+Date: Sun, 9 Feb 2014 16:07:49 +0100
+From: Thomas Glanzmann <thomas@glanzmann.de>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: John Ogness <john.ogness@linutronix.de>,
         Eric Dumazet <edumazet@google.com>,
-        Veaceslav Falico <vfalico@redhat.com>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        Jiri Pirko <jiri@resnulli.us>, Pravin B Shelar <pshelar@nicira.com>,
-        Cong Wang <amwang@redhat.com>, netdev@vger.kernel.org
-Subject: =?UTF-8?q?=5BPATCH=20v2=2004/13=5D=20net=3A=20Mark=20functions=20as=20static=20in=20core/dev=2Ec?=
-Date: Sun,  9 Feb 2014 20:26:25 +0530
-Message-Id: <ccd9586270a8ebb87aeadc10feff52857b7f907c.1391955924.git.rashika.kheria@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <6f029c895035908595957fb16ab445c82793c77d.1391955924.git.rashika.kheria@gmail.com>
-References: <6f029c895035908595957fb16ab445c82793c77d.1391955924.git.rashika.kheria@gmail.com>
+        "David S. Miller" <davem@davemloft.net>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        Linux Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] This extends tx_data and and iscsit_do_tx_data with the
+ additional parameter flags and avoids sending multiple TCP packets in
+ iscsit_fe_sendpage_sg
+Message-ID: <20140209150749.GE11169@glanzmann.de>
+Mail-Followup-To: Eric Dumazet <eric.dumazet@gmail.com>,
+	John Ogness <john.ogness@linutronix.de>,
+	Eric Dumazet <edumazet@google.com>,
+	"David S. Miller" <davem@davemloft.net>,
+	"Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+	target-devel <target-devel@vger.kernel.org>,
+	Linux Network Development <netdev@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <1391869805.10160.97.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20140208150001.GI20512@glanzmann.de>
+ <1391871986.10160.105.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20140208165732.GB22359@glanzmann.de>
+ <1391879318.10160.108.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20140208171531.GA23798@glanzmann.de>
+ <1391886759.10160.114.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20140209074027.GA8105@glanzmann.de>
+ <20140209074227.GA8219@glanzmann.de>
+ <1391949039.10160.129.camel@edumazet-glaptop2.roam.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391949039.10160.129.camel@edumazet-glaptop2.roam.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark functions as static in core/dev.c because they are not used outside
-this file.
+Hello Eric,
 
-This eliminates the following warning in core/dev.c:
-net/core/dev.c:2806:5: warning: no previous prototype for ‘__dev_queue_xmit’ [-Wmissing-prototypes]
-net/core/dev.c:4640:5: warning: no previous prototype for ‘netdev_adjacent_sysfs_add’ [-Wmissing-prototypes]
-net/core/dev.c:4650:6: warning: no previous prototype for ‘netdev_adjacent_sysfs_del’ [-Wmissing-prototypes]
+> 1) Use your own identity as the sender, not impersonate me.
+> ( thats standard convention )
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-Reviewed-by: Veaceslav Falico <vfalico@redhat.com>
----
- net/core/dev.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+sorry about that, will not happen ever again.
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 3721db7..4ad1b78 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2803,7 +2803,7 @@ EXPORT_SYMBOL(dev_loopback_xmit);
-  *      the BH enable code must have IRQs enabled so that it will not deadlock.
-  *          --BLG
-  */
--int __dev_queue_xmit(struct sk_buff *skb, void *accel_priv)
-+static int __dev_queue_xmit(struct sk_buff *skb, void *accel_priv)
- {
- 	struct net_device *dev = skb->dev;
- 	struct netdev_queue *txq;
-@@ -4637,7 +4637,7 @@ struct net_device *netdev_master_upper_dev_get_rcu(struct net_device *dev)
- }
- EXPORT_SYMBOL(netdev_master_upper_dev_get_rcu);
- 
--int netdev_adjacent_sysfs_add(struct net_device *dev,
-+static int netdev_adjacent_sysfs_add(struct net_device *dev,
- 			      struct net_device *adj_dev,
- 			      struct list_head *dev_list)
- {
-@@ -4647,7 +4647,7 @@ int netdev_adjacent_sysfs_add(struct net_device *dev,
- 	return sysfs_create_link(&(dev->dev.kobj), &(adj_dev->dev.kobj),
- 				 linkname);
- }
--void netdev_adjacent_sysfs_del(struct net_device *dev,
-+static void netdev_adjacent_sysfs_del(struct net_device *dev,
- 			       char *name,
- 			       struct list_head *dev_list)
- {
--- 
-1.7.9.5
+> 2) Put following line as first line of the mail
+> ( Documentation/SubmittingPatches lines ~565)
 
+> From: Eric Dumazet <edumazet@google.com>
+
+> Then I'll add my :
+> Signed-off-by: Eric Dumazet <edumazet@google.com>
+
+I see. Thank you for the awareness training. I read SubmittingPatches
+completly.
+
+> Anyway, patch is not yet complete : We also want to set
+> MSG_MORE/MSG_SENDPAGE_NOTLAST for all pages but last one in a sg list.
+
+I see.
+
+> This will fix suboptimal traffic :
+
+> 13:32:04.976923 IP 10.101.99.5.3260 > 10.101.0.12.43418: Flags [.], seq 289953:292849, ack 45792, win 795, options [nop,nop,TS val 4294914045 ecr 1577012], length 2896
+> 13:32:04.976936 IP 10.101.99.5.3260 > 10.101.0.12.43418: Flags [.], seq 292849:295745, ack 45792, win 795, options [nop,nop,TS val 4294914045 ecr 1577012], length 2896
+> 13:32:04.976944 IP 10.101.99.5.3260 > 10.101.0.12.43418: Flags [P.], seq 295745:298193, ack 45792, win 795, options [nop,nop,TS val 4294914045 ecr 1577012], length 2448
+> 13:32:04.976952 IP 10.101.99.5.3260 > 10.101.0.12.43418: Flags [.], seq 298193:301089, ack 45792, win 795, options [nop,nop,TS val 4294914045 ecr 1577012], length 2896
+> 13:32:04.976960 IP 10.101.99.5.3260 > 10.101.0.12.43418: Flags [.], seq 301089:303985, ack 45792, win 795, options [nop,nop,TS val 4294914045 ecr 1577012], length 2896
+> 13:32:04.976998 IP 10.101.99.5.3260 > 10.101.0.12.43418: Flags [P.], seq 303985:306385, ack 45792, win 795, options [nop,nop,TS val 4294914045 ecr 1577012], length 2400
+
+What is suboptimal about the traffic, could they all go in one packet?
+Since my MTU is 1500 I assume that the network card will split this then
+in MTU sized packets, is that correct? Should I repeat the test with MTU
+9000 as well?
+
+> Please try following updated patch, thanks!
+
+This time it took 2 seconds instead of 4 seconds (3.12) to create the
+filesystem. Find pcap here:
+
+https://thomas.glanzmann.de/tmp/tcp_auto_corking_on_patched_tcp_more_notlast.pcap.bz2
+
+> Once tested, we'll submit it formally.
+
+Let me know if you want to submit or I should. If I should do it I would
+split it up in two patches, one for the interface change and one for the
+packet submission logic. Btw. your last patches did not apply for me
+because I cut & pasted them from e-mail instead of saving it in an
+editor this one. So your patch was fine but they way I tried to apply it
+was flawed.
+
+Cheers,
+        Thomas
