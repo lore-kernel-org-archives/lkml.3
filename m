@@ -1,782 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751523AbaBIEQH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 23:16:07 -0500
-Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:48105
-	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751294AbaBIEQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 23:16:05 -0500
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH V5 1/1] Drivers: hv: Implement the file copy service
-Date: Sat,  8 Feb 2014 21:06:45 -0800
-Message-Id: <1391922405-14105-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1751654AbaBIERG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 23:17:06 -0500
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:22334 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751581AbaBIERE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Feb 2014 23:17:04 -0500
+Message-ID: <1391919420.1099.31.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: Max number of posix queues in vanilla kernel
+ (/proc/sys/fs/mqueue/queues_max)
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Doug Ledford <dledford@redhat.com>
+Cc: m@silodev.com, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Manfred Spraul <manfred@colorfullife.com>
+Date: Sat, 08 Feb 2014 20:17:00 -0800
+In-Reply-To: <52F54F08.6060507@redhat.com>
+References: <11414.87.110.183.114.1391682066.squirrel@www.silodev.com>
+	 <1391803868.1099.23.camel@buesod1.americas.hpqcorp.net>
+	 <52F54F08.6060507@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement the file copy service for Linux guests on Hyper-V. This permits the
-host to copy a file (over VMBUS) into the guest. This facility is part of
-"guest integration services" supported on the Windows platform.
-Here is a link that provides additional details on this functionality:
+On Fri, 2014-02-07 at 16:24 -0500, Doug Ledford wrote:
+> On 2/7/2014 3:11 PM, Davidlohr Bueso wrote:
+> > On Thu, 2014-02-06 at 12:21 +0200, m@silodev.com wrote:
+> >> Hi Folks,
+> >>
+> >> I have recently ported my multi-process application (like a classical open
+> >> system) which uses POSIX Queues as IPC to one of the latest Linux kernels,
+> >> and I have faced issue that number of maximum queues are dramatically
+> >> limited down to 1024 (see include/linux/ipc_namespace.h, #define
+> >> HARD_QUEUESMAX 1024).
+> >>
+> >> Previously the max number of queues was INT_MAX (on 64bit system was:
+> >> 2147483647).
+> > 
+> > Hmm yes, 1024 is quite unrealistic for some workloads and breaks
+> > userspace - I don't see any reasons for _this_ specific value in the
+> > changelog or related changes in the patchset that introduced commits
+> > 93e6f119 and 02967ea0.
+> 
+> There wasn't a specific selection of that number other than a general
+> attempt to make the max more reasonable (INT_MAX isn't really reasonable
+> given the overhead of each individual queue, even if the queue number
+> and max msg size are small).
+> 
+> > And the fact that this limit is per namespace
+> > makes no difference really. Hell, if nothing else, the mq_overview(7)
+> > manpage description is evidence enough. For privileged users:
+> > 
+> > The default value for queues_max is 256; it can be changed to any value in the range 0 to INT_MAX.
+> 
+> That was obviously never updated to match the change.
+> 
+> In hindsight, I'm not sure we really even care though.  Since the limit
+> on queues is per namespace, and we can make as many namespaces as we
+> want, the limit is more or less meaningless and only serves as a
+> nuisance to people. 
 
-http://technet.microsoft.com/en-us/library/dn464282.aspx
+Yes, but namespaces aren't _that_ popular in reality, specially as you
+describe the workaround.
 
-In V1 version of the patch I have addressed comments from
-Olaf Hering <olaf@aepfle.de> and Dan Carpenter <dan.carpenter@oracle.com>
+>  Since we have accounting on a per user basis that
+> spans across namespaces and across queues, maybe that should be
+> sufficient and the limit on queues should simply be removed and we
+> should instead just rely on memory limits.  When the user has exhausted
+> their allowed memory usage, whether by large queue sizes, large message
+> sizes, or large queue counts, then they are done.  When they haven't,
+> they can keep allocating.  Would make things considerably easier and
+> would avoid the breakage we are talking about here.
+> 
 
-In V2 version of this patch I did some minor cleanup (making some globals
-static). In V4 version of the patch I have addressed all of Olaf's
-most recent set of comments/concerns.
+Right, and this is taken care of in mqueue_get_inode().
 
-In this version of the patch I have addressed Greg's most recent comments.
-I would like to thank Greg for suggesting that I use misc device; it has
-significantly simplified the code.
+The (untested) code below simply removes this global limit, let me know
+if you're okay with it and I'll send a formal/tested patch.
 
-
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
----
- drivers/hv/Makefile        |    2 +-
- drivers/hv/hv_fcopy.c      |  388 ++++++++++++++++++++++++++++++++++++++++++++
- drivers/hv/hv_util.c       |   10 ++
- include/linux/hyperv.h     |   61 +++++++
- tools/hv/hv_fcopy_daemon.c |  195 ++++++++++++++++++++++
- 5 files changed, 655 insertions(+), 1 deletions(-)
- create mode 100644 drivers/hv/hv_fcopy.c
- create mode 100644 tools/hv/hv_fcopy_daemon.c
-
-diff --git a/drivers/hv/Makefile b/drivers/hv/Makefile
-index 0a74b56..5e4dfa4 100644
---- a/drivers/hv/Makefile
-+++ b/drivers/hv/Makefile
-@@ -5,4 +5,4 @@ obj-$(CONFIG_HYPERV_BALLOON)	+= hv_balloon.o
- hv_vmbus-y := vmbus_drv.o \
- 		 hv.o connection.o channel.o \
- 		 channel_mgmt.o ring_buffer.o
--hv_utils-y := hv_util.o hv_kvp.o hv_snapshot.o
-+hv_utils-y := hv_util.o hv_kvp.o hv_snapshot.o hv_fcopy.o
-diff --git a/drivers/hv/hv_fcopy.c b/drivers/hv/hv_fcopy.c
-new file mode 100644
-index 0000000..15cf35c
---- /dev/null
-+++ b/drivers/hv/hv_fcopy.c
-@@ -0,0 +1,388 @@
-+/*
-+ * An implementation of file copy service.
-+ *
-+ * Copyright (C) 2014, Microsoft, Inc.
-+ *
-+ * Author : K. Y. Srinivasan <ksrinivasan@novell.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License version 2 as published
-+ * by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ * NON INFRINGEMENT.  See the GNU General Public License for more
-+ * details.
-+ *
-+ */
-+
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
-+#include <linux/semaphore.h>
-+#include <linux/fs.h>
-+#include <linux/nls.h>
-+#include <linux/workqueue.h>
-+#include <linux/cdev.h>
-+#include <linux/hyperv.h>
-+#include <linux/sched.h>
-+#include <linux/uaccess.h>
-+#include <linux/miscdevice.h>
-+
-+#define WIN8_SRV_MAJOR		1
-+#define WIN8_SRV_MINOR		1
-+#define WIN8_SRV_VERSION	(WIN8_SRV_MAJOR << 16 | WIN8_SRV_MINOR)
-+
-+/*
-+ * Global state maintained for transaction that is being processed.
-+ * For a class of integration services, including the "file copy service",
-+ * the specified protocol is a "request/response" protocol which means that
-+ * there can only be single outstanding transaction from the host at any
-+ * given point in time. We use this to simplify memory management in this
-+ * driver - we cache and process only one message at a time.
-+ *
-+ * While the request/response protocol is guaranteed by the host, we further
-+ * ensure this by serializing packet processing in this driver - we do not
-+ * read additional packets from the VMBUs until the current packet is fully
-+ * handled.
-+ *
-+ * The transaction "active" state is set when we receive a request from the
-+ * host and we cleanup this state when the transaction is completed - when we
-+ * respond to the host with our response. When the transaction active state is
-+ * set, we defer handling incoming packets.
-+ */
-+
-+static struct {
-+	bool active; /* transaction status - active or not */
-+	int recv_len; /* number of bytes received. */
-+	struct hv_fcopy_hdr  *fcopy_msg; /* current message */
-+	struct hv_start_fcopy  message; /*  sent to daemon */
-+	struct vmbus_channel *recv_channel; /* chn we got the request */
-+	u64 recv_req_id; /* request ID. */
-+	void *fcopy_context; /* for the channel callback */
-+	struct semaphore read_sema;
-+} fcopy_transaction;
-+
-+static bool opened; /* currently device opened */
-+
-+/*
-+ * Before we can accept copy messages from the host, we need
-+ * to handshake with the user level daemon. This state tracks
-+ * if we are in the handshake phase.
-+ */
-+static bool in_hand_shake = true;
-+static void fcopy_send_data(void);
-+static void fcopy_respond_to_host(int error);
-+static void fcopy_work_func(struct work_struct *dummy);
-+static DECLARE_DELAYED_WORK(fcopy_work, fcopy_work_func);
-+static u8 *recv_buffer;
-+
-+static void fcopy_work_func(struct work_struct *dummy)
-+{
-+	/*
-+	 * If the timer fires, the user-mode component has not responded;
-+	 * process the pending transaction.
-+	 */
-+	fcopy_respond_to_host(HV_E_FAIL);
-+}
-+
-+static int fcopy_handle_handshake(u32 version)
-+{
-+	switch (version) {
-+	case FCOPY_CURRENT_VERSION:
-+		break;
-+	default:
-+		/*
-+		 * For now we will fail the registration.
-+		 * If and when we have multiple versions to
-+		 * deal with, we will be backward compatible.
-+		 * We will add this code when needed.
-+		 */
-+		return -EINVAL;
-+	}
-+	pr_info("FCP: user-mode registering done. Daemon version: %d\n",
-+		version);
-+	fcopy_transaction.active = false;
-+	if (fcopy_transaction.fcopy_context)
-+		hv_fcopy_onchannelcallback(fcopy_transaction.fcopy_context);
-+	in_hand_shake = false;
-+	return sizeof(int);
-+}
-+
-+static void fcopy_send_data(void)
-+{
-+	struct hv_start_fcopy *smsg_out = &fcopy_transaction.message;
-+	int operation = fcopy_transaction.fcopy_msg->operation;
-+	struct hv_start_fcopy *smsg_in;
-+
-+	/*
-+	 * The  strings sent from the host are encoded in
-+	 * in utf16; convert it to utf8 strings.
-+	 * The host assures us that the utf16 strings will not exceed
-+	 * the max lengths specified. We will however, reserve room
-+	 * for the string terminating character - in the utf16s_utf8s()
-+	 * function we limit the size of the buffer where the converted
-+	 * string is placed to W_MAX_PATH -1 to guarantee
-+	 * that the strings can be properly terminated!
-+	 */
-+
-+	switch (operation) {
-+	case START_FILE_COPY:
-+		memset(smsg_out, 0, sizeof(struct hv_start_fcopy));
-+		smsg_out->hdr.operation = operation;
-+		smsg_in = (struct hv_start_fcopy *)fcopy_transaction.fcopy_msg;
-+
-+		utf16s_to_utf8s((wchar_t *)smsg_in->file_name, W_MAX_PATH,
-+				UTF16_LITTLE_ENDIAN,
-+				(__u8 *)smsg_out->file_name, W_MAX_PATH - 1);
-+
-+		utf16s_to_utf8s((wchar_t *)smsg_in->path_name, W_MAX_PATH,
-+				UTF16_LITTLE_ENDIAN,
-+				(__u8 *)smsg_out->path_name, W_MAX_PATH - 1);
-+
-+		smsg_out->copy_flags = smsg_in->copy_flags;
-+		smsg_out->file_size = smsg_in->file_size;
-+		break;
-+
-+	default:
-+		break;
-+	}
-+	up(&fcopy_transaction.read_sema);
-+	return;
-+}
-+
-+/*
-+ * Send a response back to the host.
-+ */
-+
-+static void
-+fcopy_respond_to_host(int error)
-+{
-+	struct icmsg_hdr *icmsghdrp;
-+	u32 buf_len;
-+	struct vmbus_channel *channel;
-+	u64 req_id;
-+
-+	/*
-+	 * Copy the global state for completing the transaction. Note that
-+	 * only one transaction can be active at a time.
-+	 */
-+
-+	buf_len = fcopy_transaction.recv_len;
-+	channel = fcopy_transaction.recv_channel;
-+	req_id = fcopy_transaction.recv_req_id;
-+
-+	fcopy_transaction.active = false;
-+
-+	icmsghdrp = (struct icmsg_hdr *)
-+			&recv_buffer[sizeof(struct vmbuspipe_hdr)];
-+
-+	if (channel->onchannel_callback == NULL)
-+		/*
-+		 * We have raced with util driver being unloaded;
-+		 * silently return.
-+		 */
-+		return;
-+
-+	icmsghdrp->status = error;
-+	icmsghdrp->icflags = ICMSGHDRFLAG_TRANSACTION | ICMSGHDRFLAG_RESPONSE;
-+	vmbus_sendpacket(channel, recv_buffer, buf_len, req_id,
-+				VM_PKT_DATA_INBAND, 0);
-+}
-+
-+void hv_fcopy_onchannelcallback(void *context)
-+{
-+	struct vmbus_channel *channel = context;
-+	u32 recvlen;
-+	u64 requestid;
-+	struct hv_fcopy_hdr *fcopy_msg;
-+	struct icmsg_hdr *icmsghdrp;
-+	struct icmsg_negotiate *negop = NULL;
-+	int util_fw_version;
-+	int fcopy_srv_version;
-+
-+	if (fcopy_transaction.active) {
-+		/*
-+		 * We will defer processing this callback once
-+		 * the current transaction is complete.
-+		 */
-+		fcopy_transaction.fcopy_context = context;
-+		return;
-+	}
-+
-+	vmbus_recvpacket(channel, recv_buffer, PAGE_SIZE * 2, &recvlen,
-+			 &requestid);
-+	if (recvlen <= 0)
-+		return;
-+
-+	icmsghdrp = (struct icmsg_hdr *)&recv_buffer[
-+			sizeof(struct vmbuspipe_hdr)];
-+	if (icmsghdrp->icmsgtype == ICMSGTYPE_NEGOTIATE) {
-+		util_fw_version = UTIL_FW_VERSION;
-+		fcopy_srv_version = WIN8_SRV_VERSION;
-+		vmbus_prep_negotiate_resp(icmsghdrp, negop, recv_buffer,
-+				util_fw_version, fcopy_srv_version);
-+	} else {
-+		fcopy_msg = (struct hv_fcopy_hdr *)&recv_buffer[
-+				sizeof(struct vmbuspipe_hdr) +
-+				sizeof(struct icmsg_hdr)];
-+
-+		/*
-+		 * Stash away this global state for completing the
-+		 * transaction; note transactions are serialized.
-+		 */
-+
-+		fcopy_transaction.active = true;
-+		fcopy_transaction.recv_len = recvlen;
-+		fcopy_transaction.recv_channel = channel;
-+		fcopy_transaction.recv_req_id = requestid;
-+		fcopy_transaction.fcopy_msg = fcopy_msg;
-+
-+		/*
-+		 * Send the information to the user-level daemon.
-+		 */
-+		fcopy_send_data();
-+		schedule_delayed_work(&fcopy_work, 5*HZ);
-+		return;
-+	}
-+	icmsghdrp->icflags = ICMSGHDRFLAG_TRANSACTION | ICMSGHDRFLAG_RESPONSE;
-+	vmbus_sendpacket(channel, recv_buffer, recvlen, requestid,
-+			VM_PKT_DATA_INBAND, 0);
-+}
-+
-+/*
-+ * Create a char device that can support read/write for passing
-+ * the payload.
-+ */
-+
-+static ssize_t fcopy_read(struct file *file, char __user *buf,
-+		size_t count, loff_t *ppos)
-+{
-+	void *src;
-+	size_t copy_size;
-+	int operation;
-+
-+	/*
-+	 * Wait until there is something to be read.
-+	 */
-+	if (down_interruptible(&fcopy_transaction.read_sema))
-+		return -EINTR;
-+	if (!opened)
-+		return -ENODEV;
-+
-+	operation = fcopy_transaction.fcopy_msg->operation;
-+
-+	if (operation == START_FILE_COPY) {
-+		src = &fcopy_transaction.message;
-+		copy_size = sizeof(struct hv_start_fcopy);
-+		if (count < copy_size)
-+			return 0;
-+	} else {
-+		src = fcopy_transaction.fcopy_msg;
-+		copy_size = sizeof(struct hv_do_fcopy);
-+		if (count < copy_size)
-+			return 0;
-+	}
-+	if (copy_to_user(buf, src, copy_size))
-+		return -EFAULT;
-+
-+	return copy_size;
-+}
-+
-+static ssize_t fcopy_write(struct file *file, const char __user *buf,
-+			size_t count, loff_t *ppos)
-+{
-+	int response = 0;
-+
-+	if (count != sizeof(int))
-+		return -EINVAL;
-+
-+	if (copy_from_user(&response, buf, sizeof(int)))
-+		return -EFAULT;
-+
-+	if (in_hand_shake)
-+		return fcopy_handle_handshake(response);
-+
-+	/*
-+	 * Complete the transaction by forwarding the result
-+	 * to the host. But first, cancel the timeout.
-+	 */
-+	if (cancel_delayed_work_sync(&fcopy_work))
-+		fcopy_respond_to_host(response);
-+
-+	return sizeof(int);
-+}
-+
-+int fcopy_open(struct inode *inode, struct file *f)
-+{
-+	if (opened)
-+		return -EBUSY;
-+
-+	/*
-+	 * The daemon is alive; setup the state.
-+	 */
-+	opened = true;
-+	return 0;
-+}
-+
-+int fcopy_release(struct inode *inode, struct file *f)
-+{
-+	/*
-+	 * The daemon has exited; reset the state.
-+	 */
-+	in_hand_shake = true;
-+	opened = false;
-+	return 0;
-+}
-+
-+
-+static const struct file_operations fcopy_fops = {
-+	.read           = fcopy_read,
-+	.write          = fcopy_write,
-+	.release	= fcopy_release,
-+	.open		= fcopy_open,
-+};
-+
-+static struct miscdevice fcopy_misc = {
-+	.minor          = MISC_DYNAMIC_MINOR,
-+	.name           = "vmbus/hv_fcopy",
-+	.fops           = &fcopy_fops,
-+};
-+
-+static int fcopy_dev_init(void)
-+{
-+	return misc_register(&fcopy_misc);
-+}
-+
-+static void fcopy_dev_deinit(void)
-+{
-+	opened = false;
-+	/*
-+	 * Signal the semaphore as the device is
-+	 * going away.
-+	 */
-+	up(&fcopy_transaction.read_sema);
-+	misc_deregister(&fcopy_misc);
-+}
-+
-+int hv_fcopy_init(struct hv_util_service *srv)
-+{
-+	recv_buffer = srv->recv_buffer;
-+
-+	/*
-+	 * When this driver loads, the user level daemon that
-+	 * processes the host requests may not yet be running.
-+	 * Defer processing channel callbacks until the daemon
-+	 * has registered.
-+	 */
-+	fcopy_transaction.active = true;
-+	sema_init(&fcopy_transaction.read_sema, 0);
-+
-+	return fcopy_dev_init();
-+}
-+
-+void hv_fcopy_deinit(void)
-+{
-+	cancel_delayed_work_sync(&fcopy_work);
-+	fcopy_dev_deinit();
-+}
-diff --git a/drivers/hv/hv_util.c b/drivers/hv/hv_util.c
-index 62dfd246..efc5e83 100644
---- a/drivers/hv/hv_util.c
-+++ b/drivers/hv/hv_util.c
-@@ -82,6 +82,12 @@ static struct hv_util_service util_vss = {
- 	.util_deinit = hv_vss_deinit,
- };
+diff --git a/include/linux/ipc_namespace.h b/include/linux/ipc_namespace.h
+index e7831d2..d78a09f 100644
+--- a/include/linux/ipc_namespace.h
++++ b/include/linux/ipc_namespace.h
+@@ -120,7 +120,6 @@ extern int mq_init_ns(struct ipc_namespace *ns);
+  */
+ #define MIN_QUEUESMAX			1
+ #define DFLT_QUEUESMAX		      256
+-#define HARD_QUEUESMAX		     1024
+ #define MIN_MSGMAX			1
+ #define DFLT_MSG		       10U
+ #define DFLT_MSGMAX		       10
+diff --git a/ipc/mq_sysctl.c b/ipc/mq_sysctl.c
+index 383d638..5bb8bfe 100644
+--- a/ipc/mq_sysctl.c
++++ b/ipc/mq_sysctl.c
+@@ -22,6 +22,16 @@ static void *get_mq(ctl_table *table)
+ 	return which;
+ }
  
-+static struct hv_util_service util_fcopy = {
-+	.util_cb = hv_fcopy_onchannelcallback,
-+	.util_init = hv_fcopy_init,
-+	.util_deinit = hv_fcopy_deinit,
-+};
++static int proc_mq_dointvec(ctl_table *table, int write,
++			    void __user *buffer, size_t *lenp, loff_t *ppos)
++{
++	struct ctl_table mq_table;
++	memcpy(&mq_table, table, sizeof(mq_table));
++	mq_table.data = get_mq(table);
 +
- static void perform_shutdown(struct work_struct *dummy)
++	return proc_dointvec(&mq_table, write, buffer, lenp, ppos);
++}
++
+ static int proc_mq_dointvec_minmax(ctl_table *table, int write,
+ 	void __user *buffer, size_t *lenp, loff_t *ppos)
  {
- 	orderly_poweroff(true);
-@@ -401,6 +407,10 @@ static const struct hv_vmbus_device_id id_table[] = {
- 	{ HV_VSS_GUID,
- 	  .driver_data = (unsigned long)&util_vss
+@@ -33,12 +43,10 @@ static int proc_mq_dointvec_minmax(ctl_table *table, int write,
+ 					lenp, ppos);
+ }
+ #else
++#define proc_mq_dointvec NULL
+ #define proc_mq_dointvec_minmax NULL
+ #endif
+ 
+-static int msg_queues_limit_min = MIN_QUEUESMAX;
+-static int msg_queues_limit_max = HARD_QUEUESMAX;
+-
+ static int msg_max_limit_min = MIN_MSGMAX;
+ static int msg_max_limit_max = HARD_MSGMAX;
+ 
+@@ -51,9 +59,7 @@ static ctl_table mq_sysctls[] = {
+ 		.data		= &init_ipc_ns.mq_queues_max,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_mq_dointvec_minmax,
+-		.extra1		= &msg_queues_limit_min,
+-		.extra2		= &msg_queues_limit_max,
++		.proc_handler	= proc_mq_dointvec,
  	},
-+	/* File copy GUID */
-+	{ HV_FCOPY_GUID,
-+	  .driver_data = (unsigned long)&util_fcopy
-+	},
- 	{ },
- };
- 
-diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
-index 15da677..9d2e168 100644
---- a/include/linux/hyperv.h
-+++ b/include/linux/hyperv.h
-@@ -26,6 +26,7 @@
- #define _HYPERV_H
- 
- #include <linux/types.h>
-+#include <linux/uuid.h>
- 
- /*
-  * Framework version for util services.
-@@ -96,6 +97,51 @@ struct hv_vss_msg {
- } __attribute__((packed));
- 
- /*
-+ * Implementation of a host to guest copy facility.
-+ */
+ 	{
+ 		.procname	= "msg_max",
+diff --git a/ipc/mqueue.c b/ipc/mqueue.c
+index ccf1f9f..c3b3117 100644
+--- a/ipc/mqueue.c
++++ b/ipc/mqueue.c
+@@ -433,9 +433,9 @@ static int mqueue_create(struct inode *dir, struct dentry *dentry,
+ 		error = -EACCES;
+ 		goto out_unlock;
+ 	}
+-	if (ipc_ns->mq_queues_count >= HARD_QUEUESMAX ||
+-	    (ipc_ns->mq_queues_count >= ipc_ns->mq_queues_max &&
+-	     !capable(CAP_SYS_RESOURCE))) {
 +
-+#define FCOPY_VERSION_0 0
-+#define FCOPY_CURRENT_VERSION FCOPY_VERSION_0
-+#define W_MAX_PATH 260
-+
-+enum hv_fcopy_op {
-+	START_FILE_COPY = 0,
-+	WRITE_TO_FILE,
-+	COMPLETE_FCOPY,
-+	CANCEL_FCOPY,
-+};
-+
-+struct hv_fcopy_hdr {
-+	__u32 operation;
-+	uuid_le service_id0; /* currently unused */
-+	uuid_le service_id1; /* currently unused */
-+} __attribute__((packed));
-+
-+#define OVER_WRITE	0x1
-+#define CREATE_PATH	0x2
-+
-+struct hv_start_fcopy {
-+	struct hv_fcopy_hdr hdr;
-+	__u16 file_name[W_MAX_PATH];
-+	__u16 path_name[W_MAX_PATH];
-+	__u32 copy_flags;
-+	__u64 file_size;
-+} __attribute__((packed));
-+
-+/*
-+ * The file is chunked into fragments.
-+ */
-+#define DATA_FRAGMENT	(6 * 1024)
-+
-+struct hv_do_fcopy {
-+	struct hv_fcopy_hdr hdr;
-+	__u64	offset;
-+	__u32	size;
-+	__u8	data[DATA_FRAGMENT];
-+};
-+
-+
-+/*
-  * An implementation of HyperV key value pair (KVP) functionality for Linux.
-  *
-  *
-@@ -1352,6 +1398,17 @@ void vmbus_driver_unregister(struct hv_driver *hv_driver);
- 		}
- 
- /*
-+ * Guest File Copy Service
-+ * {34D14BE3-DEE4-41c8-9AE7-6B174977C192}
-+ */
-+
-+#define HV_FCOPY_GUID \
-+	.guid = { \
-+			0xE3, 0x4B, 0xD1, 0x34, 0xE4, 0xDE, 0xC8, 0x41, \
-+			0x9A, 0xE7, 0x6B, 0x17, 0x49, 0x77, 0xC1, 0x92 \
-+		}
-+
-+/*
-  * Common header for Hyper-V ICs
-  */
- 
-@@ -1459,6 +1516,10 @@ int hv_vss_init(struct hv_util_service *);
- void hv_vss_deinit(void);
- void hv_vss_onchannelcallback(void *);
- 
-+int hv_fcopy_init(struct hv_util_service *);
-+void hv_fcopy_deinit(void);
-+void hv_fcopy_onchannelcallback(void *);
-+
- /*
-  * Negotiated version with the Host.
-  */
-diff --git a/tools/hv/hv_fcopy_daemon.c b/tools/hv/hv_fcopy_daemon.c
-new file mode 100644
-index 0000000..c557998
---- /dev/null
-+++ b/tools/hv/hv_fcopy_daemon.c
-@@ -0,0 +1,195 @@
-+/*
-+ * An implementation of host to guest copy functionality for Linux.
-+ *
-+ * Copyright (C) 2014, Microsoft, Inc.
-+ *
-+ * Author : K. Y. Srinivasan <kys@microsoft.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License version 2 as published
-+ * by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ * NON INFRINGEMENT.  See the GNU General Public License for more
-+ * details.
-+ */
-+
-+
-+#include <sys/types.h>
-+#include <sys/socket.h>
-+#include <sys/poll.h>
-+#include <linux/types.h>
-+#include <linux/kdev_t.h>
-+#include <stdio.h>
-+#include <stdlib.h>
-+#include <unistd.h>
-+#include <string.h>
-+#include <ctype.h>
-+#include <errno.h>
-+#include <linux/hyperv.h>
-+#include <syslog.h>
-+#include <sys/stat.h>
-+#include <fcntl.h>
-+#include <dirent.h>
-+
-+static int target_fd;
-+static char target_fname[W_MAX_PATH];
-+
-+static int hv_start_fcopy(struct hv_start_fcopy *smsg)
-+{
-+	int error = HV_E_FAIL;
-+	char *q, *p;
-+
-+	/*
-+	 * If possile append a path seperator to the path.
-+	 */
-+	if (strlen((char *)smsg->path_name) < (W_MAX_PATH - 2))
-+		strcat((char *)smsg->path_name, "/");
-+
-+	p = (char *)smsg->path_name;
-+	snprintf(target_fname, sizeof(target_fname), "%s/%s",
-+		(char *)smsg->path_name, smsg->file_name);
-+
-+	syslog(LOG_INFO, "Target file name: %s", target_fname);
-+	/*
-+	 * Check to see if the path is already in place; if not,
-+	 * create if required.
-+	 */
-+	while ((q = strchr(p, '/')) != NULL) {
-+		if (q == p) {
-+			p++;
-+			continue;
-+		}
-+		*q = '\0';
-+		if (access((char *)smsg->path_name, F_OK)) {
-+			if (smsg->copy_flags & CREATE_PATH) {
-+				if (mkdir((char *)smsg->path_name, 0755)) {
-+					syslog(LOG_ERR, "Failed to create %s",
-+						(char *)smsg->path_name);
-+					goto done;
-+				}
-+			} else {
-+				syslog(LOG_ERR, "Invalid path: %s",
-+					(char *)smsg->path_name);
-+				goto done;
-+			}
-+		}
-+		p = q + 1;
-+		*q = '/';
-+	}
-+
-+	if (!access(target_fname, F_OK)) {
-+		syslog(LOG_INFO, "File: %s exists", target_fname);
-+		if (!smsg->copy_flags & OVER_WRITE)
-+			goto done;
-+	}
-+
-+	target_fd = open(target_fname, O_RDWR | O_CREAT | O_CLOEXEC, 0744);
-+	if (target_fd == -1) {
-+		syslog(LOG_INFO, "Open Failed: %s", strerror(errno));
-+		goto done;
-+	}
-+
-+	error = 0;
-+done:
-+	return error;
-+}
-+
-+static int hv_copy_data(struct hv_do_fcopy *cpmsg)
-+{
-+	ssize_t bytes_written;
-+
-+	bytes_written = pwrite(target_fd, cpmsg->data, cpmsg->size,
-+				cpmsg->offset);
-+
-+	if (bytes_written != cpmsg->size)
-+		return HV_E_FAIL;
-+
-+	return 0;
-+}
-+
-+static int hv_copy_finished(void)
-+{
-+	close(target_fd);
-+	return 0;
-+}
-+static int hv_copy_cancel(void)
-+{
-+	close(target_fd);
-+	unlink(target_fname);
-+	return 0;
-+
-+}
-+
-+int main(void)
-+{
-+	int fd, fcopy_fd, len;
-+	int error;
-+	int version = FCOPY_CURRENT_VERSION;
-+	char *buffer[4096 * 2];
-+	struct hv_fcopy_hdr *in_msg;
-+
-+	if (daemon(1, 0)) {
-+		syslog(LOG_ERR, "daemon() failed; error: %s", strerror(errno));
-+		exit(EXIT_FAILURE);
-+	}
-+
-+	openlog("HV_FCOPY", 0, LOG_USER);
-+	syslog(LOG_INFO, "HV_FCOPY starting; pid is:%d", getpid());
-+
-+	fcopy_fd = open("/dev/vmbus/hv_fcopy", O_RDWR);
-+
-+	if (fcopy_fd < 0) {
-+		syslog(LOG_ERR, "open /dev/hv_fcopy failed; error: %d %s",
-+			errno, strerror(errno));
-+		exit(EXIT_FAILURE);
-+	}
-+
-+	/*
-+	 * Register with the kernel.
-+	 */
-+	if ((write(fcopy_fd, &version, sizeof(int))) != sizeof(int)) {
-+		syslog(LOG_ERR, "Registration failed: %s", strerror(errno));
-+		exit(EXIT_FAILURE);
-+	}
-+
-+	while (1) {
-+		/*
-+		 * In this loop we process fcopy messages after the
-+		 * handshake is complete.
-+		 */
-+		len = pread(fcopy_fd, buffer, (4096 * 2), 0);
-+		if (len < 0) {
-+			syslog(LOG_ERR, "pread failed: %s", strerror(errno));
-+			exit(EXIT_FAILURE);
-+		}
-+		in_msg = (struct hv_fcopy_hdr *)buffer;
-+
-+		switch (in_msg->operation) {
-+		case START_FILE_COPY:
-+			error = hv_start_fcopy((struct hv_start_fcopy *)in_msg);
-+			break;
-+		case WRITE_TO_FILE:
-+			error = hv_copy_data((struct hv_do_fcopy *)in_msg);
-+			break;
-+		case COMPLETE_FCOPY:
-+			error = hv_copy_finished();
-+			break;
-+		case CANCEL_FCOPY:
-+			error = hv_copy_cancel();
-+			break;
-+
-+		default:
-+			syslog(LOG_ERR, "Unknown operation: %d",
-+				in_msg->operation);
-+
-+		}
-+
-+		if (pwrite(fcopy_fd, &error, sizeof(int), 0) != sizeof(int)) {
-+			syslog(LOG_ERR, "pwrite failed: %s", strerror(errno));
-+			exit(EXIT_FAILURE);
-+		}
-+	}
-+}
--- 
-1.7.4.1
++	if (ipc_ns->mq_queues_count >= ipc_ns->mq_queues_max &&
++	    !capable(CAP_SYS_RESOURCE)) {
+ 		error = -ENOSPC;
+ 		goto out_unlock;
+ 	}
+
 
