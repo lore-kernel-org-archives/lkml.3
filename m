@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752092AbaBIQ5x (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 11:57:53 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:41443 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751438AbaBIQ5v (ORCPT
+	id S1752133AbaBIQ71 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 11:59:27 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:60173 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751523AbaBIQ7Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 11:57:51 -0500
+	Sun, 9 Feb 2014 11:59:25 -0500
 From: Rashika Kheria <rashika.kheria@gmail.com>
 To: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         netdev@vger.kernel.org, josh@joshtriplett.org
-Subject: =?UTF-8?q?=5BPATCH=20v2=2010/13=5D=20net=3A=20Move=20prototype=20declaration=20to=20header=20file=20include/net/datalink=2Eh=20from=20net/ipx/af=5Fipx=2Ec?=
-Date: Sun,  9 Feb 2014 22:27:41 +0530
-Message-Id: <b6f64a14cdcff5333ee2c83cefeca42f8e934b12.1391955925.git.rashika.kheria@gmail.com>
+Subject: =?UTF-8?q?=5BPATCH=20v2=2011/13=5D=20net=3A=20Move=20prototype=20declaration=20to=20header=20file=20include/net/net=5Fnamespace=2Eh=20from=20net/ipx/af=5Fipx=2Ec?=
+Date: Sun,  9 Feb 2014 22:29:14 +0530
+Message-Id: <1fc35d143bf8d29a11d6a81fb94650682db1aa7c.1391955925.git.rashika.kheria@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <6f029c895035908595957fb16ab445c82793c77d.1391955924.git.rashika.kheria@gmail.com>
 References: <6f029c895035908595957fb16ab445c82793c77d.1391955924.git.rashika.kheria@gmail.com>
@@ -24,54 +24,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move prototype declarations of function to header file
-include/net/datalink.h from net/ipx/af_ipx.c because they are used by
-more than one file.
+Move prototype declaration of function to header file
+include/net/net_namespace.h from net/ipx/af_ipx.c because they are used
+by more than one file.
 
-This eliminates the following warning in net/ipx/pe2.c:
-net/ipx/pe2.c:20:24: warning: no previous prototype for ‘make_EII_client’ [-Wmissing-prototypes]
-net/ipx/pe2.c:32:6: warning: no previous prototype for ‘destroy_EII_client’ [-Wmissing-prototypes]
+This eliminates the following warning in net/ipx/sysctl_net_ipx.c:
+net/ipx/sysctl_net_ipx.c:33:6: warning: no previous prototype for ‘ipx_register_sysctl’ [-Wmissing-prototypes]
+net/ipx/sysctl_net_ipx.c:38:6: warning: no previous prototype for ‘ipx_unregister_sysctl’ [-Wmissing-prototypes]
 
 Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- include/net/datalink.h |    2 ++
- net/ipx/af_ipx.c       |    4 +---
- 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/include/net/datalink.h b/include/net/datalink.h
-index deb7ca7..93cb18f 100644
---- a/include/net/datalink.h
-+++ b/include/net/datalink.h
-@@ -15,4 +15,6 @@ struct datalink_proto {
- 	struct list_head node;
- };
+Changes since v1:
+Move else block in the header file.
+
+ include/net/net_namespace.h |    8 ++++++++
+ net/ipx/af_ipx.c            |    9 +--------
+ 2 files changed, 9 insertions(+), 8 deletions(-)
+
+diff --git a/include/net/net_namespace.h b/include/net/net_namespace.h
+index da68c9a..991dcd9 100644
+--- a/include/net/net_namespace.h
++++ b/include/net/net_namespace.h
+@@ -162,6 +162,14 @@ extern struct list_head net_namespace_list;
+ struct net *get_net_ns_by_pid(pid_t pid);
+ struct net *get_net_ns_by_fd(int pid);
  
-+struct datalink_proto *make_EII_client(void);
-+void destroy_EII_client(struct datalink_proto *dl);
- #endif
++#ifdef CONFIG_SYSCTL
++void ipx_register_sysctl(void);
++void ipx_unregister_sysctl(void);
++#else
++#define ipx_register_sysctl()
++#define ipx_unregister_sysctl()
++#endif
++
+ #ifdef CONFIG_NET_NS
+ void __put_net(struct net *net);
+ 
 diff --git a/net/ipx/af_ipx.c b/net/ipx/af_ipx.c
-index e5a00a9..224d058 100644
+index 224d058..00b2a6d 100644
 --- a/net/ipx/af_ipx.c
 +++ b/net/ipx/af_ipx.c
-@@ -52,6 +52,7 @@
- #include <net/p8022.h>
- #include <net/psnap.h>
+@@ -54,17 +54,10 @@
  #include <net/sock.h>
-+#include <net/datalink.h>
+ #include <net/datalink.h>
  #include <net/tcp_states.h>
++#include <net/net_namespace.h>
  
  #include <asm/uaccess.h>
-@@ -1977,9 +1978,6 @@ static struct notifier_block ipx_dev_notifier = {
- 	.notifier_call	= ipxitf_device_event,
- };
  
--extern struct datalink_proto *make_EII_client(void);
--extern void destroy_EII_client(struct datalink_proto *);
+-#ifdef CONFIG_SYSCTL
+-extern void ipx_register_sysctl(void);
+-extern void ipx_unregister_sysctl(void);
+-#else
+-#define ipx_register_sysctl()
+-#define ipx_unregister_sysctl()
+-#endif
 -
- static const unsigned char ipx_8022_type = 0xE0;
- static const unsigned char ipx_snap_id[5] = { 0x0, 0x0, 0x0, 0x81, 0x37 };
- static const char ipx_EII_err_msg[] __initconst =
+ /* Configuration Variables */
+ static unsigned char ipxcfg_max_hops = 16;
+ static char ipxcfg_auto_select_primary;
 -- 
 1.7.9.5
 
