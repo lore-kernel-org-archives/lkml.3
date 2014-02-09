@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751889AbaBIQxF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 11:53:05 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:39160 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751438AbaBIQxD (ORCPT
+	id S1752067AbaBIQyp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 11:54:45 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:64074 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751688AbaBIQyn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 11:53:03 -0500
+	Sun, 9 Feb 2014 11:54:43 -0500
 From: Rashika Kheria <rashika.kheria@gmail.com>
-To: josh@joshtriplett.org, linux-kernel@vger.kernel.org,
+To: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         "David S. Miller" <davem@davemloft.net>,
-        Gao feng <gaofeng@cn.fujitsu.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steffen Hurrle <steffen@hurrle.net>, Jiri Pirko <jiri@resnulli.us>,
-        netdev@vger.kernel.org, linux-decnet-user@lists.sourceforge.net
-Subject: =?UTF-8?q?=5BPATCH=20v2=2007/13=5D=20net=3A=20Move=20prototype=20declaration=20to=20header=20file=20include/net/dn=2Eh=20from=20net/decnet/af=5Fdecnet=2Ec?=
-Date: Sun,  9 Feb 2014 22:22:53 +0530
-Message-Id: <308804ddc5f1fb40d26af2a7e89cf06e0ffc0581.1391955925.git.rashika.kheria@gmail.com>
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        josh@joshtriplett.org
+Subject: =?UTF-8?q?=5BPATCH=20v2=2008/13=5D=20net=3A=20Move=20prototype=20declaration=20to=20include/net/ipx=2Eh=20from=20net/ipx/ipx=5Froute=2Ec?=
+Date: Sun,  9 Feb 2014 22:24:33 +0530
+Message-Id: <aa4aee4681c6f0be526df8fc2a8899793dc34801.1391955925.git.rashika.kheria@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <6f029c895035908595957fb16ab445c82793c77d.1391955924.git.rashika.kheria@gmail.com>
 References: <6f029c895035908595957fb16ab445c82793c77d.1391955924.git.rashika.kheria@gmail.com>
@@ -28,47 +29,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move prototype declaration of functions to header file include/net/dn.h
-from net/decnet/af_decnet.c because they are used by more than one file.
+Move prototype definition of function to header file include/net/ipx.h
+from net/ipx/ipx_route.c because they are used by more than one file.
 
-This eliminates the following warning in net/decnet/af_decnet.c:
-net/decnet/sysctl_net_decnet.c:354:6: warning: no previous prototype for ‘dn_register_sysctl’ [-Wmissing-prototypes]
-net/decnet/sysctl_net_decnet.c:359:6: warning: no previous prototype for ‘dn_unregister_sysctl’ [-Wmissing-prototypes]
+This eliminates the following warning from net/ipx/af_ipx.c:
+net/ipx/af_ipx.c:193:23: warning: no previous prototype for ‘ipxitf_find_using_net’ [-Wmissing-prototypes]
+net/ipx/af_ipx.c:577:5: warning: no previous prototype for ‘ipxitf_send’ [-Wmissing-prototypes]
+net/ipx/af_ipx.c:1219:8: warning: no previous prototype for ‘ipx_cksum’ [-Wmissing-prototypes]
 
 Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- include/net/dn.h       |    2 ++
- net/decnet/af_decnet.c |    3 ---
- 2 files changed, 2 insertions(+), 3 deletions(-)
+ include/net/ipx.h   |    3 +++
+ net/ipx/ipx_route.c |    4 ----
+ 2 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/include/net/dn.h b/include/net/dn.h
-index ccc1558..913b73d 100644
---- a/include/net/dn.h
-+++ b/include/net/dn.h
-@@ -200,6 +200,8 @@ static inline void dn_sk_ports_copy(struct flowidn *fld, struct dn_scp *scp)
+diff --git a/include/net/ipx.h b/include/net/ipx.h
+index 9e9e354..75466ac 100644
+--- a/include/net/ipx.h
++++ b/include/net/ipx.h
+@@ -140,6 +140,9 @@ static __inline__ void ipxitf_hold(struct ipx_interface *intrfc)
  }
  
- unsigned int dn_mss_from_pmtu(struct net_device *dev, int mtu);
-+void dn_register_sysctl(void);
-+void dn_unregister_sysctl(void);
+ void ipxitf_down(struct ipx_interface *intrfc);
++struct ipx_interface *ipxitf_find_using_net(__be32 net);
++int ipxitf_send(struct ipx_interface *intrfc, struct sk_buff *skb, char *node);
++__be16 ipx_cksum(struct ipxhdr *packet, int length);
  
- #define DN_MENUVER_ACC 0x01
- #define DN_MENUVER_USR 0x02
-diff --git a/net/decnet/af_decnet.c b/net/decnet/af_decnet.c
-index 24d9193..4c04848 100644
---- a/net/decnet/af_decnet.c
-+++ b/net/decnet/af_decnet.c
-@@ -2351,9 +2351,6 @@ static const struct proto_ops dn_proto_ops = {
- 	.sendpage =	sock_no_sendpage,
- };
+ static __inline__ void ipxitf_put(struct ipx_interface *intrfc)
+ {
+diff --git a/net/ipx/ipx_route.c b/net/ipx/ipx_route.c
+index 30f4519..c1f0318 100644
+--- a/net/ipx/ipx_route.c
++++ b/net/ipx/ipx_route.c
+@@ -20,15 +20,11 @@ DEFINE_RWLOCK(ipx_routes_lock);
  
--void dn_register_sysctl(void);
--void dn_unregister_sysctl(void);
--
- MODULE_DESCRIPTION("The Linux DECnet Network Protocol");
- MODULE_AUTHOR("Linux DECnet Project Team");
- MODULE_LICENSE("GPL");
+ extern struct ipx_interface *ipx_internal_net;
+ 
+-extern __be16 ipx_cksum(struct ipxhdr *packet, int length);
+ extern struct ipx_interface *ipxitf_find_using_net(__be32 net);
+ extern int ipxitf_demux_socket(struct ipx_interface *intrfc,
+ 			       struct sk_buff *skb, int copy);
+ extern int ipxitf_demux_socket(struct ipx_interface *intrfc,
+ 			       struct sk_buff *skb, int copy);
+-extern int ipxitf_send(struct ipx_interface *intrfc, struct sk_buff *skb,
+-		       char *node);
+-extern struct ipx_interface *ipxitf_find_using_net(__be32 net);
+ 
+ struct ipx_route *ipxrtr_lookup(__be32 net)
+ {
 -- 
 1.7.9.5
 
