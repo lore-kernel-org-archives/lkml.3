@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752151AbaBIT65 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 14:58:57 -0500
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:54724 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751612AbaBIT64 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 14:58:56 -0500
-Message-ID: <1391975934.25855.14.camel@x220>
-Subject: Re: [PATCH 02/28] Remove OF_I2C
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Richard Weinberger <richard@nod.at>
-Cc: Wolfram Sang <wsa@the-dreams.de>,
-        "open list:I2C SUBSYSTEM" <linux-i2c@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Date: Sun, 09 Feb 2014 20:58:54 +0100
-In-Reply-To: <1391971686-9517-3-git-send-email-richard@nod.at>
-References: <1391971686-9517-1-git-send-email-richard@nod.at>
-	 <1391971686-9517-3-git-send-email-richard@nod.at>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
+	id S1751996AbaBIUCd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 15:02:33 -0500
+Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751646AbaBIUCc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Feb 2014 15:02:32 -0500
+Message-ID: <52F7DED2.1020509@nod.at>
+Date: Sun, 09 Feb 2014 21:02:26 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Alexander Shiyan <shc_work@mail.ru>
+CC: Christian Daudt <bcm@fixthebug.org>, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        bcm-kernel-feedback-list@broadcom.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 12/28] Remove GENERIC_TIME
+References: <1391971686-9517-1-git-send-email-richard@nod.at> <1391971686-9517-13-git-send-email-richard@nod.at> <1391972239.567717844@f148.i.mail.ru>
+In-Reply-To: <1391972239.567717844@f148.i.mail.ru>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 09 Feb 2014 19:58:54.0653 (UTC) FILETIME=[5C73F6D0:01CF25D1]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-02-09 at 19:47 +0100, Richard Weinberger wrote:
-> The symbol is an orphan, get rid of it.
+Am 09.02.2014 19:57, schrieb Alexander Shiyan:
+>> The symbol is an orphan, get rid of it.
+>>
+>> Signed-off-by: Richard Weinberger <richard@nod.at>
+>> ---
+>> arch/arm/mach-bcm/Kconfig | 1 -
+>> 1 file changed, 1 deletion(-)
+>>
+>> diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
+>> index b1aa6a9..8dd5fbf 100644
+>> --- a/arch/arm/mach-bcm/Kconfig
+>> +++ b/arch/arm/mach-bcm/Kconfig
+>> @@ -19,7 +19,6 @@ config ARCH_BCM_MOBILE
+>> select CPU_V7
+>> select CLKSRC_OF
+>> select GENERIC_CLOCKEVENTS
+>> -	select GENERIC_TIME
+>> select GPIO_BCM_KONA
+>> select SPARSE_IRQ
+>> select TICK_ONESHOT
+>> -- 
+>> 1.8.4.2
 > 
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-> ---
->  drivers/i2c/busses/Kconfig | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
-> index f5ed031..de17c55 100644
-> --- a/drivers/i2c/busses/Kconfig
-> +++ b/drivers/i2c/busses/Kconfig
-> @@ -387,7 +387,7 @@ config I2C_CBUS_GPIO
->  
->  config I2C_CPM
->  	tristate "Freescale CPM1 or CPM2 (MPC8xx/826x)"
-> -	depends on (CPM1 || CPM2) && OF_I2C
-> +	depends on CPM1 || CPM2
->  	help
->  	  This supports the use of the I2C interface on Freescale
->  	  processors with CPM1 or CPM2.
+> I sent a similar patch in November, maintainers nothing did with it.
+> http://permalink.gmane.org/gmane.linux.ports.arm.kernel/278293
 
-This needs testing. Since when is OF_I2C orphaned? Ie, when was the last
-time it was possible to set I2C_CPM?
+Then it is time to push it. :D
 
-
-Paul Bolle
-
+Thanks,
+//richard
