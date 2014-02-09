@@ -1,133 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752234AbaBIXEM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 18:04:12 -0500
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:55029 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751938AbaBIXEJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 18:04:09 -0500
-From: Emil Goode <emilgoode@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>, Ming Lei <ming.lei@canonical.com>,
-        Mark Brown <broonie@linaro.org>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Glen Turner <gdt@gdt.id.au>
-Cc: netdev@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
-Subject: [PATCH 1/2 v2] usbnet: fix bad header length bug
-Date: Mon, 10 Feb 2014 00:06:13 +0100
-Message-Id: <1391987174-21828-1-git-send-email-emilgoode@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1752487AbaBIXFr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 18:05:47 -0500
+Received: from mail.wdtv.com ([66.118.69.84]:59395 "EHLO mail.wdtv.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752356AbaBIXFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Feb 2014 18:05:46 -0500
+From: Gene Heskett <gheskett@wdtv.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Subject: Re: [PATCH 24/28] Remove DEPRECATED
+Date: Sun, 9 Feb 2014 18:05:41 -0500
+Cc: Richard Weinberger <richard@nod.at>, Guenter Roeck <linux@roeck-us.net>,
+        David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        "moderated list:PANASONIC MN10300..." <linux-am33-list@redhat.com>,
+        open list <linux-kernel@vger.kernel.org>
+References: <1391971686-9517-1-git-send-email-richard@nod.at> <201402091741.46390.gheskett@wdtv.com> <1391986097.25855.94.camel@x220>
+In-Reply-To: <1391986097.25855.94.camel@x220>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="windows-1256"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201402091805.41618.gheskett@wdtv.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The AX88772B occasionally send rx packets that cross urb boundaries
-and the remaining partial packet is sent with no hardware header.
-When the buffer with a partial packet is of less number of octets
-than the value of hard_header_len the buffer is discarded by the
-usbnet module. This is causing dropped packages and error messages
-in dmesg.
+On Sunday 09 February 2014, Paul Bolle wrote:
+>On Sun, 2014-02-09 at 17:41 -0500, Gene Heskett wrote:
+>> On Sunday 09 February 2014, Paul Bolle wrote:
+>> >What has this got to do with an invalid Kconfig dependency in
+>> >arch/mn10300?
+>> 
+>> Probably not much
+>
+>Feel free to open a new thread, with the relevant details, and involve
+>the relevant people and lists. I have no idea what you're going on about
+>and could not care less (in the context of this thread).
+>
+>
+>Paul Bolle
 
-This can be reproduced by using ping with a packet size
-between 1965-1976.
+Been tried, got zero response.  Frankly, posting just to lkml, hoping the 
+revalent people see it, is beginning to act like posting to a black hole.
 
-The bug has been reported here:
+Somewhere between 3.4.36 and 3.8.2, 99% of it disappeared from an oldconfig 
+output.  I don't have any trees between those two on my machine or I'd pin 
+it down a little more specifically.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=29082
+So who would the correct maintainer person be, for such as a "make 
+oldconfig"?
 
-This patch introduces a new flag that enable minidrivers to disable
-the cleaning up of small partial packets with no hardware header.
-It is likely that other minidrivers will want to use this flag,
-currently the cx82310_eth is describing the same problem and solving
-it by setting the hard_header_len to 0. This patch also makes it more
-obvious to minidriver writers that the usbnet module is discarding
-small skbs, which I believe has caused some confusion.
-
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
-Reported-by: Igor Gnatenko <i.gnatenko.brain@gmail.com>
----
-v2: This patch solves the bug by introducing a new flag instead of
-    setting hard_header_len to 0. I realize that there are already
-    a lot of flags but hard_header_len is used to calculate the
-    mtu values in the usbnet_change_mtu, usbnet_probe functions
-    and I believe it's better not to change it.
-
- drivers/net/usb/asix_devices.c |   10 ++++++----
- drivers/net/usb/usbnet.c       |    3 ++-
- include/linux/usb/usbnet.h     |    3 +++
- 3 files changed, 11 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/net/usb/asix_devices.c b/drivers/net/usb/asix_devices.c
-index 9765a7d..7ced4ed 100644
---- a/drivers/net/usb/asix_devices.c
-+++ b/drivers/net/usb/asix_devices.c
-@@ -891,7 +891,8 @@ static const struct driver_info ax88772_info = {
- 	.status = asix_status,
- 	.link_reset = ax88772_link_reset,
- 	.reset = ax88772_reset,
--	.flags = FLAG_ETHER | FLAG_FRAMING_AX | FLAG_LINK_INTR | FLAG_MULTI_PACKET,
-+	.flags = FLAG_ETHER | FLAG_FRAMING_AX | FLAG_LINK_INTR |
-+		 FLAG_MULTI_PACKET | FLAG_PARTIAL_RX_PKT,
- 	.rx_fixup = asix_rx_fixup_common,
- 	.tx_fixup = asix_tx_fixup,
- };
-@@ -904,7 +905,7 @@ static const struct driver_info ax88772b_info = {
- 	.link_reset = ax88772_link_reset,
- 	.reset = ax88772_reset,
- 	.flags = FLAG_ETHER | FLAG_FRAMING_AX | FLAG_LINK_INTR |
--	         FLAG_MULTI_PACKET,
-+		 FLAG_MULTI_PACKET | FLAG_PARTIAL_RX_PKT,
- 	.rx_fixup = asix_rx_fixup_common,
- 	.tx_fixup = asix_tx_fixup,
- 	.data = FLAG_EEPROM_MAC,
-@@ -917,7 +918,8 @@ static const struct driver_info ax88178_info = {
- 	.status = asix_status,
- 	.link_reset = ax88178_link_reset,
- 	.reset = ax88178_reset,
--	.flags = FLAG_ETHER | FLAG_FRAMING_AX | FLAG_LINK_INTR,
-+	.flags = FLAG_ETHER | FLAG_FRAMING_AX | FLAG_LINK_INTR |
-+		 FLAG_PARTIAL_RX_PKT,
- 	.rx_fixup = asix_rx_fixup_common,
- 	.tx_fixup = asix_tx_fixup,
- };
-@@ -939,7 +941,7 @@ static const struct driver_info hg20f9_info = {
- 	.link_reset = ax88772_link_reset,
- 	.reset = ax88772_reset,
- 	.flags = FLAG_ETHER | FLAG_FRAMING_AX | FLAG_LINK_INTR |
--	         FLAG_MULTI_PACKET,
-+		 FLAG_MULTI_PACKET | FLAG_PARTIAL_RX_PKT,
- 	.rx_fixup = asix_rx_fixup_common,
- 	.tx_fixup = asix_tx_fixup,
- 	.data = FLAG_EEPROM_MAC,
-diff --git a/drivers/net/usb/usbnet.c b/drivers/net/usb/usbnet.c
-index 4671da7..a1e6964 100644
---- a/drivers/net/usb/usbnet.c
-+++ b/drivers/net/usb/usbnet.c
-@@ -574,7 +574,8 @@ static void rx_complete (struct urb *urb)
- 	switch (urb_status) {
- 	/* success */
- 	case 0:
--		if (skb->len < dev->net->hard_header_len) {
-+		if (skb->len < dev->net->hard_header_len &&
-+		    !(dev->driver_info->flags & FLAG_PARTIAL_RX_PKT)) {
- 			state = rx_cleanup;
- 			dev->net->stats.rx_errors++;
- 			dev->net->stats.rx_length_errors++;
-diff --git a/include/linux/usb/usbnet.h b/include/linux/usb/usbnet.h
-index e303eef..818da3b 100644
---- a/include/linux/usb/usbnet.h
-+++ b/include/linux/usb/usbnet.h
-@@ -117,6 +117,9 @@ struct driver_info {
- #define FLAG_RX_ASSEMBLE	0x4000	/* rx packets may span >1 frames */
- #define FLAG_NOARP		0x8000	/* device can't do ARP */
- 
-+/* Disables cleanup of small partial rx packets with no hardware header */
-+#define FLAG_PARTIAL_RX_PKT    0x10000
-+
- 	/* init device ... can sleep, or cause probe() failure */
- 	int	(*bind)(struct usbnet *, struct usb_interface *);
- 
+Cheers, Gene
 -- 
-1.7.10.4
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
+Genes Web page <http://geneslinuxbox.net:6309/gene>
+
+NOTICE: Will pay 100 USD for an HP-4815A defective but
+complete probe assembly.
 
