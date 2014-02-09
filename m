@@ -1,46 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752232AbaBIWsU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 17:48:20 -0500
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:51797 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751691AbaBIWsT (ORCPT
+	id S1752351AbaBIWsx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 17:48:53 -0500
+Received: from smtprelay0010.hostedemail.com ([216.40.44.10]:43124 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751691AbaBIWsw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 17:48:19 -0500
-Message-ID: <1391986097.25855.94.camel@x220>
-Subject: Re: [PATCH 24/28] Remove DEPRECATED
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Gene Heskett <gheskett@wdtv.com>
-Cc: Richard Weinberger <richard@nod.at>, Guenter Roeck <linux@roeck-us.net>,
-        David Howells <dhowells@redhat.com>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        "moderated list:PANASONIC MN10300..." <linux-am33-list@redhat.com>,
-        open list <linux-kernel@vger.kernel.org>
-Date: Sun, 09 Feb 2014 23:48:17 +0100
-In-Reply-To: <201402091741.46390.gheskett@wdtv.com>
-References: <1391971686-9517-1-git-send-email-richard@nod.at>
-	 <201402091654.25697.gheskett@wdtv.com> <1391983888.25855.73.camel@x220>
-	 <201402091741.46390.gheskett@wdtv.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 09 Feb 2014 22:48:18.0634 (UTC) FILETIME=[06A862A0:01CF25E9]
-X-RcptDomain: vger.kernel.org
+	Sun, 9 Feb 2014 17:48:52 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:69:355:379:541:960:968:988:989:1260:1345:1437:1534:1540:1711:1714:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3351:3866:3867:3868:4250:4605:5007:6261:10004:10026:10848:11658:11914:12043:12291:12296:12517:12519:12679:12683:13311:13357:14110,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: smash19_1305f28ae700c
+X-Filterd-Recvd-Size: 1521
+From: Joe Perches <joe@perches.com>
+To: Petr Vandrovec <petr@vandrovec.name>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/5] ncpfs: Logging cleanups
+Date: Sun,  9 Feb 2014 14:48:44 -0800
+Message-Id: <cover.1391985629.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-02-09 at 17:41 -0500, Gene Heskett wrote:
-> On Sunday 09 February 2014, Paul Bolle wrote:
-> >What has this got to do with an invalid Kconfig dependency in
-> >arch/mn10300?
->
-> Probably not much 
-Feel free to open a new thread, with the relevant details, and involve
-the relevant people and lists. I have no idea what you're going on about
-and could not care less (in the context of this thread).
+Mostly style updating with a couple of fmt/arg mismatch fixes
 
+Joe Perches (5):
+  ncpfs: Add pr_fmt and convert printks to pr_<level>
+  ncpfs: Convert DPRINTK/DDPRINTK to ncp_dbg
+  ncpfs: Convert PPRINTK to ncp_vdbg
+  ncpfs: Remove now unused PRINTK macro
+  ncpfs: inode: Fix mismatch printk formats and arguments
 
-Paul Bolle
+ fs/ncpfs/dir.c           | 65 ++++++++++++++++++++++--------------------------
+ fs/ncpfs/file.c          | 24 ++++++++++--------
+ fs/ncpfs/getopt.c        | 12 +++++----
+ fs/ncpfs/inode.c         | 32 ++++++++++++------------
+ fs/ncpfs/ioctl.c         | 17 ++++++-------
+ fs/ncpfs/mmap.c          |  2 +-
+ fs/ncpfs/ncp_fs.h        | 30 +++++++++++-----------
+ fs/ncpfs/ncplib_kernel.c | 28 ++++++++++-----------
+ fs/ncpfs/sock.c          | 49 ++++++++++++++++++------------------
+ fs/ncpfs/symlink.c       |  2 +-
+ 10 files changed, 130 insertions(+), 131 deletions(-)
+
+-- 
+1.8.1.2.459.gbcd45b4.dirty
 
