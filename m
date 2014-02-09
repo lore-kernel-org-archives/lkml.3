@@ -1,470 +1,639 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751996AbaBIHxg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 02:53:36 -0500
-Received: from linuxhacker.ru ([217.76.32.60]:37351 "EHLO fiona.linuxhacker.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751778AbaBIHwZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 02:52:25 -0500
-From: Oleg Drokin <green@linuxhacker.ru>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Cc: Andrew Perepechko <andrew_perepechko@xyratex.com>,
-        Nathaniel Clark <nathaniel.l.clark@intel.com>,
-        Oleg Drokin <oleg.drokin@intel.com>
-Subject: [PATCH 4/5] lustre/xattr: separate ACL and XATTR caches
-Date: Sun,  9 Feb 2014 02:51:48 -0500
-Message-Id: <1391932309-6009-5-git-send-email-green@linuxhacker.ru>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1391932309-6009-1-git-send-email-green@linuxhacker.ru>
-References: <1391932309-6009-1-git-send-email-green@linuxhacker.ru>
+	id S1751736AbaBIIBZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 03:01:25 -0500
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:34951 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751481AbaBIIBY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Feb 2014 03:01:24 -0500
+Date: Sun, 9 Feb 2014 09:01:18 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] perf fixes
+Message-ID: <20140209080118.GA17003@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrew Perepechko <andrew_perepechko@xyratex.com>
+Linus,
 
-This patch separates ACL and XATTR caches, so that
-when updating an ACL only LOOKUP lock is needed and
-when updating another XATTR only XATTR lock is needed.
+Please pull the latest perf-urgent-for-linus git tree from:
 
-This patch also reverts XATTR cache support for setxattr
-because client performing REINT under even PR lock
-will deadlock if an active server operation (like unlink)
-attempts to cancel all locks, and setxattr has to wait
-for it (MDC max-in-flight is 1).
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
 
-This patch disables the r/o cache if the data is
-unreasonably large (larger than maximum single EA
-size).
+   # HEAD: 2737fce8bc8dea2852289df29b4f92e6a7fb7c91 Merge tag 'perf-urgent-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/urgent
 
-Signed-off-by: Andrew Perepechko <andrew_perepechko@xyratex.com>
-Signed-off-by: Nathaniel Clark <nathaniel.l.clark@intel.com>
-Reviewed-on: http://review.whamcloud.com/7208
-Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-3669
-Reviewed-by: Andreas Dilger <andreas.dilger@intel.com>
-Reviewed-by: John L. Hammond <john.hammond@intel.com>
-Signed-off-by: Oleg Drokin <oleg.drokin@intel.com>
----
- .../lustre/lustre/include/lustre/lustre_idl.h      |   1 -
- drivers/staging/lustre/lustre/ldlm/ldlm_lock.c     |   2 -
- .../staging/lustre/lustre/llite/llite_internal.h   |   7 --
- drivers/staging/lustre/lustre/llite/xattr.c        |  29 +++--
- drivers/staging/lustre/lustre/llite/xattr_cache.c  | 117 ++++-----------------
- drivers/staging/lustre/lustre/mdc/mdc_internal.h   |   2 +-
- drivers/staging/lustre/lustre/mdc/mdc_locks.c      |   9 +-
- drivers/staging/lustre/lustre/mdc/mdc_reint.c      |   2 +-
- drivers/staging/lustre/lustre/mdc/mdc_request.c    |  30 +++++-
- drivers/staging/lustre/lustre/ptlrpc/layout.c      |   3 +-
- 10 files changed, 68 insertions(+), 134 deletions(-)
+Tooling fixes, mostly related to the KASLR fallout, but also other 
+fixes.
 
-diff --git a/drivers/staging/lustre/lustre/include/lustre/lustre_idl.h b/drivers/staging/lustre/lustre/include/lustre/lustre_idl.h
-index 05c77c0..4183a35 100644
---- a/drivers/staging/lustre/lustre/include/lustre/lustre_idl.h
-+++ b/drivers/staging/lustre/lustre/include/lustre/lustre_idl.h
-@@ -1747,7 +1747,6 @@ static inline __u32 lov_mds_md_size(__u16 stripes, __u32 lmm_magic)
- 			  OBD_MD_FLGID   | OBD_MD_FLFLAGS | OBD_MD_FLNLINK | \
- 			  OBD_MD_FLGENER | OBD_MD_FLRDEV  | OBD_MD_FLGROUP)
- 
--#define OBD_MD_FLXATTRLOCKED OBD_MD_FLGETATTRLOCK
- #define OBD_MD_FLXATTRALL (OBD_MD_FLXATTR | OBD_MD_FLXATTRLS)
- 
- /* don't forget obdo_fid which is way down at the bottom so it can
-diff --git a/drivers/staging/lustre/lustre/ldlm/ldlm_lock.c b/drivers/staging/lustre/lustre/ldlm/ldlm_lock.c
-index 692623b..0548aca 100644
---- a/drivers/staging/lustre/lustre/ldlm/ldlm_lock.c
-+++ b/drivers/staging/lustre/lustre/ldlm/ldlm_lock.c
-@@ -145,8 +145,6 @@ char *ldlm_it2str(int it)
- 		return "getxattr";
- 	case IT_LAYOUT:
- 		return "layout";
--	case IT_SETXATTR:
--		return "setxattr";
- 	default:
- 		CERROR("Unknown intent %d\n", it);
- 		return "UNKNOWN";
-diff --git a/drivers/staging/lustre/lustre/llite/llite_internal.h b/drivers/staging/lustre/lustre/llite/llite_internal.h
-index 28669ea..bc17c29 100644
---- a/drivers/staging/lustre/lustre/llite/llite_internal.h
-+++ b/drivers/staging/lustre/lustre/llite/llite_internal.h
-@@ -296,13 +296,6 @@ int ll_xattr_cache_get(struct inode *inode,
- 			size_t size,
- 			__u64 valid);
- 
--int ll_xattr_cache_update(struct inode *inode,
--			const char *name,
--			const char *newval,
--			size_t size,
--			__u64 valid,
--			int flags);
--
- /*
-  * Locking to guarantee consistency of non-atomic updates to long long i_size,
-  * consistency between file size and KMS.
-diff --git a/drivers/staging/lustre/lustre/llite/xattr.c b/drivers/staging/lustre/lustre/llite/xattr.c
-index af83580..b1ed4d9 100644
---- a/drivers/staging/lustre/lustre/llite/xattr.c
-+++ b/drivers/staging/lustre/lustre/llite/xattr.c
-@@ -183,17 +183,11 @@ int ll_setxattr_common(struct inode *inode, const char *name,
- 		valid |= rce_ops2valid(rce->rce_ops);
- 	}
- #endif
--	if (sbi->ll_xattr_cache_enabled &&
--	    (rce == NULL || rce->rce_ops == RMT_LSETFACL)) {
--		rc = ll_xattr_cache_update(inode, name, pv, size, valid, flags);
--	} else {
- 		oc = ll_mdscapa_get(inode);
- 		rc = md_setxattr(sbi->ll_md_exp, ll_inode2fid(inode), oc,
- 				valid, name, pv, size, 0, flags,
- 				ll_i2suppgid(inode), &req);
- 		capa_put(oc);
--	}
--
- #ifdef CONFIG_FS_POSIX_ACL
- 	if (new_value != NULL)
- 		lustre_posix_acl_xattr_free(new_value, size);
-@@ -292,6 +286,7 @@ int ll_getxattr_common(struct inode *inode, const char *name,
- 	void *xdata;
- 	struct obd_capa *oc;
- 	struct rmtacl_ctl_entry *rce = NULL;
-+	struct ll_inode_info *lli = ll_i2info(inode);
- 
- 	CDEBUG(D_VFSTRACE, "VFS Op:inode=%lu/%u(%p)\n",
- 	       inode->i_ino, inode->i_generation, inode);
-@@ -339,7 +334,7 @@ int ll_getxattr_common(struct inode *inode, const char *name,
- 	 */
- 	if (xattr_type == XATTR_ACL_ACCESS_T &&
- 	    !(sbi->ll_flags & LL_SBI_RMT_CLIENT)) {
--		struct ll_inode_info *lli = ll_i2info(inode);
-+
- 		struct posix_acl *acl;
- 
- 		spin_lock(&lli->lli_lock);
-@@ -358,13 +353,27 @@ int ll_getxattr_common(struct inode *inode, const char *name,
- #endif
- 
- do_getxattr:
--	if (sbi->ll_xattr_cache_enabled && (rce == NULL ||
--					    rce->rce_ops == RMT_LGETFACL ||
--					    rce->rce_ops == RMT_LSETFACL)) {
-+	if (sbi->ll_xattr_cache_enabled && xattr_type != XATTR_ACL_ACCESS_T) {
- 		rc = ll_xattr_cache_get(inode, name, buffer, size, valid);
-+		if (rc == -EAGAIN)
-+			goto getxattr_nocache;
- 		if (rc < 0)
- 			GOTO(out_xattr, rc);
-+
-+		/* Add "system.posix_acl_access" to the list */
-+		if (lli->lli_posix_acl != NULL && valid & OBD_MD_FLXATTRLS) {
-+			if (size == 0) {
-+				rc += sizeof(XATTR_NAME_ACL_ACCESS);
-+			} else if (size - rc >= sizeof(XATTR_NAME_ACL_ACCESS)) {
-+				memcpy(buffer + rc, XATTR_NAME_ACL_ACCESS,
-+				       sizeof(XATTR_NAME_ACL_ACCESS));
-+				rc += sizeof(XATTR_NAME_ACL_ACCESS);
-+			} else {
-+				GOTO(out_xattr, rc = -ERANGE);
-+			}
-+		}
- 	} else {
-+getxattr_nocache:
- 		oc = ll_mdscapa_get(inode);
- 		rc = md_getxattr(sbi->ll_md_exp, ll_inode2fid(inode), oc,
- 				valid | (rce ? rce_ops2valid(rce->rce_ops) : 0),
-diff --git a/drivers/staging/lustre/lustre/llite/xattr_cache.c b/drivers/staging/lustre/lustre/llite/xattr_cache.c
-index 3e3be1f..616d5bd 100644
---- a/drivers/staging/lustre/lustre/llite/xattr_cache.c
-+++ b/drivers/staging/lustre/lustre/llite/xattr_cache.c
-@@ -98,13 +98,13 @@ static int ll_xattr_cache_find(struct list_head *cache,
+ Thanks,
+
+	Ingo
+
+------------------>
+Adrian Hunter (9):
+      perf symbols: Fix symbol annotation for relocated kernel
+      perf tools: Add kallsyms__get_function_start()
+      perf machine: Add machine__get_kallsyms_filename()
+      perf machine: Set up ref_reloc_sym in machine__create_kernel_maps()
+      perf record: Get ref_reloc_sym from kernel map
+      perf symbols: Prevent the use of kcore if the kernel has moved
+      perf tests: No need to set up ref_reloc_sym
+      perf tools: Adjust kallsyms for relocated kernel
+      perf buildid-cache: Check relocation when checking for existing kcore
+
+Avi Kivity (1):
+      perf tools: Demangle kernel and kernel module symbols too
+
+Baruch Siach (1):
+      perf/doc: Remove mention of non-existent set_perf_event_pending() from design.txt
+
+Francesco Fusco (1):
+      perf tools: Fix include for non x86 architectures
+
+Peter Zijlstra (1):
+      perf tools: Fix AAAAARGH64 memory barriers
+
+
+ tools/perf/builtin-buildid-cache.c  | 33 ++++++++++++++++---
+ tools/perf/builtin-record.c         | 10 ++----
+ tools/perf/design.txt               |  1 -
+ tools/perf/perf.h                   |  4 +--
+ tools/perf/tests/vmlinux-kallsyms.c | 10 ------
+ tools/perf/util/event.c             | 36 ++++++++++----------
+ tools/perf/util/event.h             |  6 ++--
+ tools/perf/util/include/asm/hash.h  |  6 ++++
+ tools/perf/util/machine.c           | 42 +++++++++++++++++++-----
+ tools/perf/util/machine.h           |  2 ++
+ tools/perf/util/map.c               |  5 +--
+ tools/perf/util/map.h               |  1 +
+ tools/perf/util/symbol-elf.c        |  4 ++-
+ tools/perf/util/symbol.c            | 65 +++++++++++++++++++++++++++++++++----
+ 14 files changed, 162 insertions(+), 63 deletions(-)
+ create mode 100644 tools/perf/util/include/asm/hash.h
+
+diff --git a/tools/perf/builtin-buildid-cache.c b/tools/perf/builtin-buildid-cache.c
+index cfede86..b22dbb1 100644
+--- a/tools/perf/builtin-buildid-cache.c
++++ b/tools/perf/builtin-buildid-cache.c
+@@ -63,11 +63,35 @@ static int build_id_cache__kcore_dir(char *dir, size_t sz)
+ 	return 0;
  }
  
- /**
-- * This adds or updates an xattr.
-+ * This adds an xattr.
-  *
-  * Add @xattr_name attr with @xattr_val value and @xattr_val_len length,
-- * if the attribute already exists, then update its value.
-  *
-  * \retval 0       success
-  * \retval -ENOMEM if no memory could be allocated for the cached attr
-+ * \retval -EPROTO if duplicate xattr is being added
-  */
- static int ll_xattr_cache_add(struct list_head *cache,
- 			      const char *xattr_name,
-@@ -116,27 +116,8 @@ static int ll_xattr_cache_add(struct list_head *cache,
- 
- 
- 	if (ll_xattr_cache_find(cache, xattr_name, &xattr) == 0) {
--		/* Found a cached EA, update it */
--
--		if (xattr_val_len != xattr->xe_vallen) {
--			char *val;
--			OBD_ALLOC(val, xattr_val_len);
--			if (val == NULL) {
--				CDEBUG(D_CACHE,
--				       "failed to allocate %u bytes for xattr %s update\n",
--				       xattr_val_len, xattr_name);
--				return -ENOMEM;
--			}
--			OBD_FREE(xattr->xe_value, xattr->xe_vallen);
--			xattr->xe_value = val;
--			xattr->xe_vallen = xattr_val_len;
--		}
--		memcpy(xattr->xe_value, xattr_val, xattr_val_len);
--
--		CDEBUG(D_CACHE, "update: [%s]=%.*s\n", xattr_name,
--			xattr_val_len, xattr_val);
--
--		return 0;
-+		CDEBUG(D_CACHE, "duplicate xattr: [%s]\n", xattr_name);
-+		return -EPROTO;
- 	}
- 
- 	OBD_SLAB_ALLOC_PTR_GFP(xattr, xattr_kmem, __GFP_IO);
-@@ -292,7 +273,7 @@ int ll_xattr_cache_destroy(struct inode *inode)
- }
- 
- /**
-- * Match or enqueue a PR or PW LDLM lock.
-+ * Match or enqueue a PR lock.
-  *
-  * Find or request an LDLM lock with xattr data.
-  * Since LDLM does not provide API for atomic match_or_enqueue,
-@@ -322,9 +303,7 @@ static int ll_xattr_find_get_lock(struct inode *inode,
- 
- 	mutex_lock(&lli->lli_xattrs_enq_lock);
- 	/* Try matching first. */
--	mode = ll_take_md_lock(inode, MDS_INODELOCK_XATTR, &lockh, 0,
--			       oit->it_op == IT_SETXATTR ? LCK_PW :
--							   (LCK_PR | LCK_PW));
-+	mode = ll_take_md_lock(inode, MDS_INODELOCK_XATTR, &lockh, 0, LCK_PR);
- 	if (mode != 0) {
- 		/* fake oit in mdc_revalidate_lock() manner */
- 		oit->d.lustre.it_lock_handle = lockh.cookie;
-@@ -340,13 +319,7 @@ static int ll_xattr_find_get_lock(struct inode *inode,
- 		return PTR_ERR(op_data);
- 	}
- 
--	op_data->op_valid = OBD_MD_FLXATTR | OBD_MD_FLXATTRLS |
--			    OBD_MD_FLXATTRLOCKED;
--#ifdef CONFIG_FS_POSIX_ACL
--	/* If working with ACLs, we would like to cache local ACLs */
--	if (sbi->ll_flags & LL_SBI_RMT_CLIENT)
--		op_data->op_valid |= OBD_MD_FLRMTLGETFACL;
--#endif
-+	op_data->op_valid = OBD_MD_FLXATTR | OBD_MD_FLXATTRLS;
- 
- 	rc = md_enqueue(exp, &einfo, oit, op_data, &lockh, NULL, 0, NULL, 0);
- 	ll_finish_md_op_data(op_data);
-@@ -409,7 +382,11 @@ static int ll_xattr_cache_refill(struct inode *inode, struct lookup_intent *oit)
- 	if (oit->d.lustre.it_status < 0) {
- 		CDEBUG(D_CACHE, "getxattr intent returned %d for fid "DFID"\n",
- 		       oit->d.lustre.it_status, PFID(ll_inode2fid(inode)));
--		GOTO(out_destroy, rc = oit->d.lustre.it_status);
-+		rc = oit->d.lustre.it_status;
-+		/* xattr data is so large that we don't want to cache it */
-+		if (rc == -ERANGE)
-+			rc = -EAGAIN;
-+		GOTO(out_destroy, rc);
- 	}
- 
- 	body = req_capsule_server_get(&req->rq_pill, &RMF_MDT_BODY);
-@@ -447,6 +424,11 @@ static int ll_xattr_cache_refill(struct inode *inode, struct lookup_intent *oit)
- 			rc = -EPROTO;
- 		} else if (OBD_FAIL_CHECK(OBD_FAIL_LLITE_XATTR_ENOMEM)) {
- 			rc = -ENOMEM;
-+		} else if (!strcmp(xdata, XATTR_NAME_ACL_ACCESS)) {
-+			/* Filter out ACL ACCESS since it's cached separately */
-+			CDEBUG(D_CACHE, "not caching %s\n",
-+			       XATTR_NAME_ACL_ACCESS);
-+			rc = 0;
- 		} else {
- 			rc = ll_xattr_cache_add(&lli->lli_xattrs, xdata, xval,
- 						*xsizes);
-@@ -467,8 +449,7 @@ static int ll_xattr_cache_refill(struct inode *inode, struct lookup_intent *oit)
- 
- 	GOTO(out_maybe_drop, rc);
- out_maybe_drop:
--	/* drop lock on error or getxattr */
--	if (rc != 0 || oit->it_op != IT_SETXATTR)
++static bool same_kallsyms_reloc(const char *from_dir, char *to_dir)
++{
++	char from[PATH_MAX];
++	char to[PATH_MAX];
++	const char *name;
++	u64 addr1 = 0, addr2 = 0;
++	int i;
 +
- 		ll_intent_drop_lock(oit);
- 
- 	if (rc != 0)
-@@ -553,65 +534,3 @@ out:
- 
- 	return rc;
- }
--
--
--/**
-- * Set/update an xattr value or remove xattr using the write-through cache.
-- *
-- * Set/update the xattr value (if @valid has OBD_MD_FLXATTR) of @name to @newval
-- * or
-- * remove the xattr @name (@valid has OBD_MD_FLXATTRRM set) from @inode.
-- * @flags is either XATTR_CREATE or XATTR_REPLACE as defined by setxattr(2)
-- *
-- * \retval 0        no error occured
-- * \retval -EPROTO  network protocol error
-- * \retval -ENOMEM  not enough memory for the cache
-- * \retval -ERANGE  the buffer is not large enough
-- * \retval -ENODATA no such attr (in the removal case)
-- */
--int ll_xattr_cache_update(struct inode *inode,
--			const char *name,
--			const char *newval,
--			size_t size,
--			__u64 valid,
--			int flags)
--{
--	struct lookup_intent oit = { .it_op = IT_SETXATTR };
--	struct ll_sb_info *sbi = ll_i2sbi(inode);
--	struct ptlrpc_request *req = NULL;
--	struct ll_inode_info *lli = ll_i2info(inode);
--	struct obd_capa *oc;
--	int rc;
--
--
--
--	LASSERT(!!(valid & OBD_MD_FLXATTR) ^ !!(valid & OBD_MD_FLXATTRRM));
--
--	rc = ll_xattr_cache_refill(inode, &oit);
--	if (rc)
--		return rc;
--
--	oc = ll_mdscapa_get(inode);
--	rc = md_setxattr(sbi->ll_md_exp, ll_inode2fid(inode), oc,
--			valid | OBD_MD_FLXATTRLOCKED, name, newval,
--			size, 0, flags, ll_i2suppgid(inode), &req);
--	capa_put(oc);
--
--	if (rc) {
--		ll_intent_drop_lock(&oit);
--		GOTO(out, rc);
--	}
--
--	if (valid & OBD_MD_FLXATTR)
--		rc = ll_xattr_cache_add(&lli->lli_xattrs, name, newval, size);
--	else if (valid & OBD_MD_FLXATTRRM)
--		rc = ll_xattr_cache_del(&lli->lli_xattrs, name);
--
--	ll_intent_drop_lock(&oit);
--	GOTO(out, rc);
--out:
--	up_write(&lli->lli_xattrs_list_rwsem);
--	ptlrpc_req_finished(req);
--
--	return rc;
--}
-diff --git a/drivers/staging/lustre/lustre/mdc/mdc_internal.h b/drivers/staging/lustre/lustre/mdc/mdc_internal.h
-index 5069829..fc21777 100644
---- a/drivers/staging/lustre/lustre/mdc/mdc_internal.h
-+++ b/drivers/staging/lustre/lustre/mdc/mdc_internal.h
-@@ -101,7 +101,7 @@ int mdc_enqueue(struct obd_export *exp, struct ldlm_enqueue_info *einfo,
- 		struct lustre_handle *lockh, void *lmm, int lmmsize,
- 		struct ptlrpc_request **req, __u64 extra_lock_flags);
- 
--int mdc_resource_get_unused(struct obd_export *exp, struct lu_fid *fid,
-+int mdc_resource_get_unused(struct obd_export *exp, const struct lu_fid *fid,
- 			    struct list_head *cancels, ldlm_mode_t mode,
- 			    __u64 bits);
- /* mdc/mdc_request.c */
-diff --git a/drivers/staging/lustre/lustre/mdc/mdc_locks.c b/drivers/staging/lustre/lustre/mdc/mdc_locks.c
-index 8aa7c80..288a41e 100644
---- a/drivers/staging/lustre/lustre/mdc/mdc_locks.c
-+++ b/drivers/staging/lustre/lustre/mdc/mdc_locks.c
-@@ -378,13 +378,6 @@ mdc_intent_getxattr_pack(struct obd_export *exp,
- 
- 	mdc_set_capa_size(req, &RMF_CAPA1, op_data->op_capa1);
- 
--	if (it->it_op == IT_SETXATTR)
--		/* If we want to upgrade to LCK_PW, let's cancel LCK_PR
--		 * locks now. This avoids unnecessary ASTs. */
--		count = mdc_resource_get_unused(exp, &op_data->op_fid1,
--						&cancels, LCK_PW,
--						MDS_INODELOCK_XATTR);
--
- 	rc = ldlm_prep_enqueue_req(exp, req, &cancels, count);
- 	if (rc) {
- 		ptlrpc_request_free(req);
-@@ -842,7 +835,7 @@ resend:
- 			return -EOPNOTSUPP;
- 		req = mdc_intent_layout_pack(exp, it, op_data);
- 		lvb_type = LVB_T_LAYOUT;
--	} else if (it->it_op & (IT_GETXATTR | IT_SETXATTR)) {
-+	} else if (it->it_op & IT_GETXATTR) {
- 		req = mdc_intent_getxattr_pack(exp, it, op_data);
- 	} else {
- 		LBUG();
-diff --git a/drivers/staging/lustre/lustre/mdc/mdc_reint.c b/drivers/staging/lustre/lustre/mdc/mdc_reint.c
-index 9f3a345..1aea154 100644
---- a/drivers/staging/lustre/lustre/mdc/mdc_reint.c
-+++ b/drivers/staging/lustre/lustre/mdc/mdc_reint.c
-@@ -66,7 +66,7 @@ static int mdc_reint(struct ptlrpc_request *request,
- /* Find and cancel locally locks matched by inode @bits & @mode in the resource
-  * found by @fid. Found locks are added into @cancel list. Returns the amount of
-  * locks added to @cancels list. */
--int mdc_resource_get_unused(struct obd_export *exp, struct lu_fid *fid,
-+int mdc_resource_get_unused(struct obd_export *exp, const struct lu_fid *fid,
- 			    struct list_head *cancels, ldlm_mode_t mode,
- 			    __u64 bits)
++	scnprintf(from, sizeof(from), "%s/kallsyms", from_dir);
++	scnprintf(to, sizeof(to), "%s/kallsyms", to_dir);
++
++	for (i = 0; (name = ref_reloc_sym_names[i]) != NULL; i++) {
++		addr1 = kallsyms__get_function_start(from, name);
++		if (addr1)
++			break;
++	}
++
++	if (name)
++		addr2 = kallsyms__get_function_start(to, name);
++
++	return addr1 == addr2;
++}
++
+ static int build_id_cache__kcore_existing(const char *from_dir, char *to_dir,
+ 					  size_t to_dir_sz)
  {
-diff --git a/drivers/staging/lustre/lustre/mdc/mdc_request.c b/drivers/staging/lustre/lustre/mdc/mdc_request.c
-index 8301392..17c8e14 100644
---- a/drivers/staging/lustre/lustre/mdc/mdc_request.c
-+++ b/drivers/staging/lustre/lustre/mdc/mdc_request.c
-@@ -355,10 +355,32 @@ static int mdc_xattr_common(struct obd_export *exp,const struct req_format *fmt,
- 				     input_size);
+ 	char from[PATH_MAX];
+ 	char to[PATH_MAX];
++	char to_subdir[PATH_MAX];
+ 	struct dirent *dent;
+ 	int ret = -1;
+ 	DIR *d;
+@@ -86,10 +110,11 @@ static int build_id_cache__kcore_existing(const char *from_dir, char *to_dir,
+ 			continue;
+ 		scnprintf(to, sizeof(to), "%s/%s/modules", to_dir,
+ 			  dent->d_name);
+-		if (!compare_proc_modules(from, to)) {
+-			scnprintf(to, sizeof(to), "%s/%s", to_dir,
+-				  dent->d_name);
+-			strlcpy(to_dir, to, to_dir_sz);
++		scnprintf(to_subdir, sizeof(to_subdir), "%s/%s",
++			  to_dir, dent->d_name);
++		if (!compare_proc_modules(from, to) &&
++		    same_kallsyms_reloc(from_dir, to_subdir)) {
++			strlcpy(to_dir, to_subdir, to_dir_sz);
+ 			ret = 0;
+ 			break;
+ 		}
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 3c394bf..af47531 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -287,10 +287,7 @@ static void perf_event__synthesize_guest_os(struct machine *machine, void *data)
+ 	 * have no _text sometimes.
+ 	 */
+ 	err = perf_event__synthesize_kernel_mmap(tool, process_synthesized_event,
+-						 machine, "_text");
+-	if (err < 0)
+-		err = perf_event__synthesize_kernel_mmap(tool, process_synthesized_event,
+-							 machine, "_stext");
++						 machine);
+ 	if (err < 0)
+ 		pr_err("Couldn't record guest kernel [%d]'s reference"
+ 		       " relocation symbol.\n", machine->pid);
+@@ -457,10 +454,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
  	}
  
--	rc = ptlrpc_request_pack(req, LUSTRE_MDS_VERSION, opcode);
--	if (rc) {
--		ptlrpc_request_free(req);
--		return rc;
-+	/* Flush local XATTR locks to get rid of a possible cancel RPC */
-+	if (opcode == MDS_REINT && fid_is_sane(fid) &&
-+	    exp->exp_connect_data.ocd_ibits_known & MDS_INODELOCK_XATTR) {
-+		LIST_HEAD(cancels);
-+		int count;
-+
-+		/* Without that packing would fail */
-+		if (input_size == 0)
-+			req_capsule_set_size(&req->rq_pill, &RMF_EADATA,
-+					     RCL_CLIENT, 0);
-+
-+		count = mdc_resource_get_unused(exp, fid,
-+						&cancels, LCK_EX,
-+						MDS_INODELOCK_XATTR);
-+
-+		rc = mdc_prep_elc_req(exp, req, MDS_REINT, &cancels, count);
-+		if (rc) {
-+			ptlrpc_request_free(req);
-+			return rc;
-+		}
-+	} else {
-+		rc = ptlrpc_request_pack(req, LUSTRE_MDS_VERSION, opcode);
-+		if (rc) {
-+			ptlrpc_request_free(req);
-+			return rc;
-+		}
+ 	err = perf_event__synthesize_kernel_mmap(tool, process_synthesized_event,
+-						 machine, "_text");
+-	if (err < 0)
+-		err = perf_event__synthesize_kernel_mmap(tool, process_synthesized_event,
+-							 machine, "_stext");
++						 machine);
+ 	if (err < 0)
+ 		pr_err("Couldn't record kernel reference relocation symbol\n"
+ 		       "Symbol resolution may be skewed if relocation was used (e.g. kexec).\n"
+diff --git a/tools/perf/design.txt b/tools/perf/design.txt
+index 67e5d0c..63a0e6f 100644
+--- a/tools/perf/design.txt
++++ b/tools/perf/design.txt
+@@ -454,7 +454,6 @@ So to start with, in order to add HAVE_PERF_EVENTS to your Kconfig, you
+ will need at least this:
+ 	- asm/perf_event.h - a basic stub will suffice at first
+ 	- support for atomic64 types (and associated helper functions)
+-	- set_perf_event_pending() implemented
+ 
+ If your architecture does have hardware capabilities, you can override the
+ weak stub hw_perf_event_init() to register hardware counters.
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 7daa806..e84fa26 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -100,8 +100,8 @@
+ 
+ #ifdef __aarch64__
+ #define mb()		asm volatile("dmb ish" ::: "memory")
+-#define wmb()		asm volatile("dmb ishld" ::: "memory")
+-#define rmb()		asm volatile("dmb ishst" ::: "memory")
++#define wmb()		asm volatile("dmb ishst" ::: "memory")
++#define rmb()		asm volatile("dmb ishld" ::: "memory")
+ #define cpu_relax()	asm volatile("yield" ::: "memory")
+ #endif
+ 
+diff --git a/tools/perf/tests/vmlinux-kallsyms.c b/tools/perf/tests/vmlinux-kallsyms.c
+index 2bd13ed..3d90880 100644
+--- a/tools/perf/tests/vmlinux-kallsyms.c
++++ b/tools/perf/tests/vmlinux-kallsyms.c
+@@ -26,7 +26,6 @@ int test__vmlinux_matches_kallsyms(void)
+ 	struct map *kallsyms_map, *vmlinux_map;
+ 	struct machine kallsyms, vmlinux;
+ 	enum map_type type = MAP__FUNCTION;
+-	struct ref_reloc_sym ref_reloc_sym = { .name = "_stext", };
+ 	u64 mem_start, mem_end;
+ 
+ 	/*
+@@ -70,14 +69,6 @@ int test__vmlinux_matches_kallsyms(void)
+ 	 */
+ 	kallsyms_map = machine__kernel_map(&kallsyms, type);
+ 
+-	sym = map__find_symbol_by_name(kallsyms_map, ref_reloc_sym.name, NULL);
+-	if (sym == NULL) {
+-		pr_debug("dso__find_symbol_by_name ");
+-		goto out;
+-	}
+-
+-	ref_reloc_sym.addr = UM(sym->start);
+-
+ 	/*
+ 	 * Step 5:
+ 	 *
+@@ -89,7 +80,6 @@ int test__vmlinux_matches_kallsyms(void)
  	}
  
- 	if (opcode == MDS_REINT) {
-diff --git a/drivers/staging/lustre/lustre/ptlrpc/layout.c b/drivers/staging/lustre/lustre/ptlrpc/layout.c
-index 9b8f691..41c12e0 100644
---- a/drivers/staging/lustre/lustre/ptlrpc/layout.c
-+++ b/drivers/staging/lustre/lustre/ptlrpc/layout.c
-@@ -295,7 +295,8 @@ static const struct req_msg_field *mds_reint_setxattr_client[] = {
- 	&RMF_REC_REINT,
- 	&RMF_CAPA1,
- 	&RMF_NAME,
--	&RMF_EADATA
-+	&RMF_EADATA,
-+	&RMF_DLM_REQ
- };
+ 	vmlinux_map = machine__kernel_map(&vmlinux, type);
+-	map__kmap(vmlinux_map)->ref_reloc_sym = &ref_reloc_sym;
  
- static const struct req_msg_field *mdt_swap_layouts[] = {
--- 
-1.8.5.3
-
+ 	/*
+ 	 * Step 6:
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 1fc1c2f..b0f3ca8 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -470,23 +470,32 @@ static int find_symbol_cb(void *arg, const char *name, char type,
+ 	return 1;
+ }
+ 
++u64 kallsyms__get_function_start(const char *kallsyms_filename,
++				 const char *symbol_name)
++{
++	struct process_symbol_args args = { .name = symbol_name, };
++
++	if (kallsyms__parse(kallsyms_filename, &args, find_symbol_cb) <= 0)
++		return 0;
++
++	return args.start;
++}
++
+ int perf_event__synthesize_kernel_mmap(struct perf_tool *tool,
+ 				       perf_event__handler_t process,
+-				       struct machine *machine,
+-				       const char *symbol_name)
++				       struct machine *machine)
+ {
+ 	size_t size;
+-	const char *filename, *mmap_name;
+-	char path[PATH_MAX];
++	const char *mmap_name;
+ 	char name_buff[PATH_MAX];
+ 	struct map *map;
++	struct kmap *kmap;
+ 	int err;
+ 	/*
+ 	 * We should get this from /sys/kernel/sections/.text, but till that is
+ 	 * available use this, and after it is use this as a fallback for older
+ 	 * kernels.
+ 	 */
+-	struct process_symbol_args args = { .name = symbol_name, };
+ 	union perf_event *event = zalloc((sizeof(event->mmap) +
+ 					  machine->id_hdr_size));
+ 	if (event == NULL) {
+@@ -502,30 +511,19 @@ int perf_event__synthesize_kernel_mmap(struct perf_tool *tool,
+ 		 * see kernel/perf_event.c __perf_event_mmap
+ 		 */
+ 		event->header.misc = PERF_RECORD_MISC_KERNEL;
+-		filename = "/proc/kallsyms";
+ 	} else {
+ 		event->header.misc = PERF_RECORD_MISC_GUEST_KERNEL;
+-		if (machine__is_default_guest(machine))
+-			filename = (char *) symbol_conf.default_guest_kallsyms;
+-		else {
+-			sprintf(path, "%s/proc/kallsyms", machine->root_dir);
+-			filename = path;
+-		}
+-	}
+-
+-	if (kallsyms__parse(filename, &args, find_symbol_cb) <= 0) {
+-		free(event);
+-		return -ENOENT;
+ 	}
+ 
+ 	map = machine->vmlinux_maps[MAP__FUNCTION];
++	kmap = map__kmap(map);
+ 	size = snprintf(event->mmap.filename, sizeof(event->mmap.filename),
+-			"%s%s", mmap_name, symbol_name) + 1;
++			"%s%s", mmap_name, kmap->ref_reloc_sym->name) + 1;
+ 	size = PERF_ALIGN(size, sizeof(u64));
+ 	event->mmap.header.type = PERF_RECORD_MMAP;
+ 	event->mmap.header.size = (sizeof(event->mmap) -
+ 			(sizeof(event->mmap.filename) - size) + machine->id_hdr_size);
+-	event->mmap.pgoff = args.start;
++	event->mmap.pgoff = kmap->ref_reloc_sym->addr;
+ 	event->mmap.start = map->start;
+ 	event->mmap.len   = map->end - event->mmap.start;
+ 	event->mmap.pid   = machine->pid;
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index faf6e21..851fa06 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -214,8 +214,7 @@ int perf_event__synthesize_threads(struct perf_tool *tool,
+ 				   struct machine *machine, bool mmap_data);
+ int perf_event__synthesize_kernel_mmap(struct perf_tool *tool,
+ 				       perf_event__handler_t process,
+-				       struct machine *machine,
+-				       const char *symbol_name);
++				       struct machine *machine);
+ 
+ int perf_event__synthesize_modules(struct perf_tool *tool,
+ 				   perf_event__handler_t process,
+@@ -279,4 +278,7 @@ size_t perf_event__fprintf_mmap2(union perf_event *event, FILE *fp);
+ size_t perf_event__fprintf_task(union perf_event *event, FILE *fp);
+ size_t perf_event__fprintf(union perf_event *event, FILE *fp);
+ 
++u64 kallsyms__get_function_start(const char *kallsyms_filename,
++				 const char *symbol_name);
++
+ #endif /* __PERF_RECORD_H */
+diff --git a/tools/perf/util/include/asm/hash.h b/tools/perf/util/include/asm/hash.h
+new file mode 100644
+index 0000000..d82b170b
+--- /dev/null
++++ b/tools/perf/util/include/asm/hash.h
+@@ -0,0 +1,6 @@
++#ifndef __ASM_GENERIC_HASH_H
++#define __ASM_GENERIC_HASH_H
++
++/* Stub */
++
++#endif /* __ASM_GENERIC_HASH_H */
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index ded7459..c872991 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -496,19 +496,22 @@ static int symbol__in_kernel(void *arg, const char *name,
+ 	return 1;
+ }
+ 
++static void machine__get_kallsyms_filename(struct machine *machine, char *buf,
++					   size_t bufsz)
++{
++	if (machine__is_default_guest(machine))
++		scnprintf(buf, bufsz, "%s", symbol_conf.default_guest_kallsyms);
++	else
++		scnprintf(buf, bufsz, "%s/proc/kallsyms", machine->root_dir);
++}
++
+ /* Figure out the start address of kernel map from /proc/kallsyms */
+ static u64 machine__get_kernel_start_addr(struct machine *machine)
+ {
+-	const char *filename;
+-	char path[PATH_MAX];
++	char filename[PATH_MAX];
+ 	struct process_args args;
+ 
+-	if (machine__is_default_guest(machine))
+-		filename = (char *)symbol_conf.default_guest_kallsyms;
+-	else {
+-		sprintf(path, "%s/proc/kallsyms", machine->root_dir);
+-		filename = path;
+-	}
++	machine__get_kallsyms_filename(machine, filename, PATH_MAX);
+ 
+ 	if (symbol__restricted_filename(filename, "/proc/kallsyms"))
+ 		return 0;
+@@ -829,9 +832,25 @@ static int machine__create_modules(struct machine *machine)
+ 	return 0;
+ }
+ 
++const char *ref_reloc_sym_names[] = {"_text", "_stext", NULL};
++
+ int machine__create_kernel_maps(struct machine *machine)
+ {
+ 	struct dso *kernel = machine__get_kernel(machine);
++	char filename[PATH_MAX];
++	const char *name;
++	u64 addr = 0;
++	int i;
++
++	machine__get_kallsyms_filename(machine, filename, PATH_MAX);
++
++	for (i = 0; (name = ref_reloc_sym_names[i]) != NULL; i++) {
++		addr = kallsyms__get_function_start(filename, name);
++		if (addr)
++			break;
++	}
++	if (!addr)
++		return -1;
+ 
+ 	if (kernel == NULL ||
+ 	    __machine__create_kernel_maps(machine, kernel) < 0)
+@@ -850,6 +869,13 @@ int machine__create_kernel_maps(struct machine *machine)
+ 	 * Now that we have all the maps created, just set the ->end of them:
+ 	 */
+ 	map_groups__fixup_end(&machine->kmaps);
++
++	if (maps__set_kallsyms_ref_reloc_sym(machine->vmlinux_maps, name,
++					     addr)) {
++		machine__destroy_kernel_maps(machine);
++		return -1;
++	}
++
+ 	return 0;
+ }
+ 
+diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
+index 4771330..f77e91e 100644
+--- a/tools/perf/util/machine.h
++++ b/tools/perf/util/machine.h
+@@ -18,6 +18,8 @@ union perf_event;
+ #define	HOST_KERNEL_ID			(-1)
+ #define	DEFAULT_GUEST_KERNEL_ID		(0)
+ 
++extern const char *ref_reloc_sym_names[];
++
+ struct machine {
+ 	struct rb_node	  rb_node;
+ 	pid_t		  pid;
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index 3b97513..39cd2d0 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -39,6 +39,7 @@ void map__init(struct map *map, enum map_type type,
+ 	map->start    = start;
+ 	map->end      = end;
+ 	map->pgoff    = pgoff;
++	map->reloc    = 0;
+ 	map->dso      = dso;
+ 	map->map_ip   = map__map_ip;
+ 	map->unmap_ip = map__unmap_ip;
+@@ -288,7 +289,7 @@ u64 map__rip_2objdump(struct map *map, u64 rip)
+ 	if (map->dso->rel)
+ 		return rip - map->pgoff;
+ 
+-	return map->unmap_ip(map, rip);
++	return map->unmap_ip(map, rip) - map->reloc;
+ }
+ 
+ /**
+@@ -311,7 +312,7 @@ u64 map__objdump_2mem(struct map *map, u64 ip)
+ 	if (map->dso->rel)
+ 		return map->unmap_ip(map, ip + map->pgoff);
+ 
+-	return ip;
++	return ip + map->reloc;
+ }
+ 
+ void map_groups__init(struct map_groups *mg)
+diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
+index 18068c6..257e513 100644
+--- a/tools/perf/util/map.h
++++ b/tools/perf/util/map.h
+@@ -36,6 +36,7 @@ struct map {
+ 	bool			erange_warned;
+ 	u32			priv;
+ 	u64			pgoff;
++	u64			reloc;
+ 	u32			maj, min; /* only valid for MMAP2 record */
+ 	u64			ino;      /* only valid for MMAP2 record */
+ 	u64			ino_generation;/* only valid for MMAP2 record */
+diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+index 7594567..3e9f336 100644
+--- a/tools/perf/util/symbol-elf.c
++++ b/tools/perf/util/symbol-elf.c
+@@ -751,6 +751,8 @@ int dso__load_sym(struct dso *dso, struct map *map,
+ 			if (strcmp(elf_name, kmap->ref_reloc_sym->name))
+ 				continue;
+ 			kmap->ref_reloc_sym->unrelocated_addr = sym.st_value;
++			map->reloc = kmap->ref_reloc_sym->addr -
++				     kmap->ref_reloc_sym->unrelocated_addr;
+ 			break;
+ 		}
+ 	}
+@@ -922,6 +924,7 @@ int dso__load_sym(struct dso *dso, struct map *map,
+ 				  (u64)shdr.sh_offset);
+ 			sym.st_value -= shdr.sh_addr - shdr.sh_offset;
+ 		}
++new_symbol:
+ 		/*
+ 		 * We need to figure out if the object was created from C++ sources
+ 		 * DWARF DW_compile_unit has this, but we don't always have access
+@@ -933,7 +936,6 @@ int dso__load_sym(struct dso *dso, struct map *map,
+ 			if (demangled != NULL)
+ 				elf_name = demangled;
+ 		}
+-new_symbol:
+ 		f = symbol__new(sym.st_value, sym.st_size,
+ 				GELF_ST_BIND(sym.st_info), elf_name);
+ 		free(demangled);
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 39ce9ad..a9d758a 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -627,7 +627,7 @@ static int dso__split_kallsyms_for_kcore(struct dso *dso, struct map *map,
+  * kernel range is broken in several maps, named [kernel].N, as we don't have
+  * the original ELF section names vmlinux have.
+  */
+-static int dso__split_kallsyms(struct dso *dso, struct map *map,
++static int dso__split_kallsyms(struct dso *dso, struct map *map, u64 delta,
+ 			       symbol_filter_t filter)
+ {
+ 	struct map_groups *kmaps = map__kmap(map)->kmaps;
+@@ -692,6 +692,12 @@ static int dso__split_kallsyms(struct dso *dso, struct map *map,
+ 			char dso_name[PATH_MAX];
+ 			struct dso *ndso;
+ 
++			if (delta) {
++				/* Kernel was relocated at boot time */
++				pos->start -= delta;
++				pos->end -= delta;
++			}
++
+ 			if (count == 0) {
+ 				curr_map = map;
+ 				goto filter_symbol;
+@@ -721,6 +727,10 @@ static int dso__split_kallsyms(struct dso *dso, struct map *map,
+ 			curr_map->map_ip = curr_map->unmap_ip = identity__map_ip;
+ 			map_groups__insert(kmaps, curr_map);
+ 			++kernel_range;
++		} else if (delta) {
++			/* Kernel was relocated at boot time */
++			pos->start -= delta;
++			pos->end -= delta;
+ 		}
+ filter_symbol:
+ 		if (filter && filter(curr_map, pos)) {
+@@ -976,6 +986,23 @@ static int validate_kcore_modules(const char *kallsyms_filename,
+ 	return 0;
+ }
+ 
++static int validate_kcore_addresses(const char *kallsyms_filename,
++				    struct map *map)
++{
++	struct kmap *kmap = map__kmap(map);
++
++	if (kmap->ref_reloc_sym && kmap->ref_reloc_sym->name) {
++		u64 start;
++
++		start = kallsyms__get_function_start(kallsyms_filename,
++						     kmap->ref_reloc_sym->name);
++		if (start != kmap->ref_reloc_sym->addr)
++			return -EINVAL;
++	}
++
++	return validate_kcore_modules(kallsyms_filename, map);
++}
++
+ struct kcore_mapfn_data {
+ 	struct dso *dso;
+ 	enum map_type type;
+@@ -1019,8 +1046,8 @@ static int dso__load_kcore(struct dso *dso, struct map *map,
+ 					     kallsyms_filename))
+ 		return -EINVAL;
+ 
+-	/* All modules must be present at their original addresses */
+-	if (validate_kcore_modules(kallsyms_filename, map))
++	/* Modules and kernel must be present at their original addresses */
++	if (validate_kcore_addresses(kallsyms_filename, map))
+ 		return -EINVAL;
+ 
+ 	md.dso = dso;
+@@ -1113,15 +1140,41 @@ out_err:
+ 	return -EINVAL;
+ }
+ 
++/*
++ * If the kernel is relocated at boot time, kallsyms won't match.  Compute the
++ * delta based on the relocation reference symbol.
++ */
++static int kallsyms__delta(struct map *map, const char *filename, u64 *delta)
++{
++	struct kmap *kmap = map__kmap(map);
++	u64 addr;
++
++	if (!kmap->ref_reloc_sym || !kmap->ref_reloc_sym->name)
++		return 0;
++
++	addr = kallsyms__get_function_start(filename,
++					    kmap->ref_reloc_sym->name);
++	if (!addr)
++		return -1;
++
++	*delta = addr - kmap->ref_reloc_sym->addr;
++	return 0;
++}
++
+ int dso__load_kallsyms(struct dso *dso, const char *filename,
+ 		       struct map *map, symbol_filter_t filter)
+ {
++	u64 delta = 0;
++
+ 	if (symbol__restricted_filename(filename, "/proc/kallsyms"))
+ 		return -1;
+ 
+ 	if (dso__load_all_kallsyms(dso, filename, map) < 0)
+ 		return -1;
+ 
++	if (kallsyms__delta(map, filename, &delta))
++		return -1;
++
+ 	symbols__fixup_duplicate(&dso->symbols[map->type]);
+ 	symbols__fixup_end(&dso->symbols[map->type]);
+ 
+@@ -1133,7 +1186,7 @@ int dso__load_kallsyms(struct dso *dso, const char *filename,
+ 	if (!dso__load_kcore(dso, map, filename))
+ 		return dso__split_kallsyms_for_kcore(dso, map, filter);
+ 	else
+-		return dso__split_kallsyms(dso, map, filter);
++		return dso__split_kallsyms(dso, map, delta, filter);
+ }
+ 
+ static int dso__load_perf_map(struct dso *dso, struct map *map,
+@@ -1424,7 +1477,7 @@ static int find_matching_kcore(struct map *map, char *dir, size_t dir_sz)
+ 			continue;
+ 		scnprintf(kallsyms_filename, sizeof(kallsyms_filename),
+ 			  "%s/%s/kallsyms", dir, dent->d_name);
+-		if (!validate_kcore_modules(kallsyms_filename, map)) {
++		if (!validate_kcore_addresses(kallsyms_filename, map)) {
+ 			strlcpy(dir, kallsyms_filename, dir_sz);
+ 			ret = 0;
+ 			break;
+@@ -1479,7 +1532,7 @@ static char *dso__find_kallsyms(struct dso *dso, struct map *map)
+ 		if (fd != -1) {
+ 			close(fd);
+ 			/* If module maps match go with /proc/kallsyms */
+-			if (!validate_kcore_modules("/proc/kallsyms", map))
++			if (!validate_kcore_addresses("/proc/kallsyms", map))
+ 				goto proc_kallsyms;
+ 		}
+ 
