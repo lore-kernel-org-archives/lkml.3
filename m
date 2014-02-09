@@ -1,87 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751606AbaBIHbJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 02:31:09 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:37798 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751403AbaBIHbH (ORCPT
+	id S1751653AbaBIHkd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 02:40:33 -0500
+Received: from infra.glanzmann.de ([88.198.249.254]:33407 "EHLO
+	infra.glanzmann.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751379AbaBIHkb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 02:31:07 -0500
-Date: Sat, 8 Feb 2014 23:31:01 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-cc: tglx@linutronix.de, fengguang.wu@intel.com, mingo@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] time/cpuidle:Fixup fallout from hrtimer broadcast mode
- inclusion
-In-Reply-To: <20140207172924.8248.55002.stgit@preeti>
-Message-ID: <alpine.DEB.2.02.1402082329410.8686@chino.kir.corp.google.com>
-References: <20140207172924.8248.55002.stgit@preeti>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Sun, 9 Feb 2014 02:40:31 -0500
+Date: Sun, 9 Feb 2014 08:40:27 +0100
+From: Thomas Glanzmann <thomas@glanzmann.de>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: John Ogness <john.ogness@linutronix.de>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        Linux Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: RFC: Set MSG_MORE in iscsit_fe_sendpage_sg to avoid sending multiple
+ TCP packets instead of one
+Message-ID: <20140209074027.GA8105@glanzmann.de>
+Mail-Followup-To: Eric Dumazet <eric.dumazet@gmail.com>,
+	John Ogness <john.ogness@linutronix.de>,
+	Eric Dumazet <edumazet@google.com>,
+	"David S. Miller" <davem@davemloft.net>,
+	"Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+	target-devel <target-devel@vger.kernel.org>,
+	Linux Network Development <netdev@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <1391867404.10160.88.camel@edumazet-glaptop2.roam.corp.google.com>
+ <1391868816.10160.93.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20140208141905.GG20512@glanzmann.de>
+ <1391869805.10160.97.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20140208150001.GI20512@glanzmann.de>
+ <1391871986.10160.105.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20140208165732.GB22359@glanzmann.de>
+ <1391879318.10160.108.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20140208171531.GA23798@glanzmann.de>
+ <1391886759.10160.114.camel@edumazet-glaptop2.roam.corp.google.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="531381512-1904609958-1391931065=:8686"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391886759.10160.114.camel@edumazet-glaptop2.roam.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hello Eric,
+I took the liberty to test and make your patch compile by adding the
+following changeset:
 
---531381512-1904609958-1391931065=:8686
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+--- a/drivers/target/iscsi/iscsi_target_parameters.c
++++ b/drivers/target/iscsi/iscsi_target_parameters.c
+@@ -79,7 +79,7 @@ int iscsi_login_tx_data(
+         */
+        conn->if_marker += length;
 
-On Fri, 7 Feb 2014, Preeti U Murthy wrote:
+-       tx_sent = tx_data(conn, &iov[0], iov_cnt, length);
++       tx_sent = tx_data(conn, &iov[0], iov_cnt, length, 0);
+        if (tx_sent != length) {
+                pr_err("tx_data returned %d, expecting %d.\n",
+                                tx_sent, length);
 
-> The broadcast timer registration has to be done only when
-> GENERIC_CLOCKEVENTS_BROADCAST and TICK_ONESHOT config options are enabled.
-> Also fix max_delta_ticks value for the pseudo clock device.
-> 
-> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-> Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> ---
-> 
->  kernel/time/tick-broadcast-hrtimer.c |    4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/kernel/time/tick-broadcast-hrtimer.c b/kernel/time/tick-broadcast-hrtimer.c
-> index 5591aaa..bc383ac 100644
-> --- a/kernel/time/tick-broadcast-hrtimer.c
-> +++ b/kernel/time/tick-broadcast-hrtimer.c
-> @@ -81,7 +81,7 @@ static struct clock_event_device ce_broadcast_hrtimer = {
->  	.min_delta_ns		= 1,
->  	.max_delta_ns		= KTIME_MAX,
->  	.min_delta_ticks	= 1,
-> -	.max_delta_ticks	= KTIME_MAX,
-> +	.max_delta_ticks	= ULONG_MAX,
->  	.mult			= 1,
->  	.shift			= 0,
->  	.cpumask		= cpu_all_mask,
-> @@ -102,9 +102,11 @@ static enum hrtimer_restart bc_handler(struct hrtimer *t)
->  	return HRTIMER_RESTART;
->  }
->  
-> +#if defined(CONFIG_GENERIC_CLOCKEVENTS_BROADCAST) && defined(CONFIG_TICK_ONESHOT)
->  void tick_setup_hrtimer_broadcast(void)
->  {
->  	hrtimer_init(&bctimer, CLOCK_MONOTONIC, HRTIMER_MODE_ABS);
->  	bctimer.function = bc_handler;
->  	clockevents_register_device(&ce_broadcast_hrtimer);
->  }
-> +#endif
+Hello Nab,
+please consider this for upstream. If I should clean it up in two patches:
 
-I see a build error in timers/core today:
+        - One patch to change the interface iscsit_do_tx_data and tx_data
 
-kernel/time/tick-broadcast-hrtimer.c:101:6: error: redefinition of 'tick_setup_hrtimer_broadcast'
-include/linux/clockchips.h:194:20: note: previous definition of 'tick_setup_hrtimer_broadcast' was here
+        - Another patch who uses the newly introduced interface
 
-and I assume this is the intended fix for that, although it isn't 
-mentioned in the changelog.
+Let me know. This is how I would have normally done it. I set Eric as author
+but singed it off and tested it. My testbed was: Using ESXi 5.5.0 GA to create
+a 500 GB VMFS filesystem via iSCSI.
 
-After it's applied, this is left over:
-
-kernel/time/tick-broadcast-hrtimer.c:91:29: warning: ‘bc_handler’ defined but not used [-Wunused-function]
---531381512-1904609958-1391931065=:8686--
+Cheers,
+        Thomas
