@@ -1,111 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751710AbaBIRSo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 12:18:44 -0500
-Received: from mga11.intel.com ([192.55.52.93]:23158 "EHLO mga11.intel.com"
+	id S1751813AbaBIRfS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 12:35:18 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:59421 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750823AbaBIRSn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 12:18:43 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,813,1384329600"; 
-   d="scan'208";a="478580578"
-From: Andi Kleen <andi@firstfloor.org>
-To: mmarek@suse.cz
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, Dirk Gouders <dirk@gouders.net>
-Subject: [PATCH] kbuild: Support split debug info v2
-Date: Sun,  9 Feb 2014 18:17:58 +0100
-Message-Id: <1391966278-23036-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.5.2
+	id S1751516AbaBIRfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Feb 2014 12:35:14 -0500
+Date: Sun, 9 Feb 2014 12:34:18 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Bob Liu <bob.liu@oracle.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>, Greg Thelen <gthelen@google.com>,
+        Hugh Dickins <hughd@google.com>, Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Luigi Semenzato <semenzato@google.com>, Mel Gorman <mgorman@suse.de>,
+        Metin Doslu <metin@citusdata.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ozgun Erdogan <ozgun@citusdata.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Roman Gushchin <klamm@yandex-team.ru>, Ryan Mallon <rmallon@gmail.com>,
+        Tejun Heo <tj@kernel.org>, Vlastimil Babka <vbabka@suse.cz>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 02/10] fs: cachefiles: use add_to_page_cache_lru()
+Message-ID: <20140209173418.GH4407@cmpxchg.org>
+References: <1391475222-1169-1-git-send-email-hannes@cmpxchg.org>
+ <1391475222-1169-3-git-send-email-hannes@cmpxchg.org>
+ <20140208114334.GA25841@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140208114334.GA25841@localhost.localdomain>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Sat, Feb 08, 2014 at 09:43:35AM -0200, Rafael Aquini wrote:
+> On Mon, Feb 03, 2014 at 07:53:34PM -0500, Johannes Weiner wrote:
+> > This code used to have its own lru cache pagevec up until a0b8cab3
+> > ("mm: remove lru parameter from __pagevec_lru_add and remove parts of
+> > pagevec API").  Now it's just add_to_page_cache() followed by
+> > lru_cache_add(), might as well use add_to_page_cache_lru() directly.
+> >
+> 
+> Just a heads-up, here: take a look at https://lkml.org/lkml/2014/2/7/587
 
-This is an alternative approach to lower the overhead of debug info
-(as we discussed a few days ago)
+Ah, yes.  That patch replaced a private pagevec, which consumes the
+references you pass in, with add_to_page_cache_lru(), which gets its
+own references.
 
-gcc 4.7+ and newer binutils have a new "split debug info" debug info
-model where the debug info is only written once into central ".dwo" files.
+My patch changes
 
-This avoids having to copy it around multiple times, from the object
-files to the final executable. It also lowers the disk space
-requirements. In addition it defaults to compressed debug data.
+    add_to_page_cache()
+    lru_cache_add()
 
-More details here: http://gcc.gnu.org/wiki/DebugFission
+to
 
-This patch adds a new option to enable it. It has to be an option,
-because it'll undoubtedly break everyone's debuginfo packaging scheme.
-gdb/objdump/etc. all still work, if you have new enough versions.
+    add_to_page_cache_lru()
+      add_to_page_cache()
+      lru_cache_add()
 
-I don't see big compile wins (maybe a second or two faster or so), but the
-object dirs with debuginfo get significantly smaller. My standard kernel
-config (slightly bigger than defconfig) shrinks from 2.9G disk space
-to 1.1G objdir (with non reduced debuginfo). I presume if you are IO limited
-the compile time difference will be larger.
+so the refcounting does not change for the caller.
 
-Only problem I've seen so far is that it doesn't play well with older
-versions of ccache (apparently fixed, see
-https://bugzilla.samba.org/show_bug.cgi?id=10005)
-
-v2: various fixes from Dirk Gouders. Improve commit message slightly.
-Cc: Dirk Gouders <dirk@gouders.net>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- Makefile          |  6 ++++++
- lib/Kconfig.debug | 13 +++++++++++++
- 2 files changed, 19 insertions(+)
-
-diff --git a/Makefile b/Makefile
-index 606ef7c..2f3d9d1 100644
---- a/Makefile
-+++ b/Makefile
-@@ -638,7 +638,11 @@ endif
- endif
- 
- ifdef CONFIG_DEBUG_INFO
-+ifdef CONFIG_DEBUG_INFO_SPLIT
-+KBUILD_CFLAGS   += $(call cc-option, -gsplit-dwarf, -g)
-+else
- KBUILD_CFLAGS	+= -g
-+endif
- KBUILD_AFLAGS	+= -Wa,--gdwarf-2
- endif
- 
-@@ -1072,6 +1076,8 @@ MRPROPER_FILES += .config .config.old .version .old_version $(version_h) \
- 		  extra_certificates signing_key.x509.keyid		\
- 		  signing_key.x509.signer
- 
-+CLEAN_FILES += .*.dwo
-+
- # clean - Delete most, but leave enough to build external modules
- #
- clean: rm-dirs  := $(CLEAN_DIRS)
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index a48abea..367a6ba 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -143,6 +143,19 @@ config DEBUG_INFO_REDUCED
- 	  DEBUG_INFO build and compile times are reduced too.
- 	  Only works with newer gcc versions.
- 
-+config DEBUG_INFO_SPLIT
-+	bool "Produce split debuginfo in .dwo files"
-+	depends on DEBUG_INFO
-+	help
-+	  Generate debug info into separate .dwo files. This can be
-+	  faster for building than including the debug information directly
-+	  in the object files and the vmlinux, as it only needs to 
-+	  be stored once to disk, not multiple times in object files.
-+	  Requires recent gcc (4.8+) and recent gdb/binutils.
-+	  Any tool that packages or reads debug information would need
-+	  to know about the .dwo files and include them.
-+	  Currently incompatible with ccache.
-+
- config ENABLE_WARN_DEPRECATED
- 	bool "Enable __deprecated logic"
- 	default y
--- 
-1.8.5.2
-
+Thanks for pointing it out, though, it never hurts to double check
+stuff like that.
