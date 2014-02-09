@@ -1,103 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752089AbaBISTS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 13:19:18 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41221 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751646AbaBISTR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 13:19:17 -0500
-Message-ID: <1391969942.25202.76.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH 3.2 056/185] mm: ensure get_unmapped_area() returns
- higher address than mmap_min_addr
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org, Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Kiyoshi Owada <owada.kiyoshi@jp.panasonic.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 09 Feb 2014 18:19:02 +0000
-In-Reply-To: <20140106191910.7155.38390934@jp.panasonic.com>
-References: <lsq.1388282923.51724079@decadent.org.uk>
-	 <1388723203.22017.36.camel@deadeye.wl.decadent.org.uk>
-	 <20140106191910.7155.38390934@jp.panasonic.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-hjSZsR3kmrZ6DfQgRXkH"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.239
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1751925AbaBIS3t (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 13:29:49 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:59442 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751516AbaBIS3s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Feb 2014 13:29:48 -0500
+Date: Sun, 9 Feb 2014 13:29:42 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Hugh Dickins <hughd@google.com>, Dave Chinner <dchinner@redhat.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: mmotm 2014-02-05 list_lru_add lockdep splat
+Message-ID: <20140209182942.GJ6963@cmpxchg.org>
+References: <alpine.LSU.2.11.1402051944210.27326@eggly.anvils>
+ <20140206164136.GC6963@cmpxchg.org>
+ <20140207125233.4b84482453da6a656ff427dd@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140207125233.4b84482453da6a656ff427dd@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Feb 07, 2014 at 12:52:33PM -0800, Andrew Morton wrote:
+> On Thu, 6 Feb 2014 11:41:36 -0500 Johannes Weiner <hannes@cmpxchg.org> wrote:
+> 
+> > 
+> > Make the shadow lru->node[i].lock IRQ-safe to remove the order
+> > dictated by interruption.  This slightly increases the IRQ-disabled
+> > section in the shadow shrinker, but it still drops all locks and
+> > enables IRQ after every reclaimed shadow radix tree node.
+> > 
+> > ...
+> >
+> > --- a/mm/workingset.c
+> > +++ b/mm/workingset.c
+> > @@ -273,7 +273,10 @@ static unsigned long count_shadow_nodes(struct shrinker *shrinker,
+> >  	unsigned long max_nodes;
+> >  	unsigned long pages;
+> >  
+> > +	local_irq_disable();
+> >  	shadow_nodes = list_lru_count_node(&workingset_shadow_nodes, sc->nid);
+> > +	local_irq_enable();
+> 
+> This is a bit ugly-looking.
+> 
+> A reader will look at that and wonder why the heck we're disabling
+> interrupts here.  Against what?  Is there some way in which we can
+> clarify this?
 
---=-hjSZsR3kmrZ6DfQgRXkH
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+We need the list_lru's internal locking to be IRQ-safe because of the
+mapping->tree_lock nesting.
 
-On Mon, 2014-01-06 at 19:19 +0900, Akira Takeuchi wrote:
-> On Fri, 03 Jan 2014 04:26:43 +0000
-> Ben Hutchings <ben@decadent.org.uk> wrote:
->=20
-> > On Sun, 2013-12-29 at 03:08 +0100, Ben Hutchings wrote:
-> > > 3.2.54-rc1 review patch.  If anyone has any objections, please let me=
- know.
-> > >=20
-> > > ------------------
-> > >=20
-> > > From: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
-> > >=20
-> > > commit 2afc745f3e3079ab16c826be4860da2529054dd2 upstream.
-> > [...]
-> > > [bwh: Backported to 3.2:
-> > >  As we do not have vm_unmapped_area(), make arch_get_unmapped_area_to=
-pdown()
-> > >  calculate the lower limit for the new area's end address and then co=
-mpare
-> > >  addresses with this instead of with len.  In the process, fix an off=
--by-one
-> > >  error which could result in returning 0 if mm->mmap_base =3D=3D len.=
-]
-> >=20
-> > I'm dropping this as I have no good way to test the backport (it's not
-> > used on x86) and I didn't get any confirmation that it's right.
->=20
-> I'm sorry for delayed reply.
->=20
-> Your backport seems right.
-> Additionally, I've confirmed the problem is resolved by your backport pat=
-ch.
+This particular instance should go away once Dave's scalability fixes
+from last summer get merged, the lock and thus the IRQ-disabling is
+not necessary to read that counter: https://lkml.org/lkml/2013/7/31/7
 
-Thanks, I've re-queued it for 3.2.55.
+This leaves the IRQ-disabling in the scan and isolate function.
 
-Ben.
+[ I also noticed the patch that does an optimistic list_empty() check
+  before acquiring the locks, which is something my callers also do,
+  so it might be worth revisiting the missing pieces of this patch
+  set: https://lkml.org/lkml/2013/7/31/9 -- Dave? ]
 
---=20
-Ben Hutchings
-If at first you don't succeed, you're doing about average.
+> Perhaps adding list_lru_count_node_irq[save] and
+> list_lru_walk_node_irq[save] would be better - is it reasonable to
+> assume this is the only caller of the list_lru code which will ever
+> want irq-safe treatment?
 
---=-hjSZsR3kmrZ6DfQgRXkH
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+It's a combination of our objects being locked from IRQ context and
+using the object lock for lifetime management, which means list_lru
+locking has to nest inside the IRQ-safe object lock.  I suspect this
+will not be too common and mapping->tree_lock will remain the oddball.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+> This is all somewhat a side-effect of list_lru implementing its own
+> locking rather than requiring caller-provided locking.  It's always a
+> mistake.
 
-iQIVAwUAUvfGlue/yOyVhhEJAQpAQxAAkORDnuQmK0G1F9R6nwOH81520xW+h+hf
-sc6Hbk4NXUAB0VIrrFk8ZlNiBEI9Hn+vlNKWCiKJ4CfB5C6ufXXGjXs9y3kfIyvV
-B2miR2tORi1ZZYdbZ7WloaQJm/M1A/oxjHz1yvvCzLKxl+/uy0r2mA0+UH1jJ1pb
-MNSY/Z4Q5fSL2GskdWjjAmCbYXyI54KRVCYcUiXfCf5sVZEFOGfMObpdosfm4/cU
-eeuDET7Y+NRSuBZRh0hpsMkyBiuBfKSIZSrvPxOsoQfyDnmWcXynT77P5zMsu8Zo
-sT0Fsuf5jYuAuhCeJ2j6Et4aMGtslpRUolRn7L98/ZTSipix8mSfzseApmm1grZ1
-hKE0dBTxuZ2Nk/62Q5oVfRphDzuY1u0LIhkKLTThgKBeiWG8w5AQOb6NTOEk0XJ/
-k3BQFETCWN0mNSfvaf9zhmeFPBeVHZ4Rznmxq+k+PLdIiEVD1bWbGqCFK6ZuOjDI
-sLVMCKERhdXl+OxQDzltpHSbLyRrn2EWKxjOdfXjNroschMLAdhAmYd2sSL/xp8A
-fF5NXOLoR7+wUPfHPsgfWnNCTfYgyzUSOq4mx3IZ/pba28vvBPzrMzGHAG25igKw
-kvoqmMkEzYRbV04MIUCkZpFtDaN7BkFYd64EGFhLfTd2Cil8nekRXUvS6SeIrRaN
-DNfdnBtZKMM=
-=XvZB
------END PGP SIGNATURE-----
+The locks are embedded in the internal per-node structure that first
+has to be looked up.  All the users could live with the internal
+locking, so I can see why Dave didn't want to push 4 manual steps
+(lookup, lock, list op, unlock) into all callsites unnecessarily.
 
---=-hjSZsR3kmrZ6DfQgRXkH--
+Are the two manual IRQ-disabling sections in one user enough to change
+all that?  I'm perfectly neutral on this, so... path of least
+resistance ;)
+
+---
+Subject: [patch] mm: keep page cache radix tree nodes in check fix fix fix
+
+document IRQ-disabling around list_lru API calls
+
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/workingset.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/mm/workingset.c b/mm/workingset.c
+index 20aa16754305..f7216fa7da27 100644
+--- a/mm/workingset.c
++++ b/mm/workingset.c
+@@ -273,6 +273,7 @@ static unsigned long count_shadow_nodes(struct shrinker *shrinker,
+ 	unsigned long max_nodes;
+ 	unsigned long pages;
+ 
++	/* list_lru lock nests inside IRQ-safe mapping->tree_lock */
+ 	local_irq_disable();
+ 	shadow_nodes = list_lru_count_node(&workingset_shadow_nodes, sc->nid);
+ 	local_irq_enable();
+@@ -373,6 +374,7 @@ static unsigned long scan_shadow_nodes(struct shrinker *shrinker,
+ {
+ 	unsigned long ret;
+ 
++	/* list_lru lock nests inside IRQ-safe mapping->tree_lock */
+ 	local_irq_disable();
+ 	ret =  list_lru_walk_node(&workingset_shadow_nodes, sc->nid,
+ 				  shadow_lru_isolate, NULL, &sc->nr_to_scan);
+-- 
+1.8.5.3
+
