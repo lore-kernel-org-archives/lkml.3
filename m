@@ -1,63 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751757AbaBIO4U (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 09:56:20 -0500
-Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:54181 "EHLO
-	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751501AbaBIO4T (ORCPT
+	id S1752074AbaBIO4i (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 09:56:38 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:47121 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751948AbaBIO4h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 09:56:19 -0500
-Message-ID: <1391957777.25424.15.camel@x220>
-Subject: [PATCH] [media] si4713: Remove "select SI4713"
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Sun, 09 Feb 2014 15:56:17 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 09 Feb 2014 14:56:17.0629 (UTC) FILETIME=[1605F8D0:01CF25A7]
-X-RcptDomain: vger.kernel.org
+	Sun, 9 Feb 2014 09:56:37 -0500
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org, josh@joshtriplett.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>,
+        Veaceslav Falico <vfalico@redhat.com>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Jiri Pirko <jiri@resnulli.us>, Pravin B Shelar <pshelar@nicira.com>,
+        Cong Wang <amwang@redhat.com>, netdev@vger.kernel.org
+Subject: =?UTF-8?q?=5BPATCH=20v2=2004/13=5D=20net=3A=20Mark=20functions=20as=20static=20in=20core/dev=2Ec?=
+Date: Sun,  9 Feb 2014 20:26:25 +0530
+Message-Id: <ccd9586270a8ebb87aeadc10feff52857b7f907c.1391955924.git.rashika.kheria@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <6f029c895035908595957fb16ab445c82793c77d.1391955924.git.rashika.kheria@gmail.com>
+References: <6f029c895035908595957fb16ab445c82793c77d.1391955924.git.rashika.kheria@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commits 7391232e1215 ("[media] si4713: Reorganized drivers/media/radio
-directory") and b874b39fcd2f ("[media] si4713: Added the USB driver for
-Si4713") both added a "select SI4713". But there's no Kconfig symbol
-SI4713, so these selects are nops. It's not clear why they were added
-but it's safe to remove them anyway.
+Mark functions as static in core/dev.c because they are not used outside
+this file.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+This eliminates the following warning in core/dev.c:
+net/core/dev.c:2806:5: warning: no previous prototype for ‘__dev_queue_xmit’ [-Wmissing-prototypes]
+net/core/dev.c:4640:5: warning: no previous prototype for ‘netdev_adjacent_sysfs_add’ [-Wmissing-prototypes]
+net/core/dev.c:4650:6: warning: no previous prototype for ‘netdev_adjacent_sysfs_del’ [-Wmissing-prototypes]
+
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Reviewed-by: Veaceslav Falico <vfalico@redhat.com>
 ---
-Untested!
+ net/core/dev.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
- drivers/media/radio/si4713/Kconfig | 2 --
- 1 file changed, 2 deletions(-)
-
-diff --git a/drivers/media/radio/si4713/Kconfig b/drivers/media/radio/si4713/Kconfig
-index a7c3ba8..ed51ed0 100644
---- a/drivers/media/radio/si4713/Kconfig
-+++ b/drivers/media/radio/si4713/Kconfig
-@@ -1,7 +1,6 @@
- config USB_SI4713
- 	tristate "Silicon Labs Si4713 FM Radio Transmitter support with USB"
- 	depends on USB && RADIO_SI4713
--	select SI4713
- 	---help---
- 	  This is a driver for USB devices with the Silicon Labs SI4713
- 	  chip. Currently these devices are known to work.
-@@ -16,7 +15,6 @@ config USB_SI4713
- config PLATFORM_SI4713
- 	tristate "Silicon Labs Si4713 FM Radio Transmitter support with I2C"
- 	depends on I2C && RADIO_SI4713
--	select SI4713
- 	---help---
- 	  This is a driver for I2C devices with the Silicon Labs SI4713
- 	  chip.
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 3721db7..4ad1b78 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2803,7 +2803,7 @@ EXPORT_SYMBOL(dev_loopback_xmit);
+  *      the BH enable code must have IRQs enabled so that it will not deadlock.
+  *          --BLG
+  */
+-int __dev_queue_xmit(struct sk_buff *skb, void *accel_priv)
++static int __dev_queue_xmit(struct sk_buff *skb, void *accel_priv)
+ {
+ 	struct net_device *dev = skb->dev;
+ 	struct netdev_queue *txq;
+@@ -4637,7 +4637,7 @@ struct net_device *netdev_master_upper_dev_get_rcu(struct net_device *dev)
+ }
+ EXPORT_SYMBOL(netdev_master_upper_dev_get_rcu);
+ 
+-int netdev_adjacent_sysfs_add(struct net_device *dev,
++static int netdev_adjacent_sysfs_add(struct net_device *dev,
+ 			      struct net_device *adj_dev,
+ 			      struct list_head *dev_list)
+ {
+@@ -4647,7 +4647,7 @@ int netdev_adjacent_sysfs_add(struct net_device *dev,
+ 	return sysfs_create_link(&(dev->dev.kobj), &(adj_dev->dev.kobj),
+ 				 linkname);
+ }
+-void netdev_adjacent_sysfs_del(struct net_device *dev,
++static void netdev_adjacent_sysfs_del(struct net_device *dev,
+ 			       char *name,
+ 			       struct list_head *dev_list)
+ {
 -- 
-1.8.5.3
-
-
+1.7.9.5
 
