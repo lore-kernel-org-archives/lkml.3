@@ -1,144 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751786AbaBIK4e (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 05:56:34 -0500
-Received: from relay.parallels.com ([195.214.232.42]:51663 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360AbaBIK4U (ORCPT
+	id S1751868AbaBIK7h (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 05:59:37 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:58643 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751396AbaBIK7f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 05:56:20 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <gregkh@linuxfoundation.org>, <cl@linux-foundation.org>
-CC: <penberg@kernel.org>, <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, <devel@openvz.org>
-Subject: [PATCH 1/2] kobject: don't block for each kobject_uevent
-Date: Sun, 9 Feb 2014 14:56:15 +0400
-Message-ID: <ca22d856315916d3e8c74666da7079b9ae42e646.1391942582.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 9 Feb 2014 05:59:35 -0500
+Date: Sun, 9 Feb 2014 16:29:30 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>, xen-devel@lists.xenproject.org,
+        josh@joshtriplett.org
+Subject: [PATCH 1/4] drivers: xen: Mark function as static in platform-pci.c
+Message-ID: <3826f170dae13e3ee700ad9e26a8c88be4b7aaa2.1391943416.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.24.24.31]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently kobject_uevent has somewhat unpredictable semantics. The point
-is, since it may call a usermode helper and wait for it to execute
-(UMH_WAIT_EXEC), it is impossible to say for sure what lock dependencies
-it will introduce for the caller - strictly speaking it depends on what
-fs the binary is located on and the set of locks fork may take. There
-are quite a few kobject_uevent's users that do not take this into
-account and call it with various mutexes taken, e.g. rtnl_mutex,
-net_mutex, which might potentially lead to a deadlock.
+Mark function as static in xen/platform-pci.c because it is not used
+outside this file.
 
-Since there is actually no reason to wait for the usermode helper to
-execute there, let's make kobject_uevent start the helper asynchronously
-with the aid of the UMH_NO_WAIT flag.
+This eliminates the following warning in xen/platform-pci.c:
+drivers/xen/platform-pci.c:48:15: warning: no previous prototype for ‘alloc_xen_mmio’ [-Wmissing-prototypes]
 
-Personally, I'm interested in this, because I really want kobject_uevent
-to be called under the slab_mutex in the slub implementation as it used
-to be some time ago, because it greatly simplifies synchronization and
-automatically fixes a kmemcg-related race. However, there was a deadlock
-detected on an attempt to call kobject_uevent under the slab_mutex (see
-https://lkml.org/lkml/2012/1/14/45), which was reported to be fixed by
-releasing the slab_mutex for kobject_uevent. Unfortunately, there was no
-information about who exactly blocked on the slab_mutex causing the
-usermode helper to stall, neither have I managed to find this out or
-reproduce the issue.
-
-BTW, this is not the first attempt to make kobject_uevent use
-UMH_NO_WAIT. Previous one was made by commit f520360d93c, but it was
-wrong (it passed arguments allocated on stack to async thread) so it was
-reverted (commit 05f54c13cd0c). It targeted on speeding up the boot
-process though.
-
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- include/linux/kobject.h |    1 +
- lib/kobject_uevent.c    |   42 ++++++++++++++++++++++++++++++++++++------
- 2 files changed, 37 insertions(+), 6 deletions(-)
+ drivers/xen/platform-pci.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/linux/kobject.h b/include/linux/kobject.h
-index 926afb6f6b5f..f896a33e8341 100644
---- a/include/linux/kobject.h
-+++ b/include/linux/kobject.h
-@@ -119,6 +119,7 @@ struct kobj_type {
- };
+diff --git a/drivers/xen/platform-pci.c b/drivers/xen/platform-pci.c
+index a1361c3..3454973 100644
+--- a/drivers/xen/platform-pci.c
++++ b/drivers/xen/platform-pci.c
+@@ -45,7 +45,7 @@ static unsigned long platform_mmio_alloc;
+ static unsigned long platform_mmiolen;
+ static uint64_t callback_via;
  
- struct kobj_uevent_env {
-+	char *argv[3];
- 	char *envp[UEVENT_NUM_ENVP];
- 	int envp_idx;
- 	char buf[UEVENT_BUFFER_SIZE];
-diff --git a/lib/kobject_uevent.c b/lib/kobject_uevent.c
-index 5f72767ddd9b..21c39b32e2aa 100644
---- a/lib/kobject_uevent.c
-+++ b/lib/kobject_uevent.c
-@@ -124,6 +124,30 @@ static int kobj_usermode_filter(struct kobject *kobj)
- 	return 0;
- }
+-unsigned long alloc_xen_mmio(unsigned long len)
++static unsigned long alloc_xen_mmio(unsigned long len)
+ {
+ 	unsigned long addr;
  
-+static int init_uevent_argv(struct kobj_uevent_env *env, const char *subsystem)
-+{
-+	int len;
-+
-+	len = strlcpy(&env->buf[env->buflen], subsystem,
-+		      sizeof(env->buf) - env->buflen);
-+	if (len >= (sizeof(env->buf) - env->buflen)) {
-+		WARN(1, KERN_ERR "init_uevent_argv: buffer size too small\n");
-+		return -ENOMEM;
-+	}
-+
-+	env->argv[0] = uevent_helper;
-+	env->argv[1] = &env->buf[env->buflen];
-+	env->argv[2] = NULL;
-+
-+	env->buflen += len + 1;
-+	return 0;
-+}
-+
-+static void cleanup_uevent_env(struct subprocess_info *info)
-+{
-+	kfree(info->data);
-+}
-+
- /**
-  * kobject_uevent_env - send an uevent with environmental data
-  *
-@@ -301,11 +325,8 @@ int kobject_uevent_env(struct kobject *kobj, enum kobject_action action,
- 
- 	/* call uevent_helper, usually only enabled during early boot */
- 	if (uevent_helper[0] && !kobj_usermode_filter(kobj)) {
--		char *argv [3];
-+		struct subprocess_info *info;
- 
--		argv [0] = uevent_helper;
--		argv [1] = (char *)subsystem;
--		argv [2] = NULL;
- 		retval = add_uevent_var(env, "HOME=/");
- 		if (retval)
- 			goto exit;
-@@ -313,9 +334,18 @@ int kobject_uevent_env(struct kobject *kobj, enum kobject_action action,
- 					"PATH=/sbin:/bin:/usr/sbin:/usr/bin");
- 		if (retval)
- 			goto exit;
-+		retval = init_uevent_argv(env, subsystem);
-+		if (retval)
-+			goto exit;
- 
--		retval = call_usermodehelper(argv[0], argv,
--					     env->envp, UMH_WAIT_EXEC);
-+		retval = -ENOMEM;
-+		info = call_usermodehelper_setup(env->argv[0], env->argv,
-+						 env->envp, GFP_KERNEL,
-+						 NULL, cleanup_uevent_env, env);
-+		if (info)
-+			retval = call_usermodehelper_exec(info, UMH_NO_WAIT);
-+		if (!retval)
-+			env = NULL;	/* will be freed by cleanup_uevent_env */
- 	}
- 
- exit:
 -- 
-1.7.10.4
+1.7.9.5
 
