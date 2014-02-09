@@ -1,102 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751933AbaBIMxb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 07:53:31 -0500
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:52237 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751767AbaBIMxa (ORCPT
+	id S1751696AbaBINAq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 08:00:46 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:49039 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751360AbaBINAp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 07:53:30 -0500
-Date: Sun, 9 Feb 2014 13:53:25 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: "Ira W. Snyder" <iws@ovro.caltech.edu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [GIT PULL] liblockdep fixes for v3.14
-Message-ID: <20140209125325.GA23318@gmail.com>
-References: <52F2C56F.5030309@oracle.com>
+	Sun, 9 Feb 2014 08:00:45 -0500
+Date: Sun, 9 Feb 2014 18:30:39 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Kent Overstreet <kmo@daterainc.com>, Tejun Heo <tj@kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, josh@joshtriplett.org
+Subject: [PATCH 04/21] fs: Add prototype declaration to appropriate header
+ file include/linux/bio.h
+Message-ID: <74e55f4ccf256d3cc51f377d39e6395f58cb1617.1391949868.git.rashika.kheria@gmail.com>
+References: <b572932c3e016c55e596686283036316a1aacd2f.1391949868.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <52F2C56F.5030309@oracle.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <b572932c3e016c55e596686283036316a1aacd2f.1391949868.git.rashika.kheria@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add prototype declaration to header file include/linux/bio.h because it
+is used by more than one file.
 
-* Sasha Levin <sasha.levin@oracle.com> wrote:
+This eliminates the following warning in bio-integrity.c:
+fs/bio-integrity.c:214:14: warning: no previous prototype for ‘bio_integrity_tag_size’ [-Wmissing-prototypes]
 
-> The following changes since commit 65370bdf881e20907e7a53abab9b8c0bc5f60a6b:
-> 
->   Merge branch 'linus' into core/locking (2014-02-02 09:43:20 +0100)
-> 
-> are available in the git repository at:
-> 
-> 
->   https://github.com/sashalevin/liblockdep.git liblockdep-fixes
-> 
-> for you to fetch changes up to a521b55af18ac72c969c1ba41b660d77dae37357:
-> 
->   liblockdep: add a stub for new rcu_is_watching (2014-02-05 18:03:54 -0500)
-> 
-> ----------------------------------------------------------------
-> Ira W. Snyder (3):
->       tools: lockdep: fix initialization code path
->       tools: lockdep: fix include of asm/hash.h
->       tools: lockdep: add include directory to allow tests to compile
-> 
-> Sasha Levin (2):
->       liblockdep: mark runtests.sh as executable
->       liblockdep: add a stub for new rcu_is_watching
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+---
 
-So I have a couple of nits about the commits:
+Some of the API functions like bio_integrity_tag_size appears to be
+entirely unused. Such occurences should be pruned because they haven't
+been used in any driver.
 
-1)
+ include/linux/bio.h |    1 +
+ 1 file changed, 1 insertion(+)
 
-Please use the following standard tags/prefixes:
+diff --git a/include/linux/bio.h b/include/linux/bio.h
+index 7065452..d6791bb 100644
+--- a/include/linux/bio.h
++++ b/include/linux/bio.h
+@@ -332,6 +332,7 @@ extern struct bio *bio_clone_fast(struct bio *, gfp_t, struct bio_set *);
+ extern struct bio *bio_clone_bioset(struct bio *, gfp_t, struct bio_set *bs);
+ 
+ extern struct bio_set *fs_bio_set;
++unsigned int bio_integrity_tag_size(struct bio *bio);
+ 
+ static inline struct bio *bio_alloc(gfp_t gfp_mask, unsigned int nr_iovecs)
+ {
+-- 
+1.7.9.5
 
-   tools/liblockdep: Fix initialization code path
-   ...
-
-and also capitalize sentences properly.
-
-2)
-
-Faulty SOB sequences:
-
- Author: Ira W. Snyder <iws@ovro.caltech.edu>
- Date:   Fri Jan 31 13:35:32 2014 -0800
-
-    tools: lockdep: add include directory to allow tests to compile
-
-    Acked-by: Sasha Levin <sasha.levin@oracle.com>
-    Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
-
-
-That's not how we do signoffs, maintainer commits should be:
-
-	Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
-	Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-
-
-As a side note, that's not a valid Ack sequence either, which if done 
-should be the other way around:
-
-    Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
-    Acked-by: Sasha Levin <sasha.levin@oracle.com>
-
-3)
-
-It's not clear which patch you are referring to here:
-
-    This patch mirrors the fix used for perf, titled "tools: perf: 
-    util: fix include for non x86 architectures".
-
-It's neither in the series, nor in upstream.
-
-Thanks,
-
-	Ingo
