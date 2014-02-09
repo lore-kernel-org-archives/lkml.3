@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751859AbaBIOca (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 09:32:30 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:57625 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751540AbaBIOc2 (ORCPT
+	id S1751707AbaBIOhP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 09:37:15 -0500
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:63326 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751360AbaBIOhM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 09:32:28 -0500
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org,
-        Dmitry Tarnyagin <dmitry.tarnyagin@lockless.no>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        josh@joshtriplett.org
-Subject: =?UTF-8?q?=5BPATCH=20v2=2003/13=5D=20net=3A=20Include=20appropriate=20header=20file=20in=20caif/cfsrvl=2Ec?=
-Date: Sun,  9 Feb 2014 20:02:16 +0530
-Message-Id: <6b6ceef0f79bffec0ec14784dc3d921d53231a3b.1391955924.git.rashika.kheria@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <6f029c895035908595957fb16ab445c82793c77d.1391955924.git.rashika.kheria@gmail.com>
-References: <6f029c895035908595957fb16ab445c82793c77d.1391955924.git.rashika.kheria@gmail.com>
+	Sun, 9 Feb 2014 09:37:12 -0500
+Date: Sun, 9 Feb 2014 15:37:09 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: "Frank Ch. Eigler" <fche@redhat.com>, linux-arch@vger.kernel.org,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        systemtap@sourceware.org, "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH -tip v6 00/22] kprobes: introduce NOKPROBE_SYMBOL(),
+ cleanup and fixes crash bugs
+Message-ID: <20140209143709.GA31608@gmail.com>
+References: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal>
+ <y0m38loefhx.fsf@fche.csb>
+ <52B3C5E6.2040802@hitachi.com>
+ <20131220082056.GA15934@gmail.com>
+ <52B40E79.8040701@hitachi.com>
+ <20131220104615.GA22609@gmail.com>
+ <52E8E487.2090007@hitachi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52E8E487.2090007@hitachi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Include appropriate header file net/caif/caif_dev.h in caif/cfsrvl.c
-because it has prototype declaration of functions defined in
-caif/cfsrvl.c.
 
-This eliminates the following warning in caif/cfsrvl.c:
-net/caif/cfsrvl.c:198:6: warning: no previous prototype for ‘caif_free_client’ [-Wmissing-prototypes]
-net/caif/cfsrvl.c:208:6: warning: no previous prototype for ‘caif_client_register_refcnt’ [-Wmissing-prototypes]
+* Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- net/caif/cfsrvl.c |    1 +
- 1 file changed, 1 insertion(+)
+> I guess the second reason is why the stap takes so long time to set 
+> probes. stap tries to register kprobes without disabled flag, that 
+> means we enables thousands of probes (overheads).
+> 
+> So the similar thing happens when we enables events as below;
+> 
+>   # for i in /sys/kernel/debug/tracing/events/kprobes/* ; do date; echo 1 > $i; done
+>   Wed Jan 29 10:44:50 UTC 2014
+>   ...
+> 
+> I tried it and canceled after 4 min passed. It enabled about 17k 
+> events and slowed down my system very much(I almost got hang check 
+> timer).
 
-diff --git a/net/caif/cfsrvl.c b/net/caif/cfsrvl.c
-index 353f793..a6e1154 100644
---- a/net/caif/cfsrvl.c
-+++ b/net/caif/cfsrvl.c
-@@ -15,6 +15,7 @@
- #include <net/caif/caif_layer.h>
- #include <net/caif/cfsrvl.h>
- #include <net/caif/cfpkt.h>
-+#include <net/caif/caif_dev.h>
- 
- #define SRVL_CTRL_PKT_SIZE 1
- #define SRVL_FLOW_OFF 0x81
--- 
-1.7.9.5
+Ok, I guess that's the slowdown bug that Frank reported.
 
+> I think we should have some performance statistics (hit count?) and 
+> if it goes over a threshold, we should stop enabling other events.
+
+That really feels like a hack. How about fixing the root cause? Does 
+the enabling of all probes have to be so slow?
+
+Thanks,
+
+	Ingo
