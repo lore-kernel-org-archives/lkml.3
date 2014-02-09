@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751861AbaBIHw2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 02:52:28 -0500
-Received: from linuxhacker.ru ([217.76.32.60]:37346 "EHLO fiona.linuxhacker.ru"
+	id S1751962AbaBIHxL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 02:53:11 -0500
+Received: from linuxhacker.ru ([217.76.32.60]:37354 "EHLO fiona.linuxhacker.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751767AbaBIHwX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 02:52:23 -0500
+	id S1751806AbaBIHw1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Feb 2014 02:52:27 -0500
 From: Oleg Drokin <green@linuxhacker.ru>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Cc: Bobi Jam <bobijam.xu@intel.com>, Oleg Drokin <oleg.drokin@intel.com>
-Subject: [PATCH 1/5] lustre/lov: avoid subobj's coh_parent race
-Date: Sun,  9 Feb 2014 02:51:45 -0500
-Message-Id: <1391932309-6009-2-git-send-email-green@linuxhacker.ru>
+Cc: Swapnil Pimpale <spimpale@ddn.com>, Oleg Drokin <oleg.drokin@intel.com>
+Subject: [PATCH 2/5] lustre: Unsafe error handling around ll_splice_alias
+Date: Sun,  9 Feb 2014 02:51:46 -0500
+Message-Id: <1391932309-6009-3-git-send-email-green@linuxhacker.ru>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1391932309-6009-1-git-send-email-green@linuxhacker.ru>
 References: <1391932309-6009-1-git-send-email-green@linuxhacker.ru>
@@ -20,87 +20,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bobi Jam <bobijam.xu@intel.com>
+From: Swapnil Pimpale <spimpale@ddn.com>
 
-* during a file lov object initialization, we need protect the access
-  and change of its subobj->coh_parent, since it could be another
-  layout change race there, which makes an unreferenced lovsub obj in
-  the site object hash table.
+Callers of ll_splice_alias() should not assign the returned pointer to
+the dentry since it can be an err pointer. Fixed the above bug using a
+temporary dentry pointer. This temporary pointer is assigned to dentry
+only if ll_splice_alias has not returned an err pointer.
 
-* dump lovsub objects in the site if the lovsub device reference > 0
-  during its finalization phase.
-
-Signed-off-by: Bobi Jam <bobijam.xu@intel.com>
-Reviewed-on: http://review.whamcloud.com/6105
-Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-1480
-Reviewed-by: Lai Siyao <lai.siyao@intel.com>
-Reviewed-by: Andreas Dilger <andreas.dilger@intel.com>
+Signed-off-by: Swapnil Pimpale <spimpale@ddn.com>
+Reviewed-on: http://review.whamcloud.com/7460
+Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-3807
+Reviewed-by: Fan Yong <fan.yong@intel.com>
+Reviewed-by: John L. Hammond <john.hammond@intel.com>
 Reviewed-by: Oleg Drokin <oleg.drokin@intel.com>
 Signed-off-by: Oleg Drokin <oleg.drokin@intel.com>
 ---
- drivers/staging/lustre/lustre/lov/lov_object.c | 10 +++++++---
- drivers/staging/lustre/lustre/lov/lovsub_dev.c |  4 ++++
- 2 files changed, 11 insertions(+), 3 deletions(-)
+ drivers/staging/lustre/lustre/llite/namei.c     | 9 ++++++---
+ drivers/staging/lustre/lustre/llite/statahead.c | 9 ++++++---
+ 2 files changed, 12 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/staging/lustre/lustre/lov/lov_object.c b/drivers/staging/lustre/lustre/lov/lov_object.c
-index df8b5b5..fe0b70a 100644
---- a/drivers/staging/lustre/lustre/lov/lov_object.c
-+++ b/drivers/staging/lustre/lustre/lov/lov_object.c
-@@ -122,8 +122,8 @@ static struct cl_object *lov_sub_find(const struct lu_env *env,
- }
+diff --git a/drivers/staging/lustre/lustre/llite/namei.c b/drivers/staging/lustre/lustre/llite/namei.c
+index 1d03a6f..8938d37 100644
+--- a/drivers/staging/lustre/lustre/llite/namei.c
++++ b/drivers/staging/lustre/lustre/llite/namei.c
+@@ -462,9 +462,12 @@ int ll_lookup_it_finish(struct ptlrpc_request *request,
+ 	 * Atoimc_open may passin hashed dentries for open.
+ 	 */
+ 	if (d_unhashed(*de)) {
+-		*de = ll_splice_alias(inode, *de);
+-		if (IS_ERR(*de))
+-			return PTR_ERR(*de);
++		struct dentry *alias;
++
++		alias = ll_splice_alias(inode, *de);
++		if (IS_ERR(alias))
++			return PTR_ERR(alias);
++		*de = alias;
+ 	}
  
- static int lov_init_sub(const struct lu_env *env, struct lov_object *lov,
--			struct cl_object *stripe,
--			struct lov_layout_raid0 *r0, int idx)
-+			struct cl_object *stripe, struct lov_layout_raid0 *r0,
-+			int idx)
- {
- 	struct cl_object_header *hdr;
- 	struct cl_object_header *subhdr;
-@@ -144,7 +144,6 @@ static int lov_init_sub(const struct lu_env *env, struct lov_object *lov,
- 
- 	hdr    = cl_object_header(lov2cl(lov));
- 	subhdr = cl_object_header(stripe);
--	parent = subhdr->coh_parent;
- 
- 	oinfo = lov->lo_lsm->lsm_oinfo[idx];
- 	CDEBUG(D_INODE, DFID"@%p[%d] -> "DFID"@%p: ostid: "DOSTID
-@@ -153,8 +152,12 @@ static int lov_init_sub(const struct lu_env *env, struct lov_object *lov,
- 	       PFID(&hdr->coh_lu.loh_fid), hdr, POSTID(&oinfo->loi_oi),
- 	       oinfo->loi_ost_idx, oinfo->loi_ost_gen);
- 
-+	/* reuse ->coh_attr_guard to protect coh_parent change */
-+	spin_lock(&subhdr->coh_attr_guard);
-+	parent = subhdr->coh_parent;
- 	if (parent == NULL) {
- 		subhdr->coh_parent = hdr;
-+		spin_unlock(&subhdr->coh_attr_guard);
- 		subhdr->coh_nesting = hdr->coh_nesting + 1;
- 		lu_object_ref_add(&stripe->co_lu, "lov-parent", lov);
- 		r0->lo_sub[idx] = cl2lovsub(stripe);
-@@ -166,6 +169,7 @@ static int lov_init_sub(const struct lu_env *env, struct lov_object *lov,
- 		struct lov_object *old_lov;
- 		unsigned int mask = D_INODE;
- 
-+		spin_unlock(&subhdr->coh_attr_guard);
- 		old_obj = lu_object_locate(&parent->coh_lu, &lov_device_type);
- 		LASSERT(old_obj != NULL);
- 		old_lov = cl2lov(lu2cl(old_obj));
-diff --git a/drivers/staging/lustre/lustre/lov/lovsub_dev.c b/drivers/staging/lustre/lustre/lov/lovsub_dev.c
-index 998ea1c..926c35a 100644
---- a/drivers/staging/lustre/lustre/lov/lovsub_dev.c
-+++ b/drivers/staging/lustre/lustre/lov/lovsub_dev.c
-@@ -131,6 +131,10 @@ static struct lu_device *lovsub_device_free(const struct lu_env *env,
- 	struct lovsub_device *lsd  = lu2lovsub_dev(d);
- 	struct lu_device     *next = cl2lu_dev(lsd->acid_next);
- 
-+	if (atomic_read(&d->ld_ref) && d->ld_site) {
-+		LIBCFS_DEBUG_MSG_DATA_DECL(msgdata, D_ERROR, NULL);
-+		lu_site_print(env, d->ld_site, &msgdata, lu_cdebug_printer);
-+	}
- 	cl_device_fini(lu2cl_dev(d));
- 	OBD_FREE_PTR(lsd);
- 	return next;
+ 	if (!it_disposition(it, DISP_LOOKUP_NEG)) {
+diff --git a/drivers/staging/lustre/lustre/llite/statahead.c b/drivers/staging/lustre/lustre/llite/statahead.c
+index 183b415..ad61ad4 100644
+--- a/drivers/staging/lustre/lustre/llite/statahead.c
++++ b/drivers/staging/lustre/lustre/llite/statahead.c
+@@ -1585,12 +1585,15 @@ int do_statahead_enter(struct inode *dir, struct dentry **dentryp,
+ 						ll_inode2fid(inode), &bits);
+ 			if (rc == 1) {
+ 				if ((*dentryp)->d_inode == NULL) {
+-					*dentryp = ll_splice_alias(inode,
++					struct dentry *alias;
++
++					alias = ll_splice_alias(inode,
+ 								   *dentryp);
+-					if (IS_ERR(*dentryp)) {
++					if (IS_ERR(alias)) {
+ 						ll_sai_unplug(sai, entry);
+-						return PTR_ERR(*dentryp);
++						return PTR_ERR(alias);
+ 					}
++					*dentryp = alias;
+ 				} else if ((*dentryp)->d_inode != inode) {
+ 					/* revalidate, but inode is recreated */
+ 					CDEBUG(D_READA,
 -- 
 1.8.5.3
 
