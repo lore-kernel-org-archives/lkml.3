@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752747AbaBIN44 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 08:56:56 -0500
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:63327 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752070AbaBINxE (ORCPT
+	id S1752759AbaBIN5V (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 08:57:21 -0500
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:53145 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752292AbaBINxC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 08:53:04 -0500
+	Sun, 9 Feb 2014 08:53:02 -0500
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 04/16] cgroup: relocate cgroup_enable_task_cg_lists()
-Date: Sun,  9 Feb 2014 08:52:32 -0500
-Message-Id: <1391953964-22088-5-git-send-email-tj@kernel.org>
+Subject: [PATCH 03/16] cgroup: enable task_cg_lists on the first cgroup mount
+Date: Sun,  9 Feb 2014 08:52:31 -0500
+Message-Id: <1391953964-22088-4-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1391953964-22088-1-git-send-email-tj@kernel.org>
 References: <1391953964-22088-1-git-send-email-tj@kernel.org>
@@ -21,151 +21,140 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move it above so that prototype isn't necessary.  Let's also move the
-definition of use_task_css_set_links next to it.
+Tasks are not linked on their css_sets until cgroup task iteration is
+actually used.  This is to avoid incurring overhead on the fork and
+exit paths for systems which have cgroup compiled in but don't use it.
 
-This is purely cosmetic.
+This lazy binding also affects the task migration path.  It has to be
+careful so that it doesn't link tasks to css_sets when task_cg_lists
+linking is not enabled yet.  Unfortunately, this conditional linking
+in the migration path interferes with planned migration updates.
+
+This patch moves the lazy binding a bit earlier, to the first cgroup
+mount.  It's a clear indication that cgroup is being used on the
+system and task_cg_lists linking is highly likely to be enabled soon
+anyway through "tasks" and "cgroup.procs" files.
+
+This allows cgroup_task_migrate() to always link @tsk->cg_list.  Note
+that it may still race with cgroup_post_fork() but who wins that race
+is inconsequential.
+
+While at it, make use_task_css_set_links a bool, add sanity checks in
+cgroup_enable_task_cg_lists() and css_task_iter_start(), and update
+the former so that it's guaranteed and assumes to run only once.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- kernel/cgroup.c | 103 ++++++++++++++++++++++++++------------------------------
- 1 file changed, 48 insertions(+), 55 deletions(-)
+ kernel/cgroup.c | 40 +++++++++++++++++++++++++++-------------
+ 1 file changed, 27 insertions(+), 13 deletions(-)
 
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index efae7e2..1ebc6e30 100644
+index caed061..efae7e2 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -173,7 +173,6 @@ static int cgroup_destroy_locked(struct cgroup *cgrp);
+@@ -173,6 +173,7 @@ static int cgroup_destroy_locked(struct cgroup *cgrp);
  static int cgroup_addrm_files(struct cgroup *cgrp, struct cftype cfts[],
  			      bool is_add);
  static void cgroup_pidlist_destroy_all(struct cgroup *cgrp);
--static void cgroup_enable_task_cg_lists(void);
++static void cgroup_enable_task_cg_lists(void);
  
  /**
   * cgroup_css - obtain a cgroup's css for the specified subsystem
-@@ -370,14 +369,6 @@ static unsigned long css_set_hash(struct cgroup_subsys_state *css[])
- 	return key;
- }
+@@ -375,7 +376,7 @@ static unsigned long css_set_hash(struct cgroup_subsys_state *css[])
+  * fork()/exit() overhead for people who have cgroups compiled into their
+  * kernel but not actually in use.
+  */
+-static int use_task_css_set_links __read_mostly;
++static bool use_task_css_set_links __read_mostly;
  
--/*
-- * We don't maintain the lists running through each css_set to its task
-- * until after the first call to css_task_iter_start().  This reduces the
-- * fork()/exit() overhead for people who have cgroups compiled into their
-- * kernel but not actually in use.
-- */
--static bool use_task_css_set_links __read_mostly;
--
  static void __put_css_set(struct css_set *cset, int taskexit)
  {
- 	struct cgrp_cset_link *link, *tmp_link;
-@@ -1305,6 +1296,54 @@ static int cgroup_remount(struct kernfs_root *kf_root, int *flags, char *data)
- 	return ret;
- }
+@@ -1439,6 +1440,13 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
+ 	struct cgroup_sb_opts opts;
+ 	struct dentry *dentry;
+ 	int ret;
++
++	/*
++	 * The first time anyone tries to mount a cgroup, enable the list
++	 * linking each css_set to its tasks and fix up all existing tasks.
++	 */
++	if (!use_task_css_set_links)
++		cgroup_enable_task_cg_lists();
+ retry:
+ 	mutex_lock(&cgroup_tree_mutex);
+ 	mutex_lock(&cgroup_mutex);
+@@ -1692,8 +1700,7 @@ static void cgroup_task_migrate(struct cgroup *old_cgrp,
  
-+/*
-+ * To reduce the fork() overhead for systems that are not actually using
-+ * their cgroups capability, we don't maintain the lists running through
-+ * each css_set to its tasks until we see the list actually used - in other
+ 	/* Update the css_set linked lists if we're using them */
+ 	write_lock(&css_set_lock);
+-	if (!list_empty(&tsk->cg_list))
+-		list_move(&tsk->cg_list, &new_cset->tasks);
++	list_move(&tsk->cg_list, &new_cset->tasks);
+ 	write_unlock(&css_set_lock);
+ 
+ 	/*
+@@ -2360,13 +2367,19 @@ int cgroup_task_count(const struct cgroup *cgrp)
+  * To reduce the fork() overhead for systems that are not actually using
+  * their cgroups capability, we don't maintain the lists running through
+  * each css_set to its tasks until we see the list actually used - in other
+- * words after the first call to css_task_iter_start().
 + * words after the first mount.
-+ */
-+static bool use_task_css_set_links __read_mostly;
+  */
+ static void cgroup_enable_task_cg_lists(void)
+ {
+ 	struct task_struct *p, *g;
 +
-+static void cgroup_enable_task_cg_lists(void)
-+{
-+	struct task_struct *p, *g;
-+
-+	write_lock(&css_set_lock);
+ 	write_lock(&css_set_lock);
+-	use_task_css_set_links = 1;
 +
 +	if (use_task_css_set_links)
 +		goto out_unlock;
 +
 +	use_task_css_set_links = true;
 +
-+	/*
-+	 * We need tasklist_lock because RCU is not safe against
-+	 * while_each_thread(). Besides, a forking task that has passed
-+	 * cgroup_post_fork() without seeing use_task_css_set_links = 1
-+	 * is not guaranteed to have its child immediately visible in the
-+	 * tasklist if we walk through it with RCU.
-+	 */
-+	read_lock(&tasklist_lock);
-+	do_each_thread(g, p) {
-+		task_lock(p);
+ 	/*
+ 	 * We need tasklist_lock because RCU is not safe against
+ 	 * while_each_thread(). Besides, a forking task that has passed
+@@ -2377,16 +2390,22 @@ static void cgroup_enable_task_cg_lists(void)
+ 	read_lock(&tasklist_lock);
+ 	do_each_thread(g, p) {
+ 		task_lock(p);
 +
 +		WARN_ON_ONCE(!list_empty(&p->cg_list) ||
 +			     task_css_set(p) != &init_css_set);
 +
-+		/*
-+		 * We should check if the process is exiting, otherwise
-+		 * it will race with cgroup_exit() in that the list
-+		 * entry won't be deleted though the process has exited.
-+		 */
+ 		/*
+ 		 * We should check if the process is exiting, otherwise
+ 		 * it will race with cgroup_exit() in that the list
+ 		 * entry won't be deleted though the process has exited.
+ 		 */
+-		if (!(p->flags & PF_EXITING) && list_empty(&p->cg_list))
 +		if (!(p->flags & PF_EXITING))
-+			list_add(&p->cg_list, &task_css_set(p)->tasks);
+ 			list_add(&p->cg_list, &task_css_set(p)->tasks);
 +
-+		task_unlock(p);
-+	} while_each_thread(g, p);
-+	read_unlock(&tasklist_lock);
+ 		task_unlock(p);
+ 	} while_each_thread(g, p);
+ 	read_unlock(&tasklist_lock);
 +out_unlock:
-+	write_unlock(&css_set_lock);
-+}
-+
- static void init_cgroup_housekeeping(struct cgroup *cgrp)
- {
- 	atomic_set(&cgrp->refcnt, 1);
-@@ -2363,52 +2402,6 @@ int cgroup_task_count(const struct cgroup *cgrp)
- 	return count;
+ 	write_unlock(&css_set_lock);
  }
  
--/*
-- * To reduce the fork() overhead for systems that are not actually using
-- * their cgroups capability, we don't maintain the lists running through
-- * each css_set to its tasks until we see the list actually used - in other
-- * words after the first mount.
-- */
--static void cgroup_enable_task_cg_lists(void)
--{
--	struct task_struct *p, *g;
--
--	write_lock(&css_set_lock);
--
--	if (use_task_css_set_links)
--		goto out_unlock;
--
--	use_task_css_set_links = true;
--
+@@ -2619,13 +2638,8 @@ void css_task_iter_start(struct cgroup_subsys_state *css,
+ 			 struct css_task_iter *it)
+ 	__acquires(css_set_lock)
+ {
 -	/*
--	 * We need tasklist_lock because RCU is not safe against
--	 * while_each_thread(). Besides, a forking task that has passed
--	 * cgroup_post_fork() without seeing use_task_css_set_links = 1
--	 * is not guaranteed to have its child immediately visible in the
--	 * tasklist if we walk through it with RCU.
+-	 * The first time anyone tries to iterate across a css, we need to
+-	 * enable the list linking each css_set to its tasks, and fix up
+-	 * all existing tasks.
 -	 */
--	read_lock(&tasklist_lock);
--	do_each_thread(g, p) {
--		task_lock(p);
--
--		WARN_ON_ONCE(!list_empty(&p->cg_list) ||
--			     task_css_set(p) != &init_css_set);
--
--		/*
--		 * We should check if the process is exiting, otherwise
--		 * it will race with cgroup_exit() in that the list
--		 * entry won't be deleted though the process has exited.
--		 */
--		if (!(p->flags & PF_EXITING))
--			list_add(&p->cg_list, &task_css_set(p)->tasks);
--
--		task_unlock(p);
--	} while_each_thread(g, p);
--	read_unlock(&tasklist_lock);
--out_unlock:
--	write_unlock(&css_set_lock);
--}
--
- /**
-  * css_next_child - find the next child of a given css
-  * @pos_css: the current position (%NULL to initiate traversal)
+-	if (!use_task_css_set_links)
+-		cgroup_enable_task_cg_lists();
++	/* no one should try to iterate before mounting cgroups */
++	WARN_ON_ONCE(!use_task_css_set_links);
+ 
+ 	read_lock(&css_set_lock);
+ 
 -- 
 1.8.5.3
 
