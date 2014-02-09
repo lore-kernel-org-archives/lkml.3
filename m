@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752090AbaBITp7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 14:45:59 -0500
-Received: from filtteri6.pp.htv.fi ([213.243.153.189]:57387 "EHLO
-	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751646AbaBITp6 (ORCPT
+	id S1752111AbaBITrD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 14:47:03 -0500
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:49234 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751646AbaBITrB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 14:45:58 -0500
-Date: Sun, 9 Feb 2014 21:45:01 +0200
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Jonas Gorski <jogo@openwrt.org>
-Cc: Paul Bolle <pebolle@tiscali.nl>, Ralf Baechle <ralf@linux-mips.org>,
-        MIPS Mailing List <linux-mips@linux-mips.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] MIPS: Replace CONFIG_MIPS64 and CONFIG_MIPS32_R2
-Message-ID: <20140209194501.GD573@drone.musicnaut.iki.fi>
-References: <1391952745.25424.6.camel@x220>
- <CAOiHx=mi3sW7C0ZGwAhobRryikMs=Hj0UL19ENuUMECqk0EW5g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOiHx=mi3sW7C0ZGwAhobRryikMs=Hj0UL19ENuUMECqk0EW5g@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Sun, 9 Feb 2014 14:47:01 -0500
+Message-ID: <1391975219.25855.8.camel@x220>
+Subject: Re: [PATCH 27/28] Remove ARC_HAS_COH_RTSC
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Richard Weinberger <richard@nod.at>
+Cc: Vineet Gupta <vgupta@synopsys.com>,
+        open list <linux-kernel@vger.kernel.org>
+Date: Sun, 09 Feb 2014 20:46:59 +0100
+In-Reply-To: <1391971686-9517-28-git-send-email-richard@nod.at>
+References: <1391971686-9517-1-git-send-email-richard@nod.at>
+	 <1391971686-9517-28-git-send-email-richard@nod.at>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 09 Feb 2014 19:47:00.0379 (UTC) FILETIME=[B2B666B0:01CF25CF]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Sun, Feb 09, 2014 at 05:26:59PM +0100, Jonas Gorski wrote:
-> On Sun, Feb 9, 2014 at 2:32 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> > Commit 597ce1723e0f ("MIPS: Support for 64-bit FP with O32 binaries")
-> > introduced references to two undefined Kconfig macros. CONFIG_MIPS32_R2
-> > should clearly be replaced with CONFIG_CPU_MIPS32_R2. And CONFIG_MIPS64
-> > should apparently be replaced with CONFIG_64BIT.
+On Sun, 2014-02-09 at 19:48 +0100, Richard Weinberger wrote:
+> The symbol is an orphan, get rid of it.
 > 
-> While I agree about the CONFIG_MIPS64 => CONFIG_64BIT replacement, I
-> wonder if CONFIG_MIPS32_R2 shouldn't rather be CONFIG_CPU_MIPSR2
-> (maybe even the existing CONFIG_CPU_MIPS32_R2 are wrong here).
+> Signed-off-by: Richard Weinberger <richard@nod.at>
 
-FYI, the 64BIT part is already fixed by
-<http://patchwork.linux-mips.org/patch/6506/>. I guess these two changes
-could be separate patches.
+Acked-by: Paul Bolle <pebolle@tiscali.nl>
 
-A.
+This Kconfig symbol was removed in commit 7d087a54aed ("ARC: [SMP]
+Disallow RTSC"), merged in v3.13.
+
+> ---
+>  arch/arc/plat-arcfpga/Kconfig | 1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/arch/arc/plat-arcfpga/Kconfig b/arch/arc/plat-arcfpga/Kconfig
+> index 295cefe..33058aa 100644
+> --- a/arch/arc/plat-arcfpga/Kconfig
+> +++ b/arch/arc/plat-arcfpga/Kconfig
+> @@ -33,7 +33,6 @@ config ISS_SMP_EXTN
+>  	bool "ARC SMP Extensions (ISS Models only)"
+>  	default n
+>  	depends on SMP
+> -	select ARC_HAS_COH_RTSC
+>  	help
+>  	  SMP Extensions to ARC700, in a "simulation only" Model, supported in
+>  	  ARC ISS (Instruction Set Simulator).
+
+
