@@ -1,102 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751775AbaBINhY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 08:37:24 -0500
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:54233 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360AbaBINhW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 08:37:22 -0500
-MIME-Version: 1.0
-In-Reply-To: <1391780716-21896-3-git-send-email-sagar.a.kamble@intel.com>
-References: <1391780716-21896-1-git-send-email-sagar.a.kamble@intel.com>
-	<1391780716-21896-3-git-send-email-sagar.a.kamble@intel.com>
-Date: Sun, 9 Feb 2014 08:37:22 -0500
-Message-ID: <CAF6AEGu+2S6iGfisgBc=S9Lq38f-Qc=KU67Zb7tzWArXCiy0fw@mail.gmail.com>
-Subject: Re: [PATCH v4 02/11] drm: Add support_bits parameter to drm_property_create_bitmask()
-From: Rob Clark <robdclark@gmail.com>
-To: sagar.a.kamble@intel.com
-Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        vijay.a.purushothaman@intel.com, David Airlie <airlied@linux.ie>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        "Valkeinen, Tomi" <tomi.valkeinen@ti.com>,
-        "airlied@redhat.com" <airlied@redhat.com>,
-        Archit Taneja <archit@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, joe@perches.com,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        =?ISO-8859-1?Q?Ville_Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752179AbaBINsr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 08:48:47 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:47113 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751424AbaBINsf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Feb 2014 08:48:35 -0500
+From: Borislav Petkov <bp@alien8.de>
+To: X86 ML <x86@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
+Subject: [RFC PATCH 1/3] x86: Add another set of MSR accessor functions
+Date: Sun,  9 Feb 2014 14:48:27 +0100
+Message-Id: <1391953709-15400-2-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 1.8.5.2.192.g7794a68
+In-Reply-To: <1391953709-15400-1-git-send-email-bp@alien8.de>
+References: <1391953709-15400-1-git-send-email-bp@alien8.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 7, 2014 at 8:45 AM,  <sagar.a.kamble@intel.com> wrote:
-> From: Ville Syrjälä <ville.syrjala at linux.intel.com>
->
-> Make drm_property_create_bitmask() a bit more generic by allowing the
-> caller to specify which bits are in fact supported. This allows multiple
-> callers to use the same enum list, but still create different versions
-> of the same property with different list of supported bits.
->
-> Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
-> Tested-by: Sagar Kamble <sagar.a.kamble@intel.com>
+From: Borislav Petkov <bp@suse.de>
 
-very minor nit here: this patch probably should fix up the callers of
-this fxn for bisectability.  Although it could be the only other
-caller was omapdrm which gets converted over to the new API a few
-patches later..
+We very often need to set or clear a bit in an MSR as a result of doing
+some sort of a hardware configuration. Add generic versions of that
+repeated functionality in order to save us a bunch of duplicated code in
+the early CPU vendor detection/config code.
 
-with that,
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ arch/x86/include/asm/msr.h |   2 +
+ arch/x86/lib/msr.c         | 107 ++++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 108 insertions(+), 1 deletion(-)
 
-Reviewed-by: Rob Clark <robdclark@gmail.com>
+diff --git a/arch/x86/include/asm/msr.h b/arch/x86/include/asm/msr.h
+index e139b13f2a33..de36f22eb0b9 100644
+--- a/arch/x86/include/asm/msr.h
++++ b/arch/x86/include/asm/msr.h
+@@ -214,6 +214,8 @@ do {                                                            \
+ 
+ struct msr *msrs_alloc(void);
+ void msrs_free(struct msr *msrs);
++int msr_set_bit(u32 msr, u8 bit);
++int msr_clear_bit(u32 msr, u8 bit);
+ 
+ #ifdef CONFIG_SMP
+ int rdmsr_on_cpu(unsigned int cpu, u32 msr_no, u32 *l, u32 *h);
+diff --git a/arch/x86/lib/msr.c b/arch/x86/lib/msr.c
+index 8f8eebdca7d4..ebab60c549ae 100644
+--- a/arch/x86/lib/msr.c
++++ b/arch/x86/lib/msr.c
+@@ -8,7 +8,7 @@ struct msr *msrs_alloc(void)
+ 
+ 	msrs = alloc_percpu(struct msr);
+ 	if (!msrs) {
+-		pr_warning("%s: error allocating msrs\n", __func__);
++		pr_warn("%s: error allocating msrs\n", __func__);
+ 		return NULL;
+ 	}
+ 
+@@ -21,3 +21,108 @@ void msrs_free(struct msr *msrs)
+ 	free_percpu(msrs);
+ }
+ EXPORT_SYMBOL(msrs_free);
++
++/**
++ * Read an MSR with error handling
++ *
++ * @msr: MSR to read
++ * @m: value to read into
++ *
++ * It returns read data only on success, otherwise it doesn't change the output
++ * argument @m.
++ *
++ */
++int msr_read(u32 msr, struct msr *m)
++{
++	int err;
++	u64 val;
++
++	val = native_read_msr_safe(msr, &err);
++	if (err)
++		pr_warn("%s: Error reading MSR 0x%08x\n", __func__, msr);
++	else
++		m->q = val;
++
++	return err;
++}
++
++/**
++ * Write an MSR with error handling
++ *
++ * @msr: MSR to write
++ * @m: value to write
++ */
++int msr_write(u32 msr, struct msr *m)
++{
++	int err;
++
++	err = native_write_msr_safe(msr, m->l, m->h);
++	if (err)
++		pr_warn("%s: Error writing MSR 0x%08x\n", __func__, msr);
++
++	return err;
++}
++
++static int __flip_bit(u32 msr, u8 bit, bool set)
++{
++	struct msr m;
++
++	if (bit > 63)
++		return -1;
++
++	if (msr_read(msr, &m))
++		return -1;
++
++	if (set) {
++		if ((BIT_64(bit) | m.q) == m.q)
++			return 0;
++
++		m.q |= BIT_64(bit);
++	} else {
++		if ((m.q & ~BIT_64(bit)) == m.q)
++			return 0;
++
++		m.q &= ~BIT_64(bit);
++	}
++
++	if (msr_write(msr, &m))
++		return -1;
++
++	return 1;
++}
++
++/**
++ * Set @bit in a MSR @msr.
++ *
++ * Retval:
++ * < 0: An error was encountered.
++ * = 0: Bit was already set.
++ * > 0: Hardware accepted the MSR write.
++ */
++int msr_set_bit(u32 msr, u8 bit)
++{
++	int err = __flip_bit(msr, bit, true);
++	if (err < 0)
++		pr_err("%s: Error setting bit %d in MSR 0x%08x.\n",
++			__func__, bit, msr);
++
++	return err;
++}
++
++/**
++ * Clear @bit in a MSR @msr.
++ *
++ * Retval:
++ * < 0: An error was encountered.
++ * = 0: Bit was already cleared.
++ * > 0: Hardware accepted the MSR write.
++ */
++int msr_clear_bit(u32 msr, u8 bit)
++{
++	int err = __flip_bit(msr, bit, false);
++	if (err < 0)
++		pr_err("%s: Error clearing bit %d in MSR 0x%08x.\n",
++			__func__, bit, msr);
++
++	return err;
++}
+-- 
+1.8.5.2.192.g7794a68
 
-
-> ---
->  drivers/gpu/drm/drm_crtc.c | 6 +++++-
->  include/drm/drm_crtc.h     | 3 ++-
->  2 files changed, 7 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
-> index 3b7d32d..628d3d3 100644
-> --- a/drivers/gpu/drm/drm_crtc.c
-> +++ b/drivers/gpu/drm/drm_crtc.c
-> @@ -2906,7 +2906,8 @@ EXPORT_SYMBOL(drm_property_create_enum);
->  struct drm_property *drm_property_create_bitmask(struct drm_device *dev,
->                                          int flags, const char *name,
->                                          const struct drm_prop_enum_list *props,
-> -                                        int num_values)
-> +                                        int num_values,
-> +                                        unsigned int supported_bits)
->  {
->         struct drm_property *property;
->         int i, ret;
-> @@ -2918,6 +2919,9 @@ struct drm_property *drm_property_create_bitmask(struct drm_device *dev,
->                 return NULL;
->
->         for (i = 0; i < num_values; i++) {
-> +               if (!(supported_bits & (1 << i)))
-> +                       continue;
-> +
->                 ret = drm_property_add_enum(property, i,
->                                       props[i].type,
->                                       props[i].name);
-> diff --git a/include/drm/drm_crtc.h b/include/drm/drm_crtc.h
-> index d5c46c1..41b86d2 100644
-> --- a/include/drm/drm_crtc.h
-> +++ b/include/drm/drm_crtc.h
-> @@ -1070,7 +1070,8 @@ extern struct drm_property *drm_property_create_enum(struct drm_device *dev, int
->  struct drm_property *drm_property_create_bitmask(struct drm_device *dev,
->                                          int flags, const char *name,
->                                          const struct drm_prop_enum_list *props,
-> -                                        int num_values);
-> +                                        int num_values,
-> +                                        unsigned int supported_bits);
->  struct drm_property *drm_property_create_range(struct drm_device *dev, int flags,
->                                          const char *name,
->                                          uint64_t min, uint64_t max);
-> --
-> 1.8.5
->
