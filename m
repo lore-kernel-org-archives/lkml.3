@@ -1,70 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752312AbaBIVya (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 16:54:30 -0500
-Received: from mail.wdtv.com ([66.118.69.84]:48815 "EHLO mail.wdtv.com"
+	id S1752221AbaBIV5P (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 16:57:15 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:42011 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752238AbaBIVy1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 16:54:27 -0500
-From: Gene Heskett <gheskett@wdtv.com>
-To: Richard Weinberger <richard@nod.at>
-Subject: Re: [PATCH 24/28] Remove DEPRECATED
-Date: Sun, 9 Feb 2014 16:54:25 -0500
-Cc: Guenter Roeck <linux@roeck-us.net>, Paul Bolle <pebolle@tiscali.nl>,
-        David Howells <dhowells@redhat.com>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        "moderated list:PANASONIC MN10300..." <linux-am33-list@redhat.com>,
-        open list <linux-kernel@vger.kernel.org>
-References: <1391971686-9517-1-git-send-email-richard@nod.at> <52F7F486.7040003@roeck-us.net> <52F7F54B.3050602@nod.at>
-In-Reply-To: <52F7F54B.3050602@nod.at>
+	id S1751770AbaBIV5O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Feb 2014 16:57:14 -0500
+Date: Sun, 9 Feb 2014 13:56:44 -0800
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Kees Cook <keescook@chromium.org>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Subject: [PATCH] x86, kaslr: add missed "static" declarations
+Message-ID: <20140209215644.GA30339@www.outflux.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="windows-1256"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201402091654.25697.gheskett@wdtv.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 09 February 2014, Richard Weinberger wrote:
->Am 09.02.2014 22:35, schrieb Guenter Roeck:
->> I could understand if you would replace DEPRECATED with BROKEN,
->> but causing a potentially large number of broken builds and
->> then leave it to others to clean up the resulting mess doesn't
->> make any sense to me and should, in my opinion, be rejected.
->
->Currently the mess is hidden by bad Kconfig dependencies.
->We have to face it. :)
+This silences build warnings about unexported variables and functions.
 
-And much of it is in a bad make oldconfig that I can't date, but all of the 
-multimedia stuff has been stripped and I can no longer use my pcHDTV3000 
-card as just one for instance.  I just tested it, using an oldconfig that 
-contained several hundred bits and pieces under the ATSC & DVB headers,  
-after the oldconfig was done, all that was stripped from the new one, every 
-trace of it.  That was working code guys, what the hell?  Kconfig could 
-have problems, but the oldconfig output being stripped is a much larger 
-one.  First problems first.  Then you can really see how fubared kconfig 
-is.
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ arch/x86/boot/compressed/aslr.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
->Of course, if the maintainer wants me or Paul to remove the resulting
->mess to I'm fine with that...
->
->Thanks,
->//richard
->--
->To unsubscribe from this list: send the line "unsubscribe linux-kernel"
->in the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
->Please read the FAQ at  http://www.tux.org/lkml/
-
-
-Cheers, Gene
+diff --git a/arch/x86/boot/compressed/aslr.c b/arch/x86/boot/compressed/aslr.c
+index 90a21f430117..4dbf967da50d 100644
+--- a/arch/x86/boot/compressed/aslr.c
++++ b/arch/x86/boot/compressed/aslr.c
+@@ -111,7 +111,7 @@ struct mem_vector {
+ };
+ 
+ #define MEM_AVOID_MAX 5
+-struct mem_vector mem_avoid[MEM_AVOID_MAX];
++static struct mem_vector mem_avoid[MEM_AVOID_MAX];
+ 
+ static bool mem_contains(struct mem_vector *region, struct mem_vector *item)
+ {
+@@ -180,7 +180,7 @@ static void mem_avoid_init(unsigned long input, unsigned long input_size,
+ }
+ 
+ /* Does this memory vector overlap a known avoided area? */
+-bool mem_avoid_overlap(struct mem_vector *img)
++static bool mem_avoid_overlap(struct mem_vector *img)
+ {
+ 	int i;
+ 
+@@ -192,8 +192,9 @@ bool mem_avoid_overlap(struct mem_vector *img)
+ 	return false;
+ }
+ 
+-unsigned long slots[CONFIG_RANDOMIZE_BASE_MAX_OFFSET / CONFIG_PHYSICAL_ALIGN];
+-unsigned long slot_max = 0;
++static unsigned long slots[CONFIG_RANDOMIZE_BASE_MAX_OFFSET /
++			   CONFIG_PHYSICAL_ALIGN];
++static unsigned long slot_max;
+ 
+ static void slots_append(unsigned long addr)
+ {
 -- 
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-Genes Web page <http://geneslinuxbox.net:6309/gene>
+1.7.9.5
 
-NOTICE: Will pay 100 USD for an HP-4815A defective but
-complete probe assembly.
 
+-- 
+Kees Cook
+Chrome OS Security
