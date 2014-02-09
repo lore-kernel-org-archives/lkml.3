@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751691AbaBIOUx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 09:20:53 -0500
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:49366 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751421AbaBIOUv (ORCPT
+	id S1751707AbaBIO1t (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 09:27:49 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:37383 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751396AbaBIO1r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 09:20:51 -0500
-Date: Sun, 9 Feb 2014 15:20:48 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Bin Gao <bin.gao@linux.intel.com>,
-        linux-kernel@vger.kernel.org,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Subject: Re: [PATCH v3 1/2] x86, tsc: Fallback to normal calibration if fast
- MSR calibration fails
-Message-ID: <20140209142048.GA28126@gmail.com>
-References: <20140206054410.GB18884@gmail.com>
- <1391687365-10922-1-git-send-email-mika.westerberg@linux.intel.com>
- <alpine.DEB.2.02.1402061531310.21991@ionos.tec.linutronix.de>
- <20140206151117.GL18029@intel.com>
+	Sun, 9 Feb 2014 09:27:47 -0500
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org, Eric Van Hensbergen <ericvh@gmail.com>,
+        Ron Minnich <rminnich@sandia.gov>, Latchesar Ionkov <lucho@ionkov.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        v9fs-developer@lists.sourceforge.net, netdev@vger.kernel.org,
+        josh@joshtriplett.org
+Subject: =?UTF-8?q?=5BPATCH=20v2=2001/13=5D=20net=3A=20Mark=20function=20as=20static=20in=209p/client=2Ec?=
+Date: Sun,  9 Feb 2014 19:57:33 +0530
+Message-Id: <6f029c895035908595957fb16ab445c82793c77d.1391955924.git.rashika.kheria@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <6f029c895035908595957fb16ab445c82793c77d.1391888654.git.rashika.kheria@gmail.com>
+References: <6f029c895035908595957fb16ab445c82793c77d.1391888654.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140206151117.GL18029@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Mark function as static in net/9p/client.c because it is not used
+outside this file.
 
-* Mika Westerberg <mika.westerberg@linux.intel.com> wrote:
+This eliminates the following warning in net/9p/client.c:
+net/9p/client.c:207:18: warning: no previous prototype for ‘p9_fcall_alloc’ [-Wmissing-prototypes]
 
-> On Thu, Feb 06, 2014 at 03:34:18PM +0100, Thomas Gleixner wrote:
-> > On Thu, 6 Feb 2014, Mika Westerberg wrote:
-> > >  arch/x86/kernel/tsc.c | 7 ++++---
-> > >  1 file changed, 4 insertions(+), 3 deletions(-)
-> > > 
-> > > diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-> > > index 19e5adb49a27..56facfc54575 100644
-> > > --- a/arch/x86/kernel/tsc.c
-> > > +++ b/arch/x86/kernel/tsc.c
-> > > @@ -655,10 +655,11 @@ unsigned long native_calibrate_tsc(void)
-> > >  	local_irq_save(flags);
-> > >  	i = try_msr_calibrate_tsc(&fast_calibrate);
-> > >  	local_irq_restore(flags);
-> > > -	if (i >= 0) {
-> > > -		if (i == 0)
-> > > -			pr_warn("Fast TSC calibration using MSR failed\n");
-> > > +	if (i > 0) {
-> > >  		return fast_calibrate;
-> > > +	} else if (i == 0) {
-> > > +		pr_warn("Fast TSC calibration using MSR failed\n");
-> > > +		/* Continue with the normal calibration */
-> > >  	}
-> > 
-> > Bah. Can we please fix that proper. The whole 0,1,-1 return value from
-> > try_msr_calibrate_tsc() is just horrible. Why not doing the obvious?
-> 
-> Yes, that looks better and works fine, thanks.
-> 
-> Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+ net/9p/client.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Please resend the two updated/fixed patches in a new thread.
+diff --git a/net/9p/client.c b/net/9p/client.c
+index a5e4d2d..9186550 100644
+--- a/net/9p/client.c
++++ b/net/9p/client.c
+@@ -204,7 +204,7 @@ free_and_return:
+ 	return ret;
+ }
+ 
+-struct p9_fcall *p9_fcall_alloc(int alloc_msize)
++static struct p9_fcall *p9_fcall_alloc(int alloc_msize)
+ {
+ 	struct p9_fcall *fc;
+ 	fc = kmalloc(sizeof(struct p9_fcall) + alloc_msize, GFP_NOFS);
+-- 
+1.7.9.5
 
-Thanks,
-
-	Ingo
