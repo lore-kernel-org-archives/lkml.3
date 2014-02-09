@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751949AbaBITng (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 14:43:36 -0500
-Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:59396 "EHLO
-	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751556AbaBITnf (ORCPT
+	id S1752090AbaBITp7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 14:45:59 -0500
+Received: from filtteri6.pp.htv.fi ([213.243.153.189]:57387 "EHLO
+	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751646AbaBITp6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 14:43:35 -0500
-Message-ID: <1391975013.25855.5.camel@x220>
-Subject: Re: [PATCH 09/28] Remove ATHEROS_AR231X
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Joe Perches <joe@perches.com>
-Cc: Richard Weinberger <richard@nod.at>, Jiri Slaby <jirislaby@gmail.com>,
-        Nick Kossifidis <mickflemm@gmail.com>,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "open list:ATHEROS ATH5K WIR..." <linux-wireless@vger.kernel.org>,
-        "open list:ATHEROS ATH5K WIR..." <ath5k-devel@venema.h4ckr.net>,
-        "open list:NETWORKING DRIVERS" <netdev@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Date: Sun, 09 Feb 2014 20:43:33 +0100
-In-Reply-To: <1391972955.3178.1.camel@joe-AO722>
-References: <1391971686-9517-1-git-send-email-richard@nod.at>
-	 <1391971686-9517-10-git-send-email-richard@nod.at>
-	 <1391972955.3178.1.camel@joe-AO722>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 09 Feb 2014 19:43:33.0501 (UTC) FILETIME=[376752D0:01CF25CF]
-X-RcptDomain: vger.kernel.org
+	Sun, 9 Feb 2014 14:45:58 -0500
+Date: Sun, 9 Feb 2014 21:45:01 +0200
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Jonas Gorski <jogo@openwrt.org>
+Cc: Paul Bolle <pebolle@tiscali.nl>, Ralf Baechle <ralf@linux-mips.org>,
+        MIPS Mailing List <linux-mips@linux-mips.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] MIPS: Replace CONFIG_MIPS64 and CONFIG_MIPS32_R2
+Message-ID: <20140209194501.GD573@drone.musicnaut.iki.fi>
+References: <1391952745.25424.6.camel@x220>
+ <CAOiHx=mi3sW7C0ZGwAhobRryikMs=Hj0UL19ENuUMECqk0EW5g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOiHx=mi3sW7C0ZGwAhobRryikMs=Hj0UL19ENuUMECqk0EW5g@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-02-09 at 11:09 -0800, Joe Perches wrote:
-> On Sun, 2014-02-09 at 19:47 +0100, Richard Weinberger wrote:
-> > The symbol is an orphan, get rid of it.
+Hi,
+
+On Sun, Feb 09, 2014 at 05:26:59PM +0100, Jonas Gorski wrote:
+> On Sun, Feb 9, 2014 at 2:32 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> > Commit 597ce1723e0f ("MIPS: Support for 64-bit FP with O32 binaries")
+> > introduced references to two undefined Kconfig macros. CONFIG_MIPS32_R2
+> > should clearly be replaced with CONFIG_CPU_MIPS32_R2. And CONFIG_MIPS64
+> > should apparently be replaced with CONFIG_64BIT.
 > 
-> This description seems very incomplete as the symbol
-> is being used quite a bit and the code the symbol
-> controls is being deleted as well as the symbol.
+> While I agree about the CONFIG_MIPS64 => CONFIG_64BIT replacement, I
+> wonder if CONFIG_MIPS32_R2 shouldn't rather be CONFIG_CPU_MIPSR2
+> (maybe even the existing CONFIG_CPU_MIPS32_R2 are wrong here).
 
-Just yesterday I once again raised this issue (see
-https://lkml.org/lkml/2014/2/8/248 ). My patch - which dates form May
-2013 - removes quite a bit more than Richard's patch.
+FYI, the 64BIT part is already fixed by
+<http://patchwork.linux-mips.org/patch/6506/>. I guess these two changes
+could be separate patches.
 
-
-Paul Bolle
-
+A.
