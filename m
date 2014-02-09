@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751919AbaBIV1n (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 16:27:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61241 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751691AbaBIV1l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 16:27:41 -0500
-Date: Sun, 9 Feb 2014 16:27:24 -0500
-From: "Frank Ch. Eigler" <fche@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-arch@vger.kernel.org,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        systemtap@sourceware.org, "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH -tip v6 00/22] kprobes: introduce NOKPROBE_SYMBOL(), cleanup and fixes crash bugs
-Message-ID: <20140209212724.GA6892@redhat.com>
-References: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal> <y0m38loefhx.fsf@fche.csb> <52B3C5E6.2040802@hitachi.com> <20131220082056.GA15934@gmail.com> <52B40E79.8040701@hitachi.com> <20131220104615.GA22609@gmail.com> <52E8E487.2090007@hitachi.com> <20140209143709.GA31608@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140209143709.GA31608@gmail.com>
-User-Agent: Mutt/1.4.2.2i
+	id S1752133AbaBIVbb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 16:31:31 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:57570 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751687AbaBIVb3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Feb 2014 16:31:29 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Peter Wu <lekensteyn@gmail.com>
+Cc: Bastien Traverse <bastien.traverse@gmail.com>,
+        linux-kernel@vger.kernel.org, francis.moro@gmail.com,
+        linux-pm@vger.kernel.org
+Subject: Re: 3.12: ethernet controller missing after resuming from suspend to RAM
+Date: Sun, 09 Feb 2014 22:46:05 +0100
+Message-ID: <2150349.jTafhT0LGH@vostro.rjw.lan>
+User-Agent: KMail/4.11.4 (Linux/3.13.0+; KDE/4.11.4; x86_64; ; )
+In-Reply-To: <2773460.zRzOP7I6SW@al>
+References: <52F2CC7B.80406@gmail.com> <6111963.dPYocWnfhd@vostro.rjw.lan> <2773460.zRzOP7I6SW@al>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi -
-
-> > So the similar thing happens when we enables events as below;
+On Saturday, February 08, 2014 10:34:23 PM Peter Wu wrote:
+> On Saturday 08 February 2014 16:01:36 Rafael J. Wysocki wrote:
+> > It looks like we fail to resume the device, then, for some reason.
 > > 
-> >   # for i in /sys/kernel/debug/tracing/events/kprobes/* ; do date; echo 1 > $i; done
-> >   Wed Jan 29 10:44:50 UTC 2014
-> >   ...
-> >
-> > I tried it and canceled after 4 min passed. It enabled about 17k 
-> > events and slowed down my system very much(I almost got hang check 
-> > timer).
+> > That may be a PCIe link issue or something similar.
+> > 
+> > Is this a regression for you?  If so, what's the last kernel that didn't
+> > have this problem?  Does 3.13.y (as released by Greg, without and distro
+> > "improvements") have it too?
 > 
-> Ok, I guess that's the slowdown bug that Frank reported.
+> It was a regression from 3.11.x to 3.12 (and it is still broken with 3.13).
+> Due to some mistakes from my side, I have tested more configs:
+> 
+> (based on Arch Linux 3.13.1 x86_64 config)
+> (a) 3.13.2 with CONFIG_HOTPLUG_PCI=y, but CONFIG_HOTPLUG_PCI_ACPI=n works.
+> (b) 3.13.2 with CONFIG_HOTPLUG_PCI=y and CONFIG_HOTPLUG_PCI_ACPI=y is broken.
+> (c) 3.13.2 with CONFIG_HOTPLUG_PCI=n still works.
+> (my stripped config)
+> (d) 3.13.2 with CONFIG_HOTPLUG_PCI=y, but CONFIG_HOTPLUG_PCI_ACPI=n works.
+> 
+> With CONFIG_HOTPLUG_PCI_ACPI=y, the only difference in dmesg is:
+> 
+> (during boot)
+> acpiphp: ACPI Hot Plug PCI Controller Driver version: 0.5
+> (after resume)
+> iwlwifi 0000:05:00.0: no hotplug settings from platform
+> xhci_hcd 0000:02:00.0: no hotplug settings from platform
+>  (here, NetworkManager complains that a device has gone)
+> iwlwifi 0000:05:00.0: no hotplug settings from platform
+> 
+> Of course, with config (b), the ethernet adapter vanishes while it is still
+> present with configs (a), (c) and (d).
+> 
+> Time to do a bisect?
 
-It could be, but it feels a bit different.  In my testing from
-December, it's as though it wasn't the activated probes *hitting* that
-were associated with the slowdown, but them merely being activated.
-It was as though something with the kprobes/ftrace probe-registration
-code performed a lot more work than it did longer ago.  (One way to
-test this could be to be more careful in the selection of kprobes
-being enabled.  For examle, emplace thousands, but only unused loaded
-modules.)  I'm sorry I didn't get time to investigate further.
+That most likely would single out one of the ACPIPHP commits without giving us
+much clue about what's going on.
 
-- FChE
+I fail to see what the connection between those changes and system resume is,
+however.
+
+Please replace all pr_debug() calls in hotplug_notify() with pr_info() and
+see if you get any events from there.
+
+Thanks!
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
