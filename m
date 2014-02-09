@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751696AbaBINAq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 08:00:46 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:49039 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360AbaBINAp (ORCPT
+	id S1751868AbaBINBh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 08:01:37 -0500
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:54673 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751473AbaBINBf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 08:00:45 -0500
-Date: Sun, 9 Feb 2014 18:30:39 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Kent Overstreet <kmo@daterainc.com>, Tejun Heo <tj@kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, josh@joshtriplett.org
-Subject: [PATCH 04/21] fs: Add prototype declaration to appropriate header
- file include/linux/bio.h
-Message-ID: <74e55f4ccf256d3cc51f377d39e6395f58cb1617.1391949868.git.rashika.kheria@gmail.com>
-References: <b572932c3e016c55e596686283036316a1aacd2f.1391949868.git.rashika.kheria@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <b572932c3e016c55e596686283036316a1aacd2f.1391949868.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 9 Feb 2014 08:01:35 -0500
+Message-ID: <1391950893.20670.2.camel@x220>
+Subject: [PATCH] drm/tegra: fix typo 'CONFIG_TEGRA_DRM_FBDEV'
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Thierry Reding <thierry.reding@gmail.com>,
+        Terje =?ISO-8859-1?Q?Bergstr=F6m?= <tbergstrom@nvidia.com>,
+        David Airlie <airlied@linux.ie>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Cc: dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Sun, 09 Feb 2014 14:01:33 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 09 Feb 2014 13:01:34.0073 (UTC) FILETIME=[0F1AAE90:01CF2597]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add prototype declaration to header file include/linux/bio.h because it
-is used by more than one file.
-
-This eliminates the following warning in bio-integrity.c:
-fs/bio-integrity.c:214:14: warning: no previous prototype for ‘bio_integrity_tag_size’ [-Wmissing-prototypes]
-
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
+Entirely untested. But it's clear that this is what was intended.
 
-Some of the API functions like bio_integrity_tag_size appears to be
-entirely unused. Such occurences should be pruned because they haven't
-been used in any driver.
+ drivers/gpu/drm/tegra/drm.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- include/linux/bio.h |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index 7065452..d6791bb 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -332,6 +332,7 @@ extern struct bio *bio_clone_fast(struct bio *, gfp_t, struct bio_set *);
- extern struct bio *bio_clone_bioset(struct bio *, gfp_t, struct bio_set *bs);
+diff --git a/drivers/gpu/drm/tegra/drm.c b/drivers/gpu/drm/tegra/drm.c
+index 88a5290..c715947 100644
+--- a/drivers/gpu/drm/tegra/drm.c
++++ b/drivers/gpu/drm/tegra/drm.c
+@@ -104,7 +104,7 @@ static void tegra_drm_context_free(struct tegra_drm_context *context)
  
- extern struct bio_set *fs_bio_set;
-+unsigned int bio_integrity_tag_size(struct bio *bio);
- 
- static inline struct bio *bio_alloc(gfp_t gfp_mask, unsigned int nr_iovecs)
+ static void tegra_drm_lastclose(struct drm_device *drm)
  {
+-#ifdef CONFIG_TEGRA_DRM_FBDEV
++#ifdef CONFIG_DRM_TEGRA_FBDEV
+ 	struct tegra_drm *tegra = drm->dev_private;
+ 
+ 	tegra_fbdev_restore_mode(tegra->fbdev);
 -- 
-1.7.9.5
+1.8.5.3
 
