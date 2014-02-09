@@ -1,161 +1,782 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751525AbaBID0f (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 22:26:35 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:63051 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751393AbaBID0c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 22:26:32 -0500
-Date: Sat, 8 Feb 2014 19:25:42 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Sasha Levin <sasha.levin@oracle.com>
-cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: mm: shm: hang in shmem_fallocate
-In-Reply-To: <52F6898A.50101@oracle.com>
-Message-ID: <alpine.LSU.2.11.1402081841160.26825@eggly.anvils>
-References: <52AE7B10.2080201@oracle.com> <52F6898A.50101@oracle.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751523AbaBIEQH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 23:16:07 -0500
+Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:48105
+	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751294AbaBIEQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Feb 2014 23:16:05 -0500
+x-originating-ip: 72.167.245.219
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH V5 1/1] Drivers: hv: Implement the file copy service
+Date: Sat,  8 Feb 2014 21:06:45 -0800
+Message-Id: <1391922405-14105-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 8 Feb 2014, Sasha Levin wrote:
-> On 12/15/2013 11:01 PM, Sasha Levin wrote:
-> > Hi all,
-> > 
-> > While fuzzing with trinity inside a KVM tools guest running latest -next,
-> > I've noticed that
-> > quite often there's a hang happening inside shmem_fallocate. There are
-> > several processes stuck
-> > trying to acquire inode->i_mutex (for more than 2 minutes), while the
-> > process that holds it has
-> > the following stack trace:
-> 
-> [snip]
-> 
-> This still happens. For the record, here's a better trace:
+Implement the file copy service for Linux guests on Hyper-V. This permits the
+host to copy a file (over VMBUS) into the guest. This facility is part of
+"guest integration services" supported on the Windows platform.
+Here is a link that provides additional details on this functionality:
 
-Thanks for the reminder, and for the better trace: I don't find those
-traces where _every_ line is a "? " very useful (and whenever I puzzle
-over one of those, I wonder if it's inevitable, or something we got
-just slightly wrong in working out the frames... another time).
+http://technet.microsoft.com/en-us/library/dn464282.aspx
 
-> 
-> [  507.124903] CPU: 60 PID: 10864 Comm: trinity-c173 Tainted: G        W
-> 3.14.0-rc1-next-20140207-sasha-00007-g03959f6-dirty #2
-> [  507.124903] task: ffff8801f1e38000 ti: ffff8801f1e40000 task.ti:
-> ffff8801f1e40000
-> [  507.124903] RIP: 0010:[<ffffffff81ae924f>]  [<ffffffff81ae924f>]
-> __delay+0xf/0x20
-> [  507.124903] RSP: 0000:ffff8801f1e418a8  EFLAGS: 00000202
-> [  507.124903] RAX: 0000000000000001 RBX: ffff880524cf9f40 RCX:
-> 00000000e9adc2c3
-> [  507.124903] RDX: 000000000000010f RSI: ffffffff8129813c RDI:
-> 00000000ffffffff
-> [  507.124903] RBP: ffff8801f1e418a8 R08: 0000000000000000 R09:
-> 0000000000000000
-> [  507.124903] R10: 0000000000000001 R11: 0000000000000000 R12:
-> 00000000000affe0
-> [  507.124903] R13: 0000000086c42710 R14: ffff8801f1e41998 R15:
-> ffff8801f1e41ac8
-> [  507.124903] FS:  00007ff708073700(0000) GS:ffff88052b400000(0000)
-> knlGS:0000000000000000
-> [  507.124903] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [  507.124903] CR2: 000000000089d010 CR3: 00000001f1e2c000 CR4:
-> 00000000000006e0
-> [  507.124903] DR0: 0000000000696000 DR1: 0000000000000000 DR2:
-> 0000000000000000
-> [  507.124903] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
-> 0000000000000600
-> [  507.124903] Stack:
-> [  507.124903]  ffff8801f1e418d8 ffffffff811af053 ffff880524cf9f40
-> ffff880524cf9f40
-> [  507.124903]  ffff880524cf9f58 ffff8807275b1000 ffff8801f1e41908
-> ffffffff84447580
-> [  507.124903]  ffffffff8129813c ffffffff811ea882 00003ffffffff000
-> 00007ff705eb2000
-> [  507.124903] Call Trace:
-> [  507.124903]  [<ffffffff811af053>] do_raw_spin_lock+0xe3/0x170
-> [  507.124903]  [<ffffffff84447580>] _raw_spin_lock+0x60/0x80
-> [  507.124903]  [<ffffffff8129813c>] ? zap_pte_range+0xec/0x580
-> [  507.124903]  [<ffffffff811ea882>] ? smp_call_function_single+0x242/0x270
-> [  507.124903]  [<ffffffff8129813c>] zap_pte_range+0xec/0x580
-> [  507.124903]  [<ffffffff810ca710>] ? flush_tlb_mm_range+0x280/0x280
-> [  507.124903]  [<ffffffff81adbd67>] ? cpumask_next_and+0xa7/0xd0
-> [  507.124903]  [<ffffffff810ca710>] ? flush_tlb_mm_range+0x280/0x280
-> [  507.124903]  [<ffffffff812989ce>] unmap_page_range+0x3fe/0x410
-> [  507.124903]  [<ffffffff81298ae1>] unmap_single_vma+0x101/0x120
-> [  507.124903]  [<ffffffff81298cb9>] zap_page_range_single+0x119/0x160
-> [  507.124903]  [<ffffffff811a87b8>] ? trace_hardirqs_on+0x8/0x10
-> [  507.124903]  [<ffffffff812ddb8a>] ? memcg_check_events+0x7a/0x170
-> [  507.124903]  [<ffffffff81298d73>] ? unmap_mapping_range+0x73/0x180
-> [  507.124903]  [<ffffffff81298dfe>] unmap_mapping_range+0xfe/0x180
-> [  507.124903]  [<ffffffff812790c7>] truncate_inode_page+0x37/0x90
-> [  507.124903]  [<ffffffff812861aa>] shmem_undo_range+0x6aa/0x770
-> [  507.124903]  [<ffffffff81298e68>] ? unmap_mapping_range+0x168/0x180
-> [  507.124903]  [<ffffffff81286288>] shmem_truncate_range+0x18/0x40
-> [  507.124903]  [<ffffffff81286599>] shmem_fallocate+0x99/0x2f0
-> [  507.124903]  [<ffffffff8129487e>] ? madvise_vma+0xde/0x1c0
-> [  507.124903]  [<ffffffff811aa5d2>] ? __lock_release+0x1e2/0x200
-> [  507.124903]  [<ffffffff812ee006>] do_fallocate+0x126/0x170
-> [  507.124903]  [<ffffffff81294894>] madvise_vma+0xf4/0x1c0
-> [  507.124903]  [<ffffffff81294ae8>] SyS_madvise+0x188/0x250
-> [  507.124903]  [<ffffffff84452450>] tracesys+0xdd/0xe2
-> [  507.124903] Code: 66 66 66 66 90 48 c7 05 a4 66 04 05 e0 92 ae 81 c9 c3 66
-> 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 66 66 66 66 90 ff 15 89 66 04 05 <c9>
-> c3 66 66 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 55 48 8d 04
-> 
-> I'm still trying to figure it out. To me it seems like a series of calls to
-> shmem_truncate_range() takes so long that one of the tasks triggers a hung
-> task. We don't actually hang in any specific
-> shmem_truncate_range() for too long though.
+In V1 version of the patch I have addressed comments from
+Olaf Hering <olaf@aepfle.de> and Dan Carpenter <dan.carpenter@oracle.com>
 
-Okay, we're doing a FALLOC_FL_PUNCH_HOLE on tmpfs (via MADV_REMOVE).
+In V2 version of this patch I did some minor cleanup (making some globals
+static). In V4 version of the patch I have addressed all of Olaf's
+most recent set of comments/concerns.
 
-This trace shows clearly that unmap_mapping_range is being called from
-truncate_inode_range: that's supposed to be a rare inefficient fallback,
-normally all the mapped pages being unmapped by the prior call to
-unmap_mapping_range in shmem_fallocate itself.
+In this version of the patch I have addressed Greg's most recent comments.
+I would like to thank Greg for suggesting that I use misc device; it has
+significantly simplified the code.
 
-Now it's conceivable that there's some kind of off-by-one wrap-around
-case which doesn't behave as intended, but I was fairly careful there:
-you have to be because the different functions involved have different
-calling conventions and needs.  It would be interesting to know the
-arguments to madvise() and to shmem_fallocate() to rule that out,
-but my guess is that's not the problem.
 
-Would trinity be likely to have a thread or process repeatedly faulting
-in pages from the hole while it is being punched?
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+---
+ drivers/hv/Makefile        |    2 +-
+ drivers/hv/hv_fcopy.c      |  388 ++++++++++++++++++++++++++++++++++++++++++++
+ drivers/hv/hv_util.c       |   10 ++
+ include/linux/hyperv.h     |   61 +++++++
+ tools/hv/hv_fcopy_daemon.c |  195 ++++++++++++++++++++++
+ 5 files changed, 655 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/hv/hv_fcopy.c
+ create mode 100644 tools/hv/hv_fcopy_daemon.c
 
-That's what it looks like to me, but I'm not sure what to do about it,
-if anything.  It's a pity that shmem_fallocate is holding i_mutex over
-this holepunch that never completes, and that locks out others wanting
-i_mutex; but whether it's a serious matter in the scale of denials of
-service, I'm not so sure.
+diff --git a/drivers/hv/Makefile b/drivers/hv/Makefile
+index 0a74b56..5e4dfa4 100644
+--- a/drivers/hv/Makefile
++++ b/drivers/hv/Makefile
+@@ -5,4 +5,4 @@ obj-$(CONFIG_HYPERV_BALLOON)	+= hv_balloon.o
+ hv_vmbus-y := vmbus_drv.o \
+ 		 hv.o connection.o channel.o \
+ 		 channel_mgmt.o ring_buffer.o
+-hv_utils-y := hv_util.o hv_kvp.o hv_snapshot.o
++hv_utils-y := hv_util.o hv_kvp.o hv_snapshot.o hv_fcopy.o
+diff --git a/drivers/hv/hv_fcopy.c b/drivers/hv/hv_fcopy.c
+new file mode 100644
+index 0000000..15cf35c
+--- /dev/null
++++ b/drivers/hv/hv_fcopy.c
+@@ -0,0 +1,388 @@
++/*
++ * An implementation of file copy service.
++ *
++ * Copyright (C) 2014, Microsoft, Inc.
++ *
++ * Author : K. Y. Srinivasan <ksrinivasan@novell.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published
++ * by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ * NON INFRINGEMENT.  See the GNU General Public License for more
++ * details.
++ *
++ */
++
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
++#include <linux/semaphore.h>
++#include <linux/fs.h>
++#include <linux/nls.h>
++#include <linux/workqueue.h>
++#include <linux/cdev.h>
++#include <linux/hyperv.h>
++#include <linux/sched.h>
++#include <linux/uaccess.h>
++#include <linux/miscdevice.h>
++
++#define WIN8_SRV_MAJOR		1
++#define WIN8_SRV_MINOR		1
++#define WIN8_SRV_VERSION	(WIN8_SRV_MAJOR << 16 | WIN8_SRV_MINOR)
++
++/*
++ * Global state maintained for transaction that is being processed.
++ * For a class of integration services, including the "file copy service",
++ * the specified protocol is a "request/response" protocol which means that
++ * there can only be single outstanding transaction from the host at any
++ * given point in time. We use this to simplify memory management in this
++ * driver - we cache and process only one message at a time.
++ *
++ * While the request/response protocol is guaranteed by the host, we further
++ * ensure this by serializing packet processing in this driver - we do not
++ * read additional packets from the VMBUs until the current packet is fully
++ * handled.
++ *
++ * The transaction "active" state is set when we receive a request from the
++ * host and we cleanup this state when the transaction is completed - when we
++ * respond to the host with our response. When the transaction active state is
++ * set, we defer handling incoming packets.
++ */
++
++static struct {
++	bool active; /* transaction status - active or not */
++	int recv_len; /* number of bytes received. */
++	struct hv_fcopy_hdr  *fcopy_msg; /* current message */
++	struct hv_start_fcopy  message; /*  sent to daemon */
++	struct vmbus_channel *recv_channel; /* chn we got the request */
++	u64 recv_req_id; /* request ID. */
++	void *fcopy_context; /* for the channel callback */
++	struct semaphore read_sema;
++} fcopy_transaction;
++
++static bool opened; /* currently device opened */
++
++/*
++ * Before we can accept copy messages from the host, we need
++ * to handshake with the user level daemon. This state tracks
++ * if we are in the handshake phase.
++ */
++static bool in_hand_shake = true;
++static void fcopy_send_data(void);
++static void fcopy_respond_to_host(int error);
++static void fcopy_work_func(struct work_struct *dummy);
++static DECLARE_DELAYED_WORK(fcopy_work, fcopy_work_func);
++static u8 *recv_buffer;
++
++static void fcopy_work_func(struct work_struct *dummy)
++{
++	/*
++	 * If the timer fires, the user-mode component has not responded;
++	 * process the pending transaction.
++	 */
++	fcopy_respond_to_host(HV_E_FAIL);
++}
++
++static int fcopy_handle_handshake(u32 version)
++{
++	switch (version) {
++	case FCOPY_CURRENT_VERSION:
++		break;
++	default:
++		/*
++		 * For now we will fail the registration.
++		 * If and when we have multiple versions to
++		 * deal with, we will be backward compatible.
++		 * We will add this code when needed.
++		 */
++		return -EINVAL;
++	}
++	pr_info("FCP: user-mode registering done. Daemon version: %d\n",
++		version);
++	fcopy_transaction.active = false;
++	if (fcopy_transaction.fcopy_context)
++		hv_fcopy_onchannelcallback(fcopy_transaction.fcopy_context);
++	in_hand_shake = false;
++	return sizeof(int);
++}
++
++static void fcopy_send_data(void)
++{
++	struct hv_start_fcopy *smsg_out = &fcopy_transaction.message;
++	int operation = fcopy_transaction.fcopy_msg->operation;
++	struct hv_start_fcopy *smsg_in;
++
++	/*
++	 * The  strings sent from the host are encoded in
++	 * in utf16; convert it to utf8 strings.
++	 * The host assures us that the utf16 strings will not exceed
++	 * the max lengths specified. We will however, reserve room
++	 * for the string terminating character - in the utf16s_utf8s()
++	 * function we limit the size of the buffer where the converted
++	 * string is placed to W_MAX_PATH -1 to guarantee
++	 * that the strings can be properly terminated!
++	 */
++
++	switch (operation) {
++	case START_FILE_COPY:
++		memset(smsg_out, 0, sizeof(struct hv_start_fcopy));
++		smsg_out->hdr.operation = operation;
++		smsg_in = (struct hv_start_fcopy *)fcopy_transaction.fcopy_msg;
++
++		utf16s_to_utf8s((wchar_t *)smsg_in->file_name, W_MAX_PATH,
++				UTF16_LITTLE_ENDIAN,
++				(__u8 *)smsg_out->file_name, W_MAX_PATH - 1);
++
++		utf16s_to_utf8s((wchar_t *)smsg_in->path_name, W_MAX_PATH,
++				UTF16_LITTLE_ENDIAN,
++				(__u8 *)smsg_out->path_name, W_MAX_PATH - 1);
++
++		smsg_out->copy_flags = smsg_in->copy_flags;
++		smsg_out->file_size = smsg_in->file_size;
++		break;
++
++	default:
++		break;
++	}
++	up(&fcopy_transaction.read_sema);
++	return;
++}
++
++/*
++ * Send a response back to the host.
++ */
++
++static void
++fcopy_respond_to_host(int error)
++{
++	struct icmsg_hdr *icmsghdrp;
++	u32 buf_len;
++	struct vmbus_channel *channel;
++	u64 req_id;
++
++	/*
++	 * Copy the global state for completing the transaction. Note that
++	 * only one transaction can be active at a time.
++	 */
++
++	buf_len = fcopy_transaction.recv_len;
++	channel = fcopy_transaction.recv_channel;
++	req_id = fcopy_transaction.recv_req_id;
++
++	fcopy_transaction.active = false;
++
++	icmsghdrp = (struct icmsg_hdr *)
++			&recv_buffer[sizeof(struct vmbuspipe_hdr)];
++
++	if (channel->onchannel_callback == NULL)
++		/*
++		 * We have raced with util driver being unloaded;
++		 * silently return.
++		 */
++		return;
++
++	icmsghdrp->status = error;
++	icmsghdrp->icflags = ICMSGHDRFLAG_TRANSACTION | ICMSGHDRFLAG_RESPONSE;
++	vmbus_sendpacket(channel, recv_buffer, buf_len, req_id,
++				VM_PKT_DATA_INBAND, 0);
++}
++
++void hv_fcopy_onchannelcallback(void *context)
++{
++	struct vmbus_channel *channel = context;
++	u32 recvlen;
++	u64 requestid;
++	struct hv_fcopy_hdr *fcopy_msg;
++	struct icmsg_hdr *icmsghdrp;
++	struct icmsg_negotiate *negop = NULL;
++	int util_fw_version;
++	int fcopy_srv_version;
++
++	if (fcopy_transaction.active) {
++		/*
++		 * We will defer processing this callback once
++		 * the current transaction is complete.
++		 */
++		fcopy_transaction.fcopy_context = context;
++		return;
++	}
++
++	vmbus_recvpacket(channel, recv_buffer, PAGE_SIZE * 2, &recvlen,
++			 &requestid);
++	if (recvlen <= 0)
++		return;
++
++	icmsghdrp = (struct icmsg_hdr *)&recv_buffer[
++			sizeof(struct vmbuspipe_hdr)];
++	if (icmsghdrp->icmsgtype == ICMSGTYPE_NEGOTIATE) {
++		util_fw_version = UTIL_FW_VERSION;
++		fcopy_srv_version = WIN8_SRV_VERSION;
++		vmbus_prep_negotiate_resp(icmsghdrp, negop, recv_buffer,
++				util_fw_version, fcopy_srv_version);
++	} else {
++		fcopy_msg = (struct hv_fcopy_hdr *)&recv_buffer[
++				sizeof(struct vmbuspipe_hdr) +
++				sizeof(struct icmsg_hdr)];
++
++		/*
++		 * Stash away this global state for completing the
++		 * transaction; note transactions are serialized.
++		 */
++
++		fcopy_transaction.active = true;
++		fcopy_transaction.recv_len = recvlen;
++		fcopy_transaction.recv_channel = channel;
++		fcopy_transaction.recv_req_id = requestid;
++		fcopy_transaction.fcopy_msg = fcopy_msg;
++
++		/*
++		 * Send the information to the user-level daemon.
++		 */
++		fcopy_send_data();
++		schedule_delayed_work(&fcopy_work, 5*HZ);
++		return;
++	}
++	icmsghdrp->icflags = ICMSGHDRFLAG_TRANSACTION | ICMSGHDRFLAG_RESPONSE;
++	vmbus_sendpacket(channel, recv_buffer, recvlen, requestid,
++			VM_PKT_DATA_INBAND, 0);
++}
++
++/*
++ * Create a char device that can support read/write for passing
++ * the payload.
++ */
++
++static ssize_t fcopy_read(struct file *file, char __user *buf,
++		size_t count, loff_t *ppos)
++{
++	void *src;
++	size_t copy_size;
++	int operation;
++
++	/*
++	 * Wait until there is something to be read.
++	 */
++	if (down_interruptible(&fcopy_transaction.read_sema))
++		return -EINTR;
++	if (!opened)
++		return -ENODEV;
++
++	operation = fcopy_transaction.fcopy_msg->operation;
++
++	if (operation == START_FILE_COPY) {
++		src = &fcopy_transaction.message;
++		copy_size = sizeof(struct hv_start_fcopy);
++		if (count < copy_size)
++			return 0;
++	} else {
++		src = fcopy_transaction.fcopy_msg;
++		copy_size = sizeof(struct hv_do_fcopy);
++		if (count < copy_size)
++			return 0;
++	}
++	if (copy_to_user(buf, src, copy_size))
++		return -EFAULT;
++
++	return copy_size;
++}
++
++static ssize_t fcopy_write(struct file *file, const char __user *buf,
++			size_t count, loff_t *ppos)
++{
++	int response = 0;
++
++	if (count != sizeof(int))
++		return -EINVAL;
++
++	if (copy_from_user(&response, buf, sizeof(int)))
++		return -EFAULT;
++
++	if (in_hand_shake)
++		return fcopy_handle_handshake(response);
++
++	/*
++	 * Complete the transaction by forwarding the result
++	 * to the host. But first, cancel the timeout.
++	 */
++	if (cancel_delayed_work_sync(&fcopy_work))
++		fcopy_respond_to_host(response);
++
++	return sizeof(int);
++}
++
++int fcopy_open(struct inode *inode, struct file *f)
++{
++	if (opened)
++		return -EBUSY;
++
++	/*
++	 * The daemon is alive; setup the state.
++	 */
++	opened = true;
++	return 0;
++}
++
++int fcopy_release(struct inode *inode, struct file *f)
++{
++	/*
++	 * The daemon has exited; reset the state.
++	 */
++	in_hand_shake = true;
++	opened = false;
++	return 0;
++}
++
++
++static const struct file_operations fcopy_fops = {
++	.read           = fcopy_read,
++	.write          = fcopy_write,
++	.release	= fcopy_release,
++	.open		= fcopy_open,
++};
++
++static struct miscdevice fcopy_misc = {
++	.minor          = MISC_DYNAMIC_MINOR,
++	.name           = "vmbus/hv_fcopy",
++	.fops           = &fcopy_fops,
++};
++
++static int fcopy_dev_init(void)
++{
++	return misc_register(&fcopy_misc);
++}
++
++static void fcopy_dev_deinit(void)
++{
++	opened = false;
++	/*
++	 * Signal the semaphore as the device is
++	 * going away.
++	 */
++	up(&fcopy_transaction.read_sema);
++	misc_deregister(&fcopy_misc);
++}
++
++int hv_fcopy_init(struct hv_util_service *srv)
++{
++	recv_buffer = srv->recv_buffer;
++
++	/*
++	 * When this driver loads, the user level daemon that
++	 * processes the host requests may not yet be running.
++	 * Defer processing channel callbacks until the daemon
++	 * has registered.
++	 */
++	fcopy_transaction.active = true;
++	sema_init(&fcopy_transaction.read_sema, 0);
++
++	return fcopy_dev_init();
++}
++
++void hv_fcopy_deinit(void)
++{
++	cancel_delayed_work_sync(&fcopy_work);
++	fcopy_dev_deinit();
++}
+diff --git a/drivers/hv/hv_util.c b/drivers/hv/hv_util.c
+index 62dfd246..efc5e83 100644
+--- a/drivers/hv/hv_util.c
++++ b/drivers/hv/hv_util.c
+@@ -82,6 +82,12 @@ static struct hv_util_service util_vss = {
+ 	.util_deinit = hv_vss_deinit,
+ };
+ 
++static struct hv_util_service util_fcopy = {
++	.util_cb = hv_fcopy_onchannelcallback,
++	.util_init = hv_fcopy_init,
++	.util_deinit = hv_fcopy_deinit,
++};
++
+ static void perform_shutdown(struct work_struct *dummy)
+ {
+ 	orderly_poweroff(true);
+@@ -401,6 +407,10 @@ static const struct hv_vmbus_device_id id_table[] = {
+ 	{ HV_VSS_GUID,
+ 	  .driver_data = (unsigned long)&util_vss
+ 	},
++	/* File copy GUID */
++	{ HV_FCOPY_GUID,
++	  .driver_data = (unsigned long)&util_fcopy
++	},
+ 	{ },
+ };
+ 
+diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
+index 15da677..9d2e168 100644
+--- a/include/linux/hyperv.h
++++ b/include/linux/hyperv.h
+@@ -26,6 +26,7 @@
+ #define _HYPERV_H
+ 
+ #include <linux/types.h>
++#include <linux/uuid.h>
+ 
+ /*
+  * Framework version for util services.
+@@ -96,6 +97,51 @@ struct hv_vss_msg {
+ } __attribute__((packed));
+ 
+ /*
++ * Implementation of a host to guest copy facility.
++ */
++
++#define FCOPY_VERSION_0 0
++#define FCOPY_CURRENT_VERSION FCOPY_VERSION_0
++#define W_MAX_PATH 260
++
++enum hv_fcopy_op {
++	START_FILE_COPY = 0,
++	WRITE_TO_FILE,
++	COMPLETE_FCOPY,
++	CANCEL_FCOPY,
++};
++
++struct hv_fcopy_hdr {
++	__u32 operation;
++	uuid_le service_id0; /* currently unused */
++	uuid_le service_id1; /* currently unused */
++} __attribute__((packed));
++
++#define OVER_WRITE	0x1
++#define CREATE_PATH	0x2
++
++struct hv_start_fcopy {
++	struct hv_fcopy_hdr hdr;
++	__u16 file_name[W_MAX_PATH];
++	__u16 path_name[W_MAX_PATH];
++	__u32 copy_flags;
++	__u64 file_size;
++} __attribute__((packed));
++
++/*
++ * The file is chunked into fragments.
++ */
++#define DATA_FRAGMENT	(6 * 1024)
++
++struct hv_do_fcopy {
++	struct hv_fcopy_hdr hdr;
++	__u64	offset;
++	__u32	size;
++	__u8	data[DATA_FRAGMENT];
++};
++
++
++/*
+  * An implementation of HyperV key value pair (KVP) functionality for Linux.
+  *
+  *
+@@ -1352,6 +1398,17 @@ void vmbus_driver_unregister(struct hv_driver *hv_driver);
+ 		}
+ 
+ /*
++ * Guest File Copy Service
++ * {34D14BE3-DEE4-41c8-9AE7-6B174977C192}
++ */
++
++#define HV_FCOPY_GUID \
++	.guid = { \
++			0xE3, 0x4B, 0xD1, 0x34, 0xE4, 0xDE, 0xC8, 0x41, \
++			0x9A, 0xE7, 0x6B, 0x17, 0x49, 0x77, 0xC1, 0x92 \
++		}
++
++/*
+  * Common header for Hyper-V ICs
+  */
+ 
+@@ -1459,6 +1516,10 @@ int hv_vss_init(struct hv_util_service *);
+ void hv_vss_deinit(void);
+ void hv_vss_onchannelcallback(void *);
+ 
++int hv_fcopy_init(struct hv_util_service *);
++void hv_fcopy_deinit(void);
++void hv_fcopy_onchannelcallback(void *);
++
+ /*
+  * Negotiated version with the Host.
+  */
+diff --git a/tools/hv/hv_fcopy_daemon.c b/tools/hv/hv_fcopy_daemon.c
+new file mode 100644
+index 0000000..c557998
+--- /dev/null
++++ b/tools/hv/hv_fcopy_daemon.c
+@@ -0,0 +1,195 @@
++/*
++ * An implementation of host to guest copy functionality for Linux.
++ *
++ * Copyright (C) 2014, Microsoft, Inc.
++ *
++ * Author : K. Y. Srinivasan <kys@microsoft.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published
++ * by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ * NON INFRINGEMENT.  See the GNU General Public License for more
++ * details.
++ */
++
++
++#include <sys/types.h>
++#include <sys/socket.h>
++#include <sys/poll.h>
++#include <linux/types.h>
++#include <linux/kdev_t.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <unistd.h>
++#include <string.h>
++#include <ctype.h>
++#include <errno.h>
++#include <linux/hyperv.h>
++#include <syslog.h>
++#include <sys/stat.h>
++#include <fcntl.h>
++#include <dirent.h>
++
++static int target_fd;
++static char target_fname[W_MAX_PATH];
++
++static int hv_start_fcopy(struct hv_start_fcopy *smsg)
++{
++	int error = HV_E_FAIL;
++	char *q, *p;
++
++	/*
++	 * If possile append a path seperator to the path.
++	 */
++	if (strlen((char *)smsg->path_name) < (W_MAX_PATH - 2))
++		strcat((char *)smsg->path_name, "/");
++
++	p = (char *)smsg->path_name;
++	snprintf(target_fname, sizeof(target_fname), "%s/%s",
++		(char *)smsg->path_name, smsg->file_name);
++
++	syslog(LOG_INFO, "Target file name: %s", target_fname);
++	/*
++	 * Check to see if the path is already in place; if not,
++	 * create if required.
++	 */
++	while ((q = strchr(p, '/')) != NULL) {
++		if (q == p) {
++			p++;
++			continue;
++		}
++		*q = '\0';
++		if (access((char *)smsg->path_name, F_OK)) {
++			if (smsg->copy_flags & CREATE_PATH) {
++				if (mkdir((char *)smsg->path_name, 0755)) {
++					syslog(LOG_ERR, "Failed to create %s",
++						(char *)smsg->path_name);
++					goto done;
++				}
++			} else {
++				syslog(LOG_ERR, "Invalid path: %s",
++					(char *)smsg->path_name);
++				goto done;
++			}
++		}
++		p = q + 1;
++		*q = '/';
++	}
++
++	if (!access(target_fname, F_OK)) {
++		syslog(LOG_INFO, "File: %s exists", target_fname);
++		if (!smsg->copy_flags & OVER_WRITE)
++			goto done;
++	}
++
++	target_fd = open(target_fname, O_RDWR | O_CREAT | O_CLOEXEC, 0744);
++	if (target_fd == -1) {
++		syslog(LOG_INFO, "Open Failed: %s", strerror(errno));
++		goto done;
++	}
++
++	error = 0;
++done:
++	return error;
++}
++
++static int hv_copy_data(struct hv_do_fcopy *cpmsg)
++{
++	ssize_t bytes_written;
++
++	bytes_written = pwrite(target_fd, cpmsg->data, cpmsg->size,
++				cpmsg->offset);
++
++	if (bytes_written != cpmsg->size)
++		return HV_E_FAIL;
++
++	return 0;
++}
++
++static int hv_copy_finished(void)
++{
++	close(target_fd);
++	return 0;
++}
++static int hv_copy_cancel(void)
++{
++	close(target_fd);
++	unlink(target_fname);
++	return 0;
++
++}
++
++int main(void)
++{
++	int fd, fcopy_fd, len;
++	int error;
++	int version = FCOPY_CURRENT_VERSION;
++	char *buffer[4096 * 2];
++	struct hv_fcopy_hdr *in_msg;
++
++	if (daemon(1, 0)) {
++		syslog(LOG_ERR, "daemon() failed; error: %s", strerror(errno));
++		exit(EXIT_FAILURE);
++	}
++
++	openlog("HV_FCOPY", 0, LOG_USER);
++	syslog(LOG_INFO, "HV_FCOPY starting; pid is:%d", getpid());
++
++	fcopy_fd = open("/dev/vmbus/hv_fcopy", O_RDWR);
++
++	if (fcopy_fd < 0) {
++		syslog(LOG_ERR, "open /dev/hv_fcopy failed; error: %d %s",
++			errno, strerror(errno));
++		exit(EXIT_FAILURE);
++	}
++
++	/*
++	 * Register with the kernel.
++	 */
++	if ((write(fcopy_fd, &version, sizeof(int))) != sizeof(int)) {
++		syslog(LOG_ERR, "Registration failed: %s", strerror(errno));
++		exit(EXIT_FAILURE);
++	}
++
++	while (1) {
++		/*
++		 * In this loop we process fcopy messages after the
++		 * handshake is complete.
++		 */
++		len = pread(fcopy_fd, buffer, (4096 * 2), 0);
++		if (len < 0) {
++			syslog(LOG_ERR, "pread failed: %s", strerror(errno));
++			exit(EXIT_FAILURE);
++		}
++		in_msg = (struct hv_fcopy_hdr *)buffer;
++
++		switch (in_msg->operation) {
++		case START_FILE_COPY:
++			error = hv_start_fcopy((struct hv_start_fcopy *)in_msg);
++			break;
++		case WRITE_TO_FILE:
++			error = hv_copy_data((struct hv_do_fcopy *)in_msg);
++			break;
++		case COMPLETE_FCOPY:
++			error = hv_copy_finished();
++			break;
++		case CANCEL_FCOPY:
++			error = hv_copy_cancel();
++			break;
++
++		default:
++			syslog(LOG_ERR, "Unknown operation: %d",
++				in_msg->operation);
++
++		}
++
++		if (pwrite(fcopy_fd, &error, sizeof(int), 0) != sizeof(int)) {
++			syslog(LOG_ERR, "pwrite failed: %s", strerror(errno));
++			exit(EXIT_FAILURE);
++		}
++	}
++}
+-- 
+1.7.4.1
 
-Note that straight truncation does not suffer from the same problem:
-because there the faulters get a SIGBUS when they try to access
-beyond end of file, and need the i_mutex to re-extend the file.
-
-Does this happen with other holepunch filesystems?  If it does not,
-I'd suppose it's because the tmpfs fault-in-newly-created-page path
-is lighter than a consistent disk-based filesystem's has to be.
-But we don't want to make the tmpfs path heavier to match them.
-
-My old commit, d0823576bf4b "mm: pincer in truncate_inode_pages_range",
-subsequently copied into shmem_undo_range, can be blamed.  It seemed a
-nice idea at the time, to guarantee an instant during the holepunch when
-the entire hole is empty, whatever userspace does afterwards; but perhaps
-we should revert to sweeping out the pages without looking back.
-
-I don't want to make that change (and I don't want to make it in
-shmem_undo_range without doing the same in truncate_inode_pages_range),
-but it might be the right thing to do: linux-fsdevel Cc'ed for views.
-
-Hugh
