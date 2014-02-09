@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752149AbaBINc5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 08:32:57 -0500
-Received: from know-smtprelay-omc-2.server.virginmedia.net ([80.0.253.66]:55762
-	"EHLO know-smtprelay-omc-2.server.virginmedia.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751396AbaBINc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 08:32:56 -0500
-X-Originating-IP: [81.99.114.138]
-X-Spam: 0
-X-Authority: v=2.1 cv=L4GTQoj8 c=1 sm=1 tr=0 a=rTb9Q+mClrhkGV9Ah9iRIA==:117
- a=rTb9Q+mClrhkGV9Ah9iRIA==:17 a=N1CowNylAAAA:8 a=fopZr8Ys9qIA:10
- a=IkcTkHD0fZMA:10 a=i-oMMPxEfaEA:10 a=nlyIqT4kGldfwkGLb18A:9 a=QEXdDO2ut3YA:10
-Message-ID: <1391952760.6036.10.camel@artifact>
-Subject: Re: [Intel-gfx] agp/intel: can't ioremap flush page - no chipset
- flushing
-From: Steven Newbury <steve@snewbury.org.uk>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, David Airlie <airlied@linux.ie>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
-Date: Sun, 09 Feb 2014 13:32:40 +0000
-In-Reply-To: <1391952344.25424.4.camel@x220>
-References: <1391886379.2669.11.camel@x41>
-	 <CAKMK7uE6Gaq-ghgWJ+6Qyn7hrGzAMOHyGT9KQQJ+ij7omPV2Ew@mail.gmail.com>
-	 <1391890927.1882.5.camel@x41>
-	 <CAKMK7uFx2kksGgnuy9e0xiQRKpt=_+44O1V4wbX5yNBocvjBkg@mail.gmail.com>
-	 <1391951759.6036.7.camel@artifact> <1391952344.25424.4.camel@x220>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.11.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752162AbaBINeE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 08:34:04 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56193 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751365AbaBINeB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Feb 2014 08:34:01 -0500
+Date: Sun, 9 Feb 2014 19:03:54 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Vivek Goyal <vgoyal@redhat.com>,
+        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        Qais Yousef <qais.yousef@imgtec.com>, josh@joshtriplett.org
+Subject: [PATCH 21/21] fs: Move prototype declaration to appropriate header
+ file
+Message-ID: <94bd5f839212612524d7b8dc2d6a6d4ed96b42da.1391952682.git.rashika.kheria@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <764a2eddc09cb8670d757cd4170d44d41b3971e0.1391949868.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-02-09 at 14:25 +0100, Paul Bolle wrote:
-> On Sun, 2014-02-09 at 13:15 +0000, Steven Newbury wrote:
-> > PCI resource allocation is undergoing some changes at the moment, it's
-> > definitely a bug if the Flush Page isn't getting allocated.  I'm looking
-> > forward to hopefully getting pci_bus_alloc_resource_fit() behaviour in
-> > mainline, it will provide much better resource allocation in the 32 bit
-> > PCI address space, and prevent problems like this from cropping up.
-> > 
-> > See Yinghai Lu's for-pci-res-alloc branch.
-> > 
-> > I've been carrying the changes in my local tree, but right now the
-> > upstream PCI changes are quite extensive.  He's planning on rebasing the
-> > branch soon.
-> 
-> Does this mean I might be better of not bisecting this just yet? Or are
-> these changes targeted at v3.15 (or later)?
-> 
-> 
-> Paul Bolle
-> 
+Move prototype declaration to header file include/linux/crash_dump.h
+because it is used by more than file.
 
-It's an aside really for now.  The bug has probably been introduced by
-the recent pci allocation changes so it should be easier for you to
-bisect, hopefully.
+This eliminates the following warning in proc/vmcore.c:
+fs/proc/vmcore.c:1088:6: warning: no previous prototype for ‘vmcore_cleanup’ [-Wmissing-prototypes]
 
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+ include/linux/crash_dump.h |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/include/linux/crash_dump.h b/include/linux/crash_dump.h
+index 7032518..72ab536 100644
+--- a/include/linux/crash_dump.h
++++ b/include/linux/crash_dump.h
+@@ -25,6 +25,7 @@ extern int __weak remap_oldmem_pfn_range(struct vm_area_struct *vma,
+ 
+ extern ssize_t copy_oldmem_page(unsigned long, char *, size_t,
+ 						unsigned long, int);
++void vmcore_cleanup(void);
+ 
+ /* Architecture code defines this if there are other possible ELF
+  * machine types, e.g. on bi-arch capable hardware. */
+-- 
+1.7.9.5
 
