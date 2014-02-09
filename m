@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751714AbaBITOV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 14:14:21 -0500
-Received: from smtp-vbr7.xs4all.nl ([194.109.24.27]:4342 "EHLO
-	smtp-vbr7.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751523AbaBITOU (ORCPT
+	id S1751760AbaBITic (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 14:38:32 -0500
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:55682 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751553AbaBITib (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 14:14:20 -0500
-Message-ID: <52F7D363.2080108@xs4all.nl>
-Date: Sun, 09 Feb 2014 20:13:39 +0100
-From: Hans Verkuil <hverkuil@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
-MIME-Version: 1.0
+	Sun, 9 Feb 2014 14:38:31 -0500
+Message-ID: <1391974709.25855.3.camel@x220>
+Subject: Re: [PATCH 24/28] Remove DEPRECATED
+From: Paul Bolle <pebolle@tiscali.nl>
 To: Richard Weinberger <richard@nod.at>
-CC: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        "open list:MEDIA INPUT INFRA..." <linux-media@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        Paul Bolle <pebolle@tiscali.nl>
-Subject: Re: [PATCH 19/28] Remove SI4713
-References: <1391971686-9517-1-git-send-email-richard@nod.at> <1391971686-9517-20-git-send-email-richard@nod.at>
-In-Reply-To: <1391971686-9517-20-git-send-email-richard@nod.at>
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        "moderated list:PANASONIC MN10300..." <linux-am33-list@redhat.com>,
+        open list <linux-kernel@vger.kernel.org>
+Date: Sun, 09 Feb 2014 20:38:29 +0100
+In-Reply-To: <1391971686-9517-25-git-send-email-richard@nod.at>
+References: <1391971686-9517-1-git-send-email-richard@nod.at>
+	 <1391971686-9517-25-git-send-email-richard@nod.at>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 09 Feb 2014 19:38:29.0408 (UTC) FILETIME=[82266A00:01CF25CE]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/09/2014 07:47 PM, Richard Weinberger wrote:
+On Sun, 2014-02-09 at 19:48 +0100, Richard Weinberger wrote:
 > The symbol is an orphan, get rid of it.
-
-NACK.
-
-It's not an orphan, it's a typo. It should be I2C_SI4713.
-
-Paul, Richard, let me handle this. I'll make a patch for this tomorrow (I believe
-there was a report about a missing I2C dependency as well) and make sure it ends
-up in a pull request for 3.14.
-
-Regards,
-
-	Hans
-
 > 
 > Signed-off-by: Richard Weinberger <richard@nod.at>
 > ---
->  drivers/media/radio/si4713/Kconfig | 2 --
->  1 file changed, 2 deletions(-)
+>  arch/mn10300/Kconfig.debug | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/drivers/media/radio/si4713/Kconfig b/drivers/media/radio/si4713/Kconfig
-> index a7c3ba8..ed51ed0 100644
-> --- a/drivers/media/radio/si4713/Kconfig
-> +++ b/drivers/media/radio/si4713/Kconfig
-> @@ -1,7 +1,6 @@
->  config USB_SI4713
->  	tristate "Silicon Labs Si4713 FM Radio Transmitter support with USB"
->  	depends on USB && RADIO_SI4713
-> -	select SI4713
->  	---help---
->  	  This is a driver for USB devices with the Silicon Labs SI4713
->  	  chip. Currently these devices are known to work.
-> @@ -16,7 +15,6 @@ config USB_SI4713
->  config PLATFORM_SI4713
->  	tristate "Silicon Labs Si4713 FM Radio Transmitter support with I2C"
->  	depends on I2C && RADIO_SI4713
-> -	select SI4713
->  	---help---
->  	  This is a driver for I2C devices with the Silicon Labs SI4713
->  	  chip.
-> 
+> diff --git a/arch/mn10300/Kconfig.debug b/arch/mn10300/Kconfig.debug
+> index 94efb3e..af18047 100644
+> --- a/arch/mn10300/Kconfig.debug
+> +++ b/arch/mn10300/Kconfig.debug
+> @@ -32,7 +32,7 @@ config KPROBES
+>  
+>  config GDBSTUB
+>  	bool "Remote GDB kernel debugging"
+> -	depends on DEBUG_KERNEL && DEPRECATED
+> +	depends on DEBUG_KERNEL
+
+But now you've enabled a lot of stuff that, as far as I can tell, could
+not have been built since v2.6.39.
+
+The proper fix would be to remove GDBSTUB and everything that depends on
+it. I tried to do that once and it turned out to be much more work than
+I expected. So perhaps we should just do s/DEPRECATED/BROKEN/ and let
+the mn10300 maintainers deal with this.
+ 
+>  	select DEBUG_INFO
+>  	select FRAME_POINTER
+>  	help
+
+
+Paul Bolle
 
