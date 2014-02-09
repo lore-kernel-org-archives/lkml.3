@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751889AbaBIUoM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 15:44:12 -0500
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:59261 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751691AbaBIUoL (ORCPT
+	id S1751851AbaBIUyG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 15:54:06 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:60534 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751646AbaBIUyE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 15:44:11 -0500
-Message-ID: <1391978649.25855.33.camel@x220>
-Subject: Re: [PATCH 18/28] Remove MN10300_PROC_MN2WS0038
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Richard Weinberger <richard@nod.at>
-Cc: David Howells <dhowells@redhat.com>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        "moderated list:PANASONIC MN10300..." <linux-am33-list@redhat.com>,
-        open list <linux-kernel@vger.kernel.org>
-Date: Sun, 09 Feb 2014 21:44:09 +0100
-In-Reply-To: <1391971686-9517-19-git-send-email-richard@nod.at>
-References: <1391971686-9517-1-git-send-email-richard@nod.at>
-	 <1391971686-9517-19-git-send-email-richard@nod.at>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
+	Sun, 9 Feb 2014 15:54:04 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Subject: Re: [PATCH, RFC 07/30] [media] radio-cadet: avoid interruptible_sleep_on race
+Date: Sun, 9 Feb 2014 21:53:51 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        linux-media@vger.kernel.org
+References: <1388664474-1710039-1-git-send-email-arnd@arndb.de> <55674412.rAimUmdW3X@wuerfel> <52F4C51A.90002@xs4all.nl>
+In-Reply-To: <52F4C51A.90002@xs4all.nl>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 09 Feb 2014 20:44:10.0207 (UTC) FILETIME=[AF0C9EF0:01CF25D7]
-X-RcptDomain: vger.kernel.org
+Message-Id: <201402092153.51781.arnd@arndb.de>
+X-Provags-ID: V02:K0:Jb/MlDOQrYCGG+dPXFkFIsXTeSUslU7sizp8rN34LhU
+ 0BjB07e1evamrAsJX68WTgiTp+s6HW+T4RcKUo+NDY9Jm1AmFt
+ iUjAmFrPeW0eX4vd5rcMaPPq7LqPtoibhLnFnRMvMm4LjKA3b6
+ LQKzJWpes6H6GXIw0ugQ0Bt2bkYjEaLBXmg6w44kgIW2PxbnSQ
+ FryTZt0Rszy7B1KXTKoqNTOO4Q3CmbcBnDdnC2vBL4zMjXyOCy
+ VIh4OgjmRhGVT3CEUUVSBSkGE643B0y8F8/L4HeFK5XPGttFJf
+ f0gFGyuaIMJx16v/OsI1+nbAIgBx83a/XN38u2nGL+5gL9XXYd
+ SNZcUxxY41rC0LGFoC14=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-02-09 at 19:47 +0100, Richard Weinberger wrote:
-> The symbol is an orphan, get rid of it.
+On Friday 07 February 2014, Hans Verkuil wrote:
+> OK, let's try again. This patch is getting bigger and bigger, but it is always
+> nice to know that your ISA card that almost no one else in the world has is really,
+> really working well. :-)
 > 
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-
-Acked-by: Paul Bolle <pebolle@tiscali.nl>
-
-> ---
->  arch/mn10300/Kconfig | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> Regards,
 > 
-> diff --git a/arch/mn10300/Kconfig b/arch/mn10300/Kconfig
-> index a648de1..4434b54 100644
-> --- a/arch/mn10300/Kconfig
-> +++ b/arch/mn10300/Kconfig
-> @@ -181,7 +181,7 @@ endmenu
->  config SMP
->  	bool "Symmetric multi-processing support"
->  	default y
-> -	depends on MN10300_PROC_MN2WS0038 || MN10300_PROC_MN2WS0050
-> +	depends on MN10300_PROC_MN2WS0050
->  	---help---
->  	  This enables support for systems with more than one CPU. If you have
->  	  a system with only one CPU, say N. If you have a system with more
+>         Hans
+> 
+> Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
 
-I tried this one too in 2013: https://lkml.org/lkml/2013/5/15/144 .
+Looks good,
 
-
-Paul Bolle
-
+Acked-by: Arnd Bergmann <arnd@arndb.de>
