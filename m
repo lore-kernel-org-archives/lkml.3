@@ -1,93 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751757AbaBILMj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 06:12:39 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:58202 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360AbaBILMh (ORCPT
+	id S1751580AbaBILof (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 06:44:35 -0500
+Received: from www84.your-server.de ([213.133.104.84]:35222 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751360AbaBILoe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 06:12:37 -0500
-Date: Sun, 9 Feb 2014 16:42:33 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Wei Liu <wei.liu2@citrix.com>, xen-devel@lists.xenproject.org,
-        josh@joshtriplett.org
-Subject: [PATCH 4/4] drivers: xen: Move prototype declaration to header file
- include/xen/xen-ops.h from arch/x86/xen/xen-ops.h
-Message-ID: <98aa418fd8664807c4bde1ff7cf2cd5969749129.1391943416.git.rashika.kheria@gmail.com>
-References: <3826f170dae13e3ee700ad9e26a8c88be4b7aaa2.1391943416.git.rashika.kheria@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <3826f170dae13e3ee700ad9e26a8c88be4b7aaa2.1391943416.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 9 Feb 2014 06:44:34 -0500
+Message-ID: <1391946317.18067.11.camel@wall-e.seibold.net>
+Subject: Re: [PATCH v13 8/9] Add 32 bit VDSO time support for 32 bit kernel
+From: Stefani Seibold <stefani@seibold.net>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        aarcange@redhat.com, john.stultz@linaro.org, luto@amacapital.net,
+        xemul@parallels.com, gorcunov@openvz.org,
+        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
+        Andreas.Brief@rohde-schwarz.com
+Date: Sun, 09 Feb 2014 12:45:17 +0100
+In-Reply-To: <20140209100536.GM12219@tassilo.jf.intel.com>
+References: <1391894951-6381-1-git-send-email-stefani@seibold.net>
+	 <1391894951-6381-9-git-send-email-stefani@seibold.net>
+	 <20140209052230.GL12219@tassilo.jf.intel.com>
+	 <1391933453.1014.20.camel@wall-e.seibold.net>
+	 <20140209100536.GM12219@tassilo.jf.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move prototype declaration to header file include/xen/xen-ops.h from
-arch/x86/xen/xen-ops.h because it is used by more than one file. Also,
-remove else condition from xen/events/events_base.c to eliminate
-conflicting definitions when CONFIG_XEN_PVHVM is not defined.
+Am Sonntag, den 09.02.2014, 02:05 -0800 schrieb Andi Kleen:
+> > EBX is a reserved as the base register when compiling with -fPIC.
+> > Otherwise it get a "error: can't find a register in class 'BREG' while
+> > reloading 'asm'".
+> 
+> In this case you have to dwarf annotate the push/pop
+> 
+> >  
+> > > Also I if this calls syscall.S:__kernel_vsyscall it clobbers more registers
+> > > (ecx at least?) and you need to describe that to gcc with a + 
+> > 
+> > Sine ECX is in use as the second parameter it is still marked as
+> > clobbered. 
+> 
+> No input parameters are not clobbered.
+> 
+> > I think it should word... As i know a system call will preserve all
+> > register expect the EAX, which is marked as in and out for this asm()
+> > directive. 
+> 
+> Yes the syscall does, but the vsyscall stub does not (for the !0x80 case)
+> 
 
-This eliminates the following warning in xen/events/events_base.c:
-drivers/xen/events/events_base.c:1640:6: warning: no previous prototype for ‘xen_callback_vector’ [-Wmissing-prototypes]
+I cross check all kinds of vsyscall and all do save the ECX registers. 
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
----
- arch/x86/xen/xen-ops.h           |    1 -
- drivers/xen/events/events_base.c |    2 --
- include/xen/xen-ops.h            |    7 +++++++
- 3 files changed, 7 insertions(+), 3 deletions(-)
+So IMHO i see no register modification other than EAX, which is declared
+as the output register in the asm() directive.
 
-diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
-index e5edc7f..aa8a979 100644
---- a/arch/x86/xen/xen-ops.h
-+++ b/arch/x86/xen/xen-ops.h
-@@ -39,7 +39,6 @@ void xen_enable_sysenter(void);
- void xen_enable_syscall(void);
- void xen_vcpu_restore(void);
- 
--void xen_callback_vector(void);
- void xen_hvm_init_shared_info(void);
- void xen_unplug_emulated_devices(void);
- 
-diff --git a/drivers/xen/events/events_base.c b/drivers/xen/events/events_base.c
-index 4672e00..5466543 100644
---- a/drivers/xen/events/events_base.c
-+++ b/drivers/xen/events/events_base.c
-@@ -1656,8 +1656,6 @@ void xen_callback_vector(void)
- 					xen_hvm_callback_vector);
- 	}
- }
--#else
--void xen_callback_vector(void) {}
- #endif
- 
- #undef MODULE_PARAM_PREFIX
-diff --git a/include/xen/xen-ops.h b/include/xen/xen-ops.h
-index 9a86337..cdea45b 100644
---- a/include/xen/xen-ops.h
-+++ b/include/xen/xen-ops.h
-@@ -38,4 +38,11 @@ int xen_unmap_domain_mfn_range(struct vm_area_struct *vma,
- bool xen_running_on_version_or_later(unsigned int major, unsigned int minor);
- 
- irqreturn_t xen_debug_interrupt(int irq, void *dev_id);
-+
-+#ifdef CONFIG_XEN_PVHVM
-+void xen_callback_vector(void);
-+#else
-+static inline void xen_callback_vector(void) {}
-+#endif
-+
- #endif /* INCLUDE_XEN_OPS_H */
--- 
-1.7.9.5
+This following is what i get with objdump -d.
+
+./arch/x86/vdso/vdso32-sysenter.so:
+
+__kernel_vsyscall:
+push   %ecx
+push   %edx
+push   %ebp
+mov    %esp,%ebp
+sysenter 
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+int    $0x80
+pop    %ebp
+pop    %edx
+pop    %ecx
+ret    
+
+./arch/x86/vdso/vdso32-int80.so:
+
+__kernel_vsyscall:
+int    $0x80
+ret
+
+./arch/x86/vdso/vdso32-syscall.so:
+
+__kernel_vsyscall:
+push   %ebp
+mov    %ecx,%ebp
+syscall 
+mov    $0x2b,%ecx
+mov    %ecx,%ss
+mov    %ebp,%ecx
+pop    %ebp
+ret
+
+BTW, it is not possible to mark an input parameter with +, this can only
+done for an output parameter.
+
+If there is really an issue what i have overseen, a working solution
+would be to use an other register for the second parameter (ESI or EDI)
+and add ECX to the clobber list.
+
+- Stefani
+
 
