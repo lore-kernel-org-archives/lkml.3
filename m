@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752133AbaBINP1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 08:15:27 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:39722 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360AbaBINP0 (ORCPT
+	id S1752153AbaBINQY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 08:16:24 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:37653 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751370AbaBINQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 08:15:26 -0500
-Date: Sun, 9 Feb 2014 18:45:21 +0530
+	Sun, 9 Feb 2014 08:16:22 -0500
+Date: Sun, 9 Feb 2014 18:46:18 +0530
 From: Rashika Kheria <rashika.kheria@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
         ocfs2-devel@oss.oracle.com, josh@joshtriplett.org
-Subject: [PATCH 14/21] fs: Mark functions as static in ocfs2/journal.c
-Message-ID: <1507e63dfdff4ed521f0ee255a04a3cb3db300bf.1391949868.git.rashika.kheria@gmail.com>
+Subject: [PATCH 15/21] fs: Mark function as static in ocfs2/xattr.c
+Message-ID: <4c4a91b6cb44627906572e2beae874160a470362.1391949868.git.rashika.kheria@gmail.com>
 References: <b572932c3e016c55e596686283036316a1aacd2f.1391949868.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
@@ -25,71 +25,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark functions as static in ocfs2/journal.c because they are not used
-outside this file.
+Mark functions as static in ocfs2/xattr.c because it is not used outside
+this file.
 
-This eliminates the following warning in ocfs2/journal.c:
-fs/ocfs2/journal.c:106:6: warning: no previous prototype for ‘ocfs2_replay_map_set_state’ [-Wmissing-prototypes]
-fs/ocfs2/journal.c:151:6: warning: no previous prototype for ‘ocfs2_queue_replay_slots’ [-Wmissing-prototypes]
-fs/ocfs2/journal.c:169:6: warning: no previous prototype for ‘ocfs2_free_replay_slots’ [-Wmissing-prototypes]
-fs/ocfs2/journal.c:1872:6: warning: no previous prototype for ‘ocfs2_queue_orphan_scan’ [-Wmissing-prototypes]
-fs/ocfs2/journal.c:1921:6: warning: no previous prototype for‘ocfs2_orphan_scan_work’ [-Wmissing-prototypes]
+This eliminates the following warning in ocfs2/xattr.c:
+fs/ocfs2/xattr.c:7256:5: warning: no previous prototype for ‘ocfs2_initxattrs’ [-Wmissing-prototypes]
 
 Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- fs/ocfs2/journal.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ fs/ocfs2/xattr.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/ocfs2/journal.c b/fs/ocfs2/journal.c
-index 44fc3e5..3aa941a 100644
---- a/fs/ocfs2/journal.c
-+++ b/fs/ocfs2/journal.c
-@@ -103,7 +103,7 @@ struct ocfs2_replay_map {
- 	unsigned char rm_replay_slots[0];
- };
- 
--void ocfs2_replay_map_set_state(struct ocfs2_super *osb, int state)
-+static void ocfs2_replay_map_set_state(struct ocfs2_super *osb, int state)
- {
- 	if (!osb->replay_map)
- 		return;
-@@ -148,7 +148,7 @@ int ocfs2_compute_replay_slots(struct ocfs2_super *osb)
- 	return 0;
+diff --git a/fs/ocfs2/xattr.c b/fs/ocfs2/xattr.c
+index 185fa3b7..7041df5 100644
+--- a/fs/ocfs2/xattr.c
++++ b/fs/ocfs2/xattr.c
+@@ -7256,8 +7256,8 @@ static int ocfs2_xattr_security_set(struct dentry *dentry, const char *name,
+ 			       name, value, size, flags);
  }
  
--void ocfs2_queue_replay_slots(struct ocfs2_super *osb)
-+static void ocfs2_queue_replay_slots(struct ocfs2_super *osb)
+-int ocfs2_initxattrs(struct inode *inode, const struct xattr *xattr_array,
+-		     void *fs_info)
++static int ocfs2_initxattrs(struct inode *inode, const struct xattr *xattr_array,
++			    void *fs_info)
  {
- 	struct ocfs2_replay_map *replay_map = osb->replay_map;
- 	int i;
-@@ -166,7 +166,7 @@ void ocfs2_queue_replay_slots(struct ocfs2_super *osb)
- 	replay_map->rm_state = REPLAY_DONE;
- }
- 
--void ocfs2_free_replay_slots(struct ocfs2_super *osb)
-+static void ocfs2_free_replay_slots(struct ocfs2_super *osb)
- {
- 	struct ocfs2_replay_map *replay_map = osb->replay_map;
- 
-@@ -1869,7 +1869,7 @@ static inline unsigned long ocfs2_orphan_scan_timeout(void)
-  * hasn't happened.  The node queues a scan and increments the
-  * sequence number in the LVB.
-  */
--void ocfs2_queue_orphan_scan(struct ocfs2_super *osb)
-+static void ocfs2_queue_orphan_scan(struct ocfs2_super *osb)
- {
- 	struct ocfs2_orphan_scan *os;
- 	int status, i;
-@@ -1918,7 +1918,7 @@ out:
- }
- 
- /* Worker task that gets fired every ORPHAN_SCAN_SCHEDULE_TIMEOUT millsec */
--void ocfs2_orphan_scan_work(struct work_struct *work)
-+static void ocfs2_orphan_scan_work(struct work_struct *work)
- {
- 	struct ocfs2_orphan_scan *os;
- 	struct ocfs2_super *osb;
+ 	const struct xattr *xattr;
+ 	int err = 0;
 -- 
 1.7.9.5
 
