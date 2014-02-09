@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752097AbaBIWif (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 17:38:35 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:45720 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751707AbaBIWie (ORCPT
+	id S1752213AbaBIWjQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 17:39:16 -0500
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:65160 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751707AbaBIWiz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 17:38:34 -0500
-X-Greylist: delayed 477 seconds by postgrey-1.27 at vger.kernel.org; Sun, 09 Feb 2014 17:38:33 EST
-Date: Sun, 9 Feb 2014 23:30:32 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: "David S. Miller" <davem@davemloft.net>
-cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, trivial@kernel.org
-Subject: [PATCH][Trivial] tcp: correct code comment stating 3 min timeout
- for FIN_WAIT2, we only do 1 min
-Message-ID: <alpine.LNX.2.00.1402092328270.8418@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sun, 9 Feb 2014 17:38:55 -0500
+Message-ID: <1391985532.25855.88.camel@x220>
+Subject: Re: [PATCH 26/28] Remove LOCAL_TIMERS
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Richard Weinberger <richard@nod.at>
+Cc: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "moderated list:ARM SUB-ARCHITECT..." 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:ARM/SHMOBILE ARM..." <linux-sh@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Date: Sun, 09 Feb 2014 23:38:52 +0100
+In-Reply-To: <1391971686-9517-27-git-send-email-richard@nod.at>
+References: <1391971686-9517-1-git-send-email-richard@nod.at>
+	 <1391971686-9517-27-git-send-email-richard@nod.at>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 09 Feb 2014 22:38:53.0038 (UTC) FILETIME=[B58948E0:01CF25E7]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As far as I can tell we have used a default of 60 seconds for
-FIN_WAIT2 timeout for ages (since 2.x times??).
+On Sun, 2014-02-09 at 19:48 +0100, Richard Weinberger wrote:
+> The symbol is an orphan, get rid of it.
 
-In any case, the timeout these days is 60 seconds, so the 3 min
-comment is wrong (and cost me a few minutes of my life when I was
-debugging a FIN_WAIT2 related problem in a userspace application and
-checked the kernel source for details).
+Orphaned a year ago, see commit 060f3043e5e ("ARM: smp: Remove local
+timer API"). But this one got added after that, in the same relase
+cycle.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- net/ipv4/tcp.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> Signed-off-by: Richard Weinberger <richard@nod.at>
 
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 4475b3b..9f3a2db 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -2229,7 +2229,7 @@ adjudge_to_death:
- 	/*	This is a (useful) BSD violating of the RFC. There is a
- 	 *	problem with TCP as specified in that the other end could
- 	 *	keep a socket open forever with no application left this end.
--	 *	We use a 3 minute timeout (about the same as BSD) then kill
-+	 *	We use a 1 minute timeout (about the same as BSD) then kill
- 	 *	our end. If they send after that then tough - BUT: long enough
- 	 *	that we won't make the old 4*rto = almost no time - whoops
- 	 *	reset mistake.
--- 
-1.7.1
+This gets my
+    Acked-by: Paul Bolle <pebolle@tiscali.nl>
+
+as it's correct (we're dropping a nop) but I'd appreciate it if you'd
+resend with the above info added. That would easy review by others too.
 
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+Paul Bolle
+
+>  arch/arm/mach-shmobile/Kconfig | 1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/arch/arm/mach-shmobile/Kconfig b/arch/arm/mach-shmobile/Kconfig
+> index 3386406..c055388 100644
+> --- a/arch/arm/mach-shmobile/Kconfig
+> +++ b/arch/arm/mach-shmobile/Kconfig
+> @@ -8,7 +8,6 @@ config ARCH_SHMOBILE_MULTI
+>  	select CPU_V7
+>  	select GENERIC_CLOCKEVENTS
+>  	select HAVE_ARM_SCU if SMP
+> -	select HAVE_ARM_TWD if LOCAL_TIMERS
+>  	select HAVE_SMP
+>  	select ARM_GIC
+>  	select MIGHT_HAVE_CACHE_L2X0
+
 
