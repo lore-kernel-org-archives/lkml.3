@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752123AbaBIPN2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 10:13:28 -0500
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:60207 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751612AbaBIPN1 (ORCPT
+	id S1751949AbaBIPSw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 10:18:52 -0500
+Received: from smtp-vbr9.xs4all.nl ([194.109.24.29]:1961 "EHLO
+	smtp-vbr9.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751474AbaBIPSv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 10:13:27 -0500
-Message-ID: <1391958806.25424.24.camel@x220>
-Subject: [PATCH] Staging: rtl8812ae: remove undefined Kconfig macros
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Sun, 09 Feb 2014 16:13:26 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
+	Sun, 9 Feb 2014 10:18:51 -0500
+Message-ID: <52F79C37.5030000@xs4all.nl>
+Date: Sun, 09 Feb 2014 16:18:15 +0100
+From: Hans Verkuil <hverkuil@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+MIME-Version: 1.0
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: Mauro Carvalho Chehab <m.chehab@samsung.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [media] si4713: Remove "select SI4713"
+References: <1391957777.25424.15.camel@x220>
+In-Reply-To: <1391957777.25424.15.camel@x220>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 09 Feb 2014 15:13:26.0579 (UTC) FILETIME=[7B534830:01CF25A9]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are references to four undefined Kconfig macros in the code.
-Remove these as the checks for them will always evaluate to false.
+On 02/09/2014 03:56 PM, Paul Bolle wrote:
+> Commits 7391232e1215 ("[media] si4713: Reorganized drivers/media/radio
+> directory") and b874b39fcd2f ("[media] si4713: Added the USB driver for
+> Si4713") both added a "select SI4713". But there's no Kconfig symbol
+> SI4713, so these selects are nops. It's not clear why they were added
+> but it's safe to remove them anyway.
+> 
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 
-There are additional cleanups possible now, but I'll gladly leave those
-to people that are actually familiar with the code.
+USB_SI4713 and PLATFORM_SI4713 both depend on I2C_SI4713. So the select
+should be I2C_SI4713. If you can post a patch fixing that, then I'll pick
+it up for 3.14.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Untested (that is, tested with "git grep" only).
+With the addition of the USB si4713 driver things moved around and were
+renamed, and these selects were missed.
 
- drivers/staging/rtl8821ae/btcoexist/halbtcoutsrc.c | 10 ----------
- 1 file changed, 10 deletions(-)
+Regards,
 
-diff --git a/drivers/staging/rtl8821ae/btcoexist/halbtcoutsrc.c b/drivers/staging/rtl8821ae/btcoexist/halbtcoutsrc.c
-index 9d9fa4d..1152fc8 100644
---- a/drivers/staging/rtl8821ae/btcoexist/halbtcoutsrc.c
-+++ b/drivers/staging/rtl8821ae/btcoexist/halbtcoutsrc.c
-@@ -732,17 +732,7 @@ bool exhalbtc_initlize_variables(struct rtl_priv *adapter)
- 	else
- 		btcoexist->binded = true;
- 
--#if ( defined(CONFIG_PCI_HCI))
--	btcoexist->chip_interface = BTC_INTF_PCI;
--#elif ( defined(CONFIG_USB_HCI))
--	btcoexist->chip_interface = BTC_INTF_USB;
--#elif ( defined(CONFIG_SDIO_HCI))
--	btcoexist->chip_interface = BTC_INTF_SDIO;
--#elif ( defined(CONFIG_GSPI_HCI))
--	btcoexist->chip_interface = BTC_INTF_GSPI;
--#else
- 	btcoexist->chip_interface = BTC_INTF_UNKNOWN;
--#endif
- 
- 	if (NULL == btcoexist->adapter)
- 		btcoexist->adapter = adapter;
--- 
-1.8.5.3
+	Hans
+
+> ---
+> Untested!
+> 
+>  drivers/media/radio/si4713/Kconfig | 2 --
+>  1 file changed, 2 deletions(-)
+> 
+> diff --git a/drivers/media/radio/si4713/Kconfig b/drivers/media/radio/si4713/Kconfig
+> index a7c3ba8..ed51ed0 100644
+> --- a/drivers/media/radio/si4713/Kconfig
+> +++ b/drivers/media/radio/si4713/Kconfig
+> @@ -1,7 +1,6 @@
+>  config USB_SI4713
+>  	tristate "Silicon Labs Si4713 FM Radio Transmitter support with USB"
+>  	depends on USB && RADIO_SI4713
+> -	select SI4713
+>  	---help---
+>  	  This is a driver for USB devices with the Silicon Labs SI4713
+>  	  chip. Currently these devices are known to work.
+> @@ -16,7 +15,6 @@ config USB_SI4713
+>  config PLATFORM_SI4713
+>  	tristate "Silicon Labs Si4713 FM Radio Transmitter support with I2C"
+>  	depends on I2C && RADIO_SI4713
+> -	select SI4713
+>  	---help---
+>  	  This is a driver for I2C devices with the Silicon Labs SI4713
+>  	  chip.
+> 
 
