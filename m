@@ -1,217 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751475AbaBIACI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Feb 2014 19:02:08 -0500
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:37489 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751234AbaBIACG (ORCPT
+	id S1751424AbaBIAPe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Feb 2014 19:15:34 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:50293 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751172AbaBIAPc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Feb 2014 19:02:06 -0500
-MIME-Version: 1.0
-X-Originating-IP: [84.73.67.144]
-In-Reply-To: <1391890927.1882.5.camel@x41>
-References: <1391886379.2669.11.camel@x41>
-	<CAKMK7uE6Gaq-ghgWJ+6Qyn7hrGzAMOHyGT9KQQJ+ij7omPV2Ew@mail.gmail.com>
-	<1391890927.1882.5.camel@x41>
-Date: Sun, 9 Feb 2014 01:02:03 +0100
-Message-ID: <CAKMK7uFx2kksGgnuy9e0xiQRKpt=_+44O1V4wbX5yNBocvjBkg@mail.gmail.com>
-Subject: Re: agp/intel: can't ioremap flush page - no chipset flushing
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        =?ISO-8859-1?Q?Ville_Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>,
-        Yinghai Lu <yinghai@kernel.org>, David Airlie <airlied@linux.ie>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 8 Feb 2014 19:15:32 -0500
+Message-ID: <1391904928.10160.118.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: REGRESSION f54b311142a92ea2e42598e347b84e1655caf8e3 tcp auto
+ corking slows down iSCSI file system creation by factor of 70 [WAS: 4 TB
+ VMFS creation takes 15 minutes vs 26 seconds]
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Thomas Glanzmann <thomas@glanzmann.de>
+Cc: John Ogness <john.ogness@linutronix.de>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        Linux Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Sat, 08 Feb 2014 16:15:28 -0800
+In-Reply-To: <20140208213608.GA24328@glanzmann.de>
+References: <1391867404.10160.88.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <1391868816.10160.93.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <20140208141905.GG20512@glanzmann.de>
+	 <1391869805.10160.97.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <20140208150001.GI20512@glanzmann.de>
+	 <1391871986.10160.105.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <20140208165732.GB22359@glanzmann.de>
+	 <1391879318.10160.108.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <20140208171531.GA23798@glanzmann.de>
+	 <1391886759.10160.114.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <20140208213608.GA24328@glanzmann.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 8, 2014 at 9:22 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> Daniel Vetter schreef op za 08-02-2014 om 20:59 [+0100]:
->> Hm, if this is really a regression between 3.13 and 3.14-rc1 then I
->> don't see any quick candidates - relevant functions in intel-gtt.c
->> seem unchanged.
->>
->> So probably a bisect is what we need here. Note that this could also
->> be due to resource handling changes in the driver/pci core, so you
->> can't restrict the bisect really.
->
-> The last bisect on this machine took over 20 builds to pinpoint the
-> offending commit. So that's bad news ...
+On Sat, 2014-02-08 at 22:36 +0100, Thomas Glanzmann wrote:
+> Hello Eric,
+> 
+> > I was simply thinking about something like :
+> > (might need further changes, but I guess this should solve your case)
+> 
+> thank you for your patch. It did not apply on top of Linux tip, so I put
+> in the changes manually and fixed up another call to tx_data that your
+> forgot in your initial patch to make it apply.
+> 
+> I gave it another run, can you confirm that it now behaves better?
+> 
+> https://thomas.glanzmann.de/tmp/tcp_auto_corking_on_patched_tcp_more.pcap.bz2
+> 
+> And look at that roundtrip graph it is perfect. Also filesystem is now
+> created in 3 seconds instead of 4.
 
-Somehow we can't allocate the flush page resource any more, but I
-don't have any idea what. There's nothing occupying the old spot (the
-usual reason why resource management goes boom), so dunno why this
-doesn't work any more. I think bisecting is the most fruitful avenue
-here.
--Daniel
+Yes, this is much better : 2 frames per request/response, instead of 4.
 
-
->
->>  But before going down this route it
->> would be worth to check out the resource allocations of both kernels.
->> Can you please attach /proc/iomem for both 3.13 and 3.14-rc1
->
-> The diff between /proc/iomem on v3.13.2 and v3.14-rc1 is:
-> --- iomem-3.13.2        2014-02-08 21:14:30.214030591 +0100
-> +++ iomem-3.14-rc1      2014-02-08 21:07:22.041189158 +0100
-> @@ -11,16 +11,13 @@
->    000e0000-000effff : Extension ROM
->    000f0000-000fffff : System ROM
->  00100000-7f6dffff : System RAM
-> -  00400000-009af63a : Kernel code
-> -  009af63b-00c932ff : Kernel data
-> -  00d4f000-00e4dfff : Kernel bss
-> +  00400000-009c57bf : Kernel code
-> +  009c57c0-00cb6aff : Kernel data
-> +  00d78000-00e74fff : Kernel bss
->  7f6e0000-7f6f4fff : ACPI Tables
->  7f6f5000-7f6fffff : ACPI Non-volatile Storage
->  7f700000-7fffffff : reserved
->    7f800000-7fffffff : Graphics Stolen Memory
-> -80000000-801fffff : PCI Bus 0000:02
-> -80200000-8027ffff : 0000:00:02.1
-> -80280000-80280fff : Intel Flush Page
->  a0000000-a003ffff : 0000:00:02.0
->  a0040000-a00403ff : 0000:00:1d.7
->    a0040000-a00403ff : ehci_hcd
->
-> /proc/iomem for v3.13.2:
-> 00000000-00000fff : reserved
-> 00001000-0009efff : System RAM
-> 0009f000-0009ffff : reserved
-> 000a0000-000bffff : Video RAM area
-> 000c0000-000c7fff : Video ROM
-> 000c8000-000cbfff : pnp 00:00
-> 000cf800-000d3fff : reserved
->   000cf800-000d0dff : Adapter ROM
->   000d1000-000d1fff : Adapter ROM
-> 000dc000-000fffff : reserved
->   000e0000-000effff : Extension ROM
->   000f0000-000fffff : System ROM
-> 00100000-7f6dffff : System RAM
->   00400000-009af63a : Kernel code
->   009af63b-00c932ff : Kernel data
->   00d4f000-00e4dfff : Kernel bss
-> 7f6e0000-7f6f4fff : ACPI Tables
-> 7f6f5000-7f6fffff : ACPI Non-volatile Storage
-> 7f700000-7fffffff : reserved
->   7f800000-7fffffff : Graphics Stolen Memory
-> 80000000-801fffff : PCI Bus 0000:02
-> 80200000-8027ffff : 0000:00:02.1
-> 80280000-80280fff : Intel Flush Page
-> a0000000-a003ffff : 0000:00:02.0
-> a0040000-a00403ff : 0000:00:1d.7
->   a0040000-a00403ff : ehci_hcd
-> a0040400-a00404ff : 0000:00:1e.2
->   a0040400-a00404ff : Intel ICH6
-> a0040800-a00409ff : 0000:00:1e.2
->   a0040800-a00409ff : Intel ICH6
-> a0080000-a00fffff : 0000:00:02.0
-> a0100000-a01fffff : PCI Bus 0000:02
->   a0100000-a010ffff : 0000:02:00.0
->     a0100000-a010ffff : tg3
-> a0200000-afffffff : PCI Bus 0000:04
->   a0200000-a0200fff : 0000:04:00.0
->     a0200000-a0200fff : yenta_socket
->   a0201000-a02010ff : 0000:04:00.1
->     a0201000-a02010ff : mmc0
->   a0202000-a0202fff : 0000:04:02.0
->     a0202000-a0202fff : ipw2200
->   a4000000-a7ffffff : PCI CardBus 0000:05
-> c0000000-cfffffff : 0000:00:02.0
-> d0000000-d7ffffff : PCI Bus 0000:04
->   d0000000-d3ffffff : PCI CardBus 0000:05
-> e0000000-efffffff : PCI MMCONFIG 0000 [bus 00-ff]
->   e0000000-efffffff : reserved
->     e0000000-efffffff : pnp 00:01
-> f0008000-f000bfff : reserved
->   f0008000-f000bfff : pnp 00:01
->     f000b410-f000b414 : iTCO_wdt
->       f000b410-f000b414 : iTCO_wdt
-> fec00000-fec0ffff : reserved
->   fec00000-fec003ff : IOAPIC 0
-> fed14000-fed19fff : reserved
->   fed14000-fed17fff : pnp 00:01
->   fed18000-fed18fff : pnp 00:01
->   fed19000-fed19fff : pnp 00:01
-> fed20000-fed8ffff : reserved
-> fee00000-fee00fff : Local APIC
->   fee00000-fee00fff : reserved
-> ff000000-ffffffff : reserved
->
-> /proc/iomem for v3.14-rc1:
-> 00000000-00000fff : reserved
-> 00001000-0009efff : System RAM
-> 0009f000-0009ffff : reserved
-> 000a0000-000bffff : Video RAM area
-> 000c0000-000c7fff : Video ROM
-> 000c8000-000cbfff : pnp 00:00
-> 000cf800-000d3fff : reserved
->   000cf800-000d0dff : Adapter ROM
->   000d1000-000d1fff : Adapter ROM
-> 000dc000-000fffff : reserved
->   000e0000-000effff : Extension ROM
->   000f0000-000fffff : System ROM
-> 00100000-7f6dffff : System RAM
->   00400000-009c57bf : Kernel code
->   009c57c0-00cb6aff : Kernel data
->   00d78000-00e74fff : Kernel bss
-> 7f6e0000-7f6f4fff : ACPI Tables
-> 7f6f5000-7f6fffff : ACPI Non-volatile Storage
-> 7f700000-7fffffff : reserved
->   7f800000-7fffffff : Graphics Stolen Memory
-> a0000000-a003ffff : 0000:00:02.0
-> a0040000-a00403ff : 0000:00:1d.7
->   a0040000-a00403ff : ehci_hcd
-> a0040400-a00404ff : 0000:00:1e.2
->   a0040400-a00404ff : Intel ICH6
-> a0040800-a00409ff : 0000:00:1e.2
->   a0040800-a00409ff : Intel ICH6
-> a0080000-a00fffff : 0000:00:02.0
-> a0100000-a01fffff : PCI Bus 0000:02
->   a0100000-a010ffff : 0000:02:00.0
->     a0100000-a010ffff : tg3
-> a0200000-afffffff : PCI Bus 0000:04
->   a0200000-a0200fff : 0000:04:00.0
->     a0200000-a0200fff : yenta_socket
->   a0201000-a02010ff : 0000:04:00.1
->     a0201000-a02010ff : mmc0
->   a0202000-a0202fff : 0000:04:02.0
->     a0202000-a0202fff : ipw2200
->   a4000000-a7ffffff : PCI CardBus 0000:05
-> c0000000-cfffffff : 0000:00:02.0
-> d0000000-d7ffffff : PCI Bus 0000:04
->   d0000000-d3ffffff : PCI CardBus 0000:05
-> e0000000-efffffff : PCI MMCONFIG 0000 [bus 00-ff]
->   e0000000-efffffff : reserved
->     e0000000-efffffff : pnp 00:01
-> f0008000-f000bfff : reserved
->   f0008000-f000bfff : pnp 00:01
->     f000b410-f000b414 : iTCO_wdt
->       f000b410-f000b414 : iTCO_wdt
-> fec00000-fec0ffff : reserved
->   fec00000-fec003ff : IOAPIC 0
-> fed14000-fed19fff : reserved
->   fed14000-fed17fff : pnp 00:01
->   fed18000-fed18fff : pnp 00:01
->   fed19000-fed19fff : pnp 00:01
-> fed20000-fed8ffff : reserved
-> fee00000-fee00fff : Local APIC
->   fee00000-fee00fff : reserved
-> ff000000-ffffffff : reserved
->
-> Thanks,
->
->
-> Paul Bolle
->
+13:32:04.665367 IP 10.101.0.12.43418 > 10.101.99.5.3260: Flags [P.], seq 384:432, ack 2529, win 514, options [nop,nop,TS val 1576981 ecr 4294913967], length 48
+13:32:04.665483 IP 10.101.99.5.3260 > 10.101.0.12.43418: Flags [P.], seq 2529:3089, ack 432, win 235, options [nop,nop,TS val 4294913967 ecr 1576981], length 560
+13:32:04.665642 IP 10.101.0.12.43418 > 10.101.99.5.3260: Flags [P.], seq 432:480, ack 3089, win 514, options [nop,nop,TS val 1576981 ecr 4294913967], length 48
+13:32:04.665756 IP 10.101.99.5.3260 > 10.101.0.12.43418: Flags [P.], seq 3089:3649, ack 480, win 235, options [nop,nop,TS val 4294913967 ecr 1576981], length 560
+13:32:04.665933 IP 10.101.0.12.43418 > 10.101.99.5.3260: Flags [P.], seq 480:528, ack 3649, win 514, options [nop,nop,TS val 1576981 ecr 4294913967], length 48
+13:32:04.666046 IP 10.101.99.5.3260 > 10.101.0.12.43418: Flags [P.], seq 3649:4209, ack 528, win 235, options [nop,nop,TS val 4294913967 ecr 1576981], length 560
+13:32:04.666214 IP 10.101.0.12.43418 > 10.101.99.5.3260: Flags [P.], seq 528:576, ack 4209, win 514, options [nop,nop,TS val 1576981 ecr 4294913967], length 48
+13:32:04.666333 IP 10.101.99.5.3260 > 10.101.0.12.43418: Flags [P.], seq 4209:4769, ack 576, win 235, options [nop,nop,TS val 4294913967 ecr 1576981], length 560
+13:32:04.666678 IP 10.101.0.12.43418 > 10.101.99.5.3260: Flags [P.], seq 576:624, ack 4769, win 514, options [nop,nop,TS val 1576981 ecr 4294913967], length 48
+13:32:04.666790 IP 10.101.99.5.3260 > 10.101.0.12.43418: Flags [P.], seq 4769:5329, ack 624, win 235, options [nop,nop,TS val 4294913967 ecr 1576981], length 560
+13:32:04.666983 IP 10.101.0.12.43418 > 10.101.99.5.3260: Flags [P.], seq 624:672, ack 5329, win 514, options [nop,nop,TS val 1576981 ecr 4294913967], length 48
+13:32:04.667097 IP 10.101.99.5.3260 > 10.101.0.12.43418: Flags [P.], seq 5329:5889, ack 672, win 235, options [nop,nop,TS val 4294913967 ecr 1576981], length 560
+13:32:04.667280 IP 10.101.0.12.43418 > 10.101.99.5.3260: Flags [P.], seq 672:720, ack 5889, win 514, options [nop,nop,TS val 1576981 ecr 4294913967], length 48
+13:32:04.667324 IP 10.101.99.5.3260 > 10.101.0.12.43418: Flags [P.], seq 5889:6449, ack 720, win 235, options [nop,nop,TS val 4294913967 ecr 1576981], length 560
+13:32:04.667500 IP 10.101.0.12.43418 > 10.101.99.5.3260: Flags [P.], seq 720:768, ack 6449, win 514, options [nop,nop,TS val 1576981 ecr 4294913967], length 48
+13:32:04.667540 IP 10.101.99.5.3260 > 10.101.0.12.43418: Flags [P.], seq 6449:7009, ack 768, win 235, options [nop,nop,TS val 4294913967 ecr 1576981], length 560
 
 
-
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
