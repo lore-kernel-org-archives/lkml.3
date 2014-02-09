@@ -1,24 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751918AbaBIQ4o (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 11:56:44 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:42078 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751488AbaBIQ4m (ORCPT
+	id S1752092AbaBIQ5x (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 11:57:53 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:41443 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751438AbaBIQ5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 11:56:42 -0500
+	Sun, 9 Feb 2014 11:57:51 -0500
 From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org,
+To: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        josh@joshtriplett.org
-Subject: =?UTF-8?q?=5BPATCH=20v2=2009/13=5D=20net=3A=20Move=20prototype=20declaration=20to=20header=20file=20include/net/ipx=2Eh=20from=20net/ipx/af=5Fipx=2Ec?=
-Date: Sun,  9 Feb 2014 22:26:32 +0530
-Message-Id: <820c61ec008de281d921d375bf6984acc74e1bf9.1391955925.git.rashika.kheria@gmail.com>
+        netdev@vger.kernel.org, josh@joshtriplett.org
+Subject: =?UTF-8?q?=5BPATCH=20v2=2010/13=5D=20net=3A=20Move=20prototype=20declaration=20to=20header=20file=20include/net/datalink=2Eh=20from=20net/ipx/af=5Fipx=2Ec?=
+Date: Sun,  9 Feb 2014 22:27:41 +0530
+Message-Id: <b6f64a14cdcff5333ee2c83cefeca42f8e934b12.1391955925.git.rashika.kheria@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <6f029c895035908595957fb16ab445c82793c77d.1391955924.git.rashika.kheria@gmail.com>
 References: <6f029c895035908595957fb16ab445c82793c77d.1391955924.git.rashika.kheria@gmail.com>
@@ -29,63 +24,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move prototype declaration of functions to header file include/net/ipx.h
-from net/ipx/af_ipx.c because they are used by more than one file.
+Move prototype declarations of function to header file
+include/net/datalink.h from net/ipx/af_ipx.c because they are used by
+more than one file.
 
-This eliminates the following warning in
-net/ipx/ipx_route.c:33:19: warning: no previous prototype for ‘ipxrtr_lookup’ [-Wmissing-prototypes]
-net/ipx/ipx_route.c:52:5: warning: no previous prototype for ‘ipxrtr_add_route’ [-Wmissing-prototypes]
-net/ipx/ipx_route.c:94:6: warning: no previous prototype for ‘ipxrtr_del_routes’ [-Wmissing-prototypes]
-net/ipx/ipx_route.c:149:5: warning: no previous prototype for ‘ipxrtr_route_skb’ [-Wmissing-prototypes]
-net/ipx/ipx_route.c:171:5: warning: no previous prototype for ‘ipxrtr_route_packet’ [-Wmissing-prototypes]
-net/ipx/ipx_route.c:261:5: warning: no previous prototype for ‘ipxrtr_ioctl’ [-Wmissing-prototypes]
+This eliminates the following warning in net/ipx/pe2.c:
+net/ipx/pe2.c:20:24: warning: no previous prototype for ‘make_EII_client’ [-Wmissing-prototypes]
+net/ipx/pe2.c:32:6: warning: no previous prototype for ‘destroy_EII_client’ [-Wmissing-prototypes]
 
 Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- include/net/ipx.h |    8 ++++++++
- net/ipx/af_ipx.c  |    9 ---------
- 2 files changed, 8 insertions(+), 9 deletions(-)
+ include/net/datalink.h |    2 ++
+ net/ipx/af_ipx.c       |    4 +---
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/include/net/ipx.h b/include/net/ipx.h
-index 75466ac..0143180 100644
---- a/include/net/ipx.h
-+++ b/include/net/ipx.h
-@@ -143,6 +143,14 @@ void ipxitf_down(struct ipx_interface *intrfc);
- struct ipx_interface *ipxitf_find_using_net(__be32 net);
- int ipxitf_send(struct ipx_interface *intrfc, struct sk_buff *skb, char *node);
- __be16 ipx_cksum(struct ipxhdr *packet, int length);
-+int ipxrtr_add_route(__be32 network, struct ipx_interface *intrfc,
-+		     unsigned char *node);
-+void ipxrtr_del_routes(struct ipx_interface *intrfc);
-+int ipxrtr_route_packet(struct sock *sk, struct sockaddr_ipx *usipx,
-+			struct iovec *iov, size_t len, int noblock);
-+int ipxrtr_route_skb(struct sk_buff *skb);
-+struct ipx_route *ipxrtr_lookup(__be32 net);
-+int ipxrtr_ioctl(unsigned int cmd, void __user *arg);
+diff --git a/include/net/datalink.h b/include/net/datalink.h
+index deb7ca7..93cb18f 100644
+--- a/include/net/datalink.h
++++ b/include/net/datalink.h
+@@ -15,4 +15,6 @@ struct datalink_proto {
+ 	struct list_head node;
+ };
  
- static __inline__ void ipxitf_put(struct ipx_interface *intrfc)
- {
++struct datalink_proto *make_EII_client(void);
++void destroy_EII_client(struct datalink_proto *dl);
+ #endif
 diff --git a/net/ipx/af_ipx.c b/net/ipx/af_ipx.c
-index 994e28b..e5a00a9 100644
+index e5a00a9..224d058 100644
 --- a/net/ipx/af_ipx.c
 +++ b/net/ipx/af_ipx.c
-@@ -84,15 +84,6 @@ DEFINE_SPINLOCK(ipx_interfaces_lock);
- struct ipx_interface *ipx_primary_net;
- struct ipx_interface *ipx_internal_net;
+@@ -52,6 +52,7 @@
+ #include <net/p8022.h>
+ #include <net/psnap.h>
+ #include <net/sock.h>
++#include <net/datalink.h>
+ #include <net/tcp_states.h>
  
--extern int ipxrtr_add_route(__be32 network, struct ipx_interface *intrfc,
--			    unsigned char *node);
--extern void ipxrtr_del_routes(struct ipx_interface *intrfc);
--extern int ipxrtr_route_packet(struct sock *sk, struct sockaddr_ipx *usipx,
--			       struct iovec *iov, size_t len, int noblock);
--extern int ipxrtr_route_skb(struct sk_buff *skb);
--extern struct ipx_route *ipxrtr_lookup(__be32 net);
--extern int ipxrtr_ioctl(unsigned int cmd, void __user *arg);
+ #include <asm/uaccess.h>
+@@ -1977,9 +1978,6 @@ static struct notifier_block ipx_dev_notifier = {
+ 	.notifier_call	= ipxitf_device_event,
+ };
+ 
+-extern struct datalink_proto *make_EII_client(void);
+-extern void destroy_EII_client(struct datalink_proto *);
 -
- struct ipx_interface *ipx_interfaces_head(void)
- {
- 	struct ipx_interface *rc = NULL;
+ static const unsigned char ipx_8022_type = 0xE0;
+ static const unsigned char ipx_snap_id[5] = { 0x0, 0x0, 0x0, 0x81, 0x37 };
+ static const char ipx_EII_err_msg[] __initconst =
 -- 
 1.7.9.5
 
