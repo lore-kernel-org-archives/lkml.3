@@ -1,131 +1,755 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752542AbaBIXSW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 18:18:22 -0500
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:64837 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752087AbaBIXSU (ORCPT
+	id S1751919AbaBIXcb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 18:32:31 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:63591 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751710AbaBIXc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 18:18:20 -0500
-From: Peter Wu <lekensteyn@gmail.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Bastien Traverse <bastien.traverse@gmail.com>,
-        linux-kernel@vger.kernel.org, francis.moro@gmail.com,
-        linux-pm@vger.kernel.org
-Subject: Re: 3.12: ethernet controller missing after resuming from suspend to RAM
-Date: Mon, 10 Feb 2014 00:18:16 +0100
-Message-ID: <1395731.XHixqRiN3E@al>
-User-Agent: KMail/4.12.2 (Linux/3.13.2-testing; KDE/4.12.2; x86_64; ; )
-In-Reply-To: <2150349.jTafhT0LGH@vostro.rjw.lan>
-References: <52F2CC7B.80406@gmail.com> <2773460.zRzOP7I6SW@al> <2150349.jTafhT0LGH@vostro.rjw.lan>
+	Sun, 9 Feb 2014 18:32:29 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <52F7F79C.1010001@kernel.org>
+References: <1391670015-6551-1-git-send-email-mranostay@gmail.com>
+	<1391670015-6551-3-git-send-email-mranostay@gmail.com>
+	<52F7F79C.1010001@kernel.org>
+Date: Sun, 9 Feb 2014 15:32:28 -0800
+Message-ID: <CAKzfze_M1MjCEBVeOr4dD9kCW2NmWGAALdr=WyxqzbJno-V3Og@mail.gmail.com>
+Subject: Re: [PATCH 2/2] iio: Add AS3935 lightning sensor support
+From: Matt Ranostay <mranostay@gmail.com>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        devicetree@vger.kernel.org, Matt Porter <matt.porter@linaro.org>,
+        Pantelis Antoniou <pantelis.antoniou@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 09 February 2014 22:46:05 Rafael J. Wysocki wrote:
-> That most likely would single out one of the ACPIPHP commits without giving
-> us much clue about what's going on.
-> 
-> I fail to see what the connection between those changes and system resume
-> is, however.
-> 
-> Please replace all pr_debug() calls in hotplug_notify() with pr_info() and
-> see if you get any events from there.
+On Sun, Feb 9, 2014 at 1:48 PM, Jonathan Cameron <jic23@kernel.org> wrote:
+> On 06/02/14 07:00, Matt Ranostay wrote:
+>>
+>> AS3935 chipset can detect lightning strikes and reports those back as
+>> events and the estimated distance to the storm.
+>>
+>> Signed-off-by: Matt Ranostay <mranostay@gmail.com>
+>
+> Hi Matt,
+>
+> Sorry for my somewhat late entry in the discussion of the interface for this
+> device, but I'm wondering if we don't have an opportunity to create a more
+> flexible interface for 'position' measurements.  Afterall sooner or later
+> we'll get a magetic position sensor or similar coming through.
+>
+> So how about defining a new iio_chan_type IIO_POSITION and adding some
+> more modifiers to allow for polar coordinates (spherical coordinates I guess
+> given we are in 3D). For now we'd only need IIO_MOD_R though later I guess
+> we would have IIO_MOD_THETA and IIO_MOD_PHI.  That would in this case give
+> us.
+>
+> in_position_r_raw with the unit after applying scaling being meters.
+>
+> Clearly the ideal would have been to bring this suggestion up before we
+> had the proximity sensors but such is life.  Those tend to simply indicate
+> something is 'near' rather than at an explicity distance.  The difference
+> is clearly minor though.
+>
+> What do people think of this approach?
+>
+> Comments on the code inline. Note I review from the end (usually makes
+> more sense) so comments may only make sense in that direction!
+>
+> Beware of the quirks of spi buses as highlighted inline.  You have to allow
+> for the buffers you provide being used directly for DMA transfers (unlike
+> say i2c which copies everything). As such there are some restrictions on
+> where these buffers must lie.
+>
+> Jonathan
+>
+>> ---
+>>   .../ABI/testing/sysfs-bus-iio-proximity-as3935     |  18 +
+>>   drivers/iio/Kconfig                                |   1 +
+>>   drivers/iio/Makefile                               |   1 +
+>>   drivers/iio/proximity/Kconfig                      |  19 +
+>>   drivers/iio/proximity/Makefile                     |   6 +
+>>   drivers/iio/proximity/as3935.c                     | 437
+>> +++++++++++++++++++++
+>>   6 files changed, 482 insertions(+)
+>>   create mode 100644
+>> Documentation/ABI/testing/sysfs-bus-iio-proximity-as3935
+>>   create mode 100644 drivers/iio/proximity/Kconfig
+>>   create mode 100644 drivers/iio/proximity/Makefile
+>>   create mode 100644 drivers/iio/proximity/as3935.c
+>>
+>> diff --git a/Documentation/ABI/testing/sysfs-bus-iio-proximity-as3935
+>> b/Documentation/ABI/testing/sysfs-bus-iio-proximity-as3935
+>> new file mode 100644
+>> index 0000000..f6d9e6f
+>> --- /dev/null
+>> +++ b/Documentation/ABI/testing/sysfs-bus-iio-proximity-as3935
+>> @@ -0,0 +1,18 @@
+>> +What           /sys/bus/iio/devices/iio:deviceX/in_proximity_raw
+>> +Date:          January 2014
+>> +KernelVersion: 3.15
+>> +Contact:       Matt Ranostay <mranostay@gmail.com>
+>> +Description:
+>> +               Get the current distance in kilometers of storm
+>> +               1    = storm overhead
+>> +               1-40 = distance in kilometers
+>> +               63   = out of range
+>
+> This attribute should be a general purpose one given it will apply to lots
+> of other drivers over time.  Write it as such and distances should
+> definitely
+> be in meters not kilometers.
+>
+>
+>> +
+>> +What           /sys/bus/iio/devices/iio:deviceX/gain_boost
+>> +Date:          January 2014
+>> +KernelVersion: 3.15
+>> +Contact:       Matt Ranostay <mranostay@gmail.com>
+>> +Description:
+>> +               Show or set the gain boost of the amp, from 0-31 range.
+>> +               18 = indoors (default)
+>> +               14 = outdoors
+>
+> What does this gain boost actually mean?  I couldn't immediately tell from
+> the datasheet.  Does it effect the distance estimates, or is it about
+> sensitivity to detect them in the first place?  Even though you have defined
+> it just for this one device, we are always looking to generalize interfaces
+> so it is a good to have an idea of what it actually is.
+>
 
-I could not find a hotplug_notify function in the kernel tree, but I
-have dyndbg enabled. Booting with `pci_hotplug.debug=Y
-pci_hotplug.debug_acpi=Y pci_hotplug.dyndbg acpiphp.dyndbg` gives me
-only a few acpiphp_glue messages. After resume:
+Controls the goo
 
-[   55.492261] CPU3 is up
-[   55.494710] ACPI: Waking up from system sleep state S3
-[   56.187298] ehci-pci 0000:00:1a.0: System wakeup disabled by ACPI
-[   56.213939] ehci-pci 0000:00:1d.0: System wakeup disabled by ACPI
-[   56.240614] xhci_hcd 0000:02:00.0: System wakeup disabled by ACPI
-[   56.294230] PM: noirq resume of devices complete after 133.375 msecs
-[   56.294507] PM: early resume of devices complete after 0.231 msecs
-[   56.294798] pcieport 0000:00:1c.1: System wakeup disabled by ACPI
-[   56.296628] iwlwifi 0000:05:00.0: RF_KILL bit toggled to enable radio.
-[   56.404258] snd_hda_intel 0000:00:1b.0: irq 48 for MSI/MSI-X
-[   56.627043] ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-[   56.627929] ata1.00: configured for UDMA/133
-[   56.628044] sd 0:0:0:0: [sda] Starting disk
-[   56.633730] ata2: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
-[   56.640403] ata5: SATA link down (SStatus 0 SControl 300)
-[   56.802771] ata2.00: configured for UDMA/100
-[   57.737542] PM: resume of devices complete after 1443.847 msecs
-[   57.737951] PM: Finishing wakeup.
-[   57.737957] acpiphp_glue: hotplug_event: Bus check notify on \_SB_.PCI0.RP03
-[   57.737960] acpiphp_glue: hotplug_event: re-enumerating slots under \_SB_.PCI0.RP03
-[   57.738080] iwlwifi 0000:05:00.0: no hotplug settings from platform
-[   57.737963] Restarting tasks ... done.
-[   57.740480] video LNXVIDEO:00: Restoring backlight state
-[   57.740487] video LNXVIDEO:01: Restoring backlight state
-[   58.203311] ACPI: \_SB_.AC__: ACPI_NOTIFY_BUS_CHECK event: unsupported
-[   58.204080] acpiphp_glue: hotplug_event: Bus check notify on \_SB_.PCI0.RP01
-[   58.204083] acpiphp_glue: hotplug_event: re-enumerating slots under \_SB_.PCI0.RP01
-[   58.204121] xhci_hcd 0000:02:00.0: no hotplug settings from platform
-[   58.204132] acpiphp_glue: hotplug_event: Bus check notify on \_SB_.PCI0.RP02
-[   58.204134] acpiphp_glue: hotplug_event: re-enumerating slots under \_SB_.PCI0.RP02
-[   58.209339] jme 0000:04:00.5: irq 50 for MSI/MSI-X
-[   58.233503] jme 0000:04:00.5 eth0: Link is down
-[   58.233578] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
-[   58.235113] iwlwifi 0000:05:00.0: L1 Enabled; Disabling L0S
-[   58.242131] iwlwifi 0000:05:00.0: Radio type=0x1-0x3-0x1
-[   58.346311] IPv6: ADDRCONF(NETDEV_UP): wlan0: link is not ready
-[   58.392764] acpiphp_glue: hotplug_event: Bus check notify on \_SB_.PCI0.RP03
-[   58.392766] acpiphp_glue: hotplug_event: re-enumerating slots under \_SB_.PCI0.RP03
-[   58.392874] iwlwifi 0000:05:00.0: no hotplug settings from platform
+>
+>>
+>> diff --git a/drivers/iio/Kconfig b/drivers/iio/Kconfig
+>> index 5dd0e12..743485e 100644
+>> --- a/drivers/iio/Kconfig
+>> +++ b/drivers/iio/Kconfig
+>> @@ -74,6 +74,7 @@ if IIO_TRIGGER
+>>      source "drivers/iio/trigger/Kconfig"
+>>   endif #IIO_TRIGGER
+>>   source "drivers/iio/pressure/Kconfig"
+>> +source "drivers/iio/proximity/Kconfig"
+>>   source "drivers/iio/temperature/Kconfig"
+>>
+>>   endif # IIO
+>> diff --git a/drivers/iio/Makefile b/drivers/iio/Makefile
+>> index 887d390..698afc2 100644
+>> --- a/drivers/iio/Makefile
+>> +++ b/drivers/iio/Makefile
+>> @@ -24,5 +24,6 @@ obj-y += light/
+>>   obj-y += magnetometer/
+>>   obj-y += orientation/
+>>   obj-y += pressure/
+>> +obj-y += proximity/
+>>   obj-y += temperature/
+>>   obj-y += trigger/
+>> diff --git a/drivers/iio/proximity/Kconfig b/drivers/iio/proximity/Kconfig
+>> new file mode 100644
+>> index 0000000..0c8cdf5
+>> --- /dev/null
+>> +++ b/drivers/iio/proximity/Kconfig
+>> @@ -0,0 +1,19 @@
+>> +#
+>> +# Proximity sensors
+>> +#
+>> +
+>> +menu "Lightning sensors"
+>> +
+>> +config AS3935
+>> +       tristate "AS3935 Franklin lightning sensor"
+>> +       select IIO_BUFFER
+>> +       select IIO_TRIGGERED_BUFFER
+>> +       depends on SPI
+>> +       help
+>> +         Say Y here to build SPI interface support for the Austrian
+>> +         Microsystems AS3935 lightning detection sensor.
+>> +
+>> +         To compile this driver as a module, choose M here: the
+>> +         module will be called as3935
+>> +
+>> +endmenu
+>> diff --git a/drivers/iio/proximity/Makefile
+>> b/drivers/iio/proximity/Makefile
+>> new file mode 100644
+>> index 0000000..743adee
+>> --- /dev/null
+>> +++ b/drivers/iio/proximity/Makefile
+>> @@ -0,0 +1,6 @@
+>> +#
+>> +# Makefile for IIO proximity sensors
+>> +#
+>> +
+>> +# When adding new entries keep the list in alphabetical order
+>> +obj-$(CONFIG_AS3935)           += as3935.o
+>> diff --git a/drivers/iio/proximity/as3935.c
+>> b/drivers/iio/proximity/as3935.c
+>> new file mode 100644
+>> index 0000000..109759e
+>> --- /dev/null
+>> +++ b/drivers/iio/proximity/as3935.c
+>> @@ -0,0 +1,437 @@
+>> +/*
+>> + * as3935.c - Support for AS3935 Franklin lightning sensor
+>> + *
+>> + * Copyright (C) 2014 Matt Ranostay <mranostay@gmail.com>
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License as published by
+>> + * the Free Software Foundation; either version 2 of the License, or
+>> + * (at your option) any later version.
+>> + *
+>> + * This program is distributed in the hope that it will be useful,
+>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+>> + * GNU General Public License for more details.
+>> + *
+>> + */
+>> +
+>> +#include <linux/module.h>
+>> +#include <linux/init.h>
+>> +#include <linux/interrupt.h>
+>> +#include <linux/delay.h>
+>> +#include <linux/workqueue.h>
+>> +#include <linux/mutex.h>
+>> +#include <linux/err.h>
+>> +#include <linux/irq.h>
+>> +#include <linux/gpio.h>
+>> +#include <linux/spi/spi.h>
+>> +#include <linux/iio/iio.h>
+>> +#include <linux/iio/sysfs.h>
+>> +#include <linux/iio/trigger.h>
+>> +#include <linux/iio/trigger_consumer.h>
+>> +#include <linux/iio/buffer.h>
+>> +#include <linux/iio/triggered_buffer.h>
+>> +#include <linux/pm_runtime.h>
+>> +#include <linux/of_gpio.h>
+>> +
+>> +
+>> +#define AS3935_AFE_GAIN                0x00
+>> +#define AS3935_AFE_MASK                0x3F
+>> +#define AS3935_AFE_GAIN_MAX    0x1F
+>> +#define AS3935_AFE_PWR_BIT     BIT(0)
+>> +
+>> +#define AS3935_INT             0x03
+>> +#define AS3935_INT_MASK                0x07
+>> +#define AS3935_EVENT_INT       BIT(3)
+>> +#define AS3935_NOISE_INT       BIT(1)
+>> +
+>> +#define AS3935_DATA            0x07
+>> +#define AS3935_DATA_MASK       0x3F
+>> +
+>> +#define AS3935_TUNE_CAP                0x08
+>> +#define AS3935_CALIBRATE       0x3D
+>> +
+>> +#define AS3935_WRITE_DATA      BIT(15)
+>> +#define AS3935_READ_DATA       BIT(14)
+>
+> ((x) << 8) to protect against strange elements being passed in as x.
+> Obviously you have this tightly controlled here, but who knows what others
+> might add in future, so best to do it right!
+>
+>> +#define AS3935_ADDRESS(x)      (x<<8)
+>> +
+>> +struct as3935_state {
+>> +       struct spi_device *spi;
+>> +       struct iio_trigger *trig;
+>> +       struct mutex lock;
+>> +       struct delayed_work work;
+>> +
+>> +       u32 tune_cap;
+>> +};
+>> +
+>> +static const struct iio_chan_spec as3935_channels[] = {
+>> +       {
+>> +               .type           = IIO_PROXIMITY,
+>> +               .info_mask_separate =
+>> +                       BIT(IIO_CHAN_INFO_RAW),
+>> +               .scan_index     = 0,
+>> +               .scan_type = {
+>> +                       .sign           = 'u',
+>> +                       .realbits       = 6,
+>> +                       .storagebits    = 8,
+>> +               },
+>> +       },
+>> +       IIO_CHAN_SOFT_TIMESTAMP(1),
+>> +};
+>> +
+>
+> This looks very similar to val = spi_w8r8(st->spi, reg);
+>
+>
+>> +static int as3935_read(struct as3935_state *st, unsigned int reg, int
+>> *val)
+>> +{
+>> +       u8 tx, rx;
+>
+> Spi buffers should never be on the stack. You can't guarantee alignment and
+> they must be cache aligned.  spi_w8r8 deals with this by using a small
+> buffer allocated on the heap.  The alternative is to carefully allocate
+> a cache line aligned buffer in your state structure.  Here I'd definitely
+> use spi_w8r8 though!
+>
 
-RP02 is the ACPI Device for 00:1c.1 [1].
+Noted will do the former.. having it the in the as3935_state struct
+would make sense if the buffer was needed all over.
 
-Could the following commit have something to do with it?
+>> +       int ret;
+>> +
+>> +       struct spi_transfer xfers[] = {
+>> +               {
+>> +                       .tx_buf = &tx,
+>> +                       .bits_per_word = 8,
+>> +                       .len = 1,
+>> +               }, {
+>> +                       .rx_buf = &rx,
+>> +                       .bits_per_word = 8,
+>> +                       .len = 1,
+>> +               },
+>> +       };
+>> +       tx = (AS3935_READ_DATA | AS3935_ADDRESS(reg)) >> 8;
+>> +
+>> +       ret = spi_sync_transfer(st->spi, xfers, ARRAY_SIZE(xfers));
+>> +       *val = rx;
+>> +
+>> +       return ret;
+>> +};
+>> +
+>
+>
+>> +static int as3935_write(struct as3935_state *st,
+>> +                               unsigned int reg,
+>> +                               unsigned int val)
+>> +{
+>> +       u8 buf[2];
+>
+> You could use a C99 style asignment here (entirely optional!)
+> e.g.
+>         u8 buf[2] = { (AS3935_WRITE_DATA | AS3935_ADDRESS(reg)) >> 8,
+>                       val };
+> However, this buffer must be cacheline aligned seeing as spi_write
+> does not use a suitably aligned bounce buffer (unlike spi_w8r8 which does).
+> This can cause nasty, difficult to track down corruptions with spi
+> controllers
+> that do DMA.
+>
+>> +
+>> +       buf[0] = (AS3935_WRITE_DATA | AS3935_ADDRESS(reg)) >> 8;
+>> +       buf[1] = val;
+>> +
+>> +       return spi_write(st->spi, (u8 *) &buf, 2);
+>> +};
+>> +
+>> +static ssize_t as3935_gain_boost_show(struct device *dev,
+>> +                               struct device_attribute *attr,
+>> +                               char *buf)
+>> +{
+>> +       struct as3935_state *st = iio_priv(dev_to_iio_dev(dev));
+>> +       int val, ret;
+>> +
+>> +       ret = as3935_read(st, AS3935_AFE_GAIN, &val);
+>> +       if (ret)
+>> +               return ret;
+>> +       val = (val & AS3935_AFE_MASK) >> 1;
+>> +
+>> +       return sprintf(buf, "%d\n", val);
+>> +};
+>> +
+>> +static ssize_t as3935_gain_boost_store(struct device *dev,
+>> +                                       struct device_attribute *attr,
+>> +                                       const char *buf, size_t len)
+>> +{
+>> +       struct as3935_state *st = iio_priv(dev_to_iio_dev(dev));
+>> +       unsigned long val;
+>> +       int ret;
+>> +
+>> +       ret = kstrtoul((const char *) buf, 10, &val);
+>> +       if (ret)
+>> +               return -EINVAL;
+>> +
+>> +       if (val > AS3935_AFE_GAIN_MAX)
+>> +               return -EINVAL;
+>> +
+>> +       as3935_write(st, AS3935_AFE_GAIN, val << 1);
+>> +
+>> +       return len;
+>> +};
+>> +
+>> +static IIO_DEVICE_ATTR(gain_boost, S_IRUGO | S_IWUSR,
+>> +       as3935_gain_boost_show, as3935_gain_boost_store, 0);
+>> +
+>> +
+>> +static struct attribute *as3935_attributes[] = {
+>> +       &iio_dev_attr_gain_boost.dev_attr.attr,
+>> +       NULL,
+>> +};
+>> +
+>> +static struct attribute_group as3935_attribute_group = {
+>> +       .attrs = as3935_attributes,
+>> +};
+>> +
+>> +static int as3935_read_raw(struct iio_dev *indio_dev,
+>> +                          struct iio_chan_spec const *chan,
+>> +                          int *val,
+>> +                          int *val2,
+>> +                          long m)
+>> +{
+>> +       struct as3935_state *st = iio_priv(indio_dev);
+>> +       int ret;
+>> +
+>> +       if (m != IIO_CHAN_INFO_RAW)
+>> +               return -EINVAL;
+>> +
+>> +       *val2 = 0;
+>> +       ret = as3935_read(st, AS3935_DATA, val);
+>> +       if (ret)
+>> +               return ret;
+>> +       return IIO_VAL_INT;
+>> +}
+>> +
+>> +static const struct iio_info as3935_info = {
+>> +       .driver_module = THIS_MODULE,
+>> +       .attrs = &as3935_attribute_group,
+>> +       .read_raw = &as3935_read_raw,
+>> +};
+>> +
+>> +static const struct iio_buffer_setup_ops iio_triggered_buffer_setup_ops =
+>> {
+>> +       .postenable = &iio_triggered_buffer_postenable,
+>> +       .predisable = &iio_triggered_buffer_predisable,
+>> +};
+>> +
+>> +static irqreturn_t as3935_trigger_handler(int irq, void *private)
+>> +{
+>> +       struct iio_poll_func *pf = private;
+>> +       struct iio_dev *indio_dev = pf->indio_dev;
+>> +       struct as3935_state *st = iio_priv(indio_dev);
+>> +       int val, ret;
+>> +
+>> +       ret = as3935_read(st, AS3935_DATA, &val);
+>> +       if (ret)
+>> +               goto err_read;
+>> +       val &= AS3935_DATA_MASK;
+>
+> This timestamp is probably rather late given I think the interrupt indicated
+> the actual point in time?
+>
+>> +       iio_push_to_buffers_with_timestamp(indio_dev, &val,
+>> iio_get_time_ns());
+>> +err_read:
+>> +       iio_trigger_notify_done(indio_dev->trig);
+>> +
+>> +       return IRQ_HANDLED;
+>> +};
+>> +
+>> +static const struct iio_trigger_ops iio_interrupt_trigger_ops = {
+>> +       .owner = THIS_MODULE,
+>> +};
+>> +
+>> +static void as3935_event_work(struct work_struct *work)
+>> +{
+>> +       struct as3935_state *st;
+>> +       struct spi_device *spi;
+>> +       int val;
+>> +
+>> +       st = container_of(work, struct as3935_state, work.work);
+>> +       spi = st->spi;
+>
+> Don't bother with the local variable for spi. It doesn't add any clarity.
+>
+>> +
+>> +       as3935_read(st, AS3935_INT, &val);
+>> +       val &= AS3935_INT_MASK;
+>> +
+>> +       switch (val) {
+>> +       case AS3935_EVENT_INT:
+>
+> You could save a timestamp in the interrupt handler then pass it on here.
+>
+Noted.
 
-commit 4ebe34503baa0644c9352bcd76d4cf573bffe206
-Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Date:   Tue Jul 16 22:10:35 2013 +0200
+>> +               iio_trigger_poll(st->trig, 0);
+>> +               break;
+>> +       case AS3935_NOISE_INT:
+>
+> Hmm. This brings me back to one of my favourite kernel questions,
+> 'Why isn't there a better way of handling hardware errors?'
+> There isn't as far as I know!
+>
+>> +               dev_warn(&spi->dev, "noise level is too high");
+>> +               break;
+>> +       }
+>> +};
+>> +
+>> +static irqreturn_t as3935_interrupt_handler(int irq, void *private)
+>> +{
+>> +       struct iio_dev *indio_dev = private;
+>> +       struct as3935_state *st = iio_priv(indio_dev);
+>> +
+>
+> This is 'unusual' so can you add a comment explaining what is going on here.
+> My guess is that you want to avoid grabing new data for a short window after
+> a strike is detected?  The cancel is to avoid running the delayed work
+> twice?
+>
+> If so the reason a sleep in a threaded handler wouldn't work is that it
+> would
+> not 'cancel' if new data arrived I guess.  You still have a window for
+> problems
+> if the interrupt occurs whilst the work queue is actually running the
+> scheduled work.
+>
+> I'm wondering if this is overcomplicating things and it is better to just
+> occasionally handle an extra interrupt and do this with a conventional
+> threaded interrupt handler.  Of course I may be missing something.
+>>
+>> +       cancel_delayed_work(&st->work);
+>
+> I'm guessing this should be msecs_to_jiffies seeing as schedule_delayed_work
+> takes a value in jiffies.
+>>
+>> +       schedule_delayed_work(&st->work, jiffies_to_msecs(3));
+>
 
-    ACPI / hotplug / PCI: Check for new devices on enabled slots
-    
-    The current implementation of acpiphp_check_bridge() is pretty dumb:
-     - It enables a slot if it's not enabled and the slot status is
-       ACPI_STA_ALL.
-     - It disables a slot if it's enabled and the slot status is not
-       ACPI_STA_ALL.
-    
-    This behavior is not sufficient to handle the Thunderbolt daisy
-    chaining case properly, however, because in that case the bus
-    behind the already enabled slot needs to be rescanned for new
-    devices.
-    
-    For this reason, modify acpiphp_check_bridge() so that slots are
-    disabled and stopped if they are not in the ACPI_STA_ALL state.
-    
-    For slots in the ACPI_STA_ALL state, devices behind them that don't
-    respond are trimmed using a new function, trim_stale_devices(),
-    introduced specifically for this purpose.  That function walks
-    the given bus and checks each device on it.  If the device doesn't
-    respond, it is assumed to be gone and is removed.
-    
-    Once all of the stale devices directy behind the slot have been
-    removed, acpiphp_check_bridge() will start looking for new devices
-    that might have appeared on the given bus.  It will do that even if
-    the slot is already enabled (SLOT_ENABLED is set for it).
-    
-    In addition to that, make the bus check notification ignore
-    SLOT_ENABLED and go for enable_device() directly if bridge is NULL,
-    so that devices behind the slot are re-enumerated in that case too.
-    
-    This change is based on earlier patches from Kirill A Shutemov
-    and Mika Westerberg.
-    
-    Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-    Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Yes it should be msec_to_jiffies(3) :/
+Noted the cancel_delayed_work() probably is verbose and will drop in
+the next version.
 
-Peter
+Reason for this is the datasheet requires (suggests?) a 2+ millisecond
+delay before reading
+estimated distance value.
 
- [1]: https://github.com/Lekensteyn/acpi-stuff/blob/master/dsl/Clevo_B7130/DSDT.dsl#L8882
+> blank line here.
+>
+>> +       return IRQ_HANDLED;
+>> +}
+>> +
+>> +static void calibrate_as3935(struct as3935_state *st)
+>> +{
+>> +       mutex_lock(&st->lock);
+>> +
+>> +       /* mask disturber interrupt bit */
+>> +       as3935_write(st, AS3935_INT, 1 << 5);
+>> +
+>> +       as3935_write(st, AS3935_CALIBRATE, 0x96);
+>> +       as3935_write(st, AS3935_TUNE_CAP, 1 << 5 | st->tune_cap);
+>> +
+>> +       mdelay(2);
+>> +       as3935_write(st, AS3935_TUNE_CAP, st->tune_cap);
+>> +
+>> +       mutex_unlock(&st->lock);
+>> +}
+>> +
+>> +#ifdef CONFIG_PM_SLEEP
+>> +static int as3935_suspend(struct spi_device *spi, pm_message_t msg)
+>> +{
+>> +       struct iio_dev *indio_dev = spi_get_drvdata(spi);
+>> +       struct as3935_state *st = iio_priv(indio_dev);
+>> +       int val, ret;
+>> +
+>> +       mutex_lock(&st->lock);
+>> +       ret = as3935_read(st, AS3935_AFE_GAIN, &val);
+>> +       if (ret)
+>> +               return ret;
+>
+> Mutex not released.
+>
+>
+>> +       val |= AS3935_AFE_PWR_BIT;
+>> +
+>> +       ret = as3935_write(st, AS3935_AFE_GAIN, val);
+>> +       mutex_unlock(&st->lock);
+>> +       return ret;
+>> +}
+>> +
+>> +static int as3935_resume(struct spi_device *spi)
+>> +{
+>> +       struct iio_dev *indio_dev = spi_get_drvdata(spi);
+>> +       struct as3935_state *st = iio_priv(indio_dev);
+>> +       int val, ret;
+>> +
+>> +       mutex_lock(&st->lock);
+>> +       ret = as3935_read(st, AS3935_AFE_GAIN, &val);
+>> +       if (ret)
+>> +               return ret;
+>
+> You haven't released the mutex in this error path.  This is a classic
+> case for using a goto rather than returning directly here.
+>
 
+Yeah this a rookie mistake on my behalf.
+
+>
+>> +       val &= ~AS3935_AFE_PWR_BIT;
+>> +       ret = as3935_write(st, AS3935_AFE_GAIN, val);
+>> +       mutex_unlock(&st->lock);
+>
+> blank line before returns in simple cases like this.  Just makes things
+> ever so slightly easier to read ;)
+>>
+>> +       return ret;
+>> +}
+>>
+>> +#else
+>> +#define as3935_suspend NULL
+>> +#define as3935_resume  NULL
+>> +#endif
+>> +
+>> +static int as3935_probe(struct spi_device *spi)
+>> +{
+>> +       struct iio_dev *indio_dev;
+>> +       struct iio_trigger *trig;
+>> +       struct as3935_state *st;
+>> +       struct device_node *np = spi->dev.of_node;
+>> +       int ret;
+>> +
+>
+> /* Make sure the lightning event interrupt is specified. */
+> You probably don't need to do this as the request will fail if supplied
+> with a 0. Even if you want to keep this, it would be cleaner to have it
+> down where the request for the irq is made rather than here at the start.
+>
+
+Didn't know that.. all for no
+
+>> +       /* Be sure lightning event interrupt */
+>> +       if (!spi->irq) {
+>> +               dev_err(&spi->dev, "unable to get event interrupt\n");
+>> +               return -EINVAL;
+>> +       }
+>> +
+>> +       indio_dev = devm_iio_device_alloc(&spi->dev, sizeof(st));
+>> +       if (!indio_dev)
+>> +               return -ENOMEM;
+>> +
+>> +       st = iio_priv(indio_dev);
+>> +       st->spi = spi;
+>> +       st->tune_cap = 0;
+>> +
+>> +       spi_set_drvdata(spi, indio_dev);
+>> +       mutex_init(&st->lock);
+>> +       INIT_DELAYED_WORK(&st->work, as3935_event_work);
+>> +
+>> +       ret = of_property_read_u32(np, "ams,tune-cap", &st->tune_cap);
+>> +       if (ret) {
+>> +               st->tune_cap = 0;
+>> +               dev_warn(&spi->dev,
+>> +                       "no tune-cap set, defaulting to %d",
+>> st->tune_cap);
+>> +       }
+>> +
+>> +       if (st->tune_cap > 15) {
+>> +               dev_err(&spi->dev,
+>> +                       "wrong tune-cap setting of %d\n", st->tune_cap);
+>> +               return -EINVAL;
+>> +       }
+>> +
+>> +       indio_dev->dev.parent = &spi->dev;
+>> +       indio_dev->name = spi_get_device_id(spi)->name;
+>> +       indio_dev->channels = as3935_channels;
+>> +       indio_dev->num_channels = ARRAY_SIZE(as3935_channels);
+>> +       indio_dev->modes = INDIO_DIRECT_MODE;
+>> +       indio_dev->info = &as3935_info;
+>> +
+>> +       trig = devm_iio_trigger_alloc(&spi->dev, "%s-dev%d",
+>> +                                     indio_dev->name, indio_dev->id);
+>> +
+>> +       if (!trig)
+>> +               return -ENOMEM;
+>> +
+>> +       st->trig = trig;
+>> +       trig->dev.parent = indio_dev->dev.parent;
+>> +       iio_trigger_set_drvdata(trig, indio_dev);
+>> +       trig->ops = &iio_interrupt_trigger_ops;
+>> +
+>> +       ret = iio_trigger_register(trig);
+>> +       if (ret) {
+>> +               dev_err(&spi->dev, "failed to register trigger\n");
+>> +               return ret;
+>> +       }
+>> +
+>> +       ret = iio_triggered_buffer_setup(indio_dev, NULL,
+>> +                                       &as3935_trigger_handler,
+>> +                                       &iio_triggered_buffer_setup_ops);
+>> +
+>> +       if (ret) {
+>> +               dev_err(&spi->dev, "cannot setup iio trigger\n");
+>> +               goto unregister_trigger;
+>> +       }
+>> +
+>> +       calibrate_as3935(st);
+>> +
+>> +       ret = devm_request_irq(&spi->dev, spi->irq,
+>> +                               &as3935_interrupt_handler,
+>> +                               IRQF_TRIGGER_RISING,
+>> +                               dev_name(&spi->dev),
+>> +                               indio_dev);
+>> +
+>> +       if (ret) {
+>> +               dev_err(&spi->dev, "unable to request irq\n");
+>> +               goto unregister_trigger;
+>> +       }
+>> +
+>> +       ret = iio_device_register(indio_dev);
+>> +       if (ret < 0) {
+>> +               dev_err(&spi->dev, "unable to register device\n");
+>> +               goto unregister_trigger;
+>> +       }
+>> +       return 0;
+>> +
+>> +unregister_trigger:
+>> +       iio_trigger_unregister(st->trig);
+>> +       iio_triggered_buffer_cleanup(indio_dev);
+>> +
+>> +       return ret;
+>> +};
+>> +
+>> +static int as3935_remove(struct spi_device *spi)
+>> +{
+>> +       struct iio_dev *indio_dev = spi_get_drvdata(spi);
+>> +       struct as3935_state *st = iio_priv(indio_dev);
+>> +
+>> +       iio_trigger_unregister(st->trig);
+>> +       iio_triggered_buffer_cleanup(indio_dev);
+>> +       iio_device_unregister(indio_dev);
+>
+> This should be in the reverse order of what goes on in the probe.
+> This helps both for review purposes and to avoid actual bugs. Here for
+> example, the buffer has been destroyed before the userspace interface
+> is removed in the device_unregister.
+>
+
+Noted.
+
+>> +
+>> +       return 0;
+>> +};
+>> +
+>> +static const struct spi_device_id as3935_id[] = {
+>> +       {"as3935", 0},
+>> +       {},
+>> +};
+>> +MODULE_DEVICE_TABLE(spi, as3935_id);
+>> +
+>> +static struct spi_driver as3935_driver = {
+>> +       .driver = {
+>> +               .name   = "as3935",
+>> +               .owner  = THIS_MODULE,
+>> +       },
+>> +       .probe          = as3935_probe,
+>> +       .remove         = as3935_remove,
+>> +       .id_table       = as3935_id,
+>> +       .suspend        = as3935_suspend,
+>> +       .resume         = as3935_resume,
+>> +};
+>> +module_spi_driver(as3935_driver);
+>> +
+>> +MODULE_AUTHOR("Matt Ranostay <mranostay@gmail.com>");
+>> +MODULE_DESCRIPTION("AS3935 lightning sensor");
+>> +MODULE_LICENSE("GPL");
+>> +MODULE_ALIAS("spi:as3935");
+>>
+>
