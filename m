@@ -1,87 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752261AbaBINw5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 08:52:57 -0500
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:37807 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751473AbaBINwz (ORCPT
+	id S1751552AbaBIOQc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 09:16:32 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:50382 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751360AbaBIOQa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 08:52:55 -0500
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCHSET cgroup/for-3.15] cgroup: more cleanups
-Date: Sun,  9 Feb 2014 08:52:28 -0500
-Message-Id: <1391953964-22088-1-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.5.3
+	Sun, 9 Feb 2014 09:16:30 -0500
+Date: Sun, 9 Feb 2014 06:16:09 -0800
+From: tip-bot for Preeti U Murthy <tipbot@zytor.com>
+Message-ID: <tip-849401b66d305f3feb75b6db7459b95ad190552a@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        preeti@linux.vnet.ibm.com, tglx@linutronix.de, fengguang.wu@intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        preeti@linux.vnet.ibm.com, tglx@linutronix.de, fengguang.wu@intel.com
+In-Reply-To: <52F719EE.9010304@linux.vnet.ibm.com>
+References: <52F719EE.9010304@linux.vnet.ibm.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/core] tick:
+  Fixup more fallout from hrtimer broadcast mode
+Git-Commit-ID: 849401b66d305f3feb75b6db7459b95ad190552a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 09 Feb 2014 06:16:15 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Commit-ID:  849401b66d305f3feb75b6db7459b95ad190552a
+Gitweb:     http://git.kernel.org/tip/849401b66d305f3feb75b6db7459b95ad190552a
+Author:     Preeti U Murthy <preeti@linux.vnet.ibm.com>
+AuthorDate: Sun, 9 Feb 2014 11:32:22 +0530
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Sun, 9 Feb 2014 15:11:47 +0100
 
-This series contains assorted cleanups which also prepare for the
-planned migration taskset handling update.
+tick: Fixup more fallout from hrtimer broadcast mode
 
-This patchset contains the following sixteen patches.
+The hrtimer mode of broadcast is supported only when
+GENERIC_CLOCKEVENTS_BROADCAST and TICK_ONESHOT config options
+are enabled. Hence compile in the functions for hrtimer mode
+of broadcast only when these options are selected.
+Also fix max_delta_ticks value for the pseudo clock device.
 
- 0001-cgroup-disallow-xattr-release_agent-and-name-if-sane.patch
- 0002-cgroup-drop-CGRP_ROOT_SUBSYS_BOUND.patch
- 0003-cgroup-enable-task_cg_lists-on-the-first-cgroup-moun.patch
- 0004-cgroup-relocate-cgroup_enable_task_cg_lists.patch
- 0005-cgroup-implement-cgroup_has_tasks-and-unexport-cgrou.patch
- 0006-cgroup-reimplement-cgroup_transfer_tasks-without-usi.patch
- 0007-cgroup-make-css_set_lock-a-rwsem-and-rename-it-to-cs.patch
- 0008-cpuset-use-css_task_iter_start-next-end-instead-of-c.patch
- 0009-cgroup-remove-css_scan_tasks.patch
- 0010-cgroup-separate-out-put_css_set_locked-and-remove-pu.patch
- 0011-cgroup-move-css_set_rwsem-locking-outside-of-cgroup_.patch
- 0012-cgroup-drop-skip_css-from-cgroup_taskset_for_each.patch
- 0013-cpuset-don-t-use-cgroup_taskset_cur_css.patch
- 0014-cgroup-remove-cgroup_taskset_cur_css-and-cgroup_task.patch
- 0015-cgroup-cosmetic-updates-to-cgroup_attach_task.patch
- 0016-cgroup-unexport-functions.patch
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Reported-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/52F719EE.9010304@linux.vnet.ibm.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ include/linux/clockchips.h           | 1 +
+ kernel/time/Makefile                 | 5 ++++-
+ kernel/time/tick-broadcast-hrtimer.c | 2 +-
+ 3 files changed, 6 insertions(+), 2 deletions(-)
 
-The notables ones are
-
- 0003-0004 move task_cg_list enabling to the first mount instead of
- the first css task iteration.
-
- 0005-0009 make css_set_lock a rwsem so that css_task_iter allows
- blocking during iteration and removes css_scan_tasks().
-
- 0010-0015 clean up migration path to prepare for the planned
- migration taskset handling update.
-
-This patchset is on top of
-
-  cgroup/for-3.15 f7cef064aa01 ("Merge branch 'driver-core-next' into cgroup/for-3.15")
-+ [1] [PATCHSET v2 cgroup/for-3.15] cgroup: convert to kernfs
-+ [2] [PATCHSET v2 cgroup/for-3.15] cgroup: cleanups after kernfs conversion
-
-and also available in the following git branch.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-moar-cleanups
-
-diffstat follows.
-
- block/blk-cgroup.c           |    2 
- include/linux/cgroup.h       |   33 --
- kernel/cgroup.c              |  579 ++++++++++++++-----------------------------
- kernel/cgroup_freezer.c      |    2 
- kernel/cpuset.c              |  201 ++++----------
- kernel/events/core.c         |    2 
- kernel/sched/core.c          |    4 
- mm/memcontrol.c              |    4 
- net/core/netclassid_cgroup.c |    2 
- net/core/netprio_cgroup.c    |    2 
- 10 files changed, 278 insertions(+), 553 deletions(-)
-
-Thanks.
-
---
-tejun
-
-[1] http://lkml.kernel.org/g/1391876127-7134-1-git-send-email-tj@kernel.org
-[2] http://lkml.kernel.org/g/1391877509-10855-1-git-send-email-tj@kernel.org
+diff --git a/include/linux/clockchips.h b/include/linux/clockchips.h
+index 20a7183..2e4cb67 100644
+--- a/include/linux/clockchips.h
++++ b/include/linux/clockchips.h
+@@ -207,6 +207,7 @@ static inline void clockevents_resume(void) {}
+ 
+ static inline int clockevents_notify(unsigned long reason, void *arg) { return 0; }
+ static inline int tick_check_broadcast_expired(void) { return 0; }
++static inline void tick_setup_hrtimer_broadcast(void) {};
+ 
+ #endif
+ 
+diff --git a/kernel/time/Makefile b/kernel/time/Makefile
+index 06151ef..57a413f 100644
+--- a/kernel/time/Makefile
++++ b/kernel/time/Makefile
+@@ -3,7 +3,10 @@ obj-y += timeconv.o posix-clock.o alarmtimer.o
+ 
+ obj-$(CONFIG_GENERIC_CLOCKEVENTS_BUILD)		+= clockevents.o
+ obj-$(CONFIG_GENERIC_CLOCKEVENTS)		+= tick-common.o
+-obj-$(CONFIG_GENERIC_CLOCKEVENTS_BROADCAST)	+= tick-broadcast.o tick-broadcast-hrtimer.o
++ifeq ($(CONFIG_GENERIC_CLOCKEVENTS_BROADCAST),y)
++ obj-y						+= tick-broadcast.o
++ obj-$(CONFIG_TICK_ONESHOT)			+= tick-broadcast-hrtimer.o
++endif
+ obj-$(CONFIG_GENERIC_SCHED_CLOCK)		+= sched_clock.o
+ obj-$(CONFIG_TICK_ONESHOT)			+= tick-oneshot.o
+ obj-$(CONFIG_TICK_ONESHOT)			+= tick-sched.o
+diff --git a/kernel/time/tick-broadcast-hrtimer.c b/kernel/time/tick-broadcast-hrtimer.c
+index 9242527..eb682d5 100644
+--- a/kernel/time/tick-broadcast-hrtimer.c
++++ b/kernel/time/tick-broadcast-hrtimer.c
+@@ -82,7 +82,7 @@ static struct clock_event_device ce_broadcast_hrtimer = {
+ 	.min_delta_ns		= 1,
+ 	.max_delta_ns		= KTIME_MAX,
+ 	.min_delta_ticks	= 1,
+-	.max_delta_ticks	= KTIME_MAX,
++	.max_delta_ticks	= ULONG_MAX,
+ 	.mult			= 1,
+ 	.shift			= 0,
+ 	.cpumask		= cpu_all_mask,
