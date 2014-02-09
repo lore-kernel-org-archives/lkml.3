@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752144AbaBIRBy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 12:01:54 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:41457 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751438AbaBIRBw (ORCPT
+	id S1752149AbaBIRDO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 12:03:14 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:54845 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751687AbaBIRDM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 12:01:52 -0500
+	Sun, 9 Feb 2014 12:03:12 -0500
 From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org, Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        "David S. Miller" <davem@davemloft.net>,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, netdev@vger.kernel.org, josh@joshtriplett.org
-Subject: =?UTF-8?q?=5BPATCH=20v2=2012/13=5D=20net=3A=20Include=20appropriate=20header=20file=20in=20netfilter/nft=5Flookup=2Ec?=
-Date: Sun,  9 Feb 2014 22:31:42 +0530
-Message-Id: <1224796f5816c5dd1e6f5be3593f32cb17a8df58.1391955925.git.rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        "David S. Miller" <davem@davemloft.net>, linux-nfs@vger.kernel.org,
+        netdev@vger.kernel.org, josh@joshtriplett.org
+Subject: =?UTF-8?q?=5BPATCH=20v2=2013/13=5D=20net=3A=20Mark=20functions=20as=20static=20in=20net/sunrpc/svc=5Fxprt=2Ec?=
+Date: Sun,  9 Feb 2014 22:33:03 +0530
+Message-Id: <6683a8aafa491f99b0ae6e5a23614f1dbcac6ec2.1391955925.git.rashika.kheria@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <6f029c895035908595957fb16ab445c82793c77d.1391955924.git.rashika.kheria@gmail.com>
 References: <6f029c895035908595957fb16ab445c82793c77d.1391955924.git.rashika.kheria@gmail.com>
@@ -27,32 +26,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Include appropriate header file net/netfilter/nf_tables_core.h in
-net/netfilter/nft_lookup.c because it has prototype declaration of
-functions defined in net/netfilter/nft_lookup.c.
+Mark functions as static in net/sunrpc/svc_xprt.c because they are not
+used outside this file.
 
-This eliminates the following warning in net/netfilter/nft_lookup.c:
-net/netfilter/nft_lookup.c:133:12: warning: no previous prototype for ‘nft_lookup_module_init’ [-Wmissing-prototypes]
-net/netfilter/nft_lookup.c:138:6: warning: no previous prototype for ‘nft_lookup_module_exit’ [-Wmissing-prototypes]
+This eliminates the following warning in net/sunrpc/svc_xprt.c:
+net/sunrpc/svc_xprt.c:574:5: warning: no previous prototype for ‘svc_alloc_arg’ [-Wmissing-prototypes]
+net/sunrpc/svc_xprt.c:615:18: warning: no previous prototype for ‘svc_get_next_xprt’ [-Wmissing-prototypes]
+net/sunrpc/svc_xprt.c:694:6: warning: no previous prototype for ‘svc_add_new_temp_xprt’ [-Wmissing-prototypes]
 
 Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- net/netfilter/nft_lookup.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/sunrpc/svc_xprt.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/net/netfilter/nft_lookup.c b/net/netfilter/nft_lookup.c
-index 8a6116b..bb4ef4c 100644
---- a/net/netfilter/nft_lookup.c
-+++ b/net/netfilter/nft_lookup.c
-@@ -16,6 +16,7 @@
- #include <linux/netfilter.h>
- #include <linux/netfilter/nf_tables.h>
- #include <net/netfilter/nf_tables.h>
-+#include <net/netfilter/nf_tables_core.h>
+diff --git a/net/sunrpc/svc_xprt.c b/net/sunrpc/svc_xprt.c
+index 80a6640..06c6ff0 100644
+--- a/net/sunrpc/svc_xprt.c
++++ b/net/sunrpc/svc_xprt.c
+@@ -571,7 +571,7 @@ static void svc_check_conn_limits(struct svc_serv *serv)
+ 	}
+ }
  
- struct nft_lookup {
- 	struct nft_set			*set;
+-int svc_alloc_arg(struct svc_rqst *rqstp)
++static int svc_alloc_arg(struct svc_rqst *rqstp)
+ {
+ 	struct svc_serv *serv = rqstp->rq_server;
+ 	struct xdr_buf *arg;
+@@ -612,7 +612,7 @@ int svc_alloc_arg(struct svc_rqst *rqstp)
+ 	return 0;
+ }
+ 
+-struct svc_xprt *svc_get_next_xprt(struct svc_rqst *rqstp, long timeout)
++static struct svc_xprt *svc_get_next_xprt(struct svc_rqst *rqstp, long timeout)
+ {
+ 	struct svc_xprt *xprt;
+ 	struct svc_pool		*pool = rqstp->rq_pool;
+@@ -691,7 +691,7 @@ struct svc_xprt *svc_get_next_xprt(struct svc_rqst *rqstp, long timeout)
+ 	return xprt;
+ }
+ 
+-void svc_add_new_temp_xprt(struct svc_serv *serv, struct svc_xprt *newxpt)
++static void svc_add_new_temp_xprt(struct svc_serv *serv, struct svc_xprt *newxpt)
+ {
+ 	spin_lock_bh(&serv->sv_lock);
+ 	set_bit(XPT_TEMP, &newxpt->xpt_flags);
 -- 
 1.7.9.5
 
