@@ -1,70 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752432AbaBIXQj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 18:16:39 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:56974 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752267AbaBIXQa (ORCPT
+	id S1752375AbaBIXQg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 18:16:36 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:56362 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752256AbaBIXQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 18:16:30 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <52F80C4E.5040805@roeck-us.net>
-Date: Sun, 09 Feb 2014 15:16:30 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Sun, 9 Feb 2014 18:16:22 -0500
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>, Paul Bolle <pebolle@tiscali.nl>
-CC: David Howells <dhowells@redhat.com>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        "moderated list:PANASONIC MN10300..." <linux-am33-list@redhat.com>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 24/28] Remove DEPRECATED
-References: <1391971686-9517-1-git-send-email-richard@nod.at>	 <1391971686-9517-25-git-send-email-richard@nod.at> <1391974709.25855.3.camel@x220> <52F7DF51.8000507@nod.at> <52F7F486.7040003@roeck-us.net> <52F7F54B.3050602@nod.at>
-In-Reply-To: <52F7F54B.3050602@nod.at>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <52F7F92E.9040508@kernel.org>
+References: <1391670015-6551-1-git-send-email-mranostay@gmail.com>
+	<1391670015-6551-2-git-send-email-mranostay@gmail.com>
+	<52F7F92E.9040508@kernel.org>
+Date: Sun, 9 Feb 2014 15:16:21 -0800
+Message-ID: <CAKzfze-VGEVJWgqJC-87KVbrFie9_CZP6wU1sTCjPuvc0XxJAA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] iio:as3935: Add DT binding docs for AS3935 driver
+From: Matt Ranostay <mranostay@gmail.com>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        devicetree@vger.kernel.org, Matt Porter <matt.porter@linaro.org>,
+        Pantelis Antoniou <pantelis.antoniou@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/09/2014 01:38 PM, Richard Weinberger wrote:
-> Am 09.02.2014 22:35, schrieb Guenter Roeck:
->> I could understand if you would replace DEPRECATED with BROKEN,
->> but causing a potentially large number of broken builds and
->> then leave it to others to clean up the resulting mess doesn't
->> make any sense to me and should, in my opinion, be rejected.
+On Sun, Feb 9, 2014 at 1:54 PM, Jonathan Cameron <jic23@kernel.org> wrote:
+> On 06/02/14 07:00, Matt Ranostay wrote:
+>>
+>> Document compatible string, required and optional DT properties for
+>> AS3935 chipset driver.
+>>
+>> Signed-off-by: Matt Ranostay <mranostay@gmail.com>
+>> ---
+>>   .../devicetree/bindings/iio/proximity/as3935.txt   | 28
+>> ++++++++++++++++++++++
+>>   .../devicetree/bindings/vendor-prefixes.txt        |  1 +
+>>   2 files changed, 29 insertions(+)
+>>   create mode 100644
+>> Documentation/devicetree/bindings/iio/proximity/as3935.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/iio/proximity/as3935.txt
+>> b/Documentation/devicetree/bindings/iio/proximity/as3935.txt
+>> new file mode 100644
+>> index 0000000..574d49c
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/iio/proximity/as3935.txt
+>> @@ -0,0 +1,28 @@
+>> +Austrian Microsystems AS3935 Franklin lightning sensor device driver
+>> +
+>> +Required properties:
+>> +       - compatible: must be "ams,as3935"
+>> +       - reg: SPI chip select number for the device
+>> +       - spi-cpha: SPI Mode 1. Refer to spi/spi-bus.txt for generic SPI
+>> +       slave node bindings.
+>> +       - interrupt-parent : should be the phandle for the interrupt
+>> controller
+>> +       - interrupts : interrupt mapping for GPIO IRQ
 >
-> Currently the mess is hidden by bad Kconfig dependencies.
-> We have to face it. :)
+> Why does it need to be a GPIO IRQ?  As far as I can see any irq will do
+> (note there are devices that provide suitable interrupts without the ability
+> to read the level).  Oops, we have a couple of other IIO bindings stating
+> exactly this.  I doubt they need to be GPIOs either.
+>
+No it doesn't it can be any interrupt type... Will reword better
+
+
+>
+>> +
+>> +       Refer to interrupt-controller/interrupts.txt for generic
+>> +       interrupt client node bindings.
+>> +
+>> +Optional properties:
+>> +       - ams,tune-cap: Calibration tuning capacitor stepping value 0 -
+>> 15.
+>> +         Range of 0 to 120 pF, 8pF steps. This will require using the
+>> +         calibration data from the manufacturer.
+>
+> Why not have this as the actual value rather than a magic number?  Might
+> as well keep the device tree as human readable as possible.
 >
 
-You can make the breakage obvious by using BROKEN instead
-of DEPRECATED. Then it can be fixed.
+Makes sense.
 
-Otherwise you could, using your logic, remove all BROKEN
-dependencies as well (all 90 or so of them). That symbol,
-after all, is just as orphan as DEPRECATED.
-
-The point here is to not unnecessarily introduce build problems.
-There are people out there trying to ensure that no new build
-breakages are introduced. By making X configurations
-non-buildable, all you accomplish is to ensure that no one will
-be able to discover real new build problems anymore, because
-those new problems will all disappear in the build breakage
-noise you introduced.
-
-So, in practice, all you accomplish is to make the kernel
-less maintainable. If that is your goal, mission accomplished.
-Otherwise I would kindly ask you to reconsider.
-
-Note that I would not mind some big cleanup effort to simply
-remove all code marked as BROKEN, and I would be more than
-happy to assist in such an effort.
-
-However, breaking builds on purpose in the hope that someone
-would magically show up and fix it is just plain wrong.
-
-Note that I do not refer to a specific platform.
-
-Guenter
-
+>> +
+>> +Example:
+>> +
+>> +as3935@0 {
+>> +       compatible = "ams,as3935";
+>> +       reg = <0>;
+>> +       spi-cpha;
+>> +       interrupt-parent = <&gpio1>;
+>> +       interrupts = <16 1>;
+>> +       ams,tune-cap = <10>;
+>> +};
+>> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt
+>> b/Documentation/devicetree/bindings/vendor-prefixes.txt
+>> index 3c31b40..9dd66ca 100644
+>> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
+>> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+>> @@ -10,6 +10,7 @@ aeroflexgaisler       Aeroflex Gaisler AB
+>>   ak    Asahi Kasei Corp.
+>>   altr  Altera Corp.
+>>   amcc  Applied Micro Circuits Corporation (APM, formally AMCC)
+>> +ams    AMS AG
+>>   amstaos       AMS-Taos Inc.
+>>   apm   Applied Micro Circuits Corporation (APM)
+>>   arm   ARM Ltd.
+>>
+>
