@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753126AbaBJRpP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 12:45:15 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:63596 "EHLO
+	id S1753921AbaBJRpT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 12:45:19 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:63605 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753673AbaBJRpD (ORCPT
+	by vger.kernel.org with ESMTP id S1752955AbaBJRpK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 12:45:03 -0500
+	Mon, 10 Feb 2014 12:45:10 -0500
 From: Mark Rutland <mark.rutland@arm.com>
 To: linux-kernel@vger.kernel.org
 Cc: will.deacon@arm.com, dave.martin@arm.com,
         Mark Rutland <mark.rutland@arm.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Ingo Molnar <mingo@redhat.com>
-Subject: [PATCH 5/7] perf: kill pmu::hrtimer_interval_ms
-Date: Mon, 10 Feb 2014 17:44:22 +0000
-Message-Id: <1392054264-23570-6-git-send-email-mark.rutland@arm.com>
+Subject: [PATCH 7/7] perf: kill perf_event_context::pmu
+Date: Mon, 10 Feb 2014 17:44:24 +0000
+Message-Id: <1392054264-23570-8-git-send-email-mark.rutland@arm.com>
 X-Mailer: git-send-email 1.8.1.1
 In-Reply-To: <1392054264-23570-1-git-send-email-mark.rutland@arm.com>
 References: <1392054264-23570-1-git-send-email-mark.rutland@arm.com>
@@ -23,106 +23,222 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The hrtimers affecting a pmu live in perf_cpu_context, which may be
-shared by multiple pmus. As such it does not make sense for the pmu to
-track the interval, which is a property of the shared context.
+Currently portions of the perf subsystem assume that a
+perf_event_context is associated with a single pmu while in reality a
+single perf_event_context may be shared by a number of pmus, as commit
+443772776c69 (perf: Disable all pmus on unthrottling and rescheduling)
+describes.
 
-This patch removes pmu::hrtimer_interval_ms, and reworks all existing
-users to use perf_cpu_context::hrtimer_interval instead. No pmu
-implementations currently override the default hrtimer_interval_ms
-statically, so we don't lose any existing implementation-specific
-intervals (which could themselves be problematic if two pmus had
-different hrtimer_interval_ms values).
+This patch removes perf_event_context::pmu, replacing it with a direct
+pointer to the associated perf_cpu_context and a task_ctx_nr (as all
+pmus sharing a context have the same task_ctx_nr). This makes the
+relationship between pmus and perf_event_contexts clearer and allows us
+to save on some pointer chasing.
 
-While we're in the area we also replace uses of
-ns_to_ktime(NSEC_PER_MSEC * $x) with ms_to_ktime($x), which does the
-same thing.
+This also fixes a potential misuse of ctx->pmu introduced in commit
+bad7192b842c (perf: Fix PERF_EVENT_IOC_PERIOD to force-reset the
+period), where ctx->pmu is disabled before modifying state on
+event->pmu. In this case the two pmus are not guaranteed to be the same.
+
+As perf_pmu_rotate_{start,stop} only really care about the context they
+are rotating, they are renamed to perf_event_ctx_{start,stop}.
 
 Signed-off-by: Mark Rutland <mark.rutland@arm.com>
-Reviewed-by: Dave Martin <Dave.Martin@arm.com>
+Reviewed-by: Will Deacon <will.deacon@arm.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Ingo Molnar <mingo@redhat.com>
 ---
- include/linux/perf_event.h |  1 -
- kernel/events/core.c       | 24 +++++++++++++-----------
- 2 files changed, 13 insertions(+), 12 deletions(-)
+ include/linux/perf_event.h |  3 ++-
+ kernel/events/core.c       | 47 +++++++++++++++++++++++++---------------------
+ 2 files changed, 28 insertions(+), 22 deletions(-)
 
 diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index df3d34a..7794a39 100644
+index 7794a39..2123882 100644
 --- a/include/linux/perf_event.h
 +++ b/include/linux/perf_event.h
-@@ -180,7 +180,6 @@ struct pmu {
- 	int * __percpu			pmu_disable_count;
- 	struct perf_cpu_context * __percpu pmu_cpu_context;
- 	int				task_ctx_nr;
--	int				hrtimer_interval_ms;
- 
+@@ -445,7 +445,8 @@ struct perf_event {
+  * Used as a container for task events and CPU events as well:
+  */
+ struct perf_event_context {
+-	struct pmu			*pmu;
++	struct perf_cpu_context __percpu *cpu_ctx;
++	enum perf_event_task_context	task_ctx_nr;
  	/*
- 	 * Fully disable/enable this PMU, can be used to protect from the PMI
+ 	 * Protect the states of the events in the list,
+ 	 * nr_active, and the list:
 diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 13ede70..710c3fe 100644
+index 55c772e..541dcb5 100644
 --- a/kernel/events/core.c
 +++ b/kernel/events/core.c
-@@ -816,14 +816,11 @@ static void __perf_cpu_hrtimer_init(struct perf_cpu_context *cpuctx, int cpu)
+@@ -299,7 +299,7 @@ static inline u64 perf_clock(void)
+ static inline struct perf_cpu_context *
+ __get_cpu_context(struct perf_event_context *ctx)
+ {
+-	return this_cpu_ptr(ctx->pmu->pmu_cpu_context);
++	return this_cpu_ptr(ctx->cpu_ctx);
+ }
+ 
+ static void perf_ctx_lock(struct perf_cpu_context *cpuctx,
+@@ -808,11 +808,10 @@ void perf_cpu_hrtimer_cancel(int cpu)
+ static void __perf_cpu_hrtimer_init(struct perf_cpu_context *cpuctx, int cpu)
+ {
+ 	struct hrtimer *hr = &cpuctx->hrtimer;
+-	struct pmu *pmu = cpuctx->ctx.pmu;
+ 	int timer;
+ 
+ 	/* no multiplexing needed for SW PMU */
+-	if (pmu->task_ctx_nr == perf_sw_context)
++	if (cpuctx->ctx.task_ctx_nr == perf_sw_context)
  		return;
  
  	/*
--	 * check default is sane, if not set then force to
--	 * default interval (1/tick)
-+	 * Set sane default interval (1/tick)
- 	 */
--	timer = pmu->hrtimer_interval_ms;
--	if (timer < 1)
--		timer = pmu->hrtimer_interval_ms = PERF_CPU_HRTIMER;
-+	timer = PERF_CPU_HRTIMER;
- 
--	cpuctx->hrtimer_interval = ns_to_ktime(NSEC_PER_MSEC * timer);
-+	cpuctx->hrtimer_interval = ms_to_ktime(timer);
- 
- 	hrtimer_init(hr, CLOCK_MONOTONIC, HRTIMER_MODE_REL_PINNED);
- 	hr->function = perf_cpu_hrtimer_handler;
-@@ -6346,14 +6343,21 @@ type_show(struct device *dev, struct device_attribute *attr, char *page)
- }
- static DEVICE_ATTR_RO(type);
- 
-+static int get_pmu_hrtimer_interval(struct pmu *pmu)
-+{
-+	struct perf_cpu_context *cpu_ctx = this_cpu_ptr(pmu->pmu_cpu_context);
-+	return ktime_to_ms(cpu_ctx->hrtimer_interval);
-+}
-+
- static ssize_t
- perf_event_mux_interval_ms_show(struct device *dev,
- 				struct device_attribute *attr,
- 				char *page)
+@@ -829,10 +828,9 @@ static void __perf_cpu_hrtimer_init(struct perf_cpu_context *cpuctx, int cpu)
+ static void perf_cpu_hrtimer_restart(struct perf_cpu_context *cpuctx)
  {
- 	struct pmu *pmu = dev_get_drvdata(dev);
-+	int interval_ms = get_pmu_hrtimer_interval(pmu);
+ 	struct hrtimer *hr = &cpuctx->hrtimer;
+-	struct pmu *pmu = cpuctx->ctx.pmu;
  
--	return snprintf(page, PAGE_SIZE-1, "%d\n", pmu->hrtimer_interval_ms);
-+	return snprintf(page, PAGE_SIZE-1, "%d\n", interval_ms);
+ 	/* not for SW PMU */
+-	if (pmu->task_ctx_nr == perf_sw_context)
++	if (cpuctx->ctx.task_ctx_nr == perf_sw_context)
+ 		return;
+ 
+ 	if (hrtimer_active(hr))
+@@ -880,13 +878,13 @@ void perf_ctx_pmus_enable(struct perf_event_context *ctx)
+ static DEFINE_PER_CPU(struct list_head, rotation_list);
+ 
+ /*
+- * perf_pmu_rotate_start() and perf_rotate_context() are fully serialized
++ * perf_ctx_rotate_start() and perf_rotate_context() are fully serialized
+  * because they're strictly cpu affine and rotate_start is called with IRQs
+  * disabled, while rotate_context is called from IRQ context.
+  */
+-static void perf_pmu_rotate_start(struct pmu *pmu)
++static void perf_ctx_rotate_start(struct perf_event_context *ctx)
+ {
+-	struct perf_cpu_context *cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
++	struct perf_cpu_context *cpuctx = this_cpu_ptr(ctx->cpu_ctx);
+ 	struct list_head *head = &__get_cpu_var(rotation_list);
+ 
+ 	WARN_ON(!irqs_disabled());
+@@ -1151,7 +1149,7 @@ list_add_event(struct perf_event *event, struct perf_event_context *ctx)
+ 
+ 	list_add_rcu(&event->event_entry, &ctx->event_list);
+ 	if (!ctx->nr_events)
+-		perf_pmu_rotate_start(ctx->pmu);
++		perf_ctx_rotate_start(ctx);
+ 	ctx->nr_events++;
+ 	if (event->attr.inherit_stat)
+ 		ctx->nr_stat++;
+@@ -2520,7 +2518,7 @@ static void perf_event_context_sched_in(struct perf_event_context *ctx,
+ 	 * Since these rotations are per-cpu, we need to ensure the
+ 	 * cpu-context we got scheduled on is actually rotating.
+ 	 */
+-	perf_pmu_rotate_start(ctx->pmu);
++	perf_ctx_rotate_start(ctx);
  }
  
- static ssize_t
-@@ -6372,16 +6376,14 @@ perf_event_mux_interval_ms_store(struct device *dev,
- 		return -EINVAL;
+ /*
+@@ -2805,7 +2803,7 @@ static void rotate_ctx(struct perf_event_context *ctx)
+ }
  
- 	/* same value, noting to do */
--	if (timer == pmu->hrtimer_interval_ms)
-+	if (timer == get_pmu_hrtimer_interval(pmu))
- 		return count;
+ /*
+- * perf_pmu_rotate_start() and perf_rotate_context() are fully serialized
++ * perf_ctx_rotate_start() and perf_rotate_context() are fully serialized
+  * because they're strictly cpu affine and rotate_start is called with IRQs
+  * disabled, while rotate_context is called from IRQ context.
+  */
+@@ -3028,7 +3026,9 @@ static void __perf_event_init_context(struct perf_event_context *ctx)
+ }
  
--	pmu->hrtimer_interval_ms = timer;
--
- 	/* update all cpuctx for this PMU */
- 	for_each_possible_cpu(cpu) {
- 		struct perf_cpu_context *cpuctx;
- 		cpuctx = per_cpu_ptr(pmu->pmu_cpu_context, cpu);
--		cpuctx->hrtimer_interval = ns_to_ktime(NSEC_PER_MSEC * timer);
-+		cpuctx->hrtimer_interval = ms_to_ktime(timer);
+ static struct perf_event_context *
+-alloc_perf_context(struct pmu *pmu, struct task_struct *task)
++alloc_perf_context(enum perf_event_task_context task_ctx_nr,
++		   struct perf_cpu_context __percpu *cpuctx,
++		   struct task_struct *task)
+ {
+ 	struct perf_event_context *ctx;
  
- 		if (hrtimer_active(&cpuctx->hrtimer))
- 			hrtimer_forward_now(&cpuctx->hrtimer, cpuctx->hrtimer_interval);
+@@ -3041,7 +3041,8 @@ alloc_perf_context(struct pmu *pmu, struct task_struct *task)
+ 		ctx->task = task;
+ 		get_task_struct(task);
+ 	}
+-	ctx->pmu = pmu;
++	ctx->task_ctx_nr = task_ctx_nr;
++	ctx->cpu_ctx = cpuctx;
+ 
+ 	return ctx;
+ }
+@@ -3120,7 +3121,8 @@ retry:
+ 		++ctx->pin_count;
+ 		raw_spin_unlock_irqrestore(&ctx->lock, flags);
+ 	} else {
+-		ctx = alloc_perf_context(pmu, task);
++		ctx = alloc_perf_context(pmu->task_ctx_nr,
++					 pmu->pmu_cpu_context, task);
+ 		err = -ENOMEM;
+ 		if (!ctx)
+ 			goto errout;
+@@ -3565,7 +3567,7 @@ static int perf_event_period(struct perf_event *event, u64 __user *arg)
+ 
+ 	active = (event->state == PERF_EVENT_STATE_ACTIVE);
+ 	if (active) {
+-		perf_pmu_disable(ctx->pmu);
++		perf_pmu_disable(event->pmu);
+ 		event->pmu->stop(event, PERF_EF_UPDATE);
+ 	}
+ 
+@@ -3573,7 +3575,7 @@ static int perf_event_period(struct perf_event *event, u64 __user *arg)
+ 
+ 	if (active) {
+ 		event->pmu->start(event, PERF_EF_RELOAD);
+-		perf_pmu_enable(ctx->pmu);
++		perf_pmu_enable(event->pmu);
+ 	}
+ 
+ unlock:
+@@ -6495,7 +6497,9 @@ skip_type:
+ 		__perf_event_init_context(&cpuctx->ctx);
+ 		lockdep_set_class(&cpuctx->ctx.mutex, &cpuctx_mutex);
+ 		lockdep_set_class(&cpuctx->ctx.lock, &cpuctx_lock);
+-		cpuctx->ctx.pmu = pmu;
++
++		cpuctx->ctx.task_ctx_nr = pmu->task_ctx_nr;
++		cpuctx->ctx.cpu_ctx = pmu->pmu_cpu_context;
+ 
+ 		__perf_cpu_hrtimer_init(cpuctx, cpu);
+ 
+@@ -7684,7 +7688,8 @@ inherit_task_group(struct perf_event *event, struct task_struct *parent,
+ 		 * child.
+ 		 */
+ 
+-		child_ctx = alloc_perf_context(parent_ctx->pmu, child);
++		child_ctx = alloc_perf_context(parent_ctx->task_ctx_nr,
++						parent_ctx->cpu_ctx, child);
+ 		if (!child_ctx)
+ 			return -ENOMEM;
+ 
+@@ -7843,9 +7848,9 @@ static void perf_event_init_cpu(int cpu)
+ }
+ 
+ #if defined CONFIG_HOTPLUG_CPU || defined CONFIG_KEXEC
+-static void perf_pmu_rotate_stop(struct pmu *pmu)
++static void perf_ctx_rotate_stop(struct perf_event_context *ctx)
+ {
+-	struct perf_cpu_context *cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
++	struct perf_cpu_context *cpuctx = this_cpu_ptr(ctx->cpu_ctx);
+ 
+ 	WARN_ON(!irqs_disabled());
+ 
+@@ -7857,7 +7862,7 @@ static void __perf_event_exit_context(void *__info)
+ 	struct perf_event_context *ctx = __info;
+ 	struct perf_event *event, *tmp;
+ 
+-	perf_pmu_rotate_stop(ctx->pmu);
++	perf_ctx_rotate_stop(ctx);
+ 
+ 	list_for_each_entry_safe(event, tmp, &ctx->pinned_groups, group_entry)
+ 		__perf_remove_from_context(event);
 -- 
 1.8.1.1
 
