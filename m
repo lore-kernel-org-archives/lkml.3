@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755525AbaBJURk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 15:17:40 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34608 "EHLO
+	id S1755566AbaBJURu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 15:17:50 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34574 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752849AbaBJTll (ORCPT
+	with ESMTP id S1752854AbaBJTln (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:41:41 -0500
+	Mon, 10 Feb 2014 14:41:43 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
-        David Ahern <dsahern@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
+Cc: Maximilian Attems <maks@stro.at>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 019/124] perf kvm: Fix kvm report without guestmount.
-Date: Mon, 10 Feb 2014 11:39:19 -0800
-Message-Id: <1392061264-28124-20-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 010/124] parport: parport_pc: remove double PCI ID for NetMos
+Date: Mon, 10 Feb 2014 11:39:10 -0800
+Message-Id: <1392061264-28124-11-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
 References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
@@ -29,81 +30,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-commit ad85ace07a05062ef6b59c35a5e80b6eaee1eee6 upstream.
+commit d6a484520c5572a4170fa915109ccfc0c38f5008 upstream.
 
-Currently, if we use perf kvm --guestkallsyms --guestmodules report, we
-can not get the perf information from perf data file. All sample are
-shown as unknown.
+In commit 85747f ("PATCH] parport: add NetMOS 9805 support") Max added
+the PCI ID for NetMOS 9805 based on a Debian bug report from 2k4 which
+was at the v2.4.26 time frame. The patch made into 2.6.14.
+Shortly before that patch akpm merged commit 296d3c783b ("[PATCH] Support
+NetMOS based PCI cards providing serial and parallel ports") which made
+into v2.6.9-rc1.
+Now we have two different entries for the same PCI id.
+I have here the NetMos 9805 which claims to support SPP/EPP/ECP mode.
+This patch takes Max's entry for titan_1284p1 (base != -1 specifies the
+ioport for ECP mode) and replaces akpm's entry for netmos_9805 which
+specified -1 (=none). Both share the same PCI-ID (my card has subsystem
+0x1000 / 0x0020 so it should match PCI_ANY).
 
-Reproducing steps:
-	# perf kvm --guestkallsyms /tmp/kallsyms --guestmodules /tmp/modules record -a sleep 1
-	[ perf record: Woken up 1 times to write data ]
-	[ perf record: Captured and wrote 0.624 MB perf.data.guest (~27260 samples) ]
-	# perf kvm --guestkallsyms /tmp/kallsyms --guestmodules /tmp/modules report |grep %
-	   100.00%  [guest/6471]  [unknown]         [g] 0xffffffff8164f330
+While here I also drop the entry for titan_1284p2 which is the same as
+netmos_9815.
 
-This bug was introduced by 207b57926 (perf kvm: Fix regression with guest machine creation).
-In original code, it uses perf_session__find_machine(), it means we deliver symbol to machine
-which has the same pid, if no machine found, deliver it to *default* guest. But if we use
-perf_session__findnew_machine() here, if no machine was found, new machine with pid will be built
-and added. Then the default guest which with pid == 0 will never get a symbol.
-
-And because the new machine initialized here has no kernel map created, the symbol delivered to
-it will be marked as "unknown".
-
-This patch here is to revert commit 207b57926 and fix the SEGFAULT bug in another way.
-
-Verification steps:
-	# ./perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules record -a sleep 1
-	[ perf record: Woken up 1 times to write data ]
-	[ perf record: Captured and wrote 0.651 MB perf.data.guest (~28437 samples) ]
-	# ./perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules report |grep %
-	    22.64%    :6471  [guest.kernel.kallsyms]  [g] update_rq_clock.part.70
-	    19.99%    :6471  [guest.kernel.kallsyms]  [g] d_free
-	    18.46%    :6471  [guest.kernel.kallsyms]  [g] bio_phys_segments
-	    16.25%    :6471  [guest.kernel.kallsyms]  [g] dequeue_task
-	    12.78%    :6471  [guest.kernel.kallsyms]  [g] __switch_to
-	     7.91%    :6471  [guest.kernel.kallsyms]  [g] scheduler_tick
-	     1.75%    :6471  [guest.kernel.kallsyms]  [g] native_apic_mem_write
-	     0.21%    :6471  [guest.kernel.kallsyms]  [g] apic_timer_interrupt
-
-Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Acked-by: David Ahern <dsahern@gmail.com>
-Cc: David Ahern <dsahern@gmail.com>
-Link: http://lkml.kernel.org/r/1387564907-3045-1-git-send-email-yangds.fnst@cn.fujitsu.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Maximilian Attems <maks@stro.at>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- tools/perf/util/session.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/parport/parport_pc.c | 10 ++--------
+ 1 file changed, 2 insertions(+), 8 deletions(-)
 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index ce6f511..f079b2e 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -1013,6 +1013,7 @@ static struct machine *
- 					       union perf_event *event)
- {
- 	const u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
-+	struct machine *machine;
- 
- 	if (perf_guest &&
- 	    ((cpumode == PERF_RECORD_MISC_GUEST_KERNEL) ||
-@@ -1024,7 +1025,11 @@ static struct machine *
- 		else
- 			pid = event->ip.pid;
- 
--		return perf_session__findnew_machine(session, pid);
-+		machine = perf_session__find_machine(session, pid);
-+		if (!machine)
-+			machine = perf_session__findnew_machine(session,
-+						DEFAULT_GUEST_KERNEL_ID);
-+		return machine;
- 	}
- 
- 	return perf_session__find_host_machine(session);
+diff --git a/drivers/parport/parport_pc.c b/drivers/parport/parport_pc.c
+index 903e128..b0a0d53 100644
+--- a/drivers/parport/parport_pc.c
++++ b/drivers/parport/parport_pc.c
+@@ -2596,8 +2596,6 @@ enum parport_pc_pci_cards {
+ 	syba_2p_epp,
+ 	syba_1p_ecp,
+ 	titan_010l,
+-	titan_1284p1,
+-	titan_1284p2,
+ 	avlab_1p,
+ 	avlab_2p,
+ 	oxsemi_952,
+@@ -2656,8 +2654,6 @@ static struct parport_pc_pci {
+ 	/* syba_2p_epp AP138B */	{ 2, { { 0, 0x078 }, { 0, 0x178 }, } },
+ 	/* syba_1p_ecp W83787 */	{ 1, { { 0, 0x078 }, } },
+ 	/* titan_010l */		{ 1, { { 3, -1 }, } },
+-	/* titan_1284p1 */              { 1, { { 0, 1 }, } },
+-	/* titan_1284p2 */		{ 2, { { 0, 1 }, { 2, 3 }, } },
+ 	/* avlab_1p		*/	{ 1, { { 0, 1}, } },
+ 	/* avlab_2p		*/	{ 2, { { 0, 1}, { 2, 3 },} },
+ 	/* The Oxford Semi cards are unusual: 954 doesn't support ECP,
+@@ -2673,8 +2669,8 @@ static struct parport_pc_pci {
+ 	/* netmos_9705 */               { 1, { { 0, -1 }, } },
+ 	/* netmos_9715 */               { 2, { { 0, 1 }, { 2, 3 },} },
+ 	/* netmos_9755 */               { 2, { { 0, 1 }, { 2, 3 },} },
+-	/* netmos_9805 */               { 1, { { 0, -1 }, } },
+-	/* netmos_9815 */               { 2, { { 0, -1 }, { 2, -1 }, } },
++	/* netmos_9805 */		{ 1, { { 0, 1 }, } },
++	/* netmos_9815 */		{ 2, { { 0, 1 }, { 2, 3 }, } },
+ 	/* netmos_9901 */               { 1, { { 0, -1 }, } },
+ 	/* netmos_9865 */               { 1, { { 0, -1 }, } },
+ 	/* quatech_sppxp100 */		{ 1, { { 0, 1 }, } },
+@@ -2718,8 +2714,6 @@ static const struct pci_device_id parport_pc_pci_tbl[] = {
+ 	  PCI_ANY_ID, PCI_ANY_ID, 0, 0, syba_1p_ecp },
+ 	{ PCI_VENDOR_ID_TITAN, PCI_DEVICE_ID_TITAN_010L,
+ 	  PCI_ANY_ID, PCI_ANY_ID, 0, 0, titan_010l },
+-	{ 0x9710, 0x9805, 0x1000, 0x0010, 0, 0, titan_1284p1 },
+-	{ 0x9710, 0x9815, 0x1000, 0x0020, 0, 0, titan_1284p2 },
+ 	/* PCI_VENDOR_ID_AVLAB/Intek21 has another bunch of cards ...*/
+ 	/* AFAVLAB_TK9902 */
+ 	{ 0x14db, 0x2120, PCI_ANY_ID, PCI_ANY_ID, 0, 0, avlab_1p},
 -- 
 1.8.3.2
 
