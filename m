@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754787AbaBJTyy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 14:54:54 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35086 "EHLO
+	id S1754853AbaBJTzw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 14:55:52 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35062 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754300AbaBJTrH (ORCPT
+	with ESMTP id S1754235AbaBJTq7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:47:07 -0500
+	Mon, 10 Feb 2014 14:46:59 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Mark Brown <broonie@linaro.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 081/124] ASoC: wm5110: Extend SYSCLK patch file for rev D
-Date: Mon, 10 Feb 2014 11:40:21 -0800
-Message-Id: <1392061264-28124-82-git-send-email-kamal@canonical.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 067/124] arm: mvebu: fix length of SATA registers area in .dtsi
+Date: Mon, 10 Feb 2014 11:40:07 -0800
+Message-Id: <1392061264-28124-68-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
 References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
@@ -27,79 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-commit 34354792432b6e0a3b156819a1a19716c50d3473 upstream.
+commit 911492de45ccefc2bff4b8e0fb412287ca6fe9d9 upstream.
 
-Latest evaluation of the the device has given some patch file additions
-for improved performance.
+The length of the registers area for the Marvell 370/XP SATA
+controller was incorrect in the .dtsi: 0x2400 while it should have
+been 0x5000. Until now, this problem wasn't noticed because there was
+a large static mapping for all I/Os set up by ->map_io(). But since
+we're going to get rid of this static mapping, we need to ensure that
+the register areas are properly sized.
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+[ kamal: backport to 3.8 (context) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/soc/codecs/wm5110.c | 48 +++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 48 insertions(+)
+ arch/arm/boot/dts/armada-370-xp.dtsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/sound/soc/codecs/wm5110.c b/sound/soc/codecs/wm5110.c
-index bfaf96b..ca1a248 100644
---- a/sound/soc/codecs/wm5110.c
-+++ b/sound/soc/codecs/wm5110.c
-@@ -43,6 +43,54 @@ static const struct reg_default wm5110_sysclk_revd_patch[] = {
- 	{ 0x3133, 0x1201 },
- 	{ 0x3183, 0x1501 },
- 	{ 0x31D3, 0x1401 },
-+	{ 0x0049, 0x01ea },
-+	{ 0x004a, 0x01f2 },
-+	{ 0x0057, 0x01e7 },
-+	{ 0x0058, 0x01fb },
-+	{ 0x33ce, 0xc4f5 },
-+	{ 0x33cf, 0x1361 },
-+	{ 0x33d0, 0x0402 },
-+	{ 0x33d1, 0x4700 },
-+	{ 0x33d2, 0x026d },
-+	{ 0x33d3, 0xff00 },
-+	{ 0x33d4, 0x026d },
-+	{ 0x33d5, 0x0101 },
-+	{ 0x33d6, 0xc4f5 },
-+	{ 0x33d7, 0x0361 },
-+	{ 0x33d8, 0x0402 },
-+	{ 0x33d9, 0x6701 },
-+	{ 0x33da, 0xc4f5 },
-+	{ 0x33db, 0x136f },
-+	{ 0x33dc, 0xc4f5 },
-+	{ 0x33dd, 0x134f },
-+	{ 0x33de, 0xc4f5 },
-+	{ 0x33df, 0x131f },
-+	{ 0x33e0, 0x026d },
-+	{ 0x33e1, 0x4f01 },
-+	{ 0x33e2, 0x026d },
-+	{ 0x33e3, 0xf100 },
-+	{ 0x33e4, 0x026d },
-+	{ 0x33e5, 0x0001 },
-+	{ 0x33e6, 0xc4f5 },
-+	{ 0x33e7, 0x0361 },
-+	{ 0x33e8, 0x0402 },
-+	{ 0x33e9, 0x6601 },
-+	{ 0x33ea, 0xc4f5 },
-+	{ 0x33eb, 0x136f },
-+	{ 0x33ec, 0xc4f5 },
-+	{ 0x33ed, 0x134f },
-+	{ 0x33ee, 0xc4f5 },
-+	{ 0x33ef, 0x131f },
-+	{ 0x33f0, 0x026d },
-+	{ 0x33f1, 0x4e01 },
-+	{ 0x33f2, 0x026d },
-+	{ 0x33f3, 0xf000 },
-+	{ 0x33f6, 0xc4f5 },
-+	{ 0x33f7, 0x1361 },
-+	{ 0x33f8, 0x0402 },
-+	{ 0x33f9, 0x4600 },
-+	{ 0x33fa, 0x026d },
-+	{ 0x33fb, 0xfe00 },
- };
+diff --git a/arch/arm/boot/dts/armada-370-xp.dtsi b/arch/arm/boot/dts/armada-370-xp.dtsi
+index 269b6b0..eadd0bf 100644
+--- a/arch/arm/boot/dts/armada-370-xp.dtsi
++++ b/arch/arm/boot/dts/armada-370-xp.dtsi
+@@ -80,7 +80,7 @@
  
- static int wm5110_sysclk_ev(struct snd_soc_dapm_widget *w,
+ 		sata@d00a0000 {
+ 			compatible = "marvell,orion-sata";
+-			reg = <0xd00a0000 0x2400>;
++			reg = <0xd00a0000 0x5000>;
+ 			interrupts = <55>;
+ 			clocks = <&gateclk 15>, <&gateclk 30>;
+ 			clock-names = "0", "1";
 -- 
 1.8.3.2
 
