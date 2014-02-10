@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754675AbaBJTwH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 14:52:07 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35128 "EHLO
+	id S1753748AbaBJTwF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 14:52:05 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35132 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754353AbaBJTrU (ORCPT
+	with ESMTP id S1754358AbaBJTrU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 10 Feb 2014 14:47:20 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andy Adamson <andros@netapp.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 029/124] SUNRPC: don't map EKEYEXPIRED to EACCES in call_refreshresult
-Date: Mon, 10 Feb 2014 11:39:29 -0800
-Message-Id: <1392061264-28124-30-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 037/124] USB: fix race between hub_disconnect and recursively_mark_NOTATTACHED
+Date: Mon, 10 Feb 2014 11:39:37 -0800
+Message-Id: <1392061264-28124-38-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
 References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
@@ -28,37 +28,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Adamson <andros@netapp.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit f1ff0c27fd9987c59d707cd1a6b6c1fc3ae0a250 upstream.
+commit 543d7784b07ffd16cc82a9cb4e1e0323fd0040f1 upstream.
 
-The NFS layer needs to know when a key has expired.
-This change also returns -EKEYEXPIRED to the application, and the informative
-"Key has expired" error message is displayed. The user then knows that
-credential renewal is required.
+There is a race in the hub driver between hub_disconnect() and
+recursively_mark_NOTATTACHED().  This race can be triggered if the
+driver is unbound from a device at the same time as the bus's root hub
+is removed.  When the race occurs, it can cause an oops:
 
-Signed-off-by: Andy Adamson <andros@netapp.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+BUG: unable to handle kernel NULL pointer dereference at 0000015c
+IP: [<c16d5fb0>] recursively_mark_NOTATTACHED+0x20/0x60
+Call Trace:
+ [<c16d5fc4>] recursively_mark_NOTATTACHED+0x34/0x60
+ [<c16d5fc4>] recursively_mark_NOTATTACHED+0x34/0x60
+ [<c16d5fc4>] recursively_mark_NOTATTACHED+0x34/0x60
+ [<c16d5fc4>] recursively_mark_NOTATTACHED+0x34/0x60
+ [<c16d6082>] usb_set_device_state+0x92/0x120
+ [<c16d862b>] usb_disconnect+0x2b/0x1a0
+ [<c16dd4c0>] usb_remove_hcd+0xb0/0x160
+ [<c19ca846>] ? _raw_spin_unlock_irqrestore+0x26/0x50
+ [<c1704efc>] ehci_mid_remove+0x1c/0x30
+ [<c1704f26>] ehci_mid_stop_host+0x16/0x30
+ [<c16f7698>] penwell_otg_work+0xd28/0x3520
+ [<c19c945b>] ? __schedule+0x39b/0x7f0
+ [<c19cdb9d>] ? sub_preempt_count+0x3d/0x50
+ [<c125e97d>] process_one_work+0x11d/0x3d0
+ [<c19c7f4d>] ? mutex_unlock+0xd/0x10
+ [<c125e0e5>] ? manage_workers.isra.24+0x1b5/0x270
+ [<c125f009>] worker_thread+0xf9/0x320
+ [<c19ca846>] ? _raw_spin_unlock_irqrestore+0x26/0x50
+ [<c125ef10>] ? rescuer_thread+0x2b0/0x2b0
+ [<c1264ac4>] kthread+0x94/0xa0
+ [<c19d0f77>] ret_from_kernel_thread+0x1b/0x28
+ [<c1264a30>] ? kthread_create_on_node+0xc0/0xc0
+
+One problem is that recursively_mark_NOTATTACHED() uses the intfdata
+value and hub->hdev->maxchild while hub_disconnect() is clearing them.
+Another problem is that it uses hub->ports[i] while the port device is
+being released.
+
+To fix this race, we need to hold the device_state_lock while
+hub_disconnect() changes the values.  (Note that usb_disconnect()
+and hub_port_connect_change() already acquire this lock at similar
+critical times during a USB device's life cycle.)  We also need to
+remove the port devices after maxchild has been set to 0, instead of
+before.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: "Du, Changbin" <changbinx.du@intel.com>
+Tested-by: "Du, Changbin" <changbinx.du@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/sunrpc/clnt.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/core/hub.c | 14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
 
-diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
-index d8b6ad9..e1d98c8 100644
---- a/net/sunrpc/clnt.c
-+++ b/net/sunrpc/clnt.c
-@@ -1376,9 +1376,9 @@ call_refreshresult(struct rpc_task *task)
- 		return;
- 	case -ETIMEDOUT:
- 		rpc_delay(task, 3*HZ);
--	case -EKEYEXPIRED:
- 	case -EAGAIN:
- 		status = -EACCES;
-+	case -EKEYEXPIRED:
- 		if (!task->tk_cred_retry)
- 			break;
- 		task->tk_cred_retry--;
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index edbf39f..de1c1b0 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -1643,7 +1643,7 @@ static void hub_disconnect(struct usb_interface *intf)
+ {
+ 	struct usb_hub *hub = usb_get_intfdata(intf);
+ 	struct usb_device *hdev = interface_to_usbdev(intf);
+-	int i;
++	int port1;
+ 
+ 	/* Take the hub off the event list and don't let it be added again */
+ 	spin_lock_irq(&hub_event_lock);
+@@ -1658,11 +1658,15 @@ static void hub_disconnect(struct usb_interface *intf)
+ 	hub->error = 0;
+ 	hub_quiesce(hub, HUB_DISCONNECT);
+ 
+-	usb_set_intfdata (intf, NULL);
++	/* Avoid races with recursively_mark_NOTATTACHED() */
++	spin_lock_irq(&device_state_lock);
++	port1 = hdev->maxchild;
++	hdev->maxchild = 0;
++	usb_set_intfdata(intf, NULL);
++	spin_unlock_irq(&device_state_lock);
+ 
+-	for (i = 0; i < hdev->maxchild; i++)
+-		usb_hub_remove_port_device(hub, i + 1);
+-	hub->hdev->maxchild = 0;
++	for (; port1 > 0; --port1)
++		usb_hub_remove_port_device(hub, port1);
+ 
+ 	if (hub->hdev->speed == USB_SPEED_HIGH)
+ 		highspeed_hubs--;
 -- 
 1.8.3.2
 
