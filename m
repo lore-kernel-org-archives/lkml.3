@@ -1,99 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751938AbaBJD5t (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 22:57:49 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:34889 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751612AbaBJD5s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 22:57:48 -0500
-Message-ID: <52F84E38.7020001@infradead.org>
-Date: Sun, 09 Feb 2014 19:57:44 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Gene Heskett <gheskett@wdtv.com>
-CC: Ken Moffat <zarniwhoop@ntlworld.com>, Guenter Roeck <linux@roeck-us.net>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 24/28] Remove DEPRECATED
-References: <1391971686-9517-1-git-send-email-richard@nod.at> <20140210030715.GA21916@milliways> <52F843C2.9080703@infradead.org> <201402092246.59715.gheskett@wdtv.com>
-In-Reply-To: <201402092246.59715.gheskett@wdtv.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1752047AbaBJEA4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 23:00:56 -0500
+Received: from ozlabs.org ([203.10.76.45]:35533 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751654AbaBJEAz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Feb 2014 23:00:55 -0500
+Date: Mon, 10 Feb 2014 15:00:47 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Rientjes <rientjes@google.com>
+Subject: linux-next: manual merge of the akpm-current tree with the rcu tree
+Message-Id: <20140210150047.65f06219ffa970ad34d27d7f@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__10_Feb_2014_15_00_47_+1100_yhk/QmDt_I=ZxPFu"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/09/2014 07:46 PM, Gene Heskett wrote:
-> On Sunday 09 February 2014, Randy Dunlap wrote:
->> On 02/09/2014 07:07 PM, Ken Moffat wrote:
->>> On Sun, Feb 09, 2014 at 06:05:41PM -0500, Gene Heskett wrote:
->>>> On Sunday 09 February 2014, Paul Bolle wrote:
->>>>> Feel free to open a new thread, with the relevant details, and
->>>>> involve the relevant people and lists. I have no idea what you're
->>>>> going on about and could not care less (in the context of this
->>>>> thread).
->>>>>
->>>>>
->>>>> Paul Bolle
->>>>
->>>> Been tried, got zero response.  Frankly, posting just to lkml, hoping
->>>> the revalent people see it, is beginning to act like posting to a
->>>> black hole.
->>>>
->>>  I saw one response to you, from Randy Dunlap, asking for more
->>>
->>> information : https://lkml.org/lkml/2014/2/8/153
->>
->> wow, I don't know how I saw this message (thanks, Ken),
->> but replying to this patch was NOT the right thing to do, Gene.
->>
->> Just reply to my request and I'll be glad to look into it.
->>
->>>  After your posts a few days ago, I'm tempted to suggest you check
->>>
->>> your spam filters, and also any mail files your virus scanner might
->>> have quarantined.  But it is also possible that you just haven't
->>> received it - email is like that.
->>>
->>> ؤ¸en
-> 
-> Spam and viri filters watched carefully.  I also use mailfilter, and watch 
-> its logs full time for FP's.
+--Signature=_Mon__10_Feb_2014_15_00_47_+1100_yhk/QmDt_I=ZxPFu
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Still -- this ATSC problem should not be part of a reply to the Remove DEPRECATED patch.
+Hi Andrew,
 
+Today's linux-next merge of the akpm-current tree got a conflict in
+mm/slub.c between commit f4e40a71719d ("slub: Fix add_full() lockdep
+checks") from the rcu tree and commit aee03fe7a7c8 ("mm/slub.c: list_lock
+may not be held in some circumstances") from the akpm-current tree.
 
-> And I didn't reply because the question seemed way too broad, almost as if 
+These patches try to achieve the same thing, so I arbitrarily chose the
+version from the akpm-current tree.
 
-what question seemed to broad?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> my lament wasn't read.  That and the mail server doesn't like big 
+--Signature=_Mon__10_Feb_2014_15_00_47_+1100_yhk/QmDt_I=ZxPFu
+Content-Type: application/pgp-signature
 
-what mail server?  yours?  wdtv?  vger.kernel.org certainly has no problem with them.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-> attachments. So rather than reply to the list, I'll excise some of the 
-> addresses that bounce from a reply_all or don't like me, and send the 
-> .config from a 3.019 build which seems ok, but by the time that config is 
-> run thru a make oldconfig at 3.8.2, most all the media, ATSC and DVB stuff 
-> is gone.  So I'll attach that one too.  The later file grew 22kb, but 
-> wholesale parts of the first one are missing from the 2nd.
+iQIcBAEBCAAGBQJS+E70AAoJEMDTa8Ir7ZwVmsQQAJDGCpgFb4ASh1Cm2mImXygK
+SoZU4ylFnARZDYl54Wp3HZl0LVwOexSdzYbBIH9UtdBK+n27nFWOZDeixW478xnK
+6X+bRM23qWXFh7r1tI7Yh0fEfuY5kOJOHQkEjDkFeTU5GkhdB4iraLO6SxN7/DYi
+jqc4jIGL6BJ83igTg3t5OX+bvnfgKox7u5twUcZM7f2i04ERJL59oroVsKctrfg7
+nYUsn9jehGTT/zPGpeLgKFz5TKInBH8X4MY3EYHOED7p73nYfnuCE5zciZDF8Ff3
+Q+cQNYVWWxDS1gPxT76gz8axqO4GPE2f4UAThbJeeJykWxJ2IvPq45GMZjtT5cYW
+nxGv1wA8ZyV1qcfhV3Xjy0Cibgmtc8DBU8aGiJ+maVA7VLOxhtwtjdvY5Sf5cdPt
+xkq5REh7Gnjd2zHPfBdt9Cq/ync0HMxSlVyZ7n/PDZUwELO+wo/KxvM5VlA+fxC6
+SVgAL1+DjefIGXYXaLCAH5sdIrcTFIxenOqIQXcm7kGDa1E7ULbYlZcK71AhIH8G
+YUx+JprK2/ejwsuVKE14l927ixIbjC35FvGK4C8zWHceQCrPo7d3chNlcHnzKgWa
+OEhw2uDCVbzn87hwslHooADuuOUkA3n/y0hkArLpZiITgx31x+/ycQJq7UQEo38O
+I4TLOavstNsPUxbVfPiJ
+=n02h
+-----END PGP SIGNATURE-----
 
-Gene, I want to make sure where you are saying the problem is.
-Is it going directly from 3.019 to 3.8.2, with no intervening kernel versions?
-
-I don't know what kernel version 3.019 is.  Do you mean 3.0.19?
-or is that some distro numbering?
-
-> 
-> I've look at Makefile, but most Makefiles are swahili to me so I could be 
-> looking at it and not recognizing it.
-> 
-> Thank you all.
-> 
-> Cheers, Gene
-> 
-
-
--- 
-~Randy
+--Signature=_Mon__10_Feb_2014_15_00_47_+1100_yhk/QmDt_I=ZxPFu--
