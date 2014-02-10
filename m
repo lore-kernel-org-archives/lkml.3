@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753304AbaBJVrV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 16:47:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13455 "EHLO mx1.redhat.com"
+	id S1752804AbaBJVpd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 16:45:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32539 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753034AbaBJVpf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 16:45:35 -0500
+	id S1750890AbaBJVpc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 16:45:32 -0500
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: linux-mm@kvack.org
 Cc: Andrew Morton <akpm@linux-foundation.org>, Matt Mackall <mpm@selenic.com>,
@@ -17,65 +17,136 @@ Cc: Andrew Morton <akpm@linux-foundation.org>, Matt Mackall <mpm@selenic.com>,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
         Pavel Emelyanov <xemul@parallels.com>, Rik van Riel <riel@redhat.com>,
         kirill.shutemov@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: [PATCH 02/11] pagewalk: add walk_page_vma()
-Date: Mon, 10 Feb 2014 16:44:27 -0500
-Message-Id: <1392068676-30627-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH 06/11] numa_maps: redefine callback functions for page table walker
+Date: Mon, 10 Feb 2014 16:44:31 -0500
+Message-Id: <1392068676-30627-7-git-send-email-n-horiguchi@ah.jp.nec.com>
 In-Reply-To: <1392068676-30627-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 References: <1392068676-30627-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduces walk_page_vma(), which is useful for the callers which
-want to walk over a given vma. It's used by later patches.
+gather_pte_stats() connected to pmd_entry() does both of pmd loop and
+pte loop. So this patch moves pte part into pte_entry().
 
-ChangeLog v4:
-- rename skip_check to skip_lower_level_walking
+ChangeLog v2:
+- rebase onto mmots
 
 Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 ---
- include/linux/mm.h |  1 +
- mm/pagewalk.c      | 18 ++++++++++++++++++
- 2 files changed, 19 insertions(+)
+ fs/proc/task_mmu.c | 54 ++++++++++++++++++++++++++----------------------------
+ 1 file changed, 26 insertions(+), 28 deletions(-)
 
-diff --git v3.14-rc2.orig/include/linux/mm.h v3.14-rc2/include/linux/mm.h
-index 4d0bc01de43c..144b08617957 100644
---- v3.14-rc2.orig/include/linux/mm.h
-+++ v3.14-rc2/include/linux/mm.h
-@@ -1104,6 +1104,7 @@ struct mm_walk {
+diff --git v3.14-rc2.orig/fs/proc/task_mmu.c v3.14-rc2/fs/proc/task_mmu.c
+index 7ed7c88f0687..8b23bbcc5e04 100644
+--- v3.14-rc2.orig/fs/proc/task_mmu.c
++++ v3.14-rc2/fs/proc/task_mmu.c
+@@ -1193,7 +1193,6 @@ const struct file_operations proc_pagemap_operations = {
+ #ifdef CONFIG_NUMA
  
- int walk_page_range(unsigned long addr, unsigned long end,
- 		struct mm_walk *walk);
-+int walk_page_vma(struct vm_area_struct *vma, struct mm_walk *walk);
- void free_pgd_range(struct mmu_gather *tlb, unsigned long addr,
- 		unsigned long end, unsigned long floor, unsigned long ceiling);
- int copy_page_range(struct mm_struct *dst, struct mm_struct *src,
-diff --git v3.14-rc2.orig/mm/pagewalk.c v3.14-rc2/mm/pagewalk.c
-index 4770558feea8..2a88dfa58af6 100644
---- v3.14-rc2.orig/mm/pagewalk.c
-+++ v3.14-rc2/mm/pagewalk.c
-@@ -334,3 +334,21 @@ int walk_page_range(unsigned long start, unsigned long end,
- 	} while (start = next, start < end);
- 	return err;
+ struct numa_maps {
+-	struct vm_area_struct *vma;
+ 	unsigned long pages;
+ 	unsigned long anon;
+ 	unsigned long active;
+@@ -1259,43 +1258,41 @@ static struct page *can_gather_numa_stats(pte_t pte, struct vm_area_struct *vma,
+ 	return page;
  }
-+
-+int walk_page_vma(struct vm_area_struct *vma, struct mm_walk *walk)
-+{
-+	int err;
-+
-+	if (!walk->mm)
-+		return -EINVAL;
-+
-+	VM_BUG_ON(!rwsem_is_locked(&walk->mm->mmap_sem));
-+	VM_BUG_ON(!vma);
-+	walk->vma = vma;
-+	err = walk_page_test(vma->vm_start, vma->vm_end, walk);
-+	if (skip_lower_level_walking(walk))
+ 
+-static int gather_pte_stats(pmd_t *pmd, unsigned long addr,
++static int gather_pte_stats(pte_t *pte, unsigned long addr,
+ 		unsigned long end, struct mm_walk *walk)
+ {
+-	struct numa_maps *md;
+-	spinlock_t *ptl;
+-	pte_t *orig_pte;
+-	pte_t *pte;
++	struct numa_maps *md = walk->private;
+ 
+-	md = walk->private;
++	struct page *page = can_gather_numa_stats(*pte, walk->vma, addr);
++	if (!page)
 +		return 0;
-+	if (err)
-+		return err;
-+	return __walk_page_range(vma->vm_start, vma->vm_end, walk);
++	gather_stats(page, md, pte_dirty(*pte), 1);
++	return 0;
 +}
++
++static int gather_pmd_stats(pmd_t *pmd, unsigned long addr,
++		unsigned long end, struct mm_walk *walk)
++{
++	struct numa_maps *md = walk->private;
++	struct vm_area_struct *vma = walk->vma;
++	spinlock_t *ptl;
+ 
+-	if (pmd_trans_huge_lock(pmd, md->vma, &ptl) == 1) {
++	if (pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
+ 		pte_t huge_pte = *(pte_t *)pmd;
+ 		struct page *page;
+ 
+-		page = can_gather_numa_stats(huge_pte, md->vma, addr);
++		page = can_gather_numa_stats(huge_pte, vma, addr);
+ 		if (page)
+ 			gather_stats(page, md, pte_dirty(huge_pte),
+ 				     HPAGE_PMD_SIZE/PAGE_SIZE);
+ 		spin_unlock(ptl);
+-		return 0;
++		/* don't call gather_pte_stats() */
++		walk->skip = 1;
+ 	}
+-
+-	if (pmd_trans_unstable(pmd))
+-		return 0;
+-	orig_pte = pte = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
+-	do {
+-		struct page *page = can_gather_numa_stats(*pte, md->vma, addr);
+-		if (!page)
+-			continue;
+-		gather_stats(page, md, pte_dirty(*pte), 1);
+-
+-	} while (pte++, addr += PAGE_SIZE, addr != end);
+-	pte_unmap_unlock(orig_pte, ptl);
+ 	return 0;
+ }
+ #ifdef CONFIG_HUGETLB_PAGE
+-static int gather_hugetbl_stats(pte_t *pte, unsigned long hmask,
++static int gather_hugetlb_stats(pte_t *pte, unsigned long hmask,
+ 		unsigned long addr, unsigned long end, struct mm_walk *walk)
+ {
+ 	struct numa_maps *md;
+@@ -1314,7 +1311,7 @@ static int gather_hugetbl_stats(pte_t *pte, unsigned long hmask,
+ }
+ 
+ #else
+-static int gather_hugetbl_stats(pte_t *pte, unsigned long hmask,
++static int gather_hugetlb_stats(pte_t *pte, unsigned long hmask,
+ 		unsigned long addr, unsigned long end, struct mm_walk *walk)
+ {
+ 	return 0;
+@@ -1344,12 +1341,12 @@ static int show_numa_map(struct seq_file *m, void *v, int is_pid)
+ 	/* Ensure we start with an empty set of numa_maps statistics. */
+ 	memset(md, 0, sizeof(*md));
+ 
+-	md->vma = vma;
+-
+-	walk.hugetlb_entry = gather_hugetbl_stats;
+-	walk.pmd_entry = gather_pte_stats;
++	walk.hugetlb_entry = gather_hugetlb_stats;
++	walk.pmd_entry = gather_pmd_stats;
++	walk.pte_entry = gather_pte_stats;
+ 	walk.private = md;
+ 	walk.mm = mm;
++	walk.vma = vma;
+ 
+ 	pol = get_vma_policy(task, vma, vma->vm_start);
+ 	mpol_to_str(buffer, sizeof(buffer), pol);
+@@ -1380,6 +1377,7 @@ static int show_numa_map(struct seq_file *m, void *v, int is_pid)
+ 	if (is_vm_hugetlb_page(vma))
+ 		seq_printf(m, " huge");
+ 
++	/* mmap_sem is held by m_start */
+ 	walk_page_range(vma->vm_start, vma->vm_end, &walk);
+ 
+ 	if (!md->pages)
 -- 
 1.8.5.3
 
