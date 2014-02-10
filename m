@@ -1,182 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752092AbaBJA22 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 19:28:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42913 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751732AbaBJA20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 19:28:26 -0500
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-From: Torvald Riegel <triegel@redhat.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Will Deacon <will.deacon@arm.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-In-Reply-To: <20140207180216.GP4250@linux.vnet.ibm.com>
-References: <52F3DA85.1060209@arm.com>
-	 <20140206185910.GE27276@mudshark.cambridge.arm.com>
-	 <20140206192743.GH4250@linux.vnet.ibm.com>
-	 <1391721423.23421.3898.camel@triegel.csb>
-	 <20140206221117.GJ4250@linux.vnet.ibm.com>
-	 <1391730288.23421.4102.camel@triegel.csb>
-	 <20140207042051.GL4250@linux.vnet.ibm.com>
-	 <20140207074405.GM5002@laptop.programming.kicks-ass.net>
-	 <20140207165028.GO4250@linux.vnet.ibm.com>
-	 <20140207165548.GR5976@mudshark.cambridge.arm.com>
-	 <20140207180216.GP4250@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 10 Feb 2014 01:27:51 +0100
-Message-ID: <1391992071.18779.99.camel@triegel.csb>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752157AbaBJAcQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 19:32:16 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:11229 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751732AbaBJAcO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Feb 2014 19:32:14 -0500
+X-AuditID: cbfee68e-b7f566d000002344-e3-52f81e0ba72c
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
+        rtc-linux@googlegroups.com, "'Lars-Peter Clausen'" <lars@metafoo.de>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH V2] rtc: rtc-jz4740: Use devm_ioremap_resource()
+Date: Mon, 10 Feb 2014 09:32:10 +0900
+Message-id: <003801cf25f7$89791f40$9c6b5dc0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac8l94lZ1rkmbBedSjWad9HnMLoirw==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFIsWRmVeSWpSXmKPExsVy+t8zI11uuR9BBktmSVosuXiV3WLO+jVs
+	FpcXXmK1WDJ5PqvF5V1z2Cz2d3YwOrB57Jl4ks3jxIzfLB5L3hxi9ejbsorRY/q8n0wenzfJ
+	BbBFcdmkpOZklqUW6dslcGXcWPuFtaBRsOLuxXVsDYxdfF2MnBwSAiYSp5pPsEPYYhIX7q1n
+	62Lk4hASWMYo8bUFxIEomnO6ixUiMZ1R4vfii1DOL0aJu3vuMYJUsQmoSXz5chhoFAeHiIC+
+	RFuLBkgNs8B2RomG7kdMIDXCAg4SZ24fYwWxWQRUJf7O/w4W5xWwlfjz+ws7hC0o8WPyPRYQ
+	m1lAS2L9zuNMELa8xOY1b5lB5ksIqEs8+qsLEhYR0JN4/KKFGaJERGLfi3eMIHslBK6xS6xb
+	NocRYpeAxLfJh1ggemUlNh1ghnhMUuLgihssExjFZiHZPAvJ5llINs9CsmIBI8sqRtHUguSC
+	4qT0IiO94sTc4tK8dL3k/NxNjJB47NvBePOA9SHGZKD1E5mlRJPzgfGcVxJvaGxmZGFqYmps
+	ZG5pRpqwkjjvoodJQUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoYa29kK9gpX96ibb/nIV9N
+	uv05pdeLI2+em27aa+H5U+8b3zaf2VMOCHvZZiu+1C7acvobR53TEuOZm/euUT345+HUzdmd
+	xpLXowNzEh47MfB2fe/afuv9ivNBnrY33rp5bbjEenJftNyt7Ud3/g0Xdmr17/H7dIUxuFT9
+	UcKPj8rZGpu2PFp0R4mlOCPRUIu5qDgRAJVJfh7dAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOKsWRmVeSWpSXmKPExsVy+t9jQV1uuR9BBpu7RS2WXLzKbjFn/Ro2
+	i8sLL7FaLJk8n9Xi8q45bBb7OzsYHdg89kw8yeZxYsZvFo8lbw6xevRtWcXoMX3eTyaPz5vk
+	AtiiGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4Du
+	UFIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFm3Fj7hbWgUbDi7sV1bA2M
+	XXxdjJwcEgImEnNOd7FC2GISF+6tZ+ti5OIQEpjOKPF78UVWCOcXo8TdPfcYQarYBNQkvnw5
+	zN7FyMEhIqAv0daiAVLDLLCdUaKh+xETSI2wgIPEmdvHwKayCKhK/J3/HSzOK2Ar8ef3F3YI
+	W1Dix+R7LCA2s4CWxPqdx5kgbHmJzWveMoPMlxBQl3j0VxckLCKgJ/H4RQszRImIxL4X7xgn
+	MArMQjJpFpJJs5BMmoWkZQEjyypG0dSC5ILipPRcQ73ixNzi0rx0veT83E2M4Gh/JrWDcWWD
+	xSFGAQ5GJR7eHX++BwmxJpYVV+YeYpTgYFYS4X15FyjEm5JYWZValB9fVJqTWnyIMRno0YnM
+	UqLJ+cBElFcSb2hsYmZkaWRmYWRibk6asJI474FW60AhgfTEktTs1NSC1CKYLUwcnFINjJ4f
+	mQ+16C3i8G1+IW3yzvA/Z/+TrfPKCz+LSk5k8A9XOR0u6z6lUUjs4bl18xLsclQz5S6Hr9nl
+	uMLBzFfjkLE/R0raN11F2/2uuj+PzNAW1vn69EGhx1QhARNnxUM6d3RWXJ1yMabds3DzT/X4
+	zeF3s87FWTjLlzCc2cx9+3RD08YPUww5lViKMxINtZiLihMB3vijnjoDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-02-07 at 10:02 -0800, Paul E. McKenney wrote:
-> On Fri, Feb 07, 2014 at 04:55:48PM +0000, Will Deacon wrote:
-> > Hi Paul,
-> > 
-> > On Fri, Feb 07, 2014 at 04:50:28PM +0000, Paul E. McKenney wrote:
-> > > On Fri, Feb 07, 2014 at 08:44:05AM +0100, Peter Zijlstra wrote:
-> > > > On Thu, Feb 06, 2014 at 08:20:51PM -0800, Paul E. McKenney wrote:
-> > > > > Hopefully some discussion of out-of-thin-air values as well.
-> > > > 
-> > > > Yes, absolutely shoot store speculation in the head already. Then drive
-> > > > a wooden stake through its hart.
-> > > > 
-> > > > C11/C++11 should not be allowed to claim itself a memory model until that
-> > > > is sorted.
-> > > 
-> > > There actually is a proposal being put forward, but it might not make ARM
-> > > and Power people happy because it involves adding a compare, a branch,
-> > > and an ISB/isync after every relaxed load...  Me, I agree with you,
-> > > much preferring the no-store-speculation approach.
-> > 
-> > Can you elaborate a bit on this please? We don't permit speculative stores
-> > in the ARM architecture, so it seems counter-intuitive that GCC needs to
-> > emit any additional instructions to prevent that from happening.
-> 
-> Requiring a compare/branch/ISB after each relaxed load enables a simple(r)
-> proof that out-of-thin-air values cannot be observed in the face of any
-> compiler optimization that refrains from reordering a prior relaxed load
-> with a subsequent relaxed store.
-> 
-> > Stores can, of course, be observed out-of-order but that's a lot more
-> > reasonable :)
-> 
-> So let me try an example.  I am sure that Torvald Riegel will jump in
-> with any needed corrections or amplifications:
-> 
-> Initial state: x == y == 0
-> 
-> T1:	r1 = atomic_load_explicit(x, memory_order_relaxed);
-> 	atomic_store_explicit(r1, y, memory_order_relaxed);
-> 
-> T2:	r2 = atomic_load_explicit(y, memory_order_relaxed);
-> 	atomic_store_explicit(r2, x, memory_order_relaxed);
-> 
-> One would intuitively expect r1 == r2 == 0 as the only possible outcome.
-> But suppose that the compiler used specialization optimizations, as it
-> would if there was a function that has a very lightweight implementation
-> for some values and a very heavyweight one for other.  In particular,
-> suppose that the lightweight implementation was for the value 42.
-> Then the compiler might do something like the following:
-> 
-> Initial state: x == y == 0
-> 
-> T1:	r1 = atomic_load_explicit(x, memory_order_relaxed);
-> 	if (r1 == 42)
-> 		atomic_store_explicit(42, y, memory_order_relaxed);
-> 	else
-> 		atomic_store_explicit(r1, y, memory_order_relaxed);
-> 
-> T2:	r2 = atomic_load_explicit(y, memory_order_relaxed);
-> 	atomic_store_explicit(r2, x, memory_order_relaxed);
-> 
-> Suddenly we have an explicit constant 42 showing up.  Of course, if
-> the compiler carefully avoided speculative stores (as both Peter and
-> I believe that it should if its code generation is to be regarded as
-> anything other than an act of vandalism, the words in the standard
-> notwithstanding), there would be no problem.  But currently, a number
-> of compiler writers see absolutely nothing wrong with transforming
-> the optimized-for-42 version above with something like this:
-> 
-> Initial state: x == y == 0
-> 
-> T1:	r1 = atomic_load_explicit(x, memory_order_relaxed);
-> 	atomic_store_explicit(42, y, memory_order_relaxed);
-> 	if (r1 != 42)
-> 		atomic_store_explicit(r1, y, memory_order_relaxed);
-> 
-> T2:	r2 = atomic_load_explicit(y, memory_order_relaxed);
-> 	atomic_store_explicit(r2, x, memory_order_relaxed);
+Use devm_ioremap_resource() in order to make the code simpler,
+and move 'struct resource *mem' from 'struct jz4740_rtc' to
+jz4740_rtc_probe() because the 'mem' variable is used only in
+jz4740_rtc_probe(). Also the redundant return value check of
+platform_get_resource() is removed, because the value is checked
+by devm_ioremap_resource().
 
-Intuitively, this is wrong because this let's the program take a step
-the abstract machine wouldn't do.  This is different to the sequential
-code that Peter posted because it uses atomics, and thus one can't
-easily assume that the difference is not observable.
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+Changes since v1
+- Removed unnecessary resource flag setting, per Lars-Peter Clausen
+- Removed unnecessary the return value check of platform_get_resource()
 
-For this to be correct, the compiler would actually have to prove that
-the speculative store is "as-if correct", which in turn would mean that
-it needs to be aware of all potential observers, and check whether those
-observers aren't actually affected by the speculative store.
+ drivers/rtc/rtc-jz4740.c |   25 +++++--------------------
+ 1 file changed, 5 insertions(+), 20 deletions(-)
 
-I would guess that the compilers you have in mind don't really do that.
-If they do, then I don't see why this should be okay, unless you think
-out-of-thin-air values are something good (which I wouldn't agree with).
-
-> And then it is a short and uncontroversial step to the following:
-> 
-> Initial state: x == y == 0
-> 
-> T1:	atomic_store_explicit(42, y, memory_order_relaxed);
-> 	r1 = atomic_load_explicit(x, memory_order_relaxed);
-> 	if (r1 != 42)
-> 		atomic_store_explicit(r1, y, memory_order_relaxed);
-> 
-> T2:	r2 = atomic_load_explicit(y, memory_order_relaxed);
-> 	atomic_store_explicit(r2, x, memory_order_relaxed);
-> 
-> This can of course result in r1 == r2 == 42, even though the constant
-> 42 never appeared in the original code.  This is one way to generate
-> an out-of-thin-air value.
-> 
-> As near as I can tell, compiler writers hate the idea of prohibiting
-> speculative-store optimizations because it requires them to introduce
-> both control and data dependency tracking into their compilers.
-
-I wouldn't characterize the situation like this (although I can't speak
-for others, obviously).  IMHO, it's perfectly fine on sequential /
-non-synchronizing code, because we know the difference isn't observable
-by a correct program.  For synchronizing code, compilers just shouldn't
-do it, or they would have to truly prove that speculation is harmless.
-That will be hard, so I think it should just be avoided.
-
-Synchronization code will likely have been tuned anyway (especially if
-it uses relaxed MO), so I don't see a large need for trying to optimize
-using speculative atomic stores.
-
-Thus, I think there's an easy and practical solution.
-
-> Many of
-> them seem to hate dependency tracking with a purple passion.  At least,
-> such a hatred would go a long way towards explaining the incomplete
-> and high-overhead implementations of memory_order_consume, the long
-> and successful use of idioms based on the memory_order_consume pattern
-> notwithstanding [*].  ;-)
-
-I still think that's different because it blurs the difference between
-sequential code and synchronizing code (ie, atomic accesses).  With
-consume MO, the simple solution above doesn't work anymore, because
-suddenly synchronizing code does affect optimizations in sequential
-code, even if that wouldn't reorder across the synchronizing code (which
-would be clearly "visible" to the implementation of the optimization).
+diff --git a/drivers/rtc/rtc-jz4740.c b/drivers/rtc/rtc-jz4740.c
+index 1b126d2..08f5160 100644
+--- a/drivers/rtc/rtc-jz4740.c
++++ b/drivers/rtc/rtc-jz4740.c
+@@ -38,7 +38,6 @@
+ #define JZ_RTC_CTRL_ENABLE	BIT(0)
+ 
+ struct jz4740_rtc {
+-	struct resource *mem;
+ 	void __iomem *base;
+ 
+ 	struct rtc_device *rtc;
+@@ -216,6 +215,7 @@ static int jz4740_rtc_probe(struct platform_device *pdev)
+ 	int ret;
+ 	struct jz4740_rtc *rtc;
+ 	uint32_t scratchpad;
++	struct resource *mem;
+ 
+ 	rtc = devm_kzalloc(&pdev->dev, sizeof(*rtc), GFP_KERNEL);
+ 	if (!rtc)
+@@ -227,25 +227,10 @@ static int jz4740_rtc_probe(struct platform_device *pdev)
+ 		return -ENOENT;
+ 	}
+ 
+-	rtc->mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!rtc->mem) {
+-		dev_err(&pdev->dev, "Failed to get platform mmio memory\n");
+-		return -ENOENT;
+-	}
+-
+-	rtc->mem = devm_request_mem_region(&pdev->dev, rtc->mem->start,
+-					resource_size(rtc->mem), pdev->name);
+-	if (!rtc->mem) {
+-		dev_err(&pdev->dev, "Failed to request mmio memory region\n");
+-		return -EBUSY;
+-	}
+-
+-	rtc->base = devm_ioremap_nocache(&pdev->dev, rtc->mem->start,
+-					resource_size(rtc->mem));
+-	if (!rtc->base) {
+-		dev_err(&pdev->dev, "Failed to ioremap mmio memory\n");
+-		return -EBUSY;
+-	}
++	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	rtc->base = devm_ioremap_resource(&pdev->dev, mem);
++	if (IS_ERR(rtc->base))
++		return PTR_ERR(rtc->base);
+ 
+ 	spin_lock_init(&rtc->lock);
+ 
+-- 
+1.7.10.4
 
 
