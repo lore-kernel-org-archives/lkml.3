@@ -1,77 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753403AbaBJVBq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 16:01:46 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:38781 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752627AbaBJVBm (ORCPT
+	id S1753472AbaBJVCn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 16:02:43 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:36176 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752575AbaBJVCj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 16:01:42 -0500
-Message-ID: <1392066100.6615.55.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH] This extends tx_data and and iscsit_do_tx_data with the
- additional parameter flags and avoids sending multiple TCP packets in
- iscsit_fe_sendpage_sg
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Thomas Glanzmann <thomas@glanzmann.de>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        John Ogness <john.ogness@linutronix.de>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        target-devel <target-devel@vger.kernel.org>,
-        Linux Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 10 Feb 2014 13:01:40 -0800
-In-Reply-To: <20140210205634.GC19621@glanzmann.de>
-References: <20140208150001.GI20512@glanzmann.de>
-	 <1391871986.10160.105.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <20140208165732.GB22359@glanzmann.de>
-	 <1391879318.10160.108.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <20140208171531.GA23798@glanzmann.de>
-	 <1391886759.10160.114.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <20140209074027.GA8105@glanzmann.de> <20140209074227.GA8219@glanzmann.de>
-	 <1391949039.10160.129.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <1392058718.17867.8.camel@haakon3.risingtidesystems.com>
-	 <20140210205634.GC19621@glanzmann.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 10 Feb 2014 16:02:39 -0500
+Date: Mon, 10 Feb 2014 22:02:24 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: linux-kernel@vger.kernel.org
+Cc: Jason Low <jason.low2@hp.com>, Waiman Long <waiman.long@hp.com>,
+        mingo@kernel.org, paulmck@linux.vnet.ibm.com,
+        torvalds@linux-foundation.org, tglx@linutronix.de, riel@redhat.com,
+        akpm@linux-foundation.org, davidlohr@hp.com, hpa@zytor.com,
+        andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
+        chegu_vinod@hp.com
+Subject: Re: [PATCH 2/8] mutex: In mutex_can_spin_on_owner(), return false if
+ task need_resched()
+Message-ID: <20140210210224.GZ5002@laptop.programming.kicks-ass.net>
+References: <20140210195820.834693028@infradead.org>
+ <20140210203659.465074341@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140210203659.465074341@infradead.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-02-10 at 21:56 +0100, Thomas Glanzmann wrote:
-> Hello Nab,
+On Mon, Feb 10, 2014 at 08:58:22PM +0100, Peter Zijlstra wrote:
+
+Bah, I forgot Quilt eats the From: headers and I forgot to re-add them.
+They're still present in the queue, just lost in mailing :/
+
+> The mutex_can_spin_on_owner() function should also return false if the
+> task needs to be rescheduled to avoid entering the MCS queue when it
+> needs to reschedule.
 > 
-> > This looks correct to me.  Thomas, once your able to confirm please
-> > include your 'Tested-by' and I'll include for the next -rc3 PULL
-> > request.
+> Cc: chegu_vinod@hp.com
+> Cc: paulmck@linux.vnet.ibm.com
+> Cc: Waiman.Long@hp.com
+> Cc: torvalds@linux-foundation.org
+> Cc: tglx@linutronix.de
+> Cc: riel@redhat.com
+> Cc: akpm@linux-foundation.org
+> Cc: davidlohr@hp.com
+> Cc: hpa@zytor.com
+> Cc: andi@firstfloor.org
+> Cc: aswin@hp.com
+> Cc: mingo@kernel.org
+> Cc: scott.norton@hp.com
+> Signed-off-by: Jason Low <jason.low2@hp.com>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> Link: http://lkml.kernel.org/r/1390936396-3962-2-git-send-email-jason.low2@hp.com
+> ---
+>  kernel/locking/mutex.c |    3 +++
+>  1 file changed, 3 insertions(+)
 > 
-> Eric is currently reviewing our latest iteration with MSG_MORE for
-> kernel_sendmsg and MSG_MORE | MSG_SENDPAGE_NOTLAST for sendpage. However
-> with the last iteration we had again a high RTT for some packets. But
-> than Eric let me tune net.ipv4.tcp_min_tso_segs to 8 and the RTT went
-> down to what it used before auto corking was enabled. At least almost.
+> --- a/kernel/locking/mutex.c
+> +++ b/kernel/locking/mutex.c
+> @@ -166,6 +166,9 @@ static inline int mutex_can_spin_on_owne
+>  	struct task_struct *owner;
+>  	int retval = 1;
+>  
+> +	if (need_resched())
+> +		return 0;
+> +
+>  	rcu_read_lock();
+>  	owner = ACCESS_ONCE(lock->owner);
+>  	if (owner)
 > 
-
-Hmm.. I was not aware of high RTT for some packets.
-
-Can you spot this on the pcap you provided ?
-
-
-> I'm having a steep learning curve but Eric hopefully knows how to get
-> this back in check. Nevertheless the regression I saw are history
-> because I saw that Eric has submitted the patch to David S. Miller which
-> fixes the two bugs that killed the iSCSI performance when tcp auto
-> corking was on. So currently we're just optimizing to get the last 20%
-> or so out of it. Quite interesting. Especially how much bandwidth can be
-> saved by coalescing packets.
-
-It depends on the ratio payload/headers.
-
-The beginning of your pcap show a lot of 512 bytes requests, so for this
-kind of requests, the gain is huge (maybe 50%), but for 32K or 64K
-request, gain would be marginal.
-
-
-
+> 
