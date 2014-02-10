@@ -1,377 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753766AbaBJNdk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 08:33:40 -0500
-Received: from mga02.intel.com ([134.134.136.20]:36145 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753655AbaBJNdG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 08:33:06 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,818,1384329600"; 
-   d="scan'208";a="452780002"
-Date: Mon, 10 Feb 2014 15:32:38 +0200
-From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
-To: sagar.a.kamble@intel.com
-Cc: intel-gfx@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, Uma Shankar <uma.shankar@intel.com>
-Subject: Re: [Intel-gfx] [PATCH v5 10/11] drm/i915: Add 180 degree primary
- plane rotation support
-Message-ID: <20140210133238.GJ3891@intel.com>
-References: <1392017478-4945-1-git-send-email-sagar.a.kamble@intel.com>
- <1392017478-4945-11-git-send-email-sagar.a.kamble@intel.com>
+	id S1753785AbaBJNdu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 08:33:50 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:37977 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753032AbaBJNdo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 08:33:44 -0500
+Date: Mon, 10 Feb 2014 14:33:40 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Igor Podlesny <for.poige+linux@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: That greedy Linux VM cache
+Message-ID: <20140210133340.GE7117@dhcp22.suse.cz>
+References: <CA+sTkh7LzDSvhDyYX2Ybi=Z32OuJoK_F1VVHEBsW5Ly-4wa8Bg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1392017478-4945-11-git-send-email-sagar.a.kamble@intel.com>
+In-Reply-To: <CA+sTkh7LzDSvhDyYX2Ybi=Z32OuJoK_F1VVHEBsW5Ly-4wa8Bg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 01:01:17PM +0530, sagar.a.kamble@intel.com wrote:
-> From: Sagar Kamble <sagar.a.kamble@intel.com>
+On Sun 09-02-14 03:42:52, Igor Podlesny wrote:
+> On 3 February 2014 18:55, Michal Hocko <mhocko@suse.cz> wrote:
+> > [Adding linux-mm to the CC]
 > 
-> Primary planes support 180 degree rotation. Expose the feature
-> through rotation drm property.
+> [...]
 > 
-> v2: Calculating linear/tiled offsets based on pipe source width and
-> height. Added 180 degree rotation support in ironlake_update_plane.
+> > This means that the page has to be written back in order to be dropped.
+> > How much dirty memory you have (comparing to the total size of the page
+> > cache)?
 > 
-> v3: Checking if CRTC is active before issueing update_plane. Added
-> wait for vblank to make sure we dont overtake page flips. Disabling
-> FBC since it does not work with rotated planes.
+>    Not too many. May be you missed that part, but I said, that disk is
+> being mostly READ, NOT written.
+>    I also said, that READing is going from system partition (it was Btrfs).
 > 
-> v4: Updated rotation checks for pending flips, fbc disable. Creating
-> rotation property only for Gen4 onwards. Property resetting as part
-> of lastclose.
+> > What does your /proc/sys/vm/dirty_ratio say?
 > 
-> Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-> Cc: Jani Nikula <jani.nikula@linux.intel.com>
-> Cc: David Airlie <airlied@linux.ie>
-> Cc: dri-devel@lists.freedesktop.org
-> Cc: linux-kernel@vger.kernel.org
-> Cc: vijay.a.purushothaman@intel.com
-> Signed-off-by: Uma Shankar <uma.shankar@intel.com>
-> Signed-off-by: Sagar Kamble <sagar.a.kamble@intel.com>
-> ---
->  drivers/gpu/drm/i915/i915_dma.c      | 12 +++++
->  drivers/gpu/drm/i915/i915_reg.h      |  1 +
->  drivers/gpu/drm/i915/intel_display.c | 86 ++++++++++++++++++++++++++++++++++--
->  drivers/gpu/drm/i915/intel_drv.h     |  2 +
->  drivers/gpu/drm/i915/intel_pm.c      |  9 ++++
->  5 files changed, 106 insertions(+), 4 deletions(-)
+>    10
+
+With 2G of RAM this shouldn't be a lot. And definitely shouldn't make a
+problem with SSD.
+
+> > How fast is your storage?
 > 
-> diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
-> index 258b1be..fcd9e34 100644
-> --- a/drivers/gpu/drm/i915/i915_dma.c
-> +++ b/drivers/gpu/drm/i915/i915_dma.c
-> @@ -1836,6 +1836,8 @@ int i915_driver_open(struct drm_device *dev, struct drm_file *file)
->  void i915_driver_lastclose(struct drm_device * dev)
->  {
->  	drm_i915_private_t *dev_priv = dev->dev_private;
-> +	struct drm_crtc *crtc;
-> +	struct drm_plane *plane;
->  
->  	/* On gen6+ we refuse to init without kms enabled, but then the drm core
->  	 * goes right around and calls lastclose. Check for this and don't clean
-> @@ -1843,6 +1845,16 @@ void i915_driver_lastclose(struct drm_device * dev)
->  	if (!dev_priv)
->  		return;
->  
-> +	if (dev_priv->rotation_property) {
-> +		list_for_each_entry(crtc, &dev->mode_config.crtc_list, head)
-> +			drm_object_property_set_value(&crtc->base,
-> +					dev_priv->rotation_property, 0);
-> +
-> +		list_for_each_entry(plane, &dev->mode_config.plane_list, head)
-> +			drm_object_property_set_value(&plane->base,
-> +					dev_priv->rotation_property, 0);
-> +	}
-
-That would need to be something like:
-
-	struct intel_crtc *crtc
-	list_for_each_entry(crtc, &dev->mode_config.crtc_list, base.head) {
-		crtc->rotation = BIT(DRM_ROTATE_0);
-		drm_object_property_set_value(&crtc->base.base,
-					      dev_priv->rotation_property,
-					      crtc->rotation);
-	}
-
-and similarly for planes.
-
-> +
->  	if (drm_core_check_feature(dev, DRIVER_MODESET)) {
->  		intel_fbdev_restore_mode(dev);
->  		vga_switcheroo_process_delayed_switch();
-> diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
-> index 57906c5..d3000c4 100644
-> --- a/drivers/gpu/drm/i915/i915_reg.h
-> +++ b/drivers/gpu/drm/i915/i915_reg.h
-> @@ -3553,6 +3553,7 @@
->  #define   DISPPLANE_NO_LINE_DOUBLE		0
->  #define   DISPPLANE_STEREO_POLARITY_FIRST	0
->  #define   DISPPLANE_STEREO_POLARITY_SECOND	(1<<18)
-> +#define   DISPPLANE_ROTATE_180			(1<<15)
->  #define   DISPPLANE_TRICKLE_FEED_DISABLE	(1<<14) /* Ironlake */
->  #define   DISPPLANE_TILED			(1<<10)
->  #define _DSPAADDR		(dev_priv->info->display_mmio_offset + 0x70184)
-> diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-> index 4d4a0d9..4a4f650 100644
-> --- a/drivers/gpu/drm/i915/intel_display.c
-> +++ b/drivers/gpu/drm/i915/intel_display.c
-> @@ -2037,6 +2037,7 @@ static int i9xx_update_plane(struct drm_crtc *crtc, struct drm_framebuffer *fb,
->  	unsigned long linear_offset;
->  	u32 dspcntr;
->  	u32 reg;
-> +	int pixel_size;
->  
->  	switch (plane) {
->  	case 0:
-> @@ -2047,6 +2048,7 @@ static int i9xx_update_plane(struct drm_crtc *crtc, struct drm_framebuffer *fb,
->  		return -EINVAL;
->  	}
->  
-> +	pixel_size = drm_format_plane_cpp(fb->pixel_format, 0);
->  	intel_fb = to_intel_framebuffer(fb);
->  	obj = intel_fb->obj;
->  
-> @@ -2054,6 +2056,8 @@ static int i9xx_update_plane(struct drm_crtc *crtc, struct drm_framebuffer *fb,
->  	dspcntr = I915_READ(reg);
->  	/* Mask out pixel format bits in case we change it */
->  	dspcntr &= ~DISPPLANE_PIXFORMAT_MASK;
-> +	dspcntr &= ~DISPPLANE_ROTATE_180;
-> +
->  	switch (fb->pixel_format) {
->  	case DRM_FORMAT_C8:
->  		dspcntr |= DISPPLANE_8BPP;
-> @@ -2095,8 +2099,6 @@ static int i9xx_update_plane(struct drm_crtc *crtc, struct drm_framebuffer *fb,
->  	if (IS_G4X(dev))
->  		dspcntr |= DISPPLANE_TRICKLE_FEED_DISABLE;
->  
-> -	I915_WRITE(reg, dspcntr);
-> -
->  	linear_offset = y * fb->pitches[0] + x * (fb->bits_per_pixel / 8);
->  
->  	if (INTEL_INFO(dev)->gen >= 4) {
-> @@ -2109,6 +2111,17 @@ static int i9xx_update_plane(struct drm_crtc *crtc, struct drm_framebuffer *fb,
->  		intel_crtc->dspaddr_offset = linear_offset;
->  	}
->  
-> +	if (intel_crtc->rotation == BIT(DRM_ROTATE_180)) {
-> +		dspcntr |= DISPPLANE_ROTATE_180;
-> +
-> +		x += (intel_crtc->config.pipe_src_w - 1);
-> +		y += (intel_crtc->config.pipe_src_h - 1);
-> +		linear_offset += (intel_crtc->config.pipe_src_h - 1) * fb->pitches[0] +
-> +                                   intel_crtc->config.pipe_src_w * pixel_size;
-
-Off by one:
-(pipe_src_w - 1) * pixel_size
-
-> +	}
-> +
-> +	I915_WRITE(reg, dspcntr);
-> +
->  	DRM_DEBUG_KMS("Writing base %08lX %08lX %d %d %d\n",
->  		      i915_gem_obj_ggtt_offset(obj), linear_offset, x, y,
->  		      fb->pitches[0]);
-> @@ -2137,6 +2150,7 @@ static int ironlake_update_plane(struct drm_crtc *crtc,
->  	unsigned long linear_offset;
->  	u32 dspcntr;
->  	u32 reg;
-> +	int pixel_size;
->  
->  	switch (plane) {
->  	case 0:
-> @@ -2148,6 +2162,7 @@ static int ironlake_update_plane(struct drm_crtc *crtc,
->  		return -EINVAL;
->  	}
->  
-> +	pixel_size = drm_format_plane_cpp(fb->pixel_format, 0);
->  	intel_fb = to_intel_framebuffer(fb);
->  	obj = intel_fb->obj;
->  
-> @@ -2155,6 +2170,8 @@ static int ironlake_update_plane(struct drm_crtc *crtc,
->  	dspcntr = I915_READ(reg);
->  	/* Mask out pixel format bits in case we change it */
->  	dspcntr &= ~DISPPLANE_PIXFORMAT_MASK;
-> +	dspcntr &= ~DISPPLANE_ROTATE_180;
-> +
->  	switch (fb->pixel_format) {
->  	case DRM_FORMAT_C8:
->  		dspcntr |= DISPPLANE_8BPP;
-> @@ -2192,8 +2209,6 @@ static int ironlake_update_plane(struct drm_crtc *crtc,
->  	else
->  		dspcntr |= DISPPLANE_TRICKLE_FEED_DISABLE;
->  
-> -	I915_WRITE(reg, dspcntr);
-> -
->  	linear_offset = y * fb->pitches[0] + x * (fb->bits_per_pixel / 8);
->  	intel_crtc->dspaddr_offset =
->  		intel_gen4_compute_page_offset(&x, &y, obj->tiling_mode,
-> @@ -2201,6 +2216,19 @@ static int ironlake_update_plane(struct drm_crtc *crtc,
->  					       fb->pitches[0]);
->  	linear_offset -= intel_crtc->dspaddr_offset;
->  
-> +	if (intel_crtc->rotation == BIT(DRM_ROTATE_180)) {
-> +		dspcntr |= DISPPLANE_ROTATE_180;
-> +
-> +		if (!IS_HASWELL(dev) && !IS_BROADWELL(dev)) {
-> +			x += (intel_crtc->config.pipe_src_w - 1);
-> +			y += (intel_crtc->config.pipe_src_h - 1);
-> +			linear_offset += (intel_crtc->config.pipe_src_h - 1) * fb->pitches[0] +
-> +					intel_crtc->config.pipe_src_w * pixel_size;
-
-Again:
-(pipe_src_w - 1) * pixel_size
-
-> +		}
-> +	}
-> +
-> +	I915_WRITE(reg, dspcntr);
-> +
->  	DRM_DEBUG_KMS("Writing base %08lX %08lX %d %d %d\n",
->  		      i915_gem_obj_ggtt_offset(obj), linear_offset, x, y,
->  		      fb->pitches[0]);
-> @@ -8748,6 +8776,42 @@ free_work:
->  	return ret;
->  }
->  
-> +static int intel_crtc_set_property(struct drm_crtc *crtc,
-> +				    struct drm_property *prop,
-> +				    uint64_t val)
-> +{
-> +	struct drm_device *dev = crtc->dev;
-> +	struct drm_i915_private *dev_priv = dev->dev_private;
-> +	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
-> +	uint64_t old_val;
-> +	int ret = -ENOENT;
-> +
-> +	if (prop == dev_priv->rotation_property) {
-> +		/* exactly one rotation angle please */
-> +		if (hweight32(val & 0xf) != 1)
-> +			return -EINVAL;
-> +
-> +		old_val = intel_crtc->rotation;
-> +		intel_crtc->rotation = val;
-> +
-> +		/* Updating rotation on plane should be done after pending flips.
-> +		FBC does not work on some platforms for rotated planes */
-> +		intel_crtc_wait_for_pending_flips(crtc);
-> +		if (dev_priv->fbc.plane == intel_crtc->plane &&
-> +			INTEL_INFO(dev)->gen <= 4 && !IS_G4X(dev) &&
-> +			(intel_crtc->rotation != BIT(DRM_ROTATE_0)))
-
-There's some weird indentation in the if-statement. When splitting such
-things over multiple lines, the following lines should normally line up
-after the opening parenthesis. Decent editors will do this for you
-automagically.
-
-Also the extra parens around the
-'intel_crtc->rotation != BIT(DRM_ROTATE_0)' comparison aren't needed.
-
-> +			intel_disable_fbc(dev);
-
-Inactive crtc can't have any pending flips, nor can FBC be enabled in
-that case. So all of this can be moved into the 'if (intel_crtc->active)'
-block.
-
-> +
-> +		if (intel_crtc->active) {
-> +			ret = dev_priv->display.update_plane(crtc, crtc->fb, 0, 0);
-> +			if (ret)
-> +				intel_crtc->rotation = old_val;
-> +		}
-> +	}
-> +
-> +	return ret;
-> +}
-> +
->  static struct drm_crtc_helper_funcs intel_helper_funcs = {
->  	.mode_set_base_atomic = intel_pipe_set_base_atomic,
->  	.load_lut = intel_crtc_load_lut,
-> @@ -10160,6 +10224,7 @@ static const struct drm_crtc_funcs intel_crtc_funcs = {
->  	.set_config = intel_crtc_set_config,
->  	.destroy = intel_crtc_destroy,
->  	.page_flip = intel_crtc_page_flip,
-> +	.set_property = intel_crtc_set_property
->  };
->  
->  static void intel_cpu_pll_init(struct drm_device *dev)
-> @@ -10288,6 +10353,7 @@ static void intel_crtc_init(struct drm_device *dev, int pipe)
->  	 */
->  	intel_crtc->pipe = pipe;
->  	intel_crtc->plane = pipe;
-> +	intel_crtc->rotation = BIT(DRM_ROTATE_0);
->  	if (HAS_FBC(dev) && INTEL_INFO(dev)->gen < 4) {
->  		DRM_DEBUG_KMS("swapping pipes & planes for FBC\n");
->  		intel_crtc->plane = !pipe;
-> @@ -10298,6 +10364,18 @@ static void intel_crtc_init(struct drm_device *dev, int pipe)
->  	dev_priv->plane_to_crtc_mapping[intel_crtc->plane] = &intel_crtc->base;
->  	dev_priv->pipe_to_crtc_mapping[intel_crtc->pipe] = &intel_crtc->base;
->  
-> +	if (INTEL_INFO(dev)->gen >= 4) {
-> +		if (!dev_priv->rotation_property)
-> +			dev_priv->rotation_property =
-> +				drm_mode_create_rotation_property(dev,
-> +								BIT(DRM_ROTATE_0) |
-> +								BIT(DRM_ROTATE_180));
-> +		if (dev_priv->rotation_property)
-> +			drm_object_attach_property(&intel_crtc->base.base,
-> +						dev_priv->rotation_property,
-> +						intel_crtc->rotation);
-> +	}
-> +
->  	drm_crtc_helper_add(&intel_crtc->base, &intel_helper_funcs);
->  }
->  
-> diff --git a/drivers/gpu/drm/i915/intel_drv.h b/drivers/gpu/drm/i915/intel_drv.h
-> index 7a79b8e..02dfdb6 100644
-> --- a/drivers/gpu/drm/i915/intel_drv.h
-> +++ b/drivers/gpu/drm/i915/intel_drv.h
-> @@ -331,6 +331,8 @@ struct intel_crtc {
->  	struct drm_crtc base;
->  	enum pipe pipe;
->  	enum plane plane;
-> +	unsigned int rotation;
-> +
->  	u8 lut_r[256], lut_g[256], lut_b[256];
->  	/*
->  	 * Whether the crtc and the connected output pipeline is active. Implies
-> diff --git a/drivers/gpu/drm/i915/intel_pm.c b/drivers/gpu/drm/i915/intel_pm.c
-> index 3c79b63..d5b87c8 100644
-> --- a/drivers/gpu/drm/i915/intel_pm.c
-> +++ b/drivers/gpu/drm/i915/intel_pm.c
-> @@ -508,6 +508,15 @@ void intel_update_fbc(struct drm_device *dev)
->  	obj = intel_fb->obj;
->  	adjusted_mode = &intel_crtc->config.adjusted_mode;
->  
-> +	if (dev_priv->fbc.plane == intel_crtc->plane &&
-> +		INTEL_INFO(dev)->gen <= 4 && !IS_G4X(dev) &&
-> +		(intel_crtc->rotation != BIT(DRM_ROTATE_0))) {
-
-More weird indentation and needless parens.
-
-> +		if (set_no_fbc_reason(dev_priv, FBC_UNSUPPORTED_MODE))
-> +			DRM_DEBUG_KMS("mode incompatible with compression, "
-> +				      "disabling\n");
-> +		goto out_disable;
-> +	}
-> +
->  	if (i915.enable_fbc < 0 &&
->  	    INTEL_INFO(dev)->gen <= 7 && !IS_HASWELL(dev)) {
->  		if (set_no_fbc_reason(dev_priv, FBC_CHIP_DEFAULT))
-> -- 
-> 1.8.5
+>    Was 5400 HDD, today I installed SSD.
 > 
-> _______________________________________________
-> Intel-gfx mailing list
-> Intel-gfx@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/intel-gfx
+> > Also, is this 32b or 64b system?
+> 
+>    Kernel is x86_64 or sometimes 32, userspace is 32 -- full x86_64
+> setup is simply not usable on 2 GiB,
 
+Which is unexpected on its own. We have many systems with comparable
+and much less memory as well running just fine. You haven't posted any
+numbers yet so it is still not clear where is the bottleneck on your
+system.
+
+> you can run just one program, like in MS-DOS era. :) (I'd give a try
+> to x32, but alas, it's not really ready yet.)
+> 
+> >>    * How to analyze it? slabtop doesn't mention even 100 MiB of slab
+> >
+> > snapshoting /proc/meminfo and /proc/vmstat every second or two while
+> > your load is bad might tell us more.
+> >
+> >>    * Why that's possible?
+> >
+> > That is hard to tell withou some numbers. But it might be possible that
+> > you are seeing the same issue as reported and fixed here:
+> > http://marc.info/?l=linux-kernel&m=139060103406327&w=2
+> 
+>    No, there's no such amount of dirty data.
+
+OK, then I would check whether this is fs related. You said that you've
+tried xfs or something else with similar results?
+
+> > Especially when you are using tmpfs (e.g. as a backing storage for /tmp)
+> 
+>    I use it, yeah, but it has ridiculously low occupied space ~ 1--2 MiB.
+> 
+>    *** Okay, so I've said I decided to try SSD. The issue stays
+> absolutely the same and is seen even more clearer: when swappiness is
+> 0, Btrfs-endio is heating up processor constantly taking almost all
+> CPU resources (storage is fast, CPU's saturated), but when I set it
+> higher, thus allowing to swap, it helps -- ~ 250 MiB got swapped out
+> (quickly -- SSD rules) and the system became responsive again. As
+> previously it didn't try to reduce cache at all. I never saw it to be
+> even 250 MiB, always higher (~ 25 % of RAM). So, actually it's better
+> using swappiness = 100 in these circumstances.
+
+Hmm, so the swapping is fast enough while the page cache backed by the
+storage is slow. I guess both the swap partition and fs are backed by
+the same storage, right?
+Do you have a sufficient free space on the filesystem?
+
+>    I think the problem should be easily reproducible -- kernel allows
+> you to limit available RAM. ;)
+> 
+>    P. S. The only thing's left as a theory is "Intel Corporation
+> Mobile GM965/GL960 Integrated Graphics Controller" with i915 kernel
+> module. I don't know much about it, but it should have had bitten a
+> good part of system RAM, right?
+
+How much memory? I vaguely remember that i915 had very aggressive
+reclaiming logic which led to some stalls during reclaim. I cannot seem
+to find any reference right now.
+
+Btw. Are you using vanilla kernel?
+
+> Since it's Ubuntu, there's compiz by
+> default and pmap -d `pgrep compiz` shows lots of similar lines:
+
+It would be good to reduce problem space by disabling compiz.
+ 
+> ...
+> e0344000      20 rw-s- 0000000102e33000 000:00005 card0
+> e0479000      56 rw-s- 0000000102bf4000 000:00005 card0
+> e0487000      48 rw-s- 0000000102be8000 000:00005 card0
+> e0493000      56 rw-s- 0000000102bda000 000:00005 card0
+> e04a1000      56 rw-s- 0000000102bcc000 000:00005 card0
+> e04af000      48 rw-s- 0000000102bc0000 000:00005 card0
+> e04bb000      56 rw-s- 0000000102bb2000 000:00005 card0
+> e04c9000      48 rw-s- 0000000102d64000 000:00005 card0
+> e04d5000     192 rw-s- 0000000102ce5000 000:00005 card0
+> e0505000      80 rw-s- 0000000102de7000 000:00005 card0
+> e0519000      20 rw-s- 0000000102ccc000 000:00005 card0
+> e051e000     160 rw-s- 0000000102ca4000 000:00005 card0
+> e0546000      20 rw-s- 0000000102c9f000 000:00005 card0
+> e054b000      48 rw-s- 0000000102c93000 000:00005 card0
+> e0557000      20 rw-s- 0000000102c8e000 000:00005 card0
+> e055c000      20 rw-s- 0000000102c89000 000:00005 card0
+> ...
+> 
+>    I have a suspicion... (I also dislike the sizes of those mappings)
+
+The mappings do not seem to be too big (the biggest one has 160kB)...
+
+> ... that a valuable amount of that "cached memory" can be related to
+> this i915. How can I check it?...
+
+I am not sure I understand what you are asking about.
 -- 
-Ville Syrjälä
-Intel OTC
+Michal Hocko
+SUSE Labs
