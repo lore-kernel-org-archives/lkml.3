@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753930AbaBJTp0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 14:45:26 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34841 "EHLO
+	id S1753955AbaBJTps (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 14:45:48 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34856 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753819AbaBJTpX (ORCPT
+	with ESMTP id S1753937AbaBJTpn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:45:23 -0500
+	Mon, 10 Feb 2014 14:45:43 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Rientjes <rientjes@google.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Luiz Capitulino <lcapitulino@redhat.com>, Dan Duval <dan.duval@oracle.com>,
+        Chuck Anderson <chuck.anderson@oracle.com>,
+        Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 105/124] mm/mempolicy.c: fix mempolicy printing in numa_maps
-Date: Mon, 10 Feb 2014 11:40:45 -0800
-Message-Id: <1392061264-28124-106-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 060/124] audit: reset audit backlog wait time after error recovery
+Date: Mon, 10 Feb 2014 11:40:00 -0800
+Message-Id: <1392061264-28124-61-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
 References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
@@ -30,46 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Rientjes <rientjes@google.com>
+From: Richard Guy Briggs <rgb@redhat.com>
 
-commit 8790c71a18e5d2d93532ae250bcf5eddbba729cd upstream.
+commit e789e561a50de0aaa8c695662d97aaa5eac9d55f upstream.
 
-As a result of commit 5606e3877ad8 ("mm: numa: Migrate on reference
-policy"), /proc/<pid>/numa_maps prints the mempolicy for any <pid> as
-"prefer:N" for the local node, N, of the process reading the file.
+When the audit queue overflows and times out (audit_backlog_wait_time), the
+audit queue overflow timeout is set to zero.  Once the audit queue overflow
+timeout condition recovers, the timeout should be reset to the original value.
 
-This should only be printed when the mempolicy of <pid> is
-MPOL_PREFERRED for node N.
+See also:
+	https://lkml.org/lkml/2013/9/2/473
 
-If the process is actually only using the default mempolicy for local
-node allocation, make sure "default" is printed as expected.
-
-Signed-off-by: David Rientjes <rientjes@google.com>
-Reported-by: Robert Lippert <rlippert@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ kamal: backport to 3.8 (reversed if-clause logic) ]
+Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
+Signed-off-by: Dan Duval <dan.duval@oracle.com>
+Signed-off-by: Chuck Anderson <chuck.anderson@oracle.com>
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+Signed-off-by: Eric Paris <eparis@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/mempolicy.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/audit.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 2d49a12..eb2848e 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2801,7 +2801,7 @@ int mpol_to_str(char *buffer, int maxlen, struct mempolicy *pol)
- 	 */
- 	VM_BUG_ON(maxlen < strlen("interleave") + strlen("relative") + 16);
+diff --git a/kernel/audit.c b/kernel/audit.c
+index 5924919..0538e44 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -101,7 +101,8 @@ static int	audit_rate_limit;
  
--	if (!pol || pol == &default_policy)
-+	if (!pol || pol == &default_policy || (pol->flags & MPOL_F_MORON))
- 		mode = MPOL_DEFAULT;
- 	else
- 		mode = pol->mode;
+ /* Number of outstanding audit_buffers allowed. */
+ static int	audit_backlog_limit = 64;
+-static int	audit_backlog_wait_time = 60 * HZ;
++#define AUDIT_BACKLOG_WAIT_TIME (60 * HZ)
++static int	audit_backlog_wait_time = AUDIT_BACKLOG_WAIT_TIME;
+ static int	audit_backlog_wait_overflow = 0;
+ 
+ /* The identity of the user shutting down the audit system. */
+@@ -1185,6 +1186,8 @@ struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask,
+ 		return NULL;
+ 	}
+ 
++	audit_backlog_wait_time = AUDIT_BACKLOG_WAIT_TIME;
++
+ 	ab = audit_buffer_alloc(ctx, gfp_mask, type);
+ 	if (!ab) {
+ 		audit_log_lost("out of memory in audit_log_start");
 -- 
 1.8.3.2
 
