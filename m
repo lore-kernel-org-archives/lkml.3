@@ -1,63 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752553AbaBJDLZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 22:11:25 -0500
-Received: from gate.crashing.org ([63.228.1.57]:42242 "EHLO gate.crashing.org"
+	id S1752759AbaBJDLq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 22:11:46 -0500
+Received: from mga14.intel.com ([143.182.124.37]:33877 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752237AbaBJDLY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 22:11:24 -0500
-Message-ID: <1392001823.3996.21.camel@pasglop>
-Subject: Re: [PATCH v2] powerpc ticket locks
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Torsten Duwe <duwe@lst.de>
-Cc: Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Scott Wood <scottwood@freescale.com>, Tom Musta <tommusta@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Date: Mon, 10 Feb 2014 14:10:23 +1100
-In-Reply-To: <20140207165801.GC2107@lst.de>
-References: <20140207165801.GC2107@lst.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1752669AbaBJDLo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Feb 2014 22:11:44 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,815,1384329600"; 
+   d="scan'208";a="472516921"
+Message-ID: <52F8436E.8090907@intel.com>
+Date: Mon, 10 Feb 2014 11:11:42 +0800
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org
+CC: peterz@infradead.org, mingo@elte.hu, acme@redhat.com, ak@linux.intel.com
+Subject: Re: [PATCH v1 03/10] perf/x86/uncore: do not assume PCI fixed ctrs
+ have more than 32 bits
+References: <1391432142-18723-1-git-send-email-eranian@google.com> <1391432142-18723-4-git-send-email-eranian@google.com>
+In-Reply-To: <1391432142-18723-4-git-send-email-eranian@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-02-07 at 17:58 +0100, Torsten Duwe wrote:
->  typedef struct {
-> -       volatile unsigned int slock;
-> -} arch_spinlock_t;
-> +       union {
-> +               __ticketpair_t head_tail;
-> +               struct __raw_tickets {
-> +#ifdef __BIG_ENDIAN__          /* The "tail" part should be in the MSBs */
-> +                       __ticket_t tail, head;
-> +#else
-> +                       __ticket_t head, tail;
-> +#endif
-> +               } tickets;
-> +       };
-> +#if defined(CONFIG_PPC_SPLPAR)
-> +       u32 holder;
-> +#endif
-> +} arch_spinlock_t __aligned(4);
+On 02/03/2014 08:55 PM, Stephane Eranian wrote:
+> The current code assumes all PCI fixed counters implement more than
+> 32-bit hardware counters. The actual width is then round up to 64 to
+> enable base + 8 * idx calculations.
+> 
+> Not all PMUs necessarily implement counters with more than 32-bits.
+> The patch makes the uncore_pci_perf_ctr() function dynamically
+> determine the actual bits width of a pci perf counter.
+> 
+> This patch paves the way for handling more than one uncore fixed
+> counter per PMU box.
+> 
+> Signed-off-by: Stephane Eranian <eranian@google.com>
+> ---
+>  arch/x86/kernel/cpu/perf_event_intel_uncore.h |   31 ++++++++++++++++---------
+>  1 file changed, 20 insertions(+), 11 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+> index 77dc9a5..f5549cf 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+> @@ -548,10 +548,29 @@ unsigned uncore_pci_event_ctl(struct intel_uncore_box *box, int idx)
+>  	return idx * 4 + box->pmu->type->event_ctl;
+>  }
+>  
+> +static inline int uncore_perf_ctr_bits(struct intel_uncore_box *box)
+> +{
+> +	return box->pmu->type->perf_ctr_bits;
+> +}
+> +
+> +static inline int uncore_fixed_ctr_bits(struct intel_uncore_box *box)
+> +{
+> +	return box->pmu->type->fixed_ctr_bits;
+> +}
+> +
+>  static inline
+>  unsigned uncore_pci_perf_ctr(struct intel_uncore_box *box, int idx)
+>  {
+> -	return idx * 8 + box->pmu->type->perf_ctr;
+> +	int bits, bytes;
+> +
+> +	if (idx == UNCORE_PMC_IDX_FIXED)
+> +		bits = uncore_fixed_ctr_bits(box);
+> +	else
+> +		bits = uncore_perf_ctr_bits(box);
+> +
+> +	bytes = round_up(bits, 8);
 
-That's still broken with lockref (which we just merged).
+should this be "round_up(bits, 32) / 8" ?
 
-We must have the arch_spinlock_t and the ref in the same 64-bit word
-otherwise it will break.
+Regards
+Yan, Zheng
 
-We can make it work in theory since the holder doesn't have to be
-accessed atomically, but the practicals are a complete mess ...
-lockref would essentially have to re-implement the holder handling
-of the spinlocks and use lower level ticket stuff.
-
-Unless you can find a sneaky trick ... :-(
-
-Ben.
-
+> +
+> +	return idx * bytes + box->pmu->type->perf_ctr;
+>  }
+>  
+>  static inline unsigned uncore_msr_box_offset(struct intel_uncore_box *box)
+> @@ -633,16 +652,6 @@ unsigned uncore_perf_ctr(struct intel_uncore_box *box, int idx)
+>  		return uncore_msr_perf_ctr(box, idx);
+>  }
+>  
+> -static inline int uncore_perf_ctr_bits(struct intel_uncore_box *box)
+> -{
+> -	return box->pmu->type->perf_ctr_bits;
+> -}
+> -
+> -static inline int uncore_fixed_ctr_bits(struct intel_uncore_box *box)
+> -{
+> -	return box->pmu->type->fixed_ctr_bits;
+> -}
+> -
+>  static inline int uncore_num_counters(struct intel_uncore_box *box)
+>  {
+>  	return box->pmu->type->num_counters;
+> 
 
