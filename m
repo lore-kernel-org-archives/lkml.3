@@ -1,98 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752800AbaBJQVt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 11:21:49 -0500
-Received: from qmta07.emeryville.ca.mail.comcast.net ([76.96.30.64]:59823 "EHLO
-	qmta07.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752586AbaBJQVr (ORCPT
+	id S1752864AbaBJQWG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 11:22:06 -0500
+Received: from mail-de.keymile.com ([195.8.104.250]:47989 "EHLO
+	mail-de.keymile.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752564AbaBJQWB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 11:21:47 -0500
-From: Shuah Khan <shuah.kh@samsung.com>
-To: rjw@rjwysocki.net, gregkh@linuxfoundation.org
-Cc: Shuah Khan <shuah.kh@samsung.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
-Subject: [RFT][PATCH 07/12] isa: change isa bus power management to use dev_pm_ops
-Date: Mon, 10 Feb 2014 09:12:30 -0700
-Message-Id: <7ba97d2e7665008d0db89a7a36333394e5596a5e.1392040068.git.shuah.kh@samsung.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <cover.1392040064.git.shuah.kh@samsung.com>
-References: <cover.1392040064.git.shuah.kh@samsung.com>
-In-Reply-To: <cover.1392040064.git.shuah.kh@samsung.com>
-References: <cover.1392040064.git.shuah.kh@samsung.com>
+	Mon, 10 Feb 2014 11:22:01 -0500
+X-Greylist: delayed 415 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Feb 2014 11:22:01 EST
+Message-ID: <52F8FB03.6040606@keymile.com>
+Date: Mon, 10 Feb 2014 17:14:59 +0100
+From: Gerlando Falauto <gerlando.falauto@keymile.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Florian Fainelli <f.fainelli@gmail.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>
+CC: netdev <netdev@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>
+Subject: Re: [PATCH V3] net/dt: Add support for overriding phy configuration
+ from device tree
+References: <7510122.cayuQ6qt8r@wuerfel> <1389999459-9483-1-git-send-email-matthew.garrett@nebula.com> <CAGVrzcZ4TFd=9KP+aoG47QbmqDJ1i23WBcEWDbzNRUfGmPvZHQ@mail.gmail.com>
+In-Reply-To: <CAGVrzcZ4TFd=9KP+aoG47QbmqDJ1i23WBcEWDbzNRUfGmPvZHQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change isa bus driver to register pm ops using dev_pm_ops instead of
-legacy pm_ops. .pm hooks call existing legacy suspend and resume
-interfaces by passing in the right pm state.
+Hi,
 
-Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
----
- drivers/base/isa.c |   30 +++++++++++++++++++++++++++---
- 1 file changed, 27 insertions(+), 3 deletions(-)
+I'm currently trying to fix an issue for which this patch provides a 
+partial solution, so apologies in advance for jumping into the 
+discussion for my own purposes...
 
-diff --git a/drivers/base/isa.c b/drivers/base/isa.c
-index 91dba65..15b8825 100644
---- a/drivers/base/isa.c
-+++ b/drivers/base/isa.c
-@@ -63,7 +63,7 @@ static void isa_bus_shutdown(struct device *dev)
- 		isa_driver->shutdown(dev, to_isa_dev(dev)->id);
- }
- 
--static int isa_bus_suspend(struct device *dev, pm_message_t state)
-+static int __isa_bus_suspend(struct device *dev, pm_message_t state)
- {
- 	struct isa_driver *isa_driver = dev->platform_data;
- 
-@@ -73,6 +73,21 @@ static int isa_bus_suspend(struct device *dev, pm_message_t state)
- 	return 0;
- }
- 
-+static int isa_bus_suspend(struct device *dev)
-+{
-+	return __isa_bus_suspend(dev, PMSG_SUSPEND);
-+}
-+
-+static int isa_bus_freeze(struct device *dev)
-+{
-+	return __isa_bus_suspend(dev, PMSG_FREEZE);
-+}
-+
-+static int isa_bus_poweroff(struct device *dev)
-+{
-+	return __isa_bus_suspend(dev, PMSG_HIBERNATE);
-+}
-+
- static int isa_bus_resume(struct device *dev)
- {
- 	struct isa_driver *isa_driver = dev->platform_data;
-@@ -83,14 +98,23 @@ static int isa_bus_resume(struct device *dev)
- 	return 0;
- }
- 
-+static const struct dev_pm_ops isa_bus_dev_pm_ops = {
-+	.suspend = isa_bus_suspend,
-+	.resume = isa_bus_resume,
-+	/* Hibernate callbacks */
-+	.freeze = isa_bus_freeze,
-+	.thaw = isa_bus_resume,
-+	.poweroff = isa_bus_poweroff,
-+	.restore = isa_bus_resume,
-+};
-+
- static struct bus_type isa_bus_type = {
- 	.name		= "isa",
- 	.match		= isa_bus_match,
- 	.probe		= isa_bus_probe,
- 	.remove		= isa_bus_remove,
- 	.shutdown	= isa_bus_shutdown,
--	.suspend	= isa_bus_suspend,
--	.resume		= isa_bus_resume
-+	.pm		= &isa_bus_dev_pm_ops,
- };
- 
- static void isa_dev_release(struct device *dev)
--- 
-1.7.10.4
+On 02/04/2014 09:39 PM, Florian Fainelli wrote:> 2014-01-17 Matthew 
+Garrett <matthew.garrett@nebula.com>:
+ >> Some hardware may be broken in interesting and board-specific ways, such
+ >> that various bits of functionality don't work. This patch provides a
+ >> mechanism for overriding mii registers during init based on the 
+contents of
+ >> the device tree data, allowing board-specific fixups without having to
+ >> pollute generic code.
+ >
+ > It would be good to explain exactly how your hardware is broken
+ > exactly. I really do not think that such a fine-grained setting where
+ > you could disable, e.g: 100BaseT_Full, but allow 100BaseT_Half to
+ > remain usable makes that much sense. In general, Gigabit might be
+ > badly broken, but 100 and 10Mbits/sec should work fine. How about the
+ > MASTER-SLAVE bit, is overriding it really required?
+ >
+ > Is not a PHY fixup registered for a specific OUI the solution you are
+ > looking for? I am also concerned that this creates PHY troubleshooting
+ > issues much harder to debug than before as we may have no idea about
+ > how much information has been put in Device Tree to override that.
+ >
+ > Finally, how about making this more general just like the BCM87xx PHY
+ > driver, which is supplied value/reg pairs directly? There are 16
+ > common MII registers, and 16 others for vendor specific registers,
+ > this is just covering for about 2% of the possible changes.
 
+Good point. That would easily help me with my current issue, which 
+requires autoneg to be disabled to begin with (by clearing BMCR_ANENABLE 
+from register 0).
+This would not however fix it entirely (I tried a quick hardwired 
+implementation), as the whole PHY machinery would not take that into 
+account and would re-enable autoneg anyway.
+I also tried changing the patch so that phydev->support gets updated 
+(instead of phydev->advertising):
+
+ >> +               if (!of_property_read_u32(np, override->prop, &tmp)) {
+ >> +                       if (tmp) {
+ >> +                               *val |= override->value;
+ >> +                               phydev->advertising |= 
+override->supported;
+ >> +                       } else {
+ >> +                               phydev->advertising &= 
+~(override->supported);
+ >> +                       }
+ >> +
+ >> +                       *mask |= override->value;
+
+What I find weird is that the only way phydev->autoneg could ever be set 
+to disabled is from here (phy.c):
+
+static void phy_sanitize_settings(struct phy_device *phydev)
+{
+	u32 features = phydev->supported;
+	int idx;
+
+	/* Sanitize settings based on PHY capabilities */
+	if ((features & SUPPORTED_Autoneg) == 0)
+		phydev->autoneg = AUTONEG_DISABLE;
+
+which is in turn only called when phydev->autoneg is set to 
+AUTONEG_DISABLE to begin with:
+
+int phy_start_aneg(struct phy_device *phydev)
+{
+	int err;
+
+	mutex_lock(&phydev->lock);
+
+	if (AUTONEG_DISABLE == phydev->autoneg)
+		phy_sanitize_settings(phydev);
+
+So could someone please help me figure out what I'm missing here?
+
+Thanks!
+Gerlando
