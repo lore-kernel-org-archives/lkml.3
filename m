@@ -1,62 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753007AbaBJL7n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 06:59:43 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:51883 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752554AbaBJL7g (ORCPT
+	id S1753050AbaBJMAA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 07:00:00 -0500
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:58775 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753020AbaBJL74 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 06:59:36 -0500
-Date: Mon, 10 Feb 2014 11:59:28 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH v2 13/15] regulator/mfd: max14577: Export symbols for
- calculating charger current
-Message-ID: <20140210115928.GF22773@lee--X1>
-References: <1391767487-10017-1-git-send-email-k.kozlowski@samsung.com>
- <1391767487-10017-14-git-send-email-k.kozlowski@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1391767487-10017-14-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 10 Feb 2014 06:59:56 -0500
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-kernel@vger.kernel.org, monstr@monstr.eu
+Cc: Arnd Bergmann <arnd@arndb.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Mark Brown <broonie@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH v2] regmap: Check readable regs in _regmap_read
+Date: Mon, 10 Feb 2014 12:59:46 +0100
+Message-Id: <57a9999d46c2e0703c95ee68a88f3c539bd10f9f.1392033580.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-30018-1392033586-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This patch prepares for changing the max14577 charger driver to allow
-> configuring battery-dependent settings from DTS.
-> 
-> The patch moves from regulator driver to MFD core driver and exports:
->  - function for calculating register value for charger's current;
->  - table of limits for chargers (MAX14577, MAX77836).
-> 
-> Previously they were used only by the max14577 regulator driver. In next
-> patch the charger driver will use them as well. Exporting them will
-> reduce unnecessary code duplication.
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-> ---
->  drivers/mfd/max14577.c               |   95 ++++++++++++++++++++++++++++++++++
->  drivers/regulator/max14577.c         |   80 +++-------------------------
->  include/linux/mfd/max14577-private.h |   22 ++++----
->  include/linux/mfd/max14577.h         |   23 ++++++++
->  4 files changed, 135 insertions(+), 85 deletions(-)
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-Applied, with Mark's Ack.
+--=_mimegpg-monstr-desktop-30018-1392033586-0001
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Check if regs are readable.
+
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+---
+
+Changes in v2:
+- Move checking below cache read
+
+ drivers/base/regmap/regmap.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index 6a19515..b897c1a 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -1736,6 +1736,9 @@ static int _regmap_read(struct regmap *map, unsigned int reg,
+ 	if (map->cache_only)
+ 		return -EBUSY;
+
++	if (!regmap_readable(map, reg))
++		return -EIO;
++
+ 	ret = map->reg_read(context, reg, val);
+ 	if (ret == 0) {
+ #ifdef LOG_DEVICE
+--
+1.8.2.3
+
+
+--=_mimegpg-monstr-desktop-30018-1392033586-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlL4vzIACgkQykllyylKDCGG1wCfWJIP7CCj2ALkb+955rC1gR0O
+FKkAn2DZOtfKw8M2nIORZBKa5tQS5dgc
+=3oco
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-30018-1392033586-0001--
