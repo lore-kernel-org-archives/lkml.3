@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752185AbaBJN5M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 08:57:12 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:59800 "EHLO
+	id S1752222AbaBJN6w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 08:58:52 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:59810 "EHLO
 	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751371AbaBJN5L (ORCPT
+	by vger.kernel.org with ESMTP id S1751371AbaBJN6t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 08:57:11 -0500
-Date: Mon, 10 Feb 2014 13:56:59 +0000
+	Mon, 10 Feb 2014 08:58:49 -0500
+Date: Mon, 10 Feb 2014 13:58:45 +0000
 From: Russell King - ARM Linux <linux@arm.linux.org.uk>
 To: Will Deacon <will.deacon@arm.com>
-Cc: Fabrice Gasnier <fabrice.gasnier@st.com>,
+Cc: Fabrice GASNIER <fabrice.gasnier@st.com>,
         "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
         Jonathan Austin <Jonathan.Austin@arm.com>,
         Catalin Marinas <Catalin.Marinas@arm.com>,
@@ -24,51 +24,34 @@ Cc: Fabrice Gasnier <fabrice.gasnier@st.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "maxime.coquelin@st.com" <maxime.coquelin@st.com>
 Subject: Re: [RFC PATCH] ARM: Add imprecise abort enable/disable macro
-Message-ID: <20140210135659.GU26684@n2100.arm.linux.org.uk>
-References: <1391789955-26927-1-git-send-email-fabrice.gasnier@st.com> <1391789955-26927-2-git-send-email-fabrice.gasnier@st.com> <20140207170903.GT5976@mudshark.cambridge.arm.com> <52F892C8.80508@st.com> <20140210111710.GC17766@mudshark.cambridge.arm.com>
+Message-ID: <20140210135845.GV26684@n2100.arm.linux.org.uk>
+References: <1391789955-26927-1-git-send-email-fabrice.gasnier@st.com> <1391789955-26927-2-git-send-email-fabrice.gasnier@st.com> <20140207170903.GT5976@mudshark.cambridge.arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140210111710.GC17766@mudshark.cambridge.arm.com>
+In-Reply-To: <20140207170903.GT5976@mudshark.cambridge.arm.com>
 User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 11:17:10AM +0000, Will Deacon wrote:
-> On Mon, Feb 10, 2014 at 08:50:16AM +0000, Fabrice Gasnier wrote:
-> > On 02/07/2014 06:09 PM, Will Deacon wrote:
-> > > On Fri, Feb 07, 2014 at 04:19:15PM +0000, Fabrice GASNIER wrote:
-> > >> diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
-> > >> index 4636d56..ef15709 100644
-> > >> --- a/arch/arm/kernel/traps.c
-> > >> +++ b/arch/arm/kernel/traps.c
-> > >> @@ -900,6 +900,10 @@ void __init early_trap_init(void *vectors_base)
-> > >>   
-> > >>   	flush_icache_range(vectors, vectors + PAGE_SIZE * 2);
-> > >>   	modify_domain(DOMAIN_USER, DOMAIN_CLIENT);
-> > >> +
-> > >> +	/* Enable imprecise aborts */
-> > >> +	local_abt_enable();
-> > > Surely we want to enable this as early as possible? Now, putting this into
-> > > head.S is ugly, as it duplicating it across all the proc*.S files, so why
-> > > not setup_arch?
-> > Sorry, I'm not sure to understand your last comment.
-> > At least, I need it enabled before probing drivers (PCIe bus)
-> > I've added imprecise abort enable code in traps.c, following Russel 
-> > King's advice, please see:
-> > http://archive.arm.linux.org.uk/lurker/message/20140131.170827.d752a1cc.en.html
-> > As abort bit is local to a cpu, i've also added it in smp.c, but this 
-> > may not be the right place ?
-> > 
-> > Please elaborate,
+On Fri, Feb 07, 2014 at 05:09:03PM +0000, Will Deacon wrote:
+> On Fri, Feb 07, 2014 at 04:19:15PM +0000, Fabrice GASNIER wrote:
+> > +#define local_abt_enable()					\
+> > +	({							\
+> > +		unsigned long temp;				\
+> > +	__asm__ __volatile__(					\
+> > +	"mrs	%0, cpsr		@ sta\n"		\
+> > +"	bic	%0, %0, %1\n"					\
+> > +"	msr	cpsr_c, %0"					\
+> > +	: "=r" (temp)						\
+> > +	: "r" (PSR_A_BIT)					\
 > 
-> I was just suggesting that we move your local_abt_enable() call to
-> setup_arch, since that's called before early_trap_init on the primary CPU.
+> Can you use "i" instead of a register for this constant?
 
-Why would we want to enable aborts before we've setup the vectors page
-to handle an abort?  That's akin to enabling interrupts and hoping there
-isn't one pending...
+As the PSR A bit isn't in bits 7-0, cpsr_c isn't what's required here.
+It needs something different... that's why my previous patch for you
+didn't work.
 
 -- 
 FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
