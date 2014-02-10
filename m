@@ -1,72 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753243AbaBJTLx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 14:11:53 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:41656 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752423AbaBJTLv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:11:51 -0500
-Date: Mon, 10 Feb 2014 13:09:34 -0600
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>, s-anna@ti.com,
-        Rob Herring <rob.herring@calxeda.com>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        Mark Langsdorf <mark.langsdorf@calxeda.com>,
-        Tony Lindgren <tony@atomide.com>, omar.ramirez@copitl.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC 1/6] mailbox: add core framework
-Message-ID: <20140210190934.GA841@joshc.qualcomm.com>
-References: <1391820619-25487-1-git-send-email-courtney.cavin@sonymobile.com>
- <1391820619-25487-2-git-send-email-courtney.cavin@sonymobile.com>
- <4706525.lB7VmvWQMJ@wuerfel>
- <CAL_JsqKa6nyPOa0M67svUR20Y3JNZcFhsTZE=ooV-eg6_ZBaMw@mail.gmail.com>
+	id S1753256AbaBJTMm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 14:12:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26846 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752453AbaBJTMk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 14:12:40 -0500
+From: Steve Grubb <sgrubb@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Oleg Nesterov <oleg@redhat.com>, linux-audit@redhat.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Eric Paris <eparis@redhat.com>
+Subject: Re: [PATCH v3] audit: Turn off TIF_SYSCALL_AUDIT when there are no rules
+Date: Mon, 10 Feb 2014 14:12:21 -0500
+Message-ID: <6663120.dfAPuuBWIr@x2>
+Organization: Red Hat
+User-Agent: KMail/4.11.5 (Linux/3.12.9-301.fc20.x86_64; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CALCETrX0GtSaLUB9UBeKsxOoVhiVyMzWrZTYt3O5He1Wdvz+1Q@mail.gmail.com>
+References: <ee359482b77f8f633014ec300bc5a4b93f8961e8.1391893528.git.luto@amacapital.net> <CALCETrX9gb_+zW4UZZv5icCQ-3HNG7BFZOaqMPYaQfzotsZpnA@mail.gmail.com> <CALCETrX0GtSaLUB9UBeKsxOoVhiVyMzWrZTYt3O5He1Wdvz+1Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAL_JsqKa6nyPOa0M67svUR20Y3JNZcFhsTZE=ooV-eg6_ZBaMw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 11:52:05AM -0600, Rob Herring wrote:
-> On Mon, Feb 10, 2014 at 8:11 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > On Friday 07 February 2014 16:50:14 Courtney Cavin wrote:
-[..]
-> >> +int mbox_channel_notify(struct mbox_channel *chan,
-> >> +             const void *data, unsigned int len)
-> >> +{
-> >> +     return atomic_notifier_call_chain(&chan->notifier, len, (void *)data);
-> >> +}
-> >> +EXPORT_SYMBOL(mbox_channel_notify);
-> >
-> > What is the reason to use a notifier chain here? Isn't a simple
-> > callback function pointer enough? I would expect that each mailbox
-> > can have exactly one consumer, not multiple ones.
+On Monday, February 10, 2014 11:01:36 AM Andy Lutomirski wrote:
+> >> And I still think this needs more changes. Once again, I do not think
+> >> that, say, __audit_log_bprm_fcaps() should populate context->aux if
+> >> !TIF_SYSCALL_AUDIT, this list can grow indefinitely. Or
+> >> __audit_signal_info()...
+> >> 
+> >> Perhaps __audit_syscall_exit() should also set context->dummy?
+> > 
+> > That would work.
+> > 
+> > I'm still torn between trying to make it possible for things like
+> > __audit_log_bprm_fcaps to start a syscall audit record in the middle
+> > of a syscall or to just try to tighten up the current approach to the
+> > point where it will work correctly.
 > 
-> It probably can be a callback, but there can be multiple consumers. It
-> was only a notifier on the pl320 as there was no framework at the time
-> and to avoid creating custom interfaces between drivers. On highbank
-> for example, we can asynchronously receive the events for temperature
-> change, power off, and reset. So either there needs to be an event
-> demux somewhere or callbacks have to return whether they handled an
-> event or not.
+> This is worse than I thought.  Things like signal auditing can enter
+> the audit system from outside of a syscall.  I don't think there's
+> currently any way to tell whether you're in a syscall (when
+> TIF_SYSCALL_AUDIT is clear) so getting this to work right would
+> require arch help.
+> 
+> I'll ask what people on the Fedora list think about just changing the
+> default to -t task,never.
 
-I'm not familiar with highbank IPC, but with these requirements should
-the mailbox core even bother with asynchronous notifier chain?  It
-sounds like a better fit might be for the mailbox core to implement a
-proper adapter-specific irqdomain and used a chained irq handler to
-demux (or have consumers request with IRQF_SHARED in the shared case).
+I can't recall ever seeing the task filter used in real life. But assuming you 
+wanted to audit no tasks, what is the difference between using that filter and 
+never setting audit_enable in the first place?
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+-Steve
