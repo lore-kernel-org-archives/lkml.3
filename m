@@ -1,129 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753795AbaBJUne (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 15:43:34 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35697 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752729AbaBJUl1 (ORCPT
+	id S1753821AbaBJUpN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 15:45:13 -0500
+Received: from mail-vb0-f53.google.com ([209.85.212.53]:43690 "EHLO
+	mail-vb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752475AbaBJUpJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 15:41:27 -0500
-Message-Id: <20140210203659.532019477@infradead.org>
-User-Agent: quilt/0.60-1
-Date: Mon, 10 Feb 2014 20:58:23 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: linux-kernel@vger.kernel.org
-Cc: Jason Low <jason.low2@hp.com>, Waiman Long <waiman.long@hp.com>,
-        Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
-        paulmck@linux.vnet.ibm.com, torvalds@linux-foundation.org,
-        tglx@linutronix.de, riel@redhat.com, akpm@linux-foundation.org,
-        davidlohr@hp.com, hpa@zytor.com, andi@firstfloor.org, aswin@hp.com,
-        scott.norton@hp.com, chegu_vinod@hp.com
-Subject: [PATCH 3/8] mutex: Modify the way optimistic spinners are queued
-References: <20140210195820.834693028@infradead.org>
-Content-Disposition: inline; filename=jason_low-mutex-modify_the_way_optimistic_spinners_are_queued.patch
+	Mon, 10 Feb 2014 15:45:09 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140210195914.GU1706@sonymobile.com>
+References: <1391820619-25487-1-git-send-email-courtney.cavin@sonymobile.com>
+	<1391820619-25487-2-git-send-email-courtney.cavin@sonymobile.com>
+	<4706525.lB7VmvWQMJ@wuerfel>
+	<CAL_JsqKa6nyPOa0M67svUR20Y3JNZcFhsTZE=ooV-eg6_ZBaMw@mail.gmail.com>
+	<20140210190934.GA841@joshc.qualcomm.com>
+	<20140210195914.GU1706@sonymobile.com>
+Date: Mon, 10 Feb 2014 14:45:07 -0600
+Message-ID: <CAL_JsqK0YoVu0BfKSUfBQGoriCa4z-teXUQe6RPpjM2KKpeMAw@mail.gmail.com>
+Subject: Re: [RFC 1/6] mailbox: add core framework
+From: Rob Herring <robherring2@gmail.com>
+To: Courtney Cavin <courtney.cavin@sonymobile.com>
+Cc: Josh Cartwright <joshc@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        "s-anna@ti.com" <s-anna@ti.com>, Rob Herring <rob.herring@calxeda.com>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        Mark Langsdorf <mark.langsdorf@calxeda.com>,
+        Tony Lindgren <tony@atomide.com>,
+        "omar.ramirez@copitl.com" <omar.ramirez@copitl.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mutex->spin_mlock was introduced in order to ensure that only 1 thread
-spins for lock acquisition at a time to reduce cache line contention. When
-lock->owner is NULL and the lock->count is still not 1, the spinner(s) will
-continually release and obtain the lock->spin_mlock. This can generate
-quite a bit of overhead/contention, and also might just delay the spinner
-from getting the lock.
+On Mon, Feb 10, 2014 at 1:59 PM, Courtney Cavin
+<courtney.cavin@sonymobile.com> wrote:
+> On Mon, Feb 10, 2014 at 08:09:34PM +0100, Josh Cartwright wrote:
+>> On Mon, Feb 10, 2014 at 11:52:05AM -0600, Rob Herring wrote:
+>> > On Mon, Feb 10, 2014 at 8:11 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+>> > > On Friday 07 February 2014 16:50:14 Courtney Cavin wrote:
+>> [..]
+>> > >> +int mbox_channel_notify(struct mbox_channel *chan,
+>> > >> +             const void *data, unsigned int len)
+>> > >> +{
+>> > >> +     return atomic_notifier_call_chain(&chan->notifier, len, (void *)data);
+>> > >> +}
+>> > >> +EXPORT_SYMBOL(mbox_channel_notify);
+>> > >
+>> > > What is the reason to use a notifier chain here? Isn't a simple
+>> > > callback function pointer enough? I would expect that each mailbox
+>> > > can have exactly one consumer, not multiple ones.
+>> >
+>> > It probably can be a callback, but there can be multiple consumers. It
+>> > was only a notifier on the pl320 as there was no framework at the time
+>> > and to avoid creating custom interfaces between drivers. On highbank
+>> > for example, we can asynchronously receive the events for temperature
+>> > change, power off, and reset. So either there needs to be an event
+>> > demux somewhere or callbacks have to return whether they handled an
+>> > event or not.
+>>
+>> I'm not familiar with highbank IPC, but with these requirements should
+>> the mailbox core even bother with asynchronous notifier chain?  It
+>> sounds like a better fit might be for the mailbox core to implement a
+>> proper adapter-specific irqdomain and used a chained irq handler to
+>> demux (or have consumers request with IRQF_SHARED in the shared case).
+>
+> Although modeling this using irqdomains makes sense for the notification
+> bit, and would probably suit most adapters, there's the issue of data
+> being passed around which doesn't quite fit.  "Ok, I have mail... where
+> is it?"  Did you have something in mind for that?
+>
+> Frankly, I don't see the notifier chain as being extraneous or
+> over-complicated here core-wise or implementation-wise, and unless I
+> understand Rob incorrectly, should suit the existing use-cases.  Am I
+> missing something?
 
-This patch modifies the way optimistic spinners are queued by queuing before
-entering the optimistic spinning loop as oppose to acquiring before every
-call to mutex_spin_on_owner(). So in situations where the spinner requires
-a few extra spins before obtaining the lock, then there will only be 1 spinner
-trying to get the lock and it will avoid the overhead from unnecessarily
-unlocking and locking the spin_mlock.
+Well, I think notifiers are not liked very much. I don't know that irq
+handlers would be the right answer either as these are not h/w events
+really and we may not want handlers to run in irq context. I would say
+a callback similar to how the dma engine framework works is the right
+answer. On the send side, you may want to have completion callbacks as
+well.
 
-Cc: tglx@linutronix.de
-Cc: riel@redhat.com
-Cc: akpm@linux-foundation.org
-Cc: davidlohr@hp.com
-Cc: hpa@zytor.com
-Cc: andi@firstfloor.org
-Cc: aswin@hp.com
-Cc: mingo@kernel.org
-Cc: scott.norton@hp.com
-Cc: chegu_vinod@hp.com
-Cc: Waiman.Long@hp.com
-Cc: paulmck@linux.vnet.ibm.com
-Cc: torvalds@linux-foundation.org
-Signed-off-by: Jason Low <jason.low2@hp.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1390936396-3962-3-git-send-email-jason.low2@hp.com
----
- kernel/locking/mutex.c |   17 +++++++----------
- 1 file changed, 7 insertions(+), 10 deletions(-)
-
---- a/kernel/locking/mutex.c
-+++ b/kernel/locking/mutex.c
-@@ -403,9 +403,9 @@ __mutex_lock_common(struct mutex *lock,
- 	if (!mutex_can_spin_on_owner(lock))
- 		goto slowpath;
- 
-+	mcs_spin_lock(&lock->mcs_lock);
- 	for (;;) {
- 		struct task_struct *owner;
--		struct mcs_spinlock  node;
- 
- 		if (use_ww_ctx && ww_ctx->acquired > 0) {
- 			struct ww_mutex *ww;
-@@ -420,19 +420,16 @@ __mutex_lock_common(struct mutex *lock,
- 			 * performed the optimistic spinning cannot be done.
- 			 */
- 			if (ACCESS_ONCE(ww->ctx))
--				goto slowpath;
-+				break;
- 		}
- 
- 		/*
- 		 * If there's an owner, wait for it to either
- 		 * release the lock or go to sleep.
- 		 */
--		mcs_spin_lock(&lock->mcs_lock, &node);
- 		owner = ACCESS_ONCE(lock->owner);
--		if (owner && !mutex_spin_on_owner(lock, owner)) {
--			mcs_spin_unlock(&lock->mcs_lock, &node);
--			goto slowpath;
--		}
-+		if (owner && !mutex_spin_on_owner(lock, owner))
-+			break;
- 
- 		if ((atomic_read(&lock->count) == 1) &&
- 		    (atomic_cmpxchg(&lock->count, 1, 0) == 1)) {
-@@ -445,11 +442,10 @@ __mutex_lock_common(struct mutex *lock,
- 			}
- 
- 			mutex_set_owner(lock);
--			mcs_spin_unlock(&lock->mcs_lock, &node);
-+			mcs_spin_unlock(&lock->mcs_lock);
- 			preempt_enable();
- 			return 0;
- 		}
--		mcs_spin_unlock(&lock->mcs_lock, &node);
- 
- 		/*
- 		 * When there's no owner, we might have preempted between the
-@@ -458,7 +454,7 @@ __mutex_lock_common(struct mutex *lock,
- 		 * the owner complete.
- 		 */
- 		if (!owner && (need_resched() || rt_task(task)))
--			goto slowpath;
-+			break;
- 
- 		/*
- 		 * The cpu_relax() call is a compiler barrier which forces
-@@ -468,6 +464,7 @@ __mutex_lock_common(struct mutex *lock,
- 		 */
- 		arch_mutex_cpu_relax();
- 	}
-+	mcs_spin_unlock(&lock->mcs_lock);
- slowpath:
- #endif
- 	spin_lock_mutex(&lock->wait_lock, flags);
-
-
+Rob
