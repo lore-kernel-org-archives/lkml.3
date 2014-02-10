@@ -1,108 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755474AbaBJURD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 15:17:03 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:48201 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752893AbaBJTlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:41:46 -0500
-Subject: Re: [PATCH 2/2] spi: Add Qualcomm QUP SPI controller support
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Andy Gross <agross@codeaurora.org>
-Cc: Mark Brown <broonie@kernel.org>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, linux-spi@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Alok Chauhan <alokc@codeaurora.org>,
-        Gilad Avidov <gavidov@codeaurora.org>,
-        Kiran Gunda <kgunda@codeaurora.org>,
-        Sagar Dharia <sdharia@codeaurora.org>
-In-Reply-To: <20140210174738.GA31596@qualcomm.com>
-References: <1391705868-20091-1-git-send-email-iivanov@mm-sol.com>
-	 <1391705868-20091-3-git-send-email-iivanov@mm-sol.com>
-	 <20140207073952.GA2610@qualcomm.com>
-	 <1391766753.27491.60.camel@iivanov-dev>
-	 <20140207173207.GA19974@qualcomm.com>
-	 <1392051302.2853.56.camel@iivanov-dev>
-	 <20140210174738.GA31596@qualcomm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 10 Feb 2014 21:41:44 +0200
-Message-ID: <1392061304.24621.17.camel@violet>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	id S1755525AbaBJURk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 15:17:40 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34608 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752849AbaBJTll (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 14:41:41 -0500
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
+        David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 019/124] perf kvm: Fix kvm report without guestmount.
+Date: Mon, 10 Feb 2014 11:39:19 -0800
+Message-Id: <1392061264-28124-20-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
+References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.8.13.18 -stable review patch.  If anyone has any objections, please let me know.
 
-Hi,
+------------------
 
-On Mon, 2014-02-10 at 11:47 -0600, Andy Gross wrote:
-> On Mon, Feb 10, 2014 at 06:55:02PM +0200, Ivan T. Ivanov wrote:
-> 
-> [....]
-> 
-> > > > > Bail here?
-> > > > 
-> > > > I don't know. What will be the consequences if controller continue to
-> > > > operate on its default rate?
-> > > > 
-> > > 
-> > > It is unclear.  But if you can't set the rate that is configured or if there is
-> > > a misconfiguration, it's probably better to exit the probe and catch it here.
-> > 
-> > 
-> > My preference is to delay clock speed change till first
-> > SPI transfer. And use wherever transfer itself mandate.
-> > 
-> 
-> That works.  My only concern is that it might be nice to catch a configuration
-> problem early rather than wait for the SPI transfer to fail continuously.
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
 
-If developer is skilled enough to know which version controller is,
-(s)he will be able to put the right frequency constrain here :-)
+commit ad85ace07a05062ef6b59c35a5e80b6eaee1eee6 upstream.
 
-> 
-> [....]
-> 
-> > > > My understanding is:
-> > > > 
-> > > > Disabling clocks will timeout transaction, if any. Core Device driver
-> > > > will call: devm_spi_unregister(), which will wait pending transactions
-> > > > to complete and then remove the SPI master.
-> > > 
-> > > Disabling clocks will confuse the hardware.  We cannot disable clocks while the
-> > > spi core is active and transferring data.
-> > 
-> > I could follow approach taken by other SPI drivers, just reset
-> > controller and disable clocks.
-> 
-> You have to wait until the hardware is in a sane state.  For the QUP, that means
-> in a RUN/PAUSE/RESET state.  It cannot be in transition when you cut the clocks.
-> The safest thing to do is to get the QUP into the RESET state and then cut the
-> clocks.
-> 
+Currently, if we use perf kvm --guestkallsyms --guestmodules report, we
+can not get the perf information from perf data file. All sample are
+shown as unknown.
 
-Sure. will do.
+Reproducing steps:
+	# perf kvm --guestkallsyms /tmp/kallsyms --guestmodules /tmp/modules record -a sleep 1
+	[ perf record: Woken up 1 times to write data ]
+	[ perf record: Captured and wrote 0.624 MB perf.data.guest (~27260 samples) ]
+	# perf kvm --guestkallsyms /tmp/kallsyms --guestmodules /tmp/modules report |grep %
+	   100.00%  [guest/6471]  [unknown]         [g] 0xffffffff8164f330
 
-> [.....]
-> 
-> > > > I am not aware of the difference. My board report v.20020000. 
-> > > > Is there difference of handling these controllers?
-> > > 
-> > > There were some bug fixes between versions.  None of those affect SPI (that I
-> > > can tell), but it's better to be more descriptive and use the full versions in
-> > > the compatible tags.
-> > 
-> > No strong preference here. Should I add qcom,spi-qup-v2.2.0, then? :-)
-> 
-> According to the documentation, there is no v2.2.0.  It appears there is some
-> disconnect between the specific HW revision and the documentation.  I'll see if
-> I can get some clarification from the hardware guys.  For now, I think the 2.1.1
-> and 2.2.1 tags are fine.
+This bug was introduced by 207b57926 (perf kvm: Fix regression with guest machine creation).
+In original code, it uses perf_session__find_machine(), it means we deliver symbol to machine
+which has the same pid, if no machine found, deliver it to *default* guest. But if we use
+perf_session__findnew_machine() here, if no machine was found, new machine with pid will be built
+and added. Then the default guest which with pid == 0 will never get a symbol.
 
-Ok. Thanks,
-Ivan
+And because the new machine initialized here has no kernel map created, the symbol delivered to
+it will be marked as "unknown".
 
+This patch here is to revert commit 207b57926 and fix the SEGFAULT bug in another way.
 
+Verification steps:
+	# ./perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules record -a sleep 1
+	[ perf record: Woken up 1 times to write data ]
+	[ perf record: Captured and wrote 0.651 MB perf.data.guest (~28437 samples) ]
+	# ./perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules report |grep %
+	    22.64%    :6471  [guest.kernel.kallsyms]  [g] update_rq_clock.part.70
+	    19.99%    :6471  [guest.kernel.kallsyms]  [g] d_free
+	    18.46%    :6471  [guest.kernel.kallsyms]  [g] bio_phys_segments
+	    16.25%    :6471  [guest.kernel.kallsyms]  [g] dequeue_task
+	    12.78%    :6471  [guest.kernel.kallsyms]  [g] __switch_to
+	     7.91%    :6471  [guest.kernel.kallsyms]  [g] scheduler_tick
+	     1.75%    :6471  [guest.kernel.kallsyms]  [g] native_apic_mem_write
+	     0.21%    :6471  [guest.kernel.kallsyms]  [g] apic_timer_interrupt
+
+Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Acked-by: David Ahern <dsahern@gmail.com>
+Cc: David Ahern <dsahern@gmail.com>
+Link: http://lkml.kernel.org/r/1387564907-3045-1-git-send-email-yangds.fnst@cn.fujitsu.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ tools/perf/util/session.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index ce6f511..f079b2e 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1013,6 +1013,7 @@ static struct machine *
+ 					       union perf_event *event)
+ {
+ 	const u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
++	struct machine *machine;
+ 
+ 	if (perf_guest &&
+ 	    ((cpumode == PERF_RECORD_MISC_GUEST_KERNEL) ||
+@@ -1024,7 +1025,11 @@ static struct machine *
+ 		else
+ 			pid = event->ip.pid;
+ 
+-		return perf_session__findnew_machine(session, pid);
++		machine = perf_session__find_machine(session, pid);
++		if (!machine)
++			machine = perf_session__findnew_machine(session,
++						DEFAULT_GUEST_KERNEL_ID);
++		return machine;
+ 	}
+ 
+ 	return perf_session__find_host_machine(session);
+-- 
+1.8.3.2
 
