@@ -1,108 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752986AbaBJXGe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 18:06:34 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:33590 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752850AbaBJXGb (ORCPT
+	id S1753162AbaBJXHH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 18:07:07 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:57190 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753073AbaBJXHE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 18:06:31 -0500
-Message-ID: <52F95B73.7030205@kernel.dk>
-Date: Mon, 10 Feb 2014 16:06:27 -0700
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 10 Feb 2014 18:07:04 -0500
+Date: Mon, 10 Feb 2014 18:06:59 -0500
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Dan Carpenter <dan.carpenter@oracle.com>
+Subject: [PATCH v2 15/16] cgroup: cosmetic updates to cgroup_attach_task()
+Message-ID: <20140210230659.GJ25350@mtj.dyndns.org>
+References: <1391953964-22088-1-git-send-email-tj@kernel.org>
+ <1391953964-22088-16-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-To: Kent Overstreet <kmo@daterainc.com>
-CC: Christoph Hellwig <hch@infradead.org>,
-        Alexander Gordeev <agordeev@redhat.com>, Shaohua Li <shli@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/2]percpu_ida: fix a live lock
-References: <20131231033827.GA31994@kernel.org> <20140104210804.GA24199@kmo-pixel> <20140105131300.GB4186@kernel.org> <20140106204641.GB9037@kmo> <52CB1783.4050205@kernel.dk> <20140106214726.GD9037@kmo> <20140209155006.GA16149@dhcp-26-207.brq.redhat.com> <20140210103211.GA28396@infradead.org> <52F8FDA7.7070809@kernel.dk> <20140210224145.GB2362@kmo>
-In-Reply-To: <20140210224145.GB2362@kmo>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391953964-22088-16-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+cgroup_attach_task() is planned to go through restructuring.  Let's
+tidy it up a bit in preparation.
 
+* Update cgroup_attach_task() to receive the target task argument in
+  @leader instead of @tsk.
 
-On 02/10/2014 03:41 PM, Kent Overstreet wrote:
-> On Mon, Feb 10, 2014 at 09:26:15AM -0700, Jens Axboe wrote:
->>
->>
->> On 02/10/2014 03:32 AM, Christoph Hellwig wrote:
->>> On Sun, Feb 09, 2014 at 04:50:07PM +0100, Alexander Gordeev wrote:
->>>> Yeah, that was my first thought when I posted "percpu_ida: Allow variable
->>>> maximum number of cached tags" patch some few months ago. But I am back-
->>>> pedalling as it does not appear solves the fundamental problem - what is the
->>>> best threshold?
->>>>
->>>> May be we can walk off with a per-cpu timeout that flushes batch nr of tags
->>> >from local caches to the pool? Each local allocation would restart the timer,
->>>> but once allocation requests stopped coming on a CPU the tags would not gather
->>>> dust in local caches.
->>>
->>> We'll defintively need a fix to be able to allow the whole tag space.
->>
->> Certainly. The current situation of effectively only allowing half
->> the tags (if spread) is pretty crappy with (by far) most hardware.
->>
->>> For large numbers of tags per device the flush might work, but for
->>> devices with low number of tags we need something more efficient.  The
->>> case of less tags than CPUs isn't that unusual either and we probably
->>> want to switch to an allocator without per cpu allocations for them to
->>> avoid all this.  E.g. for many ATA devices we just have a single tag,
->>> and many scsi drivers also only want single digit outstanding commands
->>> per LUN.
->>
->> Even for cases where you have as many (or more) CPUs than tags,
->> per-cpu allocation is not necessarily a bad idea. It's a rare case
->> where you have all the CPUs touching the device at the same time,
->> after all.
->
-> <just back from Switzerland, probably forgetting some of where I left off>
->
-> You do still need to have enough tags to shard across the number of cpus
-> _currently_ touching the device. I think I'm with Christoph here, I'm not sure
-> how percpu tag allocation would be helpful when we have single digits/low double
-> digits of tags available.
+* Rename @tsk to @task.
 
-For the common case, I'd assume that anywhere between 31..256 tags is 
-"normal". That's where the majority of devices will end up being, 
-largely. So single digits would be an anomaly.
+* Rename @retval to @ret.
 
-And even for the case of 31 tags and, eg, a 64 cpu system, over windows 
-of access I don't think it's unreasonable to expect that you are not 
-going to have 64 threads banging on the same device.
+This is purely cosmetic.
 
-It obviously all depends on the access pattern. X threads for X tags 
-would work perfectly well with per-cpu tagging, if they are doing sync 
-IO. And similarly, 8 threads each having low queue depth would be fine. 
-However, it all falls apart pretty quickly if threads*qd > tag space.
+v2: get_nr_threads() was using uninitialized @task instead of @leader.
+    Fixed.  Reported by Dan Carpenter.
 
-> I would expect that in that case we're better off with just a well implemented
-> atomic bit vector and waitlist. However, I don't know where the crossover point
-> is and I think Jens has done by far the most and most relevant benchmarking
-> here.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>
+---
+Hello,
 
-The problem with that is when you have some of those threads on 
-different nodes, it ends up collapsing pretty quickly again. Maybe the 
-solution is to have a hierarchy of caching instead - per-node, per-cpu. 
-At least that has the potential to make the common case still perform 
-better.
+The fixed part doesn't affect the end result.  It gets removed by the
+next patchset.  I'll leave the git branch as-is for now.
 
-> How about we just make the number of tags that are allowed to be stranded an
-> explicit parameter (somehow) - then it can be up to device drivers to do
-> something sensible with it. Half is probably an ideal default for devices where
-> that works, but this way more constrained devices will be able to futz with it
-> however they want.
+Thanks.
 
-I don't think we should involve device drivers in this, that's punting a 
-complicated issue to someone who likely has little idea what to do about 
-it. This needs to be handled sensibly in the core, not in a device 
-driver. If we can't come up with a sensible algorithm to handle this, 
-how can we expect someone writing a device driver to do so?
+ kernel/cgroup.c |   45 +++++++++++++++++++++++----------------------
+ 1 file changed, 23 insertions(+), 22 deletions(-)
 
--- 
-Jens Axboe
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1726,20 +1726,20 @@ static void cgroup_task_migrate(struct c
+ /**
+  * cgroup_attach_task - attach a task or a whole threadgroup to a cgroup
+  * @cgrp: the cgroup to attach to
+- * @tsk: the task or the leader of the threadgroup to be attached
++ * @leader: the task or the leader of the threadgroup to be attached
+  * @threadgroup: attach the whole threadgroup?
+  *
+  * Call holding cgroup_mutex and the group_rwsem of the leader. Will take
+  * task_lock of @tsk or each thread in the threadgroup individually in turn.
+  */
+-static int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk,
++static int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *leader,
+ 			      bool threadgroup)
+ {
+-	int retval, i, group_size;
++	int ret, i, group_size;
+ 	struct cgroupfs_root *root = cgrp->root;
+ 	struct cgroup_subsys_state *css, *failed_css = NULL;
+ 	/* threadgroup list cursor and array */
+-	struct task_struct *leader = tsk;
++	struct task_struct *task;
+ 	struct task_and_cgroup *tc;
+ 	struct flex_array *group;
+ 	struct cgroup_taskset tset = { };
+@@ -1752,7 +1752,7 @@ static int cgroup_attach_task(struct cgr
+ 	 * threads exit, this will just be an over-estimate.
+ 	 */
+ 	if (threadgroup)
+-		group_size = get_nr_threads(tsk);
++		group_size = get_nr_threads(leader);
+ 	else
+ 		group_size = 1;
+ 	/* flex_array supports very large thread-groups better than kmalloc. */
+@@ -1760,8 +1760,8 @@ static int cgroup_attach_task(struct cgr
+ 	if (!group)
+ 		return -ENOMEM;
+ 	/* pre-allocate to guarantee space while iterating in rcu read-side. */
+-	retval = flex_array_prealloc(group, 0, group_size, GFP_KERNEL);
+-	if (retval)
++	ret = flex_array_prealloc(group, 0, group_size, GFP_KERNEL);
++	if (ret)
+ 		goto out_free_group_list;
+ 
+ 	i = 0;
+@@ -1772,17 +1772,18 @@ static int cgroup_attach_task(struct cgr
+ 	 */
+ 	down_read(&css_set_rwsem);
+ 	rcu_read_lock();
++	task = leader;
+ 	do {
+ 		struct task_and_cgroup ent;
+ 
+-		/* @tsk either already exited or can't exit until the end */
+-		if (tsk->flags & PF_EXITING)
++		/* @task either already exited or can't exit until the end */
++		if (task->flags & PF_EXITING)
+ 			goto next;
+ 
+ 		/* as per above, nr_threads may decrease, but not increase. */
+ 		BUG_ON(i >= group_size);
+-		ent.task = tsk;
+-		ent.cgrp = task_cgroup_from_root(tsk, root);
++		ent.task = task;
++		ent.cgrp = task_cgroup_from_root(task, root);
+ 		/* nothing to do if this task is already in the cgroup */
+ 		if (ent.cgrp == cgrp)
+ 			goto next;
+@@ -1790,13 +1791,13 @@ static int cgroup_attach_task(struct cgr
+ 		 * saying GFP_ATOMIC has no effect here because we did prealloc
+ 		 * earlier, but it's good form to communicate our expectations.
+ 		 */
+-		retval = flex_array_put(group, i, &ent, GFP_ATOMIC);
+-		BUG_ON(retval != 0);
++		ret = flex_array_put(group, i, &ent, GFP_ATOMIC);
++		BUG_ON(ret != 0);
+ 		i++;
+ 	next:
+ 		if (!threadgroup)
+ 			break;
+-	} while_each_thread(leader, tsk);
++	} while_each_thread(leader, task);
+ 	rcu_read_unlock();
+ 	up_read(&css_set_rwsem);
+ 	/* remember the number of threads in the array for later. */
+@@ -1805,7 +1806,7 @@ static int cgroup_attach_task(struct cgr
+ 	tset.tc_array_len = group_size;
+ 
+ 	/* methods shouldn't be called if no task is actually migrating */
+-	retval = 0;
++	ret = 0;
+ 	if (!group_size)
+ 		goto out_free_group_list;
+ 
+@@ -1814,8 +1815,8 @@ static int cgroup_attach_task(struct cgr
+ 	 */
+ 	for_each_css(css, i, cgrp) {
+ 		if (css->ss->can_attach) {
+-			retval = css->ss->can_attach(css, &tset);
+-			if (retval) {
++			ret = css->ss->can_attach(css, &tset);
++			if (ret) {
+ 				failed_css = css;
+ 				goto out_cancel_attach;
+ 			}
+@@ -1833,7 +1834,7 @@ static int cgroup_attach_task(struct cgr
+ 		old_cset = task_css_set(tc->task);
+ 		tc->cset = find_css_set(old_cset, cgrp);
+ 		if (!tc->cset) {
+-			retval = -ENOMEM;
++			ret = -ENOMEM;
+ 			goto out_put_css_set_refs;
+ 		}
+ 	}
+@@ -1861,9 +1862,9 @@ static int cgroup_attach_task(struct cgr
+ 	/*
+ 	 * step 5: success! and cleanup
+ 	 */
+-	retval = 0;
++	ret = 0;
+ out_put_css_set_refs:
+-	if (retval) {
++	if (ret) {
+ 		for (i = 0; i < group_size; i++) {
+ 			tc = flex_array_get(group, i);
+ 			if (!tc->cset)
+@@ -1872,7 +1873,7 @@ out_put_css_set_refs:
+ 		}
+ 	}
+ out_cancel_attach:
+-	if (retval) {
++	if (ret) {
+ 		for_each_css(css, i, cgrp) {
+ 			if (css == failed_css)
+ 				break;
+@@ -1882,7 +1883,7 @@ out_cancel_attach:
+ 	}
+ out_free_group_list:
+ 	flex_array_free(group);
+-	return retval;
++	return ret;
+ }
+ 
+ /*
