@@ -1,112 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752931AbaBJR5v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 12:57:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:17002 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752180AbaBJR5u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 12:57:50 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: acme@ghostprotocols.net
-Cc: LKML <linux-kernel@vger.kernel.org>, jolsa@redhat.com, jmario@redhat.com,
-        fowles@inreach.com, eranian@google.com,
-        Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 07/21] perf, callchain: Add generic callchain print handler for stdio
-Date: Mon, 10 Feb 2014 12:29:02 -0500
-Message-Id: <1392053356-23024-8-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1392053356-23024-1-git-send-email-dzickus@redhat.com>
-References: <1392053356-23024-1-git-send-email-dzickus@redhat.com>
+	id S1753154AbaBJR7A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 12:59:00 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:55767 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752312AbaBJR67 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 12:58:59 -0500
+Date: Mon, 10 Feb 2014 18:58:54 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: linux-kernel@vger.kernel.org, will.deacon@arm.com, dave.martin@arm.com,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH 4/7] perf: be less pessimistic when scheduling events
+Message-ID: <20140210175854.GB27965@twins.programming.kicks-ass.net>
+References: <1392054264-23570-1-git-send-email-mark.rutland@arm.com>
+ <1392054264-23570-5-git-send-email-mark.rutland@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392054264-23570-5-git-send-email-mark.rutland@arm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My initial implementation for rbtree sorting in the c2c tool does not use the
-normal history elements.  As a result, adding callchain support (which is
-deeply integrated with history elements) is more challenging when trying to
-display its output.
+On Mon, Feb 10, 2014 at 05:44:21PM +0000, Mark Rutland wrote:
+> This patch makes ctx_flexible_sched_in attempt to schedule every group
+> in the flexible_groups list even when earlier groups failed to schedule,
+> enabling more groups to be scheduled simultaneously.
 
-To make things simpler for myself (and to avoid rewriting the same code into
-the c2c tool), I provided a generic interface that takes an unsorted callchain
-list along with its total and relative sample size, and sorts it locally based
-on period and calls the appropriate graph function (passing the correct sample
-size).
+Since you're basically free to create as many events as you want, you can
+(as an unprivilidged user) make the context switch to and from your task
+arbitrarily expensive.
 
-This makes things easier because the c2c tool can be dumber and just collect
-callchains and not worry about the magic needed to sort and display them
-correctly.
-
-Unfortunately, this is assuming a stdio output only and does not use the other
-gui type outputs.
-
-Regardless, this patch provides useful info for the tool right now.  Tweaks and
-recommendations for a better approach are welcomed. :-)
-
-Signed-off-by: Don Zickus <dzickus@redhat.com>
----
- tools/perf/ui/stdio/hist.c | 37 +++++++++++++++++++++++++++++++++++++
- tools/perf/util/hist.h     |  4 ++++
- 2 files changed, 41 insertions(+)
-
-diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-index 831fbb7..0a40f59 100644
---- a/tools/perf/ui/stdio/hist.c
-+++ b/tools/perf/ui/stdio/hist.c
-@@ -536,3 +536,40 @@ size_t events_stats__fprintf(struct events_stats *stats, FILE *fp)
- 
- 	return ret;
- }
-+
-+size_t generic_entry_callchain__fprintf(struct callchain_root *unsorted_callchain,
-+					u64 total_samples, u64 relative_samples,
-+					int left_margin, FILE *fp)
-+{
-+	struct rb_root sorted_chain;
-+	u64 min_callchain_hits;
-+
-+	if (!symbol_conf.use_callchain)
-+		return 0;
-+
-+	min_callchain_hits = total_samples * (callchain_param.min_percent / 100);
-+
-+	callchain_param.sort(&sorted_chain, unsorted_callchain,
-+				min_callchain_hits, &callchain_param);
-+
-+	switch (callchain_param.mode) {
-+	case CHAIN_GRAPH_REL:
-+		return callchain__fprintf_graph(fp, &sorted_chain, relative_samples,
-+						left_margin);
-+		break;
-+	case CHAIN_GRAPH_ABS:
-+		return callchain__fprintf_graph(fp, &sorted_chain, total_samples,
-+						left_margin);
-+		break;
-+	case CHAIN_FLAT:
-+		return callchain__fprintf_flat(fp, &sorted_chain, total_samples);
-+		break;
-+	case CHAIN_NONE:
-+		break;
-+	default:
-+		pr_err("Bad callchain mode\n");
-+	}
-+
-+	return 0;
-+}
-+
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index a59743f..4fe5de5 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -111,6 +111,10 @@ size_t events_stats__fprintf(struct events_stats *stats, FILE *fp);
- size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
- 		      int max_cols, float min_pcnt, FILE *fp);
- 
-+size_t generic_entry_callchain__fprintf(struct callchain_root *unsorted_callchain,
-+					u64 total_samples, u64 relative_samples,
-+					int left_margin, FILE *fp);
-+
- void hists__filter_by_dso(struct hists *hists);
- void hists__filter_by_thread(struct hists *hists);
- void hists__filter_by_symbol(struct hists *hists);
--- 
-1.7.11.7
-
+So no, that's not going to fly.
