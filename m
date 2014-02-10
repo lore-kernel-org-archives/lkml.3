@@ -1,188 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753175AbaBJRnN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 12:43:13 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:59880 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752557AbaBJRnM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 12:43:12 -0500
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v2] clk: respect the clock dependencies in of_clk_init
-Date: Mon, 10 Feb 2014 18:42:59 +0100
-Message-Id: <1392054179-28830-1-git-send-email-gregory.clement@free-electrons.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1753325AbaBJRnd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 12:43:33 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55438 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752931AbaBJRna (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 12:43:30 -0500
+Date: Mon, 10 Feb 2014 18:43:23 +0100
+From: Jean Delvare <jdelvare@suse.de>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Laszlo Papp <lpapp@kde.org>, linux-kernel@vger.kernel.org,
+        lm-sensors@lm-sensors.org
+Subject: Re: [PATCH] hwmon: (max6650) Rename the device ids to  contain the
+ hwmon suffix
+Message-ID: <20140210184323.456e921c@endymion.delvare>
+In-Reply-To: <20140210165853.GD26997@lee--X1>
+References: <1392045953-26596-1-git-send-email-lpapp@kde.org>
+	<20140210160842.GB26997@lee--X1>
+	<20140210173811.04ba5964@endymion.delvare>
+	<20140210165853.GD26997@lee--X1>
+Organization: Suse Linux
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Until now the clock providers were initialized in the order found in
-the device tree. This led to have the dependencies between the clocks
-not respected: children clocks could be initialized before their
-parent clocks.
+Hi Lee,
 
-Instead of forcing each platform to manage its own initialization order,
-this patch adds this work inside the framework itself.
+On Mon, 10 Feb 2014 16:58:53 +0000, Lee Jones wrote:
+> > > >  static const struct i2c_device_id max6650_id[] = {
+> > > > -	{ "max6650", 1 },
+> > > > -	{ "max6651", 4 },
+> > > > +	{ "max6650-hwmon", 1 },
+> > > > +	{ "max6651-hwmon", 4 },
+> > 
+> > No, this is not acceptable, sorry. This will change the name of the
+> > hwmon device as seen from user-space, breaking any configuration file
+> > referring to it. Additionally, dashes are explicitly forbidden in hwmon
+> > device names. And lastly this will break any explicit instantiation of
+> > theses devices (which is the only way, as the driver doesn't support
+> > device auto-detection), be it in the kernel itself or from user-space.
+> > 
+> > The change doesn't make sense anyway. If you move to the MFD framework,
+> > the core driver will be an I2C driver binding to the I2C device, and it
+> > will spawn the logical devices, presumably in the form of platform
+> > devices. That's what the current max6650 driver would have to bind to.
+> > Just renaming the device won't work, you also need to change the type.
+> > 
+> > If you want to turn this into an MFD driver, I believe you must first
+> > convert the hwmon part to register using
+> > devm_hwmon_device_register_with_groups(). This will dissociate the i2c
+> > device name from the hwmon device name and create a clean name-space
+> > for each function. Guenter, maybe you had a plan to do so already
+> > anyway?
+> > 
+> > That being said, going with MFD in this case seems quite overkill to
+> > me. MFD makes a lot of sense when each function has its own resources.
+> > As this isn't the case here, a single driver registering both an hwmon
+> > interface and a pinctrl interface would seem sufficient to me. But I
+> > think Guenter already discussed this in the past so I'll let him
+> > continue and decide.
+> 
+> I'll get you guys decide if you want to go the MFD route or not.
+> 
+> Either is okay with me, but if you do decide in favour, a name change
+> with the device type appended would be preferred. Else the core device
+> would have the same name as all of its children which would be quite
+> unworkable.
 
-Using the data of the device tree the of_clk_init function now delayed
-the initialization of a clock provider if its parent provider was not
-ready yet.
+No problem with that. The main (I2C) device should be named max6650 (or
+max6651), the subdevices can be named whatever you want, as long as the
+hwmon (class) device's name attribute is also "max6650" (or "max6651".)
+As stated above, this is required to preserve compatibility with
+existing users.
 
-The strict dependency check (all parents of a given clk must be
-initialized) was added by Boris BREZILLON
+> > > Might be worth taking the opportunity to swap out these magic numbers
+> > > now.
+> > 
+> > There's nothing magic about them, they tell the driver how many fans
+> > each device supports. If you don't pass them as driver_data you'll have
+> > to derive them from the device name in the probe function.
+> 
+> They're magic in that they're not easily identifiable. In the few
+> moments that I looked at the patch I assumed they were device
+> IDs. They should be clearly defined.
 
-Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
----
+They could have been device IDs, some drivers do that, and that would
+have been equally fine. driver_data can be anything. Best thing to do
+is to document it right above the device id array if you really find it
+confusing (I don't.) I don't know what else exactly you had in mind,
+but #defining FOUR_FANS as 4 and ONE_FAN as 1 and using that doesn't
+strike me as the best coding practice.
 
-Since the v1, I have merged the  strict dependency check from Boris.
-And of course tested on my Armada 370 and Armada XP based board
-
- drivers/clk/clk.c | 109 ++++++++++++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 106 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 5517944495d8..684976993297 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -2526,24 +2526,127 @@ const char *of_clk_get_parent_name(struct device_node *np, int index)
- }
- EXPORT_SYMBOL_GPL(of_clk_get_parent_name);
- 
-+struct clock_provider {
-+	of_clk_init_cb_t clk_init_cb;
-+	struct device_node *np;
-+	struct list_head node;
-+};
-+
-+static LIST_HEAD(clk_provider_list);
-+
-+/*
-+ * This function looks for a parent clock. If there is one, then it
-+ * checks that the provider for this parent clock was initialized, in
-+ * this case the parent clock will be ready.
-+ */
-+static int parent_ready(struct device_node *np)
-+{
-+	struct of_phandle_args clkspec;
-+	struct of_clk_provider *provider;
-+	int num_parents;
-+	bool found;
-+	int i;
-+
-+	/*
-+	 * If there is no clock parent, no need to wait for them, then
-+	 * we can consider their absence as being ready
-+	 */
-+	num_parents = of_count_phandle_with_args(np, "clocks", "#clock-cells");
-+	if (num_parents <= 0)
-+		return 1;
-+
-+	for (i = 0; i < num_parents; i++) {
-+		if (of_parse_phandle_with_args(np, "clocks", "#clock-cells", i,
-+					       &clkspec))
-+			return 1;
-+
-+		/* Check if we have such a provider in our array */
-+		found = false;
-+		list_for_each_entry(provider, &of_clk_providers, link) {
-+			if (provider->node == clkspec.np) {
-+				found = true;
-+				break;
-+			}
-+		}
-+
-+		if (!found)
-+			return 0;
-+	}
-+
-+	return 1;
-+}
-+
- /**
-  * of_clk_init() - Scan and init clock providers from the DT
-  * @matches: array of compatible values and init functions for providers.
-  *
-- * This function scans the device tree for matching clock providers and
-- * calls their initialization functions
-+ * This function scans the device tree for matching clock providers
-+ * and calls their initialization functions. It also do it by trying
-+ * to follow the dependencies.
-  */
- void __init of_clk_init(const struct of_device_id *matches)
- {
- 	const struct of_device_id *match;
- 	struct device_node *np;
-+	struct clock_provider *clk_provider, *next;
-+	bool is_init_done;
- 
- 	if (!matches)
- 		matches = &__clk_of_table;
- 
- 	for_each_matching_node_and_match(np, matches, &match) {
- 		of_clk_init_cb_t clk_init_cb = match->data;
--		clk_init_cb(np);
-+
-+
-+		if (parent_ready(np)) {
-+			/*
-+			 * The parent clock is ready or there is no
-+			 * clock parent at all, in this case the
-+			 * provider can be initialize immediately.
-+			 */
-+			clk_init_cb(np);
-+		} else {
-+			/*
-+			 * The parent clock is not ready, this
-+			 * provider is moved to a list to be
-+			 * initialized later
-+			 */
-+			struct clock_provider *parent = kzalloc(sizeof(struct clock_provider),
-+							GFP_KERNEL);
-+
-+			parent->clk_init_cb = match->data;
-+			parent->np = np;
-+			list_add(&parent->node, &clk_provider_list);
-+		}
-+	}
-+
-+	while (!list_empty(&clk_provider_list)) {
-+		is_init_done = false;
-+		list_for_each_entry_safe(clk_provider, next,
-+					&clk_provider_list, node) {
-+			if (parent_ready(clk_provider->np)) {
-+				clk_provider->clk_init_cb(clk_provider->np);
-+				list_del(&clk_provider->node);
-+				kfree(clk_provider);
-+				is_init_done = true;
-+			}
-+		}
-+
-+		if (!is_init_done) {
-+			/*
-+			 * We didn't managed to initialize any of the
-+			 * remaining providers during the last loop,
-+			 * so now we initialize all the remaining ones
-+			 * unconditionally in case the clock parent
-+			 * was not mandatory
-+			 */
-+			list_for_each_entry_safe(clk_provider, next,
-+						&clk_provider_list, node) {
-+				clk_provider->clk_init_cb(clk_provider->np);
-+				list_del(&clk_provider->node);
-+				kfree(clk_provider);
-+			}
-+		}
- 	}
- }
- #endif
 -- 
-1.8.1.2
-
+Jean Delvare
+Suse L3 Support
