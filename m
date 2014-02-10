@@ -1,58 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753406AbaBJVQK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 16:16:10 -0500
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:36835 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752837AbaBJVQE (ORCPT
+	id S1752681AbaBJVSd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 16:18:33 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:36406 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752124AbaBJVSb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 16:16:04 -0500
-Message-ID: <1392066959.2051.2.camel@j-VirtualBox>
-Subject: Re: [PATCH 5/8] locking, mutex: Cancelable MCS lock for adaptive
- spinning
-From: Jason Low <jason.low2@hp.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Waiman Long <waiman.long@hp.com>,
-        mingo@kernel.org, paulmck@linux.vnet.ibm.com,
-        torvalds@linux-foundation.org, tglx@linutronix.de, riel@redhat.com,
-        akpm@linux-foundation.org, davidlohr@hp.com, hpa@zytor.com,
-        andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
-        chegu_vinod@hp.com
-Date: Mon, 10 Feb 2014 13:15:59 -0800
-In-Reply-To: <20140210203659.671232531@infradead.org>
-References: <20140210195820.834693028@infradead.org>
-	 <20140210203659.671232531@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 10 Feb 2014 16:18:31 -0500
+Date: Mon, 10 Feb 2014 22:18:25 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
+        jolsa@redhat.com, jmario@redhat.com, fowles@inreach.com,
+        eranian@google.com
+Subject: Re: [PATCH 00/21] perf, c2c: Add new tool to analyze cacheline
+ contention on NUMA systems
+Message-ID: <20140210211825.GB5002@laptop.programming.kicks-ass.net>
+References: <1392053356-23024-1-git-send-email-dzickus@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392053356-23024-1-git-send-email-dzickus@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-02-10 at 20:58 +0100, Peter Zijlstra wrote:
-> +void osq_unlock(struct optimistic_spin_queue **lock)
-> +{
-> +	struct optimistic_spin_queue *node = this_cpu_ptr(&osq_node);
-> +	struct optimistic_spin_queue *next;
-> +
-> +	/*
-> +	 * Fast path for the uncontended case.
-> +	 */
-> +	if (likely(cmpxchg(lock, node, NULL) == node))
-> +		return;
+On Mon, Feb 10, 2014 at 12:28:55PM -0500, Don Zickus wrote:
+> With the introduction of NUMA systems, came the possibility of remote memory accesses.
+> Combine those remote memory accesses with contention on the remote node (ie a modified
+> cacheline) and you have a possibility for very long latencies.  These latencies can
+> bottleneck a program.
+> 
+> The program added by these patches, helps detect the situation where two nodes are
+> 'tugging' on the same _data_ cacheline.  The term used through out this program and
+> the various changelogs is called a HITM.  This means nodeX went to read a cacheline
+> and it was discovered to be loaded in nodeY's LLC cache (hence the cacheHIT). The 
+> remote cacheline was also in a 'M'odified state thus creating a 'HIT M' for hit in
+> a modified state.  HITMs can happen locally and remotely.  This program's interest
+> is mainly in remote HITMs as they cause the longest latencies.
 
-Can we can also add the following code here as I'm noticing next != NULL
-is the much more likely scenario on my box:
-
-        next = xchg(&node->next, NULL);
-        if (next) {
-                ACCESS_ONCE(next->locked) = 1;
-                return;
-
-
-> +	next = osq_wait_next(lock, node, NULL);
-> +	if (next)
-> +		ACCESS_ONCE(next->locked) = 1;
-> +}
-
+All of that is true of the traditional SMP system too. Just use lower
+level caches.
