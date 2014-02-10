@@ -1,72 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752986AbaBJXaf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 18:30:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59792 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752641AbaBJXae (ORCPT
+	id S1752934AbaBJXdK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 18:33:10 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:57836 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752279AbaBJXdG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 18:30:34 -0500
-Date: Mon, 10 Feb 2014 15:30:32 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Luiz Capitulino <lcapitulino@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, mtosatti@redhat.com,
-        mgorman@suse.de, aarcange@redhat.com, andi@firstfloor.org,
-        riel@redhat.com
-Subject: Re: [PATCH 4/4] hugetlb: hugepagesnid=: add 1G huge page support
-Message-Id: <20140210153032.ac9325938264a3894dc83f8b@linux-foundation.org>
-In-Reply-To: <1392053268-29239-5-git-send-email-lcapitulino@redhat.com>
-References: <1392053268-29239-1-git-send-email-lcapitulino@redhat.com>
-	<1392053268-29239-5-git-send-email-lcapitulino@redhat.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 10 Feb 2014 18:33:06 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Au4HAHlg+VJ5LGaB/2dsb2JhbABZgwyDPqY/kBWFUIEWF3SCJQEBBScTHCMQCAMOBwMJJQ8FJQMhE4gEyWsXFo5cCweEOASUQoNoik+HUoNBKA
+Date: Tue, 11 Feb 2014 10:32:58 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: viro@zeniv.linux.org.uk, bpm@sgi.com, tytso@mit.edu,
+        adilger.kernel@dilger.ca, jack@suse.cz, mtk.manpages@gmail.com,
+        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Ashish Sangwan <a.sangwan@samsung.com>
+Subject: Re: [PATCH RESEND 2/10] xfs: Add support FALLOC_FL_COLLAPSE_RANGE
+ for fallocate
+Message-ID: <20140210233258.GX13647@dastard>
+References: <1391319851-3169-1-git-send-email-linkinjeon@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391319851-3169-1-git-send-email-linkinjeon@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Feb 2014 12:27:48 -0500 Luiz Capitulino <lcapitulino@redhat.com> wrote:
-
+On Sun, Feb 02, 2014 at 02:44:11PM +0900, Namjae Jeon wrote:
+> From: Namjae Jeon <namjae.jeon@samsung.com>
 > 
-> ...
->
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -2051,6 +2051,29 @@ void __init hugetlb_add_hstate(unsigned order)
->  	parsed_hstate = h;
->  }
->  
-> +static void __init hugetlb_hstate_alloc_pages_nid(struct hstate *h,
-> +						int nid,
-> +						unsigned long nr_pages)
+> Add support FALLOC_FL_COLLAPSE_RANGE for fallocate.
+> 
+> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+> Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
+
+A more detailed description would be nice for the change logs.
+.....
+
+> +	while (nexts++ < num_exts &&
+> +	       *current_ext <  XFS_IFORK_NEXTENTS(ip, whichfork)) {
+> +
+> +		gotp = xfs_iext_get_ext(ifp, *current_ext);
+> +		xfs_bmbt_get_all(gotp, &got);
+> +		startoff = got.br_startoff - offset_shift_fsb;
+> +
+> +		/*
+> +		 * Before shifting extent into hole, make sure that the hole
+> +		 * is large enough to accomodate the shift.
+> +		 */
+> +		if (*current_ext) {
+> +			xfs_bmbt_get_all(xfs_iext_get_ext(ifp,
+> +						*current_ext - 1), &left);
+> +
+> +			if (startoff < left.br_startoff + left.br_blockcount)
+> +				error = XFS_ERROR(EINVAL);
+> +
+> +		} else if (startoff > xfs_bmbt_get_startoff(gotp)) {
+> +			/* Hole is at the start but not large enough */
+> +			error = XFS_ERROR(EINVAL);
+> +		}
+
+This second branch seems wrong to me:
+
+	startoff = got.br_startoff - offset_shift_fsb;
+and
+	got.br_startoff = xfs_bmbt_get_startoff(gotp)).
+
+I'm not 100% sure what you are trying to check in this case -
+perhaps some basic ascii art to describe the two cases is in order
+here:
+
+	left	hole		got
+	+-------+hhhhhhhhhhhhhhh+---------+
+	LS      LE              GS        GE
+		HS              HE
+
+The first is checking that GS - offset_shift_fsb is greater than LE.
+i.e the shift doesn't overrun the hole betwenn LE and GS.
+
+	left	hole		got
+	+-------+hhhhhhhhhhhhhhh+---------+
+	LS      LE              GS        GE
+		HS              HE
+	+-------+hhhhhhh+---------+
+	LS      LE      GS'       GE'
+		HS      HE'
+
+The second I can't visualise from the code or comment....
+
+
+> +
+> +		if (error)
+> +			goto del_cursor;
+> +
+> +		if (cur) {
+> +			error = xfs_bmbt_lookup_eq(cur,
+> +					got.br_startoff,
+> +					got.br_startblock,
+> +					got.br_blockcount,
+> +					&i);
+
+Whitespace comment - a more compact form is the typical XFS
+convention if it will fit in 80 columns:
+
+			error = xfs_bmbt_lookup_eq(cur, got.br_startoff,
+						   got.br_startblock,
+						   got.br_blockcount, &i);
+
+> +			if (error)
+> +				goto del_cursor;
+> +			XFS_WANT_CORRUPTED_GOTO(i == 1, del_cursor);
+> +		}
+> +
+> +		/* Check if we can merge 2 adjacent extents */
+> +		if (*current_ext &&
+> +		    left.br_startoff + left.br_blockcount == startoff &&
+> +		    left.br_startblock + left.br_blockcount ==
+> +				got.br_startblock &&
+> +		    left.br_state == got.br_state &&
+> +		    left.br_blockcount + got.br_blockcount <= MAXEXTLEN) {
+> +			blockcount = left.br_blockcount +
+> +				xfs_bmbt_get_blockcount(gotp);
+
+				got.br_blockcount?
+
+> +			xfs_iext_remove(ip, *current_ext, 1, 0);
+> +			if (cur) {
+> +				error = xfs_btree_delete(cur, &i);
+> +				if (error)
+> +					goto del_cursor;
+> +				XFS_WANT_CORRUPTED_GOTO(i == 1, del_cursor);
+> +			}
+> +			XFS_IFORK_NEXT_SET(ip, whichfork,
+> +				XFS_IFORK_NEXTENTS(ip, whichfork) - 1);
+> +			gotp = xfs_iext_get_ext(ifp, --*current_ext);
+> +			xfs_bmbt_get_all(gotp, &got);
+> +
+> +			/* Make cursor point to the extent we will update */
+> +			if (cur) {
+> +				error = xfs_bmbt_lookup_eq(cur,
+> +				got.br_startoff,
+> +				got.br_startblock,
+> +				got.br_blockcount,
+> +				&i);
+
+whitespace.
+
+> +				if (error)
+> +					goto del_cursor;
+> +				XFS_WANT_CORRUPTED_GOTO(i == 1, del_cursor);
+> +			}
+> +
+> +			xfs_bmbt_set_blockcount(gotp, blockcount);
+> +			got.br_blockcount = blockcount;
+> +			goto bmbt_update;
+> +		}
+> +
+> +		/* We have to update the startoff */
+> +		xfs_bmbt_set_startoff(gotp, startoff);
+> +		got.br_startoff = startoff;
+> +
+> +bmbt_update:
+
+Use an } else {} for this, and the goto can be removed.
+
+....
+>  /*
+> + * xfs_collapse_file_space()
+> + *      This routine frees disk space and shift extent for the given file.
+> + *
+> + * RETURNS:
+> + *      0 on success
+> + *      errno on error
+> + *
+> + */
+> +int
+> +xfs_collapse_file_space(
+> +	struct xfs_inode	*ip,
+> +	xfs_off_t		offset,
+> +	xfs_off_t		len)
 > +{
-> +	struct huge_bootmem_page *m;
-> +	unsigned long i;
-> +	void *addr;
+> +	int			done = 0;
+> +	struct xfs_mount	*mp = ip->i_mount;
+> +	struct xfs_trans	*tp;
+> +	int			error;
+> +	xfs_extnum_t		current_ext = 0;
+> +	struct xfs_bmap_free	free_list;
+> +	xfs_fsblock_t		first_block;
+> +	int			committed;
+> +	xfs_fileoff_t		start_fsb;
+> +	xfs_fileoff_t		shift_fsb;
 > +
-> +	for (i = 0; i < nr_pages; i++) {
-> +		addr = memblock_virt_alloc_nid_nopanic(
-> +				huge_page_size(h), huge_page_size(h),
-> +				0, BOOTMEM_ALLOC_ACCESSIBLE, nid);
-> +		if (!addr)
+> +	ASSERT(xfs_isilocked(ip, XFS_IOLOCK_EXCL));
+> +
+> +	trace_xfs_collapse_file_space(ip);
+> +
+> +	start_fsb = XFS_B_TO_FSB(mp, offset + len);
+> +	shift_fsb = XFS_B_TO_FSB(mp, len);
+> +
+> +	/*
+> +	 * The first thing we do is to free data blocks in the specified range
+> +	 * by calling xfs_free_file_space(). It would also sync dirty data
+> +	 * and invalidate page cache over the region on which collapse range
+> +	 * is working.
+> +	 */
+
+This can probably go in the function header as part of describing
+the overall algorithm the code is using.
+
+> +	error = xfs_free_file_space(ip, offset, len);
+> +	if (error)
+> +		return error;
+> +
+> +	while (!error && !done) {
+> +		tp = xfs_trans_alloc(mp, XFS_TRANS_DIOSTRAT);
+> +		tp->t_flags |= XFS_TRANS_RESERVE;
+> +		/*
+> +		 * We would need to reserve permanent block for transaction.
+> +		 * This will come into picture when after shifting extent into
+> +		 * hole we found that adjacent extents can be merged which
+> +		 * may lead to freeing of a block during record update.
+> +		 */
+> +		error = xfs_trans_reserve(tp, &M_RES(mp)->tr_write,
+> +				XFS_DIOSTRAT_SPACE_RES(mp, 0), 0);
+> +		if (error) {
+> +			ASSERT(error == ENOSPC || XFS_FORCED_SHUTDOWN(mp));
+> +			xfs_trans_cancel(tp, 0);
 > +			break;
-> +		m = addr;
-> +		BUG_ON((unsigned long)virt_to_phys(m) & (huge_page_size(h) - 1));
-
-IS_ALIGNED()?
-
-> +		list_add(&m->list, &huge_boot_pages);
-> +		m->hstate = h;
-> +	}
+> +		}
 > +
-> +	h->max_huge_pages += i;
-> +}
+> +		xfs_ilock(ip, XFS_ILOCK_EXCL);
+> +		error = xfs_trans_reserve_quota(tp, mp, ip->i_udquot,
+> +				ip->i_gdquot, ip->i_pdquot,
+> +				XFS_DIOSTRAT_SPACE_RES(mp, 0), 0,
+> +				XFS_QMOPT_RES_REGBLKS);
+> +		if (error)
+> +			goto out;
 > +
->  void __init hugetlb_add_nrpages_nid(unsigned order, unsigned long nid,
->  				unsigned long nr_pages)
->  {
+> +		xfs_trans_ijoin(tp, ip, 0);
+> +
+> +		xfs_bmap_init(&free_list, &first_block);
+> +
+> +		/*
+> +		 * We are using the write transaction in which max 2 bmbt
+> +		 * updates are allowed
+> +		 */
 
-Please cc Yinghai Lu <yinghai@kernel.org> on these patches - he
-understands memblock well and is a strong reviewer.
+Right, but you've only reserved blocks for a single BMBT split
+through XFS_DIOSTRAT_SPACE_RES(). In cases of allocation, adjacent
+offset allocation is guaranteed to only require one split at most
+and hence it's safe from that perspective. However, I can see how a
+shift can require a split on the first extent move, and a merge on
+the second. e.g:
 
+
+		left		middle		right
+before		maxrecs		minrecs + 1	minrecs
+first shift	maxrecs + 1	minrecs		minrecs
+		split
+		maxrecs / 2	minrecs		minrecs
+second shift
+		maxrecs/2 + 1	minrecs - 1	minrecs
+				merge		merge
+				minrecs*2 - 1	(freed)
+
+So the question is whether the transaction reservations (both log
+space and block allocation requirements) are covered.
+
+> +		error = xfs_bmap_shift_extents(tp, ip, &done, start_fsb,
+> +				shift_fsb, &current_ext,
+> +				&first_block, &free_list, 2);
+
+And that should really have a #define associated with it. ie.:
+
+#define XFS_BMAP_MAX_SHIFT_EXTENTS	2
+
+And document the constraints that lead to that number with the
+definition.
+
+Overall, all I'm really looking for here is sufficient comments to
+document the constraints the code is operating under. Functionally
+the code looks correct (apart from the branch above I can't work
+out). Mostly I just want to make sure that in a couple of
+years time I don't have to work it all out from first principles
+again. ;)
+
+Cheers,
+
+Dave.
+
+-- 
+Dave Chinner
+david@fromorbit.com
