@@ -1,51 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753217AbaBJQQf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 11:16:35 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:45451 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753021AbaBJQQb (ORCPT
+	id S1752885AbaBJQTo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 11:19:44 -0500
+Received: from mail-we0-f181.google.com ([74.125.82.181]:65049 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752157AbaBJQTi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 11:16:31 -0500
-Date: Mon, 10 Feb 2014 08:16:19 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Kent Overstreet <kmo@daterainc.com>,
-        Jens Axboe <axboe@kernel.dk>, Shaohua Li <shli@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/2]percpu_ida: fix a live lock
-Message-ID: <20140210161619.GB8570@infradead.org>
-References: <20131231033827.GA31994@kernel.org>
- <20140104210804.GA24199@kmo-pixel>
- <20140105131300.GB4186@kernel.org>
- <20140106204641.GB9037@kmo>
- <52CB1783.4050205@kernel.dk>
- <20140106214726.GD9037@kmo>
- <20140209155006.GA16149@dhcp-26-207.brq.redhat.com>
- <20140210103211.GA28396@infradead.org>
- <20140210122942.GB320@dhcp-26-207.brq.redhat.com>
- <20140210154917.GC320@dhcp-26-207.brq.redhat.com>
+	Mon, 10 Feb 2014 11:19:38 -0500
+Date: Mon, 10 Feb 2014 17:19:34 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-kernel@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2] nohz: ensure users are aware boot CPU is not
+ NO_HZ_FULL
+Message-ID: <20140210161933.GB21060@localhost.localdomain>
+References: <52F3D583.9070208@windriver.com>
+ <1391711781-7466-1-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140210154917.GC320@dhcp-26-207.brq.redhat.com>
+In-Reply-To: <1391711781-7466-1-git-send-email-paul.gortmaker@windriver.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 04:49:17PM +0100, Alexander Gordeev wrote:
-> > Do we really always need the pool for these classes of devices?
-> > 
-> > Pulling tags from local caches to the pool just to (near to) dry it at
-> > the very next iteration does not seem beneficial. Not to mention caches
-> > vs pool locking complexities.
+On Thu, Feb 06, 2014 at 01:36:21PM -0500, Paul Gortmaker wrote:
+> This bit of information is in the Kconfig help text:
 > 
-> And I meant here we do not scrap per cpu allocations.
+>   Note the boot CPU will still be kept outside the range to
+>   handle the timekeeping duty.
+> 
+> However neither the variable NO_HZ_FULL_ALL, or the prompt
+> convey this important detail, so lets add it to the prompt
+> to make it more explicitly obvious to the average user.
+> 
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-I'm still a bit confused at what you're proposing.  Part of the problem
-might be that I'm not exactly familar with the allocator and am just
-looking it from a consumer perspective.
+Paul, I guess I can keep your ack on this 2nd version?
 
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+
+Applied, thanks a lot!
+
+> ---
+> 
+> v2: use "CPU 0" instead of "boot CPU".
+> 
+>  kernel/time/Kconfig | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/kernel/time/Kconfig b/kernel/time/Kconfig
+> index 3ce6e8c5f3fc..f448513a45ed 100644
+> --- a/kernel/time/Kconfig
+> +++ b/kernel/time/Kconfig
+> @@ -124,7 +124,7 @@ config NO_HZ_FULL
+>  endchoice
+>  
+>  config NO_HZ_FULL_ALL
+> -       bool "Full dynticks system on all CPUs by default"
+> +       bool "Full dynticks system on all CPUs by default (except CPU 0)"
+>         depends on NO_HZ_FULL
+>         help
+>           If the user doesn't pass the nohz_full boot option to
+> -- 
+> 1.8.5.2
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
