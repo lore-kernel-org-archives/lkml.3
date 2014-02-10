@@ -1,152 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752542AbaBJOel (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 09:34:41 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:60073 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752157AbaBJOef (ORCPT
+	id S1752557AbaBJOhp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 09:37:45 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:48997 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751949AbaBJOhn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 09:34:35 -0500
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Anson Huang <b20788@freescale.com>,
-        kernel@pengutronix.de, Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH v2 2/2] regulator: anatop: Add bypass support to digital LDOs
-Date: Mon, 10 Feb 2014 15:34:22 +0100
-Message-Id: <1392042862-384-2-git-send-email-p.zabel@pengutronix.de>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1392042862-384-1-git-send-email-p.zabel@pengutronix.de>
-References: <1392042862-384-1-git-send-email-p.zabel@pengutronix.de>
-X-SA-Exim-Connect-IP: 10.1.0.7
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 10 Feb 2014 09:37:43 -0500
+Date: Mon, 10 Feb 2014 09:37:27 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: David Rientjes <rientjes@google.com>, boris.ostrovsky@oracle.com,
+        david.vrabel@citrix.com, Ben Guthro <benjamin.guthro@citrix.com>,
+        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        xen-devel@lists.xensource.com
+Subject: Re: [BUG?] Interrupts enabled after
+ xen_acpi_processor_resume+0x0/0x34 [xen_acpi_processor]
+Message-ID: <20140210143727.GA15771@phenom.dumpdata.com>
+References: <20140128150848.GA1428@redhat.com>
+ <20140128160404.GA5732@phenom.dumpdata.com>
+ <alpine.DEB.2.02.1401282120180.20167@chino.kir.corp.google.com>
+ <20140129082521.GA1362@redhat.com>
+ <20140131160140.GC23648@phenom.dumpdata.com>
+ <20140203101215.GA1725@redhat.com>
+ <20140203141429.GD3400@phenom.dumpdata.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140203141429.GD3400@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ARM, PU, and SOC LDOs in the i.MX6 PMU can operate
-in bypass mode. This allows to use external switching
-regulators for cpu voltage scaling.
+On Mon, Feb 03, 2014 at 09:14:29AM -0500, Konrad Rzeszutek Wilk wrote:
+> On Mon, Feb 03, 2014 at 11:12:16AM +0100, Stanislaw Gruszka wrote:
+> > On Fri, Jan 31, 2014 at 11:01:40AM -0500, Konrad Rzeszutek Wilk wrote:
+> > > Perhaps by using 'subsys_system_register' and stick it there?
+> > 
+> > This will not call ->resume callback as it is only called for
+> > devices, so additional dummy device is needed, for example:
+> > 
+> > struct device xap_dev = {
+> >         .init_name = "xen-acpi-processor-dev",
+> >         .bus = &xap_bus,
+> > };
+> > ...
+> > subsys_system_register(&xap_bus, NULL);
+> > device_register(&xap_dev);
+> > 
+> > But I'm not sure if that is good solution. It crate some not necessery
+> > sysfs directories and files. Additionaly it can restore CPU C-states
+> > after some other drivers resume, which prehaps require proper C-states.
+> 
+> Yes.
+> > 
+> > Hence maybe adding direct notify from xen core resume will be better
+> > idea (proposed patch below). Plese let me know what you think, I'll
+> > provide solution which you choose to bug reporters for testing.
+> 
+> Let me think about it for a day or so.
 
-Since bypass and power gating modes are not configured
-with their own bits, but via the voltage target bitfield,
-store bypass state to be restored when reenabling the
-regulator.
-
-Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
----
-Changes since v1:
- - Added separate regulator_ops for core regulators that can be bypassed.
----
- drivers/regulator/anatop-regulator.c | 45 +++++++++++++++++++++++++++++++++---
- 1 file changed, 42 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/regulator/anatop-regulator.c b/drivers/regulator/anatop-regulator.c
-index 0c6981b..d60ffad 100644
---- a/drivers/regulator/anatop-regulator.c
-+++ b/drivers/regulator/anatop-regulator.c
-@@ -35,6 +35,7 @@
- #define LDO_RAMP_UP_FREQ_IN_MHZ         24 /* cycle based on 24M OSC */
- 
- #define LDO_POWER_GATE			0x00
-+#define LDO_FET_FULL_ON			0x1f
- 
- struct anatop_regulator {
- 	const char *name;
-@@ -50,6 +51,7 @@ struct anatop_regulator {
- 	int max_voltage;
- 	struct regulator_desc rdesc;
- 	struct regulator_init_data *initdata;
-+	bool bypass;
- 	int sel;
- };
- 
-@@ -103,8 +105,10 @@ static int anatop_regmap_get_voltage_sel(struct regulator_dev *reg)
- static int anatop_regmap_enable(struct regulator_dev *reg)
- {
- 	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
-+	int sel;
- 
--	return regulator_set_voltage_sel_regmap(reg, anatop_reg->sel);
-+	sel = anatop_reg->bypass ? LDO_FET_FULL_ON : anatop_reg->sel;
-+	return regulator_set_voltage_sel_regmap(reg, sel);
- }
- 
- static int anatop_regmap_disable(struct regulator_dev *reg)
-@@ -123,7 +127,7 @@ static int anatop_regmap_core_set_voltage_sel(struct regulator_dev *reg,
- 	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
- 	int ret;
- 
--	if (!anatop_regmap_is_enabled(reg)) {
-+	if (anatop_reg->bypass || !anatop_regmap_is_enabled(reg)) {
- 		anatop_reg->sel = selector;
- 		return 0;
- 	}
-@@ -138,12 +142,41 @@ static int anatop_regmap_core_get_voltage_sel(struct regulator_dev *reg)
- {
- 	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
- 
--	if (!anatop_regmap_is_enabled(reg))
-+	if (anatop_reg->bypass || !anatop_regmap_is_enabled(reg))
- 		return anatop_reg->sel;
- 
- 	return regulator_get_voltage_sel_regmap(reg);
- }
- 
-+static int anatop_regmap_get_bypass(struct regulator_dev *reg, bool *enable)
-+{
-+	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
-+	int sel;
-+
-+	sel = regulator_get_voltage_sel_regmap(reg);
-+	if (sel == LDO_FET_FULL_ON)
-+		WARN_ON(!anatop_reg->bypass);
-+	else if (sel != LDO_POWER_GATE)
-+		WARN_ON(anatop_reg->bypass);
-+
-+	*enable = anatop_reg->bypass;
-+	return 0;
-+}
-+
-+static int anatop_regmap_set_bypass(struct regulator_dev *reg, bool enable)
-+{
-+	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
-+	int sel;
-+
-+	if (enable == anatop_reg->bypass)
-+		return 0;
-+
-+	sel = enable ? LDO_FET_FULL_ON : anatop_reg->sel;
-+	anatop_reg->bypass = enable;
-+
-+	return regulator_set_voltage_sel_regmap(reg, sel);
-+}
-+
- static struct regulator_ops anatop_rops = {
- 	.set_voltage_sel = anatop_regmap_set_voltage_sel,
- 	.get_voltage_sel = anatop_regmap_get_voltage_sel,
-@@ -160,6 +193,8 @@ static struct regulator_ops anatop_core_rops = {
- 	.get_voltage_sel = anatop_regmap_core_get_voltage_sel,
- 	.list_voltage = regulator_list_voltage_linear,
- 	.map_voltage = regulator_map_voltage_linear,
-+	.get_bypass = anatop_regmap_get_bypass,
-+	.set_bypass = anatop_regmap_set_bypass,
- };
- 
- static int anatop_regulator_probe(struct platform_device *pdev)
-@@ -265,6 +300,10 @@ static int anatop_regulator_probe(struct platform_device *pdev)
- 		}
- 
- 		sreg->sel = (val & rdesc->vsel_mask) >> sreg->vol_bit_shift;
-+		if (sreg->sel == LDO_FET_FULL_ON) {
-+			sreg->sel = 0;
-+			sreg->bypass = true;
-+		}
- 	} else {
- 		rdesc->ops = &anatop_rops;
- 	}
--- 
-1.8.5.3
-
+Sorry for the delay. I think this is fine.
+> 
+> Thanks!
+> > 
+> > Thanks
+> > Stanislaw
+> > 
+> > diff --git a/drivers/xen/manage.c b/drivers/xen/manage.c
+> > index 624e8dc..96e4173 100644
+> > --- a/drivers/xen/manage.c
+> > +++ b/drivers/xen/manage.c
+> > @@ -13,6 +13,7 @@
+> >  #include <linux/freezer.h>
+> >  #include <linux/syscore_ops.h>
+> >  #include <linux/export.h>
+> > +#include <linux/notifier.h>
+> >  
+> >  #include <xen/xen.h>
+> >  #include <xen/xenbus.h>
+> > @@ -46,6 +47,20 @@ struct suspend_info {
+> >  	void (*post)(int cancelled);
+> >  };
+> >  
+> > +static RAW_NOTIFIER_HEAD(xen_resume_notifier);
+> > +
+> > +void xen_resume_notifier_register(struct notifier_block *nb)
+> > +{
+> > +	raw_notifier_chain_register(&xen_resume_notifier, nb);
+> > +}
+> > +EXPORT_SYMBOL_GPL(xen_resume_notifier_register);
+> > +
+> > +void xen_resume_notifier_unregister(struct notifier_block *nb)
+> > +{
+> > +	raw_notifier_chain_unregister(&xen_resume_notifier, nb);
+> > +}
+> > +EXPORT_SYMBOL_GPL(xen_resume_notifier_unregister);
+> > +
+> >  #ifdef CONFIG_HIBERNATE_CALLBACKS
+> >  static void xen_hvm_post_suspend(int cancelled)
+> >  {
+> > @@ -152,6 +167,8 @@ static void do_suspend(void)
+> >  
+> >  	err = stop_machine(xen_suspend, &si, cpumask_of(0));
+> >  
+> > +	raw_notifier_call_chain(&xen_resume_notifier, 0, NULL);
+> > +
+> >  	dpm_resume_start(si.cancelled ? PMSG_THAW : PMSG_RESTORE);
+> >  
+> >  	if (err) {
+> > diff --git a/drivers/xen/xen-acpi-processor.c b/drivers/xen/xen-acpi-processor.c
+> > index 7231859..82358d1 100644
+> > --- a/drivers/xen/xen-acpi-processor.c
+> > +++ b/drivers/xen/xen-acpi-processor.c
+> > @@ -27,10 +27,10 @@
+> >  #include <linux/init.h>
+> >  #include <linux/module.h>
+> >  #include <linux/types.h>
+> > -#include <linux/syscore_ops.h>
+> >  #include <linux/acpi.h>
+> >  #include <acpi/processor.h>
+> >  #include <xen/xen.h>
+> > +#include <xen/xen-ops.h>
+> >  #include <xen/interface/platform.h>
+> >  #include <asm/xen/hypercall.h>
+> >  
+> > @@ -495,14 +495,15 @@ static int xen_upload_processor_pm_data(void)
+> >  	return rc;
+> >  }
+> >  
+> > -static void xen_acpi_processor_resume(void)
+> > +static int xen_acpi_processor_resume(struct notifier_block *nb,
+> > +				     unsigned long action, void *data)
+> >  {
+> >  	bitmap_zero(acpi_ids_done, nr_acpi_bits);
+> > -	xen_upload_processor_pm_data();
+> > +	return xen_upload_processor_pm_data();
+> >  }
+> >  
+> > -static struct syscore_ops xap_syscore_ops = {
+> > -	.resume	= xen_acpi_processor_resume,
+> > +struct notifier_block xen_acpi_processor_resume_nb = {
+> > +	.notifier_call = xen_acpi_processor_resume,
+> >  };
+> >  
+> >  static int __init xen_acpi_processor_init(void)
+> > @@ -555,7 +556,7 @@ static int __init xen_acpi_processor_init(void)
+> >  	if (rc)
+> >  		goto err_unregister;
+> >  
+> > -	register_syscore_ops(&xap_syscore_ops);
+> > +	xen_resume_notifier_register(&xen_acpi_processor_resume_nb);
+> >  
+> >  	return 0;
+> >  err_unregister:
+> > @@ -574,7 +575,7 @@ static void __exit xen_acpi_processor_exit(void)
+> >  {
+> >  	int i;
+> >  
+> > -	unregister_syscore_ops(&xap_syscore_ops);
+> > +	xen_resume_notifier_unregister(&xen_acpi_processor_resume_nb);
+> >  	kfree(acpi_ids_done);
+> >  	kfree(acpi_id_present);
+> >  	kfree(acpi_id_cst_present);
+> > diff --git a/include/xen/xen-ops.h b/include/xen/xen-ops.h
+> > index fb2ea8f..6412358 100644
+> > --- a/include/xen/xen-ops.h
+> > +++ b/include/xen/xen-ops.h
+> > @@ -16,6 +16,9 @@ void xen_mm_unpin_all(void);
+> >  void xen_timer_resume(void);
+> >  void xen_arch_resume(void);
+> >  
+> > +void xen_resume_notifier_register(struct notifier_block *nb);
+> > +void xen_resume_notifier_unregister(struct notifier_block *nb);
+> > +
+> >  int xen_setup_shutdown_event(void);
+> >  
+> >  extern unsigned long *xen_contiguous_bitmap;
