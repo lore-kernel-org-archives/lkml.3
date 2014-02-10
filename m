@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755280AbaBJUIE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 15:08:04 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34820 "EHLO
+	id S1754690AbaBJUI2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 15:08:28 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34816 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753890AbaBJTpS (ORCPT
+	with ESMTP id S1753868AbaBJTpO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:45:18 -0500
+	Mon, 10 Feb 2014 14:45:14 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dave Airlie <airlied@redhat.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 098/124] drm: ast,cirrus,mgag200: use drm_can_sleep
-Date: Mon, 10 Feb 2014 11:40:38 -0800
-Message-Id: <1392061264-28124-99-git-send-email-kamal@canonical.com>
+Cc: Max Filippov <jcmvbkbc@gmail.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 062/124] xtensa: xtfpga: fix definitions of platform devices
+Date: Mon, 10 Feb 2014 11:40:02 -0800
+Message-Id: <1392061264-28124-63-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
 References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
@@ -26,62 +26,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Airlie <airlied@redhat.com>
+From: Max Filippov <jcmvbkbc@gmail.com>
 
-commit f4b4718b61d1d5a7442a4fd6863ea80c3a10e508 upstream.
+commit a558d99263936b8a67d4eff8918745a77bfd8c31 upstream.
 
-these 3 were checking in_interrupt but we have situations where
-calling vunmap under this could cause a BUG to be hit in
-smp_call_function_many. Use the drm_can_sleep macro instead,
-which should stop this path from been taken in this case.
+Remove __initdata attribute, as the devices may be used after init
+sections are freed.
 
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/ast/ast_fb.c          | 2 +-
- drivers/gpu/drm/cirrus/cirrus_fbdev.c | 2 +-
- drivers/gpu/drm/mgag200/mgag200_fb.c  | 2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ arch/xtensa/platforms/xtfpga/setup.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/gpu/drm/ast/ast_fb.c b/drivers/gpu/drm/ast/ast_fb.c
-index 66ecc16..d56d2bf 100644
---- a/drivers/gpu/drm/ast/ast_fb.c
-+++ b/drivers/gpu/drm/ast/ast_fb.c
-@@ -64,7 +64,7 @@ static void ast_dirty_update(struct ast_fbdev *afbdev,
- 	 * then the BO is being moved and we should
- 	 * store up the damage until later.
- 	 */
--	if (!in_interrupt())
-+	if (!drm_can_sleep())
- 		ret = ast_bo_reserve(bo, true);
- 	if (ret) {
- 		if (ret != -EBUSY)
-diff --git a/drivers/gpu/drm/cirrus/cirrus_fbdev.c b/drivers/gpu/drm/cirrus/cirrus_fbdev.c
-index 4202ff5..68460cb 100644
---- a/drivers/gpu/drm/cirrus/cirrus_fbdev.c
-+++ b/drivers/gpu/drm/cirrus/cirrus_fbdev.c
-@@ -38,7 +38,7 @@ static void cirrus_dirty_update(struct cirrus_fbdev *afbdev,
- 	 * then the BO is being moved and we should
- 	 * store up the damage until later.
- 	 */
--	if (!in_interrupt())
-+	if (!drm_can_sleep())
- 		ret = cirrus_bo_reserve(bo, true);
- 	if (ret) {
- 		if (ret != -EBUSY)
-diff --git a/drivers/gpu/drm/mgag200/mgag200_fb.c b/drivers/gpu/drm/mgag200/mgag200_fb.c
-index 0cbd607..675ccf5 100644
---- a/drivers/gpu/drm/mgag200/mgag200_fb.c
-+++ b/drivers/gpu/drm/mgag200/mgag200_fb.c
-@@ -40,7 +40,7 @@ static void mga_dirty_update(struct mga_fbdev *mfbdev,
- 	 * then the BO is being moved and we should
- 	 * store up the damage until later.
- 	 */
--	if (!in_interrupt())
-+	if (!drm_can_sleep())
- 		ret = mgag200_bo_reserve(bo, true);
- 	if (ret) {
- 		if (ret != -EBUSY)
+diff --git a/arch/xtensa/platforms/xtfpga/setup.c b/arch/xtensa/platforms/xtfpga/setup.c
+index 4b9951a..6182f28 100644
+--- a/arch/xtensa/platforms/xtfpga/setup.c
++++ b/arch/xtensa/platforms/xtfpga/setup.c
+@@ -193,7 +193,7 @@ void platform_calibrate_ccount(void)
+  *  Ethernet -- OpenCores Ethernet MAC (ethoc driver)
+  */
+ 
+-static struct resource ethoc_res[] __initdata = {
++static struct resource ethoc_res[] = {
+ 	[0] = { /* register space */
+ 		.start = OETH_REGS_PADDR,
+ 		.end   = OETH_REGS_PADDR + OETH_REGS_SIZE - 1,
+@@ -211,7 +211,7 @@ static struct resource ethoc_res[] __initdata = {
+ 	},
+ };
+ 
+-static struct ethoc_platform_data ethoc_pdata __initdata = {
++static struct ethoc_platform_data ethoc_pdata = {
+ 	/*
+ 	 * The MAC address for these boards is 00:50:c2:13:6f:xx.
+ 	 * The last byte (here as zero) is read from the DIP switches on the
+@@ -221,7 +221,7 @@ static struct ethoc_platform_data ethoc_pdata __initdata = {
+ 	.phy_id = -1,
+ };
+ 
+-static struct platform_device ethoc_device __initdata = {
++static struct platform_device ethoc_device = {
+ 	.name = "ethoc",
+ 	.id = -1,
+ 	.num_resources = ARRAY_SIZE(ethoc_res),
+@@ -235,13 +235,13 @@ static struct platform_device ethoc_device __initdata = {
+  *  UART
+  */
+ 
+-static struct resource serial_resource __initdata = {
++static struct resource serial_resource = {
+ 	.start	= DUART16552_PADDR,
+ 	.end	= DUART16552_PADDR + 0x1f,
+ 	.flags	= IORESOURCE_MEM,
+ };
+ 
+-static struct plat_serial8250_port serial_platform_data[] __initdata = {
++static struct plat_serial8250_port serial_platform_data[] = {
+ 	[0] = {
+ 		.mapbase	= DUART16552_PADDR,
+ 		.irq		= DUART16552_INTNUM,
+@@ -254,7 +254,7 @@ static struct plat_serial8250_port serial_platform_data[] __initdata = {
+ 	{ },
+ };
+ 
+-static struct platform_device xtavnet_uart __initdata = {
++static struct platform_device xtavnet_uart = {
+ 	.name		= "serial8250",
+ 	.id		= PLAT8250_DEV_PLATFORM,
+ 	.dev		= {
 -- 
 1.8.3.2
 
