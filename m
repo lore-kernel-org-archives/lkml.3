@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752556AbaBJPZH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 10:25:07 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:59934 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751791AbaBJPZE (ORCPT
+	id S1752554AbaBJP16 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 10:27:58 -0500
+Received: from mail-la0-f43.google.com ([209.85.215.43]:35555 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752158AbaBJP1v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 10:25:04 -0500
-Date: Mon, 10 Feb 2014 15:24:52 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Dave Martin <Dave.Martin@arm.com>
-Cc: Fabrice Gasnier <fabrice.gasnier@st.com>, jonathan.austin@arm.com,
-        nico@linaro.org, marc.zyngier@arm.com, catalin.marinas@arm.com,
-        will.deacon@arm.com, linux-kernel@vger.kernel.org, vgupta@synopsys.com,
-        ben.dooks@codethink.co.uk, u.kleine-koenig@pengutronix.de,
-        sboyd@codeaurora.org, linux-arm-kernel@lists.infradead.org,
-        maxime.coquelin@st.com
-Subject: Re: [RFC PATCH] ARM: Add imprecise abort enable/disable macro
-Message-ID: <20140210152452.GA26684@n2100.arm.linux.org.uk>
-References: <1391789955-26927-1-git-send-email-fabrice.gasnier@st.com> <1391789955-26927-2-git-send-email-fabrice.gasnier@st.com> <20140210141634.GA2794@e103592.cambridge.arm.com> <52F8E5E2.30805@st.com> <20140210151247.GD2794@e103592.cambridge.arm.com>
+	Mon, 10 Feb 2014 10:27:51 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140210151247.GD2794@e103592.cambridge.arm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1392044614-6837-1-git-send-email-jjhiblot@traphandler.com>
+References: <1392044614-6837-1-git-send-email-jjhiblot@traphandler.com>
+From: Richard Genoud <richard.genoud@gmail.com>
+Date: Mon, 10 Feb 2014 16:27:30 +0100
+Message-ID: <CACQ1gAhzcg6udqVKg0ZcNmYKghS-HWD4YxZVwXcMg70x8JNvfQ@mail.gmail.com>
+Subject: Re: [PATCH] gpio: take in account the active low flag when
+ configuring the gpio as an ouput
+To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, gnurou@gmail.com,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 03:12:47PM +0000, Dave Martin wrote:
-> Firstly, blindly adding 4 to PC is obviouly not right, partly because we
-> might be running an unrelated thread by the time the abort fires, and
-> also because the affected instruction might not be 4 bytes in size in a
-> Thumb kernel.
+2014-02-10 16:03 GMT+01:00 Jean-Jacques Hiblot <jjhiblot@traphandler.com>:
+> The initial value of the gpio is passed to gpiod_direction_output. Currently
+> this value is the raw value of the GPIO line, but it should be the logical
+> value.
+>
+> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+> ---
+>  drivers/gpio/gpiolib.c | 3 +++
+>  1 file changed, 3 insertions(+)
+>
+> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+> index 4e10b10..111a1f1 100644
+> --- a/drivers/gpio/gpiolib.c
+> +++ b/drivers/gpio/gpiolib.c
+> @@ -1751,6 +1751,9 @@ int gpiod_direction_output(struct gpio_desc *desc, int value)
+>                 return -EINVAL;
+>         }
+>
+> +       if (test_bit(FLAG_ACTIVE_LOW, &desc->flags))
+> +               value = !value;
+> +
+>         /* GPIOs used for IRQs shall not be set as output */
+>         if (test_bit(FLAG_USED_AS_IRQ, &desc->flags)) {
+>                 gpiod_err(desc,
+> --
+> 1.8.5.3
+>
+Tested-by: Richard Genoud <richard.genoud@gmail.com>
 
-Exactly.  We ended up on some platforms having special accessors for PCI
-where we included a number of 'mov r0, r0' instructions after the accessor
-so we could properly cope with them - but this required knowledge that
-we were going to only receive an imprecise abort from these accessors
-and only for a few cycles after the instruction.
-
-However, that's not true with modern architectures.  The point they're
-received will _not_ be the load/store which resulted in the abort, and
-in the case of a write, they could be many hundreds of cycles later,
-especially if the write has been buffered.
-
-So adding four to the PC is definitely a very /bad/ thing to do.
-
--- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+I was just missing that for my gpio modem lines !
+Thanks !
