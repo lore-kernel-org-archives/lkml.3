@@ -1,100 +1,376 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753032AbaBJTR4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 14:17:56 -0500
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:36810 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752740AbaBJTRy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:17:54 -0500
-X-IronPort-AV: E=Sophos;i="4.95,819,1384329600"; 
-   d="scan'208";a="13748264"
-From: Arend van Spriel <arend@broadcom.com>
-To: Rob Herring <robh+dt@kernel.org>
-CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "Arend van Spriel" <arend@broadcom.com>, Chen-Yu Tsai <wens@csie.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>
-Subject: [RFC] dt: bindings: add bindings for Broadcom bcm43xx sdio devices
-Date: Mon, 10 Feb 2014 20:17:48 +0100
-Message-ID: <1392059868-8782-1-git-send-email-arend@broadcom.com>
-X-Mailer: git-send-email 1.7.10.4
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1753208AbaBJTTD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 14:19:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:16244 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752502AbaBJTS7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 14:18:59 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: acme@ghostprotocols.net
+Cc: LKML <linux-kernel@vger.kernel.org>, jolsa@redhat.com, jmario@redhat.com,
+        fowles@inreach.com, eranian@google.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Richard Fowles <rfowles@redhat.com>
+Subject: [PATCH 01/21] perf c2c: Shared data analyser
+Date: Mon, 10 Feb 2014 14:18:05 -0500
+Message-Id: <1392059886-30812-1-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1392053356-23024-1-git-send-email-dzickus@redhat.com>
+References: <1392053356-23024-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Broadcom bcm43xx sdio devices are fullmac devices that may be
-integrated in ARM platforms. Currently, the brcmfmac driver for
-these devices support use of platform data. This patch specifies
-the bindings that allow this platform data to be expressed in the
-devicetree.
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Cc: Chen-Yu Tsai <wens@csie.org>
-Cc: Tomasz Figa <tomasz.figa@gmail.com>
-Reviewed-by: Hante Meuleman <meuleman@broadcom.com>
-Reviewed-by: Pieter-Paul Giesberts <pieterpg@broadcom.com>
-Signed-off-by: Arend van Spriel <arend@broadcom.com>
+This is the start of a new perf tool that will collect information about
+memory accesses and analyse it to find things like hot cachelines, etc.
+
+This is basically trying to get a prototype written by Richard Fowles
+written using the tools/perf coding style and libraries.
+
+Start it from 'perf sched', this patch starts the process by adding the
+'record' subcommand to collect the needed mem loads and stores samples.
+
+It also have the basic 'report' skeleton, resolving the sample address
+and hooking the events found in a perf.data file with methods to handle
+them, right now just printing the resolved perf_sample data structure
+after each event name.
+
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Joe Mario <jmario@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Richard Fowles <rfowles@redhat.com>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-xfq0d75x7ndoejy7ozjlpy0i@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
-This devicetree binding proposal is intended for platforms with
-Broadcom wireless device in MMC sdio slot. These devices may
-have their own interrupt and power line. Also the SDIO drive
-strength is often hardware dependent and expressed in this
-binding.
+ tools/perf/Documentation/perf-c2c.c |  22 +++++
+ tools/perf/Makefile.perf            |   1 +
+ tools/perf/builtin-c2c.c            | 174 ++++++++++++++++++++++++++++++++++++
+ tools/perf/builtin.h                |   1 +
+ tools/perf/perf.c                   |   1 +
+ tools/perf/util/evlist.c            |  37 ++++++++
+ tools/perf/util/evlist.h            |   7 ++
+ 7 files changed, 243 insertions(+)
+ create mode 100644 tools/perf/Documentation/perf-c2c.c
+ create mode 100644 tools/perf/builtin-c2c.c
 
-Not sure if this should go in staging or not. Feel free to
-comment on this proposal.
-
-Regards,
-Arend
----
- .../staging/net/wireless/brcm,bcm43xx-fmac.txt     |   37 ++++++++++++++++++++
- 1 file changed, 37 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/staging/net/wireless/brcm,bcm43xx-fmac.txt
-
-diff --git a/Documentation/devicetree/bindings/staging/net/wireless/brcm,bcm43xx-fmac.txt b/Documentation/devicetree/bindings/staging/net/wireless/brcm,bcm43xx-fmac.txt
+diff --git a/tools/perf/Documentation/perf-c2c.c b/tools/perf/Documentation/perf-c2c.c
 new file mode 100644
-index 0000000..535f343
+index 0000000..4d52798
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/staging/net/wireless/brcm,bcm43xx-fmac.txt
-@@ -0,0 +1,37 @@
-+Broadcom BCM43xx Fullmac wireless SDIO devices
++++ b/tools/perf/Documentation/perf-c2c.c
+@@ -0,0 +1,22 @@
++perf-c2c(1)
++===========
 +
-+This node provides properties for controlling the Broadcom wireless device. The
-+node is expected to be specified as a child node to the MMC controller that
-+connects the device to the system.
++NAME
++----
++perf-c2c - Shared Data C2C/HITM Analyzer.
 +
-+Required properties:
++SYNOPSIS
++--------
++[verse]
++'perf c2c' record
 +
-+ - compatible : Should be "brcm,bcm43xx-fmac".
-+ - wlan-supply : phandle for fixed regulator used to control power for
-+	the device/module.
++DESCRIPTION
++-----------
++These are the variants of perf c2c:
 +
-+Optional properties:
-+ - drive-strength : drive strength used for SDIO pins on device (default = 6mA).
-+ - interrupt-parent : the phandle for the interrupt controller to which the
-+	device interrupt (HOST_WAKE) is connected.
-+ - interrupts : interrupt specifier encoded according the interrupt controller
-+	specified by interrupt-parent property.
++  'perf c2c record <command>' to record the memory accesses of an arbitrary
++  workload.
 +
-+Example:
++SEE ALSO
++--------
++linkperf:perf-record[1], linkperf:perf-mem[1]
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 7257e7e..3b21f5b 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -421,6 +421,7 @@ endif
+ BUILTIN_OBJS += $(OUTPUT)bench/mem-memcpy.o
+ BUILTIN_OBJS += $(OUTPUT)bench/mem-memset.o
+ 
++BUILTIN_OBJS += $(OUTPUT)builtin-c2c.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-diff.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-evlist.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-help.o
+diff --git a/tools/perf/builtin-c2c.c b/tools/perf/builtin-c2c.c
+new file mode 100644
+index 0000000..897eadb
+--- /dev/null
++++ b/tools/perf/builtin-c2c.c
+@@ -0,0 +1,174 @@
++#include "builtin.h"
++#include "cache.h"
 +
-+mmc3: mmc@01c20000 {
-+	pinctrl-0 = <&mmc3_pins>;
-+	pinctrl-1 = <&wifi_host_wake>;
-+	vmmc-supply = <&mmc3_supply>;
-+	bus-width = <4>;
++#include "util/evlist.h"
++#include "util/parse-options.h"
++#include "util/session.h"
++#include "util/tool.h"
 +
-+	bcm4335: bcm4335@0 {
-+		compatible = "brcm,bcm43xx-fmac";
-+		wlan-supply = <&wlan-reg>;
-+		drive-strength = <4>;
-+		interrupt-parent = <&gpx2>;
-+		interrupts = <5 IRQ_TYPE_LEVEL_HIGH>;
-+		interrupt-names = "HOST_WAKE";
-+	};
++#include <linux/compiler.h>
++#include <linux/kernel.h>
++
++struct perf_c2c {
++	struct perf_tool tool;
 +};
 +
++static int perf_sample__fprintf(struct perf_sample *sample,
++				struct perf_evsel *evsel,
++				struct addr_location *al, FILE *fp)
++{
++	return fprintf(fp, "%25.25s: %5d %5d 0x%016" PRIx64 " 0x016%" PRIx64 " %5" PRIu64 " 0x%06" PRIx64 " %s:%s\n",
++		       perf_evsel__name(evsel),
++		       sample->pid, sample->tid, sample->ip, sample->addr,
++		       sample->weight, sample->data_src,
++		       al->map ? (al->map->dso ? al->map->dso->long_name : "???") : "???",
++		       al->sym ? al->sym->name : "???");
++}
++
++static int perf_c2c__process_load(struct perf_evsel *evsel,
++				  struct perf_sample *sample,
++				  struct addr_location *al)
++{
++	perf_sample__fprintf(sample, evsel, al, stdout);
++	return 0;
++}
++
++static int perf_c2c__process_store(struct perf_evsel *evsel,
++				   struct perf_sample *sample,
++				   struct addr_location *al)
++{
++	perf_sample__fprintf(sample, evsel, al, stdout);
++	return 0;
++}
++
++static const struct perf_evsel_str_handler handlers[] = {
++	{ "cpu/mem-loads,ldlat=30/pp", perf_c2c__process_load, },
++	{ "cpu/mem-stores/pp",	       perf_c2c__process_store, },
++};
++
++typedef int (*sample_handler)(struct perf_evsel *evsel,
++			      struct perf_sample *sample,
++			      struct addr_location *al);
++
++static int perf_c2c__process_sample(struct perf_tool *tool __maybe_unused,
++				    union perf_event *event,
++				    struct perf_sample *sample,
++				    struct perf_evsel *evsel,
++				    struct machine *machine)
++{
++	struct addr_location al;
++	int err = 0;
++
++	if (perf_event__preprocess_sample(event, machine, &al, sample) < 0) {
++		pr_err("problem processing %d event, skipping it.\n",
++		       event->header.type);
++		return -1;
++	}
++
++	if (evsel->handler.func != NULL) {
++		sample_handler f = evsel->handler.func;
++		err = f(evsel, sample, &al);
++	}
++
++	return err;
++}
++
++static int perf_c2c__read_events(struct perf_c2c *c2c)
++{
++	int err = -1;
++	struct perf_session *session;
++
++	session = perf_session__new(input_name, O_RDONLY, 0, false, &c2c->tool);
++	if (session == NULL) {
++		pr_debug("No memory for session\n");
++		goto out;
++	}
++
++	if (perf_evlist__set_handlers(session->evlist, handlers))
++		goto out_delete;
++
++	err = perf_session__process_events(session, &c2c->tool);
++	if (err)
++		pr_err("Failed to process events, error %d", err);
++
++out_delete:
++	perf_session__delete(session);
++out:
++	return err;
++}
++
++static int perf_c2c__report(struct perf_c2c *c2c)
++{
++	setup_pager();
++	return perf_c2c__read_events(c2c);
++}
++
++static int perf_c2c__record(int argc, const char **argv)
++{
++	unsigned int rec_argc, i, j;
++	const char **rec_argv;
++	const char * const record_args[] = {
++		"record",
++		/* "--phys-addr", */
++		"-W",
++		"-d",
++		"-a",
++	};
++
++	rec_argc = ARRAY_SIZE(record_args) + 2 * ARRAY_SIZE(handlers) + argc - 1;
++	rec_argv = calloc(rec_argc + 1, sizeof(char *));
++
++	if (rec_argv == NULL)
++		return -ENOMEM;
++
++	for (i = 0; i < ARRAY_SIZE(record_args); i++)
++		rec_argv[i] = strdup(record_args[i]);
++
++	for (j = 0; j < ARRAY_SIZE(handlers); j++) {
++		rec_argv[i++] = strdup("-e");
++		rec_argv[i++] = strdup(handlers[j].name);
++	}
++
++	for (j = 1; j < (unsigned int)argc; j++, i++)
++		rec_argv[i] = argv[j];
++
++	BUG_ON(i != rec_argc);
++
++	return cmd_record(i, rec_argv, NULL);
++}
++
++int cmd_c2c(int argc, const char **argv, const char *prefix __maybe_unused)
++{
++	struct perf_c2c c2c = {
++		.tool = {
++			.sample		 = perf_c2c__process_sample,
++			.comm		 = perf_event__process_comm,
++			.exit		 = perf_event__process_exit,
++			.fork		 = perf_event__process_fork,
++			.lost		 = perf_event__process_lost,
++			.ordered_samples = true,
++		},
++	};
++	const struct option c2c_options[] = {
++	OPT_END()
++	};
++	const char * const c2c_usage[] = {
++		"perf c2c {record|report}",
++		NULL
++	};
++
++	argc = parse_options(argc, argv, c2c_options, c2c_usage,
++			     PARSE_OPT_STOP_AT_NON_OPTION);
++	if (!argc)
++		usage_with_options(c2c_usage, c2c_options);
++
++	if (!strncmp(argv[0], "rec", 3)) {
++		return perf_c2c__record(argc, argv);
++	} else if (!strncmp(argv[0], "rep", 3)) {
++		return perf_c2c__report(&c2c);
++	} else {
++		usage_with_options(c2c_usage, c2c_options);
++	}
++
++	return 0;
++}
+diff --git a/tools/perf/builtin.h b/tools/perf/builtin.h
+index b210d62..2d0b1b5 100644
+--- a/tools/perf/builtin.h
++++ b/tools/perf/builtin.h
+@@ -17,6 +17,7 @@ extern int cmd_annotate(int argc, const char **argv, const char *prefix);
+ extern int cmd_bench(int argc, const char **argv, const char *prefix);
+ extern int cmd_buildid_cache(int argc, const char **argv, const char *prefix);
+ extern int cmd_buildid_list(int argc, const char **argv, const char *prefix);
++extern int cmd_c2c(int argc, const char **argv, const char *prefix);
+ extern int cmd_diff(int argc, const char **argv, const char *prefix);
+ extern int cmd_evlist(int argc, const char **argv, const char *prefix);
+ extern int cmd_help(int argc, const char **argv, const char *prefix);
+diff --git a/tools/perf/perf.c b/tools/perf/perf.c
+index 431798a..c7012a3 100644
+--- a/tools/perf/perf.c
++++ b/tools/perf/perf.c
+@@ -35,6 +35,7 @@ struct cmd_struct {
+ static struct cmd_struct commands[] = {
+ 	{ "buildid-cache", cmd_buildid_cache, 0 },
+ 	{ "buildid-list", cmd_buildid_list, 0 },
++	{ "c2c",	cmd_c2c,	0 },
+ 	{ "diff",	cmd_diff,	0 },
+ 	{ "evlist",	cmd_evlist,	0 },
+ 	{ "help",	cmd_help,	0 },
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 59ef280..faf29b0 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -1243,3 +1243,40 @@ void perf_evlist__to_front(struct perf_evlist *evlist,
+ 
+ 	list_splice(&move, &evlist->entries);
+ }
++
++static struct perf_evsel *perf_evlist__find_by_name(struct perf_evlist *evlist,
++						    const char *name)
++{
++	struct perf_evsel *evsel;
++
++	list_for_each_entry(evsel, &evlist->entries, node) {
++		if (strcmp(name, perf_evsel__name(evsel)) == 0)
++			return evsel;
++	}
++
++	return NULL;
++}
++
++int __perf_evlist__set_handlers(struct perf_evlist *evlist,
++				const struct perf_evsel_str_handler *assocs,
++				size_t nr_assocs)
++{
++	struct perf_evsel *evsel;
++	size_t i;
++	int err = -EEXIST;
++
++	for (i = 0; i < nr_assocs; i++) {
++		evsel = perf_evlist__find_by_name(evlist, assocs[i].name);
++		if (evsel == NULL)
++			continue;
++
++		if (evsel->handler.func != NULL)
++			goto out;
++
++		evsel->handler.func = assocs[i].handler;
++	}
++
++	err = 0;
++out:
++	return err;
++}
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index f5173cd..76f77c8 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -52,6 +52,13 @@ struct perf_evsel_str_handler {
+ 	void	   *handler;
+ };
+ 
++int __perf_evlist__set_handlers(struct perf_evlist *evlist,
++				const struct perf_evsel_str_handler *assocs,
++				size_t nr_assocs);
++
++#define perf_evlist__set_handlers(evlist, array) \
++	__perf_evlist__set_handlers(evlist, array, ARRAY_SIZE(array))
++
+ struct perf_evlist *perf_evlist__new(void);
+ struct perf_evlist *perf_evlist__new_default(void);
+ void perf_evlist__init(struct perf_evlist *evlist, struct cpu_map *cpus,
 -- 
-1.7.10.4
+1.7.11.7
 
