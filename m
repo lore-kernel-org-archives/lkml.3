@@ -1,75 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472AbaBJVCn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 16:02:43 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:36176 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752575AbaBJVCj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 16:02:39 -0500
-Date: Mon, 10 Feb 2014 22:02:24 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: linux-kernel@vger.kernel.org
-Cc: Jason Low <jason.low2@hp.com>, Waiman Long <waiman.long@hp.com>,
-        mingo@kernel.org, paulmck@linux.vnet.ibm.com,
-        torvalds@linux-foundation.org, tglx@linutronix.de, riel@redhat.com,
-        akpm@linux-foundation.org, davidlohr@hp.com, hpa@zytor.com,
-        andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
-        chegu_vinod@hp.com
-Subject: Re: [PATCH 2/8] mutex: In mutex_can_spin_on_owner(), return false if
- task need_resched()
-Message-ID: <20140210210224.GZ5002@laptop.programming.kicks-ass.net>
-References: <20140210195820.834693028@infradead.org>
- <20140210203659.465074341@infradead.org>
+	id S1753486AbaBJVEV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 16:04:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1920 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752575AbaBJVES (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 16:04:18 -0500
+Date: Mon, 10 Feb 2014 19:03:58 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Stephane Eranian <eranian@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Jiri Olsa <jolsa@redhat.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: Re: [BUG] perf top: --stdio causes continuous refresh
+Message-ID: <20140210210358.GD3202@infradead.org>
+References: <CABPqkBSkSbWvdRu3iEtNvHhfV4J4sALHvdd40hZTcGxLe576yQ@mail.gmail.com>
+ <20140206135627.GA26955@infradead.org>
+ <CABPqkBS5qLDYyyv=n8fT4K+hA3uRWYmQOZmO+n-UE9=X=cEFzQ@mail.gmail.com>
+ <20140206140705.GB26955@infradead.org>
+ <20140206140936.GC26955@infradead.org>
+ <CABPqkBRwy=0pnmm657TwV25GiYbpkqC1E8+cUGLEUbqxO=Gusw@mail.gmail.com>
+ <52F3CAE3.7060007@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140210203659.465074341@infradead.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <52F3CAE3.7060007@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 08:58:22PM +0100, Peter Zijlstra wrote:
+Em Thu, Feb 06, 2014 at 10:48:19AM -0700, David Ahern escreveu:
+> On 2/6/14, 8:24 AM, Stephane Eranian wrote:
+> >On Thu, Feb 6, 2014 at 3:09 PM, Arnaldo Carvalho de Melo
+> ><acme@redhat.com> wrote:
+> >>Em Thu, Feb 06, 2014 at 12:07:05PM -0200, Arnaldo Carvalho de Melo escreveu:
+> >>>Em Thu, Feb 06, 2014 at 02:58:01PM +0100, Stephane Eranian escreveu:
+> >>>>On Thu, Feb 6, 2014 at 2:56 PM, Arnaldo Carvalho de Melo
+> >>>><acme@redhat.com> wrote:
+> >>>>>Em Wed, Feb 05, 2014 at 10:25:09PM +0100, Stephane Eranian escreveu:
+> >>>>>>If you run perf top on 3.14 but you force --stdio mode, perf top
+> >>>>>>goes crazy and constantly refreshes the output.
 
-Bah, I forgot Quilt eats the From: headers and I forgot to re-add them.
-They're still present in the queue, just lost in mailing :/
+> >>>>>>It does that with many older versions of the perf as well on 3.14.
+> >>>>>>It runs fine with newt mode.
 
-> The mutex_can_spin_on_owner() function should also return false if the
-> task needs to be rescheduled to avoid entering the MCS queue when it
-> needs to reschedule.
+> >>>>>>Works fine with my 3.11 kernel. So something must be broken
+> >>>>>>with 3.14.
+
+> >>>>>>Can you reproduce the problem as well?
+
+> >>>>>Not so far, using my perf/urgent branch:
+
+> >>>>I am using tip.git. Or try 3.11, 3.10.
+
+> >>But my tests are on top of:
+
+> >>[acme@ssdandy linux]$ uname -r
+> >>3.11.4-101.fc18.x86_64
+
+> >>I thought it was a 3.14ish one, building one to try there...
+> >>
+> >The kernel must be 3.14-rcX, the tool can be any version.
 > 
-> Cc: chegu_vinod@hp.com
-> Cc: paulmck@linux.vnet.ibm.com
-> Cc: Waiman.Long@hp.com
-> Cc: torvalds@linux-foundation.org
-> Cc: tglx@linutronix.de
-> Cc: riel@redhat.com
-> Cc: akpm@linux-foundation.org
-> Cc: davidlohr@hp.com
-> Cc: hpa@zytor.com
-> Cc: andi@firstfloor.org
-> Cc: aswin@hp.com
-> Cc: mingo@kernel.org
-> Cc: scott.norton@hp.com
-> Signed-off-by: Jason Low <jason.low2@hp.com>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> Link: http://lkml.kernel.org/r/1390936396-3962-2-git-send-email-jason.low2@hp.com
-> ---
->  kernel/locking/mutex.c |    3 +++
->  1 file changed, 3 insertions(+)
-> 
-> --- a/kernel/locking/mutex.c
-> +++ b/kernel/locking/mutex.c
-> @@ -166,6 +166,9 @@ static inline int mutex_can_spin_on_owne
->  	struct task_struct *owner;
->  	int retval = 1;
->  
-> +	if (need_resched())
-> +		return 0;
-> +
->  	rcu_read_lock();
->  	owner = ACCESS_ONCE(lock->owner);
->  	if (owner)
-> 
-> 
+> I don't have time to do a git bisect, but I can narrow the window to
+> 3.13-rc6 and 3.14-rc1. Just happened to update a server yesterday.
+> perf-top --stdio runs fine on the former and shows the problem on
+> the latter.
+
+Bisected it down to:
+
+eb3e4668bd9e0bbda592e830e889f137e44ec9e4 is the first bad commit
+commit eb3e4668bd9e0bbda592e830e889f137e44ec9e4
+Author: Peter Hurley <peter@hurleysoftware.com>
+Date:   Mon Dec 2 14:24:42 2013 -0500
+
+    n_tty: Un-inline slow-path n_tty_receive_char()
+    
+    Commit e60d27c4d8b33ba20896b76b6558f061bc6460ff,
+    n_tty: Factor LNEXT processing from per-char i/o path,
+    mistakenly inlined the non-inline alias, n_tty_receive_char(),
+    for the inline function, n_tty_receive_char_inline().
+    
+    As n_tty_receive_char() is intended for slow-path char
+    processing only, un-inline it.
+    
+    Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+    Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+:040000 040000 80215819e331ff95d80aa7c8a6a05f8c74d1fdb6 41a856dfeb6769e47c7689c92d91db497dfcc8cf M	drivers
+[acme@fedora20 linux]$
+
+In a hurry now, will continue later, trying to understand what is the problem
+introduced by the above cset...
+
+Need to revert just this one to confirm that it is the culprit, etc.
+
+- Arnaldo
