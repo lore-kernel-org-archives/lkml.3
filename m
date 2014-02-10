@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752574AbaBJCUc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 21:20:32 -0500
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:39582 "EHLO
+	id S1752811AbaBJC1Q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 21:27:16 -0500
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:39601 "EHLO
 	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752531AbaBJCUT (ORCPT
+	with ESMTP id S1752552AbaBJCUb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 21:20:19 -0500
+	Sun, 9 Feb 2014 21:20:31 -0500
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Marcel Holtmann <marcel@holtmann.org>
 Cc: Gustavo Padovan <gustavo@padovan.org>,
@@ -17,9 +17,9 @@ Cc: Gustavo Padovan <gustavo@padovan.org>,
         Sander Eikelenboom <linux@eikelenboom.it>,
         linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
         Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 24/24] Bluetooth: Fix write_room() calculation
-Date: Sun,  9 Feb 2014 20:59:24 -0500
-Message-Id: <1391997564-1805-25-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH 22/24] Bluetooth: Don't fail RFCOMM tty writes
+Date: Sun,  9 Feb 2014 20:59:22 -0500
+Message-Id: <1391997564-1805-23-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1391997564-1805-1-git-send-email-peter@hurleysoftware.com>
 References: <1391997564-1805-1-git-send-email-peter@hurleysoftware.com>
@@ -28,65 +28,121 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The skb truesize of a 12-byte payload with a 10-byte head/tail
-reserve is 768 bytes. Consequently, even with 40 tx_credits, at
-most 6 packets could be queued at any one time:
+The tty driver api design prefers no-fail writes if the driver
+write_room() method has previously indicated space is available
+to accept writes. Since this is trivially possible for the
+RFCOMM tty driver, do so.
 
-  40 tx_credits * 127-byte mtu < 768-byte truesize * 7
-
-This error could also cause the tx queue to apparently stall if
-credit flow control is disabled (where tx_credits is fixed at 5),
-or if the receiver only granted a limited number of tx credits
-(eg., less than 7).
-
-Instead, track the outstanding number of queued packets not yet sent
-in wmem_alloc and allow for a maximum of 40 queued packets. Report
-the space avail for a single write() as the mtu * number of packets
-left before reaching the maximum.
+Introduce rfcomm_dlc_send_noerror(), which queues but does not
+schedule the krfcomm thread if the dlc is not yet connected
+(and thus does not error based on the connection state).
+The mtu size test is also unnecessary since the caller already
+chunks the written data into mtu size.
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- net/bluetooth/rfcomm/tty.c | 14 +++++---------
- 1 file changed, 5 insertions(+), 9 deletions(-)
+ include/net/bluetooth/rfcomm.h |  1 +
+ net/bluetooth/rfcomm/core.c    | 14 ++++++++++++++
+ net/bluetooth/rfcomm/tty.c     | 23 +++++++----------------
+ 3 files changed, 22 insertions(+), 16 deletions(-)
 
+diff --git a/include/net/bluetooth/rfcomm.h b/include/net/bluetooth/rfcomm.h
+index 79bb913..11aca1e 100644
+--- a/include/net/bluetooth/rfcomm.h
++++ b/include/net/bluetooth/rfcomm.h
+@@ -238,6 +238,7 @@ int  rfcomm_dlc_open(struct rfcomm_dlc *d, bdaddr_t *src, bdaddr_t *dst,
+ 								u8 channel);
+ int  rfcomm_dlc_close(struct rfcomm_dlc *d, int reason);
+ int  rfcomm_dlc_send(struct rfcomm_dlc *d, struct sk_buff *skb);
++void rfcomm_dlc_send_noerror(struct rfcomm_dlc *d, struct sk_buff *skb);
+ int  rfcomm_dlc_set_modem_status(struct rfcomm_dlc *d, u8 v24_sig);
+ int  rfcomm_dlc_get_modem_status(struct rfcomm_dlc *d, u8 *v24_sig);
+ void rfcomm_dlc_accept(struct rfcomm_dlc *d);
+diff --git a/net/bluetooth/rfcomm/core.c b/net/bluetooth/rfcomm/core.c
+index 8e14df6..112749c 100644
+--- a/net/bluetooth/rfcomm/core.c
++++ b/net/bluetooth/rfcomm/core.c
+@@ -568,6 +568,20 @@ int rfcomm_dlc_send(struct rfcomm_dlc *d, struct sk_buff *skb)
+ 	return len;
+ }
+ 
++void rfcomm_dlc_send_noerror(struct rfcomm_dlc *d, struct sk_buff *skb)
++{
++	int len = skb->len;
++
++	BT_DBG("dlc %p mtu %d len %d", d, d->mtu, len);
++
++	rfcomm_make_uih(skb, d->addr);
++	skb_queue_tail(&d->tx_queue, skb);
++
++	if (d->state == BT_CONNECTED &&
++	    !test_bit(RFCOMM_TX_THROTTLED, &d->flags))
++		rfcomm_schedule();
++}
++
+ void __rfcomm_dlc_throttle(struct rfcomm_dlc *d)
+ {
+ 	BT_DBG("dlc %p state %ld", d, d->state);
 diff --git a/net/bluetooth/rfcomm/tty.c b/net/bluetooth/rfcomm/tty.c
-index 3f44195..403ec09 100644
+index f6b9f0c..af775f3 100644
 --- a/net/bluetooth/rfcomm/tty.c
 +++ b/net/bluetooth/rfcomm/tty.c
-@@ -352,20 +352,16 @@ static inline unsigned int rfcomm_room(struct rfcomm_dev *dev)
+@@ -374,14 +374,10 @@ static void rfcomm_set_owner_w(struct sk_buff *skb, struct rfcomm_dev *dev)
+ 
+ static struct sk_buff *rfcomm_wmalloc(struct rfcomm_dev *dev, unsigned long size, gfp_t priority)
  {
+-	if (atomic_read(&dev->wmem_alloc) < rfcomm_room(dev->dlc)) {
+-		struct sk_buff *skb = alloc_skb(size, priority);
+-		if (skb) {
+-			rfcomm_set_owner_w(skb, dev);
+-			return skb;
+-		}
+-	}
+-	return NULL;
++	struct sk_buff *skb = alloc_skb(size, priority);
++	if (skb)
++		rfcomm_set_owner_w(skb, dev);
++	return skb;
+ }
+ 
+ /* ---- Device IOCTLs ---- */
+@@ -786,7 +782,7 @@ static int rfcomm_tty_write(struct tty_struct *tty, const unsigned char *buf, in
+ 	struct rfcomm_dev *dev = (struct rfcomm_dev *) tty->driver_data;
  	struct rfcomm_dlc *dlc = dev->dlc;
+ 	struct sk_buff *skb;
+-	int err = 0, sent = 0, size;
++	int sent = 0, size;
  
--	/* The limit is bogus; the number of packets which can
--	 * currently be sent by the krfcommd thread has no relevance
--	 * to the number of packets which can be queued on the dlc's
--	 * tx queue.
--	 */
--	int limit = dlc->mtu * (dlc->tx_credits?:1);
-+	/* Limit the outstanding number of packets not yet sent to 40 */
-+	int pending = 40 - atomic_read(&dev->wmem_alloc);
+ 	BT_DBG("tty %p count %d", tty, count);
  
--	return max(0, limit - atomic_read(&dev->wmem_alloc));
-+	return max(0, pending) * dlc->mtu;
+@@ -794,7 +790,6 @@ static int rfcomm_tty_write(struct tty_struct *tty, const unsigned char *buf, in
+ 		size = min_t(uint, count, dlc->mtu);
+ 
+ 		skb = rfcomm_wmalloc(dev, size + RFCOMM_SKB_RESERVE, GFP_ATOMIC);
+-
+ 		if (!skb)
+ 			break;
+ 
+@@ -802,17 +797,13 @@ static int rfcomm_tty_write(struct tty_struct *tty, const unsigned char *buf, in
+ 
+ 		memcpy(skb_put(skb, size), buf + sent, size);
+ 
+-		err = rfcomm_dlc_send(dlc, skb);
+-		if (err < 0) {
+-			kfree_skb(skb);
+-			break;
+-		}
++		rfcomm_dlc_send_noerror(dlc, skb);
+ 
+ 		sent  += size;
+ 		count -= size;
+ 	}
+ 
+-	return sent ? sent : err;
++	return sent;
  }
  
- static void rfcomm_wfree(struct sk_buff *skb)
- {
- 	struct rfcomm_dev *dev = (void *) skb->sk;
--	atomic_sub(skb->truesize, &dev->wmem_alloc);
-+	atomic_dec(&dev->wmem_alloc);
- 	if (test_bit(RFCOMM_TTY_ATTACHED, &dev->flags))
- 		tty_port_tty_wakeup(&dev->port);
- 	tty_port_put(&dev->port);
-@@ -374,7 +370,7 @@ static void rfcomm_wfree(struct sk_buff *skb)
- static void rfcomm_set_owner_w(struct sk_buff *skb, struct rfcomm_dev *dev)
- {
- 	tty_port_get(&dev->port);
--	atomic_add(skb->truesize, &dev->wmem_alloc);
-+	atomic_inc(&dev->wmem_alloc);
- 	skb->sk = (void *) dev;
- 	skb->destructor = rfcomm_wfree;
- }
+ static int rfcomm_tty_write_room(struct tty_struct *tty)
 -- 
 1.8.1.2
 
