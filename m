@@ -1,65 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755176AbaBJUEd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 15:04:33 -0500
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:55685 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752696AbaBJUE2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 15:04:28 -0500
-MIME-Version: 1.0
-In-Reply-To: <6663120.dfAPuuBWIr@x2>
-References: <ee359482b77f8f633014ec300bc5a4b93f8961e8.1391893528.git.luto@amacapital.net>
- <CALCETrX9gb_+zW4UZZv5icCQ-3HNG7BFZOaqMPYaQfzotsZpnA@mail.gmail.com>
- <CALCETrX0GtSaLUB9UBeKsxOoVhiVyMzWrZTYt3O5He1Wdvz+1Q@mail.gmail.com> <6663120.dfAPuuBWIr@x2>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 10 Feb 2014 12:04:07 -0800
-Message-ID: <CALCETrXReQ_AT9W4At4VZnyqnaYgTBB3X8-_V=-qJnucGjV2rg@mail.gmail.com>
-Subject: Re: [PATCH v3] audit: Turn off TIF_SYSCALL_AUDIT when there are no rules
-To: Steve Grubb <sgrubb@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, linux-audit@redhat.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Eric Paris <eparis@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932119AbaBJUEt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 15:04:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29267 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755181AbaBJUEo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 15:04:44 -0500
+Message-ID: <1392062650.15608.147.camel@ul30vt.home>
+Subject: Re: [RFC PATCH v4 02/10] VFIO_IOMMU_TYPE1: Introduce the
+ VFIO_DMA_MAP_FLAG_EXEC flag
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Antonios Motakis <a.motakis@virtualopensystems.com>
+Cc: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        tech@virtualopensystems.com, a.rigo@virtualopensystems.com,
+        B08248@freescale.com, kim.phillips@linaro.org, jan.kiszka@siemens.com,
+        kvm@vger.kernel.org, R65777@freescale.com, B07421@freescale.com,
+        christoffer.dall@linaro.org, agraf@suse.de, B16395@freescale.com,
+        will.deacon@arm.com
+Date: Mon, 10 Feb 2014 13:04:10 -0700
+In-Reply-To: <1391880580-471-3-git-send-email-a.motakis@virtualopensystems.com>
+References: <1391880580-471-1-git-send-email-a.motakis@virtualopensystems.com>
+	 <1391880580-471-3-git-send-email-a.motakis@virtualopensystems.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 11:12 AM, Steve Grubb <sgrubb@redhat.com> wrote:
-> On Monday, February 10, 2014 11:01:36 AM Andy Lutomirski wrote:
->> >> And I still think this needs more changes. Once again, I do not think
->> >> that, say, __audit_log_bprm_fcaps() should populate context->aux if
->> >> !TIF_SYSCALL_AUDIT, this list can grow indefinitely. Or
->> >> __audit_signal_info()...
->> >>
->> >> Perhaps __audit_syscall_exit() should also set context->dummy?
->> >
->> > That would work.
->> >
->> > I'm still torn between trying to make it possible for things like
->> > __audit_log_bprm_fcaps to start a syscall audit record in the middle
->> > of a syscall or to just try to tighten up the current approach to the
->> > point where it will work correctly.
->>
->> This is worse than I thought.  Things like signal auditing can enter
->> the audit system from outside of a syscall.  I don't think there's
->> currently any way to tell whether you're in a syscall (when
->> TIF_SYSCALL_AUDIT is clear) so getting this to work right would
->> require arch help.
->>
->> I'll ask what people on the Fedora list think about just changing the
->> default to -t task,never.
->
-> I can't recall ever seeing the task filter used in real life. But assuming you
-> wanted to audit no tasks, what is the difference between using that filter and
-> never setting audit_enable in the first place?
+On Sat, 2014-02-08 at 18:29 +0100, Antonios Motakis wrote:
+> The ARM SMMU driver expects the IOMMU_EXEC flag, otherwise it will
+> set the page tables for a device as XN (execute never). This affects
+> devices such as the ARM PL330 DMA Controller, which fails to operate
+> if the XN flag is set on the memory it tries to fetch its instructions
+> from.
+> 
+> We introduce the VFIO_DMA_MAP_FLAG_EXEC to VFIO, and use it in
+> VFIO_IOMMU_TYPE1 to set the IOMMU_EXEC flag. This way the user can
+> control whether the XN flag will be set on the requested mappings.
 
-Two possible differences:
+Should the user be told whether this flag is available?  It looks like
+existing iommu drivers for x86 ignore the flag, can we count on that?
+Thanks,
 
-1. You can toggle it both ways at runtime.  Setting audit_enabled is a
-one-way street (at least as far TIF_SYSCALL_AUDIT is concerned).
+Alex
 
-2. Do AVC denial messages still get logged if audit_enable == 0?  If
-not, then audit_enable is a non-starter.
+> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+> ---
+>  drivers/vfio/vfio_iommu_type1.c | 5 ++++-
+>  include/uapi/linux/vfio.h       | 1 +
+>  2 files changed, 5 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/vfio/vfio_iommu_type1.c b/drivers/vfio/vfio_iommu_type1.c
+> index 4fb7a8f..ad7a1f6 100644
+> --- a/drivers/vfio/vfio_iommu_type1.c
+> +++ b/drivers/vfio/vfio_iommu_type1.c
+> @@ -557,6 +557,8 @@ static int vfio_dma_do_map(struct vfio_iommu *iommu,
+>  		prot |= IOMMU_WRITE;
+>  	if (map->flags & VFIO_DMA_MAP_FLAG_READ)
+>  		prot |= IOMMU_READ;
+> +	if (map->flags & VFIO_DMA_MAP_FLAG_EXEC)
+> +		prot |= IOMMU_EXEC;
+>  
+>  	if (!prot)
+>  		return -EINVAL; /* No READ/WRITE? */
+> @@ -865,7 +867,8 @@ static long vfio_iommu_type1_ioctl(void *iommu_data,
+>  	} else if (cmd == VFIO_IOMMU_MAP_DMA) {
+>  		struct vfio_iommu_type1_dma_map map;
+>  		uint32_t mask = VFIO_DMA_MAP_FLAG_READ |
+> -				VFIO_DMA_MAP_FLAG_WRITE;
+> +				VFIO_DMA_MAP_FLAG_WRITE |
+> +				VFIO_DMA_MAP_FLAG_EXEC;
+>  
+>  		minsz = offsetofend(struct vfio_iommu_type1_dma_map, size);
+>  
+> diff --git a/include/uapi/linux/vfio.h b/include/uapi/linux/vfio.h
+> index 0fd47f5..d8e9e99 100644
+> --- a/include/uapi/linux/vfio.h
+> +++ b/include/uapi/linux/vfio.h
+> @@ -392,6 +392,7 @@ struct vfio_iommu_type1_dma_map {
+>  	__u32	flags;
+>  #define VFIO_DMA_MAP_FLAG_READ (1 << 0)		/* readable from device */
+>  #define VFIO_DMA_MAP_FLAG_WRITE (1 << 1)	/* writable from device */
+> +#define VFIO_DMA_MAP_FLAG_EXEC (1 << 2)		/* executable from device */
+>  	__u64	vaddr;				/* Process virtual address */
+>  	__u64	iova;				/* IO virtual address */
+>  	__u64	size;				/* Size of mapping (bytes) */
 
---Andy
+
+
