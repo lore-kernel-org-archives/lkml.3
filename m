@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754478AbaBJTro (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 14:47:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35171 "EHLO
+	id S1754437AbaBJTrf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 14:47:35 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35144 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754441AbaBJTrh (ORCPT
+	with ESMTP id S1754392AbaBJTr2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:47:37 -0500
+	Mon, 10 Feb 2014 14:47:28 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Li Zefan <lizefan@huawei.com>, Pekka Enberg <penberg@kernel.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 021/124] slub: Fix calculation of cpu slabs
-Date: Mon, 10 Feb 2014 11:39:21 -0800
-Message-Id: <1392061264-28124-22-git-send-email-kamal@canonical.com>
+Cc: Peter Huewe <peterhuewe@gmx.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 031/124] tpm/tpm_ppi: Do not compare strcmp(a,b) == -1
+Date: Mon, 10 Feb 2014 11:39:31 -0800
+Message-Id: <1392061264-28124-32-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
 References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
@@ -27,56 +26,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Zefan <lizefan@huawei.com>
+From: Peter Huewe <PeterHuewe@gmx.de>
 
-commit 8afb1474db4701d1ab80cd8251137a3260e6913e upstream.
+commit 747d35bd9bb4ae6bd74b19baa5bbe32f3e0cee11 upstream.
 
-  /sys/kernel/slab/:t-0000048 # cat cpu_slabs
-  231 N0=16 N1=215
-  /sys/kernel/slab/:t-0000048 # cat slabs
-  145 N0=36 N1=109
+Depending on the implementation strcmp might return the difference between
+two strings not only -1,0,1 consequently
+ if (strcmp (a,b) == -1)
+might lead to taking the wrong branch
 
-See, the number of slabs is smaller than that of cpu slabs.
+-> compare with < 0  instead,
+which in any case is more canonical.
 
-The bug was introduced by commit 49e2258586b423684f03c278149ab46d8f8b6700
-("slub: per cpu cache for partial pages").
-
-We should use page->pages instead of page->pobjects when calculating
-the number of cpu partial slabs. This also fixes the mapping of slabs
-and nodes.
-
-As there's no variable storing the number of total/active objects in
-cpu partial slabs, and we don't have user interfaces requiring those
-statistics, I just add WARN_ON for those cases.
-
-Acked-by: Christoph Lameter <cl@linux.com>
-Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/slub.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/char/tpm/tpm_ppi.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/mm/slub.c b/mm/slub.c
-index ba2ca53..90fcd67 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -4423,7 +4423,13 @@ static ssize_t show_slab_objects(struct kmem_cache *s,
+diff --git a/drivers/char/tpm/tpm_ppi.c b/drivers/char/tpm/tpm_ppi.c
+index d0f1bdd..1900b4b 100644
+--- a/drivers/char/tpm/tpm_ppi.c
++++ b/drivers/char/tpm/tpm_ppi.c
+@@ -172,7 +172,7 @@ static ssize_t tpm_store_ppi_request(struct device *dev,
+ 	 * is updated with function index from SUBREQ to SUBREQ2 since PPI
+ 	 * version 1.1
+ 	 */
+-	if (strcmp(version, "1.1") == -1)
++	if (strcmp(version, "1.1") < 0)
+ 		params[2].integer.value = TPM_PPI_FN_SUBREQ;
+ 	else
+ 		params[2].integer.value = TPM_PPI_FN_SUBREQ2;
+@@ -182,7 +182,7 @@ static ssize_t tpm_store_ppi_request(struct device *dev,
+ 	 * string/package type. For PPI version 1.0 and 1.1, use buffer type
+ 	 * for compatibility, and use package type since 1.2 according to spec.
+ 	 */
+-	if (strcmp(version, "1.2") == -1) {
++	if (strcmp(version, "1.2") < 0) {
+ 		params[3].type = ACPI_TYPE_BUFFER;
+ 		params[3].buffer.length = sizeof(req);
+ 		sscanf(buf, "%d", &req);
+@@ -248,7 +248,7 @@ static ssize_t tpm_show_ppi_transition_action(struct device *dev,
+ 	 * (e.g. Capella with PPI 1.0) need integer/string/buffer type, so for
+ 	 * compatibility, define params[3].type as buffer, if PPI version < 1.2
+ 	 */
+-	if (strcmp(version, "1.2") == -1) {
++	if (strcmp(version, "1.2") < 0) {
+ 		params[3].type = ACPI_TYPE_BUFFER;
+ 		params[3].buffer.length =  0;
+ 		params[3].buffer.pointer = NULL;
+@@ -390,7 +390,7 @@ static ssize_t show_ppi_operations(char *buf, u32 start, u32 end)
+ 	kfree(output.pointer);
+ 	output.length = ACPI_ALLOCATE_BUFFER;
+ 	output.pointer = NULL;
+-	if (strcmp(version, "1.2") == -1)
++	if (strcmp(version, "1.2") < 0)
+ 		return -EPERM;
  
- 			page = ACCESS_ONCE(c->partial);
- 			if (page) {
--				x = page->pobjects;
-+				node = page_to_nid(page);
-+				if (flags & SO_TOTAL)
-+					WARN_ON_ONCE(1);
-+				else if (flags & SO_OBJECTS)
-+					WARN_ON_ONCE(1);
-+				else
-+					x = page->pages;
- 				total += x;
- 				nodes[node] += x;
- 			}
+ 	params[2].integer.value = TPM_PPI_FN_GETOPR;
 -- 
 1.8.3.2
 
