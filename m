@@ -1,199 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753085AbaBJKi6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 05:38:58 -0500
-Received: from smtp.csie.ntu.edu.tw ([140.112.30.61]:51355 "EHLO
-	smtp.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752158AbaBJKf7 (ORCPT
+	id S1752516AbaBJKkj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 05:40:39 -0500
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:42272 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751819AbaBJKkh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 05:35:59 -0500
-From: Chen-Yu Tsai <wens@csie.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Emilio Lopez <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>
-Cc: Chen-Yu Tsai <wens@csie.org>, linux-arm-kernel@lists.infradead.org,
-        linux-sunxi@googlegroups.com, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v4 1/8] clk: sunxi: Add Allwinner A20/A31 GMAC clock unit
-Date: Mon, 10 Feb 2014 18:35:47 +0800
-Message-Id: <1392028554-32545-2-git-send-email-wens@csie.org>
-X-Mailer: git-send-email 1.9.rc1
-In-Reply-To: <1392028554-32545-1-git-send-email-wens@csie.org>
-References: <1392028554-32545-1-git-send-email-wens@csie.org>
+	Mon, 10 Feb 2014 05:40:37 -0500
+Date: Mon, 10 Feb 2014 11:40:34 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Jingoo Han <jg1.han@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-pwm@vger.kernel.org
+Subject: Re: [PATCH] backlight: add PWM dependencies
+Message-ID: <20140210104032.GB20143@ulmo.nvidia.com>
+References: <1391518634-6472-1-git-send-email-linus.walleij@linaro.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="O5XBE6gyVG5Rl6Rj"
+Content-Disposition: inline
+In-Reply-To: <1391518634-6472-1-git-send-email-linus.walleij@linaro.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Allwinner A20/A31 clock module controls the transmit clock source
-and interface type of the GMAC ethernet controller. Model this as
-a single clock for GMAC drivers to use.
 
-Signed-off-by: Chen-Yu Tsai <wens@csie.org>
----
- Documentation/devicetree/bindings/clock/sunxi.txt | 30 +++++++
- drivers/clk/sunxi/clk-sunxi.c                     | 97 +++++++++++++++++++++++
- 2 files changed, 127 insertions(+)
+--O5XBE6gyVG5Rl6Rj
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/Documentation/devicetree/bindings/clock/sunxi.txt b/Documentation/devicetree/bindings/clock/sunxi.txt
-index 0cf679b..28421d2 100644
---- a/Documentation/devicetree/bindings/clock/sunxi.txt
-+++ b/Documentation/devicetree/bindings/clock/sunxi.txt
-@@ -37,6 +37,7 @@ Required properties:
- 	"allwinner,sun6i-a31-apb2-gates-clk" - for the APB2 gates on A31
- 	"allwinner,sun4i-mod0-clk" - for the module 0 family of clocks
- 	"allwinner,sun7i-a20-out-clk" - for the external output clocks
-+	"allwinner,sun7i-a20-gmac-clk" - for the GMAC clock module on A20/A31
- 
- Required properties for all clocks:
- - reg : shall be the control register address for the clock.
-@@ -50,6 +51,9 @@ Required properties for all clocks:
- 	If the clock module only has one output, the name shall be the
- 	module name.
- 
-+For "allwinner,sun7i-a20-gmac-clk", the parent clocks shall be fixed rate
-+dummy clocks at 25 MHz and 125 MHz, respectively. See example.
-+
- Clock consumers should specify the desired clocks they use with a
- "clocks" phandle cell. Consumers that are using a gated clock should
- provide an additional ID in their clock property. This ID is the
-@@ -96,3 +100,29 @@ mmc0_clk: clk@01c20088 {
- 	clocks = <&osc24M>, <&pll6 1>, <&pll5 1>;
- 	clock-output-names = "mmc0";
- };
-+
-+mii_phy_tx_clk: clk@2 {
-+	#clock-cells = <0>;
-+	compatible = "fixed-clock";
-+	clock-frequency = <25000000>;
-+	clock-output-names = "mii_phy_tx";
-+};
-+
-+gmac_int_tx_clk: clk@3 {
-+	#clock-cells = <0>;
-+	compatible = "fixed-clock";
-+	clock-frequency = <125000000>;
-+	clock-output-names = "gmac_int_tx";
-+};
-+
-+gmac_clk: clk@01c20164 {
-+	#clock-cells = <0>;
-+	compatible = "allwinner,sun7i-a20-gmac-clk";
-+	reg = <0x01c20164 0x4>;
-+	/*
-+	 * The first clock must be fixed at 25MHz;
-+	 * the second clock must be fixed at 125MHz
-+	 */
-+	clocks = <&mii_phy_tx_clk>, <&gmac_int_tx_clk>;
-+	clock-output-names = "gmac";
-+};
-diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
-index 736fb60..da1d5cc 100644
---- a/drivers/clk/sunxi/clk-sunxi.c
-+++ b/drivers/clk/sunxi/clk-sunxi.c
-@@ -379,6 +379,103 @@ static void sun7i_a20_get_out_factors(u32 *freq, u32 parent_rate,
- 
- 
- /**
-+ * sun7i_a20_gmac_clk_setup - Setup function for A20/A31 GMAC clock module
-+ *
-+ * This clock looks something like this
-+ *                               ________________________
-+ *  MII TX clock from PHY >-----|___________    _________|----> to GMAC core
-+ *  GMAC Int. RGMII TX clk >----|___________\__/__gate---|----> to PHY
-+ *  Ext. 125MHz RGMII TX clk >--|__divider__/            |
-+ *                              |________________________|
-+ *
-+ * The external 125 MHz reference is optional, i.e. GMAC can use its
-+ * internal TX clock just fine. The A31 GMAC clock module does not have
-+ * the divider controls for the external reference.
-+ *
-+ * To keep it simple, let the GMAC use either the MII TX clock for MII mode,
-+ * and its internal TX clock for GMII and RGMII modes. The GMAC driver should
-+ * select the appropriate source and gate/ungate the output to the PHY.
-+ *
-+ * Only the GMAC should use this clock. Altering the clock so that it doesn't
-+ * match the GMAC's operation parameters will result in the GMAC not being
-+ * able to send traffic out. The GMAC driver should set the clock rate and
-+ * enable/disable this clock to configure the required state. The clock
-+ * driver then responds by auto-reparenting the clock.
-+ */
-+
-+#define SUN7I_A20_GMAC_GPIT	2
-+#define SUN7I_A20_GMAC_MASK	0x3
-+#define SUN7I_A20_GMAC_PARENTS	2
-+
-+static void __init sun7i_a20_gmac_clk_setup(struct device_node *node)
-+{
-+	struct clk *clk;
-+	struct clk_mux *mux;
-+	struct clk_gate *gate;
-+	const char *clk_name = node->name;
-+	const char *parents[SUN7I_A20_GMAC_PARENTS];
-+	void *reg;
-+	int i = 0;
-+
-+	if (of_property_read_string(node, "clock-output-names", &clk_name))
-+		return;
-+
-+	/* allocate mux and gate clock structs */
-+	mux = kzalloc(sizeof(struct clk_mux), GFP_KERNEL);
-+	if (!mux)
-+		return;
-+
-+	gate = kzalloc(sizeof(struct clk_gate), GFP_KERNEL);
-+	if (!gate)
-+		goto free_mux;
-+
-+	/* gmac clock requires exactly 2 parents */
-+	parents[0] = of_clk_get_parent_name(node, 0);
-+	parents[1] = of_clk_get_parent_name(node, 1);
-+	if (!parents[0] || !parents[1])
-+		goto free_gate;
-+
-+	reg = of_iomap(node, 0);
-+	if (!reg)
-+		goto free_gate;
-+
-+	/* set up gate and fixed rate properties */
-+	gate->reg = reg;
-+	gate->bit_idx = SUN7I_A20_GMAC_GPIT;
-+	gate->lock = &clk_lock;
-+	mux->reg = reg;
-+	mux->mask = SUN7I_A20_GMAC_MASK;
-+	mux->flags = CLK_MUX_INDEX_BIT;
-+	mux->lock = &clk_lock;
-+
-+	clk = clk_register_composite(NULL, clk_name,
-+			parents, SUN7I_A20_GMAC_PARENTS,
-+			&mux->hw, &clk_mux_ops,
-+			NULL, NULL,
-+			&gate->hw, &clk_gate_ops,
-+			0);
-+
-+	if (IS_ERR(clk))
-+		goto iounmap_reg;
-+
-+	of_clk_add_provider(node, of_clk_src_simple_get, clk);
-+	clk_register_clkdev(clk, clk_name, NULL);
-+
-+	return;
-+
-+iounmap_reg:
-+	iounmap(reg);
-+free_gate:
-+	kfree(gate);
-+free_mux:
-+	kfree(mux);
-+}
-+CLK_OF_DECLARE(sun7i_a20_gmac, "allwinner,sun7i-a20-gmac-clk",
-+		sun7i_a20_gmac_clk_setup);
-+
-+
-+
-+/**
-  * sunxi_factors_clk_setup() - Setup function for factor clocks
-  */
- 
--- 
-1.9.rc1
+On Tue, Feb 04, 2014 at 01:57:14PM +0100, Linus Walleij wrote:
+> In some compilations the LM3630A and LP855X backlight drivers
+> fail like this:
+>=20
+> drivers/built-in.o: In function `lm3630a_pwm_ctrl':
+> drivers/video/backlight/lm3630a_bl.c:168: undefined reference to `pwm_con=
+fig'
+> drivers/video/backlight/lm3630a_bl.c:172: undefined reference to `pwm_dis=
+able'
+> drivers/video/backlight/lm3630a_bl.c:170: undefined reference to `pwm_ena=
+ble'
+> drivers/built-in.o: In function `lp855x_pwm_ctrl':
+> drivers/video/backlight/lp855x_bl.c:249: undefined reference to `pwm_conf=
+ig'
+> drivers/video/backlight/lp855x_bl.c:253: undefined reference to `pwm_disa=
+ble'
+> drivers/video/backlight/lp855x_bl.c:251: undefined reference to `pwm_enab=
+le'
+>=20
+> This is because both drivers depend on the PWM framework, so
+> add this dependency to their Kconfig entries.
+>=20
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+>  drivers/video/backlight/Kconfig | 2 ++
+>  1 file changed, 2 insertions(+)
 
+Hi Linus,
+
+it seems like at least BACKLIGHT_LP8788 is missing a corresponding
+dependency as well.
+
+I have applied Sascha's patch to remove the obsolete HAVE_PWM symbol,
+and this will fix at least the build issues. However it will also cause
+the driver to fail at runtime because the pwm_*() functions won't work.
+
+So I wonder if we should still apply this patch to make it clear that
+PWM support is necessary to make the driver work. I guess the point is
+somewhat moot because even if we had PWM enabled it could still happen
+that no PWM driver is enabled to provide a PWM device... I guess it's
+equally justifiable to leave that up to the defconfig.
+
+Should we just drop this patch? Cc'ing Arnd who's commented on Jingoo's
+alternate proposal.
+
+Thierry
+
+--O5XBE6gyVG5Rl6Rj
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS+KygAAoJEN0jrNd/PrOhfbcP/3oRQku7bR3KbIgDBe50UF99
+h6V/ToVfLD7tdhyHNz0sVLLJAeOUdCCRw2ABrDAQu27c1OH0ss38isg2866lZD4Z
+9XMSmWkLYocmXjXyKAOgRdlSIJ9CDM8QWsH6V3ciBt7vKjt0e+bV7UXysuZCc3MI
+IUcDm/VqxIXezK6MEpHmwRuTdUUiofiiTu+foYhsHTQtHvZ+zNoYTzn3iQBOcu04
+3RkQWyf+N4MZ7mcTpK2o35/Zy9v6Z1i69J2vP9AxR3VxkdHHCJMfykPe0mtTzhUv
+7qMhBS3vXPAdE0hIMzvQiaR2/N57RuEHVElWRUA/L0vnc5lAV9Kc1hUqegt4h3l7
+oNzNnXQUIPIWKG7lqJHPPF6y7VyT0G2PKLsmyvmvD9IgugNY+Qgf4moeZm91veCZ
+L9u8YijOV3OxRKwB+BahshF20evdeM4FG8JnXRbSe1m1rKKo+TkiweCzLvOEcGKf
+/EAAH4bICc0grJ3d0aK+IbUrvlAto9djGyvIMqV1M+wU7Obc/dCPMomJh+/Pr7OF
+/QnDmiLy944LKR5ACYsIJnJeEZVtJvKFuKnCdXEQhyxS24LPtJdCfBuEPJNYAnXj
+hlYt9HuZdLDappgHcf8dB+PNky/6VrYSjhZM2g85ykHRCDuXecVwR5cZ5wIlvW8q
+4+vAD7DCVRtUcuoCmts2
+=71tB
+-----END PGP SIGNATURE-----
+
+--O5XBE6gyVG5Rl6Rj--
