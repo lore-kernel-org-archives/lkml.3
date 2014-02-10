@@ -1,105 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752869AbaBJNQN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 08:16:13 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:39998 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752151AbaBJNQJ (ORCPT
+	id S1753095AbaBJNQp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 08:16:45 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:47336 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752337AbaBJNQo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 08:16:09 -0500
-Date: Mon, 10 Feb 2014 13:15:57 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Anson Huang <b20788@freescale.com>,
-        kernel@pengutronix.de
-Message-ID: <20140210131557.GB1757@sirena.org.uk>
-References: <1391697813-20091-1-git-send-email-p.zabel@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ERHfpFOxJvIsVBXy"
-Content-Disposition: inline
-In-Reply-To: <1391697813-20091-1-git-send-email-p.zabel@pengutronix.de>
-X-Cookie: Colors may fade.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] regulator: anatop: Add power gating support to
- digital LDOs
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Mon, 10 Feb 2014 08:16:44 -0500
+Message-ID: <1392038191.6687.12.camel@pizza.hi.pengutronix.de>
+Subject: Re: [PATCH] reset: Add generic GPIO reset driver.
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Martin Fuzzey <mfuzzey@parkeon.com>
+Cc: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 10 Feb 2014 14:16:31 +0100
+In-Reply-To: <20140210125432.10683.86571.stgit@localhost>
+References: <20140210125432.10683.86571.stgit@localhost>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Martin,
 
---ERHfpFOxJvIsVBXy
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Am Montag, den 10.02.2014, 13:54 +0100 schrieb Martin Fuzzey:
+> This driver allows GPIO lines to be used as reset signals.
+> It has two main use cases:
+> 
+> 1) Allow drivers to reset their hardware via a GPIO line in a standard fashion
+> as supplied by the reset framework.
+> This allows adhoc driver code requesting GPIOs etc to be replaced with a
+> single call to device_reset().
 
-On Thu, Feb 06, 2014 at 03:43:32PM +0100, Philipp Zabel wrote:
-> The ARM, PU, and SOC LDOs in the i.MX6 PMU can completely gate
-> their power output. Since power gating is configured by writing
-> zero to the voltage target bitfield,, store a copy of the
-> voltage selector to be restored when reenabling the regulator.
+have you seen the patch at https://lkml.org/lkml/2014/1/8/190:
+"reset: Add GPIO support to reset controller framework" ?
 
-This is mostly good but...
+Adding a GPIO reset controller device node to the device tree is the
+wrong approach for devices enumerated in the device tree. Those should
+just declare their reset-gpios directly.
 
->  static int anatop_regmap_set_voltage_sel(struct regulator_dev *reg,
->  					unsigned selector)
->  {
->  	struct anatop_regulator *anatop_reg =3D rdev_get_drvdata(reg);
-> +	int ret;
-> =20
->  	if (!anatop_reg->control_reg)
->  		return -ENOTSUPP;
-> =20
-> -	return regulator_set_voltage_sel_regmap(reg, selector);
-> +	ret =3D regulator_set_voltage_sel_regmap(reg, selector);
-> +	if (!ret)
-> +		anatop_reg->sel =3D selector;
-> +	return ret;
->  }
+> 2) Allow hardware on discoverable busses to be rest via a GPIO line
+> without driver modifications.
+>
+> Examples of the second use case include:
+> * SDIO wifi modules
+> * USB hub chips with a reset line
 
-=2E..I don't understand this.  If the regulator is disabled won't this
-cause it to be reenabled since we just write the stored selector in to
-do that?  What I'd expect to see happening is the data being written to
-the cache always and only written to the hardware if it's enabled.
+Now this is interesting. But if you export it to userspace anyway, why
+not use the existing gpio sysfs API?
 
-> +static int anatop_regmap_disable(struct regulator_dev *reg)
-> +{
-> +	struct anatop_regulator *anatop_reg =3D rdev_get_drvdata(reg);
-> +
-> +	if (!anatop_is_core_reg(anatop_reg))
-> +		return -ENOTSUPP;
-> +
-> +	return regulator_set_voltage_sel_regmap(reg, LDO_POWER_GATE);
-> +}
+I think a proper solution should handle this in the kernel. For SDIO
+wifi modules you usually have a powerdown line that can be implemented
+as an rfkill switch.
 
-It's starting to seem like it's worth having separate ops for the core
-regulator rather than all these conditionals.
+regards
+Philipp
 
---ERHfpFOxJvIsVBXy
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS+NEKAAoJELSic+t+oim9LNwQAIw86VJOdFzLhVrxa17fP34g
-BOP9eqHhqSTNd78hDnw2wQgtp1ggXM+lI+teaXAG/bheaTmurQtHpJJ4IDwzBMMX
-RqEXe1dz9n7ofIP170rCuVlCxjDIJCTEP0oFdl3As3v9cvyqXA0ETXc4omsGZeku
-LSXh3ItvEFcPE0r02yea6XuZyN7YE8cv7iUUpxmKuOAtLFFaBIfQTSnG0VWMYY3/
-yDIp9Kr87mHBLs0fJcG9zs8TbTwBU4MQO7QEgMOSxlVVS5juF/OlbepCG/gHelbi
-ewdInr4KbL8Dtxj8hGrtRHLn3N6LKPkDiBIVH8wjdIYMYM4RGZmgPMEZXKXIBnRD
-u7aVIUbyRctBickOvA/vDmPMhn5Lmdyf9cUBHfMCgeC+zQSu9u+ReoaSugREQqJq
-I+DNsr7pRSu341tn3Xm48vzdo7gQL31uWkNatCCzaNwmUOii3GbSVpEeye7fPtFc
-x1oHS2eBJfZLe59ZYPlM6bqJxDDPZXKyTLIzRpohUq3h+Ep2YKHip9+KUdHROfOR
-b+2tzQTIxnBQRXjhX1YOlfxOBf972Z9hlgPABkj7XVN1/8/zLJ6Ut+XjTCSf7NgO
-4mdlKRH5cysDRmG+oJM9ouoFTXkpvWMGNwcIrzWI6dedGDEpk1Cc83tVK9G+vRdV
-Cte2KHlpSZNltm1VI3zP
-=VEtO
------END PGP SIGNATURE-----
-
---ERHfpFOxJvIsVBXy--
