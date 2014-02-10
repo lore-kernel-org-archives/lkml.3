@@ -1,165 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753368AbaBJVsa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 16:48:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41807 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752256AbaBJVpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 16:45:33 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: linux-mm@kvack.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, Matt Mackall <mpm@selenic.com>,
-        Cliff Wickman <cpw@sgi.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Pavel Emelyanov <xemul@parallels.com>, Rik van Riel <riel@redhat.com>,
-        kirill.shutemov@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: [PATCH 04/11] clear_refs: redefine callback functions for page table walker
-Date: Mon, 10 Feb 2014 16:44:29 -0500
-Message-Id: <1392068676-30627-5-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1392068676-30627-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1392068676-30627-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1752463AbaBJVwf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 16:52:35 -0500
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:35164 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752111AbaBJVwb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 16:52:31 -0500
+Date: Mon, 10 Feb 2014 16:52:24 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Tommi Rantala <tt.rantala@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        trinity@vger.kernel.org
+Subject: Re: lockdep: strange %s#5 lock name
+Message-ID: <20140210215224.GB25350@mtj.dyndns.org>
+References: <CA+ydwtqC7En++T5S7q5qzaDe_tf9dcMx3Y3aH=+Fcss_NU7stA@mail.gmail.com>
+ <20140210192846.GF27965@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140210192846.GF27965@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently clear_refs_pte_range() is connected to pmd_entry() to split thps
-if found. But now this work can be done in core page table walker code.
-So we have no reason to keep this callback on pmd_entry(). This patch moves
-pte handling code on pte_entry() callback.
+On Mon, Feb 10, 2014 at 08:28:46PM +0100, Peter Zijlstra wrote:
+> Lol.. its correct afaict:
+> 
+> struct workqueue_struct *__alloc_workqueue_key(const char *fmt,
+> 					       unsigned int flags,
+> 					       int max_active,
+> 					       struct lock_class_key *key,
+> 					       const char *lock_name, ...)
+> {
+> 	...
+> 	lockdep_init_map(&wq->lockdep_map, lock_name, key, 0);
+> 
+> 
+> 
+> So while its called lock_name, it looks like the argument is a format.
 
-clear_refs_write() has some prechecks about if we really walk over a given
-vma. It's fine to let them done by test_walk() callback, so let's define it.
+Heh, yeah, that's silly.
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
----
- fs/proc/task_mmu.c | 82 ++++++++++++++++++++++--------------------------------
- 1 file changed, 33 insertions(+), 49 deletions(-)
+> I suppose the below was what was intended...
+> 
+> ---
+>  kernel/workqueue.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+> index 82ef9f3b7473..861d8ddd92a2 100644
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -4202,7 +4202,7 @@ struct workqueue_struct *__alloc_workqueue_key(const char *fmt,
+>  	INIT_LIST_HEAD(&wq->flusher_overflow);
+>  	INIT_LIST_HEAD(&wq->maydays);
+>  
+> -	lockdep_init_map(&wq->lockdep_map, lock_name, key, 0);
+> +	lockdep_init_map(&wq->lockdep_map, wq->name, key, 0);
 
-diff --git v3.14-rc2.orig/fs/proc/task_mmu.c v3.14-rc2/fs/proc/task_mmu.c
-index 62eedbe50733..8ecae2f55a97 100644
---- v3.14-rc2.orig/fs/proc/task_mmu.c
-+++ v3.14-rc2/fs/proc/task_mmu.c
-@@ -698,7 +698,6 @@ enum clear_refs_types {
- };
- 
- struct clear_refs_private {
--	struct vm_area_struct *vma;
- 	enum clear_refs_types type;
- };
- 
-@@ -730,41 +729,43 @@ static inline void clear_soft_dirty(struct vm_area_struct *vma,
- #endif
- }
- 
--static int clear_refs_pte_range(pmd_t *pmd, unsigned long addr,
-+static int clear_refs_pte(pte_t *pte, unsigned long addr,
- 				unsigned long end, struct mm_walk *walk)
- {
- 	struct clear_refs_private *cp = walk->private;
--	struct vm_area_struct *vma = cp->vma;
--	pte_t *pte, ptent;
--	spinlock_t *ptl;
-+	struct vm_area_struct *vma = walk->vma;
- 	struct page *page;
- 
--	split_huge_page_pmd(vma, addr, pmd);
--	if (pmd_trans_unstable(pmd))
-+	if (cp->type == CLEAR_REFS_SOFT_DIRTY) {
-+		clear_soft_dirty(vma, addr, pte);
- 		return 0;
-+	}
-+	if (!pte_present(*pte))
-+		return 0;
-+	page = vm_normal_page(vma, addr, *pte);
-+	if (!page)
-+		return 0;
-+	/* Clear accessed and referenced bits. */
-+	ptep_test_and_clear_young(vma, addr, pte);
-+	ClearPageReferenced(page);
-+	return 0;
-+}
- 
--	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
--	for (; addr != end; pte++, addr += PAGE_SIZE) {
--		ptent = *pte;
--
--		if (cp->type == CLEAR_REFS_SOFT_DIRTY) {
--			clear_soft_dirty(vma, addr, pte);
--			continue;
--		}
--
--		if (!pte_present(ptent))
--			continue;
--
--		page = vm_normal_page(vma, addr, ptent);
--		if (!page)
--			continue;
-+static int clear_refs_test_walk(unsigned long start, unsigned long end,
-+				struct mm_walk *walk)
-+{
-+	struct clear_refs_private *cp = walk->private;
-+	struct vm_area_struct *vma = walk->vma;
- 
--		/* Clear accessed and referenced bits. */
--		ptep_test_and_clear_young(vma, addr, pte);
--		ClearPageReferenced(page);
--	}
--	pte_unmap_unlock(pte - 1, ptl);
--	cond_resched();
-+	/*
-+	 * Writing 1 to /proc/pid/clear_refs affects all pages.
-+	 * Writing 2 to /proc/pid/clear_refs only affects anonymous pages.
-+	 * Writing 3 to /proc/pid/clear_refs only affects file mapped pages.
-+	 */
-+	if (cp->type == CLEAR_REFS_ANON && vma->vm_file)
-+		walk->skip = 1;
-+	if (cp->type == CLEAR_REFS_MAPPED && !vma->vm_file)
-+		walk->skip = 1;
- 	return 0;
- }
- 
-@@ -806,33 +807,16 @@ static ssize_t clear_refs_write(struct file *file, const char __user *buf,
- 			.type = type,
- 		};
- 		struct mm_walk clear_refs_walk = {
--			.pmd_entry = clear_refs_pte_range,
-+			.pte_entry = clear_refs_pte,
-+			.test_walk = clear_refs_test_walk,
- 			.mm = mm,
- 			.private = &cp,
- 		};
- 		down_read(&mm->mmap_sem);
- 		if (type == CLEAR_REFS_SOFT_DIRTY)
- 			mmu_notifier_invalidate_range_start(mm, 0, -1);
--		for (vma = mm->mmap; vma; vma = vma->vm_next) {
--			cp.vma = vma;
--			if (is_vm_hugetlb_page(vma))
--				continue;
--			/*
--			 * Writing 1 to /proc/pid/clear_refs affects all pages.
--			 *
--			 * Writing 2 to /proc/pid/clear_refs only affects
--			 * Anonymous pages.
--			 *
--			 * Writing 3 to /proc/pid/clear_refs only affects file
--			 * mapped pages.
--			 */
--			if (type == CLEAR_REFS_ANON && vma->vm_file)
--				continue;
--			if (type == CLEAR_REFS_MAPPED && !vma->vm_file)
--				continue;
--			walk_page_range(vma->vm_start, vma->vm_end,
--					&clear_refs_walk);
--		}
-+		for (vma = mm->mmap; vma; vma = vma->vm_next)
-+			walk_page_vma(vma, &clear_refs_walk);
- 		if (type == CLEAR_REFS_SOFT_DIRTY)
- 			mmu_notifier_invalidate_range_end(mm, 0, -1);
- 		flush_tlb_mm(mm);
+Looks good to me.  Can you please post the patch with SOB?
+
+Thanks!
+
 -- 
-1.8.5.3
-
+tejun
