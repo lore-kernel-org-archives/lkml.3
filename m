@@ -1,77 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752789AbaBJKgK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 05:36:10 -0500
-Received: from smtp.csie.ntu.edu.tw ([140.112.30.61]:51353 "EHLO
-	smtp.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751889AbaBJKf7 (ORCPT
+	id S1752877AbaBJKgV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 05:36:21 -0500
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:34622 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752801AbaBJKgK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 05:35:59 -0500
-From: Chen-Yu Tsai <wens@csie.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Emilio Lopez <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>
-Cc: Chen-Yu Tsai <wens@csie.org>, linux-arm-kernel@lists.infradead.org,
-        linux-sunxi@googlegroups.com, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v4 2/8] ARM: dts: sun7i: Add GMAC clock node to sun7i DTSI
-Date: Mon, 10 Feb 2014 18:35:48 +0800
-Message-Id: <1392028554-32545-3-git-send-email-wens@csie.org>
-X-Mailer: git-send-email 1.9.rc1
-In-Reply-To: <1392028554-32545-1-git-send-email-wens@csie.org>
-References: <1392028554-32545-1-git-send-email-wens@csie.org>
+	Mon, 10 Feb 2014 05:36:10 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140204170746.GD22609@sirena.org.uk>
+References: <1391529538-21685-1-git-send-email-ulf.hansson@linaro.org>
+	<1391529538-21685-9-git-send-email-ulf.hansson@linaro.org>
+	<20140204170746.GD22609@sirena.org.uk>
+Date: Mon, 10 Feb 2014 11:36:08 +0100
+Message-ID: <CAPDyKFraQUcZ_LjSAwENQA_RVqXokKKgfOZh7WD1vKmJ+5KstQ@mail.gmail.com>
+Subject: Re: [PATCH 08/17] spi: pl022: Fully gate clocks at request inactivity
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Alessandro Rubini <rubini@unipv.it>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>, Chris Ball <chris@printf.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The GMAC uses 1 of 2 sources for its transmit clock, depending on the
-PHY interface mode. Add both sources as dummy clocks, and as parents
-to the GMAC clock node.
+On 4 February 2014 18:07, Mark Brown <broonie@kernel.org> wrote:
+> On Tue, Feb 04, 2014 at 04:58:49PM +0100, Ulf Hansson wrote:
+>> Use clk_disable_unprepare and clk_prepare_enable from the runtime PM
+>> callbacks, to fully gate|ungate clocks. Potentially this will save more
+>> power, depending on the clock tree for the current SOC.
+>
+> The same patch has already been applied (I noticed and fixed it while
+> doing unrelated code review).
 
-Signed-off-by: Chen-Yu Tsai <wens@csie.org>
----
- arch/arm/boot/dts/sun7i-a20.dtsi | 28 ++++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
+Sorry, didn't notice that.
 
-diff --git a/arch/arm/boot/dts/sun7i-a20.dtsi b/arch/arm/boot/dts/sun7i-a20.dtsi
-index 4fbe530..dd567ea 100644
---- a/arch/arm/boot/dts/sun7i-a20.dtsi
-+++ b/arch/arm/boot/dts/sun7i-a20.dtsi
-@@ -322,6 +322,34 @@
- 		};
- 
- 		/*
-+		 * The following two are dummy clocks, placeholders used in the gmac_tx
-+		 * clock. The gmac driver will choose one parent depending on the PHY
-+		 * interface mode, using clk_set_rate auto-reparenting.
-+		 * The actual TX clock rate is not controlled by the gmac_tx clock.
-+		 */
-+		mii_phy_tx_clk: clk@2 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-clock";
-+			clock-frequency = <25000000>;
-+			clock-output-names = "mii_phy_tx";
-+		};
-+
-+		gmac_int_tx_clk: clk@3 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-clock";
-+			clock-frequency = <125000000>;
-+			clock-output-names = "gmac_int_tx";
-+		};
-+
-+		gmac_tx_clk: clk@01c20164 {
-+			#clock-cells = <0>;
-+			compatible = "allwinner,sun7i-a20-gmac-clk";
-+			reg = <0x01c20164 0x4>;
-+			clocks = <&mii_phy_tx_clk>, <&gmac_int_tx_clk>;
-+			clock-output-names = "gmac_tx";
-+		};
-+
-+		/*
- 		 * Dummy clock used by output clocks
- 		 */
- 		osc24M_32k: clk@1 {
--- 
-1.9.rc1
+Thanks!
 
+Kind regards
+Ulf Hansson
+
+>
+>>       pinctrl_pm_select_default_state(dev);
+>> -     clk_enable(pl022->clk);
+>> +     clk_prepare_enable(pl022->clk);
+>
+> Someone should really make this check errors though!
