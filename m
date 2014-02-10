@@ -1,62 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752284AbaBJBYT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 20:24:19 -0500
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:33372 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752157AbaBJBYR (ORCPT
+	id S1752222AbaBJBhI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 20:37:08 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:21925 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751996AbaBJBhG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 20:24:17 -0500
+	Sun, 9 Feb 2014 20:37:06 -0500
+Message-ID: <52F82D0F.2000300@oracle.com>
+Date: Sun, 09 Feb 2014 20:36:15 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <1391994986.18779.169.camel@triegel.csb>
-References: <52F3DA85.1060209@arm.com>
-	<20140206185910.GE27276@mudshark.cambridge.arm.com>
-	<20140206192743.GH4250@linux.vnet.ibm.com>
-	<1391721423.23421.3898.camel@triegel.csb>
-	<20140206221117.GJ4250@linux.vnet.ibm.com>
-	<1391730288.23421.4102.camel@triegel.csb>
-	<20140207042051.GL4250@linux.vnet.ibm.com>
-	<20140207074405.GM5002@laptop.programming.kicks-ass.net>
-	<20140207165028.GO4250@linux.vnet.ibm.com>
-	<20140207165548.GR5976@mudshark.cambridge.arm.com>
-	<20140207180216.GP4250@linux.vnet.ibm.com>
-	<1391992071.18779.99.camel@triegel.csb>
-	<CA+55aFwFVr2KiXX2MObMBGypQk9eabe-93Nhmro=HL1RtC-1jw@mail.gmail.com>
-	<1391994986.18779.169.camel@triegel.csb>
-Date: Sun, 9 Feb 2014 17:24:14 -0800
-X-Google-Sender-Auth: lCK0TBYZGQRfld2L5Hpepwx608I
-Message-ID: <CA+55aFy0SPge-z9TbaLF2yxLffVTviv_WhhbkXsB5mMA9d9iaQ@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Torvald Riegel <triegel@redhat.com>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Will Deacon <will.deacon@arm.com>,
+To: Ingo Molnar <mingo@kernel.org>
+CC: "Ira W. Snyder" <iws@ovro.caltech.edu>,
+        LKML <linux-kernel@vger.kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Content-Type: text/plain; charset=UTF-8
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [GIT PULL] liblockdep fixes for v3.14
+References: <52F2C56F.5030309@oracle.com> <20140209125325.GA23318@gmail.com>
+In-Reply-To: <20140209125325.GA23318@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 9, 2014 at 5:16 PM, Torvald Riegel <triegel@redhat.com> wrote:
+On 02/09/2014 07:53 AM, Ingo Molnar wrote:
 >
-> (a) seems to say that you don't like requiring programmers to mark
-> atomic accesses specially.  Is that the case?
+> * Sasha Levin <sasha.levin@oracle.com> wrote:
+>
+>> The following changes since commit 65370bdf881e20907e7a53abab9b8c0bc5f60a6b:
+>>
+>>    Merge branch 'linus' into core/locking (2014-02-02 09:43:20 +0100)
+>>
+>> are available in the git repository at:
+>>
+>>
+>>    https://github.com/sashalevin/liblockdep.git liblockdep-fixes
+>>
+>> for you to fetch changes up to a521b55af18ac72c969c1ba41b660d77dae37357:
+>>
+>>    liblockdep: add a stub for new rcu_is_watching (2014-02-05 18:03:54 -0500)
+>>
+>> ----------------------------------------------------------------
+>> Ira W. Snyder (3):
+>>        tools: lockdep: fix initialization code path
+>>        tools: lockdep: fix include of asm/hash.h
+>>        tools: lockdep: add include directory to allow tests to compile
+>>
+>> Sasha Levin (2):
+>>        liblockdep: mark runtests.sh as executable
+>>        liblockdep: add a stub for new rcu_is_watching
+>
+> So I have a couple of nits about the commits:
+>
+> 1)
+>
+> Please use the following standard tags/prefixes:
+>
+>     tools/liblockdep: Fix initialization code path
+>     ...
+>
+> and also capitalize sentences properly.
+>
+> 2)
+>
+> Faulty SOB sequences:
+>
+>   Author: Ira W. Snyder <iws@ovro.caltech.edu>
+>   Date:   Fri Jan 31 13:35:32 2014 -0800
+>
+>      tools: lockdep: add include directory to allow tests to compile
+>
+>      Acked-by: Sasha Levin <sasha.levin@oracle.com>
+>      Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
+>
+>
+> That's not how we do signoffs, maintainer commits should be:
+>
+> 	Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
+> 	Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+>
+>
+> As a side note, that's not a valid Ack sequence either, which if done
+> should be the other way around:
+>
+>      Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
+>      Acked-by: Sasha Levin <sasha.levin@oracle.com>
+>
+> 3)
+>
+> It's not clear which patch you are referring to here:
+>
+>      This patch mirrors the fix used for perf, titled "tools: perf:
+>      util: fix include for non x86 architectures".
+>
+> It's neither in the series, nor in upstream.
 
-In Paul's example, they were marked specially.
+Thanks for the review Ingo, this was my first time doing a pull request. I'll fix everything and resend.
 
-And you seemed to argue that Paul's example could possibly return
-anything but 0/0.
+About 3, Arnaldo pulled that patch into -tip a week ago (https://lkml.org/lkml/2014/2/2/34).
 
-If you really think that, I hope to God that you have nothing to do
-with the C standard or any actual compiler I ever use.
 
-Because such a standard or compiler would be shit. It's sadly not too uncommon.
+Thanks,
+Sasha
 
-             Linus
