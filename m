@@ -1,72 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753546AbaBJRba (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 12:31:30 -0500
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:63029 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752620AbaBJRbV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 12:31:21 -0500
-Date: Mon, 10 Feb 2014 18:31:14 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
-Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>, sagar.a.kamble@intel.com,
-        daniel.vetter@ffwll.ch, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, vijay.a.purushothaman@intel.com,
-        tomi.valkeinen@ti.com, dri-devel@lists.freedesktop.org,
-        gregkh@linuxfoundation.org, joe@perches.com, airlied@redhat.com
-Subject: Re: [PATCH v4 00/11] Enabling 180 degree rotation for sprite and
- crtc planes
-Message-ID: <20140210173114.GB17001@phenom.ffwll.local>
-Mail-Followup-To: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>,
-	One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-	sagar.a.kamble@intel.com, intel-gfx@lists.freedesktop.org,
-	linux-kernel@vger.kernel.org, vijay.a.purushothaman@intel.com,
-	tomi.valkeinen@ti.com, dri-devel@lists.freedesktop.org,
-	gregkh@linuxfoundation.org, joe@perches.com, airlied@redhat.com
-References: <1391780716-21896-1-git-send-email-sagar.a.kamble@intel.com>
- <20140210104130.7e7c3c93@alan.etchedpixels.co.uk>
- <20140210135212.GN3891@intel.com>
- <20140210141454.7f8e25e6@alan.etchedpixels.co.uk>
- <20140210142945.GP3891@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140210142945.GP3891@intel.com>
-X-Operating-System: Linux phenom 3.12.0+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753513AbaBJRbJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 12:31:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12232 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753455AbaBJRa7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 12:30:59 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: acme@ghostprotocols.net
+Cc: LKML <linux-kernel@vger.kernel.org>, jolsa@redhat.com, jmario@redhat.com,
+        fowles@inreach.com, eranian@google.com,
+        Don Zickus <dzickus@redhat.com>
+Subject: [PATCH 17/21] perf, c2c: Add symbol count table
+Date: Mon, 10 Feb 2014 12:29:12 -0500
+Message-Id: <1392053356-23024-18-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1392053356-23024-1-git-send-email-dzickus@redhat.com>
+References: <1392053356-23024-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 04:29:45PM +0200, Ville Syrjälä wrote:
-> On Mon, Feb 10, 2014 at 02:14:54PM +0000, One Thousand Gnomes wrote:
-> > > > Does this mean it should also handle horizontal mirroring in
-> > > > hardware (180° rotate, and scan lines backwards combined) ?
-> > > 
-> > > Our hardware doesn't support mirroring (h or v). Well, unless you
-> > > count h+v mirroring since that's 180 degree rotation :)
-> > > 
-> > > Anyways IIRC the old video overlay (present on gen2-4) was the only plane
-> > > to ever support mirroring on Intel hardware. With all other planes we're
-> > > limited to 0 and 180 degree rotation
-> > 
-> > It seems to do vertical mirroring providing your output buffer is
-> > allocated and aligned on page boundaries as the GTT can then be used to
-> > map the scan lines in any order you like ?
-> 
-> Oh, right. That would be possible, but that sounds like something that
-> needs to be done on the gem side rather than the kms side since it
-> impacts other things besides scanout memory access. Well either that
-> or we'd potentially need to map the same object multiple times into
-> the ggtt.
+Just another table that displays the referenced symbols in the analysis
+report.  The table lists the most frequently used symbols first.
 
-Until someone demonstrates a clear benefit and use-case for that I'll vote
-"pls just blit it with the render engine". The common use-case for
-rotation is tablets/phones and there we can't do it in many cases anyway.
--Daniel
+It is just another way to look at similar data to figure out who
+is causing the most contention (based on the workload used).
+
+Originally done by Dick Fowles and ported by me.
+
+Suggested-by: Joe Mario <jmario@redhat.com>
+Original-by: Dick Fowles <rfowles@redhat.com>
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+---
+ tools/perf/builtin-c2c.c | 99 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 99 insertions(+)
+
+diff --git a/tools/perf/builtin-c2c.c b/tools/perf/builtin-c2c.c
+index 32c2319..979187f 100644
+--- a/tools/perf/builtin-c2c.c
++++ b/tools/perf/builtin-c2c.c
+@@ -950,6 +950,104 @@ static void c2c_hit__update_stats(struct c2c_stats *new,
+ 	new->total_period	+= old->total_period;
+ }
+ 
++LIST_HEAD(ref_tree);
++LIST_HEAD(ref_tree_sorted);
++struct refs {
++	struct list_head	list;
++	int			nr;
++	const char		*name;
++	char			*long_name;
++};
++
++static int update_ref_tree(struct c2c_entry *entry)
++{
++	struct refs *p;
++	struct dso *dso = entry->mi->iaddr.map->dso;
++	const char *name = dso->short_name;
++
++	list_for_each_entry(p, &ref_tree, list) {
++		if (!strcmp(p->name, name))
++			goto found;
++	}
++
++	p = zalloc(sizeof(struct refs));
++	if (!p)
++		return -1;
++	p->name = name;
++	p->long_name = dso->long_name;
++	list_add_tail(&p->list, &ref_tree);
++
++found:
++	p->nr++;
++	return 0;
++}
++
++static void print_symbol_record_count(struct rb_root *tree)
++{
++	struct rb_node *next = rb_first(tree);
++	struct c2c_entry *n;
++	struct refs *p, *q, *pn;
++	char      string[256];
++	char      delimit[256];
++	int       i;
++	int       idx = 0;
++
++	/* gather symbol references */
++	while (next) {
++		n = rb_entry(next, struct c2c_entry, rb_node);
++		next = rb_next(&n->rb_node);
++
++		if (update_ref_tree(n)) {
++			pr_err("Could not update reference tree\n");
++			goto cleanup;
++		}
++	}
++
++	/* sort on number of references per symbol */
++	list_for_each_entry_safe(p, pn, &ref_tree, list) {
++		list_del_init(&p->list);
++		list_for_each_entry(q, &ref_tree_sorted, list) {
++			if (p->nr > q->nr) {
++				list_add_tail(&p->list, &q->list);
++				break;
++			}
++		}
++		if (list_empty(&p->list))
++			list_add_tail(&p->list, &ref_tree_sorted);
++	}
++
++	/* print header info */
++	sprintf(string, "%5s   %8s   %-32s  %-80s",
++		"Index",
++		"Records",
++		"Object Name",
++		"Object Path");
++
++	delimit[0] = '\0';
++	for (i = 0; i < (int)strlen(string); i++) strcat(delimit, "=");
++
++	printf("\n\n");
++	printf("%s\n", delimit);
++	printf("%50s %s\n", " ", "Object Name, Path & Reference Counts");
++	printf("\n");
++	printf("%s\n", string);
++	printf("%s\n", delimit);
++
++	/* print out table */
++	list_for_each_entry(p, &ref_tree_sorted, list) {
++		printf("%5d   %8d   %-32s  %-80s\n",
++			idx, p->nr, p->name, p->long_name);
++		idx++;
++	}
++	printf("\n");
++
++cleanup:
++	list_for_each_entry_safe(p, pn, &ref_tree_sorted, list) {
++		list_del(&p->list);
++		free(p);
++	}
++}
++
+ static void print_hitm_cacheline_header(void)
+ {
+ #define SHARING_REPORT_TITLE  "Shared Cache Line Distribution Pareto"
+@@ -1528,6 +1626,7 @@ static int perf_c2c__process_events(struct perf_session *session,
+ 		dump_rb_tree(&c2c->tree_physid, c2c);
+ 	print_c2c_trace_report(c2c);
+ 	c2c_analyze_hitms(c2c);
++	print_symbol_record_count(&c2c->tree_physid);
+ 
+ err:
+ 	return err;
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+1.7.11.7
+
