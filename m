@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752547AbaBJWEi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 17:04:38 -0500
-Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:38286 "EHLO
-	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751323AbaBJWEg (ORCPT
+	id S1752965AbaBJWFT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 17:05:19 -0500
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:38120 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752608AbaBJWFP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 17:04:36 -0500
-Message-ID: <1392069862.2918.26.camel@j-VirtualBox>
-Subject: Re: [PATCH 5/8] locking, mutex: Cancelable MCS lock for adaptive
- spinning
-From: Jason Low <jason.low2@hp.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Waiman Long <waiman.long@hp.com>,
-        mingo@kernel.org, paulmck@linux.vnet.ibm.com,
-        torvalds@linux-foundation.org, tglx@linutronix.de, riel@redhat.com,
-        akpm@linux-foundation.org, davidlohr@hp.com, hpa@zytor.com,
-        andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
-        chegu_vinod@hp.com
-Date: Mon, 10 Feb 2014 14:04:22 -0800
-In-Reply-To: <20140210213202.GX2936@laptop.programming.kicks-ass.net>
-References: <20140210195820.834693028@infradead.org>
-	 <20140210203659.671232531@infradead.org>
-	 <1392066959.2051.2.camel@j-VirtualBox>
-	 <20140210213202.GX2936@laptop.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 10 Feb 2014 17:05:15 -0500
+From: David Daney <ddaney.cavm@gmail.com>
+To: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        devicetree@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, linux-gpio@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
+Subject: [PATCH] of/gpio: Define OF_GPIO_OPEN_DRAIN flag for Open Drain outputs.
+Date: Mon, 10 Feb 2014 14:05:08 -0800
+Message-Id: <1392069908-22017-1-git-send-email-ddaney.cavm@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-02-10 at 22:32 +0100, Peter Zijlstra wrote:
-> On Mon, Feb 10, 2014 at 01:15:59PM -0800, Jason Low wrote:
-> > On Mon, 2014-02-10 at 20:58 +0100, Peter Zijlstra wrote:
-> > > +void osq_unlock(struct optimistic_spin_queue **lock)
-> > > +{
-> > > +	struct optimistic_spin_queue *node = this_cpu_ptr(&osq_node);
-> > > +	struct optimistic_spin_queue *next;
-> > > +
-> > > +	/*
-> > > +	 * Fast path for the uncontended case.
-> > > +	 */
-> > > +	if (likely(cmpxchg(lock, node, NULL) == node))
-> > > +		return;
-> > 
-> > Can we can also add the following code here as I'm noticing next != NULL
-> > is the much more likely scenario on my box:
-> > 
-> >         next = xchg(&node->next, NULL);
-> >         if (next) {
-> >                 ACCESS_ONCE(next->locked) = 1;
-> >                 return;
-> 
-> Is adding that really much faster than the relatively straight path
-> oqs_wait_next() would walk to bit the same exit?
-> 
-> The only reason I pulled out the above cmpxchg() is because its the
-> uncontended fast path, which seems like a special enough case.
+From: David Daney <david.daney@cavium.com>
 
-So it would avoid 2 extra checks (*lock == node) and (node->next) in the
-oqs_wait_next() path, which aren't necessary when node->next != NULL.
+When we have a GPIO pin connected to an open-drain network, we want a
+standard way of specifying this in the device tree.  So we choose bit
+1 of the flag field to indicate open drain.
 
-And I think node->next != NULL can be considered a special enough case
-after the cmpxchg() fails because in the contended case, we're expecting
-the node->next to be pointing at something. The only times node->next is
-NULL after cmpxchg() fails are during a very small race window with the
-osq_lock(), and when the next node is unqueuing due to need_resched,
-which is also a very small window.
+A typical use case would be something like:
+
+	enum of_gpio_flags f;
+	.
+	.
+	.
+	reset_gpio = of_get_named_gpio_flags(node, "reset", 0, &f);
+	.
+	.
+	.
+	ret = gpio_request_one(reset_gpio,
+		(f & OF_GPIO_OPEN_DRAIN) ? GPIOF_OPEN_DRAIN : 0,
+		 "reset");
+	.
+	.
+	.
+	gpio_direction_output(reset_gpio, 1);
+	gpio_set_value(reset_gpio, 0);
+	msleep(20);
+	gpio_set_value(reset_gpio, 1);
+	.
+	.
+	.
+
+Signed-off-by: David Daney <david.daney@cavium.com>
+---
+ include/linux/of_gpio.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/include/linux/of_gpio.h b/include/linux/of_gpio.h
+index f14123a..0e374774 100644
+--- a/include/linux/of_gpio.h
++++ b/include/linux/of_gpio.h
+@@ -30,6 +30,7 @@ struct device_node;
+  */
+ enum of_gpio_flags {
+ 	OF_GPIO_ACTIVE_LOW = 0x1,
++	OF_GPIO_OPEN_DRAIN = 0x2,
+ };
+ 
+ #ifdef CONFIG_OF_GPIO
+-- 
+1.7.11.7
 
