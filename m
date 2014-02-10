@@ -1,61 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752837AbaBJM6g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 07:58:36 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:58877 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752660AbaBJM6d (ORCPT
+	id S1752887AbaBJNAl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 08:00:41 -0500
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:34239 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751851AbaBJNAg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 07:58:33 -0500
-MIME-Version: 1.0
-In-Reply-To: <8438484.DB7cn7tjVR@avalon>
-References: <1392029254-15400-1-git-send-email-geert@linux-m68k.org>
-	<1392029254-15400-2-git-send-email-geert@linux-m68k.org>
-	<8438484.DB7cn7tjVR@avalon>
-Date: Mon, 10 Feb 2014 13:58:32 +0100
-X-Google-Sender-Auth: 5JlT64U9fig98x5OQhoFJBpFHMQ
-Message-ID: <CAMuHMdXAhZ0i4NcpymGADfN3wwxRZxpcwRVQEqsqpoGw_O0_Ug@mail.gmail.com>
-Subject: Re: [PATCH 1/7] pinctrl: sh-pfc: r8a7790: Add QSPI pin groups
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 10 Feb 2014 08:00:36 -0500
+From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+To: lenb@kernel.org, rjw@rjwysocki.net
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Subject: [PATCH 1/2] ACPI, PCI, ISA: Call ISA-specific code only for architectures which support ISA.
+Date: Mon, 10 Feb 2014 14:00:10 +0100
+Message-Id: <1392037211-29349-1-git-send-email-tomasz.nowicki@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 1:48 PM, Laurent Pinchart
-<laurent.pinchart@ideasonboard.com> wrote:
->> @@ -4212,6 +4244,7 @@ static const struct sh_pfc_function pinmux_functions[]
->> = { SH_PFC_FUNCTION(msiof0),
->>       SH_PFC_FUNCTION(msiof1),
->>       SH_PFC_FUNCTION(msiof2),
->> +     SH_PFC_FUNCTION(qspi),
->>       SH_PFC_FUNCTION(msiof3),
->
-> I believe qspi comes after msiof3 :-)
+This commit enables ISA-specific code if and only if CONFIG_{E}ISA is set
+in the kernel configuration so that we do not have to maintain
+acpi_isa_irq_to_gsi() function for architectures which do not support ISA.
 
-Doh... silly me...
+Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+---
+ drivers/acpi/pci_irq.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-> Apart from that the patch looks good.
->
-> Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+diff --git a/drivers/acpi/pci_irq.c b/drivers/acpi/pci_irq.c
+index 41c5e1b..b0e31b6 100644
+--- a/drivers/acpi/pci_irq.c
++++ b/drivers/acpi/pci_irq.c
+@@ -418,6 +418,7 @@ int acpi_pci_irq_enable(struct pci_dev *dev)
+ 	 * driver reported one, then use it. Exit in any case.
+ 	 */
+ 	if (gsi < 0) {
++#if IS_ENABLED(CONFIG_ISA) || IS_ENABLED(CONFIG_EISA)
+ 		u32 dev_gsi;
+ 		/* Interrupt Line values above 0xF are forbidden */
+ 		if (dev->irq > 0 && (dev->irq <= 0xF) &&
+@@ -427,10 +428,9 @@ int acpi_pci_irq_enable(struct pci_dev *dev)
+ 			acpi_register_gsi(&dev->dev, dev_gsi,
+ 					  ACPI_LEVEL_SENSITIVE,
+ 					  ACPI_ACTIVE_LOW);
+-		} else {
+-			dev_warn(&dev->dev, "PCI INT %c: no GSI\n",
+-				 pin_name(pin));
+-		}
++		} else
++#endif
++		dev_warn(&dev->dev, "PCI INT %c: no GSI\n", pin_name(pin));
+ 
+ 		return 0;
+ 	}
+-- 
+1.7.9.5
 
-Thanks!
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
