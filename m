@@ -1,29 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754194AbaBJTqq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 14:46:46 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35002 "EHLO
+	id S1754954AbaBJT7P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 14:59:15 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35014 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753992AbaBJTqj (ORCPT
+	with ESMTP id S1754177AbaBJTqn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:46:39 -0500
+	Mon, 10 Feb 2014 14:46:43 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>, Mircea Gherzan <mgherzan@gmail.com>,
-        Daniel Borkmann <dxchgb@gmail.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Matt Evans <matt@ozlabs.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Takashi Iwai <tiwai@suse.de>, Matthew Garrett <matthew.garrett@nebula.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 117/124] bpf: do not use reciprocal divide
-Date: Mon, 10 Feb 2014 11:40:57 -0800
-Message-Id: <1392061264-28124-118-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 080/124] hp_accel: Add a new PnP ID HPQ6007 for new HP laptops
+Date: Mon, 10 Feb 2014 11:40:20 -0800
+Message-Id: <1392061264-28124-81-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
 References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -33,233 +30,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-[ Upstream commit aee636c4809fa54848ff07a899b326eb1f9987a2 ]
+commit b0ad4ff35d479a46a3b995a299db9aeb097acfce upstream.
 
-At first Jakub Zawadzki noticed that some divisions by reciprocal_divide
-were not correct. (off by one in some cases)
-http://www.wireshark.org/~darkjames/reciprocal-buggy.c
+The DriveGuard chips on the new HP laptops are with a new PnP ID
+"HPQ6007".  It should be compatible with older chips.
 
-He could also show this with BPF:
-http://www.wireshark.org/~darkjames/set-and-dump-filter-k-bug.c
-
-The reciprocal divide in linux kernel is not generic enough,
-lets remove its use in BPF, as it is not worth the pain with
-current cpus.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Reported-by: Jakub Zawadzki <darkjames-ws@darkjames.pl>
-Cc: Mircea Gherzan <mgherzan@gmail.com>
-Cc: Daniel Borkmann <dxchgb@gmail.com>
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Cc: Matt Evans <matt@ozlabs.org>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: David S. Miller <davem@davemloft.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Acked-by: Éric Piel <eric.piel@tremplin-utc.net>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/net/bpf_jit_32.c       |  6 +++---
- arch/powerpc/net/bpf_jit_comp.c |  7 ++++---
- arch/s390/net/bpf_jit_comp.c    | 17 ++++++++++++-----
- arch/sparc/net/bpf_jit_comp.c   | 17 ++++++++++++++---
- arch/x86/net/bpf_jit_comp.c     | 14 ++++++++++----
- net/core/filter.c               | 30 ++----------------------------
- 6 files changed, 45 insertions(+), 46 deletions(-)
+ drivers/platform/x86/hp_accel.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/arm/net/bpf_jit_32.c b/arch/arm/net/bpf_jit_32.c
-index a34f1e2..373656a 100644
---- a/arch/arm/net/bpf_jit_32.c
-+++ b/arch/arm/net/bpf_jit_32.c
-@@ -630,10 +630,10 @@ load_ind:
- 			emit(ARM_MUL(r_A, r_A, r_X), ctx);
- 			break;
- 		case BPF_S_ALU_DIV_K:
--			/* current k == reciprocal_value(userspace k) */
-+			if (k == 1)
-+				break;
- 			emit_mov_i(r_scratch, k, ctx);
--			/* A = top 32 bits of the product */
--			emit(ARM_UMULL(r_scratch, r_A, r_A, r_scratch), ctx);
-+			emit_udiv(r_A, r_A, r_scratch, ctx);
- 			break;
- 		case BPF_S_ALU_DIV_X:
- 			update_on_xread(ctx);
-diff --git a/arch/powerpc/net/bpf_jit_comp.c b/arch/powerpc/net/bpf_jit_comp.c
-index e834f1e..8a2284c 100644
---- a/arch/powerpc/net/bpf_jit_comp.c
-+++ b/arch/powerpc/net/bpf_jit_comp.c
-@@ -209,10 +209,11 @@ static int bpf_jit_build_body(struct sk_filter *fp, u32 *image,
- 			}
- 			PPC_DIVWU(r_A, r_A, r_X);
- 			break;
--		case BPF_S_ALU_DIV_K: /* A = reciprocal_divide(A, K); */
-+		case BPF_S_ALU_DIV_K: /* A /= K */
-+			if (K == 1)
-+				break;
- 			PPC_LI32(r_scratch1, K);
--			/* Top 32 bits of 64bit result -> A */
--			PPC_MULHWU(r_A, r_A, r_scratch1);
-+			PPC_DIVWU(r_A, r_A, r_scratch1);
- 			break;
- 		case BPF_S_ALU_AND_X:
- 			ctx->seen |= SEEN_XREG;
-diff --git a/arch/s390/net/bpf_jit_comp.c b/arch/s390/net/bpf_jit_comp.c
-index bb28441..fd01c59 100644
---- a/arch/s390/net/bpf_jit_comp.c
-+++ b/arch/s390/net/bpf_jit_comp.c
-@@ -335,11 +335,13 @@ static int bpf_jit_insn(struct bpf_jit *jit, struct sock_filter *filter,
- 		/* dr %r4,%r12 */
- 		EMIT2(0x1d4c);
- 		break;
--	case BPF_S_ALU_DIV_K: /* A = reciprocal_divide(A, K) */
--		/* m %r4,<d(K)>(%r13) */
--		EMIT4_DISP(0x5c40d000, EMIT_CONST(K));
--		/* lr %r5,%r4 */
--		EMIT2(0x1854);
-+	case BPF_S_ALU_DIV_K: /* A /= K */
-+		if (K == 1)
-+			break;
-+		/* lhi %r4,0 */
-+		EMIT4(0xa7480000);
-+		/* d %r4,<d(K)>(%r13) */
-+		EMIT4_DISP(0x5d40d000, EMIT_CONST(K));
- 		break;
- 	case BPF_S_ALU_MOD_X: /* A %= X */
- 		jit->seen |= SEEN_XREG | SEEN_RET0;
-@@ -355,6 +357,11 @@ static int bpf_jit_insn(struct bpf_jit *jit, struct sock_filter *filter,
- 		EMIT2(0x1854);
- 		break;
- 	case BPF_S_ALU_MOD_K: /* A %= K */
-+		if (K == 1) {
-+			/* lhi %r5,0 */
-+			EMIT4(0xa7580000);
-+			break;
-+		}
- 		/* lhi %r4,0 */
- 		EMIT4(0xa7480000);
- 		/* d %r4,<d(K)>(%r13) */
-diff --git a/arch/sparc/net/bpf_jit_comp.c b/arch/sparc/net/bpf_jit_comp.c
-index 3109ca6..d844747 100644
---- a/arch/sparc/net/bpf_jit_comp.c
-+++ b/arch/sparc/net/bpf_jit_comp.c
-@@ -497,9 +497,20 @@ void bpf_jit_compile(struct sk_filter *fp)
- 			case BPF_S_ALU_MUL_K:	/* A *= K */
- 				emit_alu_K(MUL, K);
- 				break;
--			case BPF_S_ALU_DIV_K:	/* A /= K */
--				emit_alu_K(MUL, K);
--				emit_read_y(r_A);
-+			case BPF_S_ALU_DIV_K:	/* A /= K with K != 0*/
-+				if (K == 1)
-+					break;
-+				emit_write_y(G0);
-+#ifdef CONFIG_SPARC32
-+				/* The Sparc v8 architecture requires
-+				 * three instructions between a %y
-+				 * register write and the first use.
-+				 */
-+				emit_nop();
-+				emit_nop();
-+				emit_nop();
-+#endif
-+				emit_alu_K(DIV, K);
- 				break;
- 			case BPF_S_ALU_DIV_X:	/* A /= X; */
- 				emit_cmpi(r_X, 0);
-diff --git a/arch/x86/net/bpf_jit_comp.c b/arch/x86/net/bpf_jit_comp.c
-index d11a470..5e9c43f 100644
---- a/arch/x86/net/bpf_jit_comp.c
-+++ b/arch/x86/net/bpf_jit_comp.c
-@@ -303,15 +303,21 @@ void bpf_jit_compile(struct sk_filter *fp)
- 				EMIT2(0x89, 0xd0);	/* mov %edx,%eax */
- 				break;
- 			case BPF_S_ALU_MOD_K: /* A %= K; */
-+				if (K == 1) {
-+					CLEAR_A();
-+					break;
-+				}
- 				EMIT2(0x31, 0xd2);	/* xor %edx,%edx */
- 				EMIT1(0xb9);EMIT(K, 4);	/* mov imm32,%ecx */
- 				EMIT2(0xf7, 0xf1);	/* div %ecx */
- 				EMIT2(0x89, 0xd0);	/* mov %edx,%eax */
- 				break;
--			case BPF_S_ALU_DIV_K: /* A = reciprocal_divide(A, K); */
--				EMIT3(0x48, 0x69, 0xc0); /* imul imm32,%rax,%rax */
--				EMIT(K, 4);
--				EMIT4(0x48, 0xc1, 0xe8, 0x20); /* shr $0x20,%rax */
-+			case BPF_S_ALU_DIV_K: /* A /= K */
-+				if (K == 1)
-+					break;
-+				EMIT2(0x31, 0xd2);	/* xor %edx,%edx */
-+				EMIT1(0xb9);EMIT(K, 4);	/* mov imm32,%ecx */
-+				EMIT2(0xf7, 0xf1);	/* div %ecx */
- 				break;
- 			case BPF_S_ALU_AND_X:
- 				seen |= SEEN_XREG;
-diff --git a/net/core/filter.c b/net/core/filter.c
-index c23543c..9a8d5e8 100644
---- a/net/core/filter.c
-+++ b/net/core/filter.c
-@@ -36,7 +36,6 @@
- #include <asm/uaccess.h>
- #include <asm/unaligned.h>
- #include <linux/filter.h>
--#include <linux/reciprocal_div.h>
- #include <linux/ratelimit.h>
- #include <linux/seccomp.h>
- #include <linux/if_vlan.h>
-@@ -166,7 +165,7 @@ unsigned int sk_run_filter(const struct sk_buff *skb,
- 			A /= X;
- 			continue;
- 		case BPF_S_ALU_DIV_K:
--			A = reciprocal_divide(A, K);
-+			A /= K;
- 			continue;
- 		case BPF_S_ALU_MOD_X:
- 			if (X == 0)
-@@ -549,11 +548,6 @@ int sk_chk_filter(struct sock_filter *filter, unsigned int flen)
- 		/* Some instructions need special checks */
- 		switch (code) {
- 		case BPF_S_ALU_DIV_K:
--			/* check for division by zero */
--			if (ftest->k == 0)
--				return -EINVAL;
--			ftest->k = reciprocal_value(ftest->k);
--			break;
- 		case BPF_S_ALU_MOD_K:
- 			/* check for division by zero */
- 			if (ftest->k == 0)
-@@ -835,27 +829,7 @@ static void sk_decode_filter(struct sock_filter *filt, struct sock_filter *to)
- 	to->code = decodes[code];
- 	to->jt = filt->jt;
- 	to->jf = filt->jf;
--
--	if (code == BPF_S_ALU_DIV_K) {
--		/*
--		 * When loaded this rule user gave us X, which was
--		 * translated into R = r(X). Now we calculate the
--		 * RR = r(R) and report it back. If next time this
--		 * value is loaded and RRR = r(RR) is calculated
--		 * then the R == RRR will be true.
--		 *
--		 * One exception. X == 1 translates into R == 0 and
--		 * we can't calculate RR out of it with r().
--		 */
--
--		if (filt->k == 0)
--			to->k = 1;
--		else
--			to->k = reciprocal_value(filt->k);
--
--		BUG_ON(reciprocal_value(to->k) != filt->k);
--	} else
--		to->k = filt->k;
-+	to->k = filt->k;
- }
- 
- int sk_get_filter(struct sock *sk, struct sock_filter __user *ubuf, unsigned int len)
+diff --git a/drivers/platform/x86/hp_accel.c b/drivers/platform/x86/hp_accel.c
+index 1c43168..99724b0 100644
+--- a/drivers/platform/x86/hp_accel.c
++++ b/drivers/platform/x86/hp_accel.c
+@@ -77,6 +77,7 @@ static inline void delayed_sysfs_set(struct led_classdev *led_cdev,
+ static struct acpi_device_id lis3lv02d_device_ids[] = {
+ 	{"HPQ0004", 0}, /* HP Mobile Data Protection System PNP */
+ 	{"HPQ6000", 0}, /* HP Mobile Data Protection System PNP */
++	{"HPQ6007", 0}, /* HP Mobile Data Protection System PNP */
+ 	{"", 0},
+ };
+ MODULE_DEVICE_TABLE(acpi, lis3lv02d_device_ids);
 -- 
 1.8.3.2
 
