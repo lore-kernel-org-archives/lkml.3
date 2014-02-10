@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753287AbaBJCZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 21:25:59 -0500
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:39710 "EHLO
+	id S1752847AbaBJCWa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 21:22:30 -0500
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:39680 "EHLO
 	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753013AbaBJCXN (ORCPT
+	with ESMTP id S1752678AbaBJCW2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 21:23:13 -0500
+	Sun, 9 Feb 2014 21:22:28 -0500
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Marcel Holtmann <marcel@holtmann.org>
 Cc: Gustavo Padovan <gustavo@padovan.org>,
@@ -17,9 +17,9 @@ Cc: Gustavo Padovan <gustavo@padovan.org>,
         Sander Eikelenboom <linux@eikelenboom.it>,
         linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
         Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 08/24] Bluetooth: Fix unreleased rfcomm_dev reference
-Date: Sun,  9 Feb 2014 20:59:08 -0500
-Message-Id: <1391997564-1805-9-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH 03/24] Revert "Bluetooth: Move rfcomm_get_device() before rfcomm_dev_activate()"
+Date: Sun,  9 Feb 2014 20:59:03 -0500
+Message-Id: <1391997564-1805-4-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1391997564-1805-1-git-send-email-peter@hurleysoftware.com>
 References: <1391997564-1805-1-git-send-email-peter@hurleysoftware.com>
@@ -28,64 +28,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When RFCOMM_RELEASE_ONHUP is set, the rfcomm tty driver 'takes over'
-the initial rfcomm_dev reference created by the RFCOMMCREATEDEV ioctl.
-The assumption is that the rfcomm tty driver will release the
-rfcomm_dev reference when the tty is freed (in rfcomm_tty_cleanup()).
-However, if the tty is never opened, the 'take over' never occurs,
-so when RFCOMMRELEASEDEV ioctl is called, the reference is not
-released.
+This reverts commit e228b63390536f5b737056059a9a04ea016b1abf.
 
-Track the state of the reference 'take over' so that the release
-is guaranteed by either the RFCOMMRELEASEDEV ioctl or the rfcomm tty
-driver.
+This is the third of a 3-patch revert, together with
+Revert "Bluetooth: Remove rfcomm_carrier_raised()" and
+Revert "Bluetooth: Always wait for a connection on RFCOMM open()".
 
-Note that the synchronous hangup in rfcomm_release_dev() ensures
-that rfcomm_tty_install() cannot race with the RFCOMMRELEASEDEV ioctl.
+Commit 4a2fb3ecc7467c775b154813861f25a0ddc11aa0,
+"Bluetooth: Always wait for a connection on RFCOMM open()" open-codes
+blocking on tty open(), rather than using the default behavior
+implemented by the tty port.
+
+The reasons for reverting that patch are detailed in that changelog;
+this patch restores required functionality for that revert.
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- include/net/bluetooth/rfcomm.h | 1 +
- net/bluetooth/rfcomm/tty.c     | 6 ++++--
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ net/bluetooth/rfcomm/tty.c | 32 ++++++++++++++++----------------
+ 1 file changed, 16 insertions(+), 16 deletions(-)
 
-diff --git a/include/net/bluetooth/rfcomm.h b/include/net/bluetooth/rfcomm.h
-index 29d9727..6f3fbc5 100644
---- a/include/net/bluetooth/rfcomm.h
-+++ b/include/net/bluetooth/rfcomm.h
-@@ -332,6 +332,7 @@ int  rfcomm_connect_ind(struct rfcomm_session *s, u8 channel,
- 
- /* rfcomm_dev.status bit definitions */
- #define RFCOMM_DEV_RELEASED   0
-+#define RFCOMM_TTY_OWNED      1
- 
- struct rfcomm_dev_req {
- 	s16      dev_id;
 diff --git a/net/bluetooth/rfcomm/tty.c b/net/bluetooth/rfcomm/tty.c
-index d9d4bc8..bb570d9 100644
+index 32ef9f9..a535ef1 100644
 --- a/net/bluetooth/rfcomm/tty.c
 +++ b/net/bluetooth/rfcomm/tty.c
-@@ -441,7 +441,7 @@ static int rfcomm_release_dev(void __user *arg)
- 		tty_kref_put(tty);
- 	}
- 
--	if (!test_bit(RFCOMM_RELEASE_ONHUP, &dev->flags))
-+	if (!test_bit(RFCOMM_TTY_OWNED, &dev->status))
- 		tty_port_put(&dev->port);
- 
- 	tty_port_put(&dev->port);
-@@ -685,8 +685,10 @@ static int rfcomm_tty_install(struct tty_driver *driver, struct tty_struct *tty)
- 	 * when the last process closes the tty. The behaviour is expected by
- 	 * userspace.
- 	 */
--	if (test_bit(RFCOMM_RELEASE_ONHUP, &dev->flags))
-+	if (test_bit(RFCOMM_RELEASE_ONHUP, &dev->flags)) {
-+		set_bit(RFCOMM_TTY_OWNED, &dev->status);
- 		tty_port_put(&dev->port);
-+	}
- 
- 	return 0;
+@@ -103,22 +103,6 @@ static void rfcomm_dev_destruct(struct tty_port *port)
+ 	module_put(THIS_MODULE);
  }
+ 
+-static struct device *rfcomm_get_device(struct rfcomm_dev *dev)
+-{
+-	struct hci_dev *hdev;
+-	struct hci_conn *conn;
+-
+-	hdev = hci_get_route(&dev->dst, &dev->src);
+-	if (!hdev)
+-		return NULL;
+-
+-	conn = hci_conn_hash_lookup_ba(hdev, ACL_LINK, &dev->dst);
+-
+-	hci_dev_put(hdev);
+-
+-	return conn ? &conn->dev : NULL;
+-}
+-
+ /* device-specific initialization: open the dlc */
+ static int rfcomm_dev_activate(struct tty_port *port, struct tty_struct *tty)
+ {
+@@ -185,6 +169,22 @@ static struct rfcomm_dev *rfcomm_dev_get(int id)
+ 	return dev;
+ }
+ 
++static struct device *rfcomm_get_device(struct rfcomm_dev *dev)
++{
++	struct hci_dev *hdev;
++	struct hci_conn *conn;
++
++	hdev = hci_get_route(&dev->dst, &dev->src);
++	if (!hdev)
++		return NULL;
++
++	conn = hci_conn_hash_lookup_ba(hdev, ACL_LINK, &dev->dst);
++
++	hci_dev_put(hdev);
++
++	return conn ? &conn->dev : NULL;
++}
++
+ static ssize_t show_address(struct device *tty_dev, struct device_attribute *attr, char *buf)
+ {
+ 	struct rfcomm_dev *dev = dev_get_drvdata(tty_dev);
 -- 
 1.8.1.2
 
