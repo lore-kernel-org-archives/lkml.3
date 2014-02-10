@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752297AbaBJIDk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 03:03:40 -0500
-Received: from www84.your-server.de ([213.133.104.84]:38966 "EHLO
+	id S1752252AbaBJIDj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 03:03:39 -0500
+Received: from www84.your-server.de ([213.133.104.84]:38967 "EHLO
 	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751996AbaBJIC4 (ORCPT
+	with ESMTP id S1752063AbaBJIC4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 10 Feb 2014 03:02:56 -0500
 From: stefani@seibold.net
@@ -15,9 +15,9 @@ To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
         andriy.shevchenko@linux.intel.com
 Cc: Martin.Runge@rohde-schwarz.com, Andreas.Brief@rohde-schwarz.com,
         Stefani Seibold <stefani@seibold.net>
-Subject: [PATCH v14 4/9] vclock_gettime.c __vdso_clock_gettime cleanup
-Date: Mon, 10 Feb 2014 09:03:25 +0100
-Message-Id: <1392019410-29634-5-git-send-email-stefani@seibold.net>
+Subject: [PATCH v14 7/9] introduce VVAR marco for vdso32
+Date: Mon, 10 Feb 2014 09:03:28 +0100
+Message-Id: <1392019410-29634-8-git-send-email-stefani@seibold.net>
 X-Mailer: git-send-email 1.8.5.4
 In-Reply-To: <1392019410-29634-1-git-send-email-stefani@seibold.net>
 References: <1392019410-29634-1-git-send-email-stefani@seibold.net>
@@ -28,85 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stefani Seibold <stefani@seibold.net>
 
-This patch is a small code cleanup for the __vdso_clock_gettime() function.
-
-It removes the unneeded return values from do_monotonic_coarse() and
-do_realtime_coarse() and add a fallback label for doing the kernel
-gettimeofday() system call.
+This patch revamp the vvar.h for introduce the VVAR macro for vdso32.
 
 Signed-off-by: Stefani Seibold <stefani@seibold.net>
 ---
- arch/x86/vdso/vclock_gettime.c | 27 ++++++++++++++-------------
- 1 file changed, 14 insertions(+), 13 deletions(-)
+ arch/x86/include/asm/vvar.h | 14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
-index bbc8065..fd074dd 100644
---- a/arch/x86/vdso/vclock_gettime.c
-+++ b/arch/x86/vdso/vclock_gettime.c
-@@ -209,7 +209,7 @@ notrace static int do_monotonic(struct timespec *ts)
- 	return mode;
- }
+diff --git a/arch/x86/include/asm/vvar.h b/arch/x86/include/asm/vvar.h
+index 0a534ea..52c79ff 100644
+--- a/arch/x86/include/asm/vvar.h
++++ b/arch/x86/include/asm/vvar.h
+@@ -26,6 +26,15 @@
  
--notrace static int do_realtime_coarse(struct timespec *ts)
-+notrace static void do_realtime_coarse(struct timespec *ts)
- {
- 	unsigned long seq;
- 	do {
-@@ -217,10 +217,9 @@ notrace static int do_realtime_coarse(struct timespec *ts)
- 		ts->tv_sec = gtod->wall_time_coarse.tv_sec;
- 		ts->tv_nsec = gtod->wall_time_coarse.tv_nsec;
- 	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
--	return 0;
- }
+ #else
  
--notrace static int do_monotonic_coarse(struct timespec *ts)
-+notrace static void do_monotonic_coarse(struct timespec *ts)
- {
- 	unsigned long seq;
- 	do {
-@@ -228,30 +227,32 @@ notrace static int do_monotonic_coarse(struct timespec *ts)
- 		ts->tv_sec = gtod->monotonic_time_coarse.tv_sec;
- 		ts->tv_nsec = gtod->monotonic_time_coarse.tv_nsec;
- 	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
++#ifdef BUILD_VDSO32
++
++#define DECLARE_VVAR(offset, type, name)				\
++	extern type vvar_ ## name __attribute__((visibility("hidden")));
++
++#define VVAR(name) (vvar_ ## name)
++
++#else
++
+ extern char __vvar_page;
+ 
+ /* Base address of vvars.  This is not ABI. */
+@@ -39,12 +48,13 @@ extern char __vvar_page;
+ 	static type const * const vvaraddr_ ## name =			\
+ 		(void *)(VVAR_ADDRESS + (offset));
+ 
++#define VVAR(name) (*vvaraddr_ ## name)
++#endif
++
+ #define DEFINE_VVAR(type, name)						\
+ 	type name							\
+ 	__attribute__((section(".vvar_" #name), aligned(16))) __visible
+ 
+-#define VVAR(name) (*vvaraddr_ ## name)
 -
--	return 0;
- }
+ #endif
  
- notrace int __vdso_clock_gettime(clockid_t clock, struct timespec *ts)
- {
--	int ret = VCLOCK_NONE;
--
- 	switch (clock) {
- 	case CLOCK_REALTIME:
--		ret = do_realtime(ts);
-+		if (do_realtime(ts) == VCLOCK_NONE)
-+			goto fallback;
- 		break;
- 	case CLOCK_MONOTONIC:
--		ret = do_monotonic(ts);
-+		if (do_monotonic(ts) == VCLOCK_NONE)
-+			goto fallback;
- 		break;
- 	case CLOCK_REALTIME_COARSE:
--		return do_realtime_coarse(ts);
-+		do_realtime_coarse(ts);
-+		break;
- 	case CLOCK_MONOTONIC_COARSE:
--		return do_monotonic_coarse(ts);
-+		do_monotonic_coarse(ts);
-+		break;
-+	default:
-+		goto fallback;
- 	}
- 
--	if (ret == VCLOCK_NONE)
--		return vdso_fallback_gettime(clock, ts);
- 	return 0;
-+fallback:
-+	return vdso_fallback_gettime(clock, ts);
- }
- int clock_gettime(clockid_t, struct timespec *)
- 	__attribute__((weak, alias("__vdso_clock_gettime")));
+ /* DECLARE_VVAR(offset, type, name) */
 -- 
 1.8.5.4
 
