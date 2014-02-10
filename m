@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752468AbaBJKWC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 05:22:02 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:46239 "EHLO mx2.suse.de"
+	id S1752402AbaBJKXV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 05:23:21 -0500
+Received: from mga09.intel.com ([134.134.136.24]:41612 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751725AbaBJKWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 05:22:00 -0500
-Message-ID: <1392027718.2082.11.camel@linux-fkkt.site>
-Subject: Re: [PATCH part1 v5 3/7] PCI: Add support for Device Serial Number
- capability
-From: Oliver Neukum <oneukum@suse.de>
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, Hanjun Guo <guohanjun@huawei.com>,
-        Paul Bolle <pebolle@tiscali.nl>, "RafaelJ.Wysocki" <rjw@rjwysocki.net>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>
-Date: Mon, 10 Feb 2014 11:21:58 +0100
-In-Reply-To: <1392005051-54508-4-git-send-email-wangyijing@huawei.com>
-References: <1392005051-54508-1-git-send-email-wangyijing@huawei.com>
-	 <1392005051-54508-4-git-send-email-wangyijing@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751371AbaBJKXT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 05:23:19 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,817,1384329600"; 
+   d="scan'208";a="452696987"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Bin Gao <bin.gao@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH v4 2/2] x86, tsc: Add missing Baytrail frequency to the table
+Date: Mon, 10 Feb 2014 12:23:14 +0200
+Message-Id: <1392027794-8643-2-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.8.5.2
+In-Reply-To: <1392027794-8643-1-git-send-email-mika.westerberg@linux.intel.com>
+References: <1392027794-8643-1-git-send-email-mika.westerberg@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Intel Baytrail is based on Silvermont core so MSR_FSB_FREQ[2:0] == 0 means
+that the CPU reference clock runs at 83.3MHz. Add this missing frequency to
+the table.
 
-On Mon, 2014-02-10 at 12:04 +0800, Yijing Wang wrote:
-> +static u64 pci_device_serial_number(struct pci_bus *bus, int devfn)
-> +{
-> +       int pos;
-> +       u32 lo, hi;
-> +
-> +       if (!pci_bus_find_capability(bus, devfn, PCI_CAP_ID_EXP))
-> +               return 0;
-> +
-> +       pos = pci_bus_find_ext_capability(bus, devfn,
-> PCI_EXT_CAP_ID_DSN);
-> +       if (!pos)
-> +               return 0;
-> +
-> +       pci_bus_read_config_dword(bus, devfn, pos + 4, &lo);
-> +       pci_bus_read_config_dword(bus, devfn, pos + 8, &hi);
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+ arch/x86/kernel/tsc_msr.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-We have no macro for that?
-
-> +       return ((u64)hi << 32) | lo;
-> +}
-
-	Regards
-		Oliver
-
-
+diff --git a/arch/x86/kernel/tsc_msr.c b/arch/x86/kernel/tsc_msr.c
+index 5dfff5809e74..92ae6acac8a7 100644
+--- a/arch/x86/kernel/tsc_msr.c
++++ b/arch/x86/kernel/tsc_msr.c
+@@ -53,7 +53,7 @@ static struct freq_desc freq_desc_tables[] = {
+ 	/* TNG */
+ 	{ 6, 0x4a, 1, { 0, FREQ_100, FREQ_133, 0, 0, 0, 0, 0 } },
+ 	/* VLV2 */
+-	{ 6, 0x37, 1, { 0, FREQ_100, FREQ_133, FREQ_166, 0, 0, 0, 0 } },
++	{ 6, 0x37, 1, { FREQ_83, FREQ_100, FREQ_133, FREQ_166, 0, 0, 0, 0 } },
+ 	/* ANN */
+ 	{ 6, 0x5a, 1, { FREQ_83, FREQ_100, FREQ_133, FREQ_100, 0, 0, 0, 0 } },
+ };
+-- 
+1.8.5.2
 
