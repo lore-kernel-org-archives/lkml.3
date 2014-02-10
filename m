@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752491AbaBJNwT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 08:52:19 -0500
-Received: from mga02.intel.com ([134.134.136.20]:6819 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751018AbaBJNwS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 08:52:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,818,1384329600"; 
-   d="scan'208";a="452787566"
-Date: Mon, 10 Feb 2014 15:52:12 +0200
-From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: sagar.a.kamble@intel.com, daniel.vetter@ffwll.ch,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        vijay.a.purushothaman@intel.com, tomi.valkeinen@ti.com,
-        dri-devel@lists.freedesktop.org, gregkh@linuxfoundation.org,
-        joe@perches.com, airlied@redhat.com
-Subject: Re: [PATCH v4 00/11] Enabling 180 degree rotation for sprite and
- crtc planes
-Message-ID: <20140210135212.GN3891@intel.com>
-References: <1391780716-21896-1-git-send-email-sagar.a.kamble@intel.com>
- <20140210104130.7e7c3c93@alan.etchedpixels.co.uk>
+	id S1752303AbaBJNxb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 08:53:31 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:46022 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751779AbaBJNx2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 08:53:28 -0500
+Date: Mon, 10 Feb 2014 14:52:37 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: mingo@kernel.org, dave.hansen@intel.com, torvalds@linux-foundation.org,
+        peter@hurleysoftware.com, alex.shi@linaro.org, riel@redhat.com,
+        arnd@arndb.de, figo1802@gmail.com, akpm@linux-foundation.org,
+        matthew.r.wilcox@intel.com, aarcange@redhat.com, tglx@linutronix.de,
+        scott.norton@hp.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        andi@firstfloor.org, davidlohr.bueso@hp.com, waiman.long@hp.com,
+        will.deacon@arm.com, tim.c.chen@linux.intel.com,
+        paulmck@linux.vnet.ibm.com, raghavendra.kt@linux.vnet.ibm.com,
+        linux@horizon.com, walken@google.com, aswin@hp.com, mingo@elte.hu
+Cc: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:core/locking] locking/mcs: Order the header files in Kbuild
+ of each architecture in alphabetical order
+Message-ID: <20140210135237.GM9987@twins.programming.kicks-ass.net>
+References: <tip-b119fa61d440fe0f5af504299ad506637585a8ca@git.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140210104130.7e7c3c93@alan.etchedpixels.co.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <tip-b119fa61d440fe0f5af504299ad506637585a8ca@git.kernel.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 10:41:30AM +0000, One Thousand Gnomes wrote:
-> On Fri,  7 Feb 2014 19:15:05 +0530
-> sagar.a.kamble@intel.com wrote:
-> 
-> > From: Sagar Kamble <sagar.a.kamble@intel.com>
-> > 
-> > These patches will enable 180 degree rotation for CRTC and Sprite planes.
-> > Changelog:
-> > 1. drm/i915: Add 180 degree primary plane rotation support
-> > Addressed review comments for CRTC rotation from FBC, page flip, CRTC active/
-> > inactive perspective.
-> 
-> Does this mean it should also handle horizontal mirroring in
-> hardware (180° rotate, and scan lines backwards combined) ?
+On Mon, Feb 10, 2014 at 05:32:32AM -0800, tip-bot for Tim Chen wrote:
 
-Our hardware doesn't support mirroring (h or v). Well, unless you
-count h+v mirroring since that's 180 degree rotation :)
+This script is actually buggy and lost some headers; the fixed version
+is as follows:
 
-Anyways IIRC the old video overlay (present on gen2-4) was the only plane
-to ever support mirroring on Intel hardware. With all other planes we're
-limited to 0 and 180 degree rotation.
-
--- 
-Ville Syrjälä
-Intel OTC
+> for i in arch/*/include/asm/Kbuild
+> do
+>         cat $i | gawk '/^generic-y/ {
+>                 i = 3;
+>                 do {
+			n = NF;
+                        for (; i <= n; i++) {
+>                                 if ($i == "\\") {
+>                                         getline;
+                                         i = 0;
+>                                         continue;
+>                                 }
+>                                 if ($i != "")
+>                                         hdr[$i] = $i;
+>                         }
+>                         break;
+>                 } while (1);
+>                 next;
+>         }
+>         // {
+>                 print $0;
+>         }
+>         END {
+>                 n = asort(hdr);
+>                 for (i = 1; i <= n; i++)
+>                         print "generic-y += " hdr[i];
+>         }' > ${i}.sorted;
+>         mv ${i}.sorted $i;
+> done
