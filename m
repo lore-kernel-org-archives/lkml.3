@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753047AbaBJQPM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 11:15:12 -0500
-Received: from qmta13.emeryville.ca.mail.comcast.net ([76.96.27.243]:39746
-	"EHLO qmta13.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753015AbaBJQPJ (ORCPT
+	id S1753095AbaBJQPg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 11:15:36 -0500
+Received: from qmta11.emeryville.ca.mail.comcast.net ([76.96.27.211]:48794
+	"EHLO qmta11.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753073AbaBJQPc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 11:15:09 -0500
+	Mon, 10 Feb 2014 11:15:32 -0500
 From: Shuah Khan <shuah.kh@samsung.com>
-To: rjw@rjwysocki.net, ian@mnementh.co.uk, chris@printf.net
+To: rjw@rjwysocki.net, gregkh@linuxfoundation.org
 Cc: Shuah Khan <shuah.kh@samsung.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-pcmcia@lists.infradead.org,
         shuahkhan@gmail.com
-Subject: [RFT][PATCH 10/12] mmc: change tmio_mmc platform power management to use dev_pm_ops
-Date: Mon, 10 Feb 2014 09:15:04 -0700
-Message-Id: <e0668e4c3737e44854a42ee273a37e2161f40b13.1392040068.git.shuah.kh@samsung.com>
+Subject: [RFT][PATCH 11/12] drivers/pcmcia: change ds driver power management to use dev_pm_ops
+Date: Mon, 10 Feb 2014 09:15:21 -0700
+Message-Id: <4159bb4e4aa13212b1eac2be7e911ed18451ec9c.1392040068.git.shuah.kh@samsung.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <cover.1392040064.git.shuah.kh@samsung.com>
 References: <cover.1392040064.git.shuah.kh@samsung.com>
@@ -22,92 +22,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change tmio_mmc platform driver to register pm ops using dev_pm_ops instead
-of legacy pm_ops. .pm hooks call existing legacy suspend and resume interfaces
+Change ds driver to register pm ops using dev_pm_ops instead of legacy
+pm_ops. .pm hooks call existing legacy suspend and resume interfaces
 by passing in the right pm state.
 
 Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
 ---
- drivers/mmc/host/tmio_mmc.c |   42 +++++++++++++++++++++++++++++++++++-------
- 1 file changed, 35 insertions(+), 7 deletions(-)
+ drivers/pcmcia/ds.c |   36 +++++++++++++++++++++++++++++++-----
+ 1 file changed, 31 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/mmc/host/tmio_mmc.c b/drivers/mmc/host/tmio_mmc.c
-index 1900abb..e9b0a06 100644
---- a/drivers/mmc/host/tmio_mmc.c
-+++ b/drivers/mmc/host/tmio_mmc.c
-@@ -24,7 +24,7 @@
- #include "tmio_mmc.h"
+diff --git a/drivers/pcmcia/ds.c b/drivers/pcmcia/ds.c
+index 757119b..2979323 100644
+--- a/drivers/pcmcia/ds.c
++++ b/drivers/pcmcia/ds.c
+@@ -962,7 +962,10 @@ static int pcmcia_bus_uevent(struct device *dev, struct kobj_uevent_env *env)
  
- #ifdef CONFIG_PM
--static int tmio_mmc_suspend(struct platform_device *dev, pm_message_t state)
-+static int __tmio_mmc_suspend(struct platform_device *dev, pm_message_t state)
- {
- 	const struct mfd_cell *cell = mfd_get_cell(dev);
- 	int ret;
-@@ -38,7 +38,22 @@ static int tmio_mmc_suspend(struct platform_device *dev, pm_message_t state)
- 	return ret;
+ /************************ runtime PM support ***************************/
+ 
+-static int pcmcia_dev_suspend(struct device *dev, pm_message_t state);
++static int __pcmcia_dev_suspend(struct device *dev, pm_message_t state);
++static int pcmcia_dev_suspend(struct device *dev);
++static int pcmcia_dev_poweroff(struct device *dev);
++static int pcmcia_dev_freeze(struct device *dev);
+ static int pcmcia_dev_resume(struct device *dev);
+ 
+ static int runtime_suspend(struct device *dev)
+@@ -970,7 +973,7 @@ static int runtime_suspend(struct device *dev)
+ 	int rc;
+ 
+ 	device_lock(dev);
+-	rc = pcmcia_dev_suspend(dev, PMSG_SUSPEND);
++	rc = __pcmcia_dev_suspend(dev, PMSG_SUSPEND);
+ 	device_unlock(dev);
+ 	return rc;
  }
+@@ -1120,7 +1123,22 @@ ATTRIBUTE_GROUPS(pcmcia_dev);
  
--static int tmio_mmc_resume(struct platform_device *dev)
-+static int tmio_mmc_suspend(struct device *dev)
+ /* PM support, also needed for reset */
+ 
+-static int pcmcia_dev_suspend(struct device *dev, pm_message_t state)
++static int pcmcia_dev_suspend(struct device *dev)
 +{
-+	return __tmio_mmc_suspend(to_platform_device(dev), PMSG_SUSPEND);
++	return __pcmcia_dev_suspend(dev, PMSG_SUSPEND);
 +}
 +
-+static int tmio_mmc_freeze(struct device *dev)
++static int pcmcia_dev_poweroff(struct device *dev)
 +{
-+	return __tmio_mmc_suspend(to_platform_device(dev), PMSG_FREEZE);
++	return __pcmcia_dev_suspend(dev, PMSG_HIBERNATE);
 +}
 +
-+static int tmio_mmc_poweroff(struct device *dev)
++static int pcmcia_dev_freeze(struct device *dev)
 +{
-+	return __tmio_mmc_suspend(to_platform_device(dev), PMSG_HIBERNATE);
++	return __pcmcia_dev_suspend(dev, PMSG_FREEZE);
 +}
 +
-+static int __tmio_mmc_resume(struct platform_device *dev)
++static int __pcmcia_dev_suspend(struct device *dev, pm_message_t state)
  {
- 	const struct mfd_cell *cell = mfd_get_cell(dev);
- 	int ret = 0;
-@@ -52,9 +67,21 @@ static int tmio_mmc_resume(struct platform_device *dev)
- 
- 	return ret;
- }
--#else
--#define tmio_mmc_suspend NULL
--#define tmio_mmc_resume NULL
-+
-+static int tmio_mmc_resume(struct device *dev)
-+{
-+	return __tmio_mmc_resume(to_platform_device(dev));
-+}
-+
-+static const struct dev_pm_ops tmio_mmc_dev_pm_ops = {
-+	.suspend = tmio_mmc_suspend,
-+	.resume = tmio_mmc_resume,
-+	/* Hibernate hooks */
-+	.freeze = tmio_mmc_freeze,
-+	.thaw = tmio_mmc_resume,
-+	.poweroff = tmio_mmc_poweroff,
-+	.restore = tmio_mmc_resume,
-+};
- #endif
- 
- static int tmio_mmc_probe(struct platform_device *pdev)
-@@ -138,11 +165,12 @@ static struct platform_driver tmio_mmc_driver = {
- 	.driver = {
- 		.name = "tmio-mmc",
- 		.owner = THIS_MODULE,
-+#ifdef CONFIG_PM
-+		.pm = &tmio_mmc_dev_pm_ops,
-+#endif
- 	},
- 	.probe = tmio_mmc_probe,
- 	.remove = tmio_mmc_remove,
--	.suspend = tmio_mmc_suspend,
--	.resume = tmio_mmc_resume,
+ 	struct pcmcia_device *p_dev = to_pcmcia_dev(dev);
+ 	struct pcmcia_driver *p_drv = NULL;
+@@ -1397,6 +1415,15 @@ static struct class_interface pcmcia_bus_interface __refdata = {
+ 	.remove_dev = &pcmcia_bus_remove_socket,
  };
  
- module_platform_driver(tmio_mmc_driver);
++static const struct dev_pm_ops pcmcia_bus_dev_pm_ops = {
++	.suspend = pcmcia_dev_suspend,
++	.resume = pcmcia_dev_resume,
++	/* Hibernate callbacks */
++	.freeze = pcmcia_dev_freeze,
++	.thaw = pcmcia_dev_resume,
++	.poweroff = pcmcia_dev_poweroff,
++	.restore = pcmcia_dev_resume,
++};
+ 
+ struct bus_type pcmcia_bus_type = {
+ 	.name = "pcmcia",
+@@ -1405,8 +1432,7 @@ struct bus_type pcmcia_bus_type = {
+ 	.dev_groups = pcmcia_dev_groups,
+ 	.probe = pcmcia_device_probe,
+ 	.remove = pcmcia_device_remove,
+-	.suspend = pcmcia_dev_suspend,
+-	.resume = pcmcia_dev_resume,
++	.pm = &pcmcia_bus_dev_pm_ops,
+ };
+ 
+ 
 -- 
 1.7.10.4
 
