@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754170AbaBJTqf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 14:46:35 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34969 "EHLO
+	id S1754237AbaBJTqv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 14:46:51 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35009 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753992AbaBJTq3 (ORCPT
+	with ESMTP id S1754173AbaBJTqm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:46:29 -0500
+	Mon, 10 Feb 2014 14:46:42 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Holger Eitzenberger <holger@eitzenberger.org>,
+Cc: Christoph Paasch <christoph.paasch@uclouvain.be>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 120/124] net: Fix memory leak if TPROXY used with TCP early demux
-Date: Mon, 10 Feb 2014 11:41:00 -0800
-Message-Id: <1392061264-28124-121-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 116/124] tcp: metrics: Avoid duplicate entries with the same destination-IP
+Date: Mon, 10 Feb 2014 11:40:56 -0800
+Message-Id: <1392061264-28124-117-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
 References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
@@ -28,101 +28,132 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Holger Eitzenberger <holger@eitzenberger.org>
+From: Christoph Paasch <christoph.paasch@uclouvain.be>
 
-[ Upstream commit a452ce345d63ddf92cd101e4196569f8718ad319 ]
+[ Upstream commit 77f99ad16a07aa062c2d30fae57b1fee456f6ef6 ]
 
-I see a memory leak when using a transparent HTTP proxy using TPROXY
-together with TCP early demux and Kernel v3.8.13.15 (Ubuntu stable):
+Because the tcp-metrics is an RCU-list, it may be that two
+soft-interrupts are inside __tcp_get_metrics() for the same
+destination-IP at the same time. If this destination-IP is not yet part of
+the tcp-metrics, both soft-interrupts will end up in tcpm_new and create
+a new entry for this IP.
+So, we will have two tcp-metrics with the same destination-IP in the list.
 
-unreferenced object 0xffff88008cba4a40 (size 1696):
-  comm "softirq", pid 0, jiffies 4294944115 (age 8907.520s)
-  hex dump (first 32 bytes):
-    0a e0 20 6a 40 04 1b 37 92 be 32 e2 e8 b4 00 00  .. j@..7..2.....
-    02 00 07 01 00 00 00 00 00 00 00 00 00 00 00 00  ................
-  backtrace:
-    [<ffffffff810b710a>] kmem_cache_alloc+0xad/0xb9
-    [<ffffffff81270185>] sk_prot_alloc+0x29/0xc5
-    [<ffffffff812702cf>] sk_clone_lock+0x14/0x283
-    [<ffffffff812aaf3a>] inet_csk_clone_lock+0xf/0x7b
-    [<ffffffff8129a893>] netlink_broadcast+0x14/0x16
-    [<ffffffff812c1573>] tcp_create_openreq_child+0x1b/0x4c3
-    [<ffffffff812c033e>] tcp_v4_syn_recv_sock+0x38/0x25d
-    [<ffffffff812c13e4>] tcp_check_req+0x25c/0x3d0
-    [<ffffffff812bf87a>] tcp_v4_do_rcv+0x287/0x40e
-    [<ffffffff812a08a7>] ip_route_input_noref+0x843/0xa55
-    [<ffffffff812bfeca>] tcp_v4_rcv+0x4c9/0x725
-    [<ffffffff812a26f4>] ip_local_deliver_finish+0xe9/0x154
-    [<ffffffff8127a927>] __netif_receive_skb+0x4b2/0x514
-    [<ffffffff8127aa77>] process_backlog+0xee/0x1c5
-    [<ffffffff8127c949>] net_rx_action+0xa7/0x200
-    [<ffffffff81209d86>] add_interrupt_randomness+0x39/0x157
+This patch checks twice __tcp_get_metrics(). First without holding the
+lock, then while holding the lock. The second one is there to confirm
+that the entry has not been added by another soft-irq while waiting for
+the spin-lock.
 
-But there are many more, resulting in the machine going OOM after some
-days.
-
->From looking at the TPROXY code, and with help from Florian, I see
-that the memory leak is introduced in tcp_v4_early_demux():
-
-  void tcp_v4_early_demux(struct sk_buff *skb)
-  {
-    /* ... */
-
-    iph = ip_hdr(skb);
-    th = tcp_hdr(skb);
-
-    if (th->doff < sizeof(struct tcphdr) / 4)
-        return;
-
-    sk = __inet_lookup_established(dev_net(skb->dev), &tcp_hashinfo,
-                       iph->saddr, th->source,
-                       iph->daddr, ntohs(th->dest),
-                       skb->skb_iif);
-    if (sk) {
-        skb->sk = sk;
-
-where the socket is assigned unconditionally to skb->sk, also bumping
-the refcnt on it.  This is problematic, because in our case the skb
-has already a socket assigned in the TPROXY target.  This then results
-in the leak I see.
-
-The very same issue seems to be with IPv6, but haven't tested.
-
-Reviewed-by: Florian Westphal <fw@strlen.de>
-Signed-off-by: Holger Eitzenberger <holger@eitzenberger.org>
+Fixes: 51c5d0c4b169b (tcp: Maintain dynamic metrics in local cache.)
+Signed-off-by: Christoph Paasch <christoph.paasch@uclouvain.be>
+Reviewed-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
+[ kamal: backport to 3.8 (context) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv4/ip_input.c  | 2 +-
- net/ipv6/ip6_input.c | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ net/ipv4/tcp_metrics.c | 51 +++++++++++++++++++++++++++++++-------------------
+ 1 file changed, 32 insertions(+), 19 deletions(-)
 
-diff --git a/net/ipv4/ip_input.c b/net/ipv4/ip_input.c
-index e1e5a6a..9bf55b6 100644
---- a/net/ipv4/ip_input.c
-+++ b/net/ipv4/ip_input.c
-@@ -318,7 +318,7 @@ static int ip_rcv_finish(struct sk_buff *skb)
- 	const struct iphdr *iph = ip_hdr(skb);
- 	struct rtable *rt;
+diff --git a/net/ipv4/tcp_metrics.c b/net/ipv4/tcp_metrics.c
+index f190419..ca1bafa 100644
+--- a/net/ipv4/tcp_metrics.c
++++ b/net/ipv4/tcp_metrics.c
+@@ -22,6 +22,9 @@
  
--	if (sysctl_ip_early_demux && !skb_dst(skb)) {
-+	if (sysctl_ip_early_demux && !skb_dst(skb) && skb->sk == NULL) {
- 		const struct net_protocol *ipprot;
- 		int protocol = iph->protocol;
+ int sysctl_tcp_nometrics_save __read_mostly;
  
-diff --git a/net/ipv6/ip6_input.c b/net/ipv6/ip6_input.c
-index 5345300..8b7f50c 100644
---- a/net/ipv6/ip6_input.c
-+++ b/net/ipv6/ip6_input.c
-@@ -49,7 +49,7 @@
++static struct tcp_metrics_block *__tcp_get_metrics(const struct inetpeer_addr *addr,
++						   struct net *net, unsigned int hash);
++
+ struct tcp_fastopen_metrics {
+ 	u16	mss;
+ 	u16	syn_loss:10;		/* Recurring Fast Open SYN losses */
+@@ -127,16 +130,41 @@ static void tcpm_suck_dst(struct tcp_metrics_block *tm, struct dst_entry *dst)
+ 	tm->tcpm_fastopen.cookie.len = 0;
+ }
  
- int ip6_rcv_finish(struct sk_buff *skb)
++#define TCP_METRICS_TIMEOUT		(60 * 60 * HZ)
++
++static void tcpm_check_stamp(struct tcp_metrics_block *tm, struct dst_entry *dst)
++{
++	if (tm && unlikely(time_after(jiffies, tm->tcpm_stamp + TCP_METRICS_TIMEOUT)))
++		tcpm_suck_dst(tm, dst);
++}
++
++#define TCP_METRICS_RECLAIM_DEPTH	5
++#define TCP_METRICS_RECLAIM_PTR		(struct tcp_metrics_block *) 0x1UL
++
+ static struct tcp_metrics_block *tcpm_new(struct dst_entry *dst,
+ 					  struct inetpeer_addr *addr,
+-					  unsigned int hash,
+-					  bool reclaim)
++					  unsigned int hash)
  {
--	if (sysctl_ip_early_demux && !skb_dst(skb)) {
-+	if (sysctl_ip_early_demux && !skb_dst(skb) && skb->sk == NULL) {
- 		const struct inet6_protocol *ipprot;
+ 	struct tcp_metrics_block *tm;
+ 	struct net *net;
++	bool reclaim = false;
  
- 		ipprot = rcu_dereference(inet6_protos[ipv6_hdr(skb)->nexthdr]);
+ 	spin_lock_bh(&tcp_metrics_lock);
+ 	net = dev_net(dst->dev);
++
++	/* While waiting for the spin-lock the cache might have been populated
++	 * with this entry and so we have to check again.
++	 */
++	tm = __tcp_get_metrics(addr, net, hash);
++	if (tm == TCP_METRICS_RECLAIM_PTR) {
++		reclaim = true;
++		tm = NULL;
++	}
++	if (tm) {
++		tcpm_check_stamp(tm, dst);
++		goto out_unlock;
++	}
++
+ 	if (unlikely(reclaim)) {
+ 		struct tcp_metrics_block *oldest;
+ 
+@@ -166,17 +194,6 @@ out_unlock:
+ 	return tm;
+ }
+ 
+-#define TCP_METRICS_TIMEOUT		(60 * 60 * HZ)
+-
+-static void tcpm_check_stamp(struct tcp_metrics_block *tm, struct dst_entry *dst)
+-{
+-	if (tm && unlikely(time_after(jiffies, tm->tcpm_stamp + TCP_METRICS_TIMEOUT)))
+-		tcpm_suck_dst(tm, dst);
+-}
+-
+-#define TCP_METRICS_RECLAIM_DEPTH	5
+-#define TCP_METRICS_RECLAIM_PTR		(struct tcp_metrics_block *) 0x1UL
+-
+ static struct tcp_metrics_block *tcp_get_encode(struct tcp_metrics_block *tm, int depth)
+ {
+ 	if (tm)
+@@ -277,7 +294,6 @@ static struct tcp_metrics_block *tcp_get_metrics(struct sock *sk,
+ 	struct inetpeer_addr addr;
+ 	unsigned int hash;
+ 	struct net *net;
+-	bool reclaim;
+ 
+ 	addr.family = sk->sk_family;
+ 	switch (addr.family) {
+@@ -297,13 +313,10 @@ static struct tcp_metrics_block *tcp_get_metrics(struct sock *sk,
+ 	hash = hash_32(hash, net->ipv4.tcp_metrics_hash_log);
+ 
+ 	tm = __tcp_get_metrics(&addr, net, hash);
+-	reclaim = false;
+-	if (tm == TCP_METRICS_RECLAIM_PTR) {
+-		reclaim = true;
++	if (tm == TCP_METRICS_RECLAIM_PTR)
+ 		tm = NULL;
+-	}
+ 	if (!tm && create)
+-		tm = tcpm_new(dst, &addr, hash, reclaim);
++		tm = tcpm_new(dst, &addr, hash);
+ 	else
+ 		tcpm_check_stamp(tm, dst);
+ 
 -- 
 1.8.3.2
 
