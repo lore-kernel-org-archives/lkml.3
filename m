@@ -1,132 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752470AbaBJBPa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 20:15:30 -0500
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:56910 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752331AbaBJBP0 (ORCPT
+	id S1752534AbaBJBQW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 20:16:22 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:10676 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752211AbaBJBQU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 20:15:26 -0500
-From: Peter Wu <lekensteyn@gmail.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Bastien Traverse <bastien.traverse@gmail.com>,
-        linux-kernel@vger.kernel.org, francis.moro@gmail.com,
-        linux-pm@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: Re: 3.12: ethernet controller missing after resuming from suspend to RAM
-Date: Mon, 10 Feb 2014 02:15:22 +0100
-Message-ID: <5195003.Lv4YMFRT0Y@al>
-User-Agent: KMail/4.12.2 (Linux/3.13.2-testing; KDE/4.12.2; x86_64; ; )
-In-Reply-To: <1521445.Je1ql4ndX7@vostro.rjw.lan>
-References: <52F2CC7B.80406@gmail.com> <1395731.XHixqRiN3E@al> <1521445.Je1ql4ndX7@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Sun, 9 Feb 2014 20:16:20 -0500
+X-AuditID: cbfee68f-b7f156d00000276c-f8-52f828636c79
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Dmitry Torokhov'" <dmitry.torokhov@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        "'Jingoo Han'" <jg1.han@samsung.com>,
+        "'Lars-Peter Clausen'" <lars@metafoo.de>
+References: <003901cf25fc$73002790$590076b0$%han@samsung.com>
+In-reply-to: <003901cf25fc$73002790$590076b0$%han@samsung.com>
+Subject: [PATCH 6/7] Input: pwm-beepe: remove HAVE_PWM dependencies
+Date: Mon, 10 Feb 2014 10:16:19 +0900
+Message-id: <003f01cf25fd$b3e274b0$1ba75e10$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac8l/GYGhOsBgXmsQoSPhLhnprg0iAAASf4w
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrIIsWRmVeSWpSXmKPExsVy+t8zQ91kjR9BBhd7JC0OL3rBaHF54SVW
+	iyWT57Na3Pz0jdXi8q45bA6sHjtn3WX3WPLmEKtH35ZVjB6fN8kFsERx2aSk5mSWpRbp2yVw
+	ZfzYeIqlYBdbxaQ5xg2M81m7GDk5JARMJO42LWaHsMUkLtxbz9bFyMUhJLCMUeLXwsNwRZ+2
+	3mWFSExnlNi27ytYQkjgF6PE7bU1IDabgJrEly+HgSZxcIgIGErMWFMFUs8s0M0o8fhSOztE
+	va3E3Ib9YDangJ3EvKXfwOYICzhLnGrsA7NZBFQlpi7dyAhi8wLV33u5mxnCFpT4MfkeC4jN
+	LKAlsX7ncSYIW15i85q3zCB7JQTUJR791QUJiwgYSWw6s5gVokREYt+Ld4wg90gIXGOX2Hft
+	KRPELgGJb5MPsUD0ykpsOsAM8a+kxMEVN1gmMErMQrJ5FpLNs5BsnoVkxQJGllWMoqkFyQXF
+	SelFxnrFibnFpXnpesn5uZsYIdHZv4Px7gHrQ4zJQOsnMkuJJucDozuvJN7Q2MzIwtTE1NjI
+	3NKMNGElcd77D5OChATSE0tSs1NTC1KL4otKc1KLDzEycXBKNTBuPrE4Uj3Whuv04bR9v3R7
+	fJz4T6yLmd8wqeumYpsgs/25BRXBchPr2Q9Ilr9KdjW7n/dg7dbHvy3tRV87SSa+/6N9XftG
+	aKLyDC79sttnS79lP92bfUkv58KTCg3v2+z7YsUktyh//TtHTVlBv0dY0nft7MguLoVZtVat
+	a5a5r0m8ZXQlY5YSS3FGoqEWc1FxIgADykSN5AIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHKsWRmVeSWpSXmKPExsVy+t9jQd1kjR9BBs/niFocXvSC0eLywkus
+	Fksmz2e1uPnpG6vF5V1z2BxYPXbOusvuseTNIVaPvi2rGD0+b5ILYIlqYLTJSE1MSS1SSM1L
+	zk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAVqspFCWmFMKFApILC5W0rfD
+	NCE0xE3XAqYxQtc3JAiux8gADSSsY8z4sfEUS8EutopJc4wbGOezdjFyckgImEh82noXyhaT
+	uHBvPVsXIxeHkMB0Rolt+76CJYQEfjFK3F5bA2KzCahJfPlymL2LkYNDRMBQYsaaKpB6ZoFu
+	RonHl9rZIeptJeY27AezOQXsJOYt/QY2R1jAWeJUYx+YzSKgKjF16UZGEJsXqP7ey93MELag
+	xI/J91hAbGYBLYn1O48zQdjyEpvXvGUG2SshoC7x6K8uSFhEwEhi05nFrBAlIhL7XrxjnMAo
+	NAvJpFlIJs1CMmkWkpYFjCyrGEVTC5ILipPSc430ihNzi0vz0vWS83M3MYJj/5n0DsZVDRaH
+	GAU4GJV4eHf8+R4kxJpYVlyZe4hRgoNZSYT35V2gEG9KYmVValF+fFFpTmrxIcZkoEcnMkuJ
+	JucD01JeSbyhsYmZkaWRmYWRibk5acJK4rwHW60DhQTSE0tSs1NTC1KLYLYwcXBKNTBaaCb8
+	2vmh5FG5+7oC2WW34jY9mrtwgsrz35e3vyl1vcK1eVPtgUSTItGdxZl5O//NkTV/KPHGy/vj
+	nF3Hn7ZJJ70uUXB6sLppK+sUVYfpDx6u6Fi5+lq4wuX0zY1LGbhPlOas3c3Be+O466/rzvwa
+	f1tNtn2K2J6yyNsqaO8fwxgR/Sutq5n5lViKMxINtZiLihMBUDaEAkEDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 10 February 2014 01:52:14 Rafael J. Wysocki wrote:
-> > Could the following commit have something to do with it?
-> >
-> > 
-> >
-> > commit 4ebe34503baa0644c9352bcd76d4cf573bffe206
-> > Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > Date:   Tue Jul 16 22:10:35 2013 +0200
-> >
-> > 
-> >     ACPI / hotplug / PCI: Check for new devices on enabled slots
-> 
-> This one, or another one in that series.  I rather suspect
-> 
-> ab1225901da2 Revert "ACPI / hotplug / PCI: Avoid doing too much for spurious
-> notifies"
-> 
-> from Mika, but it really doesn't matter.
-> 
-> Can you please check the patch below (it is on top of 3.14-rc1, but I think
-> it'll still apply to 3.13) and report back?
+The HAVE_PWM symbol is only for legacy platforms that provide
+the PWM API without using the generic framework. However, legacy
+PWM drivers were already moved to the generic PWM framework.
+Thus, HAVE_PWM should be removed, because HAVE_PWM is not
+required anymore.
 
-I applied the following patch:
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/input/misc/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- drivers/pci/hotplug/acpiphp_glue.c.orig	2014-02-10 01:46:59.678124018 +0100
-+++ drivers/pci/hotplug/acpiphp_glue.c	2014-02-10 01:48:59.634124004 +0100
-@@ -552,10 +552,10 @@
- 	struct pci_dev *dev;
- 	struct pci_bus *bus = slot->bus;
- 	struct acpiphp_func *func;
--	int max, pass;
-+	int nr_found, max, pass, bridges_scanned = 0;
- 	LIST_HEAD(add_list);
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index ae74df7..762e6d2 100644
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -470,7 +470,7 @@ config INPUT_PCF8574
  
--	acpiphp_rescan_slot(slot);
-+	nr_found = acpiphp_rescan_slot(slot);
- 	max = acpiphp_max_busnr(bus);
- 	for (pass = 0; pass < 2; pass++) {
- 		list_for_each_entry(dev, &bus->devices, bus_list) {
-@@ -571,9 +571,16 @@
- 					__pci_bus_size_bridges(dev->subordinate,
- 							       &add_list);
- 				}
-+				bridges_scanned++;
- 			}
- 		}
- 	}
-+	/* Nothing more to do here if there are no new devices on this bus. */
-+	if (!nr_found && !bridges_scanned && (slot->flags & SLOT_ENABLED)) {
-+		pr_debug("No more new devices on this bus.\n");
-+		return;
-+	}
-+
- 	__pci_bus_assign_resources(bus, &add_list, NULL);
+ config INPUT_PWM_BEEPER
+ 	tristate "PWM beeper support"
+-	depends on PWM && HAVE_PWM
++	depends on PWM
+ 	help
+ 	  Say Y here to get support for PWM based beeper devices.
  
- 	acpiphp_sanitize_bus(bus);
+-- 
+1.7.10.4
 
-Unfortunately, the adapter still vanishes. dmesg is below this message.
 
-Peter
-
-[   44.558995] CPU3 is up
-[   44.561438] ACPI: Waking up from system sleep state S3
-[   45.254084] ehci-pci 0000:00:1a.0: System wakeup disabled by ACPI
-[   45.280727] ehci-pci 0000:00:1d.0: System wakeup disabled by ACPI
-[   45.307403] xhci_hcd 0000:02:00.0: System wakeup disabled by ACPI
-[   45.361012] PM: noirq resume of devices complete after 133.354 msecs
-[   45.361292] PM: early resume of devices complete after 0.233 msecs
-[   45.361680] iwlwifi 0000:05:00.0: RF_KILL bit toggled to enable radio.
-[   45.361731] pcieport 0000:00:1c.1: System wakeup disabled by ACPI
-[   45.470912] snd_hda_intel 0000:00:1b.0: irq 48 for MSI/MSI-X
-[   45.700502] ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-[   45.700533] ata5: SATA link down (SStatus 0 SControl 300)
-[   45.701385] ata1.00: configured for UDMA/133
-[   45.701503] sd 0:0:0:0: [sda] Starting disk
-[   45.707139] ata2: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
-[   45.872011] ata2.00: configured for UDMA/100
-[   46.791141] PM: resume of devices complete after 1430.658 msecs
-[   46.791560] PM: Finishing wakeup.
-[   46.791565] acpiphp_glue: hotplug_event: Bus check notify on \_SB_.PCI0.RP03
-[   46.791568] acpiphp_glue: hotplug_event: re-enumerating slots under \_SB_.PCI0.RP03
-[   46.791642] acpiphp_glue: No more new devices on this bus.
-[   46.791571] Restarting tasks ... done.
-[   46.793204] video LNXVIDEO:00: Restoring backlight state
-[   46.793211] video LNXVIDEO:01: Restoring backlight state
-[   47.246425] ACPI: \_SB_.AC__: ACPI_NOTIFY_BUS_CHECK event: unsupported
-[   47.251540] jme 0000:04:00.5: irq 50 for MSI/MSI-X
-[   47.276949] jme 0000:04:00.5 eth0: Link is down
-[   47.276974] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
-[   47.278423] iwlwifi 0000:05:00.0: L1 Enabled; Disabling L0S
-[   47.285758] iwlwifi 0000:05:00.0: Radio type=0x1-0x3-0x1
-[   47.393492] acpiphp_glue: hotplug_event: Bus check notify on \_SB_.PCI0.RP01
-[   47.393495] acpiphp_glue: hotplug_event: re-enumerating slots under \_SB_.PCI0.RP01
-[   47.393517] acpiphp_glue: No more new devices on this bus.
-[   47.393525] acpiphp_glue: hotplug_event: Bus check notify on \_SB_.PCI0.RP02
-[   47.393527] acpiphp_glue: hotplug_event: re-enumerating slots under \_SB_.PCI0.RP02
-[   47.398977] IPv6: ADDRCONF(NETDEV_UP): wlan0: link is not ready
-[   47.463615] acpiphp_glue: hotplug_event: Bus check notify on \_SB_.PCI0.RP03
-[   47.463620] acpiphp_glue: hotplug_event: re-enumerating slots under \_SB_.PCI0.RP03
-[   47.463685] acpiphp_glue: No more new devices on this bus.
-
-After the last message, NetworkManager loses the interface within a second.
-The next following messages follow two seconds later and are unrelated
-(those are about wireless connectivity).
