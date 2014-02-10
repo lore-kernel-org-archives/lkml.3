@@ -1,80 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752429AbaBJOqs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 09:46:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45231 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752240AbaBJOqp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 09:46:45 -0500
-Date: Mon, 10 Feb 2014 09:46:09 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Jan Kara <jack@suse.cz>, Jens Axboe <jens.axboe@oracle.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [PATCH 09/11] watchdog: Simplify a little the IPI call
-Message-ID: <20140210144609.GX25953@redhat.com>
-References: <1391876320-25068-1-git-send-email-fweisbec@gmail.com>
- <1391876320-25068-10-git-send-email-fweisbec@gmail.com>
+	id S1752144AbaBJOv6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 09:51:58 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40101 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751371AbaBJOv4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 09:51:56 -0500
+Date: Mon, 10 Feb 2014 14:51:45 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Guenter Roeck <linux@roeck-us.net>
+Message-ID: <20140210145145.GO1757@sirena.org.uk>
+References: <cover.1391705989.git.Adam.Thomson.Opensource@diasemi.com>
+ <6a398d176b0b2bf8792d27bd5e2995fd96afb32d.1391705989.git.Adam.Thomson.Opensource@diasemi.com>
+ <20140210134310.GH1757@sirena.org.uk>
+ <20140210135939.GA23141@lee--X1>
+ <20140210141400.GJ1757@sirena.org.uk>
+ <20140210144234.GB26697@lee--X1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2wyf/X6i9kneRjiV"
 Content-Disposition: inline
-In-Reply-To: <1391876320-25068-10-git-send-email-fweisbec@gmail.com>
+In-Reply-To: <20140210144234.GB26697@lee--X1>
+X-Cookie: Colors may fade.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 1/8] ASoC: da9055: Fix device registration of PMIC and
+ CODEC devices
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 08, 2014 at 05:18:38PM +0100, Frederic Weisbecker wrote:
-> In order to remotely restart the watchdog hrtimer, update_timers()
-> allocates a csd on the stack and pass it to __smp_call_function_single().
-> 
-> There is no partcular need, however, for a specific csd here. Lets
-> simplify that a little by calling smp_call_function_single()
-> which can already take care of the csd allocation by itself.
 
-Sounds simple enough.
+--2wyf/X6i9kneRjiV
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Acked-by: Don Zickus <dzickus@redhat.com>
+On Mon, Feb 10, 2014 at 02:42:34PM +0000, Lee Jones wrote:
 
-> 
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Christoph Hellwig <hch@infradead.org>
-> Cc: Don Zickus <dzickus@redhat.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Jan Kara <jack@suse.cz>
-> Cc: Jens Axboe <jens.axboe@oracle.com>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> ---
->  kernel/watchdog.c | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-> index 4431610..01c6f97 100644
-> --- a/kernel/watchdog.c
-> +++ b/kernel/watchdog.c
-> @@ -505,7 +505,6 @@ static void restart_watchdog_hrtimer(void *info)
->  
->  static void update_timers(int cpu)
->  {
-> -	struct call_single_data data = {.func = restart_watchdog_hrtimer};
->  	/*
->  	 * Make sure that perf event counter will adopt to a new
->  	 * sampling period. Updating the sampling period directly would
-> @@ -515,7 +514,7 @@ static void update_timers(int cpu)
->  	 * might be late already so we have to restart the timer as well.
->  	 */
->  	watchdog_nmi_disable(cpu);
-> -	__smp_call_function_single(cpu, &data, 1);
-> +	smp_call_function_single(cpu, restart_watchdog_hrtimer, NULL, 1);
->  	watchdog_nmi_enable(cpu);
->  }
->  
-> -- 
-> 1.8.3.1
-> 
+> > OK, but it does need to go in as a fix targetted for stable.
+
+> Ah, in which case there's no need, as I don't have anything in my
+> -fixes branch with touches this file. Simply take it in, no problem.
+
+I'll do that - thanks for confirming.
+
+--2wyf/X6i9kneRjiV
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS+Od9AAoJELSic+t+oim9i0YP/2vivd6xlOa6KrlEZrOTWnjI
+gt0wy3dcpFavwlzW6HDColIOmHN5QAP+j5n3sf52mCN3mC4MsIwyatq9Xu88YERf
+SS4EU0vGzn30N2BSGg6HYsz6XqR2Dw0yesttiRDqHsqP0IHBDtgkz3nbi69B3EGr
+pfgqFmPE95Y1KzGJvmMcbtM0Pg5Vg0E+hO/gpr8OK9GbY3M67Kn3e4z88IS6BnI/
+u66XfmaBr8CxehCJfK0qbtAXPQad60WS2ynOXvIgxGcj3L+g+oNk3IyNWxc1YS1c
+mw26EMiNDARy2fw6Px8mhGjQ3CAAziRyIgkJtWaZyJBIRZjdNwwPjHVTMi/GaD7M
+lLEbQ1TsCXP0urA8vs95FyWmeDeAS1bX5jIosJ9LaZ79YIf5yDTWNN2xZy8Pl1+J
+v2+ec+pfpGVdgrxsuQKSffxQjRs/gsJuD1b++igMIve03L9ACSRocLH2JNxLzdr1
+oEmHK+fyp7vZqRLtK0QzMu48PPYZGHg88j1cbElBXChTFgp8AF+a9GW5KLbUD6iy
+4MKhehdda2XXGhZDNAGw4XcgvUZR6oqOOv2aRHDHcWbgPB9SetvKEisMNW7Isyn6
+X4dLIfgOZ9al1LrUH+WxB3TaPXmHpE84UNQ+qoU+wlrvuHqrE+DMdXd/Gaw7XsHw
++OOijylmSsi8d2d6DspJ
+=6NX5
+-----END PGP SIGNATURE-----
+
+--2wyf/X6i9kneRjiV--
