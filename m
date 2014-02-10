@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752964AbaBJX1e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 18:27:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59779 "EHLO
+	id S1753197AbaBJX1s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 18:27:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59785 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752369AbaBJX1b (ORCPT
+	with ESMTP id S1753073AbaBJX1l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 18:27:31 -0500
-Date: Mon, 10 Feb 2014 15:27:29 -0800
+	Mon, 10 Feb 2014 18:27:41 -0500
+Date: Mon, 10 Feb 2014 15:27:39 -0800
 From: Andrew Morton <akpm@linux-foundation.org>
 To: Luiz Capitulino <lcapitulino@redhat.com>
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, mtosatti@redhat.com,
         mgorman@suse.de, aarcange@redhat.com, andi@firstfloor.org,
         riel@redhat.com
-Subject: Re: [PATCH 3/4] hugetlb: add hugepagesnid= command-line option
-Message-Id: <20140210152729.737a5dca5db0ba7f9f9291ac@linux-foundation.org>
-In-Reply-To: <1392053268-29239-4-git-send-email-lcapitulino@redhat.com>
+Subject: Re: [PATCH 1/4] memblock: memblock_virt_alloc_internal(): alloc
+ from specified node only
+Message-Id: <20140210152739.6253f77b78ec9ef7d971ddd2@linux-foundation.org>
+In-Reply-To: <1392053268-29239-2-git-send-email-lcapitulino@redhat.com>
 References: <1392053268-29239-1-git-send-email-lcapitulino@redhat.com>
-	<1392053268-29239-4-git-send-email-lcapitulino@redhat.com>
+	<1392053268-29239-2-git-send-email-lcapitulino@redhat.com>
 X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -26,201 +27,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Feb 2014 12:27:47 -0500 Luiz Capitulino <lcapitulino@redhat.com> wrote:
+On Mon, 10 Feb 2014 12:27:45 -0500 Luiz Capitulino <lcapitulino@redhat.com> wrote:
 
 > From: Luiz capitulino <lcapitulino@redhat.com>
 > 
-> The HugeTLB command-line option hugepages= allow the user to specify
-> how many huge pages should be allocated at boot-time. On NUMA systems,
-> this option will try to automatically distribute the allocation equally
-> among nodes. For example, if you have a 2-node NUMA system and allocates
-> 200 huge pages, than hugepages= will try to allocate 100 huge pages from
-> node0 and 100 from node1.
+> If an allocation from the node specified by the nid argument fails,
+> memblock_virt_alloc_internal() automatically tries to allocate memory
+> from other nodes.
 > 
-> The hugepagesnid= option introduced by this commit allows the user
-> to specify the nodes from which huge pages are allocated. For example,
-> if you have a 2-node NUMA system and want 300 2M huge pages to be
-> allocated from node1, you could do:
+> This is fine is the caller don't care which node is going to allocate
+> the memory. However, there are cases where the caller wants memory to
+> be allocated from the specified node only. If that's not possible, then
+> memblock_virt_alloc_internal() should just fail.
 > 
->  hugepagesnid=1,300,2M
-> 
-> Or, say you want node0 to allocate 100 huge pages and node1 to
-> allocate 200 huge pages, you do:
-> 
->  hugepagesnid=0,100,2M hugepagesnid=1,200,1M
-> 
-> This commit adds support only for 2M huge pages, next commit will
-> add support for 1G huge pages.
+> This commit adds a new flags argument to memblock_virt_alloc_internal()
+> where the caller can control this behavior.
 > 
 > ...
 >
-> --- a/arch/x86/mm/hugetlbpage.c
-> +++ b/arch/x86/mm/hugetlbpage.c
-> @@ -188,4 +188,39 @@ static __init int setup_hugepagesz(char *opt)
->  	return 1;
->  }
->  __setup("hugepagesz=", setup_hugepagesz);
-> +
-> +static __init int setup_hugepagesnid(char *opt)
-> +{
-> +	unsigned long order, ps, nid, nr_pages;
-> +	char size_str[3];
-> +
-> +	size_str[2] = '\0';
-> +	if (sscanf(opt, "%lu,%lu,%c%c",
-> +			&nid, &nr_pages, &size_str[0], &size_str[1]) < 4) {
-> +		printk(KERN_ERR "hugepagesnid: failed to parse arguments\n");
-> +			return 0;
-> +	}
-
-This will blow up if passed size=16M.  We can expect that powerpc (at
-least) will want to copy (or generalise) this code.  It would be better
-to avoid such restrictions at the outset.
-
-> +	if (!nr_pages) {
-> +		printk(KERN_ERR
-> +			"hugepagesnid: zero number of pages, ignoring\n");
-
-The code contains rather a lot of these awkward wordwraps.  Try using
-pr_err() and you'll find the result quite pleasing!
-
-> +		return 0;
-> +	}
-> +
-> +	ps = memparse(size_str, NULL);
-> +	if (ps == PMD_SIZE) {
-> +		order = PMD_SHIFT - PAGE_SHIFT;
-> +	} else if (ps == PUD_SIZE && cpu_has_gbpages) {
-> +		order = PUD_SHIFT - PAGE_SHIFT;
-> +	} else {
-> +		printk(KERN_ERR "hugepagesnid: Unsupported page size %lu M\n",
-> +			ps >> 20);
-> +		return 0;
-> +	}
-> +
-> +	hugetlb_add_nrpages_nid(order, nid, nr_pages);
-> +	return 1;
-> +}
-> +__setup("hugepagesnid=", setup_hugepagesnid);
-> +
->  #endif
->
-> ...
->
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -46,6 +46,7 @@ __initdata LIST_HEAD(huge_boot_pages);
->  static struct hstate * __initdata parsed_hstate;
->  static unsigned long __initdata default_hstate_max_huge_pages;
->  static unsigned long __initdata default_hstate_size;
-> +static unsigned long __initdata boot_alloc_nodes[HUGE_MAX_HSTATE][MAX_NUMNODES];
->  
->  /*
->   * Protects updates to hugepage_freelists, hugepage_activelist, nr_huge_pages,
-> @@ -1348,6 +1349,50 @@ static void __init hugetlb_hstate_alloc_pages(struct hstate *h)
->  	h->max_huge_pages = i;
+> --- a/mm/memblock.c
+> +++ b/mm/memblock.c
+> @@ -1028,6 +1028,8 @@ phys_addr_t __init memblock_alloc_try_nid(phys_addr_t size, phys_addr_t align, i
+>  	return memblock_alloc_base(size, align, MEMBLOCK_ALLOC_ACCESSIBLE);
 >  }
 >  
-> +static unsigned long __init alloc_huge_pages_nid(struct hstate *h,
-> +						int nid,
-> +						unsigned long nr_pages)
-> +{
-> +	unsigned long i;
-> +	struct page *page;
+> +#define ALLOC_SPECIFIED_NODE_ONLY 0x1
 > +
-> +	for (i = 0; i < nr_pages; i++) {
-> +		page = alloc_fresh_huge_page_node(h, nid);
-> +		if (!page) {
-> +			count_vm_event(HTLB_BUDDY_PGALLOC_FAIL);
-> +			break;
-> +		}
-> +		count_vm_event(HTLB_BUDDY_PGALLOC);
-> +	}
-> +
-> +	return i;
-> +}
-> +
-> +static unsigned long __init alloc_huge_pages_nodes(struct hstate *h)
-> +{
-> +	unsigned long i, *entry, ret = 0;
-> +
-> +	for (i = 0; i < MAX_NUMNODES; i++) {
-> +		entry = &boot_alloc_nodes[hstate_index(h)][i];
-> +		if (*entry > 0)
-> +			ret += alloc_huge_pages_nid(h, i, *entry);
-> +	}
-> +
-> +	return ret;
-> +}
-> +
-> +static void __init hugetlb_init_hstates_nodes(void)
-> +{
-> +	struct hstate *h;
-> +	unsigned long ret;
-> +
-> +	for_each_hstate(h)
-> +		if (h->order < MAX_ORDER) {
-> +			ret = alloc_huge_pages_nodes(h);
-> +			h->max_huge_pages += ret;
-> +		}
-> +}
-
-The patch adds code to mm/hugetlb.c which only x86 will use.  I guess
-that's OK medium-term if we expect other architectures will use it. 
-But if other architectures use it, setup_hugepagesnid() was in the wrong
-directory.
-
-Can I ask that you poke the ppc/arm/ia64/etc people, see whether they
-will adpot this?  Explaining the overall justification better in [patch
-0/n] would help this discussion!
-
->  static void __init hugetlb_init_hstates(void)
+>  /**
+>   * memblock_virt_alloc_internal - allocate boot memory block
+>   * @size: size of memory block to be allocated in bytes
+> @@ -1058,7 +1060,7 @@ phys_addr_t __init memblock_alloc_try_nid(phys_addr_t size, phys_addr_t align, i
+>  static void * __init memblock_virt_alloc_internal(
+>  				phys_addr_t size, phys_addr_t align,
+>  				phys_addr_t min_addr, phys_addr_t max_addr,
+> -				int nid)
+> +				int nid, unsigned int flags)
 >  {
->  	struct hstate *h;
-> @@ -1966,6 +2011,7 @@ static int __init hugetlb_init(void)
->  		default_hstate.max_huge_pages = default_hstate_max_huge_pages;
->  
->  	hugetlb_init_hstates();
-> +	hugetlb_init_hstates_nodes();
->  	gather_bootmem_prealloc();
->  	report_hugepages();
->  
-> @@ -2005,6 +2051,37 @@ void __init hugetlb_add_hstate(unsigned order)
->  	parsed_hstate = h;
->  }
->  
-> +void __init hugetlb_add_nrpages_nid(unsigned order, unsigned long nid,
-> +				unsigned long nr_pages)
+>  	phys_addr_t alloc;
+>  	void *ptr;
+> @@ -1085,6 +1087,8 @@ again:
+>  					    nid);
+>  	if (alloc)
+>  		goto done;
+> +	else if (flags & ALLOC_SPECIFIED_NODE_ONLY)
+> +		goto error;
 
-Using an unsigned long for a NUMA node ID is overkill, surely.
+"else" is unneeded.
 
-> +{
-> +	struct hstate *h;
-> +	unsigned long *p;
-> +
-> +	if (parsed_hstate) {
-> +		printk(KERN_WARNING
-> +			"hugepagesnid: hugepagesz= specified, ignoring\n");
-> +		return;
-> +	}
-> +
-> +	for_each_hstate(h)
-> +		if (h->order == order)
-> +			break;
-> +
-> +	if (h->order != order) {
-> +		hugetlb_add_hstate(order);
-> +		parsed_hstate = NULL;
-> +	}
-> +
-> +	p = &boot_alloc_nodes[hstate_index(h)][nid];
-> +	if (*p != 0) {
-> +		printk(KERN_WARNING
-> +			"hugepagesnid: node %lu already specified, ignoring\n", nid);
-> +		return;
-> +	}
-> +
-> +	*p = nr_pages;
-> +}
-> +
-
+>  	if (nid != NUMA_NO_NODE) {
+>  		alloc = memblock_find_in_range_node(size, align, min_addr,
+>
+> ...
+>
