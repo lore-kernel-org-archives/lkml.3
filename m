@@ -1,60 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754767AbaBJTya (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 14:54:30 -0500
-Received: from mail-we0-f170.google.com ([74.125.82.170]:33324 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752821AbaBJTy1 (ORCPT
+	id S1754805AbaBJTy5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 14:54:57 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35085 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754299AbaBJTrH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:54:27 -0500
-Date: Mon, 10 Feb 2014 19:54:21 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Colin King <colin.king@canonical.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        rogerq@ti.com
-Subject: Re: [PATCH] mfd: omap-usb-tll: allocate correct size for ch_clk
-Message-ID: <20140210195421.GB31864@lee--X1>
-References: <1392059407-15452-1-git-send-email-colin.king@canonical.com>
+	Mon, 10 Feb 2014 14:47:07 -0500
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: =?UTF-8?q?Frank=20Sch=C3=A4fer?= <fschaefer.oss@googlemail.com>,
+        Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 024/124] USB: pl2303: fix data corruption on termios updates
+Date: Mon, 10 Feb 2014 11:39:24 -0800
+Message-Id: <1392061264-28124-25-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
+References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1392059407-15452-1-git-send-email-colin.king@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Colin Ian King <colin.king@canonical.com>
-> 
-> ch_clk was erroneously being allocated the incorrect size which
-> can be problematic for larger sizes of tll->nch
-> 
-> Signed-off-by: Colin Ian King <colin.king@canonical.com>
-> ---
->  drivers/mfd/omap-usb-tll.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
-> index 5ee50f7..532eacab 100644
-> --- a/drivers/mfd/omap-usb-tll.c
-> +++ b/drivers/mfd/omap-usb-tll.c
-> @@ -252,7 +252,7 @@ static int usbtll_omap_probe(struct platform_device *pdev)
->  		break;
->  	}
->  
-> -	tll->ch_clk = devm_kzalloc(dev, sizeof(struct clk * [tll->nch]),
-> +	tll->ch_clk = devm_kzalloc(dev, sizeof(struct clk *) * tll->nch,
->  						GFP_KERNEL);
->  	if (!tll->ch_clk) {
->  		ret = -ENOMEM;
+3.8.13.18 -stable review patch.  If anyone has any objections, please let me know.
 
-Thanks Colin, patch looks good to me.
+------------------
 
-Roger, fancy finishing this off with an Acked-by?
+From: Johan Hovold <jhovold@gmail.com>
 
+commit 623c8263376c0b8a4b0c220232e7313d762cd0cc upstream.
+
+Some PL2303 devices are known to lose bytes if you change serial
+settings even to the same values as before. Avoid this by comparing the
+encoded settings with the previsouly used ones before configuring the
+device.
+
+The common case was fixed by commit bf5e5834bffc6 ("pl2303: Fix mode
+switching regression"), but this problem was still possible to trigger,
+for instance, by using the TCSETS2-interface to repeatedly request
+115201 baud, which gets mapped to 115200 and thus always triggers a
+settings update.
+
+Cc: Frank Schäfer <fschaefer.oss@googlemail.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/usb/serial/pl2303.c | 29 +++++++++++++++++++++++++----
+ 1 file changed, 25 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/usb/serial/pl2303.c b/drivers/usb/serial/pl2303.c
+index 037fd68..90569d2 100644
+--- a/drivers/usb/serial/pl2303.c
++++ b/drivers/usb/serial/pl2303.c
+@@ -141,6 +141,8 @@ struct pl2303_private {
+ 	spinlock_t lock;
+ 	u8 line_control;
+ 	u8 line_status;
++
++	u8 line_settings[7];
+ };
+ 
+ static int pl2303_vendor_read(__u16 value, __u16 index,
+@@ -420,10 +422,29 @@ static void pl2303_set_termios(struct tty_struct *tty,
+ 		dev_dbg(&port->dev, "parity = none\n");
+ 	}
+ 
+-	i = usb_control_msg(serial->dev, usb_sndctrlpipe(serial->dev, 0),
+-			    SET_LINE_REQUEST, SET_LINE_REQUEST_TYPE,
+-			    0, 0, buf, 7, 100);
+-	dev_dbg(&port->dev, "0x21:0x20:0:0  %d\n", i);
++	/*
++	 * Some PL2303 are known to lose bytes if you change serial settings
++	 * even to the same values as before. Thus we actually need to filter
++	 * in this specific case.
++	 *
++	 * Note that the tty_termios_hw_change check above is not sufficient
++	 * as a previously requested baud rate may differ from the one
++	 * actually used (and stored in old_termios).
++	 *
++	 * NOTE: No additional locking needed for line_settings as it is
++	 *       only used in set_termios, which is serialised against itself.
++	 */
++	if (!old_termios || memcmp(buf, priv->line_settings, 7)) {
++		i = usb_control_msg(serial->dev,
++				    usb_sndctrlpipe(serial->dev, 0),
++				    SET_LINE_REQUEST, SET_LINE_REQUEST_TYPE,
++				    0, 0, buf, 7, 100);
++
++		dev_dbg(&port->dev, "0x21:0x20:0:0  %d\n", i);
++
++		if (i == 7)
++			memcpy(priv->line_settings, buf, 7);
++	}
+ 
+ 	/* change control lines if we are switching to or from B0 */
+ 	spin_lock_irqsave(&priv->lock, flags);
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.8.3.2
+
