@@ -1,62 +1,279 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753937AbaBJRq1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 12:46:27 -0500
-Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:55390
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753695AbaBJRqU convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 12:46:20 -0500
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zz98dIc89bh148cI1432I4015Izz1f42h2148h208ch1ee6h1de0h1fdah2149h2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzzz2fh95h839h93fhc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h2336h2438h2461h2487h24d7h2516h2545h906i1155h)
-Date: Mon, 10 Feb 2014 09:46:07 -0800
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Michal Simek <michal.simek@xilinx.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 5/7] clocksource/cadence_ttc: Use only one counter
-References: <1391466877-28908-1-git-send-email-soren.brinkmann@xilinx.com>
- <1391466877-28908-6-git-send-email-soren.brinkmann@xilinx.com>
- <alpine.DEB.2.02.1402042138480.24986@ionos.tec.linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1402042138480.24986@ionos.tec.linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <6429e1bb-d4ad-4bf2-bd75-456324f45629@CO9EHSMHS016.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	id S1753946AbaBJRqw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 12:46:52 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:64284 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752295AbaBJRqr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 12:46:47 -0500
+Message-ID: <1392054402.16327.9.camel@leira.trondhjem.org>
+Subject: Re: [PATCH v2] SUNRPC: Allow one callback request to be received
+ from two sk_buff
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+To: shaobingqing <shaobingqing@bwstor.com.cn>
+Cc: bfields@redhat.com, davem@davemloft.net, linux-nfs@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 10 Feb 2014 12:46:42 -0500
+In-Reply-To: <1391826543-3102-1-git-send-email-shaobingqing@bwstor.com.cn>
+References: <no>
+	 <1391826543-3102-1-git-send-email-shaobingqing@bwstor.com.cn>
+Organization: PrimaryData Inc
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+On Sat, 2014-02-08 at 10:29 +0800, shaobingqing wrote:
+> In current code, there only one struct rpc_rqst is prealloced. If one
+> callback request is received from two sk_buff, the xprt_alloc_bc_request
+> would be execute two times with the same transport->xid. The first time
+> xprt_alloc_bc_request will alloc one struct rpc_rqst and the TCP_RCV_COPY_DATA
+> bit of transport->tcp_flags will not be cleared. The second time
+> xprt_alloc_bc_request could not alloc struct rpc_rqst any more and NULL
+> pointer will be returned, then xprt_force_disconnect occur. I think one
+> callback request can be allowed to be received from two sk_buff.
+> 
+> Signed-off-by: shaobingqing <shaobingqing@bwstor.com.cn>
+> ---
 
-On Tue, Feb 04, 2014 at 09:41:53PM +0100, Thomas Gleixner wrote:
-> On Mon, 3 Feb 2014, Soren Brinkmann wrote:
-> 
-> > Currently the driver uses two of the three counters the TTC provides to
-> > implement a clocksource and a clockevent device. By using the TTC's
-> > match feature we can implement both use cases using a single counter
-> > only.
-> 
-> Are you entirely sure that this match feature is free of the infamous
-> HPET match feature issues?
-> 
-> See arch/x86/kernel/hpet.c: hpet_next_event()
-> 
-> If yes, please add a comment. If no ....
-Good catch. Looks like the comparator compares on == as well. So, I
-assume it may show similar issues. I'll have to spend some more time
-looking into this.
+There are still several problems with this patch.
+For one thing, xprt->req_first is never cleared, which means that the
+tests you add in xs_tcp_read_callback() could trigger even if the
+request is in use by the callback server.
+Furthermore, if the xprt is destroyed before the RPC callback has been
+filled, then the request is leaked: it is no longer on the xprt
+backchannel list, so nothing will clean it up there, and nothing ever
+checks xprt->req_first, so it won't get cleaned up there either.
 
-Thanks for applying the first two patches of the series.
+Instead of adding a new tracking mechanism, what say we just keep the
+request on the xprt callback list until it has been completely filled.
 
-	Thanks,
-	Sören
+IOW: something like the following patch:
+
+8<-------------------------------------------------------------------
+>From 2aa57b6c6c6025e17d7ca164bbda01767af662be Mon Sep 17 00:00:00 2001
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+Date: Mon, 10 Feb 2014 11:18:39 -0500
+Subject: [PATCH] SUNRPC: RPC callbacks may be split across several TCP
+ segments
+
+Since TCP is a stream protocol, our callback read code needs to take into
+account the fact that RPC callbacks are not always confined to a single
+TCP segment.
+This patch adds support for multiple TCP segments by ensuring that we
+only remove the rpc_rqst structure from the 'free backchannel requests'
+list once the data has been completely received. We rely on the fact
+that TCP data is ordered for the duration of the connection.
+
+Reported-by: shaobingqing <shaobingqing@bwstor.com.cn>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+---
+ include/linux/sunrpc/bc_xprt.h |  3 +-
+ net/sunrpc/backchannel_rqst.c  | 92 +++++++++++++++++++++++++++++-------------
+ net/sunrpc/xprtsock.c          | 28 ++++---------
+ 3 files changed, 73 insertions(+), 50 deletions(-)
+
+diff --git a/include/linux/sunrpc/bc_xprt.h b/include/linux/sunrpc/bc_xprt.h
+index 969c0a671dbf..2ca67b55e0fe 100644
+--- a/include/linux/sunrpc/bc_xprt.h
++++ b/include/linux/sunrpc/bc_xprt.h
+@@ -32,7 +32,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ #include <linux/sunrpc/sched.h>
+ 
+ #ifdef CONFIG_SUNRPC_BACKCHANNEL
+-struct rpc_rqst *xprt_alloc_bc_request(struct rpc_xprt *xprt);
++struct rpc_rqst *xprt_lookup_bc_request(struct rpc_xprt *xprt, __be32 xid);
++void xprt_complete_bc_request(struct rpc_rqst *req, uint32_t copied);
+ void xprt_free_bc_request(struct rpc_rqst *req);
+ int xprt_setup_backchannel(struct rpc_xprt *, unsigned int min_reqs);
+ void xprt_destroy_backchannel(struct rpc_xprt *, unsigned int max_reqs);
+diff --git a/net/sunrpc/backchannel_rqst.c b/net/sunrpc/backchannel_rqst.c
+index 890a29912d5a..7cceeb06b939 100644
+--- a/net/sunrpc/backchannel_rqst.c
++++ b/net/sunrpc/backchannel_rqst.c
+@@ -210,39 +210,23 @@ out:
+ }
+ EXPORT_SYMBOL_GPL(xprt_destroy_backchannel);
+ 
+-/*
+- * One or more rpc_rqst structure have been preallocated during the
+- * backchannel setup.  Buffer space for the send and private XDR buffers
+- * has been preallocated as well.  Use xprt_alloc_bc_request to allocate
+- * to this request.  Use xprt_free_bc_request to return it.
+- *
+- * We know that we're called in soft interrupt context, grab the spin_lock
+- * since there is no need to grab the bottom half spin_lock.
+- *
+- * Return an available rpc_rqst, otherwise NULL if non are available.
+- */
+-struct rpc_rqst *xprt_alloc_bc_request(struct rpc_xprt *xprt)
++static struct rpc_rqst *xprt_alloc_bc_request(struct rpc_xprt *xprt, __be32 xid)
+ {
+-	struct rpc_rqst *req;
++	struct rpc_rqst *req = NULL;
+ 
+ 	dprintk("RPC:       allocate a backchannel request\n");
+-	spin_lock(&xprt->bc_pa_lock);
+-	if (!list_empty(&xprt->bc_pa_list)) {
+-		req = list_first_entry(&xprt->bc_pa_list, struct rpc_rqst,
+-				rq_bc_pa_list);
+-		list_del(&req->rq_bc_pa_list);
+-	} else {
+-		req = NULL;
+-	}
+-	spin_unlock(&xprt->bc_pa_lock);
++	if (list_empty(&xprt->bc_pa_list))
++		goto not_found;
+ 
+-	if (req != NULL) {
+-		set_bit(RPC_BC_PA_IN_USE, &req->rq_bc_pa_state);
+-		req->rq_reply_bytes_recvd = 0;
+-		req->rq_bytes_sent = 0;
+-		memcpy(&req->rq_private_buf, &req->rq_rcv_buf,
++	req = list_first_entry(&xprt->bc_pa_list, struct rpc_rqst,
++				rq_bc_pa_list);
++	req->rq_reply_bytes_recvd = 0;
++	req->rq_bytes_sent = 0;
++	memcpy(&req->rq_private_buf, &req->rq_rcv_buf,
+ 			sizeof(req->rq_private_buf));
+-	}
++	req->rq_xid = xid;
++	req->rq_connect_cookie = xprt->connect_cookie;
++not_found:
+ 	dprintk("RPC:       backchannel req=%p\n", req);
+ 	return req;
+ }
+@@ -257,6 +241,7 @@ void xprt_free_bc_request(struct rpc_rqst *req)
+ 
+ 	dprintk("RPC:       free backchannel req=%p\n", req);
+ 
++	req->rq_connect_cookie = xprt->connect_cookie - 1;
+ 	smp_mb__before_clear_bit();
+ 	WARN_ON_ONCE(!test_bit(RPC_BC_PA_IN_USE, &req->rq_bc_pa_state));
+ 	clear_bit(RPC_BC_PA_IN_USE, &req->rq_bc_pa_state);
+@@ -279,7 +264,56 @@ void xprt_free_bc_request(struct rpc_rqst *req)
+ 	 * may be reused by a new callback request.
+ 	 */
+ 	spin_lock_bh(&xprt->bc_pa_lock);
+-	list_add(&req->rq_bc_pa_list, &xprt->bc_pa_list);
++	list_add_tail(&req->rq_bc_pa_list, &xprt->bc_pa_list);
+ 	spin_unlock_bh(&xprt->bc_pa_lock);
+ }
+ 
++/*
++ * One or more rpc_rqst structure have been preallocated during the
++ * backchannel setup.  Buffer space for the send and private XDR buffers
++ * has been preallocated as well.  Use xprt_alloc_bc_request to allocate
++ * to this request.  Use xprt_free_bc_request to return it.
++ *
++ * We know that we're called in soft interrupt context, grab the spin_lock
++ * since there is no need to grab the bottom half spin_lock.
++ *
++ * Return an available rpc_rqst, otherwise NULL if non are available.
++ */
++struct rpc_rqst *xprt_lookup_bc_request(struct rpc_xprt *xprt, __be32 xid)
++{
++	struct rpc_rqst *req;
++
++	spin_lock(&xprt->bc_pa_lock);
++	list_for_each_entry(req, &xprt->bc_pa_list, rq_bc_pa_list) {
++		if (req->rq_connect_cookie != xprt->connect_cookie)
++			continue;
++		if (req->rq_xid == xid)
++			goto found;
++	}
++	req = xprt_alloc_bc_request(xprt, xid);
++found:
++	spin_unlock(&xprt->bc_pa_lock);
++	return req;
++}
++
++/*
++ * Add callback request to callback list.  The callback
++ * service sleeps on the sv_cb_waitq waiting for new
++ * requests.  Wake it up after adding enqueing the
++ * request.
++ */
++void xprt_complete_bc_request(struct rpc_rqst *req, uint32_t copied)
++{
++	struct rpc_xprt *xprt = req->rq_xprt;
++	struct svc_serv *bc_serv = xprt->bc_serv;
++
++	req->rq_private_buf.len = copied;
++	set_bit(RPC_BC_PA_IN_USE, &req->rq_bc_pa_state);
++
++	dprintk("RPC:       add callback request to list\n");
++	spin_lock(&bc_serv->sv_cb_lock);
++	list_move(&req->rq_bc_list, &bc_serv->sv_cb_list);
++	wake_up(&bc_serv->sv_cb_waitq);
++	spin_unlock(&bc_serv->sv_cb_lock);
++}
++
+diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
+index 817a1e523969..6497c221612c 100644
+--- a/net/sunrpc/xprtsock.c
++++ b/net/sunrpc/xprtsock.c
+@@ -1302,41 +1302,29 @@ static inline int xs_tcp_read_reply(struct rpc_xprt *xprt,
+  * If we're unable to obtain the rpc_rqst we schedule the closing of the
+  * connection and return -1.
+  */
+-static inline int xs_tcp_read_callback(struct rpc_xprt *xprt,
++static int xs_tcp_read_callback(struct rpc_xprt *xprt,
+ 				       struct xdr_skb_reader *desc)
+ {
+ 	struct sock_xprt *transport =
+ 				container_of(xprt, struct sock_xprt, xprt);
+ 	struct rpc_rqst *req;
+ 
+-	req = xprt_alloc_bc_request(xprt);
++	/* Look up and lock the request corresponding to the given XID */
++	spin_lock(&xprt->transport_lock);
++	req = xprt_lookup_bc_request(xprt, transport->tcp_xid);
+ 	if (req == NULL) {
++		spin_unlock(&xprt->transport_lock);
+ 		printk(KERN_WARNING "Callback slot table overflowed\n");
+ 		xprt_force_disconnect(xprt);
+ 		return -1;
+ 	}
+ 
+-	req->rq_xid = transport->tcp_xid;
+ 	dprintk("RPC:       read callback  XID %08x\n", ntohl(req->rq_xid));
+ 	xs_tcp_read_common(xprt, desc, req);
+ 
+-	if (!(transport->tcp_flags & TCP_RCV_COPY_DATA)) {
+-		struct svc_serv *bc_serv = xprt->bc_serv;
+-
+-		/*
+-		 * Add callback request to callback list.  The callback
+-		 * service sleeps on the sv_cb_waitq waiting for new
+-		 * requests.  Wake it up after adding enqueing the
+-		 * request.
+-		 */
+-		dprintk("RPC:       add callback request to list\n");
+-		spin_lock(&bc_serv->sv_cb_lock);
+-		list_add(&req->rq_bc_list, &bc_serv->sv_cb_list);
+-		spin_unlock(&bc_serv->sv_cb_lock);
+-		wake_up(&bc_serv->sv_cb_waitq);
+-	}
+-
+-	req->rq_private_buf.len = transport->tcp_copied;
++	if (!(transport->tcp_flags & TCP_RCV_COPY_DATA))
++		xprt_complete_bc_request(req, transport->tcp_copied);
++	spin_unlock(&xprt->transport_lock);
+ 
+ 	return 0;
+ }
+-- 
+1.8.5.3
+
+
+-- 
+Trond Myklebust
+Linux NFS client maintainer, PrimaryData
+trond.myklebust@primarydata.com
 
 
