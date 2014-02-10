@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753126AbaBJTl6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 14:41:58 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34598 "EHLO
+	id S1753084AbaBJTly (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 14:41:54 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34599 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752765AbaBJTlj (ORCPT
+	with ESMTP id S1752769AbaBJTlj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 10 Feb 2014 14:41:39 -0500
 From: Kamal Mostafa <kamal@canonical.com>
@@ -13,9 +13,9 @@ To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
 Cc: Larry Finger <Larry.Finger@lwfinger.net>,
         "John W. Linville" <linville@tuxdriver.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 007/124] rtlwifi: rtl8192cu: Fix duplicate if test
-Date: Mon, 10 Feb 2014 11:39:07 -0800
-Message-Id: <1392061264-28124-8-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 005/124] rtlwifi: rtl8192cu: Add new firmware
+Date: Mon, 10 Feb 2014 11:39:05 -0800
+Message-Id: <1392061264-28124-6-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
 References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
@@ -30,37 +30,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 10d0b9030a3f86e1e26c710c7580524d7787d688 upstream.
+commit 62009b7f12793c932aaba0df946b04cb4a77d022 upstream.
 
-A typo causes routine rtl92cu_phy_rf6052_set_cck_txpower() to test the
-same condition twice. The problem was found using cppcheck-1.49, and the
-proper fix was verified against the pre-mac80211 version of the code.
+Vendor driver rtl8188C_8192C_8192D_usb_linux_v3.4.2_3727.20120404 introduced
+new firmware for these chips. The code try for the new file, and fall back to
+the original firmware if the new file is not available.
 
-This patch was originally included as commit 1288aa4, but was accidentally
-reverted in a later patch.
-
-Reported-by: David Binderman <dcb314@hotmail.com> [original report]
-Reported-by: Andrea Morello <andrea.merello@gmail.com> [report of accidental reversion]
 Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/rf.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/rtlwifi/core.c         | 10 ++++++++++
+ drivers/net/wireless/rtlwifi/rtl8192cu/sw.c | 16 +++++++++++++---
+ drivers/net/wireless/rtlwifi/wifi.h         |  1 +
+ 3 files changed, 24 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/rf.c b/drivers/net/wireless/rtlwifi/rtl8192cu/rf.c
-index 953f1a0..2119313 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/rf.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/rf.c
-@@ -104,7 +104,7 @@ void rtl92cu_phy_rf6052_set_cck_txpower(struct ieee80211_hw *hw,
- 			tx_agc[RF90_PATH_A] = 0x10101010;
- 			tx_agc[RF90_PATH_B] = 0x10101010;
- 		} else if (rtlpriv->dm.dynamic_txhighpower_lvl ==
--			   TXHIGHPWRLEVEL_LEVEL1) {
-+			   TXHIGHPWRLEVEL_LEVEL2) {
- 			tx_agc[RF90_PATH_A] = 0x00000000;
- 			tx_agc[RF90_PATH_B] = 0x00000000;
- 		} else{
+diff --git a/drivers/net/wireless/rtlwifi/core.c b/drivers/net/wireless/rtlwifi/core.c
+index be33aa1..77e4a58 100644
+--- a/drivers/net/wireless/rtlwifi/core.c
++++ b/drivers/net/wireless/rtlwifi/core.c
+@@ -46,10 +46,20 @@ void rtl_fw_cb(const struct firmware *firmware, void *context)
+ 			 "Firmware callback routine entered!\n");
+ 	complete(&rtlpriv->firmware_loading_complete);
+ 	if (!firmware) {
++		if (rtlpriv->cfg->alt_fw_name) {
++			err = request_firmware(&firmware,
++					       rtlpriv->cfg->alt_fw_name,
++					       rtlpriv->io.dev);
++			pr_info("Loading alternative firmware %s\n",
++				rtlpriv->cfg->alt_fw_name);
++			if (!err)
++				goto found_alt;
++		}
+ 		pr_err("Firmware %s not available\n", rtlpriv->cfg->fw_name);
+ 		rtlpriv->max_fw_size = 0;
+ 		return;
+ 	}
++found_alt:
+ 	if (firmware->size > rtlpriv->max_fw_size) {
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
+ 			 "Firmware is too big!\n");
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
+index 873754b..07ab292 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
+@@ -49,6 +49,9 @@ MODULE_AUTHOR("Larry Finger	<Larry.Finger@lwfinger.net>");
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Realtek 8192C/8188C 802.11n USB wireless");
+ MODULE_FIRMWARE("rtlwifi/rtl8192cufw.bin");
++MODULE_FIRMWARE("rtlwifi/rtl8192cufw_A.bin");
++MODULE_FIRMWARE("rtlwifi/rtl8192cufw_B.bin");
++MODULE_FIRMWARE("rtlwifi/rtl8192cufw_TMSC.bin");
+ 
+ static int rtl92cu_init_sw_vars(struct ieee80211_hw *hw)
+ {
+@@ -68,14 +71,21 @@ static int rtl92cu_init_sw_vars(struct ieee80211_hw *hw)
+ 			 "Can't alloc buffer for fw\n");
+ 		return 1;
+ 	}
+-
++	if (IS_VENDOR_UMC_A_CUT(rtlpriv->rtlhal.version) &&
++	    !IS_92C_SERIAL(rtlpriv->rtlhal.version)) {
++		rtlpriv->cfg->fw_name = "rtlwifi/rtl8192cufw_A.bin";
++	} else if (IS_81xxC_VENDOR_UMC_B_CUT(rtlpriv->rtlhal.version)) {
++		rtlpriv->cfg->fw_name = "rtlwifi/rtl8192cufw_B.bin";
++	} else {
++		rtlpriv->cfg->fw_name = "rtlwifi/rtl8192cufw_TMSC.bin";
++	}
++	/* provide name of alternative file */
++	rtlpriv->cfg->alt_fw_name = "rtlwifi/rtl8192cufw.bin";
+ 	pr_info("Loading firmware %s\n", rtlpriv->cfg->fw_name);
+ 	rtlpriv->max_fw_size = 0x4000;
+ 	err = request_firmware_nowait(THIS_MODULE, 1,
+ 				      rtlpriv->cfg->fw_name, rtlpriv->io.dev,
+ 				      GFP_KERNEL, hw, rtl_fw_cb);
+-
+-
+ 	return err;
+ }
+ 
+diff --git a/drivers/net/wireless/rtlwifi/wifi.h b/drivers/net/wireless/rtlwifi/wifi.h
+index 88732e7..30f96ae 100644
+--- a/drivers/net/wireless/rtlwifi/wifi.h
++++ b/drivers/net/wireless/rtlwifi/wifi.h
+@@ -1640,6 +1640,7 @@ struct rtl_hal_cfg {
+ 	bool write_readback;
+ 	char *name;
+ 	char *fw_name;
++	char *alt_fw_name;
+ 	struct rtl_hal_ops *ops;
+ 	struct rtl_mod_params *mod_params;
+ 	struct rtl_hal_usbint_cfg *usb_interface_cfg;
 -- 
 1.8.3.2
 
