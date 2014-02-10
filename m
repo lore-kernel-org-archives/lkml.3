@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752211AbaBJE0z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 23:26:55 -0500
-Received: from usmamail.tilera.com ([12.216.194.151]:63772 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751612AbaBJE0y convert rfc822-to-8bit (ORCPT
+	id S1752269AbaBJE1l (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 23:27:41 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:64638 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751750AbaBJE1j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 23:26:54 -0500
-X-Greylist: delayed 327 seconds by postgrey-1.27 at vger.kernel.org; Sun, 09 Feb 2014 23:26:53 EST
-From: Tony Lu <zlu@tilera.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tony Lu <zlu@tilera.com>, Chris Metcalf <cmetcalf@tilera.com>
-Subject: [PATCH] perf tools: Fix the logic of thread__fork
-Thread-Topic: [PATCH] perf tools: Fix the logic of thread__fork
-Thread-Index: Ac8mF47F18qUD7qqQNWZn8NHmpAOmg==
-Date: Mon, 10 Feb 2014 04:21:23 +0000
-Message-ID: <BAB94DBB0E89D8409949BC28AC95914C5D67EA30@USMAExch1.tad.internal.tilera.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Sun, 9 Feb 2014 23:27:39 -0500
+From: Matt Ranostay <mranostay@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        devicetree@vger.kernel.org
+Cc: matt.porter@linaro.org, pantelis.antoniou@gmail.com,
+        Matt Ranostay <mranostay@gmail.com>
+Subject: [PATCH v6 0/2] AS3935 lightning sensor support
+Date: Sun,  9 Feb 2014 20:27:29 -0800
+Message-Id: <1392006451-7818-1-git-send-email-mranostay@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Revert the logic of checking the return value of thread__set_comm().
+This series adds support for the AMS AS3935 lightning sensor that allows
+reporting back estimated storm distance and strike events.
 
-If thread__set_comm() returns zero without errors, we should not return
-immediately, instead we should finish the rest of the clone work.
-Otherwise, perf report would fail to resolve symbols sampled in forked
-threads.
+Changes from v5
 
-Signed-off-by: Zhigang Lu <zlu@tilera.com>
----
- tools/perf/util/thread.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+* SPI write cache-aligned issues fixed 
+* Fixed mutex_unlock's being missed
+* Reports distance in meters instead of kilometers (1km steps)
+* tune_cap is now in picofarads and not a register value
 
-diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index 49eaf1d..e394861 100644
---- a/tools/perf/util/thread.c
-+++ b/tools/perf/util/thread.c
-@@ -126,7 +126,7 @@ int thread__fork(struct thread *thread, struct thread *parent, u64 timestamp)
- 		if (!comm)
- 			return -ENOMEM;
- 		err = thread__set_comm(thread, comm, timestamp);
--		if (!err)
-+		if (err)
- 			return err;
- 		thread->comm_set = true;
- 	}
+Matt Ranostay (2):
+  iio:as3935: Add DT binding docs for AS3935 driver
+  iio: Add AS3935 lightning sensor support
+
+ .../ABI/testing/sysfs-bus-iio-proximity-as3935     |  18 +
+ .../devicetree/bindings/iio/proximity/as3935.txt   |  27 ++
+ .../devicetree/bindings/vendor-prefixes.txt        |   1 +
+ drivers/iio/Kconfig                                |   1 +
+ drivers/iio/Makefile                               |   1 +
+ drivers/iio/proximity/Kconfig                      |  19 +
+ drivers/iio/proximity/Makefile                     |   6 +
+ drivers/iio/proximity/as3935.c                     | 443 +++++++++++++++++++++
+ 8 files changed, 516 insertions(+)
+ create mode 100644 Documentation/ABI/testing/sysfs-bus-iio-proximity-as3935
+ create mode 100644 Documentation/devicetree/bindings/iio/proximity/as3935.txt
+ create mode 100644 drivers/iio/proximity/Kconfig
+ create mode 100644 drivers/iio/proximity/Makefile
+ create mode 100644 drivers/iio/proximity/as3935.c
+
 -- 
-1.7.1
+1.8.3.2
+
