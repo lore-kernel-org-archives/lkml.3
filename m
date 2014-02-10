@@ -1,92 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932119AbaBJUEt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 15:04:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29267 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755181AbaBJUEo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 15:04:44 -0500
-Message-ID: <1392062650.15608.147.camel@ul30vt.home>
-Subject: Re: [RFC PATCH v4 02/10] VFIO_IOMMU_TYPE1: Introduce the
- VFIO_DMA_MAP_FLAG_EXEC flag
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Antonios Motakis <a.motakis@virtualopensystems.com>
-Cc: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        tech@virtualopensystems.com, a.rigo@virtualopensystems.com,
-        B08248@freescale.com, kim.phillips@linaro.org, jan.kiszka@siemens.com,
-        kvm@vger.kernel.org, R65777@freescale.com, B07421@freescale.com,
-        christoffer.dall@linaro.org, agraf@suse.de, B16395@freescale.com,
-        will.deacon@arm.com
-Date: Mon, 10 Feb 2014 13:04:10 -0700
-In-Reply-To: <1391880580-471-3-git-send-email-a.motakis@virtualopensystems.com>
-References: <1391880580-471-1-git-send-email-a.motakis@virtualopensystems.com>
-	 <1391880580-471-3-git-send-email-a.motakis@virtualopensystems.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755200AbaBJUEq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 15:04:46 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:36786 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752877AbaBJUEj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 15:04:39 -0500
+Date: Mon, 10 Feb 2014 20:04:36 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [process_vm_access] BUG: unable to handle kernel paging request
+ at fffffff27b92dd20
+Message-ID: <20140210200436.GE18016@ZenIV.linux.org.uk>
+References: <20140210112231.GA11951@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140210112231.GA11951@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-02-08 at 18:29 +0100, Antonios Motakis wrote:
-> The ARM SMMU driver expects the IOMMU_EXEC flag, otherwise it will
-> set the page tables for a device as XN (execute never). This affects
-> devices such as the ARM PL330 DMA Controller, which fails to operate
-> if the XN flag is set on the memory it tries to fetch its instructions
-> from.
+On Mon, Feb 10, 2014 at 07:22:31PM +0800, Fengguang Wu wrote:
+> Hi Al,
 > 
-> We introduce the VFIO_DMA_MAP_FLAG_EXEC to VFIO, and use it in
-> VFIO_IOMMU_TYPE1 to set the IOMMU_EXEC flag. This way the user can
-> control whether the XN flag will be set on the requested mappings.
+> We noticed the below oops since commit 68a25f08c9bec07ad95e55a01b127168e43aed84
+> ("process_vm_access: take get_user_pages/put_pages one level up")
+> while running ltp tests inside kvm.
 
-Should the user be told whether this flag is available?  It looks like
-existing iommu drivers for x86 ignore the flag, can we count on that?
-Thanks,
+Actually, that's a combination of 3 bugs, only one of them being in this
+commit.  See current #iov_iter; AFAICS, all process_vm stuff in LTP passes
+with it.
 
-Alex
-
-> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
-> ---
->  drivers/vfio/vfio_iommu_type1.c | 5 ++++-
->  include/uapi/linux/vfio.h       | 1 +
->  2 files changed, 5 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/vfio/vfio_iommu_type1.c b/drivers/vfio/vfio_iommu_type1.c
-> index 4fb7a8f..ad7a1f6 100644
-> --- a/drivers/vfio/vfio_iommu_type1.c
-> +++ b/drivers/vfio/vfio_iommu_type1.c
-> @@ -557,6 +557,8 @@ static int vfio_dma_do_map(struct vfio_iommu *iommu,
->  		prot |= IOMMU_WRITE;
->  	if (map->flags & VFIO_DMA_MAP_FLAG_READ)
->  		prot |= IOMMU_READ;
-> +	if (map->flags & VFIO_DMA_MAP_FLAG_EXEC)
-> +		prot |= IOMMU_EXEC;
->  
->  	if (!prot)
->  		return -EINVAL; /* No READ/WRITE? */
-> @@ -865,7 +867,8 @@ static long vfio_iommu_type1_ioctl(void *iommu_data,
->  	} else if (cmd == VFIO_IOMMU_MAP_DMA) {
->  		struct vfio_iommu_type1_dma_map map;
->  		uint32_t mask = VFIO_DMA_MAP_FLAG_READ |
-> -				VFIO_DMA_MAP_FLAG_WRITE;
-> +				VFIO_DMA_MAP_FLAG_WRITE |
-> +				VFIO_DMA_MAP_FLAG_EXEC;
->  
->  		minsz = offsetofend(struct vfio_iommu_type1_dma_map, size);
->  
-> diff --git a/include/uapi/linux/vfio.h b/include/uapi/linux/vfio.h
-> index 0fd47f5..d8e9e99 100644
-> --- a/include/uapi/linux/vfio.h
-> +++ b/include/uapi/linux/vfio.h
-> @@ -392,6 +392,7 @@ struct vfio_iommu_type1_dma_map {
->  	__u32	flags;
->  #define VFIO_DMA_MAP_FLAG_READ (1 << 0)		/* readable from device */
->  #define VFIO_DMA_MAP_FLAG_WRITE (1 << 1)	/* writable from device */
-> +#define VFIO_DMA_MAP_FLAG_EXEC (1 << 2)		/* executable from device */
->  	__u64	vaddr;				/* Process virtual address */
->  	__u64	iova;				/* IO virtual address */
->  	__u64	size;				/* Size of mapping (bytes) */
-
-
-
+BTW, what's the story with ioctl3?  What I'm getting from it is
+"Must supply a file collection or a command", with no further
+explanations.  Something it wants installed that just isn't there?
