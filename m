@@ -1,88 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753199AbaBJKMP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 05:12:15 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:55018 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752163AbaBJKMK (ORCPT
+	id S1753202AbaBJKNQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 05:13:16 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:21851 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753151AbaBJKL7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 05:12:10 -0500
-From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-To: <santosh.shilimkar@ti.com>, <rob@landley.net>, <linux@arm.linux.org.uk>,
-        <galak@codeaurora.org>
-CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <daniel.lezcano@linaro.org>,
-        <tglx@linutronix.de>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <grygorii.strashko@ti.com>,
-        <joshc@codeaurora.org>, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Subject: [PATCH v6 2/3] clocksource: keystone: add bindings for keystone timer
-Date: Mon, 10 Feb 2014 12:10:57 +0200
-Message-ID: <1392027058-11680-3-git-send-email-ivan.khoronzhuk@ti.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1392027058-11680-1-git-send-email-ivan.khoronzhuk@ti.com>
-References: <1392027058-11680-1-git-send-email-ivan.khoronzhuk@ti.com>
+	Mon, 10 Feb 2014 05:11:59 -0500
+Date: Mon, 10 Feb 2014 10:11:50 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Laura Abbott <lauraa@codeaurora.org>
+Cc: Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Rob Herring <robherring2@gmail.com>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: Re: [PATCHv2 2/2] arm: Get rid of meminfo
+Message-ID: <20140210101150.GB25305@arm.com>
+References: <1391558551-31395-1-git-send-email-lauraa@codeaurora.org>
+ <1391558551-31395-3-git-send-email-lauraa@codeaurora.org>
+ <20140207020949.GQ1706@sonymobile.com>
+ <52F846AE.3050800@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52F846AE.3050800@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch provides bindings for the 64-bit timer in the KeyStone
-architecture devices. The timer can be configured as a general-purpose 64-bit
-timer, dual general-purpose 32-bit timers. When configured as dual 32-bit
-timers, each half can operate in conjunction (chain mode) or independently
-(unchained mode) of each other.
+On Mon, Feb 10, 2014 at 03:25:34AM +0000, Laura Abbott wrote:
+> On 2/6/2014 6:09 PM, Courtney Cavin wrote:
+> > On Wed, Feb 05, 2014 at 01:02:31AM +0100, Laura Abbott wrote:
+> >> memblock is now fully integrated into the kernel and is the prefered
+> >> method for tracking memory. Rather than reinvent the wheel with
+> >> meminfo, migrate to using memblock directly instead of meminfo as
+> >> an intermediate.
+> >>
+> >> Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
+> > [...]
+> >> diff --git a/arch/arm/mach-pxa/spitz.c b/arch/arm/mach-pxa/spitz.c
+> >> index 0b11c1a..51d814e 100644
+> >> --- a/arch/arm/mach-pxa/spitz.c
+> >> +++ b/arch/arm/mach-pxa/spitz.c
+> >> @@ -32,6 +32,7 @@
+> >>   #include <linux/io.h>
+> >>   #include <linux/module.h>
+> >>   #include <linux/reboot.h>
+> >> +#include <linux/memblock.h>
+> >>
+> >>   #include <asm/setup.h>
+> >>   #include <asm/mach-types.h>
+> >> @@ -971,13 +972,9 @@ static void __init spitz_init(void)
+> >>          spitz_i2c_init();
+> >>   }
+> >>
+> >> -static void __init spitz_fixup(struct tag *tags, char **cmdline,
+> >> -                              struct meminfo *mi)
+> >> +static void __init spitz_fixup(struct tag *tags, char **cmdline)
+> >>   {
+> >> -       sharpsl_save_param();
+> >> -       mi->nr_banks = 1;
+> >> -       mi->bank[0].start = 0xa0000000;
+> >> -       mi->bank[0].size = (64*1024*1024);
+> >> +       memblock_addr(0xa0000000, SZ_64M);
+> >
+> > memblock_add() ?
+> Yes, that was a typo on my part. I'll send out a v3 with collected acks.
 
-It is global timer is a free running up-counter and can generate interrupt
-when the counter reaches preset counter values.
+And better testing ;)
 
-Documentation:
-http://www.ti.com/lit/ug/sprugv5a/sprugv5a.pdf
-
-Acked-by: Rob Herring <robh@kernel.org>
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
----
- .../bindings/timer/ti,keystone-timer.txt           | 29 ++++++++++++++++++++++
- 1 file changed, 29 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/timer/ti,keystone-timer.txt
-
-diff --git a/Documentation/devicetree/bindings/timer/ti,keystone-timer.txt b/Documentation/devicetree/bindings/timer/ti,keystone-timer.txt
-new file mode 100644
-index 0000000..5fbe361
---- /dev/null
-+++ b/Documentation/devicetree/bindings/timer/ti,keystone-timer.txt
-@@ -0,0 +1,29 @@
-+* Device tree bindings for Texas instruments Keystone timer
-+
-+This document provides bindings for the 64-bit timer in the KeyStone
-+architecture devices. The timer can be configured as a general-purpose 64-bit
-+timer, dual general-purpose 32-bit timers. When configured as dual 32-bit
-+timers, each half can operate in conjunction (chain mode) or independently
-+(unchained mode) of each other.
-+
-+It is global timer is a free running up-counter and can generate interrupt
-+when the counter reaches preset counter values.
-+
-+Documentation:
-+http://www.ti.com/lit/ug/sprugv5a/sprugv5a.pdf
-+
-+Required properties:
-+
-+- compatible : should be "ti,keystone-timer".
-+- reg : specifies base physical address and count of the registers.
-+- interrupts : interrupt generated by the timer.
-+- clocks : the clock feeding the timer clock.
-+
-+Example:
-+
-+timer@22f0000 {
-+	compatible = "ti,keystone-timer";
-+	reg = <0x022f0000 0x80>;
-+	interrupts = <GIC_SPI 110 IRQ_TYPE_EDGE_RISING>;
-+	clocks = <&clktimer15>;
-+};
 -- 
-1.8.3.2
-
+Catalin
