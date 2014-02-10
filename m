@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755065AbaBJUB6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 15:01:58 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34939 "EHLO
+	id S1755104AbaBJUCr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 15:02:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34920 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754067AbaBJTqP (ORCPT
+	with ESMTP id S1752547AbaBJTqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:46:15 -0500
+	Mon, 10 Feb 2014 14:46:11 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Richard Weinberger <richard@nod.at>,
+Cc: Christian Engelmayer <cengelma@gmx.at>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 115/124] net,via-rhine: Fix tx_timeout handling
-Date: Mon, 10 Feb 2014 11:40:55 -0800
-Message-Id: <1392061264-28124-116-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 113/124] ieee802154: Fix memory leak in ieee802154_add_iface()
+Date: Mon, 10 Feb 2014 11:40:53 -0800
+Message-Id: <1392061264-28124-114-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
 References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
@@ -28,37 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Weinberger <richard@nod.at>
+From: Christian Engelmayer <cengelma@gmx.at>
 
-[ Upstream commit a926592f5e4e900f3fa903298c4619a131e60963 ]
+[ Upstream commit 267d29a69c6af39445f36102a832b25ed483f299 ]
 
-rhine_reset_task() misses to disable the tx scheduler upon reset,
-this can lead to a crash if work is still scheduled while we're resetting
-the tx queue.
+Fix a memory leak in the ieee802154_add_iface() error handling path.
+Detected by Coverity: CID 710490.
 
-Fixes:
-[   93.591707] BUG: unable to handle kernel NULL pointer dereference at 0000004c
-[   93.595514] IP: [<c119d10d>] rhine_napipoll+0x491/0x6
-
-Signed-off-by: Richard Weinberger <richard@nod.at>
+Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/ethernet/via/via-rhine.c | 1 +
- 1 file changed, 1 insertion(+)
+ net/ieee802154/nl-phy.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/via/via-rhine.c b/drivers/net/ethernet/via/via-rhine.c
-index 3b96bfa..7eb1963 100644
---- a/drivers/net/ethernet/via/via-rhine.c
-+++ b/drivers/net/ethernet/via/via-rhine.c
-@@ -1600,6 +1600,7 @@ static void rhine_reset_task(struct work_struct *work)
- 		goto out_unlock;
+diff --git a/net/ieee802154/nl-phy.c b/net/ieee802154/nl-phy.c
+index 22b1a70..4efd237 100644
+--- a/net/ieee802154/nl-phy.c
++++ b/net/ieee802154/nl-phy.c
+@@ -224,8 +224,10 @@ static int ieee802154_add_iface(struct sk_buff *skb,
  
- 	napi_disable(&rp->napi);
-+	netif_tx_disable(dev);
- 	spin_lock_bh(&rp->lock);
+ 	if (info->attrs[IEEE802154_ATTR_DEV_TYPE]) {
+ 		type = nla_get_u8(info->attrs[IEEE802154_ATTR_DEV_TYPE]);
+-		if (type >= __IEEE802154_DEV_MAX)
+-			return -EINVAL;
++		if (type >= __IEEE802154_DEV_MAX) {
++			rc = -EINVAL;
++			goto nla_put_failure;
++		}
+ 	}
  
- 	/* clear all descriptors */
+ 	dev = phy->add_iface(phy, devname, type);
 -- 
 1.8.3.2
 
