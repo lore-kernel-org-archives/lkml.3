@@ -1,102 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753132AbaBJXXk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 18:23:40 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:33241 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752124AbaBJXXh (ORCPT
+	id S1752964AbaBJX1e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 18:27:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59779 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752369AbaBJX1b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 18:23:37 -0500
-Date: Mon, 10 Feb 2014 17:23:28 -0600 (CST)
-From: Kumar Gala <galak@codeaurora.org>
-X-X-Sender: galak@galak-ubuntu.qualcomm.com
-To: arm@kernel.org
-cc: David Brown <davidb@codeaurora.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Kevin Hilman <khilman@linaro.org>,
-        Rohit Vaswani <rvaswani@codeaurora.org>
-Subject: [GIT PULL] qcom cleanups for v3.15
-Message-ID: <alpine.DEB.2.00.1402101722170.12284@galak-ubuntu.qualcomm.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+	Mon, 10 Feb 2014 18:27:31 -0500
+Date: Mon, 10 Feb 2014 15:27:29 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Luiz Capitulino <lcapitulino@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, mtosatti@redhat.com,
+        mgorman@suse.de, aarcange@redhat.com, andi@firstfloor.org,
+        riel@redhat.com
+Subject: Re: [PATCH 3/4] hugetlb: add hugepagesnid= command-line option
+Message-Id: <20140210152729.737a5dca5db0ba7f9f9291ac@linux-foundation.org>
+In-Reply-To: <1392053268-29239-4-git-send-email-lcapitulino@redhat.com>
+References: <1392053268-29239-1-git-send-email-lcapitulino@redhat.com>
+	<1392053268-29239-4-git-send-email-lcapitulino@redhat.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 38dbfb59d1175ef458d006556061adeaa8751b72:
+On Mon, 10 Feb 2014 12:27:47 -0500 Luiz Capitulino <lcapitulino@redhat.com> wrote:
 
-   Linus 3.14-rc1 (2014-02-02 16:42:13 -0800)
+> From: Luiz capitulino <lcapitulino@redhat.com>
+> 
+> The HugeTLB command-line option hugepages= allow the user to specify
+> how many huge pages should be allocated at boot-time. On NUMA systems,
+> this option will try to automatically distribute the allocation equally
+> among nodes. For example, if you have a 2-node NUMA system and allocates
+> 200 huge pages, than hugepages= will try to allocate 100 huge pages from
+> node0 and 100 from node1.
+> 
+> The hugepagesnid= option introduced by this commit allows the user
+> to specify the nodes from which huge pages are allocated. For example,
+> if you have a 2-node NUMA system and want 300 2M huge pages to be
+> allocated from node1, you could do:
+> 
+>  hugepagesnid=1,300,2M
+> 
+> Or, say you want node0 to allocate 100 huge pages and node1 to
+> allocate 200 huge pages, you do:
+> 
+>  hugepagesnid=0,100,2M hugepagesnid=1,200,1M
+> 
+> This commit adds support only for 2M huge pages, next commit will
+> add support for 1G huge pages.
+> 
+> ...
+>
+> --- a/arch/x86/mm/hugetlbpage.c
+> +++ b/arch/x86/mm/hugetlbpage.c
+> @@ -188,4 +188,39 @@ static __init int setup_hugepagesz(char *opt)
+>  	return 1;
+>  }
+>  __setup("hugepagesz=", setup_hugepagesz);
+> +
+> +static __init int setup_hugepagesnid(char *opt)
+> +{
+> +	unsigned long order, ps, nid, nr_pages;
+> +	char size_str[3];
+> +
+> +	size_str[2] = '\0';
+> +	if (sscanf(opt, "%lu,%lu,%c%c",
+> +			&nid, &nr_pages, &size_str[0], &size_str[1]) < 4) {
+> +		printk(KERN_ERR "hugepagesnid: failed to parse arguments\n");
+> +			return 0;
+> +	}
 
-are available in the git repository at:
+This will blow up if passed size=16M.  We can expect that powerpc (at
+least) will want to copy (or generalise) this code.  It would be better
+to avoid such restrictions at the outset.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-cleanup-for-3.15
+> +	if (!nr_pages) {
+> +		printk(KERN_ERR
+> +			"hugepagesnid: zero number of pages, ignoring\n");
 
-for you to fetch changes up to cf1e8f0cd665e2a9966d2bee4e11ecc0938ff166:
+The code contains rather a lot of these awkward wordwraps.  Try using
+pr_err() and you'll find the result quite pleasing!
 
-   ARM: qcom: Rename various msm prefixed functions to qcom (2014-02-06 16:20:41 -0600)
+> +		return 0;
+> +	}
+> +
+> +	ps = memparse(size_str, NULL);
+> +	if (ps == PMD_SIZE) {
+> +		order = PMD_SHIFT - PAGE_SHIFT;
+> +	} else if (ps == PUD_SIZE && cpu_has_gbpages) {
+> +		order = PUD_SHIFT - PAGE_SHIFT;
+> +	} else {
+> +		printk(KERN_ERR "hugepagesnid: Unsupported page size %lu M\n",
+> +			ps >> 20);
+> +		return 0;
+> +	}
+> +
+> +	hugetlb_add_nrpages_nid(order, nid, nr_pages);
+> +	return 1;
+> +}
+> +__setup("hugepagesnid=", setup_hugepagesnid);
+> +
+>  #endif
+>
+> ...
+>
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -46,6 +46,7 @@ __initdata LIST_HEAD(huge_boot_pages);
+>  static struct hstate * __initdata parsed_hstate;
+>  static unsigned long __initdata default_hstate_max_huge_pages;
+>  static unsigned long __initdata default_hstate_size;
+> +static unsigned long __initdata boot_alloc_nodes[HUGE_MAX_HSTATE][MAX_NUMNODES];
+>  
+>  /*
+>   * Protects updates to hugepage_freelists, hugepage_activelist, nr_huge_pages,
+> @@ -1348,6 +1349,50 @@ static void __init hugetlb_hstate_alloc_pages(struct hstate *h)
+>  	h->max_huge_pages = i;
+>  }
+>  
+> +static unsigned long __init alloc_huge_pages_nid(struct hstate *h,
+> +						int nid,
+> +						unsigned long nr_pages)
+> +{
+> +	unsigned long i;
+> +	struct page *page;
+> +
+> +	for (i = 0; i < nr_pages; i++) {
+> +		page = alloc_fresh_huge_page_node(h, nid);
+> +		if (!page) {
+> +			count_vm_event(HTLB_BUDDY_PGALLOC_FAIL);
+> +			break;
+> +		}
+> +		count_vm_event(HTLB_BUDDY_PGALLOC);
+> +	}
+> +
+> +	return i;
+> +}
+> +
+> +static unsigned long __init alloc_huge_pages_nodes(struct hstate *h)
+> +{
+> +	unsigned long i, *entry, ret = 0;
+> +
+> +	for (i = 0; i < MAX_NUMNODES; i++) {
+> +		entry = &boot_alloc_nodes[hstate_index(h)][i];
+> +		if (*entry > 0)
+> +			ret += alloc_huge_pages_nid(h, i, *entry);
+> +	}
+> +
+> +	return ret;
+> +}
+> +
+> +static void __init hugetlb_init_hstates_nodes(void)
+> +{
+> +	struct hstate *h;
+> +	unsigned long ret;
+> +
+> +	for_each_hstate(h)
+> +		if (h->order < MAX_ORDER) {
+> +			ret = alloc_huge_pages_nodes(h);
+> +			h->max_huge_pages += ret;
+> +		}
+> +}
 
-----------------------------------------------------------------
-General cleanups for MSM/QCOM for 3.15
+The patch adds code to mm/hugetlb.c which only x86 will use.  I guess
+that's OK medium-term if we expect other architectures will use it. 
+But if other architectures use it, setup_hugepagesnid() was in the wrong
+directory.
 
-Split of the multiplatform support for the Qualcomm SoCs into a mach-qcom
-while we leave mach-msm as legacy support.  Also, some smp and device tree
-related cleanups.
+Can I ask that you poke the ppc/arm/ia64/etc people, see whether they
+will adpot this?  Explaining the overall justification better in [patch
+0/n] would help this discussion!
 
-----------------------------------------------------------------
-Kumar Gala (6):
-       ARM: dts: msm: split out msm8660 and msm8960 soc into dts include
-       ARM: msm: kill off hotplug.c
-       clocksource: qcom: Move clocksource code out of mach-msm
-       ARM: qcom: Split Qualcomm support into legacy and multiplatform
-       clocksource: qcom: split building of legacy vs multiplatform support
-       ARM: qcom: Rename various msm prefixed functions to qcom
+>  static void __init hugetlb_init_hstates(void)
+>  {
+>  	struct hstate *h;
+> @@ -1966,6 +2011,7 @@ static int __init hugetlb_init(void)
+>  		default_hstate.max_huge_pages = default_hstate_max_huge_pages;
+>  
+>  	hugetlb_init_hstates();
+> +	hugetlb_init_hstates_nodes();
+>  	gather_bootmem_prealloc();
+>  	report_hugepages();
+>  
+> @@ -2005,6 +2051,37 @@ void __init hugetlb_add_hstate(unsigned order)
+>  	parsed_hstate = h;
+>  }
+>  
+> +void __init hugetlb_add_nrpages_nid(unsigned order, unsigned long nid,
+> +				unsigned long nr_pages)
 
-Rohit Vaswani (1):
-       ARM: msm: Remove pen_release usage
+Using an unsigned long for a NUMA node ID is overkill, surely.
 
-  MAINTAINERS                                        |  8 +++
-  arch/arm/Kconfig                                   |  7 +-
-  arch/arm/Kconfig.debug                             |  2 +-
-  arch/arm/Makefile                                  |  1 +
-  arch/arm/boot/dts/Makefile                         |  6 +-
-  arch/arm/boot/dts/qcom-msm8660-surf.dts            | 59 +----------------
-  arch/arm/boot/dts/qcom-msm8660.dtsi                | 63 ++++++++++++++++++
-  arch/arm/boot/dts/qcom-msm8960-cdp.dts             | 66 +------------------
-  arch/arm/boot/dts/qcom-msm8960.dtsi                | 70 ++++++++++++++++++++
-  arch/arm/mach-msm/Kconfig                          | 54 ++--------------
-  arch/arm/mach-msm/Makefile                         |  8 ---
-  arch/arm/mach-msm/common.h                         |  1 -
-  arch/arm/mach-msm/headsmp.S                        | 39 ------------
-  arch/arm/mach-msm/hotplug.c                        | 74 ----------------------
-  arch/arm/mach-qcom/Kconfig                         | 33 ++++++++++
-  arch/arm/mach-qcom/Makefile                        |  5 ++
-  .../arm/{mach-msm/board-dt.c => mach-qcom/board.c} | 15 ++---
-  arch/arm/{mach-msm => mach-qcom}/platsmp.c         | 66 ++++++-------------
-  arch/arm/{mach-msm => mach-qcom}/scm-boot.c        |  0
-  arch/arm/{mach-msm => mach-qcom}/scm-boot.h        |  0
-  arch/arm/{mach-msm => mach-qcom}/scm.c             |  0
-  arch/arm/{mach-msm => mach-qcom}/scm.h             |  0
-  drivers/clocksource/Kconfig                        |  3 +
-  drivers/clocksource/Makefile                       |  1 +
-  .../timer.c => drivers/clocksource/qcom-timer.c    | 29 ++++-----
-  25 files changed, 240 insertions(+), 370 deletions(-)
-  create mode 100644 arch/arm/boot/dts/qcom-msm8660.dtsi
-  create mode 100644 arch/arm/boot/dts/qcom-msm8960.dtsi
-  delete mode 100644 arch/arm/mach-msm/headsmp.S
-  delete mode 100644 arch/arm/mach-msm/hotplug.c
-  create mode 100644 arch/arm/mach-qcom/Kconfig
-  create mode 100644 arch/arm/mach-qcom/Makefile
-  rename arch/arm/{mach-msm/board-dt.c => mach-qcom/board.c} (68%)
-  rename arch/arm/{mach-msm => mach-qcom}/platsmp.c (65%)
-  rename arch/arm/{mach-msm => mach-qcom}/scm-boot.c (100%)
-  rename arch/arm/{mach-msm => mach-qcom}/scm-boot.h (100%)
-  rename arch/arm/{mach-msm => mach-qcom}/scm.c (100%)
-  rename arch/arm/{mach-msm => mach-qcom}/scm.h (100%)
-  rename arch/arm/mach-msm/timer.c => drivers/clocksource/qcom-timer.c (98%)
+> +{
+> +	struct hstate *h;
+> +	unsigned long *p;
+> +
+> +	if (parsed_hstate) {
+> +		printk(KERN_WARNING
+> +			"hugepagesnid: hugepagesz= specified, ignoring\n");
+> +		return;
+> +	}
+> +
+> +	for_each_hstate(h)
+> +		if (h->order == order)
+> +			break;
+> +
+> +	if (h->order != order) {
+> +		hugetlb_add_hstate(order);
+> +		parsed_hstate = NULL;
+> +	}
+> +
+> +	p = &boot_alloc_nodes[hstate_index(h)][nid];
+> +	if (*p != 0) {
+> +		printk(KERN_WARNING
+> +			"hugepagesnid: node %lu already specified, ignoring\n", nid);
+> +		return;
+> +	}
+> +
+> +	*p = nr_pages;
+> +}
+> +
 
---
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
