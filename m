@@ -1,78 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753195AbaBJTAB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 14:00:01 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:40541 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753096AbaBJS74 (ORCPT
+	id S1752875AbaBJTB6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 14:01:58 -0500
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:42883 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752256AbaBJTB5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 13:59:56 -0500
+	Mon, 10 Feb 2014 14:01:57 -0500
 MIME-Version: 1.0
-In-Reply-To: <20140210105346.14592yef0najhyio@67.228.131.205>
-References: <1392045953-26596-1-git-send-email-lpapp@kde.org>
-	<20140210160842.GB26997@lee--X1>
-	<20140210173811.04ba5964@endymion.delvare>
-	<20140210105346.14592yef0najhyio@67.228.131.205>
-Date: Mon, 10 Feb 2014 18:59:55 +0000
-X-Google-Sender-Auth: LHn9TgllwRY2A2yKmMEyM2U7TTU
-Message-ID: <CAOMwXhMTK6h3MQdHHaEV+5=XbQSqXzj0mPt3MzK9X9jhj4jOhQ@mail.gmail.com>
-Subject: Re: [lm-sensors] [PATCH] hwmon: (max6650) Rename the device ids to
- contain the hwmon suffix
-From: Laszlo Papp <lpapp@kde.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Jean Delvare <jdelvare@suse.de>, Lee Jones <lee.jones@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>, lm-sensors@lm-sensors.org
+In-Reply-To: <CALCETrX9gb_+zW4UZZv5icCQ-3HNG7BFZOaqMPYaQfzotsZpnA@mail.gmail.com>
+References: <ee359482b77f8f633014ec300bc5a4b93f8961e8.1391893528.git.luto@amacapital.net>
+ <20140210165723.GA10856@redhat.com> <CALCETrX9gb_+zW4UZZv5icCQ-3HNG7BFZOaqMPYaQfzotsZpnA@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 10 Feb 2014 11:01:36 -0800
+Message-ID: <CALCETrX0GtSaLUB9UBeKsxOoVhiVyMzWrZTYt3O5He1Wdvz+1Q@mail.gmail.com>
+Subject: Re: [PATCH v3] audit: Turn off TIF_SYSCALL_AUDIT when there are no rules
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-audit@redhat.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Steve Grubb <sgrubb@redhat.com>,
+        Eric Paris <eparis@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 4:53 PM,  <linux@roeck-us.net> wrote:
-> Quoting Jean Delvare <jdelvare@suse.de>:
+On Mon, Feb 10, 2014 at 9:29 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Mon, Feb 10, 2014 at 8:57 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>> On 02/08, Andy Lutomirski wrote:
+>>>
+>>> +void audit_inc_n_rules()
+>>> +{
+>>> +     struct task_struct *p, *t;
+>>> +
+>>> +     read_lock(&tasklist_lock);
+>>> +     audit_n_rules++;
+>>> +     smp_wmb();
+>>> +     if (audit_n_rules == 1) {
+>>> +             /*
+>>> +              * We now have a rule; we need to hook syscall entry.
+>>> +              */
+>>> +             for_each_process_thread(p, t) {
+>>> +                     if (t->audit_context)
+>>> +                             set_tsk_thread_flag(t, TIF_SYSCALL_AUDIT);
+>>> +             }
+>>> +     }
+>>> +     read_unlock(&tasklist_lock);
+>>> +}
+>>> +
+>>> +void audit_dec_n_rules()
+>>> +{
+>>> +     read_lock(&tasklist_lock);
+>>> +     --audit_n_rules;
+>>> +     BUG_ON(audit_n_rules < 0);
+>>> +
+>>> +     /*
+>>> +      * If audit_n_rules == 0, then __audit_syscall_exit will clear
+>>> +      * TIF_SYSCALL_AUDIT.
+>>> +      */
+>>> +
+>>> +     read_unlock(&tasklist_lock);
+>>> +}
+>>
+>> To be honest, I do not understand why _dec_ takes tasklist_lock...
+>> And why _inc_ increments audit_n_rules under tasklist.
+>
+> Bah, incorrect leftover from last time.
 >
 >>
->> That being said, going with MFD in this case seems quite overkill to
->> me. MFD makes a lot of sense when each function has its own resources.
->> As this isn't the case here, a single driver registering both an hwmon
->> interface and a pinctrl interface would seem sufficient to me. But I
->> think Guenter already discussed this in the past so I'll let him
->> continue and decide.
+>>> @@ -1528,6 +1562,25 @@ void __audit_syscall_exit(int success, long return_code)
+>>>               context->filterkey = NULL;
+>>>       }
+>>>       tsk->audit_context = context;
+>>> +
+>>> +     if (ACCESS_ONCE(audit_n_rules) == 0) {
+>>> +             /*
+>>> +              * Either this is the very first syscall by this process or
+>>> +              * audit_dec_n_rules recently set audit_n_rules to zero.
+>>> +              */
+>>> +             smp_rmb();
 >>
+>> rmb() looks wrong, we need mb() to serialize ACCESS_ONCE() and
+>> clear_tsk_thread_flag().
 >
-> That is what I had suggested as well (though we were talking gpio
-> at the time). Laszlo didn't want to do it this way for some reason.
-> Right now I don't really have an idea what to do.
-
-Right now I do not really have an idea what the concern here is.
-
-I will quote you:
-
-"Please explain, for my education, what makes you believe that I would
-object to or reject to anyone submitting such a driver."
-
-and then the next one in the thread:
-
-"> > Works for me. Should I apply the gpio and mfd drivers separately or in
-> > one single patch?
+> I clearly need to review the rules.  I think you're right, though --
+> no barrier should be needed.
 >
-> s/apply/send/
+>>
+>> But, otoh, I think we do not need any barrier at all, we can rely on
+>> control dependency. See the recent 18c03c61444a21 "Documentation/
+>> memory-barriers.txt: Prohibit speculative writes".
+>>
+>>> +             /* audit_inc_n_rules could increment audit_n_rules here... */
+>>> +
+>>> +             clear_tsk_thread_flag(tsk, TIF_SYSCALL_AUDIT);
+>>> +
+>>> +             smp_rmb();
+>>
+>> Again, I guess this should be mb() or smp_mb__after_clear_bit().
+>>
+>>
+>> And I still think this needs more changes. Once again, I do not think
+>> that, say, __audit_log_bprm_fcaps() should populate context->aux if
+>> !TIF_SYSCALL_AUDIT, this list can grow indefinitely. Or __audit_signal_info()...
+>>
+>> Perhaps __audit_syscall_exit() should also set context->dummy?
 >
-Separately."
+> That would work.
+>
+> I'm still torn between trying to make it possible for things like
+> __audit_log_bprm_fcaps to start a syscall audit record in the middle
+> of a syscall or to just try to tighten up the current approach to the
+> point where it will work correctly.
 
-This happened about two months ago, and after two months of man work,
-several reviews from various people, while you have been *explicitly*
-included in the threads, are claiming that it is unacceptable? Do you
-see how much time waste that would be for everyone who have been
-involved.
+This is worse than I thought.  Things like signal auditing can enter
+the audit system from outside of a syscall.  I don't think there's
+currently any way to tell whether you're in a syscall (when
+TIF_SYSCALL_AUDIT is clear) so getting this to work right would
+require arch help.
 
-What I currently do not understand is the point for rejecting the
-contribution that does not have API drawback, etc, if you do not
-provide anything better. You are more than welcome to rewrite my work
-once the feature works, but I guess it is very likely that you would
-not do that.
+I'll ask what people on the Fedora list think about just changing the
+default to -t task,never.
 
-So, let me ask it: shall we continue the bike-shedding after months,
-or there is a definite decision from the maintainers? Disagreement is
-not a problem because people can move on if the maintainers actually
-make it clear what is acceptable and what not, but here that did not
-really happen. We are where we were months ago.
+--Andy
