@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752123AbaBJECj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 23:02:39 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:48029 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751475AbaBJECh convert rfc822-to-8bit (ORCPT
+	id S1752171AbaBJECv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 23:02:51 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:55890 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750742AbaBJECs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 23:02:37 -0500
-X-Originating-IP: 50.43.14.201
-Date: Sun, 9 Feb 2014 20:02:25 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Rashika Kheria <rashika.kheria@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Andi Kleen <ak@linux.intel.com>,
-        Dario Faggioli <raistlin@linux.it>,
-        Michal Simek <michal.simek@xilinx.com>
-Subject: Re: [PATCH 19/21] fs: Add prototype declaration to header file
- include/linux/syscalls.h
-Message-ID: <20140210040225.GA6127@leaf>
-References: <b572932c3e016c55e596686283036316a1aacd2f.1391949868.git.rashika.kheria@gmail.com>
- <71025cb48e277e15705eb5645228a4857f729234.1391949868.git.rashika.kheria@gmail.com>
+	Sun, 9 Feb 2014 23:02:48 -0500
+Message-ID: <52F84F61.7060103@hitachi.com>
+Date: Mon, 10 Feb 2014 13:02:41 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <71025cb48e277e15705eb5645228a4857f729234.1391949868.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
+To: Ingo Molnar <mingo@kernel.org>
+Cc: "Frank Ch. Eigler" <fche@redhat.com>, linux-arch@vger.kernel.org,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        systemtap@sourceware.org, "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH -tip v6 00/22] kprobes: introduce NOKPROBE_SYMBOL(), cleanup
+ and fixes crash bugs
+References: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal> <y0m38loefhx.fsf@fche.csb> <52B3C5E6.2040802@hitachi.com> <20131220082056.GA15934@gmail.com> <52B40E79.8040701@hitachi.com> <20131220104615.GA22609@gmail.com> <52E8E487.2090007@hitachi.com> <20140209143709.GA31608@gmail.com>
+In-Reply-To: <20140209143709.GA31608@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 09, 2014 at 06:58:34PM +0530, Rashika Kheria wrote:
-> Add prototype declaration to header file include/linux/syscalls.h
-> because it is used by more than one file.
+(2014/02/09 23:37), Ingo Molnar wrote:
 > 
-> This eliminates the following warning in quota/compat.c:
-> fs/quota/compat.c:43:17: warning: no previous prototype for ‘sys32_quotactl’ [-Wmissing-prototypes]
+> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 > 
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+>> I guess the second reason is why the stap takes so long time to set 
+>> probes. stap tries to register kprobes without disabled flag, that 
+>> means we enables thousands of probes (overheads).
+>>
+>> So the similar thing happens when we enables events as below;
+>>
+>>   # for i in /sys/kernel/debug/tracing/events/kprobes/* ; do date; echo 1 > $i; done
+>>   Wed Jan 29 10:44:50 UTC 2014
+>>   ...
+>>
+>> I tried it and canceled after 4 min passed. It enabled about 17k 
+>> events and slowed down my system very much(I almost got hang check 
+>> timer).
+> 
+> Ok, I guess that's the slowdown bug that Frank reported.
+> 
+>> I think we should have some performance statistics (hit count?) and 
+>> if it goes over a threshold, we should stop enabling other events.
+> 
+> That really feels like a hack. How about fixing the root cause? Does 
+> the enabling of all probes have to be so slow?
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+When I tried to use perf top, most of the time was consumed in
+kprobe_ftrace_handler and optimized_callback, both of them
+are the handler of kprobes. Since I just tried on a VM guest and it
+didn't support NMI nor PMU, thus I have to use a bare metal machine
+for deeper investigation (and I'll do).
+And yes, it seems that the performance problem comes from probing
+and tracing itself.
 
->  include/linux/syscalls.h |    5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-> index 40ed9e9..1f109ea 100644
-> --- a/include/linux/syscalls.h
-> +++ b/include/linux/syscalls.h
-> @@ -198,6 +198,11 @@ extern struct trace_event_functions exit_syscall_print_funcs;
->  	}								\
->  	static inline long SYSC##name(__MAP(x,__SC_DECL,__VA_ARGS__))
->  
-> +#ifdef CONFIG_QUOTACTL_COMPAT
-> +asmlinkage long sys32_quotactl(unsigned int cmd, const char __user *special,
-> +			       qid_t id, void __user *addr);
-> +#endif
-> +
->  asmlinkage long sys_time(time_t __user *tloc);
->  asmlinkage long sys_stime(time_t __user *tptr);
->  asmlinkage long sys_gettimeofday(struct timeval __user *tv,
-> -- 
-> 1.7.9.5
-> 
+Thank you,
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
