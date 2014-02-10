@@ -1,435 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752564AbaBJIFG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 03:05:06 -0500
-Received: from www84.your-server.de ([213.133.104.84]:38944 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750815AbaBJICt (ORCPT
+	id S1752596AbaBJIFU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 03:05:20 -0500
+Received: from mail-we0-f170.google.com ([74.125.82.170]:39579 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750815AbaBJIFR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 03:02:49 -0500
-From: stefani@seibold.net
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        ak@linux.intel.com, aarcange@redhat.com, john.stultz@linaro.org,
-        luto@amacapital.net, xemul@parallels.com, gorcunov@openvz.org,
-        andriy.shevchenko@linux.intel.com
-Cc: Martin.Runge@rohde-schwarz.com, Andreas.Brief@rohde-schwarz.com,
-        Stefani Seibold <stefani@seibold.net>
-Subject: [PATCH v14 9/9] Add 32 bit VDSO time support for 64 bit kernel
-Date: Mon, 10 Feb 2014 09:03:30 +0100
-Message-Id: <1392019410-29634-10-git-send-email-stefani@seibold.net>
+	Mon, 10 Feb 2014 03:05:17 -0500
+From: Laszlo Papp <lpapp@kde.org>
+To: lee.jones@linaro.org
+Cc: linus.walleij@linaro.org, k.kozlowski@samsung.com,
+        linux-kernel@vger.kernel.org, Laszlo Papp <lpapp@kde.org>
+Subject: [PATCH v3] mfd: MAX6650/6651 support
+Date: Mon, 10 Feb 2014 08:04:57 +0000
+Message-Id: <1392019497-12440-1-git-send-email-lpapp@kde.org>
 X-Mailer: git-send-email 1.8.5.4
-In-Reply-To: <1392019410-29634-1-git-send-email-stefani@seibold.net>
-References: <1392019410-29634-1-git-send-email-stefani@seibold.net>
-X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefani Seibold <stefani@seibold.net>
+MAX6650/MAX6651 chip is a multi-function device with I2C busses. The
+chip includes fan-speed regulators and monitors, GPIO, and alarm.
 
-This patch add the VDSO time support for the IA32 Emulation Layer.
+This patch is an initial release of a MAX6650/6651 MFD driver that
+supports to enable the chip with its primary I2C bus that will connect
+the hwmon, and then the gpio devices for now.
 
-Due the nature of the kernel headers and the LP64 compiler where the
-size of a long and a pointer differs against a 32 bit compiler, there
-is some type hacking necessary for optimal performance.
-
-The vsyscall_gtod_data struture must be a rearranged to serve 32- and
-64-bit code access at the same time:
-
-- The seqcount_t was replaced by an unsigned, this makes the
-  vsyscall_gtod_data intedepend of kernel configuration and internal functions.
-- All kernel internal structures are replaced by fix size elements
-  which works for 32- and 64-bit access
-- The inner struct clock was removed to pack the whole struct.
-
-The "unsigned seq" would be handled by functions derivated from seqcount_t.
-
-Signed-off-by: Stefani Seibold <stefani@seibold.net>
+Signed-off-by: Laszlo Papp <lpapp@kde.org>
 ---
- arch/x86/include/asm/vgtod.h          | 69 ++++++++++++++++++++++++++++-------
- arch/x86/include/asm/vvar.h           |  5 +++
- arch/x86/kernel/vsyscall_gtod.c       | 33 +++++++++++------
- arch/x86/vdso/vclock_gettime.c        | 68 +++++++++++++++++-----------------
- arch/x86/vdso/vdso32/vclock_gettime.c | 13 +++++++
- 5 files changed, 128 insertions(+), 60 deletions(-)
+ drivers/mfd/Kconfig                 | 11 +++++
+ drivers/mfd/Makefile                |  1 +
+ drivers/mfd/max665x.c               | 88 +++++++++++++++++++++++++++++++++++++
+ include/linux/mfd/max665x-private.h | 42 ++++++++++++++++++
+ 4 files changed, 142 insertions(+)
+ create mode 100644 drivers/mfd/max665x.c
+ create mode 100644 include/linux/mfd/max665x-private.h
 
-diff --git a/arch/x86/include/asm/vgtod.h b/arch/x86/include/asm/vgtod.h
-index 46e24d3..abb9e45 100644
---- a/arch/x86/include/asm/vgtod.h
-+++ b/arch/x86/include/asm/vgtod.h
-@@ -4,27 +4,70 @@
- #include <asm/vsyscall.h>
- #include <linux/clocksource.h>
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 49bb445..4ad39f4 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -368,6 +368,17 @@ config MFD_MAX8907
+ 	  accessing the device; additional drivers must be enabled in order
+ 	  to use the functionality of the device.
  
-+#ifdef CONFIG_X86_64
-+typedef u64 gtod_long_t;
-+#else
-+typedef u32 gtod_long_t;
-+#endif
-+/*
-+ * vsyscall_gtod_data will be accessed by 32 and 64 bit code at the same time
-+ * so be carefull by modifying this structure.
-+ */
- struct vsyscall_gtod_data {
--	seqcount_t	seq;
-+	unsigned seq;
- 
--	struct { /* extract of a clocksource struct */
--		int vclock_mode;
--		cycle_t	cycle_last;
--		cycle_t	mask;
--		u32	mult;
--		u32	shift;
--	} clock;
-+	int vclock_mode;
-+	cycle_t	cycle_last;
-+	cycle_t	mask;
-+	u32	mult;
-+	u32	shift;
- 
- 	/* open coded 'struct timespec' */
--	time_t		wall_time_sec;
- 	u64		wall_time_snsec;
-+	gtod_long_t	wall_time_sec;
-+	gtod_long_t	monotonic_time_sec;
- 	u64		monotonic_time_snsec;
--	time_t		monotonic_time_sec;
-+	gtod_long_t	wall_time_coarse_sec;
-+	gtod_long_t	wall_time_coarse_nsec;
-+	gtod_long_t	monotonic_time_coarse_sec;
-+	gtod_long_t	monotonic_time_coarse_nsec;
- 
--	struct timezone sys_tz;
--	struct timespec wall_time_coarse;
--	struct timespec monotonic_time_coarse;
-+	int		tz_minuteswest;
-+	int		tz_dsttime;
- };
- extern struct vsyscall_gtod_data vsyscall_gtod_data;
- 
-+static inline unsigned gtod_read_begin(const struct vsyscall_gtod_data *s)
-+{
-+	unsigned ret;
++config MFD_MAX665X
++	bool "Maxim Semiconductor MAX6650/MAX6651 Support"
++	select MFD_CORE
++	depends on I2C
++	select REGMAP_I2C
++	help
++	  Say yes here to support for Maxim Semiconductor MAX6650/MAX6651. This is
++	  a fan speed regulator and monitor IC. This driver provides common support
++	  for accessing the device, additional drivers must be enabled in order to
++	  use the functionality of the device.
 +
-+repeat:
-+	ret = ACCESS_ONCE(s->seq);
-+	if (unlikely(ret & 1)) {
-+		cpu_relax();
-+		goto repeat;
-+	}
-+	smp_rmb();
+ config MFD_MAX8925
+ 	bool "Maxim Semiconductor MAX8925 PMIC Support"
+ 	depends on I2C=y
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index 5aea5ef..63668c5 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -111,6 +111,7 @@ obj-$(CONFIG_MFD_DA9055)	+= da9055.o
+ da9063-objs			:= da9063-core.o da9063-irq.o da9063-i2c.o
+ obj-$(CONFIG_MFD_DA9063)	+= da9063.o
+ 
++obj-$(CONFIG_MFD_MAX665X)	+= max665x.o
+ obj-$(CONFIG_MFD_MAX14577)	+= max14577.o
+ obj-$(CONFIG_MFD_MAX77686)	+= max77686.o max77686-irq.o
+ obj-$(CONFIG_MFD_MAX77693)	+= max77693.o max77693-irq.o
+diff --git a/drivers/mfd/max665x.c b/drivers/mfd/max665x.c
+new file mode 100644
+index 0000000..cd39b5a
+--- /dev/null
++++ b/drivers/mfd/max665x.c
+@@ -0,0 +1,88 @@
++/*
++ * Device access for MAX6650-MAX6651
++ *
++ * Copyright(c) 2013 Polatis Ltd.
++ *
++ * Author: Laszlo Papp <laszlo.papp@polatis.com>
++ *
++ *  This program is free software; you can redistribute  it and/or modify it
++ *  under  the terms of  the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the  License, or (at your
++ *  option) any later version.
++ */
++
++#include <linux/device.h>
++#include <linux/mfd/core.h>
++#include <linux/module.h>
++#include <linux/i2c.h>
++
++#include <linux/mfd/max665x-private.h>
++
++static struct mfd_cell max665x_devs[] = {
++	{ .name = "max6651-gpio", },
++	{ .name = "max6650", }, /* hwmon driver */
++	{},
++};
++
++const struct regmap_config max665x_regmap_config = {
++	.reg_bits = 5,
++};
++
++static int max665x_probe(struct i2c_client *i2c,
++			    const struct i2c_device_id *id)
++{
++	struct max665x_dev *max665x;
++	int ret;
++
++	max665x = devm_kzalloc(&i2c->dev, sizeof(*max665x), GFP_KERNEL);
++	if (!max665x)
++		return -ENOMEM;
++
++	i2c_set_clientdata(i2c, max665x);
++	max665x->dev = &i2c->dev;
++	max665x->i2c = i2c;
++	max665x->map = devm_regmap_init_i2c(i2c, &max665x_regmap_config);
++
++	mutex_init(&max665x->iolock);
++
++	ret = mfd_add_devices(max665x->dev, -1, max665x_devs,
++			ARRAY_SIZE(max665x_devs),
++			NULL, 0, NULL);
++
++	if (ret < 0)
++		dev_err(max665x->dev, "failed to register child devices\n");
++
 +	return ret;
 +}
 +
-+static inline int gtod_read_retry(const struct vsyscall_gtod_data *s,
-+					unsigned start)
++static int max665x_remove(struct i2c_client *i2c)
 +{
-+	smp_rmb();
-+	return unlikely(s->seq != start);
++	struct max665x_dev *max665x = i2c_get_clientdata(i2c);
++
++	mfd_remove_devices(max665x->dev);
++
++	return 0;
 +}
 +
-+static inline void gtod_write_begin(struct vsyscall_gtod_data *s)
-+{
-+	++s->seq;
-+	smp_wmb();
-+}
++static const struct i2c_device_id max665x_id[] = {
++	{ "max6650", TYPE_MAX6650 },
++	{ "max6651", TYPE_MAX6651 },
++	{},
++};
++MODULE_DEVICE_TABLE(i2c, max665x_id);
 +
-+static inline void gtod_write_end(struct vsyscall_gtod_data *s)
-+{
-+	smp_wmb();
-+	++s->seq;
-+}
++static struct i2c_driver max665x_driver = {
++	.driver = {
++		.name = "max665x",
++		.owner = THIS_MODULE,
++	},
++	.probe = max665x_probe,
++	.remove = max665x_remove,
++	.id_table = max665x_id,
++};
 +
- #endif /* _ASM_X86_VGTOD_H */
-diff --git a/arch/x86/include/asm/vvar.h b/arch/x86/include/asm/vvar.h
-index 52c79ff..081d909 100644
---- a/arch/x86/include/asm/vvar.h
-+++ b/arch/x86/include/asm/vvar.h
-@@ -16,6 +16,9 @@
-  * you mess up, the linker will catch it.)
-  */
- 
-+#ifndef _ASM_X86_VVAR_H
-+#define _ASM_X86_VVAR_H
++module_i2c_driver(max665x_driver);
 +
- #if defined(__VVAR_KERNEL_LDS)
- 
- /* The kernel linker script defines its own magic to put vvars in the
-@@ -64,3 +67,5 @@ DECLARE_VVAR(16, int, vgetcpu_mode)
- DECLARE_VVAR(128, struct vsyscall_gtod_data, vsyscall_gtod_data)
- 
- #undef DECLARE_VVAR
++MODULE_AUTHOR("Laszlo Papp <laszlo.papp@polatis.com>");
++MODULE_DESCRIPTION("MAX6650-MAX6651 MFD");
++MODULE_LICENSE("GPL");
+diff --git a/include/linux/mfd/max665x-private.h b/include/linux/mfd/max665x-private.h
+new file mode 100644
+index 0000000..eed5fdf
+--- /dev/null
++++ b/include/linux/mfd/max665x-private.h
+@@ -0,0 +1,42 @@
++/*
++ * max665x-private.h - Driver for the Maxim 6650/6651
++ *
++ * Copyright 2013 Polatis Ltd.
++ *
++ * Author: Laszlo Papp <laszlo.papp@polatis.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#ifndef __LINUX_MFD_MAX665X_PRIVATE_H
++#define __LINUX_MFD_MAX665X_PRIVATE_H
++
++#include <linux/i2c.h>
++#include <linux/export.h>
++#include <linux/regmap.h>
++
++struct max665x_dev {
++	struct device *dev;
++	struct mutex iolock;
++
++	struct i2c_client *i2c;
++	struct regmap     *map;
++
++	int type;
++};
++
++enum max665x_types {
++	TYPE_MAX6650,
++	TYPE_MAX6651,
++};
 +
 +#endif
-diff --git a/arch/x86/kernel/vsyscall_gtod.c b/arch/x86/kernel/vsyscall_gtod.c
-index 91862a4..973dcc4 100644
---- a/arch/x86/kernel/vsyscall_gtod.c
-+++ b/arch/x86/kernel/vsyscall_gtod.c
-@@ -4,6 +4,7 @@
-  *
-  *  Modified for x86 32 bit architecture by
-  *  Stefani Seibold <stefani@seibold.net>
-+ *  sponsored by Rohde & Schwarz GmbH & Co. KG Munich/Germany
-  *
-  *  Thanks to hpa@transmeta.com for some useful hint.
-  *  Special thanks to Ingo Molnar for his early experience with
-@@ -18,21 +19,22 @@ DEFINE_VVAR(struct vsyscall_gtod_data, vsyscall_gtod_data);
- 
- void update_vsyscall_tz(void)
- {
--	vsyscall_gtod_data.sys_tz = sys_tz;
-+	vsyscall_gtod_data.tz_minuteswest = sys_tz.tz_minuteswest;
-+	vsyscall_gtod_data.tz_dsttime = sys_tz.tz_dsttime;
- }
- 
- void update_vsyscall(struct timekeeper *tk)
- {
- 	struct vsyscall_gtod_data *vdata = &vsyscall_gtod_data;
- 
--	write_seqcount_begin(&vdata->seq);
-+	gtod_write_begin(vdata);
- 
- 	/* copy vsyscall data */
--	vdata->clock.vclock_mode	= tk->clock->archdata.vclock_mode;
--	vdata->clock.cycle_last		= tk->clock->cycle_last;
--	vdata->clock.mask		= tk->clock->mask;
--	vdata->clock.mult		= tk->mult;
--	vdata->clock.shift		= tk->shift;
-+	vdata->vclock_mode	= tk->clock->archdata.vclock_mode;
-+	vdata->cycle_last	= tk->clock->cycle_last;
-+	vdata->mask		= tk->clock->mask;
-+	vdata->mult		= tk->mult;
-+	vdata->shift		= tk->shift;
- 
- 	vdata->wall_time_sec		= tk->xtime_sec;
- 	vdata->wall_time_snsec		= tk->xtime_nsec;
-@@ -49,12 +51,19 @@ void update_vsyscall(struct timekeeper *tk)
- 		vdata->monotonic_time_sec++;
- 	}
- 
--	vdata->wall_time_coarse.tv_sec	= tk->xtime_sec;
--	vdata->wall_time_coarse.tv_nsec	= (long)(tk->xtime_nsec >> tk->shift);
-+	vdata->wall_time_coarse_sec	= tk->xtime_sec;
-+	vdata->wall_time_coarse_nsec	= (long)(tk->xtime_nsec >> tk->shift);
- 
--	vdata->monotonic_time_coarse	= timespec_add(vdata->wall_time_coarse,
--							tk->wall_to_monotonic);
-+	vdata->monotonic_time_coarse_sec =
-+		vdata->wall_time_coarse_sec + tk->wall_to_monotonic.tv_sec;
-+	vdata->monotonic_time_coarse_nsec =
-+		vdata->wall_time_coarse_nsec + tk->wall_to_monotonic.tv_nsec;
- 
--	write_seqcount_end(&vdata->seq);
-+	while (vdata->monotonic_time_coarse_nsec >= NSEC_PER_SEC) {
-+		vdata->monotonic_time_coarse_nsec -= NSEC_PER_SEC;
-+		vdata->monotonic_time_coarse_sec++;
-+	}
-+
-+	gtod_write_end(vdata);
- }
- 
-diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
-index 16a1c9c..cb83847 100644
---- a/arch/x86/vdso/vclock_gettime.c
-+++ b/arch/x86/vdso/vclock_gettime.c
-@@ -75,7 +75,7 @@ notrace static long vdso_fallback_gettime(long clock, struct timespec *ts)
- 		"call VDSO32_vsyscall \n"
- 		"mov %%edx, %%ebx \n"
- 		: "=a" (ret)
--		: "i" (__NR_clock_gettime), "g" (clock), "c" (ts)
-+		: "i" (__NR_ia32_clock_gettime), "g" (clock), "c" (ts)
- 		: "memory", "edx");
- 	return ret;
- }
-@@ -91,7 +91,7 @@ notrace static long vdso_fallback_gtod(struct timeval *tv, struct timezone *tz)
- 		"call VDSO32_vsyscall \n"
- 		"mov %%edx, %%ebx \n"
- 		: "=a" (ret)
--		: "i" (__NR_gettimeofday), "g" (tv), "c" (tz)
-+		: "i" (__NR_ia32_gettimeofday), "g" (tv), "c" (tz)
- 		: "memory", "edx");
- 	return ret;
- }
-@@ -158,7 +158,7 @@ static notrace cycle_t vread_pvclock(int *mode)
- 		*mode = VCLOCK_NONE;
- 
- 	/* refer to tsc.c read_tsc() comment for rationale */
--	last = gtod->clock.cycle_last;
-+	last = gtod->cycle_last;
- 
- 	if (likely(ret >= last))
- 		return ret;
-@@ -182,7 +182,7 @@ notrace static cycle_t vread_tsc(void)
- 	rdtsc_barrier();
- 	ret = (cycle_t)vget_cycles();
- 
--	last = gtod->clock.cycle_last;
-+	last = gtod->cycle_last;
- 
- 	if (likely(ret >= last))
- 		return ret;
-@@ -203,20 +203,20 @@ notrace static inline u64 vgetsns(int *mode)
- {
- 	u64 v;
- 	cycles_t cycles;
--	if (gtod->clock.vclock_mode == VCLOCK_TSC)
-+	if (gtod->vclock_mode == VCLOCK_TSC)
- 		cycles = vread_tsc();
- #ifdef CONFIG_HPET_TIMER
--	else if (gtod->clock.vclock_mode == VCLOCK_HPET)
-+	else if (gtod->vclock_mode == VCLOCK_HPET)
- 		cycles = vread_hpet();
- #endif
- #ifdef CONFIG_PARAVIRT_CLOCK
--	else if (gtod->clock.vclock_mode == VCLOCK_PVCLOCK)
-+	else if (gtod->vclock_mode == VCLOCK_PVCLOCK)
- 		cycles = vread_pvclock(mode);
- #endif
- 	else
- 		return 0;
--	v = (cycles - gtod->clock.cycle_last) & gtod->clock.mask;
--	return v * gtod->clock.mult;
-+	v = (cycles - gtod->cycle_last) & gtod->mask;
-+	return v * gtod->mult;
- }
- 
- /* Code size doesn't matter (vdso is 4k anyway) and this is faster. */
-@@ -226,17 +226,18 @@ notrace static int __always_inline do_realtime(struct timespec *ts)
- 	u64 ns;
- 	int mode;
- 
--	ts->tv_nsec = 0;
- 	do {
--		seq = raw_read_seqcount_begin(&gtod->seq);
--		mode = gtod->clock.vclock_mode;
-+		seq = gtod_read_begin(gtod);
-+		mode = gtod->vclock_mode;
- 		ts->tv_sec = gtod->wall_time_sec;
- 		ns = gtod->wall_time_snsec;
- 		ns += vgetsns(&mode);
--		ns >>= gtod->clock.shift;
--	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
-+		ns >>= gtod->shift;
-+	} while (unlikely(gtod_read_retry(gtod, seq)));
-+
-+	ts->tv_sec += __iter_div_u64_rem(ns, NSEC_PER_SEC, &ns);
-+	ts->tv_nsec = ns;
- 
--	timespec_add_ns(ts, ns);
- 	return mode;
- }
- 
-@@ -246,16 +247,17 @@ notrace static int do_monotonic(struct timespec *ts)
- 	u64 ns;
- 	int mode;
- 
--	ts->tv_nsec = 0;
- 	do {
--		seq = raw_read_seqcount_begin(&gtod->seq);
--		mode = gtod->clock.vclock_mode;
-+		seq = gtod_read_begin(gtod);
-+		mode = gtod->vclock_mode;
- 		ts->tv_sec = gtod->monotonic_time_sec;
- 		ns = gtod->monotonic_time_snsec;
- 		ns += vgetsns(&mode);
--		ns >>= gtod->clock.shift;
--	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
--	timespec_add_ns(ts, ns);
-+		ns >>= gtod->shift;
-+	} while (unlikely(gtod_read_retry(gtod, seq)));
-+
-+	ts->tv_sec += __iter_div_u64_rem(ns, NSEC_PER_SEC, &ns);
-+	ts->tv_nsec = ns;
- 
- 	return mode;
- }
-@@ -264,20 +266,20 @@ notrace static void do_realtime_coarse(struct timespec *ts)
- {
- 	unsigned long seq;
- 	do {
--		seq = raw_read_seqcount_begin(&gtod->seq);
--		ts->tv_sec = gtod->wall_time_coarse.tv_sec;
--		ts->tv_nsec = gtod->wall_time_coarse.tv_nsec;
--	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
-+		seq = gtod_read_begin(gtod);
-+		ts->tv_sec = gtod->wall_time_coarse_sec;
-+		ts->tv_nsec = gtod->wall_time_coarse_nsec;
-+	} while (unlikely(gtod_read_retry(gtod, seq)));
- }
- 
- notrace static void do_monotonic_coarse(struct timespec *ts)
- {
- 	unsigned long seq;
- 	do {
--		seq = raw_read_seqcount_begin(&gtod->seq);
--		ts->tv_sec = gtod->monotonic_time_coarse.tv_sec;
--		ts->tv_nsec = gtod->monotonic_time_coarse.tv_nsec;
--	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
-+		seq = gtod_read_begin(gtod);
-+		ts->tv_sec = gtod->monotonic_time_coarse_sec;
-+		ts->tv_nsec = gtod->monotonic_time_coarse_nsec;
-+	} while (unlikely(gtod_read_retry(gtod, seq)));
- }
- 
- notrace int __vdso_clock_gettime(clockid_t clock, struct timespec *ts)
-@@ -311,17 +313,13 @@ int clock_gettime(clockid_t, struct timespec *)
- notrace int __vdso_gettimeofday(struct timeval *tv, struct timezone *tz)
- {
- 	if (likely(tv != NULL)) {
--		BUILD_BUG_ON(offsetof(struct timeval, tv_usec) !=
--			     offsetof(struct timespec, tv_nsec) ||
--			     sizeof(*tv) != sizeof(struct timespec));
- 		if (unlikely(do_realtime((struct timespec *)tv) == VCLOCK_NONE))
- 			return vdso_fallback_gtod(tv, tz);
- 		tv->tv_usec /= 1000;
- 	}
- 	if (unlikely(tz != NULL)) {
--		/* Avoid memcpy. Some old compilers fail to inline it */
--		tz->tz_minuteswest = gtod->sys_tz.tz_minuteswest;
--		tz->tz_dsttime = gtod->sys_tz.tz_dsttime;
-+		tz->tz_minuteswest = gtod->tz_minuteswest;
-+		tz->tz_dsttime = gtod->tz_dsttime;
- 	}
- 
- 	return 0;
-diff --git a/arch/x86/vdso/vdso32/vclock_gettime.c b/arch/x86/vdso/vdso32/vclock_gettime.c
-index ffdbdb1..955a231 100644
---- a/arch/x86/vdso/vdso32/vclock_gettime.c
-+++ b/arch/x86/vdso/vdso32/vclock_gettime.c
-@@ -2,6 +2,8 @@
- 
- #ifdef CONFIG_X86_64
- 
-+#include <generated/asm/unistd_32_ia32.h>
-+
- /*
-  * Due the -m32 compilation, there will be a lot of
-  * "warning: integer constant is too large for 'unsigned long' type",
-@@ -24,12 +26,23 @@
- #define __va(x)                0
- 
- /*
-+ * function load_cr3() in x86/include/asm/processor.h depends on __pa().
-+ * Replace by a dummy is save since not used
-+ */
-+#define __pa(x)                0
-+
-+/*
-  * The define of CONFIG_ILLEGAL_POINTER_VALUE is also to prevent the
-  * "warning: integer constant is too large..."
-  */
- #undef CONFIG_ILLEGAL_POINTER_VALUE
- #define CONFIG_ILLEGAL_POINTER_VALUE   0
- 
-+#else
-+
-+#define __NR_ia32_clock_gettime	__NR_clock_gettime
-+#define __NR_ia32_gettimeofday	__NR_gettimeofday
-+
- #endif
- 
- #include "../vclock_gettime.c"
 -- 
 1.8.5.4
 
