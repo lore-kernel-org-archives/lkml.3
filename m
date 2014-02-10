@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755258AbaBJUG7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 15:06:59 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34861 "EHLO
+	id S1754364AbaBJUHn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 15:07:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34830 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752381AbaBJTpo (ORCPT
+	with ESMTP id S1753893AbaBJTpT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:45:44 -0500
+	Mon, 10 Feb 2014 14:45:19 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Neal Cardwell <ncardwell@google.com>, Eric Dumazet <edumazet@google.com>,
+Cc: robert.hodaszi@digi.com, Peter Chen <peter.chen@freescale.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 112/124] inet_diag: fix inet_diag_dump_icsk() timewait socket state logic
-Date: Mon, 10 Feb 2014 11:40:52 -0800
-Message-Id: <1392061264-28124-113-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 059/124] usb: ehci: add freescale imx28 special write register method
+Date: Mon, 10 Feb 2014 11:39:59 -0800
+Message-Id: <1392061264-28124-60-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
 References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
@@ -27,65 +29,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neal Cardwell <ncardwell@google.com>
+From: Peter Chen <peter.chen@freescale.com>
 
-[ Based upon upstream commit 70315d22d3c7383f9a508d0aab21e2eb35b2303a ]
+commit feffe09f510c475df082546815f9e4a573f6a233 upstream.
 
-Fix inet_diag_dump_icsk() to reflect the fact that both TIME_WAIT and
-FIN_WAIT2 connections are represented by inet_timewait_sock (not just
-TIME_WAIT). Thus:
+According to Freescale imx28 Errata, "ENGR119653 USB: ARM to USB
+register error issue", All USB register write operations must
+use the ARM SWP instruction. So, we implement a special ehci_write
+for imx28.
 
-(a) We need to iterate through the time_wait buckets if the user wants
-either TIME_WAIT or FIN_WAIT2. (Before fixing this, "ss -nemoi state
-fin-wait-2" would not return any sockets, even if there were some in
-FIN_WAIT2.)
+Discussion for it at below:
+http://marc.info/?l=linux-usb&m=137996395529294&w=2
 
-(b) We need to check tw_substate to see if the user wants to dump
-sockets in the particular substate (TIME_WAIT or FIN_WAIT2) that a
-given connection is in. (Before fixing this, "ss -nemoi state
-time-wait" would actually return sockets in state FIN_WAIT2.)
+Without this patcheset, imx28 works unstable at high AHB bus loading.
+If the bus loading is not high, the imx28 usb can work well at the most
+of time. There is a IC errata for this problem, usually, we consider
+IC errata is a problem not a new feature, and this workaround is needed
+for that, so we need to add them to stable tree 3.11+.
 
-An analogous fix is in v3.13: 70315d22d3c7383f9a508d0aab21e2eb35b2303a
-("inet_diag: fix inet_diag_dump_icsk() to use correct state for
-timewait sockets") but that patch is quite different because 3.13 code
-is very different in this area due to the unification of TCP hash
-tables in 05dbc7b ("tcp/dccp: remove twchain") in v3.13-rc1.
-
-I tested that this applies cleanly between v3.3 and v3.12, and tested
-that it works in both 3.3 and 3.12. It does not apply cleanly to 3.2
-and earlier (though it makes semantic sense), and semantically is not
-the right fix for 3.13 and beyond (as mentioned above).
-
-Signed-off-by: Neal Cardwell <ncardwell@google.com>
-Cc: Eric Dumazet <edumazet@google.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
+Cc: robert.hodaszi@digi.com
+Signed-off-by: Peter Chen <peter.chen@freescale.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Tested-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv4/inet_diag.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/usb/host/ehci.h | 18 +++++++++++++++++-
+ 1 file changed, 17 insertions(+), 1 deletion(-)
 
-diff --git a/net/ipv4/inet_diag.c b/net/ipv4/inet_diag.c
-index 84e812a..f3d5db4 100644
---- a/net/ipv4/inet_diag.c
-+++ b/net/ipv4/inet_diag.c
-@@ -959,7 +959,7 @@ next_normal:
- 			++num;
- 		}
+diff --git a/drivers/usb/host/ehci.h b/drivers/usb/host/ehci.h
+index 36c3a82..1522a07 100644
+--- a/drivers/usb/host/ehci.h
++++ b/drivers/usb/host/ehci.h
+@@ -200,6 +200,7 @@ struct ehci_hcd {			/* one per controller */
+ 	unsigned		use_dummy_qh:1;	/* AMD Frame List table quirk*/
+ 	unsigned		has_synopsys_hc_bug:1; /* Synopsys HC */
+ 	unsigned		frame_index_bug:1; /* MosChip (AKA NetMos) */
++	unsigned		imx28_write_fix:1; /* For Freescale i.MX28 */
  
--		if (r->idiag_states & TCPF_TIME_WAIT) {
-+		if (r->idiag_states & (TCPF_TIME_WAIT | TCPF_FIN_WAIT2)) {
- 			struct inet_timewait_sock *tw;
+ 	/* required for usb32 quirk */
+ 	#define OHCI_CTRL_HCFS          (3 << 6)
+@@ -673,6 +674,18 @@ static inline unsigned int ehci_readl(const struct ehci_hcd *ehci,
+ #endif
+ }
  
- 			inet_twsk_for_each(tw, node,
-@@ -969,6 +969,8 @@ next_normal:
++#ifdef CONFIG_SOC_IMX28
++static inline void imx28_ehci_writel(const unsigned int val,
++		volatile __u32 __iomem *addr)
++{
++	__asm__ ("swp %0, %0, [%1]" : : "r"(val), "r"(addr));
++}
++#else
++static inline void imx28_ehci_writel(const unsigned int val,
++		volatile __u32 __iomem *addr)
++{
++}
++#endif
+ static inline void ehci_writel(const struct ehci_hcd *ehci,
+ 		const unsigned int val, __u32 __iomem *regs)
+ {
+@@ -681,7 +694,10 @@ static inline void ehci_writel(const struct ehci_hcd *ehci,
+ 		writel_be(val, regs) :
+ 		writel(val, regs);
+ #else
+-	writel(val, regs);
++	if (ehci->imx28_write_fix)
++		imx28_ehci_writel(val, regs);
++	else
++		writel(val, regs);
+ #endif
+ }
  
- 				if (num < s_num)
- 					goto next_dying;
-+				if (!(r->idiag_states & (1 << tw->tw_substate)))
-+					goto next_dying;
- 				if (r->sdiag_family != AF_UNSPEC &&
- 						tw->tw_family != r->sdiag_family)
- 					goto next_dying;
 -- 
 1.8.3.2
 
