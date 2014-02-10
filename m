@@ -1,37 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753154AbaBJR7A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 12:59:00 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:55767 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752312AbaBJR67 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 12:58:59 -0500
-Date: Mon, 10 Feb 2014 18:58:54 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: linux-kernel@vger.kernel.org, will.deacon@arm.com, dave.martin@arm.com,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 4/7] perf: be less pessimistic when scheduling events
-Message-ID: <20140210175854.GB27965@twins.programming.kicks-ass.net>
-References: <1392054264-23570-1-git-send-email-mark.rutland@arm.com>
- <1392054264-23570-5-git-send-email-mark.rutland@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392054264-23570-5-git-send-email-mark.rutland@arm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1753328AbaBJR7V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 12:59:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55513 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752410AbaBJR7Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 12:59:16 -0500
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, David Herrmann <dh.herrmann@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 10/14] HID: wiimote: replace hid_output_raw_report with hid_hw_output_report for output requests
+Date: Mon, 10 Feb 2014 12:58:55 -0500
+Message-Id: <1392055139-19631-11-git-send-email-benjamin.tissoires@redhat.com>
+In-Reply-To: <1392055139-19631-1-git-send-email-benjamin.tissoires@redhat.com>
+References: <1392055139-19631-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 05:44:21PM +0000, Mark Rutland wrote:
-> This patch makes ctx_flexible_sched_in attempt to schedule every group
-> in the flexible_groups list even when earlier groups failed to schedule,
-> enabling more groups to be scheduled simultaneously.
+For BT transport layer,
+  ret = hid_output_raw_report(A, B, C, HID_OUTPUT_REPORT);
+is equivalent to
+  ret = hid_hw_output_report(A, B, C);
 
-Since you're basically free to create as many events as you want, you can
-(as an unprivilidged user) make the context switch to and from your task
-arbitrarily expensive.
+So use the new API where available
 
-So no, that's not going to fly.
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+---
+ drivers/hid/hid-wiimote-core.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/hid/hid-wiimote-core.c b/drivers/hid/hid-wiimote-core.c
+index d7dc6c5b..d003914 100644
+--- a/drivers/hid/hid-wiimote-core.c
++++ b/drivers/hid/hid-wiimote-core.c
+@@ -28,14 +28,14 @@ static int wiimote_hid_send(struct hid_device *hdev, __u8 *buffer,
+ 	__u8 *buf;
+ 	int ret;
+ 
+-	if (!hdev->hid_output_raw_report)
++	if (!hdev->ll_driver->output_report)
+ 		return -ENODEV;
+ 
+ 	buf = kmemdup(buffer, count, GFP_KERNEL);
+ 	if (!buf)
+ 		return -ENOMEM;
+ 
+-	ret = hid_output_raw_report(hdev, buf, count, HID_OUTPUT_REPORT);
++	ret = hid_hw_output_report(hdev, buf, count);
+ 
+ 	kfree(buf);
+ 	return ret;
+-- 
+1.8.3.1
+
