@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753862AbaBJTpK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 14:45:10 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34789 "EHLO
+	id S1753885AbaBJTpP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 14:45:15 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34809 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753819AbaBJTpF (ORCPT
+	with ESMTP id S1753819AbaBJTpL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:45:05 -0500
+	Mon, 10 Feb 2014 14:45:11 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Weston Andros Adamson <dros@primarydata.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 058/124] nfs4.1: properly handle ENOTSUP in SECINFO_NO_NAME
-Date: Mon, 10 Feb 2014 11:39:58 -0800
-Message-Id: <1392061264-28124-59-git-send-email-kamal@canonical.com>
+Cc: NeilBrown <neilb@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 069/124] md/raid5: fix long-standing problem with bitmap handling on write failure.
+Date: Mon, 10 Feb 2014 11:40:09 -0800
+Message-Id: <1392061264-28124-70-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
 References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
@@ -28,46 +26,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Weston Andros Adamson <dros@primarydata.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 78b19bae0813bd6f921ca58490196abd101297bd upstream.
+commit 9f97e4b128d2ea90a5f5063ea0ee3b0911f4c669 upstream.
 
-Don't check for -NFS4ERR_NOTSUPP, it's already been mapped to -ENOTSUPP
-by nfs4_stat_to_errno.
+Before a write starts we set a bit in the write-intent bitmap.
+When the write completes we clear that bit if the write was successful
+to all devices.  However if the write wasn't fully successful we
+should not clear the bit.  If the faulty drive is subsequently
+re-added, the fact that the bit is still set ensure that we will
+re-write the data that is missing.
 
-This allows the client to mount v4.1 servers that don't support
-SECINFO_NO_NAME by falling back to the "guess and check" method of
-nfs4_find_root_sec.
+This logic is mediated by the STRIPE_DEGRADED flag - we only clear the
+bitmap bit when this flag is not set.
+Currently we correctly set the flag if a write starts when some
+devices are failed or missing.  But we do *not* set the flag if some
+device failed during the write attempt.
+This is wrong and can result in clearing the bit inappropriately.
 
-Signed-off-by: Weston Andros Adamson <dros@primarydata.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+So: set the flag when a write fails.
+
+This bug has been present since bitmaps were introduces, so the fix is
+suitable for any -stable kernel.
+
+Reported-by: Ethan Wilson <ethan.wilson@shiftmail.org>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/nfs/nfs4proc.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/md/raid5.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index 3125a9e..2049562 100644
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -6466,7 +6466,7 @@ nfs41_proc_secinfo_no_name(struct nfs_server *server, struct nfs_fh *fhandle,
- 		switch (err) {
- 		case 0:
- 		case -NFS4ERR_WRONGSEC:
--		case -NFS4ERR_NOTSUPP:
-+		case -ENOTSUPP:
- 			goto out;
- 		default:
- 			err = nfs4_handle_exception(server, err, &exception);
-@@ -6498,7 +6498,7 @@ nfs41_find_root_sec(struct nfs_server *server, struct nfs_fh *fhandle,
- 	 * Fall back on "guess and check" method if
- 	 * the server doesn't support SECINFO_NO_NAME
- 	 */
--	if (err == -NFS4ERR_WRONGSEC || err == -NFS4ERR_NOTSUPP) {
-+	if (err == -NFS4ERR_WRONGSEC || err == -ENOTSUPP) {
- 		err = nfs4_find_root_sec(server, fhandle, info);
- 		goto out_freepage;
- 	}
+diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
+index 2ffa02c..5cffbd3 100644
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -1929,6 +1929,7 @@ static void raid5_end_write_request(struct bio *bi, int error)
+ 			set_bit(R5_MadeGoodRepl, &sh->dev[i].flags);
+ 	} else {
+ 		if (!uptodate) {
++			set_bit(STRIPE_DEGRADED, &sh->state);
+ 			set_bit(WriteErrorSeen, &rdev->flags);
+ 			set_bit(R5_WriteError, &sh->dev[i].flags);
+ 			if (!test_and_set_bit(WantReplacement, &rdev->flags))
 -- 
 1.8.3.2
 
