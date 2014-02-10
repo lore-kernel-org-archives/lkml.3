@@ -1,78 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752641AbaBJPjA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 10:39:00 -0500
-Received: from hofr.at ([212.69.189.236]:43855 "EHLO mail.hofr.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751770AbaBJPi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 10:38:57 -0500
-Date: Mon, 10 Feb 2014 16:38:56 +0100
-From: Nicholas Mc Guire <der.herr@hofr.at>
-To: linux-rt-users@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Carsten Emde <C.Emde@osadl.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andreas Platschek <platschek@ict.tuwien.ac.at>
-Subject: allow preemption in check_task_state
-Message-ID: <20140210153856.GD20017@opentech.at>
+	id S1752706AbaBJPjO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 10:39:14 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60839 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751770AbaBJPjJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 10:39:09 -0500
+Date: Mon, 10 Feb 2014 15:39:01 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Stefan =?utf-8?B?U8O4cmVuc2Vu?= <stefan.sorensen@spectralink.com>
+Cc: "richardcochran@gmail.com" <richardcochran@gmail.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH] dp83640: Get gpio and master/slave configuration from
+ DT
+Message-ID: <20140210153901.GH29080@e106331-lin.cambridge.arm.com>
+References: <1392037240-30913-1-git-send-email-stefan.sorensen@spectralink.com>
+ <20140210134237.GF29080@e106331-lin.cambridge.arm.com>
+ <1392045915.30419.6.camel@e37108.spectralink.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1392045915.30419.6.camel@e37108.spectralink.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Feb 10, 2014 at 03:25:15PM +0000, Stefan Sørensen wrote:
+> On Mon, 2014-02-10 at 13:42 +0000, Mark Rutland wrote:
+> 
+> > Binding document please.
+> 
+> Dang, I somehow managed to drop that from the patch. I will fix for the
+> next version.
 
-A lockfree approach to check_task_state
+Cheers.
 
-This treates the state as an indicator variable and use it to probe 
-saved_state lock free. There is actually no consistency demand on 
-state/saved_state but rather a consistency demand on the transitions 
-of the two variables but those transition, based on path inspection,
-are not independent.
+> 
+> > > +	if (of_find_property(node, "dp83640,slave", NULL))
+> > > +		dp83640->slave = true;
+> > 
+> > Use of_property_read_bool.
+> 
+> Fixed.
+> 
+> > > +	prop = of_find_property(node, "dp83640,perout-gpios", &proplen);
+> > > +	if (prop) {
+> > > +		if (dp83640->slave) {
+> > > +			pr_err("dp83640,perout-gpios property can not be set together with dp83640,slave");
+> > > +			return -EINVAL;
+> > > +		}
+> > > +
+> > > +		clock->caps.n_per_out = proplen / sizeof(u32);
+> > > +		if (clock->caps.n_per_out > N_EXT) {
+> > > +			pr_err("dp83640,perout-gpios may not have more than %d entries",
+> > > +			       N_EXT);
+> > > +			return -EINVAL;
+> > > +		}
+> > > +		err = of_property_read_u32_array(node, "dp83640,perout-gpios",
+> > > +						 clock->perout_gpios,
+> > > +						 clock->caps.n_per_out);
+> > > +		if (err < 0)
+> > > +			return err;
+> > > +	}
+> > 
+> > This looks nothing like the standard gpio bindings. What _exactly_ is
+> > this property describing?
+> 
+> The dp83640 has a number of pins of which 8 of them can be used for
+> either timestamping events or triggering changes at programmed
+> intervals. These properties are used to configure which pins get
+> assigned to what function.
 
-Its probably not faster than the lock/unlock case if uncontended - atleast
-it does not show up in benchmark results, but it would never be hit by a 
-full pi-boost cycle as there is no contention.
+Ok.
 
-This also was tested against the test-case from Sebastian as well as 
-rnning a few scripted gdb breakpoint debugging/single-stepping loops
-to trigger this.
+> 
+> > If this is not using the standard gpio bindings then this should be
+> > renamed.
+> 
+> Maybe a gpio->pin renaming?
 
-Tested-by: Andreas Platschek <platschek@ict.tuwien.ac.at>
-Tested-by: Carsten Emde <C.Emde@osadl.org>
-Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
----
- kernel/sched/core.c |   10 ++++++++--
- 1 files changed, 8 insertions(+), 2 deletions(-)
+That sounds good to me.
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index bf93f63..5690ba3 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1074,11 +1074,17 @@ static int migration_cpu_stop(void *data);
- static bool check_task_state(struct task_struct *p, long match_state)
- {
- 	bool match = false;
-+	long state, saved_state;
-+
-+	/* catch restored state */
-+	do {
-+		state = p->state;
-+		saved_state = p->saved_state;
-+		rmb();  /* make sure we actually catch updates */
-+	} while (state != p->state);
- 
--	raw_spin_lock_irq(&p->pi_lock);
- 	if (p->state == match_state || p->saved_state == match_state)
- 		match = true;
--	raw_spin_unlock_irq(&p->pi_lock);
- 
- 	return match;
- }
--- 
-1.7.2.5
-
+Thanks,
+Mark.
