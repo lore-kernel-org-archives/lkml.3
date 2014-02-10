@@ -1,150 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752594AbaBJPW7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 10:22:59 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:48085 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752232AbaBJPW4 (ORCPT
+	id S1752475AbaBJPW5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 10:22:57 -0500
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:41991 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752218AbaBJPW4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 10 Feb 2014 10:22:56 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAOMwXhNmjehcd+aiWGuKs7CijheXXngsXTHMfG9SDLpHO=KaPw@mail.gmail.com>
-References: <1391859219-3102-1-git-send-email-lpapp@kde.org>
-	<CAK9yfHx2W3KXzBJavpDwXqBUxM8Uw6tWLRGBLjUq1jS_yWYw-Q@mail.gmail.com>
-	<CAOMwXhNmjehcd+aiWGuKs7CijheXXngsXTHMfG9SDLpHO=KaPw@mail.gmail.com>
-Date: Mon, 10 Feb 2014 20:52:55 +0530
-Message-ID: <CAK9yfHwxmtEXQwPZJfU980G6g7sbrLDU=nZiN=dkwVwvg7UXyA@mail.gmail.com>
-Subject: Re: [PATCH v2] mfd: MAX6650/6651 support
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Laszlo Papp <lpapp@kde.org>, LKML <linux-kernel@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>
+Cc: Mike Turquette <mturquette@linaro.org>, Kumar Gala <galak@codeaurora.org>,
+        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, James Hogan <james.hogan@imgtec.com>,
+        Michal Simek <monstr@monstr.eu>, Felipe Pena <felipensp@gmail.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Stephen Warren <swarren@nvidia.com>, devicetree@vger.kernel.org,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Lee Jones <lee.jones@linaro.org>, Rob Herring <robherring2@gmail.com>,
+        Josh Cartwright <josh.cartwright@ni.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: [RFC PATCH 0/3] Syscon early initialization
+Date: Mon, 10 Feb 2014 16:22:32 +0100
+Message-Id: <cover.1392045742.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-27070-1392045755-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 February 2014 18:48, Laszlo Papp <lpapp@kde.org> wrote:
-> On Mon, Feb 10, 2014 at 12:02 PM, Sachin Kamat <sachin.kamat@linaro.org> wrote:
->> Hi Laszlo,
->>
->> If you are considering re-spinning this patch based on Lee's comments, please
->> also consider my comments inline.
->
-> Hi, sure, thanks.
->
->> On 8 February 2014 17:03, Laszlo Papp <lpapp@kde.org> wrote:
->>> MAX6650/MAX6651 chip is a multi-function device with I2C busses. The
->>> chip includes fan-speed regulators and monitors, GPIO, and alarm.
->>>
->>> This patch is an initial release of a MAX6650/6651 MFD driver that
->>> supports to enable the chip with its primary I2C bus that will connect
->>> the hwmon, and then the gpio devices for now.
->>>
->>> Signed-off-by: Laszlo Papp <lpapp@kde.org>
->>> ---
->>>  drivers/mfd/Kconfig                 | 11 +++++
->>>  drivers/mfd/Makefile                |  1 +
->>>  drivers/mfd/max665x.c               | 88 +++++++++++++++++++++++++++++++++++++
->>>  include/linux/mfd/max665x-private.h | 42 ++++++++++++++++++
->>>  4 files changed, 142 insertions(+)
->>>  create mode 100644 drivers/mfd/max665x.c
->>>  create mode 100644 include/linux/mfd/max665x-private.h
->>>
->>> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
->>> index 49bb445..e25be62 100644
->>> --- a/drivers/mfd/Kconfig
->>> +++ b/drivers/mfd/Kconfig
->>> @@ -368,6 +368,17 @@ config MFD_MAX8907
->>>           accessing the device; additional drivers must be enabled in order
->>>           to use the functionality of the device.
->>>
->>> +config MFD_MAX665X
->>> +       bool "Maxim Semiconductor MAX6650/MAX6651 Support"
->>> +       select MFD_CORE
->>> +       depends on I2C
->>> +       select REGMAP_I2C
->>
->> Move the "depends on" before the select MFD_CORE.
->
-> OK.
->
->>> +       help
->>> +         Say yes here to support for Maxim Semiconductor MAX6650/MAX6651.
->>
->>  s/here to support/here to add support
->
-> OK.
->
->>>This is
->>> +         a fan speed regulator and monitor IC. This driver provies common support
->>> +         for accessing the device, additional drivers must be enabled in order to
->>> +         use the functionality of the device.
->>> +
->>>  config MFD_MAX8925
->>>         bool "Maxim Semiconductor MAX8925 PMIC Support"
->>>         depends on I2C=y
->>> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
->>> index 5aea5ef..63668c5 100644
->>> --- a/drivers/mfd/Makefile
->>> +++ b/drivers/mfd/Makefile
->>> @@ -111,6 +111,7 @@ obj-$(CONFIG_MFD_DA9055)    += da9055.o
->>>  da9063-objs                    := da9063-core.o da9063-irq.o da9063-i2c.o
->>>  obj-$(CONFIG_MFD_DA9063)       += da9063.o
->>>
->>> +obj-$(CONFIG_MFD_MAX665X)      += max665x.o
->>>  obj-$(CONFIG_MFD_MAX14577)     += max14577.o
->>>  obj-$(CONFIG_MFD_MAX77686)     += max77686.o max77686-irq.o
->>>  obj-$(CONFIG_MFD_MAX77693)     += max77693.o max77693-irq.o
->>> diff --git a/drivers/mfd/max665x.c b/drivers/mfd/max665x.c
->>> new file mode 100644
->>> index 0000000..395373fe
->>> --- /dev/null
->>> +++ b/drivers/mfd/max665x.c
->>> @@ -0,0 +1,88 @@
->>> +/*
->>> + * Device access for MAX6650-MAX6651
->>> + *
->>> + * Copyright(c) 2013 Polatis Ltd.
->>> + *
->>> + * Author: Laszlo Papp <laszlo.papp@polatis.com>
->>> + *
->>> + *  This program is free software; you can redistribute  it and/or modify it
->>> + *  under  the terms of  the GNU General  Public License as published by the
->>> + *  Free Software Foundation;  either version 2 of the  License, or (at your
->>> + *  option) any later version.
->>> + */
->>> +
->>> +#include <linux/device.h>
->>> +#include <linux/mfd/core.h>
->>> +#include <linux/module.h>
->>> +#include <linux/i2c.h>
->>
->> Please arrange these alphabetically.
->
-> OK, it does not matter for me. Please agree upon something with Lee. :-)
->
->>
->> [snip]
->>> +
->>> +struct max665x_dev {
->>> +       struct device *dev;
->>> +       struct mutex iolock;
->>> +
->>> +       struct i2c_client *i2c;
->>> +       struct regmap     *map;
->>> +
->>> +       int type;
->>
->> Unnecessary extra lines above could be removed.
->
-> I prefer it that way, but I will remove the two extra lines as you wish.
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-As I already said, these are just nits and only since you were
-re-spinning the patch,
-I suggested them. Also, since this is a new file being added, it
-avoids further patches
-doing these same things.
+--=_mimegpg-monstr-desktop-27070-1392045755-0001
 
--- 
-With warm regards,
-Sachin
+Hi,
+
+this series come from my discussion with Arnd at KS and then
+on some other threads/IRCs(Arnd and Mark) that SoC vendors
+are more and more try to add misc functionality to
+one memory region. For this purpose syscon driver is in the kernel.
+But regular syscon driver is initialized too late
+and platforms are trying to create specific code to handle it.
+
+For this purpose the series have been created to provide
+early syscon initialization and regmap creation first
+and then attaching device.
+
+The last patch is zynq specific patch to clear slcr driver
+and clock driver can profit from it too when clk regmap is ready.
+
+Also moving syscon driver from mfs should be consider.
+
+Thanks for your comments,
+Michal
+
+
+Michal Simek (3):
+  regmap: Separate regmap dev initialization
+  mfd: syscon: Support early initialization
+  ARM: zynq: Use early syscon initialization
+
+ arch/arm/boot/dts/zynq-7000.dtsi |   1 +
+ arch/arm/mach-zynq/common.c      |   6 +-
+ arch/arm/mach-zynq/slcr.c        |  42 +------------
+ drivers/base/regmap/regmap.c     |  41 +++++++++----
+ drivers/clk/zynq/clkc.c          |  57 ++++++------------
+ drivers/mfd/syscon.c             | 126 +++++++++++++++++++++++++++++++++------
+ include/linux/mfd/syscon.h       |  11 ++++
+ include/linux/regmap.h           |   2 +
+ 8 files changed, 173 insertions(+), 113 deletions(-)
+
+--
+1.8.2.3
+
+
+--=_mimegpg-monstr-desktop-27070-1392045755-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlL47rsACgkQykllyylKDCHNlwCeJZDKdIvWVtpIym3PobzdOuut
+X+gAn0QxMBEPBpjidSLTCINWWPWAmdka
+=Vq2x
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-27070-1392045755-0001--
