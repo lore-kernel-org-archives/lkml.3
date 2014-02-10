@@ -1,64 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753303AbaBJR7T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 12:59:19 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:60075 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752312AbaBJR7M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 12:59:12 -0500
-Date: Mon, 10 Feb 2014 18:59:08 +0100
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Andrew Lunn <andrew@lunn.ch>
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nadav Haklai <nadavh@marvell.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH 6/6] dt: Update binding information for mvebu gating
- clocks with Armada 380/385
-Message-ID: <20140210185908.3374eaf6@skate>
-In-Reply-To: <20140210175350.GD9995@lunn.ch>
-References: <1392053569-28037-1-git-send-email-gregory.clement@free-electrons.com>
-	<1392053569-28037-7-git-send-email-gregory.clement@free-electrons.com>
-	<20140210175350.GD9995@lunn.ch>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753270AbaBJR7P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 12:59:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29189 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752410AbaBJR7J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 12:59:09 -0500
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, David Herrmann <dh.herrmann@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 06/14] HID: usbhid: change return error of usbhid_output_report
+Date: Mon, 10 Feb 2014 12:58:51 -0500
+Message-Id: <1392055139-19631-7-git-send-email-benjamin.tissoires@redhat.com>
+In-Reply-To: <1392055139-19631-1-git-send-email-benjamin.tissoires@redhat.com>
+References: <1392055139-19631-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Andrew Lunn,
+If there is no urbout when sending a output report, ENOSYS (Function
+not implemented) is a better error than EIO (I/O error).
 
-On Mon, 10 Feb 2014 18:53:50 +0100, Andrew Lunn wrote:
-> > +The following is a list of provided IDs for Armada 380/385:
-> > +ID	Clock		Peripheral
-> > +-----------------------------------
-> > +0	audio		Audio
-> > +2	ge2		Gigabit Ethernet 2
-> > +3	ge1		Gigabit Ethernet 1
-> > +4	ge0		Gigabit Ethernet 0
-> > +5	pex1		PCIe 1
-> > +6	pex2		PCIe 2
-> > +7	pex3		PCIe 3
-> > +8	pex4		PCIe 0
-> 
-> Is that last one a typo? It at least looks a bit odd.
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+---
+ drivers/hid/usbhid/hid-core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Right, this should be:
-
-	8	pex0		PCIe 0
-
-(just checked again in the datasheet)
-
-Thomas
+diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
+index b9a770f..0d1d875 100644
+--- a/drivers/hid/usbhid/hid-core.c
++++ b/drivers/hid/usbhid/hid-core.c
+@@ -922,7 +922,7 @@ static int usbhid_output_report(struct hid_device *hid, __u8 *buf, size_t count)
+ 	int actual_length, skipped_report_id = 0, ret;
+ 
+ 	if (!usbhid->urbout)
+-		return -EIO;
++		return -ENOSYS;
+ 
+ 	if (buf[0] == 0x0) {
+ 		/* Don't send the Report ID */
 -- 
-Thomas Petazzoni, CTO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+1.8.3.1
+
