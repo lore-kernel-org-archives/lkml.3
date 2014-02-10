@@ -1,44 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752407AbaBJNs1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 08:48:27 -0500
-Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:62438 "EHLO
-	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752300AbaBJNsX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 08:48:23 -0500
-Message-ID: <1392040100.3585.18.camel@x220>
-Subject: Re: [PATCH 27/28] Remove ARC_HAS_COH_RTSC
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: Richard Weinberger <richard@nod.at>,
-        open list <linux-kernel@vger.kernel.org>
-Date: Mon, 10 Feb 2014 14:48:20 +0100
-In-Reply-To: <52F85707.9000901@synopsys.com>
-References: <1391971686-9517-1-git-send-email-richard@nod.at>
-		 <1391971686-9517-28-git-send-email-richard@nod.at>
-	 <1391975219.25855.8.camel@x220> <52F85707.9000901@synopsys.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
+	id S1752311AbaBJNvR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 08:51:17 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48962 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751791AbaBJNvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 08:51:14 -0500
+Message-ID: <52F8D94D.4040307@suse.cz>
+Date: Mon, 10 Feb 2014 14:51:09 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Emily Maier <emilymaier@mykolab.com>, Rob Landley <rob@landley.net>
+CC: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH RFC] kernel build: enable use of password-protected signing
+ keys
+References: <52F8034B.8080303@mykolab.com>
+In-Reply-To: <52F8034B.8080303@mykolab.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 10 Feb 2014 13:48:21.0379 (UTC) FILETIME=[C2CD5530:01CF2666]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-02-10 at 10:05 +0530, Vineet Gupta wrote:
-> On Monday 10 February 2014 01:16 AM, Paul Bolle wrote:
-> > This Kconfig symbol was removed in commit 7d087a54aed ("ARC: [SMP]
-> > Disallow RTSC"), merged in v3.13.
->
-> I've applied you ACK, with the fixed commit-id 7d0857a54aed
+On 9.2.2014 23:38, Emily Maier wrote:
+> Currently, the module signing script assumes that the private key is 
+> not password-protected. This patch makes it slightly more secure by 
+> allowing it to be passed in on the command line as "make 
+> modules_install MOD_PASSWORD=abc". It's vulnerable to snooping during 
+> the build of course, but so is an unprotected signing key.
 
-Manually trimming 40 hex digits down to 12 digits. What can go wrong?
+The key's permissions can be set to 0600, while the make commandline is
+visible in ps.
 
-Thanks!
-
-
-Paul Bolle
-
+Michal
