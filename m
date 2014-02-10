@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847AbaBJCWa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 21:22:30 -0500
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:39680 "EHLO
+	id S1752574AbaBJCUc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 21:20:32 -0500
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:39582 "EHLO
 	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752678AbaBJCW2 (ORCPT
+	with ESMTP id S1752531AbaBJCUT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 21:22:28 -0500
+	Sun, 9 Feb 2014 21:20:19 -0500
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Marcel Holtmann <marcel@holtmann.org>
 Cc: Gustavo Padovan <gustavo@padovan.org>,
@@ -17,9 +17,9 @@ Cc: Gustavo Padovan <gustavo@padovan.org>,
         Sander Eikelenboom <linux@eikelenboom.it>,
         linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
         Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 03/24] Revert "Bluetooth: Move rfcomm_get_device() before rfcomm_dev_activate()"
-Date: Sun,  9 Feb 2014 20:59:03 -0500
-Message-Id: <1391997564-1805-4-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH 24/24] Bluetooth: Fix write_room() calculation
+Date: Sun,  9 Feb 2014 20:59:24 -0500
+Message-Id: <1391997564-1805-25-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1391997564-1805-1-git-send-email-peter@hurleysoftware.com>
 References: <1391997564-1805-1-git-send-email-peter@hurleysoftware.com>
@@ -28,75 +28,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit e228b63390536f5b737056059a9a04ea016b1abf.
+The skb truesize of a 12-byte payload with a 10-byte head/tail
+reserve is 768 bytes. Consequently, even with 40 tx_credits, at
+most 6 packets could be queued at any one time:
 
-This is the third of a 3-patch revert, together with
-Revert "Bluetooth: Remove rfcomm_carrier_raised()" and
-Revert "Bluetooth: Always wait for a connection on RFCOMM open()".
+  40 tx_credits * 127-byte mtu < 768-byte truesize * 7
 
-Commit 4a2fb3ecc7467c775b154813861f25a0ddc11aa0,
-"Bluetooth: Always wait for a connection on RFCOMM open()" open-codes
-blocking on tty open(), rather than using the default behavior
-implemented by the tty port.
+This error could also cause the tx queue to apparently stall if
+credit flow control is disabled (where tx_credits is fixed at 5),
+or if the receiver only granted a limited number of tx credits
+(eg., less than 7).
 
-The reasons for reverting that patch are detailed in that changelog;
-this patch restores required functionality for that revert.
+Instead, track the outstanding number of queued packets not yet sent
+in wmem_alloc and allow for a maximum of 40 queued packets. Report
+the space avail for a single write() as the mtu * number of packets
+left before reaching the maximum.
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- net/bluetooth/rfcomm/tty.c | 32 ++++++++++++++++----------------
- 1 file changed, 16 insertions(+), 16 deletions(-)
+ net/bluetooth/rfcomm/tty.c | 14 +++++---------
+ 1 file changed, 5 insertions(+), 9 deletions(-)
 
 diff --git a/net/bluetooth/rfcomm/tty.c b/net/bluetooth/rfcomm/tty.c
-index 32ef9f9..a535ef1 100644
+index 3f44195..403ec09 100644
 --- a/net/bluetooth/rfcomm/tty.c
 +++ b/net/bluetooth/rfcomm/tty.c
-@@ -103,22 +103,6 @@ static void rfcomm_dev_destruct(struct tty_port *port)
- 	module_put(THIS_MODULE);
+@@ -352,20 +352,16 @@ static inline unsigned int rfcomm_room(struct rfcomm_dev *dev)
+ {
+ 	struct rfcomm_dlc *dlc = dev->dlc;
+ 
+-	/* The limit is bogus; the number of packets which can
+-	 * currently be sent by the krfcommd thread has no relevance
+-	 * to the number of packets which can be queued on the dlc's
+-	 * tx queue.
+-	 */
+-	int limit = dlc->mtu * (dlc->tx_credits?:1);
++	/* Limit the outstanding number of packets not yet sent to 40 */
++	int pending = 40 - atomic_read(&dev->wmem_alloc);
+ 
+-	return max(0, limit - atomic_read(&dev->wmem_alloc));
++	return max(0, pending) * dlc->mtu;
  }
  
--static struct device *rfcomm_get_device(struct rfcomm_dev *dev)
--{
--	struct hci_dev *hdev;
--	struct hci_conn *conn;
--
--	hdev = hci_get_route(&dev->dst, &dev->src);
--	if (!hdev)
--		return NULL;
--
--	conn = hci_conn_hash_lookup_ba(hdev, ACL_LINK, &dev->dst);
--
--	hci_dev_put(hdev);
--
--	return conn ? &conn->dev : NULL;
--}
--
- /* device-specific initialization: open the dlc */
- static int rfcomm_dev_activate(struct tty_port *port, struct tty_struct *tty)
+ static void rfcomm_wfree(struct sk_buff *skb)
  {
-@@ -185,6 +169,22 @@ static struct rfcomm_dev *rfcomm_dev_get(int id)
- 	return dev;
+ 	struct rfcomm_dev *dev = (void *) skb->sk;
+-	atomic_sub(skb->truesize, &dev->wmem_alloc);
++	atomic_dec(&dev->wmem_alloc);
+ 	if (test_bit(RFCOMM_TTY_ATTACHED, &dev->flags))
+ 		tty_port_tty_wakeup(&dev->port);
+ 	tty_port_put(&dev->port);
+@@ -374,7 +370,7 @@ static void rfcomm_wfree(struct sk_buff *skb)
+ static void rfcomm_set_owner_w(struct sk_buff *skb, struct rfcomm_dev *dev)
+ {
+ 	tty_port_get(&dev->port);
+-	atomic_add(skb->truesize, &dev->wmem_alloc);
++	atomic_inc(&dev->wmem_alloc);
+ 	skb->sk = (void *) dev;
+ 	skb->destructor = rfcomm_wfree;
  }
- 
-+static struct device *rfcomm_get_device(struct rfcomm_dev *dev)
-+{
-+	struct hci_dev *hdev;
-+	struct hci_conn *conn;
-+
-+	hdev = hci_get_route(&dev->dst, &dev->src);
-+	if (!hdev)
-+		return NULL;
-+
-+	conn = hci_conn_hash_lookup_ba(hdev, ACL_LINK, &dev->dst);
-+
-+	hci_dev_put(hdev);
-+
-+	return conn ? &conn->dev : NULL;
-+}
-+
- static ssize_t show_address(struct device *tty_dev, struct device_attribute *attr, char *buf)
- {
- 	struct rfcomm_dev *dev = dev_get_drvdata(tty_dev);
 -- 
 1.8.1.2
 
