@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752721AbaBJPyZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 10:54:25 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:51522 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752667AbaBJPyV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752660AbaBJPyV (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 10 Feb 2014 10:54:21 -0500
-Message-ID: <52F8F629.7040006@intel.com>
-Date: Mon, 10 Feb 2014 07:54:17 -0800
-From: Dirk Brandewie <dirk.brandewie@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+Received: from mx1.redhat.com ([209.132.183.28]:53088 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751949AbaBJPyT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 10:54:19 -0500
+Date: Mon, 10 Feb 2014 16:53:23 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: paulus@samba.org, rusty@rustcorp.com.au, peterz@infradead.org,
+        tglx@linutronix.de, akpm@linux-foundation.org, mingo@kernel.org,
+        paulmck@linux.vnet.ibm.com, tj@kernel.org, walken@google.com,
+        ego@linux.vnet.ibm.com, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
+        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-edac@vger.kernel.org
+Subject: Re: [PATCH 19/51] x86, therm_throt.c: Fix CPU hotplug callback
+	registration
+Message-ID: <20140210155323.GA8911@redhat.com>
+References: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com> <20140205220759.19080.36356.stgit@srivatsabhat.in.ibm.com>
 MIME-Version: 1.0
-To: Fengguang Wu <fengguang.wu@intel.com>
-CC: dirk.j.brandewie@intel.com,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, lkp@01.org
-Subject: Re: [intel_pstate] fcb6a15c: -34.4% aim7 jobs-per-min and -17.0%
- will-it-scale/page_fault1 Pkg_W
-References: <20140207123315.GA3448@localhost>
-In-Reply-To: <20140207123315.GA3448@localhost>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140205220759.19080.36356.stgit@srivatsabhat.in.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2014 04:33 AM, Fengguang Wu wrote:
-> Hi Dirk,
+On 02/06, Srivatsa S. Bhat wrote:
 >
-> FYI, we notice dropped power and performance numbers on commit
-> fcb6a15c2e7e76d493e6f91ea889ab40e1c643a4 ("intel_pstate: Take core C0
-> time into account for core busy calculation").
+> --- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
+> +++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+> @@ -319,7 +319,7 @@ static __init int thermal_throttle_init_device(void)
+>  	if (!atomic_read(&therm_throt_en))
+>  		return 0;
 >
+> -	register_hotcpu_notifier(&thermal_throttle_cpu_notifier);
+> +	cpu_maps_update_begin();
 >
->        v3.14-rc1  fcb6a15c2e7e76d493e6f91ea
-> ---------------  -------------------------
->        6.53 ~ 4%     -12.0%       5.75 ~ 2%  lkp-sb03/micro/netperf/120s-200%-SCTP_STREAM
->      147.93 ~ 0%     -23.3%     113.40 ~ 0%  lkp-sbx04/micro/will-it-scale/page_fault1
->      154.46 ~ 0%     -22.9%     119.15 ~ 0%  TOTAL turbostat.Cor_W
+>  #ifdef CONFIG_HOTPLUG_CPU
+>  	mutex_lock(&therm_cpu_lock);
+> @@ -333,6 +333,9 @@ static __init int thermal_throttle_init_device(void)
+>  	mutex_unlock(&therm_cpu_lock);
+>  #endif
 >
->        v3.14-rc1  fcb6a15c2e7e76d493e6f91ea
-> ---------------  -------------------------
->         203 ~ 0%     -17.0%        169 ~ 0%  lkp-sbx04/micro/will-it-scale/page_fault1
->         203 ~ 0%     -17.0%        169 ~ 0%  TOTAL turbostat.Pkg_W
->
-
-These two tests show an improvement in power :-)
-
->        v3.14-rc1  fcb6a15c2e7e76d493e6f91ea
-> ---------------  -------------------------
->      572540 ~ 1%     -30.2%     399351 ~ 1%  grantley/micro/aim7/disk_src
->      317151 ~ 1%     -42.0%     183863 ~ 0%  grantley/micro/aim7/shell_rtns_1
->      889692 ~ 1%     -34.4%     583214 ~ 1%  TOTAL aim7.2000.jobs-per-min
->
-
-I am investigating where the aim benchmark went south.
+> +	__register_hotcpu_notifier(&thermal_throttle_cpu_notifier);
+> +	cpu_maps_update_done();
 
 
+Off-topic, but it seems that after this change therm_cpu_lock can die.
+Of course this needs another patch (if I am right).
+
+Oleg.
 
