@@ -1,86 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752067AbaBJIhN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 03:37:13 -0500
-Received: from mga01.intel.com ([192.55.52.88]:17179 "EHLO mga01.intel.com"
+	id S1751656AbaBJIpc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 03:45:32 -0500
+Received: from mga09.intel.com ([134.134.136.24]:30983 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751407AbaBJIhI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 03:37:08 -0500
+	id S1750948AbaBJIpb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 03:45:31 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,816,1384329600"; 
-   d="scan'208";a="478869913"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "pavel@ucw.cz" <pavel@ucw.cz>, "Brown, Len" <len.brown@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Li, Zhuangzhi" <zhuangzhi.li@intel.com>
-Subject: RE: [PATCH 0/5] Enabling the asynchronous threads for other phases
-Thread-Topic: [PATCH 0/5] Enabling the asynchronous threads for other phases
-Thread-Index: AQHPIrqi2B4BtmO4kEuaEAU6Gs+OZ5quMCrg
-Date: Mon, 10 Feb 2014 08:36:57 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A01C1AF9E@SHSMSX101.ccr.corp.intel.com>
-References: <1390207479-26064-1-git-send-email-chuansheng.liu@intel.com>
- <2360514.bLFmJYMItS@vostro.rjw.lan>
-In-Reply-To: <2360514.bLFmJYMItS@vostro.rjw.lan>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+   d="scan'208";a="480784880"
+Message-ID: <52F89196.6080907@intel.com>
+Date: Mon, 10 Feb 2014 16:45:10 +0800
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
+To: Stephane Eranian <eranian@google.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 09/14] perf, x86: Save/resotre LBR stack during context
+ switch
+References: <1388728091-18564-1-git-send-email-zheng.z.yan@intel.com>	<1388728091-18564-10-git-send-email-zheng.z.yan@intel.com>	<CABPqkBRz0u1U9RDoS64S00D9B+Ruyw_xBnT5WukUhuuv2A7YWA@mail.gmail.com> <CABPqkBSk6X1khQZ9UtMXqQEt=grfLv6VL1=fUnrdd71tAZeeCg@mail.gmail.com>
+In-Reply-To: <CABPqkBSk6X1khQZ9UtMXqQEt=grfLv6VL1=fUnrdd71tAZeeCg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1A8bMD7028199
 
-Hello Rafael,
-
-> -----Original Message-----
-> From: Rafael J. Wysocki [mailto:rjw@rjwysocki.net]
-> Sent: Thursday, February 06, 2014 5:53 AM
-> To: Liu, Chuansheng
-> Cc: gregkh@linuxfoundation.org; pavel@ucw.cz; Brown, Len;
-> linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org; Li, Zhuangzhi
-> Subject: Re: [PATCH 0/5] Enabling the asynchronous threads for other phases
+On 02/06/2014 11:09 PM, Stephane Eranian wrote:
+> On Wed, Feb 5, 2014 at 6:45 PM, Stephane Eranian <eranian@google.com> wrote:
+>> On Fri, Jan 3, 2014 at 6:48 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+>>> When the LBR call stack is enabled, it is necessary to save/restore
+>>> the LBR stack on context switch. The solution is saving/restoring
+>>> the LBR stack to/from task's perf event context.
+>>>
+>>> The LBR stack is saved/restored only when there are events that use
+>>> the LBR call stack. If no event uses LBR call stack, the LBR stack
+>>> is reset when task is scheduled in.
+>>>
+>>> Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+>>> ---
+>>>  arch/x86/kernel/cpu/perf_event_intel_lbr.c | 80 ++++++++++++++++++++++++------
+>>>  1 file changed, 66 insertions(+), 14 deletions(-)
+>>>
+>>> diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+>>> index 2137a9f..51e1842 100644
+>>> --- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+>>> +++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+>>> @@ -187,18 +187,82 @@ void intel_pmu_lbr_reset(void)
+>>>                 intel_pmu_lbr_reset_64();
+>>>  }
+>>>
+>>> +/*
+>>> + * TOS = most recently recorded branch
+>>> + */
+>>> +static inline u64 intel_pmu_lbr_tos(void)
+>>> +{
+>>> +       u64 tos;
+>>> +       rdmsrl(x86_pmu.lbr_tos, tos);
+>>> +       return tos;
+>>> +}
+>>> +
+>>> +enum {
+>>> +       LBR_UNINIT,
+>>> +       LBR_NONE,
+>>> +       LBR_VALID,
+>>> +};
+>>> +
+>> I don't see where the x86_perf_task_context struct gets initialized with
+>> your task_ctx_data/task_ctx_size mechanism. You are relying on 0
+>> as a valid default value. But if later more fields are needed and they need
+>> non-zero init values, it will be easy to forget.....
+>>
+>> So I think you need to provide a callback from alloc_perf_context().
+>> Should have mentioned that in Patch 05/14.
+>>
+>>> +static void __intel_pmu_lbr_restore(struct x86_perf_task_context *task_ctx)
+>>> +{
+>>> +       int i;
+>>> +       unsigned lbr_idx, mask = x86_pmu.lbr_nr - 1;
+>>> +       u64 tos = intel_pmu_lbr_tos();
+>>> +
+>>> +       for (i = 0; i < x86_pmu.lbr_nr; i++) {
+>>> +               lbr_idx = (tos - i) & mask;
+>>> +               wrmsrl(x86_pmu.lbr_from + lbr_idx, task_ctx->lbr_from[i]);
+>>> +               wrmsrl(x86_pmu.lbr_to + lbr_idx, task_ctx->lbr_to[i]);
+>>> +       }
+>>> +       task_ctx->lbr_stack_state = LBR_NONE;
+>>> +}
+>>> +
+>>> +static void __intel_pmu_lbr_save(struct x86_perf_task_context *task_ctx)
+>>> +{
+>>> +       int i;
+>>> +       unsigned lbr_idx, mask = x86_pmu.lbr_nr - 1;
+>>> +       u64 tos = intel_pmu_lbr_tos();
+>>> +
+>>> +       for (i = 0; i < x86_pmu.lbr_nr; i++) {
+>>> +               lbr_idx = (tos - i) & mask;
+>>> +               rdmsrl(x86_pmu.lbr_from + lbr_idx, task_ctx->lbr_from[i]);
+>>> +               rdmsrl(x86_pmu.lbr_to + lbr_idx, task_ctx->lbr_to[i]);
+>>> +       }
+>>> +       task_ctx->lbr_stack_state = LBR_VALID;
+>>> +}
+>>> +
+>>> +
+>>>  void intel_pmu_lbr_sched_task(struct perf_event_context *ctx, bool sched_in)
+>>>  {
+>>> +       struct cpu_hw_events *cpuc;
+>>> +       struct x86_perf_task_context *task_ctx;
+>>> +
+>>>         if (!x86_pmu.lbr_nr)
+>>>                 return;
+>>>
+>>> +       cpuc = &__get_cpu_var(cpu_hw_events);
+>>> +       task_ctx = ctx ? ctx->task_ctx_data : NULL;
+>>> +
+>>> +
+>>>         /*
+>>>          * It is necessary to flush the stack on context switch. This happens
+>>>          * when the branch stack does not tag its entries with the pid of the
+>>>          * current task.
+>>>          */
+>>> -       if (sched_in)
+>>> -               intel_pmu_lbr_reset();
+>>> +       if (sched_in) {
+>>> +               if (!task_ctx ||
+>>> +                   !task_ctx->lbr_callstack_users ||
+>>> +                   task_ctx->lbr_stack_state != LBR_VALID)
+>>> +                       intel_pmu_lbr_reset();
+>>> +               else
+>>> +                       __intel_pmu_lbr_restore(task_ctx);
+>>> +       } else if (task_ctx) {
+>>> +               if (task_ctx->lbr_callstack_users &&
+>>> +                   task_ctx->lbr_stack_state != LBR_UNINIT)
+>>> +                       __intel_pmu_lbr_save(task_ctx);
+>>> +               else
+>>> +                       task_ctx->lbr_stack_state = LBR_NONE;
+>>> +       }
+>>>  }
+>>>
+>> There ought to be a better way of structuring this if/else. It is
+>> ugly.
+>>
+> Second thought on this. I am not sure I understand why the
+> test has to be so complex including on the save() side.
 > 
-> On Monday, January 20, 2014 04:44:34 PM Liu, Chuansheng wrote:
-> > Hello,
-> >
-> > This patch series are for enabling the asynchronous threads for the phases
-> > resume_noirq, resume_early, suspend_noirq and suspend_late.
-> >
-> > Just like commit 5af84b82701a and 97df8c12995, with async threads it will
-> > reduce the system suspending and resuming time significantly.
-> >
-> > With these patches, in my test platform, it saved 80% time in resume_noirq
-> > phase.
-> >
-> > Has done the suspend-resume stress test for a long time, please help to
-> > review.
-> >
-> > Best Regards,
-> >
-> > [PATCH 1/5] PM: Adding two flags for async suspend_noirq and
-> > [PATCH 2/5] PM: Enabling the asynchronous threads for resume_noirq
-> > [PATCH 3/5] PM: Enabling the asyncronous threads for resume_early
-> > [PATCH 4/5] PM: Enabling the asyncronous threads for suspend_noirq
-> > [PATCH 5/5] PM: Enabling the asyncronous threads for suspend_late
-> 
-> I've applied this to the bleeding-edge branch of the linux-pm.git tree, with
-> minor changes related to coding style, white space etc.
-Thanks your help.
+> if (sched_in) {
+>      if (task_ctx && lbr_callstack_users)
+>               restore()
+>     else
+>             reset
+> } else { /* sched_out */
+>      if (task_ctx && lbr_callstack_users)
+>                save()
+> }
 
-> 
-> Can you please verify that the bleeding-edge branch works for you as
-> expected?
-I have picked them from your bleeding-edge branch and has done the
-suspend-resume stress test for about 200 times and 3 hours,
-It is still working well.
+I think you are right about the save side. But the lbr_state is still needed
+by the restore side. Because perf context may have invaild LBR state when task
+is being scheduled in. (task is newly created or the callstack feature was not
+enabled when the task is scheduled out)
 
-Best Regards
-Chuansheng Liu
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Regards
+Yan, Zheng
+
+> If you have lbr_callstack_users, then you need to save/restore.
+> Looks like you are trying to prevent from double sched-in or
+> double sched-out. Can this happen?
+> 
+> In other words, I am not sure I understand the need for the
+> lbr_state here.
+> 
+> 
+>>>  static inline bool branch_user_callstack(unsigned br_sel)
+>>> @@ -267,18 +331,6 @@ void intel_pmu_lbr_disable_all(void)
+>>>                 __intel_pmu_lbr_disable();
+>>>  }
+>>>
+>>> -/*
+>>> - * TOS = most recently recorded branch
+>>> - */
+>>> -static inline u64 intel_pmu_lbr_tos(void)
+>>> -{
+>>> -       u64 tos;
+>>> -
+>>> -       rdmsrl(x86_pmu.lbr_tos, tos);
+>>> -
+>>> -       return tos;
+>>> -}
+>>> -
+>>>  static void intel_pmu_lbr_read_32(struct cpu_hw_events *cpuc)
+>>>  {
+>>>         unsigned long mask = x86_pmu.lbr_nr - 1;
+>>> --
+>>> 1.8.4.2
+>>>
+
