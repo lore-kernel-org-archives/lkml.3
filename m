@@ -1,86 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752628AbaBJKcT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 05:32:19 -0500
-Received: from www.linutronix.de ([62.245.132.108]:56943 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752157AbaBJKcS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752697AbaBJKcd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 05:32:33 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:62325 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752270AbaBJKcS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 10 Feb 2014 05:32:18 -0500
-Date: Mon, 10 Feb 2014 11:32:23 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Bin Gao <bin.gao@linux.intel.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Subject: Re: [PATCH v4 1/2] x86, tsc: Fallback to normal calibration if fast
- MSR calibration fails
-In-Reply-To: <1392027794-8643-1-git-send-email-mika.westerberg@linux.intel.com>
-Message-ID: <alpine.DEB.2.02.1402101131330.21991@ionos.tec.linutronix.de>
-References: <1392027794-8643-1-git-send-email-mika.westerberg@linux.intel.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+X-IronPort-AV: E=Sophos;i="4.95,817,1384300800"; 
+   d="scan'208";a="101262090"
+Message-ID: <52F8AAAF.5040909@citrix.com>
+Date: Mon, 10 Feb 2014 10:32:15 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Rashika Kheria <rashika.kheria@gmail.com>
+CC: <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
+        <xen-devel@lists.xenproject.org>, <josh@joshtriplett.org>
+Subject: Re: [PATCH 3/4] drivers: xen: Move prototype declaration to appropriate
+ header file from arch/x86/xen/xen-ops.h
+References: <3826f170dae13e3ee700ad9e26a8c88be4b7aaa2.1391943416.git.rashika.kheria@gmail.com> <a609cbd7fcce1a4f5df0b00e3f866461b9ad071f.1391943416.git.rashika.kheria@gmail.com>
+In-Reply-To: <a609cbd7fcce1a4f5df0b00e3f866461b9ad071f.1391943416.git.rashika.kheria@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Feb 2014, Mika Westerberg wrote:
-> From: Thomas Gleixner <tglx@linutronix.de>
+On 09/02/14 11:08, Rashika Kheria wrote:
+> Move prototype declaration to header file include/xen/xen-ops.h from
+> arch/x86/xen/xen-ops.h because they are used by more than one file.
 > 
-> If we cannot calibrate TSC via MSR based calibration
-> try_msr_calibrate_tsc() stores zero to fast_calibrate and returns that to
-> the caller. This value gets then propagated further to clockevents code
-> resulting division by zero oops like the one below:
+> This eliminates the following warning in drivers/xen/events/:
+> drivers/xen/events_2l.c:1231:13: warning: no previous prototype for ‘xen_debug_interrupt’ [-Wmissing-prototypes]
 > 
->  divide error: 0000 [#1] PREEMPT SMP
->  Modules linked in:
->  CPU: 0 PID: 1 Comm: swapper/0 Tainted: G        W    3.13.0+ #47
->  task: ffff880075508000 ti: ffff880075506000 task.ti: ffff880075506000
->  RIP: 0010:[<ffffffff810aec14>]  [<ffffffff810aec14>] clockevents_config.part.3+0x24/0xa0
->  RSP: 0000:ffff880075507e58  EFLAGS: 00010246
->  RAX: ffffffffffffffff RBX: ffff880079c0cd80 RCX: 0000000000000000
->  RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffffffffffffffff
->  RBP: ffff880075507e70 R08: 0000000000000001 R09: 00000000000000be
->  R10: 00000000000000bd R11: 0000000000000003 R12: 000000000000b008
->  R13: 0000000000000008 R14: 000000000000b010 R15: 0000000000000000
->  FS:  0000000000000000(0000) GS:ffff880079c00000(0000) knlGS:0000000000000000
->  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
->  CR2: ffff880079fff000 CR3: 0000000001c0b000 CR4: 00000000001006f0
->  Stack:
->   ffff880079c0cd80 000000000000b008 0000000000000008 ffff880075507e88
->   ffffffff810aecb0 ffff880079c0cd80 ffff880075507e98 ffffffff81030168
->   ffff880075507ed8 ffffffff81d1104f 00000000000000c3 0000000000000000
->  Call Trace:
->   [<ffffffff810aecb0>] clockevents_config_and_register+0x20/0x30
->   [<ffffffff81030168>] setup_APIC_timer+0xc8/0xd0
->   [<ffffffff81d1104f>] setup_boot_APIC_clock+0x4cc/0x4d8
->   [<ffffffff81d0f5de>] native_smp_prepare_cpus+0x3dd/0x3f0
->   [<ffffffff81d02ee9>] kernel_init_freeable+0xc3/0x205
->   [<ffffffff8177c910>] ? rest_init+0x90/0x90
->   [<ffffffff8177c91e>] kernel_init+0xe/0x120
->   [<ffffffff8178deec>] ret_from_fork+0x7c/0xb0
->   [<ffffffff8177c910>] ? rest_init+0x90/0x90
-> 
-> Prevent this from happening by:
->  1) Modifying try_msr_calibrate_tsc() to return calibration value or zero
->     if it fails.
->  2) Check this return value in native_calibrate_tsc() and in case of zero
->     fallback to use normal non-MSR based calibration.
-> 
-> Reported-and-tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> ---
-> Thomas, I hope you don't mind that I added your SoB to the patch. It is
-> after all from you.
+> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+[...]
+> --- a/include/xen/xen-ops.h
+> +++ b/include/xen/xen-ops.h
+> @@ -2,6 +2,7 @@
+>  #define INCLUDE_XEN_OPS_H
+>  
+>  #include <linux/percpu.h>
+> +#include <linux/interrupt.h>
+>  #include <asm/xen/interface.h>
+>  
+>  DECLARE_PER_CPU(struct vcpu_info *, xen_vcpu);
+> @@ -35,4 +36,6 @@ int xen_unmap_domain_mfn_range(struct vm_area_struct *vma,
+>  			       int numpgs, struct page **pages);
+>  
+>  bool xen_running_on_version_or_later(unsigned int major, unsigned int minor);
+> +
+> +irqreturn_t xen_debug_interrupt(int irq, void *dev_id);
 
-You just missed to add your own SOB which tells us that you conveyed
-the patch.
- 
-Thanks,
+This should be moved to include/xen/events.h instead.
 
-	tglx
+David
