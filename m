@@ -1,48 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752996AbaBJR2J (ORCPT <rfc822;w@1wt.eu>);
+	id S1753217AbaBJR3E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 12:29:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43045 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752982AbaBJR2J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 10 Feb 2014 12:28:09 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:42728 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752133AbaBJR2H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 12:28:07 -0500
-From: Masanari Iida <standby24x7@gmail.com>
-To: trivial@kernel.org, linux-kernel@vger.kernel.org, axboe@kernel.dk
-Cc: Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] [trivial] block: Fix type mismatch in ssize_t_blk_mq_tag_sysfs_show
-Date: Tue, 11 Feb 2014 02:27:58 +0900
-Message-Id: <1392053278-2188-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.9.rc1
+From: Luiz Capitulino <lcapitulino@redhat.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        mtosatti@redhat.com, mgorman@suse.de, aarcange@redhat.com,
+        andi@firstfloor.org, riel@redhat.com
+Subject: [PATCH 2/4] memblock: add memblock_virt_alloc_nid_nopanic()
+Date: Mon, 10 Feb 2014 12:27:46 -0500
+Message-Id: <1392053268-29239-3-git-send-email-lcapitulino@redhat.com>
+In-Reply-To: <1392053268-29239-1-git-send-email-lcapitulino@redhat.com>
+References: <1392053268-29239-1-git-send-email-lcapitulino@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cppcheck detected following format string mismatch.
-[blk-mq-tag.c:201]: (warning) %u in format string (no. 1) requires
-'unsigned int' but the argument type is 'int'.
+From: Luiz capitulino <lcapitulino@redhat.com>
 
-Change "cpu" from int to unsigned int, because the cpu
-never become minus value.
+This function tries to allocate memory from the specified node only (vs.
+automatically trying other nodes on failure).
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+This is going to be used by HugeTLB boot-time allocation code in next
+commits.
+
+Signed-off-by: Luiz capitulino <lcapitulino@redhat.com>
 ---
- block/blk-mq-tag.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/bootmem.h |  4 ++++
+ mm/memblock.c           | 31 +++++++++++++++++++++++++++++++
+ 2 files changed, 35 insertions(+)
 
-diff --git a/block/blk-mq-tag.c b/block/blk-mq-tag.c
-index 5d70edc..83ae96c 100644
---- a/block/blk-mq-tag.c
-+++ b/block/blk-mq-tag.c
-@@ -184,7 +184,7 @@ void blk_mq_free_tags(struct blk_mq_tags *tags)
- ssize_t blk_mq_tag_sysfs_show(struct blk_mq_tags *tags, char *page)
- {
- 	char *orig_page = page;
--	int cpu;
-+	unsigned int cpu;
+diff --git a/include/linux/bootmem.h b/include/linux/bootmem.h
+index db51fe4..6961b11 100644
+--- a/include/linux/bootmem.h
++++ b/include/linux/bootmem.h
+@@ -153,6 +153,10 @@ extern void *__alloc_bootmem_low_node(pg_data_t *pgdat,
+ void *memblock_virt_alloc_try_nid_nopanic(phys_addr_t size,
+ 		phys_addr_t align, phys_addr_t min_addr,
+ 		phys_addr_t max_addr, int nid);
++void * __init memblock_virt_alloc_nid_nopanic(
++				phys_addr_t size, phys_addr_t align,
++				phys_addr_t min_addr, phys_addr_t max_addr,
++				int nid);
+ void *memblock_virt_alloc_try_nid(phys_addr_t size, phys_addr_t align,
+ 		phys_addr_t min_addr, phys_addr_t max_addr, int nid);
+ void __memblock_free_early(phys_addr_t base, phys_addr_t size);
+diff --git a/mm/memblock.c b/mm/memblock.c
+index b0c7b2e..9130d4b 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -1153,6 +1153,37 @@ void * __init memblock_virt_alloc_try_nid_nopanic(
+ }
  
- 	if (!tags)
- 		return 0;
+ /**
++ * memblock_virt_alloc_nid_nopanic - allocate boot memory block from
++ * specified node
++ * @size: size of memory block to be allocated in bytes
++ * @align: alignment of the region and block's size
++ * @min_addr: the lower bound of the memory region from where the allocation
++ *	  is preferred (phys address)
++ * @max_addr: the upper bound of the memory region from where the allocation
++ *	      is preferred (phys address), or %BOOTMEM_ALLOC_ACCESSIBLE to
++ *	      allocate only from memory limited by memblock.current_limit value
++ * @nid: nid of the free area to find, %NUMA_NO_NODE for any node
++ *
++ * This function tries to allocate memory from @nid only. It @nid doesn't
++ * have enough memory, this function returns failure.
++ *
++ * RETURNS:
++ * Virtual address of allocated memory block on success, NULL on failure.
++ */
++void * __init memblock_virt_alloc_nid_nopanic(
++				phys_addr_t size, phys_addr_t align,
++				phys_addr_t min_addr, phys_addr_t max_addr,
++				int nid)
++{
++	memblock_dbg("%s: %llu bytes align=0x%llx nid=%d from=0x%llx max_addr=0x%llx %pF\n",
++		     __func__, (u64)size, (u64)align, nid, (u64)min_addr,
++		     (u64)max_addr, (void *)_RET_IP_);
++	return memblock_virt_alloc_internal(size, align, min_addr,
++					     max_addr, nid,
++					     ALLOC_SPECIFIED_NODE_ONLY);
++}
++
++/**
+  * memblock_virt_alloc_try_nid - allocate boot memory block with panicking
+  * @size: size of memory block to be allocated in bytes
+  * @align: alignment of the region and block's size
 -- 
-1.9.rc1
+1.8.1.4
 
