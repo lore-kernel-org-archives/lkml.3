@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755078AbaBJUCB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 15:02:01 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34937 "EHLO
+	id S1755065AbaBJUB6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 15:01:58 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34939 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754066AbaBJTqP (ORCPT
+	with ESMTP id S1754067AbaBJTqP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 10 Feb 2014 14:46:15 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Josh Triplett <josh@joshtriplett.org>, Len Brown <len.brown@intel.com>,
+Cc: Richard Weinberger <richard@nod.at>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 073/124] turbostat: Don't put unprocessed uapi headers in the include path
-Date: Mon, 10 Feb 2014 11:40:13 -0800
-Message-Id: <1392061264-28124-74-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 115/124] net,via-rhine: Fix tx_timeout handling
+Date: Mon, 10 Feb 2014 11:40:55 -0800
+Message-Id: <1392061264-28124-116-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
 References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
@@ -27,72 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Triplett <josh@joshtriplett.org>
+From: Richard Weinberger <richard@nod.at>
 
-commit b731f3119de57144e16c19fd593b8daeb637843e upstream.
+[ Upstream commit a926592f5e4e900f3fa903298c4619a131e60963 ]
 
-turbostat's Makefile puts arch/x86/include/uapi/ in the include path, so
-that it can include <asm/msr.h> from it.  It isn't in general safe to
-include even uapi headers directly from the kernel tree without
-processing them through scripts/headers_install.sh, but asm/msr.h
-happens to work.
+rhine_reset_task() misses to disable the tx scheduler upon reset,
+this can lead to a crash if work is still scheduled while we're resetting
+the tx queue.
 
-However, that include path can break with some versions of system
-headers, by overriding some system headers with the unprocessed versions
-directly from the kernel source.  For instance:
+Fixes:
+[   93.591707] BUG: unable to handle kernel NULL pointer dereference at 0000004c
+[   93.595514] IP: [<c119d10d>] rhine_napipoll+0x491/0x6
 
-In file included from /build/x86-generic/usr/include/bits/sigcontext.h:28:0,
-                 from /build/x86-generic/usr/include/signal.h:339,
-                 from /build/x86-generic/usr/include/sys/wait.h:31,
-                 from turbostat.c:27:
-../../../../arch/x86/include/uapi/asm/sigcontext.h:4:28: fatal error: linux/compiler.h: No such file or directory
-
-This occurs because the system bits/sigcontext.h on that build system
-includes <asm/sigcontext.h>, and asm/sigcontext.h in the kernel source
-includes <linux/compiler.h>, which scripts/headers_install.sh would have
-filtered out.
-
-Since turbostat really only wants a single header, just include that one
-header rather than putting an entire directory of kernel headers on the
-include path.
-
-In the process, switch from msr.h to msr-index.h, since turbostat just
-wants the MSR numbers.
-
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
-Signed-off-by: Len Brown <len.brown@intel.com>
+Signed-off-by: Richard Weinberger <richard@nod.at>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- tools/power/x86/turbostat/Makefile    | 2 +-
- tools/power/x86/turbostat/turbostat.c | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/via/via-rhine.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/tools/power/x86/turbostat/Makefile b/tools/power/x86/turbostat/Makefile
-index f09641d..d1b3a36 100644
---- a/tools/power/x86/turbostat/Makefile
-+++ b/tools/power/x86/turbostat/Makefile
-@@ -5,7 +5,7 @@ DESTDIR		:=
+diff --git a/drivers/net/ethernet/via/via-rhine.c b/drivers/net/ethernet/via/via-rhine.c
+index 3b96bfa..7eb1963 100644
+--- a/drivers/net/ethernet/via/via-rhine.c
++++ b/drivers/net/ethernet/via/via-rhine.c
+@@ -1600,6 +1600,7 @@ static void rhine_reset_task(struct work_struct *work)
+ 		goto out_unlock;
  
- turbostat : turbostat.c
- CFLAGS +=	-Wall
--CFLAGS +=	-I../../../../arch/x86/include/uapi/
-+CFLAGS +=	-DMSRHEADER='"../../../../arch/x86/include/uapi/asm/msr-index.h"'
+ 	napi_disable(&rp->napi);
++	netif_tx_disable(dev);
+ 	spin_lock_bh(&rp->lock);
  
- %: %.c
- 	@mkdir -p $(BUILD_OUTPUT)
-diff --git a/tools/power/x86/turbostat/turbostat.c b/tools/power/x86/turbostat/turbostat.c
-index ce6d460..10f4d14 100644
---- a/tools/power/x86/turbostat/turbostat.c
-+++ b/tools/power/x86/turbostat/turbostat.c
-@@ -20,7 +20,7 @@
-  */
- 
- #define _GNU_SOURCE
--#include <asm/msr.h>
-+#include MSRHEADER
- #include <stdio.h>
- #include <unistd.h>
- #include <sys/types.h>
+ 	/* clear all descriptors */
 -- 
 1.8.3.2
 
