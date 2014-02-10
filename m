@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754356AbaBJTrU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 14:47:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35119 "EHLO
+	id S1754675AbaBJTwH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 14:52:07 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35128 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754247AbaBJTrP (ORCPT
+	with ESMTP id S1754353AbaBJTrU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:47:15 -0500
+	Mon, 10 Feb 2014 14:47:20 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Andy Adamson <andros@netapp.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 077/124] drm/radeon: fix surface sync in fence on cayman (v2)
-Date: Mon, 10 Feb 2014 11:40:17 -0800
-Message-Id: <1392061264-28124-78-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 029/124] SUNRPC: don't map EKEYEXPIRED to EACCES in call_refreshresult
+Date: Mon, 10 Feb 2014 11:39:29 -0800
+Message-Id: <1392061264-28124-30-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
 References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
@@ -27,82 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Andy Adamson <andros@netapp.com>
 
-commit 10e9ffae463396c5a25fdfe8a48d7c98a87f6b85 upstream.
+commit f1ff0c27fd9987c59d707cd1a6b6c1fc3ae0a250 upstream.
 
-We need to set the engine bit to select the ME and
-also set the full cache bit.  Should help stability
-on TN and cayman.
+The NFS layer needs to know when a key has expired.
+This change also returns -EKEYEXPIRED to the application, and the informative
+"Key has expired" error message is displayed. The user then knows that
+credential renewal is required.
 
-V2: fix up surface sync in ib execute as well
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Andy Adamson <andros@netapp.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/radeon/ni.c  | 16 +++++++---------
- drivers/gpu/drm/radeon/nid.h |  1 +
- 2 files changed, 8 insertions(+), 9 deletions(-)
+ net/sunrpc/clnt.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/ni.c b/drivers/gpu/drm/radeon/ni.c
-index 326bdea..385e05b 100644
---- a/drivers/gpu/drm/radeon/ni.c
-+++ b/drivers/gpu/drm/radeon/ni.c
-@@ -889,13 +889,12 @@ void cayman_fence_ring_emit(struct radeon_device *rdev,
- {
- 	struct radeon_ring *ring = &rdev->ring[fence->ring];
- 	u64 addr = rdev->fence_drv[fence->ring].gpu_addr;
-+	u32 cp_coher_cntl = PACKET3_FULL_CACHE_ENA | PACKET3_TC_ACTION_ENA |
-+		PACKET3_SH_ACTION_ENA;
- 
- 	/* flush read cache over gart for this vmid */
--	radeon_ring_write(ring, PACKET3(PACKET3_SET_CONFIG_REG, 1));
--	radeon_ring_write(ring, (CP_COHER_CNTL2 - PACKET3_SET_CONFIG_REG_START) >> 2);
--	radeon_ring_write(ring, 0);
- 	radeon_ring_write(ring, PACKET3(PACKET3_SURFACE_SYNC, 3));
--	radeon_ring_write(ring, PACKET3_TC_ACTION_ENA | PACKET3_SH_ACTION_ENA);
-+	radeon_ring_write(ring, PACKET3_ENGINE_ME | cp_coher_cntl);
- 	radeon_ring_write(ring, 0xFFFFFFFF);
- 	radeon_ring_write(ring, 0);
- 	radeon_ring_write(ring, 10); /* poll interval */
-@@ -911,6 +910,8 @@ void cayman_fence_ring_emit(struct radeon_device *rdev,
- void cayman_ring_ib_execute(struct radeon_device *rdev, struct radeon_ib *ib)
- {
- 	struct radeon_ring *ring = &rdev->ring[ib->ring];
-+	u32 cp_coher_cntl = PACKET3_FULL_CACHE_ENA | PACKET3_TC_ACTION_ENA |
-+		PACKET3_SH_ACTION_ENA;
- 
- 	/* set to DX10/11 mode */
- 	radeon_ring_write(ring, PACKET3(PACKET3_MODE_CONTROL, 0));
-@@ -935,14 +936,11 @@ void cayman_ring_ib_execute(struct radeon_device *rdev, struct radeon_ib *ib)
- 			  (ib->vm ? (ib->vm->id << 24) : 0));
- 
- 	/* flush read cache over gart for this vmid */
--	radeon_ring_write(ring, PACKET3(PACKET3_SET_CONFIG_REG, 1));
--	radeon_ring_write(ring, (CP_COHER_CNTL2 - PACKET3_SET_CONFIG_REG_START) >> 2);
--	radeon_ring_write(ring, ib->vm ? ib->vm->id : 0);
- 	radeon_ring_write(ring, PACKET3(PACKET3_SURFACE_SYNC, 3));
--	radeon_ring_write(ring, PACKET3_TC_ACTION_ENA | PACKET3_SH_ACTION_ENA);
-+	radeon_ring_write(ring, PACKET3_ENGINE_ME | cp_coher_cntl);
- 	radeon_ring_write(ring, 0xFFFFFFFF);
- 	radeon_ring_write(ring, 0);
--	radeon_ring_write(ring, 10); /* poll interval */
-+	radeon_ring_write(ring, ((ib->vm ? ib->vm->id : 0) << 24) | 10); /* poll interval */
- }
- 
- static void cayman_cp_enable(struct radeon_device *rdev, bool enable)
-diff --git a/drivers/gpu/drm/radeon/nid.h b/drivers/gpu/drm/radeon/nid.h
-index e045f8c..9dbea95 100644
---- a/drivers/gpu/drm/radeon/nid.h
-+++ b/drivers/gpu/drm/radeon/nid.h
-@@ -556,6 +556,7 @@
- #              define PACKET3_DB_ACTION_ENA        (1 << 26)
- #              define PACKET3_SH_ACTION_ENA        (1 << 27)
- #              define PACKET3_SX_ACTION_ENA        (1 << 28)
-+#              define PACKET3_ENGINE_ME            (1 << 31)
- #define	PACKET3_ME_INITIALIZE				0x44
- #define		PACKET3_ME_INITIALIZE_DEVICE_ID(x) ((x) << 16)
- #define	PACKET3_COND_WRITE				0x45
+diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
+index d8b6ad9..e1d98c8 100644
+--- a/net/sunrpc/clnt.c
++++ b/net/sunrpc/clnt.c
+@@ -1376,9 +1376,9 @@ call_refreshresult(struct rpc_task *task)
+ 		return;
+ 	case -ETIMEDOUT:
+ 		rpc_delay(task, 3*HZ);
+-	case -EKEYEXPIRED:
+ 	case -EAGAIN:
+ 		status = -EACCES;
++	case -EKEYEXPIRED:
+ 		if (!task->tk_cred_retry)
+ 			break;
+ 		task->tk_cred_retry--;
 -- 
 1.8.3.2
 
