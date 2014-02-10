@@ -1,551 +1,559 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752421AbaBJIxq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 03:53:46 -0500
-Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:41391 "EHLO
-	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751999AbaBJIxI (ORCPT
+	id S1752379AbaBJIxl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 03:53:41 -0500
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:59507 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752260AbaBJIxg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 03:53:08 -0500
-From: Mohit Kumar <mohit.kumar@st.com>
-To: <arnd@arndb.de>
-Cc: Pratyush Anand <pratyush.anand@st.com>,
-        Viresh Kumar <viresh.linux@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>, <spear-devel@list.st.com>,
-        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linux-ide@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>
-Subject: [PATCH V5 5/8] SPEAr13xx: Fixup: Move SPEAr1340 SATA platform code to phy driver
-Date: Mon, 10 Feb 2014 14:21:56 +0530
-Message-ID: <c6a012350a47f09679e2a43a182569e9e7c3b008.1391871170.git.pratyush.anand@st.com>
-X-Mailer: git-send-email 1.7.0.1
-In-Reply-To: <cover.1391871170.git.pratyush.anand@st.com>
-References: <cover.1391871170.git.pratyush.anand@st.com>
+	Mon, 10 Feb 2014 03:53:36 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1391997515-57736-1-git-send-email-wangyijing@huawei.com>
+References: <1391997515-57736-1-git-send-email-wangyijing@huawei.com>
+Date: Mon, 10 Feb 2014 14:23:35 +0530
+Message-ID: <CAM4v1pOT-fE3Pv1rJqiADUo+5sk2rMvVg9mbgW3f3TnUHifeCQ@mail.gmail.com>
+Subject: Re: [Update][PATCH 2/2] clocksource: Make clocksource register
+ functions void
+From: Preeti Murthy <preeti.lkml@gmail.com>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>, nsekhar@ti.com, tony@atomide.com,
+        egtvedt@samfundet.no, linux@prisktech.co.nz, geert@linux-m68k.org,
+        David.Laight@aculab.com, Daniel Lezcano <daniel.lezcano@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, x86@kernel.org,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pratyush Anand <pratyush.anand@st.com>
+Hi Yijing,
 
-ahci driver needs some platform specific functions which are called at
-init, exit, suspend and resume conditions. Till now these functions were
-present in a platform driver with a fixme notes.
+For the powerpc part:
+ Acked-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
 
-Similar functions modifying same set of registers will also be needed in
-case of PCIe phy init/exit.
-
-So move all these SATA platform code to phy-miphy40lp driver.
-
-Signed-off-by: Pratyush Anand <pratyush.anand@st.com>
-Tested-by: Mohit Kumar <mohit.kumar@st.com>
-Cc: Viresh Kumar <viresh.linux@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: spear-devel@list.st.com
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: devicetree@vger.kernel.org
-Cc: linux-ide@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-pm@vger.kernel.org
----
- .../devicetree/bindings/arm/spear-misc.txt         |   4 +
- arch/arm/boot/dts/spear1310-evb.dts                |   4 +
- arch/arm/boot/dts/spear1310.dtsi                   |  39 +++++-
- arch/arm/boot/dts/spear1340-evb.dts                |   4 +
- arch/arm/boot/dts/spear1340.dtsi                   |  13 +-
- arch/arm/boot/dts/spear13xx.dtsi                   |   5 +
- arch/arm/mach-spear/Kconfig                        |   2 +
- arch/arm/mach-spear/spear1340.c                    | 127 +-----------------
- drivers/phy/phy-miphy40lp.c                        | 144 +++++++++++++++++++++
- 9 files changed, 212 insertions(+), 130 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/arm/spear-misc.txt
-
-diff --git a/Documentation/devicetree/bindings/arm/spear-misc.txt b/Documentation/devicetree/bindings/arm/spear-misc.txt
-new file mode 100644
-index 0000000..aacd36a
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/spear-misc.txt
-@@ -0,0 +1,4 @@
-+* SPEAr Misc configuration
-+** misc node required properties:
-+- compatible Should be	"st,spear1340-misc", "syscon".
-+- reg: Address range of misc space
-diff --git a/arch/arm/boot/dts/spear1310-evb.dts b/arch/arm/boot/dts/spear1310-evb.dts
-index b56a801..d42c84b 100644
---- a/arch/arm/boot/dts/spear1310-evb.dts
-+++ b/arch/arm/boot/dts/spear1310-evb.dts
-@@ -106,6 +106,10 @@
- 			status = "okay";
- 		};
- 
-+		miphy@eb800000 {
-+			status = "okay";
-+		};
-+
- 		cf@b2800000 {
- 			status = "okay";
- 		};
-diff --git a/arch/arm/boot/dts/spear1310.dtsi b/arch/arm/boot/dts/spear1310.dtsi
-index 122ae94..64e7dd5 100644
---- a/arch/arm/boot/dts/spear1310.dtsi
-+++ b/arch/arm/boot/dts/spear1310.dtsi
-@@ -29,24 +29,57 @@
- 			#gpio-cells = <2>;
- 		};
- 
--		ahci@b1000000 {
-+		miphy0: miphy@eb800000 {
-+			compatible = "st,miphy", "st,spear1310-miphy";
-+			reg = <0xeb800000 0x4000>;
-+			misc = <&misc>;
-+			phy-id = <0>;
-+			#phy-cells = <1>;
-+			status = "disabled";
-+		};
-+
-+		miphy1: miphy@eb804000 {
-+			compatible = "st,miphy", "st,spear1310-miphy";
-+			reg = <0xeb804000 0x4000>;
-+			misc = <&misc>;
-+			phy-id = <1>;
-+			#phy-cells = <1>;
-+			status = "disabled";
-+		};
-+
-+		miphy2: miphy@eb808000 {
-+			compatible = "st,miphy", "st,spear1310-miphy";
-+			reg = <0xeb808000 0x4000>;
-+			misc = <&misc>;
-+			phy-id = <2>;
-+			#phy-cells = <1>;
-+			status = "disabled";
-+		};
-+
-+		ahci0: ahci@b1000000 {
- 			compatible = "snps,spear-ahci";
- 			reg = <0xb1000000 0x10000>;
- 			interrupts = <0 68 0x4>;
-+			phys = <&miphy0 0>;
-+			phy-names = "sata-phy";
- 			status = "disabled";
- 		};
- 
--		ahci@b1800000 {
-+		ahci1: ahci@b1800000 {
- 			compatible = "snps,spear-ahci";
- 			reg = <0xb1800000 0x10000>;
- 			interrupts = <0 69 0x4>;
-+			phys = <&miphy1 0>;
-+			phy-names = "sata-phy";
- 			status = "disabled";
- 		};
- 
--		ahci@b4000000 {
-+		ahci2: ahci@b4000000 {
- 			compatible = "snps,spear-ahci";
- 			reg = <0xb4000000 0x10000>;
- 			interrupts = <0 70 0x4>;
-+			phys = <&miphy2 0>;
-+			phy-names = "sata-phy";
- 			status = "disabled";
- 		};
- 
-diff --git a/arch/arm/boot/dts/spear1340-evb.dts b/arch/arm/boot/dts/spear1340-evb.dts
-index d6c30ae..b23e05e 100644
---- a/arch/arm/boot/dts/spear1340-evb.dts
-+++ b/arch/arm/boot/dts/spear1340-evb.dts
-@@ -122,6 +122,10 @@
- 			status = "okay";
- 		};
- 
-+		miphy@eb800000 {
-+			status = "okay";
-+		};
-+
- 		dma@ea800000 {
- 			status = "okay";
- 		};
-diff --git a/arch/arm/boot/dts/spear1340.dtsi b/arch/arm/boot/dts/spear1340.dtsi
-index 54d128d..7e3a04b 100644
---- a/arch/arm/boot/dts/spear1340.dtsi
-+++ b/arch/arm/boot/dts/spear1340.dtsi
-@@ -31,10 +31,21 @@
- 			status = "disabled";
- 		};
- 
--		ahci@b1000000 {
-+		miphy0: miphy@eb800000 {
-+			compatible = "st,miphy", "st,spear1340-miphy";
-+			reg = <0xeb800000 0x4000>;
-+			misc = <&misc>;
-+			phy-id = <0>;
-+			#phy-cells = <1>;
-+			status = "disabled";
-+		};
-+
-+		ahci0: ahci@b1000000 {
- 			compatible = "snps,spear-ahci";
- 			reg = <0xb1000000 0x10000>;
- 			interrupts = <0 72 0x4>;
-+			phys = <&miphy0 0>;
-+			phy-names = "sata-phy";
- 			status = "disabled";
- 		};
- 
-diff --git a/arch/arm/boot/dts/spear13xx.dtsi b/arch/arm/boot/dts/spear13xx.dtsi
-index 4382547..3a72508 100644
---- a/arch/arm/boot/dts/spear13xx.dtsi
-+++ b/arch/arm/boot/dts/spear13xx.dtsi
-@@ -220,6 +220,11 @@
- 				  0xd8000000 0xd8000000 0x01000000
- 				  0xe0000000 0xe0000000 0x10000000>;
- 
-+			misc: syscon@e0700000 {
-+				compatible = "st,spear1340-misc", "syscon";
-+				reg = <0xe0700000 0x1000>;
-+			};
-+
- 			gpio0: gpio@e0600000 {
- 				compatible = "arm,pl061", "arm,primecell";
- 				reg = <0xe0600000 0x1000>;
-diff --git a/arch/arm/mach-spear/Kconfig b/arch/arm/mach-spear/Kconfig
-index ac1710e6..7e7f1b0 100644
---- a/arch/arm/mach-spear/Kconfig
-+++ b/arch/arm/mach-spear/Kconfig
-@@ -26,6 +26,8 @@ config ARCH_SPEAR13XX
- 	select MIGHT_HAVE_CACHE_L2X0
- 	select PINCTRL
- 	select USE_OF
-+	select MFD_SYSCON
-+	select PHY_ST_MIPHY40LP
- 	help
- 	  Supports for ARM's SPEAR13XX family
- 
-diff --git a/arch/arm/mach-spear/spear1340.c b/arch/arm/mach-spear/spear1340.c
-index 3fb6834..8e27093 100644
---- a/arch/arm/mach-spear/spear1340.c
-+++ b/arch/arm/mach-spear/spear1340.c
-@@ -11,138 +11,13 @@
-  * warranty of any kind, whether express or implied.
-  */
- 
--#define pr_fmt(fmt) "SPEAr1340: " fmt
--
--#include <linux/ahci_platform.h>
--#include <linux/amba/serial.h>
--#include <linux/delay.h>
- #include <linux/of_platform.h>
- #include <asm/mach/arch.h>
- #include "generic.h"
--#include <mach/spear.h>
--
--/* FIXME: Move SATA PHY code into a standalone driver */
--
--/* Base addresses */
--#define SPEAR1340_SATA_BASE			UL(0xB1000000)
--
--/* Power Management Registers */
--#define SPEAR1340_PCM_CFG			(VA_MISC_BASE + 0x100)
--#define SPEAR1340_PCM_WKUP_CFG			(VA_MISC_BASE + 0x104)
--#define SPEAR1340_SWITCH_CTR			(VA_MISC_BASE + 0x108)
--
--#define SPEAR1340_PERIP1_SW_RST			(VA_MISC_BASE + 0x318)
--#define SPEAR1340_PERIP2_SW_RST			(VA_MISC_BASE + 0x31C)
--#define SPEAR1340_PERIP3_SW_RST			(VA_MISC_BASE + 0x320)
--
--/* PCIE - SATA configuration registers */
--#define SPEAR1340_PCIE_SATA_CFG			(VA_MISC_BASE + 0x424)
--	/* PCIE CFG MASks */
--	#define SPEAR1340_PCIE_CFG_DEVICE_PRESENT	(1 << 11)
--	#define SPEAR1340_PCIE_CFG_POWERUP_RESET	(1 << 10)
--	#define SPEAR1340_PCIE_CFG_CORE_CLK_EN		(1 << 9)
--	#define SPEAR1340_PCIE_CFG_AUX_CLK_EN		(1 << 8)
--	#define SPEAR1340_SATA_CFG_TX_CLK_EN		(1 << 4)
--	#define SPEAR1340_SATA_CFG_RX_CLK_EN		(1 << 3)
--	#define SPEAR1340_SATA_CFG_POWERUP_RESET	(1 << 2)
--	#define SPEAR1340_SATA_CFG_PM_CLK_EN		(1 << 1)
--	#define SPEAR1340_PCIE_SATA_SEL_PCIE		(0)
--	#define SPEAR1340_PCIE_SATA_SEL_SATA		(1)
--	#define SPEAR1340_SATA_PCIE_CFG_MASK		0xF1F
--	#define SPEAR1340_PCIE_CFG_VAL	(SPEAR1340_PCIE_SATA_SEL_PCIE | \
--			SPEAR1340_PCIE_CFG_AUX_CLK_EN | \
--			SPEAR1340_PCIE_CFG_CORE_CLK_EN | \
--			SPEAR1340_PCIE_CFG_POWERUP_RESET | \
--			SPEAR1340_PCIE_CFG_DEVICE_PRESENT)
--	#define SPEAR1340_SATA_CFG_VAL	(SPEAR1340_PCIE_SATA_SEL_SATA | \
--			SPEAR1340_SATA_CFG_PM_CLK_EN | \
--			SPEAR1340_SATA_CFG_POWERUP_RESET | \
--			SPEAR1340_SATA_CFG_RX_CLK_EN | \
--			SPEAR1340_SATA_CFG_TX_CLK_EN)
--
--#define SPEAR1340_PCIE_MIPHY_CFG		(VA_MISC_BASE + 0x428)
--	#define SPEAR1340_MIPHY_OSC_BYPASS_EXT		(1 << 31)
--	#define SPEAR1340_MIPHY_CLK_REF_DIV2		(1 << 27)
--	#define SPEAR1340_MIPHY_CLK_REF_DIV4		(2 << 27)
--	#define SPEAR1340_MIPHY_CLK_REF_DIV8		(3 << 27)
--	#define SPEAR1340_MIPHY_PLL_RATIO_TOP(x)	(x << 0)
--	#define SPEAR1340_PCIE_SATA_MIPHY_CFG_SATA \
--			(SPEAR1340_MIPHY_OSC_BYPASS_EXT | \
--			SPEAR1340_MIPHY_CLK_REF_DIV2 | \
--			SPEAR1340_MIPHY_PLL_RATIO_TOP(60))
--	#define SPEAR1340_PCIE_SATA_MIPHY_CFG_SATA_25M_CRYSTAL_CLK \
--			(SPEAR1340_MIPHY_PLL_RATIO_TOP(120))
--	#define SPEAR1340_PCIE_SATA_MIPHY_CFG_PCIE \
--			(SPEAR1340_MIPHY_OSC_BYPASS_EXT | \
--			SPEAR1340_MIPHY_PLL_RATIO_TOP(25))
--
--/* SATA device registration */
--static int sata_miphy_init(struct device *dev, void __iomem *addr)
--{
--	writel(SPEAR1340_SATA_CFG_VAL, SPEAR1340_PCIE_SATA_CFG);
--	writel(SPEAR1340_PCIE_SATA_MIPHY_CFG_SATA_25M_CRYSTAL_CLK,
--			SPEAR1340_PCIE_MIPHY_CFG);
--	/* Switch on sata power domain */
--	writel((readl(SPEAR1340_PCM_CFG) | (0x800)), SPEAR1340_PCM_CFG);
--	msleep(20);
--	/* Disable PCIE SATA Controller reset */
--	writel((readl(SPEAR1340_PERIP1_SW_RST) & (~0x1000)),
--			SPEAR1340_PERIP1_SW_RST);
--	msleep(20);
--
--	return 0;
--}
--
--void sata_miphy_exit(struct device *dev)
--{
--	writel(0, SPEAR1340_PCIE_SATA_CFG);
--	writel(0, SPEAR1340_PCIE_MIPHY_CFG);
--
--	/* Enable PCIE SATA Controller reset */
--	writel((readl(SPEAR1340_PERIP1_SW_RST) | (0x1000)),
--			SPEAR1340_PERIP1_SW_RST);
--	msleep(20);
--	/* Switch off sata power domain */
--	writel((readl(SPEAR1340_PCM_CFG) & (~0x800)), SPEAR1340_PCM_CFG);
--	msleep(20);
--}
--
--int sata_suspend(struct device *dev)
--{
--	if (dev->power.power_state.event == PM_EVENT_FREEZE)
--		return 0;
--
--	sata_miphy_exit(dev);
--
--	return 0;
--}
--
--int sata_resume(struct device *dev)
--{
--	if (dev->power.power_state.event == PM_EVENT_THAW)
--		return 0;
--
--	return sata_miphy_init(dev, NULL);
--}
--
--static struct ahci_platform_data sata_pdata = {
--	.init = sata_miphy_init,
--	.exit = sata_miphy_exit,
--	.suspend = sata_suspend,
--	.resume = sata_resume,
--};
--
--/* Add SPEAr1340 auxdata to pass platform data */
--static struct of_dev_auxdata spear1340_auxdata_lookup[] __initdata = {
--	OF_DEV_AUXDATA("snps,spear-ahci", SPEAR1340_SATA_BASE, NULL,
--			&sata_pdata),
--	{}
--};
- 
- static void __init spear1340_dt_init(void)
- {
--	of_platform_populate(NULL, of_default_bus_match_table,
--			spear1340_auxdata_lookup, NULL);
-+	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
- }
- 
- static const char * const spear1340_dt_board_compat[] = {
-diff --git a/drivers/phy/phy-miphy40lp.c b/drivers/phy/phy-miphy40lp.c
-index 3a9ada1..0ee1972 100644
---- a/drivers/phy/phy-miphy40lp.c
-+++ b/drivers/phy/phy-miphy40lp.c
-@@ -8,8 +8,10 @@
-  * it under the terms of the GNU General Public License version 2 as
-  * published by the Free Software Foundation.
-  *
-+ * 04/02/2014: Adding support of SATA mode for SPEAr1340.
-  */
- 
-+#include <linux/bitops.h>
- #include <linux/delay.h>
- #include <linux/dma-mapping.h>
- #include <linux/kernel.h>
-@@ -19,6 +21,60 @@
- #include <linux/phy/phy.h>
- #include <linux/regmap.h>
- 
-+/* SPEAr1340 Registers */
-+/* Power Management Registers */
-+#define SPEAR1340_PCM_CFG			0x100
-+	#define SPEAR1340_PCM_CFG_SATA_POWER_EN		BIT(11)
-+#define SPEAR1340_PCM_WKUP_CFG			0x104
-+#define SPEAR1340_SWITCH_CTR			0x108
-+
-+#define SPEAR1340_PERIP1_SW_RST			0x318
-+	#define SPEAR1340_PERIP1_SW_RSATA		BIT(12)
-+#define SPEAR1340_PERIP2_SW_RST			0x31C
-+#define SPEAR1340_PERIP3_SW_RST			0x320
-+
-+/* PCIE - SATA configuration registers */
-+#define SPEAR1340_PCIE_SATA_CFG			0x424
-+	/* PCIE CFG MASks */
-+	#define SPEAR1340_PCIE_CFG_DEVICE_PRESENT	BIT(11)
-+	#define SPEAR1340_PCIE_CFG_POWERUP_RESET	BIT(10)
-+	#define SPEAR1340_PCIE_CFG_CORE_CLK_EN		BIT(9)
-+	#define SPEAR1340_PCIE_CFG_AUX_CLK_EN		BIT(8)
-+	#define SPEAR1340_SATA_CFG_TX_CLK_EN		BIT(4)
-+	#define SPEAR1340_SATA_CFG_RX_CLK_EN		BIT(3)
-+	#define SPEAR1340_SATA_CFG_POWERUP_RESET	BIT(2)
-+	#define SPEAR1340_SATA_CFG_PM_CLK_EN		BIT(1)
-+	#define SPEAR1340_PCIE_SATA_SEL_PCIE		(0)
-+	#define SPEAR1340_PCIE_SATA_SEL_SATA		(1)
-+	#define SPEAR1340_PCIE_SATA_CFG_MASK		0xF1F
-+	#define SPEAR1340_PCIE_CFG_VAL	(SPEAR1340_PCIE_SATA_SEL_PCIE | \
-+			SPEAR1340_PCIE_CFG_AUX_CLK_EN | \
-+			SPEAR1340_PCIE_CFG_CORE_CLK_EN | \
-+			SPEAR1340_PCIE_CFG_POWERUP_RESET | \
-+			SPEAR1340_PCIE_CFG_DEVICE_PRESENT)
-+	#define SPEAR1340_SATA_CFG_VAL	(SPEAR1340_PCIE_SATA_SEL_SATA | \
-+			SPEAR1340_SATA_CFG_PM_CLK_EN | \
-+			SPEAR1340_SATA_CFG_POWERUP_RESET | \
-+			SPEAR1340_SATA_CFG_RX_CLK_EN | \
-+			SPEAR1340_SATA_CFG_TX_CLK_EN)
-+
-+#define SPEAR1340_PCIE_MIPHY_CFG		0x428
-+	#define SPEAR1340_MIPHY_OSC_BYPASS_EXT		BIT(31)
-+	#define SPEAR1340_MIPHY_CLK_REF_DIV2		BIT(27)
-+	#define SPEAR1340_MIPHY_CLK_REF_DIV4		(2 << 27)
-+	#define SPEAR1340_MIPHY_CLK_REF_DIV8		(3 << 27)
-+	#define SPEAR1340_MIPHY_PLL_RATIO_TOP(x)	(x << 0)
-+	#define SPEAR1340_PCIE_MIPHY_CFG_MASK		0xF80000FF
-+	#define SPEAR1340_PCIE_SATA_MIPHY_CFG_SATA \
-+			(SPEAR1340_MIPHY_OSC_BYPASS_EXT | \
-+			SPEAR1340_MIPHY_CLK_REF_DIV2 | \
-+			SPEAR1340_MIPHY_PLL_RATIO_TOP(60))
-+	#define SPEAR1340_PCIE_SATA_MIPHY_CFG_SATA_25M_CRYSTAL_CLK \
-+			(SPEAR1340_MIPHY_PLL_RATIO_TOP(120))
-+	#define SPEAR1340_PCIE_SATA_MIPHY_CFG_PCIE \
-+			(SPEAR1340_MIPHY_OSC_BYPASS_EXT | \
-+			SPEAR1340_MIPHY_PLL_RATIO_TOP(25))
-+
- enum phy_mode {
- 	SATA,
- 	PCIE,
-@@ -50,6 +106,93 @@ struct miphy40lp_priv {
- 	struct miphy40lp_plat_ops	*plat_ops;
- };
- 
-+static int miphy40lp_spear1340_sata_init(struct miphy40lp_priv *priv)
-+{
-+	regmap_update_bits(priv->misc, SPEAR1340_PCIE_SATA_CFG,
-+			SPEAR1340_PCIE_SATA_CFG_MASK, SPEAR1340_SATA_CFG_VAL);
-+	regmap_update_bits(priv->misc, SPEAR1340_PCIE_MIPHY_CFG,
-+			SPEAR1340_PCIE_MIPHY_CFG_MASK,
-+			SPEAR1340_PCIE_SATA_MIPHY_CFG_SATA_25M_CRYSTAL_CLK);
-+	/* Switch on sata power domain */
-+	regmap_update_bits(priv->misc, SPEAR1340_PCM_CFG,
-+			SPEAR1340_PCM_CFG_SATA_POWER_EN,
-+			SPEAR1340_PCM_CFG_SATA_POWER_EN);
-+	msleep(20);
-+	/* Disable PCIE SATA Controller reset */
-+	regmap_update_bits(priv->misc, SPEAR1340_PERIP1_SW_RST,
-+			SPEAR1340_PERIP1_SW_RSATA, 0);
-+	msleep(20);
-+
-+	return 0;
-+}
-+
-+static int miphy40lp_spear1340_sata_exit(struct miphy40lp_priv *priv)
-+{
-+	regmap_update_bits(priv->misc, SPEAR1340_PCIE_SATA_CFG,
-+			SPEAR1340_PCIE_SATA_CFG_MASK, 0);
-+	regmap_update_bits(priv->misc, SPEAR1340_PCIE_MIPHY_CFG,
-+			SPEAR1340_PCIE_MIPHY_CFG_MASK, 0);
-+
-+	/* Enable PCIE SATA Controller reset */
-+	regmap_update_bits(priv->misc, SPEAR1340_PERIP1_SW_RST,
-+			SPEAR1340_PERIP1_SW_RSATA,
-+			SPEAR1340_PERIP1_SW_RSATA);
-+	msleep(20);
-+	/* Switch off sata power domain */
-+	regmap_update_bits(priv->misc, SPEAR1340_PCM_CFG,
-+			SPEAR1340_PCM_CFG_SATA_POWER_EN, 0);
-+	msleep(20);
-+
-+	return 0;
-+}
-+
-+static int miphy40lp_spear1340_init(struct miphy40lp_priv *priv)
-+{
-+	int ret = 0;
-+
-+	if (priv->mode == SATA)
-+		ret = miphy40lp_spear1340_sata_init(priv);
-+
-+	return ret;
-+}
-+
-+static int miphy40lp_spear1340_exit(struct miphy40lp_priv *priv)
-+{
-+	int ret = 0;
-+
-+	if (priv->mode == SATA)
-+		ret = miphy40lp_spear1340_sata_exit(priv);
-+
-+	return ret;
-+}
-+
-+static int miphy40lp_spear1340_suspend(struct miphy40lp_priv *priv)
-+{
-+	int ret = 0;
-+
-+	if (priv->mode == SATA)
-+		ret = miphy40lp_spear1340_sata_exit(priv);
-+
-+	return ret;
-+}
-+
-+static int miphy40lp_spear1340_resume(struct miphy40lp_priv *priv)
-+{
-+	int ret = 0;
-+
-+	if (priv->mode == SATA)
-+		ret = miphy40lp_spear1340_sata_init(priv);
-+
-+	return ret;
-+}
-+
-+static struct miphy40lp_plat_ops spear1340_phy_ops = {
-+	.plat_init = miphy40lp_spear1340_init,
-+	.plat_exit = miphy40lp_spear1340_exit,
-+	.plat_suspend = miphy40lp_spear1340_suspend,
-+	.plat_resume = miphy40lp_spear1340_resume,
-+};
-+
- static int miphy40lp_init(struct phy *phy)
- {
- 	struct miphy40lp_priv *priv = phy_get_drvdata(phy);
-@@ -100,6 +243,7 @@ static int miphy40lp_power_on(struct phy *phy)
- 
- static const struct of_device_id miphy40lp_of_match[] = {
- 	{ .compatible = "st,miphy40lp-phy", .data = NULL },
-+	{ .compatible = "st,spear1340-miphy", .data = &spear1340_phy_ops },
- 	{ },
- };
- MODULE_DEVICE_TABLE(of, miphy40lp_of_match);
--- 
-1.8.1.2
-
+On Mon, Feb 10, 2014 at 7:28 AM, Yijing Wang <wangyijing@huawei.com> wrote:
+> Currently, clocksource_register() and __clocksource_register_scale()
+> functions always return 0, it's pointless, make functions void.
+> And remove the dead code that check the clocksource_register_hz()
+> return value.
+>
+> Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+> Acked-by: Tony Prisk <linux@prisktech.co.nz>
+> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+> ---
+>  arch/arm/mach-davinci/time.c                    |    5 ++---
+>  arch/arm/mach-msm/timer.c                       |    4 +---
+>  arch/arm/mach-omap2/timer.c                     |    8 +++-----
+>  arch/avr32/kernel/time.c                        |    4 +---
+>  arch/blackfin/kernel/time-ts.c                  |    6 ++----
+>  arch/microblaze/kernel/timer.c                  |    3 +--
+>  arch/mips/jz4740/time.c                         |    6 +-----
+>  arch/mips/loongson/common/cs5536/cs5536_mfgpt.c |    3 ++-
+>  arch/openrisc/kernel/time.c                     |    3 +--
+>  arch/powerpc/kernel/time.c                      |    6 +-----
+>  arch/um/kernel/time.c                           |    6 +-----
+>  arch/x86/platform/uv/uv_time.c                  |   14 ++++++--------
+>  drivers/clocksource/acpi_pm.c                   |    3 ++-
+>  drivers/clocksource/cadence_ttc_timer.c         |    6 +-----
+>  drivers/clocksource/exynos_mct.c                |    4 +---
+>  drivers/clocksource/i8253.c                     |    3 ++-
+>  drivers/clocksource/mmio.c                      |    3 ++-
+>  drivers/clocksource/samsung_pwm_timer.c         |    5 +----
+>  drivers/clocksource/scx200_hrt.c                |    3 ++-
+>  drivers/clocksource/tcb_clksrc.c                |    8 +-------
+>  drivers/clocksource/timer-marco.c               |    2 +-
+>  drivers/clocksource/timer-prima2.c              |    2 +-
+>  drivers/clocksource/vt8500_timer.c              |    4 +---
+>  include/linux/clocksource.h                     |    8 ++++----
+>  kernel/time/clocksource.c                       |    6 ++----
+>  kernel/time/jiffies.c                           |    3 ++-
+>  26 files changed, 45 insertions(+), 83 deletions(-)
+>
+> diff --git a/arch/arm/mach-davinci/time.c b/arch/arm/mach-davinci/time.c
+> index 24ad30f..92b772f 100644
+> --- a/arch/arm/mach-davinci/time.c
+> +++ b/arch/arm/mach-davinci/time.c
+> @@ -387,9 +387,8 @@ void __init davinci_timer_init(void)
+>
+>         /* setup clocksource */
+>         clocksource_davinci.name = id_to_name[clocksource_id];
+> -       if (clocksource_register_hz(&clocksource_davinci,
+> -                                   davinci_clock_tick_rate))
+> -               printk(err, clocksource_davinci.name);
+> +       clocksource_register_hz(&clocksource_davinci,
+> +                                   davinci_clock_tick_rate);
+>
+>         sched_clock_register(davinci_read_sched_clock, 32,
+>                           davinci_clock_tick_rate);
+> diff --git a/arch/arm/mach-msm/timer.c b/arch/arm/mach-msm/timer.c
+> index fd16449..ab485bc 100644
+> --- a/arch/arm/mach-msm/timer.c
+> +++ b/arch/arm/mach-msm/timer.c
+> @@ -226,9 +226,7 @@ static void __init msm_timer_init(u32 dgt_hz, int sched_bits, int irq,
+>
+>  err:
+>         writel_relaxed(TIMER_ENABLE_EN, source_base + TIMER_ENABLE);
+> -       res = clocksource_register_hz(cs, dgt_hz);
+> -       if (res)
+> -               pr_err("clocksource_register failed\n");
+> +       clocksource_register_hz(cs, dgt_hz);
+>         sched_clock_register(msm_sched_clock_read, sched_bits, dgt_hz);
+>  }
+>
+> diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
+> index 74044aa..032e1da 100644
+> --- a/arch/arm/mach-omap2/timer.c
+> +++ b/arch/arm/mach-omap2/timer.c
+> @@ -473,11 +473,9 @@ static void __init omap2_gptimer_clocksource_init(int gptimer_id,
+>                                    OMAP_TIMER_NONPOSTED);
+>         sched_clock_register(dmtimer_read_sched_clock, 32, clksrc.rate);
+>
+> -       if (clocksource_register_hz(&clocksource_gpt, clksrc.rate))
+> -               pr_err("Could not register clocksource %s\n",
+> -                       clocksource_gpt.name);
+> -       else
+> -               pr_info("OMAP clocksource: %s at %lu Hz\n",
+> +       clocksource_register_hz(&clocksource_gpt, clksrc.rate);
+> +
+> +       pr_info("OMAP clocksource: %s at %lu Hz\n",
+>                         clocksource_gpt.name, clksrc.rate);
+>  }
+>
+> diff --git a/arch/avr32/kernel/time.c b/arch/avr32/kernel/time.c
+> index d0f771b..51b4a66 100644
+> --- a/arch/avr32/kernel/time.c
+> +++ b/arch/avr32/kernel/time.c
+> @@ -134,9 +134,7 @@ void __init time_init(void)
+>
+>         /* figure rate for counter */
+>         counter_hz = clk_get_rate(boot_cpu_data.clk);
+> -       ret = clocksource_register_hz(&counter, counter_hz);
+> -       if (ret)
+> -               pr_debug("timer: could not register clocksource: %d\n", ret);
+> +       clocksource_register_hz(&counter, counter_hz);
+>
+>         /* setup COMPARE clockevent */
+>         comparator.mult = div_sc(counter_hz, NSEC_PER_SEC, comparator.shift);
+> diff --git a/arch/blackfin/kernel/time-ts.c b/arch/blackfin/kernel/time-ts.c
+> index cb0a484..df3bb08 100644
+> --- a/arch/blackfin/kernel/time-ts.c
+> +++ b/arch/blackfin/kernel/time-ts.c
+> @@ -51,8 +51,7 @@ static inline unsigned long long bfin_cs_cycles_sched_clock(void)
+>
+>  static int __init bfin_cs_cycles_init(void)
+>  {
+> -       if (clocksource_register_hz(&bfin_cs_cycles, get_cclk()))
+> -               panic("failed to register clocksource");
+> +       clocksource_register_hz(&bfin_cs_cycles, get_cclk());
+>
+>         return 0;
+>  }
+> @@ -103,8 +102,7 @@ static int __init bfin_cs_gptimer0_init(void)
+>  {
+>         setup_gptimer0();
+>
+> -       if (clocksource_register_hz(&bfin_cs_gptimer0, get_sclk()))
+> -               panic("failed to register clocksource");
+> +       clocksource_register_hz(&bfin_cs_gptimer0, get_sclk());
+>
+>         return 0;
+>  }
+> diff --git a/arch/microblaze/kernel/timer.c b/arch/microblaze/kernel/timer.c
+> index fb0c614..5b8ec44 100644
+> --- a/arch/microblaze/kernel/timer.c
+> +++ b/arch/microblaze/kernel/timer.c
+> @@ -213,8 +213,7 @@ static struct clocksource clocksource_microblaze = {
+>
+>  static int __init xilinx_clocksource_init(void)
+>  {
+> -       if (clocksource_register_hz(&clocksource_microblaze, timer_clock_freq))
+> -               panic("failed to register clocksource");
+> +       clocksource_register_hz(&clocksource_microblaze, timer_clock_freq);
+>
+>         /* stop timer1 */
+>         out_be32(timer_baseaddr + TCSR1,
+> diff --git a/arch/mips/jz4740/time.c b/arch/mips/jz4740/time.c
+> index 5e430ce..041cdff 100644
+> --- a/arch/mips/jz4740/time.c
+> +++ b/arch/mips/jz4740/time.c
+> @@ -105,7 +105,6 @@ static struct irqaction timer_irqaction = {
+>
+>  void __init plat_time_init(void)
+>  {
+> -       int ret;
+>         uint32_t clk_rate;
+>         uint16_t ctrl;
+>
+> @@ -121,10 +120,7 @@ void __init plat_time_init(void)
+>
+>         clockevents_register_device(&jz4740_clockevent);
+>
+> -       ret = clocksource_register_hz(&jz4740_clocksource, clk_rate);
+> -
+> -       if (ret)
+> -               printk(KERN_ERR "Failed to register clocksource: %d\n", ret);
+> +       clocksource_register_hz(&jz4740_clocksource, clk_rate);
+>
+>         setup_irq(JZ4740_IRQ_TCU0, &timer_irqaction);
+>
+> diff --git a/arch/mips/loongson/common/cs5536/cs5536_mfgpt.c b/arch/mips/loongson/common/cs5536/cs5536_mfgpt.c
+> index c639b9d..9fa6d99 100644
+> --- a/arch/mips/loongson/common/cs5536/cs5536_mfgpt.c
+> +++ b/arch/mips/loongson/common/cs5536/cs5536_mfgpt.c
+> @@ -208,7 +208,8 @@ int __init init_mfgpt_clocksource(void)
+>         if (num_possible_cpus() > 1)    /* MFGPT does not scale! */
+>                 return 0;
+>
+> -       return clocksource_register_hz(&clocksource_mfgpt, MFGPT_TICK_RATE);
+> +       clocksource_register_hz(&clocksource_mfgpt, MFGPT_TICK_RATE);
+> +       return 0;
+>  }
+>
+>  arch_initcall(init_mfgpt_clocksource);
+> diff --git a/arch/openrisc/kernel/time.c b/arch/openrisc/kernel/time.c
+> index 7c52e94..3f789aa 100644
+> --- a/arch/openrisc/kernel/time.c
+> +++ b/arch/openrisc/kernel/time.c
+> @@ -156,8 +156,7 @@ static struct clocksource openrisc_timer = {
+>
+>  static int __init openrisc_timer_init(void)
+>  {
+> -       if (clocksource_register_hz(&openrisc_timer, cpuinfo.clock_frequency))
+> -               panic("failed to register clocksource");
+> +       clocksource_register_hz(&openrisc_timer, cpuinfo.clock_frequency);
+>
+>         /* Enable the incrementer: 'continuous' mode with interrupt disabled */
+>         mtspr(SPR_TTMR, SPR_TTMR_CR);
+> diff --git a/arch/powerpc/kernel/time.c b/arch/powerpc/kernel/time.c
+> index b3dab20..2e66b6f 100644
+> --- a/arch/powerpc/kernel/time.c
+> +++ b/arch/powerpc/kernel/time.c
+> @@ -792,11 +792,7 @@ static void __init clocksource_init(void)
+>         else
+>                 clock = &clocksource_timebase;
+>
+> -       if (clocksource_register_hz(clock, tb_ticks_per_sec)) {
+> -               printk(KERN_ERR "clocksource: %s is already registered\n",
+> -                      clock->name);
+> -               return;
+> -       }
+> +       clocksource_register_hz(clock, tb_ticks_per_sec);
+>
+>         printk(KERN_INFO "clocksource: %s mult[%x] shift[%d] registered\n",
+>                clock->name, clock->mult, clock->shift);
+> diff --git a/arch/um/kernel/time.c b/arch/um/kernel/time.c
+> index 117568d..2034b58 100644
+> --- a/arch/um/kernel/time.c
+> +++ b/arch/um/kernel/time.c
+> @@ -92,11 +92,7 @@ static void __init setup_itimer(void)
+>                 clockevent_delta2ns(60 * HZ, &itimer_clockevent);
+>         itimer_clockevent.min_delta_ns =
+>                 clockevent_delta2ns(1, &itimer_clockevent);
+> -       err = clocksource_register_hz(&itimer_clocksource, USEC_PER_SEC);
+> -       if (err) {
+> -               printk(KERN_ERR "clocksource_register_hz returned %d\n", err);
+> -               return;
+> -       }
+> +       clocksource_register_hz(&itimer_clocksource, USEC_PER_SEC);
+>         clockevents_register_device(&itimer_clockevent);
+>  }
+>
+> diff --git a/arch/x86/platform/uv/uv_time.c b/arch/x86/platform/uv/uv_time.c
+> index 5c86786..b963774 100644
+> --- a/arch/x86/platform/uv/uv_time.c
+> +++ b/arch/x86/platform/uv/uv_time.c
+> @@ -379,15 +379,13 @@ static __init int uv_rtc_setup_clock(void)
+>         if (!is_uv_system())
+>                 return -ENODEV;
+>
+> -       rc = clocksource_register_hz(&clocksource_uv, sn_rtc_cycles_per_second);
+> -       if (rc)
+> -               printk(KERN_INFO "UV RTC clocksource failed rc %d\n", rc);
+> -       else
+> -               printk(KERN_INFO "UV RTC clocksource registered freq %lu MHz\n",
+> -                       sn_rtc_cycles_per_second/(unsigned long)1E6);
+> +       clocksource_register_hz(&clocksource_uv, sn_rtc_cycles_per_second);
+> +
+> +       pr_info("UV RTC clocksource registered freq %lu MHz\n",
+> +               sn_rtc_cycles_per_second/(unsigned long)1E6);
+>
+> -       if (rc || !uv_rtc_evt_enable || x86_platform_ipi_callback)
+> -               return rc;
+> +       if (!uv_rtc_evt_enable || x86_platform_ipi_callback)
+> +               return 0;
+>
+>         /* Setup and register clockevents */
+>         rc = uv_rtc_allocate_timers();
+> diff --git a/drivers/clocksource/acpi_pm.c b/drivers/clocksource/acpi_pm.c
+> index 6eab889..ab1dc63 100644
+> --- a/drivers/clocksource/acpi_pm.c
+> +++ b/drivers/clocksource/acpi_pm.c
+> @@ -218,8 +218,9 @@ static int __init init_acpi_pm_clocksource(void)
+>                 return -ENODEV;
+>         }
+>
+> -       return clocksource_register_hz(&clocksource_acpi_pm,
+> +       clocksource_register_hz(&clocksource_acpi_pm,
+>                                                 PMTMR_TICKS_PER_SEC);
+> +       return 0;
+>  }
+>
+>  /* We use fs_initcall because we want the PCI fixups to have run
+> diff --git a/drivers/clocksource/cadence_ttc_timer.c b/drivers/clocksource/cadence_ttc_timer.c
+> index 63f176d..b9b56ed 100644
+> --- a/drivers/clocksource/cadence_ttc_timer.c
+> +++ b/drivers/clocksource/cadence_ttc_timer.c
+> @@ -301,11 +301,7 @@ static void __init ttc_setup_clocksource(struct clk *clk, void __iomem *base)
+>         __raw_writel(CNT_CNTRL_RESET,
+>                      ttccs->ttc.base_addr + TTC_CNT_CNTRL_OFFSET);
+>
+> -       err = clocksource_register_hz(&ttccs->cs, ttccs->ttc.freq / PRESCALE);
+> -       if (WARN_ON(err)) {
+> -               kfree(ttccs);
+> -               return;
+> -       }
+> +       clocksource_register_hz(&ttccs->cs, ttccs->ttc.freq / PRESCALE);
+>
+>         ttc_sched_clock_val_reg = base + TTC_COUNT_VAL_OFFSET;
+>         sched_clock_register(ttc_sched_clock_read, 16, ttccs->ttc.freq / PRESCALE);
+> diff --git a/drivers/clocksource/exynos_mct.c b/drivers/clocksource/exynos_mct.c
+> index 48f76bc..fcb9454 100644
+> --- a/drivers/clocksource/exynos_mct.c
+> +++ b/drivers/clocksource/exynos_mct.c
+> @@ -197,9 +197,7 @@ struct clocksource mct_frc = {
+>  static void __init exynos4_clocksource_init(void)
+>  {
+>         exynos4_mct_frc_start(0, 0);
+> -
+> -       if (clocksource_register_hz(&mct_frc, clk_rate))
+> -               panic("%s: can't register clocksource\n", mct_frc.name);
+> +       clocksource_register_hz(&mct_frc, clk_rate);
+>  }
+>
+>  static void exynos4_mct_comp0_stop(void)
+> diff --git a/drivers/clocksource/i8253.c b/drivers/clocksource/i8253.c
+> index 14ee3ef..9c45f0a 100644
+> --- a/drivers/clocksource/i8253.c
+> +++ b/drivers/clocksource/i8253.c
+> @@ -95,7 +95,8 @@ static struct clocksource i8253_cs = {
+>
+>  int __init clocksource_i8253_init(void)
+>  {
+> -       return clocksource_register_hz(&i8253_cs, PIT_TICK_RATE);
+> +       clocksource_register_hz(&i8253_cs, PIT_TICK_RATE);
+> +       return 0;
+>  }
+>  #endif
+>
+> diff --git a/drivers/clocksource/mmio.c b/drivers/clocksource/mmio.c
+> index c0e2512..6e0b530 100644
+> --- a/drivers/clocksource/mmio.c
+> +++ b/drivers/clocksource/mmio.c
+> @@ -69,5 +69,6 @@ int __init clocksource_mmio_init(void __iomem *base, const char *name,
+>         cs->clksrc.mask = CLOCKSOURCE_MASK(bits);
+>         cs->clksrc.flags = CLOCK_SOURCE_IS_CONTINUOUS;
+>
+> -       return clocksource_register_hz(&cs->clksrc, hz);
+> +       clocksource_register_hz(&cs->clksrc, hz);
+> +       return 0;
+>  }
+> diff --git a/drivers/clocksource/samsung_pwm_timer.c b/drivers/clocksource/samsung_pwm_timer.c
+> index 5645cfc..c59292f 100644
+> --- a/drivers/clocksource/samsung_pwm_timer.c
+> +++ b/drivers/clocksource/samsung_pwm_timer.c
+> @@ -340,7 +340,6 @@ static void __init samsung_clocksource_init(void)
+>  {
+>         unsigned long pclk;
+>         unsigned long clock_rate;
+> -       int ret;
+>
+>         pclk = clk_get_rate(pwm.timerclk);
+>
+> @@ -361,9 +360,7 @@ static void __init samsung_clocksource_init(void)
+>                                                 pwm.variant.bits, clock_rate);
+>
+>         samsung_clocksource.mask = CLOCKSOURCE_MASK(pwm.variant.bits);
+> -       ret = clocksource_register_hz(&samsung_clocksource, clock_rate);
+> -       if (ret)
+> -               panic("samsung_clocksource_timer: can't register clocksource\n");
+> +       clocksource_register_hz(&samsung_clocksource, clock_rate);
+>  }
+>
+>  static void __init samsung_timer_resources(void)
+> diff --git a/drivers/clocksource/scx200_hrt.c b/drivers/clocksource/scx200_hrt.c
+> index 64f9e82..57bdc04 100644
+> --- a/drivers/clocksource/scx200_hrt.c
+> +++ b/drivers/clocksource/scx200_hrt.c
+> @@ -83,7 +83,8 @@ static int __init init_hrt_clocksource(void)
+>
+>         pr_info("enabling scx200 high-res timer (%s MHz +%d ppm)\n", mhz27 ? "27":"1", ppm);
+>
+> -       return clocksource_register_hz(&cs_hrt, freq);
+> +       clocksource_register_hz(&cs_hrt, freq);
+> +       return 0;
+>  }
+>
+>  module_init(init_hrt_clocksource);
+> diff --git a/drivers/clocksource/tcb_clksrc.c b/drivers/clocksource/tcb_clksrc.c
+> index 00fdd11..805245d 100644
+> --- a/drivers/clocksource/tcb_clksrc.c
+> +++ b/drivers/clocksource/tcb_clksrc.c
+> @@ -340,9 +340,7 @@ static int __init tcb_clksrc_init(void)
+>         }
+>
+>         /* and away we go! */
+> -       ret = clocksource_register_hz(&clksrc, divided_rate);
+> -       if (ret)
+> -               goto err_disable_t1;
+> +       clocksource_register_hz(&clksrc, divided_rate);
+>
+>         /* channel 2:  periodic and oneshot timer support */
+>         ret = setup_clkevents(tc, clk32k_divisor_idx);
+> @@ -354,10 +352,6 @@ static int __init tcb_clksrc_init(void)
+>  err_unregister_clksrc:
+>         clocksource_unregister(&clksrc);
+>
+> -err_disable_t1:
+> -       if (!tc->tcb_config || tc->tcb_config->counter_width != 32)
+> -               clk_disable_unprepare(tc->clk[1]);
+> -
+>  err_disable_t0:
+>         clk_disable_unprepare(t0_clk);
+>
+> diff --git a/drivers/clocksource/timer-marco.c b/drivers/clocksource/timer-marco.c
+> index 09a17d9..ae78ce0 100644
+> --- a/drivers/clocksource/timer-marco.c
+> +++ b/drivers/clocksource/timer-marco.c
+> @@ -283,7 +283,7 @@ static void __init sirfsoc_marco_timer_init(void)
+>         /* Clear all interrupts */
+>         writel_relaxed(0xFFFF, sirfsoc_timer_base + SIRFSOC_TIMER_INTR_STATUS);
+>
+> -       BUG_ON(clocksource_register_hz(&sirfsoc_clocksource, CLOCK_TICK_RATE));
+> +       clocksource_register_hz(&sirfsoc_clocksource, CLOCK_TICK_RATE);
+>
+>         sirfsoc_clockevent_init();
+>  }
+> diff --git a/drivers/clocksource/timer-prima2.c b/drivers/clocksource/timer-prima2.c
+> index 8a492d3..c9cc307 100644
+> --- a/drivers/clocksource/timer-prima2.c
+> +++ b/drivers/clocksource/timer-prima2.c
+> @@ -204,7 +204,7 @@ static void __init sirfsoc_prima2_timer_init(struct device_node *np)
+>         writel_relaxed(0, sirfsoc_timer_base + SIRFSOC_TIMER_COUNTER_HI);
+>         writel_relaxed(BIT(0), sirfsoc_timer_base + SIRFSOC_TIMER_STATUS);
+>
+> -       BUG_ON(clocksource_register_hz(&sirfsoc_clocksource, CLOCK_TICK_RATE));
+> +       clocksource_register_hz(&sirfsoc_clocksource, CLOCK_TICK_RATE);
+>
+>         sched_clock_register(sirfsoc_read_sched_clock, 64, CLOCK_TICK_RATE);
+>
+> diff --git a/drivers/clocksource/vt8500_timer.c b/drivers/clocksource/vt8500_timer.c
+> index 1098ed3..13f5fa4 100644
+> --- a/drivers/clocksource/vt8500_timer.c
+> +++ b/drivers/clocksource/vt8500_timer.c
+> @@ -150,9 +150,7 @@ static void __init vt8500_timer_init(struct device_node *np)
+>         writel(0xf, regbase + TIMER_STATUS_VAL);
+>         writel(~0, regbase + TIMER_MATCH_VAL);
+>
+> -       if (clocksource_register_hz(&clocksource, VT8500_TIMER_HZ))
+> -               pr_err("%s: vt8500_timer_init: clocksource_register failed for %s\n",
+> -                                       __func__, clocksource.name);
+> +       clocksource_register_hz(&clocksource, VT8500_TIMER_HZ);
+>
+>         clockevent.cpumask = cpumask_of(0);
+>
+> diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
+> index 67301a4..5a17c5e 100644
+> --- a/include/linux/clocksource.h
+> +++ b/include/linux/clocksource.h
+> @@ -282,7 +282,7 @@ static inline s64 clocksource_cyc2ns(cycle_t cycles, u32 mult, u32 shift)
+>  }
+>
+>
+> -extern int clocksource_register(struct clocksource*);
+> +extern void clocksource_register(struct clocksource *);
+>  extern int clocksource_unregister(struct clocksource*);
+>  extern void clocksource_touch_watchdog(void);
+>  extern struct clocksource* clocksource_get_next(void);
+> @@ -301,17 +301,17 @@ clocks_calc_mult_shift(u32 *mult, u32 *shift, u32 from, u32 to, u32 minsec);
+>   * Don't call __clocksource_register_scale directly, use
+>   * clocksource_register_hz/khz
+>   */
+> -extern int
+> +extern void
+>  __clocksource_register_scale(struct clocksource *cs, u32 scale, u32 freq);
+>  extern void
+>  __clocksource_updatefreq_scale(struct clocksource *cs, u32 scale, u32 freq);
+>
+> -static inline int clocksource_register_hz(struct clocksource *cs, u32 hz)
+> +static inline void clocksource_register_hz(struct clocksource *cs, u32 hz)
+>  {
+>         return __clocksource_register_scale(cs, 1, hz);
+>  }
+>
+> -static inline int clocksource_register_khz(struct clocksource *cs, u32 khz)
+> +static inline void clocksource_register_khz(struct clocksource *cs, u32 khz)
+>  {
+>         return __clocksource_register_scale(cs, 1000, khz);
+>  }
+> diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
+> index 9951575..686ff72 100644
+> --- a/kernel/time/clocksource.c
+> +++ b/kernel/time/clocksource.c
+> @@ -782,7 +782,7 @@ EXPORT_SYMBOL_GPL(__clocksource_updatefreq_scale);
+>   * This *SHOULD NOT* be called directly! Please use the
+>   * clocksource_register_hz() or clocksource_register_khz helper functions.
+>   */
+> -int __clocksource_register_scale(struct clocksource *cs, u32 scale, u32 freq)
+> +void __clocksource_register_scale(struct clocksource *cs, u32 scale, u32 freq)
+>  {
+>
+>         /* Initialize mult/shift and max_idle_ns */
+> @@ -794,7 +794,6 @@ int __clocksource_register_scale(struct clocksource *cs, u32 scale, u32 freq)
+>         clocksource_enqueue_watchdog(cs);
+>         clocksource_select();
+>         mutex_unlock(&clocksource_mutex);
+> -       return 0;
+>  }
+>  EXPORT_SYMBOL_GPL(__clocksource_register_scale);
+>
+> @@ -804,7 +803,7 @@ EXPORT_SYMBOL_GPL(__clocksource_register_scale);
+>   * @cs:                clocksource to be registered
+>   *
+>   */
+> -int clocksource_register(struct clocksource *cs)
+> +void clocksource_register(struct clocksource *cs)
+>  {
+>         /* calculate max adjustment for given mult/shift */
+>         cs->maxadj = clocksource_max_adjustment(cs);
+> @@ -820,7 +819,6 @@ int clocksource_register(struct clocksource *cs)
+>         clocksource_enqueue_watchdog(cs);
+>         clocksource_select();
+>         mutex_unlock(&clocksource_mutex);
+> -       return 0;
+>  }
+>  EXPORT_SYMBOL(clocksource_register);
+>
+> diff --git a/kernel/time/jiffies.c b/kernel/time/jiffies.c
+> index 7a925ba..ae4c534 100644
+> --- a/kernel/time/jiffies.c
+> +++ b/kernel/time/jiffies.c
+> @@ -88,7 +88,8 @@ EXPORT_SYMBOL(jiffies);
+>
+>  static int __init init_jiffies_clocksource(void)
+>  {
+> -       return clocksource_register(&clocksource_jiffies);
+> +       clocksource_register(&clocksource_jiffies);
+> +       return 0;
+>  }
+>
+>  core_initcall(init_jiffies_clocksource);
+> --
+> 1.7.1
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
