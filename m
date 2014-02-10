@@ -1,56 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753086AbaBJSKc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 13:10:32 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:56230 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752526AbaBJSKb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 13:10:31 -0500
-Date: Mon, 10 Feb 2014 19:10:26 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: linux-kernel@vger.kernel.org, will.deacon@arm.com, dave.martin@arm.com,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 7/7] perf: kill perf_event_context::pmu
-Message-ID: <20140210181026.GD27965@twins.programming.kicks-ass.net>
-References: <1392054264-23570-1-git-send-email-mark.rutland@arm.com>
- <1392054264-23570-8-git-send-email-mark.rutland@arm.com>
+	id S1753321AbaBJSLK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 13:11:10 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:33107 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752369AbaBJSLH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 13:11:07 -0500
+From: Roger Quadros <rogerq@ti.com>
+To: <tony@atomide.com>
+CC: <bcousson@baylibre.com>, <balbi@ti.com>, <nm@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        Roger Quadros <rogerq@ti.com>
+Subject: [PATCH] ARM: dts: OMAP2+: Fix boot with multi_v7_defconfig
+Date: Mon, 10 Feb 2014 20:10:35 +0200
+Message-ID: <1392055835-6494-1-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392054264-23570-8-git-send-email-mark.rutland@arm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 05:44:24PM +0000, Mark Rutland wrote:
-> Currently portions of the perf subsystem assume that a
-> perf_event_context is associated with a single pmu while in reality a
-> single perf_event_context may be shared by a number of pmus, as commit
-> 443772776c69 (perf: Disable all pmus on unthrottling and rescheduling)
-> describes.
-> 
-> This patch removes perf_event_context::pmu, replacing it with a direct
-> pointer to the associated perf_cpu_context and a task_ctx_nr (as all
-> pmus sharing a context have the same task_ctx_nr). This makes the
-> relationship between pmus and perf_event_contexts clearer and allows us
-> to save on some pointer chasing.
-> 
-> This also fixes a potential misuse of ctx->pmu introduced in commit
-> bad7192b842c (perf: Fix PERF_EVENT_IOC_PERIOD to force-reset the
-> period), where ctx->pmu is disabled before modifying state on
-> event->pmu. In this case the two pmus are not guaranteed to be the same.
-> 
-> As perf_pmu_rotate_{start,stop} only really care about the context they
-> are rotating, they are renamed to perf_event_ctx_{start,stop}.
+The OMAP EHCI controller is not compatible with the EHCI
+platform HCD driver so don't claim that we are.
 
-This very much relies on the previous patch where you make pmu_disable
-iterate all the events.
+This fixes boot on OMAP platforms with CONFIG_USB_EHCI_HCD_PLATFORM=y
+e.g. multi_v7_defconfig
 
-We could also change this to keep a pmu list for each context and
-iterate that instead. Given there is indeed a fair limit on different
-PMUs in the system that iteration should be much shorter.
+Reported-by: Nishanth Menon <nm@ti.com>
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+---
+ arch/arm/boot/dts/omap3.dtsi | 2 +-
+ arch/arm/boot/dts/omap4.dtsi | 2 +-
+ arch/arm/boot/dts/omap5.dtsi | 2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
+diff --git a/arch/arm/boot/dts/omap3.dtsi b/arch/arm/boot/dts/omap3.dtsi
+index a5fc83b..6b5dbf8 100644
+--- a/arch/arm/boot/dts/omap3.dtsi
++++ b/arch/arm/boot/dts/omap3.dtsi
+@@ -641,7 +641,7 @@
+ 			};
+ 
+ 			usbhsehci: ehci@48064800 {
+-				compatible = "ti,ehci-omap", "usb-ehci";
++				compatible = "ti,ehci-omap";
+ 				reg = <0x48064800 0x400>;
+ 				interrupt-parent = <&intc>;
+ 				interrupts = <77>;
+diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
+index d3f8a6e..f5d754b 100644
+--- a/arch/arm/boot/dts/omap4.dtsi
++++ b/arch/arm/boot/dts/omap4.dtsi
+@@ -706,7 +706,7 @@
+ 			};
+ 
+ 			usbhsehci: ehci@4a064c00 {
+-				compatible = "ti,ehci-omap", "usb-ehci";
++				compatible = "ti,ehci-omap";
+ 				reg = <0x4a064c00 0x400>;
+ 				interrupt-parent = <&gic>;
+ 				interrupts = <GIC_SPI 77 IRQ_TYPE_LEVEL_HIGH>;
+diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
+index a72813a..42fcffd 100644
+--- a/arch/arm/boot/dts/omap5.dtsi
++++ b/arch/arm/boot/dts/omap5.dtsi
+@@ -784,7 +784,7 @@
+ 			};
+ 
+ 			usbhsehci: ehci@4a064c00 {
+-				compatible = "ti,ehci-omap", "usb-ehci";
++				compatible = "ti,ehci-omap";
+ 				reg = <0x4a064c00 0x400>;
+ 				interrupt-parent = <&gic>;
+ 				interrupts = <GIC_SPI 77 IRQ_TYPE_LEVEL_HIGH>;
+-- 
+1.8.3.2
 
