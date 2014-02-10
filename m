@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752333AbaBJBUT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 20:20:19 -0500
-Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:54086 "EHLO
-	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751996AbaBJBUR (ORCPT
+	id S1752284AbaBJBYT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 20:24:19 -0500
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:33372 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752157AbaBJBYR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 20:20:17 -0500
-Message-ID: <1391995215.14955.10.camel@x220>
-Subject: Re: [PATCH] ARM: multiplatform: remove reference to ARCH_MULTI_V4
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>
-Date: Mon, 10 Feb 2014 02:20:15 +0100
-In-Reply-To: <201307141034.42868.arnd@arndb.de>
-References: <1373746191.1359.37.camel@x61.thuisdomein>
-	 <201307141034.42868.arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 10 Feb 2014 01:20:15.0891 (UTC) FILETIME=[40F76630:01CF25FE]
-X-RcptDomain: vger.kernel.org
+	Sun, 9 Feb 2014 20:24:17 -0500
+MIME-Version: 1.0
+In-Reply-To: <1391994986.18779.169.camel@triegel.csb>
+References: <52F3DA85.1060209@arm.com>
+	<20140206185910.GE27276@mudshark.cambridge.arm.com>
+	<20140206192743.GH4250@linux.vnet.ibm.com>
+	<1391721423.23421.3898.camel@triegel.csb>
+	<20140206221117.GJ4250@linux.vnet.ibm.com>
+	<1391730288.23421.4102.camel@triegel.csb>
+	<20140207042051.GL4250@linux.vnet.ibm.com>
+	<20140207074405.GM5002@laptop.programming.kicks-ass.net>
+	<20140207165028.GO4250@linux.vnet.ibm.com>
+	<20140207165548.GR5976@mudshark.cambridge.arm.com>
+	<20140207180216.GP4250@linux.vnet.ibm.com>
+	<1391992071.18779.99.camel@triegel.csb>
+	<CA+55aFwFVr2KiXX2MObMBGypQk9eabe-93Nhmro=HL1RtC-1jw@mail.gmail.com>
+	<1391994986.18779.169.camel@triegel.csb>
+Date: Sun, 9 Feb 2014 17:24:14 -0800
+X-Google-Sender-Auth: lCK0TBYZGQRfld2L5Hpepwx608I
+Message-ID: <CA+55aFy0SPge-z9TbaLF2yxLffVTviv_WhhbkXsB5mMA9d9iaQ@mail.gmail.com>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Torvald Riegel <triegel@redhat.com>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-07-14 at 10:34 +0200, Arnd Bergmann wrote:
-> On Saturday 13 July 2013, Paul Bolle wrote:
-> > The Kconfig symbol ARCH_MULTI_V4 was removed in commit 24e860fbfd
-> > ("ARM: multiplatform: always pick one CPU type"). Remove the last
-> > reference to it too.
-> > 
-> > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> > ---
-> > 0) Untested.
-> > 
-> > 1) Commit 24e860fbfd is silent on the reason to drop ARCH_MULTI_V4. And
-> > the ARM section of the Kconfig files is rather complicated for people,
-> > like me, that aren't familiar with the way the ARM universe is divided
-> > in architectures, machines, platforms, etc. That makes it hard to say
-> > whether ARCH_MULTI_V4 was dropped on purpose or by accident.
-> 
-> It was dropped on purpose because it is unused in 3.11 but it will
-> be used again in 3.12, so I wouldn't bother with your patch.
-> 
-> Thanks anyway for looking into unused symbols, I think checking for
-> unused code like this is very useful in general.
+On Sun, Feb 9, 2014 at 5:16 PM, Torvald Riegel <triegel@redhat.com> wrote:
+>
+> (a) seems to say that you don't like requiring programmers to mark
+> atomic accesses specially.  Is that the case?
 
-We're now at v3.14-rc1 and ARCH_MULTI_V4 is still unused. Are there still plans to
-use it again?
+In Paul's example, they were marked specially.
 
+And you seemed to argue that Paul's example could possibly return
+anything but 0/0.
 
-Paul Bolle
+If you really think that, I hope to God that you have nothing to do
+with the C standard or any actual compiler I ever use.
 
+Because such a standard or compiler would be shit. It's sadly not too uncommon.
+
+             Linus
