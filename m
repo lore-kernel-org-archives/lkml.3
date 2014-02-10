@@ -1,91 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752684AbaBJOll (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 09:41:41 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:51290 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751791AbaBJOli (ORCPT
+	id S1752721AbaBJOlz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 09:41:55 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:38865 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752074AbaBJOlv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 09:41:38 -0500
-Message-ID: <52F8E4F0.5010903@oracle.com>
-Date: Mon, 10 Feb 2014 08:40:48 -0600
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Mon, 10 Feb 2014 09:41:51 -0500
+Date: Mon, 10 Feb 2014 15:41:48 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 6/8] memcg: get_mem_cgroup_from_mm()
+Message-ID: <20140210144148.GK7117@dhcp22.suse.cz>
+References: <1391792665-21678-1-git-send-email-hannes@cmpxchg.org>
+ <1391792665-21678-7-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-CC: Richard Yao <ryao@gentoo.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Eric Van Hensbergen <ericvh@gmail.com>,
-        Ron Minnich <rminnich@sandia.gov>, Latchesar Ionkov <lucho@ionkov.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        V9FS Develooper Mailing List 
-	<v9fs-developer@lists.sourceforge.net>,
-        Linux Netdev Mailing List <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Matthew Thode <mthode@mthode.org>, Al Viro <viro@ZenIV.linux.org.uk>
-Subject: Re: [PATCH 1/2] mm/vmalloc: export is_vmalloc_or_module_addr
-References: <1391886730-19667-1-git-send-email-ryao@gentoo.org> <1391886730-19667-2-git-send-email-ryao@gentoo.org> <CA+55aFx8TzOnW9xPFA4Ox-yFiSUo=cEqeQUmgw_JWjDNEZep8Q@mail.gmail.com> <20140210121020.GC6732@suse.de>
-In-Reply-To: <20140210121020.GC6732@suse.de>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391792665-21678-7-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/10/2014 06:10 AM, Mel Gorman wrote:
-> On Sat, Feb 08, 2014 at 11:45:53AM -0800, Linus Torvalds wrote:
->> On Sat, Feb 8, 2014 at 11:12 AM, Richard Yao <ryao@gentoo.org> wrote:
->>> 9p-virtio needs is_vmalloc_or_module_addr exported before a patch can be
->>> merged to prevent the virtio zero-copy routines from triggering a
->>> hypervisor page fault when loading kernel modules:
->>>
->>> https://groups.google.com/forum/#!topic/linux.kernel/eRR7AyLE29Y
->>>
->>> Without this export, the kernel build breaks with that patch applied and
->>> CONFIG_NET_9P_VIRTIO=m. With this export in place, all is well.
->>
->> I absolutely *detest* this patch.
->>
->> Not so much because is_vmalloc_or_module_addr() should never be used,
->> but because the particular use in question is pure and utter garbage.
->>
->> There are valid reasons to use "is_vmalloc_or_module_addr()", but
->> those are along the lines of drivers/char/mem.c, which says "return
->> -ENXIO for this crap".
->>
->> And btw, that horrid crap called "kmap_to_page()" needs to die too.
->> When is it *ever* valid to use a kmap'ed page for IO? Here's a clue:
->> never.
->>
->> <SNIP>
->>
->> Those *disgusting* get_kernel_page[s]() functions came with a
->> commentary about "The initial user is expected to be NFS.." and that
->> is still the *only* user. The fact that *everybody* else has been able
->> to avoid that crap should tell us something.
+On Fri 07-02-14 12:04:23, Johannes Weiner wrote:
+> Instead of returning NULL from try_get_mem_cgroup_from_mm() when the
+> mm owner is exiting, just return root_mem_cgroup.  This makes sense
+> for all callsites and gets rid of some of them having to fallback
+> manually.
+
+It makes sense now that css reference counting is basically for free
+so we do not have to prevent reference counting on the root.
+
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+
+Acked-by: Michal Hocko <mhocko@suse.cz>
+> ---
+>  mm/memcontrol.c | 18 ++++--------------
+>  1 file changed, 4 insertions(+), 14 deletions(-)
 > 
-> kmap_to_page, get_kernel_page and the NFS user for it are already scheduled
-> for death. Dave Kleikamp has been working on a series "Issue O_DIRECT aio
-> using bio_vec" that replaces what NFS currently does with something far
-> more sane. The series does not remove the helpers on top, probably because
-> of the 9P use of it, but if that was changed then the helpers would finally
-> die. I'm not sure why Dave's series never got merged so added him to the
-> cc to find out.
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 689fffdee471..37946635655c 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -1071,7 +1071,7 @@ struct mem_cgroup *mem_cgroup_from_task(struct task_struct *p)
+>  	return mem_cgroup_from_css(task_css(p, mem_cgroup_subsys_id));
+>  }
+>  
+> -struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm)
+> +struct mem_cgroup *get_mem_cgroup_from_mm(struct mm_struct *mm)
+>  {
+>  	struct mem_cgroup *memcg = NULL;
+>  
+> @@ -1079,7 +1079,7 @@ struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm)
+>  	do {
+>  		memcg = mem_cgroup_from_task(rcu_dereference(mm->owner));
+>  		if (unlikely(!memcg))
+> -			break;
+> +			memcg = root_mem_cgroup;
+>  	} while (!css_tryget(&memcg->css));
+>  	rcu_read_unlock();
+>  	return memcg;
+> @@ -1475,7 +1475,7 @@ bool task_in_mem_cgroup(struct task_struct *task,
+>  
+>  	p = find_lock_task_mm(task);
+>  	if (p) {
+> -		curr = try_get_mem_cgroup_from_mm(p->mm);
+> +		curr = get_mem_cgroup_from_mm(p->mm);
+>  		task_unlock(p);
+>  	} else {
+>  		/*
+> @@ -1489,8 +1489,6 @@ bool task_in_mem_cgroup(struct task_struct *task,
+>  			css_get(&curr->css);
+>  		rcu_read_unlock();
+>  	}
+> -	if (!curr)
+> -		return false;
+>  	/*
+>  	 * We should check use_hierarchy of "memcg" not "curr". Because checking
+>  	 * use_hierarchy of "curr" here make this function true if hierarchy is
+> @@ -3649,15 +3647,7 @@ __memcg_kmem_newpage_charge(gfp_t gfp, struct mem_cgroup **_memcg, int order)
+>  	if (!current->mm || current->memcg_kmem_skip_account)
+>  		return true;
+>  
+> -	memcg = try_get_mem_cgroup_from_mm(current->mm);
+> -
+> -	/*
+> -	 * very rare case described in mem_cgroup_from_task. Unfortunately there
+> -	 * isn't much we can do without complicating this too much, and it would
+> -	 * be gfp-dependent anyway. Just let it go
+> -	 */
+> -	if (unlikely(!memcg))
+> -		return true;
+> +	memcg = get_mem_cgroup_from_mm(current->mm);
+>  
+>  	if (!memcg_can_account_kmem(memcg)) {
+>  		css_put(&memcg->css);
+> -- 
+> 1.8.5.3
+> 
 
-The patchset I submitted was too ugly to live. Linus and Al Viro both
-had numerous issues with the implementation, but not the overall concept.
-
-Al has the same idea for a io-vector container that can hold either an
-iovec or a kernel vector and is starting to work on his own
-implementation. Once he settles on the particulars of new
-aio_write/aio_read methods, I should be able to get the rest of my
-patchset to fall into line with it.
-
-http://www.spinics.net/lists/linux-fsdevel/msg71938.html
-
-Shaggy
+-- 
+Michal Hocko
+SUSE Labs
