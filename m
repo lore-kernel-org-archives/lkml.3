@@ -1,129 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753867AbaBJNeV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 08:34:21 -0500
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:54195 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753219AbaBJNeC (ORCPT
+	id S1753361AbaBJNfZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 08:35:25 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33400 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753225AbaBJNeK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 08:34:02 -0500
-Message-ID: <52F8D403.3040306@linux.vnet.ibm.com>
-Date: Mon, 10 Feb 2014 18:58:35 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Mon, 10 Feb 2014 08:34:10 -0500
+Date: Mon, 10 Feb 2014 05:33:31 -0800
+From: tip-bot for Oleg Nesterov <tipbot@zytor.com>
+Message-ID: <tip-47be1c1a0e188232b5e5962917b21750053cd3f8@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, sasha.levin@oracle.com, hpa@zytor.com,
+        mingo@kernel.org, stern@rowland.harvard.edu,
+        torvalds@linux-foundation.org, peterz@infradead.org, davej@redhat.com,
+        gregkh@linuxfoundation.org, paulmck@linux.vnet.ibm.com,
+        rostedt@goodmis.org, tglx@linutronix.de, oleg@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, sasha.levin@oracle.com,
+        linux-kernel@vger.kernel.org, stern@rowland.harvard.edu,
+        torvalds@linux-foundation.org, peterz@infradead.org, davej@redhat.com,
+        paulmck@linux.vnet.ibm.com, gregkh@linuxfoundation.org,
+        rostedt@goodmis.org, oleg@redhat.com, tglx@linutronix.de
+In-Reply-To: <20140120182016.GA26512@redhat.com>
+References: <20140120182016.GA26512@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/locking] lockdep: Change lockdep_set_novalidate_class()
+  to use _and_name
+Git-Commit-ID: 47be1c1a0e188232b5e5962917b21750053cd3f8
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: ego@linux.vnet.ibm.com
-CC: Oleg Nesterov <oleg@redhat.com>, paulus@samba.org, rusty@rustcorp.com.au,
-        peterz@infradead.org, tglx@linutronix.de, akpm@linux-foundation.org,
-        mingo@kernel.org, paulmck@linux.vnet.ibm.com, tj@kernel.org,
-        walken@google.com, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, Toshi Kani <toshi.kani@hp.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH 01/51] CPU hotplug: Provide lockless versions of	callback
- registration functions
-References: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com> <20140205220447.19080.9460.stgit@srivatsabhat.in.ibm.com> <20140206184103.GA31410@redhat.com> <20140207191125.GA8098@in.ibm.com> <52F898CB.6030900@linux.vnet.ibm.com> <20140210105130.GA14693@in.ibm.com> <52F8B3C8.4080802@linux.vnet.ibm.com> <20140210120526.GA16263@in.ibm.com>
-In-Reply-To: <20140210120526.GA16263@in.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021013-5816-0000-0000-00000C2F48BD
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 10 Feb 2014 05:33:37 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/10/2014 05:35 PM, Gautham R Shenoy wrote:
-> On Mon, Feb 10, 2014 at 04:41:04PM +0530, Srivatsa S. Bhat wrote:
->>> ---
->> [...]
->>> +/* Lockdep annotations for get/put_online_cpus() and cpu_hotplug_begin/end() */
->>> +#define cpuhp_lock_acquire_read() lock_map_acquire_read(&cpu_hotplug.dep_map)
->>> +#define cpuhp_lock_acquire()      lock_map_acquire(&cpu_hotplug.dep_map)
->>> +#define cpuhp_lock_release()      lock_map_release(&cpu_hotplug.dep_map)
->>> +
->>>  void get_online_cpus(void)
->>>  {
->>>  	might_sleep();
->>>  	if (cpu_hotplug.active_writer == current)
->>>  		return;
->>> +	cpuhp_lock_acquire_read();
->>>  	mutex_lock(&cpu_hotplug.lock);
->>>  	cpu_hotplug.refcount++;
->>>  	mutex_unlock(&cpu_hotplug.lock);
->>> @@ -87,6 +101,7 @@ void put_online_cpus(void)
->>>  	if (!--cpu_hotplug.refcount && unlikely(cpu_hotplug.active_writer))
->>>  		wake_up_process(cpu_hotplug.active_writer);
->>>  	mutex_unlock(&cpu_hotplug.lock);
->>> +	cpuhp_lock_release();
->>>
->>>  }
->>>  EXPORT_SYMBOL_GPL(put_online_cpus);
->>> @@ -117,6 +132,7 @@ void cpu_hotplug_begin(void)
->>>  {
->>>  	cpu_hotplug.active_writer = current;
->>>
->>> +	cpuhp_lock_acquire();
->>
->> Shouldn't we move this to _after_ the for-loop?
-> 
-> No if we move this to after the for-loop, we won't be able to catch
-> the ABBA dependency that you had mentioned earlier.
-> 
-> Consider the case
-> 
-> Thread1:                                              Thread 2:
-> ------------------------------------------------------------------------
-> get_online_cpus()
-> // lockdep knows about this.
->                                                cpu_maps_update_begin()
->                                                //lockdep knows about this.
-> 
-> register_cpu_notifier()
-> |
-> |-> cpu_maps_update_begin()
->     //lockdep knows about this. 
-> 
-> 
->                                               cpu_hotplug_begin()
->                                               |  
->                                               |-->for(;;) {
->                                                       Wait for all the
->                                                       readers to exit. 
->                                      
->                                                       This will never
->                                                       happen now and
->                                                       we're stuck here
->                                                       forever without
->                                                       telling anyone why! 
->                                                  }
-> 
-> 					         cpuhp_lock_acquire();
->                                                                         
+Commit-ID:  47be1c1a0e188232b5e5962917b21750053cd3f8
+Gitweb:     http://git.kernel.org/tip/47be1c1a0e188232b5e5962917b21750053cd3f8
+Author:     Oleg Nesterov <oleg@redhat.com>
+AuthorDate: Mon, 20 Jan 2014 19:20:16 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Sun, 9 Feb 2014 21:19:01 +0100
 
-Ok, that is a very convincing explanation!
+lockdep: Change lockdep_set_novalidate_class() to use _and_name
 
-> --------------------------------------------------------------------------
->> Because, that's when the
->> hotplug writer is really in a state equivalent to exclusive access to the
->> hotplug lock... Else, we might fool lockdep into believing that the hotplug
->> writer has the lock for write, and at the same time several readers have
->> the lock for read as well.. no?
->>
-> 
-> Well as I understand it, the purpose of lockdep annotations is to
-> signal the intent of acquiring a lock as opposed to reporting the
-> status that the lock has been acquired.
-> 
-> The annotation in the earlier patch is consistent with the lockdep
-> annotations in rwlocks. Except for the fact that the readers of
-> cpu_hotplug.lock can sleep having acquired the lock, there's no
-> difference between rwlock semantics and cpu-hotplug lock behaviour.
-> Both are unfair to the writer as they allow new readers to acquire the
-> lock as long as there's some reader which holds the lock.
->
+Cosmetic. This doesn't really matter because a) device->mutex is
+the only user of __lockdep_no_validate__ and b) this class should
+be never reported as the source of problem, but if something goes
+wrong "&dev->mutex" looks better than "&__lockdep_no_validate__"
+as the name of the lock.
 
-Ah, ok.. Thanks a lot for the clarification!
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Cc: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20140120182016.GA26512@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ include/linux/lockdep.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/linux/lockdep.h b/include/linux/lockdep.h
+index 1626047..060e513 100644
+--- a/include/linux/lockdep.h
++++ b/include/linux/lockdep.h
+@@ -303,7 +303,7 @@ extern void lockdep_init_map(struct lockdep_map *lock, const char *name,
+ 				 (lock)->dep_map.key, sub)
  
-Regards,
-Srivatsa S. Bhat
-
+ #define lockdep_set_novalidate_class(lock) \
+-	lockdep_set_class(lock, &__lockdep_no_validate__)
++	lockdep_set_class_and_name(lock, &__lockdep_no_validate__, #lock)
+ /*
+  * Compare locking classes
+  */
