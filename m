@@ -1,44 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752856AbaBJKme (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 05:42:34 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:53213 "EHLO
+	id S1752526AbaBJKov (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 05:44:51 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:53220 "EHLO
 	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752131AbaBJKmc convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752085AbaBJKot (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 05:42:32 -0500
-Date: Mon, 10 Feb 2014 10:41:30 +0000
+	Mon, 10 Feb 2014 05:44:49 -0500
+Date: Mon, 10 Feb 2014 10:44:31 +0000
 From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: sagar.a.kamble@intel.com
-Cc: intel-gfx@lists.freedesktop.org, vijay.a.purushothaman@intel.com,
-        airlied@linux.ie, daniel.vetter@ffwll.ch, jani.nikula@linux.intel.com,
-        tomi.valkeinen@ti.com, airlied@redhat.com, robdclark@gmail.com,
-        archit@ti.com, gregkh@linuxfoundation.org, joe@perches.com,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 00/11] Enabling 180 degree rotation for sprite and
- crtc planes
-Message-ID: <20140210104130.7e7c3c93@alan.etchedpixels.co.uk>
-In-Reply-To: <1391780716-21896-1-git-send-email-sagar.a.kamble@intel.com>
-References: <1391780716-21896-1-git-send-email-sagar.a.kamble@intel.com>
+To: Michael Tokarev <mjt@tls.msk.ru>
+Cc: Linux-kernel <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org
+Subject: Re: screen goes blank when loading gma500_gfx (atom D2500)
+Message-ID: <20140210104431.63f1a754@alan.etchedpixels.co.uk>
+In-Reply-To: <52F68BEF.5030305@msgid.tls.msk.ru>
+References: <52F68BEF.5030305@msgid.tls.msk.ru>
 Organization: Intel Corporation
 X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  7 Feb 2014 19:15:05 +0530
-sagar.a.kamble@intel.com wrote:
-
-> From: Sagar Kamble <sagar.a.kamble@intel.com>
+> fbcon is loaded so it isn't an issue.
 > 
-> These patches will enable 180 degree rotation for CRTC and Sprite planes.
-> Changelog:
-> 1. drm/i915: Add 180 degree primary plane rotation support
-> Addressed review comments for CRTC rotation from FBC, page flip, CRTC active/
-> inactive perspective.
+> I tried 3.10 kernel initially (the above messages are from it), next
+> I tried 3.13 kernel too, and that one behaves exactly the same.
+> 
+> As far as I remember, this system never worked with graphics well.
+> Previous kernel (from which I updated) was 3.2 which had no
+> gma500 module (local build).
+> 
+> What are the steps to debug this further?
 
-Does this mean it should also handle horizontal mirroring in
-hardware (180° rotate, and scan lines backwards combined) ?
+Check you have X86_SYSFB and SIMPLEFB disabled
+
+Boot with drm.debug=6
+
+collect the logs
+
