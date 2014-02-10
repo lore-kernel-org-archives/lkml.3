@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753245AbaBJCYn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 21:24:43 -0500
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:39721 "EHLO
-	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753093AbaBJCX2 (ORCPT
+	id S1753260AbaBJCYs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 21:24:48 -0500
+Received: from mail-vb0-f47.google.com ([209.85.212.47]:57710 "EHLO
+	mail-vb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752656AbaBJCYq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 21:23:28 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Marcel Holtmann <marcel@holtmann.org>
-Cc: Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        Gianluca Anzolin <gianluca@sottospazio.it>,
-        Alexander Holler <holler@ahsoftware.de>,
-        Andrey Vihrov <andrey.vihrov@gmail.com>,
-        Sander Eikelenboom <linux@eikelenboom.it>,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 21/24] Bluetooth: Force -EIO from tty read/write if .activate() fails
-Date: Sun,  9 Feb 2014 20:59:21 -0500
-Message-Id: <1391997564-1805-22-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1391997564-1805-1-git-send-email-peter@hurleysoftware.com>
-References: <1391997564-1805-1-git-send-email-peter@hurleysoftware.com>
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Sun, 9 Feb 2014 21:24:46 -0500
+MIME-Version: 1.0
+In-Reply-To: <1391971686-9517-17-git-send-email-richard@nod.at>
+References: <1391971686-9517-1-git-send-email-richard@nod.at>
+	<1391971686-9517-17-git-send-email-richard@nod.at>
+Date: Mon, 10 Feb 2014 10:24:45 +0800
+Message-ID: <CAF0htA5xWQwkMqdp0_zz05DLJvyCOJZf-v1Rso20de5VWFmPTA@mail.gmail.com>
+Subject: Re: [PATCH 16/28] Remove GENERIC_HAS_IOMAP
+From: Lennox Wu <lennox.wu@gmail.com>
+To: Richard Weinberger <richard@nod.at>
+Cc: Chen Liqin <liqin.linux@gmail.com>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If rfcomm_dlc_open() fails, set tty into error state which returns
--EIO from reads and writes.
+Thanks.
 
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- net/bluetooth/rfcomm/tty.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+Acked-by: Lennox Wu <lennox.wu@gmail.com>
 
-diff --git a/net/bluetooth/rfcomm/tty.c b/net/bluetooth/rfcomm/tty.c
-index 375b60d..f6b9f0c 100644
---- a/net/bluetooth/rfcomm/tty.c
-+++ b/net/bluetooth/rfcomm/tty.c
-@@ -111,8 +111,12 @@ static void rfcomm_dev_destruct(struct tty_port *port)
- static int rfcomm_dev_activate(struct tty_port *port, struct tty_struct *tty)
- {
- 	struct rfcomm_dev *dev = container_of(port, struct rfcomm_dev, port);
-+	int err;
- 
--	return rfcomm_dlc_open(dev->dlc, &dev->src, &dev->dst, dev->channel);
-+	err = rfcomm_dlc_open(dev->dlc, &dev->src, &dev->dst, dev->channel);
-+	if (err)
-+		set_bit(TTY_IO_ERROR, &tty->flags);
-+	return err;
- }
- 
- /* we block the open until the dlc->state becomes BT_CONNECTED */
--- 
-1.8.1.2
-
+2014-02-10 2:47 GMT+08:00 Richard Weinberger <richard@nod.at>:
+> The symbol is an orphan, get rid of it.
+>
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+> ---
+>  arch/score/Kconfig | 3 ---
+>  1 file changed, 3 deletions(-)
+>
+> diff --git a/arch/score/Kconfig b/arch/score/Kconfig
+> index c75d06a..c7a7b65 100644
+> --- a/arch/score/Kconfig
+> +++ b/arch/score/Kconfig
+> @@ -23,19 +23,16 @@ config ARCH_SCORE7
+>         bool "SCORE7 processor"
+>         select SYS_SUPPORTS_32BIT_KERNEL
+>         select CPU_SCORE7
+> -       select GENERIC_HAS_IOMAP
+>
+>  config MACH_SPCT6600
+>         bool "SPCT6600 series based machines"
+>         select SYS_SUPPORTS_32BIT_KERNEL
+>         select CPU_SCORE7
+> -       select GENERIC_HAS_IOMAP
+>
+>  config SCORE_SIM
+>         bool "Score simulator"
+>         select SYS_SUPPORTS_32BIT_KERNEL
+>         select CPU_SCORE7
+> -       select GENERIC_HAS_IOMAP
+>  endchoice
+>
+>  endmenu
+> --
+> 1.8.4.2
+>
