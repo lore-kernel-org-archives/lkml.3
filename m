@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752993AbaBJX5d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 18:57:33 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:65523 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752740AbaBJX5W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752860AbaBJX5W (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 10 Feb 2014 18:57:22 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH 0/3] ACPI / dock: Rework the handling of dock notifications
-Date: Tue, 11 Feb 2014 01:09:32 +0100
-Message-ID: <3728252.WpMGKRKmqq@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+Received: from rere.qmqm.pl ([89.167.52.164]:37500 "EHLO rere.qmqm.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752362AbaBJX5S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 18:57:18 -0500
+X-Greylist: delayed 490 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Feb 2014 18:57:18 EST
+Date: Tue, 11 Feb 2014 00:49:04 +0100
+From: =?iso-8859-2?Q?Micha=B3_Miros=B3aw?= <mirq-linux@rere.qmqm.pl>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: rjw@rjwysocki.net, chris@printf.net, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        shuahkhan@gmail.com
+Subject: Re: [RFT][PATCH 08/12] mmc: change cb710-mmc platform power
+ management to use dev_pm_ops
+Message-ID: <20140210234904.GA542@rere.qmqm.pl>
+References: <cover.1392040064.git.shuah.kh@samsung.com>
+ <5393e4bd34e5667b7d00fa09c9d5bee0f68d659f.1392040068.git.shuah.kh@samsung.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=iso-8859-2
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5393e4bd34e5667b7d00fa09c9d5bee0f68d659f.1392040068.git.shuah.kh@samsung.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+On Mon, Feb 10, 2014 at 09:12:31AM -0700, Shuah Khan wrote:
+> Change cb710-mmc platform driver to register pm ops using dev_pm_ops instead
+> of legacy pm_ops. .pm hooks call existing legacy suspend and resume interfaces
+> by passing in the right pm state.
+[all the patch cut]
 
-This is on top of the current linux-next branch of linux-pm.git.
+Aaah, a bit mechanical - this change, isn't it?
 
-The handling of ACPI dock notifications doesn't require a notify handler to
-be installed for every dock device object.  Moreover, the namespace doesn't
-have to be scanned upfront to discover those objects and the ACPI container
-code should be made avoid trying to handle dock notifications (in case dock
-stations have container device IDs).
+The suspend/resume callbacks just clears IRQ mask in the device in case it
+got undefined during sleep state. So the proper change here is to squash all
+the functions in one, and point all of the hooks to it.
 
-The series makes the changes following from the above observations and a
-couple of improvements on top of them.
+With the change you have my ack.
 
-[1/3] Dispatch ACPI dock notifications from the global notify handler.
-[2/3] Pass ACPI device pointer to acpi_device_is_battery() (which is a new
-      helper function added by [1/3]).
-[3/3] Associate dock platform devices with ACPI device objects
+BTW, you could move cb710_mmc_suspend() (or whatever you'll call it) to one
+ifdef block with cb710_mmc_dev_pm_ops.
 
-Thanks!
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Best Regards,
+Micha³ Miros³aw
