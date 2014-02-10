@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753518AbaBJTne (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 14:43:34 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34692 "EHLO
+	id S1753541AbaBJTnl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 14:43:41 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34704 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753468AbaBJTna (ORCPT
+	with ESMTP id S1753521AbaBJTnh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:43:30 -0500
+	Mon, 10 Feb 2014 14:43:37 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Todd Previte <tprevite@gmail.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 088/124] drm/i915: VLV2 - Fix hotplug detect bits
-Date: Mon, 10 Feb 2014 11:40:28 -0800
-Message-Id: <1392061264-28124-89-git-send-email-kamal@canonical.com>
+Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Dave Airlie <airlied@redhat.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 096/124] drm/cirrus: do not attempt to acquire a reservation while in an interrupt handler
+Date: Mon, 10 Feb 2014 11:40:36 -0800
+Message-Id: <1392061264-28124-97-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
 References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
@@ -27,114 +27,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Todd Previte <tprevite@gmail.com>
+From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
 
-commit 232a6ee9af8adb185640f67fcaaa9014a9aa0573 upstream.
+commit 19d4b72c0c22c14900313f89765c5f7ef0a2718a upstream.
 
-Add new definitions for hotplug live status bits for VLV2 since they're
-in reverse order from the gen4x ones.
+Mutexes should not be acquired in interrupt context. While the trylock
+fastpath is arguably safe on all implementations, the slowpath
+unlock path definitely isn't. This fixes the following lockdep splat:
 
-Changelog:
-- Restored gen4 bit definitions
-- Added new definitions for VLV2
-- Added platform check for IS_VALLEYVIEW() in dp_detect to use the correct
-  bit defintions
-- Replaced a lost trailing brace for the added switch()
+[   13.044313] ------------[ cut here ]------------
+[   13.044367] WARNING: at /c/kernel-tests/src/tip/kernel/mutex.c:858 mutex_trylock+0x87/0x220()
+[   13.044378] DEBUG_LOCKS_WARN_ON(in_interrupt())
+[   13.044378] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.10.0-rc4-00296-ga2963dd #20
+[   13.044379] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
+[   13.044390]  0000000000000009 ffff88000de039f8 ffffffff81fc86d5 ffff88000de03a38
+[   13.044395]  ffffffff810d511b ffff880000000018 ffff88000f33c690 0000000000000001
+[   13.044398]  00000000000003f0 ffff88000f4677c8 0000000000000000 ffff88000de03a98
+[   13.044400] Call Trace:
+[   13.044412]  <IRQ>  [<ffffffff81fc86d5>] dump_stack+0x19/0x1b
+[   13.044441]  [<ffffffff810d511b>] warn_slowpath_common+0x6b/0x90
+[   13.044445]  [<ffffffff810d51a6>] warn_slowpath_fmt+0x46/0x50
+[   13.044448]  [<ffffffff81fd34d7>] mutex_trylock+0x87/0x220
+[   13.044482]  [<ffffffff8186484d>] cirrus_dirty_update+0x1cd/0x330
+[   13.044486]  [<ffffffff818649e8>] cirrus_imageblit+0x38/0x50
+[   13.044506]  [<ffffffff8165782e>] soft_cursor+0x22e/0x240
+[   13.044510]  [<ffffffff81656c31>] bit_cursor+0x581/0x5b0
+[   13.044525]  [<ffffffff815de9f4>] ? vsnprintf+0x124/0x670
+[   13.044529]  [<ffffffff81651333>] ? get_color.isra.16+0x43/0x130
+[   13.044532]  [<ffffffff81653fca>] fbcon_cursor+0x18a/0x1d0
+[   13.044535]  [<ffffffff816566b0>] ? update_attr.isra.2+0xa0/0xa0
+[   13.044556]  [<ffffffff81754b82>] hide_cursor+0x32/0xa0
+[   13.044565]  [<ffffffff81755bd3>] vt_console_print+0x103/0x3b0
+[   13.044569]  [<ffffffff810d58ac>] ? print_time+0x9c/0xb0
+[   13.044576]  [<ffffffff810d5960>] ? print_prefix+0xa0/0xc0
+[   13.044580]  [<ffffffff810d63f6>] call_console_drivers.constprop.6+0x146/0x1f0
+[   13.044593]  [<ffffffff815f9b38>] ? do_raw_spin_unlock+0xc8/0x100
+[   13.044597]  [<ffffffff810d6f27>] console_unlock+0x2f7/0x460
+[   13.044600]  [<ffffffff810d787a>] vprintk_emit+0x59a/0x5e0
+[   13.044615]  [<ffffffff81fb676c>] printk+0x4d/0x4f
+[   13.044650]  [<ffffffff82ba5511>] print_local_APIC+0x28/0x41c
+[   13.044672]  [<ffffffff8114db55>] generic_smp_call_function_single_interrupt+0x145/0x2b0
+[   13.044688]  [<ffffffff8106f9e7>] smp_call_function_single_interrupt+0x27/0x40
+[   13.044697]  [<ffffffff81fd8f72>] call_function_single_interrupt+0x72/0x80
+[   13.044707]  <EOI>  [<ffffffff81078166>] ? native_safe_halt+0x6/0x10
+[   13.044717]  [<ffffffff811425cd>] ? trace_hardirqs_on+0xd/0x10
+[   13.044738]  [<ffffffff8104f669>] default_idle+0x59/0x120
+[   13.044742]  [<ffffffff810501e8>] arch_cpu_idle+0x18/0x40
+[   13.044754]  [<ffffffff811320c5>] cpu_startup_entry+0x235/0x410
+[   13.044763]  [<ffffffff81f9e781>] rest_init+0xd1/0xe0
+[   13.044766]  [<ffffffff81f9e6b5>] ? rest_init+0x5/0xe0
+[   13.044778]  [<ffffffff82b93ec2>] start_kernel+0x425/0x493
+[   13.044781]  [<ffffffff82b93810>] ? repair_env_string+0x5e/0x5e
+[   13.044786]  [<ffffffff82b93595>] x86_64_start_reservations+0x2a/0x2c
+[   13.044789]  [<ffffffff82b93688>] x86_64_start_kernel+0xf1/0x100
+[   13.044799] ---[ end trace 113ad28772af4058 ]---
 
-Signed-off-by: Todd Previte <tprevite@gmail.com>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=73951
-[danvet: Switch to _VLV postfix instead of prefix and regroupg
-comments again so that the g4x warning is right next to those defines.
-Also add a _G4X suffix for those special ones. Also cc stable.]
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[ kamal: backport to 3.8 (renamed constants; also merged PORTD/PORTB mixup per
-  0ce99f7 "drm/i915: fix gen4 digital port hotplug definitions" ]
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/i915/i915_reg.h | 18 ++++++++++++++----
- drivers/gpu/drm/i915/intel_dp.c | 40 ++++++++++++++++++++++++++++------------
- 2 files changed, 42 insertions(+), 16 deletions(-)
+ drivers/gpu/drm/cirrus/cirrus_fbdev.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
-index 854f215..1a2ef33 100644
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -1660,10 +1660,20 @@
- #define CRT_HOTPLUG_DETECT_VOLTAGE_475MV	(1 << 2)
- 
- #define PORT_HOTPLUG_STAT	0x61114
--/* HDMI/DP bits are gen4+ */
--#define   DPB_HOTPLUG_LIVE_STATUS               (1 << 29)
--#define   DPC_HOTPLUG_LIVE_STATUS               (1 << 28)
--#define   DPD_HOTPLUG_LIVE_STATUS               (1 << 27)
-+/*
-+ * HDMI/DP bits are gen4+
-+ *
-+ * WARNING: Bspec for hpd status bits on gen4 seems to be completely confused.
-+ * Please check the detailed lore in the commit message for for experimental
-+ * evidence.
-+ */
-+#define   DPD_HOTPLUG_LIVE_STATUS_G4X		(1 << 29)
-+#define   DPC_HOTPLUG_LIVE_STATUS_G4X		(1 << 28)
-+#define   DPB_HOTPLUG_LIVE_STATUS_G4X		(1 << 27)
-+/* VLV DP/HDMI bits again match Bspec */
-+#define   DPD_HOTPLUG_LIVE_STATUS_VLV		(1 << 27)
-+#define   DPC_HOTPLUG_LIVE_STATUS_VLV		(1 << 28)
-+#define   DPB_HOTPLUG_LIVE_STATUS_VLV		(1 << 29)
- #define   DPD_HOTPLUG_INT_STATUS		(3 << 21)
- #define   DPC_HOTPLUG_INT_STATUS		(3 << 19)
- #define   DPB_HOTPLUG_INT_STATUS		(3 << 17)
-diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
-index 37c6d3f..a671223 100644
---- a/drivers/gpu/drm/i915/intel_dp.c
-+++ b/drivers/gpu/drm/i915/intel_dp.c
-@@ -2247,18 +2247,34 @@ g4x_dp_detect(struct intel_dp *intel_dp)
- 	struct drm_i915_private *dev_priv = dev->dev_private;
- 	uint32_t bit;
- 
--	switch (intel_dp->output_reg) {
--	case DP_B:
--		bit = DPB_HOTPLUG_LIVE_STATUS;
--		break;
--	case DP_C:
--		bit = DPC_HOTPLUG_LIVE_STATUS;
--		break;
--	case DP_D:
--		bit = DPD_HOTPLUG_LIVE_STATUS;
--		break;
--	default:
--		return connector_status_unknown;
-+	if (IS_VALLEYVIEW(dev)) {
-+		switch (intel_dp->output_reg) {
-+		case DP_B:
-+			bit = DPB_HOTPLUG_LIVE_STATUS_VLV;
-+			break;
-+		case DP_C:
-+			bit = DPC_HOTPLUG_LIVE_STATUS_VLV;
-+			break;
-+		case DP_D:
-+			bit = DPD_HOTPLUG_LIVE_STATUS_VLV;
-+			break;
-+		default:
-+			return connector_status_unknown;
-+		}
-+	} else {
-+		switch (intel_dp->output_reg) {
-+		case DP_B:
-+			bit = DPB_HOTPLUG_LIVE_STATUS_G4X;
-+			break;
-+		case DP_C:
-+			bit = DPC_HOTPLUG_LIVE_STATUS_G4X;
-+			break;
-+		case DP_D:
-+			bit = DPD_HOTPLUG_LIVE_STATUS_G4X;
-+			break;
-+		default:
-+			return connector_status_unknown;
-+		}
- 	}
- 
- 	if ((I915_READ(PORT_HOTPLUG_STAT) & bit) == 0)
+diff --git a/drivers/gpu/drm/cirrus/cirrus_fbdev.c b/drivers/gpu/drm/cirrus/cirrus_fbdev.c
+index 1e64d6f..4202ff5 100644
+--- a/drivers/gpu/drm/cirrus/cirrus_fbdev.c
++++ b/drivers/gpu/drm/cirrus/cirrus_fbdev.c
+@@ -24,7 +24,7 @@ static void cirrus_dirty_update(struct cirrus_fbdev *afbdev,
+ 	struct cirrus_bo *bo;
+ 	int src_offset, dst_offset;
+ 	int bpp = (afbdev->gfb.base.bits_per_pixel + 7)/8;
+-	int ret;
++	int ret = -EBUSY;
+ 	bool unmap = false;
+ 	bool store_for_later = false;
+ 	int x2, y2;
+@@ -38,7 +38,8 @@ static void cirrus_dirty_update(struct cirrus_fbdev *afbdev,
+ 	 * then the BO is being moved and we should
+ 	 * store up the damage until later.
+ 	 */
+-	ret = cirrus_bo_reserve(bo, true);
++	if (!in_interrupt())
++		ret = cirrus_bo_reserve(bo, true);
+ 	if (ret) {
+ 		if (ret != -EBUSY)
+ 			return;
 -- 
 1.8.3.2
 
