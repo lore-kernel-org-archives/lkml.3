@@ -1,227 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752755AbaBJCVN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 21:21:13 -0500
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:40839 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752532AbaBJCVJ (ORCPT
+	id S1752700AbaBJCUy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 21:20:54 -0500
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:39632 "EHLO
+	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752217AbaBJCUv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 21:21:09 -0500
-MIME-Version: 1.0
-In-Reply-To: <1391865018-3446-3-git-send-email-hanjun.guo@linaro.org>
-References: <1391865018-3446-1-git-send-email-hanjun.guo@linaro.org>
-	<1391865018-3446-3-git-send-email-hanjun.guo@linaro.org>
-Date: Mon, 10 Feb 2014 10:21:09 +0800
-Message-ID: <CAOLK0pxxF+3e3gzgfSYuz+R8+n6hnB9rrCpzxdGNJPyHQ4xS5w@mail.gmail.com>
-Subject: Re: [PATCH v2 2/3] ACPI / processor_core: Rework _PDC related stuff
- to make it more arch-independent
-From: Lan Tianyu <lantianyu1986@gmail.com>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Patch Tracking <patches@linaro.org>,
-        "linux-kernel@vger kernel org" <linux-kernel@vger.kernel.org>,
-        linaro-acpi <linaro-acpi@lists.linaro.org>,
-        Graeme Gregory <graeme.gregory@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 9 Feb 2014 21:20:51 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Marcel Holtmann <marcel@holtmann.org>
+Cc: Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        Gianluca Anzolin <gianluca@sottospazio.it>,
+        Alexander Holler <holler@ahsoftware.de>,
+        Andrey Vihrov <andrey.vihrov@gmail.com>,
+        Sander Eikelenboom <linux@eikelenboom.it>,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH 00/24] rfcomm fixes
+Date: Sun,  9 Feb 2014 20:59:00 -0500
+Message-Id: <1391997564-1805-1-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 1.8.1.2
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-02-08 21:10 GMT+08:00 Hanjun Guo <hanjun.guo@linaro.org>:
-> _PDC related stuff in processor_core.c is little bit X86/IA64 dependent,
-> rework the code to make it more arch-independent, no functional change
-> in this patch.
->
-> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
-> Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
-> ---
->  arch/ia64/include/asm/acpi.h  |    5 +----
->  arch/ia64/kernel/acpi.c       |   17 +++++++++++++++++
->  arch/x86/include/asm/acpi.h   |   19 +------------------
->  arch/x86/kernel/acpi/cstate.c |   31 +++++++++++++++++++++++++++++++
->  drivers/acpi/processor_core.c |   19 +------------------
->  5 files changed, 51 insertions(+), 40 deletions(-)
->
-> diff --git a/arch/ia64/include/asm/acpi.h b/arch/ia64/include/asm/acpi.h
-> index d651102..d2b8b9d 100644
-> --- a/arch/ia64/include/asm/acpi.h
-> +++ b/arch/ia64/include/asm/acpi.h
-> @@ -152,10 +152,7 @@ extern int __initdata nid_to_pxm_map[MAX_NUMNODES];
->  #endif
->
->  static inline bool arch_has_acpi_pdc(void) { return true; }
-> -static inline void arch_acpi_set_pdc_bits(u32 *buf)
-> -{
-> -       buf[2] |= ACPI_PDC_EST_CAPABILITY_SMP;
-> -}
-> +extern void arch_acpi_set_pdc_bits(u32 *buf);
->
->  #define acpi_unlazy_tlb(x)
->
-> diff --git a/arch/ia64/kernel/acpi.c b/arch/ia64/kernel/acpi.c
-> index 07d209c..d71f64a 100644
-> --- a/arch/ia64/kernel/acpi.c
-> +++ b/arch/ia64/kernel/acpi.c
-> @@ -1014,3 +1014,20 @@ EXPORT_SYMBOL(acpi_unregister_ioapic);
->   * TBD when when IA64 starts to support suspend...
->   */
->  int acpi_suspend_lowlevel(void) { return 0; }
-> +
-> +void arch_acpi_set_pdc_bits(u32 *buf)
-> +{
-> +       /* Enable coordination with firmware's _TSD info */
-> +       buf[2] |= ACPI_PDC_SMP_T_SWCOORD;
+Marcel,
 
-Hi Hanjun:
-            You can write like this.
-            buf[2] |= ACPI_PDC_SMP_T_SWCOORD | ACPI_PDC_EST_CAPABILITY_SMP;
+This patch series addresses a number of previously unknown issues
+with the RFCOMM tty device implementation, in addition to
+addressing the locking regression recently reported [1].
 
-> +       if (boot_option_idle_override == IDLE_NOMWAIT) {
-> +               /*
-> +                * If mwait is disabled for CPU C-states, the C2C3_FFH access
-> +                * mode will be disabled in the parameter of _PDC object.
-> +                * Of course C1_FFH access mode will also be disabled.
-> +                */
-> +               buf[2] &= ~(ACPI_PDC_C_C2C3_FFH | ACPI_PDC_C_C1_FFH);
-> +
-> +       }
-> +
-> +       buf[2] |= ACPI_PDC_EST_CAPABILITY_SMP;
-> +}
-> diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
-> index c8c1e70..e9f71bc 100644
-> --- a/arch/x86/include/asm/acpi.h
-> +++ b/arch/x86/include/asm/acpi.h
-> @@ -147,24 +147,7 @@ static inline bool arch_has_acpi_pdc(void)
->                 c->x86_vendor == X86_VENDOR_CENTAUR);
->  }
->
-> -static inline void arch_acpi_set_pdc_bits(u32 *buf)
-> -{
-> -       struct cpuinfo_x86 *c = &cpu_data(0);
-> -
-> -       buf[2] |= ACPI_PDC_C_CAPABILITY_SMP;
-> -
-> -       if (cpu_has(c, X86_FEATURE_EST))
-> -               buf[2] |= ACPI_PDC_EST_CAPABILITY_SWSMP;
-> -
-> -       if (cpu_has(c, X86_FEATURE_ACPI))
-> -               buf[2] |= ACPI_PDC_T_FFH;
-> -
-> -       /*
-> -        * If mwait/monitor is unsupported, C2/C3_FFH will be disabled
-> -        */
-> -       if (!cpu_has(c, X86_FEATURE_MWAIT))
-> -               buf[2] &= ~(ACPI_PDC_C_C2C3_FFH);
-> -}
-> +extern void arch_acpi_set_pdc_bits(u32 *buf);
->
->  #else /* !CONFIG_ACPI */
->
-> diff --git a/arch/x86/kernel/acpi/cstate.c b/arch/x86/kernel/acpi/cstate.c
-> index e69182f..aa9aed9 100644
-> --- a/arch/x86/kernel/acpi/cstate.c
-> +++ b/arch/x86/kernel/acpi/cstate.c
-> @@ -16,6 +16,37 @@
->  #include <asm/mwait.h>
->  #include <asm/special_insns.h>
->
-> +void arch_acpi_set_pdc_bits(u32 *buf)
-> +{
-> +       struct cpuinfo_x86 *c = &cpu_data(0);
-> +
-> +       /* Enable coordination with firmware's _TSD info */
-> +       buf[2] |= ACPI_PDC_SMP_T_SWCOORD;
-> +       if (boot_option_idle_override == IDLE_NOMWAIT) {
-> +               /*
-> +                * If mwait is disabled for CPU C-states, the C2C3_FFH access
-> +                * mode will be disabled in the parameter of _PDC object.
-> +                * Of course C1_FFH access mode will also be disabled.
-> +                */
-> +               buf[2] &= ~(ACPI_PDC_C_C2C3_FFH | ACPI_PDC_C_C1_FFH);
-> +
-> +       }
-> +
-> +       buf[2] |= ACPI_PDC_C_CAPABILITY_SMP;
+As Gianluca suggested and I agree, this series first reverts
+3 of the 4 patches of 3.14-rc1 for bluetooth/rfcomm/tty.c.
 
-This is not right. ACPI_PDC_C_CAPABILITY_SMP contians ACPI_PDC_C_C1_FFH and
-ACPI_PDC_C_C2C3_FFH. boot_option_idle_override is meaningless here.
+The reasoning is detailed in the changelog for
+  Revert "Bluetooth: Always wait for a connection on RFCOMM open()"
+but the short answer is that it re-implements a long-standing
+bug by blocking on a non-blocking open.
 
-You should keep original order and put the check at last.
+This patch series corrects the reported regressions from 3.13
+(to the extent that correction is required). Specifically,
+the ModemManager regression reported by Gianluca Anzolin [2]
+and the rfcomm bind with wvdial reported by Andrey Vihrov [3].
+
+tty: Fix ref counting for port krefs
+Bluetooth: Fix racy acquire of rfcomm_dev reference
+Bluetooth: Exclude released devices from RFCOMMGETDEVLIST ioctl
+Bluetooth: Release rfcomm_dev only once
+Bluetooth: Fix unreleased rfcomm_dev reference
+   These first 5 patches after the reverts
+   fix 4 different rfcomm_dev ref count mishandling bugs.
+
+Bluetooth: Fix RFCOMM tty teardown race and
+Bluetooth: Serialize RFCOMMCREATEDEV and RFCOMMRELEASEDEV ioctls
+   Fix races which occur due to the design of the rfcomm ioctls
+   (note that buses don't have these kinds of races).
+
+Bluetooth: Verify dlci not in use before rfcomm_dev create
+Bluetooth: Simplify RFCOMM session state eval
+Bluetooth: Refactor deferred setup test in rfcomm_dlc_close()
+Bluetooth: Refactor dlc disconnect logic in rfcomm_dlc_close()
+Bluetooth: Directly close dlc for not yet started RFCOMM session
+   These 5 patches fix issues with reusing the dlci after
+   closing the tty (found by unit test).
+
+Bluetooth: Fix unsafe RFCOMM device parenting
+Bluetooth: Fix RFCOMM parent device for reused dlc
+   These 2 patches fix the ModemManager regression.
+
+Bluetooth: Refactor rfcomm_dev_add()
+Bluetooth: Cleanup RFCOMM device registration error handling
+   These 2 patches fix an unreleased module reference while
+   error handling.
+
+Bluetooth: Rename __rfcomm_dev_get() to __rfcomm_dev_lookup()
+   This is a trivial naming patch with no functional impact.
+
+Bluetooth: Force -EIO from tty read/write if .activate() fails
+   The tty core provides an existing mechanism for failing
+   reads/writes if device activation fails (like an error
+   allocating the dlc).
+
+Bluetooth: Don't fail RFCOMM tty writes
+   This patch implements buffered writes even if the device
+   is not connected.
+
+While unit testing this, I discovered a serious defect in
+the way available space is computed that under-utilizes
+rfcomm i/o and may even halt further tx on that link, which
+is fixed by:
+  Bluetooth: Refactor write_room() calculation
+  Bluetooth: Fix write_room() calculation
 
 
-> +
-> +       if (cpu_has(c, X86_FEATURE_EST))
-> +               buf[2] |= ACPI_PDC_EST_CAPABILITY_SWSMP;
-> +
-> +       if (cpu_has(c, X86_FEATURE_ACPI))
-> +               buf[2] |= ACPI_PDC_T_FFH;
-> +
-> +       /*
-> +        * If mwait/monitor is unsupported, C2/C3_FFH will be disabled
-> +        */
-> +       if (!cpu_has(c, X86_FEATURE_MWAIT))
-> +               buf[2] &= ~(ACPI_PDC_C_C2C3_FFH);
-> +}
-> +
->  /*
->   * Initialize bm_flags based on the CPU cache properties
->   * On SMP it depends on cache configuration
-> diff --git a/drivers/acpi/processor_core.c b/drivers/acpi/processor_core.c
-> index 01b2656..31a4281 100644
-> --- a/drivers/acpi/processor_core.c
-> +++ b/drivers/acpi/processor_core.c
-> @@ -255,9 +255,6 @@ static void acpi_set_pdc_bits(u32 *buf)
->         buf[0] = ACPI_PDC_REVISION_ID;
->         buf[1] = 1;
->
-> -       /* Enable coordination with firmware's _TSD info */
-> -       buf[2] = ACPI_PDC_SMP_T_SWCOORD;
-> -
->         /* Twiddle arch-specific bits needed for _PDC */
->         arch_acpi_set_pdc_bits(buf);
->  }
-> @@ -282,7 +279,7 @@ static struct acpi_object_list *acpi_processor_alloc_pdc(void)
->                 return NULL;
->         }
->
-> -       buf = kmalloc(12, GFP_KERNEL);
-> +       buf = kzalloc(12, GFP_KERNEL);
->         if (!buf) {
->                 printk(KERN_ERR "Memory allocation error\n");
->                 kfree(obj);
-> @@ -310,20 +307,6 @@ acpi_processor_eval_pdc(acpi_handle handle, struct acpi_object_list *pdc_in)
->  {
->         acpi_status status = AE_OK;
->
-> -       if (boot_option_idle_override == IDLE_NOMWAIT) {
-> -               /*
-> -                * If mwait is disabled for CPU C-states, the C2C3_FFH access
-> -                * mode will be disabled in the parameter of _PDC object.
-> -                * Of course C1_FFH access mode will also be disabled.
-> -                */
-> -               union acpi_object *obj;
-> -               u32 *buffer = NULL;
-> -
-> -               obj = pdc_in->pointer;
-> -               buffer = (u32 *)(obj->buffer.pointer);
-> -               buffer[2] &= ~(ACPI_PDC_C_C2C3_FFH | ACPI_PDC_C_C1_FFH);
-> -
-> -       }
->         status = acpi_evaluate_object(handle, "_PDC", pdc_in, NULL);
->
->         if (ACPI_FAILURE(status))
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Note that this series does not fix the naively inefficient
+method of packetizing tty output; packetizing should be
+done on the krfcommd thread to take advantage of aggregating
+multiple tty writes into 1 or more packets. Look at any
+line-by-line console output to realize how under-utilized
+the rfcomm tty packeting is.
+
+[1] http://www.spinics.net/lists/linux-wireless/msg117818.html
+[2] http://www.spinics.net/lists/linux-bluetooth/msg42075.html
+[3] http://www.spinics.net/lists/linux-bluetooth/msg42057.html
 
 
+Regards,
+
+
+Peter Hurley (24):
+  Revert "Bluetooth: Remove rfcomm_carrier_raised()"
+  Revert "Bluetooth: Always wait for a connection on RFCOMM open()"
+  Revert "Bluetooth: Move rfcomm_get_device() before
+    rfcomm_dev_activate()"
+  tty: Fix ref counting for port krefs
+  Bluetooth: Fix racy acquire of rfcomm_dev reference
+  Bluetooth: Exclude released devices from RFCOMMGETDEVLIST ioctl
+  Bluetooth: Release rfcomm_dev only once
+  Bluetooth: Fix unreleased rfcomm_dev reference
+  Bluetooth: Fix RFCOMM tty teardown race
+  Bluetooth: Verify dlci not in use before rfcomm_dev create
+  Bluetooth: Simplify RFCOMM session state eval
+  Bluetooth: Refactor deferred setup test in rfcomm_dlc_close()
+  Bluetooth: Refactor dlc disconnect logic in rfcomm_dlc_close()
+  Bluetooth: Directly close dlc for not yet started RFCOMM session
+  Bluetooth: Fix unsafe RFCOMM device parenting
+  Bluetooth: Fix RFCOMM parent device for reused dlc
+  Bluetooth: Rename __rfcomm_dev_get() to __rfcomm_dev_lookup()
+  Bluetooth: Serialize RFCOMMCREATEDEV and RFCOMMRELEASEDEV ioctls
+  Bluetooth: Refactor rfcomm_dev_add()
+  Bluetooth: Cleanup RFCOMM device registration error handling
+  Bluetooth: Force -EIO from tty read/write if .activate() fails
+  Bluetooth: Don't fail RFCOMM tty writes
+  Bluetooth: Refactor write_room() calculation
+  Bluetooth: Fix write_room() calculation
+
+ include/linux/tty.h            |   6 +-
+ include/net/bluetooth/rfcomm.h |   9 +-
+ net/bluetooth/rfcomm/core.c    |  88 ++++++++++----
+ net/bluetooth/rfcomm/tty.c     | 262 ++++++++++++++++++++++-------------------
+ 4 files changed, 223 insertions(+), 142 deletions(-)
 
 -- 
-Best regards
-Tianyu Lan
+1.8.1.2
+
