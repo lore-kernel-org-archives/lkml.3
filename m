@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754545AbaBJTtB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 14:49:01 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35153 "EHLO
+	id S1754561AbaBJTtE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 14:49:04 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35148 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753231AbaBJTra (ORCPT
+	with ESMTP id S1754395AbaBJTra (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 10 Feb 2014 14:47:30 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Weston Andros Adamson <dros@netapp.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
+Cc: =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 030/124] sunrpc: Fix infinite loop in RPC state machine
-Date: Mon, 10 Feb 2014 11:39:30 -0800
-Message-Id: <1392061264-28124-31-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 043/124] radeon/pm: Guard access to rdev->pm.power_state array
+Date: Mon, 10 Feb 2014 11:39:43 -0800
+Message-Id: <1392061264-28124-44-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
 References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,121 +31,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Weston Andros Adamson <dros@netapp.com>
+From: =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>
 
-commit 6ff33b7dd0228b7d7ed44791bbbc98b03fd15d9d upstream.
+commit 370169516e736edad3b3c5aa49858058f8b55195 upstream.
 
-When a task enters call_refreshresult with status 0 from call_refresh and
-!rpcauth_uptodatecred(task) it enters call_refresh again with no rate-limiting
-or max number of retries.
+It's never allocated on systems without an ATOMBIOS or COMBIOS ROM.
 
-Instead of trying forever, make use of the retry path that other errors use.
+Should fix an oops I encountered while resetting the GPU after a lockup
+on my PowerBook with an RV350.
 
-This only seems to be possible when the crrefresh callback is gss_refresh_null,
-which only happens when destroying the context.
-
-To reproduce:
-
-1) mount with sec=krb5 (or sec=sys with krb5 negotiated for non FSID specific
-   operations).
-
-2) reboot - the client will be stuck and will need to be hard rebooted
-
-BUG: soft lockup - CPU#0 stuck for 22s! [kworker/0:2:46]
-Modules linked in: rpcsec_gss_krb5 nfsv4 nfs fscache ppdev crc32c_intel aesni_intel aes_x86_64 glue_helper lrw gf128mul ablk_helper cryptd serio_raw i2c_piix4 i2c_core e1000 parport_pc parport shpchp nfsd auth_rpcgss oid_registry exportfs nfs_acl lockd sunrpc autofs4 mptspi scsi_transport_spi mptscsih mptbase ata_generic floppy
-irq event stamp: 195724
-hardirqs last  enabled at (195723): [<ffffffff814a925c>] restore_args+0x0/0x30
-hardirqs last disabled at (195724): [<ffffffff814b0a6a>] apic_timer_interrupt+0x6a/0x80
-softirqs last  enabled at (195722): [<ffffffff8103f583>] __do_softirq+0x1df/0x276
-softirqs last disabled at (195717): [<ffffffff8103f852>] irq_exit+0x53/0x9a
-CPU: 0 PID: 46 Comm: kworker/0:2 Not tainted 3.13.0-rc3-branch-dros_testing+ #4
-Hardware name: VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform, BIOS 6.00 07/31/2013
-Workqueue: rpciod rpc_async_schedule [sunrpc]
-task: ffff8800799c4260 ti: ffff880079002000 task.ti: ffff880079002000
-RIP: 0010:[<ffffffffa0064fd4>]  [<ffffffffa0064fd4>] __rpc_execute+0x8a/0x362 [sunrpc]
-RSP: 0018:ffff880079003d18  EFLAGS: 00000246
-RAX: 0000000000000005 RBX: 0000000000000007 RCX: 0000000000000007
-RDX: 0000000000000007 RSI: ffff88007aecbae8 RDI: ffff8800783d8900
-RBP: ffff880079003d78 R08: ffff88006e30e9f8 R09: ffffffffa005a3d7
-R10: ffff88006e30e7b0 R11: ffff8800783d8900 R12: ffffffffa006675e
-R13: ffff880079003ce8 R14: ffff88006e30e7b0 R15: ffff8800783d8900
-FS:  0000000000000000(0000) GS:ffff88007f200000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 00007f3072333000 CR3: 0000000001a0b000 CR4: 00000000001407f0
-Stack:
- ffff880079003d98 0000000000000246 0000000000000000 ffff88007a9a4830
- ffff880000000000 ffffffff81073f47 ffff88007f212b00 ffff8800799c4260
- ffff8800783d8988 ffff88007f212b00 ffffe8ffff604800 0000000000000000
-Call Trace:
- [<ffffffff81073f47>] ? trace_hardirqs_on_caller+0x145/0x1a1
- [<ffffffffa00652d3>] rpc_async_schedule+0x27/0x32 [sunrpc]
- [<ffffffff81052974>] process_one_work+0x211/0x3a5
- [<ffffffff810528d5>] ? process_one_work+0x172/0x3a5
- [<ffffffff81052eeb>] worker_thread+0x134/0x202
- [<ffffffff81052db7>] ? rescuer_thread+0x280/0x280
- [<ffffffff81052db7>] ? rescuer_thread+0x280/0x280
- [<ffffffff810584a0>] kthread+0xc9/0xd1
- [<ffffffff810583d7>] ? __kthread_parkme+0x61/0x61
- [<ffffffff814afd6c>] ret_from_fork+0x7c/0xb0
- [<ffffffff810583d7>] ? __kthread_parkme+0x61/0x61
-Code: e8 87 63 fd e0 c6 05 10 dd 01 00 01 48 8b 43 70 4c 8d 6b 70 45 31 e4 a8 02 0f 85 d5 02 00 00 4c 8b 7b 48 48 c7 43 48 00 00 00 00 <4c> 8b 4b 50 4d 85 ff 75 0c 4d 85 c9 4d 89 cf 0f 84 32 01 00 00
-
-And the output of "rpcdebug -m rpc -s all":
-
-RPC:    61 call_refresh (status 0)
-RPC:    61 call_refresh (status 0)
-RPC:    61 refreshing RPCSEC_GSS cred ffff88007a413cf0
-RPC:    61 refreshing RPCSEC_GSS cred ffff88007a413cf0
-RPC:    61 call_refreshresult (status 0)
-RPC:    61 refreshing RPCSEC_GSS cred ffff88007a413cf0
-RPC:    61 call_refreshresult (status 0)
-RPC:    61 refreshing RPCSEC_GSS cred ffff88007a413cf0
-RPC:    61 call_refresh (status 0)
-RPC:    61 call_refreshresult (status 0)
-RPC:    61 call_refresh (status 0)
-RPC:    61 call_refresh (status 0)
-RPC:    61 refreshing RPCSEC_GSS cred ffff88007a413cf0
-RPC:    61 call_refreshresult (status 0)
-RPC:    61 call_refresh (status 0)
-RPC:    61 refreshing RPCSEC_GSS cred ffff88007a413cf0
-RPC:    61 call_refresh (status 0)
-RPC:    61 refreshing RPCSEC_GSS cred ffff88007a413cf0
-RPC:    61 refreshing RPCSEC_GSS cred ffff88007a413cf0
-RPC:    61 call_refreshresult (status 0)
-RPC:    61 call_refresh (status 0)
-RPC:    61 call_refresh (status 0)
-RPC:    61 call_refresh (status 0)
-RPC:    61 call_refresh (status 0)
-RPC:    61 call_refreshresult (status 0)
-RPC:    61 refreshing RPCSEC_GSS cred ffff88007a413cf0
-
-Signed-off-by: Weston Andros Adamson <dros@netapp.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Michel Dänzer <michel.daenzer@amd.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/sunrpc/clnt.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/radeon_pm.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
-index e1d98c8..eb8a2c8 100644
---- a/net/sunrpc/clnt.c
-+++ b/net/sunrpc/clnt.c
-@@ -1371,9 +1371,13 @@ call_refreshresult(struct rpc_task *task)
- 	task->tk_action = call_refresh;
- 	switch (status) {
- 	case 0:
--		if (rpcauth_uptodatecred(task))
-+		if (rpcauth_uptodatecred(task)) {
- 			task->tk_action = call_allocate;
--		return;
-+			return;
-+		}
-+		/* Use rate-limiting and a max number of retries if refresh
-+		 * had status 0 but failed to update the cred.
-+		 */
- 	case -ETIMEDOUT:
- 		rpc_delay(task, 3*HZ);
- 	case -EAGAIN:
+diff --git a/drivers/gpu/drm/radeon/radeon_pm.c b/drivers/gpu/drm/radeon/radeon_pm.c
+index 788c64c..469ba71 100644
+--- a/drivers/gpu/drm/radeon/radeon_pm.c
++++ b/drivers/gpu/drm/radeon/radeon_pm.c
+@@ -561,8 +561,10 @@ void radeon_pm_resume(struct radeon_device *rdev)
+ 	rdev->pm.current_clock_mode_index = 0;
+ 	rdev->pm.current_sclk = rdev->pm.default_sclk;
+ 	rdev->pm.current_mclk = rdev->pm.default_mclk;
+-	rdev->pm.current_vddc = rdev->pm.power_state[rdev->pm.default_power_state_index].clock_info[0].voltage.voltage;
+-	rdev->pm.current_vddci = rdev->pm.power_state[rdev->pm.default_power_state_index].clock_info[0].voltage.vddci;
++	if (rdev->pm.power_state) {
++		rdev->pm.current_vddc = rdev->pm.power_state[rdev->pm.default_power_state_index].clock_info[0].voltage.voltage;
++		rdev->pm.current_vddci = rdev->pm.power_state[rdev->pm.default_power_state_index].clock_info[0].voltage.vddci;
++	}
+ 	if (rdev->pm.pm_method == PM_METHOD_DYNPM
+ 	    && rdev->pm.dynpm_state == DYNPM_STATE_SUSPENDED) {
+ 		rdev->pm.dynpm_state = DYNPM_STATE_ACTIVE;
 -- 
 1.8.3.2
 
