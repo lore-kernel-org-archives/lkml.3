@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751957AbaBJIIr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 03:08:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7301 "EHLO mx1.redhat.com"
+	id S1752130AbaBJIOH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 03:14:07 -0500
+Received: from mx.ungleich.ch ([77.109.138.221]:41471 "EHLO mx.ungleich.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750915AbaBJIIq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 03:08:46 -0500
-Date: Mon, 10 Feb 2014 09:07:44 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>, Andi Kleen <andi@firstfloor.org>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCHSET 00/21] perf tools: Add support to accumulate hist
- periods (v8)
-Message-ID: <20140210080744.GA1230@krava.brq.redhat.com>
-References: <1391736923-30765-1-git-send-email-namhyung@kernel.org>
+	id S1751119AbaBJIOD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 03:14:03 -0500
+Date: Mon, 10 Feb 2014 08:35:13 +0100
+From: Nico Schottelius <nico-linux-20149210@schottelius.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: nico-linux-20149210@schottelius.org
+Subject: Support for automatic screen rotation on Lenovo Yogo 2 Pro
+Message-ID: <20140210073513.GE2792@schottelius.org>
+Mail-Followup-To: Nico Schottelius <nico-linux-20149210@schottelius.org>,
+	LKML <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1391736923-30765-1-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
+X-Netzseite: http://www.nico.schottelius.org/
+X-System-Info: artist (Linux 3.12.9-1-ARCH x86_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 07, 2014 at 10:35:02AM +0900, Namhyung Kim wrote:
+Good morning hackers,
 
-SNIP
+The screen on the Lenovo Yoga 2 Pro can rotate up to 180 degrees and it would be awesome
+if we could rotate it automatically under Linux. xrandr can already rotate it, what is missing 
+is an event that we can trigger on. 
 
-> 
-> 
-> Namhyung Kim (21):
->   perf tools: Introduce struct hist_entry_iter
->   perf hists: Add support for accumulated stat of hist entry
->   perf hists: Check if accumulated when adding a hist entry
->   perf hists: Accumulate hist entry stat based on the callchain
->   perf tools: Update cpumode for each cumulative entry
->   perf report: Cache cumulative callchains
->   perf callchain: Add callchain_cursor_snapshot()
->   perf tools: Save callchain info for each cumulative entry
->   perf hists: Sort hist entries by accumulated period
->   perf ui/hist: Add support to accumulated hist stat
->   perf ui/browser: Add support to accumulated hist stat
->   perf ui/gtk: Add support to accumulated hist stat
->   perf tools: Apply percent-limit to cumulative percentage
->   perf tools: Add more hpp helper functions
->   perf report: Add --children option
->   perf report: Add report.children config option
->   perf tools: Add callback function to hist_entry_iter
->   perf top: Convert to hist_entry_iter
->   perf top: Add --children option
->   perf top: Add top.children config option
->   perf tools: Enable --children option by default
+Is there any way to find out 
+    a) if the screen is opened for more than 90 degrees?
+    a) what the opening angle of the screen is?
 
-heya, I wasn't CC-ed ;-)
+I guess there must be support somewhere, as it is supposed to happen
+automatically under windows. [1]
 
-Acked-by: Jiri Olsa <jolsa@redhat.com>
+I am still facing the problem that there are no keycodes present for
+some keys [0] - if you have a hint for this problem, I am wondering 
+if anyone has a pointer on how to solve one of these issues?
 
-for the patchset
+Cheers,
 
-thanks,
-jirka
+Nico
+
+[0] https://lkml.org/lkml/2014/1/28/251
+[1] I have never tried windows on this device, but from the forums and
+    marketing I assume it works trigger based on the opening angle.
+
+
+
+-- 
+PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
