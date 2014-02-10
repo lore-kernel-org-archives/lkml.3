@@ -1,85 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755684AbaBJUVT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 15:21:19 -0500
-Received: from mail.wdtv.com ([66.118.69.84]:48638 "EHLO mail.wdtv.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754156AbaBJUVP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 15:21:15 -0500
-From: Gene Heskett <gheskett@wdtv.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-Subject: Re: make oldfonfig broken.
-Date: Mon, 10 Feb 2014 15:21:03 -0500
-Cc: Ken Moffat <zarniwhoop@ntlworld.com>, linux-kernel@vger.kernel.org
-References: <1391971686-9517-1-git-send-email-richard@nod.at> <201402092332.32439.gheskett@wdtv.com> <52F85D2F.6010501@infradead.org>
-In-Reply-To: <52F85D2F.6010501@infradead.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="windows-1256"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201402101521.04113.gheskett@wdtv.com>
+	id S1755754AbaBJUVv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 15:21:51 -0500
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:51031 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755727AbaBJUVq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 15:21:46 -0500
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 5/5] cgroup: update cgroup_transfer_tasks() to either succeed or fail
+Date: Mon, 10 Feb 2014 15:21:34 -0500
+Message-Id: <1392063694-26465-6-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1392063694-26465-1-git-send-email-tj@kernel.org>
+References: <1392063694-26465-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 10 February 2014, Randy Dunlap wrote:
->On 02/09/2014 08:32 PM, Gene Heskett wrote:
->AUTOSELECT driver feature Better!  ugh.
+cgroup_transfer_tasks() can currently fail in the middle due to memory
+allocation failure.  When that happens, the function just aborts and
+returns error code and there's no way to tell how many actually got
+migrated at the point of failure and or to revert the partial
+migration.
 
-Spit.  I presume geneology discussions are off topic. :)
->
->Good luck. Let me know if you need more guidance.
+Update it to use cgroup_migrate{_add_src|prepare_dst|migrate|finish}()
+so that the function either succeeds or fails as a whole as long as
+->can_attach() doesn't fail.
 
-Hat in hand, I figured I had better get the first one that fails, 3.2.40, 
-to work before I carried that fwd to a more current kernel, but 5 or 6 
-builds & boot failure later I am stumped.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ kernel/cgroup.c | 28 +++++++++++++++++++++++-----
+ 1 file changed, 23 insertions(+), 5 deletions(-)
 
-The boot gets to top_init, reports the / drive is unavailable and it cannot 
-load /lib/modules/3.2.40/modules.dep, which does exist.
-
-Stops, times out in about a minute and falls thru to the busybox shell, and 
-of course my keyboard and mouse are wireless to usb, so neither work, reset 
-button tap time.
-
-The only reason I can deduce is that because the drive isn't mounted, 
-something is still missing, either in the vmlinuz file or in the initrd 
-file.
-
-This most working 3.12.9 bootup shows:
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 1b485df..188e624 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -2809,10 +2809,28 @@ void css_task_iter_end(struct css_task_iter *it)
+  */
+ int cgroup_transfer_tasks(struct cgroup *to, struct cgroup *from)
+ {
++	LIST_HEAD(preloaded_csets);
++	struct cgrp_cset_link *link;
+ 	struct css_task_iter it;
+ 	struct task_struct *task;
+-	int ret = 0;
++	int ret;
++
++	mutex_lock(&cgroup_mutex);
++
++	/* all tasks in @from are being moved, all csets are source */
++	down_read(&css_set_rwsem);
++	list_for_each_entry(link, &from->cset_links, cset_link)
++		cgroup_migrate_add_src(link->cset, to, &preloaded_csets);
++	up_read(&css_set_rwsem);
  
-gene@coyote:~/src/linux-3.2.40$ lsmod |grep sata
-sata_nv                16890  12 
-libata                146855  2 pata_amd,sata_nv
-
-And I'm pretty sure all that is in the initrd.
-
-Except according to grep, none of that is in 
-/lib/modules/3.2.40/modules.dep
-
-And I cannot find anyplace in a make xconfig that mentions libata.
-So obviously my .config is still fubared. It does grep in the other  
-modules.dep files for several other versions.
-
-In fact, no .config I have mentions it. At my age the hair is thinning 
-quickly enough.
-
-So, Next please?  libata is missing, and so is sata_nv in spite of that 
-being enabled:
-
-gene@coyote:~/src/linux-3.2.40$ grep SATA_NV .config
-CONFIG_SATA_NV=y
-
-But I see thats builtin, but it didn't help.
-
-Thanks all.
-
-Cheers, Gene
++	ret = cgroup_migrate_prepare_dst(to, &preloaded_csets);
++	if (ret)
++		goto out_err;
++
++	/*
++	 * Migrate tasks one-by-one until @form is empty.  This fails iff
++	 * ->can_attach() fails.
++	 */
+ 	do {
+ 		css_task_iter_start(&from->dummy_css, &it);
+ 		task = css_task_iter_next(&it);
+@@ -2821,13 +2839,13 @@ int cgroup_transfer_tasks(struct cgroup *to, struct cgroup *from)
+ 		css_task_iter_end(&it);
+ 
+ 		if (task) {
+-			mutex_lock(&cgroup_mutex);
+-			ret = cgroup_attach_task(to, task, false);
+-			mutex_unlock(&cgroup_mutex);
++			ret = cgroup_migrate(to, task, false);
+ 			put_task_struct(task);
+ 		}
+ 	} while (task && !ret);
+-
++out_err:
++	cgroup_migrate_finish(&preloaded_csets);
++	mutex_unlock(&cgroup_mutex);
+ 	return ret;
+ }
+ 
 -- 
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-Genes Web page <http://geneslinuxbox.net:6309/gene>
-
-NOTICE: Will pay 100 USD for an HP-4815A defective but
-complete probe assembly.
+1.8.5.3
 
