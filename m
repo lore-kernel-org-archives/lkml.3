@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752932AbaBJVrX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 16:47:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32760 "EHLO mx1.redhat.com"
+	id S1753304AbaBJVrV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 16:47:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13455 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752964AbaBJVpf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753034AbaBJVpf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 10 Feb 2014 16:45:35 -0500
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: linux-mm@kvack.org
@@ -17,49 +17,65 @@ Cc: Andrew Morton <akpm@linux-foundation.org>, Matt Mackall <mpm@selenic.com>,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
         Pavel Emelyanov <xemul@parallels.com>, Rik van Riel <riel@redhat.com>,
         kirill.shutemov@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: [PATCH 00/11 v5] update page table walker
-Date: Mon, 10 Feb 2014 16:44:25 -0500
-Message-Id: <1392068676-30627-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH 02/11] pagewalk: add walk_page_vma()
+Date: Mon, 10 Feb 2014 16:44:27 -0500
+Message-Id: <1392068676-30627-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1392068676-30627-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1392068676-30627-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Introduces walk_page_vma(), which is useful for the callers which
+want to walk over a given vma. It's used by later patches.
 
-This is ver.5 of page table walker patchset.
-I rebased it onto v3.14-rc2.
+ChangeLog v4:
+- rename skip_check to skip_lower_level_walking
 
-- v1: http://article.gmane.org/gmane.linux.kernel.mm/108362
-- v2: http://article.gmane.org/gmane.linux.kernel.mm/108827
-- v3: http://article.gmane.org/gmane.linux.kernel.mm/110561
-- v4: http://article.gmane.org/gmane.linux.kernel.mm/111832
-
-Thanks,
-Naoya Horiguchi
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 ---
-Test code:
-  git://github.com/Naoya-Horiguchi/test_rewrite_page_table_walker.git
----
-Summary:
+ include/linux/mm.h |  1 +
+ mm/pagewalk.c      | 18 ++++++++++++++++++
+ 2 files changed, 19 insertions(+)
 
-Naoya Horiguchi (11):
-      pagewalk: update page table walker core
-      pagewalk: add walk_page_vma()
-      smaps: redefine callback functions for page table walker
-      clear_refs: redefine callback functions for page table walker
-      pagemap: redefine callback functions for page table walker
-      numa_maps: redefine callback functions for page table walker
-      memcg: redefine callback functions for page table walker
-      madvise: redefine callback functions for page table walker
-      arch/powerpc/mm/subpage-prot.c: use walk_page_vma() instead of walk_page_range()
-      pagewalk: remove argument hmask from hugetlb_entry()
-      mempolicy: apply page table walker on queue_pages_range()
+diff --git v3.14-rc2.orig/include/linux/mm.h v3.14-rc2/include/linux/mm.h
+index 4d0bc01de43c..144b08617957 100644
+--- v3.14-rc2.orig/include/linux/mm.h
++++ v3.14-rc2/include/linux/mm.h
+@@ -1104,6 +1104,7 @@ struct mm_walk {
+ 
+ int walk_page_range(unsigned long addr, unsigned long end,
+ 		struct mm_walk *walk);
++int walk_page_vma(struct vm_area_struct *vma, struct mm_walk *walk);
+ void free_pgd_range(struct mmu_gather *tlb, unsigned long addr,
+ 		unsigned long end, unsigned long floor, unsigned long ceiling);
+ int copy_page_range(struct mm_struct *dst, struct mm_struct *src,
+diff --git v3.14-rc2.orig/mm/pagewalk.c v3.14-rc2/mm/pagewalk.c
+index 4770558feea8..2a88dfa58af6 100644
+--- v3.14-rc2.orig/mm/pagewalk.c
++++ v3.14-rc2/mm/pagewalk.c
+@@ -334,3 +334,21 @@ int walk_page_range(unsigned long start, unsigned long end,
+ 	} while (start = next, start < end);
+ 	return err;
+ }
++
++int walk_page_vma(struct vm_area_struct *vma, struct mm_walk *walk)
++{
++	int err;
++
++	if (!walk->mm)
++		return -EINVAL;
++
++	VM_BUG_ON(!rwsem_is_locked(&walk->mm->mmap_sem));
++	VM_BUG_ON(!vma);
++	walk->vma = vma;
++	err = walk_page_test(vma->vm_start, vma->vm_end, walk);
++	if (skip_lower_level_walking(walk))
++		return 0;
++	if (err)
++		return err;
++	return __walk_page_range(vma->vm_start, vma->vm_end, walk);
++}
+-- 
+1.8.5.3
 
- arch/powerpc/mm/subpage-prot.c |   6 +-
- fs/proc/task_mmu.c             | 267 ++++++++++++-----------------
- include/linux/mm.h             |  24 ++-
- mm/madvise.c                   |  43 ++---
- mm/memcontrol.c                |  71 +++-----
- mm/mempolicy.c                 | 255 +++++++++++-----------------
- mm/pagewalk.c                  | 372 ++++++++++++++++++++++++++---------------
- 7 files changed, 506 insertions(+), 532 deletions(-)
