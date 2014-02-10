@@ -1,126 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753124AbaBJXVL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 18:21:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:16442 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752279AbaBJXVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 18:21:08 -0500
-Message-ID: <1392074440.15608.183.camel@ul30vt.home>
-Subject: Re: [RFC PATCH v4 06/10] VFIO_PLATFORM: Read and write support for
- the device fd
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Scott Wood <scottwood@freescale.com>
-Cc: Antonios Motakis <a.motakis@virtualopensystems.com>,
-        kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        tech@virtualopensystems.com, a.rigo@virtualopensystems.com,
-        B08248@freescale.com, kim.phillips@linaro.org, jan.kiszka@siemens.com,
-        kvm@vger.kernel.org, R65777@freescale.com, B07421@freescale.com,
-        christoffer.dall@linaro.org, agraf@suse.de, B16395@freescale.com,
-        will.deacon@arm.com
-Date: Mon, 10 Feb 2014 16:20:40 -0700
-In-Reply-To: <1392073951.6733.383.camel@snotra.buserror.net>
-References: <1391880580-471-1-git-send-email-a.motakis@virtualopensystems.com>
-	 <1391880580-471-7-git-send-email-a.motakis@virtualopensystems.com>
-	 <1392072326.15608.181.camel@ul30vt.home>
-	 <1392073951.6733.383.camel@snotra.buserror.net>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753132AbaBJXXk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 18:23:40 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:33241 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752124AbaBJXXh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 18:23:37 -0500
+Date: Mon, 10 Feb 2014 17:23:28 -0600 (CST)
+From: Kumar Gala <galak@codeaurora.org>
+X-X-Sender: galak@galak-ubuntu.qualcomm.com
+To: arm@kernel.org
+cc: David Brown <davidb@codeaurora.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Kevin Hilman <khilman@linaro.org>,
+        Rohit Vaswani <rvaswani@codeaurora.org>
+Subject: [GIT PULL] qcom cleanups for v3.15
+Message-ID: <alpine.DEB.2.00.1402101722170.12284@galak-ubuntu.qualcomm.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-02-10 at 17:12 -0600, Scott Wood wrote:
-> On Mon, 2014-02-10 at 15:45 -0700, Alex Williamson wrote:
-> > On Sat, 2014-02-08 at 18:29 +0100, Antonios Motakis wrote:
-> > > VFIO returns a file descriptor which we can use to manipulate the memory
-> > > regions of the device. Since some memory regions we cannot mmap due to
-> > > security concerns, we also allow to read and write to this file descriptor
-> > > directly.
-> > > 
-> > > Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
-> > > Tested-by: Alvise Rigo <a.rigo@virtualopensystems.com>
-> > > ---
-> > >  drivers/vfio/platform/vfio_platform.c | 128 +++++++++++++++++++++++++++++++++-
-> > >  1 file changed, 125 insertions(+), 3 deletions(-)
-> > > 
-> > > diff --git a/drivers/vfio/platform/vfio_platform.c b/drivers/vfio/platform/vfio_platform.c
-> > > index f7db5c0..ee96078 100644
-> > > --- a/drivers/vfio/platform/vfio_platform.c
-> > > +++ b/drivers/vfio/platform/vfio_platform.c
-> > > @@ -55,7 +55,8 @@ static int vfio_platform_regions_init(struct vfio_platform_device *vdev)
-> > >  
-> > >  		region.addr = res->start;
-> > >  		region.size = resource_size(res);
-> > > -		region.flags = 0;
-> > > +		region.flags = VFIO_REGION_INFO_FLAG_READ
-> > > +				| VFIO_REGION_INFO_FLAG_WRITE;
-> > >  
-> > >  		vdev->region[i] = region;
-> > >  	}
-> > > @@ -150,13 +151,134 @@ static long vfio_platform_ioctl(void *device_data,
-> > >  static ssize_t vfio_platform_read(void *device_data, char __user *buf,
-> > >  			     size_t count, loff_t *ppos)
-> > >  {
-> > > -	return 0;
-> > > +	struct vfio_platform_device *vdev = device_data;
-> > > +	unsigned int *io;
-> > > +	int i;
-> > > +
-> > > +	for (i = 0; i < vdev->num_regions; i++) {
-> > > +		struct vfio_platform_region region = vdev->region[i];
-> > > +		unsigned int done = 0;
-> > > +		loff_t off;
-> > > +
-> > > +		if ((*ppos < region.addr)
-> > > +		     || (*ppos + count - 1) >= (region.addr + region.size))
-> > > +			continue;
-> > 
-> > Perhaps there's something to be said for vfio-pci's use of fixed offsets
-> > to have a direct offset to index lookup.
-> > 
-> > > +
-> > > +		io = ioremap_nocache(region.addr, region.size);
-> > 
-> > This must incur some overhead per access.
-> 
-> There's mmap() if you want fast...  Given the limited ioremap space on
-> 32-bit, I can see not wanting to map everything that the user has open
-> all the time -- but in that case, wouldn't it be better to just map one
-> page here rather than the whole region?
-> 
-> > > +
-> > > +		off = *ppos - region.addr;
-> > > +
-> > > +		while (count) {
-> > > +			size_t filled;
-> > > +
-> > > +			if (count >= 4 && !(off % 4)) {
-> > > +				u32 val;
-> > > +
-> > > +				val = ioread32(io + off);
-> > > +				if (copy_to_user(buf, &val, 4))
-> > > +					goto err;
-> > 
-> > For vfio-pci we've decided that these interfaces are always little
-> > endian, have you considered whether it makes sense to do something
-> > similar here?  Thanks,
-> 
-> ioread32() is little endian -- but since read() puts its result in the
-> caller's memory buffer (rather than a register return), I think it makes
-> more sense to preserve byte-invariance -- similar to the conclusion of
-> the recent KVM MMIO API clarification discussion.  Then the VFIO user
-> would use the same type of access (byte swapped or not) to access the
-> read() buffer that they would have used to access the register directly.
-> 
-> Forcing little endian is a better fit for PCI (which is inherently
-> little endian) than for platform devices which can be either endianness.
+The following changes since commit 38dbfb59d1175ef458d006556061adeaa8751b72:
 
-Ok, works for me.  Thanks,
+   Linus 3.14-rc1 (2014-02-02 16:42:13 -0800)
 
-Alex
+are available in the git repository at:
 
+   git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-cleanup-for-3.15
 
+for you to fetch changes up to cf1e8f0cd665e2a9966d2bee4e11ecc0938ff166:
 
+   ARM: qcom: Rename various msm prefixed functions to qcom (2014-02-06 16:20:41 -0600)
+
+----------------------------------------------------------------
+General cleanups for MSM/QCOM for 3.15
+
+Split of the multiplatform support for the Qualcomm SoCs into a mach-qcom
+while we leave mach-msm as legacy support.  Also, some smp and device tree
+related cleanups.
+
+----------------------------------------------------------------
+Kumar Gala (6):
+       ARM: dts: msm: split out msm8660 and msm8960 soc into dts include
+       ARM: msm: kill off hotplug.c
+       clocksource: qcom: Move clocksource code out of mach-msm
+       ARM: qcom: Split Qualcomm support into legacy and multiplatform
+       clocksource: qcom: split building of legacy vs multiplatform support
+       ARM: qcom: Rename various msm prefixed functions to qcom
+
+Rohit Vaswani (1):
+       ARM: msm: Remove pen_release usage
+
+  MAINTAINERS                                        |  8 +++
+  arch/arm/Kconfig                                   |  7 +-
+  arch/arm/Kconfig.debug                             |  2 +-
+  arch/arm/Makefile                                  |  1 +
+  arch/arm/boot/dts/Makefile                         |  6 +-
+  arch/arm/boot/dts/qcom-msm8660-surf.dts            | 59 +----------------
+  arch/arm/boot/dts/qcom-msm8660.dtsi                | 63 ++++++++++++++++++
+  arch/arm/boot/dts/qcom-msm8960-cdp.dts             | 66 +------------------
+  arch/arm/boot/dts/qcom-msm8960.dtsi                | 70 ++++++++++++++++++++
+  arch/arm/mach-msm/Kconfig                          | 54 ++--------------
+  arch/arm/mach-msm/Makefile                         |  8 ---
+  arch/arm/mach-msm/common.h                         |  1 -
+  arch/arm/mach-msm/headsmp.S                        | 39 ------------
+  arch/arm/mach-msm/hotplug.c                        | 74 ----------------------
+  arch/arm/mach-qcom/Kconfig                         | 33 ++++++++++
+  arch/arm/mach-qcom/Makefile                        |  5 ++
+  .../arm/{mach-msm/board-dt.c => mach-qcom/board.c} | 15 ++---
+  arch/arm/{mach-msm => mach-qcom}/platsmp.c         | 66 ++++++-------------
+  arch/arm/{mach-msm => mach-qcom}/scm-boot.c        |  0
+  arch/arm/{mach-msm => mach-qcom}/scm-boot.h        |  0
+  arch/arm/{mach-msm => mach-qcom}/scm.c             |  0
+  arch/arm/{mach-msm => mach-qcom}/scm.h             |  0
+  drivers/clocksource/Kconfig                        |  3 +
+  drivers/clocksource/Makefile                       |  1 +
+  .../timer.c => drivers/clocksource/qcom-timer.c    | 29 ++++-----
+  25 files changed, 240 insertions(+), 370 deletions(-)
+  create mode 100644 arch/arm/boot/dts/qcom-msm8660.dtsi
+  create mode 100644 arch/arm/boot/dts/qcom-msm8960.dtsi
+  delete mode 100644 arch/arm/mach-msm/headsmp.S
+  delete mode 100644 arch/arm/mach-msm/hotplug.c
+  create mode 100644 arch/arm/mach-qcom/Kconfig
+  create mode 100644 arch/arm/mach-qcom/Makefile
+  rename arch/arm/{mach-msm/board-dt.c => mach-qcom/board.c} (68%)
+  rename arch/arm/{mach-msm => mach-qcom}/platsmp.c (65%)
+  rename arch/arm/{mach-msm => mach-qcom}/scm-boot.c (100%)
+  rename arch/arm/{mach-msm => mach-qcom}/scm-boot.h (100%)
+  rename arch/arm/{mach-msm => mach-qcom}/scm.c (100%)
+  rename arch/arm/{mach-msm => mach-qcom}/scm.h (100%)
+  rename arch/arm/mach-msm/timer.c => drivers/clocksource/qcom-timer.c (98%)
+
+--
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
