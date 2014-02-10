@@ -1,78 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752567AbaBJQ2U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 11:28:20 -0500
-Received: from hofr.at ([212.69.189.236]:44624 "EHLO mail.hofr.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751770AbaBJQ2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 11:28:17 -0500
-Date: Mon, 10 Feb 2014 17:28:16 +0100
-From: Nicholas Mc Guire <der.herr@hofr.at>
-To: linux-rt-users@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Carsten Emde <C.Emde@osadl.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andreas Platschek <platschek@ict.tuwien.ac.at>
-Subject: [PATCH RT 3/5] allow preemption in check_task_state
-Message-ID: <20140210162816.GA24267@opentech.at>
+	id S1752788AbaBJQ3N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 11:29:13 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:51636 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752606AbaBJQ3I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 11:29:08 -0500
+Date: Mon, 10 Feb 2014 16:28:22 +0000
+From: Dave Martin <Dave.Martin@arm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Jonathan Austin <Jonathan.Austin@arm.com>,
+        "nico@linaro.org" <nico@linaro.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
+        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <will.deacon@arm.com>,
+        "ben.dooks@codethink.co.uk" <ben.dooks@codethink.co.uk>,
+        "vgupta@synopsys.com" <vgupta@synopsys.com>,
+        Fabrice Gasnier <fabrice.gasnier@st.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "maxime.coquelin@st.com" <maxime.coquelin@st.com>
+Subject: Re: [RFC PATCH] ARM: Add imprecise abort enable/disable macro
+Message-ID: <20140210162822.GF2794@e103592.cambridge.arm.com>
+References: <1391789955-26927-1-git-send-email-fabrice.gasnier@st.com>
+ <1391789955-26927-2-git-send-email-fabrice.gasnier@st.com>
+ <20140207170903.GT5976@mudshark.cambridge.arm.com>
+ <52F892C8.80508@st.com>
+ <20140210111710.GC17766@mudshark.cambridge.arm.com>
+ <20140210135659.GU26684@n2100.arm.linux.org.uk>
+ <20140210144228.GC2794@e103592.cambridge.arm.com>
+ <20140210151934.GZ26684@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20140210151934.GZ26684@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Feb 10, 2014 at 03:19:34PM +0000, Russell King - ARM Linux wrote:
+> On Mon, Feb 10, 2014 at 02:42:28PM +0000, Dave Martin wrote:
+> > Should we require CPSR.A to me masked in Booting, for all CPUs that have
+> > it?
+> 
+> If it's not masked at boot, then there can't be an imprecise exception
+> pending.
 
-A lockfree approach to check_task_state
+Couldn't there still be a dangling abort condition triggered by the
+bootloader, which which doesn't raise the abort pin until after we
+entered the kernel?
 
-This treates the state as an indicator variable and use it to probe 
-saved_state lock free. There is actually no consistency demand on 
-state/saved_state but rather a consistency demand on the transitions 
-of the two variables but those transition, based on path inspection,
-are not independent.
+> That's unlike interrupts, where a device could trigger an interrupt at
+> any moment (eg, a timer expiring.)
 
-Its probably not faster than the lock/unlock case if uncontended - atleast
-it does not show up in benchmark results, but it would never be hit by a 
-full pi-boost cycle as there is no contention.
 
-This also was tested against the test-case from Sebastian as well as 
-rnning a few scripted gdb breakpoint debugging/single-stepping loops
-to trigger this.
+List as with interrupts, there's no way to drain or cancel pending aborts
+that aren't asserted yet, but whose cause conditions are already
+established.
 
-Tested-by: Andreas Platschek <platschek@ict.tuwien.ac.at>
-Tested-by: Carsten Emde <C.Emde@osadl.org>
-Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
----
- kernel/sched/core.c |   10 ++++++++--
- 1 files changed, 8 insertions(+), 2 deletions(-)
+It's possible that Strongly-Ordered memory is sufficient to
+guarantee that any D-side abort becomes synchronous in some
+implementations but I don't think the arhitecture guarantees it.
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index bf93f63..5690ba3 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1074,11 +1074,17 @@ static int migration_cpu_stop(void *data);
- static bool check_task_state(struct task_struct *p, long match_state)
- {
- 	bool match = false;
-+	long state, saved_state;
-+
-+	/* catch restored state */
-+	do {
-+		state = p->state;
-+		saved_state = p->saved_state;
-+		rmb();  /* make sure we actually catch updates */
-+	} while (state != p->state);
- 
--	raw_spin_lock_irq(&p->pi_lock);
- 	if (p->state == match_state || p->saved_state == match_state)
- 		match = true;
--	raw_spin_unlock_irq(&p->pi_lock);
- 
- 	return match;
- }
--- 
-1.7.2.5
+It certainly won't be guaranteed for any other memory type.
 
+
+For these reasons, imprecise aborts seem a lot like interrupts:
+you can mask them or handle them; but controlling when and whether
+they occur involves platform-specific assumptions, at least in
+theory.
+
+Cheers
+---Dave
