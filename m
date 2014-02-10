@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752666AbaBJDHI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 22:07:08 -0500
-Received: from gate.crashing.org ([63.228.1.57]:47653 "EHLO gate.crashing.org"
+	id S1752721AbaBJDHX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 22:07:23 -0500
+Received: from know-smtprelay-omc-8.server.virginmedia.net ([80.0.253.72]:37107
+	"EHLO know-smtprelay-omc-8.server.virginmedia.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752252AbaBJDHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 22:07:06 -0500
-Message-ID: <1392001526.3996.17.camel@pasglop>
-Subject: Re: [PATCH] Convert powerpc simple spinlocks into ticket locks
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Kumar Gala <galak@kernel.crashing.org>
-Cc: Torsten Duwe <duwe@lst.de>, Scott Wood <scottwood@freescale.com>,
-        Tom Musta <tommusta@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        Anton Blanchard <anton@samba.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org, Ingo Molnar <mingo@kernel.org>
-Date: Mon, 10 Feb 2014 14:05:26 +1100
-In-Reply-To: <87C29DBB-41E7-4B6C-9089-3C7756FBAE07@kernel.crashing.org>
-References: <20140206103736.GA18054@lst.de>
-	 <20140206163837.GT2936@laptop.programming.kicks-ass.net>
-	 <20140206173727.GA13048@lst.de>
-	 <1391717992.6733.232.camel@snotra.buserror.net>
-	 <20140207090248.GB26811@lst.de>
-	 <87C29DBB-41E7-4B6C-9089-3C7756FBAE07@kernel.crashing.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1752252AbaBJDHS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Feb 2014 22:07:18 -0500
+X-Originating-IP: [81.106.150.188]
+X-Spam: 0
+X-Authority: v=2.1 cv=Rs1LLUWK c=1 sm=1 tr=0 a=DGj713NdaxKrsjjgQne7PA==:117
+ a=DGj713NdaxKrsjjgQne7PA==:17 a=M1kyBYkWWGkA:10 a=ZeE3dv4depkA:10
+ a=uObrxnre4hsA:10 a=IkcTkHD0fZMA:10 a=NLZqzBF-AAAA:8 a=BLapovA1oewA:10
+ a=D19gQVrFAAAA:8 a=9ujWuo5hLi11aQj-c_YA:9 a=QEXdDO2ut3YA:10
+Date: Mon, 10 Feb 2014 03:07:16 +0000
+From: Ken Moffat <zarniwhoop@ntlworld.com>
+To: Gene Heskett <gheskett@wdtv.com>
+Cc: Paul Bolle <pebolle@tiscali.nl>, Richard Weinberger <richard@nod.at>,
+        Guenter Roeck <linux@roeck-us.net>,
+        David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        "moderated list:PANASONIC MN10300..." <linux-am33-list@redhat.com>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 24/28] Remove DEPRECATED
+Message-ID: <20140210030715.GA21916@milliways>
+References: <1391971686-9517-1-git-send-email-richard@nod.at>
+ <201402091741.46390.gheskett@wdtv.com>
+ <1391986097.25855.94.camel@x220>
+ <201402091805.41618.gheskett@wdtv.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <201402091805.41618.gheskett@wdtv.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-02-07 at 09:51 -0600, Kumar Gala wrote:
-> On Feb 7, 2014, at 3:02 AM, Torsten Duwe <duwe@lst.de> wrote:
+On Sun, Feb 09, 2014 at 06:05:41PM -0500, Gene Heskett wrote:
+> On Sunday 09 February 2014, Paul Bolle wrote:
+> >
+> >Feel free to open a new thread, with the relevant details, and involve
+> >the relevant people and lists. I have no idea what you're going on about
+> >and could not care less (in the context of this thread).
+> >
+> >
+> >Paul Bolle
 > 
-> > On Thu, Feb 06, 2014 at 02:19:52PM -0600, Scott Wood wrote:
-> >> On Thu, 2014-02-06 at 18:37 +0100, Torsten Duwe wrote:
-> >>> On Thu, Feb 06, 2014 at 05:38:37PM +0100, Peter Zijlstra wrote:
-> >> 
-> >>>> Can you pair lwarx with sthcx ? I couldn't immediately find the answer
-> >>>> in the PowerISA doc. If so I think you can do better by being able to
-> >>>> atomically load both tickets but only storing the head without affecting
-> >>>> the tail.
-> > 
-> > Can I simply write the half word, without a reservation, or will the HW caches
-> > mess up the other half? Will it ruin the cache coherency on some (sub)architectures?
+> Been tried, got zero response.  Frankly, posting just to lkml, hoping the 
+> revalent people see it, is beginning to act like posting to a black hole.
 > 
-> The coherency should be fine, I just can’t remember if you’ll lose the reservation by doing this.
+ I saw one response to you, from Randy Dunlap, asking for more
+information : https://lkml.org/lkml/2014/2/8/153
 
-Yes you do.
+ After your posts a few days ago, I'm tempted to suggest you check
+your spam filters, and also any mail files your virus scanner might
+have quarantined.  But it is also possible that you just haven't
+received it - email is like that.
 
-> >> Plus, sthcx doesn't exist on all PPC chips.
-> > 
-> > Which ones are lacking it? Do all have at least a simple 16-bit store?
-> 
-> Everything implements a simple 16-bit store, just not everything implements the store conditional of 16-bit data.
-
-Ben.
-
-> - k--
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
+ĸen
+-- 
+das eine Mal als Tragödie, dieses Mal als Farce
