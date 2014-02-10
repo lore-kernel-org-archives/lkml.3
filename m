@@ -1,90 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752965AbaBJN0j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 08:26:39 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:48429 "EHLO mx2.suse.de"
+	id S1753090AbaBJN1T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 08:27:19 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:45134 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752195AbaBJN0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 08:26:38 -0500
-Date: Mon, 10 Feb 2014 13:26:34 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Vlastimil Babka <vbabka@suse.cz>, Joonsoo Kim <js1304@gmail.com>,
-        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] mm/compaction: disallow high-order page for
- migration target
-Message-ID: <20140210132634.GE6732@suse.de>
-References: <1391749726-28910-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1391749726-28910-2-git-send-email-iamjoonsoo.kim@lge.com>
+	id S1752300AbaBJN1P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 08:27:15 -0500
+X-IronPort-AV: E=Sophos;i="4.95,817,1384300800"; 
+   d="scan'208";a="101293015"
+Date: Mon, 10 Feb 2014 13:26:53 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Rashika Kheria <rashika.kheria@gmail.com>
+CC: <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Wei Liu <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <josh@joshtriplett.org>
+Subject: Re: [PATCH 4/4] drivers: xen: Move prototype declaration to header
+ file include/xen/xen-ops.h from arch/x86/xen/xen-ops.h
+In-Reply-To: <98aa418fd8664807c4bde1ff7cf2cd5969749129.1391943416.git.rashika.kheria@gmail.com>
+Message-ID: <alpine.DEB.2.02.1402101326460.4373@kaball.uk.xensource.com>
+References: <3826f170dae13e3ee700ad9e26a8c88be4b7aaa2.1391943416.git.rashika.kheria@gmail.com> <98aa418fd8664807c4bde1ff7cf2cd5969749129.1391943416.git.rashika.kheria@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1391749726-28910-2-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/mixed;
+	boundary="1342847746-1702294038-1392038813=:4373"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 07, 2014 at 02:08:42PM +0900, Joonsoo Kim wrote:
-> Purpose of compaction is to get a high order page. Currently, if we find
-> high-order page while searching migration target page, we break it to
-> order-0 pages and use them as migration target. It is contrary to purpose
-> of compaction, so disallow high-order page to be used for
-> migration target.
-> 
-> Additionally, clean-up logic in suitable_migration_target() to simply.
-> There is no functional changes from this clean-up.
-> 
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> 
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index 3a91a2e..bbe1260 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -217,21 +217,12 @@ static inline bool compact_trylock_irqsave(spinlock_t *lock,
->  /* Returns true if the page is within a block suitable for migration to */
->  static bool suitable_migration_target(struct page *page)
->  {
-> -	int migratetype = get_pageblock_migratetype(page);
-> -
-> -	/* Don't interfere with memory hot-remove or the min_free_kbytes blocks */
-> -	if (migratetype == MIGRATE_RESERVE)
-> -		return false;
-> -
+--1342847746-1702294038-1392038813=:4373
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
-Why is this check removed? The reservation blocks are preserved as
-short-lived high-order atomic allocations depend on them.
+On Sun, 9 Feb 2014, Rashika Kheria wrote:
+> Move prototype declaration to header file include/xen/xen-ops.h from
+> arch/x86/xen/xen-ops.h because it is used by more than one file. Also,
+> remove else condition from xen/events/events_base.c to eliminate
+> conflicting definitions when CONFIG_XEN_PVHVM is not defined.
+>=20
+> This eliminates the following warning in xen/events/events_base.c:
+> drivers/xen/events/events_base.c:1640:6: warning: no previous prototype f=
+or =E2=80=98xen_callback_vector=E2=80=99 [-Wmissing-prototypes]
+>=20
+> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 
-> -	if (is_migrate_isolate(migratetype))
-> -		return false;
-> -
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-Why is this check removed?
 
-> -	/* If the page is a large free page, then allow migration */
-> +	/* If the page is a large free page, then disallow migration */
->  	if (PageBuddy(page) && page_order(page) >= pageblock_order)
-> -		return true;
-> +		return false;
->  
-
-The reason why this was originally allowed was to allow pageblocks that were
-marked MIGRATE_UNMOVABLE or MIGRATE_RECLAIMABLE to be used as compaction
-targets. However, compaction should not even be running if this is the
-case so the change makes sense.
-
->  	/* If the block is MIGRATE_MOVABLE or MIGRATE_CMA, allow migration */
-> -	if (migrate_async_suitable(migratetype))
-> +	if (migrate_async_suitable(get_pageblock_migratetype(page)))
->  		return true;
->  
->  	/* Otherwise skip the block */
-> -- 
+>  arch/x86/xen/xen-ops.h           |    1 -
+>  drivers/xen/events/events_base.c |    2 --
+>  include/xen/xen-ops.h            |    7 +++++++
+>  3 files changed, 7 insertions(+), 3 deletions(-)
+>=20
+> diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
+> index e5edc7f..aa8a979 100644
+> --- a/arch/x86/xen/xen-ops.h
+> +++ b/arch/x86/xen/xen-ops.h
+> @@ -39,7 +39,6 @@ void xen_enable_sysenter(void);
+>  void xen_enable_syscall(void);
+>  void xen_vcpu_restore(void);
+> =20
+> -void xen_callback_vector(void);
+>  void xen_hvm_init_shared_info(void);
+>  void xen_unplug_emulated_devices(void);
+> =20
+> diff --git a/drivers/xen/events/events_base.c b/drivers/xen/events/events=
+_base.c
+> index 4672e00..5466543 100644
+> --- a/drivers/xen/events/events_base.c
+> +++ b/drivers/xen/events/events_base.c
+> @@ -1656,8 +1656,6 @@ void xen_callback_vector(void)
+>  =09=09=09=09=09xen_hvm_callback_vector);
+>  =09}
+>  }
+> -#else
+> -void xen_callback_vector(void) {}
+>  #endif
+> =20
+>  #undef MODULE_PARAM_PREFIX
+> diff --git a/include/xen/xen-ops.h b/include/xen/xen-ops.h
+> index 9a86337..cdea45b 100644
+> --- a/include/xen/xen-ops.h
+> +++ b/include/xen/xen-ops.h
+> @@ -38,4 +38,11 @@ int xen_unmap_domain_mfn_range(struct vm_area_struct *=
+vma,
+>  bool xen_running_on_version_or_later(unsigned int major, unsigned int mi=
+nor);
+> =20
+>  irqreturn_t xen_debug_interrupt(int irq, void *dev_id);
+> +
+> +#ifdef CONFIG_XEN_PVHVM
+> +void xen_callback_vector(void);
+> +#else
+> +static inline void xen_callback_vector(void) {}
+> +#endif
+> +
+>  #endif /* INCLUDE_XEN_OPS_H */
+> --=20
 > 1.7.9.5
-> 
-
--- 
-Mel Gorman
-SUSE Labs
+>=20
+--1342847746-1702294038-1392038813=:4373--
