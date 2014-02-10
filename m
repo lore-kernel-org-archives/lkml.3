@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754870AbaBJUTM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 15:19:12 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34567 "EHLO
+	id S1755637AbaBJUT2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 15:19:28 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34559 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752654AbaBJTli (ORCPT
+	with ESMTP id S1752588AbaBJTli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 10 Feb 2014 14:41:38 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+Cc: Yegor Yefremov <yegorslists@googlemail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 023/124] xen/pvhvm: If xen_platform_pci=0 is set don't blow up (v4).
-Date: Mon, 10 Feb 2014 11:39:23 -0800
-Message-Id: <1392061264-28124-24-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 015/124] serial: add support for 200 v3 series Titan card
+Date: Mon, 10 Feb 2014 11:39:15 -0800
+Message-Id: <1392061264-28124-16-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
 References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
@@ -27,330 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Yegor Yefremov <yegorslists@googlemail.com>
 
-commit 51c71a3bbaca868043cc45b3ad3786dd48a90235 upstream.
+commit 48c0247d7b7bf58abb85a39021099529df365c4d upstream.
 
-The user has the option of disabling the platform driver:
-00:02.0 Unassigned class [ff80]: XenSource, Inc. Xen Platform Device (rev 01)
-
-which is used to unplug the emulated drivers (IDE, Realtek 8169, etc)
-and allow the PV drivers to take over. If the user wishes
-to disable that they can set:
-
-  xen_platform_pci=0
-  (in the guest config file)
-
-or
-  xen_emul_unplug=never
-  (on the Linux command line)
-
-except it does not work properly. The PV drivers still try to
-load and since the Xen platform driver is not run - and it
-has not initialized the grant tables, most of the PV drivers
-stumble upon:
-
-input: Xen Virtual Keyboard as /devices/virtual/input/input5
-input: Xen Virtual Pointer as /devices/virtual/input/input6M
-------------[ cut here ]------------
-kernel BUG at /home/konrad/ssd/konrad/linux/drivers/xen/grant-table.c:1206!
-invalid opcode: 0000 [#1] SMP
-Modules linked in: xen_kbdfront(+) xenfs xen_privcmd
-CPU: 6 PID: 1389 Comm: modprobe Not tainted 3.13.0-rc1upstream-00021-ga6c892b-dirty #1
-Hardware name: Xen HVM domU, BIOS 4.4-unstable 11/26/2013
-RIP: 0010:[<ffffffff813ddc40>]  [<ffffffff813ddc40>] get_free_entries+0x2e0/0x300
-Call Trace:
- [<ffffffff8150d9a3>] ? evdev_connect+0x1e3/0x240
- [<ffffffff813ddd0e>] gnttab_grant_foreign_access+0x2e/0x70
- [<ffffffffa0010081>] xenkbd_connect_backend+0x41/0x290 [xen_kbdfront]
- [<ffffffffa0010a12>] xenkbd_probe+0x2f2/0x324 [xen_kbdfront]
- [<ffffffff813e5757>] xenbus_dev_probe+0x77/0x130
- [<ffffffff813e7217>] xenbus_frontend_dev_probe+0x47/0x50
- [<ffffffff8145e9a9>] driver_probe_device+0x89/0x230
- [<ffffffff8145ebeb>] __driver_attach+0x9b/0xa0
- [<ffffffff8145eb50>] ? driver_probe_device+0x230/0x230
- [<ffffffff8145eb50>] ? driver_probe_device+0x230/0x230
- [<ffffffff8145cf1c>] bus_for_each_dev+0x8c/0xb0
- [<ffffffff8145e7d9>] driver_attach+0x19/0x20
- [<ffffffff8145e260>] bus_add_driver+0x1a0/0x220
- [<ffffffff8145f1ff>] driver_register+0x5f/0xf0
- [<ffffffff813e55c5>] xenbus_register_driver_common+0x15/0x20
- [<ffffffff813e76b3>] xenbus_register_frontend+0x23/0x40
- [<ffffffffa0015000>] ? 0xffffffffa0014fff
- [<ffffffffa001502b>] xenkbd_init+0x2b/0x1000 [xen_kbdfront]
- [<ffffffff81002049>] do_one_initcall+0x49/0x170
-
-.. snip..
-
-which is hardly nice. This patch fixes this by having each
-PV driver check for:
- - if running in PV, then it is fine to execute (as that is their
-   native environment).
- - if running in HVM, check if user wanted 'xen_emul_unplug=never',
-   in which case bail out and don't load any PV drivers.
- - if running in HVM, and if PCI device 5853:0001 (xen_platform_pci)
-   does not exist, then bail out and not load PV drivers.
- - (v2) if running in HVM, and if the user wanted 'xen_emul_unplug=ide-disks',
-   then bail out for all PV devices _except_ the block one.
-   Ditto for the network one ('nics').
- - (v2) if running in HVM, and if the user wanted 'xen_emul_unplug=unnecessary'
-   then load block PV driver, and also setup the legacy IDE paths.
-   In (v3) make it actually load PV drivers.
-
-Reported-by: Sander Eikelenboom <linux@eikelenboom.it
-Reported-by: Anthony PERARD <anthony.perard@citrix.com>
-Reported-and-Tested-by: Fabio Fantoni <fabio.fantoni@m2r.biz>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-[v2: Add extra logic to handle the myrid ways 'xen_emul_unplug'
-can be used per Ian and Stefano suggestion]
-[v3: Make the unnecessary case work properly]
-[v4: s/disks/ide-disks/ spotted by Fabio]
-Reviewed-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Acked-by: Bjorn Helgaas <bhelgaas@google.com> [for PCI parts]
-[ kamal: backport to 3.8 (no drivers/char/tpm/xen-tpmfront.c) ]
+Signed-off-by: Yegor Yefremov <yegorslists@googlemail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/xen/platform-pci-unplug.c         | 74 ++++++++++++++++++++++++++++++
- drivers/block/xen-blkfront.c               |  4 +-
- drivers/input/misc/xen-kbdfront.c          |  4 ++
- drivers/net/xen-netfront.c                 |  2 +-
- drivers/pci/xen-pcifront.c                 |  4 ++
- drivers/video/xen-fbfront.c                |  4 ++
- drivers/xen/xenbus/xenbus_probe_frontend.c |  2 +-
- include/xen/platform_pci.h                 | 23 ++++++++++
- 8 files changed, 113 insertions(+), 4 deletions(-)
+ drivers/tty/serial/8250/8250_pci.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/arch/x86/xen/platform-pci-unplug.c b/arch/x86/xen/platform-pci-unplug.c
-index 0a78524..ab84ac1 100644
---- a/arch/x86/xen/platform-pci-unplug.c
-+++ b/arch/x86/xen/platform-pci-unplug.c
-@@ -69,6 +69,80 @@ static int check_platform_magic(void)
- 	return 0;
- }
- 
-+bool xen_has_pv_devices()
-+{
-+	if (!xen_domain())
-+		return false;
-+
-+	/* PV domains always have them. */
-+	if (xen_pv_domain())
-+		return true;
-+
-+	/* And user has xen_platform_pci=0 set in guest config as
-+	 * driver did not modify the value. */
-+	if (xen_platform_pci_unplug == 0)
-+		return false;
-+
-+	if (xen_platform_pci_unplug & XEN_UNPLUG_NEVER)
-+		return false;
-+
-+	if (xen_platform_pci_unplug & XEN_UNPLUG_ALL)
-+		return true;
-+
-+	/* This is an odd one - we are going to run legacy
-+	 * and PV drivers at the same time. */
-+	if (xen_platform_pci_unplug & XEN_UNPLUG_UNNECESSARY)
-+		return true;
-+
-+	/* And the caller has to follow with xen_pv_{disk,nic}_devices
-+	 * to be certain which driver can load. */
-+	return false;
-+}
-+EXPORT_SYMBOL_GPL(xen_has_pv_devices);
-+
-+static bool __xen_has_pv_device(int state)
-+{
-+	/* HVM domains might or might not */
-+	if (xen_hvm_domain() && (xen_platform_pci_unplug & state))
-+		return true;
-+
-+	return xen_has_pv_devices();
-+}
-+
-+bool xen_has_pv_nic_devices(void)
-+{
-+	return __xen_has_pv_device(XEN_UNPLUG_ALL_NICS | XEN_UNPLUG_ALL);
-+}
-+EXPORT_SYMBOL_GPL(xen_has_pv_nic_devices);
-+
-+bool xen_has_pv_disk_devices(void)
-+{
-+	return __xen_has_pv_device(XEN_UNPLUG_ALL_IDE_DISKS |
-+				   XEN_UNPLUG_AUX_IDE_DISKS | XEN_UNPLUG_ALL);
-+}
-+EXPORT_SYMBOL_GPL(xen_has_pv_disk_devices);
-+
-+/*
-+ * This one is odd - it determines whether you want to run PV _and_
-+ * legacy (IDE) drivers together. This combination is only possible
-+ * under HVM.
-+ */
-+bool xen_has_pv_and_legacy_disk_devices(void)
-+{
-+	if (!xen_domain())
-+		return false;
-+
-+	/* N.B. This is only ever used in HVM mode */
-+	if (xen_pv_domain())
-+		return false;
-+
-+	if (xen_platform_pci_unplug & XEN_UNPLUG_UNNECESSARY)
-+		return true;
-+
-+	return false;
-+}
-+EXPORT_SYMBOL_GPL(xen_has_pv_and_legacy_disk_devices);
-+
- void xen_unplug_emulated_devices(void)
- {
- 	int r;
-diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-index 3331cb1..de4a933 100644
---- a/drivers/block/xen-blkfront.c
-+++ b/drivers/block/xen-blkfront.c
-@@ -1129,7 +1129,7 @@ static int blkfront_probe(struct xenbus_device *dev,
- 		char *type;
- 		int len;
- 		/* no unplug has been done: do not hook devices != xen vbds */
--		if (xen_platform_pci_unplug & XEN_UNPLUG_UNNECESSARY) {
-+		if (xen_has_pv_and_legacy_disk_devices()) {
- 			int major;
- 
- 			if (!VDEV_IS_EXTENDED(vdevice))
-@@ -1656,7 +1656,7 @@ static int __init xlblk_init(void)
- 	if (!xen_domain())
- 		return -ENODEV;
- 
--	if (xen_hvm_domain() && !xen_platform_pci_unplug)
-+	if (!xen_has_pv_disk_devices())
- 		return -ENODEV;
- 
- 	if (register_blkdev(XENVBD_MAJOR, DEV_NAME)) {
-diff --git a/drivers/input/misc/xen-kbdfront.c b/drivers/input/misc/xen-kbdfront.c
-index e21c181..fbfdc10 100644
---- a/drivers/input/misc/xen-kbdfront.c
-+++ b/drivers/input/misc/xen-kbdfront.c
-@@ -29,6 +29,7 @@
- #include <xen/interface/io/fbif.h>
- #include <xen/interface/io/kbdif.h>
- #include <xen/xenbus.h>
-+#include <xen/platform_pci.h>
- 
- struct xenkbd_info {
- 	struct input_dev *kbd;
-@@ -380,6 +381,9 @@ static int __init xenkbd_init(void)
- 	if (xen_initial_domain())
- 		return -ENODEV;
- 
-+	if (!xen_has_pv_devices())
-+		return -ENODEV;
-+
- 	return xenbus_register_frontend(&xenkbd_driver);
- }
- 
-diff --git a/drivers/net/xen-netfront.c b/drivers/net/xen-netfront.c
-index 1f57423..49b6c78 100644
---- a/drivers/net/xen-netfront.c
-+++ b/drivers/net/xen-netfront.c
-@@ -1994,7 +1994,7 @@ static int __init netif_init(void)
- 	if (!xen_domain())
- 		return -ENODEV;
- 
--	if (xen_hvm_domain() && !xen_platform_pci_unplug)
-+	if (!xen_has_pv_nic_devices())
- 		return -ENODEV;
- 
- 	printk(KERN_INFO "Initialising Xen virtual ethernet driver.\n");
-diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
-index f7197a7..eae7cd9 100644
---- a/drivers/pci/xen-pcifront.c
-+++ b/drivers/pci/xen-pcifront.c
-@@ -20,6 +20,7 @@
- #include <linux/workqueue.h>
- #include <linux/bitops.h>
- #include <linux/time.h>
-+#include <xen/platform_pci.h>
- 
- #include <asm/xen/swiotlb-xen.h>
- #define INVALID_GRANT_REF (0)
-@@ -1138,6 +1139,9 @@ static int __init pcifront_init(void)
- 	if (!xen_pv_domain() || xen_initial_domain())
- 		return -ENODEV;
- 
-+	if (!xen_has_pv_devices())
-+		return -ENODEV;
-+
- 	pci_frontend_registrar(1 /* enable */);
- 
- 	return xenbus_register_frontend(&xenpci_driver);
-diff --git a/drivers/video/xen-fbfront.c b/drivers/video/xen-fbfront.c
-index cd005c2..4b2d3ab 100644
---- a/drivers/video/xen-fbfront.c
-+++ b/drivers/video/xen-fbfront.c
-@@ -35,6 +35,7 @@
- #include <xen/interface/io/fbif.h>
- #include <xen/interface/io/protocols.h>
- #include <xen/xenbus.h>
-+#include <xen/platform_pci.h>
- 
- struct xenfb_info {
- 	unsigned char		*fb;
-@@ -699,6 +700,9 @@ static int __init xenfb_init(void)
- 	if (xen_initial_domain())
- 		return -ENODEV;
- 
-+	if (!xen_has_pv_devices())
-+		return -ENODEV;
-+
- 	return xenbus_register_frontend(&xenfb_driver);
- }
- 
-diff --git a/drivers/xen/xenbus/xenbus_probe_frontend.c b/drivers/xen/xenbus/xenbus_probe_frontend.c
-index 3159a37..45bcbd9 100644
---- a/drivers/xen/xenbus/xenbus_probe_frontend.c
-+++ b/drivers/xen/xenbus/xenbus_probe_frontend.c
-@@ -447,7 +447,7 @@ subsys_initcall(xenbus_probe_frontend_init);
- #ifndef MODULE
- static int __init boot_wait_for_devices(void)
- {
--	if (xen_hvm_domain() && !xen_platform_pci_unplug)
-+	if (!xen_has_pv_devices())
- 		return -ENODEV;
- 
- 	ready_to_wait_for_devices = 1;
-diff --git a/include/xen/platform_pci.h b/include/xen/platform_pci.h
-index 438c256..b49eeab 100644
---- a/include/xen/platform_pci.h
-+++ b/include/xen/platform_pci.h
-@@ -48,4 +48,27 @@ static inline int xen_must_unplug_disks(void) {
- 
- extern int xen_platform_pci_unplug;
- 
-+#if defined(CONFIG_XEN_PVHVM)
-+extern bool xen_has_pv_devices(void);
-+extern bool xen_has_pv_disk_devices(void);
-+extern bool xen_has_pv_nic_devices(void);
-+extern bool xen_has_pv_and_legacy_disk_devices(void);
-+#else
-+static inline bool xen_has_pv_devices(void)
-+{
-+	return IS_ENABLED(CONFIG_XEN);
-+}
-+static inline bool xen_has_pv_disk_devices(void)
-+{
-+	return IS_ENABLED(CONFIG_XEN);
-+}
-+static inline bool xen_has_pv_nic_devices(void)
-+{
-+	return IS_ENABLED(CONFIG_XEN);
-+}
-+static inline bool xen_has_pv_and_legacy_disk_devices(void)
-+{
-+	return false;
-+}
-+#endif
- #endif /* _XEN_PLATFORM_PCI_H */
+diff --git a/drivers/tty/serial/8250/8250_pci.c b/drivers/tty/serial/8250/8250_pci.c
+index 67950ca..1a890a9 100644
+--- a/drivers/tty/serial/8250/8250_pci.c
++++ b/drivers/tty/serial/8250/8250_pci.c
+@@ -1298,6 +1298,7 @@ pci_wch_ch353_setup(struct serial_private *priv,
+ #define PCI_DEVICE_ID_TITAN_800E	0xA014
+ #define PCI_DEVICE_ID_TITAN_200EI	0xA016
+ #define PCI_DEVICE_ID_TITAN_200EISI	0xA017
++#define PCI_DEVICE_ID_TITAN_200V3	0xA306
+ #define PCI_DEVICE_ID_TITAN_400V3	0xA310
+ #define PCI_DEVICE_ID_TITAN_410V3	0xA312
+ #define PCI_DEVICE_ID_TITAN_800V3	0xA314
+@@ -3801,6 +3802,9 @@ static struct pci_device_id serial_pci_tbl[] = {
+ 	{	PCI_VENDOR_ID_TITAN, PCI_DEVICE_ID_TITAN_200EISI,
+ 		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
+ 		pbn_oxsemi_2_4000000 },
++	{	PCI_VENDOR_ID_TITAN, PCI_DEVICE_ID_TITAN_200V3,
++		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
++		pbn_b0_bt_2_921600 },
+ 	{	PCI_VENDOR_ID_TITAN, PCI_DEVICE_ID_TITAN_400V3,
+ 		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
+ 		pbn_b0_4_921600 },
 -- 
 1.8.3.2
 
