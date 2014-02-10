@@ -1,53 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752965AbaBJMex (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 07:34:53 -0500
-Received: from mga14.intel.com ([143.182.124.37]:29550 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751869AbaBJMes (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 07:34:48 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,817,1384329600"; 
-   d="scan'208";a="472729231"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next] mei: fix compilation error with missing WATCHDOG_CORE
-Date: Mon, 10 Feb 2014 14:33:53 +0200
-Message-Id: <1392035633-21602-1-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.8.5.3
+	id S1753011AbaBJMgo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 07:36:44 -0500
+Received: from mail-we0-f177.google.com ([74.125.82.177]:35025 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752223AbaBJMgk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 07:36:40 -0500
+Date: Mon, 10 Feb 2014 13:36:36 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: lizefan@huawei.com, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 05/16] cgroup: implement cgroup_has_tasks() and unexport
+ cgroup_task_count()
+Message-ID: <20140210123636.GC7117@dhcp22.suse.cz>
+References: <1391953964-22088-1-git-send-email-tj@kernel.org>
+ <1391953964-22088-6-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391953964-22088-6-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kconfig is not transitive so INTEL_ME_TXE has to depend
-on WATCHDOG_CORE as well
+On Sun 09-02-14 08:52:33, Tejun Heo wrote:
+> cgroup_task_count() read-locks css_set_lock and walks all tasks to
+> count them and then returns the result.  The only thing all the users
+> want is determining whether the cgroup is empty or not.  This patch
+> implements cgroup_has_tasks() which tests whether cgroup->cset_links
+> is empty, replaces all cgroup_task_count() usages and unexports it.
+> 
+> Note that the test isn't synchronized.  This is the same as before.
+> The test has always been racy.
+> 
+> This will help planned css_set locking update.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Li Zefan <lizefan@huawei.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: Balbir Singh <bsingharora@gmail.com>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-ERROR: "watchdog_unregister_device" [drivers/misc/mei/mei.ko]
-undefined!
-ERROR: "watchdog_register_device" [drivers/misc/mei/mei.ko]
-undefined!
+Looks good.
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
----
- drivers/misc/mei/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> ---
+>  include/linux/cgroup.h | 8 ++++++--
+>  kernel/cgroup.c        | 2 +-
+>  kernel/cpuset.c        | 2 +-
+>  mm/memcontrol.c        | 4 ++--
+>  4 files changed, 10 insertions(+), 6 deletions(-)
+> 
+> diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+> index 8ca31c1..f173cfb 100644
+> --- a/include/linux/cgroup.h
+> +++ b/include/linux/cgroup.h
+> @@ -455,6 +455,12 @@ static inline bool cgroup_sane_behavior(const struct cgroup *cgrp)
+>  	return cgrp->root->flags & CGRP_ROOT_SANE_BEHAVIOR;
+>  }
+>  
+> +/* no synchronization, the result can only be used as a hint */
+> +static inline bool cgroup_has_tasks(struct cgroup *cgrp)
+> +{
+> +	return !list_empty(&cgrp->cset_links);
+> +}
+> +
+>  /* returns ino associated with a cgroup, 0 indicates unmounted root */
+>  static inline ino_t cgroup_ino(struct cgroup *cgrp)
+>  {
+> @@ -514,8 +520,6 @@ int cgroup_rm_cftypes(struct cftype *cfts);
+>  
+>  bool cgroup_is_descendant(struct cgroup *cgrp, struct cgroup *ancestor);
+>  
+> -int cgroup_task_count(const struct cgroup *cgrp);
+> -
+>  /*
+>   * Control Group taskset, used to pass around set of tasks to cgroup_subsys
+>   * methods.
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index 1ebc6e30..96a3a85 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -2390,7 +2390,7 @@ EXPORT_SYMBOL_GPL(cgroup_add_cftypes);
+>   *
+>   * Return the number of tasks in the cgroup.
+>   */
+> -int cgroup_task_count(const struct cgroup *cgrp)
+> +static int cgroup_task_count(const struct cgroup *cgrp)
+>  {
+>  	int count = 0;
+>  	struct cgrp_cset_link *link;
+> diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+> index e97a6e8..ae190b0 100644
+> --- a/kernel/cpuset.c
+> +++ b/kernel/cpuset.c
+> @@ -467,7 +467,7 @@ static int validate_change(struct cpuset *cur, struct cpuset *trial)
+>  	 * be changed to have empty cpus_allowed or mems_allowed.
+>  	 */
+>  	ret = -ENOSPC;
+> -	if ((cgroup_task_count(cur->css.cgroup) || cur->attach_in_progress)) {
+> +	if ((cgroup_has_tasks(cur->css.cgroup) || cur->attach_in_progress)) {
+>  		if (!cpumask_empty(cur->cpus_allowed) &&
+>  		    cpumask_empty(trial->cpus_allowed))
+>  			goto out;
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index c1c2549..d9c6ac1 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -4958,7 +4958,7 @@ static int mem_cgroup_force_empty(struct mem_cgroup *memcg)
+>  	struct cgroup *cgrp = memcg->css.cgroup;
+>  
+>  	/* returns EBUSY if there is a task or if we come here twice. */
+> -	if (cgroup_task_count(cgrp) || !list_empty(&cgrp->children))
+> +	if (cgroup_has_tasks(cgrp) || !list_empty(&cgrp->children))
+>  		return -EBUSY;
+>  
+>  	/* we call try-to-free pages for make this cgroup empty */
+> @@ -5140,7 +5140,7 @@ static int __memcg_activate_kmem(struct mem_cgroup *memcg,
+>  	 * of course permitted.
+>  	 */
+>  	mutex_lock(&memcg_create_mutex);
+> -	if (cgroup_task_count(memcg->css.cgroup) || memcg_has_children(memcg))
+> +	if (cgroup_has_tasks(memcg->css.cgroup) || memcg_has_children(memcg))
+>  		err = -EBUSY;
+>  	mutex_unlock(&memcg_create_mutex);
+>  	if (err)
+> -- 
+> 1.8.5.3
+> 
 
-diff --git a/drivers/misc/mei/Kconfig b/drivers/misc/mei/Kconfig
-index 5881679..d23384d 100644
---- a/drivers/misc/mei/Kconfig
-+++ b/drivers/misc/mei/Kconfig
-@@ -37,7 +37,7 @@ config INTEL_MEI_ME
- config INTEL_MEI_TXE
- 	tristate "Intel Trusted Execution Environment with ME Interface"
- 	select INTEL_MEI
--	depends on X86 && PCI
-+	depends on X86 && PCI && WATCHDOG_CORE
- 	help
- 	  MEI Support for Trusted Execution Environment device on Intel SoCs
- 
 -- 
-1.8.5.3
-
+Michal Hocko
+SUSE Labs
