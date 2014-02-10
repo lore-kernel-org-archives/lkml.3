@@ -1,82 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752906AbaBJMdz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 07:33:55 -0500
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:33383 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752720AbaBJMdv (ORCPT
+	id S1752720AbaBJMef (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 07:34:35 -0500
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:40881 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752151AbaBJMee (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 07:33:51 -0500
+	Mon, 10 Feb 2014 07:34:34 -0500
+Date: Mon, 10 Feb 2014 13:34:25 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Ben Skeggs <bskeggs@redhat.com>, nouveau@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        gnurou@gmail.com
+Subject: Re: [PATCH] drm/nouveau: handle -EACCES runtime PM return code
+Message-ID: <20140210123424.GE20143@ulmo.nvidia.com>
+References: <1392011892-4339-1-git-send-email-acourbot@nvidia.com>
 MIME-Version: 1.0
-In-Reply-To: <20140204191609.GU22609@sirena.org.uk>
-References: <1391529538-21685-1-git-send-email-ulf.hansson@linaro.org>
-	<1391529538-21685-8-git-send-email-ulf.hansson@linaro.org>
-	<20140204191609.GU22609@sirena.org.uk>
-Date: Mon, 10 Feb 2014 13:33:50 +0100
-Message-ID: <CAPDyKFqNdw-6R12cUOre8UOTOnB-PpxHD5rPAMCwuS3i--Sesg@mail.gmail.com>
-Subject: Re: [PATCH 07/17] spi: pl022: Don't ignore power domain and amba bus
- at system suspend
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Alessandro Rubini <rubini@unipv.it>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>, Chris Ball <chris@printf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0H629O+sVkh21xTi"
+Content-Disposition: inline
+In-Reply-To: <1392011892-4339-1-git-send-email-acourbot@nvidia.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4 February 2014 20:16, Mark Brown <broonie@kernel.org> wrote:
-> On Tue, Feb 04, 2014 at 04:58:48PM +0100, Ulf Hansson wrote:
->
->> @@ -2328,8 +2300,23 @@ static int pl022_suspend(struct device *dev)
->>               return ret;
->>       }
->>
->> -     pm_runtime_get_sync(dev);
->> -     pl022_suspend_resources(pl022, false);
->> +     pm_runtime_disable(dev);
->> +
->> +     if (!pm_runtime_status_suspended(dev)) {
->> +             if (dev->pm_domain && dev->pm_domain->ops.runtime_suspend)
->> +                     ret = dev->pm_domain->ops.runtime_suspend(dev);
->> +             else
->> +                     ret = dev->bus->pm->runtime_suspend(dev);
->> +
->> +             if (ret) {
->> +                     pm_runtime_enable(dev);
->> +                     return ret;
->> +             }
->> +
->> +             pm_runtime_set_suspended(dev);
->> +     }
->
-> This seems like a fairly hideous thing to be having to open code in an
-> individual driver, it all looks generic and like something that most if
-> not all devices ought to be doing and it looks very vulnerable to being
-> broken by changes in the core.  At the very least I would expect this to
-> be done in a helper function, though it would be even nicer if the
-> driver core were figuring this stuff out for us based on the device
-> level callback so that drivers didn't need to worry about being in power
-> domains or manually calling bus level callbacks.
->
-> Putting it in a helper would at least mean that it's easier for the
-> mechanics to be transferred to the core proper later on.
 
-I agree, a helper function would be nice. I have earlier sent a patch
-to the PM core, that is similar to the code above, though it was
-rejected in it's current form. Let me follow up on this again.
+--0H629O+sVkh21xTi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-At this point, would a way forward be to still go ahead with this
-patch and then convert to, when/if, the helper function from the PM
-core becomes available?
+On Mon, Feb 10, 2014 at 02:58:12PM +0900, Alexandre Courbot wrote:
+> pm_runtime_get*() may return -EACCESS to indicate a device does not have
 
-Kind regards
-Ulf Hansson
+s/-EACCESS/-EACCES/
+
+> runtime PM enabled. This is the case when the nouveau.runpm parameter is
+> set to 0, and is not an error in that context. Handle this case without
+> failure.
+>=20
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> ---
+>  drivers/gpu/drm/nouveau/dispnv04/crtc.c     | 2 +-
+>  drivers/gpu/drm/nouveau/nouveau_connector.c | 2 +-
+>  drivers/gpu/drm/nouveau/nouveau_drm.c       | 4 ++--
+>  3 files changed, 4 insertions(+), 4 deletions(-)
+
+I'm not sure if the commit message is entirely accurate. Looking at the
+various runtime power-management functions in nouveau_drm.c (such as
+nouveau_pmops_runtime_suspend() for example), they seem to return
+-EINVAL if the nouveau.runpm parameter is set to 0.
+
+However it seems like -EACCES is indeed returned when runtime power-
+management hasn't been enabled for a device. This is done automatically
+for PCI devices, but not for platform devices. We don't support runtime
+power-management on gk20a yet, therefore pm_runtime_enable() is never
+called, causing disable_depth to remain at -1 and therefore runtime PM
+helpers return -EACCES.
+
+Thierry
+
+--0H629O+sVkh21xTi
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS+MdQAAoJEN0jrNd/PrOhkkQP/jJqMml32+cKwH4jBvnRhFrr
+FkmWJpLR9SyDK38304W7gccVfdiRfHZ83t0xxk1pJ4TIDqQgB8FpwDYRpVHaS/bL
+ZL2y+5iXxt7lqjHUWz4Gp98iDe7WGPR8ISi07i2L/XH7mcZGrK6CxIoQIk0EYpOV
+RDHt2zc4gDakP5bFc8SNpuStZTHIbUpOSwTr08ypEeWjid84FfNIvNGkl/NRhjsW
+i8FL7zTplfjZCIfN587rROjFKRBtX1azEQBZD8onDW+rFrdGul/MEpGg/ItxLr8w
+r4rNuOyLLHTJFbfh0hw6CsZp0DbRSz82giOnt3naIVqX7E8qT3yLf9PAVh3n94fk
+epEzDssgjM4HarFXFE1xMhl2B1hnF73cBJ1jP5Ke1OWAhOv3FXMQmbB5QxB4g08Y
+oqlwj7j/FpA6BDV8YGmesFvKZ+Qjvql1XL4BIful4EzLeTTMCEEyg9whM6JYA2Df
+6VS2p6Bp0c3ewRWKA2cOs1LruC+WF3GGtyBm9fIB69Z9so2uz6JQd1kpRsL0m+d6
+yooZEH6SLk2LawHdwGPoxWULZ6PVLonTq9CXHt9u4eQE2lCLsNMT2x9WWG19vWXa
+py/0x8uDT8vb8GXhhEvwtChfuCq9IHRqTeFQ66+tuS+MV/cOUSfecZMj6uMbIjt9
+yu2nkjb6hUAvgQZzRA80
+=PAR3
+-----END PGP SIGNATURE-----
+
+--0H629O+sVkh21xTi--
