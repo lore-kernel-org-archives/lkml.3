@@ -1,157 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753513AbaBJRbJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 12:31:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12232 "EHLO mx1.redhat.com"
+	id S1753494AbaBJRbG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 12:31:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40586 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753455AbaBJRa7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753451AbaBJRa7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 10 Feb 2014 12:30:59 -0500
 From: Don Zickus <dzickus@redhat.com>
 To: acme@ghostprotocols.net
 Cc: LKML <linux-kernel@vger.kernel.org>, jolsa@redhat.com, jmario@redhat.com,
         fowles@inreach.com, eranian@google.com,
         Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 17/21] perf, c2c: Add symbol count table
-Date: Mon, 10 Feb 2014 12:29:12 -0500
-Message-Id: <1392053356-23024-18-git-send-email-dzickus@redhat.com>
+Subject: [PATCH 18/21] perf, c2c: Add shared cachline summary table
+Date: Mon, 10 Feb 2014 12:29:13 -0500
+Message-Id: <1392053356-23024-19-git-send-email-dzickus@redhat.com>
 In-Reply-To: <1392053356-23024-1-git-send-email-dzickus@redhat.com>
 References: <1392053356-23024-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just another table that displays the referenced symbols in the analysis
-report.  The table lists the most frequently used symbols first.
-
-It is just another way to look at similar data to figure out who
-is causing the most contention (based on the workload used).
+This adds a quick summary of the hottest cache contention lines based
+on the input data.  This summarizes what the broken table shows you,
+so you can see at a quick glance which cachelines are interesting.
 
 Originally done by Dick Fowles and ported by me.
 
-Suggested-by: Joe Mario <jmario@redhat.com>
 Original-by: Dick Fowles <rfowles@redhat.com>
 Signed-off-by: Don Zickus <dzickus@redhat.com>
 ---
- tools/perf/builtin-c2c.c | 99 ++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 99 insertions(+)
+ tools/perf/builtin-c2c.c | 136 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 136 insertions(+)
 
 diff --git a/tools/perf/builtin-c2c.c b/tools/perf/builtin-c2c.c
-index 32c2319..979187f 100644
+index 979187f..014c9b0 100644
 --- a/tools/perf/builtin-c2c.c
 +++ b/tools/perf/builtin-c2c.c
-@@ -950,6 +950,104 @@ static void c2c_hit__update_stats(struct c2c_stats *new,
- 	new->total_period	+= old->total_period;
+@@ -1048,6 +1048,141 @@ cleanup:
+ 	}
  }
  
-+LIST_HEAD(ref_tree);
-+LIST_HEAD(ref_tree_sorted);
-+struct refs {
-+	struct list_head	list;
-+	int			nr;
-+	const char		*name;
-+	char			*long_name;
-+};
-+
-+static int update_ref_tree(struct c2c_entry *entry)
++static void print_c2c_shared_cacheline_report(struct rb_root *hitm_tree,
++					      struct c2c_stats *shared_stats __maybe_unused,
++					      struct c2c_stats *c2c_stats __maybe_unused)
 +{
-+	struct refs *p;
-+	struct dso *dso = entry->mi->iaddr.map->dso;
-+	const char *name = dso->short_name;
++#define   SHM_TITLE  "Shared Data Cache Line Table"
 +
-+	list_for_each_entry(p, &ref_tree, list) {
-+		if (!strcmp(p->name, name))
-+			goto found;
-+	}
++	struct rb_node	*next = rb_first(hitm_tree);
++	struct c2c_hit	*h;
++	char		header[256];
++	char		delimit[256];
++	u32		crecords;
++	u32		lclmiss;
++	u32		ldcnt;
++	double		p_hitm;
++	double		p_all;
++	int		totmiss;
++	int		rmt_hitm;
++	int		len;
++	int		pad;
++	int		i;
 +
-+	p = zalloc(sizeof(struct refs));
-+	if (!p)
-+		return -1;
-+	p->name = name;
-+	p->long_name = dso->long_name;
-+	list_add_tail(&p->list, &ref_tree);
++	sprintf(header,"%28s  %8s  %8s  %8s  %8s  %28s  %18s  %28s  %18s  %8s  %28s",
++		" ",
++		"Total",
++		"%All ",
++		" ",
++		"Total",
++		"---- Core Load Hit ----",
++		"-- LLC Load Hit --",
++		"----- LLC Load Hitm -----",
++		"-- Load Dram --",
++		"LLC  ",
++		"---- Store Reference ----");
 +
-+found:
-+	p->nr++;
-+	return 0;
-+}
-+
-+static void print_symbol_record_count(struct rb_root *tree)
-+{
-+	struct rb_node *next = rb_first(tree);
-+	struct c2c_entry *n;
-+	struct refs *p, *q, *pn;
-+	char      string[256];
-+	char      delimit[256];
-+	int       i;
-+	int       idx = 0;
-+
-+	/* gather symbol references */
-+	while (next) {
-+		n = rb_entry(next, struct c2c_entry, rb_node);
-+		next = rb_next(&n->rb_node);
-+
-+		if (update_ref_tree(n)) {
-+			pr_err("Could not update reference tree\n");
-+			goto cleanup;
-+		}
-+	}
-+
-+	/* sort on number of references per symbol */
-+	list_for_each_entry_safe(p, pn, &ref_tree, list) {
-+		list_del_init(&p->list);
-+		list_for_each_entry(q, &ref_tree_sorted, list) {
-+			if (p->nr > q->nr) {
-+				list_add_tail(&p->list, &q->list);
-+				break;
-+			}
-+		}
-+		if (list_empty(&p->list))
-+			list_add_tail(&p->list, &ref_tree_sorted);
-+	}
-+
-+	/* print header info */
-+	sprintf(string, "%5s   %8s   %-32s  %-80s",
-+		"Index",
-+		"Records",
-+		"Object Name",
-+		"Object Path");
-+
++	len = strlen(header);
 +	delimit[0] = '\0';
-+	for (i = 0; i < (int)strlen(string); i++) strcat(delimit, "=");
++
++	for (i = 0; i < len; i++)
++		strcat(delimit, "=");
 +
 +	printf("\n\n");
 +	printf("%s\n", delimit);
-+	printf("%50s %s\n", " ", "Object Name, Path & Reference Counts");
 +	printf("\n");
-+	printf("%s\n", string);
++	pad = (strlen(header)/2) - (strlen(SHM_TITLE)/2);
++	for (i = 0; i < pad; i++)
++		printf(" ");
++	printf("%s\n", SHM_TITLE);
++	printf("\n");
++	printf("%s\n", header);
++
++	sprintf(header, "%8s  %18s  %8s  %8s  %8s  %8s  %8s  %8s  %8s  %8s  %8s  %8s  %8s  %8s  %8s  %8s  %8s  %8s  %8s  %8s",
++		"Index",
++		"Phys Adrs",
++		"Records",
++		"Ld Miss",
++		"%hitm",
++		"Loads",
++		"FB",
++		"L1D",
++		"L2D",
++		"Lcl",
++		"Rmt",
++		"Total",
++		"Lcl",
++		"Rmt",
++		"Lcl",
++		"Rmt",
++		"Ld Miss",
++		"Total",
++		"L1Hit",
++		"L1Miss");
++
++	printf("%s\n", header);
 +	printf("%s\n", delimit);
 +
-+	/* print out table */
-+	list_for_each_entry(p, &ref_tree_sorted, list) {
-+		printf("%5d   %8d   %-32s  %-80s\n",
-+			idx, p->nr, p->name, p->long_name);
-+		idx++;
-+	}
-+	printf("\n");
++	rmt_hitm    = c2c_stats->t.rmt_hitm;
++	totmiss     = c2c_stats->t.lcl_dram +
++		      c2c_stats->t.rmt_dram +
++		      c2c_stats->t.rmt_hit +
++		      c2c_stats->t.rmt_hitm;
 +
-+cleanup:
-+	list_for_each_entry_safe(p, pn, &ref_tree_sorted, list) {
-+		list_del(&p->list);
-+		free(p);
++	i = 0;
++	while (next) {
++		h = rb_entry(next, struct c2c_hit, rb_node);
++		next = rb_next(&h->rb_node);
++
++		lclmiss  = h->stats.t.lcl_dram +
++			   h->stats.t.rmt_dram +
++			   h->stats.t.rmt_hitm +
++			   h->stats.t.rmt_hit;
++
++		ldcnt    = lclmiss +
++			   h->stats.t.ld_fbhit +
++			   h->stats.t.ld_l1hit +
++			   h->stats.t.ld_l2hit +
++			   h->stats.t.ld_llchit +
++			   h->stats.t.lcl_hitm;
++
++		crecords = ldcnt +
++			   h->stats.t.st_l1hit +
++			   h->stats.t.st_l1miss;
++
++		p_hitm = (double)h->stats.t.rmt_hitm / (double)rmt_hitm;
++		p_all  = (double)h->stats.t.rmt_hitm / (double)totmiss;
++
++		/* stop when the percentage gets to low */
++		if (p_hitm < DISPLAY_LINE_LIMIT)
++			break;
++
++		printf("%8d  %#18lx  %8u  %7.2f%%  %7.2f%%  %8u  %8u  %8u  %8u  %8u  %8u  %8u  %8u  %8u  %8u  %8u  %8u  %8u  %8u  %8u\n",
++			i,
++			h->cacheline,
++			crecords,
++			100. * p_all,
++			100. * p_hitm,
++			ldcnt,
++			h->stats.t.ld_fbhit,
++			h->stats.t.ld_l1hit,
++			h->stats.t.ld_l2hit,
++			h->stats.t.ld_llchit,
++			h->stats.t.rmt_hit,
++			h->stats.t.lcl_hitm + h->stats.t.rmt_hitm,
++			h->stats.t.lcl_hitm,
++			h->stats.t.rmt_hitm,
++			h->stats.t.lcl_dram,
++			h->stats.t.rmt_dram,
++			lclmiss,
++			h->stats.t.store,
++			h->stats.t.st_l1hit,
++			h->stats.t.st_l1miss);
++
++		i++;
 +	}
 +}
 +
  static void print_hitm_cacheline_header(void)
  {
  #define SHARING_REPORT_TITLE  "Shared Cache Line Distribution Pareto"
-@@ -1528,6 +1626,7 @@ static int perf_c2c__process_events(struct perf_session *session,
- 		dump_rb_tree(&c2c->tree_physid, c2c);
- 	print_c2c_trace_report(c2c);
- 	c2c_analyze_hitms(c2c);
-+	print_symbol_record_count(&c2c->tree_physid);
+@@ -1555,6 +1690,7 @@ static void c2c_analyze_hitms(struct perf_c2c *c2c)
+ 		free(h);
  
- err:
- 	return err;
+ 	print_shared_cacheline_info(&hitm_stats, shared_clines);
++	print_c2c_shared_cacheline_report(&hitm_tree, &hitm_stats, &c2c->stats);
+ 	print_c2c_hitm_report(&hitm_tree, &hitm_stats, &c2c->stats);
+ 
+ cleanup:
 -- 
 1.7.11.7
 
