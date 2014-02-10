@@ -1,73 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752987AbaBJQXn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 11:23:43 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61955 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752946AbaBJQXh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 11:23:37 -0500
-Date: Mon, 10 Feb 2014 16:22:55 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Torvald Riegel <triegel@redhat.com>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-Message-ID: <20140210162255.GC12826@mudshark.cambridge.arm.com>
-References: <20140206221117.GJ4250@linux.vnet.ibm.com>
- <1391730288.23421.4102.camel@triegel.csb>
- <20140207042051.GL4250@linux.vnet.ibm.com>
- <20140207074405.GM5002@laptop.programming.kicks-ass.net>
- <20140207165028.GO4250@linux.vnet.ibm.com>
- <20140207165548.GR5976@mudshark.cambridge.arm.com>
- <20140207180216.GP4250@linux.vnet.ibm.com>
- <20140210114813.GJ9987@twins.programming.kicks-ass.net>
- <20140210114929.GF17766@mudshark.cambridge.arm.com>
- <20140210150443.GJ4250@linux.vnet.ibm.com>
-MIME-Version: 1.0
+	id S1753055AbaBJQYI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 11:24:08 -0500
+Received: from kanga.kvack.org ([205.233.56.17]:55935 "EHLO kanga.kvack.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752357AbaBJQYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 11:24:05 -0500
+Date: Mon, 10 Feb 2014 11:24:02 -0500
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: Rakesh Pandit <rakesh@tuxera.com>
+Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-aio@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] aio: add aio_migratepage_helper to get rid of duplicate code
+Message-ID: <20140210162402.GB26657@kvack.org>
+References: <20140210115255.GA3399@localhost.localdomain>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140210150443.GJ4250@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140210115255.GA3399@localhost.localdomain>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 03:04:43PM +0000, Paul E. McKenney wrote:
-> On Mon, Feb 10, 2014 at 11:49:29AM +0000, Will Deacon wrote:
-> > On Mon, Feb 10, 2014 at 11:48:13AM +0000, Peter Zijlstra wrote:
-> > > On Fri, Feb 07, 2014 at 10:02:16AM -0800, Paul E. McKenney wrote:
-> > > > As near as I can tell, compiler writers hate the idea of prohibiting
-> > > > speculative-store optimizations because it requires them to introduce
-> > > > both control and data dependency tracking into their compilers.  Many of
-> > > > them seem to hate dependency tracking with a purple passion.  At least,
-> > > > such a hatred would go a long way towards explaining the incomplete
-> > > > and high-overhead implementations of memory_order_consume, the long
-> > > > and successful use of idioms based on the memory_order_consume pattern
-> > > > notwithstanding [*].  ;-)
-> > > 
-> > > Just tell them that because the hardware provides control dependencies
-> > > we actually use and rely on them.
-> > 
-> > s/control/address/ ?
+On Mon, Feb 10, 2014 at 01:52:56PM +0200, Rakesh Pandit wrote:
+
+You're missing a commit message here providing justification for the changes 
+submitted.  Why is this change a good thing?  Did it fix any bugs?
+
+		-ben
+
+> Signed-off-by: Rakesh Pandit <rakesh@tuxera.com>
+> ---
+>  fs/aio.c | 55 +++++++++++++++++++++++--------------------------------
+>  1 file changed, 23 insertions(+), 32 deletions(-)
 > 
-> Both are important, but as Peter's reply noted, it was control
-> dependencies under discussion.  Data dependencies (which include the
-> ARM/PowerPC notion of address dependencies) are called out by the standard
-> already, but control dependencies are not.  I am not all that satisified
-> by current implementations of data dependencies, admittedly.  Should
-> be an interesting discussion.  ;-)
+> diff --git a/fs/aio.c b/fs/aio.c
+> index d3d55dc..20d690a 100644
+> --- a/fs/aio.c
+> +++ b/fs/aio.c
+> @@ -278,32 +278,46 @@ static int aio_set_page_dirty(struct page *page)
+>  }
+>  
+>  #if IS_ENABLED(CONFIG_MIGRATION)
+> -static int aio_migratepage(struct address_space *mapping, struct page *new,
+> -			struct page *old, enum migrate_mode mode)
+> +static int aio_migratepage_helper(struct address_space *mapping,
+> +			struct page *new, struct page *old, bool move)
+>  {
+>  	struct kioctx *ctx;
+>  	unsigned long flags;
+> -	int rc;
+> -
+> -	rc = 0;
+> +	int rc = 0;
+>  
+> -	/* Make sure the old page hasn't already been changed */
+> +	/* We can potentially race against kioctx teardown here.  Use the
+> +	 * address_space's private data lock to protect the mapping's
+> +	 * private_data.
+> +	 */
+>  	spin_lock(&mapping->private_lock);
+>  	ctx = mapping->private_data;
+>  	if (ctx) {
+>  		pgoff_t idx;
+>  		spin_lock_irqsave(&ctx->completion_lock, flags);
+> +		if (move)
+> +			migrate_page_copy(new, old);
+>  		idx = old->index;
+>  		if (idx < (pgoff_t)ctx->nr_pages) {
+>  			if (ctx->ring_pages[idx] != old)
+>  				rc = -EAGAIN;
+> +			else if (move)
+> +				ctx->ring_pages[idx] = new;
+>  		} else
+>  			rc = -EINVAL;
+>  		spin_unlock_irqrestore(&ctx->completion_lock, flags);
+>  	} else
+> -		rc = -EINVAL;
+> +		rc = move ? -EBUSY : -EINVAL;
+>  	spin_unlock(&mapping->private_lock);
+> +	return rc;
+> +}
+>  
+> +static int aio_migratepage(struct address_space *mapping, struct page *new,
+> +			struct page *old, enum migrate_mode mode)
+> +{
+> +	int rc = 0;
+> +
+> +	/* Make sure the old page hasn't already been changed */
+> +	rc = aio_migratepage_helper(mapping, new, old, false);
+>  	if (rc != 0)
+>  		return rc;
+>  
+> @@ -317,31 +331,8 @@ static int aio_migratepage(struct address_space *mapping, struct page *new,
+>  		return rc;
+>  	}
+>  
+> -	/* We can potentially race against kioctx teardown here.  Use the
+> -	 * address_space's private data lock to protect the mapping's
+> -	 * private_data.
+> -	 */
+> -	spin_lock(&mapping->private_lock);
+> -	ctx = mapping->private_data;
+> -	if (ctx) {
+> -		pgoff_t idx;
+> -		spin_lock_irqsave(&ctx->completion_lock, flags);
+> -		migrate_page_copy(new, old);
+> -		idx = old->index;
+> -		if (idx < (pgoff_t)ctx->nr_pages) {
+> -			/* And only do the move if things haven't changed */
+> -			if (ctx->ring_pages[idx] == old)
+> -				ctx->ring_pages[idx] = new;
+> -			else
+> -				rc = -EAGAIN;
+> -		} else
+> -			rc = -EINVAL;
+> -		spin_unlock_irqrestore(&ctx->completion_lock, flags);
+> -	} else
+> -		rc = -EBUSY;
+> -	spin_unlock(&mapping->private_lock);
+> -
+> -	if (rc == MIGRATEPAGE_SUCCESS)
+> +	rc = aio_migratepage_helper(mapping, new, old, true);
+> +	if (rc == 0)
+>  		put_page(old);
+>  	else
+>  		put_page(new);
+> -- 
+> 1.8.3.1
 
-Ok, but since you can't use control dependencies to order LOAD -> LOAD, it's
-a pretty big ask of the compiler to make use of them for things like
-consume, where a data dependency will suffice for any combination of
-accesses.
-
-Will
+-- 
+"Thought is the essence of where you are now."
