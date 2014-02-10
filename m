@@ -1,90 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752223AbaBJIQL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 03:16:11 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:49250 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751108AbaBJIQI (ORCPT
+	id S1752260AbaBJIS2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 03:18:28 -0500
+Received: from mail-bn1lp0155.outbound.protection.outlook.com ([207.46.163.155]:25261
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751108AbaBJIS1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 03:16:08 -0500
-Message-ID: <52F88B04.2080309@gmail.com>
-Date: Mon, 10 Feb 2014 09:17:08 +0100
-From: Francis Moreau <francis.moro@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Mon, 10 Feb 2014 03:18:27 -0500
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: "guangyu.chen@freescale.com" <guangyu.chen@freescale.com>
+CC: "broonie@kernel.org" <broonie@kernel.org>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] ASoC: fsl-esai: fix ESAI TDM slot setting
+Thread-Topic: [PATCH] ASoC: fsl-esai: fix ESAI TDM slot setting
+Thread-Index: AQHPJjS7Y4SjfJU+qkicZ0YluXSuwJquHSIAgAAGMMA=
+Date: Mon, 10 Feb 2014 08:18:23 +0000
+Message-ID: <3613612f0b3841b6a0e590b0c95e95c9@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1392014837-22308-1-git-send-email-Li.Xiubo@freescale.com>
+ <20140210075031.GA16453@MrMyself>
+In-Reply-To: <20140210075031.GA16453@MrMyself>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.49]
+x-forefront-prvs: 0118CD8765
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(51704005)(199002)(189002)(164054003)(54356001)(76482001)(4396001)(46102001)(51856001)(53806001)(56776001)(54316002)(81342001)(33646001)(49866001)(50986001)(74876001)(47736001)(47976001)(95416001)(76796001)(76786001)(81542001)(74706001)(93516002)(90146001)(94316002)(94946001)(80976001)(77982001)(59766001)(83322001)(79102001)(74366001)(69226001)(63696002)(86362001)(2656002)(76576001)(92566001)(56816005)(87936001)(65816001)(87266001)(81816001)(81686001)(31966008)(85306002)(66066001)(74662001)(93136001)(74502001)(47446002)(83072002)(85852003)(74316001)(80022001)(24736002)(217873001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB441;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:FEF8DB1F.AB8074F5.83FAB195.901CDA3B.200A4;InfoNoRecordsA:1;MX:1;LANG:;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Bastien Traverse <bastien.traverse@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Peter Wu <lekensteyn@gmail.com>
-CC: linux-kernel@vger.kernel.org, Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: 3.12: ethernet controller missing after resuming from suspend
- to RAM
-References: <52F2CC7B.80406@gmail.com> <55671594.HynIX0trOC@vostro.rjw.lan> <52F41DB8.3080802@gmail.com> <2087423.Qy7HQIx1X6@vostro.rjw.lan> <52F7CC8B.1020209@gmail.com>
-In-Reply-To: <52F7CC8B.1020209@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/09/2014 07:44 PM, Bastien Traverse wrote:
-> Le 07/02/2014 02:19, Rafael J. Wysocki a écrit :
->> Please send the output of lspci -vv right before suspend and right after
->> the subsequent resume as attachments.
-> 
-> You'll find them attached, but I got a strange error when I wanted to
-> run it as root:
-> $ sudo lspci -vv > lspci_vv_before
-> pcilib: sysfs_read_vpd: read failed: Connection timed out
-> $ sudo -i
-> # lspci -vv
-> pcilib: sysfs_read_vpd: read failed: Connection timed out
-> 
-> So I only got the unpriviledge output.
-> 
-> Some complementary lines from my journal:
-> 
-> kernel: r8169 Gigabit Ethernet driver 2.3LK-NAPI loaded
-> kernel: r8169 0000:03:00.2: can't disable ASPM; OS doesn't have ASPM control
-> kernel: pcieport 0000:00:1c.3: driver skip pci_set_master, fix it!
-> kernel: r8169 0000:03:00.2: irq 44 for MSI/MSI-X
-> kernel: r8169 0000:03:00.2 eth0: RTL8411 at 0xffffc90016ed4000,
-> 00:90:f5:d7:34:53, XID 08800800 IRQ 44
-> kernel: r8169 0000:03:00.2 eth0: jumbo features [frames: 9200 bytes, tx
-> checksumming: ko]
-> kernel: rtsx_pci 0000:03:00.0: irq 45 for MSI/MSI-X
-> kernel: rtsx_pci 0000:03:00.0: rtsx_pci_acquire_irq: pcr->msi_en = 1,
-> pci->irq = 45
-> ...
-> 
-> And one I thought of interest:
-> 
-> kernel: rtsx_pci 0000:03:00.0: vpd r/w failed.  This is likely a
-> firmware bug on this device.  Contact the card vendor for a firmware update.
-> 
-> That came three times before suspend.
-> 
-> Only two lines about hotplug, none special.
-> 
-> Stripped journal attached for the suspend cycle.
-> 
-> 
-> Le 07/02/2014 08:29, Francis Moreau a écrit :
->> yeah, but calling this "fast resolution" is quite incorrect.
->>
->> I don't blame anyone for this and I'm quite happy that a workaround has
->> been found at last but calling this "fast resolution" is a bit funny
->> compare to the PITA it was to debug this.
-> 
-> Sorry, I didn't mean to underestimate the amount of work you put in that
-> bug resolution (actually it was the first time I heard of kernel
-> bisection and was pretty impressed by how you led it).
 
-No problem Bastien and don't be impressed by this :). Bisection thing is
-a mechanical work but can be useful sometimes when we, users, are lost
-and have no clue on what's going on.
+> > diff --git a/sound/soc/fsl/fsl_esai.h b/sound/soc/fsl/fsl_esai.h
+> > index 9c9f957..75e1403 100644
+> > --- a/sound/soc/fsl/fsl_esai.h
+> > +++ b/sound/soc/fsl/fsl_esai.h
+> > @@ -322,7 +322,7 @@
+> >  #define ESAI_xSMB_xS_SHIFT	0
+> >  #define ESAI_xSMB_xS_WIDTH	16
+> >  #define ESAI_xSMB_xS_MASK	(((1 << ESAI_xSMB_xS_WIDTH) - 1) <<
+> ESAI_xSMB_xS_SHIFT)
+> > -#define ESAI_xSMB_xS(v)		(((v) >> ESAI_xSMA_xS_WIDTH) &
+> ESAI_xSMA_xS_MASK)
+> > +#define ESAI_xSMB_xS(v)		(((v) >> ESAI_xSMA_xS_WIDTH) &
+> ESAI_xSMB_xS_MASK)
+> 
+> It should use ESAI_xSMB_xS_WIDTH.
+>
 
-The real PITA in that case was to reboot more than 10 times the system
-in order to test each suspicious commits on a live system.
+Well, the ESAI_xSMB_xS_WIDTH is 0x0010(16), and ESAI_xSMB_xS_MASK will
+be 0xFFFF.
 
-Anyways, good luck, all my hopes are on you now :)
 
+
+Thanks,
+
+--
+Best Regards,
+Xiubo
