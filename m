@@ -1,89 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753011AbaBJMIV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 07:08:21 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:39922 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752339AbaBJMIU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 07:08:20 -0500
-Date: Mon, 10 Feb 2014 12:08:03 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Cc: lgirdwood@gmail.com, dmitry.torokhov@gmail.com, myungjoo.ham@samsung.com,
-        cw00.choi@samsung.com, alsa-devel@alsa-project.org,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Message-ID: <20140210120803.GS1757@sirena.org.uk>
-References: <20140210110536.GB6856@opensource.wolfsonmicro.com>
+	id S1752925AbaBJMKb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 07:10:31 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47858 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752276AbaBJMK0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 07:10:26 -0500
+Date: Mon, 10 Feb 2014 12:10:20 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Kleikamp <dave.kleikamp@oracle.com>, Richard Yao <ryao@gentoo.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Eric Van Hensbergen <ericvh@gmail.com>,
+        Ron Minnich <rminnich@sandia.gov>, Latchesar Ionkov <lucho@ionkov.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        V9FS Develooper Mailing List 
+	<v9fs-developer@lists.sourceforge.net>,
+        Linux Netdev Mailing List <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Matthew Thode <mthode@mthode.org>
+Subject: Re: [PATCH 1/2] mm/vmalloc: export is_vmalloc_or_module_addr
+Message-ID: <20140210121020.GC6732@suse.de>
+References: <1391886730-19667-1-git-send-email-ryao@gentoo.org>
+ <1391886730-19667-2-git-send-email-ryao@gentoo.org>
+ <CA+55aFx8TzOnW9xPFA4Ox-yFiSUo=cEqeQUmgw_JWjDNEZep8Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xe2geHXJg22At20M"
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20140210110536.GB6856@opensource.wolfsonmicro.com>
-X-Cookie: Colors may fade.
+In-Reply-To: <CA+55aFx8TzOnW9xPFA4Ox-yFiSUo=cEqeQUmgw_JWjDNEZep8Q@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: dapm: Add locking to snd_soc_dapm_xxxx_pin
- functions
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Feb 08, 2014 at 11:45:53AM -0800, Linus Torvalds wrote:
+> On Sat, Feb 8, 2014 at 11:12 AM, Richard Yao <ryao@gentoo.org> wrote:
+> > 9p-virtio needs is_vmalloc_or_module_addr exported before a patch can be
+> > merged to prevent the virtio zero-copy routines from triggering a
+> > hypervisor page fault when loading kernel modules:
+> >
+> > https://groups.google.com/forum/#!topic/linux.kernel/eRR7AyLE29Y
+> >
+> > Without this export, the kernel build breaks with that patch applied and
+> > CONFIG_NET_9P_VIRTIO=m. With this export in place, all is well.
+> 
+> I absolutely *detest* this patch.
+> 
+> Not so much because is_vmalloc_or_module_addr() should never be used,
+> but because the particular use in question is pure and utter garbage.
+> 
+> There are valid reasons to use "is_vmalloc_or_module_addr()", but
+> those are along the lines of drivers/char/mem.c, which says "return
+> -ENXIO for this crap".
+> 
+> And btw, that horrid crap called "kmap_to_page()" needs to die too.
+> When is it *ever* valid to use a kmap'ed page for IO? Here's a clue:
+> never.
+> 
+> <SNIP>
+>
+> Those *disgusting* get_kernel_page[s]() functions came with a
+> commentary about "The initial user is expected to be NFS.." and that
+> is still the *only* user. The fact that *everybody* else has been able
+> to avoid that crap should tell us something.
 
---xe2geHXJg22At20M
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+kmap_to_page, get_kernel_page and the NFS user for it are already scheduled
+for death. Dave Kleikamp has been working on a series "Issue O_DIRECT aio
+using bio_vec" that replaces what NFS currently does with something far
+more sane. The series does not remove the helpers on top, probably because
+of the 9P use of it, but if that was changed then the helpers would finally
+die. I'm not sure why Dave's series never got merged so added him to the
+cc to find out.
 
-On Mon, Feb 10, 2014 at 11:05:36AM +0000, Charles Keepax wrote:
-> snd_soc_dapm_disable_pin, snd_soc_dapm_enable_pin and
-> snd_soc_dapm_force_enable_pin all require the dapm_mutex to be held when
-> they are called as they edit the dirty list. There are 385 usages of
-> these functions and only 7 hold the lock whilst calling.
->=20
-> This patch moves the locking into snd_soc_dapm_set_pin and fixes up the
-> places where the lock was held on the caller side. This saves on fixing
-> up all the current users and also is much more consistant with the rest
-> of the DAPM API which all handles the locking internally.
-
-Unfortunately the fix needs to be in the callers to some extent - there
-are situations where you want to do atomic updates of multiple pins so
-that we don't end up bouncing the power up and down too much, we need
-the unlocked version for things that care.  This means we need to at
-least preserve an unlocked version and translate those callers that
-might care over to it (not sure if any of them are in mainline).
-
-It should also be safe to call the functions without explicit locking
-during init since we won't run DAPM until we've finished init - it is
-effectively locked even if we don't actually hold the mutex.  There
-shouldn't be a race with marking the widget dirty since every widget
-should start out dirty but I'd have to verify that one.  This will
-account for a very large proportion of the callers so perhaps it's less
-of an issue to add the locking to them than you had thought.
-
---xe2geHXJg22At20M
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS+MEgAAoJELSic+t+oim97PAQAI9bbI24cArteSwsBd2P3IxC
-/lj916LZlei15VVwAgjwpSJLAXsPumDc9K222qQ61oVbliJbKhM87uvazKNpSEj7
-fwt4jVZPaClKyS788kGNrsJeEOeKbzKI0hvR3SnU8Mn00zppll14SY7iR3KHp8zl
-DZsLnhWR+rrbKN7TT3ePhoxzgctJEL3wlOeO5c2LYZT+KjkoWDrrYMjK6dN2hTHP
-9WMYpPr1u1pE6nD2TQ6lOi4Got/U45gPlGSA4zS97cplCAxU33waKqVEh8Bgkk8L
-pU3llqGERg/6Gk85rTg7r4CWHpaXi3efNOCChtmy/HYPGv3fSIvv8kPykJSrRZCk
-aNVxvh3RuTcP1aCwMtV31wz1fZSOzeXcK04EI8pfwJGe2cqE3Q65WTIWW4JBL99l
-XEdYlW7sBxw7GuSmWH0JvteIiA48ES5Qwz/dvuoLDEDlZyY5FZrb5nCQbCHAW6Xi
-RurYa1cX72Qd0PNiVuwocRLcpnnvWb4mYc4zxjpovqyrfO1q269BN3oyjtNXTdms
-xVF8eee0ECRfjJLujF7Y2xzWVeHckiD8knBwpRjwEkCjR0RwbMq9M9MNDPfhFEl5
-lGR8+oBsBQMnuCcUXNhzM31BNc/G7u4kwA0tzl0DjmPvRy96Dm0vY2qkQ+rcmTMb
-pdtHXke2Y4E9zB65Kx/G
-=eUOK
------END PGP SIGNATURE-----
-
---xe2geHXJg22At20M--
+-- 
+Mel Gorman
+SUSE Labs
