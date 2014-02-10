@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755554AbaBJURr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 15:17:47 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34603 "EHLO
+	id S1755540AbaBJURo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 15:17:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34607 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752793AbaBJTlj (ORCPT
+	with ESMTP id S1752155AbaBJTlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:41:39 -0500
+	Mon, 10 Feb 2014 14:41:40 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jack Pham <jackp@codeaurora.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+Cc: Vijaya Mohan Guvva <vmohan@brocade.com>,
+        James Bottomley <JBottomley@Parallels.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 016/124] usb: xhci: Check for XHCI_PLAT in xhci_cleanup_msix()
-Date: Mon, 10 Feb 2014 11:39:16 -0800
-Message-Id: <1392061264-28124-17-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 012/124] [SCSI] bfa: Chinook quad port 16G FC HBA claim issue
+Date: Mon, 10 Feb 2014 11:39:12 -0800
+Message-Id: <1392061264-28124-13-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
 References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
@@ -28,39 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jack Pham <jackp@codeaurora.org>
+From: Vijaya Mohan Guvva <vmohan@brocade.com>
 
-commit 9005355af23856c55a5538c9024355785424821b upstream.
+commit dcaf9aed995c2b2a49fb86bbbcfa2f92c797ab5d upstream.
 
-If CONFIG_PCI is enabled, make sure xhci_cleanup_msix()
-doesn't try to free a bogus PCI IRQ or dereference an invalid
-pci_dev when the xHCI device is actually a platform_device.
+Bfa driver crash is observed while pushing the firmware on to chinook
+quad port card due to uninitialized bfi_image_ct2 access which gets
+initialized only for CT2 ASIC based cards after request_firmware().
+For quard port chinook (CT2 ASIC based), bfi_image_ct2 is not getting
+initialized as there is no check for chinook PCI device ID before
+request_firmware and instead bfi_image_cb is initialized as it is the
+default case for card type check.
 
-This patch should be backported to kernels as old as 3.9, that
-contain the commit 52fb61250a7a132b0cfb9f4a1060a1f3c49e5a25
-"xhci-plat: Don't enable legacy PCI interrupts."
+This patch includes changes to read the right firmware for quad port chinook.
 
-Signed-off-by: Jack Pham <jackp@codeaurora.org>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Vijaya Mohan Guvva <vmohan@brocade.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/host/xhci.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/scsi/bfa/bfad.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 4bade57..e00d140 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -315,6 +315,9 @@ static void xhci_cleanup_msix(struct xhci_hcd *xhci)
- 	struct usb_hcd *hcd = xhci_to_hcd(xhci);
- 	struct pci_dev *pdev = to_pci_dev(hcd->self.controller);
- 
-+	if (xhci->quirks & XHCI_PLAT)
-+		return;
+diff --git a/drivers/scsi/bfa/bfad.c b/drivers/scsi/bfa/bfad.c
+index e6bf126..630e09d 100644
+--- a/drivers/scsi/bfa/bfad.c
++++ b/drivers/scsi/bfa/bfad.c
+@@ -1824,7 +1824,7 @@ out:
+ static u32 *
+ bfad_load_fwimg(struct pci_dev *pdev)
+ {
+-	if (pdev->device == BFA_PCI_DEVICE_ID_CT2) {
++	if (bfa_asic_id_ct2(pdev->device)) {
+ 		if (bfi_image_ct2_size == 0)
+ 			bfad_read_firmware(pdev, &bfi_image_ct2,
+ 				&bfi_image_ct2_size, BFAD_FW_FILE_CT2);
+@@ -1834,12 +1834,14 @@ bfad_load_fwimg(struct pci_dev *pdev)
+ 			bfad_read_firmware(pdev, &bfi_image_ct,
+ 				&bfi_image_ct_size, BFAD_FW_FILE_CT);
+ 		return bfi_image_ct;
+-	} else {
++	} else if (bfa_asic_id_cb(pdev->device)) {
+ 		if (bfi_image_cb_size == 0)
+ 			bfad_read_firmware(pdev, &bfi_image_cb,
+ 				&bfi_image_cb_size, BFAD_FW_FILE_CB);
+ 		return bfi_image_cb;
+ 	}
 +
- 	xhci_free_irq(xhci);
++	return NULL;
+ }
  
- 	if (xhci->msix_entries) {
+ static void
 -- 
 1.8.3.2
 
