@@ -1,264 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753255AbaBJTTG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 14:19:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4432 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752838AbaBJTS7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:18:59 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: acme@ghostprotocols.net
-Cc: LKML <linux-kernel@vger.kernel.org>, jolsa@redhat.com, jmario@redhat.com,
-        fowles@inreach.com, eranian@google.com,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Richard Fowles <rfowles@redhat.com>
-Subject: [PATCH 02/21] perf c2c: Dump raw records, decode data_src bits
-Date: Mon, 10 Feb 2014 14:18:06 -0500
-Message-Id: <1392059886-30812-2-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1392053356-23024-1-git-send-email-dzickus@redhat.com>
-References: <1392053356-23024-1-git-send-email-dzickus@redhat.com>
+	id S1753275AbaBJTTr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 14:19:47 -0500
+Received: from mail-vb0-f50.google.com ([209.85.212.50]:56207 "EHLO
+	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752453AbaBJTTo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 14:19:44 -0500
+MIME-Version: 1.0
+Date: Mon, 10 Feb 2014 21:19:43 +0200
+Message-ID: <CA+ydwtqC7En++T5S7q5qzaDe_tf9dcMx3Y3aH=+Fcss_NU7stA@mail.gmail.com>
+Subject: lockdep: strange %s#5 lock name
+From: Tommi Rantala <tt.rantala@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        trinity@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+Hello,
 
->From the c2c prototype:
+Noticed a suspicious "%s#5" lock name in a lockdep splat while fuzzing
+with trinity.
 
-[root@sandy ~]# perf c2c -r report | head -7
-T Status    Pid Tid CPU          Inst Adrs     Virt Data Adrs Phys Data Adrs Cycles Source      Decoded Source                ObJect:Symbol
---------------------------------------------------------------------------------------------------------------------------------------------
-  raw input 779 779   7 0xffffffff810865dd 0xffff8803f4d75ec8              0    370 0x68080882 [LOAD,LCL_LLC,MISS,SNP NA]    [kernel.kallsyms]:try_to_wake_up
-  raw input 779 779   7 0xffffffff8107acb3 0xffff8802a5b73158              0    297 0x6a100142 [LOAD,L1,HIT,SNP NONE,LOCKED] [kernel.kallsyms]:up_read
-  raw input 779 779   7       0x3b7e009814     0x7fff87429ea0              0    925 0x68100142 [LOAD,L1,HIT,SNP NONE]        ???:???
-  raw input   0   0   1 0xffffffff8108bf81 0xffff8803eafebf50              0    172 0x68800842 [LOAD,LCL_LLC,HIT,SNP HITM]   [kernel.kallsyms]:update_stats_wait_end
-  raw input 779 779   7       0x3b7e0097cc     0x7fac94b69068              0    228 0x68100242 [LOAD,LFB,HIT,SNP NONE]       ???:???
-[root@sandy ~]#
+Tommi
 
-The "Phys Data Adrs" column is not available at this point.
-
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Joe Mario <jmario@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Richard Fowles <rfowles@redhat.com>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-prwkuoz6y4g1qf3od8lksl1b@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-c2c.c | 148 +++++++++++++++++++++++++++++++++++++++--------
- 1 file changed, 125 insertions(+), 23 deletions(-)
-
-diff --git a/tools/perf/builtin-c2c.c b/tools/perf/builtin-c2c.c
-index 897eadb..a5dc412 100644
---- a/tools/perf/builtin-c2c.c
-+++ b/tools/perf/builtin-c2c.c
-@@ -11,51 +11,148 @@
- 
- struct perf_c2c {
- 	struct perf_tool tool;
-+	bool		 raw_records;
- };
- 
--static int perf_sample__fprintf(struct perf_sample *sample,
--				struct perf_evsel *evsel,
--				struct addr_location *al, FILE *fp)
-+enum { OP, LVL, SNP, LCK, TLB };
-+
-+static int perf_c2c__scnprintf_data_src(char *bf, size_t size, uint64_t val)
- {
--	return fprintf(fp, "%25.25s: %5d %5d 0x%016" PRIx64 " 0x016%" PRIx64 " %5" PRIu64 " 0x%06" PRIx64 " %s:%s\n",
--		       perf_evsel__name(evsel),
--		       sample->pid, sample->tid, sample->ip, sample->addr,
--		       sample->weight, sample->data_src,
--		       al->map ? (al->map->dso ? al->map->dso->long_name : "???") : "???",
--		       al->sym ? al->sym->name : "???");
-+#define PREFIX       "["
-+#define SUFFIX       "]"
-+#define ELLIPSIS     "..."
-+	static const struct {
-+		uint64_t   bit;
-+		int64_t    field;
-+		const char *name;
-+	} decode_bits[] = {
-+	{ PERF_MEM_OP_LOAD,       OP,  "LOAD"     },
-+	{ PERF_MEM_OP_STORE,      OP,  "STORE"    },
-+	{ PERF_MEM_OP_NA,         OP,  "OP_NA"    },
-+	{ PERF_MEM_LVL_LFB,       LVL, "LFB"      },
-+	{ PERF_MEM_LVL_L1,        LVL, "L1"       },
-+	{ PERF_MEM_LVL_L2,        LVL, "L2"       },
-+	{ PERF_MEM_LVL_L3,        LVL, "LCL_LLC"  },
-+	{ PERF_MEM_LVL_LOC_RAM,   LVL, "LCL_RAM"  },
-+	{ PERF_MEM_LVL_REM_RAM1,  LVL, "RMT_RAM"  },
-+	{ PERF_MEM_LVL_REM_RAM2,  LVL, "RMT_RAM"  },
-+	{ PERF_MEM_LVL_REM_CCE1,  LVL, "RMT_LLC"  },
-+	{ PERF_MEM_LVL_REM_CCE2,  LVL, "RMT_LLC"  },
-+	{ PERF_MEM_LVL_IO,        LVL, "I/O"	  },
-+	{ PERF_MEM_LVL_UNC,       LVL, "UNCACHED" },
-+	{ PERF_MEM_LVL_NA,        LVL, "N"        },
-+	{ PERF_MEM_LVL_HIT,       LVL, "HIT"      },
-+	{ PERF_MEM_LVL_MISS,      LVL, "MISS"     },
-+	{ PERF_MEM_SNOOP_NONE,    SNP, "SNP NONE" },
-+	{ PERF_MEM_SNOOP_HIT,     SNP, "SNP HIT"  },
-+	{ PERF_MEM_SNOOP_MISS,    SNP, "SNP MISS" },
-+	{ PERF_MEM_SNOOP_HITM,    SNP, "SNP HITM" },
-+	{ PERF_MEM_SNOOP_NA,      SNP, "SNP NA"   },
-+	{ PERF_MEM_LOCK_LOCKED,   LCK, "LOCKED"   },
-+	{ PERF_MEM_LOCK_NA,       LCK, "LOCK_NA"  },
-+	};
-+	union perf_mem_data_src dsrc = { .val = val, };
-+	int printed = scnprintf(bf, size, PREFIX);
-+	size_t i;
-+	bool first_present = true;
-+
-+	for (i = 0; i < ARRAY_SIZE(decode_bits); i++) {
-+		int bitval;
-+
-+		switch (decode_bits[i].field) {
-+		case OP:  bitval = decode_bits[i].bit & dsrc.mem_op;    break;
-+		case LVL: bitval = decode_bits[i].bit & dsrc.mem_lvl;   break;
-+		case SNP: bitval = decode_bits[i].bit & dsrc.mem_snoop; break;
-+		case LCK: bitval = decode_bits[i].bit & dsrc.mem_lock;  break;
-+		case TLB: bitval = decode_bits[i].bit & dsrc.mem_dtlb;  break;
-+		default: bitval = 0;					break;
-+		}
-+
-+		if (!bitval)
-+			continue;
-+
-+		if (strlen(decode_bits[i].name) + !!i > size - printed - sizeof(SUFFIX)) {
-+			sprintf(bf + size - sizeof(SUFFIX) - sizeof(ELLIPSIS) + 1, ELLIPSIS);
-+			printed = size - sizeof(SUFFIX);
-+			break;
-+		}
-+
-+		printed += scnprintf(bf + printed, size - printed, "%s%s",
-+				     first_present ? "" : ",", decode_bits[i].name);
-+		first_present = false;
-+	}
-+
-+	printed += scnprintf(bf + printed, size - printed, SUFFIX);
-+	return printed;
- }
- 
--static int perf_c2c__process_load(struct perf_evsel *evsel,
--				  struct perf_sample *sample,
--				  struct addr_location *al)
-+static int perf_c2c__fprintf_header(FILE *fp)
- {
--	perf_sample__fprintf(sample, evsel, al, stdout);
--	return 0;
-+	int printed = fprintf(fp, "%c %-16s  %6s  %6s  %4s  %18s  %18s  %18s  %6s  %-10s %-60s %s\n", 
-+			      'T',
-+			      "Status",
-+			      "Pid",
-+			      "Tid",
-+			      "CPU",
-+			      "Inst Adrs",
-+			      "Virt Data Adrs",
-+			      "Phys Data Adrs",
-+			      "Cycles",
-+			      "Source",
-+			      "  Decoded Source",
-+			      "ObJect:Symbol");
-+	return printed + fprintf(fp, "%-*.*s\n", printed, printed, graph_dotted_line);
- }
- 
--static int perf_c2c__process_store(struct perf_evsel *evsel,
--				   struct perf_sample *sample,
--				   struct addr_location *al)
-+static int perf_sample__fprintf(struct perf_sample *sample, char tag,
-+				const char *reason, struct addr_location *al, FILE *fp)
- {
--	perf_sample__fprintf(sample, evsel, al, stdout);
-+	char data_src[61];
-+
-+	perf_c2c__scnprintf_data_src(data_src, sizeof(data_src), sample->data_src);
-+
-+	return fprintf(fp, "%c %-16s  %6d  %6d  %4d  %#18" PRIx64 "  %#18" PRIx64 "  %#18" PRIx64 "  %6" PRIu64 "  %#10" PRIx64 " %-60.60s %s:%s\n",
-+		       tag,
-+		       reason ?: "valid record",
-+		       sample->pid,
-+		       sample->tid,
-+		       sample->cpu,
-+		       sample->ip,
-+		       sample->addr,
-+		       0UL,
-+		       sample->weight,
-+		       sample->data_src,
-+		       data_src,
-+		       al->map ? (al->map->dso ? al->map->dso->long_name : "???") : "???",
-+		       al->sym ? al->sym->name : "???");
-+}
-+
-+static int perf_c2c__process_load_store(struct perf_c2c *c2c,
-+					struct perf_sample *sample,
-+					struct addr_location *al)
-+{
-+	if (c2c->raw_records)
-+		perf_sample__fprintf(sample, ' ', "raw input", al, stdout);
-+
- 	return 0;
- }
- 
- static const struct perf_evsel_str_handler handlers[] = {
--	{ "cpu/mem-loads,ldlat=30/pp", perf_c2c__process_load, },
--	{ "cpu/mem-stores/pp",	       perf_c2c__process_store, },
-+	{ "cpu/mem-loads,ldlat=30/pp", perf_c2c__process_load_store, },
-+	{ "cpu/mem-stores/pp",	       perf_c2c__process_load_store, },
- };
- 
--typedef int (*sample_handler)(struct perf_evsel *evsel,
-+typedef int (*sample_handler)(struct perf_c2c *c2c,
- 			      struct perf_sample *sample,
- 			      struct addr_location *al);
- 
--static int perf_c2c__process_sample(struct perf_tool *tool __maybe_unused,
-+static int perf_c2c__process_sample(struct perf_tool *tool,
- 				    union perf_event *event,
- 				    struct perf_sample *sample,
- 				    struct perf_evsel *evsel,
- 				    struct machine *machine)
- {
-+	struct perf_c2c *c2c = container_of(tool, struct perf_c2c, tool);
- 	struct addr_location al;
- 	int err = 0;
- 
-@@ -67,7 +164,7 @@ static int perf_c2c__process_sample(struct perf_tool *tool __maybe_unused,
- 
- 	if (evsel->handler.func != NULL) {
- 		sample_handler f = evsel->handler.func;
--		err = f(evsel, sample, &al);
-+		err = f(c2c, sample, &al);
- 	}
- 
- 	return err;
-@@ -100,6 +197,10 @@ out:
- static int perf_c2c__report(struct perf_c2c *c2c)
- {
- 	setup_pager();
-+
-+	if (c2c->raw_records)
-+		perf_c2c__fprintf_header(stdout);
-+
- 	return perf_c2c__read_events(c2c);
- }
- 
-@@ -150,6 +251,7 @@ int cmd_c2c(int argc, const char **argv, const char *prefix __maybe_unused)
- 		},
- 	};
- 	const struct option c2c_options[] = {
-+	OPT_BOOLEAN('r', "raw_records", &c2c.raw_records, "dump raw events"),
- 	OPT_END()
- 	};
- 	const char * const c2c_usage[] = {
--- 
-1.7.11.7
-
+[249844.491141] INFO: task kworker/u2:2:32113 blocked for more than 120 seconds.
+[249844.493268]       Not tainted v3.13-11268-g8a1f006 #3
+[249844.494731] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+disables this message.
+[249844.496922] kworker/u2:2    D ffff880074a92520     0 32113      2 0x00000000
+[249844.498985] Workqueue: netns cleanup_net
+[249844.500188]  ffff8800956d1c78 0000000000000046 ffff880074a92520
+00000000001d4f80
+[249844.502360]  ffff8800956d1fd8 00000000001d4f80 ffff880074a90000
+ffff880074a92520
+[249844.504617]  ffff8800b414dab8 ffffffff82db4d20 ffffffff82db4d28
+0000000000000246
+[249844.506647] Call Trace:
+[249844.507331]  [<ffffffff82378b75>] schedule+0x65/0x70
+[249844.508576]  [<ffffffff82378b91>] schedule_preempt_disabled+0x11/0x20
+[249844.510185]  [<ffffffff8237a0e5>] mutex_lock_nested+0x285/0x4a0
+[249844.511777]  [<ffffffff81f89160>] ? cleanup_net+0x80/0x1e0
+[249844.513422]  [<ffffffff81f89160>] ? cleanup_net+0x80/0x1e0
+[249844.514998]  [<ffffffff81f89160>] cleanup_net+0x80/0x1e0
+[249844.516523]  [<ffffffff8115b096>] process_one_work+0x366/0x690
+[249844.518172]  [<ffffffff8115af70>] ? process_one_work+0x240/0x690
+[249844.519840]  [<ffffffff8115b8de>] worker_thread+0x21e/0x370
+[249844.521422]  [<ffffffff8115b6c0>] ? rescuer_thread+0x2c0/0x2c0
+[249844.523040]  [<ffffffff81164420>] kthread+0xf0/0x100
+[249844.524425]  [<ffffffff8116dde1>] ? finish_task_switch+0x81/0x130
+[249844.525987]  [<ffffffff81164330>] ? insert_kthread_work+0x90/0x90
+[249844.527487]  [<ffffffff8237f50c>] ret_from_fork+0x7c/0xb0
+[249844.528959]  [<ffffffff81164330>] ? insert_kthread_work+0x90/0x90
+[249844.530451] 3 locks held by kworker/u2:2/32113:
+[249844.531638]  #0:  (%s#5){.+.+.+}, at: [<ffffffff8115af70>]
+process_one_work+0x240/0x690
+[249844.533891]  #1:  (net_cleanup_work){+.+.+.}, at:
+[<ffffffff8115af70>] process_one_work+0x240/0x690
+[249844.536317]  #2:  (net_mutex){+.+.+.}, at: [<ffffffff81f89160>]
+cleanup_net+0x80/0x1e0
+[249844.538744] INFO: task trinity-c10:23911 blocked for more than 120 seconds.
+[249844.540723]       Not tainted v3.13-11268-g8a1f006 #3
+[249844.542192] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+disables this message.
+[249844.544785] trinity-c10     D ffff8800b963a520     0 23911  22465 0x00000004
+[249844.546929]  ffff880020d49df8 0000000000000046 ffff8800b963a520
+00000000001d4f80
+[249844.549183]  ffff880020d49fd8 00000000001d4f80 ffff8800bb42a520
+ffff8800b963a520
+[249844.551401]  ffff880024e58000 ffffffff82db4d20 ffffffff82db4d28
+0000000000000246
+[249844.553376] Call Trace:
+[249844.553998]  [<ffffffff82378b75>] schedule+0x65/0x70
+[249844.555237]  [<ffffffff82378b91>] schedule_preempt_disabled+0x11/0x20
+[249844.556844]  [<ffffffff8237a0e5>] mutex_lock_nested+0x285/0x4a0
+[249844.558349]  [<ffffffff81f89357>] ? copy_net_ns+0x97/0x150
+[249844.559748]  [<ffffffff81f89357>] ? copy_net_ns+0x97/0x150
+[249844.561305]  [<ffffffff81f89357>] copy_net_ns+0x97/0x150
+[249844.562789]  [<ffffffff811693e6>] create_new_namespaces+0x126/0x1c0
+[249844.564551]  [<ffffffff81fffffd>] ? ip_build_and_send_pkt+0x1cd/0x260
+[249844.566484]  [<ffffffff81169797>] unshare_nsproxy_namespaces+0xa7/0xe0
+[249844.568325]  [<ffffffff81139876>] SyS_unshare+0x116/0x2c0
+[249844.569838]  [<ffffffff81fffffd>] ? ip_build_and_send_pkt+0x1cd/0x260
+[249844.571664]  [<ffffffff8237f5b9>] system_call_fastpath+0x16/0x1b
+[249844.573328]  [<ffffffff81fffffd>] ? ip_build_and_send_pkt+0x1cd/0x260
+[249844.574886] 1 lock held by trinity-c10/23911:
+[249844.576036]  #0:  (net_mutex){+.+.+.}, at: [<ffffffff81f89357>]
+copy_net_ns+0x97/0x150
