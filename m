@@ -1,162 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750890AbaBJFBl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 00:01:41 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35255 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750719AbaBJFBk (ORCPT
+	id S1751502AbaBJFCT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 00:02:19 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:54194 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751083AbaBJFCI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 00:01:40 -0500
-Message-ID: <52F85D2F.6010501@infradead.org>
-Date: Sun, 09 Feb 2014 21:01:35 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Mon, 10 Feb 2014 00:02:08 -0500
+X-Sasl-enc: AS6K/iRc8FD5mSyfOY/zv1gs3dgQbAD7MaSygg9zXGA7 1392008527
+Date: Sun, 9 Feb 2014 21:04:06 -0800
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Larry Finger <Larry.Finger@lwfinger.net>
+Subject: Re: linux-next: build failure after merge of the final tree (staging
+ tree related)
+Message-ID: <20140210050406.GA15517@kroah.com>
+References: <20140210155412.d42b2dda36feac3e9c8733fe@canb.auug.org.au>
 MIME-Version: 1.0
-To: Gene Heskett <gheskett@wdtv.com>
-CC: Ken Moffat <zarniwhoop@ntlworld.com>, linux-kernel@vger.kernel.org
-Subject: Re: make oldfonfig broken.
-References: <1391971686-9517-1-git-send-email-richard@nod.at> <201402092314.58129.gheskett@wdtv.com> <52F852DA.9040407@infradead.org> <201402092332.32439.gheskett@wdtv.com>
-In-Reply-To: <201402092332.32439.gheskett@wdtv.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140210155412.d42b2dda36feac3e9c8733fe@canb.auug.org.au>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/09/2014 08:32 PM, Gene Heskett wrote:
-> On Sunday 09 February 2014, Randy Dunlap wrote:
->> On 02/09/2014 08:14 PM, Gene Heskett wrote:
->>> On Sunday 09 February 2014, Randy Dunlap wrote:
->>>> On 02/09/2014 07:46 PM, Gene Heskett wrote:
->>>>> On Sunday 09 February 2014, Randy Dunlap wrote:
->>>>>> On 02/09/2014 07:07 PM, Ken Moffat wrote:
->>>>>>> On Sun, Feb 09, 2014 at 06:05:41PM -0500, Gene Heskett wrote:
->>>>>>>> On Sunday 09 February 2014, Paul Bolle wrote:
->>>>>>>>> Feel free to open a new thread, with the relevant details, and
->>>>>>>>> involve the relevant people and lists. I have no idea what you're
->>>>>>>>> going on about and could not care less (in the context of this
->>>>>>>>> thread).
->>>>>>>>>
->>>>>>>>>
->>>>>>>>> Paul Bolle
->>>>>>>>
->>>>>>>> Been tried, got zero response.  Frankly, posting just to lkml,
->>>>>>>> hoping the revalent people see it, is beginning to act like
->>>>>>>> posting to a black hole.
->>>>>>>>
->>>>>>>  I saw one response to you, from Randy Dunlap, asking for more
->>>>>>>
->>>>>>> information : https://lkml.org/lkml/2014/2/8/153
->>>>>>
->>>>>> wow, I don't know how I saw this message (thanks, Ken),
->>>>>> but replying to this patch was NOT the right thing to do, Gene.
->>>>>>
->>>>>> Just reply to my request and I'll be glad to look into it.
->>>>>>
->>>>>>>  After your posts a few days ago, I'm tempted to suggest you check
->>>>>>>
->>>>>>> your spam filters, and also any mail files your virus scanner might
->>>>>>> have quarantined.  But it is also possible that you just haven't
->>>>>>> received it - email is like that.
->>>>>>>
->>>>>>> ط¤آ¸en
->>>>>
->>>>> Spam and viri filters watched carefully.  I also use mailfilter, and
->>>>> watch its logs full time for FP's.
->>>>
->>>> Still -- this ATSC problem should not be part of a reply to the Remove
->>>> DEPRECATED patch.
->>>
->>> True.  But I got some attention.
->>>
->>>>> And I didn't reply because the question seemed way too broad, almost
->>>>> as if
->>>>
->>>> what question seemed to broad?
->>>
->>> You wanted to see "a" config, but I wanted to show the diffs. Also
->>> yesterday I hadn't gone thru what I have yet to see where it falls
->>> apart.
->>>
->>>>> my lament wasn't read.  That and the mail server doesn't like big
->>>>
->>>> what mail server?  yours?  wdtv?  vger.kernel.org certainly has no
->>>> problem with them.
->>>
->>> I have gotten bounced from lkml because a screen shot pix of a failed
->>> boot was too big.  Perhaps 18 months or so.  It was big, from a 10
->>> megapixel camera.
->>>
->>>>> attachments. So rather than reply to the list, I'll excise some of
->>>>> the addresses that bounce from a reply_all or don't like me, and
->>>>> send the .config from a 3.019 build which seems ok, but by the time
->>>>> that config is run thru a make oldconfig at 3.8.2, most all the
->>>>> media, ATSC and DVB stuff is gone.  So I'll attach that one too. 
->>>>> The later file grew 22kb, but wholesale parts of the first one are
->>>>> missing from the 2nd.
->>>>
->>>> Gene, I want to make sure where you are saying the problem is.
->>>> Is it going directly from 3.019 to 3.8.2, with no intervening kernel
->>>> versions?
->>>
->>> No, one intermediate step in this case.
->>>
->>> I started with 3.0.19, which was fine, took that one to 3.2.40, and
->>> that one to 3.8.2 because I don't have anything between those here. 
->>> Not exactly a step by step.
->>
->> and when you go from one kernel version to the next, do you use
->>
->> $ make oldconfig
->> and answer all of its questions, or do you use
+On Mon, Feb 10, 2014 at 03:54:12PM +1100, Stephen Rothwell wrote:
+> Hi all,
 > 
-> I generally answer all its questions, or take the default by hitting enter, 
-> but I do read all its questions.
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
 > 
->> $ yes '' | make oldconfig
-> 
-> Never done that in all these years.
-> 
->> or some other variant?  (I guess in your super build script.)
-> 
-> This is long before my "super script" gets fired off.
-> 
-> And that part is actually working well, run it as root, do a grub-update 
-> and reboot.
-> 
-> Cheers, Gene
-> 
+> drivers/staging/rtl8188eu/core/rtw_mlme.c: In function '_rtw_init_mlme_priv':
+> drivers/staging/rtl8188eu/core/rtw_mlme.c:65:2: error: implicit declaration of function 'vzalloc' [-Werror=implicit-function-declaration]
+>   pbuf = vzalloc(MAX_BSS_CNT * (sizeof(struct wlan_network)));
+>   ^
 
-You need to have a Kconfig symbol named DVB_CORE enabled.
+<snip>
 
-In 3.8.2 (and likely previously, but not in 3.2.40),
-DVB_CORE depends on having both MEDIA_SUPPORT and MEDIA_DIGITAL_TV_SUPPORT
-enabled.  Your .confile file  has MEDIA_SUPPORT enabled but not
-MEDIA_DIGITAL_TV_SUPPORT.
+Sorry about that.  Larry sent me a patch for this Friday evening and I
+haven't had the chance to add it to my tree just yet.  Sorry for the
+noise.
 
-In your 3.2.40 kernel source tree, just edit your .config file and delete the line
-that says:
-# CONFIG_MEDIA_DIGITAL_TV_SUPPORT is not set
-
-then run [1]
-$ make oldconfig
-and it will ask you how to set the Kconfig symbol.  Tell it 'y'.
-
-and if you can find this line in your .config file:
-CONFIG_MEDIA_SUBDRV_AUTOSELECT=y
-
-delete it. Run 'make oldconfig' again if you did so at [1] above.
-For this Kconfig question:
-  Autoselect tuners and i2c modules to build (MEDIA_SUBDRV_AUTOSELECT),
-answer N.
-Then you can select all of the tuners and frontends that you want.
-There are LOTS of them to choose from.
-
-IIRC, this all happened because someone decided that they could make the AUTOSELECT
-driver feature Better!  ugh.
-
-Good luck. Let me know if you need more guidance.
-
-
--- 
-~Randy
+greg k-h
