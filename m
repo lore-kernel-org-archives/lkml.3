@@ -1,105 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753571AbaBJNcB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 08:32:01 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33238 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752516AbaBJNb6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 08:31:58 -0500
-Date: Mon, 10 Feb 2014 05:31:46 -0800
-From: tip-bot for David Rientjes <tipbot@zytor.com>
-Message-ID: <tip-dc9788f40a769d967de3eb5a7aee8c1a70094d32@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, rientjes@google.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, rientjes@google.com
-In-Reply-To: <alpine.DEB.2.02.1402042354380.7839@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1402042354380.7839@chino.kir.corp.google.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86/apic:
-  Always define nox2apic and define it as initdata
-Git-Commit-ID: dc9788f40a769d967de3eb5a7aee8c1a70094d32
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1753611AbaBJNcb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 08:32:31 -0500
+Received: from mga14.intel.com ([143.182.124.37]:53394 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753589AbaBJNc0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 08:32:26 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,818,1384329600"; 
+   d="scan'208";a="472753064"
+Date: Mon, 10 Feb 2014 15:31:47 +0200
+From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
+To: sagar.a.kamble@intel.com
+Cc: intel-gfx@lists.freedesktop.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 07/11] drm/i915: Add 180 degree sprite rotation support
+Message-ID: <20140210133147.GI3891@intel.com>
+References: <1392017478-4945-1-git-send-email-sagar.a.kamble@intel.com>
+ <1392017478-4945-8-git-send-email-sagar.a.kamble@intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 10 Feb 2014 05:31:52 -0800 (PST)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1392017478-4945-8-git-send-email-sagar.a.kamble@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  dc9788f40a769d967de3eb5a7aee8c1a70094d32
-Gitweb:     http://git.kernel.org/tip/dc9788f40a769d967de3eb5a7aee8c1a70094d32
-Author:     David Rientjes <rientjes@google.com>
-AuthorDate: Tue, 4 Feb 2014 23:55:06 -0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sun, 9 Feb 2014 15:15:11 +0100
+On Mon, Feb 10, 2014 at 01:01:14PM +0530, sagar.a.kamble@intel.com wrote:
+> From: Ville Syrjälä <ville.syrjala@linux.intel.com>
+> 
+> The sprite planes (in fact all display planes starting from gen4)
+> support 180 degree rotation. Add the relevant low level bits to the
+> sprite code to make use of that feature.
+> 
+> The upper layers are not yet plugged in.
+> 
+> v2: HSW handles the rotated buffer offset automagically
+> 
+> Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+> Cc: Jani Nikula <jani.nikula@linux.intel.com>
+> Cc: David Airlie <airlied@linux.ie>
+> Cc: dri-devel@lists.freedesktop.org
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
+> Signed-off-by: Sagar Kamble <sagar.a.kamble@intel.com>
+> ---
+>  drivers/gpu/drm/i915/i915_reg.h     |  3 +++
+>  drivers/gpu/drm/i915/intel_drv.h    |  1 +
+>  drivers/gpu/drm/i915/intel_sprite.c | 37 +++++++++++++++++++++++++++++++++++++
+>  3 files changed, 41 insertions(+)
+> 
+> diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
+> index abd18cd..57906c5 100644
+> --- a/drivers/gpu/drm/i915/i915_reg.h
+> +++ b/drivers/gpu/drm/i915/i915_reg.h
+> @@ -3637,6 +3637,7 @@
+>  #define   DVS_YUV_ORDER_UYVY	(1<<16)
+>  #define   DVS_YUV_ORDER_YVYU	(2<<16)
+>  #define   DVS_YUV_ORDER_VYUY	(3<<16)
+> +#define   DVS_ROTATE_180	(1<<15)
+>  #define   DVS_DEST_KEY		(1<<2)
+>  #define   DVS_TRICKLE_FEED_DISABLE (1<<14)
+>  #define   DVS_TILED		(1<<10)
+> @@ -3707,6 +3708,7 @@
+>  #define   SPRITE_YUV_ORDER_UYVY		(1<<16)
+>  #define   SPRITE_YUV_ORDER_YVYU		(2<<16)
+>  #define   SPRITE_YUV_ORDER_VYUY		(3<<16)
+> +#define   SPRITE_ROTATE_180		(1<<15)
+>  #define   SPRITE_TRICKLE_FEED_DISABLE	(1<<14)
+>  #define   SPRITE_INT_GAMMA_ENABLE	(1<<13)
+>  #define   SPRITE_TILED			(1<<10)
+> @@ -3780,6 +3782,7 @@
+>  #define   SP_YUV_ORDER_UYVY		(1<<16)
+>  #define   SP_YUV_ORDER_YVYU		(2<<16)
+>  #define   SP_YUV_ORDER_VYUY		(3<<16)
+> +#define   SP_ROTATE_180			(1<<15)
+>  #define   SP_TILED			(1<<10)
+>  #define _SPALINOFF		(VLV_DISPLAY_BASE + 0x72184)
+>  #define _SPASTRIDE		(VLV_DISPLAY_BASE + 0x72188)
+> diff --git a/drivers/gpu/drm/i915/intel_drv.h b/drivers/gpu/drm/i915/intel_drv.h
+> index 44067bc..85864fc 100644
+> --- a/drivers/gpu/drm/i915/intel_drv.h
+> +++ b/drivers/gpu/drm/i915/intel_drv.h
+> @@ -397,6 +397,7 @@ struct intel_plane {
+>  	unsigned int crtc_w, crtc_h;
+>  	uint32_t src_x, src_y;
+>  	uint32_t src_w, src_h;
+> +	unsigned int rotation;
+>  
+>  	/* Since we need to change the watermarks before/after
+>  	 * enabling/disabling the planes, we need to store the parameters here
+> diff --git a/drivers/gpu/drm/i915/intel_sprite.c b/drivers/gpu/drm/i915/intel_sprite.c
+> index 336ae6c..477d4d7 100644
+> --- a/drivers/gpu/drm/i915/intel_sprite.c
+> +++ b/drivers/gpu/drm/i915/intel_sprite.c
+> @@ -60,6 +60,7 @@ vlv_update_plane(struct drm_plane *dplane, struct drm_crtc *crtc,
+>  	sprctl &= ~SP_PIXFORMAT_MASK;
+>  	sprctl &= ~SP_YUV_BYTE_ORDER_MASK;
+>  	sprctl &= ~SP_TILED;
+> +	sprctl &= ~SP_ROTATE_180;
+>  
+>  	switch (fb->pixel_format) {
+>  	case DRM_FORMAT_YUYV:
+> @@ -131,6 +132,14 @@ vlv_update_plane(struct drm_plane *dplane, struct drm_crtc *crtc,
+>  							fb->pitches[0]);
+>  	linear_offset -= sprsurf_offset;
+>  
+> +	if (intel_plane->rotation == BIT(DRM_ROTATE_180)) {
+> +		sprctl |= SP_ROTATE_180;
+> +
+> +		x += src_w;
+> +		y += src_h;
+> +		linear_offset += src_h * fb->pitches[0] + src_w * pixel_size;
+> +	}
+> +
+>  	I915_WRITE(SPSTRIDE(pipe, plane), fb->pitches[0]);
+>  	I915_WRITE(SPPOS(pipe, plane), (crtc_y << 16) | crtc_x);
+>  
+> @@ -238,6 +247,7 @@ ivb_update_plane(struct drm_plane *plane, struct drm_crtc *crtc,
+>  	sprctl &= ~SPRITE_RGB_ORDER_RGBX;
+>  	sprctl &= ~SPRITE_YUV_BYTE_ORDER_MASK;
+>  	sprctl &= ~SPRITE_TILED;
+> +	sprctl &= ~SPRITE_ROTATE_180;
+>  
+>  	switch (fb->pixel_format) {
+>  	case DRM_FORMAT_XBGR8888:
+> @@ -299,6 +309,17 @@ ivb_update_plane(struct drm_plane *plane, struct drm_crtc *crtc,
+>  					       pixel_size, fb->pitches[0]);
+>  	linear_offset -= sprsurf_offset;
+>  
+> +	if (intel_plane->rotation == BIT(DRM_ROTATE_180)) {
+> +		sprctl |= SPRITE_ROTATE_180;
+> +
+> +		/* HSW does this automagically in hardware */
+> +		if (!IS_HASWELL(dev)) {
 
-x86/apic: Always define nox2apic and define it as initdata
+Still missing the BDW check here.
 
-The "nox2apic" variable can be defined as __initdata since it is
-only used for bootstrap.  It can now unconditionally be defined
-since it will later be freed.
+> +			x += src_w;
+> +			y += src_h;
+> +			linear_offset += src_h * fb->pitches[0] + src_w * pixel_size;
+> +		}
+> +	}
+> +
+>  	I915_WRITE(SPRSTRIDE(pipe), fb->pitches[0]);
+>  	I915_WRITE(SPRPOS(pipe), (crtc_y << 16) | crtc_x);
+>  
+> @@ -422,6 +443,7 @@ ilk_update_plane(struct drm_plane *plane, struct drm_crtc *crtc,
+>  	dvscntr &= ~DVS_RGB_ORDER_XBGR;
+>  	dvscntr &= ~DVS_YUV_BYTE_ORDER_MASK;
+>  	dvscntr &= ~DVS_TILED;
+> +	dvscntr &= ~DVS_ROTATE_180;
+>  
+>  	switch (fb->pixel_format) {
+>  	case DRM_FORMAT_XBGR8888:
+> @@ -478,6 +500,14 @@ ilk_update_plane(struct drm_plane *plane, struct drm_crtc *crtc,
+>  					       pixel_size, fb->pitches[0]);
+>  	linear_offset -= dvssurf_offset;
+>  
+> +	if (intel_plane->rotation == BIT(DRM_ROTATE_180)) {
+> +		dvscntr |= DVS_ROTATE_180;
+> +
+> +		x += src_w;
+> +		y += src_h;
+> +		linear_offset += src_h * fb->pitches[0] + src_w * pixel_size;
+> +	}
+> +
+>  	I915_WRITE(DVSSTRIDE(pipe), fb->pitches[0]);
+>  	I915_WRITE(DVSPOS(pipe), (crtc_y << 16) | crtc_x);
+>  
+> @@ -739,6 +769,9 @@ intel_update_plane(struct drm_plane *plane, struct drm_crtc *crtc,
+>  	max_scale = intel_plane->max_downscale << 16;
+>  	min_scale = intel_plane->can_scale ? 1 : (1 << 16);
+>  
+> +	drm_rect_rotate(&src, fb->width << 16, fb->height << 16,
+> +			intel_plane->rotation);
+> +
+>  	hscale = drm_rect_calc_hscale_relaxed(&src, &dst, min_scale, max_scale);
+>  	BUG_ON(hscale < 0);
+>  
+> @@ -777,6 +810,9 @@ intel_update_plane(struct drm_plane *plane, struct drm_crtc *crtc,
+>  				     drm_rect_width(&dst) * hscale - drm_rect_width(&src),
+>  				     drm_rect_height(&dst) * vscale - drm_rect_height(&src));
+>  
+> +		drm_rect_rotate_inv(&src, fb->width << 16, fb->height << 16,
+> +				    intel_plane->rotation);
+> +
+>  		/* sanity check to make sure the src viewport wasn't enlarged */
+>  		WARN_ON(src.x1 < (int) src_x ||
+>  			src.y1 < (int) src_y ||
+> @@ -1141,6 +1177,7 @@ intel_plane_init(struct drm_device *dev, enum pipe pipe, int plane)
+>  
+>  	intel_plane->pipe = pipe;
+>  	intel_plane->plane = plane;
+> +	intel_plane->rotation = BIT(DRM_ROTATE_0);
+>  	possible_crtcs = (1 << pipe);
+>  	ret = drm_plane_init(dev, &intel_plane->base, possible_crtcs,
+>  			     &intel_plane_funcs,
+> -- 
+> 1.8.5
 
-At the same time, it is also better off as a bool.
-
-Signed-off-by: David Rientjes <rientjes@google.com>
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/alpine.DEB.2.02.1402042354380.7839@chino.kir.corp.google.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/include/asm/apic.h | 1 -
- arch/x86/kernel/apic/apic.c | 9 ++++++---
- 2 files changed, 6 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
-index b4c561d..19b0eba 100644
---- a/arch/x86/include/asm/apic.h
-+++ b/arch/x86/include/asm/apic.h
-@@ -217,7 +217,6 @@ static inline void x2apic_force_phys(void)
- {
- }
- 
--#define	nox2apic	0
- #define	x2apic_preenabled 0
- #define	x2apic_supported()	0
- #endif
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index 7f26c9a..f824d69 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -133,6 +133,10 @@ static inline void imcr_apic_to_pic(void)
-  * +1=force-enable
-  */
- static int force_enable_local_apic __initdata;
-+
-+/* Control whether x2APIC mode is enabled or not */
-+static bool nox2apic __initdata;
-+
- /*
-  * APIC command line parameters
-  */
-@@ -162,8 +166,7 @@ int x2apic_mode;
- /* x2apic enabled before OS handover */
- int x2apic_preenabled;
- static int x2apic_disabled;
--static int nox2apic;
--static __init int setup_nox2apic(char *str)
-+static int __init setup_nox2apic(char *str)
- {
- 	if (x2apic_enabled()) {
- 		int apicid = native_apic_msr_read(APIC_ID);
-@@ -178,7 +181,7 @@ static __init int setup_nox2apic(char *str)
- 	} else
- 		setup_clear_cpu_cap(X86_FEATURE_X2APIC);
- 
--	nox2apic = 1;
-+	nox2apic = true;
- 
- 	return 0;
- }
+-- 
+Ville Syrjälä
+Intel OTC
