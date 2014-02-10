@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755434AbaBJUNn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 15:13:43 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:51780 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755419AbaBJUNg (ORCPT
+	id S1755440AbaBJUN7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 15:13:59 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34673 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753448AbaBJTnV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 15:13:36 -0500
-Date: Mon, 10 Feb 2014 12:12:42 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 3/8] memcg: update comment about charge reparenting on
- cgroup exit
-In-Reply-To: <20140210142344.GI7117@dhcp22.suse.cz>
-Message-ID: <alpine.LSU.2.11.1402101208290.1516@eggly.anvils>
-References: <1391792665-21678-1-git-send-email-hannes@cmpxchg.org> <1391792665-21678-4-git-send-email-hannes@cmpxchg.org> <20140210142344.GI7117@dhcp22.suse.cz>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 10 Feb 2014 14:43:21 -0500
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 045/124] staging: r8712u: Set device type to wlan
+Date: Mon, 10 Feb 2014 11:39:45 -0800
+Message-Id: <1392061264-28124-46-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
+References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Feb 2014, Michal Hocko wrote:
-> On Fri 07-02-14 12:04:20, Johannes Weiner wrote:
-> > Reparenting memory charges in the css_free() callback was meant as a
-> > temporary fix for charges that race with offlining, but after some
-> > follow-up discussion, it turns out that this is really the right place
-> > to reparent charges because it guarantees none are in-flight.
+3.8.13.18 -stable review patch.  If anyone has any objections, please let me know.
 
-Perhaps: I'm not as gung-ho for this new orthodoxy as you are.
+------------------
 
-> > 
-> > Make clear that the reparenting in css_offline() is an optimistic
-> > sweep of established charges because swapout records might hold up
-> > css_free() indefinitely, but that in fact the css_free() reparenting
-> > is the properly synchronized one.
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-It worries me that you keep referring to the memsw usage, but
-forget the kmem usage, which also delays css_free() indefinitely.
+commit 3a21f00a5002b14e4aab52aef59d33ed28468a13 upstream.
 
-Or am I out-of-date?  Seems not, mem_cgroup_reparent_chages() still
-waits for memcg->res - memcg->kmem to reach 0, knowing there's not
-much certainty that kmem will reach 0 any time soon.
+The latest version of NetworkManager does not recognize the device as wireless
+without this change.
 
-I think you need a plan for what to do with the kmem pinning,
-before going much further in reworking the memsw pinning.
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/staging/rtl8712/usb_intf.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-Or at the least, please mention it in this patch's comment.
+diff --git a/drivers/staging/rtl8712/usb_intf.c b/drivers/staging/rtl8712/usb_intf.c
+index a96cd06..601b9f7 100644
+--- a/drivers/staging/rtl8712/usb_intf.c
++++ b/drivers/staging/rtl8712/usb_intf.c
+@@ -358,6 +358,10 @@ static u8 key_2char2num(u8 hch, u8 lch)
+ 	return (hex_to_bin(hch) << 4) | hex_to_bin(lch);
+ }
+ 
++static const struct device_type wlan_type = {
++	.name = "wlan",
++};
++
+ /*
+  * drv_init() - a device potentially for us
+  *
+@@ -393,6 +397,7 @@ static int r871xu_drv_init(struct usb_interface *pusb_intf,
+ 	padapter->pusb_intf = pusb_intf;
+ 	usb_set_intfdata(pusb_intf, pnetdev);
+ 	SET_NETDEV_DEV(pnetdev, &pusb_intf->dev);
++	pnetdev->dev.type = &wlan_type;
+ 	/* step 2. */
+ 	padapter->dvobj_init = &r8712_usb_dvobj_init;
+ 	padapter->dvobj_deinit = &r8712_usb_dvobj_deinit;
+-- 
+1.8.3.2
 
-Hugh
-
-> > 
-> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> 
-> OK, I am still thinking about 2 stage reparenting. LRU drain part called
-> from css_offline and charge drain from css_free. But this is a
-> sufficient for now.
-> 
-> Acked-by: Michal Hocko <mhocko@suse.cz>
