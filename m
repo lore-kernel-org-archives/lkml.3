@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752862AbaBJRwz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 12:52:55 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:53280 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751970AbaBJRwv (ORCPT
+	id S1752929AbaBJRxj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 12:53:39 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:55560 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752214AbaBJRxh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 12:52:51 -0500
-Date: Mon, 10 Feb 2014 17:52:46 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: Madper Xie <cxie@redhat.com>
-Cc: Matt Fleming <matt.fleming@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        Adam Williamson <awilliam@redhat.com>
-Subject: Re: [BUG] can't boot up: unable to handle kernel paging request at
- ffffffffff340003
-Message-ID: <20140210175246.GB2887@console-pimps.org>
-References: <8738jr5t3e.fsf@redhat.com>
+	Mon, 10 Feb 2014 12:53:37 -0500
+Date: Mon, 10 Feb 2014 18:53:25 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Torsten Duwe <duwe@lst.de>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Scott Wood <scottwood@freescale.com>, Tom Musta <tommusta@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v2] powerpc ticket locks
+Message-ID: <20140210175325.GA27965@twins.programming.kicks-ass.net>
+References: <20140207165801.GC2107@lst.de>
+ <1392001823.3996.21.camel@pasglop>
+ <20140210155217.GF2107@lst.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <8738jr5t3e.fsf@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140210155217.GF2107@lst.de>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Feb, at 03:23:33PM, Madper Xie wrote:
-> Howdy,
-> 
-> With old kernel (from 3.10 to 3.14-rc1), my hp box shows following
-> outputs:
-> ~~~
-> [    0.009166] Freeing SMP alternatives memory: 20K (ffffffff82234000 - ffffffff82239000)
-> [    0.010302] ioremap: invalid physical address 1376e01800000001
-> [    0.010303] ------------[ cut here ]------------
-> [    0.010308] WARNING: CPU: 0 PID: 0 at arch/x86/mm/ioremap.c:83 __ioremap_caller+0x357/0x380()
+On Mon, Feb 10, 2014 at 04:52:17PM +0100, Torsten Duwe wrote:
+> Opinions, anyone?
 
-OK, this looks like a bogus BGRT address, that's a 64-bit physical
-address. I suspect the BGRT address is actually 0x1376e018, but that's
-just a guess. This looks like a BIOS bug.
+Since the holder thing is a performance thing, not a correctness thing;
+one thing you could do is something like:
 
-> ~~~
-> However the box can boot up and works well.
-> After I update kernel to 3.14-rc2, it panic when booting. Here is
-> console output:
-> ~~~
-> [    0.010366] BUG: unable to handle kernel paging request at ffffffffff340003
-> [    0.017376] IP: [<ffffffff81d85ba4>] efi_bgrt_init+0x9d/0x133
-> [    0.023153] PGD 159eb067 PUD 159ed067 PMD 16240067 PTE 9376e01800000163
-> [    0.029842] Oops: 0009 [#1] SMP 
+static const int OWNER_HASH_SIZE = CONFIG_NR_CPUS * 4;
+static const int OWNER_HASH_BITS = ilog2(OWNER_HASH_SIZE);
 
-Well, nuts. I think this is my bad. Does reverting commit 081cd62a010f
-("x86/efi: Allow mapping BGRT on x86-32") make things work? Or at least,
-work as well as they did prior to -rc2?
+u16 lock_owner_array[OWNER_HASH_SIZE] = { 0, };
 
-I wonder if we're calling early_memremap() when the fixmap slots are no
-longer valid. Could you try building the 'urgent' branch at,
+void set_owner(struct arch_spinlock_t *lock, int owner)
+{
+	int hash = hash_ptr(lock, OWNER_HASH_BITS);
+	lock_owner_array[hash] = owner;
+}
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git
+void yield_to_owner(struct arch_spinlock_t *lock)
+{
+	int hash = hash_ptr(lock, OWNER_HASH_BITS);
+	int owner = lock_owner_array[hash];
+	yield_to_cpu(owner);
+}
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+And call set_owner() after the ticket lock is acquired, and don't bother
+clearing it again; a new acquire will overwrite, a collision we have to
+live with.
+
+It should on average get you the right yield and does away with having
+to track the owner field in place.
+
+It does however get you an extra cacheline miss on acquire :/
+
+One could consider patching it out when you know your kernel is not
+running on an overloaded partition.
