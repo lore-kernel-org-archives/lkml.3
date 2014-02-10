@@ -1,34 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752823AbaBJQrG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 11:47:06 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:43548 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752708AbaBJQrE (ORCPT
+	id S1752708AbaBJQuh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 11:50:37 -0500
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.217]:48511 "EHLO
+	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751949AbaBJQue (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 11:47:04 -0500
-Message-ID: <52F90281.2000705@wwwdotorg.org>
-Date: Mon, 10 Feb 2014 09:46:57 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org
-CC: Laxman Dewangan <ldewangan@nvidia.com>,
-        Thierry Reding <thierry.reding@gmail.com>, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 16/17] i2c: i2c-tegra: deprecate class based instantiation
-References: <1392026654-5343-1-git-send-email-wsa@the-dreams.de> <1392026654-5343-17-git-send-email-wsa@the-dreams.de>
-In-Reply-To: <1392026654-5343-17-git-send-email-wsa@the-dreams.de>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 10 Feb 2014 11:50:34 -0500
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+yackYocTD1iAi8x+OWi/zfN1cLnBYfstAo5SQMel8AXawDOUvwr8pxjMon91SD6m7JJcBA==
+X-RZG-CLASS-ID: mo00
+From: Olaf Hering <olaf@aepfle.de>
+To: konrad.wilk@oracle.com
+Cc: xen-devel@lists.xen.org, linux-kernel@vger.kernel.org,
+        david.vrabel@citrix.com, boris.ostrovsky@oracle.com,
+        Olaf Hering <olaf@aepfle.de>
+Subject: [PATCH 0/3] xen-block: changes for discard support
+Date: Mon, 10 Feb 2014 17:50:24 +0100
+Message-Id: <1392051027-29516-1-git-send-email-olaf@aepfle.de>
+X-Mailer: git-send-email 1.8.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/10/2014 03:04 AM, Wolfram Sang wrote:
-> Warn users that class based instantiation is going away soon in favour
-> of more robust probing and faster bootup times.
+Fix blkfront to handle all sorts of backends.
 
-Acked-by: Stephen Warren <swarren@nvidia.com>
+Also let blkback recognize a xenstore property to disable discard for a
+given device. It requires upcoming libxl changes ("discard-enable"):
+http://lists.xenproject.org/archives/html/xen-devel/2014-01/msg02632.html
+
+Olaf Hering (3):
+  xen-blkfront: remove type check from blkfront_setup_discard
+  xen blkif.h: fix comment typo in discard-alignment
+  xen/blkback: disable discard feature if requested by toolstack
+
+ drivers/block/xen-blkback/xenbus.c |  7 ++++++-
+ drivers/block/xen-blkfront.c       | 40 +++++++++++++-------------------------
+ include/xen/interface/io/blkif.h   |  2 +-
+ 3 files changed, 21 insertions(+), 28 deletions(-)
 
