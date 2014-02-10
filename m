@@ -1,211 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752747AbaBJWpv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 17:45:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51210 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751323AbaBJWpt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 17:45:49 -0500
-Message-ID: <1392072326.15608.181.camel@ul30vt.home>
-Subject: Re: [RFC PATCH v4 06/10] VFIO_PLATFORM: Read and write support for
- the device fd
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Antonios Motakis <a.motakis@virtualopensystems.com>
-Cc: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        tech@virtualopensystems.com, a.rigo@virtualopensystems.com,
-        B08248@freescale.com, kim.phillips@linaro.org, jan.kiszka@siemens.com,
-        kvm@vger.kernel.org, R65777@freescale.com, B07421@freescale.com,
-        christoffer.dall@linaro.org, agraf@suse.de, B16395@freescale.com,
-        will.deacon@arm.com
-Date: Mon, 10 Feb 2014 15:45:26 -0700
-In-Reply-To: <1391880580-471-7-git-send-email-a.motakis@virtualopensystems.com>
-References: <1391880580-471-1-git-send-email-a.motakis@virtualopensystems.com>
-	 <1391880580-471-7-git-send-email-a.motakis@virtualopensystems.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+	id S1752765AbaBJWzV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 17:55:21 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:38627 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752111AbaBJWzU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 17:55:20 -0500
+Message-ID: <52F958D2.1070003@infradead.org>
+Date: Mon, 10 Feb 2014 14:55:14 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Gene Heskett <gheskett@wdtv.com>
+CC: Ken Moffat <zarniwhoop@ntlworld.com>, linux-kernel@vger.kernel.org
+Subject: Re: make oldfonfig broken.
+References: <1391971686-9517-1-git-send-email-richard@nod.at> <201402092332.32439.gheskett@wdtv.com> <52F85D2F.6010501@infradead.org> <201402101521.04113.gheskett@wdtv.com>
+In-Reply-To: <201402101521.04113.gheskett@wdtv.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-02-08 at 18:29 +0100, Antonios Motakis wrote:
-> VFIO returns a file descriptor which we can use to manipulate the memory
-> regions of the device. Since some memory regions we cannot mmap due to
-> security concerns, we also allow to read and write to this file descriptor
-> directly.
+On 02/10/2014 12:21 PM, Gene Heskett wrote:
+> On Monday 10 February 2014, Randy Dunlap wrote:
+>> On 02/09/2014 08:32 PM, Gene Heskett wrote:
+>> AUTOSELECT driver feature Better!  ugh.
 > 
-> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
-> Tested-by: Alvise Rigo <a.rigo@virtualopensystems.com>
-> ---
->  drivers/vfio/platform/vfio_platform.c | 128 +++++++++++++++++++++++++++++++++-
->  1 file changed, 125 insertions(+), 3 deletions(-)
+> Spit.  I presume geneology discussions are off topic. :)
+>>
+>> Good luck. Let me know if you need more guidance.
 > 
-> diff --git a/drivers/vfio/platform/vfio_platform.c b/drivers/vfio/platform/vfio_platform.c
-> index f7db5c0..ee96078 100644
-> --- a/drivers/vfio/platform/vfio_platform.c
-> +++ b/drivers/vfio/platform/vfio_platform.c
-> @@ -55,7 +55,8 @@ static int vfio_platform_regions_init(struct vfio_platform_device *vdev)
+> Hat in hand, I figured I had better get the first one that fails, 3.2.40, 
+> to work before I carried that fwd to a more current kernel, but 5 or 6 
+> builds & boot failure later I am stumped.
+> 
+> The boot gets to top_init, reports the / drive is unavailable and it cannot 
+> load /lib/modules/3.2.40/modules.dep, which does exist.
+> 
+> Stops, times out in about a minute and falls thru to the busybox shell, and 
+> of course my keyboard and mouse are wireless to usb, so neither work, reset 
+> button tap time.
+> 
+> The only reason I can deduce is that because the drive isn't mounted, 
+> something is still missing, either in the vmlinuz file or in the initrd 
+> file.
+> 
+> This most working 3.12.9 bootup shows:
 >  
->  		region.addr = res->start;
->  		region.size = resource_size(res);
-> -		region.flags = 0;
-> +		region.flags = VFIO_REGION_INFO_FLAG_READ
-> +				| VFIO_REGION_INFO_FLAG_WRITE;
->  
->  		vdev->region[i] = region;
->  	}
-> @@ -150,13 +151,134 @@ static long vfio_platform_ioctl(void *device_data,
->  static ssize_t vfio_platform_read(void *device_data, char __user *buf,
->  			     size_t count, loff_t *ppos)
->  {
-> -	return 0;
-> +	struct vfio_platform_device *vdev = device_data;
-> +	unsigned int *io;
-> +	int i;
-> +
-> +	for (i = 0; i < vdev->num_regions; i++) {
-> +		struct vfio_platform_region region = vdev->region[i];
-> +		unsigned int done = 0;
-> +		loff_t off;
-> +
-> +		if ((*ppos < region.addr)
-> +		     || (*ppos + count - 1) >= (region.addr + region.size))
-> +			continue;
+> gene@coyote:~/src/linux-3.2.40$ lsmod |grep sata
+> sata_nv                16890  12 
+> libata                146855  2 pata_amd,sata_nv
+> 
+> And I'm pretty sure all that is in the initrd.
+> 
+> Except according to grep, none of that is in 
+> /lib/modules/3.2.40/modules.dep
+> 
+> And I cannot find anyplace in a make xconfig that mentions libata.
+> So obviously my .config is still fubared. It does grep in the other  
+> modules.dep files for several other versions.
+> 
+> In fact, no .config I have mentions it. At my age the hair is thinning 
+> quickly enough.
+> 
+> So, Next please?  libata is missing, and so is sata_nv in spite of that 
+> being enabled:
 
-Perhaps there's something to be said for vfio-pci's use of fixed offsets
-to have a direct offset to index lookup.
+It's missing as a loadable module, but that's OK since it's builtin.
 
-> +
-> +		io = ioremap_nocache(region.addr, region.size);
+> gene@coyote:~/src/linux-3.2.40$ grep SATA_NV .config
+> CONFIG_SATA_NV=y
+> 
+> But I see thats builtin, but it didn't help.
 
-This must incur some overhead per access.
+Your .config has (I believe)
+CONFIG_ATA=y
+and that is what builds libata.
 
-> +
-> +		off = *ppos - region.addr;
-> +
-> +		while (count) {
-> +			size_t filled;
-> +
-> +			if (count >= 4 && !(off % 4)) {
-> +				u32 val;
-> +
-> +				val = ioread32(io + off);
-> +				if (copy_to_user(buf, &val, 4))
-> +					goto err;
-
-For vfio-pci we've decided that these interfaces are always little
-endian, have you considered whether it makes sense to do something
-similar here?  Thanks,
-
-Alex
-
-> +
-> +				filled = 4;
-> +			} else if (count >= 2 && !(off % 2)) {
-> +				u16 val;
-> +
-> +				val = ioread16(io + off);
-> +				if (copy_to_user(buf, &val, 2))
-> +					goto err;
-> +
-> +				filled = 2;
-> +			} else {
-> +				u8 val;
-> +
-> +				val = ioread8(io + off);
-> +				if (copy_to_user(buf, &val, 1))
-> +					goto err;
-> +
-> +				filled = 1;
-> +			}
-> +
-> +
-> +			count -= filled;
-> +			done += filled;
-> +			off += filled;
-> +			buf += filled;
-> +		}
-> +
-> +		iounmap(io);
-> +		return done;
-> +	}
-> +
-> +	return -EFAULT;
-> +
-> +err:
-> +	iounmap(io);
-> +	return -EFAULT;
->  }
->  
->  static ssize_t vfio_platform_write(void *device_data, const char __user *buf,
->  			      size_t count, loff_t *ppos)
->  {
-> -	return 0;
-> +	struct vfio_platform_device *vdev = device_data;
-> +	unsigned int *io;
-> +	int i;
-> +
-> +	for (i = 0; i < vdev->num_regions; i++) {
-> +		struct vfio_platform_region region = vdev->region[i];
-> +		unsigned int done = 0;
-> +		loff_t off;
-> +
-> +		if ((*ppos < region.addr)
-> +		     || (*ppos + count - 1) >= (region.addr + region.size))
-> +			continue;
-> +
-> +		io = ioremap_nocache(region.addr, region.size);
-> +
-> +		off = *ppos - region.addr;
-> +
-> +		while (count) {
-> +			size_t filled;
-> +
-> +			if (count >= 4 && !(off % 4)) {
-> +				u32 val;
-> +
-> +				if (copy_from_user(&val, buf, 4))
-> +					goto err;
-> +				iowrite32(val, io + off);
-> +
-> +				filled = 4;
-> +			} else if (count >= 2 && !(off % 2)) {
-> +				u16 val;
-> +
-> +				if (copy_from_user(&val, buf, 2))
-> +					goto err;
-> +				iowrite16(val, io + off);
-> +
-> +				filled = 2;
-> +			} else {
-> +				u8 val;
-> +
-> +				if (copy_from_user(&val, buf, 1))
-> +					goto err;
-> +				iowrite8(val, io + off);
-> +
-> +				filled = 1;
-> +			}
-> +
-> +			count -= filled;
-> +			done += filled;
-> +			off += filled;
-> +			buf += filled;
-> +		}
-> +
-> +		iounmap(io);
-> +		return done;
-> +	}
-> +
-> +	return -EINVAL;
-> +
-> +err:
-> +	iounmap(io);
-> +	return -EFAULT;
->  }
->  
->  static int vfio_platform_mmap(void *device_data, struct vm_area_struct *vma)
+Any other clues?
 
 
-
+-- 
+~Randy
