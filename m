@@ -1,86 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751772AbaBJHGI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 02:06:08 -0500
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:52820 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751240AbaBJHGG (ORCPT
+	id S1751788AbaBJHJk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 02:09:40 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:59323 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750797AbaBJHJh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 02:06:06 -0500
-Message-ID: <52F87A59.9040600@monstr.eu>
-Date: Mon, 10 Feb 2014 08:06:01 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Mon, 10 Feb 2014 02:09:37 -0500
+Message-ID: <52F87B1D.7090401@linaro.org>
+Date: Mon, 10 Feb 2014 15:09:17 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH 10/10] watchdog: xilinx: Enable this driver for Zynq
-References: <ed4cb31c9a549343e6b492cf62fc962d39034bd0.1391177880.git.michal.simek@xilinx.com> <f7bdfada576e93eaab8f6dc2ecd881da8f43911c.1391177880.git.michal.simek@xilinx.com> <52F82296.8010804@roeck-us.net>
-In-Reply-To: <52F82296.8010804@roeck-us.net>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="GoUWt0HPGtNPS4WPjlX9tM2vAQKSLseXj"
+To: Lan Tianyu <lantianyu1986@gmail.com>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Patch Tracking <patches@linaro.org>,
+        "linux-kernel@vger kernel org" <linux-kernel@vger.kernel.org>,
+        linaro-acpi <linaro-acpi@lists.linaro.org>,
+        Graeme Gregory <graeme.gregory@linaro.org>
+Subject: Re: [PATCH v2 2/3] ACPI / processor_core: Rework _PDC related stuff
+ to make it more arch-independent
+References: <1391865018-3446-1-git-send-email-hanjun.guo@linaro.org> <1391865018-3446-3-git-send-email-hanjun.guo@linaro.org> <CAOLK0pxxF+3e3gzgfSYuz+R8+n6hnB9rrCpzxdGNJPyHQ4xS5w@mail.gmail.com>
+In-Reply-To: <CAOLK0pxxF+3e3gzgfSYuz+R8+n6hnB9rrCpzxdGNJPyHQ4xS5w@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---GoUWt0HPGtNPS4WPjlX9tM2vAQKSLseXj
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Hi Tianyu,
 
-On 02/10/2014 01:51 AM, Guenter Roeck wrote:
-> On 01/31/2014 06:18 AM, Michal Simek wrote:
->> Enable this driver for Zynq.
->> Move it to architecture independent Kconfig part.
+On 2014年02月10日 10:21, Lan Tianyu wrote:
+> 2014-02-08 21:10 GMT+08:00 Hanjun Guo <hanjun.guo@linaro.org>:
+>> _PDC related stuff in processor_core.c is little bit X86/IA64 dependent,
+>> rework the code to make it more arch-independent, no functional change
+>> in this patch.
 >>
->> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+>> Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
 >> ---
+>>   arch/ia64/include/asm/acpi.h  |    5 +----
+>>   arch/ia64/kernel/acpi.c       |   17 +++++++++++++++++
+>>   arch/x86/include/asm/acpi.h   |   19 +------------------
+>>   arch/x86/kernel/acpi/cstate.c |   31 +++++++++++++++++++++++++++++++
+>>   drivers/acpi/processor_core.c |   19 +------------------
+>>   5 files changed, 51 insertions(+), 40 deletions(-)
 >>
->> Build tested by zero day testing system.
->> ---
->=20
-> Hi Michal,
->=20
-> I tried myself, and I don't see any build failures on any platform.
-> So let's assume this works as-is.
->=20
-> Reviewed-by: Guenter Roeck <linux@roeck-us.net>
->=20
+>> diff --git a/arch/ia64/include/asm/acpi.h b/arch/ia64/include/asm/acpi.h
+>> index d651102..d2b8b9d 100644
+>> --- a/arch/ia64/include/asm/acpi.h
+>> +++ b/arch/ia64/include/asm/acpi.h
+>> @@ -152,10 +152,7 @@ extern int __initdata nid_to_pxm_map[MAX_NUMNODES];
+>>   #endif
+>>
+>>   static inline bool arch_has_acpi_pdc(void) { return true; }
+>> -static inline void arch_acpi_set_pdc_bits(u32 *buf)
+>> -{
+>> -       buf[2] |= ACPI_PDC_EST_CAPABILITY_SMP;
+>> -}
+>> +extern void arch_acpi_set_pdc_bits(u32 *buf);
+>>
+>>   #define acpi_unlazy_tlb(x)
+>>
+>> diff --git a/arch/ia64/kernel/acpi.c b/arch/ia64/kernel/acpi.c
+>> index 07d209c..d71f64a 100644
+>> --- a/arch/ia64/kernel/acpi.c
+>> +++ b/arch/ia64/kernel/acpi.c
+>> @@ -1014,3 +1014,20 @@ EXPORT_SYMBOL(acpi_unregister_ioapic);
+>>    * TBD when when IA64 starts to support suspend...
+>>    */
+>>   int acpi_suspend_lowlevel(void) { return 0; }
+>> +
+>> +void arch_acpi_set_pdc_bits(u32 *buf)
+>> +{
+>> +       /* Enable coordination with firmware's _TSD info */
+>> +       buf[2] |= ACPI_PDC_SMP_T_SWCOORD;
+> Hi Hanjun:
+>              You can write like this.
+>              buf[2] |= ACPI_PDC_SMP_T_SWCOORD | ACPI_PDC_EST_CAPABILITY_SMP;
 
-Thanks for your review. I have fixed comments from Rob and
-also add one more patch which was suggested by Rob.
-I will wait for your reactions for 1/10 and then will send
-v2.
+Thanks for the suggestion, will update it.
 
-Thanks,
-Michal
+>
+>> +       if (boot_option_idle_override == IDLE_NOMWAIT) {
+>> +               /*
+>> +                * If mwait is disabled for CPU C-states, the C2C3_FFH access
+>> +                * mode will be disabled in the parameter of _PDC object.
+>> +                * Of course C1_FFH access mode will also be disabled.
+>> +                */
+>> +               buf[2] &= ~(ACPI_PDC_C_C2C3_FFH | ACPI_PDC_C_C1_FFH);
+>> +
+>> +       }
+>> +
+>> +       buf[2] |= ACPI_PDC_EST_CAPABILITY_SMP;
+>> +}
+>> diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
+>> index c8c1e70..e9f71bc 100644
+>> --- a/arch/x86/include/asm/acpi.h
+>> +++ b/arch/x86/include/asm/acpi.h
+>> @@ -147,24 +147,7 @@ static inline bool arch_has_acpi_pdc(void)
+>>                  c->x86_vendor == X86_VENDOR_CENTAUR);
+>>   }
+>>
+>> -static inline void arch_acpi_set_pdc_bits(u32 *buf)
+>> -{
+>> -       struct cpuinfo_x86 *c = &cpu_data(0);
+>> -
+>> -       buf[2] |= ACPI_PDC_C_CAPABILITY_SMP;
+>> -
+>> -       if (cpu_has(c, X86_FEATURE_EST))
+>> -               buf[2] |= ACPI_PDC_EST_CAPABILITY_SWSMP;
+>> -
+>> -       if (cpu_has(c, X86_FEATURE_ACPI))
+>> -               buf[2] |= ACPI_PDC_T_FFH;
+>> -
+>> -       /*
+>> -        * If mwait/monitor is unsupported, C2/C3_FFH will be disabled
+>> -        */
+>> -       if (!cpu_has(c, X86_FEATURE_MWAIT))
+>> -               buf[2] &= ~(ACPI_PDC_C_C2C3_FFH);
+>> -}
+>> +extern void arch_acpi_set_pdc_bits(u32 *buf);
+>>
+>>   #else /* !CONFIG_ACPI */
+>>
+>> diff --git a/arch/x86/kernel/acpi/cstate.c b/arch/x86/kernel/acpi/cstate.c
+>> index e69182f..aa9aed9 100644
+>> --- a/arch/x86/kernel/acpi/cstate.c
+>> +++ b/arch/x86/kernel/acpi/cstate.c
+>> @@ -16,6 +16,37 @@
+>>   #include <asm/mwait.h>
+>>   #include <asm/special_insns.h>
+>>
+>> +void arch_acpi_set_pdc_bits(u32 *buf)
+>> +{
+>> +       struct cpuinfo_x86 *c = &cpu_data(0);
+>> +
+>> +       /* Enable coordination with firmware's _TSD info */
+>> +       buf[2] |= ACPI_PDC_SMP_T_SWCOORD;
+>> +       if (boot_option_idle_override == IDLE_NOMWAIT) {
+>> +               /*
+>> +                * If mwait is disabled for CPU C-states, the C2C3_FFH access
+>> +                * mode will be disabled in the parameter of _PDC object.
+>> +                * Of course C1_FFH access mode will also be disabled.
+>> +                */
+>> +               buf[2] &= ~(ACPI_PDC_C_C2C3_FFH | ACPI_PDC_C_C1_FFH);
+>> +
+>> +       }
+>> +
+>> +       buf[2] |= ACPI_PDC_C_CAPABILITY_SMP;
+> This is not right. ACPI_PDC_C_CAPABILITY_SMP contians ACPI_PDC_C_C1_FFH and
+> ACPI_PDC_C_C2C3_FFH. boot_option_idle_override is meaningless here.
+>
+> You should keep original order and put the check at last.
 
+Good catch! I will update this patch, thanks for your review :)
 
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---GoUWt0HPGtNPS4WPjlX9tM2vAQKSLseXj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlL4elkACgkQykllyylKDCFTxACfXT5/wde7rxM6jwH5FzD62os9
-jGgAn0+I6TrYwT7ctdXV9TOAzp/e+9m8
-=/W6s
------END PGP SIGNATURE-----
-
---GoUWt0HPGtNPS4WPjlX9tM2vAQKSLseXj--
+Best regards
+Hanjun
