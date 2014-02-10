@@ -1,46 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752172AbaBJAxu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 19:53:50 -0500
-Received: from smtprelay0206.hostedemail.com ([216.40.44.206]:37197 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751907AbaBJAxs (ORCPT
+	id S1752181AbaBJA43 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 19:56:29 -0500
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:61871 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751760AbaBJA41 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 19:53:48 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1567:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3866:3868:4321:5007:7652:10004:10400:10848:11026:11232:11658:11914:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: chalk63_5b2e1eec80a4a
-X-Filterd-Recvd-Size: 1316
-Message-ID: <1391993624.3178.11.camel@joe-AO722>
-Subject: Re: [PATCH 2/5] ncpfs: Convert DPRINTK/DDPRINTK to ncp_dbg
-From: Joe Perches <joe@perches.com>
-To: Petr Vandrovec <petr@vandrovec.name>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Date: Sun, 09 Feb 2014 16:53:44 -0800
-In-Reply-To: <29642e506f8f78fd1308326c1c7c2e0a8a0be056.1391985629.git.joe@perches.com>
-References: <cover.1391985629.git.joe@perches.com>
-	 <29642e506f8f78fd1308326c1c7c2e0a8a0be056.1391985629.git.joe@perches.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 9 Feb 2014 19:56:27 -0500
+MIME-Version: 1.0
+In-Reply-To: <1391992071.18779.99.camel@triegel.csb>
+References: <52F3DA85.1060209@arm.com>
+	<20140206185910.GE27276@mudshark.cambridge.arm.com>
+	<20140206192743.GH4250@linux.vnet.ibm.com>
+	<1391721423.23421.3898.camel@triegel.csb>
+	<20140206221117.GJ4250@linux.vnet.ibm.com>
+	<1391730288.23421.4102.camel@triegel.csb>
+	<20140207042051.GL4250@linux.vnet.ibm.com>
+	<20140207074405.GM5002@laptop.programming.kicks-ass.net>
+	<20140207165028.GO4250@linux.vnet.ibm.com>
+	<20140207165548.GR5976@mudshark.cambridge.arm.com>
+	<20140207180216.GP4250@linux.vnet.ibm.com>
+	<1391992071.18779.99.camel@triegel.csb>
+Date: Sun, 9 Feb 2014 16:56:26 -0800
+X-Google-Sender-Auth: 3W8wPEa-zcdE2SC-JaOO91otoeg
+Message-ID: <CA+55aFwFVr2KiXX2MObMBGypQk9eabe-93Nhmro=HL1RtC-1jw@mail.gmail.com>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Torvald Riegel <triegel@redhat.com>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-02-09 at 14:48 -0800, Joe Perches wrote:
-> Use a more current logging style and enable use of dynamic debugging.
-[]
-> diff --git a/fs/ncpfs/ncp_fs.h b/fs/ncpfs/ncp_fs.h
-[]
-> +#define ncp_dbg(level, fmt, ...)				\
-> +do {								\
-> +	if (level >= DEBUG_NCP)					\
-> +		pr_debug(fmt, ##__VA_ARGS__);			\
-> +} while (0)
+On Sun, Feb 9, 2014 at 4:27 PM, Torvald Riegel <triegel@redhat.com> wrote:
+>
+> I wouldn't characterize the situation like this (although I can't speak
+> for others, obviously).  IMHO, it's perfectly fine on sequential /
+> non-synchronizing code, because we know the difference isn't observable
+> by a correct program.
 
-Stupid thinko/typo self-nack.  This should be:
+What BS is that? If you use an "atomic_store_explicit()", by
+definition you're either
 
-	if (DEBUG_NCP >= level)
+ (a) f*cking insane
+ (b) not doing sequential non-synchronizing code
 
+and a compiler that assumes that the programmer is insane may actually
+be correct more often than not, but it's still a shit compiler.
+Agreed?
 
+So I don't see how any sane person can say that speculative writes are
+ok. They are clearly not ok.
+
+Speculative stores are a bad idea in general. They are completely
+invalid for anything that says "atomic". This is not even worth
+discussing.
+
+                Linus
