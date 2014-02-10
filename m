@@ -1,114 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752824AbaBJDRQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 22:17:16 -0500
-Received: from mga11.intel.com ([192.55.52.93]:13568 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752387AbaBJDRP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 22:17:15 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,815,1384329600"; 
-   d="scan'208";a="472518682"
-Message-ID: <52F844BA.2050602@intel.com>
-Date: Mon, 10 Feb 2014 11:17:14 +0800
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752624AbaBJDVM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 22:21:12 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:46440 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752277AbaBJDVK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Feb 2014 22:21:10 -0500
+Date: Sun, 9 Feb 2014 19:21:00 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Torvald Riegel <triegel@redhat.com>
+Cc: Will Deacon <will.deacon@arm.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+Message-ID: <20140210032100.GF4250@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140206192743.GH4250@linux.vnet.ibm.com>
+ <1391721423.23421.3898.camel@triegel.csb>
+ <20140206221117.GJ4250@linux.vnet.ibm.com>
+ <1391730288.23421.4102.camel@triegel.csb>
+ <20140207042051.GL4250@linux.vnet.ibm.com>
+ <20140207074405.GM5002@laptop.programming.kicks-ass.net>
+ <20140207165028.GO4250@linux.vnet.ibm.com>
+ <20140207165548.GR5976@mudshark.cambridge.arm.com>
+ <20140207180216.GP4250@linux.vnet.ibm.com>
+ <1391992071.18779.99.camel@triegel.csb>
 MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org
-CC: peterz@infradead.org, mingo@elte.hu, acme@redhat.com, ak@linux.intel.com
-Subject: Re: [PATCH v1 07/10] perf/x86/uncore: allow more than one fixed counter
- per box
-References: <1391432142-18723-1-git-send-email-eranian@google.com> <1391432142-18723-8-git-send-email-eranian@google.com>
-In-Reply-To: <1391432142-18723-8-git-send-email-eranian@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391992071.18779.99.camel@triegel.csb>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021003-9332-0000-0000-0000030BA62A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/03/2014 08:55 PM, Stephane Eranian wrote:
-> This patch modifies some of the helper functions to support
-> more than one fixed counter per uncore PCI PMU box.
+On Mon, Feb 10, 2014 at 01:27:51AM +0100, Torvald Riegel wrote:
+> On Fri, 2014-02-07 at 10:02 -0800, Paul E. McKenney wrote:
+> > On Fri, Feb 07, 2014 at 04:55:48PM +0000, Will Deacon wrote:
+> > > Hi Paul,
+> > > 
+> > > On Fri, Feb 07, 2014 at 04:50:28PM +0000, Paul E. McKenney wrote:
+> > > > On Fri, Feb 07, 2014 at 08:44:05AM +0100, Peter Zijlstra wrote:
+> > > > > On Thu, Feb 06, 2014 at 08:20:51PM -0800, Paul E. McKenney wrote:
+> > > > > > Hopefully some discussion of out-of-thin-air values as well.
+> > > > > 
+> > > > > Yes, absolutely shoot store speculation in the head already. Then drive
+> > > > > a wooden stake through its hart.
+> > > > > 
+> > > > > C11/C++11 should not be allowed to claim itself a memory model until that
+> > > > > is sorted.
+> > > > 
+> > > > There actually is a proposal being put forward, but it might not make ARM
+> > > > and Power people happy because it involves adding a compare, a branch,
+> > > > and an ISB/isync after every relaxed load...  Me, I agree with you,
+> > > > much preferring the no-store-speculation approach.
+> > > 
+> > > Can you elaborate a bit on this please? We don't permit speculative stores
+> > > in the ARM architecture, so it seems counter-intuitive that GCC needs to
+> > > emit any additional instructions to prevent that from happening.
+> > 
+> > Requiring a compare/branch/ISB after each relaxed load enables a simple(r)
+> > proof that out-of-thin-air values cannot be observed in the face of any
+> > compiler optimization that refrains from reordering a prior relaxed load
+> > with a subsequent relaxed store.
+> > 
+> > > Stores can, of course, be observed out-of-order but that's a lot more
+> > > reasonable :)
+> > 
+> > So let me try an example.  I am sure that Torvald Riegel will jump in
+> > with any needed corrections or amplifications:
+> > 
+> > Initial state: x == y == 0
+> > 
+> > T1:	r1 = atomic_load_explicit(x, memory_order_relaxed);
+> > 	atomic_store_explicit(r1, y, memory_order_relaxed);
+> > 
+> > T2:	r2 = atomic_load_explicit(y, memory_order_relaxed);
+> > 	atomic_store_explicit(r2, x, memory_order_relaxed);
+> > 
+> > One would intuitively expect r1 == r2 == 0 as the only possible outcome.
+> > But suppose that the compiler used specialization optimizations, as it
+> > would if there was a function that has a very lightweight implementation
+> > for some values and a very heavyweight one for other.  In particular,
+> > suppose that the lightweight implementation was for the value 42.
+> > Then the compiler might do something like the following:
+> > 
+> > Initial state: x == y == 0
+> > 
+> > T1:	r1 = atomic_load_explicit(x, memory_order_relaxed);
+> > 	if (r1 == 42)
+> > 		atomic_store_explicit(42, y, memory_order_relaxed);
+> > 	else
+> > 		atomic_store_explicit(r1, y, memory_order_relaxed);
+> > 
+> > T2:	r2 = atomic_load_explicit(y, memory_order_relaxed);
+> > 	atomic_store_explicit(r2, x, memory_order_relaxed);
+> > 
+> > Suddenly we have an explicit constant 42 showing up.  Of course, if
+> > the compiler carefully avoided speculative stores (as both Peter and
+> > I believe that it should if its code generation is to be regarded as
+> > anything other than an act of vandalism, the words in the standard
+> > notwithstanding), there would be no problem.  But currently, a number
+> > of compiler writers see absolutely nothing wrong with transforming
+> > the optimized-for-42 version above with something like this:
+> > 
+> > Initial state: x == y == 0
+> > 
+> > T1:	r1 = atomic_load_explicit(x, memory_order_relaxed);
+> > 	atomic_store_explicit(42, y, memory_order_relaxed);
+> > 	if (r1 != 42)
+> > 		atomic_store_explicit(r1, y, memory_order_relaxed);
+> > 
+> > T2:	r2 = atomic_load_explicit(y, memory_order_relaxed);
+> > 	atomic_store_explicit(r2, x, memory_order_relaxed);
 > 
-> Signed-off-by: Stephane Eranian <eranian@google.com>
-> ---
->  arch/x86/kernel/cpu/perf_event_intel_uncore.c |    4 ++--
->  arch/x86/kernel/cpu/perf_event_intel_uncore.h |   22 +++++++++++++---------
->  2 files changed, 15 insertions(+), 11 deletions(-)
+> Intuitively, this is wrong because this let's the program take a step
+> the abstract machine wouldn't do.  This is different to the sequential
+> code that Peter posted because it uses atomics, and thus one can't
+> easily assume that the difference is not observable.
 > 
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> index 2980994c..69a4ad0 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> @@ -2777,8 +2777,8 @@ static void uncore_assign_hw_event(struct intel_uncore_box *box, struct perf_eve
->  	hwc->idx = idx;
->  	hwc->last_tag = ++box->tags[idx];
->  
-> -	if (hwc->idx == UNCORE_PMC_IDX_FIXED) {
-> -		hwc->event_base = uncore_fixed_ctr(box);
-> +	if (hwc->idx >= UNCORE_PMC_IDX_FIXED) {
-> +		hwc->event_base = uncore_fixed_ctr(box, idx);
->  		hwc->config_base = uncore_fixed_ctl(box);
->  		return;
->  	}
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-> index 433c180..c63a3ff 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-> @@ -538,9 +538,18 @@ static inline unsigned uncore_pci_fixed_ctl(struct intel_uncore_box *box)
->  	return box->pmu->type->fixed_ctl;
->  }
->  
-> -static inline unsigned uncore_pci_fixed_ctr(struct intel_uncore_box *box)
-> +static inline int uncore_fixed_ctr_bits(struct intel_uncore_box *box)
-> +{
-> +	return box->pmu->type->fixed_ctr_bits;
-> +}
-> +
-> +static inline unsigned uncore_pci_fixed_ctr(struct intel_uncore_box *box,
-> +					    int idx)
->  {
-> -	return box->pmu->type->fixed_ctr;
-> +	int bits = uncore_fixed_ctr_bits(box);
-> +	int bytes = round_up(bits, 8);
-> +
-> +	return idx * bytes + box->pmu->type->fixed_ctr;
->  }
-
-should this be:
-int bytes = round_up(bits, 32) / 8;
-return (idx - UNCORE_PMC_IDX_FIXED) * bytes + box->pmu->type->fixed_ctr;
-?
-
-Regards
-Yan, Zheng
-
->  
->  static inline
-> @@ -554,11 +563,6 @@ static inline int uncore_perf_ctr_bits(struct intel_uncore_box *box)
->  	return box->pmu->type->perf_ctr_bits;
->  }
->  
-> -static inline int uncore_fixed_ctr_bits(struct intel_uncore_box *box)
-> -{
-> -	return box->pmu->type->fixed_ctr_bits;
-> -}
-> -
->  static inline
->  unsigned uncore_pci_perf_ctr(struct intel_uncore_box *box, int idx)
->  {
-> @@ -627,10 +631,10 @@ unsigned uncore_fixed_ctl(struct intel_uncore_box *box)
->  }
->  
->  static inline
-> -unsigned uncore_fixed_ctr(struct intel_uncore_box *box)
-> +unsigned uncore_fixed_ctr(struct intel_uncore_box *box, int idx)
->  {
->  	if (box->pci_dev)
-> -		return uncore_pci_fixed_ctr(box);
-> +		return uncore_pci_fixed_ctr(box, idx);
->  	else
->  		return uncore_msr_fixed_ctr(box);
->  }
+> For this to be correct, the compiler would actually have to prove that
+> the speculative store is "as-if correct", which in turn would mean that
+> it needs to be aware of all potential observers, and check whether those
+> observers aren't actually affected by the speculative store.
 > 
+> I would guess that the compilers you have in mind don't really do that.
+> If they do, then I don't see why this should be okay, unless you think
+> out-of-thin-air values are something good (which I wouldn't agree with).
+
+OK, we agree that pulling the atomic store to y out of its "if" statement
+is a bad thing.  Very good!  Now we just have to convince others on
+the committee.  ;-)
+
+							Thanx, Paul
 
