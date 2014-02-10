@@ -1,160 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752783AbaBJWZG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 17:25:06 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:65262 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750890AbaBJWY7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 17:24:59 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Peter Wu <lekensteyn@gmail.com>,
-        Bastien Traverse <bastien.traverse@gmail.com>,
-        linux-kernel@vger.kernel.org, francis.moro@gmail.com,
-        linux-pm@vger.kernel.org
-Subject: Re: 3.12: ethernet controller missing after resuming from suspend to RAM
-Date: Mon, 10 Feb 2014 23:39:29 +0100
-Message-ID: <4302366.hs31VgE4VT@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140210122035.GY18029@intel.com>
-References: <52F2CC7B.80406@gmail.com> <1747020.MhBDqPO9oJ@vostro.rjw.lan> <20140210122035.GY18029@intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1752778AbaBJWcw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 17:32:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19372 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752279AbaBJWcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 17:32:48 -0500
+Message-ID: <1392071540.15608.173.camel@ul30vt.home>
+Subject: Re: [RFC PATCH v4 05/10] VFIO_PLATFORM: Return info for device and
+ its memory mapped IO regions
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Antonios Motakis <a.motakis@virtualopensystems.com>
+Cc: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        tech@virtualopensystems.com, a.rigo@virtualopensystems.com,
+        B08248@freescale.com, kim.phillips@linaro.org, jan.kiszka@siemens.com,
+        kvm@vger.kernel.org, R65777@freescale.com, B07421@freescale.com,
+        christoffer.dall@linaro.org, agraf@suse.de, B16395@freescale.com,
+        will.deacon@arm.com, Catalin Marinas <catalin.marinas@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>
+Date: Mon, 10 Feb 2014 15:32:20 -0700
+In-Reply-To: <1391880580-471-6-git-send-email-a.motakis@virtualopensystems.com>
+References: <1391880580-471-1-git-send-email-a.motakis@virtualopensystems.com>
+	 <1391880580-471-6-git-send-email-a.motakis@virtualopensystems.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, February 10, 2014 02:20:35 PM Mika Westerberg wrote:
-> On Mon, Feb 10, 2014 at 01:10:19PM +0100, Rafael J. Wysocki wrote:
-> > On Monday, February 10, 2014 02:15:22 AM Peter Wu wrote:
-> > > On Monday 10 February 2014 01:52:14 Rafael J. Wysocki wrote:
-> > > > > Could the following commit have something to do with it?
-> > > > >
-> > > > > 
-> > > > >
-> > > > > commit 4ebe34503baa0644c9352bcd76d4cf573bffe206
-> > > > > Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > > > Date:   Tue Jul 16 22:10:35 2013 +0200
-> > > > >
-> > > > > 
-> > > > >     ACPI / hotplug / PCI: Check for new devices on enabled slots
-> > > > 
-> > > > This one, or another one in that series.  I rather suspect
-> > > > 
-> > > > ab1225901da2 Revert "ACPI / hotplug / PCI: Avoid doing too much for spurious
-> > > > notifies"
-> > > > 
-> > > > from Mika, but it really doesn't matter.
-> > > > 
-> > > > Can you please check the patch below (it is on top of 3.14-rc1, but I think
-> > > > it'll still apply to 3.13) and report back?
-> > > 
-> > > I applied the following patch:
-> > > 
-> > > --- drivers/pci/hotplug/acpiphp_glue.c.orig	2014-02-10 01:46:59.678124018 +0100
-> > > +++ drivers/pci/hotplug/acpiphp_glue.c	2014-02-10 01:48:59.634124004 +0100
-> > > @@ -552,10 +552,10 @@
-> > >  	struct pci_dev *dev;
-> > >  	struct pci_bus *bus = slot->bus;
-> > >  	struct acpiphp_func *func;
-> > > -	int max, pass;
-> > > +	int nr_found, max, pass, bridges_scanned = 0;
-> > >  	LIST_HEAD(add_list);
-> > >  
-> > > -	acpiphp_rescan_slot(slot);
-> > > +	nr_found = acpiphp_rescan_slot(slot);
-> > >  	max = acpiphp_max_busnr(bus);
-> > >  	for (pass = 0; pass < 2; pass++) {
-> > >  		list_for_each_entry(dev, &bus->devices, bus_list) {
-> > > @@ -571,9 +571,16 @@
-> > >  					__pci_bus_size_bridges(dev->subordinate,
-> > >  							       &add_list);
-> > >  				}
-> > > +				bridges_scanned++;
-> > >  			}
-> > >  		}
-> > >  	}
-> > > +	/* Nothing more to do here if there are no new devices on this bus. */
-> > > +	if (!nr_found && !bridges_scanned && (slot->flags & SLOT_ENABLED)) {
-> > > +		pr_debug("No more new devices on this bus.\n");
-> > > +		return;
-> > > +	}
-> > > +
-> > >  	__pci_bus_assign_resources(bus, &add_list, NULL);
-> > >  
-> > >  	acpiphp_sanitize_bus(bus);
-> > > 
-> > > Unfortunately, the adapter still vanishes. dmesg is below this message.
-> > > 
-> > > Peter
-> > > 
-> > > [   44.558995] CPU3 is up
-> > > [   44.561438] ACPI: Waking up from system sleep state S3
-> > > [   45.254084] ehci-pci 0000:00:1a.0: System wakeup disabled by ACPI
-> > > [   45.280727] ehci-pci 0000:00:1d.0: System wakeup disabled by ACPI
-> > > [   45.307403] xhci_hcd 0000:02:00.0: System wakeup disabled by ACPI
-> > > [   45.361012] PM: noirq resume of devices complete after 133.354 msecs
-> > > [   45.361292] PM: early resume of devices complete after 0.233 msecs
-> > > [   45.361680] iwlwifi 0000:05:00.0: RF_KILL bit toggled to enable radio.
-> > > [   45.361731] pcieport 0000:00:1c.1: System wakeup disabled by ACPI
-> > > [   45.470912] snd_hda_intel 0000:00:1b.0: irq 48 for MSI/MSI-X
-> > > [   45.700502] ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-> > > [   45.700533] ata5: SATA link down (SStatus 0 SControl 300)
-> > > [   45.701385] ata1.00: configured for UDMA/133
-> > > [   45.701503] sd 0:0:0:0: [sda] Starting disk
-> > > [   45.707139] ata2: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
-> > > [   45.872011] ata2.00: configured for UDMA/100
-> > > [   46.791141] PM: resume of devices complete after 1430.658 msecs
-> > > [   46.791560] PM: Finishing wakeup.
-> > > [   46.791565] acpiphp_glue: hotplug_event: Bus check notify on \_SB_.PCI0.RP03
-> > > [   46.791568] acpiphp_glue: hotplug_event: re-enumerating slots under \_SB_.PCI0.RP03
-> > > [   46.791642] acpiphp_glue: No more new devices on this bus.
-> > > [   46.791571] Restarting tasks ... done.
-> > > [   46.793204] video LNXVIDEO:00: Restoring backlight state
-> > > [   46.793211] video LNXVIDEO:01: Restoring backlight state
-> > > [   47.246425] ACPI: \_SB_.AC__: ACPI_NOTIFY_BUS_CHECK event: unsupported
-> > > [   47.251540] jme 0000:04:00.5: irq 50 for MSI/MSI-X
-> > > [   47.276949] jme 0000:04:00.5 eth0: Link is down
-> > 
-> > I'm wondering why these two messages are printed here.
-> > 
-> > > [   47.276974] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
-> > > [   47.278423] iwlwifi 0000:05:00.0: L1 Enabled; Disabling L0S
-> > > [   47.285758] iwlwifi 0000:05:00.0: Radio type=0x1-0x3-0x1
-> > > [   47.393492] acpiphp_glue: hotplug_event: Bus check notify on \_SB_.PCI0.RP01
-> > > [   47.393495] acpiphp_glue: hotplug_event: re-enumerating slots under \_SB_.PCI0.RP01
-> > > [   47.393517] acpiphp_glue: No more new devices on this bus.
-> > > [   47.393525] acpiphp_glue: hotplug_event: Bus check notify on \_SB_.PCI0.RP02
-> > > [   47.393527] acpiphp_glue: hotplug_event: re-enumerating slots under \_SB_.PCI0.RP02
-> > 
-> > Anyway, the message you've added to the patch is not printed for this bridge,
-> > so the condition is not satified for its bus.  We need to find out why it isn't
-> > satisfied and what exactly happens to the devices that appear to go away.
+On Sat, 2014-02-08 at 18:29 +0100, Antonios Motakis wrote:
+> A VFIO userspace driver will start by opening the VFIO device
+> that corresponds to an IOMMU group, and will use the ioctl interface
+> to get the basic device info, such as number of memory regions and
+> interrupts, and their properties.
 > 
-> One thing, I noticed when checking the DSDT:
+> This patch enables the IOCTLs:
+>  - VFIO_DEVICE_GET_INFO
+>  - VFIO_DEVICE_GET_REGION_INFO
 > 
-> 	Device (J380)
-> 	{
-> 		Method (_STA, 0, NotSerialized)  // _STA: Status
-> 		{
-> 			If (LNotEqual (DVID, 0xFFFFFFFF))
-> 			{
-> 				Return (0x0A)
-> 			}
-> 			Else
-> 			{
-> 				Return (Zero)
-> 			}
-> 		}
+>  IRQ info is provided by one of the latter patches.
 > 
-> _STA() returns 0x0A instead of 0x0F. Could there be something missing in
-> the ACPI hotplug code that overlooks this and removes the device on resume?
+> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+> ---
+>  drivers/vfio/platform/vfio_platform.c         | 74 ++++++++++++++++++++++++---
+>  drivers/vfio/platform/vfio_platform_private.h |  8 +++
+>  2 files changed, 76 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/vfio/platform/vfio_platform.c b/drivers/vfio/platform/vfio_platform.c
+> index a3d8f29..f7db5c0 100644
+> --- a/drivers/vfio/platform/vfio_platform.c
+> +++ b/drivers/vfio/platform/vfio_platform.c
+> @@ -34,15 +34,62 @@
+>  #define DRIVER_AUTHOR   "Antonios Motakis <a.motakis@virtualopensystems.com>"
+>  #define DRIVER_DESC     "VFIO for platform devices - User Level meta-driver"
+>  
+> +static int vfio_platform_regions_init(struct vfio_platform_device *vdev)
+> +{
+> +	int cnt = 0, i;
+> +
+> +	while (platform_get_resource(vdev->pdev, IORESOURCE_MEM, cnt))
+> +		cnt++;
+> +
+> +	vdev->num_regions = cnt;
+> +
+> +	vdev->region = kzalloc(sizeof(struct vfio_platform_region) * cnt,
+> +				GFP_KERNEL);
+> +	if (!vdev->region)
+> +		return -ENOMEM;
+> +
+> +	for (i = 0; i < cnt;  i++) {
+> +		struct vfio_platform_region region;
+> +		struct resource *res =
+> +			platform_get_resource(vdev->pdev, IORESOURCE_MEM, i);
+> +
+> +		region.addr = res->start;
+> +		region.size = resource_size(res);
+> +		region.flags = 0;
+> +
+> +		vdev->region[i] = region;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static void vfio_platform_regions_cleanup(struct vfio_platform_device *vdev)
+> +{
+> +	kfree(vdev->region);
+> +}
+> +
+>  static void vfio_platform_release(void *device_data)
+>  {
+> +	struct vfio_platform_device *vdev = device_data;
+> +
+> +	vfio_platform_regions_cleanup(vdev);
+> +
+>  	module_put(THIS_MODULE);
+>  }
+>  
+>  static int vfio_platform_open(void *device_data)
+>  {
+> -	if (!try_module_get(THIS_MODULE))
+> +	struct vfio_platform_device *vdev = device_data;
+> +	int ret;
+> +
+> +	ret = vfio_platform_regions_init(vdev);
+> +	if (ret)
+> +		return ret;
+> +
+> +	if (!try_module_get(THIS_MODULE)) {
+> +		vfio_platform_regions_cleanup(vdev);
+>  		return -ENODEV;
+> +	}
+>  
+>  	return 0;
+>  }
+> @@ -65,18 +112,33 @@ static long vfio_platform_ioctl(void *device_data,
+>  			return -EINVAL;
+>  
+>  		info.flags = VFIO_DEVICE_FLAGS_PLATFORM;
+> -		info.num_regions = 0;
+> +		info.num_regions = vdev->num_regions;
+>  		info.num_irqs = 0;
+>  
+>  		return copy_to_user((void __user *)arg, &info, minsz);
+>  
+> -	} else if (cmd == VFIO_DEVICE_GET_REGION_INFO)
+> -		return -EINVAL;
+> +	} else if (cmd == VFIO_DEVICE_GET_REGION_INFO) {
+> +		struct vfio_region_info info;
+> +
+> +		minsz = offsetofend(struct vfio_region_info, offset);
+> +
+> +		if (copy_from_user(&info, (void __user *)arg, minsz))
+> +			return -EFAULT;
+> +
+> +		if (info.argsz < minsz)
+> +			return -EINVAL;
 
-That is possible.  Actually even quite likely, but let's wait for the response
-from Peter.
+Missing a bounds check for info.index, user could be getting back kernel
+data here.  Thanks,
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Alex
+
+> +
+> +		/* map offset to the physical address  */
+> +		info.offset = vdev->region[info.index].addr;
+> +		info.size = vdev->region[info.index].size;
+> +		info.flags = vdev->region[info.index].flags;
+> +
+> +		return copy_to_user((void __user *)arg, &info, minsz);
+>  
+> -	else if (cmd == VFIO_DEVICE_GET_IRQ_INFO)
+> +	} else if (cmd == VFIO_DEVICE_GET_IRQ_INFO) {
+>  		return -EINVAL;
+>  
+> -	else if (cmd == VFIO_DEVICE_SET_IRQS)
+> +	} else if (cmd == VFIO_DEVICE_SET_IRQS)
+>  		return -EINVAL;
+>  
+>  	else if (cmd == VFIO_DEVICE_RESET)
+> diff --git a/drivers/vfio/platform/vfio_platform_private.h b/drivers/vfio/platform/vfio_platform_private.h
+> index 6df8084..4705aa5 100644
+> --- a/drivers/vfio/platform/vfio_platform_private.h
+> +++ b/drivers/vfio/platform/vfio_platform_private.h
+> @@ -15,8 +15,16 @@
+>  #ifndef VFIO_PLATFORM_PRIVATE_H
+>  #define VFIO_PLATFORM_PRIVATE_H
+>  
+> +struct vfio_platform_region {
+> +	u64			addr;
+> +	resource_size_t		size;
+> +	u32			flags;
+> +};
+> +
+>  struct vfio_platform_device {
+>  	struct platform_device		*pdev;
+> +	struct vfio_platform_region	*region;
+> +	u32				num_regions;
+>  };
+>  
+>  #endif /* VFIO_PCI_PRIVATE_H */
+
+
+
