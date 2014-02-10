@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753955AbaBJTps (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 14:45:48 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34856 "EHLO
+	id S1753999AbaBJTpz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 14:45:55 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34865 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753937AbaBJTpn (ORCPT
+	with ESMTP id S1753934AbaBJTpp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:45:43 -0500
+	Mon, 10 Feb 2014 14:45:45 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Luiz Capitulino <lcapitulino@redhat.com>, Dan Duval <dan.duval@oracle.com>,
-        Chuck Anderson <chuck.anderson@oracle.com>,
-        Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>,
+Cc: Mikulas Patocka <mpatocka@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 060/124] audit: reset audit backlog wait time after error recovery
-Date: Mon, 10 Feb 2014 11:40:00 -0800
-Message-Id: <1392061264-28124-61-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 063/124] dm sysfs: fix a module unload race
+Date: Mon, 10 Feb 2014 11:40:03 -0800
+Message-Id: <1392061264-28124-64-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
 References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
@@ -29,50 +27,242 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Guy Briggs <rgb@redhat.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit e789e561a50de0aaa8c695662d97aaa5eac9d55f upstream.
+commit 2995fa78e423d7193f3b57835f6c1c75006a0315 upstream.
 
-When the audit queue overflows and times out (audit_backlog_wait_time), the
-audit queue overflow timeout is set to zero.  Once the audit queue overflow
-timeout condition recovers, the timeout should be reset to the original value.
+This reverts commit be35f48610 ("dm: wait until embedded kobject is
+released before destroying a device") and provides an improved fix.
 
-See also:
-	https://lkml.org/lkml/2013/9/2/473
+The kobject release code that calls the completion must be placed in a
+non-module file, otherwise there is a module unload race (if the process
+calling dm_kobject_release is preempted and the DM module unloaded after
+the completion is triggered, but before dm_kobject_release returns).
 
-Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
-Signed-off-by: Dan Duval <dan.duval@oracle.com>
-Signed-off-by: Chuck Anderson <chuck.anderson@oracle.com>
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-Signed-off-by: Eric Paris <eparis@redhat.com>
+To fix this race, this patch moves the completion code to dm-builtin.c
+which is always compiled directly into the kernel if BLK_DEV_DM is
+selected.
+
+The patch introduces a new dm_kobject_holder structure, its purpose is
+to keep the completion and kobject in one place, so that it can be
+accessed from non-module code without the need to export the layout of
+struct mapped_device to that code.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+[ kamal: backport to 3.8 (dm-builtin.c needs "#include <linux/export.h>";
+  context changes) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/audit.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/md/Kconfig      |  4 ++++
+ drivers/md/Makefile     |  1 +
+ drivers/md/dm-builtin.c | 49 +++++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/md/dm-sysfs.c   |  5 -----
+ drivers/md/dm.c         | 22 +++++-----------------
+ drivers/md/dm.h         | 17 ++++++++++++++++-
+ 6 files changed, 75 insertions(+), 23 deletions(-)
+ create mode 100644 drivers/md/dm-builtin.c
 
-diff --git a/kernel/audit.c b/kernel/audit.c
-index 5924919..0538e44 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -101,7 +101,8 @@ static int	audit_rate_limit;
+diff --git a/drivers/md/Kconfig b/drivers/md/Kconfig
+index 91a02ee..defbe5e1 100644
+--- a/drivers/md/Kconfig
++++ b/drivers/md/Kconfig
+@@ -185,8 +185,12 @@ config MD_FAULTY
  
- /* Number of outstanding audit_buffers allowed. */
- static int	audit_backlog_limit = 64;
--static int	audit_backlog_wait_time = 60 * HZ;
-+#define AUDIT_BACKLOG_WAIT_TIME (60 * HZ)
-+static int	audit_backlog_wait_time = AUDIT_BACKLOG_WAIT_TIME;
- static int	audit_backlog_wait_overflow = 0;
+ 	  In unsure, say N.
  
- /* The identity of the user shutting down the audit system. */
-@@ -1185,6 +1186,8 @@ struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask,
- 		return NULL;
- 	}
- 
-+	audit_backlog_wait_time = AUDIT_BACKLOG_WAIT_TIME;
++config BLK_DEV_DM_BUILTIN
++	boolean
 +
- 	ab = audit_buffer_alloc(ctx, gfp_mask, type);
- 	if (!ab) {
- 		audit_log_lost("out of memory in audit_log_start");
+ config BLK_DEV_DM
+ 	tristate "Device mapper support"
++	select BLK_DEV_DM_BUILTIN
+ 	---help---
+ 	  Device-mapper is a low level volume manager.  It works by allowing
+ 	  people to specify mappings for ranges of logical sectors.  Various
+diff --git a/drivers/md/Makefile b/drivers/md/Makefile
+index 94dce8b..50ead1d 100644
+--- a/drivers/md/Makefile
++++ b/drivers/md/Makefile
+@@ -28,6 +28,7 @@ obj-$(CONFIG_MD_MULTIPATH)	+= multipath.o
+ obj-$(CONFIG_MD_FAULTY)		+= faulty.o
+ obj-$(CONFIG_BLK_DEV_MD)	+= md-mod.o
+ obj-$(CONFIG_BLK_DEV_DM)	+= dm-mod.o
++obj-$(CONFIG_BLK_DEV_DM_BUILTIN) += dm-builtin.o
+ obj-$(CONFIG_DM_BUFIO)		+= dm-bufio.o
+ obj-$(CONFIG_DM_BIO_PRISON)	+= dm-bio-prison.o
+ obj-$(CONFIG_DM_CRYPT)		+= dm-crypt.o
+diff --git a/drivers/md/dm-builtin.c b/drivers/md/dm-builtin.c
+new file mode 100644
+index 0000000..8b82788
+--- /dev/null
++++ b/drivers/md/dm-builtin.c
+@@ -0,0 +1,49 @@
++#include <linux/export.h>
++#include "dm.h"
++
++/*
++ * The kobject release method must not be placed in the module itself,
++ * otherwise we are subject to module unload races.
++ *
++ * The release method is called when the last reference to the kobject is
++ * dropped. It may be called by any other kernel code that drops the last
++ * reference.
++ *
++ * The release method suffers from module unload race. We may prevent the
++ * module from being unloaded at the start of the release method (using
++ * increased module reference count or synchronizing against the release
++ * method), however there is no way to prevent the module from being
++ * unloaded at the end of the release method.
++ *
++ * If this code were placed in the dm module, the following race may
++ * happen:
++ *  1. Some other process takes a reference to dm kobject
++ *  2. The user issues ioctl function to unload the dm device
++ *  3. dm_sysfs_exit calls kobject_put, however the object is not released
++ *     because of the other reference taken at step 1
++ *  4. dm_sysfs_exit waits on the completion
++ *  5. The other process that took the reference in step 1 drops it,
++ *     dm_kobject_release is called from this process
++ *  6. dm_kobject_release calls complete()
++ *  7. a reschedule happens before dm_kobject_release returns
++ *  8. dm_sysfs_exit continues, the dm device is unloaded, module reference
++ *     count is decremented
++ *  9. The user unloads the dm module
++ * 10. The other process that was rescheduled in step 7 continues to run,
++ *     it is now executing code in unloaded module, so it crashes
++ *
++ * Note that if the process that takes the foreign reference to dm kobject
++ * has a low priority and the system is sufficiently loaded with
++ * higher-priority processes that prevent the low-priority process from
++ * being scheduled long enough, this bug may really happen.
++ *
++ * In order to fix this module unload race, we place the release method
++ * into a helper code that is compiled directly into the kernel.
++ */
++
++void dm_kobject_release(struct kobject *kobj)
++{
++	complete(dm_get_completion_from_kobject(kobj));
++}
++
++EXPORT_SYMBOL(dm_kobject_release);
+diff --git a/drivers/md/dm-sysfs.c b/drivers/md/dm-sysfs.c
+index e0cc5d6..c62c5ab 100644
+--- a/drivers/md/dm-sysfs.c
++++ b/drivers/md/dm-sysfs.c
+@@ -79,11 +79,6 @@ static const struct sysfs_ops dm_sysfs_ops = {
+ 	.show	= dm_attr_show,
+ };
+ 
+-static void dm_kobject_release(struct kobject *kobj)
+-{
+-	complete(dm_get_completion_from_kobject(kobj));
+-}
+-
+ /*
+  * dm kobject is embedded in mapped_device structure
+  * no need to define release function here
+diff --git a/drivers/md/dm.c b/drivers/md/dm.c
+index a027513..9a7a409 100644
+--- a/drivers/md/dm.c
++++ b/drivers/md/dm.c
+@@ -185,11 +185,8 @@ struct mapped_device {
+ 	/* forced geometry settings */
+ 	struct hd_geometry geometry;
+ 
+-	/* sysfs handle */
+-	struct kobject kobj;
+-
+-	/* wait until the kobject is released */
+-	struct completion kobj_completion;
++	/* kobject and completion */
++	struct dm_kobject_holder kobj_holder;
+ 
+ 	/* zero-length flush that will be cloned and submitted to targets */
+ 	struct bio flush_bio;
+@@ -1902,7 +1899,7 @@ static struct mapped_device *alloc_dev(int minor)
+ 	init_waitqueue_head(&md->wait);
+ 	INIT_WORK(&md->work, dm_wq_work);
+ 	init_waitqueue_head(&md->eventq);
+-	init_completion(&md->kobj_completion);
++	init_completion(&md->kobj_holder.completion);
+ 
+ 	md->disk->major = _major;
+ 	md->disk->first_minor = minor;
+@@ -2728,7 +2725,7 @@ struct gendisk *dm_disk(struct mapped_device *md)
+ 
+ struct kobject *dm_kobject(struct mapped_device *md)
+ {
+-	return &md->kobj;
++	return &md->kobj_holder.kobj;
+ }
+ 
+ /*
+@@ -2739,9 +2736,7 @@ struct mapped_device *dm_get_from_kobject(struct kobject *kobj)
+ {
+ 	struct mapped_device *md;
+ 
+-	md = container_of(kobj, struct mapped_device, kobj);
+-	if (&md->kobj != kobj)
+-		return NULL;
++	md = container_of(kobj, struct mapped_device, kobj_holder.kobj);
+ 
+ 	if (test_bit(DMF_FREEING, &md->flags) ||
+ 	    dm_deleting_md(md))
+@@ -2751,13 +2746,6 @@ struct mapped_device *dm_get_from_kobject(struct kobject *kobj)
+ 	return md;
+ }
+ 
+-struct completion *dm_get_completion_from_kobject(struct kobject *kobj)
+-{
+-	struct mapped_device *md = container_of(kobj, struct mapped_device, kobj);
+-
+-	return &md->kobj_completion;
+-}
+-
+ int dm_suspended_md(struct mapped_device *md)
+ {
+ 	return test_bit(DMF_SUSPENDED, &md->flags);
+diff --git a/drivers/md/dm.h b/drivers/md/dm.h
+index 66cfb7d..9b3222f 100644
+--- a/drivers/md/dm.h
++++ b/drivers/md/dm.h
+@@ -16,6 +16,7 @@
+ #include <linux/blkdev.h>
+ #include <linux/hdreg.h>
+ #include <linux/completion.h>
++#include <linux/kobject.h>
+ 
+ /*
+  * Suspend feature flags
+@@ -126,11 +127,25 @@ void dm_interface_exit(void);
+ /*
+  * sysfs interface
+  */
++struct dm_kobject_holder {
++	struct kobject kobj;
++	struct completion completion;
++};
++
++static inline struct completion *dm_get_completion_from_kobject(struct kobject *kobj)
++{
++	return &container_of(kobj, struct dm_kobject_holder, kobj)->completion;
++}
++
+ int dm_sysfs_init(struct mapped_device *md);
+ void dm_sysfs_exit(struct mapped_device *md);
+ struct kobject *dm_kobject(struct mapped_device *md);
+ struct mapped_device *dm_get_from_kobject(struct kobject *kobj);
+-struct completion *dm_get_completion_from_kobject(struct kobject *kobj);
++
++/*
++ * The kobject helper
++ */
++void dm_kobject_release(struct kobject *kobj);
+ 
+ /*
+  * Targets for linear and striped mappings
 -- 
 1.8.3.2
 
