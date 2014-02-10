@@ -1,90 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752869AbaBJLhh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 06:37:37 -0500
-Received: from mga09.intel.com ([134.134.136.24]:63583 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752174AbaBJLhe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 06:37:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,817,1384329600"; 
-   d="scan'208";a="472709247"
-Date: Mon, 10 Feb 2014 19:37:32 +0800
-From: kernel test robot <fengguang.wu@intel.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [userns] 6e9f18123077: xfstests generic/317,318 TFAIL
-Message-ID: <20140210113732.GD11951@localhost>
+	id S1752628AbaBJLm2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 06:42:28 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:39898 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752337AbaBJLmZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 06:42:25 -0500
+Date: Mon, 10 Feb 2014 11:41:54 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Richard Weinberger <richard@nod.at>
+Cc: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20140210114154.GQ1757@sirena.org.uk>
+References: <1391971686-9517-1-git-send-email-richard@nod.at>
+ <1391971686-9517-15-git-send-email-richard@nod.at>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qd/SZIFVu+MYwfCR"
 Content-Disposition: inline
-User-Agent: Heirloom mailx 12.5 6/20/10
+In-Reply-To: <1391971686-9517-15-git-send-email-richard@nod.at>
+X-Cookie: Colors may fade.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 14/28] Remove MACH_SMDKC210
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric,
 
-FYI, we noticed xfstests generic/317 and generic/318 TFAILs in
+--qd/SZIFVu+MYwfCR
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-git://git.kernel.org/pub/scm/linux/kernel/git/ebiederm/user-namespace.git userns-always-map-user-v151
+On Sun, Feb 09, 2014 at 07:47:52PM +0100, Richard Weinberger wrote:
 
-commit 6e9f18123077643a3b88c092c865cc6905f2d90d
-Author:     Eric W. Biederman <ebiederm@xmission.com>
-AuthorDate: Mon Feb 3 15:40:35 2014 -0800
-Commit:     Eric W. Biederman <ebiederm@xmission.com>
-CommitDate: Thu Feb 6 18:42:56 2014 -0800
+> The symbol is an orphan, get rid of it.
 
-    userns:  Don't allow more user namespaces than pids.
-    
-    To prevent denial of service attacks and general foolishness limit the
-    total number of user namespaces to the maximum number of pids we allow.
-    
-    We may want to make the limit dynamic later but for now make the limit
-    the maximum number of pids our kernel can be configured to support.
-    
-    Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Please fix whatever script you're using to generate your mails, it's
+generating corrupt headers.  Please also use subject lines consistent
+with the rest of the subsystem - between the two I very nearly just
+deleted this unread, it's only Paul's mail that made me look.
 
- kernel/user_namespace.c | 24 +++++++++++++++++-------
- 1 file changed, 17 insertions(+), 7 deletions(-)
+>  config SND_SOC_SAMSUNG_SMDK_WM9713
+>  	tristate "SoC AC97 Audio support for SMDK with WM9713"
+> -	depends on SND_SOC_SAMSUNG && (MACH_SMDK6410 || MACH_SMDKC100 || MACH_SMDKV210 || MACH_SMDKC110 || MACH_SMDKV310 || MACH_SMDKC210)
+> +	depends on SND_SOC_SAMSUNG && (MACH_SMDK6410 || MACH_SMDKC100 || MACH_SMDKV210 || MACH_SMDKC110 || MACH_SMDKV310)
 
-# good: [38dbfb59d1175ef458d006556061adeaa8751b72] Linus 3.14-rc1
-git bisect good 38dbfb59d1175ef458d006556061adeaa8751b72
-# bad: [7c4f56c0167ab5bf4cfa8c51c279f8a86d3bf7d0] 0day head guard for 'devel-hourly-2014020717'
-git bisect bad 7c4f56c0167ab5bf4cfa8c51c279f8a86d3bf7d0
-# good: [3b80e366643eb774a6aaa89091129529d6be92af] Merge 'tip/x86/urgent' into devel-hourly-2014020717
-git bisect good 3b80e366643eb774a6aaa89091129529d6be92af
-# good: [668abb889ee1326eda659b546d6086b0156efa09] Merge 'trace/ftrace/core' into devel-hourly-2014020717
-git bisect good 668abb889ee1326eda659b546d6086b0156efa09
-# good: [575877fbe7b25b1ae1461b384c28f454457f9955] Merge 'spi/for-next' into devel-hourly-2014020717
-git bisect good 575877fbe7b25b1ae1461b384c28f454457f9955
-# bad: [7c5f6b4dfe9ac34586a96e323e0135edce43c41c] Merge 'dhowells-fs/fscache' into devel-hourly-2014020717
-git bisect bad 7c5f6b4dfe9ac34586a96e323e0135edce43c41c
-# bad: [c5d14676653d58df4a4dcbe7e2e01414d7e2eed8] Merge 'userns/userns-always-map-user-v151' into devel-hourly-2014020717
-git bisect bad c5d14676653d58df4a4dcbe7e2e01414d7e2eed8
-# good: [v3.14-rc1] Linus 3.14-rc1
-git bisect good v3.14-rc1
-# bad: [d7eb936fa850669c4bc17780ab47f0f6fd8903c9] fdtable: Avoid triggering OOMs from alloc_fdmem
-git bisect bad d7eb936fa850669c4bc17780ab47f0f6fd8903c9
-# good: [v3.14-rc1] Linus 3.14-rc1
-git bisect good v3.14-rc1
-# bad: [d7eb936fa850669c4bc17780ab47f0f6fd8903c9] fdtable: Avoid triggering OOMs from alloc_fdmem
-git bisect bad d7eb936fa850669c4bc17780ab47f0f6fd8903c9
-# good: [b39b3f1f2aeda8b70900881d2202b7d424365fb2] pid: Modify is_idle_task to test pid pointers instead of pid numbers
-git bisect good b39b3f1f2aeda8b70900881d2202b7d424365fb2
-# good: [d8ee4242a90a5205bfb47f979295257117da4612] keys: In keyctl_session_to_parent by more explicit about invalid parents
-git bisect good d8ee4242a90a5205bfb47f979295257117da4612
-# good: [3e27cd90f82df0fe5e00358fe3b48d13efee7b88] proc:  Remove hard coded magic number
-git bisect good 3e27cd90f82df0fe5e00358fe3b48d13efee7b88
-# good: [49701868f32410737aa2964374d60eac365b5215] sysctl: Attempt to handle deletion of sysctl with submounts
-git bisect good 49701868f32410737aa2964374d60eac365b5215
-# good: [a2c004614a7f8d3ce830442ee7cc5c26101f563d] vfs: Modify prepend_name to return a pointer
-git bisect good a2c004614a7f8d3ce830442ee7cc5c26101f563d
-# good: [6bd028500e699991e8e118726566c1141dd61fe0] vfs: Comment what a positive error code in prepend_path means
-git bisect good 6bd028500e699991e8e118726566c1141dd61fe0
-# bad: [6e9f18123077643a3b88c092c865cc6905f2d90d] userns:  Don't allow more user namespaces than pids.
-git bisect bad 6e9f18123077643a3b88c092c865cc6905f2d90d
-# first bad commit: [6e9f18123077643a3b88c092c865cc6905f2d90d] userns:  Don't allow more user namespaces than pids.
+Like I said to Paul this isn't fixing the actual issue - think about why
+the symbol was there in the first place and why it was removed.  There
+is a problem here but this would make it less likely that it would be
+properly fixed.
 
-Thanks,
-Fengguang
+--qd/SZIFVu+MYwfCR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS+Lr+AAoJELSic+t+oim9vxYP/1rHH0BvAyI3uM47spId+ACF
+8nArourCnAlMvprRcqnJhIwUzOmgLof9gIV3wjFakcSNzE/80zKE5fhvUMfoEmAa
+Wvq08oOSJyGn3QUBBKInK36CXyB7M7AJQvTwj+HuhntyTmeaYx1Bvdh39SZEaiOd
+g7lkrHMvD/NuKOn4jx6LnQtx0Uik8Y3RkkVNvtErUOjqyPDOwPBgnICU8832b+nb
+NU7p8TNUgwAYwE86j/GJK40IrnWHz1uYMkHHzhvDJJDqzy7ZPTdcoO88xiDDMWf5
+FW5bLNyOrwmCOuCqwXoPqKd59kYzesi3lpUsaf/n+xLwBvasMH+L8BD9zdjQCY69
+ac8IRC7yzVpF78ZKCCj+GjPPBCovhqPbCW28ELMMS59ynU+QiezqKga8RaoydqPt
+JL0n6nGFTn4eLImJJfADryos6bWTYVea2o1CQYnzInmqBqclX+M323vAKldwEH41
+zkRN+HmbnfCVpqJyc8FJhJ7KjQXV5cSLqCkGqC4xS/v91eWsIAMDopHITt0jif1W
+DcSFd+2MQDaAr/g4vZAcCm25abC6mtfaoNxeR6hcyuL58JZADdDZhHowbZ1gzOvt
+OhjjDn8/l8WpzKjEUCr0reaVo71546kzpareUx6fY6lhKlI/vD3fkwa6MsAXUwas
+6zCaFAG+cpKZ+eBb5uZo
+=Qh7R
+-----END PGP SIGNATURE-----
+
+--qd/SZIFVu+MYwfCR--
