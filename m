@@ -1,70 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753590AbaBJTns (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 14:43:48 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34713 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753521AbaBJTnn (ORCPT
+	id S1753568AbaBJTnq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 14:43:46 -0500
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:53224 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753528AbaBJTnl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:43:43 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Dave Airlie <airlied@redhat.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 097/124] drm/mgag200: do not attempt to acquire a reservation while in an interrupt handler
-Date: Mon, 10 Feb 2014 11:40:37 -0800
-Message-Id: <1392061264-28124-98-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
-References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Mon, 10 Feb 2014 14:43:41 -0500
+MIME-Version: 1.0
+In-Reply-To: <52F929A6.8040209@mit.edu>
+References: <1391886730-19667-1-git-send-email-ryao@gentoo.org>
+	<1391886730-19667-2-git-send-email-ryao@gentoo.org>
+	<CA+55aFx8TzOnW9xPFA4Ox-yFiSUo=cEqeQUmgw_JWjDNEZep8Q@mail.gmail.com>
+	<52F68C67.6050606@gentoo.org>
+	<CA+55aFw2BGS-sPYM1xkO7MfZ_-u=7nF4RYFmoCM99rkL=PxvpA@mail.gmail.com>
+	<52F6972C.2030307@gentoo.org>
+	<CA+55aFzzxcrLrUaCrzFbwS_74B2iHd3OvQ=WC-DR-rqpOA0j0A@mail.gmail.com>
+	<52F929A6.8040209@mit.edu>
+Date: Mon, 10 Feb 2014 11:43:39 -0800
+X-Google-Sender-Auth: VxLSjf61E7YvSiT4VhQeOgxVRuk
+Message-ID: <CA+55aFx1zipV70iTtuyciu36_dLRre7db09XRUDWUrLW2wLA0g@mail.gmail.com>
+Subject: Re: [PATCH 1/2] mm/vmalloc: export is_vmalloc_or_module_addr
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Richard Yao <ryao@gentoo.org>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Eric Van Hensbergen <ericvh@gmail.com>,
+        Ron Minnich <rminnich@sandia.gov>, Latchesar Ionkov <lucho@ionkov.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        V9FS Develooper Mailing List 
+	<v9fs-developer@lists.sourceforge.net>,
+        Linux Netdev Mailing List <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Matthew Thode <mthode@mthode.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.18 -stable review patch.  If anyone has any objections, please let me know.
+On Mon, Feb 10, 2014 at 11:33 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>
+> I agree that reading to module space is awful, but is it obviously
+> terrible for a module to do this:
+>
+> static const char header[] = {...};
+> kernel_write(file, header, sizeof(header), 0);
 
-------------------
+Yes, it is terrible. Don't do it. It shouldn't work.
 
-From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+Now, whether it is "obvious" or not is immaterial. It might be hard to
+notice, but let's face it, we are kernel programmers. Our interfaces
+aren't designed for convenience, they are for working well and
+efficiently.  And if that happens to mean that you shouldn't do IO on
+kmap'ed pages, or use random static data in your modules, that is what
+it means.
 
-commit a06b9a74c73750835b8fd69fe0d0bd7877da111b upstream.
+We have lots of other rules too. People should deal with it, and
+realize that in the kernel we absolutely *have* to try to minimize the
+problem space as much as possible.
 
-Mutexes should not be acquired in interrupt context. While the trylock
-fastpath is arguably safe on all implementations, the slowpath
-unlock path definitely isn't.
+The usual computer sciencey approach of "make things as generic as
+possible so that you can reuse the code" stuff is generally bullshit
+even in other contexts (example: STL), but it's _particularly_ bad for
+the kernel. It's much better to have strict rules about what is
+acceptable.
 
-Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/gpu/drm/mgag200/mgag200_fb.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/gpu/drm/mgag200/mgag200_fb.c b/drivers/gpu/drm/mgag200/mgag200_fb.c
-index 41eefc4..0cbd607 100644
---- a/drivers/gpu/drm/mgag200/mgag200_fb.c
-+++ b/drivers/gpu/drm/mgag200/mgag200_fb.c
-@@ -26,7 +26,7 @@ static void mga_dirty_update(struct mga_fbdev *mfbdev,
- 	struct mgag200_bo *bo;
- 	int src_offset, dst_offset;
- 	int bpp = (mfbdev->mfb.base.bits_per_pixel + 7)/8;
--	int ret;
-+	int ret = -EBUSY;
- 	bool unmap = false;
- 	bool store_for_later = false;
- 	int x2, y2;
-@@ -40,7 +40,8 @@ static void mga_dirty_update(struct mga_fbdev *mfbdev,
- 	 * then the BO is being moved and we should
- 	 * store up the damage until later.
- 	 */
--	ret = mgag200_bo_reserve(bo, true);
-+	if (!in_interrupt())
-+		ret = mgag200_bo_reserve(bo, true);
- 	if (ret) {
- 		if (ret != -EBUSY)
- 			return;
--- 
-1.8.3.2
-
+                Linus
