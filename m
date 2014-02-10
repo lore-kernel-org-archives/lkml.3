@@ -1,96 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753217AbaBJR3E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 12:29:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43045 "EHLO mx1.redhat.com"
+	id S1753243AbaBJR3S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 12:29:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55004 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752982AbaBJR2J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 12:28:09 -0500
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        mtosatti@redhat.com, mgorman@suse.de, aarcange@redhat.com,
-        andi@firstfloor.org, riel@redhat.com
-Subject: [PATCH 2/4] memblock: add memblock_virt_alloc_nid_nopanic()
-Date: Mon, 10 Feb 2014 12:27:46 -0500
-Message-Id: <1392053268-29239-3-git-send-email-lcapitulino@redhat.com>
-In-Reply-To: <1392053268-29239-1-git-send-email-lcapitulino@redhat.com>
-References: <1392053268-29239-1-git-send-email-lcapitulino@redhat.com>
+	id S1753193AbaBJR3C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 12:29:02 -0500
+Date: Mon, 10 Feb 2014 18:28:53 +0100
+From: Petr Tesarik <ptesarik@suse.cz>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, fengguang.wu@intel.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, bp@alien8.de,
+        ebiederm@xmission.com, akpm@linux-foundation.org, hpa@linux.intel.com,
+        jingbai.ma@hp.com
+Subject: Re: [RESEND PATCH v10] x86, apic, kexec, Documentation: Add
+ disable_cpu_apicid kernel parameter
+Message-ID: <20140210182853.15fccd8e@hananiah.suse.cz>
+In-Reply-To: <20140115181426.GC29244@redhat.com>
+References: <20140115064458.1545.38775.stgit@localhost6.localdomain6>
+	<20140115170525.GF3180@redhat.com>
+	<52D6C4B6.8010804@zytor.com>
+	<20140115174714.GG3180@redhat.com>
+	<52D6CB57.8030804@zytor.com>
+	<20140115181426.GC29244@redhat.com>
+Organization: SUSE Linux, s.r.o.
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Luiz capitulino <lcapitulino@redhat.com>
+On Wed, 15 Jan 2014 13:14:26 -0500
+Vivek Goyal <vgoyal@redhat.com> wrote:
 
-This function tries to allocate memory from the specified node only (vs.
-automatically trying other nodes on failure).
+> On Wed, Jan 15, 2014 at 09:54:31AM -0800, H. Peter Anvin wrote:
+> > On 01/15/2014 09:47 AM, Vivek Goyal wrote:
+> > > On Wed, Jan 15, 2014 at 09:26:14AM -0800, H. Peter Anvin wrote:
+> > >> On 01/15/2014 09:05 AM, Vivek Goyal wrote:
+> > >>>
+> > >>> I think this is a reasonable approach to solve the issue. Use a command
+> > >>> line to not bring up specific cpu in second kernel which can create
+> > >>> problems.
+> > >>>
+> > >>> Acked-by: Vivek Goyal <vgoyal@redhat.com>
+> > >>>
+> > >>> hpa, I know you are not excited about this approach. If you made up your
+> > >>> mind that this appoarch is not worth pursuing, please do suggest what
+> > >>> would you like to see and we can give that a try.
+> > >>>
+> > >>> We want to solve this problem as on large memory machines saving dump can
+> > >>> take lot of time and we want to bring up multiple cpus and speed up
+> > >>> compression and save on dump time.
+> > >>>
+> > >>
+> > >> I'm not excited about kdump's reliance on the command line, since it
+> > >> seems to be a neverending source of trouble, simply because the command
+> > >> line is fundamentally intended as a human interface.
+> > > 
+> > > So in general, what are the alternatives? Either we figure out that kernel
+> > > is booting as kdump kernel and do things differently. That seems even
+> > > worse as what do we want in kdump kernel will change over a period of
+> > > time.
+> > > 
+> > > Other thing is that pass more information in bootparams. But that does
+> > > not seem much different than command line to me.
+> > > 
+> > 
+> > It is the commingling of semantics that is the problem.  Command line
+> > options are generally imperative, "do this".  What you want in the kdump
+> > situation, as you yourself state above, is get a description of the
+> > current situation and let the kdump side choose the action to take.
+> > 
+> > As a transport mechanism the command line suffers from limited size and
+> > that you have to share it with an arbitrary amount of user-provided
+> > options that may or may not be essential.
+> 
+> For large amount of info like memory map, I agree that passing on command
+> line is not a good idea. (/me taks the blame for doing that). That's why
+> in new patches I want to move to pass new map on bootparams and pass
+> saved_max_pfn on command line instead. This is a fresh start so we
+> probably can ignore compatibility with older kernels for this new
+> interface and set things right.
+> 
+> But for smaller options, command line seems to be good that they don't
+> consume precious space in bootparams. If we introduce an option today,
+> we are not sure if kdump will continue to use that option down the line
+> or not. For example, few years down the line, we might be able to send
+> INIT IPI to boot cpu too and not need disable_cpu_apicid.
 
-This is going to be used by HugeTLB boot-time allocation code in next
-commits.
+Yes, that was my thinking. We really only need all this, because
+current BIOS implementations do not offer a way to override the default
+initialization routine on a BSP. In fact, I disassembled the INIT
+vector of a few BIOSes to see if the old 286 way of leaving protected
+mode (via a CMOS location) is still supported and might be used at
+least on some hardware. It is not, but that doesn't mean future BIOSes
+may not re-implement something like that.
 
-Signed-off-by: Luiz capitulino <lcapitulino@redhat.com>
----
- include/linux/bootmem.h |  4 ++++
- mm/memblock.c           | 31 +++++++++++++++++++++++++++++++
- 2 files changed, 35 insertions(+)
+Sorry for coming late to the party...
 
-diff --git a/include/linux/bootmem.h b/include/linux/bootmem.h
-index db51fe4..6961b11 100644
---- a/include/linux/bootmem.h
-+++ b/include/linux/bootmem.h
-@@ -153,6 +153,10 @@ extern void *__alloc_bootmem_low_node(pg_data_t *pgdat,
- void *memblock_virt_alloc_try_nid_nopanic(phys_addr_t size,
- 		phys_addr_t align, phys_addr_t min_addr,
- 		phys_addr_t max_addr, int nid);
-+void * __init memblock_virt_alloc_nid_nopanic(
-+				phys_addr_t size, phys_addr_t align,
-+				phys_addr_t min_addr, phys_addr_t max_addr,
-+				int nid);
- void *memblock_virt_alloc_try_nid(phys_addr_t size, phys_addr_t align,
- 		phys_addr_t min_addr, phys_addr_t max_addr, int nid);
- void __memblock_free_early(phys_addr_t base, phys_addr_t size);
-diff --git a/mm/memblock.c b/mm/memblock.c
-index b0c7b2e..9130d4b 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -1153,6 +1153,37 @@ void * __init memblock_virt_alloc_try_nid_nopanic(
- }
- 
- /**
-+ * memblock_virt_alloc_nid_nopanic - allocate boot memory block from
-+ * specified node
-+ * @size: size of memory block to be allocated in bytes
-+ * @align: alignment of the region and block's size
-+ * @min_addr: the lower bound of the memory region from where the allocation
-+ *	  is preferred (phys address)
-+ * @max_addr: the upper bound of the memory region from where the allocation
-+ *	      is preferred (phys address), or %BOOTMEM_ALLOC_ACCESSIBLE to
-+ *	      allocate only from memory limited by memblock.current_limit value
-+ * @nid: nid of the free area to find, %NUMA_NO_NODE for any node
-+ *
-+ * This function tries to allocate memory from @nid only. It @nid doesn't
-+ * have enough memory, this function returns failure.
-+ *
-+ * RETURNS:
-+ * Virtual address of allocated memory block on success, NULL on failure.
-+ */
-+void * __init memblock_virt_alloc_nid_nopanic(
-+				phys_addr_t size, phys_addr_t align,
-+				phys_addr_t min_addr, phys_addr_t max_addr,
-+				int nid)
-+{
-+	memblock_dbg("%s: %llu bytes align=0x%llx nid=%d from=0x%llx max_addr=0x%llx %pF\n",
-+		     __func__, (u64)size, (u64)align, nid, (u64)min_addr,
-+		     (u64)max_addr, (void *)_RET_IP_);
-+	return memblock_virt_alloc_internal(size, align, min_addr,
-+					     max_addr, nid,
-+					     ALLOC_SPECIFIED_NODE_ONLY);
-+}
-+
-+/**
-  * memblock_virt_alloc_try_nid - allocate boot memory block with panicking
-  * @size: size of memory block to be allocated in bytes
-  * @align: alignment of the region and block's size
--- 
-1.8.1.4
-
+Petr Tesarik
