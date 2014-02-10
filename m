@@ -1,101 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753014AbaBJQ5d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 11:57:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63047 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751970AbaBJQ5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 11:57:32 -0500
-Date: Mon, 10 Feb 2014 17:57:23 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>, Steve Grubb <sgrubb@redhat.com>,
-        Eric Paris <eparis@redhat.com>
-Subject: Re: [PATCH v3] audit: Turn off TIF_SYSCALL_AUDIT when there are no
-	rules
-Message-ID: <20140210165723.GA10856@redhat.com>
-References: <ee359482b77f8f633014ec300bc5a4b93f8961e8.1391893528.git.luto@amacapital.net>
+	id S1752761AbaBJQ7A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 11:59:00 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:46713 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751970AbaBJQ67 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 11:58:59 -0500
+Date: Mon, 10 Feb 2014 16:58:53 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Jean Delvare <jdelvare@suse.de>
+Cc: Laszlo Papp <lpapp@kde.org>, linux-kernel@vger.kernel.org,
+        Guenter Roeck <linux@roeck-us.net>, lm-sensors@lm-sensors.org
+Subject: Re: [lm-sensors] [PATCH] hwmon: (max6650) Rename the device ids to
+ contain the hwmon suffix
+Message-ID: <20140210165853.GD26997@lee--X1>
+References: <1392045953-26596-1-git-send-email-lpapp@kde.org>
+ <20140210160842.GB26997@lee--X1>
+ <20140210173811.04ba5964@endymion.delvare>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <ee359482b77f8f633014ec300bc5a4b93f8961e8.1391893528.git.luto@amacapital.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140210173811.04ba5964@endymion.delvare>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/08, Andy Lutomirski wrote:
->
-> +void audit_inc_n_rules()
-> +{
-> +	struct task_struct *p, *t;
-> +
-> +	read_lock(&tasklist_lock);
-> +	audit_n_rules++;
-> +	smp_wmb();
-> +	if (audit_n_rules == 1) {
-> +		/*
-> +		 * We now have a rule; we need to hook syscall entry.
-> +		 */
-> +		for_each_process_thread(p, t) {
-> +			if (t->audit_context)
-> +				set_tsk_thread_flag(t, TIF_SYSCALL_AUDIT);
-> +		}
-> +	}
-> +	read_unlock(&tasklist_lock);
-> +}
-> +
-> +void audit_dec_n_rules()
-> +{
-> +	read_lock(&tasklist_lock);
-> +	--audit_n_rules;
-> +	BUG_ON(audit_n_rules < 0);
-> +
-> +	/*
-> +	 * If audit_n_rules == 0, then __audit_syscall_exit will clear
-> +	 * TIF_SYSCALL_AUDIT.
-> +	 */
-> +
-> +	read_unlock(&tasklist_lock);
-> +}
+> > >  static const struct i2c_device_id max6650_id[] = {
+> > > -	{ "max6650", 1 },
+> > > -	{ "max6651", 4 },
+> > > +	{ "max6650-hwmon", 1 },
+> > > +	{ "max6651-hwmon", 4 },
+> 
+> No, this is not acceptable, sorry. This will change the name of the
+> hwmon device as seen from user-space, breaking any configuration file
+> referring to it. Additionally, dashes are explicitly forbidden in hwmon
+> device names. And lastly this will break any explicit instantiation of
+> theses devices (which is the only way, as the driver doesn't support
+> device auto-detection), be it in the kernel itself or from user-space.
+> 
+> The change doesn't make sense anyway. If you move to the MFD framework,
+> the core driver will be an I2C driver binding to the I2C device, and it
+> will spawn the logical devices, presumably in the form of platform
+> devices. That's what the current max6650 driver would have to bind to.
+> Just renaming the device won't work, you also need to change the type.
+> 
+> If you want to turn this into an MFD driver, I believe you must first
+> convert the hwmon part to register using
+> devm_hwmon_device_register_with_groups(). This will dissociate the i2c
+> device name from the hwmon device name and create a clean name-space
+> for each function. Guenter, maybe you had a plan to do so already
+> anyway?
+> 
+> That being said, going with MFD in this case seems quite overkill to
+> me. MFD makes a lot of sense when each function has its own resources.
+> As this isn't the case here, a single driver registering both an hwmon
+> interface and a pinctrl interface would seem sufficient to me. But I
+> think Guenter already discussed this in the past so I'll let him
+> continue and decide.
 
-To be honest, I do not understand why _dec_ takes tasklist_lock...
-And why _inc_ increments audit_n_rules under tasklist.
+I'll get you guys decide if you want to go the MFD route or not.
 
-> @@ -1528,6 +1562,25 @@ void __audit_syscall_exit(int success, long return_code)
->  		context->filterkey = NULL;
->  	}
->  	tsk->audit_context = context;
-> +
-> +	if (ACCESS_ONCE(audit_n_rules) == 0) {
-> +		/*
-> +		 * Either this is the very first syscall by this process or
-> +		 * audit_dec_n_rules recently set audit_n_rules to zero.
-> +		 */
-> +		smp_rmb();
+Either is okay with me, but if you do decide in favour, a name change
+with the device type appended would be preferred. Else the core device
+would have the same name as all of its children which would be quite
+unworkable.
 
-rmb() looks wrong, we need mb() to serialize ACCESS_ONCE() and
-clear_tsk_thread_flag().
+> > Might be worth taking the opportunity to swap out these magic numbers
+> > now.
+> 
+> There's nothing magic about them, they tell the driver how many fans
+> each device supports. If you don't pass them as driver_data you'll have
+> to derive them from the device name in the probe function.
 
-But, otoh, I think we do not need any barrier at all, we can rely on
-control dependency. See the recent 18c03c61444a21 "Documentation/
-memory-barriers.txt: Prohibit speculative writes".
+They're magic in that they're not easily identifiable. In the few
+moments that I looked at the patch I assumed they were device
+IDs. They should be clearly defined.
 
-> +		/* audit_inc_n_rules could increment audit_n_rules here... */
-> +
-> +		clear_tsk_thread_flag(tsk, TIF_SYSCALL_AUDIT);
-> +
-> +		smp_rmb();
+> > >  	{ }
+> > >  };
+> > >  MODULE_DEVICE_TABLE(i2c, max6650_id);
 
-Again, I guess this should be mb() or smp_mb__after_clear_bit().
-
-
-And I still think this needs more changes. Once again, I do not think
-that, say, __audit_log_bprm_fcaps() should populate context->aux if
-!TIF_SYSCALL_AUDIT, this list can grow indefinitely. Or __audit_signal_info()...
-
-Perhaps __audit_syscall_exit() should also set context->dummy?
-
-Oleg.
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
