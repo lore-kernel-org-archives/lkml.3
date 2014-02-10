@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755121AbaBJUDO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 15:03:14 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34909 "EHLO
+	id S1755138AbaBJUDl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 15:03:41 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34903 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753934AbaBJTqF (ORCPT
+	with ESMTP id S1754003AbaBJTqA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:46:05 -0500
+	Mon, 10 Feb 2014 14:46:00 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Mikulas Patocka <mpatocka@redhat.com>, Matt Turner <mattst88@gmail.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 106/124] mm, oom: base root bonus on current usage
-Date: Mon, 10 Feb 2014 11:40:46 -0800
-Message-Id: <1392061264-28124-107-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 107/124] alpha: fix broken network checksum
+Date: Mon, 10 Feb 2014 11:40:47 -0800
+Message-Id: <1392061264-28124-108-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
 References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
@@ -29,78 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Rientjes <rientjes@google.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 778c14affaf94a9e4953179d3e13a544ccce7707 upstream.
+commit 0ef38d70d4118b2ce1a538d14357be5ff9dc2bbd upstream.
 
-A 3% of system memory bonus is sometimes too excessive in comparison to
-other processes.
+The patch 3ddc5b46a8e90f3c9251338b60191d0a804b0d92 breaks networking on
+alpha (there is a follow-up fix 5cfe8f1ba5eebe6f4b6e5858cdb1a5be4f3272a6,
+but networking is still broken even with the second patch).
 
-With commit a63d83f427fb ("oom: badness heuristic rewrite"), the OOM
-killer tries to avoid killing privileged tasks by subtracting 3% of
-overall memory (system or cgroup) from their per-task consumption.  But
-as a result, all root tasks that consume less than 3% of overall memory
-are considered equal, and so it only takes 33+ privileged tasks pushing
-the system out of memory for the OOM killer to do something stupid and
-kill dhclient or other root-owned processes.  For example, on a 32G
-machine it can't tell the difference between the 1M agetty and the 10G
-fork bomb member.
+The patch 3ddc5b46a8e90f3c9251338b60191d0a804b0d92 makes
+csum_partial_copy_from_user check the pointer with access_ok. However,
+csum_partial_copy_from_user is called also from csum_partial_copy_nocheck
+and csum_partial_copy_nocheck is called on kernel pointers and it is
+supposed not to check pointer validity.
 
-The changelog describes this 3% boost as the equivalent to the global
-overcommit limit being 3% higher for privileged tasks, but this is not
-the same as discounting 3% of overall memory from _every privileged task
-individually_ during OOM selection.
+This bug results in ssh session hangs if the system is loaded and bulk
+data are printed to ssh terminal.
 
-Replace the 3% of system memory bonus with a 3% of current memory usage
-bonus.
+This patch fixes csum_partial_copy_nocheck to call set_fs(KERNEL_DS), so
+that access_ok in csum_partial_copy_from_user accepts kernel-space
+addresses.
 
-By giving root tasks a bonus that is proportional to their actual size,
-they remain comparable even when relatively small.  In the example
-above, the OOM killer will discount the 1M agetty's 256 badness points
-down to 179, and the 10G fork bomb's 262144 points down to 183500 points
-and make the right choice, instead of discounting both to 0 and killing
-agetty because it's first in the task list.
-
-Signed-off-by: David Rientjes <rientjes@google.com>
-Reported-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Matt Turner <mattst88@gmail.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- Documentation/filesystems/proc.txt | 4 ++--
- mm/oom_kill.c                      | 2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ arch/alpha/lib/csum_partial_copy.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
-index fd8d0d5..954eab8 100644
---- a/Documentation/filesystems/proc.txt
-+++ b/Documentation/filesystems/proc.txt
-@@ -1372,8 +1372,8 @@ may allocate from based on an estimation of its current memory and swap use.
- For example, if a task is using all allowed memory, its badness score will be
- 1000.  If it is using half of its allowed memory, its score will be 500.
- 
--There is an additional factor included in the badness score: root
--processes are given 3% extra memory over other tasks.
-+There is an additional factor included in the badness score: the current memory
-+and swap usage is discounted by 3% for root processes.
- 
- The amount of "allowed" memory depends on the context in which the oom killer
- was called.  If it is due to the memory assigned to the allocating task's cpuset
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index 0399f14..4eac855 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -170,7 +170,7 @@ unsigned long oom_badness(struct task_struct *p, struct mem_cgroup *memcg,
- 	 * implementation used by LSMs.
- 	 */
- 	if (has_capability_noaudit(p, CAP_SYS_ADMIN))
--		adj -= 30;
-+		points -= (points * 3) / 100;
- 
- 	/* Normalize to oom_score_adj units */
- 	adj *= totalpages / 1000;
+diff --git a/arch/alpha/lib/csum_partial_copy.c b/arch/alpha/lib/csum_partial_copy.c
+index 40736da..1d2ef5a 100644
+--- a/arch/alpha/lib/csum_partial_copy.c
++++ b/arch/alpha/lib/csum_partial_copy.c
+@@ -373,6 +373,11 @@ csum_partial_copy_from_user(const void __user *src, void *dst, int len,
+ __wsum
+ csum_partial_copy_nocheck(const void *src, void *dst, int len, __wsum sum)
+ {
+-	return csum_partial_copy_from_user((__force const void __user *)src,
+-			dst, len, sum, NULL);
++	__wsum checksum;
++	mm_segment_t oldfs = get_fs();
++	set_fs(KERNEL_DS);
++	checksum = csum_partial_copy_from_user((__force const void __user *)src,
++						dst, len, sum, NULL);
++	set_fs(oldfs);
++	return checksum;
+ }
 -- 
 1.8.3.2
 
