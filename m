@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752534AbaBJBQW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 20:16:22 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:10676 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752211AbaBJBQU (ORCPT
+	id S1752553AbaBJBQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 20:16:57 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:23189 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752189AbaBJBQz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 20:16:20 -0500
-X-AuditID: cbfee68f-b7f156d00000276c-f8-52f828636c79
+	Sun, 9 Feb 2014 20:16:55 -0500
+X-AuditID: cbfee68e-b7f566d000002344-75-52f8288685aa
 From: Jingoo Han <jg1.han@samsung.com>
-To: "'Dmitry Torokhov'" <dmitry.torokhov@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        "'Jingoo Han'" <jg1.han@samsung.com>,
-        "'Lars-Peter Clausen'" <lars@metafoo.de>
+To: "'Thierry Reding'" <thierry.reding@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-pwm@vger.kernel.org,
+        "'Jingoo Han'" <jg1.han@samsung.com>
 References: <003901cf25fc$73002790$590076b0$%han@samsung.com>
 In-reply-to: <003901cf25fc$73002790$590076b0$%han@samsung.com>
-Subject: [PATCH 6/7] Input: pwm-beepe: remove HAVE_PWM dependencies
-Date: Mon, 10 Feb 2014 10:16:19 +0900
-Message-id: <003f01cf25fd$b3e274b0$1ba75e10$%han@samsung.com>
+Subject: [PATCH 7/7] pwm: don't use IS_ENABLED(CONFIG_HAVE_PWM)
+Date: Mon, 10 Feb 2014 10:16:53 +0900
+Message-id: <004001cf25fd$c8a11ff0$59e35fd0$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac8l/GYGhOsBgXmsQoSPhLhnprg0iAAASf4w
+Thread-index: Ac8l/GYGhOsBgXmsQoSPhLhnprg0iAAAU7yA
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrIIsWRmVeSWpSXmKPExsVy+t8zQ91kjR9BBhd7JC0OL3rBaHF54SVW
-	iyWT57Na3Pz0jdXi8q45bA6sHjtn3WX3WPLmEKtH35ZVjB6fN8kFsERx2aSk5mSWpRbp2yVw
-	ZfzYeIqlYBdbxaQ5xg2M81m7GDk5JARMJO42LWaHsMUkLtxbz9bFyMUhJLCMUeLXwsNwRZ+2
-	3mWFSExnlNi27ytYQkjgF6PE7bU1IDabgJrEly+HgSZxcIgIGErMWFMFUs8s0M0o8fhSOztE
-	va3E3Ib9YDangJ3EvKXfwOYICzhLnGrsA7NZBFQlpi7dyAhi8wLV33u5mxnCFpT4MfkeC4jN
-	LKAlsX7ncSYIW15i85q3zCB7JQTUJR791QUJiwgYSWw6s5gVokREYt+Ld4wg90gIXGOX2Hft
-	KRPELgGJb5MPsUD0ykpsOsAM8a+kxMEVN1gmMErMQrJ5FpLNs5BsnoVkxQJGllWMoqkFyQXF
-	SelFxnrFibnFpXnpesn5uZsYIdHZv4Px7gHrQ4zJQOsnMkuJJucDozuvJN7Q2MzIwtTE1NjI
-	3NKMNGElcd77D5OChATSE0tSs1NTC1KL4otKc1KLDzEycXBKNTBuPrE4Uj3Whuv04bR9v3R7
-	fJz4T6yLmd8wqeumYpsgs/25BRXBchPr2Q9Ilr9KdjW7n/dg7dbHvy3tRV87SSa+/6N9XftG
-	aKLyDC79sttnS79lP92bfUkv58KTCg3v2+z7YsUktyh//TtHTVlBv0dY0nft7MguLoVZtVat
-	a5a5r0m8ZXQlY5YSS3FGoqEWc1FxIgADykSN5AIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHKsWRmVeSWpSXmKPExsVy+t9jQd1kjR9BBs/niFocXvSC0eLywkus
-	Fksmz2e1uPnpG6vF5V1z2BxYPXbOusvuseTNIVaPvi2rGD0+b5ILYIlqYLTJSE1MSS1SSM1L
-	zk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAVqspFCWmFMKFApILC5W0rfD
-	NCE0xE3XAqYxQtc3JAiux8gADSSsY8z4sfEUS8EutopJc4wbGOezdjFyckgImEh82noXyhaT
-	uHBvPVsXIxeHkMB0Rolt+76CJYQEfjFK3F5bA2KzCahJfPlymL2LkYNDRMBQYsaaKpB6ZoFu
-	RonHl9rZIeptJeY27AezOQXsJOYt/QY2R1jAWeJUYx+YzSKgKjF16UZGEJsXqP7ey93MELag
-	xI/J91hAbGYBLYn1O48zQdjyEpvXvGUG2SshoC7x6K8uSFhEwEhi05nFrBAlIhL7XrxjnMAo
-	NAvJpFlIJs1CMmkWkpYFjCyrGEVTC5ILipPSc430ihNzi0vz0vWS83M3MYJj/5n0DsZVDRaH
-	GAU4GJV4eHf8+R4kxJpYVlyZe4hRgoNZSYT35V2gEG9KYmVValF+fFFpTmrxIcZkoEcnMkuJ
-	JucD01JeSbyhsYmZkaWRmYWRibk5acJK4rwHW60DhQTSE0tSs1NTC1KLYLYwcXBKNTBaaCb8
-	2vmh5FG5+7oC2WW34jY9mrtwgsrz35e3vyl1vcK1eVPtgUSTItGdxZl5O//NkTV/KPHGy/vj
-	nF3Hn7ZJJ70uUXB6sLppK+sUVYfpDx6u6Fi5+lq4wuX0zY1LGbhPlOas3c3Be+O466/rzvwa
-	f1tNtn2K2J6yyNsqaO8fwxgR/Sutq5n5lViKMxINtZiLihMBUDaEAkEDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBIsWRmVeSWpSXmKPExsVy+t8zA902jR9BBp8nilhcXniJ1eLyrjls
+	FnfvrmK0+LlrHosDi8fOWXfZPfq2rGL0+LxJLoA5issmJTUnsyy1SN8ugStj08GvbAX/WStu
+	XHrG3MD4maWLkZNDQsBEomvxH3YIW0ziwr31bCC2kMAyRonmd2UwNbd67gLVcwHFpzNKfHi8
+	nBHC+cUo8fb/T7AONgE1iS9fDoNNEhHQl7h0/RIriM0skCgx5/AdRoipthJzG/aD1XAK2EnM
+	W/oNrEZYwF6i4fwysBoWAVWJ35dOgtm8QPX/Zz1lgrAFJX5MvscCMVNLYv3O40wQtrzE5jVv
+	mbsYOYAuVZd49FcX4gQjiY2blzFDlIhI7HvxDuxmCYFj7BKTNp1mgdglIPFt8iEWiF5ZiU0H
+	mCEelpQ4uOIGywRGiVlINs9CsnkWks2zkKxYwMiyilE0tSC5oDgpvchIrzgxt7g0L10vOT93
+	EyMkFvt2MN48YH2IMRlo/URmKdHkfGAs55XEGxqbGVmYmpgaG5lbmpEmrCTOu+hhUpCQQHpi
+	SWp2ampBalF8UWlOavEhRiYOTqkGxgDl1PyrTO81rXcsWV5wQ2ZV0aqug+v5vl77ez07Yu28
+	5TsMXzpJBqdm6R0Ik5G7mOT9Qeg6xz373yFKDCoL9DufPjnJcvTWz1A9dcb3EXynYhPMj2VM
+	fXmLr/CaaPiaYtuPp161XbnzrGrGQbW8hM98YRs/qhxyOdOUcE5hnWW7DX9F6q7HakosxRmJ
+	hlrMRcWJAA1WpBDbAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGKsWRmVeSWpSXmKPExsVy+t9jQd02jR9BBk92ClhcXniJ1eLyrjls
+	FnfvrmK0+LlrHosDi8fOWXfZPfq2rGL0+LxJLoA5qoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzje
+	Od7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwdonZJCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd
+	35AguB4jAzSQsI4xY9PBr2wF/1krblx6xtzA+Jmli5GTQ0LAROJWz10oW0ziwr31bF2MXBxC
+	AtMZJT48Xs4I4fxilHj7/ycbSBWbgJrEly+H2UFsEQF9iUvXL7GC2MwCiRJzDt9hBLGFBGwl
+	5jbsB6vhFLCTmLf0G1iNsIC9RMP5ZWA1LAKqEr8vnQSzeYHq/896ygRhC0r8mHyPBWKmlsT6
+	nceZIGx5ic1r3jJ3MXIAXaou8eivLsQJRhIbNy9jhigRkdj34h3jBEahWUgmzUIyaRaSSbOQ
+	tCxgZFnFKJpakFxQnJSea6hXnJhbXJqXrpecn7uJERzrz6R2MK5ssDjEKMDBqMTDu+PP9yAh
+	1sSy4srcQ4wSHMxKIrwv7wKFeFMSK6tSi/Lji0pzUosPMSYDPTqRWUo0OR+YhvJK4g2NTcyM
+	LI3MLIxMzM1JE1YS5z3Qah0oJJCeWJKanZpakFoEs4WJg1OqgfHMuVnlX971Lnsa9bTMRFCp
+	NsFy2tKvYVz3r9kdn6pQnCC3Ycu61Wf//ktZHtG2bXkuX1b/SeWtp0MF2ROmV7HPbwrkKj7D
+	feUTW5jN7jXnLTO7/oTvTfrZxdR24t50j68RnWtvOBxKYfqUe/69zdyqIEETf7Pts9KC97uJ
+	BH41r3y712+beIMSS3FGoqEWc1FxIgAlkhvvOQMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -64,22 +63,22 @@ required anymore.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/input/misc/Kconfig |    2 +-
+ include/linux/pwm.h |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
-index ae74df7..762e6d2 100644
---- a/drivers/input/misc/Kconfig
-+++ b/drivers/input/misc/Kconfig
-@@ -470,7 +470,7 @@ config INPUT_PCF8574
+diff --git a/include/linux/pwm.h b/include/linux/pwm.h
+index f0feafd..4717f54 100644
+--- a/include/linux/pwm.h
++++ b/include/linux/pwm.h
+@@ -7,7 +7,7 @@
+ struct pwm_device;
+ struct seq_file;
  
- config INPUT_PWM_BEEPER
- 	tristate "PWM beeper support"
--	depends on PWM && HAVE_PWM
-+	depends on PWM
- 	help
- 	  Say Y here to get support for PWM based beeper devices.
- 
+-#if IS_ENABLED(CONFIG_PWM) || IS_ENABLED(CONFIG_HAVE_PWM)
++#if IS_ENABLED(CONFIG_PWM)
+ /*
+  * pwm_request - request a PWM device
+  */
 -- 
 1.7.10.4
 
