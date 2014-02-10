@@ -1,90 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752837AbaBJMOO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 07:14:14 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:33840 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752399AbaBJMOM (ORCPT
+	id S1752946AbaBJMOk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 07:14:40 -0500
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:51935 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752399AbaBJMOj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 07:14:12 -0500
-Date: Mon, 10 Feb 2014 12:14:05 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, Jenny Tc <jenny.tc@intel.com>
-Subject: Re: [PATCH v2 14/15] charger: max14577: Configure battery-dependent
- settings from DTS
-Message-ID: <20140210121405.GH22773@lee--X1>
-References: <1391767487-10017-1-git-send-email-k.kozlowski@samsung.com>
- <1391767487-10017-15-git-send-email-k.kozlowski@samsung.com>
+	Mon, 10 Feb 2014 07:14:39 -0500
+Date: Mon, 10 Feb 2014 13:14:33 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Ben Skeggs <bskeggs@redhat.com>, nouveau@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        gnurou@gmail.com
+Subject: Re: [PATCH] drm/nouveau/fifo: allocate usermem as needed
+Message-ID: <20140210121431.GD20143@ulmo.nvidia.com>
+References: <1392011821-2406-1-git-send-email-acourbot@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lc9FT7cWel8HagAv"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1391767487-10017-15-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1392011821-2406-1-git-send-email-acourbot@nvidia.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Remove hard-coded values for:
->  - Fast Charge current,
->  - End Of Charge current,
->  - Fast Charge timer,
->  - Overvoltage Protection Threshold,
->  - Battery Constant Voltage,
-> and use DTS to configure them. This allows using the max14577 charger
-> driver with different batteries.
-> 
-> Now the charger driver requires valid configuration data from DTS. In
-> case of wrong configuration data it fails during probe. Patch adds
-> of_compatible to the charger mfd cell in MFD driver core.
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-> Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-> Cc: David Woodhouse <dwmw2@infradead.org>
-> Cc: Jenny Tc <jenny.tc@intel.com>
+
+--lc9FT7cWel8HagAv
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Mon, Feb 10, 2014 at 02:57:01PM +0900, Alexandre Courbot wrote:
+> Memory was always allocated for 4096 channels. Change this to allocate
+> what we actually need according to the number of channels we use.
+>=20
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
 > ---
->  drivers/mfd/max14577.c               |    5 +-
->  drivers/power/max14577_charger.c     |  234 +++++++++++++++++++++++++++++-----
->  include/linux/mfd/max14577-private.h |   10 ++
->  include/linux/mfd/max14577.h         |    8 ++
->  4 files changed, 227 insertions(+), 30 deletions(-)
+>  drivers/gpu/drm/nouveau/core/engine/fifo/nve0.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 
-<snip>
+Looks good to me:
 
-> diff --git a/include/linux/mfd/max14577-private.h b/include/linux/mfd/max14577-private.h
-> index a8cd7de3526a..50cf70bec4d4 100644
-> --- a/include/linux/mfd/max14577-private.h
-> +++ b/include/linux/mfd/max14577-private.h
-> @@ -269,6 +269,16 @@ enum maxim_muic_charger_type {
->  #define MAX77836_CHARGER_CURRENT_LIMIT_HIGH_STEP	 25000U
->  #define MAX77836_CHARGER_CURRENT_LIMIT_MAX		475000U
->  
-> +/* MAX14577 charger End-Of-Charge current limits (as in MAXIM_CHGCTRL5 register), uA */
+Reviewed-by: Thierry Reding <treding@nvidia.com>
 
-Too many chars. Didn't checkpatch.pl complain about this?
+--lc9FT7cWel8HagAv
+Content-Type: application/pgp-signature
 
-> +#define MAX14577_CHARGER_EOC_CURRENT_LIMIT_MIN		50000U
-> +#define MAX14577_CHARGER_EOC_CURRENT_LIMIT_STEP		10000U
-> +#define MAX14577_CHARGER_EOC_CURRENT_LIMIT_MAX		200000U
-> +
-> +/* MAX14577/MAX77836 Battery Constant Voltage (as in MAXIM_CHGCTRL3
-> register), uV */
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-Same here
+iQIcBAEBAgAGBQJS+MKnAAoJEN0jrNd/PrOh7fEP/1Z7mQnIaUIK9Z40DcxFTgAk
+J/+CGg3z4gLbDiBG9Cqw0cXKv9GRGMAy34AJiec2RubQZk3So87n8uTKcUT/nWSR
+vpRBovyd70Byzs+bEkOOkUtGWXXgkbI0CPsxL1inL6sCGfEU+e76QkA/bbe3T4pP
+N29LV+uFJQU4FG2rcOkFhqKe4hQe/edc4/b9RC7U9WP2paVI/Ex5Fu6MuGoKssri
+1//6SyC72Afv5Pkk2weV2jB+ikUJEkodZovvIE39+aFEWA7LDTlmVOaYrZWuKLIH
+t7hLVGNaWsRAIC6ntAyqoAgyd0ONFV0hams071CM7Ey/xtilG3N7gKoBSVKBx0+A
+YCPRbr4IgPtdeoxbaYNTzYHkoa4L4QI64FsNxCbY5fSseZznBwellbgJmRVW6CYU
+fzjGo3Mh+AIg1hfizYgm6r6wTOGZetpfsaupfei8PN7mNyfOxBZ6JOw2B1o7g4bS
+Q9yw0wjq9cJ8tyou/SaSRxM1dJzSoumfeDb3sBcBuiV0C2v29eBz45td7sEDnvJu
+kTb+z3EM98t0nmfzsH02Lnt/D/Dyr0JgSGEHr7SdL2sJRy4+DsaCs3JCo4ZiT+nn
+D1vVNXpjxeJs2N/DcJt5DCE7W3dUKbkvRKgrqAEadsWjkR/QPSgRzStSwEi9+NB7
+FNtV732ZNcOtv4dARF2m
+=vm+j
+-----END PGP SIGNATURE-----
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+--lc9FT7cWel8HagAv--
