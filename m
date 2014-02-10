@@ -1,92 +1,392 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755714AbaBJUVo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 15:21:44 -0500
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:61129 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754161AbaBJUVj (ORCPT
+	id S1755784AbaBJUWi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 15:22:38 -0500
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:33766 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754161AbaBJUVp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 15:21:39 -0500
+	Mon, 10 Feb 2014 15:21:45 -0500
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCHSET cgroup/for-3.15] cgroup: update task migration path
-Date: Mon, 10 Feb 2014 15:21:29 -0500
-Message-Id: <1392063694-26465-1-git-send-email-tj@kernel.org>
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 4/5] cgroup: split process / task migration into four steps
+Date: Mon, 10 Feb 2014 15:21:33 -0500
+Message-Id: <1392063694-26465-5-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1392063694-26465-1-git-send-email-tj@kernel.org>
+References: <1392063694-26465-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Currently, process / task migration is a single operation which may
+fail depending on memory pressure or the involved controllers'
+->can_attach() callbacks.  One problem with this approach is migration
+of multiple targets.  It's impossible to tell whether a given target
+will be successfully migrated beforehand and cgroup core can't keep
+track of enough states to roll back after intermediate failure.
 
-Currently, when migrating a task or process from one cgroup to
-another, a flex_array is used to keep track of the target tasks and
-associated css_sets.  This has a couple issues.
+This is already an issue with cgroup_transfer_tasks().  Also, we're
+gonna need multiple target migration for unified hierarchy.
 
-* flex_array size is limited.  Given the current data structure, the
-  limit is ~87k on 64bit, which is pretty high but not impossible to
-  hit.
+This patch splits migration into four stages -
+cgroup_migrate_add_src(), cgroup_migrate_prepare_dst(),
+cgroup_migrate() and cgroup_migrate_finish(), where
+cgroup_migrate_prepare_dst() performs all the operations which may
+fail due to allocation failure without actually migrating the target.
 
-* If multiple targets are being migrated, as migrating each target
-  involves memory allocation, it can fail at any point.  cgroup core
-  doesn't keep track of enough state to roll back partial migration
-  either, so it ends up aborting with some targets migrated with no
-  way of finding out which.  While this isn't a big issue now, we're
-  gonna be making more use of multi-target migration.
+The four separate stages mean that, disregarding ->can_attach()
+failures, the success or failure of multi target migration can be
+determined before performing any actual migration.  If preparations of
+all targets succeed, the whole thing will succeed.  If not, the whole
+operation can fail without any side-effect.
 
-This patchset updates task migration path such that
+Since the previous patch to use css_set->mg_tasks to keep track of
+migration targets, the only thing which may need memory allocation
+during migration is the target css_sets.  cgroup_migrate_prepare()
+pins all source and target css_sets and link them up.  Note that this
+can be performed without holding threadgroup_lock even if the target
+is a process.  As long as cgroup_mutex is held, no new css_set can be
+put into play.
 
-* task->cg_list and css_sets are also used to keep track of targets
-  during migration so that no extra memory allocation is necessary to
-  keep track of migration targets.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ include/linux/cgroup.h |   1 +
+ kernel/cgroup.c        | 240 +++++++++++++++++++++++++++++++++++++------------
+ 2 files changed, 182 insertions(+), 59 deletions(-)
 
-* Migration is split into several stages so that all preparations
-  which may fail can be performed for all targets before actually
-  starting migrating tasks.  Ignoring ->can_attach() failure, this can
-  guarantee all-or-nothing semantics of multi-target migration.
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 38d239b..0fd1482 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -348,6 +348,7 @@ struct css_set {
+ 	 * List of csets participating in the on-going migration either as
+ 	 * source or destination.  Protected by cgroup_mutex.
+ 	 */
++	struct list_head mg_preload_node;
+ 	struct list_head mg_node;
+ 
+ 	/*
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 9201160..1b485df 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -644,6 +644,7 @@ static struct css_set *find_css_set(struct css_set *old_cset,
+ 	INIT_LIST_HEAD(&cset->cgrp_links);
+ 	INIT_LIST_HEAD(&cset->tasks);
+ 	INIT_LIST_HEAD(&cset->mg_tasks);
++	INIT_LIST_HEAD(&cset->mg_preload_node);
+ 	INIT_LIST_HEAD(&cset->mg_node);
+ 	INIT_HLIST_NODE(&cset->hlist);
+ 
+@@ -1747,16 +1748,137 @@ static void cgroup_task_migrate(struct cgroup *old_cgrp,
+ }
+ 
+ /**
+- * cgroup_attach_task - attach a task or a whole threadgroup to a cgroup
+- * @cgrp: the cgroup to attach to
+- * @leader: the task or the leader of the threadgroup to be attached
+- * @threadgroup: attach the whole threadgroup?
++ * cgroup_migrate_finish - cleanup after attach
++ * @preloaded_csets: list of preloaded css_sets
+  *
+- * Call holding cgroup_mutex and the group_rwsem of the leader. Will take
+- * task_lock of @tsk or each thread in the threadgroup individually in turn.
++ * Undo cgroup_migrate_add_src() and cgroup_migrate_prepare_dst().  See
++ * those functions for details.
+  */
+-static int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *leader,
+-			      bool threadgroup)
++static void cgroup_migrate_finish(struct list_head *preloaded_csets)
++{
++	struct css_set *cset, *tmp_cset;
++
++	lockdep_assert_held(&cgroup_mutex);
++
++	down_write(&css_set_rwsem);
++	list_for_each_entry_safe(cset, tmp_cset, preloaded_csets, mg_preload_node) {
++		cset->mg_src_cgrp = NULL;
++		cset->mg_dst_cset = NULL;
++		list_del_init(&cset->mg_preload_node);
++		put_css_set_locked(cset, false);
++	}
++	up_write(&css_set_rwsem);
++}
++
++/**
++ * cgroup_migrate_add_src - add a migration source css_set
++ * @src_cset: the source css_set to add
++ * @dst_cgrp: the destination cgroup
++ * @preloaded_csets: list of preloaded css_sets
++ *
++ * Tasks belonging to @src_cset are about to be migrated to @dst_cgrp.  Pin
++ * @src_cset and add it to @preloaded_csets, which should later be cleaned
++ * up by cgroup_migrate_finish().
++ *
++ * This function may be called without holding threadgroup_lock even if the
++ * target is a process.  Threads may be created and destroyed but as long
++ * as cgroup_mutex is not dropped, no new css_set can be put into play and
++ * the preloaded css_sets are guaranteed to cover all migrations.
++ */
++static void cgroup_migrate_add_src(struct css_set *src_cset,
++				   struct cgroup *dst_cgrp,
++				   struct list_head *preloaded_csets)
++{
++	struct cgroup *src_cgrp;
++
++	lockdep_assert_held(&cgroup_mutex);
++	lockdep_assert_held(&css_set_rwsem);
++
++	src_cgrp = cset_cgroup_from_root(src_cset, dst_cgrp->root);
++
++	/* nothing to do if this cset already belongs to the cgroup */
++	if (src_cgrp == dst_cgrp)
++		return;
++
++	if (!list_empty(&src_cset->mg_preload_node))
++		return;
++
++	WARN_ON(src_cset->mg_src_cgrp);
++	WARN_ON(!list_empty(&src_cset->mg_tasks));
++	WARN_ON(!list_empty(&src_cset->mg_node));
++
++	src_cset->mg_src_cgrp = src_cgrp;
++	get_css_set(src_cset);
++	list_add(&src_cset->mg_preload_node, preloaded_csets);
++}
++
++/**
++ * cgroup_migrate_prepare_dst - prepare destination css_sets for migration
++ * @dst_cgrp: the destination cgroup
++ * @preloaded_csets: list of preloaded source css_sets
++ *
++ * Tasks are about to be moved to @dst_cgrp and all the source css_sets
++ * have been preloaded to @preloaded_csets.  This function looks up and
++ * pins all destination css_sets, links each to its source, and put them on
++ * @preloaded_csets.
++ *
++ * This function must be called after cgroup_migrate_add_src() has been
++ * called on each migration source css_set.  After migration is performed
++ * using cgroup_migrate(), cgroup_migrate_finish() must be called on
++ * @preloaded_csets.
++ */
++static int cgroup_migrate_prepare_dst(struct cgroup *dst_cgrp,
++				      struct list_head *preloaded_csets)
++{
++	LIST_HEAD(csets);
++	struct css_set *src_cset;
++
++	lockdep_assert_held(&cgroup_mutex);
++
++	/* look up the dst cset for each src cset and link it to src */
++	list_for_each_entry(src_cset, preloaded_csets, mg_preload_node) {
++		struct css_set *dst_cset;
++
++		dst_cset = find_css_set(src_cset, dst_cgrp);
++		if (!dst_cset)
++			goto err;
++
++		WARN_ON_ONCE(src_cset->mg_dst_cset || dst_cset->mg_dst_cset);
++		src_cset->mg_dst_cset = dst_cset;
++
++		if (list_empty(&dst_cset->mg_preload_node))
++			list_add(&dst_cset->mg_preload_node, &csets);
++		else
++			put_css_set(dst_cset, false);
++	}
++
++	list_splice(&csets, preloaded_csets);
++	return 0;
++err:
++	cgroup_migrate_finish(&csets);
++	return -ENOMEM;
++}
++
++/**
++ * cgroup_migrate - migrate a process or task to a cgroup
++ * @cgrp: the destination cgroup
++ * @leader: the leader of the process or the task to migrate
++ * @threadgroup: whether @leader points to the whole process or a single task
++ *
++ * Migrate a process or task denoted by @leader to @cgrp.  If migrating a
++ * process, the caller must be holding threadgroup_lock of @leader.  The
++ * caller is also responsible for invoking cgroup_migrate_add_src() and
++ * cgroup_migrate_prepare_dst() on the targets before invoking this
++ * function and following up with cgroup_migrate_finish().
++ *
++ * As long as a controller's ->can_attach() doesn't fail, this function is
++ * guaranteed to succeed.  This means that, excluding ->can_attach()
++ * failure, when migrating multiple targets, the success or failure can be
++ * decided for all targets by invoking group_migrate_prepare_dst() before
++ * actually starting migrating.
++ */
++static int cgroup_migrate(struct cgroup *cgrp, struct task_struct *leader,
++			  bool threadgroup)
+ {
+ 	struct cgroup_taskset tset = {
+ 		.src_csets	= LIST_HEAD_INIT(tset.src_csets),
+@@ -1777,29 +1899,17 @@ static int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *leader,
+ 	rcu_read_lock();
+ 	task = leader;
+ 	do {
+-		struct cgroup *src_cgrp;
+-
+ 		/* @task either already exited or can't exit until the end */
+ 		if (task->flags & PF_EXITING)
+ 			goto next;
+ 
+ 		cset = task_css_set(task);
+-		src_cgrp = task_cgroup_from_root(task, cgrp->root);
+-
+-		/* nothing to do if this task is already in the cgroup */
+-		if (src_cgrp == cgrp)
++		if (!cset->mg_src_cgrp)
+ 			goto next;
+ 
+-		if (!cset->mg_src_cgrp) {
+-			WARN_ON(!list_empty(&cset->mg_tasks));
+-			WARN_ON(!list_empty(&cset->mg_node));
+-
+-			cset->mg_src_cgrp = src_cgrp;
+-			list_add(&cset->mg_node, &tset.src_csets);
+-			get_css_set(cset);
+-		}
+-
+ 		list_move(&task->cg_list, &cset->mg_tasks);
++		list_move(&cset->mg_node, &tset.src_csets);
++		list_move(&cset->mg_dst_cset->mg_node, &tset.dst_csets);
+ 	next:
+ 		if (!threadgroup)
+ 			break;
+@@ -1811,9 +1921,7 @@ static int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *leader,
+ 	if (list_empty(&tset.src_csets))
+ 		return 0;
+ 
+-	/*
+-	 * step 1: check that we can legitimately attach to the cgroup.
+-	 */
++	/* check that we can legitimately attach to the cgroup */
+ 	for_each_css(css, i, cgrp) {
+ 		if (css->ss->can_attach) {
+ 			ret = css->ss->can_attach(css, &tset);
+@@ -1825,30 +1933,9 @@ static int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *leader,
+ 	}
+ 
+ 	/*
+-	 * step 2: make sure css_sets exist for all threads to be migrated.
+-	 * we use find_css_set, which allocates a new one if necessary.
+-	 */
+-	list_for_each_entry(cset, &tset.src_csets, mg_node) {
+-		struct css_set *dst_cset;
+-
+-		dst_cset = find_css_set(cset, cgrp);
+-		if (!dst_cset) {
+-			ret = -ENOMEM;
+-			goto out_release_tset;
+-		}
+-
+-		if (list_empty(&dst_cset->mg_node))
+-			list_add(&dst_cset->mg_node, &tset.dst_csets);
+-		else
+-			put_css_set(dst_cset, false);
+-
+-		cset->mg_dst_cset = dst_cset;
+-	}
+-
+-	/*
+-	 * step 3: now that we're guaranteed success wrt the css_sets,
+-	 * proceed to move all tasks to the new cgroup.  There are no
+-	 * failure cases after here, so this is the commit point.
++	 * Now that we're guaranteed success, proceed to move all tasks to
++	 * the new cgroup.  There are no failure cases after here, so this
++	 * is the commit point.
+ 	 */
+ 	down_write(&css_set_rwsem);
+ 	list_for_each_entry(cset, &tset.src_csets, mg_node) {
+@@ -1858,14 +1945,13 @@ static int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *leader,
+ 	}
+ 	up_write(&css_set_rwsem);
+ 
+-	/* migration is committed, all target tasks are now on dst_csets */
+-	tset.csets = &tset.dst_csets;
+-
+-	/* nothing is sensitive to fork() after this point */
+-
+ 	/*
+-	 * step 4: do subsystem attach callbacks.
++	 * Migration is committed, all target tasks are now on dst_csets.
++	 * Nothing is sensitive to fork() after this point.  Notify
++	 * controllers that migration is complete.
+ 	 */
++	tset.csets = &tset.dst_csets;
++
+ 	for_each_css(css, i, cgrp)
+ 		if (css->ss->attach)
+ 			css->ss->attach(css, &tset);
+@@ -1885,15 +1971,50 @@ out_release_tset:
+ 	list_splice_init(&tset.dst_csets, &tset.src_csets);
+ 	list_for_each_entry_safe(cset, tmp_cset, &tset.src_csets, mg_node) {
+ 		list_splice_init(&cset->mg_tasks, &cset->tasks);
+-		cset->mg_dst_cset = NULL;
+-		cset->mg_src_cgrp = NULL;
+ 		list_del_init(&cset->mg_node);
+-		put_css_set_locked(cset, false);
+ 	}
+ 	up_write(&css_set_rwsem);
+ 	return ret;
+ }
+ 
++/**
++ * cgroup_attach_task - attach a task or a whole threadgroup to a cgroup
++ * @dst_cgrp: the cgroup to attach to
++ * @leader: the task or the leader of the threadgroup to be attached
++ * @threadgroup: attach the whole threadgroup?
++ *
++ * Call holding cgroup_mutex and the group_rwsem of the leader. Will take
++ * task_lock of @tsk or each thread in the threadgroup individually in turn.
++ */
++static int cgroup_attach_task(struct cgroup *dst_cgrp,
++			      struct task_struct *leader, bool threadgroup)
++{
++	LIST_HEAD(preloaded_csets);
++	struct task_struct *task;
++	int ret;
++
++	/* look up all src csets */
++	down_read(&css_set_rwsem);
++	rcu_read_lock();
++	task = leader;
++	do {
++		cgroup_migrate_add_src(task_css_set(task), dst_cgrp,
++				       &preloaded_csets);
++		if (!threadgroup)
++			break;
++	} while_each_thread(leader, task);
++	rcu_read_unlock();
++	up_read(&css_set_rwsem);
++
++	/* prepare dst csets and commit */
++	ret = cgroup_migrate_prepare_dst(dst_cgrp, &preloaded_csets);
++	if (!ret)
++		ret = cgroup_migrate(dst_cgrp, leader, threadgroup);
++
++	cgroup_migrate_finish(&preloaded_csets);
++	return ret;
++}
++
+ /*
+  * Find the task_struct of the task to attach by vpid and pass it along to the
+  * function to attach either it or all tasks in its threadgroup. Will lock
+@@ -3893,6 +4014,7 @@ int __init cgroup_init_early(void)
+ 	INIT_LIST_HEAD(&init_css_set.cgrp_links);
+ 	INIT_LIST_HEAD(&init_css_set.tasks);
+ 	INIT_LIST_HEAD(&init_css_set.mg_tasks);
++	INIT_LIST_HEAD(&init_css_set.mg_preload_node);
+ 	INIT_LIST_HEAD(&init_css_set.mg_node);
+ 	INIT_HLIST_NODE(&init_css_set.hlist);
+ 	css_set_count = 1;
+-- 
+1.8.5.3
 
-This patchset contains the following five patches.
-
- 0001-cgroup-add-css_set-mg_tasks.patch
- 0002-cgroup-use-css_set-mg_tasks-to-track-target-tasks-du.patch
- 0003-cgroup-separate-out-cset_group_from_root-from-task_c.patch
- 0004-cgroup-split-process-task-migration-into-four-steps.patch
- 0005-cgroup-update-cgroup_transfer_tasks-to-either-succee.patch
-
-0001-0002 update migration path so that it uses task->cg_list for
-keeping track of migration targets.
-
-0003-0004 split migration into multiple steps so that preparation
-which may fail can be done up-front.
-
-0005 updates cgroup_transfer_tasks() to use multi-step migration to
-guarantee all-or-nothing behavior as long as ->can_attach() doesn't
-fail.
-
-This patch is on top of
-
-  cgroup/for-3.15 f7cef064aa01 ("Merge branch 'driver-core-next' into cgroup/for-3.15")
-+ [1] [PATCHSET v2 cgroup/for-3.15] cgroup: convert to kernfs
-+ [2] [PATCHSET v2 cgroup/for-3.15] cgroup: cleanups after kernfs conversion
-+ [3] [PATCHSET cgroup/for-3.15] cgroup: more cleanups
-
-and also available in the following git branch.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-migration-update
-
-diffstat follows.
-
- include/linux/cgroup.h |   25 ++
- kernel/cgroup.c        |  510 ++++++++++++++++++++++++++++++++-----------------
- 2 files changed, 363 insertions(+), 172 deletions(-)
-
-Thanks.
-
---
-tejun
-
-[1] http://lkml.kernel.org/g/1391876127-7134-1-git-send-email-tj@kernel.org
-[2] http://lkml.kernel.org/g/1391877509-10855-1-git-send-email-tj@kernel.org
-[3] http://lkml.kernel.org/g/1391953964-22088-1-git-send-email-tj@kernel.org
