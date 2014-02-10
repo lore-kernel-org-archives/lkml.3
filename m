@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755021AbaBJUAd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 15:00:33 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34974 "EHLO
+	id S1754111AbaBJTqW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 14:46:22 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34929 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752260AbaBJTqb (ORCPT
+	with ESMTP id S1753992AbaBJTqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:46:31 -0500
+	Mon, 10 Feb 2014 14:46:13 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Lee Jones <lee.jones@linaro.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 079/124] mfd: max77686: Fix regmap resource leak on driver remove
-Date: Mon, 10 Feb 2014 11:40:19 -0800
-Message-Id: <1392061264-28124-80-git-send-email-kamal@canonical.com>
+Cc: Alex Deucher <alexander.deucher@amd.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 075/124] drm/radeon: disable ss on DP for DCE3.x
+Date: Mon, 10 Feb 2014 11:40:15 -0800
+Message-Id: <1392061264-28124-76-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
 References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
@@ -27,37 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 74142ffc0b52cfe6f9d2f6f34a5f3eedbfe3ce51 upstream.
+commit d8e24525094200601236fa64a54cf73e3d682f2e upstream.
 
-The regmap used by max77686 MFD driver was not freed with regmap_exit()
-on driver exit. This lead to leak of resources.
+Seems to cause problems with certain DP monitors.
 
-Replace regmap_init_i2c() call in driver probe with initialization of
-managed register map so the regmap will be properly freed by the device
-management code.
+Bug:
+https://bugs.freedesktop.org/show_bug.cgi?id=40699
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/mfd/max77686.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/atombios_crtc.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
-index 4d73963..5b6f118 100644
---- a/drivers/mfd/max77686.c
-+++ b/drivers/mfd/max77686.c
-@@ -102,7 +102,7 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
- 	max77686->irq_gpio = pdata->irq_gpio;
- 	max77686->irq = i2c->irq;
- 
--	max77686->regmap = regmap_init_i2c(i2c, &max77686_regmap_config);
-+	max77686->regmap = devm_regmap_init_i2c(i2c, &max77686_regmap_config);
- 	if (IS_ERR(max77686->regmap)) {
- 		ret = PTR_ERR(max77686->regmap);
- 		dev_err(max77686->dev, "Failed to allocate register map: %d\n",
+diff --git a/drivers/gpu/drm/radeon/atombios_crtc.c b/drivers/gpu/drm/radeon/atombios_crtc.c
+index ef32bf6..b997e79 100644
+--- a/drivers/gpu/drm/radeon/atombios_crtc.c
++++ b/drivers/gpu/drm/radeon/atombios_crtc.c
+@@ -938,11 +938,14 @@ static bool atombios_crtc_prepare_pll(struct drm_crtc *crtc, struct drm_display_
+ 							radeon_atombios_get_ppll_ss_info(rdev,
+ 											 &radeon_crtc->ss,
+ 											 ATOM_DP_SS_ID1);
+-				} else
++				} else {
+ 					radeon_crtc->ss_enabled =
+ 						radeon_atombios_get_ppll_ss_info(rdev,
+ 										 &radeon_crtc->ss,
+ 										 ATOM_DP_SS_ID1);
++				}
++				/* disable spread spectrum on DCE3 DP */
++				radeon_crtc->ss_enabled = false;
+ 			}
+ 			break;
+ 		case ATOM_ENCODER_MODE_LVDS:
 -- 
 1.8.3.2
 
