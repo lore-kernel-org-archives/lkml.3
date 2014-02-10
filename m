@@ -1,178 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753600AbaBJSCx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 13:02:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22355 "EHLO mx1.redhat.com"
+	id S1753629AbaBJSC4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 13:02:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53360 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753184AbaBJR7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753180AbaBJR7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 10 Feb 2014 12:59:07 -0500
 From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
         Jiri Kosina <jkosina@suse.cz>, David Herrmann <dh.herrmann@gmail.com>,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 04/14] HID: i2c-hid: implement ll_driver transport-layer callbacks
-Date: Mon, 10 Feb 2014 12:58:49 -0500
-Message-Id: <1392055139-19631-5-git-send-email-benjamin.tissoires@redhat.com>
+Subject: [PATCH 03/14] HID: core: implement generic .request()
+Date: Mon, 10 Feb 2014 12:58:48 -0500
+Message-Id: <1392055139-19631-4-git-send-email-benjamin.tissoires@redhat.com>
 In-Reply-To: <1392055139-19631-1-git-send-email-benjamin.tissoires@redhat.com>
 References: <1392055139-19631-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add output_report and raw_request to i2c-hid.
-The current implementation of i2c_hid_output_raw_report decides
-by itself if it should use a direct send of the output report
-or use the data register (SET_REPORT). Split that by reimplement
-the logic in __i2c_hid_output_raw_report() which will be dropped
-soon.
+.request() can be emulated through .raw_request()
+we can implement this emulation in hid-core, and make .request
+not mandatory for transport layer drivers.
 
 Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 ---
- drivers/hid/i2c-hid/i2c-hid.c | 69 +++++++++++++++++++++++++++++++++++++------
- 1 file changed, 60 insertions(+), 9 deletions(-)
+ drivers/hid/hid-core.c | 45 ++++++++++++++++++++++++++++++++++++++++++++-
+ include/linux/hid.h    |  5 ++++-
+ 2 files changed, 48 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
-index f57de7f..07a054a 100644
---- a/drivers/hid/i2c-hid/i2c-hid.c
-+++ b/drivers/hid/i2c-hid/i2c-hid.c
-@@ -257,12 +257,21 @@ static int i2c_hid_get_report(struct i2c_client *client, u8 reportType,
- 	return 0;
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index 18fe49b..f36778a 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1248,6 +1248,11 @@ void hid_output_report(struct hid_report *report, __u8 *data)
  }
+ EXPORT_SYMBOL_GPL(hid_output_report);
  
--static int i2c_hid_set_report(struct i2c_client *client, u8 reportType,
--		u8 reportID, unsigned char *buf, size_t data_len)
-+/**
-+ * i2c_hid_set_or_send_report: forward an incoming report to the device
-+ * @client: the i2c_client of the device
-+ * @reportType: 0x03 for HID_FEATURE_REPORT ; 0x02 for HID_OUTPUT_REPORT
-+ * @reportID: the report ID
-+ * @buf: the actual data to transfer, without the report ID
-+ * @len: size of buf
-+ * @use_data: true: use SET_REPORT HID command, false: send plain OUTPUT report
-+ */
-+static int i2c_hid_set_or_send_report(struct i2c_client *client, u8 reportType,
-+		u8 reportID, unsigned char *buf, size_t data_len, bool use_data)
- {
- 	struct i2c_hid *ihid = i2c_get_clientdata(client);
- 	u8 *args = ihid->argsbuf;
--	const struct i2c_hid_cmd * hidcmd = &hid_set_report_cmd;
-+	const struct i2c_hid_cmd *hidcmd;
- 	int ret;
- 	u16 dataRegister = le16_to_cpu(ihid->hdesc.wDataRegister);
- 	u16 outputRegister = le16_to_cpu(ihid->hdesc.wOutputRegister);
-@@ -279,6 +288,9 @@ static int i2c_hid_set_report(struct i2c_client *client, u8 reportType,
- 
- 	i2c_hid_dbg(ihid, "%s\n", __func__);
- 
-+	if (!use_data && maxOutputLength == 0)
-+		return -ENOSYS;
++static int hid_report_len(struct hid_report *report)
++{
++	return ((report->size - 1) >> 3) + 1 + (report->id > 0) + 7;
++}
 +
- 	if (reportID >= 0x0F) {
- 		args[index++] = reportID;
- 		reportID = 0x0F;
-@@ -288,9 +300,10 @@ static int i2c_hid_set_report(struct i2c_client *client, u8 reportType,
- 	 * use the data register for feature reports or if the device does not
- 	 * support the output register
+ /*
+  * Allocator for buffer that is going to be passed to hid_output_report()
+  */
+@@ -1258,7 +1263,7 @@ u8 *hid_alloc_report_buf(struct hid_report *report, gfp_t flags)
+ 	 * of implement() working on 8 byte chunks
  	 */
--	if (reportType == 0x03 || maxOutputLength == 0) {
-+	if (use_data) {
- 		args[index++] = dataRegister & 0xFF;
- 		args[index++] = dataRegister >> 8;
-+		hidcmd = &hid_set_report_cmd;
- 	} else {
- 		args[index++] = outputRegister & 0xFF;
- 		args[index++] = outputRegister >> 8;
-@@ -559,7 +572,7 @@ static int i2c_hid_get_raw_report(struct hid_device *hid,
+ 
+-	int len = ((report->size - 1) >> 3) + 1 + (report->id > 0) + 7;
++	int len = hid_report_len(report);
+ 
+ 	return kmalloc(len, flags);
+ }
+@@ -1314,6 +1319,44 @@ static struct hid_report *hid_get_report(struct hid_report_enum *report_enum,
+ 	return report;
  }
  
- static int i2c_hid_output_raw_report(struct hid_device *hid, __u8 *buf,
--		size_t count, unsigned char report_type)
-+		size_t count, unsigned char report_type, bool use_data)
- {
- 	struct i2c_client *client = hid->driver_data;
- 	int report_id = buf[0];
-@@ -573,9 +586,9 @@ static int i2c_hid_output_raw_report(struct hid_device *hid, __u8 *buf,
- 		count--;
- 	}
- 
--	ret = i2c_hid_set_report(client,
-+	ret = i2c_hid_set_or_send_report(client,
- 				report_type == HID_FEATURE_REPORT ? 0x03 : 0x02,
--				report_id, buf, count);
-+				report_id, buf, count, use_data);
- 
- 	if (report_id && ret >= 0)
- 		ret++; /* add report_id to the number of transfered bytes */
-@@ -583,6 +596,42 @@ static int i2c_hid_output_raw_report(struct hid_device *hid, __u8 *buf,
- 	return ret;
- }
- 
-+static int __i2c_hid_output_raw_report(struct hid_device *hid, __u8 *buf,
-+		size_t count, unsigned char report_type)
++/*
++ * Implement a generic .request() callback, using .raw_request()
++ * DO NOT USE in hid drivers directly, but through hid_hw_request instead.
++ */
++void __hid_request(struct hid_device *hid, struct hid_report *report,
++		int reqtype)
 +{
-+	struct i2c_client *client = hid->driver_data;
-+	struct i2c_hid *ihid = i2c_get_clientdata(client);
-+	bool data = true; /* SET_REPORT */
++	char *buf;
++	int ret;
++	int len;
 +
-+	if (report_type == HID_OUTPUT_REPORT)
-+		data = le16_to_cpu(ihid->hdesc.wMaxOutputLength) == 0;
++	if (!hid->ll_driver->raw_request)
++		return;
 +
-+	return i2c_hid_output_raw_report(hid, buf, count, report_type, data);
-+}
++	buf = hid_alloc_report_buf(report, GFP_KERNEL);
++	if (!buf)
++		return;
 +
-+static int i2c_hid_output_report(struct hid_device *hid, __u8 *buf,
-+		size_t count)
-+{
-+	return i2c_hid_output_raw_report(hid, buf, count, HID_OUTPUT_REPORT,
-+			false);
-+}
++	len = hid_report_len(report);
 +
-+static int i2c_hid_raw_request(struct hid_device *hid, unsigned char reportnum,
-+			       __u8 *buf, size_t len, unsigned char rtype,
-+			       int reqtype)
-+{
-+	switch (reqtype) {
-+	case HID_REQ_GET_REPORT:
-+		return i2c_hid_get_raw_report(hid, reportnum, buf, len, rtype);
-+	case HID_REQ_SET_REPORT:
-+		if (buf[0] != reportnum)
-+			return -EINVAL;
-+		return i2c_hid_output_raw_report(hid, buf, len, rtype, true);
-+	default:
-+		return -EIO;
++	if (reqtype == HID_REQ_SET_REPORT)
++		hid_output_report(report, buf);
++
++	ret = hid->ll_driver->raw_request(hid, report->id, buf, len,
++					  report->type, reqtype);
++	if (ret < 0) {
++		dbg_hid("unable to complete request: %d\n", ret);
++		goto out;
 +	}
-+}
 +
- static void i2c_hid_request(struct hid_device *hid, struct hid_report *rep,
- 		int reqtype)
++	if (reqtype == HID_REQ_GET_REPORT)
++		hid_input_report(hid, report->type, buf, ret, 0);
++
++out:
++	kfree(buf);
++}
++EXPORT_SYMBOL_GPL(__hid_request);
++
+ int hid_report_raw_event(struct hid_device *hid, int type, u8 *data, int size,
+ 		int interrupt)
  {
-@@ -606,7 +655,7 @@ static void i2c_hid_request(struct hid_device *hid, struct hid_report *rep,
- 		break;
- 	case HID_REQ_SET_REPORT:
- 		hid_output_report(rep, buf);
--		i2c_hid_output_raw_report(hid, buf, len, rep->type);
-+		i2c_hid_output_raw_report(hid, buf, len, rep->type, true);
- 		break;
- 	}
+diff --git a/include/linux/hid.h b/include/linux/hid.h
+index a837ede..09fbbd7 100644
+--- a/include/linux/hid.h
++++ b/include/linux/hid.h
+@@ -753,6 +753,7 @@ struct hid_field *hidinput_get_led_field(struct hid_device *hid);
+ unsigned int hidinput_count_leds(struct hid_device *hid);
+ __s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code);
+ void hid_output_report(struct hid_report *report, __u8 *data);
++void __hid_request(struct hid_device *hid, struct hid_report *rep, int reqtype);
+ u8 *hid_alloc_report_buf(struct hid_report *report, gfp_t flags);
+ struct hid_device *hid_allocate_device(void);
+ struct hid_report *hid_register_report(struct hid_device *device, unsigned type, unsigned id);
+@@ -965,7 +966,9 @@ static inline void hid_hw_request(struct hid_device *hdev,
+ 				  struct hid_report *report, int reqtype)
+ {
+ 	if (hdev->ll_driver->request)
+-		hdev->ll_driver->request(hdev, report, reqtype);
++		return hdev->ll_driver->request(hdev, report, reqtype);
++
++	__hid_request(hdev, report, reqtype);
+ }
  
-@@ -769,6 +818,8 @@ static struct hid_ll_driver i2c_hid_ll_driver = {
- 	.close = i2c_hid_close,
- 	.power = i2c_hid_power,
- 	.request = i2c_hid_request,
-+	.output_report = i2c_hid_output_report,
-+	.raw_request = i2c_hid_raw_request,
- };
- 
- static int i2c_hid_init_irq(struct i2c_client *client)
-@@ -1003,7 +1054,7 @@ static int i2c_hid_probe(struct i2c_client *client,
- 
- 	hid->driver_data = client;
- 	hid->ll_driver = &i2c_hid_ll_driver;
--	hid->hid_output_raw_report = i2c_hid_output_raw_report;
-+	hid->hid_output_raw_report = __i2c_hid_output_raw_report;
- 	hid->dev.parent = &client->dev;
- 	ACPI_COMPANION_SET(&hid->dev, ACPI_COMPANION(&client->dev));
- 	hid->bus = BUS_I2C;
+ /**
 -- 
 1.8.3.1
 
