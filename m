@@ -1,83 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752423AbaBJQgz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 11:36:55 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40147 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751770AbaBJQgv (ORCPT
+	id S1752765AbaBJQhB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 11:37:01 -0500
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:48611 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752540AbaBJQg5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 11:36:51 -0500
-Date: Mon, 10 Feb 2014 16:36:22 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Richard Weinberger <richard@nod.at>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Sangbeom Kim <sbkim73@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20140210163621.GA13533@sirena.org.uk>
-References: <1391971686-9517-1-git-send-email-richard@nod.at>
- <1391971686-9517-15-git-send-email-richard@nod.at>
- <20140210114154.GQ1757@sirena.org.uk>
- <1392039072.3585.15.camel@x220>
- <20140210141255.GI1757@sirena.org.uk>
- <1392046242.3585.41.camel@x220>
+	Mon, 10 Feb 2014 11:36:57 -0500
+Message-ID: <52F8FFF6.80400@st.com>
+Date: Mon, 10 Feb 2014 17:36:06 +0100
+From: Fabrice Gasnier <fabrice.gasnier@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rwEMma7ioTxnRzrJ"
-Content-Disposition: inline
-In-Reply-To: <1392046242.3585.41.camel@x220>
-X-Cookie: My LESLIE GORE record is BROKEN ...
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 14/28] Remove MACH_SMDKC210
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Dave Martin <Dave.Martin@arm.com>
+Cc: <jonathan.austin@arm.com>, <nico@linaro.org>, <marc.zyngier@arm.com>,
+        <catalin.marinas@arm.com>, <will.deacon@arm.com>,
+        <linux-kernel@vger.kernel.org>, <vgupta@synopsys.com>,
+        <ben.dooks@codethink.co.uk>, <u.kleine-koenig@pengutronix.de>,
+        <sboyd@codeaurora.org>, <linux-arm-kernel@lists.infradead.org>,
+        <maxime.coquelin@st.com>
+Subject: Re: [RFC PATCH] ARM: Add imprecise abort enable/disable macro
+References: <1391789955-26927-1-git-send-email-fabrice.gasnier@st.com> <1391789955-26927-2-git-send-email-fabrice.gasnier@st.com> <20140210141634.GA2794@e103592.cambridge.arm.com> <52F8E5E2.30805@st.com> <20140210151247.GD2794@e103592.cambridge.arm.com> <20140210152452.GA26684@n2100.arm.linux.org.uk>
+In-Reply-To: <20140210152452.GA26684@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.201.23.81]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---rwEMma7ioTxnRzrJ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 02/10/2014 04:24 PM, Russell King - ARM Linux wrote:
+> On Mon, Feb 10, 2014 at 03:12:47PM +0000, Dave Martin wrote:
+>> Firstly, blindly adding 4 to PC is obviouly not right, partly because we
+>> might be running an unrelated thread by the time the abort fires, and
+>> also because the affected instruction might not be 4 bytes in size in a
+>> Thumb kernel.
+> Exactly.  We ended up on some platforms having special accessors for PCI
+> where we included a number of 'mov r0, r0' instructions after the accessor
+> so we could properly cope with them - but this required knowledge that
+> we were going to only receive an imprecise abort from these accessors
+> and only for a few cycles after the instruction.
+>
+> However, that's not true with modern architectures.  The point they're
+> received will _not_ be the load/store which resulted in the abort, and
+> in the case of a write, they could be many hundreds of cycles later,
+> especially if the write has been buffered.
+What about putting a memory barrier after a load/store ?
+CPU should wait for the operation to complete right ?
+>
+> So adding four to the PC is definitely a very /bad/ thing to do.
+>
 
-On Mon, Feb 10, 2014 at 04:30:42PM +0100, Paul Bolle wrote:
-> On Mon, 2014-02-10 at 14:12 +0000, Mark Brown wrote:
-
-> > Yes, that's correct.  Now, like I say think about what the symbol was
-> > there for in the first place.
-
-> So, next step: the Kconfig symbols MACH_SMDKV310 and MACH_SMDKC210 were
-> removed in commit 383ffda2fa ("ARM: EXYNOS: no more support non-DT for
-> EXYNOS SoCs"). That commit was part of v3.11. Correct?
-
-Indeed, so we can see that these platforms were converted to use DT and
-the symbols were removed as a result.  This means that a good fix here
-is to ensure that the driver can be used with DT platforms.
-
---rwEMma7ioTxnRzrJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS+QACAAoJELSic+t+oim9gcMP/26leZ6LFzKPlv9jOvbe82Li
-QVHEq7Gt2FfIDYJjkiXYy7UK6HKB5xZ1PUqxVJy2ExKqEGz2SwkfYgN8uLs16R8z
-7AHO86PluSecrq1P3hzLxQ2BRia45eoiSpujCy3oYN13RMiHUq1MrrUp/LlttJnT
-Y++oA0oxoeJAPL+iQYJWDuRZGmduoC3ibdtXOs51eaYBCijhqs9u4X6pTZo0VoGE
-V3gu2Idya9ocyQ28KipNvpG+cFjaYna8evj8MGb7vdCUHsQxg2eZZWBsvudpBo94
-jYzjMekU8sQN+QVbFTt+MTsxd/wndqCJXMuiwHdQ3SvzusmeOHcSDcOmsXfyIy6C
-hZFE4pNkMnekMM8ZjPTy073lFyky9GXg0jHn/amTE0e3ouGEPAaZgHY8Lv6FLgoz
-3bS7ZFV3phh8Fjr/DrX434hiQC8TLTkdWbmaOTJJAK1lQbeENMVX804UfUttkCE4
-QZK2+har0qUOzgTl26hJz2osPAWZSE7qo3UmdD9LWqGMx1DQ1KVDDFj5hCUoXRkz
-LjYtn16rFYTCTSyao/Mp4eg5WGEawrBWYKXK7PZWDDH/89OAsnwuxi7HI9cClnng
-yvhRG2rMQYUvtw0xMmTJWbTYJV0nowzA/x8D4EKo9obNu0ZBmrdMY5lTFNFFvWCZ
-WWCorlRxgZllBsQetG3W
-=Xxmg
------END PGP SIGNATURE-----
-
---rwEMma7ioTxnRzrJ--
