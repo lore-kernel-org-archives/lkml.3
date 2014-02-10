@@ -1,68 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752684AbaBJR44 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 12:56:56 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:53504 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752157AbaBJR4z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 12:56:55 -0500
-Date: Mon, 10 Feb 2014 17:56:50 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
-Cc: linux-kernel@vger.kernel.org, Vegard Nossum <vegardno@ifi.uio.no>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: kmemleak or crc32_le  bug?
-Message-ID: <20140210175650.GA25309@arm.com>
-References: <52F3B2A1.4080702@itwm.fraunhofer.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52F3B2A1.4080702@itwm.fraunhofer.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752931AbaBJR5v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 12:57:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17002 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752180AbaBJR5u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 12:57:50 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: acme@ghostprotocols.net
+Cc: LKML <linux-kernel@vger.kernel.org>, jolsa@redhat.com, jmario@redhat.com,
+        fowles@inreach.com, eranian@google.com,
+        Don Zickus <dzickus@redhat.com>
+Subject: [PATCH 07/21] perf, callchain: Add generic callchain print handler for stdio
+Date: Mon, 10 Feb 2014 12:29:02 -0500
+Message-Id: <1392053356-23024-8-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1392053356-23024-1-git-send-email-dzickus@redhat.com>
+References: <1392053356-23024-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 06, 2014 at 05:04:49PM +0100, Bernd Schubert wrote:
-> I'm frequently getting 
-> 
-> UG: unable to handle kernel paging request at ffff880f87550dc0
-> IP: [<ffffffff813016d0>] crc32_le+0x30/0x110
-> 
-> called from kmemleak, see bottom of the message.
-...
-> With the "Cannot allocate a kmemleak_object structure" messages, 
+My initial implementation for rbtree sorting in the c2c tool does not use the
+normal history elements.  As a result, adding callchain support (which is
+deeply integrated with history elements) is more challenging when trying to
+display its output.
 
-Just curious, is the free memory low when this happens?
+To make things simpler for myself (and to avoid rewriting the same code into
+the c2c tool), I provided a generic interface that takes an unsorted callchain
+list along with its total and relative sample size, and sorts it locally based
+on period and calls the appropriate graph function (passing the correct sample
+size).
 
-> somehow looks like object is not proper initialized, but update_checksum()
-> checks for that. Hmm, I'm not sure about kmemcheck_shadow_lookup(), 
-> especially about
-> 
-> > 	if (!virt_addr_valid(address))
-> > 		return NULL;
-> 
-> So is the test 
-> 
-> > 	shadow = kmemcheck_shadow_lookup(addr);
-> > 	if (!shadow)
-> > 		return true;
-> 
-> right here? Shouldn't that be 'return false'?
+This makes things easier because the c2c tool can be dumber and just collect
+callchains and not worry about the magic needed to sort and display them
+correctly.
 
-Are you using kmemcheck and kmemleak together?
+Unfortunately, this is assuming a stdio output only and does not use the other
+gui type outputs.
 
-I don't think update_checksum() is called on the object being allocated
-but possibly on an object being freed when kmemleak_scan() is running.
-This is generally a safe operation because of the object locks in
-kmemleak_scan() but when an error condition just occurred (like kmemleak
-not being able to allocate memory), kmemleak gets disabled and
-kmemleak_free() no longer passes the information down to update the
-object's flags. At this point, the running kmemleak_scan() potentially
-reads unmmapped objects.
+Regardless, this patch provides useful info for the tool right now.  Tweaks and
+recommendations for a better approach are welcomed. :-)
 
-I need to think a bit more about this. Thanks for reporting.
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+---
+ tools/perf/ui/stdio/hist.c | 37 +++++++++++++++++++++++++++++++++++++
+ tools/perf/util/hist.h     |  4 ++++
+ 2 files changed, 41 insertions(+)
 
+diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
+index 831fbb7..0a40f59 100644
+--- a/tools/perf/ui/stdio/hist.c
++++ b/tools/perf/ui/stdio/hist.c
+@@ -536,3 +536,40 @@ size_t events_stats__fprintf(struct events_stats *stats, FILE *fp)
+ 
+ 	return ret;
+ }
++
++size_t generic_entry_callchain__fprintf(struct callchain_root *unsorted_callchain,
++					u64 total_samples, u64 relative_samples,
++					int left_margin, FILE *fp)
++{
++	struct rb_root sorted_chain;
++	u64 min_callchain_hits;
++
++	if (!symbol_conf.use_callchain)
++		return 0;
++
++	min_callchain_hits = total_samples * (callchain_param.min_percent / 100);
++
++	callchain_param.sort(&sorted_chain, unsorted_callchain,
++				min_callchain_hits, &callchain_param);
++
++	switch (callchain_param.mode) {
++	case CHAIN_GRAPH_REL:
++		return callchain__fprintf_graph(fp, &sorted_chain, relative_samples,
++						left_margin);
++		break;
++	case CHAIN_GRAPH_ABS:
++		return callchain__fprintf_graph(fp, &sorted_chain, total_samples,
++						left_margin);
++		break;
++	case CHAIN_FLAT:
++		return callchain__fprintf_flat(fp, &sorted_chain, total_samples);
++		break;
++	case CHAIN_NONE:
++		break;
++	default:
++		pr_err("Bad callchain mode\n");
++	}
++
++	return 0;
++}
++
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index a59743f..4fe5de5 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -111,6 +111,10 @@ size_t events_stats__fprintf(struct events_stats *stats, FILE *fp);
+ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
+ 		      int max_cols, float min_pcnt, FILE *fp);
+ 
++size_t generic_entry_callchain__fprintf(struct callchain_root *unsorted_callchain,
++					u64 total_samples, u64 relative_samples,
++					int left_margin, FILE *fp);
++
+ void hists__filter_by_dso(struct hists *hists);
+ void hists__filter_by_thread(struct hists *hists);
+ void hists__filter_by_symbol(struct hists *hists);
 -- 
-Catalin
+1.7.11.7
+
