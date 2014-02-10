@@ -1,104 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753749AbaBJNdi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 08:33:38 -0500
-Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:56303 "EHLO
-	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753729AbaBJNdf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 08:33:35 -0500
-Message-ID: <52F8D503.1080600@st.com>
-Date: Mon, 10 Feb 2014 14:32:51 +0100
-From: Fabrice Gasnier <fabrice.gasnier@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1752252AbaBJNhL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 08:37:11 -0500
+Received: from mga11.intel.com ([192.55.52.93]:1273 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753196AbaBJNdC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 08:33:02 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,818,1384329600"; 
+   d="scan'208";a="472753279"
+Date: Mon, 10 Feb 2014 15:32:57 +0200
+From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
+To: sagar.a.kamble@intel.com
+Cc: intel-gfx@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] [PATCH v5 11/11] drm/i915: Calling rotate and
+ inverse rotate transformations after clipping
+Message-ID: <20140210133257.GK3891@intel.com>
+References: <1392017478-4945-1-git-send-email-sagar.a.kamble@intel.com>
+ <1392017478-4945-12-git-send-email-sagar.a.kamble@intel.com>
 MIME-Version: 1.0
-To: Ben Dooks <ben.dooks@codethink.co.uk>
-Cc: Will Deacon <will.deacon@arm.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
-        Jonathan Austin <Jonathan.Austin@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "nico@linaro.org" <nico@linaro.org>,
-        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        "vgupta@synopsys.com" <vgupta@synopsys.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "maxime.coquelin@st.com" <maxime.coquelin@st.com>
-Subject: Re: [RFC PATCH] ARM: Add imprecise abort enable/disable macro
-References: <1391789955-26927-1-git-send-email-fabrice.gasnier@st.com> <1391789955-26927-2-git-send-email-fabrice.gasnier@st.com> <20140207170903.GT5976@mudshark.cambridge.arm.com> <52F892C8.80508@st.com> <52F89522.6030302@codethink.co.uk>
-In-Reply-To: <52F89522.6030302@codethink.co.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.201.23.81]
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1392017478-4945-12-git-send-email-sagar.a.kamble@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/10/2014 10:00 AM, Ben Dooks wrote:
-> On 10/02/14 08:50, Fabrice Gasnier wrote:
->> On 02/07/2014 06:09 PM, Will Deacon wrote:
->>> On Fri, Feb 07, 2014 at 04:19:15PM +0000, Fabrice GASNIER wrote:
->>>> This patch adds imprecise abort enable/disable macros.
->>>> It also enables imprecise aborts when starting kernel.
->>>>
->>>> Signed-off-by: Fabrice Gasnier <fabrice.gasnier@st.com>
->>>> ---
->>>>   arch/arm/include/asm/irqflags.h |   33
->>>> +++++++++++++++++++++++++++++++++
->>>>   arch/arm/kernel/smp.c           |    1 +
->>>>   arch/arm/kernel/traps.c         |    4 ++++
->>>>   3 files changed, 38 insertions(+)
->>>>
->>>> diff --git a/arch/arm/include/asm/irqflags.h
->>>> b/arch/arm/include/asm/irqflags.h
->>>> index 3b763d6..82e3834 100644
->>>> --- a/arch/arm/include/asm/irqflags.h
->>>> +++ b/arch/arm/include/asm/irqflags.h
->>>> @@ -51,6 +51,9 @@ static inline void arch_local_irq_disable(void)
->>>>   #define local_fiq_enable()  __asm__("cpsie f    @ __stf" : : :
->>>> "memory", "cc")
->>>>   #define local_fiq_disable() __asm__("cpsid f    @ __clf" : : :
->>>> "memory", "cc")
->>>> +
->>>> +#define local_abt_enable()  __asm__("cpsie a    @ __sta" : : :
->>>> "memory", "cc")
->>>> +#define local_abt_disable() __asm__("cpsid a    @ __cla" : : :
->>>> "memory", "cc")
->>>>   #else
->>>>   /*
->>>> @@ -130,6 +133,36 @@ static inline void arch_local_irq_disable(void)
->>>>       : "memory", "cc");                    \
->>>>       })
->>>> +/*
->>>> + * Enable Aborts
->>>> + */
->>>> +#define local_abt_enable()                    \
->>>> +    ({                            \
->>>> +        unsigned long temp;                \
->>>> +    __asm__ __volatile__(                    \
->>>> +    "mrs    %0, cpsr        @ sta\n"        \
->>>> +"    bic    %0, %0, %1\n"                    \
->>>> +"    msr    cpsr_c, %0"                    \
->>>> +    : "=r" (temp)                        \
->>>> +    : "r" (PSR_A_BIT)                    \
->>> Can you use "i" instead of a register for this constant?
->> Hi,
->>
->> Sure, I will change it in a future patch.
->>>
->>>> +    : "memory", "cc");                    \
->>> You don't need the "cc" clobber.
->> That surprises me: I think "orr" and "bic" instruction might change N
->> and Z bits, depending on the result.
->> So shouldn't "cc" be placed here ?
->> I also see that it is used in local_fiq_enable/disable macros just
->> above, that are similar:
->
-> No, only if they have the S flag set on the instruction (ORRS,BICS)
->
->
-Thank you for pointing that out!
+On Mon, Feb 10, 2014 at 01:01:18PM +0530, sagar.a.kamble@intel.com wrote:
+> From: Sagar Kamble <sagar.a.kamble@intel.com>
+> 
+> With clipped sprites these transformations are not working. these
+> functions transform complete sprite irrespective of clipping present.
+> This leads to invisible portion of sprite show up when rotate 180 if
+> it was out of visible area before.
+> 
+> v4: Moved rotate transform for source rectangle after clipping.
+> Added rotate and inverse rotate transform for destination rect.
 
+Still NAK.
 
+I just pushed rotation support to my glplane test app [1], and with
+with that my rotated clipping code works exactly as intended.
+
+[1] git://gitorious.org/vsyrjala/glplane.git
+
+> 
+> Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+> Cc: Jani Nikula <jani.nikula@linux.intel.com>
+> Cc: David Airlie <airlied@linux.ie>
+> Cc: dri-devel@lists.freedesktop.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: vijay.a.purushothaman@intel.com
+> Signed-off-by: Sagar Kamble <sagar.a.kamble@intel.com>
+> ---
+>  drivers/gpu/drm/i915/intel_sprite.c | 16 ++++++++++++----
+>  1 file changed, 12 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/i915/intel_sprite.c b/drivers/gpu/drm/i915/intel_sprite.c
+> index 62b9f84..799f6a9 100644
+> --- a/drivers/gpu/drm/i915/intel_sprite.c
+> +++ b/drivers/gpu/drm/i915/intel_sprite.c
+> @@ -769,9 +769,6 @@ intel_update_plane(struct drm_plane *plane, struct drm_crtc *crtc,
+>  	max_scale = intel_plane->max_downscale << 16;
+>  	min_scale = intel_plane->can_scale ? 1 : (1 << 16);
+>  
+> -	drm_rect_rotate(&src, fb->width << 16, fb->height << 16,
+> -			intel_plane->rotation);
+> -
+>  	hscale = drm_rect_calc_hscale_relaxed(&src, &dst, min_scale, max_scale);
+>  	BUG_ON(hscale < 0);
+>  
+> @@ -785,6 +782,13 @@ intel_update_plane(struct drm_plane *plane, struct drm_crtc *crtc,
+>  	crtc_w = drm_rect_width(&dst);
+>  	crtc_h = drm_rect_height(&dst);
+>  
+> +	drm_rect_rotate(&src, fb->width << 16, fb->height << 16,
+> +				intel_plane->rotation);
+> +
+> +	drm_rect_rotate(&dst, intel_crtc->config.pipe_src_w,
+> +				intel_crtc->config.pipe_src_h,
+> +				intel_plane->rotation);
+> +
+>  	if (visible) {
+>  		/* check again in case clipping clamped the results */
+>  		hscale = drm_rect_calc_hscale(&src, &dst, min_scale, max_scale);
+> @@ -811,7 +815,11 @@ intel_update_plane(struct drm_plane *plane, struct drm_crtc *crtc,
+>  				     drm_rect_height(&dst) * vscale - drm_rect_height(&src));
+>  
+>  		drm_rect_rotate_inv(&src, fb->width << 16, fb->height << 16,
+> -				    intel_plane->rotation);
+> +					intel_plane->rotation);
+> +
+> +		drm_rect_rotate_inv(&dst, intel_crtc->config.pipe_src_w,
+> +					intel_crtc->config.pipe_src_h,
+> +					intel_plane->rotation);
+>  
+>  		/* sanity check to make sure the src viewport wasn't enlarged */
+>  		WARN_ON(src.x1 < (int) src_x ||
+> -- 
+> 1.8.5
+> 
+> _______________________________________________
+> Intel-gfx mailing list
+> Intel-gfx@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/intel-gfx
+
+-- 
+Ville Syrjälä
+Intel OTC
