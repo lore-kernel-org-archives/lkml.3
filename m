@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753169AbaBJSpT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 13:45:19 -0500
-Received: from hofr.at ([212.69.189.236]:46225 "EHLO mail.hofr.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752295AbaBJSpP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 13:45:15 -0500
-Date: Mon, 10 Feb 2014 19:45:14 +0100
-From: Nicholas Mc Guire <der.herr@hofr.at>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-rt-users@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Carsten Emde <C.Emde@osadl.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Andreas Platschek <platschek@ict.tuwien.ac.at>
-Subject: Re: allow preemption in check_task_state
-Message-ID: <20140210184514.GA13362@opentech.at>
-References: <20140210153856.GD20017@opentech.at> <20140210111106.67438d1e@gandalf.local.home> <20140210171712.GA17517@opentech.at> <20140210173833.GQ9987@twins.programming.kicks-ass.net> <20140210181203.GA17914@opentech.at> <20140210181608.GE27965@twins.programming.kicks-ass.net>
+	id S1753216AbaBJSqW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 13:46:22 -0500
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:47718 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752660AbaBJSqT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 13:46:19 -0500
+Date: Mon, 10 Feb 2014 19:46:05 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: Stefan =?iso-8859-1?Q?S=F8rensen?= 
+	<stefan.sorensen@spectralink.com>
+Cc: grant.likely@linaro.org, robh+dt@kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH] dp83640: Get gpio and master/slave configuration from DT
+Message-ID: <20140210184604.GA4296@netboy>
+References: <1392037240-30913-1-git-send-email-stefan.sorensen@spectralink.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20140210181608.GE27965@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1392037240-30913-1-git-send-email-stefan.sorensen@spectralink.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Feb 2014, Peter Zijlstra wrote:
+On Mon, Feb 10, 2014 at 02:00:40PM +0100, Stefan Sørensen wrote:
+> This patch removes the module parameters gpio_tab and chosen_phy in favour of
+> retrieving the configuration from DT through the properties
 
-> On Mon, Feb 10, 2014 at 07:12:03PM +0100, Nicholas Mc Guire wrote:
-> > On Mon, 10 Feb 2014, Peter Zijlstra wrote:
-> > 
-> > > On Mon, Feb 10, 2014 at 06:17:12PM +0100, Nicholas Mc Guire wrote:
-> > > > maybe I'm missing/missunderstanding something here but
-> > > > pi_unlock -> arch_spin_unlock is a full mb() 
-> > > 
-> > > Nope, arch_spin_unlock() on x86 is a single add[wb] without LOCK prefix.
-> > > 
-> > > The lock and unlock primitives are in general specified to have ACQUIRE
-> > > resp. RELEASE semantics.
-> > > 
-> > > See Documentation/memory-barriers.txt for far too much head-hurting
-> > > details.
-> > 
-> > I did check that - but from the code check it seems to me to be using a
-> > lock prefix in the fast __add() path and an explicit smp_add() in the slow
-> > path (arch/x86/include/asm/spinlock.h:arch_spin_unlock) the __add from 
-> > arch/x86/include/asm/cmpxchg.h does lock or am I missinterpreting this ?
-> > the other archs I believe were all doing explicit mb()/smp_mb() in the 
-> > arch_spin_unlock - will go check this again.
-> 
-> It uses UNLOCK_LOCK_PREFIX, which if you look carefully, is normally
-> always "". Only some 'broken' i386 chips require a LOCK there.
+Can we please keep the module parameters? I have two platforms with
+phyters neither of which will ever support DT, namely ixp and m68k,
+and I want to run recent kernels on them.
 
-thanks for the details - will go dig through this again - still 
-missing seme bits.
+Are module parameters even considered user ABI?
 
-the first patch proposal is taken care of I guess :)
+Even if not, still I want to retain the module params until there is
+an alternative for non-DT platforms.
 
-thx!
-hofrat
+> 	dp83640,slave
+> 	dp83640,calibrate-gpio
+> 	dp83640,perout-gpios
+> 	dp83640,extts-gpios
+> The configuration is now stored for each master clock device, allowing different 
+> gpio setups for each master.
+
+What do you mean by "each master"? Do you mean each individual PHY device
+or each group of PHYs on the same MDIO bus?
+
+Thanks,
+Richard
