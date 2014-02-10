@@ -1,74 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752594AbaBJMiH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 07:38:07 -0500
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:45736 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751851AbaBJMiE (ORCPT
+	id S1753038AbaBJMil (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 07:38:41 -0500
+Received: from mail-yk0-f170.google.com ([209.85.160.170]:52696 "EHLO
+	mail-yk0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752312AbaBJMii (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 07:38:04 -0500
-Date: Mon, 10 Feb 2014 13:37:58 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: David Airlie <airlied@linux.ie>, gnurou@gmail.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH] drm/ttm: declare 'struct device' in ttm_page_alloc.h
-Message-ID: <20140210123757.GF20143@ulmo.nvidia.com>
-References: <1391938998-4848-1-git-send-email-acourbot@nvidia.com>
+	Mon, 10 Feb 2014 07:38:38 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Y/WcH0a6A93yCHGr"
-Content-Disposition: inline
-In-Reply-To: <1391938998-4848-1-git-send-email-acourbot@nvidia.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <52F8C373.9060108@rempel-privat.de>
+References: <1391971686-9517-1-git-send-email-richard@nod.at>
+ <1391971686-9517-10-git-send-email-richard@nod.at> <52F7D480.1050106@hauke-m.de>
+ <52F7DF21.70207@nod.at> <CAHNKnsS7Mv4ZhBWZa53go9L9nZimJ7_FG5HFJ9C3kkGMAEz-mA@mail.gmail.com>
+ <52F8C373.9060108@rempel-privat.de>
+From: Sergey Ryazanov <ryazanov.s.a@gmail.com>
+Date: Mon, 10 Feb 2014 16:38:17 +0400
+Message-ID: <CAHNKnsQF5Hdf3JT91moPraRQzn4kMpdD2NSiJ7b30wQhS1W4MA@mail.gmail.com>
+Subject: Re: [PATCH 09/28] Remove ATHEROS_AR231X
+To: Oleksij Rempel <linux@rempel-privat.de>
+Cc: Richard Weinberger <richard@nod.at>, Jonathan Bither <jonbither@gmail.com>,
+        OpenWrt Development List <openwrt-devel@lists.openwrt.org>,
+        Hauke Mehrtens <hauke@hauke-m.de>, Jiri Slaby <jirislaby@gmail.com>,
+        Nick Kossifidis <mickflemm@gmail.com>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "open list:ATHEROS ATH5K WIR..." <linux-wireless@vger.kernel.org>,
+        "open list:ATHEROS ATH5K WIR..." <ath5k-devel@venema.h4ckr.net>,
+        open@hauke-m.de,
+        "list@hauke-m.de:NETWORKING DRIVERS" <netdev@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        "antonynpavlov@gmail.com" <antonynpavlov@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2014-02-10 16:17 GMT+04:00 Oleksij Rempel <linux@rempel-privat.de>:
+> Am 10.02.2014 13:05, schrieb Sergey Ryazanov:
+>> 2014-02-10 0:03 GMT+04:00 Richard Weinberger <richard@nod.at>:
+>>> Am 09.02.2014 20:18, schrieb Hauke Mehrtens:
+>>>> On 02/09/2014 07:47 PM, Richard Weinberger wrote:
+>>>>> The symbol is an orphan, get rid of it.
+>>>>>
+>>>>> Signed-off-by: Richard Weinberger <richard@nod.at>
+>>>>> ---
+>>>>>  drivers/net/wireless/ath/ath5k/Kconfig | 10 +++++-----
+>>>>>  drivers/net/wireless/ath/ath5k/ath5k.h | 28 ----------------------------
+>>>>>  drivers/net/wireless/ath/ath5k/base.c  | 14 --------------
+>>>>>  drivers/net/wireless/ath/ath5k/led.c   |  7 -------
+>>>>>  4 files changed, 5 insertions(+), 54 deletions(-)
+>>>>>
+>>>>
+>>>> This code is used in OpenWrt with an out of tree arch code for the
+>>>> Atheros 231x/531x SoC. [0] I do not think anyone is working on adding
+>>>> this code to mainline Linux kernel, because of lack of time/interest.
+>>>
+>>> Sorry, we don't maintain out of tree code.
+>>>
+>>
+>> Oleksij, Jonathan do you still working to make ar231x devices work
+>> with upstream, since your posts [1, 2]? Or may be someone from OpenWRT
+>> team would like to add upstream support?
+>>
+>> 1. https://lkml.org/lkml/2013/5/13/321
+>> 2. https://lkml.org/lkml/2013/5/13/358
+>>
+>
+> Hi,
+> my current target was to provide barebox and openocd support.
+> - ar2313 is already upstream on barebox.
+> - ar2315-2318 (barebox) awaiting review by Anthony Pavlov.
+> - openocd (EJTAG) support is ready and i'll push it ASUP.
+>
+WOW, Impressive.
 
---Y/WcH0a6A93yCHGr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> I hope Jonathan do kernel part. If not, i can provide some work, since i
+> have testing boards and expiriance on this hardware.
+>
+If you need, I can test kernel part, or even do some porting work. I
+have some AR231x based boards, e.g. Ubnt LS2 and NS2.
 
-On Sun, Feb 09, 2014 at 06:43:18PM +0900, Alexandre Courbot wrote:
-> Declare 'struct device' explicitly in ttm_page_alloc.h as this file
-> does not include any file declaring it. This removes the following
-> warning:
->=20
-> 	warning: 'struct device' declared inside parameter list
->=20
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> ---
-> This warning was visible when compiling Nouveau on -next today.
->=20
->  include/drm/ttm/ttm_page_alloc.h | 2 ++
->  1 file changed, 2 insertions(+)
-
-I don't think I've seen this on x86, but I've certainly encountered the
-same warning when building nouveau on ARM, so:
-
-Reviewed-by: Thierry Reding <treding@nvidia.com>
-
---Y/WcH0a6A93yCHGr
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS+MglAAoJEN0jrNd/PrOhJsEP/jyI0ghrwf8b1kM+dzSzhDKp
-WraYwCxiD1Ku+TA7u+JvP9Hl0x28RDnUnAfEyyEgJt1XzsmKsFiNpWUmdSPoN80z
-5QWpL28y5q1JPx2Aa8igy6WkLTbCBVXsg3g1rr7Rh54oz2N05u3WTHb+dF8NXRfm
-a/WC6/Tx0gPwCXx7Q23N1Mtyd5kjwCUjRgvI10iHm0GBZIiaMGtQVk+7Md7iQNDD
-jVzKT0EZvbT3mEl5x7/f/r0bDWoBQUTTOqCP9wVV7K+h+aWx6VTz85oEY28e98Uy
-BLsyI7CJe5jWbv3hgSlPsRlchd2lYC0JGf+UkCWYD3aUULsOXnoo0ibvT2Y9UxAv
-axZG+I6FM/lyJaTWdkODCAzSPiVJG7mNHWWClkO/CO25AGaziUeQbdWMB4zl6EiL
-C+ovdfACJUhraJ13tVWa69dgaBh+rmTcBgV/tfbOF07Gn8LE/tB0w4v9vDkbbkOY
-rUWcbjuPgNjTIW3vGM7e/2mlxh1W2suuTDRJhN/OxpkhKu6/1AFs68NpCc8ztitB
-sOKaWPI6giimAs1XlHf0WLzlOfbkMLuoCZrQAd6uQXXGJv0tvx+I49bqlW8XXiu+
-EJ44lNaMdUNWoUHZ6o/r9XKi8Rb05ok0yC7UbAFfNUSFqLSsfedxhVZUgHiJOIqb
-yti5DbYt/PBGqgcP1+Ns
-=ocaK
------END PGP SIGNATURE-----
-
---Y/WcH0a6A93yCHGr--
+-- 
+BR,
+Sergey
