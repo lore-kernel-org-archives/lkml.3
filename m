@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622AbaBJT2J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 14:28:09 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:53208 "EHLO comal.ext.ti.com"
+	id S1752805AbaBJT2g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 14:28:36 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:48805 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752380AbaBJT2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:28:07 -0500
-Message-ID: <52F9282B.5000702@ti.com>
-Date: Mon, 10 Feb 2014 13:27:39 -0600
-From: Suman Anna <s-anna@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752233AbaBJT2e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 14:28:34 -0500
+Date: Tue, 11 Feb 2014 00:57:47 +0530
+From: Gautham R Shenoy <ego@linux.vnet.ibm.com>
+To: Gautham R Shenoy <ego@linux.vnet.ibm.com>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, paulus@samba.org,
+        oleg@redhat.com, rusty@rustcorp.com.au, peterz@infradead.org,
+        tglx@linutronix.de, akpm@linux-foundation.org, mingo@kernel.org,
+        paulmck@linux.vnet.ibm.com, tj@kernel.org, walken@google.com,
+        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Subject: Re: [PATCH 26/51] x86, oprofile, nmi: Fix CPU hotplug callback
+ registration
+Message-ID: <20140210192747.GE3416@in.ibm.com>
+Reply-To: ego@linux.vnet.ibm.com
+References: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com>
+ <20140205220921.19080.94715.stgit@srivatsabhat.in.ibm.com>
+ <20140210190737.GD3416@in.ibm.com>
 MIME-Version: 1.0
-To: Ohad Ben-Cohen <ohad@wizery.com>, Mark Rutland <mark.rutland@arm.com>
-CC: Tony Lindgren <tony@atomide.com>, Kumar Gala <galak@codeaurora.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Suman Anna <s-anna@ti.com>
-Subject: Re: [PATCHv4 0/7] omap hwspinlock dt support
-References: <1389658764-39199-1-git-send-email-s-anna@ti.com>
-In-Reply-To: <1389658764-39199-1-git-send-email-s-anna@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140210190737.GD3416@in.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021019-0320-0000-0000-0000026D96F3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark,
-
-On 01/13/2014 06:19 PM, Suman Anna wrote:
+On Tue, Feb 11, 2014 at 12:37:37AM +0530, Gautham R Shenoy wrote:
 > Hi,
->
-> This is an updated series mainly addressing Mark Rutland's comments
-> about hwlock specifier being always one-cell. The series adds the
-> support for #hwlock-cells property and adds a simple default OF
-> translate function.
->
-> The DTS patches from previous series have already been merged, and
-> needs this property to be added. This is handled in a separate series
-> that only deals with OMAP hwspinlock DTS patches.
->
-> The series, along with the DTS patches, is tested on top of v3.13-rc8
-> plus Tero's v13 clock DT series and Tony's 3.14 staged branches. The
-> validation on OMAP5, DRA7, AM437 requires Tero's series with couple of
-> additional base patches for AM43xx. AM43xx functionality needs a hwmod
-> fix [1] for creating the associated omap_device as well.
->
+> 
+> On Thu, Feb 06, 2014 at 03:39:22AM +0530, Srivatsa S. Bhat wrote:
+> > Fix the oprofile code in x86 by using this latter form of callback
+> > registration. But retain the calls to get/put_online_cpus(), since they
+> > also protect the variables 'nmi_enabled' and 'ctr_running'.
+> 
+> get/put_online_cpus() protect us against cpu_hotplug_begin/end(). The
+> latter is always nested inside cpu_maps_update_begin/end(), which we
+> are already using here. 
+> 
+> So what additional protection are we getting by retaining
+> get/put_online_cpus() ?
 
-Can you please take a look at this series and give your ack on the 
-bindings if you do not have any further comments? The only comments so 
-far are from Bjorn on the OF helpers.
+Probably you mean to say that there are other places which access
+'nmi_enabled' and 'ctr_running' with the cpu-hotplug protection
+provided only by get/put_online_cpus() and you are retaining the calls
+in this patch to be consistent with those other places. If so, could
+you reword the changelog to reflect this instead of saying "they also
+protect the variables ..." ?
 
-regards
-Suman
+--
+Thanks and Regards
+gautham.
+
