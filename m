@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752691AbaBJKxB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 05:53:01 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:47383 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751696AbaBJKw5 (ORCPT
+	id S1752470AbaBJKxh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 05:53:37 -0500
+Received: from smtp-out-245.synserver.de ([212.40.185.245]:1025 "EHLO
+	smtp-out-182.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751436AbaBJKxf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 05:52:57 -0500
-Date: Mon, 10 Feb 2014 13:52:54 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: DaeSeok Youn <daeseok.youn@gmail.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, John Stultz <john.stultz@linaro.org>,
-        ohaugan@codeaurora.org, Rom Lemarchand <romlem@google.com>,
-        devel <devel@driverdev.osuosl.org>, konkers <konkers@android.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, ccross@android.com,
-        Rebecca Zavin <rebecca@android.com>, prtvar.b@gmail.com
-Subject: Re: [PATCH] staging : android : fix checkpatch issues
-Message-ID: <20140210105254.GB26776@mwanda>
-References: <2067517.LR5DRBeXLF@daeseok-laptop.cloud.net>
- <20140210091135.GR26722@mwanda>
- <CAHb8M2AzdaFLyNkUhU8uTb_ztt3NoEW0QO8px1FRuHdK2cT4FA@mail.gmail.com>
+	Mon, 10 Feb 2014 05:53:35 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 4750
+Message-ID: <52F8AFB2.4000307@metafoo.de>
+Date: Mon, 10 Feb 2014 11:53:38 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHb8M2AzdaFLyNkUhU8uTb_ztt3NoEW0QO8px1FRuHdK2cT4FA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: Michal Simek <michal.simek@xilinx.com>
+CC: linux-kernel@vger.kernel.org, monstr@monstr.eu,
+        Arnd Bergmann <arnd@arndb.de>, Mark Brown <broonie@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] regmap: Check readable regs in _regmap_read
+References: <73e82a7cf77a1a68c5303def3071418b7d0ea382.1392029156.git.michal.simek@xilinx.com>
+In-Reply-To: <73e82a7cf77a1a68c5303def3071418b7d0ea382.1392029156.git.michal.simek@xilinx.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 07:23:46PM +0900, DaeSeok Youn wrote:
-> Thanks for reviewing.
-> 
-> Yes, I just followed by reports of checkpatch.pl.
-> 
-> But I don't understand why I can use of seq_puts() in the middle of
-> seq_printf() calls.
-> I have been trying to search why that is not good but I didn't find
-> anything about that.
-> And I saw patches which were already merged similar with this patch.
-> 
-> You can see with this url
-> https://github.com/torvalds/linux/commit/2d219c518882d2b2bac77742a6a8979c9dad051a
-> https://github.com/mirrors/linux-2.6/commit/7aff38176e79a22b1749c2af74060028298e6a45
-> 
-> If you don't mind, let me know why it is not good.
+On 02/10/2014 11:46 AM, Michal Simek wrote:
+> Check if regs are readable.
+>
+> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+> ---
+>
+>   drivers/base/regmap/regmap.c | 3 +++
+>   1 file changed, 3 insertions(+)
+>
+> diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+> index 6a19515..7569dfc 100644
+> --- a/drivers/base/regmap/regmap.c
+> +++ b/drivers/base/regmap/regmap.c
+> @@ -1725,6 +1725,9 @@ static int _regmap_read(struct regmap *map, unsigned int reg,
+>   	int ret;
+>   	void *context = _regmap_map_get_context(map);
+>
+> +	if (!regmap_readable(map, reg))
+> +		return -EIO;
+> +
 
-Because it doesn't look nice.  It messes up the alignment.
+This will cause issues with devices where registers are writable, but not 
+readable, but we keep the register value in the cache.
 
-Checkpatch is a tool not a king of the world.  Stop obeying checkpatch.
-
-regards,
-dan carpenter
+>   	WARN_ON(!map->reg_read);
+>
+>   	if (!map->cache_bypass) {
+> --
+> 1.8.2.3
+>
 
