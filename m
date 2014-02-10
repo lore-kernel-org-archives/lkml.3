@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753200AbaBJWJo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 17:09:44 -0500
-Received: from senator.holtmann.net ([87.106.208.187]:57011 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752111AbaBJWJn convert rfc822-to-8bit (ORCPT
+	id S1753229AbaBJWKK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 17:10:10 -0500
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:22154 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752085AbaBJWKH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 17:09:43 -0500
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
-Subject: Re: [PATCH 00/24] rfcomm fixes
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <1391997564-1805-1-git-send-email-peter@hurleysoftware.com>
-Date: Mon, 10 Feb 2014 14:09:38 -0800
-Cc: "Gustavo F. Padovan" <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        Gianluca Anzolin <gianluca@sottospazio.it>,
-        Alexander Holler <holler@ahsoftware.de>,
-        Andrey Vihrov <andrey.vihrov@gmail.com>,
-        Sander Eikelenboom <linux@eikelenboom.it>,
-        "bluez mailin list (linux-bluetooth@vger.kernel.org)" 
-	<linux-bluetooth@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <3E0F3723-029F-4B12-8D77-9790FDBD3227@holtmann.org>
-References: <1391997564-1805-1-git-send-email-peter@hurleysoftware.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-X-Mailer: Apple Mail (2.1827)
+	Mon, 10 Feb 2014 17:10:07 -0500
+Message-ID: <1392070204.25316.1.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH 01/21] perf c2c: Shared data analyser
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
+        jolsa@redhat.com, jmario@redhat.com, fowles@inreach.com,
+        eranian@google.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Richard Fowles <rfowles@redhat.com>
+Date: Mon, 10 Feb 2014 14:10:04 -0800
+In-Reply-To: <1392059886-30812-1-git-send-email-dzickus@redhat.com>
+References: <1392053356-23024-1-git-send-email-dzickus@redhat.com>
+	 <1392059886-30812-1-git-send-email-dzickus@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
-
-> This patch series addresses a number of previously unknown issues
-> with the RFCOMM tty device implementation, in addition to
-> addressing the locking regression recently reported [1].
+On Mon, 2014-02-10 at 14:18 -0500, Don Zickus wrote:
+> From: Arnaldo Carvalho de Melo <acme@redhat.com>
 > 
-> As Gianluca suggested and I agree, this series first reverts
-> 3 of the 4 patches of 3.14-rc1 for bluetooth/rfcomm/tty.c.
+> This is the start of a new perf tool that will collect information about
+> memory accesses and analyse it to find things like hot cachelines, etc.
+> 
+> This is basically trying to get a prototype written by Richard Fowles
+> written using the tools/perf coding style and libraries.
+> 
+> Start it from 'perf sched', this patch starts the process by adding the
+> 'record' subcommand to collect the needed mem loads and stores samples.
+> 
+> It also have the basic 'report' skeleton, resolving the sample address
+> and hooking the events found in a perf.data file with methods to handle
+> them, right now just printing the resolved perf_sample data structure
+> after each event name.
 
-so for 3.14 we should revert 3 patches. And then the other 21 are intended for 3.15 merge window.
+What tree/branch is this developed against? I'm getting the following
+with Linus' latest and tip tree:
 
-I realize that we still have to deal with some breakage, but we do not want regressions and I clearly not going to take 24 patches for 3.14 at this point in time.
+builtin-c2c.c: In function ‘perf_c2c__process_sample’:
+builtin-c2c.c:68:20: error: request for member ‘func’ in something not a structure or union
+builtin-c2c.c:69:36: error: request for member ‘func’ in something not a structure or union
+builtin-c2c.c: In function ‘perf_c2c__read_events’:
+builtin-c2c.c:81:2: error: passing argument 1 of ‘perf_session__new’ from incompatible pointer type [-Werror]
+In file included from builtin-c2c.c:6:0:
+util/session.h:52:22: note: expected ‘struct perf_data_file *’ but argument is of type ‘const char *’
+builtin-c2c.c:81:2: error: too many arguments to function ‘perf_session__new’
+In file included from builtin-c2c.c:6:0:
+util/session.h:52:22: note: declared here
 
-What I can do is take all 24 patches into bluetooth-next and let them sit for 1 week and have people test them. And then we go ahead with reverting 3 patches from 3.14. Does that make sense?
-
-Regards
-
-Marcel
 
