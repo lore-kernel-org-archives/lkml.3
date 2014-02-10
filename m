@@ -1,60 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752304AbaBJO3w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 09:29:52 -0500
-Received: from mga02.intel.com ([134.134.136.20]:53168 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751970AbaBJO3v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 09:29:51 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,818,1384329600"; 
-   d="scan'208";a="480929230"
-Date: Mon, 10 Feb 2014 16:29:45 +0200
-From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: sagar.a.kamble@intel.com, daniel.vetter@ffwll.ch,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        vijay.a.purushothaman@intel.com, tomi.valkeinen@ti.com,
-        dri-devel@lists.freedesktop.org, gregkh@linuxfoundation.org,
-        joe@perches.com, airlied@redhat.com
-Subject: Re: [PATCH v4 00/11] Enabling 180 degree rotation for sprite and
- crtc planes
-Message-ID: <20140210142945.GP3891@intel.com>
-References: <1391780716-21896-1-git-send-email-sagar.a.kamble@intel.com>
- <20140210104130.7e7c3c93@alan.etchedpixels.co.uk>
- <20140210135212.GN3891@intel.com>
- <20140210141454.7f8e25e6@alan.etchedpixels.co.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140210141454.7f8e25e6@alan.etchedpixels.co.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752297AbaBJOeg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 09:34:36 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:60066 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751962AbaBJOec (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 09:34:32 -0500
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Anson Huang <b20788@freescale.com>,
+        kernel@pengutronix.de, Philipp Zabel <p.zabel@pengutronix.de>
+Subject: [PATCH v2 1/2] regulator: anatop: Add power gating support to digital LDOs
+Date: Mon, 10 Feb 2014 15:34:21 +0100
+Message-Id: <1392042862-384-1-git-send-email-p.zabel@pengutronix.de>
+X-Mailer: git-send-email 1.8.5.3
+X-SA-Exim-Connect-IP: 10.1.0.7
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 02:14:54PM +0000, One Thousand Gnomes wrote:
-> > > Does this mean it should also handle horizontal mirroring in
-> > > hardware (180° rotate, and scan lines backwards combined) ?
-> > 
-> > Our hardware doesn't support mirroring (h or v). Well, unless you
-> > count h+v mirroring since that's 180 degree rotation :)
-> > 
-> > Anyways IIRC the old video overlay (present on gen2-4) was the only plane
-> > to ever support mirroring on Intel hardware. With all other planes we're
-> > limited to 0 and 180 degree rotation
-> 
-> It seems to do vertical mirroring providing your output buffer is
-> allocated and aligned on page boundaries as the GTT can then be used to
-> map the scan lines in any order you like ?
+The ARM, PU, and SOC LDOs in the i.MX6 PMU can completely gate
+their power output. Since power gating is configured by writing
+zero to the voltage target bitfield,, store a copy of the
+voltage selector to be restored when reenabling the regulator.
 
-Oh, right. That would be possible, but that sounds like something that
-needs to be done on the gem side rather than the kms side since it
-impacts other things besides scanout memory access. Well either that
-or we'd potentially need to map the same object multiple times into
-the ggtt.
+Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+---
+Changes since v1:
+ - Added separate regulator_ops for core regulators that can be gated.
+ - Fixed core set_voltage_sel to not enable the regulator whenever a new
+   voltage is selected and get_voltage_sel to return the selected value.
+---
+ drivers/regulator/anatop-regulator.c | 76 +++++++++++++++++++++++++++++++++++-
+ 1 file changed, 74 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/regulator/anatop-regulator.c b/drivers/regulator/anatop-regulator.c
+index 862e63e..0c6981b 100644
+--- a/drivers/regulator/anatop-regulator.c
++++ b/drivers/regulator/anatop-regulator.c
+@@ -34,6 +34,8 @@
+ #define LDO_RAMP_UP_UNIT_IN_CYCLES      64 /* 64 cycles per step */
+ #define LDO_RAMP_UP_FREQ_IN_MHZ         24 /* cycle based on 24M OSC */
+ 
++#define LDO_POWER_GATE			0x00
++
+ struct anatop_regulator {
+ 	const char *name;
+ 	u32 control_reg;
+@@ -48,6 +50,7 @@ struct anatop_regulator {
+ 	int max_voltage;
+ 	struct regulator_desc rdesc;
+ 	struct regulator_init_data *initdata;
++	int sel;
+ };
+ 
+ static int anatop_regmap_set_voltage_sel(struct regulator_dev *reg,
+@@ -97,14 +100,68 @@ static int anatop_regmap_get_voltage_sel(struct regulator_dev *reg)
+ 	return regulator_get_voltage_sel_regmap(reg);
+ }
+ 
++static int anatop_regmap_enable(struct regulator_dev *reg)
++{
++	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
++
++	return regulator_set_voltage_sel_regmap(reg, anatop_reg->sel);
++}
++
++static int anatop_regmap_disable(struct regulator_dev *reg)
++{
++	return regulator_set_voltage_sel_regmap(reg, LDO_POWER_GATE);
++}
++
++static int anatop_regmap_is_enabled(struct regulator_dev *reg)
++{
++	return regulator_get_voltage_sel_regmap(reg) != LDO_POWER_GATE;
++}
++
++static int anatop_regmap_core_set_voltage_sel(struct regulator_dev *reg,
++					      unsigned selector)
++{
++	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
++	int ret;
++
++	if (!anatop_regmap_is_enabled(reg)) {
++		anatop_reg->sel = selector;
++		return 0;
++	}
++
++	ret = regulator_set_voltage_sel_regmap(reg, selector);
++	if (!ret)
++		anatop_reg->sel = selector;
++	return ret;
++}
++
++static int anatop_regmap_core_get_voltage_sel(struct regulator_dev *reg)
++{
++	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
++
++	if (!anatop_regmap_is_enabled(reg))
++		return anatop_reg->sel;
++
++	return regulator_get_voltage_sel_regmap(reg);
++}
++
+ static struct regulator_ops anatop_rops = {
+ 	.set_voltage_sel = anatop_regmap_set_voltage_sel,
+-	.set_voltage_time_sel = anatop_regmap_set_voltage_time_sel,
+ 	.get_voltage_sel = anatop_regmap_get_voltage_sel,
+ 	.list_voltage = regulator_list_voltage_linear,
+ 	.map_voltage = regulator_map_voltage_linear,
+ };
+ 
++static struct regulator_ops anatop_core_rops = {
++	.enable = anatop_regmap_enable,
++	.disable = anatop_regmap_disable,
++	.is_enabled = anatop_regmap_is_enabled,
++	.set_voltage_sel = anatop_regmap_core_set_voltage_sel,
++	.set_voltage_time_sel = anatop_regmap_set_voltage_time_sel,
++	.get_voltage_sel = anatop_regmap_core_get_voltage_sel,
++	.list_voltage = regulator_list_voltage_linear,
++	.map_voltage = regulator_map_voltage_linear,
++};
++
+ static int anatop_regulator_probe(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
+@@ -116,6 +173,7 @@ static int anatop_regulator_probe(struct platform_device *pdev)
+ 	struct regulator_init_data *initdata;
+ 	struct regulator_config config = { };
+ 	int ret = 0;
++	u32 val;
+ 
+ 	initdata = of_get_regulator_init_data(dev, np);
+ 	sreg = devm_kzalloc(dev, sizeof(*sreg), GFP_KERNEL);
+@@ -125,7 +183,6 @@ static int anatop_regulator_probe(struct platform_device *pdev)
+ 	sreg->name = of_get_property(np, "regulator-name", NULL);
+ 	rdesc = &sreg->rdesc;
+ 	rdesc->name = sreg->name;
+-	rdesc->ops = &anatop_rops;
+ 	rdesc->type = REGULATOR_VOLTAGE;
+ 	rdesc->owner = THIS_MODULE;
+ 
+@@ -197,6 +254,21 @@ static int anatop_regulator_probe(struct platform_device *pdev)
+ 	config.of_node = pdev->dev.of_node;
+ 	config.regmap = sreg->anatop;
+ 
++	/* Only core regulators have the ramp up delay configuration. */
++	if (sreg->control_reg && sreg->delay_bit_width) {
++		rdesc->ops = &anatop_core_rops;
++
++		ret = regmap_read(config.regmap, rdesc->vsel_reg, &val);
++		if (ret) {
++			dev_err(dev, "failed to read initial state\n");
++			goto anatop_probe_end;
++		}
++
++		sreg->sel = (val & rdesc->vsel_mask) >> sreg->vol_bit_shift;
++	} else {
++		rdesc->ops = &anatop_rops;
++	}
++
+ 	/* register regulator */
+ 	rdev = devm_regulator_register(dev, rdesc, &config);
+ 	if (IS_ERR(rdev)) {
 -- 
-Ville Syrjälä
-Intel OTC
+1.8.5.3
+
