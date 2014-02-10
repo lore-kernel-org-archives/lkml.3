@@ -1,25 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753228AbaBJXCg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 18:02:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59419 "EHLO
+	id S1752706AbaBJXGS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 18:06:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59427 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752231AbaBJXCd (ORCPT
+	with ESMTP id S1752111AbaBJXGQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 18:02:33 -0500
-Date: Mon, 10 Feb 2014 15:02:30 -0800
+	Mon, 10 Feb 2014 18:06:16 -0500
+Date: Mon, 10 Feb 2014 15:06:14 -0800
 From: Andrew Morton <akpm@linux-foundation.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Jason Low <jason.low2@hp.com>,
-        Waiman Long <waiman.long@hp.com>, mingo@kernel.org,
-        paulmck@linux.vnet.ibm.com, torvalds@linux-foundation.org,
-        tglx@linutronix.de, riel@redhat.com, davidlohr@hp.com, hpa@zytor.com,
-        andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
-        chegu_vinod@hp.com
-Subject: Re: [PATCH 0/8] locking/core patches
-Message-Id: <20140210150230.b7f46688093ebc5c45fee870@linux-foundation.org>
-In-Reply-To: <20140210195820.834693028@infradead.org>
-References: <20140210195820.834693028@infradead.org>
+To: Dan Streetman <ddstreet@ieee.org>
+Cc: Seth Jennings <sjennings@variantweb.net>, Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bob Liu <bob.liu@oracle.com>, Minchan Kim <minchan@kernel.org>,
+        Weijie Yang <weijie.yang@samsung.com>,
+        Shirish Pargaonkar <spargaonkar@suse.com>,
+        Mel Gorman <mgorman@suse.de>
+Subject: Re: [PATCH v2] mm/zswap: add writethrough option
+Message-Id: <20140210150614.c6a1b20553803da5f81acb72@linux-foundation.org>
+In-Reply-To: <CALZtONAFF3F4j0KQX=ineJ1cOVEWJSGSe3V=Ja4x=3NguFAFMQ@mail.gmail.com>
+References: <1387459407-29342-1-git-send-email-ddstreet@ieee.org>
+	<1390831279-5525-1-git-send-email-ddstreet@ieee.org>
+	<20140203150835.f55fd427d0ebb0c2943f266b@linux-foundation.org>
+	<CALZtONAFF3F4j0KQX=ineJ1cOVEWJSGSe3V=Ja4x=3NguFAFMQ@mail.gmail.com>
 X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -28,21 +31,20 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Feb 2014 20:58:20 +0100 Peter Zijlstra <peterz@infradead.org> wrote:
+On Mon, 10 Feb 2014 14:05:14 -0500 Dan Streetman <ddstreet@ieee.org> wrote:
 
-> Hi all,
+> >
+> > It does sound like the feature is of marginal benefit.  Is "zswap
+> > filled up" an interesting or useful case to optimize?
+> >
+> > otoh the addition is pretty simple and we can later withdraw the whole
+> > thing without breaking anyone's systems.
 > 
-> I would propose merging the following patches...
+> ping...
 > 
-> The first set is mostly from Jason and tweaks the mutex adaptive
-> spinning, AIM7 throughput numbers:
-> 
-> PRE:  100   2000.04  21564.90 2721.29 311.99     3.12       0.01     0.00     99
-> POST: 100   2000.04  42603.85 5142.80 311.99     3.12       0.00     0.00     99
+> you still thinking about this or is it a reject for now?
 
-What do these columns represent?  I'm guessing the large improvement
-was in context switches?
+I'm not seeing a compelling case for merging it and Minchan sounded
+rather unconvinced.  Perhaps we should park it until/unless a more
+solid need is found?
 
-> The second set is the qrwlock, although mostly rewritten by me. I didn't do
-> much with it other than boot and build a kernel. But I like them because
-> of the much better worst case preformance.
