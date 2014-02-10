@@ -1,299 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752934AbaBJXdK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 18:33:10 -0500
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:57836 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752279AbaBJXdG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 18:33:06 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Au4HAHlg+VJ5LGaB/2dsb2JhbABZgwyDPqY/kBWFUIEWF3SCJQEBBScTHCMQCAMOBwMJJQ8FJQMhE4gEyWsXFo5cCweEOASUQoNoik+HUoNBKA
-Date: Tue, 11 Feb 2014 10:32:58 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: viro@zeniv.linux.org.uk, bpm@sgi.com, tytso@mit.edu,
-        adilger.kernel@dilger.ca, jack@suse.cz, mtk.manpages@gmail.com,
-        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ashish Sangwan <a.sangwan@samsung.com>
-Subject: Re: [PATCH RESEND 2/10] xfs: Add support FALLOC_FL_COLLAPSE_RANGE
- for fallocate
-Message-ID: <20140210233258.GX13647@dastard>
-References: <1391319851-3169-1-git-send-email-linkinjeon@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1391319851-3169-1-git-send-email-linkinjeon@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753087AbaBJXdM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 18:33:12 -0500
+Received: from mail.efficios.com ([78.47.125.74]:52095 "EHLO mail.efficios.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752291AbaBJXdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 18:33:07 -0500
+X-Greylist: delayed 559 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Feb 2014 18:33:06 EST
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        David Howells <dhowells@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [RFC PATCH] Fix: module signature vs tracepoints: add new TAINT_UNSIGNED_MODULE
+Date: Mon, 10 Feb 2014 18:23:20 -0500
+Message-Id: <1392074600-21977-1-git-send-email-mathieu.desnoyers@efficios.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 02, 2014 at 02:44:11PM +0900, Namjae Jeon wrote:
-> From: Namjae Jeon <namjae.jeon@samsung.com>
-> 
-> Add support FALLOC_FL_COLLAPSE_RANGE for fallocate.
-> 
-> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-> Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
+Users have reported being unable to trace non-signed modules loaded
+within a kernel supporting module signature.
 
-A more detailed description would be nice for the change logs.
-.....
+This is caused by tracepoint.c:tracepoint_module_coming() refusing to
+take into account tracepoints sitting within force-loaded modules
+(TAINT_FORCED_MODULE). The reason for this check, in the first place, is
+that a force-loaded module may have a struct module incompatible with
+the layout expected by the kernel, and can thus cause a kernel crash
+upon forced load of that module on a kernel with CONFIG_TRACEPOINTS=y.
 
-> +	while (nexts++ < num_exts &&
-> +	       *current_ext <  XFS_IFORK_NEXTENTS(ip, whichfork)) {
-> +
-> +		gotp = xfs_iext_get_ext(ifp, *current_ext);
-> +		xfs_bmbt_get_all(gotp, &got);
-> +		startoff = got.br_startoff - offset_shift_fsb;
-> +
-> +		/*
-> +		 * Before shifting extent into hole, make sure that the hole
-> +		 * is large enough to accomodate the shift.
-> +		 */
-> +		if (*current_ext) {
-> +			xfs_bmbt_get_all(xfs_iext_get_ext(ifp,
-> +						*current_ext - 1), &left);
-> +
-> +			if (startoff < left.br_startoff + left.br_blockcount)
-> +				error = XFS_ERROR(EINVAL);
-> +
-> +		} else if (startoff > xfs_bmbt_get_startoff(gotp)) {
-> +			/* Hole is at the start but not large enough */
-> +			error = XFS_ERROR(EINVAL);
-> +		}
+Tracepoints, however, specifically accept TAINT_OOT_MODULE and
+TAINT_CRAP, since those modules do not lead to the "very likely system
+crash" issue cited above for force-loaded modules.
 
-This second branch seems wrong to me:
+With kernels having CONFIG_MODULE_SIG=y (signed modules), a non-signed
+module is tainted re-using the TAINT_FORCED_MODULE taint flag.
+Unfortunately, this means that Tracepoints treat that module as a
+force-loaded module, and thus silently refuse to consider any tracepoint
+within this module.
 
-	startoff = got.br_startoff - offset_shift_fsb;
-and
-	got.br_startoff = xfs_bmbt_get_startoff(gotp)).
+Since an unsigned module does not fit within the "very likely system
+crash" category of tainting, add a new TAINT_UNSIGNED_MODULE taint flag
+to specifically address this taint behavior, and accept those modules
+within Tracepoints. This flag is assigned to the letter 'N', since all
+the more obvious ones (e.g. 'S') were already taken.
 
-I'm not 100% sure what you are trying to check in this case -
-perhaps some basic ascii art to describe the two cases is in order
-here:
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: Steven Rostedt <rostedt@goodmis.org>
+CC: Ingo Molnar <mingo@redhat.com>
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Rusty Russell <rusty@rustcorp.com.au>
+CC: David Howells <dhowells@redhat.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ include/linux/kernel.h        |    1 +
+ include/trace/events/module.h |    3 ++-
+ kernel/module.c               |    4 +++-
+ kernel/panic.c                |    1 +
+ kernel/tracepoint.c           |    5 +++--
+ 5 files changed, 10 insertions(+), 4 deletions(-)
 
-	left	hole		got
-	+-------+hhhhhhhhhhhhhhh+---------+
-	LS      LE              GS        GE
-		HS              HE
-
-The first is checking that GS - offset_shift_fsb is greater than LE.
-i.e the shift doesn't overrun the hole betwenn LE and GS.
-
-	left	hole		got
-	+-------+hhhhhhhhhhhhhhh+---------+
-	LS      LE              GS        GE
-		HS              HE
-	+-------+hhhhhhh+---------+
-	LS      LE      GS'       GE'
-		HS      HE'
-
-The second I can't visualise from the code or comment....
-
-
-> +
-> +		if (error)
-> +			goto del_cursor;
-> +
-> +		if (cur) {
-> +			error = xfs_bmbt_lookup_eq(cur,
-> +					got.br_startoff,
-> +					got.br_startblock,
-> +					got.br_blockcount,
-> +					&i);
-
-Whitespace comment - a more compact form is the typical XFS
-convention if it will fit in 80 columns:
-
-			error = xfs_bmbt_lookup_eq(cur, got.br_startoff,
-						   got.br_startblock,
-						   got.br_blockcount, &i);
-
-> +			if (error)
-> +				goto del_cursor;
-> +			XFS_WANT_CORRUPTED_GOTO(i == 1, del_cursor);
-> +		}
-> +
-> +		/* Check if we can merge 2 adjacent extents */
-> +		if (*current_ext &&
-> +		    left.br_startoff + left.br_blockcount == startoff &&
-> +		    left.br_startblock + left.br_blockcount ==
-> +				got.br_startblock &&
-> +		    left.br_state == got.br_state &&
-> +		    left.br_blockcount + got.br_blockcount <= MAXEXTLEN) {
-> +			blockcount = left.br_blockcount +
-> +				xfs_bmbt_get_blockcount(gotp);
-
-				got.br_blockcount?
-
-> +			xfs_iext_remove(ip, *current_ext, 1, 0);
-> +			if (cur) {
-> +				error = xfs_btree_delete(cur, &i);
-> +				if (error)
-> +					goto del_cursor;
-> +				XFS_WANT_CORRUPTED_GOTO(i == 1, del_cursor);
-> +			}
-> +			XFS_IFORK_NEXT_SET(ip, whichfork,
-> +				XFS_IFORK_NEXTENTS(ip, whichfork) - 1);
-> +			gotp = xfs_iext_get_ext(ifp, --*current_ext);
-> +			xfs_bmbt_get_all(gotp, &got);
-> +
-> +			/* Make cursor point to the extent we will update */
-> +			if (cur) {
-> +				error = xfs_bmbt_lookup_eq(cur,
-> +				got.br_startoff,
-> +				got.br_startblock,
-> +				got.br_blockcount,
-> +				&i);
-
-whitespace.
-
-> +				if (error)
-> +					goto del_cursor;
-> +				XFS_WANT_CORRUPTED_GOTO(i == 1, del_cursor);
-> +			}
-> +
-> +			xfs_bmbt_set_blockcount(gotp, blockcount);
-> +			got.br_blockcount = blockcount;
-> +			goto bmbt_update;
-> +		}
-> +
-> +		/* We have to update the startoff */
-> +		xfs_bmbt_set_startoff(gotp, startoff);
-> +		got.br_startoff = startoff;
-> +
-> +bmbt_update:
-
-Use an } else {} for this, and the goto can be removed.
-
-....
->  /*
-> + * xfs_collapse_file_space()
-> + *      This routine frees disk space and shift extent for the given file.
-> + *
-> + * RETURNS:
-> + *      0 on success
-> + *      errno on error
-> + *
-> + */
-> +int
-> +xfs_collapse_file_space(
-> +	struct xfs_inode	*ip,
-> +	xfs_off_t		offset,
-> +	xfs_off_t		len)
-> +{
-> +	int			done = 0;
-> +	struct xfs_mount	*mp = ip->i_mount;
-> +	struct xfs_trans	*tp;
-> +	int			error;
-> +	xfs_extnum_t		current_ext = 0;
-> +	struct xfs_bmap_free	free_list;
-> +	xfs_fsblock_t		first_block;
-> +	int			committed;
-> +	xfs_fileoff_t		start_fsb;
-> +	xfs_fileoff_t		shift_fsb;
-> +
-> +	ASSERT(xfs_isilocked(ip, XFS_IOLOCK_EXCL));
-> +
-> +	trace_xfs_collapse_file_space(ip);
-> +
-> +	start_fsb = XFS_B_TO_FSB(mp, offset + len);
-> +	shift_fsb = XFS_B_TO_FSB(mp, len);
-> +
-> +	/*
-> +	 * The first thing we do is to free data blocks in the specified range
-> +	 * by calling xfs_free_file_space(). It would also sync dirty data
-> +	 * and invalidate page cache over the region on which collapse range
-> +	 * is working.
-> +	 */
-
-This can probably go in the function header as part of describing
-the overall algorithm the code is using.
-
-> +	error = xfs_free_file_space(ip, offset, len);
-> +	if (error)
-> +		return error;
-> +
-> +	while (!error && !done) {
-> +		tp = xfs_trans_alloc(mp, XFS_TRANS_DIOSTRAT);
-> +		tp->t_flags |= XFS_TRANS_RESERVE;
-> +		/*
-> +		 * We would need to reserve permanent block for transaction.
-> +		 * This will come into picture when after shifting extent into
-> +		 * hole we found that adjacent extents can be merged which
-> +		 * may lead to freeing of a block during record update.
-> +		 */
-> +		error = xfs_trans_reserve(tp, &M_RES(mp)->tr_write,
-> +				XFS_DIOSTRAT_SPACE_RES(mp, 0), 0);
-> +		if (error) {
-> +			ASSERT(error == ENOSPC || XFS_FORCED_SHUTDOWN(mp));
-> +			xfs_trans_cancel(tp, 0);
-> +			break;
-> +		}
-> +
-> +		xfs_ilock(ip, XFS_ILOCK_EXCL);
-> +		error = xfs_trans_reserve_quota(tp, mp, ip->i_udquot,
-> +				ip->i_gdquot, ip->i_pdquot,
-> +				XFS_DIOSTRAT_SPACE_RES(mp, 0), 0,
-> +				XFS_QMOPT_RES_REGBLKS);
-> +		if (error)
-> +			goto out;
-> +
-> +		xfs_trans_ijoin(tp, ip, 0);
-> +
-> +		xfs_bmap_init(&free_list, &first_block);
-> +
-> +		/*
-> +		 * We are using the write transaction in which max 2 bmbt
-> +		 * updates are allowed
-> +		 */
-
-Right, but you've only reserved blocks for a single BMBT split
-through XFS_DIOSTRAT_SPACE_RES(). In cases of allocation, adjacent
-offset allocation is guaranteed to only require one split at most
-and hence it's safe from that perspective. However, I can see how a
-shift can require a split on the first extent move, and a merge on
-the second. e.g:
-
-
-		left		middle		right
-before		maxrecs		minrecs + 1	minrecs
-first shift	maxrecs + 1	minrecs		minrecs
-		split
-		maxrecs / 2	minrecs		minrecs
-second shift
-		maxrecs/2 + 1	minrecs - 1	minrecs
-				merge		merge
-				minrecs*2 - 1	(freed)
-
-So the question is whether the transaction reservations (both log
-space and block allocation requirements) are covered.
-
-> +		error = xfs_bmap_shift_extents(tp, ip, &done, start_fsb,
-> +				shift_fsb, &current_ext,
-> +				&first_block, &free_list, 2);
-
-And that should really have a #define associated with it. ie.:
-
-#define XFS_BMAP_MAX_SHIFT_EXTENTS	2
-
-And document the constraints that lead to that number with the
-definition.
-
-Overall, all I'm really looking for here is sufficient comments to
-document the constraints the code is operating under. Functionally
-the code looks correct (apart from the branch above I can't work
-out). Mostly I just want to make sure that in a couple of
-years time I don't have to work it all out from first principles
-again. ;)
-
-Cheers,
-
-Dave.
-
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 196d1ea..4710900 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -469,6 +469,7 @@ extern enum system_states {
+ #define TAINT_CRAP			10
+ #define TAINT_FIRMWARE_WORKAROUND	11
+ #define TAINT_OOT_MODULE		12
++#define TAINT_UNSIGNED_MODULE		13
+ 
+ extern const char hex_asc[];
+ #define hex_asc_lo(x)	hex_asc[((x) & 0x0f)]
+diff --git a/include/trace/events/module.h b/include/trace/events/module.h
+index 1619327..1788a02 100644
+--- a/include/trace/events/module.h
++++ b/include/trace/events/module.h
+@@ -23,7 +23,8 @@ struct module;
+ #define show_module_flags(flags) __print_flags(flags, "",	\
+ 	{ (1UL << TAINT_PROPRIETARY_MODULE),	"P" },		\
+ 	{ (1UL << TAINT_FORCED_MODULE),		"F" },		\
+-	{ (1UL << TAINT_CRAP),			"C" })
++	{ (1UL << TAINT_CRAP),			"C" },		\
++	{ (1UL << TAINT_UNSIGNED_MODULE),	"N" })
+ 
+ TRACE_EVENT(module_load,
+ 
+diff --git a/kernel/module.c b/kernel/module.c
+index d24fcf2..73ca01a 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -1013,6 +1013,8 @@ static size_t module_flags_taint(struct module *mod, char *buf)
+ 		buf[l++] = 'F';
+ 	if (mod->taints & (1 << TAINT_CRAP))
+ 		buf[l++] = 'C';
++	if (mod->taints & (1 << TAINT_UNSIGNED_MODULE))
++		buf[l++] = 'N';
+ 	/*
+ 	 * TAINT_FORCED_RMMOD: could be added.
+ 	 * TAINT_UNSAFE_SMP, TAINT_MACHINE_CHECK, TAINT_BAD_PAGE don't
+@@ -3214,7 +3216,7 @@ static int load_module(struct load_info *info, const char __user *uargs,
+ 		pr_notice_once("%s: module verification failed: signature "
+ 			       "and/or  required key missing - tainting "
+ 			       "kernel\n", mod->name);
+-		add_taint_module(mod, TAINT_FORCED_MODULE, LOCKDEP_STILL_OK);
++		add_taint_module(mod, TAINT_UNSIGNED_MODULE, LOCKDEP_STILL_OK);
+ 	}
+ #endif
+ 
+diff --git a/kernel/panic.c b/kernel/panic.c
+index 6d63003..98588e0 100644
+--- a/kernel/panic.c
++++ b/kernel/panic.c
+@@ -210,6 +210,7 @@ static const struct tnt tnts[] = {
+ 	{ TAINT_CRAP,			'C', ' ' },
+ 	{ TAINT_FIRMWARE_WORKAROUND,	'I', ' ' },
+ 	{ TAINT_OOT_MODULE,		'O', ' ' },
++	{ TAINT_UNSIGNED_MODULE,	'N', ' ' },
+ };
+ 
+ /**
+diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
+index 29f2654..e7903c1 100644
+--- a/kernel/tracepoint.c
++++ b/kernel/tracepoint.c
+@@ -639,9 +639,10 @@ static int tracepoint_module_coming(struct module *mod)
+ 	/*
+ 	 * We skip modules that taint the kernel, especially those with different
+ 	 * module headers (for forced load), to make sure we don't cause a crash.
+-	 * Staging and out-of-tree GPL modules are fine.
++	 * Staging, out-of-tree, and non-signed GPL modules are fine.
+ 	 */
+-	if (mod->taints & ~((1 << TAINT_OOT_MODULE) | (1 << TAINT_CRAP)))
++	if (mod->taints & ~((1 << TAINT_OOT_MODULE) | (1 << TAINT_CRAP) |
++			(1 << TAINT_UNSIGNED_MODULE)))
+ 		return 0;
+ 	mutex_lock(&tracepoints_mutex);
+ 	tp_mod = kmalloc(sizeof(struct tp_module), GFP_KERNEL);
 -- 
-Dave Chinner
-david@fromorbit.com
+1.7.10.4
+
