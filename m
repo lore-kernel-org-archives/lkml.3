@@ -1,138 +1,630 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752765AbaBJNmu (ORCPT <rfc822;w@1wt.eu>);
+	id S1752811AbaBJNm4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 08:42:56 -0500
+Received: from mta1.parkeon.com ([91.121.43.66]:41069 "EHLO mta1.parkeon.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752726AbaBJNmu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 10 Feb 2014 08:42:50 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:57487 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752726AbaBJNmr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 08:42:47 -0500
-Date: Mon, 10 Feb 2014 13:42:38 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Stefan =?utf-8?B?U8O4cmVuc2Vu?= <stefan.sorensen@spectralink.com>
-Cc: "richardcochran@gmail.com" <richardcochran@gmail.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH] dp83640: Get gpio and master/slave configuration from
- DT
-Message-ID: <20140210134237.GF29080@e106331-lin.cambridge.arm.com>
-References: <1392037240-30913-1-git-send-email-stefan.sorensen@spectralink.com>
+X-Greylist: delayed 2889 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Feb 2014 08:42:50 EST
+Subject: [PATCH] reset: Add generic GPIO reset driver.
+To: linux-arm-kernel@lists.infradead.org,
+        Philipp Zabel <p.zabel@pengutronix.de>
+From: Martin Fuzzey <mfuzzey@parkeon.com>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Date: Mon, 10 Feb 2014 13:54:32 +0100
+Message-ID: <20140210125432.10683.86571.stgit@localhost>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1392037240-30913-1-git-send-email-stefan.sorensen@spectralink.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 01:00:40PM +0000, Stefan Sørensen wrote:
-> This patch removes the module parameters gpio_tab and chosen_phy in favour of
-> retrieving the configuration from DT through the properties
-> 	dp83640,slave
-> 	dp83640,calibrate-gpio
-> 	dp83640,perout-gpios
-> 	dp83640,extts-gpios
-> The configuration is now stored for each master clock device, allowing different 
-> gpio setups for each master.
-> 
-> Furthermore the code is enhanced to handle more than one periodic output.
+This driver allows GPIO lines to be used as reset signals.
+It has two main use cases:
 
-Binding document please.
+1) Allow drivers to reset their hardware via a GPIO line in a standard fashion
+as supplied by the reset framework.
+This allows adhoc driver code requesting GPIOs etc to be replaced with a
+single call to device_reset().
 
-I have some basic comments below, but without a description of what the
-properties mean, it's difficult to provide any meaningful review.
+2) Allow hardware on discoverable busses to be rest via a GPIO line
+without driver modifications.
 
-[...]
+Examples of the second use case include:
+* SDIO wifi modules
+* USB hub chips with a reset line
 
-> +static int dp83640_probe_dt(struct device_node *node,
-> +			    struct dp83640_private *dp83640)
-> +{
-> +	struct dp83640_clock *clock = dp83640->clock;
-> +	struct property *prop;
-> +	int err, proplen;
-> +
-> +	if (!node)
-> +		return 0;
-> +
-> +	if (of_find_property(node, "dp83640,slave", NULL))
-> +		dp83640->slave = true;
+In this second use case the reset has to be done externally to the driver
+managing the hardware since resetting the device from the driver's probe()
+method will either do nothing (if the device needs to be reset before
+ennumeration will work) or cause racy beahviour (when the device disappears
+from the bus during probe()).
 
-Use of_property_read_bool.
+So, in addition to providing a gpio based  reset controller implementation
+it is also possible to reset devices at boot via a DT property or from
+userspace on request via sysfs attributes.
 
-> +	if (!dp83640->slave && clock->chosen) {
-> +		pr_err("dp83640,slave must be set if more than one device on the same bus");
-> +		return -EINVAL;
-> +	}
-> +
-> +	prop = of_find_property(node, "dp83640,perout-gpios", &proplen);
-> +	if (prop) {
-> +		if (dp83640->slave) {
-> +			pr_err("dp83640,perout-gpios property can not be set together with dp83640,slave");
-> +			return -EINVAL;
-> +		}
-> +
-> +		clock->caps.n_per_out = proplen / sizeof(u32);
-> +		if (clock->caps.n_per_out > N_EXT) {
-> +			pr_err("dp83640,perout-gpios may not have more than %d entries",
-> +			       N_EXT);
-> +			return -EINVAL;
-> +		}
-> +		err = of_property_read_u32_array(node, "dp83640,perout-gpios",
-> +						 clock->perout_gpios,
-> +						 clock->caps.n_per_out);
-> +		if (err < 0)
-> +			return err;
-> +	}
+Signed-off-by: Martin Fuzzey <mfuzzey@parkeon.com>
+---
+ Documentation/ABI/testing/sysfs-driver-gpio-reset |   18 +
+ Documentation/devicetree/bindings/reset/gpio.txt  |   44 ++
+ drivers/reset/Kconfig                             |   13 +
+ drivers/reset/Makefile                            |    1 
+ drivers/reset/gpio-reset.c                        |  460 +++++++++++++++++++++
+ 5 files changed, 536 insertions(+)
+ create mode 100644 Documentation/ABI/testing/sysfs-driver-gpio-reset
+ create mode 100644 Documentation/devicetree/bindings/reset/gpio.txt
+ create mode 100644 drivers/reset/gpio-reset.c
 
-This looks nothing like the standard gpio bindings. What _exactly_ is
-this property describing?
+diff --git a/Documentation/ABI/testing/sysfs-driver-gpio-reset b/Documentation/ABI/testing/sysfs-driver-gpio-reset
+new file mode 100644
+index 0000000..6c14144
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-driver-gpio-reset
+@@ -0,0 +1,18 @@
++In the descriptions below <line-name> is the name of the device tree node
++describing the reset line.
++
++What:		/sys/bus/platform/devices/gpio-reset.<ID>/<line-name>/duration_ms
++Date:		February 2014
++Contact:	Martin Fuzzey <mfuzzey@parkeon.com>
++Description:	Allows reset duration to be configured
++		Read: returns reset duration in ms (decimal)
++		Write: sets new resst duration in ms (decimal)
++
++What:		/sys/bus/platform/devices/gpio-reset.<ID>/<line-name>/control
++Date:		February 2014
++Contact:	Martin Fuzzey <mfuzzey@parkeon.com>
++Description:	Allows reset line state to be controlled
++		Write only accepting the following strings:
++			"reset" : Line will be asserted during the reset duration then deasserted
++			"assert" : Line will be asserted until next write operation
++			"deassert" : Line will be deasserted until the next write operation
+diff --git a/Documentation/devicetree/bindings/reset/gpio.txt b/Documentation/devicetree/bindings/reset/gpio.txt
+new file mode 100644
+index 0000000..1a36821
+--- /dev/null
++++ b/Documentation/devicetree/bindings/reset/gpio.txt
+@@ -0,0 +1,44 @@
++Generic GPIO based Reset Controller
++======================================
++
++Please also refer to reset.txt in this directory for common reset
++controller binding usage.
++
++The parent node only needs a compatible property "linux,gpio-reset".
++
++Eaach reset line is described by a child node with the following properties:
++Required properties:
++- gpios : phandle of the GPIO line to use
++
++Optional properties:
++- asserted-state:  0 => line low to reset, 1  => line high to reset. Defalut 0
++- duration-ms : Number of ms the line should be asserted while resetting (default 1)
++- auto : boolean property - if present a reset will be done on boot
++- #reset-cells: 0 if drivers can trigger reset via phandle
++
++example:
++
++gpio-reset {
++	compatible = "linux,gpio-reset";
++
++	wifi {
++		gpios = <&gpio2 1 0>;
++		asserted-state = <0>;
++		duration-ms = <100>;
++		auto;
++	};
++
++	ethernet_phy_reset:ethernet_phy {
++		#reset-cells = <0>;
++		gpios = <&gpio7 6 0>;
++		asserted-state = <0>;
++		duration-ms = <100>;
++	};
++};
++
++Note that, although this controller may be used as part of the reset
++framework, meaning that a device driver may request the reset using the
++child node's phandle it (ethernet example above) it can also be used
++in a standalone mode where the reset is performed automatically at boot
++or from userspace by sysfs. This is particularly for devices that require
++reset but are on discoverable busses (eg SDIO, USB).
+diff --git a/drivers/reset/Kconfig b/drivers/reset/Kconfig
+index c9d04f7..edf867c 100644
+--- a/drivers/reset/Kconfig
++++ b/drivers/reset/Kconfig
+@@ -11,3 +11,16 @@ menuconfig RESET_CONTROLLER
+ 	  via GPIOs or SoC-internal reset controller modules.
+ 
+ 	  If unsure, say no.
++
++config GPIO_RESET_CONTROLLER
++	tristate "GPIO reset controller"
++	help
++	  Reset controller using GPIO lines
++
++	  There are two main methods of using this controller:
++	  * As a reset controller within the reset framework allowing device
++	  drivers to request a hardware reset of their devices.
++	  * As a standalone driver performing reset at boot or upon userspace
++	  request (via sysfs)
++	  The second method is suitable for devices on discoverable busses
++	  (SDIO, USB)
+diff --git a/drivers/reset/Makefile b/drivers/reset/Makefile
+index 1e2d83f..57c2751 100644
+--- a/drivers/reset/Makefile
++++ b/drivers/reset/Makefile
+@@ -1 +1,2 @@
+ obj-$(CONFIG_RESET_CONTROLLER) += core.o
++obj-$(CONFIG_GPIO_RESET_CONTROLLER) += gpio-reset.o
+diff --git a/drivers/reset/gpio-reset.c b/drivers/reset/gpio-reset.c
+new file mode 100644
+index 0000000..17f8a45
+--- /dev/null
++++ b/drivers/reset/gpio-reset.c
+@@ -0,0 +1,460 @@
++/*
++ * Copyright 2014 Parkeon
++ * Martin Fuzzey <mfuzzey@parkeon.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it under
++ * the terms of the GNU General Public License version 2 as published by the
++ * Free Software Foundation.
++ *
++ * Driver allowing arbitary hardware to be reset by GPIO signals.
++ * The reset may be triggered in several ways:
++ *	At boot time (if configured in DT)
++ *	On userspace request via sysfs
++ *	By a driver using the reset controller framework
++ *
++ * The first two methods are supplied for devices on discoverable busses
++ * needing an external reset (eg some SDIO modules, USB hub chips)
++ */
++
++#include <linux/delay.h>
++#include <linux/err.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
++#include <linux/of_gpio.h>
++#include <linux/platform_device.h>
++#include <linux/reset-controller.h>
++#include <linux/slab.h>
++
++
++struct gpio_reset_priv;
++
++struct gpio_reset_line {
++	struct kobject kobj;
++	struct gpio_reset_priv *priv;
++	const char *name;
++	int gpio;
++	uint32_t asserted_value;
++	uint32_t duration_ms;
++#ifdef CONFIG_RESET_CONTROLLER
++	struct reset_controller_dev rcdev;
++#endif
++};
++#define kobj_to_gpio_reset_line(x) container_of(x, struct gpio_reset_line, kobj)
++
++
++struct gpio_reset_priv {
++	struct kref refcount;
++	struct device *dev;
++	int num_lines;
++	struct gpio_reset_line lines[];
++};
++
++struct gpio_reset_attribute {
++	struct attribute attr;
++	ssize_t (*show)(struct gpio_reset_line *line,
++				struct gpio_reset_attribute *attr, char *buf);
++	ssize_t (*store)(struct gpio_reset_line *line,
++				struct gpio_reset_attribute *attr,
++				const char *buf, size_t count);
++};
++#define to_gpio_reset_attr(x) container_of(x, struct gpio_reset_attribute, attr)
++
++
++static void gpio_reset_assert(struct gpio_reset_line *line)
++{
++	gpio_set_value(line->gpio, line->asserted_value);
++}
++
++static void gpio_reset_deassert(struct gpio_reset_line *line)
++{
++	gpio_set_value(line->gpio, !line->asserted_value);
++}
++
++static void gpio_reset_reset(struct gpio_reset_line *line)
++{
++	dev_info(line->priv->dev, "Resetting '%s' (%dms)",
++				line->name, line->duration_ms);
++	gpio_reset_assert(line);
++	msleep(line->duration_ms);
++	gpio_reset_deassert(line);
++}
++
++
++static void gpio_reset_free_priv(struct kref *ref)
++{
++	struct gpio_reset_priv *priv = container_of(ref,
++					struct gpio_reset_priv, refcount);
++
++	kfree(priv);
++}
++
++static void gpio_reset_release_kobj(struct kobject *kobj)
++{
++	struct gpio_reset_line *line;
++
++	line = kobj_to_gpio_reset_line(kobj);
++
++	kref_put(&line->priv->refcount, gpio_reset_free_priv);
++}
++
++
++#ifdef CONFIG_SYSFS
++
++static ssize_t gpio_reset_attr_show(struct kobject *kobj,
++			     struct attribute *attr,
++			     char *buf)
++{
++	struct gpio_reset_attribute *attribute;
++	struct gpio_reset_line *line;
++
++	attribute = to_gpio_reset_attr(attr);
++	line = kobj_to_gpio_reset_line(kobj);
++
++	if (!attribute->show)
++		return -EIO;
++
++	return attribute->show(line, attribute, buf);
++}
++
++static ssize_t gpio_reset_attr_store(struct kobject *kobj,
++			      struct attribute *attr,
++			      const char *buf, size_t len)
++{
++	struct gpio_reset_attribute *attribute;
++	struct gpio_reset_line *line;
++
++	attribute = to_gpio_reset_attr(attr);
++	line = kobj_to_gpio_reset_line(kobj);
++
++	if (!attribute->store)
++		return -EIO;
++
++	return attribute->store(line, attribute, buf, len);
++}
++
++static ssize_t control_store(struct gpio_reset_line *line,
++	struct gpio_reset_attribute *attr, const char *buf, size_t count)
++{
++	char action[10];
++	char *eol;
++
++	strncpy(action, buf, min(count, sizeof(action)));
++	action[sizeof(action) - 1] = '\0';
++	eol = strrchr(action, '\n');
++	if (eol)
++		*eol = '\0';
++
++	if (!strcmp("reset", action))
++		gpio_reset_reset(line);
++	else if (!strcmp("assert", action))
++		gpio_reset_assert(line);
++	else if (!strcmp("deassert", action))
++		gpio_reset_deassert(line);
++	else
++		return -EINVAL;
++
++	return count;
++}
++
++static ssize_t duration_ms_show(struct gpio_reset_line *line,
++	struct gpio_reset_attribute *attr, char *buf)
++{
++	return sprintf(buf, "%d\n", line->duration_ms);
++}
++
++static ssize_t duration_ms_store(struct gpio_reset_line *line,
++	struct gpio_reset_attribute *attr, const char *buf, size_t count)
++{
++	if (sscanf(buf, "%u", &line->duration_ms) != 1)
++		return -EINVAL;
++
++	return count;
++}
++
++static struct gpio_reset_attribute control_attribute = __ATTR_WO(control);
++static struct gpio_reset_attribute duration_attribute = __ATTR_RW(duration_ms);
++
++static struct attribute *gpio_reset_attrs[] = {
++	&control_attribute.attr,
++	&duration_attribute.attr,
++	NULL
++};
++
++
++static const struct sysfs_ops gpio_reset_sysfs_ops = {
++	.show = gpio_reset_attr_show,
++	.store = gpio_reset_attr_store,
++};
++
++
++static struct kobj_type gpio_reset_ktype = {
++	.release = gpio_reset_release_kobj,
++	.sysfs_ops = &gpio_reset_sysfs_ops,
++	.default_attrs = gpio_reset_attrs,
++};
++
++static int gpio_reset_create_sysfs(struct gpio_reset_line *line)
++{
++	int ret;
++
++	ret = kobject_init_and_add(&line->kobj, &gpio_reset_ktype,
++		&line->priv->dev->kobj, "reset-%s", line->name);
++
++	kref_get(&line->priv->refcount); /* kobject part of private structure */
++
++	if (ret) {
++		kobject_put(&line->kobj);
++		return ret;
++	}
++
++	kobject_uevent(&line->kobj, KOBJ_ADD);
++
++	return 0;
++}
++
++static void gpio_reset_destroy_sysfs(struct gpio_reset_line *line)
++{
++	kobject_put(&line->kobj);
++}
++
++
++#else
++
++static int gpio_reset_create_sysfs(struct gpio_reset_line *line)
++{
++	return 0;
++}
++
++static void gpio_reset_destroy_sysfs(struct gpio_reset_line *line)
++{
++}
++
++#endif  /* CONFIG_SYSFS */
++
++
++#ifdef CONFIG_RESET_CONTROLLER
++#define rcdev_to_gpio_reset_line(x) \
++		container_of(x, struct gpio_reset_line, rcdev)
++
++static int gpio_reset_controller_assert(struct reset_controller_dev *rcdev,
++		unsigned long sw_reset_idx)
++{
++	struct gpio_reset_line *line =  rcdev_to_gpio_reset_line(rcdev);
++
++	gpio_reset_assert(line);
++
++	return 0;
++}
++
++static int gpio_reset_controller_deassert(struct reset_controller_dev *rcdev,
++		unsigned long sw_reset_idx)
++{
++	struct gpio_reset_line *line =  rcdev_to_gpio_reset_line(rcdev);
++
++	gpio_reset_deassert(line);
++
++	return 0;
++}
++
++static int gpio_reset_controller_reset(struct reset_controller_dev *rcdev,
++		unsigned long sw_reset_idx)
++{
++	struct gpio_reset_line *line =  rcdev_to_gpio_reset_line(rcdev);
++
++	gpio_reset_reset(line);
++
++	return 0;
++}
++
++static struct reset_control_ops gpio_reset_ops = {
++	.assert = gpio_reset_controller_assert,
++	.deassert = gpio_reset_controller_deassert,
++	.reset = gpio_reset_controller_reset,
++};
++
++
++int gpio_reset_nooarg_xlate(struct reset_controller_dev *rcdev,
++			  const struct of_phandle_args *reset_spec)
++{
++	if (WARN_ON(reset_spec->args_count != 0))
++		return -EINVAL;
++
++	return 0;
++}
++
++/* We register one controller per line rather than a single
++ * global controller so that drivers my directly reference the
++ * phandle of the gpio_reset subnode rather than having to know
++ * the index.
++ */
++static int gpio_reset_register_controller(
++	struct device_node *np,
++	struct gpio_reset_line *line)
++{
++	line->rcdev.of_node = np;
++	line->rcdev.nr_resets = 1;
++	line->rcdev.ops = &gpio_reset_ops;
++	line->rcdev.of_xlate = gpio_reset_nooarg_xlate;
++
++	return reset_controller_register(&line->rcdev);
++}
++
++static void gpio_reset_unregister_controller(struct gpio_reset_line *line)
++{
++	if (line->rcdev.nr_resets)
++		reset_controller_unregister(&line->rcdev);
++}
++
++#else
++
++static int gpio_reset_register_controller(
++	struct device_node *np,
++	struct gpio_reset_line *line)
++{
++	return 0;
++}
++
++static void gpio_reset_unregister_controller(struct gpio_reset_line *line)
++{
++}
++#endif  /* CONFIG_RESET_CONTROLLER */
++
++
++static int gpio_reset_init_line(
++	struct device_node *np,
++	struct gpio_reset_line *line)
++{
++	int ret;
++	struct device *dev = line->priv->dev;
++
++	line->name = np->name;
++
++	line->gpio = of_get_gpio(np, 0);
++	if (!gpio_is_valid(line->gpio)) {
++		dev_warn(dev, "Invalid reset gpio for '%s'", np->name);
++		return 0;
++	}
++
++	line->duration_ms = 1;
++	of_property_read_u32(np, "asserted-state", &line->asserted_value);
++	of_property_read_u32(np, "duration-ms", &line->duration_ms);
++
++	ret = devm_gpio_request_one(dev, line->gpio,
++		line->asserted_value ? GPIOF_OUT_INIT_LOW : GPIOF_OUT_INIT_HIGH,
++		line->name);
++	if (ret)
++		return ret;
++
++	ret = gpio_reset_create_sysfs(line);
++	if (ret)
++		return ret;
++
++	ret = gpio_reset_register_controller(np, line);
++	if (ret)
++		return ret;
++
++
++	if (of_property_read_bool(np, "auto"))
++		gpio_reset_reset(line);
++
++	return 0;
++}
++
++static void gpio_reset_free_line(struct gpio_reset_line *line)
++{
++	gpio_reset_destroy_sysfs(line);
++	gpio_reset_unregister_controller(line);
++}
++
++static int gpio_reset_probe(struct platform_device *pdev)
++{
++	struct device_node *np = pdev->dev.of_node, *child;
++	struct gpio_reset_priv *priv;
++	struct gpio_reset_line *line;
++	int num_lines;
++	int ret;
++
++	num_lines = of_get_available_child_count(np);
++	if (!num_lines)
++		return -ENODEV;
++
++	for_each_available_child_of_node(np, child) {
++		ret = of_get_gpio(child, 0);
++		if (ret == -EPROBE_DEFER)
++			return ret;
++	}
++
++	priv = kzalloc(sizeof(*priv) + sizeof(*line) * num_lines, GFP_KERNEL);
++	if (!priv)
++		return -ENOMEM;
++
++	kref_init(&priv->refcount);
++	priv->dev = &pdev->dev;
++	priv->num_lines = num_lines;
++
++	line = priv->lines;
++	for_each_available_child_of_node(np, child) {
++		line->priv = priv;
++		ret = gpio_reset_init_line(child, line);
++		if (ret)
++			goto rollback;
++		line++;
++	}
++
++	platform_set_drvdata(pdev, priv);
++
++	return 0;
++
++rollback:
++	while (line >= priv->lines)
++		gpio_reset_free_line(line--);
++
++	kref_put(&priv->refcount, gpio_reset_free_priv);
++
++	return ret;
++}
++
++static int gpio_reset_remove(struct platform_device *pdev)
++{
++	struct gpio_reset_priv *priv = platform_get_drvdata(pdev);
++	int i;
++
++	for (i = 0; i < priv->num_lines; i++)
++		gpio_reset_free_line(&priv->lines[i]);
++
++	kref_put(&priv->refcount, gpio_reset_free_priv);
++
++	return 0;
++}
++
++static const struct of_device_id gpio_reset_dt_ids[] = {
++	{ .compatible = "linux,gpio-reset" },
++	{}
++};
++
++static struct platform_driver gpio_reset_driver = {
++	.probe		= gpio_reset_probe,
++	.remove		= gpio_reset_remove,
++	.driver		= {
++		.name	= "gpio_reset",
++		.owner	= THIS_MODULE,
++		.of_match_table = gpio_reset_dt_ids,
++	},
++};
++
++static int __init gpio_reset_init(void)
++{
++	return platform_driver_register(&gpio_reset_driver);
++}
++subsys_initcall(gpio_reset_init);
++
++static void __exit gpio_reset_exit(void)
++{
++	platform_driver_unregister(&gpio_reset_driver);
++}
++module_exit(gpio_reset_exit);
++
++MODULE_AUTHOR("Martin Fuzzey <mfuzzey@parkeon.com>");
++MODULE_DESCRIPTION("GPIO reset controller");
++MODULE_LICENSE("GPL");
 
-If this is not using the standard gpio bindings then this should be
-renamed.
-
-Either way this must be documented.
-
-> +
-> +	prop = of_find_property(node, "dp83640,extts-gpios", &proplen);
-> +	if (prop) {
-> +		if (dp83640->slave) {
-> +			pr_err("dp83640,extts-gpios property can not be set together with dp83640,slave");
-> +			return -EINVAL;
-> +		}
-> +
-> +		clock->caps.n_ext_ts = proplen / sizeof(u32);
-> +		if (clock->caps.n_ext_ts > N_EXT) {
-> +			pr_err("dp83640,extts-gpios may not have more than %d entries",
-> +			       N_EXT);
-> +			return -EINVAL;
-> +		}
-> +		err = of_property_read_u32_array(node, "dp83640,extts-gpios",
-> +						 clock->extts_gpios,
-> +						 clock->caps.n_ext_ts);
-> +		if (err < 0)
-> +			return err;
-> +	}
-
-Similarly this does not look right for parsing a standard -gpios property.
-
-> +
-> +	prop = of_find_property(node, "dp83640,calibrate-gpio", &proplen);
-> +	if (prop) {
-> +		if (dp83640->slave) {
-> +			pr_err("dp83640,calibrate-gpio property can not be set together with dp83640,slave");
-> +			return -EINVAL;
-> +		}
-> +		clock->calibrate_gpio = -1;
-> +		of_property_read_u32(node, "dp83640,calibrate-gpio",
-> +				     &clock->calibrate_gpio);
-> +	}
-
-And again, this doesn't look right.
-
-Thanks,
-Mark.
