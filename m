@@ -1,22 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753266AbaBJN3X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 08:29:23 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33088 "EHLO
+	id S1753293AbaBJN3a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 08:29:30 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33093 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753250AbaBJN3U (ORCPT
+	with ESMTP id S1753250AbaBJN3Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 08:29:20 -0500
-Date: Mon, 10 Feb 2014 05:28:32 -0800
-From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-69efsat90ibhnd577zy3z9gh@git.kernel.org>
+	Mon, 10 Feb 2014 08:29:25 -0500
+Date: Mon, 10 Feb 2014 05:28:43 -0800
+From: tip-bot for Steven Rostedt <tipbot@zytor.com>
+Message-ID: <tip-569d6557ab957d6ae7e97a46ae669174be4189e6@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, junk@eslaf.co.uk, tglx@linutronix.de
+        torvalds@linux-foundation.org, rostedt@goodmis.org,
+        peterz@infradead.org, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, junk@eslaf.co.uk
+        rostedt@goodmis.org, torvalds@linux-foundation.org,
+        peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <20140204141315.2a968a72@gandalf.local.home>
+References: <20140204141315.2a968a72@gandalf.local.home>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86: Fix Userspace RDPMC switch
-Git-Commit-ID: 0e9f2204cfa6d79abe3e525ddf7c4ab5792cc751
+Subject: [tip:x86/urgent] x86: Use preempt_disable_notrace()
+  in cycles_2_ns()
+Git-Commit-ID: 569d6557ab957d6ae7e97a46ae669174be4189e6
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -25,43 +30,63 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 10 Feb 2014 05:28:38 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 10 Feb 2014 05:28:49 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0e9f2204cfa6d79abe3e525ddf7c4ab5792cc751
-Gitweb:     http://git.kernel.org/tip/0e9f2204cfa6d79abe3e525ddf7c4ab5792cc751
-Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Wed, 5 Feb 2014 11:19:56 +0100
+Commit-ID:  569d6557ab957d6ae7e97a46ae669174be4189e6
+Gitweb:     http://git.kernel.org/tip/569d6557ab957d6ae7e97a46ae669174be4189e6
+Author:     Steven Rostedt <rostedt@goodmis.org>
+AuthorDate: Tue, 4 Feb 2014 14:13:15 -0500
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sun, 9 Feb 2014 13:08:25 +0100
+CommitDate: Sun, 9 Feb 2014 13:09:08 +0100
 
-perf/x86: Fix Userspace RDPMC switch
+x86: Use preempt_disable_notrace() in cycles_2_ns()
 
-The current code forgets to change the CR4 state on the current CPU.
-Use on_each_cpu() instead of smp_call_function().
+When debug preempt is enabled, preempt_disable() can be traced by
+function and function graph tracing.
 
-Reported-by: Mark Davies <junk@eslaf.co.uk>
-Suggested-by: Mark Davies <junk@eslaf.co.uk>
+There's a place in the function graph tracer that calls trace_clock()
+which eventually calls cycles_2_ns() outside of the recursion
+protection. When cycles_2_ns() calls preempt_disable() it gets traced
+and the graph tracer will go into a recursive loop causing a crash or
+worse, a triple fault.
+
+Simple fix is to use preempt_disable_notrace() in cycles_2_ns, which
+makes sense because the preempt_disable() tracing may use that code
+too, and it tracing it, even with recursion protection is rather
+pointless.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: fweisbec@gmail.com
-Link: http://lkml.kernel.org/n/tip-69efsat90ibhnd577zy3z9gh@git.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/20140204141315.2a968a72@gandalf.local.home
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/cpu/perf_event.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kernel/tsc.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 1246b85..895604f 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1826,7 +1826,7 @@ static ssize_t set_attr_rdpmc(struct device *cdev,
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index 19e5adb..acb3b60 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -209,7 +209,7 @@ static inline unsigned long long cycles_2_ns(unsigned long long cyc)
+ 	 * dance when its actually needed.
+ 	 */
  
- 	if (!!val != !!x86_pmu.attr_rdpmc) {
- 		x86_pmu.attr_rdpmc = !!val;
--		smp_call_function(change_rdpmc, (void *)val, 1);
-+		on_each_cpu(change_rdpmc, (void *)val, 1);
+-	preempt_disable();
++	preempt_disable_notrace();
+ 	data = this_cpu_read(cyc2ns.head);
+ 	tail = this_cpu_read(cyc2ns.tail);
+ 
+@@ -229,7 +229,7 @@ static inline unsigned long long cycles_2_ns(unsigned long long cyc)
+ 		if (!--data->__count)
+ 			this_cpu_write(cyc2ns.tail, data);
  	}
+-	preempt_enable();
++	preempt_enable_notrace();
  
- 	return count;
+ 	return ns;
+ }
