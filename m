@@ -1,146 +1,454 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753087AbaBJXdM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 18:33:12 -0500
-Received: from mail.efficios.com ([78.47.125.74]:52095 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752291AbaBJXdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 18:33:07 -0500
-X-Greylist: delayed 559 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Feb 2014 18:33:06 EST
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        David Howells <dhowells@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [RFC PATCH] Fix: module signature vs tracepoints: add new TAINT_UNSIGNED_MODULE
-Date: Mon, 10 Feb 2014 18:23:20 -0500
-Message-Id: <1392074600-21977-1-git-send-email-mathieu.desnoyers@efficios.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1753212AbaBJXfJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 18:35:09 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:33153 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752659AbaBJXfF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 18:35:05 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AuwHAIBh+VJ5LGaB/2dsb2JhbABZgwyDPrZUhVCBFhd0giUBAQUnExweBRAIAw4HAwklDwUlAyETiATJaxcWjmcHhDgEmCqKT4dSgW+BUig
+Date: Tue, 11 Feb 2014 10:34:57 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: viro@zeniv.linux.org.uk, bpm@sgi.com, tytso@mit.edu,
+        adilger.kernel@dilger.ca, jack@suse.cz, mtk.manpages@gmail.com,
+        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Ashish Sangwan <a.sangwan@samsung.com>
+Subject: Re: [PATCH RESEND 3/10] ext4: Add support FALLOC_FL_COLLAPSE_RANGE
+ for fallocate
+Message-ID: <20140210233457.GY13647@dastard>
+References: <1391319874-3203-1-git-send-email-linkinjeon@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391319874-3203-1-git-send-email-linkinjeon@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Users have reported being unable to trace non-signed modules loaded
-within a kernel supporting module signature.
+On Sun, Feb 02, 2014 at 02:44:34PM +0900, Namjae Jeon wrote:
+> From: Namjae Jeon <namjae.jeon@samsung.com>
+> 
+> Add support FALLOC_FL_COLLAPSE_RANGE for fallocate
+> 
+> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+> Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
 
-This is caused by tracepoint.c:tracepoint_module_coming() refusing to
-take into account tracepoints sitting within force-loaded modules
-(TAINT_FORCED_MODULE). The reason for this check, in the first place, is
-that a force-loaded module may have a struct module incompatible with
-the layout expected by the kernel, and can thus cause a kernel crash
-upon forced load of that module on a kernel with CONFIG_TRACEPOINTS=y.
+Can someone more familiar with ext4 please look at this?
 
-Tracepoints, however, specifically accept TAINT_OOT_MODULE and
-TAINT_CRAP, since those modules do not lead to the "very likely system
-crash" issue cited above for force-loaded modules.
+I'm happy to stage this through the XFS tree if it's ok, but I'll
+need a reviewed-by tag before I take it. If the XFS code is ready to
+go before the ext4 stuff, then I'll just take the XFS functionality
+and the ext4 stuff can go through the ext4 tree at a later date...
 
-With kernels having CONFIG_MODULE_SIG=y (signed modules), a non-signed
-module is tainted re-using the TAINT_FORCED_MODULE taint flag.
-Unfortunately, this means that Tracepoints treat that module as a
-force-loaded module, and thus silently refuse to consider any tracepoint
-within this module.
+Cheers,
 
-Since an unsigned module does not fit within the "very likely system
-crash" category of tainting, add a new TAINT_UNSIGNED_MODULE taint flag
-to specifically address this taint behavior, and accept those modules
-within Tracepoints. This flag is assigned to the letter 'N', since all
-the more obvious ones (e.g. 'S') were already taken.
+Dave.
 
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: Steven Rostedt <rostedt@goodmis.org>
-CC: Ingo Molnar <mingo@redhat.com>
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Rusty Russell <rusty@rustcorp.com.au>
-CC: David Howells <dhowells@redhat.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/linux/kernel.h        |    1 +
- include/trace/events/module.h |    3 ++-
- kernel/module.c               |    4 +++-
- kernel/panic.c                |    1 +
- kernel/tracepoint.c           |    5 +++--
- 5 files changed, 10 insertions(+), 4 deletions(-)
+> ---
+>  fs/ext4/ext4.h              |    3 +
+>  fs/ext4/extents.c           |  297 ++++++++++++++++++++++++++++++++++++++++++-
+>  fs/ext4/move_extent.c       |    2 +-
+>  include/trace/events/ext4.h |   25 ++++
+>  4 files changed, 325 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+> index e618503..5cc015a 100644
+> --- a/fs/ext4/ext4.h
+> +++ b/fs/ext4/ext4.h
+> @@ -2745,6 +2745,7 @@ extern int ext4_find_delalloc_cluster(struct inode *inode, ext4_lblk_t lblk);
+>  extern int ext4_fiemap(struct inode *inode, struct fiemap_extent_info *fieinfo,
+>  			__u64 start, __u64 len);
+>  extern int ext4_ext_precache(struct inode *inode);
+> +extern int ext4_collapse_range(struct inode *inode, loff_t offset, loff_t len);
+>  
+>  /* move_extent.c */
+>  extern void ext4_double_down_write_data_sem(struct inode *first,
+> @@ -2754,6 +2755,8 @@ extern void ext4_double_up_write_data_sem(struct inode *orig_inode,
+>  extern int ext4_move_extents(struct file *o_filp, struct file *d_filp,
+>  			     __u64 start_orig, __u64 start_donor,
+>  			     __u64 len, __u64 *moved_len);
+> +extern int mext_next_extent(struct inode *inode, struct ext4_ext_path *path,
+> +			    struct ext4_extent **extent);
+>  
+>  /* page-io.c */
+>  extern int __init ext4_init_pageio(void);
+> diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+> index 267c9fb..12338c1 100644
+> --- a/fs/ext4/extents.c
+> +++ b/fs/ext4/extents.c
+> @@ -4566,12 +4566,16 @@ long ext4_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
+>  	unsigned int credits, blkbits = inode->i_blkbits;
+>  
+>  	/* Return error if mode is not supported */
+> -	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE))
+> +	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE |
+> +		     FALLOC_FL_COLLAPSE_RANGE))
+>  		return -EOPNOTSUPP;
+>  
+>  	if (mode & FALLOC_FL_PUNCH_HOLE)
+>  		return ext4_punch_hole(inode, offset, len);
+>  
+> +	if (mode & FALLOC_FL_COLLAPSE_RANGE)
+> +		return ext4_collapse_range(inode, offset, len);
+> +
+>  	ret = ext4_convert_inline_data(inode);
+>  	if (ret)
+>  		return ret;
+> @@ -4870,3 +4874,294 @@ int ext4_fiemap(struct inode *inode, struct fiemap_extent_info *fieinfo,
+>  	ext4_es_lru_add(inode);
+>  	return error;
+>  }
+> +
+> +/*
+> + * ext4_access_path:
+> + * Function to access the path buffer for marking it dirty.
+> + * It also checks if there are sufficient credits left in the journal handle
+> + * to update path.
+> + */
+> +static int
+> +ext4_access_path(handle_t *handle, struct inode *inode,
+> +		struct ext4_ext_path *path)
+> +{
+> +	int credits, err;
+> +
+> +	/*
+> +	 * Check if need to extend journal credits
+> +	 * 3 for leaf, sb, and inode plus 2 (bmap and group
+> +	 * descriptor) for each block group; assume two block
+> +	 * groups
+> +	 */
+> +	if (handle->h_buffer_credits < 7) {
+> +		credits = ext4_writepage_trans_blocks(inode);
+> +		err = ext4_ext_truncate_extend_restart(handle, inode, credits);
+> +		/* EAGAIN is success */
+> +		if (err && err != -EAGAIN)
+> +			return err;
+> +	}
+> +
+> +	err = ext4_ext_get_access(handle, inode, path);
+> +	return err;
+> +}
+> +
+> +/*
+> + * ext4_ext_shift_path_extents:
+> + * Shift the extents of a path structure lying between path[depth].p_ext
+> + * and EXT_LAST_EXTENT(path[depth].p_hdr) downwards, by subtracting shift
+> + * from starting block for each extent.
+> + */
+> +static int
+> +ext4_ext_shift_path_extents(struct ext4_ext_path *path, ext4_lblk_t shift,
+> +			    struct inode *inode, handle_t *handle,
+> +			    ext4_lblk_t *start)
+> +{
+> +	int depth, err = 0;
+> +	struct ext4_extent *ex_start, *ex_last;
+> +	bool update = 0;
+> +	depth = path->p_depth;
+> +
+> +	while (depth >= 0) {
+> +		if (depth == path->p_depth) {
+> +			ex_start = path[depth].p_ext;
+> +			if (!ex_start)
+> +				return -EIO;
+> +
+> +			ex_last = EXT_LAST_EXTENT(path[depth].p_hdr);
+> +			if (!ex_last)
+> +				return -EIO;
+> +
+> +			err = ext4_access_path(handle, inode, path + depth);
+> +			if (err)
+> +				goto out;
+> +
+> +			if (ex_start == EXT_FIRST_EXTENT(path[depth].p_hdr))
+> +				update = 1;
+> +
+> +			*start = ex_last->ee_block +
+> +				ext4_ext_get_actual_len(ex_last);
+> +
+> +			while (ex_start <= ex_last) {
+> +				ex_start->ee_block -= shift;
+> +				if (ex_start >
+> +					EXT_FIRST_EXTENT(path[depth].p_hdr)) {
+> +					if (ext4_ext_try_to_merge_right(inode,
+> +						path, ex_start - 1))
+> +						ex_last--;
+> +				}
+> +				ex_start++;
+> +			}
+> +			err = ext4_ext_dirty(handle, inode, path + depth);
+> +			if (err)
+> +				goto out;
+> +
+> +			if (--depth < 0 || !update)
+> +				break;
+> +		}
+> +
+> +		/* Update index too */
+> +		err = ext4_access_path(handle, inode, path + depth);
+> +		if (err)
+> +			goto out;
+> +
+> +		path[depth].p_idx->ei_block -= shift;
+> +		err = ext4_ext_dirty(handle, inode, path + depth);
+> +		if (err)
+> +			goto out;
+> +
+> +		/* we are done if current index is not a starting index */
+> +		if (path[depth].p_idx != EXT_FIRST_INDEX(path[depth].p_hdr))
+> +			break;
+> +
+> +		depth--;
+> +	}
+> +
+> +out:
+> +	return err;
+> +}
+> +
+> +/*
+> + * ext4_ext_shift_extents:
+> + * All the extents which lies in the range from start to the last allocated
+> + * block for the file are shifted downwards by shift blocks.
+> + * On success, 0 is returned, error otherwise.
+> + */
+> +static int
+> +ext4_ext_shift_extents(struct inode *inode, handle_t *handle,
+> +		       ext4_lblk_t start, ext4_lblk_t shift)
+> +{
+> +	struct ext4_ext_path *path;
+> +	int ret = 0, depth;
+> +	struct ext4_extent *extent;
+> +	ext4_lblk_t stop_block, current_block;
+> +	ext4_lblk_t ex_start, ex_end;
+> +
+> +	/* Let path point to the last extent */
+> +	path = ext4_ext_find_extent(inode, EXT_MAX_BLOCKS - 1, NULL, 0);
+> +	if (IS_ERR(path))
+> +		return PTR_ERR(path);
+> +
+> +	depth = path->p_depth;
+> +	extent = path[depth].p_ext;
+> +	if (!extent) {
+> +		ext4_ext_drop_refs(path);
+> +		kfree(path);
+> +		return ret;
+> +	}
+> +
+> +	stop_block = extent->ee_block + ext4_ext_get_actual_len(extent);
+> +	ext4_ext_drop_refs(path);
+> +	kfree(path);
+> +
+> +	/* Nothing to shift, if hole is at the end of file */
+> +	if (start >= stop_block)
+> +		return ret;
+> +
+> +	/*
+> +	 * Don't start shifting extents until we make sure the hole is big
+> +	 * enough to accomodate the shift.
+> +	 */
+> +	path = ext4_ext_find_extent(inode, start - 1, NULL, 0);
+> +	depth = path->p_depth;
+> +	extent =  path[depth].p_ext;
+> +	ex_start = extent->ee_block;
+> +	ex_end = extent->ee_block + ext4_ext_get_actual_len(extent);
+> +	ext4_ext_drop_refs(path);
+> +	kfree(path);
+> +
+> +	if ((ex_start > start - 1 && shift > ex_start) ||
+> +	    (ex_end > start - shift))
+> +		return -EINVAL;
+> +
+> +	/* Its safe to start updating extents */
+> +	while (start < stop_block) {
+> +		path = ext4_ext_find_extent(inode, start, NULL, 0);
+> +		if (IS_ERR(path))
+> +			return PTR_ERR(path);
+> +		depth = path->p_depth;
+> +		extent = path[depth].p_ext;
+> +		current_block = extent->ee_block;
+> +		if (start > current_block) {
+> +			/* Hole, move to the next extent */
+> +			ret = mext_next_extent(inode, path, &extent);
+> +			if (ret != 0) {
+> +				ext4_ext_drop_refs(path);
+> +				kfree(path);
+> +				if (ret == 1)
+> +					ret = 0;
+> +				break;
+> +			}
+> +		}
+> +		ret = ext4_ext_shift_path_extents(path, shift, inode,
+> +				handle, &start);
+> +		ext4_ext_drop_refs(path);
+> +		kfree(path);
+> +		if (ret)
+> +			break;
+> +	}
+> +
+> +	return ret;
+> +}
+> +
+> +/*
+> + * ext4_collapse_range:
+> + * This implements the fallocate's collapse range functionality for ext4
+> + * Returns: 0 and non-zero on error.
+> + */
+> +int ext4_collapse_range(struct inode *inode, loff_t offset, loff_t len)
+> +{
+> +	struct super_block *sb = inode->i_sb;
+> +	ext4_lblk_t punch_start, punch_stop;
+> +	handle_t *handle;
+> +	unsigned int credits;
+> +	unsigned int rounding;
+> +	loff_t ioffset, new_size;
+> +	int ret;
+> +	unsigned blksize_mask = (1 << inode->i_blkbits) - 1;
+> +
+> +	BUG_ON(offset + len > i_size_read(inode));
+> +
+> +	/* Collapse range works only on fs block size aligned offsets. */
+> +	if (offset & blksize_mask || len & blksize_mask)
+> +		return -EINVAL;
+> +
+> +	if (!S_ISREG(inode->i_mode))
+> +		return -EOPNOTSUPP;
+> +
+> +	if (EXT4_SB(sb)->s_cluster_ratio > 1)
+> +		return -EOPNOTSUPP;
+> +
+> +	/* Currently just for extent based files */
+> +	if (!ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS))
+> +		return -EOPNOTSUPP;
+> +
+> +	if (IS_SWAPFILE(inode))
+> +		return -ETXTBSY;
+> +
+> +	trace_ext4_collapse_range(inode, offset, len);
+> +
+> +	punch_start = offset >> EXT4_BLOCK_SIZE_BITS(sb);
+> +	punch_stop = (offset + len) >> EXT4_BLOCK_SIZE_BITS(sb);
+> +
+> +	rounding = max_t(uint, 1 << EXT4_BLOCK_SIZE_BITS(sb), PAGE_CACHE_SIZE);
+> +	ioffset = offset & ~(rounding - 1);
+> +
+> +	/* Write out all dirty pages */
+> +	ret = filemap_write_and_wait_range(inode->i_mapping, ioffset, -1);
+> +	if (ret)
+> +		return ret;
+> +
+> +	/* Take mutex lock */
+> +	mutex_lock(&inode->i_mutex);
+> +
+> +	/* Wait for existing dio to complete */
+> +	ext4_inode_block_unlocked_dio(inode);
+> +	inode_dio_wait(inode);
+> +
+> +	truncate_pagecache_range(inode, ioffset, -1);
+> +
+> +	credits = ext4_writepage_trans_blocks(inode);
+> +	handle = ext4_journal_start(inode, EXT4_HT_TRUNCATE, credits);
+> +	if (IS_ERR(handle)) {
+> +		ret = PTR_ERR(handle);
+> +		goto out_dio;
+> +	}
+> +
+> +	down_write(&EXT4_I(inode)->i_data_sem);
+> +
+> +	ext4_discard_preallocations(inode);
+> +
+> +	ret = ext4_es_remove_extent(inode, punch_start,
+> +				    EXT_MAX_BLOCKS - punch_start - 1);
+> +	if (ret)
+> +		goto journal_stop;
+> +
+> +	ret = ext4_ext_remove_space(inode, punch_start, punch_stop - 1);
+> +	if (ret)
+> +		goto journal_stop;
+> +
+> +	ret = ext4_ext_shift_extents(inode, handle, punch_stop,
+> +				     punch_stop - punch_start);
+> +	if (ret)
+> +		goto journal_stop;
+> +
+> +	if ((offset + len) > i_size_read(inode))
+> +		new_size = offset;
+> +	else
+> +		new_size = i_size_read(inode) - len;
+> +
+> +	truncate_setsize(inode, new_size);
+> +	EXT4_I(inode)->i_disksize = new_size;
+> +
+> +	inode->i_mtime = inode->i_ctime = ext4_current_time(inode);
+> +	ext4_mark_inode_dirty(handle, inode);
+> +
+> +journal_stop:
+> +	ext4_journal_stop(handle);
+> +	up_write(&EXT4_I(inode)->i_data_sem);
+> +
+> +out_dio:
+> +	ext4_inode_resume_unlocked_dio(inode);
+> +	mutex_unlock(&inode->i_mutex);
+> +	return ret;
+> +}
+> diff --git a/fs/ext4/move_extent.c b/fs/ext4/move_extent.c
+> index 773b503..b474558 100644
+> --- a/fs/ext4/move_extent.c
+> +++ b/fs/ext4/move_extent.c
+> @@ -76,7 +76,7 @@ copy_extent_status(struct ext4_extent *src, struct ext4_extent *dest)
+>   * ext4_ext_path structure refers to the last extent, or a negative error
+>   * value on failure.
+>   */
+> -static int
+> +int
+>  mext_next_extent(struct inode *inode, struct ext4_ext_path *path,
+>  		      struct ext4_extent **extent)
+>  {
+> diff --git a/include/trace/events/ext4.h b/include/trace/events/ext4.h
+> index 197d312..90e2f71 100644
+> --- a/include/trace/events/ext4.h
+> +++ b/include/trace/events/ext4.h
+> @@ -2410,6 +2410,31 @@ TRACE_EVENT(ext4_es_shrink_exit,
+>  		  __entry->shrunk_nr, __entry->cache_cnt)
+>  );
+>  
+> +TRACE_EVENT(ext4_collapse_range,
+> +	TP_PROTO(struct inode *inode, loff_t offset, loff_t len),
+> +
+> +	TP_ARGS(inode, offset, len),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(dev_t,	dev)
+> +		__field(ino_t,	ino)
+> +		__field(loff_t,	offset)
+> +		__field(loff_t, len)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->dev	= inode->i_sb->s_dev;
+> +		__entry->ino	= inode->i_ino;
+> +		__entry->offset	= offset;
+> +		__entry->len	= len;
+> +	),
+> +
+> +	TP_printk("dev %d,%d ino %lu offset %lld len %lld",
+> +		  MAJOR(__entry->dev), MINOR(__entry->dev),
+> +		  (unsigned long) __entry->ino,
+> +		  __entry->offset, __entry->len)
+> +);
+> +
+>  #endif /* _TRACE_EXT4_H */
+>  
+>  /* This part must be outside protection */
+> -- 
+> 1.7.9.5
+> 
+> 
 
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 196d1ea..4710900 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -469,6 +469,7 @@ extern enum system_states {
- #define TAINT_CRAP			10
- #define TAINT_FIRMWARE_WORKAROUND	11
- #define TAINT_OOT_MODULE		12
-+#define TAINT_UNSIGNED_MODULE		13
- 
- extern const char hex_asc[];
- #define hex_asc_lo(x)	hex_asc[((x) & 0x0f)]
-diff --git a/include/trace/events/module.h b/include/trace/events/module.h
-index 1619327..1788a02 100644
---- a/include/trace/events/module.h
-+++ b/include/trace/events/module.h
-@@ -23,7 +23,8 @@ struct module;
- #define show_module_flags(flags) __print_flags(flags, "",	\
- 	{ (1UL << TAINT_PROPRIETARY_MODULE),	"P" },		\
- 	{ (1UL << TAINT_FORCED_MODULE),		"F" },		\
--	{ (1UL << TAINT_CRAP),			"C" })
-+	{ (1UL << TAINT_CRAP),			"C" },		\
-+	{ (1UL << TAINT_UNSIGNED_MODULE),	"N" })
- 
- TRACE_EVENT(module_load,
- 
-diff --git a/kernel/module.c b/kernel/module.c
-index d24fcf2..73ca01a 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -1013,6 +1013,8 @@ static size_t module_flags_taint(struct module *mod, char *buf)
- 		buf[l++] = 'F';
- 	if (mod->taints & (1 << TAINT_CRAP))
- 		buf[l++] = 'C';
-+	if (mod->taints & (1 << TAINT_UNSIGNED_MODULE))
-+		buf[l++] = 'N';
- 	/*
- 	 * TAINT_FORCED_RMMOD: could be added.
- 	 * TAINT_UNSAFE_SMP, TAINT_MACHINE_CHECK, TAINT_BAD_PAGE don't
-@@ -3214,7 +3216,7 @@ static int load_module(struct load_info *info, const char __user *uargs,
- 		pr_notice_once("%s: module verification failed: signature "
- 			       "and/or  required key missing - tainting "
- 			       "kernel\n", mod->name);
--		add_taint_module(mod, TAINT_FORCED_MODULE, LOCKDEP_STILL_OK);
-+		add_taint_module(mod, TAINT_UNSIGNED_MODULE, LOCKDEP_STILL_OK);
- 	}
- #endif
- 
-diff --git a/kernel/panic.c b/kernel/panic.c
-index 6d63003..98588e0 100644
---- a/kernel/panic.c
-+++ b/kernel/panic.c
-@@ -210,6 +210,7 @@ static const struct tnt tnts[] = {
- 	{ TAINT_CRAP,			'C', ' ' },
- 	{ TAINT_FIRMWARE_WORKAROUND,	'I', ' ' },
- 	{ TAINT_OOT_MODULE,		'O', ' ' },
-+	{ TAINT_UNSIGNED_MODULE,	'N', ' ' },
- };
- 
- /**
-diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
-index 29f2654..e7903c1 100644
---- a/kernel/tracepoint.c
-+++ b/kernel/tracepoint.c
-@@ -639,9 +639,10 @@ static int tracepoint_module_coming(struct module *mod)
- 	/*
- 	 * We skip modules that taint the kernel, especially those with different
- 	 * module headers (for forced load), to make sure we don't cause a crash.
--	 * Staging and out-of-tree GPL modules are fine.
-+	 * Staging, out-of-tree, and non-signed GPL modules are fine.
- 	 */
--	if (mod->taints & ~((1 << TAINT_OOT_MODULE) | (1 << TAINT_CRAP)))
-+	if (mod->taints & ~((1 << TAINT_OOT_MODULE) | (1 << TAINT_CRAP) |
-+			(1 << TAINT_UNSIGNED_MODULE)))
- 		return 0;
- 	mutex_lock(&tracepoints_mutex);
- 	tp_mod = kmalloc(sizeof(struct tp_module), GFP_KERNEL);
 -- 
-1.7.10.4
-
+Dave Chinner
+david@fromorbit.com
