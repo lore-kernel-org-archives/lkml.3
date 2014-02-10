@@ -1,108 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752851AbaBJRYr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 12:24:47 -0500
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:34069
-	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752293AbaBJRYo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 12:24:44 -0500
-x-originating-ip: 72.167.245.219
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: davem@davemloft.net, netdev@vger.kernel.org
-Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
-        jasowang@redhat.com, linux-kernel@vger.kernel.org,
-        driverdev-devel@linuxdriverproject.org
-Subject: [PATCH net,v2] hyperv: Fix the carrier status setting
-Date: Mon, 10 Feb 2014 10:15:29 -0800
-Message-Id: <1392056129-29398-1-git-send-email-haiyangz@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1752625AbaBJR0a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 12:26:30 -0500
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:4397 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752179AbaBJR01 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 12:26:27 -0500
+Date: Mon, 10 Feb 2014 09:28:09 -0800
+From: Courtney Cavin <courtney.cavin@sonymobile.com>
+To: Laura Abbott <lauraa@codeaurora.org>
+CC: Russell King <linux@arm.linux.org.uk>, David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Rob Herring <robherring2@gmail.com>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: Re: [PATCHv2 2/2] arm: Get rid of meminfo
+Message-ID: <20140210172808.GS1706@sonymobile.com>
+References: <1391558551-31395-1-git-send-email-lauraa@codeaurora.org>
+ <1391558551-31395-3-git-send-email-lauraa@codeaurora.org>
+ <20140207020949.GQ1706@sonymobile.com>
+ <52F846AE.3050800@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <52F846AE.3050800@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Without this patch, the "cat /sys/class/net/ethN/operstate" shows
-"unknown", and "ethtool ethN" shows "Link detected: yes", when VM
-boots up with or without vNIC connected.
+On Mon, Feb 10, 2014 at 04:25:34AM +0100, Laura Abbott wrote:
+> On 2/6/2014 6:09 PM, Courtney Cavin wrote:
+> > On Wed, Feb 05, 2014 at 01:02:31AM +0100, Laura Abbott wrote:
+> >> memblock is now fully integrated into the kernel and is the prefered
+> >> method for tracking memory. Rather than reinvent the wheel with
+> >> meminfo, migrate to using memblock directly instead of meminfo as
+> >> an intermediate.
+> >>
+> >> Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
+> > [...]
+> >> diff --git a/arch/arm/mach-pxa/spitz.c b/arch/arm/mach-pxa/spitz.c
+> >> index 0b11c1a..51d814e 100644
+> >> --- a/arch/arm/mach-pxa/spitz.c
+> >> +++ b/arch/arm/mach-pxa/spitz.c
+> >> @@ -32,6 +32,7 @@
+> >>   #include <linux/io.h>
+> >>   #include <linux/module.h>
+> >>   #include <linux/reboot.h>
+> >> +#include <linux/memblock.h>
+> >>
+> >>   #include <asm/setup.h>
+> >>   #include <asm/mach-types.h>
+> >> @@ -971,13 +972,9 @@ static void __init spitz_init(void)
+> >>          spitz_i2c_init();
+> >>   }
+> >>
+> >> -static void __init spitz_fixup(struct tag *tags, char **cmdline,
+> >> -                              struct meminfo *mi)
+> >> +static void __init spitz_fixup(struct tag *tags, char **cmdline)
+> >>   {
+> >> -       sharpsl_save_param();
+> >> -       mi->nr_banks = 1;
+> >> -       mi->bank[0].start = 0xa0000000;
+> >> -       mi->bank[0].size = (64*1024*1024);
+> >> +       memblock_addr(0xa0000000, SZ_64M);
+> >
+> > memblock_add() ?
+> Yes, that was a typo on my part. I'll send out a v3 with collected acks.
+> 
 
-This patch fixed the problem.
+So, I also just noticed that you specifically remove the call to
+sharpsl_save_param() here.  I'm presuming that this is also an error, as
+you haven't removed it from any of the other pxa fixups, and it seems
+unrelated to the change.
 
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
----
- drivers/net/hyperv/netvsc_drv.c |   24 +++++++++++++++---------
- 1 files changed, 15 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
-index 7756118..18916f7 100644
---- a/drivers/net/hyperv/netvsc_drv.c
-+++ b/drivers/net/hyperv/netvsc_drv.c
-@@ -88,8 +88,12 @@ static int netvsc_open(struct net_device *net)
- {
- 	struct net_device_context *net_device_ctx = netdev_priv(net);
- 	struct hv_device *device_obj = net_device_ctx->device_ctx;
-+	struct netvsc_device *nvdev;
-+	struct rndis_device *rdev;
- 	int ret = 0;
- 
-+	netif_carrier_off(net);
-+
- 	/* Open up the device */
- 	ret = rndis_filter_open(device_obj);
- 	if (ret != 0) {
-@@ -99,6 +103,11 @@ static int netvsc_open(struct net_device *net)
- 
- 	netif_start_queue(net);
- 
-+	nvdev = hv_get_drvdata(device_obj);
-+	rdev = nvdev->extension;
-+	if (!rdev->link_state)
-+		netif_carrier_on(net);
-+
- 	return ret;
- }
- 
-@@ -229,15 +238,17 @@ void netvsc_linkstatus_callback(struct hv_device *device_obj,
- 	struct net_device *net;
- 	struct net_device_context *ndev_ctx;
- 	struct netvsc_device *net_device;
-+	struct rndis_device *rdev;
- 
- 	net_device = hv_get_drvdata(device_obj);
-+	rdev = net_device->extension;
-+
-+	rdev->link_state = status != 1;
-+
- 	net = net_device->ndev;
- 
--	if (!net) {
--		netdev_err(net, "got link status but net device "
--				"not initialized yet\n");
-+	if (!net || net->reg_state != NETREG_REGISTERED)
- 		return;
--	}
- 
- 	if (status == 1) {
- 		netif_carrier_on(net);
-@@ -414,9 +425,6 @@ static int netvsc_probe(struct hv_device *dev,
- 	if (!net)
- 		return -ENOMEM;
- 
--	/* Set initial state */
--	netif_carrier_off(net);
--
- 	net_device_ctx = netdev_priv(net);
- 	net_device_ctx->device_ctx = dev;
- 	hv_set_drvdata(dev, net);
-@@ -443,8 +451,6 @@ static int netvsc_probe(struct hv_device *dev,
- 	}
- 	memcpy(net->dev_addr, device_info.mac_adr, ETH_ALEN);
- 
--	netif_carrier_on(net);
--
- 	ret = register_netdev(net);
- 	if (ret != 0) {
- 		pr_err("Unable to register netdev.\n");
--- 
-1.7.4.1
-
+-Courtney
