@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753238AbaBJN3A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 08:29:00 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:49472 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752924AbaBJN25 (ORCPT
+	id S1753266AbaBJN3X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 08:29:23 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33088 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753250AbaBJN3U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 08:28:57 -0500
-Message-ID: <52F8D417.6020302@cogentembedded.com>
-Date: Mon, 10 Feb 2014 17:28:55 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Mon, 10 Feb 2014 08:29:20 -0500
+Date: Mon, 10 Feb 2014 05:28:32 -0800
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-69efsat90ibhnd577zy3z9gh@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, junk@eslaf.co.uk, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, tglx@linutronix.de, junk@eslaf.co.uk
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf/x86: Fix Userspace RDPMC switch
+Git-Commit-ID: 0e9f2204cfa6d79abe3e525ddf7c4ab5792cc751
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Haiyang Zhang <haiyangz@microsoft.com>, davem@davemloft.net,
-        netdev@vger.kernel.org
-CC: kys@microsoft.com, olaf@aepfle.de, jasowang@redhat.com,
-        linux-kernel@vger.kernel.org, driverdev-devel@linuxdriverproject.org
-Subject: Re: [PATCH net] hyperv: Fix the carrier status setting
-References: <1391994478-25809-1-git-send-email-haiyangz@microsoft.com>
-In-Reply-To: <1391994478-25809-1-git-send-email-haiyangz@microsoft.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 10 Feb 2014 05:28:38 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Commit-ID:  0e9f2204cfa6d79abe3e525ddf7c4ab5792cc751
+Gitweb:     http://git.kernel.org/tip/0e9f2204cfa6d79abe3e525ddf7c4ab5792cc751
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Wed, 5 Feb 2014 11:19:56 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Sun, 9 Feb 2014 13:08:25 +0100
 
-On 10-02-2014 5:07, Haiyang Zhang wrote:
+perf/x86: Fix Userspace RDPMC switch
 
-> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
-> ---
->   drivers/net/hyperv/netvsc_drv.c |   24 +++++++++++++++---------
->   1 files changed, 15 insertions(+), 9 deletions(-)
+The current code forgets to change the CR4 state on the current CPU.
+Use on_each_cpu() instead of smp_call_function().
 
-> diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
-> index 7756118..836211c 100644
-> --- a/drivers/net/hyperv/netvsc_drv.c
-> +++ b/drivers/net/hyperv/netvsc_drv.c
-[...]
-> @@ -229,15 +238,17 @@ void netvsc_linkstatus_callback(struct hv_device *device_obj,
->   	struct net_device *net;
->   	struct net_device_context *ndev_ctx;
->   	struct netvsc_device *net_device;
-> +	struct rndis_device *rdev;
->
->   	net_device = hv_get_drvdata(device_obj);
-> +	rdev = net_device->extension;
-> +
-> +	rdev->link_state = !(status == 1);
+Reported-by: Mark Davies <junk@eslaf.co.uk>
+Suggested-by: Mark Davies <junk@eslaf.co.uk>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: fweisbec@gmail.com
+Link: http://lkml.kernel.org/n/tip-69efsat90ibhnd577zy3z9gh@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/cpu/perf_event.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-    Why not just 'status != 1'?
-
-WBR, Sergei
-
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 1246b85..895604f 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1826,7 +1826,7 @@ static ssize_t set_attr_rdpmc(struct device *cdev,
+ 
+ 	if (!!val != !!x86_pmu.attr_rdpmc) {
+ 		x86_pmu.attr_rdpmc = !!val;
+-		smp_call_function(change_rdpmc, (void *)val, 1);
++		on_each_cpu(change_rdpmc, (void *)val, 1);
+ 	}
+ 
+ 	return count;
