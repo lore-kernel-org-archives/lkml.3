@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755637AbaBJUT2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 15:19:28 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34559 "EHLO
+	id S1755618AbaBJUTZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 15:19:25 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34561 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752588AbaBJTli (ORCPT
+	with ESMTP id S1752627AbaBJTli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 10 Feb 2014 14:41:38 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Yegor Yefremov <yegorslists@googlemail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 015/124] serial: add support for 200 v3 series Titan card
-Date: Mon, 10 Feb 2014 11:39:15 -0800
-Message-Id: <1392061264-28124-16-git-send-email-kamal@canonical.com>
+Cc: Cong Ding <dinggnu@gmail.com>, Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Gleb Natapov <gleb@redhat.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 001/124] KVM: s390: kvm/sigp.c: fix memory leakage
+Date: Mon, 10 Feb 2014 11:39:01 -0800
+Message-Id: <1392061264-28124-2-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
 References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
@@ -28,39 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yegor Yefremov <yegorslists@googlemail.com>
+From: Cong Ding <dinggnu@gmail.com>
 
-commit 48c0247d7b7bf58abb85a39021099529df365c4d upstream.
+commit a046b816a4587c7898772af7cc7e6798cc8b56dd upstream.
 
-Signed-off-by: Yegor Yefremov <yegorslists@googlemail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+the variable inti should be freed in the branch CPUSTAT_STOPPED.
+
+Signed-off-by: Cong Ding <dinggnu@gmail.com>
+Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/tty/serial/8250/8250_pci.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ arch/s390/kvm/sigp.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/tty/serial/8250/8250_pci.c b/drivers/tty/serial/8250/8250_pci.c
-index 67950ca..1a890a9 100644
---- a/drivers/tty/serial/8250/8250_pci.c
-+++ b/drivers/tty/serial/8250/8250_pci.c
-@@ -1298,6 +1298,7 @@ pci_wch_ch353_setup(struct serial_private *priv,
- #define PCI_DEVICE_ID_TITAN_800E	0xA014
- #define PCI_DEVICE_ID_TITAN_200EI	0xA016
- #define PCI_DEVICE_ID_TITAN_200EISI	0xA017
-+#define PCI_DEVICE_ID_TITAN_200V3	0xA306
- #define PCI_DEVICE_ID_TITAN_400V3	0xA310
- #define PCI_DEVICE_ID_TITAN_410V3	0xA312
- #define PCI_DEVICE_ID_TITAN_800V3	0xA314
-@@ -3801,6 +3802,9 @@ static struct pci_device_id serial_pci_tbl[] = {
- 	{	PCI_VENDOR_ID_TITAN, PCI_DEVICE_ID_TITAN_200EISI,
- 		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
- 		pbn_oxsemi_2_4000000 },
-+	{	PCI_VENDOR_ID_TITAN, PCI_DEVICE_ID_TITAN_200V3,
-+		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
-+		pbn_b0_bt_2_921600 },
- 	{	PCI_VENDOR_ID_TITAN, PCI_DEVICE_ID_TITAN_400V3,
- 		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
- 		pbn_b0_4_921600 },
+diff --git a/arch/s390/kvm/sigp.c b/arch/s390/kvm/sigp.c
+index 566ddf6..1278873 100644
+--- a/arch/s390/kvm/sigp.c
++++ b/arch/s390/kvm/sigp.c
+@@ -137,8 +137,10 @@ static int __inject_sigp_stop(struct kvm_s390_local_interrupt *li, int action)
+ 	inti->type = KVM_S390_SIGP_STOP;
+ 
+ 	spin_lock_bh(&li->lock);
+-	if ((atomic_read(li->cpuflags) & CPUSTAT_STOPPED))
++	if ((atomic_read(li->cpuflags) & CPUSTAT_STOPPED)) {
++		kfree(inti);
+ 		goto out;
++	}
+ 	list_add_tail(&inti->list, &li->list);
+ 	atomic_set(&li->active, 1);
+ 	atomic_set_mask(CPUSTAT_STOP_INT, li->cpuflags);
 -- 
 1.8.3.2
 
