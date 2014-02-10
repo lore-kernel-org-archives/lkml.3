@@ -1,38 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753041AbaBJMOu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 07:14:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9242 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752955AbaBJMOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 07:14:44 -0500
-Date: Mon, 10 Feb 2014 13:16:38 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: fengguang.wu@intel.com
-Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-        wil6210@qca.qualcomm.com, linux-pci@vger.kernel.org,
-        Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>
-Subject: Re: [PATCH] wil6210: Fix switch operator "missing break?" warning
-Message-ID: <20140210121638.GA320@dhcp-26-207.brq.redhat.com>
-References: <cover.1389904166.git.agordeev@redhat.com>
- <aedc9b7eb82232204a7d65b4c7d3302ba6ba3892.1389904167.git.agordeev@redhat.com>
- <20140207144639.GA10939@dhcp-26-207.brq.redhat.com>
- <3132701.EBRqRlvTI9@lx-vladimir>
+	id S1753030AbaBJMQi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 07:16:38 -0500
+Received: from mail-we0-f181.google.com ([74.125.82.181]:43640 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751965AbaBJMQe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 07:16:34 -0500
+Date: Mon, 10 Feb 2014 12:16:28 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH 58/73] drivers/mfd: delete non-required instances of
+ include <linux/init.h>
+Message-ID: <20140210121628.GI22773@lee--X1>
+References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
+ <1390339396-3479-59-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <3132701.EBRqRlvTI9@lx-vladimir>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1390339396-3479-59-git-send-email-paul.gortmaker@windriver.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 12:54:13PM +0200, Vladimir Kondratiev wrote:
-> I can't reproduce this warning. What tools used to get it?
+> None of these files are actually using any __init type directives
+> and hence don't need to include <linux/init.h>.  Most are just a
+> left over from __devinit and __cpuinit removal, or simply due to
+> code getting copied from one driver to the next.
+> 
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Cc: Lee Jones <lee.jones@linaro.org>
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-Fengguang?
+Applied, thanks.
 
 -- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
