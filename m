@@ -1,141 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753011AbaBJMgo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 07:36:44 -0500
-Received: from mail-we0-f177.google.com ([74.125.82.177]:35025 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752223AbaBJMgk (ORCPT
+	id S1752594AbaBJMiH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 07:38:07 -0500
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:45736 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751851AbaBJMiE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 07:36:40 -0500
-Date: Mon, 10 Feb 2014 13:36:36 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 05/16] cgroup: implement cgroup_has_tasks() and unexport
- cgroup_task_count()
-Message-ID: <20140210123636.GC7117@dhcp22.suse.cz>
-References: <1391953964-22088-1-git-send-email-tj@kernel.org>
- <1391953964-22088-6-git-send-email-tj@kernel.org>
+	Mon, 10 Feb 2014 07:38:04 -0500
+Date: Mon, 10 Feb 2014 13:37:58 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: David Airlie <airlied@linux.ie>, gnurou@gmail.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH] drm/ttm: declare 'struct device' in ttm_page_alloc.h
+Message-ID: <20140210123757.GF20143@ulmo.nvidia.com>
+References: <1391938998-4848-1-git-send-email-acourbot@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Y/WcH0a6A93yCHGr"
 Content-Disposition: inline
-In-Reply-To: <1391953964-22088-6-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1391938998-4848-1-git-send-email-acourbot@nvidia.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 09-02-14 08:52:33, Tejun Heo wrote:
-> cgroup_task_count() read-locks css_set_lock and walks all tasks to
-> count them and then returns the result.  The only thing all the users
-> want is determining whether the cgroup is empty or not.  This patch
-> implements cgroup_has_tasks() which tests whether cgroup->cset_links
-> is empty, replaces all cgroup_task_count() usages and unexports it.
-> 
-> Note that the test isn't synchronized.  This is the same as before.
-> The test has always been racy.
-> 
-> This will help planned css_set locking update.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Li Zefan <lizefan@huawei.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: Balbir Singh <bsingharora@gmail.com>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Looks good.
-Acked-by: Michal Hocko <mhocko@suse.cz>
+--Y/WcH0a6A93yCHGr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Sun, Feb 09, 2014 at 06:43:18PM +0900, Alexandre Courbot wrote:
+> Declare 'struct device' explicitly in ttm_page_alloc.h as this file
+> does not include any file declaring it. This removes the following
+> warning:
+>=20
+> 	warning: 'struct device' declared inside parameter list
+>=20
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
 > ---
->  include/linux/cgroup.h | 8 ++++++--
->  kernel/cgroup.c        | 2 +-
->  kernel/cpuset.c        | 2 +-
->  mm/memcontrol.c        | 4 ++--
->  4 files changed, 10 insertions(+), 6 deletions(-)
-> 
-> diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-> index 8ca31c1..f173cfb 100644
-> --- a/include/linux/cgroup.h
-> +++ b/include/linux/cgroup.h
-> @@ -455,6 +455,12 @@ static inline bool cgroup_sane_behavior(const struct cgroup *cgrp)
->  	return cgrp->root->flags & CGRP_ROOT_SANE_BEHAVIOR;
->  }
->  
-> +/* no synchronization, the result can only be used as a hint */
-> +static inline bool cgroup_has_tasks(struct cgroup *cgrp)
-> +{
-> +	return !list_empty(&cgrp->cset_links);
-> +}
-> +
->  /* returns ino associated with a cgroup, 0 indicates unmounted root */
->  static inline ino_t cgroup_ino(struct cgroup *cgrp)
->  {
-> @@ -514,8 +520,6 @@ int cgroup_rm_cftypes(struct cftype *cfts);
->  
->  bool cgroup_is_descendant(struct cgroup *cgrp, struct cgroup *ancestor);
->  
-> -int cgroup_task_count(const struct cgroup *cgrp);
-> -
->  /*
->   * Control Group taskset, used to pass around set of tasks to cgroup_subsys
->   * methods.
-> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-> index 1ebc6e30..96a3a85 100644
-> --- a/kernel/cgroup.c
-> +++ b/kernel/cgroup.c
-> @@ -2390,7 +2390,7 @@ EXPORT_SYMBOL_GPL(cgroup_add_cftypes);
->   *
->   * Return the number of tasks in the cgroup.
->   */
-> -int cgroup_task_count(const struct cgroup *cgrp)
-> +static int cgroup_task_count(const struct cgroup *cgrp)
->  {
->  	int count = 0;
->  	struct cgrp_cset_link *link;
-> diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-> index e97a6e8..ae190b0 100644
-> --- a/kernel/cpuset.c
-> +++ b/kernel/cpuset.c
-> @@ -467,7 +467,7 @@ static int validate_change(struct cpuset *cur, struct cpuset *trial)
->  	 * be changed to have empty cpus_allowed or mems_allowed.
->  	 */
->  	ret = -ENOSPC;
-> -	if ((cgroup_task_count(cur->css.cgroup) || cur->attach_in_progress)) {
-> +	if ((cgroup_has_tasks(cur->css.cgroup) || cur->attach_in_progress)) {
->  		if (!cpumask_empty(cur->cpus_allowed) &&
->  		    cpumask_empty(trial->cpus_allowed))
->  			goto out;
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index c1c2549..d9c6ac1 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -4958,7 +4958,7 @@ static int mem_cgroup_force_empty(struct mem_cgroup *memcg)
->  	struct cgroup *cgrp = memcg->css.cgroup;
->  
->  	/* returns EBUSY if there is a task or if we come here twice. */
-> -	if (cgroup_task_count(cgrp) || !list_empty(&cgrp->children))
-> +	if (cgroup_has_tasks(cgrp) || !list_empty(&cgrp->children))
->  		return -EBUSY;
->  
->  	/* we call try-to-free pages for make this cgroup empty */
-> @@ -5140,7 +5140,7 @@ static int __memcg_activate_kmem(struct mem_cgroup *memcg,
->  	 * of course permitted.
->  	 */
->  	mutex_lock(&memcg_create_mutex);
-> -	if (cgroup_task_count(memcg->css.cgroup) || memcg_has_children(memcg))
-> +	if (cgroup_has_tasks(memcg->css.cgroup) || memcg_has_children(memcg))
->  		err = -EBUSY;
->  	mutex_unlock(&memcg_create_mutex);
->  	if (err)
-> -- 
-> 1.8.5.3
-> 
+> This warning was visible when compiling Nouveau on -next today.
+>=20
+>  include/drm/ttm/ttm_page_alloc.h | 2 ++
+>  1 file changed, 2 insertions(+)
 
--- 
-Michal Hocko
-SUSE Labs
+I don't think I've seen this on x86, but I've certainly encountered the
+same warning when building nouveau on ARM, so:
+
+Reviewed-by: Thierry Reding <treding@nvidia.com>
+
+--Y/WcH0a6A93yCHGr
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS+MglAAoJEN0jrNd/PrOhJsEP/jyI0ghrwf8b1kM+dzSzhDKp
+WraYwCxiD1Ku+TA7u+JvP9Hl0x28RDnUnAfEyyEgJt1XzsmKsFiNpWUmdSPoN80z
+5QWpL28y5q1JPx2Aa8igy6WkLTbCBVXsg3g1rr7Rh54oz2N05u3WTHb+dF8NXRfm
+a/WC6/Tx0gPwCXx7Q23N1Mtyd5kjwCUjRgvI10iHm0GBZIiaMGtQVk+7Md7iQNDD
+jVzKT0EZvbT3mEl5x7/f/r0bDWoBQUTTOqCP9wVV7K+h+aWx6VTz85oEY28e98Uy
+BLsyI7CJe5jWbv3hgSlPsRlchd2lYC0JGf+UkCWYD3aUULsOXnoo0ibvT2Y9UxAv
+axZG+I6FM/lyJaTWdkODCAzSPiVJG7mNHWWClkO/CO25AGaziUeQbdWMB4zl6EiL
+C+ovdfACJUhraJ13tVWa69dgaBh+rmTcBgV/tfbOF07Gn8LE/tB0w4v9vDkbbkOY
+rUWcbjuPgNjTIW3vGM7e/2mlxh1W2suuTDRJhN/OxpkhKu6/1AFs68NpCc8ztitB
+sOKaWPI6giimAs1XlHf0WLzlOfbkMLuoCZrQAd6uQXXGJv0tvx+I49bqlW8XXiu+
+EJ44lNaMdUNWoUHZ6o/r9XKi8Rb05ok0yC7UbAFfNUSFqLSsfedxhVZUgHiJOIqb
+yti5DbYt/PBGqgcP1+Ns
+=ocaK
+-----END PGP SIGNATURE-----
+
+--Y/WcH0a6A93yCHGr--
