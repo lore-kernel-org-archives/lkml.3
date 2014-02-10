@@ -1,42 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753874AbaBJRiv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 12:38:51 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:54830 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752542AbaBJRit (ORCPT
+	id S1753884AbaBJRkR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 12:40:17 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:57896 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752223AbaBJRkO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 12:38:49 -0500
-Date: Mon, 10 Feb 2014 18:38:33 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Nicholas Mc Guire <der.herr@hofr.at>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-rt-users@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Carsten Emde <C.Emde@osadl.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Andreas Platschek <platschek@ict.tuwien.ac.at>
-Subject: Re: allow preemption in check_task_state
-Message-ID: <20140210173833.GQ9987@twins.programming.kicks-ass.net>
-References: <20140210153856.GD20017@opentech.at>
- <20140210111106.67438d1e@gandalf.local.home>
- <20140210171712.GA17517@opentech.at>
+	Mon, 10 Feb 2014 12:40:14 -0500
+Message-ID: <52F90EF9.9070406@kernel.dk>
+Date: Mon, 10 Feb 2014 10:40:09 -0700
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140210171712.GA17517@opentech.at>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Masanari Iida <standby24x7@gmail.com>, trivial@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [trivial] block: Fix type mismatch in ssize_t_blk_mq_tag_sysfs_show
+References: <1392053278-2188-1-git-send-email-standby24x7@gmail.com>
+In-Reply-To: <1392053278-2188-1-git-send-email-standby24x7@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 06:17:12PM +0100, Nicholas Mc Guire wrote:
-> maybe I'm missing/missunderstanding something here but
-> pi_unlock -> arch_spin_unlock is a full mb() 
 
-Nope, arch_spin_unlock() on x86 is a single add[wb] without LOCK prefix.
 
-The lock and unlock primitives are in general specified to have ACQUIRE
-resp. RELEASE semantics.
+On 02/10/2014 10:27 AM, Masanari Iida wrote:
+> cppcheck detected following format string mismatch.
+> [blk-mq-tag.c:201]: (warning) %u in format string (no. 1) requires
+> 'unsigned int' but the argument type is 'int'.
+>
+> Change "cpu" from int to unsigned int, because the cpu
+> never become minus value.
 
-See Documentation/memory-barriers.txt for far too much head-hurting
-details.
+Thanks, applied.
+
+-- 
+Jens Axboe
