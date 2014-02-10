@@ -1,84 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752761AbaBJM0u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 07:26:50 -0500
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:54621 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751889AbaBJM0o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 07:26:44 -0500
-Date: Mon, 10 Feb 2014 13:26:40 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>, Don Zickus <dzickus@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Jan Kara <jack@suse.cz>,
-        Jens Axboe <jens.axboe@oracle.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [PATCH 09/11] watchdog: Simplify a little the IPI call
-Message-ID: <20140210122640.GB7117@dhcp22.suse.cz>
-References: <1391876320-25068-1-git-send-email-fweisbec@gmail.com>
- <1391876320-25068-10-git-send-email-fweisbec@gmail.com>
+	id S1752700AbaBJM2N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 07:28:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56606 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751851AbaBJM2M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 07:28:12 -0500
+Date: Mon, 10 Feb 2014 13:29:43 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Kent Overstreet <kmo@daterainc.com>, Jens Axboe <axboe@kernel.dk>,
+        Shaohua Li <shli@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/2]percpu_ida: fix a live lock
+Message-ID: <20140210122942.GB320@dhcp-26-207.brq.redhat.com>
+References: <20131231033827.GA31994@kernel.org>
+ <20140104210804.GA24199@kmo-pixel>
+ <20140105131300.GB4186@kernel.org>
+ <20140106204641.GB9037@kmo>
+ <52CB1783.4050205@kernel.dk>
+ <20140106214726.GD9037@kmo>
+ <20140209155006.GA16149@dhcp-26-207.brq.redhat.com>
+ <20140210103211.GA28396@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1391876320-25068-10-git-send-email-fweisbec@gmail.com>
+In-Reply-To: <20140210103211.GA28396@infradead.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 08-02-14 17:18:38, Frederic Weisbecker wrote:
-> In order to remotely restart the watchdog hrtimer, update_timers()
-> allocates a csd on the stack and pass it to __smp_call_function_single().
+On Mon, Feb 10, 2014 at 02:32:11AM -0800, Christoph Hellwig wrote:
+> > May be we can walk off with a per-cpu timeout that flushes batch nr of tags
+> > from local caches to the pool? Each local allocation would restart the timer,
+> > but once allocation requests stopped coming on a CPU the tags would not gather
+> > dust in local caches.
 > 
-> There is no partcular need, however, for a specific csd here. Lets
-> simplify that a little by calling smp_call_function_single()
-> which can already take care of the csd allocation by itself.
-> 
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Christoph Hellwig <hch@infradead.org>
-> Cc: Don Zickus <dzickus@redhat.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Jan Kara <jack@suse.cz>
-> Cc: Jens Axboe <jens.axboe@oracle.com>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> We'll defintively need a fix to be able to allow the whole tag space.
+> For large numbers of tags per device the flush might work, but for
+> devices with low number of tags we need something more efficient.  The
+> case of less tags than CPUs isn't that unusual either and we probably
+> want to switch to an allocator without per cpu allocations for them to
+> avoid all this.  E.g. for many ATA devices we just have a single tag,
+> and many scsi drivers also only want single digit outstanding commands
+> per LUN.
 
-Looks good to me.
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Do we really always need the pool for these classes of devices?
 
-> ---
->  kernel/watchdog.c | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-> index 4431610..01c6f97 100644
-> --- a/kernel/watchdog.c
-> +++ b/kernel/watchdog.c
-> @@ -505,7 +505,6 @@ static void restart_watchdog_hrtimer(void *info)
->  
->  static void update_timers(int cpu)
->  {
-> -	struct call_single_data data = {.func = restart_watchdog_hrtimer};
->  	/*
->  	 * Make sure that perf event counter will adopt to a new
->  	 * sampling period. Updating the sampling period directly would
-> @@ -515,7 +514,7 @@ static void update_timers(int cpu)
->  	 * might be late already so we have to restart the timer as well.
->  	 */
->  	watchdog_nmi_disable(cpu);
-> -	__smp_call_function_single(cpu, &data, 1);
-> +	smp_call_function_single(cpu, restart_watchdog_hrtimer, NULL, 1);
->  	watchdog_nmi_enable(cpu);
->  }
->  
-> -- 
-> 1.8.3.1
-> 
+Pulling tags from local caches to the pool just to (near to) dry it at
+the very next iteration does not seem beneficial. Not to mention caches
+vs pool locking complexities.
 
 -- 
-Michal Hocko
-SUSE Labs
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
