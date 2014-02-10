@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754749AbaBJTyA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 14:54:00 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35093 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753246AbaBJTrI (ORCPT
+	id S1754761AbaBJTyP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 14:54:15 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:60545 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753731AbaBJTyH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:47:08 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 028/124] ALSA: rme9652: fix a missing comma in channel_map_9636_ds[]
-Date: Mon, 10 Feb 2014 11:39:28 -0800
-Message-Id: <1392061264-28124-29-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
-References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Mon, 10 Feb 2014 14:54:07 -0500
+Date: Mon, 10 Feb 2014 12:54:02 -0700
+From: Jens Axboe <axboe@kernel.dk>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
+Subject: Re: [GIT PULL] (xen) stable/for-jens-3.14
+Message-ID: <20140210195402.GA3924@kernel.dk>
+References: <20140210184412.GA18198@phenom.dumpdata.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140210184412.GA18198@phenom.dumpdata.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.18 -stable review patch.  If anyone has any objections, please let me know.
+On Mon, Feb 10 2014, Konrad Rzeszutek Wilk wrote:
+> Hey Jens,
+> 
+> Please git pull the following branch:
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip.git stable/for-jens-3.14
+> 
+> which is based off v3.13-rc6. If you would like me to rebase it on
+> a different branch/tag I would be more than happy to do so.
 
-------------------
+Older is fine, it's only an issue if you are ahead of the branch you
+want to go into.
 
-From: Takashi Iwai <tiwai@suse.de>
+dd> 
+> The patches are all bug-fixes and hopefully can go in 3.14.
+> 
+> They deal with xen-blkback shutdown and cause memory leaks
+> as well as shutdown races. They should go to stable tree and if you
+> are OK with I will ask them to backport those fixes.
+> 
+> There is also a fix to xen-blkfront to deal with unexpected state
+> transition. And lastly a fix to the header where it was using the
+> __aligned__ unnecessarily.
 
-commit 770bd4bf2e664939a9dacd3d26ec9ff7a3933210 upstream.
+Pulled!
 
-The lack of comma leads to the wrong channel for an SPDIF channel.
-Unfortunately this wasn't caught by compiler because it's still a
-valid expression.
-
-Reported-by: Alexander Aristov <aristov.alexander@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- sound/pci/rme9652/rme9652.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/sound/pci/rme9652/rme9652.c b/sound/pci/rme9652/rme9652.c
-index 773a67f..431bf68 100644
---- a/sound/pci/rme9652/rme9652.c
-+++ b/sound/pci/rme9652/rme9652.c
-@@ -285,7 +285,7 @@ static char channel_map_9636_ds[26] = {
- 	/* ADAT channels are remapped */
- 	1, 3, 5, 7, 9, 11, 13, 15,
- 	/* channels 8 and 9 are S/PDIF */
--	24, 25
-+	24, 25,
- 	/* others don't exist */
- 	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
- };
 -- 
-1.8.3.2
+Jens Axboe
 
