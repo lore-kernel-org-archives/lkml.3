@@ -1,43 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752178AbaBJJNI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 04:13:08 -0500
-Received: from mga09.intel.com ([134.134.136.24]:2128 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751240AbaBJJND (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 04:13:03 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,816,1384329600"; 
-   d="scan'208";a="472647614"
-Date: Mon, 10 Feb 2014 17:12:31 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Filipe David Manana <fdmanana@gmail.com>
-Cc: Chris Mason <clm@fb.com>, Tejun Heo <tj@kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>
-Subject: Re: [btrfs] BUG: unable to handle kernel NULL pointer dereference at
- 0000000000000038
-Message-ID: <20140210091231.GA7864@localhost>
-References: <20140207023801.GC11051@localhost>
- <alpine.DEB.2.02.1402070213020.22146@chino.kir.corp.google.com>
- <20140207121038.GA1690@localhost>
- <52F4F755.4090503@fb.com>
- <CAL3q7H6ZRzXqaxF_DQbeiRdE_dy=62BjFHiBKt=YAiGgEeiCRA@mail.gmail.com>
+	id S1752237AbaBJJOy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 04:14:54 -0500
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:52648 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751123AbaBJJOu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 04:14:50 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAL3q7H6ZRzXqaxF_DQbeiRdE_dy=62BjFHiBKt=YAiGgEeiCRA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1391700529-11816-1-git-send-email-iivanov@mm-sol.com>
+References: <1391700529-11816-1-git-send-email-iivanov@mm-sol.com>
+Date: Mon, 10 Feb 2014 10:14:50 +0100
+Message-ID: <CACRpkdY4C0eP4HTRMaha2hzRA0Jvv=5BV40cYGx-Zf=o06r_yg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] pinctrl-msm: Add SPI8 pin definitions
+From: Linus Walleij <linus.walleij@linaro.org>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Bjorn Andersson <Bjorn.Andersson@sonymobile.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Filipe,
+On Thu, Feb 6, 2014 at 4:28 PM, Ivan T. Ivanov <iivanov@mm-sol.com> wrote:
 
-> If you disable CONFIG_BTRFS_FS_RUN_SANITY_TESTS, does it still crash?
+> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+>
+> Add pin, group and function definitions for SPI#8
+> controller.
+>
+> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
 
-I tried disabling CONFIG_BTRFS_FS_RUN_SANITY_TESTS in the reported 3
-randconfigs and they all boot fine.
+Björn can I have your ACK on this patch?
 
-Thanks,
-Fengguang
+Yours,
+Linus Walleij
