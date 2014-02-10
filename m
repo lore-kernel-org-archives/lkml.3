@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753011AbaBJSJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 13:09:56 -0500
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:36682 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752246AbaBJSJv (ORCPT
+	id S1753086AbaBJSKc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 13:10:32 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:56230 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752526AbaBJSKb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 13:09:51 -0500
-Message-ID: <52F914A7.9080702@linux.vnet.ibm.com>
-Date: Mon, 10 Feb 2014 23:34:23 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Mon, 10 Feb 2014 13:10:31 -0500
+Date: Mon, 10 Feb 2014 19:10:26 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: linux-kernel@vger.kernel.org, will.deacon@arm.com, dave.martin@arm.com,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH 7/7] perf: kill perf_event_context::pmu
+Message-ID: <20140210181026.GD27965@twins.programming.kicks-ass.net>
+References: <1392054264-23570-1-git-send-email-mark.rutland@arm.com>
+ <1392054264-23570-8-git-send-email-mark.rutland@arm.com>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: paulus@samba.org, rusty@rustcorp.com.au, peterz@infradead.org,
-        tglx@linutronix.de, akpm@linux-foundation.org, mingo@kernel.org,
-        paulmck@linux.vnet.ibm.com, tj@kernel.org, walken@google.com,
-        ego@linux.vnet.ibm.com, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-edac@vger.kernel.org
-Subject: Re: [PATCH 19/51] x86, therm_throt.c: Fix CPU hotplug callback registration
-References: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com> <20140205220759.19080.36356.stgit@srivatsabhat.in.ibm.com> <20140210155323.GA8911@redhat.com> <52F90C8C.9050203@linux.vnet.ibm.com>
-In-Reply-To: <52F90C8C.9050203@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021018-5816-0000-0000-00000C329002
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392054264-23570-8-git-send-email-mark.rutland@arm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/10/2014 10:59 PM, Srivatsa S. Bhat wrote:
-> On 02/10/2014 09:23 PM, Oleg Nesterov wrote:
->> On 02/06, Srivatsa S. Bhat wrote:
->>>
->>> --- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
->>> +++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
->>> @@ -319,7 +319,7 @@ static __init int thermal_throttle_init_device(void)
->>>  	if (!atomic_read(&therm_throt_en))
->>>  		return 0;
->>>
->>> -	register_hotcpu_notifier(&thermal_throttle_cpu_notifier);
->>> +	cpu_maps_update_begin();
->>>
->>>  #ifdef CONFIG_HOTPLUG_CPU
->>>  	mutex_lock(&therm_cpu_lock);
->>> @@ -333,6 +333,9 @@ static __init int thermal_throttle_init_device(void)
->>>  	mutex_unlock(&therm_cpu_lock);
->>>  #endif
->>>
->>> +	__register_hotcpu_notifier(&thermal_throttle_cpu_notifier);
->>> +	cpu_maps_update_done();
->>
->>
->> Off-topic, but it seems that after this change therm_cpu_lock can die.
->> Of course this needs another patch (if I am right).
->>
+On Mon, Feb 10, 2014 at 05:44:24PM +0000, Mark Rutland wrote:
+> Currently portions of the perf subsystem assume that a
+> perf_event_context is associated with a single pmu while in reality a
+> single perf_event_context may be shared by a number of pmus, as commit
+> 443772776c69 (perf: Disable all pmus on unthrottling and rescheduling)
+> describes.
 > 
-> I'm not sure I understood that clearly. Can you please explain?
+> This patch removes perf_event_context::pmu, replacing it with a direct
+> pointer to the associated perf_cpu_context and a task_ctx_nr (as all
+> pmus sharing a context have the same task_ctx_nr). This makes the
+> relationship between pmus and perf_event_contexts clearer and allows us
+> to save on some pointer chasing.
 > 
-> I'm guessing that you are referring to some problem with the #ifdef
-> CONFIG_HOTPLUG_CPU around mutex_lock/unlock(&therm_cpu_lock) ?
->
+> This also fixes a potential misuse of ctx->pmu introduced in commit
+> bad7192b842c (perf: Fix PERF_EVENT_IOC_PERIOD to force-reset the
+> period), where ctx->pmu is disabled before modifying state on
+> event->pmu. In this case the two pmus are not guaranteed to be the same.
+> 
+> As perf_pmu_rotate_{start,stop} only really care about the context they
+> are rotating, they are renamed to perf_event_ctx_{start,stop}.
 
-Oh, nevermind, now I see it. Basically you are suggesting that therm_cpu_lock
-is useless after this patch and hence can be removed entirely. Yep, that
-makes sense. (I hadn't noticed it earlier). I'll incorporate that change
-in a separate patch in my v2 of the patchset. Thank you!
- 
-Regards,
-Srivatsa S. Bhat
+This very much relies on the previous patch where you make pmu_disable
+iterate all the events.
+
+We could also change this to keep a pmu list for each context and
+iterate that instead. Given there is indeed a fair limit on different
+PMUs in the system that iteration should be much shorter.
+
 
