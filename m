@@ -1,72 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753050AbaBJNK5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 08:10:57 -0500
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:62767 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752831AbaBJNKz (ORCPT
+	id S1752869AbaBJNQN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 08:16:13 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:39998 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752151AbaBJNQJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 08:10:55 -0500
-Date: Mon, 10 Feb 2014 14:10:51 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Erik Faye-Lund <kusmabite@gmail.com>
-Cc: linux-tegra@vger.kernel.org, tbergstrom@nvidia.com,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] gpu: host1x: do not check previously handled gathers
-Message-ID: <20140210131050.GH20143@ulmo.nvidia.com>
-References: <1389124986-32501-1-git-send-email-kusmabite@gmail.com>
+	Mon, 10 Feb 2014 08:16:09 -0500
+Date: Mon, 10 Feb 2014 13:15:57 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Anson Huang <b20788@freescale.com>,
+        kernel@pengutronix.de
+Message-ID: <20140210131557.GB1757@sirena.org.uk>
+References: <1391697813-20091-1-git-send-email-p.zabel@pengutronix.de>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="aF3LVLvitz/VQU3c"
+	protocol="application/pgp-signature"; boundary="ERHfpFOxJvIsVBXy"
 Content-Disposition: inline
-In-Reply-To: <1389124986-32501-1-git-send-email-kusmabite@gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1391697813-20091-1-git-send-email-p.zabel@pengutronix.de>
+X-Cookie: Colors may fade.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] regulator: anatop: Add power gating support to
+ digital LDOs
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---aF3LVLvitz/VQU3c
+--ERHfpFOxJvIsVBXy
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Tue, Jan 07, 2014 at 09:03:06PM +0100, Erik Faye-Lund wrote:
-> When patching gathers, we don't need to check against
-> gathers with lower indices than the current one, as
-> they are guaranteed to already have been handled.
->=20
-> Signed-off-by: Erik Faye-Lund <kusmabite@gmail.com>
-> ---
->=20
-> Here's a trivial optimization I have been running with for a while.
->=20
->  drivers/gpu/host1x/job.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+On Thu, Feb 06, 2014 at 03:43:32PM +0100, Philipp Zabel wrote:
+> The ARM, PU, and SOC LDOs in the i.MX6 PMU can completely gate
+> their power output. Since power gating is configured by writing
+> zero to the voltage target bitfield,, store a copy of the
+> voltage selector to be restored when reenabling the regulator.
 
-Applied, thanks!
+This is mostly good but...
 
-Thierry
+>  static int anatop_regmap_set_voltage_sel(struct regulator_dev *reg,
+>  					unsigned selector)
+>  {
+>  	struct anatop_regulator *anatop_reg =3D rdev_get_drvdata(reg);
+> +	int ret;
+> =20
+>  	if (!anatop_reg->control_reg)
+>  		return -ENOTSUPP;
+> =20
+> -	return regulator_set_voltage_sel_regmap(reg, selector);
+> +	ret =3D regulator_set_voltage_sel_regmap(reg, selector);
+> +	if (!ret)
+> +		anatop_reg->sel =3D selector;
+> +	return ret;
+>  }
 
---aF3LVLvitz/VQU3c
-Content-Type: application/pgp-signature
+=2E..I don't understand this.  If the regulator is disabled won't this
+cause it to be reenabled since we just write the stored selector in to
+do that?  What I'd expect to see happening is the data being written to
+the cache always and only written to the hardware if it's enabled.
+
+> +static int anatop_regmap_disable(struct regulator_dev *reg)
+> +{
+> +	struct anatop_regulator *anatop_reg =3D rdev_get_drvdata(reg);
+> +
+> +	if (!anatop_is_core_reg(anatop_reg))
+> +		return -ENOTSUPP;
+> +
+> +	return regulator_set_voltage_sel_regmap(reg, LDO_POWER_GATE);
+> +}
+
+It's starting to seem like it's worth having separate ops for the core
+regulator rather than all these conditionals.
+
+--ERHfpFOxJvIsVBXy
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJS+M/aAAoJEN0jrNd/PrOhCyUP/R8c2UA/zcFQ0Z7iR8PhtP1G
-enatundvbaD2Iq11BxeUSLa5/tlJJxN4CcVXjshQI9rH/ntsd8K83LtgC19QZ3Pn
-HNWGZKkBFDe3DXVt+aK2lVYtBNzeOjZYpnUXGQ3YaQjo3rOy9MjQ4cOi+nXEH6Uy
-BYhNd1eIDWUbmWssz636JeYvtI0yXMY96a4IfWvY3kBUGufShoeTVA1GXpoJMyUA
-xU+JRd6YkoZL/+11HKB3x4vHwdKLzmCES8Q9eSEAvTZ1dVaHZ+j8dcn07sYUkQlD
-1Th4oGhmcS5oIh8FTpyckLrCviTzrVguqz5MhUKmamNqqwYKtHpFFvCqeTs7SH8O
-CGSkbFwMXgFFU7LF+RbGkTRpRsz4CYD1SE7Kn6h7jn0jpYRZi/AD3xn0O9VMDuuJ
-ddWa/vpgI0p1IqQIeQ6ol0H+0hgNhC1/QC1L0PFkjcp95uFTQeH+4ng/BAjmo8dE
-M/+kDisJ1dl6Xwk3qmTcTO7mVC9LHlgkd4Ur5zmbSSj20y5bvJbyhTUxtM84SgcE
-iQf6TK/wRSNptpRM60Ep1C9YOgVvw6MBlVAZ6dnUKfA5eOc/xuFFkBzPmr+p4Xt+
-MICvzyu+mLnE++IzpJanS8bhntYDxPqpoBw5ZWmEAJfemb6wQO9U9z6W30k2ShDS
-UmPskyR+I0eypxli1QN2
-=tVjA
+iQIcBAEBAgAGBQJS+NEKAAoJELSic+t+oim9LNwQAIw86VJOdFzLhVrxa17fP34g
+BOP9eqHhqSTNd78hDnw2wQgtp1ggXM+lI+teaXAG/bheaTmurQtHpJJ4IDwzBMMX
+RqEXe1dz9n7ofIP170rCuVlCxjDIJCTEP0oFdl3As3v9cvyqXA0ETXc4omsGZeku
+LSXh3ItvEFcPE0r02yea6XuZyN7YE8cv7iUUpxmKuOAtLFFaBIfQTSnG0VWMYY3/
+yDIp9Kr87mHBLs0fJcG9zs8TbTwBU4MQO7QEgMOSxlVVS5juF/OlbepCG/gHelbi
+ewdInr4KbL8Dtxj8hGrtRHLn3N6LKPkDiBIVH8wjdIYMYM4RGZmgPMEZXKXIBnRD
+u7aVIUbyRctBickOvA/vDmPMhn5Lmdyf9cUBHfMCgeC+zQSu9u+ReoaSugREQqJq
+I+DNsr7pRSu341tn3Xm48vzdo7gQL31uWkNatCCzaNwmUOii3GbSVpEeye7fPtFc
+x1oHS2eBJfZLe59ZYPlM6bqJxDDPZXKyTLIzRpohUq3h+Ep2YKHip9+KUdHROfOR
+b+2tzQTIxnBQRXjhX1YOlfxOBf972Z9hlgPABkj7XVN1/8/zLJ6Ut+XjTCSf7NgO
+4mdlKRH5cysDRmG+oJM9ouoFTXkpvWMGNwcIrzWI6dedGDEpk1Cc83tVK9G+vRdV
+Cte2KHlpSZNltm1VI3zP
+=VEtO
 -----END PGP SIGNATURE-----
 
---aF3LVLvitz/VQU3c--
+--ERHfpFOxJvIsVBXy--
