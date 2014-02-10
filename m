@@ -1,43 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752575AbaBJStz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 13:49:55 -0500
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:44671 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752155AbaBJStw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 13:49:52 -0500
+	id S1752805AbaBJSvT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 13:51:19 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:50149 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752179AbaBJSvR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 13:51:17 -0500
+Date: Tue, 11 Feb 2014 00:20:56 +0530
+From: Gautham R Shenoy <ego@linux.vnet.ibm.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: paulus@samba.org, oleg@redhat.com, rusty@rustcorp.com.au,
+        peterz@infradead.org, tglx@linutronix.de, akpm@linux-foundation.org,
+        mingo@kernel.org, paulmck@linux.vnet.ibm.com, tj@kernel.org,
+        walken@google.com, ego@linux.vnet.ibm.com, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Subject: Re: [PATCH 16/51] x86, vsyscall: Fix CPU hotplug callback
+ registration
+Message-ID: <20140210185056.GB3416@in.ibm.com>
+Reply-To: ego@linux.vnet.ibm.com
+References: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com>
+ <20140205220727.19080.71911.stgit@srivatsabhat.in.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdY4C0eP4HTRMaha2hzRA0Jvv=5BV40cYGx-Zf=o06r_yg@mail.gmail.com>
-References: <1391700529-11816-1-git-send-email-iivanov@mm-sol.com>
-	<CACRpkdY4C0eP4HTRMaha2hzRA0Jvv=5BV40cYGx-Zf=o06r_yg@mail.gmail.com>
-Date: Mon, 10 Feb 2014 10:49:51 -0800
-Message-ID: <CAJAp7OgVqEL5y1Bib2u3MUi99SOifqc0zDHBDG+59X7K2eMixA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] pinctrl-msm: Add SPI8 pin definitions
-From: Bjorn Andersson <bjorn@kryo.se>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Bjorn Andersson <Bjorn.Andersson@sonymobile.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140205220727.19080.71911.stgit@srivatsabhat.in.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021018-0320-0000-0000-0000026D8025
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 1:14 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Thu, Feb 6, 2014 at 4:28 PM, Ivan T. Ivanov <iivanov@mm-sol.com> wrote:
->
->> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
->>
->> Add pin, group and function definitions for SPI#8
->> controller.
->>
->> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
->
-> Björn can I have your ACK on this patch?
+Hi,
 
-Indeed,
+On Thu, Feb 06, 2014 at 03:37:27AM +0530, Srivatsa S. Bhat wrote:
+> @@ -393,9 +393,13 @@ static int __init vsyscall_init(void)
+>  {
+>  	BUG_ON(VSYSCALL_ADDR(0) != __fix_to_virt(VSYSCALL_FIRST_PAGE));
+> 
+> +	cpu_maps_update_begin();
+> +
+>  	on_each_cpu(cpu_vsyscall_init, NULL, 1);
+>  	/* notifier priority > KVM */
+> -	hotcpu_notifier(cpu_vsyscall_notifier, 30);
+> +	__hotcpu_notifier(cpu_vsyscall_notifier, 30);
 
-Acked-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+While we're at it, we could also #define the VSYSCALL_PRIO relative to
+KVM_PRIO instead of hard-coding the value here, no ?
+
+> +
+> +	cpu_maps_update_done();
+> 
+>  	return 0;
+>  }
+> 
+
