@@ -1,91 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752491AbaBJQdr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 11:33:47 -0500
-Received: from smtprelay0234.hostedemail.com ([216.40.44.234]:40093 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751831AbaBJQdp (ORCPT
+	id S1752423AbaBJQgz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 11:36:55 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40147 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751770AbaBJQgv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 11:33:45 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3865:3867:3868:3871:3872:3873:4250:4321:4605:5007:7652:7875:10004:10400:10848:11026:11232:11657:11658:11914:12043:12295:12296:12517:12519:12740:13069:13071:13141:13230:13311:13357:21060,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: pan50_2dbf650d4955
-X-Filterd-Recvd-Size: 2664
-Message-ID: <1392050018.2507.6.camel@joe-AO722>
-Subject: Re: [Resend PATCH] staging : ion : Fix some checkpatch warnings and
- an error
-From: Joe Perches <joe@perches.com>
-To: Daeseok Youn <daeseok.youn@gmail.com>
-Cc: gregkh@linuxfoundation.org, swetland@google.com, john.stultz@linaro.org,
-        rebecca@android.com, ccross@android.com, ohaugan@codeaurora.org,
-        romlem@google.com, linux-kernel@vger.kernel.org,
-        dan.carpenter@oracle.com
-Date: Mon, 10 Feb 2014 08:33:38 -0800
-In-Reply-To: <1861074.WmPcbRBdNV@daeseok-laptop.cloud.net>
-References: <1861074.WmPcbRBdNV@daeseok-laptop.cloud.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 10 Feb 2014 11:36:51 -0500
+Date: Mon, 10 Feb 2014 16:36:22 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Richard Weinberger <richard@nod.at>, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Sangbeom Kim <sbkim73@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20140210163621.GA13533@sirena.org.uk>
+References: <1391971686-9517-1-git-send-email-richard@nod.at>
+ <1391971686-9517-15-git-send-email-richard@nod.at>
+ <20140210114154.GQ1757@sirena.org.uk>
+ <1392039072.3585.15.camel@x220>
+ <20140210141255.GI1757@sirena.org.uk>
+ <1392046242.3585.41.camel@x220>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="rwEMma7ioTxnRzrJ"
+Content-Disposition: inline
+In-Reply-To: <1392046242.3585.41.camel@x220>
+X-Cookie: My LESLIE GORE record is BROKEN ...
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 14/28] Remove MACH_SMDKC210
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-02-10 at 20:25 +0900, Daeseok Youn wrote:
 
-> Warning:
->  - Unnecessary space after function pointer name
->  - quoted string split across lines
-> 
-> Error:
->  - return is not a function, parentheses are not required
+--rwEMma7ioTxnRzrJ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Hi.
+On Mon, Feb 10, 2014 at 04:30:42PM +0100, Paul Bolle wrote:
+> On Mon, 2014-02-10 at 14:12 +0000, Mark Brown wrote:
 
-checkpatch issuing either an ERROR or WARNING isn't
-really relevant to the subject.
+> > Yes, that's correct.  Now, like I say think about what the symbol was
+> > there for in the first place.
 
-This isn't really a resend.  It's a different version
-and so the subject should not say "Resend".  Ideally,
-you send this with a subject like:
+> So, next step: the Kconfig symbols MACH_SMDKV310 and MACH_SMDKC210 were
+> removed in commit 383ffda2fa ("ARM: EXYNOS: no more support non-DT for
+> EXYNOS SoCs"). That commit was part of v3.11. Correct?
 
-[PATCH V2] staging: ion: Whitespace neatening
+Indeed, so we can see that these platforms were converted to use DT and
+the symbols were removed as a result.  This means that a good fix here
+is to ensure that the driver can be used with DT platforms.
 
-and if needed again:
+--rwEMma7ioTxnRzrJ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-[PATCH V3] staging: ion: Whitespace neatening
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-etc...
+iQIcBAEBAgAGBQJS+QACAAoJELSic+t+oim9gcMP/26leZ6LFzKPlv9jOvbe82Li
+QVHEq7Gt2FfIDYJjkiXYy7UK6HKB5xZ1PUqxVJy2ExKqEGz2SwkfYgN8uLs16R8z
+7AHO86PluSecrq1P3hzLxQ2BRia45eoiSpujCy3oYN13RMiHUq1MrrUp/LlttJnT
+Y++oA0oxoeJAPL+iQYJWDuRZGmduoC3ibdtXOs51eaYBCijhqs9u4X6pTZo0VoGE
+V3gu2Idya9ocyQ28KipNvpG+cFjaYna8evj8MGb7vdCUHsQxg2eZZWBsvudpBo94
+jYzjMekU8sQN+QVbFTt+MTsxd/wndqCJXMuiwHdQ3SvzusmeOHcSDcOmsXfyIy6C
+hZFE4pNkMnekMM8ZjPTy073lFyky9GXg0jHn/amTE0e3ouGEPAaZgHY8Lv6FLgoz
+3bS7ZFV3phh8Fjr/DrX434hiQC8TLTkdWbmaOTJJAK1lQbeENMVX804UfUttkCE4
+QZK2+har0qUOzgTl26hJz2osPAWZSE7qo3UmdD9LWqGMx1DQ1KVDDFj5hCUoXRkz
+LjYtn16rFYTCTSyao/Mp4eg5WGEawrBWYKXK7PZWDDH/89OAsnwuxi7HI9cClnng
+yvhRG2rMQYUvtw0xMmTJWbTYJV0nowzA/x8D4EKo9obNu0ZBmrdMY5lTFNFFvWCZ
+WWCorlRxgZllBsQetG3W
+=Xxmg
+-----END PGP SIGNATURE-----
 
-and below:
-
-> diff --git a/drivers/staging/android/ion/ion.c b/drivers/staging/android/ion/ion.c
-[]
-> @@ -55,7 +55,7 @@ struct ion_device {
->  	struct mutex buffer_lock;
->  	struct rw_semaphore lock;
->  	struct plist_head heaps;
-> -	long (*custom_ioctl) (struct ion_client *client, unsigned int cmd,
-> +	long (*custom_ioctl)(struct ion_client *client, unsigned int cmd,
->  			      unsigned long arg);
-
-Please realign the arguments to the open parenthesis like:
-
-	long (*custom_ioctl)(struct ion_client *client, unsigned int cmd,
-			     unsigned long arg);
-
-> diff --git a/drivers/staging/android/ion/ion_priv.h b/drivers/staging/android/ion/ion_priv.h
-[]
-> @@ -100,18 +100,18 @@ void ion_buffer_destroy(struct ion_buffer *buffer);
->   * map_dma and map_kernel return pointer on success, ERR_PTR on error.
->   */
->  struct ion_heap_ops {
-> -	int (*allocate) (struct ion_heap *heap,
-> +	int (*allocate)(struct ion_heap *heap,
->  			 struct ion_buffer *buffer, unsigned long len,
->  			 unsigned long align, unsigned long flags);
-
-realignment here too
-
-etc.
-
+--rwEMma7ioTxnRzrJ--
