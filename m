@@ -1,112 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752864AbaBJQWG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 11:22:06 -0500
-Received: from mail-de.keymile.com ([195.8.104.250]:47989 "EHLO
-	mail-de.keymile.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752564AbaBJQWB (ORCPT
+	id S1752627AbaBJQXR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 11:23:17 -0500
+Received: from smtp.csie.ntu.edu.tw ([140.112.30.61]:51899 "EHLO
+	smtp.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752074AbaBJQXP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 11:22:01 -0500
-X-Greylist: delayed 415 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Feb 2014 11:22:01 EST
-Message-ID: <52F8FB03.6040606@keymile.com>
-Date: Mon, 10 Feb 2014 17:14:59 +0100
-From: Gerlando Falauto <gerlando.falauto@keymile.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Florian Fainelli <f.fainelli@gmail.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>
-CC: netdev <netdev@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>
-Subject: Re: [PATCH V3] net/dt: Add support for overriding phy configuration
- from device tree
-References: <7510122.cayuQ6qt8r@wuerfel> <1389999459-9483-1-git-send-email-matthew.garrett@nebula.com> <CAGVrzcZ4TFd=9KP+aoG47QbmqDJ1i23WBcEWDbzNRUfGmPvZHQ@mail.gmail.com>
-In-Reply-To: <CAGVrzcZ4TFd=9KP+aoG47QbmqDJ1i23WBcEWDbzNRUfGmPvZHQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 10 Feb 2014 11:23:15 -0500
+From: Chen-Yu Tsai <wens@csie.org>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Chen-Yu Tsai <wens@csie.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        David Lanzendoerfer <david.lanzendoerfer@o2s.ch>,
+        stable@vger.kernel.org
+Subject: [PATCH] pinctrl: sunxi: use chained_irq_{enter, exit} for GIC compatibility
+Date: Tue, 11 Feb 2014 00:22:37 +0800
+Message-Id: <1392049357-13225-1-git-send-email-wens@csie.org>
+X-Mailer: git-send-email 1.9.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On tha Allwinner A20 SoC, the external interrupts on the pin controller
+device are connected to the GIC. Without chained_irq_{enter, exit},
+external GPIO interrupts, such as used by mmc core card detect, cause
+the system to hang.
 
-I'm currently trying to fix an issue for which this patch provides a 
-partial solution, so apologies in advance for jumping into the 
-discussion for my own purposes...
+Cc: stable@vger.kernel.org
+Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+---
 
-On 02/04/2014 09:39 PM, Florian Fainelli wrote:> 2014-01-17 Matthew 
-Garrett <matthew.garrett@nebula.com>:
- >> Some hardware may be broken in interesting and board-specific ways, such
- >> that various bits of functionality don't work. This patch provides a
- >> mechanism for overriding mii registers during init based on the 
-contents of
- >> the device tree data, allowing board-specific fixups without having to
- >> pollute generic code.
- >
- > It would be good to explain exactly how your hardware is broken
- > exactly. I really do not think that such a fine-grained setting where
- > you could disable, e.g: 100BaseT_Full, but allow 100BaseT_Half to
- > remain usable makes that much sense. In general, Gigabit might be
- > badly broken, but 100 and 10Mbits/sec should work fine. How about the
- > MASTER-SLAVE bit, is overriding it really required?
- >
- > Is not a PHY fixup registered for a specific OUI the solution you are
- > looking for? I am also concerned that this creates PHY troubleshooting
- > issues much harder to debug than before as we may have no idea about
- > how much information has been put in Device Tree to override that.
- >
- > Finally, how about making this more general just like the BCM87xx PHY
- > driver, which is supplied value/reg pairs directly? There are 16
- > common MII registers, and 16 others for vendor specific registers,
- > this is just covering for about 2% of the possible changes.
+This issue was first encountered during my attempt to get out-of-band
+interrupts for WiFi on the Cubietruck working. With David's new series
+of sunci-mci using mmc slot-gpio for (GPIO interrupt based) card
+detection, removing the SD card also causes my Cubietruck to hang. This
+problem should extend to all Allwinner A20 based boards.
 
-Good point. That would easily help me with my current issue, which 
-requires autoneg to be disabled to begin with (by clearing BMCR_ANENABLE 
-from register 0).
-This would not however fix it entirely (I tried a quick hardwired 
-implementation), as the whole PHY machinery would not take that into 
-account and would re-enable autoneg anyway.
-I also tried changing the patch so that phydev->support gets updated 
-(instead of phydev->advertising):
+With this fix, the system no longer hangs when I remove or insert the
+SD card. /proc/interrupts show that the interrupt has correctly fired.
+However the system still does not detect card removal/insertion. I
+believe this is another unrelated issue.
 
- >> +               if (!of_property_read_u32(np, override->prop, &tmp)) {
- >> +                       if (tmp) {
- >> +                               *val |= override->value;
- >> +                               phydev->advertising |= 
-override->supported;
- >> +                       } else {
- >> +                               phydev->advertising &= 
-~(override->supported);
- >> +                       }
- >> +
- >> +                       *mask |= override->value;
+ drivers/pinctrl/pinctrl-sunxi.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-What I find weird is that the only way phydev->autoneg could ever be set 
-to disabled is from here (phy.c):
+diff --git a/drivers/pinctrl/pinctrl-sunxi.c b/drivers/pinctrl/pinctrl-sunxi.c
+index 9ccf681..787f352 100644
+--- a/drivers/pinctrl/pinctrl-sunxi.c
++++ b/drivers/pinctrl/pinctrl-sunxi.c
+@@ -14,6 +14,7 @@
+ #include <linux/clk.h>
+ #include <linux/gpio.h>
+ #include <linux/irqdomain.h>
++#include <linux/irqchip/chained_irq.h>
+ #include <linux/module.h>
+ #include <linux/of.h>
+ #include <linux/of_address.h>
+@@ -665,6 +666,7 @@ static struct irq_chip sunxi_pinctrl_irq_chip = {
+ 
+ static void sunxi_pinctrl_irq_handler(unsigned irq, struct irq_desc *desc)
+ {
++	struct irq_chip *chip = irq_get_chip(irq);
+ 	struct sunxi_pinctrl *pctl = irq_get_handler_data(irq);
+ 	const unsigned long reg = readl(pctl->membase + IRQ_STATUS_REG);
+ 
+@@ -674,10 +676,12 @@ static void sunxi_pinctrl_irq_handler(unsigned irq, struct irq_desc *desc)
+ 	if (reg) {
+ 		int irqoffset;
+ 
++		chained_irq_enter(chip, desc);
+ 		for_each_set_bit(irqoffset, &reg, SUNXI_IRQ_NUMBER) {
+ 			int pin_irq = irq_find_mapping(pctl->domain, irqoffset);
+ 			generic_handle_irq(pin_irq);
+ 		}
++		chained_irq_exit(chip, desc);
+ 	}
+ }
+ 
+-- 
+1.9.rc1
 
-static void phy_sanitize_settings(struct phy_device *phydev)
-{
-	u32 features = phydev->supported;
-	int idx;
-
-	/* Sanitize settings based on PHY capabilities */
-	if ((features & SUPPORTED_Autoneg) == 0)
-		phydev->autoneg = AUTONEG_DISABLE;
-
-which is in turn only called when phydev->autoneg is set to 
-AUTONEG_DISABLE to begin with:
-
-int phy_start_aneg(struct phy_device *phydev)
-{
-	int err;
-
-	mutex_lock(&phydev->lock);
-
-	if (AUTONEG_DISABLE == phydev->autoneg)
-		phy_sanitize_settings(phydev);
-
-So could someone please help me figure out what I'm missing here?
-
-Thanks!
-Gerlando
