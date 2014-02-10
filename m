@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754237AbaBJTqv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 14:46:51 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35009 "EHLO
+	id S1754289AbaBJTrB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 14:47:01 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35048 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754173AbaBJTqm (ORCPT
+	with ESMTP id S1754242AbaBJTqy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:46:42 -0500
+	Mon, 10 Feb 2014 14:46:54 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Christoph Paasch <christoph.paasch@uclouvain.be>,
-        "David S. Miller" <davem@davemloft.net>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 116/124] tcp: metrics: Avoid duplicate entries with the same destination-IP
-Date: Mon, 10 Feb 2014 11:40:56 -0800
-Message-Id: <1392061264-28124-117-git-send-email-kamal@canonical.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 038/124] ext4: avoid clearing beyond i_blocks when truncating an inline data file
+Date: Mon, 10 Feb 2014 11:39:38 -0800
+Message-Id: <1392061264-28124-39-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
 References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
@@ -28,132 +26,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Paasch <christoph.paasch@uclouvain.be>
+From: Theodore Ts'o <tytso@mit.edu>
 
-[ Upstream commit 77f99ad16a07aa062c2d30fae57b1fee456f6ef6 ]
+commit 09c455aaa8f47a94d5bafaa23d58365768210507 upstream.
 
-Because the tcp-metrics is an RCU-list, it may be that two
-soft-interrupts are inside __tcp_get_metrics() for the same
-destination-IP at the same time. If this destination-IP is not yet part of
-the tcp-metrics, both soft-interrupts will end up in tcpm_new and create
-a new entry for this IP.
-So, we will have two tcp-metrics with the same destination-IP in the list.
+A missing cast means that when we are truncating a file which is less
+than 60 bytes, we don't clear the correct area of memory, and in fact
+we can end up truncating the next inode in the inode table, or worse
+yet, some other kernel data structure.
 
-This patch checks twice __tcp_get_metrics(). First without holding the
-lock, then while holding the lock. The second one is there to confirm
-that the entry has not been added by another soft-irq while waiting for
-the spin-lock.
+Addresses-Coverity-Id: #751987
 
-Fixes: 51c5d0c4b169b (tcp: Maintain dynamic metrics in local cache.)
-Signed-off-by: Christoph Paasch <christoph.paasch@uclouvain.be>
-Reviewed-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[ kamal: backport to 3.8 (context) ]
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv4/tcp_metrics.c | 51 +++++++++++++++++++++++++++++++-------------------
- 1 file changed, 32 insertions(+), 19 deletions(-)
+ fs/ext4/inline.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/net/ipv4/tcp_metrics.c b/net/ipv4/tcp_metrics.c
-index f190419..ca1bafa 100644
---- a/net/ipv4/tcp_metrics.c
-+++ b/net/ipv4/tcp_metrics.c
-@@ -22,6 +22,9 @@
+diff --git a/fs/ext4/inline.c b/fs/ext4/inline.c
+index f33fcb6..10816d2 100644
+--- a/fs/ext4/inline.c
++++ b/fs/ext4/inline.c
+@@ -1817,9 +1817,11 @@ void ext4_inline_data_truncate(struct inode *inode, int *has_inline)
+ 		}
  
- int sysctl_tcp_nometrics_save __read_mostly;
+ 		/* Clear the content within i_blocks. */
+-		if (i_size < EXT4_MIN_INLINE_DATA_SIZE)
+-			memset(ext4_raw_inode(&is.iloc)->i_block + i_size, 0,
+-					EXT4_MIN_INLINE_DATA_SIZE - i_size);
++		if (i_size < EXT4_MIN_INLINE_DATA_SIZE) {
++			void *p = (void *) ext4_raw_inode(&is.iloc)->i_block;
++			memset(p + i_size, 0,
++			       EXT4_MIN_INLINE_DATA_SIZE - i_size);
++		}
  
-+static struct tcp_metrics_block *__tcp_get_metrics(const struct inetpeer_addr *addr,
-+						   struct net *net, unsigned int hash);
-+
- struct tcp_fastopen_metrics {
- 	u16	mss;
- 	u16	syn_loss:10;		/* Recurring Fast Open SYN losses */
-@@ -127,16 +130,41 @@ static void tcpm_suck_dst(struct tcp_metrics_block *tm, struct dst_entry *dst)
- 	tm->tcpm_fastopen.cookie.len = 0;
- }
- 
-+#define TCP_METRICS_TIMEOUT		(60 * 60 * HZ)
-+
-+static void tcpm_check_stamp(struct tcp_metrics_block *tm, struct dst_entry *dst)
-+{
-+	if (tm && unlikely(time_after(jiffies, tm->tcpm_stamp + TCP_METRICS_TIMEOUT)))
-+		tcpm_suck_dst(tm, dst);
-+}
-+
-+#define TCP_METRICS_RECLAIM_DEPTH	5
-+#define TCP_METRICS_RECLAIM_PTR		(struct tcp_metrics_block *) 0x1UL
-+
- static struct tcp_metrics_block *tcpm_new(struct dst_entry *dst,
- 					  struct inetpeer_addr *addr,
--					  unsigned int hash,
--					  bool reclaim)
-+					  unsigned int hash)
- {
- 	struct tcp_metrics_block *tm;
- 	struct net *net;
-+	bool reclaim = false;
- 
- 	spin_lock_bh(&tcp_metrics_lock);
- 	net = dev_net(dst->dev);
-+
-+	/* While waiting for the spin-lock the cache might have been populated
-+	 * with this entry and so we have to check again.
-+	 */
-+	tm = __tcp_get_metrics(addr, net, hash);
-+	if (tm == TCP_METRICS_RECLAIM_PTR) {
-+		reclaim = true;
-+		tm = NULL;
-+	}
-+	if (tm) {
-+		tcpm_check_stamp(tm, dst);
-+		goto out_unlock;
-+	}
-+
- 	if (unlikely(reclaim)) {
- 		struct tcp_metrics_block *oldest;
- 
-@@ -166,17 +194,6 @@ out_unlock:
- 	return tm;
- }
- 
--#define TCP_METRICS_TIMEOUT		(60 * 60 * HZ)
--
--static void tcpm_check_stamp(struct tcp_metrics_block *tm, struct dst_entry *dst)
--{
--	if (tm && unlikely(time_after(jiffies, tm->tcpm_stamp + TCP_METRICS_TIMEOUT)))
--		tcpm_suck_dst(tm, dst);
--}
--
--#define TCP_METRICS_RECLAIM_DEPTH	5
--#define TCP_METRICS_RECLAIM_PTR		(struct tcp_metrics_block *) 0x1UL
--
- static struct tcp_metrics_block *tcp_get_encode(struct tcp_metrics_block *tm, int depth)
- {
- 	if (tm)
-@@ -277,7 +294,6 @@ static struct tcp_metrics_block *tcp_get_metrics(struct sock *sk,
- 	struct inetpeer_addr addr;
- 	unsigned int hash;
- 	struct net *net;
--	bool reclaim;
- 
- 	addr.family = sk->sk_family;
- 	switch (addr.family) {
-@@ -297,13 +313,10 @@ static struct tcp_metrics_block *tcp_get_metrics(struct sock *sk,
- 	hash = hash_32(hash, net->ipv4.tcp_metrics_hash_log);
- 
- 	tm = __tcp_get_metrics(&addr, net, hash);
--	reclaim = false;
--	if (tm == TCP_METRICS_RECLAIM_PTR) {
--		reclaim = true;
-+	if (tm == TCP_METRICS_RECLAIM_PTR)
- 		tm = NULL;
--	}
- 	if (!tm && create)
--		tm = tcpm_new(dst, &addr, hash, reclaim);
-+		tm = tcpm_new(dst, &addr, hash);
- 	else
- 		tcpm_check_stamp(tm, dst);
- 
+ 		EXT4_I(inode)->i_inline_size = i_size <
+ 					EXT4_MIN_INLINE_DATA_SIZE ?
 -- 
 1.8.3.2
 
