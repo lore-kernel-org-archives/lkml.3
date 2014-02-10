@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754987AbaBJUAH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 15:00:07 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34979 "EHLO
+	id S1755038AbaBJUAf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 15:00:35 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34960 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754135AbaBJTqd (ORCPT
+	with ESMTP id S1754119AbaBJTq0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:46:33 -0500
+	Mon, 10 Feb 2014 14:46:26 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+Cc: Michal Schmidt <mschmidt@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 122/124] sit: fix double free of fb_tunnel_dev on exit
-Date: Mon, 10 Feb 2014 11:41:02 -0800
-Message-Id: <1392061264-28124-123-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 111/124] bnx2x: fix DMA unmapping of TSO split BDs
+Date: Mon, 10 Feb 2014 11:40:51 -0800
+Message-Id: <1392061264-28124-112-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
 References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
@@ -28,80 +28,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+From: Michal Schmidt <mschmidt@redhat.com>
 
-[ No relevant upstream commit. ]
+[ Upstream commit 95e92fd40c967c363ad66b2fd1ce4dcd68132e54 ]
 
-This problem was fixed upstream by commit 9434266f2c64 ("sit: fix use after free
-of fb_tunnel_dev").
-The upstream patch depends on upstream commit 5e6700b3bf98 ("sit: add support of
-x-netns"), which was not backported into 3.10 branch.
+bnx2x triggers warnings with CONFIG_DMA_API_DEBUG=y:
 
-First, explain the problem: when the sit module is unloaded, sit_cleanup() is
-called.
-rmmod sit
-=> sit_cleanup()
-  => rtnl_link_unregister()
-    => __rtnl_kill_links()
-      => for_each_netdev(net, dev) {
-        if (dev->rtnl_link_ops == ops)
-        	ops->dellink(dev, &list_kill);
-        }
-At this point, the FB device is deleted (and all sit tunnels).
-  => unregister_pernet_device()
-    => unregister_pernet_operations()
-      => ops_exit_list()
-        => sit_exit_net()
-          => sit_destroy_tunnels()
-          In this function, no tunnel is found.
-          => unregister_netdevice_queue(sitn->fb_tunnel_dev, &list);
-We delete the FB device a second time here!
+  WARNING: CPU: 0 PID: 2253 at lib/dma-debug.c:887 check_unmap+0xf8/0x920()
+  bnx2x 0000:28:00.0: DMA-API: device driver frees DMA memory with
+  different size [device address=0x00000000da2b389e] [map size=1490 bytes]
+  [unmap size=66 bytes]
 
-Because we cannot simply remove the second deletion (sit_exit_net() must remove
-the FB device when a netns is deleted), we add an rtnl ops which delete all sit
-device excepting the FB device and thus we can keep the explicit deletion in
-sit_exit_net().
+The reason is that bnx2x splits a TSO BD into two BDs (headers + data)
+using one DMA mapping for both, but it uses only the length of the first
+BD when unmapping.
 
-CC: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Acked-by: Willem de Bruijn <willemb@google.com>
-Reported-by: Steven Rostedt <srostedt@redhat.com>
-Tested-by: Steven Rostedt <srostedt@redhat.com> (and our entire MRG team)
-Tested-by: "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>
-Tested-by: John Kacur <jkacur@redhat.com>
+This patch fixes the bug by unmapping the whole length of the two BDs.
+
+Signed-off-by: Michal Schmidt <mschmidt@redhat.com>
+Reviewed-by: Eric Dumazet <edumazet@google.com>
+Acked-by: Dmitry Kravkov <dmitry@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv6/sit.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c | 13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
-diff --git a/net/ipv6/sit.c b/net/ipv6/sit.c
-index b1c5654..0511f0e 100644
---- a/net/ipv6/sit.c
-+++ b/net/ipv6/sit.c
-@@ -1463,6 +1463,15 @@ static const struct nla_policy ipip6_policy[IFLA_IPTUN_MAX + 1] = {
- #endif
- };
+diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
+index 3a73bb9..269eefa 100644
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
+@@ -126,6 +126,7 @@ static u16 bnx2x_free_tx_pkt(struct bnx2x *bp, struct bnx2x_fp_txdata *txdata,
+ 	struct sk_buff *skb = tx_buf->skb;
+ 	u16 bd_idx = TX_BD(tx_buf->first_bd), new_cons;
+ 	int nbd;
++	u16 split_bd_len = 0;
  
-+static void ipip6_dellink(struct net_device *dev, struct list_head *head)
-+{
-+	struct net *net = dev_net(dev);
-+	struct sit_net *sitn = net_generic(net, sit_net_id);
-+
-+	if (dev != sitn->fb_tunnel_dev)
-+		unregister_netdevice_queue(dev, head);
-+}
-+
- static struct rtnl_link_ops sit_link_ops __read_mostly = {
- 	.kind		= "sit",
- 	.maxtype	= IFLA_IPTUN_MAX,
-@@ -1473,6 +1482,7 @@ static struct rtnl_link_ops sit_link_ops __read_mostly = {
- 	.changelink	= ipip6_changelink,
- 	.get_size	= ipip6_get_size,
- 	.fill_info	= ipip6_fill_info,
-+	.dellink	= ipip6_dellink,
- };
+ 	/* prefetch skb end pointer to speedup dev_kfree_skb() */
+ 	prefetch(&skb->end);
+@@ -133,10 +134,7 @@ static u16 bnx2x_free_tx_pkt(struct bnx2x *bp, struct bnx2x_fp_txdata *txdata,
+ 	DP(NETIF_MSG_TX_DONE, "fp[%d]: pkt_idx %d  buff @(%p)->skb %p\n",
+ 	   txdata->txq_index, idx, tx_buf, skb);
  
- static struct xfrm_tunnel sit_handler __read_mostly = {
+-	/* unmap first bd */
+ 	tx_start_bd = &txdata->tx_desc_ring[bd_idx].start_bd;
+-	dma_unmap_single(&bp->pdev->dev, BD_UNMAP_ADDR(tx_start_bd),
+-			 BD_UNMAP_LEN(tx_start_bd), DMA_TO_DEVICE);
+ 
+ 
+ 	nbd = le16_to_cpu(tx_start_bd->nbd) - 1;
+@@ -155,12 +153,19 @@ static u16 bnx2x_free_tx_pkt(struct bnx2x *bp, struct bnx2x_fp_txdata *txdata,
+ 	--nbd;
+ 	bd_idx = TX_BD(NEXT_TX_IDX(bd_idx));
+ 
+-	/* ...and the TSO split header bd since they have no mapping */
++	/* TSO headers+data bds share a common mapping. See bnx2x_tx_split() */
+ 	if (tx_buf->flags & BNX2X_TSO_SPLIT_BD) {
++		tx_data_bd = &txdata->tx_desc_ring[bd_idx].reg_bd;
++		split_bd_len = BD_UNMAP_LEN(tx_data_bd);
+ 		--nbd;
+ 		bd_idx = TX_BD(NEXT_TX_IDX(bd_idx));
+ 	}
+ 
++	/* unmap first bd */
++	dma_unmap_single(&bp->pdev->dev, BD_UNMAP_ADDR(tx_start_bd),
++			 BD_UNMAP_LEN(tx_start_bd) + split_bd_len,
++			 DMA_TO_DEVICE);
++
+ 	/* now free frags */
+ 	while (nbd > 0) {
+ 
 -- 
 1.8.3.2
 
