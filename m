@@ -1,39 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752831AbaBJLSG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 06:18:06 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:35390 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752779AbaBJLSC (ORCPT
+	id S1752358AbaBJLVt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 06:21:49 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:53275 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751889AbaBJLVs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 06:18:02 -0500
-Date: Mon, 10 Feb 2014 11:17:59 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [git pull] vfs.git fixes for -rc2
-Message-ID: <20140210111759.GD18016@ZenIV.linux.org.uk>
-References: <20140209233643.GB18016@ZenIV.linux.org.uk>
- <20140210104747.GV13997@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140210104747.GV13997@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 10 Feb 2014 06:21:48 -0500
+Date: Mon, 10 Feb 2014 11:21:16 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Kay Sievers <kay@vrfy.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Hannes Reinecke <hare@suse.de>,
+        systemd Mailing List <systemd-devel@lists.freedesktop.org>,
+        dh.herrmann@gmail.com, LKML <linux-kernel@vger.kernel.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Jiri Slaby <jslaby@suse.cz>, Werner Fink <werner@suse.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: Re: [PATCHv2] tty: Set correct tty name in 'active' sysfs attribute
+Message-ID: <20140210112116.010b1006@alan.etchedpixels.co.uk>
+In-Reply-To: <CAPXgP11BPt+bcHNELwucyXz+ZticDpZbs1Ae=c0qVeWKb69pnA@mail.gmail.com>
+References: <1391696863-62767-1-git-send-email-hare@suse.de>
+	<20140206152947.GA19335@kroah.com>
+	<52F3ADD4.7020907@suse.de>
+	<20140206162908.GA7443@kroah.com>
+	<CAPXgP11BPt+bcHNELwucyXz+ZticDpZbs1Ae=c0qVeWKb69pnA@mail.gmail.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 09:47:47PM +1100, Dave Chinner wrote:
+> Sounds good to me. The intention clearly was to point to the device in use,
+> which we can find then.
 
-> and the updated pos value on O_APPEND writes is never folded back
-> into ppos.
+I would concur.
 
-Not true.  Check generic_file_buffered_write() and generic_file_direct_write()
-- that's where it's normally stored into iocb->ki_pos (via *ppos).  And yes,
-I agree that the damn thing is obfuscated to hell and back - other commits
-in my local tree kill 'ppos' arguments of __generic_file_aio_write() and
-generic_file_buffered_write() (equal to &iocb->ki_pos for all call sites),
-which makes it a bit easier to keep track of.  Will push that part of
-queue into vfs.git#iov_iter today...
+> I would not expect problems with this change. For common uses it is the
+> same name already and nothing visibly should change, and for the ones
+> where it isn't the same, I expect it is not too useful to find the driver
+> name.
+
+Very few tools use it so if it doesn't break any distro init setups
+(upstart, sysvinit, oh and that other one....) it ought to be fine.
+
+Alan
