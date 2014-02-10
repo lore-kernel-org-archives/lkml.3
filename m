@@ -1,102 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752547AbaBJRGv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 12:06:51 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:38450 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751889AbaBJRGs (ORCPT
+	id S1752567AbaBJRJP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 12:09:15 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40165 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752155AbaBJRJN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 12:06:48 -0500
+	Mon, 10 Feb 2014 12:09:13 -0500
+Date: Mon, 10 Feb 2014 17:09:00 +0000
+From: Mark Brown <broonie@kernel.org>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        linux-spi@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Alok Chauhan <alokc@codeaurora.org>,
+        Gilad Avidov <gavidov@codeaurora.org>,
+        Kiran Gunda <kgunda@codeaurora.org>,
+        Sagar Dharia <sdharia@codeaurora.org>
+Message-ID: <20140210170900.GC13533@sirena.org.uk>
+References: <1391705868-20091-1-git-send-email-iivanov@mm-sol.com>
+ <1391705868-20091-3-git-send-email-iivanov@mm-sol.com>
+ <20140207171202.GD1757@sirena.org.uk>
+ <1392049766.2853.43.camel@iivanov-dev>
 MIME-Version: 1.0
-In-Reply-To: <20140210173811.04ba5964@endymion.delvare>
-References: <1392045953-26596-1-git-send-email-lpapp@kde.org>
-	<20140210160842.GB26997@lee--X1>
-	<20140210173811.04ba5964@endymion.delvare>
-Date: Mon, 10 Feb 2014 17:06:46 +0000
-X-Google-Sender-Auth: 5j8ysxs5IfgvVoxyX1qEY_ey3Ko
-Message-ID: <CAOMwXhNr27fwwhr=Fb996b1DtSb0R6xiasMY2PsbTwVNe2qgOQ@mail.gmail.com>
-Subject: Re: [lm-sensors] [PATCH] hwmon: (max6650) Rename the device ids to
- contain the hwmon suffix
-From: Laszlo Papp <lpapp@kde.org>
-To: Jean Delvare <jdelvare@suse.de>
-Cc: Lee Jones <lee.jones@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
-        Guenter Roeck <linux@roeck-us.net>, lm-sensors@lm-sensors.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="5QAgd0e35j3NYeGe"
+Content-Disposition: inline
+In-Reply-To: <1392049766.2853.43.camel@iivanov-dev>
+X-Cookie: My LESLIE GORE record is BROKEN ...
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/2] spi: Add Qualcomm QUP SPI controller support
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 4:38 PM, Jean Delvare <jdelvare@suse.de> wrote:
-> Hi Lee, Laszlo,
->
-> On Mon, 10 Feb 2014 16:08:42 +0000, Lee Jones wrote:
->> > In the preparation of creating an mfd driver and then refactor this one into a
->> > platform driver in order to add some pinctrl functionality to the chip, it is
->> > necessary to start the series with this change so that the mfd driver can refer
->> > to the proper name in the subsequent change without making changes in more than
->> > one driver later.
->> >
->> > This was a request from Lee Jones, the MFD subsystem maintainer.
->> >
->> > Signed-off-by: Laszlo Papp <lpapp@kde.org>
->> > ---
->> >  drivers/hwmon/max6650.c | 4 ++--
->> >  1 file changed, 2 insertions(+), 2 deletions(-)
->> >
->> > diff --git a/drivers/hwmon/max6650.c b/drivers/hwmon/max6650.c
->> > index 0cafc39..3c36edc 100644
->> > --- a/drivers/hwmon/max6650.c
->> > +++ b/drivers/hwmon/max6650.c
->> > @@ -116,8 +116,8 @@ static struct max6650_data *max6650_update_device(struct device *dev);
->> >   */
->> >
->> >  static const struct i2c_device_id max6650_id[] = {
->> > -   { "max6650", 1 },
->> > -   { "max6651", 4 },
->> > +   { "max6650-hwmon", 1 },
->> > +   { "max6651-hwmon", 4 },
->
-> No, this is not acceptable, sorry. This will change the name of the
-> hwmon device as seen from user-space, breaking any configuration file
-> referring to it. Additionally, dashes are explicitly forbidden in hwmon
-> device names. And lastly this will break any explicit instantiation of
-> theses devices (which is the only way, as the driver doesn't support
-> device auto-detection), be it in the kernel itself or from user-space.
->
-> The change doesn't make sense anyway. If you move to the MFD framework,
-> the core driver will be an I2C driver binding to the I2C device, and it
-> will spawn the logical devices, presumably in the form of platform
-> devices. That's what the current max6650 driver would have to bind to.
-> Just renaming the device won't work, you also need to change the type.
 
-Hmm, this paragraph seems to indicate that you have not seen my
-previous patch set. I tried to summarize in this commit message that
-the type in this subdriver would need to change, yes.
+--5QAgd0e35j3NYeGe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I am fine with not renaming, but appending if such a thing is
-possible. What does not make sense to me is acquiring a "global"
-max665x name in a sub-device driver. The children have to be
-distinguished somehow!
+On Mon, Feb 10, 2014 at 06:29:26PM +0200, Ivan T. Ivanov wrote:
+> On Fri, 2014-02-07 at 17:12 +0000, Mark Brown wrote:=20
 
-> If you want to turn this into an MFD driver, I believe you must first
-> convert the hwmon part to register using
-> devm_hwmon_device_register_with_groups(). This will dissociate the i2c
-> device name from the hwmon device name and create a clean name-space
-> for each function. Guenter, maybe you had a plan to do so already
-> anyway?
->
-> That being said, going with MFD in this case seems quite overkill to
-> me. MFD makes a lot of sense when each function has its own resources.
-> As this isn't the case here, a single driver registering both an hwmon
-> interface and a pinctrl interface would seem sufficient to me. But I
-> think Guenter already discussed this in the past so I'll let him
-> continue and decide.
+> > > +	if (!xfer)
+> > > +		return IRQ_HANDLED;
 
-Exactly. This had been overdiscussed. I took my personal preference
-without any technical drawback. I prefer clean separation just like
-several other mfd drivers are doing, really.
+> > Are you sure?  It seems wrong to just ignore interrupts, some comments
+> > would help explain why.
 
-Tell me this is unacceptable, and I will stop helping with getting the
-required functionality into the kernel. Frankly, I am getting tired of
-having worked on it for a few months now, and we are still at
-discussing personal preferences rather than getting features in ...
+> Of course this should never happen. This was left from initial stage
+> of the implementation.
+
+OK, so reporting them as errors seems better then.
+
+> > > +	if (controller->speed_hz !=3D chip->speed_hz) {
+> > > +		ret =3D clk_set_rate(controller->cclk, chip->speed_hz);
+> > > +		if (ret) {
+> > > +			dev_err(controller->dev, "fail to set frequency %d",
+> > > +				chip->speed_hz);
+> > > +			return -EIO;
+> > > +		}
+> > > +	}
+
+> > Is calling into the clock framework really so expensive that we need to
+> > avoid doing it? =20
+
+> Probably not. But why to call it if the frequency is the same.
+
+It's less code that could go wrong and the check is already there in the
+clock framework hopefully.
+
+> > You also shouldn't be interacting with the hardware in
+> > setup().
+
+> This is internal hw-setup, not master::setup() or I am
+> missing something?
+
+The naming could probably be clearer then - config or something.
+
+> > > +	if (chip->bits_per_word <=3D 8)
+> > > +		controller->bytes_per_word =3D 1;
+> > > +	else if (chip->bits_per_word <=3D 16)
+> > > +		controller->bytes_per_word =3D 2;
+> > > +	else
+> > > +		controller->bytes_per_word =3D 4;
+
+> > This looks like a switch statement, and looking at the above it's not
+> > clear that the device actually supports anything other than whole bytes.
+> > I'm not sure what that would mean from an API point of view.
+
+> SPI API didn't validate struct spi_transfer::len field.
+
+It's supposed to; if the validation is incomplete then that should be
+fixed.
+
+--5QAgd0e35j3NYeGe
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS+QepAAoJELSic+t+oim98m8P/1CnfiS2JrsBUDbqMteVfjQ6
+s1rS7R3SU7gNCvuq7wOD2uNmS2CFK1EeSQirPzot1tS3rNeZx6AuRieortYPJfJb
+Z894ofWT8thXHOWNDX2QGKDUS6XZAvsp5y5HOl8b/4R4xwRT7dYqXOjv84KAwa3l
+ONdiWw+z+jjvdwQupSlpGOpN+lgp5CTtlo4k/oQ35VaZ6VdQAcma2psdJamdAzCK
+ayovd01VwhL9s1d81Jd6Hp4+erQONHPWA3v6CBElkyXnCLvXnMTGvDCn4A9dud3q
+WAucQ+xgYPqII4ZnexDyfF2rvp0Cad9536OY8Sw5zx94PipXxW1xbbpGIBUtbFr4
+9/+xU2gr8zMBBWGaQzQb5bIeAmb4q9Ly+vPi9eBMcRgsIDVA0fAPbSrQ0U0xIyVx
+vqoDRKRhCO8gnNwGeTSVCrRx0SnZP9WbPzdCw0pk8t3FABL1jFQFeUql4UJCrfkj
+KSKnPBoRsy4FwL8Bbx+gr7fPcQX/bB/sTNi/+u7wcgK5KAHN9f3C4po5Qstedz3Z
+qC5Kc4MMVM0Utlze66a2mUWxlD59UM/xgHX7ZFkvMl/fgq8JGnC5WZmRc7d/Mai0
+DSJgS6E2asUDd+Bkiv7Ac1O+2Ngwch289970P6AOqY38ZEi7+/XtL41juJfyEZxD
+gTftlYdakcZxbAIWQ3Pl
+=7/+x
+-----END PGP SIGNATURE-----
+
+--5QAgd0e35j3NYeGe--
