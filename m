@@ -1,102 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752140AbaBJARY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 19:17:24 -0500
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:56500
-	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751732AbaBJARQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 19:17:16 -0500
-x-originating-ip: 72.167.245.219
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: davem@davemloft.net, netdev@vger.kernel.org
-Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
-        jasowang@redhat.com, linux-kernel@vger.kernel.org,
-        driverdev-devel@linuxdriverproject.org
-Subject: [PATCH net] hyperv: Fix the carrier status setting
-Date: Sun,  9 Feb 2014 17:07:58 -0800
-Message-Id: <1391994478-25809-1-git-send-email-haiyangz@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1752098AbaBJAWt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 19:22:49 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:52376 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751732AbaBJAWr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Feb 2014 19:22:47 -0500
+X-AuditID: cbfee690-b7f266d00000287c-0f-52f81bd5677e
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: "'Levente Kurusa'" <levex@linux.com>,
+        "'LKML'" <linux-kernel@vger.kernel.org>,
+        "'Jean-Christophe Plagniol-Villard'" <plagnioj@jcrosoft.com>,
+        "'Tomi Valkeinen'" <tomi.valkeinen@ti.com>,
+        "'FBDEV list'" <linux-fbdev@vger.kernel.org>,
+        "'Bryan Wu'" <cooloney@gmail.com>,
+        "'Lee Jones'" <lee.jones@linaro.org>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <1391762601-4560-1-git-send-email-levex@linux.com>
+In-reply-to: <1391762601-4560-1-git-send-email-levex@linux.com>
+Subject: Re: [PATCH] backlight: replace kfree with put_device
+Date: Mon, 10 Feb 2014 09:22:44 +0900
+Message-id: <003701cf25f6$3807c6d0$a8175470$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac8j4QEYSC67ulp7SSGXSfnmHNsCJACFOYmg
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBIsWRmVeSWpSXmKPExsVy+t8zI92r0j+CDK7t47eYs34Nm8XRnROZ
+	LC4vvMRqcf/rUUaLpR1v2S1O9H1gtbi8aw6bxbqHL5gs1s+/xebA6bFz1l12j1cX7rB43Lm2
+	h83jxIzfLB5Prkxn8ujbsorR4/iN7UwenzfJBXBEcdmkpOZklqUW6dslcGV07xUvmMBRsXD/
+	MpYGxotsXYycHBICJhKHfrxmhLDFJC7cWw8U5+IQEljGKNE58wA7TNGijpXsEIlFjBLHGrYw
+	gSSEBH4xSizvqAOx2QTUJL58OQxUxMEhIqAv0daiAVLPLHCBSWJ601ZGiHo7iQ0NG5lBbE4B
+	e4md87pYQWxhAVuJvY96mEF6WQRUJZqvxoKEeYHCz3e+Z4OwBSV+TL7HAmIzC2hJrN95nAnC
+	lpfYvOYtWKuEgLrEo7+6IGERASOJGVNXQZWLSOx78Y4R5BwJgV4OiY7z98B6WQQEJL5NPsQC
+	0SsrsekAM8S7khIHV9xgmcAoMQvJ5llINs9CsnkWkhULGFlWMYqmFiQXFCelF5noFSfmFpfm
+	pesl5+duYoTE+oQdjPcOWB9iTAZaP5FZSjQ5H5gq8kriDY3NjCxMTUyNjcwtzUgTVhLnVXuU
+	FCQkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBcXmc78RMpi1FVm4nagzt1SUe2+T/9utILVFU
+	/yT6atqJVROWGEX9/Nl/XHfuC0HmRUzlQjUVl4vVWy7IxqwSiD9YUzQ1OyNIXjxSMO1KLbNq
+	MutyrcjzTNPfs4gcnO3ddeyqTbc1h9jZ68zWV67dMtto+jjs0j/LLJ3e4K271dqsnL5tPVqj
+	xFKckWioxVxUnAgAGKFczgsDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKKsWRmVeSWpSXmKPExsVy+t9jAd2r0j+CDB41cVvMWb+GzeLozolM
+	FpcXXmK1uP/1KKPF0o637BYn+j6wWlzeNYfNYt3DF0wW6+ffYnPg9Ng56y67x6sLd1g87lzb
+	w+ZxYsZvFo8nV6YzefRtWcXocfzGdiaPz5vkAjiiGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od
+	403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4AOVFIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHr
+	GxIE12NkgAYS1jFmdO8VL5jAUbFw/zKWBsaLbF2MnBwSAiYSizpWskPYYhIX7q0HinNxCAks
+	YpQ41rCFCSQhJPCLUWJ5Rx2IzSagJvHly2GgBg4OEQF9ibYWDZB6ZoELTBLTm7YyQtTbSWxo
+	2MgMYnMK2EvsnNfFCmILC9hK7H3UwwzSyyKgKtF8NRYkzAsUfr7zPRuELSjxY/I9FhCbWUBL
+	Yv3O40wQtrzE5jVvwVolBNQlHv3VBQmLCBhJzJi6CqpcRGLfi3eMExiFZiGZNAvJpFlIJs1C
+	0rKAkWUVo2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnAieSa9g3FVg8UhRgEORiUe3h1/vgcJ
+	sSaWFVfmHmKU4GBWEuF9eRcoxJuSWFmVWpQfX1Sak1p8iDEZ6M+JzFKiyfnAJJdXEm9obGJm
+	ZGlkZmFkYm5OmrCSOO/BVutAIYH0xJLU7NTUgtQimC1MHJxSDYyeO7i+/cv2N1JWcHB/XB6t
+	VDTjZ0ZTr3tsfUu64q/82SfWqKYuPrqUcc751W7SM0KP/UqcLzHHLkrarOpbhFxMsNLHRbHL
+	Au/5V8X4hxlv84z6oL79WoRqFgvL+8ajyqfz83x6LrjmPL1ns965e67kTMHv0hY6P3al9th1
+	XTcw2VB2fXa1vRJLcUaioRZzUXEiADUvJkRoAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
----
- drivers/net/hyperv/netvsc_drv.c |   24 +++++++++++++++---------
- 1 files changed, 15 insertions(+), 9 deletions(-)
+On Friday, February 07, 2014 5:43 PM, Levente Kurusa wrote:
+> 
+> As per the comments on device_register, we shouldn't call kfree()
+> right after a device_register() failure. Instead call put_device(),
+> which in turn will call bl_device_release resulting in a kfree to the
+> full structure.
+> 
+> Signed-off-by: Levente Kurusa <levex@linux.com>
 
-diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
-index 7756118..836211c 100644
---- a/drivers/net/hyperv/netvsc_drv.c
-+++ b/drivers/net/hyperv/netvsc_drv.c
-@@ -88,8 +88,12 @@ static int netvsc_open(struct net_device *net)
- {
- 	struct net_device_context *net_device_ctx = netdev_priv(net);
- 	struct hv_device *device_obj = net_device_ctx->device_ctx;
-+	struct netvsc_device *nvdev;
-+	struct rndis_device *rdev;
- 	int ret = 0;
- 
-+	netif_carrier_off(net);
-+
- 	/* Open up the device */
- 	ret = rndis_filter_open(device_obj);
- 	if (ret != 0) {
-@@ -99,6 +103,11 @@ static int netvsc_open(struct net_device *net)
- 
- 	netif_start_queue(net);
- 
-+	nvdev = hv_get_drvdata(device_obj);
-+	rdev = nvdev->extension;
-+	if (!rdev->link_state)
-+		netif_carrier_on(net);
-+
- 	return ret;
- }
- 
-@@ -229,15 +238,17 @@ void netvsc_linkstatus_callback(struct hv_device *device_obj,
- 	struct net_device *net;
- 	struct net_device_context *ndev_ctx;
- 	struct netvsc_device *net_device;
-+	struct rndis_device *rdev;
- 
- 	net_device = hv_get_drvdata(device_obj);
-+	rdev = net_device->extension;
-+
-+	rdev->link_state = !(status == 1);
-+
- 	net = net_device->ndev;
- 
--	if (!net) {
--		netdev_err(net, "got link status but net device "
--				"not initialized yet\n");
-+	if (!net || net->reg_state != NETREG_REGISTERED)
- 		return;
--	}
- 
- 	if (status == 1) {
- 		netif_carrier_on(net);
-@@ -414,9 +425,6 @@ static int netvsc_probe(struct hv_device *dev,
- 	if (!net)
- 		return -ENOMEM;
- 
--	/* Set initial state */
--	netif_carrier_off(net);
--
- 	net_device_ctx = netdev_priv(net);
- 	net_device_ctx->device_ctx = dev;
- 	hv_set_drvdata(dev, net);
-@@ -443,8 +451,6 @@ static int netvsc_probe(struct hv_device *dev,
- 	}
- 	memcpy(net->dev_addr, device_info.mac_adr, ETH_ALEN);
- 
--	netif_carrier_on(net);
--
- 	ret = register_netdev(net);
- 	if (ret != 0) {
- 		pr_err("Unable to register netdev.\n");
--- 
-1.7.4.1
+(+cc Bryan Wu, Lee Jones)
+
+Acked-by: Jingoo Han <jg1.han@samsung.com>
+
+Best regards,
+Jingoo Han
+
+> ---
+>  drivers/video/backlight/backlight.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/video/backlight/backlight.c b/drivers/video/backlight/backlight.c
+> index 5d05555..20b276e 100644
+> --- a/drivers/video/backlight/backlight.c
+> +++ b/drivers/video/backlight/backlight.c
+> @@ -333,7 +333,7 @@ struct backlight_device *backlight_device_register(const char *name,
+> 
+>  	rc = device_register(&new_bd->dev);
+>  	if (rc) {
+> -		kfree(new_bd);
+> +		put_device(&new_bd->dev);
+>  		return ERR_PTR(rc);
+>  	}
+> 
+> --
+> 1.8.3.1
 
