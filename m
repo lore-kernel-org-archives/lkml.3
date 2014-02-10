@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755273AbaBJUHB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 15:07:01 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34844 "EHLO
+	id S1755258AbaBJUG7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 15:06:59 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34861 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752419AbaBJTpZ (ORCPT
+	with ESMTP id S1752381AbaBJTpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:45:25 -0500
+	Mon, 10 Feb 2014 14:45:44 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+Cc: Neal Cardwell <ncardwell@google.com>, Eric Dumazet <edumazet@google.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 061/124] audit: correct a type mismatch in audit_syscall_exit()
-Date: Mon, 10 Feb 2014 11:40:01 -0800
-Message-Id: <1392061264-28124-62-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 112/124] inet_diag: fix inet_diag_dump_icsk() timewait socket state logic
+Date: Mon, 10 Feb 2014 11:40:52 -0800
+Message-Id: <1392061264-28124-113-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
 References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
@@ -29,41 +27,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+From: Neal Cardwell <ncardwell@google.com>
 
-commit 06bdadd7634551cfe8ce071fe44d0311b3033d9e upstream.
+[ Based upon upstream commit 70315d22d3c7383f9a508d0aab21e2eb35b2303a ]
 
-audit_syscall_exit() saves a result of regs_return_value() in intermediate
-"int" variable and passes it to __audit_syscall_exit(), which expects its
-second argument as a "long" value.  This will result in truncating the
-value returned by a system call and making a wrong audit record.
+Fix inet_diag_dump_icsk() to reflect the fact that both TIME_WAIT and
+FIN_WAIT2 connections are represented by inet_timewait_sock (not just
+TIME_WAIT). Thus:
 
-I don't know why gcc compiler doesn't complain about this, but anyway it
-causes a problem at runtime on arm64 (and probably most 64-bit archs).
+(a) We need to iterate through the time_wait buckets if the user wants
+either TIME_WAIT or FIN_WAIT2. (Before fixing this, "ss -nemoi state
+fin-wait-2" would not return any sockets, even if there were some in
+FIN_WAIT2.)
 
-Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Eric Paris <eparis@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Eric Paris <eparis@redhat.com>
+(b) We need to check tw_substate to see if the user wants to dump
+sockets in the particular substate (TIME_WAIT or FIN_WAIT2) that a
+given connection is in. (Before fixing this, "ss -nemoi state
+time-wait" would actually return sockets in state FIN_WAIT2.)
+
+An analogous fix is in v3.13: 70315d22d3c7383f9a508d0aab21e2eb35b2303a
+("inet_diag: fix inet_diag_dump_icsk() to use correct state for
+timewait sockets") but that patch is quite different because 3.13 code
+is very different in this area due to the unification of TCP hash
+tables in 05dbc7b ("tcp/dccp: remove twchain") in v3.13-rc1.
+
+I tested that this applies cleanly between v3.3 and v3.12, and tested
+that it works in both 3.3 and 3.12. It does not apply cleanly to 3.2
+and earlier (though it makes semantic sense), and semantically is not
+the right fix for 3.13 and beyond (as mentioned above).
+
+Signed-off-by: Neal Cardwell <ncardwell@google.com>
+Cc: Eric Dumazet <edumazet@google.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/linux/audit.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv4/inet_diag.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/audit.h b/include/linux/audit.h
-index 37464c5..385d733 100644
---- a/include/linux/audit.h
-+++ b/include/linux/audit.h
-@@ -127,7 +127,7 @@ static inline void audit_syscall_exit(void *pt_regs)
- {
- 	if (unlikely(current->audit_context)) {
- 		int success = is_syscall_success(pt_regs);
--		int return_code = regs_return_value(pt_regs);
-+		long return_code = regs_return_value(pt_regs);
+diff --git a/net/ipv4/inet_diag.c b/net/ipv4/inet_diag.c
+index 84e812a..f3d5db4 100644
+--- a/net/ipv4/inet_diag.c
++++ b/net/ipv4/inet_diag.c
+@@ -959,7 +959,7 @@ next_normal:
+ 			++num;
+ 		}
  
- 		__audit_syscall_exit(success, return_code);
- 	}
+-		if (r->idiag_states & TCPF_TIME_WAIT) {
++		if (r->idiag_states & (TCPF_TIME_WAIT | TCPF_FIN_WAIT2)) {
+ 			struct inet_timewait_sock *tw;
+ 
+ 			inet_twsk_for_each(tw, node,
+@@ -969,6 +969,8 @@ next_normal:
+ 
+ 				if (num < s_num)
+ 					goto next_dying;
++				if (!(r->idiag_states & (1 << tw->tw_substate)))
++					goto next_dying;
+ 				if (r->sdiag_family != AF_UNSPEC &&
+ 						tw->tw_family != r->sdiag_family)
+ 					goto next_dying;
 -- 
 1.8.3.2
 
