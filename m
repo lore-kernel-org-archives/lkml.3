@@ -1,75 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753284AbaBJR3p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 12:29:45 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:51795 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752922AbaBJR3m (ORCPT
+	id S1753306AbaBJR3s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 12:29:48 -0500
+Received: from mail-vb0-f42.google.com ([209.85.212.42]:59504 "EHLO
+	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752781AbaBJR3l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 12:29:42 -0500
-Date: Mon, 10 Feb 2014 17:28:56 +0000
-From: Dave Martin <Dave.Martin@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Jonathan Austin <Jonathan.Austin@arm.com>,
-        "nico@linaro.org" <nico@linaro.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <will.deacon@arm.com>,
-        "vgupta@synopsys.com" <vgupta@synopsys.com>,
-        "ben.dooks@codethink.co.uk" <ben.dooks@codethink.co.uk>,
-        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
-        Fabrice Gasnier <fabrice.gasnier@st.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "maxime.coquelin@st.com" <maxime.coquelin@st.com>
-Subject: Re: [RFC PATCH] ARM: Add imprecise abort enable/disable macro
-Message-ID: <20140210172856.GG2794@e103592.cambridge.arm.com>
-References: <1391789955-26927-1-git-send-email-fabrice.gasnier@st.com>
- <1391789955-26927-2-git-send-email-fabrice.gasnier@st.com>
- <20140207170903.GT5976@mudshark.cambridge.arm.com>
- <52F892C8.80508@st.com>
- <20140210111710.GC17766@mudshark.cambridge.arm.com>
- <20140210135659.GU26684@n2100.arm.linux.org.uk>
- <20140210144228.GC2794@e103592.cambridge.arm.com>
- <20140210151934.GZ26684@n2100.arm.linux.org.uk>
- <20140210162822.GF2794@e103592.cambridge.arm.com>
- <20140210163700.GD26684@n2100.arm.linux.org.uk>
+	Mon, 10 Feb 2014 12:29:41 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140210163700.GD26684@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140210165723.GA10856@redhat.com>
+References: <ee359482b77f8f633014ec300bc5a4b93f8961e8.1391893528.git.luto@amacapital.net>
+ <20140210165723.GA10856@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 10 Feb 2014 09:29:19 -0800
+Message-ID: <CALCETrX9gb_+zW4UZZv5icCQ-3HNG7BFZOaqMPYaQfzotsZpnA@mail.gmail.com>
+Subject: Re: [PATCH v3] audit: Turn off TIF_SYSCALL_AUDIT when there are no rules
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-audit@redhat.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Steve Grubb <sgrubb@redhat.com>,
+        Eric Paris <eparis@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 04:37:00PM +0000, Russell King - ARM Linux wrote:
-> On Mon, Feb 10, 2014 at 04:28:22PM +0000, Dave Martin wrote:
-> > On Mon, Feb 10, 2014 at 03:19:34PM +0000, Russell King - ARM Linux wrote:
-> > > On Mon, Feb 10, 2014 at 02:42:28PM +0000, Dave Martin wrote:
-> > > > Should we require CPSR.A to me masked in Booting, for all CPUs that have
-> > > > it?
-> > > 
-> > > If it's not masked at boot, then there can't be an imprecise exception
-> > > pending.
-> > 
-> > Couldn't there still be a dangling abort condition triggered by the
-> > bootloader, which which doesn't raise the abort pin until after we
-> > entered the kernel?
-> 
-> True, but the decompressor does disable them (see safe_svcmode_maskall),
-> so any raised abort is likely to hit the boot loader's vectors at that
-> time.  They remain masked into the kernel from that point.
-> 
-> If you're not using the decompressor then the A bit will be left as-is.
-> 
-> Given that we've not yet had any failures, I'm inclined to just let the
-> status-quo be for the kernel entry - if it does cause problems then it's
-> clear that the right solution is that the A bit must be disabled.
+On Mon, Feb 10, 2014 at 8:57 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 02/08, Andy Lutomirski wrote:
+>>
+>> +void audit_inc_n_rules()
+>> +{
+>> +     struct task_struct *p, *t;
+>> +
+>> +     read_lock(&tasklist_lock);
+>> +     audit_n_rules++;
+>> +     smp_wmb();
+>> +     if (audit_n_rules == 1) {
+>> +             /*
+>> +              * We now have a rule; we need to hook syscall entry.
+>> +              */
+>> +             for_each_process_thread(p, t) {
+>> +                     if (t->audit_context)
+>> +                             set_tsk_thread_flag(t, TIF_SYSCALL_AUDIT);
+>> +             }
+>> +     }
+>> +     read_unlock(&tasklist_lock);
+>> +}
+>> +
+>> +void audit_dec_n_rules()
+>> +{
+>> +     read_lock(&tasklist_lock);
+>> +     --audit_n_rules;
+>> +     BUG_ON(audit_n_rules < 0);
+>> +
+>> +     /*
+>> +      * If audit_n_rules == 0, then __audit_syscall_exit will clear
+>> +      * TIF_SYSCALL_AUDIT.
+>> +      */
+>> +
+>> +     read_unlock(&tasklist_lock);
+>> +}
+>
+> To be honest, I do not understand why _dec_ takes tasklist_lock...
+> And why _inc_ increments audit_n_rules under tasklist.
 
-OK, that seems a reasonable view.
+Bah, incorrect leftover from last time.
 
-Cheers
----Dave
+>
+>> @@ -1528,6 +1562,25 @@ void __audit_syscall_exit(int success, long return_code)
+>>               context->filterkey = NULL;
+>>       }
+>>       tsk->audit_context = context;
+>> +
+>> +     if (ACCESS_ONCE(audit_n_rules) == 0) {
+>> +             /*
+>> +              * Either this is the very first syscall by this process or
+>> +              * audit_dec_n_rules recently set audit_n_rules to zero.
+>> +              */
+>> +             smp_rmb();
+>
+> rmb() looks wrong, we need mb() to serialize ACCESS_ONCE() and
+> clear_tsk_thread_flag().
+
+I clearly need to review the rules.  I think you're right, though --
+no barrier should be needed.
+
+>
+> But, otoh, I think we do not need any barrier at all, we can rely on
+> control dependency. See the recent 18c03c61444a21 "Documentation/
+> memory-barriers.txt: Prohibit speculative writes".
+>
+>> +             /* audit_inc_n_rules could increment audit_n_rules here... */
+>> +
+>> +             clear_tsk_thread_flag(tsk, TIF_SYSCALL_AUDIT);
+>> +
+>> +             smp_rmb();
+>
+> Again, I guess this should be mb() or smp_mb__after_clear_bit().
+>
+>
+> And I still think this needs more changes. Once again, I do not think
+> that, say, __audit_log_bprm_fcaps() should populate context->aux if
+> !TIF_SYSCALL_AUDIT, this list can grow indefinitely. Or __audit_signal_info()...
+>
+> Perhaps __audit_syscall_exit() should also set context->dummy?
+
+That would work.
+
+I'm still torn between trying to make it possible for things like
+__audit_log_bprm_fcaps to start a syscall audit record in the middle
+of a syscall or to just try to tighten up the current approach to the
+point where it will work correctly.
+
+Grr.  Why is all this crap tied up with syscall auditing anyway?  ISTM
+it would have been a lot nicer if audit calls just immediately emitted
+audit records, completely independently of the syscall machinery.
+
+--Andy
