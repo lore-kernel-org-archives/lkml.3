@@ -1,79 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753385AbaBJVOt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 16:14:49 -0500
-Received: from infra.glanzmann.de ([88.198.249.254]:35363 "EHLO
-	infra.glanzmann.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752984AbaBJVOr (ORCPT
+	id S1753469AbaBJVPI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 16:15:08 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:36333 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752740AbaBJVPB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 16:14:47 -0500
-Date: Mon, 10 Feb 2014 22:14:45 +0100
-From: Thomas Glanzmann <thomas@glanzmann.de>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        John Ogness <john.ogness@linutronix.de>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        target-devel <target-devel@vger.kernel.org>,
-        Linux Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] This extends tx_data and and iscsit_do_tx_data with the
- additional parameter flags and avoids sending multiple TCP packets in
- iscsit_fe_sendpage_sg
-Message-ID: <20140210211445.GE19621@glanzmann.de>
-Mail-Followup-To: Eric Dumazet <eric.dumazet@gmail.com>,
-	"Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-	John Ogness <john.ogness@linutronix.de>,
-	Eric Dumazet <edumazet@google.com>,
-	"David S. Miller" <davem@davemloft.net>,
-	target-devel <target-devel@vger.kernel.org>,
-	Linux Network Development <netdev@vger.kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <20140208165732.GB22359@glanzmann.de>
- <1391879318.10160.108.camel@edumazet-glaptop2.roam.corp.google.com>
- <20140208171531.GA23798@glanzmann.de>
- <1391886759.10160.114.camel@edumazet-glaptop2.roam.corp.google.com>
- <20140209074027.GA8105@glanzmann.de>
- <20140209074227.GA8219@glanzmann.de>
- <1391949039.10160.129.camel@edumazet-glaptop2.roam.corp.google.com>
- <1392058718.17867.8.camel@haakon3.risingtidesystems.com>
- <20140210205634.GC19621@glanzmann.de>
- <1392066100.6615.55.camel@edumazet-glaptop2.roam.corp.google.com>
+	Mon, 10 Feb 2014 16:15:01 -0500
+Date: Mon, 10 Feb 2014 22:14:58 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+Message-ID: <20140210211458.GA5002@laptop.programming.kicks-ass.net>
+References: <20140206134825.305510953@infradead.org>
+ <52F93B7C.2090304@tilera.com>
+ <20140210205719.GY5002@laptop.programming.kicks-ass.net>
+ <52F93FBB.1090108@tilera.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1392066100.6615.55.camel@edumazet-glaptop2.roam.corp.google.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <52F93FBB.1090108@tilera.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Eric,
+On Mon, Feb 10, 2014 at 04:08:11PM -0500, Chris Metcalf wrote:
+> (+LKML again)
+> 
+> On 2/10/2014 3:57 PM, Peter Zijlstra wrote:
+> > On Mon, Feb 10, 2014 at 03:50:04PM -0500, Chris Metcalf wrote:
+> >> On 2/6/2014 8:52 AM, Peter Zijlstra wrote:
+> >>> Its been compiled on everything I have a compiler for, however frv and
+> >>> tile are missing because they're special and I was tired.
+> >> So what's the specialness on tile?
+> > Its not doing the atomic work in ASM but uses magic builtins or such.
+> >
+> > I got the list of magic funcs for tilegx, but didn't look into the 32bit
+> > chips.
+> 
+> Oh, I see.  The <asm/atomic.h> files on tile are already reasonably well-factored.
+> 
+> It's possible you could do better, but I think not by too much, other than possibly
+> by using <asm-generic/atomic.h> for some of the common idioms like "subtraction
+> is addition with a negative second argument", etc., which hasn't been done elsewhere.
 
-> Hmm.. I was not aware of high RTT for some packets.
-> Can you spot this on the pcap you provided ?
+The last patch 5/5 adds a few atomic ops; I could of course use
+cmpxchg() loops for everything, but I found tilegx actually has fetch_or
+and fetch_and to implement atomic_or() / atomic_and().
 
-with the latest patch as in:
-
-(node-62) [~/work/linux-2.6] git diff | pbot
-http://pbot.rmdir.de/CQwqI6b7wJProw_xaukmEg
-
-with net.ipv4.tcp_min_tso_segs=2 we had this pcap:
-https://thomas.glanzmann.de/tmp/tcp_auto_corking_on_patched_tcp_more_notlast.pcap.bz2
-And here is the RTT TCP graph:
-Wireshark > Statistics > TCP Stream Graph > Round Trip Time Graph
-https://thomas.glanzmann.de/tmp/screenshot-mini-2014-02-10-22_04_30.png
-
-with net.ipv4.tcp_min_tso_segs=8 we have this pcap:
-https://thomas.glanzmann.de/tmp/tcp_auto_corking_on_patched_tcp_more_notlast_min_tso_segs_8.pcap.bz2
-And here is the RTT TCP graph:
-Wireshark > Statistics > TCP Stream Graph > Round Trip Time Graph
-
-This gives us 0.0015 seconds RTT (1.5 ms)
-
-Without TCP autocorking we had 0.0005 (0.5 ms).
-
-https://thomas.glanzmann.de/tmp/screenshot-mini-2014-02-08-09:53:17.png
-
-Cheers,
-        Thomas
+It doesn't have fetch_xor() from what I've been told so atomic_xor()
+will have to become a cmpxchg() loop.
