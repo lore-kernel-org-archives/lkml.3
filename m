@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754023AbaBJTqE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 14:46:04 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34898 "EHLO
+	id S1755121AbaBJUDO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 15:03:14 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34909 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753934AbaBJTp6 (ORCPT
+	with ESMTP id S1753934AbaBJTqF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:45:58 -0500
+	Mon, 10 Feb 2014 14:46:05 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 100/124] drm/radeon/DCE4+: clear bios scratch dpms bit (v2)
-Date: Mon, 10 Feb 2014 11:40:40 -0800
-Message-Id: <1392061264-28124-101-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 106/124] mm, oom: base root bonus on current usage
+Date: Mon, 10 Feb 2014 11:40:46 -0800
+Message-Id: <1392061264-28124-107-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
 References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
@@ -27,40 +29,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: David Rientjes <rientjes@google.com>
 
-commit 6802d4bad83f50081b2788698570218aaff8d10e upstream.
+commit 778c14affaf94a9e4953179d3e13a544ccce7707 upstream.
 
-The BlankCrtc table in some DCE8 boards has some
-logic shortcuts for the vbios when this bit is set.
-Clear it for driver use.
+A 3% of system memory bonus is sometimes too excessive in comparison to
+other processes.
 
-v2: fix typo
+With commit a63d83f427fb ("oom: badness heuristic rewrite"), the OOM
+killer tries to avoid killing privileged tasks by subtracting 3% of
+overall memory (system or cgroup) from their per-task consumption.  But
+as a result, all root tasks that consume less than 3% of overall memory
+are considered equal, and so it only takes 33+ privileged tasks pushing
+the system out of memory for the OOM killer to do something stupid and
+kill dhclient or other root-owned processes.  For example, on a 32G
+machine it can't tell the difference between the 1M agetty and the 10G
+fork bomb member.
 
-Bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=73420
+The changelog describes this 3% boost as the equivalent to the global
+overcommit limit being 3% higher for privileged tasks, but this is not
+the same as discounting 3% of overall memory from _every privileged task
+individually_ during OOM selection.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Replace the 3% of system memory bonus with a 3% of current memory usage
+bonus.
+
+By giving root tasks a bonus that is proportional to their actual size,
+they remain comparable even when relatively small.  In the example
+above, the OOM killer will discount the 1M agetty's 256 badness points
+down to 179, and the 10G fork bomb's 262144 points down to 183500 points
+and make the right choice, instead of discounting both to 0 and killing
+agetty because it's first in the task list.
+
+Signed-off-by: David Rientjes <rientjes@google.com>
+Reported-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/radeon/radeon_atombios.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ Documentation/filesystems/proc.txt | 4 ++--
+ mm/oom_kill.c                      | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_atombios.c b/drivers/gpu/drm/radeon/radeon_atombios.c
-index 6048f2b..9e134ea 100644
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -2821,6 +2821,10 @@ void radeon_atom_initialize_bios_scratch_regs(struct drm_device *dev)
- 	/* tell the bios not to handle mode switching */
- 	bios_6_scratch |= ATOM_S6_ACC_BLOCK_DISPLAY_SWITCH;
+diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
+index fd8d0d5..954eab8 100644
+--- a/Documentation/filesystems/proc.txt
++++ b/Documentation/filesystems/proc.txt
+@@ -1372,8 +1372,8 @@ may allocate from based on an estimation of its current memory and swap use.
+ For example, if a task is using all allowed memory, its badness score will be
+ 1000.  If it is using half of its allowed memory, its score will be 500.
  
-+	/* clear the vbios dpms state */
-+	if (ASIC_IS_DCE4(rdev))
-+		bios_2_scratch &= ~ATOM_S2_DEVICE_DPMS_STATE;
-+
- 	if (rdev->family >= CHIP_R600) {
- 		WREG32(R600_BIOS_2_SCRATCH, bios_2_scratch);
- 		WREG32(R600_BIOS_6_SCRATCH, bios_6_scratch);
+-There is an additional factor included in the badness score: root
+-processes are given 3% extra memory over other tasks.
++There is an additional factor included in the badness score: the current memory
++and swap usage is discounted by 3% for root processes.
+ 
+ The amount of "allowed" memory depends on the context in which the oom killer
+ was called.  If it is due to the memory assigned to the allocating task's cpuset
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index 0399f14..4eac855 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -170,7 +170,7 @@ unsigned long oom_badness(struct task_struct *p, struct mem_cgroup *memcg,
+ 	 * implementation used by LSMs.
+ 	 */
+ 	if (has_capability_noaudit(p, CAP_SYS_ADMIN))
+-		adj -= 30;
++		points -= (points * 3) / 100;
+ 
+ 	/* Normalize to oom_score_adj units */
+ 	adj *= totalpages / 1000;
 -- 
 1.8.3.2
 
