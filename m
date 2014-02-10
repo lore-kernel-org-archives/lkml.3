@@ -1,461 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753155AbaBJX57 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 18:57:59 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:59409 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752681AbaBJX5V (ORCPT
+	id S1753272AbaBJX7N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 18:59:13 -0500
+Received: from smtprelay0237.hostedemail.com ([216.40.44.237]:57975 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753011AbaBJX7L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 18:57:21 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH 1/3] ACPI / dock: Dispatch dock notifications from the global notify handler
-Date: Tue, 11 Feb 2014 01:10:17 +0100
-Message-ID: <1703120.DI1Ms8G1sr@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <3728252.WpMGKRKmqq@vostro.rjw.lan>
-References: <3728252.WpMGKRKmqq@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Mon, 10 Feb 2014 18:59:11 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:69:355:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2559:2562:2693:2828:3138:3139:3140:3141:3142:3354:3653:3865:3866:3867:3868:3871:3872:5007:7652:10004:10026:10400:10848:11026:11232:11658:11914:12043:12291:12517:12519:12555:12683:13019:13141:13230:14093:14097:14110,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: club62_6d110878e0d31
+X-Filterd-Recvd-Size: 3651
+Message-ID: <1392076748.2507.29.camel@joe-AO722>
+Subject: [PATCH] checkpatch: Don't warn on some function pointer return
+ styles
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Daeseok Youn <daeseok.youn@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Date: Mon, 10 Feb 2014 15:59:08 -0800
+In-Reply-To: <1392012424.3178.23.camel@joe-AO722>
+References: <81912500.jvGoQpGOq5@daeseok-laptop.cloud.net>
+	 <1392012424.3178.23.camel@joe-AO722>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Check for some function pointer return styles are too strict.  Fix them.
 
-The ACPI dock station code carries out an extra namespace scan
-before the main one in order to find and register all of the dock
-device objects.  Then, it registers a notify handler for each of
-them for handling dock events.
+Multiple spaces after function pointer return types are allowed.
+	int  (*foo)(int bar)
 
-However, dock device objects need not be scanned for upfront.  They
-very well can be enumerated and registered during the first phase
-of the main namespace scan, before attaching scan handlers and ACPI
-drivers to ACPI device objects.  Then, the dependent devices can be
-added to the in the second phase.  That makes it possible to drop
-the extra namespace scan, so do it.
+Spaces after function pointer returns of pointer types are not required.
+	int *(*foo)(int bar)
 
-Moreover, it is not necessary to register notify handlers for all
-of the dock stations' namespace nodes, becuase notifications may
-be dispatched from the global notify handler for them.  Do that and
-drop two functions used for dock notify handling, acpi_dock_deferred_cb()
-and dock_notify_handler(), that aren't necessary any more.
-
-Finally, some dock station objects have _HID objects matching the
-ACPI container scan handler which causes it to claim those objects
-and try to handle their hotplug, but that is not a good idea,
-because those objects have their own special hotplug handling anyway.
-For this reason, the hotplug_notify flag should not be set for ACPI
-device objects representing dock stations and the container scan
-handler should be made ignore those objects, so make that happen.
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/acpi/container.c |    3 
- drivers/acpi/dock.c      |  168 +++++++++++------------------------------------
- drivers/acpi/internal.h  |   11 ++-
- drivers/acpi/scan.c      |   36 +++++++++-
- include/acpi/acpi_bus.h  |    3 
- 5 files changed, 89 insertions(+), 132 deletions(-)
+ scripts/checkpatch.pl | 31 +++++++++++++++++++++----------
+ 1 file changed, 21 insertions(+), 10 deletions(-)
 
-Index: linux-pm/include/acpi/acpi_bus.h
-===================================================================
---- linux-pm.orig/include/acpi/acpi_bus.h
-+++ linux-pm/include/acpi/acpi_bus.h
-@@ -203,7 +203,8 @@ struct acpi_device_flags {
- 	u32 visited:1;
- 	u32 no_hotplug:1;
- 	u32 hotplug_notify:1;
--	u32 reserved:23;
-+	u32 is_dock_station:1;
-+	u32 reserved:22;
- };
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 7d3bc2f..19591af 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -2848,10 +2848,7 @@ sub process {
+ # Function pointer declarations
+ # check spacing between type, funcptr, and args
+ # canonical declaration is "type (*funcptr)(args...)"
+-#
+-# the $Declare variable will capture all spaces after the type
+-# so check it for trailing missing spaces or multiple spaces
+-		if ($line =~ /^.\s*($Declare)\((\s*)\*(\s*)$Ident(\s*)\)(\s*)\(/) {
++		if ($line =~ /^.\s*($Declare)\((\s*)\*(\s*)($Ident)(\s*)\)(\s*)\(/) {
+ 			my $declare = $1;
+ 			my $pre_pointer_space = $2;
+ 			my $post_pointer_space = $3;
+@@ -2859,16 +2856,30 @@ sub process {
+ 			my $post_funcname_space = $5;
+ 			my $pre_args_space = $6;
  
- /* File System */
-Index: linux-pm/drivers/acpi/scan.c
-===================================================================
---- linux-pm.orig/drivers/acpi/scan.c
-+++ linux-pm/drivers/acpi/scan.c
-@@ -487,7 +487,9 @@ void acpi_device_hotplug(void *data, u32
- 	if (adev->handle == INVALID_ACPI_HANDLE)
- 		goto err_out;
+-			if ($declare !~ /\s$/) {
++# the $Declare variable will capture all spaces after the type
++# so check it for a missing trailing missing space but pointer return types
++# don't need a space so don't warn for those.
++			my $post_declare_space = "";
++			if ($declare =~ /(\s+)$/) {
++				$post_declare_space = $1;
++				$declare = rtrim($declare);
++			}
++			if ($declare !~ /\*$/ && $post_declare_space =~ /^$/) {
+ 				WARN("SPACING",
+ 				     "missing space after return type\n" . $herecurr);
++				$post_declare_space = " ";
+ 			}
  
--	if (adev->flags.hotplug_notify) {
-+	if (adev->flags.is_dock_station) {
-+		error = dock_notify(adev, src);
-+	} else if (adev->flags.hotplug_notify) {
- 		error = acpi_generic_hotplug_event(adev, src);
- 		if (error == -EPERM) {
- 			ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
-@@ -1660,6 +1662,29 @@ bool acpi_bay_match(acpi_handle handle)
- 	return acpi_ata_match(phandle);
- }
+ # unnecessary space "type  (*funcptr)(args...)"
+-			elsif ($declare =~ /\s{2,}$/) {
+-				WARN("SPACING",
+-				     "Multiple spaces after return type\n" . $herecurr);
+-			}
++# This test is not currently implemented because these declarations are
++# equivalent to
++#	int  foo(int bar, ...)
++# and this is form shouldn't/doesn't generate a checkpatch warning.
++#
++#			elsif ($declare =~ /\s{2,}$/) {
++#				WARN("SPACING",
++#				     "Multiple spaces after return type\n" . $herecurr);
++#			}
  
-+bool acpi_device_is_battery(acpi_handle handle)
-+{
-+	struct acpi_device_info *info;
-+	bool ret = false;
-+
-+	if (!ACPI_SUCCESS(acpi_get_object_info(handle, &info)))
-+		return false;
-+
-+	if (info->valid & ACPI_VALID_HID)
-+		ret = !strcmp("PNP0C0A", info->hardware_id.string);
-+
-+	kfree(info);
-+	return ret;
-+}
-+
-+static bool is_ejectable_bay(acpi_handle handle)
-+{
-+	if (acpi_has_method(handle, "_EJ0") && acpi_device_is_battery(handle))
-+		return true;
-+
-+	return acpi_bay_match(handle);
-+}
-+
- /*
-  * acpi_dock_match - see if an acpi object has a _DCK method
-  */
-@@ -1964,6 +1989,10 @@ static void acpi_scan_init_hotplug(struc
- {
- 	struct acpi_hardware_id *hwid;
+ # unnecessary space "type ( *funcptr)(args...)"
+ 			if (defined $pre_pointer_space &&
+@@ -2900,7 +2911,7 @@ sub process {
  
-+	if (acpi_dock_match(adev->handle) || is_ejectable_bay(adev->handle)) {
-+		acpi_dock_add(adev);
-+		return;
-+	}
- 	list_for_each_entry(hwid, &adev->pnp.ids, list) {
- 		struct acpi_scan_handler *handler;
+ 			if (show_type("SPACING") && $fix) {
+ 				$fixed[$linenr - 1] =~
+-				    s/^(.\s*$Declare)\(\s*\*\s*($Ident)\s*\)\s*\(/rtrim($1) . " " . "\(\*$2\)\("/ex;
++				    s/^(.\s*)$Declare\s*\(\s*\*\s*$Ident\s*\)\s*\(/$1 . $declare . $post_declare_space . '(*' . $funcname . ')('/ex;
+ 			}
+ 		}
  
-@@ -2036,8 +2065,12 @@ static int acpi_scan_attach_handler(stru
- static void acpi_bus_attach(struct acpi_device *device)
- {
- 	struct acpi_device *child;
-+	acpi_handle ejd;
- 	int ret;
- 
-+	if (ACPI_SUCCESS(acpi_bus_get_ejd(device->handle, &ejd)))
-+		register_dock_dependent_device(device, ejd);
-+
- 	acpi_bus_get_status(device);
- 	/* Skip devices that are not present. */
- 	if (!acpi_device_is_present(device)) {
-@@ -2190,7 +2223,6 @@ int __init acpi_scan_init(void)
- 	acpi_cmos_rtc_init();
- 	acpi_container_init();
- 	acpi_memory_hotplug_init();
--	acpi_dock_init();
- 
- 	mutex_lock(&acpi_scan_lock);
- 	/*
-Index: linux-pm/drivers/acpi/internal.h
-===================================================================
---- linux-pm.orig/drivers/acpi/internal.h
-+++ linux-pm/drivers/acpi/internal.h
-@@ -37,9 +37,15 @@ void acpi_container_init(void);
- static inline void acpi_container_init(void) {}
- #endif
- #ifdef CONFIG_ACPI_DOCK
--void acpi_dock_init(void);
-+void register_dock_dependent_device(struct acpi_device *adev,
-+				    acpi_handle dshandle);
-+int dock_notify(struct acpi_device *adev, u32 event);
-+void acpi_dock_add(struct acpi_device *adev);
- #else
--static inline void acpi_dock_init(void) {}
-+static inline void register_dock_dependent_device(struct acpi_device *adev,
-+						  acpi_handle dshandle) {}
-+static inline int dock_notify(struct acpi_device *adev, u32 event) { return -ENODEV; }
-+static inline void acpi_dock_add(struct acpi_device *adev) { return -ENODEV; }
- #endif
- #ifdef CONFIG_ACPI_HOTPLUG_MEMORY
- void acpi_memory_hotplug_init(void);
-@@ -91,6 +97,7 @@ void acpi_free_pnp_ids(struct acpi_devic
- int acpi_bind_one(struct device *dev, struct acpi_device *adev);
- int acpi_unbind_one(struct device *dev);
- bool acpi_device_is_present(struct acpi_device *adev);
-+bool acpi_device_is_battery(acpi_handle handle);
- 
- /* --------------------------------------------------------------------------
-                                   Power Resource
-Index: linux-pm/drivers/acpi/dock.c
-===================================================================
---- linux-pm.orig/drivers/acpi/dock.c
-+++ linux-pm/drivers/acpi/dock.c
-@@ -218,6 +218,17 @@ static void dock_hotplug_event(struct do
- 	dock_release_hotplug(dd);
- }
- 
-+static struct dock_station *find_dock_station(acpi_handle handle)
-+{
-+	struct dock_station *ds;
-+
-+	list_for_each_entry(ds, &dock_stations, sibling)
-+		if (ds->handle == handle)
-+			return ds;
-+
-+	return NULL;
-+}
-+
- /**
-  * find_dock_dependent_device - get a device dependent on this dock
-  * @ds: the dock station
-@@ -238,33 +249,19 @@ find_dock_dependent_device(struct dock_s
- 	return NULL;
- }
- 
--/*****************************************************************************
-- *                         Dock functions                                    *
-- *****************************************************************************/
--static int __init is_battery(acpi_handle handle)
-+void register_dock_dependent_device(struct acpi_device *adev,
-+				    acpi_handle dshandle)
- {
--	struct acpi_device_info *info;
--	int ret = 1;
--
--	if (!ACPI_SUCCESS(acpi_get_object_info(handle, &info)))
--		return 0;
--	if (!(info->valid & ACPI_VALID_HID))
--		ret = 0;
--	else
--		ret = !strcmp("PNP0C0A", info->hardware_id.string);
-+	struct dock_station *ds = find_dock_station(dshandle);
-+	acpi_handle handle = adev->handle;
- 
--	kfree(info);
--	return ret;
-+	if (ds && !find_dock_dependent_device(ds, handle))
-+		add_dock_dependent_device(ds, handle);
- }
- 
--/* Check whether ACPI object is an ejectable battery or disk bay */
--static bool __init is_ejectable_bay(acpi_handle handle)
--{
--	if (acpi_has_method(handle, "_EJ0") && is_battery(handle))
--		return true;
--
--	return acpi_bay_match(handle);
--}
-+/*****************************************************************************
-+ *                         Dock functions                                    *
-+ *****************************************************************************/
- 
- /**
-  * is_dock_device - see if a device is on a dock station
-@@ -598,20 +595,23 @@ static int handle_eject_request(struct d
- }
- 
- /**
-- * dock_notify - act upon an acpi dock notification
-- * @ds: dock station
-- * @event: the acpi event
-+ * dock_notify - Handle ACPI dock notification.
-+ * @adev: Dock station's ACPI device object.
-+ * @event: Event code.
-  *
-  * If we are notified to dock, then check to see if the dock is
-  * present and then dock.  Notify all drivers of the dock event,
-  * and then hotplug and devices that may need hotplugging.
-  */
--static void dock_notify(struct dock_station *ds, u32 event)
-+int dock_notify(struct acpi_device *adev, u32 event)
- {
--	acpi_handle handle = ds->handle;
--	struct acpi_device *adev = NULL;
-+	acpi_handle handle = adev->handle;
-+	struct dock_station *ds = find_dock_station(handle);
- 	int surprise_removal = 0;
- 
-+	if (!ds)
-+		return -ENODEV;
-+
- 	/*
- 	 * According to acpi spec 3.0a, if a DEVICE_CHECK notification
- 	 * is sent and _DCK is present, it is assumed to mean an undock
-@@ -632,7 +632,6 @@ static void dock_notify(struct dock_stat
- 	switch (event) {
- 	case ACPI_NOTIFY_BUS_CHECK:
- 	case ACPI_NOTIFY_DEVICE_CHECK:
--		acpi_bus_get_device(handle, &adev);
- 		if (!dock_in_progress(ds) && !acpi_device_enumerated(adev)) {
- 			begin_dock(ds);
- 			dock(ds);
-@@ -662,49 +661,8 @@ static void dock_notify(struct dock_stat
- 		else
- 			dock_event(ds, event, UNDOCK_EVENT);
- 		break;
--	default:
--		acpi_handle_err(handle, "Unknown dock event %d\n", event);
- 	}
--}
--
--static void acpi_dock_deferred_cb(void *data, u32 event)
--{
--	acpi_scan_lock_acquire();
--	dock_notify(data, event);
--	acpi_scan_lock_release();
--}
--
--static void dock_notify_handler(acpi_handle handle, u32 event, void *data)
--{
--	if (event != ACPI_NOTIFY_BUS_CHECK && event != ACPI_NOTIFY_DEVICE_CHECK
--	   && event != ACPI_NOTIFY_EJECT_REQUEST)
--		return;
--
--	acpi_hotplug_execute(acpi_dock_deferred_cb, data, event);
--}
--
--/**
-- * find_dock_devices - find devices on the dock station
-- * @handle: the handle of the device we are examining
-- * @lvl: unused
-- * @context: the dock station private data
-- * @rv: unused
-- *
-- * This function is called by acpi_walk_namespace.  It will
-- * check to see if an object has an _EJD method.  If it does, then it
-- * will see if it is dependent on the dock station.
-- */
--static acpi_status __init find_dock_devices(acpi_handle handle, u32 lvl,
--					    void *context, void **rv)
--{
--	struct dock_station *ds = context;
--	acpi_handle ejd = NULL;
--
--	acpi_bus_get_ejd(handle, &ejd);
--	if (ejd == ds->handle)
--		add_dock_dependent_device(ds, handle);
--
--	return AE_OK;
-+	return 0;
- }
- 
- /*
-@@ -805,23 +763,22 @@ static struct attribute_group dock_attri
- };
- 
- /**
-- * dock_add - add a new dock station
-- * @handle: the dock station handle
-+ * acpi_dock_add - Add a new dock station
-+ * @adev: Dock station ACPI device object.
-  *
-- * allocated and initialize a new dock station device.  Find all devices
-- * that are on the dock station, and register for dock event notifications.
-+ * allocated and initialize a new dock station device.
-  */
--static int __init dock_add(acpi_handle handle)
-+void acpi_dock_add(struct acpi_device *adev)
- {
- 	struct dock_station *dock_station, ds = { NULL, };
-+	acpi_handle handle = adev->handle;
- 	struct platform_device *dd;
--	acpi_status status;
- 	int ret;
- 
- 	dd = platform_device_register_data(NULL, "dock", dock_station_count,
- 					   &ds, sizeof(ds));
- 	if (IS_ERR(dd))
--		return PTR_ERR(dd);
-+		return;
- 
- 	dock_station = dd->dev.platform_data;
- 
-@@ -839,33 +796,24 @@ static int __init dock_add(acpi_handle h
- 		dock_station->flags |= DOCK_IS_DOCK;
- 	if (acpi_ata_match(handle))
- 		dock_station->flags |= DOCK_IS_ATA;
--	if (is_battery(handle))
-+	if (acpi_device_is_battery(handle))
- 		dock_station->flags |= DOCK_IS_BAT;
- 
- 	ret = sysfs_create_group(&dd->dev.kobj, &dock_attribute_group);
- 	if (ret)
- 		goto err_unregister;
- 
--	/* Find dependent devices */
--	acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
--			    ACPI_UINT32_MAX, find_dock_devices, NULL,
--			    dock_station, NULL);
--
- 	/* add the dock station as a device dependent on itself */
- 	ret = add_dock_dependent_device(dock_station, handle);
- 	if (ret)
- 		goto err_rmgroup;
- 
--	status = acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
--					     dock_notify_handler, dock_station);
--	if (ACPI_FAILURE(status)) {
--		ret = -ENODEV;
--		goto err_rmgroup;
--	}
--
- 	dock_station_count++;
- 	list_add(&dock_station->sibling, &dock_stations);
--	return 0;
-+	adev->flags.is_dock_station = true;
-+	dev_info(&adev->dev, "ACPI dock station (docks/bays count: %d)\n",
-+		 dock_station_count);
-+	return;
- 
- err_rmgroup:
- 	remove_dock_dependent_devices(dock_station);
-@@ -873,38 +821,4 @@ err_rmgroup:
- err_unregister:
- 	platform_device_unregister(dd);
- 	acpi_handle_err(handle, "%s encountered error %d\n", __func__, ret);
--	return ret;
--}
--
--/**
-- * find_dock_and_bay - look for dock stations and bays
-- * @handle: acpi handle of a device
-- * @lvl: unused
-- * @context: unused
-- * @rv: unused
-- *
-- * This is called by acpi_walk_namespace to look for dock stations and bays.
-- */
--static acpi_status __init
--find_dock_and_bay(acpi_handle handle, u32 lvl, void *context, void **rv)
--{
--	if (acpi_dock_match(handle) || is_ejectable_bay(handle))
--		dock_add(handle);
--
--	return AE_OK;
--}
--
--void __init acpi_dock_init(void)
--{
--	/* look for dock stations and bays */
--	acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
--		ACPI_UINT32_MAX, find_dock_and_bay, NULL, NULL, NULL);
--
--	if (!dock_station_count) {
--		pr_info(PREFIX "No dock devices found.\n");
--		return;
--	}
--
--	pr_info(PREFIX "%s: %d docks/bays found\n",
--		ACPI_DOCK_DRIVER_DESCRIPTION, dock_station_count);
- }
-Index: linux-pm/drivers/acpi/container.c
-===================================================================
---- linux-pm.orig/drivers/acpi/container.c
-+++ linux-pm/drivers/acpi/container.c
-@@ -68,6 +68,9 @@ static int container_device_attach(struc
- 	struct device *dev;
- 	int ret;
- 
-+	if (adev->flags.is_dock_station)
-+		return 0;
-+
- 	cdev = kzalloc(sizeof(*cdev), GFP_KERNEL);
- 	if (!cdev)
- 		return -ENOMEM;
+-- 
+1.8.1.2.459.gbcd45b4.dirty
+
+
 
