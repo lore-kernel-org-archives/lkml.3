@@ -1,164 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677AbaBJLW4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 06:22:56 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:42818 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752378AbaBJLWs (ORCPT
+	id S1752747AbaBJLXn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 06:23:43 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:61124 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751961AbaBJLXm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 06:22:48 -0500
-Date: Mon, 10 Feb 2014 11:22:42 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Laszlo Papp <lpapp@kde.org>
-Cc: linus.walleij@linaro.org, k.kozlowski@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] mfd: MAX6650/6651 support
-Message-ID: <20140210112242.GB21522@lee--X1>
-References: <1392019497-12440-1-git-send-email-lpapp@kde.org>
+	Mon, 10 Feb 2014 06:23:42 -0500
+X-IronPort-AV: E=Sophos;i="4.95,817,1384300800"; 
+   d="scan'208";a="99435606"
+Message-ID: <52F8B6BB.6040205@citrix.com>
+Date: Mon, 10 Feb 2014 11:23:39 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+To: Rashika Kheria <rashika.kheria@gmail.com>
+CC: <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        <xen-devel@lists.xenproject.org>, <josh@joshtriplett.org>
+Subject: Re: [PATCH 2/4] drivers: xen: Include appropriate header file in
+ pcpu.c
+References: <3826f170dae13e3ee700ad9e26a8c88be4b7aaa2.1391943416.git.rashika.kheria@gmail.com> <a7672a06595d907ce9aacc65b3cbe0179684f5e0.1391943416.git.rashika.kheria@gmail.com>
+In-Reply-To: <a7672a06595d907ce9aacc65b3cbe0179684f5e0.1391943416.git.rashika.kheria@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1392019497-12440-1-git-send-email-lpapp@kde.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> MAX6650/MAX6651 chip is a multi-function device with I2C busses. The
-> chip includes fan-speed regulators and monitors, GPIO, and alarm.
+On 09/02/14 11:01, Rashika Kheria wrote:
+> Include appropriate header file in xen/pcpu.c because include/xen/acpi.h
+> contains prototype declaration of functions defined in the file.
 > 
-> This patch is an initial release of a MAX6650/6651 MFD driver that
-> supports to enable the chip with its primary I2C bus that will connect
-> the hwmon, and then the gpio devices for now.
+> This eliminates the following warning in xen/pcpu.c:
+> drivers/xen/pcpu.c:336:6: warning: no previous prototype for ‘xen_pcpu_hotplug_sync’ [-Wmissing-prototypes]
+> drivers/xen/pcpu.c:346:5: warning: no previous prototype for ‘xen_pcpu_id’ [-Wmissing-prototypes]
 > 
-> Signed-off-by: Laszlo Papp <lpapp@kde.org>
-> ---
->  drivers/mfd/Kconfig                 | 11 +++++
->  drivers/mfd/Makefile                |  1 +
->  drivers/mfd/max665x.c               | 88 +++++++++++++++++++++++++++++++++++++
->  include/linux/mfd/max665x-private.h | 42 ++++++++++++++++++
->  4 files changed, 142 insertions(+)
->  create mode 100644 drivers/mfd/max665x.c
->  create mode 100644 include/linux/mfd/max665x-private.h
-> 
-> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> index 49bb445..4ad39f4 100644
-> --- a/drivers/mfd/Kconfig
-> +++ b/drivers/mfd/Kconfig
-> @@ -368,6 +368,17 @@ config MFD_MAX8907
->  	  accessing the device; additional drivers must be enabled in order
->  	  to use the functionality of the device.
->  
-> +config MFD_MAX665X
-> +	bool "Maxim Semiconductor MAX6650/MAX6651 Support"
-> +	select MFD_CORE
-> +	depends on I2C
-> +	select REGMAP_I2C
-> +	help
-> +	  Say yes here to support for Maxim Semiconductor MAX6650/MAX6651. This is
-> +	  a fan speed regulator and monitor IC. This driver provides common support
-> +	  for accessing the device, additional drivers must be enabled in order to
-> +	  use the functionality of the device.
-> +
->  config MFD_MAX8925
->  	bool "Maxim Semiconductor MAX8925 PMIC Support"
->  	depends on I2C=y
-> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-> index 5aea5ef..63668c5 100644
-> --- a/drivers/mfd/Makefile
-> +++ b/drivers/mfd/Makefile
-> @@ -111,6 +111,7 @@ obj-$(CONFIG_MFD_DA9055)	+= da9055.o
->  da9063-objs			:= da9063-core.o da9063-irq.o da9063-i2c.o
->  obj-$(CONFIG_MFD_DA9063)	+= da9063.o
->  
-> +obj-$(CONFIG_MFD_MAX665X)	+= max665x.o
->  obj-$(CONFIG_MFD_MAX14577)	+= max14577.o
->  obj-$(CONFIG_MFD_MAX77686)	+= max77686.o max77686-irq.o
->  obj-$(CONFIG_MFD_MAX77693)	+= max77693.o max77693-irq.o
-> diff --git a/drivers/mfd/max665x.c b/drivers/mfd/max665x.c
-> new file mode 100644
-> index 0000000..cd39b5a
-> --- /dev/null
-> +++ b/drivers/mfd/max665x.c
-> @@ -0,0 +1,88 @@
-> +/*
-> + * Device access for MAX6650-MAX6651
-> + *
-> + * Copyright(c) 2013 Polatis Ltd.
-> + *
-> + * Author: Laszlo Papp <laszlo.papp@polatis.com>
-> + *
-> + *  This program is free software; you can redistribute  it and/or modify it
-> + *  under  the terms of  the GNU General  Public License as published by the
-> + *  Free Software Foundation;  either version 2 of the  License, or (at your
-> + *  option) any later version.
-> + */
-> +
-> +#include <linux/device.h>
-> +#include <linux/mfd/core.h>
-> +#include <linux/module.h>
-> +#include <linux/i2c.h>
-> +
-> +#include <linux/mfd/max665x-private.h>
-> +
-> +static struct mfd_cell max665x_devs[] = {
-> +	{ .name = "max6651-gpio", },
-> +	{ .name = "max6650", }, /* hwmon driver */
+> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-What happened to renaming the hwmon driver, so we can have
-"max6650-hwmon" here?
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
 
-<snip>
-
-> +static const struct i2c_device_id max665x_id[] = {
-> +	{ "max6650", TYPE_MAX6650 },
-> +	{ "max6651", TYPE_MAX6651 },
-> +	{},
-
-Can you remind me where these IDs are being used?
-
-> +};
-> +MODULE_DEVICE_TABLE(i2c, max665x_id);
-> +
-> +static struct i2c_driver max665x_driver = {
-> +	.driver = {
-> +		.name = "max665x",
-> +		.owner = THIS_MODULE,
-
-All new drivers are required to support Device Tree.
-
-<snip>
-
-> +#ifndef __LINUX_MFD_MAX665X_PRIVATE_H
-> +#define __LINUX_MFD_MAX665X_PRIVATE_H
-> +
-> +#include <linux/i2c.h>
-> +#include <linux/export.h>
-
-What's this here for?
-
-> +#include <linux/regmap.h>
-> +
-> +struct max665x_dev {
-> +	struct device *dev;
-> +	struct mutex iolock;
-> +
-> +	struct i2c_client *i2c;
-> +	struct regmap     *map;
-> +
-> +	int type;
-> +};
-> +
-> +enum max665x_types {
-> +	TYPE_MAX6650,
-> +	TYPE_MAX6651,
-> +};
-> +
-> +#endif
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+David
