@@ -1,49 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753881AbaBJNeZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 08:34:25 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:53488 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753830AbaBJNeM (ORCPT
+	id S1753867AbaBJNeV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 08:34:21 -0500
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:54195 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753219AbaBJNeC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 08:34:12 -0500
+	Mon, 10 Feb 2014 08:34:02 -0500
+Message-ID: <52F8D403.3040306@linux.vnet.ibm.com>
+Date: Mon, 10 Feb 2014 18:58:35 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <CAOMwXhMJTeO8ev++dzXKtz8En9pK+3CkjmweuLsb5aoU+e=Aqw@mail.gmail.com>
-References: <1392019497-12440-1-git-send-email-lpapp@kde.org>
-	<20140210112242.GB21522@lee--X1>
-	<CAOMwXhMJTeO8ev++dzXKtz8En9pK+3CkjmweuLsb5aoU+e=Aqw@mail.gmail.com>
-Date: Mon, 10 Feb 2014 13:34:11 +0000
-X-Google-Sender-Auth: yDzza8yWc5eheQV86soqBl7aLxQ
-Message-ID: <CAOMwXhMriMiS9Pvm210BB0ScRJUw-whC2rnN+Ka383ztuSvOJQ@mail.gmail.com>
-Subject: Re: [PATCH v3] mfd: MAX6650/6651 support
-From: Laszlo Papp <lpapp@kde.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        LKML <linux-kernel@vger.kernel.org>
+To: ego@linux.vnet.ibm.com
+CC: Oleg Nesterov <oleg@redhat.com>, paulus@samba.org, rusty@rustcorp.com.au,
+        peterz@infradead.org, tglx@linutronix.de, akpm@linux-foundation.org,
+        mingo@kernel.org, paulmck@linux.vnet.ibm.com, tj@kernel.org,
+        walken@google.com, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org, Toshi Kani <toshi.kani@hp.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH 01/51] CPU hotplug: Provide lockless versions of	callback
+ registration functions
+References: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com> <20140205220447.19080.9460.stgit@srivatsabhat.in.ibm.com> <20140206184103.GA31410@redhat.com> <20140207191125.GA8098@in.ibm.com> <52F898CB.6030900@linux.vnet.ibm.com> <20140210105130.GA14693@in.ibm.com> <52F8B3C8.4080802@linux.vnet.ibm.com> <20140210120526.GA16263@in.ibm.com>
+In-Reply-To: <20140210120526.GA16263@in.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021013-5816-0000-0000-00000C2F48BD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> +};
->>> +MODULE_DEVICE_TABLE(i2c, max665x_id);
+On 02/10/2014 05:35 PM, Gautham R Shenoy wrote:
+> On Mon, Feb 10, 2014 at 04:41:04PM +0530, Srivatsa S. Bhat wrote:
+>>> ---
+>> [...]
+>>> +/* Lockdep annotations for get/put_online_cpus() and cpu_hotplug_begin/end() */
+>>> +#define cpuhp_lock_acquire_read() lock_map_acquire_read(&cpu_hotplug.dep_map)
+>>> +#define cpuhp_lock_acquire()      lock_map_acquire(&cpu_hotplug.dep_map)
+>>> +#define cpuhp_lock_release()      lock_map_release(&cpu_hotplug.dep_map)
 >>> +
->>> +static struct i2c_driver max665x_driver = {
->>> +     .driver = {
->>> +             .name = "max665x",
->>> +             .owner = THIS_MODULE,
+>>>  void get_online_cpus(void)
+>>>  {
+>>>  	might_sleep();
+>>>  	if (cpu_hotplug.active_writer == current)
+>>>  		return;
+>>> +	cpuhp_lock_acquire_read();
+>>>  	mutex_lock(&cpu_hotplug.lock);
+>>>  	cpu_hotplug.refcount++;
+>>>  	mutex_unlock(&cpu_hotplug.lock);
+>>> @@ -87,6 +101,7 @@ void put_online_cpus(void)
+>>>  	if (!--cpu_hotplug.refcount && unlikely(cpu_hotplug.active_writer))
+>>>  		wake_up_process(cpu_hotplug.active_writer);
+>>>  	mutex_unlock(&cpu_hotplug.lock);
+>>> +	cpuhp_lock_release();
+>>>
+>>>  }
+>>>  EXPORT_SYMBOL_GPL(put_online_cpus);
+>>> @@ -117,6 +132,7 @@ void cpu_hotplug_begin(void)
+>>>  {
+>>>  	cpu_hotplug.active_writer = current;
+>>>
+>>> +	cpuhp_lock_acquire();
 >>
->> All new drivers are required to support Device Tree.
+>> Shouldn't we move this to _after_ the for-loop?
+> 
+> No if we move this to after the for-loop, we won't be able to catch
+> the ABBA dependency that you had mentioned earlier.
+> 
+> Consider the case
+> 
+> Thread1:                                              Thread 2:
+> ------------------------------------------------------------------------
+> get_online_cpus()
+> // lockdep knows about this.
+>                                                cpu_maps_update_begin()
+>                                                //lockdep knows about this.
+> 
+> register_cpu_notifier()
+> |
+> |-> cpu_maps_update_begin()
+>     //lockdep knows about this. 
+> 
+> 
+>                                               cpu_hotplug_begin()
+>                                               |  
+>                                               |-->for(;;) {
+>                                                       Wait for all the
+>                                                       readers to exit. 
+>                                      
+>                                                       This will never
+>                                                       happen now and
+>                                                       we're stuck here
+>                                                       forever without
+>                                                       telling anyone why! 
+>                                                  }
+> 
+> 					         cpuhp_lock_acquire();
+>                                                                         
+
+Ok, that is a very convincing explanation!
+
+> --------------------------------------------------------------------------
+>> Because, that's when the
+>> hotplug writer is really in a state equivalent to exclusive access to the
+>> hotplug lock... Else, we might fool lockdep into believing that the hotplug
+>> writer has the lock for write, and at the same time several readers have
+>> the lock for read as well.. no?
+>>
+> 
+> Well as I understand it, the purpose of lockdep annotations is to
+> signal the intent of acquiring a lock as opposed to reporting the
+> status that the lock has been acquired.
+> 
+> The annotation in the earlier patch is consistent with the lockdep
+> annotations in rwlocks. Except for the fact that the readers of
+> cpu_hotplug.lock can sleep having acquired the lock, there's no
+> difference between rwlock semantics and cpu-hotplug lock behaviour.
+> Both are unfair to the writer as they allow new readers to acquire the
+> lock as long as there's some reader which holds the lock.
 >
-> Do you have some recommendation for documentation, examples, etc? I am
-> new to this.
 
-I see .of_match_table added in certain mfd drivers, but I am not sure
-what I should put into the name or even the compatible member, I see
-them boot neglected in various drivers. The structure here does not
-seem to be documented either:
-http://lxr.free-electrons.com/source/include/linux/mod_devicetable.h#L220
+Ah, ok.. Thanks a lot for the clarification!
+ 
+Regards,
+Srivatsa S. Bhat
 
-I do not know where to get the information for the .name and/or
-.compatible entry for, or if I need anything more.
