@@ -1,61 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752123AbaBJJu2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 04:50:28 -0500
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:58917 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751725AbaBJJuY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 04:50:24 -0500
-Date: Mon, 10 Feb 2014 10:50:20 +0100
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Sudeep Holla <sudeep.holla@arm.com>
-Cc: linux-kernel@vger.kernel.org, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux390@de.ibm.com, linux-s390@vger.kernel.org
-Subject: Re: [PATCH RFC/RFT v2 3/8] s390: move cacheinfo sysfs to generic
- cacheinfo infrastructure
-Message-ID: <20140210095020.GB19013@osiris>
-References: <1391791763-28518-1-git-send-email-sudeep.holla@arm.com>
- <1391791763-28518-4-git-send-email-sudeep.holla@arm.com>
+	id S1752206AbaBJJws (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 04:52:48 -0500
+Received: from mail.wdtv.com ([66.118.69.84]:46427 "EHLO mail.wdtv.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751371AbaBJJwq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 04:52:46 -0500
+From: Gene Heskett <gheskett@wdtv.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Subject: Re: make oldfonfig broken.
+Date: Mon, 10 Feb 2014 04:52:34 -0500
+Cc: Ken Moffat <zarniwhoop@ntlworld.com>, linux-kernel@vger.kernel.org
+References: <1391971686-9517-1-git-send-email-richard@nod.at> <201402092332.32439.gheskett@wdtv.com> <52F85D2F.6010501@infradead.org>
+In-Reply-To: <52F85D2F.6010501@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1391791763-28518-4-git-send-email-sudeep.holla@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021009-0542-0000-0000-000007F0D0D8
+Content-Type: Text/Plain;
+  charset="windows-1256"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201402100452.34646.gheskett@wdtv.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 07, 2014 at 04:49:18PM +0000, Sudeep Holla wrote:
-> From: Sudeep Holla <sudeep.holla@arm.com>
-> 
-> This patch removes the redundant sysfs cacheinfo code by making use of
-> the newly introduced generic cacheinfo infrastructure.
-> 
-> Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
-> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-> Cc: linux390@de.ibm.com
-> Cc: linux-s390@vger.kernel.org
-> ---
-
+On Monday 10 February 2014, Randy Dunlap wrote:
 [...]
+>>>>> Gene, I want to make sure where you are saying the problem is.
+>>>>> Is it going directly from 3.019 to 3.8.2, with no intervening kernel
+>>>>> versions?
+>>>> 
+>>>> No, one intermediate step in this case.
+>>>> 
+>>>> I started with 3.0.19, which was fine, took that one to 3.2.40, and
+>>>> that one to 3.8.2 because I don't have anything between those here.
+>>>> Not exactly a step by step.
+>>> 
+>>> and when you go from one kernel version to the next, do you use
+>>> 
+>>> $ make oldconfig
+>>> and answer all of its questions, or do you use
+>> 
+>> I generally answer all its questions, or take the default by hitting
+>> enter, but I do read all its questions.
+>> 
+>>> $ yes '' | make oldconfig
+>> 
+>> Never done that in all these years.
+>> 
+>>> or some other variant?  (I guess in your super build script.)
+>> 
+>> This is long before my "super script" gets fired off.
+>> 
+>> And that part is actually working well, run it as root, do a
+>> grub-update and reboot.
+>> 
+>> Cheers, Gene
+>
+>You need to have a Kconfig symbol named DVB_CORE enabled.
+>
+>In 3.8.2 (and likely previously, but not in 3.2.40),
+>DVB_CORE depends on having both MEDIA_SUPPORT and
+>MEDIA_DIGITAL_TV_SUPPORT enabled.  Your .confile file  has MEDIA_SUPPORT
+>enabled but not
+>MEDIA_DIGITAL_TV_SUPPORT.
+>
+>In your 3.2.40 kernel source tree, just edit your .config file and delete
+>the line that says:
+># CONFIG_MEDIA_DIGITAL_TV_SUPPORT is not set
+>
+>then run [1]
+>$ make oldconfig
+>and it will ask you how to set the Kconfig symbol.  Tell it 'y'.
+>
+>and if you can find this line in your .config file:
+>CONFIG_MEDIA_SUBDRV_AUTOSELECT=y
+>
+>delete it. Run 'make oldconfig' again if you did so at [1] above.
+>For this Kconfig question:
+>  Autoselect tuners and i2c modules to build (MEDIA_SUBDRV_AUTOSELECT),
+>answer N.
+>Then you can select all of the tuners and frontends that you want.
+>There are LOTS of them to choose from.
+>
+>IIRC, this all happened because someone decided that they could make the
+>AUTOSELECT driver feature Better!  ugh.
+>
+>Good luck. Let me know if you need more guidance.
 
-> diff --git a/arch/s390/kernel/processor.c b/arch/s390/kernel/processor.c
-> index 2461202..1f875db 100644
-> --- a/arch/s390/kernel/processor.c
-> +++ b/arch/s390/kernel/processor.c
-> @@ -58,7 +58,6 @@ static int show_cpuinfo(struct seq_file *m, void *v)
->  			if (hwcap_str[i] && (elf_hwcap & (1UL << i)))
->  				seq_printf(m, "%s ", hwcap_str[i]);
->  		seq_puts(m, "\n");
-> -		show_cacheinfo(m);
->  	}
->  	get_online_cpus();
->  	if (cpu_online(n)) {
+Printed. That sounds as if I ought to be able to do it, which I will take a 
+shot at tomorrow.
 
-You can't remove that. It's a user space visible change.
+Cheers, Gene
+-- 
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
+Genes Web page <http://geneslinuxbox.net:6309/gene>
+
+NOTICE: Will pay 100 USD for an HP-4815A defective but
+complete probe assembly.
 
