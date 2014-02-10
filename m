@@ -1,43 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754671AbaBJTvj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 14:51:39 -0500
-Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:34481
-	"EHLO hallynmail2" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753740AbaBJTvf (ORCPT
+	id S1754356AbaBJTrU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 14:47:20 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35119 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754247AbaBJTrP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:51:35 -0500
-Date: Mon, 10 Feb 2014 20:51:33 +0100
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        lkml <linux-kernel@vger.kernel.org>, stgraber@ubuntu.com,
-        apw@canonical.com
-Subject: overlayfs mounts in user namespaces
-Message-ID: <20140210195133.GA10107@mail.hallyn.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 10 Feb 2014 14:47:15 -0500
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Alex Deucher <alexander.deucher@amd.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 077/124] drm/radeon: fix surface sync in fence on cayman (v2)
+Date: Mon, 10 Feb 2014 11:40:17 -0800
+Message-Id: <1392061264-28124-78-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
+References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric,
+3.8.13.18 -stable review patch.  If anyone has any objections, please let me know.
 
-most filesystems cannot be mounted in a non-init user namespace because we
-don't trust the superblock parsers to DTRT when handed garbage.  I was
-wondering if you had any ideas on ways that allowing root in a non-init userns
-to mount an overlayfs fs would be dangerous?  There's no superblock parsing in
-that case at all;  writes end up being allowed if and only if the userid owning
-the 'upper' (writeable) layer is mapped into the userns.  Near as I can tell
-it should be quite safe.  But my imagination isn't the most active.
+------------------
 
-I assume there would be concerns about memory usage if the system is not
-configured to place all logged-in users into configured cgroups?  Is there
-anything else you can think of that could be abused?
+From: Alex Deucher <alexander.deucher@amd.com>
 
-(I realize overlayfs isn't upstream yet so the question may not be all that
-interesting to most people...)
+commit 10e9ffae463396c5a25fdfe8a48d7c98a87f6b85 upstream.
 
-thanks,
--serge
+We need to set the engine bit to select the ME and
+also set the full cache bit.  Should help stability
+on TN and cayman.
+
+V2: fix up surface sync in ib execute as well
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/gpu/drm/radeon/ni.c  | 16 +++++++---------
+ drivers/gpu/drm/radeon/nid.h |  1 +
+ 2 files changed, 8 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/gpu/drm/radeon/ni.c b/drivers/gpu/drm/radeon/ni.c
+index 326bdea..385e05b 100644
+--- a/drivers/gpu/drm/radeon/ni.c
++++ b/drivers/gpu/drm/radeon/ni.c
+@@ -889,13 +889,12 @@ void cayman_fence_ring_emit(struct radeon_device *rdev,
+ {
+ 	struct radeon_ring *ring = &rdev->ring[fence->ring];
+ 	u64 addr = rdev->fence_drv[fence->ring].gpu_addr;
++	u32 cp_coher_cntl = PACKET3_FULL_CACHE_ENA | PACKET3_TC_ACTION_ENA |
++		PACKET3_SH_ACTION_ENA;
+ 
+ 	/* flush read cache over gart for this vmid */
+-	radeon_ring_write(ring, PACKET3(PACKET3_SET_CONFIG_REG, 1));
+-	radeon_ring_write(ring, (CP_COHER_CNTL2 - PACKET3_SET_CONFIG_REG_START) >> 2);
+-	radeon_ring_write(ring, 0);
+ 	radeon_ring_write(ring, PACKET3(PACKET3_SURFACE_SYNC, 3));
+-	radeon_ring_write(ring, PACKET3_TC_ACTION_ENA | PACKET3_SH_ACTION_ENA);
++	radeon_ring_write(ring, PACKET3_ENGINE_ME | cp_coher_cntl);
+ 	radeon_ring_write(ring, 0xFFFFFFFF);
+ 	radeon_ring_write(ring, 0);
+ 	radeon_ring_write(ring, 10); /* poll interval */
+@@ -911,6 +910,8 @@ void cayman_fence_ring_emit(struct radeon_device *rdev,
+ void cayman_ring_ib_execute(struct radeon_device *rdev, struct radeon_ib *ib)
+ {
+ 	struct radeon_ring *ring = &rdev->ring[ib->ring];
++	u32 cp_coher_cntl = PACKET3_FULL_CACHE_ENA | PACKET3_TC_ACTION_ENA |
++		PACKET3_SH_ACTION_ENA;
+ 
+ 	/* set to DX10/11 mode */
+ 	radeon_ring_write(ring, PACKET3(PACKET3_MODE_CONTROL, 0));
+@@ -935,14 +936,11 @@ void cayman_ring_ib_execute(struct radeon_device *rdev, struct radeon_ib *ib)
+ 			  (ib->vm ? (ib->vm->id << 24) : 0));
+ 
+ 	/* flush read cache over gart for this vmid */
+-	radeon_ring_write(ring, PACKET3(PACKET3_SET_CONFIG_REG, 1));
+-	radeon_ring_write(ring, (CP_COHER_CNTL2 - PACKET3_SET_CONFIG_REG_START) >> 2);
+-	radeon_ring_write(ring, ib->vm ? ib->vm->id : 0);
+ 	radeon_ring_write(ring, PACKET3(PACKET3_SURFACE_SYNC, 3));
+-	radeon_ring_write(ring, PACKET3_TC_ACTION_ENA | PACKET3_SH_ACTION_ENA);
++	radeon_ring_write(ring, PACKET3_ENGINE_ME | cp_coher_cntl);
+ 	radeon_ring_write(ring, 0xFFFFFFFF);
+ 	radeon_ring_write(ring, 0);
+-	radeon_ring_write(ring, 10); /* poll interval */
++	radeon_ring_write(ring, ((ib->vm ? ib->vm->id : 0) << 24) | 10); /* poll interval */
+ }
+ 
+ static void cayman_cp_enable(struct radeon_device *rdev, bool enable)
+diff --git a/drivers/gpu/drm/radeon/nid.h b/drivers/gpu/drm/radeon/nid.h
+index e045f8c..9dbea95 100644
+--- a/drivers/gpu/drm/radeon/nid.h
++++ b/drivers/gpu/drm/radeon/nid.h
+@@ -556,6 +556,7 @@
+ #              define PACKET3_DB_ACTION_ENA        (1 << 26)
+ #              define PACKET3_SH_ACTION_ENA        (1 << 27)
+ #              define PACKET3_SX_ACTION_ENA        (1 << 28)
++#              define PACKET3_ENGINE_ME            (1 << 31)
+ #define	PACKET3_ME_INITIALIZE				0x44
+ #define		PACKET3_ME_INITIALIZE_DEVICE_ID(x) ((x) << 16)
+ #define	PACKET3_COND_WRITE				0x45
+-- 
+1.8.3.2
+
