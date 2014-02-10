@@ -1,69 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752940AbaBJT2z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 14:28:55 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:59955 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752233AbaBJT2w (ORCPT
+	id S1752960AbaBJTeF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 14:34:05 -0500
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:46905 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752475AbaBJTeB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:28:52 -0500
-Date: Mon, 10 Feb 2014 20:28:46 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tommi Rantala <tt.rantala@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>, trinity@vger.kernel.org, tj@kernel.org
-Subject: Re: lockdep: strange %s#5 lock name
-Message-ID: <20140210192846.GF27965@twins.programming.kicks-ass.net>
-References: <CA+ydwtqC7En++T5S7q5qzaDe_tf9dcMx3Y3aH=+Fcss_NU7stA@mail.gmail.com>
+	Mon, 10 Feb 2014 14:34:01 -0500
+Message-ID: <52F929A6.8040209@mit.edu>
+Date: Mon, 10 Feb 2014 11:33:58 -0800
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+ydwtqC7En++T5S7q5qzaDe_tf9dcMx3Y3aH=+Fcss_NU7stA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Richard Yao <ryao@gentoo.org>
+CC: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Eric Van Hensbergen <ericvh@gmail.com>,
+        Ron Minnich <rminnich@sandia.gov>, Latchesar Ionkov <lucho@ionkov.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        V9FS Develooper Mailing List 
+	<v9fs-developer@lists.sourceforge.net>,
+        Linux Netdev Mailing List <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Matthew Thode <mthode@mthode.org>
+Subject: Re: [PATCH 1/2] mm/vmalloc: export is_vmalloc_or_module_addr
+References: <1391886730-19667-1-git-send-email-ryao@gentoo.org>	<1391886730-19667-2-git-send-email-ryao@gentoo.org>	<CA+55aFx8TzOnW9xPFA4Ox-yFiSUo=cEqeQUmgw_JWjDNEZep8Q@mail.gmail.com>	<52F68C67.6050606@gentoo.org>	<CA+55aFw2BGS-sPYM1xkO7MfZ_-u=7nF4RYFmoCM99rkL=PxvpA@mail.gmail.com>	<52F6972C.2030307@gentoo.org> <CA+55aFzzxcrLrUaCrzFbwS_74B2iHd3OvQ=WC-DR-rqpOA0j0A@mail.gmail.com>
+In-Reply-To: <CA+55aFzzxcrLrUaCrzFbwS_74B2iHd3OvQ=WC-DR-rqpOA0j0A@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 09:19:43PM +0200, Tommi Rantala wrote:
-> Hello,
+On 02/08/2014 02:24 PM, Linus Torvalds wrote:
+> On Sat, Feb 8, 2014 at 12:44 PM, Richard Yao <ryao@gentoo.org> wrote:
+>>
+>> However, is_vmalloc_addr() only applies to the vmalloc region. While all
+>> architectures load kernel modules into virtual memory (to my knowledge),
+>> some architectures do not load them into the vmalloc region.
 > 
-> Noticed a suspicious "%s#5" lock name in a lockdep splat while fuzzing
-> with trinity.
+> So?
 > 
-> [249844.531638]  #0:  (%s#5){.+.+.+}, at: [<ffffffff8115af70>]
-> process_one_work+0x240/0x690
+> People shouldn't do IO to module data, so who cares if something is a
+> module address or not?
+> 
+> The thing is, even module *loading* doesn't do IO to the magic module
+> addresses - it loads the module data into regular vmalloc space, and
+> then copies it into the final location separately.
+> 
+> And no module should ever do any IO on random static data (and
+> certainly not on code).
+> 
+> So there is _zero_ reason for a driver or a filesystem to use
+> is_vmalloc_or_module_addr(). It's just not a valid question to ask.
+> 
+> If somebody uses module data/code addresses, we're *better* off with a
+> oops or other nasty behavior than to try to make it "work".
 
-Lol.. its correct afaict:
+I agree that reading to module space is awful, but is it obviously
+terrible for a module to do this:
 
-struct workqueue_struct *__alloc_workqueue_key(const char *fmt,
-					       unsigned int flags,
-					       int max_active,
-					       struct lock_class_key *key,
-					       const char *lock_name, ...)
-{
-	...
-	lockdep_init_map(&wq->lockdep_map, lock_name, key, 0);
+static const char header[] = {...};
+kernel_write(file, header, sizeof(header), 0);
 
+The current nasty behavior is doing the I/O to the wrong place if the
+appropriate CONFIG_DEBUG option isn't set.  That IMO sucks.
 
-
-So while its called lock_name, it looks like the argument is a format.
-
-I suppose the below was what was intended...
-
----
- kernel/workqueue.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 82ef9f3b7473..861d8ddd92a2 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -4202,7 +4202,7 @@ struct workqueue_struct *__alloc_workqueue_key(const char *fmt,
- 	INIT_LIST_HEAD(&wq->flusher_overflow);
- 	INIT_LIST_HEAD(&wq->maydays);
- 
--	lockdep_init_map(&wq->lockdep_map, lock_name, key, 0);
-+	lockdep_init_map(&wq->lockdep_map, wq->name, key, 0);
- 	INIT_LIST_HEAD(&wq->list);
- 
- 	if (alloc_and_link_pwqs(wq) < 0)
+--Andy
