@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753748AbaBJTwF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 14:52:05 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35132 "EHLO
+	id S1754707AbaBJTwu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 14:52:50 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35124 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754358AbaBJTrU (ORCPT
+	with ESMTP id S1754339AbaBJTrR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:47:20 -0500
+	Mon, 10 Feb 2014 14:47:17 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 037/124] USB: fix race between hub_disconnect and recursively_mark_NOTATTACHED
-Date: Mon, 10 Feb 2014 11:39:37 -0800
-Message-Id: <1392061264-28124-38-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 033/124] dm thin: fix discard support to a previously shared block
+Date: Mon, 10 Feb 2014 11:39:33 -0800
+Message-Id: <1392061264-28124-34-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
 References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
@@ -28,95 +27,134 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Joe Thornber <ejt@redhat.com>
 
-commit 543d7784b07ffd16cc82a9cb4e1e0323fd0040f1 upstream.
+commit 19fa1a6756ed9e92daa9537c03b47d6b55cc2316 upstream.
 
-There is a race in the hub driver between hub_disconnect() and
-recursively_mark_NOTATTACHED().  This race can be triggered if the
-driver is unbound from a device at the same time as the bus's root hub
-is removed.  When the race occurs, it can cause an oops:
+If a snapshot is created and later deleted the origin dm_thin_device's
+snapshotted_time will have been updated to reflect the snapshot's
+creation time.  The 'shared' flag in the dm_thin_lookup_result struct
+returned from dm_thin_find_block() is an approximation based on
+snapshotted_time -- this is done to avoid 0(n), or worse, time
+complexity.  In this case, the shared flag would be true.
 
-BUG: unable to handle kernel NULL pointer dereference at 0000015c
-IP: [<c16d5fb0>] recursively_mark_NOTATTACHED+0x20/0x60
-Call Trace:
- [<c16d5fc4>] recursively_mark_NOTATTACHED+0x34/0x60
- [<c16d5fc4>] recursively_mark_NOTATTACHED+0x34/0x60
- [<c16d5fc4>] recursively_mark_NOTATTACHED+0x34/0x60
- [<c16d5fc4>] recursively_mark_NOTATTACHED+0x34/0x60
- [<c16d6082>] usb_set_device_state+0x92/0x120
- [<c16d862b>] usb_disconnect+0x2b/0x1a0
- [<c16dd4c0>] usb_remove_hcd+0xb0/0x160
- [<c19ca846>] ? _raw_spin_unlock_irqrestore+0x26/0x50
- [<c1704efc>] ehci_mid_remove+0x1c/0x30
- [<c1704f26>] ehci_mid_stop_host+0x16/0x30
- [<c16f7698>] penwell_otg_work+0xd28/0x3520
- [<c19c945b>] ? __schedule+0x39b/0x7f0
- [<c19cdb9d>] ? sub_preempt_count+0x3d/0x50
- [<c125e97d>] process_one_work+0x11d/0x3d0
- [<c19c7f4d>] ? mutex_unlock+0xd/0x10
- [<c125e0e5>] ? manage_workers.isra.24+0x1b5/0x270
- [<c125f009>] worker_thread+0xf9/0x320
- [<c19ca846>] ? _raw_spin_unlock_irqrestore+0x26/0x50
- [<c125ef10>] ? rescuer_thread+0x2b0/0x2b0
- [<c1264ac4>] kthread+0x94/0xa0
- [<c19d0f77>] ret_from_kernel_thread+0x1b/0x28
- [<c1264a30>] ? kthread_create_on_node+0xc0/0xc0
+But because the 'shared' flag reflects an approximation a block can be
+incorrectly assumed to be shared (e.g. false positive for 'shared'
+because the snapshot no longer exists).  This could result in discards
+issued to a thin device not being passed down to the pool's underlying
+data device.
 
-One problem is that recursively_mark_NOTATTACHED() uses the intfdata
-value and hub->hdev->maxchild while hub_disconnect() is clearing them.
-Another problem is that it uses hub->ports[i] while the port device is
-being released.
+To fix this we double check that a thin block is really still in-use
+after a mapping is removed using dm_pool_block_is_used().  If the
+reference count for a block is now zero the discard is allowed to be
+passed down.
 
-To fix this race, we need to hold the device_state_lock while
-hub_disconnect() changes the values.  (Note that usb_disconnect()
-and hub_port_connect_change() already acquire this lock at similar
-critical times during a USB device's life cycle.)  We also need to
-remove the port devices after maxchild has been set to 0, instead of
-before.
+Also add a 'definitely_not_shared' member to the dm_thin_new_mapping
+structure -- reflects that the 'shared' flag in the response from
+dm_thin_find_block() can only be held as definitive if false is
+returned.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: "Du, Changbin" <changbinx.du@intel.com>
-Tested-by: "Du, Changbin" <changbinx.du@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Resolves: https://bugzilla.redhat.com/show_bug.cgi?id=1043527
+
+Signed-off-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/core/hub.c | 14 +++++++++-----
- 1 file changed, 9 insertions(+), 5 deletions(-)
+ drivers/md/dm-thin-metadata.c | 20 ++++++++++++++++++++
+ drivers/md/dm-thin-metadata.h |  2 ++
+ drivers/md/dm-thin.c          | 14 ++++++++++++--
+ 3 files changed, 34 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index edbf39f..de1c1b0 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -1643,7 +1643,7 @@ static void hub_disconnect(struct usb_interface *intf)
+diff --git a/drivers/md/dm-thin-metadata.c b/drivers/md/dm-thin-metadata.c
+index 0368a69..6727958 100644
+--- a/drivers/md/dm-thin-metadata.c
++++ b/drivers/md/dm-thin-metadata.c
+@@ -1349,6 +1349,12 @@ dm_thin_id dm_thin_dev_id(struct dm_thin_device *td)
+ 	return td->id;
+ }
+ 
++/*
++ * Check whether @time (of block creation) is older than @td's last snapshot.
++ * If so then the associated block is shared with the last snapshot device.
++ * Any block on a device created *after* the device last got snapshotted is
++ * necessarily not shared.
++ */
+ static bool __snapshotted_since(struct dm_thin_device *td, uint32_t time)
  {
- 	struct usb_hub *hub = usb_get_intfdata(intf);
- 	struct usb_device *hdev = interface_to_usbdev(intf);
--	int i;
-+	int port1;
+ 	return td->snapshotted_time > time;
+@@ -1458,6 +1464,20 @@ int dm_thin_remove_block(struct dm_thin_device *td, dm_block_t block)
+ 	return r;
+ }
  
- 	/* Take the hub off the event list and don't let it be added again */
- 	spin_lock_irq(&hub_event_lock);
-@@ -1658,11 +1658,15 @@ static void hub_disconnect(struct usb_interface *intf)
- 	hub->error = 0;
- 	hub_quiesce(hub, HUB_DISCONNECT);
++int dm_pool_block_is_used(struct dm_pool_metadata *pmd, dm_block_t b, bool *result)
++{
++	int r;
++	uint32_t ref_count;
++
++	down_read(&pmd->root_lock);
++	r = dm_sm_get_count(pmd->data_sm, b, &ref_count);
++	if (!r)
++		*result = (ref_count != 0);
++	up_read(&pmd->root_lock);
++
++	return r;
++}
++
+ bool dm_thin_changed_this_transaction(struct dm_thin_device *td)
+ {
+ 	int r;
+diff --git a/drivers/md/dm-thin-metadata.h b/drivers/md/dm-thin-metadata.h
+index 050a9ad..149d326 100644
+--- a/drivers/md/dm-thin-metadata.h
++++ b/drivers/md/dm-thin-metadata.h
+@@ -180,6 +180,8 @@ int dm_pool_get_data_block_size(struct dm_pool_metadata *pmd, sector_t *result);
  
--	usb_set_intfdata (intf, NULL);
-+	/* Avoid races with recursively_mark_NOTATTACHED() */
-+	spin_lock_irq(&device_state_lock);
-+	port1 = hdev->maxchild;
-+	hdev->maxchild = 0;
-+	usb_set_intfdata(intf, NULL);
-+	spin_unlock_irq(&device_state_lock);
+ int dm_pool_get_data_dev_size(struct dm_pool_metadata *pmd, dm_block_t *result);
  
--	for (i = 0; i < hdev->maxchild; i++)
--		usb_hub_remove_port_device(hub, i + 1);
--	hub->hdev->maxchild = 0;
-+	for (; port1 > 0; --port1)
-+		usb_hub_remove_port_device(hub, port1);
++int dm_pool_block_is_used(struct dm_pool_metadata *pmd, dm_block_t b, bool *result);
++
+ /*
+  * Returns -ENOSPC if the new size is too small and already allocated
+  * blocks would be lost.
+diff --git a/drivers/md/dm-thin.c b/drivers/md/dm-thin.c
+index b6fdaf7..5e62738 100644
+--- a/drivers/md/dm-thin.c
++++ b/drivers/md/dm-thin.c
+@@ -440,6 +440,7 @@ struct dm_thin_new_mapping {
+ 	unsigned quiesced:1;
+ 	unsigned prepared:1;
+ 	unsigned pass_discard:1;
++	unsigned definitely_not_shared:1;
  
- 	if (hub->hdev->speed == USB_SPEED_HIGH)
- 		highspeed_hubs--;
+ 	struct thin_c *tc;
+ 	dm_block_t virt_block;
+@@ -610,7 +611,15 @@ static void process_prepared_discard_passdown(struct dm_thin_new_mapping *m)
+ 	cell_defer_no_holder(tc, m->cell2);
+ 
+ 	if (m->pass_discard)
+-		remap_and_issue(tc, m->bio, m->data_block);
++		if (m->definitely_not_shared)
++			remap_and_issue(tc, m->bio, m->data_block);
++		else {
++			bool used = false;
++			if (dm_pool_block_is_used(tc->pool->pmd, m->data_block, &used) || used)
++				bio_endio(m->bio, 0);
++			else
++				remap_and_issue(tc, m->bio, m->data_block);
++		}
+ 	else
+ 		bio_endio(m->bio, 0);
+ 
+@@ -957,7 +966,8 @@ static void process_discard(struct thin_c *tc, struct bio *bio)
+ 			 */
+ 			m = get_next_mapping(pool);
+ 			m->tc = tc;
+-			m->pass_discard = (!lookup_result.shared) && pool->pf.discard_passdown;
++			m->pass_discard = pool->pf.discard_passdown;
++			m->definitely_not_shared = !lookup_result.shared;
+ 			m->virt_block = block;
+ 			m->data_block = lookup_result.block;
+ 			m->cell = cell;
 -- 
 1.8.3.2
 
