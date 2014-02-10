@@ -1,109 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753118AbaBJMSE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 07:18:04 -0500
-Received: from mout.gmx.net ([212.227.15.18]:50062 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751965AbaBJMSA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 07:18:00 -0500
-Message-ID: <52F8C373.9060108@rempel-privat.de>
-Date: Mon, 10 Feb 2014 13:17:55 +0100
-From: Oleksij Rempel <linux@rempel-privat.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752877AbaBJMTw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 07:19:52 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:53534 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752276AbaBJMTs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 07:19:48 -0500
+Message-ID: <52F8C556.6090006@linux.vnet.ibm.com>
+Date: Mon, 10 Feb 2014 17:55:58 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Sergey Ryazanov <ryazanov.s.a@gmail.com>,
-        Richard Weinberger <richard@nod.at>,
-        Jonathan Bither <jonbither@gmail.com>,
-        OpenWrt Development List <openwrt-devel@lists.openwrt.org>
-CC: Hauke Mehrtens <hauke@hauke-m.de>, Jiri Slaby <jirislaby@gmail.com>,
-        Nick Kossifidis <mickflemm@gmail.com>,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "open list:ATHEROS ATH5K WIR..." <linux-wireless@vger.kernel.org>,
-        "open list:ATHEROS ATH5K WIR..." <ath5k-devel@venema.h4ckr.net>,
-        open@hauke-m.de,
-        "list@hauke-m.de:NETWORKING DRIVERS" <netdev@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        "antonynpavlov@gmail.com" <antonynpavlov@gmail.com>
-Subject: Re: [PATCH 09/28] Remove ATHEROS_AR231X
-References: <1391971686-9517-1-git-send-email-richard@nod.at> <1391971686-9517-10-git-send-email-richard@nod.at> <52F7D480.1050106@hauke-m.de> <52F7DF21.70207@nod.at> <CAHNKnsS7Mv4ZhBWZa53go9L9nZimJ7_FG5HFJ9C3kkGMAEz-mA@mail.gmail.com>
-In-Reply-To: <CAHNKnsS7Mv4ZhBWZa53go9L9nZimJ7_FG5HFJ9C3kkGMAEz-mA@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha256;
- protocol="application/pgp-signature";
- boundary="JDWAQLMAn1UQWTOqbFvCwbPqUUSJtjr7V"
-X-Provags-ID: V03:K0:cOcsqxpZKh0ipstFwVhUaD7UwbnOzO9Z7dbSLpS2r1w/jx8wYRv
- v7xexO5OqPzp21oJYDzGDRx5nVmgwFcXqdvJCFt990C24soCnGv/Dz8dslvqe+yiAfK3I+6
- Tn8gJPjm9LiYpWwmP62RZ8KZmjFdUMjgwUGxVPB1p3iNLwA7PjOEDPBAkznJeEeNyHxQmgy
- CmGpYpREQTRg74Ru5nGQQ==
+To: David Rientjes <rientjes@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Damien Ramonda <damien.ramonda@intel.com>, Jan Kara <jack@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH V5] mm readahead: Fix readahead fail for no local
+ memory and limit readahead pages
+References: <1390388025-1418-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com> <20140206145105.27dec37b16f24e4ac5fd90ce@linux-foundation.org> <alpine.DEB.2.02.1402061456290.31828@chino.kir.corp.google.com> <20140206152219.45c2039e5092c8ea1c31fd38@linux-foundation.org> <alpine.DEB.2.02.1402061537180.3441@chino.kir.corp.google.com> <alpine.DEB.2.02.1402061557210.5061@chino.kir.corp.google.com> <52F4B8A4.70405@linux.vnet.ibm.com> <alpine.DEB.2.02.1402071239301.4212@chino.kir.corp.google.com> <52F88C16.70204@linux.vnet.ibm.com> <alpine.DEB.2.02.1402100200420.30650@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1402100200420.30650@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021012-5140-0000-0000-00000488C8CC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---JDWAQLMAn1UQWTOqbFvCwbPqUUSJtjr7V
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
-
-Am 10.02.2014 13:05, schrieb Sergey Ryazanov:
-> 2014-02-10 0:03 GMT+04:00 Richard Weinberger <richard@nod.at>:
->> Am 09.02.2014 20:18, schrieb Hauke Mehrtens:
->>> On 02/09/2014 07:47 PM, Richard Weinberger wrote:
->>>> The symbol is an orphan, get rid of it.
->>>>
->>>> Signed-off-by: Richard Weinberger <richard@nod.at>
->>>> ---
->>>>  drivers/net/wireless/ath/ath5k/Kconfig | 10 +++++-----
->>>>  drivers/net/wireless/ath/ath5k/ath5k.h | 28 -----------------------=
------
->>>>  drivers/net/wireless/ath/ath5k/base.c  | 14 --------------
->>>>  drivers/net/wireless/ath/ath5k/led.c   |  7 -------
->>>>  4 files changed, 5 insertions(+), 54 deletions(-)
->>>>
->>>
->>> This code is used in OpenWrt with an out of tree arch code for the
->>> Atheros 231x/531x SoC. [0] I do not think anyone is working on adding=
-
->>> this code to mainline Linux kernel, because of lack of time/interest.=
-
+On 02/10/2014 03:35 PM, David Rientjes wrote:
+> On Mon, 10 Feb 2014, Raghavendra K T wrote:
+>
+>> As you rightly pointed , I 'll drop remote memory term and use
+>> something like  :
 >>
->> Sorry, we don't maintain out of tree code.
+>> "* Ensure readahead success on a memoryless node cpu. But we limit
+>>   * the readahead to 4k pages to avoid trashing page cache." ..
 >>
->=20
-> Oleksij, Jonathan do you still working to make ar231x devices work
-> with upstream, since your posts [1, 2]? Or may be someone from OpenWRT
-> team would like to add upstream support?
->=20
-> 1. https://lkml.org/lkml/2013/5/13/321
-> 2. https://lkml.org/lkml/2013/5/13/358
->=20
+>
+> I don't know how to proceed here after pointing it out twice, I'm afraid.
+>
+> numa_mem_id() is local memory for a memoryless node.  node_present_pages()
+> has no place in your patch.
 
-Hi,
-my current target was to provide barebox and openocd support.
-- ar2313 is already upstream on barebox.
-- ar2315-2318 (barebox) awaiting review by Anthony Pavlov.
-- openocd (EJTAG) support is ready and i'll push it ASUP.
+Hi David,  I am happy to see your pointer reg. numa_mem_id(). I did not
+meant to be ignoring/offensive .. sorry if conversation thought to be so.
 
-I hope Jonathan do kernel part. If not, i can provide some work, since i
-have testing boards and expiriance on this hardware.
+So I understood that you are suggesting implementations like below
 
---=20
-Regards,
-Oleksij
+1) I do not have problem with the below approach, I could post this in
+next version.
+( But this did not include 4k limit Linus mentioned to apply)
 
+unsigned long max_sane_readahead(unsigned long nr)
+{
+         unsigned long local_free_page;
+         int nid;
 
---JDWAQLMAn1UQWTOqbFvCwbPqUUSJtjr7V
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+         nid = numa_mem_id();
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+         /*
+          * We sanitize readahead size depending on free memory in
+          * the local node.
+          */
+         local_free_page = node_page_state(nid, NR_INACTIVE_FILE)
+                           + node_page_state(nid, NR_FREE_PAGES);
+         return min(nr, local_free_page / 2);
+}
 
-iF4EAREIAAYFAlL4w3MACgkQHwImuRkmbWmHEgEAmUpmT5YkDvKgx0v24yzb1wE3
-lJRt74eb739s+Pc2mt8A/jnP8qfXkUwr7vSSBHUH9W266NrdqSTXjlWGgY3J3hgN
-=MGbj
------END PGP SIGNATURE-----
+2) I did not go for below because Honza (Jan Kara) had some
+concerns for 4k limit for normal case, and since I am not
+the expert, I was waiting for opinions.
 
---JDWAQLMAn1UQWTOqbFvCwbPqUUSJtjr7V--
+unsigned long max_sane_readahead(unsigned long nr)
+{
+         unsigned long local_free_page, sane_nr;
+         int nid;
+
+         nid = numa_mem_id();
+	/* limit the max readahead to 4k pages */
+	sane_nr = min(nr, MAX_REMOTE_READAHEAD);
+
+         /*
+          * We sanitize readahead size depending on free memory in
+          * the local node.
+          */
+         local_free_page = node_page_state(nid, NR_INACTIVE_FILE)
+                           + node_page_state(nid, NR_FREE_PAGES);
+         return min(sane_nr, local_free_page / 2);
+}
+
+>
+>> Regarding ACCESS_ONCE, since we will have to add
+>> inside the function and still there is nothing that could prevent us
+>> getting run on different cpu with a different node (as Andrew ponted), I have
+>> not included in current patch that I am posting.
+>> Moreover this case is hopefully not fatal since it is just a hint for
+>> readahead we can do.
+>>
+>
+> I have no idea why you think the ACCESS_ONCE() is a problem.  It's relying
+> on gcc's implementation to ensure that the equation is done only for one
+> node.  It has absolutely nothing to do with the fact that the process may
+> be moved to another cpu upon returning or even immediately after the
+> calculation is done.  Is it possible that node0 has 80% of memory free and
+> node1 has 80% of memory inactive?  Well, then your equation doesn't work
+> quite so well if the process moves.
+>
+> There is no downside whatsoever to using it, I have no idea why you think
+> it's better without it.
+
+I have no problem introducing ACESSS_ONCE too. But I skipped only
+after I got the below error.
+
+mm/readahead.c: In function ‘max_sane_readahead’:
+mm/readahead.c:246: error: lvalue required as unary ‘&’ operand
+
+>
+>> So there are many possible implementation:
+>> (1) use numa_mem_id(), apply freepage limit  and use 4k page limit for all
+>> case
+>> (Jan had reservation about this case)
+>>
+>> (2)for normal case:    use free memory calculation and do not apply 4k
+>>      limit (no change).
+>>     for memoryless cpu case:  use numa_mem_id for more accurate
+>>      calculation of limit and also apply 4k limit.
+>>
+>> (3) for normal case:   use free memory calculation and do not apply 4k
+>>      limit (no change).
+>>      for memoryless case: apply 4k page limit
+>>
+>> (4) use numa_mem_id() and apply only free page limit..
+>>
+>> So, I ll be resending the patch with changelog and comment changes
+>> based on your and Andrew's feedback (type (3) implementation).
+>>
+>
+> It's frustrating to have to say something three times.  Ask yourself what
+> happens if ALL NODES WITH CPUS DO NOT HAVE MEMORY?
+>
+
+True, this is the reason why we could go for implementation (1) I posted
+above. It was just that I did not want to float a new version without
+knowing whether Andrew was expecting new patch or change log updates.
+
