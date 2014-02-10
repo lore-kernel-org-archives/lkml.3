@@ -1,71 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752573AbaBJMbT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 07:31:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35866 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751889AbaBJMbS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 07:31:18 -0500
-Subject: Re: [PATCH 10/21] fs: Mark functions as static in gfs2/rgrp.c
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Rashika Kheria <rashika.kheria@gmail.com>
-Cc: linux-kernel@vger.kernel.org, cluster-devel@redhat.com,
-        josh@joshtriplett.org
-In-Reply-To: <ea8cd448204387985f76078b8649168baaf81ab4.1391949868.git.rashika.kheria@gmail.com>
-References: <b572932c3e016c55e596686283036316a1aacd2f.1391949868.git.rashika.kheria@gmail.com>
-	 <ea8cd448204387985f76078b8649168baaf81ab4.1391949868.git.rashika.kheria@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Mon, 10 Feb 2014 12:30:20 +0000
-Message-ID: <1392035420.2726.16.camel@menhir>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1752906AbaBJMdz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 07:33:55 -0500
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:33383 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752720AbaBJMdv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 07:33:51 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140204191609.GU22609@sirena.org.uk>
+References: <1391529538-21685-1-git-send-email-ulf.hansson@linaro.org>
+	<1391529538-21685-8-git-send-email-ulf.hansson@linaro.org>
+	<20140204191609.GU22609@sirena.org.uk>
+Date: Mon, 10 Feb 2014 13:33:50 +0100
+Message-ID: <CAPDyKFqNdw-6R12cUOre8UOTOnB-PpxHD5rPAMCwuS3i--Sesg@mail.gmail.com>
+Subject: Re: [PATCH 07/17] spi: pl022: Don't ignore power domain and amba bus
+ at system suspend
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Alessandro Rubini <rubini@unipv.it>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>, Chris Ball <chris@printf.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 4 February 2014 20:16, Mark Brown <broonie@kernel.org> wrote:
+> On Tue, Feb 04, 2014 at 04:58:48PM +0100, Ulf Hansson wrote:
+>
+>> @@ -2328,8 +2300,23 @@ static int pl022_suspend(struct device *dev)
+>>               return ret;
+>>       }
+>>
+>> -     pm_runtime_get_sync(dev);
+>> -     pl022_suspend_resources(pl022, false);
+>> +     pm_runtime_disable(dev);
+>> +
+>> +     if (!pm_runtime_status_suspended(dev)) {
+>> +             if (dev->pm_domain && dev->pm_domain->ops.runtime_suspend)
+>> +                     ret = dev->pm_domain->ops.runtime_suspend(dev);
+>> +             else
+>> +                     ret = dev->bus->pm->runtime_suspend(dev);
+>> +
+>> +             if (ret) {
+>> +                     pm_runtime_enable(dev);
+>> +                     return ret;
+>> +             }
+>> +
+>> +             pm_runtime_set_suspended(dev);
+>> +     }
+>
+> This seems like a fairly hideous thing to be having to open code in an
+> individual driver, it all looks generic and like something that most if
+> not all devices ought to be doing and it looks very vulnerable to being
+> broken by changes in the core.  At the very least I would expect this to
+> be done in a helper function, though it would be even nicer if the
+> driver core were figuring this stuff out for us based on the device
+> level callback so that drivers didn't need to worry about being in power
+> domains or manually calling bus level callbacks.
+>
+> Putting it in a helper would at least mean that it's easier for the
+> mechanics to be transferred to the core proper later on.
 
-On Sun, 2014-02-09 at 18:40 +0530, Rashika Kheria wrote:
-> Mark functions as static in gfs2/rgrp.c because they are not used
-> outside this file.
-> 
-> This eliminates the following warning in gfs2/rgrp.c:
-> fs/gfs2/rgrp.c:1092:5: warning: no previous prototype for ‘gfs2_rgrp_bh_get’ [-Wmissing-prototypes]
-> fs/gfs2/rgrp.c:1157:5: warning: no previous prototype for ‘update_rgrp_lvb’ [-Wmissing-prototypes]
-> 
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> ---
->  fs/gfs2/rgrp.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
+I agree, a helper function would be nice. I have earlier sent a patch
+to the PM core, that is similar to the code above, though it was
+rejected in it's current form. Let me follow up on this again.
 
-Now in the GFS2 -nmw tree. Thanks,
+At this point, would a way forward be to still go ahead with this
+patch and then convert to, when/if, the helper function from the PM
+core becomes available?
 
-Steve.
-
-> diff --git a/fs/gfs2/rgrp.c b/fs/gfs2/rgrp.c
-> index a1da213..551b9e9 100644
-> --- a/fs/gfs2/rgrp.c
-> +++ b/fs/gfs2/rgrp.c
-> @@ -1102,7 +1102,7 @@ static u32 count_unlinked(struct gfs2_rgrpd *rgd)
->   * Returns: errno
->   */
->  
-> -int gfs2_rgrp_bh_get(struct gfs2_rgrpd *rgd)
-> +static int gfs2_rgrp_bh_get(struct gfs2_rgrpd *rgd)
->  {
->  	struct gfs2_sbd *sdp = rgd->rd_sbd;
->  	struct gfs2_glock *gl = rgd->rd_gl;
-> @@ -1169,7 +1169,7 @@ fail:
->  	return error;
->  }
->  
-> -int update_rgrp_lvb(struct gfs2_rgrpd *rgd)
-> +static int update_rgrp_lvb(struct gfs2_rgrpd *rgd)
->  {
->  	u32 rl_flags;
->  
-
-
+Kind regards
+Ulf Hansson
