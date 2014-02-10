@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752194AbaBJHcJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 02:32:09 -0500
+	id S1752256AbaBJHcQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 02:32:16 -0500
 Received: from mga09.intel.com ([134.134.136.24]:34681 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752175AbaBJHcF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 02:32:05 -0500
+	id S1751502AbaBJHcC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 02:32:02 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,816,1384329600"; 
-   d="scan'208";a="452607218"
+   d="scan'208";a="452607203"
 From: sagar.a.kamble@intel.com
 To: intel-gfx@lists.freedesktop.org
 Cc: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
@@ -16,10 +16,10 @@ Cc: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?=
         Daniel Vetter <daniel.vetter@ffwll.ch>,
         Jani Nikula <jani.nikula@linux.intel.com>,
         David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v5 09/11] drm/i915: Add rotation property for sprites
-Date: Mon, 10 Feb 2014 13:01:16 +0530
-Message-Id: <1392017478-4945-10-git-send-email-sagar.a.kamble@intel.com>
+        linux-kernel@vger.kernel.org, Sagar Kamble <sagar.a.kamble@intel.com>
+Subject: [PATCH v5 07/11] drm/i915: Add 180 degree sprite rotation support
+Date: Mon, 10 Feb 2014 13:01:14 +0530
+Message-Id: <1392017478-4945-8-git-send-email-sagar.a.kamble@intel.com>
 X-Mailer: git-send-email 1.8.5
 In-Reply-To: <1392017478-4945-1-git-send-email-sagar.a.kamble@intel.com>
 References: <1392017478-4945-1-git-send-email-sagar.a.kamble@intel.com>
@@ -32,9 +32,13 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ville Syrjälä <ville.syrjala@linux.intel.com>
 
-Sprite planes support 180 degree rotation. The lower layers are now in
-place, so hook in the standard rotation property to expose the feature
-to the users.
+The sprite planes (in fact all display planes starting from gen4)
+support 180 degree rotation. Add the relevant low level bits to the
+sprite code to make use of that feature.
+
+The upper layers are not yet plugged in.
+
+v2: HSW handles the rotated buffer offset automagically
 
 Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
 Cc: Jani Nikula <jani.nikula@linux.intel.com>
@@ -42,100 +46,157 @@ Cc: David Airlie <airlied@linux.ie>
 Cc: dri-devel@lists.freedesktop.org
 Cc: linux-kernel@vger.kernel.org
 Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Reviewed-by: Sagar Kamble <sagar.a.kamble@intel.com>
-Tested-by: Sagar Kamble <sagar.a.kamble@intel.com>
+Signed-off-by: Sagar Kamble <sagar.a.kamble@intel.com>
 ---
- drivers/gpu/drm/i915/i915_drv.h     |  1 +
- drivers/gpu/drm/i915/intel_sprite.c | 42 ++++++++++++++++++++++++++++++++++++-
- 2 files changed, 42 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/i915/i915_reg.h     |  3 +++
+ drivers/gpu/drm/i915/intel_drv.h    |  1 +
+ drivers/gpu/drm/i915/intel_sprite.c | 37 +++++++++++++++++++++++++++++++++++++
+ 3 files changed, 41 insertions(+)
 
-diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
-index fa37dfd..ea2efc3 100644
---- a/drivers/gpu/drm/i915/i915_drv.h
-+++ b/drivers/gpu/drm/i915/i915_drv.h
-@@ -1548,6 +1548,7 @@ typedef struct drm_i915_private {
+diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
+index abd18cd..57906c5 100644
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -3637,6 +3637,7 @@
+ #define   DVS_YUV_ORDER_UYVY	(1<<16)
+ #define   DVS_YUV_ORDER_YVYU	(2<<16)
+ #define   DVS_YUV_ORDER_VYUY	(3<<16)
++#define   DVS_ROTATE_180	(1<<15)
+ #define   DVS_DEST_KEY		(1<<2)
+ #define   DVS_TRICKLE_FEED_DISABLE (1<<14)
+ #define   DVS_TILED		(1<<10)
+@@ -3707,6 +3708,7 @@
+ #define   SPRITE_YUV_ORDER_UYVY		(1<<16)
+ #define   SPRITE_YUV_ORDER_YVYU		(2<<16)
+ #define   SPRITE_YUV_ORDER_VYUY		(3<<16)
++#define   SPRITE_ROTATE_180		(1<<15)
+ #define   SPRITE_TRICKLE_FEED_DISABLE	(1<<14)
+ #define   SPRITE_INT_GAMMA_ENABLE	(1<<13)
+ #define   SPRITE_TILED			(1<<10)
+@@ -3780,6 +3782,7 @@
+ #define   SP_YUV_ORDER_UYVY		(1<<16)
+ #define   SP_YUV_ORDER_YVYU		(2<<16)
+ #define   SP_YUV_ORDER_VYUY		(3<<16)
++#define   SP_ROTATE_180			(1<<15)
+ #define   SP_TILED			(1<<10)
+ #define _SPALINOFF		(VLV_DISPLAY_BASE + 0x72184)
+ #define _SPASTRIDE		(VLV_DISPLAY_BASE + 0x72188)
+diff --git a/drivers/gpu/drm/i915/intel_drv.h b/drivers/gpu/drm/i915/intel_drv.h
+index 44067bc..85864fc 100644
+--- a/drivers/gpu/drm/i915/intel_drv.h
++++ b/drivers/gpu/drm/i915/intel_drv.h
+@@ -397,6 +397,7 @@ struct intel_plane {
+ 	unsigned int crtc_w, crtc_h;
+ 	uint32_t src_x, src_y;
+ 	uint32_t src_w, src_h;
++	unsigned int rotation;
  
- 	struct drm_property *broadcast_rgb_property;
- 	struct drm_property *force_audio_property;
-+	struct drm_property *rotation_property;
- 
- 	uint32_t hw_context_size;
- 	struct list_head context_list;
+ 	/* Since we need to change the watermarks before/after
+ 	 * enabling/disabling the planes, we need to store the parameters here
 diff --git a/drivers/gpu/drm/i915/intel_sprite.c b/drivers/gpu/drm/i915/intel_sprite.c
-index 511934c..62b9f84 100644
+index 336ae6c..477d4d7 100644
 --- a/drivers/gpu/drm/i915/intel_sprite.c
 +++ b/drivers/gpu/drm/i915/intel_sprite.c
-@@ -1047,6 +1047,30 @@ out_unlock:
- 	return ret;
- }
+@@ -60,6 +60,7 @@ vlv_update_plane(struct drm_plane *dplane, struct drm_crtc *crtc,
+ 	sprctl &= ~SP_PIXFORMAT_MASK;
+ 	sprctl &= ~SP_YUV_BYTE_ORDER_MASK;
+ 	sprctl &= ~SP_TILED;
++	sprctl &= ~SP_ROTATE_180;
  
-+static int intel_plane_set_property(struct drm_plane *plane,
-+				    struct drm_property *prop,
-+				    uint64_t val)
-+{
-+	struct drm_i915_private *dev_priv = plane->dev->dev_private;
-+	struct intel_plane *intel_plane = to_intel_plane(plane);
-+	uint64_t old_val;
-+	int ret = -ENOENT;
+ 	switch (fb->pixel_format) {
+ 	case DRM_FORMAT_YUYV:
+@@ -131,6 +132,14 @@ vlv_update_plane(struct drm_plane *dplane, struct drm_crtc *crtc,
+ 							fb->pitches[0]);
+ 	linear_offset -= sprsurf_offset;
+ 
++	if (intel_plane->rotation == BIT(DRM_ROTATE_180)) {
++		sprctl |= SP_ROTATE_180;
 +
-+	if (prop == dev_priv->rotation_property) {
-+		/* exactly one rotation angle please */
-+		if (hweight32(val & 0xf) != 1)
-+			return -EINVAL;
-+
-+		old_val = intel_plane->rotation;
-+		intel_plane->rotation = val;
-+		ret = intel_plane_restore(plane);
-+		if (ret)
-+			intel_plane->rotation = old_val;
++		x += src_w;
++		y += src_h;
++		linear_offset += src_h * fb->pitches[0] + src_w * pixel_size;
 +	}
 +
-+	return ret;
-+}
-+
- int intel_plane_restore(struct drm_plane *plane)
- {
- 	struct intel_plane *intel_plane = to_intel_plane(plane);
-@@ -1073,6 +1097,7 @@ static const struct drm_plane_funcs intel_plane_funcs = {
- 	.update_plane = intel_update_plane,
- 	.disable_plane = intel_disable_plane,
- 	.destroy = intel_destroy_plane,
-+	.set_property = intel_plane_set_property,
- };
+ 	I915_WRITE(SPSTRIDE(pipe, plane), fb->pitches[0]);
+ 	I915_WRITE(SPPOS(pipe, plane), (crtc_y << 16) | crtc_x);
  
- static uint32_t ilk_plane_formats[] = {
-@@ -1109,6 +1134,7 @@ static uint32_t vlv_plane_formats[] = {
- int
- intel_plane_init(struct drm_device *dev, enum pipe pipe, int plane)
- {
-+	struct drm_i915_private *dev_priv = dev->dev_private;
- 	struct intel_plane *intel_plane;
- 	unsigned long possible_crtcs;
- 	const uint32_t *plane_formats;
-@@ -1183,8 +1209,22 @@ intel_plane_init(struct drm_device *dev, enum pipe pipe, int plane)
+@@ -238,6 +247,7 @@ ivb_update_plane(struct drm_plane *plane, struct drm_crtc *crtc,
+ 	sprctl &= ~SPRITE_RGB_ORDER_RGBX;
+ 	sprctl &= ~SPRITE_YUV_BYTE_ORDER_MASK;
+ 	sprctl &= ~SPRITE_TILED;
++	sprctl &= ~SPRITE_ROTATE_180;
+ 
+ 	switch (fb->pixel_format) {
+ 	case DRM_FORMAT_XBGR8888:
+@@ -299,6 +309,17 @@ ivb_update_plane(struct drm_plane *plane, struct drm_crtc *crtc,
+ 					       pixel_size, fb->pitches[0]);
+ 	linear_offset -= sprsurf_offset;
+ 
++	if (intel_plane->rotation == BIT(DRM_ROTATE_180)) {
++		sprctl |= SPRITE_ROTATE_180;
++
++		/* HSW does this automagically in hardware */
++		if (!IS_HASWELL(dev)) {
++			x += src_w;
++			y += src_h;
++			linear_offset += src_h * fb->pitches[0] + src_w * pixel_size;
++		}
++	}
++
+ 	I915_WRITE(SPRSTRIDE(pipe), fb->pitches[0]);
+ 	I915_WRITE(SPRPOS(pipe), (crtc_y << 16) | crtc_x);
+ 
+@@ -422,6 +443,7 @@ ilk_update_plane(struct drm_plane *plane, struct drm_crtc *crtc,
+ 	dvscntr &= ~DVS_RGB_ORDER_XBGR;
+ 	dvscntr &= ~DVS_YUV_BYTE_ORDER_MASK;
+ 	dvscntr &= ~DVS_TILED;
++	dvscntr &= ~DVS_ROTATE_180;
+ 
+ 	switch (fb->pixel_format) {
+ 	case DRM_FORMAT_XBGR8888:
+@@ -478,6 +500,14 @@ ilk_update_plane(struct drm_plane *plane, struct drm_crtc *crtc,
+ 					       pixel_size, fb->pitches[0]);
+ 	linear_offset -= dvssurf_offset;
+ 
++	if (intel_plane->rotation == BIT(DRM_ROTATE_180)) {
++		dvscntr |= DVS_ROTATE_180;
++
++		x += src_w;
++		y += src_h;
++		linear_offset += src_h * fb->pitches[0] + src_w * pixel_size;
++	}
++
+ 	I915_WRITE(DVSSTRIDE(pipe), fb->pitches[0]);
+ 	I915_WRITE(DVSPOS(pipe), (crtc_y << 16) | crtc_x);
+ 
+@@ -739,6 +769,9 @@ intel_update_plane(struct drm_plane *plane, struct drm_crtc *crtc,
+ 	max_scale = intel_plane->max_downscale << 16;
+ 	min_scale = intel_plane->can_scale ? 1 : (1 << 16);
+ 
++	drm_rect_rotate(&src, fb->width << 16, fb->height << 16,
++			intel_plane->rotation);
++
+ 	hscale = drm_rect_calc_hscale_relaxed(&src, &dst, min_scale, max_scale);
+ 	BUG_ON(hscale < 0);
+ 
+@@ -777,6 +810,9 @@ intel_update_plane(struct drm_plane *plane, struct drm_crtc *crtc,
+ 				     drm_rect_width(&dst) * hscale - drm_rect_width(&src),
+ 				     drm_rect_height(&dst) * vscale - drm_rect_height(&src));
+ 
++		drm_rect_rotate_inv(&src, fb->width << 16, fb->height << 16,
++				    intel_plane->rotation);
++
+ 		/* sanity check to make sure the src viewport wasn't enlarged */
+ 		WARN_ON(src.x1 < (int) src_x ||
+ 			src.y1 < (int) src_y ||
+@@ -1141,6 +1177,7 @@ intel_plane_init(struct drm_device *dev, enum pipe pipe, int plane)
+ 
+ 	intel_plane->pipe = pipe;
+ 	intel_plane->plane = plane;
++	intel_plane->rotation = BIT(DRM_ROTATE_0);
+ 	possible_crtcs = (1 << pipe);
+ 	ret = drm_plane_init(dev, &intel_plane->base, possible_crtcs,
  			     &intel_plane_funcs,
- 			     plane_formats, num_plane_formats,
- 			     false);
--	if (ret)
-+	if (ret) {
- 		kfree(intel_plane);
-+		goto out;
-+	}
-+
-+	if (!dev_priv->rotation_property)
-+		dev_priv->rotation_property =
-+			drm_mode_create_rotation_property(dev,
-+							  BIT(DRM_ROTATE_0) |
-+							  BIT(DRM_ROTATE_180));
-+
-+	if (dev_priv->rotation_property)
-+		drm_object_attach_property(&intel_plane->base.base,
-+					   dev_priv->rotation_property,
-+					   intel_plane->rotation);
- 
-+ out:
- 	return ret;
- }
 -- 
 1.8.5
 
