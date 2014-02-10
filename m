@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754380AbaBJTrY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 14:47:24 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35115 "EHLO
+	id S1753218AbaBJTrd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 14:47:33 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35136 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754327AbaBJTrN (ORCPT
+	with ESMTP id S1754385AbaBJTr1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:47:13 -0500
+	Mon, 10 Feb 2014 14:47:27 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Simon Guinot <simon.guinot@sequanux.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Lior Amsalem <alior@marvell.com>, Tejun Heo <tj@kernel.org>,
+Cc: Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 068/124] ARM: mvebu: update the SATA compatible string for Armada 370/XP
-Date: Mon, 10 Feb 2014 11:40:08 -0800
-Message-Id: <1392061264-28124-69-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 041/124] dm space map common: make sure new space is used during extend
+Date: Mon, 10 Feb 2014 11:39:41 -0800
+Message-Id: <1392061264-28124-42-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
 References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
@@ -32,40 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Simon Guinot <simon.guinot@sequanux.org>
+From: Joe Thornber <ejt@redhat.com>
 
-commit a96cc303e42ad7830dde929aad0046e448a05505 upstream.
+commit 12c91a5c2d2a8e8cc40a9552313e1e7b0a2d9ee3 upstream.
 
-This patch updates the Armada 370/XP SATA node with the new compatible
-string "marvell,armada-370-sata".
+When extending a low level space map we should update nr_blocks at
+the start so the new space is used for the index entries.
 
-Signed-off-by: Simon Guinot <simon.guinot@sequanux.org>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Gregory Clement <gregory.clement@free-electrons.com>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Lior Amsalem <alior@marvell.com>
-Acked-by: Jason Cooper <jason@lakedaemon.net>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Otherwise extend can fail, e.g.: sm_metadata_extend call sequence
+that fails:
+ -> sm_ll_extend
+    -> dm_tm_new_block -> dm_sm_new_block -> sm_bootstrap_new_block
+    => returns -ENOSPC because smm->begin == smm->ll.nr_blocks
+
+Signed-off-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/boot/dts/armada-370-xp.dtsi | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/persistent-data/dm-space-map-common.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/armada-370-xp.dtsi b/arch/arm/boot/dts/armada-370-xp.dtsi
-index eadd0bf..146c850 100644
---- a/arch/arm/boot/dts/armada-370-xp.dtsi
-+++ b/arch/arm/boot/dts/armada-370-xp.dtsi
-@@ -79,7 +79,7 @@
- 		};
+diff --git a/drivers/md/persistent-data/dm-space-map-common.c b/drivers/md/persistent-data/dm-space-map-common.c
+index 3e7a88d..0d24037 100644
+--- a/drivers/md/persistent-data/dm-space-map-common.c
++++ b/drivers/md/persistent-data/dm-space-map-common.c
+@@ -245,6 +245,10 @@ int sm_ll_extend(struct ll_disk *ll, dm_block_t extra_blocks)
+ 		return -EINVAL;
+ 	}
  
- 		sata@d00a0000 {
--			compatible = "marvell,orion-sata";
-+			compatible = "marvell,armada-370-sata";
- 			reg = <0xd00a0000 0x5000>;
- 			interrupts = <55>;
- 			clocks = <&gateclk 15>, <&gateclk 30>;
++	/*
++	 * We need to set this before the dm_tm_new_block() call below.
++	 */
++	ll->nr_blocks = nr_blocks;
+ 	for (i = old_blocks; i < blocks; i++) {
+ 		struct dm_block *b;
+ 		struct disk_index_entry idx;
+@@ -252,6 +256,7 @@ int sm_ll_extend(struct ll_disk *ll, dm_block_t extra_blocks)
+ 		r = dm_tm_new_block(ll->tm, &dm_sm_bitmap_validator, &b);
+ 		if (r < 0)
+ 			return r;
++
+ 		idx.blocknr = cpu_to_le64(dm_block_location(b));
+ 
+ 		r = dm_tm_unlock(ll->tm, b);
+@@ -266,7 +271,6 @@ int sm_ll_extend(struct ll_disk *ll, dm_block_t extra_blocks)
+ 			return r;
+ 	}
+ 
+-	ll->nr_blocks = nr_blocks;
+ 	return 0;
+ }
+ 
 -- 
 1.8.3.2
 
