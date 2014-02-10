@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755447AbaBJUOr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 15:14:47 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34649 "EHLO
+	id S1755452AbaBJUPN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 15:15:13 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34640 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753212AbaBJTmv (ORCPT
+	with ESMTP id S1753313AbaBJTmn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:42:51 -0500
+	Mon, 10 Feb 2014 14:42:43 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 055/124] b43: Fix lockdep splat
-Date: Mon, 10 Feb 2014 11:39:55 -0800
-Message-Id: <1392061264-28124-56-git-send-email-kamal@canonical.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 049/124] ftrace: Check module functions being traced on reload
+Date: Mon, 10 Feb 2014 11:39:49 -0800
+Message-Id: <1392061264-28124-50-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
 References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,105 +29,244 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 09164043f63c947a49797750a09ca1cd7c31108e upstream.
+commit 8c4f3c3fa9681dc549cd35419b259496082fef8b upstream.
 
-In https://bugzilla.kernel.org/show_bug.cgi?id=67561, a locking dependency is reported
-when b43 is used with hostapd, and rfkill is used to kill the radio output.
+There's been a nasty bug that would show up and not give much info.
+The bug displayed the following warning:
 
-The lockdep splat (in part) is as follows:
+ WARNING: at kernel/trace/ftrace.c:1529 __ftrace_hash_rec_update+0x1e3/0x230()
+ Pid: 20903, comm: bash Tainted: G           O 3.6.11+ #38405.trunk
+ Call Trace:
+  [<ffffffff8103e5ff>] warn_slowpath_common+0x7f/0xc0
+  [<ffffffff8103e65a>] warn_slowpath_null+0x1a/0x20
+  [<ffffffff810c2ee3>] __ftrace_hash_rec_update+0x1e3/0x230
+  [<ffffffff810c4f28>] ftrace_hash_move+0x28/0x1d0
+  [<ffffffff811401cc>] ? kfree+0x2c/0x110
+  [<ffffffff810c68ee>] ftrace_regex_release+0x8e/0x150
+  [<ffffffff81149f1e>] __fput+0xae/0x220
+  [<ffffffff8114a09e>] ____fput+0xe/0x10
+  [<ffffffff8105fa22>] task_work_run+0x72/0x90
+  [<ffffffff810028ec>] do_notify_resume+0x6c/0xc0
+  [<ffffffff8126596e>] ? trace_hardirqs_on_thunk+0x3a/0x3c
+  [<ffffffff815c0f88>] int_signal+0x12/0x17
+ ---[ end trace 793179526ee09b2c ]---
 
-======================================================
-[ INFO: possible circular locking dependency detected ]
-3.12.0 #1 Not tainted
--------------------------------------------------------
-rfkill/10040 is trying to acquire lock:
- (rtnl_mutex){+.+.+.}, at: [<ffffffff8146f282>] rtnl_lock+0x12/0x20
+It was finally narrowed down to unloading a module that was being traced.
 
-but task is already holding lock:
- (rfkill_global_mutex){+.+.+.}, at: [<ffffffffa04832ca>] rfkill_fop_write+0x6a/0x170 [rfkill]
+It was actually more than that. When functions are being traced, there's
+a table of all functions that have a ref count of the number of active
+tracers attached to that function. When a function trace callback is
+registered to a function, the function's record ref count is incremented.
+When it is unregistered, the function's record ref count is decremented.
+If an inconsistency is detected (ref count goes below zero) the above
+warning is shown and the function tracing is permanently disabled until
+reboot.
 
---snip--
+The ftrace callback ops holds a hash of functions that it filters on
+(and/or filters off). If the hash is empty, the default means to filter
+all functions (for the filter_hash) or to disable no functions (for the
+notrace_hash).
 
-Chain exists of:
-  rtnl_mutex --> misc_mtx --> rfkill_global_mutex
+When a module is unloaded, it frees the function records that represent
+the module functions. These records exist on their own pages, that is
+function records for one module will not exist on the same page as
+function records for other modules or even the core kernel.
 
-The fix is to move the initialization of the hardware random number generator
-outside the code range covered by the rtnl_mutex.
+Now when a module unloads, the records that represents its functions are
+freed. When the module is loaded again, the records are recreated with
+a default ref count of zero (unless there's a callback that traces all
+functions, then they will also be traced, and the ref count will be
+incremented).
 
-Reported-by: yury <urykhy@gmail.com>
-Tested-by: yury <urykhy@gmail.com>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+The problem is that if an ftrace callback hash includes functions of the
+module being unloaded, those hash entries will not be removed. If the
+module is reloaded in the same location, the hash entries still point
+to the functions of the module but the module's ref counts do not reflect
+that.
+
+With the help of Steve and Joern, we found a reproducer:
+
+ Using uinput module and uinput_release function.
+
+ cd /sys/kernel/debug/tracing
+ modprobe uinput
+ echo uinput_release > set_ftrace_filter
+ echo function > current_tracer
+ rmmod uinput
+ modprobe uinput
+ # check /proc/modules to see if loaded in same addr, otherwise try again
+ echo nop > current_tracer
+
+ [BOOM]
+
+The above loads the uinput module, which creates a table of functions that
+can be traced within the module.
+
+We add uinput_release to the filter_hash to trace just that function.
+
+Enable function tracincg, which increments the ref count of the record
+associated to uinput_release.
+
+Remove uinput, which frees the records including the one that represents
+uinput_release.
+
+Load the uinput module again (and make sure it's at the same address).
+This recreates the function records all with a ref count of zero,
+including uinput_release.
+
+Disable function tracing, which will decrement the ref count for uinput_release
+which is now zero because of the module removal and reload, and we have
+a mismatch (below zero ref count).
+
+The solution is to check all currently tracing ftrace callbacks to see if any
+are tracing any of the module's functions when a module is loaded (it already does
+that with callbacks that trace all functions). If a callback happens to have
+a module function being traced, it increments that records ref count and starts
+tracing that function.
+
+There may be a strange side effect with this, where tracing module functions
+on unload and then reloading a new module may have that new module's functions
+being traced. This may be something that confuses the user, but it's not
+a big deal. Another approach is to disable all callback hashes on module unload,
+but this leaves some ftrace callbacks that may not be registered, but can
+still have hashes tracing the module's function where ftrace doesn't know about
+it. That situation can cause the same bug. This solution solves that case too.
+Another benefit of this solution, is it is possible to trace a module's
+function on unload and load.
+
+Link: http://lkml.kernel.org/r/20130705142629.GA325@redhat.com
+
+Reported-by: Jörn Engel <joern@logfs.org>
+Reported-by: Dave Jones <davej@redhat.com>
+Reported-by: Steve Hodgson <steve@purestorage.com>
+Tested-by: Steve Hodgson <steve@purestorage.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+[ kamal: 3.8-stable prereq for a4c35ed2
+  "ftrace: Fix synchronization location disabling and freeing ftrace_ops" ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/b43/main.c | 17 +++++++++++------
- 1 file changed, 11 insertions(+), 6 deletions(-)
+ kernel/trace/ftrace.c | 71 ++++++++++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 62 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/net/wireless/b43/main.c b/drivers/net/wireless/b43/main.c
-index 911c4c0..bb421be 100644
---- a/drivers/net/wireless/b43/main.c
-+++ b/drivers/net/wireless/b43/main.c
-@@ -2415,6 +2415,7 @@ error:
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 35d7565..c573423 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -2105,12 +2105,57 @@ static cycle_t		ftrace_update_time;
+ static unsigned long	ftrace_update_cnt;
+ unsigned long		ftrace_update_tot_cnt;
  
- static int b43_one_core_attach(struct b43_bus_dev *dev, struct b43_wl *wl);
- static void b43_one_core_detach(struct b43_bus_dev *dev);
-+static int b43_rng_init(struct b43_wl *wl);
- 
- static void b43_request_firmware(struct work_struct *work)
+-static int ops_traces_mod(struct ftrace_ops *ops)
++static inline int ops_traces_mod(struct ftrace_ops *ops)
  {
-@@ -2466,6 +2467,10 @@ start_ieee80211:
- 		goto err_one_core_detach;
- 	wl->hw_registred = true;
- 	b43_leds_register(wl->current_dev);
+-	struct ftrace_hash *hash;
++	/*
++	 * Filter_hash being empty will default to trace module.
++	 * But notrace hash requires a test of individual module functions.
++	 */
++	return ftrace_hash_empty(ops->filter_hash) &&
++		ftrace_hash_empty(ops->notrace_hash);
++}
 +
-+	/* Register HW RNG driver */
-+	b43_rng_init(wl);
++/*
++ * Check if the current ops references the record.
++ *
++ * If the ops traces all functions, then it was already accounted for.
++ * If the ops does not trace the current record function, skip it.
++ * If the ops ignores the function via notrace filter, skip it.
++ */
++static inline bool
++ops_references_rec(struct ftrace_ops *ops, struct dyn_ftrace *rec)
++{
++	/* If ops isn't enabled, ignore it */
++	if (!(ops->flags & FTRACE_OPS_FL_ENABLED))
++		return 0;
 +
- 	goto out;
- 
- err_one_core_detach:
-@@ -4630,9 +4635,6 @@ static void b43_wireless_core_exit(struct b43_wldev *dev)
- 	if (!dev || b43_status(dev) != B43_STAT_INITIALIZED)
- 		return;
- 
--	/* Unregister HW RNG driver */
--	b43_rng_exit(dev->wl);
--
- 	b43_set_status(dev, B43_STAT_UNINIT);
- 
- 	/* Stop the microcode PSM. */
-@@ -4775,9 +4777,6 @@ static int b43_wireless_core_init(struct b43_wldev *dev)
- 
- 	b43_set_status(dev, B43_STAT_INITIALIZED);
- 
--	/* Register HW RNG driver */
--	b43_rng_init(dev->wl);
--
- out:
- 	return err;
- 
-@@ -5438,6 +5437,9 @@ static void b43_bcma_remove(struct bcma_device *core)
- 
- 	b43_one_core_detach(wldev->dev);
- 
-+	/* Unregister HW RNG driver */
-+	b43_rng_exit(wl);
++	/* If ops traces all mods, we already accounted for it */
++	if (ops_traces_mod(ops))
++		return 0;
 +
- 	b43_leds_unregister(wl);
++	/* The function must be in the filter */
++	if (!ftrace_hash_empty(ops->filter_hash) &&
++	    !ftrace_lookup_ip(ops->filter_hash, rec->ip))
++		return 0;
  
- 	ieee80211_free_hw(wl->hw);
-@@ -5515,6 +5517,9 @@ static void b43_ssb_remove(struct ssb_device *sdev)
- 
- 	b43_one_core_detach(dev);
- 
-+	/* Unregister HW RNG driver */
-+	b43_rng_exit(wl);
+-	hash = ops->filter_hash;
+-	return ftrace_hash_empty(hash);
++	/* If in notrace hash, we ignore it too */
++	if (ftrace_lookup_ip(ops->notrace_hash, rec->ip))
++		return 0;
 +
- 	if (list_empty(&wl->devlist)) {
- 		b43_leds_unregister(wl);
- 		/* Last core on the chip unregistered.
++	return 1;
++}
++
++static int referenced_filters(struct dyn_ftrace *rec)
++{
++	struct ftrace_ops *ops;
++	int cnt = 0;
++
++	for (ops = ftrace_ops_list; ops != &ftrace_list_end; ops = ops->next) {
++		if (ops_references_rec(ops, rec))
++		    cnt++;
++	}
++
++	return cnt;
+ }
+ 
+ static int ftrace_update_code(struct module *mod)
+@@ -2119,6 +2164,7 @@ static int ftrace_update_code(struct module *mod)
+ 	struct dyn_ftrace *p;
+ 	cycle_t start, stop;
+ 	unsigned long ref = 0;
++	bool test = false;
+ 	int i;
+ 
+ 	/*
+@@ -2132,9 +2178,12 @@ static int ftrace_update_code(struct module *mod)
+ 
+ 		for (ops = ftrace_ops_list;
+ 		     ops != &ftrace_list_end; ops = ops->next) {
+-			if (ops->flags & FTRACE_OPS_FL_ENABLED &&
+-			    ops_traces_mod(ops))
+-				ref++;
++			if (ops->flags & FTRACE_OPS_FL_ENABLED) {
++				if (ops_traces_mod(ops))
++					ref++;
++				else
++					test = true;
++			}
+ 		}
+ 	}
+ 
+@@ -2144,12 +2193,16 @@ static int ftrace_update_code(struct module *mod)
+ 	for (pg = ftrace_new_pgs; pg; pg = pg->next) {
+ 
+ 		for (i = 0; i < pg->index; i++) {
++			int cnt = ref;
++
+ 			/* If something went wrong, bail without enabling anything */
+ 			if (unlikely(ftrace_disabled))
+ 				return -1;
+ 
+ 			p = &pg->records[i];
+-			p->flags = ref;
++			if (test)
++				cnt += referenced_filters(p);
++			p->flags = cnt;
+ 
+ 			/*
+ 			 * Do the initial record conversion from mcount jump
+@@ -2169,7 +2222,7 @@ static int ftrace_update_code(struct module *mod)
+ 			 * conversion puts the module to the correct state, thus
+ 			 * passing the ftrace_make_call check.
+ 			 */
+-			if (ftrace_start_up && ref) {
++			if (ftrace_start_up && cnt) {
+ 				int failed = __ftrace_replace_code(p, 1);
+ 				if (failed)
+ 					ftrace_bug(failed, p->ip);
 -- 
 1.8.3.2
 
