@@ -1,159 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752754AbaBJMNd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 07:13:33 -0500
-Received: from mga09.intel.com ([134.134.136.24]:40025 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752399AbaBJMNa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 07:13:30 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,817,1384329600"; 
-   d="scan'208";a="480874467"
-Date: Mon, 10 Feb 2014 14:20:35 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Peter Wu <lekensteyn@gmail.com>,
-        Bastien Traverse <bastien.traverse@gmail.com>,
-        linux-kernel@vger.kernel.org, francis.moro@gmail.com,
-        linux-pm@vger.kernel.org
-Subject: Re: 3.12: ethernet controller missing after resuming from suspend to
- RAM
-Message-ID: <20140210122035.GY18029@intel.com>
-References: <52F2CC7B.80406@gmail.com>
- <1521445.Je1ql4ndX7@vostro.rjw.lan>
- <5195003.Lv4YMFRT0Y@al>
- <1747020.MhBDqPO9oJ@vostro.rjw.lan>
+	id S1752837AbaBJMOO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 07:14:14 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:33840 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752399AbaBJMOM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 07:14:12 -0500
+Date: Mon, 10 Feb 2014 12:14:05 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, Jenny Tc <jenny.tc@intel.com>
+Subject: Re: [PATCH v2 14/15] charger: max14577: Configure battery-dependent
+ settings from DTS
+Message-ID: <20140210121405.GH22773@lee--X1>
+References: <1391767487-10017-1-git-send-email-k.kozlowski@samsung.com>
+ <1391767487-10017-15-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1747020.MhBDqPO9oJ@vostro.rjw.lan>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1391767487-10017-15-git-send-email-k.kozlowski@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 01:10:19PM +0100, Rafael J. Wysocki wrote:
-> On Monday, February 10, 2014 02:15:22 AM Peter Wu wrote:
-> > On Monday 10 February 2014 01:52:14 Rafael J. Wysocki wrote:
-> > > > Could the following commit have something to do with it?
-> > > >
-> > > > 
-> > > >
-> > > > commit 4ebe34503baa0644c9352bcd76d4cf573bffe206
-> > > > Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > > Date:   Tue Jul 16 22:10:35 2013 +0200
-> > > >
-> > > > 
-> > > >     ACPI / hotplug / PCI: Check for new devices on enabled slots
-> > > 
-> > > This one, or another one in that series.  I rather suspect
-> > > 
-> > > ab1225901da2 Revert "ACPI / hotplug / PCI: Avoid doing too much for spurious
-> > > notifies"
-> > > 
-> > > from Mika, but it really doesn't matter.
-> > > 
-> > > Can you please check the patch below (it is on top of 3.14-rc1, but I think
-> > > it'll still apply to 3.13) and report back?
-> > 
-> > I applied the following patch:
-> > 
-> > --- drivers/pci/hotplug/acpiphp_glue.c.orig	2014-02-10 01:46:59.678124018 +0100
-> > +++ drivers/pci/hotplug/acpiphp_glue.c	2014-02-10 01:48:59.634124004 +0100
-> > @@ -552,10 +552,10 @@
-> >  	struct pci_dev *dev;
-> >  	struct pci_bus *bus = slot->bus;
-> >  	struct acpiphp_func *func;
-> > -	int max, pass;
-> > +	int nr_found, max, pass, bridges_scanned = 0;
-> >  	LIST_HEAD(add_list);
-> >  
-> > -	acpiphp_rescan_slot(slot);
-> > +	nr_found = acpiphp_rescan_slot(slot);
-> >  	max = acpiphp_max_busnr(bus);
-> >  	for (pass = 0; pass < 2; pass++) {
-> >  		list_for_each_entry(dev, &bus->devices, bus_list) {
-> > @@ -571,9 +571,16 @@
-> >  					__pci_bus_size_bridges(dev->subordinate,
-> >  							       &add_list);
-> >  				}
-> > +				bridges_scanned++;
-> >  			}
-> >  		}
-> >  	}
-> > +	/* Nothing more to do here if there are no new devices on this bus. */
-> > +	if (!nr_found && !bridges_scanned && (slot->flags & SLOT_ENABLED)) {
-> > +		pr_debug("No more new devices on this bus.\n");
-> > +		return;
-> > +	}
-> > +
-> >  	__pci_bus_assign_resources(bus, &add_list, NULL);
-> >  
-> >  	acpiphp_sanitize_bus(bus);
-> > 
-> > Unfortunately, the adapter still vanishes. dmesg is below this message.
-> > 
-> > Peter
-> > 
-> > [   44.558995] CPU3 is up
-> > [   44.561438] ACPI: Waking up from system sleep state S3
-> > [   45.254084] ehci-pci 0000:00:1a.0: System wakeup disabled by ACPI
-> > [   45.280727] ehci-pci 0000:00:1d.0: System wakeup disabled by ACPI
-> > [   45.307403] xhci_hcd 0000:02:00.0: System wakeup disabled by ACPI
-> > [   45.361012] PM: noirq resume of devices complete after 133.354 msecs
-> > [   45.361292] PM: early resume of devices complete after 0.233 msecs
-> > [   45.361680] iwlwifi 0000:05:00.0: RF_KILL bit toggled to enable radio.
-> > [   45.361731] pcieport 0000:00:1c.1: System wakeup disabled by ACPI
-> > [   45.470912] snd_hda_intel 0000:00:1b.0: irq 48 for MSI/MSI-X
-> > [   45.700502] ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-> > [   45.700533] ata5: SATA link down (SStatus 0 SControl 300)
-> > [   45.701385] ata1.00: configured for UDMA/133
-> > [   45.701503] sd 0:0:0:0: [sda] Starting disk
-> > [   45.707139] ata2: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
-> > [   45.872011] ata2.00: configured for UDMA/100
-> > [   46.791141] PM: resume of devices complete after 1430.658 msecs
-> > [   46.791560] PM: Finishing wakeup.
-> > [   46.791565] acpiphp_glue: hotplug_event: Bus check notify on \_SB_.PCI0.RP03
-> > [   46.791568] acpiphp_glue: hotplug_event: re-enumerating slots under \_SB_.PCI0.RP03
-> > [   46.791642] acpiphp_glue: No more new devices on this bus.
-> > [   46.791571] Restarting tasks ... done.
-> > [   46.793204] video LNXVIDEO:00: Restoring backlight state
-> > [   46.793211] video LNXVIDEO:01: Restoring backlight state
-> > [   47.246425] ACPI: \_SB_.AC__: ACPI_NOTIFY_BUS_CHECK event: unsupported
-> > [   47.251540] jme 0000:04:00.5: irq 50 for MSI/MSI-X
-> > [   47.276949] jme 0000:04:00.5 eth0: Link is down
+> Remove hard-coded values for:
+>  - Fast Charge current,
+>  - End Of Charge current,
+>  - Fast Charge timer,
+>  - Overvoltage Protection Threshold,
+>  - Battery Constant Voltage,
+> and use DTS to configure them. This allows using the max14577 charger
+> driver with different batteries.
 > 
-> I'm wondering why these two messages are printed here.
+> Now the charger driver requires valid configuration data from DTS. In
+> case of wrong configuration data it fails during probe. Patch adds
+> of_compatible to the charger mfd cell in MFD driver core.
 > 
-> > [   47.276974] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
-> > [   47.278423] iwlwifi 0000:05:00.0: L1 Enabled; Disabling L0S
-> > [   47.285758] iwlwifi 0000:05:00.0: Radio type=0x1-0x3-0x1
-> > [   47.393492] acpiphp_glue: hotplug_event: Bus check notify on \_SB_.PCI0.RP01
-> > [   47.393495] acpiphp_glue: hotplug_event: re-enumerating slots under \_SB_.PCI0.RP01
-> > [   47.393517] acpiphp_glue: No more new devices on this bus.
-> > [   47.393525] acpiphp_glue: hotplug_event: Bus check notify on \_SB_.PCI0.RP02
-> > [   47.393527] acpiphp_glue: hotplug_event: re-enumerating slots under \_SB_.PCI0.RP02
-> 
-> Anyway, the message you've added to the patch is not printed for this bridge,
-> so the condition is not satified for its bus.  We need to find out why it isn't
-> satisfied and what exactly happens to the devices that appear to go away.
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+> Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+> Cc: David Woodhouse <dwmw2@infradead.org>
+> Cc: Jenny Tc <jenny.tc@intel.com>
+> ---
+>  drivers/mfd/max14577.c               |    5 +-
+>  drivers/power/max14577_charger.c     |  234 +++++++++++++++++++++++++++++-----
+>  include/linux/mfd/max14577-private.h |   10 ++
+>  include/linux/mfd/max14577.h         |    8 ++
+>  4 files changed, 227 insertions(+), 30 deletions(-)
 
-One thing, I noticed when checking the DSDT:
+<snip>
 
-	Device (J380)
-	{
-		Method (_STA, 0, NotSerialized)  // _STA: Status
-		{
-			If (LNotEqual (DVID, 0xFFFFFFFF))
-			{
-				Return (0x0A)
-			}
-			Else
-			{
-				Return (Zero)
-			}
-		}
+> diff --git a/include/linux/mfd/max14577-private.h b/include/linux/mfd/max14577-private.h
+> index a8cd7de3526a..50cf70bec4d4 100644
+> --- a/include/linux/mfd/max14577-private.h
+> +++ b/include/linux/mfd/max14577-private.h
+> @@ -269,6 +269,16 @@ enum maxim_muic_charger_type {
+>  #define MAX77836_CHARGER_CURRENT_LIMIT_HIGH_STEP	 25000U
+>  #define MAX77836_CHARGER_CURRENT_LIMIT_MAX		475000U
+>  
+> +/* MAX14577 charger End-Of-Charge current limits (as in MAXIM_CHGCTRL5 register), uA */
 
-_STA() returns 0x0A instead of 0x0F. Could there be something missing in
-the ACPI hotplug code that overlooks this and removes the device on resume?
+Too many chars. Didn't checkpatch.pl complain about this?
+
+> +#define MAX14577_CHARGER_EOC_CURRENT_LIMIT_MIN		50000U
+> +#define MAX14577_CHARGER_EOC_CURRENT_LIMIT_STEP		10000U
+> +#define MAX14577_CHARGER_EOC_CURRENT_LIMIT_MAX		200000U
+> +
+> +/* MAX14577/MAX77836 Battery Constant Voltage (as in MAXIM_CHGCTRL3
+> register), uV */
+
+Same here
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
