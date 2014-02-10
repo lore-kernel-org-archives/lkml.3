@@ -1,144 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752711AbaBJRJm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 12:09:42 -0500
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:43043 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752180AbaBJRJk convert rfc822-to-8bit (ORCPT
+	id S1752772AbaBJRJz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 12:09:55 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:64677 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752180AbaBJRJq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 12:09:40 -0500
-From: Florian Fainelli <f.fainelli@gmail.com>
-To: Gerlando Falauto <gerlando.falauto@keymile.com>
-Cc: Matthew Garrett <matthew.garrett@nebula.com>,
-        netdev <netdev@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>
-Subject: Re: [PATCH V3] net/dt: Add support for overriding phy configuration from device tree
-Date: Mon, 10 Feb 2014 09:09:36 -0800
-Message-ID: <29007785.iYrLORbRAN@lenovo>
-User-Agent: KMail/4.11.3 (Linux/3.11.0-15-generic; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <52F8FB03.6040606@keymile.com>
-References: <7510122.cayuQ6qt8r@wuerfel> <CAGVrzcZ4TFd=9KP+aoG47QbmqDJ1i23WBcEWDbzNRUfGmPvZHQ@mail.gmail.com> <52F8FB03.6040606@keymile.com>
+	Mon, 10 Feb 2014 12:09:46 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+In-Reply-To: <CAOMwXhNr27fwwhr=Fb996b1DtSb0R6xiasMY2PsbTwVNe2qgOQ@mail.gmail.com>
+References: <1392045953-26596-1-git-send-email-lpapp@kde.org>
+	<20140210160842.GB26997@lee--X1>
+	<20140210173811.04ba5964@endymion.delvare>
+	<CAOMwXhNr27fwwhr=Fb996b1DtSb0R6xiasMY2PsbTwVNe2qgOQ@mail.gmail.com>
+Date: Mon, 10 Feb 2014 17:09:45 +0000
+X-Google-Sender-Auth: UyRWbUNhftq4D4XC9YrEnNfiLo8
+Message-ID: <CAOMwXhP6F0OL3DyCmrhMf0_eQG0+5YzzRLKDycNEigWwkWs8fg@mail.gmail.com>
+Subject: Re: [lm-sensors] [PATCH] hwmon: (max6650) Rename the device ids to
+ contain the hwmon suffix
+From: Laszlo Papp <lpapp@kde.org>
+To: Jean Delvare <jdelvare@suse.de>
+Cc: Lee Jones <lee.jones@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
+        Guenter Roeck <linux@roeck-us.net>, lm-sensors@lm-sensors.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gerlando,
+On Mon, Feb 10, 2014 at 5:06 PM, Laszlo Papp <lpapp@kde.org> wrote:
+> On Mon, Feb 10, 2014 at 4:38 PM, Jean Delvare <jdelvare@suse.de> wrote:
+>> Hi Lee, Laszlo,
+>>
+>> On Mon, 10 Feb 2014 16:08:42 +0000, Lee Jones wrote:
+>>> > In the preparation of creating an mfd driver and then refactor this one into a
+>>> > platform driver in order to add some pinctrl functionality to the chip, it is
+>>> > necessary to start the series with this change so that the mfd driver can refer
+>>> > to the proper name in the subsequent change without making changes in more than
+>>> > one driver later.
+>>> >
+>>> > This was a request from Lee Jones, the MFD subsystem maintainer.
+>>> >
+>>> > Signed-off-by: Laszlo Papp <lpapp@kde.org>
+>>> > ---
+>>> >  drivers/hwmon/max6650.c | 4 ++--
+>>> >  1 file changed, 2 insertions(+), 2 deletions(-)
+>>> >
+>>> > diff --git a/drivers/hwmon/max6650.c b/drivers/hwmon/max6650.c
+>>> > index 0cafc39..3c36edc 100644
+>>> > --- a/drivers/hwmon/max6650.c
+>>> > +++ b/drivers/hwmon/max6650.c
+>>> > @@ -116,8 +116,8 @@ static struct max6650_data *max6650_update_device(struct device *dev);
+>>> >   */
+>>> >
+>>> >  static const struct i2c_device_id max6650_id[] = {
+>>> > -   { "max6650", 1 },
+>>> > -   { "max6651", 4 },
+>>> > +   { "max6650-hwmon", 1 },
+>>> > +   { "max6651-hwmon", 4 },
+>>
+>> No, this is not acceptable, sorry. This will change the name of the
+>> hwmon device as seen from user-space, breaking any configuration file
+>> referring to it. Additionally, dashes are explicitly forbidden in hwmon
+>> device names. And lastly this will break any explicit instantiation of
+>> theses devices (which is the only way, as the driver doesn't support
+>> device auto-detection), be it in the kernel itself or from user-space.
+>>
+>> The change doesn't make sense anyway. If you move to the MFD framework,
+>> the core driver will be an I2C driver binding to the I2C device, and it
+>> will spawn the logical devices, presumably in the form of platform
+>> devices. That's what the current max6650 driver would have to bind to.
+>> Just renaming the device won't work, you also need to change the type.
+>
+> Hmm, this paragraph seems to indicate that you have not seen my
+> previous patch set. I tried to summarize in this commit message that
+> the type in this subdriver would need to change, yes.
+>
+> I am fine with not renaming, but appending if such a thing is
+> possible. What does not make sense to me is acquiring a "global"
+> max665x name in a sub-device driver. The children have to be
+> distinguished somehow!
+>
+>> If you want to turn this into an MFD driver, I believe you must first
+>> convert the hwmon part to register using
+>> devm_hwmon_device_register_with_groups(). This will dissociate the i2c
+>> device name from the hwmon device name and create a clean name-space
+>> for each function. Guenter, maybe you had a plan to do so already
+>> anyway?
+>>
+>> That being said, going with MFD in this case seems quite overkill to
+>> me. MFD makes a lot of sense when each function has its own resources.
+>> As this isn't the case here, a single driver registering both an hwmon
+>> interface and a pinctrl interface would seem sufficient to me. But I
+>> think Guenter already discussed this in the past so I'll let him
+>> continue and decide.
+>
+> Exactly. This had been overdiscussed. I took my personal preference
+> without any technical drawback. I prefer clean separation just like
+> several other mfd drivers are doing, really.
+>
+> Tell me this is unacceptable, and I will stop helping with getting the
+> required functionality into the kernel. Frankly, I am getting tired of
+> having worked on it for a few months now, and we are still at
+> discussing personal preferences rather than getting features in ...
 
-Le lundi 10 février 2014, 17:14:59 Gerlando Falauto a écrit :
-> Hi,
-> 
-> I'm currently trying to fix an issue for which this patch provides a
-> partial solution, so apologies in advance for jumping into the
-> discussion for my own purposes...
-> 
-> On 02/04/2014 09:39 PM, Florian Fainelli wrote:> 2014-01-17 Matthew
-> 
-> Garrett <matthew.garrett@nebula.com>:
->  >> Some hardware may be broken in interesting and board-specific ways, such
->  >> that various bits of functionality don't work. This patch provides a
->  >> mechanism for overriding mii registers during init based on the
-> 
-> contents of
-> 
->  >> the device tree data, allowing board-specific fixups without having to
->  >> pollute generic code.
->  > 
->  > It would be good to explain exactly how your hardware is broken
->  > exactly. I really do not think that such a fine-grained setting where
->  > you could disable, e.g: 100BaseT_Full, but allow 100BaseT_Half to
->  > remain usable makes that much sense. In general, Gigabit might be
->  > badly broken, but 100 and 10Mbits/sec should work fine. How about the
->  > MASTER-SLAVE bit, is overriding it really required?
->  > 
->  > Is not a PHY fixup registered for a specific OUI the solution you are
->  > looking for? I am also concerned that this creates PHY troubleshooting
->  > issues much harder to debug than before as we may have no idea about
->  > how much information has been put in Device Tree to override that.
->  > 
->  > Finally, how about making this more general just like the BCM87xx PHY
->  > driver, which is supplied value/reg pairs directly? There are 16
->  > common MII registers, and 16 others for vendor specific registers,
->  > this is just covering for about 2% of the possible changes.
-> 
-> Good point. That would easily help me with my current issue, which
-> requires autoneg to be disabled to begin with (by clearing BMCR_ANENABLE
-> from register 0).
+Moreover, I really do not see how this is an overkill. In my opinion,
+quite the opposite, putting MFD functionality for different areas into
+one particular area is more than peculiar.
 
-Is there a point in time (e.g: after some specific initial configuration has 
-been made) where BMCR_ANENABLE can be used?
-
-> This would not however fix it entirely (I tried a quick hardwired
-> implementation), as the whole PHY machinery would not take that into
-> account and would re-enable autoneg anyway.
-> I also tried changing the patch so that phydev->support gets updated
-
-There are multiple things that you could try doing here:
-
-- override the PHY state machine in your read_status callback to make sure 
-that you always set phydev->autoneg set to AUTONEG_ENABLE
-
-- clear the SUPPORTED_Autoneg bits from phydev->supported right after PHY 
-registration and before the call to phy_start()
-
-- set the PHY_HAS_MAGICANEG bit in your PHY driver flag
-
-> 
-> (instead of phydev->advertising):
->  >> +               if (!of_property_read_u32(np, override->prop, &tmp)) {
->  >> +                       if (tmp) {
->  >> +                               *val |= override->value;
->  >> +                               phydev->advertising |=
-> 
-> override->supported;
-> 
->  >> +                       } else {
->  >> +                               phydev->advertising &=
-> 
-> ~(override->supported);
-> 
->  >> +                       }
->  >> +
->  >> +                       *mask |= override->value;
-> 
-> What I find weird is that the only way phydev->autoneg could ever be set
-> to disabled is from here (phy.c):
-> 
-> static void phy_sanitize_settings(struct phy_device *phydev)
-> {
-> 	u32 features = phydev->supported;
-> 	int idx;
-> 
-> 	/* Sanitize settings based on PHY capabilities */
-> 	if ((features & SUPPORTED_Autoneg) == 0)
-> 		phydev->autoneg = AUTONEG_DISABLE;
-> 
-> which is in turn only called when phydev->autoneg is set to
-> AUTONEG_DISABLE to begin with:
-> 
-> int phy_start_aneg(struct phy_device *phydev)
-> {
-> 	int err;
-> 
-> 	mutex_lock(&phydev->lock);
-> 
-> 	if (AUTONEG_DISABLE == phydev->autoneg)
-> 		phy_sanitize_settings(phydev);
-> 
-> So could someone please help me figure out what I'm missing here?
-
-At first glance it looks like the PHY driver should be reading the phydev-
->autoneg value when the PHY driver config_aneg() callback is called to be 
-allowed to set the forced speed and settings.
-
-The way phy_sanitize_settings() is coded does not make it return a mask of 
-features, but only the forced supported speed and duplex. Then when the link 
-is forced but we are having some issues getting a link status, libphy tries 
-lower speeds and this function is used again to provide the next speed/duplex 
-pair to try.
--- 
-Florian
+Even more, Guenter has been included in the long
+gpio/pinctrl/mfd/hwmon patchset discussions. Could you please make up
+your mind finally? I am sorry if this sounds harsh, but I hope you
+understand my position. Trying to help this stuff moving forward, and
+even after months of discussion we are still hitting the same
+opinionated gates.
