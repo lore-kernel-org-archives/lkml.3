@@ -1,76 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753385AbaBJUvK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 15:51:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58533 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752910AbaBJUvF (ORCPT
+	id S1753199AbaBJUzF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 15:55:05 -0500
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:62879 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752367AbaBJUzD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 15:51:05 -0500
-Date: Mon, 10 Feb 2014 12:51:02 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Rik van Riel <riel@redhat.com>, Dave Hansen <dave@sr71.net>,
-        Michal Hocko <mhocko@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] drop_caches: add some documentation and info message
-Message-Id: <20140210125102.86de67241664da038676af7d@linux-foundation.org>
-In-Reply-To: <20140207212601.GI6963@cmpxchg.org>
-References: <1391794851-11412-1-git-send-email-hannes@cmpxchg.org>
-	<52F51E19.9000406@redhat.com>
-	<20140207181332.GG6963@cmpxchg.org>
-	<20140207123129.84f9fb0aaf32f0e09c78851a@linux-foundation.org>
-	<20140207212601.GI6963@cmpxchg.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Mon, 10 Feb 2014 15:55:03 -0500
+Subject: Re: OMAP: clock DT conversion issues with omap36xx
+From: Christoph Fritz <chf.fritz@googlemail.com>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Tero Kristo <t-kristo@ti.com>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, pali.rohar@gmail.com, pavel@ucw.cz,
+        Nishanth Menon <nm@ti.com>
+In-Reply-To: <52F4E45B.1020107@ti.com>
+References: <52E697C0.6000202@gmail.com> <1390848104.4936.62.camel@mars>
+	 <52E772A3.4090401@ti.com> <1390901735.2963.8.camel@lovely>
+	 <52E77D03.8090001@ti.com>  <52E7B361.2030601@ti.com>
+	 <1390928565.4904.88.camel@mars> <1390994505.5023.32.camel@mars>
+	 <52F10C3D.7000507@ti.com> <1391767923.4937.110.camel@mars>
+	 <52F4E45B.1020107@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 10 Feb 2014 21:54:56 +0100
+Message-ID: <1392065696.4898.163.camel@mars>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 7 Feb 2014 16:26:01 -0500 Johannes Weiner <hannes@cmpxchg.org> wrote:
-
-> On Fri, Feb 07, 2014 at 12:31:29PM -0800, Andrew Morton wrote:
-> > On Fri, 7 Feb 2014 13:13:32 -0500 Johannes Weiner <hannes@cmpxchg.org> wrote:
-> > 
-> > > @@ -63,6 +64,9 @@ int drop_caches_sysctl_handler(ctl_table *table, int write,
-> > >  			iterate_supers(drop_pagecache_sb, NULL);
-> > >  		if (sysctl_drop_caches & 2)
-> > >  			drop_slab();
-> > > +		printk_ratelimited(KERN_INFO "%s (%d): dropped kernel caches: %d\n",
-> > > +				   current->comm, task_pid_nr(current),
-> > > +				   sysctl_drop_caches);
-> > >  	}
-> > >  	return 0;
-> > >  }
-> > 
-> > My concern with this is that there may be people whose
-> > other-party-provided software uses drop_caches.  Their machines will
-> > now sit there emitting log messages and there's nothing they can do
-> > about it, apart from whining at their vendors.
+On Fri, 2014-02-07 at 15:49 +0200, Tomi Valkeinen wrote:
+> On 07/02/14 12:12, Christoph Fritz wrote:
 > 
-> Ironically, we have a customer that is complaining that we currently
-> do not log these events, and they want to know who in their stack is
-> being idiotic.
-
-Right.  But if we release a kernel which goes blah on every write to
-drop_caches, that customer has logs full of blahs which they are
-now totally uninterested in.
-
-> > We could do something like this?
+> > Yes, your patch fixes the issues for sys_clkout2. Thanks! If you want,
+> > you can add my:
+> > Tested-by: Christoph Fritz <chf.fritz@googlemail.com>
+> > 
+> > Below is my clock fix for dss:
+> > 
+> > From b90a62128068e1b6b0ba2a11c5cc0c8e587cf301 Mon Sep 17 00:00:00 2001
+> > From: Christoph Fritz <chf.fritz@googlemail.com>
+> > Date: Fri, 7 Feb 2014 10:51:15 +0100
+> > Subject: [PATCH] ARM: dts: omap36xx: fix dpll4_m4_ck tree
+> > 
+> > OMAP36xx has different hardware implementation for the dpll4_m4_ck tree
+> > compared to other OMAP3 variants. Reflect this properly in the dts file.
 > 
-> They can already change the log level.
+> I rebased the DSS DT branch on top of v3.14-rc1, and I'm trying to get
+> beagle-xM working. Pinmuxing was wrong, but after fixing that, the
+> clk_set_rate for dss fclk failed. I applied Tero's and your patches, but
+> now when starting omapdss I see:
+> 
+> [   19.704193] omap clock: module associated with clock
+> dss1_alwon_fck_3430es2 didn't enable in 1000
+> 00 tries
+> 
+> I wonder if I'm still missing some patch?
 
-Suppressing unrelated things...
+Is beagle-xM using DSI? Because here the LILLY-A83X board is not. The
+clock registers are all fine now as before the dt clock conversion
+patches.
 
->  The below will suppress
-> valuable debugging information in a way that still results in
-> inconspicuous looking syslog excerpts, which somewhat undermines the
-> original motivation for this change.
+I suppose you are using current linus tree. I tested 'next' but didn't
+get DSS working. I guessed that it would have something to do with early
+DSS DT integration issues.
 
-Yes, somewhat.  It is a compromise. You can see my concern here?
+I'll rebase my current dt board support patchset for LILLY-A83X to
+current linus tree and investigate DSS further.
 
+ Thanks
+  -- Christoph
 
