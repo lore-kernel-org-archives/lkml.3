@@ -1,99 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752470AbaBJJZT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 04:25:19 -0500
-Received: from mga11.intel.com ([192.55.52.93]:47975 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751428AbaBJJZP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 04:25:15 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,816,1384329600"; 
-   d="scan'208";a="472654238"
-Date: Mon, 10 Feb 2014 17:25:00 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: David Rientjes <rientjes@google.com>,
-        Filipe David Borba Manana <fdmanana@gmail.com>,
-        Chris Mason <clm@fb.com>, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [btrfs] BUG: unable to handle kernel NULL pointer dereference at
- 0000000000000038
-Message-ID: <20140210092500.GB7864@localhost>
-References: <20140207023801.GC11051@localhost>
- <alpine.DEB.2.02.1402070213020.22146@chino.kir.corp.google.com>
- <20140207121038.GA1690@localhost>
- <alpine.DEB.2.02.1402071307590.4212@chino.kir.corp.google.com>
- <20140208201037.GC10975@htj.dyndns.org>
+	id S1752516AbaBJJZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 04:25:57 -0500
+Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:38528 "EHLO
+	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751123AbaBJJZy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 04:25:54 -0500
+From: Mohit Kumar <mohit.kumar@st.com>
+To: <arnd@arndb.de>
+Cc: Pratyush Anand <pratyush.anand@st.com>,
+        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
+        <linux-ide@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        <spear-devel@list.st.com>, <linux-kernel@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>
+Subject: [PATCH V5 0/8]PCI:Add SPEAr13xx PCie support
+Date: Mon, 10 Feb 2014 14:21:51 +0530
+Message-ID: <cover.1391871170.git.pratyush.anand@st.com>
+X-Mailer: git-send-email 1.7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140208201037.GC10975@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 08, 2014 at 03:10:37PM -0500, Tejun Heo wrote:
-> Hello, David, Fengguang, Chris.
-> 
-> On Fri, Feb 07, 2014 at 01:13:06PM -0800, David Rientjes wrote:
-> > On Fri, 7 Feb 2014, Fengguang Wu wrote:
-> > 
-> > > On Fri, Feb 07, 2014 at 02:13:59AM -0800, David Rientjes wrote:
-> > > > On Fri, 7 Feb 2014, Fengguang Wu wrote:
-> > > > 
-> > > > > [    1.625020] BTRFS: selftest: Running btrfs_split_item tests
-> > > > > [    1.627004] BTRFS: selftest: Running find delalloc tests
-> > > > > [    2.289182] tsc: Refined TSC clocksource calibration: 2299.967 MHz
-> > > > > [  292.084537] kthreadd invoked oom-killer: gfp_mask=0x3000d0, order=1, oom_score_adj=0
-> > > > > [  292.086439] kthreadd cpuset=
-> > > > > [  292.087072] BUG: unable to handle kernel NULL pointer dereference at 0000000000000038
-> > > > > [  292.087372] IP: [<ffffffff812119de>] pr_cont_kernfs_name+0x1b/0x6c
-> > > > 
-> > > > This looks like a problem with the cpuset cgroup name, are you sure this 
-> > > > isn't related to the removal of cgroup->name?
-> > > 
-> > > It looks not related to patch "cgroup: remove cgroup->name", because
-> > > that patch lies in the cgroup tree and not contained in output of "git log BAD_COMMIT".
+From: Pratyush Anand <pratyush.anand@st.com>
 
-Sorry I was wrong here. I find that the above dmesg is for commit
-4830363 which is a merge HEAD that contains the cgroup code.
+First three patches are improvement and fixes for SPEAr13xx support.
+Patches 4-6 add miphy40lp skelten driver and support for spear1310/40 miphy
+wrapper. Patch 7 add support for SPEAr13xx PCIe.
 
-The dmesg for commit 878a876b2e1 ("Merge branch 'for-linus' of
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs")
-looks different, which hangs after the tsc line:
+These pathes are tested with linux-3.14-rc1 with following patch on the top of
+it:
+Author: Balaji T K <balajitk@ti.com>
+Date:   Mon Jan 20 16:41:27 2014 +0200
 
-[    2.428110] Btrfs loaded, assert=on, integrity-checker=on
-[    2.429469] BTRFS: selftest: Running btrfs free space cache tests
-[    2.430874] BTRFS: selftest: Running extent only tests
-[    2.432135] BTRFS: selftest: Running bitmap only tests
-[    2.433359] BTRFS: selftest: Running bitmap and extent tests
-[    2.434675] BTRFS: selftest: Free space cache tests finished
-[    2.435959] BTRFS: selftest: Running extent buffer operation tests
-[    2.437350] BTRFS: selftest: Running btrfs_split_item tests
-[    2.438843] BTRFS: selftest: Running find delalloc tests
-[    3.158351] tsc: Refined TSC clocksource calibration: 2666.596 MHz
+    ata: ahci_platform: Manage SATA PHY
+
+Tested with SPEAr1310 evaluation board:
+	- INTEL PRO 100/100 EP card
+	- USB xhci gen2 card
+ 	- Above cards connected through LeCROY PTC switch
+
+Modifications for SATA are tested with SPEAr1340-evb board
+
+Changes since v4:
+- Uses per device function pointers passed from .data field to
+  the of_device_id instead of of_device_is_compatible.
+- Incorporated other minor comments from v4
+
+Changes since v3:
+- Phy driver renamed to phy-miphy40lp
+- ahci phy hook patch used as suggested by Arnd
+- Incorporated other minor comments from v3
+
+Changes since v2:
+- Incorporated comments to move SPEAr13xx PCIe and SATA phy specific routines to
+  the phy framework
+- Modify ahci driver to include phy hooks
+- phy-core driver modifications for subsys_initcall() 
+ 
+Changes since v1:
+- Few patches of the series are already accepted and applied to mainline e.g.
+ pcie designware driver improvements,fixes for IO translation bug, PCIe dw
+ driver maintainer. So dropped these from v2.
+- Incorporated comment to move the common/reset PCIe code to the seperate driver
+- PCIe and SATA share common PHY configuration registers, so move SATA
+ platform code to the system config driver
+Fourth patch is improves pcie designware driver and fixes the IO
+translation bug. IO translation bug fix leads to the working of PCIe EP devices
+connected to RC through switch.
+
+PCIe driver support for SPEAr1310/40 platform board is added.
+
+These patches are tested with SPEAr1310 evaluation board:
+	- INTEL PRO 100/100 EP card
+	- USB xhci gen2 card
+ 	- Above cards connected through LeCROY PTC switch
+
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: devicetree@vger.kernel.org
+Cc: linux-ide@vger.kernel.org
+Cc: linux-pci@vger.kernel.org
+Cc: spear-devel@list.st.com
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-pm@vger.kernel.org
 
 
-> > It's dying on pr_cont_kernfs_name which is some tree that has "kernfs: 
-> > implement kernfs_get_parent(), kernfs_name/path() and friends", which is 
-> > not in linux-next, and is obviously printing the cpuset cgroup name.
-> > 
-> > It doesn't look like it has anything at all to do with btrfs or why they 
-> > would care about this failure.
-> 
-> Yeah, this is from a patch in cgroup/review-post-kernfs-conversion
-> branch which updates cgroup to use pr_cont_kernfs_name().  I forget
-> that cgrp->kn is NULL for the dummy_root's top cgroup and thus it ends
-> up calling the kernfs functions with NULL kn and thus the oops.  I
-> posted an updated patch and the git branch has been updated.
-> 
->  http://lkml.kernel.org/g/20140208200640.GB10975@htj.dyndns.org
-> 
-> So, nothing to do with btrfs and it looks like somehow the test
-> appratus is mixing up branches?
+Mohit Kumar (2):
+  SPEAr13xx: defconfig: Update
+  MAINTAINERS: Add ST SPEAr13xx PCIe driver maintainer
 
-Yes - I may do random merges and boot test the resulted kernels.
+Pratyush Anand (6):
+  clk: SPEAr13xx: Fix pcie clock name
+  SPEAr13xx: Fix static mapping table
+  phy: st-miphy-40lp: Add skeleton driver
+  SPEAr13xx: Fixup: Move SPEAr1340 SATA platform code to phy driver
+  phy: st-miphy-40lp: Add SPEAr1310 and SPEAr1340 PCIe phy support
+  pcie: SPEAr13xx: Add designware pcie support
 
-Thanks,
-Fengguang
+ .../devicetree/bindings/arm/spear-misc.txt         |   4 +
+ .../devicetree/bindings/pci/spear13xx-pcie.txt     |   7 +
+ .../devicetree/bindings/phy/st-miphy40lp.txt       |  12 +
+ MAINTAINERS                                        |   6 +
+ arch/arm/boot/dts/spear1310-evb.dts                |   4 +
+ arch/arm/boot/dts/spear1310.dtsi                   |  96 +++-
+ arch/arm/boot/dts/spear1340-evb.dts                |   4 +
+ arch/arm/boot/dts/spear1340.dtsi                   |  32 +-
+ arch/arm/boot/dts/spear13xx.dtsi                   |  10 +-
+ arch/arm/configs/spear13xx_defconfig               |  15 +
+ arch/arm/mach-spear/Kconfig                        |   3 +
+ arch/arm/mach-spear/include/mach/spear.h           |   4 +-
+ arch/arm/mach-spear/spear1340.c                    | 127 +----
+ arch/arm/mach-spear/spear13xx.c                    |   2 +-
+ drivers/clk/spear/spear1310_clock.c                |   6 +-
+ drivers/clk/spear/spear1340_clock.c                |   2 +-
+ drivers/pci/host/Kconfig                           |   5 +
+ drivers/pci/host/Makefile                          |   1 +
+ drivers/pci/host/pcie-spear13xx.c                  | 414 ++++++++++++++++
+ drivers/phy/Kconfig                                |   6 +
+ drivers/phy/Makefile                               |   1 +
+ drivers/phy/phy-miphy40lp.c                        | 538 +++++++++++++++++++++
+ 22 files changed, 1160 insertions(+), 139 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/spear-misc.txt
+ create mode 100644 Documentation/devicetree/bindings/pci/spear13xx-pcie.txt
+ create mode 100644 Documentation/devicetree/bindings/phy/st-miphy40lp.txt
+ create mode 100644 drivers/pci/host/pcie-spear13xx.c
+ create mode 100644 drivers/phy/phy-miphy40lp.c
+
+-- 
+1.8.1.2
+
