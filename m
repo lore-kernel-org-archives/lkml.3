@@ -1,55 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752765AbaBJQhB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 11:37:01 -0500
-Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:48611 "EHLO
-	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752540AbaBJQg5 (ORCPT
+	id S1752851AbaBJQhT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 11:37:19 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:60192 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751920AbaBJQhP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 11:36:57 -0500
-Message-ID: <52F8FFF6.80400@st.com>
-Date: Mon, 10 Feb 2014 17:36:06 +0100
-From: Fabrice Gasnier <fabrice.gasnier@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Dave Martin <Dave.Martin@arm.com>
-Cc: <jonathan.austin@arm.com>, <nico@linaro.org>, <marc.zyngier@arm.com>,
-        <catalin.marinas@arm.com>, <will.deacon@arm.com>,
-        <linux-kernel@vger.kernel.org>, <vgupta@synopsys.com>,
-        <ben.dooks@codethink.co.uk>, <u.kleine-koenig@pengutronix.de>,
-        <sboyd@codeaurora.org>, <linux-arm-kernel@lists.infradead.org>,
-        <maxime.coquelin@st.com>
+	Mon, 10 Feb 2014 11:37:15 -0500
+Date: Mon, 10 Feb 2014 16:37:00 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Dave Martin <Dave.Martin@arm.com>
+Cc: Jonathan Austin <Jonathan.Austin@arm.com>,
+        "nico@linaro.org" <nico@linaro.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
+        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <will.deacon@arm.com>,
+        "ben.dooks@codethink.co.uk" <ben.dooks@codethink.co.uk>,
+        "vgupta@synopsys.com" <vgupta@synopsys.com>,
+        Fabrice Gasnier <fabrice.gasnier@st.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "maxime.coquelin@st.com" <maxime.coquelin@st.com>
 Subject: Re: [RFC PATCH] ARM: Add imprecise abort enable/disable macro
-References: <1391789955-26927-1-git-send-email-fabrice.gasnier@st.com> <1391789955-26927-2-git-send-email-fabrice.gasnier@st.com> <20140210141634.GA2794@e103592.cambridge.arm.com> <52F8E5E2.30805@st.com> <20140210151247.GD2794@e103592.cambridge.arm.com> <20140210152452.GA26684@n2100.arm.linux.org.uk>
-In-Reply-To: <20140210152452.GA26684@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.201.23.81]
+Message-ID: <20140210163700.GD26684@n2100.arm.linux.org.uk>
+References: <1391789955-26927-1-git-send-email-fabrice.gasnier@st.com> <1391789955-26927-2-git-send-email-fabrice.gasnier@st.com> <20140207170903.GT5976@mudshark.cambridge.arm.com> <52F892C8.80508@st.com> <20140210111710.GC17766@mudshark.cambridge.arm.com> <20140210135659.GU26684@n2100.arm.linux.org.uk> <20140210144228.GC2794@e103592.cambridge.arm.com> <20140210151934.GZ26684@n2100.arm.linux.org.uk> <20140210162822.GF2794@e103592.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140210162822.GF2794@e103592.cambridge.arm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Feb 10, 2014 at 04:28:22PM +0000, Dave Martin wrote:
+> On Mon, Feb 10, 2014 at 03:19:34PM +0000, Russell King - ARM Linux wrote:
+> > On Mon, Feb 10, 2014 at 02:42:28PM +0000, Dave Martin wrote:
+> > > Should we require CPSR.A to me masked in Booting, for all CPUs that have
+> > > it?
+> > 
+> > If it's not masked at boot, then there can't be an imprecise exception
+> > pending.
+> 
+> Couldn't there still be a dangling abort condition triggered by the
+> bootloader, which which doesn't raise the abort pin until after we
+> entered the kernel?
 
-On 02/10/2014 04:24 PM, Russell King - ARM Linux wrote:
-> On Mon, Feb 10, 2014 at 03:12:47PM +0000, Dave Martin wrote:
->> Firstly, blindly adding 4 to PC is obviouly not right, partly because we
->> might be running an unrelated thread by the time the abort fires, and
->> also because the affected instruction might not be 4 bytes in size in a
->> Thumb kernel.
-> Exactly.  We ended up on some platforms having special accessors for PCI
-> where we included a number of 'mov r0, r0' instructions after the accessor
-> so we could properly cope with them - but this required knowledge that
-> we were going to only receive an imprecise abort from these accessors
-> and only for a few cycles after the instruction.
->
-> However, that's not true with modern architectures.  The point they're
-> received will _not_ be the load/store which resulted in the abort, and
-> in the case of a write, they could be many hundreds of cycles later,
-> especially if the write has been buffered.
-What about putting a memory barrier after a load/store ?
-CPU should wait for the operation to complete right ?
->
-> So adding four to the PC is definitely a very /bad/ thing to do.
->
+True, but the decompressor does disable them (see safe_svcmode_maskall),
+so any raised abort is likely to hit the boot loader's vectors at that
+time.  They remain masked into the kernel from that point.
 
+If you're not using the decompressor then the A bit will be left as-is.
+
+Given that we've not yet had any failures, I'm inclined to just let the
+status-quo be for the kernel entry - if it does cause problems then it's
+clear that the right solution is that the A bit must be disabled.
+
+-- 
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
