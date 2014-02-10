@@ -1,163 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752865AbaBJCtq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 21:49:46 -0500
-Received: from mga02.intel.com ([134.134.136.20]:7303 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752400AbaBJCt1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 21:49:27 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,815,1384329600"; 
-   d="scan'208";a="472511436"
-Message-ID: <52F83E34.8030305@intel.com>
-Date: Mon, 10 Feb 2014 10:49:24 +0800
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org
-CC: peterz@infradead.org, mingo@elte.hu, acme@redhat.com, ak@linux.intel.com
-Subject: Re: [PATCH v1 01/10] perf/x86/uncore: fix initialization of cpumask
-References: <1391432142-18723-1-git-send-email-eranian@google.com> <1391432142-18723-2-git-send-email-eranian@google.com>
-In-Reply-To: <1391432142-18723-2-git-send-email-eranian@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752899AbaBJCuE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 21:50:04 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:54735 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752108AbaBJCra (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Feb 2014 21:47:30 -0500
+X-AuditID: 9c93017e-b7cf9ae000004b4b-ac-52f83dbf5b2f
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>
+Subject: [PATCH 1/8] perf tools: Count periods of filtered entries separately
+Date: Mon, 10 Feb 2014 11:47:18 +0900
+Message-Id: <1392000446-14744-2-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1392000446-14744-1-git-send-email-namhyung@kernel.org>
+References: <1392000446-14744-1-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-why not something like below. I think it's simpler.
+Currently if a sample was filtered by command line option, it just
+dropped.  But this affects final output in that the percentage can be
+different since the filtered entries were not included to the total.
 
+But user might want to see the original percentages when filter
+applied so add new total_filtered_period filed to hists->stats in
+order to be controlled by user later.  It doesn't change the current
+behavior yet.
+
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index 29c2487..169ef4a 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -3799,9 +3799,6 @@ static int __init uncore_cpu_init(void)
- 			ivt_uncore_cbox.num_boxes = max_cores;
- 		msr_uncores = ivt_msr_uncores;
- 		break;
--
--	default:
--		return 0;
+ tools/perf/builtin-report.c |  2 +-
+ tools/perf/util/event.c     | 22 ++++++++++------------
+ tools/perf/util/hist.c      | 10 ++--------
+ tools/perf/util/hist.h      | 10 ++++++++++
+ tools/perf/util/symbol.h    |  2 +-
+ 5 files changed, 24 insertions(+), 22 deletions(-)
+
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index d882b6f96411..5f7f1a332186 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -223,7 +223,7 @@ static int process_sample_event(struct perf_tool *tool,
+ 		return -1;
  	}
  
- 	ret = uncore_types_init(msr_uncores);
-
-
-Regards
-Yan, Zheng
-
-
-On 02/03/2014 08:55 PM, Stephane Eranian wrote:
-> On certain processors, the uncore PMU boxes may only be
-> msr-bsed or PCI-based. But in both cases, the cpumask,
-> suggesting on which CPUs to monitor to get full coverage
-> of the particular PMU, must be created.
-> 
-> However with the current code base, the cpumask was only
-> created on processor which had at least one MSR-based
-> uncore PMU. This patch removes that restriction and
-> ensures the cpumask is created even when there is no
-> msr-based PMU. For instance, on SNB client where only
-> a PCI-based memory controller PMU is supported.
-> 
-> Signed-off-by: Stephane Eranian <eranian@google.com>
-> ---
->  arch/x86/kernel/cpu/perf_event_intel_uncore.c |   61 +++++++++++++++----------
->  1 file changed, 37 insertions(+), 24 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> index 29c2487..fe4255b 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> @@ -3764,7 +3764,7 @@ static void __init uncore_cpu_setup(void *dummy)
->  
->  static int __init uncore_cpu_init(void)
->  {
-> -	int ret, cpu, max_cores;
-> +	int ret, max_cores;
->  
->  	max_cores = boot_cpu_data.x86_max_cores;
->  	switch (boot_cpu_data.x86_model) {
-> @@ -3808,29 +3808,6 @@ static int __init uncore_cpu_init(void)
->  	if (ret)
->  		return ret;
->  
-> -	get_online_cpus();
-> -
-> -	for_each_online_cpu(cpu) {
-> -		int i, phys_id = topology_physical_package_id(cpu);
-> -
-> -		for_each_cpu(i, &uncore_cpu_mask) {
-> -			if (phys_id == topology_physical_package_id(i)) {
-> -				phys_id = -1;
-> -				break;
-> -			}
-> -		}
-> -		if (phys_id < 0)
-> -			continue;
-> -
-> -		uncore_cpu_prepare(cpu, phys_id);
-> -		uncore_event_init_cpu(cpu);
-> -	}
-> -	on_each_cpu(uncore_cpu_setup, NULL, 1);
-> -
-> -	register_cpu_notifier(&uncore_cpu_nb);
-> -
-> -	put_online_cpus();
-> -
->  	return 0;
->  }
->  
-> @@ -3859,6 +3836,41 @@ static int __init uncore_pmus_register(void)
->  	return 0;
->  }
->  
-> +static void uncore_cpumask_init(void)
-> +{
-> +	int cpu;
-> +
-> +	/*
-> +	 * ony invoke once from msr or pci init code
-> +	 */
-> +	if (!cpumask_empty(&uncore_cpu_mask))
-> +		return;
-> +
-> +	get_online_cpus();
-> +
-> +	for_each_online_cpu(cpu) {
-> +		int i, phys_id = topology_physical_package_id(cpu);
-> +
-> +		for_each_cpu(i, &uncore_cpu_mask) {
-> +			if (phys_id == topology_physical_package_id(i)) {
-> +				phys_id = -1;
-> +				break;
-> +			}
-> +		}
-> +		if (phys_id < 0)
-> +			continue;
-> +
-> +		uncore_cpu_prepare(cpu, phys_id);
-> +		uncore_event_init_cpu(cpu);
-> +	}
-> +	on_each_cpu(uncore_cpu_setup, NULL, 1);
-> +
-> +	register_cpu_notifier(&uncore_cpu_nb);
-> +
-> +	put_online_cpus();
-> +}
-> +
-> +
->  static int __init intel_uncore_init(void)
->  {
->  	int ret;
-> @@ -3877,6 +3889,7 @@ static int __init intel_uncore_init(void)
->  		uncore_pci_exit();
->  		goto fail;
->  	}
-> +	uncore_cpumask_init();
->  
->  	uncore_pmus_register();
->  	return 0;
-> 
+-	if (al.filtered || (rep->hide_unresolved && al.sym == NULL))
++	if (rep->hide_unresolved && al.sym == NULL)
+ 		return 0;
+ 
+ 	if (rep->cpu_list && !test_bit(sample->cpu, rep->cpu_bitmap))
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index b0f3ca850e9e..21aa8c6248ee 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -3,6 +3,7 @@
+ #include "debug.h"
+ #include "machine.h"
+ #include "sort.h"
++#include "hist.h"
+ #include "string.h"
+ #include "strlist.h"
+ #include "thread.h"
+@@ -661,7 +662,7 @@ void thread__find_addr_map(struct thread *thread,
+ 	al->thread = thread;
+ 	al->addr = addr;
+ 	al->cpumode = cpumode;
+-	al->filtered = false;
++	al->filtered = 0;
+ 
+ 	if (machine == NULL) {
+ 		al->map = NULL;
+@@ -687,11 +688,11 @@ void thread__find_addr_map(struct thread *thread,
+ 		if ((cpumode == PERF_RECORD_MISC_GUEST_USER ||
+ 			cpumode == PERF_RECORD_MISC_GUEST_KERNEL) &&
+ 			!perf_guest)
+-			al->filtered = true;
++			al->filtered |= (1 << HIST_FILTER__GUEST);
+ 		if ((cpumode == PERF_RECORD_MISC_USER ||
+ 			cpumode == PERF_RECORD_MISC_KERNEL) &&
+ 			!perf_host)
+-			al->filtered = true;
++			al->filtered |= (1 << HIST_FILTER__HOST);
+ 
+ 		return;
+ 	}
+@@ -748,9 +749,6 @@ int perf_event__preprocess_sample(const union perf_event *event,
+ 	if (thread == NULL)
+ 		return -1;
+ 
+-	if (thread__is_filtered(thread))
+-		goto out_filtered;
+-
+ 	dump_printf(" ... thread: %s:%d\n", thread__comm_str(thread), thread->tid);
+ 	/*
+ 	 * Have we already created the kernel maps for this machine?
+@@ -765,6 +763,10 @@ int perf_event__preprocess_sample(const union perf_event *event,
+ 
+ 	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
+ 			      sample->ip, al);
++
++	if (thread__is_filtered(thread))
++		al->filtered |= (1 << HIST_FILTER__THREAD);
++
+ 	dump_printf(" ...... dso: %s\n",
+ 		    al->map ? al->map->dso->long_name :
+ 			al->level == 'H' ? "[hypervisor]" : "<not found>");
+@@ -780,7 +782,7 @@ int perf_event__preprocess_sample(const union perf_event *event,
+ 			       (dso->short_name != dso->long_name &&
+ 				strlist__has_entry(symbol_conf.dso_list,
+ 						   dso->long_name)))))
+-			goto out_filtered;
++			al->filtered |= (1 << HIST_FILTER__DSO);
+ 
+ 		al->sym = map__find_symbol(al->map, al->addr,
+ 					   machine->symbol_filter);
+@@ -789,11 +791,7 @@ int perf_event__preprocess_sample(const union perf_event *event,
+ 	if (symbol_conf.sym_list &&
+ 		(!al->sym || !strlist__has_entry(symbol_conf.sym_list,
+ 						al->sym->name)))
+-		goto out_filtered;
+-
+-	return 0;
++		al->filtered |= (1 << HIST_FILTER__SYMBOL);
+ 
+-out_filtered:
+-	al->filtered = true;
+ 	return 0;
+ }
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 0466efa71140..d0c40897c955 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -13,13 +13,6 @@ static bool hists__filter_entry_by_thread(struct hists *hists,
+ static bool hists__filter_entry_by_symbol(struct hists *hists,
+ 					  struct hist_entry *he);
+ 
+-enum hist_filter {
+-	HIST_FILTER__DSO,
+-	HIST_FILTER__THREAD,
+-	HIST_FILTER__PARENT,
+-	HIST_FILTER__SYMBOL,
+-};
+-
+ struct callchain_param	callchain_param = {
+ 	.mode	= CHAIN_GRAPH_REL,
+ 	.min_percent = 0.5,
+@@ -330,6 +323,7 @@ void hists__inc_nr_entries(struct hists *hists, struct hist_entry *h)
+ 		hists__calc_col_len(hists, h);
+ 		++hists->nr_entries;
+ 		hists->stats.total_period += h->stat.period;
++		hists->stats.total_filtered_period += h->stat.period;
+ 	}
+ }
+ 
+@@ -429,7 +423,7 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
+ 			.weight = weight,
+ 		},
+ 		.parent = sym_parent,
+-		.filtered = symbol__parent_filter(sym_parent),
++		.filtered = symbol__parent_filter(sym_parent) | al->filtered,
+ 		.hists	= hists,
+ 		.branch_info = bi,
+ 		.mem_info = mi,
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index a59743fa3ef7..bdfd821e2435 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -14,6 +14,15 @@ struct hist_entry;
+ struct addr_location;
+ struct symbol;
+ 
++enum hist_filter {
++	HIST_FILTER__DSO,
++	HIST_FILTER__THREAD,
++	HIST_FILTER__PARENT,
++	HIST_FILTER__SYMBOL,
++	HIST_FILTER__GUEST,
++	HIST_FILTER__HOST,
++};
++
+ /*
+  * The kernel collects the number of events it couldn't send in a stretch and
+  * when possible sends this number in a PERF_RECORD_LOST event. The number of
+@@ -28,6 +37,7 @@ struct symbol;
+  */
+ struct events_stats {
+ 	u64 total_period;
++	u64 total_filtered_period;
+ 	u64 total_lost;
+ 	u64 total_invalid_chains;
+ 	u32 nr_events[PERF_RECORD_HEADER_MAX];
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index fffe2888a1c7..6300903de169 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -175,7 +175,7 @@ struct addr_location {
+ 	struct symbol *sym;
+ 	u64	      addr;
+ 	char	      level;
+-	bool	      filtered;
++	u8	      filtered;
+ 	u8	      cpumode;
+ 	s32	      cpu;
+ };
+-- 
+1.7.11.7
 
