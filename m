@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753999AbaBJTpz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 14:45:55 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34865 "EHLO
+	id S1754044AbaBJTqI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 14:46:08 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34894 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753934AbaBJTpp (ORCPT
+	with ESMTP id S1753992AbaBJTpz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:45:45 -0500
+	Mon, 10 Feb 2014 14:45:55 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mikulas Patocka <mpatocka@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
+Cc: Ilia Mirkin <imirkin@alum.mit.edu>, Ben Skeggs <bskeggs@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 063/124] dm sysfs: fix a module unload race
-Date: Mon, 10 Feb 2014 11:40:03 -0800
-Message-Id: <1392061264-28124-64-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 109/124] drm/nouveau/bios: fix offset calculation for BMPv1 bioses
+Date: Mon, 10 Feb 2014 11:40:49 -0800
+Message-Id: <1392061264-28124-110-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
 References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
@@ -27,242 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Ilia Mirkin <imirkin@alum.mit.edu>
 
-commit 2995fa78e423d7193f3b57835f6c1c75006a0315 upstream.
+commit 5d2f4767c4eacab351b8450b0de4d3261fe1a957 upstream.
 
-This reverts commit be35f48610 ("dm: wait until embedded kobject is
-released before destroying a device") and provides an improved fix.
+The only BIOS on record that needs the 14 offset has a bios major
+version 2 but BMP version 1.01. Another bunch of BIOSes that need the 18
+offset have BMP version 2.01 or 5.01 or higher. So instead of looking at the
+bios major version, look at the BMP version. BIOSes with BMP version 0
+do not contain a detectable script, so always return 0 for them.
 
-The kobject release code that calls the completion must be placed in a
-non-module file, otherwise there is a module unload race (if the process
-calling dm_kobject_release is preempted and the DM module unloaded after
-the completion is triggered, but before dm_kobject_release returns).
+See https://bugs.freedesktop.org/show_bug.cgi?id=68835
 
-To fix this race, this patch moves the completion code to dm-builtin.c
-which is always compiled directly into the kernel if BLK_DEV_DM is
-selected.
-
-The patch introduces a new dm_kobject_holder structure, its purpose is
-to keep the completion and kobject in one place, so that it can be
-accessed from non-module code without the need to export the layout of
-struct mapped_device to that code.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-[ kamal: backport to 3.8 (dm-builtin.c needs "#include <linux/export.h>";
-  context changes) ]
+Reported-by: Mauro Molinari <mauromol@tiscali.it>
+Signed-off-by: Ilia Mirkin <imirkin@alum.mit.edu>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/md/Kconfig      |  4 ++++
- drivers/md/Makefile     |  1 +
- drivers/md/dm-builtin.c | 49 +++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/md/dm-sysfs.c   |  5 -----
- drivers/md/dm.c         | 22 +++++-----------------
- drivers/md/dm.h         | 17 ++++++++++++++++-
- 6 files changed, 75 insertions(+), 23 deletions(-)
- create mode 100644 drivers/md/dm-builtin.c
+ drivers/gpu/drm/nouveau/core/subdev/bios/init.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/md/Kconfig b/drivers/md/Kconfig
-index 91a02ee..defbe5e1 100644
---- a/drivers/md/Kconfig
-+++ b/drivers/md/Kconfig
-@@ -185,8 +185,12 @@ config MD_FAULTY
- 
- 	  In unsure, say N.
- 
-+config BLK_DEV_DM_BUILTIN
-+	boolean
-+
- config BLK_DEV_DM
- 	tristate "Device mapper support"
-+	select BLK_DEV_DM_BUILTIN
- 	---help---
- 	  Device-mapper is a low level volume manager.  It works by allowing
- 	  people to specify mappings for ranges of logical sectors.  Various
-diff --git a/drivers/md/Makefile b/drivers/md/Makefile
-index 94dce8b..50ead1d 100644
---- a/drivers/md/Makefile
-+++ b/drivers/md/Makefile
-@@ -28,6 +28,7 @@ obj-$(CONFIG_MD_MULTIPATH)	+= multipath.o
- obj-$(CONFIG_MD_FAULTY)		+= faulty.o
- obj-$(CONFIG_BLK_DEV_MD)	+= md-mod.o
- obj-$(CONFIG_BLK_DEV_DM)	+= dm-mod.o
-+obj-$(CONFIG_BLK_DEV_DM_BUILTIN) += dm-builtin.o
- obj-$(CONFIG_DM_BUFIO)		+= dm-bufio.o
- obj-$(CONFIG_DM_BIO_PRISON)	+= dm-bio-prison.o
- obj-$(CONFIG_DM_CRYPT)		+= dm-crypt.o
-diff --git a/drivers/md/dm-builtin.c b/drivers/md/dm-builtin.c
-new file mode 100644
-index 0000000..8b82788
---- /dev/null
-+++ b/drivers/md/dm-builtin.c
-@@ -0,0 +1,49 @@
-+#include <linux/export.h>
-+#include "dm.h"
-+
-+/*
-+ * The kobject release method must not be placed in the module itself,
-+ * otherwise we are subject to module unload races.
-+ *
-+ * The release method is called when the last reference to the kobject is
-+ * dropped. It may be called by any other kernel code that drops the last
-+ * reference.
-+ *
-+ * The release method suffers from module unload race. We may prevent the
-+ * module from being unloaded at the start of the release method (using
-+ * increased module reference count or synchronizing against the release
-+ * method), however there is no way to prevent the module from being
-+ * unloaded at the end of the release method.
-+ *
-+ * If this code were placed in the dm module, the following race may
-+ * happen:
-+ *  1. Some other process takes a reference to dm kobject
-+ *  2. The user issues ioctl function to unload the dm device
-+ *  3. dm_sysfs_exit calls kobject_put, however the object is not released
-+ *     because of the other reference taken at step 1
-+ *  4. dm_sysfs_exit waits on the completion
-+ *  5. The other process that took the reference in step 1 drops it,
-+ *     dm_kobject_release is called from this process
-+ *  6. dm_kobject_release calls complete()
-+ *  7. a reschedule happens before dm_kobject_release returns
-+ *  8. dm_sysfs_exit continues, the dm device is unloaded, module reference
-+ *     count is decremented
-+ *  9. The user unloads the dm module
-+ * 10. The other process that was rescheduled in step 7 continues to run,
-+ *     it is now executing code in unloaded module, so it crashes
-+ *
-+ * Note that if the process that takes the foreign reference to dm kobject
-+ * has a low priority and the system is sufficiently loaded with
-+ * higher-priority processes that prevent the low-priority process from
-+ * being scheduled long enough, this bug may really happen.
-+ *
-+ * In order to fix this module unload race, we place the release method
-+ * into a helper code that is compiled directly into the kernel.
-+ */
-+
-+void dm_kobject_release(struct kobject *kobj)
-+{
-+	complete(dm_get_completion_from_kobject(kobj));
-+}
-+
-+EXPORT_SYMBOL(dm_kobject_release);
-diff --git a/drivers/md/dm-sysfs.c b/drivers/md/dm-sysfs.c
-index e0cc5d6..c62c5ab 100644
---- a/drivers/md/dm-sysfs.c
-+++ b/drivers/md/dm-sysfs.c
-@@ -79,11 +79,6 @@ static const struct sysfs_ops dm_sysfs_ops = {
- 	.show	= dm_attr_show,
- };
- 
--static void dm_kobject_release(struct kobject *kobj)
--{
--	complete(dm_get_completion_from_kobject(kobj));
--}
--
- /*
-  * dm kobject is embedded in mapped_device structure
-  * no need to define release function here
-diff --git a/drivers/md/dm.c b/drivers/md/dm.c
-index a027513..9a7a409 100644
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -185,11 +185,8 @@ struct mapped_device {
- 	/* forced geometry settings */
- 	struct hd_geometry geometry;
- 
--	/* sysfs handle */
--	struct kobject kobj;
--
--	/* wait until the kobject is released */
--	struct completion kobj_completion;
-+	/* kobject and completion */
-+	struct dm_kobject_holder kobj_holder;
- 
- 	/* zero-length flush that will be cloned and submitted to targets */
- 	struct bio flush_bio;
-@@ -1902,7 +1899,7 @@ static struct mapped_device *alloc_dev(int minor)
- 	init_waitqueue_head(&md->wait);
- 	INIT_WORK(&md->work, dm_wq_work);
- 	init_waitqueue_head(&md->eventq);
--	init_completion(&md->kobj_completion);
-+	init_completion(&md->kobj_holder.completion);
- 
- 	md->disk->major = _major;
- 	md->disk->first_minor = minor;
-@@ -2728,7 +2725,7 @@ struct gendisk *dm_disk(struct mapped_device *md)
- 
- struct kobject *dm_kobject(struct mapped_device *md)
+diff --git a/drivers/gpu/drm/nouveau/core/subdev/bios/init.c b/drivers/gpu/drm/nouveau/core/subdev/bios/init.c
+index 9e0cb43..992c26d 100644
+--- a/drivers/gpu/drm/nouveau/core/subdev/bios/init.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/bios/init.c
+@@ -349,13 +349,13 @@ static u16
+ init_script(struct nouveau_bios *bios, int index)
  {
--	return &md->kobj;
-+	return &md->kobj_holder.kobj;
- }
+ 	struct nvbios_init init = { .bios = bios };
+-	u16 data;
++	u16 bmp_ver = bmp_version(bios), data;
  
- /*
-@@ -2739,9 +2736,7 @@ struct mapped_device *dm_get_from_kobject(struct kobject *kobj)
- {
- 	struct mapped_device *md;
+-	if (bmp_version(bios) && bmp_version(bios) < 0x0510) {
+-		if (index > 1)
++	if (bmp_ver && bmp_ver < 0x0510) {
++		if (index > 1 || bmp_ver < 0x0100)
+ 			return 0x0000;
  
--	md = container_of(kobj, struct mapped_device, kobj);
--	if (&md->kobj != kobj)
--		return NULL;
-+	md = container_of(kobj, struct mapped_device, kobj_holder.kobj);
+-		data = bios->bmp_offset + (bios->version.major < 2 ? 14 : 18);
++		data = bios->bmp_offset + (bmp_ver < 0x0200 ? 14 : 18);
+ 		return nv_ro16(bios, data + (index * 2));
+ 	}
  
- 	if (test_bit(DMF_FREEING, &md->flags) ||
- 	    dm_deleting_md(md))
-@@ -2751,13 +2746,6 @@ struct mapped_device *dm_get_from_kobject(struct kobject *kobj)
- 	return md;
- }
- 
--struct completion *dm_get_completion_from_kobject(struct kobject *kobj)
--{
--	struct mapped_device *md = container_of(kobj, struct mapped_device, kobj);
--
--	return &md->kobj_completion;
--}
--
- int dm_suspended_md(struct mapped_device *md)
- {
- 	return test_bit(DMF_SUSPENDED, &md->flags);
-diff --git a/drivers/md/dm.h b/drivers/md/dm.h
-index 66cfb7d..9b3222f 100644
---- a/drivers/md/dm.h
-+++ b/drivers/md/dm.h
-@@ -16,6 +16,7 @@
- #include <linux/blkdev.h>
- #include <linux/hdreg.h>
- #include <linux/completion.h>
-+#include <linux/kobject.h>
- 
- /*
-  * Suspend feature flags
-@@ -126,11 +127,25 @@ void dm_interface_exit(void);
- /*
-  * sysfs interface
-  */
-+struct dm_kobject_holder {
-+	struct kobject kobj;
-+	struct completion completion;
-+};
-+
-+static inline struct completion *dm_get_completion_from_kobject(struct kobject *kobj)
-+{
-+	return &container_of(kobj, struct dm_kobject_holder, kobj)->completion;
-+}
-+
- int dm_sysfs_init(struct mapped_device *md);
- void dm_sysfs_exit(struct mapped_device *md);
- struct kobject *dm_kobject(struct mapped_device *md);
- struct mapped_device *dm_get_from_kobject(struct kobject *kobj);
--struct completion *dm_get_completion_from_kobject(struct kobject *kobj);
-+
-+/*
-+ * The kobject helper
-+ */
-+void dm_kobject_release(struct kobject *kobj);
- 
- /*
-  * Targets for linear and striped mappings
 -- 
 1.8.3.2
 
