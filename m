@@ -1,55 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752047AbaBJF6H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 00:58:07 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:58042 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751119AbaBJF6F (ORCPT
+	id S1752108AbaBJF6Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 00:58:25 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:10014 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751018AbaBJF6Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 00:58:05 -0500
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: gregkh <gregkh@linuxfoundation.org>, swetland@google.com
-Cc: konkers <konkers@android.com>, "john.stultz" <john.stultz@linaro.org>,
-        rdunlap <rdunlap@infradead.org>, standby24x7 <standby24x7@gmail.com>,
-        devel <devel@driverdev.osuosl.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging : android : sync : fix a checkpatch warning
-Date: Sun, 09 Feb 2014 21:58:03 -0800 (PST)
-Message-ID: <19098109.K5Vqu3vXYV@daeseok-laptop.cloud.net>
-User-Agent: KMail/4.8.5 (Linux/3.2.0-58-generic; KDE/4.8.5; x86_64; ; )
+	Mon, 10 Feb 2014 00:58:24 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Sun, 09 Feb 2014 21:56:03 -0800
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Ben Skeggs <bskeggs@redhat.com>
+CC: <nouveau@lists.freedesktop.org>, <dri-devel@lists.freedesktop.org>,
+        <linux-kernel@vger.kernel.org>, <gnurou@gmail.com>,
+        Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH] drm/nouveau: handle -EACCES runtime PM return code
+Date: Mon, 10 Feb 2014 14:58:12 +0900
+Message-ID: <1392011892-4339-1-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 1.8.5.4
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 16140b1ec1b1e1060f74707e4a6661aface81a14 Mon Sep 17 00:00:00 2001
-From: Daeseok Youn <daeseok.youn@gmail.com>
-Date: Mon, 10 Feb 2014 14:36:48 +0900
-Subject: [PATCH] staging : android : sync : fix a checkpatch warning
+pm_runtime_get*() may return -EACCESS to indicate a device does not have
+runtime PM enabled. This is the case when the nouveau.runpm parameter is
+set to 0, and is not an error in that context. Handle this case without
+failure.
 
-- WARNING: missing space after return type
-
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
 ---
- drivers/staging/android/sync.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/nouveau/dispnv04/crtc.c     | 2 +-
+ drivers/gpu/drm/nouveau/nouveau_connector.c | 2 +-
+ drivers/gpu/drm/nouveau/nouveau_drm.c       | 4 ++--
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/android/sync.h b/drivers/staging/android/sync.h
-index 62e2255b..6ee8d69 100644
---- a/drivers/staging/android/sync.h
-+++ b/drivers/staging/android/sync.h
-@@ -53,7 +53,7 @@ struct sync_timeline_ops {
- 	const char *driver_name;
+diff --git a/drivers/gpu/drm/nouveau/dispnv04/crtc.c b/drivers/gpu/drm/nouveau/dispnv04/crtc.c
+index 0e3270c3ffd2..1caef1fd139e 100644
+--- a/drivers/gpu/drm/nouveau/dispnv04/crtc.c
++++ b/drivers/gpu/drm/nouveau/dispnv04/crtc.c
+@@ -1048,7 +1048,7 @@ nouveau_crtc_set_config(struct drm_mode_set *set)
  
- 	/* required */
--	struct sync_pt *(*dup)(struct sync_pt *pt);
-+	struct sync_pt * (*dup)(struct sync_pt *pt);
+ 	/* get a pm reference here */
+ 	ret = pm_runtime_get_sync(dev->dev);
+-	if (ret < 0)
++	if (ret < 0 && ret != -EACCES)
+ 		return ret;
  
- 	/* required */
- 	int (*has_signaled)(struct sync_pt *pt);
+ 	ret = drm_crtc_helper_set_config(set);
+diff --git a/drivers/gpu/drm/nouveau/nouveau_connector.c b/drivers/gpu/drm/nouveau/nouveau_connector.c
+index 1674882d60d5..cddef546d9b0 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_connector.c
++++ b/drivers/gpu/drm/nouveau/nouveau_connector.c
+@@ -255,7 +255,7 @@ nouveau_connector_detect(struct drm_connector *connector, bool force)
+ 	}
+ 
+ 	ret = pm_runtime_get_sync(connector->dev->dev);
+-	if (ret < 0)
++	if (ret < 0 && ret != -EACCES)
+ 		return conn_status;
+ 
+ 	i2c = nouveau_connector_ddc_detect(connector, &nv_encoder);
+diff --git a/drivers/gpu/drm/nouveau/nouveau_drm.c b/drivers/gpu/drm/nouveau/nouveau_drm.c
+index 8a4630a1fc45..2617168af244 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_drm.c
++++ b/drivers/gpu/drm/nouveau/nouveau_drm.c
+@@ -696,7 +696,7 @@ nouveau_drm_open(struct drm_device *dev, struct drm_file *fpriv)
+ 
+ 	/* need to bring up power immediately if opening device */
+ 	ret = pm_runtime_get_sync(dev->dev);
+-	if (ret < 0)
++	if (ret < 0 && ret != -EACCES)
+ 		return ret;
+ 
+ 	get_task_comm(tmpname, current);
+@@ -781,7 +781,7 @@ long nouveau_drm_ioctl(struct file *filp,
+ 	dev = file_priv->minor->dev;
+ 
+ 	ret = pm_runtime_get_sync(dev->dev);
+-	if (ret < 0)
++	if (ret < 0 && ret != -EACCES)
+ 		return ret;
+ 
+ 	ret = drm_ioctl(filp, cmd, arg);
 -- 
-1.7.9.5
-
+1.8.5.4
 
