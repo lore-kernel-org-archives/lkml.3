@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310AbaBJTmk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 14:42:40 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34626 "EHLO
+	id S1753336AbaBJTmq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 14:42:46 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34636 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753071AbaBJTmf (ORCPT
+	with ESMTP id S1753071AbaBJTml (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:42:35 -0500
+	Mon, 10 Feb 2014 14:42:41 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Colin Leitner <colin.leitner@gmail.com>, Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Lars-Peter Clausen <lars@metafoo.de>, Mark Brown <broonie@linaro.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 039/124] USB: ftdi_sio: added CS5 quirk for broken smartcard readers
-Date: Mon, 10 Feb 2014 11:39:39 -0800
-Message-Id: <1392061264-28124-40-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 042/124] ASoC: adau1701: Fix ADAU1701_SEROCTL_WORD_LEN_16 constant
+Date: Mon, 10 Feb 2014 11:39:42 -0800
+Message-Id: <1392061264-28124-43-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
 References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
@@ -28,70 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Colin Leitner <colin.leitner@googlemail.com>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit c1f15196ac3b541d084dc80a8fbd8a74c6a0bd44 upstream.
+commit e20970ada3f699c113fe64b04492af083d11a7d8 upstream.
 
-Genuine FTDI chips support only CS7/8. A previous fix in commit
-8704211f65a2 ("USB: ftdi_sio: fixed handling of unsupported CSIZE
-setting") enforced this limitation and reported it back to userspace.
+The driver defines ADAU1701_SEROCTL_WORD_LEN_16 as 0x10 while it should be b10,
+so 0x2. This patch fixes it.
 
-However, certain types of smartcard readers depend on specific
-driver behaviour that requests 0 data bits (not 5) to change into a
-different operating mode if CS5 has been set.
-
-This patch reenables this behaviour for all FTDI devices.
-
-Tagged to be added to stable, because it affects a lot of users of
-embedded systems which rely on these readers to work properly.
-
-Reported-by: Heinrich Siebmanns <H.Siebmanns@t-online.de>
-Tested-by: Heinrich Siebmanns <H.Siebmanns@t-online.de>
-Signed-off-by: Colin Leitner <colin.leitner@gmail.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Reported-by: Magnus Reftel <magnus.reftel@lockless.no>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/ftdi_sio.c | 17 +++++++++++++++--
- 1 file changed, 15 insertions(+), 2 deletions(-)
+ sound/soc/codecs/adau1701.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index ede7f9f..8856967 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -2181,10 +2181,20 @@ static void ftdi_set_termios(struct tty_struct *tty,
- 	}
+diff --git a/sound/soc/codecs/adau1701.c b/sound/soc/codecs/adau1701.c
+index dafdbe8..0c499c6 100644
+--- a/sound/soc/codecs/adau1701.c
++++ b/sound/soc/codecs/adau1701.c
+@@ -64,7 +64,7 @@
  
- 	/*
--	 * All FTDI UART chips are limited to CS7/8. We won't pretend to
-+	 * All FTDI UART chips are limited to CS7/8. We shouldn't pretend to
- 	 * support CS5/6 and revert the CSIZE setting instead.
-+	 *
-+	 * CS5 however is used to control some smartcard readers which abuse
-+	 * this limitation to switch modes. Original FTDI chips fall back to
-+	 * eight data bits.
-+	 *
-+	 * TODO: Implement a quirk to only allow this with mentioned
-+	 *       readers. One I know of (Argolis Smartreader V1)
-+	 *       returns "USB smartcard server" as iInterface string.
-+	 *       The vendor didn't bother with a custom VID/PID of
-+	 *       course.
- 	 */
--	if ((C_CSIZE(tty) != CS8) && (C_CSIZE(tty) != CS7)) {
-+	if (C_CSIZE(tty) == CS6) {
- 		dev_warn(ddev, "requested CSIZE setting not supported\n");
+ #define ADAU1701_SEROCTL_WORD_LEN_24	0x0000
+ #define ADAU1701_SEROCTL_WORD_LEN_20	0x0001
+-#define ADAU1701_SEROCTL_WORD_LEN_16	0x0010
++#define ADAU1701_SEROCTL_WORD_LEN_16	0x0002
+ #define ADAU1701_SEROCTL_WORD_LEN_MASK	0x0003
  
- 		termios->c_cflag &= ~CSIZE;
-@@ -2231,6 +2241,9 @@ no_skip:
- 		urb_value |= FTDI_SIO_SET_DATA_PARITY_NONE;
- 	}
- 	switch (cflag & CSIZE) {
-+	case CS5:
-+		dev_dbg(ddev, "Setting CS5 quirk\n");
-+		break;
- 	case CS7:
- 		urb_value |= 7;
- 		dev_dbg(ddev, "Setting CS7\n");
+ #define ADAU1701_AUXNPOW_VBPD		0x40
 -- 
 1.8.3.2
 
