@@ -1,83 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752627AbaBJQXR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 11:23:17 -0500
-Received: from smtp.csie.ntu.edu.tw ([140.112.30.61]:51899 "EHLO
-	smtp.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752074AbaBJQXP (ORCPT
+	id S1752935AbaBJQXe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 11:23:34 -0500
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:38621 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752357AbaBJQXa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 11:23:15 -0500
-From: Chen-Yu Tsai <wens@csie.org>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Chen-Yu Tsai <wens@csie.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        David Lanzendoerfer <david.lanzendoerfer@o2s.ch>,
-        stable@vger.kernel.org
-Subject: [PATCH] pinctrl: sunxi: use chained_irq_{enter, exit} for GIC compatibility
-Date: Tue, 11 Feb 2014 00:22:37 +0800
-Message-Id: <1392049357-13225-1-git-send-email-wens@csie.org>
-X-Mailer: git-send-email 1.9.rc1
+	Mon, 10 Feb 2014 11:23:30 -0500
+From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+To: lenb@kernel.org, rjw@rjwysocki.net
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Subject: [PATCH] ACPI, APEI: Remove X86 redundant dependency for APEI Generic Hardware Error Source.
+Date: Mon, 10 Feb 2014 17:23:36 +0100
+Message-Id: <1392049416-31240-1-git-send-email-tomasz.nowicki@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On tha Allwinner A20 SoC, the external interrupts on the pin controller
-device are connected to the GIC. Without chained_irq_{enter, exit},
-external GPIO interrupts, such as used by mmc core card detect, cause
-the system to hang.
+ACPI_APEI is already dependent on X86, hence, there is no need to
+define such dependency for ACPI_APEI_GHES again.
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
 ---
+ drivers/acpi/apei/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-This issue was first encountered during my attempt to get out-of-band
-interrupts for WiFi on the Cubietruck working. With David's new series
-of sunci-mci using mmc slot-gpio for (GPIO interrupt based) card
-detection, removing the SD card also causes my Cubietruck to hang. This
-problem should extend to all Allwinner A20 based boards.
-
-With this fix, the system no longer hangs when I remove or insert the
-SD card. /proc/interrupts show that the interrupt has correctly fired.
-However the system still does not detect card removal/insertion. I
-believe this is another unrelated issue.
-
- drivers/pinctrl/pinctrl-sunxi.c | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/drivers/pinctrl/pinctrl-sunxi.c b/drivers/pinctrl/pinctrl-sunxi.c
-index 9ccf681..787f352 100644
---- a/drivers/pinctrl/pinctrl-sunxi.c
-+++ b/drivers/pinctrl/pinctrl-sunxi.c
-@@ -14,6 +14,7 @@
- #include <linux/clk.h>
- #include <linux/gpio.h>
- #include <linux/irqdomain.h>
-+#include <linux/irqchip/chained_irq.h>
- #include <linux/module.h>
- #include <linux/of.h>
- #include <linux/of_address.h>
-@@ -665,6 +666,7 @@ static struct irq_chip sunxi_pinctrl_irq_chip = {
+diff --git a/drivers/acpi/apei/Kconfig b/drivers/acpi/apei/Kconfig
+index 786294b..1d7ca6e 100644
+--- a/drivers/acpi/apei/Kconfig
++++ b/drivers/acpi/apei/Kconfig
+@@ -13,7 +13,7 @@ config ACPI_APEI
  
- static void sunxi_pinctrl_irq_handler(unsigned irq, struct irq_desc *desc)
- {
-+	struct irq_chip *chip = irq_get_chip(irq);
- 	struct sunxi_pinctrl *pctl = irq_get_handler_data(irq);
- 	const unsigned long reg = readl(pctl->membase + IRQ_STATUS_REG);
- 
-@@ -674,10 +676,12 @@ static void sunxi_pinctrl_irq_handler(unsigned irq, struct irq_desc *desc)
- 	if (reg) {
- 		int irqoffset;
- 
-+		chained_irq_enter(chip, desc);
- 		for_each_set_bit(irqoffset, &reg, SUNXI_IRQ_NUMBER) {
- 			int pin_irq = irq_find_mapping(pctl->domain, irqoffset);
- 			generic_handle_irq(pin_irq);
- 		}
-+		chained_irq_exit(chip, desc);
- 	}
- }
- 
+ config ACPI_APEI_GHES
+ 	bool "APEI Generic Hardware Error Source"
+-	depends on ACPI_APEI && X86
++	depends on ACPI_APEI
+ 	select ACPI_HED
+ 	select IRQ_WORK
+ 	select GENERIC_ALLOCATOR
 -- 
-1.9.rc1
+1.7.9.5
 
