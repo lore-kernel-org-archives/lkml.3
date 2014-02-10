@@ -1,39 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752678AbaBJKOW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 05:14:22 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:52992 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752340AbaBJKOU (ORCPT
+	id S1752851AbaBJKOw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 05:14:52 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:35470 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752470AbaBJKOr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 05:14:20 -0500
-Date: Mon, 10 Feb 2014 02:14:18 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>,
-        poma <pomidorabelisima@gmail.com>
-cc: Christoph Lameter <cl@linux.com>, Josh Boyer <jwboyer@redhat.com>,
-        "Justin M. Forbes" <jforbes@redhat.com>, Dave Jones <davej@redhat.com>,
-        kernel@lists.fedoraproject.org, linux-kernel@vger.kernel.org
-Subject: Re: WARNING: CPU: 0 PID: 2243 at mm/slub.c:1007
- deactivate_slab+0x4e0/0x590()
-In-Reply-To: <52F832C0.9070702@gmail.com>
-Message-ID: <alpine.DEB.2.02.1402100212280.30650@chino.kir.corp.google.com>
-References: <52F832C0.9070702@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 10 Feb 2014 05:14:47 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CACRpkdZwoXf5ovmQEAN6Ugvz91+_i5uGqStR3MGXQeJGHitj3Q@mail.gmail.com>
+References: <1391529538-21685-1-git-send-email-ulf.hansson@linaro.org>
+	<1391529538-21685-15-git-send-email-ulf.hansson@linaro.org>
+	<CACRpkdZwoXf5ovmQEAN6Ugvz91+_i5uGqStR3MGXQeJGHitj3Q@mail.gmail.com>
+Date: Mon, 10 Feb 2014 11:14:46 +0100
+Message-ID: <CAPDyKFrWgB8z1rtWxU7AYvVsmNj_pfGbsozwgP_FzLODpmGRwQ@mail.gmail.com>
+Subject: Re: [PATCH 14/17] i2c: nomadik: Fixup deployment of runtime PM
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Alessandro Rubini <rubini@unipv.it>, Wolfram Sang <wsa@the-dreams.de>,
+        Chris Ball <chris@printf.net>, Mark Brown <broonie@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        linux-spi@vger.kernel.org,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Feb 2014, poma wrote:
+On 5 February 2014 15:34, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Tue, Feb 4, 2014 at 4:58 PM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+>
+>> Since the device is active while a successful probe has been completed,
+>> the reference counting for the clock will be screwed up and never reach
+>> zero.
+>>
+>> The issue is resolved by implementing runtime PM callbacks and let them
+>> handle the resources accordingly, including the clock.
+>>
+>> Cc: Alessandro Rubini <rubini@unipv.it>
+>> Cc: Linus Walleij <linus.walleij@linaro.org>
+>> Cc: Wolfram Sang <wsa@the-dreams.de>
+>> Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+>
+> Hm do I read it right as patch 13 breaks runtime PM by leaving
+> the device active after probe() and this patch
+> 14 fixes it again? Maybe these two patches should be squashed
+> then.
 
-> [   83.530421] WARNING: CPU: 0 PID: 2243 at mm/slub.c:1007
-> deactivate_slab+0x4e0/0x590()
+You are right; but the driver will still be working, you just don't
+get the benefit from inactivating the device at request inactivity -
+as you pointed out.
 
-Yeah, you'll need the patch from the http://marc.info/?t=139145791300002 
-thread.  It's in the -mm tree as
-mm-slub-list_lock-may-not-be-held-in-some-circumstances.patch and I'm 
-hoping it will go into 3.14-rc3, several people have been complaining 
-about it.
+The reason for why I wanted to do this as separate steps was to make
+it easier for reviewing, otherwise the patch(es) would have been quite
+big and messy. I am for sure open to  adopt to your proposal, but just
+wanted to give you some more background, before I go ahead and send a
+v2.
+
+Kind regards
+Ulf Hansson
+
+>
+> Yours,
+> Linus Walleij
