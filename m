@@ -1,87 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622AbaBJQbx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 11:31:53 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:57127 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751807AbaBJQbs (ORCPT
+	id S1752491AbaBJQdr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 11:33:47 -0500
+Received: from smtprelay0234.hostedemail.com ([216.40.44.234]:40093 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751831AbaBJQdp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 11:31:48 -0500
-Message-ID: <20140210103148.187113o1jxn9inz4@67.228.131.205>
-Date: Mon, 10 Feb 2014 10:31:48 -0600
-From: linux@roeck-us.net
-To: Michal Simek <monstr@monstr.eu>
-Cc: "Edgar E. Iglesias" <edgar.iglesias@gmail.com>,
-        microblaze-uclinux@itee.uq.edu.au, LKML <linux-kernel@vger.kernel.org>,
-        qemu-devel@nongnu.org
-Subject: Re: [Qemu-devel] Commit 34b9c07a3 (microblaze: Disable stack
- protection from bootloader) causing qemu crash
-References: <20140207231731.GA8647@roeck-us.net>
- <20140208023131.GE24420@amz.ap-southeast-2.compute.internal>
- <CAHTX3dKz01P3P8y-8OC8WSMt68pPd2Y625bG97Y7B9s_VAGKDQ@mail.gmail.com>
-In-Reply-To: <CAHTX3dKz01P3P8y-8OC8WSMt68pPd2Y625bG97Y7B9s_VAGKDQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
+	Mon, 10 Feb 2014 11:33:45 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3865:3867:3868:3871:3872:3873:4250:4321:4605:5007:7652:7875:10004:10400:10848:11026:11232:11657:11658:11914:12043:12295:12296:12517:12519:12740:13069:13071:13141:13230:13311:13357:21060,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: pan50_2dbf650d4955
+X-Filterd-Recvd-Size: 2664
+Message-ID: <1392050018.2507.6.camel@joe-AO722>
+Subject: Re: [Resend PATCH] staging : ion : Fix some checkpatch warnings and
+ an error
+From: Joe Perches <joe@perches.com>
+To: Daeseok Youn <daeseok.youn@gmail.com>
+Cc: gregkh@linuxfoundation.org, swetland@google.com, john.stultz@linaro.org,
+        rebecca@android.com, ccross@android.com, ohaugan@codeaurora.org,
+        romlem@google.com, linux-kernel@vger.kernel.org,
+        dan.carpenter@oracle.com
+Date: Mon, 10 Feb 2014 08:33:38 -0800
+In-Reply-To: <1861074.WmPcbRBdNV@daeseok-laptop.cloud.net>
+References: <1861074.WmPcbRBdNV@daeseok-laptop.cloud.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Michal Simek <monstr@monstr.eu>:
+On Mon, 2014-02-10 at 20:25 +0900, Daeseok Youn wrote:
 
-> Hi Edgar and Guenter,
->
->
-> 2014-02-08 Edgar E. Iglesias <edgar.iglesias@gmail.com>:
->
->> On Fri, Feb 07, 2014 at 03:17:31PM -0800, Guenter Roeck wrote:
->> > Michal,
->> >
->> > commit 34b9c07a3 (microblaze: Disable stack protection from bootloader)
->> results
->> > in the following qemu crash in 3.14-rc1.
->> >
->> > /opt/buildbot/bin/qemu-system-microblaze -M petalogix-s3adsp1800 -kernel
->> arch/microblaze/boot/linux.bin -no-reboot -append "console=ttyUL0,115200 "
->> -nographic
->> > qemu: fatal: fetching nop sequence
->> >
->> > IN: PC=20
->> > rmsr=4300 resr=7 rear=c0389fe8 debug=0 imm=ffffffd0 iflags=0 fsr=0
->> > btaken=1 btarget=c03a9f24 mode=kernel(saved=kernel) eip=512 ie=0
->> > r00=00000000 r01=c0389fcc r02=c0386a52 r03=000000c0
->> > r04=00004100 r05=9052fab4 r06=00000000 r07=90530ab4
->> > r08=00000000 r09=00400000 r10=00400000 r11=c03a9f24
->> > r12=00621000 r13=40aef0c0 r14=00000000 r15=c0000294
->> > r16=00000000 r17=c03a9f28 r18=00000000 r19=00000000
->> > r20=00000000 r21=00000000 r22=00000000 r23=00000000
->> > r24=00000000 r25=00000000 r26=00000000 r27=00000000
->> > r28=00000000 r29=00400000 r30=00000300 r31=c03932d4
->> >
->>
->
-> Can you please check that these 2 registers are not available when
-> microblaze is configured with full MMU?
-> Because I expect that you are testing MMU kernel but these two writes
-> should be just nops.
->
+> Warning:
+>  - Unnecessary space after function pointer name
+>  - quoted string split across lines
+> 
+> Error:
+>  - return is not a function, parentheses are not required
 
-Hi Michal,
+Hi.
 
-I can send you my configuration if that is what you are
-looking for. Other than that, I am pretty clueless when
-it comes to Microblaze details - all I do is to build
-an image and check if it boots with qemu. This is part of
-my sanity tests of upcoming -stable kernel versions.
+checkpatch issuing either an ERROR or WARNING isn't
+really relevant to the subject.
 
-It will have to wait until tonight, though - my home internet
-connection is down and I can not connect to the system right
-now.
+This isn't really a resend.  It's a different version
+and so the subject should not say "Resend".  Ideally,
+you send this with a subject like:
 
-Guenter
+[PATCH V2] staging: ion: Whitespace neatening
+
+and if needed again:
+
+[PATCH V3] staging: ion: Whitespace neatening
+
+etc...
+
+and below:
+
+> diff --git a/drivers/staging/android/ion/ion.c b/drivers/staging/android/ion/ion.c
+[]
+> @@ -55,7 +55,7 @@ struct ion_device {
+>  	struct mutex buffer_lock;
+>  	struct rw_semaphore lock;
+>  	struct plist_head heaps;
+> -	long (*custom_ioctl) (struct ion_client *client, unsigned int cmd,
+> +	long (*custom_ioctl)(struct ion_client *client, unsigned int cmd,
+>  			      unsigned long arg);
+
+Please realign the arguments to the open parenthesis like:
+
+	long (*custom_ioctl)(struct ion_client *client, unsigned int cmd,
+			     unsigned long arg);
+
+> diff --git a/drivers/staging/android/ion/ion_priv.h b/drivers/staging/android/ion/ion_priv.h
+[]
+> @@ -100,18 +100,18 @@ void ion_buffer_destroy(struct ion_buffer *buffer);
+>   * map_dma and map_kernel return pointer on success, ERR_PTR on error.
+>   */
+>  struct ion_heap_ops {
+> -	int (*allocate) (struct ion_heap *heap,
+> +	int (*allocate)(struct ion_heap *heap,
+>  			 struct ion_buffer *buffer, unsigned long len,
+>  			 unsigned long align, unsigned long flags);
+
+realignment here too
+
+etc.
 
