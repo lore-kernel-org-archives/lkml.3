@@ -1,55 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752130AbaBJIOH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 03:14:07 -0500
-Received: from mx.ungleich.ch ([77.109.138.221]:41471 "EHLO mx.ungleich.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751119AbaBJIOD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 03:14:03 -0500
-Date: Mon, 10 Feb 2014 08:35:13 +0100
-From: Nico Schottelius <nico-linux-20149210@schottelius.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: nico-linux-20149210@schottelius.org
-Subject: Support for automatic screen rotation on Lenovo Yogo 2 Pro
-Message-ID: <20140210073513.GE2792@schottelius.org>
-Mail-Followup-To: Nico Schottelius <nico-linux-20149210@schottelius.org>,
-	LKML <linux-kernel@vger.kernel.org>
+	id S1752186AbaBJIOd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 03:14:33 -0500
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:36397 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750948AbaBJIOc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 03:14:32 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
-X-Netzseite: http://www.nico.schottelius.org/
-X-System-Info: artist (Linux 3.12.9-1-ARCH x86_64)
+In-Reply-To: <CAEPRUYqYq5g_98xnegKg7KLczkttVwOp3_+uEO1cRQE5GoP-fg@mail.gmail.com>
+References: <1391503770.19947.0.camel@phoenix>
+	<52F149F4.6040105@broadcom.com>
+	<CACRpkdY4rQC30idfYP0bJHeHL-OMbH=oSNaKf8pBfUP1f+sYBg@mail.gmail.com>
+	<CAEPRUYroQYzxsW-WirQ9ZW9XsSvnO7aSxun7JZoF1=3iONu-rQ@mail.gmail.com>
+	<CAEPRUYqYq5g_98xnegKg7KLczkttVwOp3_+uEO1cRQE5GoP-fg@mail.gmail.com>
+Date: Mon, 10 Feb 2014 09:14:31 +0100
+Message-ID: <CACRpkdZGPv8658ZA=6t_gf0U+tAh19B2XCnmtsFotyZfkQs6VQ@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: capri: Make capri_pinctrl_probe static
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Christian Daudt <bcm@fixthebug.org>
+Cc: Olof Johansson <olof@lixom.net>, Matt Porter <mporter@linaro.org>,
+        Sherman Yin <syin@broadcom.com>, Axel Lin <axel.lin@ingics.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good morning hackers,
+On Fri, Feb 7, 2014 at 8:01 PM, Christian Daudt <bcm@fixthebug.org> wrote:
+> On Fri, Feb 7, 2014 at 10:35 AM, Christian Daudt <bcm@fixthebug.org> wrote:
+>> On Thu, Feb 6, 2014 at 1:21 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+>>> On Tue, Feb 4, 2014 at 9:13 PM, Sherman Yin <syin@broadcom.com> wrote:
+>>>> On 14-02-04 12:49 AM, Axel Lin wrote:
+>>>>>
+>>>>> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+>>>>>
+>>>> Note that this will collide with the capri->bcm281xx renaming patches.
+>>>>
+>>>> Linus, Christian, are those patches going in soon?
+>>>
+>>> I have ACKed it, expecting it to be funneled through ARM SoC.
+>>>
+>>> Yours,
+>>> Linus Walleij
+>>
+>> Linus, just to confirm. the bcm_defconfig portion is the only one
+>> going through armsoc right ?
+>>
+>>  thanks,
+>>    csd
+>
+> Linus,
+>  Sorry for the noise. I just had a chat with Olof on irc and it is
+> probably best to revert to v1 and push a single patch through, either
+> through pinctrl or armsoc. If you have further patches for 3.14 could
+> you pull this one in along with it ? If not then I'll ask Olof to pull
+> it in instead.
 
-The screen on the Lenovo Yoga 2 Pro can rotate up to 180 degrees and it would be awesome
-if we could rotate it automatically under Linux. xrandr can already rotate it, what is missing 
-is an event that we can trigger on. 
+Not quite following, I have ACKed the patches, so please push
+whatever changes you need done through ARM SoC as this is
+basically a device tree problem.
 
-Is there any way to find out 
-    a) if the screen is opened for more than 90 degrees?
-    a) what the opening angle of the screen is?
-
-I guess there must be support somewhere, as it is supposed to happen
-automatically under windows. [1]
-
-I am still facing the problem that there are no keycodes present for
-some keys [0] - if you have a hint for this problem, I am wondering 
-if anyone has a pointer on how to solve one of these issues?
-
-Cheers,
-
-Nico
-
-[0] https://lkml.org/lkml/2014/1/28/251
-[1] I have never tried windows on this device, but from the forums and
-    marketing I assume it works trigger based on the opening angle.
-
-
-
--- 
-PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
+Yours,
+Linus Walleij
