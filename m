@@ -1,72 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753603AbaBJTvb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 14:51:31 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35140 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754391AbaBJTr2 (ORCPT
+	id S1754671AbaBJTvj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 14:51:39 -0500
+Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:34481
+	"EHLO hallynmail2" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753740AbaBJTvf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:47:28 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Mikhail Zolotaryov <lebon@lebon.org.ua>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 026/124] USB: Nokia 502 is an unusual device
-Date: Mon, 10 Feb 2014 11:39:26 -0800
-Message-Id: <1392061264-28124-27-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
-References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Mon, 10 Feb 2014 14:51:35 -0500
+Date: Mon, 10 Feb 2014 20:51:33 +0100
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        lkml <linux-kernel@vger.kernel.org>, stgraber@ubuntu.com,
+        apw@canonical.com
+Subject: overlayfs mounts in user namespaces
+Message-ID: <20140210195133.GA10107@mail.hallyn.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.18 -stable review patch.  If anyone has any objections, please let me know.
+Hi Eric,
 
-------------------
+most filesystems cannot be mounted in a non-init user namespace because we
+don't trust the superblock parsers to DTRT when handed garbage.  I was
+wondering if you had any ideas on ways that allowing root in a non-init userns
+to mount an overlayfs fs would be dangerous?  There's no superblock parsing in
+that case at all;  writes end up being allowed if and only if the userid owning
+the 'upper' (writeable) layer is mapped into the userns.  Near as I can tell
+it should be quite safe.  But my imagination isn't the most active.
 
-From: Mikhail Zolotaryov <lebon@lebon.org.ua>
+I assume there would be concerns about memory usage if the system is not
+configured to place all logged-in users into configured cgroups?  Is there
+anything else you can think of that could be abused?
 
-commit 0e16114f2db4838251fb64f3b550996ad3585890 upstream.
+(I realize overlayfs isn't upstream yet so the question may not be all that
+interesting to most people...)
 
-The USB storage operation of Nokia Asha 502 Dual SIM smartphone running Asha
-Platform 1.1.1 is unreliable in respect of data consistency (i.e. transfered
-files are corrupted). A similar issue is described here:
-http://discussions.nokia.com/t5/Asha-and-other-Nokia-Series-30/Nokia-301-USB-transfers-and-corrupted-files/td-p/1974170
-
-The workaround is (MAX_SECTORS_64):
-   rmmod usb_storage && modprobe usb_storage quirks=0421:06aa:m
-
-The patch adds the tested device to the unusual list permanently.
-
-Signed-off-by: Mikhail Zolotaryov <lebon@lebon.org.ua>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/usb/storage/unusual_devs.h | 7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/drivers/usb/storage/unusual_devs.h b/drivers/usb/storage/unusual_devs.h
-index df8c74b..3224305 100644
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -226,6 +226,13 @@ UNUSUAL_DEV(  0x0421, 0x0495, 0x0370, 0x0370,
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_MAX_SECTORS_64 ),
- 
-+/* Patch submitted by Mikhail Zolotaryov <lebon@lebon.org.ua> */
-+UNUSUAL_DEV(  0x0421, 0x06aa, 0x1110, 0x1110,
-+		"Nokia",
-+		"502",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_MAX_SECTORS_64 ),
-+
- #ifdef NO_SDDR09
- UNUSUAL_DEV(  0x0436, 0x0005, 0x0100, 0x0100,
- 		"Microtech",
--- 
-1.8.3.2
-
+thanks,
+-serge
