@@ -1,89 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777AbaBJKgH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 05:36:07 -0500
-Received: from smtp.csie.ntu.edu.tw ([140.112.30.61]:51352 "EHLO
-	smtp.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751851AbaBJKf7 (ORCPT
+	id S1752796AbaBJKhM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 05:37:12 -0500
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:51615 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752089AbaBJKhK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 05:35:59 -0500
-From: Chen-Yu Tsai <wens@csie.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Emilio Lopez <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>
-Cc: Chen-Yu Tsai <wens@csie.org>, linux-arm-kernel@lists.infradead.org,
-        linux-sunxi@googlegroups.com, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v4 0/8] Add Allwinner A20 GMAC ethernet support
-Date: Mon, 10 Feb 2014 18:35:46 +0800
-Message-Id: <1392028554-32545-1-git-send-email-wens@csie.org>
-X-Mailer: git-send-email 1.9.rc1
+	Mon, 10 Feb 2014 05:37:10 -0500
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: monstr@monstr.eu, Josh Cartwright <josh.cartwright@ni.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Rob Herring <robherring2@gmail.com>,
+        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: zynq: Add waituart implementation
+Date: Mon, 10 Feb 2014 11:37:03 +0100
+Message-Id: <13a04fc77bd93b2ad5a15a8967627a11fb7c8925.1392028615.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-22013-1392028623-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-This is the v4 of the remaining Allwinner A20 GMAC glue layer patches.
-The stmmac driver changes have been merged through net-next. The
-remaining bits are clock and DT patches. The patches should be applied
-over my clock renaming patches.
+--=_mimegpg-monstr-desktop-22013-1392028623-0001
 
-The Allwinner A20 SoC integrates an early version of dwmac
-IP from Synopsys. On top of that is a hardware glue layer.
-This layer needs to be configured before the dwmac can be
-used.
+Add missing waituart implementation.
 
-Part of the glue layer is a clock mux, which controls the
-source and direction of the TX clock used by GMAC.
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+---
 
-Changes since v3:
+ arch/arm/include/debug/zynq.S | 3 +++
+ 1 file changed, 3 insertions(+)
 
-  * Rework error checking in GMAC clock driver
-  * Clarify required parent clock order for GMAC clock in DT bindings
-  * Rewrite commit log for "ARM: dts: sun7i: Add ethernet alias for GMAC"
-  * Corrected "a20-olinuxino-micro" in commit message
-  * Rewrite comments in sun7i dtsi to clarify purpose of dummy clocks
-  * Rebase onto Maxime's sunxi-next branch
+diff --git a/arch/arm/include/debug/zynq.S b/arch/arm/include/debug/zynq.S
+index f9aa974..0b762fa 100644
+--- a/arch/arm/include/debug/zynq.S
++++ b/arch/arm/include/debug/zynq.S
+@@ -42,6 +42,9 @@
+ 		.endm
 
-Changes since v2:
+ 		.macro	waituart,rd,rx
++1001:		ldr	\rd, [\rx, #UART_SR_OFFSET]
++		tst	\rd, #UART_SR_TXEMPTY
++		beq	1001b
+ 		.endm
 
-  * Added more comments on GMAC clock driver
-  * Drop CLK_SET_PARENT_GATE in GMAC clock driver
-  * Use macro for max clock parents
-  * Line wrapping
-
-Changes since v1:
-
-  * Added optional reset control to stmmac driver core
-  * Added non CONFIG_RESET_CONROLLER routines for the above change
-  * Extended callback API, as discussed with Srinivas
-  * Used new stmmac_of_data to pass features and callbacks,
-    instead of platform data, as discussed
-  * Seperated clock module glue layer into clock driver
-
-Cheers,
-ChenYu
+ 		.macro	busyuart,rd,rx
+--
+1.8.2.3
 
 
-Chen-Yu Tsai (8):
-  clk: sunxi: Add Allwinner A20/A31 GMAC clock unit
-  ARM: dts: sun7i: Add GMAC clock node to sun7i DTSI
-  ARM: dts: sun7i: Add GMAC controller node to sun7i DTSI
-  ARM: dts: sun7i: Add pin muxing options for the GMAC
-  ARM: dts: sun7i: cubietruck: Enable the GMAC
-  ARM: dts: sun7i: cubieboard2: Enable GMAC instead of EMAC
-  ARM: dts: sun7i: a20-olinuxino-micro: Enable GMAC instead of EMAC
-  ARM: dts: sun7i: Add ethernet alias for GMAC
+--=_mimegpg-monstr-desktop-22013-1392028623-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
 
- Documentation/devicetree/bindings/clock/sunxi.txt | 30 +++++++
- arch/arm/boot/dts/sun7i-a20-cubieboard2.dts       | 27 +++----
- arch/arm/boot/dts/sun7i-a20-cubietruck.dts        | 12 +++
- arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts   | 27 +++----
- arch/arm/boot/dts/sun7i-a20.dtsi                  | 71 ++++++++++++++++-
- drivers/clk/sunxi/clk-sunxi.c                     | 97 +++++++++++++++++++++++
- 6 files changed, 233 insertions(+), 31 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
--- 
-1.9.rc1
+iEYEABECAAYFAlL4q88ACgkQykllyylKDCGGVgCfQGfyw1vgX6obu/J3SXkZrgrs
+JPUAoJjP4B6D0vtoT34zEtq+49chjtWa
+=7RZ7
+-----END PGP SIGNATURE-----
 
+--=_mimegpg-monstr-desktop-22013-1392028623-0001--
