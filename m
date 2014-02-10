@@ -1,57 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676AbaBJSgy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 13:36:54 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:39933 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752526AbaBJSgs (ORCPT
+	id S1752821AbaBJSik (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 13:38:40 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37664 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752740AbaBJSig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 13:36:48 -0500
+	Mon, 10 Feb 2014 13:38:36 -0500
+From: Kevin Hilman <khilman@linaro.org>
+To: Nishanth Menon <nm@ti.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        Tony Lindgren <tony@atomide.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH] ARM: multi_v7_defconfig: Select CONFIG_SOC_DRA7XX
+References: <1391700571-31784-1-git-send-email-nm@ti.com>
+Date: Mon, 10 Feb 2014 10:38:34 -0800
+In-Reply-To: <1391700571-31784-1-git-send-email-nm@ti.com> (Nishanth Menon's
+	message of "Thu, 6 Feb 2014 09:29:31 -0600")
+Message-ID: <7hlhxi95jp.fsf@paris.lan>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <CAK9yfHyBRvr5fDCiCsNWV2q83PDsY=b1H3ocmk4pQ96m5m0cHg@mail.gmail.com>
-References: <1391859219-3102-1-git-send-email-lpapp@kde.org>
-	<CAK9yfHx2W3KXzBJavpDwXqBUxM8Uw6tWLRGBLjUq1jS_yWYw-Q@mail.gmail.com>
-	<20140210122129.GA23053@lee--X1>
-	<CAK9yfHyBRvr5fDCiCsNWV2q83PDsY=b1H3ocmk4pQ96m5m0cHg@mail.gmail.com>
-Date: Mon, 10 Feb 2014 18:36:47 +0000
-X-Google-Sender-Auth: cHUq7dfx5V2x2GcW8jeDDHw22OM
-Message-ID: <CAOMwXhOz5gMg5xTfh7QAPji8okzK8ZNjd=_mC1Rq9TUkn2SD_Q@mail.gmail.com>
-Subject: Re: [PATCH v2] mfd: MAX6650/6651 support
-From: Laszlo Papp <lpapp@kde.org>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 3:20 PM, Sachin Kamat <sachin.kamat@linaro.org> wrote:
-> On 10 February 2014 17:51, Lee Jones <lee.jones@linaro.org> wrote:
->>> > +#include <linux/device.h>
->>> > +#include <linux/mfd/core.h>
->>> > +#include <linux/module.h>
->>> > +#include <linux/i2c.h>
->>>
->>> Please arrange these alphabetically.
->>
->> Why?
+Nishanth Menon <nm@ti.com> writes:
+
+> Select CONFIG_SOC_DRA7XX so that we can boot dra7-evm.
+> DRA7 family are A15 based processors that supports LPAE and an
+> evolutionary update to the OMAP5 generation of processors.
 >
-> 1. It makes it easier to avoid adding duplicate includes.
-> 2. Code looks more ordered/organized.
-> 3. Prevents further clean up patches arranging them so :)
+> Signed-off-by: Nishanth Menon <nm@ti.com>
+> ---
+>
+> based on v3.13-rc1 kernel tag - tested on v3.14-rc1 and next-20140206
 
-1) I am sorry, but I need to disagree with this one, personally. Check
-duplicates could be done by a util at any given moment if it becomes a
-pressing issue.
+Applied to arm-soc/fixes for v3.14-rc.
 
-2) Not for me. I prefer hierarchical dependency based inclusion
-between headers if there is such a thing, or just orthogonal if not.
-
-3) It does not apply to my taste due to 1-2).
-
-I would also like to add further detriments:
-
-4) file rename could rearrange the list with your suggestion.
-
-5) It would be inconsistent with a large code base out there.
+Kevin
