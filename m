@@ -1,205 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751949AbaBJEyW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 23:54:22 -0500
-Received: from ozlabs.org ([203.10.76.45]:45593 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751678AbaBJEyU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 23:54:20 -0500
-Date: Mon, 10 Feb 2014 15:54:12 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Subject: linux-next: build failure after merge of the final tree (staging
- tree related)
-Message-Id: <20140210155412.d42b2dda36feac3e9c8733fe@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__10_Feb_2014_15_54_12_+1100_Itl8SJ67dqJbfMsM"
+	id S1750890AbaBJFBl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 00:01:41 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35255 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750719AbaBJFBk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 00:01:40 -0500
+Message-ID: <52F85D2F.6010501@infradead.org>
+Date: Sun, 09 Feb 2014 21:01:35 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Gene Heskett <gheskett@wdtv.com>
+CC: Ken Moffat <zarniwhoop@ntlworld.com>, linux-kernel@vger.kernel.org
+Subject: Re: make oldfonfig broken.
+References: <1391971686-9517-1-git-send-email-richard@nod.at> <201402092314.58129.gheskett@wdtv.com> <52F852DA.9040407@infradead.org> <201402092332.32439.gheskett@wdtv.com>
+In-Reply-To: <201402092332.32439.gheskett@wdtv.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__10_Feb_2014_15_54_12_+1100_Itl8SJ67dqJbfMsM
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 02/09/2014 08:32 PM, Gene Heskett wrote:
+> On Sunday 09 February 2014, Randy Dunlap wrote:
+>> On 02/09/2014 08:14 PM, Gene Heskett wrote:
+>>> On Sunday 09 February 2014, Randy Dunlap wrote:
+>>>> On 02/09/2014 07:46 PM, Gene Heskett wrote:
+>>>>> On Sunday 09 February 2014, Randy Dunlap wrote:
+>>>>>> On 02/09/2014 07:07 PM, Ken Moffat wrote:
+>>>>>>> On Sun, Feb 09, 2014 at 06:05:41PM -0500, Gene Heskett wrote:
+>>>>>>>> On Sunday 09 February 2014, Paul Bolle wrote:
+>>>>>>>>> Feel free to open a new thread, with the relevant details, and
+>>>>>>>>> involve the relevant people and lists. I have no idea what you're
+>>>>>>>>> going on about and could not care less (in the context of this
+>>>>>>>>> thread).
+>>>>>>>>>
+>>>>>>>>>
+>>>>>>>>> Paul Bolle
+>>>>>>>>
+>>>>>>>> Been tried, got zero response.  Frankly, posting just to lkml,
+>>>>>>>> hoping the revalent people see it, is beginning to act like
+>>>>>>>> posting to a black hole.
+>>>>>>>>
+>>>>>>>  I saw one response to you, from Randy Dunlap, asking for more
+>>>>>>>
+>>>>>>> information : https://lkml.org/lkml/2014/2/8/153
+>>>>>>
+>>>>>> wow, I don't know how I saw this message (thanks, Ken),
+>>>>>> but replying to this patch was NOT the right thing to do, Gene.
+>>>>>>
+>>>>>> Just reply to my request and I'll be glad to look into it.
+>>>>>>
+>>>>>>>  After your posts a few days ago, I'm tempted to suggest you check
+>>>>>>>
+>>>>>>> your spam filters, and also any mail files your virus scanner might
+>>>>>>> have quarantined.  But it is also possible that you just haven't
+>>>>>>> received it - email is like that.
+>>>>>>>
+>>>>>>> ط¤آ¸en
+>>>>>
+>>>>> Spam and viri filters watched carefully.  I also use mailfilter, and
+>>>>> watch its logs full time for FP's.
+>>>>
+>>>> Still -- this ATSC problem should not be part of a reply to the Remove
+>>>> DEPRECATED patch.
+>>>
+>>> True.  But I got some attention.
+>>>
+>>>>> And I didn't reply because the question seemed way too broad, almost
+>>>>> as if
+>>>>
+>>>> what question seemed to broad?
+>>>
+>>> You wanted to see "a" config, but I wanted to show the diffs. Also
+>>> yesterday I hadn't gone thru what I have yet to see where it falls
+>>> apart.
+>>>
+>>>>> my lament wasn't read.  That and the mail server doesn't like big
+>>>>
+>>>> what mail server?  yours?  wdtv?  vger.kernel.org certainly has no
+>>>> problem with them.
+>>>
+>>> I have gotten bounced from lkml because a screen shot pix of a failed
+>>> boot was too big.  Perhaps 18 months or so.  It was big, from a 10
+>>> megapixel camera.
+>>>
+>>>>> attachments. So rather than reply to the list, I'll excise some of
+>>>>> the addresses that bounce from a reply_all or don't like me, and
+>>>>> send the .config from a 3.019 build which seems ok, but by the time
+>>>>> that config is run thru a make oldconfig at 3.8.2, most all the
+>>>>> media, ATSC and DVB stuff is gone.  So I'll attach that one too. 
+>>>>> The later file grew 22kb, but wholesale parts of the first one are
+>>>>> missing from the 2nd.
+>>>>
+>>>> Gene, I want to make sure where you are saying the problem is.
+>>>> Is it going directly from 3.019 to 3.8.2, with no intervening kernel
+>>>> versions?
+>>>
+>>> No, one intermediate step in this case.
+>>>
+>>> I started with 3.0.19, which was fine, took that one to 3.2.40, and
+>>> that one to 3.8.2 because I don't have anything between those here. 
+>>> Not exactly a step by step.
+>>
+>> and when you go from one kernel version to the next, do you use
+>>
+>> $ make oldconfig
+>> and answer all of its questions, or do you use
+> 
+> I generally answer all its questions, or take the default by hitting enter, 
+> but I do read all its questions.
+> 
+>> $ yes '' | make oldconfig
+> 
+> Never done that in all these years.
+> 
+>> or some other variant?  (I guess in your super build script.)
+> 
+> This is long before my "super script" gets fired off.
+> 
+> And that part is actually working well, run it as root, do a grub-update 
+> and reboot.
+> 
+> Cheers, Gene
+> 
 
-Hi all,
+You need to have a Kconfig symbol named DVB_CORE enabled.
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+In 3.8.2 (and likely previously, but not in 3.2.40),
+DVB_CORE depends on having both MEDIA_SUPPORT and MEDIA_DIGITAL_TV_SUPPORT
+enabled.  Your .confile file  has MEDIA_SUPPORT enabled but not
+MEDIA_DIGITAL_TV_SUPPORT.
 
-drivers/staging/rtl8188eu/core/rtw_mlme.c: In function '_rtw_init_mlme_priv=
-':
-drivers/staging/rtl8188eu/core/rtw_mlme.c:65:2: error: implicit declaration=
- of function 'vzalloc' [-Werror=3Dimplicit-function-declaration]
-  pbuf =3D vzalloc(MAX_BSS_CNT * (sizeof(struct wlan_network)));
-  ^
-drivers/staging/rtl8188eu/core/rtw_mlme.c:65:7: warning: assignment makes p=
-ointer from integer without a cast [enabled by default]
-  pbuf =3D vzalloc(MAX_BSS_CNT * (sizeof(struct wlan_network)));
-       ^
-drivers/staging/rtl8188eu/core/rtw_mlme.c: In function '_rtw_free_mlme_priv=
-':
-drivers/staging/rtl8188eu/core/rtw_mlme.c:133:4: error: implicit declaratio=
-n of function 'vfree' [-Werror=3Dimplicit-function-declaration]
-    vfree(pmlmepriv->free_bss_buf);
-    ^
-drivers/staging/rtl8188eu/core/rtw_mp.c: In function '_rtw_mp_xmit_priv':
-drivers/staging/rtl8188eu/core/rtw_mp.c:946:3: error: implicit declaration =
-of function 'vfree' [-Werror=3Dimplicit-function-declaration]
-   vfree(pxmitpriv->pallocated_xmit_extbuf);
-   ^
-drivers/staging/rtl8188eu/core/rtw_mp.c:959:2: error: implicit declaration =
-of function 'vzalloc' [-Werror=3Dimplicit-function-declaration]
-  pxmitpriv->pallocated_xmit_extbuf =3D vzalloc(num_xmit_extbuf * sizeof(st=
-ruct xmit_buf) + 4);
-  ^
-drivers/staging/rtl8188eu/core/rtw_mp.c:959:36: warning: assignment makes p=
-ointer from integer without a cast [enabled by default]
-  pxmitpriv->pallocated_xmit_extbuf =3D vzalloc(num_xmit_extbuf * sizeof(st=
-ruct xmit_buf) + 4);
-                                    ^
-drivers/staging/rtl8188eu/core/rtw_recv.c: In function '_rtw_init_recv_priv=
-':
-drivers/staging/rtl8188eu/core/rtw_recv.c:80:2: error: implicit declaration=
- of function 'vzalloc' [-Werror=3Dimplicit-function-declaration]
-  precvpriv->pallocated_frame_buf =3D vzalloc(NR_RECVFRAME * sizeof(union r=
-ecv_frame) + RXFRAME_ALIGN_SZ);
-  ^
-drivers/staging/rtl8188eu/core/rtw_recv.c:80:34: warning: assignment makes =
-pointer from integer without a cast [enabled by default]
-  precvpriv->pallocated_frame_buf =3D vzalloc(NR_RECVFRAME * sizeof(union r=
-ecv_frame) + RXFRAME_ALIGN_SZ);
-                                  ^
-drivers/staging/rtl8188eu/core/rtw_recv.c: In function '_rtw_free_recv_priv=
-':
-drivers/staging/rtl8188eu/core/rtw_recv.c:132:3: error: implicit declaratio=
-n of function 'vfree' [-Werror=3Dimplicit-function-declaration]
-   vfree(precvpriv->pallocated_frame_buf);
-   ^
-drivers/staging/rtl8188eu/core/rtw_sta_mgt.c: In function '_rtw_init_sta_pr=
-iv':
-drivers/staging/rtl8188eu/core/rtw_sta_mgt.c:82:2: error: implicit declarat=
-ion of function 'vzalloc' [-Werror=3Dimplicit-function-declaration]
-  pstapriv->pallocated_stainfo_buf =3D vzalloc(sizeof(struct sta_info) * NU=
-M_STA + 4);
-  ^
-drivers/staging/rtl8188eu/core/rtw_sta_mgt.c:82:35: warning: assignment mak=
-es pointer from integer without a cast [enabled by default]
-  pstapriv->pallocated_stainfo_buf =3D vzalloc(sizeof(struct sta_info) * NU=
-M_STA + 4);
-                                   ^
-drivers/staging/rtl8188eu/core/rtw_sta_mgt.c: In function '_rtw_free_sta_pr=
-iv':
-drivers/staging/rtl8188eu/core/rtw_sta_mgt.c:211:4: error: implicit declara=
-tion of function 'vfree' [-Werror=3Dimplicit-function-declaration]
-    vfree(pstapriv->pallocated_stainfo_buf);
-    ^
-drivers/staging/rtl8188eu/core/rtw_xmit.c: In function '_rtw_init_xmit_priv=
-':
-drivers/staging/rtl8188eu/core/rtw_xmit.c:94:2: error: implicit declaration=
- of function 'vzalloc' [-Werror=3Dimplicit-function-declaration]
-  pxmitpriv->pallocated_frame_buf =3D vzalloc(NR_XMITFRAME * sizeof(struct =
-xmit_frame) + 4);
-  ^
-drivers/staging/rtl8188eu/core/rtw_xmit.c:94:34: warning: assignment makes =
-pointer from integer without a cast [enabled by default]
-  pxmitpriv->pallocated_frame_buf =3D vzalloc(NR_XMITFRAME * sizeof(struct =
-xmit_frame) + 4);
-                                  ^
-drivers/staging/rtl8188eu/core/rtw_xmit.c:132:32: warning: assignment makes=
- pointer from integer without a cast [enabled by default]
-  pxmitpriv->pallocated_xmitbuf =3D vzalloc(NR_XMITBUFF * sizeof(struct xmi=
-t_buf) + 4);
-                                ^
-drivers/staging/rtl8188eu/core/rtw_xmit.c:174:36: warning: assignment makes=
- pointer from integer without a cast [enabled by default]
-  pxmitpriv->pallocated_xmit_extbuf =3D vzalloc(num_xmit_extbuf * sizeof(st=
-ruct xmit_buf) + 4);
-                                    ^
-drivers/staging/rtl8188eu/core/rtw_xmit.c: In function '_rtw_free_xmit_priv=
-':
-drivers/staging/rtl8188eu/core/rtw_xmit.c:262:3: error: implicit declaratio=
-n of function 'vfree' [-Werror=3Dimplicit-function-declaration]
-   vfree(pxmitpriv->pallocated_frame_buf);
-   ^
-drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c: In function 'rtw_IOL_cmd=
-_tx_pkt_buf_dump':
-drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c:368:2: error: implicit de=
-claration of function 'vzalloc' [-Werror=3Dimplicit-function-declaration]
-  u8 *pbuf =3D vzalloc(data_len+10);
-  ^
-drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c:368:13: warning: initiali=
-zation makes pointer from integer without a cast [enabled by default]
-  u8 *pbuf =3D vzalloc(data_len+10);
-             ^
-drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c:390:3: error: implicit de=
-claration of function 'vfree' [-Werror=3Dimplicit-function-declaration]
-   vfree(pbuf);
-   ^
-drivers/staging/rtl8188eu/os_dep/ioctl_linux.c: In function 'rtw_wx_set_pri=
-v':
-drivers/staging/rtl8188eu/os_dep/ioctl_linux.c:5651:2: error: implicit decl=
-aration of function 'vmalloc' [-Werror=3Dimplicit-function-declaration]
-  ext =3D vmalloc(len);
-  ^
-drivers/staging/rtl8188eu/os_dep/ioctl_linux.c:5651:6: warning: assignment =
-makes pointer from integer without a cast [enabled by default]
-  ext =3D vmalloc(len);
-      ^
-drivers/staging/rtl8188eu/os_dep/ioctl_linux.c:5656:3: error: implicit decl=
-aration of function 'vfree' [-Werror=3Dimplicit-function-declaration]
-   vfree(ext);
-   ^
-drivers/staging/rtl8188eu/os_dep/usb_intf.c: In function 'rtw_usb_if1_init':
-drivers/staging/rtl8188eu/os_dep/usb_intf.c:649:21: error: implicit declara=
-tion of function 'vzalloc' [-Werror=3Dimplicit-function-declaration]
-  padapter =3D (struct adapter *)vzalloc(sizeof(*padapter));
-                     ^
-drivers/staging/rtl8188eu/os_dep/usb_intf.c:649:13: warning: cast to pointe=
-r from integer of different size [-Wint-to-pointer-cast]
-  padapter =3D (struct adapter *)vzalloc(sizeof(*padapter));
-             ^
-drivers/staging/rtl8188eu/os_dep/usb_intf.c:749:4: error: implicit declarat=
-ion of function 'vfree' [-Werror=3Dimplicit-function-declaration]
-    vfree(padapter);
-    ^
+In your 3.2.40 kernel source tree, just edit your .config file and delete the line
+that says:
+# CONFIG_MEDIA_DIGITAL_TV_SUPPORT is not set
 
-Caused by commits 2397c6e09276 ("staging: r8188eu: Remove wrappers around
-vmalloc and vzalloc") and 03bd6aea7ba6 ("staging: r8188eu: Remove
-wrappers around vfree") from the staging tree.  See Rule 1 in
-Documentation/SubmitChecklist ...
+then run [1]
+$ make oldconfig
+and it will ask you how to set the Kconfig symbol.  Tell it 'y'.
 
-I have disabled that driver for today.
+and if you can find this line in your .config file:
+CONFIG_MEDIA_SUBDRV_AUTOSELECT=y
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+delete it. Run 'make oldconfig' again if you did so at [1] above.
+For this Kconfig question:
+  Autoselect tuners and i2c modules to build (MEDIA_SUBDRV_AUTOSELECT),
+answer N.
+Then you can select all of the tuners and frontends that you want.
+There are LOTS of them to choose from.
 
---Signature=_Mon__10_Feb_2014_15_54_12_+1100_Itl8SJ67dqJbfMsM
-Content-Type: application/pgp-signature
+IIRC, this all happened because someone decided that they could make the AUTOSELECT
+driver feature Better!  ugh.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Good luck. Let me know if you need more guidance.
 
-iQIcBAEBCAAGBQJS+Ft6AAoJEMDTa8Ir7ZwVE5oQAIHDcF/KqWDQlpAtJqBG77FC
-q6vpMAbF/xrPkqPwsFbNMWVfer2PITuGePpDC2BI79cRPa8Ko09Tn/bOp2Ez7Ndo
-aKvyrRi4rdS2exQVe1kEStxVr+tq6L1CG6MMY2kQlD6qUpy8zs8kKPUWfayXvQ7I
-Z5Cf/w4mNVVdclfdTLENV/DhLeM3guoHFPuC9aJbt+fiNSJFzMCmRFLxgwyHdRwT
-lINNpu9DvlHtt+yaZJcU082I5sPV6tgoA1fhVTTAsMf7c4RZR/smg3blldPaYJcV
-c20geGqPyj0Rpr4L3j9c2fAg42kx47OkYd+yr3tUsnSJoshr1+Bl+t9GJCDAteMB
-iHlkM3B/s1gZOAKcNj1jY5vv2/JERnbSFfuH1rRoFhMFSoi8KqggPDsAeQITg5P6
-1qnAhTsrJEEejnAqylizbahF7qBk6YnG13YCjqighqJmcRDD30DIRk3hEYyFil/a
-3Twu5QH5b+klCTdHRDF60vPnQATP9XrzR64KWfeWfLc/4xSNhGJdP4+UBIbbTCnV
-ryi87IVUEPPIoY/eWy4HwU40wDDssk8UHt4HsafrvzMFiyJBZVar9HoiQI8dT46u
-oz5bTnPaMDGwhejjNHjFb2agKjEZgSJ7TG2tZ6nxfvyMjowhmSeaLaBrhxVGJ2at
-2DtWWpo2d7ay5DkwFg61
-=OmjC
------END PGP SIGNATURE-----
 
---Signature=_Mon__10_Feb_2014_15_54_12_+1100_Itl8SJ67dqJbfMsM--
+-- 
+~Randy
