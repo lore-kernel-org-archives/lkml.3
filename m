@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753156AbaBJWMf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 17:12:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5265 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750890AbaBJWMc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 17:12:32 -0500
-Date: Mon, 10 Feb 2014 17:11:59 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
-        jolsa@redhat.com, jmario@redhat.com, fowles@inreach.com,
-        eranian@google.com
-Subject: Re: [PATCH 00/21] perf, c2c: Add new tool to analyze cacheline
- contention on NUMA systems
-Message-ID: <20140210221159.GT25953@redhat.com>
-References: <1392053356-23024-1-git-send-email-dzickus@redhat.com>
- <20140210211825.GB5002@laptop.programming.kicks-ass.net>
+	id S1753246AbaBJWNX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 17:13:23 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:51638 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752231AbaBJWNW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 17:13:22 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AuwHAL5O+VJ5LGaB/2dsb2JhbABZgwyDPrdphVCBFhd0giUBAQU6HCMQCAMOBwMJJQ8FJQMhE4gEyV8XFo5nB4Q4BJgqik+HUoFvgVIo
+Date: Tue, 11 Feb 2014 09:12:59 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: viro@zeniv.linux.org.uk, bpm@sgi.com, tytso@mit.edu,
+        adilger.kernel@dilger.ca, jack@suse.cz, mtk.manpages@gmail.com,
+        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Ashish Sangwan <a.sangwan@samsung.com>
+Subject: Re: [PATCH RESEND 1/10] fs: Add new flag(FALLOC_FL_COLLAPSE_RANGE)
+ for fallocate
+Message-ID: <20140210221259.GW13647@dastard>
+References: <1391319821-3135-1-git-send-email-linkinjeon@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140210211825.GB5002@laptop.programming.kicks-ass.net>
+In-Reply-To: <1391319821-3135-1-git-send-email-linkinjeon@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 10:18:25PM +0100, Peter Zijlstra wrote:
-> On Mon, Feb 10, 2014 at 12:28:55PM -0500, Don Zickus wrote:
-> > With the introduction of NUMA systems, came the possibility of remote memory accesses.
-> > Combine those remote memory accesses with contention on the remote node (ie a modified
-> > cacheline) and you have a possibility for very long latencies.  These latencies can
-> > bottleneck a program.
-> > 
-> > The program added by these patches, helps detect the situation where two nodes are
-> > 'tugging' on the same _data_ cacheline.  The term used through out this program and
-> > the various changelogs is called a HITM.  This means nodeX went to read a cacheline
-> > and it was discovered to be loaded in nodeY's LLC cache (hence the cacheHIT). The 
-> > remote cacheline was also in a 'M'odified state thus creating a 'HIT M' for hit in
-> > a modified state.  HITMs can happen locally and remotely.  This program's interest
-> > is mainly in remote HITMs as they cause the longest latencies.
+On Sun, Feb 02, 2014 at 02:43:41PM +0900, Namjae Jeon wrote:
+> From: Namjae Jeon <namjae.jeon@samsung.com>
 > 
-> All of that is true of the traditional SMP system too. Just use lower
-> level caches.
+> Add new flag(FALLOC_FL_COLLAPSE_RANGE) for fallocate.
+> updated detailed semantics in comments.
+> 
+> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+> Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
 
-Yup.  We just focused on the longer latencies which is the remote case.  I
-think the idea was overflowing an L1 and L2 wasn't that hard, so the gain
-on solving local LLC HITMs wouldn't be that much.  Maybe we are wrong.
+Looks OK to me.
 
-Anyway, if this tool can help solve any bottlenecks, NUMA or non-NUMA,
-that would be great. :-)
-
-Cheers,
-Don
-
+Reviewed-by: Dave Chinner <dchinner@redhat.com>
+-- 
+Dave Chinner
+david@fromorbit.com
