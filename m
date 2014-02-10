@@ -1,124 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752567AbaBJRJP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 12:09:15 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40165 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752155AbaBJRJN (ORCPT
+	id S1752711AbaBJRJm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 12:09:42 -0500
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:43043 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752180AbaBJRJk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 12:09:13 -0500
-Date: Mon, 10 Feb 2014 17:09:00 +0000
-From: Mark Brown <broonie@kernel.org>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        linux-spi@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Alok Chauhan <alokc@codeaurora.org>,
-        Gilad Avidov <gavidov@codeaurora.org>,
-        Kiran Gunda <kgunda@codeaurora.org>,
-        Sagar Dharia <sdharia@codeaurora.org>
-Message-ID: <20140210170900.GC13533@sirena.org.uk>
-References: <1391705868-20091-1-git-send-email-iivanov@mm-sol.com>
- <1391705868-20091-3-git-send-email-iivanov@mm-sol.com>
- <20140207171202.GD1757@sirena.org.uk>
- <1392049766.2853.43.camel@iivanov-dev>
+	Mon, 10 Feb 2014 12:09:40 -0500
+From: Florian Fainelli <f.fainelli@gmail.com>
+To: Gerlando Falauto <gerlando.falauto@keymile.com>
+Cc: Matthew Garrett <matthew.garrett@nebula.com>,
+        netdev <netdev@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>
+Subject: Re: [PATCH V3] net/dt: Add support for overriding phy configuration from device tree
+Date: Mon, 10 Feb 2014 09:09:36 -0800
+Message-ID: <29007785.iYrLORbRAN@lenovo>
+User-Agent: KMail/4.11.3 (Linux/3.11.0-15-generic; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <52F8FB03.6040606@keymile.com>
+References: <7510122.cayuQ6qt8r@wuerfel> <CAGVrzcZ4TFd=9KP+aoG47QbmqDJ1i23WBcEWDbzNRUfGmPvZHQ@mail.gmail.com> <52F8FB03.6040606@keymile.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5QAgd0e35j3NYeGe"
-Content-Disposition: inline
-In-Reply-To: <1392049766.2853.43.camel@iivanov-dev>
-X-Cookie: My LESLIE GORE record is BROKEN ...
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/2] spi: Add Qualcomm QUP SPI controller support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Gerlando,
 
---5QAgd0e35j3NYeGe
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Le lundi 10 février 2014, 17:14:59 Gerlando Falauto a écrit :
+> Hi,
+> 
+> I'm currently trying to fix an issue for which this patch provides a
+> partial solution, so apologies in advance for jumping into the
+> discussion for my own purposes...
+> 
+> On 02/04/2014 09:39 PM, Florian Fainelli wrote:> 2014-01-17 Matthew
+> 
+> Garrett <matthew.garrett@nebula.com>:
+>  >> Some hardware may be broken in interesting and board-specific ways, such
+>  >> that various bits of functionality don't work. This patch provides a
+>  >> mechanism for overriding mii registers during init based on the
+> 
+> contents of
+> 
+>  >> the device tree data, allowing board-specific fixups without having to
+>  >> pollute generic code.
+>  > 
+>  > It would be good to explain exactly how your hardware is broken
+>  > exactly. I really do not think that such a fine-grained setting where
+>  > you could disable, e.g: 100BaseT_Full, but allow 100BaseT_Half to
+>  > remain usable makes that much sense. In general, Gigabit might be
+>  > badly broken, but 100 and 10Mbits/sec should work fine. How about the
+>  > MASTER-SLAVE bit, is overriding it really required?
+>  > 
+>  > Is not a PHY fixup registered for a specific OUI the solution you are
+>  > looking for? I am also concerned that this creates PHY troubleshooting
+>  > issues much harder to debug than before as we may have no idea about
+>  > how much information has been put in Device Tree to override that.
+>  > 
+>  > Finally, how about making this more general just like the BCM87xx PHY
+>  > driver, which is supplied value/reg pairs directly? There are 16
+>  > common MII registers, and 16 others for vendor specific registers,
+>  > this is just covering for about 2% of the possible changes.
+> 
+> Good point. That would easily help me with my current issue, which
+> requires autoneg to be disabled to begin with (by clearing BMCR_ANENABLE
+> from register 0).
 
-On Mon, Feb 10, 2014 at 06:29:26PM +0200, Ivan T. Ivanov wrote:
-> On Fri, 2014-02-07 at 17:12 +0000, Mark Brown wrote:=20
+Is there a point in time (e.g: after some specific initial configuration has 
+been made) where BMCR_ANENABLE can be used?
 
-> > > +	if (!xfer)
-> > > +		return IRQ_HANDLED;
+> This would not however fix it entirely (I tried a quick hardwired
+> implementation), as the whole PHY machinery would not take that into
+> account and would re-enable autoneg anyway.
+> I also tried changing the patch so that phydev->support gets updated
 
-> > Are you sure?  It seems wrong to just ignore interrupts, some comments
-> > would help explain why.
+There are multiple things that you could try doing here:
 
-> Of course this should never happen. This was left from initial stage
-> of the implementation.
+- override the PHY state machine in your read_status callback to make sure 
+that you always set phydev->autoneg set to AUTONEG_ENABLE
 
-OK, so reporting them as errors seems better then.
+- clear the SUPPORTED_Autoneg bits from phydev->supported right after PHY 
+registration and before the call to phy_start()
 
-> > > +	if (controller->speed_hz !=3D chip->speed_hz) {
-> > > +		ret =3D clk_set_rate(controller->cclk, chip->speed_hz);
-> > > +		if (ret) {
-> > > +			dev_err(controller->dev, "fail to set frequency %d",
-> > > +				chip->speed_hz);
-> > > +			return -EIO;
-> > > +		}
-> > > +	}
+- set the PHY_HAS_MAGICANEG bit in your PHY driver flag
 
-> > Is calling into the clock framework really so expensive that we need to
-> > avoid doing it? =20
+> 
+> (instead of phydev->advertising):
+>  >> +               if (!of_property_read_u32(np, override->prop, &tmp)) {
+>  >> +                       if (tmp) {
+>  >> +                               *val |= override->value;
+>  >> +                               phydev->advertising |=
+> 
+> override->supported;
+> 
+>  >> +                       } else {
+>  >> +                               phydev->advertising &=
+> 
+> ~(override->supported);
+> 
+>  >> +                       }
+>  >> +
+>  >> +                       *mask |= override->value;
+> 
+> What I find weird is that the only way phydev->autoneg could ever be set
+> to disabled is from here (phy.c):
+> 
+> static void phy_sanitize_settings(struct phy_device *phydev)
+> {
+> 	u32 features = phydev->supported;
+> 	int idx;
+> 
+> 	/* Sanitize settings based on PHY capabilities */
+> 	if ((features & SUPPORTED_Autoneg) == 0)
+> 		phydev->autoneg = AUTONEG_DISABLE;
+> 
+> which is in turn only called when phydev->autoneg is set to
+> AUTONEG_DISABLE to begin with:
+> 
+> int phy_start_aneg(struct phy_device *phydev)
+> {
+> 	int err;
+> 
+> 	mutex_lock(&phydev->lock);
+> 
+> 	if (AUTONEG_DISABLE == phydev->autoneg)
+> 		phy_sanitize_settings(phydev);
+> 
+> So could someone please help me figure out what I'm missing here?
 
-> Probably not. But why to call it if the frequency is the same.
+At first glance it looks like the PHY driver should be reading the phydev-
+>autoneg value when the PHY driver config_aneg() callback is called to be 
+allowed to set the forced speed and settings.
 
-It's less code that could go wrong and the check is already there in the
-clock framework hopefully.
-
-> > You also shouldn't be interacting with the hardware in
-> > setup().
-
-> This is internal hw-setup, not master::setup() or I am
-> missing something?
-
-The naming could probably be clearer then - config or something.
-
-> > > +	if (chip->bits_per_word <=3D 8)
-> > > +		controller->bytes_per_word =3D 1;
-> > > +	else if (chip->bits_per_word <=3D 16)
-> > > +		controller->bytes_per_word =3D 2;
-> > > +	else
-> > > +		controller->bytes_per_word =3D 4;
-
-> > This looks like a switch statement, and looking at the above it's not
-> > clear that the device actually supports anything other than whole bytes.
-> > I'm not sure what that would mean from an API point of view.
-
-> SPI API didn't validate struct spi_transfer::len field.
-
-It's supposed to; if the validation is incomplete then that should be
-fixed.
-
---5QAgd0e35j3NYeGe
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS+QepAAoJELSic+t+oim98m8P/1CnfiS2JrsBUDbqMteVfjQ6
-s1rS7R3SU7gNCvuq7wOD2uNmS2CFK1EeSQirPzot1tS3rNeZx6AuRieortYPJfJb
-Z894ofWT8thXHOWNDX2QGKDUS6XZAvsp5y5HOl8b/4R4xwRT7dYqXOjv84KAwa3l
-ONdiWw+z+jjvdwQupSlpGOpN+lgp5CTtlo4k/oQ35VaZ6VdQAcma2psdJamdAzCK
-ayovd01VwhL9s1d81Jd6Hp4+erQONHPWA3v6CBElkyXnCLvXnMTGvDCn4A9dud3q
-WAucQ+xgYPqII4ZnexDyfF2rvp0Cad9536OY8Sw5zx94PipXxW1xbbpGIBUtbFr4
-9/+xU2gr8zMBBWGaQzQb5bIeAmb4q9Ly+vPi9eBMcRgsIDVA0fAPbSrQ0U0xIyVx
-vqoDRKRhCO8gnNwGeTSVCrRx0SnZP9WbPzdCw0pk8t3FABL1jFQFeUql4UJCrfkj
-KSKnPBoRsy4FwL8Bbx+gr7fPcQX/bB/sTNi/+u7wcgK5KAHN9f3C4po5Qstedz3Z
-qC5Kc4MMVM0Utlze66a2mUWxlD59UM/xgHX7ZFkvMl/fgq8JGnC5WZmRc7d/Mai0
-DSJgS6E2asUDd+Bkiv7Ac1O+2Ngwch289970P6AOqY38ZEi7+/XtL41juJfyEZxD
-gTftlYdakcZxbAIWQ3Pl
-=7/+x
------END PGP SIGNATURE-----
-
---5QAgd0e35j3NYeGe--
+The way phy_sanitize_settings() is coded does not make it return a mask of 
+features, but only the forced supported speed and duplex. Then when the link 
+is forced but we are having some issues getting a link status, libphy tries 
+lower speeds and this function is used again to provide the next speed/duplex 
+pair to try.
+-- 
+Florian
