@@ -1,39 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752468AbaBJCJB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 21:09:01 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:49026 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750742AbaBJCJA (ORCPT
+	id S1752400AbaBJCUN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 21:20:13 -0500
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:39571 "EHLO
+	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751532AbaBJCUL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 21:09:00 -0500
-Date: Sun, 09 Feb 2014 18:08:59 -0800 (PST)
-Message-Id: <20140209.180859.1874072271513266305.davem@davemloft.net>
-To: liujunliang_ljl@163.com
-Cc: joe@perches.com, horms@verge.net.au, romieu@fr.zoreil.com,
-        gregkh@linuxfoundation.org, netdev@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sunhecheng@vip.126.com
-Subject: Re: [PATCH] USB2NET : SR9800 : One chip USB2.0 USB2NET SR9800
- Device Driver Support
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1391755365-9202-1-git-send-email-liujunliang_ljl@163.com>
-References: <1391755365-9202-1-git-send-email-liujunliang_ljl@163.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Sun, 9 Feb 2014 21:20:11 -0500
+X-Greylist: delayed 1083 seconds by postgrey-1.27 at vger.kernel.org; Sun, 09 Feb 2014 21:20:11 EST
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Marcel Holtmann <marcel@holtmann.org>
+Cc: Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        Gianluca Anzolin <gianluca@sottospazio.it>,
+        Alexander Holler <holler@ahsoftware.de>,
+        Andrey Vihrov <andrey.vihrov@gmail.com>,
+        Sander Eikelenboom <linux@eikelenboom.it>,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH 11/24] Bluetooth: Simplify RFCOMM session state eval
+Date: Sun,  9 Feb 2014 20:59:11 -0500
+Message-Id: <1391997564-1805-12-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1391997564-1805-1-git-send-email-peter@hurleysoftware.com>
+References: <1391997564-1805-1-git-send-email-peter@hurleysoftware.com>
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: liujunliang_ljl@163.com
-Date: Fri,  7 Feb 2014 14:42:45 +0800
+Merge conditional test for BT_LISTEN session state into following
+switch statement (which is functionally equivalent).
 
-> +MODULE_AUTHOR("Liu Junliang <liujunliang_ljl@163.com");
-> +MODULE_VERSION(DRIVER_VERSION);
-> +MODULE_DESCRIPTION("SR9800 USB 2.0 USB2NET Dev : http://www.corechip-sz.com");
-> +MODULE_LICENSE("GPL");
-> +
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ net/bluetooth/rfcomm/core.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-Please do not add empty lines at the end of files.
+diff --git a/net/bluetooth/rfcomm/core.c b/net/bluetooth/rfcomm/core.c
+index 646b6ff..b5a3785 100644
+--- a/net/bluetooth/rfcomm/core.c
++++ b/net/bluetooth/rfcomm/core.c
+@@ -1967,12 +1967,11 @@ static void rfcomm_process_sessions(void)
+ 			continue;
+ 		}
+ 
+-		if (s->state == BT_LISTEN) {
++		switch (s->state) {
++		case BT_LISTEN:
+ 			rfcomm_accept_connection(s);
+ 			continue;
+-		}
+ 
+-		switch (s->state) {
+ 		case BT_BOUND:
+ 			s = rfcomm_check_connection(s);
+ 			break;
+-- 
+1.8.1.2
+
