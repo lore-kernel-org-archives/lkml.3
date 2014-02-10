@@ -1,226 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752586AbaBJKSr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 05:18:47 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52742 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751502AbaBJKSo (ORCPT
+	id S1752333AbaBJKUY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 05:20:24 -0500
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:60050 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752084AbaBJKUW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 05:18:44 -0500
-Date: Mon, 10 Feb 2014 10:18:42 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Marek Belisko <marek@goldelico.com>
-Cc: "robh+dt@kernel.org" <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "rob@landley.net" <rob@landley.net>,
-        "linville@tuxdriver.com" <linville@tuxdriver.com>,
-        "johannes@sipsolutions.net" <johannes@sipsolutions.net>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "neilb@suse.de" <neilb@suse.de>,
-        "hns@goldelico.com" <hns@goldelico.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [PATCH] net: rfkill-regulator: Add devicetree support.
-Message-ID: <20140210101842.GS25314@e106331-lin.cambridge.arm.com>
-References: <1391802529-29861-1-git-send-email-marek@goldelico.com>
+	Mon, 10 Feb 2014 05:20:22 -0500
+Date: Mon, 10 Feb 2014 11:20:18 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-pwm@vger.kernel.orig,
+        Russell King <linux@arm.linux.org.uk>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: Re: [PATCH resend] pwm: Remove obsolete HAVE_PWM Kconfig symbol
+Message-ID: <20140210102017.GA20143@ulmo.nvidia.com>
+References: <1390550056-5924-1-git-send-email-s.hauer@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="YZ5djTAD1cGYuMQK"
 Content-Disposition: inline
-In-Reply-To: <1391802529-29861-1-git-send-email-marek@goldelico.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1390550056-5924-1-git-send-email-s.hauer@pengutronix.de>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 07, 2014 at 07:48:49PM +0000, Marek Belisko wrote:
-> Signed-off-by: NeilBrown <neilb@suse.de>
-> Signed-off-by: Marek Belisko <marek@goldelico.com>
+
+--YZ5djTAD1cGYuMQK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Fri, Jan 24, 2014 at 08:54:16AM +0100, Sascha Hauer wrote:
+> Before we had the PWM framework we used to have a barebone PWM api. The
+> HAVE_PWM Kconfig symbol used to be selected by the PWM drivers to specify
+> the PWM API is present in the kernel. Since the last legacy driver is gone
+> the HAVE_PWM symbol can go aswell.
+>=20
+> Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> Cc: Eric Miao <eric.y.miao@gmail.com>
+> Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: Thierry Reding <thierry.reding@gmail.com>
+> Cc: linux-pwm@vger.kernel.orig
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Ralf Baechle <ralf@linux-mips.org>
 > ---
-> Based on Neil's patch and extend for documentation and bindings include.
-> 
->  .../bindings/net/rfkill/rfkill-relugator.txt       | 28 ++++++++++++++++
->  include/dt-bindings/net/rfkill-regulator.h         | 23 +++++++++++++
->  net/rfkill/rfkill-regulator.c                      | 38 ++++++++++++++++++++++
->  3 files changed, 89 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/net/rfkill/rfkill-relugator.txt
->  create mode 100644 include/dt-bindings/net/rfkill-regulator.h
-> 
-> diff --git a/Documentation/devicetree/bindings/net/rfkill/rfkill-relugator.txt b/Documentation/devicetree/bindings/net/rfkill/rfkill-relugator.txt
-> new file mode 100644
-> index 0000000..cdb7dd7
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/net/rfkill/rfkill-relugator.txt
-> @@ -0,0 +1,28 @@
-> +Regulator consumer for rfkill devices
+>=20
+> Thierry as PWM maintainer has agreed to take this patch. Would be nice
+> to get some Acks from affected architectures. Russell, Ralf?
 
-What exactly is an "rfkill" device? How is it used? How does it relate
-to other devices in the DT?
+No replies for over two weeks and this looks simple enough, so I just
+went ahead and applied it. Thanks,
 
-To me, this looks like a leak of a Linux abstraction.
+Thierry
 
-> +
-> +Required properties:
-> +- compatible   : Must be "rfkill-regulator".
-> +- label  : Name of rfkill device.
+--YZ5djTAD1cGYuMQK
+Content-Type: application/pgp-signature
 
-What's this for? Why does this need a label in the DT? Surely this can
-be implied by the relationship to a particular radio device?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-> +- type  : Type of rfkill device.
-> +
-> +Possible values (defined in include/dt-bindings/net/rfkill-regulator.h):
-> +	RFKILL_TYPE_ALL
-> +	RFKILL_TYPE_WLAN
-> +	RFKILL_TYPE_BLUETOOTH
-> +	RFKILL_TYPE_UWB
-> +	RFKILL_TYPE_WIMAX
-> +	RFKILL_TYPE_WWAN
-> +	RFKILL_TYPE_GPS
-> +	RFKILL_TYPE_FM
-> +	RFKILL_TYPE_NFC
+iQIcBAEBAgAGBQJS+KfhAAoJEN0jrNd/PrOhoqYP/j7Jp8PGk+gegMSCFQY3txy4
+ns4SJQT7DoSP/ac/7SYtovjuxPgzZ1t2WhTmM+ZALtJ5vy3t0LHr+IUFRp28f0Mu
+P1/rqxyy/sb8dUVMIfhEx/CcR7CZ1i3LFbQkIc7gev7wqWcAGckRqtpmvtrZboTH
+g2eE/NkQBWdf++YliUV9IrH2tsSGhsfjFIq6yWjcVpdrdaQ8BKSQne5ueoarfAQi
+oAHb+YBUVW4P4gEyVOw2+73QDwcfliHObSQ9ruo9ti/dexnjsJ9Zosi1ECIOncN3
+/PvRyentTYCDI/wQQC+VuRh/Xylj4qSIlmolWsQllqV1uT4kOVtQJ848B7eFnKFk
+58blQakQrYwkGri7UY+h8BBxEqd8Bt4hAFvuSltlv2P9wqtvEz9FBmpQ9w+oWF+3
+YJSCGbOi6L8ZQu603UF4j0HWmHjCzfDWcBFMluKz2z1ZKJkfchAdETB06siSCyjo
+7oekCWy+PthnhxI8sk+yYWQ5Yy1QJCtW/ZOOlhsCIbhW++2OzmZTRQwMGTkiQypR
+tBN63KLqnptBjciwWAcXDiv78UZdhPX8GklyYdEtDDA1KATEJcEYyNy8C4/1X04P
+R40+jUw3HLEtPCeVTmIrSuCbWgX8KSvAvDB3r71/qzBw6SoNEvQdAxjpYpMln4Hk
+/XKd2tzGvG24UAeXnufg
+=LTka
+-----END PGP SIGNATURE-----
 
-What do these mean? Why can these not be implied by a relationship to
-any devices of these particular types?
-
-> +
-> +- vrfkill-supply - regulator device.
-
-Why isn't this described on the radio revice node? It's a supply to the
-radio, not to the rfkill concept.
-
-> +
-> +Example:
-> +	gps-rfkill {
-> +		compatible = "rfkill-regulator";
-> +		label = "GPS";
-> +		type = <RFKILL_TYPE_GPS>;
-> +		vrfkill-supply = <&reg>;
-> +	};
-
-Why is this not bound to the particular GPS device in some way?
-
-What if I have more than one of any of the types of device this
-supports, which device is this expected to control?
-
-Why is it described as a separate device in the device tree at all?
-
-I do not think this binding is the right way to describe this.
-
-Thanks,
-Mark.
-
-> +
-> diff --git a/include/dt-bindings/net/rfkill-regulator.h b/include/dt-bindings/net/rfkill-regulator.h
-> new file mode 100644
-> index 0000000..ae32273
-> --- /dev/null
-> +++ b/include/dt-bindings/net/rfkill-regulator.h
-> @@ -0,0 +1,23 @@
-> +/*
-> + * This header provides macros for rfkill-regulator bindings.
-> + *
-> + * Copyright (C) 2014 Marek Belisko <marek@goldelico.com>
-> + *
-> + * GPLv2 only
-> + */
-> +
-> +#ifndef __DT_BINDINGS_RFKILL_REGULATOR_H__
-> +#define __DT_BINDINGS_RFKILL_REGULATOR_H__
-> +
-> +
-> +#define RFKILL_TYPE_ALL		(0)
-> +#define RFKILL_TYPE_WLAN	(1)
-> +#define RFKILL_TYPE_BLUETOOTH	(2)
-> +#define RFKILL_TYPE_UWB		(3)
-> +#define RFKILL_TYPE_WIMAX	(4)
-> +#define RFKILL_TYPE_WWAN	(5)
-> +#define RFKILL_TYPE_GPS		(6)
-> +#define RFKILL_TYPE_FM		(7)
-> +#define RFKILL_TYPE_NFC		(8)
-> +
-> +#endif /* __DT_BINDINGS_RFKILL_REGULATOR_H__ */
-> diff --git a/net/rfkill/rfkill-regulator.c b/net/rfkill/rfkill-regulator.c
-> index cf5b145..a04aff8 100644
-> --- a/net/rfkill/rfkill-regulator.c
-> +++ b/net/rfkill/rfkill-regulator.c
-> @@ -19,6 +19,7 @@
->  #include <linux/regulator/consumer.h>
->  #include <linux/rfkill.h>
->  #include <linux/rfkill-regulator.h>
-> +#include <linux/of_platform.h>
->  
->  struct rfkill_regulator_data {
->  	struct rfkill *rf_kill;
-> @@ -57,6 +58,31 @@ static struct rfkill_ops rfkill_regulator_ops = {
->  	.set_block = rfkill_regulator_set_block,
->  };
->  
-> +#ifdef CONFIG_OF
-> +static struct rfkill_regulator_platform_data *
-> +rfkill_regulator_parse_pdata(struct device *dev)
-> +{
-> +	struct rfkill_regulator_platform_data *pdata;
-> +	struct device_node *np = dev->of_node;
-> +	u32 num;
-> +	if (!np)
-> +		return NULL;
-> +	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
-> +	if (!pdata)
-> +		return NULL;
-> +	if (of_property_read_u32(np, "type", &num) == 0)
-> +		pdata->type = num;
-> +	of_property_read_string(np, "label", &pdata->name);
-> +	return pdata;
-> +}
-> +#else
-> +static inline struct rfkill_regulator_platform_data *
-> +rfkill_regulator_parse_pdata(struct device *dev)
-> +{
-> +	return NULL;
-> +}
-> +#endif
-> +
->  static int rfkill_regulator_probe(struct platform_device *pdev)
->  {
->  	struct rfkill_regulator_platform_data *pdata = pdev->dev.platform_data;
-> @@ -65,6 +91,9 @@ static int rfkill_regulator_probe(struct platform_device *pdev)
->  	struct rfkill *rf_kill;
->  	int ret = 0;
->  
-> +	if (!pdata)
-> +		pdata = rfkill_regulator_parse_pdata(&pdev->dev);
-> +
->  	if (pdata == NULL) {
->  		dev_err(&pdev->dev, "no platform data\n");
->  		return -ENODEV;
-> @@ -137,12 +166,21 @@ static int rfkill_regulator_remove(struct platform_device *pdev)
->  	return 0;
->  }
->  
-> +#ifdef CONFIG_OF
-> +static const struct of_device_id rfkill_regulator_match[] = {
-> +	{.compatible = "rfkill-regulator"},
-> +	{}
-> +};
-> +MODULE_DEVICE_TABLE(of, rfkill_regulator_match);
-> +#endif
-> +
->  static struct platform_driver rfkill_regulator_driver = {
->  	.probe = rfkill_regulator_probe,
->  	.remove = rfkill_regulator_remove,
->  	.driver = {
->  		.name = "rfkill-regulator",
->  		.owner = THIS_MODULE,
-> +		.of_match_table = of_match_ptr(rfkill_regulator_match),
->  	},
->  };
->  
-> -- 
-> 1.8.3.2
-> 
-> 
+--YZ5djTAD1cGYuMQK--
