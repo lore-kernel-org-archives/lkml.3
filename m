@@ -1,43 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753648AbaBJRrh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 12:47:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60767 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752133AbaBJRrf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 12:47:35 -0500
-From: Steve Grubb <sgrubb@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Oleg Nesterov <oleg@redhat.com>, linux-audit@redhat.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Eric Paris <eparis@redhat.com>
-Subject: Re: [PATCH v3] audit: Turn off TIF_SYSCALL_AUDIT when there are no rules
-Date: Mon, 10 Feb 2014 12:47:21 -0500
-Message-ID: <6760094.oQMeiCg8QG@x2>
-Organization: Red Hat
-User-Agent: KMail/4.11.5 (Linux/3.12.9-301.fc20.x86_64; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CALCETrX9gb_+zW4UZZv5icCQ-3HNG7BFZOaqMPYaQfzotsZpnA@mail.gmail.com>
-References: <ee359482b77f8f633014ec300bc5a4b93f8961e8.1391893528.git.luto@amacapital.net> <20140210165723.GA10856@redhat.com> <CALCETrX9gb_+zW4UZZv5icCQ-3HNG7BFZOaqMPYaQfzotsZpnA@mail.gmail.com>
+	id S1753134AbaBJRrm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 12:47:42 -0500
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:44810 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752133AbaBJRri (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 12:47:38 -0500
+Date: Mon, 10 Feb 2014 17:47:30 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Bryan Wu <cooloney@gmail.com>
+Cc: Jingoo Han <jg1.han@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Levente Kurusa <levex@linux.com>, LKML <linux-kernel@vger.kernel.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        FBDEV list <linux-fbdev@vger.kernel.org>
+Subject: Re: [PATCH] backlight: replace kfree with put_device
+Message-ID: <20140210174730.GE26997@lee--X1>
+References: <1391762601-4560-1-git-send-email-levex@linux.com>
+ <003701cf25f6$3807c6d0$a8175470$%han@samsung.com>
+ <20140210111349.GA21522@lee--X1>
+ <CAK5ve-L54nmDX_HLPpfWQrTe=n11RFr5hyUFFcc-1otWPQde7Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAK5ve-L54nmDX_HLPpfWQrTe=n11RFr5hyUFFcc-1otWPQde7Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, February 10, 2014 09:29:19 AM Andy Lutomirski wrote:
-> Grr.  Why is all this crap tied up with syscall auditing anyway?  ISTM
-> it would have been a lot nicer if audit calls just immediately emitted
-> audit records, completely independently of the syscall machinery.
+> >> > As per the comments on device_register, we shouldn't call kfree()
+> >> > right after a device_register() failure. Instead call put_device(),
+> >> > which in turn will call bl_device_release resulting in a kfree to the
+> >> > full structure.
+> >> >
+> >> > Signed-off-by: Levente Kurusa <levex@linux.com>
+> >>
+> >> (+cc Bryan Wu, Lee Jones)
+> >>
+> >> Acked-by: Jingoo Han <jg1.han@samsung.com>
+> >
+> > Applied to temporary Backlight repo [1], thanks.
+> >
+> > [1] git://git.linaro.org/people/lee.jones/backlight.git
+> >
+> 
+> Great, I think we can put the Git URL into the MAINTAINS file for
+> Backlight subsystem after your finalize the git repo.
 
-Because the majority of people needing audit need syscall records for it to 
-make any sense. The auxiliary records generally report on the object of the 
-syscall. We still require information about who was doing something, what they 
-were doing, and what the result was. 
+Right, I plan do to this for MFD too. Before doing so I need to load
+my GPG Key with lots of signatures, at Linus' request. I'm aiming for
+the end of the month(ish).
 
-Even if you just get the AVC's, you still don't know what happened. If you get 
-a deny record, was it really denied? The system could have been in permissive 
-mode and the syscall succeeded. You only get the real decision when you have 
-syscall records.
-
--Steve
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
