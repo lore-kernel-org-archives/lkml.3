@@ -1,65 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753229AbaBJWKK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 17:10:10 -0500
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:22154 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752085AbaBJWKH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 17:10:07 -0500
-Message-ID: <1392070204.25316.1.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH 01/21] perf c2c: Shared data analyser
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Don Zickus <dzickus@redhat.com>
+	id S1753156AbaBJWMf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 17:12:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5265 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750890AbaBJWMc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 17:12:32 -0500
+Date: Mon, 10 Feb 2014 17:11:59 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
 Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
         jolsa@redhat.com, jmario@redhat.com, fowles@inreach.com,
-        eranian@google.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Richard Fowles <rfowles@redhat.com>
-Date: Mon, 10 Feb 2014 14:10:04 -0800
-In-Reply-To: <1392059886-30812-1-git-send-email-dzickus@redhat.com>
+        eranian@google.com
+Subject: Re: [PATCH 00/21] perf, c2c: Add new tool to analyze cacheline
+ contention on NUMA systems
+Message-ID: <20140210221159.GT25953@redhat.com>
 References: <1392053356-23024-1-git-send-email-dzickus@redhat.com>
-	 <1392059886-30812-1-git-send-email-dzickus@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+ <20140210211825.GB5002@laptop.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140210211825.GB5002@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-02-10 at 14:18 -0500, Don Zickus wrote:
-> From: Arnaldo Carvalho de Melo <acme@redhat.com>
+On Mon, Feb 10, 2014 at 10:18:25PM +0100, Peter Zijlstra wrote:
+> On Mon, Feb 10, 2014 at 12:28:55PM -0500, Don Zickus wrote:
+> > With the introduction of NUMA systems, came the possibility of remote memory accesses.
+> > Combine those remote memory accesses with contention on the remote node (ie a modified
+> > cacheline) and you have a possibility for very long latencies.  These latencies can
+> > bottleneck a program.
+> > 
+> > The program added by these patches, helps detect the situation where two nodes are
+> > 'tugging' on the same _data_ cacheline.  The term used through out this program and
+> > the various changelogs is called a HITM.  This means nodeX went to read a cacheline
+> > and it was discovered to be loaded in nodeY's LLC cache (hence the cacheHIT). The 
+> > remote cacheline was also in a 'M'odified state thus creating a 'HIT M' for hit in
+> > a modified state.  HITMs can happen locally and remotely.  This program's interest
+> > is mainly in remote HITMs as they cause the longest latencies.
 > 
-> This is the start of a new perf tool that will collect information about
-> memory accesses and analyse it to find things like hot cachelines, etc.
-> 
-> This is basically trying to get a prototype written by Richard Fowles
-> written using the tools/perf coding style and libraries.
-> 
-> Start it from 'perf sched', this patch starts the process by adding the
-> 'record' subcommand to collect the needed mem loads and stores samples.
-> 
-> It also have the basic 'report' skeleton, resolving the sample address
-> and hooking the events found in a perf.data file with methods to handle
-> them, right now just printing the resolved perf_sample data structure
-> after each event name.
+> All of that is true of the traditional SMP system too. Just use lower
+> level caches.
 
-What tree/branch is this developed against? I'm getting the following
-with Linus' latest and tip tree:
+Yup.  We just focused on the longer latencies which is the remote case.  I
+think the idea was overflowing an L1 and L2 wasn't that hard, so the gain
+on solving local LLC HITMs wouldn't be that much.  Maybe we are wrong.
 
-builtin-c2c.c: In function ‘perf_c2c__process_sample’:
-builtin-c2c.c:68:20: error: request for member ‘func’ in something not a structure or union
-builtin-c2c.c:69:36: error: request for member ‘func’ in something not a structure or union
-builtin-c2c.c: In function ‘perf_c2c__read_events’:
-builtin-c2c.c:81:2: error: passing argument 1 of ‘perf_session__new’ from incompatible pointer type [-Werror]
-In file included from builtin-c2c.c:6:0:
-util/session.h:52:22: note: expected ‘struct perf_data_file *’ but argument is of type ‘const char *’
-builtin-c2c.c:81:2: error: too many arguments to function ‘perf_session__new’
-In file included from builtin-c2c.c:6:0:
-util/session.h:52:22: note: declared here
+Anyway, if this tool can help solve any bottlenecks, NUMA or non-NUMA,
+that would be great. :-)
 
+Cheers,
+Don
 
