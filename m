@@ -1,33 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753175AbaBJTDg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 14:03:36 -0500
-Received: from qmta10.emeryville.ca.mail.comcast.net ([76.96.30.17]:58614 "EHLO
-	qmta10.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752303AbaBJTDf (ORCPT
+	id S1752896AbaBJTFj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 14:05:39 -0500
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:33992 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752357AbaBJTFi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:03:35 -0500
-Date: Mon, 10 Feb 2014 13:03:32 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@nuc
-To: Vladimir Davydov <vdavydov@parallels.com>
-cc: gregkh@linuxfoundation.org, penberg@kernel.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, devel@openvz.org
-Subject: Re: [PATCH 2/2] slub: do not drop slab_mutex for sysfs_slab_add
-In-Reply-To: <ba4769896e7b5702679e4d7a7ab53dd5aa370e74.1391942582.git.vdavydov@parallels.com>
-Message-ID: <alpine.DEB.2.10.1402101302510.17405@nuc>
-References: <ca22d856315916d3e8c74666da7079b9ae42e646.1391942582.git.vdavydov@parallels.com> <ba4769896e7b5702679e4d7a7ab53dd5aa370e74.1391942582.git.vdavydov@parallels.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 10 Feb 2014 14:05:38 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140203150835.f55fd427d0ebb0c2943f266b@linux-foundation.org>
+References: <1387459407-29342-1-git-send-email-ddstreet@ieee.org>
+ <1390831279-5525-1-git-send-email-ddstreet@ieee.org> <20140203150835.f55fd427d0ebb0c2943f266b@linux-foundation.org>
+From: Dan Streetman <ddstreet@ieee.org>
+Date: Mon, 10 Feb 2014 14:05:14 -0500
+X-Google-Sender-Auth: gs1PEKhtkclT4rn6aJmumAtMuvo
+Message-ID: <CALZtONAFF3F4j0KQX=ineJ1cOVEWJSGSe3V=Ja4x=3NguFAFMQ@mail.gmail.com>
+Subject: Re: [PATCH v2] mm/zswap: add writethrough option
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Seth Jennings <sjennings@variantweb.net>, Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bob Liu <bob.liu@oracle.com>, Minchan Kim <minchan@kernel.org>,
+        Weijie Yang <weijie.yang@samsung.com>,
+        Shirish Pargaonkar <spargaonkar@suse.com>,
+        Mel Gorman <mgorman@suse.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 9 Feb 2014, Vladimir Davydov wrote:
+On Mon, Feb 3, 2014 at 6:08 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Mon, 27 Jan 2014 09:01:19 -0500 Dan Streetman <ddstreet@ieee.org> wrote:
+>
+>> Currently, zswap is writeback cache; stored pages are not sent
+>> to swap disk, and when zswap wants to evict old pages it must
+>> first write them back to swap cache/disk manually.  This avoids
+>> swap out disk I/O up front, but only moves that disk I/O to
+>> the writeback case (for pages that are evicted), and adds the
+>> overhead of having to uncompress the evicted pages and the
+>> need for an additional free page (to store the uncompressed page).
+>>
+>> This optionally changes zswap to writethrough cache by enabling
+>> frontswap_writethrough() before registering, so that any
+>> successful page store will also be written to swap disk.  The
+>> default remains writeback.  To enable writethrough, the param
+>> zswap.writethrough=1 must be used at boot.
+>>
+>> Whether writeback or writethrough will provide better performance
+>> depends on many factors including disk I/O speed/throughput,
+>> CPU speed(s), system load, etc.  In most cases it is likely
+>> that writeback has better performance than writethrough before
+>> zswap is full, but after zswap fills up writethrough has
+>> better performance than writeback.
+>>
+>> The reason to add this option now is, first to allow any zswap
+>> user to be able to test using writethrough to determine if they
+>> get better performance than using writeback, and second to allow
+>> future updates to zswap, such as the possibility of dynamically
+>> switching between writeback and writethrough.
+>>
+>> ...
+>>
+>> Based on specjbb testing on my laptop, the results for both writeback
+>> and writethrough are better than not using zswap at all, but writeback
+>> does seem to be better than writethrough while zswap isn't full.  Once
+>> it fills up, performance for writethrough is essentially close to not
+>> using zswap, while writeback seems to be worse than not using zswap.
+>> However, I think more testing on a wider span of systems and conditions
+>> is needed.  Additionally, I'm not sure that specjbb is measuring true
+>> performance under fully loaded cpu conditions, so additional cpu load
+>> might need to be added or specjbb parameters modified (I took the
+>> values from the 4 "warehouses" test run).
+>>
+>> In any case though, I think having writethrough as an option is still
+>> useful.  More changes could be made, such as changing from writeback
+>> to writethrough based on the zswap % full.  And the patch doesn't
+>> change default behavior - writethrough must be specifically enabled.
+>>
+>> The %-ized numbers I got from specjbb on average, using the default
+>> 20% max_pool_percent and varying the amount of heap used as shown:
+>>
+>> ram | no zswap | writeback | writethrough
+>> 75     93.08     100         96.90
+>> 87     96.58     95.58       96.72
+>> 100    92.29     89.73       86.75
+>> 112    63.80     38.66       19.66
+>> 125    4.79      29.90       15.75
+>> 137    4.99      4.50        4.75
+>> 150    4.28      4.62        5.01
+>> 162    5.20      2.94        4.66
+>> 175    5.71      2.11        4.84
+>
+> Changelog is very useful, thanks for taking the time.
+>
+> It does sound like the feature is of marginal benefit.  Is "zswap
+> filled up" an interesting or useful case to optimize?
+>
+> otoh the addition is pretty simple and we can later withdraw the whole
+> thing without breaking anyone's systems.
 
-> Fortunately, recently kobject_uevent was patched to call the usermode
-> helper with the UMH_NO_WAIT flag, making the deadlock impossible.
+ping...
 
-Great!!!! If you can get that other patch merged then
+you still thinking about this or is it a reject for now?
 
-Acked-by: Christoph Lameter <cl@linux.com>
-
+>
+> What do people think?
+>
+>
