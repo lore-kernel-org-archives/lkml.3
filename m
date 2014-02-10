@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752516AbaBJLa3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 06:30:29 -0500
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:43096 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752107AbaBJLa0 (ORCPT
+	id S1752672AbaBJLbE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 06:31:04 -0500
+Received: from mail-we0-f177.google.com ([74.125.82.177]:41924 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752171AbaBJLbA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 06:30:26 -0500
-Date: Mon, 10 Feb 2014 12:30:19 +0100
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Sudeep Holla <sudeep.holla@arm.com>
-Cc: linux-kernel@vger.kernel.org, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux390@de.ibm.com, linux-s390@vger.kernel.org
-Subject: Re: [PATCH RFC/RFT v2 3/8] s390: move cacheinfo sysfs to generic
- cacheinfo infrastructure
-Message-ID: <20140210113019.GC19013@osiris>
-References: <1391791763-28518-1-git-send-email-sudeep.holla@arm.com>
- <1391791763-28518-4-git-send-email-sudeep.holla@arm.com>
+	Mon, 10 Feb 2014 06:31:00 -0500
+Date: Mon, 10 Feb 2014 11:30:54 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: rogerable@realtek.com
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Chris Ball <cjb@laptop.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org, driverdev-devel@linuxdriverproject.org,
+        wei_wang@realsil.com.cn, micky_ching@realsil.com.cn
+Subject: Re: [PATCH v3 1/3] mfd: Add realtek USB card reader driver
+Message-ID: <20140210113054.GE21522@lee--X1>
+References: <1391697307-23457-1-git-send-email-rogerable@realtek.com>
+ <1391697307-23457-2-git-send-email-rogerable@realtek.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1391791763-28518-4-git-send-email-sudeep.holla@arm.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1391697307-23457-2-git-send-email-rogerable@realtek.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021011-8372-0000-0000-0000089B4D73
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 07, 2014 at 04:49:18PM +0000, Sudeep Holla wrote:
-> From: Sudeep Holla <sudeep.holla@arm.com>
+> From: Roger Tseng <rogerable@realtek.com>
 > 
-> This patch removes the redundant sysfs cacheinfo code by making use of
-> the newly introduced generic cacheinfo infrastructure.
+> Realtek USB card reader provides a channel to transfer command or data to flash
+> memory cards. This driver exports host instances for mmc and memstick subsystems
+> and handles basic works.
 > 
-> Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+> Signed-off-by: Roger Tseng <rogerable@realtek.com>
+> ---
+>  drivers/mfd/Kconfig          |  10 +
+>  drivers/mfd/Makefile         |   1 +
+>  drivers/mfd/rtsx_usb.c       | 760 +++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/mfd/rtsx_usb.h | 628 +++++++++++++++++++++++++++++++++++
+>  4 files changed, 1399 insertions(+)
+>  create mode 100644 drivers/mfd/rtsx_usb.c
+>  create mode 100644 include/linux/mfd/rtsx_usb.h
 
-[...]
+Applied with Greg's Ack.
 
-> -static ssize_t shared_cpu_map_func(struct kobject *kobj, int type, char *buf)
-> -{
-> -	struct cache_index_dir *index;
-> -	int len;
-> +	this_leaf->level = level + 1;
-> +	this_leaf->type = type;
-> +	this_leaf->coherency_line_size = ecag(EXTRACT_LINE_SIZE, level, ti);
-> +	this_leaf->ways_of_associativity = ecag(EXTRACT_ASSOCIATIVITY,
-> +						level, ti);
-> +	this_leaf->size = ecag(EXTRACT_SIZE, level, ti);
-> +	if (private)
-> +		cpumask_set_cpu(cpu, &this_leaf->shared_cpu_map);
-> +	else /* System wide */
-> +		cpumask_copy(&this_leaf->shared_cpu_map, cpu_online_mask);
-
-FWIW, this also seems to be wrong: on s390 we only expose cpu private
-caches via sysfs. Shared caches are not exposed (and simply saying they are
-system wide would be wrong).
-Please have a look at these two commits which should describe why things
-are as they are on s390:
-
-881730ad365130f64b5c70c40904b04eb3b79de3
- "s390/cache: expose cpu cache topology via sysfs"
-6668022c7bde3fdc96d3d257294a7216c7a46829
- "s390/cache: add cpu cache information to /proc/cpuinfo"
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
