@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753466AbaBJTnY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 14:43:24 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34669 "EHLO
+	id S1753493AbaBJTn2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 14:43:28 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34681 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753409AbaBJTnU (ORCPT
+	with ESMTP id S1753468AbaBJTnZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:43:20 -0500
+	Mon, 10 Feb 2014 14:43:25 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 056/124] b43: Fix unload oops if firmware is not available
-Date: Mon, 10 Feb 2014 11:39:56 -0800
-Message-Id: <1392061264-28124-57-git-send-email-kamal@canonical.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 052/124] ftrace: Fix synchronization location disabling and freeing ftrace_ops
+Date: Mon, 10 Feb 2014 11:39:52 -0800
+Message-Id: <1392061264-28124-53-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
 References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
@@ -28,95 +26,113 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 0673effd41dba323d6a280ef37b5ef29f3f5a653 upstream.
+commit a4c35ed241129dd142be4cadb1e5a474a56d5464 upstream.
 
-The asyncronous firmware load uses a completion struct to hold firmware
-processing until the user-space routines are up and running. There is.
-however, a problem in that the waiter is nevered canceled during teardown.
-As a result, unloading the driver when firmware is not available causes an oops.
+The synchronization needed after ftrace_ops are unregistered must happen
+after the callback is disabled from becing called by functions.
 
-To be able to access the completion structure at teardown, it had to be moved
-into the b43_wldev structure.
+The current location happens after the function is being removed from the
+internal lists, but not after the function callbacks were disabled, leaving
+the functions susceptible of being called after their callbacks are freed.
 
-This patch also fixes a typo in a comment.
+This affects perf and any externel users of function tracing (LTTng and
+SystemTap).
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Fixes: cdbe61bfe704 "ftrace: Allow dynamically allocated function tracers"
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/b43/b43.h  |  4 ++--
- drivers/net/wireless/b43/main.c | 10 +++++-----
- 2 files changed, 7 insertions(+), 7 deletions(-)
+ kernel/trace/ftrace.c | 58 ++++++++++++++++++++++++++++-----------------------
+ 1 file changed, 32 insertions(+), 26 deletions(-)
 
-diff --git a/drivers/net/wireless/b43/b43.h b/drivers/net/wireless/b43/b43.h
-index 10e288d..fdb900c 100644
---- a/drivers/net/wireless/b43/b43.h
-+++ b/drivers/net/wireless/b43/b43.h
-@@ -723,8 +723,6 @@ enum b43_firmware_file_type {
- struct b43_request_fw_context {
- 	/* The device we are requesting the fw for. */
- 	struct b43_wldev *dev;
--	/* a completion event structure needed if this call is asynchronous */
--	struct completion fw_load_complete;
- 	/* a pointer to the firmware object */
- 	const struct firmware *blob;
- 	/* The type of firmware to request. */
-@@ -801,6 +799,8 @@ enum {
- struct b43_wldev {
- 	struct b43_bus_dev *dev;
- 	struct b43_wl *wl;
-+	/* a completion event structure needed if this call is asynchronous */
-+	struct completion fw_load_complete;
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 0ae6f97..384cb73 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -396,20 +396,6 @@ static int __unregister_ftrace_function(struct ftrace_ops *ops)
+ 	} else if (ops->flags & FTRACE_OPS_FL_CONTROL) {
+ 		ret = remove_ftrace_list_ops(&ftrace_control_list,
+ 					     &control_ops, ops);
+-		if (!ret) {
+-			/*
+-			 * The ftrace_ops is now removed from the list,
+-			 * so there'll be no new users. We must ensure
+-			 * all current users are done before we free
+-			 * the control data.
+-			 * Note synchronize_sched() is not enough, as we
+-			 * use preempt_disable() to do RCU, but the function
+-			 * tracer can be called where RCU is not active
+-			 * (before user_exit()).
+-			 */
+-			schedule_on_each_cpu(ftrace_sync);
+-			control_ops_free(ops);
+-		}
+ 	} else
+ 		ret = remove_ftrace_ops(&ftrace_ops_list, ops);
  
- 	/* The device initialization status.
- 	 * Use b43_status() to query. */
-diff --git a/drivers/net/wireless/b43/main.c b/drivers/net/wireless/b43/main.c
-index bb421be..3f4b3bd 100644
---- a/drivers/net/wireless/b43/main.c
-+++ b/drivers/net/wireless/b43/main.c
-@@ -2061,6 +2061,7 @@ void b43_do_release_fw(struct b43_firmware_file *fw)
+@@ -419,17 +405,6 @@ static int __unregister_ftrace_function(struct ftrace_ops *ops)
+ 	if (ftrace_enabled)
+ 		update_ftrace_function();
  
- static void b43_release_firmware(struct b43_wldev *dev)
- {
-+	complete(&dev->fw_load_complete);
- 	b43_do_release_fw(&dev->fw.ucode);
- 	b43_do_release_fw(&dev->fw.pcm);
- 	b43_do_release_fw(&dev->fw.initvals);
-@@ -2086,7 +2087,7 @@ static void b43_fw_cb(const struct firmware *firmware, void *context)
- 	struct b43_request_fw_context *ctx = context;
- 
- 	ctx->blob = firmware;
--	complete(&ctx->fw_load_complete);
-+	complete(&ctx->dev->fw_load_complete);
+-	/*
+-	 * Dynamic ops may be freed, we must make sure that all
+-	 * callers are done before leaving this function.
+-	 *
+-	 * Again, normal synchronize_sched() is not good enough.
+-	 * We need to do a hard force of sched synchronization.
+-	 */
+-	if (ops->flags & FTRACE_OPS_FL_DYNAMIC)
+-		schedule_on_each_cpu(ftrace_sync);
+-
+-
+ 	return 0;
  }
  
- int b43_do_request_fw(struct b43_request_fw_context *ctx,
-@@ -2133,7 +2134,7 @@ int b43_do_request_fw(struct b43_request_fw_context *ctx,
+@@ -2096,10 +2071,41 @@ static int ftrace_shutdown(struct ftrace_ops *ops, int command)
+ 		command |= FTRACE_UPDATE_TRACE_FUNC;
  	}
- 	if (async) {
- 		/* do this part asynchronously */
--		init_completion(&ctx->fw_load_complete);
-+		init_completion(&ctx->dev->fw_load_complete);
- 		err = request_firmware_nowait(THIS_MODULE, 1, ctx->fwname,
- 					      ctx->dev->dev->dev, GFP_KERNEL,
- 					      ctx, b43_fw_cb);
-@@ -2141,12 +2142,11 @@ int b43_do_request_fw(struct b43_request_fw_context *ctx,
- 			pr_err("Unable to load firmware\n");
- 			return err;
- 		}
--		/* stall here until fw ready */
--		wait_for_completion(&ctx->fw_load_complete);
-+		wait_for_completion(&ctx->dev->fw_load_complete);
- 		if (ctx->blob)
- 			goto fw_ready;
- 	/* On some ARM systems, the async request will fail, but the next sync
--	 * request works. For this reason, we dall through here
-+	 * request works. For this reason, we fall through here
- 	 */
- 	}
- 	err = request_firmware(&ctx->blob, ctx->fwname,
+ 
+-	if (!command || !ftrace_enabled)
++	if (!command || !ftrace_enabled) {
++		/*
++		 * If these are control ops, they still need their
++		 * per_cpu field freed. Since, function tracing is
++		 * not currently active, we can just free them
++		 * without synchronizing all CPUs.
++		 */
++		if (ops->flags & FTRACE_OPS_FL_CONTROL)
++			control_ops_free(ops);
+ 		return 0;
++	}
+ 
+ 	ftrace_run_update_code(command);
++
++	/*
++	 * Dynamic ops may be freed, we must make sure that all
++	 * callers are done before leaving this function.
++	 * The same goes for freeing the per_cpu data of the control
++	 * ops.
++	 *
++	 * Again, normal synchronize_sched() is not good enough.
++	 * We need to do a hard force of sched synchronization.
++	 * This is because we use preempt_disable() to do RCU, but
++	 * the function tracers can be called where RCU is not watching
++	 * (like before user_exit()). We can not rely on the RCU
++	 * infrastructure to do the synchronization, thus we must do it
++	 * ourselves.
++	 */
++	if (ops->flags & (FTRACE_OPS_FL_DYNAMIC | FTRACE_OPS_FL_CONTROL)) {
++		schedule_on_each_cpu(ftrace_sync);
++
++		if (ops->flags & FTRACE_OPS_FL_CONTROL)
++			control_ops_free(ops);
++	}
++
+ 	return 0;
+ }
+ 
 -- 
 1.8.3.2
 
