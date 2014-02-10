@@ -1,88 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529AbaBJPl5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 10:41:57 -0500
-Received: from mail-bn1blp0183.outbound.protection.outlook.com ([207.46.163.183]:20865
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751744AbaBJPly (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 10:41:54 -0500
-X-Greylist: delayed 875 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Feb 2014 10:41:54 EST
-Message-ID: <1392045915.30419.6.camel@e37108.spectralink.com>
-Subject: Re: [PATCH] dp83640: Get gpio and master/slave configuration from DT
-From: Stefan =?ISO-8859-1?Q?S=F8rensen?= 
-	<stefan.sorensen@spectralink.com>
-To: Mark Rutland <mark.rutland@arm.com>
-CC: "richardcochran@gmail.com" <richardcochran@gmail.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Date: Mon, 10 Feb 2014 16:25:15 +0100
-In-Reply-To: <20140210134237.GF29080@e106331-lin.cambridge.arm.com>
-References: <1392037240-30913-1-git-send-email-stefan.sorensen@spectralink.com>
-	 <20140210134237.GF29080@e106331-lin.cambridge.arm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+	id S1752772AbaBJPmS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 10:42:18 -0500
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:60673 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752549AbaBJPmO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 10:42:14 -0500
+Message-ID: <52F8F34E.3030606@monstr.eu>
+Date: Mon, 10 Feb 2014 16:42:06 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [213.83.164.162]
-X-ClientProxiedBy: DB3PR01CA002.eurprd01.prod.exchangelabs.com
- (10.255.177.19) To DM2PR07MB334.namprd07.prod.outlook.com (10.141.98.12)
-X-Forefront-PRVS: 0118CD8765
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009001)(6009001)(6049001)(24454002)(377424004)(199002)(189002)(51704005)(74662001)(85306002)(65816001)(81342001)(81542001)(50466002)(93136001)(74502001)(89996001)(74876001)(51856001)(90146001)(56816005)(66066001)(86362001)(47446002)(80022001)(69226001)(74706001)(31966008)(88136002)(95416001)(46102001)(93516002)(33646001)(62966002)(74366001)(80976001)(83322001)(23676002)(81686001)(92566001)(56776001)(54316002)(87266001)(87286001)(92726001)(50226001)(4396001)(81816001)(94316002)(63696002)(76796001)(77156001)(76786001)(53806001)(77096001)(47736001)(85852003)(47776003)(93916002)(47976001)(50986001)(49866001)(42186004)(94946001)(83072002)(59766001)(87976001)(77982001)(76482001)(79102001);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR07MB334;H:[172.29.194.63];CLIP:213.83.164.162;FPR:20D7D094.AD3B0F0B.43E49B72.46D5CA01.20202;InfoNoRecordsA:1;MX:1;LANG:en;
-X-OriginatorOrg: spectralink.com
+To: Michal Simek <michal.simek@xilinx.com>
+CC: linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 2/3] mfd: syscon: Support early initialization
+References: <cover.1392045742.git.michal.simek@xilinx.com> <1785585d090175da81b561b17eeef95d991ff0de.1392045742.git.michal.simek@xilinx.com>
+In-Reply-To: <1785585d090175da81b561b17eeef95d991ff0de.1392045742.git.michal.simek@xilinx.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="bBmlV2EG5GIXAvhUUg74kqEBRL8tBCFEO"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-02-10 at 13:42 +0000, Mark Rutland wrote:
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--bBmlV2EG5GIXAvhUUg74kqEBRL8tBCFEO
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-> Binding document please.
+On 02/10/2014 04:22 PM, Michal Simek wrote:
+> Some platforms need to get system controller
+> ready as soon as possible.
+> The patch provides early_syscon_initialization
+> which create early mapping for all syscon compatible
+> devices in early_syscon_probe.
+> Regmap is get via syscon_early_regmap_lookup_by_phandle()
+>=20
+> Regular device probes attach device to regmap
+> via regmap_attach_dev().
+>=20
+> For early syscon initialization is necessary to extend
+> struct syscon and provide remove function
+> which unmap all early init structures.
+>=20
+> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+> ---
+>=20
+>  drivers/mfd/syscon.c       | 126 +++++++++++++++++++++++++++++++++++++=
+++------
+>  include/linux/mfd/syscon.h |  11 ++++
+>  2 files changed, 120 insertions(+), 17 deletions(-)
+>=20
+> diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
+> index 71841f9..5935f02 100644
+> --- a/drivers/mfd/syscon.c
+> +++ b/drivers/mfd/syscon.c
+> @@ -20,12 +20,15 @@
+>  #include <linux/of_platform.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/regmap.h>
+> +#include <linux/slab.h>
+>  #include <linux/mfd/syscon.h>
+>=20
+>  static struct platform_driver syscon_driver;
+>=20
+>  struct syscon {
+> +	void __iomem *base;
+>  	struct regmap *regmap;
+> +	struct resource res;
+>  };
+>=20
+>  static int syscon_match_node(struct device *dev, void *data)
+> @@ -95,6 +98,24 @@ struct regmap *syscon_regmap_lookup_by_pdevname(cons=
+t char *s)
+>  }
+>  EXPORT_SYMBOL_GPL(syscon_regmap_lookup_by_pdevname);
+>=20
+> +struct regmap *syscon_early_regmap_lookup_by_phandle(struct device_nod=
+e *np,
+> +						     const char *property)
+> +{
+> +	struct device_node *syscon_np;
+> +	struct syscon *syscon;
+> +
+> +	syscon_np =3D of_parse_phandle(np, property, 0);
+> +	if (!syscon_np)
+> +		return ERR_PTR(-ENODEV);
+> +
+> +	syscon =3D syscon_np->data;
+> +
+> +	of_node_put(syscon_np);
+> +
+> +	return syscon->regmap;
+> +}
+> +EXPORT_SYMBOL_GPL(syscon_early_regmap_lookup_by_phandle);
+> +
+>  struct regmap *syscon_regmap_lookup_by_phandle(struct device_node *np,=
 
-Dang, I somehow managed to drop that from the patch. I will fix for the
-next version.
+>  					const char *property)
+>  {
+> @@ -128,40 +149,110 @@ static int syscon_probe(struct platform_device *=
+pdev)
+>  	struct device *dev =3D &pdev->dev;
+>  	struct syscon *syscon;
+>  	struct resource *res;
+> -	void __iomem *base;
+>=20
+> -	syscon =3D devm_kzalloc(dev, sizeof(*syscon), GFP_KERNEL);
+> +	/* Early syscon init */
+> +	if (pdev->dev.of_node && pdev->dev.of_node->data) {
+> +		syscon =3D pdev->dev.of_node->data;
+> +		res =3D &syscon->res;
+> +		regmap_attach_dev(dev, syscon->regmap, &syscon_regmap_config);
+> +	} else {
+> +
+> +		syscon =3D devm_kzalloc(dev, sizeof(*syscon), GFP_KERNEL);
+> +		if (!syscon)
+> +			return -ENOMEM;
+> +
+> +		res =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +		if (!res)
+> +			return -ENOENT;
+> +
+> +		syscon->base =3D devm_ioremap(dev, res->start,
+> +					    resource_size(res));
+> +		if (!syscon->base)
+> +			return -ENOMEM;
+> +
+> +		syscon_regmap_config.max_register =3D res->end - res->start - 3;
+> +		syscon->regmap =3D devm_regmap_init_mmio(dev, syscon->base,
+> +						&syscon_regmap_config);
+> +		if (IS_ERR(syscon->regmap)) {
+> +			dev_err(dev, "regmap init failed\n");
+> +			return PTR_ERR(syscon->regmap);
+> +		}
+> +	}
+> +
+> +	platform_set_drvdata(pdev, syscon);
+> +
+> +	dev_info(dev, "regmap %pR registered\n", res);
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct platform_device_id syscon_ids[] =3D {
+> +	{ "syscon", },
+> +	{ }
+> +};
+> +
+> +static int syscon_remove(struct platform_device *pdev)
+> +{
+> +	struct syscon *syscon =3D platform_get_drvdata(pdev);
+> +
+> +	if (pdev->dev.of_node && pdev->dev.of_node->data) {
+> +		iounmap(syscon->base);
+> +		kfree(syscon);
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int early_syscon_probe(struct device_node *np)
+> +{
+> +	struct syscon *syscon;
+> +
+> +	syscon =3D kzalloc(sizeof(*syscon), GFP_KERNEL);
+>  	if (!syscon)
+>  		return -ENOMEM;
+>=20
+> -	res =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> -	if (!res)
+> -		return -ENOENT;
+> +	if (of_address_to_resource(np, 0, &syscon->res))
+> +		return -EINVAL;
+>=20
+> -	base =3D devm_ioremap(dev, res->start, resource_size(res));
+> -	if (!base)
+> -		return -ENOMEM;
+> +	syscon->base =3D ioremap(syscon->res.start, resource_size(&syscon->re=
+s));
+> +	if (!syscon->base) {
+> +		pr_err("%s: Unable to map I/O memory\n", __func__);
+> +		return PTR_ERR(syscon->base);
+> +	}
+>=20
+> -	syscon_regmap_config.max_register =3D res->end - res->start - 3;
+> -	syscon->regmap =3D devm_regmap_init_mmio(dev, base,
+> -					&syscon_regmap_config);
+> +	syscon_regmap_config.max_register =3D syscon->res.end -
+> +					    syscon->res.start - 3;
+> +	syscon->regmap =3D regmap_init_mmio(NULL, syscon->base,
+> +					  &syscon_regmap_config);
+>  	if (IS_ERR(syscon->regmap)) {
+> -		dev_err(dev, "regmap init failed\n");
+> +		pr_err("regmap init failed\n");
+>  		return PTR_ERR(syscon->regmap);
+>  	}
+>=20
+> -	platform_set_drvdata(pdev, syscon);
+> +	np->data =3D syscon;
+>=20
+> -	dev_info(dev, "regmap %pR registered\n", res);
+> +	of_node_put(np);
+> +
+> +	pr_info("%s: regmap %pR registered\n", np->full_name, &syscon->res);
+>=20
+>  	return 0;
+>  }
+>=20
+> -static const struct platform_device_id syscon_ids[] =3D {
+> -	{ "syscon", },
+> -	{ }
+> +static struct of_device_id of_syscon_ids[] =3D {
+> +	{ .compatible =3D "syscon" },
+> +	{},
+>  };
+>=20
+> +void __init early_syscon_init(void)
+> +{
+> +	struct device_node *np;
+> +
+> +	for_each_matching_node_and_match(np, of_syscon_ids, NULL) {
+> +		if (!early_syscon_probe(np))
 
-> > +	if (of_find_property(node, "dp83640,slave", NULL))
-> > +		dp83640->slave = true;
-> 
-> Use of_property_read_bool.
+just
+if (early_syscon_probe(np))
+	BUG();
+here.
 
-Fixed.
+Thanks,
+Michal
 
-> > +	prop = of_find_property(node, "dp83640,perout-gpios", &proplen);
-> > +	if (prop) {
-> > +		if (dp83640->slave) {
-> > +			pr_err("dp83640,perout-gpios property can not be set together with dp83640,slave");
-> > +			return -EINVAL;
-> > +		}
-> > +
-> > +		clock->caps.n_per_out = proplen / sizeof(u32);
-> > +		if (clock->caps.n_per_out > N_EXT) {
-> > +			pr_err("dp83640,perout-gpios may not have more than %d entries",
-> > +			       N_EXT);
-> > +			return -EINVAL;
-> > +		}
-> > +		err = of_property_read_u32_array(node, "dp83640,perout-gpios",
-> > +						 clock->perout_gpios,
-> > +						 clock->caps.n_per_out);
-> > +		if (err < 0)
-> > +			return err;
-> > +	}
-> 
-> This looks nothing like the standard gpio bindings. What _exactly_ is
-> this property describing?
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
-The dp83640 has a number of pins of which 8 of them can be used for
-either timestamping events or triggering changes at programmed
-intervals. These properties are used to configure which pins get
-assigned to what function.
 
-> If this is not using the standard gpio bindings then this should be
-> renamed.
 
-Maybe a gpio->pin renaming?
+--bBmlV2EG5GIXAvhUUg74kqEBRL8tBCFEO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-Stefan
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
+iEYEARECAAYFAlL4804ACgkQykllyylKDCEb1ACfeOLn2F2Ue4SYoRug8BV0aHDc
+bYIAn34lFYKo0GUc32/6WTwpVI4QntTW
+=pFtV
+-----END PGP SIGNATURE-----
+
+--bBmlV2EG5GIXAvhUUg74kqEBRL8tBCFEO--
