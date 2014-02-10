@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753559AbaBJSCL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 13:02:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40400 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753211AbaBJR7J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 12:59:09 -0500
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, David Herrmann <dh.herrmann@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 07/14] HID: input: hid-input remove hid_output_raw_report call
-Date: Mon, 10 Feb 2014 12:58:52 -0500
-Message-Id: <1392055139-19631-8-git-send-email-benjamin.tissoires@redhat.com>
-In-Reply-To: <1392055139-19631-1-git-send-email-benjamin.tissoires@redhat.com>
-References: <1392055139-19631-1-git-send-email-benjamin.tissoires@redhat.com>
+	id S1753529AbaBJSCJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 13:02:09 -0500
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:38765 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752295AbaBJSCF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 13:02:05 -0500
+Date: Mon, 10 Feb 2014 18:01:59 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Jean Delvare <jdelvare@suse.de>
+Cc: Laszlo Papp <lpapp@kde.org>, linux-kernel@vger.kernel.org,
+        lm-sensors@lm-sensors.org
+Subject: Re: [PATCH] hwmon: (max6650) Rename the device ids to  contain the
+ hwmon suffix
+Message-ID: <20140210180159.GF26997@lee--X1>
+References: <1392045953-26596-1-git-send-email-lpapp@kde.org>
+ <20140210160842.GB26997@lee--X1>
+ <20140210173811.04ba5964@endymion.delvare>
+ <20140210165853.GD26997@lee--X1>
+ <20140210184323.456e921c@endymion.delvare>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140210184323.456e921c@endymion.delvare>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hid_output_raw_report() is not a ll_driver callback and should not be used.
-To keep the same code path than before, we are forced to play with the
-different hid_hw_* calls: if the usb or i2c device does not support
-direct output reports, then we will rely on the SET_REPORT HID call.
+> > > > Might be worth taking the opportunity to swap out these magic numbers
+> > > > now.
+> > > 
+> > > There's nothing magic about them, they tell the driver how many fans
+> > > each device supports. If you don't pass them as driver_data you'll have
+> > > to derive them from the device name in the probe function.
+> > 
+> > They're magic in that they're not easily identifiable. In the few
+> > moments that I looked at the patch I assumed they were device
+> > IDs. They should be clearly defined.
+> 
+> They could have been device IDs, some drivers do that, and that would
+> have been equally fine. driver_data can be anything. Best thing to do
+> is to document it right above the device id array if you really find it
+> confusing (I don't.) I don't know what else exactly you had in mind,
+> but #defining FOUR_FANS as 4 and ONE_FAN as 1 and using that doesn't
+> strike me as the best coding practice.
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
----
- drivers/hid/hid-input.c | 10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+On the contrary. Perhaps the nomenclature can be worked on a little,
+but if I saw the aforementioned defines I would have known instantly
+what was being defined without searching for co-located comments. Thus
+elevating the requirement for me to even mention it. Even when we
+use the .data element for very simple information such as device IDs
+we do so with a #define.
 
-diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
-index eb00a5b..6b7bdca 100644
---- a/drivers/hid/hid-input.c
-+++ b/drivers/hid/hid-input.c
-@@ -1153,7 +1153,7 @@ static void hidinput_led_worker(struct work_struct *work)
- 					      led_work);
- 	struct hid_field *field;
- 	struct hid_report *report;
--	int len;
-+	int len, ret;
- 	__u8 *buf;
- 
- 	field = hidinput_get_led_field(hid);
-@@ -1187,7 +1187,10 @@ static void hidinput_led_worker(struct work_struct *work)
- 
- 	hid_output_report(report, buf);
- 	/* synchronous output report */
--	hid_output_raw_report(hid, buf, len, HID_OUTPUT_REPORT);
-+	ret = hid_hw_output_report(hid, buf, len);
-+	if (ret == -ENOSYS)
-+		hid_hw_raw_request(hid, buf[0], buf, len, HID_OUTPUT_REPORT,
-+				HID_REQ_SET_REPORT);
- 	kfree(buf);
- }
- 
-@@ -1266,7 +1269,8 @@ static struct hid_input *hidinput_allocate(struct hid_device *hid)
- 	}
- 
- 	input_set_drvdata(input_dev, hid);
--	if (hid->ll_driver->request || hid->hid_output_raw_report)
-+	if (hid->ll_driver->request || hid->ll_driver->output_report ||
-+	    hid->ll_driver->raw_request)
- 		input_dev->event = hidinput_input_event;
- 	input_dev->open = hidinput_open;
- 	input_dev->close = hidinput_close;
 -- 
-1.8.3.1
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
