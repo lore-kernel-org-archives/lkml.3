@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367AbaBJN34 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 08:29:56 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33119 "EHLO
+	id S1753379AbaBJNad (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 08:30:33 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33094 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752662AbaBJN3w (ORCPT
+	with ESMTP id S1753270AbaBJN33 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 08:29:52 -0500
-Date: Mon, 10 Feb 2014 05:29:17 -0800
+	Mon, 10 Feb 2014 08:29:29 -0500
+Date: Mon, 10 Feb 2014 05:28:19 -0800
 From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-rdw0au56a5ymis1u8p48c12d@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, dave.hansen@linux.intel.com, tglx@linutronix.de,
-        dzickus@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, dave.hansen@linux.intel.com,
-        dzickus@redhat.com
+Message-ID: <tip-e97df76377b8b3b1f7dfd5d6f8a1d5a31438b140@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, alan@lxorguk.ukuu.org.uk,
+        vince@deater.net, tglx@linutronix.de, junk@eslaf.co.uk
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, peterz@infradead.org,
+        alan@lxorguk.ukuu.org.uk, vince@deater.net, junk@eslaf.co.uk,
+        tglx@linutronix.de
+In-Reply-To: <20140206170815.GW2936@laptop.programming.kicks-ass.net>
+References: <20140206170815.GW2936@laptop.programming.kicks-ass.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] x86/nmi: Push duration printk() to irq context
-Git-Commit-ID: e90c78535283dd0ded3bf2e484890d14dba2d527
+Subject: [tip:perf/core] perf/x86/intel/p6:
+  Add userspace RDPMC quirk for PPro
+Git-Commit-ID: e97df76377b8b3b1f7dfd5d6f8a1d5a31438b140
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,131 +31,149 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 10 Feb 2014 05:29:23 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 10 Feb 2014 05:28:28 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e90c78535283dd0ded3bf2e484890d14dba2d527
-Gitweb:     http://git.kernel.org/tip/e90c78535283dd0ded3bf2e484890d14dba2d527
+Commit-ID:  e97df76377b8b3b1f7dfd5d6f8a1d5a31438b140
+Gitweb:     http://git.kernel.org/tip/e97df76377b8b3b1f7dfd5d6f8a1d5a31438b140
 Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Mon, 3 Feb 2014 18:02:09 +0100
+AuthorDate: Wed, 5 Feb 2014 20:48:51 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sun, 9 Feb 2014 13:17:22 +0100
+CommitDate: Sun, 9 Feb 2014 13:08:24 +0100
 
-x86/nmi: Push duration printk() to irq context
+perf/x86/intel/p6: Add userspace RDPMC quirk for PPro
 
-Calling printk() from NMI context is bad (TM), so move it to IRQ
-context.
+PPro machines can die hard when PCE gets enabled due to a CPU erratum.
+The safe way it so disable it by default and keep it disabled.
 
-In doing so we slightly change (probably wreck) the debugfs
-nmi_longest_ns thingy, in that it doesn't update to reflect the
-longest, nor does writing to it reset the count.
+See erratum 26 in:
 
+  http://download.intel.com/design/archives/processors/pro/docs/24268935.pdf
+
+Reported-and-Tested-by: Mark Davies <junk@eslaf.co.uk>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Vince Weaver <vince@deater.net>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: Dave Hansen <dave.hansen@linux.intel.com>
-Link: http://lkml.kernel.org/n/tip-rdw0au56a5ymis1u8p48c12d@git.kernel.org
+Link: http://lkml.kernel.org/r/20140206170815.GW2936@laptop.programming.kicks-ass.net
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/include/asm/nmi.h |  3 +++
- arch/x86/kernel/nmi.c      | 37 ++++++++++++++++++++++++-------------
- 2 files changed, 27 insertions(+), 13 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c    |  6 ++++-
+ arch/x86/kernel/cpu/perf_event.h    |  1 +
+ arch/x86/kernel/cpu/perf_event_p6.c | 48 +++++++++++++++++++++++++------------
+ 3 files changed, 39 insertions(+), 16 deletions(-)
 
-diff --git a/arch/x86/include/asm/nmi.h b/arch/x86/include/asm/nmi.h
-index 86f9301..5f2fc44 100644
---- a/arch/x86/include/asm/nmi.h
-+++ b/arch/x86/include/asm/nmi.h
-@@ -1,6 +1,7 @@
- #ifndef _ASM_X86_NMI_H
- #define _ASM_X86_NMI_H
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index b886451..1246b85 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1521,6 +1521,8 @@ static int __init init_hw_perf_events(void)
  
-+#include <linux/irq_work.h>
- #include <linux/pm.h>
- #include <asm/irq.h>
- #include <asm/io.h>
-@@ -38,6 +39,8 @@ typedef int (*nmi_handler_t)(unsigned int, struct pt_regs *);
- struct nmiaction {
- 	struct list_head	list;
- 	nmi_handler_t		handler;
-+	u64			max_duration;
-+	struct irq_work		irq_work;
- 	unsigned long		flags;
- 	const char		*name;
+ 	pr_cont("%s PMU driver.\n", x86_pmu.name);
+ 
++	x86_pmu.attr_rdpmc = 1; /* enable userspace RDPMC usage by default */
++
+ 	for (quirk = x86_pmu.quirks; quirk; quirk = quirk->next)
+ 		quirk->func();
+ 
+@@ -1534,7 +1536,6 @@ static int __init init_hw_perf_events(void)
+ 		__EVENT_CONSTRAINT(0, (1ULL << x86_pmu.num_counters) - 1,
+ 				   0, x86_pmu.num_counters, 0, 0);
+ 
+-	x86_pmu.attr_rdpmc = 1; /* enable userspace RDPMC usage by default */
+ 	x86_pmu_format_group.attrs = x86_pmu.format_attrs;
+ 
+ 	if (x86_pmu.event_attrs)
+@@ -1820,6 +1821,9 @@ static ssize_t set_attr_rdpmc(struct device *cdev,
+ 	if (ret)
+ 		return ret;
+ 
++	if (x86_pmu.attr_rdpmc_broken)
++		return -ENOTSUPP;
++
+ 	if (!!val != !!x86_pmu.attr_rdpmc) {
+ 		x86_pmu.attr_rdpmc = !!val;
+ 		smp_call_function(change_rdpmc, (void *)val, 1);
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index c1a8618..4972c24 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -409,6 +409,7 @@ struct x86_pmu {
+ 	/*
+ 	 * sysfs attrs
+ 	 */
++	int		attr_rdpmc_broken;
+ 	int		attr_rdpmc;
+ 	struct attribute **format_attrs;
+ 	struct attribute **event_attrs;
+diff --git a/arch/x86/kernel/cpu/perf_event_p6.c b/arch/x86/kernel/cpu/perf_event_p6.c
+index b1e2fe1..7c1a0c0 100644
+--- a/arch/x86/kernel/cpu/perf_event_p6.c
++++ b/arch/x86/kernel/cpu/perf_event_p6.c
+@@ -231,31 +231,49 @@ static __initconst const struct x86_pmu p6_pmu = {
+ 
  };
-diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c
-index 6fcb49c..b4872b9 100644
---- a/arch/x86/kernel/nmi.c
-+++ b/arch/x86/kernel/nmi.c
-@@ -87,6 +87,7 @@ __setup("unknown_nmi_panic", setup_unknown_nmi_panic);
- #define nmi_to_desc(type) (&nmi_desc[type])
  
- static u64 nmi_longest_ns = 1 * NSEC_PER_MSEC;
-+
- static int __init nmi_warning_debugfs(void)
- {
- 	debugfs_create_u64("nmi_longest_ns", 0644,
-@@ -95,6 +96,20 @@ static int __init nmi_warning_debugfs(void)
- }
- fs_initcall(nmi_warning_debugfs);
- 
-+static void nmi_max_handler(struct irq_work *w)
++static __init void p6_pmu_rdpmc_quirk(void)
 +{
-+	struct nmiaction *a = container_of(w, struct nmiaction, irq_work);
-+	int remainder_ns, decimal_msecs;
-+	u64 whole_msecs = ACCESS_ONCE(a->max_duration);
-+
-+	remainder_ns = do_div(whole_msecs, (1000 * 1000));
-+	decimal_msecs = remainder_ns / 1000;
-+
-+	printk_ratelimited(KERN_INFO
-+		"INFO: NMI handler (%ps) took too long to run: %lld.%03d msecs\n",
-+		a->handler, whole_msecs, decimal_msecs);
++	if (boot_cpu_data.x86_mask < 9) {
++		/*
++		 * PPro erratum 26; fixed in stepping 9 and above.
++		 */
++		pr_warn("Userspace RDPMC support disabled due to a CPU erratum\n");
++		x86_pmu.attr_rdpmc_broken = 1;
++		x86_pmu.attr_rdpmc = 0;
++	}
 +}
 +
- static int __kprobes nmi_handle(unsigned int type, struct pt_regs *regs, bool b2b)
+ __init int p6_pmu_init(void)
  {
- 	struct nmi_desc *desc = nmi_to_desc(type);
-@@ -110,26 +125,20 @@ static int __kprobes nmi_handle(unsigned int type, struct pt_regs *regs, bool b2
- 	 * to handle those situations.
- 	 */
- 	list_for_each_entry_rcu(a, &desc->head, list) {
--		u64 before, delta, whole_msecs;
--		int remainder_ns, decimal_msecs, thishandled;
-+		int thishandled;
-+		u64 delta;
- 
--		before = sched_clock();
-+		delta = sched_clock();
- 		thishandled = a->handler(type, regs);
- 		handled += thishandled;
--		delta = sched_clock() - before;
-+		delta = sched_clock() - delta;
- 		trace_nmi_handler(a->handler, (int)delta, thishandled);
- 
--		if (delta < nmi_longest_ns)
-+		if (delta < nmi_longest_ns || delta < a->max_duration)
- 			continue;
- 
--		nmi_longest_ns = delta;
--		whole_msecs = delta;
--		remainder_ns = do_div(whole_msecs, (1000 * 1000));
--		decimal_msecs = remainder_ns / 1000;
--		printk_ratelimited(KERN_INFO
--			"INFO: NMI handler (%ps) took too long to run: "
--			"%lld.%03d msecs\n", a->handler, whole_msecs,
--			decimal_msecs);
-+		a->max_duration = delta;
-+		irq_work_queue(&a->irq_work);
++	x86_pmu = p6_pmu;
++
+ 	switch (boot_cpu_data.x86_model) {
+-	case 1:
+-	case 3:  /* Pentium Pro */
+-	case 5:
+-	case 6:  /* Pentium II */
+-	case 7:
+-	case 8:
+-	case 11: /* Pentium III */
+-	case 9:
+-	case 13:
+-		/* Pentium M */
++	case  1: /* Pentium Pro */
++		x86_add_quirk(p6_pmu_rdpmc_quirk);
++		break;
++
++	case  3: /* Pentium II - Klamath */
++	case  5: /* Pentium II - Deschutes */
++	case  6: /* Pentium II - Mendocino */
+ 		break;
++
++	case  7: /* Pentium III - Katmai */
++	case  8: /* Pentium III - Coppermine */
++	case 10: /* Pentium III Xeon */
++	case 11: /* Pentium III - Tualatin */
++		break;
++
++	case  9: /* Pentium M - Banias */
++	case 13: /* Pentium M - Dothan */
++		break;
++
+ 	default:
+-		pr_cont("unsupported p6 CPU model %d ",
+-			boot_cpu_data.x86_model);
++		pr_cont("unsupported p6 CPU model %d ", boot_cpu_data.x86_model);
+ 		return -ENODEV;
  	}
  
- 	rcu_read_unlock();
-@@ -146,6 +155,8 @@ int __register_nmi_handler(unsigned int type, struct nmiaction *action)
- 	if (!action->handler)
- 		return -EINVAL;
+-	x86_pmu = p6_pmu;
+-
+ 	memcpy(hw_cache_event_ids, p6_hw_cache_event_ids,
+ 		sizeof(hw_cache_event_ids));
  
-+	init_irq_work(&action->irq_work, nmi_max_handler);
-+
- 	spin_lock_irqsave(&desc->lock, flags);
- 
- 	/*
+-
+ 	return 0;
+ }
