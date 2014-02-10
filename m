@@ -1,134 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752153AbaBJAYV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 19:24:21 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:53844 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751732AbaBJAYU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 19:24:20 -0500
-X-AuditID: 9c93016f-b7b0cae0000024a7-0f-52f81c31eb75
-Date: Mon, 10 Feb 2014 09:24:26 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] compaction related commits
-Message-ID: <20140210002426.GA12049@lge.com>
-References: <1391749726-28910-1-git-send-email-iamjoonsoo.kim@lge.com>
- <52F4A3F2.1050809@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52F4A3F2.1050809@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	id S1752092AbaBJA22 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 19:28:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42913 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751732AbaBJA20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Feb 2014 19:28:26 -0500
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Torvald Riegel <triegel@redhat.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Will Deacon <will.deacon@arm.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+In-Reply-To: <20140207180216.GP4250@linux.vnet.ibm.com>
+References: <52F3DA85.1060209@arm.com>
+	 <20140206185910.GE27276@mudshark.cambridge.arm.com>
+	 <20140206192743.GH4250@linux.vnet.ibm.com>
+	 <1391721423.23421.3898.camel@triegel.csb>
+	 <20140206221117.GJ4250@linux.vnet.ibm.com>
+	 <1391730288.23421.4102.camel@triegel.csb>
+	 <20140207042051.GL4250@linux.vnet.ibm.com>
+	 <20140207074405.GM5002@laptop.programming.kicks-ass.net>
+	 <20140207165028.GO4250@linux.vnet.ibm.com>
+	 <20140207165548.GR5976@mudshark.cambridge.arm.com>
+	 <20140207180216.GP4250@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 10 Feb 2014 01:27:51 +0100
+Message-ID: <1391992071.18779.99.camel@triegel.csb>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 07, 2014 at 10:14:26AM +0100, Vlastimil Babka wrote:
-> On 02/07/2014 06:08 AM, Joonsoo Kim wrote:
-> > This patchset is related to the compaction.
+On Fri, 2014-02-07 at 10:02 -0800, Paul E. McKenney wrote:
+> On Fri, Feb 07, 2014 at 04:55:48PM +0000, Will Deacon wrote:
+> > Hi Paul,
 > > 
-> > patch 1 fixes contrary implementation of the purpose of compaction.
-> > patch 2~4 are for optimization.
-> > patch 5 is just for clean-up.
+> > On Fri, Feb 07, 2014 at 04:50:28PM +0000, Paul E. McKenney wrote:
+> > > On Fri, Feb 07, 2014 at 08:44:05AM +0100, Peter Zijlstra wrote:
+> > > > On Thu, Feb 06, 2014 at 08:20:51PM -0800, Paul E. McKenney wrote:
+> > > > > Hopefully some discussion of out-of-thin-air values as well.
+> > > > 
+> > > > Yes, absolutely shoot store speculation in the head already. Then drive
+> > > > a wooden stake through its hart.
+> > > > 
+> > > > C11/C++11 should not be allowed to claim itself a memory model until that
+> > > > is sorted.
+> > > 
+> > > There actually is a proposal being put forward, but it might not make ARM
+> > > and Power people happy because it involves adding a compare, a branch,
+> > > and an ISB/isync after every relaxed load...  Me, I agree with you,
+> > > much preferring the no-store-speculation approach.
 > > 
-> > I tested this patchset with stress-highalloc benchmark on Mel's mmtest
-> > and cannot find any regression in terms of success rate. And I find
-> > much reduced system time. Below is result of 3 runs.
+> > Can you elaborate a bit on this please? We don't permit speculative stores
+> > in the ARM architecture, so it seems counter-intuitive that GCC needs to
+> > emit any additional instructions to prevent that from happening.
 > 
-> What was the memory size? Mel told me this test shouldn't be run with more than 4GB.
-
-Yep, I know!
-My system is 4GB quad core system.
-
-> > * Before
-> > time :: stress-highalloc 3276.26 user 740.52 system 1664.79 elapsed
-> > time :: stress-highalloc 3640.71 user 771.32 system 1633.83 elapsed
-> > time :: stress-highalloc 3691.64 user 775.44 system 1638.05 elapsed
-> > 
-> > avg system: 1645 s
-> > 
-> > * After
-> > time :: stress-highalloc 3225.51 user 732.40 system 1542.76 elapsed
-> > time :: stress-highalloc 3524.31 user 749.63 system 1512.88 elapsed
-> > time :: stress-highalloc 3610.55 user 757.20 system 1505.70 elapsed
-> > 
-> > avg system: 1519 s
-> > 
-> > That is 7% reduced system time.
-
-Oops, It should be elapsed time ;)
-
-> Why not post the whole compare-mmtests output? There are more metrics in there and extra
-> eyes never hurt.
+> Requiring a compare/branch/ISB after each relaxed load enables a simple(r)
+> proof that out-of-thin-air values cannot be observed in the face of any
+> compiler optimization that refrains from reordering a prior relaxed load
+> with a subsequent relaxed store.
 > 
+> > Stores can, of course, be observed out-of-order but that's a lot more
+> > reasonable :)
+> 
+> So let me try an example.  I am sure that Torvald Riegel will jump in
+> with any needed corrections or amplifications:
+> 
+> Initial state: x == y == 0
+> 
+> T1:	r1 = atomic_load_explicit(x, memory_order_relaxed);
+> 	atomic_store_explicit(r1, y, memory_order_relaxed);
+> 
+> T2:	r2 = atomic_load_explicit(y, memory_order_relaxed);
+> 	atomic_store_explicit(r2, x, memory_order_relaxed);
+> 
+> One would intuitively expect r1 == r2 == 0 as the only possible outcome.
+> But suppose that the compiler used specialization optimizations, as it
+> would if there was a function that has a very lightweight implementation
+> for some values and a very heavyweight one for other.  In particular,
+> suppose that the lightweight implementation was for the value 42.
+> Then the compiler might do something like the following:
+> 
+> Initial state: x == y == 0
+> 
+> T1:	r1 = atomic_load_explicit(x, memory_order_relaxed);
+> 	if (r1 == 42)
+> 		atomic_store_explicit(42, y, memory_order_relaxed);
+> 	else
+> 		atomic_store_explicit(r1, y, memory_order_relaxed);
+> 
+> T2:	r2 = atomic_load_explicit(y, memory_order_relaxed);
+> 	atomic_store_explicit(r2, x, memory_order_relaxed);
+> 
+> Suddenly we have an explicit constant 42 showing up.  Of course, if
+> the compiler carefully avoided speculative stores (as both Peter and
+> I believe that it should if its code generation is to be regarded as
+> anything other than an act of vandalism, the words in the standard
+> notwithstanding), there would be no problem.  But currently, a number
+> of compiler writers see absolutely nothing wrong with transforming
+> the optimized-for-42 version above with something like this:
+> 
+> Initial state: x == y == 0
+> 
+> T1:	r1 = atomic_load_explicit(x, memory_order_relaxed);
+> 	atomic_store_explicit(42, y, memory_order_relaxed);
+> 	if (r1 != 42)
+> 		atomic_store_explicit(r1, y, memory_order_relaxed);
+> 
+> T2:	r2 = atomic_load_explicit(y, memory_order_relaxed);
+> 	atomic_store_explicit(r2, x, memory_order_relaxed);
 
-Reason is that I can't average the result of 10 runs easily, since I'm not
-familiar to mmtest. Do you share your method to get the average of 10 runs?
-Anyway, I did it manually and below is the average result of 10 runs.
+Intuitively, this is wrong because this let's the program take a step
+the abstract machine wouldn't do.  This is different to the sequential
+code that Peter posted because it uses atomics, and thus one can't
+easily assume that the difference is not observable.
 
-compaction-base+ is based on 3.13.0 with Vlastimil's recent fixes.
-compaction-fix+ has this patch series on top of compaction-base+.
+For this to be correct, the compiler would actually have to prove that
+the speculative store is "as-if correct", which in turn would mean that
+it needs to be aware of all potential observers, and check whether those
+observers aren't actually affected by the speculative store.
 
-Thanks.
-							
-stress-highalloc	
-			3.13.0			3.13.0
-			compaction-base+	compaction-fix+
-Success 1		14.10				15.00
-Success 2		20.20				20.00
-Success 3		68.30				73.40
-																			
-			3.13.0			3.13.0
-			compaction-base+	compaction-fix+
-User			3486.02				3437.13
-System			757.92				741.15
-Elapsed			1638.52				1488.32
-																			
-			3.13.0			3.13.0
-			compaction-base+	compaction-fix+
-Minor Faults 			172591561		167116621
-Major Faults 			     984		     859
-Swap Ins 			     743		     653
-Swap Outs 			    3657		    3535
-Direct pages scanned 		  129742		  127344
-Kswapd pages scanned 		 1852277		 1817825
-Kswapd pages reclaimed 		 1838000		 1804212
-Direct pages reclaimed 		  129719		  127327
-Kswapd efficiency 		     98%		     98%
-Kswapd velocity 		1130.066		1221.296
-Direct efficiency 		     99%		     99%
-Direct velocity 		  79.367		  85.585
-Percentage direct scans 	      6%		      6%
-Zone normal velocity 		 231.829		 246.097
-Zone dma32 velocity 		 972.589		1055.158
-Zone dma velocity 		   5.015		   5.626
-Page writes by reclaim 		    6287		    6534
-Page writes file 		    2630		    2999
-Page writes anon 		    3657		    3535
-Page reclaim immediate 		    2187		    2080
-Sector Reads 			 2917808		 2877336
-Sector Writes 			11477891		11206722
-Page rescued immediate 		       0		       0
-Slabs scanned 			 2214118		 2168524
-Direct inode steals 		   12181		    9788
-Kswapd inode steals 		  144830		  132109
-Kswapd skipped wait 		       0		       0
-THP fault alloc 		       0		       0
-THP collapse alloc 		       0		       0
-THP splits 			       0		       0
-THP fault fallback 		       0		       0
-THP collapse fail 		       0		       0
-Compaction stalls 		     738		     714
-Compaction success 		     194		     207
-Compaction failures 		     543		     507
-Page migrate success 		 1806083		 1464014
-Page migrate failure 		       0		       0
-Compaction pages isolated 	 3873329	 	 3162974
-Compaction migrate scanned 	74594862	 	59874420
-Compaction free scanned 	125888854	 	110868637
-Compaction cost 		    2469		    1998
+I would guess that the compilers you have in mind don't really do that.
+If they do, then I don't see why this should be okay, unless you think
+out-of-thin-air values are something good (which I wouldn't agree with).
+
+> And then it is a short and uncontroversial step to the following:
+> 
+> Initial state: x == y == 0
+> 
+> T1:	atomic_store_explicit(42, y, memory_order_relaxed);
+> 	r1 = atomic_load_explicit(x, memory_order_relaxed);
+> 	if (r1 != 42)
+> 		atomic_store_explicit(r1, y, memory_order_relaxed);
+> 
+> T2:	r2 = atomic_load_explicit(y, memory_order_relaxed);
+> 	atomic_store_explicit(r2, x, memory_order_relaxed);
+> 
+> This can of course result in r1 == r2 == 42, even though the constant
+> 42 never appeared in the original code.  This is one way to generate
+> an out-of-thin-air value.
+> 
+> As near as I can tell, compiler writers hate the idea of prohibiting
+> speculative-store optimizations because it requires them to introduce
+> both control and data dependency tracking into their compilers.
+
+I wouldn't characterize the situation like this (although I can't speak
+for others, obviously).  IMHO, it's perfectly fine on sequential /
+non-synchronizing code, because we know the difference isn't observable
+by a correct program.  For synchronizing code, compilers just shouldn't
+do it, or they would have to truly prove that speculation is harmless.
+That will be hard, so I think it should just be avoided.
+
+Synchronization code will likely have been tuned anyway (especially if
+it uses relaxed MO), so I don't see a large need for trying to optimize
+using speculative atomic stores.
+
+Thus, I think there's an easy and practical solution.
+
+> Many of
+> them seem to hate dependency tracking with a purple passion.  At least,
+> such a hatred would go a long way towards explaining the incomplete
+> and high-overhead implementations of memory_order_consume, the long
+> and successful use of idioms based on the memory_order_consume pattern
+> notwithstanding [*].  ;-)
+
+I still think that's different because it blurs the difference between
+sequential code and synchronizing code (ie, atomic accesses).  With
+consume MO, the simple solution above doesn't work anymore, because
+suddenly synchronizing code does affect optimizations in sequential
+code, even if that wouldn't reorder across the synchronizing code (which
+would be clearly "visible" to the implementation of the optimization).
+
+
