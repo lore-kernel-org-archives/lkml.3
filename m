@@ -1,68 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752274AbaBJPWj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 10:22:39 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:51561 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751770AbaBJPWg (ORCPT
+	id S1752594AbaBJPW7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 10:22:59 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:48085 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752232AbaBJPW4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 10:22:36 -0500
-Date: Mon, 10 Feb 2014 15:21:47 +0000
-From: Dave Martin <Dave.Martin@arm.com>
-To: Ben Dooks <ben.dooks@codethink.co.uk>
-Cc: linux@arm.linux.org.uk, jonathan.austin@arm.com, nico@linaro.org,
-        marc.zyngier@arm.com, catalin.marinas@arm.com, will.deacon@arm.com,
-        linux-kernel@vger.kernel.org, vgupta@synopsys.com,
-        u.kleine-koenig@pengutronix.de,
-        Fabrice GASNIER <fabrice.gasnier@st.com>, sboyd@codeaurora.org,
-        linux-arm-kernel@lists.infradead.org, maxime.coquelin@st.com
-Subject: Re: [RFC PATCH] ARM: Add imprecise abort enable/disable macro
-Message-ID: <20140210152147.GE2794@e103592.cambridge.arm.com>
-References: <1391789955-26927-1-git-send-email-fabrice.gasnier@st.com>
- <1391789955-26927-2-git-send-email-fabrice.gasnier@st.com>
- <20140210141634.GA2794@e103592.cambridge.arm.com>
- <52F8E81E.70804@codethink.co.uk>
+	Mon, 10 Feb 2014 10:22:56 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52F8E81E.70804@codethink.co.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAOMwXhNmjehcd+aiWGuKs7CijheXXngsXTHMfG9SDLpHO=KaPw@mail.gmail.com>
+References: <1391859219-3102-1-git-send-email-lpapp@kde.org>
+	<CAK9yfHx2W3KXzBJavpDwXqBUxM8Uw6tWLRGBLjUq1jS_yWYw-Q@mail.gmail.com>
+	<CAOMwXhNmjehcd+aiWGuKs7CijheXXngsXTHMfG9SDLpHO=KaPw@mail.gmail.com>
+Date: Mon, 10 Feb 2014 20:52:55 +0530
+Message-ID: <CAK9yfHwxmtEXQwPZJfU980G6g7sbrLDU=nZiN=dkwVwvg7UXyA@mail.gmail.com>
+Subject: Re: [PATCH v2] mfd: MAX6650/6651 support
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Laszlo Papp <lpapp@kde.org>, LKML <linux-kernel@vger.kernel.org>,
+        Lee Jones <lee.jones@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 02:54:22PM +0000, Ben Dooks wrote:
-> On 10/02/14 14:16, Dave Martin wrote:
-> >On Fri, Feb 07, 2014 at 05:19:15PM +0100, Fabrice GASNIER wrote:
-> >>This patch adds imprecise abort enable/disable macros.
-> >>It also enables imprecise aborts when starting kernel.
-> >
-> >Relying on imprecise aborts for hardware probing would be considered bad
-> >hardware and/or software design for ARM-specific stuff.
-> >
-> >PCI is more generic though, so we may have to put up with this to some
-> >extent.  Can you point me to the affected probing code?  I'm not very
-> >familiar with that stuff...
-> 
-> The marvell pcie always had the option of delivering any bus
-> errors as imprecise aborts. However it was /annoying/ and therefore
+On 10 February 2014 18:48, Laszlo Papp <lpapp@kde.org> wrote:
+> On Mon, Feb 10, 2014 at 12:02 PM, Sachin Kamat <sachin.kamat@linaro.org> wrote:
+>> Hi Laszlo,
+>>
+>> If you are considering re-spinning this patch based on Lee's comments, please
+>> also consider my comments inline.
+>
+> Hi, sure, thanks.
+>
+>> On 8 February 2014 17:03, Laszlo Papp <lpapp@kde.org> wrote:
+>>> MAX6650/MAX6651 chip is a multi-function device with I2C busses. The
+>>> chip includes fan-speed regulators and monitors, GPIO, and alarm.
+>>>
+>>> This patch is an initial release of a MAX6650/6651 MFD driver that
+>>> supports to enable the chip with its primary I2C bus that will connect
+>>> the hwmon, and then the gpio devices for now.
+>>>
+>>> Signed-off-by: Laszlo Papp <lpapp@kde.org>
+>>> ---
+>>>  drivers/mfd/Kconfig                 | 11 +++++
+>>>  drivers/mfd/Makefile                |  1 +
+>>>  drivers/mfd/max665x.c               | 88 +++++++++++++++++++++++++++++++++++++
+>>>  include/linux/mfd/max665x-private.h | 42 ++++++++++++++++++
+>>>  4 files changed, 142 insertions(+)
+>>>  create mode 100644 drivers/mfd/max665x.c
+>>>  create mode 100644 include/linux/mfd/max665x-private.h
+>>>
+>>> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+>>> index 49bb445..e25be62 100644
+>>> --- a/drivers/mfd/Kconfig
+>>> +++ b/drivers/mfd/Kconfig
+>>> @@ -368,6 +368,17 @@ config MFD_MAX8907
+>>>           accessing the device; additional drivers must be enabled in order
+>>>           to use the functionality of the device.
+>>>
+>>> +config MFD_MAX665X
+>>> +       bool "Maxim Semiconductor MAX6650/MAX6651 Support"
+>>> +       select MFD_CORE
+>>> +       depends on I2C
+>>> +       select REGMAP_I2C
+>>
+>> Move the "depends on" before the select MFD_CORE.
+>
+> OK.
+>
+>>> +       help
+>>> +         Say yes here to support for Maxim Semiconductor MAX6650/MAX6651.
+>>
+>>  s/here to support/here to add support
+>
+> OK.
+>
+>>>This is
+>>> +         a fan speed regulator and monitor IC. This driver provies common support
+>>> +         for accessing the device, additional drivers must be enabled in order to
+>>> +         use the functionality of the device.
+>>> +
+>>>  config MFD_MAX8925
+>>>         bool "Maxim Semiconductor MAX8925 PMIC Support"
+>>>         depends on I2C=y
+>>> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+>>> index 5aea5ef..63668c5 100644
+>>> --- a/drivers/mfd/Makefile
+>>> +++ b/drivers/mfd/Makefile
+>>> @@ -111,6 +111,7 @@ obj-$(CONFIG_MFD_DA9055)    += da9055.o
+>>>  da9063-objs                    := da9063-core.o da9063-irq.o da9063-i2c.o
+>>>  obj-$(CONFIG_MFD_DA9063)       += da9063.o
+>>>
+>>> +obj-$(CONFIG_MFD_MAX665X)      += max665x.o
+>>>  obj-$(CONFIG_MFD_MAX14577)     += max14577.o
+>>>  obj-$(CONFIG_MFD_MAX77686)     += max77686.o max77686-irq.o
+>>>  obj-$(CONFIG_MFD_MAX77693)     += max77693.o max77693-irq.o
+>>> diff --git a/drivers/mfd/max665x.c b/drivers/mfd/max665x.c
+>>> new file mode 100644
+>>> index 0000000..395373fe
+>>> --- /dev/null
+>>> +++ b/drivers/mfd/max665x.c
+>>> @@ -0,0 +1,88 @@
+>>> +/*
+>>> + * Device access for MAX6650-MAX6651
+>>> + *
+>>> + * Copyright(c) 2013 Polatis Ltd.
+>>> + *
+>>> + * Author: Laszlo Papp <laszlo.papp@polatis.com>
+>>> + *
+>>> + *  This program is free software; you can redistribute  it and/or modify it
+>>> + *  under  the terms of  the GNU General  Public License as published by the
+>>> + *  Free Software Foundation;  either version 2 of the  License, or (at your
+>>> + *  option) any later version.
+>>> + */
+>>> +
+>>> +#include <linux/device.h>
+>>> +#include <linux/mfd/core.h>
+>>> +#include <linux/module.h>
+>>> +#include <linux/i2c.h>
+>>
+>> Please arrange these alphabetically.
+>
+> OK, it does not matter for me. Please agree upon something with Lee. :-)
+>
+>>
+>> [snip]
+>>> +
+>>> +struct max665x_dev {
+>>> +       struct device *dev;
+>>> +       struct mutex iolock;
+>>> +
+>>> +       struct i2c_client *i2c;
+>>> +       struct regmap     *map;
+>>> +
+>>> +       int type;
+>>
+>> Unnecessary extra lines above could be removed.
+>
+> I prefer it that way, but I will remove the two extra lines as you wish.
 
-You don't say ;)
+As I already said, these are just nits and only since you were
+re-spinning the patch,
+I suggested them. Also, since this is a new file being added, it
+avoids further patches
+doing these same things.
 
-> easier just to turn it off and rely on the hardware returning 0xffff
-> for any configuration area it couldn't get to.
-
-Does PCI have any way of finding out which parts of the configuration
-space are there before you are forced to go poking around in invalid
-address space?
-
-I'm guessing there may not be, otherwise this convsersation might not
-be happening ... but I don't know too much about PCI.
-
-
-Maybe some driver-specific probing hook would make sense, so that we
-only need to use the russian roulette approach on hardware that forces
-us to.
-
-Cheers
----Dave
+-- 
+With warm regards,
+Sachin
