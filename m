@@ -1,93 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752796AbaBJDm0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Feb 2014 22:42:26 -0500
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:52542 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752387AbaBJDmY (ORCPT
+	id S1752805AbaBJDpq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Feb 2014 22:45:46 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:43772 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752453AbaBJDpn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Feb 2014 22:42:24 -0500
-Message-ID: <52F84A9B.5020008@gmail.com>
-Date: Mon, 10 Feb 2014 04:42:19 +0100
-From: poma <pomidorabelisima@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Sun, 9 Feb 2014 22:45:43 -0500
+Date: Sun, 9 Feb 2014 19:45:33 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Torvald Riegel <triegel@redhat.com>
+Cc: Will Deacon <will.deacon@arm.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+Message-ID: <20140210034533.GA15831@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140206192743.GH4250@linux.vnet.ibm.com>
+ <1391721423.23421.3898.camel@triegel.csb>
+ <20140206221117.GJ4250@linux.vnet.ibm.com>
+ <1391730288.23421.4102.camel@triegel.csb>
+ <20140207042051.GL4250@linux.vnet.ibm.com>
+ <20140207074405.GM5002@laptop.programming.kicks-ass.net>
+ <20140207165028.GO4250@linux.vnet.ibm.com>
+ <20140207165548.GR5976@mudshark.cambridge.arm.com>
+ <20140207180216.GP4250@linux.vnet.ibm.com>
+ <1391992071.18779.99.camel@triegel.csb>
 MIME-Version: 1.0
-To: Linux Kernel list <linux-kernel@vger.kernel.org>
-CC: linux-pm@vger.kernel.org, Olaf Hering <olaf@aepfle.de>,
-        Dave Jones <davej@redhat.com>, "Justin M. Forbes" <jforbes@redhat.com>,
-        Josh Boyer <jwboyer@redhat.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: WARNING: CPU: 1 PID: 0 at kernel/time/tick-broadcast.c:668 tick_broadcast_oneshot_control+0x17d/0x190()
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391992071.18779.99.camel@triegel.csb>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021003-3532-0000-0000-0000056E2A9D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Feb 10, 2014 at 01:27:51AM +0100, Torvald Riegel wrote:
+> On Fri, 2014-02-07 at 10:02 -0800, Paul E. McKenney wrote:
+> > On Fri, Feb 07, 2014 at 04:55:48PM +0000, Will Deacon wrote:
 
-Let's have one last round of Champions!
+[ . . . ]
 
+> > And then it is a short and uncontroversial step to the following:
+> > 
+> > Initial state: x == y == 0
+> > 
+> > T1:	atomic_store_explicit(42, y, memory_order_relaxed);
+> > 	r1 = atomic_load_explicit(x, memory_order_relaxed);
+> > 	if (r1 != 42)
+> > 		atomic_store_explicit(r1, y, memory_order_relaxed);
+> > 
+> > T2:	r2 = atomic_load_explicit(y, memory_order_relaxed);
+> > 	atomic_store_explicit(r2, x, memory_order_relaxed);
+> > 
+> > This can of course result in r1 == r2 == 42, even though the constant
+> > 42 never appeared in the original code.  This is one way to generate
+> > an out-of-thin-air value.
+> > 
+> > As near as I can tell, compiler writers hate the idea of prohibiting
+> > speculative-store optimizations because it requires them to introduce
+> > both control and data dependency tracking into their compilers.
+> 
+> I wouldn't characterize the situation like this (although I can't speak
+> for others, obviously).  IMHO, it's perfectly fine on sequential /
+> non-synchronizing code, because we know the difference isn't observable
+> by a correct program.  For synchronizing code, compilers just shouldn't
+> do it, or they would have to truly prove that speculation is harmless.
+> That will be hard, so I think it should just be avoided.
+> 
+> Synchronization code will likely have been tuned anyway (especially if
+> it uses relaxed MO), so I don't see a large need for trying to optimize
+> using speculative atomic stores.
+> 
+> Thus, I think there's an easy and practical solution.
 
-[   83.558497] ------------[ cut here ]------------
-[   83.558503] WARNING: CPU: 1 PID: 0 at
-kernel/time/tick-broadcast.c:668
-tick_broadcast_oneshot_control+0x17d/0x190()
-[   83.558527] Modules linked in: ipt_MASQUERADE iptable_nat nf_nat_ipv4
-nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack
-xt_CHECKSUM iptable_mangle fuse ip6table_filter ip6_tables ebtable_nat
-ebtables kvm_amd kvm ppdev microcode serio_raw nouveau mxm_wmi video
-i2c_algo_bit ttm edac_core edac_mce_amd drm_kms_helper k10temp drm
-parport_serial parport_pc parport wmi shpchp i2c_nforce2 i2c_core
-acpi_cpufreq nfsd auth_rpcgss nfs_acl lockd sunrpc binfmt_misc
-ata_generic pata_acpi pata_amd 8021q garp mrp tun bridge stp llc bonding
-[   83.558530] CPU: 1 PID: 0 Comm: swapper/1 Tainted: G        W
-3.14.0-0.rc1.git5.1.fc21.1.x86_64 #1
-[   83.558530] Hardware name: Gigabyte Technology Co., Ltd.
-M720-US3/M720-US3, BIOS F7n 09/07/2010
-[   83.558533]  0000000000000000 184f2fadf588e594 ffff880128bb9dd0
-ffffffff817cf05d
-[   83.558535]  0000000000000000 ffff880128bb9e08 ffffffff810966cd
-0000000000000001
-[   83.558536]  0000000000000001 ffff88012a80df00 0000000000000092
-ffffffff81c28940
-[   83.558537] Call Trace:
-[   83.558541]  [<ffffffff817cf05d>] dump_stack+0x4d/0x66
-[   83.558544]  [<ffffffff810966cd>] warn_slowpath_common+0x7d/0xa0
-[   83.558545]  [<ffffffff810967fa>] warn_slowpath_null+0x1a/0x20
-[   83.558547]  [<ffffffff811243dd>]
-tick_broadcast_oneshot_control+0x17d/0x190
-[   83.558549]  [<ffffffff81122dd8>] clockevents_notify+0x178/0x1a0
-[   83.558551]  [<ffffffff81025b17>] amd_e400_idle+0x87/0x130
-[   83.558553]  [<ffffffff8102639e>] arch_cpu_idle+0x2e/0x40
-[   83.558555]  [<ffffffff8110d375>] cpu_startup_entry+0xf5/0x420
-[   83.558558]  [<ffffffff8104dc90>] start_secondary+0x240/0x300
-[   83.558559] ---[ end trace d6d150ba17d5207c ]---
+I like this approach, but there has been resistance to it in the past.
+Definitely worth a good try, though!
 
+> > Many of
+> > them seem to hate dependency tracking with a purple passion.  At least,
+> > such a hatred would go a long way towards explaining the incomplete
+> > and high-overhead implementations of memory_order_consume, the long
+> > and successful use of idioms based on the memory_order_consume pattern
+> > notwithstanding [*].  ;-)
+> 
+> I still think that's different because it blurs the difference between
+> sequential code and synchronizing code (ie, atomic accesses).  With
+> consume MO, the simple solution above doesn't work anymore, because
+> suddenly synchronizing code does affect optimizations in sequential
+> code, even if that wouldn't reorder across the synchronizing code (which
+> would be clearly "visible" to the implementation of the optimization).
 
-https://bugzilla.redhat.com/attachment.cgi?id=861203
-https://bugzilla.redhat.com/show_bug.cgi?id=1063108
-Also,
-https://bugzilla.redhat.com/show_bug.cgi?id=1033310
-https://bugzilla.redhat.com/show_bug.cgi?id=1031296
-https://bugzilla.redhat.com/show_bug.cgi?id=996973
-https://bugzilla.redhat.com/show_bug.cgi?id=989718
+I understand that memory_order_consume is a bit harder on compiler
+writers than the other memory orders, but it is also pretty valuable.
 
->From kernel-3.10 to 3.14,
-http://thread.gmane.org/gmane.linux.kernel/1529924
-http://thread.gmane.org/gmane.linux.power-management.general/37437
-
-
-poma
-
-
-At 600km above planet Earth the temperature
-fluctuates between +125 and -100 degrees Celsius
-
-There is nothing to carry sound
-No air pressure
-No oxygen
-
-Life in space is impossible
-
-LINUX KERNEL LIST
-
+							Thanx, Paul
 
