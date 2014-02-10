@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753093AbaBJXAk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 18:00:40 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:46800 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752635AbaBJXAi (ORCPT
+	id S1753228AbaBJXCg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 18:02:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59419 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752231AbaBJXCd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 18:00:38 -0500
-Message-ID: <52F95A10.5010507@hurleysoftware.com>
-Date: Mon, 10 Feb 2014 18:00:32 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Marcel Holtmann <marcel@holtmann.org>
-CC: "Gustavo F. Padovan" <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        Gianluca Anzolin <gianluca@sottospazio.it>,
-        Alexander Holler <holler@ahsoftware.de>,
-        Andrey Vihrov <andrey.vihrov@gmail.com>,
-        Sander Eikelenboom <linux@eikelenboom.it>,
-        "bluez mailin list (linux-bluetooth@vger.kernel.org)" 
-	<linux-bluetooth@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/24] rfcomm fixes
-References: <1391997564-1805-1-git-send-email-peter@hurleysoftware.com> <3E0F3723-029F-4B12-8D77-9790FDBD3227@holtmann.org>
-In-Reply-To: <3E0F3723-029F-4B12-8D77-9790FDBD3227@holtmann.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Mon, 10 Feb 2014 18:02:33 -0500
+Date: Mon, 10 Feb 2014 15:02:30 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Jason Low <jason.low2@hp.com>,
+        Waiman Long <waiman.long@hp.com>, mingo@kernel.org,
+        paulmck@linux.vnet.ibm.com, torvalds@linux-foundation.org,
+        tglx@linutronix.de, riel@redhat.com, davidlohr@hp.com, hpa@zytor.com,
+        andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
+        chegu_vinod@hp.com
+Subject: Re: [PATCH 0/8] locking/core patches
+Message-Id: <20140210150230.b7f46688093ebc5c45fee870@linux-foundation.org>
+In-Reply-To: <20140210195820.834693028@infradead.org>
+References: <20140210195820.834693028@infradead.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marcel,
+On Mon, 10 Feb 2014 20:58:20 +0100 Peter Zijlstra <peterz@infradead.org> wrote:
 
-On 02/10/2014 05:09 PM, Marcel Holtmann wrote:
-> Hi Peter,
->
->> This patch series addresses a number of previously unknown issues
->> with the RFCOMM tty device implementation, in addition to
->> addressing the locking regression recently reported [1].
->>
->> As Gianluca suggested and I agree, this series first reverts
->> 3 of the 4 patches of 3.14-rc1 for bluetooth/rfcomm/tty.c.
->
-> so for 3.14 we should revert 3 patches. And then the other 21 are
- > intended for 3.15 merge window.
+> Hi all,
+> 
+> I would propose merging the following patches...
+> 
+> The first set is mostly from Jason and tweaks the mutex adaptive
+> spinning, AIM7 throughput numbers:
+> 
+> PRE:  100   2000.04  21564.90 2721.29 311.99     3.12       0.01     0.00     99
+> POST: 100   2000.04  42603.85 5142.80 311.99     3.12       0.00     0.00     99
 
-Yep, this is probably best. At least 3.13 & 3.14 will behave the
-same wrt rfcomm.
+What do these columns represent?  I'm guessing the large improvement
+was in context switches?
 
-> I realize that we still have to deal with some breakage, but we
- > do not want regressions and I clearly not going to take 24 patches
- > for 3.14 at this point in time.
-
-Yeah, I wasn't expecting you to.
-
-> What I can do is take all 24 patches into bluetooth-next and let
- > them sit for 1 week and have people test them. And then we go ahead
- > with reverting 3 patches from 3.14. Does that make sense?
-
-Yep, that's fine with me. Thanks.
-
-Regards,
-Peter Hurley
+> The second set is the qrwlock, although mostly rewritten by me. I didn't do
+> much with it other than boot and build a kernel. But I like them because
+> of the much better worst case preformance.
