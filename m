@@ -1,322 +1,457 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752575AbaBJWT4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 17:19:56 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:52675 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752085AbaBJWTw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 17:19:52 -0500
-Date: Mon, 10 Feb 2014 14:17:59 -0800
-From: Drew Richardson <drew.richardson@arm.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Arnaldo <acme@redhat.com>,
-        Will Deacon <Will.Deacon@arm.com>, Pawel Moll <Pawel.Moll@arm.com>,
-        Wade Cherry <Wade.Cherry@arm.com>
-Subject: Perf Oops on 3.14-rc2
-Message-ID: <20140210221758.GB11542@dreric01-Precision-T1600>
+	id S1752770AbaBJWVF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 17:21:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62178 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751323AbaBJWVB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 17:21:01 -0500
+Date: Mon, 10 Feb 2014 17:20:23 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
+        jolsa@redhat.com, jmario@redhat.com, fowles@inreach.com,
+        eranian@google.com
+Subject: Re: [PATCH 00/21] perf, c2c: Add new tool to analyze cacheline
+ contention on NUMA systems
+Message-ID: <20140210222023.GU25953@redhat.com>
+References: <1392053356-23024-1-git-send-email-dzickus@redhat.com>
+ <20140210212955.GC5002@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Thread-Topic: Perf Oops on 3.14-rc2
-Accept-Language: en-US, en-GB
-Content-Language: en-US
+In-Reply-To: <20140210212955.GC5002@laptop.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 10 Feb 2014 22:18:00.0394 (UTC) FILETIME=[F550BAA0:01CF26AD]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While adding CPU on/offlining support during perf captures I get an
-Oops both on ARM as well as my desktop x86_64. Below is a small
-program that duplicates the issue.
+On Mon, Feb 10, 2014 at 10:29:55PM +0100, Peter Zijlstra wrote:
+> On Mon, Feb 10, 2014 at 12:28:55PM -0500, Don Zickus wrote:
+> > The data output is verbose and there are lots of data tables that interprit the latencies
+> > and data addresses in different ways to help see where bottlenecks might be lying.
+> 
+> Would be good to see what the output looks like.
 
-Here's the oops from an ARM Versatile Express TC2 board running a
-vanilla 3.14-rc2 kernel.
+hehe.  unfortunately, my node info is causing double frees now, but
+attached below (without node info)..
 
-[  119.176648] Unable to handle kernel NULL pointer dereference at virtual address 00000040
-[  119.203448] pgd = ec178000
-[  119.211562] [00000040] *pgd=adcee831, *pte=00000000, *ppte=00000000
-[  119.230399] Internal error: Oops: 17 [#1] SMP THUMB2
-[  119.245263] Modules linked in:
-[  119.254409] CPU: 1 PID: 2268 Comm: perf_fail Not tainted 3.14.0-rc2 #1
-[  119.273962] task: ee2c1540 ti: ed6b8000 task.ti: ed6b8000
-[  119.290133] PC is at perf_event_aux_ctx+0x36/0x5c
-[  119.304216] LR is at perf_event_aux_ctx+0x4b/0x5c
-[  119.318299] pc : [<c008c62a>]    lr : [<c008c63f>]    psr: 00000033
-[  119.318299] sp : ed6b9dd0  ip : ee2c1a80  fp : ee3cefe0
-[  119.352701] r10: ee252420  r9 : ed6b8000  r8 : c00910b9
-[  119.368346] r7 : ed6b9e48  r6 : 00000001  r5 : eefc7180  r4 : 00000000
-[  119.387898] r3 : 00000000  r2 : 00000002  r1 : ed6b9e48  r0 : 00000000
-[  119.407452] Flags: nzcv  IRQs on  FIQs on  Mode SVC_32  ISA Thumb  Segment user
-[  119.429352] Control: 50c5387d  Table: ac17806a  DAC: 00000015
-[  119.446562] Process perf_fail (pid: 2268, stack limit = 0xed6b8240)
-[  119.465333] Stack: (0xed6b9dd0 to 0xed6ba000)
-[  119.478374] 9dc0:                                     edb11f34 00000000 ed6b8000 ee923880
-[  119.502880] 9de0: ed6b8000 00000000 ed6b9e48 c00910b9 c06bd43c c008c9d1 00000001 00000000
-[  119.527385] 9e00: c008c930 00000000 00000001 ee923880 edc25c80 00000000 00000000 ee3ce000
-[  119.551890] 9e20: 00000008 000014a5 00000000 c0091ebd ed6b8000 00000000 00000080 00000000
-[  119.576394] 9e40: c00b1a97 00000000 ee252420 ee3cefe0 00000018 00000000 00000008 00000000
-[  119.600899] 9e60: 000014a5 00000000 00000000 00000000 00000001 00402002 00000000 00000000
-[  119.625404] 9e80: b1daa000 00000000 00101000 00000000 00000000 00000000 ee6c4a14 ee2520c8
-[  119.649910] 9ea0: b1daa000 ee2520c0 edc25c80 edc18d80 040600fb ed55db00 ed6b8000 c00b32cb
-[  119.674414] 9ec0: ee2520c0 00000000 edc25c80 00000000 00000000 00101000 00000000 ee252420
-[  119.698924] 9ee0: 00000101 edc25c80 b1daa000 00000000 b1daa000 ed6b8000 edc25c80 edc18d80
-[  119.723430] 9f00: 00101000 00000101 c06ad7e4 c00b37e5 00000000 edc18df8 edc18dd4 000000fb
-[  119.747934] 9f20: 00100100 ed6b9f5c 00000001 00000003 00101000 00000000 edc25c80 edc18dd4
-[  119.772439] 9f40: 00000000 c00a723b 00000001 00000000 ed6b9f5c c00d4bdd 00000001 00000000
-[  119.796944] 9f60: 00000001 00000003 00101000 00000000 00000000 edc25c80 00000000 c00b275d
-[  119.821449] 9f80: 00000001 00000000 ffffffff 00000003 00000000 be823718 000000c0 c000cfc4
-[  119.845954] 9fa0: ed6b8000 c000ce01 00000003 00000000 00000000 00101000 00000003 00000001
-[  119.870459] 9fc0: 00000003 00000000 be823718 000000c0 00000000 00000000 b6fd5000 00000000
-[  119.894965] 9fe0: 00000000 be823664 00008bab b6f39588 40000010 00000000 00afbc1e 00000000
-[  119.919477] [<c008c62a>] (perf_event_aux_ctx) from [<c008c9d1>] (perf_event_aux+0xa1/0xd4)
-[  119.944251] [<c008c9d1>] (perf_event_aux) from [<c0091ebd>] (perf_event_mmap+0xf9/0x190)
-[  119.968506] [<c0091ebd>] (perf_event_mmap) from [<c00b32cb>] (mmap_region+0xd7/0x418)
-[  119.991973] [<c00b32cb>] (mmap_region) from [<c00b37e5>] (do_mmap_pgoff+0x1d9/0x244)
-[  120.015184] [<c00b37e5>] (do_mmap_pgoff) from [<c00a723b>] (vm_mmap_pgoff+0x5b/0x74)
-[  120.038389] [<c00a723b>] (vm_mmap_pgoff) from [<c00b275d>] (SyS_mmap_pgoff+0x61/0xa4)
-[  120.061861] [<c00b275d>] (SyS_mmap_pgoff) from [<c000ce01>] (ret_fast_syscall+0x1/0x44)
-[  120.085847] Code: 9301 9c01 42ac d00e (6c23) 2b00
-[  120.100239] ---[ end trace c41e3da6a7630bd4 ]---
-[  120.114104] note: perf_fail[2268] exited with preempt_count 2
+> 
+> What I haven't seen; and what I would find most useful; is using the IP
+> + dwarf info to map it back to a data structure member.
 
-Drew
+Yeah, we would like that too. :-)
 
---->8
+> 
+> Since you're already using the PEBS data-source fields, you can also
+> have a precise IP. For many cases its possible to reconstruct the exact
+> data member the instruction is modifying.
+> 
+> At that point you can do pahole like output of data structures, showing
+> which members are 'hot' on misses etc.
 
-#include <assert.h>
-#include <fcntl.h>
-#include <linux/perf_event.h>
-#include <pthread.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/ioctl.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/syscall.h>
-#include <sys/types.h>
-#include <unistd.h>
+Yeah, Arnaldo promised to look into that.  I think Stephane was doing some
+research into that too.
 
-#define NR_CPUS 16
-#define BUF_SIZE (1<<20)
-#define MASK (BUF_SIZE - 1)
+Cheers,
+Don
 
-static void *bufs[NR_CPUS];
-static int fds[NR_CPUS][3];
-static long page_size;
-static int nr_cpu_ids;
 
-static int sys_perf_event_open(struct perf_event_attr *const attr, const pid_t pid, const int cpu, const int group_fd, const unsigned long flags) {
-	return syscall(__NR_perf_event_open, attr, pid, cpu, group_fd, flags);
-}
+=================================================
+            Trace Event Information              
+=================================================
+  Total records                     :    1322047
+  Locked Load/Store Operations      :     206317
+  Load Operations                   :     355701
+  Loads - uncacheable               :        590
+  Loads - no mapping                :        207
+  Load Fill Buffer Hit              :     100214
+  Load L1D hit                      :     148454
+  Load L2D hit                      :      15170
+  Load LLC hit                      :      53872
+  Load Local HITM                   :      15388
+  Load Remote HITM                  :      26760
+  Load Remote HIT                   :       3910
+  Load Local DRAM                   :       2436
+  Load Remote DRAM                  :       3648
+  Load MESI State Exclusive         :       2883
+  Load MESI State Shared            :       3201
+  Load LLC Misses                   :      36754
+  LLC Misses to Local DRAM          :        6.6%
+  LLC Misses to Remote DRAM         :        9.9%
+  LLC Misses to Remote cache (HIT)  :       10.6%
+  LLC Misses to Remote cache (HITM) :       72.8%
+  Store Operations                  :     966322
+  Store - uncacheable               :          0
+  Store - no mapping                :      42931
+  Store L1D Hit                     :     915696
+  Virt -> Phys Remap Rejects        :          0
+  No Page Map Rejects               :          0
 
-static long read_long(const char *const path)
-{
-	char buf[32];
-	ssize_t bytes;
-	int fd;
 
-	fd = open(path, O_RDONLY);
-	assert(fd >= 0);
-	bytes = read(fd, buf, sizeof(buf) - 1);
-	assert(bytes > 0);
-	buf[bytes] = '\0';
-	close(fd);
+================================================================================
+                Execution Latency For Loads to Non Shared Memory
 
-	return strtol(buf, NULL, 0);
-}
+Metric                           Overall            Extremes            Selected
+================================================================================
+Samples                           301189                3454                 104
 
-static int write_cpu_online(const char online)
-{
-	ssize_t bytes;
-	int fd;
+Minimum                               32                1006                4095
+Maximum                             8149                8149                8149
+Threshold                              0                1005                4042
 
-	fd = open("/sys/devices/system/cpu/cpu1/online", O_WRONLY);
-	assert(fd >= 0);
-	bytes = write(fd, &online, sizeof(online));
-	close(fd);
+Mode                                  34                1152                4556
+Median                               136                1250                5163
+Mean                                 236                1524                5337
 
-	return bytes == sizeof(online);
-}
+Std Dev                            256.3               839.7               979.5
+Coeff of Variation                 1.086               0.551               0.184
+Confid Interval                      0.8                23.5                41.3
 
-static void *busy_loop(void *arg)
-{
-	(void)arg;
 
-	for (;;);
 
-	return NULL;
-}
 
-static void create_threads(void)
-{
-	pthread_t thread;
-	int cpu;
-	int result;
+====================================================================================================================================================================
+                                                       Non Shared Data Loads With Excessive Execution Latency
 
-	for (cpu = 0; cpu < 2*nr_cpu_ids; ++cpu) {
-		result = pthread_create(&thread, NULL, busy_loop, NULL);
-		assert(result == 0);
-	}
-}
+                        Load                                            ------ Load Inst Execute Latency ------                                                     
+  Num  %dist  %cumm    Count       Data Address       Inst Address      Min   Median      Max     Mean       CV  Symbol                         Object              
+====================================================================================================================================================================
+-----------------------------------------------
+    0  57.3%  57.3%       59 0xffffffff81c57ac0
+-----------------------------------------------
+                       33.9%               0x00 0xffffffff81098c43     4169     0.0     8149  5479.0    20.5%  update_cfs_shares              [kernel.kallsyms]   
+                       66.1%               0x20 0xffffffff81094929     4155     0.0     7492  5286.6    16.9%  update_cfs_rq_blocked_load     [kernel.kallsyms]   
+-----------------------------------------------
+    1   5.8%  63.1%        6 0xffffffff818a1180
+-----------------------------------------------
+                       50.0%               0x04 0xffffffff815c4f1e     4866     0.0     8116  6745.7    25.0%  _raw_spin_lock                 [kernel.kallsyms]   
+                       50.0%               0x04 0xffffffff815c4f47     4556     0.0     7389  6099.3    23.5%  _raw_spin_lock                 [kernel.kallsyms]   
+-----------------------------------------------
+    2   4.9%  68.0%        5 0xffff881fbf608ac0
+-----------------------------------------------
+                      100.0%               0x24 0xffffffff810981dd     4201     0.0     6653  5429.4    17.4%  task_tick_numa                 [kernel.kallsyms]   
+-----------------------------------------------
+    3   2.9%  70.9%        3 0xffff881fa55b0140
+-----------------------------------------------
+                      100.0%               0x38 0xffffffff81082e8a     4317     0.0     4571  4418.7     3.0%  mspin_lock                     [kernel.kallsyms]   
+-----------------------------------------------
+    4   2.9%  73.8%        3 0xffff883fff834700
+-----------------------------------------------
+                      100.0%               0x30 0xffffffff810948e4     4906     0.0     6078  5532.3    10.7%  update_cfs_rq_blocked_load     [kernel.kallsyms]   
+-----------------------------------------------
+    5   2.9%  76.7%        3 0xffff885fff834700
+-----------------------------------------------
+                      100.0%               0x30 0xffffffff810948e4     4921     0.0     6703  5828.7    15.3%  update_cfs_rq_blocked_load     [kernel.kallsyms]   
+-----------------------------------------------
+    6   2.9%  79.6%        3 0xffff885fff8b4700
+-----------------------------------------------
+                      100.0%               0x30 0xffffffff810948e4     4101     0.0     6022  5166.7    18.9%  update_cfs_rq_blocked_load     [kernel.kallsyms]   
+-----------------------------------------------
+    7   2.9%  82.5%        3 0xffff885fff9d4700
+-----------------------------------------------
+                      100.0%               0x30 0xffffffff810948e4     4319     0.0     4486  4381.7     2.1%  update_cfs_rq_blocked_load     [kernel.kallsyms]   
+-----------------------------------------------
+    8   1.9%  84.5%        2 0xffff885fff854700
+-----------------------------------------------
+                      100.0%               0x30 0xffffffff810948e4     5434     0.0     6075  5754.5     7.9%  update_cfs_rq_blocked_load     [kernel.kallsyms]   
+-----------------------------------------------
+    9   1.9%  86.4%        2 0xffff885fff974700
+-----------------------------------------------
+                      100.0%               0x30 0xffffffff810948e4     5326     0.0     5589  5457.5     3.4%  update_cfs_rq_blocked_load     [kernel.kallsyms]   
+-----------------------------------------------
+   10   1.9%  88.3%        2 0xffffffff819bd400
+-----------------------------------------------
+                       50.0%               0x04 0xffffffff810ae886     5427     0.0     5427  5427.0     0.0%  ktime_get                      [kernel.kallsyms]   
+                       50.0%               0x04 0xffffffff810aed07     4334     0.0     4334  4334.0     0.0%  update_wall_time               [kernel.kallsyms]   
+-----------------------------------------------
+   11   1.0%  89.3%        1 0xffff881fc5600040
+-----------------------------------------------
+                      100.0%               0x20 0xffffffffa162cb70     5606     0.0     5606  5606.0     0.0%  mtip_irq_handler               [mtip32xx]          
 
-static void start_perf(void)
-{
-	struct perf_event_attr pea = {
-		.size = sizeof(pea),
-		.read_format = PERF_FORMAT_ID | PERF_FORMAT_GROUP,
-		.disabled = 1,
-		.watermark = 1,
-		.wakeup_watermark = 3 * BUF_SIZE / 4,
-	};
-	long sched_switch_id = read_long("/sys/kernel/debug/tracing/events/sched/sched_switch/id");
-	int cpu;
-	int i;
-	int result;
+<snip 11 records>
+...
 
-	assert(sched_switch_id >= 0);
 
-	// Setup perf
-	for (cpu = 0; cpu < nr_cpu_ids; ++cpu) {
-		pea.type = PERF_TYPE_TRACEPOINT;
-		pea.config = sched_switch_id;
-		pea.sample_period = 1;
-		pea.sample_type = PERF_SAMPLE_TIME | PERF_SAMPLE_READ | PERF_SAMPLE_ID | PERF_SAMPLE_RAW,
-		pea.pinned = 1;
-		pea.mmap = 1;
-		pea.comm = 1;
-		pea.task = 1;
-		pea.sample_id_all = 1;
-		fds[cpu][0] = sys_perf_event_open(&pea, -1, cpu, -1, 0);
-		assert(fds[cpu][0] >= 0);
-		bufs[cpu] = mmap(NULL, page_size + BUF_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fds[cpu][0], 0);
-		assert(bufs[cpu] != MAP_FAILED);
 
-		pea.pinned = 0;
-		pea.mmap = 0;
-		pea.comm = 0;
-		pea.task = 0;
-		pea.sample_id_all = 0;
 
-		pea.type = PERF_TYPE_SOFTWARE;
-		pea.config = PERF_COUNT_SW_CPU_CLOCK;
-		pea.sample_period = 1000000;
-		pea.sample_type = PERF_SAMPLE_TIME | PERF_SAMPLE_READ | PERF_SAMPLE_ID | PERF_SAMPLE_TID | PERF_SAMPLE_CALLCHAIN;
-		fds[cpu][1] = sys_perf_event_open(&pea, -1, cpu, fds[cpu][0], PERF_FLAG_FD_OUTPUT);
-		assert(fds[cpu][1] >= 0);
-		result = ioctl(fds[cpu][1], PERF_EVENT_IOC_SET_OUTPUT, fds[cpu][0]);
-		assert(result == 0);
+========================================================================================================
+                                Load Access & Excute Latency Information
 
-		pea.type = PERF_TYPE_HARDWARE;
-		pea.config = PERF_COUNT_HW_CPU_CYCLES;
-		pea.sample_period = 0;
-		pea.sample_type = PERF_SAMPLE_TIME | PERF_SAMPLE_READ | PERF_SAMPLE_ID;
-		fds[cpu][2] = sys_perf_event_open(&pea, -1, cpu, fds[cpu][0], PERF_FLAG_FD_OUTPUT);
-		assert(fds[cpu][2] >= 0);
-		result = ioctl(fds[cpu][2], PERF_EVENT_IOC_SET_OUTPUT, fds[cpu][0]);
-		assert(result == 0);
-	}
+                                       Count      Minmum     Average        CV       Maximum       %dist
+========================================================================================================
+L1  Hit  - Snp None                   148444          32         242      1.1501        7492        39.5%
+LFB Hit  - Snp None                   100190          32         271      0.8572        8149        29.8%
+L2  Hit  - Snp None                    15154          32         227      0.9071        1682         3.8%
+L3  Hit  - Snp None                    32029          32          70      1.7761        6353         2.5%
+L3  Hit  - Snp Miss                     2489          38         373      0.7307        5306         1.0%
+L3  Hit  - Snp Hit  - Lcl Cache         3802          32         150      0.9289        3225         0.6%
+L3  Hit  - Snp Hitm - Lcl Cache        15388          32         187      1.0542        8485         3.2%
+L3  Miss - Snp Hit  - Rmt Cache         3910          32         355      0.3318        3972         1.5%
+L3  Miss - Snp Hitm - Rmt Cache        26760          32         493      0.5116        6236        14.5%
+L3  Miss - Snp Hit  - Lcl Dram          1029          32         400      0.5783        3578         0.5%
+L3  Miss - Snp Hit  - Rmt Dram          2170          32         541      0.7315        9967         1.3%
+L3  Miss - Snp Miss - Lcl Dram          1406          32         431      0.9117        8116         0.7%
+L3  Miss - Snp Miss - Rmt Dram          1477          34         554      0.4437        2956         0.9%
+L3  Miss - Snp NA                        440           0         607      0.6940        2717         0.3%
+Ld  UNC  - Snp None                        0  18446744073709551615           0        -nan           0         0.0%
 
-	// Start perf
-	for (cpu = 0; cpu < nr_cpu_ids; ++cpu) {
-		for (i = 0; i < (int)(sizeof(fds[cpu])/sizeof(fds[cpu][0])); ++i) {
-			result = ioctl(fds[cpu][i], PERF_EVENT_IOC_ENABLE);
-			assert(result == 0);
-		}
-	}
-}
+=================================================
+    Global Shared Cache Line Event Information   
+=================================================
+  Total Shared Cache Lines          :       1327
+  Load HITs on shared lines         :     167131
+  Fill Buffer Hits on shared lines  :      43469
+  L1D hits on shared lines          :      50497
+  L2D hits on shared lines          :        960
+  LLC hits on shared lines          :      38467
+  Locked Access on shared lines     :     100032
+  Store HITs on shared lines        :     118659
+  Store L1D hits on shared lines    :     113783
+  Total Merged records              :     160807
 
-static void read_perf(void)
-{
-	int cpu;
 
-	for (cpu = 0; cpu < nr_cpu_ids; ++cpu) {
-		if (bufs[cpu] != MAP_FAILED) {
-			// Take a snapshot of the positions
-			struct perf_event_mmap_page *pemp = (struct perf_event_mmap_page *)bufs[cpu];
-			const __u64 head = pemp->data_head;
-			__u64 tail = pemp->data_tail;
+================================================================================================================================================================================================================
 
-			if (head > tail) {
-				printf("cpu %i has data\n", cpu);
-				/*
-				int header_print_count = 5;
-				while (head > tail) {
-					struct perf_event_header *const peh = (struct perf_event_header *)(bufs[cpu] + page_size + (tail % MASK));
-					if (header_print_count > 0) {
-						printf("header = {type = %i, misc = %i, size = %i}\n", peh->type, peh->misc, peh->size);
-						--header_print_count;
-					}
-					if (peh->size <= 0) {
-						printf("Found odd header\n");
-						tail = head;
-						break;
-					}
-					if (tail + peh->size > head) {
-						break;
-					}
-					tail += peh->size;
-				}
-				*/
+                                                                                          Shared Data Cache Line Table
 
-				// Update tail with the data read
-				pemp->data_tail = tail;
-			}
-		}
-	}
-}
+                                 Total     %All                Total       ---- Core Load Hit ----  -- LLC Load Hit --     ----- LLC Load Hitm -----     -- Load Dram --     LLC       ---- Store Reference ----
+   Index           Phys Adrs   Records   Ld Miss     %hitm     Loads        FB       L1D       L2D       Lcl       Rmt     Total       Lcl       Rmt       Lcl       Rmt   Ld Miss     Total     L1Hit    L1Miss
+================================================================================================================================================================================================================
+       0  0xffff881fa55b0140     72006    16.97%    23.31%     43095     13591     16860        45      2651        25      9526      3288      6238       266       131      6660     28911     28098       813
+       1  0xffff881fba47f000     21854     5.29%     7.26%     13938      3887      6941        15         1         7      3087      1143      1944         0         0      1951      7916      7916         0
+       2  0xffff881fc21b9cc0      2153     1.61%     2.21%       862        32        70         0        15         1       740       148       592         0         4       597      1291      1235        56
+       3  0xffff881fc7d91cc0      1957     1.40%     1.92%       866        34        94         0        14         3       720       207       513         0         1       517      1091      1028        63
+       4  0xffff881fba539cc0      1813     1.35%     1.85%       808        33        84         3        14         1       665       170       495         8         0       504      1005       967        38
+       5  0xffff881fc770bcc0      1939     1.30%     1.78%       827        36        70         0        16         1       700       223       477         4         0       482      1112      1058        54
+       6  0xffff881fbc8adcc0      1854     1.25%     1.72%       788        21        77         1        12         2       674       215       459         0         1       462      1066       965       101
+       7  0xffff881fc6c03cc0      1825     1.19%     1.63%       800        20        80         1        16         3       677       240       437         1         2       443      1025       973        52
+       8  0xffff881fb93f1cc0      1934     1.17%     1.61%       846        42        79         2         7         2       711       280       431         0         3       436      1088      1022        66
+       9  0xffff881fd1391cc0      1901     1.16%     1.59%       840        35        97         0        10         0       693       267       426         0         5       431      1061      1000        61
+      10  0xffff881fd0771cc0      1731     1.14%     1.57%       779        19        62         1        22         9       663       244       419         1         2       431       952       890        62
+      11  0xffff881fc7d31cc0      1971     1.13%     1.56%       826        29        91         2        19         5       677       260       417         0         3       425      1145      1064        81
+      12  0xffff881fb9dcdcc0      1821     1.13%     1.55%       784        31        67         0        13         8       663       249       414         0         2       424      1037       973        64
+      13  0xffff881fc3febcc0      1795     1.10%     1.51%       788        33        74         1        11         4       663       258       405         1         1       411      1007       936        71
+      14  0xffff881fc7d29cc0      1837     1.10%     1.51%       756        30        71         0        19         1       634       229       405         1         0       407      1081      1023        58
+      15  0xffff881fbc365cc0      1961     1.06%     1.46%       850        23        73         0        16         0       736       345       391         2         0       393      1111      1047        64
+      16  0xffff881fd0259cc0      1896     1.04%     1.43%       779        28        68         1        15         0       665       282       383         1         1       385      1117      1052        65
+      17  0xffff881fd0589cc0      1848     1.03%     1.42%       860        26        95         0        22         2       714       334       380         0         1       383       988       921        67
+      18  0xffff881fd01a1cc0      1822     1.02%     1.40%       823        38        78         0        17         1       688       313       375         1         0       377       999       926        73
+      19  0xffff881fb7ce1cc0      1833     1.00%     1.38%       761        28        72         0        11         2       642       274       368         1         5       376      1072       975        97
+      20  0xffff881fb8099cc0      1846     0.94%     1.30%       779        23        52         1        11         2       684       337       347         1         5       355      1067       991        76
+      21  0xffff881fc7e91cc0      1751     0.91%     1.25%       792        29        79         0        20         1       662       327       335         0         1       337       959       905        54
+      22  0xffff881fbf608000       625     0.33%     0.45%       551       162        17        27       189        18       134        13       121         4         0       143        74        64        10
 
-static void stop_perf(void)
-{
-	int cpu;
-	int i;
-	int result;
+<snip 40 lines>
+....
 
-	// Stop perf
-	for (cpu = 0; cpu < nr_cpu_ids; ++cpu) {
-		for (i = 0; i < (int)(sizeof(fds[cpu])/sizeof(fds[cpu][0])); ++i) {
-			result = ioctl(fds[cpu][i], PERF_EVENT_IOC_DISABLE);
-			assert(result == 0);
-		}
-	}
 
-	// Cleanup perf
-	for (cpu = 0; cpu < nr_cpu_ids; ++cpu) {
-		munmap(bufs[cpu], page_size + BUF_SIZE);
-		for (i = 0; i < (int)(sizeof(fds[cpu])/sizeof(fds[cpu][0])); ++i) {
-			close(fds[cpu][i]);
-		}
-	}
-}
+================================================================================================================================================================================================================
 
-int main(void)
-{
-	int result;
+                                                                                      Shared Cache Line Distribution Pareto
 
-	page_size = sysconf(_SC_PAGE_SIZE);
-	assert(page_size > 0);
-	nr_cpu_ids = sysconf(_SC_NPROCESSORS_CONF);
-	assert(nr_cpu_ids > 0 && nr_cpu_ids <= NR_CPUS);
+     ---- All ----  -- Shared --    ---- HITM ----                                                                        Load Inst Execute Latency                                                             
+       Data Misses   Data Misses   Remote    Local  -- Store Refs --                                                                      
+                                                                                                                          ---- cycles ----             cpu
+ Num  %dist  %cumm  %dist  %cumm  LLCmiss   LLChit   L1 hit  L1 Miss       Data Address    Pid    Tid       Inst Address   median     mean     CV      cnt Symbol                         Object                
+================================================================================================================================================================================================================
+-----------------------------------------------------------------------------------------------
+   0  17.0%  17.0%  23.3%  23.3%     6238     3288    28098      813 0xffff881fa55b0140    ***
+-----------------------------------------------------------------------------------------------
+                                     0.0%     0.0%     0.0%     0.0%               0x00    375    375 0xffffffffa018ff5b      n/a      n/a      n/a      1 ext4_bio_write_page            [ext4]                
+                                     0.0%     0.0%     0.0%     0.0%               0x08  18156  18165 0xffffffffa018b7f9       -1      384     0.0%      1 ext4_mark_iloc_dirty           [ext4]                
+                                     0.2%     0.0%     0.0%     0.0%               0x10  18156    *** 0xffffffff811ca1aa       -1      387    10.7%      7 __mark_inode_dirty             [kernel.kallsyms]     
+                                     0.7%     0.1%    15.9%     0.0%               0x18  18156    *** 0xffffffff815c15b1       -1     1241    24.0%     51 mutex_unlock                   [kernel.kallsyms]     
+                                     0.0%     0.0%    23.2%     0.0%               0x18  18156    *** 0xffffffff815c1615       -1      684     0.0%     50 mutex_lock                     [kernel.kallsyms]     
+                                     0.0%     0.0%     0.5%     3.1%               0x18  18156    *** 0xffffffff815c2082      n/a      n/a      n/a     38 __mutex_unlock_slowpath        [kernel.kallsyms]     
+                                     0.2%     3.3%     0.0%     0.0%               0x18  18156    *** 0xffffffff815c2139       -1      496    22.7%     31 __mutex_lock_slowpath          [kernel.kallsyms]     
+                                     0.2%     3.4%     5.1%     0.0%               0x18  18156    *** 0xffffffff815c2142       -1      821    13.2%     50 __mutex_lock_slowpath          [kernel.kallsyms]     
+                                     0.0%     0.0%     0.1%     0.0%               0x18  18156    *** 0xffffffff815c21bf       -1     1203     0.0%     18 __mutex_lock_slowpath          [kernel.kallsyms]     
+                                     1.2%     0.1%     0.0%     0.0%               0x18  18156    *** 0xffffffff815c21ed       -1      671    42.9%     37 __mutex_lock_slowpath          [kernel.kallsyms]     
+                                     0.0%     0.1%     0.1%     0.1%               0x18  18156    *** 0xffffffff815c21f6       -1      971    16.5%     25 __mutex_lock_slowpath          [kernel.kallsyms]     
+                                    10.9%     6.2%     2.5%    89.3%               0x1c  18156    *** 0xffffffff815c4e4a       -1      478    51.7%     50 _raw_spin_unlock               [kernel.kallsyms]     
+                                    11.8%     2.0%    18.4%     0.0%               0x1c  18156    *** 0xffffffff815c4f1e       -1     1276    22.0%     50 _raw_spin_lock                 [kernel.kallsyms]     
+                                     3.2%     2.6%     0.0%     0.0%               0x1c  18156    *** 0xffffffff815c4f47       -1      831    54.2%     48 _raw_spin_lock                 [kernel.kallsyms]     
+                                     0.8%     0.4%     0.0%     0.0%               0x20  18156    *** 0xffffffff815c207f       -1      669    26.3%     26 __mutex_unlock_slowpath        [kernel.kallsyms]     
+                                     0.0%     0.0%     0.0%     0.6%               0x28  18156    *** 0xffffffff812b7e4e      n/a      n/a      n/a      5 __list_add                     [kernel.kallsyms]     
+                                     0.0%     0.1%     0.0%     0.0%               0x30  18156    *** 0xffffffff81082f19       -1      738    58.4%      5 mutex_spin_on_owner            [kernel.kallsyms]     
+                                     0.1%     8.8%     0.0%     0.0%               0x30  18156    *** 0xffffffff81082f55       -1      730    33.9%     23 mutex_spin_on_owner            [kernel.kallsyms]     
+                                     0.0%     0.0%     0.2%     0.4%               0x30  18156    *** 0xffffffff815c15a6      n/a      n/a      n/a     27 mutex_unlock                   [kernel.kallsyms]     
+                                     0.0%     0.0%     2.8%     6.5%               0x30  18156    *** 0xffffffff815c1628      n/a      n/a      n/a     50 mutex_lock                     [kernel.kallsyms]     
+                                     0.4%     0.4%     0.0%     0.0%               0x30  18156    *** 0xffffffff815c20d6       -1      860    50.5%     17 __mutex_lock_slowpath          [kernel.kallsyms]     
+                                    60.3%    66.7%     0.0%     0.0%               0x30  18156    *** 0xffffffff815c211d       -1      471    46.6%     50 __mutex_lock_slowpath          [kernel.kallsyms]     
+                                     0.0%     0.0%     0.0%     0.0%               0x30  18156  18165 0xffffffff815c2157      n/a      n/a      n/a      1 __mutex_lock_slowpath          [kernel.kallsyms]     
+                                     9.8%     5.8%    31.0%     0.0%               0x38  18156    *** 0xffffffff81082e8a       -1      960    33.3%     50 mspin_lock                     [kernel.kallsyms]     
+                                     0.0%     0.0%     0.1%     0.0%               0x38  18156    *** 0xffffffff81082ec4       -1      588    42.1%     18 mspin_unlock                   [kernel.kallsyms]     
 
-	write_cpu_online('1');
-	create_threads();
+-----------------------------------------------------------------------------------------------
+   1   5.3%  22.3%   7.3%  30.6%     1944     1143     7916        0 0xffff881fba47f000  18156
+-----------------------------------------------------------------------------------------------
+                                   100.0%   100.0%     0.0%     0.0%               0x00  18156    *** 0xffffffffa01b410e       -1      401    13.5%     50 __ext4_journal_start_sb        [ext4]                
+                                     0.0%     0.0%    10.1%     0.0%               0x28  18156    *** 0xffffffffa0167409      n/a      n/a      n/a     50 start_this_handle              [jbd2]                
+                                     0.0%     0.0%    89.9%     0.0%               0x28  18156    *** 0xffffffff815c4be9      n/a      n/a      n/a     50 _raw_read_lock                 [kernel.kallsyms]     
 
-	printf("Starting perf\n");
-	start_perf();
-	sleep(10);
+-----------------------------------------------------------------------------------------------
+   2   1.6%  23.9%   2.2%  32.8%      592      148     1235       56 0xffff881fc21b9cc0  18156
+-----------------------------------------------------------------------------------------------
+                                     0.0%     0.0%     0.2%     0.0%               0x00  18156  18172 0xffffffff81082e75      n/a      n/a      n/a      2 mspin_lock                     [kernel.kallsyms]     
+                                     0.0%     0.0%     0.2%     0.0%               0x00  18156  18172 0xffffffff81082f15      n/a      n/a      n/a      2 mutex_spin_on_owner            [kernel.kallsyms]     
+                                     0.3%     0.0%     0.0%     0.0%               0x00  18156  18172 0xffffffff81082f5a       -1      449     0.3%      1 mutex_spin_on_owner            [kernel.kallsyms]     
+                                     0.0%     0.0%     0.2%     0.0%               0x00  18156  18172 0xffffffff810908ac      n/a      n/a      n/a      1 try_to_wake_up                 [kernel.kallsyms]     
+                                     0.0%     0.0%     0.9%     0.0%               0x00  18156  18172 0xffffffff81090a73      n/a      n/a      n/a      5 try_to_wake_up                 [kernel.kallsyms]     
+                                     0.0%     0.0%     2.3%     0.0%               0x00  18156  18172 0xffffffff8113524c      n/a      n/a      n/a      7 generic_segment_checks         [kernel.kallsyms]     
+                                     0.0%     0.0%     1.1%     0.0%               0x00  18156  18172 0xffffffff81135f09      n/a      n/a      n/a      3 generic_file_buffered_write    [kernel.kallsyms]     
+                                     0.0%     0.0%     3.8%     0.0%               0x00  18156  18172 0xffffffff811ba059      n/a      n/a      n/a      6 file_update_time               [kernel.kallsyms]     
+                                     0.0%     0.0%     0.0%     1.8%               0x00  18156  18172 0xffffffff815c4275      n/a      n/a      n/a      1 schedule_preempt_disabled      [kernel.kallsyms]     
+                                     2.9%     0.0%     0.0%     0.0%               0x00  18156  18172 0xffffffff815c4299       -1      353    15.2%      6 schedule_preempt_disabled      [kernel.kallsyms]     
+                                     0.0%     0.0%     1.9%     0.0%               0x08  18156  18172 0xffffffff81135245      n/a      n/a      n/a      6 generic_segment_checks         [kernel.kallsyms]     
+                                     0.0%     0.0%     0.5%     0.0%               0x08  18156  18172 0xffffffff81135f05      n/a      n/a      n/a      3 generic_file_buffered_write    [kernel.kallsyms]     
+                                     0.0%     0.0%    10.0%     0.0%               0x08  18156  18172 0xffffffff811b9cb5      n/a      n/a      n/a      8 file_remove_suid               [kernel.kallsyms]     
+                                     0.0%     0.0%     2.3%     0.0%               0x08  18156  18172 0xffffffff811ba055      n/a      n/a      n/a      8 file_update_time               [kernel.kallsyms]     
+                                     0.0%     0.0%     2.8%     3.6%               0x08  18156  18172 0xffffffff815c2106      n/a      n/a      n/a      5 __mutex_lock_slowpath          [kernel.kallsyms]     
+                                     0.0%     0.0%    12.2%     0.0%               0x08  18156  18172 0xffffffff815c2118      n/a      n/a      n/a      9 __mutex_lock_slowpath          [kernel.kallsyms]     
+                                     0.0%     0.0%     2.9%    33.9%               0x08  18156  18172 0xffffffff815c212c      n/a      n/a      n/a      8 __mutex_lock_slowpath          [kernel.kallsyms]     
+                                     0.0%     0.0%     0.0%     7.1%               0x08  18156  18172 0xffffffff815c21e8      n/a      n/a      n/a      3 __mutex_lock_slowpath          [kernel.kallsyms]     
+                                     0.3%     0.0%     0.0%     0.0%               0x08  18156  18172 0xffffffff815c429a       -1      314    28.6%      2 schedule_preempt_disabled      [kernel.kallsyms]     
+                                     0.0%     0.0%     0.1%     0.0%               0x10  18156  18172 0xffffffff81082e80      n/a      n/a      n/a      1 mspin_lock                     [kernel.kallsyms]     
+                                     0.0%     0.0%     0.0%    17.9%               0x10  18156    *** 0xffffffff81082e9b      n/a      n/a      n/a      8 mspin_lock                     [kernel.kallsyms]     
+                                     0.0%     0.0%     0.1%     0.0%               0x10  18156  18172 0xffffffff810908a2      n/a      n/a      n/a      1 try_to_wake_up                 [kernel.kallsyms]     
+                                     0.0%     0.0%     1.4%     0.0%               0x10  18156  18172 0xffffffff81137c4d      n/a      n/a      n/a      7 __generic_file_aio_write       [kernel.kallsyms]     
+                                     0.0%     0.0%     7.4%     0.0%               0x10  18156  18172 0xffffffff81137d7b      n/a      n/a      n/a      9 __generic_file_aio_write       [kernel.kallsyms]     
+                                     0.0%     0.0%     0.2%     0.0%               0x10  18156  18172 0xffffffff81137dbc      n/a      n/a      n/a      2 __generic_file_aio_write       [kernel.kallsyms]     
+                                     0.2%     0.7%     0.0%     0.0%               0x10  18156    *** 0xffffffff812b7e3b       -1      507     0.0%      2 __list_add                     [kernel.kallsyms]     
+                                    89.0%    98.0%     0.0%     0.0%               0x18  18156  18172 0xffffffff81082ea7       -1      471    28.5%      9 mspin_lock                     [kernel.kallsyms]     
+                                     0.0%     0.0%     0.0%    33.9%               0x18  18156    *** 0xffffffff81082eda      n/a      n/a      n/a     15 mspin_unlock                   [kernel.kallsyms]     
+                                     0.0%     0.0%     0.1%     0.0%               0x18  18156  18172 0xffffffff810908a0      n/a      n/a      n/a      1 try_to_wake_up                 [kernel.kallsyms]     
+                                     0.0%     0.0%    13.8%     1.8%               0x18  18156  18172 0xffffffff811360de      n/a      n/a      n/a      9 generic_file_buffered_write    [kernel.kallsyms]     
+                                     0.0%     0.0%     6.6%     0.0%               0x18  18156  18172 0xffffffff81137dab      n/a      n/a      n/a      9 __generic_file_aio_write       [kernel.kallsyms]     
+                                     0.0%     0.0%     0.2%     0.0%               0x20  18156  18172 0xffffffff8109089e      n/a      n/a      n/a      1 try_to_wake_up                 [kernel.kallsyms]     
+                                     7.3%     1.4%     0.0%     0.0%               0x20  18156    *** 0xffffffff815c208e       -1      402    13.6%     29 __mutex_unlock_slowpath        [kernel.kallsyms]     
+                                     0.0%     0.0%    19.5%     0.0%               0x28  18156  18172 0xffffffff81137d63      n/a      n/a      n/a      9 __generic_file_aio_write       [kernel.kallsyms]     
+                                     0.0%     0.0%     0.2%     0.0%               0x30  18156  18172 0xffffffff81137c49      n/a      n/a      n/a      1 __generic_file_aio_write       [kernel.kallsyms]     
+                                     0.0%     0.0%     5.4%     0.0%               0x30  18156  18172 0xffffffff81137dc1      n/a      n/a      n/a      6 __generic_file_aio_write       [kernel.kallsyms]     
+                                     0.0%     0.0%     2.6%     0.0%               0x38  18156  18172 0xffffffff81090b4e      n/a      n/a      n/a      7 wake_up_process                [kernel.kallsyms]     
+                                     0.0%     0.0%     1.3%     0.0%               0x38  18156  18172 0xffffffff81137c2c      n/a      n/a      n/a      4 __generic_file_aio_write       [kernel.kallsyms]     
 
-	printf("Offlining cpu1\n");
-	result = write_cpu_online('0');
-	assert(result);
-	sleep(1);
+-----------------------------------------------------------------------------------------------
+   3   1.4%  25.3%   1.9%  34.7%      513      207     1028       63 0xffff881fc7d91cc0  18156
+-----------------------------------------------------------------------------------------------
+                                     0.0%     0.0%     0.2%     0.0%               0x00  18156  18159 0xffffffff81082e75      n/a      n/a      n/a      2 mspin_lock                     [kernel.kallsyms]     
+                                     0.0%     0.0%     0.1%     0.0%               0x00  18156  18159 0xffffffff81082f15      n/a      n/a      n/a      1 mutex_spin_on_owner            [kernel.kallsyms]     
+                                     0.4%     0.5%     0.0%     0.0%               0x00  18156  18159 0xffffffff81082f5a       -1      446     2.5%      2 mutex_spin_on_owner            [kernel.kallsyms]     
+                                     0.0%     0.0%     0.3%     0.0%               0x00  18156  18159 0xffffffff810908ac      n/a      n/a      n/a      3 try_to_wake_up                 [kernel.kallsyms]     
+                                     0.0%     0.0%     0.1%     0.0%               0x00  18156  18159 0xffffffff810908fc      n/a      n/a      n/a      1 try_to_wake_up                 [kernel.kallsyms]     
+                                     0.0%     0.0%     1.6%     0.0%               0x00  18156  18159 0xffffffff81090a73      n/a      n/a      n/a      7 try_to_wake_up                 [kernel.kallsyms]     
+                                     0.0%     0.0%     2.9%     0.0%               0x00  18156  18159 0xffffffff8113524c      n/a      n/a      n/a      6 generic_segment_checks         [kernel.kallsyms]     
+                                     0.0%     0.0%     0.1%     0.0%               0x00  18156  18159 0xffffffff81135f09      n/a      n/a      n/a      1 generic_file_buffered_write    [kernel.kallsyms]     
+                                     0.0%     0.0%     0.2%     0.0%               0x00  18156  18159 0xffffffff811ba059      n/a      n/a      n/a      1 file_update_time               [kernel.kallsyms]     
+                                     0.0%     0.0%     0.1%     0.0%               0x00  18156  18159 0xffffffff815c4275      n/a      n/a      n/a      1 schedule_preempt_disabled      [kernel.kallsyms]     
+                                     3.1%     0.0%     0.0%     0.0%               0x00  18156  18159 0xffffffff815c4299       -1      376    18.4%      5 schedule_preempt_disabled      [kernel.kallsyms]     
+                                     0.2%     0.0%     0.0%     0.0%               0x00  18156  18159 0xffffffff815c4f4f       -1      431     0.0%      1 _raw_spin_lock                 [kernel.kallsyms]     
+                                     0.0%     0.0%     1.9%     0.0%               0x08  18156  18159 0xffffffff81135245      n/a      n/a      n/a      5 generic_segment_checks         [kernel.kallsyms]     
+                                     0.0%     0.0%     1.6%     0.0%               0x08  18156  18159 0xffffffff811b9cb5      n/a      n/a      n/a      5 file_remove_suid               [kernel.kallsyms]     
+                                     0.0%     0.0%     0.1%     0.0%               0x08  18156  18159 0xffffffff811ba055      n/a      n/a      n/a      1 file_update_time               [kernel.kallsyms]     
+                                     0.0%     0.0%     2.9%     3.2%               0x08  18156  18159 0xffffffff815c2106      n/a      n/a      n/a      5 __mutex_lock_slowpath          [kernel.kallsyms]     
+                                     0.0%     0.0%    17.6%     0.0%               0x08  18156  18159 0xffffffff815c2118      n/a      n/a      n/a      7 __mutex_lock_slowpath          [kernel.kallsyms]     
+                                     0.0%     0.0%     6.2%    31.7%               0x08  18156  18159 0xffffffff815c212c      n/a      n/a      n/a      7 __mutex_lock_slowpath          [kernel.kallsyms]     
+                                     0.0%     0.0%     0.1%     0.0%               0x08  18156  18159 0xffffffff815c21aa      n/a      n/a      n/a      1 __mutex_lock_slowpath          [kernel.kallsyms]     
+                                     0.0%     0.0%     0.0%     9.5%               0x08  18156  18159 0xffffffff815c21e8      n/a      n/a      n/a      5 __mutex_lock_slowpath          [kernel.kallsyms]     
+                                     0.0%     0.0%     0.1%     0.0%               0x08  18156  18159 0xffffffff815c2246      n/a      n/a      n/a      1 __mutex_lock_slowpath          [kernel.kallsyms]     
+                                     0.4%     0.0%     0.0%     0.0%               0x08  18156  18159 0xffffffff815c429a       -1      358    35.7%      2 schedule_preempt_disabled      [kernel.kallsyms]     
+                                     0.0%     0.0%     0.0%    23.8%               0x10  18156    *** 0xffffffff81082e9b      n/a      n/a      n/a     10 mspin_lock                     [kernel.kallsyms]     
+                                     0.0%     0.0%     0.2%     0.0%               0x10  18156  18159 0xffffffff810908a2      n/a      n/a      n/a      2 try_to_wake_up                 [kernel.kallsyms]     
+                                     0.0%     0.0%     1.3%     0.0%               0x10  18156  18159 0xffffffff81137c4d      n/a      n/a      n/a      4 __generic_file_aio_write       [kernel.kallsyms]     
+                                     0.0%     0.0%     4.2%     0.0%               0x10  18156  18159 0xffffffff81137d7b      n/a      n/a      n/a      6 __generic_file_aio_write       [kernel.kallsyms]     
+                                     0.0%     0.0%     2.0%     0.0%               0x10  18156  18159 0xffffffff81137dbc      n/a      n/a      n/a      5 __generic_file_aio_write       [kernel.kallsyms]     
+                                     0.2%     0.0%     0.0%     0.0%               0x10  18156  18175 0xffffffff812b7e3b       -1      502     0.0%      1 __list_add                     [kernel.kallsyms]     
+                                    90.8%    92.3%     0.0%     0.0%               0x18  18156  18159 0xffffffff81082ea7       -1      481    25.2%      7 mspin_lock                     [kernel.kallsyms]     
+                                     0.0%     0.0%     0.0%    31.7%               0x18  18156    *** 0xffffffff81082eda      n/a      n/a      n/a     12 mspin_unlock                   [kernel.kallsyms]     
+                                     0.0%     0.0%     0.1%     0.0%               0x18  18156  18159 0xffffffff810908a0      n/a      n/a      n/a      1 try_to_wake_up                 [kernel.kallsyms]     
+                                     0.0%     0.0%    24.2%     0.0%               0x18  18156  18159 0xffffffff811360de      n/a      n/a      n/a      7 generic_file_buffered_write    [kernel.kallsyms]     
+                                     0.0%     0.0%     7.8%     0.0%               0x18  18156  18159 0xffffffff81137dab      n/a      n/a      n/a      6 __generic_file_aio_write       [kernel.kallsyms]     
+                                     0.0%     0.0%     0.1%     0.0%               0x20  18156  18159 0xffffffff8109089e      n/a      n/a      n/a      1 try_to_wake_up                 [kernel.kallsyms]     
+                                     4.9%     7.2%     0.0%     0.0%               0x20  18156    *** 0xffffffff815c208e       -1      381    15.7%     28 __mutex_unlock_slowpath        [kernel.kallsyms]     
+                                     0.0%     0.0%    15.9%     0.0%               0x28  18156  18159 0xffffffff81137d63      n/a      n/a      n/a      7 __generic_file_aio_write       [kernel.kallsyms]     
+                                     0.0%     0.0%     0.1%     0.0%               0x30  18156  18159 0xffffffff81090895      n/a      n/a      n/a      1 try_to_wake_up                 [kernel.kallsyms]     
+                                     0.0%     0.0%     0.1%     0.0%               0x30  18156  18159 0xffffffff81137c49      n/a      n/a      n/a      1 __generic_file_aio_write       [kernel.kallsyms]     
+                                     0.0%     0.0%     4.3%     0.0%               0x30  18156  18159 0xffffffff81137dc1      n/a      n/a      n/a      7 __generic_file_aio_write       [kernel.kallsyms]     
+                                     0.0%     0.0%     0.1%     0.0%               0x30  18156  18159 0xffffffff815ce68c      n/a      n/a      n/a      1 apic_timer_interrupt           [kernel.kallsyms]     
+                                     0.0%     0.0%     2.3%     0.0%               0x38  18156  18159 0xffffffff81090b4e      n/a      n/a      n/a      5 wake_up_process                [kernel.kallsyms]     
+                                     0.0%     0.0%     1.3%     0.0%               0x38  18156  18159 0xffffffff81137c2c      n/a      n/a      n/a      6 __generic_file_aio_write       [kernel.kallsyms]     
 
-	read_perf();
-	sleep(10);
+-----------------------------------------------------------------------------------------------
+   4   1.3%  26.6%   1.8%  36.6%      495      170      967       38 0xffff881fba539cc0  18156
+-----------------------------------------------------------------------------------------------
+                                     0.0%     0.0%     0.2%     0.0%               0x00  18156  18169 0xffffffff81082e75      n/a      n/a      n/a      2 mspin_lock                     [kernel.kallsyms]     
+                                     0.0%     0.0%     0.2%     0.0%               0x00  18156  18169 0xffffffff81082f15      n/a      n/a      n/a      2 mutex_spin_on_owner            [kernel.kallsyms]     
+                                     0.0%     0.6%     0.0%     0.0%               0x00  18156  18169 0xffffffff81082f5a      n/a      n/a      n/a      1 mutex_spin_on_owner            [kernel.kallsyms]     
+                                     0.0%     0.0%     0.1%     0.0%               0x00  18156  18169 0xffffffff810908ac      n/a      n/a      n/a      1 try_to_wake_up                 [kernel.kallsyms]     
+                                     0.0%     0.0%     1.0%     0.0%               0x00  18156  18169 0xffffffff81090a73      n/a      n/a      n/a      5 try_to_wake_up                 [kernel.kallsyms]     
+                                     0.0%     0.0%     2.1%     0.0%               0x00  18156  18169 0xffffffff8113524c      n/a      n/a      n/a      7 generic_segment_checks         [kernel.kallsyms]     
+                                     0.0%     0.0%     0.1%     0.0%               0x00  18156  18169 0xffffffff81135f09      n/a      n/a      n/a      1 generic_file_buffered_write    [kernel.kallsyms]     
+                                     0.0%     0.0%     0.4%     0.0%               0x00  18156  18169 0xffffffff811ba059      n/a      n/a      n/a      3 file_update_time               [kernel.kallsyms]     
+                                     0.0%     0.0%     0.1%     0.0%               0x00  18156  18169 0xffffffff815c4275      n/a      n/a      n/a      1 schedule_preempt_disabled      [kernel.kallsyms]     
+                                     1.2%     0.0%     0.0%     0.0%               0x00  18156  18169 0xffffffff815c4299       -1      298     8.7%      6 schedule_preempt_disabled      [kernel.kallsyms]     
+                                     0.2%     0.0%     0.0%     0.0%               0x00  18156  18169 0xffffffff815c4f2c       -1      441     0.0%      1 _raw_spin_lock                 [kernel.kallsyms]     
+                                     0.4%     0.0%     0.0%     0.0%               0x00  18156  18169 0xffffffff815c4f4f       -1      353     8.8%      2 _raw_spin_lock                 [kernel.kallsyms]     
+                                     0.0%     0.0%     1.2%     0.0%               0x08  18156  18169 0xffffffff81135245      n/a      n/a      n/a      9 generic_segment_checks         [kernel.kallsyms]     
+                                     0.0%     0.0%     1.3%     0.0%               0x08  18156  18169 0xffffffff811b9cb5      n/a      n/a      n/a      8 file_remove_suid               [kernel.kallsyms]     
+                                     0.0%     0.0%     0.6%     0.0%               0x08  18156  18169 0xffffffff811ba055      n/a      n/a      n/a      4 file_update_time               [kernel.kallsyms]     
+                                     0.0%     0.0%     4.2%    13.2%               0x08  18156  18169 0xffffffff815c2106      n/a      n/a      n/a      9 __mutex_lock_slowpath          [kernel.kallsyms]     
+                                     0.0%     0.0%    13.8%     0.0%               0x08  18156  18169 0xffffffff815c2118      n/a      n/a      n/a     12 __mutex_lock_slowpath          [kernel.kallsyms]     
+                                     0.0%     0.0%     5.0%    50.0%               0x08  18156  18169 0xffffffff815c212c      n/a      n/a      n/a     11 __mutex_lock_slowpath          [kernel.kallsyms]     
+                                     0.0%     0.0%     0.1%     0.0%               0x08  18156  18169 0xffffffff815c21e0      n/a      n/a      n/a      1 __mutex_lock_slowpath          [kernel.kallsyms]     
+                                     0.0%     0.0%     0.1%    15.8%               0x08  18156  18169 0xffffffff815c21e8      n/a      n/a      n/a      5 __mutex_lock_slowpath          [kernel.kallsyms]     
+                                     1.0%     0.0%     0.0%     0.0%               0x08  18156  18169 0xffffffff815c429a       -1      286     5.8%      3 schedule_preempt_disabled      [kernel.kallsyms]     
+                                     0.0%     0.0%     0.1%     0.0%               0x10  18156  18169 0xffffffff81082e80      n/a      n/a      n/a      1 mspin_lock                     [kernel.kallsyms]     
+                                     0.0%     0.0%     0.2%     0.0%               0x10  18156  18169 0xffffffff810908a2      n/a      n/a      n/a      2 try_to_wake_up                 [kernel.kallsyms]     
+                                     0.0%     0.0%     1.2%     0.0%               0x10  18156  18169 0xffffffff81137c4d      n/a      n/a      n/a      6 __generic_file_aio_write       [kernel.kallsyms]     
+                                     0.0%     0.0%     5.2%     0.0%               0x10  18156  18169 0xffffffff81137d7b      n/a      n/a      n/a     12 __generic_file_aio_write       [kernel.kallsyms]     
+                                     0.0%     0.0%     1.9%     0.0%               0x10  18156  18169 0xffffffff81137dbc      n/a      n/a      n/a      8 __generic_file_aio_write       [kernel.kallsyms]     
+                                     0.2%     0.0%     0.0%     0.0%               0x10  18156  18175 0xffffffff812b7e3b       -1      355     0.0%      1 __list_add                     [kernel.kallsyms]     
+                                    90.9%    93.5%     0.0%     0.0%               0x18  18156  18169 0xffffffff81082ea7       -1      613    28.9%     13 mspin_lock                     [kernel.kallsyms]     
+                                     0.0%     0.0%     0.0%    21.1%               0x18  18156    *** 0xffffffff81082eda      n/a      n/a      n/a      7 mspin_unlock                   [kernel.kallsyms]     
+                                     0.0%     0.0%    26.0%     0.0%               0x18  18156  18169 0xffffffff811360de      n/a      n/a      n/a     12 generic_file_buffered_write    [kernel.kallsyms]     
+                                     0.0%     0.0%     9.0%     0.0%               0x18  18156  18169 0xffffffff81137dab      n/a      n/a      n/a     12 __generic_file_aio_write       [kernel.kallsyms]     
+                                     6.1%     5.9%     0.0%     0.0%               0x20  18156    *** 0xffffffff815c208e       -1      377    19.3%     25 __mutex_unlock_slowpath        [kernel.kallsyms]     
+                                     0.0%     0.0%    18.2%     0.0%               0x28  18156  18169 0xffffffff81137d63      n/a      n/a      n/a     12 __generic_file_aio_write       [kernel.kallsyms]     
+                                     0.0%     0.0%     0.2%     0.0%               0x30  18156  18169 0xffffffff81137c49      n/a      n/a      n/a      2 __generic_file_aio_write       [kernel.kallsyms]     
+                                     0.0%     0.0%     0.1%     0.0%               0x30  18156  18169 0xffffffff81137d67      n/a      n/a      n/a      1 __generic_file_aio_write       [kernel.kallsyms]     
+                                     0.0%     0.0%     3.1%     0.0%               0x30  18156  18169 0xffffffff81137dc1      n/a      n/a      n/a      8 __generic_file_aio_write       [kernel.kallsyms]     
+                                     0.0%     0.0%     3.1%     0.0%               0x38  18156  18169 0xffffffff81090b4e      n/a      n/a      n/a     11 wake_up_process                [kernel.kallsyms]     
+                                     0.0%     0.0%     1.1%     0.0%               0x38  18156  18169 0xffffffff81137c2c      n/a      n/a      n/a      8 __generic_file_aio_write       [kernel.kallsyms]     
 
-	read_perf();
-	stop_perf();
-	write_cpu_online('1');
 
-	return 0;
-}
+<snip 58 records>
+....
+
+
+
+=====================================================================================================================================
+                                                   Object Name, Path & Reference Counts
+
+Index    Records   Object Name                       Object Path                                                                     
+=====================================================================================================================================
+    0     931379   [kernel.kallsyms]                 [kernel.kallsyms]                                                               
+    1     192258   fio                               /home/joe/old_fio-2.0.15/fio                                                    
+    2      80302   [jbd2]                            /lib/modules/3.10.0c2c_all+/kernel/fs/jbd2/jbd2.ko                              
+    3      65392   [ext4]                            /lib/modules/3.10.0c2c_all+/kernel/fs/ext4/ext4.ko                              
+    4       8236   libpthread-2.17.so                /usr/lib64/libpthread-2.17.so                                                   
+    5         19   [ip_tables]                       /lib/modules/3.10.0c2c_all+/kernel/net/ipv4/netfilter/ip_tables.ko              
+    6         17   [ixgbe]                           /lib/modules/3.10.0c2c_all+/kernel/drivers/net/ethernet/intel/ixgbe/ixgbe.ko    
+    7         17   perf                              /home/root/git/rhel7.don/tools/perf/perf                                        
+    8         13   [ipmi_si]                         /lib/modules/3.10.0c2c_all+/kernel/drivers/char/ipmi/ipmi_si.ko                 
+    9         11   libc-2.17.so                      /usr/lib64/libc-2.17.so                                                         
+   10         10   [megaraid_sas]                    /lib/modules/3.10.0c2c_all+/kernel/drivers/scsi/megaraid/megaraid_sas.ko        
+   11          9   [mtip32xx]                        /lib/modules/3.10.0c2c_all+/kernel/drivers/block/mtip32xx/mtip32xx.ko           
+   12          6   irqbalance                        /usr/sbin/irqbalance                                                            
+   13          6   libpython2.7.so.1.0               /usr/lib64/libpython2.7.so.1.0                                                  
+   14          5   [ip6_tables]                      /lib/modules/3.10.0c2c_all+/kernel/net/ipv6/netfilter/ip6_tables.ko             
+   15          4   [nf_conntrack]                    /lib/modules/3.10.0c2c_all+/kernel/net/netfilter/nf_conntrack.ko                
+   16          2   [dm_mod]                          /lib/modules/3.10.0c2c_all+/kernel/drivers/md/dm-mod.ko                         
+   17          2   sshd                              /usr/sbin/sshd                                                                  
+   18          1   [iptable_raw]                     /lib/modules/3.10.0c2c_all+/kernel/net/ipv4/netfilter/iptable_raw.ko            
+   19          1   [sb_edac]                         /lib/modules/3.10.0c2c_all+/kernel/drivers/edac/sb_edac.ko                      
+   20          1   [edac_core]                       /lib/modules/3.10.0c2c_all+/kernel/drivers/edac/edac_core.ko                    
+   21          1   libdbus-1.so.3.7.4                /usr/lib64/libdbus-1.so.3.7.4                                                   
+
