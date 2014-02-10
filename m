@@ -1,69 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752851AbaBJKOw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 05:14:52 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:35470 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752470AbaBJKOr (ORCPT
+	id S1752951AbaBJKO7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 05:14:59 -0500
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:39982 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752889AbaBJKOy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 05:14:47 -0500
+	Mon, 10 Feb 2014 05:14:54 -0500
+From: Peter Korsgaard <peter@korsgaard.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: linux-i2c@vger.kernel.org, Peter Korsgaard <jacmet@sunsite.dk>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 11/17] i2c: i2c-ocores: deprecate class based instantiation
+References: <1392026654-5343-1-git-send-email-wsa@the-dreams.de>
+	<1392026654-5343-12-git-send-email-wsa@the-dreams.de>
+Date: Mon, 10 Feb 2014 11:14:47 +0100
+In-Reply-To: <1392026654-5343-12-git-send-email-wsa@the-dreams.de> (Wolfram
+	Sang's message of "Mon, 10 Feb 2014 11:04:05 +0100")
+Message-ID: <8738jr1dgo.fsf@dell.be.48ers.dk>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdZwoXf5ovmQEAN6Ugvz91+_i5uGqStR3MGXQeJGHitj3Q@mail.gmail.com>
-References: <1391529538-21685-1-git-send-email-ulf.hansson@linaro.org>
-	<1391529538-21685-15-git-send-email-ulf.hansson@linaro.org>
-	<CACRpkdZwoXf5ovmQEAN6Ugvz91+_i5uGqStR3MGXQeJGHitj3Q@mail.gmail.com>
-Date: Mon, 10 Feb 2014 11:14:46 +0100
-Message-ID: <CAPDyKFrWgB8z1rtWxU7AYvVsmNj_pfGbsozwgP_FzLODpmGRwQ@mail.gmail.com>
-Subject: Re: [PATCH 14/17] i2c: nomadik: Fixup deployment of runtime PM
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Alessandro Rubini <rubini@unipv.it>, Wolfram Sang <wsa@the-dreams.de>,
-        Chris Ball <chris@printf.net>, Mark Brown <broonie@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        linux-spi@vger.kernel.org,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5 February 2014 15:34, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Tue, Feb 4, 2014 at 4:58 PM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
->
->> Since the device is active while a successful probe has been completed,
->> the reference counting for the clock will be screwed up and never reach
->> zero.
->>
->> The issue is resolved by implementing runtime PM callbacks and let them
->> handle the resources accordingly, including the clock.
->>
->> Cc: Alessandro Rubini <rubini@unipv.it>
->> Cc: Linus Walleij <linus.walleij@linaro.org>
->> Cc: Wolfram Sang <wsa@the-dreams.de>
->> Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
->
-> Hm do I read it right as patch 13 breaks runtime PM by leaving
-> the device active after probe() and this patch
-> 14 fixes it again? Maybe these two patches should be squashed
-> then.
+>>>>> "Wolfram" == Wolfram Sang <wsa@the-dreams.de> writes:
 
-You are right; but the driver will still be working, you just don't
-get the benefit from inactivating the device at request inactivity -
-as you pointed out.
+ > Warn users that class based instantiation is going away soon in favour
+ > of more robust probing and faster bootup times.
 
-The reason for why I wanted to do this as separate steps was to make
-it easier for reviewing, otherwise the patch(es) would have been quite
-big and messy. I am for sure open to  adopt to your proposal, but just
-wanted to give you some more background, before I go ahead and send a
-v2.
+ > Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+ > Cc: Peter Korsgaard <jacmet@sunsite.dk>
+ > ---
 
-Kind regards
-Ulf Hansson
+ > This patch is a suggestion. Looking for an ack by someone who actually uses
+ > the driver.
 
->
-> Yours,
-> Linus Walleij
+It's been some time since I last used it, but I never needed the class
+based probing, so:
+
+Acked-by: Peter Korsgaard <jacmet@sunsite.dk>
+
+-- 
+Bye, Peter Korsgaard
