@@ -1,117 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752686AbaBJPkV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 10:40:21 -0500
-Received: from hofr.at ([212.69.189.236]:43884 "EHLO mail.hofr.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751889AbaBJPkR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 10:40:17 -0500
-Date: Mon, 10 Feb 2014 16:40:16 +0100
-From: Nicholas Mc Guire <der.herr@hofr.at>
-To: linux-rt-users@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Carsten Emde <C.Emde@osadl.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andreas Platschek <platschek@ict.tuwien.ac.at>
-Subject: [PATCH RT 5/5] allow preemption in slab_alloc_node and slab_free
-Message-ID: <20140210154016.GF20017@opentech.at>
+	id S1752529AbaBJPl5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 10:41:57 -0500
+Received: from mail-bn1blp0183.outbound.protection.outlook.com ([207.46.163.183]:20865
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751744AbaBJPly (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 10:41:54 -0500
+X-Greylist: delayed 875 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Feb 2014 10:41:54 EST
+Message-ID: <1392045915.30419.6.camel@e37108.spectralink.com>
+Subject: Re: [PATCH] dp83640: Get gpio and master/slave configuration from DT
+From: Stefan =?ISO-8859-1?Q?S=F8rensen?= 
+	<stefan.sorensen@spectralink.com>
+To: Mark Rutland <mark.rutland@arm.com>
+CC: "richardcochran@gmail.com" <richardcochran@gmail.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Date: Mon, 10 Feb 2014 16:25:15 +0100
+In-Reply-To: <20140210134237.GF29080@e106331-lin.cambridge.arm.com>
+References: <1392037240-30913-1-git-send-email-stefan.sorensen@spectralink.com>
+	 <20140210134237.GF29080@e106331-lin.cambridge.arm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [213.83.164.162]
+X-ClientProxiedBy: DB3PR01CA002.eurprd01.prod.exchangelabs.com
+ (10.255.177.19) To DM2PR07MB334.namprd07.prod.outlook.com (10.141.98.12)
+X-Forefront-PRVS: 0118CD8765
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009001)(6009001)(6049001)(24454002)(377424004)(199002)(189002)(51704005)(74662001)(85306002)(65816001)(81342001)(81542001)(50466002)(93136001)(74502001)(89996001)(74876001)(51856001)(90146001)(56816005)(66066001)(86362001)(47446002)(80022001)(69226001)(74706001)(31966008)(88136002)(95416001)(46102001)(93516002)(33646001)(62966002)(74366001)(80976001)(83322001)(23676002)(81686001)(92566001)(56776001)(54316002)(87266001)(87286001)(92726001)(50226001)(4396001)(81816001)(94316002)(63696002)(76796001)(77156001)(76786001)(53806001)(77096001)(47736001)(85852003)(47776003)(93916002)(47976001)(50986001)(49866001)(42186004)(94946001)(83072002)(59766001)(87976001)(77982001)(76482001)(79102001);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR07MB334;H:[172.29.194.63];CLIP:213.83.164.162;FPR:20D7D094.AD3B0F0B.43E49B72.46D5CA01.20202;InfoNoRecordsA:1;MX:1;LANG:en;
+X-OriginatorOrg: spectralink.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2014-02-10 at 13:42 +0000, Mark Rutland wrote:
 
-drop preempt_disable/enable in slab_alloc_node and slab_free
+> Binding document please.
 
-__slab_alloc is only called from slub.c:slab_alloc_node
-it runs with local irqs disabled so it can't be pushed off this CPU
-asynchronously, the preempt_disable/enable is thus not needed.
-Aside from that the later this_cpu_cmpxchg_double would catch such a 
-migration event anyay.
+Dang, I somehow managed to drop that from the patch. I will fix for the
+next version.
 
-slab_free:
- slowpath: (if the allocation was on a different CPU) detected by 
-  (page == c->page) c pointing to the per cpu slab, this does not need a 
-  consistent ref to tid so the slow path is safe without the 
-  preempt_disable/enable
- fastpath: if allocation was on the same cpu but we got migrated between
-  fetching the cpu_slab and the actual push onto the free list then
-  this_cpu_cmpxchg_double would catch this case and loop in redo. So the
-  fast path is also safe without the preempt_disable/enable
+> > +	if (of_find_property(node, "dp83640,slave", NULL))
+> > +		dp83640->slave = true;
+> 
+> Use of_property_read_bool.
 
-Testing:
- while : ; do ./hackbench 120 thread 10000 ; done 
-Time: 296.631
-Time: 298.723
-Time: 301.468
-Time: 303.880
-Time: 301.988
-Time: 300.038
-Time: 299.634
-Time: 301.488
- which seems to be a good way to stress-test slub
+Fixed.
 
-Impact on performance:
- The change could negatively impact performance if the removal of the 
- preempt_disable/enable would result in a significant increase of the 
- slow path being taken or looping via goto redo - this was checked by:
- static instrumentation:
-  an instrumentation was added to check how often the redo loop is taken
-  the results showed that the redo loop is very rarely taken (< 1 in 10000)
-  and is below the value with the preempt_disable/enable present. Further
-  the slowpath to fastpath ration improves slightly (not sure if this is 
-  statistically significant though)
- running slab_test.c:
-  the slub-benchmark from Christoph Lameter and Mathieu Desnoyers was used
-  the only change being that asm/system.h was droped from the list of
-  includes. The results indicate that the removal of preempt_disable/enable
-  reduces the cycles needed slightly (though quite a few testsystems would
-  need to be checked before this can be confirmed).
+> > +	prop = of_find_property(node, "dp83640,perout-gpios", &proplen);
+> > +	if (prop) {
+> > +		if (dp83640->slave) {
+> > +			pr_err("dp83640,perout-gpios property can not be set together with dp83640,slave");
+> > +			return -EINVAL;
+> > +		}
+> > +
+> > +		clock->caps.n_per_out = proplen / sizeof(u32);
+> > +		if (clock->caps.n_per_out > N_EXT) {
+> > +			pr_err("dp83640,perout-gpios may not have more than %d entries",
+> > +			       N_EXT);
+> > +			return -EINVAL;
+> > +		}
+> > +		err = of_property_read_u32_array(node, "dp83640,perout-gpios",
+> > +						 clock->perout_gpios,
+> > +						 clock->caps.n_per_out);
+> > +		if (err < 0)
+> > +			return err;
+> > +	}
+> 
+> This looks nothing like the standard gpio bindings. What _exactly_ is
+> this property describing?
 
-Tested-by: Andreas Platschek <platschek@ict.tuwien.ac.at>
-Tested-by: Carsten Emde <C.Emde@osadl.org>
-Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
----
- mm/slub.c |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
+The dp83640 has a number of pins of which 8 of them can be used for
+either timestamping events or triggering changes at programmed
+intervals. These properties are used to configure which pins get
+assigned to what function.
 
-diff --git a/mm/slub.c b/mm/slub.c
-index 546bd9a..c422988 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -2424,7 +2424,6 @@ redo:
- 	 * on a different processor between the determination of the pointer
- 	 * and the retrieval of the tid.
- 	 */
--	preempt_disable();
- 	c = __this_cpu_ptr(s->cpu_slab);
- 
- 	/*
-@@ -2434,7 +2433,6 @@ redo:
- 	 * linked list in between.
- 	 */
- 	tid = c->tid;
--	preempt_enable();
- 
- 	object = c->freelist;
- 	page = c->page;
-@@ -2683,11 +2681,9 @@ redo:
- 	 * data is retrieved via this pointer. If we are on the same cpu
- 	 * during the cmpxchg then the free will succedd.
- 	 */
--	preempt_disable();
- 	c = __this_cpu_ptr(s->cpu_slab);
- 
- 	tid = c->tid;
--	preempt_enable();
- 
- 	if (likely(page == c->page)) {
- 		set_freepointer(s, object, c->freelist);
--- 
-1.7.2.5
+> If this is not using the standard gpio bindings then this should be
+> renamed.
+
+Maybe a gpio->pin renaming?
+
+Stefan
 
