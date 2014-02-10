@@ -1,262 +1,342 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752772AbaBJPmS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 10:42:18 -0500
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:60673 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752549AbaBJPmO (ORCPT
+	id S1752232AbaBJPqz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 10:46:55 -0500
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:49545 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751965AbaBJPqw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 10:42:14 -0500
-Message-ID: <52F8F34E.3030606@monstr.eu>
-Date: Mon, 10 Feb 2014 16:42:06 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Mon, 10 Feb 2014 10:46:52 -0500
+Date: Mon, 10 Feb 2014 16:46:48 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
+        Filipe Brandenburger <filbranden@google.com>,
+        Li Zefan <lizefan@huawei.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>,
+        Markus Blank-Burian <burian@muenster.de>,
+        Shawn Bohrer <shawn.bohrer@gmail.com>, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] cgroup: use an ordered workqueue for cgroup destruction
+Message-ID: <20140210154648.GM7117@dhcp22.suse.cz>
+References: <alpine.LSU.2.11.1402061541560.31342@eggly.anvils>
+ <20140207164321.GE6963@cmpxchg.org>
 MIME-Version: 1.0
-To: Michal Simek <michal.simek@xilinx.com>
-CC: linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 2/3] mfd: syscon: Support early initialization
-References: <cover.1392045742.git.michal.simek@xilinx.com> <1785585d090175da81b561b17eeef95d991ff0de.1392045742.git.michal.simek@xilinx.com>
-In-Reply-To: <1785585d090175da81b561b17eeef95d991ff0de.1392045742.git.michal.simek@xilinx.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="bBmlV2EG5GIXAvhUUg74kqEBRL8tBCFEO"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140207164321.GE6963@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---bBmlV2EG5GIXAvhUUg74kqEBRL8tBCFEO
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Fri 07-02-14 11:43:21, Johannes Weiner wrote:
+[...]
+> Long-term, I think we may want to get rid of the reparenting in
+> css_offline() entirely and only do it in the naturally ordered
+> css_free() callback.  We only reparent in css_offline() because
+> swapout records pin the css and we don't want to hang on to
+> potentially gigabytes of unreclaimable (css_tryget() disabled) cache
+> indefinitely until the last swapout records disappear.
+> 
+> So I'm currently mucking around with the following patch, which drops
+> the css pin from swapout records and reparents them in css_free().
+> It's lightly tested and there might well be dragons but I don't see
+> any fundamental problems with it.
+> 
+> What do you think?
 
-On 02/10/2014 04:22 PM, Michal Simek wrote:
-> Some platforms need to get system controller
-> ready as soon as possible.
-> The patch provides early_syscon_initialization
-> which create early mapping for all syscon compatible
-> devices in early_syscon_probe.
-> Regmap is get via syscon_early_regmap_lookup_by_phandle()
->=20
-> Regular device probes attach device to regmap
-> via regmap_attach_dev().
->=20
-> For early syscon initialization is necessary to extend
-> struct syscon and provide remove function
-> which unmap all early init structures.
->=20
-> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+Hugh has posted something like this back in December
+(http://marc.info/?l=linux-mm&m=138718299304670&w=2).
+I am not entirely happy about scanning potentially huge amount of 
+swap records.
+
+A trivial optimization would check the memsw counter and break out early
+but it would still leave a potentially full scan possible. I guess we
+shouldn't care much about when css_free is called. I think we should
+split the reparenting into two parts. LRU reparent without any hard
+requirements and charges reparent which guarantees that nothing is left
+behind.
+The first one called css_offline and the second one from css_free.
+
+kmem accounting pins memcg as well btw so taking care of swap is not
+sufficient to guarantee an early css_free.
+
 > ---
->=20
->  drivers/mfd/syscon.c       | 126 +++++++++++++++++++++++++++++++++++++=
-++------
->  include/linux/mfd/syscon.h |  11 ++++
->  2 files changed, 120 insertions(+), 17 deletions(-)
->=20
-> diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
-> index 71841f9..5935f02 100644
-> --- a/drivers/mfd/syscon.c
-> +++ b/drivers/mfd/syscon.c
-> @@ -20,12 +20,15 @@
->  #include <linux/of_platform.h>
->  #include <linux/platform_device.h>
->  #include <linux/regmap.h>
-> +#include <linux/slab.h>
->  #include <linux/mfd/syscon.h>
->=20
->  static struct platform_driver syscon_driver;
->=20
->  struct syscon {
-> +	void __iomem *base;
->  	struct regmap *regmap;
-> +	struct resource res;
->  };
->=20
->  static int syscon_match_node(struct device *dev, void *data)
-> @@ -95,6 +98,24 @@ struct regmap *syscon_regmap_lookup_by_pdevname(cons=
-t char *s)
->  }
->  EXPORT_SYMBOL_GPL(syscon_regmap_lookup_by_pdevname);
->=20
-> +struct regmap *syscon_early_regmap_lookup_by_phandle(struct device_nod=
-e *np,
-> +						     const char *property)
-> +{
-> +	struct device_node *syscon_np;
-> +	struct syscon *syscon;
-> +
-> +	syscon_np =3D of_parse_phandle(np, property, 0);
-> +	if (!syscon_np)
-> +		return ERR_PTR(-ENODEV);
-> +
-> +	syscon =3D syscon_np->data;
-> +
-> +	of_node_put(syscon_np);
-> +
-> +	return syscon->regmap;
-> +}
-> +EXPORT_SYMBOL_GPL(syscon_early_regmap_lookup_by_phandle);
-> +
->  struct regmap *syscon_regmap_lookup_by_phandle(struct device_node *np,=
-
->  					const char *property)
->  {
-> @@ -128,40 +149,110 @@ static int syscon_probe(struct platform_device *=
-pdev)
->  	struct device *dev =3D &pdev->dev;
->  	struct syscon *syscon;
->  	struct resource *res;
-> -	void __iomem *base;
->=20
-> -	syscon =3D devm_kzalloc(dev, sizeof(*syscon), GFP_KERNEL);
-> +	/* Early syscon init */
-> +	if (pdev->dev.of_node && pdev->dev.of_node->data) {
-> +		syscon =3D pdev->dev.of_node->data;
-> +		res =3D &syscon->res;
-> +		regmap_attach_dev(dev, syscon->regmap, &syscon_regmap_config);
-> +	} else {
-> +
-> +		syscon =3D devm_kzalloc(dev, sizeof(*syscon), GFP_KERNEL);
-> +		if (!syscon)
-> +			return -ENOMEM;
-> +
-> +		res =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +		if (!res)
-> +			return -ENOENT;
-> +
-> +		syscon->base =3D devm_ioremap(dev, res->start,
-> +					    resource_size(res));
-> +		if (!syscon->base)
-> +			return -ENOMEM;
-> +
-> +		syscon_regmap_config.max_register =3D res->end - res->start - 3;
-> +		syscon->regmap =3D devm_regmap_init_mmio(dev, syscon->base,
-> +						&syscon_regmap_config);
-> +		if (IS_ERR(syscon->regmap)) {
-> +			dev_err(dev, "regmap init failed\n");
-> +			return PTR_ERR(syscon->regmap);
-> +		}
-> +	}
-> +
-> +	platform_set_drvdata(pdev, syscon);
-> +
-> +	dev_info(dev, "regmap %pR registered\n", res);
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct platform_device_id syscon_ids[] =3D {
-> +	{ "syscon", },
-> +	{ }
-> +};
-> +
-> +static int syscon_remove(struct platform_device *pdev)
-> +{
-> +	struct syscon *syscon =3D platform_get_drvdata(pdev);
-> +
-> +	if (pdev->dev.of_node && pdev->dev.of_node->data) {
-> +		iounmap(syscon->base);
-> +		kfree(syscon);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int early_syscon_probe(struct device_node *np)
-> +{
-> +	struct syscon *syscon;
-> +
-> +	syscon =3D kzalloc(sizeof(*syscon), GFP_KERNEL);
->  	if (!syscon)
->  		return -ENOMEM;
->=20
-> -	res =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> -	if (!res)
-> -		return -ENOENT;
-> +	if (of_address_to_resource(np, 0, &syscon->res))
-> +		return -EINVAL;
->=20
-> -	base =3D devm_ioremap(dev, res->start, resource_size(res));
-> -	if (!base)
-> -		return -ENOMEM;
-> +	syscon->base =3D ioremap(syscon->res.start, resource_size(&syscon->re=
-s));
-> +	if (!syscon->base) {
-> +		pr_err("%s: Unable to map I/O memory\n", __func__);
-> +		return PTR_ERR(syscon->base);
-> +	}
->=20
-> -	syscon_regmap_config.max_register =3D res->end - res->start - 3;
-> -	syscon->regmap =3D devm_regmap_init_mmio(dev, base,
-> -					&syscon_regmap_config);
-> +	syscon_regmap_config.max_register =3D syscon->res.end -
-> +					    syscon->res.start - 3;
-> +	syscon->regmap =3D regmap_init_mmio(NULL, syscon->base,
-> +					  &syscon_regmap_config);
->  	if (IS_ERR(syscon->regmap)) {
-> -		dev_err(dev, "regmap init failed\n");
-> +		pr_err("regmap init failed\n");
->  		return PTR_ERR(syscon->regmap);
->  	}
->=20
-> -	platform_set_drvdata(pdev, syscon);
-> +	np->data =3D syscon;
->=20
-> -	dev_info(dev, "regmap %pR registered\n", res);
-> +	of_node_put(np);
-> +
-> +	pr_info("%s: regmap %pR registered\n", np->full_name, &syscon->res);
->=20
+>  include/linux/page_cgroup.h |   8 ++++
+>  mm/memcontrol.c             | 101 +++++++++++++-------------------------------
+>  mm/page_cgroup.c            |  41 ++++++++++++++++++
+>  3 files changed, 78 insertions(+), 72 deletions(-)
+> 
+> diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
+> index 777a524716db..3ededda8934f 100644
+> --- a/include/linux/page_cgroup.h
+> +++ b/include/linux/page_cgroup.h
+> @@ -111,6 +111,8 @@ extern unsigned short swap_cgroup_cmpxchg(swp_entry_t ent,
+>  					unsigned short old, unsigned short new);
+>  extern unsigned short swap_cgroup_record(swp_entry_t ent, unsigned short id);
+>  extern unsigned short lookup_swap_cgroup_id(swp_entry_t ent);
+> +extern unsigned long swap_cgroup_migrate(unsigned short old,
+> +					 unsigned short new);
+>  extern int swap_cgroup_swapon(int type, unsigned long max_pages);
+>  extern void swap_cgroup_swapoff(int type);
+>  #else
+> @@ -127,6 +129,12 @@ unsigned short lookup_swap_cgroup_id(swp_entry_t ent)
 >  	return 0;
 >  }
->=20
-> -static const struct platform_device_id syscon_ids[] =3D {
-> -	{ "syscon", },
-> -	{ }
-> +static struct of_device_id of_syscon_ids[] =3D {
-> +	{ .compatible =3D "syscon" },
-> +	{},
->  };
->=20
-> +void __init early_syscon_init(void)
+>  
+> +static inline unsigned long swap_cgroup_migrate(unsigned short old,
+> +						unsigned short new)
 > +{
-> +	struct device_node *np;
+> +	return 0;
+> +}
 > +
-> +	for_each_matching_node_and_match(np, of_syscon_ids, NULL) {
-> +		if (!early_syscon_probe(np))
+>  static inline int
+>  swap_cgroup_swapon(int type, unsigned long max_pages)
+>  {
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 53385cd4e6f0..e2a0d3986c74 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -892,11 +892,9 @@ static long mem_cgroup_read_stat(struct mem_cgroup *memcg,
+>  	return val;
+>  }
+>  
+> -static void mem_cgroup_swap_statistics(struct mem_cgroup *memcg,
+> -					 bool charge)
+> +static void mem_cgroup_swap_statistics(struct mem_cgroup *memcg, long nr_pages)
+>  {
+> -	int val = (charge) ? 1 : -1;
+> -	this_cpu_add(memcg->stat->count[MEM_CGROUP_STAT_SWAP], val);
+> +	this_cpu_add(memcg->stat->count[MEM_CGROUP_STAT_SWAP], nr_pages);
+>  }
+>  
+>  static unsigned long mem_cgroup_read_events(struct mem_cgroup *memcg,
+> @@ -4234,15 +4232,12 @@ __mem_cgroup_uncharge_common(struct page *page, enum charge_type ctype,
+>  	 */
+>  
+>  	unlock_page_cgroup(pc);
+> -	/*
+> -	 * even after unlock, we have memcg->res.usage here and this memcg
+> -	 * will never be freed, so it's safe to call css_get().
+> -	 */
+> +
+>  	memcg_check_events(memcg, page);
+> -	if (do_swap_account && ctype == MEM_CGROUP_CHARGE_TYPE_SWAPOUT) {
+> -		mem_cgroup_swap_statistics(memcg, true);
+> -		css_get(&memcg->css);
+> -	}
+> +
+> +	if (do_swap_account && ctype == MEM_CGROUP_CHARGE_TYPE_SWAPOUT)
+> +		mem_cgroup_swap_statistics(memcg, 1);
+> +
+>  	/*
+>  	 * Migration does not charge the res_counter for the
+>  	 * replacement page, so leave it alone when phasing out the
+> @@ -4351,10 +4346,6 @@ mem_cgroup_uncharge_swapcache(struct page *page, swp_entry_t ent, bool swapout)
+>  
+>  	memcg = __mem_cgroup_uncharge_common(page, ctype, false);
+>  
+> -	/*
+> -	 * record memcg information,  if swapout && memcg != NULL,
+> -	 * css_get() was called in uncharge().
+> -	 */
+>  	if (do_swap_account && swapout && memcg)
+>  		swap_cgroup_record(ent, mem_cgroup_id(memcg));
+>  }
+> @@ -4383,8 +4374,7 @@ void mem_cgroup_uncharge_swap(swp_entry_t ent)
+>  		 */
+>  		if (!mem_cgroup_is_root(memcg))
+>  			res_counter_uncharge(&memcg->memsw, PAGE_SIZE);
+> -		mem_cgroup_swap_statistics(memcg, false);
+> -		css_put(&memcg->css);
+> +		mem_cgroup_swap_statistics(memcg, -1);
+>  	}
+>  	rcu_read_unlock();
+>  }
+> @@ -4412,20 +4402,8 @@ static int mem_cgroup_move_swap_account(swp_entry_t entry,
+>  	new_id = mem_cgroup_id(to);
+>  
+>  	if (swap_cgroup_cmpxchg(entry, old_id, new_id) == old_id) {
+> -		mem_cgroup_swap_statistics(from, false);
+> -		mem_cgroup_swap_statistics(to, true);
+> -		/*
+> -		 * This function is only called from task migration context now.
+> -		 * It postpones res_counter and refcount handling till the end
+> -		 * of task migration(mem_cgroup_clear_mc()) for performance
+> -		 * improvement. But we cannot postpone css_get(to)  because if
+> -		 * the process that has been moved to @to does swap-in, the
+> -		 * refcount of @to might be decreased to 0.
+> -		 *
+> -		 * We are in attach() phase, so the cgroup is guaranteed to be
+> -		 * alive, so we can just call css_get().
+> -		 */
+> -		css_get(&to->css);
+> +		mem_cgroup_swap_statistics(from, -1);
+> +		mem_cgroup_swap_statistics(to, 1);
+>  		return 0;
+>  	}
+>  	return -EINVAL;
+> @@ -6611,7 +6589,6 @@ static void mem_cgroup_css_offline(struct cgroup_subsys_state *css)
+>  	kmem_cgroup_css_offline(memcg);
+>  
+>  	mem_cgroup_invalidate_reclaim_iterators(memcg);
+> -	mem_cgroup_reparent_charges(memcg);
+>  	mem_cgroup_destroy_all_caches(memcg);
+>  	vmpressure_cleanup(&memcg->vmpressure);
+>  }
+> @@ -6619,41 +6596,26 @@ static void mem_cgroup_css_offline(struct cgroup_subsys_state *css)
+>  static void mem_cgroup_css_free(struct cgroup_subsys_state *css)
+>  {
+>  	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
+> +	unsigned long swaps_moved;
+> +	struct mem_cgroup *parent;
+> +
+>  	/*
+> -	 * XXX: css_offline() would be where we should reparent all
+> -	 * memory to prepare the cgroup for destruction.  However,
+> -	 * memcg does not do css_tryget() and res_counter charging
+> -	 * under the same RCU lock region, which means that charging
+> -	 * could race with offlining.  Offlining only happens to
+> -	 * cgroups with no tasks in them but charges can show up
+> -	 * without any tasks from the swapin path when the target
+> -	 * memcg is looked up from the swapout record and not from the
+> -	 * current task as it usually is.  A race like this can leak
+> -	 * charges and put pages with stale cgroup pointers into
+> -	 * circulation:
+> -	 *
+> -	 * #0                        #1
+> -	 *                           lookup_swap_cgroup_id()
+> -	 *                           rcu_read_lock()
+> -	 *                           mem_cgroup_lookup()
+> -	 *                           css_tryget()
+> -	 *                           rcu_read_unlock()
+> -	 * disable css_tryget()
+> -	 * call_rcu()
+> -	 *   offline_css()
+> -	 *     reparent_charges()
+> -	 *                           res_counter_charge()
+> -	 *                           css_put()
+> -	 *                             css_free()
+> -	 *                           pc->mem_cgroup = dead memcg
+> -	 *                           add page to lru
+> -	 *
+> -	 * The bulk of the charges are still moved in offline_css() to
+> -	 * avoid pinning a lot of pages in case a long-term reference
+> -	 * like a swapout record is deferring the css_free() to long
+> -	 * after offlining.  But this makes sure we catch any charges
+> -	 * made after offlining:
+> +	 * Migrate all swap entries to the parent.  There are no more
+> +	 * references to the css, so no new swap out records can show
+> +	 * up.  Any concurrently faulting pages will either get this
+> +	 * offline cgroup and charge the faulting task, or get the
+> +	 * migrated parent id and charge the parent for the in-memory
+> +	 * page.  uncharge_swap() will balance the res_counter in the
+> +	 * parent either way, whether it still fixes this group's
+> +	 * res_counter is irrelevant at this point.
+>  	 */
+> +	parent = parent_mem_cgroup(memcg);
+> +	if (!parent)
+> +		parent = root_mem_cgroup;
+> +	swaps_moved = swap_cgroup_migrate(mem_cgroup_id(memcg),
+> +					  mem_cgroup_id(parent));
+> +	mem_cgroup_swap_statistics(parent, swaps_moved);
+> +
+>  	mem_cgroup_reparent_charges(memcg);
+>  
+>  	memcg_destroy_kmem(memcg);
+> @@ -6966,7 +6928,6 @@ static void __mem_cgroup_clear_mc(void)
+>  {
+>  	struct mem_cgroup *from = mc.from;
+>  	struct mem_cgroup *to = mc.to;
+> -	int i;
+>  
+>  	/* we must uncharge all the leftover precharges from mc.to */
+>  	if (mc.precharge) {
+> @@ -6981,16 +6942,13 @@ static void __mem_cgroup_clear_mc(void)
+>  		__mem_cgroup_cancel_charge(mc.from, mc.moved_charge);
+>  		mc.moved_charge = 0;
+>  	}
+> -	/* we must fixup refcnts and charges */
+> +	/* we must fixup charges */
+>  	if (mc.moved_swap) {
+>  		/* uncharge swap account from the old cgroup */
+>  		if (!mem_cgroup_is_root(mc.from))
+>  			res_counter_uncharge(&mc.from->memsw,
+>  						PAGE_SIZE * mc.moved_swap);
+>  
+> -		for (i = 0; i < mc.moved_swap; i++)
+> -			css_put(&mc.from->css);
+> -
+>  		if (!mem_cgroup_is_root(mc.to)) {
+>  			/*
+>  			 * we charged both to->res and to->memsw, so we should
+> @@ -6999,7 +6957,6 @@ static void __mem_cgroup_clear_mc(void)
+>  			res_counter_uncharge(&mc.to->res,
+>  						PAGE_SIZE * mc.moved_swap);
+>  		}
+> -		/* we've already done css_get(mc.to) */
+>  		mc.moved_swap = 0;
+>  	}
+>  	memcg_oom_recover(from);
+> diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
+> index cfd162882c00..ca04feaae7fe 100644
+> --- a/mm/page_cgroup.c
+> +++ b/mm/page_cgroup.c
+> @@ -459,6 +459,47 @@ unsigned short lookup_swap_cgroup_id(swp_entry_t ent)
+>  	return lookup_swap_cgroup(ent, NULL)->id;
+>  }
+>  
+> +/**
+> + * swap_cgroup_migrate - migrate all entries of one id to another
+> + * @old: old id
+> + * @new: new id
+> + *
+> + * Caller has to be able to deal with swapon/swapoff racing.
+> + *
+> + * Returns number of migrated entries.
+> + */
+> +unsigned long swap_cgroup_migrate(unsigned short old, unsigned short new)
+> +{
+> +	unsigned long migrated = 0;
+> +	unsigned int type;
+> +
+> +	for (type = 0; type < MAX_SWAPFILES; type++) {
+> +		struct swap_cgroup_ctrl *ctrl;
+> +		unsigned long flags;
+> +		unsigned int page;
+> +
+> +		ctrl = &swap_cgroup_ctrl[type];
+> +		spin_lock_irqsave(&ctrl->lock, flags);
+> +		for (page = 0; page < ctrl->length; page++) {
+> +			struct swap_cgroup *base;
+> +			pgoff_t offset;
+> +
+> +			base = page_address(ctrl->map[page]);
+> +			for (offset = 0; offset < SC_PER_PAGE; offset++) {
+> +				struct swap_cgroup *sc;
+> +
+> +				sc = base + offset;
+> +				if (sc->id == old) {
+> +					sc->id = new;
+> +					migrated++;
+> +				}
+> +			}
+> +		}
+> +		spin_unlock_irqrestore(&ctrl->lock, flags);
+> +	}
+> +	return migrated;
+> +}
+> +
+>  int swap_cgroup_swapon(int type, unsigned long max_pages)
+>  {
+>  	void *array;
+> -- 
+> 1.8.5.3
+> 
 
-just
-if (early_syscon_probe(np))
-	BUG();
-here.
-
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---bBmlV2EG5GIXAvhUUg74kqEBRL8tBCFEO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlL4804ACgkQykllyylKDCEb1ACfeOLn2F2Ue4SYoRug8BV0aHDc
-bYIAn34lFYKo0GUc32/6WTwpVI4QntTW
-=pFtV
------END PGP SIGNATURE-----
-
---bBmlV2EG5GIXAvhUUg74kqEBRL8tBCFEO--
+-- 
+Michal Hocko
+SUSE Labs
