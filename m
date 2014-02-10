@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754316AbaBJUGl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 15:06:41 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34870 "EHLO
+	id S1755273AbaBJUHB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 15:07:01 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34844 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753942AbaBJTpq (ORCPT
+	with ESMTP id S1752419AbaBJTpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:45:46 -0500
+	Mon, 10 Feb 2014 14:45:25 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Aristeu Rozanski <aris@redhat.com>, Borislav Petkov <bp@suse.de>,
+Cc: AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 110/124] e752x_edac: Fix pci_dev usage count
-Date: Mon, 10 Feb 2014 11:40:50 -0800
-Message-Id: <1392061264-28124-111-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 061/124] audit: correct a type mismatch in audit_syscall_exit()
+Date: Mon, 10 Feb 2014 11:40:01 -0800
+Message-Id: <1392061264-28124-62-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
 References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
@@ -27,42 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aristeu Rozanski <aris@redhat.com>
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
 
-commit 90ed4988b8c030d65b41b7d13140e9376dc6ec5a upstream.
+commit 06bdadd7634551cfe8ce071fe44d0311b3033d9e upstream.
 
-In case the device 0, function 1 is not found using pci_get_device(),
-pci_scan_single_device() will be used but, differently than
-pci_get_device(), it allocates a pci_dev but doesn't does bump the usage
-count on the pci_dev and after few module removals and loads the pci_dev
-will be freed.
+audit_syscall_exit() saves a result of regs_return_value() in intermediate
+"int" variable and passes it to __audit_syscall_exit(), which expects its
+second argument as a "long" value.  This will result in truncating the
+value returned by a system call and making a wrong audit record.
 
-Signed-off-by: Aristeu Rozanski <aris@redhat.com>
-Reviewed-by: mark gross <mark.gross@intel.com>
-Link: http://lkml.kernel.org/r/20131205153755.GL4545@redhat.com
-Signed-off-by: Borislav Petkov <bp@suse.de>
+I don't know why gcc compiler doesn't complain about this, but anyway it
+causes a problem at runtime on arm64 (and probably most 64-bit archs).
+
+Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Eric Paris <eparis@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Eric Paris <eparis@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/edac/e752x_edac.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ include/linux/audit.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/edac/e752x_edac.c b/drivers/edac/e752x_edac.c
-index 644fec5..f1e9d7b 100644
---- a/drivers/edac/e752x_edac.c
-+++ b/drivers/edac/e752x_edac.c
-@@ -1182,9 +1182,11 @@ static int e752x_get_devs(struct pci_dev *pdev, int dev_idx,
- 	pvt->bridge_ck = pci_get_device(PCI_VENDOR_ID_INTEL,
- 				pvt->dev_info->err_dev, pvt->bridge_ck);
+diff --git a/include/linux/audit.h b/include/linux/audit.h
+index 37464c5..385d733 100644
+--- a/include/linux/audit.h
++++ b/include/linux/audit.h
+@@ -127,7 +127,7 @@ static inline void audit_syscall_exit(void *pt_regs)
+ {
+ 	if (unlikely(current->audit_context)) {
+ 		int success = is_syscall_success(pt_regs);
+-		int return_code = regs_return_value(pt_regs);
++		long return_code = regs_return_value(pt_regs);
  
--	if (pvt->bridge_ck == NULL)
-+	if (pvt->bridge_ck == NULL) {
- 		pvt->bridge_ck = pci_scan_single_device(pdev->bus,
- 							PCI_DEVFN(0, 1));
-+		pci_dev_get(pvt->bridge_ck);
-+	}
- 
- 	if (pvt->bridge_ck == NULL) {
- 		e752x_printk(KERN_ERR, "error reporting device not found:"
+ 		__audit_syscall_exit(success, return_code);
+ 	}
 -- 
 1.8.3.2
 
