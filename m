@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753837AbaBJTpG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 14:45:06 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34784 "EHLO
+	id S1754738AbaBJUKM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 15:10:12 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34743 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752475AbaBJTpC (ORCPT
+	with ESMTP id S1753640AbaBJTn7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:45:02 -0500
+	Mon, 10 Feb 2014 14:43:59 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Boaz Harrosh <bharrosh@panasas.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 087/124] ore: Fix wrong math in allocation of per device BIO
-Date: Mon, 10 Feb 2014 11:40:27 -0800
-Message-Id: <1392061264-28124-88-git-send-email-kamal@canonical.com>
+Cc: Mark Brown <broonie@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 094/124] ACPI / init: Flag use of ACPI and ACPI idioms for power supplies to regulator API
+Date: Mon, 10 Feb 2014 11:40:34 -0800
+Message-Id: <1392061264-28124-95-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
 References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
@@ -26,136 +28,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Boaz Harrosh <bharrosh@panasas.com>
+From: Mark Brown <broonie@linaro.org>
 
-commit aad560b7f63b495f48a7232fd086c5913a676e6f upstream.
+commit 49a12877d2777cadcb838981c3c4f5a424aef310 upstream.
 
-At IO preparation we calculate the max pages at each device and
-allocate a BIO per device of that size. The calculation was wrong
-on some unaligned corner cases offset/length combination and would
-make prepare return with -ENOMEM. This would be bad for pnfs-objects
-that would in that case IO through MDS. And fatal for exofs were it
-would fail writes with EIO.
+There is currently no facility in ACPI to express the hookup of voltage
+regulators, the expectation is that the regulators that exist in the
+system will be handled transparently by firmware if they need software
+control at all. This means that if for some reason the regulator API is
+enabled on such a system it should assume that any supplies that devices
+need are provided by the system at all relevant times without any software
+intervention.
 
-Fix it by doing the proper math, that will work in all cases. (I
-ran a test with all possible offset/length combinations this time
-round).
+Tell the regulator core to make this assumption by calling
+regulator_has_full_constraints(). Do this as soon as we know we are using
+ACPI so that the information is available to the regulator core as early
+as possible. This will cause the regulator core to pretend that there is
+an always on regulator supplying any supply that is requested but that has
+not otherwise been mapped which is the behaviour expected on a system with
+ACPI.
 
-Also when reading we do not need to allocate for the parity units
-since we jump over them.
+Should the ability to specify regulators be added in future revisions of
+ACPI then once we have support for ACPI mappings in the kernel the same
+assumptions will apply. It is also likely that systems will default to a
+mode of operation which does not require any interpretation of these
+mappings in order to be compatible with existing operating system releases
+so it should remain safe to make these assumptions even if the mappings
+exist but are not supported by the kernel.
 
-Also lower the max_io_length to take into account the parity pages
-so not to allocate BIOs bigger than PAGE_SIZE
-
-Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/exofs/ore.c         | 37 +++++++++++++++++++++++++------------
- include/scsi/osd_ore.h |  1 +
- 2 files changed, 26 insertions(+), 12 deletions(-)
+ drivers/acpi/bus.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/fs/exofs/ore.c b/fs/exofs/ore.c
-index b744228..85cde3e 100644
---- a/fs/exofs/ore.c
-+++ b/fs/exofs/ore.c
-@@ -103,7 +103,7 @@ int ore_verify_layout(unsigned total_comps, struct ore_layout *layout)
- 
- 	layout->max_io_length =
- 		(BIO_MAX_PAGES_KMALLOC * PAGE_SIZE - layout->stripe_unit) *
--							layout->group_width;
-+					(layout->group_width - layout->parity);
- 	if (layout->parity) {
- 		unsigned stripe_length =
- 				(layout->group_width - layout->parity) *
-@@ -286,7 +286,8 @@ int  ore_get_rw_state(struct ore_layout *layout, struct ore_components *oc,
- 	if (length) {
- 		ore_calc_stripe_info(layout, offset, length, &ios->si);
- 		ios->length = ios->si.length;
--		ios->nr_pages = (ios->length + PAGE_SIZE - 1) / PAGE_SIZE;
-+		ios->nr_pages = ((ios->offset & (PAGE_SIZE - 1)) +
-+				 ios->length + PAGE_SIZE - 1) / PAGE_SIZE;
- 		if (layout->parity)
- 			_ore_post_alloc_raid_stuff(ios);
+diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
+index 1f0d457..de22f48 100644
+--- a/drivers/acpi/bus.c
++++ b/drivers/acpi/bus.c
+@@ -33,6 +33,7 @@
+ #include <linux/proc_fs.h>
+ #include <linux/acpi.h>
+ #include <linux/slab.h>
++#include <linux/regulator/machine.h>
+ #ifdef CONFIG_X86
+ #include <asm/mpspec.h>
+ #endif
+@@ -976,6 +977,14 @@ void __init acpi_early_init(void)
+ 		goto error0;
  	}
-@@ -536,6 +537,7 @@ void ore_calc_stripe_info(struct ore_layout *layout, u64 file_offset,
- 	u64	H = LmodS - G * T;
  
- 	u32	N = div_u64(H, U);
-+	u32	Nlast;
- 
- 	/* "H - (N * U)" is just "H % U" so it's bound to u32 */
- 	u32	C = (u32)(H - (N * U)) / stripe_unit + G * group_width;
-@@ -568,6 +570,10 @@ void ore_calc_stripe_info(struct ore_layout *layout, u64 file_offset,
- 	si->length = T - H;
- 	if (si->length > length)
- 		si->length = length;
++	/*
++	 * If the system is using ACPI then we can be reasonably
++	 * confident that any regulators are managed by the firmware
++	 * so tell the regulator core it has everything it needs to
++	 * know.
++	 */
++	regulator_has_full_constraints();
 +
-+	Nlast = div_u64(H + si->length + U - 1, U);
-+	si->maxdevUnits = Nlast - N;
-+
- 	si->M = M;
- }
- EXPORT_SYMBOL(ore_calc_stripe_info);
-@@ -583,13 +589,16 @@ int _ore_add_stripe_unit(struct ore_io_state *ios,  unsigned *cur_pg,
- 	int ret;
+ 	return;
  
- 	if (per_dev->bio == NULL) {
--		unsigned pages_in_stripe = ios->layout->group_width *
--					(ios->layout->stripe_unit / PAGE_SIZE);
--		unsigned nr_pages = ios->nr_pages * ios->layout->group_width /
--					(ios->layout->group_width -
--					 ios->layout->parity);
--		unsigned bio_size = (nr_pages + pages_in_stripe) /
--					ios->layout->group_width;
-+		unsigned bio_size;
-+
-+		if (!ios->reading) {
-+			bio_size = ios->si.maxdevUnits;
-+		} else {
-+			bio_size = (ios->si.maxdevUnits + 1) *
-+			     (ios->layout->group_width - ios->layout->parity) /
-+			     ios->layout->group_width;
-+		}
-+		bio_size *= (ios->layout->stripe_unit / PAGE_SIZE);
- 
- 		per_dev->bio = bio_kmalloc(GFP_KERNEL, bio_size);
- 		if (unlikely(!per_dev->bio)) {
-@@ -609,8 +618,12 @@ int _ore_add_stripe_unit(struct ore_io_state *ios,  unsigned *cur_pg,
- 		added_len = bio_add_pc_page(q, per_dev->bio, pages[pg],
- 					    pglen, pgbase);
- 		if (unlikely(pglen != added_len)) {
--			ORE_DBGMSG("Failed bio_add_pc_page bi_vcnt=%u\n",
--				   per_dev->bio->bi_vcnt);
-+			/* If bi_vcnt == bi_max then this is a SW BUG */
-+			ORE_DBGMSG("Failed bio_add_pc_page bi_vcnt=0x%x "
-+				   "bi_max=0x%x BIO_MAX=0x%x cur_len=0x%x\n",
-+				   per_dev->bio->bi_vcnt,
-+				   per_dev->bio->bi_max_vecs,
-+				   BIO_MAX_PAGES_KMALLOC, cur_len);
- 			ret = -ENOMEM;
- 			goto out;
- 		}
-@@ -1098,7 +1111,7 @@ int ore_truncate(struct ore_layout *layout, struct ore_components *oc,
- 		size_attr->attr = g_attr_logical_length;
- 		size_attr->attr.val_ptr = &size_attr->newsize;
- 
--		ORE_DBGMSG("trunc(0x%llx) obj_offset=0x%llx dev=%d\n",
-+		ORE_DBGMSG2("trunc(0x%llx) obj_offset=0x%llx dev=%d\n",
- 			     _LLU(oc->comps->obj.id), _LLU(obj_size), i);
- 		ret = _truncate_mirrors(ios, i * ios->layout->mirrors_p1,
- 					&size_attr->attr);
-diff --git a/include/scsi/osd_ore.h b/include/scsi/osd_ore.h
-index a5f9b96..6ca3265 100644
---- a/include/scsi/osd_ore.h
-+++ b/include/scsi/osd_ore.h
-@@ -102,6 +102,7 @@ struct ore_striping_info {
- 	unsigned unit_off;
- 	unsigned cur_pg;
- 	unsigned cur_comp;
-+	unsigned maxdevUnits;
- };
- 
- struct ore_io_state;
+       error0:
 -- 
 1.8.3.2
 
