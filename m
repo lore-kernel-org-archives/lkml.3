@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926AbaBJSlK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 13:41:10 -0500
-Received: from mail.windriver.com ([147.11.1.11]:41452 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752338AbaBJSlH (ORCPT
+	id S1753006AbaBJSnD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 13:43:03 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34142 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752157AbaBJSm7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 13:41:07 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <sparclinux@vger.kernel.org>, <linux-next@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-        <stable@vger.kernel.org>
-Subject: [PATCH] irqdesc: Fix missing irq_to_desc export for !CONFIG_SPARSE_IRQ
-Date: Mon, 10 Feb 2014 13:39:53 -0500
-Message-ID: <1392057610-11514-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.8.5.2
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 10 Feb 2014 13:42:59 -0500
+From: Colin King <colin.king@canonical.com>
+To: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Cc: David.Daney@caviumnetworks.com
+Subject: [PATCH] MIPS: Octeon: fix fall through on bar type OCTEON_DMA_BAR_TYPE_SMALL
+Date: Mon, 10 Feb 2014 18:42:57 +0000
+Message-Id: <1392057777-14919-1-git-send-email-colin.king@canonical.com>
+X-Mailer: git-send-email 1.9.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In allmodconfig builds for sparc and any other arch which does
-not set CONFIG_SPARSE_IRQ, the following will be seen at modpost:
+From: Colin Ian King <colin.king@canonical.com>
 
-  CC [M]  lib/cpu-notifier-error-inject.o
-  CC [M]  lib/pm-notifier-error-inject.o
-ERROR: "irq_to_desc" [drivers/gpio/gpio-mcp23s08.ko] undefined!
-make[2]: *** [__modpost] Error 1
+Bar type OCTEON_DMA_BAR_TYPE_SMALL assigns lo and hi addresses and
+then falls through to OCTEON_DMA_BAR_TYPE_BIG that re-assignes lo and
+hi addresses with totally different values. Add a break so we don't
+fall through.
 
-This happens because commit 3911ff30f5d1175e2e67e73244405e3492b35c79
-("genirq: export handle_edge_irq() and irq_to_desc()") added one
-export for it, but there were actually two instances of it, in
-an if/else clause for CONFIG_SPARSE_IRQ.  Add the second one.
+Signed-off-by: Colin Ian King <colin.king@canonical.com>
+Acked-by: David Daney <ddaney@caviumnetworks.com>
+---
+ arch/mips/pci/msi-octeon.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-Cc: Jiri Kosina <jkosina@suse.cz>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: stable@vger.kernel.org	# 3.4+
-Fixes: 3911ff30f5d1 ("genirq: export handle_edge_irq() and irq_to_desc()")
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-
-diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
-index 192a302d6cfd..8ab8e9390297 100644
---- a/kernel/irq/irqdesc.c
-+++ b/kernel/irq/irqdesc.c
-@@ -274,6 +274,7 @@ struct irq_desc *irq_to_desc(unsigned int irq)
- {
- 	return (irq < NR_IRQS) ? irq_desc + irq : NULL;
- }
-+EXPORT_SYMBOL(irq_to_desc);
- 
- static void free_desc(unsigned int irq)
- {
+diff --git a/arch/mips/pci/msi-octeon.c b/arch/mips/pci/msi-octeon.c
+index d37be36..2b91b0e 100644
+--- a/arch/mips/pci/msi-octeon.c
++++ b/arch/mips/pci/msi-octeon.c
+@@ -150,6 +150,7 @@ msi_irq_allocated:
+ 		msg.address_lo =
+ 			((128ul << 20) + CVMX_PCI_MSI_RCV) & 0xffffffff;
+ 		msg.address_hi = ((128ul << 20) + CVMX_PCI_MSI_RCV) >> 32;
++		break;
+ 	case OCTEON_DMA_BAR_TYPE_BIG:
+ 		/* When using big bar, Bar 0 is based at 0 */
+ 		msg.address_lo = (0 + CVMX_PCI_MSI_RCV) & 0xffffffff;
 -- 
-1.8.5.2
+1.9.rc1
 
