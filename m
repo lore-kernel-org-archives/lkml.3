@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218AbaBJTrd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 14:47:33 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35136 "EHLO
+	id S1754478AbaBJTro (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 14:47:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35171 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754385AbaBJTr1 (ORCPT
+	with ESMTP id S1754441AbaBJTrh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 14:47:27 -0500
+	Mon, 10 Feb 2014 14:47:37 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
+Cc: Li Zefan <lizefan@huawei.com>, Pekka Enberg <penberg@kernel.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 041/124] dm space map common: make sure new space is used during extend
-Date: Mon, 10 Feb 2014 11:39:41 -0800
-Message-Id: <1392061264-28124-42-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 021/124] slub: Fix calculation of cpu slabs
+Date: Mon, 10 Feb 2014 11:39:21 -0800
+Message-Id: <1392061264-28124-22-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392061264-28124-1-git-send-email-kamal@canonical.com>
 References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
@@ -27,57 +27,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Thornber <ejt@redhat.com>
+From: Li Zefan <lizefan@huawei.com>
 
-commit 12c91a5c2d2a8e8cc40a9552313e1e7b0a2d9ee3 upstream.
+commit 8afb1474db4701d1ab80cd8251137a3260e6913e upstream.
 
-When extending a low level space map we should update nr_blocks at
-the start so the new space is used for the index entries.
+  /sys/kernel/slab/:t-0000048 # cat cpu_slabs
+  231 N0=16 N1=215
+  /sys/kernel/slab/:t-0000048 # cat slabs
+  145 N0=36 N1=109
 
-Otherwise extend can fail, e.g.: sm_metadata_extend call sequence
-that fails:
- -> sm_ll_extend
-    -> dm_tm_new_block -> dm_sm_new_block -> sm_bootstrap_new_block
-    => returns -ENOSPC because smm->begin == smm->ll.nr_blocks
+See, the number of slabs is smaller than that of cpu slabs.
 
-Signed-off-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+The bug was introduced by commit 49e2258586b423684f03c278149ab46d8f8b6700
+("slub: per cpu cache for partial pages").
+
+We should use page->pages instead of page->pobjects when calculating
+the number of cpu partial slabs. This also fixes the mapping of slabs
+and nodes.
+
+As there's no variable storing the number of total/active objects in
+cpu partial slabs, and we don't have user interfaces requiring those
+statistics, I just add WARN_ON for those cases.
+
+Acked-by: Christoph Lameter <cl@linux.com>
+Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/md/persistent-data/dm-space-map-common.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ mm/slub.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/md/persistent-data/dm-space-map-common.c b/drivers/md/persistent-data/dm-space-map-common.c
-index 3e7a88d..0d24037 100644
---- a/drivers/md/persistent-data/dm-space-map-common.c
-+++ b/drivers/md/persistent-data/dm-space-map-common.c
-@@ -245,6 +245,10 @@ int sm_ll_extend(struct ll_disk *ll, dm_block_t extra_blocks)
- 		return -EINVAL;
- 	}
+diff --git a/mm/slub.c b/mm/slub.c
+index ba2ca53..90fcd67 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -4423,7 +4423,13 @@ static ssize_t show_slab_objects(struct kmem_cache *s,
  
-+	/*
-+	 * We need to set this before the dm_tm_new_block() call below.
-+	 */
-+	ll->nr_blocks = nr_blocks;
- 	for (i = old_blocks; i < blocks; i++) {
- 		struct dm_block *b;
- 		struct disk_index_entry idx;
-@@ -252,6 +256,7 @@ int sm_ll_extend(struct ll_disk *ll, dm_block_t extra_blocks)
- 		r = dm_tm_new_block(ll->tm, &dm_sm_bitmap_validator, &b);
- 		if (r < 0)
- 			return r;
-+
- 		idx.blocknr = cpu_to_le64(dm_block_location(b));
- 
- 		r = dm_tm_unlock(ll->tm, b);
-@@ -266,7 +271,6 @@ int sm_ll_extend(struct ll_disk *ll, dm_block_t extra_blocks)
- 			return r;
- 	}
- 
--	ll->nr_blocks = nr_blocks;
- 	return 0;
- }
- 
+ 			page = ACCESS_ONCE(c->partial);
+ 			if (page) {
+-				x = page->pobjects;
++				node = page_to_nid(page);
++				if (flags & SO_TOTAL)
++					WARN_ON_ONCE(1);
++				else if (flags & SO_OBJECTS)
++					WARN_ON_ONCE(1);
++				else
++					x = page->pages;
+ 				total += x;
+ 				nodes[node] += x;
+ 			}
 -- 
 1.8.3.2
 
