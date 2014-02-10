@@ -1,45 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752935AbaBJQXe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 11:23:34 -0500
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:38621 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752357AbaBJQXa (ORCPT
+	id S1752987AbaBJQXn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 11:23:43 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61955 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752946AbaBJQXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 11:23:30 -0500
-From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-To: lenb@kernel.org, rjw@rjwysocki.net
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>
-Subject: [PATCH] ACPI, APEI: Remove X86 redundant dependency for APEI Generic Hardware Error Source.
-Date: Mon, 10 Feb 2014 17:23:36 +0100
-Message-Id: <1392049416-31240-1-git-send-email-tomasz.nowicki@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 10 Feb 2014 11:23:37 -0500
+Date: Mon, 10 Feb 2014 16:22:55 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Torvald Riegel <triegel@redhat.com>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+Message-ID: <20140210162255.GC12826@mudshark.cambridge.arm.com>
+References: <20140206221117.GJ4250@linux.vnet.ibm.com>
+ <1391730288.23421.4102.camel@triegel.csb>
+ <20140207042051.GL4250@linux.vnet.ibm.com>
+ <20140207074405.GM5002@laptop.programming.kicks-ass.net>
+ <20140207165028.GO4250@linux.vnet.ibm.com>
+ <20140207165548.GR5976@mudshark.cambridge.arm.com>
+ <20140207180216.GP4250@linux.vnet.ibm.com>
+ <20140210114813.GJ9987@twins.programming.kicks-ass.net>
+ <20140210114929.GF17766@mudshark.cambridge.arm.com>
+ <20140210150443.GJ4250@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140210150443.GJ4250@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ACPI_APEI is already dependent on X86, hence, there is no need to
-define such dependency for ACPI_APEI_GHES again.
+On Mon, Feb 10, 2014 at 03:04:43PM +0000, Paul E. McKenney wrote:
+> On Mon, Feb 10, 2014 at 11:49:29AM +0000, Will Deacon wrote:
+> > On Mon, Feb 10, 2014 at 11:48:13AM +0000, Peter Zijlstra wrote:
+> > > On Fri, Feb 07, 2014 at 10:02:16AM -0800, Paul E. McKenney wrote:
+> > > > As near as I can tell, compiler writers hate the idea of prohibiting
+> > > > speculative-store optimizations because it requires them to introduce
+> > > > both control and data dependency tracking into their compilers.  Many of
+> > > > them seem to hate dependency tracking with a purple passion.  At least,
+> > > > such a hatred would go a long way towards explaining the incomplete
+> > > > and high-overhead implementations of memory_order_consume, the long
+> > > > and successful use of idioms based on the memory_order_consume pattern
+> > > > notwithstanding [*].  ;-)
+> > > 
+> > > Just tell them that because the hardware provides control dependencies
+> > > we actually use and rely on them.
+> > 
+> > s/control/address/ ?
+> 
+> Both are important, but as Peter's reply noted, it was control
+> dependencies under discussion.  Data dependencies (which include the
+> ARM/PowerPC notion of address dependencies) are called out by the standard
+> already, but control dependencies are not.  I am not all that satisified
+> by current implementations of data dependencies, admittedly.  Should
+> be an interesting discussion.  ;-)
 
-Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
----
- drivers/acpi/apei/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Ok, but since you can't use control dependencies to order LOAD -> LOAD, it's
+a pretty big ask of the compiler to make use of them for things like
+consume, where a data dependency will suffice for any combination of
+accesses.
 
-diff --git a/drivers/acpi/apei/Kconfig b/drivers/acpi/apei/Kconfig
-index 786294b..1d7ca6e 100644
---- a/drivers/acpi/apei/Kconfig
-+++ b/drivers/acpi/apei/Kconfig
-@@ -13,7 +13,7 @@ config ACPI_APEI
- 
- config ACPI_APEI_GHES
- 	bool "APEI Generic Hardware Error Source"
--	depends on ACPI_APEI && X86
-+	depends on ACPI_APEI
- 	select ACPI_HED
- 	select IRQ_WORK
- 	select GENERIC_ALLOCATOR
--- 
-1.7.9.5
-
+Will
