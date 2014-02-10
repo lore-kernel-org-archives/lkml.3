@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526AbaBJPar (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 10:30:47 -0500
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:55719 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751831AbaBJPao (ORCPT
+	id S1752642AbaBJPbj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 10:31:39 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:50458 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752211AbaBJPbf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 10:30:44 -0500
-Message-ID: <1392046242.3585.41.camel@x220>
-Subject: Re: [PATCH 14/28] Remove MACH_SMDKC210
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Mark Brown <broonie@kernel.org>
-Cc: Richard Weinberger <richard@nod.at>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Sangbeom Kim <sbkim73@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 10 Feb 2014 16:30:42 +0100
-In-Reply-To: <20140210141255.GI1757@sirena.org.uk>
-References: <1391971686-9517-1-git-send-email-richard@nod.at>
-	 <1391971686-9517-15-git-send-email-richard@nod.at>
-	 <20140210114154.GQ1757@sirena.org.uk> <1392039072.3585.15.camel@x220>
-	 <20140210141255.GI1757@sirena.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 10 Feb 2014 15:30:43.0092 (UTC) FILETIME=[0F8C5D40:01CF2675]
-X-RcptDomain: vger.kernel.org
+	Mon, 10 Feb 2014 10:31:35 -0500
+From: Laszlo Papp <lpapp@kde.org>
+To: jdelvare@suse.de, linux@roeck-us.net
+Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
+        lee.jones@linaro.org, Laszlo Papp <lpapp@kde.org>
+Subject: [PATCH] hwmon: (max6650) Rename the device ids to contain the hwmon suffix
+Date: Mon, 10 Feb 2014 15:25:53 +0000
+Message-Id: <1392045953-26596-1-git-send-email-lpapp@kde.org>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-02-10 at 14:12 +0000, Mark Brown wrote:
-> On Mon, Feb 10, 2014 at 02:31:12PM +0100, Paul Bolle wrote:
-> > If so, to be absolutely sure we start from the same point: do you agree
-> > that the above line now effectively reads
-> >     depends on SND_SOC_SAMSUNG && (MACH_SMDK6410 || MACH_SMDKC100 || MACH_SMDKV210 || MACH_SMDKC110 || false || false)
-> 
-> > because there's neither a Kconfig symbol MACH_SMDKV310 nor a Kconfig
-> > symbol MACH_SMDKC210?
-> 
-> Yes, that's correct.  Now, like I say think about what the symbol was
-> there for in the first place.
+In the preparation of creating an mfd driver and then refactor this one into a
+platform driver in order to add some pinctrl functionality to the chip, it is
+necessary to start the series with this change so that the mfd driver can refer
+to the proper name in the subsequent change without making changes in more than
+one driver later.
 
-So, next step: the Kconfig symbols MACH_SMDKV310 and MACH_SMDKC210 were
-removed in commit 383ffda2fa ("ARM: EXYNOS: no more support non-DT for
-EXYNOS SoCs"). That commit was part of v3.11. Correct?
+This was a request from Lee Jones, the MFD subsystem maintainer.
 
-Thanks for your patience.
+Signed-off-by: Laszlo Papp <lpapp@kde.org>
+---
+ drivers/hwmon/max6650.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-
-Paul Bolle
+diff --git a/drivers/hwmon/max6650.c b/drivers/hwmon/max6650.c
+index 0cafc39..3c36edc 100644
+--- a/drivers/hwmon/max6650.c
++++ b/drivers/hwmon/max6650.c
+@@ -116,8 +116,8 @@ static struct max6650_data *max6650_update_device(struct device *dev);
+  */
+ 
+ static const struct i2c_device_id max6650_id[] = {
+-	{ "max6650", 1 },
+-	{ "max6651", 4 },
++	{ "max6650-hwmon", 1 },
++	{ "max6651-hwmon", 4 },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(i2c, max6650_id);
+-- 
+1.8.5.3
 
