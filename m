@@ -1,99 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752204AbaBKRxe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 12:53:34 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:56020 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751694AbaBKRwt (ORCPT
+	id S1752047AbaBKRyU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 12:54:20 -0500
+Received: from mail-vb0-f52.google.com ([209.85.212.52]:36316 "EHLO
+	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750978AbaBKRyS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 12:52:49 -0500
-From: Pawel Moll <pawel.moll@arm.com>
-To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
-Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>
-Subject: [PATCH v2 2/2] mfd: vexpress-sysreg: Add syscon labels as platform data
-Date: Tue, 11 Feb 2014 17:52:45 +0000
-Message-Id: <1392141165-14338-2-git-send-email-pawel.moll@arm.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1392141165-14338-1-git-send-email-pawel.moll@arm.com>
-References: <20140211174829.GJ15081@lee--X1>
- <1392141165-14338-1-git-send-email-pawel.moll@arm.com>
+	Tue, 11 Feb 2014 12:54:18 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140211160302.GA18936@infradead.org>
+References: <20140211160302.GA18936@infradead.org>
+Date: Tue, 11 Feb 2014 09:54:17 -0800
+X-Google-Sender-Auth: P_tygE8Yb6J8uqtYtTjeuBT8Y0o
+Message-ID: <CA+55aFy5qCfbr59-7X-EwoS4FpbH65tjhzMdnzSQ3AW5TsRPWw@mail.gmail.com>
+Subject: Re: O_TMPFILE detection
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-man@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds platform data with label names for syscon
-registers in the relevant MFD cells.
+On Tue, Feb 11, 2014 at 8:03 AM, Christoph Hellwig <hch@infradead.org> wrote:
+> I've started implementing support for O_TMPFILE in xfs_io in preparation
+> for proper testcases and found something rather annoying:
+>
+> Given that we implicitly pass O_DIRECTORY as part of the full O_TMPFILE
+> flag an open using O_TMPFILE will simply succeed on a kernel old enough
+> to not have O_TMPFILE support, and give you a file descriptor for the
+> directory passed in.  Of course this only works if you open the fd
+> read-only which isn't all that useful for real temporary files, but it
+> would be the natural choice for a feature test.
 
-Signed-off-by: Pawel Moll <pawel.moll@arm.com>
----
- drivers/mfd/vexpress-sysreg.c | 19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
+But O_TMPFILE without write access fails on modern kernels, so what
+you test doesn't make sense.
 
-diff --git a/drivers/mfd/vexpress-sysreg.c b/drivers/mfd/vexpress-sysreg.c
-index ece5ac8..952df84 100644
---- a/drivers/mfd/vexpress-sysreg.c
-+++ b/drivers/mfd/vexpress-sysreg.c
-@@ -17,6 +17,7 @@
- #include <linux/mfd/core.h>
- #include <linux/of_address.h>
- #include <linux/of_platform.h>
-+#include <linux/platform_data/syscon.h>
- #include <linux/platform_device.h>
- #include <linux/slab.h>
- #include <linux/stat.h>
-@@ -132,6 +133,10 @@ void __init vexpress_sysreg_early_init(void __iomem *base)
- 
- /* The sysreg block is just a random collection of various functions... */
- 
-+static struct syscon_platform_data vexpress_sysreg_sys_id_pdata = {
-+	.label = "sys_id",
-+};
-+
- static struct bgpio_pdata vexpress_sysreg_sys_led_pdata = {
- 	.label = "sys_led",
- 	.base = -1,
-@@ -150,6 +155,14 @@ static struct bgpio_pdata vexpress_sysreg_sys_flash_pdata = {
- 	.ngpio = 1,
- };
- 
-+static struct syscon_platform_data vexpress_sysreg_sys_misc_pdata = {
-+	.label = "sys_misc",
-+};
-+
-+static struct syscon_platform_data vexpress_sysreg_sys_procid_pdata = {
-+	.label = "sys_procid",
-+};
-+
- static struct mfd_cell vexpress_sysreg_cells[] = {
- 	{
- 		.name = "syscon",
-@@ -157,6 +170,8 @@ static struct mfd_cell vexpress_sysreg_cells[] = {
- 		.resources = (struct resource []) {
- 			DEFINE_RES_MEM(SYS_ID, 0x4),
- 		},
-+		.platform_data = &vexpress_sysreg_sys_id_pdata,
-+		.pdata_size = sizeof(vexpress_sysreg_sys_id_pdata),
- 	}, {
- 		.name = "basic-mmio-gpio",
- 		.of_compatible = "arm,vexpress-sysreg,sys_led",
-@@ -190,12 +205,16 @@ static struct mfd_cell vexpress_sysreg_cells[] = {
- 		.resources = (struct resource []) {
- 			DEFINE_RES_MEM(SYS_MISC, 0x4),
- 		},
-+		.platform_data = &vexpress_sysreg_sys_misc_pdata,
-+		.pdata_size = sizeof(vexpress_sysreg_sys_misc_pdata),
- 	}, {
- 		.name = "syscon",
- 		.num_resources = 1,
- 		.resources = (struct resource []) {
- 			DEFINE_RES_MEM(SYS_PROCID0, 0x8),
- 		},
-+		.platform_data = &vexpress_sysreg_sys_procid_pdata,
-+		.pdata_size = sizeof(vexpress_sysreg_sys_procid_pdata),
- 	}, {
- 		.name = "vexpress-syscfg",
- 		.num_resources = 1,
--- 
-1.8.3.2
+In fact, that "O_TMPFILE fails with O_RDONLY" was done exactly so that
+you could not have a program that works on kernels with O_TMPFILE
+support _and_ opens a directory on old kernels without it. Basically
+"O_TMPFILE | O_RDONLY" is an insane thing to do, and will never create
+a temporary file.
 
+              Linus
