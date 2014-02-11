@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752569AbaBKTFI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:05:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39551 "EHLO
+	id S932102AbaBKVDx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 16:03:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39570 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751347AbaBKTFF (ORCPT
+	with ESMTP id S1752544AbaBKTFH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:05:05 -0500
+	Tue, 11 Feb 2014 14:05:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.13 031/120] fs/compat: fix lookup_dcookie() parameter handling
-Date: Tue, 11 Feb 2014 11:04:32 -0800
-Message-Id: <20140211184824.451001321@linuxfoundation.org>
+        Michael Grzeschik <m.grzeschik@pengutronix.de>,
+        Brian Norris <computersforpeace@gmail.com>
+Subject: [PATCH 3.13 034/120] mtd: mxc_nand: remove duplicated ecc_stats counting
+Date: Tue, 11 Feb 2014 11:04:35 -0800
+Message-Id: <20140211184824.541875084@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -34,54 +29,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: Michael Grzeschik <m.grzeschik@pengutronix.de>
 
-commit d8d14bd09cddbaf0168d61af638455a26bd027ff upstream.
+commit 0566477762f9e174e97af347ee9c865f908a5647 upstream.
 
-Commit d5dc77bfeeab ("consolidate compat lookup_dcookie()") coverted all
-architectures to the new compat_sys_lookup_dcookie() syscall.
+The ecc_stats.corrected count variable will already be incremented in
+the above framework-layer just after this callback.
 
-The "len" paramater of the new compat syscall must have the type
-compat_size_t in order to enforce zero extension for architectures where
-the ABI requires that the caller of a function performed zero and/or
-sign extension to 64 bit of all parameters.
-
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/dcookies.c          |    2 +-
- include/linux/compat.h |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/mtd/nand/mxc_nand.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/fs/dcookies.c
-+++ b/fs/dcookies.c
-@@ -204,7 +204,7 @@ out:
- }
+--- a/drivers/mtd/nand/mxc_nand.c
++++ b/drivers/mtd/nand/mxc_nand.c
+@@ -677,7 +677,6 @@ static int mxc_nand_correct_data_v2_v3(s
+ 		ecc_stat >>= 4;
+ 	} while (--no_subpages);
  
- #ifdef CONFIG_COMPAT
--COMPAT_SYSCALL_DEFINE4(lookup_dcookie, u32, w0, u32, w1, char __user *, buf, size_t, len)
-+COMPAT_SYSCALL_DEFINE4(lookup_dcookie, u32, w0, u32, w1, char __user *, buf, compat_size_t, len)
- {
- #ifdef __BIG_ENDIAN
- 	return sys_lookup_dcookie(((u64)w0 << 32) | w1, buf, len);
---- a/include/linux/compat.h
-+++ b/include/linux/compat.h
-@@ -422,7 +422,7 @@ extern long compat_arch_ptrace(struct ta
- asmlinkage long compat_sys_ptrace(compat_long_t request, compat_long_t pid,
- 				  compat_long_t addr, compat_long_t data);
+-	mtd->ecc_stats.corrected += ret;
+ 	pr_debug("%d Symbol Correctable RS-ECC Error\n", ret);
  
--asmlinkage long compat_sys_lookup_dcookie(u32, u32, char __user *, size_t);
-+asmlinkage long compat_sys_lookup_dcookie(u32, u32, char __user *, compat_size_t);
- /*
-  * epoll (fs/eventpoll.c) compat bits follow ...
-  */
+ 	return ret;
 
 
