@@ -1,92 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752108AbaBKRKt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 12:10:49 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:24980 "EHLO
+	id S1753001AbaBKRO4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 12:14:56 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:25300 "EHLO
 	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752023AbaBKRKn (ORCPT
+	by vger.kernel.org with ESMTP id S1752047AbaBKRKs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 12:10:43 -0500
+	Tue, 11 Feb 2014 12:10:48 -0500
 From: Pawel Moll <pawel.moll@arm.com>
 To: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Cc: Pawel Moll <pawel.moll@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Mike Turquette <mturquette@linaro.org>,
+Cc: Pawel Moll <pawel.moll@arm.com>,
         Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Jean Delvare <jdelvare@suse.de>, Guenter Roeck <linux@roeck-us.net>,
-        lm-sensors@lm-sensors.org
-Subject: [PATCH 00/12] Versatile Express updates
-Date: Tue, 11 Feb 2014 17:10:24 +0000
-Message-Id: <1392138636-29240-1-git-send-email-pawel.moll@arm.com>
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 04/12] clocksource: Sched clock source for Versatile Express
+Date: Tue, 11 Feb 2014 17:10:28 +0000
+Message-Id: <1392138636-29240-5-git-send-email-pawel.moll@arm.com>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1392138636-29240-1-git-send-email-pawel.moll@arm.com>
+References: <1392138636-29240-1-git-send-email-pawel.moll@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series is a set of updates following the infrastructure
-rework and depends on it. It will be finally posted once
-the main series is merged. For the time being I would really
-appreciate feedback and/or (n)acks...
+This patch adds a trival sched clock source using free
+running, 24MHz clocked counter present in the ARM Ltd.
+Versatile Express platform's System Registers block.
 
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Mike Turquette <mturquette@linaro.org>
+This code replaces the call in the VE machine code.
+
 Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Alexandre Courbot <gnurou@gmail.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Lee Jones <lee.jones@linaro.org>
-Cc: Jean Delvare <jdelvare@suse.de>
-Cc: Guenter Roeck <linux@roeck-us.net> 
-Cc: lm-sensors@lm-sensors.org
-
-Pawel Moll (11):
-  misc: vexpress-syscfg: Add udelay-based delay
-  power/reset: vexpress: Use udelay instead of timers
-  clk: versatile: Split config options for sp810 and vexpress_osc
-  clocksource: Sched clock source for Versatile Express
-  GPIO: gpio-generic: Add label to platform data
-  mfd: vexpress-sysreg: Add labels to gpio banks
-  mfd: syscon: Consider platform data a regmap config name
-  mfd: vexpress-sysreg: Add syscon labels as platform data
-  hwmon: vexpress: Use devm helper for hwmon device registration
-  ARM: vexpress: Simplify SMP operations for DT-powered system
-  ARM: vexpress: move HBI check to sysreg driver
-
-Sudeep KarkadaNagesha (1):
-  ARM: vexpress: remove redundant vexpress_dt_cpus_num to get cpu count
-
- arch/arm/mach-vexpress/core.h           |   3 +-
- arch/arm/mach-vexpress/platsmp.c        | 187 +++++++-------------------------
- arch/arm/mach-vexpress/v2m.c            |  57 +---------
- drivers/clk/Kconfig                     |   9 +-
- drivers/clk/versatile/Kconfig           |  26 +++++
- drivers/clk/versatile/Makefile          |   5 +-
- drivers/clocksource/Kconfig             |   9 ++
- drivers/clocksource/Makefile            |   1 +
- drivers/clocksource/vexpress.c          |  40 +++++++
- drivers/gpio/gpio-generic.c             |   2 +
- drivers/hwmon/vexpress.c                | 100 +++++------------
- drivers/mfd/syscon.c                    |   1 +
- drivers/mfd/vexpress-sysreg.c           |  45 ++++----
- drivers/misc/vexpress-syscfg.c          |  40 ++++++-
- drivers/power/reset/vexpress-poweroff.c |  10 +-
- include/linux/basic_mmio_gpio.h         |   1 +
- include/linux/vexpress.h                |   1 -
- 17 files changed, 216 insertions(+), 321 deletions(-)
- create mode 100644 drivers/clk/versatile/Kconfig
+Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+---
+ arch/arm/mach-vexpress/v2m.c   |  2 --
+ drivers/clocksource/Kconfig    |  9 +++++++++
+ drivers/clocksource/Makefile   |  1 +
+ drivers/clocksource/vexpress.c | 40 ++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 50 insertions(+), 2 deletions(-)
  create mode 100644 drivers/clocksource/vexpress.c
 
+diff --git a/arch/arm/mach-vexpress/v2m.c b/arch/arm/mach-vexpress/v2m.c
+index 90f04c9..d8a9fd7 100644
+--- a/arch/arm/mach-vexpress/v2m.c
++++ b/arch/arm/mach-vexpress/v2m.c
+@@ -418,8 +418,6 @@ void __init v2m_dt_init_early(void)
+ 			pr_warning("vexpress: DT HBI (%x) is not matching "
+ 					"hardware (%x)!\n", dt_hbi, hbi);
+ 	}
+-
+-	versatile_sched_clock_init(vexpress_get_24mhz_clock_base(), 24000000);
+ }
+ 
+ 
+diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
+index cd6950f..9799744 100644
+--- a/drivers/clocksource/Kconfig
++++ b/drivers/clocksource/Kconfig
+@@ -140,3 +140,12 @@ config VF_PIT_TIMER
+ 	bool
+ 	help
+ 	  Support for Period Interrupt Timer on Freescale Vybrid Family SoCs.
++
++config CLKSRC_VEXPRESS
++	bool
++	depends on MFD_VEXPRESS_SYSREG
++	depends on GENERIC_SCHED_CLOCK
++	select CLKSRC_OF
++	default y
++	help
++	  Simple provider of sched clock on ARM Versatile Express platform.
+diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
+index c7ca50a..1051a23 100644
+--- a/drivers/clocksource/Makefile
++++ b/drivers/clocksource/Makefile
+@@ -37,3 +37,4 @@ obj-$(CONFIG_ARM_ARCH_TIMER)		+= arm_arch_timer.o
+ obj-$(CONFIG_ARM_GLOBAL_TIMER)		+= arm_global_timer.o
+ obj-$(CONFIG_CLKSRC_METAG_GENERIC)	+= metag_generic.o
+ obj-$(CONFIG_ARCH_HAS_TICK_BROADCAST)	+= dummy_timer.o
++obj-$(CONFIG_CLKSRC_VEXPRESS)	+= vexpress.o
+diff --git a/drivers/clocksource/vexpress.c b/drivers/clocksource/vexpress.c
+new file mode 100644
+index 0000000..55b8ab4
+--- /dev/null
++++ b/drivers/clocksource/vexpress.c
+@@ -0,0 +1,40 @@
++/*
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * Copyright (C) 2013 ARM Limited
++ */
++
++#include <linux/clocksource.h>
++#include <linux/io.h>
++#include <linux/of_address.h>
++#include <linux/sched_clock.h>
++
++#define SYS_24MHZ 0x05c
++
++static void __iomem *vexpress_sys_24mhz;
++
++static u32 notrace vexpress_sys_24mhz_read(void)
++{
++	return readl(vexpress_sys_24mhz);
++}
++
++static void __init vexpress_sched_clock_init(struct device_node *node)
++{
++	void __iomem *base = of_iomap(node, 0);
++
++	if (!base)
++		return;
++
++	vexpress_sys_24mhz = base + SYS_24MHZ;
++
++	setup_sched_clock(vexpress_sys_24mhz_read, 32, 24000000);
++}
++CLOCKSOURCE_OF_DECLARE(vexpress, "arm,vexpress-sysreg",
++		vexpress_sched_clock_init);
 -- 
 1.8.3.2
 
