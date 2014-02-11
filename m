@@ -1,82 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751312AbaBKKeH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 05:34:07 -0500
-Received: from 1.mo1.mail-out.ovh.net ([178.32.127.22]:52705 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750776AbaBKKeE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 05:34:04 -0500
-X-Greylist: delayed 6607 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 Feb 2014 05:34:04 EST
+	id S1751643AbaBKKfh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 05:35:37 -0500
+Received: from mga14.intel.com ([143.182.124.37]:41035 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751053AbaBKKfd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 05:35:33 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,825,1384329600"; 
+   d="scan'208";a="473322302"
+Date: Tue, 11 Feb 2014 12:42:37 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Peter Wu <lekensteyn@gmail.com>,
+        Bastien Traverse <bastien.traverse@gmail.com>,
+        linux-kernel@vger.kernel.org, francis.moro@gmail.com,
+        linux-pm@vger.kernel.org
+Subject: Re: 3.12: ethernet controller missing after resuming from suspend to
+ RAM
+Message-ID: <20140211104237.GE18029@intel.com>
+References: <52F2CC7B.80406@gmail.com>
+ <1747020.MhBDqPO9oJ@vostro.rjw.lan>
+ <20140210122035.GY18029@intel.com>
+ <4302366.hs31VgE4VT@vostro.rjw.lan>
 MIME-Version: 1.0
-In-Reply-To: <CAAVeFuJ6BP4JnVb6qD1DYXqPQ3zBKw8hb+xLqcmUjktOxAjdGA@mail.gmail.com>
-References: <1392044614-6837-1-git-send-email-jjhiblot@traphandler.com>
-	<CAAVeFuJ6BP4JnVb6qD1DYXqPQ3zBKw8hb+xLqcmUjktOxAjdGA@mail.gmail.com>
-Date: Tue, 11 Feb 2014 09:06:09 +0100
-Message-ID: <CACh+v5Nj+qAD4LHXfX5=Ww_v5N9vvm=O_r29X3H1dKseeafauQ@mail.gmail.com>
-Subject: Re: [PATCH] gpio: take in account the active low flag when
- configuring the gpio as an ouput
-From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Richard Genoud <richard.genoud@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-X-Ovh-Tracer-Id: 15704896325675538456
-X-Ovh-Remote: 209.85.220.44 (mail-pa0-f44.google.com)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrjedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrjeehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4302366.hs31VgE4VT@vostro.rjw.lan>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexandre,
+On Mon, Feb 10, 2014 at 11:39:29PM +0100, Rafael J. Wysocki wrote:
+> > _STA() returns 0x0A instead of 0x0F. Could there be something missing in
+> > the ACPI hotplug code that overlooks this and removes the device on resume?
+> 
+> That is possible.  Actually even quite likely, but let's wait for the response
+> from Peter.
 
-I somehow missed this one. Forget about my patch then.
+Here's a hack that should take the 0xa return value into consideration. It
+turned out that this case is even mentioned in the ACPI spec.
 
-Jean-Jacques
+diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
+index e2a783fdb98f..014381b42d86 100644
+--- a/drivers/pci/hotplug/acpiphp_glue.c
++++ b/drivers/pci/hotplug/acpiphp_glue.c
+@@ -730,6 +730,17 @@ static unsigned int get_slot_status(struct acpiphp_slot *slot)
+ 	return (unsigned int)sta;
+ }
+ 
++static inline bool device_sta_valid(unsigned long long sta)
++{
++	/*
++	 * ACPI spec says that _STA may return bit 0 clear with bit 8 set
++	 * if the device is valid but does not require device driver to be
++	 * loaded (chapter 6.3.7).
++	 */
++	unsigned mask = ACPI_STA_DEVICE_ENABLED | ACPI_STA_DEVICE_FUNCTIONING;
++	return (sta & mask) == mask;
++}
++
+ /**
+  * trim_stale_devices - remove PCI devices that are not responding.
+  * @dev: PCI device to start walking the hierarchy from.
+@@ -745,7 +756,7 @@ static void trim_stale_devices(struct pci_dev *dev)
+ 		unsigned long long sta;
+ 
+ 		status = acpi_evaluate_integer(handle, "_STA", NULL, &sta);
+-		alive = (ACPI_SUCCESS(status) && sta == ACPI_STA_ALL)
++		alive = (ACPI_SUCCESS(status) && device_sta_valid(sta))
+ 			|| acpiphp_no_hotplug(handle);
+ 	}
+ 	if (!alive) {
+@@ -792,7 +803,7 @@ static void acpiphp_check_bridge(struct acpiphp_bridge *bridge)
+ 		mutex_lock(&slot->crit_sect);
+ 		if (slot_no_hotplug(slot)) {
+ 			; /* do nothing */
+-		} else if (get_slot_status(slot) == ACPI_STA_ALL) {
++		} else if (device_sta_valid(get_slot_status(slot))) {
+ 			/* remove stale devices if any */
+ 			list_for_each_entry_safe_reverse(dev, tmp,
+ 							 &bus->devices, bus_list)
 
-2014-02-11 5:22 GMT+01:00 Alexandre Courbot <gnurou@gmail.com>:
-> On Tue, Feb 11, 2014 at 12:03 AM, Jean-Jacques Hiblot
-> <jjhiblot@traphandler.com> wrote:
->> The initial value of the gpio is passed to gpiod_direction_output. Currently
->> this value is the raw value of the GPIO line, but it should be the logical
->> value.
->
-> I think we have a patch that already does this:
->
-> http://www.kernelhub.org/?msg=390263&p=2
->
-> Linus said it would be merged for 3.15, but I am not seeing it in -next. Linus?
->
->>
->> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
->> ---
->>  drivers/gpio/gpiolib.c | 3 +++
->>  1 file changed, 3 insertions(+)
->>
->> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
->> index 4e10b10..111a1f1 100644
->> --- a/drivers/gpio/gpiolib.c
->> +++ b/drivers/gpio/gpiolib.c
->> @@ -1751,6 +1751,9 @@ int gpiod_direction_output(struct gpio_desc *desc, int value)
->>                 return -EINVAL;
->>         }
->>
->> +       if (test_bit(FLAG_ACTIVE_LOW, &desc->flags))
->> +               value = !value;
->> +
->>         /* GPIOs used for IRQs shall not be set as output */
->>         if (test_bit(FLAG_USED_AS_IRQ, &desc->flags)) {
->>                 gpiod_err(desc,
->> --
->> 1.8.5.3
->>
+
