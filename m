@@ -1,185 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751962AbaBKLEz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 06:04:55 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:42176 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751015AbaBKLEy (ORCPT
+	id S1751578AbaBKLIa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 06:08:30 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:50709 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758AbaBKLI3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 06:04:54 -0500
-Message-ID: <1392116684.6943.4.camel@pizza.hi.pengutronix.de>
-Subject: Re: [PATCH v2 1/2] regulator: anatop: Add power gating support to
- digital LDOs
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Anson Huang <b20788@freescale.com>,
-        kernel@pengutronix.de
-Date: Tue, 11 Feb 2014 12:04:44 +0100
-In-Reply-To: <1392042862-384-1-git-send-email-p.zabel@pengutronix.de>
-References: <1392042862-384-1-git-send-email-p.zabel@pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 11 Feb 2014 06:08:29 -0500
+Date: Tue, 11 Feb 2014 12:08:20 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Don Zickus <dzickus@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Joe Mario <jmario@redhat.com>, Richard Fowles <fowles@inreach.com>
+Subject: Re: [PATCH 00/21] perf, c2c: Add new tool to analyze cacheline
+ contention on NUMA systems
+Message-ID: <20140211110820.GV9987@twins.programming.kicks-ass.net>
+References: <1392053356-23024-1-git-send-email-dzickus@redhat.com>
+ <20140210212955.GC5002@laptop.programming.kicks-ass.net>
+ <CABPqkBRzvfcdKGG4yY9q1PmtVL5Z=9H1RzHg8QDMN42a7=AF6A@mail.gmail.com>
+ <20140211071401.GG27965@twins.programming.kicks-ass.net>
+ <CABPqkBRn+AVUA-KTx-JQ28j1NhE4pDQe5vjb5NKGx0jrZq8g_Q@mail.gmail.com>
+ <20140211105217.GS9987@twins.programming.kicks-ass.net>
+ <CABPqkBROriDQa5-b-w45zV+2gS94oEW1c_bYwGmYAeYcqPoUog@mail.gmail.com>
+ <20140211110242.GU9987@twins.programming.kicks-ass.net>
+ <CABPqkBQhUCUOszQzBJZd_pwX-nLf6y=0X-+swPi0pE3ivRpVcg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBQhUCUOszQzBJZd_pwX-nLf6y=0X-+swPi0pE3ivRpVcg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, den 10.02.2014, 15:34 +0100 schrieb Philipp Zabel:
-> The ARM, PU, and SOC LDOs in the i.MX6 PMU can completely gate
-> their power output. Since power gating is configured by writing
-> zero to the voltage target bitfield,, store a copy of the
-> voltage selector to be restored when reenabling the regulator.
-> 
-> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-> ---
-> Changes since v1:
->  - Added separate regulator_ops for core regulators that can be gated.
->  - Fixed core set_voltage_sel to not enable the regulator whenever a new
->    voltage is selected and get_voltage_sel to return the selected value.
-> ---
->  drivers/regulator/anatop-regulator.c | 76 +++++++++++++++++++++++++++++++++++-
->  1 file changed, 74 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/regulator/anatop-regulator.c b/drivers/regulator/anatop-regulator.c
-> index 862e63e..0c6981b 100644
-> --- a/drivers/regulator/anatop-regulator.c
-> +++ b/drivers/regulator/anatop-regulator.c
-> @@ -34,6 +34,8 @@
->  #define LDO_RAMP_UP_UNIT_IN_CYCLES      64 /* 64 cycles per step */
->  #define LDO_RAMP_UP_FREQ_IN_MHZ         24 /* cycle based on 24M OSC */
->  
-> +#define LDO_POWER_GATE			0x00
-> +
->  struct anatop_regulator {
->  	const char *name;
->  	u32 control_reg;
-> @@ -48,6 +50,7 @@ struct anatop_regulator {
->  	int max_voltage;
->  	struct regulator_desc rdesc;
->  	struct regulator_init_data *initdata;
-> +	int sel;
->  };
->  
->  static int anatop_regmap_set_voltage_sel(struct regulator_dev *reg,
-> @@ -97,14 +100,68 @@ static int anatop_regmap_get_voltage_sel(struct regulator_dev *reg)
->  	return regulator_get_voltage_sel_regmap(reg);
->  }
->  
-> +static int anatop_regmap_enable(struct regulator_dev *reg)
-> +{
-> +	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
-> +
-> +	return regulator_set_voltage_sel_regmap(reg, anatop_reg->sel);
-> +}
-> +
-> +static int anatop_regmap_disable(struct regulator_dev *reg)
-> +{
-> +	return regulator_set_voltage_sel_regmap(reg, LDO_POWER_GATE);
-> +}
-> +
-> +static int anatop_regmap_is_enabled(struct regulator_dev *reg)
-> +{
-> +	return regulator_get_voltage_sel_regmap(reg) != LDO_POWER_GATE;
-> +}
-> +
-> +static int anatop_regmap_core_set_voltage_sel(struct regulator_dev *reg,
-> +					      unsigned selector)
-> +{
-> +	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
-> +	int ret;
-> +
-> +	if (!anatop_regmap_is_enabled(reg)) {
-> +		anatop_reg->sel = selector;
-> +		return 0;
-> +	}
-> +
-> +	ret = regulator_set_voltage_sel_regmap(reg, selector);
-> +	if (!ret)
-> +		anatop_reg->sel = selector;
-> +	return ret;
-> +}
-> +
-> +static int anatop_regmap_core_get_voltage_sel(struct regulator_dev *reg)
-> +{
-> +	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
-> +
-> +	if (!anatop_regmap_is_enabled(reg))
-> +		return anatop_reg->sel;
-> +
-> +	return regulator_get_voltage_sel_regmap(reg);
-> +}
-> +
->  static struct regulator_ops anatop_rops = {
->  	.set_voltage_sel = anatop_regmap_set_voltage_sel,
-> -	.set_voltage_time_sel = anatop_regmap_set_voltage_time_sel,
->  	.get_voltage_sel = anatop_regmap_get_voltage_sel,
->  	.list_voltage = regulator_list_voltage_linear,
->  	.map_voltage = regulator_map_voltage_linear,
->  };
->  
-> +static struct regulator_ops anatop_core_rops = {
-> +	.enable = anatop_regmap_enable,
-> +	.disable = anatop_regmap_disable,
-> +	.is_enabled = anatop_regmap_is_enabled,
-> +	.set_voltage_sel = anatop_regmap_core_set_voltage_sel,
-> +	.set_voltage_time_sel = anatop_regmap_set_voltage_time_sel,
-> +	.get_voltage_sel = anatop_regmap_core_get_voltage_sel,
-> +	.list_voltage = regulator_list_voltage_linear,
-> +	.map_voltage = regulator_map_voltage_linear,
-> +};
-> +
->  static int anatop_regulator_probe(struct platform_device *pdev)
->  {
->  	struct device *dev = &pdev->dev;
-> @@ -116,6 +173,7 @@ static int anatop_regulator_probe(struct platform_device *pdev)
->  	struct regulator_init_data *initdata;
->  	struct regulator_config config = { };
->  	int ret = 0;
-> +	u32 val;
->  
->  	initdata = of_get_regulator_init_data(dev, np);
->  	sreg = devm_kzalloc(dev, sizeof(*sreg), GFP_KERNEL);
-> @@ -125,7 +183,6 @@ static int anatop_regulator_probe(struct platform_device *pdev)
->  	sreg->name = of_get_property(np, "regulator-name", NULL);
->  	rdesc = &sreg->rdesc;
->  	rdesc->name = sreg->name;
-> -	rdesc->ops = &anatop_rops;
->  	rdesc->type = REGULATOR_VOLTAGE;
->  	rdesc->owner = THIS_MODULE;
->  
-> @@ -197,6 +254,21 @@ static int anatop_regulator_probe(struct platform_device *pdev)
->  	config.of_node = pdev->dev.of_node;
->  	config.regmap = sreg->anatop;
->  
-> +	/* Only core regulators have the ramp up delay configuration. */
-> +	if (sreg->control_reg && sreg->delay_bit_width) {
-> +		rdesc->ops = &anatop_core_rops;
-> +
-> +		ret = regmap_read(config.regmap, rdesc->vsel_reg, &val);
-> +		if (ret) {
-> +			dev_err(dev, "failed to read initial state\n");
-> +			goto anatop_probe_end;
+On Tue, Feb 11, 2014 at 12:04:23PM +0100, Stephane Eranian wrote:
+> >> How do you know that load at addr 0x1000 is accessing variable bar?
+> >> The IP gives you line number, and then what?
+> >> I think dwarf has the mapping regs -> variable and yes, the type info.
+> >> But I am not sure that's enough.
+> >
+> > Ah, but if you have the instruction, you can decode it and obtain the
+> > reg and thus type-info, no?
+> >
+> But on x86, you can load directly from memory, you'd only have the
+> target reg for the load. Not enough.
 
-Sorry, this doesn't exist anymore in v3.14-rc1. I'll replace it with
-"return ret;" for v3.
+But if you load an immediate, you should be able to find it in the
+symbol table.
 
-> +		}
-> +
-> +		sreg->sel = (val & rdesc->vsel_mask) >> sreg->vol_bit_shift;
-> +	} else {
-> +		rdesc->ops = &anatop_rops;
-> +	}
-> +
->  	/* register regulator */
->  	rdev = devm_regulator_register(dev, rdesc, &config);
->  	if (IS_ERR(rdev)) {
-
-regards
-Philipp
-
+Any other load will have a register base and will thus have type-info
+therefrom.
