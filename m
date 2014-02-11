@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751760AbaBKJj0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 04:39:26 -0500
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:41565 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750807AbaBKJjY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 04:39:24 -0500
+	id S1751359AbaBKJk5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 04:40:57 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:36790 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750758AbaBKJky (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 04:40:54 -0500
+Message-ID: <52F9F020.6090504@ti.com>
+Date: Tue, 11 Feb 2014 11:40:48 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <20140207165801.GC2107@lst.de>
-References: <20140207165801.GC2107@lst.de>
-Date: Tue, 11 Feb 2014 15:09:23 +0530
-Message-ID: <CAC4Lta0=DojhnvPta5Rj3z61UzoEXO4H78iApa4nhNqmZcU+3g@mail.gmail.com>
-Subject: Re: [PATCH v2] powerpc ticket locks
-From: Raghavendra KT <raghavendra.kt.linux@gmail.com>
-To: Torsten Duwe <duwe@lst.de>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Scott Wood <scottwood@freescale.com>, Tom Musta <tommusta@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linuxppc-dev@lists.ozlabs.org,
-        Raghavendra KT <raghavendra.kt@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Colin King <colin.king@canonical.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH][v2] mfd: omap-usb-tll: fix cppcheck sizeof warning
+References: <1392111533-23053-1-git-send-email-colin.king@canonical.com>
+In-Reply-To: <1392111533-23053-1-git-send-email-colin.king@canonical.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 7, 2014 at 10:28 PM, Torsten Duwe <duwe@lst.de> wrote:
-> Ticket locks for ppc, version 2. Changes since v1:
-> * The atomically exchanged entity is always 32 bits.
-> * asm inline string variations thus removed.
-> * Carry the additional holder hint only #if defined(CONFIG_PPC_SPLPAR)
->
-> Signed-off-by: Torsten Duwe <duwe@suse.de>
-> --
-[...]
-> +static __always_inline void arch_spin_lock(arch_spinlock_t *lock)
->  {
-> +       register struct __raw_tickets old, tmp,
-> +               inc = { .tail = TICKET_LOCK_INC };
-> +
->         CLEAR_IO_SYNC;
-> -       while (1) {
-> -               if (likely(__arch_spin_trylock(lock) == 0))
-> -                       break;
-> +       __asm__ __volatile__(
-> +"1:    lwarx   %0,0,%4         # arch_spin_lock\n"
-> +"      add     %1,%3,%0\n"
-> +       PPC405_ERR77(0, "%4")
-> +"      stwcx.  %1,0,%4\n"
-> +"      bne-    1b"
-> +       : "=&r" (old), "=&r" (tmp), "+m" (lock->tickets)
-> +       : "r" (inc), "r" (&lock->tickets)
-> +       : "cc");
-> +
-> +       if (likely(old.head == old.tail))
-> +               goto out;
-> +
-> +       for (;;) {
-> +               unsigned count = 100;
+On 02/11/2014 11:38 AM, Colin King wrote:
+> From: Colin Ian King <colin.king@canonical.com>
+> 
+> Static analysis from cppcheck issued the following warning:
+> 
+> [drivers/mfd/omap-usb-tll.c:255]: (warning) Found calculation
+>   inside sizeof().
+> 
+> The current size calculation is not obvious and is easy to
+> miscomprehend, so re-work the size of the allocation based
+> on the size of the struct pointer and quantity to allocate.
+> 
+> Signed-off-by: Colin Ian King <colin.king@canonical.com>
+> ---
+>  drivers/mfd/omap-usb-tll.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
+> index 5ee50f7..532eacab 100644
+> --- a/drivers/mfd/omap-usb-tll.c
+> +++ b/drivers/mfd/omap-usb-tll.c
+> @@ -252,7 +252,7 @@ static int usbtll_omap_probe(struct platform_device *pdev)
+>  		break;
+>  	}
+>  
+> -	tll->ch_clk = devm_kzalloc(dev, sizeof(struct clk * [tll->nch]),
+> +	tll->ch_clk = devm_kzalloc(dev, sizeof(struct clk *) * tll->nch,
+>  						GFP_KERNEL);
+>  	if (!tll->ch_clk) {
+>  		ret = -ENOMEM;
+> 
 
-I am sure you wanted to tune the total loops to typical lock holding time ...
+Thanks for the patch Colin.
+
+Acked-by: Roger Quadros <rogerq@ti.com>
+
+--
+cheers,
+-roger
