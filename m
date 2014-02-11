@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753897AbaBKTHZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:07:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40229 "EHLO
+	id S1755242AbaBKTwE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:52:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40249 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753587AbaBKTHW (ORCPT
+	with ESMTP id S1753895AbaBKTHZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:07:22 -0500
+	Tue, 11 Feb 2014 14:07:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 3.12 104/107] timekeeping: Fix missing timekeeping_update in suspend path
-Date: Tue, 11 Feb 2014 11:06:10 -0800
-Message-Id: <20140211184751.162860464@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.12 072/107] drm/radeon: disable ss on DP for DCE3.x
+Date: Tue, 11 Feb 2014 11:05:38 -0800
+Message-Id: <20140211184750.247331311@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -32,46 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John Stultz <john.stultz@linaro.org>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 330a1617b0a6268d427aa5922c94d082b1d3e96d upstream.
+commit d8e24525094200601236fa64a54cf73e3d682f2e upstream.
 
-Since 48cdc135d4840 (Implement a shadow timekeeper), we have to
-call timekeeping_update() after any adjustment to the timekeeping
-structure in order to make sure that any adjustments to the structure
-persist.
+Seems to cause problems with certain DP monitors.
 
-In the timekeeping suspend path, we udpate the timekeeper
-structure, so we should be sure to update the shadow-timekeeper
-before releasing the timekeeping locks. Currently this isn't done.
+Bug:
+https://bugs.freedesktop.org/show_bug.cgi?id=40699
 
-In most cases, the next time related code to run would be
-timekeeping_resume, which does update the shadow-timekeeper, but
-in an abundence of caution, this patch adds the call to
-timekeeping_update() in the suspend path.
-
-Cc: Sasha Levin <sasha.levin@oracle.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/time/timekeeping.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/gpu/drm/radeon/atombios_crtc.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -1024,6 +1024,8 @@ static int timekeeping_suspend(void)
- 		timekeeping_suspend_time =
- 			timespec_add(timekeeping_suspend_time, delta_delta);
- 	}
-+
-+	timekeeping_update(tk, TK_MIRROR);
- 	write_seqcount_end(&timekeeper_seq);
- 	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
- 
+--- a/drivers/gpu/drm/radeon/atombios_crtc.c
++++ b/drivers/gpu/drm/radeon/atombios_crtc.c
+@@ -938,11 +938,14 @@ static bool atombios_crtc_prepare_pll(st
+ 							radeon_atombios_get_ppll_ss_info(rdev,
+ 											 &radeon_crtc->ss,
+ 											 ATOM_DP_SS_ID1);
+-				} else
++				} else {
+ 					radeon_crtc->ss_enabled =
+ 						radeon_atombios_get_ppll_ss_info(rdev,
+ 										 &radeon_crtc->ss,
+ 										 ATOM_DP_SS_ID1);
++				}
++				/* disable spread spectrum on DCE3 DP */
++				radeon_crtc->ss_enabled = false;
+ 			}
+ 			break;
+ 		case ATOM_ENCODER_MODE_LVDS:
 
 
