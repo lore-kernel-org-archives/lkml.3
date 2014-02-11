@@ -1,77 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752358AbaBKBjK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 20:39:10 -0500
-Received: from smtprelay0007.hostedemail.com ([216.40.44.7]:36937 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751970AbaBKBjH (ORCPT
+	id S1752311AbaBKBqB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 20:46:01 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:37998 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752123AbaBKBp6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 20:39:07 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1960:2194:2199:2393:2559:2562:2741:2828:2901:2914:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3874:4321:5007:7652:7904:10004:10400:10848:11026:11232:11473:11658:11914:12043:12347:12438:12517:12519:12555:12679:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: color71_6c0bd4454ff1f
-X-Filterd-Recvd-Size: 2266
-Message-ID: <1392082740.2507.49.camel@joe-AO722>
-Subject: Re: [PATCH v2] ieee80211: Print human-readable disassoc/deauth
- reason codes
-From: Joe Perches <joe@perches.com>
-To: Calvin Owens <jcalvinowens@gmail.com>
-Cc: Johannes Berg <johannes@sipsolutions.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 10 Feb 2014 17:39:00 -0800
-In-Reply-To: <20140211012523.GA2739@gmail.com>
-References: <1391651088-31785-1-git-send-email-jcalvinowens@gmail.com>
-	 <1391661863.30094.56.camel@joe-AO722>
-	 <1392030546.4128.11.camel@jlt4.sipsolutions.net>
-	 <1392050359.2507.10.camel@joe-AO722> <20140211012523.GA2739@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 10 Feb 2014 20:45:58 -0500
+From: Kent Overstreet <kmo@daterainc.com>
+To: axboe@kernel.dk
+Cc: clm@fb.com, rjones@redhat.com, linux-fsdevel@vger.kernel.org,
+        neilb@suse.de, linux-kernel@vger.kernel.org,
+        Kent Overstreet <kmo@daterainc.com>
+Subject: [PATCH] block: Fix cloning of discard/write same bios
+Date: Mon, 10 Feb 2014 17:45:50 -0800
+Message-Id: <1392083150-11670-1-git-send-email-kmo@daterainc.com>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-02-10 at 19:25 -0600, Calvin Owens wrote:
-> Create a function to return a descriptive string for each reason code,
-> and print that instead of the numeric value in the kernel log. These
-> codes are easily found on popular search engines, but one is generally
-> not able to access the internet when dealing with wireless connectivity
-> issues.
-> 
-> Changes since v1: Refactored array of strings into switch statement,
-> print numeric code in addition to string.
+Immutable biovecs changed the way bio segments are treated in such a way that
+bio_for_each_segment() cannot now do what we want for discard/write same bios,
+since bi_size means something completely different for them.
 
-trivia:
+Fortunately discard and write same bios never have more than a single biovec, so
+bio_for_each_segment() is unnecessary and not terribly meaningful for them, but
+we still have to special case them in a few places.
 
-> +const char *ieee80211_get_reason_code_string(u16 reason_code)
-> +{
-> +	enum ieee80211_reasoncode r = reason_code;
+Signed-off-by: Kent Overstreet <kmo@daterainc.com>
+---
+ fs/bio.c            | 15 ++++++++++-----
+ include/linux/bio.h | 11 +++++++++++
+ 2 files changed, 21 insertions(+), 5 deletions(-)
 
-what good does this temporary do?
-
-> +	switch(r) {
-
-space after switch please.
-
-> +	case WLAN_REASON_UNSPECIFIED: return "UNSPECIFIED";
-> +	case WLAN_REASON_PREV_AUTH_NOT_VALID: return "PREV_AUTH_NOT_VALID";
-> +	case WLAN_REASON_DEAUTH_LEAVING: return "DEAUTH_LEAVING";
-
-This seems a bit too wall of text to me.
-
-Maybe a simplifying macro like:
-
-#define case_WLAN(type)				\
-	case WLAN_REASON_##type: return #type
-
-and use:
-	switch (reason_code) {
-	case_WLAN(UNSPECIFIED);
-	case_WLAN(PREV_AUTH_NOT_VALID);
-
-etc...
-
+diff --git a/fs/bio.c b/fs/bio.c
+index 75c49a3822..8754e7b6eb 100644
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -611,7 +611,6 @@ EXPORT_SYMBOL(bio_clone_fast);
+ struct bio *bio_clone_bioset(struct bio *bio_src, gfp_t gfp_mask,
+ 			     struct bio_set *bs)
+ {
+-	unsigned nr_iovecs = 0;
+ 	struct bvec_iter iter;
+ 	struct bio_vec bv;
+ 	struct bio *bio;
+@@ -638,10 +637,7 @@ struct bio *bio_clone_bioset(struct bio *bio_src, gfp_t gfp_mask,
+ 	 *    __bio_clone_fast() anyways.
+ 	 */
+ 
+-	bio_for_each_segment(bv, bio_src, iter)
+-		nr_iovecs++;
+-
+-	bio = bio_alloc_bioset(gfp_mask, nr_iovecs, bs);
++	bio = bio_alloc_bioset(gfp_mask, bio_segments(bio_src), bs);
+ 	if (!bio)
+ 		return NULL;
+ 
+@@ -650,9 +646,18 @@ struct bio *bio_clone_bioset(struct bio *bio_src, gfp_t gfp_mask,
+ 	bio->bi_iter.bi_sector	= bio_src->bi_iter.bi_sector;
+ 	bio->bi_iter.bi_size	= bio_src->bi_iter.bi_size;
+ 
++	if (bio->bi_rw & REQ_DISCARD)
++		goto integrity_clone;
++
++	if (bio->bi_rw & REQ_WRITE_SAME) {
++		bio->bi_io_vec[bio->bi_vcnt++] = bio_src->bi_io_vec[0];
++		goto integrity_clone;
++	}
++
+ 	bio_for_each_segment(bv, bio_src, iter)
+ 		bio->bi_io_vec[bio->bi_vcnt++] = bv;
+ 
++integrity_clone:
+ 	if (bio_integrity(bio_src)) {
+ 		int ret;
+ 
+diff --git a/include/linux/bio.h b/include/linux/bio.h
+index 70654521da..05d2a0392f 100644
+--- a/include/linux/bio.h
++++ b/include/linux/bio.h
+@@ -250,6 +250,17 @@ static inline unsigned bio_segments(struct bio *bio)
+ 	struct bio_vec bv;
+ 	struct bvec_iter iter;
+ 
++	/*
++	 * We special case discard/write same, because they interpret bi_size
++	 * differently:
++	 */
++
++	if (bio->bi_rw & REQ_DISCARD)
++		return 1;
++
++	if (bio->bi_rw & REQ_WRITE_SAME)
++		return 1;
++
+ 	bio_for_each_segment(bv, bio, iter)
+ 		segs++;
+ 
+-- 
+1.8.5.3
 
