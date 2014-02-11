@@ -1,167 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199AbaBKG4N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 01:56:13 -0500
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:38738 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751869AbaBKG4G (ORCPT
+	id S1752727AbaBKG6I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 01:58:08 -0500
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:2661 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752211AbaBKG6F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 01:56:06 -0500
-From: Michal Simek <michal.simek@xilinx.com>
-To: linux-kernel@vger.kernel.org, monstr@monstr.eu
-Cc: Guenter Roeck <linux@roeck-us.net>, Wim Van Sebroeck <wim@iguana.be>,
-        linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v2 03/11] watchdog: xilinx: Simplify probe and remove functions
-Date: Tue, 11 Feb 2014 07:55:46 +0100
-Message-Id: <619599eff39de3551d53c75dd6c95678d9a81df1.1392101734.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-In-Reply-To: <f298edd222c57b0ce1ebad3ae50c3f715406c631.1392101734.git.michal.simek@xilinx.com>
-References: <f298edd222c57b0ce1ebad3ae50c3f715406c631.1392101734.git.michal.simek@xilinx.com>
-In-Reply-To: <f298edd222c57b0ce1ebad3ae50c3f715406c631.1392101734.git.michal.simek@xilinx.com>
-References: <f298edd222c57b0ce1ebad3ae50c3f715406c631.1392101734.git.michal.simek@xilinx.com>
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-9498-1392101762-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	Tue, 11 Feb 2014 01:58:05 -0500
+Message-ID: <52F9C95C.7050009@marvell.com>
+Date: Tue, 11 Feb 2014 14:55:24 +0800
+From: Jane Li <jiel@marvell.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: <tianxf@marvell.com>, <fswu@marvell.com>, Toshi Kani <toshi.kani@hp.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Joe Perches <joe@perches.com>, Tejun Heo <tj@kernel.org>
+Subject: Re: Question about console_lock lockdep after involving console_lock_dep_map
+References: <52F5BFA3.2000306@marvell.com> <20140209154525.GI17001@phenom.ffwll.local>
+In-Reply-To: <20140209154525.GI17001@phenom.ffwll.local>
+Content-Type: text/plain; charset="us-ascii"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-02-11_03:2014-02-10,2014-02-11,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1402100242
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
 
---=_mimegpg-monstr-desktop-9498-1392101762-0001
+On 02/09/2014 11:45 PM, Daniel Vetter wrote:
+> Adding many more people and lkml to the cc list. Please don't poke people
+> in private, but always cc a relevant mailing list.
+>
+> On Sat, Feb 8, 2014 at 6:24 AM, Jane Li <jiel@marvell.com> wrote:
+>> Hi Danial Vetter,
+>>
+>> I found you had added console_lock_dep_map in commit daee7797 (console:
+>> implement lockdep support for console_lock). I encounter another circular
+>> lock warning related to it.
+>>
+>> Sequence:
+>>
+>>          enter suspend ->  resume ->  plug-out CPUx (echo 0 > cpux/online)
+>>
+>> Then, lockdep will show warning as following:
+>>
+>> ======================================================
+>> [ INFO: possible circular locking dependency detected ]
+>> 3.10.0 #2 Tainted: G           O
+>> -------------------------------------------------------
+>> sh/1271 is trying to acquire lock:
+>>   (console_lock){+.+.+.}, at: [<c06ebf7c>] console_cpu_notify+0x20/0x2c
+>> but task is already holding lock:
+>> (cpu_hotplug.lock){+.+.+.}, at: [<c012b4e8>] cpu_hotplug_begin+0x2c/0x58
+>> which lock already depends on the new lock.
+>>
+>> the existing dependency chain (in reverse order) is:
+>> -> #2 (cpu_hotplug.lock){+.+.+.}:
+>> [<c017bb7c>] lock_acquire+0x98/0x12c
+>> [<c06f5014>] mutex_lock_nested+0x50/0x3d8
+>> [<c012b4e8>] cpu_hotplug_begin+0x2c/0x58
+>> [<c06ebfac>] _cpu_up+0x24/0x154
+>> [<c06ec140>] cpu_up+0x64/0x84
+>> [<c0981834>] smp_init+0x9c/0xd4
+>> [<c0973880>] kernel_init_freeable+0x78/0x1c8
+>> [<c06e7f40>] kernel_init+0x8/0xe4
+>> [<c010eec8>] ret_from_fork+0x14/0x2c
+>>
+>> -> #1 (cpu_add_remove_lock){+.+.+.}:
+>> [<c017bb7c>] lock_acquire+0x98/0x12c
+>> [<c06f5014>] mutex_lock_nested+0x50/0x3d8
+>> [<c012b758>] disable_nonboot_cpus+0x8/0xe8
+>> [<c016b83c>] suspend_devices_and_enter+0x214/0x448
+>> [<c016bc54>] pm_suspend+0x1e4/0x284
+>> [<c016bdcc>] try_to_suspend+0xa4/0xbc
+>> [<c0143848>] process_one_work+0x1c4/0x4fc
+>> [<c0143f80>] worker_thread+0x138/0x37c
+>> [<c014aaf8>] kthread+0xa4/0xb0
+>> [<c010eec8>] ret_from_fork+0x14/0x2c
+>>
+>> -> #0 (console_lock){+.+.+.}:
+>> [<c017b5d0>] __lock_acquire+0x1b38/0x1b80
+>> [<c017bb7c>] lock_acquire+0x98/0x12c
+>> [<c01288c4>] console_lock+0x54/0x68
+>> [<c06ebf7c>] console_cpu_notify+0x20/0x2c
+>> [<c01501d4>] notifier_call_chain+0x44/0x84
+>> [<c012b448>] __cpu_notify+0x2c/0x48
+>> [<c012b5b0>] cpu_notify_nofail+0x8/0x14
+>> [<c06e81bc>] _cpu_down+0xf4/0x258
+>> [<c06e8344>] cpu_down+0x24/0x40
+>> [<c06e921c>] store_online+0x30/0x74
+>> [<c03b7298>] dev_attr_store+0x18/0x24
+>> [<c025fc5c>] sysfs_write_file+0x16c/0x19c
+>> [<c0207a98>] vfs_write+0xb4/0x190
+>> [<c0207e58>] SyS_write+0x3c/0x70
+>> [<c010ee00>] ret_fastChain exists of:
+>>    console_lock --> cpu_add_remove_lock --> cpu_hotplug.lock
+>>
+>> Possible unsafe locking scenario:
+>>        CPU0                    CPU1
+>>        ----                    ----
+>> lock(cpu_hotplug.lock);
+>>                                lock(cpu_add_remove_lock);
+>>                                lock(cpu_hotplug.lock);
+>> lock(console_lock);
+>>   *** DEADLOCK ***
+>>
+>>
+>>
+>> Analyze this information, there are three locks involved in two sequence:
+>>
+>>          pm suspend: console_lock (@suspend_console()) -> cpu_add_remove_lock
+>> (@disable_nonboot_cpus()) -> cpu_hotplug.lock (@_cpu_down())
+>>
+>>          Plug-out CPUx: cpu_add_remove_lock (@(cpu_down()) ->
+>> cpu_hotplug.lock (@_cpu_down()) -> console_lock (@console_cpu_notify()) =>
+>> Lockdeps prints warning log.
+>>
+>>
+>> I check code and there should be not real deadlock, as flag of
+>> console_suspended can protect this.
+>>
+>> Do you know how to avoid this warning?
+> I think the right approach here is to add a new function to do the console
+> flushing:
+>
+> /**
+>   * console_flush - flush dmesg if console isn't suspended
+>   *
+>   * console_unlock always flushes the dmesg buffer, so just try to
+>   * grab&drop the console lock. If that fails we know that the current
+>   * holder will eventually drop the console lock and so flush the dmesg
+>   * buffers at the earliest possible time.
+>   */
+> void console_flush(void)
+> {
+> 	if (console_trylock())
+> 		console_unlock();
+> }
+>
+> Then use that instead of the unconditional console_lock/unlock pair int
+> the console_cpu_notitifier. Since that's practically the patch already
+> feel free to smash a Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+> on top if it works.
+>
+> Cheers, Daniel
+>
+Do same test as you suggested, there is no warning now.
 
-Use devm_ helper function to simplify probe and error path.
-Move ioremap to the beginning of probe function.
+I have updated the patch named "printk: fix one circular lockdep warning about console_lock".
 
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
----
+Thanks!
 
-Changes in v2: None
+Best Regards,
+Jane
 
- drivers/watchdog/of_xilinx_wdt.c | 41 +++++++++-------------------------------
- 1 file changed, 9 insertions(+), 32 deletions(-)
-
-diff --git a/drivers/watchdog/of_xilinx_wdt.c b/drivers/watchdog/of_xilinx_wdt.c
-index aca9bab..7f371ed 100644
---- a/drivers/watchdog/of_xilinx_wdt.c
-+++ b/drivers/watchdog/of_xilinx_wdt.c
-@@ -12,6 +12,7 @@
-
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-
-+#include <linux/err.h>
- #include <linux/module.h>
- #include <linux/types.h>
- #include <linux/kernel.h>
-@@ -44,7 +45,6 @@
- #define PFX WATCHDOG_NAME ": "
-
- struct xwdt_device {
--	struct resource  res;
- 	void __iomem *base;
- 	u32 wdt_interval;
- };
-@@ -159,9 +159,15 @@ static int xwdt_probe(struct platform_device *pdev)
- 	int rc;
- 	u32 *tmptr;
- 	u32 *pfreq;
-+	struct resource *res;
-
- 	no_timeout = 0;
-
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	xdev.base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(xdev.base))
-+		return PTR_ERR(xdev.base);
-+
- 	pfreq = (u32 *)of_get_property(pdev->dev.of_node,
- 					"clock-frequency", NULL);
-
-@@ -170,12 +176,6 @@ static int xwdt_probe(struct platform_device *pdev)
- 		no_timeout = 1;
- 	}
-
--	rc = of_address_to_resource(pdev->dev.of_node, 0, &xdev.res);
--	if (rc) {
--		pr_warn("invalid address!\n");
--		return rc;
--	}
--
- 	tmptr = (u32 *)of_get_property(pdev->dev.of_node,
- 					"xlnx,wdt-interval", NULL);
- 	if (tmptr == NULL) {
-@@ -199,50 +199,27 @@ static int xwdt_probe(struct platform_device *pdev)
- 	if (!no_timeout)
- 		timeout = 2 * ((1<<xdev.wdt_interval) / *pfreq);
-
--	if (!request_mem_region(xdev.res.start,
--			xdev.res.end - xdev.res.start + 1, WATCHDOG_NAME)) {
--		rc = -ENXIO;
--		pr_err("memory request failure!\n");
--		goto err_out;
--	}
--
--	xdev.base = ioremap(xdev.res.start, xdev.res.end - xdev.res.start + 1);
--	if (xdev.base == NULL) {
--		rc = -ENOMEM;
--		pr_err("ioremap failure!\n");
--		goto release_mem;
--	}
--
- 	rc = xwdt_selftest();
- 	if (rc == XWT_TIMER_FAILED) {
- 		pr_err("SelfTest routine error!\n");
--		goto unmap_io;
-+		return rc;
- 	}
-
- 	rc = watchdog_register_device(&xilinx_wdt_wdd);
- 	if (rc) {
- 		pr_err("cannot register watchdog (err=%d)\n", rc);
--		goto unmap_io;
-+		return rc;
- 	}
-
- 	dev_info(&pdev->dev, "Xilinx Watchdog Timer at %p with timeout %ds\n",
- 		 xdev.base, timeout);
-
- 	return 0;
--
--unmap_io:
--	iounmap(xdev.base);
--release_mem:
--	release_mem_region(xdev.res.start, resource_size(&xdev.res));
--err_out:
--	return rc;
- }
-
- static int xwdt_remove(struct platform_device *dev)
- {
- 	watchdog_unregister_device(&xilinx_wdt_wdd);
--	iounmap(xdev.base);
--	release_mem_region(xdev.res.start, resource_size(&xdev.res));
-
- 	return 0;
- }
---
-1.8.2.3
-
-
---=_mimegpg-monstr-desktop-9498-1392101762-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAlL5yYIACgkQykllyylKDCETygCgkIZLHS/Z10YzTUzuZ6vxHe29
-+rQAn3IUkv/Kf/Y8STdngQGB7jIKgZ2o
-=CB+W
------END PGP SIGNATURE-----
-
---=_mimegpg-monstr-desktop-9498-1392101762-0001--
