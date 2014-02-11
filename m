@@ -1,51 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752571AbaBKQkN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 11:40:13 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:10870 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751358AbaBKQkK (ORCPT
+	id S1752786AbaBKQka (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 11:40:30 -0500
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:10206 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751358AbaBKQk1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 11:40:10 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX198r27uTit0za650f+bSEesJc9MoXYI8h8=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 4F929524763
-Date: Tue, 11 Feb 2014 11:39:53 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Josh Cartwright <joshc@codeaurora.org>
-Cc: Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/8] bus: mvebu-mbus: make use of
- of_find_matching_node_and_match
-Message-ID: <20140211163953.GZ8533@titan.lakedaemon.net>
-References: <1392135847-30791-1-git-send-email-joshc@codeaurora.org>
- <1392135847-30791-3-git-send-email-joshc@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392135847-30791-3-git-send-email-joshc@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 11 Feb 2014 11:40:27 -0500
+Message-ID: <1392136436.5612.131.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 01/51] CPU hotplug: Provide lockless versions of
+ callback registration functions
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "paulus@samba.org" <paulus@samba.org>, "oleg@redhat.com" <oleg@redhat.com>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "tj@kernel.org" <tj@kernel.org>,
+        "walken@google.com" <walken@google.com>,
+        "ego@linux.vnet.ibm.com" <ego@linux.vnet.ibm.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Date: Tue, 11 Feb 2014 09:33:56 -0700
+In-Reply-To: <52F9ED11.5010800@linux.vnet.ibm.com>
+References: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com>
+	 <20140205220447.19080.9460.stgit@srivatsabhat.in.ibm.com>
+	 <1392081980.5612.123.camel@misato.fc.hp.com>
+	 <52F9ED11.5010800@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 10:24:00AM -0600, Josh Cartwright wrote:
-> Instead of the of_find_matching_node()/of_match_node() pair, which requires two
-> iterations through the match table, make use of of_find_matching_node_and_match(),
-> which only iterates through the table once.
+On Tue, 2014-02-11 at 09:27 +0000, Srivatsa S. Bhat wrote:
+> On 02/11/2014 06:56 AM, Toshi Kani wrote:
+> > On Thu, 2014-02-06 at 03:34 +0530, Srivatsa S. Bhat wrote:
+> >  :
+> [...]
+> >>
+> >> Also, since cpu_maps_update_begin/done() is like a super-set of
+> >> get/put_online_cpus(), the former naturally protects the critical sections
+> >> from concurrent hotplug operations.
+> > 
+> > get/put_online_cpus() is a reader-lock and concurrent executions are
+> > allowed among the readers.  They won't be serialized until a cpu
+> > online/offline operation begins.  By replacing this lock with
+> > cpu_maps_update_begin/done(), we now serialize all readers.  Isn't that
+> > too restrictive?
 > 
-> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
-> ---
->  drivers/bus/mvebu-mbus.c | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
+> That's an excellent line of thought! It doesn't really hurt at the moment
+> because the for_each_online_cpu() kind of loop that the initcalls of various
+> subsystems run (before registering the notifier) are really tiny (typically
+> the loop runs for just 1 cpu, the boot-cpu). In other words, this change
+> represents a tiny increase in the critical section size; so its effect
+> shouldn't be noticeable. (Note that in the old model, register_cpu_notifier()
+> already takes the cpu_add_remove_lock, so they will be serialized at that
+> point, and this is necessary).
+> 
+> However, going forward, when we start using more aggressive CPU onlining
+> techniques during boot (such as parallel CPU hotplug), the issue you pointed
+> out can become a real bottleneck, since for_each_online_cpu() can become
+> quite a large loop, and hence explicit (and unnecessary) mutual exclusion
+> will start hurting.
+>  
+> >  Can we fix the issue with CPU_POST_DEAD and continue
+> > to use get_online_cpus()?
+> > 
+> 
+> We don't want to get rid of CPU_POST_DEAD, so unfortunately we can't continue
+> to use get_online_cpus(). However, I am thinking of introducing a Reader-Writer
+> semaphore for this purpose, so that the registration routines can run in
+> parallel most of the time. (Basically, the rw-semaphore is like
+> get/put_online_cpus(), except that it protects the full hotplug critical section,
+> including the CPU_POST_DEAD stage.)
 
-Acked-by: Jason Cooper <jason@lakedaemon.net>
+I agree that introducing a reader-writer semaphore allows concurrent
+executions.  Adding yet another hotplug lock is a bit unfortunate,
+though.
 
-thx,
+This may be a dumb question, but can't we simply do this way?
 
-Jason.
+        get_online_cpus();
+
+        for_each_online_cpu(cpu)
+                init_cpu(cpu);
+
+        put_online_cpus();
+
+        register_cpu_notifier(&foobar_cpu_notifier);
+
+Thanks,
+-Toshi
+ 
+
+
