@@ -1,62 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751415AbaBKJZY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 04:25:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38010 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750809AbaBKJZV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 04:25:21 -0500
-Date: Tue, 11 Feb 2014 09:25:14 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: David Rientjes <rientjes@google.com>
-Cc: Luiz Capitulino <lcapitulino@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, mtosatti@redhat.com,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 0/4] hugetlb: add hugepagesnid= command-line option
-Message-ID: <20140211092514.GH6732@suse.de>
-References: <1392053268-29239-1-git-send-email-lcapitulino@redhat.com>
- <alpine.DEB.2.02.1402101851190.3447@chino.kir.corp.google.com>
+	id S1751578AbaBKJZe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 04:25:34 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:57163 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809AbaBKJZ2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 04:25:28 -0500
+Message-ID: <52F9EC39.40504@huawei.com>
+Date: Tue, 11 Feb 2014 17:24:09 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1402101851190.3447@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHSET cgroup/for-3.15] cgroup: convert to kernfs
+References: <1390953285-16360-1-git-send-email-tj@kernel.org>
+In-Reply-To: <1390953285-16360-1-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 06:54:20PM -0800, David Rientjes wrote:
-> On Mon, 10 Feb 2014, Luiz Capitulino wrote:
+On 2014/1/29 7:54, Tejun Heo wrote:
+> Hello,
 > 
-> > HugeTLB command-line option hugepages= allows the user to specify how many
-> > huge pages should be allocated at boot. On NUMA systems, this argument
-> > automatically distributes huge pages allocation among nodes, which can
-> > be undesirable.
-> > 
+> cgroup filesystem code was derived from the original sysfs
+> implementation which was heavily intertwined with vfs objects and
+> locking with the goal of re-using the existing vfs infrastructure.
+> That experiment turned out rather disastrous and sysfs switched, a
+> long time ago, to distributed filesystem model where a separate
+> representation is maintained which is queried by vfs.  Unfortunately,
+> cgroup stuck with the failed experiment all these years and
+> accumulated even more problems over time.
 > 
-> And when hugepages can no longer be allocated on a node because it is too 
-> small, the remaining hugepages are distributed over nodes with memory 
-> available, correct?
+> Locking and object lifetime management being entangled with vfs is
+> probably the most egregious.  vfs was never designed to be misused
+> like this and cgroup ends up jumping through various convoluted
+> dancing to make things work.  Even then, operations across multiple
+> cgroups can't be done safely as it'll deadlock with rename locking.
 > 
-> > The hugepagesnid= option introduced by this commit allows the user
-> > to specify which NUMA nodes should be used to allocate boot-time HugeTLB
-> > pages. For example, hugepagesnid=0,2,2G will allocate two 2G huge pages
-> > from node 0 only. More details on patch 3/4 and patch 4/4.
-> > 
+> Recently, kernfs is separated out from sysfs so that it can be used by
+> users other than sysfs.  This patchset converts cgroup to use kernfs.
+> This simplifies code base quite a bit and allows further cleanups and
+> implementation of features which depend on operating across multiple
+> nodes.
 > 
-> Strange, it would seem better to just reserve as many hugepages as you 
-> want so that you get the desired number on each node and then free the 
-> ones you don't need at runtime.
+> This patchset contains the following 13 patches.
+> 
+>  0001-cgroup-improve-css_from_dir-into-css_tryget_from_dir.patch
+>  0002-cgroup-introduce-cgroup_tree_mutex.patch
+>  0003-cgroup-release-cgroup_mutex-over-file-removals.patch
+>  0004-cgroup-restructure-locking-and-error-handling-in-cgr.patch
+>  0005-cgroup-factor-out-cgroup_setup_root-from-cgroup_moun.patch
+>  0006-cgroup-update-cgroup-name-handling.patch
+>  0007-cgroup-make-cgroup_subsys-base_cftypes-use-cgroup_ad.patch
+>  0008-cgroup-update-the-meaning-of-cftype-max_write_len.patch
+>  0009-cgroup-introduce-cgroup_init-exit_cftypes.patch
+>  0010-cgroup-introduce-cgroup_ino.patch
+>  0011-cgroup-misc-preps-for-kernfs-conversion.patch
+>  0012-cgroup-relocate-functions-in-preparation-of-kernfs-c.patch
+>  0013-cgroup-convert-to-kernfs.patch
+> 
+> 0001 updates css_from_dir() into css_tryget_from_dir() so that the
+> caller doesn't have to worry about RCU locking.
+> 
+> 0002-0004 introduce cgroup_tree_mutex and prepare locking.
+> 
+> 0005-0006 are misc preps.
+> 
+> 0007-0008 update cftype handling in preparation.
+> 
+> 0009-0012 are misc preps.
+> 
+> 0013 converts cgroup to kernfs.
+> 
+> This patchset is on top of
+> 
+>   linus#master 54c0a4b46150 ("Merge branch 'akpm' (incoming from Andrew)")
+> + [1] [PATCHSET cgroup/for-3.14-fixes] cgroup: four misc fixes
+> + [2] [PATCH] arm, pm, vmpressure: add missing slab.h includes
+> + [3] [PATCHSET v2 cgroup/for-3.15] cgroup: drop module support and cgroup_root_mutex
+> + git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-kernfs-cgroup-prep
+> 
+> and also available in the following git branch.
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-kernfs-conversion
+> 
+> diffstat follows.
+> 
+>  block/blk-throttle.c   |    4
+>  block/cfq-iosched.c    |    3
+>  include/linux/cgroup.h |   71 --
+>  kernel/cgroup.c        | 1712 ++++++++++++++++++++-----------------------------
+>  kernel/events/core.c   |   17
+>  mm/memcontrol.c        |   16
+>  mm/memory-failure.c    |    8
+>  7 files changed, 754 insertions(+), 1077 deletions(-)
 > 
 
-Or take a stab at allocating 1G pages at runtime. It would require
-finding properly aligned 1Gs worth of contiguous MAX_ORDER_NR_PAGES at
-runtime. I would expect it would only work very early in the lifetime of
-the system but if the user is willing to use kernel parameters to
-allocate them then it should not be an issue.
+Looks good to me!
 
--- 
-Mel Gorman
-SUSE Labs
+Acked-by: Li Zefan <lizefan@huawei.com>
+
+Will look into remaining patchsets tomorrow.
+
