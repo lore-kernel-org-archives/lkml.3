@@ -1,394 +1,368 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752190AbaBKP3S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 10:29:18 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:56746 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750803AbaBKP3Q (ORCPT
+	id S1752377AbaBKP3e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 10:29:34 -0500
+Received: from 213083164162.static.sonofon.dk ([213.83.164.162]:34689 "EHLO
+	HORWDSPRD01.spectralink.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752274AbaBKP3c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 10:29:16 -0500
-From: Andrey Smirnov <andrew.smirnov@gmail.com>
-To: dmitry.torokhov@gmail.com
-Cc: linux-input@vger.kernel.org, andrew.smirnov@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v4 RESEND] ims-pcu: Add commands supported by the new version of the FW
-Date: Tue, 11 Feb 2014 07:28:40 -0800
-Message-Id: <1392132520-2497-1-git-send-email-andrew.smirnov@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
+	Tue, 11 Feb 2014 10:29:32 -0500
+From: =?UTF-8?q?Stefan=20S=C3=B8rensen?= 
+	<stefan.sorensen@spectralink.com>
+To: richardcochran@gmail.com, grant.likely@linaro.org, robh+dt@kernel.org,
+        mark.rutland@arm.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Cc: =?UTF-8?q?Stefan=20S=C3=B8rensen?= 
+	<stefan.sorensen@spectralink.com>
+Subject: [PATCH v2 2/2] dp83640: Get pin and master/slave configuration from DT
+Date: Tue, 11 Feb 2014 16:29:22 +0100
+Message-Id: <1392132562-23644-3-git-send-email-stefan.sorensen@spectralink.com>
+X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1392132562-23644-1-git-send-email-stefan.sorensen@spectralink.com>
+References: <1392132562-23644-1-git-send-email-stefan.sorensen@spectralink.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 11 Feb 2014 15:29:31.0127 (UTC) FILETIME=[0F112070:01CF273E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-New version of the PCU firmware supports two new commands:
-  - IMS_PCU_CMD_OFN_SET_CONFIG which allows to write data to the
-  registers of one finger navigation(OFN) chip present on the device
-  - IMS_PCU_CMD_OFN_GET_CONFIG which allows to read data form the
-  registers of said chip.
+This patch adds configuration of the periodic output and external timestamp
+pins available on the dp83640 family of PHYs. It also configures the
+master/slave relationship in a group of PHYs on the same MDIO bus and the pins
+used for clock calibration in the group.
 
-This commit adds two helper functions to use those commands and sysfs
-attributes to use them. It also exposes some OFN configuration
-parameters via sysfs.
+The configuration is retrieved from DT through the properties
+    dp83640,slave
+    dp83640,calibrate-pin
+    dp83640,perout-pins
+    dp83640,extts-pins
+The configuration module parameters are retained as fallback for the non-DT
+case.
 
-Signed-off-by: Andrey Smirnov <andrew.smirnov@gmail.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Since the pin configuration is now stored for each clock device, groups of
+devices on different mdio busses can now have different pin configurations.
+
+Signed-off-by: Stefan Sørensen <stefan.sorensen@spectralink.com>
 ---
- drivers/input/misc/ims-pcu.c | 260 +++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 251 insertions(+), 9 deletions(-)
+ Documentation/devicetree/bindings/net/dp83640.txt |  29 +++++
+ drivers/net/phy/dp83640.c                         | 152 ++++++++++++++++++----
+ 2 files changed, 154 insertions(+), 27 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/net/dp83640.txt
 
-diff --git a/drivers/input/misc/ims-pcu.c b/drivers/input/misc/ims-pcu.c
-index e204f26..0306e8d 100644
---- a/drivers/input/misc/ims-pcu.c
-+++ b/drivers/input/misc/ims-pcu.c
-@@ -51,6 +51,8 @@ struct ims_pcu_backlight {
- #define IMS_PCU_BL_VERSION_LEN		(9 + 1)
- #define IMS_PCU_BL_RESET_REASON_LEN	(2 + 1)
- 
-+#define IMS_PCU_PCU_B_DEVICE_ID		5
+diff --git a/Documentation/devicetree/bindings/net/dp83640.txt b/Documentation/devicetree/bindings/net/dp83640.txt
+new file mode 100644
+index 0000000..b9a57c0
+--- /dev/null
++++ b/Documentation/devicetree/bindings/net/dp83640.txt
+@@ -0,0 +1,29 @@
++Required properties for the National DP83640 ethernet phy:
 +
- #define IMS_PCU_BUF_SIZE		128
- 
- struct ims_pcu {
-@@ -68,6 +70,9 @@ struct ims_pcu {
- 	char bl_version[IMS_PCU_BL_VERSION_LEN];
- 	char reset_reason[IMS_PCU_BL_RESET_REASON_LEN];
- 	int update_firmware_status;
-+	u8 device_id;
++- compatible : Must contain "national,dp83640"
 +
-+	u8 ofn_reg_addr;
- 
- 	struct usb_interface *ctrl_intf;
- 
-@@ -371,6 +376,8 @@ static void ims_pcu_destroy_gamepad(struct ims_pcu *pcu)
- #define IMS_PCU_CMD_GET_DEVICE_ID	0xae
- #define IMS_PCU_CMD_SPECIAL_INFO	0xb0
- #define IMS_PCU_CMD_BOOTLOADER		0xb1	/* Pass data to bootloader */
-+#define IMS_PCU_CMD_OFN_SET_CONFIG	0xb3
-+#define IMS_PCU_CMD_OFN_GET_CONFIG	0xb4
- 
- /* PCU responses */
- #define IMS_PCU_RSP_STATUS		0xc0
-@@ -389,6 +396,9 @@ static void ims_pcu_destroy_gamepad(struct ims_pcu *pcu)
- #define IMS_PCU_RSP_GET_DEVICE_ID	0xce
- #define IMS_PCU_RSP_SPECIAL_INFO	0xd0
- #define IMS_PCU_RSP_BOOTLOADER		0xd1	/* Bootloader response */
-+#define IMS_PCU_RSP_OFN_SET_CONFIG	0xd2
-+#define IMS_PCU_RSP_OFN_GET_CONFIG	0xd3
++Optional properties:
 +
++- dp83640,slave: If present, this phy will be slave to another dp83640
++  on the same mdio bus.
++- dp83640,perout-pins : List of the pin pins used for periodic output
++  triggers.
++- dp83640,extts-pins : List of the pin pins used for external event
++  timestamping.
++- dp83640,calibrate-pin : The pin used for master/slave calibration.
++
++Example:
++
++	ethernet-phy@1 {
++		compatible = "national,dp83640", "ethernet-phy-ieee802.3-c22";
++		reg = <1>;
++		dp83640,perout-pins = <2>;
++		dp83640,extts-pins = <3 4 8 9 10 11>;
++		dp83640,calibrate-pin = <1>;
++	};
++
++	ethernet-phy@2 {
++		compatible = "national,dp83640", "ethernet-phy-ieee802.3-c22";
++		reg = <2>;
++		dp83640,slave;
++	};
+diff --git a/drivers/net/phy/dp83640.c b/drivers/net/phy/dp83640.c
+index d4fe95d..a9bd553 100644
+--- a/drivers/net/phy/dp83640.c
++++ b/drivers/net/phy/dp83640.c
+@@ -30,6 +30,7 @@
+ #include <linux/phy.h>
+ #include <linux/ptp_classify.h>
+ #include <linux/ptp_clock_kernel.h>
++#include <linux/of_device.h>
  
- #define IMS_PCU_RSP_EVNT_BUTTONS	0xe0	/* Unsolicited, button state */
- #define IMS_PCU_GAMEPAD_MASK		0x0001ff80UL	/* Bits 7 through 16 */
-@@ -1226,7 +1236,7 @@ static struct attribute *ims_pcu_attrs[] = {
- 	&dev_attr_reset_device.attr,
- 	&dev_attr_update_firmware.attr,
- 	&dev_attr_update_firmware_status.attr,
--	NULL
-+	NULL,
+ #include "dp83640_reg.h"
+ 
+@@ -119,6 +120,8 @@ struct dp83640_private {
+ 	/* queues of incoming and outgoing packets */
+ 	struct sk_buff_head rx_queue;
+ 	struct sk_buff_head tx_queue;
++	/* is this phyter a slave */
++	bool slave;
  };
  
- static umode_t ims_pcu_is_attr_visible(struct kobject *kobj,
-@@ -1256,6 +1266,225 @@ static struct attribute_group ims_pcu_attr_group = {
- 	.attrs		= ims_pcu_attrs,
+ struct dp83640_clock {
+@@ -140,6 +143,7 @@ struct dp83640_clock {
+ 	struct list_head phylist;
+ 	/* reference to our PTP hardware clock */
+ 	struct ptp_clock *ptp_clock;
++	u32 perout_pins[N_EXT], extts_pins[N_EXT], calibrate_pin;
  };
  
-+/* Support for a separate OFN attribute group */
-+
-+#define OFN_REG_RESULT_OFFSET	2
-+
-+static int ims_pcu_read_ofn_config(struct ims_pcu *pcu, u8 addr, u8 *data)
-+{
-+	int error;
-+	s16 result;
-+
-+	error = ims_pcu_execute_command(pcu, OFN_GET_CONFIG,
-+					&addr, sizeof(addr));
-+	if (error)
-+		return error;
-+
-+	result = (s16)get_unaligned_le16(pcu->cmd_buf + OFN_REG_RESULT_OFFSET);
-+	if (result < 0)
-+		return -EIO;
-+
-+	/* We only need LSB */
-+	*data = pcu->cmd_buf[OFN_REG_RESULT_OFFSET];
-+	return 0;
-+}
-+
-+static int ims_pcu_write_ofn_config(struct ims_pcu *pcu, u8 addr, u8 data)
-+{
-+	u8 buffer[] = { addr, data };
-+	int error;
-+	s16 result;
-+
-+	error = ims_pcu_execute_command(pcu, OFN_SET_CONFIG,
-+					&buffer, sizeof(buffer));
-+	if (error)
-+		return error;
-+
-+	result = (s16)get_unaligned_le16(pcu->cmd_buf + OFN_REG_RESULT_OFFSET);
-+	if (result < 0)
-+		return -EIO;
-+
-+	return 0;
-+}
-+
-+static ssize_t ims_pcu_ofn_reg_data_show(struct device *dev,
-+					 struct device_attribute *dattr,
-+					 char *buf)
-+{
-+	struct usb_interface *intf = to_usb_interface(dev);
-+	struct ims_pcu *pcu = usb_get_intfdata(intf);
-+	int error;
-+	u8 data;
-+
-+	mutex_lock(&pcu->cmd_mutex);
-+	error = ims_pcu_read_ofn_config(pcu, pcu->ofn_reg_addr, &data);
-+	mutex_unlock(&pcu->cmd_mutex);
-+
-+	if (error)
-+		return error;
-+
-+	return scnprintf(buf, PAGE_SIZE, "%x\n", data);
-+}
-+
-+static ssize_t ims_pcu_ofn_reg_data_store(struct device *dev,
-+					  struct device_attribute *dattr,
-+					  const char *buf, size_t count)
-+{
-+	struct usb_interface *intf = to_usb_interface(dev);
-+	struct ims_pcu *pcu = usb_get_intfdata(intf);
-+	int error;
-+	u8 value;
-+
-+	error = kstrtou8(buf, 0, &value);
-+	if (error)
-+		return error;
-+
-+	mutex_lock(&pcu->cmd_mutex);
-+	error = ims_pcu_write_ofn_config(pcu, pcu->ofn_reg_addr, value);
-+	mutex_unlock(&pcu->cmd_mutex);
-+
-+	return error ?: count;
-+}
-+
-+static DEVICE_ATTR(reg_data, S_IRUGO | S_IWUSR,
-+		   ims_pcu_ofn_reg_data_show, ims_pcu_ofn_reg_data_store);
-+
-+static ssize_t ims_pcu_ofn_reg_addr_show(struct device *dev,
-+					 struct device_attribute *dattr,
-+					 char *buf)
-+{
-+	struct usb_interface *intf = to_usb_interface(dev);
-+	struct ims_pcu *pcu = usb_get_intfdata(intf);
-+	int error;
-+
-+	mutex_lock(&pcu->cmd_mutex);
-+	error = scnprintf(buf, PAGE_SIZE, "%x\n", pcu->ofn_reg_addr);
-+	mutex_unlock(&pcu->cmd_mutex);
-+
-+	return error;
-+}
-+
-+static ssize_t ims_pcu_ofn_reg_addr_store(struct device *dev,
-+					  struct device_attribute *dattr,
-+					  const char *buf, size_t count)
-+{
-+	struct usb_interface *intf = to_usb_interface(dev);
-+	struct ims_pcu *pcu = usb_get_intfdata(intf);
-+	int error;
-+	u8 value;
-+
-+	error = kstrtou8(buf, 0, &value);
-+	if (error)
-+		return error;
-+
-+	mutex_lock(&pcu->cmd_mutex);
-+	pcu->ofn_reg_addr = value;
-+	mutex_unlock(&pcu->cmd_mutex);
-+
-+	return error ?: count;
-+}
-+
-+static DEVICE_ATTR(reg_addr, S_IRUGO | S_IWUSR,
-+		   ims_pcu_ofn_reg_addr_show, ims_pcu_ofn_reg_addr_store);
-+
-+struct ims_pcu_ofn_bit_attribute {
-+	struct device_attribute dattr;
-+	u8 addr;
-+	u8 nr;
-+};
-+
-+static ssize_t ims_pcu_ofn_bit_show(struct device *dev,
-+				    struct device_attribute *dattr,
-+				    char *buf)
-+{
-+	struct usb_interface *intf = to_usb_interface(dev);
-+	struct ims_pcu *pcu = usb_get_intfdata(intf);
-+	struct ims_pcu_ofn_bit_attribute *attr =
-+		container_of(dattr, struct ims_pcu_ofn_bit_attribute, dattr);
-+	int error;
-+	u8 data;
-+
-+	mutex_lock(&pcu->cmd_mutex);
-+	error = ims_pcu_read_ofn_config(pcu, attr->addr, &data);
-+	mutex_unlock(&pcu->cmd_mutex);
-+
-+	if (error)
-+		return error;
-+
-+	return scnprintf(buf, PAGE_SIZE, "%d\n", !!(data & (1 << attr->nr)));
-+}
-+
-+static ssize_t ims_pcu_ofn_bit_store(struct device *dev,
-+				     struct device_attribute *dattr,
-+				     const char *buf, size_t count)
-+{
-+	struct usb_interface *intf = to_usb_interface(dev);
-+	struct ims_pcu *pcu = usb_get_intfdata(intf);
-+	struct ims_pcu_ofn_bit_attribute *attr =
-+		container_of(dattr, struct ims_pcu_ofn_bit_attribute, dattr);
-+	int error;
-+	int value;
-+	u8 data;
-+
-+	error = kstrtoint(buf, 0, &value);
-+	if (error)
-+		return error;
-+
-+	if (value > 1)
-+		return -EINVAL;
-+
-+	mutex_lock(&pcu->cmd_mutex);
-+
-+	error = ims_pcu_read_ofn_config(pcu, attr->addr, &data);
-+	if (!error) {
-+		if (value)
-+			data |= 1U << attr->nr;
-+		else
-+			data &= ~(1U << attr->nr);
-+
-+		error = ims_pcu_write_ofn_config(pcu, attr->addr, data);
-+	}
-+
-+	mutex_unlock(&pcu->cmd_mutex);
-+
-+	return error ?: count;
-+}
-+
-+#define IMS_PCU_OFN_BIT_ATTR(_field, _addr, _nr)			\
-+struct ims_pcu_ofn_bit_attribute ims_pcu_ofn_attr_##_field = {		\
-+	.dattr = __ATTR(_field, S_IWUSR | S_IRUGO,			\
-+			ims_pcu_ofn_bit_show, ims_pcu_ofn_bit_store),	\
-+	.addr = _addr,							\
-+	.nr = _nr,							\
-+}
-+
-+static IMS_PCU_OFN_BIT_ATTR(engine_enable,   0x60, 7);
-+static IMS_PCU_OFN_BIT_ATTR(speed_enable,    0x60, 6);
-+static IMS_PCU_OFN_BIT_ATTR(assert_enable,   0x60, 5);
-+static IMS_PCU_OFN_BIT_ATTR(xyquant_enable,  0x60, 4);
-+static IMS_PCU_OFN_BIT_ATTR(xyscale_enable,  0x60, 1);
-+
-+static IMS_PCU_OFN_BIT_ATTR(scale_x2,        0x63, 6);
-+static IMS_PCU_OFN_BIT_ATTR(scale_y2,        0x63, 7);
-+
-+static struct attribute *ims_pcu_ofn_attrs[] = {
-+	&dev_attr_reg_data.attr,
-+	&dev_attr_reg_addr.attr,
-+	&ims_pcu_ofn_attr_engine_enable.dattr.attr,
-+	&ims_pcu_ofn_attr_speed_enable.dattr.attr,
-+	&ims_pcu_ofn_attr_assert_enable.dattr.attr,
-+	&ims_pcu_ofn_attr_xyquant_enable.dattr.attr,
-+	&ims_pcu_ofn_attr_xyscale_enable.dattr.attr,
-+	&ims_pcu_ofn_attr_scale_x2.dattr.attr,
-+	&ims_pcu_ofn_attr_scale_y2.dattr.attr,
-+	NULL
-+};
-+
-+static struct attribute_group ims_pcu_ofn_attr_group = {
-+	.name	= "ofn",
-+	.attrs	= ims_pcu_ofn_attrs,
-+};
-+
- static void ims_pcu_irq(struct urb *urb)
+ 
+@@ -263,8 +267,8 @@ static void periodic_output(struct dp83640_clock *clock,
+ 	u32 sec, nsec, period;
+ 	u16 gpio, ptp_trig, trigger, val;
+ 
+-	gpio = on ? perout_pins[index] : 0;
+-	trigger = n_ext_ts + index;
++	gpio = on ? clock->perout_pins[index] : 0;
++	trigger = clock->caps.n_ext_ts + index;
+ 
+ 	ptp_trig = TRIG_WR |
+ 		(trigger & TRIG_CSEL_MASK) << TRIG_CSEL_SHIFT |
+@@ -419,12 +423,12 @@ static int ptp_dp83640_enable(struct ptp_clock_info *ptp,
+ 	switch (rq->type) {
+ 	case PTP_CLK_REQ_EXTTS:
+ 		index = rq->extts.index;
+-		if (index < 0 || index >= n_ext_ts)
++		if (index < 0 || index >= clock->caps.n_ext_ts)
+ 			return -EINVAL;
+ 		event_num = index;
+ 		evnt = EVNT_WR | (event_num & EVNT_SEL_MASK) << EVNT_SEL_SHIFT;
+ 		if (on) {
+-			gpio_num = extts_pins[index];
++			gpio_num = clock->extts_pins[index];
+ 			evnt |= (gpio_num & EVNT_GPIO_MASK) << EVNT_GPIO_SHIFT;
+ 			evnt |= EVNT_RISE;
+ 		}
+@@ -433,7 +437,7 @@ static int ptp_dp83640_enable(struct ptp_clock_info *ptp,
+ 
+ 	case PTP_CLK_REQ_PEROUT:
+ 		index = rq->perout.index;
+-		if (index < 0 || index >= n_per_out)
++		if (index < 0 || index >= clock->caps.n_per_out)
+ 			return -EINVAL;
+ 		periodic_output(clock, rq, index, on);
+ 		return 0;
+@@ -530,7 +534,7 @@ static void recalibrate(struct dp83640_clock *clock)
+ 	struct phy_device *master = clock->chosen->phydev;
+ 	u16 cfg0, evnt, ptp_trig, trigger, val;
+ 
+-	trigger = n_ext_ts + n_per_out;
++	trigger = clock->caps.n_ext_ts + clock->caps.n_per_out;
+ 
+ 	mutex_lock(&clock->extreg_lock);
+ 
+@@ -554,7 +558,7 @@ static void recalibrate(struct dp83640_clock *clock)
+ 	 */
+ 	evnt = EVNT_WR | EVNT_RISE | EVNT_SINGLE;
+ 	evnt |= (trigger & EVNT_SEL_MASK) << EVNT_SEL_SHIFT;
+-	evnt |= (calibrate_pin & EVNT_GPIO_MASK) << EVNT_GPIO_SHIFT;
++	evnt |= (clock->calibrate_pin & EVNT_GPIO_MASK) << EVNT_GPIO_SHIFT;
+ 
+ 	list_for_each(this, &clock->phylist) {
+ 		tmp = list_entry(this, struct dp83640_private, list);
+@@ -567,7 +571,7 @@ static void recalibrate(struct dp83640_clock *clock)
+ 	 */
+ 	ptp_trig = TRIG_WR | TRIG_IF_LATE | TRIG_PULSE;
+ 	ptp_trig |= (trigger  & TRIG_CSEL_MASK) << TRIG_CSEL_SHIFT;
+-	ptp_trig |= (calibrate_pin & TRIG_GPIO_MASK) << TRIG_GPIO_SHIFT;
++	ptp_trig |= (clock->calibrate_pin & TRIG_GPIO_MASK) << TRIG_GPIO_SHIFT;
+ 	ext_write(0, master, PAGE5, PTP_TRIG, ptp_trig);
+ 
+ 	/* load trigger */
+@@ -672,7 +676,7 @@ static int decode_evnt(struct dp83640_private *dp83640,
+ 	event.type = PTP_CLOCK_EXTTS;
+ 	event.timestamp = phy2txts(&dp83640->edata);
+ 
+-	for (i = 0; i < n_ext_ts; i++) {
++	for (i = 0; i < dp83640->clock->caps.n_ext_ts; i++) {
+ 		if (ext_status & exts_chan_to_edata(i)) {
+ 			event.index = i;
+ 			ptp_clock_event(dp83640->clock->ptp_clock, &event);
+@@ -874,12 +878,11 @@ static void dp83640_clock_init(struct dp83640_clock *clock, struct mii_bus *bus)
+ 	mutex_init(&clock->extreg_lock);
+ 	mutex_init(&clock->clock_lock);
+ 	INIT_LIST_HEAD(&clock->phylist);
++	clock->calibrate_pin = -1;
+ 	clock->caps.owner = THIS_MODULE;
+ 	sprintf(clock->caps.name, "dp83640 timer");
+ 	clock->caps.max_adj	= 1953124;
+ 	clock->caps.n_alarm	= 0;
+-	clock->caps.n_ext_ts	= n_ext_ts;
+-	clock->caps.n_per_out	= n_per_out;
+ 	clock->caps.pps		= 0;
+ 	clock->caps.adjfreq	= ptp_dp83640_adjfreq;
+ 	clock->caps.adjtime	= ptp_dp83640_adjtime;
+@@ -892,18 +895,6 @@ static void dp83640_clock_init(struct dp83640_clock *clock, struct mii_bus *bus)
+ 	get_device(&bus->dev);
+ }
+ 
+-static int choose_this_phy(struct dp83640_clock *clock,
+-			   struct phy_device *phydev)
+-{
+-	if (chosen_phy == -1 && !clock->chosen)
+-		return 1;
+-
+-	if (chosen_phy == phydev->addr)
+-		return 1;
+-
+-	return 0;
+-}
+-
+ static struct dp83640_clock *dp83640_clock_get(struct dp83640_clock *clock)
  {
- 	struct ims_pcu *pcu = urb->context;
-@@ -1624,7 +1853,6 @@ static int ims_pcu_init_application_mode(struct ims_pcu *pcu)
- 	static atomic_t device_no = ATOMIC_INIT(0);
+ 	if (clock)
+@@ -949,6 +940,95 @@ static void dp83640_clock_put(struct dp83640_clock *clock)
+ 	mutex_unlock(&clock->clock_lock);
+ }
  
- 	const struct ims_pcu_device_info *info;
--	u8 device_id;
- 	int error;
- 
- 	error = ims_pcu_get_device_info(pcu);
-@@ -1633,7 +1861,7 @@ static int ims_pcu_init_application_mode(struct ims_pcu *pcu)
- 		return error;
- 	}
- 
--	error = ims_pcu_identify_type(pcu, &device_id);
-+	error = ims_pcu_identify_type(pcu, &pcu->device_id);
- 	if (error) {
- 		dev_err(pcu->dev,
- 			"Failed to identify device, error: %d\n", error);
-@@ -1645,9 +1873,9 @@ static int ims_pcu_init_application_mode(struct ims_pcu *pcu)
- 		return 0;
- 	}
- 
--	if (device_id >= ARRAY_SIZE(ims_pcu_device_info) ||
--	    !ims_pcu_device_info[device_id].keymap) {
--		dev_err(pcu->dev, "Device ID %d is not valid\n", device_id);
-+	if (pcu->device_id >= ARRAY_SIZE(ims_pcu_device_info) ||
-+	    !ims_pcu_device_info[pcu->device_id].keymap) {
-+		dev_err(pcu->dev, "Device ID %d is not valid\n", pcu->device_id);
- 		/* Same as above, punt to userspace */
- 		return 0;
- 	}
-@@ -1655,11 +1883,21 @@ static int ims_pcu_init_application_mode(struct ims_pcu *pcu)
- 	/* Device appears to be operable, complete initialization */
- 	pcu->device_no = atomic_inc_return(&device_no) - 1;
- 
-+	/*
-+	   PCU-B devices, both GEN_1 and GEN_2 do not have OFN sensor
-+	*/
-+	if (pcu->device_id != IMS_PCU_PCU_B_DEVICE_ID) {
-+		error = sysfs_create_group(&pcu->dev->kobj,
-+					   &ims_pcu_ofn_attr_group);
-+		if (error)
-+			return error;
++#ifdef CONFIG_OF
++static int dp83640_probe_dt(struct device_node *node,
++			    struct dp83640_private *dp83640)
++{
++	struct dp83640_clock *clock = dp83640->clock;
++	struct property *prop;
++	int err, proplen;
++
++	dp83640->slave = of_property_read_bool(node, "dp83640,slave");
++	if (!dp83640->slave && clock->chosen) {
++		pr_err("dp83640,slave must be set if more than one device on the same bus");
++		return -EINVAL;
 +	}
 +
- 	error = ims_pcu_setup_backlight(pcu);
- 	if (error)
- 		return error;
- 
--	info = &ims_pcu_device_info[device_id];
-+	info = &ims_pcu_device_info[pcu->device_id];
- 	error = ims_pcu_setup_buttons(pcu, info->keymap, info->keymap_len);
- 	if (error)
- 		goto err_destroy_backlight;
-@@ -1674,10 +1912,10 @@ static int ims_pcu_init_application_mode(struct ims_pcu *pcu)
- 
- 	return 0;
- 
--err_destroy_backlight:
--	ims_pcu_destroy_backlight(pcu);
- err_destroy_buttons:
- 	ims_pcu_destroy_buttons(pcu);
-+err_destroy_backlight:
-+	ims_pcu_destroy_backlight(pcu);
- 	return error;
- }
- 
-@@ -1691,6 +1929,10 @@ static void ims_pcu_destroy_application_mode(struct ims_pcu *pcu)
- 			ims_pcu_destroy_gamepad(pcu);
- 		ims_pcu_destroy_buttons(pcu);
- 		ims_pcu_destroy_backlight(pcu);
++	prop = of_find_property(node, "dp83640,perout-pins", &proplen);
++	if (prop) {
++		if (dp83640->slave) {
++			pr_err("dp83640,perout-pins property can not be set together with dp83640,slave");
++			return -EINVAL;
++		}
 +
-+		if (pcu->device_id != IMS_PCU_PCU_B_DEVICE_ID)
-+			sysfs_remove_group(&pcu->dev->kobj,
-+					   &ims_pcu_ofn_attr_group);
- 	}
- }
++		clock->caps.n_per_out = proplen / sizeof(u32);
++		if (clock->caps.n_per_out > N_EXT) {
++			pr_err("dp83640,perout-pins may not have more than %d entries",
++			       N_EXT);
++			return -EINVAL;
++		}
++		err = of_property_read_u32_array(node, "dp83640,perout-pins",
++						 clock->perout_pins,
++						 clock->caps.n_per_out);
++		if (err < 0)
++			return err;
++	}
++
++	prop = of_find_property(node, "dp83640,extts-pins", &proplen);
++	if (prop) {
++		if (dp83640->slave) {
++			pr_err("dp83640,extts-pins property can not be set together with dp83640,slave");
++			return -EINVAL;
++		}
++
++		clock->caps.n_ext_ts = proplen / sizeof(u32);
++		if (clock->caps.n_ext_ts > N_EXT) {
++			pr_err("dp83640,extts-pins may not have more than %d entries",
++			       N_EXT);
++			return -EINVAL;
++		}
++		err = of_property_read_u32_array(node, "dp83640,extts-pins",
++						 clock->extts_pins,
++						 clock->caps.n_ext_ts);
++		if (err < 0)
++			return err;
++	}
++
++	prop = of_find_property(node, "dp83640,calibrate-pin", &proplen);
++	if (prop) {
++		if (dp83640->slave) {
++			pr_err("dp83640,calibrate-pin property can not be set together with dp83640,slave");
++			return -EINVAL;
++		}
++		of_property_read_u32(node, "dp83640,calibrate-pin",
++				     &clock->calibrate_pin);
++	}
++
++	if (!dp83640->slave) {
++		if (clock->caps.n_per_out + clock->caps.n_ext_ts +
++		    (clock->calibrate_pin != -1 ? 1 : 0) > N_EXT) {
++			pr_err("Too many pins configured");
++			return -EINVAL;
++		}
++	}
++
++	return 0;
++}
++
++static const struct of_device_id dp83640_of_match_table[] = {
++	{ .compatible = "national,dp83640", },
++	{ },
++};
++MODULE_DEVICE_TABLE(of, dp83640_of_match_table);
++#else
++
++static inline int dp83640_probe_dt(struct device_node *node,
++				   struct dp83640_private *dp83640)
++{
++	return 0;
++}
++#endif
++
+ static int dp83640_probe(struct phy_device *phydev)
+ {
+ 	struct dp83640_clock *clock;
+@@ -966,7 +1046,24 @@ static int dp83640_probe(struct phy_device *phydev)
+ 	if (!dp83640)
+ 		goto no_memory;
  
++	dp83640->clock = clock;
+ 	dp83640->phydev = phydev;
++
++	if (phydev->dev.of_node) {
++		err = dp83640_probe_dt(phydev->dev.of_node, dp83640);
++		if (err)
++			return err;
++	} else {
++		clock->calibrate_pin = calibrate_pin;
++		memcpy(clock->perout_pins, perout_pins,
++		       sizeof(clock->perout_pins));
++		memcpy(clock->extts_pins, extts_pins,
++		       sizeof(clock->extts_pins));
++		if (clock->chosen ||
++		    (chosen_phy != -1 && phydev->addr != chosen_phy))
++			dp83640->slave = true;
++	}
++
+ 	INIT_WORK(&dp83640->ts_work, rx_timestamp_work);
+ 
+ 	INIT_LIST_HEAD(&dp83640->rxts);
+@@ -980,9 +1077,7 @@ static int dp83640_probe(struct phy_device *phydev)
+ 	skb_queue_head_init(&dp83640->rx_queue);
+ 	skb_queue_head_init(&dp83640->tx_queue);
+ 
+-	dp83640->clock = clock;
+-
+-	if (choose_this_phy(clock, phydev)) {
++	if (!dp83640->slave) {
+ 		clock->chosen = dp83640;
+ 		clock->ptp_clock = ptp_clock_register(&clock->caps, &phydev->dev);
+ 		if (IS_ERR(clock->ptp_clock)) {
+@@ -1327,7 +1422,10 @@ static struct phy_driver dp83640_driver = {
+ 	.hwtstamp	= dp83640_hwtstamp,
+ 	.rxtstamp	= dp83640_rxtstamp,
+ 	.txtstamp	= dp83640_txtstamp,
+-	.driver		= {.owner = THIS_MODULE,}
++	.driver		= {
++		.owner = THIS_MODULE,
++		.of_match_table = of_match_ptr(dp83640_of_match_table),
++	}
+ };
+ 
+ static int __init dp83640_init(void)
 -- 
-1.8.3.2
+1.8.5.3
 
