@@ -1,65 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751584AbaBKIzF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 03:55:05 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:35089 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750809AbaBKIzA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 03:55:00 -0500
-Message-ID: <52F9E55E.2050708@ti.com>
-Date: Tue, 11 Feb 2014 10:54:54 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751684AbaBKI6J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 03:58:09 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:47319 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750785AbaBKI6E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 03:58:04 -0500
+Date: Tue, 11 Feb 2014 09:57:43 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Jason Low <jason.low2@hp.com>, Waiman Long <waiman.long@hp.com>,
+        paulmck@linux.vnet.ibm.com, torvalds@linux-foundation.org,
+        tglx@linutronix.de, riel@redhat.com, davidlohr@hp.com, hpa@zytor.com,
+        andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
+        chegu_vinod@hp.com
+Subject: Re: [PATCH 0/8] locking/core patches
+Message-ID: <20140211085743.GJ27965@twins.programming.kicks-ass.net>
+References: <20140210195820.834693028@infradead.org>
+ <20140210150230.b7f46688093ebc5c45fee870@linux-foundation.org>
+ <20140211071700.GH27965@twins.programming.kicks-ass.net>
+ <20140211000330.d791513d.akpm@linux-foundation.org>
+ <20140211084502.GA26063@gmail.com>
 MIME-Version: 1.0
-To: Colin King <colin.king@canonical.com>
-CC: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mfd: omap-usb-tll: allocate correct size for ch_clk
-References: <1392059407-15452-1-git-send-email-colin.king@canonical.com> <20140210195421.GB31864@lee--X1>
-In-Reply-To: <20140210195421.GB31864@lee--X1>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140211084502.GA26063@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Colin,
-
-On 02/10/2014 09:54 PM, Lee Jones wrote:
->> From: Colin Ian King <colin.king@canonical.com>
->>
->> ch_clk was erroneously being allocated the incorrect size which
->> can be problematic for larger sizes of tll->nch
-
-The code fix is good but the subject and description aren't right.
-
-You could instead mention about the cppcheck warning and hard to read
-code.
-
->>
->> Signed-off-by: Colin Ian King <colin.king@canonical.com>
->> ---
->>  drivers/mfd/omap-usb-tll.c | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
->> index 5ee50f7..532eacab 100644
->> --- a/drivers/mfd/omap-usb-tll.c
->> +++ b/drivers/mfd/omap-usb-tll.c
->> @@ -252,7 +252,7 @@ static int usbtll_omap_probe(struct platform_device *pdev)
->>  		break;
->>  	}
->>  
->> -	tll->ch_clk = devm_kzalloc(dev, sizeof(struct clk * [tll->nch]),
->> +	tll->ch_clk = devm_kzalloc(dev, sizeof(struct clk *) * tll->nch,
->>  						GFP_KERNEL);
->>  	if (!tll->ch_clk) {
->>  		ret = -ENOMEM;
+On Tue, Feb 11, 2014 at 09:45:02AM +0100, Ingo Molnar wrote:
+> > heh, yes, it's stupid how long many benchmarks take.  Ditch it.  A 
+> > change like this should be testable with a 30-line microbenchmark 
+> > which runs in 5 seconds tops.
 > 
-> Thanks Colin, patch looks good to me.
-> 
-> Roger, fancy finishing this off with an Acked-by?
-> 
+> Another very nice option would be to stick the relevant workload 
+> patterns into 'perf bench', calibrate it to emit similar figures (and 
+> double check the speedup is similar as well) and thus make it an AIM7 
+> work-alike microbenchmark.
 
-cheers,
--roger
+/me stares at Jason and Waiman.. :-)
