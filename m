@@ -1,135 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752233AbaBKGsu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 01:48:50 -0500
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:41956 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751147AbaBKGss (ORCPT
+	id S1751242AbaBKGv1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 01:51:27 -0500
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:58761 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750758AbaBKGvZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 01:48:48 -0500
-From: Michal Simek <michal.simek@xilinx.com>
-To: linux-kernel@vger.kernel.org, monstr@monstr.eu
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] video: xilinxfb: Move xilinxfb_platform_data directly to the driver
-Date: Tue, 11 Feb 2014 07:48:32 +0100
-Message-Id: <af8de8bd8803b319c0f6a02ca5109768e5ef8457.1392101292.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-3939-1392101312-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	Tue, 11 Feb 2014 01:51:25 -0500
+From: <jiel@marvell.com>
+To: <akpm@linux-foundation.org>, <joe@perches.com>, <tj@kernel.org>,
+        <fweisbec@gmail.com>, <davem@davemloft.net>, <keescook@chromium.org>
+CC: <linux-kernel@vger.kernel.org>, Jane Li <jiel@marvell.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [PATCH] printk: fix one circular lockdep warning about console_lock
+Date: Tue, 11 Feb 2014 14:50:00 +0800
+Message-ID: <1392101400-14550-1-git-send-email-jiel@marvell.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-02-11_03:2014-02-10,2014-02-11,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1402100241
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
+From: Jane Li <jiel@marvell.com>
 
---=_mimegpg-monstr-desktop-3939-1392101312-0001
+This patch tries to fix a warning about possible circular locking
+dependency.
 
-No reason to have separate file in header in include/linux folder
-if this is purely driver specific structure.
+If do in following sequence:
+    enter suspend ->  resume ->  plug-out CPUx (echo 0 > cpux/online)
+lockdep will show warning as following:
 
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+======================================================
+[ INFO: possible circular locking dependency detected ]
+3.10.0 #2 Tainted: G           O
+-------------------------------------------------------
+sh/1271 is trying to acquire lock:
+(console_lock){+.+.+.}, at: [<c06ebf7c>] console_cpu_notify+0x20/0x2c
+but task is already holding lock:
+(cpu_hotplug.lock){+.+.+.}, at: [<c012b4e8>] cpu_hotplug_begin+0x2c/0x58
+which lock already depends on the new lock.
+
+the existing dependency chain (in reverse order) is:
+-> #2 (cpu_hotplug.lock){+.+.+.}:
+[<c017bb7c>] lock_acquire+0x98/0x12c
+[<c06f5014>] mutex_lock_nested+0x50/0x3d8
+[<c012b4e8>] cpu_hotplug_begin+0x2c/0x58
+[<c06ebfac>] _cpu_up+0x24/0x154
+[<c06ec140>] cpu_up+0x64/0x84
+[<c0981834>] smp_init+0x9c/0xd4
+[<c0973880>] kernel_init_freeable+0x78/0x1c8
+[<c06e7f40>] kernel_init+0x8/0xe4
+[<c010eec8>] ret_from_fork+0x14/0x2c
+
+-> #1 (cpu_add_remove_lock){+.+.+.}:
+[<c017bb7c>] lock_acquire+0x98/0x12c
+[<c06f5014>] mutex_lock_nested+0x50/0x3d8
+[<c012b758>] disable_nonboot_cpus+0x8/0xe8
+[<c016b83c>] suspend_devices_and_enter+0x214/0x448
+[<c016bc54>] pm_suspend+0x1e4/0x284
+[<c016bdcc>] try_to_suspend+0xa4/0xbc
+[<c0143848>] process_one_work+0x1c4/0x4fc
+[<c0143f80>] worker_thread+0x138/0x37c
+[<c014aaf8>] kthread+0xa4/0xb0
+[<c010eec8>] ret_from_fork+0x14/0x2c
+
+-> #0 (console_lock){+.+.+.}:
+[<c017b5d0>] __lock_acquire+0x1b38/0x1b80
+[<c017bb7c>] lock_acquire+0x98/0x12c
+[<c01288c4>] console_lock+0x54/0x68
+[<c06ebf7c>] console_cpu_notify+0x20/0x2c
+[<c01501d4>] notifier_call_chain+0x44/0x84
+[<c012b448>] __cpu_notify+0x2c/0x48
+[<c012b5b0>] cpu_notify_nofail+0x8/0x14
+[<c06e81bc>] _cpu_down+0xf4/0x258
+[<c06e8344>] cpu_down+0x24/0x40
+[<c06e921c>] store_online+0x30/0x74
+[<c03b7298>] dev_attr_store+0x18/0x24
+[<c025fc5c>] sysfs_write_file+0x16c/0x19c
+[<c0207a98>] vfs_write+0xb4/0x190
+[<c0207e58>] SyS_write+0x3c/0x70
+[<c010ee00>] ret_fast_syscall+0x0/0x48
+
+Chain exists of:
+   console_lock --> cpu_add_remove_lock --> cpu_hotplug.lock
+
+Possible unsafe locking scenario:
+       CPU0                    CPU1
+       ----                    ----
+lock(cpu_hotplug.lock);
+                               lock(cpu_add_remove_lock);
+                               lock(cpu_hotplug.lock);
+lock(console_lock);
+  *** DEADLOCK ***
+
+There are three locks involved in two sequence:
+a) pm suspend:
+	console_lock (@suspend_console())
+	cpu_add_remove_lock (@disable_nonboot_cpus())
+	cpu_hotplug.lock (@_cpu_down())
+b) Plug-out CPUx:
+	cpu_add_remove_lock (@(cpu_down())
+	cpu_hotplug.lock (@_cpu_down())
+	console_lock (@console_cpu_notify()) => Lockdeps prints warning log.
+
+There should be not real deadlock, as flag of console_suspended can
+protect this.
+
+Printk registers cpu hotplug notify function. When CPUx is plug-out/in,
+always execute console_lock() and console_unlock(). This patch
+modifies that with console_trylock() and console_unlock(). Then use
+that instead of the unconditional console_lock/unlock pair to avoid the
+warning.
+
+Signed-off-by: Jane Li <jiel@marvell.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 ---
+ kernel/printk/printk.c |   17 +++++++++++++++--
+ 1 file changed, 15 insertions(+), 2 deletions(-)
 
-I have this patch in my devel tree for a while and would like
-to hear your opinion. I can't see any reason to have
-xilinxfb_platform_data in header if this is purely OF driver
-used on OF archs.
----
- drivers/video/xilinxfb.c | 15 ++++++++++++++-
- include/linux/xilinxfb.h | 30 ------------------------------
- 2 files changed, 14 insertions(+), 31 deletions(-)
- delete mode 100644 include/linux/xilinxfb.h
-
-diff --git a/drivers/video/xilinxfb.c b/drivers/video/xilinxfb.c
-index 6ff1a91..553cff2 100644
---- a/drivers/video/xilinxfb.c
-+++ b/drivers/video/xilinxfb.c
-@@ -33,7 +33,6 @@
- #include <linux/of_platform.h>
- #include <linux/of_address.h>
- #include <linux/io.h>
--#include <linux/xilinxfb.h>
- #include <linux/slab.h>
-
- #ifdef CONFIG_PPC_DCR
-@@ -84,6 +83,20 @@
-
- #define PALETTE_ENTRIES_NO	16	/* passed to fb_alloc_cmap() */
-
-+/* ML300/403 reference design framebuffer driver platform data struct */
-+struct xilinxfb_platform_data {
-+	u32 rotate_screen;      /* Flag to rotate display 180 degrees */
-+	u32 screen_height_mm;   /* Physical dimensions of screen in mm */
-+	u32 screen_width_mm;
-+	u32 xres, yres;         /* resolution of screen in pixels */
-+	u32 xvirt, yvirt;       /* resolution of memory buffer */
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index b1d255f..e7a0525 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -1893,6 +1893,20 @@ void resume_console(void)
+ }
+ 
+ /**
++ * console_flush - flush dmesg if console isn't suspended
++ *
++ * console_unlock always flushes the dmesg buffer, so just try to
++ * grab&drop the console lock. If that fails we know that the current
++ * holder will eventually drop the console lock and so flush the dmesg
++ * buffers at the earliest possible time.
++ */
++void console_flush(void)
++{
++	if (console_trylock())
++		console_unlock();
++}
 +
-+	/* Physical address of framebuffer memory; If non-zero, driver
-+	* will use provided memory address instead of allocating one from
-+	* the consistent pool. */
-+	u32 fb_phys;
-+};
-+
- /*
-  * Default xilinxfb configuration
-  */
-diff --git a/include/linux/xilinxfb.h b/include/linux/xilinxfb.h
-deleted file mode 100644
-index 5a155a9..0000000
---- a/include/linux/xilinxfb.h
-+++ /dev/null
-@@ -1,30 +0,0 @@
--/*
-- * Platform device data for Xilinx Framebuffer device
-- *
-- * Copyright 2007 Secret Lab Technologies Ltd.
-- *
-- * This file is licensed under the terms of the GNU General Public License
-- * version 2.  This program is licensed "as is" without any warranty of any
-- * kind, whether express or implied.
-- */
--
--#ifndef __XILINXFB_H__
--#define __XILINXFB_H__
--
--#include <linux/types.h>
--
--/* ML300/403 reference design framebuffer driver platform data struct */
--struct xilinxfb_platform_data {
--	u32 rotate_screen;	/* Flag to rotate display 180 degrees */
--	u32 screen_height_mm;	/* Physical dimensions of screen in mm */
--	u32 screen_width_mm;
--	u32 xres, yres;		/* resolution of screen in pixels */
--	u32 xvirt, yvirt;	/* resolution of memory buffer */
--
--	/* Physical address of framebuffer memory; If non-zero, driver
--	 * will use provided memory address instead of allocating one from
--	 * the consistent pool. */
--	u32 fb_phys;
--};
--
--#endif  /* __XILINXFB_H__ */
---
-1.8.2.3
++/**
+  * console_cpu_notify - print deferred console messages after CPU hotplug
+  * @self: notifier struct
+  * @action: CPU hotplug event
+@@ -1911,8 +1925,7 @@ static int console_cpu_notify(struct notifier_block *self,
+ 	case CPU_DEAD:
+ 	case CPU_DOWN_FAILED:
+ 	case CPU_UP_CANCELED:
+-		console_lock();
+-		console_unlock();
++		console_flush();
+ 	}
+ 	return NOTIFY_OK;
+ }
+-- 
+1.7.9.5
 
-
---=_mimegpg-monstr-desktop-3939-1392101312-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAlL5x8AACgkQykllyylKDCGWZACghJ/ImTbQeAes03Djj19Zb0Li
-aowAnjBUvANjmDKCufQCUPzSejn7aTn3
-=O9xJ
------END PGP SIGNATURE-----
-
---=_mimegpg-monstr-desktop-3939-1392101312-0001--
