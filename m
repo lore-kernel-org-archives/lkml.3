@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932233AbaBKTja (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:39:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40355 "EHLO
+	id S1754061AbaBKTHo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:07:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40341 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754067AbaBKTHp (ORCPT
+	with ESMTP id S1753994AbaBKTHm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:07:45 -0500
+	Tue, 11 Feb 2014 14:07:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Weston Andros Adamson <dros@primarydata.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.10 30/79] nfs4.1: properly handle ENOTSUP in SECINFO_NO_NAME
-Date: Tue, 11 Feb 2014 11:05:34 -0800
-Message-Id: <20140211184721.792336405@linuxfoundation.org>
+        Max Filippov <jcmvbkbc@gmail.com>
+Subject: [PATCH 3.10 25/79] xtensa: xtfpga: fix definitions of platform devices
+Date: Tue, 11 Feb 2014 11:05:29 -0800
+Message-Id: <20140211184721.654783288@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
 References: <20140211184720.928667275@linuxfoundation.org>
@@ -29,44 +28,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Weston Andros Adamson <dros@primarydata.com>
+From: Max Filippov <jcmvbkbc@gmail.com>
 
-commit 78b19bae0813bd6f921ca58490196abd101297bd upstream.
+commit a558d99263936b8a67d4eff8918745a77bfd8c31 upstream.
 
-Don't check for -NFS4ERR_NOTSUPP, it's already been mapped to -ENOTSUPP
-by nfs4_stat_to_errno.
+Remove __initdata attribute, as the devices may be used after init
+sections are freed.
 
-This allows the client to mount v4.1 servers that don't support
-SECINFO_NO_NAME by falling back to the "guess and check" method of
-nfs4_find_root_sec.
-
-Signed-off-by: Weston Andros Adamson <dros@primarydata.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4proc.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/xtensa/platforms/xtfpga/setup.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -6683,7 +6683,7 @@ nfs41_proc_secinfo_no_name(struct nfs_se
- 		switch (err) {
- 		case 0:
- 		case -NFS4ERR_WRONGSEC:
--		case -NFS4ERR_NOTSUPP:
-+		case -ENOTSUPP:
- 			goto out;
- 		default:
- 			err = nfs4_handle_exception(server, err, &exception);
-@@ -6715,7 +6715,7 @@ nfs41_find_root_sec(struct nfs_server *s
- 	 * Fall back on "guess and check" method if
- 	 * the server doesn't support SECINFO_NO_NAME
- 	 */
--	if (err == -NFS4ERR_WRONGSEC || err == -NFS4ERR_NOTSUPP) {
-+	if (err == -NFS4ERR_WRONGSEC || err == -ENOTSUPP) {
- 		err = nfs4_find_root_sec(server, fhandle, info);
- 		goto out_freepage;
- 	}
+--- a/arch/xtensa/platforms/xtfpga/setup.c
++++ b/arch/xtensa/platforms/xtfpga/setup.c
+@@ -195,7 +195,7 @@ void platform_calibrate_ccount(void)
+  *  Ethernet -- OpenCores Ethernet MAC (ethoc driver)
+  */
+ 
+-static struct resource ethoc_res[] __initdata = {
++static struct resource ethoc_res[] = {
+ 	[0] = { /* register space */
+ 		.start = OETH_REGS_PADDR,
+ 		.end   = OETH_REGS_PADDR + OETH_REGS_SIZE - 1,
+@@ -213,7 +213,7 @@ static struct resource ethoc_res[] __ini
+ 	},
+ };
+ 
+-static struct ethoc_platform_data ethoc_pdata __initdata = {
++static struct ethoc_platform_data ethoc_pdata = {
+ 	/*
+ 	 * The MAC address for these boards is 00:50:c2:13:6f:xx.
+ 	 * The last byte (here as zero) is read from the DIP switches on the
+@@ -223,7 +223,7 @@ static struct ethoc_platform_data ethoc_
+ 	.phy_id = -1,
+ };
+ 
+-static struct platform_device ethoc_device __initdata = {
++static struct platform_device ethoc_device = {
+ 	.name = "ethoc",
+ 	.id = -1,
+ 	.num_resources = ARRAY_SIZE(ethoc_res),
+@@ -237,13 +237,13 @@ static struct platform_device ethoc_devi
+  *  UART
+  */
+ 
+-static struct resource serial_resource __initdata = {
++static struct resource serial_resource = {
+ 	.start	= DUART16552_PADDR,
+ 	.end	= DUART16552_PADDR + 0x1f,
+ 	.flags	= IORESOURCE_MEM,
+ };
+ 
+-static struct plat_serial8250_port serial_platform_data[] __initdata = {
++static struct plat_serial8250_port serial_platform_data[] = {
+ 	[0] = {
+ 		.mapbase	= DUART16552_PADDR,
+ 		.irq		= DUART16552_INTNUM,
+@@ -256,7 +256,7 @@ static struct plat_serial8250_port seria
+ 	{ },
+ };
+ 
+-static struct platform_device xtavnet_uart __initdata = {
++static struct platform_device xtavnet_uart = {
+ 	.name		= "serial8250",
+ 	.id		= PLAT8250_DEV_PLATFORM,
+ 	.dev		= {
 
 
