@@ -1,19 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756133AbaBKVDJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 16:03:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39570 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751347AbaBKTFI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752569AbaBKTFI (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 11 Feb 2014 14:05:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39551 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751347AbaBKTFF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 14:05:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Max Filippov <jcmvbkbc@gmail.com>
-Subject: [PATCH 3.13 036/120] xtensa: xtfpga: fix definitions of platform devices
-Date: Tue, 11 Feb 2014 11:04:37 -0800
-Message-Id: <20140211184824.602432440@linuxfoundation.org>
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.13 031/120] fs/compat: fix lookup_dcookie() parameter handling
+Date: Tue, 11 Feb 2014 11:04:32 -0800
+Message-Id: <20140211184824.451001321@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -28,73 +34,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Max Filippov <jcmvbkbc@gmail.com>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-commit a558d99263936b8a67d4eff8918745a77bfd8c31 upstream.
+commit d8d14bd09cddbaf0168d61af638455a26bd027ff upstream.
 
-Remove __initdata attribute, as the devices may be used after init
-sections are freed.
+Commit d5dc77bfeeab ("consolidate compat lookup_dcookie()") coverted all
+architectures to the new compat_sys_lookup_dcookie() syscall.
 
-Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+The "len" paramater of the new compat syscall must have the type
+compat_size_t in order to enforce zero extension for architectures where
+the ABI requires that the caller of a function performed zero and/or
+sign extension to 64 bit of all parameters.
+
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/xtensa/platforms/xtfpga/setup.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ fs/dcookies.c          |    2 +-
+ include/linux/compat.h |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/xtensa/platforms/xtfpga/setup.c
-+++ b/arch/xtensa/platforms/xtfpga/setup.c
-@@ -194,7 +194,7 @@ void __init platform_calibrate_ccount(vo
-  *  Ethernet -- OpenCores Ethernet MAC (ethoc driver)
+--- a/fs/dcookies.c
++++ b/fs/dcookies.c
+@@ -204,7 +204,7 @@ out:
+ }
+ 
+ #ifdef CONFIG_COMPAT
+-COMPAT_SYSCALL_DEFINE4(lookup_dcookie, u32, w0, u32, w1, char __user *, buf, size_t, len)
++COMPAT_SYSCALL_DEFINE4(lookup_dcookie, u32, w0, u32, w1, char __user *, buf, compat_size_t, len)
+ {
+ #ifdef __BIG_ENDIAN
+ 	return sys_lookup_dcookie(((u64)w0 << 32) | w1, buf, len);
+--- a/include/linux/compat.h
++++ b/include/linux/compat.h
+@@ -422,7 +422,7 @@ extern long compat_arch_ptrace(struct ta
+ asmlinkage long compat_sys_ptrace(compat_long_t request, compat_long_t pid,
+ 				  compat_long_t addr, compat_long_t data);
+ 
+-asmlinkage long compat_sys_lookup_dcookie(u32, u32, char __user *, size_t);
++asmlinkage long compat_sys_lookup_dcookie(u32, u32, char __user *, compat_size_t);
+ /*
+  * epoll (fs/eventpoll.c) compat bits follow ...
   */
- 
--static struct resource ethoc_res[] __initdata = {
-+static struct resource ethoc_res[] = {
- 	[0] = { /* register space */
- 		.start = OETH_REGS_PADDR,
- 		.end   = OETH_REGS_PADDR + OETH_REGS_SIZE - 1,
-@@ -212,7 +212,7 @@ static struct resource ethoc_res[] __ini
- 	},
- };
- 
--static struct ethoc_platform_data ethoc_pdata __initdata = {
-+static struct ethoc_platform_data ethoc_pdata = {
- 	/*
- 	 * The MAC address for these boards is 00:50:c2:13:6f:xx.
- 	 * The last byte (here as zero) is read from the DIP switches on the
-@@ -222,7 +222,7 @@ static struct ethoc_platform_data ethoc_
- 	.phy_id = -1,
- };
- 
--static struct platform_device ethoc_device __initdata = {
-+static struct platform_device ethoc_device = {
- 	.name = "ethoc",
- 	.id = -1,
- 	.num_resources = ARRAY_SIZE(ethoc_res),
-@@ -236,13 +236,13 @@ static struct platform_device ethoc_devi
-  *  UART
-  */
- 
--static struct resource serial_resource __initdata = {
-+static struct resource serial_resource = {
- 	.start	= DUART16552_PADDR,
- 	.end	= DUART16552_PADDR + 0x1f,
- 	.flags	= IORESOURCE_MEM,
- };
- 
--static struct plat_serial8250_port serial_platform_data[] __initdata = {
-+static struct plat_serial8250_port serial_platform_data[] = {
- 	[0] = {
- 		.mapbase	= DUART16552_PADDR,
- 		.irq		= DUART16552_INTNUM,
-@@ -255,7 +255,7 @@ static struct plat_serial8250_port seria
- 	{ },
- };
- 
--static struct platform_device xtavnet_uart __initdata = {
-+static struct platform_device xtavnet_uart = {
- 	.name		= "serial8250",
- 	.id		= PLAT8250_DEV_PLATFORM,
- 	.dev		= {
 
 
