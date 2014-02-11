@@ -1,27 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754039AbaBKTHl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:07:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40306 "EHLO
+	id S1754802AbaBKTk0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:40:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40343 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753994AbaBKTHh (ORCPT
+	with ESMTP id S1754042AbaBKTHm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:07:37 -0500
+	Tue, 11 Feb 2014 14:07:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Andreas Krebbel <krebbel@linux.vnet.ibm.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@redhat.com>, Ralf Baechle <ralf@linux-mips.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 19/79] compat: fix sys_fanotify_mark
-Date: Tue, 11 Feb 2014 11:05:23 -0800
-Message-Id: <20140211184721.482373761@linuxfoundation.org>
+        Mike Marciniszyn <mike.marciniszyn@intel.com>,
+        Ira Weiny <ira.weiny@intel.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [PATCH 3.10 26/79] IB/qib: Fix QP check when looping back to/from QP1
+Date: Tue, 11 Feb 2014 11:05:30 -0800
+Message-Id: <20140211184721.682189506@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
 References: <20140211184720.928667275@linuxfoundation.org>
@@ -36,48 +30,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: Ira Weiny <ira.weiny@intel.com>
 
-commit 592f6b842f64e416c7598a1b97c649b34241e22d upstream.
+commit 6e0ea9e6cbcead7fa8c76e3e3b9de4a50c5131c5 upstream.
 
-Commit 91c2e0bcae72 ("unify compat fanotify_mark(2), switch to
-COMPAT_SYSCALL_DEFINE") added a new unified compat fanotify_mark syscall
-to be used by all architectures.
+The GSI QP type is compatible with and should be allowed to send data
+to/from any UD QP.  This was found when testing ibacm on the same node
+as an SA.
 
-Unfortunately the unified version merges the split mask parameter in a
-wrong way: the lower and higher word got swapped.
-
-This was discovered with glibc's tst-fanotify test case.
-
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Reported-by: Andreas Krebbel <krebbel@linux.vnet.ibm.com>
-Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
-Acked-by: "David S. Miller" <davem@davemloft.net>
-Acked-by: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reviewed-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
+Signed-off-by: Ira Weiny <ira.weiny@intel.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/notify/fanotify/fanotify_user.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/infiniband/hw/qib/qib_ud.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
---- a/fs/notify/fanotify/fanotify_user.c
-+++ b/fs/notify/fanotify/fanotify_user.c
-@@ -867,9 +867,9 @@ COMPAT_SYSCALL_DEFINE6(fanotify_mark,
- {
- 	return sys_fanotify_mark(fanotify_fd, flags,
- #ifdef __BIG_ENDIAN
--				((__u64)mask1 << 32) | mask0,
--#else
- 				((__u64)mask0 << 32) | mask1,
-+#else
-+				((__u64)mask1 << 32) | mask0,
- #endif
- 				 dfd, pathname);
- }
+--- a/drivers/infiniband/hw/qib/qib_ud.c
++++ b/drivers/infiniband/hw/qib/qib_ud.c
+@@ -57,13 +57,20 @@ static void qib_ud_loopback(struct qib_q
+ 	struct qib_sge *sge;
+ 	struct ib_wc wc;
+ 	u32 length;
++	enum ib_qp_type sqptype, dqptype;
+ 
+ 	qp = qib_lookup_qpn(ibp, swqe->wr.wr.ud.remote_qpn);
+ 	if (!qp) {
+ 		ibp->n_pkt_drops++;
+ 		return;
+ 	}
+-	if (qp->ibqp.qp_type != sqp->ibqp.qp_type ||
++
++	sqptype = sqp->ibqp.qp_type == IB_QPT_GSI ?
++			IB_QPT_UD : sqp->ibqp.qp_type;
++	dqptype = qp->ibqp.qp_type == IB_QPT_GSI ?
++			IB_QPT_UD : qp->ibqp.qp_type;
++
++	if (dqptype != sqptype ||
+ 	    !(ib_qib_state_ops[qp->state] & QIB_PROCESS_RECV_OK)) {
+ 		ibp->n_pkt_drops++;
+ 		goto drop;
 
 
