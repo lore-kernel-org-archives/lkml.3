@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754700AbaBKT2J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:28:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40447 "EHLO
+	id S1755177AbaBKT2e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:28:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40431 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754194AbaBKTID (ORCPT
+	with ESMTP id S1754188AbaBKTIB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:08:03 -0500
+	Tue, 11 Feb 2014 14:08:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ray Jui <rjui@broadcom.com>, Seungwon Jeon <tgih.jun@samsung.com>,
-        Chris Ball <cjb@laptop.org>
-Subject: [PATCH 3.10 13/79] mmc: fix host release issue after discard operation
-Date: Tue, 11 Feb 2014 11:05:17 -0800
-Message-Id: <20140211184721.317053191@linuxfoundation.org>
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Wu Fengguang <fengguang.wu@intel.com>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 11/79] mm/page-writeback.c: fix dirty_balance_reserve subtraction from dirtyable memory
+Date: Tue, 11 Feb 2014 11:05:15 -0800
+Message-Id: <20140211184721.257646791@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
 References: <20140211184720.928667275@linuxfoundation.org>
@@ -29,66 +32,147 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ray Jui <rjui@broadcom.com>
+From: Johannes Weiner <hannes@cmpxchg.org>
 
-commit f662ae48ae67dfd42739e65750274fe8de46240a upstream.
+commit a804552b9a15c931cfc2a92a2e0aed1add8b580a upstream.
 
-Under function mmc_blk_issue_rq, after an MMC discard operation,
-the MMC request data structure may be freed in memory. Later in
-the same function, the check of req->cmd_flags & MMC_REQ_SPECIAL_MASK
-is dangerous and invalid. It causes the MMC host not to be released
-when it should.
+Tejun reported stuttering and latency spikes on a system where random
+tasks would enter direct reclaim and get stuck on dirty pages.  Around
+50% of memory was occupied by tmpfs backed by an SSD, and another disk
+(rotating) was reading and writing at max speed to shrink a partition.
 
-This patch fixes the issue by marking the special request down before
-the discard/flush operation.
+: The problem was pretty ridiculous.  It's a 8gig machine w/ one ssd and 10k
+: rpm harddrive and I could reliably reproduce constant stuttering every
+: several seconds for as long as buffered IO was going on on the hard drive
+: either with tmpfs occupying somewhere above 4gig or a test program which
+: allocates about the same amount of anon memory.  Although swap usage was
+: zero, turning off swap also made the problem go away too.
+:
+: The trigger conditions seem quite plausible - high anon memory usage w/
+: heavy buffered IO and swap configured - and it's highly likely that this
+: is happening in the wild too.  (this can happen with copying large files
+: to usb sticks too, right?)
 
-Reported by: Harold (SoonYeal) Yang <haroldsy@broadcom.com>
-Signed-off-by: Ray Jui <rjui@broadcom.com>
-Reviewed-by: Seungwon Jeon <tgih.jun@samsung.com>
-Acked-by: Seungwon Jeon <tgih.jun@samsung.com>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+This patch (of 2):
+
+The dirty_balance_reserve is an approximation of the fraction of free
+pages that the page allocator does not make available for page cache
+allocations.  As a result, it has to be taken into account when
+calculating the amount of "dirtyable memory", the baseline to which
+dirty_background_ratio and dirty_ratio are applied.
+
+However, currently the reserve is subtracted from the sum of free and
+reclaimable pages, which is non-sensical and leads to erroneous results
+when the system is dominated by unreclaimable pages and the
+dirty_balance_reserve is bigger than free+reclaimable.  In that case, at
+least the already allocated cache should be considered dirtyable.
+
+Fix the calculation by subtracting the reserve from the amount of free
+pages, then adding the reclaimable pages on top.
+
+[akpm@linux-foundation.org: fix CONFIG_HIGHMEM build]
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Reported-by: Tejun Heo <tj@kernel.org>
+Tested-by: Tejun Heo <tj@kernel.org>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/card/block.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ mm/page-writeback.c |   55 ++++++++++++++++++++++------------------------------
+ 1 file changed, 24 insertions(+), 31 deletions(-)
 
---- a/drivers/mmc/card/block.c
-+++ b/drivers/mmc/card/block.c
-@@ -1931,6 +1931,7 @@ static int mmc_blk_issue_rq(struct mmc_q
- 	struct mmc_card *card = md->queue.card;
- 	struct mmc_host *host = card->host;
- 	unsigned long flags;
-+	unsigned int cmd_flags = req ? req->cmd_flags : 0;
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -188,6 +188,25 @@ static unsigned long writeout_period_tim
+  * global dirtyable memory first.
+  */
  
- 	if (req && !mq->mqrq_prev->req)
- 		/* claim host only for the first request */
-@@ -1946,7 +1947,7 @@ static int mmc_blk_issue_rq(struct mmc_q
++/**
++ * zone_dirtyable_memory - number of dirtyable pages in a zone
++ * @zone: the zone
++ *
++ * Returns the zone's number of pages potentially available for dirty
++ * page cache.  This is the base value for the per-zone dirty limits.
++ */
++static unsigned long zone_dirtyable_memory(struct zone *zone)
++{
++	unsigned long nr_pages;
++
++	nr_pages = zone_page_state(zone, NR_FREE_PAGES);
++	nr_pages -= min(nr_pages, zone->dirty_balance_reserve);
++
++	nr_pages += zone_reclaimable_pages(zone);
++
++	return nr_pages;
++}
++
+ static unsigned long highmem_dirtyable_memory(unsigned long total)
+ {
+ #ifdef CONFIG_HIGHMEM
+@@ -195,11 +214,9 @@ static unsigned long highmem_dirtyable_m
+ 	unsigned long x = 0;
+ 
+ 	for_each_node_state(node, N_HIGH_MEMORY) {
+-		struct zone *z =
+-			&NODE_DATA(node)->node_zones[ZONE_HIGHMEM];
++		struct zone *z = &NODE_DATA(node)->node_zones[ZONE_HIGHMEM];
+ 
+-		x += zone_page_state(z, NR_FREE_PAGES) +
+-		     zone_reclaimable_pages(z) - z->dirty_balance_reserve;
++		x += zone_dirtyable_memory(z);
  	}
+ 	/*
+ 	 * Unreclaimable memory (kernel memory or anonymous memory
+@@ -235,9 +252,11 @@ static unsigned long global_dirtyable_me
+ {
+ 	unsigned long x;
  
- 	mq->flags &= ~MMC_QUEUE_NEW_REQUEST;
--	if (req && req->cmd_flags & REQ_DISCARD) {
-+	if (cmd_flags & REQ_DISCARD) {
- 		/* complete ongoing async transfer before issuing discard */
- 		if (card->host->areq)
- 			mmc_blk_issue_rw_rq(mq, NULL);
-@@ -1955,7 +1956,7 @@ static int mmc_blk_issue_rq(struct mmc_q
- 			ret = mmc_blk_issue_secdiscard_rq(mq, req);
- 		else
- 			ret = mmc_blk_issue_discard_rq(mq, req);
--	} else if (req && req->cmd_flags & REQ_FLUSH) {
-+	} else if (cmd_flags & REQ_FLUSH) {
- 		/* complete ongoing async transfer before issuing flush */
- 		if (card->host->areq)
- 			mmc_blk_issue_rw_rq(mq, NULL);
-@@ -1971,7 +1972,7 @@ static int mmc_blk_issue_rq(struct mmc_q
+-	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages();
++	x = global_page_state(NR_FREE_PAGES);
+ 	x -= min(x, dirty_balance_reserve);
  
- out:
- 	if ((!req && !(mq->flags & MMC_QUEUE_NEW_REQUEST)) ||
--	     (req && (req->cmd_flags & MMC_REQ_SPECIAL_MASK)))
-+	     (cmd_flags & MMC_REQ_SPECIAL_MASK))
- 		/*
- 		 * Release host when there are no more requests
- 		 * and after special request(discard, flush) is done.
++	x += global_reclaimable_pages();
++
+ 	if (!vm_highmem_is_dirtyable)
+ 		x -= highmem_dirtyable_memory(x);
+ 
+@@ -289,32 +308,6 @@ void global_dirty_limits(unsigned long *
+ }
+ 
+ /**
+- * zone_dirtyable_memory - number of dirtyable pages in a zone
+- * @zone: the zone
+- *
+- * Returns the zone's number of pages potentially available for dirty
+- * page cache.  This is the base value for the per-zone dirty limits.
+- */
+-static unsigned long zone_dirtyable_memory(struct zone *zone)
+-{
+-	/*
+-	 * The effective global number of dirtyable pages may exclude
+-	 * highmem as a big-picture measure to keep the ratio between
+-	 * dirty memory and lowmem reasonable.
+-	 *
+-	 * But this function is purely about the individual zone and a
+-	 * highmem zone can hold its share of dirty pages, so we don't
+-	 * care about vm_highmem_is_dirtyable here.
+-	 */
+-	unsigned long nr_pages = zone_page_state(zone, NR_FREE_PAGES) +
+-		zone_reclaimable_pages(zone);
+-
+-	/* don't allow this to underflow */
+-	nr_pages -= min(nr_pages, zone->dirty_balance_reserve);
+-	return nr_pages;
+-}
+-
+-/**
+  * zone_dirty_limit - maximum number of dirty pages allowed in a zone
+  * @zone: the zone
+  *
 
 
