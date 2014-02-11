@@ -1,94 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752243AbaBKQuZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 11:50:25 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:33475 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751803AbaBKQuW (ORCPT
+	id S1752527AbaBKQuq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 11:50:46 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:49896 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752291AbaBKQun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 11:50:22 -0500
-Date: Tue, 11 Feb 2014 17:50:13 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: Re: [PATCH v2 6/8] perf/x86/uncore: add SNB/IVB/HSW client uncore
- memory controller support
-Message-ID: <20140211165013.GV27965@twins.programming.kicks-ass.net>
-References: <1392132015-14521-1-git-send-email-eranian@google.com>
- <1392132015-14521-7-git-send-email-eranian@google.com>
- <20140211161905.GS27965@twins.programming.kicks-ass.net>
- <CABPqkBRmt120Xn02sR8nhFCjuxSJ7xZbE4-G57x7rgsmB3nwNg@mail.gmail.com>
+	Tue, 11 Feb 2014 11:50:43 -0500
+Date: Tue, 11 Feb 2014 10:48:26 -0600
+From: Josh Cartwright <joshc@codeaurora.org>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>
+Subject: Re: [PATCH] of: Turn of_match_node into a static inline when
+ CONFIG_OF isn't set
+Message-ID: <20140211164825.GC841@joshc.qualcomm.com>
+References: <1392122211-11422-1-git-send-email-laurent.pinchart@ideasonboard.com>
+ <20140211144108.GB841@joshc.qualcomm.com>
+ <1596542.hkJp71u3OJ@avalon>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CABPqkBRmt120Xn02sR8nhFCjuxSJ7xZbE4-G57x7rgsmB3nwNg@mail.gmail.com>
+In-Reply-To: <1596542.hkJp71u3OJ@avalon>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 05:25:39PM +0100, Stephane Eranian wrote:
-> On Tue, Feb 11, 2014 at 5:19 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Tue, Feb 11, 2014 at 04:20:12PM +0100, Stephane Eranian wrote:
-> >> This patch adds a new uncore PMU for Intel SNB/IVB/HSW client
-> >
-> >
-> >> @@ -3501,6 +3844,28 @@ static int __init uncore_pci_init(void)
-> >>               pci_uncores = ivt_pci_uncores;
-> >>               uncore_pci_driver = &ivt_uncore_pci_driver;
-> >>               break;
-> >> +     case 42: /* Sandy Bridge */
-> >> +             ret = snb_pci2phy_map_init(PCI_DEVICE_ID_INTEL_SNB_IMC);
-> >> +             if (ret)
-> >> +                     return ret;
-> >> +             pci_uncores = snb_pci_uncores;
-> >> +             uncore_pci_driver = &snb_uncore_pci_driver;
-> >> +             break;
-> >> +     case 60: /* Haswell */
-> >> +     case 69: /* Haswell Celeron */
-> >> +             ret = snb_pci2phy_map_init(PCI_DEVICE_ID_INTEL_HSW_IMC);
-> >> +             if (ret)
-> >> +                     return ret;
-> >> +             pci_uncores = snb_pci_uncores;
-> >> +             uncore_pci_driver = &hsw_uncore_pci_driver;
-> >> +             break;
-> >> +     case 58: /* Ivy Bridge */
-> >> +             ret = snb_pci2phy_map_init(PCI_DEVICE_ID_INTEL_IVB_IMC);
-> >> +             if (ret)
-> >> +                     return ret;
-> >> +             pci_uncores = snb_pci_uncores;
-> >> +             uncore_pci_driver = &ivb_uncore_pci_driver;
-> >> +             break;
-> >>       default:
-> >>               return 0;
-> >>       }
-> >
-> > I reorderd that list; but looking at perf_event_intel.c we have a lot
-> > more HSW clients listed there. Plz as to make it consistent.
+On Tue, Feb 11, 2014 at 03:55:35PM +0100, Laurent Pinchart wrote:
+> Hi Josh,
 > 
-> I don't have all of them, so no testing possible. I doubt they have so
-> many clients model numbers.
+> On Tuesday 11 February 2014 08:41:08 Josh Cartwright wrote:
+> > On Tue, Feb 11, 2014 at 01:36:51PM +0100, Laurent Pinchart wrote:
+> > > when CONFIG_OF is disabled of_match_node is defined as a macro that
+> > > evaluates to NULL. This breaks compilation of drivers that dereference
+> > > the function's return value directly. Fix it by turning the macro into a
+> > > static inline function that returns NULL.
+> > 
+> > Just this past week I did the same thing, but noticed that it breaks the
+> > following usecase:
+> > 
+> > 	#ifdef CONFIG_OF
+> > 	static const struct of_device_id foobar_matches[] = {
+> > 		{ .compatible = "foobar,whatsit", },
+> > 		{ },
+> > 	};
+> > 	#endif
+> > 
+> > 	static int probeme(struct platform_device *pdev)
+> > 	{
+> > 		struct of_device_id *id;
+> > 
+> > 		id = of_match_node(foobar_matches, pdev->dev.of_node);
+> > 		if (id) {
+> > 			/* ... */
+> > 		}
+> > 		return 0;
+> > 	}
+> > 
+> > When !CONFIG_OF and with your change, this will fail to build due to
+> > foobar_matches being undefined.
+> 
+> Good point. What would you think about
+> 
+> #define of_match_node(_matches, _node)  ((const struct of_device_id *)NULL)
 
-Yeah, I don't have any of those chips.. last I have is WSM-EP.
+I've just sent out a patchset that cleans up at least a couple of users
+that directly do of_match_node(matches, np)->data using
+of_find_matching_node_and_match.  Not sure if that will fix the usage
+you have in mind, though.
 
-Anyway, perf_event_intel.c lists: 60,63,69,70,71 as being haswell
-clients.  Andi did all that, so if its wrong its on Intel anyway.
+I am a bit weary about having an of_match_node() user that both directly
+dereferences the result (i.e. of_match_node(matches, np)->data) _and_
+builds when !CONFIG_OF; most likely due to a traumatic childhood event
+where demons flew out my nose.
 
-I'm still thinking we ought to make a big Intel classification function;
-something that returns something like:
-
-struct intel_part {
-	enum { client, ep, ex } type;
-	enum { core, core2, nhm, wsm, snb, ivb, hsw } gen;
-};
-
-And we can do things like:
-
-  if (ip.type == client && ip.gen >= snb)
-
-And then we only have to fix up the one classification function with all
-those stupid model numbers, instead of having them duplicated all over
-the stinking place.
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
