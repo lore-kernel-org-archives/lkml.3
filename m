@@ -1,113 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752075AbaBKQuX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 11:50:23 -0500
-Received: from s3.neomailbox.net ([178.209.62.157]:5247 "EHLO
-	s3.neomailbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751668AbaBKQuV (ORCPT
+	id S1751825AbaBKQxa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 11:53:30 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:47210 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750909AbaBKQx2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 11:50:21 -0500
-Message-ID: <52FA546B.1060008@meshcoding.com>
-Date: Tue, 11 Feb 2014 17:48:43 +0100
-From: Antonio Quartulli <antonio@meshcoding.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Tue, 11 Feb 2014 11:53:28 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18SXLqHqKWhapgHvegG5qSchUc1f6Mvlnk=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 5DC945247A4
+Date: Tue, 11 Feb 2014 11:53:14 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Josh Cartwright <joshc@codeaurora.org>
+Cc: Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        devicetree@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 4/8] ARM: mvebu: make use of
+ of_find_matching_node_and_match
+Message-ID: <20140211165314.GA8533@titan.lakedaemon.net>
+References: <1392135847-30791-1-git-send-email-joshc@codeaurora.org>
+ <1392135847-30791-5-git-send-email-joshc@codeaurora.org>
 MIME-Version: 1.0
-To: Calvin Owens <jcalvinowens@gmail.com>, Joe Perches <joe@perches.com>,
-        Johannes Berg <johannes@sipsolutions.net>
-CC: "David S. Miller" <davem@davemloft.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] ieee80211: Print human-readable disassoc/deauth reason
- codes
-References: <1391651088-31785-1-git-send-email-jcalvinowens@gmail.com> <1391661863.30094.56.camel@joe-AO722> <1392030546.4128.11.camel@jlt4.sipsolutions.net> <1392050359.2507.10.camel@joe-AO722> <20140211012523.GA2739@gmail.com> <1392082740.2507.49.camel@joe-AO722> <20140211163738.GA32043@gmail.com>
-In-Reply-To: <20140211163738.GA32043@gmail.com>
-X-Enigmail-Version: 1.6
-OpenPGP: id=43FD7307
-Content-Type: multipart/signed; micalg=pgp-sha256;
- protocol="application/pgp-signature";
- boundary="TqvpCLocJD7n3wtgTEobcJsUN51HG72Ag"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392135847-30791-5-git-send-email-joshc@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---TqvpCLocJD7n3wtgTEobcJsUN51HG72Ag
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
-
-On 11/02/14 17:37, Calvin Owens wrote:
-> Create a function to return a descriptive string for each reason code,
-> and print that in addition to the numeric value in the kernel log. Thes=
-e
-> codes are easily found on popular search engines, but one is generally
-> not able to access the internet when dealing with wireless connectivity=
-
-> issues.
->=20
-> Changes in v2: Refactored array of strings into switch statement.
-> Changes in v3: Fix style problem, use simplifying macro for switch
-> statement, eliminate temporary enum variable.
->=20
-> Signed-off-by: Calvin Owens <jcalvinowens@gmail.com>
+On Tue, Feb 11, 2014 at 10:24:02AM -0600, Josh Cartwright wrote:
+> Instead of the of_find_matching_node()/of_match_node() pair, which requires two
+> iterations through the match table, make use of of_find_matching_node_and_match(),
+> which only iterates through the table once.
+> 
+> While we're here, mark the of_system_controller table const.
+> 
+> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
 > ---
->  include/net/mac80211.h | 10 +++++++++
->  net/mac80211/main.c    | 57 ++++++++++++++++++++++++++++++++++++++++++=
-++++++++
->  net/mac80211/mlme.c    | 12 +++++------
->  3 files changed, 73 insertions(+), 6 deletions(-)
->=20
-> diff --git a/include/net/mac80211.h b/include/net/mac80211.h
-> index f4ab2fb..d18acfe 100644
-> --- a/include/net/mac80211.h
-> +++ b/include/net/mac80211.h
-> @@ -2971,6 +2971,16 @@ struct ieee80211_ops {
->   */
->  struct ieee80211_hw *ieee80211_alloc_hw(size_t priv_data_len,
->  					const struct ieee80211_ops *ops);
-> +/**
-> + * ieee80211_get_reason_code_string - Get human readable reason code
-> + *
-> + * This function returns a string describing the @reason_code.
-> + *
-> + * @reason_code: Reason code
-
-Kerneldoc is not properly formatted here.
-The "@argument:" clause should be on the line right after the function
-name (as explained in Documentation/kernel-doc-nano-HOWTO.txt), e.g.:
-
-/**
- * function_name - blabla
- * @arg: I am a good arg description
- *
-
-
-Cheers,
-
---=20
-Antonio Quartulli
+>  arch/arm/mach-mvebu/system-controller.c | 9 ++++-----
+>  1 file changed, 4 insertions(+), 5 deletions(-)
+> 
+> diff --git a/arch/arm/mach-mvebu/system-controller.c b/arch/arm/mach-mvebu/system-controller.c
+> index a7fb89a..e6e300a 100644
+> --- a/arch/arm/mach-mvebu/system-controller.c
+> +++ b/arch/arm/mach-mvebu/system-controller.c
+> @@ -54,7 +54,7 @@ static const struct mvebu_system_controller orion_system_controller = {
+>  	.system_soft_reset = 0x1,
+>  };
+>  
+> -static struct of_device_id of_system_controller_table[] = {
+> +static const struct of_device_id of_system_controller_table[] = {
+>  	{
+>  		.compatible = "marvell,orion-system-controller",
+>  		.data = (void *) &orion_system_controller,
+> @@ -90,13 +90,12 @@ void mvebu_restart(enum reboot_mode mode, const char *cmd)
+>  
+>  static int __init mvebu_system_controller_init(void)
+>  {
+> +	const struct of_device_id *match;
+>  	struct device_node *np;
+>  
+> -	np = of_find_matching_node(NULL, of_system_controller_table);
+> +	np = of_find_matching_node_and_match(NULL, of_system_controller_table,
+> +					     &match);
+>  	if (np) {
+> -		const struct of_device_id *match =
+> -		    of_match_node(of_system_controller_table, np);
 
 
---TqvpCLocJD7n3wtgTEobcJsUN51HG72Ag
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+> -		BUG_ON(!match);
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Gregory, is it ok to remove this?  It was added with the original code
+submission for mach-mvebu.  mvebu_restart() will handle this
+gracefully...
 
-iQIcBAEBCAAGBQJS+lRxAAoJEEKTMo6mOh1V/n0P/ilGrLK6JIBczuqPncKiB3kl
-/5Md+JunEkQW7VVv4eey3bZZvINx1lZ8VerScSeHQRlUGg/eUFS2i4xkpd5hdL/m
-A9Py9IWCXrOpidUNiQzx9iG7lg8gmWwkxiXPezC9+pEBqe7n823L/OFS2NonizHv
-SqOJjhTaykOQAgKf1mBL+YV5WOUydV3BNK91pjraSrJBHYxHAv4OBBuNRJuat4E9
-wDjVVrW4s1haC0UK/cD8l0e35MWC3Sjdvozsda2PZxzDDKd8VRyHrnT2i3yHOdgt
-9i9TeuPYeYyB8+PVlPrxK/aCXnL9yuOwItQ62n0aipiLL7oqNCErCIgXMnABL8GH
-mC6Ku+TVhBJ97FVLmw45eIh+zvEGKzRXnv0jUIi3kS5bg926NOPvgNgr23uyatIW
-dWauzn2AicyxCVBBwwpdIBHgy5jFYhXc3BGd4Ih8fBClplOXWEVFS30hw9xk+YUK
-a/WokptTV5SyHCucpXulZKbXE9E6qSACjRjz8ybTrvFABQQPfZc+T83eN6ktpJeS
-SSdMrLK7lNk8dz8alq/zmGbYWAesFAEcPr3RiWKM1l7vuZ92eV5mTru6c124fqP7
-QApBrh7qqTVVHi0i54EmE+qoTGA62+D0t2WX6Nko9SSnNrWaKHQvjF9JvfaFLNjl
-J8TaKAgAZdcZfpyzjAgG
-=PHgj
------END PGP SIGNATURE-----
+>  		system_controller_base = of_iomap(np, 0);
+>  		mvebu_sc = (struct mvebu_system_controller *)match->data;
+>  		of_node_put(np);
 
---TqvpCLocJD7n3wtgTEobcJsUN51HG72Ag--
+thx,
+
+Jason.
