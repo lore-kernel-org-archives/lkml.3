@@ -1,85 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752017AbaBKPv4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 10:51:56 -0500
-Received: from www.linutronix.de ([62.245.132.108]:42870 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751435AbaBKPvz (ORCPT
+	id S1752097AbaBKPwW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 10:52:22 -0500
+Received: from vserver.eikelenboom.it ([84.200.39.61]:40999 "EHLO
+	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751902AbaBKPwV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 10:51:55 -0500
-Date: Tue, 11 Feb 2014 16:51:55 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Mel Gorman <mgorman@suse.de>
-cc: Peter Zijlstra <peterz@infradead.org>,
-        Chris Mason <chris.mason@fusionio.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Sebastian Sewior <bigeasy@linutronix.de>
-Subject: Re: [RFC PATCH] futex: Remove requirement for lock_page in
- get_futex_key
-In-Reply-To: <20131030092611.GJ2400@suse.de>
-Message-ID: <alpine.DEB.2.02.1402111650250.21991@ionos.tec.linutronix.de>
-References: <20131029173814.GH2400@suse.de> <alpine.DEB.2.02.1310300929420.19212@ionos.tec.linutronix.de> <20131030092611.GJ2400@suse.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 11 Feb 2014 10:52:21 -0500
+Date: Tue, 11 Feb 2014 16:52:15 +0100
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <771950784.20140211165215@eikelenboom.it>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Jens Axboe <axboe@kernel.dk>, xen-devel@lists.xensource.com,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [GIT PULL] (xen) stable/for-jens-3.14 : NFO: trying to register non-static key. the code is fine but needs lockdep annotation.
+In-Reply-To: <20140210195402.GA3924@kernel.dk>
+References: <20140210184412.GA18198@phenom.dumpdata.com> <20140210195402.GA3924@kernel.dk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Oct 2013, Mel Gorman wrote:
-> On Wed, Oct 30, 2013 at 09:45:31AM +0100, Thomas Gleixner wrote:
-> > On Tue, 29 Oct 2013, Mel Gorman wrote:
-> > 
-> > > Thomas Gleixner and Peter Zijlstra discussed off-list that real-time users
-> > > currently have a problem with the page lock being contended for unbounded
-> > > periods of time during futex operations. The three of us discussed the
-> > > possibiltity that the page lock is unnecessary in this case because we are
-> > > not concerned with the usual races with reclaim and page cache updates. For
-> > > anonymous pages, the associated futex object is the mm_struct which does
-> > > not require the page lock. For inodes, we should be able to check under
-> > > RCU read lock if the page mapping is still valid to take a reference to
-> > > the inode.  This just leaves one rare race that requires the page lock
-> > > in the slow path. This patch does not completely eliminate the page lock
-> > > but it should reduce contention in the majority of cases.
-> > > 
-> > > Patch boots and futextest did not explode but I did no comparison
-> > > performance tests. Thomas, do you have details of the workload that
-> > > drove you to examine this problem? Alternatively, can you test it and
-> > 
-> > The scenario is simple. All you need is a PSHARED futex.
-> > 
-> > Task A 
-> >      get_futex_key()
-> >      lock_page()
-> > 
-> > ---> preemption
-> > 
-> 
-> Ok, so scaling numbers of threads doing something like multiple
-> consumers using FUTEX_WAIT and then all being woken should trigger it.
-> Should not be that hard to device a test if something in futextest does
-> not do it alreayd.
-> 
-> > Now any other task trying to lock that page will have to wait until
-> > task A gets scheduled back in, which is an unbound time.
-> > 
-> > It takes quite some time to reproduce, but I'll ask the people who
-> > have that workload to give it a try.
-> > 
-> 
-> Do please. I'd rather not sink time into trying to reproduce a hypothetical
-> problem when people who are already familiar with it can provide better
-> data. If it stays quiet for too long then I'll either use an existing
-> futextest, extend futextest or conclude that the problem was not major
-> in the first place if the users cannot be arsed testing a patch.
+Hi Konrad,
 
-Took some time, but the folks finally came around to give it a try and
-it fixes their problem. I did not explode either, but I doubt, that
-their workload can trigger any of the corner cases.
+Today decided to tryout another kernel RC and your pull request to Jens on top of it .. and I encoutered this one:
 
-Thanks,
 
-	tglx
+[  438.029756] INFO: trying to register non-static key.
+[  438.029759] the code is fine but needs lockdep annotation.
+[  438.029760] turning off the locking correctness validator.
+[  438.029770] CPU: 3 PID: 9593 Comm: blkback.2.xvda Tainted: G        W    3.14.0-rc2-20140211-pcireset-net-btrevert-xenblock+ #1
+[  438.029773] Hardware name: MSI MS-7640/890FXA-GD70 (MS-7640)  , BIOS V1.8B1 09/13/2010
+[  438.029784]  ffff88005224c4f0 ffff88004e5d9b68 ffffffff81b808c4 ffff88004ba2b510
+[  438.029791]  0000000000000002 ffff88004e5d9c38 ffffffff81116eab ffff88004e5d9bf8
+[  438.029798]  ffffffff81117b35 0000000000000000 0000000000000000 ffffffff82cee570
+[  438.029799] Call Trace:
+[  438.029815]  [<ffffffff81b808c4>] dump_stack+0x46/0x58
+[  438.029826]  [<ffffffff81116eab>] __lock_acquire+0x1c2b/0x2220
+[  438.029833]  [<ffffffff81117b35>] ? lock_acquire+0xe5/0x150
+[  438.029841]  [<ffffffff81117b0d>] lock_acquire+0xbd/0x150
+[  438.029847]  [<ffffffff810e5965>] ? flush_work+0x5/0x290
+[  438.029852]  [<ffffffff810e599d>] flush_work+0x3d/0x290
+[  438.029856]  [<ffffffff810e5965>] ? flush_work+0x5/0x290
+[  438.029863]  [<ffffffff81117b35>] ? lock_acquire+0xe5/0x150
+[  438.029872]  [<ffffffff816fef01>] ? xen_blkif_schedule+0x1a1/0x8d0
+[  438.029881]  [<ffffffff81b8ae0d>] ? _raw_spin_unlock_irqrestore+0x6d/0x90
+[  438.029888]  [<ffffffff8111392b>] ? trace_hardirqs_on_caller+0xfb/0x240
+[  438.029894]  [<ffffffff81113a7d>] ? trace_hardirqs_on+0xd/0x10
+[  438.029901]  [<ffffffff816fefe9>] xen_blkif_schedule+0x289/0x8d0
+[  438.029907]  [<ffffffff8110d510>] ? __init_waitqueue_head+0x60/0x60
+[  438.029913]  [<ffffffff81113a7d>] ? trace_hardirqs_on+0xd/0x10
+[  438.029919]  [<ffffffff81b8ae21>] ? _raw_spin_unlock_irqrestore+0x81/0x90
+[  438.029925]  [<ffffffff816fed60>] ? xen_blkif_be_int+0x40/0x40
+[  438.029932]  [<ffffffff810ee374>] kthread+0xe4/0x100
+[  438.029938]  [<ffffffff81b8afe0>] ? _raw_spin_unlock_irq+0x30/0x50
+[  438.029946]  [<ffffffff810ee290>] ? __init_kthread_worker+0x70/0x70
+[  438.029951]  [<ffffffff81b8c1fc>] ret_from_fork+0x7c/0xb0
+[  438.029958]  [<ffffffff810ee290>] ? __init_kthread_worker+0x70/0x70
+
+Doesn't seem to serious .. but never the less :-)
+
+--
+
+Sander
+
+
+Monday, February 10, 2014, 8:54:02 PM, you wrote:
+
+> On Mon, Feb 10 2014, Konrad Rzeszutek Wilk wrote:
+>> Hey Jens,
+>> 
+>> Please git pull the following branch:
+>> 
+>>  git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip.git stable/for-jens-3.14
+>> 
+>> which is based off v3.13-rc6. If you would like me to rebase it on
+>> a different branch/tag I would be more than happy to do so.
+
+> Older is fine, it's only an issue if you are ahead of the branch you
+> want to go into.
+
+dd>> 
+>> The patches are all bug-fixes and hopefully can go in 3.14.
+>> 
+>> They deal with xen-blkback shutdown and cause memory leaks
+>> as well as shutdown races. They should go to stable tree and if you
+>> are OK with I will ask them to backport those fixes.
+>> 
+>> There is also a fix to xen-blkfront to deal with unexpected state
+>> transition. And lastly a fix to the header where it was using the
+>> __aligned__ unnecessarily.
+
+> Pulled!
+
+
