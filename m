@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754798AbaBKVHI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 16:07:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39491 "EHLO
+	id S932101AbaBKVHg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 16:07:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39500 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752456AbaBKTE7 (ORCPT
+	with ESMTP id S1752449AbaBKTE7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Feb 2014 14:04:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christoph Lameter <cl@linux.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, Li Zefan <lizefan@huawei.com>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: [PATCH 3.13 025/120] slub: Fix calculation of cpu slabs
-Date: Tue, 11 Feb 2014 11:04:26 -0800
-Message-Id: <20140211184824.271308793@linuxfoundation.org>
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [PATCH 3.13 024/120] ARM: mvebu: Fix kernel hang in mvebu_soc_id_init() when of_iomap failed
+Date: Tue, 11 Feb 2014 11:04:25 -0800
+Message-Id: <20140211184824.241253352@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -30,54 +30,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Zefan <lizefan@huawei.com>
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 
-commit 8afb1474db4701d1ab80cd8251137a3260e6913e upstream.
+commit dc4910d9e93f8cc56b190dd8fc9e789135978216 upstream.
 
-  /sys/kernel/slab/:t-0000048 # cat cpu_slabs
-  231 N0=16 N1=215
-  /sys/kernel/slab/:t-0000048 # cat slabs
-  145 N0=36 N1=109
+When pci_base is accessed whereas it has not been properly mapped by
+of_iomap() the kernel hang. The check of this pointer made an improper
+use of IS_ERR() instead of comparing to NULL. This patch fix this
+issue.
 
-See, the number of slabs is smaller than that of cpu slabs.
-
-The bug was introduced by commit 49e2258586b423684f03c278149ab46d8f8b6700
-("slub: per cpu cache for partial pages").
-
-We should use page->pages instead of page->pobjects when calculating
-the number of cpu partial slabs. This also fixes the mapping of slabs
-and nodes.
-
-As there's no variable storing the number of total/active objects in
-cpu partial slabs, and we don't have user interfaces requiring those
-statistics, I just add WARN_ON for those cases.
-
-Acked-by: Christoph Lameter <cl@linux.com>
-Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Reported-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Fixes: 930ab3d403ae (i2c: mv64xxx: Add I2C Transaction Generator support)
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/slub.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ arch/arm/mach-mvebu/mvebu-soc-id.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -4299,7 +4299,13 @@ static ssize_t show_slab_objects(struct
+--- a/arch/arm/mach-mvebu/mvebu-soc-id.c
++++ b/arch/arm/mach-mvebu/mvebu-soc-id.c
+@@ -88,7 +88,7 @@ static int __init mvebu_soc_id_init(void
+ 	}
  
- 			page = ACCESS_ONCE(c->partial);
- 			if (page) {
--				x = page->pobjects;
-+				node = page_to_nid(page);
-+				if (flags & SO_TOTAL)
-+					WARN_ON_ONCE(1);
-+				else if (flags & SO_OBJECTS)
-+					WARN_ON_ONCE(1);
-+				else
-+					x = page->pages;
- 				total += x;
- 				nodes[node] += x;
- 			}
+ 	pci_base = of_iomap(child, 0);
+-	if (IS_ERR(pci_base)) {
++	if (pci_base == NULL) {
+ 		pr_err("cannot map registers\n");
+ 		ret = -ENOMEM;
+ 		goto res_ioremap;
 
 
