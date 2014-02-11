@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755931AbaBKU4L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:56:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39635 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752693AbaBKTFV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752752AbaBKTFV (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 11 Feb 2014 14:05:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39612 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752693AbaBKTFQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 14:05:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.13 055/120] dm space map metadata: fix extending the space map
-Date: Tue, 11 Feb 2014 11:04:56 -0800
-Message-Id: <20140211184825.195455276@linuxfoundation.org>
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [PATCH 3.13 007/120] Revert "EISA: Initialize device before its resources"
+Date: Tue, 11 Feb 2014 11:04:08 -0800
+Message-Id: <20140211184823.723730298@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -28,65 +28,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Thornber <ejt@redhat.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
 
-commit 7e664b3dec431eebf0c5df5ff704d6197634cf35 upstream.
+commit 765ee51f9a3f652959b4c7297d198a28e37952b4 upstream.
 
-When extending a metadata space map we should do the first commit whilst
-still in bootstrap mode -- a mode where all blocks get allocated in the
-new area.
+This reverts commit 26abfeed4341872364386c6a52b9acef8c81a81a.
 
-That way the commit overhead is allocated from the newly added space.
-Otherwise we risk running out of space.
+In the eisa_probe() force_probe path, if we were unable to request slot
+resources (e.g., [io 0x800-0x8ff]), we skipped the slot with "Cannot
+allocate resource for EISA slot %d" before reading the EISA signature in
+eisa_init_device().
 
-With this fix, and the previous commit "dm space map common: make sure
-new space is used during extend", the following device mapper testsuite
-test passes:
- dmtest run --suite thin-provisioning -n /resize_metadata_no_io/
+Commit 26abfeed4341 moved eisa_init_device() earlier, so we tried to read
+the EISA signature before requesting the slot resources, and this caused
+hangs during boot.
 
-Signed-off-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Link: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1251816
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/persistent-data/dm-space-map-metadata.c |   18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
+ drivers/eisa/eisa-bus.c |   26 +++++++++++++++-----------
+ 1 file changed, 15 insertions(+), 11 deletions(-)
 
---- a/drivers/md/persistent-data/dm-space-map-metadata.c
-+++ b/drivers/md/persistent-data/dm-space-map-metadata.c
-@@ -608,20 +608,28 @@ static int sm_metadata_extend(struct dm_
- 	 * Flick into a mode where all blocks get allocated in the new area.
- 	 */
- 	smm->begin = old_len;
--	memcpy(&smm->sm, &bootstrap_ops, sizeof(smm->sm));
-+	memcpy(sm, &bootstrap_ops, sizeof(*sm));
+--- a/drivers/eisa/eisa-bus.c
++++ b/drivers/eisa/eisa-bus.c
+@@ -275,11 +275,13 @@ static int __init eisa_request_resources
+ 		}
+ 		
+ 		if (slot) {
++			edev->res[i].name  = NULL;
+ 			edev->res[i].start = SLOT_ADDRESS(root, slot)
+ 					     + (i * 0x400);
+ 			edev->res[i].end   = edev->res[i].start + 0xff;
+ 			edev->res[i].flags = IORESOURCE_IO;
+ 		} else {
++			edev->res[i].name  = NULL;
+ 			edev->res[i].start = SLOT_ADDRESS(root, slot)
+ 					     + EISA_VENDOR_ID_OFFSET;
+ 			edev->res[i].end   = edev->res[i].start + 3;
+@@ -326,19 +328,20 @@ static int __init eisa_probe(struct eisa
+ 		return -ENOMEM;
+ 	}
+ 		
+-	if (eisa_init_device(root, edev, 0)) {
++	if (eisa_request_resources(root, edev, 0)) {
++		dev_warn(root->dev,
++		         "EISA: Cannot allocate resource for mainboard\n");
+ 		kfree(edev);
+ 		if (!root->force_probe)
+-			return -ENODEV;
++			return -EBUSY;
+ 		goto force_probe;
+ 	}
  
- 	/*
- 	 * Extend.
- 	 */
- 	r = sm_ll_extend(&smm->ll, extra_blocks);
-+	if (r)
-+		goto out;
+-	if (eisa_request_resources(root, edev, 0)) {
+-		dev_warn(root->dev,
+-		         "EISA: Cannot allocate resource for mainboard\n");
++	if (eisa_init_device(root, edev, 0)) {
++		eisa_release_resources(edev);
+ 		kfree(edev);
+ 		if (!root->force_probe)
+-			return -EBUSY;
++			return -ENODEV;
+ 		goto force_probe;
+ 	}
  
-+	for (i = old_len; !r && i < smm->begin; i++) {
-+		r = sm_ll_inc(&smm->ll, i, &ev);
-+		if (r)
-+			goto out;
-+	}
-+
-+	r = sm_metadata_commit(sm);
-+
-+out:
- 	/*
- 	 * Switch back to normal behaviour.
- 	 */
--	memcpy(&smm->sm, &ops, sizeof(smm->sm));
--	for (i = old_len; !r && i < smm->begin; i++)
--		r = sm_ll_inc(&smm->ll, i, &ev);
+@@ -361,11 +364,6 @@ static int __init eisa_probe(struct eisa
+ 			continue;
+ 		}
+ 
+-		if (eisa_init_device(root, edev, i)) {
+-			kfree(edev);
+-			continue;
+-		}
 -
-+	memcpy(sm, &ops, sizeof(*sm));
- 	return r;
- }
+ 		if (eisa_request_resources(root, edev, i)) {
+ 			dev_warn(root->dev,
+ 			         "Cannot allocate resource for EISA slot %d\n",
+@@ -373,6 +371,12 @@ static int __init eisa_probe(struct eisa
+ 			kfree(edev);
+ 			continue;
+ 		}
++
++		if (eisa_init_device(root, edev, i)) {
++			eisa_release_resources(edev);
++			kfree(edev);
++			continue;
++		}
  
+ 		if (edev->state == (EISA_CONFIG_ENABLED | EISA_CONFIG_FORCED))
+ 			enabled_str = " (forced enabled)";
 
 
