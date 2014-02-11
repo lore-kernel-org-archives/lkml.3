@@ -1,83 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753582AbaBKVag (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 16:30:36 -0500
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:32893 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751664AbaBKVae (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 16:30:34 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAMuHMdVkPLe5986hYPApoQr7oJSb6U2P71=nP+9mtvtaskdHXg@mail.gmail.com>
-References: <1392122211-11422-1-git-send-email-laurent.pinchart@ideasonboard.com>
-	<1596542.hkJp71u3OJ@avalon>
-	<20140211164825.GC841@joshc.qualcomm.com>
-	<6446980.WMjvBYStRY@avalon>
-	<20140211180845.GG841@joshc.qualcomm.com>
-	<CAMuHMdVkPLe5986hYPApoQr7oJSb6U2P71=nP+9mtvtaskdHXg@mail.gmail.com>
-Date: Tue, 11 Feb 2014 15:30:33 -0600
-Message-ID: <CAL_JsqKnsr-9nSjCGvroC0nDK36vQUnwMWj=cPjvUbRymmHFOQ@mail.gmail.com>
-Subject: Re: [PATCH] of: Turn of_match_node into a static inline when
- CONFIG_OF isn't set
-From: Rob Herring <robherring2@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Josh Cartwright <joshc@codeaurora.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753800AbaBKVb2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 16:31:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12449 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753011AbaBKVb1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 16:31:27 -0500
+Date: Tue, 11 Feb 2014 16:31:08 -0500
+From: Luiz Capitulino <lcapitulino@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, mtosatti@redhat.com, mgorman@suse.de,
+        aarcange@redhat.com, riel@redhat.com
+Subject: Re: [PATCH 0/4] hugetlb: add hugepagesnid= command-line option
+Message-ID: <20140211163108.3136d55a@redhat.com>
+In-Reply-To: <20140211211732.GS11821@two.firstfloor.org>
+References: <1392053268-29239-1-git-send-email-lcapitulino@redhat.com>
+	<20140211211732.GS11821@two.firstfloor.org>
+Organization: Red Hat
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 12:29 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> On Tue, Feb 11, 2014 at 7:08 PM, Josh Cartwright <joshc@codeaurora.org> wrote:
->> It sure would be convenient if platform_device had a 'const struct
->> of_device_id *of_id_entry' member similar to the existing struct
->> platform_device_id one, that was set up during platform device matching.
->> Most platform_driver users of of_match_node() would simply go away.
->
-> Can't the entry be shared for both platform_device_id and of_device_id?
-> Only one of them can be valid at the same time, right?
->
-> Ideally, all xxx_device_id look like
->
->     struct xxx_device_id {
->             ... /* bus-specific ID information */
->             kernel_ulong_t driver_data;
->     };
->
-> This may be formalized in some way, using a base class, but thay may
-> require reordering the fields, like:
->
->     struct base_device_id {
->             kernel_ulong_t driver_data;
->             long id[0];
->     };
->
+On Tue, 11 Feb 2014 22:17:32 +0100
+Andi Kleen <andi@firstfloor.org> wrote:
 
-I believe this is the reason drivers have to call of_match_device:
+> On Mon, Feb 10, 2014 at 12:27:44PM -0500, Luiz Capitulino wrote:
+> > HugeTLB command-line option hugepages= allows the user to specify how many
+> > huge pages should be allocated at boot. On NUMA systems, this argument
+> > automatically distributes huge pages allocation among nodes, which can
+> > be undesirable.
+> > 
+> > The hugepagesnid= option introduced by this commit allows the user
+> > to specify which NUMA nodes should be used to allocate boot-time HugeTLB
+> > pages. For example, hugepagesnid=0,2,2G will allocate two 2G huge pages
+> > from node 0 only. More details on patch 3/4 and patch 4/4.
+> 
+> The syntax seems very confusing. Can you make that more obvious?
 
-commit b1608d69cb804e414d0887140ba08a9398e4e638
-Author: Grant Likely <grant.likely@secretlab.ca>
-Date:   Wed May 18 11:19:24 2011 -0600
+I guess that my bad description in this email may have contributed to make
+it look confusing.
 
-    drivercore: revert addition of of_match to struct device
-
-    Commit b826291c, "drivercore/dt: add a match table pointer to struct
-    device" added an of_match pointer to struct device to cache the
-    of_match_table entry discovered at driver match time.  This was unsafe
-    because matching is not an atomic operation with probing a driver.  If
-    two or more drivers are attempted to be matched to a driver at the
-    same time, then the cached matching entry pointer could get
-    overwritten.
-
-    This patch reverts the of_match cache pointer and reworks all users to
-    call of_match_device() directly instead.
-
-    Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-
-Rob
+The real syntax is hugepagesnid=nid,nr-pages,size. Which looks straightforward
+to me. I honestly can't think of anything better than that, but I'm open for
+suggestions.
