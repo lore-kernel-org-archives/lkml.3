@@ -1,69 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752891AbaBMBgx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 20:36:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54109 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751644AbaBMBgw (ORCPT
+	id S1752936AbaBMBhe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 20:37:34 -0500
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:61326 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751076AbaBMBhb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 20:36:52 -0500
-Date: Wed, 12 Feb 2014 17:39:02 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: David Miller <davem@davemloft.net>
-Cc: mst@redhat.com, linux-kernel@vger.kernel.org, jasowang@redhat.com,
-        virtio-dev@lists.oasis-open.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        qinchuanyu@huawei.com, joern@logfs.org, anatol.pomozov@gmail.com,
-        nab@linux-iscsi.org
-Subject: Re: [PATCH net 1/3] kref: add kref_sub_return
-Message-ID: <20140213013902.GA21261@kroah.com>
-References: <1392222846-26699-1-git-send-email-mst@redhat.com>
- <1392222846-26699-2-git-send-email-mst@redhat.com>
- <20140212165630.GA22991@kroah.com>
- <20140212.190637.328045386111912135.davem@davemloft.net>
+	Wed, 12 Feb 2014 20:37:31 -0500
+Message-ID: <52F999F8.8070808@samsung.com>
+Date: Tue, 11 Feb 2014 12:33:12 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140212.190637.328045386111912135.davem@davemloft.net>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Laura Abbott <lauraa@codeaurora.org>
+CC: Russell King <linux@arm.linux.org.uk>, David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        linux-arm-msm@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
+        linux-kernel@vger.kernel.org, Leif Lindholm <leif.lindholm@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>, linux-mm@kvack.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCHv3 2/2] arm: Get rid of meminfo
+References: <1392153265-14439-1-git-send-email-lauraa@codeaurora.org> <1392153265-14439-3-git-send-email-lauraa@codeaurora.org>
+In-Reply-To: <1392153265-14439-3-git-send-email-lauraa@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 07:06:37PM -0500, David Miller wrote:
-> From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Date: Wed, 12 Feb 2014 08:56:30 -0800
-> 
-> > On Wed, Feb 12, 2014 at 06:38:21PM +0200, Michael S. Tsirkin wrote:
-> >> It is sometimes useful to get the value of the reference count after
-> >> decrement.
-> >> For example, vhost wants to execute some periodic cleanup operations
-> >> once number of references drops below a specific value, before it
-> >> reaches zero (for efficiency).
-> > 
-> > You should never care about what the value of the kref is, if you are
-> > using it correctly :)
-> 
-> It isn't being used to determine when to destroy things.
-> 
-> They use it to as a heuristic of when to trigger polling.
-> 
-> Each ubuf attached gets a kref to the higher level virtio_net buffer
-> holding object, they want to trigger polling when that reference drops
-> to 1 or lower.
-> 
-> Right now they are reading the atomic refcount directly, which
-> I think is much worse than this helper.
+On 02/12/14 06:14, Laura Abbott wrote:
+> memblock is now fully integrated into the kernel and is the prefered
+> method for tracking memory. Rather than reinvent the wheel with
+> meminfo, migrate to using memblock directly instead of meminfo as
+> an intermediate.
+>
+> Acked-by: Jason Cooper<jason@lakedaemon.net>
+> Acked-by: Catalin Marinas<catalin.marinas@arm.com>
+> Acked-by: Santosh Shilimkar<santosh.shilimkar@ti.com>
+> Tested-by: Leif Lindholm<leif.lindholm@linaro.org>
+> Signed-off-by: Laura Abbott<lauraa@codeaurora.org>
+> ---
+>   arch/arm/include/asm/mach/arch.h         |    4 +-
+>   arch/arm/include/asm/memblock.h          |    3 +-
+>   arch/arm/include/asm/setup.h             |   23 ------
+>   arch/arm/kernel/atags_parse.c            |    5 +-
+>   arch/arm/kernel/devtree.c                |    5 --
+>   arch/arm/kernel/setup.c                  |   30 ++------
+>   arch/arm/mach-clps711x/board-clep7312.c  |    7 +-
+>   arch/arm/mach-clps711x/board-edb7211.c   |   10 +--
+>   arch/arm/mach-clps711x/board-p720t.c     |    2 +-
+>   arch/arm/mach-footbridge/cats-hw.c       |    2 +-
+>   arch/arm/mach-footbridge/netwinder-hw.c  |    2 +-
+>   arch/arm/mach-msm/board-halibut.c        |    6 --
+>   arch/arm/mach-msm/board-mahimahi.c       |   13 +---
+>   arch/arm/mach-msm/board-msm7x30.c        |    3 +-
+>   arch/arm/mach-msm/board-sapphire.c       |   13 ++--
+>   arch/arm/mach-msm/board-trout.c          |    8 +--
+>   arch/arm/mach-orion5x/common.c           |    3 +-
+>   arch/arm/mach-orion5x/common.h           |    3 +-
+>   arch/arm/mach-pxa/cm-x300.c              |    3 +-
+>   arch/arm/mach-pxa/corgi.c                |   10 +--
+>   arch/arm/mach-pxa/eseries.c              |    9 +--
+>   arch/arm/mach-pxa/poodle.c               |    8 +--
+>   arch/arm/mach-pxa/spitz.c                |    8 +--
+>   arch/arm/mach-pxa/tosa.c                 |    8 +--
+>   arch/arm/mach-realview/core.c            |   11 +--
+>   arch/arm/mach-realview/core.h            |    3 +-
+>   arch/arm/mach-realview/realview_pb1176.c |    8 +--
+>   arch/arm/mach-realview/realview_pbx.c    |   17 ++---
+>   arch/arm/mach-s3c24xx/mach-smdk2413.c    |    8 +--
+>   arch/arm/mach-s3c24xx/mach-vstms.c       |    8 +--
 
-Yes, that's horrible as well, but as was already pointed out in this
-thread, you can't rely on that value to really be "1" after reading it
-due to the way krefs work, what happened if someone else just grabbed
-it?
+For s3c24xx,
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
 
-If all they want is a "count" for when to start polling, then use a
-separate atomic count, but don't abuse the kref interface for this, I
-don't think that will work properly at all.
+>   arch/arm/mach-sa1100/assabet.c           |    2 +-
+>   arch/arm/mm/init.c                       |   67 +++++++-----------
+>   arch/arm/mm/mmu.c                        |  115 +++++++++---------------------
+>   33 files changed, 136 insertions(+), 291 deletions(-)
 
-thanks,
-
-greg k-h
+Thanks,
+Kukjin
