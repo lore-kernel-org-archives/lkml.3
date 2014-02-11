@@ -1,31 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752549AbaBKMUW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 07:20:22 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:46667 "EHLO
+	id S1752358AbaBKMTk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 07:19:40 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:46618 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751014AbaBKMUQ (ORCPT
+	with ESMTP id S1752317AbaBKMTi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 07:20:16 -0500
-Date: Tue, 11 Feb 2014 04:18:32 -0800
+	Tue, 11 Feb 2014 07:19:38 -0500
+Date: Tue, 11 Feb 2014 04:17:56 -0800
 From: tip-bot for Nicolas Pitre <tipbot@zytor.com>
-Message-ID: <tip-3ioazimg4j5iq6kdefks04i8@git.kernel.org>
+Message-ID: <tip-y2nbw5j3ma5siy5584919z5i@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        nicolas.pitre@linaro.org, lethal@linux-sh.org,
+        peterz@infradead.org, nicolas.pitre@linaro.org, lethal@linux-sh.org,
         benh@kernel.crashing.org, linux@arm.linux.org.uk,
         preeti@linux.vnet.ibm.com, nico@linaro.org, rjw@rjwysocki.net,
         tglx@linutronix.de, daniel.lezcano@linaro.org
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        nicolas.pitre@linaro.org, lethal@linux-sh.org,
+        peterz@infradead.org, nicolas.pitre@linaro.org, lethal@linux-sh.org,
         benh@kernel.crashing.org, preeti@linux.vnet.ibm.com,
         linux@arm.linux.org.uk, nico@linaro.org, tglx@linutronix.de,
         rjw@rjwysocki.net, daniel.lezcano@linaro.org
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/idle, x86:
+Subject: [tip:sched/core] sched/idle, ARM:
   Remove redundant cpuidle_idle_call()
-Git-Commit-ID: 16f8b05abe33575b5fc0833cab1286bd6227f255
+Git-Commit-ID: ad68cc7a777948b77f15a3dc3510918ff87ed0c0
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,19 +32,19 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 11 Feb 2014 04:18:38 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 11 Feb 2014 04:18:02 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  16f8b05abe33575b5fc0833cab1286bd6227f255
-Gitweb:     http://git.kernel.org/tip/16f8b05abe33575b5fc0833cab1286bd6227f255
+Commit-ID:  ad68cc7a777948b77f15a3dc3510918ff87ed0c0
+Gitweb:     http://git.kernel.org/tip/ad68cc7a777948b77f15a3dc3510918ff87ed0c0
 Author:     Nicolas Pitre <nicolas.pitre@linaro.org>
-AuthorDate: Wed, 29 Jan 2014 12:45:12 -0500
+AuthorDate: Wed, 29 Jan 2014 12:45:09 -0500
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 11 Feb 2014 09:58:28 +0100
+CommitDate: Tue, 11 Feb 2014 09:58:22 +0100
 
-sched/idle, x86: Remove redundant cpuidle_idle_call()
+sched/idle, ARM: Remove redundant cpuidle_idle_call()
 
 The core idle loop now takes care of it.
 
@@ -62,27 +60,51 @@ Cc: linux-pm@vger.kernel.org
 Cc: Russell King <linux@arm.linux.org.uk>
 Cc: linaro-kernel@lists.linaro.org
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/n/tip-3ioazimg4j5iq6kdefks04i8@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-y2nbw5j3ma5siy5584919z5i@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/process.c | 5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ arch/arm/kernel/process.c | 16 +++++-----------
+ 1 file changed, 5 insertions(+), 11 deletions(-)
 
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index 3fb8d95..4505e2a 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -298,10 +298,7 @@ void arch_cpu_idle_dead(void)
-  */
- void arch_cpu_idle(void)
+diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
+index 92f7b15..adabeab 100644
+--- a/arch/arm/kernel/process.c
++++ b/arch/arm/kernel/process.c
+@@ -30,7 +30,6 @@
+ #include <linux/uaccess.h>
+ #include <linux/random.h>
+ #include <linux/hw_breakpoint.h>
+-#include <linux/cpuidle.h>
+ #include <linux/leds.h>
+ #include <linux/reboot.h>
+ 
+@@ -133,7 +132,11 @@ EXPORT_SYMBOL_GPL(arm_pm_restart);
+ 
+ void (*arm_pm_idle)(void);
+ 
+-static void default_idle(void)
++/*
++ * Called from the core idle loop.
++ */
++
++void arch_cpu_idle(void)
  {
--	if (cpuidle_idle_call())
--		x86_idle();
--	else
--		local_irq_enable();
-+	x86_idle();
- }
+ 	if (arm_pm_idle)
+ 		arm_pm_idle();
+@@ -168,15 +171,6 @@ void arch_cpu_idle_dead(void)
+ #endif
  
  /*
+- * Called from the core idle loop.
+- */
+-void arch_cpu_idle(void)
+-{
+-	if (cpuidle_idle_call())
+-		default_idle();
+-}
+-
+-/*
+  * Called by kexec, immediately prior to machine_kexec().
+  *
+  * This must completely disable all secondary CPUs; simply causing those CPUs
