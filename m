@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755877AbaBKUxh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:53:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39668 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752529AbaBKTF2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752821AbaBKTF2 (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 11 Feb 2014 14:05:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39643 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752529AbaBKTFX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 14:05:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.13 064/120] mm, oom: base root bonus on current usage
-Date: Tue, 11 Feb 2014 11:05:05 -0800
-Message-Id: <20140211184825.444456224@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.13 058/120] drm/radeon/dpm: disable mclk switching on desktop RV770
+Date: Tue, 11 Feb 2014 11:04:59 -0800
+Message-Id: <20140211184825.278466197@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -31,74 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Rientjes <rientjes@google.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 778c14affaf94a9e4953179d3e13a544ccce7707 upstream.
+commit 8097d94116d0c17e774ba4c8256e774018dc2a46 upstream.
 
-A 3% of system memory bonus is sometimes too excessive in comparison to
-other processes.
+Mclk switching doesn't seem to work reliably on these
+cards.  Most RV770 boards specify the same mclk for all
+performance levels anyway so in most cases, this has
+no affect.
 
-With commit a63d83f427fb ("oom: badness heuristic rewrite"), the OOM
-killer tries to avoid killing privileged tasks by subtracting 3% of
-overall memory (system or cgroup) from their per-task consumption.  But
-as a result, all root tasks that consume less than 3% of overall memory
-are considered equal, and so it only takes 33+ privileged tasks pushing
-the system out of memory for the OOM killer to do something stupid and
-kill dhclient or other root-owned processes.  For example, on a 32G
-machine it can't tell the difference between the 1M agetty and the 10G
-fork bomb member.
+Bug:
+https://bugs.freedesktop.org/show_bug.cgi?id=73067
 
-The changelog describes this 3% boost as the equivalent to the global
-overcommit limit being 3% higher for privileged tasks, but this is not
-the same as discounting 3% of overall memory from _every privileged task
-individually_ during OOM selection.
-
-Replace the 3% of system memory bonus with a 3% of current memory usage
-bonus.
-
-By giving root tasks a bonus that is proportional to their actual size,
-they remain comparable even when relatively small.  In the example
-above, the OOM killer will discount the 1M agetty's 256 badness points
-down to 179, and the 10G fork bomb's 262144 points down to 183500 points
-and make the right choice, instead of discounting both to 0 and killing
-agetty because it's first in the task list.
-
-Signed-off-by: David Rientjes <rientjes@google.com>
-Reported-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/filesystems/proc.txt |    4 ++--
- mm/oom_kill.c                      |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/radeon/rv770_dpm.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/Documentation/filesystems/proc.txt
-+++ b/Documentation/filesystems/proc.txt
-@@ -1377,8 +1377,8 @@ may allocate from based on an estimation
- For example, if a task is using all allowed memory, its badness score will be
- 1000.  If it is using half of its allowed memory, its score will be 500.
+--- a/drivers/gpu/drm/radeon/rv770_dpm.c
++++ b/drivers/gpu/drm/radeon/rv770_dpm.c
+@@ -2531,6 +2531,12 @@ bool rv770_dpm_vblank_too_short(struct r
+ 	    (rdev->pdev->subsystem_device == 0x1c42))
+ 		switch_limit = 200;
  
--There is an additional factor included in the badness score: root
--processes are given 3% extra memory over other tasks.
-+There is an additional factor included in the badness score: the current memory
-+and swap usage is discounted by 3% for root processes.
- 
- The amount of "allowed" memory depends on the context in which the oom killer
- was called.  If it is due to the memory assigned to the allocating task's cpuset
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -170,7 +170,7 @@ unsigned long oom_badness(struct task_st
- 	 * implementation used by LSMs.
- 	 */
- 	if (has_capability_noaudit(p, CAP_SYS_ADMIN))
--		adj -= 30;
-+		points -= (points * 3) / 100;
- 
- 	/* Normalize to oom_score_adj units */
- 	adj *= totalpages / 1000;
++	/* RV770 */
++	/* mclk switching doesn't seem to work reliably on desktop RV770s */
++	if ((rdev->family == CHIP_RV770) &&
++	    !(rdev->flags & RADEON_IS_MOBILITY))
++		switch_limit = 0xffffffff; /* disable mclk switching */
++
+ 	if (vblank_time < switch_limit)
+ 		return true;
+ 	else
 
 
