@@ -1,78 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751591AbaBKRjn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 12:39:43 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40484 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750779AbaBKRjl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 12:39:41 -0500
-Date: Tue, 11 Feb 2014 17:39:33 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-kernel@vger.kernel.org
-Message-ID: <20140211173933.GW13533@sirena.org.uk>
-References: <1392114599-481-1-git-send-email-linus.walleij@linaro.org>
+	id S1751962AbaBKRkI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 12:40:08 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:18588 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751316AbaBKRkF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 12:40:05 -0500
+X-IronPort-AV: E=Sophos;i="4.95,826,1384300800"; 
+   d="scan'208";a="101678179"
+Message-ID: <52FA6072.40908@citrix.com>
+Date: Tue, 11 Feb 2014 18:40:02 +0100
+From: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="CpBQqYjq/d0HQTAP"
-Content-Disposition: inline
-In-Reply-To: <1392114599-481-1-git-send-email-linus.walleij@linaro.org>
-X-Cookie: My LESLIE GORE record is BROKEN ...
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] mfd: dbx500/abx500: root out hardcoded IRQ assignments
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Sander Eikelenboom <linux@eikelenboom.it>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: <david.vrabel@citrix.com>, <mrushton@amazon.com>, <msw@amazon.com>,
+        <boris.ostrovsky@oracle.com>, Jens Axboe <axboe@kernel.dk>,
+        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [GIT PULL] (xen) stable/for-jens-3.14 : NFO: trying
+ to register non-static key. the code is fine but needs lockdep annotation.
+References: <20140210184412.GA18198@phenom.dumpdata.com> <20140210195402.GA3924@kernel.dk> <771950784.20140211165215@eikelenboom.it> <20140211155650.GA23026@phenom.dumpdata.com> <1542261541.20140211170750@eikelenboom.it>
+In-Reply-To: <1542261541.20140211170750@eikelenboom.it>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/02/14 17:07, Sander Eikelenboom wrote:
+> 
+> Tuesday, February 11, 2014, 4:56:50 PM, you wrote:
+> 
+>> On Tue, Feb 11, 2014 at 04:52:15PM +0100, Sander Eikelenboom wrote:
+>>> Hi Konrad,
+>>>
+>>> Today decided to tryout another kernel RC and your pull request to Jens on top of it .. and I encoutered this one:
+> 
+>> Thank you for testing!
+> 
+>> Could you provide the .config file please?
+> 
+> Attached
+> 
+>> Did you see this _before_ the pull request with Jens? I presume
+>> not, but just double checking?
+> 
+> Nope not too my knowledge (though it's a bit messy with things broken on 3.14 at the moment)
+> 
+>> And lastly - what were you doing when you triggered this? Just launching
+>> a guest?
+> 
+> Nope it triggers on guest shutdown ..
+> 
+> 
+>> CC-ing Roger and other folks who were on the patches.
+> 
+>>>
+>>>
+>>> [  438.029756] INFO: trying to register non-static key.
+>>> [  438.029759] the code is fine but needs lockdep annotation.
+>>> [  438.029760] turning off the locking correctness validator.
+>>> [  438.029770] CPU: 3 PID: 9593 Comm: blkback.2.xvda Tainted: G        W    3.14.0-rc2-20140211-pcireset-net-btrevert-xenblock+ #1
+>>> [  438.029773] Hardware name: MSI MS-7640/890FXA-GD70 (MS-7640)  , BIOS V1.8B1 09/13/2010
+>>> [  438.029784]  ffff88005224c4f0 ffff88004e5d9b68 ffffffff81b808c4 ffff88004ba2b510
+>>> [  438.029791]  0000000000000002 ffff88004e5d9c38 ffffffff81116eab ffff88004e5d9bf8
+>>> [  438.029798]  ffffffff81117b35 0000000000000000 0000000000000000 ffffffff82cee570
+>>> [  438.029799] Call Trace:
+>>> [  438.029815]  [<ffffffff81b808c4>] dump_stack+0x46/0x58
+>>> [  438.029826]  [<ffffffff81116eab>] __lock_acquire+0x1c2b/0x2220
+>>> [  438.029833]  [<ffffffff81117b35>] ? lock_acquire+0xe5/0x150
+>>> [  438.029841]  [<ffffffff81117b0d>] lock_acquire+0xbd/0x150
+>>> [  438.029847]  [<ffffffff810e5965>] ? flush_work+0x5/0x290
+>>> [  438.029852]  [<ffffffff810e599d>] flush_work+0x3d/0x290
+>>> [  438.029856]  [<ffffffff810e5965>] ? flush_work+0x5/0x290
+>>> [  438.029863]  [<ffffffff81117b35>] ? lock_acquire+0xe5/0x150
+>>> [  438.029872]  [<ffffffff816fef01>] ? xen_blkif_schedule+0x1a1/0x8d0
+>>> [  438.029881]  [<ffffffff81b8ae0d>] ? _raw_spin_unlock_irqrestore+0x6d/0x90
+>>> [  438.029888]  [<ffffffff8111392b>] ? trace_hardirqs_on_caller+0xfb/0x240
+>>> [  438.029894]  [<ffffffff81113a7d>] ? trace_hardirqs_on+0xd/0x10
+>>> [  438.029901]  [<ffffffff816fefe9>] xen_blkif_schedule+0x289/0x8d0
+>>> [  438.029907]  [<ffffffff8110d510>] ? __init_waitqueue_head+0x60/0x60
+>>> [  438.029913]  [<ffffffff81113a7d>] ? trace_hardirqs_on+0xd/0x10
+>>> [  438.029919]  [<ffffffff81b8ae21>] ? _raw_spin_unlock_irqrestore+0x81/0x90
+>>> [  438.029925]  [<ffffffff816fed60>] ? xen_blkif_be_int+0x40/0x40
+>>> [  438.029932]  [<ffffffff810ee374>] kthread+0xe4/0x100
+>>> [  438.029938]  [<ffffffff81b8afe0>] ? _raw_spin_unlock_irq+0x30/0x50
+>>> [  438.029946]  [<ffffffff810ee290>] ? __init_kthread_worker+0x70/0x70
+>>> [  438.029951]  [<ffffffff81b8c1fc>] ret_from_fork+0x7c/0xb0
+>>> [  438.029958]  [<ffffffff810ee290>] ? __init_kthread_worker+0x70/0x70
+>>>
+>>> Doesn't seem to serious .. but never the less :-)
 
---CpBQqYjq/d0HQTAP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Thanks for the report!
 
-On Tue, Feb 11, 2014 at 11:29:59AM +0100, Linus Walleij wrote:
+Does the following patch solve the problem?
 
-> I've been ambivalent on how to look up the IRQ resource for the
-> AB8500 from the device tree (as it is hanging off the main GIC
-> interrupt controller rather than the PRCMU) and eventually ended
-> up with this solution. I experimented with modifying mfd-core.c
-> to add resources from the device tree, but I didn't like the
-> result, it seems MFD cells should get their resources exclusively
-> from the parent instantiating the cell, so I ended up with this.
+---
+commit c1460953d081c8a18ac9e84fe90f696cdceae105
+Author: Roger Pau Monne <roger.pau@citrix.com>
+Date:   Tue Feb 11 17:21:19 2014 +0100
 
-> Maybe Broonie has ideas about this too?
+    xen-blkback: init persistent_purge_work work_struct
+    
+    Do a dummy initialization of the persistent_purge_work
+    work_struct on xen_blkif_alloc, so that when flush_work is called on
+    shutdown the struct is initialized even if it hasn't been used.
+    
+    Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
 
-This looks reasonably sensible to me.  The way irqdomains seem to want
-you to encapsulate this stuff is that the internal interrupts of the
-chip get an irqdomain and then the children get their resources relative
-to that, normally using the MFD helpers to map the hwirqs in the domain
-to Linux interrupt numbers.
+diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
+index 84973c6..3df7575 100644
+--- a/drivers/block/xen-blkback/xenbus.c
++++ b/drivers/block/xen-blkback/xenbus.c
+@@ -129,6 +129,17 @@ static struct xen_blkif *xen_blkif_alloc(domid_t domid)
+ 	blkif->free_pages_num = 0;
+ 	atomic_set(&blkif->persistent_gnt_in_use, 0);
+ 	atomic_set(&blkif->inflight, 0);
++	/*
++	 * Init the work struct with a NULL function, this is done
++	 * so that flush_work doesn't complain when shutting down if
++	 * persistent_purge_work has not been used during the lifetime
++	 * of this blkback instance.
++	 *
++	 * NB: In purge_persistent_gnt we make sure that
++	 * persistent_purge_work is always correctly setup with a valid
++	 * function pointer before being scheduled.
++	 */
++	INIT_WORK(&blkif->persistent_purge_work, NULL);
+ 
+ 	INIT_LIST_HEAD(&blkif->pending_free);
+ 
 
---CpBQqYjq/d0HQTAP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS+mBSAAoJELSic+t+oim94z8QAJ2pz6XLRoHqFV/fBRVuI2ko
-94L3jl7bhczJcO0BjalGYVlNYop5q7ND9J1LRYP8xRE3k6CmXsQ/ZGSc7ybgDOSt
-vU1Gg2TygPjbUQ9PZQhxnOWe7ZbR31F2BnQ2qEoAtgPp71C09FgbhrT0zehcqmcA
-qwS+BI5cAzdtwmUbiAeXh4q6U0y5O+vhtCyEgdZ9nU2M8Zv/CkObpeD6EHI9xJJP
-AVyAIO8u74Aqs5V4f9AdfyIVjq++w8FXiD87YDnUV0Y2R0nTX8p2RYpMjGudcFhz
-84XzzCJwPjAuCfbzfevetT+OI2/JkcDagtztb8W4jLVoUsTW74KUjNFIukI5oSWK
-PIXvOi2lXzKqRLR7FmcofCQeDV6fsJfcrBZRKh2SRgKhjjk1T9dPApKnCMkN/ZsI
-Vfi066qIJgtDB198rJdrWoYFADd82thm0rQtLTj7LQf9ouS2kNJcK62k8N0PgtbP
-5YNFE4kS4DVDT6vmvhrR0nFBPIOCqZcjOHqO5jpVMTNKgXypZOnSDBL0KUGDwQbz
-3pHQ8/WJANlvxL5sjEW2VJCUWCJxnKdjKnjuOgVjslCwFgFPJ14V7LyOkGp1hA4O
-/tj72QyXDuxEc2SYpu4/GpAfIAtqjrSLo7s+F3RAQE6/76z8se7y/EPP8WGHa4+6
-EXW0Y6Yf+78DvjPbOy30
-=GofM
------END PGP SIGNATURE-----
-
---CpBQqYjq/d0HQTAP--
