@@ -1,101 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752394AbaBKQuo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 11:50:44 -0500
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:44681 "EHLO
-	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751014AbaBKQuj (ORCPT
+	id S1752075AbaBKQuX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 11:50:23 -0500
+Received: from s3.neomailbox.net ([178.209.62.157]:5247 "EHLO
+	s3.neomailbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751668AbaBKQuV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 11:50:39 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
-        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Jiri Olsa <jolsa@redhat.com>, Eric Dumazet <edumazet@google.com>,
-        linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH] n_tty: Fix poll() when TIME_CHAR and MIN_CHAR == 0
-Date: Tue, 11 Feb 2014 11:49:58 -0500
-Message-Id: <1392137400-4205-1-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <20140211121411.GA4368@infradead.org>
-References: <20140211121411.GA4368@infradead.org>
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Tue, 11 Feb 2014 11:50:21 -0500
+Message-ID: <52FA546B.1060008@meshcoding.com>
+Date: Tue, 11 Feb 2014 17:48:43 +0100
+From: Antonio Quartulli <antonio@meshcoding.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Calvin Owens <jcalvinowens@gmail.com>, Joe Perches <joe@perches.com>,
+        Johannes Berg <johannes@sipsolutions.net>
+CC: "David S. Miller" <davem@davemloft.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] ieee80211: Print human-readable disassoc/deauth reason
+ codes
+References: <1391651088-31785-1-git-send-email-jcalvinowens@gmail.com> <1391661863.30094.56.camel@joe-AO722> <1392030546.4128.11.camel@jlt4.sipsolutions.net> <1392050359.2507.10.camel@joe-AO722> <20140211012523.GA2739@gmail.com> <1392082740.2507.49.camel@joe-AO722> <20140211163738.GA32043@gmail.com>
+In-Reply-To: <20140211163738.GA32043@gmail.com>
+X-Enigmail-Version: 1.6
+OpenPGP: id=43FD7307
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ protocol="application/pgp-signature";
+ boundary="TqvpCLocJD7n3wtgTEobcJsUN51HG72Ag"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2014 07:14 AM, Arnaldo Carvalho de Melo wrote:
-> Em Mon, Feb 10, 2014 at 09:15:42PM -0500, Peter Hurley escreveu:
->>> Bisected it down to:
->
->>> eb3e4668bd9e0bbda592e830e889f137e44ec9e4 is the first bad commit
->>> Author: Peter Hurley <peter@hurleysoftware.com>
->>> Date:   Mon Dec 2 14:24:42 2013 -0500
->
->>>      n_tty: Un-inline slow-path n_tty_receive_char()
->
->>> In a hurry now, will continue later, trying to understand what is the problem
->>> introduced by the above cset...
->
->>> Need to revert just this one to confirm that it is the culprit, etc.
->
->> Thanks for the report and bisect. Seems unlikely this commit is the
->> cause, but very likely to be some change I made since 3.13, since
->> I can repro on 3.14-rc1 but not on 3.13.2 -stable. I can also repro
->> this on 3.12 + the patch stack from me for 3.13 and 3.14.
->
->> I'm looking into this now.
->
-> I just reverted just this cset and the problem persisted, so I'll wait
-> for you on this one :-) 
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--TqvpCLocJD7n3wtgTEobcJsUN51HG72Ag
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-My bisection pointed to:
+On 11/02/14 17:37, Calvin Owens wrote:
+> Create a function to return a descriptive string for each reason code,
+> and print that in addition to the numeric value in the kernel log. Thes=
+e
+> codes are easily found on popular search engines, but one is generally
+> not able to access the internet when dealing with wireless connectivity=
 
-eafbe67f84761d787802e5113d895a316b6292fe is the first bad commit
-commit eafbe67f84761d787802e5113d895a316b6292fe
-Author: Peter Hurley <peter@hurleysoftware.com>
-Date:   Mon Dec 2 14:24:45 2013 -0500
+> issues.
+>=20
+> Changes in v2: Refactored array of strings into switch statement.
+> Changes in v3: Fix style problem, use simplifying macro for switch
+> statement, eliminate temporary enum variable.
+>=20
+> Signed-off-by: Calvin Owens <jcalvinowens@gmail.com>
+> ---
+>  include/net/mac80211.h | 10 +++++++++
+>  net/mac80211/main.c    | 57 ++++++++++++++++++++++++++++++++++++++++++=
+++++++++
+>  net/mac80211/mlme.c    | 12 +++++------
+>  3 files changed, 73 insertions(+), 6 deletions(-)
+>=20
+> diff --git a/include/net/mac80211.h b/include/net/mac80211.h
+> index f4ab2fb..d18acfe 100644
+> --- a/include/net/mac80211.h
+> +++ b/include/net/mac80211.h
+> @@ -2971,6 +2971,16 @@ struct ieee80211_ops {
+>   */
+>  struct ieee80211_hw *ieee80211_alloc_hw(size_t priv_data_len,
+>  					const struct ieee80211_ops *ops);
+> +/**
+> + * ieee80211_get_reason_code_string - Get human readable reason code
+> + *
+> + * This function returns a string describing the @reason_code.
+> + *
+> + * @reason_code: Reason code
 
-    n_tty: Refactor input_available_p() by call site
+Kerneldoc is not properly formatted here.
+The "@argument:" clause should be on the line right after the function
+name (as explained in Documentation/kernel-doc-nano-HOWTO.txt), e.g.:
 
-Apologies for the breakage; the patch below should fix it.
+/**
+ * function_name - blabla
+ * @arg: I am a good arg description
+ *
 
-Regards,
-Peter Hurley
 
---- >% ---
-From: Peter Hurley <peter@hurleysoftware.com>
-Date: Tue, 11 Feb 2014 10:10:07 -0500
-Subject: [PATCH] n_tty: Fix poll() when TIME_CHAR and MIN_CHAR == 0
+Cheers,
 
-Commit eafbe67f84761d787802e5113d895a316b6292fe,
-  n_tty: Refactor input_available_p() by call site
-broke poll() when TIME_CHAR(tty) and MIN_CHAR(tty) are both 0.
+--=20
+Antonio Quartulli
 
-When TIME_CHAR and MIN_CHAR are both 0, input is available if the
-read_cnt is 1 (not 0).
 
-Reported-by: Stephane Eranian <eranian@google.com>
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/tty/n_tty.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+--TqvpCLocJD7n3wtgTEobcJsUN51HG72Ag
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index cb8017a..2747a3b 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -1896,7 +1896,7 @@ err:
- static inline int input_available_p(struct tty_struct *tty, int poll)
- {
- 	struct n_tty_data *ldata = tty->disc_data;
--	int amt = poll && !TIME_CHAR(tty) ? MIN_CHAR(tty) : 1;
-+	int amt = poll && !TIME_CHAR(tty) && MIN_CHAR(tty) ? MIN_CHAR(tty) : 1;
- 
- 	if (ldata->icanon && !L_EXTPROC(tty)) {
- 		if (ldata->canon_head != ldata->read_tail)
--- 
-1.8.1.2
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
+iQIcBAEBCAAGBQJS+lRxAAoJEEKTMo6mOh1V/n0P/ilGrLK6JIBczuqPncKiB3kl
+/5Md+JunEkQW7VVv4eey3bZZvINx1lZ8VerScSeHQRlUGg/eUFS2i4xkpd5hdL/m
+A9Py9IWCXrOpidUNiQzx9iG7lg8gmWwkxiXPezC9+pEBqe7n823L/OFS2NonizHv
+SqOJjhTaykOQAgKf1mBL+YV5WOUydV3BNK91pjraSrJBHYxHAv4OBBuNRJuat4E9
+wDjVVrW4s1haC0UK/cD8l0e35MWC3Sjdvozsda2PZxzDDKd8VRyHrnT2i3yHOdgt
+9i9TeuPYeYyB8+PVlPrxK/aCXnL9yuOwItQ62n0aipiLL7oqNCErCIgXMnABL8GH
+mC6Ku+TVhBJ97FVLmw45eIh+zvEGKzRXnv0jUIi3kS5bg926NOPvgNgr23uyatIW
+dWauzn2AicyxCVBBwwpdIBHgy5jFYhXc3BGd4Ih8fBClplOXWEVFS30hw9xk+YUK
+a/WokptTV5SyHCucpXulZKbXE9E6qSACjRjz8ybTrvFABQQPfZc+T83eN6ktpJeS
+SSdMrLK7lNk8dz8alq/zmGbYWAesFAEcPr3RiWKM1l7vuZ92eV5mTru6c124fqP7
+QApBrh7qqTVVHi0i54EmE+qoTGA62+D0t2WX6Nko9SSnNrWaKHQvjF9JvfaFLNjl
+J8TaKAgAZdcZfpyzjAgG
+=PHgj
+-----END PGP SIGNATURE-----
+
+--TqvpCLocJD7n3wtgTEobcJsUN51HG72Ag--
