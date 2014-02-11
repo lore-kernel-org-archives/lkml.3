@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755973AbaBKUII (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:08:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40058 "EHLO
+	id S932127AbaBKUIa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:08:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40052 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753593AbaBKTGv (ORCPT
+	with ESMTP id S1753589AbaBKTGu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:51 -0500
+	Tue, 11 Feb 2014 14:06:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.12 061/107] mm, oom: base root bonus on current usage
-Date: Tue, 11 Feb 2014 11:05:27 -0800
-Message-Id: <20140211184749.937396641@linuxfoundation.org>
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kent Overstreet <kmo@daterainc.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.12 060/107] iscsi-target: Fix connection reset hang with percpu_ida_alloc
+Date: Tue, 11 Feb 2014 11:05:26 -0800
+Message-Id: <20140211184749.910095285@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -31,74 +30,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Rientjes <rientjes@google.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 778c14affaf94a9e4953179d3e13a544ccce7707 upstream.
+commit 555b270e25b0279b98083518a85f4b1da144a181 upstream.
 
-A 3% of system memory bonus is sometimes too excessive in comparison to
-other processes.
+This patch addresses a bug where connection reset would hang
+indefinately once percpu_ida_alloc() was starved for tags, due
+to the fact that it always assumed uninterruptible sleep mode.
 
-With commit a63d83f427fb ("oom: badness heuristic rewrite"), the OOM
-killer tries to avoid killing privileged tasks by subtracting 3% of
-overall memory (system or cgroup) from their per-task consumption.  But
-as a result, all root tasks that consume less than 3% of overall memory
-are considered equal, and so it only takes 33+ privileged tasks pushing
-the system out of memory for the OOM killer to do something stupid and
-kill dhclient or other root-owned processes.  For example, on a 32G
-machine it can't tell the difference between the 1M agetty and the 10G
-fork bomb member.
+So now make percpu_ida_alloc() check for signal_pending_state() for
+making interruptible sleep optional, and convert iscsit_allocate_cmd()
+to set TASK_INTERRUPTIBLE for GFP_KERNEL, or TASK_RUNNING for
+GFP_ATOMIC.
 
-The changelog describes this 3% boost as the equivalent to the global
-overcommit limit being 3% higher for privileged tasks, but this is not
-the same as discounting 3% of overall memory from _every privileged task
-individually_ during OOM selection.
-
-Replace the 3% of system memory bonus with a 3% of current memory usage
-bonus.
-
-By giving root tasks a bonus that is proportional to their actual size,
-they remain comparable even when relatively small.  In the example
-above, the OOM killer will discount the 1M agetty's 256 badness points
-down to 179, and the 10G fork bomb's 262144 points down to 183500 points
-and make the right choice, instead of discounting both to 0 and killing
-agetty because it's first in the task list.
-
-Signed-off-by: David Rientjes <rientjes@google.com>
-Reported-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Kent Overstreet <kmo@daterainc.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/filesystems/proc.txt |    4 ++--
- mm/oom_kill.c                      |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/target/iscsi/iscsi_target_util.c |    2 +-
+ lib/percpu_ida.c                         |    9 +++++++--
+ 2 files changed, 8 insertions(+), 3 deletions(-)
 
---- a/Documentation/filesystems/proc.txt
-+++ b/Documentation/filesystems/proc.txt
-@@ -1376,8 +1376,8 @@ may allocate from based on an estimation
- For example, if a task is using all allowed memory, its badness score will be
- 1000.  If it is using half of its allowed memory, its score will be 500.
+--- a/drivers/target/iscsi/iscsi_target_util.c
++++ b/drivers/target/iscsi/iscsi_target_util.c
+@@ -156,7 +156,7 @@ struct iscsi_cmd *iscsit_allocate_cmd(st
+ {
+ 	struct iscsi_cmd *cmd;
+ 	struct se_session *se_sess = conn->sess->se_sess;
+-	int size, tag, state = (gfp_mask & __GFP_WAIT) ? TASK_UNINTERRUPTIBLE :
++	int size, tag, state = (gfp_mask & __GFP_WAIT) ? TASK_INTERRUPTIBLE :
+ 				TASK_RUNNING;
  
--There is an additional factor included in the badness score: root
--processes are given 3% extra memory over other tasks.
-+There is an additional factor included in the badness score: the current memory
-+and swap usage is discounted by 3% for root processes.
+ 	tag = percpu_ida_alloc(&se_sess->sess_tag_pool, state);
+--- a/lib/percpu_ida.c
++++ b/lib/percpu_ida.c
+@@ -148,14 +148,14 @@ static inline unsigned alloc_local_tag(s
+  * tag_pool_init()), or otherwise -ENOSPC on allocation failure.
+  *
+  * Safe to be called from interrupt context (assuming it isn't passed
+- * TASK_UNINTERRUPTIBLE, of course).
++ * TASK_UNINTERRUPTIBLE | TASK_INTERRUPTIBLE, of course).
+  *
+  * @gfp indicates whether or not to wait until a free id is available (it's not
+  * used for internal memory allocations); thus if passed __GFP_WAIT we may sleep
+  * however long it takes until another thread frees an id (same semantics as a
+  * mempool).
+  *
+- * Will not fail if passed TASK_UNINTERRUPTIBLE.
++ * Will not fail if passed TASK_UNINTERRUPTIBLE | TASK_INTERRUPTIBLE.
+  */
+ int percpu_ida_alloc(struct percpu_ida *pool, int state)
+ {
+@@ -205,6 +205,11 @@ int percpu_ida_alloc(struct percpu_ida *
+ 		if (tag >= 0 || state == TASK_RUNNING)
+ 			break;
  
- The amount of "allowed" memory depends on the context in which the oom killer
- was called.  If it is due to the memory assigned to the allocating task's cpuset
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -170,7 +170,7 @@ unsigned long oom_badness(struct task_st
- 	 * implementation used by LSMs.
- 	 */
- 	if (has_capability_noaudit(p, CAP_SYS_ADMIN))
--		adj -= 30;
-+		points -= (points * 3) / 100;
++		if (signal_pending_state(state, current)) {
++			tag = -ERESTARTSYS;
++			break;
++		}
++
+ 		schedule();
  
- 	/* Normalize to oom_score_adj units */
- 	adj *= totalpages / 1000;
+ 		local_irq_save(flags);
 
 
