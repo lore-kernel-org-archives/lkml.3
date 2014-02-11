@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756019AbaBKUKK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:10:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40030 "EHLO
+	id S1753542AbaBKTGp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:06:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40007 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753544AbaBKTGq (ORCPT
+	with ESMTP id S1753434AbaBKTGj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:46 -0500
+	Tue, 11 Feb 2014 14:06:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.12 053/107] dm space map metadata: fix extending the space map
-Date: Tue, 11 Feb 2014 11:05:19 -0800
-Message-Id: <20140211184749.706591218@linuxfoundation.org>
+        Boaz Harrosh <bharrosh@panasas.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.12 044/107] pnfs: Proper delay for NFS4ERR_RECALLCONFLICT in layout_get_done
+Date: Tue, 11 Feb 2014 11:05:10 -0800
+Message-Id: <20140211184749.447635470@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -28,65 +29,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Thornber <ejt@redhat.com>
+From: Boaz Harrosh <bharrosh@panasas.com>
 
-commit 7e664b3dec431eebf0c5df5ff704d6197634cf35 upstream.
+commit ed7e5423014ad89720fcf315c0b73f2c5d0c7bd2 upstream.
 
-When extending a metadata space map we should do the first commit whilst
-still in bootstrap mode -- a mode where all blocks get allocated in the
-new area.
+An NFS4ERR_RECALLCONFLICT is returned by server from a GET_LAYOUT
+only when a Server Sent a RECALL do to that GET_LAYOUT, or
+the RECALL and GET_LAYOUT crossed on the wire.
+In any way this means we want to wait at most until in-flight IO
+is finished and the RECALL can be satisfied.
 
-That way the commit overhead is allocated from the newly added space.
-Otherwise we risk running out of space.
+So a proper wait here is more like 1/10 of a second, not 15 seconds
+like we have now. In case of a server bug we delay exponentially
+longer on each retry.
 
-With this fix, and the previous commit "dm space map common: make sure
-new space is used during extend", the following device mapper testsuite
-test passes:
- dmtest run --suite thin-provisioning -n /resize_metadata_no_io/
+Current code totally craps out performance of very large files on
+most pnfs-objects layouts, because of how the map changes when the
+file has grown into the next raid group.
 
-Signed-off-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+[Stable: This will patch back to 3.9. If there are earlier still
+ maintained trees, please tell me I'll send a patch]
+
+Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/persistent-data/dm-space-map-metadata.c |   18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
+ fs/nfs/nfs4proc.c |   34 ++++++++++++++++++++++++++++++----
+ 1 file changed, 30 insertions(+), 4 deletions(-)
 
---- a/drivers/md/persistent-data/dm-space-map-metadata.c
-+++ b/drivers/md/persistent-data/dm-space-map-metadata.c
-@@ -608,20 +608,28 @@ static int sm_metadata_extend(struct dm_
- 	 * Flick into a mode where all blocks get allocated in the new area.
- 	 */
- 	smm->begin = old_len;
--	memcpy(&smm->sm, &bootstrap_ops, sizeof(smm->sm));
-+	memcpy(sm, &bootstrap_ops, sizeof(*sm));
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -7057,9 +7057,9 @@ static void nfs4_layoutget_done(struct r
+ 	struct nfs_server *server = NFS_SERVER(inode);
+ 	struct pnfs_layout_hdr *lo;
+ 	struct nfs4_state *state = NULL;
+-	unsigned long timeo, giveup;
++	unsigned long timeo, now, giveup;
  
- 	/*
- 	 * Extend.
- 	 */
- 	r = sm_ll_extend(&smm->ll, extra_blocks);
-+	if (r)
-+		goto out;
+-	dprintk("--> %s\n", __func__);
++	dprintk("--> %s tk_status => %d\n", __func__, -task->tk_status);
  
-+	for (i = old_len; !r && i < smm->begin; i++) {
-+		r = sm_ll_inc(&smm->ll, i, &ev);
-+		if (r)
-+			goto out;
-+	}
+ 	if (!nfs41_sequence_done(task, &lgp->res.seq_res))
+ 		goto out;
+@@ -7067,12 +7067,38 @@ static void nfs4_layoutget_done(struct r
+ 	switch (task->tk_status) {
+ 	case 0:
+ 		goto out;
++	/*
++	 * NFS4ERR_LAYOUTTRYLATER is a conflict with another client
++	 * (or clients) writing to the same RAID stripe
++	 */
+ 	case -NFS4ERR_LAYOUTTRYLATER:
++	/*
++	 * NFS4ERR_RECALLCONFLICT is when conflict with self (must recall
++	 * existing layout before getting a new one).
++	 */
+ 	case -NFS4ERR_RECALLCONFLICT:
+ 		timeo = rpc_get_timeout(task->tk_client);
+ 		giveup = lgp->args.timestamp + timeo;
+-		if (time_after(giveup, jiffies))
+-			task->tk_status = -NFS4ERR_DELAY;
++		now = jiffies;
++		if (time_after(giveup, now)) {
++			unsigned long delay;
 +
-+	r = sm_metadata_commit(sm);
++			/* Delay for:
++			 * - Not less then NFS4_POLL_RETRY_MIN.
++			 * - One last time a jiffie before we give up
++			 * - exponential backoff (time_now minus start_attempt)
++			 */
++			delay = max_t(unsigned long, NFS4_POLL_RETRY_MIN,
++				    min((giveup - now - 1),
++					now - lgp->args.timestamp));
 +
-+out:
- 	/*
- 	 * Switch back to normal behaviour.
- 	 */
--	memcpy(&smm->sm, &ops, sizeof(smm->sm));
--	for (i = old_len; !r && i < smm->begin; i++)
--		r = sm_ll_inc(&smm->ll, i, &ev);
--
-+	memcpy(sm, &ops, sizeof(*sm));
- 	return r;
- }
- 
++			dprintk("%s: NFS4ERR_RECALLCONFLICT waiting %lu\n",
++				__func__, delay);
++			rpc_delay(task, delay);
++			task->tk_status = 0;
++			rpc_restart_call_prepare(task);
++			goto out; /* Do not call nfs4_async_handle_error() */
++		}
+ 		break;
+ 	case -NFS4ERR_EXPIRED:
+ 	case -NFS4ERR_BAD_STATEID:
 
 
