@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754463AbaBKTIe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:08:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40599 "EHLO
+	id S1754604AbaBKTPH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:15:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40617 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754376AbaBKTI3 (ORCPT
+	with ESMTP id S1754457AbaBKTIe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:08:29 -0500
+	Tue, 11 Feb 2014 14:08:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Weston Andros Adamson <dros@primarydata.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.4 13/30] nfs4.1: properly handle ENOTSUP in SECINFO_NO_NAME
-Date: Tue, 11 Feb 2014 11:06:13 -0800
-Message-Id: <20140211184647.522754270@linuxfoundation.org>
+        Alex Williamson <alex.williamson@redhat.com>,
+        David Woodhouse <dwmw2@infradead.org>, Joerg Roedel <joro@8bytes.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.4 02/30] intel-iommu: fix off-by-one in pagetable freeing
+Date: Tue, 11 Feb 2014 11:06:02 -0800
+Message-Id: <20140211184647.221708369@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184647.149512538@linuxfoundation.org>
 References: <20140211184647.149512538@linuxfoundation.org>
@@ -29,44 +31,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Weston Andros Adamson <dros@primarydata.com>
+From: Alex Williamson <alex.williamson@redhat.com>
 
-commit 78b19bae0813bd6f921ca58490196abd101297bd upstream.
+commit 08336fd218e087cc4fcc458e6b6dcafe8702b098 upstream.
 
-Don't check for -NFS4ERR_NOTSUPP, it's already been mapped to -ENOTSUPP
-by nfs4_stat_to_errno.
+dma_pte_free_level() has an off-by-one error when checking whether a pte
+is completely covered by a range.  Take for example the case of
+attempting to free pfn 0x0 - 0x1ff, ie.  512 entries covering the first
+2M superpage.
 
-This allows the client to mount v4.1 servers that don't support
-SECINFO_NO_NAME by falling back to the "guess and check" method of
-nfs4_find_root_sec.
+The level_size() is 0x200 and we test:
 
-Signed-off-by: Weston Andros Adamson <dros@primarydata.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+  static void dma_pte_free_level(...
+	...
+
+	if (!(0 > 0 || 0x1ff < 0 + 0x200)) {
+		...
+	}
+
+Clearly the 2nd test is true, which means we fail to take the branch to
+clear and free the pagetable entry.  As a result, we're leaking
+pagetables and failing to install new pages over the range.
+
+This was found with a PCI device assigned to a QEMU guest using vfio-pci
+without a VGA device present.  The first 1M of guest address space is
+mapped with various combinations of 4K pages, but eventually the range
+is entirely freed and replaced with a 2M contiguous mapping.
+intel-iommu errors out with something like:
+
+  ERROR: DMA PTE for vPFN 0x0 already set (to 5c2b8003 not 849c00083)
+
+In this case 5c2b8003 is the pointer to the previous leaf page that was
+neither freed nor cleared and 849c00083 is the superpage entry that
+we're trying to replace it with.
+
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Joerg Roedel <joro@8bytes.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4proc.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/iommu/intel-iommu.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -6394,7 +6394,7 @@ nfs41_proc_secinfo_no_name(struct nfs_se
- 		switch (err) {
- 		case 0:
- 		case -NFS4ERR_WRONGSEC:
--		case -NFS4ERR_NOTSUPP:
-+		case -ENOTSUPP:
- 			goto out;
- 		default:
- 			err = nfs4_handle_exception(server, err, &exception);
-@@ -6426,7 +6426,7 @@ nfs41_find_root_sec(struct nfs_server *s
- 	 * Fall back on "guess and check" method if
- 	 * the server doesn't support SECINFO_NO_NAME
- 	 */
--	if (err == -NFS4ERR_WRONGSEC || err == -NFS4ERR_NOTSUPP) {
-+	if (err == -NFS4ERR_WRONGSEC || err == -ENOTSUPP) {
- 		err = nfs4_find_root_sec(server, fhandle, info);
- 		goto out_freepage;
- 	}
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -913,7 +913,7 @@ static void dma_pte_free_level(struct dm
+ 
+ 		/* If range covers entire pagetable, free it */
+ 		if (!(start_pfn > level_pfn ||
+-		      last_pfn < level_pfn + level_size(level))) {
++		      last_pfn < level_pfn + level_size(level) - 1)) {
+ 			dma_clear_pte(pte);
+ 			domain_flush_cache(domain, pte, sizeof(*pte));
+ 			free_pgtable_page(level_pte);
 
 
