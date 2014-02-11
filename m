@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751753AbaBKKTC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 05:19:02 -0500
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.151]:36961 "EHLO
+	id S1751832AbaBKKTT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 05:19:19 -0500
+Received: from mail1.bemta5.messagelabs.com ([195.245.231.150]:36820 "EHLO
 	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751675AbaBKKS6 convert rfc822-to-8bit
+	by vger.kernel.org with ESMTP id S1751687AbaBKKTB convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 05:18:58 -0500
+	Tue, 11 Feb 2014 05:19:01 -0500
 X-Env-Sender: Adam.Thomson.Opensource@diasemi.com
-X-Msg-Ref: server-15.tower-179.messagelabs.com!1392113936!26637316!1
+X-Msg-Ref: server-4.tower-179.messagelabs.com!1392113938!26528942!1
 X-Originating-IP: [82.210.246.133]
 X-StarScan-Received: 
 X-StarScan-Version: 6.9.16; banners=-,-,-
 X-VirusChecked: Checked
-Message-ID: <68b98f4a080bb8be65eb97e63a5fb6c72ca555eb.1392044599.git.Adam.Thomson.Opensource@diasemi.com>
+Message-ID: <15303685eabc28d534243d0138f1457b5184644b.1392044599.git.Adam.Thomson.Opensource@diasemi.com>
 In-Reply-To: <cover.1392044599.git.Adam.Thomson.Opensource@diasemi.com>
 References: <cover.1392044599.git.Adam.Thomson.Opensource@diasemi.com>
 From: Adam Thomson <adam.thomson@diasemi.com>
-Date: Tue, 11 Feb 2014 10:18:54 +0000
-Subject: [PATCH 1/2] onkey: da9055: Remove use of regmap_irq_get_virq()
+Date: Tue, 11 Feb 2014 10:18:56 +0000
+Subject: [PATCH 2/2] rtc: da9055: Remove use of regmap_irq_get_virq()
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Dmitry Torokhov <dtor@mail.ru>,
         Alessandro Zummo <a.zummo@towertech.it>
@@ -35,25 +35,28 @@ returns the VIRQ number rather than the local IRQ number for
 the device. Passing that value then into regmap_irq_get_virq()
 causes a failure because the function is expecting the local
 IRQ number (e.g. 0, 1, 2, 3, etc). This patch removes use of
-regmap_irq_get_virq() to prevent this failure from happening.
+regmap_irq_get_virq() to prevent this failure from happening
 
 Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
 ---
- drivers/input/misc/da9055_onkey.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ drivers/rtc/rtc-da9055.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/input/misc/da9055_onkey.c b/drivers/input/misc/da9055_onkey.c
-index 4b11ede..4765799 100644
---- a/drivers/input/misc/da9055_onkey.c
-+++ b/drivers/input/misc/da9055_onkey.c
-@@ -109,7 +109,6 @@ static int da9055_onkey_probe(struct platform_device *pdev)
+diff --git a/drivers/rtc/rtc-da9055.c b/drivers/rtc/rtc-da9055.c
+index 48cb2ac..a825491 100644
+--- a/drivers/rtc/rtc-da9055.c
++++ b/drivers/rtc/rtc-da9055.c
+@@ -302,7 +302,9 @@ static int da9055_rtc_probe(struct platform_device *pdev)
+        }
 
-        INIT_DELAYED_WORK(&onkey->work, da9055_onkey_work);
-
--       irq = regmap_irq_get_virq(da9055->irq_data, irq);
-        err = request_threaded_irq(irq, NULL, da9055_onkey_irq,
-                                   IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
-                                   "ONKEY", onkey);
+        alm_irq = platform_get_irq_byname(pdev, "ALM");
+-       alm_irq = regmap_irq_get_virq(rtc->da9055->irq_data, alm_irq);
++       if (alm_irq < 0)
++               return alm_irq;
++
+        ret = devm_request_threaded_irq(&pdev->dev, alm_irq, NULL,
+                                        da9055_rtc_alm_irq,
+                                        IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
 --
 1.7.0.4
 
