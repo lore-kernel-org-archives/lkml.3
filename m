@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755991AbaBKUIt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:08:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40036 "EHLO
+	id S1753561AbaBKTGr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:06:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40010 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753569AbaBKTGs (ORCPT
+	with ESMTP id S1753489AbaBKTGj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:48 -0500
+	Tue, 11 Feb 2014 14:06:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.12 056/107] drm/radeon/dpm: disable mclk switching on desktop RV770
-Date: Tue, 11 Feb 2014 11:05:22 -0800
-Message-Id: <20140211184749.790157335@linuxfoundation.org>
+        Chuck Lever <chuck.lever@oracle.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.12 045/107] NFSv4: Fix a slot leak in nfs40_sequence_done
+Date: Tue, 11 Feb 2014 11:05:11 -0800
+Message-Id: <20140211184749.475394162@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -28,39 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit 8097d94116d0c17e774ba4c8256e774018dc2a46 upstream.
+commit cab92c19821a814ecf5a5279e2699bf28e66caee upstream.
 
-Mclk switching doesn't seem to work reliably on these
-cards.  Most RV770 boards specify the same mclk for all
-performance levels anyway so in most cases, this has
-no affect.
+The check for whether or not we sent an RPC call in nfs40_sequence_done
+is insufficient to decide whether or not we are holding a session slot,
+and thus should not be used to decide when to free that slot.
 
-Bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=73067
+This patch replaces the RPC_WAS_SENT() test with the correct test for
+whether or not slot == NULL.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Cc: Chuck Lever <chuck.lever@oracle.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/rv770_dpm.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ fs/nfs/nfs4proc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/rv770_dpm.c
-+++ b/drivers/gpu/drm/radeon/rv770_dpm.c
-@@ -2531,6 +2531,12 @@ bool rv770_dpm_vblank_too_short(struct r
- 	    (rdev->pdev->subsystem_device == 0x1c42))
- 		switch_limit = 200;
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -532,7 +532,7 @@ static int nfs40_sequence_done(struct rp
+ 	struct nfs4_slot *slot = res->sr_slot;
+ 	struct nfs4_slot_table *tbl;
  
-+	/* RV770 */
-+	/* mclk switching doesn't seem to work reliably on desktop RV770s */
-+	if ((rdev->family == CHIP_RV770) &&
-+	    !(rdev->flags & RADEON_IS_MOBILITY))
-+		switch_limit = 0xffffffff; /* disable mclk switching */
-+
- 	if (vblank_time < switch_limit)
- 		return true;
- 	else
+-	if (!RPC_WAS_SENT(task))
++	if (slot == NULL)
+ 		goto out;
+ 
+ 	tbl = slot->table;
 
 
