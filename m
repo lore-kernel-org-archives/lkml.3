@@ -1,61 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752048AbaBKSGf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 13:06:35 -0500
-Received: from mga02.intel.com ([134.134.136.20]:57702 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751367AbaBKSGe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 13:06:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,826,1384329600"; 
-   d="scan'208";a="481708270"
-Date: Tue, 11 Feb 2014 23:34:54 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>
-Cc: dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1] dma: dw: add a PCI ID for Intel Haswell SoC
-Message-ID: <20140211180454.GT10628@intel.com>
-References: <1391686015-7719-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1751597AbaBKSKD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 13:10:03 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:37732 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751280AbaBKSKC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 13:10:02 -0500
+Message-ID: <52FA6770.2030606@infradead.org>
+Date: Tue, 11 Feb 2014 10:09:52 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1391686015-7719-1-git-send-email-andriy.shevchenko@linux.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: Dan Carpenter <dan.carpenter@oracle.com>, Jiri Kosina <trivial@kernel.org>,
+        Martin Walch <walch.martin@web.de>,
+        Richard Weinberger <richard@nod.at>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [TRIVIAL] Kconfig: Remove useless "default N" lines
+References: <1392122327.13064.14.camel@x220>	 <52FA4901.8030405@infradead.org> <52FA49E9.9050802@infradead.org> <1392135980.3755.20.camel@x220>
+In-Reply-To: <1392135980.3755.20.camel@x220>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 06, 2014 at 01:26:55PM +0200, Andy Shevchenko wrote:
-> In case of PCI mode the DMA controller has a specific ID. Put this ID to the
-> list of supported.
+On 02/11/2014 08:26 AM, Paul Bolle wrote:
+> On Tue, 2014-02-11 at 08:03 -0800, Randy Dunlap wrote:
+>> Yes, I found it in Documentation/SubmittingPatches.
+>> I find that unfortunate.
 > 
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> Dan Carpenter and I already suggested updates to the text about getting
+> permission to add a Reported-by tag in
+> https://lkml.org/lkml/2014/2/11/252 and in Dan's reply to that message.
+> 
+> 
+> Paul Bolle
+> 
 
-Applied, thanks
+Thanks for the info.  I obviously agree with that suggested change.
 
 -- 
-~Vinod
-
-> ---
->  drivers/dma/dw/pci.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/dma/dw/pci.c b/drivers/dma/dw/pci.c
-> index e89fc24..755cc6b 100644
-> --- a/drivers/dma/dw/pci.c
-> +++ b/drivers/dma/dw/pci.c
-> @@ -83,6 +83,9 @@ static DEFINE_PCI_DEVICE_TABLE(dw_pci_id_table) = {
->  	/* BayTrail */
->  	{ PCI_VDEVICE(INTEL, 0x0f06), (kernel_ulong_t)&dw_pci_pdata },
->  	{ PCI_VDEVICE(INTEL, 0x0f40), (kernel_ulong_t)&dw_pci_pdata },
-> +
-> +	/* Haswell */
-> +	{ PCI_VDEVICE(INTEL, 0x9c60), (kernel_ulong_t)&dw_pci_pdata },
->  	{ }
->  };
->  MODULE_DEVICE_TABLE(pci, dw_pci_id_table);
-> -- 
-> 1.9.rc1
-> 
-
--- 
+~Randy
