@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755836AbaBKUDi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:03:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40109 "EHLO
+	id S1755849AbaBKUD4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:03:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40101 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753663AbaBKTG6 (ORCPT
+	with ESMTP id S1753655AbaBKTG6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Feb 2014 14:06:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3.12 031/107] tile: remove compat_sys_lookup_dcookie declaration to fix compile error
-Date: Tue, 11 Feb 2014 11:04:57 -0800
-Message-Id: <20140211184749.083275270@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.12 030/107] fs/compat: fix lookup_dcookie() parameter handling
+Date: Tue, 11 Feb 2014 11:04:56 -0800
+Message-Id: <20140211184749.054831394@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -33,44 +36,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-commit 5a5e75f4714a592f31e57f248b8f5c866f278b8d upstream.
+commit d8d14bd09cddbaf0168d61af638455a26bd027ff upstream.
 
-With commit d8d14bd09cdd ("fs/compat: fix lookup_dcookie() parameter
-handling") I changed the type of the len parameter of the
-lookup_dcookie() syscall.
+Commit d5dc77bfeeab ("consolidate compat lookup_dcookie()") coverted all
+architectures to the new compat_sys_lookup_dcookie() syscall.
 
-However I missed that there was still a stale declaration in
-arch/tile/..  which now causes a compile error on tile:
-
-  In file included from fs/dcookies.c:28:0:
-  include/linux/compat.h:425:17: error: conflicting types for 'compat_sys_lookup_dcookie'
-  fs/dcookies.c:207:1: error: conflicting types for 'compat_sys_lookup_dcookie'
-
-Simply remove the declaration in the tile architecture, which is only a
-leftover from before the different compat lookup_dcookie() versions have
-been merged.  The correct declaration is now in include/linux/compat.h
-
-The build error was reported by Fenguang's build bot.
+The "len" paramater of the new compat syscall must have the type
+compat_size_t in order to enforce zero extension for architectures where
+the ABI requires that the caller of a function performed zero and/or
+sign extension to 64 bit of all parameters.
 
 Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/tile/include/asm/compat.h |    1 -
- 1 file changed, 1 deletion(-)
+ fs/dcookies.c          |    2 +-
+ include/linux/compat.h |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/tile/include/asm/compat.h
-+++ b/arch/tile/include/asm/compat.h
-@@ -281,7 +281,6 @@ long compat_sys_pread64(unsigned int fd,
- 			u32 dummy, u32 low, u32 high);
- long compat_sys_pwrite64(unsigned int fd, char __user *ubuf, size_t count,
- 			 u32 dummy, u32 low, u32 high);
--long compat_sys_lookup_dcookie(u32 low, u32 high, char __user *buf, size_t len);
- long compat_sys_sync_file_range2(int fd, unsigned int flags,
- 				 u32 offset_lo, u32 offset_hi,
- 				 u32 nbytes_lo, u32 nbytes_hi);
+--- a/fs/dcookies.c
++++ b/fs/dcookies.c
+@@ -204,7 +204,7 @@ out:
+ }
+ 
+ #ifdef CONFIG_COMPAT
+-COMPAT_SYSCALL_DEFINE4(lookup_dcookie, u32, w0, u32, w1, char __user *, buf, size_t, len)
++COMPAT_SYSCALL_DEFINE4(lookup_dcookie, u32, w0, u32, w1, char __user *, buf, compat_size_t, len)
+ {
+ #ifdef __BIG_ENDIAN
+ 	return sys_lookup_dcookie(((u64)w0 << 32) | w1, buf, len);
+--- a/include/linux/compat.h
++++ b/include/linux/compat.h
+@@ -422,7 +422,7 @@ extern long compat_arch_ptrace(struct ta
+ asmlinkage long compat_sys_ptrace(compat_long_t request, compat_long_t pid,
+ 				  compat_long_t addr, compat_long_t data);
+ 
+-asmlinkage long compat_sys_lookup_dcookie(u32, u32, char __user *, size_t);
++asmlinkage long compat_sys_lookup_dcookie(u32, u32, char __user *, compat_size_t);
+ /*
+  * epoll (fs/eventpoll.c) compat bits follow ...
+  */
 
 
