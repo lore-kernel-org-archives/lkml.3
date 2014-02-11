@@ -1,68 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932500AbaBKUcE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:32:04 -0500
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:62813 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753218AbaBKUcA (ORCPT
+	id S932521AbaBKUcg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:32:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41251 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932504AbaBKUcd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 15:32:00 -0500
+	Tue, 11 Feb 2014 15:32:33 -0500
+Date: Tue, 11 Feb 2014 12:33:48 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: navin patidar <navin.patidar@gmail.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] staging: rtl8188eu: remove header file ethernet.h
+Message-ID: <20140211203348.GA25883@kroah.com>
+References: <1391935247-3797-1-git-send-email-navin.patidar@gmail.com>
+ <1391935247-3797-3-git-send-email-navin.patidar@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1392150119-21132-1-git-send-email-galak@codeaurora.org>
-References: <1392150119-21132-1-git-send-email-galak@codeaurora.org>
-Date: Tue, 11 Feb 2014 15:32:00 -0500
-Message-ID: <CAF6AEGtQRhwRS+GpGqrGUNts26X=sfOKWUjbbxwUmkPs2btbYw@mail.gmail.com>
-Subject: Re: [PATCH] drm/msm: drop ARCH_MSM Kconfig depend
-From: Rob Clark <robdclark@gmail.com>
-To: Kumar Gala <galak@codeaurora.org>
-Cc: David Airlie <airlied@linux.ie>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arm-msm@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391935247-3797-3-git-send-email-navin.patidar@gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 3:21 PM, Kumar Gala <galak@codeaurora.org> wrote:
-> The ARCH_MSM depend is redundant with ARCH_MSM8960, so we can remove it.
-> Additionally, we are splitting Qualcomm MSM support into legacy (ARCH_MSM)
-> and multiplatform (ARCH_QCOM).  The MSM8960 with be ARCH_QCOM going forward
-> so dropping ARCH_MSM will work properly for the new ARCH_QCOM multiplatform
-> build.
->
-> Signed-off-by: Kumar Gala <galak@codeaurora.org>
-
-Acked-by: Rob Clark <robdclark@gmail.com>
-
-
+On Sun, Feb 09, 2014 at 02:10:46PM +0530, navin patidar wrote:
+> "ethernet.h" is included in three files but only "rtw_recv.c" using two macros
+> defined in "ethernet.h", so move used macros in "rtw_recv.c" and
+> remove "include/ethernet.h" header file and inclusion of this header file.
+> 
+> Signed-off-by: navin patidar <navin.patidar@gmail.com>
 > ---
-> David/Rob,
->
-> If you can ack this I'll send it via linux-qcom/arm-soc tree's
->
-> thanks
->
-> - k
->  drivers/gpu/drm/msm/Kconfig | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/gpu/drm/msm/Kconfig b/drivers/gpu/drm/msm/Kconfig
-> index c69d1e0..b698497 100644
-> --- a/drivers/gpu/drm/msm/Kconfig
-> +++ b/drivers/gpu/drm/msm/Kconfig
-> @@ -3,7 +3,7 @@ config DRM_MSM
->         tristate "MSM DRM"
->         depends on DRM
->         depends on MSM_IOMMU
-> -       depends on (ARCH_MSM && ARCH_MSM8960) || (ARM && COMPILE_TEST)
-> +       depends on ARCH_MSM8960 || (ARM && COMPILE_TEST)
->         select DRM_KMS_HELPER
->         select SHMEM
->         select TMPFS
-> --
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by The Linux Foundation
->
+>  drivers/staging/rtl8188eu/core/rtw_recv.c      |    4 ++-
+>  drivers/staging/rtl8188eu/hal/rtl8188eu_recv.c |    1 -
+>  drivers/staging/rtl8188eu/include/ethernet.h   |   42 ------------------------
+>  drivers/staging/rtl8188eu/os_dep/recv_linux.c  |    1 -
+>  4 files changed, 3 insertions(+), 45 deletions(-)
+>  delete mode 100644 drivers/staging/rtl8188eu/include/ethernet.h
+
+This patch fails to apply (2/3 had fuzz, but I fixed that up), can you
+redo this against linux-next and resend it?
+
+thanks,
+
+greg k-h
