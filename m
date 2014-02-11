@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932095AbaBKUok (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:44:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39741 "EHLO
+	id S1754972AbaBKUo7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:44:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39728 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753002AbaBKTFs (ORCPT
+	with ESMTP id S1752975AbaBKTFo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:05:48 -0500
+	Tue, 11 Feb 2014 14:05:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mike Snitzer <snitzer@redhat.com>, Joe Thornber <ejt@redhat.com>
-Subject: [PATCH 3.13 051/120] dm thin: initialize dm_thin_new_mapping returned by get_next_mapping
-Date: Tue, 11 Feb 2014 11:04:52 -0800
-Message-Id: <20140211184825.077211377@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.13 084/120] drm/radeon/DCE4+: clear bios scratch dpms bit (v2)
+Date: Tue, 11 Feb 2014 11:05:25 -0800
+Message-Id: <20140211184826.008794328@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -28,82 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Snitzer <snitzer@redhat.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 16961b042db8cc5cf75d782b4255193ad56e1d4f upstream.
+commit 6802d4bad83f50081b2788698570218aaff8d10e upstream.
 
-As additional members are added to the dm_thin_new_mapping structure
-care should be taken to make sure they get initialized before use.
+The BlankCrtc table in some DCE8 boards has some
+logic shortcuts for the vbios when this bit is set.
+Clear it for driver use.
 
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Acked-by: Joe Thornber <ejt@redhat.com>
+v2: fix typo
+
+Bug:
+https://bugs.freedesktop.org/show_bug.cgi?id=73420
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-thin.c |   17 ++++++-----------
- 1 file changed, 6 insertions(+), 11 deletions(-)
+ drivers/gpu/drm/radeon/radeon_atombios.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/md/dm-thin.c
-+++ b/drivers/md/dm-thin.c
-@@ -760,13 +760,17 @@ static int ensure_next_mapping(struct po
+--- a/drivers/gpu/drm/radeon/radeon_atombios.c
++++ b/drivers/gpu/drm/radeon/radeon_atombios.c
+@@ -3944,6 +3944,10 @@ void radeon_atom_initialize_bios_scratch
+ 	/* tell the bios not to handle mode switching */
+ 	bios_6_scratch |= ATOM_S6_ACC_BLOCK_DISPLAY_SWITCH;
  
- static struct dm_thin_new_mapping *get_next_mapping(struct pool *pool)
- {
--	struct dm_thin_new_mapping *r = pool->next_mapping;
-+	struct dm_thin_new_mapping *m = pool->next_mapping;
- 
- 	BUG_ON(!pool->next_mapping);
- 
-+	memset(m, 0, sizeof(struct dm_thin_new_mapping));
-+	INIT_LIST_HEAD(&m->list);
-+	m->bio = NULL;
++	/* clear the vbios dpms state */
++	if (ASIC_IS_DCE4(rdev))
++		bios_2_scratch &= ~ATOM_S2_DEVICE_DPMS_STATE;
 +
- 	pool->next_mapping = NULL;
- 
--	return r;
-+	return m;
- }
- 
- static void schedule_copy(struct thin_c *tc, dm_block_t virt_block,
-@@ -778,15 +782,10 @@ static void schedule_copy(struct thin_c
- 	struct pool *pool = tc->pool;
- 	struct dm_thin_new_mapping *m = get_next_mapping(pool);
- 
--	INIT_LIST_HEAD(&m->list);
--	m->quiesced = 0;
--	m->prepared = 0;
- 	m->tc = tc;
- 	m->virt_block = virt_block;
- 	m->data_block = data_dest;
- 	m->cell = cell;
--	m->err = 0;
--	m->bio = NULL;
- 
- 	if (!dm_deferred_set_add_work(pool->shared_read_ds, &m->list))
- 		m->quiesced = 1;
-@@ -849,15 +848,12 @@ static void schedule_zero(struct thin_c
- 	struct pool *pool = tc->pool;
- 	struct dm_thin_new_mapping *m = get_next_mapping(pool);
- 
--	INIT_LIST_HEAD(&m->list);
- 	m->quiesced = 1;
- 	m->prepared = 0;
- 	m->tc = tc;
- 	m->virt_block = virt_block;
- 	m->data_block = data_block;
- 	m->cell = cell;
--	m->err = 0;
--	m->bio = NULL;
- 
- 	/*
- 	 * If the whole block of data is being overwritten or we are not
-@@ -1055,7 +1051,6 @@ static void process_discard(struct thin_
- 			m->data_block = lookup_result.block;
- 			m->cell = cell;
- 			m->cell2 = cell2;
--			m->err = 0;
- 			m->bio = bio;
- 
- 			if (!dm_deferred_set_add_work(pool->all_io_ds, &m->list)) {
+ 	if (rdev->family >= CHIP_R600) {
+ 		WREG32(R600_BIOS_2_SCRATCH, bios_2_scratch);
+ 		WREG32(R600_BIOS_6_SCRATCH, bios_6_scratch);
 
 
