@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754644AbaBKU6i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:58:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39619 "EHLO
+	id S1752691AbaBKTFQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:05:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39570 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752706AbaBKTFS (ORCPT
+	with ESMTP id S1752529AbaBKTFL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:05:18 -0500
+	Tue, 11 Feb 2014 14:05:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Dan Duval <dan.duval@oracle.com>,
-        Chuck Anderson <chuck.anderson@oracle.com>,
-        Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>
-Subject: [PATCH 3.13 009/120] audit: reset audit backlog wait time after error recovery
-Date: Tue, 11 Feb 2014 11:04:10 -0800
-Message-Id: <20140211184823.780685449@linuxfoundation.org>
+        Daniel Santos <daniel.santos@pobox.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.13 039/120] spidev: fix hang when transfer_one_message fails
+Date: Tue, 11 Feb 2014 11:04:40 -0800
+Message-Id: <20140211184824.706301465@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -31,48 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Guy Briggs <rgb@redhat.com>
+From: Daniel Santos <daniel.santos@pobox.com>
 
-commit e789e561a50de0aaa8c695662d97aaa5eac9d55f upstream.
+commit e120cc0dcf2880a4c5c0a6cb27b655600a1cfa1d upstream.
 
-When the audit queue overflows and times out (audit_backlog_wait_time), the
-audit queue overflow timeout is set to zero.  Once the audit queue overflow
-timeout condition recovers, the timeout should be reset to the original value.
+This corrects a problem in spi_pump_messages() that leads to an spi
+message hanging forever when a call to transfer_one_message() fails.
+This failure occurs in my MCP2210 driver when the cs_change bit is set
+on the last transfer in a message, an operation which the hardware does
+not support.
 
-See also:
-	https://lkml.org/lkml/2013/9/2/473
+Rationale
+Since the transfer_one_message() returns an int, we must presume that it
+may fail.  If transfer_one_message() should never fail, it should return
+void.  Thus, calls to transfer_one_message() should properly manage a
+failure.
 
-Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
-Signed-off-by: Dan Duval <dan.duval@oracle.com>
-Signed-off-by: Chuck Anderson <chuck.anderson@oracle.com>
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-Signed-off-by: Eric Paris <eparis@redhat.com>
+Fixes: ffbbdd21329f3 (spi: create a message queueing infrastructure)
+Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/audit.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/spi/spi.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -102,7 +102,8 @@ static int	audit_rate_limit;
- 
- /* Number of outstanding audit_buffers allowed. */
- static int	audit_backlog_limit = 64;
--static int	audit_backlog_wait_time = 60 * HZ;
-+#define AUDIT_BACKLOG_WAIT_TIME (60 * HZ)
-+static int	audit_backlog_wait_time = AUDIT_BACKLOG_WAIT_TIME;
- static int	audit_backlog_wait_overflow = 0;
- 
- /* The identity of the user shutting down the audit system. */
-@@ -1239,6 +1240,8 @@ struct audit_buffer *audit_log_start(str
- 		return NULL;
+--- a/drivers/spi/spi.c
++++ b/drivers/spi/spi.c
+@@ -735,7 +735,9 @@ static void spi_pump_messages(struct kth
+ 	ret = master->transfer_one_message(master, master->cur_msg);
+ 	if (ret) {
+ 		dev_err(&master->dev,
+-			"failed to transfer one message from queue\n");
++			"failed to transfer one message from queue: %d\n", ret);
++		master->cur_msg->status = ret;
++		spi_finalize_current_message(master);
+ 		return;
  	}
- 
-+	audit_backlog_wait_time = AUDIT_BACKLOG_WAIT_TIME;
-+
- 	ab = audit_buffer_alloc(ctx, gfp_mask, type);
- 	if (!ab) {
- 		audit_log_lost("out of memory in audit_log_start");
+ }
 
 
