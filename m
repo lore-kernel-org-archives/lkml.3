@@ -1,175 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755567AbaBKT72 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:59:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40152 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753737AbaBKTHI (ORCPT
+	id S1753725AbaBKTHF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:07:05 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:33617 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753587AbaBKTG7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:07:08 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Malcolm Priestley <tvboxspy@gmail.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.12 069/107] [media] m88rs2000: add m88rs2000_set_carrieroffset
-Date: Tue, 11 Feb 2014 11:05:35 -0800
-Message-Id: <20140211184750.162849066@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
-References: <20140211184748.191276235@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Tue, 11 Feb 2014 14:06:59 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19u7+PplGLFYqF3B+0n93NLYkXLZsrg5iQ=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 171B3524BE3
+Date: Tue, 11 Feb 2014 14:06:32 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Andrew Lunn <andrew@lunn.ch>, Lior Amsalem <alior@marvell.com>,
+        devicetree@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
+        Tawfik Bayouk <tawfik@marvell.com>, linux-kernel@vger.kernel.org,
+        Nadav Haklai <nadavh@marvell.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH 6/6] dt: Update binding information for mvebu gating
+ clocks with Armada 380/385
+Message-ID: <20140211190632.GE27395@titan.lakedaemon.net>
+References: <1392053569-28037-1-git-send-email-gregory.clement@free-electrons.com>
+ <1392053569-28037-7-git-send-email-gregory.clement@free-electrons.com>
+ <20140210175350.GD9995@lunn.ch>
+ <20140210185908.3374eaf6@skate>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140210185908.3374eaf6@skate>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On Mon, Feb 10, 2014 at 06:59:08PM +0100, Thomas Petazzoni wrote:
+> Dear Andrew Lunn,
+> 
+> On Mon, 10 Feb 2014 18:53:50 +0100, Andrew Lunn wrote:
+> > > +The following is a list of provided IDs for Armada 380/385:
+> > > +ID	Clock		Peripheral
+> > > +-----------------------------------
+> > > +0	audio		Audio
+> > > +2	ge2		Gigabit Ethernet 2
+> > > +3	ge1		Gigabit Ethernet 1
+> > > +4	ge0		Gigabit Ethernet 0
+> > > +5	pex1		PCIe 1
+> > > +6	pex2		PCIe 2
+> > > +7	pex3		PCIe 3
+> > > +8	pex4		PCIe 0
+> > 
+> > Is that last one a typo? It at least looks a bit odd.
+> 
+> Right, this should be:
+> 
+> 	8	pex0		PCIe 0
+> 
+> (just checked again in the datasheet)
 
-------------------
+I can fix this up when I pull it in for Mike.  No need to redo the
+series just for this.
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+I'll let it sit for a day or two more before I pull it to give everyone
+a chance to look it over.
 
-commit 06af15d1b6f45c60358feab88004472e5428f01c upstream.
+thx,
 
-Set the carrier offset correctly using the default mclk values.
+Jason.
 
-Add function m88rs2000_get_mclk to calculate the mclk value
-against crystal frequency which will later be used for
-other functions.
-
-Add function m88rs2000_set_carrieroffset to calculate
-and set the offset value.
-
-variable offset becomes a signed value.
-
-Register 0x86 is set the appropriate value according to
-remainder value of frequency % 192857 calculation as
-shown.
-
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/media/dvb-frontends/m88rs2000.c |   77 +++++++++++++++++++++++---------
- drivers/media/dvb-frontends/m88rs2000.h |    2 
- 2 files changed, 59 insertions(+), 20 deletions(-)
-
---- a/drivers/media/dvb-frontends/m88rs2000.c
-+++ b/drivers/media/dvb-frontends/m88rs2000.c
-@@ -110,6 +110,52 @@ static u8 m88rs2000_readreg(struct m88rs
- 	return b1[0];
- }
- 
-+static u32 m88rs2000_get_mclk(struct dvb_frontend *fe)
-+{
-+	struct m88rs2000_state *state = fe->demodulator_priv;
-+	u32 mclk;
-+	u8 reg;
-+	/* Must not be 0x00 or 0xff */
-+	reg = m88rs2000_readreg(state, 0x86);
-+	if (!reg || reg == 0xff)
-+		return 0;
-+
-+	reg /= 2;
-+	reg += 1;
-+
-+	mclk = (u32)(reg * RS2000_FE_CRYSTAL_KHZ + 28 / 2) / 28;
-+
-+	return mclk;
-+}
-+
-+static int m88rs2000_set_carrieroffset(struct dvb_frontend *fe, s16 offset)
-+{
-+	struct m88rs2000_state *state = fe->demodulator_priv;
-+	u32 mclk;
-+	s32 tmp;
-+	u8 reg;
-+	int ret;
-+
-+	mclk = m88rs2000_get_mclk(fe);
-+	if (!mclk)
-+		return -EINVAL;
-+
-+	tmp = (offset * 4096 + (s32)mclk / 2) / (s32)mclk;
-+	if (tmp < 0)
-+		tmp += 4096;
-+
-+	/* Carrier Offset */
-+	ret = m88rs2000_writereg(state, 0x9c, (u8)(tmp >> 4));
-+
-+	reg = m88rs2000_readreg(state, 0x9d);
-+	reg &= 0xf;
-+	reg |= (u8)(tmp & 0xf) << 4;
-+
-+	ret |= m88rs2000_writereg(state, 0x9d, reg);
-+
-+	return ret;
-+}
-+
- static int m88rs2000_set_symbolrate(struct dvb_frontend *fe, u32 srate)
- {
- 	struct m88rs2000_state *state = fe->demodulator_priv;
-@@ -540,9 +586,8 @@ static int m88rs2000_set_frontend(struct
- 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
- 	fe_status_t status;
- 	int i, ret = 0;
--	s32 tmp;
- 	u32 tuner_freq;
--	u16 offset = 0;
-+	s16 offset = 0;
- 	u8 reg;
- 
- 	state->no_lock_count = 0;
-@@ -567,26 +612,18 @@ static int m88rs2000_set_frontend(struct
- 	if (ret < 0)
- 		return -ENODEV;
- 
--	offset = tuner_freq - c->frequency;
-+	offset = (s16)((s32)tuner_freq - c->frequency);
- 
--	/* calculate offset assuming 96000kHz*/
--	tmp = offset;
--	tmp *= 65536;
--
--	tmp = (2 * tmp + 96000) / (2 * 96000);
--	if (tmp < 0)
--		tmp += 65536;
--
--	offset = tmp & 0xffff;
--
--	ret = m88rs2000_writereg(state, 0x9a, 0x30);
--	/* Unknown usually 0xc6 sometimes 0xc1 */
--	reg = m88rs2000_readreg(state, 0x86);
--	ret |= m88rs2000_writereg(state, 0x86, reg);
--	/* Offset lower nibble always 0 */
--	ret |= m88rs2000_writereg(state, 0x9c, (offset >> 8));
--	ret |= m88rs2000_writereg(state, 0x9d, offset & 0xf0);
-+	/* default mclk value 96.4285 * 2 * 1000 = 192857 */
-+	if (((c->frequency % 192857) >= (192857 - 3000)) ||
-+				(c->frequency % 192857) <= 3000)
-+		ret = m88rs2000_writereg(state, 0x86, 0xc2);
-+	else
-+		ret = m88rs2000_writereg(state, 0x86, 0xc6);
- 
-+	ret |= m88rs2000_set_carrieroffset(fe, offset);
-+	if (ret < 0)
-+		return -ENODEV;
- 
- 	/* Reset Demod */
- 	ret = m88rs2000_tab_set(state, fe_reset);
---- a/drivers/media/dvb-frontends/m88rs2000.h
-+++ b/drivers/media/dvb-frontends/m88rs2000.h
-@@ -53,6 +53,8 @@ static inline struct dvb_frontend *m88rs
- }
- #endif /* CONFIG_DVB_M88RS2000 */
- 
-+#define RS2000_FE_CRYSTAL_KHZ 27000
-+
- enum {
- 	DEMOD_WRITE = 0x1,
- 	WRITE_DELAY = 0x10,
-
-
+> 
+> Thomas
+> -- 
+> Thomas Petazzoni, CTO, Free Electrons
+> Embedded Linux, Kernel and Android engineering
+> http://free-electrons.com
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
