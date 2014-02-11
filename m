@@ -1,125 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752266AbaBKWSD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 17:18:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22169 "EHLO mx1.redhat.com"
+	id S1752593AbaBKWTG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 17:19:06 -0500
+Received: from relay1.sgi.com ([192.48.179.29]:42429 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751347AbaBKWSA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 17:18:00 -0500
-From: Denys Vlasenko <dvlasenk@redhat.com>
-To: Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Cc: Denys Vlasenko <dvlasenk@redhat.com>,
-        Denys Vlasenko <vda.linux@googlemail.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] intel_pstate: deinline largish functions
-Date: Tue, 11 Feb 2014 23:17:50 +0100
-Message-Id: <1392157070-19184-1-git-send-email-dvlasenk@redhat.com>
+	id S1751347AbaBKWTE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 17:19:04 -0500
+Date: Tue, 11 Feb 2014 16:19:03 -0600
+From: Alex Thorlton <athorlton@sgi.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Russ Anderson <rja@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org,
+        linux-efi@vger.kernel.org
+Subject: Re: [BUG] Linux 3.14 fails to boot with new EFI changes
+Message-ID: <20140211221903.GG27648@sgi.com>
+References: <20140128225905.GN815@pd.tnic>
+ <20140128234036.GB18196@sgi.com>
+ <20140129141822.GC24887@pd.tnic>
+ <20140130221950.GJ3105@sgi.com>
+ <52EAD0F2.7090101@zytor.com>
+ <20140131100722.GA21873@pd.tnic>
+ <20140131140220.GC22498@sgi.com>
+ <20140131142318.GC21873@pd.tnic>
+ <20140205214536.GT3034@sgi.com>
+ <20140205231540.GB6364@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140205231540.GB6364@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No need to manually inline one-use functions, gcc does it automatically.
+On Thu, Feb 06, 2014 at 12:15:40AM +0100, Borislav Petkov wrote:
+> On Wed, Feb 05, 2014 at 03:45:36PM -0600, Alex Thorlton wrote:
+> > While working on an answer to this question, I ran across another issue
+> > on some newer hardware, that looks like it's definitely related to this
+> > problem, and might be the root cause.
+> > 
+> > When booting on a UV2 we die in efi_enter_virtual_mode:
+> > 
+> > BUG: unable to handle kernel paging request at 0000008f7e848020
+> > IP: [<000000007dadb6a9>] 0x7dadb6a8
+> > PGD 0
+> 
+> That looks very much like this other issue we're debugging right now:
 
-intel_pstate_busy_pid_reset() and intel_pstate_sample() aren't one-use
-and expand into ~200 and ~400 bytes of duplicated code.
+Have there been any developments on this since last week, Boris?  Just
+trying to make sure that we stay in the loop on this issue.
 
-Result of this change:
+Let me know if there's anything else we can do from our end to help
+expedite the process.  I'm always available to test new ideas.
 
-   text	   data	    bss	    dec	    hex	filename
-   6073	    517	    104	   6694	   1a26	intel_pstate.inline.o
-   5542	    517	    104	   6163	   1813	intel_pstate.o
+Thanks!
 
-CC: Denys Vlasenko <vda.linux@googlemail.com>
-CC: linux-kernel@vger.kernel.org
-Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
----
- drivers/cpufreq/intel_pstate.c | 16 +++++++---------
- 1 file changed, 7 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-index 79606f4..d058748 100644
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -168,7 +168,6 @@ static inline void pid_i_gain_set(struct _pid *pid, int percent)
- 
- static inline void pid_d_gain_set(struct _pid *pid, int percent)
- {
--
- 	pid->d_gain = div_fp(int_tofp(percent), int_tofp(100));
- }
- 
-@@ -202,7 +201,7 @@ static signed int pid_calc(struct _pid *pid, int32_t busy)
- 	return (signed int)fp_toint(result);
- }
- 
--static inline void intel_pstate_busy_pid_reset(struct cpudata *cpu)
-+static void intel_pstate_busy_pid_reset(struct cpudata *cpu)
- {
- 	pid_p_gain_set(&cpu->pid, pid_params.p_gain_pct);
- 	pid_d_gain_set(&cpu->pid, pid_params.d_gain_pct);
-@@ -215,7 +214,7 @@ static inline void intel_pstate_busy_pid_reset(struct cpudata *cpu)
- 		0);
- }
- 
--static inline void intel_pstate_reset_all_pid(void)
-+static void intel_pstate_reset_all_pid(void)
- {
- 	unsigned int cpu;
- 	for_each_online_cpu(cpu) {
-@@ -546,7 +545,7 @@ static void intel_pstate_get_cpu_pstates(struct cpudata *cpu)
- 	intel_pstate_set_pstate(cpu, cpu->pstate.max_pstate);
- }
- 
--static inline void intel_pstate_calc_busy(struct cpudata *cpu,
-+static void intel_pstate_calc_busy(struct cpudata *cpu,
- 					struct sample *sample)
- {
- 	u64 core_pct;
-@@ -563,7 +562,7 @@ static inline void intel_pstate_calc_busy(struct cpudata *cpu,
- 				div_fp(int_tofp(c0_pct + 1), int_tofp(100)));
- }
- 
--static inline void intel_pstate_sample(struct cpudata *cpu)
-+static void intel_pstate_sample(struct cpudata *cpu)
- {
- 	u64 aperf, mperf;
- 	unsigned long long tsc;
-@@ -587,7 +586,7 @@ static inline void intel_pstate_sample(struct cpudata *cpu)
- 	cpu->prev_tsc = tsc;
- }
- 
--static inline void intel_pstate_set_sample_time(struct cpudata *cpu)
-+static void intel_pstate_set_sample_time(struct cpudata *cpu)
- {
- 	int sample_time, delay;
- 
-@@ -596,7 +595,7 @@ static inline void intel_pstate_set_sample_time(struct cpudata *cpu)
- 	mod_timer_pinned(&cpu->timer, jiffies + delay);
- }
- 
--static inline int32_t intel_pstate_get_scaled_busy(struct cpudata *cpu)
-+static int32_t intel_pstate_get_scaled_busy(struct cpudata *cpu)
- {
- 	int32_t core_busy, max_pstate, current_pstate;
- 
-@@ -606,7 +605,7 @@ static inline int32_t intel_pstate_get_scaled_busy(struct cpudata *cpu)
- 	return mul_fp(core_busy, div_fp(max_pstate, current_pstate));
- }
- 
--static inline void intel_pstate_adjust_busy_pstate(struct cpudata *cpu)
-+static void intel_pstate_adjust_busy_pstate(struct cpudata *cpu)
- {
- 	int32_t busy_scaled;
- 	struct _pid *pid;
-@@ -670,7 +669,6 @@ MODULE_DEVICE_TABLE(x86cpu, intel_pstate_cpu_ids);
- 
- static int intel_pstate_init_cpu(unsigned int cpunum)
- {
--
- 	const struct x86_cpu_id *id;
- 	struct cpudata *cpu;
- 
--- 
-1.8.1.4
-
+- Alex
