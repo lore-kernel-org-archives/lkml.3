@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751845AbaBKRso (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 12:48:44 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:38624 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751366AbaBKRsg (ORCPT
+	id S1751763AbaBKRur (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 12:50:47 -0500
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:46360 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750978AbaBKRuq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 12:48:36 -0500
-Date: Tue, 11 Feb 2014 17:48:29 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: "arm@kernel.org" <arm@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH 08/12] mfd: vexpress-sysreg: Add syscon labels as
- platform data
-Message-ID: <20140211174829.GJ15081@lee--X1>
-References: <1392138636-29240-1-git-send-email-pawel.moll@arm.com>
- <1392138636-29240-9-git-send-email-pawel.moll@arm.com>
- <20140211172918.GH15081@lee--X1>
- <1392139946.3380.48.camel@hornet>
+	Tue, 11 Feb 2014 12:50:46 -0500
+Date: Tue, 11 Feb 2014 12:50:41 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 8/9] workqueue: Replace hardcoding of -20 and 19 with
+ MIN_NICE and MAX_NICE.
+Message-ID: <20140211175041.GH24490@htj.dyndns.org>
+References: <cover.1392103744.git.yangds.fnst@cn.fujitsu.com>
+ <6d85138180c00ce86975addab6e34b24b84f00a5.1392103744.git.yangds.fnst@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1392139946.3380.48.camel@hornet>
+In-Reply-To: <6d85138180c00ce86975addab6e34b24b84f00a5.1392103744.git.yangds.fnst@cn.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Feb 2014, Pawel Moll wrote:
-
-> On Tue, 2014-02-11 at 17:29 +0000, Lee Jones wrote:
-> > There must be better
-> > ways of passing a name than through pdata, and if there isn't I'd
-> > suggest setting up a sysconf pdata struct that others can use in case
-> > they wish to expand the functionality further in some other
-> > unfathomable way. :)
+On Tue, Feb 11, 2014 at 03:34:52PM +0800, Dongsheng Yang wrote:
+> Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+> cc: Tejun Heo <tj@kernel.org>
+> cc: Peter Zijlstra <peterz@infradead.org>
+> cc: Ingo Molnar <mingo@kernel.org>
+> ---
+>  kernel/workqueue.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> ... which I proposed in the previous patch :-)
-> 
-> > Alternatively I could define a syscon platform data structure,
-> > something like this:
-> > 
-> > struct syscon_platform_data {
-> > 	const char *label;
-> > };
+> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+> index 82ef9f3..e4f5905 100644
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -3218,7 +3218,7 @@ static ssize_t wq_nice_store(struct device *dev, struct device_attribute *attr,
+>  		return -ENOMEM;
+>  
+>  	if (sscanf(buf, "%d", &attrs->nice) == 1 &&
+> -	    attrs->nice >= -20 && attrs->nice <= 19)
+> +	    attrs->nice >= MIN_NICE && attrs->nice <= MAX_NICE)
 
-So you did.
+No objection.  If this gets accepted, it will be routed through -tip,
+I suppose?  Please feel free to add
 
-Yes, this would be the lesser of the two evils. 
+ Acked-by: Tejun Heo <tj@kernel.org>
+
+Thanks.
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+tejun
