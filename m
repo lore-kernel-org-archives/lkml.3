@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753521AbaBKTGn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:06:43 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40012 "EHLO
+	id S1755390AbaBKUMd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:12:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40022 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753491AbaBKTGk (ORCPT
+	with ESMTP id S1753519AbaBKTGn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:40 -0500
+	Tue, 11 Feb 2014 14:06:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Weston Andros Adamson <dros@netapp.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.12 046/107] sunrpc: Fix infinite loop in RPC state machine
-Date: Tue, 11 Feb 2014 11:05:12 -0800
-Message-Id: <20140211184749.505816423@linuxfoundation.org>
+        Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.12 050/107] dm thin: fix set_pool_mode exposed pool operation races
+Date: Tue, 11 Feb 2014 11:05:16 -0800
+Message-Id: <20140211184749.623523708@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -29,119 +28,154 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Weston Andros Adamson <dros@netapp.com>
+From: Mike Snitzer <snitzer@redhat.com>
 
-commit 6ff33b7dd0228b7d7ed44791bbbc98b03fd15d9d upstream.
+commit 8b64e881eb40ac8b9bfcbce068a97eef819044ee upstream.
 
-When a task enters call_refreshresult with status 0 from call_refresh and
-!rpcauth_uptodatecred(task) it enters call_refresh again with no rate-limiting
-or max number of retries.
+The pool mode must not be switched until after the corresponding pool
+process_* methods have been established.  Otherwise, because
+set_pool_mode() isn't interlocked with the IO path for performance
+reasons, the IO path can end up executing process_* operations that
+don't match the mode.  This patch eliminates problems like the following
+(as seen on really fast PCIe SSD storage when transitioning the pool's
+mode from PM_READ_ONLY to PM_WRITE):
 
-Instead of trying forever, make use of the retry path that other errors use.
+kernel: device-mapper: thin: 253:2: reached low water mark for data device: sending event.
+kernel: device-mapper: thin: 253:2: no free data space available.
+kernel: device-mapper: thin: 253:2: switching pool to read-only mode
+kernel: device-mapper: thin: 253:2: switching pool to write mode
+kernel: ------------[ cut here ]------------
+kernel: WARNING: CPU: 11 PID: 7564 at drivers/md/dm-thin.c:995 handle_unserviceable_bio+0x146/0x160 [dm_thin_pool]()
+...
+kernel: Workqueue: dm-thin do_worker [dm_thin_pool]
+kernel: 00000000000003e3 ffff880308831cc8 ffffffff8152ebcb 00000000000003e3
+kernel: 0000000000000000 ffff880308831d08 ffffffff8104c46c ffff88032502a800
+kernel: ffff880036409000 ffff88030ec7ce00 0000000000000001 00000000ffffffc3
+kernel: Call Trace:
+kernel: [<ffffffff8152ebcb>] dump_stack+0x49/0x5e
+kernel: [<ffffffff8104c46c>] warn_slowpath_common+0x8c/0xc0
+kernel: [<ffffffff8104c4ba>] warn_slowpath_null+0x1a/0x20
+kernel: [<ffffffffa001e2c6>] handle_unserviceable_bio+0x146/0x160 [dm_thin_pool]
+kernel: [<ffffffffa001f276>] process_bio_read_only+0x136/0x180 [dm_thin_pool]
+kernel: [<ffffffffa0020b75>] process_deferred_bios+0xc5/0x230 [dm_thin_pool]
+kernel: [<ffffffffa0020d31>] do_worker+0x51/0x60 [dm_thin_pool]
+kernel: [<ffffffff81067823>] process_one_work+0x183/0x490
+kernel: [<ffffffff81068c70>] worker_thread+0x120/0x3a0
+kernel: [<ffffffff81068b50>] ? manage_workers+0x160/0x160
+kernel: [<ffffffff8106e86e>] kthread+0xce/0xf0
+kernel: [<ffffffff8106e7a0>] ? kthread_freezable_should_stop+0x70/0x70
+kernel: [<ffffffff8153b3ec>] ret_from_fork+0x7c/0xb0
+kernel: [<ffffffff8106e7a0>] ? kthread_freezable_should_stop+0x70/0x70
+kernel: ---[ end trace 3f00528e08ffa55c ]---
+kernel: device-mapper: thin: pool mode is PM_WRITE not PM_READ_ONLY like expected!?
 
-This only seems to be possible when the crrefresh callback is gss_refresh_null,
-which only happens when destroying the context.
+dm-thin.c:995 was the WARN_ON_ONCE(get_pool_mode(pool) != PM_READ_ONLY);
+at the top of handle_unserviceable_bio().  And as the additional
+debugging I had conveys: the pool mode was _not_ PM_READ_ONLY like
+expected, it was already PM_WRITE, yet pool->process_bio was still set
+to process_bio_read_only().
 
-To reproduce:
+Also, while fixing this up, reduce logging of redundant pool mode
+transitions by checking new_mode is different from old_mode.
 
-1) mount with sec=krb5 (or sec=sys with krb5 negotiated for non FSID specific
-   operations).
-
-2) reboot - the client will be stuck and will need to be hard rebooted
-
-BUG: soft lockup - CPU#0 stuck for 22s! [kworker/0:2:46]
-Modules linked in: rpcsec_gss_krb5 nfsv4 nfs fscache ppdev crc32c_intel aesni_intel aes_x86_64 glue_helper lrw gf128mul ablk_helper cryptd serio_raw i2c_piix4 i2c_core e1000 parport_pc parport shpchp nfsd auth_rpcgss oid_registry exportfs nfs_acl lockd sunrpc autofs4 mptspi scsi_transport_spi mptscsih mptbase ata_generic floppy
-irq event stamp: 195724
-hardirqs last  enabled at (195723): [<ffffffff814a925c>] restore_args+0x0/0x30
-hardirqs last disabled at (195724): [<ffffffff814b0a6a>] apic_timer_interrupt+0x6a/0x80
-softirqs last  enabled at (195722): [<ffffffff8103f583>] __do_softirq+0x1df/0x276
-softirqs last disabled at (195717): [<ffffffff8103f852>] irq_exit+0x53/0x9a
-CPU: 0 PID: 46 Comm: kworker/0:2 Not tainted 3.13.0-rc3-branch-dros_testing+ #4
-Hardware name: VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform, BIOS 6.00 07/31/2013
-Workqueue: rpciod rpc_async_schedule [sunrpc]
-task: ffff8800799c4260 ti: ffff880079002000 task.ti: ffff880079002000
-RIP: 0010:[<ffffffffa0064fd4>]  [<ffffffffa0064fd4>] __rpc_execute+0x8a/0x362 [sunrpc]
-RSP: 0018:ffff880079003d18  EFLAGS: 00000246
-RAX: 0000000000000005 RBX: 0000000000000007 RCX: 0000000000000007
-RDX: 0000000000000007 RSI: ffff88007aecbae8 RDI: ffff8800783d8900
-RBP: ffff880079003d78 R08: ffff88006e30e9f8 R09: ffffffffa005a3d7
-R10: ffff88006e30e7b0 R11: ffff8800783d8900 R12: ffffffffa006675e
-R13: ffff880079003ce8 R14: ffff88006e30e7b0 R15: ffff8800783d8900
-FS:  0000000000000000(0000) GS:ffff88007f200000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 00007f3072333000 CR3: 0000000001a0b000 CR4: 00000000001407f0
-Stack:
- ffff880079003d98 0000000000000246 0000000000000000 ffff88007a9a4830
- ffff880000000000 ffffffff81073f47 ffff88007f212b00 ffff8800799c4260
- ffff8800783d8988 ffff88007f212b00 ffffe8ffff604800 0000000000000000
-Call Trace:
- [<ffffffff81073f47>] ? trace_hardirqs_on_caller+0x145/0x1a1
- [<ffffffffa00652d3>] rpc_async_schedule+0x27/0x32 [sunrpc]
- [<ffffffff81052974>] process_one_work+0x211/0x3a5
- [<ffffffff810528d5>] ? process_one_work+0x172/0x3a5
- [<ffffffff81052eeb>] worker_thread+0x134/0x202
- [<ffffffff81052db7>] ? rescuer_thread+0x280/0x280
- [<ffffffff81052db7>] ? rescuer_thread+0x280/0x280
- [<ffffffff810584a0>] kthread+0xc9/0xd1
- [<ffffffff810583d7>] ? __kthread_parkme+0x61/0x61
- [<ffffffff814afd6c>] ret_from_fork+0x7c/0xb0
- [<ffffffff810583d7>] ? __kthread_parkme+0x61/0x61
-Code: e8 87 63 fd e0 c6 05 10 dd 01 00 01 48 8b 43 70 4c 8d 6b 70 45 31 e4 a8 02 0f 85 d5 02 00 00 4c 8b 7b 48 48 c7 43 48 00 00 00 00 <4c> 8b 4b 50 4d 85 ff 75 0c 4d 85 c9 4d 89 cf 0f 84 32 01 00 00
-
-And the output of "rpcdebug -m rpc -s all":
-
-RPC:    61 call_refresh (status 0)
-RPC:    61 call_refresh (status 0)
-RPC:    61 refreshing RPCSEC_GSS cred ffff88007a413cf0
-RPC:    61 refreshing RPCSEC_GSS cred ffff88007a413cf0
-RPC:    61 call_refreshresult (status 0)
-RPC:    61 refreshing RPCSEC_GSS cred ffff88007a413cf0
-RPC:    61 call_refreshresult (status 0)
-RPC:    61 refreshing RPCSEC_GSS cred ffff88007a413cf0
-RPC:    61 call_refresh (status 0)
-RPC:    61 call_refreshresult (status 0)
-RPC:    61 call_refresh (status 0)
-RPC:    61 call_refresh (status 0)
-RPC:    61 refreshing RPCSEC_GSS cred ffff88007a413cf0
-RPC:    61 call_refreshresult (status 0)
-RPC:    61 call_refresh (status 0)
-RPC:    61 refreshing RPCSEC_GSS cred ffff88007a413cf0
-RPC:    61 call_refresh (status 0)
-RPC:    61 refreshing RPCSEC_GSS cred ffff88007a413cf0
-RPC:    61 refreshing RPCSEC_GSS cred ffff88007a413cf0
-RPC:    61 call_refreshresult (status 0)
-RPC:    61 call_refresh (status 0)
-RPC:    61 call_refresh (status 0)
-RPC:    61 call_refresh (status 0)
-RPC:    61 call_refresh (status 0)
-RPC:    61 call_refreshresult (status 0)
-RPC:    61 refreshing RPCSEC_GSS cred ffff88007a413cf0
-
-Signed-off-by: Weston Andros Adamson <dros@netapp.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/clnt.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/md/dm-thin.c |   40 +++++++++++++++++++++++++++-------------
+ 1 file changed, 27 insertions(+), 13 deletions(-)
 
---- a/net/sunrpc/clnt.c
-+++ b/net/sunrpc/clnt.c
-@@ -1433,9 +1433,13 @@ call_refreshresult(struct rpc_task *task
- 	task->tk_action = call_refresh;
- 	switch (status) {
- 	case 0:
--		if (rpcauth_uptodatecred(task))
-+		if (rpcauth_uptodatecred(task)) {
- 			task->tk_action = call_allocate;
--		return;
-+			return;
-+		}
-+		/* Use rate-limiting and a max number of retries if refresh
-+		 * had status 0 but failed to update the cred.
-+		 */
- 	case -ETIMEDOUT:
- 		rpc_delay(task, 3*HZ);
- 	case -EAGAIN:
+--- a/drivers/md/dm-thin.c
++++ b/drivers/md/dm-thin.c
+@@ -1395,16 +1395,16 @@ static enum pool_mode get_pool_mode(stru
+ 	return pool->pf.mode;
+ }
+ 
+-static void set_pool_mode(struct pool *pool, enum pool_mode mode)
++static void set_pool_mode(struct pool *pool, enum pool_mode new_mode)
+ {
+ 	int r;
++	enum pool_mode old_mode = pool->pf.mode;
+ 
+-	pool->pf.mode = mode;
+-
+-	switch (mode) {
++	switch (new_mode) {
+ 	case PM_FAIL:
+-		DMERR("%s: switching pool to failure mode",
+-		      dm_device_name(pool->pool_md));
++		if (old_mode != new_mode)
++			DMERR("%s: switching pool to failure mode",
++			      dm_device_name(pool->pool_md));
+ 		dm_pool_metadata_read_only(pool->pmd);
+ 		pool->process_bio = process_bio_fail;
+ 		pool->process_discard = process_bio_fail;
+@@ -1413,13 +1413,15 @@ static void set_pool_mode(struct pool *p
+ 		break;
+ 
+ 	case PM_READ_ONLY:
+-		DMERR("%s: switching pool to read-only mode",
+-		      dm_device_name(pool->pool_md));
++		if (old_mode != new_mode)
++			DMERR("%s: switching pool to read-only mode",
++			      dm_device_name(pool->pool_md));
+ 		r = dm_pool_abort_metadata(pool->pmd);
+ 		if (r) {
+ 			DMERR("%s: aborting transaction failed",
+ 			      dm_device_name(pool->pool_md));
+-			set_pool_mode(pool, PM_FAIL);
++			new_mode = PM_FAIL;
++			set_pool_mode(pool, new_mode);
+ 		} else {
+ 			dm_pool_metadata_read_only(pool->pmd);
+ 			pool->process_bio = process_bio_read_only;
+@@ -1430,6 +1432,9 @@ static void set_pool_mode(struct pool *p
+ 		break;
+ 
+ 	case PM_WRITE:
++		if (old_mode != new_mode)
++			DMINFO("%s: switching pool to write mode",
++			       dm_device_name(pool->pool_md));
+ 		dm_pool_metadata_read_write(pool->pmd);
+ 		pool->process_bio = process_bio;
+ 		pool->process_discard = process_discard;
+@@ -1437,6 +1442,8 @@ static void set_pool_mode(struct pool *p
+ 		pool->process_prepared_discard = process_prepared_discard;
+ 		break;
+ 	}
++
++	pool->pf.mode = new_mode;
+ }
+ 
+ /*----------------------------------------------------------------*/
+@@ -1653,6 +1660,17 @@ static int bind_control_target(struct po
+ 	enum pool_mode new_mode = pt->adjusted_pf.mode;
+ 
+ 	/*
++	 * Don't change the pool's mode until set_pool_mode() below.
++	 * Otherwise the pool's process_* function pointers may
++	 * not match the desired pool mode.
++	 */
++	pt->adjusted_pf.mode = old_mode;
++
++	pool->ti = ti;
++	pool->pf = pt->adjusted_pf;
++	pool->low_water_blocks = pt->low_water_blocks;
++
++	/*
+ 	 * If we were in PM_FAIL mode, rollback of metadata failed.  We're
+ 	 * not going to recover without a thin_repair.  So we never let the
+ 	 * pool move out of the old mode.  On the other hand a PM_READ_ONLY
+@@ -1662,10 +1680,6 @@ static int bind_control_target(struct po
+ 	if (old_mode == PM_FAIL)
+ 		new_mode = old_mode;
+ 
+-	pool->ti = ti;
+-	pool->low_water_blocks = pt->low_water_blocks;
+-	pool->pf = pt->adjusted_pf;
+-
+ 	set_pool_mode(pool, new_mode);
+ 
+ 	return 0;
 
 
