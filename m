@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751763AbaBKRur (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 12:50:47 -0500
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:46360 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750978AbaBKRuq (ORCPT
+	id S1751962AbaBKRva (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 12:51:30 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:58644 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751288AbaBKRv1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 12:50:46 -0500
-Date: Tue, 11 Feb 2014 12:50:41 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 8/9] workqueue: Replace hardcoding of -20 and 19 with
- MIN_NICE and MAX_NICE.
-Message-ID: <20140211175041.GH24490@htj.dyndns.org>
-References: <cover.1392103744.git.yangds.fnst@cn.fujitsu.com>
- <6d85138180c00ce86975addab6e34b24b84f00a5.1392103744.git.yangds.fnst@cn.fujitsu.com>
+	Tue, 11 Feb 2014 12:51:27 -0500
+Date: Tue, 11 Feb 2014 11:49:10 -0600
+From: Josh Cartwright <joshc@codeaurora.org>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Andy Gross <agross@codeaurora.org>,
+        Dan Williams <dan.j.williams@intel.com>, dmaengine@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org
+Subject: Re: [Patch v5 1/2] dmaengine: add Qualcomm BAM dma driver
+Message-ID: <20140211174910.GE841@joshc.qualcomm.com>
+References: <1391546556-27702-1-git-send-email-agross@codeaurora.org>
+ <1391546556-27702-2-git-send-email-agross@codeaurora.org>
+ <20140211173048.GP10628@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <6d85138180c00ce86975addab6e34b24b84f00a5.1392103744.git.yangds.fnst@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140211173048.GP10628@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 03:34:52PM +0800, Dongsheng Yang wrote:
-> Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-> cc: Tejun Heo <tj@kernel.org>
-> cc: Peter Zijlstra <peterz@infradead.org>
-> cc: Ingo Molnar <mingo@kernel.org>
-> ---
->  kernel/workqueue.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-> index 82ef9f3..e4f5905 100644
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -3218,7 +3218,7 @@ static ssize_t wq_nice_store(struct device *dev, struct device_attribute *attr,
->  		return -ENOMEM;
->  
->  	if (sscanf(buf, "%d", &attrs->nice) == 1 &&
-> -	    attrs->nice >= -20 && attrs->nice <= 19)
-> +	    attrs->nice >= MIN_NICE && attrs->nice <= MAX_NICE)
+On Tue, Feb 11, 2014 at 11:00:48PM +0530, Vinod Koul wrote:
+> On Tue, Feb 04, 2014 at 02:42:35PM -0600, Andy Gross wrote:
+> > Add the DMA engine driver for the QCOM Bus Access Manager (BAM) DMA controller
+> > found in the MSM 8x74 platforms.
+> > 
+> > Each BAM DMA device is associated with a specific on-chip peripheral.  Each
+> > channel provides a uni-directional data transfer engine that is capable of
+> > transferring data between the peripheral and system memory (System mode), or
+> > between two peripherals (BAM2BAM).
+> > 
+> > The initial release of this driver only supports slave transfers between
+> > peripherals and system memory.
+> > 
+> > Signed-off-by: Andy Gross <agross@codeaurora.org>
+>
+> > +++ b/drivers/dma/qcom_bam_dma.c
+[..]
+> > +static void bam_reset_channel(struct bam_chan *bchan)
+> > +{
+> > +	struct bam_device *bdev = bchan->bdev;
+> > +
+> > +	/* reset channel */
+> > +	writel_relaxed(1, bdev->regs + BAM_P_RST(bchan->id));
+> > +	writel_relaxed(0, bdev->regs + BAM_P_RST(bchan->id));
+> > +
+> > +	/* don't allow reorder of the channel reset */
+> > +	wmb();
+> Documentation/memory-barriers.txt describes wmb() as a CPU barier but based on
+> above you want it to be a compiler barrier then you should do 1st write,
+> barrier(), second write.
 
-No objection.  If this gets accepted, it will be routed through -tip,
-I suppose?  Please feel free to add
+It could also be that the intent was to prevent these writes from being
+ordered before setting the initialized flag below, either way the
+comment could be made clearer.
 
- Acked-by: Tejun Heo <tj@kernel.org>
-
-Thanks.
+> > +
+> > +	/* make sure hw is initialized when channel is used the first time  */
+> > +	bchan->initialized = 0;
+> > +}
 
 -- 
-tejun
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
