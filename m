@@ -1,48 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752190AbaBKSOc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 13:14:32 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:48154 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751674AbaBKSO3 (ORCPT
+	id S1752257AbaBKSO4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 13:14:56 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:37973 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752145AbaBKSOy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 13:14:29 -0500
-Message-ID: <52FA6881.4030602@gmail.com>
-Date: Tue, 11 Feb 2014 19:14:25 +0100
-From: Bastien Traverse <bastien.traverse@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Tue, 11 Feb 2014 13:14:54 -0500
+Message-ID: <52FA689C.7090103@infradead.org>
+Date: Tue, 11 Feb 2014 10:14:52 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Peter Wu <lekensteyn@gmail.com>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
-        francis.moro@gmail.com, Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: 3.12: ethernet controller missing after resuming from suspend
- to RAM
-References: <52F2CC7B.80406@gmail.com> <2087423.Qy7HQIx1X6@vostro.rjw.lan> <52F7CC8B.1020209@gmail.com> <2182978.C0zdYi5cqX@al>
-In-Reply-To: <2182978.C0zdYi5cqX@al>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: linux-next: Tree for Feb 11  (staging/rtl8821ae/)
+References: <20140211172136.37976e8c5e7b81ce11f30b34@canb.auug.org.au>
+In-Reply-To: <20140211172136.37976e8c5e7b81ce11f30b34@canb.auug.org.au>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 09/02/2014 23:07, Peter Wu a écrit :
-> I think this is relevant. See also my test with 3.13.2 and different
-> kernel configs[1]. A workaround that triggers a scan was also posted[2].
+On 02/10/2014 10:21 PM, Stephen Rothwell wrote:
+> Hi all,
 > 
-> Peter
+> This tree fails (more than usual) the powerpc allyesconfig build.
 > 
->  [1]: http://lkml.org/lkml/2014/2/8/264
->  [2]: http://lkml.org/lkml/2014/2/7/809
+> Changes since 20140210:
+> 
 
-Thanks, I can confirm that triggering a rescan by issuing
+on i386:
 
-  sudo tee /sys/devices/pci0000:00/0000:00:1c.1/rescan <<<1
+ERROR: "ieee80211_rx_irqsafe" [drivers/staging/rtl8821ae/rtl8821ae.ko] undefined!
+ERROR: "ieee80211_beacon_get_tim" [drivers/staging/rtl8821ae/rtl8821ae.ko] undefined!
+ERROR: "ieee80211_unregister_hw" [drivers/staging/rtl8821ae/rtl8821ae.ko] undefined!
+ERROR: "rate_control_send_low" [drivers/staging/rtl8821ae/rtl8821ae.ko] undefined!
+ERROR: "ieee80211_stop_queue" [drivers/staging/rtl8821ae/rtl8821ae.ko] undefined!
+ERROR: "ieee80211_rate_control_register" [drivers/staging/rtl8821ae/rtl8821ae.ko] undefined!
+ERROR: "wiphy_to_ieee80211_hw" [drivers/staging/rtl8821ae/rtl8821ae.ko] undefined!
+ERROR: "ieee80211_stop_tx_ba_cb_irqsafe" [drivers/staging/rtl8821ae/rtl8821ae.ko] undefined!
+ERROR: "ieee80211_tx_status_irqsafe" [drivers/staging/rtl8821ae/rtl8821ae.ko] undefined!
+ERROR: "ieee80211_find_sta" [drivers/staging/rtl8821ae/rtl8821ae.ko] undefined!
+ERROR: "ieee80211_wake_queue" [drivers/staging/rtl8821ae/rtl8821ae.ko] undefined!
+ERROR: "ieee80211_rate_control_unregister" [drivers/staging/rtl8821ae/rtl8821ae.ko] undefined!
+ERROR: "ieee80211_register_hw" [drivers/staging/rtl8821ae/rtl8821ae.ko] undefined!
+ERROR: "ieee80211_start_tx_ba_session" [drivers/staging/rtl8821ae/rtl8821ae.ko] undefined!
+ERROR: "ieee80211_alloc_hw" [drivers/staging/rtl8821ae/rtl8821ae.ko] undefined!
+ERROR: "ieee80211_free_hw" [drivers/staging/rtl8821ae/rtl8821ae.ko] undefined!
+ERROR: "ieee80211_connection_loss" [drivers/staging/rtl8821ae/rtl8821ae.ko] undefined!
+ERROR: "ieee80211_start_tx_ba_cb_irqsafe" [drivers/staging/rtl8821ae/rtl8821ae.ko] undefined!
 
-made the device reappear on my system (of course I had to adapt the
-command to match PCI Bridge number). That's a handy workaround, it
-avoids restarting each time.
+when CONFIG_MAC80211 is not enabled.
+Looks like it should also depend on MAC80211.
 
-As I've never compiled a kernel so far I think I'll leave the
-configuration tweaks for another time :)
 
-Cheers
+
+-- 
+~Randy
