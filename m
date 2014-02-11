@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753175AbaBKTGE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:06:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39778 "EHLO
+	id S1754255AbaBKUgX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:36:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39815 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752997AbaBKTF6 (ORCPT
+	with ESMTP id S1753160AbaBKTGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:05:58 -0500
+	Tue, 11 Feb 2014 14:06:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.13 107/120] ftrace: Synchronize setting function_trace_op with ftrace_trace_function
-Date: Tue, 11 Feb 2014 11:05:48 -0800
-Message-Id: <20140211184826.686778823@linuxfoundation.org>
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Ben Skeggs <bskeggs@redhat.com>
+Subject: [PATCH 3.13 090/120] drm/nouveau: hold mutex while syncing to kernel channel
+Date: Tue, 11 Feb 2014 11:05:31 -0800
+Message-Id: <20140211184826.177249264@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -28,168 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
 
-commit 405e1d834807e51b2ebd3dea81cb51e53fb61504 upstream.
+commit d5c1e84b3a130f0743b218b33ff7d9cb493ab5b4 upstream.
 
-ftrace_trace_function is a variable that holds what function will be called
-directly by the assembly code (mcount). If just a single function is
-registered and it handles recursion itself, then the assembly will call that
-function directly without any helper function. It also passes in the
-ftrace_op that was registered with the callback. The ftrace_op to send is
-stored in the function_trace_op variable.
+Not holding the mutex potentially causes corruption of the kernel
+channel when page flipping.
 
-The ftrace_trace_function and function_trace_op needs to be coordinated such
-that the called callback wont be called with the wrong ftrace_op, otherwise
-bad things can happen if it expected a different op. Luckily, there's no
-callback that doesn't use the helper functions that requires this. But
-there soon will be and this needs to be fixed.
-
-Use a set_function_trace_op to store the ftrace_op to set the
-function_trace_op to when it is safe to do so (during the update function
-within the breakpoint or stop machine calls). Or if dynamic ftrace is not
-being used (static tracing) then we have to do a bit more synchronization
-when the ftrace_trace_function is set as that takes affect immediately
-(as oppose to dynamic ftrace doing it with the modification of the trampoline).
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/ftrace.c |   87 +++++++++++++++++++++++++++++++++++++++++---------
- 1 file changed, 72 insertions(+), 15 deletions(-)
+ drivers/gpu/drm/nouveau/nouveau_display.c |   15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
 
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -85,6 +85,8 @@ int function_trace_stop __read_mostly;
+--- a/drivers/gpu/drm/nouveau/nouveau_display.c
++++ b/drivers/gpu/drm/nouveau/nouveau_display.c
+@@ -603,6 +603,14 @@ nouveau_crtc_page_flip(struct drm_crtc *
+ 	if (!s)
+ 		return -ENOMEM;
  
- /* Current function tracing op */
- struct ftrace_ops *function_trace_op __read_mostly = &ftrace_list_end;
-+/* What to set function_trace_op to */
-+static struct ftrace_ops *set_function_trace_op;
- 
- /* List for set_ftrace_pid's pids. */
- LIST_HEAD(ftrace_pids);
-@@ -278,6 +280,23 @@ static void update_global_ops(void)
- 	global_ops.func = func;
- }
- 
-+static void ftrace_sync(struct work_struct *work)
-+{
-+	/*
-+	 * This function is just a stub to implement a hard force
-+	 * of synchronize_sched(). This requires synchronizing
-+	 * tasks even in userspace and idle.
-+	 *
-+	 * Yes, function tracing is rude.
-+	 */
-+}
-+
-+static void ftrace_sync_ipi(void *data)
-+{
-+	/* Probably not needed, but do it anyway */
-+	smp_rmb();
-+}
-+
- static void update_ftrace_function(void)
- {
- 	ftrace_func_t func;
-@@ -296,16 +315,59 @@ static void update_ftrace_function(void)
- 	     !FTRACE_FORCE_LIST_FUNC)) {
- 		/* Set the ftrace_ops that the arch callback uses */
- 		if (ftrace_ops_list == &global_ops)
--			function_trace_op = ftrace_global_list;
-+			set_function_trace_op = ftrace_global_list;
- 		else
--			function_trace_op = ftrace_ops_list;
-+			set_function_trace_op = ftrace_ops_list;
- 		func = ftrace_ops_list->func;
- 	} else {
- 		/* Just use the default ftrace_ops */
--		function_trace_op = &ftrace_list_end;
-+		set_function_trace_op = &ftrace_list_end;
- 		func = ftrace_ops_list_func;
- 	}
- 
-+	/* If there's no change, then do nothing more here */
-+	if (ftrace_trace_function == func)
-+		return;
-+
-+	/*
-+	 * If we are using the list function, it doesn't care
-+	 * about the function_trace_ops.
-+	 */
-+	if (func == ftrace_ops_list_func) {
-+		ftrace_trace_function = func;
-+		/*
-+		 * Don't even bother setting function_trace_ops,
-+		 * it would be racy to do so anyway.
-+		 */
-+		return;
++	if (new_bo != old_bo) {
++		ret = nouveau_bo_pin(new_bo, TTM_PL_FLAG_VRAM);
++		if (ret)
++			goto fail_free;
 +	}
 +
-+#ifndef CONFIG_DYNAMIC_FTRACE
-+	/*
-+	 * For static tracing, we need to be a bit more careful.
-+	 * The function change takes affect immediately. Thus,
-+	 * we need to coorditate the setting of the function_trace_ops
-+	 * with the setting of the ftrace_trace_function.
-+	 *
-+	 * Set the function to the list ops, which will call the
-+	 * function we want, albeit indirectly, but it handles the
-+	 * ftrace_ops and doesn't depend on function_trace_op.
-+	 */
-+	ftrace_trace_function = ftrace_ops_list_func;
-+	/*
-+	 * Make sure all CPUs see this. Yes this is slow, but static
-+	 * tracing is slow and nasty to have enabled.
-+	 */
-+	schedule_on_each_cpu(ftrace_sync);
-+	/* Now all cpus are using the list ops. */
-+	function_trace_op = set_function_trace_op;
-+	/* Make sure the function_trace_op is visible on all CPUs */
-+	smp_wmb();
-+	/* Nasty way to force a rmb on all cpus */
-+	smp_call_function(ftrace_sync_ipi, NULL, 1);
-+	/* OK, we are all set to update the ftrace_trace_function now! */
-+#endif /* !CONFIG_DYNAMIC_FTRACE */
++	mutex_lock(&chan->cli->mutex);
 +
- 	ftrace_trace_function = func;
- }
+ 	/* synchronise rendering channel with the kernel's channel */
+ 	spin_lock(&new_bo->bo.bdev->fence_lock);
+ 	fence = nouveau_fence_ref(new_bo->bo.sync_obj);
+@@ -612,13 +620,6 @@ nouveau_crtc_page_flip(struct drm_crtc *
+ 	if (ret)
+ 		goto fail_free;
  
-@@ -410,17 +472,6 @@ static int __register_ftrace_function(st
- 	return 0;
- }
- 
--static void ftrace_sync(struct work_struct *work)
--{
--	/*
--	 * This function is just a stub to implement a hard force
--	 * of synchronize_sched(). This requires synchronizing
--	 * tasks even in userspace and idle.
--	 *
--	 * Yes, function tracing is rude.
--	 */
--}
+-	if (new_bo != old_bo) {
+-		ret = nouveau_bo_pin(new_bo, TTM_PL_FLAG_VRAM);
+-		if (ret)
+-			goto fail_free;
+-	}
 -
- static int __unregister_ftrace_function(struct ftrace_ops *ops)
- {
- 	int ret;
-@@ -1992,8 +2043,14 @@ void ftrace_modify_all_code(int command)
- 	else if (command & FTRACE_DISABLE_CALLS)
- 		ftrace_replace_code(0);
- 
--	if (update && ftrace_trace_function != ftrace_ops_list_func)
-+	if (update && ftrace_trace_function != ftrace_ops_list_func) {
-+		function_trace_op = set_function_trace_op;
-+		smp_wmb();
-+		/* If irqs are disabled, we are in stop machine */
-+		if (!irqs_disabled())
-+			smp_call_function(ftrace_sync_ipi, NULL, 1);
- 		ftrace_update_ftrace_func(ftrace_trace_function);
-+	}
- 
- 	if (command & FTRACE_START_FUNC_RET)
- 		ftrace_enable_ftrace_graph_caller();
+-	mutex_lock(&chan->cli->mutex);
+ 	ret = ttm_bo_reserve(&old_bo->bo, true, false, false, NULL);
+ 	if (ret)
+ 		goto fail_unpin;
 
 
