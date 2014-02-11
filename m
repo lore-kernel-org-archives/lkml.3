@@ -1,86 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755361AbaBKTq7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:46:59 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:39370 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754041AbaBKToY (ORCPT
+	id S1755372AbaBKTrX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:47:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40272 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753938AbaBKTHa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:44:24 -0500
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH 1/3] arm: at91sam9rl: refresh defconfig
-Date: Tue, 11 Feb 2014 20:43:59 +0100
-Message-Id: <1392147841-7815-2-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1392147841-7815-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1392147841-7815-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Tue, 11 Feb 2014 14:07:30 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.10 02/79] tracing: Have trace buffer point back to trace_array
+Date: Tue, 11 Feb 2014 11:05:06 -0800
+Message-Id: <20140211184720.999746089@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
+References: <20140211184720.928667275@linuxfoundation.org>
+User-Agent: quilt/0.61-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The defconfig for the at91sam9rl is quite old, refresh it:
- - now uses EABI instead of OABI
- - add devtmpfs support
- - add UBI/UBIfs support
- - remove a few config symbols that disappeared
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+------------------
+
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+
+commit dced341b2d4f06668efaab33f88de5d287c0f45b upstream.
+
+The trace buffer has a descriptor pointer that goes back to the trace
+array. But it was never assigned. Luckily, nothing uses it (yet), but
+it will in the future.
+
+Although nothing currently uses this, if any of the new features get
+backported to older kernels, and because this is such a simple change,
+I'm marking it for stable too.
+
+Fixes: 12883efb670c "tracing: Consolidate max_tr into main trace_array structure"
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- arch/arm/configs/at91sam9rl_defconfig | 10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ kernel/trace/trace.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/arm/configs/at91sam9rl_defconfig b/arch/arm/configs/at91sam9rl_defconfig
-index 7cf87856d63c..e60f51afcf6a 100644
---- a/arch/arm/configs/at91sam9rl_defconfig
-+++ b/arch/arm/configs/at91sam9rl_defconfig
-@@ -1,8 +1,8 @@
--CONFIG_EXPERIMENTAL=y
- # CONFIG_LOCALVERSION_AUTO is not set
- # CONFIG_SWAP is not set
- CONFIG_SYSVIPC=y
- CONFIG_LOG_BUF_SHIFT=14
-+CONFIG_EMBEDDED=y
- CONFIG_BLK_DEV_INITRD=y
- CONFIG_SLAB=y
- CONFIG_MODULES=y
-@@ -15,20 +15,23 @@ CONFIG_ARCH_AT91SAM9RL=y
- CONFIG_MACH_AT91SAM9RLEK=y
- CONFIG_AT91_PROGRAMMABLE_CLOCKS=y
- # CONFIG_ARM_THUMB is not set
-+CONFIG_AEABI=y
- CONFIG_ZBOOT_ROM_TEXT=0x0
- CONFIG_ZBOOT_ROM_BSS=0x0
- CONFIG_CMDLINE="mem=64M console=ttyS0,115200 initrd=0x21100000,17105363 root=/dev/ram0 rw"
--CONFIG_FPE_NWFPE=y
-+CONFIG_AUTO_ZRELADDR=y
- CONFIG_NET=y
- CONFIG_UNIX=y
- CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
-+CONFIG_DEVTMPFS=y
-+CONFIG_DEVTMPFS_MOUNT=y
- CONFIG_MTD=y
- CONFIG_MTD_CMDLINE_PARTS=y
--CONFIG_MTD_CHAR=y
- CONFIG_MTD_BLOCK=y
- CONFIG_MTD_DATAFLASH=y
- CONFIG_MTD_NAND=y
- CONFIG_MTD_NAND_ATMEL=y
-+CONFIG_MTD_UBI=y
- CONFIG_BLK_DEV_LOOP=y
- CONFIG_BLK_DEV_RAM=y
- CONFIG_BLK_DEV_RAM_COUNT=4
-@@ -67,6 +70,7 @@ CONFIG_EXT2_FS=y
- CONFIG_MSDOS_FS=y
- CONFIG_VFAT_FS=y
- CONFIG_TMPFS=y
-+CONFIG_UBIFS_FS=y
- CONFIG_CRAMFS=y
- CONFIG_NLS_CODEPAGE_437=y
- CONFIG_NLS_CODEPAGE_850=y
--- 
-1.8.3.2
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -5878,6 +5878,8 @@ allocate_trace_buffer(struct trace_array
+ 
+ 	rb_flags = trace_flags & TRACE_ITER_OVERWRITE ? RB_FL_OVERWRITE : 0;
+ 
++	buf->tr = tr;
++
+ 	buf->buffer = ring_buffer_alloc(size, rb_flags);
+ 	if (!buf->buffer)
+ 		return -ENOMEM;
+
 
