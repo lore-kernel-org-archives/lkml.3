@@ -1,96 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751462AbaBKJu7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 04:50:59 -0500
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:48479 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751096AbaBKJux convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 04:50:53 -0500
+	id S1751572AbaBKJvr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 04:51:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5506 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750807AbaBKJvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 04:51:42 -0500
+Message-ID: <52F9F293.7080601@redhat.com>
+Date: Tue, 11 Feb 2014 17:51:15 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <20140211094726.GH32042@lee--X1>
-References: <1392045953-26596-1-git-send-email-lpapp@kde.org>
-	<20140210160842.GB26997@lee--X1>
-	<20140210173811.04ba5964@endymion.delvare>
-	<CAOMwXhPTkrUUaUL-H_0fvZBO9_kt4jqKXs5BJYthDfu0_1c3xg@mail.gmail.com>
-	<20140211085014.4ef32b56@endymion.delvare>
-	<CAOMwXhMhKdp420+SPTih+C3fAgTmrpJgPnGBxsfPO3pEhESGTA@mail.gmail.com>
-	<20140211085053.GD32042@lee--X1>
-	<CAOMwXhPfmXDKcov_+HHDTCaieGDiMEi+6CV_OnYDM3c8+S+bfA@mail.gmail.com>
-	<20140211094726.GH32042@lee--X1>
-Date: Tue, 11 Feb 2014 09:50:52 +0000
-X-Google-Sender-Auth: u1GVrogxS9OVHzuroCh_O_AnQ-Q
-Message-ID: <CAOMwXhNJaVX4LF+PeWh2zi5-vbF95hQNGMvqnK1=sOMO1to8VA@mail.gmail.com>
-Subject: Re: [lm-sensors] [PATCH] hwmon: (max6650) Rename the device ids to
- contain the hwmon suffix
-From: Laszlo Papp <lpapp@kde.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Jean Delvare <jdelvare@suse.de>, LKML <linux-kernel@vger.kernel.org>,
-        lm-sensors@lm-sensors.org
+To: Haiyang Zhang <haiyangz@microsoft.com>, davem@davemloft.net,
+        netdev@vger.kernel.org
+CC: kys@microsoft.com, olaf@aepfle.de, linux-kernel@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org
+Subject: Re: [PATCH net,v2] hyperv: Fix the carrier status setting
+References: <1392056129-29398-1-git-send-email-haiyangz@microsoft.com>
+In-Reply-To: <1392056129-29398-1-git-send-email-haiyangz@microsoft.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 9:47 AM, Lee Jones <lee.jones@linaro.org> wrote:
->> >> >> On Mon, Feb 10, 2014 at 4:38 PM, Jean Delvare <jdelvare@suse.de> wrote:
->> >> >> > Additionally, dashes are explicitly forbidden in hwmon
->> >> >> > device names.
->> >> >>
->> >> >> Also, where is that documented?
->> >> >
->> >> > In Documentation/hwmon/sysfs-interface:
->> >> >
->> >> > *********************
->> >> > * Global attributes *
->> >> > *********************
->> >> >
->> >> > name            The chip name.
->> >> >                 This should be a short, lowercase string, not containing
->> >> >                 spaces nor dashes, representing the chip name. This is
->> >> >                 the only mandatory attribute.
->> >> >                 I2C devices get this attribute created automatically.
->> >> >                 RO
->> >>
->> >> Time to revisit this decision....
->> >>
->> >> So, based on the fact that children device names usually contain
->> >> dashes, I do not understand why hwmon would be any special in this
->> >> regard. It is possible that the hwmon developers have not faced much
->> >> MFD situation before, and so, this was not considered to be handled
->> >> like in other subsystems.
->> >>
->> >> I am proposing to change this "rule"...  Any objection?
->> >
->> > Prior to proposing such an invasive change which is highly likely to
->> > come up against heavy opposition,
->>
->> It is possible that someone does not understand why you think it may
->> be invasive, right? Could you please explain the reason for that?
+On 02/11/2014 02:15 AM, Haiyang Zhang wrote:
+> Without this patch, the "cat /sys/class/net/ethN/operstate" shows
+> "unknown", and "ethtool ethN" shows "Link detected: yes", when VM
+> boots up with or without vNIC connected.
 >
-> The reason is a good one. In the kernel we make every attempt not to
-> break userspace. By that I mean _any_ userspace application. Userspace
-> applications which interface with the kernel can do so via a variety of
-> methods. One of those is Sysfs, where this name you are attempting to
-> change appears. The userspace applications already mentioned parse for
-> these devices, regex:ing for '-' separators. If you add an additional
-> '-' separator there is a chance that these applications will get
-> confused and break without warning.
-
-Only for new devices that they have not supported before, right?
-Provided, we apply the logic only for new drivers.
-
-Is it unacceptable to have an interim "obsolete" period for a while
-and the recommendation is the dash for the long future?
-
-Also, how about applications that would expect hwmon to behave the
-same way like all the rest? They also break with the current hwmon
-schema, right?
-
+> This patch fixed the problem.
 >
-> --
-> Lee Jones
-> Linaro STMicroelectronics Landing Team Lead
-> Linaro.org │ Open source software for ARM SoCs
-> Follow Linaro: Facebook | Twitter | Blog
+> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+> ---
+>  drivers/net/hyperv/netvsc_drv.c |   24 +++++++++++++++---------
+>  1 files changed, 15 insertions(+), 9 deletions(-)
+>
+> diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
+> index 7756118..18916f7 100644
+> --- a/drivers/net/hyperv/netvsc_drv.c
+> +++ b/drivers/net/hyperv/netvsc_drv.c
+> @@ -88,8 +88,12 @@ static int netvsc_open(struct net_device *net)
+>  {
+>  	struct net_device_context *net_device_ctx = netdev_priv(net);
+>  	struct hv_device *device_obj = net_device_ctx->device_ctx;
+> +	struct netvsc_device *nvdev;
+> +	struct rndis_device *rdev;
+>  	int ret = 0;
+>  
+> +	netif_carrier_off(net);
+> +
+>  	/* Open up the device */
+>  	ret = rndis_filter_open(device_obj);
+>  	if (ret != 0) {
+> @@ -99,6 +103,11 @@ static int netvsc_open(struct net_device *net)
+>  
+>  	netif_start_queue(net);
+>  
+> +	nvdev = hv_get_drvdata(device_obj);
+> +	rdev = nvdev->extension;
+> +	if (!rdev->link_state)
+
+What if the link status interrupt comes here at this time?
+> +		netif_carrier_on(net);
+> +
+>  	return ret;
+>  }
+>  
+> @@ -229,15 +238,17 @@ void netvsc_linkstatus_callback(struct hv_device *device_obj,
+>  	struct net_device *net;
+>  	struct net_device_context *ndev_ctx;
+>  	struct netvsc_device *net_device;
+> +	struct rndis_device *rdev;
+>  
+>  	net_device = hv_get_drvdata(device_obj);
+> +	rdev = net_device->extension;
+> +
+> +	rdev->link_state = status != 1;
+> +
+>  	net = net_device->ndev;
+>  
+> -	if (!net) {
+> -		netdev_err(net, "got link status but net device "
+> -				"not initialized yet\n");
+> +	if (!net || net->reg_state != NETREG_REGISTERED)
+>  		return;
+> -	}
+>  
+>  	if (status == 1) {
+>  		netif_carrier_on(net);
+> @@ -414,9 +425,6 @@ static int netvsc_probe(struct hv_device *dev,
+>  	if (!net)
+>  		return -ENOMEM;
+>  
+> -	/* Set initial state */
+> -	netif_carrier_off(net);
+> -
+>  	net_device_ctx = netdev_priv(net);
+>  	net_device_ctx->device_ctx = dev;
+>  	hv_set_drvdata(dev, net);
+> @@ -443,8 +451,6 @@ static int netvsc_probe(struct hv_device *dev,
+>  	}
+>  	memcpy(net->dev_addr, device_info.mac_adr, ETH_ALEN);
+>  
+> -	netif_carrier_on(net);
+> -
+>  	ret = register_netdev(net);
+>  	if (ret != 0) {
+>  		pr_err("Unable to register netdev.\n");
+
