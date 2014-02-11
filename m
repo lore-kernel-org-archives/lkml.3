@@ -1,72 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752629AbaBKMXN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 07:23:13 -0500
-Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:64229 "EHLO
-	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751004AbaBKMXJ (ORCPT
+	id S1752659AbaBKMXZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 07:23:25 -0500
+Received: from mail-we0-f178.google.com ([74.125.82.178]:42613 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751540AbaBKMXU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 07:23:09 -0500
-Message-ID: <1392121387.13064.3.camel@x220>
-Subject: [PATCH] USB: ELAN: Remove useless "default M" lines
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Martin Walch <walch.martin@web.de>, Richard Weinberger <richard@nod.at>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 11 Feb 2014 13:23:07 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 11 Feb 2014 12:23:07.0866 (UTC) FILETIME=[0552EBA0:01CF2724]
-X-RcptDomain: vger.kernel.org
+	Tue, 11 Feb 2014 07:23:20 -0500
+Date: Tue, 11 Feb 2014 12:23:14 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 5/7] mfd: max8925: Fix possible NULL pointer dereference
+ on i2c_new_dummy error
+Message-ID: <20140211122314.GT32042@lee--X1>
+References: <1392113015-11180-1-git-send-email-k.kozlowski@samsung.com>
+ <1392113015-11180-5-git-send-email-k.kozlowski@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1392113015-11180-5-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Kconfig entries for USB_U132_HCD and USB_FTDI_ELAN default to
-(uppercase) "M". But in Kconfig (lowercase) "m" is a magic symbol. "M"
-is an ordinary symbol. As "M" is never set these Kconfig symbols will
-also not be set by default.
+On Tue, 11 Feb 2014, Krzysztof Kozlowski wrote:
 
-Since I'm not aware of a reason why these driver should be set by
-default, let's just drop these lines (that basically do nothing).
+> During probe the driver allocates dummy I2C devices for RTC and ADC
+> with i2c_new_dummy() but it does not check the return value of this
+> calls.
+> 
+> In case of error (i2c_new_device(): memory allocation failure or I2C
+> address cannot be used) this function returns NULL which is later used
+> by i2c_unregister_device().
+> 
+> If i2c_new_dummy() fails for RTC or ADC devices, fail also the probe
+> for main MFD driver.
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Cc: stable@vger.kernel.org
+> ---
+>  drivers/mfd/max8925-i2c.c |    9 +++++++++
+>  1 file changed, 9 insertions(+)
+> 
+> diff --git a/drivers/mfd/max8925-i2c.c b/drivers/mfd/max8925-i2c.c
+> index 176aa26fc787..a83eed5c15ca 100644
+> --- a/drivers/mfd/max8925-i2c.c
+> +++ b/drivers/mfd/max8925-i2c.c
+> @@ -181,9 +181,18 @@ static int max8925_probe(struct i2c_client *client,
+>  	mutex_init(&chip->io_lock);
+>  
+>  	chip->rtc = i2c_new_dummy(chip->i2c->adapter, RTC_I2C_ADDR);
+> +	if (!chip->rtc) {
+> +		dev_err(chip->dev, "Failed to allocate I2C device for RTC\n");
+> +		return -ENODEV;
+> +	}
+>  	i2c_set_clientdata(chip->rtc, chip);
+>  
+>  	chip->adc = i2c_new_dummy(chip->i2c->adapter, ADC_I2C_ADDR);
+> +	if (!chip->adc) {
+> +		dev_err(chip->dev, "Failed to allocate I2C device for ADC\n");
+> +		i2c_unregister_device(chip->rtc);
+> +		return -ENODEV;
+> +	}
+>  	i2c_set_clientdata(chip->adc, chip);
+>  
+>  	device_init_wakeup(&client->dev, 1);
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-This patch deserves a
-    Reported-by: Martin Walch <walch.martin@web.de>
+Applied, thanks.
 
-line, but that apparently requires Martin's permission.
-
- drivers/usb/host/Kconfig | 1 -
- drivers/usb/misc/Kconfig | 1 -
- 2 files changed, 2 deletions(-)
-
-diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index a9707da..e22b826 100644
---- a/drivers/usb/host/Kconfig
-+++ b/drivers/usb/host/Kconfig
-@@ -584,7 +584,6 @@ config FHCI_DEBUG
- config USB_U132_HCD
- 	tristate "Elan U132 Adapter Host Controller"
- 	depends on USB_FTDI_ELAN
--	default M
- 	help
- 	  The U132 adapter is a USB to CardBus adapter specifically designed
- 	  for PC cards that contain an OHCI host controller. Typical PC cards
-diff --git a/drivers/usb/misc/Kconfig b/drivers/usb/misc/Kconfig
-index ba5f70f..1bca274 100644
---- a/drivers/usb/misc/Kconfig
-+++ b/drivers/usb/misc/Kconfig
-@@ -128,7 +128,6 @@ config USB_IDMOUSE
- 
- config USB_FTDI_ELAN
- 	tristate "Elan PCMCIA CardBus Adapter USB Client"
--	default M
- 	help
- 	  ELAN's Uxxx series of adapters are USB to PCMCIA CardBus adapters.
- 	  Currently only the U132 adapter is available.
 -- 
-1.8.5.3
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
