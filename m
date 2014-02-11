@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754718AbaBKTNX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:13:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40623 "EHLO
+	id S1754327AbaBKTNW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:13:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40635 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754477AbaBKTIf (ORCPT
+	with ESMTP id S1754488AbaBKTIi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:08:35 -0500
+	Tue, 11 Feb 2014 14:08:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.4 21/30] drm/radeon/DCE4+: clear bios scratch dpms bit (v2)
-Date: Tue, 11 Feb 2014 11:06:21 -0800
-Message-Id: <20140211184647.748599943@linuxfoundation.org>
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, Chris Ball <cjb@laptop.org>
+Subject: [PATCH 3.4 04/30] mmc: atmel-mci: fix timeout errors in SDIO mode when using DMA
+Date: Tue, 11 Feb 2014 11:06:04 -0800
+Message-Id: <20140211184647.276621496@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184647.149512538@linuxfoundation.org>
 References: <20140211184647.149512538@linuxfoundation.org>
@@ -28,38 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Ludovic Desroches <ludovic.desroches@atmel.com>
 
-commit 6802d4bad83f50081b2788698570218aaff8d10e upstream.
+commit 66b512eda74d59b17eac04c4da1b38d82059e6c9 upstream.
 
-The BlankCrtc table in some DCE8 boards has some
-logic shortcuts for the vbios when this bit is set.
-Clear it for driver use.
+With some SDIO devices, timeout errors can happen when reading data.
+To solve this issue, the DMA transfer has to be activated before sending
+the command to the device. This order is incorrect in PDC mode. So we
+have to take care if we are using DMA or PDC to know when to send the
+MMC command.
 
-v2: fix typo
-
-Bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=73420
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_atombios.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/mmc/host/atmel-mci.c |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -2785,6 +2785,10 @@ void radeon_atom_initialize_bios_scratch
- 	/* tell the bios not to handle mode switching */
- 	bios_6_scratch |= ATOM_S6_ACC_BLOCK_DISPLAY_SWITCH;
- 
-+	/* clear the vbios dpms state */
-+	if (ASIC_IS_DCE4(rdev))
-+		bios_2_scratch &= ~ATOM_S2_DEVICE_DPMS_STATE;
+--- a/drivers/mmc/host/atmel-mci.c
++++ b/drivers/mmc/host/atmel-mci.c
+@@ -1022,11 +1022,22 @@ static void atmci_start_request(struct a
+ 	iflags |= ATMCI_CMDRDY;
+ 	cmd = mrq->cmd;
+ 	cmdflags = atmci_prepare_command(slot->mmc, cmd);
+-	atmci_send_command(host, cmd, cmdflags);
 +
- 	if (rdev->family >= CHIP_R600) {
- 		WREG32(R600_BIOS_2_SCRATCH, bios_2_scratch);
- 		WREG32(R600_BIOS_6_SCRATCH, bios_6_scratch);
++	/*
++	 * DMA transfer should be started before sending the command to avoid
++	 * unexpected errors especially for read operations in SDIO mode.
++	 * Unfortunately, in PDC mode, command has to be sent before starting
++	 * the transfer.
++	 */
++	if (host->submit_data != &atmci_submit_data_dma)
++		atmci_send_command(host, cmd, cmdflags);
+ 
+ 	if (data)
+ 		host->submit_data(host, data);
+ 
++	if (host->submit_data == &atmci_submit_data_dma)
++		atmci_send_command(host, cmd, cmdflags);
++
+ 	if (mrq->stop) {
+ 		host->stop_cmdr = atmci_prepare_command(slot->mmc, mrq->stop);
+ 		host->stop_cmdr |= ATMCI_CMDR_STOP_XFER;
 
 
