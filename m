@@ -1,93 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754233AbaBKVVU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 16:21:20 -0500
-Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:53054 "EHLO
-	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751744AbaBKVVS (ORCPT
+	id S1754259AbaBKVVg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 16:21:36 -0500
+Received: from www.linutronix.de ([62.245.132.108]:46259 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752134AbaBKVVe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 16:21:18 -0500
-Message-ID: <1392153676.14317.8.camel@x220>
-Subject: [PATCH] ARM: spear: Remove references to PLAT_SPEAR_SINGLE
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Viresh Kumar <viresh.linux@gmail.com>,
-        Shiraz Hashim <shiraz.hashim@st.com>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: Martin Walch <walch.martin@web.de>, Richard Weinberger <richard@nod.at>,
-        spear-devel@list.st.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 11 Feb 2014 22:21:16 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 11 Feb 2014 21:21:17.0635 (UTC) FILETIME=[3386A930:01CF276F]
-X-RcptDomain: vger.kernel.org
+	Tue, 11 Feb 2014 16:21:34 -0500
+Date: Tue, 11 Feb 2014 22:21:38 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andy Lutomirski <luto@amacapital.net>
+cc: Mike Galbraith <bitbucket@online.de>, X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: Too many rescheduling interrupts (still!)
+In-Reply-To: <CALCETrVL44ewQPJXNwPAm2s5aj9auo2p4tYYieNcxANoL91VWw@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1402112219160.21991@ionos.tec.linutronix.de>
+References: <CALCETrVL44ewQPJXNwPAm2s5aj9auo2p4tYYieNcxANoL91VWw@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Kconfig symbol PLAT_SPEAR_SINGLE briefly appeared during the v3.10
-development cycle. It was removed in a merge commit before v3.10. A few
-references to it were left in the tree, probably because they didn't
-generate merge conflicts. Whatever it was, they're useless now and can
-safely be removed.
+On Tue, 11 Feb 2014, Andy Lutomirski wrote:
 
-Reported-by: Martin Walch <walch.martin@web.de>
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Untested.
+Just adding Peter for now, as I'm too tired to grok the issue right
+now.
 
- arch/arm/mach-spear/Kconfig | 8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
-
-diff --git a/arch/arm/mach-spear/Kconfig b/arch/arm/mach-spear/Kconfig
-index ac1710e6..1595776 100644
---- a/arch/arm/mach-spear/Kconfig
-+++ b/arch/arm/mach-spear/Kconfig
-@@ -4,7 +4,6 @@
- 
- menuconfig PLAT_SPEAR
- 	bool "ST SPEAr Family" if ARCH_MULTI_V7 || ARCH_MULTI_V5
--	default PLAT_SPEAR_SINGLE
- 	select ARCH_REQUIRE_GPIOLIB
- 	select ARM_AMBA
- 	select CLKSRC_MMIO
-@@ -15,7 +14,7 @@ if PLAT_SPEAR
- 
- config ARCH_SPEAR13XX
- 	bool "ST SPEAr13xx"
--	depends on ARCH_MULTI_V7 || PLAT_SPEAR_SINGLE
-+	depends on ARCH_MULTI_V7
- 	select ARCH_HAS_CPUFREQ
- 	select ARM_GIC
- 	select CPU_V7
-@@ -47,7 +46,7 @@ endif #ARCH_SPEAR13XX
- 
- config ARCH_SPEAR3XX
- 	bool "ST SPEAr3xx"
--	depends on ARCH_MULTI_V5 || PLAT_SPEAR_SINGLE
-+	depends on ARCH_MULTI_V5
- 	depends on !ARCH_SPEAR13XX
- 	select ARM_VIC
- 	select CPU_ARM926T
-@@ -80,7 +79,7 @@ endif
- 
- config ARCH_SPEAR6XX
- 	bool "ST SPEAr6XX"
--	depends on ARCH_MULTI_V5 || PLAT_SPEAR_SINGLE
-+	depends on ARCH_MULTI_V5
- 	depends on !ARCH_SPEAR13XX
- 	select ARM_VIC
- 	select CPU_ARM926T
-@@ -95,7 +94,6 @@ config MACH_SPEAR600
- 	  Supports ST SPEAr600 boards configured via the device-treesource "arch/arm/mach-spear6xx/Kconfig"
- 
- config ARCH_SPEAR_AUTO
--	def_bool PLAT_SPEAR_SINGLE
- 	depends on !ARCH_SPEAR13XX && !ARCH_SPEAR6XX
- 	select ARCH_SPEAR3XX
- 
--- 
-1.8.5.3
-
+> Rumor has it that Linux 3.13 was supposed to get rid of all the silly
+> rescheduling interrupts.  It doesn't, although it does seem to have
+> improved the situation.
+> 
+> A small number of reschedule interrupts appear to be due to a race:
+> both resched_task and wake_up_idle_cpu do, essentially:
+> 
+> set_tsk_need_resched(t);
+> smb_mb();
+> if (!tsk_is_polling(t))
+>   smp_send_reschedule(cpu);
+> 
+> The problem is that set_tsk_need_resched wakes the CPU and, if the CPU
+> is too quick (which isn't surprising if it was in C0 or C1), then it
+> could *clear* TS_POLLING before tsk_is_polling is read.
+> 
+> Is there a good reason that TIF_NEED_RESCHED is in thread->flags and
+> TS_POLLING is in thread->status?  Couldn't both of these be in the
+> same field in something like struct rq?  That would allow a real
+> atomic op here.
+> 
+> The more serious issue is that AFAICS default_wake_function is
+> completely missing the polling check.  It goes through
+> ttwu_queue_remote, which unconditionally sends an interrupt.
+> 
+> --Andy
+> 
