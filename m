@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751518AbaBKOxG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 09:53:06 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:32794 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751015AbaBKOxE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 09:53:04 -0500
-Date: Tue, 11 Feb 2014 14:52:48 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Philipp Zabel <p.zabel@pengutronix.de>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Philipp Zabel <philipp.zabel@gmail.com>
-Subject: Re: [RFC PATCH] [media]: of: move graph helpers from
-	drivers/media/v4l2-core to drivers/of
-Message-ID: <20140211145248.GI26684@n2100.arm.linux.org.uk>
-References: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de> <CAL_Jsq+U9zU1i+STLHMBjY5BeEP6djYnJVE5X1ix-D2q_zWztQ@mail.gmail.com>
+	id S1751563AbaBKOxb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 09:53:31 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:38668 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750743AbaBKOx3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 09:53:29 -0500
+Message-ID: <52FA3961.9050208@ti.com>
+Date: Tue, 11 Feb 2014 16:53:21 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAL_Jsq+U9zU1i+STLHMBjY5BeEP6djYnJVE5X1ix-D2q_zWztQ@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Christoph Fritz <chf.fritz@googlemail.com>
+CC: Tero Kristo <t-kristo@ti.com>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <pali.rohar@gmail.com>, <pavel@ucw.cz>,
+        Nishanth Menon <nm@ti.com>
+Subject: Re: OMAP: clock DT conversion issues with omap36xx
+References: <52E697C0.6000202@gmail.com> <1390848104.4936.62.camel@mars>	 <52E772A3.4090401@ti.com> <1390901735.2963.8.camel@lovely>	 <52E77D03.8090001@ti.com>  <52E7B361.2030601@ti.com>	 <1390928565.4904.88.camel@mars> <1390994505.5023.32.camel@mars>	 <52F10C3D.7000507@ti.com> <1391767923.4937.110.camel@mars>	 <52F4E45B.1020107@ti.com> <1392065696.4898.163.camel@mars>
+In-Reply-To: <1392065696.4898.163.camel@mars>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="87h4hNfMdUIlBa3GdIKxthCfREv82UGsC"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 07:56:33AM -0600, Rob Herring wrote:
-> On Tue, Feb 11, 2014 at 5:45 AM, Philipp Zabel <p.zabel@pengutronix.de> wrote:
-> > This allows to reuse the same parser code from outside the V4L2 framework,
-> > most importantly from display drivers. There have been patches that duplicate
-> > the code (and I am going to send one of my own), such as
-> > http://lists.freedesktop.org/archives/dri-devel/2013-August/043308.html
-> > and others that parse the same binding in a different way:
-> > https://www.mail-archive.com/linux-omap@vger.kernel.org/msg100761.html
-> >
-> > I think that all common video interface parsing helpers should be moved to a
-> > single place, outside of the specific subsystems, so that it can be reused
-> > by all drivers.
-> 
-> Perhaps that should be done rather than moving to drivers/of now and
-> then again to somewhere else.
+--87h4hNfMdUIlBa3GdIKxthCfREv82UGsC
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Do you have a better suggestion where it should move to?
+On 10/02/14 22:54, Christoph Fritz wrote:
 
-drivers/gpu/drm - no, because v4l2 wants to use it
-drivers/media/video - no, because DRM drivers want to use it
-drivers/video - no, because v4l2 and drm drivers want to use it
+>> I wonder if I'm still missing some patch?
+>=20
+> Is beagle-xM using DSI? Because here the LILLY-A83X board is not. The
+> clock registers are all fine now as before the dt clock conversion
+> patches.
 
-Maybe drivers/of-graph/ ?  Or maybe it's just as good a place to move it
-into drivers/of ?
+No, Beagle xM doesn't use DSI, plain DPI.
 
--- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+ Tomi
+
+
+
+
+--87h4hNfMdUIlBa3GdIKxthCfREv82UGsC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJS+jlhAAoJEPo9qoy8lh71KREQAJlVa3O5Y4ERvRPfJuAw5SEx
+Vknk084d9vUOFgVMFxWKT/oVMA6ohZ/6fvnJ1tSyzv4XbQhMMLUDMtZgf1Syhl1a
+UIzf3K6MmKeVXBUutJnlXVSGf8Npf2AZ6f9aA5kA6KvMXDoYLPN2ce1sbt5MdByt
+X2QAEDkd26xMIhyas5OBySplwQEhoH5o+0dn4WRL/qbWFcXTBcMCMVSDWvq0OZ7F
+vqIq3zYKdU/CjyAwaidlDuAxIp+lmOR9naXoZ+LSypy0iIFbXAs9RMD3fiG31jyj
+NPP41zFYuhUOcCCGjmlzoyj/pDgmPdvxoYUUlL53YJpL1ER+NShc1fVFpYLSqZ/N
+CFIe3bcfronHwwRQTA2tEUCWsXU3A9DAG8rGKKb5sUUullg04BiCIr5d4Cdy9d1Y
+luchkoOpmRz8WmBE8N+hjaNP6gK84fZhkkA9Xz6mZehVYyAKtGu/F0Olali04ocN
+Scfym/tHteVcTBrMStykVBq14RfdNRF0G3Z9rOw+CJ3wNZaDrczbVwf00JdLNI5X
+ud0I0WLWJqkN/NmaxKNkSj7FfaKpm5/JAgeZ2a7246lT2NDvvO40LHPZV15vzPtX
+r3BfjRlF1b/0ZUo3HZhAYk7KADqGjIsHuvcOnWjTHysYhdsPizQ21Fl7jRsi3wGI
+2zTTGYwZhLo2oV8Lgdiy
+=RTJm
+-----END PGP SIGNATURE-----
+
+--87h4hNfMdUIlBa3GdIKxthCfREv82UGsC--
