@@ -1,203 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751065AbaBKMGp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 07:06:45 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:40988 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750785AbaBKMGo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 07:06:44 -0500
-Message-ID: <52FA122A.1010900@ti.com>
-Date: Tue, 11 Feb 2014 17:36:02 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1751525AbaBKMHR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 07:07:17 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:43854 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803AbaBKMHP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 07:07:15 -0500
+Message-ID: <52FA1270.9020806@linaro.org>
+Date: Tue, 11 Feb 2014 13:07:12 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Mohit Kumar <mohit.kumar@st.com>, <arnd@arndb.de>
-CC: Pratyush Anand <pratyush.anand@st.com>,
-        Viresh Kumar <viresh.linux@gmail.com>, <spear-devel@list.st.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V6 07/12] phy: st-miphy-40lp: Add SPEAr1310 and SPEAr1340
- PCIe phy support
-References: <cover.1392109054.git.mohit.kumar@st.com> <f84ed875ae7a356a8056f4645a4d1e59c665c972.1392109054.git.mohit.kumar@st.com>
-In-Reply-To: <f84ed875ae7a356a8056f4645a4d1e59c665c972.1392109054.git.mohit.kumar@st.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+To: Preeti Murthy <preeti.lkml@gmail.com>
+CC: Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
+        alex.shi@linaro.org, LKML <linux-kernel@vger.kernel.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Subject: Re: [PATCH V2 3/3] sched: Move idle_stamp up to the core
+References: <1391728237-4441-1-git-send-email-daniel.lezcano@linaro.org>	<1391728237-4441-4-git-send-email-daniel.lezcano@linaro.org> <CAM4v1pPPOE9xrH3AKc6sHAThPq43Ws_L_KuicRa5Ktr5nMBmtQ@mail.gmail.com>
+In-Reply-To: <CAM4v1pPPOE9xrH3AKc6sHAThPq43Ws_L_KuicRa5Ktr5nMBmtQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 11 February 2014 03:00 PM, Mohit Kumar wrote:
-> From: Pratyush Anand <pratyush.anand@st.com>
-> 
-> SPEAr1310 and SPEAr1340 uses miphy40lp phy for PCIe. This driver adds
-> support for the same.
+On 02/10/2014 11:04 AM, Preeti Murthy wrote:
+> Hi Daniel,
+>
+> On Fri, Feb 7, 2014 at 4:40 AM, Daniel Lezcano
+> <daniel.lezcano@linaro.org> wrote:
+>> The idle_balance modifies the idle_stamp field of the rq, making this
+>> information to be shared across core.c and fair.c. As we can know if the
+>> cpu is going to idle or not with the previous patch, let's encapsulate the
+>> idle_stamp information in core.c by moving it up to the caller. The
+>> idle_balance function returns true in case a balancing occured and the cpu
+>> won't be idle, false if no balance happened and the cpu is going idle.
+>>
+>> Cc: mingo@kernel.org
+>> Cc: alex.shi@linaro.org
+>> Cc: peterz@infradead.org
+>> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+>> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+>> ---
+>>   kernel/sched/core.c  |   13 +++++++++++--
+>>   kernel/sched/fair.c  |   14 ++++++--------
+>>   kernel/sched/sched.h |    8 +-------
+>>   3 files changed, 18 insertions(+), 17 deletions(-)
+>>
+>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+>> index 16b97dd..428ee4c 100644
+>> --- a/kernel/sched/core.c
+>> +++ b/kernel/sched/core.c
+>> @@ -2704,8 +2704,17 @@ need_resched:
+>>
+>>          pre_schedule(rq, prev);
+>>
+>> -       if (unlikely(!rq->nr_running))
+>> -               idle_balance(rq);
+>> +#ifdef CONFIG_SMP
+>> +       if (unlikely(!rq->nr_running)) {
+>> +               /*
+>> +                * We must set idle_stamp _before_ calling idle_balance(), such
+>> +                * that we measure the duration of idle_balance() as idle time.
+>
+> Should not this be "such that we *do not* measure the duration of idle_balance()
+> as idle time?"
 
-What's up with SATA support for SPEAr1310? Do you have plans of adding it soon?
-> 
-> Signed-off-by: Pratyush Anand <pratyush.anand@st.com>
-> Tested-by: Mohit Kumar <mohit.kumar@st.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Viresh Kumar <viresh.linux@gmail.com>
-> Cc: Kishon Vijay Abraham I <kishon@ti.com>
-> Cc: spear-devel@list.st.com
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  drivers/phy/phy-miphy40lp.c |  165 +++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 165 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/phy/phy-miphy40lp.c b/drivers/phy/phy-miphy40lp.c
-> index 16da55b..dec67ed 100644
-> --- a/drivers/phy/phy-miphy40lp.c
-> +++ b/drivers/phy/phy-miphy40lp.c
-> @@ -9,6 +9,7 @@
->   * published by the Free Software Foundation.
->   *
->   * 04/02/2014: Adding support of SATA mode for SPEAr1340.
-> + * 04/02/2014: Adding support of PCIe mode for SPEAr1340 and SPEAr1310
->   */
->  
->  #include <linux/bitops.h>
-> @@ -74,6 +75,80 @@
->  	#define SPEAR1340_PCIE_SATA_MIPHY_CFG_PCIE \
->  			(SPEAR1340_MIPHY_OSC_BYPASS_EXT | \
->  			SPEAR1340_MIPHY_PLL_RATIO_TOP(25))
-> +/* SPEAr1310 Registers */
-> +#define SPEAR1310_PCIE_SATA_CFG			0x3A4
-> +	#define SPEAR1310_PCIE_SATA2_SEL_PCIE		(0 << 31)
-> +	#define SPEAR1310_PCIE_SATA1_SEL_PCIE		(0 << 30)
-> +	#define SPEAR1310_PCIE_SATA0_SEL_PCIE		(0 << 29)
-> +	#define SPEAR1310_PCIE_SATA2_SEL_SATA		BIT(31)
-> +	#define SPEAR1310_PCIE_SATA1_SEL_SATA		BIT(30)
-> +	#define SPEAR1310_PCIE_SATA0_SEL_SATA		BIT(29)
-> +	#define SPEAR1310_SATA2_CFG_TX_CLK_EN		BIT(27)
-> +	#define SPEAR1310_SATA2_CFG_RX_CLK_EN		BIT(26)
-> +	#define SPEAR1310_SATA2_CFG_POWERUP_RESET	BIT(25)
-> +	#define SPEAR1310_SATA2_CFG_PM_CLK_EN		BIT(24)
-> +	#define SPEAR1310_SATA1_CFG_TX_CLK_EN		BIT(23)
-> +	#define SPEAR1310_SATA1_CFG_RX_CLK_EN		BIT(22)
-> +	#define SPEAR1310_SATA1_CFG_POWERUP_RESET	BIT(21)
-> +	#define SPEAR1310_SATA1_CFG_PM_CLK_EN		BIT(20)
-> +	#define SPEAR1310_SATA0_CFG_TX_CLK_EN		BIT(19)
-> +	#define SPEAR1310_SATA0_CFG_RX_CLK_EN		BIT(18)
-> +	#define SPEAR1310_SATA0_CFG_POWERUP_RESET	BIT(17)
-> +	#define SPEAR1310_SATA0_CFG_PM_CLK_EN		BIT(16)
-> +	#define SPEAR1310_PCIE2_CFG_DEVICE_PRESENT	BIT(11)
-> +	#define SPEAR1310_PCIE2_CFG_POWERUP_RESET	BIT(10)
-> +	#define SPEAR1310_PCIE2_CFG_CORE_CLK_EN		BIT(9)
-> +	#define SPEAR1310_PCIE2_CFG_AUX_CLK_EN		BIT(8)
-> +	#define SPEAR1310_PCIE1_CFG_DEVICE_PRESENT	BIT(7)
-> +	#define SPEAR1310_PCIE1_CFG_POWERUP_RESET	BIT(6)
-> +	#define SPEAR1310_PCIE1_CFG_CORE_CLK_EN		BIT(5)
-> +	#define SPEAR1310_PCIE1_CFG_AUX_CLK_EN		BIT(4)
-> +	#define SPEAR1310_PCIE0_CFG_DEVICE_PRESENT	BIT(3)
-> +	#define SPEAR1310_PCIE0_CFG_POWERUP_RESET	BIT(2)
-> +	#define SPEAR1310_PCIE0_CFG_CORE_CLK_EN		BIT(1)
-> +	#define SPEAR1310_PCIE0_CFG_AUX_CLK_EN		BIT(0)
-> +
-> +	#define SPEAR1310_PCIE_CFG_MASK(x) ((0xF << (x * 4)) | BIT((x + 29)))
-> +	#define SPEAR1310_SATA_CFG_MASK(x) ((0xF << (x * 4 + 16)) | \
-> +			BIT((x + 29)))
-> +	#define SPEAR1310_PCIE_CFG_VAL(x) \
-> +			(SPEAR1310_PCIE_SATA##x##_SEL_PCIE | \
-> +			SPEAR1310_PCIE##x##_CFG_AUX_CLK_EN | \
-> +			SPEAR1310_PCIE##x##_CFG_CORE_CLK_EN | \
-> +			SPEAR1310_PCIE##x##_CFG_POWERUP_RESET | \
-> +			SPEAR1310_PCIE##x##_CFG_DEVICE_PRESENT)
-> +	#define SPEAR1310_SATA_CFG_VAL(x) \
-> +			(SPEAR1310_PCIE_SATA##x##_SEL_SATA | \
-> +			SPEAR1310_SATA##x##_CFG_PM_CLK_EN | \
-> +			SPEAR1310_SATA##x##_CFG_POWERUP_RESET | \
-> +			SPEAR1310_SATA##x##_CFG_RX_CLK_EN | \
-> +			SPEAR1310_SATA##x##_CFG_TX_CLK_EN)
-> +
-> +#define SPEAR1310_PCIE_MIPHY_CFG_1		0x3A8
-> +	#define SPEAR1310_MIPHY_DUAL_OSC_BYPASS_EXT	BIT(31)
-> +	#define SPEAR1310_MIPHY_DUAL_CLK_REF_DIV2	BIT(28)
-> +	#define SPEAR1310_MIPHY_DUAL_PLL_RATIO_TOP(x)	(x << 16)
-> +	#define SPEAR1310_MIPHY_SINGLE_OSC_BYPASS_EXT	BIT(15)
-> +	#define SPEAR1310_MIPHY_SINGLE_CLK_REF_DIV2	BIT(12)
-> +	#define SPEAR1310_MIPHY_SINGLE_PLL_RATIO_TOP(x)	(x << 0)
-> +	#define SPEAR1310_PCIE_SATA_MIPHY_CFG_SATA_MASK (0xFFFF)
-> +	#define SPEAR1310_PCIE_SATA_MIPHY_CFG_PCIE_MASK (0xFFFF << 16)
-> +	#define SPEAR1310_PCIE_SATA_MIPHY_CFG_SATA \
-> +			(SPEAR1310_MIPHY_DUAL_OSC_BYPASS_EXT | \
-> +			SPEAR1310_MIPHY_DUAL_CLK_REF_DIV2 | \
-> +			SPEAR1310_MIPHY_DUAL_PLL_RATIO_TOP(60) | \
-> +			SPEAR1310_MIPHY_SINGLE_OSC_BYPASS_EXT | \
-> +			SPEAR1310_MIPHY_SINGLE_CLK_REF_DIV2 | \
-> +			SPEAR1310_MIPHY_SINGLE_PLL_RATIO_TOP(60))
-> +	#define SPEAR1310_PCIE_SATA_MIPHY_CFG_SATA_25M_CRYSTAL_CLK \
-> +			(SPEAR1310_MIPHY_SINGLE_PLL_RATIO_TOP(120))
-> +	#define SPEAR1310_PCIE_SATA_MIPHY_CFG_PCIE \
-> +			(SPEAR1310_MIPHY_DUAL_OSC_BYPASS_EXT | \
-> +			SPEAR1310_MIPHY_DUAL_PLL_RATIO_TOP(25) | \
-> +			SPEAR1310_MIPHY_SINGLE_OSC_BYPASS_EXT | \
-> +			SPEAR1310_MIPHY_SINGLE_PLL_RATIO_TOP(25))
-> +
-> +#define SPEAR1310_PCIE_MIPHY_CFG_2		0x3AC
->  
->  enum phy_mode {
->  	SATA,
-> @@ -146,12 +221,35 @@ static int miphy40lp_spear1340_sata_exit(struct miphy40lp_priv *priv)
->  	return 0;
->  }
->  
-> +static int miphy40lp_spear1340_pcie_init(struct miphy40lp_priv *priv)
-> +{
-> +	regmap_update_bits(priv->misc, SPEAR1340_PCIE_MIPHY_CFG,
-> +			SPEAR1340_PCIE_MIPHY_CFG_MASK,
-> +			SPEAR1340_PCIE_SATA_MIPHY_CFG_PCIE);
-> +	regmap_update_bits(priv->misc, SPEAR1340_PCIE_SATA_CFG,
-> +			SPEAR1340_PCIE_SATA_CFG_MASK, SPEAR1340_PCIE_CFG_VAL);
-> +
-> +	return 0;
-> +}
-> +
-> +static int miphy40lp_spear1340_pcie_exit(struct miphy40lp_priv *priv)
-> +{
-> +	regmap_update_bits(priv->misc, SPEAR1340_PCIE_MIPHY_CFG,
-> +			SPEAR1340_PCIE_MIPHY_CFG_MASK, 0);
-> +	regmap_update_bits(priv->misc, SPEAR1340_PCIE_SATA_CFG,
-> +			SPEAR1340_PCIE_SATA_CFG_MASK, 0);
-> +
-> +	return 0;
-> +}
-> +
->  static int miphy40lp_spear1340_init(struct miphy40lp_priv *priv)
->  {
->  	int ret = 0;
->  
->  	if (priv->mode == SATA)
->  		ret = miphy40lp_spear1340_sata_init(priv);
-> +	else if (priv->mode == PCIE)
-> +		ret = miphy40lp_spear1340_pcie_init(priv);
->  
->  	return ret;
->  }
-> @@ -162,6 +260,8 @@ static int miphy40lp_spear1340_exit(struct miphy40lp_priv *priv)
->  
->  	if (priv->mode == SATA)
->  		ret = miphy40lp_spear1340_sata_exit(priv);
-> +	else if (priv->mode == PCIE)
-> +		ret = miphy40lp_spear1340_pcie_exit(priv);
->  
->  	return ret;
->  }
-> @@ -193,6 +293,70 @@ static struct miphy40lp_plat_ops spear1340_phy_ops = {
->  	.plat_resume = miphy40lp_spear1340_resume,
->  };
->  
-> +static int miphy40lp_spear1310_pcie_init(struct miphy40lp_priv *priv)
-> +{
-> +	u32 val;
-> +
-> +	regmap_update_bits(priv->misc, SPEAR1310_PCIE_MIPHY_CFG_1,
-> +			SPEAR1310_PCIE_SATA_MIPHY_CFG_PCIE_MASK,
-> +			SPEAR1310_PCIE_SATA_MIPHY_CFG_PCIE);
-> +
-> +	switch (priv->id) {
+Actually, the initial code was including the idle balance time 
+processing in the idle stamp. When I moved the idle stamp in core.c, 
+idle balance was no longer measured (an unwanted change). That has been 
+fixed and to prevent that to occur again, we added a comment.
 
-'id' should be made as optional dt property since it's not used for 1340 no?
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-Thanks
-Kishon
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
