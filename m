@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752303AbaBKCoJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 21:44:09 -0500
-Received: from mail1.comorestelecom.km ([197.255.224.7]:56746 "HELO
-	mail1.comorestelecom.km" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752047AbaBKCoE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 21:44:04 -0500
-X-Greylist: delayed 546 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Feb 2014 21:43:53 EST
-DomainKey-Signature: a=rsa-sha1; s=mail; d=comorestelecom.km; c=nofws; q=dns;
-	h=received:message-id:date:subject:from:reply-to:user-agent:
-	mime-version:content-type:x-priority:importance:to;
-	b=hp9G4dpNGS94FWt3ARsM6eSiW8ZkfPyik1+tqgirvRZvs6Nv4y+xy2joCa5p4Hf9d
-	XbLBoowY2re+DnhoK0LWWHDQ/ZPk2cMz/wR/tTPJEEixc/HDBSiuXdmdW1+dGwUrRUp
-	p5Tay4+rPOCYy/PpOicQFspiMnNedb7SreqGZwk=
-Message-ID: <2c39aac077f111494cedc8c803232f50.squirrel@197.255.224.7>
-Date: Tue, 11 Feb 2014 05:34:42 +0300 (EAT)
-Subject: PROTECT YOUR ACCOUNT!!
-From: thabit.mhadji@comorestelecom.km
-Reply-To: onlineteam@zbavitu.net
-User-Agent: SquirrelMail/1.4.17
-MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
-Content-Transfer-Encoding: 8BIT
+	id S1752542AbaBKCqM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 21:46:12 -0500
+Received: from gate.crashing.org ([63.228.1.57]:53339 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751779AbaBKCqI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 21:46:08 -0500
+Message-ID: <1392086660.3996.50.camel@pasglop>
+Subject: Re: [PATCH v2] powerpc ticket locks
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Torsten Duwe <duwe@lst.de>
+Cc: Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Scott Wood <scottwood@freescale.com>, Tom Musta <tommusta@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Date: Tue, 11 Feb 2014 13:44:20 +1100
+In-Reply-To: <20140210155217.GF2107@lst.de>
+References: <20140207165801.GC2107@lst.de>
+	 <1392001823.3996.21.camel@pasglop> <20140210155217.GF2107@lst.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(Linus, Al, a question for you down there about lockref "ref" size)
 
+On Mon, 2014-02-10 at 16:52 +0100, Torsten Duwe wrote:
 
+> What if I squeeze the bits a little?
+> 4k vCPUs, and 256 physical, as a limit to stay within 32 bits?
+> At the cost that unlock may become an ll/sc operation again.
+> I could think about a trick against that.
+> But alas, hw_cpu_id is 16 bit, which makes a lookup table neccessary :-/
+> 
+> Doing another round of yields for lockrefs now doesn't
+> sound so bad any more.
 
-Dear Webmail User,
+So, the ticketpair has to be 16:16 so we can avoid the atomic on unlock
 
-This message is from Online Webmail team messaging center to all Webmail
-account owners. We are currently upgrading our data base and all Webmail
-account center so we will be making some vital maintenance on our systems,
-we are deleting all Webmail account to create more space for new accounts.
-During this process you might have login problems in signing into your
-Online account, to prevent this, you will have to confirm your account
-immediately after you receive this notification, To prevent your account
-from closing you will have to update it below so that we will know that
-it's a current and valid account.
+That leaves us with 32 bits to put the ref and the owner. The question
+is how big the ref really has to be and can we have a reasonable failure
+mode if it overflows ?
 
-To confirm and to keep your account active during and after this
-maintenance process, please reply to this email onlineteam@zbavitu.net
-with the below account information. Failure to do this might result in
-technical problems after this maintainance. This operation will enable us
-create more spaces for new users and to also reduce spam input.
+If we limit ourselves to, for example, 16-bit for the ref in lockref,
+then we can have the second 32-bit split between the owner and the ref.
 
-Update Account Details
-Webmail Email ID:
-Email Password:
-Confirm Password:
-Date of birth:
+If we limit ourselves to 4k CPUs, then we get 4 more bits of ref ...
 
-Your account will remain active after you must have successfully confirmed
-your account details.
+So the question is, is it reasonable to have the ref smaller than
+32-bit...
 
-We apologise for all inconveniences.
-Regards
-ONLINE TEAM.
-Copyright © 2014.
+Cheers,
+Ben.
+
 
