@@ -1,78 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752559AbaBKRhN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 12:37:13 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:43224 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750909AbaBKRhI (ORCPT
+	id S1751591AbaBKRjn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 12:39:43 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40484 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750779AbaBKRjl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 12:37:08 -0500
-Message-ID: <1392140209.6943.49.camel@pizza.hi.pengutronix.de>
-Subject: Re: [PATCH] reset: Add generic GPIO reset driver.
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: "Fuzzey, Martin" <mfuzzey@parkeon.com>
-Cc: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
+	Tue, 11 Feb 2014 12:39:41 -0500
+Date: Tue, 11 Feb 2014 17:39:33 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
         linux-kernel@vger.kernel.org
-Date: Tue, 11 Feb 2014 18:36:49 +0100
-In-Reply-To: <CANh8QzwERe-zxCaAd4QujZJ4zcZ7SchK+w8u52fvJj0s5tx2nA@mail.gmail.com>
-References: <20140210125432.10683.86571.stgit@localhost>
-	 <1392038191.6687.12.camel@pizza.hi.pengutronix.de>
-	 <CANh8QzwERe-zxCaAd4QujZJ4zcZ7SchK+w8u52fvJj0s5tx2nA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Message-ID: <20140211173933.GW13533@sirena.org.uk>
+References: <1392114599-481-1-git-send-email-linus.walleij@linaro.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="CpBQqYjq/d0HQTAP"
+Content-Disposition: inline
+In-Reply-To: <1392114599-481-1-git-send-email-linus.walleij@linaro.org>
+X-Cookie: My LESLIE GORE record is BROKEN ...
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] mfd: dbx500/abx500: root out hardcoded IRQ assignments
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Martin,
 
-Am Dienstag, den 11.02.2014, 10:34 +0100 schrieb Fuzzey, Martin:
-[...]
-> >> 2) Allow hardware on discoverable busses to be rest via a GPIO line
-> >> without driver modifications.
-> >>
-> >> Examples of the second use case include:
-> >> * SDIO wifi modules
-> >> * USB hub chips with a reset line
-> >
-> > Now this is interesting. But if you export it to userspace anyway, why
-> > not use the existing gpio sysfs API?
-> >
-> 
-> In the normal case of reset on boot the userspace interface isn't needed.
-> Setting the "auto" dt property will make the kernel do the reset by
-> itself during
-> early boot. This is the standard use case.
-> 
-> The userspace interface is to let applications deal with special cases.
-> It is also simpler for userspace than manlually toggling the GPIO line
-> and keeps the configuration (active high / low, delay) centralised in
-> the DT and consistent between the automatic on boot reset and the
-> manually triggered reset.
->
-> > I think a proper solution should handle this in the kernel. For SDIO
-> > wifi modules you usually have a powerdown line that can be implemented
-> > as an rfkill switch.
-> >
-> 
-> I think this is too specific. It's not just for SDIO wifi. We also
-> have the problem
-> of a USB hub needing to be reset.
-> 
-> Also even for the SDIO wifi case rfkill doesn't ssem the right
-> abstraction to say "reset me"
-> (particularly when firmware fails to load on warm boot if you don't).
+--CpBQqYjq/d0HQTAP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-so long as you need to take devices out of reset before they can be
-discovered, maybe the corresponding host controller would be the right
-place to put the reset.
+On Tue, Feb 11, 2014 at 11:29:59AM +0100, Linus Walleij wrote:
 
-regards
-Philipp
+> I've been ambivalent on how to look up the IRQ resource for the
+> AB8500 from the device tree (as it is hanging off the main GIC
+> interrupt controller rather than the PRCMU) and eventually ended
+> up with this solution. I experimented with modifying mfd-core.c
+> to add resources from the device tree, but I didn't like the
+> result, it seems MFD cells should get their resources exclusively
+> from the parent instantiating the cell, so I ended up with this.
 
+> Maybe Broonie has ideas about this too?
+
+This looks reasonably sensible to me.  The way irqdomains seem to want
+you to encapsulate this stuff is that the internal interrupts of the
+chip get an irqdomain and then the children get their resources relative
+to that, normally using the MFD helpers to map the hwirqs in the domain
+to Linux interrupt numbers.
+
+--CpBQqYjq/d0HQTAP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS+mBSAAoJELSic+t+oim94z8QAJ2pz6XLRoHqFV/fBRVuI2ko
+94L3jl7bhczJcO0BjalGYVlNYop5q7ND9J1LRYP8xRE3k6CmXsQ/ZGSc7ybgDOSt
+vU1Gg2TygPjbUQ9PZQhxnOWe7ZbR31F2BnQ2qEoAtgPp71C09FgbhrT0zehcqmcA
+qwS+BI5cAzdtwmUbiAeXh4q6U0y5O+vhtCyEgdZ9nU2M8Zv/CkObpeD6EHI9xJJP
+AVyAIO8u74Aqs5V4f9AdfyIVjq++w8FXiD87YDnUV0Y2R0nTX8p2RYpMjGudcFhz
+84XzzCJwPjAuCfbzfevetT+OI2/JkcDagtztb8W4jLVoUsTW74KUjNFIukI5oSWK
+PIXvOi2lXzKqRLR7FmcofCQeDV6fsJfcrBZRKh2SRgKhjjk1T9dPApKnCMkN/ZsI
+Vfi066qIJgtDB198rJdrWoYFADd82thm0rQtLTj7LQf9ouS2kNJcK62k8N0PgtbP
+5YNFE4kS4DVDT6vmvhrR0nFBPIOCqZcjOHqO5jpVMTNKgXypZOnSDBL0KUGDwQbz
+3pHQ8/WJANlvxL5sjEW2VJCUWCJxnKdjKnjuOgVjslCwFgFPJ14V7LyOkGp1hA4O
+/tj72QyXDuxEc2SYpu4/GpAfIAtqjrSLo7s+F3RAQE6/76z8se7y/EPP8WGHa4+6
+EXW0Y6Yf+78DvjPbOy30
+=GofM
+-----END PGP SIGNATURE-----
+
+--CpBQqYjq/d0HQTAP--
