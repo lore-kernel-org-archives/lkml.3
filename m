@@ -1,154 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752363AbaBKSSL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 13:18:11 -0500
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:7556 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751978AbaBKSSJ (ORCPT
+	id S1752416AbaBKSSW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 13:18:22 -0500
+Received: from alt-proxy90.mail.unifiedlayer.com ([74.220.215.9]:56279 "HELO
+	alt-proxy90.mail.unifiedlayer.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752378AbaBKSSU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 13:18:09 -0500
-Message-ID: <52FA6941.4060102@hp.com>
-Date: Tue, 11 Feb 2014 13:17:37 -0500
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: linux-kernel@vger.kernel.org, Jason Low <jason.low2@hp.com>,
-        mingo@kernel.org, paulmck@linux.vnet.ibm.com,
-        torvalds@linux-foundation.org, tglx@linutronix.de, riel@redhat.com,
-        akpm@linux-foundation.org, davidlohr@hp.com, hpa@zytor.com,
-        andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
-        chegu_vinod@hp.com
-Subject: Re: [PATCH 7/8] locking: Introduce qrwlock
-References: <20140210195820.834693028@infradead.org> <20140210203659.796912337@infradead.org>
-In-Reply-To: <20140210203659.796912337@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 11 Feb 2014 13:18:20 -0500
+X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 Feb 2014 13:18:19 EST
+Date: Tue, 11 Feb 2014 10:11:37 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Baytrail/T (ASUS T100 etc) regression from 3.13 onwards
+Message-ID: <20140211101137.23b2274b@jbarnes-desktop>
+In-Reply-To: <20140211163541.GB12567@kroah.com>
+References: <CA+55aFwLXnW-GWKNcUCrpS5e7fd_0ZoKk83H4qMJNUS_WCF_3A@mail.gmail.com>
+	<20140114120103.436d190b@alan.etchedpixels.co.uk>
+	<20140211142203.77561e0f@alan.etchedpixels.co.uk>
+	<20140211163541.GB12567@kroah.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter,
+On Tue, 11 Feb 2014 08:35:41 -0800
+Greg KH <gregkh@linuxfoundation.org> wrote:
 
-I had written a test program to repetitively take a single rwlock with
-programmable number of threads and count their execution times. Each
-thread takes the lock 5M times on a 4-socket 40-core Westmere-EX
-system. I bound all the threads to different CPUs with the following
-3 configurations:
+> On Tue, Feb 11, 2014 at 02:22:03PM +0000, One Thousand Gnomes wrote:
+> > On Tue, 14 Jan 2014 12:01:03 +0000
+> > One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk> wrote:
+> > 
+> > > On Sun, 12 Jan 2014 20:33:03 +0700
+> > > Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> > > 
+> > > > Another week, another RC. And things look fine.
+> > > 
+> > > It seems to hate Baytrail/T
+> > > 
+> > > My ASUS T100TA has gone from 3.11 'needs video=VGA-1:blah' to get the mode
+> > > right but otherwise running nicely and playing 3D games to 3.13-rc8
+> > 
+> > This has now been pinned down to (confirmed by multiple people)
+> > 
+> > commit 6c4a8962a4a078cacfc8eb5d4bd79f6343b8cd7a
+> > Author: Jesse Barnes <jbarnes@virtuousgeek.org>
+> > Date:   Tue Sep 10 14:54:42 2013 -0700
+> > 
+> >     drm/i915/vlv: re-enable hotplug detect based probing on VLV/BYT
+> > 
+> > 
+> > which given this is affecting some of the top 10 Amazon selling new
+> > laptops and has not been fixed for 3.14-rc should IMHO be reverted until
+> > such time as any needed debugging for the MIPI panels is done for this
+> > driver and the hotplug probing doesn't break the workarounds.
+> > 
+> > Likewise it wants pulling from any -stable backports.
+> 
+> I only see it in the 3.13 tree, so when this gets reverted in Linus's
+> tree, can someone mark it for stable so I know to pick it up for
+> 3.13-stable as well?
 
-  1) Both CPUs and lock are in the same node
-  2) CPUs and lock are in different nodes
-  3) Half of the CPUs are in same node as the lock & the other half
-     are remote
+Ugg, so reverting a real fix to make the T100TA work by accident...
+this is ugly.
 
-The results of the test run are as follows (execution times in ms,
-smaller is better, qrwlock uses MCS lock for queuing):
+According to the reg dumps, this is actually a MIPI panel we're failing
+to bring up properly.  We're working on that issue, but in the
+meantime, maybe something like the below would work for you?
 
-R:W ratio = 0:1 (write lock only)
----------------------------------
-  # of            rwlock mean/std          qrwlock mean/std
-threads           Local  ,    Remote          Local  ,  Remote
--------         ---------------------    ----------------------
-    1           75/   0,   76/   0      44/  0,   44/  0
-    2          924/   6,  818/  11     233/ 22,  685/  1
-    3         1680/  67, 1676/  50     422/ 24,  640/305
-    4         1727/ 402, 1661/ 620     563/ 85,  694/384
-    5         2634/ 861, 2746/ 426     787/276,  829/401
-    6         2969/1196, 2892/ 398     810/307,  968/451
-    7         3532/1512, 3137/1109     936/387, 1060/512
-    8         3979/1698, 4190/1526    1134/590, 1120/503
+-- 
+Jesse Barnes, Intel Open Source Technology Center
 
-R:W ratio = 1:1
----------------
-  # of            rwlock mean/std          qrwlock mean/std
-threads           Local  ,    Remote          Local  ,  Remote
--------         ---------------------    ----------------------
-    1           82/   0,   81/   0      65/  0,   65/  0
-    2          844/   6,  829/   1     752/  4,  894/  2
-    3         1683/  65, 1628/  29     980/ 14, 1046/ 24
-    4         2661/  65, 1747/ 609    1356/ 16, 1405/ 13
-    5         2227/ 868, 2887/ 395    1625/ 32, 1679/ 29
-    6         2553/ 968, 3924/1319    1935/ 18, 1986/ 65
-    7         3392/1325, 3674/1430    2302/ 41, 2313/ 83
-    8         3822/1545, 5163/2103    2654/ 31, 2654/ 67
-
-R:W ratio = 10:1
-----------------
-  # of            rwlock mean/std          qrwlock mean/std
-threads           Local  ,    Remote          Local  ,  Remote
--------         ---------------------    ----------------------
-    1           86/   0,   86/   0      83/  0,   83/  0
-    2          656/   2,  640/   3     546/  2,  635/  1
-    3         1154/  39, 1053/  64     934/ 27,  968/ 31
-    4         1810/  26, 1535/ 399    1357/ 34, 1382/ 52
-    5         1994/ 495, 2618/  27    1713/ 52, 1785/ 47
-    6         2371/ 488, 3099/ 105    2093/ 80, 2131/ 77
-    7         2846/ 751, 3068/ 689    2495/103, 2527/107
-    8         3392/1009, 3566/1017    2899/130, 2928/126
-
-For reference, I also made the same measurement for ticket spinlock with
-essentially no variation in execution time between different threads:
-
-  # of          spinlock mean
-threads         Local, Remote
--------         -------------
-    1            70,   70
-    2           757,  779
-    3          1892, 1858
-    4          2818, 2794
-    5          3829, 3851
-    6          4957, 5069
-    7          6209, 6251
-    8          7524, 7564
-
-In summary,
-
-1) The qrwlock is always faster than the rwlock with the exception
-    of about 8% slowdown with 1:1 read-write lock ratio and 2 contending
-    threads on a remote lock. In the most common case of 1-socket
-    system, qrwlock will not be slower than rwlock.
-
-2) qrwlock has much less variation in execution times (more consistent
-    performance) when compared with rwlock.
-
-3) For rwlock with 2-3 contending threads, remote lock actually
-    performs slightly better than local lock.
-
-4) For qrwlock, local lock performs slightly better than remote lock
-    with less variation in execution time.
-
-As for the use of ticket lock for queuing purpose, the spinlock
-performance figures above seem to suggest that it will perform worse
-than MCS lock with even a few contending threads. This is especially
-a problem with contending threads coming from different nodes.
-
-Below are the performance data with half local and half remote CPUs:
-
-# of threads = 8
-R/W ratio     rwlock mean/std        qrwlock mean/std
----------    ---------------        ----------------
-   0:1            3476/868           1304/484
-   1:1           3452/975           2984/777
-  10:1            3215/914           2963/107
-
-The rwlock actually performs slightly better when CPUs have different access
-times to the lock. The qrwlock, on the other hand, performs slightly worse
-with much larger variation in execution times.
-
-In the case of ticket spinlock with asymmetric access time (half
-local CPUs, half remote CPUs), the performance data were:
-
-# of threads         spinlock mean
-------------         -------------
-      2             4570
-      4             9927
-      6            15197
-      8            20573
-
-Ticket spinlock seems to be 3-5X slower with asymmetric access time. So
-it may not be such a good idea to replace the MCS lock by a ticket
-lock in qrwlock. I will take some additional measurement with your patch
-to see how it perform.
-
--Longman
-
+diff --git a/drivers/gpu/drm/i915/i915_drv.c b/drivers/gpu/drm/i915/i915_drv.c
+index 61fb9fc..adc16a5 100644
+--- a/drivers/gpu/drm/i915/i915_drv.c
++++ b/drivers/gpu/drm/i915/i915_drv.c
+@@ -155,6 +155,11 @@ module_param_named(prefault_disable, i915_prefault_disable, bool, 0600);
+ MODULE_PARM_DESC(prefault_disable,
+ 		"Disable page prefaulting for pread/pwrite/reloc (default:false). For developers only.");
+ 
++bool i915_force_vga_hotplug __read_mostly;
++module_param_named(force_vga_hotplug, i915_force_vga_hotplug, bool, 0600);
++MODULE_PARM_DESC(force_vga_hotplug,
++		 "Force VGA hotplug detection to always return true (default: false)");
++
+ static struct drm_driver driver;
+ 
+ static const struct intel_device_info intel_i830_info = {
+diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
+index 29e1e86..f7a5e98 100644
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -1918,6 +1918,7 @@ extern bool i915_fastboot __read_mostly;
+ extern int i915_enable_pc8 __read_mostly;
+ extern int i915_pc8_timeout __read_mostly;
+ extern bool i915_prefault_disable __read_mostly;
++extern bool i915_force_vga_hotplug __read_mostly;
+ 
+ extern int i915_suspend(struct drm_device *dev, pm_message_t state);
+ extern int i915_resume(struct drm_device *dev);
+diff --git a/drivers/gpu/drm/i915/intel_crt.c b/drivers/gpu/drm/i915/intel_crt.c
+index e2e39e6..55531d6 100644
+--- a/drivers/gpu/drm/i915/intel_crt.c
++++ b/drivers/gpu/drm/i915/intel_crt.c
+@@ -434,6 +434,9 @@ static bool intel_crt_detect_hotplug(struct drm_connector *connector)
+ 	/* and put the bits back */
+ 	I915_WRITE(PORT_HOTPLUG_EN, orig);
+ 
++	if (i915_force_vga_hotplug)
++		ret = true;
++
+ 	return ret;
+ }
+ 
