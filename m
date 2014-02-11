@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754349AbaBKTIW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:08:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40557 "EHLO
+	id S1754838AbaBKTUA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:20:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40567 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752123AbaBKTIT (ORCPT
+	with ESMTP id S1754346AbaBKTIW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:08:19 -0500
+	Tue, 11 Feb 2014 14:08:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Brennan Shacklett <bpshacklett@gmail.com>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.10 78/79] intel_pstate: Improve accuracy by not truncating until final result
-Date: Tue, 11 Feb 2014 11:06:22 -0800
-Message-Id: <20140211184723.227325038@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.10 53/79] drm/radeon: fix surface sync in fence on cayman (v2)
+Date: Tue, 11 Feb 2014 11:05:57 -0800
+Message-Id: <20140211184722.492721044@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
 References: <20140211184720.928667275@linuxfoundation.org>
@@ -30,119 +28,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brennan Shacklett <brennan@genyes.org>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit d253d2a52676cfa3d89b8f0737a08ce7db665207 upstream.
+commit 10e9ffae463396c5a25fdfe8a48d7c98a87f6b85 upstream.
 
-This patch addresses Bug 60727
-(https://bugzilla.kernel.org/show_bug.cgi?id=60727)
-which was due to the truncation of intermediate values in the
-calculations, which causes the code to consistently underestimate the
-current cpu frequency, specifically 100% cpu utilization was truncated
-down to the setpoint of 97%. This patch fixes the problem by keeping
-the results of all intermediate calculations as fixed point numbers
-rather scaling them back and forth between integers and fixed point.
+We need to set the engine bit to select the ME and
+also set the full cache bit.  Should help stability
+on TN and cayman.
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=60727
-Signed-off-by: Brennan Shacklett <bpshacklett@gmail.com>
-Acked-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+V2: fix up surface sync in ib execute as well
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/intel_pstate.c |   33 +++++++++++++++------------------
- 1 file changed, 15 insertions(+), 18 deletions(-)
+ drivers/gpu/drm/radeon/ni.c  |   16 +++++++---------
+ drivers/gpu/drm/radeon/nid.h |    1 +
+ 2 files changed, 8 insertions(+), 9 deletions(-)
 
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -48,7 +48,7 @@ static inline int32_t div_fp(int32_t x,
- }
- 
- struct sample {
--	int core_pct_busy;
-+	int32_t core_pct_busy;
- 	u64 aperf;
- 	u64 mperf;
- 	int freq;
-@@ -68,7 +68,7 @@ struct _pid {
- 	int32_t i_gain;
- 	int32_t d_gain;
- 	int deadband;
--	int last_err;
-+	int32_t last_err;
- };
- 
- struct cpudata {
-@@ -153,16 +153,15 @@ static inline void pid_d_gain_set(struct
- 	pid->d_gain = div_fp(int_tofp(percent), int_tofp(100));
- }
- 
--static signed int pid_calc(struct _pid *pid, int busy)
-+static signed int pid_calc(struct _pid *pid, int32_t busy)
+--- a/drivers/gpu/drm/radeon/ni.c
++++ b/drivers/gpu/drm/radeon/ni.c
+@@ -1178,13 +1178,12 @@ void cayman_fence_ring_emit(struct radeo
  {
--	signed int err, result;
-+	signed int result;
- 	int32_t pterm, dterm, fp_error;
- 	int32_t integral_limit;
+ 	struct radeon_ring *ring = &rdev->ring[fence->ring];
+ 	u64 addr = rdev->fence_drv[fence->ring].gpu_addr;
++	u32 cp_coher_cntl = PACKET3_FULL_CACHE_ENA | PACKET3_TC_ACTION_ENA |
++		PACKET3_SH_ACTION_ENA;
  
--	err = pid->setpoint - busy;
--	fp_error = int_tofp(err);
-+	fp_error = int_tofp(pid->setpoint) - busy;
- 
--	if (abs(err) <= pid->deadband)
-+	if (abs(fp_error) <= int_tofp(pid->deadband))
- 		return 0;
- 
- 	pterm = mul_fp(pid->p_gain, fp_error);
-@@ -176,8 +175,8 @@ static signed int pid_calc(struct _pid *
- 	if (pid->integral < -integral_limit)
- 		pid->integral = -integral_limit;
- 
--	dterm = mul_fp(pid->d_gain, (err - pid->last_err));
--	pid->last_err = err;
-+	dterm = mul_fp(pid->d_gain, fp_error - pid->last_err);
-+	pid->last_err = fp_error;
- 
- 	result = pterm + mul_fp(pid->integral, pid->i_gain) + dterm;
- 
-@@ -435,8 +434,9 @@ static inline void intel_pstate_calc_bus
- 					struct sample *sample)
+ 	/* flush read cache over gart for this vmid */
+-	radeon_ring_write(ring, PACKET3(PACKET3_SET_CONFIG_REG, 1));
+-	radeon_ring_write(ring, (CP_COHER_CNTL2 - PACKET3_SET_CONFIG_REG_START) >> 2);
+-	radeon_ring_write(ring, 0);
+ 	radeon_ring_write(ring, PACKET3(PACKET3_SURFACE_SYNC, 3));
+-	radeon_ring_write(ring, PACKET3_TC_ACTION_ENA | PACKET3_SH_ACTION_ENA);
++	radeon_ring_write(ring, PACKET3_ENGINE_ME | cp_coher_cntl);
+ 	radeon_ring_write(ring, 0xFFFFFFFF);
+ 	radeon_ring_write(ring, 0);
+ 	radeon_ring_write(ring, 10); /* poll interval */
+@@ -1200,6 +1199,8 @@ void cayman_fence_ring_emit(struct radeo
+ void cayman_ring_ib_execute(struct radeon_device *rdev, struct radeon_ib *ib)
  {
- 	u64 core_pct;
--	core_pct = div64_u64(sample->aperf * 100, sample->mperf);
--	sample->freq = cpu->pstate.max_pstate * core_pct * 1000;
-+	core_pct = div64_u64(int_tofp(sample->aperf * 100),
-+			     sample->mperf);
-+	sample->freq = fp_toint(cpu->pstate.max_pstate * core_pct * 1000);
+ 	struct radeon_ring *ring = &rdev->ring[ib->ring];
++	u32 cp_coher_cntl = PACKET3_FULL_CACHE_ENA | PACKET3_TC_ACTION_ENA |
++		PACKET3_SH_ACTION_ENA;
  
- 	sample->core_pct_busy = core_pct;
- }
-@@ -468,22 +468,19 @@ static inline void intel_pstate_set_samp
- 	mod_timer_pinned(&cpu->timer, jiffies + delay);
- }
+ 	/* set to DX10/11 mode */
+ 	radeon_ring_write(ring, PACKET3(PACKET3_MODE_CONTROL, 0));
+@@ -1224,14 +1225,11 @@ void cayman_ring_ib_execute(struct radeo
+ 			  (ib->vm ? (ib->vm->id << 24) : 0));
  
--static inline int intel_pstate_get_scaled_busy(struct cpudata *cpu)
-+static inline int32_t intel_pstate_get_scaled_busy(struct cpudata *cpu)
- {
--	int32_t busy_scaled;
- 	int32_t core_busy, max_pstate, current_pstate;
- 
--	core_busy = int_tofp(cpu->samples[cpu->sample_ptr].core_pct_busy);
-+	core_busy = cpu->samples[cpu->sample_ptr].core_pct_busy;
- 	max_pstate = int_tofp(cpu->pstate.max_pstate);
- 	current_pstate = int_tofp(cpu->pstate.current_pstate);
--	busy_scaled = mul_fp(core_busy, div_fp(max_pstate, current_pstate));
--
--	return fp_toint(busy_scaled);
-+	return mul_fp(core_busy, div_fp(max_pstate, current_pstate));
+ 	/* flush read cache over gart for this vmid */
+-	radeon_ring_write(ring, PACKET3(PACKET3_SET_CONFIG_REG, 1));
+-	radeon_ring_write(ring, (CP_COHER_CNTL2 - PACKET3_SET_CONFIG_REG_START) >> 2);
+-	radeon_ring_write(ring, ib->vm ? ib->vm->id : 0);
+ 	radeon_ring_write(ring, PACKET3(PACKET3_SURFACE_SYNC, 3));
+-	radeon_ring_write(ring, PACKET3_TC_ACTION_ENA | PACKET3_SH_ACTION_ENA);
++	radeon_ring_write(ring, PACKET3_ENGINE_ME | cp_coher_cntl);
+ 	radeon_ring_write(ring, 0xFFFFFFFF);
+ 	radeon_ring_write(ring, 0);
+-	radeon_ring_write(ring, 10); /* poll interval */
++	radeon_ring_write(ring, ((ib->vm ? ib->vm->id : 0) << 24) | 10); /* poll interval */
  }
  
- static inline void intel_pstate_adjust_busy_pstate(struct cpudata *cpu)
- {
--	int busy_scaled;
-+	int32_t busy_scaled;
- 	struct _pid *pid;
- 	signed int ctl = 0;
- 	int steps;
+ void cayman_uvd_semaphore_emit(struct radeon_device *rdev,
+--- a/drivers/gpu/drm/radeon/nid.h
++++ b/drivers/gpu/drm/radeon/nid.h
+@@ -573,6 +573,7 @@
+ #              define PACKET3_DB_ACTION_ENA        (1 << 26)
+ #              define PACKET3_SH_ACTION_ENA        (1 << 27)
+ #              define PACKET3_SX_ACTION_ENA        (1 << 28)
++#              define PACKET3_ENGINE_ME            (1 << 31)
+ #define	PACKET3_ME_INITIALIZE				0x44
+ #define		PACKET3_ME_INITIALIZE_DEVICE_ID(x) ((x) << 16)
+ #define	PACKET3_COND_WRITE				0x45
 
 
