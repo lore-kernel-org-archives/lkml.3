@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755648AbaBKUxE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:53:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39677 "EHLO
+	id S1755877AbaBKUxh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:53:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39668 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752841AbaBKTFa (ORCPT
+	with ESMTP id S1752529AbaBKTF2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:05:30 -0500
+	Tue, 11 Feb 2014 14:05:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Antti Palosaari <crope@iki.fi>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.13 066/120] media: anysee: fix non-working E30 Combo Plus DVB-T
-Date: Tue, 11 Feb 2014 11:05:07 -0800
-Message-Id: <20140211184825.500013256@linuxfoundation.org>
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.13 064/120] mm, oom: base root bonus on current usage
+Date: Tue, 11 Feb 2014 11:05:05 -0800
+Message-Id: <20140211184825.444456224@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -29,39 +31,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Antti Palosaari <crope@iki.fi>
+From: David Rientjes <rientjes@google.com>
 
-commit c57f87e62368c33ebda11a4993380c8e5a19a5c5 upstream.
+commit 778c14affaf94a9e4953179d3e13a544ccce7707 upstream.
 
-PLL was attached twice to frontend0 leaving frontend1 without a tuner.
-frontend0 is DVB-C and frontend1 is DVB-T.
+A 3% of system memory bonus is sometimes too excessive in comparison to
+other processes.
 
-Signed-off-by: Antti Palosaari <crope@iki.fi>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+With commit a63d83f427fb ("oom: badness heuristic rewrite"), the OOM
+killer tries to avoid killing privileged tasks by subtracting 3% of
+overall memory (system or cgroup) from their per-task consumption.  But
+as a result, all root tasks that consume less than 3% of overall memory
+are considered equal, and so it only takes 33+ privileged tasks pushing
+the system out of memory for the OOM killer to do something stupid and
+kill dhclient or other root-owned processes.  For example, on a 32G
+machine it can't tell the difference between the 1M agetty and the 10G
+fork bomb member.
+
+The changelog describes this 3% boost as the equivalent to the global
+overcommit limit being 3% higher for privileged tasks, but this is not
+the same as discounting 3% of overall memory from _every privileged task
+individually_ during OOM selection.
+
+Replace the 3% of system memory bonus with a 3% of current memory usage
+bonus.
+
+By giving root tasks a bonus that is proportional to their actual size,
+they remain comparable even when relatively small.  In the example
+above, the OOM killer will discount the 1M agetty's 256 badness points
+down to 179, and the 10G fork bomb's 262144 points down to 183500 points
+and make the right choice, instead of discounting both to 0 and killing
+agetty because it's first in the task list.
+
+Signed-off-by: David Rientjes <rientjes@google.com>
+Reported-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/usb/dvb-usb-v2/anysee.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ Documentation/filesystems/proc.txt |    4 ++--
+ mm/oom_kill.c                      |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/media/usb/dvb-usb-v2/anysee.c
-+++ b/drivers/media/usb/dvb-usb-v2/anysee.c
-@@ -442,6 +442,7 @@ static struct cxd2820r_config anysee_cxd
-  * IOD[0] ZL10353 1=enabled
-  * IOE[0] tuner 0=enabled
-  * tuner is behind ZL10353 I2C-gate
-+ * tuner is behind TDA10023 I2C-gate
-  *
-  * E7 TC VID=1c73 PID=861f HW=18 FW=0.7 AMTCI=0.5 "anysee-E7TC(LP)"
-  * PCB: 508TC (rev0.6)
-@@ -956,7 +957,7 @@ static int anysee_tuner_attach(struct dv
+--- a/Documentation/filesystems/proc.txt
++++ b/Documentation/filesystems/proc.txt
+@@ -1377,8 +1377,8 @@ may allocate from based on an estimation
+ For example, if a task is using all allowed memory, its badness score will be
+ 1000.  If it is using half of its allowed memory, its score will be 500.
  
- 		if (fe && adap->fe[1]) {
- 			/* attach tuner for 2nd FE */
--			fe = dvb_attach(dvb_pll_attach, adap->fe[0],
-+			fe = dvb_attach(dvb_pll_attach, adap->fe[1],
- 					(0xc0 >> 1), &d->i2c_adap,
- 					DVB_PLL_SAMSUNG_DTOS403IH102A);
- 		}
+-There is an additional factor included in the badness score: root
+-processes are given 3% extra memory over other tasks.
++There is an additional factor included in the badness score: the current memory
++and swap usage is discounted by 3% for root processes.
+ 
+ The amount of "allowed" memory depends on the context in which the oom killer
+ was called.  If it is due to the memory assigned to the allocating task's cpuset
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -170,7 +170,7 @@ unsigned long oom_badness(struct task_st
+ 	 * implementation used by LSMs.
+ 	 */
+ 	if (has_capability_noaudit(p, CAP_SYS_ADMIN))
+-		adj -= 30;
++		points -= (points * 3) / 100;
+ 
+ 	/* Normalize to oom_score_adj units */
+ 	adj *= totalpages / 1000;
 
 
