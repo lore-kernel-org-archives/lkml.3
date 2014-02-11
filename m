@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932551AbaBKUdT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:33:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39838 "EHLO
+	id S932566AbaBKUdo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:33:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39835 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753207AbaBKTGH (ORCPT
+	with ESMTP id S1753195AbaBKTGG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:07 -0500
+	Tue, 11 Feb 2014 14:06:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Adrian Hunter <adrian.hunter@intel.com>, Chris Ball <chris@printf.net>
-Subject: [PATCH 3.13 119/120] mmc: sdhci-pci: Fix BYT sd card getting stuck in runtime suspend
-Date: Tue, 11 Feb 2014 11:06:00 -0800
-Message-Id: <20140211184827.039243725@linuxfoundation.org>
+        Brecht Machiels <brecht@mos6581.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Rabin Vincent <rabin.vincent@stericsson.com>,
+        Borislav Petkov <bp@suse.de>
+Subject: [PATCH 3.13 118/120] rtc-cmos: Add an alarm disable quirk
+Date: Tue, 11 Feb 2014 11:05:59 -0800
+Message-Id: <20140211184827.010489286@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -28,73 +32,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+From: Borislav Petkov <bp@alien8.de>
 
-commit 77a0122e0838663795651aa0beb2325156f98c09 upstream.
+commit d5a1c7e3fc38d9c7d629e1e47f32f863acbdec3d upstream.
 
-A host controller for a SD card may need a GPIO for card detect in order
-to wake up from runtime suspend when a card is inserted.  If that GPIO is
-not configured, then the host controller will not wake up.  Fix that for
-the affected devices by not enabling runtime PM unless the GPIO is
-successfully set up.
+41c7f7424259f ("rtc: Disable the alarm in the hardware (v2)") added the
+functionality to disable the RTC wake alarm when shutting down the box.
 
-This affects BYT sd card host controller which had runtime PM enabled from
-v3.11.  For completeness, the MFD sd card host controller is flagged also.
+However, there are at least two b0rked BIOSes we know about:
 
-The original patch before rebasing (see link below) was tested on v3.11.10
-and v3.12.4 although the patch applied with some offsets and fuzz.  The
-original patch is here:
+https://bugzilla.novell.com/show_bug.cgi?id=812592
+https://bugzilla.novell.com/show_bug.cgi?id=805740
 
-    http://marc.info/?l=linux-mmc&m=138676702327057
+where, when wakeup alarm is enabled in the BIOS, the machine reboots
+automatically right after shutdown, regardless of what wakeup time is
+programmed.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Signed-off-by: Chris Ball <chris@printf.net>
+Bisecting the issue lead to this patch so disable its functionality with
+a DMI quirk only for those boxes.
+
+Cc: Brecht Machiels <brecht@mos6581.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Rabin Vincent <rabin.vincent@stericsson.com>
+Signed-off-by: Borislav Petkov <bp@suse.de>
+[jstultz: Changed variable name for clarity, added extra dmi entry]
+Tested-by: Brecht Machiels <brecht@mos6581.org>
+Tested-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/host/sdhci-pci.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ drivers/rtc/rtc-cmos.c |   52 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 51 insertions(+), 1 deletion(-)
 
---- a/drivers/mmc/host/sdhci-pci.c
-+++ b/drivers/mmc/host/sdhci-pci.c
-@@ -65,6 +65,7 @@ struct sdhci_pci_fixes {
- 	unsigned int		quirks;
- 	unsigned int		quirks2;
- 	bool			allow_runtime_pm;
-+	bool			own_cd_for_runtime_pm;
+--- a/drivers/rtc/rtc-cmos.c
++++ b/drivers/rtc/rtc-cmos.c
+@@ -34,11 +34,11 @@
+ #include <linux/interrupt.h>
+ #include <linux/spinlock.h>
+ #include <linux/platform_device.h>
+-#include <linux/mod_devicetable.h>
+ #include <linux/log2.h>
+ #include <linux/pm.h>
+ #include <linux/of.h>
+ #include <linux/of_platform.h>
++#include <linux/dmi.h>
  
- 	int			(*probe) (struct sdhci_pci_chip *);
+ /* this is for "generic access to PC-style RTC" using CMOS_READ/CMOS_WRITE */
+ #include <asm-generic/rtc.h>
+@@ -377,6 +377,51 @@ static int cmos_set_alarm(struct device
+ 	return 0;
+ }
  
-@@ -296,6 +297,7 @@ static const struct sdhci_pci_fixes sdhc
- static const struct sdhci_pci_fixes sdhci_intel_mfd_sd = {
- 	.quirks		= SDHCI_QUIRK_NO_ENDATTR_IN_NOPDESC,
- 	.allow_runtime_pm = true,
-+	.own_cd_for_runtime_pm = true,
- };
- 
- static const struct sdhci_pci_fixes sdhci_intel_mfd_sdio = {
-@@ -360,6 +362,7 @@ static const struct sdhci_pci_fixes sdhc
- static const struct sdhci_pci_fixes sdhci_intel_byt_sd = {
- 	.quirks2	= SDHCI_QUIRK2_CARD_ON_NEEDS_BUS_ON,
- 	.allow_runtime_pm = true,
-+	.own_cd_for_runtime_pm = true,
- };
- 
- /* Define Host controllers for Intel Merrifield platform */
-@@ -1458,6 +1461,14 @@ static struct sdhci_pci_slot *sdhci_pci_
- 
- 	sdhci_pci_add_own_cd(slot);
- 
-+	/*
-+	 * Check if the chip needs a separate GPIO for card detect to wake up
-+	 * from runtime suspend.  If it is not there, don't allow runtime PM.
-+	 * Note sdhci_pci_add_own_cd() sets slot->cd_gpio to -EINVAL on failure.
-+	 */
-+	if (chip->fixes->own_cd_for_runtime_pm && !gpio_is_valid(slot->cd_gpio))
-+		chip->allow_runtime_pm = false;
++/*
++ * Do not disable RTC alarm on shutdown - workaround for b0rked BIOSes.
++ */
++static bool alarm_disable_quirk;
 +
- 	return slot;
++static int __init set_alarm_disable_quirk(const struct dmi_system_id *id)
++{
++	alarm_disable_quirk = true;
++	pr_info("rtc-cmos: BIOS has alarm-disable quirk. ");
++	pr_info("RTC alarms disabled\n");
++	return 0;
++}
++
++static const struct dmi_system_id rtc_quirks[] __initconst = {
++	/* https://bugzilla.novell.com/show_bug.cgi?id=805740 */
++	{
++		.callback = set_alarm_disable_quirk,
++		.ident    = "IBM Truman",
++		.matches  = {
++			DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "4852570"),
++		},
++	},
++	/* https://bugzilla.novell.com/show_bug.cgi?id=812592 */
++	{
++		.callback = set_alarm_disable_quirk,
++		.ident    = "Gigabyte GA-990XA-UD3",
++		.matches  = {
++			DMI_MATCH(DMI_SYS_VENDOR,
++					"Gigabyte Technology Co., Ltd."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "GA-990XA-UD3"),
++		},
++	},
++	/* http://permalink.gmane.org/gmane.linux.kernel/1604474 */
++	{
++		.callback = set_alarm_disable_quirk,
++		.ident    = "Toshiba Satellite L300",
++		.matches  = {
++			DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Satellite L300"),
++		},
++	},
++	{}
++};
++
+ static int cmos_alarm_irq_enable(struct device *dev, unsigned int enabled)
+ {
+ 	struct cmos_rtc	*cmos = dev_get_drvdata(dev);
+@@ -385,6 +430,9 @@ static int cmos_alarm_irq_enable(struct
+ 	if (!is_valid_irq(cmos->irq))
+ 		return -EINVAL;
  
- remove:
++	if (alarm_disable_quirk)
++		return 0;
++
+ 	spin_lock_irqsave(&rtc_lock, flags);
+ 
+ 	if (enabled)
+@@ -1157,6 +1205,8 @@ static int __init cmos_init(void)
+ 			platform_driver_registered = true;
+ 	}
+ 
++	dmi_check_system(rtc_quirks);
++
+ 	if (retval == 0)
+ 		return 0;
+ 
 
 
