@@ -1,108 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755583AbaBKT7x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:59:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40134 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753718AbaBKTHF (ORCPT
+	id S1755613AbaBKUAJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:00:09 -0500
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:61408 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755595AbaBKUAF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:07:05 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Mika Kuoppala <mika.kuoppala@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@intel.com>
-Subject: [PATCH 3.12 082/107] drm/i915: Flush outstanding requests before allocating new seqno
-Date: Tue, 11 Feb 2014 11:05:48 -0800
-Message-Id: <20140211184750.534648852@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
-References: <20140211184748.191276235@linuxfoundation.org>
-User-Agent: quilt/0.61-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Tue, 11 Feb 2014 15:00:05 -0500
+Message-ID: <1392148802.9682.36.camel@x220>
+Subject: Re: drm/msm: CONFIG_MSM_OCMEM?
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Rob Clark <robdclark@gmail.com>
+Cc: Richard Weinberger <richard@nod.at>, David Airlie <airlied@linux.ie>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arm-msm@vger.kernel.org
+Date: Tue, 11 Feb 2014 21:00:02 +0100
+In-Reply-To: <CAF6AEGuezz14GCVfRA1m-5kKcQEHjzSLJ2xoPyU5jinjzwOm6A@mail.gmail.com>
+References: <1392133181.3755.14.camel@x220>
+	 <CAF6AEGuezz14GCVfRA1m-5kKcQEHjzSLJ2xoPyU5jinjzwOm6A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 11 Feb 2014 20:00:03.0067 (UTC) FILETIME=[DA0E9CB0:01CF2763]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On Tue, 2014-02-11 at 12:29 -0500, Rob Clark wrote:
+> On Tue, Feb 11, 2014 at 10:39 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> > Commit 55459968176f ("drm/msm: add a330/apq8x74") added preprocessor
+> > checks for CONFIG_MSM_OCMEM. But I couldn't find a Kconfig symbol
+> > MSM_OCMEM (nor a preprocessor define for a macro of that name). Why were
+> > those preprocessor checks added?
+> 
+> At the moment, CONFIG_MSM_OCMEM is only in downstream kernel.. not
+> 100% sure about how we'll handle that upstream when there is more than
+> just drm/msm using OCMEM (which can be shared between gpu, video
+> enc/dec, etc).
 
-------------------
+I see. (Wouldn't that be an upstream kernel, actually?)
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+> > Please note that lines 197-201 currently read:
+> >     /* Set the OCMEM base address for A330, etc */
+> >     if (a3xx_gpu->ocmem_hdl) {
+> >             gpu_write(gpu, REG_A3XX_RB_GMEM_BASE_ADDR,
+> >                     (unsigned int)(a3xx_gpu->ocmem_base >> 14));
+> >     }
+> >
+> > ocmem_hdl and ocmem_base are used uninitialized here, aren't they? So it
+> > seems these lines should be wrapped with a preprocessor check for
+> > CONFIG_MSM_OCMEM too.
+> 
+> in this case ocmem_hdl will be NULL (since a3xx_gpu is kzalloc'd).
+> The #ifdef's could be added here, but not required.
 
-commit 304d695c3dc8eb65206b9eaf16f8d1a41510d1cf upstream.
+I missed that. So whether or not to #ifdef this would be mostly a matter
+of style.
 
-In very rare cases (such as a memory failure stress test) it is possible
-to fill the entire ring without emitting a request. Under this
-circumstance, the outstanding request is flushed and waited upon. After
-space on the ring is cleared, we return to emitting the new command -
-except that we just cleared the seqno allocated for this operation and
-trigger the sanity check that a request is only ever emitted with a
-valid seqno. The fix is to rearrange the code to make sure the
-allocation of the seqno for this operation is after any required flushes
-of outstanding operations.
+Thanks,
 
-The bug exists since the preallocation was introduced in
-commit 9d7730914f4cd496e356acfab95b41075aa8eae8
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Tue Nov 27 16:22:52 2012 +0000
 
-    drm/i915: Preallocate next seqno before touching the ring
-
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Mika Kuoppala <mika.kuoppala@intel.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Reviewed-by: Jani Nikula <jani.nikula@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/gpu/drm/i915/intel_ringbuffer.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
-
---- a/drivers/gpu/drm/i915/intel_ringbuffer.c
-+++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
-@@ -1501,8 +1501,8 @@ intel_ring_alloc_seqno(struct intel_ring
- 	return i915_gem_get_seqno(ring->dev, &ring->outstanding_lazy_request);
- }
- 
--static int __intel_ring_begin(struct intel_ring_buffer *ring,
--			      int bytes)
-+static int __intel_ring_prepare(struct intel_ring_buffer *ring,
-+				int bytes)
- {
- 	int ret;
- 
-@@ -1518,7 +1518,6 @@ static int __intel_ring_begin(struct int
- 			return ret;
- 	}
- 
--	ring->space -= bytes;
- 	return 0;
- }
- 
-@@ -1533,12 +1532,17 @@ int intel_ring_begin(struct intel_ring_b
- 	if (ret)
- 		return ret;
- 
-+	ret = __intel_ring_prepare(ring, num_dwords * sizeof(uint32_t));
-+	if (ret)
-+		return ret;
-+
- 	/* Preallocate the olr before touching the ring */
- 	ret = intel_ring_alloc_seqno(ring);
- 	if (ret)
- 		return ret;
- 
--	return __intel_ring_begin(ring, num_dwords * sizeof(uint32_t));
-+	ring->space -= num_dwords * sizeof(uint32_t);
-+	return 0;
- }
- 
- void intel_ring_init_seqno(struct intel_ring_buffer *ring, u32 seqno)
-
+Paul Bolle
 
