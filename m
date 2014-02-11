@@ -1,62 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754472AbaBKUhK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:37:10 -0500
-Received: from gate.crashing.org ([63.228.1.57]:57218 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754364AbaBKUhH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 15:37:07 -0500
-Message-ID: <1392147268.3835.11.camel@pasglop>
-Subject: Re: [PATCH v2] powerpc ticket locks
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Scott Wood <scottwood@freescale.com>
-Cc: Torsten Duwe <duwe@lst.de>,
-        Raghavendra KT <raghavendra.kt.linux@gmail.com>,
-        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Tom Musta <tommusta@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linuxppc-dev@lists.ozlabs.org,
-        Raghavendra KT <raghavendra.kt@linux.vnet.ibm.com>
-Date: Wed, 12 Feb 2014 06:34:28 +1100
-In-Reply-To: <1392143455.6733.386.camel@snotra.buserror.net>
-References: <20140207165801.GC2107@lst.de>
-	 <1392001823.3996.21.camel@pasglop>
-	 <CAC4Lta2Pssu5QY_QLmy5C3Fm2G3fwpiuc5BNOLBnQTmmRH+W4Q@mail.gmail.com>
-	 <20140211104030.GG2107@lst.de>
-	 <1392143455.6733.386.camel@snotra.buserror.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754210AbaBKUhx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:37:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39794 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753145AbaBKTGC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 14:06:02 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 3.13 112/120] timekeeping: Fix lost updates to tai adjustment
+Date: Tue, 11 Feb 2014 11:05:53 -0800
+Message-Id: <20140211184826.833456399@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
+References: <20140211184823.492407127@linuxfoundation.org>
+User-Agent: quilt/0.61-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-02-11 at 12:30 -0600, Scott Wood wrote:
-> > It's something very special to IBM pSeries: the hypervisor can assign
-> > fractions of physical CPUs to guests. Sometimes a guest with 4 quarter
-> > CPUs will be faster than 1 monoprocessor. (correct me if I'm wrong).
-> > 
-> > The directed yield resolves the silly situation when holder and waiter
-> > reside on the same physical CPU, as I understand it.
-> > 
-> > x86 has nothing comparable.
-> 
-> How is this different from the very ordinary case of an SMP KVM guest
-> whose vcpus are not bound to host cpus, and thus you could have multiple
-> vcpus running on the same host cpu?
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
-It's not really ... though I can see drawbacks with the scheme as well
-and I think in KVM we should be careful to only confer if the owner
-vcpu last scheduled on the same physical cpu where the waiter is, other
-wise, there's too much chances of us bouncing things around the machine
-for minor contention cases.
+------------------
 
-Paul, what's your policy today ?
+From: John Stultz <john.stultz@linaro.org>
 
-Cheers,
-Ben.
+commit f55c07607a38f84b5c7e6066ee1cfe433fa5643c upstream.
+
+Since 48cdc135d4840 (Implement a shadow timekeeper), we have to
+call timekeeping_update() after any adjustment to the timekeeping
+structure in order to make sure that any adjustments to the structure
+persist.
+
+Unfortunately, the updates to the tai offset via adjtimex do not
+trigger this update, causing adjustments to the tai offset to be
+made and then over-written by the previous value at the next
+update_wall_time() call.
+
+This patch resovles the issue by calling timekeeping_update()
+right after setting the tai offset.
+
+Cc: Sasha Levin <sasha.levin@oracle.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Richard Cochran <richardcochran@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ kernel/time/timekeeping.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -610,6 +610,7 @@ void timekeeping_set_tai_offset(s32 tai_
+ 	raw_spin_lock_irqsave(&timekeeper_lock, flags);
+ 	write_seqcount_begin(&timekeeper_seq);
+ 	__timekeeping_set_tai_offset(tk, tai_offset);
++	timekeeping_update(tk, TK_MIRROR | TK_CLOCK_WAS_SET);
+ 	write_seqcount_end(&timekeeper_seq);
+ 	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
+ 	clock_was_set();
+@@ -1698,7 +1699,7 @@ int do_adjtimex(struct timex *txc)
+ 
+ 	if (tai != orig_tai) {
+ 		__timekeeping_set_tai_offset(tk, tai);
+-		update_pvclock_gtod(tk, true);
++		timekeeping_update(tk, TK_MIRROR | TK_CLOCK_WAS_SET);
+ 		clock_was_set_delayed();
+ 	}
+ 	write_seqcount_end(&timekeeper_seq);
 
 
