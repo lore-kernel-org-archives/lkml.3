@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752599AbaBLB7n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 20:59:43 -0500
-Received: from mail.windriver.com ([147.11.1.11]:53183 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751435AbaBLB7m (ORCPT
+	id S1752699AbaBLCHv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 21:07:51 -0500
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:17532 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752503AbaBLCH2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 20:59:42 -0500
-Date: Tue, 11 Feb 2014 21:00:10 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: David Rientjes <rientjes@google.com>
-CC: <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        <x86@kernel.org>
-Subject: Re: [PATCH] x86: fix two sparse warnings in early boot string
- handling
-Message-ID: <20140212020010.GB21033@windriver.com>
-References: <1392143619-11453-1-git-send-email-paul.gortmaker@windriver.com>
- <alpine.DEB.2.02.1402111425430.32020@chino.kir.corp.google.com>
+	Tue, 11 Feb 2014 21:07:28 -0500
+Message-ID: <52FA80DB.2000504@hp.com>
+Date: Tue, 11 Feb 2014 12:58:19 -0700
+From: Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1402111425430.32020@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andreas Dilger <adilger@dilger.ca>, Andi Kleen <andi@firstfloor.org>
+CC: T Makphaibulchoke <tmac@hp.com>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "tytso@mit.edu" <tytso@mit.edu>,
+        "adilger.kernel@dilger.ca" <adilger.kernel@dilger.ca>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "aswin@hp.com" <aswin@hp.com>
+Subject: Re: [PATCH v4 0/3] ext4: increase mbcache scalability
+References: <1377186876-57291-1-git-send-email-tmac@hp.com> <1390588288-66930-1-git-send-email-tmac@hp.com> <87fvodcb65.fsf@tassilo.jf.intel.com> <DBA818DD-1C87-4B98-8475-8BB8F00F7DA4@dilger.ca>
+In-Reply-To: <DBA818DD-1C87-4B98-8475-8BB8F00F7DA4@dilger.ca>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Re: [PATCH] x86: fix two sparse warnings in early boot string handling] On 11/02/2014 (Tue 14:26) David Rientjes wrote:
-
-> On Tue, 11 Feb 2014, Paul Gortmaker wrote:
+On 01/24/2014 11:09 PM, Andreas Dilger wrote:
+> I think the ext4 block groups are locked with the blockgroup_lock that has about the same number of locks as the number of cores, with a max of 128, IIRC.  See blockgroup_lock.h. 
 > 
-> > Fixes:
-> > 
-> > arch/x86/boot/compressed/../string.c:60:14: warning: symbol 'atou' was not declared. Should it be static?
-> > arch/x86/boot/string.c:133:6: warning: symbol 'strstr' was not declared. Should it be static?
-> > 
-> > The atou one could be considered a false positive; it seems somehow
-> > caused by including ./string.c from within /compressed/string.c file.
-> > However git grep shows only the atou prototype and declaration, so
-> > it is completely unused and we can hence delete it.
-> > 
+> While there is some chance of contention, it is also unlikely that all of the cores are locking this area at the same time.  
 > 
-> Declaring a prototype in a header file would be pointless if there is no 
-> current breakage; I don't see why you can't remove strstr() in 
-> arch/x86/boot/string.c entirely.  What breaks?
+> Cheers, Andreas
+> 
 
-Explicit breakage vs. sparse warnings are two different things.  It may
-be that we can delete strstr() just like I did for atou() -- but in the
-interest of doing the minimal change, I did just what was needed for
-fixing the sparse warnings for strstr.  I can test if it can be removed,
-but it has the smell of generic-libc usage all over it...
+Andreas, looks like your assumption is correct.  On all 3 systems, 80, 60 and 20 cores, I got almost identical aim7 results using either a smaller dedicated lock array or the block group lock.  I'm inclined to go with using the block group lock as it does not incur any extra space.
 
-Paul.
---
-`
+One problem is that, with the current implementation mbcache has no knowledge of the super block, including its block group lock, of the filesystem.  In my implementation I have to change the first argument of mb_cache_create() from char * to struct super_block * to be able to access the super block's block group lock. This works with my proposed change to allocate an mb_cache for each mounted ext4 filesystem.  This would also require the same change, allocating an mb_cache for each mounted filesystem, to both ext2 and ext3, which would increase the scope of the patch.  The other alternative, allocating a new smaller spinlock array, would not require any change to either ext2 and ext3.
+
+I'm working on resubmitting my patches using the block group locks and extending the changes to also include both ext2 and ext3.  With this approach, not only that no addition space for dedicated new spinlock array is required, the e_bdev member of struct mb_cache_entry could also be removed, reducing the space required for each mb_cache_entry.
+
+Please let me know if you have any concern or suggestion.
+
+Thanks,
+Mak.
+
