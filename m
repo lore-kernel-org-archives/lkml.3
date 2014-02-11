@@ -1,52 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751589AbaBKKKV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 05:10:21 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:48370 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750975AbaBKKKS (ORCPT
+	id S1751084AbaBKKQq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 05:16:46 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:48907 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758AbaBKKQj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 05:10:18 -0500
+	Tue, 11 Feb 2014 05:16:39 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAK9yfHwxmtEXQwPZJfU980G6g7sbrLDU=nZiN=dkwVwvg7UXyA@mail.gmail.com>
-References: <1391859219-3102-1-git-send-email-lpapp@kde.org>
-	<CAK9yfHx2W3KXzBJavpDwXqBUxM8Uw6tWLRGBLjUq1jS_yWYw-Q@mail.gmail.com>
-	<CAOMwXhNmjehcd+aiWGuKs7CijheXXngsXTHMfG9SDLpHO=KaPw@mail.gmail.com>
-	<CAK9yfHwxmtEXQwPZJfU980G6g7sbrLDU=nZiN=dkwVwvg7UXyA@mail.gmail.com>
-Date: Tue, 11 Feb 2014 10:10:17 +0000
-X-Google-Sender-Auth: HsEYsb7UK_-9iCbigdYcKuk93cY
-Message-ID: <CAOMwXhNcYpBvMEhcxtvsnByeB7QxO56gjAC+JP2s0tRvmyQiXQ@mail.gmail.com>
-Subject: Re: [PATCH v2] mfd: MAX6650/6651 support
-From: Laszlo Papp <lpapp@kde.org>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Lee Jones <lee.jones@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <tencent_6B2CED8A64B1D86F144B30D3@qq.com>
+References: <tencent_6B2CED8A64B1D86F144B30D3@qq.com>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Tue, 11 Feb 2014 11:16:19 +0100
+Message-ID: <CAKgNAkj=MvGNFQeJuxkeUamf-7NNjE+LWKt10GoC8mfQQC4qdw@mail.gmail.com>
+Subject: Re: recv function bug
+To: =?Big5?B?pbyo97Bfqrqu9g==?= <ayjj_8109@qq.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-man <linux-man@vger.kernel.org>
+Content-Type: text/plain; charset=Big5
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> [snip]
->>>> +
->>>> +struct max665x_dev {
->>>> +       struct device *dev;
->>>> +       struct mutex iolock;
->>>> +
->>>> +       struct i2c_client *i2c;
->>>> +       struct regmap     *map;
->>>> +
->>>> +       int type;
->>>
->>> Unnecessary extra lines above could be removed.
->>
->> I prefer it that way, but I will remove the two extra lines as you wish.
->
-> As I already said, these are just nits and only since you were
-> re-spinning the patch,
-> I suggested them. Also, since this is a new file being added, it
-> avoids further patches
-> doing these same things.
+Hello 未卷起的浪,
 
-Well, it is worse in my opinion because it makes the code more bloated
-without separation between units, but I made the requested change
-anyway because the feature matters lotta more to me than this styling.
-Hope it is OK now?
+On Sat, Feb 8, 2014 at 5:32 PM, 未卷起的浪 <ayjj_8109@qq.com> wrote:
+>     It is my pleasure to write here for you.
+>     I have read 'Linux Programmer’s Manual RECV(2)'. The description of
+> return value is like this: These calls return the number of bytes received,
+> or -1 if  an  error occurred. The  return  value will be 0 when the peer has
+> performed an orderly shutdown.
+>     Notice the bold text. It means that if the "recv" function return 0, the
+> connection has already been broken gracefully. But in the fallowing code, it
+> is not the case:
+>            char         buf[256];
+>            ssize_t      rc;
+>            size_t       buflen = 0;
+>            rc = recv( sockfd, buf, buflen, 0 );   // the 'rc' will be 0, but
+> the connection is still established
+> If the value of 'buflen' is 0, the "recv" function also return 0. But the
+> connection is still established. In another case, before the "recv" being
+> called, the remote programe close the socket (it means that the connection
+> has been broken), and the "recv" return 0 too.
+>                 SERVER
+> CLIENT
+>            char         buf[256];
+>            ssize_t      rc;
+>            size_t       buflen = 0;
+> ......
+>
+> close( sockfd );
+>            // before call recv, the connection has been broken gracefully
+> ......
+>            rc = recv( sockfd, buf, buflen, 0 );   // the 'rc' will be 0, but
+> the connection is broken
+>
+>     So, when I call the "recv" function with the value 0 in the 3rd
+> argument, I'm not sure whether the connection is still OK by the return
+> value.
+>     I think there is a conflict between the definition of the 3rd argument
+> and the return value.
+
+Thanks for this report. Yes, there are several details missing there.
+I've applied the patch below.
+
+Cheers,
+
+Michael
+
+--- a/man2/recv.2
++++ b/man2/recv.2
+@@ -403,8 +403,16 @@ if an error occurred.
+ In the event of an error,
+ .I errno
+ is set to indicate the error.
+-The return value will be 0 when the
+-peer has performed an orderly shutdown.
++
++When a stream socket peer has performed an orderly shutdown,
++the return value will be 0 (the traditional "end-of-file" return).
++
++Datagram sockets in various domains (e.g., the UNIX and Internet domains)
++permit zero-length datagrams.
++When such a datagram is received, the return value is 0.
++
++The value 0 may also be returned if the requested number of bytes
++to receive from a stream socket was 0.
+ .SH ERRORS
+ These are some standard errors generated by the socket layer.
+ Additional errors
+
+
+
+
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
