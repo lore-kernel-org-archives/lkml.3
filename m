@@ -1,238 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752941AbaBKQdL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 11:33:11 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:44893 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752694AbaBKQdG (ORCPT
+	id S1752195AbaBKQ0c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 11:26:32 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:46658 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751589AbaBKQ00 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 11:33:06 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-To: dwmw2@infradead.org, akpm@linux-foundation.org
-Cc: viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
-        linux-mtd@lists.infradead.org, linux-mm@kvack.org,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH] mm: remove read_cache_page_async
-Date: Tue, 11 Feb 2014 11:32:09 -0500
-Message-Id: <1392136329-21946-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.8.3.2
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Tue, 11 Feb 2014 11:26:26 -0500
+From: Josh Cartwright <joshc@codeaurora.org>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
+        linux-kernel@vger.kernel.org
+Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 1/8] bus: arm-cci: make use of of_find_matching_node_and_match
+Date: Tue, 11 Feb 2014 10:23:59 -0600
+Message-Id: <1392135847-30791-2-git-send-email-joshc@codeaurora.org>
+X-Mailer: git-send-email 1.8.5.4
+In-Reply-To: <1392135847-30791-1-git-send-email-joshc@codeaurora.org>
+References: <1392135847-30791-1-git-send-email-joshc@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes read_cache_page_async() which wasn't really needed anywhere
-and simplifies the code around it a bit.
+Instead of the of_find_matching_node()/of_match_node() pair, which requires two
+iterations through the match table, make use of of_find_matching_node_and_match(),
+which only iterates through the table once.
 
-read_cache_page_async() is useful when we want to read a page into the cache
-without waiting for it to complete. This happens when the appropriate callback
-'filler' doesn't complete it's read operation and releases the page lock
-immediately, and instead queues a different completion routine to do that.
-This never actually happened anywhere in the code.
+This also has the side effect of fixing the following following error hit
+during randconfig testing:
 
-read_cache_page_async() had 3 different callers:
+  drivers/bus/arm-cci.c: In function ‘cci_probe’:
+  drivers/bus/arm-cci.c:976:49: warning: dereferencing ‘void *’ pointer [enabled by default]
+    cci_config = of_match_node(arm_cci_matches, np)->data;
+                                                   ^
+  drivers/bus/arm-cci.c:976:49: error: request for member ‘data’ in something not a structure or union
 
- - read_cache_page() which is the sync version, it would just wait for
-the requested read to complete using wait_on_page_read().
- - JFFS2 would call it from jffs2_gc_fetch_page(), but the filler function
-it supplied doesn't do any async reads, and would complete before the
-filler function returns - making it actually a sync read.
- - CRAMFS would call it using the read_mapping_page_async() wrapper, with
-a similar story to JFFS2 - the filler function doesn't do anything that
-reminds async reads and would always complete before the filler function
-returns.
-
-To sum it up, the code in mm/filemap.c never took advantage of having
-read_cache_page_async(). While there are filler callbacks that do async
-reads (such as the block one), we always called it with the read_cache_page().
-
-This patch adds a mandatory wait for read to complete when adding a new
-page to the cache, and removes read_cache_page_async() and it's wrappers.
-
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
 ---
- fs/cramfs/inode.c       |    3 +-
- fs/jffs2/fs.c           |    2 +-
- include/linux/pagemap.h |   10 -------
- mm/filemap.c            |   64 +++++++++++++++++------------------------------
- 4 files changed, 25 insertions(+), 54 deletions(-)
+ drivers/bus/arm-cci.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/fs/cramfs/inode.c b/fs/cramfs/inode.c
-index 06610cf..a1f801c 100644
---- a/fs/cramfs/inode.c
-+++ b/fs/cramfs/inode.c
-@@ -195,8 +195,7 @@ static void *cramfs_read(struct super_block *sb, unsigned int offset, unsigned i
- 		struct page *page = NULL;
+diff --git a/drivers/bus/arm-cci.c b/drivers/bus/arm-cci.c
+index 962fd35..e249cdb2 100644
+--- a/drivers/bus/arm-cci.c
++++ b/drivers/bus/arm-cci.c
+@@ -962,6 +962,7 @@ static const struct of_device_id arm_cci_ctrl_if_matches[] = {
  
- 		if (blocknr + i < devsize) {
--			page = read_mapping_page_async(mapping, blocknr + i,
--									NULL);
-+			page = read_mapping_page(mapping, blocknr + i, NULL);
- 			/* synchronous error? */
- 			if (IS_ERR(page))
- 				page = NULL;
-diff --git a/fs/jffs2/fs.c b/fs/jffs2/fs.c
-index 5e36504..601afd1 100644
---- a/fs/jffs2/fs.c
-+++ b/fs/jffs2/fs.c
-@@ -690,7 +690,7 @@ unsigned char *jffs2_gc_fetch_page(struct jffs2_sb_info *c,
- 	struct inode *inode = OFNI_EDONI_2SFFJ(f);
- 	struct page *pg;
- 
--	pg = read_cache_page_async(inode->i_mapping, offset >> PAGE_CACHE_SHIFT,
-+	pg = read_cache_page(inode->i_mapping, offset >> PAGE_CACHE_SHIFT,
- 			     (void *)jffs2_do_readpage_unlock, inode);
- 	if (IS_ERR(pg))
- 		return (void *)pg;
-diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
-index e772973..4f591df 100644
---- a/include/linux/pagemap.h
-+++ b/include/linux/pagemap.h
-@@ -289,8 +289,6 @@ static inline struct page *grab_cache_page(struct address_space *mapping,
- 
- extern struct page * grab_cache_page_nowait(struct address_space *mapping,
- 				pgoff_t index);
--extern struct page * read_cache_page_async(struct address_space *mapping,
--				pgoff_t index, filler_t *filler, void *data);
- extern struct page * read_cache_page(struct address_space *mapping,
- 				pgoff_t index, filler_t *filler, void *data);
- extern struct page * read_cache_page_gfp(struct address_space *mapping,
-@@ -298,14 +296,6 @@ extern struct page * read_cache_page_gfp(struct address_space *mapping,
- extern int read_cache_pages(struct address_space *mapping,
- 		struct list_head *pages, filler_t *filler, void *data);
- 
--static inline struct page *read_mapping_page_async(
--				struct address_space *mapping,
--				pgoff_t index, void *data)
--{
--	filler_t *filler = (filler_t *)mapping->a_ops->readpage;
--	return read_cache_page_async(mapping, index, filler, data);
--}
--
- static inline struct page *read_mapping_page(struct address_space *mapping,
- 				pgoff_t index, void *data)
+ static int cci_probe(void)
  {
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 8d44788..0ad619d 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -2130,6 +2130,18 @@ int generic_file_readonly_mmap(struct file * file, struct vm_area_struct * vma)
- EXPORT_SYMBOL(generic_file_mmap);
- EXPORT_SYMBOL(generic_file_readonly_mmap);
++	const struct of_device_id *match;
+ 	struct cci_nb_ports const *cci_config;
+ 	int ret, i, nb_ace = 0, nb_ace_lite = 0;
+ 	struct device_node *np, *cp;
+@@ -969,11 +970,11 @@ static int cci_probe(void)
+ 	const char *match_str;
+ 	bool is_ace;
  
-+static struct page *wait_on_page_read(struct page *page)
-+{
-+	if (!IS_ERR(page)) {
-+		wait_on_page_locked(page);
-+		if (!PageUptodate(page)) {
-+			page_cache_release(page);
-+			page = ERR_PTR(-EIO);
-+		}
-+	}
-+	return page;
-+}
-+
- static struct page *__read_cache_page(struct address_space *mapping,
- 				pgoff_t index,
- 				int (*filler)(void *, struct page *),
-@@ -2156,6 +2168,8 @@ repeat:
- 		if (err < 0) {
- 			page_cache_release(page);
- 			page = ERR_PTR(err);
-+		} else {
-+			page = wait_on_page_read(page);
- 		}
- 	}
- 	return page;
-@@ -2192,6 +2206,10 @@ retry:
- 	if (err < 0) {
- 		page_cache_release(page);
- 		return ERR_PTR(err);
-+	} else {
-+		page = wait_on_page_read(page);
-+		if (IS_ERR(page))
-+			return page;
- 	}
- out:
- 	mark_page_accessed(page);
-@@ -2199,40 +2217,25 @@ out:
- }
+-	np = of_find_matching_node(NULL, arm_cci_matches);
++	np = of_find_matching_node_and_match(NULL, arm_cci_matches, &match);
+ 	if (!np)
+ 		return -ENODEV;
  
- /**
-- * read_cache_page_async - read into page cache, fill it if needed
-+ * read_cache_page - read into page cache, fill it if needed
-  * @mapping:	the page's address_space
-  * @index:	the page index
-  * @filler:	function to perform the read
-  * @data:	first arg to filler(data, page) function, often left as NULL
-  *
-- * Same as read_cache_page, but don't wait for page to become unlocked
-- * after submitting it to the filler.
-- *
-  * Read into the page cache. If a page already exists, and PageUptodate() is
-- * not set, try to fill the page but don't wait for it to become unlocked.
-+ * not set, try to fill the page and wait for it to become unlocked.
-  *
-  * If the page does not get brought uptodate, return -EIO.
-  */
--struct page *read_cache_page_async(struct address_space *mapping,
-+struct page *read_cache_page(struct address_space *mapping,
- 				pgoff_t index,
- 				int (*filler)(void *, struct page *),
- 				void *data)
- {
- 	return do_read_cache_page(mapping, index, filler, data, mapping_gfp_mask(mapping));
- }
--EXPORT_SYMBOL(read_cache_page_async);
--
--static struct page *wait_on_page_read(struct page *page)
--{
--	if (!IS_ERR(page)) {
--		wait_on_page_locked(page);
--		if (!PageUptodate(page)) {
--			page_cache_release(page);
--			page = ERR_PTR(-EIO);
--		}
--	}
--	return page;
--}
-+EXPORT_SYMBOL(read_cache_page);
+-	cci_config = of_match_node(arm_cci_matches, np)->data;
++	cci_config = match->data;
+ 	if (!cci_config)
+ 		return -ENODEV;
  
- /**
-  * read_cache_page_gfp - read into page cache, using specified page allocation flags.
-@@ -2251,31 +2254,10 @@ struct page *read_cache_page_gfp(struct address_space *mapping,
- {
- 	filler_t *filler = (filler_t *)mapping->a_ops->readpage;
- 
--	return wait_on_page_read(do_read_cache_page(mapping, index, filler, NULL, gfp));
-+	return do_read_cache_page(mapping, index, filler, NULL, gfp);
- }
- EXPORT_SYMBOL(read_cache_page_gfp);
- 
--/**
-- * read_cache_page - read into page cache, fill it if needed
-- * @mapping:	the page's address_space
-- * @index:	the page index
-- * @filler:	function to perform the read
-- * @data:	first arg to filler(data, page) function, often left as NULL
-- *
-- * Read into the page cache. If a page already exists, and PageUptodate() is
-- * not set, try to fill the page then wait for it to become unlocked.
-- *
-- * If the page does not get brought uptodate, return -EIO.
-- */
--struct page *read_cache_page(struct address_space *mapping,
--				pgoff_t index,
--				int (*filler)(void *, struct page *),
--				void *data)
--{
--	return wait_on_page_read(read_cache_page_async(mapping, index, filler, data));
--}
--EXPORT_SYMBOL(read_cache_page);
--
- static size_t __iovec_copy_from_user_inatomic(char *vaddr,
- 			const struct iovec *iov, size_t base, size_t bytes)
- {
 -- 
-1.7.2.5
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
