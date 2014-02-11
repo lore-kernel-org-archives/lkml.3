@@ -1,80 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751620AbaBKSFY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 13:05:24 -0500
-Received: from mga11.intel.com ([192.55.52.93]:1464 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750909AbaBKSFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 13:05:21 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,826,1384329600"; 
-   d="scan'208";a="473527132"
-Date: Tue, 11 Feb 2014 23:33:44 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Josh Cartwright <joshc@codeaurora.org>
-Cc: Andy Gross <agross@codeaurora.org>,
-        Dan Williams <dan.j.williams@intel.com>, dmaengine@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [Patch v5 1/2] dmaengine: add Qualcomm BAM dma driver
-Message-ID: <20140211180344.GS10628@intel.com>
-References: <1391546556-27702-1-git-send-email-agross@codeaurora.org>
- <1391546556-27702-2-git-send-email-agross@codeaurora.org>
- <20140211173048.GP10628@intel.com>
- <20140211174910.GE841@joshc.qualcomm.com>
+	id S1751946AbaBKSFm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 13:05:42 -0500
+Received: from mail1.bemta3.messagelabs.com ([195.245.230.165]:13699 "EHLO
+	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751756AbaBKSFi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 13:05:38 -0500
+X-Greylist: delayed 412 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 Feb 2014 13:05:37 EST
+X-Env-Sender: stwiss.opensource@diasemi.com
+X-Msg-Ref: server-12.tower-38.messagelabs.com!1392141522!1728940!1
+X-Originating-IP: [82.210.246.133]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.16; banners=-,-,-
+X-VirusChecked: Checked
+Message-ID: <201402111758.s1BHweP2015522@swsrvapps-01.diasemi.com>
+From: Steve Twiss <stwiss.opensource@diasemi.com>
+Date: Tue, 11 Feb 2014 17:46:41 +0000
+Subject: [PATCH V1] regulator: da9063: Bug fix when setting max voltage on
+ LDOs 5-11
+To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
+CC: David Dajun Chen <david.chen@diasemi.com>,
+        LKML <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140211174910.GE841@joshc.qualcomm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 11:49:10AM -0600, Josh Cartwright wrote:
-> On Tue, Feb 11, 2014 at 11:00:48PM +0530, Vinod Koul wrote:
-> > On Tue, Feb 04, 2014 at 02:42:35PM -0600, Andy Gross wrote:
-> > > Add the DMA engine driver for the QCOM Bus Access Manager (BAM) DMA controller
-> > > found in the MSM 8x74 platforms.
-> > > 
-> > > Each BAM DMA device is associated with a specific on-chip peripheral.  Each
-> > > channel provides a uni-directional data transfer engine that is capable of
-> > > transferring data between the peripheral and system memory (System mode), or
-> > > between two peripherals (BAM2BAM).
-> > > 
-> > > The initial release of this driver only supports slave transfers between
-> > > peripherals and system memory.
-> > > 
-> > > Signed-off-by: Andy Gross <agross@codeaurora.org>
-> >
-> > > +++ b/drivers/dma/qcom_bam_dma.c
-> [..]
-> > > +static void bam_reset_channel(struct bam_chan *bchan)
-> > > +{
-> > > +	struct bam_device *bdev = bchan->bdev;
-> > > +
-> > > +	/* reset channel */
-> > > +	writel_relaxed(1, bdev->regs + BAM_P_RST(bchan->id));
-> > > +	writel_relaxed(0, bdev->regs + BAM_P_RST(bchan->id));
-> > > +
-> > > +	/* don't allow reorder of the channel reset */
-> > > +	wmb();
-> > Documentation/memory-barriers.txt describes wmb() as a CPU barier but based on
-> > above you want it to be a compiler barrier then you should do 1st write,
-> > barrier(), second write.
-> 
-> It could also be that the intent was to prevent these writes from being
-> ordered before setting the initialized flag below, either way the
-> comment could be made clearer.
-yes for that case, but i am suspecting the comment is correct as it would make
-sense to ensure reset is in sequence...
+From: Steve Twiss <stwiss.opensource@diasemi.com>
 
+Bug fix to allow the setting of maximum voltage for certain LDOs.
+
+Signed-off-by: Steve Twiss <stwiss.opensource@diasemi.com>
+---
+Checks performed with next-20140211/scripts/checkpatch.pl
+ da9063-regulator.c        total: 0 errors, 0 warnings, 927 lines checked
+
+This patch applies against kernel version linux-next next-20140211
+
+This fixes a problem caused by an invalid calculation of n_voltages
+in the driver. This n_voltages value has the potential to be
+different for each regulator and the new calculation takes this
+into account.
+
+Several of the regulators have a non-linear response of voltage
+versus voltage selector. This is true for the following LDOs:
+5, 6, 7, 8, 9, 10 and 11.
+
+This patch also includes several minor alterations to clean up
+the code so that checkpatch.pl will not display any warnings.
+
+Regards,
+Steve Twiss, Dialog Semiconductor Ltd.
+
+
+
+ drivers/regulator/da9063-regulator.c |   18 ++++++++++++------
+ 1 file changed, 12 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/regulator/da9063-regulator.c b/drivers/regulator/da9063-regulator.c
+index 56727eb..6a2b26f 100644
+--- a/drivers/regulator/da9063-regulator.c
++++ b/drivers/regulator/da9063-regulator.c
+@@ -1,3 +1,4 @@
++
+ /*
+  * Regulator driver for DA9063 PMIC series
+  *
+@@ -60,7 +61,8 @@ struct da9063_regulator_info {
+ 	.desc.ops = &da9063_ldo_ops, \
+ 	.desc.min_uV = (min_mV) * 1000, \
+ 	.desc.uV_step = (step_mV) * 1000, \
+-	.desc.n_voltages = (((max_mV) - (min_mV))/(step_mV) + 1), \
++	.desc.n_voltages = (((max_mV) - (min_mV))/(step_mV) + 1 \
++		+ (DA9063_V##regl_name##_BIAS)), \
+ 	.desc.enable_reg = DA9063_REG_##regl_name##_CONT, \
+ 	.desc.enable_mask = DA9063_LDO_EN, \
+ 	.desc.vsel_reg = DA9063_REG_V##regl_name##_A, \
+@@ -387,7 +389,8 @@ static int da9063_suspend_disable(struct regulator_dev *rdev)
+ 	return regmap_field_write(regl->suspend, 0);
+ }
+ 
+-static int da9063_buck_set_suspend_mode(struct regulator_dev *rdev, unsigned mode)
++static int da9063_buck_set_suspend_mode(struct regulator_dev *rdev,
++					unsigned mode)
+ {
+ 	struct da9063_regulator *regl = rdev_get_drvdata(rdev);
+ 	int val;
+@@ -409,7 +412,8 @@ static int da9063_buck_set_suspend_mode(struct regulator_dev *rdev, unsigned mod
+ 	return regmap_field_write(regl->mode, val);
+ }
+ 
+-static int da9063_ldo_set_suspend_mode(struct regulator_dev *rdev, unsigned mode)
++static int da9063_ldo_set_suspend_mode(struct regulator_dev *rdev,
++				       unsigned mode)
+ {
+ 	struct da9063_regulator *regl = rdev_get_drvdata(rdev);
+ 	unsigned val;
+@@ -833,8 +837,9 @@ static int da9063_regulator_probe(struct platform_device *pdev)
+ 			regl->sleep = devm_regmap_field_alloc(&pdev->dev,
+ 					da9063->regmap, regl->info->sleep);
+ 		if (regl->info->suspend_sleep.reg)
+-			regl->suspend_sleep = devm_regmap_field_alloc(&pdev->dev,
+-					da9063->regmap, regl->info->suspend_sleep);
++			regl->suspend_sleep =
++				devm_regmap_field_alloc(&pdev->dev,
++				da9063->regmap, regl->info->suspend_sleep);
+ 		if (regl->info->ilimit.reg)
+ 			regl->ilimit = devm_regmap_field_alloc(&pdev->dev,
+ 					da9063->regmap, regl->info->ilimit);
+@@ -842,7 +847,8 @@ static int da9063_regulator_probe(struct platform_device *pdev)
+ 		/* Register regulator */
+ 		memset(&config, 0, sizeof(config));
+ 		config.dev = &pdev->dev;
+-		config.init_data = da9063_get_regulator_initdata(regl_pdata, id);
++		config.init_data =
++			da9063_get_regulator_initdata(regl_pdata, id);
+ 		config.driver_data = regl;
+ 		if (da9063_reg_matches)
+ 			config.of_node = da9063_reg_matches[id].of_node;
 -- 
-~Vinod
-> 
-> > > +
-> > > +	/* make sure hw is initialized when channel is used the first time  */
-> > > +	bchan->initialized = 0;
-> > > +}
-> 
--- 
+end-of-patch for PATCH V1
+
