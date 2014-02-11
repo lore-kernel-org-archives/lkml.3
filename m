@@ -1,96 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752179AbaBKMS0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 07:18:26 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:46550 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751105AbaBKMSD (ORCPT
+	id S1752188AbaBKMSt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 07:18:49 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:37759 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750803AbaBKMSq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 07:18:03 -0500
-Date: Tue, 11 Feb 2014 04:17:31 -0800
-From: tip-bot for Alex Shi <tipbot@zytor.com>
-Message-ID: <tip-37e6bae8395a94b4dd934c92b02b9408be992365@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, alex.shi@linaro.org, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, alex.shi@linaro.org,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <52E0F3BF.5020904@linaro.org>
-References: <52E0F3BF.5020904@linaro.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched:
-  Add statistic for newidle load balance cost
-Git-Commit-ID: 37e6bae8395a94b4dd934c92b02b9408be992365
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 11 Feb 2014 07:18:46 -0500
+Message-ID: <52FA151C.9040205@hurleysoftware.com>
+Date: Tue, 11 Feb 2014 07:18:36 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 11 Feb 2014 04:17:37 -0800 (PST)
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+CC: David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Jiri Olsa <jolsa@redhat.com>, Eric Dumazet <edumazet@google.com>
+Subject: Re: [BUG] perf top: --stdio causes continuous refresh
+References: <CABPqkBSkSbWvdRu3iEtNvHhfV4J4sALHvdd40hZTcGxLe576yQ@mail.gmail.com> <20140206135627.GA26955@infradead.org> <CABPqkBS5qLDYyyv=n8fT4K+hA3uRWYmQOZmO+n-UE9=X=cEFzQ@mail.gmail.com> <20140206140705.GB26955@infradead.org> <20140206140936.GC26955@infradead.org> <CABPqkBRwy=0pnmm657TwV25GiYbpkqC1E8+cUGLEUbqxO=Gusw@mail.gmail.com> <52F3CAE3.7060007@gmail.com> <20140210210358.GD3202@infradead.org> <52F987CE.7010300@hurleysoftware.com> <20140211121411.GA4368@infradead.org>
+In-Reply-To: <20140211121411.GA4368@infradead.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  37e6bae8395a94b4dd934c92b02b9408be992365
-Gitweb:     http://git.kernel.org/tip/37e6bae8395a94b4dd934c92b02b9408be992365
-Author:     Alex Shi <alex.shi@linaro.org>
-AuthorDate: Thu, 23 Jan 2014 18:39:54 +0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 11 Feb 2014 09:58:18 +0100
+On 02/11/2014 07:14 AM, Arnaldo Carvalho de Melo wrote:
+> Em Mon, Feb 10, 2014 at 09:15:42PM -0500, Peter Hurley escreveu:
+>>> Bisected it down to:
+>
+>>> eb3e4668bd9e0bbda592e830e889f137e44ec9e4 is the first bad commit
+>>> Author: Peter Hurley <peter@hurleysoftware.com>
+>>> Date:   Mon Dec 2 14:24:42 2013 -0500
+>
+>>>      n_tty: Un-inline slow-path n_tty_receive_char()
+>
+>>> In a hurry now, will continue later, trying to understand what is the problem
+>>> introduced by the above cset...
+>
+>>> Need to revert just this one to confirm that it is the culprit, etc.
+>
+>> Thanks for the report and bisect. Seems unlikely this commit is the
+>> cause, but very likely to be some change I made since 3.13, since
+>> I can repro on 3.14-rc1 but not on 3.13.2 -stable. I can also repro
+>> this on 3.12 + the patch stack from me for 3.13 and 3.14.
+>
+>> I'm looking into this now.
+>
+> I just reverted just this cset and the problem persisted, so I'll wait
+> for you on this one :-)
 
-sched: Add statistic for newidle load balance cost
+I did the same with the same result. So I'm re-bisecting on one machine
+and tracing on another.
 
-Tracking rq->max_idle_balance_cost and sd->max_newidle_lb_cost.
-It's useful to know these values in debug mode.
+Regards,
+Peter Hurley
 
-Signed-off-by: Alex Shi <alex.shi@linaro.org>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/52E0F3BF.5020904@linaro.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/core.c  | 9 ++++++---
- kernel/sched/debug.c | 1 +
- 2 files changed, 7 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 3068f37..fb9764f 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -4811,7 +4811,7 @@ set_table_entry(struct ctl_table *entry,
- static struct ctl_table *
- sd_alloc_ctl_domain_table(struct sched_domain *sd)
- {
--	struct ctl_table *table = sd_alloc_ctl_entry(13);
-+	struct ctl_table *table = sd_alloc_ctl_entry(14);
- 
- 	if (table == NULL)
- 		return NULL;
-@@ -4839,9 +4839,12 @@ sd_alloc_ctl_domain_table(struct sched_domain *sd)
- 		sizeof(int), 0644, proc_dointvec_minmax, false);
- 	set_table_entry(&table[10], "flags", &sd->flags,
- 		sizeof(int), 0644, proc_dointvec_minmax, false);
--	set_table_entry(&table[11], "name", sd->name,
-+	set_table_entry(&table[11], "max_newidle_lb_cost",
-+		&sd->max_newidle_lb_cost,
-+		sizeof(long), 0644, proc_doulongvec_minmax, false);
-+	set_table_entry(&table[12], "name", sd->name,
- 		CORENAME_MAX_SIZE, 0444, proc_dostring, false);
--	/* &table[12] is terminator */
-+	/* &table[13] is terminator */
- 
- 	return table;
- }
-diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
-index 31b908d..f3344c3 100644
---- a/kernel/sched/debug.c
-+++ b/kernel/sched/debug.c
-@@ -321,6 +321,7 @@ do {									\
- 	P(sched_goidle);
- #ifdef CONFIG_SMP
- 	P64(avg_idle);
-+	P64(max_idle_balance_cost);
- #endif
- 
- 	P(ttwu_count);
