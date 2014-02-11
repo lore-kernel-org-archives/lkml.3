@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752772AbaBKTFX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:05:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39617 "EHLO
+	id S1752906AbaBKTFg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:05:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39674 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752529AbaBKTFR (ORCPT
+	with ESMTP id S1752833AbaBKTF3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:05:17 -0500
+	Tue, 11 Feb 2014 14:05:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>, Miklos Szeredi <mszeredi@suse.cz>
-Subject: [PATCH 3.13 008/120] fuse: fix pipe_buf_operations
-Date: Tue, 11 Feb 2014 11:04:09 -0800
-Message-Id: <20140211184823.752634924@linuxfoundation.org>
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Sakari Ailus <sakari.ailus@linux.intel.com>,
+        Ricardo Ribalda <ricardo.ribalda@gmail.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.13 065/120] media: media: v4l2-dev: fix video device index assignment
+Date: Tue, 11 Feb 2014 11:05:06 -0800
+Message-Id: <20140211184825.472116162@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -28,152 +31,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Marek Szyprowski <m.szyprowski@samsung.com>
 
-commit 28a625cbc2a14f17b83e47ef907b2658576a32aa upstream.
+commit 6c3df5da67f1f53df78c7e20cd53a481dc28eade upstream.
 
-Having this struct in module memory could Oops when if the module is
-unloaded while the buffer still persists in a pipe.
+The side effect of commit 1056e4388b045 ("v4l2-dev: Fix race condition on
+__video_register_device") is the increased number of index value assigned
+on video_device registration. Before that commit video_devices were
+numbered from 0, after it, the indexes starts from 1, because get_index()
+always count the device, which is being registered. Some device drivers
+rely on video_device index number for internal purposes, i.e. s5p-mfc
+driver stopped working after that patch. This patch restores the old method
+of numbering the video_device indexes.
 
-Since sock_pipe_buf_ops is essentially the same as fuse_dev_pipe_buf_steal
-merge them into nosteal_pipe_buf_ops (this is the same as
-default_pipe_buf_ops except stealing the page from the buffer is not
-allowed).
-
-Reported-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Acked-by: Sakari Ailus <sakari.ailus@linux.intel.com>
+Acked-by: Ricardo Ribalda <ricardo.ribalda@gmail.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/fuse/dev.c             |   22 +++++-----------------
- fs/splice.c               |   18 ++++++++++++++++++
- include/linux/pipe_fs_i.h |    2 ++
- net/core/skbuff.c         |   32 +-------------------------------
- 4 files changed, 26 insertions(+), 48 deletions(-)
+ drivers/media/v4l2-core/v4l2-dev.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/fuse/dev.c
-+++ b/fs/fuse/dev.c
-@@ -1296,22 +1296,6 @@ static ssize_t fuse_dev_read(struct kioc
- 	return fuse_dev_do_read(fc, file, &cs, iov_length(iov, nr_segs));
- }
+--- a/drivers/media/v4l2-core/v4l2-dev.c
++++ b/drivers/media/v4l2-core/v4l2-dev.c
+@@ -872,8 +872,8 @@ int __video_register_device(struct video
  
--static int fuse_dev_pipe_buf_steal(struct pipe_inode_info *pipe,
--				   struct pipe_buffer *buf)
--{
--	return 1;
--}
--
--static const struct pipe_buf_operations fuse_dev_pipe_buf_ops = {
--	.can_merge = 0,
--	.map = generic_pipe_buf_map,
--	.unmap = generic_pipe_buf_unmap,
--	.confirm = generic_pipe_buf_confirm,
--	.release = generic_pipe_buf_release,
--	.steal = fuse_dev_pipe_buf_steal,
--	.get = generic_pipe_buf_get,
--};
--
- static ssize_t fuse_dev_splice_read(struct file *in, loff_t *ppos,
- 				    struct pipe_inode_info *pipe,
- 				    size_t len, unsigned int flags)
-@@ -1358,7 +1342,11 @@ static ssize_t fuse_dev_splice_read(stru
- 		buf->page = bufs[page_nr].page;
- 		buf->offset = bufs[page_nr].offset;
- 		buf->len = bufs[page_nr].len;
--		buf->ops = &fuse_dev_pipe_buf_ops;
-+		/*
-+		 * Need to be careful about this.  Having buf->ops in module
-+		 * code can Oops if the buffer persists after module unload.
-+		 */
-+		buf->ops = &nosteal_pipe_buf_ops;
+ 	/* Should not happen since we thought this minor was free */
+ 	WARN_ON(video_device[vdev->minor] != NULL);
+-	video_device[vdev->minor] = vdev;
+ 	vdev->index = get_index(vdev);
++	video_device[vdev->minor] = vdev;
+ 	mutex_unlock(&videodev_lock);
  
- 		pipe->nrbufs++;
- 		page_nr++;
---- a/fs/splice.c
-+++ b/fs/splice.c
-@@ -555,6 +555,24 @@ static const struct pipe_buf_operations
- 	.get = generic_pipe_buf_get,
- };
- 
-+static int generic_pipe_buf_nosteal(struct pipe_inode_info *pipe,
-+				    struct pipe_buffer *buf)
-+{
-+	return 1;
-+}
-+
-+/* Pipe buffer operations for a socket and similar. */
-+const struct pipe_buf_operations nosteal_pipe_buf_ops = {
-+	.can_merge = 0,
-+	.map = generic_pipe_buf_map,
-+	.unmap = generic_pipe_buf_unmap,
-+	.confirm = generic_pipe_buf_confirm,
-+	.release = generic_pipe_buf_release,
-+	.steal = generic_pipe_buf_nosteal,
-+	.get = generic_pipe_buf_get,
-+};
-+EXPORT_SYMBOL(nosteal_pipe_buf_ops);
-+
- static ssize_t kernel_readv(struct file *file, const struct iovec *vec,
- 			    unsigned long vlen, loff_t offset)
- {
---- a/include/linux/pipe_fs_i.h
-+++ b/include/linux/pipe_fs_i.h
-@@ -157,6 +157,8 @@ int generic_pipe_buf_confirm(struct pipe
- int generic_pipe_buf_steal(struct pipe_inode_info *, struct pipe_buffer *);
- void generic_pipe_buf_release(struct pipe_inode_info *, struct pipe_buffer *);
- 
-+extern const struct pipe_buf_operations nosteal_pipe_buf_ops;
-+
- /* for F_SETPIPE_SZ and F_GETPIPE_SZ */
- long pipe_fcntl(struct file *, unsigned int, unsigned long arg);
- struct pipe_inode_info *get_pipe_info(struct file *file);
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -74,36 +74,6 @@
- struct kmem_cache *skbuff_head_cache __read_mostly;
- static struct kmem_cache *skbuff_fclone_cache __read_mostly;
- 
--static void sock_pipe_buf_release(struct pipe_inode_info *pipe,
--				  struct pipe_buffer *buf)
--{
--	put_page(buf->page);
--}
--
--static void sock_pipe_buf_get(struct pipe_inode_info *pipe,
--				struct pipe_buffer *buf)
--{
--	get_page(buf->page);
--}
--
--static int sock_pipe_buf_steal(struct pipe_inode_info *pipe,
--			       struct pipe_buffer *buf)
--{
--	return 1;
--}
--
--
--/* Pipe buffer operations for a socket. */
--static const struct pipe_buf_operations sock_pipe_buf_ops = {
--	.can_merge = 0,
--	.map = generic_pipe_buf_map,
--	.unmap = generic_pipe_buf_unmap,
--	.confirm = generic_pipe_buf_confirm,
--	.release = sock_pipe_buf_release,
--	.steal = sock_pipe_buf_steal,
--	.get = sock_pipe_buf_get,
--};
--
- /**
-  *	skb_panic - private function for out-of-line support
-  *	@skb:	buffer
-@@ -1830,7 +1800,7 @@ int skb_splice_bits(struct sk_buff *skb,
- 		.partial = partial,
- 		.nr_pages_max = MAX_SKB_FRAGS,
- 		.flags = flags,
--		.ops = &sock_pipe_buf_ops,
-+		.ops = &nosteal_pipe_buf_ops,
- 		.spd_release = sock_spd_release,
- 	};
- 	struct sk_buff *frag_iter;
+ 	if (vdev->ioctl_ops)
 
 
