@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754255AbaBKUgX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:36:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39815 "EHLO
+	id S1754347AbaBKUgt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:36:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39801 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753160AbaBKTGF (ORCPT
+	with ESMTP id S1753151AbaBKTGD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:05 -0500
+	Tue, 11 Feb 2014 14:06:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: [PATCH 3.13 090/120] drm/nouveau: hold mutex while syncing to kernel channel
-Date: Tue, 11 Feb 2014 11:05:31 -0800
-Message-Id: <20140211184826.177249264@linuxfoundation.org>
+        Sasha Levin <sasha.levin@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Richard Cochran <richardcochran@gmail.com>, xen-devel@lists.xen.org,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 3.13 113/120] timekeeping: Fix potential lost pv notification of time change
+Date: Tue, 11 Feb 2014 11:05:54 -0800
+Message-Id: <20140211184826.865964390@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -29,51 +34,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+From: John Stultz <john.stultz@linaro.org>
 
-commit d5c1e84b3a130f0743b218b33ff7d9cb493ab5b4 upstream.
+commit 5258d3f25c76f6ab86e9333abf97a55a877d3870 upstream.
 
-Not holding the mutex potentially causes corruption of the kernel
-channel when page flipping.
+In 780427f0e11 (Indicate that clock was set in the pvclock
+gtod notifier), logic was added to pass a CLOCK_WAS_SET
+notification to the pvclock notifier chain.
 
-Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+While that patch added a action flag returned from
+accumulate_nsecs_to_secs(), it only uses the returned value
+in one location, and not in the logarithmic accumulation.
+
+This means if a leap second triggered during the logarithmic
+accumulation (which is most likely where it would happen),
+the notification that the clock was set would not make it to
+the pv notifiers.
+
+This patch extends the logarithmic_accumulation pass down
+that action flag so proper notification will occur.
+
+This patch also changes the varialbe action -> clock_set
+per Ingo's suggestion.
+
+Cc: Sasha Levin <sasha.levin@oracle.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: David Vrabel <david.vrabel@citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Richard Cochran <richardcochran@gmail.com>
+Cc: <xen-devel@lists.xen.org>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/nouveau_display.c |   15 ++++++++-------
- 1 file changed, 8 insertions(+), 7 deletions(-)
+ kernel/time/timekeeping.c |   20 +++++++++++---------
+ 1 file changed, 11 insertions(+), 9 deletions(-)
 
---- a/drivers/gpu/drm/nouveau/nouveau_display.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_display.c
-@@ -603,6 +603,14 @@ nouveau_crtc_page_flip(struct drm_crtc *
- 	if (!s)
- 		return -ENOMEM;
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -1256,7 +1256,7 @@ out_adjust:
+ static inline unsigned int accumulate_nsecs_to_secs(struct timekeeper *tk)
+ {
+ 	u64 nsecps = (u64)NSEC_PER_SEC << tk->shift;
+-	unsigned int action = 0;
++	unsigned int clock_set = 0;
  
-+	if (new_bo != old_bo) {
-+		ret = nouveau_bo_pin(new_bo, TTM_PL_FLAG_VRAM);
-+		if (ret)
-+			goto fail_free;
-+	}
-+
-+	mutex_lock(&chan->cli->mutex);
-+
- 	/* synchronise rendering channel with the kernel's channel */
- 	spin_lock(&new_bo->bo.bdev->fence_lock);
- 	fence = nouveau_fence_ref(new_bo->bo.sync_obj);
-@@ -612,13 +620,6 @@ nouveau_crtc_page_flip(struct drm_crtc *
- 	if (ret)
- 		goto fail_free;
+ 	while (tk->xtime_nsec >= nsecps) {
+ 		int leap;
+@@ -1279,10 +1279,10 @@ static inline unsigned int accumulate_ns
+ 			__timekeeping_set_tai_offset(tk, tk->tai_offset - leap);
  
--	if (new_bo != old_bo) {
--		ret = nouveau_bo_pin(new_bo, TTM_PL_FLAG_VRAM);
--		if (ret)
--			goto fail_free;
--	}
--
--	mutex_lock(&chan->cli->mutex);
- 	ret = ttm_bo_reserve(&old_bo->bo, true, false, false, NULL);
- 	if (ret)
- 		goto fail_unpin;
+ 			clock_was_set_delayed();
+-			action = TK_CLOCK_WAS_SET;
++			clock_set = TK_CLOCK_WAS_SET;
+ 		}
+ 	}
+-	return action;
++	return clock_set;
+ }
+ 
+ /**
+@@ -1295,7 +1295,8 @@ static inline unsigned int accumulate_ns
+  * Returns the unconsumed cycles.
+  */
+ static cycle_t logarithmic_accumulation(struct timekeeper *tk, cycle_t offset,
+-						u32 shift)
++						u32 shift,
++						unsigned int *clock_set)
+ {
+ 	cycle_t interval = tk->cycle_interval << shift;
+ 	u64 raw_nsecs;
+@@ -1309,7 +1310,7 @@ static cycle_t logarithmic_accumulation(
+ 	tk->cycle_last += interval;
+ 
+ 	tk->xtime_nsec += tk->xtime_interval << shift;
+-	accumulate_nsecs_to_secs(tk);
++	*clock_set |= accumulate_nsecs_to_secs(tk);
+ 
+ 	/* Accumulate raw time */
+ 	raw_nsecs = (u64)tk->raw_interval << shift;
+@@ -1367,7 +1368,7 @@ static void update_wall_time(void)
+ 	struct timekeeper *tk = &shadow_timekeeper;
+ 	cycle_t offset;
+ 	int shift = 0, maxshift;
+-	unsigned int action;
++	unsigned int clock_set = 0;
+ 	unsigned long flags;
+ 
+ 	raw_spin_lock_irqsave(&timekeeper_lock, flags);
+@@ -1402,7 +1403,8 @@ static void update_wall_time(void)
+ 	maxshift = (64 - (ilog2(ntp_tick_length())+1)) - 1;
+ 	shift = min(shift, maxshift);
+ 	while (offset >= tk->cycle_interval) {
+-		offset = logarithmic_accumulation(tk, offset, shift);
++		offset = logarithmic_accumulation(tk, offset, shift,
++							&clock_set);
+ 		if (offset < tk->cycle_interval<<shift)
+ 			shift--;
+ 	}
+@@ -1420,7 +1422,7 @@ static void update_wall_time(void)
+ 	 * Finally, make sure that after the rounding
+ 	 * xtime_nsec isn't larger than NSEC_PER_SEC
+ 	 */
+-	action = accumulate_nsecs_to_secs(tk);
++	clock_set |= accumulate_nsecs_to_secs(tk);
+ 
+ 	write_seqcount_begin(&timekeeper_seq);
+ 	/* Update clock->cycle_last with the new value */
+@@ -1436,7 +1438,7 @@ static void update_wall_time(void)
+ 	 * updating.
+ 	 */
+ 	memcpy(real_tk, tk, sizeof(*tk));
+-	timekeeping_update(real_tk, action);
++	timekeeping_update(real_tk, clock_set);
+ 	write_seqcount_end(&timekeeper_seq);
+ out:
+ 	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
 
 
