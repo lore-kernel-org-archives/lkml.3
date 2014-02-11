@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754885AbaBKTWI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:22:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40535 "EHLO
+	id S1754887AbaBKTWa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:22:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40525 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754287AbaBKTIQ (ORCPT
+	with ESMTP id S1751526AbaBKTIP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:08:16 -0500
+	Tue, 11 Feb 2014 14:08:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
@@ -15,9 +15,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Prarit Bhargava <prarit@redhat.com>,
         Richard Cochran <richardcochran@gmail.com>,
         Ingo Molnar <mingo@kernel.org>, John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 3.10 73/79] timekeeping: Fix missing timekeeping_update in suspend path
-Date: Tue, 11 Feb 2014 11:06:17 -0800
-Message-Id: <20140211184723.081547947@linuxfoundation.org>
+Subject: [PATCH 3.10 72/79] timekeeping: Fix CLOCK_TAI timer/nanosleep delays
+Date: Tue, 11 Feb 2014 11:06:16 -0800
+Message-Id: <20140211184723.054244612@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
 References: <20140211184720.928667275@linuxfoundation.org>
@@ -34,21 +34,14 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: John Stultz <john.stultz@linaro.org>
 
-commit 330a1617b0a6268d427aa5922c94d082b1d3e96d upstream.
+commit 04005f6011e3b504cd4d791d9769f7cb9a3b2eae upstream.
 
-Since 48cdc135d4840 (Implement a shadow timekeeper), we have to
-call timekeeping_update() after any adjustment to the timekeeping
-structure in order to make sure that any adjustments to the structure
-persist.
+A think-o in the calculation of the monotonic -> tai time offset
+results in CLOCK_TAI timers and nanosleeps to expire late (the
+latency is ~2x the tai offset).
 
-In the timekeeping suspend path, we udpate the timekeeper
-structure, so we should be sure to update the shadow-timekeeper
-before releasing the timekeeping locks. Currently this isn't done.
-
-In most cases, the next time related code to run would be
-timekeeping_resume, which does update the shadow-timekeeper, but
-in an abundence of caution, this patch adds the call to
-timekeeping_update() in the suspend path.
+Fix this by adding the tai offset from the realtime offset instead
+of subtracting.
 
 Cc: Sasha Levin <sasha.levin@oracle.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
@@ -59,19 +52,28 @@ Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/time/timekeeping.c |    2 ++
- 1 file changed, 2 insertions(+)
+ kernel/time/timekeeping.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 --- a/kernel/time/timekeeping.c
 +++ b/kernel/time/timekeeping.c
-@@ -1008,6 +1008,8 @@ static int timekeeping_suspend(void)
- 		timekeeping_suspend_time =
- 			timespec_add(timekeeping_suspend_time, delta_delta);
- 	}
-+
-+	timekeeping_update(tk, false, true);
- 	write_seqcount_end(&timekeeper_seq);
- 	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
+@@ -72,7 +72,7 @@ static void tk_set_wall_to_mono(struct t
+ 	tk->wall_to_monotonic = wtm;
+ 	set_normalized_timespec(&tmp, -wtm.tv_sec, -wtm.tv_nsec);
+ 	tk->offs_real = timespec_to_ktime(tmp);
+-	tk->offs_tai = ktime_sub(tk->offs_real, ktime_set(tk->tai_offset, 0));
++	tk->offs_tai = ktime_add(tk->offs_real, ktime_set(tk->tai_offset, 0));
+ }
  
+ static void tk_set_sleep_time(struct timekeeper *tk, struct timespec t)
+@@ -590,7 +590,7 @@ s32 timekeeping_get_tai_offset(void)
+ static void __timekeeping_set_tai_offset(struct timekeeper *tk, s32 tai_offset)
+ {
+ 	tk->tai_offset = tai_offset;
+-	tk->offs_tai = ktime_sub(tk->offs_real, ktime_set(tai_offset, 0));
++	tk->offs_tai = ktime_add(tk->offs_real, ktime_set(tai_offset, 0));
+ }
+ 
+ /**
 
 
