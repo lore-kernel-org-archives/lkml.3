@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755638AbaBKUbV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:31:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39849 "EHLO
+	id S1756553AbaBKUbT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:31:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39856 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753229AbaBKTGJ (ORCPT
+	with ESMTP id S1753238AbaBKTGL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:09 -0500
+	Tue, 11 Feb 2014 14:06:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Mika Kuoppala <mika.kuoppala@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@intel.com>
-Subject: [PATCH 3.13 092/120] drm/i915: Flush outstanding requests before allocating new seqno
-Date: Tue, 11 Feb 2014 11:05:33 -0800
-Message-Id: <20140211184826.234668010@linuxfoundation.org>
+        Todd Previte <tprevite@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [PATCH 3.13 094/120] drm/i915: VLV2 - Fix hotplug detect bits
+Date: Tue, 11 Feb 2014 11:05:35 -0800
+Message-Id: <20140211184826.302270287@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -31,78 +29,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Todd Previte <tprevite@gmail.com>
 
-commit 304d695c3dc8eb65206b9eaf16f8d1a41510d1cf upstream.
+commit 232a6ee9af8adb185640f67fcaaa9014a9aa0573 upstream.
 
-In very rare cases (such as a memory failure stress test) it is possible
-to fill the entire ring without emitting a request. Under this
-circumstance, the outstanding request is flushed and waited upon. After
-space on the ring is cleared, we return to emitting the new command -
-except that we just cleared the seqno allocated for this operation and
-trigger the sanity check that a request is only ever emitted with a
-valid seqno. The fix is to rearrange the code to make sure the
-allocation of the seqno for this operation is after any required flushes
-of outstanding operations.
+Add new definitions for hotplug live status bits for VLV2 since they're
+in reverse order from the gen4x ones.
 
-The bug exists since the preallocation was introduced in
-commit 9d7730914f4cd496e356acfab95b41075aa8eae8
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Tue Nov 27 16:22:52 2012 +0000
+Changelog:
+- Restored gen4 bit definitions
+- Added new definitions for VLV2
+- Added platform check for IS_VALLEYVIEW() in dp_detect to use the correct
+  bit defintions
+- Replaced a lost trailing brace for the added switch()
 
-    drm/i915: Preallocate next seqno before touching the ring
-
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Mika Kuoppala <mika.kuoppala@intel.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Reviewed-by: Jani Nikula <jani.nikula@intel.com>
+Signed-off-by: Todd Previte <tprevite@gmail.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=73951
+[danvet: Switch to _VLV postfix instead of prefix and regroupg
+comments again so that the g4x warning is right next to those defines.
+Also add a _G4X suffix for those special ones. Also cc stable.]
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_ringbuffer.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/i915/i915_reg.h |   10 +++++++---
+ drivers/gpu/drm/i915/intel_dp.c |   40 ++++++++++++++++++++++++++++------------
+ 2 files changed, 35 insertions(+), 15 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_ringbuffer.c
-+++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
-@@ -1611,8 +1611,8 @@ intel_ring_alloc_seqno(struct intel_ring
- 	return i915_gem_get_seqno(ring->dev, &ring->outstanding_lazy_seqno);
- }
- 
--static int __intel_ring_begin(struct intel_ring_buffer *ring,
--			      int bytes)
-+static int __intel_ring_prepare(struct intel_ring_buffer *ring,
-+				int bytes)
- {
- 	int ret;
- 
-@@ -1628,7 +1628,6 @@ static int __intel_ring_begin(struct int
- 			return ret;
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -2117,9 +2117,13 @@
+  * Please check the detailed lore in the commit message for for experimental
+  * evidence.
+  */
+-#define   PORTD_HOTPLUG_LIVE_STATUS               (1 << 29)
+-#define   PORTC_HOTPLUG_LIVE_STATUS               (1 << 28)
+-#define   PORTB_HOTPLUG_LIVE_STATUS               (1 << 27)
++#define   PORTD_HOTPLUG_LIVE_STATUS_G4X		(1 << 29)
++#define   PORTC_HOTPLUG_LIVE_STATUS_G4X		(1 << 28)
++#define   PORTB_HOTPLUG_LIVE_STATUS_G4X		(1 << 27)
++/* VLV DP/HDMI bits again match Bspec */
++#define   PORTD_HOTPLUG_LIVE_STATUS_VLV		(1 << 27)
++#define   PORTC_HOTPLUG_LIVE_STATUS_VLV		(1 << 28)
++#define   PORTB_HOTPLUG_LIVE_STATUS_VLV		(1 << 29)
+ #define   PORTD_HOTPLUG_INT_STATUS		(3 << 21)
+ #define   PORTC_HOTPLUG_INT_STATUS		(3 << 19)
+ #define   PORTB_HOTPLUG_INT_STATUS		(3 << 17)
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -3020,18 +3020,34 @@ g4x_dp_detect(struct intel_dp *intel_dp)
+ 		return status;
  	}
  
--	ring->space -= bytes;
- 	return 0;
- }
+-	switch (intel_dig_port->port) {
+-	case PORT_B:
+-		bit = PORTB_HOTPLUG_LIVE_STATUS;
+-		break;
+-	case PORT_C:
+-		bit = PORTC_HOTPLUG_LIVE_STATUS;
+-		break;
+-	case PORT_D:
+-		bit = PORTD_HOTPLUG_LIVE_STATUS;
+-		break;
+-	default:
+-		return connector_status_unknown;
++	if (IS_VALLEYVIEW(dev)) {
++		switch (intel_dig_port->port) {
++		case PORT_B:
++			bit = PORTB_HOTPLUG_LIVE_STATUS_VLV;
++			break;
++		case PORT_C:
++			bit = PORTC_HOTPLUG_LIVE_STATUS_VLV;
++			break;
++		case PORT_D:
++			bit = PORTD_HOTPLUG_LIVE_STATUS_VLV;
++			break;
++		default:
++			return connector_status_unknown;
++		}
++	} else {
++		switch (intel_dig_port->port) {
++		case PORT_B:
++			bit = PORTB_HOTPLUG_LIVE_STATUS_G4X;
++			break;
++		case PORT_C:
++			bit = PORTC_HOTPLUG_LIVE_STATUS_G4X;
++			break;
++		case PORT_D:
++			bit = PORTD_HOTPLUG_LIVE_STATUS_G4X;
++			break;
++		default:
++			return connector_status_unknown;
++		}
+ 	}
  
-@@ -1643,12 +1642,17 @@ int intel_ring_begin(struct intel_ring_b
- 	if (ret)
- 		return ret;
- 
-+	ret = __intel_ring_prepare(ring, num_dwords * sizeof(uint32_t));
-+	if (ret)
-+		return ret;
-+
- 	/* Preallocate the olr before touching the ring */
- 	ret = intel_ring_alloc_seqno(ring);
- 	if (ret)
- 		return ret;
- 
--	return __intel_ring_begin(ring, num_dwords * sizeof(uint32_t));
-+	ring->space -= num_dwords * sizeof(uint32_t);
-+	return 0;
- }
- 
- void intel_ring_init_seqno(struct intel_ring_buffer *ring, u32 seqno)
+ 	if ((I915_READ(PORT_HOTPLUG_STAT) & bit) == 0)
 
 
