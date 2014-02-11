@@ -1,69 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750972AbaBKKCp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 05:02:45 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:37309 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750767AbaBKKCk (ORCPT
+	id S1751518AbaBKKD6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 05:03:58 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:20624 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803AbaBKKDx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 05:02:40 -0500
-Date: Tue, 11 Feb 2014 10:02:33 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Roger <rogerable@realtek.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Chris Ball <cjb@laptop.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, driverdev-devel@linuxdriverproject.org,
-        wei_wang@realsil.com.cn, micky_ching@realsil.com.cn,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [PATCH v3 1/3] mfd: Add realtek USB card reader driver
-Message-ID: <20140211100233.GK32042@lee--X1>
-References: <1391697307-23457-1-git-send-email-rogerable@realtek.com>
- <1391697307-23457-2-git-send-email-rogerable@realtek.com>
- <20140210113054.GE21522@lee--X1>
- <52F9F012.8030302@realtek.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <52F9F012.8030302@realtek.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 11 Feb 2014 05:03:53 -0500
+X-AuditID: cbfec7f4-b7f796d000005a13-e7-52f9f586aa05
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>, stable@vger.kernel.org
+Subject: [PATCH 1/7] mfd: 88pm860x: Fix possible NULL pointer dereference on
+ i2c_new_dummy error
+Date: Tue, 11 Feb 2014 11:03:29 +0100
+Message-id: <1392113015-11180-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKJMWRmVeSWpSXmKPExsVy+t/xK7ptX38GGZz4Y22xccZ6VovXLwwt
+	zja9Ybe4//Uoo8XlXXPYLGac38dksfbIXXaL092sFhdXfGGyWLDxEaMDl8eda3vYPOadDPTo
+	27KK0ePzJrkAligum5TUnMyy1CJ9uwSujMMvJzEXfOKsWHepmamBcQ5HFyMHh4SAicS7X1Fd
+	jJxAppjEhXvr2boYuTiEBJYySqx9/pkFwuljktj65T0LSBWbgLHE5uVLwKpEBDYzSiz+fpUV
+	xGEWuMso0Xz3PSNIlbBAksT6Bz/ZQWwWAVWJbS/ng9m8Au4S/25MY4ZYrSAxZ5LNBEbuBYwM
+	qxhFU0uTC4qT0nMN9YoTc4tL89L1kvNzNzFCgubLDsbFx6wOMQpwMCrx8G5Q/BkkxJpYVlyZ
+	e4hRgoNZSYRX6ThQiDclsbIqtSg/vqg0J7X4ECMTB6dUA6Nq0+TgP51mJZeOvhD/zHBKavOC
+	jwFVla+6pzwKZ8/dO1mhflt0XfQzfvnMb46x7FsZcjf93Wcfm7zddK584qnFu0s5XlhYpqrP
+	7Vze7W7sFOI56eCXuFsNxznnHxL1MlG4eVuspyyh+6Tiyr31hvV2HbUPHuY83siWOMny27Ss
+	Ldlubsu62JVYijMSDbWYi4oTAetQft74AQAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Feb 2014, Roger wrote:
+During probe the driver allocates dummy I2C device for companion chip
+with i2c_new_dummy() but it does not check the return value of this call.
 
-> On 02/10/2014 07:30 PM, Lee Jones wrote:
-> >>From: Roger Tseng <rogerable@realtek.com>
-> >>
-> >>Realtek USB card reader provides a channel to transfer command or data to flash
-> >>memory cards. This driver exports host instances for mmc and memstick subsystems
-> >>and handles basic works.
-> >>
-> >>Signed-off-by: Roger Tseng <rogerable@realtek.com>
-> >>---
-> >>  drivers/mfd/Kconfig          |  10 +
-> >>  drivers/mfd/Makefile         |   1 +
-> >>  drivers/mfd/rtsx_usb.c       | 760 +++++++++++++++++++++++++++++++++++++++++++
-> >>  include/linux/mfd/rtsx_usb.h | 628 +++++++++++++++++++++++++++++++++++
-> >>  4 files changed, 1399 insertions(+)
-> >>  create mode 100644 drivers/mfd/rtsx_usb.c
-> >>  create mode 100644 include/linux/mfd/rtsx_usb.h
-> >
-> >Applied with Greg's Ack.
-> >
-> Thanks. But I have to modify some places in PATCH 2/3 and 3/3
-> according to Ulf's suggestion. I will resend v4 later but currently
-> I don't plan to change the 1/3 part(for mfd) in it.
-> 
-> Would you wait for and re-apply the v4 submission or give any advice?
+In case of error (i2c_new_device(): memory allocation failure or I2C
+address cannot be used) this function returns NULL which is later used
+by regmap_init_i2c().
 
-Yes, no problem.
+If i2c_new_dummy() fails for companion device, fail also the probe for
+main MFD driver.
 
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: stable@vger.kernel.org
+---
+ drivers/mfd/88pm860x-core.c |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/drivers/mfd/88pm860x-core.c b/drivers/mfd/88pm860x-core.c
+index c9b1f6422941..e456be9a7c67 100644
+--- a/drivers/mfd/88pm860x-core.c
++++ b/drivers/mfd/88pm860x-core.c
+@@ -1179,6 +1179,11 @@ static int pm860x_probe(struct i2c_client *client,
+ 		chip->companion_addr = pdata->companion_addr;
+ 		chip->companion = i2c_new_dummy(chip->client->adapter,
+ 						chip->companion_addr);
++		if (!chip->companion) {
++			dev_err(&client->dev,
++				"Failed to allocate I2C companion device\n");
++			return -ENODEV;
++		}
+ 		chip->regmap_companion = regmap_init_i2c(chip->companion,
+ 							&pm860x_regmap_config);
+ 		if (IS_ERR(chip->regmap_companion)) {
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.9.5
+
