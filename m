@@ -1,95 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752863AbaBKQ5z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 11:57:55 -0500
-Received: from mail1.bemta14.messagelabs.com ([193.109.254.110]:25688 "EHLO
-	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750803AbaBKQ5v convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 11:57:51 -0500
-X-Env-Sender: anthony.olech.opensource@diasemi.com
-X-Msg-Ref: server-4.tower-193.messagelabs.com!1392137868!1737976!1
-X-Originating-IP: [82.210.246.133]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.16; banners=-,-,-
-X-VirusChecked: Checked
-From: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
-CC: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "David Dajun Chen" <david.chen@diasemi.com>
-Subject: RE: [PATCH V1] da9052: ONKEY: use correct register bit for key
- status
-Thread-Topic: [PATCH V1] da9052: ONKEY: use correct register bit for key
- status
-Thread-Index: AQHPJ0PNTqAx6W9icUWcVcja7qYrIJqwPjGAgAADhKA=
-Date: Tue, 11 Feb 2014 16:57:47 +0000
-Message-ID: <24DF37198A1E704D9811D8F72B87EB51BCFD52F3@NB-EX-MBX02.diasemi.com>
-References: <201402111610.s1BGAXJo056493@swsrvapps-02.lan>
- <20140211162857.GA12106@core.coreip.homeip.net>
-In-Reply-To: <20140211162857.GA12106@core.coreip.homeip.net>
-Accept-Language: en-GB, de-DE, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.20.24.126]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752368AbaBKQ7S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 11:59:18 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40463 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750779AbaBKQ7Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 11:59:16 -0500
+Date: Tue, 11 Feb 2014 16:46:08 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20140211164608.GS13533@sirena.org.uk>
+References: <1392067531.27939.19.camel@x220>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="daC8KDjlMyCcZyAo"
+Content-Disposition: inline
+In-Reply-To: <1392067531.27939.19.camel@x220>
+X-Cookie: My LESLIE GORE record is BROKEN ...
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] ASoC: smdk_wm8994: Fix typo "wm8894"
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Dmitry Torokhov [mailto:dmitry.torokhov@gmail.com]
-> Sent: 11 February 2014 16:29
-..[snip]..
-> >  static void da9052_onkey_query(struct da9052_onkey *onkey)  {
-> > -	int key_stat;
-> > +	int ret, key_stat;
-> >
-> > -	key_stat = da9052_reg_read(onkey->da9052,
-> DA9052_EVENT_B_REG);
-> > -	if (key_stat < 0) {
-> > +	ret = da9052_reg_read(onkey->da9052, DA9052_STATUS_A_REG);
-> > +	if (ret < 0) {
-> >  		dev_err(onkey->da9052->dev,
-> > -			"Failed to read onkey event %d\n", key_stat);
-> > +			"Failed to read onkey event err=%d\n", ret);
-> > +		key_stat = false;
-> 
-> Why do you need this assignment? Also, key_stat is integer, why are we
-> using boolean values for it?
-> 
-> >  	} else {
-> >  		/*
-> >  		 * Since interrupt for deassertion of ONKEY pin is not
-> >  		 * generated, onkey event state determines the onkey
-> >  		 * button state.
-> >  		 */
-> > -		key_stat &= DA9052_EVENTB_ENONKEY;
-> > +		if (ret & DA9052_STATUSA_NONKEY)
-> > +			key_stat = false;
-> > +		else
-> > +			key_stat = true;
-> 
-> It seems to me that the relevant changes are replacement of
-> DA9052_EVENT_B_REG -> DA9052_STATUS_A_REG in da9052_reg_read()
-> and doing:
-> 
-> 		key_stat &= DA9052_STATUSA_NONKEY;
-> 		input_report_key(onkey->input, KEY_POWER, !key_stat);
-> 
-> Right?
 
-Right as far as the register and the bit within it.
+--daC8KDjlMyCcZyAo
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-However, should the register read fail due to the PMIC not responding on the i2c bus then the previous code would just loop round the work queue.
-By explicitly using key_stat as a boolean it makes the code very clear that in the case of failure a 'false' value is set. As it was the negative value of the error code would be treated as true, since -EFAULT being non-zero will be treated as true.
+On Mon, Feb 10, 2014 at 10:25:31PM +0100, Paul Bolle wrote:
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 
-Tony Olech
+Applied, thanks.
 
-> Thanks.
-> Dmitry
+--daC8KDjlMyCcZyAo
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS+lPNAAoJELSic+t+oim9UgwP/1xzYGjADXwBabOMXLm5atyQ
+3k1JLb8rCfCXDLJCh4McET//CrSXzBG6Ry5fp9FSsGp+q98uzvffbTAKhBctOpfF
+D3vjnWjSav1c6Bkcj1fyg966w1CvGvkCZadeNTRuklpTLW8+8z9/Pxb/ahx/+GWg
+M+bkVMcrFoteU9FTiRd6YkHw60w6qHSq45xhM3xCfwvs/U7Liy/IzHSkvH+/5Y4E
+VJTZQPeNA8d4Kmx3vxfkJaCqoZgb83kUBSCQwxrjpTyTlRcc+Yd593+njzwBCdyV
+qiXaNcGwDrTFgHuOaBm/YXAZpvHEWqp8u5bxmWqQeITkrqqCsq1zxeaX3dfmhqwn
+zz/hyAkOiEdByxOUcQiBIaVsSN7CQVp6BIUuuBsbbJPs5DUGBtu7YpADKI51zk1p
+RhYZCfzWX4M6zkI2xF64d4yltw77SQO8GXiGNq20ERlgne2uTgrfaR8wgTUrfiZ3
+qONAb3tBmIAAxYgGpXYW/pCPMFsp+TQSrHVx4j3r5w+Pui7gU+x6jYsuRSW5zuSm
+SAkGFGxQBU8TES62ODlmJP3QEQe1SvEZ59koF4oE0LFHhvkA6nI/HjnMitM5FHDY
+npY72AfWGxaGCn6FdFDJBe9g7gT/6FFZHHUSYT//DVKnuXtfwIgDAsN6TcAElqVf
+3Hff1qdF0dDNuUzK0Xl8
+=T20I
+-----END PGP SIGNATURE-----
+
+--daC8KDjlMyCcZyAo--
