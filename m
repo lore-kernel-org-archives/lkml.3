@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751872AbaBKSFk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 13:05:40 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:58259 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751656AbaBKSFa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 13:05:30 -0500
-Date: Tue, 11 Feb 2014 18:05:12 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Weng Meiling <wengmeiling.weng@huawei.com>
-Cc: Robert Richter <rric@kernel.org>,
-        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>,
-        "wangnan0@huawei.com" <wangnan0@huawei.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Huang Qiang <h.huangqiang@huawei.com>,
-        "sdu.liu@huawei.com" <sdu.liu@huawei.com>
-Subject: Re: [PATCH] oprofile: check whether oprofile perf enabled in
- op_overflow_handler()
-Message-ID: <20140211180512.GO8693@mudshark.cambridge.arm.com>
-References: <20140114150553.GC20315@rric.localhost>
- <52D5EC44.30101@huawei.com>
- <20140115102445.GE20315@rric.localhost>
- <52D73148.4090408@huawei.com>
- <52D7A750.50906@huawei.com>
- <20140116115245.GB8360@rric.localhost>
- <20140116193652.GD22105@mudshark.cambridge.arm.com>
- <52D8A56F.1010507@huawei.com>
- <52F9A82F.3060806@huawei.com>
- <20140211155207.GK8693@mudshark.cambridge.arm.com>
+	id S1752048AbaBKSGf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 13:06:35 -0500
+Received: from mga02.intel.com ([134.134.136.20]:57702 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751367AbaBKSGe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 13:06:34 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,826,1384329600"; 
+   d="scan'208";a="481708270"
+Date: Tue, 11 Feb 2014 23:34:54 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>
+Cc: dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v1] dma: dw: add a PCI ID for Intel Haswell SoC
+Message-ID: <20140211180454.GT10628@intel.com>
+References: <1391686015-7719-1-git-send-email-andriy.shevchenko@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140211155207.GK8693@mudshark.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1391686015-7719-1-git-send-email-andriy.shevchenko@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 03:52:07PM +0000, Will Deacon wrote:
-> On Tue, Feb 11, 2014 at 04:33:51AM +0000, Weng Meiling wrote:
-> > Is there any progress on this work? Because this is important for me.
-> > Sorry for trouble you.
+On Thu, Feb 06, 2014 at 01:26:55PM +0200, Andy Shevchenko wrote:
+> In case of PCI mode the DMA controller has a specific ID. Put this ID to the
+> list of supported.
 > 
-> Oops, I totally forgot about this. Does the below patch work for you?
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 
-[...]
+Applied, thanks
 
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index 56003c6edfd3..6fcc293d77a4 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -237,6 +237,8 @@ void perf_sample_event_took(u64 sample_len_ns)
->         u64 local_samples_len;
->         u64 allowed_ns = ACCESS_ONCE(perf_sample_allowed_ns);
->  
-> +       pr_info("perf_sample_event_took(%llu ns)\n", sample_len_ns);
+-- 
+~Vinod
+
+> ---
+>  drivers/dma/dw/pci.c | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/drivers/dma/dw/pci.c b/drivers/dma/dw/pci.c
+> index e89fc24..755cc6b 100644
+> --- a/drivers/dma/dw/pci.c
+> +++ b/drivers/dma/dw/pci.c
+> @@ -83,6 +83,9 @@ static DEFINE_PCI_DEVICE_TABLE(dw_pci_id_table) = {
+>  	/* BayTrail */
+>  	{ PCI_VDEVICE(INTEL, 0x0f06), (kernel_ulong_t)&dw_pci_pdata },
+>  	{ PCI_VDEVICE(INTEL, 0x0f40), (kernel_ulong_t)&dw_pci_pdata },
 > +
->         if (allowed_ns == 0)
->                 return;
+> +	/* Haswell */
+> +	{ PCI_VDEVICE(INTEL, 0x9c60), (kernel_ulong_t)&dw_pci_pdata },
+>  	{ }
+>  };
+>  MODULE_DEVICE_TABLE(pci, dw_pci_id_table);
+> -- 
+> 1.9.rc1
+> 
 
-Ignore this hunk, it was there as a debugging aid. Testing the other half of
-the patch would be useful though!
-
-Will
+-- 
