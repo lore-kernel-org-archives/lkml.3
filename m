@@ -1,452 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751851AbaBKLpe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 06:45:34 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:42172 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751584AbaBKLpa (ORCPT
+	id S1751893AbaBKLpv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 06:45:51 -0500
+Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:20550
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751004AbaBKLpp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 06:45:30 -0500
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        devicetree@vger.kernel.org, Philipp Zabel <philipp.zabel@gmail.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [RFC PATCH] [media]: of: move graph helpers from drivers/media/v4l2-core to drivers/of
-Date: Tue, 11 Feb 2014 12:45:05 +0100
-Message-Id: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de>
-X-Mailer: git-send-email 1.8.5.3
-X-SA-Exim-Connect-IP: 10.1.0.7
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 11 Feb 2014 06:45:45 -0500
+X-Forefront-Antispam-Report: CIP:62.221.5.235;KIP:(null);UIP:(null);IPV:NLI;H:xir-gw1;RD:unknown-62-221-5-235.ipspace.xilinx.com;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: VPS3(zzbb2dI98dI9371I1dbaI1432I4015Ide40h853kzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h1de097hz2fh95h839hc61hd24hf0ah119dh1288h12a5h12bdh137ah1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19b5h19c3h1b0ah1bceh1be0h224fh1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh20f0h2216h2336h2438h2461h2487h24ach24d7h2516h2545h255eh34h19b6n1155h)
+Date: Tue, 11 Feb 2014 12:45:31 +0100
+From: Michal Simek <michal.simek@xilinx.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Marc Kleine-Budde <mkl@pengutronix.de>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+CC: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>,
+        "wg@grandegger.com" <wg@grandegger.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH] can: xilinx CAN controller support.
+References: <6c2bcce0-9897-4d1d-a8b9-47924e40f73c@VA3EHSMHS008.ehs.local> <52F382D5.6090706@pengutronix.de> <8b4dad82-c72a-4e1f-b1af-b8c7964bbf24@TX2EHSMHS043.ehs.local> <52F4A960.10809@pengutronix.de>
+In-Reply-To: <52F4A960.10809@pengutronix.de>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="JaxILsq4rGx903n6X379Vge7eAxE5kk1O"
+X-RCIS-Action: ALLOW
+Message-ID: <da80c522-5524-4f53-9373-3f2bb6f81ddc@CO9EHSMHS015.ehs.local>
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Philipp Zabel <philipp.zabel@gmail.com>
+--JaxILsq4rGx903n6X379Vge7eAxE5kk1O
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-This patch moves the parsing helpers used to parse connected graphs
-in the device tree, like the video interface bindings documented in
-Documentation/devicetree/bindings/media/video-interfaces.txt, from
-drivers/media/v4l2-core to drivers/of.
+Hi Marc,
 
-This allows to reuse the same parser code from outside the V4L2 framework,
-most importantly from display drivers. There have been patches that duplicate
-the code (and I am going to send one of my own), such as
-http://lists.freedesktop.org/archives/dri-devel/2013-August/043308.html
-and others that parse the same binding in a different way:
-https://www.mail-archive.com/linux-omap@vger.kernel.org/msg100761.html
+On 02/07/2014 10:37 AM, Marc Kleine-Budde wrote:
+> On 02/07/2014 09:42 AM, Appana Durga Kedareswara Rao wrote:
+>>>> ---
+>>>> This patch is rebased on the 3.14 rc1 kernel.
+>>>> ---
+>>>>  .../devicetree/bindings/net/can/xilinx_can.txt     |   43 +
+>>>>  drivers/net/can/Kconfig                            |    8 +
+>>>>  drivers/net/can/Makefile                           |    1 +
+>>>>  drivers/net/can/xilinx_can.c                       | 1150 +++++++++++=
++++++++++
+>>>>  4 files changed, 1202 insertions(+), 0 deletions(-)  create mode
+>>>> 100644 Documentation/devicetree/bindings/net/can/xilinx_can.txt
+>>>>  create mode 100644 drivers/net/can/xilinx_can.c
+>>>>
+>>>> diff --git a/Documentation/devicetree/bindings/net/can/xilinx_can.txt
+>>>> b/Documentation/devicetree/bindings/net/can/xilinx_can.txt
+>>>> new file mode 100644
+>>>> index 0000000..34f9643
+>>>> --- /dev/null
+>>>> +++ b/Documentation/devicetree/bindings/net/can/xilinx_can.txt
+>>>> @@ -0,0 +1,43 @@
+>>>> +Xilinx Axi CAN/Zynq CANPS controller Device Tree Bindings
+>>>> +---------------------------------------------------------
+>>>> +
+>>>> +Required properties:
+>>>> +- compatible               : Should be "xlnx,zynq-can-1.00.a" for Zyn=
+q
+>>> CAN
+>>>> +                     controllers and "xlnx,axi-can-1.00.a" for Axi CA=
+N
+>>>> +                     controllers.
+>>>> +- reg                      : Physical base address and size of the Ax=
+i CAN/Zynq
+>>>> +                     CANPS registers map.
+>>>> +- interrupts               : Property with a value describing the int=
+errupt
+>>>> +                     number.
+>>>> +- interrupt-parent : Must be core interrupt controller
+>>>> +- clock-names              : List of input clock names - "ref_clk",
+>>> "aper_clk"
+>>>> +                     (See clock bindings for details. Two clocks are
+>>>> +                      required for Zynq CAN. For Axi CAN
+>>>> +                      case it is one(ref_clk)).
+>>>> +- clocks           : Clock phandles (see clock bindings for details).=
 
-I think that all common video interface parsing helpers should be moved to a
-single place, outside of the specific subsystems, so that it can be reused
-by all drivers.
+>>>> +- xlnx,can-tx-dpth : Can Tx fifo depth (Required for Axi CAN).
+>>>> +- xlnx,can-rx-dpth : Can Rx fifo depth (Required for Axi CAN).
+>>>> +
+>>>> +
+>>>> +Example:
+>>>> +
+>>>> +For Zynq CANPS Dts file:
+>>>> +   zynq_can_0: zynq-can@e0008000 {
+>>>> +                   compatible =3D "xlnx,zynq-can-1.00.a";
+>>>> +                   clocks =3D <&clkc 19>, <&clkc 36>;
+>>>> +                   clock-names =3D "ref_clk", "aper_clk";
+>>>> +                   reg =3D <0xe0008000 0x1000>;
+>>>> +                   interrupts =3D <0 28 4>;
+>>>> +                   interrupt-parent =3D <&intc>;
+>>>
+>>> Above xlnx,can-{rx,tx}-dpth is mentioned as required, but it's not in t=
+he
+>>> Zynq example.
+>>
+>> One of the Difference b/w the AXI CAN and zynq CAN is in AXI CAN the fif=
+o depth(tx,rx)
+>> Is user configurable. But in case of ZYNQ CAN  the fifo depth  is fixed =
+for tx and rx fifo's(64)
+>> Xlnx,can-{rx,tx}-dpth is required only for AXI CAN case it is not requir=
+ed for zynq CAN.
+>> That's why didn't putted that property in device tree.
+> =
 
-I moved v4l2_of_get_next_endpoint, v4l2_of_get_remote_port,
-and v4l2_of_get_remote_port_parent. They are renamed to
-of_graph_get_next_endpoint, of_graph_get_remote_port, and
-of_graph_get_remote_port_parent, respectively.
+> The device tree should be a hardware only description and should not
+> hold any user configurable data. Please split your patch into two
+> patches. The first one should add the driver with a fixed fifo size
+> (e.g. 0x40) for the AXI, too. The second patch should make the fifo
+> configurable via device tree.
 
-Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
----
- drivers/media/Kconfig             |   1 +
- drivers/media/v4l2-core/v4l2-of.c | 117 ---------------------------------
- drivers/of/Kconfig                |   3 +
- drivers/of/Makefile               |   1 +
- drivers/of/of_graph.c             | 133 ++++++++++++++++++++++++++++++++++++++
- include/linux/of_graph.h          |  23 +++++++
- include/media/v4l2-of.h           |  16 ++---
- 7 files changed, 167 insertions(+), 127 deletions(-)
- create mode 100644 drivers/of/of_graph.c
- create mode 100644 include/linux/of_graph.h
+can-rx/tx-dpth is not user configurable data as you think.
+This is FPGA where you can configure this parameter in design tools.
+It means these 2 values just describe real hardware and user can't just cha=
+nge it
+for different software behaviour.
 
-diff --git a/drivers/media/Kconfig b/drivers/media/Kconfig
-index 1d0758a..882faeb 100644
---- a/drivers/media/Kconfig
-+++ b/drivers/media/Kconfig
-@@ -96,6 +96,7 @@ config VIDEO_DEV
- 	tristate
- 	depends on MEDIA_SUPPORT
- 	depends on MEDIA_CAMERA_SUPPORT || MEDIA_ANALOG_TV_SUPPORT || MEDIA_RADIO_SUPPORT
-+	select OF_GRAPH if OF
- 	default y
- 
- config VIDEO_V4L2_SUBDEV_API
-diff --git a/drivers/media/v4l2-core/v4l2-of.c b/drivers/media/v4l2-core/v4l2-of.c
-index 42e3e8a..f919db3 100644
---- a/drivers/media/v4l2-core/v4l2-of.c
-+++ b/drivers/media/v4l2-core/v4l2-of.c
-@@ -152,120 +152,3 @@ int v4l2_of_parse_endpoint(const struct device_node *node,
- 	return 0;
- }
- EXPORT_SYMBOL(v4l2_of_parse_endpoint);
--
--/**
-- * v4l2_of_get_next_endpoint() - get next endpoint node
-- * @parent: pointer to the parent device node
-- * @prev: previous endpoint node, or NULL to get first
-- *
-- * Return: An 'endpoint' node pointer with refcount incremented. Refcount
-- * of the passed @prev node is not decremented, the caller have to use
-- * of_node_put() on it when done.
-- */
--struct device_node *v4l2_of_get_next_endpoint(const struct device_node *parent,
--					struct device_node *prev)
--{
--	struct device_node *endpoint;
--	struct device_node *port = NULL;
--
--	if (!parent)
--		return NULL;
--
--	if (!prev) {
--		struct device_node *node;
--		/*
--		 * It's the first call, we have to find a port subnode
--		 * within this node or within an optional 'ports' node.
--		 */
--		node = of_get_child_by_name(parent, "ports");
--		if (node)
--			parent = node;
--
--		port = of_get_child_by_name(parent, "port");
--
--		if (port) {
--			/* Found a port, get an endpoint. */
--			endpoint = of_get_next_child(port, NULL);
--			of_node_put(port);
--		} else {
--			endpoint = NULL;
--		}
--
--		if (!endpoint)
--			pr_err("%s(): no endpoint nodes specified for %s\n",
--			       __func__, parent->full_name);
--		of_node_put(node);
--	} else {
--		port = of_get_parent(prev);
--		if (!port)
--			/* Hm, has someone given us the root node ?... */
--			return NULL;
--
--		/* Avoid dropping prev node refcount to 0. */
--		of_node_get(prev);
--		endpoint = of_get_next_child(port, prev);
--		if (endpoint) {
--			of_node_put(port);
--			return endpoint;
--		}
--
--		/* No more endpoints under this port, try the next one. */
--		do {
--			port = of_get_next_child(parent, port);
--			if (!port)
--				return NULL;
--		} while (of_node_cmp(port->name, "port"));
--
--		/* Pick up the first endpoint in this port. */
--		endpoint = of_get_next_child(port, NULL);
--		of_node_put(port);
--	}
--
--	return endpoint;
--}
--EXPORT_SYMBOL(v4l2_of_get_next_endpoint);
--
--/**
-- * v4l2_of_get_remote_port_parent() - get remote port's parent node
-- * @node: pointer to a local endpoint device_node
-- *
-- * Return: Remote device node associated with remote endpoint node linked
-- *	   to @node. Use of_node_put() on it when done.
-- */
--struct device_node *v4l2_of_get_remote_port_parent(
--			       const struct device_node *node)
--{
--	struct device_node *np;
--	unsigned int depth;
--
--	/* Get remote endpoint node. */
--	np = of_parse_phandle(node, "remote-endpoint", 0);
--
--	/* Walk 3 levels up only if there is 'ports' node. */
--	for (depth = 3; depth && np; depth--) {
--		np = of_get_next_parent(np);
--		if (depth == 2 && of_node_cmp(np->name, "ports"))
--			break;
--	}
--	return np;
--}
--EXPORT_SYMBOL(v4l2_of_get_remote_port_parent);
--
--/**
-- * v4l2_of_get_remote_port() - get remote port node
-- * @node: pointer to a local endpoint device_node
-- *
-- * Return: Remote port node associated with remote endpoint node linked
-- *	   to @node. Use of_node_put() on it when done.
-- */
--struct device_node *v4l2_of_get_remote_port(const struct device_node *node)
--{
--	struct device_node *np;
--
--	/* Get remote endpoint node. */
--	np = of_parse_phandle(node, "remote-endpoint", 0);
--	if (!np)
--		return NULL;
--	return of_get_next_parent(np);
--}
--EXPORT_SYMBOL(v4l2_of_get_remote_port);
-diff --git a/drivers/of/Kconfig b/drivers/of/Kconfig
-index c6973f1..1bfbb0e 100644
---- a/drivers/of/Kconfig
-+++ b/drivers/of/Kconfig
-@@ -75,4 +75,7 @@ config OF_MTD
- 	depends on MTD
- 	def_bool y
- 
-+config OF_GRAPH
-+	bool
-+
- endmenu # OF
-diff --git a/drivers/of/Makefile b/drivers/of/Makefile
-index efd0510..7ee8ab3 100644
---- a/drivers/of/Makefile
-+++ b/drivers/of/Makefile
-@@ -9,3 +9,4 @@ obj-$(CONFIG_OF_MDIO)	+= of_mdio.o
- obj-$(CONFIG_OF_PCI)	+= of_pci.o
- obj-$(CONFIG_OF_PCI_IRQ)  += of_pci_irq.o
- obj-$(CONFIG_OF_MTD)	+= of_mtd.o
-+obj-$(CONFIG_OF_GRAPH)	+= of_graph.o
-diff --git a/drivers/of/of_graph.c b/drivers/of/of_graph.c
-new file mode 100644
-index 0000000..aa526d7
---- /dev/null
-+++ b/drivers/of/of_graph.c
-@@ -0,0 +1,133 @@
-+/*
-+ * OF graph binding parsing library
-+ *
-+ * Copyright (C) 2012 - 2013 Samsung Electronics Co., Ltd.
-+ * Author: Sylwester Nawrocki <s.nawrocki@samsung.com>
-+ *
-+ * Copyright (C) 2012 Renesas Electronics Corp.
-+ * Author: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of version 2 of the GNU General Public License as
-+ * published by the Free Software Foundation.
-+ */
-+#include <linux/kernel.h>
-+#include <linux/of.h>
-+#include <linux/types.h>
-+
-+/**
-+ * of_graph_get_next_endpoint() - get next endpoint node
-+ * @parent: pointer to the parent device node
-+ * @prev: previous endpoint node, or NULL to get first
-+ *
-+ * Return: An 'endpoint' node pointer with refcount incremented. Refcount
-+ * of the passed @prev node is not decremented, the caller have to use
-+ * of_node_put() on it when done.
-+ */
-+struct device_node *of_graph_get_next_endpoint(const struct device_node *parent,
-+					struct device_node *prev)
-+{
-+	struct device_node *endpoint;
-+	struct device_node *port = NULL;
-+
-+	if (!parent)
-+		return NULL;
-+
-+	if (!prev) {
-+		struct device_node *node;
-+		/*
-+		 * It's the first call, we have to find a port subnode
-+		 * within this node or within an optional 'ports' node.
-+		 */
-+		node = of_get_child_by_name(parent, "ports");
-+		if (node)
-+			parent = node;
-+
-+		port = of_get_child_by_name(parent, "port");
-+
-+		if (port) {
-+			/* Found a port, get an endpoint. */
-+			endpoint = of_get_next_child(port, NULL);
-+			of_node_put(port);
-+		} else {
-+			endpoint = NULL;
-+		}
-+
-+		if (!endpoint)
-+			pr_err("%s(): no endpoint nodes specified for %s\n",
-+			       __func__, parent->full_name);
-+		of_node_put(node);
-+	} else {
-+		port = of_get_parent(prev);
-+		if (!port)
-+			/* Hm, has someone given us the root node ?... */
-+			return NULL;
-+
-+		/* Avoid dropping prev node refcount to 0. */
-+		of_node_get(prev);
-+		endpoint = of_get_next_child(port, prev);
-+		if (endpoint) {
-+			of_node_put(port);
-+			return endpoint;
-+		}
-+
-+		/* No more endpoints under this port, try the next one. */
-+		do {
-+			port = of_get_next_child(parent, port);
-+			if (!port)
-+				return NULL;
-+		} while (of_node_cmp(port->name, "port"));
-+
-+		/* Pick up the first endpoint in this port. */
-+		endpoint = of_get_next_child(port, NULL);
-+		of_node_put(port);
-+	}
-+
-+	return endpoint;
-+}
-+EXPORT_SYMBOL(of_graph_get_next_endpoint);
-+
-+/**
-+ * of_graph_get_remote_port_parent() - get remote port's parent node
-+ * @node: pointer to a local endpoint device_node
-+ *
-+ * Return: Remote device node associated with remote endpoint node linked
-+ *	   to @node. Use of_node_put() on it when done.
-+ */
-+struct device_node *of_graph_get_remote_port_parent(
-+			       const struct device_node *node)
-+{
-+	struct device_node *np;
-+	unsigned int depth;
-+
-+	/* Get remote endpoint node. */
-+	np = of_parse_phandle(node, "remote-endpoint", 0);
-+
-+	/* Walk 3 levels up only if there is 'ports' node. */
-+	for (depth = 3; depth && np; depth--) {
-+		np = of_get_next_parent(np);
-+		if (depth == 2 && of_node_cmp(np->name, "ports"))
-+			break;
-+	}
-+	return np;
-+}
-+EXPORT_SYMBOL(of_graph_get_remote_port_parent);
-+
-+/**
-+ * of_graph_get_remote_port() - get remote port node
-+ * @node: pointer to a local endpoint device_node
-+ *
-+ * Return: Remote port node associated with remote endpoint node linked
-+ *	   to @node. Use of_node_put() on it when done.
-+ */
-+struct device_node *of_graph_get_remote_port(const struct device_node *node)
-+{
-+	struct device_node *np;
-+
-+	/* Get remote endpoint node. */
-+	np = of_parse_phandle(node, "remote-endpoint", 0);
-+	if (!np)
-+		return NULL;
-+	return of_get_next_parent(np);
-+}
-+EXPORT_SYMBOL(of_graph_get_remote_port);
-diff --git a/include/linux/of_graph.h b/include/linux/of_graph.h
-new file mode 100644
-index 0000000..352306a
---- /dev/null
-+++ b/include/linux/of_graph.h
-@@ -0,0 +1,23 @@
-+/*
-+ * OF graph binding parsing helpers
-+ *
-+ * Copyright (C) 2012 - 2013 Samsung Electronics Co., Ltd.
-+ * Author: Sylwester Nawrocki <s.nawrocki@samsung.com>
-+ *
-+ * Copyright (C) 2012 Renesas Electronics Corp.
-+ * Author: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of version 2 of the GNU General Public License as
-+ * published by the Free Software Foundation.
-+ */
-+#ifndef __LINUX_OF_GRAPH_H
-+#define __LINUX_OF_GRAPH_H
-+
-+struct device_node *of_graph_get_next_endpoint(const struct device_node *parent,
-+					struct device_node *previous);
-+struct device_node *of_graph_get_remote_port_parent(
-+					const struct device_node *node);
-+struct device_node *of_graph_get_remote_port(const struct device_node *node);
-+
-+#endif /* __LINUX_OF_GRAPH_H */
-diff --git a/include/media/v4l2-of.h b/include/media/v4l2-of.h
-index 541cea4..404a493 100644
---- a/include/media/v4l2-of.h
-+++ b/include/media/v4l2-of.h
-@@ -17,6 +17,7 @@
- #include <linux/list.h>
- #include <linux/types.h>
- #include <linux/errno.h>
-+#include <linux/of_graph.h>
- 
- #include <media/v4l2-mediabus.h>
- 
-@@ -72,11 +73,6 @@ struct v4l2_of_endpoint {
- #ifdef CONFIG_OF
- int v4l2_of_parse_endpoint(const struct device_node *node,
- 			   struct v4l2_of_endpoint *endpoint);
--struct device_node *v4l2_of_get_next_endpoint(const struct device_node *parent,
--					struct device_node *previous);
--struct device_node *v4l2_of_get_remote_port_parent(
--					const struct device_node *node);
--struct device_node *v4l2_of_get_remote_port(const struct device_node *node);
- #else /* CONFIG_OF */
- 
- static inline int v4l2_of_parse_endpoint(const struct device_node *node,
-@@ -85,25 +81,25 @@ static inline int v4l2_of_parse_endpoint(const struct device_node *node,
- 	return -ENOSYS;
- }
- 
-+#endif /* CONFIG_OF */
-+
- static inline struct device_node *v4l2_of_get_next_endpoint(
- 					const struct device_node *parent,
- 					struct device_node *previous)
- {
--	return NULL;
-+	return of_graph_get_next_endpoint(parent, previous);
- }
- 
- static inline struct device_node *v4l2_of_get_remote_port_parent(
- 					const struct device_node *node)
- {
--	return NULL;
-+	return of_graph_get_remote_port_parent(node);
- }
- 
- static inline struct device_node *v4l2_of_get_remote_port(
- 					const struct device_node *node)
- {
--	return NULL;
-+	return of_graph_get_remote_port(node);
- }
- 
--#endif /* CONFIG_OF */
--
- #endif /* _V4L2_OF_H */
--- 
-1.8.5.3
+Also I don't think it is worth to create 2 patches for the same driver
+where the first one is useless for axi can device. But if you think
+that it is worth to do we can create 2 patches as you suggested.
 
+Also what we can do is to define that this property is required also
+for zynq which is 0x40 and change code according too.
+
+> If it's acceptable to describe the fifo usage by device tree, I'd like
+> to make it a generic CAN driver option. But we have to look around, e.g.
+> what the Ethernet driver use to configure their hardware.
+
+I think the real question is not if this is acceptable or not. It is just
+reality that we can setup hardware fifo depth and driver has to reflect thi=
+s
+because without it driver just doesn't work for axi can.
+
+The only remaining question is if we should create generic DT binding
+for fifo depth. Arnd, Rob: Any opinion about it?
+Definitely will be worth to have one generic binding if this is generic fea=
+ture.
+But if this is just specific feature for us then current properties should
+be fine.
+
+In general all these xlnx,XXX properties just reflect all configurable opti=
+ons
+which you can setup in design tool which means that provide full hw descrip=
+tion
+with all variants and they are automatically generated from tools.
+
+Please let me know what you think.
+
+Thanks,
+Michal
+
+
+--JaxILsq4rGx903n6X379Vge7eAxE5kk1O
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlL6DVsACgkQykllyylKDCHZhwCeJkO74M5tOGQGTPL56zp1YxtK
+WugAoIJWLpKIIElilRGyKZzdMVed0D8C
+=1jFI
+-----END PGP SIGNATURE-----
+
+
+--JaxILsq4rGx903n6X379Vge7eAxE5kk1O--
