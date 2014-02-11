@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754515AbaBKTbu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:31:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40393 "EHLO
+	id S1754793AbaBKTcR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:32:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40383 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754150AbaBKTH4 (ORCPT
+	with ESMTP id S1754141AbaBKTHx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:07:56 -0500
+	Tue, 11 Feb 2014 14:07:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 43/79] mm, oom: base root bonus on current usage
-Date: Tue, 11 Feb 2014 11:05:47 -0800
-Message-Id: <20140211184722.191350208@linuxfoundation.org>
+        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.10 40/79] dm space map metadata: fix bug in resizing of thin metadata
+Date: Tue, 11 Feb 2014 11:05:44 -0800
+Message-Id: <20140211184722.103122072@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
 References: <20140211184720.928667275@linuxfoundation.org>
@@ -31,74 +28,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Rientjes <rientjes@google.com>
+From: Joe Thornber <ejt@redhat.com>
 
-commit 778c14affaf94a9e4953179d3e13a544ccce7707 upstream.
+commit fca028438fb903852beaf7c3fe1cd326651af57d upstream.
 
-A 3% of system memory bonus is sometimes too excessive in comparison to
-other processes.
+This bug was introduced in commit 7e664b3dec431e ("dm space map metadata:
+fix extending the space map").
 
-With commit a63d83f427fb ("oom: badness heuristic rewrite"), the OOM
-killer tries to avoid killing privileged tasks by subtracting 3% of
-overall memory (system or cgroup) from their per-task consumption.  But
-as a result, all root tasks that consume less than 3% of overall memory
-are considered equal, and so it only takes 33+ privileged tasks pushing
-the system out of memory for the OOM killer to do something stupid and
-kill dhclient or other root-owned processes.  For example, on a 32G
-machine it can't tell the difference between the 1M agetty and the 10G
-fork bomb member.
+When extending a dm-thin metadata volume we:
 
-The changelog describes this 3% boost as the equivalent to the global
-overcommit limit being 3% higher for privileged tasks, but this is not
-the same as discounting 3% of overall memory from _every privileged task
-individually_ during OOM selection.
+- Switch the space map into a simple bootstrap mode, which allocates
+  all space linearly from the newly added space.
+- Add new bitmap entries for the new space
+- Increment the reference counts for those newly allocated bitmap
+  entries
+- Commit changes to disk
+- Switch back out of bootstrap mode.
 
-Replace the 3% of system memory bonus with a 3% of current memory usage
-bonus.
+But, the disk commit may allocate space itself, if so this fact will be
+lost when switching out of bootstrap mode.
 
-By giving root tasks a bonus that is proportional to their actual size,
-they remain comparable even when relatively small.  In the example
-above, the OOM killer will discount the 1M agetty's 256 badness points
-down to 179, and the 10G fork bomb's 262144 points down to 183500 points
-and make the right choice, instead of discounting both to 0 and killing
-agetty because it's first in the task list.
+The bug exhibited itself as an error when the bitmap_root, with an
+erroneous ref count of 0, was subsequently decremented as part of a
+later disk commit.  This would cause the disk commit to fail, and thinp
+to enter read_only mode.  The metadata was not damaged (thin_check
+passed).
 
-Signed-off-by: David Rientjes <rientjes@google.com>
-Reported-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+The fix is to put the increments + commit into a loop, running until
+the commit has not allocated extra space.  In practise this loop only
+runs twice.
+
+With this fix the following device mapper testsuite test passes:
+ dmtest run --suite thin-provisioning -n thin_remove_works_after_resize
+
+Signed-off-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/filesystems/proc.txt |    4 ++--
- mm/oom_kill.c                      |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/md/persistent-data/dm-space-map-metadata.c |   18 ++++++++++++++----
+ 1 file changed, 14 insertions(+), 4 deletions(-)
 
---- a/Documentation/filesystems/proc.txt
-+++ b/Documentation/filesystems/proc.txt
-@@ -1372,8 +1372,8 @@ may allocate from based on an estimation
- For example, if a task is using all allowed memory, its badness score will be
- 1000.  If it is using half of its allowed memory, its score will be 500.
+--- a/drivers/md/persistent-data/dm-space-map-metadata.c
++++ b/drivers/md/persistent-data/dm-space-map-metadata.c
+@@ -617,13 +617,23 @@ static int sm_metadata_extend(struct dm_
+ 	if (r)
+ 		goto out;
  
--There is an additional factor included in the badness score: root
--processes are given 3% extra memory over other tasks.
-+There is an additional factor included in the badness score: the current memory
-+and swap usage is discounted by 3% for root processes.
+-	for (i = old_len; !r && i < smm->begin; i++) {
+-		r = sm_ll_inc(&smm->ll, i, &ev);
++	/*
++	 * We repeatedly increment then commit until the commit doesn't
++	 * allocate any new blocks.
++	 */
++	do {
++		for (i = old_len; !r && i < smm->begin; i++) {
++			r = sm_ll_inc(&smm->ll, i, &ev);
++			if (r)
++				goto out;
++		}
++		old_len = smm->begin;
++
++		r = sm_ll_commit(&smm->ll);
+ 		if (r)
+ 			goto out;
+-	}
  
- The amount of "allowed" memory depends on the context in which the oom killer
- was called.  If it is due to the memory assigned to the allocating task's cpuset
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -170,7 +170,7 @@ unsigned long oom_badness(struct task_st
- 	 * implementation used by LSMs.
- 	 */
- 	if (has_capability_noaudit(p, CAP_SYS_ADMIN))
--		adj -= 30;
-+		points -= (points * 3) / 100;
+-	r = sm_metadata_commit(sm);
++	} while (old_len != smm->begin);
  
- 	/* Normalize to oom_score_adj units */
- 	adj *= totalpages / 1000;
+ out:
+ 	/*
 
 
