@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932306AbaBKUMH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:12:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40024 "EHLO
+	id S1753521AbaBKTGn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:06:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40012 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753491AbaBKTGo (ORCPT
+	with ESMTP id S1753491AbaBKTGk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:44 -0500
+	Tue, 11 Feb 2014 14:06:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.12 051/107] dm: wait until embedded kobject is released before destroying a device
-Date: Tue, 11 Feb 2014 11:05:17 -0800
-Message-Id: <20140211184749.651719612@linuxfoundation.org>
+        Weston Andros Adamson <dros@netapp.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.12 046/107] sunrpc: Fix infinite loop in RPC state machine
+Date: Tue, 11 Feb 2014 11:05:12 -0800
+Message-Id: <20140211184749.505816423@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -29,125 +29,119 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Weston Andros Adamson <dros@netapp.com>
 
-commit be35f486108227e10fe5d96fd42fb2b344c59983 upstream.
+commit 6ff33b7dd0228b7d7ed44791bbbc98b03fd15d9d upstream.
 
-There may be other parts of the kernel holding a reference on the dm
-kobject.  We must wait until all references are dropped before
-deallocating the mapped_device structure.
+When a task enters call_refreshresult with status 0 from call_refresh and
+!rpcauth_uptodatecred(task) it enters call_refresh again with no rate-limiting
+or max number of retries.
 
-The dm_kobject_release method signals that all references are dropped
-via completion.  But dm_kobject_release doesn't free the kobject (which
-is embedded in the mapped_device structure).
+Instead of trying forever, make use of the retry path that other errors use.
 
-This is the sequence of operations:
-* when destroying a DM device, call kobject_put from dm_sysfs_exit
-* wait until all users stop using the kobject, when it happens the
-  release method is called
-* the release method signals the completion and should return without
-  delay
-* the dm device removal code that waits on the completion continues
-* the dm device removal code drops the dm_mod reference the device had
-* the dm device removal code frees the mapped_device structure that
-  contains the kobject
+This only seems to be possible when the crrefresh callback is gss_refresh_null,
+which only happens when destroying the context.
 
-Using kobject this way should avoid the module unload race that was
-mentioned at the beginning of this thread:
-https://lkml.org/lkml/2014/1/4/83
+To reproduce:
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+1) mount with sec=krb5 (or sec=sys with krb5 negotiated for non FSID specific
+   operations).
+
+2) reboot - the client will be stuck and will need to be hard rebooted
+
+BUG: soft lockup - CPU#0 stuck for 22s! [kworker/0:2:46]
+Modules linked in: rpcsec_gss_krb5 nfsv4 nfs fscache ppdev crc32c_intel aesni_intel aes_x86_64 glue_helper lrw gf128mul ablk_helper cryptd serio_raw i2c_piix4 i2c_core e1000 parport_pc parport shpchp nfsd auth_rpcgss oid_registry exportfs nfs_acl lockd sunrpc autofs4 mptspi scsi_transport_spi mptscsih mptbase ata_generic floppy
+irq event stamp: 195724
+hardirqs last  enabled at (195723): [<ffffffff814a925c>] restore_args+0x0/0x30
+hardirqs last disabled at (195724): [<ffffffff814b0a6a>] apic_timer_interrupt+0x6a/0x80
+softirqs last  enabled at (195722): [<ffffffff8103f583>] __do_softirq+0x1df/0x276
+softirqs last disabled at (195717): [<ffffffff8103f852>] irq_exit+0x53/0x9a
+CPU: 0 PID: 46 Comm: kworker/0:2 Not tainted 3.13.0-rc3-branch-dros_testing+ #4
+Hardware name: VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform, BIOS 6.00 07/31/2013
+Workqueue: rpciod rpc_async_schedule [sunrpc]
+task: ffff8800799c4260 ti: ffff880079002000 task.ti: ffff880079002000
+RIP: 0010:[<ffffffffa0064fd4>]  [<ffffffffa0064fd4>] __rpc_execute+0x8a/0x362 [sunrpc]
+RSP: 0018:ffff880079003d18  EFLAGS: 00000246
+RAX: 0000000000000005 RBX: 0000000000000007 RCX: 0000000000000007
+RDX: 0000000000000007 RSI: ffff88007aecbae8 RDI: ffff8800783d8900
+RBP: ffff880079003d78 R08: ffff88006e30e9f8 R09: ffffffffa005a3d7
+R10: ffff88006e30e7b0 R11: ffff8800783d8900 R12: ffffffffa006675e
+R13: ffff880079003ce8 R14: ffff88006e30e7b0 R15: ffff8800783d8900
+FS:  0000000000000000(0000) GS:ffff88007f200000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 00007f3072333000 CR3: 0000000001a0b000 CR4: 00000000001407f0
+Stack:
+ ffff880079003d98 0000000000000246 0000000000000000 ffff88007a9a4830
+ ffff880000000000 ffffffff81073f47 ffff88007f212b00 ffff8800799c4260
+ ffff8800783d8988 ffff88007f212b00 ffffe8ffff604800 0000000000000000
+Call Trace:
+ [<ffffffff81073f47>] ? trace_hardirqs_on_caller+0x145/0x1a1
+ [<ffffffffa00652d3>] rpc_async_schedule+0x27/0x32 [sunrpc]
+ [<ffffffff81052974>] process_one_work+0x211/0x3a5
+ [<ffffffff810528d5>] ? process_one_work+0x172/0x3a5
+ [<ffffffff81052eeb>] worker_thread+0x134/0x202
+ [<ffffffff81052db7>] ? rescuer_thread+0x280/0x280
+ [<ffffffff81052db7>] ? rescuer_thread+0x280/0x280
+ [<ffffffff810584a0>] kthread+0xc9/0xd1
+ [<ffffffff810583d7>] ? __kthread_parkme+0x61/0x61
+ [<ffffffff814afd6c>] ret_from_fork+0x7c/0xb0
+ [<ffffffff810583d7>] ? __kthread_parkme+0x61/0x61
+Code: e8 87 63 fd e0 c6 05 10 dd 01 00 01 48 8b 43 70 4c 8d 6b 70 45 31 e4 a8 02 0f 85 d5 02 00 00 4c 8b 7b 48 48 c7 43 48 00 00 00 00 <4c> 8b 4b 50 4d 85 ff 75 0c 4d 85 c9 4d 89 cf 0f 84 32 01 00 00
+
+And the output of "rpcdebug -m rpc -s all":
+
+RPC:    61 call_refresh (status 0)
+RPC:    61 call_refresh (status 0)
+RPC:    61 refreshing RPCSEC_GSS cred ffff88007a413cf0
+RPC:    61 refreshing RPCSEC_GSS cred ffff88007a413cf0
+RPC:    61 call_refreshresult (status 0)
+RPC:    61 refreshing RPCSEC_GSS cred ffff88007a413cf0
+RPC:    61 call_refreshresult (status 0)
+RPC:    61 refreshing RPCSEC_GSS cred ffff88007a413cf0
+RPC:    61 call_refresh (status 0)
+RPC:    61 call_refreshresult (status 0)
+RPC:    61 call_refresh (status 0)
+RPC:    61 call_refresh (status 0)
+RPC:    61 refreshing RPCSEC_GSS cred ffff88007a413cf0
+RPC:    61 call_refreshresult (status 0)
+RPC:    61 call_refresh (status 0)
+RPC:    61 refreshing RPCSEC_GSS cred ffff88007a413cf0
+RPC:    61 call_refresh (status 0)
+RPC:    61 refreshing RPCSEC_GSS cred ffff88007a413cf0
+RPC:    61 refreshing RPCSEC_GSS cred ffff88007a413cf0
+RPC:    61 call_refreshresult (status 0)
+RPC:    61 call_refresh (status 0)
+RPC:    61 call_refresh (status 0)
+RPC:    61 call_refresh (status 0)
+RPC:    61 call_refresh (status 0)
+RPC:    61 call_refreshresult (status 0)
+RPC:    61 refreshing RPCSEC_GSS cred ffff88007a413cf0
+
+Signed-off-by: Weston Andros Adamson <dros@netapp.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-sysfs.c |   10 +++++++++-
- drivers/md/dm.c       |   11 +++++++++++
- drivers/md/dm.h       |    2 ++
- 3 files changed, 22 insertions(+), 1 deletion(-)
+ net/sunrpc/clnt.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/md/dm-sysfs.c
-+++ b/drivers/md/dm-sysfs.c
-@@ -79,6 +79,11 @@ static const struct sysfs_ops dm_sysfs_o
- 	.show	= dm_attr_show,
- };
- 
-+static void dm_kobject_release(struct kobject *kobj)
-+{
-+	complete(dm_get_completion_from_kobject(kobj));
-+}
-+
- /*
-  * dm kobject is embedded in mapped_device structure
-  * no need to define release function here
-@@ -86,6 +91,7 @@ static const struct sysfs_ops dm_sysfs_o
- static struct kobj_type dm_ktype = {
- 	.sysfs_ops	= &dm_sysfs_ops,
- 	.default_attrs	= dm_attrs,
-+	.release	= dm_kobject_release,
- };
- 
- /*
-@@ -104,5 +110,7 @@ int dm_sysfs_init(struct mapped_device *
-  */
- void dm_sysfs_exit(struct mapped_device *md)
- {
--	kobject_put(dm_kobject(md));
-+	struct kobject *kobj = dm_kobject(md);
-+	kobject_put(kobj);
-+	wait_for_completion(dm_get_completion_from_kobject(kobj));
- }
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -197,6 +197,9 @@ struct mapped_device {
- 	/* sysfs handle */
- 	struct kobject kobj;
- 
-+	/* wait until the kobject is released */
-+	struct completion kobj_completion;
-+
- 	/* zero-length flush that will be cloned and submitted to targets */
- 	struct bio flush_bio;
- 
-@@ -2005,6 +2008,7 @@ static struct mapped_device *alloc_dev(i
- 	init_waitqueue_head(&md->wait);
- 	INIT_WORK(&md->work, dm_wq_work);
- 	init_waitqueue_head(&md->eventq);
-+	init_completion(&md->kobj_completion);
- 
- 	md->disk->major = _major;
- 	md->disk->first_minor = minor;
-@@ -2889,6 +2893,13 @@ struct mapped_device *dm_get_from_kobjec
- 	return md;
- }
- 
-+struct completion *dm_get_completion_from_kobject(struct kobject *kobj)
-+{
-+	struct mapped_device *md = container_of(kobj, struct mapped_device, kobj);
-+
-+	return &md->kobj_completion;
-+}
-+
- int dm_suspended_md(struct mapped_device *md)
- {
- 	return test_bit(DMF_SUSPENDED, &md->flags);
---- a/drivers/md/dm.h
-+++ b/drivers/md/dm.h
-@@ -15,6 +15,7 @@
- #include <linux/list.h>
- #include <linux/blkdev.h>
- #include <linux/hdreg.h>
-+#include <linux/completion.h>
- 
- #include "dm-stats.h"
- 
-@@ -142,6 +143,7 @@ int dm_sysfs_init(struct mapped_device *
- void dm_sysfs_exit(struct mapped_device *md);
- struct kobject *dm_kobject(struct mapped_device *md);
- struct mapped_device *dm_get_from_kobject(struct kobject *kobj);
-+struct completion *dm_get_completion_from_kobject(struct kobject *kobj);
- 
- /*
-  * Targets for linear and striped mappings
+--- a/net/sunrpc/clnt.c
++++ b/net/sunrpc/clnt.c
+@@ -1433,9 +1433,13 @@ call_refreshresult(struct rpc_task *task
+ 	task->tk_action = call_refresh;
+ 	switch (status) {
+ 	case 0:
+-		if (rpcauth_uptodatecred(task))
++		if (rpcauth_uptodatecred(task)) {
+ 			task->tk_action = call_allocate;
+-		return;
++			return;
++		}
++		/* Use rate-limiting and a max number of retries if refresh
++		 * had status 0 but failed to update the cred.
++		 */
+ 	case -ETIMEDOUT:
+ 		rpc_delay(task, 3*HZ);
+ 	case -EAGAIN:
 
 
