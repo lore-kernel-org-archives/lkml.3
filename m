@@ -1,166 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752007AbaBKOY3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 09:24:29 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:51433 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751014AbaBKOY2 (ORCPT
+	id S1752032AbaBKOZA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 09:25:00 -0500
+Received: from www.linutronix.de ([62.245.132.108]:42129 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751886AbaBKOY6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 09:24:28 -0500
-From: Azat Khuzhin <a3at.mail@gmail.com>
-To: linux-ext4@vger.kernel.org
-Cc: Azat Khuzhin <a3at.mail@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v3] ext4: initialize multi-block allocator before checking block descriptors
-Date: Tue, 11 Feb 2014 18:24:12 +0400
-Message-Id: <1392128652-6882-1-git-send-email-a3at.mail@gmail.com>
-X-Mailer: git-send-email 1.8.5.3
+	Tue, 11 Feb 2014 09:24:58 -0500
+Date: Tue, 11 Feb 2014 15:25:05 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: poma <pomidorabelisima@gmail.com>
+cc: Linux Kernel list <linux-kernel@vger.kernel.org>, linux-pm@vger.kernel.org,
+        Olaf Hering <olaf@aepfle.de>, Dave Jones <davej@redhat.com>,
+        "Justin M. Forbes" <jforbes@redhat.com>,
+        Josh Boyer <jwboyer@redhat.com>
+Subject: Re: WARNING: CPU: 1 PID: 0 at kernel/time/tick-broadcast.c:668
+ tick_broadcast_oneshot_control+0x17d/0x190()
+In-Reply-To: <alpine.DEB.2.02.1402101056260.21991@ionos.tec.linutronix.de>
+Message-ID: <alpine.DEB.2.02.1402111434180.21991@ionos.tec.linutronix.de>
+References: <52F84A9B.5020008@gmail.com> <alpine.DEB.2.02.1402101056260.21991@ionos.tec.linutronix.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With EXT4FS_DEBUG ext4_count_free_clusters() will call
-ext4_read_block_bitmap() without s_group_info initialized, so we need to
-initialize multi-block allocator before.
+On Mon, 10 Feb 2014, Thomas Gleixner wrote:
+> On Mon, 10 Feb 2014, poma wrote:
+> 
+> > [   83.558551]  [<ffffffff81025b17>] amd_e400_idle+0x87/0x130
+> 
+> So this seems to happen only on AMD machines which use that e400 idle
+> mode. I have no idea at the moment whats wrong there. I'll find one of
+> those machines and try to reproduce.
 
-And we can't initialize multi-block allocator without group descriptors,
-since it use them.
-Also we need to install s_op before initializing multi-block allocator,
-because in ext4_mb_init_backend() new inode is created.
+Found it. Patch below.
 
-Here is bt:
-(gdb) bt
- #0  ext4_get_group_info (group=0, sb=0xffff880079a10000) at ext4.h:2430
- #1  ext4_validate_block_bitmap (sb=sb@entry=0xffff880079a10000, desc=desc@entry=0xffff880056510000, block_group=block_group@entry=0,
-     bh=bh@entry=0xffff88007bf2b2d8) at balloc.c:358
- #2  0xffffffff81232202 in ext4_wait_block_bitmap (sb=sb@entry=0xffff880079a10000, block_group=block_group@entry=0,
-     bh=bh@entry=0xffff88007bf2b2d8) at balloc.c:476
- #3  0xffffffff81232eaf in ext4_read_block_bitmap (sb=sb@entry=0xffff880079a10000, block_group=block_group@entry=0) at balloc.c:489
- #4  0xffffffff81232fc0 in ext4_count_free_clusters (sb=sb@entry=0xffff880079a10000) at balloc.c:665
- #5  0xffffffff81259ffa in ext4_check_descriptors (first_not_zeroed=<synthetic pointer>, sb=0xffff880079a10000) at super.c:2143
- #6  ext4_fill_super (sb=sb@entry=0xffff880079a10000, data=<optimized out>, data@entry=0x0 <irq_stack_union>, silent=silent@entry=0)
-     at super.c:3851
- #7  0xffffffff811b8340 in mount_bdev (fs_type=<optimized out>, flags=0, dev_name=<optimized out>, data=0x0 <irq_stack_union>,
-     fill_super=fill_super@entry=0xffffffff812589c0 <ext4_fill_super>) at super.c:987
- #8  0xffffffff8124ec35 in ext4_mount (fs_type=<optimized out>, flags=<optimized out>, dev_name=<optimized out>, data=<optimized out>)
-     at super.c:5365
- #9  0xffffffff811b8cf9 in mount_fs (type=type@entry=0xffffffff81c71840 <ext4_fs_type>, flags=flags@entry=0,
-     name=name@entry=0xffff880077a80c70 "/dev/loop4", data=data@entry=0x0 <irq_stack_union>) at super.c:1090
- #10 0xffffffff811d2ff3 in vfs_kern_mount (type=type@entry=0xffffffff81c71840 <ext4_fs_type>, flags=0,
-     name=name@entry=0xffff880077a80c70 "/dev/loop4", data=data@entry=0x0 <irq_stack_union>) at namespace.c:813
- #11 0xffffffff811d55de in do_new_mount (data=0x0 <irq_stack_union>, name=0xffff880077a80c70 "/dev/loop4", mnt_flags=32,
-     flags=<optimized out>, fstype=0xffff880077a80ca0 "ext4-insane", path=0xffff88007a5b1ed0) at namespace.c:2068
- #12 do_mount (dev_name=0xffff880077a80c70 "/dev/loop4", dir_name=<optimized out>, type_page=0xffff880077a80ca0 "ext4-insane",
-     flags=<optimized out>, flags@entry=3236757504, data_page=0x0 <irq_stack_union>) at namespace.c:2392
- #13 0xffffffff811d6183 in SYSC_mount (data=0x0 <irq_stack_union>, flags=3236757504, type=<optimized out>, dir_name=<optimized out>,
-     dev_name=0x7ffad9649c20 "/dev/loop4") at namespace.c:2586
- #14 SyS_mount (dev_name=140715365800992, dir_name=<optimized out>, type=<optimized out>, flags=3236757504, data=0) at namespace.c:2559
+Thanks,
 
-Signed-off-by: Azat Khuzhin <a3at.mail@gmail.com>
+	tglx
+----
+Subject: tick: Clear broadcast pending bit when switching to oneshot
+From: Thomas Gleixner <tglx@linutronix.de>
+Date: Tue, 11 Feb 2014 14:35:40 +0100
+
+AMD systems which use the C1E workaround in the amd_e400_idle routine
+trigger the WARN_ON_ONCE in the broadcast code when onlining a CPU.
+
+The reason is that the idle routine of those AMD systems switches the
+cpu into forced broadcast mode early on before the newly brought up
+CPU can switch over to high resolution / NOHZ mode. The timer related
+CPU1 bringup looks like this:
+
+  clockevent_register_device(local_apic);
+  tick_setup(local_apic);
+  ...
+  idle()
+	tick_broadcast_on_off(FORCE);
+	tick_broadcast_oneshot_control(ENTER)
+	  cpumask_set(cpu, broadcast_oneshot_mask);
+	halt();
+
+Now the broadcast interrupt on CPU0 sets CPU1 in the
+broadcast_pending_mask and wakes CPU1. So CPU1 continues:
+
+	local_apic_timer_interrupt()
+	   tick_handle_periodic();
+	   softirq()
+	     tick_init_highres();
+	       cpumask_clr(cpu, broadcast_oneshot_mask);
+	
+	tick_broadcast_oneshot_control(ENTER)
+	   WARN_ON(cpumask_test(cpu, broadcast_pending_mask);
+
+So while we remove CPU1 from the broadcast_oneshot_mask when we switch
+over to highres mode, we do not clear the pending bit, which then
+triggers the warning when we go back to idle.
+
+The reason why this is only visible on C1E affected AMD systems is
+that the other machines enter the deep sleep states via
+acpi_idle/intel_idle and exit the broadcast mode before executing the
+remote triggered local_apic_timer_interrupt. So the pending bit is
+already cleared when the switch over to highres mode is clearing the
+oneshot mask.
+
+The solution is simple: Clear the pending bit together with the mask
+bit when we switch over to highres mode.
+
+Reported-by: poma <pomidorabelisima@gmail.com>
+Cc: stable@vger.kernel.org # 3.10+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
-v2: ext4: initialize multi-block allocator after group descriptors loaded
-v3: ext4: set s_op before initializing multi-block allocator
+ kernel/time/tick-broadcast.c |    1 +
+ 1 file changed, 1 insertion(+)
 
- fs/ext4/super.c | 44 +++++++++++++++++++++++---------------------
- 1 file changed, 23 insertions(+), 21 deletions(-)
+Index: linux-2.6/kernel/time/tick-broadcast.c
+===================================================================
+--- linux-2.6.orig/kernel/time/tick-broadcast.c
++++ linux-2.6/kernel/time/tick-broadcast.c
+@@ -756,6 +756,7 @@ out:
+ static void tick_broadcast_clear_oneshot(int cpu)
+ {
+ 	cpumask_clear_cpu(cpu, tick_broadcast_oneshot_mask);
++	cpumask_clear_cpu(cpu, tick_broadcast_pending_mask);
+ }
+ 
+ static void tick_broadcast_init_next_event(struct cpumask *mask,
 
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 1f7784d..fc42ee0 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -3848,16 +3848,34 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
- 			goto failed_mount2;
- 		}
- 	}
-+
-+	/*
-+	 * set up enough so that it can read an inode
-+	 */
-+	if (!test_opt(sb, NOLOAD) &&
-+	    EXT4_HAS_COMPAT_FEATURE(sb, EXT4_FEATURE_COMPAT_HAS_JOURNAL))
-+		sb->s_op = &ext4_sops;
-+	else
-+		sb->s_op = &ext4_nojournal_sops;
-+
-+	ext4_ext_init(sb);
-+	err = ext4_mb_init(sb);
-+	if (err) {
-+		ext4_msg(sb, KERN_ERR, "failed to initialize mballoc (%d)",
-+			 err);
-+		goto failed_mount2;
-+	}
-+
- 	if (!ext4_check_descriptors(sb, &first_not_zeroed)) {
- 		ext4_msg(sb, KERN_ERR, "group descriptors corrupted!");
--		goto failed_mount2;
-+		goto failed_mount2a;
- 	}
- 	if (EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_FLEX_BG))
- 		if (!ext4_fill_flex_info(sb)) {
- 			ext4_msg(sb, KERN_ERR,
- 			       "unable to initialize "
- 			       "flex_bg meta info!");
--			goto failed_mount2;
-+			goto failed_mount2a;
- 		}
- 
- 	sbi->s_gdb_count = db_count;
-@@ -3895,14 +3913,6 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
- 	sbi->s_stripe = ext4_get_stripe_size(sbi);
- 	sbi->s_extent_max_zeroout_kb = 32;
- 
--	/*
--	 * set up enough so that it can read an inode
--	 */
--	if (!test_opt(sb, NOLOAD) &&
--	    EXT4_HAS_COMPAT_FEATURE(sb, EXT4_FEATURE_COMPAT_HAS_JOURNAL))
--		sb->s_op = &ext4_sops;
--	else
--		sb->s_op = &ext4_nojournal_sops;
- 	sb->s_export_op = &ext4_export_ops;
- 	sb->s_xattr = ext4_xattr_handlers;
- #ifdef CONFIG_QUOTA
-@@ -4094,14 +4104,6 @@ no_journal:
- 		goto failed_mount4a;
- 	}
- 
--	ext4_ext_init(sb);
--	err = ext4_mb_init(sb);
--	if (err) {
--		ext4_msg(sb, KERN_ERR, "failed to initialize mballoc (%d)",
--			 err);
--		goto failed_mount5;
--	}
--
- 	err = ext4_register_li_request(sb, first_not_zeroed);
- 	if (err)
- 		goto failed_mount6;
-@@ -4175,9 +4177,6 @@ failed_mount8:
- failed_mount7:
- 	ext4_unregister_li_request(sb);
- failed_mount6:
--	ext4_mb_release(sb);
--failed_mount5:
--	ext4_ext_release(sb);
- 	ext4_release_system_zone(sb);
- failed_mount4a:
- 	dput(sb->s_root);
-@@ -4203,11 +4202,14 @@ failed_mount3:
- 	percpu_counter_destroy(&sbi->s_extent_cache_cnt);
- 	if (sbi->s_mmp_tsk)
- 		kthread_stop(sbi->s_mmp_tsk);
-+failed_mount2a:
-+	ext4_mb_release(sb);
- failed_mount2:
- 	for (i = 0; i < db_count; i++)
- 		brelse(sbi->s_group_desc[i]);
- 	ext4_kvfree(sbi->s_group_desc);
- failed_mount:
-+	ext4_ext_release(sb);
- 	if (sbi->s_chksum_driver)
- 		crypto_free_shash(sbi->s_chksum_driver);
- 	if (sbi->s_proc) {
--- 
-1.8.5.3
 
