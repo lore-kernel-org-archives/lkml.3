@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751894AbaBKJSM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 04:18:12 -0500
-Received: from www.linutronix.de ([62.245.132.108]:39799 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751076AbaBKJSK (ORCPT
+	id S1751935AbaBKJSg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 04:18:36 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:47848 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750972AbaBKJSd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 04:18:10 -0500
-Date: Tue, 11 Feb 2014 10:17:58 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/6 v2] sched: Init idle->on_rq in init_idle()
-Message-ID: <20140211091758.GA19477@linutronix.de>
-References: <1391803122-4425-1-git-send-email-bigeasy@linutronix.de>
- <1391803122-4425-2-git-send-email-bigeasy@linutronix.de>
- <20140207210905.GV5002@laptop.programming.kicks-ass.net>
+	Tue, 11 Feb 2014 04:18:33 -0500
+Date: Tue, 11 Feb 2014 10:18:05 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jason Low <jason.low2@hp.com>
+Cc: linux-kernel@vger.kernel.org, Waiman Long <waiman.long@hp.com>,
+        mingo@kernel.org, paulmck@linux.vnet.ibm.com,
+        torvalds@linux-foundation.org, tglx@linutronix.de, riel@redhat.com,
+        akpm@linux-foundation.org, davidlohr@hp.com, hpa@zytor.com,
+        andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
+        chegu_vinod@hp.com
+Subject: Re: [PATCH 5/8] locking, mutex: Cancelable MCS lock for adaptive
+ spinning
+Message-ID: <20140211091805.GK27965@twins.programming.kicks-ass.net>
+References: <20140210195820.834693028@infradead.org>
+ <20140210203659.671232531@infradead.org>
+ <1392066959.2051.2.camel@j-VirtualBox>
+ <20140210213202.GX2936@laptop.programming.kicks-ass.net>
+ <1392069862.2918.26.camel@j-VirtualBox>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140207210905.GV5002@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1392069862.2918.26.camel@j-VirtualBox>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The init task is state TASK_RUNNING and on_irq should be set to 1. It won't
-be set by scheduler because the idle task is never woken up, it is always the
-task we fall back to if there is no other task pending.
+On Mon, Feb 10, 2014 at 02:04:22PM -0800, Jason Low wrote:
+> On Mon, 2014-02-10 at 22:32 +0100, Peter Zijlstra wrote:
+> > Is adding that really much faster than the relatively straight path
+> > oqs_wait_next() would walk to bit the same exit?
+> > 
+> > The only reason I pulled out the above cmpxchg() is because its the
+> > uncontended fast path, which seems like a special enough case.
+> 
+> So it would avoid 2 extra checks (*lock == node) and (node->next) in the
+> oqs_wait_next() path, which aren't necessary when node->next != NULL.
+> 
+> And I think node->next != NULL can be considered a special enough case
+> after the cmpxchg() fails because in the contended case, we're expecting
+> the node->next to be pointing at something. The only times node->next is
+> NULL after cmpxchg() fails are during a very small race window with the
+> osq_lock(), and when the next node is unqueuing due to need_resched,
+> which is also a very small window.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-[bigeasy: add patch description]
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
-v1..v2: add patch description
-
- kernel/sched/core.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index b46131e..64f75f9 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -4473,6 +4473,7 @@ void init_idle(struct task_struct *idle, int cpu)
- 	rcu_read_unlock();
- 
- 	rq->curr = rq->idle = idle;
-+	idle->on_rq = 1;
- #if defined(CONFIG_SMP)
- 	idle->on_cpu = 1;
- #endif
--- 
-1.9.rc1
+True all; now if only we had a useful benchmark so we could test if it
+makes a difference or not :-)
