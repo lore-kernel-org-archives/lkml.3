@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542AbaBKTGp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:06:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40007 "EHLO
+	id S932218AbaBKUKt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:10:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40025 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753434AbaBKTGj (ORCPT
+	with ESMTP id S1753532AbaBKTGo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:39 -0500
+	Tue, 11 Feb 2014 14:06:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.12 044/107] pnfs: Proper delay for NFS4ERR_RECALLCONFLICT in layout_get_done
-Date: Tue, 11 Feb 2014 11:05:10 -0800
-Message-Id: <20140211184749.447635470@linuxfoundation.org>
+        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.12 052/107] dm space map common: make sure new space is used during extend
+Date: Tue, 11 Feb 2014 11:05:18 -0800
+Message-Id: <20140211184749.679032004@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -29,89 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Boaz Harrosh <bharrosh@panasas.com>
+From: Joe Thornber <ejt@redhat.com>
 
-commit ed7e5423014ad89720fcf315c0b73f2c5d0c7bd2 upstream.
+commit 12c91a5c2d2a8e8cc40a9552313e1e7b0a2d9ee3 upstream.
 
-An NFS4ERR_RECALLCONFLICT is returned by server from a GET_LAYOUT
-only when a Server Sent a RECALL do to that GET_LAYOUT, or
-the RECALL and GET_LAYOUT crossed on the wire.
-In any way this means we want to wait at most until in-flight IO
-is finished and the RECALL can be satisfied.
+When extending a low level space map we should update nr_blocks at
+the start so the new space is used for the index entries.
 
-So a proper wait here is more like 1/10 of a second, not 15 seconds
-like we have now. In case of a server bug we delay exponentially
-longer on each retry.
+Otherwise extend can fail, e.g.: sm_metadata_extend call sequence
+that fails:
+ -> sm_ll_extend
+    -> dm_tm_new_block -> dm_sm_new_block -> sm_bootstrap_new_block
+    => returns -ENOSPC because smm->begin == smm->ll.nr_blocks
 
-Current code totally craps out performance of very large files on
-most pnfs-objects layouts, because of how the map changes when the
-file has grown into the next raid group.
-
-[Stable: This will patch back to 3.9. If there are earlier still
- maintained trees, please tell me I'll send a patch]
-
-Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4proc.c |   34 ++++++++++++++++++++++++++++++----
- 1 file changed, 30 insertions(+), 4 deletions(-)
+ drivers/md/persistent-data/dm-space-map-common.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -7057,9 +7057,9 @@ static void nfs4_layoutget_done(struct r
- 	struct nfs_server *server = NFS_SERVER(inode);
- 	struct pnfs_layout_hdr *lo;
- 	struct nfs4_state *state = NULL;
--	unsigned long timeo, giveup;
-+	unsigned long timeo, now, giveup;
+--- a/drivers/md/persistent-data/dm-space-map-common.c
++++ b/drivers/md/persistent-data/dm-space-map-common.c
+@@ -245,6 +245,10 @@ int sm_ll_extend(struct ll_disk *ll, dm_
+ 		return -EINVAL;
+ 	}
  
--	dprintk("--> %s\n", __func__);
-+	dprintk("--> %s tk_status => %d\n", __func__, -task->tk_status);
++	/*
++	 * We need to set this before the dm_tm_new_block() call below.
++	 */
++	ll->nr_blocks = nr_blocks;
+ 	for (i = old_blocks; i < blocks; i++) {
+ 		struct dm_block *b;
+ 		struct disk_index_entry idx;
+@@ -252,6 +256,7 @@ int sm_ll_extend(struct ll_disk *ll, dm_
+ 		r = dm_tm_new_block(ll->tm, &dm_sm_bitmap_validator, &b);
+ 		if (r < 0)
+ 			return r;
++
+ 		idx.blocknr = cpu_to_le64(dm_block_location(b));
  
- 	if (!nfs41_sequence_done(task, &lgp->res.seq_res))
- 		goto out;
-@@ -7067,12 +7067,38 @@ static void nfs4_layoutget_done(struct r
- 	switch (task->tk_status) {
- 	case 0:
- 		goto out;
-+	/*
-+	 * NFS4ERR_LAYOUTTRYLATER is a conflict with another client
-+	 * (or clients) writing to the same RAID stripe
-+	 */
- 	case -NFS4ERR_LAYOUTTRYLATER:
-+	/*
-+	 * NFS4ERR_RECALLCONFLICT is when conflict with self (must recall
-+	 * existing layout before getting a new one).
-+	 */
- 	case -NFS4ERR_RECALLCONFLICT:
- 		timeo = rpc_get_timeout(task->tk_client);
- 		giveup = lgp->args.timestamp + timeo;
--		if (time_after(giveup, jiffies))
--			task->tk_status = -NFS4ERR_DELAY;
-+		now = jiffies;
-+		if (time_after(giveup, now)) {
-+			unsigned long delay;
-+
-+			/* Delay for:
-+			 * - Not less then NFS4_POLL_RETRY_MIN.
-+			 * - One last time a jiffie before we give up
-+			 * - exponential backoff (time_now minus start_attempt)
-+			 */
-+			delay = max_t(unsigned long, NFS4_POLL_RETRY_MIN,
-+				    min((giveup - now - 1),
-+					now - lgp->args.timestamp));
-+
-+			dprintk("%s: NFS4ERR_RECALLCONFLICT waiting %lu\n",
-+				__func__, delay);
-+			rpc_delay(task, delay);
-+			task->tk_status = 0;
-+			rpc_restart_call_prepare(task);
-+			goto out; /* Do not call nfs4_async_handle_error() */
-+		}
- 		break;
- 	case -NFS4ERR_EXPIRED:
- 	case -NFS4ERR_BAD_STATEID:
+ 		r = dm_tm_unlock(ll->tm, b);
+@@ -266,7 +271,6 @@ int sm_ll_extend(struct ll_disk *ll, dm_
+ 			return r;
+ 	}
+ 
+-	ll->nr_blocks = nr_blocks;
+ 	return 0;
+ }
+ 
 
 
