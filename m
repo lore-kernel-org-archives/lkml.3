@@ -1,73 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752735AbaBKMX4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 07:23:56 -0500
-Received: from mail-we0-f182.google.com ([74.125.82.182]:49173 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752132AbaBKMXx (ORCPT
+	id S1752740AbaBKMYR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 07:24:17 -0500
+Received: from s3.sipsolutions.net ([144.76.43.152]:50014 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750767AbaBKMYP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 07:23:53 -0500
-Date: Tue, 11 Feb 2014 12:23:46 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 7/7] mfd: max8998: Fix possible NULL pointer dereference
- on i2c_new_dummy error
-Message-ID: <20140211122346.GV32042@lee--X1>
-References: <1392113015-11180-1-git-send-email-k.kozlowski@samsung.com>
- <1392113015-11180-7-git-send-email-k.kozlowski@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1392113015-11180-7-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 11 Feb 2014 07:24:15 -0500
+Message-ID: <1392121442.4128.14.camel@jlt4.sipsolutions.net>
+Subject: Re: [RFC - beta][PATCH] tracing: Introduce TRACE_MARKER() no
+ argument trace event
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Wolfgang Grandegger <wg@grandegger.com>
+Date: Tue, 11 Feb 2014 13:24:02 +0100
+In-Reply-To: <20140207152814.16e263ab@gandalf.local.home>
+References: <20140207112357.35552998@gandalf.local.home>
+	 <20140207152814.16e263ab@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Feb 2014, Krzysztof Kozlowski wrote:
+On Fri, 2014-02-07 at 15:28 -0500, Steven Rostedt wrote:
 
-> During probe the driver allocates dummy I2C device for RTC with i2c_new_dummy() but it does not check the return value of this call.
-> 
-> In case of error (i2c_new_device(): memory allocation failure or I2C
-> address cannot be used) this function returns NULL which is later used
-> by i2c_unregister_device().
-> 
-> If i2c_new_dummy() fails for RTC device, fail also the probe for
-> main MFD driver.
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Cc: stable@vger.kernel.org
-> ---
->  drivers/mfd/max8998.c |    4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/drivers/mfd/max8998.c b/drivers/mfd/max8998.c
-> index 612ca404e150..61ea1826f8b4 100644
-> --- a/drivers/mfd/max8998.c
-> +++ b/drivers/mfd/max8998.c
-> @@ -215,6 +215,10 @@ static int max8998_i2c_probe(struct i2c_client *i2c,
->  	mutex_init(&max8998->iolock);
->  
->  	max8998->rtc = i2c_new_dummy(i2c->adapter, RTC_I2C_ADDR);
-> +	if (!max8998->rtc) {
-> +		dev_err(&i2c->dev, "Failed to allocate I2C device for RTC\n");
-> +		return -ENODEV;
-> +	}
->  	i2c_set_clientdata(max8998->rtc, max8998);
->  
->  	max8998_irq_init(max8998);
+> I'm thinking no. And unless someone can give me a good reason that we
+> should have such a thing, I will Nack my own patch!
 
-Applied, thanks.
+:)
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> What's up with trace_iwlwifi_dev_irq()?  You are tracing it but not
+> saving any information. There's obviously a reason for the
+> iwl_pcie_isr() to be called (it's handling something). Does it do the
+> exact same thing every time?  No variables are needed then?
+> 
+> What I'm trying to say is, if you go through the trouble of inserting a
+> tracepoint into some location, might as well extract data from it.
+> Otherwise you are wasting space in memory. If all you want to know is
+> if the function was called or not, then simply use a kprobe or function
+> trace that function (noinline to allow ftrace to trace it).
+
+I think right now the tracepoint is misplaced, I meant it to be in the
+function that's now iwl_pcie_isr() but I guess I haven't used it much.
+
+In any case, the reasoning was that we don't yet know any useful data,
+we really only know that an interrupt happened. We later have this ICT
+(interrupt cause table or something) that we read the information from,
+but for tracing I want to know each field in the table even though only
+the OR of all of them is later relevant.
+
+So originally we had "interrupt" and then "interrupt reason"
+tracepoints. Looking at the code now, that seems to have been lost, so I
+guess I should instead add the reason to the tracepoint and only have
+the ICT tracing separate when ICT is enabled (in fact, if ICT isn't
+enabled, I don't have the reason status at all...)
+
+
+Looking at this I'd agree that having a special 'hit only' trace event
+isn't really needed (any more), at least not for this particular case.
+
+johannes
+
