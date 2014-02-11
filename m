@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755776AbaBKUCc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:02:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40119 "EHLO
+	id S1755818AbaBKUCu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:02:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40112 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753686AbaBKTHA (ORCPT
+	with ESMTP id S1753677AbaBKTG7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:07:00 -0500
+	Tue, 11 Feb 2014 14:06:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Olivier Grenie <olivier.grenie@parrot.com>,
-        Patrick Boettcher <pboettcher@kernellabs.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.12 068/107] [media] dib8000: fix regression with dib807x
-Date: Tue, 11 Feb 2014 11:05:34 -0800
-Message-Id: <20140211184750.135276714@linuxfoundation.org>
+        Michael Grzeschik <m.grzeschik@pengutronix.de>,
+        Brian Norris <computersforpeace@gmail.com>
+Subject: [PATCH 3.12 032/107] mtd: mxc_nand: remove duplicated ecc_stats counting
+Date: Tue, 11 Feb 2014 11:04:58 -0800
+Message-Id: <20140211184749.111576316@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -30,56 +29,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olivier Grenie <olivier.grenie@parrot.com>
+From: Michael Grzeschik <m.grzeschik@pengutronix.de>
 
-commit d67350f8c4e67f5eba627e1fd111f16257ca9c95 upstream.
+commit 0566477762f9e174e97af347ee9c865f908a5647 upstream.
 
-Commit 173a64cb3fcf broke support for some dib807x versions.
+The ecc_stats.corrected count variable will already be incremented in
+the above framework-layer just after this callback.
 
-Fix it by providing backward compatibility with the older versions.
-
-[mkrufky@linuxtv.org: conflict handling and CodingStyle fixes]
-
-Signed-off-by: Olivier Grenie <olivier.grenie@parrot.com>
-Acked-by: Patrick Boettcher <pboettcher@kernellabs.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/dvb-frontends/dib8000.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/mtd/nand/mxc_nand.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/media/dvb-frontends/dib8000.c
-+++ b/drivers/media/dvb-frontends/dib8000.c
-@@ -2462,7 +2462,8 @@ static int dib8000_autosearch_start(stru
- 	if (state->revision == 0x8090)
- 		internal = dib8000_read32(state, 23) / 1000;
+--- a/drivers/mtd/nand/mxc_nand.c
++++ b/drivers/mtd/nand/mxc_nand.c
+@@ -676,7 +676,6 @@ static int mxc_nand_correct_data_v2_v3(s
+ 		ecc_stat >>= 4;
+ 	} while (--no_subpages);
  
--	if (state->autosearch_state == AS_SEARCHING_FFT) {
-+	if ((state->revision >= 0x8002) &&
-+	    (state->autosearch_state == AS_SEARCHING_FFT)) {
- 		dib8000_write_word(state,  37, 0x0065); /* P_ctrl_pha_off_max default values */
- 		dib8000_write_word(state, 116, 0x0000); /* P_ana_gain to 0 */
+-	mtd->ecc_stats.corrected += ret;
+ 	pr_debug("%d Symbol Correctable RS-ECC Error\n", ret);
  
-@@ -2498,7 +2499,8 @@ static int dib8000_autosearch_start(stru
- 		dib8000_write_word(state, 770, (dib8000_read_word(state, 770) & 0xdfff) | (1 << 13)); /* P_restart_ccg = 1 */
- 		dib8000_write_word(state, 770, (dib8000_read_word(state, 770) & 0xdfff) | (0 << 13)); /* P_restart_ccg = 0 */
- 		dib8000_write_word(state, 0, (dib8000_read_word(state, 0) & 0x7ff) | (0 << 15) | (1 << 13)); /* P_restart_search = 0; */
--	} else if (state->autosearch_state == AS_SEARCHING_GUARD) {
-+	} else if ((state->revision >= 0x8002) &&
-+		   (state->autosearch_state == AS_SEARCHING_GUARD)) {
- 		c->transmission_mode = TRANSMISSION_MODE_8K;
- 		c->guard_interval = GUARD_INTERVAL_1_8;
- 		c->inversion = 0;
-@@ -2600,7 +2602,8 @@ static int dib8000_autosearch_irq(struct
- 	struct dib8000_state *state = fe->demodulator_priv;
- 	u16 irq_pending = dib8000_read_word(state, 1284);
- 
--	if (state->autosearch_state == AS_SEARCHING_FFT) {
-+	if ((state->revision >= 0x8002) &&
-+	    (state->autosearch_state == AS_SEARCHING_FFT)) {
- 		if (irq_pending & 0x1) {
- 			dprintk("dib8000_autosearch_irq: max correlation result available");
- 			return 3;
+ 	return ret;
 
 
