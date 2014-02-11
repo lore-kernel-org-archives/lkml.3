@@ -1,68 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752133AbaBKPgr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 10:36:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6855 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751614AbaBKPgp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 10:36:45 -0500
-Date: Tue, 11 Feb 2014 10:36:24 -0500
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, mtosatti@redhat.com,
-        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 0/4] hugetlb: add hugepagesnid= command-line option
-Message-ID: <20140211103624.7edf1423@redhat.com>
-In-Reply-To: <alpine.DEB.2.02.1402101851190.3447@chino.kir.corp.google.com>
-References: <1392053268-29239-1-git-send-email-lcapitulino@redhat.com>
-	<alpine.DEB.2.02.1402101851190.3447@chino.kir.corp.google.com>
-Organization: Red Hat
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752059AbaBKPiv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 10:38:51 -0500
+Received: from mailout1.w2.samsung.com ([211.189.100.11]:60867 "EHLO
+	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751014AbaBKPit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 10:38:49 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-2; format=flowed
+X-AuditID: cbfec37a-b7ef66d000004f2b-79-52fa4407ecbe
+Message-id: <52FA43FF.8030303@samsung.com>
+Date: Tue, 11 Feb 2014 08:38:39 -0700
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.2.0
+To: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirq-linux@rere.qmqm.pl>
+Cc: rjw@rjwysocki.net, chris@printf.net, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        shuahkhan@gmail.com, Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [RFT][PATCH 08/12] mmc: change cb710-mmc platform power management
+ to use dev_pm_ops
+References: <cover.1392040064.git.shuah.kh@samsung.com>
+ <5393e4bd34e5667b7d00fa09c9d5bee0f68d659f.1392040068.git.shuah.kh@samsung.com>
+ <20140210234904.GA542@rere.qmqm.pl>
+In-reply-to: <20140210234904.GA542@rere.qmqm.pl>
+Content-transfer-encoding: 8bit
+X-Originating-IP: [105.144.34.13]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDLMWRmVeSWpSXmKPExsVy+t9hX112l19BBnPvmFlMuLyd0eLyrjls
+	Fkf+9zNafO49wmjx7fkpRoszpy+xWnz96eDA7rFz1l12jxuvFjJ5zGrbx+ax5Wo7i8fnTXIB
+	rFFcNimpOZllqUX6dglcGW9WXGMpOMBRMesoVwPjfbYuRg4OCQETiQv3PboYOYFMMYkL99YD
+	hbk4hASWMUp8v36fHSTBKyAo8WPyPRYQm1nAWqJp3xVmEFtIoJdJYu2SaoiGTYwSz4/+ABvK
+	K6AlcX9GAojJIqAqMekzWCubgLrE59c72CFa5SSalqwGGyMqECHx6uxEsBoRASeJQwfvMIGM
+	ZBbYxijRs+wjWJGwQLLE/e5P7BC71jFKzDwFciknB6eAgcT63m5miOPkJQ5eec4CsUFZ4s/l
+	U0wQnylKTPx9gXkCo8gsJP/MQvLPLCTtCxiZVzGKlRYnFxQnpadWGOoVJ+YWl+al6yXn525i
+	hMRQ1Q7GO19tDjEKcDAq8fBe+PQjSIg1say4MvcQowQHs5IIr5raryAh3pTEyqrUovz4otKc
+	1OJDjEwcnFINjKbGh1b+rt5jy3A9bKXbKsX9wc6/X+ZZT/moyDvz/e3WwF3vP7b5Tj2l0+Ke
+	xhgX+I5h25l1ju+bF78uiJtwsNTDaePjY5sZr32N2sz843xQ+TnPl7lf1mZt9083Pq5y+8ne
+	Z3dcn6hc6d7B77TA7sR9k8OXVvPc+Zn/3nzDkul2L1fZpC2wXrFIiaU4I9FQi7moOBEABMcE
+	JX8CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Feb 2014 18:54:20 -0800 (PST)
-David Rientjes <rientjes@google.com> wrote:
+On 02/10/2014 04:49 PM, Micha³ Miros³aw wrote:
+> On Mon, Feb 10, 2014 at 09:12:31AM -0700, Shuah Khan wrote:
+>> Change cb710-mmc platform driver to register pm ops using dev_pm_ops instead
+>> of legacy pm_ops. .pm hooks call existing legacy suspend and resume interfaces
+>> by passing in the right pm state.
+> [all the patch cut]
+>
+> Aaah, a bit mechanical - this change, isn't it?
 
-> On Mon, 10 Feb 2014, Luiz Capitulino wrote:
-> 
-> > HugeTLB command-line option hugepages= allows the user to specify how many
-> > huge pages should be allocated at boot. On NUMA systems, this argument
-> > automatically distributes huge pages allocation among nodes, which can
-> > be undesirable.
-> > 
-> 
-> And when hugepages can no longer be allocated on a node because it is too 
-> small, the remaining hugepages are distributed over nodes with memory 
-> available, correct?
+Yes :)
 
-No. hugepagesnid= tries to obey what was specified by the uses as much as
-possible. So, if you specify that 10 1G huge pages should be allocated from
-node0 but only 7 1G pages can actually be allocated, then hugepagesnid= will
-do just that.
+>
+> The suspend/resume callbacks just clears IRQ mask in the device in case it
+> got undefined during sleep state. So the proper change here is to squash all
+> the functions in one, and point all of the hooks to it.
+>
+> With the change you have my ack.
+>
+> BTW, you could move cb710_mmc_suspend() (or whatever you'll call it) to one
+> ifdef block with cb710_mmc_dev_pm_ops.
+>
 
-> > The hugepagesnid= option introduced by this commit allows the user
-> > to specify which NUMA nodes should be used to allocate boot-time HugeTLB
-> > pages. For example, hugepagesnid=0,2,2G will allocate two 2G huge pages
-> > from node 0 only. More details on patch 3/4 and patch 4/4.
-> > 
-> 
-> Strange, it would seem better to just reserve as many hugepages as you 
-> want so that you get the desired number on each node and then free the 
-> ones you don't need at runtime.
+It makes perfect sense to squash suspend and resume. Thanks for the 
+review. Code looks lot simpler now. Will send v2 patch shortly.
 
-You mean, for example, if I have a 2 node system and want 2 1G huge pages
-from node 1, then I have to allocate 4 1G huge pages and then free 2 pages
-on node 0 after boot? That seems very cumbersome to me. Besides, what if
-node0 needs this memory during boot?
+-- Shuah
 
-> That probably doesn't work because we can't free very large hugepages that 
-> are reserved at boot, would fixing that issue reduce the need for this 
-> patchset?
-
-I don't think so.
+-- 
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
