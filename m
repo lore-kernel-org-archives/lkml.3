@@ -1,73 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751803AbaBKXDu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 18:03:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42093 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751316AbaBKXDt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 18:03:49 -0500
-Date: Tue, 11 Feb 2014 15:03:47 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: <gregkh@linuxfoundation.org>, <cl@linux-foundation.org>,
-        <penberg@kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devel@openvz.org>
-Subject: Re: [PATCH 1/2] kobject: don't block for each kobject_uevent
-Message-Id: <20140211150347.17b9473bed7952baa2ed1438@linux-foundation.org>
-In-Reply-To: <ca22d856315916d3e8c74666da7079b9ae42e646.1391942582.git.vdavydov@parallels.com>
-References: <ca22d856315916d3e8c74666da7079b9ae42e646.1391942582.git.vdavydov@parallels.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751965AbaBKXMK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 18:12:10 -0500
+Received: from mga11.intel.com ([192.55.52.93]:48333 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750978AbaBKXMG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 18:12:06 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,828,1384329600"; 
+   d="scan'208";a="479914630"
+Date: Tue, 11 Feb 2014 16:12:11 -0700 (MST)
+From: Ross Zwisler <ross.zwisler@linux.intel.com>
+X-X-Sender: rzwisler@scrumpy
+To: Matthew Wilcox <matthew.r.wilcox@intel.com>
+cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-ext4@vger.kernel.org,
+        Ross Zwisler <ross.zwisler@linux.intel.com>
+Subject: Re: [PATCH v5 19/22] ext4: Add XIP functionality
+In-Reply-To: <CF1FF3EB.24114%matthew.r.wilcox@intel.com>
+Message-ID: <alpine.OSX.2.00.1402111536290.55274@scrumpy>
+References: <cover.1389779961.git.matthew.r.wilcox@intel.com> <CF1FF3EB.24114%matthew.r.wilcox@intel.com>
+User-Agent: Alpine 2.00 (OSX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 9 Feb 2014 14:56:15 +0400 Vladimir Davydov <vdavydov@parallels.com> wrote:
-
-> Currently kobject_uevent has somewhat unpredictable semantics. The point
-> is, since it may call a usermode helper and wait for it to execute
-> (UMH_WAIT_EXEC), it is impossible to say for sure what lock dependencies
-> it will introduce for the caller - strictly speaking it depends on what
-> fs the binary is located on and the set of locks fork may take. There
-> are quite a few kobject_uevent's users that do not take this into
-> account and call it with various mutexes taken, e.g. rtnl_mutex,
-> net_mutex, which might potentially lead to a deadlock.
+On Wed, 15 Jan 2014, Matthew Wilcox wrote:
+> From: Ross Zwisler <ross.zwisler@linux.intel.com>
 > 
-> Since there is actually no reason to wait for the usermode helper to
-> execute there, let's make kobject_uevent start the helper asynchronously
-> with the aid of the UMH_NO_WAIT flag.
+> This is a port of the XIP functionality found in the current version of
+> ext2.
 > 
-> Personally, I'm interested in this, because I really want kobject_uevent
-> to be called under the slab_mutex in the slub implementation as it used
-> to be some time ago, because it greatly simplifies synchronization and
-> automatically fixes a kmemcg-related race. However, there was a deadlock
-> detected on an attempt to call kobject_uevent under the slab_mutex (see
-> https://lkml.org/lkml/2012/1/14/45), which was reported to be fixed by
-> releasing the slab_mutex for kobject_uevent. Unfortunately, there was no
-> information about who exactly blocked on the slab_mutex causing the
-> usermode helper to stall, neither have I managed to find this out or
-> reproduce the issue.
-> 
-> BTW, this is not the first attempt to make kobject_uevent use
-> UMH_NO_WAIT. Previous one was made by commit f520360d93c, but it was
-> wrong (it passed arguments allocated on stack to async thread) so it was
-> reverted (commit 05f54c13cd0c). It targeted on speeding up the boot
-> process though.
+> Signed-off-by: Ross Zwisler <ross.zwisler@linux.intel.com>
+> Reviewed-by: Andreas Dilger <andreas.dilger@intel.com>
+> [heavily tweaked]
+> Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
 
-The patches look good to me.  One is kobject (Greg) and the other is
-slub (Pekka), so I grabbed them ;) Reviews-and-acks, please?
+...
 
+> diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+> index c767666..8b73d77 100644
+> --- a/fs/ext4/inode.c
+> +++ b/fs/ext4/inode.c
+> @@ -663,6 +663,18 @@ found:
+>  			WARN_ON(1);
+>  		}
+>  
+> +		/* this is probably wrong for ext4.  unlike ext2, ext4 supports
+> +		 * uninitialised extents, so we should probably be hooking
+> +		 * into the "make it initialised" code instead. */
+> +		if (IS_XIP(inode)) {
 
+With the very first version of this patch the above logic seemed to work
+correctly, zeroing blocks as we allocated them.  With the current XIP
+infrastructure based tightly on direct IO this ends up being wrong because in
+some cases we can call ext4_map_blocks() twice for a given block.  
 
-btw, when referring to commits, please use the form
+A quick userland test program that creates a new file, truncates it up to 4k
+and then does a partial block write will end up giving you a file filled with
+all zeros.  This is because we zero the data before the write, do the write,
+and then zero again, overwriting the data.  The second call to
+ext4_map_blocks() happens via ext4_ext_direct_IO =>
+ext4_convert_unwritten_extents() => ext4_map_blocks().
 
-f520360d93c ("kobject: don't block for each kobject_uevent")
+We can know in ext4_map_blocks() that we are being called after a write has
+already completed by looking at the flags.  One solution to get around this
+double-zeroing would be to change the above test to:
 
-because the same commit can have different hashes in different trees.
++                 if (IS_XIP(inode) && !(flags & EXT4_GET_BLOCKS_CONVERT)) {
 
-(Although I suspect the amount of convenience this provides others
-doesn't match the amount of time I spend fixing changelogs!)
+This fixes the tests I've been able to come up with, but I'm not certain it's
+the correct fix for the long term.  It seems wasteful to zero the blocks we're
+allocating, just to have the zeros overwritten immediately by a write.  Maybe
+a cleaner way would be to try and zero the unwritten bits inside of
+ext4_convert_unwritten_extents(), or somewhere similar?
 
+It's worth noting that I don't think the direct I/O path has this kind of
+logic because they don't allow partial block writes.  The regular I/O path
+knows to zero unwritten space based on the BH_New flag, as set via the
+set_buffer_new() call in ext4_da_map_blocks().  This is a pretty different I/O
+path, though, so I'm not sure how much we can borrow for the XIP code.
+
+Thoughts on the correct fix?
+
+- Ross
