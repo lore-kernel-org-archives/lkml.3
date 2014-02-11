@@ -1,82 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751744AbaBKLk5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 06:40:57 -0500
-Received: from mail-we0-f169.google.com ([74.125.82.169]:35135 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751256AbaBKLkz (ORCPT
+	id S1751626AbaBKLmq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 06:42:46 -0500
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:43089 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750984AbaBKLmp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 06:40:55 -0500
-Date: Tue, 11 Feb 2014 11:40:48 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@kernel.org>
-Subject: Re: [PATCH] mfd: dbx500/abx500: root out hardcoded IRQ assignments
-Message-ID: <20140211114048.GO32042@lee--X1>
-References: <1392114599-481-1-git-send-email-linus.walleij@linaro.org>
+	Tue, 11 Feb 2014 06:42:45 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1392114599-481-1-git-send-email-linus.walleij@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAOMwXhOaJoYgrtBuXgZO3PGym+-ndNrrN2NGTX90vWZWTuG=Kg@mail.gmail.com>
+References: <1391859219-3102-1-git-send-email-lpapp@kde.org>
+	<CAK9yfHx2W3KXzBJavpDwXqBUxM8Uw6tWLRGBLjUq1jS_yWYw-Q@mail.gmail.com>
+	<CAOMwXhNmjehcd+aiWGuKs7CijheXXngsXTHMfG9SDLpHO=KaPw@mail.gmail.com>
+	<CAK9yfHwxmtEXQwPZJfU980G6g7sbrLDU=nZiN=dkwVwvg7UXyA@mail.gmail.com>
+	<CAOMwXhNcYpBvMEhcxtvsnByeB7QxO56gjAC+JP2s0tRvmyQiXQ@mail.gmail.com>
+	<CAK9yfHxUf_nyd0aYyMGHS5tCEKo-GrLxGNu_18dSL12cPe+J6Q@mail.gmail.com>
+	<CAOMwXhOaJoYgrtBuXgZO3PGym+-ndNrrN2NGTX90vWZWTuG=Kg@mail.gmail.com>
+Date: Tue, 11 Feb 2014 17:12:44 +0530
+Message-ID: <CAK9yfHxzLbENXz60oFTHfp6NmhyyjPavKstrBbrGw_KwjKFYkA@mail.gmail.com>
+Subject: Re: [PATCH v2] mfd: MAX6650/6651 support
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Laszlo Papp <lpapp@kde.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Lee Jones <lee.jones@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The DBx500 and ABx500 should be getting their IRQs from the
-> device tree and nowhere else. Get rid of all the static assignments
-> everywhere, delete it from the driver, platform data and the
-> board files in one swift strike.
-> 
-> Lots of cross-dependencies in the MFD drivers for PRCMU and
-> AB8500 makes it necessary to strike everywhere at once to
-> eradicate IRQs passed as resources and platform data to the left
-> and right around the platform.
-> 
-> Cc: Mark Brown <broonie@kernel.org>
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> Cc: Lee Jones <lee.jones@linaro.org>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
-> Sam/Lee: I'm looking for an ACK on this to take the result through
-> ARM SoC.
+On 11 February 2014 17:09, Laszlo Papp <lpapp@kde.org> wrote:
+> On Tue, Feb 11, 2014 at 11:14 AM, Sachin Kamat <sachin.kamat@linaro.org> wrote:
+>> On 11 February 2014 15:40, Laszlo Papp <lpapp@kde.org> wrote:
+>>>>>> [snip]
+>>>>>>> +
+>>>>>>> +struct max665x_dev {
+>>>>>>> +       struct device *dev;
+>>>>>>> +       struct mutex iolock;
+>>>>>>> +
+>>>>>>> +       struct i2c_client *i2c;
+>>>>>>> +       struct regmap     *map;
+>>>>>>> +
+>>>>>>> +       int type;
+>>>>>>
+>>>>>> Unnecessary extra lines above could be removed.
+>>>>>
+>>>>> I prefer it that way, but I will remove the two extra lines as you wish.
+>>>>
+>>>> As I already said, these are just nits and only since you were
+>>>> re-spinning the patch,
+>>>> I suggested them. Also, since this is a new file being added, it
+>>>> avoids further patches
+>>>> doing these same things.
+>>>
+>>> Well, it is worse in my opinion because it makes the code more bloated
+>>> without separation between units, but I made the requested change
+>>> anyway because the feature matters lotta more to me than this styling.
+>>> Hope it is OK now?
+>>
+>> The only thing that you missed among what you agreed to change is the
+>> arrangement of
+>> "depends on" and "select" in Kconfig. Rest look OK. Thanks for taking care.
+>
+> Ah, true. I will do that tomorrow if it is a blocker for the integration.
 
-Actually I have a better idea. Gather all of the Acks/head-nods you
-need and I'll create an immutable branch for the pair of us to pull
-from.
-
-> I've been ambivalent on how to look up the IRQ resource for the
-> AB8500 from the device tree (as it is hanging off the main GIC
-> interrupt controller rather than the PRCMU) and eventually ended
-> up with this solution. I experimented with modifying mfd-core.c
-> to add resources from the device tree, but I didn't like the
-> result, it seems MFD cells should get their resources exclusively
-> from the parent instantiating the cell, so I ended up with this.
-
-Well no one knows that h/w better than you do and the code looks fine
-to be taking into account it _is_ the SoC and the relationship between
-the AB8500 and DB8500.
-
-> Maybe Broonie has ideas about this too?
-> ---
->  arch/arm/mach-ux500/board-mop500-audio.c |   1 -
->  arch/arm/mach-ux500/cpu-db8500.c         |   4 -
->  arch/arm/mach-ux500/irqs-board-mop500.h  |  55 --------------
->  arch/arm/mach-ux500/irqs-db8500.h        | 125 -------------------------------
->  arch/arm/mach-ux500/irqs.h               |  49 ------------
->  drivers/mfd/ab8500-core.c                |  27 +++----
->  drivers/mfd/db8500-prcmu.c               |  34 ++++++---
->  include/linux/mfd/abx500/ab8500.h        |   2 -
->  include/linux/mfd/dbx500-prcmu.h         |   2 -
->  9 files changed, 36 insertions(+), 263 deletions(-)
->  delete mode 100644 arch/arm/mach-ux500/irqs-board-mop500.h
->  delete mode 100644 arch/arm/mach-ux500/irqs-db8500.h
->  delete mode 100644 arch/arm/mach-ux500/irqs.h
+I don't think it is a blocker in any way and you may choose to ignore
+it as well.
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+With warm regards,
+Sachin
