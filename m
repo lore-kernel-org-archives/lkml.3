@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756151AbaBKURs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:17:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39977 "EHLO
+	id S932351AbaBKUSL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:18:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39971 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753306AbaBKTGb (ORCPT
+	with ESMTP id S1753392AbaBKTGa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:31 -0500
+	Tue, 11 Feb 2014 14:06:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Max Filippov <jcmvbkbc@gmail.com>
-Subject: [PATCH 3.12 034/107] xtensa: xtfpga: fix definitions of platform devices
-Date: Tue, 11 Feb 2014 11:05:00 -0800
-Message-Id: <20140211184749.172068546@linuxfoundation.org>
+        Christoph Lameter <cl@linux.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, Li Zefan <lizefan@huawei.com>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: [PATCH 3.12 024/107] slub: Fix calculation of cpu slabs
+Date: Tue, 11 Feb 2014 11:04:50 -0800
+Message-Id: <20140211184748.888825119@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -28,73 +30,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Max Filippov <jcmvbkbc@gmail.com>
+From: Li Zefan <lizefan@huawei.com>
 
-commit a558d99263936b8a67d4eff8918745a77bfd8c31 upstream.
+commit 8afb1474db4701d1ab80cd8251137a3260e6913e upstream.
 
-Remove __initdata attribute, as the devices may be used after init
-sections are freed.
+  /sys/kernel/slab/:t-0000048 # cat cpu_slabs
+  231 N0=16 N1=215
+  /sys/kernel/slab/:t-0000048 # cat slabs
+  145 N0=36 N1=109
 
-Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+See, the number of slabs is smaller than that of cpu slabs.
+
+The bug was introduced by commit 49e2258586b423684f03c278149ab46d8f8b6700
+("slub: per cpu cache for partial pages").
+
+We should use page->pages instead of page->pobjects when calculating
+the number of cpu partial slabs. This also fixes the mapping of slabs
+and nodes.
+
+As there's no variable storing the number of total/active objects in
+cpu partial slabs, and we don't have user interfaces requiring those
+statistics, I just add WARN_ON for those cases.
+
+Acked-by: Christoph Lameter <cl@linux.com>
+Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/xtensa/platforms/xtfpga/setup.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ mm/slub.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/arch/xtensa/platforms/xtfpga/setup.c
-+++ b/arch/xtensa/platforms/xtfpga/setup.c
-@@ -194,7 +194,7 @@ void __init platform_calibrate_ccount(vo
-  *  Ethernet -- OpenCores Ethernet MAC (ethoc driver)
-  */
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -4272,7 +4272,13 @@ static ssize_t show_slab_objects(struct
  
--static struct resource ethoc_res[] __initdata = {
-+static struct resource ethoc_res[] = {
- 	[0] = { /* register space */
- 		.start = OETH_REGS_PADDR,
- 		.end   = OETH_REGS_PADDR + OETH_REGS_SIZE - 1,
-@@ -212,7 +212,7 @@ static struct resource ethoc_res[] __ini
- 	},
- };
- 
--static struct ethoc_platform_data ethoc_pdata __initdata = {
-+static struct ethoc_platform_data ethoc_pdata = {
- 	/*
- 	 * The MAC address for these boards is 00:50:c2:13:6f:xx.
- 	 * The last byte (here as zero) is read from the DIP switches on the
-@@ -222,7 +222,7 @@ static struct ethoc_platform_data ethoc_
- 	.phy_id = -1,
- };
- 
--static struct platform_device ethoc_device __initdata = {
-+static struct platform_device ethoc_device = {
- 	.name = "ethoc",
- 	.id = -1,
- 	.num_resources = ARRAY_SIZE(ethoc_res),
-@@ -236,13 +236,13 @@ static struct platform_device ethoc_devi
-  *  UART
-  */
- 
--static struct resource serial_resource __initdata = {
-+static struct resource serial_resource = {
- 	.start	= DUART16552_PADDR,
- 	.end	= DUART16552_PADDR + 0x1f,
- 	.flags	= IORESOURCE_MEM,
- };
- 
--static struct plat_serial8250_port serial_platform_data[] __initdata = {
-+static struct plat_serial8250_port serial_platform_data[] = {
- 	[0] = {
- 		.mapbase	= DUART16552_PADDR,
- 		.irq		= DUART16552_INTNUM,
-@@ -255,7 +255,7 @@ static struct plat_serial8250_port seria
- 	{ },
- };
- 
--static struct platform_device xtavnet_uart __initdata = {
-+static struct platform_device xtavnet_uart = {
- 	.name		= "serial8250",
- 	.id		= PLAT8250_DEV_PLATFORM,
- 	.dev		= {
+ 			page = ACCESS_ONCE(c->partial);
+ 			if (page) {
+-				x = page->pobjects;
++				node = page_to_nid(page);
++				if (flags & SO_TOTAL)
++					WARN_ON_ONCE(1);
++				else if (flags & SO_OBJECTS)
++					WARN_ON_ONCE(1);
++				else
++					x = page->pages;
+ 				total += x;
+ 				nodes[node] += x;
+ 			}
 
 
