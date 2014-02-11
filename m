@@ -1,97 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752399AbaBKXyn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 18:54:43 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42423 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751799AbaBKXyl (ORCPT
+	id S1752403AbaBKXz5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 18:55:57 -0500
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:39848 "EHLO
+	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751347AbaBKXz4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 18:54:41 -0500
-Date: Tue, 11 Feb 2014 15:54:40 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, <dwmw2@infradead.org>,
-        <linux-mtd@lists.infradead.org>
-Subject: Re: [PATCH 2/3] jffs2: avoid soft-lockup in
- jffs2_reserve_space_gc()
-Message-Id: <20140211155440.62c5e90eb498ec2964258969@linux-foundation.org>
-In-Reply-To: <52F5934B.4000101@huawei.com>
-References: <52F592F2.6010008@huawei.com>
-	<52F5934B.4000101@huawei.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 11 Feb 2014 18:55:56 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: n_tty: Simplify input_available_p()
+Date: Tue, 11 Feb 2014 18:55:30 -0500
+Message-Id: <1392162930-4643-1-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 1.8.1.2
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 8 Feb 2014 10:15:39 +0800 Li Zefan <lizefan@huawei.com> wrote:
+Greg,
 
-> We triggered soft-lockup under stress test on 2.6.34 kernel.
-> 
-> BUG: soft lockup - CPU#1 stuck for 60009ms! [lockf2.test:14488]
-> ...
-> [<bf09a4d4>] (jffs2_do_reserve_space+0x420/0x440 [jffs2])
-> [<bf09a528>] (jffs2_reserve_space_gc+0x34/0x78 [jffs2])
-> [<bf0a1350>] (jffs2_garbage_collect_dnode.isra.3+0x264/0x478 [jffs2])
-> [<bf0a2078>] (jffs2_garbage_collect_pass+0x9c0/0xe4c [jffs2])
-> [<bf09a670>] (jffs2_reserve_space+0x104/0x2a8 [jffs2])
-> [<bf09dc48>] (jffs2_write_inode_range+0x5c/0x4d4 [jffs2])
-> [<bf097d8c>] (jffs2_write_end+0x198/0x2c0 [jffs2])
-> [<c00e00a4>] (generic_file_buffered_write+0x158/0x200)
-> [<c00e14f4>] (__generic_file_aio_write+0x3a4/0x414)
-> [<c00e15c0>] (generic_file_aio_write+0x5c/0xbc)
-> [<c012334c>] (do_sync_write+0x98/0xd4)
-> [<c0123a84>] (vfs_write+0xa8/0x150)
-> [<c0123d74>] (sys_write+0x3c/0xc0)]
-> 
-> Fix this by adding a cond_resched() in the while loop.
-> 
-> ...
->
-> --- a/fs/jffs2/nodemgmt.c
-> +++ b/fs/jffs2/nodemgmt.c
-> @@ -216,15 +216,20 @@ int jffs2_reserve_space_gc(struct jffs2_sb_info *c, uint32_t minsize,
->  
->  	jffs2_dbg(1, "%s(): Requested 0x%x bytes\n", __func__, minsize);
->  
-> -	spin_lock(&c->erase_completion_lock);
-> -	while(ret == -EAGAIN) {
-> +	while (true) {
-> +		spin_lock(&c->erase_completion_lock);
->  		ret = jffs2_do_reserve_space(c, minsize, len, sumsize);
->  		if (ret) {
->  			jffs2_dbg(1, "%s(): looping, ret is %d\n",
->  				  __func__, ret);
->  		}
-> +		spin_unlock(&c->erase_completion_lock);
-> +
-> +		if (ret == -EAGAIN)
-> +			cond_resched();
-> +		else
-> +			break;
->  	}
-> -	spin_unlock(&c->erase_completion_lock);
->  	if (!ret)
->  		ret = jffs2_prealloc_raw_node_refs(c, c->nextblock, 1);
+Please note this patch requires
+   n_tty: Fix poll() when TIME_CHAR and MIN_CHAR == 0
 
-Looks OK.  We can do this:
+Regards,
+Peter Hurley
 
---- a/fs/jffs2/nodemgmt.c~jffs2-avoid-soft-lockup-in-jffs2_reserve_space_gc-fix
-+++ a/fs/jffs2/nodemgmt.c
-@@ -211,7 +211,7 @@ out:
- int jffs2_reserve_space_gc(struct jffs2_sb_info *c, uint32_t minsize,
- 			   uint32_t *len, uint32_t sumsize)
- {
--	int ret = -EAGAIN;
-+	int ret;
- 	minsize = PAD(minsize);
+--- >% ---
+From: Peter Hurley <peter@hurleysoftware.com>
+Date: Tue, 11 Feb 2014 10:19:14 -0500
+Subject: [PATCH] n_tty: Simplify input_available_p()
+
+Return the result of the respective boolean evaluation, rather
+than evaluating and returning 0 or 1.
+
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+
+ drivers/tty/n_tty.c | 11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+index 2747a3b..df6dda6 100644
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -1898,13 +1898,10 @@ static inline int input_available_p(struct tty_struct *tty, int poll)
+ 	struct n_tty_data *ldata = tty->disc_data;
+ 	int amt = poll && !TIME_CHAR(tty) && MIN_CHAR(tty) ? MIN_CHAR(tty) : 1;
  
- 	jffs2_dbg(1, "%s(): Requested 0x%x bytes\n", __func__, minsize);
-_
-
-
-I now have four jffs2 bugfixes but cannot unload them on anyone. 
-Waddup?
+-	if (ldata->icanon && !L_EXTPROC(tty)) {
+-		if (ldata->canon_head != ldata->read_tail)
+-			return 1;
+-	} else if (read_cnt(ldata) >= amt)
+-		return 1;
+-
+-	return 0;
++	if (ldata->icanon && !L_EXTPROC(tty))
++		return ldata->canon_head != ldata->read_tail;
++	else
++		return read_cnt(ldata) >= amt;
+ }
+ 
+ /**
+-- 
+1.8.1.2
 
