@@ -1,75 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752101AbaBKRwm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 12:52:42 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:58891 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751614AbaBKRwi (ORCPT
+	id S1752149AbaBKRwu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 12:52:50 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:55941 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751614AbaBKRws (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 12:52:38 -0500
-Date: Tue, 11 Feb 2014 11:50:21 -0600
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Andy Gross <agross@codeaurora.org>,
-        Dan Williams <dan.j.williams@intel.com>, dmaengine@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [Patch v5 1/2] dmaengine: add Qualcomm BAM dma driver
-Message-ID: <20140211175021.GF841@joshc.qualcomm.com>
-References: <1391546556-27702-1-git-send-email-agross@codeaurora.org>
- <1391546556-27702-2-git-send-email-agross@codeaurora.org>
- <20140211173048.GP10628@intel.com>
- <20140211174910.GE841@joshc.qualcomm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140211174910.GE841@joshc.qualcomm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 11 Feb 2014 12:52:48 -0500
+From: Pawel Moll <pawel.moll@arm.com>
+To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
+Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>
+Subject: [PATCH v2 1/2] mfd: syscon: Add platform data with a regmap config name
+Date: Tue, 11 Feb 2014 17:52:44 +0000
+Message-Id: <1392141165-14338-1-git-send-email-pawel.moll@arm.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <20140211174829.GJ15081@lee--X1>
+References: <20140211174829.GJ15081@lee--X1>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ugh.
+Define syscon platform data structure that can be used
+to define a regmap config name. This is particularly useful
+in the regmap debugfs when there is more than one syscon
+device registered, to distinguish the register blocks.
 
-On Tue, Feb 11, 2014 at 11:49:10AM -0600, Josh Cartwright wrote:
-> On Tue, Feb 11, 2014 at 11:00:48PM +0530, Vinod Koul wrote:
-> > On Tue, Feb 04, 2014 at 02:42:35PM -0600, Andy Gross wrote:
-> > > Add the DMA engine driver for the QCOM Bus Access Manager (BAM) DMA controller
-> > > found in the MSM 8x74 platforms.
-> > > 
-> > > Each BAM DMA device is associated with a specific on-chip peripheral.  Each
-> > > channel provides a uni-directional data transfer engine that is capable of
-> > > transferring data between the peripheral and system memory (System mode), or
-> > > between two peripherals (BAM2BAM).
-> > > 
-> > > The initial release of this driver only supports slave transfers between
-> > > peripherals and system memory.
-> > > 
-> > > Signed-off-by: Andy Gross <agross@codeaurora.org>
-> >
-> > > +++ b/drivers/dma/qcom_bam_dma.c
-> [..]
-> > > +static void bam_reset_channel(struct bam_chan *bchan)
-> > > +{
-> > > +	struct bam_device *bdev = bchan->bdev;
-> > > +
-> > > +	/* reset channel */
-> > > +	writel_relaxed(1, bdev->regs + BAM_P_RST(bchan->id));
-> > > +	writel_relaxed(0, bdev->regs + BAM_P_RST(bchan->id));
-> > > +
-> > > +	/* don't allow reorder of the channel reset */
-> > > +	wmb();
-> > Documentation/memory-barriers.txt describes wmb() as a CPU barier but based on
-> > above you want it to be a compiler barrier then you should do 1st write,
-> > barrier(), second write.
-> 
-> It could also be that the intent was to prevent these writes from being
-> ordered before setting the initialized flag below, either way the
+Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+---
+ drivers/mfd/syscon.c                 | 4 ++++
+ include/linux/platform_data/syscon.h | 8 ++++++++
+ 2 files changed, 12 insertions(+)
+ create mode 100644 include/linux/platform_data/syscon.h
 
-          ^ after
-
-> comment could be made clearer.
-
+diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
+index 71841f9..854b8d9 100644
+--- a/drivers/mfd/syscon.c
++++ b/drivers/mfd/syscon.c
+@@ -18,6 +18,7 @@
+ #include <linux/of.h>
+ #include <linux/of_address.h>
+ #include <linux/of_platform.h>
++#include <linux/platform_data/syscon.h>
+ #include <linux/platform_device.h>
+ #include <linux/regmap.h>
+ #include <linux/mfd/syscon.h>
+@@ -126,6 +127,7 @@ static struct regmap_config syscon_regmap_config = {
+ static int syscon_probe(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
++	struct syscon_platform_data *pdata = dev_get_platdata(dev);
+ 	struct syscon *syscon;
+ 	struct resource *res;
+ 	void __iomem *base;
+@@ -143,6 +145,8 @@ static int syscon_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 
+ 	syscon_regmap_config.max_register = res->end - res->start - 3;
++	if (pdata)
++		syscon_regmap_config.name = pdata->label;
+ 	syscon->regmap = devm_regmap_init_mmio(dev, base,
+ 					&syscon_regmap_config);
+ 	if (IS_ERR(syscon->regmap)) {
+diff --git a/include/linux/platform_data/syscon.h b/include/linux/platform_data/syscon.h
+new file mode 100644
+index 0000000..921e59a
+--- /dev/null
++++ b/include/linux/platform_data/syscon.h
+@@ -0,0 +1,8 @@
++#ifndef PLATFORM_DATA_SYSCON_H
++#define PLATFORM_DATA_SYSCON_H
++
++struct syscon_platform_data {
++	        const char *label;
++};
++
++#endif
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+1.8.3.2
+
