@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754715AbaBKUmh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:42:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39757 "EHLO
+	id S1754757AbaBKUm6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:42:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39755 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753043AbaBKTFx (ORCPT
+	with ESMTP id S1752994AbaBKTFw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:05:53 -0500
+	Tue, 11 Feb 2014 14:05:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
-Subject: [PATCH 3.13 100/120] drm/gma500: Lock struct_mutex around cursor updates
-Date: Tue, 11 Feb 2014 11:05:41 -0800
-Message-Id: <20140211184826.478638184@linuxfoundation.org>
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Subject: [PATCH 3.13 099/120] drm/rcar-du: Update plane pitch in .mode_set_base() operation
+Date: Tue, 11 Feb 2014 11:05:40 -0800
+Message-Id: <20140211184826.444968258@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -28,64 +28,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 
-commit 631794b44bd3dbfba37074954d5c584c9e8725f0 upstream.
+commit eb86301f293da3c362db729a9f40ddb25755902b upstream.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=64361
-Signed-off-by: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+When setting a new frame buffer with the mode set base operation the
+pitch value might change. Set the hardware plane pitch register at the
+same time as the plane base address in the rcar_du_plane_update_base()
+function to make sure the pitch value always matches the frame buffer.
+
+Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/gma500/gma_display.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/rcar-du/rcar_du_crtc.c  |    1 -
+ drivers/gpu/drm/rcar-du/rcar_du_plane.c |   21 +++++++++++----------
+ 2 files changed, 11 insertions(+), 11 deletions(-)
 
---- a/drivers/gpu/drm/gma500/gma_display.c
-+++ b/drivers/gpu/drm/gma500/gma_display.c
-@@ -349,6 +349,7 @@ int gma_crtc_cursor_set(struct drm_crtc
- 	/* If we didn't get a handle then turn the cursor off */
- 	if (!handle) {
- 		temp = CURSOR_MODE_DISABLE;
-+		mutex_lock(&dev->struct_mutex);
+--- a/drivers/gpu/drm/rcar-du/rcar_du_crtc.c
++++ b/drivers/gpu/drm/rcar-du/rcar_du_crtc.c
+@@ -371,7 +371,6 @@ static int rcar_du_crtc_mode_set(struct
+ 		goto error;
  
- 		if (gma_power_begin(dev, false)) {
- 			REG_WRITE(control, temp);
-@@ -365,6 +366,7 @@ int gma_crtc_cursor_set(struct drm_crtc
- 			gma_crtc->cursor_obj = NULL;
- 		}
+ 	rcrtc->plane->format = format;
+-	rcrtc->plane->pitch = crtc->fb->pitches[0];
  
-+		mutex_unlock(&dev->struct_mutex);
- 		return 0;
- 	}
+ 	rcrtc->plane->src_x = x;
+ 	rcrtc->plane->src_y = y;
+--- a/drivers/gpu/drm/rcar-du/rcar_du_plane.c
++++ b/drivers/gpu/drm/rcar-du/rcar_du_plane.c
+@@ -104,6 +104,15 @@ void rcar_du_plane_update_base(struct rc
+ {
+ 	struct rcar_du_group *rgrp = plane->group;
+ 	unsigned int index = plane->hwindex;
++	u32 mwr;
++
++	/* Memory pitch (expressed in pixels) */
++	if (plane->format->planes == 2)
++		mwr = plane->pitch;
++	else
++		mwr = plane->pitch * 8 / plane->format->bpp;
++
++	rcar_du_plane_write(rgrp, index, PnMWR, mwr);
  
-@@ -374,9 +376,12 @@ int gma_crtc_cursor_set(struct drm_crtc
- 		return -EINVAL;
- 	}
+ 	/* The Y position is expressed in raster line units and must be doubled
+ 	 * for 32bpp formats, according to the R8A7790 datasheet. No mention of
+@@ -133,6 +142,8 @@ void rcar_du_plane_compute_base(struct r
+ {
+ 	struct drm_gem_cma_object *gem;
  
-+	mutex_lock(&dev->struct_mutex);
- 	obj = drm_gem_object_lookup(dev, file_priv, handle);
--	if (!obj)
--		return -ENOENT;
-+	if (!obj) {
-+		ret = -ENOENT;
-+		goto unlock;
-+	}
++	plane->pitch = fb->pitches[0];
++
+ 	gem = drm_fb_cma_get_gem_obj(fb, 0);
+ 	plane->dma[0] = gem->paddr + fb->offsets[0];
  
- 	if (obj->size < width * height * 4) {
- 		dev_dbg(dev->dev, "Buffer is too small\n");
-@@ -440,10 +445,13 @@ int gma_crtc_cursor_set(struct drm_crtc
- 	}
+@@ -209,7 +220,6 @@ static void __rcar_du_plane_setup(struct
+ 	struct rcar_du_group *rgrp = plane->group;
+ 	u32 ddcr2 = PnDDCR2_CODE;
+ 	u32 ddcr4;
+-	u32 mwr;
  
- 	gma_crtc->cursor_obj = obj;
-+unlock:
-+	mutex_unlock(&dev->struct_mutex);
- 	return ret;
+ 	/* Data format
+ 	 *
+@@ -240,14 +250,6 @@ static void __rcar_du_plane_setup(struct
+ 	rcar_du_plane_write(rgrp, index, PnDDCR2, ddcr2);
+ 	rcar_du_plane_write(rgrp, index, PnDDCR4, ddcr4);
  
- unref_cursor:
- 	drm_gem_object_unreference(obj);
-+	mutex_unlock(&dev->struct_mutex);
- 	return ret;
- }
+-	/* Memory pitch (expressed in pixels) */
+-	if (plane->format->planes == 2)
+-		mwr = plane->pitch;
+-	else
+-		mwr = plane->pitch * 8 / plane->format->bpp;
+-
+-	rcar_du_plane_write(rgrp, index, PnMWR, mwr);
+-
+ 	/* Destination position and size */
+ 	rcar_du_plane_write(rgrp, index, PnDSXR, plane->width);
+ 	rcar_du_plane_write(rgrp, index, PnDSYR, plane->height);
+@@ -309,7 +311,6 @@ rcar_du_plane_update(struct drm_plane *p
  
+ 	rplane->crtc = crtc;
+ 	rplane->format = format;
+-	rplane->pitch = fb->pitches[0];
+ 
+ 	rplane->src_x = src_x >> 16;
+ 	rplane->src_y = src_y >> 16;
 
 
