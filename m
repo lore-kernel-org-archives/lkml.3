@@ -1,253 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752371AbaBKRZs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 12:25:48 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:56746 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751639AbaBKRZp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 12:25:45 -0500
+	id S1752105AbaBKR1S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 12:27:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57772 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751015AbaBKR1Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 12:27:16 -0500
+Date: Tue, 11 Feb 2014 12:27:07 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: xfs@oss.sgi.com
+Subject: 3.14-rc2 XFS backtrace because irqs_disabled.
+Message-ID: <20140211172707.GA1749@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
 MIME-Version: 1.0
-In-Reply-To: <20140211163629.GM18807@madcap2.tricolour.ca>
-References: <1391710528-23481-1-git-send-email-wroberts@tresys.com>
-	<1391710528-23481-3-git-send-email-wroberts@tresys.com>
-	<20140211163629.GM18807@madcap2.tricolour.ca>
-Date: Tue, 11 Feb 2014 09:25:44 -0800
-Message-ID: <CAFftDdrxZtSpQi5zugwkcbfRhvbsyL9y=51x8PwqryhtE+2x4g@mail.gmail.com>
-Subject: Re: [PATCH v5 3/3] audit: Audit proc/<pid>/cmdline aka proctitle
-From: William Roberts <bill.c.roberts@gmail.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: "linux-audit@redhat.com" <linux-audit@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        akpm@linux-foundation.org, Stephen Smalley <sds@tycho.nsa.gov>,
-        William Roberts <wroberts@tresys.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 8:36 AM, Richard Guy Briggs <rgb@redhat.com> wrote:
-> On 14/02/06, William Roberts wrote:
->> During an audit event, cache and print the value of the process's
->> proctitle value (proc/<pid>/cmdline). This is useful in situations
->> where processes are started via fork'd virtual machines where the
->> comm field is incorrect. Often times, setting the comm field still
->> is insufficient as the comm width is not very wide and most
->> virtual machine "package names" do not fit. Also, during execution,
->> many threads have their comm field set as well. By tying it back to
->> the global cmdline value for the process, audit records will be more
->> complete in systems with these properties. An example of where this
->> is useful and applicable is in the realm of Android. With Android,
->> their is no fork/exec for VM instances. The bare, preloaded Dalvik
->> VM listens for a fork and specialize request. When this request comes
->> in, the VM forks, and the loads the specific application (specializing).
->> This was done to take advantage of COW and to not require a load of
->> basic packages by the VM on very app spawn. When this spawn occurs,
->> the package name is set via setproctitle() and shows up in procfs.
->> Many of these package names are longer then 16 bytes, the historical
->> width of task->comm. Having the cmdline in the audit records will
->> couple the application back to the record directly. Also, on my
->> Debian development box, some audit records were more useful then
->> what was printed under comm.
->>
->> The cached proctitle is tied to the life-cycle of the audit_context
->> structure and is built on demand.
->>
->> Proctitle is controllable by userspace, and thus should not be trusted.
->> It is meant as an aid to assist in debugging. The proctitle event is
->> emitted during syscall audits, and can be filtered with auditctl.
->>
->> Example:
->> type=AVC msg=audit(1391217013.924:386): avc:  denied  { getattr } for  pid=1971 comm="mkdir" name="/" dev="selinuxfs" ino=1 scontext=system_u:system_r:consolekit_t:s0-s0:c0.c255 tcontext=system_u:object_r:security_t:s0 tclass=filesystem
->> type=SYSCALL msg=audit(1391217013.924:386): arch=c000003e syscall=137 success=yes exit=0 a0=7f019dfc8bd7 a1=7fffa6aed2c0 a2=fffffffffff4bd25 a3=7fffa6aed050 items=0 ppid=1967 pid=1971 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm="mkdir" exe="/bin/mkdir" subj=system_u:system_r:consolekit_t:s0-s0:c0.c255 key=(null)
->> type=UNKNOWN[1327] msg=audit(1391217013.924:386):  proctitle=6D6B646972002D70002F7661722F72756E2F636F6E736F6C65
->>
->> Signed-off-by: William Roberts <wroberts@tresys.com>
->
-> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
->
-> Though, I would prefer to see the size of the proctitle copy buffer
-> dynamically allocated based on the size of the original rather than
-> pinned at 128.
+BUG: sleeping function called from invalid context at mm/mempool.c:203
+in_atomic(): 0, irqs_disabled(): 1, pid: 27511, name: trinity-c3
+5 locks held by trinity-c3/27511:
+ #0:  (sb_writers#9){......}, at: [<ffffffff831df3b4>] mnt_want_write+0x24/0x50
+ #1:  (&type->i_mutex_dir_key#3){......}, at: [<ffffffff831cced4>] do_last.isra.51+0x294/0x11f0
+ #2:  (sb_internal#2){......}, at: [<ffffffffc03225c4>] xfs_trans_alloc+0x24/0x40 [xfs]
+ #3:  (&(&ip->i_lock)->mr_lock/1){......}, at: [<ffffffffc036447f>] xfs_ilock+0x16f/0x1b0 [xfs]
+ #4:  (&(&ip->i_lock)->mr_lock){......}, at: [<ffffffffc03646d4>] xfs_ilock_nowait+0x184/0x200 [xfs]
+CPU: 3 PID: 27511 Comm: trinity-c3 Not tainted 3.14.0-rc2+ #111 
+ ffffffff83a3fd56 0000000045a3849a ffff88009f368f60 ffffffff8372afea
+ 0000000000000000 ffff88009f368f88 ffffffff8309ddb5 0000000000000010
+ ffff880243566288 0000000000000008 ffff88009f369008 ffffffff831534d3
+Call Trace:
+ [<ffffffff8372afea>] dump_stack+0x4e/0x7a
+ [<ffffffff8309ddb5>] __might_sleep+0x105/0x150
+ [<ffffffff831534d3>] mempool_alloc+0xa3/0x170
+ [<ffffffff831a955a>] ? deactivate_slab+0x51a/0x590
+ [<ffffffff831f8fd6>] bio_alloc_bioset+0x156/0x210
+ [<ffffffffc0308231>] _xfs_buf_ioapply+0x1c1/0x3c0 [xfs]
+ [<ffffffffc03798f2>] ? xlog_bdstrat+0x22/0x60 [xfs]
+ [<ffffffffc030849b>] xfs_buf_iorequest+0x6b/0xf0 [xfs]
+ [<ffffffffc03798f2>] xlog_bdstrat+0x22/0x60 [xfs]
+ [<ffffffffc037ba87>] xlog_sync+0x3a7/0x5b0 [xfs]
+ [<ffffffffc037bd9f>] xlog_state_release_iclog+0x10f/0x120 [xfs]
+ [<ffffffffc037c840>] xlog_write+0x6f0/0x800 [xfs]
+ [<ffffffffc037e061>] xlog_cil_push+0x2f1/0x410 [xfs]
+ [<ffffffffc037e948>] xlog_cil_force_lsn+0x1d8/0x210 [xfs]
+ [<ffffffffc03428a8>] ? xfs_bmbt_get_all+0x18/0x20 [xfs]
+ [<ffffffffc037cc40>] _xfs_log_force+0x70/0x290 [xfs]
+ [<ffffffff830a4edd>] ? get_parent_ip+0xd/0x50
+ [<ffffffffc037ce86>] xfs_log_force+0x26/0xb0 [xfs]
+ [<ffffffffc03076e6>] ? _xfs_buf_find+0x1f6/0x3c0 [xfs]
+ [<ffffffffc03074e3>] xfs_buf_lock+0x133/0x140 [xfs]
+ [<ffffffffc03076e6>] _xfs_buf_find+0x1f6/0x3c0 [xfs]
+ [<ffffffffc030796a>] xfs_buf_get_map+0x2a/0x1b0 [xfs]
+ [<ffffffffc0383c61>] xfs_trans_get_buf_map+0x1a1/0x240 [xfs]
+ [<ffffffffc034e03d>] xfs_da_get_buf+0xbd/0x100 [xfs]
+ [<ffffffffc0356869>] xfs_dir3_data_init+0x59/0x1d0 [xfs]
+ [<ffffffffc03526db>] ? xfs_dir2_grow_inode+0x13b/0x150 [xfs]
+ [<ffffffffc0354ede>] xfs_dir2_sf_to_block+0x17e/0x7b0 [xfs]
+ [<ffffffffc0351f5a>] ? xfs_dir2_sfe_get_ino+0x1a/0x20 [xfs]
+ [<ffffffffc035e9b4>] ? xfs_dir2_sf_check.isra.7+0x114/0x1b0 [xfs]
+ [<ffffffffc034c24f>] ? xfs_da_compname+0x1f/0x30 [xfs]
+ [<ffffffffc035f503>] ? xfs_dir2_sf_lookup+0x303/0x310 [xfs]
+ [<ffffffffc035f858>] xfs_dir2_sf_addname+0x348/0x6d0 [xfs]
+ [<ffffffffc031970d>] ? xfs_setup_inode+0x1cd/0x320 [xfs]
+ [<ffffffffc03529a4>] xfs_dir_createname+0x184/0x1e0 [xfs]
+ [<ffffffffc03663d9>] xfs_create+0x469/0x580 [xfs]
+ [<ffffffffc0318864>] xfs_vn_mknod+0xc4/0x1e0 [xfs]
+ [<ffffffffc0318993>] xfs_vn_create+0x13/0x20 [xfs]
+ [<ffffffff831ccc15>] vfs_create+0x95/0xc0
+ [<ffffffff831cd638>] do_last.isra.51+0x9f8/0x11f0
+ [<ffffffff831c9e11>] ? link_path_walk+0x81/0x870
+ [<ffffffff831cdef9>] path_openat+0xc9/0x620
+ [<ffffffff8331cc02>] ? put_dec+0x72/0x90
+ [<ffffffff831ceb6d>] do_filp_open+0x4d/0xb0
+ [<ffffffff831bc4ae>] file_open_name+0xfe/0x160
+ [<ffffffff831bc554>] filp_open+0x44/0x60
+ [<ffffffff83221862>] do_coredump+0x602/0xf60
+ [<ffffffff83081358>] get_signal_to_deliver+0x2b8/0x6b0
+ [<ffffffff830024d7>] do_signal+0x57/0x9d0
+ [<ffffffff8311115e>] ? __acct_update_integrals+0x8e/0x120
+ [<ffffffff83730000>] ? __schedule+0x60/0x850
+ [<ffffffff8373a1db>] ? preempt_count_sub+0x6b/0xf0
+ [<ffffffff83735a31>] ? _raw_spin_unlock+0x31/0x50
+ [<ffffffff830ab671>] ? vtime_account_user+0x91/0xa0
+ [<ffffffff8314f57b>] ? context_tracking_user_exit+0x9b/0x100
+ [<ffffffff83002eac>] do_notify_resume+0x5c/0xa0
+ [<ffffffff83736746>] retint_signal+0x46/0x90
+------------[ cut here ]------------
+WARNING: CPU: 3 PID: 27511 at block/blk.h:227 generic_make_request_checks+0x33f/0x460()
+Modules linked in: bridge stp tun snd_seq_dummy fuse hidp bnep rfcomm nf_conntrack_netlink nf_conntrack scsi_transport_iscsi nfnetlink can_raw nfc pn_pep caif_socket caif af_802154 phonet af_rxrpc can_bcm can llc2 pppoe pppox ppp_generic slhc irda crc_ccitt rds ipt_ULOG af_key rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 cfg80211 xfs libcrc32c coretemp hwmon x86_pkg_temp_thermal kvm_intel kvm crct10dif_pclmul crc32c_intel ghash_clmulni_intel snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_codec_generic serio_raw microcode pcspkr snd_hda_intel snd_hda_codec usb_debug btusb snd_hwdep snd_seq snd_seq_device bluetooth 6lowpan_iphc rfkill snd_pcm snd_timer snd soundcore e1000e ptp shpchp pps_core
+CPU: 3 PID: 27511 Comm: trinity-c3 Not tainted 3.14.0-rc2+ #111 
+ 0000000000000009 0000000045a3849a ffff88009f368f10 ffffffff8372afea
+ 0000000000000000 ffff88009f368f48 ffffffff8306d0cd ffff88023933ed00
+ 00000000ffffffff 00000000197f7510 0000000000800005 ffff880240913740
+Call Trace:
+ [<ffffffff8372afea>] dump_stack+0x4e/0x7a
+ [<ffffffff8306d0cd>] warn_slowpath_common+0x7d/0xa0
+ [<ffffffff8306d1fa>] warn_slowpath_null+0x1a/0x20
+ [<ffffffff832e81bf>] generic_make_request_checks+0x33f/0x460
+ [<ffffffff832e8307>] generic_make_request+0x27/0x130
+ [<ffffffff832e8488>] submit_bio+0x78/0x160
+ [<ffffffff831f9000>] ? bio_alloc_bioset+0x180/0x210
+ [<ffffffffc030832b>] _xfs_buf_ioapply+0x2bb/0x3c0 [xfs]
+ [<ffffffffc03798f2>] ? xlog_bdstrat+0x22/0x60 [xfs]
+ [<ffffffffc030849b>] xfs_buf_iorequest+0x6b/0xf0 [xfs]
+ [<ffffffffc03798f2>] xlog_bdstrat+0x22/0x60 [xfs]
+ [<ffffffffc037ba87>] xlog_sync+0x3a7/0x5b0 [xfs]
+ [<ffffffffc037bd9f>] xlog_state_release_iclog+0x10f/0x120 [xfs]
+ [<ffffffffc037c840>] xlog_write+0x6f0/0x800 [xfs]
+ [<ffffffffc037e061>] xlog_cil_push+0x2f1/0x410 [xfs]
+ [<ffffffffc037e948>] xlog_cil_force_lsn+0x1d8/0x210 [xfs]
+ [<ffffffffc03428a8>] ? xfs_bmbt_get_all+0x18/0x20 [xfs]
+ [<ffffffffc037cc40>] _xfs_log_force+0x70/0x290 [xfs]
+ [<ffffffff830a4edd>] ? get_parent_ip+0xd/0x50
+ [<ffffffffc037ce86>] xfs_log_force+0x26/0xb0 [xfs]
+ [<ffffffffc03076e6>] ? _xfs_buf_find+0x1f6/0x3c0 [xfs]
+ [<ffffffffc03074e3>] xfs_buf_lock+0x133/0x140 [xfs]
+ [<ffffffffc03076e6>] _xfs_buf_find+0x1f6/0x3c0 [xfs]
+ [<ffffffffc030796a>] xfs_buf_get_map+0x2a/0x1b0 [xfs]
+ [<ffffffffc0383c61>] xfs_trans_get_buf_map+0x1a1/0x240 [xfs]
+ [<ffffffffc034e03d>] xfs_da_get_buf+0xbd/0x100 [xfs]
+ [<ffffffffc0356869>] xfs_dir3_data_init+0x59/0x1d0 [xfs]
+ [<ffffffffc03526db>] ? xfs_dir2_grow_inode+0x13b/0x150 [xfs]
+ [<ffffffffc0354ede>] xfs_dir2_sf_to_block+0x17e/0x7b0 [xfs]
+ [<ffffffffc0351f5a>] ? xfs_dir2_sfe_get_ino+0x1a/0x20 [xfs]
+ [<ffffffffc035e9b4>] ? xfs_dir2_sf_check.isra.7+0x114/0x1b0 [xfs]
+ [<ffffffffc034c24f>] ? xfs_da_compname+0x1f/0x30 [xfs]
+ [<ffffffffc035f503>] ? xfs_dir2_sf_lookup+0x303/0x310 [xfs]
+ [<ffffffffc035f858>] xfs_dir2_sf_addname+0x348/0x6d0 [xfs]
+ [<ffffffffc031970d>] ? xfs_setup_inode+0x1cd/0x320 [xfs]
+ [<ffffffffc03529a4>] xfs_dir_createname+0x184/0x1e0 [xfs]
+ [<ffffffffc03663d9>] xfs_create+0x469/0x580 [xfs]
+ [<ffffffffc0318864>] xfs_vn_mknod+0xc4/0x1e0 [xfs]
+ [<ffffffffc0318993>] xfs_vn_create+0x13/0x20 [xfs]
+ [<ffffffff831ccc15>] vfs_create+0x95/0xc0
+ [<ffffffff831cd638>] do_last.isra.51+0x9f8/0x11f0
+ [<ffffffff831c9e11>] ? link_path_walk+0x81/0x870
+ [<ffffffff831cdef9>] path_openat+0xc9/0x620
+ [<ffffffff8331cc02>] ? put_dec+0x72/0x90
+ [<ffffffff831ceb6d>] do_filp_open+0x4d/0xb0
+ [<ffffffff831bc4ae>] file_open_name+0xfe/0x160
+ [<ffffffff831bc554>] filp_open+0x44/0x60
+ [<ffffffff83221862>] do_coredump+0x602/0xf60
+ [<ffffffff83081358>] get_signal_to_deliver+0x2b8/0x6b0
+ [<ffffffff830024d7>] do_signal+0x57/0x9d0
+ [<ffffffff8311115e>] ? __acct_update_integrals+0x8e/0x120
+ [<ffffffff83730000>] ? __schedule+0x60/0x850
+ [<ffffffff8373a1db>] ? preempt_count_sub+0x6b/0xf0
+ [<ffffffff83735a31>] ? _raw_spin_unlock+0x31/0x50
+ [<ffffffff830ab671>] ? vtime_account_user+0x91/0xa0
+ [<ffffffff8314f57b>] ? context_tracking_user_exit+0x9b/0x100
+ [<ffffffff83002eac>] do_notify_resume+0x5c/0xa0
+ [<ffffffff83736746>] retint_signal+0x46/0x90
+---[ end trace e6e48f6461c98e81 ]---
 
-Not as good as it originally seems as this could be a whole page,
-which would result in 2*PAGE_SIZE if hex escaped back to
-userspace. A tuneable interface could be added in the future if its needed.
-
->
->> ---
->>  include/uapi/linux/audit.h |    1 +
->>  kernel/audit.h             |    6 ++++
->>  kernel/auditsc.c           |   67 ++++++++++++++++++++++++++++++++++++++++++++
->>  3 files changed, 74 insertions(+)
->>
->> diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
->> index 2d48fe1..4315ee9 100644
->> --- a/include/uapi/linux/audit.h
->> +++ b/include/uapi/linux/audit.h
->> @@ -109,6 +109,7 @@
->>  #define AUDIT_NETFILTER_PKT  1324    /* Packets traversing netfilter chains */
->>  #define AUDIT_NETFILTER_CFG  1325    /* Netfilter chain modifications */
->>  #define AUDIT_SECCOMP                1326    /* Secure Computing event */
->> +#define AUDIT_PROCTITLE              1327    /* Proctitle emit event */
->>
->>  #define AUDIT_AVC            1400    /* SE Linux avc denial or grant */
->>  #define AUDIT_SELINUX_ERR    1401    /* Internal SE Linux Errors */
->> diff --git a/kernel/audit.h b/kernel/audit.h
->> index 57cc64d..38c967d 100644
->> --- a/kernel/audit.h
->> +++ b/kernel/audit.h
->> @@ -106,6 +106,11 @@ struct audit_names {
->>       bool                    should_free;
->>  };
->>
->> +struct audit_proctitle {
->> +     int     len;    /* length of the cmdline field. */
->> +     char    *value; /* the cmdline field */
->> +};
->> +
->>  /* The per-task audit context. */
->>  struct audit_context {
->>       int                 dummy;      /* must be the first element */
->> @@ -202,6 +207,7 @@ struct audit_context {
->>               } execve;
->>       };
->>       int fds[2];
->> +     struct audit_proctitle proctitle;
->>
->>  #if AUDIT_DEBUG
->>       int                 put_count;
->> diff --git a/kernel/auditsc.c b/kernel/auditsc.c
->> index 10176cd..e342eb0 100644
->> --- a/kernel/auditsc.c
->> +++ b/kernel/auditsc.c
->> @@ -68,6 +68,7 @@
->>  #include <linux/capability.h>
->>  #include <linux/fs_struct.h>
->>  #include <linux/compat.h>
->> +#include <linux/ctype.h>
->>
->>  #include "audit.h"
->>
->> @@ -79,6 +80,9 @@
->>  /* no execve audit message should be longer than this (userspace limits) */
->>  #define MAX_EXECVE_AUDIT_LEN 7500
->>
->> +/* max length to print of cmdline/proctitle value during audit */
->> +#define MAX_PROCTITLE_AUDIT_LEN 128
->> +
->>  /* number of audit rules */
->>  int audit_n_rules;
->>
->> @@ -842,6 +846,13 @@ static inline struct audit_context *audit_get_context(struct task_struct *tsk,
->>       return context;
->>  }
->>
->> +static inline void audit_proctitle_free(struct audit_context *context)
->> +{
->> +     kfree(context->proctitle.value);
->> +     context->proctitle.value = NULL;
->> +     context->proctitle.len = 0;
->> +}
->> +
->>  static inline void audit_free_names(struct audit_context *context)
->>  {
->>       struct audit_names *n, *next;
->> @@ -955,6 +966,7 @@ static inline void audit_free_context(struct audit_context *context)
->>       audit_free_aux(context);
->>       kfree(context->filterkey);
->>       kfree(context->sockaddr);
->> +     audit_proctitle_free(context);
->>       kfree(context);
->>  }
->>
->> @@ -1271,6 +1283,59 @@ static void show_special(struct audit_context *context, int *call_panic)
->>       audit_log_end(ab);
->>  }
->>
->> +static inline int audit_proctitle_rtrim(char *proctitle, int len)
->> +{
->> +     char *end = proctitle + len - 1;
->> +     while (end > proctitle && !isprint(*end))
->> +             end--;
->> +
->> +     /* catch the case where proctitle is only 1 non-print character */
->> +     len = end - proctitle + 1;
->> +     len -= isprint(proctitle[len-1]) == 0;
->> +     return len;
->> +}
->> +
->> +static void audit_log_proctitle(struct task_struct *tsk,
->> +                      struct audit_context *context)
->> +{
->> +     int res;
->> +     char *buf;
->> +     char *msg = "(null)";
->> +     int len = strlen(msg);
->> +     struct audit_buffer *ab;
->> +
->> +     ab = audit_log_start(context, GFP_KERNEL, AUDIT_PROCTITLE);
->> +     if (!ab)
->> +             return; /* audit_panic or being filtered */
->> +
->> +     audit_log_format(ab, "proctitle=");
->> +
->> +     /* Not  cached */
->> +     if (!context->proctitle.value) {
->> +             buf = kmalloc(MAX_PROCTITLE_AUDIT_LEN, GFP_KERNEL);
->> +             if (!buf)
->> +                     goto out;
->> +             /* Historically called this from procfs naming */
->> +             res = get_cmdline(tsk, buf, MAX_PROCTITLE_AUDIT_LEN);
->> +             if (res == 0) {
->> +                     kfree(buf);
->> +                     goto out;
->> +             }
->> +             res = audit_proctitle_rtrim(buf, res);
->> +             if (res == 0) {
->> +                     kfree(buf);
->> +                     goto out;
->> +             }
->> +             context->proctitle.value = buf;
->> +             context->proctitle.len = res;
->> +     }
->> +     msg = context->proctitle.value;
->> +     len = context->proctitle.len;
->> +out:
->> +     audit_log_n_untrustedstring(ab, msg, len);
->> +     audit_log_end(ab);
->> +}
->> +
->>  static void audit_log_exit(struct audit_context *context, struct task_struct *tsk)
->>  {
->>       int i, call_panic = 0;
->> @@ -1388,6 +1453,8 @@ static void audit_log_exit(struct audit_context *context, struct task_struct *ts
->>               audit_log_name(context, n, NULL, i++, &call_panic);
->>       }
->>
->> +     audit_log_proctitle(tsk, context);
->> +
->>       /* Send end of event record to help user space know we are finished */
->>       ab = audit_log_start(context, GFP_KERNEL, AUDIT_EOE);
->>       if (ab)
->> --
->> 1.7.9.5
->>
->
-> - RGB
->
-> --
-> Richard Guy Briggs <rbriggs@redhat.com>
-> Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-> Remote, Ottawa, Canada
-> Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
-
-
-
--- 
-Respectfully,
-
-William C Roberts
