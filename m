@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199AbaBKXuq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 18:50:46 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:59025 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750978AbaBKXup (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 18:50:45 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH] ACPI / container: Fix error code path in container_device_attach()
-Date: Wed, 12 Feb 2014 01:05:24 +0100
-Message-ID: <1575051.TZgsd5D5jn@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1752532AbaBKXwG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 18:52:06 -0500
+Received: from mga01.intel.com ([192.55.52.88]:48844 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752491AbaBKXwE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 18:52:04 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,828,1384329600"; 
+   d="scan'208";a="479929608"
+From: Andi Kleen <andi@firstfloor.org>
+To: peterz@infradead.org
+Cc: linux-kernel@vger.kernel.org, Markus Metzger <markus.t.metzger@intel.com>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH] perf, nmi: fix unknown NMI warning
+Date: Tue, 11 Feb 2014 15:51:33 -0800
+Message-Id: <1392162693-13169-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+From: Markus Metzger <markus.t.metzger@intel.com>
 
-To avoid leaking memory on errors from device_register(), do a
-put_device() on the device object in question in the error code
-path of container_device_attach().
+[From Markus, just sending for him because he had problems with his mail]
 
-Fixes: caa73ea158de (ACPI / hotplug / driver core: Handle containers in a special way)
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+When using BTS on Core i7-4*, I get the below kernel warning.
+
+$ perf record -c 1 -e branches:u ls
+Message from syslogd@labpc1501 at Nov 11 15:49:25 ...
+ kernel:[  438.317893] Uhhuh. NMI received for unknown reason 31 on CPU 2.
+
+Message from syslogd@labpc1501 at Nov 11 15:49:25 ...
+ kernel:[  438.317920] Do you have a strange power saving mode enabled?
+
+Message from syslogd@labpc1501 at Nov 11 15:49:25 ...
+ kernel:[  438.317945] Dazed and confused, but trying to continue
+
+Make intel_pmu_handle_irq() take the full exit path when returning early.
+
+Signed-off-by: Markus Metzger <markus.t.metzger@intel.com>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
+ arch/x86/kernel/cpu/perf_event_intel.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-3.14 material.
-
-Thanks!
-
----
- drivers/acpi/container.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-Index: linux-pm/drivers/acpi/container.c
-===================================================================
---- linux-pm.orig/drivers/acpi/container.c
-+++ linux-pm/drivers/acpi/container.c
-@@ -82,9 +82,10 @@ static int container_device_attach(struc
- 	ACPI_COMPANION_SET(dev, adev);
- 	dev->release = acpi_container_release;
- 	ret = device_register(dev);
--	if (ret)
-+	if (ret) {
-+		put_device(dev);
- 		return ret;
--
-+	}
- 	adev->driver_data = dev;
- 	return 1;
- }
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 0fa4f24..698ae77 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1361,10 +1361,8 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
+ 	intel_pmu_disable_all();
+ 	handled = intel_pmu_drain_bts_buffer();
+ 	status = intel_pmu_get_status();
+-	if (!status) {
+-		intel_pmu_enable_all(0);
+-		return handled;
+-	}
++	if (!status)
++		goto done;
+ 
+ 	loops = 0;
+ again:
+-- 
+1.8.5.3
 
