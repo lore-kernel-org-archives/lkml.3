@@ -1,113 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751788AbaBKPLx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 10:11:53 -0500
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:52255 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751557AbaBKPLo (ORCPT
+	id S1751851AbaBKPLz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 10:11:55 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:57406 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751783AbaBKPLx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 10:11:44 -0500
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-To: mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
-        rjw@rjwysocki.net
-Cc: nicolas.pitre@linaro.org, preeti@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 5/5] idle: Add more comments to the code
-Date: Tue, 11 Feb 2014 16:11:31 +0100
-Message-Id: <1392131491-5265-5-git-send-email-daniel.lezcano@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1392131491-5265-1-git-send-email-daniel.lezcano@linaro.org>
-References: <1392131491-5265-1-git-send-email-daniel.lezcano@linaro.org>
+	Tue, 11 Feb 2014 10:11:53 -0500
+Date: Tue, 11 Feb 2014 16:11:48 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sched/fair: Remove idle_balance() declaration in sched.h
+Message-ID: <20140211151148.GP27965@twins.programming.kicks-ass.net>
+References: <1392130864-4416-1-git-send-email-daniel.lezcano@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392130864-4416-1-git-send-email-daniel.lezcano@linaro.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The idle main function is a complex and a critical function. Added more
-comments to the code.
+On Tue, Feb 11, 2014 at 04:01:04PM +0100, Daniel Lezcano wrote:
+> The idle_balance() function is called within a #ifdef CONFIG_SMP section.
+> 
+> Remove its declaration in sched.h for !CONFIG_SMP because it is pointless.
+> 
+> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 
-Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+The below again makes a horrible mess of idle_balance() -- which you
+tried to clean up.. but it does rid us of some #ifdef goo.
+
+Hmmm?
+
 ---
- kernel/sched/idle.c |   37 +++++++++++++++++++++++++++++++++----
- 1 file changed, 33 insertions(+), 4 deletions(-)
+ kernel/sched/fair.c  | 47 +++++++++++++++++++++++++++++------------------
+ kernel/sched/sched.h |  7 -------
+ 2 files changed, 29 insertions(+), 25 deletions(-)
 
-diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
-index 72b5926..36ff1a7 100644
---- a/kernel/sched/idle.c
-+++ b/kernel/sched/idle.c
-@@ -86,19 +86,34 @@ static int cpuidle_idle_call(void)
- 	if (cpu_idle_force_poll || tick_check_broadcast_expired())
- 		return cpu_idle_poll();
- 
-+	/*
-+	 * Check if the idle task must rescheduled. If it is the case,
-+	 * exit the function after re-enabling the local irq and set
-+	 * again the polling flag
-+	 */
- 	if (current_clr_polling_and_test()) {
- 		local_irq_enable();
- 		__current_set_polling();
- 		return 0;
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 235cfa7ad8fc..d168c968195b 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2374,13 +2374,13 @@ static inline void __update_group_entity_contrib(struct sched_entity *se)
+ 		se->avg.load_avg_contrib >>= NICE_0_SHIFT;
  	}
+ }
+-#else
++#else /* CONFIG_FAIR_GROUP_SCHED */
+ static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
+ 						 int force_update) {}
+ static inline void __update_tg_runnable_avg(struct sched_avg *sa,
+ 						  struct cfs_rq *cfs_rq) {}
+ static inline void __update_group_entity_contrib(struct sched_entity *se) {}
+-#endif
++#endif /* CONFIG_FAIR_GROUP_SCHED */
  
-+	/*
-+	 * During the idle period, stop measuring the disabled irqs
-+	 * critical sections latencies
-+	 */
- 	stop_critical_timings();
+ static inline void __update_task_entity_contrib(struct sched_entity *se)
+ {
+@@ -2571,6 +2571,8 @@ void idle_exit_fair(struct rq *this_rq)
+ 	update_rq_runnable_avg(this_rq, 0);
+ }
+ 
++static int idle_balance(struct rq *this_rq);
 +
-+	/*
-+	 * Tell the RCU framework we are entering an idle section,
-+	 * so no more rcu read side critical sections and one more
-+	 * step to the grace period
-+	 */
- 	rcu_idle_enter();
+ #else /* CONFIG_SMP */
  
--	/* Ask the governor for the next state, this call can fail for
--	 * different reasons: cpuidle is not enabled or an idle state
--	 * fulfilling the constraints was not found. In this case, we fall
--	 * back to the default idle function
+ static inline void update_entity_load_avg(struct sched_entity *se,
+@@ -2584,6 +2586,12 @@ static inline void dequeue_entity_load_avg(struct cfs_rq *cfs_rq,
+ 					   int sleep) {}
+ static inline void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq,
+ 					      int force_update) {}
++
++static inline int idle_balance(struct rq *rq)
++{
++	return 0;
++}
++
+ #endif /* CONFIG_SMP */
+ 
+ static void enqueue_sleeper(struct cfs_rq *cfs_rq, struct sched_entity *se)
+@@ -4677,7 +4685,7 @@ pick_next_task_fair(struct rq *rq, struct task_struct *prev)
+ 	struct sched_entity *se;
+ 	struct task_struct *p;
+ 
+-again: __maybe_unused
++again:
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ 	if (!cfs_rq->nr_running)
+ 		goto idle;
+@@ -4775,18 +4783,8 @@ again: __maybe_unused
+ 	return p;
+ 
+ idle:
+-#ifdef CONFIG_SMP
+-	idle_enter_fair(rq);
+-	/*
+-	 * We must set idle_stamp _before_ calling idle_balance(), such that we
+-	 * measure the duration of idle_balance() as idle time.
+-	 */
+-	rq->idle_stamp = rq_clock(rq);
+-	if (idle_balance(rq)) { /* drops rq->lock */
+-		rq->idle_stamp = 0;
++	if (idle_balance(rq)) /* drops rq->lock */
+ 		goto again;
+-	}
+-#endif
+ 
+ 	return NULL;
+ }
+@@ -6634,7 +6632,7 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+  * idle_balance is called by schedule() if this_cpu is about to become
+  * idle. Attempts to pull tasks from other CPUs.
+  */
+-int idle_balance(struct rq *this_rq)
++static int idle_balance(struct rq *this_rq)
+ {
+ 	struct sched_domain *sd;
+ 	int pulled_task = 0;
+@@ -6642,8 +6640,15 @@ int idle_balance(struct rq *this_rq)
+ 	u64 curr_cost = 0;
+ 	int this_cpu = this_rq->cpu;
+ 
++	idle_enter_fair(this_rq);
 +	/*
-+	 * Ask the governor to choose an idle state it thinks it is
-+	 * convenient to go to. There is *always* a convenient idle
-+	 * state but the call could fail if cpuidle is not enabled
++	 * We must set idle_stamp _before_ calling idle_balance(), such that we
++	 * measure the duration of idle_balance() as idle time.
++	 */
++	this_rq->idle_stamp = rq_clock(this_rq);
++
+ 	if (this_rq->avg_idle < sysctl_sched_migration_cost)
+-		return 0;
++		goto out;
+ 
+ 	/*
+ 	 * Drop the rq->lock, but keep IRQ/preempt disabled.
+@@ -6692,8 +6697,10 @@ int idle_balance(struct rq *this_rq)
+ 	 * While browsing the domains, we released the rq lock.
+ 	 * A task could have be enqueued in the meantime
  	 */
- 	next_state = cpuidle_select(drv, dev);
- 	if (next_state < 0) {
-@@ -106,6 +121,10 @@ static int cpuidle_idle_call(void)
- 		goto out;
- 	}
+-	if (this_rq->nr_running && !pulled_task)
+-		return 1;
++	if (this_rq->nr_running && !pulled_task) {
++		pulled_task = 1;
++		goto out;
++	}
  
-+	/*
-+	 * The idle task must be scheduled, it is pointless to go to idle,
-+	 * just update no idle residency and get out of this function
-+	 */
- 	if (need_resched()) {
- 		dev->last_residency = 0;
- 		/* give the governor an opportunity to reflect on the outcome */
-@@ -116,6 +135,12 @@ static int cpuidle_idle_call(void)
+ 	if (pulled_task || time_after(jiffies, this_rq->next_balance)) {
+ 		/*
+@@ -6706,6 +6713,10 @@ int idle_balance(struct rq *this_rq)
+ 	if (curr_cost > this_rq->max_idle_balance_cost)
+ 		this_rq->max_idle_balance_cost = curr_cost;
  
- 	trace_cpu_idle_rcuidle(next_state, dev->cpu);
++out:
++	if (pulled_task)
++		this_rq->idle_stamp = 0;
++
+ 	return pulled_task;
+ }
  
-+	/*
-+	 * Enter the idle state previously returned by the governor
-+	 * decision. This function will block until an interrupt
-+	 * occurs and will take care of re-enabling the local
-+	 * interrupts
-+	 */
- 	entered_state = cpuidle_enter(drv, dev, next_state);
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 1bf34c257d3b..92018f9821e8 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -1163,17 +1163,10 @@ extern const struct sched_class idle_sched_class;
+ extern void update_group_power(struct sched_domain *sd, int cpu);
  
- 	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, dev->cpu);
-@@ -152,6 +177,10 @@ static void cpu_idle_loop(void)
- 			local_irq_disable();
- 			arch_cpu_idle_enter();
+ extern void trigger_load_balance(struct rq *rq);
+-extern int idle_balance(struct rq *this_rq);
  
-+			/*
-+			 * It is up to the underlying functions to
-+			 * enable the local interrupts again
-+			 */
- 			cpuidle_idle_call();
+ extern void idle_enter_fair(struct rq *this_rq);
+ extern void idle_exit_fair(struct rq *this_rq);
  
- 			arch_cpu_idle_exit();
--- 
-1.7.9.5
-
+-#else	/* CONFIG_SMP */
+-
+-static inline void idle_balance(int cpu, struct rq *rq)
+-{
+-}
+-
+ #endif
+ 
+ extern void sysrq_sched_debug_show(void);
