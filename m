@@ -1,62 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752507AbaBKBd2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 20:33:28 -0500
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:26455 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752047AbaBKBd1 (ORCPT
+	id S1752571AbaBKBdt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 20:33:49 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:38723 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752528AbaBKBds (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 20:33:27 -0500
-Message-ID: <1392082398.2918.33.camel@j-VirtualBox>
-Subject: Re: [PATCH 3/8] mutex: Modify the way optimistic spinners are queued
-From: Jason Low <jason.low2@hp.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Waiman Long <waiman.long@hp.com>,
-        mingo@kernel.org, paulmck@linux.vnet.ibm.com,
-        torvalds@linux-foundation.org, tglx@linutronix.de, riel@redhat.com,
-        akpm@linux-foundation.org, davidlohr@hp.com, hpa@zytor.com,
-        andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
-        chegu_vinod@hp.com
-Date: Mon, 10 Feb 2014 17:33:18 -0800
-In-Reply-To: <20140210203659.532019477@infradead.org>
-References: <20140210195820.834693028@infradead.org>
-	 <20140210203659.532019477@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Mon, 10 Feb 2014 20:33:48 -0500
+Message-ID: <52F97DF8.2040602@hitachi.com>
+Date: Tue, 11 Feb 2014 10:33:44 +0900
+From: Eiichi Tsukata <eiichi.tsukata.xh@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Libo Chen <clbchenlibo.chen@huawei.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: Re: [PATCH v2] scsi: Add 'retry_timeout' to avoid infinite
+ command retry
+References: <52F30B5E.8020202@hitachi.com>	 <20140207002241.11465.87367.stgit@ltc223.sdl.hitachi.co.jp> <1391752003.22335.67.camel@dabdike> <52F47A03.2010805@huawei.com>
+In-Reply-To: <52F47A03.2010805@huawei.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-02-10 at 20:58 +0100, Peter Zijlstra wrote:
-> Cc: tglx@linutronix.de
-> Cc: riel@redhat.com
-> Cc: akpm@linux-foundation.org
-> Cc: davidlohr@hp.com
-> Cc: hpa@zytor.com
-> Cc: andi@firstfloor.org
-> Cc: aswin@hp.com
-> Cc: mingo@kernel.org
-> Cc: scott.norton@hp.com
-> Cc: chegu_vinod@hp.com
-> Cc: Waiman.Long@hp.com
-> Cc: paulmck@linux.vnet.ibm.com
-> Cc: torvalds@linux-foundation.org
-> Signed-off-by: Jason Low <jason.low2@hp.com>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> Link: http://lkml.kernel.org/r/1390936396-3962-3-git-send-email-jason.low2@hp.com
-> ---
->  kernel/locking/mutex.c |   17 +++++++----------
->  1 file changed, 7 insertions(+), 10 deletions(-)
-> 
-> --- a/kernel/locking/mutex.c
-> +++ b/kernel/locking/mutex.c
-> @@ -403,9 +403,9 @@ __mutex_lock_common(struct mutex *lock,
->  	if (!mutex_can_spin_on_owner(lock))
->  		goto slowpath;
->  
-> +	mcs_spin_lock(&lock->mcs_lock);
 
-Where did the mcs node go? :)
+(2014/02/07 15:15), Libo Chen wrote:
+> On 2014/2/7 13:46, James Bottomley wrote:
+>> On Fri, 2014-02-07 at 09:22 +0900, Eiichi Tsukata wrote:
+>>> Currently, scsi error handling in scsi_io_completion() tries to
+>>> unconditionally requeue scsi command when device keeps some error state.
+>>> For example, UNIT_ATTENTION causes infinite retry with
+>>> action == ACTION_RETRY.
+>>> This is because retryable errors are thought to be temporary and the scsi
+>>> device will soon recover from those errors. Normally, such retry policy is
+>>> appropriate because the device will soon recover from temporary error state.
+>>
+>>
+>>> But there is no guarantee that device is able to recover from error state
+>>> immediately. Actually, we've experienced an infinite retry on some hardware.
+>>> Therefore hardware error can results in infinite command retry loop.
+>> Could you please add an analysis of the actual failure; which devices
+>> and what conditions.
+>>
+>
+> same question, can you explain?
+
+
+I'm afraid to say that I can't expose the device name because I've not 
+confirmed yet that
+the device is responsible for the problem with the device manufacturer. 
+However, with the
+limited evidence, It seems that SCSI command retried with UNIT_ATTENTION.
+
+In the previous thread, Ewan reported that a storage array returned a 
+CHECK_CONDITION
+with invalid sense data, which caused the command to be retried 
+indefinitely:
+https://lkml.org/lkml/2013/8/20/498
+
+So, we should try to avoid infinite retry in SCSI middle layer, not in 
+each SCSI LLDD.
+
+>>> This patch adds 'retry_timeout' sysfs attribute which limits the retry time
+>>> of each scsi command. This attribute is located in scsi sysfs directory
+>>> for example "/sys/bus/scsi/devices/X:X:X:X/" and value is in seconds.
+>>> Once scsi command retry time is longer than this timeout,
+>>> the command is treated as failure. 'retry_timeout' is set to '0' by default
+>>> which means no timeout set.
+>> Don't do this ... you're mixing a feature (which you'd need to justify)
+>> with an apparent bug fix.
+>>
+>> Once you dump all the complexity, I think the patch boils down to a
+>> simple check before the action switch in scsi_io_completion():
+>>
+>> 	if (action !=  ACTION_FAIL &&
+>> 	    time_before(cmd->jiffies_at_alloc + wait_for, jiffies)) {
+>> 		action = ACTION_FAIL;
+>> 		description = "command timed out";
+>> 	}
+>>
+
+Sounds good!
+Thanks for much simpler code. It's enough to fix the bug.
+I'll resend the patch soon with the above code.
+
+Eiichi.
+
+>> James
+>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>>
+>
+> .
+>
 
