@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753674AbaBKTG7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:06:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40077 "EHLO
+	id S1755836AbaBKUDi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:03:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40109 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753587AbaBKTG4 (ORCPT
+	with ESMTP id S1753663AbaBKTG6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:56 -0500
+	Tue, 11 Feb 2014 14:06:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Malcolm Priestley <tvboxspy@gmail.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.12 066/107] [media] it913x: Add support for Avermedia H335 id 0x0335
-Date: Tue, 11 Feb 2014 11:05:32 -0800
-Message-Id: <20140211184750.078256593@linuxfoundation.org>
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 3.12 031/107] tile: remove compat_sys_lookup_dcookie declaration to fix compile error
+Date: Tue, 11 Feb 2014 11:04:57 -0800
+Message-Id: <20140211184749.083275270@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -29,42 +31,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-commit 17f335c304ac19d9b11814238fe8a7519d80e2ff upstream.
+commit 5a5e75f4714a592f31e57f248b8f5c866f278b8d upstream.
 
-Trivial USB ID addition for Avermedia H335.
+With commit d8d14bd09cdd ("fs/compat: fix lookup_dcookie() parameter
+handling") I changed the type of the len parameter of the
+lookup_dcookie() syscall.
 
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+However I missed that there was still a stale declaration in
+arch/tile/..  which now causes a compile error on tile:
+
+  In file included from fs/dcookies.c:28:0:
+  include/linux/compat.h:425:17: error: conflicting types for 'compat_sys_lookup_dcookie'
+  fs/dcookies.c:207:1: error: conflicting types for 'compat_sys_lookup_dcookie'
+
+Simply remove the declaration in the tile architecture, which is only a
+leftover from before the different compat lookup_dcookie() versions have
+been merged.  The correct declaration is now in include/linux/compat.h
+
+The build error was reported by Fenguang's build bot.
+
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/dvb-core/dvb-usb-ids.h  |    1 +
- drivers/media/usb/dvb-usb-v2/it913x.c |    3 +++
- 2 files changed, 4 insertions(+)
+ arch/tile/include/asm/compat.h |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/media/dvb-core/dvb-usb-ids.h
-+++ b/drivers/media/dvb-core/dvb-usb-ids.h
-@@ -239,6 +239,7 @@
- #define USB_PID_AVERMEDIA_A835B_4835			0x4835
- #define USB_PID_AVERMEDIA_1867				0x1867
- #define USB_PID_AVERMEDIA_A867				0xa867
-+#define USB_PID_AVERMEDIA_H335				0x0335
- #define USB_PID_AVERMEDIA_TWINSTAR			0x0825
- #define USB_PID_TECHNOTREND_CONNECT_S2400               0x3006
- #define USB_PID_TECHNOTREND_CONNECT_S2400_8KEEPROM	0x3009
---- a/drivers/media/usb/dvb-usb-v2/it913x.c
-+++ b/drivers/media/usb/dvb-usb-v2/it913x.c
-@@ -799,6 +799,9 @@ static const struct usb_device_id it913x
- 	{ DVB_USB_DEVICE(USB_VID_KWORLD_2, USB_PID_CTVDIGDUAL_V2,
- 		&it913x_properties, "Digital Dual TV Receiver CTVDIGDUAL_V2",
- 			RC_MAP_IT913X_V1) },
-+	{ DVB_USB_DEVICE(USB_VID_AVERMEDIA, USB_PID_AVERMEDIA_H335,
-+		&it913x_properties, "Avermedia H335",
-+			RC_MAP_IT913X_V2) },
- 	{}		/* Terminating entry */
- };
- 
+--- a/arch/tile/include/asm/compat.h
++++ b/arch/tile/include/asm/compat.h
+@@ -281,7 +281,6 @@ long compat_sys_pread64(unsigned int fd,
+ 			u32 dummy, u32 low, u32 high);
+ long compat_sys_pwrite64(unsigned int fd, char __user *ubuf, size_t count,
+ 			 u32 dummy, u32 low, u32 high);
+-long compat_sys_lookup_dcookie(u32 low, u32 high, char __user *buf, size_t len);
+ long compat_sys_sync_file_range2(int fd, unsigned int flags,
+ 				 u32 offset_lo, u32 offset_hi,
+ 				 u32 nbytes_lo, u32 nbytes_hi);
 
 
