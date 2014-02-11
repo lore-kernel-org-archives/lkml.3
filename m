@@ -1,57 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751756AbaBKOlk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 09:41:40 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:55251 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750812AbaBKOlj (ORCPT
+	id S1752023AbaBKOmq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 09:42:46 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:48723 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751291AbaBKOmn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 09:41:39 -0500
-Message-ID: <52FA3686.5080800@ti.com>
-Date: Tue, 11 Feb 2014 08:41:10 -0600
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Hans de Goede <hdegoede@redhat.com>, Roger Quadros <rogerq@ti.com>,
-        <tony@atomide.com>
-CC: <bcousson@baylibre.com>, <balbi@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-Subject: Re: [PATCH] ARM: dts: OMAP2+: Fix boot with multi_v7_defconfig
-References: <1392055835-6494-1-git-send-email-rogerq@ti.com> <52FA2B4F.3010408@ti.com> <52FA3102.7080407@ti.com> <52FA3531.8090308@redhat.com>
-In-Reply-To: <52FA3531.8090308@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Tue, 11 Feb 2014 09:42:43 -0500
+Message-ID: <1392129760.2128.15.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [patch 1/2]percpu_ida: fix a live lock
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Jens Axboe <axboe@kernel.dk>, Kent Overstreet <kmo@daterainc.com>,
+        Alexander Gordeev <agordeev@redhat.com>, Shaohua Li <shli@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Date: Tue, 11 Feb 2014 06:42:40 -0800
+In-Reply-To: <20140211091228.GA25567@infradead.org>
+References: <20140104210804.GA24199@kmo-pixel>
+	 <20140105131300.GB4186@kernel.org> <20140106204641.GB9037@kmo>
+	 <52CB1783.4050205@kernel.dk> <20140106214726.GD9037@kmo>
+	 <20140209155006.GA16149@dhcp-26-207.brq.redhat.com>
+	 <20140210103211.GA28396@infradead.org> <52F8FDA7.7070809@kernel.dk>
+	 <20140210224145.GB2362@kmo> <52F95B73.7030205@kernel.dk>
+	 <20140211091228.GA25567@infradead.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.10.2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2014 08:35 AM, Hans de Goede wrote:
-> On 02/11/2014 03:17 PM, Nishanth Menon wrote:
->> On 02/11/2014 07:53 AM, Roger Quadros wrote:
->>> On 02/10/2014 08:10 PM, Roger Quadros wrote:
->>>> The OMAP EHCI controller is not compatible with the EHCI
->>>> platform HCD driver so don't claim that we are.
->>>>
->>>> This fixes boot on OMAP platforms with CONFIG_USB_EHCI_HCD_PLATFORM=y
->>>> e.g. multi_v7_defconfig
->>>>
->>>> Reported-by: Nishanth Menon <nm@ti.com>
->>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
->>>
->>> Please ignore this patch as Hans has agreed to do a more proper fix in
->>>
->>> http://article.gmane.org/gmane.comp.hardware.netbook.arm.sunxi/7015
->> umm.. even then, drivers/usb/host/ehci-ppc-of.c claims compatibility
->> with usb,ehci -> and we wont function with that driver either.
+On Tue, 2014-02-11 at 01:12 -0800, Christoph Hellwig wrote:
+> On Mon, Feb 10, 2014 at 04:06:27PM -0700, Jens Axboe wrote:
+> > For the common case, I'd assume that anywhere between 31..256 tags
+> > is "normal". That's where the majority of devices will end up being,
+> > largely. So single digits would be an anomaly.
 > 
-> Right, but that has never been an issue as no kernel will ever include
-> both ppc and omap support.
+> Unfortunately that's not true in SCSI land, where most driver do per-lun
+> tagging, and the the cmd_per_lun values are very low and very often
+> single digits, as a simple grep for cmd_per_lun will tell.
 
-Conceptually, we have compatibility string today in dts description
-that maps a driver that cant ever handle the device. I dont have
-strong opinions either way.. just something i noticed with a git grep..
+Remember we do shared (all queue) tags on qla, aic and a few other
+drivers (it's actually the mailbox slot tag for the HBA).
 
--- 
-Regards,
-Nishanth Menon
+>   Now it might
+> be that the tag space actually is much bigger in the hardware and the
+> driver authors for some reason want to limit the number of outstanding
+> commands, but the interface to the drivers doesn't allow them to express
+> such a difference at the moment.
+
+Tag space is dependent on SCSI protocol.  It's 256 for SPI, 65536 for
+SAS and I'm not sure for FCP.
+
+> > >How about we just make the number of tags that are allowed to be stranded an
+> > >explicit parameter (somehow) - then it can be up to device drivers to do
+> > >something sensible with it. Half is probably an ideal default for devices where
+> > >that works, but this way more constrained devices will be able to futz with it
+> > >however they want.
+> > 
+> > I don't think we should involve device drivers in this, that's
+> > punting a complicated issue to someone who likely has little idea
+> > what to do about it. This needs to be handled sensibly in the core,
+> > not in a device driver. If we can't come up with a sensible
+> > algorithm to handle this, how can we expect someone writing a device
+> > driver to do so?
+> 
+> Agreed, punting this to the drivers is a bad idea.  But at least
+> exposing variable for the allowed tag space and allowed outstanding
+> commands to be able to make a smarter decision might be a good idea.  On
+> the other hand this will require us to count the outstanding commands
+> again, introducing more cachelines touched than nessecary.  To make
+> things worse for complex topologies like SCSI we might have to limit the
+> outstanding commands at up to three levels in the hierarchy.
+
+The list seems to be missing prior context but a few SPI drivers use the
+clock algorithm for tag starvation in the driver.  The NCR ones are the
+ones I know about: tag allocation is the hands of a clock sweeping
+around (one for last tag and one for last outstanding tag).  The hands
+are never allowed to cross, so if a tag gets starved the hands try to
+cross and the driver stops issuing until the missing tag returns.  Tag
+starvation used to be a known problem for Parallel devices; I haven't
+seen much in the way of tag starvation algorithms for other types of
+devices, so I assume the problem went away.
+
+James
+
+
