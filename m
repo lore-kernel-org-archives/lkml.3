@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751415AbaBKOBJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 09:01:09 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:36761 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750812AbaBKOBI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 09:01:08 -0500
-Date: Tue, 11 Feb 2014 11:01:03 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-To: Boris BREZILLON <b.brezillon.dev@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] mtd: add per NAND partition ECC config
-Message-ID: <20140211140102.GB23150@localhost>
-References: <1391855206-5974-1-git-send-email-b.brezillon.dev@gmail.com>
+	id S1751572AbaBKOGX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 09:06:23 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:36277 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750984AbaBKOGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 09:06:22 -0500
+Message-ID: <52FA2E57.3010300@ti.com>
+Date: Tue, 11 Feb 2014 16:06:15 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1391855206-5974-1-git-send-email-b.brezillon.dev@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ryan Mallon <rmallon@gmail.com>
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] video: Use fb_sys_write rather than open-coding in
+ drivers
+References: <523BF40B.1090002@gmail.com>
+In-Reply-To: <523BF40B.1090002@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="QVPrfwc3wawPJcD5Q9EiX5Fg3JejxVlQt"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Boris,
+--QVPrfwc3wawPJcD5Q9EiX5Fg3JejxVlQt
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-On Sat, Feb 08, 2014 at 11:26:46AM +0100, Boris BREZILLON wrote:
-> This patch aims to add per partition ECC config for NAND devices.
-> It defines a new field in the mtd struct to store the mtd ECC config and
-> thus each mtd partition device can store its config instead of using the
-> default NAND chip config.
-> 
-> This feature is needed to support the sunxi boot0 paritition case:
-> Allwinner boot code (BROM) requires a specific HW ECC for its boot code
-> that may not fit the HW NAND requirements for the entire NAND chip.
-> 
-> Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
+On 20/09/13 10:06, Ryan Mallon wrote:
+> Several video drivers open code the fb_write write function with code
+> which is very similar to fb_sys_write. Replace the open code versions
+> with calls to fb_sys_write. An fb_sync callback is added to each of
+> the drivers.
+>    =20
+> Signed-off-by: Ryan Mallon <rmallon@gmail.com>
 > ---
-> Hello,
-> 
-> This patch is just a draft that implement per partition ECC config.
-> It's currently not properly splitted (it should be separated in several
-> patches) and not documented either.
-> 
 
-Ah, ah...
+Doesn't this change the behavior so that fb_write does no longer update
+the display, but fb_sync does? I don't think fb_sync is even meant to
+update the display, it's meant to wait for an update to finish. Then
+again, I'm not sure about that, all I see in fb.h is "wait for blit
+idle, optional"
 
-> There's at least one point that bother me in the current implementation:
-> I introduced DT notions in the nand core code by the mean of the get_ecc_ctrl
-> callback, and so far this was kept out of mtd/nand core code (I guess it was
-> on purpose).
-> 
-> Please let me know if you see other drawbacks.
-> 
-> If you think per partition ECC should not be implemented, could you help me
-> find a way to handle sunxi specific case decribed above ?
-> 
->  drivers/mtd/mtdpart.c          |   23 ++-
->  drivers/mtd/nand/nand_base.c   |  428 ++++++++++++++++++++++++----------------
+ Tomi
 
-I really appreciate your effort, but 428 changed lines is a too big and
-intrusive change. I must admit I'm not smart enough to review such patches.
 
-I honestly think you'll have better luck getting feedback if you take the time
-to properly split and document this.
 
-Yeah, it's annoying and time-consuming, but it's globally cheaper for you to
-invest time on making it easier for reviewers and maintainers, than for each
-of us to invest the time deciphering this :-)
+--QVPrfwc3wawPJcD5Q9EiX5Fg3JejxVlQt
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-Just my point of view, of course.
--- 
-Ezequiel García, Free Electrons
-Embedded Linux, Kernel and Android Engineering
-http://free-electrons.com
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJS+i5YAAoJEPo9qoy8lh71MFQP/inA/g1qn2yD1hZsjbQEMKKs
+JgjBZYmvzuzsRxLHQ5vTVj+fS2H9LX8l0zL6TdFfk6k1VFBXsOCfa1Otn9FftJoD
+pNuKI1ePMnim5b3VG8hGs1AA12JToVqiSAq2Tx1A/XBZ3Xeg3ZGFwCqyzWOBTuU0
+9thg8xdzfWETfn7NKn8pjnZsKhX+CwLPo5waZj6id3Qlx4xg0HgYvW2hXplQzIFJ
+WP3w3b+0CK5kEeh+pNFkuOcWm9+CzzvjEOjgVGcqolCLB3bRZtdLtI7ewR7iGVVd
+l8GpHc4yEfC0mkrhYOQkdJzlo+NwXzW8J6q3EehsYK/rK36W/vJeg/Oh9VVoNczn
+lJ1LEgXRYDnNHOpm/JXO6y3Z9Y/vK3qxVF5u92LX03sBKvzK81wNdgNVNFmWeAKk
+YPUNDfDUTkoT6ahmDaqn3sZvBOCTklNAEDW7k0wyyFwWFcDxdyTLpF5WMsbS37u8
+rnHR5NKYJ0l3q0fpc91NhfWRnYYPE44kz2h+lMUq1rp6BbnJyiAkuJU/Y/HcZcnO
+GJIAfEkG6wtTV+8RJgJAJAfoN2vFPkcLU34wzncYxllUGk/NMtJvS6zKnCTXWZYK
+yeqAPeCNg2mI2KhWtN/AkqfV33L3vbVHbU8cljWY8kewDkXQbJ3cacIuU/vCnCg2
+SU9ttgqhoTK8hEKjs79R
+=5wgk
+-----END PGP SIGNATURE-----
+
+--QVPrfwc3wawPJcD5Q9EiX5Fg3JejxVlQt--
