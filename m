@@ -1,98 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752164AbaBKXOy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 18:14:54 -0500
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:54725 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751752AbaBKXOw (ORCPT
+	id S1752140AbaBKXSk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 18:18:40 -0500
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:36020 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750978AbaBKXSj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 18:14:52 -0500
+	Tue, 11 Feb 2014 18:18:39 -0500
+Date: Tue, 11 Feb 2014 16:18:35 -0700
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Rajat Jain <rajatjain@juniper.net>
+Cc: Takashi Iwai <tiwai@suse.de>, Alex Williamson <alex.williamson@redhat.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] PCI: pciehp: Remove surprise bit checks
+Message-ID: <20140211231835.GA21057@google.com>
+References: <s5hmwhx98vx.wl%tiwai@suse.de>
+ <1117e550ec6248e3a1834f887cbfdfad@DM2PR05MB671.namprd05.prod.outlook.com>
 MIME-Version: 1.0
-In-Reply-To: <20140211215519.GJ841@joshc.qualcomm.com>
-References: <1392122211-11422-1-git-send-email-laurent.pinchart@ideasonboard.com>
-	<1596542.hkJp71u3OJ@avalon>
-	<20140211164825.GC841@joshc.qualcomm.com>
-	<6446980.WMjvBYStRY@avalon>
-	<20140211180845.GG841@joshc.qualcomm.com>
-	<CAMuHMdVkPLe5986hYPApoQr7oJSb6U2P71=nP+9mtvtaskdHXg@mail.gmail.com>
-	<CAL_JsqKnsr-9nSjCGvroC0nDK36vQUnwMWj=cPjvUbRymmHFOQ@mail.gmail.com>
-	<20140211215519.GJ841@joshc.qualcomm.com>
-Date: Tue, 11 Feb 2014 17:14:51 -0600
-Message-ID: <CAL_JsqJdbBuv0TgN7Okrxa4MmEon6a74hv458VFS=8RpcyX5tw@mail.gmail.com>
-Subject: Re: [PATCH] of: Turn of_match_node into a static inline when
- CONFIG_OF isn't set
-From: Rob Herring <robherring2@gmail.com>
-To: Josh Cartwright <joshc@codeaurora.org>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1117e550ec6248e3a1834f887cbfdfad@DM2PR05MB671.namprd05.prod.outlook.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 3:55 PM, Josh Cartwright <joshc@codeaurora.org> wrote:
-> On Tue, Feb 11, 2014 at 03:30:33PM -0600, Rob Herring wrote:
->> On Tue, Feb 11, 2014 at 12:29 PM, Geert Uytterhoeven
->> <geert@linux-m68k.org> wrote:
->> > On Tue, Feb 11, 2014 at 7:08 PM, Josh Cartwright <joshc@codeaurora.org> wrote:
->> >> It sure would be convenient if platform_device had a 'const struct
->> >> of_device_id *of_id_entry' member similar to the existing struct
->> >> platform_device_id one, that was set up during platform device matching.
->> >> Most platform_driver users of of_match_node() would simply go away.
->> >
->> > Can't the entry be shared for both platform_device_id and of_device_id?
->> > Only one of them can be valid at the same time, right?
->> >
-> [..]
->>
->> I believe this is the reason drivers have to call of_match_device:
->>
->> commit b1608d69cb804e414d0887140ba08a9398e4e638
->> Author: Grant Likely <grant.likely@secretlab.ca>
->> Date:   Wed May 18 11:19:24 2011 -0600
->>
->>     drivercore: revert addition of of_match to struct device
->>
->>     Commit b826291c, "drivercore/dt: add a match table pointer to struct
->>     device" added an of_match pointer to struct device to cache the
->>     of_match_table entry discovered at driver match time.  This was unsafe
->>     because matching is not an atomic operation with probing a driver.  If
->>     two or more drivers are attempted to be matched to a driver at the
->>     same time, then the cached matching entry pointer could get
->>     overwritten.
->>
->>     This patch reverts the of_match cache pointer and reworks all users to
->>     call of_match_device() directly instead.
->>
->>     Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
->
-> Interesting, thanks for the history!  I'm wondering if this same problem
-> exists for the existing platform_device_id cached pointer as well.
->
-> Okay, so maybe caching a pointer in the device isn't the best option,
-> what if we considered extending the platform_driver callbacks to include
-> a set of per-method (?) probe callbacks which do provide a handle to
-> matched identifiers.
->
-> In the case of a totally contrived platform_driver supporting ACPI, OF,
-> and !OF configurations, it might look something like:
->
->         static const struct of_device_id acme_of_table[] = {
->                 /* ... */
->                 { },
->         };
->         MODULE_DEVICE_TABLE(of, acme_of_table);
->
->         static int acme_probe_of(struct platform_device *pdev,
->                                  const struct of_device_id *id)
+On Tue, Feb 11, 2014 at 06:52:30PM +0000, Rajat Jain wrote:
+> Hello Takashi,
+> 
+> > -----Original Message-----
+> > From: linux-pci-owner@vger.kernel.org [mailto:linux-pci-
+> > owner@vger.kernel.org] On Behalf Of Takashi Iwai
+> > Sent: Tuesday, February 11, 2014 3:39 AM
+> > To: Bjorn Helgaas
+> > Cc: Alex Williamson; linux-pci@vger.kernel.org; linux-
+> > kernel@vger.kernel.org
+> > Subject: [PATCH] PCI: pciehp: Remove surprise bit checks
+> > 
+> > Currently pciehp driver checks the surprise removal bit and handles
+> > the hotplug event only when the bit is set.  But there are devices
+> > that don't set that bit but yet expect the hotplug working, e.g. the
+> > PCI card reader on HP ProBook 445 and 455 laptops appears only when
+> > you insert a card, and it needs the hotplug event handling.
+> > 
+> > For fixing this, basically we may ignore the surprise bit and always
+> > handle the event.
+> 
+> Some of this has been taken care of in the recent changes to pciehcp (last night).
+> 
+> Please see
+> 
+> https://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/commit/?h=pci/pciehp&id=a3eba3887960d00abb912fe3703cd3a058c721b8
+> 
+> Also, link state hotplug has been added as part of this patch set. Can you please try with Bjorn's latest pci tree?
+> 
+> With that, I think you should not see the issue you are describing, because if the PCIe Link comes up when you insert the card, it shall be added (now) irrespective of whether or not you have the surprise bit set.
 
-I don't think this is the right direction. You might want to look at
-of_platform_driver in git history...
+Takashi's patch removed more HP_SUPR_RM() usage than yours, and I think
+those additional changes are probably necessary.  I rebased Takashi's patch
+on top of my pci/pciehp branch, resulting in the patch below.
 
-We still have something like this for macio_bus though.
+I pushed this, so you can try the whole thing out at:
 
-Rob
+http://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/commit/?h=pci/pciehp&id=237e0218bcad52d3df6746cd8d15a0d353bae84f
+
+Bjorn
+
+
+
+PCI: pciehp: Remove surprise bit checks
+
+From: Takashi Iwai <tiwai@suse.de>
+
+Currently pciehp driver checks the surprise removal bit and handles the
+hotplug event only when the bit is set.  But there are devices that don't
+set that bit, yet expect hotplug to work, e.g., the SD/MMC card reader on
+HP ProBook 445 and 455 laptops appears only when you insert a card, and it
+needs the hotplug event handling.
+
+For fixing this, basically we may ignore the surprise bit and always handle
+the event.  The only big concern in the past was the KVM device assignment,
+but this has been fixed in KVM side (ignoring hotplug events during
+secondary bus resets), there should be no obstacle ahead.
+
+The earlier discussion thread is found at:
+    https://lkml.kernel.org/r/s5h38vqjhk6.wl%25tiwai@suse.de
+
+[bhelgaas: rebase on Rajat's changes, remove HP_SUPR_RM() completely]
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=70261
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+---
+ drivers/pci/hotplug/pciehp.h      |    1 -
+ drivers/pci/hotplug/pciehp_ctrl.c |    2 --
+ drivers/pci/hotplug/pciehp_hpc.c  |   11 +++++------
+ 3 files changed, 5 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/pci/hotplug/pciehp.h b/drivers/pci/hotplug/pciehp.h
+index 8a66866b8cf1..d2a67aa0e49d 100644
+--- a/drivers/pci/hotplug/pciehp.h
++++ b/drivers/pci/hotplug/pciehp.h
+@@ -124,7 +124,6 @@ struct controller {
+ #define MRL_SENS(ctrl)		((ctrl)->slot_cap & PCI_EXP_SLTCAP_MRLSP)
+ #define ATTN_LED(ctrl)		((ctrl)->slot_cap & PCI_EXP_SLTCAP_AIP)
+ #define PWR_LED(ctrl)		((ctrl)->slot_cap & PCI_EXP_SLTCAP_PIP)
+-#define HP_SUPR_RM(ctrl)	((ctrl)->slot_cap & PCI_EXP_SLTCAP_HPS)
+ #define EMI(ctrl)		((ctrl)->slot_cap & PCI_EXP_SLTCAP_EIP)
+ #define NO_CMD_CMPL(ctrl)	((ctrl)->slot_cap & PCI_EXP_SLTCAP_NCCS)
+ #define PSN(ctrl)		((ctrl)->slot_cap >> 19)
+diff --git a/drivers/pci/hotplug/pciehp_ctrl.c b/drivers/pci/hotplug/pciehp_ctrl.c
+index fec99a164d93..a4d29d24057d 100644
+--- a/drivers/pci/hotplug/pciehp_ctrl.c
++++ b/drivers/pci/hotplug/pciehp_ctrl.c
+@@ -535,8 +535,6 @@ static void interrupt_event_handler(struct work_struct *work)
+ 		break;
+ 	case INT_PRESENCE_ON:
+ 	case INT_PRESENCE_OFF:
+-		if (!HP_SUPR_RM(ctrl))
+-			break;
+ 		ctrl_dbg(ctrl, "Surprise Removal\n");
+ 		handle_surprise_event(p_slot);
+ 		break;
+diff --git a/drivers/pci/hotplug/pciehp_hpc.c b/drivers/pci/hotplug/pciehp_hpc.c
+index da4b0204b4f7..1076a51623b5 100644
+--- a/drivers/pci/hotplug/pciehp_hpc.c
++++ b/drivers/pci/hotplug/pciehp_hpc.c
+@@ -628,17 +628,18 @@ int pciehp_reset_slot(struct slot *slot, int probe)
+ {
+ 	struct controller *ctrl = slot->ctrl;
+ 	struct pci_dev *pdev = ctrl_dev(ctrl);
+-	u16 stat_mask = 0, ctrl_mask = 0;
++	u16 stat_mask, ctrl_mask;
+ 
+ 	if (probe)
+ 		return 0;
+ 
+-	if (HP_SUPR_RM(ctrl) && !ATTN_BUTTN(ctrl)) {
++	ctrl_mask = PCI_EXP_SLTCTL_DLLSCE;
++	stat_mask = PCI_EXP_SLTSTA_DLLSC;
++
++	if (!ATTN_BUTTN(ctrl)) {	/* as in pcie_enable_notification() */
+ 		ctrl_mask |= PCI_EXP_SLTCTL_PDCE;
+ 		stat_mask |= PCI_EXP_SLTSTA_PDC;
+ 	}
+-	ctrl_mask |= PCI_EXP_SLTCTL_DLLSCE;
+-	stat_mask |= PCI_EXP_SLTSTA_DLLSC;
+ 
+ 	pcie_write_cmd(ctrl, 0, ctrl_mask);
+ 	if (pciehp_poll_mode)
+@@ -741,8 +742,6 @@ static inline void dbg_ctrl(struct controller *ctrl)
+ 		  ATTN_LED(ctrl)   ? "yes" : "no");
+ 	ctrl_info(ctrl, "  Power Indicator      : %3s\n",
+ 		  PWR_LED(ctrl)    ? "yes" : "no");
+-	ctrl_info(ctrl, "  Hot-Plug Surprise    : %3s\n",
+-		  HP_SUPR_RM(ctrl) ? "yes" : "no");
+ 	ctrl_info(ctrl, "  EMI Present          : %3s\n",
+ 		  EMI(ctrl)        ? "yes" : "no");
+ 	ctrl_info(ctrl, "  Command Completed    : %3s\n",
