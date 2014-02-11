@@ -1,82 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752222AbaBKRSq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 12:18:46 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:32923 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750934AbaBKRSo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 12:18:44 -0500
-Date: Tue, 11 Feb 2014 22:48:05 +0530
-From: Gautham R Shenoy <ego@linux.vnet.ibm.com>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "oleg@redhat.com" <oleg@redhat.com>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "tj@kernel.org" <tj@kernel.org>,
-        "walken@google.com" <walken@google.com>,
-        "ego@linux.vnet.ibm.com" <ego@linux.vnet.ibm.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH 01/51] CPU hotplug: Provide lockless versions of callback
- registration functions
-Message-ID: <20140211171805.GA3932@in.ibm.com>
-Reply-To: ego@linux.vnet.ibm.com
-References: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com>
- <20140205220447.19080.9460.stgit@srivatsabhat.in.ibm.com>
- <1392081980.5612.123.camel@misato.fc.hp.com>
- <52F9ED11.5010800@linux.vnet.ibm.com>
- <1392136436.5612.131.camel@misato.fc.hp.com>
+	id S1752207AbaBKRTr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 12:19:47 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:48241 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751015AbaBKRTq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 12:19:46 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Josh Cartwright <joshc@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>
+Subject: Re: [PATCH] of: Turn of_match_node into a static inline when CONFIG_OF isn't set
+Date: Tue, 11 Feb 2014 18:20:49 +0100
+Message-ID: <6446980.WMjvBYStRY@avalon>
+User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140211164825.GC841@joshc.qualcomm.com>
+References: <1392122211-11422-1-git-send-email-laurent.pinchart@ideasonboard.com> <1596542.hkJp71u3OJ@avalon> <20140211164825.GC841@joshc.qualcomm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392136436.5612.131.camel@misato.fc.hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021117-0320-0000-0000-0000026FA1C0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 09:33:56AM -0700, Toshi Kani wrote:
-> 
-> I agree that introducing a reader-writer semaphore allows concurrent
-> executions.  Adding yet another hotplug lock is a bit unfortunate,
-> though.
-> 
+Hi Josh,
 
-I agree with this last part. We already have enough locks for
-cpu-hotplug. Another one sounds one too many!!
+On Tuesday 11 February 2014 10:48:26 Josh Cartwright wrote:
+> On Tue, Feb 11, 2014 at 03:55:35PM +0100, Laurent Pinchart wrote:
+> > On Tuesday 11 February 2014 08:41:08 Josh Cartwright wrote:
+> > > On Tue, Feb 11, 2014 at 01:36:51PM +0100, Laurent Pinchart wrote:
+> > > > when CONFIG_OF is disabled of_match_node is defined as a macro that
+> > > > evaluates to NULL. This breaks compilation of drivers that dereference
+> > > > the function's return value directly. Fix it by turning the macro into
+> > > > a static inline function that returns NULL.
+> > > 
+> > > Just this past week I did the same thing, but noticed that it breaks the
+> > > following usecase:
+> > >
+> > > 	#ifdef CONFIG_OF
+> > > 	static const struct of_device_id foobar_matches[] = {
+> > > 		{ .compatible = "foobar,whatsit", },
+> > > 		{ },
+> > > 	};
+> > > 	#endif
+> > > 	
+> > > 	static int probeme(struct platform_device *pdev)
+> > > 	{
+> > > 		struct of_device_id *id;
+> > > 		
+> > > 		id = of_match_node(foobar_matches, pdev->dev.of_node);
+> > > 		if (id) {
+> > > 			/* ... */
+> > > 		}
+> > > 		return 0;
+> > > 	
+> > > 	}
+> > > 
+> > > When !CONFIG_OF and with your change, this will fail to build due to
+> > > foobar_matches being undefined.
+> > 
+> > Good point. What would you think about
+> > 
+> > #define of_match_node(_matches, _node)  ((const struct of_device_id
+> > *)NULL)
+> 
+> I've just sent out a patchset that cleans up at least a couple of users
+> that directly do of_match_node(matches, np)->data using
+> of_find_matching_node_and_match.  Not sure if that will fix the usage
+> you have in mind, though.
 
+Not quite. My use case is pretty simple:
 
-> This may be a dumb question, but can't we simply do this way?
-> 
->         get_online_cpus();
-> 
->         for_each_online_cpu(cpu)
->                 init_cpu(cpu);
-> 
->         put_online_cpus();
->
-      -------- Someone chooses to hotplug a cpu here ------
-      -------- But this subsystem might miss out on knowing
-               about it since it hasn't registered its
-               notifier yet! 
+	state->info = of_match_node(adv7604_of_id, np)->data;
 
->         register_cpu_notifier(&foobar_cpu_notifier);
-> 
-> Thanks,
-> -Toshi
-> 
+> I am a bit weary about having an of_match_node() user that both directly
+> dereferences the result (i.e. of_match_node(matches, np)->data) _and_
+> builds when !CONFIG_OF; most likely due to a traumatic childhood event
+> where demons flew out my nose.
 
---
-Thanks and Regards
-gautham.
+I can assign the intermediate value to a variable before dereferencing it and 
+drop my of_match_node() patch if it makes everybody happier.
+
+-- 
+Regards,
+
+Laurent Pinchart
 
