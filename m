@@ -1,67 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755613AbaBKUAJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:00:09 -0500
-Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:61408 "EHLO
-	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755595AbaBKUAF (ORCPT
+	id S1755661AbaBKUAu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:00:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40129 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753705AbaBKTHE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 15:00:05 -0500
-Message-ID: <1392148802.9682.36.camel@x220>
-Subject: Re: drm/msm: CONFIG_MSM_OCMEM?
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Rob Clark <robdclark@gmail.com>
-Cc: Richard Weinberger <richard@nod.at>, David Airlie <airlied@linux.ie>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arm-msm@vger.kernel.org
-Date: Tue, 11 Feb 2014 21:00:02 +0100
-In-Reply-To: <CAF6AEGuezz14GCVfRA1m-5kKcQEHjzSLJ2xoPyU5jinjzwOm6A@mail.gmail.com>
-References: <1392133181.3755.14.camel@x220>
-	 <CAF6AEGuezz14GCVfRA1m-5kKcQEHjzSLJ2xoPyU5jinjzwOm6A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 11 Feb 2014 20:00:03.0067 (UTC) FILETIME=[DA0E9CB0:01CF2763]
-X-RcptDomain: vger.kernel.org
+	Tue, 11 Feb 2014 14:07:04 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Ben Skeggs <bskeggs@redhat.com>
+Subject: [PATCH 3.12 080/107] drm/nouveau: fix m2mf copy to tiled gart
+Date: Tue, 11 Feb 2014 11:05:46 -0800
+Message-Id: <20140211184750.479409712@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
+References: <20140211184748.191276235@linuxfoundation.org>
+User-Agent: quilt/0.61-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-02-11 at 12:29 -0500, Rob Clark wrote:
-> On Tue, Feb 11, 2014 at 10:39 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> > Commit 55459968176f ("drm/msm: add a330/apq8x74") added preprocessor
-> > checks for CONFIG_MSM_OCMEM. But I couldn't find a Kconfig symbol
-> > MSM_OCMEM (nor a preprocessor define for a macro of that name). Why were
-> > those preprocessor checks added?
-> 
-> At the moment, CONFIG_MSM_OCMEM is only in downstream kernel.. not
-> 100% sure about how we'll handle that upstream when there is more than
-> just drm/msm using OCMEM (which can be shared between gpu, video
-> enc/dec, etc).
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-I see. (Wouldn't that be an upstream kernel, actually?)
+------------------
 
-> > Please note that lines 197-201 currently read:
-> >     /* Set the OCMEM base address for A330, etc */
-> >     if (a3xx_gpu->ocmem_hdl) {
-> >             gpu_write(gpu, REG_A3XX_RB_GMEM_BASE_ADDR,
-> >                     (unsigned int)(a3xx_gpu->ocmem_base >> 14));
-> >     }
-> >
-> > ocmem_hdl and ocmem_base are used uninitialized here, aren't they? So it
-> > seems these lines should be wrapped with a preprocessor check for
-> > CONFIG_MSM_OCMEM too.
-> 
-> in this case ocmem_hdl will be NULL (since a3xx_gpu is kzalloc'd).
-> The #ifdef's could be added here, but not required.
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
 
-I missed that. So whether or not to #ifdef this would be mostly a matter
-of style.
+commit ce8f7699f2b6ffe4aa8368b8d9d370875accaa5f upstream.
 
-Thanks,
+Commit de7b7d59d54852c introduced tiled GART, but a linear copy is
+still performed. This may result in errors on eviction, fix it by
+checking tiling from memtype.
 
+Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Paul Bolle
+---
+ drivers/gpu/drm/nouveau/nouveau_bo.c |   33 ++++++++-------------------------
+ 1 file changed, 8 insertions(+), 25 deletions(-)
+
+--- a/drivers/gpu/drm/nouveau/nouveau_bo.c
++++ b/drivers/gpu/drm/nouveau/nouveau_bo.c
+@@ -802,25 +802,25 @@ nv50_bo_move_m2mf(struct nouveau_channel
+ 		  struct ttm_mem_reg *old_mem, struct ttm_mem_reg *new_mem)
+ {
+ 	struct nouveau_mem *node = old_mem->mm_node;
+-	struct nouveau_bo *nvbo = nouveau_bo(bo);
+ 	u64 length = (new_mem->num_pages << PAGE_SHIFT);
+ 	u64 src_offset = node->vma[0].offset;
+ 	u64 dst_offset = node->vma[1].offset;
++	int src_tiled = !!node->memtype;
++	int dst_tiled = !!((struct nouveau_mem *)new_mem->mm_node)->memtype;
+ 	int ret;
+ 
+ 	while (length) {
+ 		u32 amount, stride, height;
+ 
++		ret = RING_SPACE(chan, 18 + 6 * (src_tiled + dst_tiled));
++		if (ret)
++			return ret;
++
+ 		amount  = min(length, (u64)(4 * 1024 * 1024));
+ 		stride  = 16 * 4;
+ 		height  = amount / stride;
+ 
+-		if (old_mem->mem_type == TTM_PL_VRAM &&
+-		    nouveau_bo_tile_layout(nvbo)) {
+-			ret = RING_SPACE(chan, 8);
+-			if (ret)
+-				return ret;
+-
++		if (src_tiled) {
+ 			BEGIN_NV04(chan, NvSubCopy, 0x0200, 7);
+ 			OUT_RING  (chan, 0);
+ 			OUT_RING  (chan, 0);
+@@ -830,19 +830,10 @@ nv50_bo_move_m2mf(struct nouveau_channel
+ 			OUT_RING  (chan, 0);
+ 			OUT_RING  (chan, 0);
+ 		} else {
+-			ret = RING_SPACE(chan, 2);
+-			if (ret)
+-				return ret;
+-
+ 			BEGIN_NV04(chan, NvSubCopy, 0x0200, 1);
+ 			OUT_RING  (chan, 1);
+ 		}
+-		if (new_mem->mem_type == TTM_PL_VRAM &&
+-		    nouveau_bo_tile_layout(nvbo)) {
+-			ret = RING_SPACE(chan, 8);
+-			if (ret)
+-				return ret;
+-
++		if (dst_tiled) {
+ 			BEGIN_NV04(chan, NvSubCopy, 0x021c, 7);
+ 			OUT_RING  (chan, 0);
+ 			OUT_RING  (chan, 0);
+@@ -852,18 +843,10 @@ nv50_bo_move_m2mf(struct nouveau_channel
+ 			OUT_RING  (chan, 0);
+ 			OUT_RING  (chan, 0);
+ 		} else {
+-			ret = RING_SPACE(chan, 2);
+-			if (ret)
+-				return ret;
+-
+ 			BEGIN_NV04(chan, NvSubCopy, 0x021c, 1);
+ 			OUT_RING  (chan, 1);
+ 		}
+ 
+-		ret = RING_SPACE(chan, 14);
+-		if (ret)
+-			return ret;
+-
+ 		BEGIN_NV04(chan, NvSubCopy, 0x0238, 2);
+ 		OUT_RING  (chan, upper_32_bits(src_offset));
+ 		OUT_RING  (chan, upper_32_bits(dst_offset));
+
 
