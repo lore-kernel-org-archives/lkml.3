@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754817AbaBKTSy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:18:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40574 "EHLO
+	id S1754821AbaBKTTX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:19:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40571 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754364AbaBKTIY (ORCPT
+	with ESMTP id S1754356AbaBKTIX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:08:24 -0500
+	Tue, 11 Feb 2014 14:08:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.10 56/79] drm/radeon/DCE4+: clear bios scratch dpms bit (v2)
-Date: Tue, 11 Feb 2014 11:06:00 -0800
-Message-Id: <20140211184722.591398400@linuxfoundation.org>
+Subject: [PATCH 3.10 55/79] drm/radeon: fix DAC interrupt handling on DCE5+
+Date: Tue, 11 Feb 2014 11:05:59 -0800
+Message-Id: <20140211184722.562238296@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
 References: <20140211184720.928667275@linuxfoundation.org>
@@ -30,36 +30,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 6802d4bad83f50081b2788698570218aaff8d10e upstream.
+commit e9a321c6b2ac954a7dbf235f419c255a424a1273 upstream.
 
-The BlankCrtc table in some DCE8 boards has some
-logic shortcuts for the vbios when this bit is set.
-Clear it for driver use.
-
-v2: fix typo
-
-Bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=73420
+DCE5 and newer hardware only has 1 DAC.  Use the correct
+offset.  This may fix display problems on certain board
+configurations.
 
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_atombios.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/gpu/drm/radeon/evergreen.c |    4 ++--
+ drivers/gpu/drm/radeon/si.c        |    2 +-
+ drivers/gpu/drm/radeon/sid.h       |    2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -2926,6 +2926,10 @@ void radeon_atom_initialize_bios_scratch
- 	/* tell the bios not to handle mode switching */
- 	bios_6_scratch |= ATOM_S6_ACC_BLOCK_DISPLAY_SWITCH;
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -3792,8 +3792,8 @@ void evergreen_disable_interrupt_state(s
+ 		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET, 0);
+ 	}
  
-+	/* clear the vbios dpms state */
-+	if (ASIC_IS_DCE4(rdev))
-+		bios_2_scratch &= ~ATOM_S2_DEVICE_DPMS_STATE;
-+
- 	if (rdev->family >= CHIP_R600) {
- 		WREG32(R600_BIOS_2_SCRATCH, bios_2_scratch);
- 		WREG32(R600_BIOS_6_SCRATCH, bios_6_scratch);
+-	/* only one DAC on DCE6 */
+-	if (!ASIC_IS_DCE6(rdev))
++	/* only one DAC on DCE5 */
++	if (!ASIC_IS_DCE5(rdev))
+ 		WREG32(DACA_AUTODETECT_INT_CONTROL, 0);
+ 	WREG32(DACB_AUTODETECT_INT_CONTROL, 0);
+ 
+--- a/drivers/gpu/drm/radeon/si.c
++++ b/drivers/gpu/drm/radeon/si.c
+@@ -4519,7 +4519,7 @@ static void si_disable_interrupt_state(s
+ 	}
+ 
+ 	if (!ASIC_IS_NODCE(rdev)) {
+-		WREG32(DACA_AUTODETECT_INT_CONTROL, 0);
++		WREG32(DAC_AUTODETECT_INT_CONTROL, 0);
+ 
+ 		tmp = RREG32(DC_HPD1_INT_CONTROL) & DC_HPDx_INT_POLARITY;
+ 		WREG32(DC_HPD1_INT_CONTROL, tmp);
+--- a/drivers/gpu/drm/radeon/sid.h
++++ b/drivers/gpu/drm/radeon/sid.h
+@@ -394,7 +394,7 @@
+ #       define GRPH_PFLIP_INT_MASK                      (1 << 0)
+ #       define GRPH_PFLIP_INT_TYPE                      (1 << 8)
+ 
+-#define	DACA_AUTODETECT_INT_CONTROL			0x66c8
++#define	DAC_AUTODETECT_INT_CONTROL			0x67c8
+ 
+ #define DC_HPD1_INT_STATUS                              0x601c
+ #define DC_HPD2_INT_STATUS                              0x6028
 
 
