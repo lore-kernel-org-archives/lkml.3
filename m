@@ -1,96 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752266AbaBKQ0f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 11:26:35 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:46698 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752069AbaBKQ01 (ORCPT
+	id S1752941AbaBKQdL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 11:33:11 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:44893 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752694AbaBKQdG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 11:26:27 -0500
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 3/8] ARM: at91: make use of of_find_matching_node_and_match
-Date: Tue, 11 Feb 2014 10:24:01 -0600
-Message-Id: <1392135847-30791-4-git-send-email-joshc@codeaurora.org>
-X-Mailer: git-send-email 1.8.5.4
-In-Reply-To: <1392135847-30791-1-git-send-email-joshc@codeaurora.org>
-References: <1392135847-30791-1-git-send-email-joshc@codeaurora.org>
+	Tue, 11 Feb 2014 11:33:06 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+To: dwmw2@infradead.org, akpm@linux-foundation.org
+Cc: viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
+        linux-mtd@lists.infradead.org, linux-mm@kvack.org,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: [PATCH] mm: remove read_cache_page_async
+Date: Tue, 11 Feb 2014 11:32:09 -0500
+Message-Id: <1392136329-21946-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 1.8.3.2
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of the of_find_matching_node()/of_match_node() pair, which requires two
-iterations through the match table, make use of of_find_matching_node_and_match(),
-which only iterates through the table once.
+This patch removes read_cache_page_async() which wasn't really needed anywhere
+and simplifies the code around it a bit.
 
-While we're here, mark the rtsc id table const.
+read_cache_page_async() is useful when we want to read a page into the cache
+without waiting for it to complete. This happens when the appropriate callback
+'filler' doesn't complete it's read operation and releases the page lock
+immediately, and instead queues a different completion routine to do that.
+This never actually happened anywhere in the code.
 
-Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+read_cache_page_async() had 3 different callers:
+
+ - read_cache_page() which is the sync version, it would just wait for
+the requested read to complete using wait_on_page_read().
+ - JFFS2 would call it from jffs2_gc_fetch_page(), but the filler function
+it supplied doesn't do any async reads, and would complete before the
+filler function returns - making it actually a sync read.
+ - CRAMFS would call it using the read_mapping_page_async() wrapper, with
+a similar story to JFFS2 - the filler function doesn't do anything that
+reminds async reads and would always complete before the filler function
+returns.
+
+To sum it up, the code in mm/filemap.c never took advantage of having
+read_cache_page_async(). While there are filler callbacks that do async
+reads (such as the block one), we always called it with the read_cache_page().
+
+This patch adds a mandatory wait for read to complete when adding a new
+page to the cache, and removes read_cache_page_async() and it's wrappers.
+
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 ---
- arch/arm/mach-at91/setup.c | 16 ++++------------
- 1 file changed, 4 insertions(+), 12 deletions(-)
+ fs/cramfs/inode.c       |    3 +-
+ fs/jffs2/fs.c           |    2 +-
+ include/linux/pagemap.h |   10 -------
+ mm/filemap.c            |   64 +++++++++++++++++------------------------------
+ 4 files changed, 25 insertions(+), 54 deletions(-)
 
-diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
-index f7ca97b..e884de8 100644
---- a/arch/arm/mach-at91/setup.c
-+++ b/arch/arm/mach-at91/setup.c
-@@ -352,7 +352,7 @@ void __init at91_ioremap_matrix(u32 base_addr)
- }
+diff --git a/fs/cramfs/inode.c b/fs/cramfs/inode.c
+index 06610cf..a1f801c 100644
+--- a/fs/cramfs/inode.c
++++ b/fs/cramfs/inode.c
+@@ -195,8 +195,7 @@ static void *cramfs_read(struct super_block *sb, unsigned int offset, unsigned i
+ 		struct page *page = NULL;
  
- #if defined(CONFIG_OF)
--static struct of_device_id rstc_ids[] = {
-+static const struct of_device_id rstc_ids[] = {
- 	{ .compatible = "atmel,at91sam9260-rstc", .data = at91sam9_alt_restart },
- 	{ .compatible = "atmel,at91sam9g45-rstc", .data = at91sam9g45_restart },
- 	{ /*sentinel*/ }
-@@ -363,7 +363,7 @@ static void at91_dt_rstc(void)
- 	struct device_node *np;
- 	const struct of_device_id *of_id;
+ 		if (blocknr + i < devsize) {
+-			page = read_mapping_page_async(mapping, blocknr + i,
+-									NULL);
++			page = read_mapping_page(mapping, blocknr + i, NULL);
+ 			/* synchronous error? */
+ 			if (IS_ERR(page))
+ 				page = NULL;
+diff --git a/fs/jffs2/fs.c b/fs/jffs2/fs.c
+index 5e36504..601afd1 100644
+--- a/fs/jffs2/fs.c
++++ b/fs/jffs2/fs.c
+@@ -690,7 +690,7 @@ unsigned char *jffs2_gc_fetch_page(struct jffs2_sb_info *c,
+ 	struct inode *inode = OFNI_EDONI_2SFFJ(f);
+ 	struct page *pg;
  
--	np = of_find_matching_node(NULL, rstc_ids);
-+	np = of_find_matching_node_and_match(NULL, rstc_ids, &of_id);
- 	if (!np)
- 		panic("unable to find compatible rstc node in dtb\n");
+-	pg = read_cache_page_async(inode->i_mapping, offset >> PAGE_CACHE_SHIFT,
++	pg = read_cache_page(inode->i_mapping, offset >> PAGE_CACHE_SHIFT,
+ 			     (void *)jffs2_do_readpage_unlock, inode);
+ 	if (IS_ERR(pg))
+ 		return (void *)pg;
+diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+index e772973..4f591df 100644
+--- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -289,8 +289,6 @@ static inline struct page *grab_cache_page(struct address_space *mapping,
  
-@@ -371,10 +371,6 @@ static void at91_dt_rstc(void)
- 	if (!at91_rstc_base)
- 		panic("unable to map rstc cpu registers\n");
+ extern struct page * grab_cache_page_nowait(struct address_space *mapping,
+ 				pgoff_t index);
+-extern struct page * read_cache_page_async(struct address_space *mapping,
+-				pgoff_t index, filler_t *filler, void *data);
+ extern struct page * read_cache_page(struct address_space *mapping,
+ 				pgoff_t index, filler_t *filler, void *data);
+ extern struct page * read_cache_page_gfp(struct address_space *mapping,
+@@ -298,14 +296,6 @@ extern struct page * read_cache_page_gfp(struct address_space *mapping,
+ extern int read_cache_pages(struct address_space *mapping,
+ 		struct list_head *pages, filler_t *filler, void *data);
  
--	of_id = of_match_node(rstc_ids, np);
--	if (!of_id)
--		panic("AT91: rtsc no restart function available\n");
+-static inline struct page *read_mapping_page_async(
+-				struct address_space *mapping,
+-				pgoff_t index, void *data)
+-{
+-	filler_t *filler = (filler_t *)mapping->a_ops->readpage;
+-	return read_cache_page_async(mapping, index, filler, data);
+-}
 -
- 	arm_pm_restart = of_id->data;
+ static inline struct page *read_mapping_page(struct address_space *mapping,
+ 				pgoff_t index, void *data)
+ {
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 8d44788..0ad619d 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -2130,6 +2130,18 @@ int generic_file_readonly_mmap(struct file * file, struct vm_area_struct * vma)
+ EXPORT_SYMBOL(generic_file_mmap);
+ EXPORT_SYMBOL(generic_file_readonly_mmap);
  
- 	of_node_put(np);
-@@ -392,7 +388,7 @@ static void at91_dt_ramc(void)
- 	struct device_node *np;
- 	const struct of_device_id *of_id;
- 
--	np = of_find_matching_node(NULL, ramc_ids);
-+	np = of_find_matching_node_and_match(NULL, ramc_ids, &of_id);
- 	if (!np)
- 		panic("unable to find compatible ram controller node in dtb\n");
- 
-@@ -402,11 +398,7 @@ static void at91_dt_ramc(void)
- 	/* the controller may have 2 banks */
- 	at91_ramc_base[1] = of_iomap(np, 1);
- 
--	of_id = of_match_node(ramc_ids, np);
--	if (!of_id)
--		pr_warn("AT91: ramc no standby function available\n");
--	else
--		at91_pm_set_standby(of_id->data);
-+	at91_pm_set_standby(of_id->data);
- 
- 	of_node_put(np);
++static struct page *wait_on_page_read(struct page *page)
++{
++	if (!IS_ERR(page)) {
++		wait_on_page_locked(page);
++		if (!PageUptodate(page)) {
++			page_cache_release(page);
++			page = ERR_PTR(-EIO);
++		}
++	}
++	return page;
++}
++
+ static struct page *__read_cache_page(struct address_space *mapping,
+ 				pgoff_t index,
+ 				int (*filler)(void *, struct page *),
+@@ -2156,6 +2168,8 @@ repeat:
+ 		if (err < 0) {
+ 			page_cache_release(page);
+ 			page = ERR_PTR(err);
++		} else {
++			page = wait_on_page_read(page);
+ 		}
+ 	}
+ 	return page;
+@@ -2192,6 +2206,10 @@ retry:
+ 	if (err < 0) {
+ 		page_cache_release(page);
+ 		return ERR_PTR(err);
++	} else {
++		page = wait_on_page_read(page);
++		if (IS_ERR(page))
++			return page;
+ 	}
+ out:
+ 	mark_page_accessed(page);
+@@ -2199,40 +2217,25 @@ out:
  }
+ 
+ /**
+- * read_cache_page_async - read into page cache, fill it if needed
++ * read_cache_page - read into page cache, fill it if needed
+  * @mapping:	the page's address_space
+  * @index:	the page index
+  * @filler:	function to perform the read
+  * @data:	first arg to filler(data, page) function, often left as NULL
+  *
+- * Same as read_cache_page, but don't wait for page to become unlocked
+- * after submitting it to the filler.
+- *
+  * Read into the page cache. If a page already exists, and PageUptodate() is
+- * not set, try to fill the page but don't wait for it to become unlocked.
++ * not set, try to fill the page and wait for it to become unlocked.
+  *
+  * If the page does not get brought uptodate, return -EIO.
+  */
+-struct page *read_cache_page_async(struct address_space *mapping,
++struct page *read_cache_page(struct address_space *mapping,
+ 				pgoff_t index,
+ 				int (*filler)(void *, struct page *),
+ 				void *data)
+ {
+ 	return do_read_cache_page(mapping, index, filler, data, mapping_gfp_mask(mapping));
+ }
+-EXPORT_SYMBOL(read_cache_page_async);
+-
+-static struct page *wait_on_page_read(struct page *page)
+-{
+-	if (!IS_ERR(page)) {
+-		wait_on_page_locked(page);
+-		if (!PageUptodate(page)) {
+-			page_cache_release(page);
+-			page = ERR_PTR(-EIO);
+-		}
+-	}
+-	return page;
+-}
++EXPORT_SYMBOL(read_cache_page);
+ 
+ /**
+  * read_cache_page_gfp - read into page cache, using specified page allocation flags.
+@@ -2251,31 +2254,10 @@ struct page *read_cache_page_gfp(struct address_space *mapping,
+ {
+ 	filler_t *filler = (filler_t *)mapping->a_ops->readpage;
+ 
+-	return wait_on_page_read(do_read_cache_page(mapping, index, filler, NULL, gfp));
++	return do_read_cache_page(mapping, index, filler, NULL, gfp);
+ }
+ EXPORT_SYMBOL(read_cache_page_gfp);
+ 
+-/**
+- * read_cache_page - read into page cache, fill it if needed
+- * @mapping:	the page's address_space
+- * @index:	the page index
+- * @filler:	function to perform the read
+- * @data:	first arg to filler(data, page) function, often left as NULL
+- *
+- * Read into the page cache. If a page already exists, and PageUptodate() is
+- * not set, try to fill the page then wait for it to become unlocked.
+- *
+- * If the page does not get brought uptodate, return -EIO.
+- */
+-struct page *read_cache_page(struct address_space *mapping,
+-				pgoff_t index,
+-				int (*filler)(void *, struct page *),
+-				void *data)
+-{
+-	return wait_on_page_read(read_cache_page_async(mapping, index, filler, data));
+-}
+-EXPORT_SYMBOL(read_cache_page);
+-
+ static size_t __iovec_copy_from_user_inatomic(char *vaddr,
+ 			const struct iovec *iov, size_t base, size_t bytes)
+ {
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+1.7.2.5
 
