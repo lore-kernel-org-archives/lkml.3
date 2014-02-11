@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754320AbaBKUgA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:36:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39828 "EHLO
+	id S1753175AbaBKTGE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:06:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39778 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753184AbaBKTGG (ORCPT
+	with ESMTP id S1752997AbaBKTF6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:06 -0500
+	Tue, 11 Feb 2014 14:05:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 3.13 117/120] timekeeping: Fix missing timekeeping_update in suspend path
-Date: Tue, 11 Feb 2014 11:05:58 -0800
-Message-Id: <20140211184826.982552333@linuxfoundation.org>
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.13 107/120] ftrace: Synchronize setting function_trace_op with ftrace_trace_function
+Date: Tue, 11 Feb 2014 11:05:48 -0800
+Message-Id: <20140211184826.686778823@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -32,46 +28,168 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John Stultz <john.stultz@linaro.org>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 330a1617b0a6268d427aa5922c94d082b1d3e96d upstream.
+commit 405e1d834807e51b2ebd3dea81cb51e53fb61504 upstream.
 
-Since 48cdc135d4840 (Implement a shadow timekeeper), we have to
-call timekeeping_update() after any adjustment to the timekeeping
-structure in order to make sure that any adjustments to the structure
-persist.
+ftrace_trace_function is a variable that holds what function will be called
+directly by the assembly code (mcount). If just a single function is
+registered and it handles recursion itself, then the assembly will call that
+function directly without any helper function. It also passes in the
+ftrace_op that was registered with the callback. The ftrace_op to send is
+stored in the function_trace_op variable.
 
-In the timekeeping suspend path, we udpate the timekeeper
-structure, so we should be sure to update the shadow-timekeeper
-before releasing the timekeeping locks. Currently this isn't done.
+The ftrace_trace_function and function_trace_op needs to be coordinated such
+that the called callback wont be called with the wrong ftrace_op, otherwise
+bad things can happen if it expected a different op. Luckily, there's no
+callback that doesn't use the helper functions that requires this. But
+there soon will be and this needs to be fixed.
 
-In most cases, the next time related code to run would be
-timekeeping_resume, which does update the shadow-timekeeper, but
-in an abundence of caution, this patch adds the call to
-timekeeping_update() in the suspend path.
+Use a set_function_trace_op to store the ftrace_op to set the
+function_trace_op to when it is safe to do so (during the update function
+within the breakpoint or stop machine calls). Or if dynamic ftrace is not
+being used (static tracing) then we have to do a bit more synchronization
+when the ftrace_trace_function is set as that takes affect immediately
+(as oppose to dynamic ftrace doing it with the modification of the trampoline).
 
-Cc: Sasha Levin <sasha.levin@oracle.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/time/timekeeping.c |    2 ++
- 1 file changed, 2 insertions(+)
+ kernel/trace/ftrace.c |   87 +++++++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 72 insertions(+), 15 deletions(-)
 
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -1024,6 +1024,8 @@ static int timekeeping_suspend(void)
- 		timekeeping_suspend_time =
- 			timespec_add(timekeeping_suspend_time, delta_delta);
- 	}
-+
-+	timekeeping_update(tk, TK_MIRROR);
- 	write_seqcount_end(&timekeeper_seq);
- 	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -85,6 +85,8 @@ int function_trace_stop __read_mostly;
  
+ /* Current function tracing op */
+ struct ftrace_ops *function_trace_op __read_mostly = &ftrace_list_end;
++/* What to set function_trace_op to */
++static struct ftrace_ops *set_function_trace_op;
+ 
+ /* List for set_ftrace_pid's pids. */
+ LIST_HEAD(ftrace_pids);
+@@ -278,6 +280,23 @@ static void update_global_ops(void)
+ 	global_ops.func = func;
+ }
+ 
++static void ftrace_sync(struct work_struct *work)
++{
++	/*
++	 * This function is just a stub to implement a hard force
++	 * of synchronize_sched(). This requires synchronizing
++	 * tasks even in userspace and idle.
++	 *
++	 * Yes, function tracing is rude.
++	 */
++}
++
++static void ftrace_sync_ipi(void *data)
++{
++	/* Probably not needed, but do it anyway */
++	smp_rmb();
++}
++
+ static void update_ftrace_function(void)
+ {
+ 	ftrace_func_t func;
+@@ -296,16 +315,59 @@ static void update_ftrace_function(void)
+ 	     !FTRACE_FORCE_LIST_FUNC)) {
+ 		/* Set the ftrace_ops that the arch callback uses */
+ 		if (ftrace_ops_list == &global_ops)
+-			function_trace_op = ftrace_global_list;
++			set_function_trace_op = ftrace_global_list;
+ 		else
+-			function_trace_op = ftrace_ops_list;
++			set_function_trace_op = ftrace_ops_list;
+ 		func = ftrace_ops_list->func;
+ 	} else {
+ 		/* Just use the default ftrace_ops */
+-		function_trace_op = &ftrace_list_end;
++		set_function_trace_op = &ftrace_list_end;
+ 		func = ftrace_ops_list_func;
+ 	}
+ 
++	/* If there's no change, then do nothing more here */
++	if (ftrace_trace_function == func)
++		return;
++
++	/*
++	 * If we are using the list function, it doesn't care
++	 * about the function_trace_ops.
++	 */
++	if (func == ftrace_ops_list_func) {
++		ftrace_trace_function = func;
++		/*
++		 * Don't even bother setting function_trace_ops,
++		 * it would be racy to do so anyway.
++		 */
++		return;
++	}
++
++#ifndef CONFIG_DYNAMIC_FTRACE
++	/*
++	 * For static tracing, we need to be a bit more careful.
++	 * The function change takes affect immediately. Thus,
++	 * we need to coorditate the setting of the function_trace_ops
++	 * with the setting of the ftrace_trace_function.
++	 *
++	 * Set the function to the list ops, which will call the
++	 * function we want, albeit indirectly, but it handles the
++	 * ftrace_ops and doesn't depend on function_trace_op.
++	 */
++	ftrace_trace_function = ftrace_ops_list_func;
++	/*
++	 * Make sure all CPUs see this. Yes this is slow, but static
++	 * tracing is slow and nasty to have enabled.
++	 */
++	schedule_on_each_cpu(ftrace_sync);
++	/* Now all cpus are using the list ops. */
++	function_trace_op = set_function_trace_op;
++	/* Make sure the function_trace_op is visible on all CPUs */
++	smp_wmb();
++	/* Nasty way to force a rmb on all cpus */
++	smp_call_function(ftrace_sync_ipi, NULL, 1);
++	/* OK, we are all set to update the ftrace_trace_function now! */
++#endif /* !CONFIG_DYNAMIC_FTRACE */
++
+ 	ftrace_trace_function = func;
+ }
+ 
+@@ -410,17 +472,6 @@ static int __register_ftrace_function(st
+ 	return 0;
+ }
+ 
+-static void ftrace_sync(struct work_struct *work)
+-{
+-	/*
+-	 * This function is just a stub to implement a hard force
+-	 * of synchronize_sched(). This requires synchronizing
+-	 * tasks even in userspace and idle.
+-	 *
+-	 * Yes, function tracing is rude.
+-	 */
+-}
+-
+ static int __unregister_ftrace_function(struct ftrace_ops *ops)
+ {
+ 	int ret;
+@@ -1992,8 +2043,14 @@ void ftrace_modify_all_code(int command)
+ 	else if (command & FTRACE_DISABLE_CALLS)
+ 		ftrace_replace_code(0);
+ 
+-	if (update && ftrace_trace_function != ftrace_ops_list_func)
++	if (update && ftrace_trace_function != ftrace_ops_list_func) {
++		function_trace_op = set_function_trace_op;
++		smp_wmb();
++		/* If irqs are disabled, we are in stop machine */
++		if (!irqs_disabled())
++			smp_call_function(ftrace_sync_ipi, NULL, 1);
+ 		ftrace_update_ftrace_func(ftrace_trace_function);
++	}
+ 
+ 	if (command & FTRACE_START_FUNC_RET)
+ 		ftrace_enable_ftrace_graph_caller();
 
 
