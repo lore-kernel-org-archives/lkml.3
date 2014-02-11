@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754690AbaBKTMY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:12:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40649 "EHLO
+	id S1754702AbaBKTM4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:12:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40642 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754419AbaBKTIk (ORCPT
+	with ESMTP id S1754498AbaBKTIi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:08:40 -0500
+	Tue, 11 Feb 2014 14:08:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Brown <broonie@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.4 07/30] ACPI / init: Flag use of ACPI and ACPI idioms for power supplies to regulator API
-Date: Tue, 11 Feb 2014 11:06:07 -0800
-Message-Id: <20140211184647.358763064@linuxfoundation.org>
+        Christoph Lameter <cl@linux.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, Li Zefan <lizefan@huawei.com>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: [PATCH 3.4 05/30] slub: Fix calculation of cpu slabs
+Date: Tue, 11 Feb 2014 11:06:05 -0800
+Message-Id: <20140211184647.303822567@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184647.149512538@linuxfoundation.org>
 References: <20140211184647.149512538@linuxfoundation.org>
@@ -29,66 +30,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@linaro.org>
+From: Li Zefan <lizefan@huawei.com>
 
-commit 49a12877d2777cadcb838981c3c4f5a424aef310 upstream.
+commit 8afb1474db4701d1ab80cd8251137a3260e6913e upstream.
 
-There is currently no facility in ACPI to express the hookup of voltage
-regulators, the expectation is that the regulators that exist in the
-system will be handled transparently by firmware if they need software
-control at all. This means that if for some reason the regulator API is
-enabled on such a system it should assume that any supplies that devices
-need are provided by the system at all relevant times without any software
-intervention.
+  /sys/kernel/slab/:t-0000048 # cat cpu_slabs
+  231 N0=16 N1=215
+  /sys/kernel/slab/:t-0000048 # cat slabs
+  145 N0=36 N1=109
 
-Tell the regulator core to make this assumption by calling
-regulator_has_full_constraints(). Do this as soon as we know we are using
-ACPI so that the information is available to the regulator core as early
-as possible. This will cause the regulator core to pretend that there is
-an always on regulator supplying any supply that is requested but that has
-not otherwise been mapped which is the behaviour expected on a system with
-ACPI.
+See, the number of slabs is smaller than that of cpu slabs.
 
-Should the ability to specify regulators be added in future revisions of
-ACPI then once we have support for ACPI mappings in the kernel the same
-assumptions will apply. It is also likely that systems will default to a
-mode of operation which does not require any interpretation of these
-mappings in order to be compatible with existing operating system releases
-so it should remain safe to make these assumptions even if the mappings
-exist but are not supported by the kernel.
+The bug was introduced by commit 49e2258586b423684f03c278149ab46d8f8b6700
+("slub: per cpu cache for partial pages").
 
-Signed-off-by: Mark Brown <broonie@linaro.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+We should use page->pages instead of page->pobjects when calculating
+the number of cpu partial slabs. This also fixes the mapping of slabs
+and nodes.
+
+As there's no variable storing the number of total/active objects in
+cpu partial slabs, and we don't have user interfaces requiring those
+statistics, I just add WARN_ON for those cases.
+
+Acked-by: Christoph Lameter <cl@linux.com>
+Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/bus.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ mm/slub.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/drivers/acpi/bus.c
-+++ b/drivers/acpi/bus.c
-@@ -33,6 +33,7 @@
- #include <linux/proc_fs.h>
- #include <linux/acpi.h>
- #include <linux/slab.h>
-+#include <linux/regulator/machine.h>
- #ifdef CONFIG_X86
- #include <asm/mpspec.h>
- #endif
-@@ -921,6 +922,14 @@ void __init acpi_early_init(void)
- 		goto error0;
- 	}
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -4520,7 +4520,13 @@ static ssize_t show_slab_objects(struct
+ 			page = c->partial;
  
-+	/*
-+	 * If the system is using ACPI then we can be reasonably
-+	 * confident that any regulators are managed by the firmware
-+	 * so tell the regulator core it has everything it needs to
-+	 * know.
-+	 */
-+	regulator_has_full_constraints();
-+
- 	return;
- 
-       error0:
+ 			if (page) {
+-				x = page->pobjects;
++				node = page_to_nid(page);
++				if (flags & SO_TOTAL)
++					WARN_ON_ONCE(1);
++				else if (flags & SO_OBJECTS)
++					WARN_ON_ONCE(1);
++				else
++					x = page->pages;
+ 				total += x;
+ 				nodes[node] += x;
+ 			}
 
 
