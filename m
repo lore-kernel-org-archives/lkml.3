@@ -1,141 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752181AbaBKSW3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 13:22:29 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:38192 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751829AbaBKSW1 (ORCPT
+	id S1752222AbaBKSWn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 13:22:43 -0500
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:61177 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751291AbaBKSWl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 13:22:27 -0500
-Message-ID: <52FA6A62.5010000@infradead.org>
-Date: Tue, 11 Feb 2014 10:22:26 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Tue, 11 Feb 2014 13:22:41 -0500
 MIME-Version: 1.0
-To: Gene Heskett <gheskett@wdtv.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: make oldfonfig broken.
-References: <1391971686-9517-1-git-send-email-richard@nod.at> <201402101521.04113.gheskett@wdtv.com> <52F958D2.1070003@infradead.org> <201402101913.04969.gheskett@wdtv.com>
-In-Reply-To: <201402101913.04969.gheskett@wdtv.com>
+In-Reply-To: <20140211111751.GD3748@arm.com>
+References: <20140209221826.GA30556@www.outflux.net>
+	<20140210102935.GC25305@arm.com>
+	<20140210104135.GD25305@arm.com>
+	<CAGXu5jL0asY2L9xvnEDwBPQoWYZAVHjtG+U7nyz=JfZtXFK34A@mail.gmail.com>
+	<20140211111751.GD3748@arm.com>
+Date: Tue, 11 Feb 2014 10:22:40 -0800
+X-Google-Sender-Auth: 8aGQsMNwjBVWBLkNGiw4z14AT4E
+Message-ID: <CAGXu5jKhp515gX--i-B85T1cGhTOUu2K8JuXNq5XDpxZHcCUPw@mail.gmail.com>
+Subject: Re: [PATCH] ARM: mm: report both sections from PMD
+From: Kees Cook <keescook@chromium.org>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Steven Capper <steve.capper@linaro.org>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Cyril Chemparathy <cyril@ti.com>, Marc Zyngier <Marc.Zyngier@arm.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/10/2014 04:13 PM, Gene Heskett wrote:
-> On Monday 10 February 2014, Randy Dunlap wrote:
->> On 02/10/2014 12:21 PM, Gene Heskett wrote:
->>> On Monday 10 February 2014, Randy Dunlap wrote:
->>>> On 02/09/2014 08:32 PM, Gene Heskett wrote:
->>>> AUTOSELECT driver feature Better!  ugh.
->>>
->>> Spit.  I presume geneology discussions are off topic. :)
->>>
->>>> Good luck. Let me know if you need more guidance.
->>>
->>> Hat in hand, I figured I had better get the first one that fails,
->>> 3.2.40, to work before I carried that fwd to a more current kernel,
->>> but 5 or 6 builds & boot failure later I am stumped.
->>>
->>> The boot gets to top_init, reports the / drive is unavailable and it
->>> cannot load /lib/modules/3.2.40/modules.dep, which does exist.
->>>
->>> Stops, times out in about a minute and falls thru to the busybox shell,
->>> and of course my keyboard and mouse are wireless to usb, so neither
->>> work, reset button tap time.
->>>
->>> The only reason I can deduce is that because the drive isn't mounted,
->>> something is still missing, either in the vmlinuz file or in the initrd
->>> file.
->>>
->>> This most working 3.12.9 bootup shows:
->>>
->>> gene@coyote:~/src/linux-3.2.40$ lsmod |grep sata
->>> sata_nv                16890  12
->>> libata                146855  2 pata_amd,sata_nv
->>>
->>> And I'm pretty sure all that is in the initrd.
->>>
->>> Except according to grep, none of that is in
->>> /lib/modules/3.2.40/modules.dep
->>>
->>> And I cannot find anyplace in a make xconfig that mentions libata.
->>> So obviously my .config is still fubared. It does grep in the other
->>> modules.dep files for several other versions.
->>>
->>> In fact, no .config I have mentions it. At my age the hair is thinning
->>> quickly enough.
->>>
->>> So, Next please?  libata is missing, and so is sata_nv in spite of that
+On Tue, Feb 11, 2014 at 3:17 AM, Catalin Marinas
+<catalin.marinas@arm.com> wrote:
+> On Mon, Feb 10, 2014 at 05:26:28PM +0000, Kees Cook wrote:
+>> On Mon, Feb 10, 2014 at 2:41 AM, Catalin Marinas
+>> <catalin.marinas@arm.com> wrote:
+>> > On Mon, Feb 10, 2014 at 10:29:35AM +0000, Catalin Marinas wrote:
+>> >> On Sun, Feb 09, 2014 at 10:18:26PM +0000, Kees Cook wrote:
+>> >> > diff --git a/arch/arm/mm/dump.c b/arch/arm/mm/dump.c
+>> >> > index 1f7b1e13d945..ff1559f9200c 100644
+>> >> > --- a/arch/arm/mm/dump.c
+>> >> > +++ b/arch/arm/mm/dump.c
+>> >> > @@ -264,6 +264,9 @@ static void walk_pmd(struct pg_state *st, pud_t *pud, unsigned long start)
+>> >> >                     note_page(st, addr, 3, pmd_val(*pmd));
+>> >> >             else
+>> >> >                     walk_pte(st, pmd, addr);
+>> >> > +
+>> >> > +           if (SECTION_SIZE < PMD_SIZE && pmd_sect(*pmd))
+>> >> > +                   note_page(st, addr + SECTION_SIZE, 3, pmd_val(pmd[1]));
+>> >>
+>> >> You can  use pmd_large() here as well.
+>> >>
+>> >> But I think this function is broken (the "for" statement not shown
+>> >> here). The pmd_t is 32-bit with classic MMU and it uses pmd++ while the
+>> >> address grows by PMD_SIZE (two pmd_t entries).
+>> >
+>> > Actually it's ok since PTRS_PER_PMD is 1, so it only goes through this
+>> > loop once.
+>> >
+>> > But in your patch shouldn't you check for pmd_large(*(pmd+1))? The first
+>> > pmd is already caught by the 'if' statement.
 >>
->>> being enabled:
->> It's missing as a loadable module, but that's OK since it's builtin.
->>
->>> gene@coyote:~/src/linux-3.2.40$ grep SATA_NV .config
->>> CONFIG_SATA_NV=y
->>>
->>> But I see thats builtin, but it didn't help.
->>
->> Your .config has (I believe)
->> CONFIG_ATA=y
->> and that is what builds libata.
->>
->> Any other clues?
-> 
-> Not that I see in the build trace. grepping:
-> gene@coyote:~/src/linux-3.2.40$ grep CONFIG_ATA .config
-> CONFIG_ATALK=m
-> # CONFIG_ATA_OVER_ETH is not set
-> CONFIG_ATA=y
-> # CONFIG_ATA_NONSTANDARD is not set
-> CONFIG_ATA_VERBOSE_ERROR=y
-> CONFIG_ATA_ACPI=y
-> CONFIG_ATA_SFF=y
-> CONFIG_ATA_BMDMA=y
-> # CONFIG_ATA_PIIX is not set
-> CONFIG_ATA_GENERIC=m
-> 
-> And it seems to be building libata:
-> gene@coyote:~/src/linux-3.2.40/drivers/ata$ ls -l|grep libata|grep .o
-> -rw-r--r-- 1 root root  10236 2014-02-10 18:19 libata-acpi.o
-> -rw-rw-r-- 1 gene gene 175870 2013-03-05 22:24 libata-core.c
-> -rw-r--r-- 1 root root  89616 2014-02-10 18:19 libata-core.o
-> -rw-r--r-- 1 root root  35904 2014-02-10 18:19 libata-eh.o
-> -rw-r--r-- 1 root root 222732 2014-02-10 18:19 libata.o
-> -rw-r--r-- 1 root root  12072 2014-02-10 18:19 libata-pmp.o
-> -rw-r--r-- 1 root root  37156 2014-02-10 18:19 libata-scsi.o
-> -rw-r--r-- 1 root root  40996 2014-02-10 18:19 libata-sff.o
-> -rw-rw-r-- 1 gene gene  19559 2013-03-05 22:24 libata-transport.c
-> -rw-rw-r-- 1 gene gene    536 2013-03-05 22:24 libata-transport.h
-> -rw-r--r-- 1 root root  11772 2014-02-10 18:19 libata-transport.o
-> 
-> But libata.ko is not making it into the initrd, nor the modules.dep for 
-> 3.2.40.
-> 
-> I been playing 20 monkeys changing one ata related thing at a time & doing 
-> a sudo time -p ./makeit to check, not much use rebooting to check until I 
-> see it.
-> 
-> I'll go gedit .config & change CONFIG_ATA to = m & try one more time.
-> 
-> Got it, test reboot time.  Made it 2 lines farther, "switching to clock 
-> source TSC" then fell through to the busybox prompt with all inputs dead.
-> 
-> Sigh.
-> 
-> .config attached if you've got time.
+>> It wasn't clear to me what the logic should be here. If PTRS_PER_PMD
+>> is 1, then why is there this second pmd after the first? Shouldn't
+>> PTRS_PER_PMD be 2 if that's the case?
+>
+> The reason is that a hardware pte has only 256 entries (classic MMU),
+> this is 1KB. We put two pte tables together and it gives us 2KB. The
+> other 2KB in the page are used for Linux pte bits. Because we have two
+> hw pte tables in a page, we need two corresponding pmd entries.
+>
+> A side effect is that even though we don't actually have a pmd (normally
+> we should have included pgtable-nopmd.h), we still pretend we have one
+> and __pmd_populate takes care of writing two consecutive entries. If we
+> set PTRS_PER_PMD to 2, we should modify pte_alloc_one() to allocate a
+> single hw pte (1KB + 1KB for software bits). I don't think this would be
+> more efficient (there may have been other kernel restrictions in the
+> past to require a full pte table page).
+>
+>> If that's not the case, then I figured the state of needing to report
+>> the 2nd pmd depended on the type of the first one, so that's what I
+>> wrote instead of trying to figure out why PTRS_PER_PMD wasn't 2.
+>
+> I don't remember whether we can have the first pmd being a table and the
+> second one being a section. I don't think we restrict this but Russell
+> should know more.
 
-You have ext[234] filesystems builtin. I suppose the rootfs is one of those?
+It sounds like my logic is still okay, then? Perhaps move it into the
+first "if" for readability?
 
-Your .config file also has the ATA drivers as =m (loadable modules), but
-I guess that you also tested with those drivers =y (builtin).
+                if (pmd_none(*pmd) || pmd_large(*pmd) || !pmd_present(*pmd)) {
+                        note_page(st, addr, 3, pmd_val(*pmd));
+                        if (SECTION_SIZE < PMD_SIZE && pmd_sect(*pmd))
+                                note_page(st, addr + SECTION_SIZE, 3,
+pmd_val(pmd[1]));
+                } else
+                        walk_pte(st, pmd, addr);
 
-I don't see what the problem is.
-You may need to try taking a photo of the failed boot and sending it to
-the mailing list (and me) again, even though that has not worked for you
-some time in the past.
+Or should be be explicitly separated (to allow for the very unlikely
+future case of pmd_large != pmd_sect)? In the LPAE case, SECTION_SIZE
+== PMD_SIZE, so IIUC, we have to continue testing for that:
 
+                if (pmd_sect(*pmd)) {
+                        note_page(st, addr, 3, pmd_val(*pmd));
+                        if (SECTION_SIZE < PMD_SIZE)
+                                note_page(st, addr + SECTION_SIZE, 3,
+pmd_val(pmd[1]));
+                } else if (pmd_none(*pmd) || pmd_large(*pmd) ||
+!pmd_present(*pmd))
+                        note_page(st, addr, 3, pmd_val(*pmd));
+                else
+                        walk_pte(st, pmd, addr);
+
+>> There's clearly something I'm not understanding in here. :)
+>
+> I happen to understand it from time to time but it doesn't last ;).
+
+Heh, understood. Thanks for looking at this. :)
+
+-Kees
 
 -- 
-~Randy
+Kees Cook
+Chrome OS Security
