@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752624AbaBKWGM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 17:06:12 -0500
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:42047 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751969AbaBKWGK (ORCPT
+	id S1752377AbaBKWLZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 17:11:25 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:12388 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751347AbaBKWLW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 17:06:10 -0500
+	Tue, 11 Feb 2014 17:11:22 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 11 Feb 2014 14:09:32 -0800
+From: Andrew Chew <AChew@nvidia.com>
+To: Guenter Roeck <linux@roeck-us.net>, "wim@iguana.be" <wim@iguana.be>,
+        "rob@landley.net" <rob@landley.net>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "abrestic@chromium.org" <abrestic@chromium.org>,
+        "dgreid@chromium.org" <dgreid@chromium.org>,
+        "katierh@chromium.org" <katierh@chromium.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Date: Tue, 11 Feb 2014 14:11:20 -0800
+Subject: RE: [PATCH v5 1/1] watchdog: Add tegra watchdog
+Thread-Topic: [PATCH v5 1/1] watchdog: Add tegra watchdog
+Thread-Index: Ac8jp/ik4+hKjovOQkutJBQS/7f+bgDziKrg
+Message-ID: <643E69AA4436674C8F39DCC2C05F76386319AB352D@HQMAIL03.nvidia.com>
+References: <1391738086-29142-1-git-send-email-achew@nvidia.com>
+ <52F43D88.2050304@roeck-us.net>
+In-Reply-To: <52F43D88.2050304@roeck-us.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-X-Originating-IP: [84.73.67.144]
-In-Reply-To: <1392116390-23798-1-git-send-email-sagar.a.kamble@intel.com>
-References: <1392116390-23798-1-git-send-email-sagar.a.kamble@intel.com>
-Date: Tue, 11 Feb 2014 23:06:09 +0100
-Message-ID: <CAKMK7uHemuNJV3oxkKEsf==jzj4sDMosoObeQC7a2CFWdocs7Q@mail.gmail.com>
-Subject: Re: [PATCH v5 1/1] drm/i915: Add 180 degree primary plane rotation support
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Sagar Arun Kamble <sagar.a.kamble@intel.com>
-Cc: intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        David Airlie <airlied@linux.ie>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Purushothaman, Vijay A" <vijay.a.purushothaman@intel.com>,
-        Uma Shankar <uma.shankar@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 11:59 AM,  <sagar.a.kamble@intel.com> wrote:
-> From: Sagar Kamble <sagar.a.kamble@intel.com>
->
-> Primary planes support 180 degree rotation. Expose the feature
-> through rotation drm property.
->
-> v2: Calculating linear/tiled offsets based on pipe source width and
-> height. Added 180 degree rotation support in ironlake_update_plane.
->
-> v3: Checking if CRTC is active before issueing update_plane. Added
-> wait for vblank to make sure we dont overtake page flips. Disabling
-> FBC since it does not work with rotated planes.
->
-> v4: Updated rotation checks for pending flips, fbc disable. Creating
-> rotation property only for Gen4 onwards. Property resetting as part
-> of lastclose.
->
-> v5: Resetting property in i915_driver_lastclose properly for planes
-> and crtcs. Fixed linear offset calculation that was off by 1 w.r.t
-> width in i9xx_update_plane and ironlake_update_plane. Removed tab
-> based indentation and unnecessary braces in intel_crtc_set_property
-> and intel_update_fbc. FBC and flip related checks should be done only
-> for valid crtcs.
->
-> Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-> Cc: Jani Nikula <jani.nikula@linux.intel.com>
-> Cc: David Airlie <airlied@linux.ie>
-> Cc: dri-devel@lists.freedesktop.org
-> Cc: linux-kernel@vger.kernel.org
-> Cc: vijay.a.purushothaman@intel.com
-> Signed-off-by: Uma Shankar <uma.shankar@intel.com>
-> Signed-off-by: Sagar Kamble <sagar.a.kamble@intel.com>
+> On 02/06/2014 05:54 PM, Andrew Chew wrote:
+> > Add a driver for the hardware watchdogs in NVIDIA Tegra SoCs (Tegra30
+> > and later).  This driver will configure one watchdog timer that will
+> > reset the system in the case of a watchdog timeout.
+> >
+> > This driver binds to the nvidia,tegra30-timer device node and gets its
+> > register base from there.
+> >
+> > Signed-off-by: Andrew Chew <achew@nvidia.com>
+> 
+> Reviewed-by: Guenter Roeck <linux@roeck-us.net>
 
-Process nit: Since you have a nice testcase for this, please add a
-reference to it using the testcase tag in the cc/sob section here,
-e.g.
+Thanks, Guenter.
 
-Testcase: igt/kms_plane_rotation_crc
-
-Thanks, Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Pinging other potential reviewers.  Any other comments for me, guys?
