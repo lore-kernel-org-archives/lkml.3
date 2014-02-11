@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404AbaBKTGa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:06:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39934 "EHLO
+	id S1756151AbaBKURs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:17:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39977 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753306AbaBKTGW (ORCPT
+	with ESMTP id S1753306AbaBKTGb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:22 -0500
+	Tue, 11 Feb 2014 14:06:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, Chris Ball <cjb@laptop.org>
-Subject: [PATCH 3.12 020/107] mmc: atmel-mci: fix timeout errors in SDIO mode when using DMA
-Date: Tue, 11 Feb 2014 11:04:46 -0800
-Message-Id: <20140211184748.778991099@linuxfoundation.org>
+        Max Filippov <jcmvbkbc@gmail.com>
+Subject: [PATCH 3.12 034/107] xtensa: xtfpga: fix definitions of platform devices
+Date: Tue, 11 Feb 2014 11:05:00 -0800
+Message-Id: <20140211184749.172068546@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -29,50 +28,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ludovic Desroches <ludovic.desroches@atmel.com>
+From: Max Filippov <jcmvbkbc@gmail.com>
 
-commit 66b512eda74d59b17eac04c4da1b38d82059e6c9 upstream.
+commit a558d99263936b8a67d4eff8918745a77bfd8c31 upstream.
 
-With some SDIO devices, timeout errors can happen when reading data.
-To solve this issue, the DMA transfer has to be activated before sending
-the command to the device. This order is incorrect in PDC mode. So we
-have to take care if we are using DMA or PDC to know when to send the
-MMC command.
+Remove __initdata attribute, as the devices may be used after init
+sections are freed.
 
-Signed-off-by: Ludovic Desroches <ludovic.desroches@atmel.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/host/atmel-mci.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ arch/xtensa/platforms/xtfpga/setup.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/drivers/mmc/host/atmel-mci.c
-+++ b/drivers/mmc/host/atmel-mci.c
-@@ -1193,11 +1193,22 @@ static void atmci_start_request(struct a
- 	iflags |= ATMCI_CMDRDY;
- 	cmd = mrq->cmd;
- 	cmdflags = atmci_prepare_command(slot->mmc, cmd);
--	atmci_send_command(host, cmd, cmdflags);
-+
-+	/*
-+	 * DMA transfer should be started before sending the command to avoid
-+	 * unexpected errors especially for read operations in SDIO mode.
-+	 * Unfortunately, in PDC mode, command has to be sent before starting
-+	 * the transfer.
-+	 */
-+	if (host->submit_data != &atmci_submit_data_dma)
-+		atmci_send_command(host, cmd, cmdflags);
+--- a/arch/xtensa/platforms/xtfpga/setup.c
++++ b/arch/xtensa/platforms/xtfpga/setup.c
+@@ -194,7 +194,7 @@ void __init platform_calibrate_ccount(vo
+  *  Ethernet -- OpenCores Ethernet MAC (ethoc driver)
+  */
  
- 	if (data)
- 		host->submit_data(host, data);
+-static struct resource ethoc_res[] __initdata = {
++static struct resource ethoc_res[] = {
+ 	[0] = { /* register space */
+ 		.start = OETH_REGS_PADDR,
+ 		.end   = OETH_REGS_PADDR + OETH_REGS_SIZE - 1,
+@@ -212,7 +212,7 @@ static struct resource ethoc_res[] __ini
+ 	},
+ };
  
-+	if (host->submit_data == &atmci_submit_data_dma)
-+		atmci_send_command(host, cmd, cmdflags);
-+
- 	if (mrq->stop) {
- 		host->stop_cmdr = atmci_prepare_command(slot->mmc, mrq->stop);
- 		host->stop_cmdr |= ATMCI_CMDR_STOP_XFER;
+-static struct ethoc_platform_data ethoc_pdata __initdata = {
++static struct ethoc_platform_data ethoc_pdata = {
+ 	/*
+ 	 * The MAC address for these boards is 00:50:c2:13:6f:xx.
+ 	 * The last byte (here as zero) is read from the DIP switches on the
+@@ -222,7 +222,7 @@ static struct ethoc_platform_data ethoc_
+ 	.phy_id = -1,
+ };
+ 
+-static struct platform_device ethoc_device __initdata = {
++static struct platform_device ethoc_device = {
+ 	.name = "ethoc",
+ 	.id = -1,
+ 	.num_resources = ARRAY_SIZE(ethoc_res),
+@@ -236,13 +236,13 @@ static struct platform_device ethoc_devi
+  *  UART
+  */
+ 
+-static struct resource serial_resource __initdata = {
++static struct resource serial_resource = {
+ 	.start	= DUART16552_PADDR,
+ 	.end	= DUART16552_PADDR + 0x1f,
+ 	.flags	= IORESOURCE_MEM,
+ };
+ 
+-static struct plat_serial8250_port serial_platform_data[] __initdata = {
++static struct plat_serial8250_port serial_platform_data[] = {
+ 	[0] = {
+ 		.mapbase	= DUART16552_PADDR,
+ 		.irq		= DUART16552_INTNUM,
+@@ -255,7 +255,7 @@ static struct plat_serial8250_port seria
+ 	{ },
+ };
+ 
+-static struct platform_device xtavnet_uart __initdata = {
++static struct platform_device xtavnet_uart = {
+ 	.name		= "serial8250",
+ 	.id		= PLAT8250_DEV_PLATFORM,
+ 	.dev		= {
 
 
