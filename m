@@ -1,61 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752188AbaBKMSt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 07:18:49 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:37759 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750803AbaBKMSq (ORCPT
+	id S1752211AbaBKMS7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 07:18:59 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:8923 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803AbaBKMS4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 07:18:46 -0500
-Message-ID: <52FA151C.9040205@hurleysoftware.com>
-Date: Tue, 11 Feb 2014 07:18:36 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-CC: David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Jiri Olsa <jolsa@redhat.com>, Eric Dumazet <edumazet@google.com>
-Subject: Re: [BUG] perf top: --stdio causes continuous refresh
-References: <CABPqkBSkSbWvdRu3iEtNvHhfV4J4sALHvdd40hZTcGxLe576yQ@mail.gmail.com> <20140206135627.GA26955@infradead.org> <CABPqkBS5qLDYyyv=n8fT4K+hA3uRWYmQOZmO+n-UE9=X=cEFzQ@mail.gmail.com> <20140206140705.GB26955@infradead.org> <20140206140936.GC26955@infradead.org> <CABPqkBRwy=0pnmm657TwV25GiYbpkqC1E8+cUGLEUbqxO=Gusw@mail.gmail.com> <52F3CAE3.7060007@gmail.com> <20140210210358.GD3202@infradead.org> <52F987CE.7010300@hurleysoftware.com> <20140211121411.GA4368@infradead.org>
-In-Reply-To: <20140211121411.GA4368@infradead.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+	Tue, 11 Feb 2014 07:18:56 -0500
+X-AuditID: cbfee68f-b7f156d00000276c-0a-52fa152ea6c1
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Lars-Peter Clausen'" <lars@metafoo.de>
+Cc: "'Dmitry Torokhov'" <dmitry.torokhov@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <003901cf25fc$73002790$590076b0$%han@samsung.com>
+ <003f01cf25fd$b3e274b0$1ba75e10$%han@samsung.com> <52FA12D1.4020408@metafoo.de>
+In-reply-to: <52FA12D1.4020408@metafoo.de>
+Subject: Re: [PATCH 6/7] Input: pwm-beepe: remove HAVE_PWM dependencies
+Date: Tue, 11 Feb 2014 21:18:54 +0900
+Message-id: <000901cf2723$6e68bc10$4b3a3430$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac8nIgHSf0sRpC3AS8mOGgsbgZGqfAAAVD5A
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMIsWRmVeSWpSXmKPExsVy+t8zI1190V9BBteVLQ4vesFocXnhJVaL
+	JZPns1rc/PSN1eLyrjlsDqweO2fdZfdY8uYQq0ffllWMHp83yQWwRHHZpKTmZJalFunbJXBl
+	nD67nalgHVfFjfs/mBsYp3N0MXJySAiYSMzqncYIYYtJXLi3nq2LkYtDSGAZo8T2Bz1sMEWH
+	T95lhkgsYpTo/PgVyvnFKDHp/01WkCo2ATWJL18Os4PYIgJaElO/vWUFKWIWmMIo0TDzHDtE
+	Rz+jxIc1J4AyHBycQFVn38aCNAgLuEscPt3AAmKzCKhKrFy1jwnE5hWwlWj4f54dwhaU+DH5
+	HlgNM1Dr+p3HmSBseYnNa94yg4yUEFCXePRXF+IGI4mFi64yQpSISOx78Y4R5AQJgVvsEndO
+	dLBC7BKQ+Db5EAtEr6zEpgPMEB9LShxccYNlAqPELCSbZyHZPAvJ5llIVixgZFnFKJpakFxQ
+	nJReZKxXnJhbXJqXrpecn7uJERKh/TsY7x6wPsSYDLR+IrOUaHI+MMLzSuINjc2MLExNTI2N
+	zC3NSBNWEue9/zApSEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVANjSq7UovipvjMjH6twVcg9
+	fc5qoOelXjQ/6pVdVBNzlVfPmXOT5rW5TA2cFJRzpbCeffOyr3Vxm+TvnlxzQlmaL3zH4VVv
+	9D9/OhAoYdKrJZmkvaXu7lm/8sRaliqlb0tnr4w6/P/y7oCnar1am2QXcurffzTln1LaSb3i
+	5zaaJXkW6Q8XuDYrsRRnJBpqMRcVJwIAi8d4IeYCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrIKsWRmVeSWpSXmKPExsVy+t9jAV090V9BBjcWW1ocXvSC0eLywkus
+	Fksmz2e1uPnpG6vF5V1z2BxYPXbOusvuseTNIVaPvi2rGD0+b5ILYIlqYLTJSE1MSS1SSM1L
+	zk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAVqspFCWmFMKFApILC5W0rfD
+	NCE0xE3XAqYxQtc3JAiux8gADSSsY8w4fXY7U8E6roob938wNzBO5+hi5OSQEDCROHzyLjOE
+	LSZx4d56ti5GLg4hgUWMEp0fvzJDOL8YJSb9v8kKUsUmoCbx5cthdhBbREBLYuq3t6wgRcwC
+	UxglGmaeY4fo6GeU+LDmBFCGg4MTqOrs21iQBmEBd4nDpxtYQGwWAVWJlav2MYHYvAK2Eg3/
+	z7ND2IISPybfA6thBmpdv/M4E4QtL7F5zVtmkJESAuoSj/7qQtxgJLFw0VVGiBIRiX0v3jFO
+	YBSahWTSLCSTZiGZNAtJywJGllWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYwQngmfQOxlUN
+	FocYBTgYlXh4L3z6ESTEmlhWXJl7iFGCg1lJhHcjy68gId6UxMqq1KL8+KLSnNTiQ4zJQI9O
+	ZJYSTc4HJqe8knhDYxMzI0sjMwsjE3Nz0oSVxHkPtloHCgmkJ5akZqemFqQWwWxh4uCUamBc
+	LfPs5r6uUGuLuoa2RdJtS24fnN+1Jt+zfBHjq0Z+oyt7f2leLnknNHeh5p3MnfNiv628b/Hi
+	dZ+8etpFV5G6VUtUF/8L8o0/rfXb8FpM+t3HNxLZFv0puv/4+uw1xru2TPMV8JGSen7sangc
+	8zupzAiVErbjqYdd5U7zeN6d8+iEUnTZr+8cSizFGYmGWsxFxYkAOLz0M0QDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2014 07:14 AM, Arnaldo Carvalho de Melo wrote:
-> Em Mon, Feb 10, 2014 at 09:15:42PM -0500, Peter Hurley escreveu:
->>> Bisected it down to:
->
->>> eb3e4668bd9e0bbda592e830e889f137e44ec9e4 is the first bad commit
->>> Author: Peter Hurley <peter@hurleysoftware.com>
->>> Date:   Mon Dec 2 14:24:42 2013 -0500
->
->>>      n_tty: Un-inline slow-path n_tty_receive_char()
->
->>> In a hurry now, will continue later, trying to understand what is the problem
->>> introduced by the above cset...
->
->>> Need to revert just this one to confirm that it is the culprit, etc.
->
->> Thanks for the report and bisect. Seems unlikely this commit is the
->> cause, but very likely to be some change I made since 3.13, since
->> I can repro on 3.14-rc1 but not on 3.13.2 -stable. I can also repro
->> this on 3.12 + the patch stack from me for 3.13 and 3.14.
->
->> I'm looking into this now.
->
-> I just reverted just this cset and the problem persisted, so I'll wait
-> for you on this one :-)
+On Tuesday, February 11, 2014 9:09 PM, Lars-Peter Clausen wrote:
+> On 02/10/2014 02:16 AM, Jingoo Han wrote:
+> > The HAVE_PWM symbol is only for legacy platforms that provide
+> > the PWM API without using the generic framework. However, legacy
+> > PWM drivers were already moved to the generic PWM framework.
+> > Thus, HAVE_PWM should be removed, because HAVE_PWM is not
+> > required anymore.
+> >
+> > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> 
+> Acked-by: Lars-Peter Clausen <lars@metafoo.de>
 
-I did the same with the same result. So I'm re-bisecting on one machine
-and tracing on another.
+Hi Lars-Peter Clausen,
 
-Regards,
-Peter Hurley
+I really appreciate your Acked-by. However, the same patch was
+already submitted by Sascha Hauer.[1] So, please ignore this patch.
+Thank you.
+
+[1] https://lkml.org/lkml/2014/1/16/262
+
+Best regards,
+Jingoo Han
+
+> 
+> > ---
+> >   drivers/input/misc/Kconfig |    2 +-
+> >   1 file changed, 1 insertion(+), 1 deletion(-)
+> >
+> > diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+> > index ae74df7..762e6d2 100644
+> > --- a/drivers/input/misc/Kconfig
+> > +++ b/drivers/input/misc/Kconfig
+> > @@ -470,7 +470,7 @@ config INPUT_PCF8574
+> >
+> >   config INPUT_PWM_BEEPER
+> >   	tristate "PWM beeper support"
+> > -	depends on PWM && HAVE_PWM
+> > +	depends on PWM
+> >   	help
+> >   	  Say Y here to get support for PWM based beeper devices.
+> >
+> >
 
