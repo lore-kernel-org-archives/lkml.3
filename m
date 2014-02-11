@@ -1,62 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756118AbaBKUQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:16:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39984 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753426AbaBKTGc (ORCPT
+	id S932268AbaBKUQp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:16:45 -0500
+Received: from qmta09.emeryville.ca.mail.comcast.net ([76.96.30.96]:33332 "EHLO
+	qmta09.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754820AbaBKUQl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:32 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jonas Gorski <jogo@openwrt.org>,
-        Florian Fainelli <florian@openwrt.org>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.12 036/107] spi/bcm63xx: dont substract prepend length from total length
-Date: Tue, 11 Feb 2014 11:05:02 -0800
-Message-Id: <20140211184749.227133361@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
-References: <20140211184748.191276235@linuxfoundation.org>
-User-Agent: quilt/0.61-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Tue, 11 Feb 2014 15:16:41 -0500
+From: Shuah Khan <shuah.kh@samsung.com>
+To: rjw@rjwysocki.net, mirq-linux@rere.qmqm.pl, chris@printf.net
+Cc: Shuah Khan <shuah.kh@samsung.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        shuahkhan@gmail.com
+Subject: [RFT][PATCH v2] mmc: change cb710-mmc platform power management to use dev_pm_ops
+Date: Tue, 11 Feb 2014 13:16:21 -0700
+Message-Id: <1392149781-4991-1-git-send-email-shuah.kh@samsung.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+Change cb710-mmc platform driver to register pm ops using dev_pm_ops instead
+of legacy pm_ops. The existing legacy suspend/resume routines are identical
+and simply clear IRQ mask in the device in case it got undefined during sleep
+state. Changed code to collapse suspend and resume into one .pm interface
+for suspend and resume which gets installed for suspend, freeze, poweroff,
+thaw, restore, and resume states.
 
-------------------
-
-From: Jonas Gorski <jogo@openwrt.org>
-
-commit 86b3bde003e6bf60ccb9c09b4115b8a2f533974c upstream.
-
-The spi command must include the full message length including any
-prepended writes, else transfers larger than 256 bytes will be
-incomplete.
-
-Signed-off-by: Jonas Gorski <jogo@openwrt.org>
-Acked-by: Florian Fainelli <florian@openwrt.org>
-Signed-off-by: Mark Brown <broonie@linaro.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
 ---
- drivers/spi/spi-bcm63xx.c |    2 --
- 1 file changed, 2 deletions(-)
 
---- a/drivers/spi/spi-bcm63xx.c
-+++ b/drivers/spi/spi-bcm63xx.c
-@@ -169,8 +169,6 @@ static int bcm63xx_txrx_bufs(struct spi_
- 			       transfer_list);
- 	}
+patch v2: Addresses review comments on patch v1
+
+ drivers/mmc/host/cb710-mmc.c |   42 ++++++++++++++++++++----------------------
+ 1 file changed, 20 insertions(+), 22 deletions(-)
+
+diff --git a/drivers/mmc/host/cb710-mmc.c b/drivers/mmc/host/cb710-mmc.c
+index 1087b4c..ccf7a75 100644
+--- a/drivers/mmc/host/cb710-mmc.c
++++ b/drivers/mmc/host/cb710-mmc.c
+@@ -662,26 +662,6 @@ static const struct mmc_host_ops cb710_mmc_host = {
+ 	.get_cd = cb710_mmc_get_cd,
+ };
  
--	len -= prepend_len;
+-#ifdef CONFIG_PM
 -
- 	init_completion(&bs->done);
+-static int cb710_mmc_suspend(struct platform_device *pdev, pm_message_t state)
+-{
+-	struct cb710_slot *slot = cb710_pdev_to_slot(pdev);
+-
+-	cb710_mmc_enable_irq(slot, 0, ~0);
+-	return 0;
+-}
+-
+-static int cb710_mmc_resume(struct platform_device *pdev)
+-{
+-	struct cb710_slot *slot = cb710_pdev_to_slot(pdev);
+-
+-	cb710_mmc_enable_irq(slot, 0, ~0);
+-	return 0;
+-}
+-
+-#endif /* CONFIG_PM */
+-
+ static int cb710_mmc_init(struct platform_device *pdev)
+ {
+ 	struct cb710_slot *slot = cb710_pdev_to_slot(pdev);
+@@ -762,13 +742,31 @@ static int cb710_mmc_exit(struct platform_device *pdev)
+ 	return 0;
+ }
  
- 	/* Fill in the Message control register */
-
++#ifdef CONFIG_PM
++static int cb710_mmc_suspend_resume(struct device *dev)
++{
++	struct cb710_slot *slot = cb710_pdev_to_slot(to_platform_device(dev));
++
++	cb710_mmc_enable_irq(slot, 0, ~0);
++	return 0;
++}
++
++static const struct dev_pm_ops cb710_mmc_dev_pm_ops = {
++	.suspend = cb710_mmc_suspend_resume,
++	.resume = cb710_mmc_suspend_resume,
++	/* Hibernate hooks */
++	.freeze = cb710_mmc_suspend_resume,
++	.thaw = cb710_mmc_suspend_resume,
++	.poweroff = cb710_mmc_suspend_resume,
++	.restore = cb710_mmc_suspend_resume,
++};
++#endif
+ static struct platform_driver cb710_mmc_driver = {
+ 	.driver.name = "cb710-mmc",
+ 	.probe = cb710_mmc_init,
+ 	.remove = cb710_mmc_exit,
+ #ifdef CONFIG_PM
+-	.suspend = cb710_mmc_suspend,
+-	.resume = cb710_mmc_resume,
++	.driver.pm = &cb710_mmc_dev_pm_ops,
+ #endif
+ };
+ 
+-- 
+1.7.10.4
 
