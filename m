@@ -1,258 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755698AbaBKUB1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:01:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40127 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750978AbaBKTHC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:07:02 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.12 079/107] dm sysfs: fix a module unload race
-Date: Tue, 11 Feb 2014 11:05:45 -0800
-Message-Id: <20140211184750.451723357@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
-References: <20140211184748.191276235@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	id S1753701AbaBKTHB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:07:01 -0500
+Received: from mail-bl2lp0209.outbound.protection.outlook.com ([207.46.163.209]:27176
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753644AbaBKTG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 14:06:57 -0500
+Message-ID: <52FA7147.20607@caviumnetworks.com>
+Date: Tue, 11 Feb 2014 10:51:51 -0800
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: Alexandre Courbot <gnurou@gmail.com>
+CC: David Daney <ddaney.cavm@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH] of/gpio: Define OF_GPIO_OPEN_DRAIN flag for Open Drain
+ outputs.
+References: <1392069908-22017-1-git-send-email-ddaney.cavm@gmail.com> <CAAVeFu+_WKzLdhWcB_km3iDj419OhtMXEKzz_yWoL3WUm+7kQQ@mail.gmail.com>
+In-Reply-To: <CAAVeFu+_WKzLdhWcB_km3iDj419OhtMXEKzz_yWoL3WUm+7kQQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [64.2.3.195]
+X-Forefront-PRVS: 0119DC3B5E
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019001)(6009001)(377454003)(51704005)(199002)(189002)(24454002)(51914003)(479174003)(76482001)(64126003)(74502001)(53806001)(47446002)(81542001)(46102001)(23676002)(69226001)(1411001)(94946001)(51856001)(92726001)(94316002)(31966008)(54356001)(81342001)(54316002)(56776001)(92566001)(76786001)(95416001)(74662001)(83072002)(85852003)(83322001)(19580405001)(80976001)(19580395003)(33656001)(85306002)(93516002)(90146001)(83506001)(81686001)(81816001)(56816005)(93136001)(74876001)(74706001)(50466002)(77982001)(76796001)(77096001)(74366001)(59766001)(53416003)(4396001)(63696002)(87266001)(65956001)(47976001)(47736001)(50986001)(49866001)(36756003)(65806001)(80022001)(66066001)(79102001)(87936001)(47776003)(95666001);DIR:OUT;SFP:1102;SCL:1;SRVR:CO2PR07MB619;H:BLUPRD0711HT001.namprd07.prod.outlook.com;CLIP:64.2.3.195;FPR:FEF8FABC.9ED29FE9.DBCB32BA.4CEDC060.2023F;InfoNoRecordsA:1;MX:1;LANG:en;
+X-OriginatorOrg: caviumnetworks.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On 02/10/2014 08:31 PM, Alexandre Courbot wrote:
+> On Tue, Feb 11, 2014 at 7:05 AM, David Daney <ddaney.cavm@gmail.com> wrote:
+>> From: David Daney <david.daney@cavium.com>
+>>
+>> When we have a GPIO pin connected to an open-drain network, we want a
+>> standard way of specifying this in the device tree.  So we choose bit
+>> 1 of the flag field to indicate open drain.
+>>
+>> A typical use case would be something like:
+>>
+>>          enum of_gpio_flags f;
+>>          .
+>>          .
+>>          .
+>>          reset_gpio = of_get_named_gpio_flags(node, "reset", 0, &f);
+>>          .
+>>          .
+>>          .
+>>          ret = gpio_request_one(reset_gpio,
+>>                  (f & OF_GPIO_OPEN_DRAIN) ? GPIOF_OPEN_DRAIN : 0,
+>>                   "reset");
+>>          .
+>>          .
+>>          .
+>>          gpio_direction_output(reset_gpio, 1);
+>>          gpio_set_value(reset_gpio, 0);
+>>          msleep(20);
+>>          gpio_set_value(reset_gpio, 1);
+>
+> This is also useful for gpiod_get(). However, while you are at it,
+> could you also add a flag for the OF_GPIO_OPEN_SOURCE property? My joy
+> would be complete if you could also take the time to update
+> of_find_gpio() to pass these new flags back to the caller as it
+> already does for OF_GPIO_ACTIVE_LOW.
+>
+> Then you could even switch your use-case to the gpiod interface and
+> not bother with passing these flags by yourself anymore. Just sayin'.
+> ;)
 
-------------------
+Thanks for the suggestion.  I will send a revised patch set for your 
+consideration.
 
-From: Mikulas Patocka <mpatocka@redhat.com>
-
-commit 2995fa78e423d7193f3b57835f6c1c75006a0315 upstream.
-
-This reverts commit be35f48610 ("dm: wait until embedded kobject is
-released before destroying a device") and provides an improved fix.
-
-The kobject release code that calls the completion must be placed in a
-non-module file, otherwise there is a module unload race (if the process
-calling dm_kobject_release is preempted and the DM module unloaded after
-the completion is triggered, but before dm_kobject_release returns).
-
-To fix this race, this patch moves the completion code to dm-builtin.c
-which is always compiled directly into the kernel if BLK_DEV_DM is
-selected.
-
-The patch introduces a new dm_kobject_holder structure, its purpose is
-to keep the completion and kobject in one place, so that it can be
-accessed from non-module code without the need to export the layout of
-struct mapped_device to that code.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-
----
- drivers/md/Kconfig      |    4 ++++
- drivers/md/Makefile     |    1 +
- drivers/md/dm-builtin.c |   48 ++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/md/dm-sysfs.c   |    5 -----
- drivers/md/dm.c         |   26 +++++---------------------
- drivers/md/dm.h         |   17 ++++++++++++++++-
- 6 files changed, 74 insertions(+), 27 deletions(-)
-
---- a/drivers/md/Kconfig
-+++ b/drivers/md/Kconfig
-@@ -176,8 +176,12 @@ config MD_FAULTY
- 
- source "drivers/md/bcache/Kconfig"
- 
-+config BLK_DEV_DM_BUILTIN
-+	boolean
-+
- config BLK_DEV_DM
- 	tristate "Device mapper support"
-+	select BLK_DEV_DM_BUILTIN
- 	---help---
- 	  Device-mapper is a low level volume manager.  It works by allowing
- 	  people to specify mappings for ranges of logical sectors.  Various
---- a/drivers/md/Makefile
-+++ b/drivers/md/Makefile
-@@ -32,6 +32,7 @@ obj-$(CONFIG_MD_FAULTY)		+= faulty.o
- obj-$(CONFIG_BCACHE)		+= bcache/
- obj-$(CONFIG_BLK_DEV_MD)	+= md-mod.o
- obj-$(CONFIG_BLK_DEV_DM)	+= dm-mod.o
-+obj-$(CONFIG_BLK_DEV_DM_BUILTIN) += dm-builtin.o
- obj-$(CONFIG_DM_BUFIO)		+= dm-bufio.o
- obj-$(CONFIG_DM_BIO_PRISON)	+= dm-bio-prison.o
- obj-$(CONFIG_DM_CRYPT)		+= dm-crypt.o
---- /dev/null
-+++ b/drivers/md/dm-builtin.c
-@@ -0,0 +1,48 @@
-+#include "dm.h"
-+
-+/*
-+ * The kobject release method must not be placed in the module itself,
-+ * otherwise we are subject to module unload races.
-+ *
-+ * The release method is called when the last reference to the kobject is
-+ * dropped. It may be called by any other kernel code that drops the last
-+ * reference.
-+ *
-+ * The release method suffers from module unload race. We may prevent the
-+ * module from being unloaded at the start of the release method (using
-+ * increased module reference count or synchronizing against the release
-+ * method), however there is no way to prevent the module from being
-+ * unloaded at the end of the release method.
-+ *
-+ * If this code were placed in the dm module, the following race may
-+ * happen:
-+ *  1. Some other process takes a reference to dm kobject
-+ *  2. The user issues ioctl function to unload the dm device
-+ *  3. dm_sysfs_exit calls kobject_put, however the object is not released
-+ *     because of the other reference taken at step 1
-+ *  4. dm_sysfs_exit waits on the completion
-+ *  5. The other process that took the reference in step 1 drops it,
-+ *     dm_kobject_release is called from this process
-+ *  6. dm_kobject_release calls complete()
-+ *  7. a reschedule happens before dm_kobject_release returns
-+ *  8. dm_sysfs_exit continues, the dm device is unloaded, module reference
-+ *     count is decremented
-+ *  9. The user unloads the dm module
-+ * 10. The other process that was rescheduled in step 7 continues to run,
-+ *     it is now executing code in unloaded module, so it crashes
-+ *
-+ * Note that if the process that takes the foreign reference to dm kobject
-+ * has a low priority and the system is sufficiently loaded with
-+ * higher-priority processes that prevent the low-priority process from
-+ * being scheduled long enough, this bug may really happen.
-+ *
-+ * In order to fix this module unload race, we place the release method
-+ * into a helper code that is compiled directly into the kernel.
-+ */
-+
-+void dm_kobject_release(struct kobject *kobj)
-+{
-+	complete(dm_get_completion_from_kobject(kobj));
-+}
-+
-+EXPORT_SYMBOL(dm_kobject_release);
---- a/drivers/md/dm-sysfs.c
-+++ b/drivers/md/dm-sysfs.c
-@@ -79,11 +79,6 @@ static const struct sysfs_ops dm_sysfs_o
- 	.show	= dm_attr_show,
- };
- 
--static void dm_kobject_release(struct kobject *kobj)
--{
--	complete(dm_get_completion_from_kobject(kobj));
--}
--
- /*
-  * dm kobject is embedded in mapped_device structure
-  * no need to define release function here
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -194,11 +194,8 @@ struct mapped_device {
- 	/* forced geometry settings */
- 	struct hd_geometry geometry;
- 
--	/* sysfs handle */
--	struct kobject kobj;
--
--	/* wait until the kobject is released */
--	struct completion kobj_completion;
-+	/* kobject and completion */
-+	struct dm_kobject_holder kobj_holder;
- 
- 	/* zero-length flush that will be cloned and submitted to targets */
- 	struct bio flush_bio;
-@@ -2008,7 +2005,7 @@ static struct mapped_device *alloc_dev(i
- 	init_waitqueue_head(&md->wait);
- 	INIT_WORK(&md->work, dm_wq_work);
- 	init_waitqueue_head(&md->eventq);
--	init_completion(&md->kobj_completion);
-+	init_completion(&md->kobj_holder.completion);
- 
- 	md->disk->major = _major;
- 	md->disk->first_minor = minor;
-@@ -2870,20 +2867,14 @@ struct gendisk *dm_disk(struct mapped_de
- 
- struct kobject *dm_kobject(struct mapped_device *md)
- {
--	return &md->kobj;
-+	return &md->kobj_holder.kobj;
- }
- 
--/*
-- * struct mapped_device should not be exported outside of dm.c
-- * so use this check to verify that kobj is part of md structure
-- */
- struct mapped_device *dm_get_from_kobject(struct kobject *kobj)
- {
- 	struct mapped_device *md;
- 
--	md = container_of(kobj, struct mapped_device, kobj);
--	if (&md->kobj != kobj)
--		return NULL;
-+	md = container_of(kobj, struct mapped_device, kobj_holder.kobj);
- 
- 	if (test_bit(DMF_FREEING, &md->flags) ||
- 	    dm_deleting_md(md))
-@@ -2893,13 +2884,6 @@ struct mapped_device *dm_get_from_kobjec
- 	return md;
- }
- 
--struct completion *dm_get_completion_from_kobject(struct kobject *kobj)
--{
--	struct mapped_device *md = container_of(kobj, struct mapped_device, kobj);
--
--	return &md->kobj_completion;
--}
--
- int dm_suspended_md(struct mapped_device *md)
- {
- 	return test_bit(DMF_SUSPENDED, &md->flags);
---- a/drivers/md/dm.h
-+++ b/drivers/md/dm.h
-@@ -16,6 +16,7 @@
- #include <linux/blkdev.h>
- #include <linux/hdreg.h>
- #include <linux/completion.h>
-+#include <linux/kobject.h>
- 
- #include "dm-stats.h"
- 
-@@ -139,11 +140,25 @@ void dm_interface_exit(void);
- /*
-  * sysfs interface
-  */
-+struct dm_kobject_holder {
-+	struct kobject kobj;
-+	struct completion completion;
-+};
-+
-+static inline struct completion *dm_get_completion_from_kobject(struct kobject *kobj)
-+{
-+	return &container_of(kobj, struct dm_kobject_holder, kobj)->completion;
-+}
-+
- int dm_sysfs_init(struct mapped_device *md);
- void dm_sysfs_exit(struct mapped_device *md);
- struct kobject *dm_kobject(struct mapped_device *md);
- struct mapped_device *dm_get_from_kobject(struct kobject *kobj);
--struct completion *dm_get_completion_from_kobject(struct kobject *kobj);
-+
-+/*
-+ * The kobject helper
-+ */
-+void dm_kobject_release(struct kobject *kobj);
- 
- /*
-  * Targets for linear and striped mappings
-
+David Daney
 
