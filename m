@@ -1,72 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751823AbaBKMbf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 07:31:35 -0500
-Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:64031 "EHLO
-	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751347AbaBKMbe (ORCPT
+	id S1751291AbaBKMfn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 07:35:43 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:52921 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750972AbaBKMfl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 07:31:34 -0500
-Message-ID: <1392121892.13064.9.camel@x220>
-Subject: [PATCH] staging: r8188eu: default to "y" in Kconfig
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Martin Walch <walch.martin@web.de>, Richard Weinberger <richard@nod.at>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Tue, 11 Feb 2014 13:31:32 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 11 Feb 2014 12:31:32.0603 (UTC) FILETIME=[322BACB0:01CF2725]
-X-RcptDomain: vger.kernel.org
+	Tue, 11 Feb 2014 07:35:41 -0500
+Message-ID: <52FA1910.2060101@pengutronix.de>
+Date: Tue, 11 Feb 2014 13:35:28 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.2.0
+MIME-Version: 1.0
+To: Michal Simek <michal.simek@xilinx.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+CC: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>,
+        "wg@grandegger.com" <wg@grandegger.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH] can: xilinx CAN controller support.
+References: <6c2bcce0-9897-4d1d-a8b9-47924e40f73c@VA3EHSMHS008.ehs.local> <52F382D5.6090706@pengutronix.de> <8b4dad82-c72a-4e1f-b1af-b8c7964bbf24@TX2EHSMHS043.ehs.local> <52F4A960.10809@pengutronix.de> <da80c522-5524-4f53-9373-3f2bb6f81ddc@CO9EHSMHS015.ehs.local>
+In-Reply-To: <da80c522-5524-4f53-9373-3f2bb6f81ddc@CO9EHSMHS015.ehs.local>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="iC0VoWpxjirWjA09IfHuQr39pRus7jQEA"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Two Kconfig entries for this driver default to (uppercase) "Y". But in
-Kconfig (lowercase) "y" is a magic symbol. "Y" is an ordinary symbol.
-As "Y" is never set these Kconfig symbols will also not be set by
-default.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--iC0VoWpxjirWjA09IfHuQr39pRus7jQEA
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-So use "default y" here, as was clearly intended.
+On 02/11/2014 12:45 PM, Michal Simek wrote:
+> Hi Marc,
+>=20
+> On 02/07/2014 10:37 AM, Marc Kleine-Budde wrote:
+>> On 02/07/2014 09:42 AM, Appana Durga Kedareswara Rao wrote:
+>>>>> ---
+>>>>> This patch is rebased on the 3.14 rc1 kernel.
+>>>>> ---
+>>>>>  .../devicetree/bindings/net/can/xilinx_can.txt     |   43 +
+>>>>>  drivers/net/can/Kconfig                            |    8 +
+>>>>>  drivers/net/can/Makefile                           |    1 +
+>>>>>  drivers/net/can/xilinx_can.c                       | 1150 ++++++++=
+++++++++++++
+>>>>>  4 files changed, 1202 insertions(+), 0 deletions(-)  create mode
+>>>>> 100644 Documentation/devicetree/bindings/net/can/xilinx_can.txt
+>>>>>  create mode 100644 drivers/net/can/xilinx_can.c
+>>>>>
+>>>>> diff --git a/Documentation/devicetree/bindings/net/can/xilinx_can.t=
+xt
+>>>>> b/Documentation/devicetree/bindings/net/can/xilinx_can.txt
+>>>>> new file mode 100644
+>>>>> index 0000000..34f9643
+>>>>> --- /dev/null
+>>>>> +++ b/Documentation/devicetree/bindings/net/can/xilinx_can.txt
+>>>>> @@ -0,0 +1,43 @@
+>>>>> +Xilinx Axi CAN/Zynq CANPS controller Device Tree Bindings
+>>>>> +---------------------------------------------------------
+>>>>> +
+>>>>> +Required properties:
+>>>>> +- compatible               : Should be "xlnx,zynq-can-1.00.a" for =
+Zynq
+>>>> CAN
+>>>>> +                     controllers and "xlnx,axi-can-1.00.a" for Axi=
+ CAN
+>>>>> +                     controllers.
+>>>>> +- reg                      : Physical base address and size of the=
+ Axi CAN/Zynq
+>>>>> +                     CANPS registers map.
+>>>>> +- interrupts               : Property with a value describing the =
+interrupt
+>>>>> +                     number.
+>>>>> +- interrupt-parent : Must be core interrupt controller
+>>>>> +- clock-names              : List of input clock names - "ref_clk"=
+,
+>>>> "aper_clk"
+>>>>> +                     (See clock bindings for details. Two clocks a=
+re
+>>>>> +                      required for Zynq CAN. For Axi CAN
+>>>>> +                      case it is one(ref_clk)).
+>>>>> +- clocks           : Clock phandles (see clock bindings for detail=
+s).
+>>>>> +- xlnx,can-tx-dpth : Can Tx fifo depth (Required for Axi CAN).
+>>>>> +- xlnx,can-rx-dpth : Can Rx fifo depth (Required for Axi CAN).
+>>>>> +
+>>>>> +
+>>>>> +Example:
+>>>>> +
+>>>>> +For Zynq CANPS Dts file:
+>>>>> +   zynq_can_0: zynq-can@e0008000 {
+>>>>> +                   compatible =3D "xlnx,zynq-can-1.00.a";
+>>>>> +                   clocks =3D <&clkc 19>, <&clkc 36>;
+>>>>> +                   clock-names =3D "ref_clk", "aper_clk";
+>>>>> +                   reg =3D <0xe0008000 0x1000>;
+>>>>> +                   interrupts =3D <0 28 4>;
+>>>>> +                   interrupt-parent =3D <&intc>;
+>>>>
+>>>> Above xlnx,can-{rx,tx}-dpth is mentioned as required, but it's not i=
+n the
+>>>> Zynq example.
+>>>
+>>> One of the Difference b/w the AXI CAN and zynq CAN is in AXI CAN the =
+fifo depth(tx,rx)
+>>> Is user configurable. But in case of ZYNQ CAN  the fifo depth  is fix=
+ed for tx and rx fifo's(64)
+>>> Xlnx,can-{rx,tx}-dpth is required only for AXI CAN case it is not req=
+uired for zynq CAN.
+>>> That's why didn't putted that property in device tree.
+>>
+>> The device tree should be a hardware only description and should not
+>> hold any user configurable data. Please split your patch into two
+>> patches. The first one should add the driver with a fixed fifo size
+>> (e.g. 0x40) for the AXI, too. The second patch should make the fifo
+>> configurable via device tree.
+>=20
+> can-rx/tx-dpth is not user configurable data as you think.
+> This is FPGA where you can configure this parameter in design tools.
+> It means these 2 values just describe real hardware and user can't just=
+ change it
+> for different software behaviour.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-This patch will enable code that used to be disabled. Since this is in
-staging, that should be OK. This might also uncover warnings or errors.
-I didn't test it, anyhow.
+I see, thanks for the clarification. I had a short grep over the
+arm/boot/dts folder and it seems that fifo-depth is a more or less
+common property. I think it should be called {rx,tx}-fifo-depth. I'm
+unsure whether we need the xlnx or not.
 
-This patch also deserves a
-    Reported-by: Martin Walch <walch.martin@web.de>
+> Also I don't think it is worth to create 2 patches for the same driver
+> where the first one is useless for axi can device. But if you think
+> that it is worth to do we can create 2 patches as you suggested.
+>=20
+> Also what we can do is to define that this property is required also
+> for zynq which is 0x40 and change code according too.
 
-line, but that apparently requires Martin's permission.
+Good idea, I think this would make the driver more uniform.
 
- drivers/staging/rtl8188eu/Kconfig | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+>> If it's acceptable to describe the fifo usage by device tree, I'd like=
 
-diff --git a/drivers/staging/rtl8188eu/Kconfig b/drivers/staging/rtl8188eu/Kconfig
-index c9c548f..9a57d31 100644
---- a/drivers/staging/rtl8188eu/Kconfig
-+++ b/drivers/staging/rtl8188eu/Kconfig
-@@ -12,7 +12,7 @@ if R8188EU
- 
- config 88EU_AP_MODE
- 	bool "Realtek RTL8188EU AP mode"
--	default Y
-+	default y
- 	---help---
- 	This option enables Access Point mode. Unless you know that your system
- 	will never be used as an AP, or the target system has limited memory,
-@@ -20,7 +20,7 @@ config 88EU_AP_MODE
- 
- config 88EU_P2P
- 	bool "Realtek RTL8188EU Peer-to-peer mode"
--	default Y
-+	default y
- 	---help---
- 	This option enables peer-to-peer mode for the r8188eu driver. Unless you
- 	know that peer-to-peer (P2P) mode will never be used, or the target system has
--- 
-1.8.5.3
+>> to make it a generic CAN driver option. But we have to look around, e.=
+g.
+>> what the Ethernet driver use to configure their hardware.
+>=20
+> I think the real question is not if this is acceptable or not. It is ju=
+st
+> reality that we can setup hardware fifo depth and driver has to reflect=
+ this
+> because without it driver just doesn't work for axi can.
+>=20
+> The only remaining question is if we should create generic DT binding
+> for fifo depth. Arnd, Rob: Any opinion about it?
+> Definitely will be worth to have one generic binding if this is generic=
+ feature.
+> But if this is just specific feature for us then current properties sho=
+uld
+> be fine.
+>=20
+> In general all these xlnx,XXX properties just reflect all configurable =
+options
+> which you can setup in design tool which means that provide full hw des=
+cription
+> with all variants and they are automatically generated from tools.
+>=20
+> Please let me know what you think.
 
+I like:
+
+    rx-fifo-depth
+    tx-fifo-depth
+
+Marc
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--iC0VoWpxjirWjA09IfHuQr39pRus7jQEA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+
+iEYEARECAAYFAlL6GRAACgkQjTAFq1RaXHOlagCgjeKqJ3C4KD7+eLY3tFmYrozA
+ITcAn3x7RnOrlzvrDSBfkqOOgm38H8qx
+=gLMG
+-----END PGP SIGNATURE-----
+
+--iC0VoWpxjirWjA09IfHuQr39pRus7jQEA--
