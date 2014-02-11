@@ -1,66 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753481AbaBKV3l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 16:29:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41558 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752994AbaBKV3j (ORCPT
+	id S1753582AbaBKVag (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 16:30:36 -0500
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:32893 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751664AbaBKVae (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 16:29:39 -0500
-Date: Tue, 11 Feb 2014 13:30:54 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Richard Weinberger <richard@nod.at>
-Cc: Felipe Balbi <balbi@ti.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        "open list:USB PHY LAYER" <linux-usb@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        "open list:FRAMEBUFFER LAYER" <linux-fbdev@vger.kernel.org>
-Subject: Re: [PATCH 01/28] Remove CPU_MMP3
-Message-ID: <20140211213054.GA2555@kroah.com>
-References: <1391971686-9517-1-git-send-email-richard@nod.at>
- <1391971686-9517-2-git-send-email-richard@nod.at>
+	Tue, 11 Feb 2014 16:30:34 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1391971686-9517-2-git-send-email-richard@nod.at>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <CAMuHMdVkPLe5986hYPApoQr7oJSb6U2P71=nP+9mtvtaskdHXg@mail.gmail.com>
+References: <1392122211-11422-1-git-send-email-laurent.pinchart@ideasonboard.com>
+	<1596542.hkJp71u3OJ@avalon>
+	<20140211164825.GC841@joshc.qualcomm.com>
+	<6446980.WMjvBYStRY@avalon>
+	<20140211180845.GG841@joshc.qualcomm.com>
+	<CAMuHMdVkPLe5986hYPApoQr7oJSb6U2P71=nP+9mtvtaskdHXg@mail.gmail.com>
+Date: Tue, 11 Feb 2014 15:30:33 -0600
+Message-ID: <CAL_JsqKnsr-9nSjCGvroC0nDK36vQUnwMWj=cPjvUbRymmHFOQ@mail.gmail.com>
+Subject: Re: [PATCH] of: Turn of_match_node into a static inline when
+ CONFIG_OF isn't set
+From: Rob Herring <robherring2@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Josh Cartwright <joshc@codeaurora.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 09, 2014 at 07:47:39PM +0100, Richard Weinberger wrote:
-> The symbol is an orphan, get rid of it.
-> 
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-> Acked-by: Paul Bolle <pebolle@tiscali.nl>
-> 
-> ---
->  drivers/usb/phy/Kconfig      | 1 -
->  drivers/video/mmp/Kconfig    | 2 +-
->  drivers/video/mmp/hw/Kconfig | 2 +-
->  3 files changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
-> index 7d1451d..b9b1c52 100644
-> --- a/drivers/usb/phy/Kconfig
-> +++ b/drivers/usb/phy/Kconfig
-> @@ -61,7 +61,6 @@ config KEYSTONE_USB_PHY
->  
->  config MV_U3D_PHY
->  	bool "Marvell USB 3.0 PHY controller Driver"
-> -	depends on CPU_MMP3
->  	select USB_PHY
->  	help
->  	  Enable this to support Marvell USB 3.0 phy controller for Marvell
+On Tue, Feb 11, 2014 at 12:29 PM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> On Tue, Feb 11, 2014 at 7:08 PM, Josh Cartwright <joshc@codeaurora.org> wrote:
+>> It sure would be convenient if platform_device had a 'const struct
+>> of_device_id *of_id_entry' member similar to the existing struct
+>> platform_device_id one, that was set up during platform device matching.
+>> Most platform_driver users of of_match_node() would simply go away.
+>
+> Can't the entry be shared for both platform_device_id and of_device_id?
+> Only one of them can be valid at the same time, right?
+>
+> Ideally, all xxx_device_id look like
+>
+>     struct xxx_device_id {
+>             ... /* bus-specific ID information */
+>             kernel_ulong_t driver_data;
+>     };
+>
+> This may be formalized in some way, using a base class, but thay may
+> require reordering the fields, like:
+>
+>     struct base_device_id {
+>             kernel_ulong_t driver_data;
+>             long id[0];
+>     };
+>
 
-Do this and the driver breaks the build so it needs to depend on
-something:
+I believe this is the reason drivers have to call of_match_device:
 
-drivers/usb/phy/phy-mv-u3d-usb.c: In function ‘mv_u3d_phy_read’:
-drivers/usb/phy/phy-mv-u3d-usb.c:42:2: error: implicit declaration of function ‘writel_relaxed’ [-Werror=implicit-function-declaration]
+commit b1608d69cb804e414d0887140ba08a9398e4e638
+Author: Grant Likely <grant.likely@secretlab.ca>
+Date:   Wed May 18 11:19:24 2011 -0600
 
-Sorry, I can't take this as-is.
+    drivercore: revert addition of of_match to struct device
 
-greg k-h
+    Commit b826291c, "drivercore/dt: add a match table pointer to struct
+    device" added an of_match pointer to struct device to cache the
+    of_match_table entry discovered at driver match time.  This was unsafe
+    because matching is not an atomic operation with probing a driver.  If
+    two or more drivers are attempted to be matched to a driver at the
+    same time, then the cached matching entry pointer could get
+    overwritten.
+
+    This patch reverts the of_match cache pointer and reworks all users to
+    call of_match_device() directly instead.
+
+    Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+
+Rob
