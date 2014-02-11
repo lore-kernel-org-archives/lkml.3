@@ -1,53 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753267AbaBKAQa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 19:16:30 -0500
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:40939 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753013AbaBKAQ2 (ORCPT
+	id S1753208AbaBKARw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 19:17:52 -0500
+Received: from mail-qa0-f67.google.com ([209.85.216.67]:56553 "EHLO
+	mail-qa0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752702AbaBKARt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 19:16:28 -0500
-Date: Mon, 10 Feb 2014 17:16:24 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Andreas Noever <andreas.noever@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH 0/8] PCI: cleanup pci_scan_bridge
-Message-ID: <20140211001624.GA12851@google.com>
-References: <1390510768-5652-1-git-send-email-andreas.noever@gmail.com>
+	Mon, 10 Feb 2014 19:17:49 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1390510768-5652-1-git-send-email-andreas.noever@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: mathewsam221@gmail.com
+Date: Tue, 11 Feb 2014 00:17:49 +0000
+Message-ID: <CANH=OX2=WBoPwa=JkFjJ2K0a_u7HfMQpZp164643rBzB6sjysQ@mail.gmail.com>
+Subject: Poslovni prijedlog / / /
+From: Mathew Sam <mathewfrank6@gmail.com>
+To: undisclosed-recipients:;
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 23, 2014 at 09:59:20PM +0100, Andreas Noever wrote:
-> I have been reading the code around pci_scan_bridge and noticed a few oddities.
-> These patches try to cleanup some of the these things.
-> 
-> Most of the patches make also sense in isolation, but some make more sense with
-> the previous ones applied as well. None of the patches fix any observed bugs.
-> Patch 5 fixes a (probably harmless) dmesg.
-> 
-> The changes related to CardBus probing are completely untested.
-> 
-> Andreas
-> 
-> Andreas Noever (8):
->   PCI: Increment max correctly in pci_scan_bridge.
->   PCI: Clarify the "scan anyway" comment in pci_scan_bridge.
->   PCI: Assign CardBus bus number only during the second pass.
->   PCI: Use request_resource_conflict instead of insert_ for bus numbers.
->   PCI: Make sure bus number resources stay within their parents bounds.
->   PCI: Remove pci_fixup_parent_subordinate_busnr.
->   PCI: Check for child busses which use more bus numbers than allocated.
->   PCI: Don't scan random busses in pci_scan_bridge.
-> 
->  drivers/pci/probe.c | 78 +++++++++++++++++++++--------------------------------
->  1 file changed, 31 insertions(+), 47 deletions(-)
+Dragi,Do you speak English?
 
-I applied all these to pci/scan-bridge for v3.15, thanks!
+Pisala sam ranije. Imam va¾nu poslovnu ponudu u vrijednosti od
+12,500,000.00 $, za vas.
+Fond je pripadala mojoj pokojnog klijenta, koji je takoðer rodom iz
+va¹eg country.Therefore, kontaktirajte me
+na moj po¹tanski sanduèiæ (mathewsam221@gmail.com) omoguæiti mi da vam
+poslati vi¹e detalja, ukljuèujuæi njegovu fotografiju.
 
-Bjorn
+
+pozdravi
+Odvjetnik Mathew Sam.
+(mathewsam221@gmail.com)
