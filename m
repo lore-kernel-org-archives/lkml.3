@@ -1,92 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754550AbaBKTN6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:13:58 -0500
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:52495 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752951AbaBKTNz (ORCPT
+	id S1754731AbaBKTOL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:14:11 -0500
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:55807 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752951AbaBKTOI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:13:55 -0500
+	Tue, 11 Feb 2014 14:14:08 -0500
+Message-ID: <52FA7539.4030907@linux.vnet.ibm.com>
+Date: Wed, 12 Feb 2014 00:38:41 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Reply-To: kusmabite@gmail.com
-In-Reply-To: <1392138747-18198-1-git-send-email-digetx@gmail.com>
-References: <1392138747-18198-1-git-send-email-digetx@gmail.com>
-From: Erik Faye-Lund <kusmabite@gmail.com>
-Date: Tue, 11 Feb 2014 20:13:14 +0100
-Message-ID: <CABPQNSYNpwf_EQqUc2zpQ1cVQE++2ma-bR-rfQPdNoaJc07W4w@mail.gmail.com>
-Subject: Re: [PATCH 1/1] drm/tegra: Add guard to avoid double disable/enable
- of RGB outputs
-To: Dmitry Osipenko <digetx@gmail.com>
-Cc: thierry.reding@gmail.com, tbergstrom@nvidia.com, airlied@linux.ie,
-        swarren@wwwdotorg.org, dri-devel@lists.freedesktop.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Toshi Kani <toshi.kani@hp.com>, paulus@samba.org, rusty@rustcorp.com.au,
+        peterz@infradead.org, tglx@linutronix.de, akpm@linux-foundation.org,
+        mingo@kernel.org, paulmck@linux.vnet.ibm.com, tj@kernel.org,
+        walken@google.com, ego@linux.vnet.ibm.com, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH 01/51] CPU hotplug: Provide lockless versions of	callback
+ registration functions
+References: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com> <20140205220447.19080.9460.stgit@srivatsabhat.in.ibm.com> <1392081980.5612.123.camel@misato.fc.hp.com> <52F9ED11.5010800@linux.vnet.ibm.com> <20140211171553.GA26036@redhat.com>
+In-Reply-To: <20140211171553.GA26036@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021119-9574-0000-0000-00000BE6FAD6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 6:12 PM, Dmitry Osipenko <digetx@gmail.com> wrote:
-> Add guard to check whether RGB output is already enabled in the way it's
-> done for HDMI output. Fixes possible hang on trying to disable output twice
-> (first time during driver probe and second on fb registering).
->
-> Signed-off-by: Dmitry Osipenko <digetx@gmail.com>
-> ---
->  drivers/gpu/drm/tegra/rgb.c | 11 +++++++++++
->  1 file changed, 11 insertions(+)
->
-> diff --git a/drivers/gpu/drm/tegra/rgb.c b/drivers/gpu/drm/tegra/rgb.c
-> index 338f7f6..0266fb4 100644
-> --- a/drivers/gpu/drm/tegra/rgb.c
-> +++ b/drivers/gpu/drm/tegra/rgb.c
-> @@ -15,6 +15,7 @@
->  struct tegra_rgb {
->         struct tegra_output output;
->         struct tegra_dc *dc;
-> +       bool enabled;
->
->         struct clk *clk_parent;
->         struct clk *clk;
-> @@ -89,6 +90,9 @@ static int tegra_output_rgb_enable(struct tegra_output *output)
->         struct tegra_rgb *rgb = to_rgb(output);
->         unsigned long value;
->
-> +       if (rgb->enabled)
-> +               return 0;
-> +
->         tegra_dc_write_regs(rgb->dc, rgb_enable, ARRAY_SIZE(rgb_enable));
->
->         value = DE_SELECT_ACTIVE | DE_CONTROL_NORMAL;
-> @@ -122,6 +126,8 @@ static int tegra_output_rgb_enable(struct tegra_output *output)
->         tegra_dc_writel(rgb->dc, GENERAL_ACT_REQ << 8, DC_CMD_STATE_CONTROL);
->         tegra_dc_writel(rgb->dc, GENERAL_ACT_REQ, DC_CMD_STATE_CONTROL);
->
-> +       rgb->enabled = true;
-> +
->         return 0;
->  }
->
-> @@ -130,6 +136,9 @@ static int tegra_output_rgb_disable(struct tegra_output *output)
->         struct tegra_rgb *rgb = to_rgb(output);
->         unsigned long value;
->
-> +       if (!rgb->enabled)
-> +               return 0;
-> +
->         value = tegra_dc_readl(rgb->dc, DC_CMD_DISPLAY_POWER_CONTROL);
->         value &= ~(PW0_ENABLE | PW1_ENABLE | PW2_ENABLE | PW3_ENABLE |
->                    PW4_ENABLE | PM0_ENABLE | PM1_ENABLE);
-> @@ -144,6 +153,8 @@ static int tegra_output_rgb_disable(struct tegra_output *output)
->
->         tegra_dc_write_regs(rgb->dc, rgb_disable, ARRAY_SIZE(rgb_disable));
->
-> +       rgb->enabled = false;
-> +
->         return 0;
->  }
->
+On 02/11/2014 10:45 PM, Oleg Nesterov wrote:
+> On 02/11, Srivatsa S. Bhat wrote:
+>>
+>> +static DECLARE_RWSEM(cpu_hotplug_rwsem);
+>> +
+>> +void cpu_notifier_register_begin(void)
+>> +{
+>> +	down_read(&cpu_hotplug_rwsem);
+>> +}
+>> +
+>> +void cpu_notifier_register_end(void)
+>> +{
+>> +	up_read(&cpu_hotplug_rwsem);
+>> +}
+>> +
+>>  /* Serializes the updates to cpu_online_mask, cpu_present_mask */
+>>  static DEFINE_MUTEX(cpu_add_remove_lock);
+>>  
+>> @@ -32,12 +45,14 @@ static DEFINE_MUTEX(cpu_add_remove_lock);
+>>   */
+>>  void cpu_maps_update_begin(void)
+>>  {
+>> +	down_write(&cpu_hotplug_rwsem);
+>>  	mutex_lock(&cpu_add_remove_lock);
+>>  }
+>>  
+>>  void cpu_maps_update_done(void)
+>>  {
+>>  	mutex_unlock(&cpu_add_remove_lock);
+>> +	up_write(&cpu_hotplug_rwsem);
+>>  }
+> 
+> I am a bit confused... If we do this, why we can't simply turn
+> cpu_add_remove_lock into rw_semaphore?
+> 
 
-Wouldn't it make more sense to make "enabled" and int that counts how
-many times tegra_output_rgb_enable has been called? That way you can
-have tegra_output_rgb_disable only really disable the display once the
-same amount of disables have been performed...
+Short answer: Being a mutex, cpu_add_remove_lock ensures that the updates to
+the cpu notifier chain get serialized. If we make that an rw-semaphore, then
+the notifier chain mutations (during callback registration) will run in
+parallel, wreaking havoc.
+
+Long answer: There are two distinct phases in the critical section involving
+the callback registration - one that should run in parallel with other
+readers (other such critical sections) and the other one which should run
+serially, as depicted below.
+
+	cpu_notifier_register_begin();                |  Run in parallel
+                                                      |  with similar phases
+	for_each_online_cpu(cpu)                      |  from other subsystems.
+		init_cpu(cpu);                        |
+
+	/* Updates the cpu notifier chain. */
+	register_cpu_notifier(&foobar_cpu_notifier); ||| -- Must run serially
+
+	cpu_notifier_register_done();
+
+
+So, for the first part, we can use an rw-semaphore, to allow the init
+routines of various subsystems to run in parallel. For the second part,
+we need strict mutual exclusion; so we can use the cpu_add_remove_lock
+mutex as it is. But it so happens that the length of the critical section
+for both these locks are exactly the same on the hotplug writer side - they
+both need to cover the full hotplug code, including the CPU_POST_DEAD stage.
+
+I do agree that this approach introduces yet another lock in the hotplug
+path. However, we can nicely abstract it into APIs that the rest of the
+subsystems can call (as shown above), without needing to know the internal
+lock ordering etc.
+
+Thoughts?
+
+Regards,
+Srivatsa S. Bhat
+
