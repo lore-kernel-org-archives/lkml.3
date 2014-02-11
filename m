@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754802AbaBKTk0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:40:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40343 "EHLO
+	id S932250AbaBKTkZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:40:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40347 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754042AbaBKTHm (ORCPT
+	with ESMTP id S1754044AbaBKTHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:07:42 -0500
+	Tue, 11 Feb 2014 14:07:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mike Marciniszyn <mike.marciniszyn@intel.com>,
-        Ira Weiny <ira.weiny@intel.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.10 26/79] IB/qib: Fix QP check when looping back to/from QP1
-Date: Tue, 11 Feb 2014 11:05:30 -0800
-Message-Id: <20140211184721.682189506@linuxfoundation.org>
+        Jonas Gorski <jogo@openwrt.org>,
+        Florian Fainelli <florian@openwrt.org>,
+        Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.10 27/79] spi/bcm63xx: dont substract prepend length from total length
+Date: Tue, 11 Feb 2014 11:05:31 -0800
+Message-Id: <20140211184721.710023331@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
 References: <20140211184720.928667275@linuxfoundation.org>
@@ -30,46 +30,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ira Weiny <ira.weiny@intel.com>
+From: Jonas Gorski <jogo@openwrt.org>
 
-commit 6e0ea9e6cbcead7fa8c76e3e3b9de4a50c5131c5 upstream.
+commit 86b3bde003e6bf60ccb9c09b4115b8a2f533974c upstream.
 
-The GSI QP type is compatible with and should be allowed to send data
-to/from any UD QP.  This was found when testing ibacm on the same node
-as an SA.
+The spi command must include the full message length including any
+prepended writes, else transfers larger than 256 bytes will be
+incomplete.
 
-Reviewed-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
-Signed-off-by: Ira Weiny <ira.weiny@intel.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Jonas Gorski <jogo@openwrt.org>
+Acked-by: Florian Fainelli <florian@openwrt.org>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/hw/qib/qib_ud.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ drivers/spi/spi-bcm63xx.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/drivers/infiniband/hw/qib/qib_ud.c
-+++ b/drivers/infiniband/hw/qib/qib_ud.c
-@@ -57,13 +57,20 @@ static void qib_ud_loopback(struct qib_q
- 	struct qib_sge *sge;
- 	struct ib_wc wc;
- 	u32 length;
-+	enum ib_qp_type sqptype, dqptype;
- 
- 	qp = qib_lookup_qpn(ibp, swqe->wr.wr.ud.remote_qpn);
- 	if (!qp) {
- 		ibp->n_pkt_drops++;
- 		return;
+--- a/drivers/spi/spi-bcm63xx.c
++++ b/drivers/spi/spi-bcm63xx.c
+@@ -180,8 +180,6 @@ static int bcm63xx_txrx_bufs(struct spi_
+ 			       transfer_list);
  	}
--	if (qp->ibqp.qp_type != sqp->ibqp.qp_type ||
-+
-+	sqptype = sqp->ibqp.qp_type == IB_QPT_GSI ?
-+			IB_QPT_UD : sqp->ibqp.qp_type;
-+	dqptype = qp->ibqp.qp_type == IB_QPT_GSI ?
-+			IB_QPT_UD : qp->ibqp.qp_type;
-+
-+	if (dqptype != sqptype ||
- 	    !(ib_qib_state_ops[qp->state] & QIB_PROCESS_RECV_OK)) {
- 		ibp->n_pkt_drops++;
- 		goto drop;
+ 
+-	len -= prepend_len;
+-
+ 	init_completion(&bs->done);
+ 
+ 	/* Fill in the Message control register */
 
 
