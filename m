@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754301AbaBKTIR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:08:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40505 "EHLO
+	id S1754872AbaBKTVt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:21:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40538 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751830AbaBKTIM (ORCPT
+	with ESMTP id S1754296AbaBKTIR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:08:12 -0500
+	Tue, 11 Feb 2014 14:08:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org,
-        Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.10 68/79] ftrace: Synchronize setting function_trace_op with ftrace_trace_function
-Date: Tue, 11 Feb 2014 11:06:12 -0800
-Message-Id: <20140211184722.940208673@linuxfoundation.org>
+        Brecht Machiels <brecht@mos6581.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Rabin Vincent <rabin.vincent@stericsson.com>,
+        Borislav Petkov <bp@suse.de>
+Subject: [PATCH 3.10 74/79] rtc-cmos: Add an alarm disable quirk
+Date: Tue, 11 Feb 2014 11:06:18 -0800
+Message-Id: <20140211184723.111866557@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
 References: <20140211184720.928667275@linuxfoundation.org>
@@ -29,149 +32,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Rostedt <rostedt@goodmis.org>
+From: Borislav Petkov <bp@alien8.de>
 
-commit 405e1d834807e51b2ebd3dea81cb51e53fb61504 upstream.
+commit d5a1c7e3fc38d9c7d629e1e47f32f863acbdec3d upstream.
 
-ftrace_trace_function is a variable that holds what function will be called
-directly by the assembly code (mcount). If just a single function is
-registered and it handles recursion itself, then the assembly will call that
-function directly without any helper function. It also passes in the
-ftrace_op that was registered with the callback. The ftrace_op to send is
-stored in the function_trace_op variable.
+41c7f7424259f ("rtc: Disable the alarm in the hardware (v2)") added the
+functionality to disable the RTC wake alarm when shutting down the box.
 
-The ftrace_trace_function and function_trace_op needs to be coordinated such
-that the called callback wont be called with the wrong ftrace_op, otherwise
-bad things can happen if it expected a different op. Luckily, there's no
-callback that doesn't use the helper functions that requires this. But
-there soon will be and this needs to be fixed.
+However, there are at least two b0rked BIOSes we know about:
 
-Use a set_function_trace_op to store the ftrace_op to set the
-function_trace_op to when it is safe to do so (during the update function
-within the breakpoint or stop machine calls). Or if dynamic ftrace is not
-being used (static tracing) then we have to do a bit more synchronization
-when the ftrace_trace_function is set as that takes affect immediately
-(as oppose to dynamic ftrace doing it with the modification of the trampoline).
+https://bugzilla.novell.com/show_bug.cgi?id=812592
+https://bugzilla.novell.com/show_bug.cgi?id=805740
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+where, when wakeup alarm is enabled in the BIOS, the machine reboots
+automatically right after shutdown, regardless of what wakeup time is
+programmed.
+
+Bisecting the issue lead to this patch so disable its functionality with
+a DMI quirk only for those boxes.
+
+Cc: Brecht Machiels <brecht@mos6581.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Rabin Vincent <rabin.vincent@stericsson.com>
+Signed-off-by: Borislav Petkov <bp@suse.de>
+[jstultz: Changed variable name for clarity, added extra dmi entry]
+Tested-by: Brecht Machiels <brecht@mos6581.org>
+Tested-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- kernel/trace/ftrace.c |   76 +++++++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 72 insertions(+), 4 deletions(-)
 
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -85,6 +85,8 @@ int function_trace_stop __read_mostly;
+---
+ drivers/rtc/rtc-cmos.c |   52 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 51 insertions(+), 1 deletion(-)
+
+--- a/drivers/rtc/rtc-cmos.c
++++ b/drivers/rtc/rtc-cmos.c
+@@ -34,11 +34,11 @@
+ #include <linux/interrupt.h>
+ #include <linux/spinlock.h>
+ #include <linux/platform_device.h>
+-#include <linux/mod_devicetable.h>
+ #include <linux/log2.h>
+ #include <linux/pm.h>
+ #include <linux/of.h>
+ #include <linux/of_platform.h>
++#include <linux/dmi.h>
  
- /* Current function tracing op */
- struct ftrace_ops *function_trace_op __read_mostly = &ftrace_list_end;
-+/* What to set function_trace_op to */
-+static struct ftrace_ops *set_function_trace_op;
- 
- /* List for set_ftrace_pid's pids. */
- LIST_HEAD(ftrace_pids);
-@@ -278,6 +280,23 @@ static void update_global_ops(void)
- 	global_ops.func = func;
+ /* this is for "generic access to PC-style RTC" using CMOS_READ/CMOS_WRITE */
+ #include <asm-generic/rtc.h>
+@@ -377,6 +377,51 @@ static int cmos_set_alarm(struct device
+ 	return 0;
  }
  
-+static void ftrace_sync(struct work_struct *work)
++/*
++ * Do not disable RTC alarm on shutdown - workaround for b0rked BIOSes.
++ */
++static bool alarm_disable_quirk;
++
++static int __init set_alarm_disable_quirk(const struct dmi_system_id *id)
 +{
-+	/*
-+	 * This function is just a stub to implement a hard force
-+	 * of synchronize_sched(). This requires synchronizing
-+	 * tasks even in userspace and idle.
-+	 *
-+	 * Yes, function tracing is rude.
-+	 */
++	alarm_disable_quirk = true;
++	pr_info("rtc-cmos: BIOS has alarm-disable quirk. ");
++	pr_info("RTC alarms disabled\n");
++	return 0;
 +}
 +
-+static void ftrace_sync_ipi(void *data)
-+{
-+	/* Probably not needed, but do it anyway */
-+	smp_rmb();
-+}
++static const struct dmi_system_id rtc_quirks[] __initconst = {
++	/* https://bugzilla.novell.com/show_bug.cgi?id=805740 */
++	{
++		.callback = set_alarm_disable_quirk,
++		.ident    = "IBM Truman",
++		.matches  = {
++			DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "4852570"),
++		},
++	},
++	/* https://bugzilla.novell.com/show_bug.cgi?id=812592 */
++	{
++		.callback = set_alarm_disable_quirk,
++		.ident    = "Gigabyte GA-990XA-UD3",
++		.matches  = {
++			DMI_MATCH(DMI_SYS_VENDOR,
++					"Gigabyte Technology Co., Ltd."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "GA-990XA-UD3"),
++		},
++	},
++	/* http://permalink.gmane.org/gmane.linux.kernel/1604474 */
++	{
++		.callback = set_alarm_disable_quirk,
++		.ident    = "Toshiba Satellite L300",
++		.matches  = {
++			DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Satellite L300"),
++		},
++	},
++	{}
++};
 +
- static void update_ftrace_function(void)
+ static int cmos_alarm_irq_enable(struct device *dev, unsigned int enabled)
  {
- 	ftrace_func_t func;
-@@ -296,16 +315,59 @@ static void update_ftrace_function(void)
- 	     !FTRACE_FORCE_LIST_FUNC)) {
- 		/* Set the ftrace_ops that the arch callback uses */
- 		if (ftrace_ops_list == &global_ops)
--			function_trace_op = ftrace_global_list;
-+			set_function_trace_op = ftrace_global_list;
- 		else
--			function_trace_op = ftrace_ops_list;
-+			set_function_trace_op = ftrace_ops_list;
- 		func = ftrace_ops_list->func;
- 	} else {
- 		/* Just use the default ftrace_ops */
--		function_trace_op = &ftrace_list_end;
-+		set_function_trace_op = &ftrace_list_end;
- 		func = ftrace_ops_list_func;
+ 	struct cmos_rtc	*cmos = dev_get_drvdata(dev);
+@@ -385,6 +430,9 @@ static int cmos_alarm_irq_enable(struct
+ 	if (!is_valid_irq(cmos->irq))
+ 		return -EINVAL;
+ 
++	if (alarm_disable_quirk)
++		return 0;
++
+ 	spin_lock_irqsave(&rtc_lock, flags);
+ 
+ 	if (enabled)
+@@ -1163,6 +1211,8 @@ static int __init cmos_init(void)
+ 			platform_driver_registered = true;
  	}
  
-+	/* If there's no change, then do nothing more here */
-+	if (ftrace_trace_function == func)
-+		return;
++	dmi_check_system(rtc_quirks);
 +
-+	/*
-+	 * If we are using the list function, it doesn't care
-+	 * about the function_trace_ops.
-+	 */
-+	if (func == ftrace_ops_list_func) {
-+		ftrace_trace_function = func;
-+		/*
-+		 * Don't even bother setting function_trace_ops,
-+		 * it would be racy to do so anyway.
-+		 */
-+		return;
-+	}
-+
-+#ifndef CONFIG_DYNAMIC_FTRACE
-+	/*
-+	 * For static tracing, we need to be a bit more careful.
-+	 * The function change takes affect immediately. Thus,
-+	 * we need to coorditate the setting of the function_trace_ops
-+	 * with the setting of the ftrace_trace_function.
-+	 *
-+	 * Set the function to the list ops, which will call the
-+	 * function we want, albeit indirectly, but it handles the
-+	 * ftrace_ops and doesn't depend on function_trace_op.
-+	 */
-+	ftrace_trace_function = ftrace_ops_list_func;
-+	/*
-+	 * Make sure all CPUs see this. Yes this is slow, but static
-+	 * tracing is slow and nasty to have enabled.
-+	 */
-+	schedule_on_each_cpu(ftrace_sync);
-+	/* Now all cpus are using the list ops. */
-+	function_trace_op = set_function_trace_op;
-+	/* Make sure the function_trace_op is visible on all CPUs */
-+	smp_wmb();
-+	/* Nasty way to force a rmb on all cpus */
-+	smp_call_function(ftrace_sync_ipi, NULL, 1);
-+	/* OK, we are all set to update the ftrace_trace_function now! */
-+#endif /* !CONFIG_DYNAMIC_FTRACE */
-+
- 	ftrace_trace_function = func;
- }
+ 	if (retval == 0)
+ 		return 0;
  
-@@ -1952,8 +2014,14 @@ void ftrace_modify_all_code(int command)
- 	else if (command & FTRACE_DISABLE_CALLS)
- 		ftrace_replace_code(0);
- 
--	if (command & FTRACE_UPDATE_TRACE_FUNC)
-+	if (command & FTRACE_UPDATE_TRACE_FUNC) {
-+		function_trace_op = set_function_trace_op;
-+		smp_wmb();
-+		/* If irqs are disabled, we are in stop machine */
-+		if (!irqs_disabled())
-+			smp_call_function(ftrace_sync_ipi, NULL, 1);
- 		ftrace_update_ftrace_func(ftrace_trace_function);
-+	}
- 
- 	if (command & FTRACE_START_FUNC_RET)
- 		ftrace_enable_ftrace_graph_caller();
 
 
