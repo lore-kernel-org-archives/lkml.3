@@ -1,72 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752120AbaBKMR7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 07:17:59 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:46541 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752055AbaBKMR5 (ORCPT
+	id S1752149AbaBKMSH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 07:18:07 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:14792 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752055AbaBKMSB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 07:17:57 -0500
-Date: Tue, 11 Feb 2014 04:17:20 -0800
-From: tip-bot for Dietmar Eggemann <tipbot@zytor.com>
-Message-ID: <tip-27f17580fd2c7514c8f5cce22ab903c6f3ddf458@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, dietmar.eggemann@arm.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        dietmar.eggemann@arm.com, peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <1391005773-29493-1-git-send-email-dietmar.eggemann@arm.com>
-References: <1391005773-29493-1-git-send-email-dietmar.eggemann@arm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Delete is_same_group()
-  outside CONFIG_FAIR_GROUP_SCHED
-Git-Commit-ID: 27f17580fd2c7514c8f5cce22ab903c6f3ddf458
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 11 Feb 2014 04:17:26 -0800 (PST)
+	Tue, 11 Feb 2014 07:18:01 -0500
+X-AuditID: cbfee690-b7f266d00000287c-06-52fa14f751ff
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Lars-Peter Clausen'" <lars@metafoo.de>
+Cc: "'Ralf Baechle'" <ralf@linux-mips.org>, linux-kernel@vger.kernel.org,
+        linux-mips@linux-mips.org, "'Jingoo Han'" <jg1.han@samsung.com>
+References: <003901cf25fc$73002790$590076b0$%han@samsung.com>
+ <003d01cf25fd$309c58a0$91d509e0$%han@samsung.com> <52FA12B2.5090906@metafoo.de>
+In-reply-to: <52FA12B2.5090906@metafoo.de>
+Subject: Re: [PATCH 4/7] MIPS: jz4740: don't select HAVE_PWM
+Date: Tue, 11 Feb 2014 21:17:59 +0900
+Message-id: <000801cf2723$4d873940$e895abc0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac8nIe9YwZKKeTMzQweTKfLP6Xh3rwAASTfQ
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMIsWRmVeSWpSXmKPExsVy+t8zI93vIr+CDG716VhcXniJ1WLJ5Pms
+	Fpd3zWGzmDB1ErvFpT0qDqweR1euZfJY8uYQq0ffllWMHp83yQWwRHHZpKTmZJalFunbJXBl
+	/Hz7ialgLmfFnC0TGBsYF7J3MXJySAiYSEw8+pUZwhaTuHBvPVsXIxeHkMAyRomlf74xwxQ9
+	XLaPHSKxiFHi7+HXUM4vRol9L9cyglSxCahJfPlyGGysiICWxNRvb1lBipgF2hkl5q9YwQLR
+	0c8o8egASIaTgxOo6t65m2A7hAVsJPYsOsUEYrMIqEqsnD4DzOYVsJWYcuQsI4QtKPFj8j0W
+	EJsZqHf9zuNMELa8xOY1b4HmcADdqi7x6K8uxBFGEnOmrGaGKBGR2PfiHSPEO9fYJVY9dYNY
+	JSDxbfIhFohWWYlNB6A+lpQ4uOIGywRGiVlIFs9CsngWksWzkGxYwMiyilE0tSC5oDgpvchE
+	rzgxt7g0L10vOT93EyMkQifsYLx3wPoQYzLQ+onMUqLJ+cAIzyuJNzQ2M7IwNTE1NjK3NCNN
+	WEmcV+1RUpCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGxpqID1uFr0300C+9NCk+MfvtMRb3
+	yoOnzpYsargR0KmUXfuZcUPN6jmGD2dM2HRkkfyjSabvwhmvCq79e89mUnLY2k3SJaefhIYY
+	VwUfcw87P+ux7+tber43ytp+hsefFem4csHvx89LOsbZv1X2bZrrLfLquNqrF6mBl7rqT900
+	9Uk4l7Z26hIlluKMREMt5qLiRAAZLyfE5gIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrIKsWRmVeSWpSXmKPExsVy+t9jAd3vIr+CDB5P17C4vPASq8WSyfNZ
+	LS7vmsNmMWHqJHaLS3tUHFg9jq5cy+Sx5M0hVo++LasYPT5vkgtgiWpgtMlITUxJLVJIzUvO
+	T8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wB2qukUJaYUwoUCkgsLlbSt8M0
+	ITTETdcCpjFC1zckCK7HyAANJKxjzPj59hNTwVzOijlbJjA2MC5k72Lk5JAQMJF4uGwflC0m
+	ceHeerYuRi4OIYFFjBJ/D79mh3B+MUrse7mWEaSKTUBN4suXw2AdIgJaElO/vWUFKWIWaGeU
+	mL9iBQtERz+jxKMDIBlODk6gqnvnbjKD2MICNhJ7Fp1iArFZBFQlVk6fAWbzCthKTDlylhHC
+	FpT4MfkeC4jNDNS7fudxJghbXmLzmrdAcziAblWXePRXF+III4k5U1YzQ5SISOx78Y5xAqPQ
+	LCSTZiGZNAvJpFlIWhYwsqxiFE0tSC4oTkrPNdQrTswtLs1L10vOz93ECE4Az6R2MK5ssDjE
+	KMDBqMTDq/H1R5AQa2JZcWXuIUYJDmYlEd4vwr+ChHhTEiurUovy44tKc1KLDzEmAz06kVlK
+	NDkfmJzySuINjU3MjCyNzCyMTMzNSRNWEuc90GodKCSQnliSmp2aWpBaBLOFiYNTqoHRdsl7
+	q+7+q5XFa7bv3P+5qPPL9fx5tptZBO5ZzX1jwaDWt2HxgvkNDEuUlyxdcnX5t4lFk84uuR3A
+	pDZlax1jfc3doO0MMw/9LZulkuJ2PkBBUGXhq5YX/rM/HM4s/7d+xT3ePC3Tu3F7Kn+tTdCc
+	5exoc2vxFpmL//6v8cuY83xb6qEHSzqlbZRYijMSDbWYi4oTAYhYf/FEAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  27f17580fd2c7514c8f5cce22ab903c6f3ddf458
-Gitweb:     http://git.kernel.org/tip/27f17580fd2c7514c8f5cce22ab903c6f3ddf458
-Author:     Dietmar Eggemann <dietmar.eggemann@arm.com>
-AuthorDate: Wed, 29 Jan 2014 14:29:33 +0000
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 11 Feb 2014 09:58:16 +0100
+On Tuesday, February 11, 2014 9:08 PM, Lars-Peter Clausen wrote:
+> On 02/10/2014 02:12 AM, Jingoo Han wrote:
+> > The HAVE_PWM symbol is only for legacy platforms that provide
+> > the PWM API without using the generic framework. The jz4740
+> > platform uses the generic PWM framework, after the commit "f6b8a57
+> > pwm: Add Ingenic JZ4740 support".
+> >
+> > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> 
+> Acked-by: Lars-Peter Clausen <lars@metafoo.de>
 
-sched: Delete is_same_group() outside CONFIG_FAIR_GROUP_SCHED
+Hi Lars-Peter Clausen,
 
-Since is_same_group() is only used in the group scheduling code, there is
-no need to define it outside CONFIG_FAIR_GROUP_SCHED.
+I really appreciate your Acked-by. However, the same patch was
+already submitted by Sascha Hauer.[1] So, please ignore this patch.
+Thank you.
 
-Signed-off-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1391005773-29493-1-git-send-email-dietmar.eggemann@arm.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/fair.c | 6 ------
- 1 file changed, 6 deletions(-)
+[1] https://lkml.org/lkml/2014/1/16/262
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 43b49fe..235cfa7 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -415,12 +415,6 @@ static inline void list_del_leaf_cfs_rq(struct cfs_rq *cfs_rq)
- #define for_each_leaf_cfs_rq(rq, cfs_rq) \
- 		for (cfs_rq = &rq->cfs; cfs_rq; cfs_rq = NULL)
- 
--static inline struct cfs_rq *
--is_same_group(struct sched_entity *se, struct sched_entity *pse)
--{
--	return cfs_rq_of(se); /* always the same rq */
--}
--
- static inline struct sched_entity *parent_entity(struct sched_entity *se)
- {
- 	return NULL;
+Best regards,
+Jingoo Han
+
+> 
+> > ---
+> >   arch/mips/Kconfig |    1 -
+> >   1 file changed, 1 deletion(-)
+> >
+> > diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+> > index dcae3a7..d132603 100644
+> > --- a/arch/mips/Kconfig
+> > +++ b/arch/mips/Kconfig
+> > @@ -235,7 +235,6 @@ config MACH_JZ4740
+> >   	select IRQ_CPU
+> >   	select ARCH_REQUIRE_GPIOLIB
+> >   	select SYS_HAS_EARLY_PRINTK
+> > -	select HAVE_PWM
+> >   	select HAVE_CLK
+> >   	select GENERIC_IRQ_CHIP
+> >
+> >
+
