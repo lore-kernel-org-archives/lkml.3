@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932152AbaBKT45 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:56:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40169 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752620AbaBKTHM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753777AbaBKTHM (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 11 Feb 2014 14:07:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40145 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753732AbaBKTHH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 14:07:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        Jakob Bornecrantz <jakob@vmware.com>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Jerome Glisse <jglisse@redhat.com>, Dave Airlie <airlied@redhat.com>
-Subject: [PATCH 3.12 092/107] drm/vmwgfx: Fix regression caused by "drm/ttm: make ttm reservation calls behave like reservation calls"
-Date: Tue, 11 Feb 2014 11:05:58 -0800
-Message-Id: <20140211184750.821707952@linuxfoundation.org>
+        Giandomenico De Tullio <ghisha@gmail.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [PATCH 3.12 085/107] i915: remove pm_qos request on error
+Date: Tue, 11 Feb 2014 11:05:51 -0800
+Message-Id: <20140211184750.625808953@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -31,54 +30,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Hellstrom <thellstrom@vmware.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit cf5e3413337309050c05e13dcebe85b7194a21e5 upstream.
+commit 22accca01713b13dac386ca90b787aadf88f6551 upstream.
 
-The call to ttm_eu_backoff_reservation() as part of an error path would cause
-a lock imbalance if the reservation ticket was not initialized. This error is
-easily triggered from user-space by submitting a bogus command stream.
+Not removing pm qos request and free memory for it can cause crash,
+when some other driver use pm qos. For example, this oops:
 
-Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
-Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
-Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: Jerome Glisse <jglisse@redhat.com>
-Cc: Dave Airlie <airlied@redhat.com>
+BUG: unable to handle kernel paging request at fffffffffffffff8
+IP: [<ffffffff81307a6b>] plist_add+0x5b/0xd0
+Call Trace:
+ [<ffffffff810acf25>] pm_qos_update_target+0x125/0x1e0
+ [<ffffffff810ad071>] pm_qos_add_request+0x91/0x100
+ [<ffffffffa053ec14>] e1000_open+0xe4/0x5b0 [e1000e]
+
+was caused by earlier i915 probe failure:
+
+[drm:i915_report_and_clear_eir] *ERROR* EIR stuck: 0x00000010, masking
+[drm:init_ring_common] *ERROR* render ring initialization failed ctl 0001f001 head 00003004 tail 00000000 start 00003000
+[drm:i915_driver_load] *ERROR* failed to init modeset
+i915: probe of 0000:00:02.0 failed with error -5
+
+Bug report:
+http://bugzilla.redhat.com/show_bug.cgi?id=1057533
+
+Reported-by: Giandomenico De Tullio <ghisha@gmail.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+[danvet: Drop unnecessary code movement.]
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/i915/i915_dma.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c
-@@ -1483,11 +1483,11 @@ int vmw_execbuf_process(struct drm_file
- 	ret = vmw_cmd_check_all(dev_priv, sw_context, kernel_commands,
- 				command_size);
- 	if (unlikely(ret != 0))
--		goto out_err;
-+		goto out_err_nores;
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@ -1683,6 +1683,7 @@ out_gem_unload:
  
- 	ret = vmw_resources_reserve(sw_context);
- 	if (unlikely(ret != 0))
--		goto out_err;
-+		goto out_err_nores;
- 
- 	ret = ttm_eu_reserve_buffers(&ticket, &sw_context->validate_nodes);
- 	if (unlikely(ret != 0))
-@@ -1569,10 +1569,11 @@ int vmw_execbuf_process(struct drm_file
- 	return 0;
- 
- out_err:
--	vmw_resource_relocations_free(&sw_context->res_relocations);
--	vmw_free_relocations(sw_context);
- 	ttm_eu_backoff_reservation(&ticket, &sw_context->validate_nodes);
-+out_err_nores:
- 	vmw_resource_list_unreserve(&sw_context->resource_list, true);
-+	vmw_resource_relocations_free(&sw_context->res_relocations);
-+	vmw_free_relocations(sw_context);
- 	vmw_clear_validations(sw_context);
- 	if (unlikely(dev_priv->pinned_bo != NULL &&
- 		     !dev_priv->query_cid_valid))
+ 	intel_teardown_gmbus(dev);
+ 	intel_teardown_mchbar(dev);
++	pm_qos_remove_request(&dev_priv->pm_qos);
+ 	destroy_workqueue(dev_priv->wq);
+ out_mtrrfree:
+ 	arch_phys_wc_del(dev_priv->gtt.mtrr);
 
 
