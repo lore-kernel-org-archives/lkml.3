@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754746AbaBKT1s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:27:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40451 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754197AbaBKTIE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754202AbaBKTIE (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 11 Feb 2014 14:08:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40413 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754065AbaBKTH7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 14:07:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, Chris Ball <cjb@laptop.org>
-Subject: [PATCH 3.10 14/79] mmc: atmel-mci: fix timeout errors in SDIO mode when using DMA
-Date: Tue, 11 Feb 2014 11:05:18 -0800
-Message-Id: <20140211184721.344649345@linuxfoundation.org>
+        Rich Freeman <rich0@gentoo.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.10 47/79] [media] nxt200x: increase write buffer size
+Date: Tue, 11 Feb 2014 11:05:51 -0800
+Message-Id: <20140211184722.312199422@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
 References: <20140211184720.928667275@linuxfoundation.org>
@@ -29,50 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ludovic Desroches <ludovic.desroches@atmel.com>
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
-commit 66b512eda74d59b17eac04c4da1b38d82059e6c9 upstream.
+commit fa1e1de6bb679f2c86da3311bbafee7eaf78f125 upstream.
 
-With some SDIO devices, timeout errors can happen when reading data.
-To solve this issue, the DMA transfer has to be activated before sending
-the command to the device. This order is incorrect in PDC mode. So we
-have to take care if we are using DMA or PDC to know when to send the
-MMC command.
+The buffer size on nxt200x is not enough:
 
-Signed-off-by: Ludovic Desroches <ludovic.desroches@atmel.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+	...
+	> Dec 20 10:52:04 rich kernel: [   31.747949] nxt200x: nxt200x_writebytes: i2c wr reg=002c: len=255 is too big!
+	...
+
+Increase it to 256 bytes.
+
+Reported-by: Rich Freeman <rich0@gentoo.org>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/host/atmel-mci.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ drivers/media/dvb-frontends/nxt200x.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/mmc/host/atmel-mci.c
-+++ b/drivers/mmc/host/atmel-mci.c
-@@ -1188,11 +1188,22 @@ static void atmci_start_request(struct a
- 	iflags |= ATMCI_CMDRDY;
- 	cmd = mrq->cmd;
- 	cmdflags = atmci_prepare_command(slot->mmc, cmd);
--	atmci_send_command(host, cmd, cmdflags);
-+
-+	/*
-+	 * DMA transfer should be started before sending the command to avoid
-+	 * unexpected errors especially for read operations in SDIO mode.
-+	 * Unfortunately, in PDC mode, command has to be sent before starting
-+	 * the transfer.
-+	 */
-+	if (host->submit_data != &atmci_submit_data_dma)
-+		atmci_send_command(host, cmd, cmdflags);
+--- a/drivers/media/dvb-frontends/nxt200x.c
++++ b/drivers/media/dvb-frontends/nxt200x.c
+@@ -40,7 +40,7 @@
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
  
- 	if (data)
- 		host->submit_data(host, data);
+ /* Max transfer size done by I2C transfer functions */
+-#define MAX_XFER_SIZE  64
++#define MAX_XFER_SIZE  256
  
-+	if (host->submit_data == &atmci_submit_data_dma)
-+		atmci_send_command(host, cmd, cmdflags);
-+
- 	if (mrq->stop) {
- 		host->stop_cmdr = atmci_prepare_command(slot->mmc, mrq->stop);
- 		host->stop_cmdr |= ATMCI_CMDR_STOP_XFER;
+ #define NXT2002_DEFAULT_FIRMWARE "dvb-fe-nxt2002.fw"
+ #define NXT2004_DEFAULT_FIRMWARE "dvb-fe-nxt2004.fw"
 
 
