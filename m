@@ -1,86 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753725AbaBKTHF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:07:05 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:33617 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753587AbaBKTG7 (ORCPT
+	id S1755583AbaBKT7x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:59:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40134 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753718AbaBKTHF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:59 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19u7+PplGLFYqF3B+0n93NLYkXLZsrg5iQ=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 171B3524BE3
-Date: Tue, 11 Feb 2014 14:06:32 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Andrew Lunn <andrew@lunn.ch>, Lior Amsalem <alior@marvell.com>,
-        devicetree@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
-        Tawfik Bayouk <tawfik@marvell.com>, linux-kernel@vger.kernel.org,
-        Nadav Haklai <nadavh@marvell.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH 6/6] dt: Update binding information for mvebu gating
- clocks with Armada 380/385
-Message-ID: <20140211190632.GE27395@titan.lakedaemon.net>
-References: <1392053569-28037-1-git-send-email-gregory.clement@free-electrons.com>
- <1392053569-28037-7-git-send-email-gregory.clement@free-electrons.com>
- <20140210175350.GD9995@lunn.ch>
- <20140210185908.3374eaf6@skate>
+	Tue, 11 Feb 2014 14:07:05 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Mika Kuoppala <mika.kuoppala@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@intel.com>
+Subject: [PATCH 3.12 082/107] drm/i915: Flush outstanding requests before allocating new seqno
+Date: Tue, 11 Feb 2014 11:05:48 -0800
+Message-Id: <20140211184750.534648852@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
+References: <20140211184748.191276235@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140210185908.3374eaf6@skate>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 06:59:08PM +0100, Thomas Petazzoni wrote:
-> Dear Andrew Lunn,
-> 
-> On Mon, 10 Feb 2014 18:53:50 +0100, Andrew Lunn wrote:
-> > > +The following is a list of provided IDs for Armada 380/385:
-> > > +ID	Clock		Peripheral
-> > > +-----------------------------------
-> > > +0	audio		Audio
-> > > +2	ge2		Gigabit Ethernet 2
-> > > +3	ge1		Gigabit Ethernet 1
-> > > +4	ge0		Gigabit Ethernet 0
-> > > +5	pex1		PCIe 1
-> > > +6	pex2		PCIe 2
-> > > +7	pex3		PCIe 3
-> > > +8	pex4		PCIe 0
-> > 
-> > Is that last one a typo? It at least looks a bit odd.
-> 
-> Right, this should be:
-> 
-> 	8	pex0		PCIe 0
-> 
-> (just checked again in the datasheet)
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-I can fix this up when I pull it in for Mike.  No need to redo the
-series just for this.
+------------------
 
-I'll let it sit for a day or two more before I pull it to give everyone
-a chance to look it over.
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-thx,
+commit 304d695c3dc8eb65206b9eaf16f8d1a41510d1cf upstream.
 
-Jason.
+In very rare cases (such as a memory failure stress test) it is possible
+to fill the entire ring without emitting a request. Under this
+circumstance, the outstanding request is flushed and waited upon. After
+space on the ring is cleared, we return to emitting the new command -
+except that we just cleared the seqno allocated for this operation and
+trigger the sanity check that a request is only ever emitted with a
+valid seqno. The fix is to rearrange the code to make sure the
+allocation of the seqno for this operation is after any required flushes
+of outstanding operations.
 
-> 
-> Thomas
-> -- 
-> Thomas Petazzoni, CTO, Free Electrons
-> Embedded Linux, Kernel and Android engineering
-> http://free-electrons.com
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+The bug exists since the preallocation was introduced in
+commit 9d7730914f4cd496e356acfab95b41075aa8eae8
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Tue Nov 27 16:22:52 2012 +0000
+
+    drm/i915: Preallocate next seqno before touching the ring
+
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Mika Kuoppala <mika.kuoppala@intel.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Reviewed-by: Jani Nikula <jani.nikula@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/gpu/drm/i915/intel_ringbuffer.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
+
+--- a/drivers/gpu/drm/i915/intel_ringbuffer.c
++++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
+@@ -1501,8 +1501,8 @@ intel_ring_alloc_seqno(struct intel_ring
+ 	return i915_gem_get_seqno(ring->dev, &ring->outstanding_lazy_request);
+ }
+ 
+-static int __intel_ring_begin(struct intel_ring_buffer *ring,
+-			      int bytes)
++static int __intel_ring_prepare(struct intel_ring_buffer *ring,
++				int bytes)
+ {
+ 	int ret;
+ 
+@@ -1518,7 +1518,6 @@ static int __intel_ring_begin(struct int
+ 			return ret;
+ 	}
+ 
+-	ring->space -= bytes;
+ 	return 0;
+ }
+ 
+@@ -1533,12 +1532,17 @@ int intel_ring_begin(struct intel_ring_b
+ 	if (ret)
+ 		return ret;
+ 
++	ret = __intel_ring_prepare(ring, num_dwords * sizeof(uint32_t));
++	if (ret)
++		return ret;
++
+ 	/* Preallocate the olr before touching the ring */
+ 	ret = intel_ring_alloc_seqno(ring);
+ 	if (ret)
+ 		return ret;
+ 
+-	return __intel_ring_begin(ring, num_dwords * sizeof(uint32_t));
++	ring->space -= num_dwords * sizeof(uint32_t);
++	return 0;
+ }
+ 
+ void intel_ring_init_seqno(struct intel_ring_buffer *ring, u32 seqno)
+
+
