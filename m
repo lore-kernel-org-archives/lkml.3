@@ -1,54 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751578AbaBKLIa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 06:08:30 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:50709 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750758AbaBKLI3 (ORCPT
+	id S1751891AbaBKLJA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 06:09:00 -0500
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:50064 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751782AbaBKLI6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 06:08:29 -0500
-Date: Tue, 11 Feb 2014 12:08:20 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
+	Tue, 11 Feb 2014 06:08:58 -0500
+MIME-Version: 1.0
+In-Reply-To: <CABPqkBQhUCUOszQzBJZd_pwX-nLf6y=0X-+swPi0pE3ivRpVcg@mail.gmail.com>
+References: <1392053356-23024-1-git-send-email-dzickus@redhat.com>
+	<20140210212955.GC5002@laptop.programming.kicks-ass.net>
+	<CABPqkBRzvfcdKGG4yY9q1PmtVL5Z=9H1RzHg8QDMN42a7=AF6A@mail.gmail.com>
+	<20140211071401.GG27965@twins.programming.kicks-ass.net>
+	<CABPqkBRn+AVUA-KTx-JQ28j1NhE4pDQe5vjb5NKGx0jrZq8g_Q@mail.gmail.com>
+	<20140211105217.GS9987@twins.programming.kicks-ass.net>
+	<CABPqkBROriDQa5-b-w45zV+2gS94oEW1c_bYwGmYAeYcqPoUog@mail.gmail.com>
+	<20140211110242.GU9987@twins.programming.kicks-ass.net>
+	<CABPqkBQhUCUOszQzBJZd_pwX-nLf6y=0X-+swPi0pE3ivRpVcg@mail.gmail.com>
+Date: Tue, 11 Feb 2014 12:08:56 +0100
+Message-ID: <CABPqkBSbBqOtvstKwQWD7jM8nn3XEdq0OXMjW8Z8oCF17uRYPw@mail.gmail.com>
+Subject: Re: [PATCH 00/21] perf, c2c: Add new tool to analyze cacheline
+ contention on NUMA systems
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
 Cc: Don Zickus <dzickus@redhat.com>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
         Joe Mario <jmario@redhat.com>, Richard Fowles <fowles@inreach.com>
-Subject: Re: [PATCH 00/21] perf, c2c: Add new tool to analyze cacheline
- contention on NUMA systems
-Message-ID: <20140211110820.GV9987@twins.programming.kicks-ass.net>
-References: <1392053356-23024-1-git-send-email-dzickus@redhat.com>
- <20140210212955.GC5002@laptop.programming.kicks-ass.net>
- <CABPqkBRzvfcdKGG4yY9q1PmtVL5Z=9H1RzHg8QDMN42a7=AF6A@mail.gmail.com>
- <20140211071401.GG27965@twins.programming.kicks-ass.net>
- <CABPqkBRn+AVUA-KTx-JQ28j1NhE4pDQe5vjb5NKGx0jrZq8g_Q@mail.gmail.com>
- <20140211105217.GS9987@twins.programming.kicks-ass.net>
- <CABPqkBROriDQa5-b-w45zV+2gS94oEW1c_bYwGmYAeYcqPoUog@mail.gmail.com>
- <20140211110242.GU9987@twins.programming.kicks-ass.net>
- <CABPqkBQhUCUOszQzBJZd_pwX-nLf6y=0X-+swPi0pE3ivRpVcg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBQhUCUOszQzBJZd_pwX-nLf6y=0X-+swPi0pE3ivRpVcg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 12:04:23PM +0100, Stephane Eranian wrote:
-> >> How do you know that load at addr 0x1000 is accessing variable bar?
-> >> The IP gives you line number, and then what?
-> >> I think dwarf has the mapping regs -> variable and yes, the type info.
-> >> But I am not sure that's enough.
-> >
-> > Ah, but if you have the instruction, you can decode it and obtain the
-> > reg and thus type-info, no?
-> >
+On Tue, Feb 11, 2014 at 12:04 PM, Stephane Eranian <eranian@google.com> wrote:
+> On Tue, Feb 11, 2014 at 12:02 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> On Tue, Feb 11, 2014 at 11:58:45AM +0100, Stephane Eranian wrote:
+>>> On Tue, Feb 11, 2014 at 11:52 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>>> > On Tue, Feb 11, 2014 at 11:35:45AM +0100, Stephane Eranian wrote:
+>>> >> On Tue, Feb 11, 2014 at 8:14 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>>> >> >
+>>> >> > That blows; how much is missing?
+>>> >>
+>>> >> They need to annotate load and stores. I asked for that feature a while ago.
+>>> >> It will come.
+>>> >
+>>> > And there is no way to deduce the information? We have type information
+>>> > for all arguments and local variables, right? So we can follow that.
+>>> >
+>>> > struct foo {
+>>> >         int ponies;
+>>> >         int moar_ponies;
+>>> > };
+>>> >
+>>> > struct bar {
+>>> >         int my_ponies;
+>>> >         struct foo *foo;
+>>> > };
+>>> >
+>>> > int moo(struct bar *bar)
+>>> > {
+>>> >         return bar->foo->moar_ponies;
+>>> > }
+>>> >
+>>> > Since we have the argument type, we can find the type for both loads,
+>>> > the first load:
+>>> >
+>>> >   *bar+8, we know is: struct foo * bar::foo
+>>> >   *foo+4, we know is: int foo::moar_ponies
+>>> >
+>>> > Or am I missing something?
+>>>
+>>> How do you know that load at addr 0x1000 is accessing variable bar?
+>>> The IP gives you line number, and then what?
+>>> I think dwarf has the mapping regs -> variable and yes, the type info.
+>>> But I am not sure that's enough.
+>>
+>> Ah, but if you have the instruction, you can decode it and obtain the
+>> reg and thus type-info, no?
+>>
 > But on x86, you can load directly from memory, you'd only have the
 > target reg for the load. Not enough.
 
-But if you load an immediate, you should be able to find it in the
-symbol table.
-
-Any other load will have a register base and will thus have type-info
-therefrom.
+Assuming you can decode and get the info about the base registers used,
+you'd have to do this for each arch with load/store sampling capabilities.
+this is painful compared to getting the portable info from dwarf directly.
