@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753052AbaBKQfC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 11:35:02 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:46692 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752067AbaBKQ01 (ORCPT
+	id S1753106AbaBKQfp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 11:35:45 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40438 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753033AbaBKQfB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 11:26:27 -0500
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 4/8] ARM: mvebu: make use of of_find_matching_node_and_match
-Date: Tue, 11 Feb 2014 10:24:02 -0600
-Message-Id: <1392135847-30791-5-git-send-email-joshc@codeaurora.org>
-X-Mailer: git-send-email 1.8.5.4
-In-Reply-To: <1392135847-30791-1-git-send-email-joshc@codeaurora.org>
-References: <1392135847-30791-1-git-send-email-joshc@codeaurora.org>
+	Tue, 11 Feb 2014 11:35:01 -0500
+Date: Tue, 11 Feb 2014 16:34:52 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Manish Badarkhe <badarkhe.manish@gmail.com>
+Cc: linux-kernel@vger.kernel.org, lgirdwood@gmail.com,
+        gregkh@linuxfoundation.org
+Message-ID: <20140211163452.GQ13533@sirena.org.uk>
+References: <1391007448-26245-1-git-send-email-badarkhe.manish@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="WZLuFERxa6Y0cbOt"
+Content-Disposition: inline
+In-Reply-To: <1391007448-26245-1-git-send-email-badarkhe.manish@gmail.com>
+X-Cookie: My LESLIE GORE record is BROKEN ...
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH V4 0/2] devm_* API operation for fixed regulator
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of the of_find_matching_node()/of_match_node() pair, which requires two
-iterations through the match table, make use of of_find_matching_node_and_match(),
-which only iterates through the table once.
 
-While we're here, mark the of_system_controller table const.
+--WZLuFERxa6Y0cbOt
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
----
- arch/arm/mach-mvebu/system-controller.c | 9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+On Wed, Jan 29, 2014 at 08:27:26PM +0530, Manish Badarkhe wrote:
+> Use devm_* API operations for fixed regulator driver so that
+> driver core will manage resources.
 
-diff --git a/arch/arm/mach-mvebu/system-controller.c b/arch/arm/mach-mvebu/system-controller.c
-index a7fb89a..e6e300a 100644
---- a/arch/arm/mach-mvebu/system-controller.c
-+++ b/arch/arm/mach-mvebu/system-controller.c
-@@ -54,7 +54,7 @@ static const struct mvebu_system_controller orion_system_controller = {
- 	.system_soft_reset = 0x1,
- };
- 
--static struct of_device_id of_system_controller_table[] = {
-+static const struct of_device_id of_system_controller_table[] = {
- 	{
- 		.compatible = "marvell,orion-system-controller",
- 		.data = (void *) &orion_system_controller,
-@@ -90,13 +90,12 @@ void mvebu_restart(enum reboot_mode mode, const char *cmd)
- 
- static int __init mvebu_system_controller_init(void)
- {
-+	const struct of_device_id *match;
- 	struct device_node *np;
- 
--	np = of_find_matching_node(NULL, of_system_controller_table);
-+	np = of_find_matching_node_and_match(NULL, of_system_controller_table,
-+					     &match);
- 	if (np) {
--		const struct of_device_id *match =
--		    of_match_node(of_system_controller_table, np);
--		BUG_ON(!match);
- 		system_controller_base = of_iomap(np, 0);
- 		mvebu_sc = (struct mvebu_system_controller *)match->data;
- 		of_node_put(np);
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Applied both, thanks.
 
+--WZLuFERxa6Y0cbOt
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS+lEpAAoJELSic+t+oim9sxUP/3xRw5ABiYKLIlY8PDRKTmNj
+PII9zRNXlvout9XzoAfhVUDTjYptwcmTp2/+bL6w7hZXC+o8keyULnQP1AhjguGP
+q0iL1ml9LXD7MaaVyAa9TMdc36DkhniBCub/pjy/gBXKGMl28pnkq6gGktmUcH/D
+DEuBp7ksJYrvXAXkVuBG31wJebZtF/RzQkJJEBlocIdtmMktX6gTSOVEgYs06zvz
+dVIJp0Kpj8iN4ScMRwKJUh5lhConJck2g6WsQRNt2pN5gRTOwB2kRcNQsNfpcKgo
+pJ9NYGFLigsp2RmkliN868EokJG7UMGzVU/eIqdubZi59y+051Kt/NV2hcWyyyKR
+nWEgrXPyZ8AIGtQ4rgOt9q0b62KDIpa5F4quxDxwsQt24VOFpO63E5vkzoueuiUX
+jxl/T4mG9S5fGmeTvoS7imWNZ8lp+9XVZWgk1jzHhnpJRSMsxUL5KhhMBWGmUZq+
+wEu4ScMLdXTCSWmFJVMyQ769YZnP+iy8KbSC+I5ZTNmm7q2+jeYVvkPlRI+3Mcmf
+FQWgyVwUY4fqwP9Iiourh83wpvgLKw1rQpM+F9sjefOor0SwmKAjKBzI5tD48wxb
+/vxTrkq+kb+sRlwMQOR/gsJd4UrYWDA7B2yqHF08L96yQ06588q1SEWxXIH3D44W
+NRnI7sZqD5PJ7hWrrqoz
+=ZRzO
+-----END PGP SIGNATURE-----
+
+--WZLuFERxa6Y0cbOt--
