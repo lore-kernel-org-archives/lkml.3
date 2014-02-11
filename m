@@ -1,66 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752390AbaBKQcM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 11:32:12 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:37814 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752451AbaBKQcI (ORCPT
+	id S1752266AbaBKQ0f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 11:26:35 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:46698 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752069AbaBKQ01 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 11:32:08 -0500
-Date: Tue, 11 Feb 2014 17:32:03 +0100
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+	Tue, 11 Feb 2014 11:26:27 -0500
+From: Josh Cartwright <joshc@codeaurora.org>
+To: Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
         linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2] clk: respect the clock dependencies in of_clk_init
-Message-ID: <20140211173203.4e6c7b22@skate>
-In-Reply-To: <1392054179-28830-1-git-send-email-gregory.clement@free-electrons.com>
-References: <1392054179-28830-1-git-send-email-gregory.clement@free-electrons.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Subject: [PATCH 3/8] ARM: at91: make use of of_find_matching_node_and_match
+Date: Tue, 11 Feb 2014 10:24:01 -0600
+Message-Id: <1392135847-30791-4-git-send-email-joshc@codeaurora.org>
+X-Mailer: git-send-email 1.8.5.4
+In-Reply-To: <1392135847-30791-1-git-send-email-joshc@codeaurora.org>
+References: <1392135847-30791-1-git-send-email-joshc@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Instead of the of_find_matching_node()/of_match_node() pair, which requires two
+iterations through the match table, make use of of_find_matching_node_and_match(),
+which only iterates through the table once.
 
-On Mon, 10 Feb 2014 18:42:59 +0100, Gregory CLEMENT wrote:
-> Until now the clock providers were initialized in the order found in
-> the device tree. This led to have the dependencies between the clocks
-> not respected: children clocks could be initialized before their
-> parent clocks.
-> 
-> Instead of forcing each platform to manage its own initialization order,
-> this patch adds this work inside the framework itself.
-> 
-> Using the data of the device tree the of_clk_init function now delayed
-> the initialization of a clock provider if its parent provider was not
-> ready yet.
-> 
-> The strict dependency check (all parents of a given clk must be
-> initialized) was added by Boris BREZILLON
-> 
-> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-> ---
-> 
-> Since the v1, I have merged the  strict dependency check from Boris.
-> And of course tested on my Armada 370 and Armada XP based board
-> 
->  drivers/clk/clk.c | 109 ++++++++++++++++++++++++++++++++++++++++++++++++++++--
->  1 file changed, 106 insertions(+), 3 deletions(-)
+While we're here, mark the rtsc id table const.
 
-Tested-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+---
+ arch/arm/mach-at91/setup.c | 16 ++++------------
+ 1 file changed, 4 insertions(+), 12 deletions(-)
 
-On the newly proposed Armada 375 platform.
-
-Thomas
+diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
+index f7ca97b..e884de8 100644
+--- a/arch/arm/mach-at91/setup.c
++++ b/arch/arm/mach-at91/setup.c
+@@ -352,7 +352,7 @@ void __init at91_ioremap_matrix(u32 base_addr)
+ }
+ 
+ #if defined(CONFIG_OF)
+-static struct of_device_id rstc_ids[] = {
++static const struct of_device_id rstc_ids[] = {
+ 	{ .compatible = "atmel,at91sam9260-rstc", .data = at91sam9_alt_restart },
+ 	{ .compatible = "atmel,at91sam9g45-rstc", .data = at91sam9g45_restart },
+ 	{ /*sentinel*/ }
+@@ -363,7 +363,7 @@ static void at91_dt_rstc(void)
+ 	struct device_node *np;
+ 	const struct of_device_id *of_id;
+ 
+-	np = of_find_matching_node(NULL, rstc_ids);
++	np = of_find_matching_node_and_match(NULL, rstc_ids, &of_id);
+ 	if (!np)
+ 		panic("unable to find compatible rstc node in dtb\n");
+ 
+@@ -371,10 +371,6 @@ static void at91_dt_rstc(void)
+ 	if (!at91_rstc_base)
+ 		panic("unable to map rstc cpu registers\n");
+ 
+-	of_id = of_match_node(rstc_ids, np);
+-	if (!of_id)
+-		panic("AT91: rtsc no restart function available\n");
+-
+ 	arm_pm_restart = of_id->data;
+ 
+ 	of_node_put(np);
+@@ -392,7 +388,7 @@ static void at91_dt_ramc(void)
+ 	struct device_node *np;
+ 	const struct of_device_id *of_id;
+ 
+-	np = of_find_matching_node(NULL, ramc_ids);
++	np = of_find_matching_node_and_match(NULL, ramc_ids, &of_id);
+ 	if (!np)
+ 		panic("unable to find compatible ram controller node in dtb\n");
+ 
+@@ -402,11 +398,7 @@ static void at91_dt_ramc(void)
+ 	/* the controller may have 2 banks */
+ 	at91_ramc_base[1] = of_iomap(np, 1);
+ 
+-	of_id = of_match_node(ramc_ids, np);
+-	if (!of_id)
+-		pr_warn("AT91: ramc no standby function available\n");
+-	else
+-		at91_pm_set_standby(of_id->data);
++	at91_pm_set_standby(of_id->data);
+ 
+ 	of_node_put(np);
+ }
 -- 
-Thomas Petazzoni, CTO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
