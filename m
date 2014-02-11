@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754156AbaBKUlH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:41:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39766 "EHLO
+	id S1753985AbaBKUlF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:41:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39769 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753065AbaBKTFz (ORCPT
+	with ESMTP id S1753074AbaBKTFz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Feb 2014 14:05:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        Jakob Bornecrantz <jakob@vmware.com>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Jerome Glisse <jglisse@redhat.com>, Dave Airlie <airlied@redhat.com>
-Subject: [PATCH 3.13 103/120] drm/vmwgfx: Fix regression caused by "drm/ttm: make ttm reservation calls behave like reservation calls"
-Date: Tue, 11 Feb 2014 11:05:44 -0800
-Message-Id: <20140211184826.570100239@linuxfoundation.org>
+        Dave Airlie <airlied@redhat.com>
+Subject: [PATCH 3.13 104/120] drm/mgag200: fix oops in cursor code.
+Date: Tue, 11 Feb 2014 11:05:45 -0800
+Message-Id: <20140211184826.598434860@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -31,54 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Hellstrom <thellstrom@vmware.com>
+From: Dave Airlie <airlied@redhat.com>
 
-commit cf5e3413337309050c05e13dcebe85b7194a21e5 upstream.
+commit 53dac830537b51df555ba5e7ebb236705b7eaa7c upstream.
 
-The call to ttm_eu_backoff_reservation() as part of an error path would cause
-a lock imbalance if the reservation ticket was not initialized. This error is
-easily triggered from user-space by submitting a bogus command stream.
+In some cases we enter the cursor code with file_priv = NULL causing an oops,
+we also can try to unpin something that isn't pinned, and this is a good fix for it.
 
-Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
-Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
-Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: Jerome Glisse <jglisse@redhat.com>
-Cc: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/mgag200/mgag200_cursor.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c
-@@ -1483,11 +1483,11 @@ int vmw_execbuf_process(struct drm_file
- 	ret = vmw_cmd_check_all(dev_priv, sw_context, kernel_commands,
- 				command_size);
- 	if (unlikely(ret != 0))
--		goto out_err;
-+		goto out_err_nores;
+--- a/drivers/gpu/drm/mgag200/mgag200_cursor.c
++++ b/drivers/gpu/drm/mgag200/mgag200_cursor.c
+@@ -22,8 +22,10 @@ static void mga_hide_cursor(struct mga_d
+ {
+ 	WREG8(MGA_CURPOSXL, 0);
+ 	WREG8(MGA_CURPOSXH, 0);
+-	mgag200_bo_unpin(mdev->cursor.pixels_1);
+-	mgag200_bo_unpin(mdev->cursor.pixels_2);
++	if (mdev->cursor.pixels_1->pin_count)
++		mgag200_bo_unpin(mdev->cursor.pixels_1);
++	if (mdev->cursor.pixels_2->pin_count)
++		mgag200_bo_unpin(mdev->cursor.pixels_2);
+ }
  
- 	ret = vmw_resources_reserve(sw_context);
- 	if (unlikely(ret != 0))
--		goto out_err;
-+		goto out_err_nores;
- 
- 	ret = ttm_eu_reserve_buffers(&ticket, &sw_context->validate_nodes);
- 	if (unlikely(ret != 0))
-@@ -1569,10 +1569,11 @@ int vmw_execbuf_process(struct drm_file
- 	return 0;
- 
- out_err:
--	vmw_resource_relocations_free(&sw_context->res_relocations);
--	vmw_free_relocations(sw_context);
- 	ttm_eu_backoff_reservation(&ticket, &sw_context->validate_nodes);
-+out_err_nores:
- 	vmw_resource_list_unreserve(&sw_context->resource_list, true);
-+	vmw_resource_relocations_free(&sw_context->res_relocations);
-+	vmw_free_relocations(sw_context);
- 	vmw_clear_validations(sw_context);
- 	if (unlikely(dev_priv->pinned_bo != NULL &&
- 		     !dev_priv->query_cid_valid))
+ int mga_crtc_cursor_set(struct drm_crtc *crtc,
+@@ -32,7 +34,7 @@ int mga_crtc_cursor_set(struct drm_crtc
+ 			uint32_t width,
+ 			uint32_t height)
+ {
+-	struct drm_device *dev = (struct drm_device *)file_priv->minor->dev;
++	struct drm_device *dev = crtc->dev;
+ 	struct mga_device *mdev = (struct mga_device *)dev->dev_private;
+ 	struct mgag200_bo *pixels_1 = mdev->cursor.pixels_1;
+ 	struct mgag200_bo *pixels_2 = mdev->cursor.pixels_2;
 
 
