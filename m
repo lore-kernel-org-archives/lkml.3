@@ -1,103 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932156AbaBKUJU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:09:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40032 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753558AbaBKTGq (ORCPT
+	id S932205AbaBKUJl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:09:41 -0500
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:49759 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754629AbaBKUJh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:46 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.12 054/107] dm space map metadata: fix bug in resizing of thin metadata
-Date: Tue, 11 Feb 2014 11:05:20 -0800
-Message-Id: <20140211184749.734366852@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
-References: <20140211184748.191276235@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Tue, 11 Feb 2014 15:09:37 -0500
+Date: Tue, 11 Feb 2014 21:09:23 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: Stefan =?iso-8859-1?Q?S=F8rensen?= 
+	<stefan.sorensen@spectralink.com>
+Cc: grant.likely@linaro.org, robh+dt@kernel.org, mark.rutland@arm.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] dp83640: Support a configurable number of
+ periodic outputs
+Message-ID: <20140211200922.GA4254@netboy>
+References: <1392132562-23644-1-git-send-email-stefan.sorensen@spectralink.com>
+ <1392132562-23644-2-git-send-email-stefan.sorensen@spectralink.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1392132562-23644-2-git-send-email-stefan.sorensen@spectralink.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Feb 11, 2014 at 04:29:21PM +0100, Stefan Sørensen wrote:
 
-------------------
+> diff --git a/drivers/net/phy/dp83640.c b/drivers/net/phy/dp83640.c
+> index 547725f..d4fe95d 100644
+> --- a/drivers/net/phy/dp83640.c
+> +++ b/drivers/net/phy/dp83640.c
+> @@ -38,15 +38,11 @@
+>  #define LAYER4		0x02
+>  #define LAYER2		0x01
+>  #define MAX_RXTS	64
+> -#define N_EXT_TS	6
+> +#define N_EXT		8
+>  #define PSF_PTPVER	2
+>  #define PSF_EVNT	0x4000
+>  #define PSF_RX		0x2000
+>  #define PSF_TX		0x1000
+> -#define EXT_EVENT	1
 
-From: Joe Thornber <ejt@redhat.com>
+Regarding this EXT_EVENT thing ...
 
-commit fca028438fb903852beaf7c3fe1cd326651af57d upstream.
+> @@ -430,12 +419,12 @@ static int ptp_dp83640_enable(struct ptp_clock_info *ptp,
+>  	switch (rq->type) {
+>  	case PTP_CLK_REQ_EXTTS:
+>  		index = rq->extts.index;
+> -		if (index < 0 || index >= N_EXT_TS)
+> +		if (index < 0 || index >= n_ext_ts)
+>  			return -EINVAL;
+> -		event_num = EXT_EVENT + index;
+> +		event_num = index;
 
-This bug was introduced in commit 7e664b3dec431e ("dm space map metadata:
-fix extending the space map").
+there was a mapping between the "event numbers" and the external time
+stamp channels. I don't remember off the top of my head why this these
+two differ by one, but there was a good reason.
 
-When extending a dm-thin metadata volume we:
+Are you sure this is still working with this change?
 
-- Switch the space map into a simple bootstrap mode, which allocates
-  all space linearly from the newly added space.
-- Add new bitmap entries for the new space
-- Increment the reference counts for those newly allocated bitmap
-  entries
-- Commit changes to disk
-- Switch back out of bootstrap mode.
+I am especially wondering about the event decoding here:
 
-But, the disk commit may allocate space itself, if so this fact will be
-lost when switching out of bootstrap mode.
+> @@ -642,7 +631,7 @@ static void recalibrate(struct dp83640_clock *clock)
+>  
+>  static inline u16 exts_chan_to_edata(int ch)
+>  {
+> -	return 1 << ((ch + EXT_EVENT) * 2);
+> +	return 1 << ((ch) * 2);
+>  }
 
-The bug exhibited itself as an error when the bitmap_root, with an
-erroneous ref count of 0, was subsequently decremented as part of a
-later disk commit.  This would cause the disk commit to fail, and thinp
-to enter read_only mode.  The metadata was not damaged (thin_check
-passed).
+Maybe I am just paranoid, but can you remind me how these event
+numbers are supposed to work, before and after the change?
 
-The fix is to put the increments + commit into a loop, running until
-the commit has not allocated extra space.  In practise this loop only
-runs twice.
-
-With this fix the following device mapper testsuite test passes:
- dmtest run --suite thin-provisioning -n thin_remove_works_after_resize
-
-Signed-off-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/md/persistent-data/dm-space-map-metadata.c |   18 ++++++++++++++----
- 1 file changed, 14 insertions(+), 4 deletions(-)
-
---- a/drivers/md/persistent-data/dm-space-map-metadata.c
-+++ b/drivers/md/persistent-data/dm-space-map-metadata.c
-@@ -617,13 +617,23 @@ static int sm_metadata_extend(struct dm_
- 	if (r)
- 		goto out;
- 
--	for (i = old_len; !r && i < smm->begin; i++) {
--		r = sm_ll_inc(&smm->ll, i, &ev);
-+	/*
-+	 * We repeatedly increment then commit until the commit doesn't
-+	 * allocate any new blocks.
-+	 */
-+	do {
-+		for (i = old_len; !r && i < smm->begin; i++) {
-+			r = sm_ll_inc(&smm->ll, i, &ev);
-+			if (r)
-+				goto out;
-+		}
-+		old_len = smm->begin;
-+
-+		r = sm_ll_commit(&smm->ll);
- 		if (r)
- 			goto out;
--	}
- 
--	r = sm_metadata_commit(sm);
-+	} while (old_len != smm->begin);
- 
- out:
- 	/*
-
-
+Thanks,
+Richard
