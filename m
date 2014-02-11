@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754500AbaBKUif (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:38:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39786 "EHLO
+	id S1754493AbaBKUiw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:38:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39782 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753129AbaBKTGA (ORCPT
+	with ESMTP id S1753115AbaBKTGA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Feb 2014 14:06:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.13 110/120] powerpc/thp: Fix crash on mremap
-Date: Tue, 11 Feb 2014 11:05:51 -0800
-Message-Id: <20140211184826.770819750@linuxfoundation.org>
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.13 109/120] ftrace: Have function graph only trace based on global_ops filters
+Date: Tue, 11 Feb 2014 11:05:50 -0800
+Message-Id: <20140211184826.743030346@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -30,110 +28,184 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit b3084f4db3aeb991c507ca774337c7e7893ed04f upstream.
+commit 23a8e8441a0a74dd612edf81dc89d1600bc0a3d1 upstream.
 
-This patch fix the below crash
+Doing some different tests, I discovered that function graph tracing, when
+filtered via the set_ftrace_filter and set_ftrace_notrace files, does
+not always keep with them if another function ftrace_ops is registered
+to trace functions.
 
-NIP [c00000000004cee4] .__hash_page_thp+0x2a4/0x440
-LR [c0000000000439ac] .hash_page+0x18c/0x5e0
-...
-Call Trace:
-[c000000736103c40] [00001ffffb000000] 0x1ffffb000000(unreliable)
-[437908.479693] [c000000736103d50] [c0000000000439ac] .hash_page+0x18c/0x5e0
-[437908.479699] [c000000736103e30] [c00000000000924c] .do_hash_page+0x4c/0x58
+The reason is that function graph just happens to trace all functions
+that the function tracer enables. When there was only one user of
+function tracing, the function graph tracer did not need to worry about
+being called by functions that it did not want to trace. But now that there
+are other users, this becomes a problem.
 
-On ppc64 we use the pgtable for storing the hpte slot information and
-store address to the pgtable at a constant offset (PTRS_PER_PMD) from
-pmd. On mremap, when we switch the pmd, we need to withdraw and deposit
-the pgtable again, so that we find the pgtable at PTRS_PER_PMD offset
-from new pmd.
+For example, one just needs to do the following:
 
-We also want to move the withdraw and deposit before the set_pmd so
-that, when page fault find the pmd as trans huge we can be sure that
-pgtable can be located at the offset.
+ # cd /sys/kernel/debug/tracing
+ # echo schedule > set_ftrace_filter
+ # echo function_graph > current_tracer
+ # cat trace
+[..]
+ 0)               |  schedule() {
+ ------------------------------------------
+ 0)    <idle>-0    =>   rcu_pre-7
+ ------------------------------------------
 
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+ 0) ! 2980.314 us |  }
+ 0)               |  schedule() {
+ ------------------------------------------
+ 0)   rcu_pre-7    =>    <idle>-0
+ ------------------------------------------
+
+ 0) + 20.701 us   |  }
+
+ # echo 1 > /proc/sys/kernel/stack_tracer_enabled
+ # cat trace
+[..]
+ 1) + 20.825 us   |      }
+ 1) + 21.651 us   |    }
+ 1) + 30.924 us   |  } /* SyS_ioctl */
+ 1)               |  do_page_fault() {
+ 1)               |    __do_page_fault() {
+ 1)   0.274 us    |      down_read_trylock();
+ 1)   0.098 us    |      find_vma();
+ 1)               |      handle_mm_fault() {
+ 1)               |        _raw_spin_lock() {
+ 1)   0.102 us    |          preempt_count_add();
+ 1)   0.097 us    |          do_raw_spin_lock();
+ 1)   2.173 us    |        }
+ 1)               |        do_wp_page() {
+ 1)   0.079 us    |          vm_normal_page();
+ 1)   0.086 us    |          reuse_swap_page();
+ 1)   0.076 us    |          page_move_anon_rmap();
+ 1)               |          unlock_page() {
+ 1)   0.082 us    |            page_waitqueue();
+ 1)   0.086 us    |            __wake_up_bit();
+ 1)   1.801 us    |          }
+ 1)   0.075 us    |          ptep_set_access_flags();
+ 1)               |          _raw_spin_unlock() {
+ 1)   0.098 us    |            do_raw_spin_unlock();
+ 1)   0.105 us    |            preempt_count_sub();
+ 1)   1.884 us    |          }
+ 1)   9.149 us    |        }
+ 1) + 13.083 us   |      }
+ 1)   0.146 us    |      up_read();
+
+When the stack tracer was enabled, it enabled all functions to be traced, which
+now the function graph tracer also traces. This is a side effect that should
+not occur.
+
+To fix this a test is added when the function tracing is changed, as well as when
+the graph tracer is enabled, to see if anything other than the ftrace global_ops
+function tracer is enabled. If so, then the graph tracer calls a test trampoline
+that will look at the function that is being traced and compare it with the
+filters defined by the global_ops.
+
+As an optimization, if there's no other function tracers registered, or if
+the only registered function tracers also use the global ops, the function
+graph infrastructure will call the registered function graph callback directly
+and not go through the test trampoline.
+
+Fixes: d2d45c7a03a2 "tracing: Have stack_tracer use a separate list of functions"
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/include/asm/pgtable-ppc64.h |   14 ++++++++++++++
- include/asm-generic/pgtable.h            |   12 ++++++++++++
- mm/huge_memory.c                         |   14 +++++---------
- 3 files changed, 31 insertions(+), 9 deletions(-)
+ kernel/trace/ftrace.c |   45 ++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 44 insertions(+), 1 deletion(-)
 
---- a/arch/powerpc/include/asm/pgtable-ppc64.h
-+++ b/arch/powerpc/include/asm/pgtable-ppc64.h
-@@ -558,5 +558,19 @@ extern pgtable_t pgtable_trans_huge_with
- #define __HAVE_ARCH_PMDP_INVALIDATE
- extern void pmdp_invalidate(struct vm_area_struct *vma, unsigned long address,
- 			    pmd_t *pmdp);
-+
-+#define pmd_move_must_withdraw pmd_move_must_withdraw
-+typedef struct spinlock spinlock_t;
-+static inline int pmd_move_must_withdraw(spinlock_t *new_pmd_ptl,
-+					 spinlock_t *old_pmd_ptl)
-+{
-+	/*
-+	 * Archs like ppc64 use pgtable to store per pmd
-+	 * specific information. So when we switch the pmd,
-+	 * we should also withdraw and deposit the pgtable
-+	 */
-+	return true;
-+}
-+
- #endif /* __ASSEMBLY__ */
- #endif /* _ASM_POWERPC_PGTABLE_PPC64_H_ */
---- a/include/asm-generic/pgtable.h
-+++ b/include/asm-generic/pgtable.h
-@@ -558,6 +558,18 @@ static inline pmd_t pmd_read_atomic(pmd_
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -297,6 +297,12 @@ static void ftrace_sync_ipi(void *data)
+ 	smp_rmb();
  }
- #endif
  
-+#ifndef pmd_move_must_withdraw
-+static inline int pmd_move_must_withdraw(spinlock_t *new_pmd_ptl,
-+					 spinlock_t *old_pmd_ptl)
-+{
-+	/*
-+	 * With split pmd lock we also need to move preallocated
-+	 * PTE page table if new_pmd is on different PMD page table.
-+	 */
-+	return new_pmd_ptl != old_pmd_ptl;
-+}
++#ifdef CONFIG_FUNCTION_GRAPH_TRACER
++static void update_function_graph_func(void);
++#else
++static inline void update_function_graph_func(void) { }
 +#endif
 +
- /*
-  * This function is meant to be used by sites walking pagetables with
-  * the mmap_sem hold in read mode to protect against MADV_DONTNEED and
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1502,19 +1502,15 @@ int move_huge_pmd(struct vm_area_struct
- 			spin_lock_nested(new_ptl, SINGLE_DEPTH_NESTING);
- 		pmd = pmdp_get_and_clear(mm, old_addr, old_pmd);
- 		VM_BUG_ON(!pmd_none(*new_pmd));
--		set_pmd_at(mm, new_addr, new_pmd, pmd_mksoft_dirty(pmd));
--		if (new_ptl != old_ptl) {
--			pgtable_t pgtable;
+ static void update_ftrace_function(void)
+ {
+ 	ftrace_func_t func;
+@@ -329,6 +335,8 @@ static void update_ftrace_function(void)
+ 	if (ftrace_trace_function == func)
+ 		return;
  
--			/*
--			 * Move preallocated PTE page table if new_pmd is on
--			 * different PMD page table.
--			 */
-+		if (pmd_move_must_withdraw(new_ptl, old_ptl)) {
-+			pgtable_t pgtable;
- 			pgtable = pgtable_trans_huge_withdraw(mm, old_pmd);
- 			pgtable_trans_huge_deposit(mm, new_pmd, pgtable);
--
--			spin_unlock(new_ptl);
- 		}
-+		set_pmd_at(mm, new_addr, new_pmd, pmd_mksoft_dirty(pmd));
-+		if (new_ptl != old_ptl)
-+			spin_unlock(new_ptl);
- 		spin_unlock(old_ptl);
++	update_function_graph_func();
++
+ 	/*
+ 	 * If we are using the list function, it doesn't care
+ 	 * about the function_trace_ops.
+@@ -4925,6 +4933,7 @@ int ftrace_graph_entry_stub(struct ftrac
+ trace_func_graph_ret_t ftrace_graph_return =
+ 			(trace_func_graph_ret_t)ftrace_stub;
+ trace_func_graph_ent_t ftrace_graph_entry = ftrace_graph_entry_stub;
++static trace_func_graph_ent_t __ftrace_graph_entry = ftrace_graph_entry_stub;
+ 
+ /* Try to assign a return stack array on FTRACE_RETSTACK_ALLOC_SIZE tasks. */
+ static int alloc_retstack_tasklist(struct ftrace_ret_stack **ret_stack_list)
+@@ -5066,6 +5075,30 @@ static struct ftrace_ops fgraph_ops __re
+ 				FTRACE_OPS_FL_RECURSION_SAFE,
+ };
+ 
++static int ftrace_graph_entry_test(struct ftrace_graph_ent *trace)
++{
++	if (!ftrace_ops_test(&global_ops, trace->func, NULL))
++		return 0;
++	return __ftrace_graph_entry(trace);
++}
++
++/*
++ * The function graph tracer should only trace the functions defined
++ * by set_ftrace_filter and set_ftrace_notrace. If another function
++ * tracer ops is registered, the graph tracer requires testing the
++ * function against the global ops, and not just trace any function
++ * that any ftrace_ops registered.
++ */
++static void update_function_graph_func(void)
++{
++	if (ftrace_ops_list == &ftrace_list_end ||
++	    (ftrace_ops_list == &global_ops &&
++	     global_ops.next == &ftrace_list_end))
++		ftrace_graph_entry = __ftrace_graph_entry;
++	else
++		ftrace_graph_entry = ftrace_graph_entry_test;
++}
++
+ int register_ftrace_graph(trace_func_graph_ret_t retfunc,
+ 			trace_func_graph_ent_t entryfunc)
+ {
+@@ -5090,7 +5123,16 @@ int register_ftrace_graph(trace_func_gra
  	}
- out:
+ 
+ 	ftrace_graph_return = retfunc;
+-	ftrace_graph_entry = entryfunc;
++
++	/*
++	 * Update the indirect function to the entryfunc, and the
++	 * function that gets called to the entry_test first. Then
++	 * call the update fgraph entry function to determine if
++	 * the entryfunc should be called directly or not.
++	 */
++	__ftrace_graph_entry = entryfunc;
++	ftrace_graph_entry = ftrace_graph_entry_test;
++	update_function_graph_func();
+ 
+ 	ret = ftrace_startup(&fgraph_ops, FTRACE_START_FUNC_RET);
+ 
+@@ -5109,6 +5151,7 @@ void unregister_ftrace_graph(void)
+ 	ftrace_graph_active--;
+ 	ftrace_graph_return = (trace_func_graph_ret_t)ftrace_stub;
+ 	ftrace_graph_entry = ftrace_graph_entry_stub;
++	__ftrace_graph_entry = ftrace_graph_entry_stub;
+ 	ftrace_shutdown(&fgraph_ops, FTRACE_STOP_FUNC_RET);
+ 	unregister_pm_notifier(&ftrace_suspend_notifier);
+ 	unregister_trace_sched_switch(ftrace_graph_probe_sched_switch, NULL);
 
 
