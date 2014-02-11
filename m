@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754824AbaBKT3e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:29:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40417 "EHLO
+	id S932077AbaBKT3w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:29:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40405 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751988AbaBKTIA (ORCPT
+	with ESMTP id S1751487AbaBKTH6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:08:00 -0500
+	Tue, 11 Feb 2014 14:07:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Olivier Grenie <olivier.grenie@parrot.com>,
-        Patrick Boettcher <pboettcher@kernellabs.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.10 48/79] [media] dib8000: fix regression with dib807x
-Date: Tue, 11 Feb 2014 11:05:52 -0800
-Message-Id: <20140211184722.340465908@linuxfoundation.org>
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Patrick Boettcher <pboettcher@kernellabs.com>
+Subject: [PATCH 3.10 45/79] [media] dib8000: make 32 bits read atomic
+Date: Tue, 11 Feb 2014 11:05:49 -0800
+Message-Id: <20140211184722.255664894@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
 References: <20140211184720.928667275@linuxfoundation.org>
@@ -30,56 +29,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olivier Grenie <olivier.grenie@parrot.com>
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
-commit d67350f8c4e67f5eba627e1fd111f16257ca9c95 upstream.
+commit 5ac64ba12aca3bef18e61c866583155a3bbf81c4 upstream.
 
-Commit 173a64cb3fcf broke support for some dib807x versions.
+As the dvb-frontend kthread can be called anytime, it can race
+with some get status ioctl. So, it seems better to avoid one to
+race with the other while reading a 32 bits register.
+I can't see any other reason for having a mutex there at I2C, except
+to provide such kind of protection, as the I2C core already has a
+mutex to protect I2C transfers.
 
-Fix it by providing backward compatibility with the older versions.
+Note: instead of this approach, it could eventually remove the dib8000
+specific mutex for it, and either group the 4 ops into one xfer or
+to manually control the I2C mutex. The main advantage of the current
+approach is that the changes are smaller and more puntual.
 
-[mkrufky@linuxtv.org: conflict handling and CodingStyle fixes]
-
-Signed-off-by: Olivier Grenie <olivier.grenie@parrot.com>
-Acked-by: Patrick Boettcher <pboettcher@kernellabs.com>
 Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Acked-by: Patrick Boettcher <pboettcher@kernellabs.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/dvb-frontends/dib8000.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/media/dvb-frontends/dib8000.c |   33 +++++++++++++++++++++++++--------
+ 1 file changed, 25 insertions(+), 8 deletions(-)
 
 --- a/drivers/media/dvb-frontends/dib8000.c
 +++ b/drivers/media/dvb-frontends/dib8000.c
-@@ -2462,7 +2462,8 @@ static int dib8000_autosearch_start(stru
- 	if (state->revision == 0x8090)
- 		internal = dib8000_read32(state, 23) / 1000;
+@@ -157,15 +157,10 @@ static u16 dib8000_i2c_read16(struct i2c
+ 	return ret;
+ }
  
--	if (state->autosearch_state == AS_SEARCHING_FFT) {
-+	if ((state->revision >= 0x8002) &&
-+	    (state->autosearch_state == AS_SEARCHING_FFT)) {
- 		dib8000_write_word(state,  37, 0x0065); /* P_ctrl_pha_off_max default values */
- 		dib8000_write_word(state, 116, 0x0000); /* P_ana_gain to 0 */
+-static u16 dib8000_read_word(struct dib8000_state *state, u16 reg)
++static u16 __dib8000_read_word(struct dib8000_state *state, u16 reg)
+ {
+ 	u16 ret;
  
-@@ -2498,7 +2499,8 @@ static int dib8000_autosearch_start(stru
- 		dib8000_write_word(state, 770, (dib8000_read_word(state, 770) & 0xdfff) | (1 << 13)); /* P_restart_ccg = 1 */
- 		dib8000_write_word(state, 770, (dib8000_read_word(state, 770) & 0xdfff) | (0 << 13)); /* P_restart_ccg = 0 */
- 		dib8000_write_word(state, 0, (dib8000_read_word(state, 0) & 0x7ff) | (0 << 15) | (1 << 13)); /* P_restart_search = 0; */
--	} else if (state->autosearch_state == AS_SEARCHING_GUARD) {
-+	} else if ((state->revision >= 0x8002) &&
-+		   (state->autosearch_state == AS_SEARCHING_GUARD)) {
- 		c->transmission_mode = TRANSMISSION_MODE_8K;
- 		c->guard_interval = GUARD_INTERVAL_1_8;
- 		c->inversion = 0;
-@@ -2600,7 +2602,8 @@ static int dib8000_autosearch_irq(struct
- 	struct dib8000_state *state = fe->demodulator_priv;
- 	u16 irq_pending = dib8000_read_word(state, 1284);
+-	if (mutex_lock_interruptible(&state->i2c_buffer_lock) < 0) {
+-		dprintk("could not acquire lock");
+-		return 0;
+-	}
+-
+ 	state->i2c_write_buffer[0] = reg >> 8;
+ 	state->i2c_write_buffer[1] = reg & 0xff;
  
--	if (state->autosearch_state == AS_SEARCHING_FFT) {
-+	if ((state->revision >= 0x8002) &&
-+	    (state->autosearch_state == AS_SEARCHING_FFT)) {
- 		if (irq_pending & 0x1) {
- 			dprintk("dib8000_autosearch_irq: max correlation result available");
- 			return 3;
+@@ -183,6 +178,21 @@ static u16 dib8000_read_word(struct dib8
+ 		dprintk("i2c read error on %d", reg);
+ 
+ 	ret = (state->i2c_read_buffer[0] << 8) | state->i2c_read_buffer[1];
++
++	return ret;
++}
++
++static u16 dib8000_read_word(struct dib8000_state *state, u16 reg)
++{
++	u16 ret;
++
++	if (mutex_lock_interruptible(&state->i2c_buffer_lock) < 0) {
++		dprintk("could not acquire lock");
++		return 0;
++	}
++
++	ret = __dib8000_read_word(state, reg);
++
+ 	mutex_unlock(&state->i2c_buffer_lock);
+ 
+ 	return ret;
+@@ -192,8 +202,15 @@ static u32 dib8000_read32(struct dib8000
+ {
+ 	u16 rw[2];
+ 
+-	rw[0] = dib8000_read_word(state, reg + 0);
+-	rw[1] = dib8000_read_word(state, reg + 1);
++	if (mutex_lock_interruptible(&state->i2c_buffer_lock) < 0) {
++		dprintk("could not acquire lock");
++		return 0;
++	}
++
++	rw[0] = __dib8000_read_word(state, reg + 0);
++	rw[1] = __dib8000_read_word(state, reg + 1);
++
++	mutex_unlock(&state->i2c_buffer_lock);
+ 
+ 	return ((rw[0] << 16) | (rw[1]));
+ }
 
 
