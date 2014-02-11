@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932250AbaBKTkZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:40:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40347 "EHLO
+	id S1754992AbaBKTlO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:41:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40335 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754044AbaBKTHn (ORCPT
+	with ESMTP id S1754022AbaBKTHk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:07:43 -0500
+	Tue, 11 Feb 2014 14:07:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jonas Gorski <jogo@openwrt.org>,
-        Florian Fainelli <florian@openwrt.org>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.10 27/79] spi/bcm63xx: dont substract prepend length from total length
-Date: Tue, 11 Feb 2014 11:05:31 -0800
-Message-Id: <20140211184721.710023331@linuxfoundation.org>
+        Boaz Harrosh <bharrosh@panasas.com>
+Subject: [PATCH 3.10 24/79] ore: Fix wrong math in allocation of per device BIO
+Date: Tue, 11 Feb 2014 11:05:28 -0800
+Message-Id: <20140211184721.627545836@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
 References: <20140211184720.928667275@linuxfoundation.org>
@@ -30,33 +28,132 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jonas Gorski <jogo@openwrt.org>
+From: Boaz Harrosh <bharrosh@panasas.com>
 
-commit 86b3bde003e6bf60ccb9c09b4115b8a2f533974c upstream.
+commit aad560b7f63b495f48a7232fd086c5913a676e6f upstream.
 
-The spi command must include the full message length including any
-prepended writes, else transfers larger than 256 bytes will be
-incomplete.
+At IO preparation we calculate the max pages at each device and
+allocate a BIO per device of that size. The calculation was wrong
+on some unaligned corner cases offset/length combination and would
+make prepare return with -ENOMEM. This would be bad for pnfs-objects
+that would in that case IO through MDS. And fatal for exofs were it
+would fail writes with EIO.
 
-Signed-off-by: Jonas Gorski <jogo@openwrt.org>
-Acked-by: Florian Fainelli <florian@openwrt.org>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Fix it by doing the proper math, that will work in all cases. (I
+ran a test with all possible offset/length combinations this time
+round).
+
+Also when reading we do not need to allocate for the parity units
+since we jump over them.
+
+Also lower the max_io_length to take into account the parity pages
+so not to allocate BIOs bigger than PAGE_SIZE
+
+Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/spi/spi-bcm63xx.c |    2 --
- 1 file changed, 2 deletions(-)
+ fs/exofs/ore.c         |   37 +++++++++++++++++++++++++------------
+ include/scsi/osd_ore.h |    1 +
+ 2 files changed, 26 insertions(+), 12 deletions(-)
 
---- a/drivers/spi/spi-bcm63xx.c
-+++ b/drivers/spi/spi-bcm63xx.c
-@@ -180,8 +180,6 @@ static int bcm63xx_txrx_bufs(struct spi_
- 			       transfer_list);
+--- a/fs/exofs/ore.c
++++ b/fs/exofs/ore.c
+@@ -103,7 +103,7 @@ int ore_verify_layout(unsigned total_com
+ 
+ 	layout->max_io_length =
+ 		(BIO_MAX_PAGES_KMALLOC * PAGE_SIZE - layout->stripe_unit) *
+-							layout->group_width;
++					(layout->group_width - layout->parity);
+ 	if (layout->parity) {
+ 		unsigned stripe_length =
+ 				(layout->group_width - layout->parity) *
+@@ -286,7 +286,8 @@ int  ore_get_rw_state(struct ore_layout
+ 	if (length) {
+ 		ore_calc_stripe_info(layout, offset, length, &ios->si);
+ 		ios->length = ios->si.length;
+-		ios->nr_pages = (ios->length + PAGE_SIZE - 1) / PAGE_SIZE;
++		ios->nr_pages = ((ios->offset & (PAGE_SIZE - 1)) +
++				 ios->length + PAGE_SIZE - 1) / PAGE_SIZE;
+ 		if (layout->parity)
+ 			_ore_post_alloc_raid_stuff(ios);
  	}
+@@ -536,6 +537,7 @@ void ore_calc_stripe_info(struct ore_lay
+ 	u64	H = LmodS - G * T;
  
--	len -= prepend_len;
--
- 	init_completion(&bs->done);
+ 	u32	N = div_u64(H, U);
++	u32	Nlast;
  
- 	/* Fill in the Message control register */
+ 	/* "H - (N * U)" is just "H % U" so it's bound to u32 */
+ 	u32	C = (u32)(H - (N * U)) / stripe_unit + G * group_width;
+@@ -568,6 +570,10 @@ void ore_calc_stripe_info(struct ore_lay
+ 	si->length = T - H;
+ 	if (si->length > length)
+ 		si->length = length;
++
++	Nlast = div_u64(H + si->length + U - 1, U);
++	si->maxdevUnits = Nlast - N;
++
+ 	si->M = M;
+ }
+ EXPORT_SYMBOL(ore_calc_stripe_info);
+@@ -583,13 +589,16 @@ int _ore_add_stripe_unit(struct ore_io_s
+ 	int ret;
+ 
+ 	if (per_dev->bio == NULL) {
+-		unsigned pages_in_stripe = ios->layout->group_width *
+-					(ios->layout->stripe_unit / PAGE_SIZE);
+-		unsigned nr_pages = ios->nr_pages * ios->layout->group_width /
+-					(ios->layout->group_width -
+-					 ios->layout->parity);
+-		unsigned bio_size = (nr_pages + pages_in_stripe) /
+-					ios->layout->group_width;
++		unsigned bio_size;
++
++		if (!ios->reading) {
++			bio_size = ios->si.maxdevUnits;
++		} else {
++			bio_size = (ios->si.maxdevUnits + 1) *
++			     (ios->layout->group_width - ios->layout->parity) /
++			     ios->layout->group_width;
++		}
++		bio_size *= (ios->layout->stripe_unit / PAGE_SIZE);
+ 
+ 		per_dev->bio = bio_kmalloc(GFP_KERNEL, bio_size);
+ 		if (unlikely(!per_dev->bio)) {
+@@ -609,8 +618,12 @@ int _ore_add_stripe_unit(struct ore_io_s
+ 		added_len = bio_add_pc_page(q, per_dev->bio, pages[pg],
+ 					    pglen, pgbase);
+ 		if (unlikely(pglen != added_len)) {
+-			ORE_DBGMSG("Failed bio_add_pc_page bi_vcnt=%u\n",
+-				   per_dev->bio->bi_vcnt);
++			/* If bi_vcnt == bi_max then this is a SW BUG */
++			ORE_DBGMSG("Failed bio_add_pc_page bi_vcnt=0x%x "
++				   "bi_max=0x%x BIO_MAX=0x%x cur_len=0x%x\n",
++				   per_dev->bio->bi_vcnt,
++				   per_dev->bio->bi_max_vecs,
++				   BIO_MAX_PAGES_KMALLOC, cur_len);
+ 			ret = -ENOMEM;
+ 			goto out;
+ 		}
+@@ -1098,7 +1111,7 @@ int ore_truncate(struct ore_layout *layo
+ 		size_attr->attr = g_attr_logical_length;
+ 		size_attr->attr.val_ptr = &size_attr->newsize;
+ 
+-		ORE_DBGMSG("trunc(0x%llx) obj_offset=0x%llx dev=%d\n",
++		ORE_DBGMSG2("trunc(0x%llx) obj_offset=0x%llx dev=%d\n",
+ 			     _LLU(oc->comps->obj.id), _LLU(obj_size), i);
+ 		ret = _truncate_mirrors(ios, i * ios->layout->mirrors_p1,
+ 					&size_attr->attr);
+--- a/include/scsi/osd_ore.h
++++ b/include/scsi/osd_ore.h
+@@ -102,6 +102,7 @@ struct ore_striping_info {
+ 	unsigned unit_off;
+ 	unsigned cur_pg;
+ 	unsigned cur_comp;
++	unsigned maxdevUnits;
+ };
+ 
+ struct ore_io_state;
 
 
