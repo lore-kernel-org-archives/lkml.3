@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751487AbaBKPLl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 10:11:41 -0500
-Received: from mail-la0-f42.google.com ([209.85.215.42]:56086 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750890AbaBKPLh (ORCPT
+	id S1751788AbaBKPLx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 10:11:53 -0500
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:52255 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751557AbaBKPLo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 10:11:37 -0500
+	Tue, 11 Feb 2014 10:11:44 -0500
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
 To: mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
         rjw@rjwysocki.net
 Cc: nicolas.pitre@linaro.org, preeti@linux.vnet.ibm.com,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 2/5] cpuidle/idle: Move the cpuidle_idle_call function to idle.c
-Date: Tue, 11 Feb 2014 16:11:28 +0100
-Message-Id: <1392131491-5265-2-git-send-email-daniel.lezcano@linaro.org>
+Subject: [PATCH 5/5] idle: Add more comments to the code
+Date: Tue, 11 Feb 2014 16:11:31 +0100
+Message-Id: <1392131491-5265-5-git-send-email-daniel.lezcano@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1392131491-5265-1-git-send-email-daniel.lezcano@linaro.org>
 References: <1392131491-5265-1-git-send-email-daniel.lezcano@linaro.org>
@@ -22,144 +22,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The cpuidle_idle_call does nothing more than calling the three individuals
-function and is no longer used by any arch specific code but only in the
-cpuidle framework code.
-
-We can move this function into the idle task code to ensure better
-proximity to the scheduler code.
+The idle main function is a complex and a critical function. Added more
+comments to the code.
 
 Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-Acked-by: Nicolas Pitre <nicolas.pitre@linaro.org>
 ---
- drivers/cpuidle/cpuidle.c |   37 -------------------------------------
- include/linux/cpuidle.h   |    2 --
- kernel/sched/idle.c       |   44 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 44 insertions(+), 39 deletions(-)
+ kernel/sched/idle.c |   37 +++++++++++++++++++++++++++++++++----
+ 1 file changed, 33 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-index 172ab6a..ae3078b 100644
---- a/drivers/cpuidle/cpuidle.c
-+++ b/drivers/cpuidle/cpuidle.c
-@@ -173,43 +173,6 @@ void cpuidle_reflect(struct cpuidle_device *dev, int index)
- }
- 
- /**
-- * cpuidle_idle_call - the main idle loop
-- *
-- * NOTE: no locks or semaphores should be used here
-- * return non-zero on failure
-- */
--int cpuidle_idle_call(void)
--{
--	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
--	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
--	int next_state, entered_state;
--
--	/* ask the governor for the next state */
--	next_state = cpuidle_select(drv, dev);
--	if (next_state < 0)
--		return next_state;
--
--	if (need_resched()) {
--		dev->last_residency = 0;
--		/* give the governor an opportunity to reflect on the outcome */
--		cpuidle_reflect(dev, next_state);
--		local_irq_enable();
--		return 0;
--	}
--
--	trace_cpu_idle_rcuidle(next_state, dev->cpu);
--
--	entered_state = cpuidle_enter(drv, dev, next_state);
--
--	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, dev->cpu);
--
--	/* give the governor an opportunity to reflect on the outcome */
--	cpuidle_reflect(dev, entered_state);
--
--	return 0;
--}
--
--/**
-  * cpuidle_install_idle_handler - installs the cpuidle idle loop handler
-  */
- void cpuidle_install_idle_handler(void)
-diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
-index bf06f37..0befaff 100644
---- a/include/linux/cpuidle.h
-+++ b/include/linux/cpuidle.h
-@@ -126,7 +126,6 @@ extern int cpuidle_enter(struct cpuidle_driver *drv,
- 			 struct cpuidle_device *dev, int index);
- extern void cpuidle_reflect(struct cpuidle_device *dev, int index);
- 
--extern int cpuidle_idle_call(void);
- extern int cpuidle_register_driver(struct cpuidle_driver *drv);
- extern struct cpuidle_driver *cpuidle_get_driver(void);
- extern struct cpuidle_driver *cpuidle_driver_ref(void);
-@@ -155,7 +154,6 @@ static inline int cpuidle_enter(struct cpuidle_driver *drv,
- 				struct cpuidle_device *dev, int index)
- {return -ENODEV; }
- static inline void cpuidle_reflect(struct cpuidle_device *dev, int index) { }
--static inline int cpuidle_idle_call(void) { return -ENODEV; }
- static inline int cpuidle_register_driver(struct cpuidle_driver *drv)
- {return -ENODEV; }
- static inline struct cpuidle_driver *cpuidle_get_driver(void) {return NULL; }
 diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
-index 14ca434..6963822 100644
+index 72b5926..36ff1a7 100644
 --- a/kernel/sched/idle.c
 +++ b/kernel/sched/idle.c
-@@ -63,6 +63,50 @@ void __weak arch_cpu_idle(void)
- 	local_irq_enable();
- }
+@@ -86,19 +86,34 @@ static int cpuidle_idle_call(void)
+ 	if (cpu_idle_force_poll || tick_check_broadcast_expired())
+ 		return cpu_idle_poll();
  
-+#ifdef CONFIG_CPU_IDLE
-+/**
-+ * cpuidle_idle_call - the main idle function
-+ *
-+ * NOTE: no locks or semaphores should be used here
-+ * return non-zero on failure
-+ */
-+static int cpuidle_idle_call(void)
-+{
-+	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
-+	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
-+	int next_state, entered_state;
++	/*
++	 * Check if the idle task must rescheduled. If it is the case,
++	 * exit the function after re-enabling the local irq and set
++	 * again the polling flag
++	 */
+ 	if (current_clr_polling_and_test()) {
+ 		local_irq_enable();
+ 		__current_set_polling();
+ 		return 0;
+ 	}
+ 
++	/*
++	 * During the idle period, stop measuring the disabled irqs
++	 * critical sections latencies
++	 */
+ 	stop_critical_timings();
 +
-+	/* ask the governor for the next state */
-+	next_state = cpuidle_select(drv, dev);
-+	if (next_state < 0)
-+		return next_state;
-+
-+	if (need_resched()) {
-+		dev->last_residency = 0;
-+		/* give the governor an opportunity to reflect on the outcome */
-+		cpuidle_reflect(dev, next_state);
-+		local_irq_enable();
-+		return 0;
-+	}
-+
-+	trace_cpu_idle_rcuidle(next_state, dev->cpu);
-+
-+	entered_state = cpuidle_enter(drv, dev, next_state);
-+
-+	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, dev->cpu);
-+
-+	/* give the governor an opportunity to reflect on the outcome */
-+	cpuidle_reflect(dev, entered_state);
-+
-+	return 0;
-+}
-+#else
-+static inline int cpuidle_idle_call(void)
-+{
-+	return -ENODEV;
-+}
-+#endif
-+
- /*
-  * Generic idle loop implementation
-  */
++	/*
++	 * Tell the RCU framework we are entering an idle section,
++	 * so no more rcu read side critical sections and one more
++	 * step to the grace period
++	 */
+ 	rcu_idle_enter();
+ 
+-	/* Ask the governor for the next state, this call can fail for
+-	 * different reasons: cpuidle is not enabled or an idle state
+-	 * fulfilling the constraints was not found. In this case, we fall
+-	 * back to the default idle function
++	/*
++	 * Ask the governor to choose an idle state it thinks it is
++	 * convenient to go to. There is *always* a convenient idle
++	 * state but the call could fail if cpuidle is not enabled
+ 	 */
+ 	next_state = cpuidle_select(drv, dev);
+ 	if (next_state < 0) {
+@@ -106,6 +121,10 @@ static int cpuidle_idle_call(void)
+ 		goto out;
+ 	}
+ 
++	/*
++	 * The idle task must be scheduled, it is pointless to go to idle,
++	 * just update no idle residency and get out of this function
++	 */
+ 	if (need_resched()) {
+ 		dev->last_residency = 0;
+ 		/* give the governor an opportunity to reflect on the outcome */
+@@ -116,6 +135,12 @@ static int cpuidle_idle_call(void)
+ 
+ 	trace_cpu_idle_rcuidle(next_state, dev->cpu);
+ 
++	/*
++	 * Enter the idle state previously returned by the governor
++	 * decision. This function will block until an interrupt
++	 * occurs and will take care of re-enabling the local
++	 * interrupts
++	 */
+ 	entered_state = cpuidle_enter(drv, dev, next_state);
+ 
+ 	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, dev->cpu);
+@@ -152,6 +177,10 @@ static void cpu_idle_loop(void)
+ 			local_irq_disable();
+ 			arch_cpu_idle_enter();
+ 
++			/*
++			 * It is up to the underlying functions to
++			 * enable the local interrupts again
++			 */
+ 			cpuidle_idle_call();
+ 
+ 			arch_cpu_idle_exit();
 -- 
 1.7.9.5
 
