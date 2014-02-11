@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756458AbaBKVL3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 16:11:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39450 "EHLO
+	id S1756532AbaBKVLx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 16:11:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39448 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752199AbaBKTEw (ORCPT
+	with ESMTP id S1752189AbaBKTEv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:04:52 -0500
+	Tue, 11 Feb 2014 14:04:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Greg Thelen <gthelen@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Wu Fengguang <fengguang.wu@intel.com>, Michal Hocko <mhocko@suse.cz>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.13 016/120] memcg: fix endless loop caused by mem_cgroup_iter
-Date: Tue, 11 Feb 2014 11:04:17 -0800
-Message-Id: <20140211184823.994027051@linuxfoundation.org>
+Subject: [PATCH 3.13 015/120] mm/page-writeback.c: do not count anon pages as dirtyable memory
+Date: Tue, 11 Feb 2014 11:04:16 -0800
+Message-Id: <20140211184823.964875782@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -31,98 +32,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Hocko <mhocko@suse.cz>
+From: Johannes Weiner <hannes@cmpxchg.org>
 
-commit ecc736fc3c71c411a9d201d8588c9e7e049e5d8c upstream.
+commit a1c3bfb2f67ef766de03f1f56bdfff9c8595ab14 upstream.
 
-Hugh has reported an endless loop when the hardlimit reclaim sees the
-same group all the time.  This might happen when the reclaim races with
-the memcg removal.
+The VM is currently heavily tuned to avoid swapping.  Whether that is
+good or bad is a separate discussion, but as long as the VM won't swap
+to make room for dirty cache, we can not consider anonymous pages when
+calculating the amount of dirtyable memory, the baseline to which
+dirty_background_ratio and dirty_ratio are applied.
 
-shrink_zone
-                                                [rmdir root]
-  mem_cgroup_iter(root, NULL, reclaim)
-    // prev = NULL
-    rcu_read_lock()
-    mem_cgroup_iter_load
-      last_visited = iter->last_visited   // gets root || NULL
-      css_tryget(last_visited)            // failed
-      last_visited = NULL                 [1]
-    memcg = root = __mem_cgroup_iter_next(root, NULL)
-    mem_cgroup_iter_update
-      iter->last_visited = root;
-    reclaim->generation = iter->generation
+A simple workload that occupies a significant size (40+%, depending on
+memory layout, storage speeds etc.) of memory with anon/tmpfs pages and
+uses the remainder for a streaming writer demonstrates this problem.  In
+that case, the actual cache pages are a small fraction of what is
+considered dirtyable overall, which results in an relatively large
+portion of the cache pages to be dirtied.  As kswapd starts rotating
+these, random tasks enter direct reclaim and stall on IO.
 
- mem_cgroup_iter(root, root, reclaim)
-   // prev = root
-   rcu_read_lock
-    mem_cgroup_iter_load
-      last_visited = iter->last_visited   // gets root
-      css_tryget(last_visited)            // failed
-    [1]
+Only consider free pages and file pages dirtyable.
 
-The issue seemed to be introduced by commit 5f5781619718 ("memcg: relax
-memcg iter caching") which has replaced unconditional css_get/css_put by
-css_tryget/css_put for the cached iterator.
-
-This patch fixes the issue by skipping css_tryget on the root of the
-tree walk in mem_cgroup_iter_load and symmetrically doesn't release it
-in mem_cgroup_iter_update.
-
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Reported-by: Hugh Dickins <hughd@google.com>
-Tested-by: Hugh Dickins <hughd@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Greg Thelen <gthelen@google.com>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Reported-by: Tejun Heo <tj@kernel.org>
+Tested-by: Tejun Heo <tj@kernel.org>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/memcontrol.c |   17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
+ include/linux/vmstat.h |    2 --
+ mm/internal.h          |    1 -
+ mm/page-writeback.c    |    6 ++++--
+ mm/vmscan.c            |   23 +----------------------
+ 4 files changed, 5 insertions(+), 27 deletions(-)
 
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1139,7 +1139,15 @@ mem_cgroup_iter_load(struct mem_cgroup_r
- 	if (iter->last_dead_count == *sequence) {
- 		smp_rmb();
- 		position = iter->last_visited;
--		if (position && !css_tryget(&position->css))
-+
-+		/*
-+		 * We cannot take a reference to root because we might race
-+		 * with root removal and returning NULL would end up in
-+		 * an endless loop on the iterator user level when root
-+		 * would be returned all the time.
-+		 */
-+		if (position && position != root &&
-+				!css_tryget(&position->css))
- 			position = NULL;
- 	}
- 	return position;
-@@ -1148,9 +1156,11 @@ mem_cgroup_iter_load(struct mem_cgroup_r
- static void mem_cgroup_iter_update(struct mem_cgroup_reclaim_iter *iter,
- 				   struct mem_cgroup *last_visited,
- 				   struct mem_cgroup *new_position,
-+				   struct mem_cgroup *root,
- 				   int sequence)
+--- a/include/linux/vmstat.h
++++ b/include/linux/vmstat.h
+@@ -142,8 +142,6 @@ static inline unsigned long zone_page_st
+ 	return x;
+ }
+ 
+-extern unsigned long global_reclaimable_pages(void);
+-
+ #ifdef CONFIG_NUMA
+ /*
+  * Determine the per node value of a stat item. This function
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -85,7 +85,6 @@ extern unsigned long highest_memmap_pfn;
+  */
+ extern int isolate_lru_page(struct page *page);
+ extern void putback_lru_page(struct page *page);
+-extern unsigned long zone_reclaimable_pages(struct zone *zone);
+ extern bool zone_reclaimable(struct zone *zone);
+ 
+ /*
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -205,7 +205,8 @@ static unsigned long zone_dirtyable_memo
+ 	nr_pages = zone_page_state(zone, NR_FREE_PAGES);
+ 	nr_pages -= min(nr_pages, zone->dirty_balance_reserve);
+ 
+-	nr_pages += zone_reclaimable_pages(zone);
++	nr_pages += zone_page_state(zone, NR_INACTIVE_FILE);
++	nr_pages += zone_page_state(zone, NR_ACTIVE_FILE);
+ 
+ 	return nr_pages;
+ }
+@@ -258,7 +259,8 @@ static unsigned long global_dirtyable_me
+ 	x = global_page_state(NR_FREE_PAGES);
+ 	x -= min(x, dirty_balance_reserve);
+ 
+-	x += global_reclaimable_pages();
++	x += global_page_state(NR_INACTIVE_FILE);
++	x += global_page_state(NR_ACTIVE_FILE);
+ 
+ 	if (!vm_highmem_is_dirtyable)
+ 		x -= highmem_dirtyable_memory(x);
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -147,7 +147,7 @@ static bool global_reclaim(struct scan_c
+ }
+ #endif
+ 
+-unsigned long zone_reclaimable_pages(struct zone *zone)
++static unsigned long zone_reclaimable_pages(struct zone *zone)
  {
--	if (last_visited)
-+	/* root reference counting symmetric to mem_cgroup_iter_load */
-+	if (last_visited && last_visited != root)
- 		css_put(&last_visited->css);
- 	/*
- 	 * We store the sequence count from the time @last_visited was
-@@ -1225,7 +1235,8 @@ struct mem_cgroup *mem_cgroup_iter(struc
- 		memcg = __mem_cgroup_iter_next(root, last_visited);
+ 	int nr;
  
- 		if (reclaim) {
--			mem_cgroup_iter_update(iter, last_visited, memcg, seq);
-+			mem_cgroup_iter_update(iter, last_visited, memcg, root,
-+					seq);
+@@ -3297,27 +3297,6 @@ void wakeup_kswapd(struct zone *zone, in
+ 	wake_up_interruptible(&pgdat->kswapd_wait);
+ }
  
- 			if (!memcg)
- 				iter->generation++;
+-/*
+- * The reclaimable count would be mostly accurate.
+- * The less reclaimable pages may be
+- * - mlocked pages, which will be moved to unevictable list when encountered
+- * - mapped pages, which may require several travels to be reclaimed
+- * - dirty pages, which is not "instantly" reclaimable
+- */
+-unsigned long global_reclaimable_pages(void)
+-{
+-	int nr;
+-
+-	nr = global_page_state(NR_ACTIVE_FILE) +
+-	     global_page_state(NR_INACTIVE_FILE);
+-
+-	if (get_nr_swap_pages() > 0)
+-		nr += global_page_state(NR_ACTIVE_ANON) +
+-		      global_page_state(NR_INACTIVE_ANON);
+-
+-	return nr;
+-}
+-
+ #ifdef CONFIG_HIBERNATION
+ /*
+  * Try to free `nr_to_reclaim' of memory, system-wide, and return the number of
 
 
