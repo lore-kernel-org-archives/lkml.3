@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752749AbaBKEcL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 23:32:11 -0500
-Received: from mail-vb0-f49.google.com ([209.85.212.49]:33706 "EHLO
-	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752199AbaBKEcF (ORCPT
+	id S1752580AbaBKEgA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 23:36:00 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:50221 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751970AbaBKEf5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 23:32:05 -0500
+	Mon, 10 Feb 2014 23:35:57 -0500
+Message-ID: <52F9A82F.3060806@huawei.com>
+Date: Tue, 11 Feb 2014 12:33:51 +0800
+From: Weng Meiling <wengmeiling.weng@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-In-Reply-To: <1392069908-22017-1-git-send-email-ddaney.cavm@gmail.com>
-References: <1392069908-22017-1-git-send-email-ddaney.cavm@gmail.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Tue, 11 Feb 2014 13:31:44 +0900
-Message-ID: <CAAVeFu+_WKzLdhWcB_km3iDj419OhtMXEKzz_yWoL3WUm+7kQQ@mail.gmail.com>
-Subject: Re: [PATCH] of/gpio: Define OF_GPIO_OPEN_DRAIN flag for Open Drain outputs.
-To: David Daney <ddaney.cavm@gmail.com>
-Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        David Daney <david.daney@cavium.com>
-Content-Type: text/plain; charset=UTF-8
+To: Will Deacon <will.deacon@arm.com>
+CC: Robert Richter <rric@kernel.org>,
+        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>,
+        "wangnan0@huawei.com" <wangnan0@huawei.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Huang Qiang <h.huangqiang@huawei.com>,
+        "sdu.liu@huawei.com" <sdu.liu@huawei.com>
+Subject: Re: [PATCH] oprofile: check whether oprofile perf enabled in op_overflow_handler()
+References: <52B3F66D.6060707@huawei.com> <20140113084555.GU20315@rric.localhost> <52D4984B.9090600@huawei.com> <20140114150553.GC20315@rric.localhost> <52D5EC44.30101@huawei.com> <20140115102445.GE20315@rric.localhost> <52D73148.4090408@huawei.com> <52D7A750.50906@huawei.com> <20140116115245.GB8360@rric.localhost> <20140116193652.GD22105@mudshark.cambridge.arm.com> <52D8A56F.1010507@huawei.com>
+In-Reply-To: <52D8A56F.1010507@huawei.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.24.66]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 7:05 AM, David Daney <ddaney.cavm@gmail.com> wrote:
-> From: David Daney <david.daney@cavium.com>
->
-> When we have a GPIO pin connected to an open-drain network, we want a
-> standard way of specifying this in the device tree.  So we choose bit
-> 1 of the flag field to indicate open drain.
->
-> A typical use case would be something like:
->
->         enum of_gpio_flags f;
->         .
->         .
->         .
->         reset_gpio = of_get_named_gpio_flags(node, "reset", 0, &f);
->         .
->         .
->         .
->         ret = gpio_request_one(reset_gpio,
->                 (f & OF_GPIO_OPEN_DRAIN) ? GPIOF_OPEN_DRAIN : 0,
->                  "reset");
->         .
->         .
->         .
->         gpio_direction_output(reset_gpio, 1);
->         gpio_set_value(reset_gpio, 0);
->         msleep(20);
->         gpio_set_value(reset_gpio, 1);
+Hi Will,
 
-This is also useful for gpiod_get(). However, while you are at it,
-could you also add a flag for the OF_GPIO_OPEN_SOURCE property? My joy
-would be complete if you could also take the time to update
-of_find_gpio() to pass these new flags back to the caller as it
-already does for OF_GPIO_ACTIVE_LOW.
+> 
+>>> how userland can be notified about throttling. Throttling could be
+>>> worth for operf too, not only for the oprofile kernel driver.
+>>>
+> 
+>>> From a quick look it seems there is also code in x86 that dynamically
+>>> adjusts the rate which might be worth being implemented for ARM too.
+>>
+>> Are you referring to the perf_sample_event_took callback? If so, that
+>> certainly looks worth persuing. I'll stick it on my list, thanks!
+>>
 
-Then you could even switch your use-case to the gpiod interface and
-not bother with passing these flags by yourself anymore. Just sayin'.
-;)
+Is there any progress on this work? Because this is important for me.
+Sorry for trouble you.
 
-Thanks,
-Alex.
+Thanks!
+Weng Meiling
+
+
