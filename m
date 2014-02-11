@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755646AbaBKUAt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:00:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40131 "EHLO
+	id S1755714AbaBKUB3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:01:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40125 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753706AbaBKTHE (ORCPT
+	with ESMTP id S1753644AbaBKTHC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:07:04 -0500
+	Tue, 11 Feb 2014 14:07:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ilia Mirkin <imirkin@alum.mit.edu>
-Subject: [PATCH 3.12 081/107] drm/nouveau/falcon: use vmalloc to create firwmare copies
-Date: Tue, 11 Feb 2014 11:05:47 -0800
-Message-Id: <20140211184750.506897296@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.12 078/107] drm/radeon/dce8: workaround for atom BlankCrtc table
+Date: Tue, 11 Feb 2014 11:05:44 -0800
+Message-Id: <20140211184750.422900943@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -28,77 +28,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ilia Mirkin <imirkin@alum.mit.edu>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 90d6db1635d5e225623af2e2e859feb607345287 upstream.
+commit 78fe9e545ce6d510b979dc2d8e14096a279fc519 upstream.
 
-Some firmware images may be large (64K), so using kmalloc memory is
-inappropriate for them. Use vmalloc instead, to avoid high-order
-allocation failures.
+Some DCE8 boards have a funky BlankCrtc table that results
+in a timeout when trying to blank the display.  The
+timeout is harmless (all operations needed from the table
+are complete), but wastes time and is confusing to users so
+work around it.
 
-Signed-off-by: Ilia Mirkin <imirkin@alum.mit.edu>
+bug:
+https://bugs.freedesktop.org/show_bug.cgi?id=73420
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/core/engine/falcon.c |   20 +++++++++++++++-----
- 1 file changed, 15 insertions(+), 5 deletions(-)
+ drivers/gpu/drm/radeon/atombios_crtc.c |   20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
---- a/drivers/gpu/drm/nouveau/core/engine/falcon.c
-+++ b/drivers/gpu/drm/nouveau/core/engine/falcon.c
-@@ -56,6 +56,16 @@ _nouveau_falcon_wr32(struct nouveau_obje
- 	nv_wr32(falcon, falcon->addr + addr, data);
+--- a/drivers/gpu/drm/radeon/atombios_crtc.c
++++ b/drivers/gpu/drm/radeon/atombios_crtc.c
+@@ -209,6 +209,16 @@ static void atombios_enable_crtc_memreq(
+ 	atom_execute_table(rdev->mode_info.atom_context, index, (uint32_t *)&args);
  }
  
-+static void *
-+vmemdup(const void *src, size_t len)
++static const u32 vga_control_regs[6] =
 +{
-+	void *p = vmalloc(len);
++	AVIVO_D1VGA_CONTROL,
++	AVIVO_D2VGA_CONTROL,
++	EVERGREEN_D3VGA_CONTROL,
++	EVERGREEN_D4VGA_CONTROL,
++	EVERGREEN_D5VGA_CONTROL,
++	EVERGREEN_D6VGA_CONTROL,
++};
 +
-+	if (p)
-+		memcpy(p, src, len);
-+	return p;
-+}
-+
- int
- _nouveau_falcon_init(struct nouveau_object *object)
+ static void atombios_blank_crtc(struct drm_crtc *crtc, int state)
  {
-@@ -111,7 +121,7 @@ _nouveau_falcon_init(struct nouveau_obje
+ 	struct radeon_crtc *radeon_crtc = to_radeon_crtc(crtc);
+@@ -216,13 +226,23 @@ static void atombios_blank_crtc(struct d
+ 	struct radeon_device *rdev = dev->dev_private;
+ 	int index = GetIndexIntoMasterTable(COMMAND, BlankCRTC);
+ 	BLANK_CRTC_PS_ALLOCATION args;
++	u32 vga_control = 0;
  
- 		ret = request_firmware(&fw, name, &device->pdev->dev);
- 		if (ret == 0) {
--			falcon->code.data = kmemdup(fw->data, fw->size, GFP_KERNEL);
-+			falcon->code.data = vmemdup(fw->data, fw->size);
- 			falcon->code.size = fw->size;
- 			falcon->data.data = NULL;
- 			falcon->data.size = 0;
-@@ -134,7 +144,7 @@ _nouveau_falcon_init(struct nouveau_obje
- 			return ret;
- 		}
+ 	memset(&args, 0, sizeof(args));
  
--		falcon->data.data = kmemdup(fw->data, fw->size, GFP_KERNEL);
-+		falcon->data.data = vmemdup(fw->data, fw->size);
- 		falcon->data.size = fw->size;
- 		release_firmware(fw);
- 		if (!falcon->data.data)
-@@ -149,7 +159,7 @@ _nouveau_falcon_init(struct nouveau_obje
- 			return ret;
- 		}
++	if (ASIC_IS_DCE8(rdev)) {
++		vga_control = RREG32(vga_control_regs[radeon_crtc->crtc_id]);
++		WREG32(vga_control_regs[radeon_crtc->crtc_id], vga_control | 1);
++	}
++
+ 	args.ucCRTC = radeon_crtc->crtc_id;
+ 	args.ucBlanking = state;
  
--		falcon->code.data = kmemdup(fw->data, fw->size, GFP_KERNEL);
-+		falcon->code.data = vmemdup(fw->data, fw->size);
- 		falcon->code.size = fw->size;
- 		release_firmware(fw);
- 		if (!falcon->code.data)
-@@ -235,8 +245,8 @@ _nouveau_falcon_fini(struct nouveau_obje
- 	if (!suspend) {
- 		nouveau_gpuobj_ref(NULL, &falcon->core);
- 		if (falcon->external) {
--			kfree(falcon->data.data);
--			kfree(falcon->code.data);
-+			vfree(falcon->data.data);
-+			vfree(falcon->code.data);
- 			falcon->code.data = NULL;
- 		}
- 	}
+ 	atom_execute_table(rdev->mode_info.atom_context, index, (uint32_t *)&args);
++
++	if (ASIC_IS_DCE8(rdev)) {
++		WREG32(vga_control_regs[radeon_crtc->crtc_id], vga_control);
++	}
+ }
+ 
+ static void atombios_powergate_crtc(struct drm_crtc *crtc, int state)
 
 
