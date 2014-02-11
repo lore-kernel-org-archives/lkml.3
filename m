@@ -1,67 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756251AbaBKUWF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:22:05 -0500
-Received: from vserver.eikelenboom.it ([84.200.39.61]:42997 "EHLO
-	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753821AbaBKUWB convert rfc822-to-8bit (ORCPT
+	id S1754249AbaBKUVy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:21:54 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:48332 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753868AbaBKUVv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 15:22:01 -0500
-Date: Tue, 11 Feb 2014 21:21:57 +0100
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <1009282985.20140211212157@eikelenboom.it>
-To: David Vrabel <david.vrabel@citrix.com>
-CC: =?iso-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>, <xen-devel@lists.xensource.com>,
-        <linux-kernel@vger.kernel.org>, <mrushton@amazon.com>,
-        <msw@amazon.com>, <boris.ostrovsky@oracle.com>
-Subject: Re: [Xen-devel] [GIT PULL] (xen) stable/for-jens-3.14 : NFO: trying to register non-static key. the code is fine but needs lockdep annotation.
-In-Reply-To: <52FA6A44.6050003@citrix.com>
-References: <20140210184412.GA18198@phenom.dumpdata.com> <20140210195402.GA3924@kernel.dk> <771950784.20140211165215@eikelenboom.it> <20140211155650.GA23026@phenom.dumpdata.com> <1542261541.20140211170750@eikelenboom.it> <52FA6072.40908@citrix.com> <52FA6352.1010403@citrix.com> <52FA68AE.6070608@citrix.com> <52FA6A44.6050003@citrix.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 11 Feb 2014 15:21:51 -0500
+From: Kumar Gala <galak@codeaurora.org>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] hwrng: msm: switch Kconfig to ARCH_QCOM depends
+Date: Tue, 11 Feb 2014 14:21:45 -0600
+Message-Id: <1392150105-21057-1-git-send-email-galak@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is the splits the Qualcomm MSM platform into legacy support that we will
+not try and convert to multiplatform and multiplatform support.
 
+- k
 
-Tuesday, February 11, 2014, 7:21:56 PM, you wrote:
+Changes from v2:
+* Dropped ARCH_MSM depends from CLKSRC_QCOM, since we select it
+* Fixed some grammar/typo's in commit messages
+* kept smp ops code in platsmp.c to match what other mach's do
+* Kept mach-qcom/Kconfig sorted alphabetically
 
-> On 11/02/14 18:15, Roger Pau Monné wrote:
->> On 11/02/14 18:52, David Vrabel wrote:
->>> 
->> That would mean that unmap_purged_grants would no longer be static and 
->> I should also add a prototype for it in blkback/common.h, which is kind 
->> of ugly IMHO.
+Changes from v1:
+* Added patch to remove hotplug.c
+* Added patch to rename msm_ to qcom_
+* Changes the Kconfig to drop CPU_V7
+* used wfi() in cpu_die function
+* Added git tree to MAINTAINERS file
 
-> But less ugly than initializing work with a NULL function, IMO.
+Kumar Gala (5):
 
->> commit 980e72e45454b64ccb7f23b6794a769384e51038
->> Author: Roger Pau Monne <roger.pau@citrix.com>
->> Date:   Tue Feb 11 19:04:06 2014 +0100
->> 
->>     xen-blkback: init persistent_purge_work work_struct
->>     
->>     Initialize persistent_purge_work work_struct on xen_blkif_alloc (and
->>     remove the previous initialization done in purge_persistent_gnt). This
->>     prevents flush_work from complaining even if purge_persistent_gnt has
->>     not been used.
->>     
->>     Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
+We've split Qualcomm MSM support into legacy and multiplatform.  The RNG
+driver is only relevant on the multiplatform supported SoCs so switch the
+Kconfig depends to ARCH_QCOM.
 
-> Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+CC: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Kumar Gala <galak@codeaurora.org>
+---
+ drivers/char/hw_random/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-And a Tested-by: Sander Eikelenboom <linux@eikelenboom.it>
-
-Thanks !
-
-> Thanks.
-
-> David
-
+diff --git a/drivers/char/hw_random/Kconfig b/drivers/char/hw_random/Kconfig
+index 2f2b084..289bd3a 100644
+--- a/drivers/char/hw_random/Kconfig
++++ b/drivers/char/hw_random/Kconfig
+@@ -343,7 +343,7 @@ config HW_RANDOM_TPM
+ 
+ config HW_RANDOM_MSM
+ 	tristate "Qualcomm MSM Random Number Generator support"
+-	depends on HW_RANDOM && ARCH_MSM
++	depends on HW_RANDOM && ARCH_QCOM
+ 	---help---
+ 	  This driver provides kernel-side support for the Random Number
+ 	  Generator hardware found on Qualcomm MSM SoCs.
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
