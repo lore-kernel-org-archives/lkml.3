@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754826AbaBKTTl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:19:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40569 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752123AbaBKTIW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754349AbaBKTIW (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 11 Feb 2014 14:08:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40557 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752123AbaBKTIT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 14:08:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.10 54/79] drm/radeon: set the full cache bit for fences on r7xx+
-Date: Tue, 11 Feb 2014 11:05:58 -0800
-Message-Id: <20140211184722.527552253@linuxfoundation.org>
+        Brennan Shacklett <bpshacklett@gmail.com>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.10 78/79] intel_pstate: Improve accuracy by not truncating until final result
+Date: Tue, 11 Feb 2014 11:06:22 -0800
+Message-Id: <20140211184723.227325038@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
 References: <20140211184720.928667275@linuxfoundation.org>
@@ -28,63 +30,119 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Brennan Shacklett <brennan@genyes.org>
 
-commit d45b964a22cad962d3ede1eba8d24f5cee7b2a92 upstream.
+commit d253d2a52676cfa3d89b8f0737a08ce7db665207 upstream.
 
-Needed to properly flush the read caches for fences.
+This patch addresses Bug 60727
+(https://bugzilla.kernel.org/show_bug.cgi?id=60727)
+which was due to the truncation of intermediate values in the
+calculations, which causes the code to consistently underestimate the
+current cpu frequency, specifically 100% cpu utilization was truncated
+down to the setpoint of 97%. This patch fixes the problem by keeping
+the results of all intermediate calculations as fixed point numbers
+rather scaling them back and forth between integers and fixed point.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+References: https://bugzilla.kernel.org/show_bug.cgi?id=60727
+Signed-off-by: Brennan Shacklett <bpshacklett@gmail.com>
+Acked-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/r600.c  |   13 +++++++------
- drivers/gpu/drm/radeon/r600d.h |    1 +
- 2 files changed, 8 insertions(+), 6 deletions(-)
+ drivers/cpufreq/intel_pstate.c |   33 +++++++++++++++------------------
+ 1 file changed, 15 insertions(+), 18 deletions(-)
 
---- a/drivers/gpu/drm/radeon/r600.c
-+++ b/drivers/gpu/drm/radeon/r600.c
-@@ -2957,14 +2957,17 @@ void r600_fence_ring_emit(struct radeon_
- 			  struct radeon_fence *fence)
- {
- 	struct radeon_ring *ring = &rdev->ring[fence->ring];
-+	u32 cp_coher_cntl = PACKET3_TC_ACTION_ENA | PACKET3_VC_ACTION_ENA |
-+		PACKET3_SH_ACTION_ENA;
-+
-+	if (rdev->family >= CHIP_RV770)
-+		cp_coher_cntl |= PACKET3_FULL_CACHE_ENA;
+--- a/drivers/cpufreq/intel_pstate.c
++++ b/drivers/cpufreq/intel_pstate.c
+@@ -48,7 +48,7 @@ static inline int32_t div_fp(int32_t x,
+ }
  
- 	if (rdev->wb.use_event) {
- 		u64 addr = rdev->fence_drv[fence->ring].gpu_addr;
- 		/* flush read cache over gart */
- 		radeon_ring_write(ring, PACKET3(PACKET3_SURFACE_SYNC, 3));
--		radeon_ring_write(ring, PACKET3_TC_ACTION_ENA |
--					PACKET3_VC_ACTION_ENA |
--					PACKET3_SH_ACTION_ENA);
-+		radeon_ring_write(ring, cp_coher_cntl);
- 		radeon_ring_write(ring, 0xFFFFFFFF);
- 		radeon_ring_write(ring, 0);
- 		radeon_ring_write(ring, 10); /* poll interval */
-@@ -2978,9 +2981,7 @@ void r600_fence_ring_emit(struct radeon_
- 	} else {
- 		/* flush read cache over gart */
- 		radeon_ring_write(ring, PACKET3(PACKET3_SURFACE_SYNC, 3));
--		radeon_ring_write(ring, PACKET3_TC_ACTION_ENA |
--					PACKET3_VC_ACTION_ENA |
--					PACKET3_SH_ACTION_ENA);
-+		radeon_ring_write(ring, cp_coher_cntl);
- 		radeon_ring_write(ring, 0xFFFFFFFF);
- 		radeon_ring_write(ring, 0);
- 		radeon_ring_write(ring, 10); /* poll interval */
---- a/drivers/gpu/drm/radeon/r600d.h
-+++ b/drivers/gpu/drm/radeon/r600d.h
-@@ -1283,6 +1283,7 @@
- #              define PACKET3_CP_DMA_CMD_DAIC      (1 << 29)
- #define	PACKET3_SURFACE_SYNC				0x43
- #              define PACKET3_CB0_DEST_BASE_ENA    (1 << 6)
-+#              define PACKET3_FULL_CACHE_ENA       (1 << 20) /* r7xx+ only */
- #              define PACKET3_TC_ACTION_ENA        (1 << 23)
- #              define PACKET3_VC_ACTION_ENA        (1 << 24)
- #              define PACKET3_CB_ACTION_ENA        (1 << 25)
+ struct sample {
+-	int core_pct_busy;
++	int32_t core_pct_busy;
+ 	u64 aperf;
+ 	u64 mperf;
+ 	int freq;
+@@ -68,7 +68,7 @@ struct _pid {
+ 	int32_t i_gain;
+ 	int32_t d_gain;
+ 	int deadband;
+-	int last_err;
++	int32_t last_err;
+ };
+ 
+ struct cpudata {
+@@ -153,16 +153,15 @@ static inline void pid_d_gain_set(struct
+ 	pid->d_gain = div_fp(int_tofp(percent), int_tofp(100));
+ }
+ 
+-static signed int pid_calc(struct _pid *pid, int busy)
++static signed int pid_calc(struct _pid *pid, int32_t busy)
+ {
+-	signed int err, result;
++	signed int result;
+ 	int32_t pterm, dterm, fp_error;
+ 	int32_t integral_limit;
+ 
+-	err = pid->setpoint - busy;
+-	fp_error = int_tofp(err);
++	fp_error = int_tofp(pid->setpoint) - busy;
+ 
+-	if (abs(err) <= pid->deadband)
++	if (abs(fp_error) <= int_tofp(pid->deadband))
+ 		return 0;
+ 
+ 	pterm = mul_fp(pid->p_gain, fp_error);
+@@ -176,8 +175,8 @@ static signed int pid_calc(struct _pid *
+ 	if (pid->integral < -integral_limit)
+ 		pid->integral = -integral_limit;
+ 
+-	dterm = mul_fp(pid->d_gain, (err - pid->last_err));
+-	pid->last_err = err;
++	dterm = mul_fp(pid->d_gain, fp_error - pid->last_err);
++	pid->last_err = fp_error;
+ 
+ 	result = pterm + mul_fp(pid->integral, pid->i_gain) + dterm;
+ 
+@@ -435,8 +434,9 @@ static inline void intel_pstate_calc_bus
+ 					struct sample *sample)
+ {
+ 	u64 core_pct;
+-	core_pct = div64_u64(sample->aperf * 100, sample->mperf);
+-	sample->freq = cpu->pstate.max_pstate * core_pct * 1000;
++	core_pct = div64_u64(int_tofp(sample->aperf * 100),
++			     sample->mperf);
++	sample->freq = fp_toint(cpu->pstate.max_pstate * core_pct * 1000);
+ 
+ 	sample->core_pct_busy = core_pct;
+ }
+@@ -468,22 +468,19 @@ static inline void intel_pstate_set_samp
+ 	mod_timer_pinned(&cpu->timer, jiffies + delay);
+ }
+ 
+-static inline int intel_pstate_get_scaled_busy(struct cpudata *cpu)
++static inline int32_t intel_pstate_get_scaled_busy(struct cpudata *cpu)
+ {
+-	int32_t busy_scaled;
+ 	int32_t core_busy, max_pstate, current_pstate;
+ 
+-	core_busy = int_tofp(cpu->samples[cpu->sample_ptr].core_pct_busy);
++	core_busy = cpu->samples[cpu->sample_ptr].core_pct_busy;
+ 	max_pstate = int_tofp(cpu->pstate.max_pstate);
+ 	current_pstate = int_tofp(cpu->pstate.current_pstate);
+-	busy_scaled = mul_fp(core_busy, div_fp(max_pstate, current_pstate));
+-
+-	return fp_toint(busy_scaled);
++	return mul_fp(core_busy, div_fp(max_pstate, current_pstate));
+ }
+ 
+ static inline void intel_pstate_adjust_busy_pstate(struct cpudata *cpu)
+ {
+-	int busy_scaled;
++	int32_t busy_scaled;
+ 	struct _pid *pid;
+ 	signed int ctl = 0;
+ 	int steps;
 
 
