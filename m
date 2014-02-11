@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755453AbaBKTvX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:51:23 -0500
+	id S932213AbaBKTvW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:51:22 -0500
 Received: from mail.linuxfoundation.org ([140.211.169.12]:40249 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753587AbaBKTH0 (ORCPT
+	with ESMTP id S1751585AbaBKTH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:07:26 -0500
+	Tue, 11 Feb 2014 14:07:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.12 073/107] drm/radeon: fix surface sync in fence on cayman (v2)
-Date: Tue, 11 Feb 2014 11:05:39 -0800
-Message-Id: <20140211184750.275114022@linuxfoundation.org>
+Subject: [PATCH 3.12 074/107] drm/radeon: set the full cache bit for fences on r7xx+
+Date: Tue, 11 Feb 2014 11:05:40 -0800
+Message-Id: <20140211184750.303783804@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -30,76 +30,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 10e9ffae463396c5a25fdfe8a48d7c98a87f6b85 upstream.
+commit d45b964a22cad962d3ede1eba8d24f5cee7b2a92 upstream.
 
-We need to set the engine bit to select the ME and
-also set the full cache bit.  Should help stability
-on TN and cayman.
-
-V2: fix up surface sync in ib execute as well
+Needed to properly flush the read caches for fences.
 
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/ni.c  |   16 +++++++---------
- drivers/gpu/drm/radeon/nid.h |    1 +
- 2 files changed, 8 insertions(+), 9 deletions(-)
+ drivers/gpu/drm/radeon/r600.c  |   13 +++++++------
+ drivers/gpu/drm/radeon/r600d.h |    1 +
+ 2 files changed, 8 insertions(+), 6 deletions(-)
 
---- a/drivers/gpu/drm/radeon/ni.c
-+++ b/drivers/gpu/drm/radeon/ni.c
-@@ -1335,13 +1335,12 @@ void cayman_fence_ring_emit(struct radeo
+--- a/drivers/gpu/drm/radeon/r600.c
++++ b/drivers/gpu/drm/radeon/r600.c
+@@ -2554,14 +2554,17 @@ void r600_fence_ring_emit(struct radeon_
+ 			  struct radeon_fence *fence)
  {
  	struct radeon_ring *ring = &rdev->ring[fence->ring];
- 	u64 addr = rdev->fence_drv[fence->ring].gpu_addr;
-+	u32 cp_coher_cntl = PACKET3_FULL_CACHE_ENA | PACKET3_TC_ACTION_ENA |
++	u32 cp_coher_cntl = PACKET3_TC_ACTION_ENA | PACKET3_VC_ACTION_ENA |
 +		PACKET3_SH_ACTION_ENA;
++
++	if (rdev->family >= CHIP_RV770)
++		cp_coher_cntl |= PACKET3_FULL_CACHE_ENA;
  
- 	/* flush read cache over gart for this vmid */
--	radeon_ring_write(ring, PACKET3(PACKET3_SET_CONFIG_REG, 1));
--	radeon_ring_write(ring, (CP_COHER_CNTL2 - PACKET3_SET_CONFIG_REG_START) >> 2);
--	radeon_ring_write(ring, 0);
- 	radeon_ring_write(ring, PACKET3(PACKET3_SURFACE_SYNC, 3));
--	radeon_ring_write(ring, PACKET3_TC_ACTION_ENA | PACKET3_SH_ACTION_ENA);
-+	radeon_ring_write(ring, PACKET3_ENGINE_ME | cp_coher_cntl);
- 	radeon_ring_write(ring, 0xFFFFFFFF);
- 	radeon_ring_write(ring, 0);
- 	radeon_ring_write(ring, 10); /* poll interval */
-@@ -1357,6 +1356,8 @@ void cayman_fence_ring_emit(struct radeo
- void cayman_ring_ib_execute(struct radeon_device *rdev, struct radeon_ib *ib)
- {
- 	struct radeon_ring *ring = &rdev->ring[ib->ring];
-+	u32 cp_coher_cntl = PACKET3_FULL_CACHE_ENA | PACKET3_TC_ACTION_ENA |
-+		PACKET3_SH_ACTION_ENA;
- 
- 	/* set to DX10/11 mode */
- 	radeon_ring_write(ring, PACKET3(PACKET3_MODE_CONTROL, 0));
-@@ -1381,14 +1382,11 @@ void cayman_ring_ib_execute(struct radeo
- 			  (ib->vm ? (ib->vm->id << 24) : 0));
- 
- 	/* flush read cache over gart for this vmid */
--	radeon_ring_write(ring, PACKET3(PACKET3_SET_CONFIG_REG, 1));
--	radeon_ring_write(ring, (CP_COHER_CNTL2 - PACKET3_SET_CONFIG_REG_START) >> 2);
--	radeon_ring_write(ring, ib->vm ? ib->vm->id : 0);
- 	radeon_ring_write(ring, PACKET3(PACKET3_SURFACE_SYNC, 3));
--	radeon_ring_write(ring, PACKET3_TC_ACTION_ENA | PACKET3_SH_ACTION_ENA);
-+	radeon_ring_write(ring, PACKET3_ENGINE_ME | cp_coher_cntl);
- 	radeon_ring_write(ring, 0xFFFFFFFF);
- 	radeon_ring_write(ring, 0);
--	radeon_ring_write(ring, 10); /* poll interval */
-+	radeon_ring_write(ring, ((ib->vm ? ib->vm->id : 0) << 24) | 10); /* poll interval */
- }
- 
- static void cayman_cp_enable(struct radeon_device *rdev, bool enable)
---- a/drivers/gpu/drm/radeon/nid.h
-+++ b/drivers/gpu/drm/radeon/nid.h
-@@ -1154,6 +1154,7 @@
- #              define PACKET3_DB_ACTION_ENA        (1 << 26)
- #              define PACKET3_SH_ACTION_ENA        (1 << 27)
- #              define PACKET3_SX_ACTION_ENA        (1 << 28)
-+#              define PACKET3_ENGINE_ME            (1 << 31)
- #define	PACKET3_ME_INITIALIZE				0x44
- #define		PACKET3_ME_INITIALIZE_DEVICE_ID(x) ((x) << 16)
- #define	PACKET3_COND_WRITE				0x45
+ 	if (rdev->wb.use_event) {
+ 		u64 addr = rdev->fence_drv[fence->ring].gpu_addr;
+ 		/* flush read cache over gart */
+ 		radeon_ring_write(ring, PACKET3(PACKET3_SURFACE_SYNC, 3));
+-		radeon_ring_write(ring, PACKET3_TC_ACTION_ENA |
+-					PACKET3_VC_ACTION_ENA |
+-					PACKET3_SH_ACTION_ENA);
++		radeon_ring_write(ring, cp_coher_cntl);
+ 		radeon_ring_write(ring, 0xFFFFFFFF);
+ 		radeon_ring_write(ring, 0);
+ 		radeon_ring_write(ring, 10); /* poll interval */
+@@ -2575,9 +2578,7 @@ void r600_fence_ring_emit(struct radeon_
+ 	} else {
+ 		/* flush read cache over gart */
+ 		radeon_ring_write(ring, PACKET3(PACKET3_SURFACE_SYNC, 3));
+-		radeon_ring_write(ring, PACKET3_TC_ACTION_ENA |
+-					PACKET3_VC_ACTION_ENA |
+-					PACKET3_SH_ACTION_ENA);
++		radeon_ring_write(ring, cp_coher_cntl);
+ 		radeon_ring_write(ring, 0xFFFFFFFF);
+ 		radeon_ring_write(ring, 0);
+ 		radeon_ring_write(ring, 10); /* poll interval */
+--- a/drivers/gpu/drm/radeon/r600d.h
++++ b/drivers/gpu/drm/radeon/r600d.h
+@@ -1547,6 +1547,7 @@
+ #              define PACKET3_CP_DMA_CMD_DAIC      (1 << 29)
+ #define	PACKET3_SURFACE_SYNC				0x43
+ #              define PACKET3_CB0_DEST_BASE_ENA    (1 << 6)
++#              define PACKET3_FULL_CACHE_ENA       (1 << 20) /* r7xx+ only */
+ #              define PACKET3_TC_ACTION_ENA        (1 << 23)
+ #              define PACKET3_VC_ACTION_ENA        (1 << 24)
+ #              define PACKET3_CB_ACTION_ENA        (1 << 25)
 
 
