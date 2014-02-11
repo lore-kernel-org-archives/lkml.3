@@ -1,102 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755205AbaBKTca (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:32:30 -0500
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:51847 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754141AbaBKTc0 (ORCPT
+	id S1754138AbaBKTHx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:07:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40370 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751359AbaBKTHt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:32:26 -0500
+	Tue, 11 Feb 2014 14:07:49 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.10 35/79] dm thin: fix discard support to a previously shared block
+Date: Tue, 11 Feb 2014 11:05:39 -0800
+Message-Id: <20140211184721.951861167@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
+References: <20140211184720.928667275@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-In-Reply-To: <20140211184511.GA32425@kroah.com>
-References: <CA+O4pCJAL_Dqrt0mF5rbErBXbLTALx8Rrs1+vB3JmT=+rT0jCg@mail.gmail.com>
-	<CA+O4pC+bHC1Bo4ERSfos8fL+FdnwXTTu_EE=rfd9eFkY7432Jg@mail.gmail.com>
-	<CA+O4pCJ5xUQwRem3rvZbvv7K8BEnMW983Qq_vR0tVzwAwmVS6A@mail.gmail.com>
-	<CA+O4pCJ9dFuwrcVF2b5MsreUb4NJX8t6664i3XHM9CYrdN7VzA@mail.gmail.com>
-	<20140120193510.GC5545@xanatos>
-	<CA+O4pC+inTZBSVJDBs4PfaDv0et3ZT+eN-1epThRJMztdgQryQ@mail.gmail.com>
-	<063D6719AE5E284EB5DD2968C1650D6D0F6B8058@AcuExch.aculab.com>
-	<CA+O4pCKedNsBcLoVP6T0BHT6sq00D+XNHLT790UDgdx-r7TL4Q@mail.gmail.com>
-	<52F80C28.5040709@gmail.com>
-	<CA+O4pCL8gUqFs7zTJZ+0UftOq_jALpg=rsmz3hSypOPr2qZg7Q@mail.gmail.com>
-	<20140211184511.GA32425@kroah.com>
-Date: Tue, 11 Feb 2014 20:32:25 +0100
-Message-ID: <CA+O4pCLR8ztYv2p0yGMpP6qA7fH=V4zpv5Q7fzfsY0RSORo-dg@mail.gmail.com>
-Subject: Re: [BUGREPORT] Linux USB 3.0
-From: Markus Rechberger <mrechberger@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Robert Hancock <hancockrwd@gmail.com>,
-        David Laight <David.Laight@aculab.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 7:45 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Tue, Feb 11, 2014 at 07:29:47PM +0100, Markus Rechberger wrote:
->> On Mon, Feb 10, 2014 at 12:15 AM, Robert Hancock <hancockrwd@gmail.com> wrote:
->> > On 08/02/14 03:00 AM, Markus Rechberger wrote:
->> >>
->> >> On Tue, Feb 4, 2014 at 10:31 AM, David Laight <David.Laight@aculab.com>
->> >> wrote:
->> >>>
->> >>> From: Markus Rechberger
->> >>>>>>
->> >>>>>> Dec 27 23:23:50 solist kernel: [   36.118245] xhci_hcd 0000:00:14.0:
->> >>>>>> ERROR Transfer event TRB DMA
->> >>>>
->> >>>> ptr
->> >>>>>
->> >>>>>
->> >>>>> These messages might be harmless.  The 3.0 kernel contains a fix for
->> >>>>> Intel Panther Point xHCI hosts that suppresses those messages, commit
->> >>>>> ad808333d8201d53075a11bc8dd83b81f3d68f0b "Intel xhci: Ignore spurious
->> >>>>> successful event."
->> >>>>>
->> >>>>> A later commit extends that to all xHCI 1.0 hosts, commit
->> >>>>> 07f3cb7c28bf3f4dd80bfb136cf45810c46ac474 "usb: host: xhci: Enable
->> >>>>> XHCI_SPURIOUS_SUCCESS for all controllers with xhci 1.0"  That was
->> >>>>> queued for 3.11 and marked to be backported into stable kernels as old
->> >>>>> as 3.0.
->> >>>
->> >>>
->> >>> I see the same error message on the 0.96 ASMedia controller when
->> >>> the rx buffers for the ax88179_178a driver cross 64k boundaries.
->> >>>
->> >>> So this isn't confined to 1.0 controllers.
->> >>>
->> >>
->> >> Sarah,
->> >>
->> >> since there is no response yet, is there anyone at Intel dedicated at
->> >> working on USB 3.0?
->> >> We are also getting more and more negative USB 3.0 feedback with Linux
->> >
->> >
->> > Still nobody appears to have provided the requested debugging information
->> > that was requested. So there is not much that can be done upstream to debug
->> > things based only on vague reports, especially when not using current kernel
->> > versions.
->> >
->>
->> Next kernel crash report, this time a Synology NAS System:
->> http://support.sundtek.com/index.php/topic,1511.0.html
->
-> That kernel has a closed source kernel module loaded, no community
-> member can look at it, sorry, please get support from the company that
-> wrote that module.
->
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-I'm going to collect all XHCI issues we get here as a reference,
-unfortunately we're busy with our own hardware so we don't have the
-time to dig into USB 3.0 Kernel issues at the moment. All that can be
-done is collecting the feedback and maybe help to translate between
-German and English. So if someone wants to volunteer to fix some
-issues (eg Intel) just drop me a line. As Sarah indicated there are
-already several issues mentioned within this post.
+------------------
 
-Markus
+From: Joe Thornber <ejt@redhat.com>
+
+commit 19fa1a6756ed9e92daa9537c03b47d6b55cc2316 upstream.
+
+If a snapshot is created and later deleted the origin dm_thin_device's
+snapshotted_time will have been updated to reflect the snapshot's
+creation time.  The 'shared' flag in the dm_thin_lookup_result struct
+returned from dm_thin_find_block() is an approximation based on
+snapshotted_time -- this is done to avoid 0(n), or worse, time
+complexity.  In this case, the shared flag would be true.
+
+But because the 'shared' flag reflects an approximation a block can be
+incorrectly assumed to be shared (e.g. false positive for 'shared'
+because the snapshot no longer exists).  This could result in discards
+issued to a thin device not being passed down to the pool's underlying
+data device.
+
+To fix this we double check that a thin block is really still in-use
+after a mapping is removed using dm_pool_block_is_used().  If the
+reference count for a block is now zero the discard is allowed to be
+passed down.
+
+Also add a 'definitely_not_shared' member to the dm_thin_new_mapping
+structure -- reflects that the 'shared' flag in the response from
+dm_thin_find_block() can only be held as definitive if false is
+returned.
+
+Resolves: https://bugzilla.redhat.com/show_bug.cgi?id=1043527
+
+Signed-off-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/md/dm-thin-metadata.c |   20 ++++++++++++++++++++
+ drivers/md/dm-thin-metadata.h |    2 ++
+ drivers/md/dm-thin.c          |   14 ++++++++++++--
+ 3 files changed, 34 insertions(+), 2 deletions(-)
+
+--- a/drivers/md/dm-thin-metadata.c
++++ b/drivers/md/dm-thin-metadata.c
+@@ -1349,6 +1349,12 @@ dm_thin_id dm_thin_dev_id(struct dm_thin
+ 	return td->id;
+ }
+ 
++/*
++ * Check whether @time (of block creation) is older than @td's last snapshot.
++ * If so then the associated block is shared with the last snapshot device.
++ * Any block on a device created *after* the device last got snapshotted is
++ * necessarily not shared.
++ */
+ static bool __snapshotted_since(struct dm_thin_device *td, uint32_t time)
+ {
+ 	return td->snapshotted_time > time;
+@@ -1457,6 +1463,20 @@ int dm_thin_remove_block(struct dm_thin_
+ 
+ 	return r;
+ }
++
++int dm_pool_block_is_used(struct dm_pool_metadata *pmd, dm_block_t b, bool *result)
++{
++	int r;
++	uint32_t ref_count;
++
++	down_read(&pmd->root_lock);
++	r = dm_sm_get_count(pmd->data_sm, b, &ref_count);
++	if (!r)
++		*result = (ref_count != 0);
++	up_read(&pmd->root_lock);
++
++	return r;
++}
+ 
+ bool dm_thin_changed_this_transaction(struct dm_thin_device *td)
+ {
+--- a/drivers/md/dm-thin-metadata.h
++++ b/drivers/md/dm-thin-metadata.h
+@@ -181,6 +181,8 @@ int dm_pool_get_data_block_size(struct d
+ 
+ int dm_pool_get_data_dev_size(struct dm_pool_metadata *pmd, dm_block_t *result);
+ 
++int dm_pool_block_is_used(struct dm_pool_metadata *pmd, dm_block_t b, bool *result);
++
+ /*
+  * Returns -ENOSPC if the new size is too small and already allocated
+  * blocks would be lost.
+--- a/drivers/md/dm-thin.c
++++ b/drivers/md/dm-thin.c
+@@ -512,6 +512,7 @@ struct dm_thin_new_mapping {
+ 	unsigned quiesced:1;
+ 	unsigned prepared:1;
+ 	unsigned pass_discard:1;
++	unsigned definitely_not_shared:1;
+ 
+ 	struct thin_c *tc;
+ 	dm_block_t virt_block;
+@@ -683,7 +684,15 @@ static void process_prepared_discard_pas
+ 	cell_defer_no_holder(tc, m->cell2);
+ 
+ 	if (m->pass_discard)
+-		remap_and_issue(tc, m->bio, m->data_block);
++		if (m->definitely_not_shared)
++			remap_and_issue(tc, m->bio, m->data_block);
++		else {
++			bool used = false;
++			if (dm_pool_block_is_used(tc->pool->pmd, m->data_block, &used) || used)
++				bio_endio(m->bio, 0);
++			else
++				remap_and_issue(tc, m->bio, m->data_block);
++		}
+ 	else
+ 		bio_endio(m->bio, 0);
+ 
+@@ -1032,7 +1041,8 @@ static void process_discard(struct thin_
+ 			 */
+ 			m = get_next_mapping(pool);
+ 			m->tc = tc;
+-			m->pass_discard = (!lookup_result.shared) && pool->pf.discard_passdown;
++			m->pass_discard = pool->pf.discard_passdown;
++			m->definitely_not_shared = !lookup_result.shared;
+ 			m->virt_block = block;
+ 			m->data_block = lookup_result.block;
+ 			m->cell = cell;
+
+
