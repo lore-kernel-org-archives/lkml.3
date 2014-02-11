@@ -1,112 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752712AbaBKDBX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 22:01:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47220 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752232AbaBKDBK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 22:01:10 -0500
-References: <8738jr5t3e.fsf@redhat.com> <20140210175246.GB2887@console-pimps.org>
-User-agent: mu4e 0.9.9.6pre2; emacs 24.3.1
-From: Madper Xie <cxie@redhat.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Madper Xie <cxie@redhat.com>, Matt Fleming <matt.fleming@intel.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi\@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        Adam Williamson <awilliam@redhat.com>
-Subject: Re: [BUG] can't boot up: unable to handle kernel paging request at ffffffffff340003
-In-reply-to: <20140210175246.GB2887@console-pimps.org>
-Date: Tue, 11 Feb 2014 11:00:52 +0800
-Message-ID: <87mwhy8iaj.fsf@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1752755AbaBKDCa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 22:02:30 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:15200 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752148AbaBKDC1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 22:02:27 -0500
+X-AuditID: cbfee690-b7f266d00000287c-a3-52f992beb360
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Arnd Bergmann'" <arnd@arndb.de>, "'Ralf Baechle'" <ralf@linux-mips.org>,
+        "'Dmitry Torokhov'" <dmitry.torokhov@gmail.com>,
+        "'Thierry Reding'" <thierry.reding@gmail.com>
+Cc: "'Linus Walleij'" <linus.walleij@linaro.org>,
+        "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
+        "'Eric Miao'" <eric.y.miao@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
+        linux-input@vger.kernel.org, linux-pwm@vger.kernel.org,
+        "'Jingoo Han'" <jg1.han@samsung.com>,
+        "'Sascha Hauer'" <s.hauer@pengutronix.de>,
+        "'Roland Stigge'" <stigge@antcom.de>
+References: <003901cf25fc$73002790$590076b0$%han@samsung.com>
+In-reply-to: <003901cf25fc$73002790$590076b0$%han@samsung.com>
+Subject: Re: [PATCH 0/7] Remove HAVE_PWM config option
+Date: Tue, 11 Feb 2014 12:02:21 +0900
+Message-id: <007801cf26d5$aeaf3040$0c0d90c0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac8l/GYGhOsBgXmsQoSPhLhnprg0iAA2IYdQ
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrAKsWRmVeSWpSXmKPExsVy+t8zQ919k34GGZw8xWrxd9IxdovDi14w
+	WuxoO85mcXnhJVaLKX+WM1lsenyN1eLmp2+sFpd3zWGzmDB1ErvF3burGC1uX+a1uLRHxeLv
+	9k0sFpOXnGW1+LlrHosDv8ecqbsZPVqae9g8fv+axOixc9Zddo871/aweRxduZbJY/OSeo/+
+	vwYefVtWMXp83iQXwBXFZZOSmpNZllqkb5fAlXG8cyVjwXPhipenTzM3MPbxdzFyckgImEh0
+	Ht/FCmGLSVy4t56ti5GLQ0hgGaPEwZ/zGWGKvt06yA6RWMQocffzOhYI5xejxKVZ28Gq2ATU
+	JL58OQxWJSKwklHiycurbCAJZoE5zBKbvySD2EICthJzG/azg9icAnYS85Z+A9stLGAmsbj7
+	Flg9i4CqxMn1z8DivED1/f9Ps0PYghI/Jt9jgZipJbF+53EmCFteYvOat8xdjBxAp6pLPPqr
+	CxIWETCSuPP9KzNEiYjEvhfvGEFukxA4wyGx6OwfFohdAhLfJh9igeiVldh0gBniY0mJgytu
+	sExglJiFZPMsJJtnIdk8C8mKBYwsqxhFUwuSC4qT0otM9IoTc4tL89L1kvNzNzFCUseEHYz3
+	DlgfYkwGWj+RWUo0OR+YevJK4g2NzYwsTE1MjY3MLc1IE1YS51V7lBQkJJCeWJKanZpakFoU
+	X1Sak1p8iJGJg1OqgTHKQFdopvEzrg9nfy+p+t+3NvFF585vEs6F8sxPP6vpvpi/Q9Lg9t3J
+	Up+iuB/kHbebczFszbQl6vs1ag56ZyY92LeH94HWByHHjCkifw0uPbnL3O1rkm8dMeWlnc/C
+	ojnTVGdpCKyrXNXnsMKoa4N/Rpfi01zzxf3Htkz/Errglc4ZNk+pmPVKLMUZiYZazEXFiQDY
+	fJRoMwMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLKsWRmVeSWpSXmKPExsVy+t9jAd29k34GGey7Y2Pxd9IxdovDi14w
+	WuxoO85mcXnhJVaLKX+WM1lsenyN1eLmp2+sFpd3zWGzmDB1ErvF3burGC1uX+a1uLRHxeLv
+	9k0sFpOXnGW1+LlrHosDv8ecqbsZPVqae9g8fv+axOixc9Zddo871/aweRxduZbJY/OSeo/+
+	vwYefVtWMXp83iQXwBXVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQl5ib
+	aqvk4hOg65aZA/SEkkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMDNJCwjjHjeOdK
+	xoLnwhUvT59mbmDs4+9i5OSQEDCR+HbrIDuELSZx4d56ti5GLg4hgUWMEnc/r2OBcH4xSlya
+	tZ0RpIpNQE3iy5fD7CAJEYGVjBJPXl5lA0kwC8xhltj8JRnEFhKwlZjbsB9sLKeAncS8pd9Y
+	QWxhATOJxd23wOpZBFQlTq5/BhbnBarv/3+aHcIWlPgx+R4LxEwtifU7jzNB2PISm9e8Ze5i
+	5AA6VV3i0V9dkLCIgJHEne9fmSFKRCT2vXjHOIFRaBaSSbOQTJqFZNIsJC0LGFlWMYqmFiQX
+	FCel5xrqFSfmFpfmpesl5+duYgQnpmdSOxhXNlgcYhTgYFTi4dX4+iNIiDWxrLgy9xCjBAez
+	kgjvWbufQUK8KYmVValF+fFFpTmpxYcYk4EencgsJZqcD0yaeSXxhsYmZkaWRmYWRibm5qQJ
+	K4nzHmi1DhQSSE8sSc1OTS1ILYLZwsTBKdXA6OWw+frcbmcFJSe1HefNs2vUakuYPryUOh3R
+	cLj+IMP6folzrbxfflZWhkZ6tv3xb1568vz7SiMjq59vXf6rHOh5IyvEbPvXLvuOeUd85Pwy
+	TRaTPeeX/5sb53/buFXliFz5VXfeVG1J18lnPdUY/5xrPSO0Ydr6RdaHvsQ1L9BbGZsg8fyn
+	EktxRqKhFnNRcSIAYX8WDJADAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday, February 10, 2014 10:07 AM, Jingoo Han wrote:
+> 
+> The HAVE_PWM symbol is only for legacy platforms that provide
+> the PWM API without using the generic framework, while PWM symbol
+> is used for PWM drivers using the generic PWM framework.
+> 
+> I looked at all HAVE_PWMs in the latest mainline kernel 3.14-rc1.
+> Three platforms are still using HAVE_PWM as below:
+> 
+> 1. ARM - PXA
+>   ./arch/arm/mach-pxa/Kconfig
+> 
+> 2. ARM - NXP LPC32XX
+>   ./arch/arm/Kconfig
+>   config ARCH_LPC32XX
+>   	select HAVE_PWM
+> 
+> 3. MIPS - Ingenic JZ4740 based machines
+>   ./arch/mips/Kconfig
+>   config MACH_JZ4740
+>   	select HAVE_PWM
+> 
+> However, the legacy PWM drivers for PXA, LPC32XX, and JZ474 were
+> already moved to the generic PWM framework.
+>   ./drivers/pwm/pwm-pxa.c
+>   ./drivers/pwm/pwm-lpc32xx.c
+>   ./drivers/pwm/pwm-jz4740.c
+> 
+> In conclusion, HAVE_PWM should be removed, because HAVE_PWM is
+> NOT required anymore.
+> 
+> Jingoo Han (7):
+>       ARM: pxa: don't select HAVE_PWM
+>       ARM: lpc32xx: don't select HAVE_PWM
+>       ARM: remove HAVE_PWM config option
+>       MIPS: jz4740: don't select HAVE_PWM
+>       Input: max8997_haptic: remove HAVE_PWM dependencies
+>       Input: pwm-beepe: remove HAVE_PWM dependencies
+>       pwm: don't use IS_ENABLED(CONFIG_HAVE_PWM)
+> 
+>  arch/arm/Kconfig           |    4 ----
+>  arch/arm/mach-pxa/Kconfig  |   15 ---------------
+>  arch/mips/Kconfig          |    1 -
+>  drivers/input/misc/Kconfig |    4 ++--
+>  include/linux/pwm.h        |    2 +-
+>  5 files changed, 3 insertions(+), 23 deletions(-)
 
-matt@console-pimps.org writes:
+(+cc Sascha Hauer, Roland Stigge)
 
-> On Mon, 10 Feb, at 03:23:33PM, Madper Xie wrote:
->> Howdy,
->> 
->> With old kernel (from 3.10 to 3.14-rc1), my hp box shows following
->> outputs:
->> ~~~
->> [    0.009166] Freeing SMP alternatives memory: 20K (ffffffff82234000 - ffffffff82239000)
->> [    0.010302] ioremap: invalid physical address 1376e01800000001
->> [    0.010303] ------------[ cut here ]------------
->> [    0.010308] WARNING: CPU: 0 PID: 0 at arch/x86/mm/ioremap.c:83 __ioremap_caller+0x357/0x380()
->
-> OK, this looks like a bogus BGRT address, that's a 64-bit physical
-> address. I suspect the BGRT address is actually 0x1376e018, but that's
-> just a guess. This looks like a BIOS bug.
->
->> ~~~
->> However the box can boot up and works well.
->> After I update kernel to 3.14-rc2, it panic when booting. Here is
->> console output:
->> ~~~
->> [    0.010366] BUG: unable to handle kernel paging request at ffffffffff340003
->> [    0.017376] IP: [<ffffffff81d85ba4>] efi_bgrt_init+0x9d/0x133
->> [    0.023153] PGD 159eb067 PUD 159ed067 PMD 16240067 PTE 9376e01800000163
->> [    0.029842] Oops: 0009 [#1] SMP 
->
-> Well, nuts. I think this is my bad. Does reverting commit 081cd62a010f
-> ("x86/efi: Allow mapping BGRT on x86-32") make things work? Or at least,
-> work as well as they did prior to -rc2?
->
-Sure.
-Yes, after revert 081cd62a it can boot up. (Of cause the ioremap failed
-as before.)
-[    0.010340] ioremap: invalid physical address 1376e01800000001
-[    0.010342] ------------[ cut here ]------------
-[    0.010346] WARNING: CPU: 0 PID: 0 at arch/x86/mm/ioremap.c:83
-__ioremap_caller+0x357/0x380()
+The same patch was already submitted by Sascha Hauer. [1]
+So, please ignore this patch. Thank you.
 
-> I wonder if we're calling early_memremap() when the fixmap slots are no
-> longer valid. Could you try building the 'urgent' branch at,
->
->   git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git
-it doesn't help, seems the same panic output:
-[    0.001341] BUG: unable to handle kernel paging request at ffffffffff340003
-[    0.008339] IP: [<ffffffff81a73794>] efi_bgrt_init+0x9d/0x133
-[    0.014111] PGD 28fb067 PUD 28fd067 PMD 2bef067 PTE 9376e01800000163
-[    0.020530] Oops: 0009 [#1] SMP 
-[    0.023792] Modules linked in:
-[    0.026864] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.14.0-rc2+ #1
-[    0.033213] Hardware name: Hewlett-Packard HP Compaq Elite 8300 SFF/3397, BIOS K01 v02.05 05/07/2012
-[    0.042341] task: ffffffff818ff460 ti: ffffffff818ec000 task.ti: ffffffff818ec000
-[    0.049822] RIP: 0010:[<ffffffff81a73794>]  [<ffffffff81a73794>] efi_bgrt_init+0x9d/0x133
-[    0.058014] RSP: 0000:ffffffff818edee0  EFLAGS: 00010202
-[    0.063325] RAX: ffffffffff340001 RBX: ffffffffff340001 RCX: ffffffff00000abf
-[    0.070456] RDX: 8000000000000163 RSI: 9376e01800000163 RDI: ffffffffff340000
-[    0.077588] RBP: ffffffff818edef8 R08: 8000000000000163 R09: 8000000000000163
-[    0.084720] R10: 00000000d9bb5000 R11: ffffffff8118907f R12: 0000000000000001
-[    0.091853] R13: 0000000000002e50 R14: 0000000000000001 R15: 0000000213d4c000
-[    0.098984] FS:  0000000000000000(0000) GS:ffff88021ea00000(0000) knlGS:0000000000000000
-[    0.107072] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[    0.112817] CR2: ffffffffff340003 CR3: 00000000028f8000 CR4: 00000000000406b0
-[    0.119952] Stack:
-[    0.121965]  0000000000000000 ffff880213d4c000 0000000000002e50 ffffffff818edf48
-[    0.129427]  ffffffff81a73311 000000f71ed85640 47ddbe4b4424ac57 a9929ff050ed979e
-[    0.136890]  ffffffffffffffff ffffffff81af0900 ffff88021ed85640 ffffffff81afa2c0
-[    0.144353] Call Trace:
-[    0.146801]  [<ffffffff81a73311>] efi_enter_virtual_mode+0x3d9/0x42c
-[    0.153162]  [<ffffffff81a56ea9>] start_kernel+0x386/0x403
-[    0.158652]  [<ffffffff81a5692c>] ? repair_env_string+0x5c/0x5c
-[    0.164569]  [<ffffffff81a56120>] ? early_idt_handlers+0x120/0x120
-[    0.170748]  [<ffffffff81a565de>] x86_64_start_reservations+0x2a/0x2c
-[    0.177188]  [<ffffffff81a5671e>] x86_64_start_kernel+0x13e/0x14d
-[    0.183284] Code: 89 c3 75 24 48 8b 05 e4 09 1f 00 be 06 00 00 00 48 8b 78 28 e8 8b d0 ff ff 48 85 c0 48 89 c3 0f 84 95 00 00 00 41 b4 01 45 84 e4 <44> 8b  
-[    0.203257] RIP  [<ffffffff81a73794>] efi_bgrt_init+0x9d/0x133
-[    0.209105]  RSP <ffffffff818edee0>
-[    0.212593] CR2: ffffffffff340003
-[    0.215914] ---[ end trace fbce8f13012fb82c ]---
-[    0.220533] Kernel panic - not syncing: Fatal exception
-[    0.225758] Rebooting in 3 seconds..
-[    0.229211] ACPI MEMORY or I/O RESET_REG.
+[1] https://lkml.org/lkml/2014/1/16/262
 
--- 
-Thanks,
-Madper
+Best regards,
+Jingoo Han
+
+> 
+> I would like to merge these patches as below:
+> 
+> 1. Through arm-soc tree
+>   [PATCH 1/7] ARM: pxa: don't select HAVE_PWM
+>   [PATCH 2/7] ARM: lpc32xx: don't select HAVE_PWM
+>   [PATCH 3/7] ARM: remove HAVE_PWM config option
+> 
+> 2. Through MIPS tree
+>   [PATCH 4/7] MIPS: jz4740: don't select HAVE_PWM
+> 
+> 3. Through Input tree
+>   [PATCH 5/7] Input: max8997_haptic: remove HAVE_PWM dependencies
+>   [PATCH 6/7] Input: pwm-beepe: remove HAVE_PWM dependencies
+> 
+> 4. Through PWM tree
+>   [PATCH 7/7] pwm: don't use IS_ENABLED(CONFIG_HAVE_PWM)
+> 
+> After merging these patches, all HAVE_PWM will be removed from
+> the mainline kernel. Thank you. :-)
+> 
+> Best regards,
+> Jingoo Han
+
