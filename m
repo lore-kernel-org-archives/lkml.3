@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754695AbaBKThx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:37:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40361 "EHLO
+	id S932211AbaBKTjA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:39:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40357 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754088AbaBKTHr (ORCPT
+	with ESMTP id S1754082AbaBKTHq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:07:47 -0500
+	Tue, 11 Feb 2014 14:07:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Boaz Harrosh <bharrosh@panasas.com>,
         Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.10 33/79] pnfs: Proper delay for NFS4ERR_RECALLCONFLICT in layout_get_done
-Date: Tue, 11 Feb 2014 11:05:37 -0800
-Message-Id: <20140211184721.889028749@linuxfoundation.org>
+Subject: [PATCH 3.10 31/79] NFSv4.1: Handle errors correctly in nfs41_walk_client_list
+Date: Tue, 11 Feb 2014 11:05:35 -0800
+Message-Id: <20140211184721.827588757@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
 References: <20140211184720.928667275@linuxfoundation.org>
@@ -29,89 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Boaz Harrosh <bharrosh@panasas.com>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit ed7e5423014ad89720fcf315c0b73f2c5d0c7bd2 upstream.
+commit 64590daa9e0dfb3aad89e3ab9230683b76211d5b upstream.
 
-An NFS4ERR_RECALLCONFLICT is returned by server from a GET_LAYOUT
-only when a Server Sent a RECALL do to that GET_LAYOUT, or
-the RECALL and GET_LAYOUT crossed on the wire.
-In any way this means we want to wait at most until in-flight IO
-is finished and the RECALL can be satisfied.
+Both nfs41_walk_client_list and nfs40_walk_client_list expect the
+'status' variable to be set to the value -NFS4ERR_STALE_CLIENTID
+if the loop fails to find a match.
+The problem is that the 'pos->cl_cons_state > NFS_CS_READY' changes
+the value of 'status', and sets it either to the value '0' (which
+indicates success), or to the value EINTR.
 
-So a proper wait here is more like 1/10 of a second, not 15 seconds
-like we have now. In case of a server bug we delay exponentially
-longer on each retry.
-
-Current code totally craps out performance of very large files on
-most pnfs-objects layouts, because of how the map changes when the
-file has grown into the next raid group.
-
-[Stable: This will patch back to 3.9. If there are earlier still
- maintained trees, please tell me I'll send a patch]
-
-Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
 Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4proc.c |   34 ++++++++++++++++++++++++++++++----
- 1 file changed, 30 insertions(+), 4 deletions(-)
+ fs/nfs/nfs4client.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -6232,9 +6232,9 @@ static void nfs4_layoutget_done(struct r
- 	struct nfs_server *server = NFS_SERVER(inode);
- 	struct pnfs_layout_hdr *lo;
- 	struct nfs4_state *state = NULL;
--	unsigned long timeo, giveup;
-+	unsigned long timeo, now, giveup;
+--- a/fs/nfs/nfs4client.c
++++ b/fs/nfs/nfs4client.c
+@@ -324,9 +324,10 @@ int nfs40_walk_client_list(struct nfs_cl
+ 			prev = pos;
  
--	dprintk("--> %s\n", __func__);
-+	dprintk("--> %s tk_status => %d\n", __func__, -task->tk_status);
- 
- 	if (!nfs41_sequence_done(task, &lgp->res.seq_res))
- 		goto out;
-@@ -6242,12 +6242,38 @@ static void nfs4_layoutget_done(struct r
- 	switch (task->tk_status) {
- 	case 0:
- 		goto out;
-+	/*
-+	 * NFS4ERR_LAYOUTTRYLATER is a conflict with another client
-+	 * (or clients) writing to the same RAID stripe
-+	 */
- 	case -NFS4ERR_LAYOUTTRYLATER:
-+	/*
-+	 * NFS4ERR_RECALLCONFLICT is when conflict with self (must recall
-+	 * existing layout before getting a new one).
-+	 */
- 	case -NFS4ERR_RECALLCONFLICT:
- 		timeo = rpc_get_timeout(task->tk_client);
- 		giveup = lgp->args.timestamp + timeo;
--		if (time_after(giveup, jiffies))
--			task->tk_status = -NFS4ERR_DELAY;
-+		now = jiffies;
-+		if (time_after(giveup, now)) {
-+			unsigned long delay;
-+
-+			/* Delay for:
-+			 * - Not less then NFS4_POLL_RETRY_MIN.
-+			 * - One last time a jiffie before we give up
-+			 * - exponential backoff (time_now minus start_attempt)
-+			 */
-+			delay = max_t(unsigned long, NFS4_POLL_RETRY_MIN,
-+				    min((giveup - now - 1),
-+					now - lgp->args.timestamp));
-+
-+			dprintk("%s: NFS4ERR_RECALLCONFLICT waiting %lu\n",
-+				__func__, delay);
-+			rpc_delay(task, delay);
-+			task->tk_status = 0;
-+			rpc_restart_call_prepare(task);
-+			goto out; /* Do not call nfs4_async_handle_error() */
-+		}
- 		break;
- 	case -NFS4ERR_EXPIRED:
- 	case -NFS4ERR_BAD_STATEID:
+ 			status = nfs_wait_client_init_complete(pos);
+-			spin_lock(&nn->nfs_client_lock);
+ 			if (status < 0)
+-				continue;
++				goto out;
++			status = -NFS4ERR_STALE_CLIENTID;
++			spin_lock(&nn->nfs_client_lock);
+ 		}
+ 		if (pos->cl_cons_state != NFS_CS_READY)
+ 			continue;
+@@ -464,7 +465,8 @@ int nfs41_walk_client_list(struct nfs_cl
+ 			}
+ 			spin_lock(&nn->nfs_client_lock);
+ 			if (status < 0)
+-				continue;
++				break;
++			status = -NFS4ERR_STALE_CLIENTID;
+ 		}
+ 		if (pos->cl_cons_state != NFS_CS_READY)
+ 			continue;
 
 
