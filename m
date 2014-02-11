@@ -1,110 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753776AbaBKVtR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 16:49:17 -0500
-Received: from sandeen.net ([63.231.237.45]:33157 "EHLO sandeen.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752759AbaBKVtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 16:49:15 -0500
-Message-ID: <52FA9ADA.9040803@sandeen.net>
-Date: Tue, 11 Feb 2014 15:49:14 -0600
-From: Eric Sandeen <sandeen@sandeen.net>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752916AbaBKVwX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 16:52:23 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:50047 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752529AbaBKVwV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 16:52:21 -0500
+Message-ID: <52FA9B92.5000705@linaro.org>
+Date: Tue, 11 Feb 2014 22:52:18 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
-References: <20140211172707.GA1749@redhat.com> <20140211210841.GM13647@dastard>
-In-Reply-To: <20140211210841.GM13647@dastard>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+CC: mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
+        rjw@rjwysocki.net, preeti@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] idle: Add more comments to the code
+References: <1392131491-5265-1-git-send-email-daniel.lezcano@linaro.org> <1392131491-5265-5-git-send-email-daniel.lezcano@linaro.org> <alpine.LFD.2.11.1402111245400.17677@knanqh.ubzr>
+In-Reply-To: <alpine.LFD.2.11.1402111245400.17677@knanqh.ubzr>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/11/14, 3:08 PM, Dave Chinner wrote:
-> On Tue, Feb 11, 2014 at 12:27:07PM -0500, Dave Jones wrote:
->> BUG: sleeping function called from invalid context at mm/mempool.c:203
->> in_atomic(): 0, irqs_disabled(): 1, pid: 27511, name: trinity-c3
->> 5 locks held by trinity-c3/27511:
->>  #0:  (sb_writers#9){......}, at: [<ffffffff831df3b4>] mnt_want_write+0x24/0x50
->>  #1:  (&type->i_mutex_dir_key#3){......}, at: [<ffffffff831cced4>] do_last.isra.51+0x294/0x11f0
->>  #2:  (sb_internal#2){......}, at: [<ffffffffc03225c4>] xfs_trans_alloc+0x24/0x40 [xfs]
->>  #3:  (&(&ip->i_lock)->mr_lock/1){......}, at: [<ffffffffc036447f>] xfs_ilock+0x16f/0x1b0 [xfs]
->>  #4:  (&(&ip->i_lock)->mr_lock){......}, at: [<ffffffffc03646d4>] xfs_ilock_nowait+0x184/0x200 [xfs]
->> CPU: 3 PID: 27511 Comm: trinity-c3 Not tainted 3.14.0-rc2+ #111 
->>  ffffffff83a3fd56 0000000045a3849a ffff88009f368f60 ffffffff8372afea
->>  0000000000000000 ffff88009f368f88 ffffffff8309ddb5 0000000000000010
->>  ffff880243566288 0000000000000008 ffff88009f369008 ffffffff831534d3
->> Call Trace:
->>  [<ffffffff8372afea>] dump_stack+0x4e/0x7a
->>  [<ffffffff8309ddb5>] __might_sleep+0x105/0x150
->>  [<ffffffff831534d3>] mempool_alloc+0xa3/0x170
->>  [<ffffffff831a955a>] ? deactivate_slab+0x51a/0x590
->>  [<ffffffff831f8fd6>] bio_alloc_bioset+0x156/0x210
->>  [<ffffffffc0308231>] _xfs_buf_ioapply+0x1c1/0x3c0 [xfs]
->>  [<ffffffffc03798f2>] ? xlog_bdstrat+0x22/0x60 [xfs]
->>  [<ffffffffc030849b>] xfs_buf_iorequest+0x6b/0xf0 [xfs]
->>  [<ffffffffc03798f2>] xlog_bdstrat+0x22/0x60 [xfs]
->>  [<ffffffffc037ba87>] xlog_sync+0x3a7/0x5b0 [xfs]
->>  [<ffffffffc037bd9f>] xlog_state_release_iclog+0x10f/0x120 [xfs]
->>  [<ffffffffc037c840>] xlog_write+0x6f0/0x800 [xfs]
->>  [<ffffffffc037e061>] xlog_cil_push+0x2f1/0x410 [xfs]
->>  [<ffffffffc037e948>] xlog_cil_force_lsn+0x1d8/0x210 [xfs]
->>  [<ffffffffc03428a8>] ? xfs_bmbt_get_all+0x18/0x20 [xfs]
->>  [<ffffffffc037cc40>] _xfs_log_force+0x70/0x290 [xfs]
->>  [<ffffffff830a4edd>] ? get_parent_ip+0xd/0x50
->>  [<ffffffffc037ce86>] xfs_log_force+0x26/0xb0 [xfs]
->>  [<ffffffffc03076e6>] ? _xfs_buf_find+0x1f6/0x3c0 [xfs]
->>  [<ffffffffc03074e3>] xfs_buf_lock+0x133/0x140 [xfs]
->>  [<ffffffffc03076e6>] _xfs_buf_find+0x1f6/0x3c0 [xfs]
->>  [<ffffffffc030796a>] xfs_buf_get_map+0x2a/0x1b0 [xfs]
->>  [<ffffffffc0383c61>] xfs_trans_get_buf_map+0x1a1/0x240 [xfs]
->>  [<ffffffffc034e03d>] xfs_da_get_buf+0xbd/0x100 [xfs]
->>  [<ffffffffc0356869>] xfs_dir3_data_init+0x59/0x1d0 [xfs]
->>  [<ffffffffc03526db>] ? xfs_dir2_grow_inode+0x13b/0x150 [xfs]
->>  [<ffffffffc0354ede>] xfs_dir2_sf_to_block+0x17e/0x7b0 [xfs]
->>  [<ffffffffc0351f5a>] ? xfs_dir2_sfe_get_ino+0x1a/0x20 [xfs]
->>  [<ffffffffc035e9b4>] ? xfs_dir2_sf_check.isra.7+0x114/0x1b0 [xfs]
->>  [<ffffffffc034c24f>] ? xfs_da_compname+0x1f/0x30 [xfs]
->>  [<ffffffffc035f503>] ? xfs_dir2_sf_lookup+0x303/0x310 [xfs]
->>  [<ffffffffc035f858>] xfs_dir2_sf_addname+0x348/0x6d0 [xfs]
->>  [<ffffffffc031970d>] ? xfs_setup_inode+0x1cd/0x320 [xfs]
->>  [<ffffffffc03529a4>] xfs_dir_createname+0x184/0x1e0 [xfs]
->>  [<ffffffffc03663d9>] xfs_create+0x469/0x580 [xfs]
->>  [<ffffffffc0318864>] xfs_vn_mknod+0xc4/0x1e0 [xfs]
->>  [<ffffffffc0318993>] xfs_vn_create+0x13/0x20 [xfs]
->>  [<ffffffff831ccc15>] vfs_create+0x95/0xc0
->>  [<ffffffff831cd638>] do_last.isra.51+0x9f8/0x11f0
->>  [<ffffffff831c9e11>] ? link_path_walk+0x81/0x870
->>  [<ffffffff831cdef9>] path_openat+0xc9/0x620
->>  [<ffffffff8331cc02>] ? put_dec+0x72/0x90
->>  [<ffffffff831ceb6d>] do_filp_open+0x4d/0xb0
->>  [<ffffffff831bc4ae>] file_open_name+0xfe/0x160
->>  [<ffffffff831bc554>] filp_open+0x44/0x60
->>  [<ffffffff83221862>] do_coredump+0x602/0xf60
->>  [<ffffffff83081358>] get_signal_to_deliver+0x2b8/0x6b0
->>  [<ffffffff830024d7>] do_signal+0x57/0x9d0
->>  [<ffffffff8311115e>] ? __acct_update_integrals+0x8e/0x120
->>  [<ffffffff83730000>] ? __schedule+0x60/0x850
->>  [<ffffffff8373a1db>] ? preempt_count_sub+0x6b/0xf0
->>  [<ffffffff83735a31>] ? _raw_spin_unlock+0x31/0x50
->>  [<ffffffff830ab671>] ? vtime_account_user+0x91/0xa0
->>  [<ffffffff8314f57b>] ? context_tracking_user_exit+0x9b/0x100
->>  [<ffffffff83002eac>] do_notify_resume+0x5c/0xa0
->>  [<ffffffff83736746>] retint_signal+0x46/0x90
-> 
-> There's nowhere in this XFS stack that disables interrupts, so I
-> thinks it's either above or below XFS that is causing this problem.
+On 02/11/2014 06:51 PM, Nicolas Pitre wrote:
+> On Tue, 11 Feb 2014, Daniel Lezcano wrote:
+>
+>> The idle main function is a complex and a critical function. Added more
+>> comments to the code.
+>>
+>> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+>
+> Few questions below.  In any case,:
+>
+> Acked-by: Nicolas Pitre <nico@linaro.org>
 
-any chance the stack got blown & corrupted things such that it
-only _looks_ like irqs are disabled?
+Thanks for the review Nico !
 
--Eric
+Answer below.
 
-> Cheers,
-> 
-> Dave.
-> 
+>> ---
+>>   kernel/sched/idle.c |   37 +++++++++++++++++++++++++++++++++----
+>>   1 file changed, 33 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
+>> index 72b5926..36ff1a7 100644
+>> --- a/kernel/sched/idle.c
+>> +++ b/kernel/sched/idle.c
+>> @@ -86,19 +86,34 @@ static int cpuidle_idle_call(void)
+>>   	if (cpu_idle_force_poll || tick_check_broadcast_expired())
+>>   		return cpu_idle_poll();
+>>
+>> +	/*
+>> +	 * Check if the idle task must rescheduled. If it is the case,
+>
+> s/must/must be/
+>
+>> +	 * exit the function after re-enabling the local irq and set
+>> +	 * again the polling flag
+>> +	 */
+>>   	if (current_clr_polling_and_test()) {
+>>   		local_irq_enable();
+>>   		__current_set_polling();
+>>   		return 0;
+>>   	}
+>>
+>> +	/*
+>> +	 * During the idle period, stop measuring the disabled irqs
+>> +	 * critical sections latencies
+>> +	 */
+>>   	stop_critical_timings();
+>> +
+>> +	/*
+>> +	 * Tell the RCU framework we are entering an idle section,
+>> +	 * so no more rcu read side critical sections and one more
+>> +	 * step to the grace period
+>> +	 */
+>>   	rcu_idle_enter();
+>>
+>> -	/* Ask the governor for the next state, this call can fail for
+>> -	 * different reasons: cpuidle is not enabled or an idle state
+>> -	 * fulfilling the constraints was not found. In this case, we fall
+>> -	 * back to the default idle function
+>> +	/*
+>> +	 * Ask the governor to choose an idle state it thinks it is
+>> +	 * convenient to go to. There is *always* a convenient idle
+>> +	 * state but the call could fail if cpuidle is not enabled
+>>   	 */
+>>   	next_state = cpuidle_select(drv, dev);
+>>   	if (next_state < 0) {
+>> @@ -106,6 +121,10 @@ static int cpuidle_idle_call(void)
+>>   		goto out;
+>>   	}
+>>
+>> +	/*
+>> +	 * The idle task must be scheduled, it is pointless to go to idle,
+>> +	 * just update no idle residency and get out of this function
+>> +	 */
+>>   	if (need_resched()) {
+>>   		dev->last_residency = 0;
+>>   		/* give the governor an opportunity to reflect on the outcome */
+>
+> Is this if block really necessary?  We already have need_resched() being
+> monitored in the outer loop.  Are cpuidle_select() or rcu_idle_enter()
+> likely to spend a significant amount of time justifying a recheck here?
+
+That's a question I have been always asking myself.
+
+The cpuidle_select function could spend some time for:
+
+1. reflecting the idle time for the statistics of the previous idle 
+period. This processing is post-poned when exiting an idle state via the 
+'need_update' field in the cpuidle structure. I guess, this is because 
+it can take a while and we want to exit asap to reduce the wakeup latency.
+
+2. there are some processing to choose the idle state.
+
+I don't know what is the rational here to use need_resched at this place 
+except to 'abort' an idle state arbitrarily after some experimentation 
+for better reactivity. I am wondering if the multiple need_resched() we 
+find in the call stack for some idle states makes really sense and 
+doesn't denote a lack of control of what is happening in the idle path 
+vs system activity or a lack of confidence in the idle duration prediction.
+
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
