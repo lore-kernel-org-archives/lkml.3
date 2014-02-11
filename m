@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753777AbaBKTHM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:07:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40145 "EHLO
+	id S932373AbaBKT5V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:57:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40167 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753732AbaBKTHH (ORCPT
+	with ESMTP id S1753772AbaBKTHM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:07:07 -0500
+	Tue, 11 Feb 2014 14:07:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Giandomenico De Tullio <ghisha@gmail.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [PATCH 3.12 085/107] i915: remove pm_qos request on error
-Date: Tue, 11 Feb 2014 11:05:51 -0800
-Message-Id: <20140211184750.625808953@linuxfoundation.org>
+        Dave Airlie <airlied@redhat.com>
+Subject: [PATCH 3.12 091/107] drm: ast,cirrus,mgag200: use drm_can_sleep
+Date: Tue, 11 Feb 2014 11:05:57 -0800
+Message-Id: <20140211184750.793693250@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -30,49 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Dave Airlie <airlied@redhat.com>
 
-commit 22accca01713b13dac386ca90b787aadf88f6551 upstream.
+commit f4b4718b61d1d5a7442a4fd6863ea80c3a10e508 upstream.
 
-Not removing pm qos request and free memory for it can cause crash,
-when some other driver use pm qos. For example, this oops:
+these 3 were checking in_interrupt but we have situations where
+calling vunmap under this could cause a BUG to be hit in
+smp_call_function_many. Use the drm_can_sleep macro instead,
+which should stop this path from been taken in this case.
 
-BUG: unable to handle kernel paging request at fffffffffffffff8
-IP: [<ffffffff81307a6b>] plist_add+0x5b/0xd0
-Call Trace:
- [<ffffffff810acf25>] pm_qos_update_target+0x125/0x1e0
- [<ffffffff810ad071>] pm_qos_add_request+0x91/0x100
- [<ffffffffa053ec14>] e1000_open+0xe4/0x5b0 [e1000e]
-
-was caused by earlier i915 probe failure:
-
-[drm:i915_report_and_clear_eir] *ERROR* EIR stuck: 0x00000010, masking
-[drm:init_ring_common] *ERROR* render ring initialization failed ctl 0001f001 head 00003004 tail 00000000 start 00003000
-[drm:i915_driver_load] *ERROR* failed to init modeset
-i915: probe of 0000:00:02.0 failed with error -5
-
-Bug report:
-http://bugzilla.redhat.com/show_bug.cgi?id=1057533
-
-Reported-by: Giandomenico De Tullio <ghisha@gmail.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-[danvet: Drop unnecessary code movement.]
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_dma.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/ast/ast_fb.c          |    2 +-
+ drivers/gpu/drm/cirrus/cirrus_fbdev.c |    2 +-
+ drivers/gpu/drm/mgag200/mgag200_fb.c  |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@ -1683,6 +1683,7 @@ out_gem_unload:
- 
- 	intel_teardown_gmbus(dev);
- 	intel_teardown_mchbar(dev);
-+	pm_qos_remove_request(&dev_priv->pm_qos);
- 	destroy_workqueue(dev_priv->wq);
- out_mtrrfree:
- 	arch_phys_wc_del(dev_priv->gtt.mtrr);
+--- a/drivers/gpu/drm/ast/ast_fb.c
++++ b/drivers/gpu/drm/ast/ast_fb.c
+@@ -65,7 +65,7 @@ static void ast_dirty_update(struct ast_
+ 	 * then the BO is being moved and we should
+ 	 * store up the damage until later.
+ 	 */
+-	if (!in_interrupt())
++	if (!drm_can_sleep())
+ 		ret = ast_bo_reserve(bo, true);
+ 	if (ret) {
+ 		if (ret != -EBUSY)
+--- a/drivers/gpu/drm/cirrus/cirrus_fbdev.c
++++ b/drivers/gpu/drm/cirrus/cirrus_fbdev.c
+@@ -39,7 +39,7 @@ static void cirrus_dirty_update(struct c
+ 	 * then the BO is being moved and we should
+ 	 * store up the damage until later.
+ 	 */
+-	if (!in_interrupt())
++	if (!drm_can_sleep())
+ 		ret = cirrus_bo_reserve(bo, true);
+ 	if (ret) {
+ 		if (ret != -EBUSY)
+--- a/drivers/gpu/drm/mgag200/mgag200_fb.c
++++ b/drivers/gpu/drm/mgag200/mgag200_fb.c
+@@ -41,7 +41,7 @@ static void mga_dirty_update(struct mga_
+ 	 * then the BO is being moved and we should
+ 	 * store up the damage until later.
+ 	 */
+-	if (!in_interrupt())
++	if (!drm_can_sleep())
+ 		ret = mgag200_bo_reserve(bo, true);
+ 	if (ret) {
+ 		if (ret != -EBUSY)
 
 
