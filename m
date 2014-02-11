@@ -1,108 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754731AbaBKTOL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:14:11 -0500
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:55807 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752951AbaBKTOI (ORCPT
+	id S1754740AbaBKTOm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:14:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40621 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754376AbaBKTIf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:14:08 -0500
-Message-ID: <52FA7539.4030907@linux.vnet.ibm.com>
-Date: Wed, 12 Feb 2014 00:38:41 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Tue, 11 Feb 2014 14:08:35 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.4 20/30] drm/radeon: set the full cache bit for fences on r7xx+
+Date: Tue, 11 Feb 2014 11:06:20 -0800
+Message-Id: <20140211184647.721797077@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140211184647.149512538@linuxfoundation.org>
+References: <20140211184647.149512538@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Toshi Kani <toshi.kani@hp.com>, paulus@samba.org, rusty@rustcorp.com.au,
-        peterz@infradead.org, tglx@linutronix.de, akpm@linux-foundation.org,
-        mingo@kernel.org, paulmck@linux.vnet.ibm.com, tj@kernel.org,
-        walken@google.com, ego@linux.vnet.ibm.com, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH 01/51] CPU hotplug: Provide lockless versions of	callback
- registration functions
-References: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com> <20140205220447.19080.9460.stgit@srivatsabhat.in.ibm.com> <1392081980.5612.123.camel@misato.fc.hp.com> <52F9ED11.5010800@linux.vnet.ibm.com> <20140211171553.GA26036@redhat.com>
-In-Reply-To: <20140211171553.GA26036@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021119-9574-0000-0000-00000BE6FAD6
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2014 10:45 PM, Oleg Nesterov wrote:
-> On 02/11, Srivatsa S. Bhat wrote:
->>
->> +static DECLARE_RWSEM(cpu_hotplug_rwsem);
->> +
->> +void cpu_notifier_register_begin(void)
->> +{
->> +	down_read(&cpu_hotplug_rwsem);
->> +}
->> +
->> +void cpu_notifier_register_end(void)
->> +{
->> +	up_read(&cpu_hotplug_rwsem);
->> +}
->> +
->>  /* Serializes the updates to cpu_online_mask, cpu_present_mask */
->>  static DEFINE_MUTEX(cpu_add_remove_lock);
->>  
->> @@ -32,12 +45,14 @@ static DEFINE_MUTEX(cpu_add_remove_lock);
->>   */
->>  void cpu_maps_update_begin(void)
->>  {
->> +	down_write(&cpu_hotplug_rwsem);
->>  	mutex_lock(&cpu_add_remove_lock);
->>  }
->>  
->>  void cpu_maps_update_done(void)
->>  {
->>  	mutex_unlock(&cpu_add_remove_lock);
->> +	up_write(&cpu_hotplug_rwsem);
->>  }
-> 
-> I am a bit confused... If we do this, why we can't simply turn
-> cpu_add_remove_lock into rw_semaphore?
-> 
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Short answer: Being a mutex, cpu_add_remove_lock ensures that the updates to
-the cpu notifier chain get serialized. If we make that an rw-semaphore, then
-the notifier chain mutations (during callback registration) will run in
-parallel, wreaking havoc.
+------------------
 
-Long answer: There are two distinct phases in the critical section involving
-the callback registration - one that should run in parallel with other
-readers (other such critical sections) and the other one which should run
-serially, as depicted below.
+From: Alex Deucher <alexander.deucher@amd.com>
 
-	cpu_notifier_register_begin();                |  Run in parallel
-                                                      |  with similar phases
-	for_each_online_cpu(cpu)                      |  from other subsystems.
-		init_cpu(cpu);                        |
+commit d45b964a22cad962d3ede1eba8d24f5cee7b2a92 upstream.
 
-	/* Updates the cpu notifier chain. */
-	register_cpu_notifier(&foobar_cpu_notifier); ||| -- Must run serially
+Needed to properly flush the read caches for fences.
 
-	cpu_notifier_register_done();
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
+---
+ drivers/gpu/drm/radeon/r600.c  |   13 +++++++------
+ drivers/gpu/drm/radeon/r600d.h |    1 +
+ 2 files changed, 8 insertions(+), 6 deletions(-)
 
-So, for the first part, we can use an rw-semaphore, to allow the init
-routines of various subsystems to run in parallel. For the second part,
-we need strict mutual exclusion; so we can use the cpu_add_remove_lock
-mutex as it is. But it so happens that the length of the critical section
-for both these locks are exactly the same on the hotplug writer side - they
-both need to cover the full hotplug code, including the CPU_POST_DEAD stage.
+--- a/drivers/gpu/drm/radeon/r600.c
++++ b/drivers/gpu/drm/radeon/r600.c
+@@ -2313,14 +2313,17 @@ void r600_fence_ring_emit(struct radeon_
+ 			  struct radeon_fence *fence)
+ {
+ 	struct radeon_ring *ring = &rdev->ring[fence->ring];
++	u32 cp_coher_cntl = PACKET3_TC_ACTION_ENA | PACKET3_VC_ACTION_ENA |
++		PACKET3_SH_ACTION_ENA;
++
++	if (rdev->family >= CHIP_RV770)
++		cp_coher_cntl |= PACKET3_FULL_CACHE_ENA;
+ 
+ 	if (rdev->wb.use_event) {
+ 		u64 addr = rdev->fence_drv[fence->ring].gpu_addr;
+ 		/* flush read cache over gart */
+ 		radeon_ring_write(ring, PACKET3(PACKET3_SURFACE_SYNC, 3));
+-		radeon_ring_write(ring, PACKET3_TC_ACTION_ENA |
+-					PACKET3_VC_ACTION_ENA |
+-					PACKET3_SH_ACTION_ENA);
++		radeon_ring_write(ring, cp_coher_cntl);
+ 		radeon_ring_write(ring, 0xFFFFFFFF);
+ 		radeon_ring_write(ring, 0);
+ 		radeon_ring_write(ring, 10); /* poll interval */
+@@ -2334,9 +2337,7 @@ void r600_fence_ring_emit(struct radeon_
+ 	} else {
+ 		/* flush read cache over gart */
+ 		radeon_ring_write(ring, PACKET3(PACKET3_SURFACE_SYNC, 3));
+-		radeon_ring_write(ring, PACKET3_TC_ACTION_ENA |
+-					PACKET3_VC_ACTION_ENA |
+-					PACKET3_SH_ACTION_ENA);
++		radeon_ring_write(ring, cp_coher_cntl);
+ 		radeon_ring_write(ring, 0xFFFFFFFF);
+ 		radeon_ring_write(ring, 0);
+ 		radeon_ring_write(ring, 10); /* poll interval */
+--- a/drivers/gpu/drm/radeon/r600d.h
++++ b/drivers/gpu/drm/radeon/r600d.h
+@@ -873,6 +873,7 @@
+ #define	PACKET3_INDIRECT_BUFFER				0x32
+ #define	PACKET3_SURFACE_SYNC				0x43
+ #              define PACKET3_CB0_DEST_BASE_ENA    (1 << 6)
++#              define PACKET3_FULL_CACHE_ENA       (1 << 20) /* r7xx+ only */
+ #              define PACKET3_TC_ACTION_ENA        (1 << 23)
+ #              define PACKET3_VC_ACTION_ENA        (1 << 24)
+ #              define PACKET3_CB_ACTION_ENA        (1 << 25)
 
-I do agree that this approach introduces yet another lock in the hotplug
-path. However, we can nicely abstract it into APIs that the rest of the
-subsystems can call (as shown above), without needing to know the internal
-lock ordering etc.
-
-Thoughts?
-
-Regards,
-Srivatsa S. Bhat
 
