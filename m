@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751639AbaBKKq4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 05:46:56 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:56153 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751482AbaBKKqr (ORCPT
+	id S1751481AbaBKKw0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 05:52:26 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:50433 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751001AbaBKKwZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 05:46:47 -0500
-From: SeongJae Park <sj38.park@gmail.com>
-To: sjenning@linux.vnet.ibm.com, trivial@kernel.org
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        SeongJae Park <sj38.park@gmail.com>
-Subject: [PATCH 2/2] mm/zswap: update zsmalloc in comment to zbud
-Date: Tue, 11 Feb 2014 19:46:30 +0900
-Message-Id: <1392115590-15260-2-git-send-email-sj38.park@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1392115590-15260-1-git-send-email-sj38.park@gmail.com>
-References: <1392115590-15260-1-git-send-email-sj38.park@gmail.com>
+	Tue, 11 Feb 2014 05:52:25 -0500
+Date: Tue, 11 Feb 2014 11:52:17 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Don Zickus <dzickus@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Joe Mario <jmario@redhat.com>, Richard Fowles <fowles@inreach.com>
+Subject: Re: [PATCH 00/21] perf, c2c: Add new tool to analyze cacheline
+ contention on NUMA systems
+Message-ID: <20140211105217.GS9987@twins.programming.kicks-ass.net>
+References: <1392053356-23024-1-git-send-email-dzickus@redhat.com>
+ <20140210212955.GC5002@laptop.programming.kicks-ass.net>
+ <CABPqkBRzvfcdKGG4yY9q1PmtVL5Z=9H1RzHg8QDMN42a7=AF6A@mail.gmail.com>
+ <20140211071401.GG27965@twins.programming.kicks-ass.net>
+ <CABPqkBRn+AVUA-KTx-JQ28j1NhE4pDQe5vjb5NKGx0jrZq8g_Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBRn+AVUA-KTx-JQ28j1NhE4pDQe5vjb5NKGx0jrZq8g_Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-zswap used zsmalloc before and now using zbud. But, some comments
-saying it use zsmalloc yet. Fix the trivial problems.
+On Tue, Feb 11, 2014 at 11:35:45AM +0100, Stephane Eranian wrote:
+> On Tue, Feb 11, 2014 at 8:14 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> >
+> > That blows; how much is missing?
+> 
+> They need to annotate load and stores. I asked for that feature a while ago.
+> It will come.
 
-Signed-off-by: SeongJae Park <sj38.park@gmail.com>
----
- mm/zswap.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+And there is no way to deduce the information? We have type information
+for all arguments and local variables, right? So we can follow that.
 
-diff --git a/mm/zswap.c b/mm/zswap.c
-index 5b22453..25312eb 100644
---- a/mm/zswap.c
-+++ b/mm/zswap.c
-@@ -165,7 +165,7 @@ static void zswap_comp_exit(void)
-  *            be held while changing the refcount.  Since the lock must
-  *            be held, there is no reason to also make refcount atomic.
-  * offset - the swap offset for the entry.  Index into the red-black tree.
-- * handle - zsmalloc allocation handle that stores the compressed page data
-+ * handle - zbud allocation handle that stores the compressed page data
-  * length - the length in bytes of the compressed page data.  Needed during
-  *          decompression
-  */
-@@ -282,7 +282,7 @@ static void zswap_rb_erase(struct rb_root *root, struct zswap_entry *entry)
- }
- 
- /*
-- * Carries out the common pattern of freeing and entry's zsmalloc allocation,
-+ * Carries out the common pattern of freeing and entry's zbud allocation,
-  * freeing the entry itself, and decrementing the number of stored pages.
-  */
- static void zswap_free_entry(struct zswap_tree *tree,
--- 
-1.8.1.2
+struct foo {
+	int ponies;
+	int moar_ponies;
+};
 
+struct bar {
+	int my_ponies;
+	struct foo *foo;
+};
+
+int moo(struct bar *bar)
+{
+	return bar->foo->moar_ponies;
+}
+
+Since we have the argument type, we can find the type for both loads,
+the first load:
+
+  *bar+8, we know is: struct foo * bar::foo
+  *foo+4, we know is: int foo::moar_ponies
+
+Or am I missing something?
