@@ -1,95 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752214AbaBKRfE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 12:35:04 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:50862 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751937AbaBKRfB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 12:35:01 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19jqhWK+4+4O6kgXjrPLrZH6//KTPmd7qI=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 012815249ED
-Date: Tue, 11 Feb 2014 12:34:46 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Josh Cartwright <joshc@codeaurora.org>, Andrew Lunn <andrew@lunn.ch>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH 4/8] ARM: mvebu: make use of
- of_find_matching_node_and_match
-Message-ID: <20140211173446.GC27395@titan.lakedaemon.net>
-References: <1392135847-30791-1-git-send-email-joshc@codeaurora.org>
- <1392135847-30791-5-git-send-email-joshc@codeaurora.org>
- <20140211165314.GA8533@titan.lakedaemon.net>
- <20140211181048.6934bdd3@skate>
- <52FA5E75.7030402@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52FA5E75.7030402@free-electrons.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752643AbaBKRfa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 12:35:30 -0500
+Received: from mga11.intel.com ([192.55.52.93]:20057 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752158AbaBKRf2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 12:35:28 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,826,1384329600"; 
+   d="scan'208";a="473510327"
+Message-ID: <1392140185.28501.29.camel@sagar-desktop>
+Subject: Re: [Intel-gfx] [PATCH v5 11/11] drm/i915: Calling rotate and
+ inverse rotate transformations after clipping
+From: Sagar Arun Kamble <sagar.a.kamble@intel.com>
+To: Ville =?ISO-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
+Cc: intel-gfx@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Date: Tue, 11 Feb 2014 23:06:25 +0530
+In-Reply-To: <20140211145615.GT3891@intel.com>
+References: <1392017478-4945-1-git-send-email-sagar.a.kamble@intel.com>
+	 <1392017478-4945-12-git-send-email-sagar.a.kamble@intel.com>
+	 <20140210133257.GK3891@intel.com> <1392118351.28501.21.camel@sagar-desktop>
+	 <20140211145615.GT3891@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 06:31:33PM +0100, Gregory CLEMENT wrote:
-> On 11/02/2014 18:10, Thomas Petazzoni wrote:
-> > Dear Jason Cooper,
+On Tue, 2014-02-11 at 16:56 +0200, Ville Syrjälä wrote:
+> On Tue, Feb 11, 2014 at 05:02:31PM +0530, Sagar Arun Kamble wrote:
+> > On Mon, 2014-02-10 at 15:32 +0200, Ville Syrjälä wrote:
+> > > On Mon, Feb 10, 2014 at 01:01:18PM +0530, sagar.a.kamble@intel.com wrote:
+> > > > From: Sagar Kamble <sagar.a.kamble@intel.com>
+> > > > 
+> > > > With clipped sprites these transformations are not working. these
+> > > > functions transform complete sprite irrespective of clipping present.
+> > > > This leads to invisible portion of sprite show up when rotate 180 if
+> > > > it was out of visible area before.
+> > > > 
+> > > > v4: Moved rotate transform for source rectangle after clipping.
+> > > > Added rotate and inverse rotate transform for destination rect.
+> > > 
+> > > Still NAK.
+> > > 
+> > > I just pushed rotation support to my glplane test app [1], and with
+> > > with that my rotated clipping code works exactly as intended.
+> > > 
+> > > [1] git://gitorious.org/vsyrjala/glplane.git
+> > I tried this app. I think I am considering 180 degree rotation of
+> > clipped sprite plane differently. I have captured output with these
+> > rotate transforms moved before(clip-rotated) and after(rotate-clipped)
+> > clipping code.
 > > 
-> > On Tue, 11 Feb 2014 11:53:14 -0500, Jason Cooper wrote:
+> > Which is valid? Rotating entire sprite and then clipping or Rotating
+> > clipped portion?
 > > 
-> >>> -	np = of_find_matching_node(NULL, of_system_controller_table);
-> >>> +	np = of_find_matching_node_and_match(NULL, of_system_controller_table,
-> >>> +					     &match);
-> >>>  	if (np) {
-> >>> -		const struct of_device_id *match =
-> >>> -		    of_match_node(of_system_controller_table, np);
-> >>
-> >>
-> >>> -		BUG_ON(!match);
-> >>
-> >> Gregory, is it ok to remove this?  It was added with the original code
-> >> submission for mach-mvebu.  mvebu_restart() will handle this
-> >> gracefully...
+> > Reference and Rotated output is attached FYI.
 > > 
-> > The BUG_ON here can normally never be reached. If
-> > of_find_matching_node() returns a non-NULL result, then of_match_node()
-> > should also return a non-NULL result.
-> > 
-> > Or I'm missing something :)
+> > If rotating entire sprite is correct then this patch 11/11 is not needed
+> > and can be abandoned.
 > 
-> No you're almost right!
+> The way I think of these things is roughly this:
 > 
-> The only case we can get it, would be if we were declaring something like:
+> You have the user specified source rectangle, where the coordinates specify
+> the viewport into the framebuffer. This coordinate space is oriented the
+> same was as the framebuffer itself, ie. the first pixel of the
+> framebuffer is at coordinates 0,0. So plane rotation doesn't affect this
+> at all.
 > 
-> static struct of_device_id of_system_controller_table[] = {
-> 	{
-> 		.compatible = "foo,bar-controller",
-> 	},
-> [...]
+> Then you have the user specified destination/crtc rectangle, where the
+> coordinates specify the position of the plane within the crtc coordinate
+> space. So the first visible pixel the pipe will push out is at
+> coordinates 0,0. So again plane rotation doesn't affect this.
 > 
-> instead of
+> Then you have the rotation which simply specifies the transformation to
+> be applied to the pixels when they "move" from the source rectangle to
+> the destination rectangle. So w/ 0 degree rotation the pixel at
+> src_x,src_y in the framebuffer will appear at position crtc_x,crtc_y
+> on the crtc output. With 180 degree rotation the pixel at src_x,src_y
+> will appear at crtc_x+crtc_w-1,crtc_y+crtc_h-1.
 > 
-> static struct of_device_id of_system_controller_table[] = {
-> 	{
-> 		.compatible = "foo,bar",
-> 		.data = (void *) &bar_controller,
-> 	},
-> [...]
+> As clipping happens in the crtc coordinate space, we need to orient
+> the source coordindates the same way to get the correct clipping result.
+> So for example with 0 degrees rotation clipping the left side of the
+> destination rectangle must result in clipping the left side of the source
+> rectangle as well. And with 180 degree rotation clipping the destination
+> rectangle on the left side must result in clipping the source rectangle
+> on the right side. Left and right in each case referring to the original
+> unrotate coordinates.
 > 
-> This test is very paranoid, so I agree to remove it.
+> So let's say we have the following situation w/ 180 degree rotation.
+> The letters inside the rects represented specific named pixels,
+> the FB rectangle represents the FB as specified by addfb2 ioctl,
+> the CRTC rectangle represents the pipe output (0,0 -> PIPESRC.w,h):
+> 
+> FB:                 CRTC:
+> 0,0 ___________     0.0 __________
+>     |  abcd   |         |         |
+>     |  efgh   |         |         |
+>     |_________|         |hgfe     |
+>                         |dcba_____|
+> unclipped coordinates specified by user:
+> src_x=2,src_y=0     crtc_x=0,crtc_y=2
+> src_w=4.src_h=2     crtc_w=4,crtc_h=2
+> 
+> clipped coordinates:
+> src_x=2,src_y=0     crtc_x=0,crtc_y=2
+> src_w=4.src_h=2     crtc_w=4,crtc_h=2
 > 
 > 
-> Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> Then the user moves the sprite one pixel to the left resulting on some
+> clipping (the X pixels). Note that the unclipped source coordinates do
+> not change here at all, in fact crtc_x is the only thing changed by the
+> user:
+> 
+> FB:                 CRTC:
+> 0,0 ___________     0.0 __________
+>     |  abcX   |         |         |
+>     |  efgX   |         |         |
+>     |_________|         Xgfe      |
+>                         Xcba______|
+> unclipped coordinates specified by user:
+> src_x=2,src_y=0     crtc_x=-1,crtc_y=2
+> src_w=4.src_h=2     crtc_w= 4,crtc_h=2
+> 
+> clipped coordinates:
+> src_x=2,src_y=0     crtc_x=0,crtc_y=2
+> src_w=3.src_h=2     crtc_w=3,crtc_h=2
+> 
 
-Ok, great!  Josh, do you want us to take the two mvebu patches through
-mvebu/arm-soc?  Or would you prefer to take them?
 
-thx,
+Understood this now. Thank you Ville for providing this elaborate
+graphical view of the rotation cases.
 
-Jason.
+-Sagar
+
