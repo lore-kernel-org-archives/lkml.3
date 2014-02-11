@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752271AbaBKNG4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 08:06:56 -0500
+	id S1751919AbaBKNER (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 08:04:17 -0500
 Received: from mailout3.w1.samsung.com ([210.118.77.13]:32478 "EHLO
 	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751933AbaBKNES (ORCPT
+	with ESMTP id S1751071AbaBKNEO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 08:04:18 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-9b-52fa1fcff58b
+	Tue, 11 Feb 2014 08:04:14 -0500
+X-AuditID: cbfec7f5-b7fc96d000004885-18-52fa1fcb6f99
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
         Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
@@ -16,583 +16,88 @@ Cc: Kyungmin Park <kyungmin.park@samsung.com>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 08/14] mfd: sec: Add support for S2MPS14
-Date: Tue, 11 Feb 2014 14:03:51 +0100
-Message-id: <1392123837-5517-9-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH 00/14] mfd/regulator/rtc: sec: Add support for S2MPS14
+Date: Tue, 11 Feb 2014 14:03:43 +0100
+Message-id: <1392123837-5517-1-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1392123837-5517-1-git-send-email-k.kozlowski@samsung.com>
-References: <1392123837-5517-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCJMWRmVeSWpSXmKPExsVy+t/xK7rn5X8FGZy/bGixccZ6VovXLwwt
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrAJMWRmVeSWpSXmKPExsVy+t/xK7qn5X8FGXzabGyxccZ6VovXLwwt
 	zja9Ybe4//Uoo8XlXXPYLGac38dksfbIXXaL092sFhdXfGFy4PS4c20Pm8e8k4EefVtWMXp8
-	3iQXwBLFZZOSmpNZllqkb5fAlbF0UgdzwfuqikU/p7A1MC5O6WLk4JAQMJE4vUi9i5ETyBST
-	uHBvPRuILSSwlFFiz6TkLkYuILuPSaL740MmkASbgLHE5uVL2EASIgKbGSUWf7/KCuIwCxxl
-	lJje+5YJZKqwgIXE8StBICaLgKrE5+XyIL28Am4SC879ZoLYqyAxZ5INSJhTwF2i79N/NpCw
-	EFDJ8v7YCYy8CxgZVjGKppYmFxQnpeca6hUn5haX5qXrJefnbmKEhNSXHYyLj1kdYhTgYFTi
-	4d2g+DNIiDWxrLgy9xCjBAezkgjvF+FfQUK8KYmVValF+fFFpTmpxYcYmTg4pRoYF13Qdr3x
-	40rt3Zs8ZkrNjEcEvfWkNmhO/NtXqzBPM0KSIem3kmvmXkXn9qO/e4oSL9kXKU/+8ol7+4F5
-	2lzr78i8+yN04+maWw/KL6pwJcyNmj5xt0zmu48PZu9/3mK9q2h6uXP2bMukYrNVd6PZr8sX
-	uitMLpyhH/0o7e05LeuMCL5vf+asUWIpzkg01GIuKk4EAJzPlMEHAgAA
+	3iQXwBLFZZOSmpNZllqkb5fAlTFn4zqmggtiFW+++TUwzhHsYuTkkBAwkbi38hsjhC0mceHe
+	erYuRi4OIYGljBJvWraxQDh9TBLzVkxnBqliEzCW2Lx8CViViMBmRonF36+ygjjMAkcZJab3
+	vmUCqRIWcJM4/3MiK4jNIqAqsfL2ITCbFyj+fOk7oLEcQPsUJOZMspnAyL2AkWEVo2hqaXJB
+	cVJ6rpFecWJucWleul5yfu4mRkiofN3BuPSY1SFGAQ5GJR5eja8/goRYE8uKK3MPMUpwMCuJ
+	8H4R/hUkxJuSWFmVWpQfX1Sak1p8iJGJg1OqgVFNPTFbLLz5Z/UHnlWM//ukzf/yqRbclNz0
+	yPlj2XYRm2fOf1bIrv2+Jrvc8GuX8ufLsSozfi2XPpI6RWLu/J+fth5ctCA+0VtG8vjJBdY5
+	MytWny9oTpDcUvbdlF1oc88E9Yb0eRWLKhsOeKXYPdVr+CX78dLVZXoB9X88F5fH/J5TJ3+g
+	gVeJpTgj0VCLuag4EQD88KIJ8wEAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for S2MPS14 PMIC device to the MFD sec-core driver.
+Hi,
+
+
+This patchset adds support for S2MPS14 device to the Samsung MFD driver family.
+
 The S2MPS14 is similar to S2MPS11 but it has fewer regulators, two
 clocks instead of three and a little different registers layout.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- drivers/mfd/sec-core.c              |   48 +++++++++--
- drivers/mfd/sec-irq.c               |   89 +++++++++++++++++++-
- include/linux/mfd/samsung/core.h    |    1 +
- include/linux/mfd/samsung/irq.h     |   27 +++++++
- include/linux/mfd/samsung/rtc.h     |   56 +++++++++++--
- include/linux/mfd/samsung/s2mps14.h |  152 +++++++++++++++++++++++++++++++++++
- 6 files changed, 361 insertions(+), 12 deletions(-)
+The patchset is organized in following way:
+1. Patches from 1 to 7 clean up the S2MPS1X/S5M876X drivers and prepare
+   for adding S2MPS14 support (some symbol renaming is needed).
+2. Patches from 8 to 10 add support for S2MPS14 to the MFD and regulator
+   drivers. They depend on previous patches.
+3. Patches 11 and 12 add opmode support for S2MPS14 regulator driver.
+4. Patches 13 and 14 add support for S2MPS14 RTC and they depend on previous
+   MFD and RTC patches.
+
+Probably the best way to get everything working and merged into the linux-next
+would be to obtain ACK-s from all maintainers and to put all the patches into
+the mfd-next tree.
+
+
+The patchset is based on linux-next: next-20140211 *with* today's patch:
+mfd: sec-core: Fix possible NULL pointer dereference when i2c_new_dummy error
+
+
+TODO
+====
+Add support for S2MPS14 to the S2MPS11 clock driver. The patch
+is actually ready but it is based on the "Add support for clocks in S5M8767"
+   http://thread.gmane.org/gmane.linux.kernel/1587881/focus=1587882
+which didn't get their way into clk-next. I will wait for them.
+
+
+Krzysztof Kozlowski (14):
+  mfd: sec: Add maximum RTC register for regmap config
+  mfd: sec: Select different RTC regmaps for devices
+  mfd/rtc: sec/sec: Rename SEC* symbols to S5M
+  rtc: s5m: Remove undocumented time init on first boot
+  mfd: sec: Use consistent S2MPS11 RTC alarm interrupt indexes
+  regulator: s2mps11: Constify regulator_desc array
+  regulator: s2mps11: Choose number of supported regulators during
+    probe
+  mfd: sec: Add support for S2MPS14
+  regulator: s2mps11: Add support for S2MPS14 regulators
+  Documentation: mfd: s2mps11: Document support for S2MPS14
+  regulator: s2mps11: Add opmode for S2MPS14 regulators
+  Documentation: mfd/regulator: s2mps11: Document the "op_mode"
+    bindings
+  rtc: s5m: Support different register layout
+  rtc: s5m: Add support for S2MPS14 RTC
+
+ Documentation/devicetree/bindings/mfd/s2mps11.txt |   58 ++-
+ drivers/mfd/sec-core.c                            |   57 ++-
+ drivers/mfd/sec-irq.c                             |   97 ++++-
+ drivers/regulator/s2mps11.c                       |  393 +++++++++++++++++----
+ drivers/rtc/rtc-s5m.c                             |  284 ++++++++++-----
+ include/linux/mfd/samsung/core.h                  |    1 +
+ include/linux/mfd/samsung/irq.h                   |   31 +-
+ include/linux/mfd/samsung/rtc.h                   |  132 ++++---
+ include/linux/mfd/samsung/s2mps14.h               |  169 +++++++++
+ 9 files changed, 1000 insertions(+), 222 deletions(-)
  create mode 100644 include/linux/mfd/samsung/s2mps14.h
 
-diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
-index 8504de82b7e0..6e5343255633 100644
---- a/drivers/mfd/sec-core.c
-+++ b/drivers/mfd/sec-core.c
-@@ -27,6 +27,7 @@
- #include <linux/mfd/samsung/irq.h>
- #include <linux/mfd/samsung/rtc.h>
- #include <linux/mfd/samsung/s2mps11.h>
-+#include <linux/mfd/samsung/s2mps14.h>
- #include <linux/mfd/samsung/s5m8763.h>
- #include <linux/mfd/samsung/s5m8767.h>
- #include <linux/regmap.h>
-@@ -69,6 +70,16 @@ static const struct mfd_cell s2mps11_devs[] = {
- 	}
- };
- 
-+static const struct mfd_cell s2mps14_devs[] = {
-+	{
-+		.name = "s2mps14-pmic",
-+	}, {
-+		.name = "s2mps14-rtc",
-+	}, {
-+		.name = "s2mps14-clk",
-+	}
-+};
-+
- #ifdef CONFIG_OF
- static struct of_device_id sec_dt_match[] = {
- 	{	.compatible = "samsung,s5m8767-pmic",
-@@ -77,6 +88,9 @@ static struct of_device_id sec_dt_match[] = {
- 	{	.compatible = "samsung,s2mps11-pmic",
- 		.data = (void *)S2MPS11X,
- 	},
-+	{	.compatible = "samsung,s2mps14-pmic",
-+		.data = (void *)S2MPS14X,
-+	},
- 	{},
- };
- #endif
-@@ -120,6 +134,15 @@ static const struct regmap_config s2mps11_regmap_config = {
- 	.cache_type = REGCACHE_FLAT,
- };
- 
-+static const struct regmap_config s2mps14_regmap_config = {
-+	.reg_bits = 8,
-+	.val_bits = 8,
-+
-+	.max_register = S2MPS14_REG_LDODSCH3,
-+	.volatile_reg = s2mps11_volatile,
-+	.cache_type = REGCACHE_FLAT,
-+};
-+
- static const struct regmap_config s5m8763_regmap_config = {
- 	.reg_bits = 8,
- 	.val_bits = 8,
-@@ -138,13 +161,20 @@ static const struct regmap_config s5m8767_regmap_config = {
- 	.cache_type = REGCACHE_FLAT,
- };
- 
--static const struct regmap_config sec_rtc_regmap_config = {
-+static const struct regmap_config s5m_rtc_regmap_config = {
- 	.reg_bits = 8,
- 	.val_bits = 8,
- 
- 	.max_register = S5M_RTC_REG_MAX,
- };
- 
-+static const struct regmap_config s2mps14_rtc_regmap_config = {
-+	.reg_bits = 8,
-+	.val_bits = 8,
-+
-+	.max_register = S2MPS_RTC_REG_MAX,
-+};
-+
- #ifdef CONFIG_OF
- /*
-  * Only the common platform data elements for s5m8767 are parsed here from the
-@@ -239,19 +269,23 @@ static int sec_pmic_probe(struct i2c_client *i2c,
- 		 * However we must pass something to devm_regmap_init_i2c()
- 		 * so use S5M-like regmap config even though it wouldn't work.
- 		 */
--		regmap_rtc = &sec_rtc_regmap_config;
-+		regmap_rtc = &s5m_rtc_regmap_config;
-+		break;
-+	case S2MPS14X:
-+		regmap = &s2mps14_regmap_config;
-+		regmap_rtc = &s2mps14_rtc_regmap_config;
- 		break;
- 	case S5M8763X:
- 		regmap = &s5m8763_regmap_config;
--		regmap_rtc = &sec_rtc_regmap_config;
-+		regmap_rtc = &s5m_rtc_regmap_config;
- 		break;
- 	case S5M8767X:
- 		regmap = &s5m8767_regmap_config;
--		regmap_rtc = &sec_rtc_regmap_config;
-+		regmap_rtc = &s5m_rtc_regmap_config;
- 		break;
- 	default:
- 		regmap = &sec_regmap_config;
--		regmap_rtc = &sec_rtc_regmap_config;
-+		regmap_rtc = &s5m_rtc_regmap_config;
- 		break;
- 	}
- 
-@@ -302,6 +336,10 @@ static int sec_pmic_probe(struct i2c_client *i2c,
- 		ret = mfd_add_devices(sec_pmic->dev, -1, s2mps11_devs,
- 				      ARRAY_SIZE(s2mps11_devs), NULL, 0, NULL);
- 		break;
-+	case S2MPS14X:
-+		ret = mfd_add_devices(sec_pmic->dev, -1, s2mps14_devs,
-+				      ARRAY_SIZE(s2mps14_devs), NULL, 0, NULL);
-+		break;
- 	default:
- 		/* If this happens the probe function is problem */
- 		BUG();
-diff --git a/drivers/mfd/sec-irq.c b/drivers/mfd/sec-irq.c
-index e403c293b437..64e7913aadc6 100644
---- a/drivers/mfd/sec-irq.c
-+++ b/drivers/mfd/sec-irq.c
-@@ -1,7 +1,7 @@
- /*
-  * sec-irq.c
-  *
-- * Copyright (c) 2011 Samsung Electronics Co., Ltd
-+ * Copyright (c) 2011-2014 Samsung Electronics Co., Ltd
-  *              http://www.samsung.com
-  *
-  *  This program is free software; you can redistribute  it and/or modify it
-@@ -19,6 +19,7 @@
- #include <linux/mfd/samsung/core.h>
- #include <linux/mfd/samsung/irq.h>
- #include <linux/mfd/samsung/s2mps11.h>
-+#include <linux/mfd/samsung/s2mps14.h>
- #include <linux/mfd/samsung/s5m8763.h>
- #include <linux/mfd/samsung/s5m8767.h>
- 
-@@ -89,6 +90,76 @@ static const struct regmap_irq s2mps11_irqs[] = {
- 	},
- };
- 
-+static const struct regmap_irq s2mps14_irqs[] = {
-+	[S2MPS14_IRQ_PWRONF] = {
-+		.reg_offset = 0,
-+		.mask = S2MPS11_IRQ_PWRONF_MASK,
-+	},
-+	[S2MPS14_IRQ_PWRONR] = {
-+		.reg_offset = 0,
-+		.mask = S2MPS11_IRQ_PWRONR_MASK,
-+	},
-+	[S2MPS14_IRQ_JIGONBF] = {
-+		.reg_offset = 0,
-+		.mask = S2MPS11_IRQ_JIGONBF_MASK,
-+	},
-+	[S2MPS14_IRQ_JIGONBR] = {
-+		.reg_offset = 0,
-+		.mask = S2MPS11_IRQ_JIGONBR_MASK,
-+	},
-+	[S2MPS14_IRQ_ACOKBF] = {
-+		.reg_offset = 0,
-+		.mask = S2MPS11_IRQ_ACOKBF_MASK,
-+	},
-+	[S2MPS14_IRQ_ACOKBR] = {
-+		.reg_offset = 0,
-+		.mask = S2MPS11_IRQ_ACOKBR_MASK,
-+	},
-+	[S2MPS14_IRQ_PWRON1S] = {
-+		.reg_offset = 0,
-+		.mask = S2MPS11_IRQ_PWRON1S_MASK,
-+	},
-+	[S2MPS14_IRQ_MRB] = {
-+		.reg_offset = 0,
-+		.mask = S2MPS11_IRQ_MRB_MASK,
-+	},
-+	[S2MPS14_IRQ_RTC60S] = {
-+		.reg_offset = 1,
-+		.mask = S2MPS11_IRQ_RTC60S_MASK,
-+	},
-+	[S2MPS14_IRQ_RTCA1] = {
-+		.reg_offset = 1,
-+		.mask = S2MPS11_IRQ_RTCA1_MASK,
-+	},
-+	[S2MPS14_IRQ_RTCA0] = {
-+		.reg_offset = 1,
-+		.mask = S2MPS11_IRQ_RTCA0_MASK,
-+	},
-+	[S2MPS14_IRQ_SMPL] = {
-+		.reg_offset = 1,
-+		.mask = S2MPS11_IRQ_SMPL_MASK,
-+	},
-+	[S2MPS14_IRQ_RTC1S] = {
-+		.reg_offset = 1,
-+		.mask = S2MPS11_IRQ_RTC1S_MASK,
-+	},
-+	[S2MPS14_IRQ_WTSR] = {
-+		.reg_offset = 1,
-+		.mask = S2MPS11_IRQ_WTSR_MASK,
-+	},
-+	[S2MPS14_IRQ_INT120C] = {
-+		.reg_offset = 2,
-+		.mask = S2MPS11_IRQ_INT120C_MASK,
-+	},
-+	[S2MPS14_IRQ_INT140C] = {
-+		.reg_offset = 2,
-+		.mask = S2MPS11_IRQ_INT140C_MASK,
-+	},
-+	[S2MPS14_IRQ_TSD] = {
-+		.reg_offset = 2,
-+		.mask = S2MPS14_IRQ_TSD_MASK,
-+	},
-+};
- 
- static const struct regmap_irq s5m8767_irqs[] = {
- 	[S5M8767_IRQ_PWRR] = {
-@@ -246,6 +317,16 @@ static const struct regmap_irq_chip s2mps11_irq_chip = {
- 	.ack_base = S2MPS11_REG_INT1,
- };
- 
-+static const struct regmap_irq_chip s2mps14_irq_chip = {
-+	.name = "s2mps14",
-+	.irqs = s2mps14_irqs,
-+	.num_irqs = ARRAY_SIZE(s2mps14_irqs),
-+	.num_regs = 3,
-+	.status_base = S2MPS14_REG_INT1,
-+	.mask_base = S2MPS14_REG_INT1M,
-+	.ack_base = S2MPS14_REG_INT1,
-+};
-+
- static const struct regmap_irq_chip s5m8767_irq_chip = {
- 	.name = "s5m8767",
- 	.irqs = s5m8767_irqs,
-@@ -297,6 +378,12 @@ int sec_irq_init(struct sec_pmic_dev *sec_pmic)
- 				  sec_pmic->irq_base, &s2mps11_irq_chip,
- 				  &sec_pmic->irq_data);
- 		break;
-+	case S2MPS14X:
-+		ret = regmap_add_irq_chip(sec_pmic->regmap_pmic, sec_pmic->irq,
-+				  IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
-+				  sec_pmic->irq_base, &s2mps14_irq_chip,
-+				  &sec_pmic->irq_data);
-+		break;
- 	default:
- 		dev_err(sec_pmic->dev, "Unknown device type %d\n",
- 			sec_pmic->device_type);
-diff --git a/include/linux/mfd/samsung/core.h b/include/linux/mfd/samsung/core.h
-index 55510444b9fd..e517b12f290f 100644
---- a/include/linux/mfd/samsung/core.h
-+++ b/include/linux/mfd/samsung/core.h
-@@ -19,6 +19,7 @@ enum sec_device_type {
- 	S5M8763X,
- 	S5M8767X,
- 	S2MPS11X,
-+	S2MPS14X,
- };
- 
- /**
-diff --git a/include/linux/mfd/samsung/irq.h b/include/linux/mfd/samsung/irq.h
-index abe1a6aae3b7..0065f6f1daf4 100644
---- a/include/linux/mfd/samsung/irq.h
-+++ b/include/linux/mfd/samsung/irq.h
-@@ -55,6 +55,33 @@ enum s2mps11_irq {
- #define S2MPS11_IRQ_INT120C_MASK	(1 << 0)
- #define S2MPS11_IRQ_INT140C_MASK	(1 << 1)
- 
-+enum s2mps14_irq {
-+	S2MPS14_IRQ_PWRONF,
-+	S2MPS14_IRQ_PWRONR,
-+	S2MPS14_IRQ_JIGONBF,
-+	S2MPS14_IRQ_JIGONBR,
-+	S2MPS14_IRQ_ACOKBF,
-+	S2MPS14_IRQ_ACOKBR,
-+	S2MPS14_IRQ_PWRON1S,
-+	S2MPS14_IRQ_MRB,
-+
-+	S2MPS14_IRQ_RTC60S,
-+	S2MPS14_IRQ_RTCA1,
-+	S2MPS14_IRQ_RTCA0,
-+	S2MPS14_IRQ_SMPL,
-+	S2MPS14_IRQ_RTC1S,
-+	S2MPS14_IRQ_WTSR,
-+
-+	S2MPS14_IRQ_INT120C,
-+	S2MPS14_IRQ_INT140C,
-+	S2MPS14_IRQ_TSD,
-+
-+	S2MPS14_IRQ_NR,
-+};
-+
-+/* Masks for interrupts are the same as in s2mps11 */
-+#define S2MPS14_IRQ_TSD_MASK		(1 << 2)
-+
- enum s5m8767_irq {
- 	S5M8767_IRQ_PWRR,
- 	S5M8767_IRQ_PWRF,
-diff --git a/include/linux/mfd/samsung/rtc.h b/include/linux/mfd/samsung/rtc.h
-index bdf0573891d0..fa0fc32c763a 100644
---- a/include/linux/mfd/samsung/rtc.h
-+++ b/include/linux/mfd/samsung/rtc.h
-@@ -1,12 +1,17 @@
--/*  rtc.h
-+/* rtc.h
-  *
-- * Copyright (c) 2011 Samsung Electronics Co., Ltd
-+ * Copyright (c) 2011-2014 Samsung Electronics Co., Ltd
-  *              http://www.samsung.com
-  *
-- *  This program is free software; you can redistribute  it and/or modify it
-- *  under  the terms of  the GNU General  Public License as published by the
-- *  Free Software Foundation;  either version 2 of the  License, or (at your
-- *  option) any later version.
-+ * This program is free software; you can redistribute  it and/or modify it
-+ * under  the terms of  the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-  *
-  */
- 
-@@ -47,15 +52,50 @@ enum s5m_rtc_reg {
- 	S5M_RTC_REG_MAX,
- };
- 
-+enum s2mps_rtc_reg {
-+	S2MPS_RTC_CTRL,
-+	S2MPS_WTSR_SMPL_CNTL,
-+	S2MPS_RTC_UDR_CON,
-+	S2MPS_RSVD,
-+	S2MPS_RTC_SEC,
-+	S2MPS_RTC_MIN,
-+	S2MPS_RTC_HOUR,
-+	S2MPS_RTC_WEEKDAY,
-+	S2MPS_RTC_DATE,
-+	S2MPS_RTC_MONTH,
-+	S2MPS_RTC_YEAR,
-+	S2MPS_ALARM0_SEC,
-+	S2MPS_ALARM0_MIN,
-+	S2MPS_ALARM0_HOUR,
-+	S2MPS_ALARM0_WEEKDAY,
-+	S2MPS_ALARM0_DATE,
-+	S2MPS_ALARM0_MONTH,
-+	S2MPS_ALARM0_YEAR,
-+	S2MPS_ALARM1_SEC,
-+	S2MPS_ALARM1_MIN,
-+	S2MPS_ALARM1_HOUR,
-+	S2MPS_ALARM1_WEEKDAY,
-+	S2MPS_ALARM1_DATE,
-+	S2MPS_ALARM1_MONTH,
-+	S2MPS_ALARM1_YEAR,
-+	S2MPS_OFFSRC,
-+
-+	S2MPS_RTC_REG_MAX,
-+};
-+
- #define RTC_I2C_ADDR		(0x0C >> 1)
- 
- #define HOUR_12			(1 << 7)
- #define HOUR_AMPM		(1 << 6)
- #define HOUR_PM			(1 << 5)
-+
- #define S5M_ALARM0_STATUS	(1 << 1)
- #define S5M_ALARM1_STATUS	(1 << 2)
- #define S5M_UPDATE_AD		(1 << 0)
- 
-+#define S2MPS_ALARM0_STATUS	(1 << 2)
-+#define S2MPS_ALARM1_STATUS	(1 << 1)
-+
- /* RTC Control Register */
- #define BCD_EN_SHIFT		0
- #define BCD_EN_MASK		(1 << BCD_EN_SHIFT)
-@@ -64,6 +104,10 @@ enum s5m_rtc_reg {
- /* RTC Update Register1 */
- #define S5M_RTC_UDR_SHIFT	0
- #define S5M_RTC_UDR_MASK	(1 << S5M_RTC_UDR_SHIFT)
-+#define S2MPS_RTC_WUDR_SHIFT	4
-+#define S2MPS_RTC_WUDR_MASK	(1 << S2MPS_RTC_WUDR_SHIFT)
-+#define S2MPS_RTC_RUDR_SHIFT	0
-+#define S2MPS_RTC_RUDR_MASK	(1 << S2MPS_RTC_RUDR_SHIFT)
- #define RTC_TCON_SHIFT		1
- #define RTC_TCON_MASK		(1 << RTC_TCON_SHIFT)
- #define S5M_RTC_TIME_EN_SHIFT	3
-diff --git a/include/linux/mfd/samsung/s2mps14.h b/include/linux/mfd/samsung/s2mps14.h
-new file mode 100644
-index 000000000000..c4bfb8edc836
---- /dev/null
-+++ b/include/linux/mfd/samsung/s2mps14.h
-@@ -0,0 +1,152 @@
-+/*
-+ * s2mps14.h
-+ *
-+ * Copyright (c) 2014 Samsung Electronics Co., Ltd
-+ *              http://www.samsung.com
-+ *
-+ * This program is free software; you can redistribute  it and/or modify it
-+ * under  the terms of  the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#ifndef __LINUX_MFD_S2MPS14_H
-+#define __LINUX_MFD_S2MPS14_H
-+
-+/* S2MPS14 registers */
-+enum s2mps14_reg {
-+	S2MPS14_REG_ID,
-+	S2MPS14_REG_INT1,
-+	S2MPS14_REG_INT2,
-+	S2MPS14_REG_INT3,
-+	S2MPS14_REG_INT1M,
-+	S2MPS14_REG_INT2M,
-+	S2MPS14_REG_INT3M,
-+	S2MPS14_REG_ST1,
-+	S2MPS14_REG_ST2,
-+	S2MPS14_REG_PWRONSRC,
-+	S2MPS14_REG_OFFSRC,
-+	S2MPS14_REG_BU_CHG,
-+	S2MPS14_REG_RTCCTRL,
-+	S2MPS14_REG_CTRL1,
-+	S2MPS14_REG_CTRL2,
-+	S2MPS14_REG_RSVD1,
-+	S2MPS14_REG_RSVD2,
-+	S2MPS14_REG_RSVD3,
-+	S2MPS14_REG_RSVD4,
-+	S2MPS14_REG_RSVD5,
-+	S2MPS14_REG_RSVD6,
-+	S2MPS14_REG_CTRL3,
-+	S2MPS14_REG_RSVD7,
-+	S2MPS14_REG_RSVD8,
-+	S2MPS14_REG_WRSTBI,
-+	S2MPS14_REG_B1CTRL1,
-+	S2MPS14_REG_B1CTRL2,
-+	S2MPS14_REG_B2CTRL1,
-+	S2MPS14_REG_B2CTRL2,
-+	S2MPS14_REG_B3CTRL1,
-+	S2MPS14_REG_B3CTRL2,
-+	S2MPS14_REG_B4CTRL1,
-+	S2MPS14_REG_B4CTRL2,
-+	S2MPS14_REG_B5CTRL1,
-+	S2MPS14_REG_B5CTRL2,
-+	S2MPS14_REG_L1CTRL,
-+	S2MPS14_REG_L2CTRL,
-+	S2MPS14_REG_L3CTRL,
-+	S2MPS14_REG_L4CTRL,
-+	S2MPS14_REG_L5CTRL,
-+	S2MPS14_REG_L6CTRL,
-+	S2MPS14_REG_L7CTRL,
-+	S2MPS14_REG_L8CTRL,
-+	S2MPS14_REG_L9CTRL,
-+	S2MPS14_REG_L10CTRL,
-+	S2MPS14_REG_L11CTRL,
-+	S2MPS14_REG_L12CTRL,
-+	S2MPS14_REG_L13CTRL,
-+	S2MPS14_REG_L14CTRL,
-+	S2MPS14_REG_L15CTRL,
-+	S2MPS14_REG_L16CTRL,
-+	S2MPS14_REG_L17CTRL,
-+	S2MPS14_REG_L18CTRL,
-+	S2MPS14_REG_L19CTRL,
-+	S2MPS14_REG_L20CTRL,
-+	S2MPS14_REG_L21CTRL,
-+	S2MPS14_REG_L22CTRL,
-+	S2MPS14_REG_L23CTRL,
-+	S2MPS14_REG_L24CTRL,
-+	S2MPS14_REG_L25CTRL,
-+	S2MPS14_REG_LDODSCH1,
-+	S2MPS14_REG_LDODSCH2,
-+	S2MPS14_REG_LDODSCH3,
-+};
-+
-+/* S2MPS14 regulator ids */
-+enum s2mps14_regulators {
-+	S2MPS14_LDO1,
-+	S2MPS14_LDO2,
-+	S2MPS14_LDO3,
-+	S2MPS14_LDO4,
-+	S2MPS14_LDO5,
-+	S2MPS14_LDO6,
-+	S2MPS14_LDO7,
-+	S2MPS14_LDO8,
-+	S2MPS14_LDO9,
-+	S2MPS14_LDO10,
-+	S2MPS14_LDO11,
-+	S2MPS14_LDO12,
-+	S2MPS14_LDO13,
-+	S2MPS14_LDO14,
-+	S2MPS14_LDO15,
-+	S2MPS14_LDO16,
-+	S2MPS14_LDO17,
-+	S2MPS14_LDO18,
-+	S2MPS14_LDO19,
-+	S2MPS14_LDO20,
-+	S2MPS14_LDO21,
-+	S2MPS14_LDO22,
-+	S2MPS14_LDO23,
-+	S2MPS14_LDO24,
-+	S2MPS14_LDO25,
-+	S2MPS14_BUCK1,
-+	S2MPS14_BUCK2,
-+	S2MPS14_BUCK3,
-+	S2MPS14_BUCK4,
-+	S2MPS14_BUCK5,
-+
-+	S2MPS14_REGULATOR_MAX,
-+};
-+
-+/* Regulator constraints for BUCKx */
-+#define S2MPS14_BUCK1235_MIN_600MV	600000
-+#define S2MPS14_BUCK4_MIN_1400MV	1400000
-+#define S2MPS14_BUCK1235_STEP_6_25MV	6250
-+#define S2MPS14_BUCK4_STEP_12_5MV	12500
-+#define S2MPS14_BUCK1235_START_SEL	0x20
-+#define S2MPS14_BUCK4_START_SEL		0x40
-+/*
-+ * Default ramp delay in uv/us. Datasheet says that ramp delay can be
-+ * controlled however it does not specify which register is used for that.
-+ * Let's assume that default value will be set.
-+ */
-+#define S2MPS14_BUCK_RAMP_DELAY		12500
-+
-+/* Regulator constraints for different types of LDOx */
-+#define S2MPS14_LDO_MIN_800MV	800000
-+#define S2MPS14_LDO_MIN_1800MV	1800000
-+#define S2MPS14_LDO_STEP_12_5MV	12500
-+#define S2MPS14_LDO_STEP_25MV	25000
-+
-+#define S2MPS14_LDO_VSEL_MASK	0x3F
-+#define S2MPS14_BUCK_VSEL_MASK	0xFF
-+#define S2MPS14_ENABLE_MASK	(0x03 << S2MPS14_ENABLE_SHIFT)
-+#define S2MPS14_ENABLE_SHIFT	6
-+#define S2MPS14_LDO_N_VOLTAGES	(S2MPS14_LDO_VSEL_MASK + 1)
-+#define S2MPS14_BUCK_N_VOLTAGES (S2MPS14_BUCK_VSEL_MASK + 1)
-+
-+#endif /*  __LINUX_MFD_S2MPS14_H */
 -- 
 1.7.9.5
 
