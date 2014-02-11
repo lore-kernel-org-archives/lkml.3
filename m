@@ -1,83 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751674AbaBKOyE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 09:54:04 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:50361 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521AbaBKOyB (ORCPT
+	id S1751849AbaBKOyd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 09:54:33 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:47404 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751676AbaBKOyc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 09:54:01 -0500
-Date: Tue, 11 Feb 2014 06:53:50 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Jens Axboe <axboe@kernel.dk>,
-        Kent Overstreet <kmo@daterainc.com>,
-        Alexander Gordeev <agordeev@redhat.com>, Shaohua Li <shli@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: [patch 1/2]percpu_ida: fix a live lock
-Message-ID: <20140211145350.GA16453@infradead.org>
-References: <20140106204641.GB9037@kmo>
- <52CB1783.4050205@kernel.dk>
- <20140106214726.GD9037@kmo>
- <20140209155006.GA16149@dhcp-26-207.brq.redhat.com>
- <20140210103211.GA28396@infradead.org>
- <52F8FDA7.7070809@kernel.dk>
- <20140210224145.GB2362@kmo>
- <52F95B73.7030205@kernel.dk>
- <20140211091228.GA25567@infradead.org>
- <1392129760.2128.15.camel@dabdike.int.hansenpartnership.com>
+	Tue, 11 Feb 2014 09:54:32 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Josh Cartwright <joshc@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>
+Subject: Re: [PATCH] of: Turn of_match_node into a static inline when CONFIG_OF isn't set
+Date: Tue, 11 Feb 2014 15:55:35 +0100
+Message-ID: <1596542.hkJp71u3OJ@avalon>
+User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140211144108.GB841@joshc.qualcomm.com>
+References: <1392122211-11422-1-git-send-email-laurent.pinchart@ideasonboard.com> <20140211144108.GB841@joshc.qualcomm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392129760.2128.15.camel@dabdike.int.hansenpartnership.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 06:42:40AM -0800, James Bottomley wrote:
-> > Unfortunately that's not true in SCSI land, where most driver do per-lun
-> > tagging, and the the cmd_per_lun values are very low and very often
-> > single digits, as a simple grep for cmd_per_lun will tell.
+Hi Josh,
+
+On Tuesday 11 February 2014 08:41:08 Josh Cartwright wrote:
+> On Tue, Feb 11, 2014 at 01:36:51PM +0100, Laurent Pinchart wrote:
+> > when CONFIG_OF is disabled of_match_node is defined as a macro that
+> > evaluates to NULL. This breaks compilation of drivers that dereference
+> > the function's return value directly. Fix it by turning the macro into a
+> > static inline function that returns NULL.
 > 
-> Remember we do shared (all queue) tags on qla, aic and a few other
-> drivers (it's actually the mailbox slot tag for the HBA).
-
-That's why I said most and not all.  We have a fair amount of drivers
-using host-wide tags.  Having to support both models actually is a bit
-of an issue with the blk-mq support in scsi.
-
-At this point I suspect we'll have to detangle the concept of tag space
-and the queueing limits that blk-mq merged into a single problem space
-again to support SCSI properly.
-
-> >   Now it might
-> > be that the tag space actually is much bigger in the hardware and the
-> > driver authors for some reason want to limit the number of outstanding
-> > commands, but the interface to the drivers doesn't allow them to express
-> > such a difference at the moment.
+> Just this past week I did the same thing, but noticed that it breaks the
+> following usecase:
 > 
-> Tag space is dependent on SCSI protocol.  It's 256 for SPI, 65536 for
-> SAS and I'm not sure for FCP.
+> 	#ifdef CONFIG_OF
+> 	static const struct of_device_id foobar_matches[] = {
+> 		{ .compatible = "foobar,whatsit", },
+> 		{ },
+> 	};
+> 	#endif
+> 
+> 	static int probeme(struct platform_device *pdev)
+> 	{
+> 		struct of_device_id *id;
+> 
+> 		id = of_match_node(foobar_matches, pdev->dev.of_node);
+> 		if (id) {
+> 			/* ... */
+> 		}
+> 		return 0;
+> 	}
+> 
+> When !CONFIG_OF and with your change, this will fail to build due to
+> foobar_matches being undefined.
 
-But that doesn't mean a HBA can support the full space.  Unless we know
-each piece of hardware detailed enough we can't simplify increase the
-tag space as we can be sure something will break.
+Good point. What would you think about
 
-> The list seems to be missing prior context but a few SPI drivers use the
-> clock algorithm for tag starvation in the driver.  The NCR ones are the
-> ones I know about: tag allocation is the hands of a clock sweeping
-> around (one for last tag and one for last outstanding tag).  The hands
-> are never allowed to cross, so if a tag gets starved the hands try to
-> cross and the driver stops issuing until the missing tag returns.  Tag
-> starvation used to be a known problem for Parallel devices; I haven't
-> seen much in the way of tag starvation algorithms for other types of
-> devices, so I assume the problem went away.
+#define of_match_node(_matches, _node)  ((const struct of_device_id *)NULL)
 
-As long as the drivers don't rely on the block layer tag handling they
-can keep whatever they want to do.  Given that it's mostly SPI drivers
-I doubt the tag allocation is a performance bottle neck of any sort for
-them anyway.
+?
+
+-- 
+Regards,
+
+Laurent Pinchart
 
