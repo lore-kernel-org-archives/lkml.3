@@ -1,82 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932096AbaBKTdX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:33:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40375 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754117AbaBKTHw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:07:52 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.10 38/79] dm space map common: make sure new space is used during extend
-Date: Tue, 11 Feb 2014 11:05:42 -0800
-Message-Id: <20140211184722.043059748@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
-References: <20140211184720.928667275@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	id S1755212AbaBKTde (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:33:34 -0500
+Received: from kolab.o2s.ch ([77.109.136.180]:60092 "EHLO kolab.o2s.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753128AbaBKTda (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 14:33:30 -0500
+Subject: [PATCH v5 1/8] clk: sunxi: factors: automatic reparenting support
+To: devicetree@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Simon Baatz <gmbnomis@gmail.com>, Hans de Goede <hdegoede@redhat.com>,
+        Emilio =?utf-8?b?TMOzcGV6?= <emilio@elopez.com.ar>,
+        linux-mmc@vger.kernel.org, Chris Ball <chris@printf.net>,
+        linux-kernel@vger.kernel.org,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        linux-sunxi@googlegroups.com, Tejun Heo <tj@kernel.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        linux-arm-kernel@lists.infradead.org
+From: David =?utf-8?q?Lanzend=C3=B6rfer?= <david.lanzendoerfer@o2s.ch>
+Date: Tue, 11 Feb 2014 20:33:20 +0100
+Message-ID: <20140211193319.4568.81780.stgit@dizzy-6.o2s.ch>
+In-Reply-To: <20140211190543.4568.83517.stgit@dizzy-6.o2s.ch>
+References: <20140211190543.4568.83517.stgit@dizzy-6.o2s.ch>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+From: Emilio López <emilio@elopez.com.ar>
 
-------------------
+This commit implements .determine_rate, so that our factor clocks can be
+reparented when needed.
 
-From: Joe Thornber <ejt@redhat.com>
-
-commit 12c91a5c2d2a8e8cc40a9552313e1e7b0a2d9ee3 upstream.
-
-When extending a low level space map we should update nr_blocks at
-the start so the new space is used for the index entries.
-
-Otherwise extend can fail, e.g.: sm_metadata_extend call sequence
-that fails:
- -> sm_ll_extend
-    -> dm_tm_new_block -> dm_sm_new_block -> sm_bootstrap_new_block
-    => returns -ENOSPC because smm->begin == smm->ll.nr_blocks
-
-Signed-off-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Emilio López <emilio@elopez.com.ar>
 ---
- drivers/md/persistent-data/dm-space-map-common.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/clk/sunxi/clk-factors.c |   36 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 36 insertions(+)
 
---- a/drivers/md/persistent-data/dm-space-map-common.c
-+++ b/drivers/md/persistent-data/dm-space-map-common.c
-@@ -245,6 +245,10 @@ int sm_ll_extend(struct ll_disk *ll, dm_
- 		return -EINVAL;
- 	}
- 
-+	/*
-+	 * We need to set this before the dm_tm_new_block() call below.
-+	 */
-+	ll->nr_blocks = nr_blocks;
- 	for (i = old_blocks; i < blocks; i++) {
- 		struct dm_block *b;
- 		struct disk_index_entry idx;
-@@ -252,6 +256,7 @@ int sm_ll_extend(struct ll_disk *ll, dm_
- 		r = dm_tm_new_block(ll->tm, &dm_sm_bitmap_validator, &b);
- 		if (r < 0)
- 			return r;
-+
- 		idx.blocknr = cpu_to_le64(dm_block_location(b));
- 
- 		r = dm_tm_unlock(ll->tm, b);
-@@ -266,7 +271,6 @@ int sm_ll_extend(struct ll_disk *ll, dm_
- 			return r;
- 	}
- 
--	ll->nr_blocks = nr_blocks;
- 	return 0;
+diff --git a/drivers/clk/sunxi/clk-factors.c b/drivers/clk/sunxi/clk-factors.c
+index 9e23264..3806d97 100644
+--- a/drivers/clk/sunxi/clk-factors.c
++++ b/drivers/clk/sunxi/clk-factors.c
+@@ -77,6 +77,41 @@ static long clk_factors_round_rate(struct clk_hw *hw, unsigned long rate,
+ 	return rate;
  }
  
-
++static long clk_factors_determine_rate(struct clk_hw *hw, unsigned long rate,
++				       unsigned long *best_parent_rate,
++				       struct clk **best_parent_p)
++{
++	struct clk *clk = hw->clk, *parent, *best_parent = NULL;
++	int i, num_parents;
++	unsigned long parent_rate, best = 0, child_rate, best_child_rate = 0;
++
++	/* find the parent that can help provide the fastest rate <= rate */
++	num_parents = __clk_get_num_parents(clk);
++	for (i = 0; i < num_parents; i++) {
++		parent = clk_get_parent_by_index(clk, i);
++		if (!parent)
++			continue;
++		if (__clk_get_flags(clk) & CLK_SET_RATE_PARENT)
++			parent_rate = __clk_round_rate(parent, rate);
++		else
++			parent_rate = __clk_get_rate(parent);
++
++		child_rate = clk_factors_round_rate(hw, rate, &parent_rate);
++
++		if (child_rate <= rate && child_rate > best_child_rate) {
++			best_parent = parent;
++			best = parent_rate;
++			best_child_rate = child_rate;
++		}
++	}
++
++	if (best_parent)
++		*best_parent_p = best_parent;
++	*best_parent_rate = best;
++
++	return best_child_rate;
++}
++
+ static int clk_factors_set_rate(struct clk_hw *hw, unsigned long rate,
+ 				unsigned long parent_rate)
+ {
+@@ -113,6 +148,7 @@ static int clk_factors_set_rate(struct clk_hw *hw, unsigned long rate,
+ }
+ 
+ const struct clk_ops clk_factors_ops = {
++	.determine_rate = clk_factors_determine_rate,
+ 	.recalc_rate = clk_factors_recalc_rate,
+ 	.round_rate = clk_factors_round_rate,
+ 	.set_rate = clk_factors_set_rate,
 
