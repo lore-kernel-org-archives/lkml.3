@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529AbaBKUYU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:24:20 -0500
-Received: from mail-vb0-f54.google.com ([209.85.212.54]:35154 "EHLO
-	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752837AbaBKUYQ (ORCPT
+	id S932476AbaBKUYg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:24:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41220 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756021AbaBKUYc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 15:24:16 -0500
+	Tue, 11 Feb 2014 15:24:32 -0500
+Date: Tue, 11 Feb 2014 12:25:47 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Daeseok Youn <daeseok.youn@gmail.com>
+Cc: john.stultz@linaro.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] gpu: ion: fix sparse non static symbol warnings
+Message-ID: <20140211202547.GA11684@kroah.com>
+References: <2249537.0tqhh5qnLv@daeseok-laptop.cloud.net>
 MIME-Version: 1.0
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 11 Feb 2014 12:23:55 -0800
-Message-ID: <CALCETrVL44ewQPJXNwPAm2s5aj9auo2p4tYYieNcxANoL91VWw@mail.gmail.com>
-Subject: Too many rescheduling interrupts (still!)
-To: Mike Galbraith <bitbucket@online.de>, X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2249537.0tqhh5qnLv@daeseok-laptop.cloud.net>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rumor has it that Linux 3.13 was supposed to get rid of all the silly
-rescheduling interrupts.  It doesn't, although it does seem to have
-improved the situation.
+On Mon, Feb 10, 2014 at 09:32:22AM +0900, Daeseok Youn wrote:
+> >From 08b77be03927d450810c07d3a4440dc8c32fe766 Mon Sep 17 00:00:00 2001
+> From: Daeseok Youn <daeseok.youn@gmail.com>
+> Date: Mon, 10 Feb 2014 09:02:26 +0900
+> Subject: [PATCH] gpu: ion: fix sparse non static symbol warnings
+> 
+> Fixes the following sparse warnings:
+> 
+> drivers/staging/android/ion/ion_dummy_driver.c:26:19:
+>  warning: symbol 'idev' was not declared. Should it be static?
+> drivers/staging/android/ion/ion_dummy_driver.c:27:17:
+>  warning: symbol 'heaps' was not declared. Should it be static?
+> drivers/staging/android/ion/ion_dummy_driver.c:29:6:
+>  warning: symbol 'carveout_ptr' was not declared. Should it be static?
+> drivers/staging/android/ion/ion_dummy_driver.c:30:6:
+>  warning: symbol 'chunk_ptr' was not declared. Should it be static?
+> drivers/staging/android/ion/ion_dummy_driver.c:32:26:
+>  warning: symbol 'dummy_heaps' was not declared. Should it be static?
+> drivers/staging/android/ion/ion_dummy_driver.c:59:26:
+>  warning: symbol 'dummy_ion_pdata' was not declared. Should it be static?
+> 
+> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
 
-A small number of reschedule interrupts appear to be due to a race:
-both resched_task and wake_up_idle_cpu do, essentially:
+This patch has already been made in my tree, please always work against
+linux-next to prevent duplication of work.
 
-set_tsk_need_resched(t);
-smb_mb();
-if (!tsk_is_polling(t))
-  smp_send_reschedule(cpu);
+thanks,
 
-The problem is that set_tsk_need_resched wakes the CPU and, if the CPU
-is too quick (which isn't surprising if it was in C0 or C1), then it
-could *clear* TS_POLLING before tsk_is_polling is read.
-
-Is there a good reason that TIF_NEED_RESCHED is in thread->flags and
-TS_POLLING is in thread->status?  Couldn't both of these be in the
-same field in something like struct rq?  That would allow a real
-atomic op here.
-
-The more serious issue is that AFAICS default_wake_function is
-completely missing the polling check.  It goes through
-ttwu_queue_remote, which unconditionally sends an interrupt.
-
---Andy
+greg k-h
