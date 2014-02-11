@@ -1,140 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752716AbaBKCSs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 21:18:48 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:41277 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752133AbaBKCSr (ORCPT
+	id S1752723AbaBKCWo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 21:22:44 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:38649 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752047AbaBKCWl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 21:18:47 -0500
-Message-ID: <52F98883.7020803@infradead.org>
-Date: Mon, 10 Feb 2014 18:18:43 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Mon, 10 Feb 2014 21:22:41 -0500
+Message-ID: <52F9896D.7090908@gmail.com>
+Date: Mon, 10 Feb 2014 18:22:37 -0800
+From: Rajat Jain <rajatxjain@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Gene Heskett <gheskett@wdtv.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: make oldfonfig broken.
-References: <1391971686-9517-1-git-send-email-richard@nod.at> <201402101521.04113.gheskett@wdtv.com> <52F958D2.1070003@infradead.org> <201402101913.04969.gheskett@wdtv.com>
-In-Reply-To: <201402101913.04969.gheskett@wdtv.com>
-Content-Type: text/plain; charset=UTF-8
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Rajat Jain <rajatjain@juniper.net>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Yijing Wang <wangyijing@huawei.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Yinghai Lu <yhlu.kernel@gmail.com>, Guenter Roeck <groeck@juniper.net>
+Subject: [PATCH v5 8/8] Allow Link state changes for Hot-Plug
+References: <52F1A1B6.2090709@gmail.com> <4f93bb24b6214bfb9dbcc91b682184eb@DM2PR05MB671.namprd05.prod.outlook.com> <20140211011816.GA15412@google.com>
+In-Reply-To: <20140211011816.GA15412@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/10/2014 04:13 PM, Gene Heskett wrote:
-> On Monday 10 February 2014, Randy Dunlap wrote:
->> On 02/10/2014 12:21 PM, Gene Heskett wrote:
->>> On Monday 10 February 2014, Randy Dunlap wrote:
->>>> On 02/09/2014 08:32 PM, Gene Heskett wrote:
->>>> AUTOSELECT driver feature Better!  ugh.
->>>
->>> Spit.  I presume geneology discussions are off topic. :)
->>>
->>>> Good luck. Let me know if you need more guidance.
->>>
->>> Hat in hand, I figured I had better get the first one that fails,
->>> 3.2.40, to work before I carried that fwd to a more current kernel,
->>> but 5 or 6 builds & boot failure later I am stumped.
->>>
->>> The boot gets to top_init, reports the / drive is unavailable and it
->>> cannot load /lib/modules/3.2.40/modules.dep, which does exist.
->>>
->>> Stops, times out in about a minute and falls thru to the busybox shell,
->>> and of course my keyboard and mouse are wireless to usb, so neither
->>> work, reset button tap time.
->>>
->>> The only reason I can deduce is that because the drive isn't mounted,
->>> something is still missing, either in the vmlinuz file or in the initrd
->>> file.
->>>
->>> This most working 3.12.9 bootup shows:
->>>
->>> gene@coyote:~/src/linux-3.2.40$ lsmod |grep sata
->>> sata_nv                16890  12
->>> libata                146855  2 pata_amd,sata_nv
->>>
->>> And I'm pretty sure all that is in the initrd.
->>>
->>> Except according to grep, none of that is in
->>> /lib/modules/3.2.40/modules.dep
->>>
->>> And I cannot find anyplace in a make xconfig that mentions libata.
->>> So obviously my .config is still fubared. It does grep in the other
->>> modules.dep files for several other versions.
->>>
->>> In fact, no .config I have mentions it. At my age the hair is thinning
->>> quickly enough.
->>>
->>> So, Next please?  libata is missing, and so is sata_nv in spite of that
->>
->>> being enabled:
->> It's missing as a loadable module, but that's OK since it's builtin.
->>
->>> gene@coyote:~/src/linux-3.2.40$ grep SATA_NV .config
->>> CONFIG_SATA_NV=y
->>>
->>> But I see thats builtin, but it didn't help.
->>
->> Your .config has (I believe)
->> CONFIG_ATA=y
->> and that is what builds libata.
->>
->> Any other clues?
-> 
-> Not that I see in the build trace. grepping:
-> gene@coyote:~/src/linux-3.2.40$ grep CONFIG_ATA .config
-> CONFIG_ATALK=m
-> # CONFIG_ATA_OVER_ETH is not set
-> CONFIG_ATA=y
-> # CONFIG_ATA_NONSTANDARD is not set
-> CONFIG_ATA_VERBOSE_ERROR=y
-> CONFIG_ATA_ACPI=y
-> CONFIG_ATA_SFF=y
-> CONFIG_ATA_BMDMA=y
-> # CONFIG_ATA_PIIX is not set
-> CONFIG_ATA_GENERIC=m
-> 
-> And it seems to be building libata:
-> gene@coyote:~/src/linux-3.2.40/drivers/ata$ ls -l|grep libata|grep .o
-> -rw-r--r-- 1 root root  10236 2014-02-10 18:19 libata-acpi.o
-> -rw-rw-r-- 1 gene gene 175870 2013-03-05 22:24 libata-core.c
-> -rw-r--r-- 1 root root  89616 2014-02-10 18:19 libata-core.o
-> -rw-r--r-- 1 root root  35904 2014-02-10 18:19 libata-eh.o
-> -rw-r--r-- 1 root root 222732 2014-02-10 18:19 libata.o
-> -rw-r--r-- 1 root root  12072 2014-02-10 18:19 libata-pmp.o
-> -rw-r--r-- 1 root root  37156 2014-02-10 18:19 libata-scsi.o
-> -rw-r--r-- 1 root root  40996 2014-02-10 18:19 libata-sff.o
-> -rw-rw-r-- 1 gene gene  19559 2013-03-05 22:24 libata-transport.c
-> -rw-rw-r-- 1 gene gene    536 2013-03-05 22:24 libata-transport.h
-> -rw-r--r-- 1 root root  11772 2014-02-10 18:19 libata-transport.o
-> 
-> But libata.ko is not making it into the initrd, nor the modules.dep for 
-> 3.2.40.
+Today it is there is no protection around pciehp_enable_slot() and
+pciehp_disable_slot() to ensure that they complete before another
+hot-plug operation can be done on that particular slot.
 
-Since CONFIG_ATA=y, it's builtin, not a loadable module (.ko), so it won't
-be in the initrd or modules.dep.
+This patch introduces the slot->hotplug_lock to ensure that any
+hotplug operations (add / remove) complete before another HP event
+can begin processing on that particular slot.
 
-> I been playing 20 monkeys changing one ata related thing at a time & doing 
-> a sudo time -p ./makeit to check, not much use rebooting to check until I 
-> see it.
-> 
-> I'll go gedit .config & change CONFIG_ATA to = m & try one more time.
-> 
-> Got it, test reboot time.  Made it 2 lines farther, "switching to clock 
-> source TSC" then fell through to the busybox prompt with all inputs dead.
-> 
-> Sigh.
-> 
-> .config attached if you've got time.
-> 
-> Thanks Randy
-> 
-> Cheers, Gene
-> 
+Signed-off-by: Rajat Jain <rajatxjain@gmail.com>
+Signed-off-by: Rajat Jain <rajatjain@juniper.net>
+Signed-off-by: Guenter Roeck <groeck@juniper.net>
+---
+Hello Bjorn,
 
-I'll look at it Tuesday morning.
+> 
+> I applied these to pci/pciehp for v3.15, thanks!  I dropped the "ret" decl
+> in 8/8, which I assume was the cause of the unused variable warning.
+>
 
+Thank you so much for accepting the patchset. The "ret" variable in 8/8
+was supposed to be used for holding the return value, so that the call to
+pciehp_green_led_off() could be moved to after releasing the lock. Here
+is the revised 8/8 patch (only a couple lines diff from v4). Please feel
+free to either use this, or just make that small change in
+pciehp_power_thread(). I was holding off sending this in case there were
+any other comments.
+
+Thank you so much once again,
+
+Rajat
+ 
+v5: Remove the "unused variable" warning by using it to hold return value
+    (Thus reducing lock hold time, by moving pciehp_green_led_off() to
+     after releasing the lock)
+v4: same as v3, only rebased on top of 3.14-rc1
+v3: same as v2, only patch numbering changed from [4/4] to [8/8].
+v2: Same as v1, dropped the "RFC" from subject, added Guenter's signature
+v1: Initial patch
+
+ drivers/pci/hotplug/pciehp.h      |    1 +
+ drivers/pci/hotplug/pciehp_core.c |    7 ++++++-
+ drivers/pci/hotplug/pciehp_ctrl.c |   17 +++++++++++++++--
+ drivers/pci/hotplug/pciehp_hpc.c  |    1 +
+ 4 files changed, 23 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/pci/hotplug/pciehp.h b/drivers/pci/hotplug/pciehp.h
+index d8d0336..8a66866 100644
+--- a/drivers/pci/hotplug/pciehp.h
++++ b/drivers/pci/hotplug/pciehp.h
+@@ -76,6 +76,7 @@ struct slot {
+ 	struct hotplug_slot *hotplug_slot;
+ 	struct delayed_work work;	/* work for button event */
+ 	struct mutex lock;
++	struct mutex hotplug_lock;
+ 	struct workqueue_struct *wq;
+ };
+ 
+diff --git a/drivers/pci/hotplug/pciehp_core.c b/drivers/pci/hotplug/pciehp_core.c
+index 53b58de..23b4bde 100644
+--- a/drivers/pci/hotplug/pciehp_core.c
++++ b/drivers/pci/hotplug/pciehp_core.c
+@@ -283,8 +283,11 @@ static int pciehp_probe(struct pcie_device *dev)
+ 	slot = ctrl->slot;
+ 	pciehp_get_adapter_status(slot, &occupied);
+ 	pciehp_get_power_status(slot, &poweron);
+-	if (occupied && pciehp_force)
++	if (occupied && pciehp_force) {
++		mutex_lock(&slot->hotplug_lock);
+ 		pciehp_enable_slot(slot);
++		mutex_unlock(&slot->hotplug_lock);
++	}
+ 	/* If empty slot's power status is on, turn power off */
+ 	if (!occupied && poweron && POWER_CTRL(ctrl))
+ 		pciehp_power_off_slot(slot);
+@@ -328,10 +331,12 @@ static int pciehp_resume (struct pcie_device *dev)
+ 
+ 	/* Check if slot is occupied */
+ 	pciehp_get_adapter_status(slot, &status);
++	mutex_lock(&slot->hotplug_lock);
+ 	if (status)
+ 		pciehp_enable_slot(slot);
+ 	else
+ 		pciehp_disable_slot(slot);
++	mutex_unlock(&slot->hotplug_lock);
+ 	return 0;
+ }
+ #endif /* PM */
+diff --git a/drivers/pci/hotplug/pciehp_ctrl.c b/drivers/pci/hotplug/pciehp_ctrl.c
+index 3e40ec0..fec99a1 100644
+--- a/drivers/pci/hotplug/pciehp_ctrl.c
++++ b/drivers/pci/hotplug/pciehp_ctrl.c
+@@ -293,6 +293,7 @@ static void pciehp_power_thread(struct work_struct *work)
+ 	struct power_work_info *info =
+ 		container_of(work, struct power_work_info, work);
+ 	struct slot *p_slot = info->p_slot;
++	int ret;
+ 
+ 	switch (info->req) {
+ 	case DISABLE_REQ:
+@@ -300,7 +301,9 @@ static void pciehp_power_thread(struct work_struct *work)
+ 			 "Disabling domain:bus:device=%04x:%02x:00\n",
+ 			 pci_domain_nr(p_slot->ctrl->pcie->port->subordinate),
+ 			 p_slot->ctrl->pcie->port->subordinate->number);
++		mutex_lock(&p_slot->hotplug_lock);
+ 		pciehp_disable_slot(p_slot);
++		mutex_unlock(&p_slot->hotplug_lock);
+ 		mutex_lock(&p_slot->lock);
+ 		p_slot->state = STATIC_STATE;
+ 		mutex_unlock(&p_slot->lock);
+@@ -310,7 +313,10 @@ static void pciehp_power_thread(struct work_struct *work)
+ 			 "Enabling domain:bus:device=%04x:%02x:00\n",
+ 			 pci_domain_nr(p_slot->ctrl->pcie->port->subordinate),
+ 			 p_slot->ctrl->pcie->port->subordinate->number);
+-		if (pciehp_enable_slot(p_slot))
++		mutex_lock(&p_slot->hotplug_lock);
++		ret = pciehp_enable_slot(p_slot);
++		mutex_unlock(&p_slot->hotplug_lock);
++		if (ret)
+ 			pciehp_green_led_off(p_slot);
+ 		mutex_lock(&p_slot->lock);
+ 		p_slot->state = STATIC_STATE;
+@@ -546,6 +552,9 @@ static void interrupt_event_handler(struct work_struct *work)
+ 	kfree(info);
+ }
+ 
++/*
++ * Note: This function must be called with slot->hotplug_lock held
++ */
+ int pciehp_enable_slot(struct slot *p_slot)
+ {
+ 	u8 getstatus = 0;
+@@ -584,7 +593,9 @@ int pciehp_enable_slot(struct slot *p_slot)
+ 	return rc;
+ }
+ 
+-
++/*
++ * Note: This function must be called with slot->hotplug_lock held
++ */
+ int pciehp_disable_slot(struct slot *p_slot)
+ {
+ 	u8 getstatus = 0;
+@@ -617,7 +628,9 @@ int pciehp_sysfs_enable_slot(struct slot *p_slot)
+ 	case STATIC_STATE:
+ 		p_slot->state = POWERON_STATE;
+ 		mutex_unlock(&p_slot->lock);
++		mutex_lock(&p_slot->hotplug_lock);
+ 		retval = pciehp_enable_slot(p_slot);
++		mutex_unlock(&p_slot->hotplug_lock);
+ 		mutex_lock(&p_slot->lock);
+ 		p_slot->state = STATIC_STATE;
+ 		break;
+diff --git a/drivers/pci/hotplug/pciehp_hpc.c b/drivers/pci/hotplug/pciehp_hpc.c
+index 55cc389..68447a1 100644
+--- a/drivers/pci/hotplug/pciehp_hpc.c
++++ b/drivers/pci/hotplug/pciehp_hpc.c
+@@ -686,6 +686,7 @@ static int pcie_init_slot(struct controller *ctrl)
+ 
+ 	slot->ctrl = ctrl;
+ 	mutex_init(&slot->lock);
++	mutex_init(&slot->hotplug_lock);
+ 	INIT_DELAYED_WORK(&slot->work, pciehp_queue_pushbutton_work);
+ 	ctrl->slot = slot;
+ 	return 0;
 -- 
-~Randy
+1.7.9.5
+
