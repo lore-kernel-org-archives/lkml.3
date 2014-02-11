@@ -1,124 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752362AbaBLAoR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 19:44:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33706 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751347AbaBLAoQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 19:44:16 -0500
-Date: Tue, 11 Feb 2014 19:44:03 -0500
-From: Dave Jones <davej@redhat.com>
-To: Eric Sandeen <sandeen@sandeen.net>
-Cc: Dave Chinner <david@fromorbit.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
-Message-ID: <20140212004403.GA17129@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Eric Sandeen <sandeen@sandeen.net>,
-	Dave Chinner <david@fromorbit.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
-	Al Viro <viro@zeniv.linux.org.uk>,
-	Linus Torvalds <torvalds@linux-foundation.org>
-References: <20140211172707.GA1749@redhat.com>
- <20140211210841.GM13647@dastard>
- <52FA9ADA.9040803@sandeen.net>
+	id S1752501AbaBLA4U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 19:56:20 -0500
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:3441 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752214AbaBLA4S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 19:56:18 -0500
+Message-ID: <52FA702E.7020503@hp.com>
+Date: Tue, 11 Feb 2014 11:47:10 -0700
+From: Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52FA9ADA.9040803@sandeen.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andreas Dilger <adilger@dilger.ca>, George Spelvin <linux@horizon.com>
+CC: T Makphaibulchoke <tmac@hp.com>, Andi Kleen <andi@firstfloor.org>,
+        Ext4 Developers List <linux-ext4@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 0/3] ext4: increase mbcache scalability
+References: <20140128122623.26029.qmail@science.horizon.com> <848E47EB-5FDF-4DB9-9800-4B1F4B1FA71C@dilger.ca>
+In-Reply-To: <848E47EB-5FDF-4DB9-9800-4B1F4B1FA71C@dilger.ca>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 03:49:14PM -0600, Eric Sandeen wrote:
- > On 2/11/14, 3:08 PM, Dave Chinner wrote:
- > > On Tue, Feb 11, 2014 at 12:27:07PM -0500, Dave Jones wrote:
- > >> BUG: sleeping function called from invalid context at mm/mempool.c:203
- > >> in_atomic(): 0, irqs_disabled(): 1, pid: 27511, name: trinity-c3
- > >> 5 locks held by trinity-c3/27511:
- > >>  #0:  (sb_writers#9){......}, at: [<ffffffff831df3b4>] mnt_want_write+0x24/0x50
- > >>  #1:  (&type->i_mutex_dir_key#3){......}, at: [<ffffffff831cced4>] do_last.isra.51+0x294/0x11f0
- > >>  #2:  (sb_internal#2){......}, at: [<ffffffffc03225c4>] xfs_trans_alloc+0x24/0x40 [xfs]
- > >>  #3:  (&(&ip->i_lock)->mr_lock/1){......}, at: [<ffffffffc036447f>] xfs_ilock+0x16f/0x1b0 [xfs]
- > >>  #4:  (&(&ip->i_lock)->mr_lock){......}, at: [<ffffffffc03646d4>] xfs_ilock_nowait+0x184/0x200 [xfs]
- > >> CPU: 3 PID: 27511 Comm: trinity-c3 Not tainted 3.14.0-rc2+ #111 
- > >>  ffffffff83a3fd56 0000000045a3849a ffff88009f368f60 ffffffff8372afea
- > >>  0000000000000000 ffff88009f368f88 ffffffff8309ddb5 0000000000000010
- > >>  ffff880243566288 0000000000000008 ffff88009f369008 ffffffff831534d3
- > >> Call Trace:
- > >>  [<ffffffff8372afea>] dump_stack+0x4e/0x7a
- > >>  [<ffffffff8309ddb5>] __might_sleep+0x105/0x150
- > >>  [<ffffffff831534d3>] mempool_alloc+0xa3/0x170
- > >>  [<ffffffff831a955a>] ? deactivate_slab+0x51a/0x590
- > >>  [<ffffffff831f8fd6>] bio_alloc_bioset+0x156/0x210
- > >>  [<ffffffffc0308231>] _xfs_buf_ioapply+0x1c1/0x3c0 [xfs]
- > >>  [<ffffffffc03798f2>] ? xlog_bdstrat+0x22/0x60 [xfs]
- > >>  [<ffffffffc030849b>] xfs_buf_iorequest+0x6b/0xf0 [xfs]
- > >>  [<ffffffffc03798f2>] xlog_bdstrat+0x22/0x60 [xfs]
- > >>  [<ffffffffc037ba87>] xlog_sync+0x3a7/0x5b0 [xfs]
- > >>  [<ffffffffc037bd9f>] xlog_state_release_iclog+0x10f/0x120 [xfs]
- > >>  [<ffffffffc037c840>] xlog_write+0x6f0/0x800 [xfs]
- > >>  [<ffffffffc037e061>] xlog_cil_push+0x2f1/0x410 [xfs]
- > >>  [<ffffffffc037e948>] xlog_cil_force_lsn+0x1d8/0x210 [xfs]
- > >>  [<ffffffffc03428a8>] ? xfs_bmbt_get_all+0x18/0x20 [xfs]
- > >>  [<ffffffffc037cc40>] _xfs_log_force+0x70/0x290 [xfs]
- > >>  [<ffffffff830a4edd>] ? get_parent_ip+0xd/0x50
- > >>  [<ffffffffc037ce86>] xfs_log_force+0x26/0xb0 [xfs]
- > >>  [<ffffffffc03076e6>] ? _xfs_buf_find+0x1f6/0x3c0 [xfs]
- > >>  [<ffffffffc03074e3>] xfs_buf_lock+0x133/0x140 [xfs]
- > >>  [<ffffffffc03076e6>] _xfs_buf_find+0x1f6/0x3c0 [xfs]
- > >>  [<ffffffffc030796a>] xfs_buf_get_map+0x2a/0x1b0 [xfs]
- > >>  [<ffffffffc0383c61>] xfs_trans_get_buf_map+0x1a1/0x240 [xfs]
- > >>  [<ffffffffc034e03d>] xfs_da_get_buf+0xbd/0x100 [xfs]
- > >>  [<ffffffffc0356869>] xfs_dir3_data_init+0x59/0x1d0 [xfs]
- > >>  [<ffffffffc03526db>] ? xfs_dir2_grow_inode+0x13b/0x150 [xfs]
- > >>  [<ffffffffc0354ede>] xfs_dir2_sf_to_block+0x17e/0x7b0 [xfs]
- > >>  [<ffffffffc0351f5a>] ? xfs_dir2_sfe_get_ino+0x1a/0x20 [xfs]
- > >>  [<ffffffffc035e9b4>] ? xfs_dir2_sf_check.isra.7+0x114/0x1b0 [xfs]
- > >>  [<ffffffffc034c24f>] ? xfs_da_compname+0x1f/0x30 [xfs]
- > >>  [<ffffffffc035f503>] ? xfs_dir2_sf_lookup+0x303/0x310 [xfs]
- > >>  [<ffffffffc035f858>] xfs_dir2_sf_addname+0x348/0x6d0 [xfs]
- > >>  [<ffffffffc031970d>] ? xfs_setup_inode+0x1cd/0x320 [xfs]
- > >>  [<ffffffffc03529a4>] xfs_dir_createname+0x184/0x1e0 [xfs]
- > >>  [<ffffffffc03663d9>] xfs_create+0x469/0x580 [xfs]
- > >>  [<ffffffffc0318864>] xfs_vn_mknod+0xc4/0x1e0 [xfs]
- > >>  [<ffffffffc0318993>] xfs_vn_create+0x13/0x20 [xfs]
- > >>  [<ffffffff831ccc15>] vfs_create+0x95/0xc0
- > >>  [<ffffffff831cd638>] do_last.isra.51+0x9f8/0x11f0
- > >>  [<ffffffff831c9e11>] ? link_path_walk+0x81/0x870
- > >>  [<ffffffff831cdef9>] path_openat+0xc9/0x620
- > >>  [<ffffffff8331cc02>] ? put_dec+0x72/0x90
- > >>  [<ffffffff831ceb6d>] do_filp_open+0x4d/0xb0
- > >>  [<ffffffff831bc4ae>] file_open_name+0xfe/0x160
- > >>  [<ffffffff831bc554>] filp_open+0x44/0x60
- > >>  [<ffffffff83221862>] do_coredump+0x602/0xf60
- > >>  [<ffffffff83081358>] get_signal_to_deliver+0x2b8/0x6b0
- > >>  [<ffffffff830024d7>] do_signal+0x57/0x9d0
- > >>  [<ffffffff8311115e>] ? __acct_update_integrals+0x8e/0x120
- > >>  [<ffffffff83730000>] ? __schedule+0x60/0x850
- > >>  [<ffffffff8373a1db>] ? preempt_count_sub+0x6b/0xf0
- > >>  [<ffffffff83735a31>] ? _raw_spin_unlock+0x31/0x50
- > >>  [<ffffffff830ab671>] ? vtime_account_user+0x91/0xa0
- > >>  [<ffffffff8314f57b>] ? context_tracking_user_exit+0x9b/0x100
- > >>  [<ffffffff83002eac>] do_notify_resume+0x5c/0xa0
- > >>  [<ffffffff83736746>] retint_signal+0x46/0x90
- > > 
- > > There's nowhere in this XFS stack that disables interrupts, so I
- > > thinks it's either above or below XFS that is causing this problem.
- > 
- > any chance the stack got blown & corrupted things such that it
- > only _looks_ like irqs are disabled?
+On 01/28/2014 02:09 PM, Andreas Dilger wrote:
+> On Jan 28, 2014, at 5:26 AM, George Spelvin <linux@horizon.com> wrote:
+>>> The third part of the patch further increases the scalablity of an ext4
+>>> filesystem by having each ext4 fielsystem allocate and use its own private
+>>> mbcache structure, instead of sharing a single mcache structures across all
+>>> ext4 filesystems, and increases the size of its mbcache hash tables.
+>>
+>> Are you sure this helps?  The idea behind having one large mbcache is
+>> that one large hash table will always be at least as well balanced as
+>> multiple separate tables, if the total size is the same.
+>>
+>> If you have two size 2^n hash tables, the chance of collision is equal to
+>> one size  2^(n+1) table if they're equally busy, and if they're unequally
+>> busy. the latter is better.  The busier file system will take less time
+>> per search, and since it's searched more often than the less-busy one,
+>> net win.
+>>
+>> How does it compare with just increasing the hash table size but leaving
+>> them combined?
+> 
+> Except that having one mbcache per block device would avoid the need
+> to store the e_bdev pointer in thousands/millions of entries.  Since
+> the blocks are never shared between different block devices, there
+> is no caching benefit even if the same block is on two block devices.
+> 
+> Cheers, Andreas
+> 
 
-The 'good' news is I seem to be able to reproduce it fairly quickly.
-I've seen it 3-4 times this afternoon. (Always from the coredump path)
+On all 3 systems, with 80, 60 and 20 cores, that I ran aim7 on, spreading test files across 4 ext4 filesystems, there seems to be no different in performance either with a single large hash table or a smaller one per filesystem.
 
-I was on vacation last week, but I wasn't hitting this before then, so it's a
-fairly recent change that's introduced this.
+Having said that, I still believe that having a separate hash table for each filesystem should scale better, as the size of a larger single hash table would be very arbitrary. As Andres mentioned above, with an mbcache per filesystem we would be able to remove the e_bdev member from the mb_cache_entry. It would also work well and also result in less mb_cache_entry lock contention, if we are to use the blockgroup locks, which are also on a per filesystem base, to implement the mb_cache_entry lock as suggested by Andreas.  
 
-Al ?
+Please let me know if you have any further comment or concerns.
 
-	Dave
+Thanks,
+Mak.
+
+ 
 
