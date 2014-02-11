@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754048AbaBKUHl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:07:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40063 "EHLO
+	id S1755973AbaBKUII (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:08:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40058 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753605AbaBKTGw (ORCPT
+	with ESMTP id S1753593AbaBKTGv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:52 -0500
+	Tue, 11 Feb 2014 14:06:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Sakari Ailus <sakari.ailus@linux.intel.com>,
-        Ricardo Ribalda <ricardo.ribalda@gmail.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.12 062/107] media: media: v4l2-dev: fix video device index assignment
-Date: Tue, 11 Feb 2014 11:05:28 -0800
-Message-Id: <20140211184749.965299805@linuxfoundation.org>
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.12 061/107] mm, oom: base root bonus on current usage
+Date: Tue, 11 Feb 2014 11:05:27 -0800
+Message-Id: <20140211184749.937396641@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -31,40 +31,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marek Szyprowski <m.szyprowski@samsung.com>
+From: David Rientjes <rientjes@google.com>
 
-commit 6c3df5da67f1f53df78c7e20cd53a481dc28eade upstream.
+commit 778c14affaf94a9e4953179d3e13a544ccce7707 upstream.
 
-The side effect of commit 1056e4388b045 ("v4l2-dev: Fix race condition on
-__video_register_device") is the increased number of index value assigned
-on video_device registration. Before that commit video_devices were
-numbered from 0, after it, the indexes starts from 1, because get_index()
-always count the device, which is being registered. Some device drivers
-rely on video_device index number for internal purposes, i.e. s5p-mfc
-driver stopped working after that patch. This patch restores the old method
-of numbering the video_device indexes.
+A 3% of system memory bonus is sometimes too excessive in comparison to
+other processes.
 
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-Acked-by: Sakari Ailus <sakari.ailus@linux.intel.com>
-Acked-by: Ricardo Ribalda <ricardo.ribalda@gmail.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+With commit a63d83f427fb ("oom: badness heuristic rewrite"), the OOM
+killer tries to avoid killing privileged tasks by subtracting 3% of
+overall memory (system or cgroup) from their per-task consumption.  But
+as a result, all root tasks that consume less than 3% of overall memory
+are considered equal, and so it only takes 33+ privileged tasks pushing
+the system out of memory for the OOM killer to do something stupid and
+kill dhclient or other root-owned processes.  For example, on a 32G
+machine it can't tell the difference between the 1M agetty and the 10G
+fork bomb member.
+
+The changelog describes this 3% boost as the equivalent to the global
+overcommit limit being 3% higher for privileged tasks, but this is not
+the same as discounting 3% of overall memory from _every privileged task
+individually_ during OOM selection.
+
+Replace the 3% of system memory bonus with a 3% of current memory usage
+bonus.
+
+By giving root tasks a bonus that is proportional to their actual size,
+they remain comparable even when relatively small.  In the example
+above, the OOM killer will discount the 1M agetty's 256 badness points
+down to 179, and the 10G fork bomb's 262144 points down to 183500 points
+and make the right choice, instead of discounting both to 0 and killing
+agetty because it's first in the task list.
+
+Signed-off-by: David Rientjes <rientjes@google.com>
+Reported-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/v4l2-core/v4l2-dev.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ Documentation/filesystems/proc.txt |    4 ++--
+ mm/oom_kill.c                      |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/media/v4l2-core/v4l2-dev.c
-+++ b/drivers/media/v4l2-core/v4l2-dev.c
-@@ -872,8 +872,8 @@ int __video_register_device(struct video
+--- a/Documentation/filesystems/proc.txt
++++ b/Documentation/filesystems/proc.txt
+@@ -1376,8 +1376,8 @@ may allocate from based on an estimation
+ For example, if a task is using all allowed memory, its badness score will be
+ 1000.  If it is using half of its allowed memory, its score will be 500.
  
- 	/* Should not happen since we thought this minor was free */
- 	WARN_ON(video_device[vdev->minor] != NULL);
--	video_device[vdev->minor] = vdev;
- 	vdev->index = get_index(vdev);
-+	video_device[vdev->minor] = vdev;
- 	mutex_unlock(&videodev_lock);
+-There is an additional factor included in the badness score: root
+-processes are given 3% extra memory over other tasks.
++There is an additional factor included in the badness score: the current memory
++and swap usage is discounted by 3% for root processes.
  
- 	if (vdev->ioctl_ops)
+ The amount of "allowed" memory depends on the context in which the oom killer
+ was called.  If it is due to the memory assigned to the allocating task's cpuset
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -170,7 +170,7 @@ unsigned long oom_badness(struct task_st
+ 	 * implementation used by LSMs.
+ 	 */
+ 	if (has_capability_noaudit(p, CAP_SYS_ADMIN))
+-		adj -= 30;
++		points -= (points * 3) / 100;
+ 
+ 	/* Normalize to oom_score_adj units */
+ 	adj *= totalpages / 1000;
 
 
