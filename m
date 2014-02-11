@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753581AbaBKTGs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:06:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40017 "EHLO
+	id S1754086AbaBKTHq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:07:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40338 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753493AbaBKTGl (ORCPT
+	with ESMTP id S1754040AbaBKTHl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:41 -0500
+	Tue, 11 Feb 2014 14:07:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jeff Layton <jlayton@redhat.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [PATCH 3.12 047/107] sunrpc: dont wait for write before allowing reads from use-gss-proxy file
-Date: Tue, 11 Feb 2014 11:05:13 -0800
-Message-Id: <20140211184749.533479904@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>, Miklos Szeredi <mszeredi@suse.cz>
+Subject: [PATCH 3.10 07/79] fuse: fix pipe_buf_operations
+Date: Tue, 11 Feb 2014 11:05:11 -0800
+Message-Id: <20140211184721.146083036@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
-References: <20140211184748.191276235@linuxfoundation.org>
+In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
+References: <20140211184720.928667275@linuxfoundation.org>
 User-Agent: quilt/0.61-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,116 +24,156 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-commit 1654a04cd702fd19c297c36300a6ab834cf8c072 upstream.
+commit 28a625cbc2a14f17b83e47ef907b2658576a32aa upstream.
 
-It doesn't make much sense to make reads from this procfile hang. As
-far as I can tell, only gssproxy itself will open this file and it
-never reads from it. Change it to just give the present setting of
-sn->use_gss_proxy without waiting for anything.
+Having this struct in module memory could Oops when if the module is
+unloaded while the buffer still persists in a pipe.
 
-Note that we do not want to call use_gss_proxy() in this codepath
-since an inopportune read of this file could cause it to be disabled
-prematurely.
+Since sock_pipe_buf_ops is essentially the same as fuse_dev_pipe_buf_steal
+merge them into nosteal_pipe_buf_ops (this is the same as
+default_pipe_buf_ops except stealing the page from the buffer is not
+allowed).
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Reported-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/auth_gss/gss_rpc_upcall.c |    2 --
- net/sunrpc/auth_gss/svcauth_gss.c    |   33 ++-------------------------------
- net/sunrpc/netns.h                   |    1 -
- 3 files changed, 2 insertions(+), 34 deletions(-)
+ fs/fuse/dev.c             |   22 +++++-----------------
+ fs/splice.c               |   18 ++++++++++++++++++
+ include/linux/pipe_fs_i.h |    2 ++
+ net/core/skbuff.c         |   32 +-------------------------------
+ 4 files changed, 26 insertions(+), 48 deletions(-)
 
---- a/net/sunrpc/auth_gss/gss_rpc_upcall.c
-+++ b/net/sunrpc/auth_gss/gss_rpc_upcall.c
-@@ -137,7 +137,6 @@ void init_gssp_clnt(struct sunrpc_net *s
- {
- 	mutex_init(&sn->gssp_lock);
- 	sn->gssp_clnt = NULL;
--	init_waitqueue_head(&sn->gssp_wq);
+--- a/fs/fuse/dev.c
++++ b/fs/fuse/dev.c
+@@ -1296,22 +1296,6 @@ static ssize_t fuse_dev_read(struct kioc
+ 	return fuse_dev_do_read(fc, file, &cs, iov_length(iov, nr_segs));
  }
  
- int set_gssp_clnt(struct net *net)
-@@ -154,7 +153,6 @@ int set_gssp_clnt(struct net *net)
- 		sn->gssp_clnt = clnt;
- 	}
- 	mutex_unlock(&sn->gssp_lock);
--	wake_up(&sn->gssp_wq);
- 	return ret;
- }
- 
---- a/net/sunrpc/auth_gss/svcauth_gss.c
-+++ b/net/sunrpc/auth_gss/svcauth_gss.c
-@@ -1295,34 +1295,9 @@ static int set_gss_proxy(struct net *net
- 	else
- 		ret = -EBUSY;
- 	spin_unlock(&use_gssp_lock);
--	wake_up(&sn->gssp_wq);
- 	return ret;
- }
- 
--static inline bool gssp_ready(struct sunrpc_net *sn)
+-static int fuse_dev_pipe_buf_steal(struct pipe_inode_info *pipe,
+-				   struct pipe_buffer *buf)
 -{
--	switch (sn->use_gss_proxy) {
--		case -1:
--			return false;
--		case 0:
--			return true;
--		case 1:
--			return sn->gssp_clnt;
--	}
--	WARN_ON_ONCE(1);
--	return false;
+-	return 1;
 -}
 -
--static int wait_for_gss_proxy(struct net *net, struct file *file)
--{
--	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
+-static const struct pipe_buf_operations fuse_dev_pipe_buf_ops = {
+-	.can_merge = 0,
+-	.map = generic_pipe_buf_map,
+-	.unmap = generic_pipe_buf_unmap,
+-	.confirm = generic_pipe_buf_confirm,
+-	.release = generic_pipe_buf_release,
+-	.steal = fuse_dev_pipe_buf_steal,
+-	.get = generic_pipe_buf_get,
+-};
 -
--	if (file->f_flags & O_NONBLOCK && !gssp_ready(sn))
--		return -EAGAIN;
--	return wait_event_interruptible(sn->gssp_wq, gssp_ready(sn));
+ static ssize_t fuse_dev_splice_read(struct file *in, loff_t *ppos,
+ 				    struct pipe_inode_info *pipe,
+ 				    size_t len, unsigned int flags)
+@@ -1358,7 +1342,11 @@ static ssize_t fuse_dev_splice_read(stru
+ 		buf->page = bufs[page_nr].page;
+ 		buf->offset = bufs[page_nr].offset;
+ 		buf->len = bufs[page_nr].len;
+-		buf->ops = &fuse_dev_pipe_buf_ops;
++		/*
++		 * Need to be careful about this.  Having buf->ops in module
++		 * code can Oops if the buffer persists after module unload.
++		 */
++		buf->ops = &nosteal_pipe_buf_ops;
+ 
+ 		pipe->nrbufs++;
+ 		page_nr++;
+--- a/fs/splice.c
++++ b/fs/splice.c
+@@ -555,6 +555,24 @@ static const struct pipe_buf_operations
+ 	.get = generic_pipe_buf_get,
+ };
+ 
++static int generic_pipe_buf_nosteal(struct pipe_inode_info *pipe,
++				    struct pipe_buffer *buf)
++{
++	return 1;
++}
++
++/* Pipe buffer operations for a socket and similar. */
++const struct pipe_buf_operations nosteal_pipe_buf_ops = {
++	.can_merge = 0,
++	.map = generic_pipe_buf_map,
++	.unmap = generic_pipe_buf_unmap,
++	.confirm = generic_pipe_buf_confirm,
++	.release = generic_pipe_buf_release,
++	.steal = generic_pipe_buf_nosteal,
++	.get = generic_pipe_buf_get,
++};
++EXPORT_SYMBOL(nosteal_pipe_buf_ops);
++
+ static ssize_t kernel_readv(struct file *file, const struct iovec *vec,
+ 			    unsigned long vlen, loff_t offset)
+ {
+--- a/include/linux/pipe_fs_i.h
++++ b/include/linux/pipe_fs_i.h
+@@ -157,6 +157,8 @@ int generic_pipe_buf_confirm(struct pipe
+ int generic_pipe_buf_steal(struct pipe_inode_info *, struct pipe_buffer *);
+ void generic_pipe_buf_release(struct pipe_inode_info *, struct pipe_buffer *);
+ 
++extern const struct pipe_buf_operations nosteal_pipe_buf_ops;
++
+ /* for F_SETPIPE_SZ and F_GETPIPE_SZ */
+ long pipe_fcntl(struct file *, unsigned int, unsigned long arg);
+ struct pipe_inode_info *get_pipe_info(struct file *file);
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -74,36 +74,6 @@
+ struct kmem_cache *skbuff_head_cache __read_mostly;
+ static struct kmem_cache *skbuff_fclone_cache __read_mostly;
+ 
+-static void sock_pipe_buf_release(struct pipe_inode_info *pipe,
+-				  struct pipe_buffer *buf)
+-{
+-	put_page(buf->page);
+-}
+-
+-static void sock_pipe_buf_get(struct pipe_inode_info *pipe,
+-				struct pipe_buffer *buf)
+-{
+-	get_page(buf->page);
+-}
+-
+-static int sock_pipe_buf_steal(struct pipe_inode_info *pipe,
+-			       struct pipe_buffer *buf)
+-{
+-	return 1;
 -}
 -
 -
- static ssize_t write_gssp(struct file *file, const char __user *buf,
- 			 size_t count, loff_t *ppos)
- {
-@@ -1355,16 +1330,12 @@ static ssize_t read_gssp(struct file *fi
- 			 size_t count, loff_t *ppos)
- {
- 	struct net *net = PDE_DATA(file_inode(file));
-+	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
- 	unsigned long p = *ppos;
- 	char tbuf[10];
- 	size_t len;
--	int ret;
+-/* Pipe buffer operations for a socket. */
+-static const struct pipe_buf_operations sock_pipe_buf_ops = {
+-	.can_merge = 0,
+-	.map = generic_pipe_buf_map,
+-	.unmap = generic_pipe_buf_unmap,
+-	.confirm = generic_pipe_buf_confirm,
+-	.release = sock_pipe_buf_release,
+-	.steal = sock_pipe_buf_steal,
+-	.get = sock_pipe_buf_get,
+-};
 -
--	ret = wait_for_gss_proxy(net, file);
--	if (ret)
--		return ret;
- 
--	snprintf(tbuf, sizeof(tbuf), "%d\n", use_gss_proxy(net));
-+	snprintf(tbuf, sizeof(tbuf), "%d\n", sn->use_gss_proxy);
- 	len = strlen(tbuf);
- 	if (p >= len)
- 		return 0;
---- a/net/sunrpc/netns.h
-+++ b/net/sunrpc/netns.h
-@@ -26,7 +26,6 @@ struct sunrpc_net {
- 	unsigned int rpcb_is_af_local : 1;
- 
- 	struct mutex gssp_lock;
--	wait_queue_head_t gssp_wq;
- 	struct rpc_clnt *gssp_clnt;
- 	int use_gss_proxy;
- 	int pipe_version;
+ /**
+  *	skb_panic - private function for out-of-line support
+  *	@skb:	buffer
+@@ -1811,7 +1781,7 @@ int skb_splice_bits(struct sk_buff *skb,
+ 		.partial = partial,
+ 		.nr_pages_max = MAX_SKB_FRAGS,
+ 		.flags = flags,
+-		.ops = &sock_pipe_buf_ops,
++		.ops = &nosteal_pipe_buf_ops,
+ 		.spd_release = sock_spd_release,
+ 	};
+ 	struct sk_buff *frag_iter;
 
 
