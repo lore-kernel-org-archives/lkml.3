@@ -1,156 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932566AbaBKUdo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:33:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39835 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753195AbaBKTGG (ORCPT
+	id S1756644AbaBKUeu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:34:50 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:44247 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755653AbaBKUe0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:06 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Brecht Machiels <brecht@mos6581.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>,
-        Rabin Vincent <rabin.vincent@stericsson.com>,
-        Borislav Petkov <bp@suse.de>
-Subject: [PATCH 3.13 118/120] rtc-cmos: Add an alarm disable quirk
-Date: Tue, 11 Feb 2014 11:05:59 -0800
-Message-Id: <20140211184827.010489286@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
-References: <20140211184823.492407127@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Tue, 11 Feb 2014 15:34:26 -0500
+Date: Tue, 11 Feb 2014 21:34:13 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: Re: [PATCH v2 6/8] perf/x86/uncore: add SNB/IVB/HSW client uncore
+ memory controller support
+Message-ID: <20140211203413.GB9987@twins.programming.kicks-ass.net>
+References: <1392132015-14521-1-git-send-email-eranian@google.com>
+ <1392132015-14521-7-git-send-email-eranian@google.com>
+ <20140211161905.GS27965@twins.programming.kicks-ass.net>
+ <CABPqkBRmt120Xn02sR8nhFCjuxSJ7xZbE4-G57x7rgsmB3nwNg@mail.gmail.com>
+ <20140211165013.GV27965@twins.programming.kicks-ass.net>
+ <CABPqkBSoW5bUret1-Rnm4AQSVrDm+CkrzuzZzdeh9HN8bsj58Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBSoW5bUret1-Rnm4AQSVrDm+CkrzuzZzdeh9HN8bsj58Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Feb 11, 2014 at 07:31:59PM +0100, Stephane Eranian wrote:
+> > Anyway, perf_event_intel.c lists: 60,63,69,70,71 as being haswell
+> > clients.  Andi did all that, so if its wrong its on Intel anyway.
+> >
+> What he has is okay for core. They all have the same core PMU at 99%.
+> But the uncore can be radically different. Look at IVB (58) vs IVB-EP (62).
+> So this is more risky there. That is why I did not add the other model numbers.
 
-------------------
+Well, if any of those is a !client part; then still his fault for not
+putting in a comment.
 
-From: Borislav Petkov <bp@alien8.de>
-
-commit d5a1c7e3fc38d9c7d629e1e47f32f863acbdec3d upstream.
-
-41c7f7424259f ("rtc: Disable the alarm in the hardware (v2)") added the
-functionality to disable the RTC wake alarm when shutting down the box.
-
-However, there are at least two b0rked BIOSes we know about:
-
-https://bugzilla.novell.com/show_bug.cgi?id=812592
-https://bugzilla.novell.com/show_bug.cgi?id=805740
-
-where, when wakeup alarm is enabled in the BIOS, the machine reboots
-automatically right after shutdown, regardless of what wakeup time is
-programmed.
-
-Bisecting the issue lead to this patch so disable its functionality with
-a DMI quirk only for those boxes.
-
-Cc: Brecht Machiels <brecht@mos6581.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Rabin Vincent <rabin.vincent@stericsson.com>
-Signed-off-by: Borislav Petkov <bp@suse.de>
-[jstultz: Changed variable name for clarity, added extra dmi entry]
-Tested-by: Brecht Machiels <brecht@mos6581.org>
-Tested-by: Borislav Petkov <bp@suse.de>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/rtc/rtc-cmos.c |   52 ++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 51 insertions(+), 1 deletion(-)
-
---- a/drivers/rtc/rtc-cmos.c
-+++ b/drivers/rtc/rtc-cmos.c
-@@ -34,11 +34,11 @@
- #include <linux/interrupt.h>
- #include <linux/spinlock.h>
- #include <linux/platform_device.h>
--#include <linux/mod_devicetable.h>
- #include <linux/log2.h>
- #include <linux/pm.h>
- #include <linux/of.h>
- #include <linux/of_platform.h>
-+#include <linux/dmi.h>
- 
- /* this is for "generic access to PC-style RTC" using CMOS_READ/CMOS_WRITE */
- #include <asm-generic/rtc.h>
-@@ -377,6 +377,51 @@ static int cmos_set_alarm(struct device
- 	return 0;
- }
- 
-+/*
-+ * Do not disable RTC alarm on shutdown - workaround for b0rked BIOSes.
-+ */
-+static bool alarm_disable_quirk;
-+
-+static int __init set_alarm_disable_quirk(const struct dmi_system_id *id)
-+{
-+	alarm_disable_quirk = true;
-+	pr_info("rtc-cmos: BIOS has alarm-disable quirk. ");
-+	pr_info("RTC alarms disabled\n");
-+	return 0;
-+}
-+
-+static const struct dmi_system_id rtc_quirks[] __initconst = {
-+	/* https://bugzilla.novell.com/show_bug.cgi?id=805740 */
-+	{
-+		.callback = set_alarm_disable_quirk,
-+		.ident    = "IBM Truman",
-+		.matches  = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "4852570"),
-+		},
-+	},
-+	/* https://bugzilla.novell.com/show_bug.cgi?id=812592 */
-+	{
-+		.callback = set_alarm_disable_quirk,
-+		.ident    = "Gigabyte GA-990XA-UD3",
-+		.matches  = {
-+			DMI_MATCH(DMI_SYS_VENDOR,
-+					"Gigabyte Technology Co., Ltd."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "GA-990XA-UD3"),
-+		},
-+	},
-+	/* http://permalink.gmane.org/gmane.linux.kernel/1604474 */
-+	{
-+		.callback = set_alarm_disable_quirk,
-+		.ident    = "Toshiba Satellite L300",
-+		.matches  = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "Satellite L300"),
-+		},
-+	},
-+	{}
-+};
-+
- static int cmos_alarm_irq_enable(struct device *dev, unsigned int enabled)
- {
- 	struct cmos_rtc	*cmos = dev_get_drvdata(dev);
-@@ -385,6 +430,9 @@ static int cmos_alarm_irq_enable(struct
- 	if (!is_valid_irq(cmos->irq))
- 		return -EINVAL;
- 
-+	if (alarm_disable_quirk)
-+		return 0;
-+
- 	spin_lock_irqsave(&rtc_lock, flags);
- 
- 	if (enabled)
-@@ -1157,6 +1205,8 @@ static int __init cmos_init(void)
- 			platform_driver_registered = true;
- 	}
- 
-+	dmi_check_system(rtc_quirks);
-+
- 	if (retval == 0)
- 		return 0;
- 
-
-
+What's the worst that can happen? Failing to find the hardware I suppose
+seeing as this is all discoverable PCI space?
