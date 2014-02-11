@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754157AbaBKTH4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:07:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40367 "EHLO
+	id S1754515AbaBKTbu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:31:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40393 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754111AbaBKTHt (ORCPT
+	with ESMTP id S1754150AbaBKTH4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:07:49 -0500
+	Tue, 11 Feb 2014 14:07:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Dan Duval <dan.duval@oracle.com>,
-        Chuck Anderson <chuck.anderson@oracle.com>,
-        Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>
-Subject: [PATCH 3.10 08/79] audit: reset audit backlog wait time after error recovery
-Date: Tue, 11 Feb 2014 11:05:12 -0800
-Message-Id: <20140211184721.173742955@linuxfoundation.org>
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 43/79] mm, oom: base root bonus on current usage
+Date: Tue, 11 Feb 2014 11:05:47 -0800
+Message-Id: <20140211184722.191350208@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
 References: <20140211184720.928667275@linuxfoundation.org>
@@ -31,48 +31,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Guy Briggs <rgb@redhat.com>
+From: David Rientjes <rientjes@google.com>
 
-commit e789e561a50de0aaa8c695662d97aaa5eac9d55f upstream.
+commit 778c14affaf94a9e4953179d3e13a544ccce7707 upstream.
 
-When the audit queue overflows and times out (audit_backlog_wait_time), the
-audit queue overflow timeout is set to zero.  Once the audit queue overflow
-timeout condition recovers, the timeout should be reset to the original value.
+A 3% of system memory bonus is sometimes too excessive in comparison to
+other processes.
 
-See also:
-	https://lkml.org/lkml/2013/9/2/473
+With commit a63d83f427fb ("oom: badness heuristic rewrite"), the OOM
+killer tries to avoid killing privileged tasks by subtracting 3% of
+overall memory (system or cgroup) from their per-task consumption.  But
+as a result, all root tasks that consume less than 3% of overall memory
+are considered equal, and so it only takes 33+ privileged tasks pushing
+the system out of memory for the OOM killer to do something stupid and
+kill dhclient or other root-owned processes.  For example, on a 32G
+machine it can't tell the difference between the 1M agetty and the 10G
+fork bomb member.
 
-Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
-Signed-off-by: Dan Duval <dan.duval@oracle.com>
-Signed-off-by: Chuck Anderson <chuck.anderson@oracle.com>
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-Signed-off-by: Eric Paris <eparis@redhat.com>
+The changelog describes this 3% boost as the equivalent to the global
+overcommit limit being 3% higher for privileged tasks, but this is not
+the same as discounting 3% of overall memory from _every privileged task
+individually_ during OOM selection.
+
+Replace the 3% of system memory bonus with a 3% of current memory usage
+bonus.
+
+By giving root tasks a bonus that is proportional to their actual size,
+they remain comparable even when relatively small.  In the example
+above, the OOM killer will discount the 1M agetty's 256 badness points
+down to 179, and the 10G fork bomb's 262144 points down to 183500 points
+and make the right choice, instead of discounting both to 0 and killing
+agetty because it's first in the task list.
+
+Signed-off-by: David Rientjes <rientjes@google.com>
+Reported-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/audit.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ Documentation/filesystems/proc.txt |    4 ++--
+ mm/oom_kill.c                      |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -103,7 +103,8 @@ static int	audit_rate_limit;
+--- a/Documentation/filesystems/proc.txt
++++ b/Documentation/filesystems/proc.txt
+@@ -1372,8 +1372,8 @@ may allocate from based on an estimation
+ For example, if a task is using all allowed memory, its badness score will be
+ 1000.  If it is using half of its allowed memory, its score will be 500.
  
- /* Number of outstanding audit_buffers allowed. */
- static int	audit_backlog_limit = 64;
--static int	audit_backlog_wait_time = 60 * HZ;
-+#define AUDIT_BACKLOG_WAIT_TIME (60 * HZ)
-+static int	audit_backlog_wait_time = AUDIT_BACKLOG_WAIT_TIME;
- static int	audit_backlog_wait_overflow = 0;
+-There is an additional factor included in the badness score: root
+-processes are given 3% extra memory over other tasks.
++There is an additional factor included in the badness score: the current memory
++and swap usage is discounted by 3% for root processes.
  
- /* The identity of the user shutting down the audit system. */
-@@ -1135,6 +1136,8 @@ struct audit_buffer *audit_log_start(str
- 		return NULL;
- 	}
+ The amount of "allowed" memory depends on the context in which the oom killer
+ was called.  If it is due to the memory assigned to the allocating task's cpuset
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -170,7 +170,7 @@ unsigned long oom_badness(struct task_st
+ 	 * implementation used by LSMs.
+ 	 */
+ 	if (has_capability_noaudit(p, CAP_SYS_ADMIN))
+-		adj -= 30;
++		points -= (points * 3) / 100;
  
-+	audit_backlog_wait_time = AUDIT_BACKLOG_WAIT_TIME;
-+
- 	ab = audit_buffer_alloc(ctx, gfp_mask, type);
- 	if (!ab) {
- 		audit_log_lost("out of memory in audit_log_start");
+ 	/* Normalize to oom_score_adj units */
+ 	adj *= totalpages / 1000;
 
 
