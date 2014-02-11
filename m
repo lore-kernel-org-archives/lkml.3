@@ -1,80 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751426AbaBKIpL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 03:45:11 -0500
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:48585 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750758AbaBKIpH (ORCPT
+	id S1751560AbaBKIp3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 03:45:29 -0500
+Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:38664
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751440AbaBKIp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 03:45:07 -0500
-Date: Tue, 11 Feb 2014 09:45:02 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Jason Low <jason.low2@hp.com>, Waiman Long <waiman.long@hp.com>,
-        paulmck@linux.vnet.ibm.com, torvalds@linux-foundation.org,
-        tglx@linutronix.de, riel@redhat.com, davidlohr@hp.com, hpa@zytor.com,
-        andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
-        chegu_vinod@hp.com
-Subject: Re: [PATCH 0/8] locking/core patches
-Message-ID: <20140211084502.GA26063@gmail.com>
-References: <20140210195820.834693028@infradead.org>
- <20140210150230.b7f46688093ebc5c45fee870@linux-foundation.org>
- <20140211071700.GH27965@twins.programming.kicks-ass.net>
- <20140211000330.d791513d.akpm@linux-foundation.org>
+	Tue, 11 Feb 2014 03:45:27 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzdchz1de098h8275bh1de097h84d07hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <broonie@kernel.org>, <lgirdwood@gmail.com>, <Guangyu.Chen@freescale.com>
+CC: <perex@perex.cz>, <tiwai@suse.de>, <shawn.guo@linaro.org>,
+        <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>,
+        Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCH v2 1/2] ASoC: fsl-spdif: big-endian support
+Date: Tue, 11 Feb 2014 15:42:48 +0800
+Message-ID: <1392104569-27792-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140211000330.d791513d.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+For most platforms, the CPU and SPDIF device is in the same endianess
+mode. While for the LS1 platform, the CPU is in LE mode and the SPDIF
+is in BE mode.
 
-* Andrew Morton <akpm@linux-foundation.org> wrote:
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+Cc: Nicolin Chen <Guangyu.Chen@freescale.com>
+Acked-by: Nicolin Chen <Guangyu.Chen@freescale.com>
+---
 
-> On Tue, 11 Feb 2014 08:17:00 +0100 Peter Zijlstra <peterz@infradead.org> wrote:
-> 
-> > On Mon, Feb 10, 2014 at 03:02:30PM -0800, Andrew Morton wrote:
-> > > On Mon, 10 Feb 2014 20:58:20 +0100 Peter Zijlstra <peterz@infradead.org> wrote:
-> > > 
-> > > > Hi all,
-> > > > 
-> > > > I would propose merging the following patches...
-> > > > 
-> > > > The first set is mostly from Jason and tweaks the mutex adaptive
-> > > > spinning, AIM7 throughput numbers:
-> > > > 
-> > 
-> >                          Jobs/min/ Jobs/sec/ Time:   Time:  Time:   Time:           Running child time
-> >          Forks  Jobs/min   child    child parent  childU childS  std_dev   JTI   :max  :min
-> > 
-> > > > PRE:  100   2000.04  21564.90 2721.29 311.99     3.12       0.01     0.00     99
-> > > > POST: 100   2000.04  42603.85 5142.80 311.99     3.12       0.00     0.00     99
-> > > 
-> > > What do these columns represent?  I'm guessing the large improvement
-> > > was in context switches?
-> > 
-> > I pasted the header from reaim above;
-> 
-> hmpf.  I wonder what's the difference between Jobs/min, Jobs/min(child)
-> and Jobs/sec(child), which is not Jobs/min(child) / 60.
-> 
-> > I'm not entirely sure what the bloody thing does and I hate that 
-> > it takes hours to get these numbers :/
-> >
-> > Bloody stupid benchmark if you ask me.
-> 
-> heh, yes, it's stupid how long many benchmarks take.  Ditch it.  A 
-> change like this should be testable with a 30-line microbenchmark 
-> which runs in 5 seconds tops.
+Fix some issues from Nicolin Chen's comments.
 
-Another very nice option would be to stick the relevant workload 
-patterns into 'perf bench', calibrate it to emit similar figures (and 
-double check the speedup is similar as well) and thus make it an AIM7 
-work-alike microbenchmark.
 
-Thanks,
+ Documentation/devicetree/bindings/sound/fsl,spdif.txt | 5 +++++
+ sound/soc/fsl/fsl_spdif.c                             | 5 ++++-
+ 2 files changed, 9 insertions(+), 1 deletion(-)
 
-	Ingo
+diff --git a/Documentation/devicetree/bindings/sound/fsl,spdif.txt b/Documentation/devicetree/bindings/sound/fsl,spdif.txt
+index f2ae335..3e9e82c8 100644
+--- a/Documentation/devicetree/bindings/sound/fsl,spdif.txt
++++ b/Documentation/devicetree/bindings/sound/fsl,spdif.txt
+@@ -29,6 +29,10 @@ Required properties:
+ 			can also be referred to TxClk_Source
+ 			bit of register SPDIF_STC.
+ 
++   - big-endian : If this property is absent, the native endian mode will
++   be in use as default, or the big endian mode will be in use for all the
++   device registers.
++
+ Example:
+ 
+ spdif: spdif@02004000 {
+@@ -50,5 +54,6 @@ spdif: spdif@02004000 {
+ 		"rxtx5", "rxtx6",
+ 		"rxtx7";
+ 
++	big-endian;
+ 	status = "okay";
+ };
+diff --git a/sound/soc/fsl/fsl_spdif.c b/sound/soc/fsl/fsl_spdif.c
+index 8f36f49..6452ca8 100644
+--- a/sound/soc/fsl/fsl_spdif.c
++++ b/sound/soc/fsl/fsl_spdif.c
+@@ -985,7 +985,7 @@ static bool fsl_spdif_writeable_reg(struct device *dev, unsigned int reg)
+ 	}
+ }
+ 
+-static const struct regmap_config fsl_spdif_regmap_config = {
++static struct regmap_config fsl_spdif_regmap_config = {
+ 	.reg_bits = 32,
+ 	.reg_stride = 4,
+ 	.val_bits = 32,
+@@ -1105,6 +1105,9 @@ static int fsl_spdif_probe(struct platform_device *pdev)
+ 	memcpy(&spdif_priv->cpu_dai_drv, &fsl_spdif_dai, sizeof(fsl_spdif_dai));
+ 	spdif_priv->cpu_dai_drv.name = spdif_priv->name;
+ 
++	if (of_property_read_bool(np, "big-endian"))
++		fsl_spdif_regmap_config.val_format_endian = REGMAP_ENDIAN_BIG;
++
+ 	/* Get the addresses and IRQ */
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	regs = devm_ioremap_resource(&pdev->dev, res);
+-- 
+1.8.4
+
+
