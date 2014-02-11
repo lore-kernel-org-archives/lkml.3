@@ -1,20 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756215AbaBKVFo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 16:05:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39519 "EHLO
+	id S1755895AbaBKVFl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 16:05:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39526 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751969AbaBKTFC (ORCPT
+	with ESMTP id S1752362AbaBKTFC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Feb 2014 14:05:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Brown <broonie@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.13 028/120] ACPI / init: Flag use of ACPI and ACPI idioms for power supplies to regulator API
-Date: Tue, 11 Feb 2014 11:04:29 -0800
-Message-Id: <20140211184824.360636707@linuxfoundation.org>
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Andreas Krebbel <krebbel@linux.vnet.ibm.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@redhat.com>, Ralf Baechle <ralf@linux-mips.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.13 029/120] compat: fix sys_fanotify_mark
+Date: Tue, 11 Feb 2014 11:04:30 -0800
+Message-Id: <20140211184824.391137374@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -29,66 +36,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@linaro.org>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-commit 49a12877d2777cadcb838981c3c4f5a424aef310 upstream.
+commit 592f6b842f64e416c7598a1b97c649b34241e22d upstream.
 
-There is currently no facility in ACPI to express the hookup of voltage
-regulators, the expectation is that the regulators that exist in the
-system will be handled transparently by firmware if they need software
-control at all. This means that if for some reason the regulator API is
-enabled on such a system it should assume that any supplies that devices
-need are provided by the system at all relevant times without any software
-intervention.
+Commit 91c2e0bcae72 ("unify compat fanotify_mark(2), switch to
+COMPAT_SYSCALL_DEFINE") added a new unified compat fanotify_mark syscall
+to be used by all architectures.
 
-Tell the regulator core to make this assumption by calling
-regulator_has_full_constraints(). Do this as soon as we know we are using
-ACPI so that the information is available to the regulator core as early
-as possible. This will cause the regulator core to pretend that there is
-an always on regulator supplying any supply that is requested but that has
-not otherwise been mapped which is the behaviour expected on a system with
-ACPI.
+Unfortunately the unified version merges the split mask parameter in a
+wrong way: the lower and higher word got swapped.
 
-Should the ability to specify regulators be added in future revisions of
-ACPI then once we have support for ACPI mappings in the kernel the same
-assumptions will apply. It is also likely that systems will default to a
-mode of operation which does not require any interpretation of these
-mappings in order to be compatible with existing operating system releases
-so it should remain safe to make these assumptions even if the mappings
-exist but are not supported by the kernel.
+This was discovered with glibc's tst-fanotify test case.
 
-Signed-off-by: Mark Brown <broonie@linaro.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Reported-by: Andreas Krebbel <krebbel@linux.vnet.ibm.com>
+Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
+Acked-by: "David S. Miller" <davem@davemloft.net>
+Acked-by: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/bus.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ fs/notify/fanotify/fanotify_user.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/acpi/bus.c
-+++ b/drivers/acpi/bus.c
-@@ -33,6 +33,7 @@
- #include <linux/proc_fs.h>
- #include <linux/acpi.h>
- #include <linux/slab.h>
-+#include <linux/regulator/machine.h>
- #ifdef CONFIG_X86
- #include <asm/mpspec.h>
+--- a/fs/notify/fanotify/fanotify_user.c
++++ b/fs/notify/fanotify/fanotify_user.c
+@@ -888,9 +888,9 @@ COMPAT_SYSCALL_DEFINE6(fanotify_mark,
+ {
+ 	return sys_fanotify_mark(fanotify_fd, flags,
+ #ifdef __BIG_ENDIAN
+-				((__u64)mask1 << 32) | mask0,
+-#else
+ 				((__u64)mask0 << 32) | mask1,
++#else
++				((__u64)mask1 << 32) | mask0,
  #endif
-@@ -576,6 +577,14 @@ void __init acpi_early_init(void)
- 		goto error0;
- 	}
- 
-+	/*
-+	 * If the system is using ACPI then we can be reasonably
-+	 * confident that any regulators are managed by the firmware
-+	 * so tell the regulator core it has everything it needs to
-+	 * know.
-+	 */
-+	regulator_has_full_constraints();
-+
- 	return;
- 
-       error0:
+ 				 dfd, pathname);
+ }
 
 
