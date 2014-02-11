@@ -1,110 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752358AbaBKMTk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 07:19:40 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:46618 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752317AbaBKMTi (ORCPT
+	id S1752573AbaBKMVz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 07:21:55 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:41940 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751929AbaBKMVx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 07:19:38 -0500
-Date: Tue, 11 Feb 2014 04:17:56 -0800
-From: tip-bot for Nicolas Pitre <tipbot@zytor.com>
-Message-ID: <tip-y2nbw5j3ma5siy5584919z5i@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, nicolas.pitre@linaro.org, lethal@linux-sh.org,
-        benh@kernel.crashing.org, linux@arm.linux.org.uk,
-        preeti@linux.vnet.ibm.com, nico@linaro.org, rjw@rjwysocki.net,
-        tglx@linutronix.de, daniel.lezcano@linaro.org
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, nicolas.pitre@linaro.org, lethal@linux-sh.org,
-        benh@kernel.crashing.org, preeti@linux.vnet.ibm.com,
-        linux@arm.linux.org.uk, nico@linaro.org, tglx@linutronix.de,
-        rjw@rjwysocki.net, daniel.lezcano@linaro.org
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/idle, ARM:
-  Remove redundant cpuidle_idle_call()
-Git-Commit-ID: ad68cc7a777948b77f15a3dc3510918ff87ed0c0
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 11 Feb 2014 07:21:53 -0500
+Date: Tue, 11 Feb 2014 12:21:46 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 1/7] mfd: 88pm860x: Fix possible NULL pointer dereference
+ on i2c_new_dummy error
+Message-ID: <20140211122146.GP32042@lee--X1>
+References: <1392113015-11180-1-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 11 Feb 2014 04:18:02 -0800 (PST)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1392113015-11180-1-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ad68cc7a777948b77f15a3dc3510918ff87ed0c0
-Gitweb:     http://git.kernel.org/tip/ad68cc7a777948b77f15a3dc3510918ff87ed0c0
-Author:     Nicolas Pitre <nicolas.pitre@linaro.org>
-AuthorDate: Wed, 29 Jan 2014 12:45:09 -0500
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 11 Feb 2014 09:58:22 +0100
+On Tue, 11 Feb 2014, Krzysztof Kozlowski wrote:
 
-sched/idle, ARM: Remove redundant cpuidle_idle_call()
+> During probe the driver allocates dummy I2C device for companion chip
+> with i2c_new_dummy() but it does not check the return value of this call.
+> 
+> In case of error (i2c_new_device(): memory allocation failure or I2C
+> address cannot be used) this function returns NULL which is later used
+> by regmap_init_i2c().
+> 
+> If i2c_new_dummy() fails for companion device, fail also the probe for
+> main MFD driver.
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Cc: stable@vger.kernel.org
+> ---
+>  drivers/mfd/88pm860x-core.c |    5 +++++
+>  1 file changed, 5 insertions(+)
+> 
+> diff --git a/drivers/mfd/88pm860x-core.c b/drivers/mfd/88pm860x-core.c
+> index c9b1f6422941..e456be9a7c67 100644
+> --- a/drivers/mfd/88pm860x-core.c
+> +++ b/drivers/mfd/88pm860x-core.c
+> @@ -1179,6 +1179,11 @@ static int pm860x_probe(struct i2c_client *client,
+>  		chip->companion_addr = pdata->companion_addr;
+>  		chip->companion = i2c_new_dummy(chip->client->adapter,
+>  						chip->companion_addr);
+> +		if (!chip->companion) {
+> +			dev_err(&client->dev,
+> +				"Failed to allocate I2C companion device\n");
+> +			return -ENODEV;
+> +		}
+>  		chip->regmap_companion = regmap_init_i2c(chip->companion,
+>  							&pm860x_regmap_config);
+>  		if (IS_ERR(chip->regmap_companion)) {
 
-The core idle loop now takes care of it.
+Applied, thanks.
 
-Signed-off-by: Nicolas Pitre <nico@linaro.org>
-Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: Paul Mundt <lethal@linux-sh.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linuxppc-dev@lists.ozlabs.org
-Cc: linux-sh@vger.kernel.org
-Cc: linux-pm@vger.kernel.org
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: linaro-kernel@lists.linaro.org
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/n/tip-y2nbw5j3ma5siy5584919z5i@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/arm/kernel/process.c | 16 +++++-----------
- 1 file changed, 5 insertions(+), 11 deletions(-)
-
-diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
-index 92f7b15..adabeab 100644
---- a/arch/arm/kernel/process.c
-+++ b/arch/arm/kernel/process.c
-@@ -30,7 +30,6 @@
- #include <linux/uaccess.h>
- #include <linux/random.h>
- #include <linux/hw_breakpoint.h>
--#include <linux/cpuidle.h>
- #include <linux/leds.h>
- #include <linux/reboot.h>
- 
-@@ -133,7 +132,11 @@ EXPORT_SYMBOL_GPL(arm_pm_restart);
- 
- void (*arm_pm_idle)(void);
- 
--static void default_idle(void)
-+/*
-+ * Called from the core idle loop.
-+ */
-+
-+void arch_cpu_idle(void)
- {
- 	if (arm_pm_idle)
- 		arm_pm_idle();
-@@ -168,15 +171,6 @@ void arch_cpu_idle_dead(void)
- #endif
- 
- /*
-- * Called from the core idle loop.
-- */
--void arch_cpu_idle(void)
--{
--	if (cpuidle_idle_call())
--		default_idle();
--}
--
--/*
-  * Called by kexec, immediately prior to machine_kexec().
-  *
-  * This must completely disable all secondary CPUs; simply causing those CPUs
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
