@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932451AbaBKUXl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:23:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39956 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751939AbaBKTG0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753357AbaBKTG0 (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 11 Feb 2014 14:06:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39908 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751939AbaBKTGS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 14:06:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH 3.12 006/107] Revert "EISA: Initialize device before its resources"
-Date: Tue, 11 Feb 2014 11:04:32 -0800
-Message-Id: <20140211184748.379851541@linuxfoundation.org>
+        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Greg Thelen <gthelen@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.12 015/107] memcg: fix endless loop caused by mem_cgroup_iter
+Date: Tue, 11 Feb 2014 11:04:41 -0800
+Message-Id: <20140211184748.638971647@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -28,96 +31,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjorn Helgaas <bhelgaas@google.com>
+From: Michal Hocko <mhocko@suse.cz>
 
-commit 765ee51f9a3f652959b4c7297d198a28e37952b4 upstream.
+commit ecc736fc3c71c411a9d201d8588c9e7e049e5d8c upstream.
 
-This reverts commit 26abfeed4341872364386c6a52b9acef8c81a81a.
+Hugh has reported an endless loop when the hardlimit reclaim sees the
+same group all the time.  This might happen when the reclaim races with
+the memcg removal.
 
-In the eisa_probe() force_probe path, if we were unable to request slot
-resources (e.g., [io 0x800-0x8ff]), we skipped the slot with "Cannot
-allocate resource for EISA slot %d" before reading the EISA signature in
-eisa_init_device().
+shrink_zone
+                                                [rmdir root]
+  mem_cgroup_iter(root, NULL, reclaim)
+    // prev = NULL
+    rcu_read_lock()
+    mem_cgroup_iter_load
+      last_visited = iter->last_visited   // gets root || NULL
+      css_tryget(last_visited)            // failed
+      last_visited = NULL                 [1]
+    memcg = root = __mem_cgroup_iter_next(root, NULL)
+    mem_cgroup_iter_update
+      iter->last_visited = root;
+    reclaim->generation = iter->generation
 
-Commit 26abfeed4341 moved eisa_init_device() earlier, so we tried to read
-the EISA signature before requesting the slot resources, and this caused
-hangs during boot.
+ mem_cgroup_iter(root, root, reclaim)
+   // prev = root
+   rcu_read_lock
+    mem_cgroup_iter_load
+      last_visited = iter->last_visited   // gets root
+      css_tryget(last_visited)            // failed
+    [1]
 
-Link: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1251816
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+The issue seemed to be introduced by commit 5f5781619718 ("memcg: relax
+memcg iter caching") which has replaced unconditional css_get/css_put by
+css_tryget/css_put for the cached iterator.
+
+This patch fixes the issue by skipping css_tryget on the root of the
+tree walk in mem_cgroup_iter_load and symmetrically doesn't release it
+in mem_cgroup_iter_update.
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Reported-by: Hugh Dickins <hughd@google.com>
+Tested-by: Hugh Dickins <hughd@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Greg Thelen <gthelen@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/eisa/eisa-bus.c |   26 +++++++++++++++-----------
- 1 file changed, 15 insertions(+), 11 deletions(-)
+ mm/memcontrol.c |   17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
 
---- a/drivers/eisa/eisa-bus.c
-+++ b/drivers/eisa/eisa-bus.c
-@@ -275,11 +275,13 @@ static int __init eisa_request_resources
- 		}
- 		
- 		if (slot) {
-+			edev->res[i].name  = NULL;
- 			edev->res[i].start = SLOT_ADDRESS(root, slot)
- 					     + (i * 0x400);
- 			edev->res[i].end   = edev->res[i].start + 0xff;
- 			edev->res[i].flags = IORESOURCE_IO;
- 		} else {
-+			edev->res[i].name  = NULL;
- 			edev->res[i].start = SLOT_ADDRESS(root, slot)
- 					     + EISA_VENDOR_ID_OFFSET;
- 			edev->res[i].end   = edev->res[i].start + 3;
-@@ -326,19 +328,20 @@ static int __init eisa_probe(struct eisa
- 		return -ENOMEM;
- 	}
- 		
--	if (eisa_init_device(root, edev, 0)) {
-+	if (eisa_request_resources(root, edev, 0)) {
-+		dev_warn(root->dev,
-+		         "EISA: Cannot allocate resource for mainboard\n");
- 		kfree(edev);
- 		if (!root->force_probe)
--			return -ENODEV;
-+			return -EBUSY;
- 		goto force_probe;
- 	}
- 
--	if (eisa_request_resources(root, edev, 0)) {
--		dev_warn(root->dev,
--		         "EISA: Cannot allocate resource for mainboard\n");
-+	if (eisa_init_device(root, edev, 0)) {
-+		eisa_release_resources(edev);
- 		kfree(edev);
- 		if (!root->force_probe)
--			return -EBUSY;
-+			return -ENODEV;
- 		goto force_probe;
- 	}
- 
-@@ -361,11 +364,6 @@ static int __init eisa_probe(struct eisa
- 			continue;
- 		}
- 
--		if (eisa_init_device(root, edev, i)) {
--			kfree(edev);
--			continue;
--		}
--
- 		if (eisa_request_resources(root, edev, i)) {
- 			dev_warn(root->dev,
- 			         "Cannot allocate resource for EISA slot %d\n",
-@@ -373,6 +371,12 @@ static int __init eisa_probe(struct eisa
- 			kfree(edev);
- 			continue;
- 		}
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1120,7 +1120,15 @@ mem_cgroup_iter_load(struct mem_cgroup_r
+ 	if (iter->last_dead_count == *sequence) {
+ 		smp_rmb();
+ 		position = iter->last_visited;
+-		if (position && !css_tryget(&position->css))
 +
-+		if (eisa_init_device(root, edev, i)) {
-+			eisa_release_resources(edev);
-+			kfree(edev);
-+			continue;
-+		}
++		/*
++		 * We cannot take a reference to root because we might race
++		 * with root removal and returning NULL would end up in
++		 * an endless loop on the iterator user level when root
++		 * would be returned all the time.
++		 */
++		if (position && position != root &&
++				!css_tryget(&position->css))
+ 			position = NULL;
+ 	}
+ 	return position;
+@@ -1129,9 +1137,11 @@ mem_cgroup_iter_load(struct mem_cgroup_r
+ static void mem_cgroup_iter_update(struct mem_cgroup_reclaim_iter *iter,
+ 				   struct mem_cgroup *last_visited,
+ 				   struct mem_cgroup *new_position,
++				   struct mem_cgroup *root,
+ 				   int sequence)
+ {
+-	if (last_visited)
++	/* root reference counting symmetric to mem_cgroup_iter_load */
++	if (last_visited && last_visited != root)
+ 		css_put(&last_visited->css);
+ 	/*
+ 	 * We store the sequence count from the time @last_visited was
+@@ -1206,7 +1216,8 @@ struct mem_cgroup *mem_cgroup_iter(struc
+ 		memcg = __mem_cgroup_iter_next(root, last_visited);
  
- 		if (edev->state == (EISA_CONFIG_ENABLED | EISA_CONFIG_FORCED))
- 			enabled_str = " (forced enabled)";
+ 		if (reclaim) {
+-			mem_cgroup_iter_update(iter, last_visited, memcg, seq);
++			mem_cgroup_iter_update(iter, last_visited, memcg, root,
++					seq);
+ 
+ 			if (!memcg)
+ 				iter->generation++;
 
 
