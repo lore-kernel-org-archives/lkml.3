@@ -1,214 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751185AbaBKPLh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 10:11:37 -0500
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:36721 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750743AbaBKPLg (ORCPT
+	id S1751487AbaBKPLl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 10:11:41 -0500
+Received: from mail-la0-f42.google.com ([209.85.215.42]:56086 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750890AbaBKPLh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 10:11:36 -0500
+	Tue, 11 Feb 2014 10:11:37 -0500
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
 To: mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
         rjw@rjwysocki.net
 Cc: nicolas.pitre@linaro.org, preeti@linux.vnet.ibm.com,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/5] idle/cpuidle: Split cpuidle_idle_call main function into smaller functions
-Date: Tue, 11 Feb 2014 16:11:27 +0100
-Message-Id: <1392131491-5265-1-git-send-email-daniel.lezcano@linaro.org>
+Subject: [PATCH 2/5] cpuidle/idle: Move the cpuidle_idle_call function to idle.c
+Date: Tue, 11 Feb 2014 16:11:28 +0100
+Message-Id: <1392131491-5265-2-git-send-email-daniel.lezcano@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1392131491-5265-1-git-send-email-daniel.lezcano@linaro.org>
+References: <1392131491-5265-1-git-send-email-daniel.lezcano@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to allow better integration between the cpuidle framework and the
-scheduler, reducing the distance between these two sub-components will
-facilitate this integration by moving part of the cpuidle code in the idle
-task file and, because idle.c is in the sched directory, we have access to
-the scheduler's private structures.
+The cpuidle_idle_call does nothing more than calling the three individuals
+function and is no longer used by any arch specific code but only in the
+cpuidle framework code.
 
-This patch splits the cpuidle_idle_call main entry function into 3 calls
-to a newly added API:
- 1. select the idle state
- 2. enter the idle state
- 3. reflect the idle state
-
-The cpuidle_idle_call calls these three functions to implement the main
-idle entry function.
+We can move this function into the idle task code to ensure better
+proximity to the scheduler code.
 
 Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Acked-by: Nicolas Pitre <nicolas.pitre@linaro.org>
 ---
- drivers/cpuidle/cpuidle.c |  102 ++++++++++++++++++++++++++++++++-------------
- include/linux/cpuidle.h   |   14 +++++++
- 2 files changed, 87 insertions(+), 29 deletions(-)
+ drivers/cpuidle/cpuidle.c |   37 -------------------------------------
+ include/linux/cpuidle.h   |    2 --
+ kernel/sched/idle.c       |   44 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 44 insertions(+), 39 deletions(-)
 
 diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-index a55e68f..172ab6a 100644
+index 172ab6a..ae3078b 100644
 --- a/drivers/cpuidle/cpuidle.c
 +++ b/drivers/cpuidle/cpuidle.c
-@@ -108,6 +108,71 @@ int cpuidle_enter_state(struct cpuidle_device *dev, struct cpuidle_driver *drv,
+@@ -173,43 +173,6 @@ void cpuidle_reflect(struct cpuidle_device *dev, int index)
  }
  
  /**
-+ * cpuidle_select - ask the cpuidle framework to choose an idle state
-+ *
-+ * @drv: the cpuidle driver
-+ * @dev: the cpuidle device
-+ *
-+ * Returns the index of the idle state. On error it returns:
-+ * -NODEV : the cpuidle framework is not available
-+ * -EBUSY : the cpuidle framework is not initialized
-+ */
-+int cpuidle_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
-+{
-+	if (off || !initialized)
-+		return -ENODEV;
-+
-+	if (!drv || !dev || !dev->enabled)
-+		return -EBUSY;
-+
-+	return cpuidle_curr_governor->select(drv, dev);
-+}
-+
-+/**
-+ * cpuidle_enter - enter into the specified idle state
-+ *
-+ * @drv:   the cpuidle driver tied with the cpu
-+ * @dev:   the cpuidle device
-+ * @index: the index in the idle state table
-+ *
-+ * Returns the index in the idle state, < 0 in case of error.
-+ * The error code depends on the backend driver
-+ */
-+int cpuidle_enter(struct cpuidle_driver *drv, struct cpuidle_device *dev,
-+		  int index)
-+{
-+	int entered_state;
-+	bool broadcast = !!(drv->states[index].flags & CPUIDLE_FLAG_TIMER_STOP);
-+
-+	if (broadcast)
-+		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &dev->cpu);
-+
-+	if (cpuidle_state_is_coupled(dev, drv, index))
-+		entered_state = cpuidle_enter_state_coupled(dev, drv, index);
-+	else
-+		entered_state = cpuidle_enter_state(dev, drv, index);
-+
-+	if (broadcast)
-+		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &dev->cpu);
-+
-+	return entered_state;
-+}
-+
-+/**
-+ * cpuidle_reflect - tell the underlying governor what was the state
-+ * we were in
-+ *
-+ * @dev  : the cpuidle device
-+ * @index: the index in the idle state table
-+ *
-+ */
-+void cpuidle_reflect(struct cpuidle_device *dev, int index)
-+{
-+	if (cpuidle_curr_governor->reflect)
-+		cpuidle_curr_governor->reflect(dev, index);
-+}
-+
-+/**
-  * cpuidle_idle_call - the main idle loop
-  *
-  * NOTE: no locks or semaphores should be used here
-@@ -116,51 +181,30 @@ int cpuidle_enter_state(struct cpuidle_device *dev, struct cpuidle_driver *drv,
- int cpuidle_idle_call(void)
- {
- 	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
--	struct cpuidle_driver *drv;
-+	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
- 	int next_state, entered_state;
--	bool broadcast;
+- * cpuidle_idle_call - the main idle loop
+- *
+- * NOTE: no locks or semaphores should be used here
+- * return non-zero on failure
+- */
+-int cpuidle_idle_call(void)
+-{
+-	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
+-	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
+-	int next_state, entered_state;
 -
--	if (off || !initialized)
--		return -ENODEV;
+-	/* ask the governor for the next state */
+-	next_state = cpuidle_select(drv, dev);
+-	if (next_state < 0)
+-		return next_state;
 -
--	/* check if the device is ready */
--	if (!dev || !dev->enabled)
--		return -EBUSY;
+-	if (need_resched()) {
+-		dev->last_residency = 0;
+-		/* give the governor an opportunity to reflect on the outcome */
+-		cpuidle_reflect(dev, next_state);
+-		local_irq_enable();
+-		return 0;
+-	}
 -
--	drv = cpuidle_get_cpu_driver(dev);
+-	trace_cpu_idle_rcuidle(next_state, dev->cpu);
+-
+-	entered_state = cpuidle_enter(drv, dev, next_state);
+-
+-	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, dev->cpu);
+-
+-	/* give the governor an opportunity to reflect on the outcome */
+-	cpuidle_reflect(dev, entered_state);
+-
+-	return 0;
+-}
+-
+-/**
+  * cpuidle_install_idle_handler - installs the cpuidle idle loop handler
+  */
+ void cpuidle_install_idle_handler(void)
+diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
+index bf06f37..0befaff 100644
+--- a/include/linux/cpuidle.h
++++ b/include/linux/cpuidle.h
+@@ -126,7 +126,6 @@ extern int cpuidle_enter(struct cpuidle_driver *drv,
+ 			 struct cpuidle_device *dev, int index);
+ extern void cpuidle_reflect(struct cpuidle_device *dev, int index);
  
- 	/* ask the governor for the next state */
--	next_state = cpuidle_curr_governor->select(drv, dev);
+-extern int cpuidle_idle_call(void);
+ extern int cpuidle_register_driver(struct cpuidle_driver *drv);
+ extern struct cpuidle_driver *cpuidle_get_driver(void);
+ extern struct cpuidle_driver *cpuidle_driver_ref(void);
+@@ -155,7 +154,6 @@ static inline int cpuidle_enter(struct cpuidle_driver *drv,
+ 				struct cpuidle_device *dev, int index)
+ {return -ENODEV; }
+ static inline void cpuidle_reflect(struct cpuidle_device *dev, int index) { }
+-static inline int cpuidle_idle_call(void) { return -ENODEV; }
+ static inline int cpuidle_register_driver(struct cpuidle_driver *drv)
+ {return -ENODEV; }
+ static inline struct cpuidle_driver *cpuidle_get_driver(void) {return NULL; }
+diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
+index 14ca434..6963822 100644
+--- a/kernel/sched/idle.c
++++ b/kernel/sched/idle.c
+@@ -63,6 +63,50 @@ void __weak arch_cpu_idle(void)
+ 	local_irq_enable();
+ }
+ 
++#ifdef CONFIG_CPU_IDLE
++/**
++ * cpuidle_idle_call - the main idle function
++ *
++ * NOTE: no locks or semaphores should be used here
++ * return non-zero on failure
++ */
++static int cpuidle_idle_call(void)
++{
++	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
++	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
++	int next_state, entered_state;
++
++	/* ask the governor for the next state */
 +	next_state = cpuidle_select(drv, dev);
 +	if (next_state < 0)
 +		return next_state;
 +
- 	if (need_resched()) {
- 		dev->last_residency = 0;
- 		/* give the governor an opportunity to reflect on the outcome */
--		if (cpuidle_curr_governor->reflect)
--			cpuidle_curr_governor->reflect(dev, next_state);
++	if (need_resched()) {
++		dev->last_residency = 0;
++		/* give the governor an opportunity to reflect on the outcome */
 +		cpuidle_reflect(dev, next_state);
- 		local_irq_enable();
- 		return 0;
- 	}
- 
- 	trace_cpu_idle_rcuidle(next_state, dev->cpu);
- 
--	broadcast = !!(drv->states[next_state].flags & CPUIDLE_FLAG_TIMER_STOP);
--
--	if (broadcast)
--		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &dev->cpu);
--
--	if (cpuidle_state_is_coupled(dev, drv, next_state))
--		entered_state = cpuidle_enter_state_coupled(dev, drv,
--							    next_state);
--	else
--		entered_state = cpuidle_enter_state(dev, drv, next_state);
--
--	if (broadcast)
--		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &dev->cpu);
++		local_irq_enable();
++		return 0;
++	}
++
++	trace_cpu_idle_rcuidle(next_state, dev->cpu);
++
 +	entered_state = cpuidle_enter(drv, dev, next_state);
- 
- 	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, dev->cpu);
- 
- 	/* give the governor an opportunity to reflect on the outcome */
--	if (cpuidle_curr_governor->reflect)
--		cpuidle_curr_governor->reflect(dev, entered_state);
++
++	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, dev->cpu);
++
++	/* give the governor an opportunity to reflect on the outcome */
 +	cpuidle_reflect(dev, entered_state);
- 
- 	return 0;
- }
-diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
-index 50fcbb0..bf06f37 100644
---- a/include/linux/cpuidle.h
-+++ b/include/linux/cpuidle.h
-@@ -119,6 +119,13 @@ struct cpuidle_driver {
- 
- #ifdef CONFIG_CPU_IDLE
- extern void disable_cpuidle(void);
 +
-+extern int cpuidle_select(struct cpuidle_driver *drv,
-+			  struct cpuidle_device *dev);
-+extern int cpuidle_enter(struct cpuidle_driver *drv,
-+			 struct cpuidle_device *dev, int index);
-+extern void cpuidle_reflect(struct cpuidle_device *dev, int index);
++	return 0;
++}
++#else
++static inline int cpuidle_idle_call(void)
++{
++	return -ENODEV;
++}
++#endif
 +
- extern int cpuidle_idle_call(void);
- extern int cpuidle_register_driver(struct cpuidle_driver *drv);
- extern struct cpuidle_driver *cpuidle_get_driver(void);
-@@ -141,6 +148,13 @@ extern int cpuidle_play_dead(void);
- extern struct cpuidle_driver *cpuidle_get_cpu_driver(struct cpuidle_device *dev);
- #else
- static inline void disable_cpuidle(void) { }
-+static inline int cpuidle_select(struct cpuidle_driver *drv,
-+				 struct cpuidle_device *dev)
-+{return -ENODEV; }
-+static inline int cpuidle_enter(struct cpuidle_driver *drv,
-+				struct cpuidle_device *dev, int index)
-+{return -ENODEV; }
-+static inline void cpuidle_reflect(struct cpuidle_device *dev, int index) { }
- static inline int cpuidle_idle_call(void) { return -ENODEV; }
- static inline int cpuidle_register_driver(struct cpuidle_driver *drv)
- {return -ENODEV; }
+ /*
+  * Generic idle loop implementation
+  */
 -- 
 1.7.9.5
 
