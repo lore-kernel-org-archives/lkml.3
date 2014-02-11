@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751935AbaBKJSg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 04:18:36 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:47848 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750972AbaBKJSd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 04:18:33 -0500
-Date: Tue, 11 Feb 2014 10:18:05 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jason Low <jason.low2@hp.com>
-Cc: linux-kernel@vger.kernel.org, Waiman Long <waiman.long@hp.com>,
-        mingo@kernel.org, paulmck@linux.vnet.ibm.com,
-        torvalds@linux-foundation.org, tglx@linutronix.de, riel@redhat.com,
-        akpm@linux-foundation.org, davidlohr@hp.com, hpa@zytor.com,
-        andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
-        chegu_vinod@hp.com
-Subject: Re: [PATCH 5/8] locking, mutex: Cancelable MCS lock for adaptive
- spinning
-Message-ID: <20140211091805.GK27965@twins.programming.kicks-ass.net>
-References: <20140210195820.834693028@infradead.org>
- <20140210203659.671232531@infradead.org>
- <1392066959.2051.2.camel@j-VirtualBox>
- <20140210213202.GX2936@laptop.programming.kicks-ass.net>
- <1392069862.2918.26.camel@j-VirtualBox>
+	id S1751830AbaBKJUZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 04:20:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37836 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751312AbaBKJUW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 04:20:22 -0500
+Date: Tue, 11 Feb 2014 09:20:17 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Luiz Capitulino <lcapitulino@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, mtosatti@redhat.com, aarcange@redhat.com,
+        andi@firstfloor.org, riel@redhat.com
+Subject: Re: [PATCH 1/4] memblock: memblock_virt_alloc_internal(): alloc from
+ specified node only
+Message-ID: <20140211092017.GG6732@suse.de>
+References: <1392053268-29239-1-git-send-email-lcapitulino@redhat.com>
+ <1392053268-29239-2-git-send-email-lcapitulino@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1392069862.2918.26.camel@j-VirtualBox>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1392053268-29239-2-git-send-email-lcapitulino@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 02:04:22PM -0800, Jason Low wrote:
-> On Mon, 2014-02-10 at 22:32 +0100, Peter Zijlstra wrote:
-> > Is adding that really much faster than the relatively straight path
-> > oqs_wait_next() would walk to bit the same exit?
-> > 
-> > The only reason I pulled out the above cmpxchg() is because its the
-> > uncontended fast path, which seems like a special enough case.
+On Mon, Feb 10, 2014 at 12:27:45PM -0500, Luiz Capitulino wrote:
+> From: Luiz capitulino <lcapitulino@redhat.com>
 > 
-> So it would avoid 2 extra checks (*lock == node) and (node->next) in the
-> oqs_wait_next() path, which aren't necessary when node->next != NULL.
+> If an allocation from the node specified by the nid argument fails,
+> memblock_virt_alloc_internal() automatically tries to allocate memory
+> from other nodes.
 > 
-> And I think node->next != NULL can be considered a special enough case
-> after the cmpxchg() fails because in the contended case, we're expecting
-> the node->next to be pointing at something. The only times node->next is
-> NULL after cmpxchg() fails are during a very small race window with the
-> osq_lock(), and when the next node is unqueuing due to need_resched,
-> which is also a very small window.
+> This is fine is the caller don't care which node is going to allocate
+> the memory. However, there are cases where the caller wants memory to
+> be allocated from the specified node only. If that's not possible, then
+> memblock_virt_alloc_internal() should just fail.
+> 
+> This commit adds a new flags argument to memblock_virt_alloc_internal()
+> where the caller can control this behavior.
+> 
+> Signed-off-by: Luiz capitulino <lcapitulino@redhat.com>
+> ---
+>  mm/memblock.c | 10 +++++++---
+>  1 file changed, 7 insertions(+), 3 deletions(-)
+> 
+> diff --git a/mm/memblock.c b/mm/memblock.c
+> index 39a31e7..b0c7b2e 100644
+> --- a/mm/memblock.c
+> +++ b/mm/memblock.c
+> @@ -1028,6 +1028,8 @@ phys_addr_t __init memblock_alloc_try_nid(phys_addr_t size, phys_addr_t align, i
+>  	return memblock_alloc_base(size, align, MEMBLOCK_ALLOC_ACCESSIBLE);
+>  }
+>  
+> +#define ALLOC_SPECIFIED_NODE_ONLY 0x1
+> +
 
-True all; now if only we had a useful benchmark so we could test if it
-makes a difference or not :-)
+It's not a perfect fit but you could use gfp_t and GFP_THISNODE. The
+meaning of the flag is recognised and while you are not using it with a
+page allocator, we already use GFP flags with the slab allocator without
+confusion.
+
+-- 
+Mel Gorman
+SUSE Labs
