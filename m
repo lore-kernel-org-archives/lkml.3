@@ -1,153 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755962AbaBKU53 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:57:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39631 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752736AbaBKTFU (ORCPT
+	id S1755982AbaBKU5m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:57:42 -0500
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:5957 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753910AbaBKU5k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:05:20 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.13 053/120] dm: wait until embedded kobject is released before destroying a device
-Date: Tue, 11 Feb 2014 11:04:54 -0800
-Message-Id: <20140211184825.139553492@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
-References: <20140211184823.492407127@linuxfoundation.org>
-User-Agent: quilt/0.61-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Tue, 11 Feb 2014 15:57:40 -0500
+Message-ID: <1392151870.5612.159.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 01/51] CPU hotplug: Provide lockless versions of
+ callback registration functions
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: ego@linux.vnet.ibm.com, "paulus@samba.org" <paulus@samba.org>,
+        "oleg@redhat.com" <oleg@redhat.com>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "tj@kernel.org" <tj@kernel.org>,
+        "walken@google.com" <walken@google.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Date: Tue, 11 Feb 2014 13:51:10 -0700
+In-Reply-To: <52FA77EA.7050105@linux.vnet.ibm.com>
+References: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com>
+	 <20140205220447.19080.9460.stgit@srivatsabhat.in.ibm.com>
+	 <1392081980.5612.123.camel@misato.fc.hp.com>
+	 <52F9ED11.5010800@linux.vnet.ibm.com>
+	 <1392136436.5612.131.camel@misato.fc.hp.com>
+	 <20140211171805.GA3932@in.ibm.com>
+	 <1392140115.5612.135.camel@misato.fc.hp.com>
+	 <52FA77EA.7050105@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+On Wed, 2014-02-12 at 00:50 +0530, Srivatsa S. Bhat wrote:
+> On 02/11/2014 11:05 PM, Toshi Kani wrote:
+ :
+> > How about this?  foo_cpu_notifier returns NOP when foo_notifier_ready is
+> > false.
+> > 
+> >         register_cpu_notifier(&foobar_cpu_notifier);
+> > 
+> >         get_online_cpus();
+> > 
+> >         for_each_online_cpu(cpu)
+> >                 init_cpu(cpu);
+> > 
+> > 	foo_notifier_ready = true;
+> > 
+> >         put_online_cpus();
+> > 
+> 
+> Nah, that looks a lot like some quick-n-dirty hack ;-(
+> It would also amount to burdening the various subsystems to add weird-looking
+> pieces of code such as this in their callbacks:
+> 
+> 	if (!foo_notifier_ready)
+> 		return NOTIFY_OK;
+> 
+> This only makes it all the more evident that the callback registration APIs
+> exposed by the CPU hotplug core is poorly designed.
+> 
+> What we need instead, is an elegant, well-defined and easy-to-use set of
+> interfaces/APIs exposed by the core CPU hotplug code to the various
+> subsystems. I don't think we should worry so much about the fact that
+> we can't use the familiar get/put_online_cpus() in this type of callback
+> registration scenario. We can introduce a sane set of APIs that work
+> well in such situations and use them consistently.
 
-------------------
+> For example, something like the code snippet shown below looks pretty
+> neat to me:
+> 
+> 	cpu_notifier_register_begin();
+> 
+> 	for_each_online_cpu(cpu)
+> 		init_cpu(cpu);
+> 
+> 	register_cpu_notifier(&foobar_cpu_notifier);
+> 
+> 	cpu_notifier_register_done();
+> 
+> What do you think?
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+I agree that it is cleaner for the callers as long as people understand
+how to use them.  Can you document them properly so that they know when
+they need to use them instead of the familiar get/put_online_cpus()?
 
-commit be35f486108227e10fe5d96fd42fb2b344c59983 upstream.
-
-There may be other parts of the kernel holding a reference on the dm
-kobject.  We must wait until all references are dropped before
-deallocating the mapped_device structure.
-
-The dm_kobject_release method signals that all references are dropped
-via completion.  But dm_kobject_release doesn't free the kobject (which
-is embedded in the mapped_device structure).
-
-This is the sequence of operations:
-* when destroying a DM device, call kobject_put from dm_sysfs_exit
-* wait until all users stop using the kobject, when it happens the
-  release method is called
-* the release method signals the completion and should return without
-  delay
-* the dm device removal code that waits on the completion continues
-* the dm device removal code drops the dm_mod reference the device had
-* the dm device removal code frees the mapped_device structure that
-  contains the kobject
-
-Using kobject this way should avoid the module unload race that was
-mentioned at the beginning of this thread:
-https://lkml.org/lkml/2014/1/4/83
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/md/dm-sysfs.c |   10 +++++++++-
- drivers/md/dm.c       |   11 +++++++++++
- drivers/md/dm.h       |    2 ++
- 3 files changed, 22 insertions(+), 1 deletion(-)
-
---- a/drivers/md/dm-sysfs.c
-+++ b/drivers/md/dm-sysfs.c
-@@ -79,6 +79,11 @@ static const struct sysfs_ops dm_sysfs_o
- 	.show	= dm_attr_show,
- };
- 
-+static void dm_kobject_release(struct kobject *kobj)
-+{
-+	complete(dm_get_completion_from_kobject(kobj));
-+}
-+
- /*
-  * dm kobject is embedded in mapped_device structure
-  * no need to define release function here
-@@ -86,6 +91,7 @@ static const struct sysfs_ops dm_sysfs_o
- static struct kobj_type dm_ktype = {
- 	.sysfs_ops	= &dm_sysfs_ops,
- 	.default_attrs	= dm_attrs,
-+	.release	= dm_kobject_release,
- };
- 
- /*
-@@ -104,5 +110,7 @@ int dm_sysfs_init(struct mapped_device *
-  */
- void dm_sysfs_exit(struct mapped_device *md)
- {
--	kobject_put(dm_kobject(md));
-+	struct kobject *kobj = dm_kobject(md);
-+	kobject_put(kobj);
-+	wait_for_completion(dm_get_completion_from_kobject(kobj));
- }
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -203,6 +203,9 @@ struct mapped_device {
- 	/* sysfs handle */
- 	struct kobject kobj;
- 
-+	/* wait until the kobject is released */
-+	struct completion kobj_completion;
-+
- 	/* zero-length flush that will be cloned and submitted to targets */
- 	struct bio flush_bio;
- 
-@@ -2041,6 +2044,7 @@ static struct mapped_device *alloc_dev(i
- 	init_waitqueue_head(&md->wait);
- 	INIT_WORK(&md->work, dm_wq_work);
- 	init_waitqueue_head(&md->eventq);
-+	init_completion(&md->kobj_completion);
- 
- 	md->disk->major = _major;
- 	md->disk->first_minor = minor;
-@@ -2925,6 +2929,13 @@ struct mapped_device *dm_get_from_kobjec
- 	return md;
- }
- 
-+struct completion *dm_get_completion_from_kobject(struct kobject *kobj)
-+{
-+	struct mapped_device *md = container_of(kobj, struct mapped_device, kobj);
-+
-+	return &md->kobj_completion;
-+}
-+
- int dm_suspended_md(struct mapped_device *md)
- {
- 	return test_bit(DMF_SUSPENDED, &md->flags);
---- a/drivers/md/dm.h
-+++ b/drivers/md/dm.h
-@@ -15,6 +15,7 @@
- #include <linux/list.h>
- #include <linux/blkdev.h>
- #include <linux/hdreg.h>
-+#include <linux/completion.h>
- 
- #include "dm-stats.h"
- 
-@@ -152,6 +153,7 @@ int dm_sysfs_init(struct mapped_device *
- void dm_sysfs_exit(struct mapped_device *md);
- struct kobject *dm_kobject(struct mapped_device *md);
- struct mapped_device *dm_get_from_kobject(struct kobject *kobj);
-+struct completion *dm_get_completion_from_kobject(struct kobject *kobj);
- 
- /*
-  * Targets for linear and striped mappings
+Thanks,
+-Toshi
 
 
