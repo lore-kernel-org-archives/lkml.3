@@ -1,101 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752681AbaBKMXl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 07:23:41 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:44368 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751540AbaBKMXh (ORCPT
+	id S1752708AbaBKMXq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 07:23:46 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:54033 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752690AbaBKMXm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 07:23:37 -0500
-Date: Tue, 11 Feb 2014 12:23:31 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 6/7] mfd: max8997: Fix possible NULL pointer dereference
- on i2c_new_dummy error
-Message-ID: <20140211122331.GU32042@lee--X1>
-References: <1392113015-11180-1-git-send-email-k.kozlowski@samsung.com>
- <1392113015-11180-6-git-send-email-k.kozlowski@samsung.com>
+	Tue, 11 Feb 2014 07:23:42 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1392113015-11180-6-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAK9yfHxzLbENXz60oFTHfp6NmhyyjPavKstrBbrGw_KwjKFYkA@mail.gmail.com>
+References: <1391859219-3102-1-git-send-email-lpapp@kde.org>
+	<CAK9yfHx2W3KXzBJavpDwXqBUxM8Uw6tWLRGBLjUq1jS_yWYw-Q@mail.gmail.com>
+	<CAOMwXhNmjehcd+aiWGuKs7CijheXXngsXTHMfG9SDLpHO=KaPw@mail.gmail.com>
+	<CAK9yfHwxmtEXQwPZJfU980G6g7sbrLDU=nZiN=dkwVwvg7UXyA@mail.gmail.com>
+	<CAOMwXhNcYpBvMEhcxtvsnByeB7QxO56gjAC+JP2s0tRvmyQiXQ@mail.gmail.com>
+	<CAK9yfHxUf_nyd0aYyMGHS5tCEKo-GrLxGNu_18dSL12cPe+J6Q@mail.gmail.com>
+	<CAOMwXhOaJoYgrtBuXgZO3PGym+-ndNrrN2NGTX90vWZWTuG=Kg@mail.gmail.com>
+	<CAK9yfHxzLbENXz60oFTHfp6NmhyyjPavKstrBbrGw_KwjKFYkA@mail.gmail.com>
+Date: Tue, 11 Feb 2014 12:23:41 +0000
+X-Google-Sender-Auth: iI4PQPli1o7y-CY5gAT09jLEORQ
+Message-ID: <CAOMwXhM20-wHQFotpkEo_Zb_MQuFqnOp4e3YPOMFLWDWdFpyrw@mail.gmail.com>
+Subject: Re: [PATCH v2] mfd: MAX6650/6651 support
+From: Laszlo Papp <lpapp@kde.org>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Lee Jones <lee.jones@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Feb 2014, Krzysztof Kozlowski wrote:
+On Tue, Feb 11, 2014 at 11:42 AM, Sachin Kamat <sachin.kamat@linaro.org> wrote:
+> On 11 February 2014 17:09, Laszlo Papp <lpapp@kde.org> wrote:
+>> On Tue, Feb 11, 2014 at 11:14 AM, Sachin Kamat <sachin.kamat@linaro.org> wrote:
+>>> On 11 February 2014 15:40, Laszlo Papp <lpapp@kde.org> wrote:
+>>>>>>> [snip]
+>>>>>>>> +
+>>>>>>>> +struct max665x_dev {
+>>>>>>>> +       struct device *dev;
+>>>>>>>> +       struct mutex iolock;
+>>>>>>>> +
+>>>>>>>> +       struct i2c_client *i2c;
+>>>>>>>> +       struct regmap     *map;
+>>>>>>>> +
+>>>>>>>> +       int type;
+>>>>>>>
+>>>>>>> Unnecessary extra lines above could be removed.
+>>>>>>
+>>>>>> I prefer it that way, but I will remove the two extra lines as you wish.
+>>>>>
+>>>>> As I already said, these are just nits and only since you were
+>>>>> re-spinning the patch,
+>>>>> I suggested them. Also, since this is a new file being added, it
+>>>>> avoids further patches
+>>>>> doing these same things.
+>>>>
+>>>> Well, it is worse in my opinion because it makes the code more bloated
+>>>> without separation between units, but I made the requested change
+>>>> anyway because the feature matters lotta more to me than this styling.
+>>>> Hope it is OK now?
+>>>
+>>> The only thing that you missed among what you agreed to change is the
+>>> arrangement of
+>>> "depends on" and "select" in Kconfig. Rest look OK. Thanks for taking care.
+>>
+>> Ah, true. I will do that tomorrow if it is a blocker for the integration.
+>
+> I don't think it is a blocker in any way and you may choose to ignore
+> it as well.
 
-> During probe the driver allocates dummy I2C devices for RTC, haptic and
-> MUIC with i2c_new_dummy() but it does not check the return value of this
-> calls.
-> 
-> In case of error (i2c_new_device(): memory allocation failure or I2C
-> address cannot be used) this function returns NULL which is later used
-> by i2c_unregister_device().
-> 
-> If i2c_new_dummy() fails for RTC, haptic or MUIC devices, fail also the
-> probe for main MFD driver.
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Cc: stable@vger.kernel.org
-> ---
->  drivers/mfd/max8997.c |   18 ++++++++++++++++++
->  1 file changed, 18 insertions(+)
-> 
-> diff --git a/drivers/mfd/max8997.c b/drivers/mfd/max8997.c
-> index be88a3bf7b85..3ffc11dfc3b6 100644
-> --- a/drivers/mfd/max8997.c
-> +++ b/drivers/mfd/max8997.c
-> @@ -208,10 +208,26 @@ static int max8997_i2c_probe(struct i2c_client *i2c,
->  	mutex_init(&max8997->iolock);
->  
->  	max8997->rtc = i2c_new_dummy(i2c->adapter, I2C_ADDR_RTC);
-> +	if (!max8997->rtc) {
-> +		dev_err(max8997->dev, "Failed to allocate I2C device for RTC\n");
-> +		return -ENODEV;
-> +	}
->  	i2c_set_clientdata(max8997->rtc, max8997);
-> +
->  	max8997->haptic = i2c_new_dummy(i2c->adapter, I2C_ADDR_HAPTIC);
-> +	if (!max8997->haptic) {
-> +		dev_err(max8997->dev, "Failed to allocate I2C device for Haptic\n");
-> +		ret = -ENODEV;
-> +		goto err_i2c_haptic;
-> +	}
->  	i2c_set_clientdata(max8997->haptic, max8997);
-> +
->  	max8997->muic = i2c_new_dummy(i2c->adapter, I2C_ADDR_MUIC);
-> +	if (!max8997->muic) {
-> +		dev_err(max8997->dev, "Failed to allocate I2C device for MUIC\n");
-> +		ret = -ENODEV;
-> +		goto err_i2c_muic;
-> +	}
->  	i2c_set_clientdata(max8997->muic, max8997);
->  
->  	pm_runtime_set_active(max8997->dev);
-> @@ -239,7 +255,9 @@ static int max8997_i2c_probe(struct i2c_client *i2c,
->  err_mfd:
->  	mfd_remove_devices(max8997->dev);
->  	i2c_unregister_device(max8997->muic);
-> +err_i2c_muic:
->  	i2c_unregister_device(max8997->haptic);
-> +err_i2c_haptic:
->  	i2c_unregister_device(max8997->rtc);
->  	return ret;
->  }
+That is alright, Sachin. I will make this change from home. Perhaps,
+it is wise anyhow to wait for more feedback, like e.g. from Lee, etc.
 
-Applied, thanks.
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Thanks again.
