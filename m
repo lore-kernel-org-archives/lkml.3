@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240AbaBKTEx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:04:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39410 "EHLO
+	id S1752660AbaBKTFO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:05:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39570 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751849AbaBKTEs (ORCPT
+	with ESMTP id S1752614AbaBKTFL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:04:48 -0500
+	Tue, 11 Feb 2014 14:05:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 3.13 010/120] audit: correct a type mismatch in audit_syscall_exit()
-Date: Tue, 11 Feb 2014 11:04:11 -0800
-Message-Id: <20140211184823.810759765@linuxfoundation.org>
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.13 004/120] tracing: Check if tracing is enabled in trace_puts()
+Date: Tue, 11 Feb 2014 11:04:05 -0800
+Message-Id: <20140211184823.633835148@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -30,39 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 06bdadd7634551cfe8ce071fe44d0311b3033d9e upstream.
+commit 3132e107d608f8753240d82d61303c500fd515b4 upstream.
 
-audit_syscall_exit() saves a result of regs_return_value() in intermediate
-"int" variable and passes it to __audit_syscall_exit(), which expects its
-second argument as a "long" value.  This will result in truncating the
-value returned by a system call and making a wrong audit record.
+If trace_puts() is used very early in boot up, it can crash the machine
+if it is called before the ring buffer is allocated. If a trace_printk()
+is used with no arguments, then it will be converted into a trace_puts()
+and suffer the same fate.
 
-I don't know why gcc compiler doesn't complain about this, but anyway it
-causes a problem at runtime on arm64 (and probably most 64-bit archs).
-
-Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Eric Paris <eparis@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Eric Paris <eparis@redhat.com>
+Fixes: 09ae72348ecc "tracing: Add trace_puts() for even faster trace_printk() tracing"
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/audit.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/trace/trace.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/include/linux/audit.h
-+++ b/include/linux/audit.h
-@@ -137,7 +137,7 @@ static inline void audit_syscall_exit(vo
- {
- 	if (unlikely(current->audit_context)) {
- 		int success = is_syscall_success(pt_regs);
--		int return_code = regs_return_value(pt_regs);
-+		long return_code = regs_return_value(pt_regs);
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -455,6 +455,9 @@ int __trace_puts(unsigned long ip, const
+ 	unsigned long irq_flags;
+ 	int alloc;
  
- 		__audit_syscall_exit(success, return_code);
- 	}
++	if (unlikely(tracing_selftest_running || tracing_disabled))
++		return 0;
++
+ 	alloc = sizeof(*entry) + size + 2; /* possible \n added */
+ 
+ 	local_save_flags(irq_flags);
+@@ -495,6 +498,9 @@ int __trace_bputs(unsigned long ip, cons
+ 	unsigned long irq_flags;
+ 	int size = sizeof(struct bputs_entry);
+ 
++	if (unlikely(tracing_selftest_running || tracing_disabled))
++		return 0;
++
+ 	local_save_flags(irq_flags);
+ 	buffer = global_trace.trace_buffer.buffer;
+ 	event = trace_buffer_lock_reserve(buffer, TRACE_BPUTS, size,
 
 
