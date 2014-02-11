@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754322AbaBKTIT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:08:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40510 "EHLO
+	id S1754852AbaBKTVC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:21:02 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40549 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754262AbaBKTIN (ORCPT
+	with ESMTP id S1754311AbaBKTIS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:08:13 -0500
+	Tue, 11 Feb 2014 14:08:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org,
-        Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.10 69/79] ftrace: Fix synchronization location disabling and freeing ftrace_ops
-Date: Tue, 11 Feb 2014 11:06:13 -0800
-Message-Id: <20140211184722.968697027@linuxfoundation.org>
+        Nell Hardcastle <nell@spicious.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.10 76/79] intel_pstate: Add Haswell CPU models
+Date: Tue, 11 Feb 2014 11:06:20 -0800
+Message-Id: <20140211184723.169745574@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
 References: <20140211184720.928667275@linuxfoundation.org>
@@ -29,103 +31,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Rostedt <rostedt@goodmis.org>
+From: Nell Hardcastle <nell@spicious.com>
 
-commit a4c35ed241129dd142be4cadb1e5a474a56d5464 upstream.
+commit 6cdcdb793791f776ea9408581b1242b636d43b37 upstream.
 
-The synchronization needed after ftrace_ops are unregistered must happen
-after the callback is disabled from becing called by functions.
+Enable the intel_pstate driver for Haswell CPUs. One missing Ivy Bridge
+model (0x3E) is also included. Models referenced from
+tools/power/x86/turbostat/turbostat.c:has_nehalem_turbo_ratio_limit
 
-The current location happens after the function is being removed from the
-internal lists, but not after the function callbacks were disabled, leaving
-the functions susceptible of being called after their callbacks are freed.
-
-This affects perf and any externel users of function tracing (LTTng and
-SystemTap).
-
-Fixes: cdbe61bfe704 "ftrace: Allow dynamically allocated function tracers"
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Nell Hardcastle <nell@spicious.com>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Acked-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/ftrace.c |   50 ++++++++++++++++++++++++++++++++------------------
- 1 file changed, 32 insertions(+), 18 deletions(-)
+ drivers/cpufreq/intel_pstate.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -490,16 +490,6 @@ static int __unregister_ftrace_function(
- 	} else if (ops->flags & FTRACE_OPS_FL_CONTROL) {
- 		ret = remove_ftrace_list_ops(&ftrace_control_list,
- 					     &control_ops, ops);
--		if (!ret) {
--			/*
--			 * The ftrace_ops is now removed from the list,
--			 * so there'll be no new users. We must ensure
--			 * all current users are done before we free
--			 * the control data.
--			 */
--			synchronize_sched();
--			control_ops_free(ops);
--		}
- 	} else
- 		ret = remove_ftrace_ops(&ftrace_ops_list, ops);
- 
-@@ -509,13 +499,6 @@ static int __unregister_ftrace_function(
- 	if (ftrace_enabled)
- 		update_ftrace_function();
- 
--	/*
--	 * Dynamic ops may be freed, we must make sure that all
--	 * callers are done before leaving this function.
--	 */
--	if (ops->flags & FTRACE_OPS_FL_DYNAMIC)
--		synchronize_sched();
--
- 	return 0;
- }
- 
-@@ -2184,10 +2167,41 @@ static int ftrace_shutdown(struct ftrace
- 		command |= FTRACE_UPDATE_TRACE_FUNC;
- 	}
- 
--	if (!command || !ftrace_enabled)
-+	if (!command || !ftrace_enabled) {
-+		/*
-+		 * If these are control ops, they still need their
-+		 * per_cpu field freed. Since, function tracing is
-+		 * not currently active, we can just free them
-+		 * without synchronizing all CPUs.
-+		 */
-+		if (ops->flags & FTRACE_OPS_FL_CONTROL)
-+			control_ops_free(ops);
- 		return 0;
-+	}
- 
- 	ftrace_run_update_code(command);
-+
-+	/*
-+	 * Dynamic ops may be freed, we must make sure that all
-+	 * callers are done before leaving this function.
-+	 * The same goes for freeing the per_cpu data of the control
-+	 * ops.
-+	 *
-+	 * Again, normal synchronize_sched() is not good enough.
-+	 * We need to do a hard force of sched synchronization.
-+	 * This is because we use preempt_disable() to do RCU, but
-+	 * the function tracers can be called where RCU is not watching
-+	 * (like before user_exit()). We can not rely on the RCU
-+	 * infrastructure to do the synchronization, thus we must do it
-+	 * ourselves.
-+	 */
-+	if (ops->flags & (FTRACE_OPS_FL_DYNAMIC | FTRACE_OPS_FL_CONTROL)) {
-+		schedule_on_each_cpu(ftrace_sync);
-+
-+		if (ops->flags & FTRACE_OPS_FL_CONTROL)
-+			control_ops_free(ops);
-+	}
-+
- 	return 0;
- }
- 
+--- a/drivers/cpufreq/intel_pstate.c
++++ b/drivers/cpufreq/intel_pstate.c
+@@ -523,6 +523,11 @@ static const struct x86_cpu_id intel_pst
+ 	ICPU(0x2a, default_policy),
+ 	ICPU(0x2d, default_policy),
+ 	ICPU(0x3a, default_policy),
++	ICPU(0x3c, default_policy),
++	ICPU(0x3e, default_policy),
++	ICPU(0x3f, default_policy),
++	ICPU(0x45, default_policy),
++	ICPU(0x46, default_policy),
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(x86cpu, intel_pstate_cpu_ids);
 
 
