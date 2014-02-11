@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755083AbaBKUp5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:45:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39726 "EHLO
+	id S1752965AbaBKTFm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:05:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39715 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752970AbaBKTFn (ORCPT
+	with ESMTP id S1752933AbaBKTFj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:05:43 -0500
+	Tue, 11 Feb 2014 14:05:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.13 083/120] drm/radeon: set si_notify_smc_display_change properly
-Date: Tue, 11 Feb 2014 11:05:24 -0800
-Message-Id: <20140211184825.981528989@linuxfoundation.org>
+Subject: [PATCH 3.13 079/120] drm/radeon: set the full cache bit for fences on r7xx+
+Date: Tue, 11 Feb 2014 11:05:20 -0800
+Message-Id: <20140211184825.872258729@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -30,42 +30,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit ffcda352b569dcf5be5c8a5f57545794acf4adb9 upstream.
+commit d45b964a22cad962d3ede1eba8d24f5cee7b2a92 upstream.
 
-This is effectively a revert of 4573388c92ee60b4ed72b8d95b73df861189988c.
-
-Forcing a display active when there is none causes problems with
-dpm on some SI boards which results in improperly initialized
-dpm state and boot failures on some boards.  As for the bug commit
-4573388c92ee tried to address, one can manually force the state to
-high for better performance when using the card as a headless compute
-node until a better fix is developed.
-
-bugs:
-https://bugs.freedesktop.org/show_bug.cgi?id=73788
-https://bugs.freedesktop.org/show_bug.cgi?id=69395
+Needed to properly flush the read caches for fences.
 
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/si_dpm.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/radeon/r600.c  |   13 +++++++------
+ drivers/gpu/drm/radeon/r600d.h |    1 +
+ 2 files changed, 8 insertions(+), 6 deletions(-)
 
---- a/drivers/gpu/drm/radeon/si_dpm.c
-+++ b/drivers/gpu/drm/radeon/si_dpm.c
-@@ -3591,10 +3591,9 @@ static void si_program_display_gap(struc
+--- a/drivers/gpu/drm/radeon/r600.c
++++ b/drivers/gpu/drm/radeon/r600.c
+@@ -2607,14 +2607,17 @@ void r600_fence_ring_emit(struct radeon_
+ 			  struct radeon_fence *fence)
+ {
+ 	struct radeon_ring *ring = &rdev->ring[fence->ring];
++	u32 cp_coher_cntl = PACKET3_TC_ACTION_ENA | PACKET3_VC_ACTION_ENA |
++		PACKET3_SH_ACTION_ENA;
++
++	if (rdev->family >= CHIP_RV770)
++		cp_coher_cntl |= PACKET3_FULL_CACHE_ENA;
  
- 	/* Setting this to false forces the performance state to low if the crtcs are disabled.
- 	 * This can be a problem on PowerXpress systems or if you want to use the card
--	 * for offscreen rendering or compute if there are no crtcs enabled.  Set it to
--	 * true for now so that performance scales even if the displays are off.
-+	 * for offscreen rendering or compute if there are no crtcs enabled.
- 	 */
--	si_notify_smc_display_change(rdev, true /*rdev->pm.dpm.new_active_crtc_count > 0*/);
-+	si_notify_smc_display_change(rdev, rdev->pm.dpm.new_active_crtc_count > 0);
- }
- 
- static void si_enable_spread_spectrum(struct radeon_device *rdev, bool enable)
+ 	if (rdev->wb.use_event) {
+ 		u64 addr = rdev->fence_drv[fence->ring].gpu_addr;
+ 		/* flush read cache over gart */
+ 		radeon_ring_write(ring, PACKET3(PACKET3_SURFACE_SYNC, 3));
+-		radeon_ring_write(ring, PACKET3_TC_ACTION_ENA |
+-					PACKET3_VC_ACTION_ENA |
+-					PACKET3_SH_ACTION_ENA);
++		radeon_ring_write(ring, cp_coher_cntl);
+ 		radeon_ring_write(ring, 0xFFFFFFFF);
+ 		radeon_ring_write(ring, 0);
+ 		radeon_ring_write(ring, 10); /* poll interval */
+@@ -2628,9 +2631,7 @@ void r600_fence_ring_emit(struct radeon_
+ 	} else {
+ 		/* flush read cache over gart */
+ 		radeon_ring_write(ring, PACKET3(PACKET3_SURFACE_SYNC, 3));
+-		radeon_ring_write(ring, PACKET3_TC_ACTION_ENA |
+-					PACKET3_VC_ACTION_ENA |
+-					PACKET3_SH_ACTION_ENA);
++		radeon_ring_write(ring, cp_coher_cntl);
+ 		radeon_ring_write(ring, 0xFFFFFFFF);
+ 		radeon_ring_write(ring, 0);
+ 		radeon_ring_write(ring, 10); /* poll interval */
+--- a/drivers/gpu/drm/radeon/r600d.h
++++ b/drivers/gpu/drm/radeon/r600d.h
+@@ -1575,6 +1575,7 @@
+ #              define PACKET3_CP_DMA_CMD_DAIC      (1 << 29)
+ #define	PACKET3_SURFACE_SYNC				0x43
+ #              define PACKET3_CB0_DEST_BASE_ENA    (1 << 6)
++#              define PACKET3_FULL_CACHE_ENA       (1 << 20) /* r7xx+ only */
+ #              define PACKET3_TC_ACTION_ENA        (1 << 23)
+ #              define PACKET3_VC_ACTION_ENA        (1 << 24)
+ #              define PACKET3_CB_ACTION_ENA        (1 << 25)
 
 
