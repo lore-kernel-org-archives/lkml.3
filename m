@@ -1,676 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753391AbaBKVx0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 16:53:26 -0500
-Received: from mailout1.w2.samsung.com ([211.189.100.11]:21300 "EHLO
-	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752502AbaBKVxX (ORCPT
+	id S1753942AbaBKVxv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 16:53:51 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:51921 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753306AbaBKVxs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 16:53:23 -0500
-X-AuditID: cbfec373-b7f4a6d000005e0a-18-52fa9bd29bf1
-Date: Wed, 12 Feb 2014 06:53:06 +0900
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Philipp Zabel <philipp.zabel@gmail.com>
-Subject: Re: [PATCH v2] [media] of: move graph helpers from
- drivers/media/v4l2-core to drivers/media
-Message-id: <20140212065306.36a03e82.m.chehab@samsung.com>
-In-reply-to: <1392154905-12007-1-git-send-email-p.zabel@pengutronix.de>
-References: <1392154905-12007-1-git-send-email-p.zabel@pengutronix.de>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCLMWRmVeSWpSXmKPExsVy+t/hQN1Ls38FGTSu5bOYf+Qcq8X7jfOY
-	LA782cFocbbpDbtF58Ql7BaXd81hs+jZsJXV4vZlXou7906wWGydd47RonXvEXaLw2/aWS3W
-	z7/F5sDr0dLcw+axc9Zddo8PH+M8ZnfMZPXYtKqTzePOtT1sHv1/DTz6tqxi9Dh+YzuTx+dN
-	cgFcUVw2Kak5mWWpRfp2CVwZ7/9vYCqYvYyxYsfze2wNjDdaGLsYOTkkBEwkVm/8yQZhi0lc
-	uLceyObiEBJYwiix52E3C4TTwCRx7ew7JpAqFgFVieeLbrOC2GwCRhKvGlvAbBEBLYmnV+6B
-	dTMLfGGWeL2kH6xBWCBN4s7yJSwgNq+AlUTfsxXMXYwcHJwC7hI718mDhIUE3CRad21nhbjC
-	SeLV68lMEOWCEj8m3wNrZQaav3lbEyuELS+xec1b5gmMArOQlM1CUjYLSdkCRuZVjKKlxckF
-	xUnpuUZ6xYm5xaV56XrJ+bmbGCExVbyD8cUGq0OMAhyMSjy8Ed6/goRYE8uKK3MPMUpwMCuJ
-	8J6rAwrxpiRWVqUW5ccXleakFh9iZOLglGpgFJDOsV4mzbl3t2IEQ8GUPzdmbC85P2vf2kt6
-	Cufy+BelHO588b6DZ0uJx92DQq6lHGfXqIfFfmU6nn78mLP2ddeHLbPDrjvZCU8OMjmb0/d9
-	07aUV/vYTmxkyrjxzSPoXbP0/fPKmteqUhPquHeqLa84r5q5W8r6QnBlAPO3bU9+M96aylff
-	psRSnJFoqMVcVJwIAL+cM76HAgAA
+	Tue, 11 Feb 2014 16:53:48 -0500
+MIME-Version: 1.0
+In-Reply-To: <1392108205.22033.16.camel@dagon.hellion.org.uk>
+References: <1392071391-13215-1-git-send-email-mcgrof@do-not-panic.com>
+ <1392071391-13215-3-git-send-email-mcgrof@do-not-panic.com> <1392108205.22033.16.camel@dagon.hellion.org.uk>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Tue, 11 Feb 2014 13:53:26 -0800
+X-Google-Sender-Auth: M7QMbo99YcECCHhx442fAMZK2kA
+Message-ID: <CAB=NE6Vu=khpj_3J7r-u8DFkhyC-RgLikNFtOU-WO7te_4HMCw@mail.gmail.com>
+Subject: Re: [RFC 2/2] xen-netback: disable multicast and use a random hw MAC address
+To: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        xen-devel@lists.xenproject.org, Paul Durrant <Paul.Durrant@citrix.com>,
+        Wei Liu <wei.liu2@citrix.com>, kvm@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, 11 Feb 2014 22:41:45 +0100
-Philipp Zabel <p.zabel@pengutronix.de> escreveu:
+Cc'ing kvm folks as they may have a shared interest on the shared
+physical case with the bridge (non NAT).
 
-> From: Philipp Zabel <philipp.zabel@gmail.com>
-> 
-> This patch moves the parsing helpers used to parse connected graphs
-> in the device tree, like the video interface bindings documented in
-> Documentation/devicetree/bindings/media/video-interfaces.txt, from
-> drivers/media/v4l2-core to drivers/media.
-> 
-> This allows to reuse the same parser code from outside the V4L2
-> framework, most importantly from display drivers.
-> The functions v4l2_of_get_next_endpoint, v4l2_of_get_remote_port,
-> and v4l2_of_get_remote_port_parent are moved. They are renamed to
-> of_graph_get_next_endpoint, of_graph_get_remote_port, and
-> of_graph_get_remote_port_parent, respectively.
-> Since there are not that many current users, switch all of them
-> to the new functions right away.
-> 
-> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-> Acked-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-> Acked-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> ---
-> Changes since v1:
->  - Moved to drivers/media instead of drives/of
->  - Removed v4l2_of_get_ functions and changed all users in one step
->  - Keep providing stubs for !OF case
-> ---
->  drivers/media/Kconfig                         |   4 +
->  drivers/media/Makefile                        |   2 +
->  drivers/media/i2c/adv7343.c                   |   4 +-
->  drivers/media/i2c/mt9p031.c                   |   4 +-
->  drivers/media/i2c/s5k5baf.c                   |   3 +-
->  drivers/media/i2c/tvp514x.c                   |   3 +-
->  drivers/media/i2c/tvp7002.c                   |   3 +-
->  drivers/media/of_graph.c                      | 133 ++++++++++++++++++++++++++
->  drivers/media/platform/exynos4-is/fimc-is.c   |   6 +-
->  drivers/media/platform/exynos4-is/media-dev.c |   3 +-
->  drivers/media/platform/exynos4-is/mipi-csis.c |   3 +-
->  drivers/media/v4l2-core/v4l2-of.c             | 117 ----------------------
->  include/media/of_graph.h                      |  46 +++++++++
->  include/media/v4l2-of.h                       |  24 -----
->  14 files changed, 202 insertions(+), 153 deletions(-)
->  create mode 100644 drivers/media/of_graph.c
->  create mode 100644 include/media/of_graph.h
-> 
-> diff --git a/drivers/media/Kconfig b/drivers/media/Kconfig
-> index 1d0758a..7681026 100644
-> --- a/drivers/media/Kconfig
-> +++ b/drivers/media/Kconfig
-> @@ -96,6 +96,7 @@ config VIDEO_DEV
->  	tristate
->  	depends on MEDIA_SUPPORT
->  	depends on MEDIA_CAMERA_SUPPORT || MEDIA_ANALOG_TV_SUPPORT || MEDIA_RADIO_SUPPORT
-> +	select OF_GRAPH if OF
->  	default y
->  
->  config VIDEO_V4L2_SUBDEV_API
-> @@ -203,3 +204,6 @@ source "drivers/media/tuners/Kconfig"
->  source "drivers/media/dvb-frontends/Kconfig"
->  
->  endif # MEDIA_SUPPORT
-> +
-> +config OF_GRAPH
-> +        bool
-> diff --git a/drivers/media/Makefile b/drivers/media/Makefile
-> index 620f275..ff980bd 100644
-> --- a/drivers/media/Makefile
-> +++ b/drivers/media/Makefile
-> @@ -18,6 +18,8 @@ ifeq ($(CONFIG_MEDIA_CONTROLLER),y)
->    obj-$(CONFIG_MEDIA_SUPPORT) += media.o
->  endif
->  
-> +obj-$(CONFIG_OF_GRAPH)  += of_graph.o
-> +
->  obj-$(CONFIG_VIDEO_DEV) += v4l2-core/
->  obj-$(CONFIG_DVB_CORE)  += dvb-core/
->  
-> diff --git a/drivers/media/i2c/adv7343.c b/drivers/media/i2c/adv7343.c
-> index d4e15a6..74a1507 100644
-> --- a/drivers/media/i2c/adv7343.c
-> +++ b/drivers/media/i2c/adv7343.c
-> @@ -28,10 +28,10 @@
->  #include <linux/of.h>
->  
->  #include <media/adv7343.h>
-> +#include <media/of_graph.h>
->  #include <media/v4l2-async.h>
->  #include <media/v4l2-device.h>
->  #include <media/v4l2-ctrls.h>
-> -#include <media/v4l2-of.h>
->  
->  #include "adv7343_regs.h"
->  
-> @@ -410,7 +410,7 @@ adv7343_get_pdata(struct i2c_client *client)
->  	if (!IS_ENABLED(CONFIG_OF) || !client->dev.of_node)
->  		return client->dev.platform_data;
->  
-> -	np = v4l2_of_get_next_endpoint(client->dev.of_node, NULL);
-> +	np = of_graph_get_next_endpoint(client->dev.of_node, NULL);
->  	if (!np)
->  		return NULL;
->  
-> diff --git a/drivers/media/i2c/mt9p031.c b/drivers/media/i2c/mt9p031.c
-> index e5ddf47..60f36dc 100644
-> --- a/drivers/media/i2c/mt9p031.c
-> +++ b/drivers/media/i2c/mt9p031.c
-> @@ -27,9 +27,9 @@
->  #include <linux/videodev2.h>
->  
->  #include <media/mt9p031.h>
-> +#include <media/of_graph.h>
->  #include <media/v4l2-ctrls.h>
->  #include <media/v4l2-device.h>
-> -#include <media/v4l2-of.h>
->  #include <media/v4l2-subdev.h>
->  
->  #include "aptina-pll.h"
-> @@ -943,7 +943,7 @@ mt9p031_get_pdata(struct i2c_client *client)
->  	if (!IS_ENABLED(CONFIG_OF) || !client->dev.of_node)
->  		return client->dev.platform_data;
->  
-> -	np = v4l2_of_get_next_endpoint(client->dev.of_node, NULL);
-> +	np = of_graph_get_next_endpoint(client->dev.of_node, NULL);
->  	if (!np)
->  		return NULL;
->  
-> diff --git a/drivers/media/i2c/s5k5baf.c b/drivers/media/i2c/s5k5baf.c
-> index 77e10e0..06261ee 100644
-> --- a/drivers/media/i2c/s5k5baf.c
-> +++ b/drivers/media/i2c/s5k5baf.c
-> @@ -25,6 +25,7 @@
->  #include <linux/slab.h>
->  
->  #include <media/media-entity.h>
-> +#include <media/of_graph.h>
->  #include <media/v4l2-ctrls.h>
->  #include <media/v4l2-device.h>
->  #include <media/v4l2-subdev.h>
-> @@ -1855,7 +1856,7 @@ static int s5k5baf_parse_device_node(struct s5k5baf *state, struct device *dev)
->  	if (ret < 0)
->  		return ret;
->  
-> -	node_ep = v4l2_of_get_next_endpoint(node, NULL);
-> +	node_ep = of_graph_get_next_endpoint(node, NULL);
->  	if (!node_ep) {
->  		dev_err(dev, "no endpoint defined at node %s\n",
->  			node->full_name);
-> diff --git a/drivers/media/i2c/tvp514x.c b/drivers/media/i2c/tvp514x.c
-> index 83d85df..50062d2 100644
-> --- a/drivers/media/i2c/tvp514x.c
-> +++ b/drivers/media/i2c/tvp514x.c
-> @@ -37,6 +37,7 @@
->  #include <linux/v4l2-mediabus.h>
->  #include <linux/of.h>
->  
-> +#include <media/of_graph.h>
->  #include <media/v4l2-async.h>
->  #include <media/v4l2-device.h>
->  #include <media/v4l2-common.h>
-> @@ -1068,7 +1069,7 @@ tvp514x_get_pdata(struct i2c_client *client)
->  	if (!IS_ENABLED(CONFIG_OF) || !client->dev.of_node)
->  		return client->dev.platform_data;
->  
-> -	endpoint = v4l2_of_get_next_endpoint(client->dev.of_node, NULL);
-> +	endpoint = of_graph_get_next_endpoint(client->dev.of_node, NULL);
->  	if (!endpoint)
->  		return NULL;
->  
-> diff --git a/drivers/media/i2c/tvp7002.c b/drivers/media/i2c/tvp7002.c
-> index 912e1cc..7b3201b 100644
-> --- a/drivers/media/i2c/tvp7002.c
-> +++ b/drivers/media/i2c/tvp7002.c
-> @@ -31,6 +31,7 @@
->  #include <linux/module.h>
->  #include <linux/of.h>
->  #include <linux/v4l2-dv-timings.h>
-> +#include <media/of_graph.h>
->  #include <media/tvp7002.h>
->  #include <media/v4l2-async.h>
->  #include <media/v4l2-device.h>
-> @@ -957,7 +958,7 @@ tvp7002_get_pdata(struct i2c_client *client)
->  	if (!IS_ENABLED(CONFIG_OF) || !client->dev.of_node)
->  		return client->dev.platform_data;
->  
-> -	endpoint = v4l2_of_get_next_endpoint(client->dev.of_node, NULL);
-> +	endpoint = of_graph_get_next_endpoint(client->dev.of_node, NULL);
->  	if (!endpoint)
->  		return NULL;
->  
-> diff --git a/drivers/media/of_graph.c b/drivers/media/of_graph.c
-> new file mode 100644
-> index 0000000..aa526d7
-> --- /dev/null
-> +++ b/drivers/media/of_graph.c
-> @@ -0,0 +1,133 @@
-> +/*
-> + * OF graph binding parsing library
-> + *
-> + * Copyright (C) 2012 - 2013 Samsung Electronics Co., Ltd.
-> + * Author: Sylwester Nawrocki <s.nawrocki@samsung.com>
-> + *
-> + * Copyright (C) 2012 Renesas Electronics Corp.
-> + * Author: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of version 2 of the GNU General Public License as
-> + * published by the Free Software Foundation.
-> + */
-> +#include <linux/kernel.h>
-> +#include <linux/of.h>
-> +#include <linux/types.h>
-> +
-> +/**
-> + * of_graph_get_next_endpoint() - get next endpoint node
-> + * @parent: pointer to the parent device node
-> + * @prev: previous endpoint node, or NULL to get first
-> + *
-> + * Return: An 'endpoint' node pointer with refcount incremented. Refcount
-> + * of the passed @prev node is not decremented, the caller have to use
-> + * of_node_put() on it when done.
-> + */
-> +struct device_node *of_graph_get_next_endpoint(const struct device_node *parent,
-> +					struct device_node *prev)
-> +{
-> +	struct device_node *endpoint;
-> +	struct device_node *port = NULL;
-> +
-> +	if (!parent)
-> +		return NULL;
-> +
-> +	if (!prev) {
-> +		struct device_node *node;
-> +		/*
-> +		 * It's the first call, we have to find a port subnode
-> +		 * within this node or within an optional 'ports' node.
-> +		 */
-> +		node = of_get_child_by_name(parent, "ports");
-> +		if (node)
-> +			parent = node;
-> +
-> +		port = of_get_child_by_name(parent, "port");
-> +
-> +		if (port) {
-> +			/* Found a port, get an endpoint. */
-> +			endpoint = of_get_next_child(port, NULL);
-> +			of_node_put(port);
-> +		} else {
-> +			endpoint = NULL;
-> +		}
-> +
-> +		if (!endpoint)
-> +			pr_err("%s(): no endpoint nodes specified for %s\n",
-> +			       __func__, parent->full_name);
-> +		of_node_put(node);
-> +	} else {
-> +		port = of_get_parent(prev);
-> +		if (!port)
-> +			/* Hm, has someone given us the root node ?... */
-> +			return NULL;
-> +
-> +		/* Avoid dropping prev node refcount to 0. */
-> +		of_node_get(prev);
-> +		endpoint = of_get_next_child(port, prev);
-> +		if (endpoint) {
-> +			of_node_put(port);
-> +			return endpoint;
-> +		}
-> +
-> +		/* No more endpoints under this port, try the next one. */
-> +		do {
-> +			port = of_get_next_child(parent, port);
-> +			if (!port)
-> +				return NULL;
-> +		} while (of_node_cmp(port->name, "port"));
-> +
-> +		/* Pick up the first endpoint in this port. */
-> +		endpoint = of_get_next_child(port, NULL);
-> +		of_node_put(port);
-> +	}
-> +
-> +	return endpoint;
-> +}
-> +EXPORT_SYMBOL(of_graph_get_next_endpoint);
-> +
-> +/**
-> + * of_graph_get_remote_port_parent() - get remote port's parent node
-> + * @node: pointer to a local endpoint device_node
-> + *
-> + * Return: Remote device node associated with remote endpoint node linked
-> + *	   to @node. Use of_node_put() on it when done.
-> + */
-> +struct device_node *of_graph_get_remote_port_parent(
-> +			       const struct device_node *node)
-> +{
-> +	struct device_node *np;
-> +	unsigned int depth;
-> +
-> +	/* Get remote endpoint node. */
-> +	np = of_parse_phandle(node, "remote-endpoint", 0);
-> +
-> +	/* Walk 3 levels up only if there is 'ports' node. */
-> +	for (depth = 3; depth && np; depth--) {
-> +		np = of_get_next_parent(np);
-> +		if (depth == 2 && of_node_cmp(np->name, "ports"))
-> +			break;
-> +	}
-> +	return np;
-> +}
-> +EXPORT_SYMBOL(of_graph_get_remote_port_parent);
-> +
-> +/**
-> + * of_graph_get_remote_port() - get remote port node
-> + * @node: pointer to a local endpoint device_node
-> + *
-> + * Return: Remote port node associated with remote endpoint node linked
-> + *	   to @node. Use of_node_put() on it when done.
-> + */
-> +struct device_node *of_graph_get_remote_port(const struct device_node *node)
-> +{
-> +	struct device_node *np;
-> +
-> +	/* Get remote endpoint node. */
-> +	np = of_parse_phandle(node, "remote-endpoint", 0);
-> +	if (!np)
-> +		return NULL;
-> +	return of_get_next_parent(np);
-> +}
-> +EXPORT_SYMBOL(of_graph_get_remote_port);
-> diff --git a/drivers/media/platform/exynos4-is/fimc-is.c b/drivers/media/platform/exynos4-is/fimc-is.c
-> index 13a4228..6405268 100644
-> --- a/drivers/media/platform/exynos4-is/fimc-is.c
-> +++ b/drivers/media/platform/exynos4-is/fimc-is.c
-> @@ -30,7 +30,7 @@
->  #include <linux/slab.h>
->  #include <linux/types.h>
->  #include <linux/videodev2.h>
-> -#include <media/v4l2-of.h>
-> +#include <media/of_graph.h>
->  #include <media/videobuf2-dma-contig.h>
->  
->  #include "media-dev.h"
-> @@ -167,10 +167,10 @@ static int fimc_is_parse_sensor_config(struct fimc_is_sensor *sensor,
->  	u32 tmp = 0;
->  	int ret;
->  
-> -	np = v4l2_of_get_next_endpoint(np, NULL);
-> +	np = of_graph_get_next_endpoint(np, NULL);
->  	if (!np)
->  		return -ENXIO;
-> -	np = v4l2_of_get_remote_port(np);
-> +	np = of_graph_get_remote_port(np);
->  	if (!np)
->  		return -ENXIO;
->  
-> diff --git a/drivers/media/platform/exynos4-is/media-dev.c b/drivers/media/platform/exynos4-is/media-dev.c
-> index c1bce17..11219e2 100644
-> --- a/drivers/media/platform/exynos4-is/media-dev.c
-> +++ b/drivers/media/platform/exynos4-is/media-dev.c
-> @@ -24,6 +24,7 @@
->  #include <linux/pm_runtime.h>
->  #include <linux/types.h>
->  #include <linux/slab.h>
-> +#include <media/of_graph.h>
->  #include <media/v4l2-ctrls.h>
->  #include <media/v4l2-of.h>
->  #include <media/media-device.h>
-> @@ -473,7 +474,7 @@ static int fimc_md_parse_port_node(struct fimc_md *fmd,
->  
->  	pd->mux_id = (endpoint.port - 1) & 0x1;
->  
-> -	rem = v4l2_of_get_remote_port_parent(ep);
-> +	rem = of_graph_get_remote_port_parent(ep);
->  	of_node_put(ep);
->  	if (rem == NULL) {
->  		v4l2_info(&fmd->v4l2_dev, "Remote device at %s not found\n",
-> diff --git a/drivers/media/platform/exynos4-is/mipi-csis.c b/drivers/media/platform/exynos4-is/mipi-csis.c
-> index f3c3591..7211523 100644
-> --- a/drivers/media/platform/exynos4-is/mipi-csis.c
-> +++ b/drivers/media/platform/exynos4-is/mipi-csis.c
-> @@ -28,6 +28,7 @@
->  #include <linux/slab.h>
->  #include <linux/spinlock.h>
->  #include <linux/videodev2.h>
-> +#include <media/of_graph.h>
->  #include <media/s5p_fimc.h>
->  #include <media/v4l2-of.h>
->  #include <media/v4l2-subdev.h>
-> @@ -762,7 +763,7 @@ static int s5pcsis_parse_dt(struct platform_device *pdev,
->  				 &state->max_num_lanes))
->  		return -EINVAL;
->  
-> -	node = v4l2_of_get_next_endpoint(node, NULL);
-> +	node = of_graph_get_next_endpoint(node, NULL);
->  	if (!node) {
->  		dev_err(&pdev->dev, "No port node at %s\n",
->  				pdev->dev.of_node->full_name);
-> diff --git a/drivers/media/v4l2-core/v4l2-of.c b/drivers/media/v4l2-core/v4l2-of.c
-> index 42e3e8a..f919db3 100644
-> --- a/drivers/media/v4l2-core/v4l2-of.c
-> +++ b/drivers/media/v4l2-core/v4l2-of.c
-> @@ -152,120 +152,3 @@ int v4l2_of_parse_endpoint(const struct device_node *node,
->  	return 0;
->  }
->  EXPORT_SYMBOL(v4l2_of_parse_endpoint);
-> -
-> -/**
-> - * v4l2_of_get_next_endpoint() - get next endpoint node
-> - * @parent: pointer to the parent device node
-> - * @prev: previous endpoint node, or NULL to get first
-> - *
-> - * Return: An 'endpoint' node pointer with refcount incremented. Refcount
-> - * of the passed @prev node is not decremented, the caller have to use
-> - * of_node_put() on it when done.
-> - */
-> -struct device_node *v4l2_of_get_next_endpoint(const struct device_node *parent,
-> -					struct device_node *prev)
-> -{
-> -	struct device_node *endpoint;
-> -	struct device_node *port = NULL;
-> -
-> -	if (!parent)
-> -		return NULL;
-> -
-> -	if (!prev) {
-> -		struct device_node *node;
-> -		/*
-> -		 * It's the first call, we have to find a port subnode
-> -		 * within this node or within an optional 'ports' node.
-> -		 */
-> -		node = of_get_child_by_name(parent, "ports");
-> -		if (node)
-> -			parent = node;
-> -
-> -		port = of_get_child_by_name(parent, "port");
-> -
-> -		if (port) {
-> -			/* Found a port, get an endpoint. */
-> -			endpoint = of_get_next_child(port, NULL);
-> -			of_node_put(port);
-> -		} else {
-> -			endpoint = NULL;
-> -		}
-> -
-> -		if (!endpoint)
-> -			pr_err("%s(): no endpoint nodes specified for %s\n",
-> -			       __func__, parent->full_name);
-> -		of_node_put(node);
-> -	} else {
-> -		port = of_get_parent(prev);
-> -		if (!port)
-> -			/* Hm, has someone given us the root node ?... */
-> -			return NULL;
-> -
-> -		/* Avoid dropping prev node refcount to 0. */
-> -		of_node_get(prev);
-> -		endpoint = of_get_next_child(port, prev);
-> -		if (endpoint) {
-> -			of_node_put(port);
-> -			return endpoint;
-> -		}
-> -
-> -		/* No more endpoints under this port, try the next one. */
-> -		do {
-> -			port = of_get_next_child(parent, port);
-> -			if (!port)
-> -				return NULL;
-> -		} while (of_node_cmp(port->name, "port"));
-> -
-> -		/* Pick up the first endpoint in this port. */
-> -		endpoint = of_get_next_child(port, NULL);
-> -		of_node_put(port);
-> -	}
-> -
-> -	return endpoint;
-> -}
-> -EXPORT_SYMBOL(v4l2_of_get_next_endpoint);
-> -
-> -/**
-> - * v4l2_of_get_remote_port_parent() - get remote port's parent node
-> - * @node: pointer to a local endpoint device_node
-> - *
-> - * Return: Remote device node associated with remote endpoint node linked
-> - *	   to @node. Use of_node_put() on it when done.
-> - */
-> -struct device_node *v4l2_of_get_remote_port_parent(
-> -			       const struct device_node *node)
-> -{
-> -	struct device_node *np;
-> -	unsigned int depth;
-> -
-> -	/* Get remote endpoint node. */
-> -	np = of_parse_phandle(node, "remote-endpoint", 0);
-> -
-> -	/* Walk 3 levels up only if there is 'ports' node. */
-> -	for (depth = 3; depth && np; depth--) {
-> -		np = of_get_next_parent(np);
-> -		if (depth == 2 && of_node_cmp(np->name, "ports"))
-> -			break;
-> -	}
-> -	return np;
-> -}
-> -EXPORT_SYMBOL(v4l2_of_get_remote_port_parent);
-> -
-> -/**
-> - * v4l2_of_get_remote_port() - get remote port node
-> - * @node: pointer to a local endpoint device_node
-> - *
-> - * Return: Remote port node associated with remote endpoint node linked
-> - *	   to @node. Use of_node_put() on it when done.
-> - */
-> -struct device_node *v4l2_of_get_remote_port(const struct device_node *node)
-> -{
-> -	struct device_node *np;
-> -
-> -	/* Get remote endpoint node. */
-> -	np = of_parse_phandle(node, "remote-endpoint", 0);
-> -	if (!np)
-> -		return NULL;
-> -	return of_get_next_parent(np);
-> -}
-> -EXPORT_SYMBOL(v4l2_of_get_remote_port);
-> diff --git a/include/media/of_graph.h b/include/media/of_graph.h
-> new file mode 100644
-> index 0000000..3bbeb60
-> --- /dev/null
-> +++ b/include/media/of_graph.h
-> @@ -0,0 +1,46 @@
-> +/*
-> + * OF graph binding parsing helpers
-> + *
-> + * Copyright (C) 2012 - 2013 Samsung Electronics Co., Ltd.
-> + * Author: Sylwester Nawrocki <s.nawrocki@samsung.com>
-> + *
-> + * Copyright (C) 2012 Renesas Electronics Corp.
-> + * Author: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of version 2 of the GNU General Public License as
-> + * published by the Free Software Foundation.
-> + */
-> +#ifndef __LINUX_OF_GRAPH_H
-> +#define __LINUX_OF_GRAPH_H
-> +
-> +#ifdef CONFIG_OF
+On Tue, Feb 11, 2014 at 12:43 AM, Ian Campbell <Ian.Campbell@citrix.com> wrote:
+> On Mon, 2014-02-10 at 14:29 -0800, Luis R. Rodriguez wrote:
+>> From: "Luis R. Rodriguez" <mcgrof@suse.com>
+>>
+>> Although the xen-netback interfaces do not participate in the
+>> link as a typical Ethernet device interfaces for them are
+>> still required under the current archtitecture. IPv6 addresses
+>> do not need to be created or assigned on the xen-netback interfaces
+>> however, even if the frontend devices do need them, so clear the
+>> multicast flag to ensure the net core does not initiate IPv6
+>> Stateless Address Autoconfiguration.
+>
+> How does disabling SAA flow from the absence of multicast?
 
-As a matter of consistency, it would be better to test here for
-CONFIG_OF_GRAPH instead, to reflect the same symbol that enables such
-functions as used on Kconfig/Makefile.
+See patch 1 in this series [0], but I explain the issue I see with
+this on the cover letter [1]. In summary the RFCs on IPv6 make it
+clear you need multicast for Stateless address autoconfiguration
+(SLAAC is the preferred acronym) and DAD, however the net core has not
+made this a requirement, and hence the patch. The caveat which I
+address on the cover letter needs to be seriously considered though.
 
-> +struct device_node *of_graph_get_next_endpoint(const struct device_node *parent,
-> +					struct device_node *previous);
-> +struct device_node *of_graph_get_remote_port_parent(
-> +					const struct device_node *node);
-> +struct device_node *of_graph_get_remote_port(const struct device_node *node);
-> +#else
-> +
-> +static inline struct device_node *of_graph_get_next_endpoint(
-> +					const struct device_node *parent,
-> +					struct device_node *previous)
-> +{
-> +	return NULL;
-> +}
-> +
-> +static inline struct device_node *of_graph_get_remote_port_parent(
-> +					const struct device_node *node)
-> +{
-> +	return NULL;
-> +}
-> +
-> +static inline struct device_node *of_graph_get_remote_port(
-> +					const struct device_node *node)
-> +{
-> +	return NULL;
-> +}
-> +
-> +#endif /* CONFIG_OF */
-> +
-> +#endif /* __LINUX_OF_GRAPH_H */
-> diff --git a/include/media/v4l2-of.h b/include/media/v4l2-of.h
-> index 541cea4..8174282 100644
-> --- a/include/media/v4l2-of.h
-> +++ b/include/media/v4l2-of.h
-> @@ -72,11 +72,6 @@ struct v4l2_of_endpoint {
->  #ifdef CONFIG_OF
->  int v4l2_of_parse_endpoint(const struct device_node *node,
->  			   struct v4l2_of_endpoint *endpoint);
-> -struct device_node *v4l2_of_get_next_endpoint(const struct device_node *parent,
-> -					struct device_node *previous);
-> -struct device_node *v4l2_of_get_remote_port_parent(
-> -					const struct device_node *node);
-> -struct device_node *v4l2_of_get_remote_port(const struct device_node *node);
->  #else /* CONFIG_OF */
->  
->  static inline int v4l2_of_parse_endpoint(const struct device_node *node,
-> @@ -85,25 +80,6 @@ static inline int v4l2_of_parse_endpoint(const struct device_node *node,
->  	return -ENOSYS;
->  }
->  
-> -static inline struct device_node *v4l2_of_get_next_endpoint(
-> -					const struct device_node *parent,
-> -					struct device_node *previous)
-> -{
-> -	return NULL;
-> -}
-> -
-> -static inline struct device_node *v4l2_of_get_remote_port_parent(
-> -					const struct device_node *node)
-> -{
-> -	return NULL;
-> -}
-> -
-> -static inline struct device_node *v4l2_of_get_remote_port(
-> -					const struct device_node *node)
-> -{
-> -	return NULL;
-> -}
-> -
->  #endif /* CONFIG_OF */
->  
->  #endif /* _V4L2_OF_H */
+[0] http://marc.info/?l=linux-netdev&m=139207142110535&w=2
+[1] http://marc.info/?l=linux-netdev&m=139207142110536&w=2
 
+> Surely these should be controlled logically independently even if there is some
+> notional linkage.
 
--- 
+When a node hops on a network it will query its network by sending a
+router solicitation multicast request for its configuration
+parameters, the router can respond with router advertisements to
+disable SLAAC.
 
-Cheers,
-Mauro
+Apart from that we have no other means to disable SLAAC neatly, and as
+I gather that would be counter to the IPv6 RFCs anyway, and that makes
+sense.
+
+> Can SAA not be disabled directly?
+
+Nope. The ipv6 core assumes all device want ipv6 and this is done upon
+netdev registration, and as I noted on my patch 1 description --
+although ipv6 supports a module parameter to disable autoconfiguration
+RFC4682 Section 5.4 makes it clear that DAD *MUST* be performed on all
+unicast addresses prior to assigning them to an interface, regardless
+of
+whether they are obtained through SLAAC, DHCPv6, or manual configuration.
+
+Upon NETDEV_REGISTER the ipv6 core has 2 struct ipv6_devconf sets of
+configurations which could get slapped onto devices, neither of these
+disable autoconfiguration, its not a knob with a design purpose to let
+devices disable freely -- and technically the RFCs for IPv6 simply
+imply that you should not use IPv6 if you do cannot support multicast.
+Given that the noautoconf module parameter exists though I think my
+patch can be considered upstream after addressing the caveat I noted
+on not-NBMA links (and I now I think I know how to address that, we
+can just make the MULTICAST flag more meaninful for the dev->type).
+
+A nasty hack to disable IPv6 for testing purposes is to set the MTU to
+something lower than IPV6_MIN_MTU (1280) and in fact IPv4 can also be
+disabled by setting it to 67, that will disable both IPv6 and IPv4.
+That's obviously just that, a nasty nasty hack, but useful for easy
+testing of disabling either ipv6 completely or both.
+
+>>  Clearing the multicast
+>> flag is required given that the net_device is using the
+>> ether_setup() helper.
+>>
+>> There's also no good reason why the special MAC address of
+>> FE:FF:FF:FF:FF:FF is being used other than to avoid issues
+>> with STP,
+>
+> With your change there is a random probability on reboot that the bridge
+> will end up with a randomly generated MAC address instead of a static
+> MAC address (usually that of the physical NIC on the bridge), since the
+> bridge tends to inherit the lowest MAC of any port.
+
+I had not considered the bridge taking the lowest MAC address of any
+port added! So that was one of the tricks with the fixed MAC address
+of FE:FF:FF:FF:FF:FF, to ensure the bridge would skip using its mac
+address when it was later added as a port. Another collateral issue if
+this is *not* considered is that if a xen-netback interface has a MAC
+address lower than the general interface one and if you shutdown that
+guest, and therefore removed it from the bridge, the bridge MAC
+address will also change once again back to the general interface one.
+This will cause a hiccup on accessing the device, while ARP settles
+things. If doing a massive shutdown / reboot of guests that have a
+series of MAC addresses lower than the general interface one is a
+series of MAC address changes on the bridge.
+
+FWIW kvm seems to completely randomize the MAC address of the backend
+TAP interfaces (while the front end virtio driver fully randomizes
+it), but note that in the NAT use case where only the TAP interfaces
+get added the above is not an issue, although I suspect if the shared
+connection is used this could be a problem, it will depend on what
+tools create the TAP interface and how.
+
+I suspect we may have a shared concern here and I wonder if kvm hit
+the snags described above on the shared physical cases. Curious if kvm
+folks have seen these issues?
+
+> Since IP configuration is done on the bridge this will break DHCP,
+> whether it is using static or dynamic mappings from MAC to IP address,
+> and the host will randomly change IP address on reboot.
+
+Its beyond that, as I noted as well there can be issues upon shutdown.
+
+> So Nack for that reason.
+
+Makes sense. Will think about this a bit more.
+
+>>  since using this can create an issue if a user
+>> decides to enable multicast on the backend interfaces
+>
+> Please explain what this issue is.
+
+I explained this on the cover letter but should have elaborated more
+here. The *known* and *reported* issue is that xen-backend interfaces
+can end up  SLAAC and you'd obviously end up in some situations where
+the MAC address and IP address clash, despite the architecture of IPv6
+to randomize time requests for neighbor solicitations, and DAD.
+Ultimately a series of services can end up filling your log messages
+with tons of warnings.
+
+Another not reported issue, but I suspect critical and it can bite
+both xen and kvm in the ass is described on Appendex A on RFC 4862 [2]
+which considers the issues of getting duplicates of packets on the
+same link with the same link layer address. I think to address that we
+can also consider dev->type into all the different cases.
+
+What drove these patches is trying to find a proper upstream approach
+to Olaf's old xen ipv6-no-autoconf patch [3]. Although not stated on
+the patch I have seen some old year 2006 internal reports even with
+the static FE:FF:FF:FF:FF:FF MAC address, whereby the xen-netback
+interfaces kicked off IPv6 SLAAC and DAD. IPv6 SLAAC should trigger
+once the link goes up.
+
+My preference, rather than trying to simply disable ipv6 is actually
+seeing how xen-netback interfaces (and kvm TAP topology) can be
+simplified further). As I see it there is tons of code which could
+trigger being used on these xen-netback interfaces (and TAP for kvm)
+which is simply not needed for the use case of just doing sending data
+back and forth between host and guest: ipv6 is not needed at all, and
+I tried to test removing ipv4, but ran into issues.
+
+[2] http://tools.ietf.org/html/rfc4862#appendix-A
+[3[ https://gitorious.org/opensuse/kernel-source/source/8e16582178a29b03e850468004a47e7be5ed3005:patches.xen/ipv6-no-autoconf
+
+> Also how can a user enable multicast on the b/e?
+
+ip set multicast on dev <devname>
+ip set multicast off dev <devname>
+
+> AFAIK only Solaris ever
+> implemented the m/c bits of the Xen PV network protocol (not that I
+> wouldn't welcome attempts to add it to other platforms)
+
+Do you mean kernel configuration multicast ? Or networking ?
+
+ Luis
