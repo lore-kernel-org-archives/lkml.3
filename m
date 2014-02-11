@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755661AbaBKUAu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:00:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40129 "EHLO
+	id S1755646AbaBKUAt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:00:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40131 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753705AbaBKTHE (ORCPT
+	with ESMTP id S1753706AbaBKTHE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Feb 2014 14:07:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: [PATCH 3.12 080/107] drm/nouveau: fix m2mf copy to tiled gart
-Date: Tue, 11 Feb 2014 11:05:46 -0800
-Message-Id: <20140211184750.479409712@linuxfoundation.org>
+        Ilia Mirkin <imirkin@alum.mit.edu>
+Subject: [PATCH 3.12 081/107] drm/nouveau/falcon: use vmalloc to create firwmare copies
+Date: Tue, 11 Feb 2014 11:05:47 -0800
+Message-Id: <20140211184750.506897296@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -29,96 +28,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+From: Ilia Mirkin <imirkin@alum.mit.edu>
 
-commit ce8f7699f2b6ffe4aa8368b8d9d370875accaa5f upstream.
+commit 90d6db1635d5e225623af2e2e859feb607345287 upstream.
 
-Commit de7b7d59d54852c introduced tiled GART, but a linear copy is
-still performed. This may result in errors on eviction, fix it by
-checking tiling from memtype.
+Some firmware images may be large (64K), so using kmalloc memory is
+inappropriate for them. Use vmalloc instead, to avoid high-order
+allocation failures.
 
-Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+Signed-off-by: Ilia Mirkin <imirkin@alum.mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/nouveau_bo.c |   33 ++++++++-------------------------
- 1 file changed, 8 insertions(+), 25 deletions(-)
+ drivers/gpu/drm/nouveau/core/engine/falcon.c |   20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
 
---- a/drivers/gpu/drm/nouveau/nouveau_bo.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_bo.c
-@@ -802,25 +802,25 @@ nv50_bo_move_m2mf(struct nouveau_channel
- 		  struct ttm_mem_reg *old_mem, struct ttm_mem_reg *new_mem)
- {
- 	struct nouveau_mem *node = old_mem->mm_node;
--	struct nouveau_bo *nvbo = nouveau_bo(bo);
- 	u64 length = (new_mem->num_pages << PAGE_SHIFT);
- 	u64 src_offset = node->vma[0].offset;
- 	u64 dst_offset = node->vma[1].offset;
-+	int src_tiled = !!node->memtype;
-+	int dst_tiled = !!((struct nouveau_mem *)new_mem->mm_node)->memtype;
- 	int ret;
+--- a/drivers/gpu/drm/nouveau/core/engine/falcon.c
++++ b/drivers/gpu/drm/nouveau/core/engine/falcon.c
+@@ -56,6 +56,16 @@ _nouveau_falcon_wr32(struct nouveau_obje
+ 	nv_wr32(falcon, falcon->addr + addr, data);
+ }
  
- 	while (length) {
- 		u32 amount, stride, height;
- 
-+		ret = RING_SPACE(chan, 18 + 6 * (src_tiled + dst_tiled));
-+		if (ret)
-+			return ret;
++static void *
++vmemdup(const void *src, size_t len)
++{
++	void *p = vmalloc(len);
 +
- 		amount  = min(length, (u64)(4 * 1024 * 1024));
- 		stride  = 16 * 4;
- 		height  = amount / stride;
++	if (p)
++		memcpy(p, src, len);
++	return p;
++}
++
+ int
+ _nouveau_falcon_init(struct nouveau_object *object)
+ {
+@@ -111,7 +121,7 @@ _nouveau_falcon_init(struct nouveau_obje
  
--		if (old_mem->mem_type == TTM_PL_VRAM &&
--		    nouveau_bo_tile_layout(nvbo)) {
--			ret = RING_SPACE(chan, 8);
--			if (ret)
--				return ret;
--
-+		if (src_tiled) {
- 			BEGIN_NV04(chan, NvSubCopy, 0x0200, 7);
- 			OUT_RING  (chan, 0);
- 			OUT_RING  (chan, 0);
-@@ -830,19 +830,10 @@ nv50_bo_move_m2mf(struct nouveau_channel
- 			OUT_RING  (chan, 0);
- 			OUT_RING  (chan, 0);
- 		} else {
--			ret = RING_SPACE(chan, 2);
--			if (ret)
--				return ret;
--
- 			BEGIN_NV04(chan, NvSubCopy, 0x0200, 1);
- 			OUT_RING  (chan, 1);
- 		}
--		if (new_mem->mem_type == TTM_PL_VRAM &&
--		    nouveau_bo_tile_layout(nvbo)) {
--			ret = RING_SPACE(chan, 8);
--			if (ret)
--				return ret;
--
-+		if (dst_tiled) {
- 			BEGIN_NV04(chan, NvSubCopy, 0x021c, 7);
- 			OUT_RING  (chan, 0);
- 			OUT_RING  (chan, 0);
-@@ -852,18 +843,10 @@ nv50_bo_move_m2mf(struct nouveau_channel
- 			OUT_RING  (chan, 0);
- 			OUT_RING  (chan, 0);
- 		} else {
--			ret = RING_SPACE(chan, 2);
--			if (ret)
--				return ret;
--
- 			BEGIN_NV04(chan, NvSubCopy, 0x021c, 1);
- 			OUT_RING  (chan, 1);
+ 		ret = request_firmware(&fw, name, &device->pdev->dev);
+ 		if (ret == 0) {
+-			falcon->code.data = kmemdup(fw->data, fw->size, GFP_KERNEL);
++			falcon->code.data = vmemdup(fw->data, fw->size);
+ 			falcon->code.size = fw->size;
+ 			falcon->data.data = NULL;
+ 			falcon->data.size = 0;
+@@ -134,7 +144,7 @@ _nouveau_falcon_init(struct nouveau_obje
+ 			return ret;
  		}
  
--		ret = RING_SPACE(chan, 14);
--		if (ret)
--			return ret;
--
- 		BEGIN_NV04(chan, NvSubCopy, 0x0238, 2);
- 		OUT_RING  (chan, upper_32_bits(src_offset));
- 		OUT_RING  (chan, upper_32_bits(dst_offset));
+-		falcon->data.data = kmemdup(fw->data, fw->size, GFP_KERNEL);
++		falcon->data.data = vmemdup(fw->data, fw->size);
+ 		falcon->data.size = fw->size;
+ 		release_firmware(fw);
+ 		if (!falcon->data.data)
+@@ -149,7 +159,7 @@ _nouveau_falcon_init(struct nouveau_obje
+ 			return ret;
+ 		}
+ 
+-		falcon->code.data = kmemdup(fw->data, fw->size, GFP_KERNEL);
++		falcon->code.data = vmemdup(fw->data, fw->size);
+ 		falcon->code.size = fw->size;
+ 		release_firmware(fw);
+ 		if (!falcon->code.data)
+@@ -235,8 +245,8 @@ _nouveau_falcon_fini(struct nouveau_obje
+ 	if (!suspend) {
+ 		nouveau_gpuobj_ref(NULL, &falcon->core);
+ 		if (falcon->external) {
+-			kfree(falcon->data.data);
+-			kfree(falcon->code.data);
++			vfree(falcon->data.data);
++			vfree(falcon->code.data);
+ 			falcon->code.data = NULL;
+ 		}
+ 	}
 
 
