@@ -1,89 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752023AbaBKOmq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 09:42:46 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:48723 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751291AbaBKOmn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1751994AbaBKOmo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 09:42:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23891 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751105AbaBKOmn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Feb 2014 09:42:43 -0500
-Message-ID: <1392129760.2128.15.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [patch 1/2]percpu_ida: fix a live lock
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Kent Overstreet <kmo@daterainc.com>,
-        Alexander Gordeev <agordeev@redhat.com>, Shaohua Li <shli@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Date: Tue, 11 Feb 2014 06:42:40 -0800
-In-Reply-To: <20140211091228.GA25567@infradead.org>
-References: <20140104210804.GA24199@kmo-pixel>
-	 <20140105131300.GB4186@kernel.org> <20140106204641.GB9037@kmo>
-	 <52CB1783.4050205@kernel.dk> <20140106214726.GD9037@kmo>
-	 <20140209155006.GA16149@dhcp-26-207.brq.redhat.com>
-	 <20140210103211.GA28396@infradead.org> <52F8FDA7.7070809@kernel.dk>
-	 <20140210224145.GB2362@kmo> <52F95B73.7030205@kernel.dk>
-	 <20140211091228.GA25567@infradead.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.10.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Date: Tue, 11 Feb 2014 08:51:27 -0500
+From: Richard Guy Briggs <rgb@redhat.com>
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: viro@zeniv.linux.org.uk, eparis@redhat.com, catalin.marinas@arm.com,
+        will.deacon@arm.com, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, arndb@arndb.de, linux-kernel@vger.kernel.org,
+        linux-audit@redhat.com, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 0/3] arm64: Add audit support
+Message-ID: <20140211135127.GB17952@madcap2.tricolour.ca>
+References: <1391410590-4884-1-git-send-email-takahiro.akashi@linaro.org>
+ <1391767803-5350-1-git-send-email-takahiro.akashi@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391767803-5350-1-git-send-email-takahiro.akashi@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-02-11 at 01:12 -0800, Christoph Hellwig wrote:
-> On Mon, Feb 10, 2014 at 04:06:27PM -0700, Jens Axboe wrote:
-> > For the common case, I'd assume that anywhere between 31..256 tags
-> > is "normal". That's where the majority of devices will end up being,
-> > largely. So single digits would be an anomaly.
+On 14/02/07, AKASHI Takahiro wrote:
+> This patchset adds system call audit support on arm64.
+> Both 32-bit (AUDIT_ARCH_ARM) and 64-bit tasks (AUDIT_ARCH_AARCH64)
+> are supported. Since arm64 has the exact same set of system calls
+> on LE and BE, we don't care about endianness (or more specifically
+> __AUDIT_ARCH_64BIT bit in AUDIT_ARCH_*).
 > 
-> Unfortunately that's not true in SCSI land, where most driver do per-lun
-> tagging, and the the cmd_per_lun values are very low and very often
-> single digits, as a simple grep for cmd_per_lun will tell.
-
-Remember we do shared (all queue) tags on qla, aic and a few other
-drivers (it's actually the mailbox slot tag for the HBA).
-
->   Now it might
-> be that the tag space actually is much bigger in the hardware and the
-> driver authors for some reason want to limit the number of outstanding
-> commands, but the interface to the drivers doesn't allow them to express
-> such a difference at the moment.
-
-Tag space is dependent on SCSI protocol.  It's 256 for SPI, 65536 for
-SAS and I'm not sure for FCP.
-
-> > >How about we just make the number of tags that are allowed to be stranded an
-> > >explicit parameter (somehow) - then it can be up to device drivers to do
-> > >something sensible with it. Half is probably an ideal default for devices where
-> > >that works, but this way more constrained devices will be able to futz with it
-> > >however they want.
-> > 
-> > I don't think we should involve device drivers in this, that's
-> > punting a complicated issue to someone who likely has little idea
-> > what to do about it. This needs to be handled sensibly in the core,
-> > not in a device driver. If we can't come up with a sensible
-> > algorithm to handle this, how can we expect someone writing a device
-> > driver to do so?
+> There are some prerequisites for this patch to work correctly:
+> * "generic compat system call audit support" patch
+> * "correct a type mismatch in audit_syscall_exit()" patch
+>    (already accepted and queued in 3.14)
+> * "Modify a set of system calls in audit class" patch
+>    (already accepted and queued in 3.14)
+> * "__NR_* definitions for compat syscalls" patch from Catalin
+> * "make a single hook to syscall_trace() for all syscall features" patch
+> * userspace audit tool (v2.3.2 + my patch for arm64)
 > 
-> Agreed, punting this to the drivers is a bad idea.  But at least
-> exposing variable for the allowed tag space and allowed outstanding
-> commands to be able to make a smarter decision might be a good idea.  On
-> the other hand this will require us to count the outstanding commands
-> again, introducing more cachelines touched than nessecary.  To make
-> things worse for complex topologies like SCSI we might have to limit the
-> outstanding commands at up to three levels in the hierarchy.
+> Please review them as well for better understandings.
+> 
+> This code was tested on both 32-bit and 64-bit LE userland 
+> in the following two ways:
+> 1) basic operations with auditctl/autrace
+>   # auditctl -a exit,always -S openat -F path=/etc/inittab
+>   # auditctl -a exit,always -F dir=/tmp -F perm=rw
+>   # auditctl -a task,always
+>   # autrace /bin/ls
+>     by comparing output from autrace with one from strace
+> 
+> 2) audit-test-code (+ my workarounds for arm/arm64)
+>   by running "audit-tool", "filter" and "syscalls" test categories.
+> 
+> Changes v1 -> v2:
+> * Modified to utilize "generic compat system call audit" [3/6, 4/6, 5/6]
+>   Please note that a required header, unistd_32.h, is automatically
+>   generated from unistd32.h.
+> * Refer to regs->orig_x0 instead of regs->x0 as the first argument of
+>   system call in audit_syscall_entry() [6/6]
+> * Include "Add regs_return_value() in syscall.h" patch [2/6],
+>   which was not intentionally included in v1 because it could be added
+>   by "kprobes support".
+> 
+> Changes v2 -> v3:
+> * Remove asm/audit.h.
+>   See "generic compat syscall audit support" patch v4
+> * Remove endianness dependency, ie. AUDIT_ARCH_ARMEB/AARCH64EB.
+> * Remove kernel/syscalls/Makefile which was used to create unistd32.h.
+>   See Catalin's "Add __NR_* definitions for compat syscalls" patch
+> 
+> Changes v3 -> v4:
+> * Modified to sync with the patch, "make a single hook to syscall_trace()
+>   for all syscall features"
+> 
+> 
+> AKASHI Takahiro (3):
+>   arm64: Add regs_return_value() in syscall.h
+>   arm64: Add audit support
+>   arm64: audit: Add audit hook in ptrace/syscall_trace
+> 
+>  arch/arm64/Kconfig               |    1 +
+>  arch/arm64/include/asm/ptrace.h  |    5 +++++
+>  arch/arm64/include/asm/syscall.h |   15 +++++++++++++++
+>  arch/arm64/kernel/ptrace.c       |    7 +++++++
+>  include/uapi/linux/audit.h       |    1 +
+>  5 files changed, 29 insertions(+)
 
-The list seems to be missing prior context but a few SPI drivers use the
-clock algorithm for tag starvation in the driver.  The NCR ones are the
-ones I know about: tag allocation is the hands of a clock sweeping
-around (one for last tag and one for last outstanding tag).  The hands
-are never allowed to cross, so if a tag gets starved the hands try to
-cross and the driver stops issuing until the missing tag returns.  Tag
-starvation used to be a known problem for Parallel devices; I haven't
-seen much in the way of tag starvation algorithms for other types of
-devices, so I assume the problem went away.
+Compile and regression tested on: ppc s390 x86_64 ppc64 i686 s390x.
 
-James
+Acked-by: Richard Guy Briggs <rgb@redhat.com>
 
+> -- 
+> 1.7.9.5
+> 
+> --
+> Linux-audit mailing list
+> Linux-audit@redhat.com
+> https://www.redhat.com/mailman/listinfo/linux-audit
 
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
