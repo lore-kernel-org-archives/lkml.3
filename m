@@ -1,152 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751923AbaBKOhZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 09:37:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20424 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751358AbaBKOhX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 09:37:23 -0500
-Date: Tue, 11 Feb 2014 09:36:43 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Davidlohr Bueso <davidlohr@hp.com>, LKML <linux-kernel@vger.kernel.org>,
-        jolsa@redhat.com, jmario@redhat.com, fowles@inreach.com,
-        eranian@google.com, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Richard Fowles <rfowles@redhat.com>
-Subject: Re: [PATCH 01/21] perf c2c: Shared data analyser
-Message-ID: <20140211143643.GX25953@redhat.com>
-References: <1392053356-23024-1-git-send-email-dzickus@redhat.com>
- <1392059886-30812-1-git-send-email-dzickus@redhat.com>
- <1392070204.25316.1.camel@buesod1.americas.hpqcorp.net>
- <20140211113127.GA28757@ghostprotocols.net>
+	id S1751606AbaBKOjX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 09:39:23 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:59778 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751014AbaBKOjV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 09:39:21 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mohit KUMAR DCG <Mohit.KUMAR@st.com>
+Cc: Pratyush ANAND <pratyush.anand@st.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        spear-devel <spear-devel@list.st.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH V5 4/8] phy: st-miphy-40lp: Add skeleton driver
+Date: Tue, 11 Feb 2014 15:38:51 +0100
+Message-ID: <10315753.nkNxr0yDnp@wuerfel>
+User-Agent: KMail/4.11.3 (Linux/3.11.0-15-generic; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <2CC2A0A4A178534D93D5159BF3BCB66189FD2CAA9B@EAPEX1MAIL1.st.com>
+References: <cover.1391871170.git.pratyush.anand@st.com> <201402101654.22187.arnd@arndb.de> <2CC2A0A4A178534D93D5159BF3BCB66189FD2CAA9B@EAPEX1MAIL1.st.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140211113127.GA28757@ghostprotocols.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:dUYOEPYFYgbjZudzzyTYtlCkIUnbE6NYGE++6H0eRY6
+ 3axJRYwFWaLm9VVSb2HGG8u05sXjYvbHW6hutuvwjZUXmKXtmR
+ Iwml7ItPKn51IfUDlEYm6shmK30r3B/R0c/scX3tSRXNu9utwR
+ R8bGP/64nP+t0LYRVGDz2A3D8b+crvSyhU8w9pjDLhe/FQYHxQ
+ 2CurYUADUXAnUENgaTRslcORO8ed9Xfk5oGNz8KR6WnSINd1Ta
+ JE1oiu6E2jOzpEZ2RKi1ZRvgHUTRBEAyg8r8nohhsYxgYBQck7
+ 1so/bUZA+ycBLdqa/7gLmMgSylj72ImSjhMtYaYmFvhgWVQInO
+ 6N2ku8n8C0xkYZxlDFsk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 08:31:27AM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Mon, Feb 10, 2014 at 02:10:04PM -0800, Davidlohr Bueso escreveu:
-> > On Mon, 2014-02-10 at 14:18 -0500, Don Zickus wrote:
-> > > From: Arnaldo Carvalho de Melo <acme@redhat.com>
-> > > 
-> > > This is the start of a new perf tool that will collect information about
-> > > memory accesses and analyse it to find things like hot cachelines, etc.
-> > > 
-> > > This is basically trying to get a prototype written by Richard Fowles
-> > > written using the tools/perf coding style and libraries.
-> > > 
-> > > Start it from 'perf sched', this patch starts the process by adding the
-> > > 'record' subcommand to collect the needed mem loads and stores samples.
-> > > 
-> > > It also have the basic 'report' skeleton, resolving the sample address
-> > > and hooking the events found in a perf.data file with methods to handle
-> > > them, right now just printing the resolved perf_sample data structure
-> > > after each event name.
-> > 
-> > What tree/branch is this developed against? I'm getting the following
-> > with Linus' latest and tip tree:
+On Tuesday 11 February 2014 11:57:46 Mohit KUMAR DCG wrote:
 > 
-> I'll try refreshing it on top of my perf/core branch today
+> > Maybe mention that this phy is used inside the spear13xx
+> > SoC here rather than a standalone phy.
+> 
+> - Yes, for spear13xx its used internally. Do you think that
+> it requires to be mentioned here? 
+> We have few prototype boards that uses this as external phy.
 
-Sorry for the trouble.  I guess I missed all the function cleanups from
-last month.  Attached is a patch that gets things to compile.
+[adding Lee since he mentioned working on a similar part]
 
-I'll split this patch up to the right spots on my next refresh.
+I'm a bit confused. Is it actually the same IP block that can
+be used internally as part of a SoC and as a standalone chip?
 
-Cheers,
-Don
+Since some of the settings of the PHY are controlled through
+the misc register in case of spear13xx, I assume that part
+is different on the standalone version. How do you actually
+select the mode in that case?
 
-diff --git a/tools/perf/builtin-c2c.c b/tools/perf/builtin-c2c.c
-index a73535a..b55f281 100644
---- a/tools/perf/builtin-c2c.c
-+++ b/tools/perf/builtin-c2c.c
-@@ -1009,15 +1009,20 @@ static int perf_c2c__process_sample(struct perf_tool *tool,
- 	struct c2c_entry *entry;
- 	sample_handler f;
- 	int err = -1;
-+	struct addr_location al = {
-+			.machine = machine,
-+			.cpumode = cpumode,
-+	};
- 
--	if (evsel->handler.func == NULL)
-+	if (evsel->handler == NULL)
- 		return 0;
- 
- 	thread = machine__find_thread(machine, sample->pid);
- 	if (thread == NULL)
- 		goto err;
- 
--	mi = machine__resolve_mem(machine, thread, sample, cpumode);
-+	al.thread = thread;
-+	mi = sample__resolve_mem(sample, &al);
- 	if (mi == NULL)
- 		goto err;
- 
-@@ -1031,7 +1036,7 @@ static int perf_c2c__process_sample(struct perf_tool *tool,
- 	if (entry == NULL)
- 		goto err_mem;
- 
--	f = evsel->handler.func;
-+	f = evsel->handler;
- 	err = f(c2c, sample, entry);
- 	if (err)
- 		goto err_entry;
-@@ -1040,8 +1045,8 @@ static int perf_c2c__process_sample(struct perf_tool *tool,
- 	if (symbol_conf.use_callchain && sample->callchain) {
- 		callchain_init(entry->callchain);
- 
--		err = machine__resolve_callchain(machine, evsel, thread,
--						 sample, &parent, NULL);
-+		err = sample__resolve_callchain(sample, &parent, evsel, &al,
-+						PERF_MAX_STACK_DEPTH);
- 		if (!err)
- 			err = callchain_append(entry->callchain,
- 					       &callchain_cursor,
-@@ -1198,7 +1203,7 @@ struct refs {
- 	struct list_head	list;
- 	int			nr;
- 	const char		*name;
--	char			*long_name;
-+	const char		*long_name;
- };
- 
- static int update_ref_tree(struct c2c_entry *entry)
-@@ -2732,8 +2737,12 @@ static int perf_c2c__read_events(struct perf_c2c *c2c)
- {
- 	int err = -1;
- 	struct perf_session *session;
-+	struct perf_data_file file = {
-+			.path = input_name,
-+			.mode = PERF_DATA_MODE_READ,
-+	};
- 
--	session = perf_session__new(input_name, O_RDONLY, 0, false, &c2c->tool);
-+	session = perf_session__new(&file, 0, &c2c->tool);
- 	if (session == NULL) {
- 		pr_debug("No memory for session\n");
- 		goto out;
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index faf29b0..49e0328 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -1270,10 +1270,10 @@ int __perf_evlist__set_handlers(struct perf_evlist *evlist,
- 		if (evsel == NULL)
- 			continue;
- 
--		if (evsel->handler.func != NULL)
-+		if (evsel->handler != NULL)
- 			goto out;
- 
--		evsel->handler.func = assocs[i].handler;
-+		evsel->handler = assocs[i].handler;
- 	}
- 
- 	err = 0;
+It would certainly be helpful to explain this somewhere,
+and the binding might not be the worst place for this.
+
+On a related note, the driver in its current shape looks
+a bit silly since it doesn't contain any of the miphy specific
+code but only the SoC specific parts (as I suggested you
+do, so I'm not blaming you :-)) and a multiplexer that
+switches between the two possible implementations.
+
+What is your plan for the future, do you intend to add
+the actual miphy code soon, or is that something you just
+want to leave as an option for the future but have no
+specific plans to do right now? If not, the driver
+would probably look nicer if it were split into two
+separate implementations, one for each spear13xx SoC
+and with a separate set of phy_ops but no multiplexer.
+The connection to the miphy code (if you want to keep
+your options open) could be done by implementing some
+kind of nested phy model where the st,spear1340-phy contains
+another "phys" property pointing to the st,miphy40 node
+and the driver just calls the slave phy_ops recursively,
+or the sata and pcie nodes actually link to two phy nodes
+that are separate from one another.
+
+	Arnd
