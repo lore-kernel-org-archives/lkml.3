@@ -1,65 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751790AbaBKNQo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 08:16:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33465 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750767AbaBKNQm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 08:16:42 -0500
-Date: Tue, 11 Feb 2014 08:16:40 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Dave Young <dyoung@redhat.com>
-Cc: keescook@chromium.org, hpa@zytor.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] disable kaslr in kdump kernel
-Message-ID: <20140211131640.GB1055@redhat.com>
-References: <20140211100837.GA17202@dhcp-16-126.nay.redhat.com>
+	id S1751870AbaBKNRE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 08:17:04 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:48247 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750785AbaBKNRB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 08:17:01 -0500
+Date: Tue, 11 Feb 2014 13:16:40 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Madper Xie <cxie@redhat.com>
+Cc: Matt Fleming <matt.fleming@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        Adam Williamson <awilliam@redhat.com>
+Subject: Re: [BUG] can't boot up: unable to handle kernel paging request at
+ ffffffffff340003
+Message-ID: <20140211131640.GD2887@console-pimps.org>
+References: <8738jr5t3e.fsf@redhat.com>
+ <20140210175246.GB2887@console-pimps.org>
+ <87mwhy8iaj.fsf@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140211100837.GA17202@dhcp-16-126.nay.redhat.com>
+In-Reply-To: <87mwhy8iaj.fsf@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 06:08:38PM +0800, Dave Young wrote:
-> 
-> KASLR does not work in kdump kernel because it's too early that mem=exactmap
-> has not been parsed.
-> 
-> Since KASLR does not make much sense for kdump kernel thus let's disable it
-> for kdump kernel. To check if it is a kdump kernel I just check the cmdline
-> param elfcorehdr just like is_kdump_kernel.
-> 
-> Signed-off-by: Dave Young <dyoung@redhat.com>
+On Tue, 11 Feb, at 11:00:52AM, Madper Xie wrote:
+> it doesn't help, seems the same panic output:
 
-I don't think it is a good idea. I don't like hardcoding second kernel's
-behavior. I rather vary second kernel's behavior based on command line
-parameters or based on values passed in bootparams.
+OK, thanks for testing so quickly.
 
-So I am more than happy to pass command line option "nokaslr" instead
-of hardcoding this in kernel.
+> [    0.001341] BUG: unable to handle kernel paging request at ffffffffff340003
+> [    0.008339] IP: [<ffffffff81a73794>] efi_bgrt_init+0x9d/0x133
+> [    0.014111] PGD 28fb067 PUD 28fd067 PMD 2bef067 PTE 9376e01800000163
 
-Thanks
-Vivek
+Thinking about this a bit harder that PTE is invalid because bits 52-63
+are not zero, which is exactly the problem you were hitting prior to
+-rc2, namely that the physical BGRT address is bogus.
 
-> ---
->  linux-2.6/arch/x86/boot/compressed/aslr.c |    5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> Index: dyoung/git/linux-2.6/arch/x86/boot/compressed/aslr.c
-> ===================================================================
-> --- linux-2.6/arch/x86/boot/compressed/aslr.c
-> +++ linux-2.6/arch/x86/boot/compressed/aslr.c
-> @@ -293,6 +293,11 @@ unsigned char *choose_kernel_location(un
->  		goto out;
->  	}
->  
-> +	if (cmdline_find_option("elfcorehdr", NULL, 0) != -1) {
-> +		debug_putstr("KASLR disabled...\n");
-> +		goto out;
-> +	}
-> +
->  	/* Record the various known unsafe memory ranges. */
->  	mem_avoid_init((unsigned long)input, input_size,
->  		       (unsigned long)output, output_size);
+Can you post the EFI memory map entries from a dmesg? I just want to
+make sure that it really is the BGRT address that is broken and not
+something else. Also, please post the ACPI: BGRT entry from your dmesg
+too. Thanks.
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
