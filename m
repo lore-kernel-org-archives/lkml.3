@@ -1,54 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044AbaBKPPM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 10:15:12 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:40351 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752015AbaBKPPI convert rfc822-to-8bit (ORCPT
+	id S1752048AbaBKPPp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 10:15:45 -0500
+Received: from relay.parallels.com ([195.214.232.42]:37154 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751481AbaBKPPn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 10:15:08 -0500
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
-Subject: Re: [PATCH v3 3/5] ARM: qcom: Split Qualcomm support into legacy and multiplatform
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <20140208032607.GC10784@codeaurora.org>
-Date: Tue, 11 Feb 2014 09:13:23 -0600
-Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <392A0D29-65A3-403D-B645-DB74A1897170@codeaurora.org>
-References: <1391725484-6673-1-git-send-email-galak@codeaurora.org> <1391725484-6673-4-git-send-email-galak@codeaurora.org> <20140208032607.GC10784@codeaurora.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-X-Mailer: Apple Mail (2.1827)
+	Tue, 11 Feb 2014 10:15:43 -0500
+Message-ID: <52FA3E8E.2080601@parallels.com>
+Date: Tue, 11 Feb 2014 19:15:26 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+MIME-Version: 1.0
+To: <dchinner@redhat.com>, <mhocko@suse.cz>, <hannes@cmpxchg.org>
+CC: <akpm@linux-foundation.org>, <glommer@gmail.com>, <rientjes@google.com>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <devel@openvz.org>
+Subject: Re: [PATCH -mm v15 00/13] kmemcg shrinkers
+References: <cover.1391624021.git.vdavydov@parallels.com>
+In-Reply-To: <cover.1391624021.git.vdavydov@parallels.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Michal, Johannes, David,
 
-On Feb 7, 2014, at 9:26 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+Could you please take a look at this if you have time? Without your
+review, it'll never get committed.
 
-> On 02/06, Kumar Gala wrote:
->> diff --git a/arch/arm/mach-msm/platsmp.c b/arch/arm/mach-qcom/platsmp.c
->> similarity index 98%
->> rename from arch/arm/mach-msm/platsmp.c
->> rename to arch/arm/mach-qcom/platsmp.c
->> index 251a91e..67823a7 100644
->> --- a/arch/arm/mach-msm/platsmp.c
->> +++ b/arch/arm/mach-qcom/platsmp.c
->> @@ -2,6 +2,7 @@
->>  *  Copyright (C) 2002 ARM Ltd.
->>  *  All Rights Reserved
->>  *  Copyright (c) 2010, Code Aurora Forum. All rights reserved.
->> + *  Copyright (c) 2014 The Linux Foundation. All rights reserved.
-> 
-> We should replace the Code Aurora Forum copyright with Linux
-> Foundation here.
+Thank you.
 
-Is this something we’ve been doing?  Its normally bad form to make such changes, but I don’t know what the details re when LF took over CAF w/regards to something like Copyright.
-
-- k
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+On 02/05/2014 10:39 PM, Vladimir Davydov wrote:
+> Hi,
+>
+> This is the 15th iteration of Glauber Costa's patch-set implementing slab
+> shrinking on memcg pressure. The main idea is to make the list_lru structure
+> used by most FS shrinkers per-memcg. When adding or removing an element from a
+> list_lru, we use the page information to figure out which memcg it belongs to
+> and relay it to the appropriate list. This allows scanning kmem objects
+> accounted to different memcgs independently.
+>
+> Please note that this patch-set implements slab shrinking only when we hit the
+> user memory limit so that kmem allocations will still fail if we are below the
+> user memory limit, but close to the kmem limit. I am going to fix this in a
+> separate patch-set, but currently it is only worthwhile setting the kmem limit
+> to be greater than the user mem limit just to enable per-memcg slab accounting
+> and reclaim.
+>
+> The patch-set is based on top of v3.14-rc1-mmots-2014-02-04-16-48 (there are
+> some vmscan cleanups that I need committed there) and organized as follows:
+>  - patches 1-4 introduce some minor changes to memcg needed for this set;
+>  - patches 5-7 prepare fs for per-memcg list_lru;
+>  - patch 8 implement kmemcg reclaim core;
+>  - patch 9 make list_lru per-memcg and patch 10 marks sb shrinker memcg-aware;
+>  - patch 10 is trivial - it issues shrinkers on memcg destruction;
+>  - patches 12 and 13 introduce shrinking of dead kmem caches to facilitate
+>    memcg destruction.
+>
+> Changes in v15:
+>  - remove patches that have been merged to -mm;
+>  - fix memory barrier usage in per-memcg list_lru implementation;
+>  - fix list_lru_destroy(), which might sleep for per-memcg lrus, called from
+>    atomic context (__put_super()).
+>
+> Previous iterations of this patch-set can be found here:
+>  - https://lkml.org/lkml/2013/12/16/206 (v14)
+>  - https://lkml.org/lkml/2013/12/9/103 (v13)
+>  - https://lkml.org/lkml/2013/12/2/141 (v12)
+>  - https://lkml.org/lkml/2013/11/25/214 (v11)
+>
+> Comments are highly appreciated.
+>
+> Thanks.
+>
+> Glauber Costa (6):
+>   memcg: make cache index determination more robust
+>   memcg: consolidate callers of memcg_cache_id
+>   memcg: move initialization to memcg creation
+>   memcg: flush memcg items upon memcg destruction
+>   vmpressure: in-kernel notifications
+>   memcg: reap dead memcgs upon global memory pressure
+>
+> Vladimir Davydov (7):
+>   memcg: make for_each_mem_cgroup macros public
+>   list_lru, shrinkers: introduce list_lru_shrink_{count,walk}
+>   fs: consolidate {nr,free}_cached_objects args in shrink_control
+>   fs: do not call destroy_super() in atomic context
+>   vmscan: shrink slab on memcg pressure
+>   list_lru: add per-memcg lists
+>   fs: make shrinker memcg aware
+>
+>  fs/dcache.c                |   14 +-
+>  fs/gfs2/quota.c            |    6 +-
+>  fs/inode.c                 |    7 +-
+>  fs/internal.h              |    7 +-
+>  fs/super.c                 |   44 ++---
+>  fs/xfs/xfs_buf.c           |    7 +-
+>  fs/xfs/xfs_qm.c            |    7 +-
+>  fs/xfs/xfs_super.c         |    7 +-
+>  include/linux/fs.h         |    8 +-
+>  include/linux/list_lru.h   |  112 ++++++++++---
+>  include/linux/memcontrol.h |   50 ++++++
+>  include/linux/shrinker.h   |   10 +-
+>  include/linux/vmpressure.h |    5 +
+>  mm/list_lru.c              |  271 +++++++++++++++++++++++++++---
+>  mm/memcontrol.c            |  399 ++++++++++++++++++++++++++++++++++++++------
+>  mm/vmpressure.c            |   53 +++++-
+>  mm/vmscan.c                |   94 ++++++++---
+>  17 files changed, 926 insertions(+), 175 deletions(-)
+>
 
