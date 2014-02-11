@@ -1,112 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755450AbaBKU46 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:56:58 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:51993 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753857AbaBKU4y convert rfc822-to-8bit (ORCPT
+	id S1755962AbaBKU53 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:57:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39631 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752736AbaBKTFU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 15:56:54 -0500
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
-Subject: Re: [Patch v5 2/2] dmaengine: qcom_bam_dma: Add device tree binding
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <1391546556-27702-3-git-send-email-agross@codeaurora.org>
-Date: Tue, 11 Feb 2014 14:56:48 -0600
-Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
-        dmaengine <dmaengine@vger.kernel.org>,
-        devicetree <devicetree@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <C8E65D93-F685-40C7-A482-C3E85D9F0558@codeaurora.org>
-References: <1391546556-27702-1-git-send-email-agross@codeaurora.org> <1391546556-27702-3-git-send-email-agross@codeaurora.org>
-To: Andy Gross <agross@codeaurora.org>
-X-Mailer: Apple Mail (2.1827)
+	Tue, 11 Feb 2014 14:05:20 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.13 053/120] dm: wait until embedded kobject is released before destroying a device
+Date: Tue, 11 Feb 2014 11:04:54 -0800
+Message-Id: <20140211184825.139553492@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
+References: <20140211184823.492407127@linuxfoundation.org>
+User-Agent: quilt/0.61-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
-On Feb 4, 2014, at 2:42 PM, Andy Gross <agross@codeaurora.org> wrote:
+------------------
 
-> Add device tree binding support for the QCOM BAM DMA driver.
-> 
-> Signed-off-by: Andy Gross <agross@codeaurora.org>
-> ---
-> .../devicetree/bindings/dma/qcom_bam_dma.txt       |   48 ++++++++++++++++++++
-> 1 file changed, 48 insertions(+)
-> create mode 100644 Documentation/devicetree/bindings/dma/qcom_bam_dma.txt
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-Acked-by: Kumar Gala <galak@codeaurora.org>
+commit be35f486108227e10fe5d96fd42fb2b344c59983 upstream.
 
-- k
+There may be other parts of the kernel holding a reference on the dm
+kobject.  We must wait until all references are dropped before
+deallocating the mapped_device structure.
 
-> 
-> diff --git a/Documentation/devicetree/bindings/dma/qcom_bam_dma.txt b/Documentation/devicetree/bindings/dma/qcom_bam_dma.txt
-> new file mode 100644
-> index 0000000..86344f1
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/dma/qcom_bam_dma.txt
-> @@ -0,0 +1,48 @@
-> +QCOM BAM DMA controller
-> +
-> +Required properties:
-> +- compatible:	Must be "qcom,bam-v1.4.0" for MSM8974 V1
-> +		Must be "qcom,bam-v1.4.1" for MSM8974 V2
-> +- reg: Address range for DMA registers
-> +- interrupts: single interrupt for this controller
-> +- #dma-cells: must be <1>
-> +- clocks: required clock
-> +- clock-names: name of clock
-> +- qcom,ee : indicates the active Execution Environment identifier (0-7)
-> +
-> +Example:
-> +
-> +	uart-bam: dma@f9984000 = {
-> +		compatible = "qcom,bam-v1.4.1";
-> +		reg = <0xf9984000 0x15000>;
-> +		interrupts = <0 94 0>;
-> +		clocks = <&gcc GCC_BAM_DMA_AHB_CLK>;
-> +		clock-names = "bam_clk";
-> +		#dma-cells = <1>;
-> +		qcom,ee = <0>;
-> +	};
-> +
-> +Client:
-> +Required properties:
-> +- dmas: List of dma channel requests
-> +- dma-names: Names of aforementioned requested channels
-> +
-> +Clients must use the format described in the dma.txt file, using a two cell
-> +specifier for each channel.
-> +
-> +The three cells in order are:
-> +  1. A phandle pointing to the DMA controller
-> +  2. The channel number
-> +
-> +Example:
-> +	serial@f991e000 {
-> +		compatible = "qcom,msm-uart";
-> +		reg = <0xf991e000 0x1000>
-> +			<0xf9944000 0x19000>;
-> +		interrupts = <0 108 0>;
-> +		clocks = <&gcc GCC_BLSP1_UART2_APPS_CLK>, <&gcc GCC_BLSP1_AHB_CLK>;
-> +		clock-names = "core", "iface";
-> +
-> +		dmas = <&uart-bam 0>, <&uart-bam 1>;
-> +		dma-names = "rx", "tx";
-> +	};
-> -- 
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by The Linux Foundation
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+The dm_kobject_release method signals that all references are dropped
+via completion.  But dm_kobject_release doesn't free the kobject (which
+is embedded in the mapped_device structure).
 
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+This is the sequence of operations:
+* when destroying a DM device, call kobject_put from dm_sysfs_exit
+* wait until all users stop using the kobject, when it happens the
+  release method is called
+* the release method signals the completion and should return without
+  delay
+* the dm device removal code that waits on the completion continues
+* the dm device removal code drops the dm_mod reference the device had
+* the dm device removal code frees the mapped_device structure that
+  contains the kobject
+
+Using kobject this way should avoid the module unload race that was
+mentioned at the beginning of this thread:
+https://lkml.org/lkml/2014/1/4/83
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/md/dm-sysfs.c |   10 +++++++++-
+ drivers/md/dm.c       |   11 +++++++++++
+ drivers/md/dm.h       |    2 ++
+ 3 files changed, 22 insertions(+), 1 deletion(-)
+
+--- a/drivers/md/dm-sysfs.c
++++ b/drivers/md/dm-sysfs.c
+@@ -79,6 +79,11 @@ static const struct sysfs_ops dm_sysfs_o
+ 	.show	= dm_attr_show,
+ };
+ 
++static void dm_kobject_release(struct kobject *kobj)
++{
++	complete(dm_get_completion_from_kobject(kobj));
++}
++
+ /*
+  * dm kobject is embedded in mapped_device structure
+  * no need to define release function here
+@@ -86,6 +91,7 @@ static const struct sysfs_ops dm_sysfs_o
+ static struct kobj_type dm_ktype = {
+ 	.sysfs_ops	= &dm_sysfs_ops,
+ 	.default_attrs	= dm_attrs,
++	.release	= dm_kobject_release,
+ };
+ 
+ /*
+@@ -104,5 +110,7 @@ int dm_sysfs_init(struct mapped_device *
+  */
+ void dm_sysfs_exit(struct mapped_device *md)
+ {
+-	kobject_put(dm_kobject(md));
++	struct kobject *kobj = dm_kobject(md);
++	kobject_put(kobj);
++	wait_for_completion(dm_get_completion_from_kobject(kobj));
+ }
+--- a/drivers/md/dm.c
++++ b/drivers/md/dm.c
+@@ -203,6 +203,9 @@ struct mapped_device {
+ 	/* sysfs handle */
+ 	struct kobject kobj;
+ 
++	/* wait until the kobject is released */
++	struct completion kobj_completion;
++
+ 	/* zero-length flush that will be cloned and submitted to targets */
+ 	struct bio flush_bio;
+ 
+@@ -2041,6 +2044,7 @@ static struct mapped_device *alloc_dev(i
+ 	init_waitqueue_head(&md->wait);
+ 	INIT_WORK(&md->work, dm_wq_work);
+ 	init_waitqueue_head(&md->eventq);
++	init_completion(&md->kobj_completion);
+ 
+ 	md->disk->major = _major;
+ 	md->disk->first_minor = minor;
+@@ -2925,6 +2929,13 @@ struct mapped_device *dm_get_from_kobjec
+ 	return md;
+ }
+ 
++struct completion *dm_get_completion_from_kobject(struct kobject *kobj)
++{
++	struct mapped_device *md = container_of(kobj, struct mapped_device, kobj);
++
++	return &md->kobj_completion;
++}
++
+ int dm_suspended_md(struct mapped_device *md)
+ {
+ 	return test_bit(DMF_SUSPENDED, &md->flags);
+--- a/drivers/md/dm.h
++++ b/drivers/md/dm.h
+@@ -15,6 +15,7 @@
+ #include <linux/list.h>
+ #include <linux/blkdev.h>
+ #include <linux/hdreg.h>
++#include <linux/completion.h>
+ 
+ #include "dm-stats.h"
+ 
+@@ -152,6 +153,7 @@ int dm_sysfs_init(struct mapped_device *
+ void dm_sysfs_exit(struct mapped_device *md);
+ struct kobject *dm_kobject(struct mapped_device *md);
+ struct mapped_device *dm_get_from_kobject(struct kobject *kobj);
++struct completion *dm_get_completion_from_kobject(struct kobject *kobj);
+ 
+ /*
+  * Targets for linear and striped mappings
+
 
