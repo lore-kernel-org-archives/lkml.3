@@ -1,63 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752542AbaBKCqM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 21:46:12 -0500
-Received: from gate.crashing.org ([63.228.1.57]:53339 "EHLO gate.crashing.org"
+	id S1752367AbaBKCvj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 21:51:39 -0500
+Received: from mga02.intel.com ([134.134.136.20]:15796 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751779AbaBKCqI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 21:46:08 -0500
-Message-ID: <1392086660.3996.50.camel@pasglop>
-Subject: Re: [PATCH v2] powerpc ticket locks
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Torsten Duwe <duwe@lst.de>
-Cc: Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Scott Wood <scottwood@freescale.com>, Tom Musta <tommusta@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>
-Date: Tue, 11 Feb 2014 13:44:20 +1100
-In-Reply-To: <20140210155217.GF2107@lst.de>
-References: <20140207165801.GC2107@lst.de>
-	 <1392001823.3996.21.camel@pasglop> <20140210155217.GF2107@lst.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751779AbaBKCvc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 21:51:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,822,1384329600"; 
+   d="scan'208";a="481316917"
+From: Lv Zheng <lv.zheng@intel.com>
+To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>
+Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org
+Subject: [PATCH 0/2] ACPICA: Preparations of acpidump release automation.
+Date: Tue, 11 Feb 2014 10:51:21 +0800
+Message-Id: <cover.1392086457.git.lv.zheng@intel.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Linus, Al, a question for you down there about lockref "ref" size)
+This series includes required changes for acpidump release automation.
 
-On Mon, 2014-02-10 at 16:52 +0100, Torsten Duwe wrote:
+Since these commits actually are no-op for ACPICA and there are side
+effects for Linux kernel after applying the linuxized ones, it is better to
+post them in Linux community rather than in ACPICA community for review and
+back port them to ACPICA upstream after merging them first into Linux.
 
-> What if I squeeze the bits a little?
-> 4k vCPUs, and 256 physical, as a limit to stay within 32 bits?
-> At the cost that unlock may become an ll/sc operation again.
-> I could think about a trick against that.
-> But alas, hw_cpu_id is 16 bit, which makes a lookup table neccessary :-/
-> 
-> Doing another round of yields for lockrefs now doesn't
-> sound so bad any more.
+Lv Zheng (2):
+  ACPICA: acpidump: Add sparse declarators support.
+  ACPICA: acpidump: Remove translation protection on integer types.
 
-So, the ticketpair has to be 16:16 so we can avoid the atomic on unlock
+ include/acpi/actypes.h          |   64 +++++++++++++++++++--------------------
+ include/acpi/platform/aclinux.h |   12 ++++++++
+ 2 files changed, 44 insertions(+), 32 deletions(-)
 
-That leaves us with 32 bits to put the ref and the owner. The question
-is how big the ref really has to be and can we have a reasonable failure
-mode if it overflows ?
-
-If we limit ourselves to, for example, 16-bit for the ref in lockref,
-then we can have the second 32-bit split between the owner and the ref.
-
-If we limit ourselves to 4k CPUs, then we get 4 more bits of ref ...
-
-So the question is, is it reasonable to have the ref smaller than
-32-bit...
-
-Cheers,
-Ben.
-
+-- 
+1.7.10
 
