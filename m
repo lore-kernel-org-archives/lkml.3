@@ -1,63 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755056AbaBKTY4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:24:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40489 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754234AbaBKTIJ (ORCPT
+	id S1755095AbaBKTZk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:25:40 -0500
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:54900 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755039AbaBKTZh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:08:09 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Airlie <airlied@redhat.com>
-Subject: [PATCH 3.10 64/79] drm/mgag200: fix typo causing bw limits to be ignored on some chips
-Date: Tue, 11 Feb 2014 11:06:08 -0800
-Message-Id: <20140211184722.820329799@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
-References: <20140211184720.928667275@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Tue, 11 Feb 2014 14:25:37 -0500
+Message-ID: <52FA77EA.7050105@linux.vnet.ibm.com>
+Date: Wed, 12 Feb 2014 00:50:10 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
+To: Toshi Kani <toshi.kani@hp.com>
+CC: ego@linux.vnet.ibm.com, "paulus@samba.org" <paulus@samba.org>,
+        "oleg@redhat.com" <oleg@redhat.com>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "tj@kernel.org" <tj@kernel.org>,
+        "walken@google.com" <walken@google.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH 01/51] CPU hotplug: Provide lockless versions of callback
+ registration functions
+References: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com> <20140205220447.19080.9460.stgit@srivatsabhat.in.ibm.com> <1392081980.5612.123.camel@misato.fc.hp.com> <52F9ED11.5010800@linux.vnet.ibm.com> <1392136436.5612.131.camel@misato.fc.hp.com> <20140211171805.GA3932@in.ibm.com> <1392140115.5612.135.camel@misato.fc.hp.com>
+In-Reply-To: <1392140115.5612.135.camel@misato.fc.hp.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021119-4790-0000-0000-00000CACC7E3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On 02/11/2014 11:05 PM, Toshi Kani wrote:
+> On Tue, 2014-02-11 at 22:48 +0530, Gautham R Shenoy wrote:
+>> On Tue, Feb 11, 2014 at 09:33:56AM -0700, Toshi Kani wrote:
+>>>
+>>> I agree that introducing a reader-writer semaphore allows concurrent
+>>> executions.  Adding yet another hotplug lock is a bit unfortunate,
+>>> though.
+>>>
+>>
+>> I agree with this last part. We already have enough locks for
+>> cpu-hotplug. Another one sounds one too many!!
+>>
+>>
+>>> This may be a dumb question, but can't we simply do this way?
+>>>
+>>>         get_online_cpus();
+>>>
+>>>         for_each_online_cpu(cpu)
+>>>                 init_cpu(cpu);
+>>>
+>>>         put_online_cpus();
+>>>
+>>       -------- Someone chooses to hotplug a cpu here ------
+>>       -------- But this subsystem might miss out on knowing
+>>                about it since it hasn't registered its
+>>                notifier yet! 
+>>
+>>>         register_cpu_notifier(&foobar_cpu_notifier);
+> 
+> 
+> How about this?  foo_cpu_notifier returns NOP when foo_notifier_ready is
+> false.
+> 
+>         register_cpu_notifier(&foobar_cpu_notifier);
+> 
+>         get_online_cpus();
+> 
+>         for_each_online_cpu(cpu)
+>                 init_cpu(cpu);
+> 
+> 	foo_notifier_ready = true;
+> 
+>         put_online_cpus();
+> 
 
-------------------
+Nah, that looks a lot like some quick-n-dirty hack ;-(
+It would also amount to burdening the various subsystems to add weird-looking
+pieces of code such as this in their callbacks:
 
-From: Dave Airlie <airlied@redhat.com>
+	if (!foo_notifier_ready)
+		return NOTIFY_OK;
 
-commit ec22b4aa993abbd18f5bbbcb20a1c56be3b1d38b upstream.
+This only makes it all the more evident that the callback registration APIs
+exposed by the CPU hotplug core is poorly designed.
 
-mode->mdev otherwise the bw limits never kick in.
+What we need instead, is an elegant, well-defined and easy-to-use set of
+interfaces/APIs exposed by the core CPU hotplug code to the various
+subsystems. I don't think we should worry so much about the fact that
+we can't use the familiar get/put_online_cpus() in this type of callback
+registration scenario. We can introduce a sane set of APIs that work
+well in such situations and use them consistently.
 
-Reported in RHEL testing.
+For example, something like the code snippet shown below looks pretty
+neat to me:
 
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+	cpu_notifier_register_begin();
 
----
- drivers/gpu/drm/mgag200/mgag200_mode.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+	for_each_online_cpu(cpu)
+		init_cpu(cpu);
 
---- a/drivers/gpu/drm/mgag200/mgag200_mode.c
-+++ b/drivers/gpu/drm/mgag200/mgag200_mode.c
-@@ -1477,11 +1477,11 @@ static int mga_vga_mode_valid(struct drm
- 		(mga_vga_calculate_mode_bandwidth(mode, bpp)
- 			> (32700 * 1024))) {
- 		return MODE_BANDWIDTH;
--	} else if (mode->type == G200_EH &&
-+	} else if (mdev->type == G200_EH &&
- 		(mga_vga_calculate_mode_bandwidth(mode, bpp)
- 			> (37500 * 1024))) {
- 		return MODE_BANDWIDTH;
--	} else if (mode->type == G200_ER &&
-+	} else if (mdev->type == G200_ER &&
- 		(mga_vga_calculate_mode_bandwidth(mode,
- 			bpp) > (55000 * 1024))) {
- 		return MODE_BANDWIDTH;
+	register_cpu_notifier(&foobar_cpu_notifier);
 
+	cpu_notifier_register_done();
+
+What do you think?
+
+Regards,
+Srivatsa S. Bhat
 
