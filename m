@@ -1,83 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751661AbaBKMQV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 07:16:21 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:46468 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750809AbaBKMQU (ORCPT
+	id S1751962AbaBKM04 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 07:26:56 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40358 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750788AbaBKM0z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 07:16:20 -0500
-Date: Tue, 11 Feb 2014 04:15:50 -0800
-From: tip-bot for Daniel Lezcano <tipbot@zytor.com>
-Message-ID: <tip-e5fc66119ec97054eefc83f173a7ee9e133c3c3a@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, daniel.lezcano@linaro.org
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, daniel.lezcano@linaro.org
-In-Reply-To: <1389949444-14821-2-git-send-email-daniel.lezcano@linaro.org>
-References: <1389949444-14821-2-git-send-email-daniel.lezcano@linaro.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Fix race in idle_balance()
-Git-Commit-ID: e5fc66119ec97054eefc83f173a7ee9e133c3c3a
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 11 Feb 2014 07:26:55 -0500
+Date: Tue, 11 Feb 2014 12:26:44 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Message-ID: <20140211122644.GJ13533@sirena.org.uk>
+References: <1391669261.24190.1.camel@phoenix>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="yr/DzoowOgTDcSCF"
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 11 Feb 2014 04:15:56 -0800 (PST)
+In-Reply-To: <1391669261.24190.1.camel@phoenix>
+X-Cookie: My LESLIE GORE record is BROKEN ...
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] regulator: as3711: Allow missing init_data for
+ diagnostics
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e5fc66119ec97054eefc83f173a7ee9e133c3c3a
-Gitweb:     http://git.kernel.org/tip/e5fc66119ec97054eefc83f173a7ee9e133c3c3a
-Author:     Daniel Lezcano <daniel.lezcano@linaro.org>
-AuthorDate: Fri, 17 Jan 2014 10:04:02 +0100
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 10 Feb 2014 16:17:04 +0100
 
-sched: Fix race in idle_balance()
+--yr/DzoowOgTDcSCF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-The scheduler main function 'schedule()' checks if there are no more tasks
-on the runqueue. Then it checks if a task should be pulled in the current
-runqueue in idle_balance() assuming it will go to idle otherwise.
+On Thu, Feb 06, 2014 at 02:47:41PM +0800, Axel Lin wrote:
+> The regulator core supports this to allow the configuration to be inspected
+> at runtime even if no software management is enabled.
 
-But idle_balance() releases the rq->lock in order to look up the sched
-domains and takes the lock again right after. That opens a window where
-another cpu may put a task in our runqueue, so we won't go to idle but
-we have filled the idle_stamp, thinking we will.
+Applied, thanks.
 
-This patch closes the window by checking if the runqueue has been modified
-but without pulling a task after taking the lock again, so we won't go to idle
-right after in the __schedule() function.
+--yr/DzoowOgTDcSCF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: alex.shi@linaro.org
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1389949444-14821-2-git-send-email-daniel.lezcano@linaro.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/fair.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 428bc9d..5ebc681 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -6589,6 +6589,13 @@ void idle_balance(struct rq *this_rq)
- 
- 	raw_spin_lock(&this_rq->lock);
- 
-+	/*
-+	 * While browsing the domains, we released the rq lock.
-+	 * A task could have be enqueued in the meantime
-+	 */
-+	if (this_rq->nr_running && !pulled_task)
-+		return;
-+
- 	if (pulled_task || time_after(jiffies, this_rq->next_balance)) {
- 		/*
- 		 * We are going idle. next_balance may be set based on
+iQIcBAEBAgAGBQJS+hcBAAoJELSic+t+oim9LsMP/ibUdsflAYPayZhjknLlf5mi
+GVwmTxSj2vPy9y+jmnZ2EpuqHB113eBxufVaVNfDsYoPpi5fi+rUDWJeQko7zUxJ
+gmfVmSER76v+51UEjsAkR8gdWxg4Cd0heacNrfoubOv7ZTpVSiYTXQAI/DaOWKRD
+BxHGZPe+K7a5/87utcRUJTZbmV8JLjmBb7EVqVo6vtKbUsAdboP/fRFSI4xSRoka
+8Sqn2HgOdah8frR+MrHLMd4gRbFWOls6ZSd05zlPu4Mhav1yMTkw1hgB0uYTyNBH
+diuLnAc/SB/cUJdK7xmQ6EKVz77NdSgCGOIRDk41FPMqGTGylfNRNk5Ki+uZXynD
+1Y/5K1BmPupqv6p9YC1tWsgPZ+voTRG4cAq72PE772DqQgm7L+CbR8+v2FogZPQ9
+zWvKAQSH9MhNa93HjhznyYw7xyJpfk9qn1StSbYm+F2ZI3hIrqtbmLnq3nsH7ERa
+KF0alIv+ulfLe1z0+62gyDglNQ/Qr7e6VxxAc7Fucqp3R0LteQMzpwEJdY9u1CFa
+YKZX4TwhaqHn61T6LjNu8Os52Cz3Lldq0fCpt+5merAIl52uFf4QheikMKZT/Bfk
++ty3OwrSsEBaKgM1vAFoVsxbh5jKPpu0Ck/fabc/gNgazOIcLoqKskSbhB252Jf4
+0YRO53lHVkdGYFEwWSF9
+=/uav
+-----END PGP SIGNATURE-----
+
+--yr/DzoowOgTDcSCF--
