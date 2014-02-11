@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753030AbaBKTFv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:05:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39733 "EHLO
+	id S1754904AbaBKUno (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:43:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39745 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752994AbaBKTFq (ORCPT
+	with ESMTP id S1753015AbaBKTFu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:05:46 -0500
+	Tue, 11 Feb 2014 14:05:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Weston Andros Adamson <dros@netapp.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.13 048/120] sunrpc: Fix infinite loop in RPC state machine
-Date: Tue, 11 Feb 2014 11:04:49 -0800
-Message-Id: <20140211184824.991005837@linuxfoundation.org>
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Ben Skeggs <bskeggs@redhat.com>
+Subject: [PATCH 3.13 088/120] drm/nouveau: fix m2mf copy to tiled gart
+Date: Tue, 11 Feb 2014 11:05:29 -0800
+Message-Id: <20140211184826.122124799@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -29,119 +29,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Weston Andros Adamson <dros@netapp.com>
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
 
-commit 6ff33b7dd0228b7d7ed44791bbbc98b03fd15d9d upstream.
+commit ce8f7699f2b6ffe4aa8368b8d9d370875accaa5f upstream.
 
-When a task enters call_refreshresult with status 0 from call_refresh and
-!rpcauth_uptodatecred(task) it enters call_refresh again with no rate-limiting
-or max number of retries.
+Commit de7b7d59d54852c introduced tiled GART, but a linear copy is
+still performed. This may result in errors on eviction, fix it by
+checking tiling from memtype.
 
-Instead of trying forever, make use of the retry path that other errors use.
-
-This only seems to be possible when the crrefresh callback is gss_refresh_null,
-which only happens when destroying the context.
-
-To reproduce:
-
-1) mount with sec=krb5 (or sec=sys with krb5 negotiated for non FSID specific
-   operations).
-
-2) reboot - the client will be stuck and will need to be hard rebooted
-
-BUG: soft lockup - CPU#0 stuck for 22s! [kworker/0:2:46]
-Modules linked in: rpcsec_gss_krb5 nfsv4 nfs fscache ppdev crc32c_intel aesni_intel aes_x86_64 glue_helper lrw gf128mul ablk_helper cryptd serio_raw i2c_piix4 i2c_core e1000 parport_pc parport shpchp nfsd auth_rpcgss oid_registry exportfs nfs_acl lockd sunrpc autofs4 mptspi scsi_transport_spi mptscsih mptbase ata_generic floppy
-irq event stamp: 195724
-hardirqs last  enabled at (195723): [<ffffffff814a925c>] restore_args+0x0/0x30
-hardirqs last disabled at (195724): [<ffffffff814b0a6a>] apic_timer_interrupt+0x6a/0x80
-softirqs last  enabled at (195722): [<ffffffff8103f583>] __do_softirq+0x1df/0x276
-softirqs last disabled at (195717): [<ffffffff8103f852>] irq_exit+0x53/0x9a
-CPU: 0 PID: 46 Comm: kworker/0:2 Not tainted 3.13.0-rc3-branch-dros_testing+ #4
-Hardware name: VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform, BIOS 6.00 07/31/2013
-Workqueue: rpciod rpc_async_schedule [sunrpc]
-task: ffff8800799c4260 ti: ffff880079002000 task.ti: ffff880079002000
-RIP: 0010:[<ffffffffa0064fd4>]  [<ffffffffa0064fd4>] __rpc_execute+0x8a/0x362 [sunrpc]
-RSP: 0018:ffff880079003d18  EFLAGS: 00000246
-RAX: 0000000000000005 RBX: 0000000000000007 RCX: 0000000000000007
-RDX: 0000000000000007 RSI: ffff88007aecbae8 RDI: ffff8800783d8900
-RBP: ffff880079003d78 R08: ffff88006e30e9f8 R09: ffffffffa005a3d7
-R10: ffff88006e30e7b0 R11: ffff8800783d8900 R12: ffffffffa006675e
-R13: ffff880079003ce8 R14: ffff88006e30e7b0 R15: ffff8800783d8900
-FS:  0000000000000000(0000) GS:ffff88007f200000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 00007f3072333000 CR3: 0000000001a0b000 CR4: 00000000001407f0
-Stack:
- ffff880079003d98 0000000000000246 0000000000000000 ffff88007a9a4830
- ffff880000000000 ffffffff81073f47 ffff88007f212b00 ffff8800799c4260
- ffff8800783d8988 ffff88007f212b00 ffffe8ffff604800 0000000000000000
-Call Trace:
- [<ffffffff81073f47>] ? trace_hardirqs_on_caller+0x145/0x1a1
- [<ffffffffa00652d3>] rpc_async_schedule+0x27/0x32 [sunrpc]
- [<ffffffff81052974>] process_one_work+0x211/0x3a5
- [<ffffffff810528d5>] ? process_one_work+0x172/0x3a5
- [<ffffffff81052eeb>] worker_thread+0x134/0x202
- [<ffffffff81052db7>] ? rescuer_thread+0x280/0x280
- [<ffffffff81052db7>] ? rescuer_thread+0x280/0x280
- [<ffffffff810584a0>] kthread+0xc9/0xd1
- [<ffffffff810583d7>] ? __kthread_parkme+0x61/0x61
- [<ffffffff814afd6c>] ret_from_fork+0x7c/0xb0
- [<ffffffff810583d7>] ? __kthread_parkme+0x61/0x61
-Code: e8 87 63 fd e0 c6 05 10 dd 01 00 01 48 8b 43 70 4c 8d 6b 70 45 31 e4 a8 02 0f 85 d5 02 00 00 4c 8b 7b 48 48 c7 43 48 00 00 00 00 <4c> 8b 4b 50 4d 85 ff 75 0c 4d 85 c9 4d 89 cf 0f 84 32 01 00 00
-
-And the output of "rpcdebug -m rpc -s all":
-
-RPC:    61 call_refresh (status 0)
-RPC:    61 call_refresh (status 0)
-RPC:    61 refreshing RPCSEC_GSS cred ffff88007a413cf0
-RPC:    61 refreshing RPCSEC_GSS cred ffff88007a413cf0
-RPC:    61 call_refreshresult (status 0)
-RPC:    61 refreshing RPCSEC_GSS cred ffff88007a413cf0
-RPC:    61 call_refreshresult (status 0)
-RPC:    61 refreshing RPCSEC_GSS cred ffff88007a413cf0
-RPC:    61 call_refresh (status 0)
-RPC:    61 call_refreshresult (status 0)
-RPC:    61 call_refresh (status 0)
-RPC:    61 call_refresh (status 0)
-RPC:    61 refreshing RPCSEC_GSS cred ffff88007a413cf0
-RPC:    61 call_refreshresult (status 0)
-RPC:    61 call_refresh (status 0)
-RPC:    61 refreshing RPCSEC_GSS cred ffff88007a413cf0
-RPC:    61 call_refresh (status 0)
-RPC:    61 refreshing RPCSEC_GSS cred ffff88007a413cf0
-RPC:    61 refreshing RPCSEC_GSS cred ffff88007a413cf0
-RPC:    61 call_refreshresult (status 0)
-RPC:    61 call_refresh (status 0)
-RPC:    61 call_refresh (status 0)
-RPC:    61 call_refresh (status 0)
-RPC:    61 call_refresh (status 0)
-RPC:    61 call_refreshresult (status 0)
-RPC:    61 refreshing RPCSEC_GSS cred ffff88007a413cf0
-
-Signed-off-by: Weston Andros Adamson <dros@netapp.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/clnt.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/nouveau/nouveau_bo.c |   33 ++++++++-------------------------
+ 1 file changed, 8 insertions(+), 25 deletions(-)
 
---- a/net/sunrpc/clnt.c
-+++ b/net/sunrpc/clnt.c
-@@ -1529,9 +1529,13 @@ call_refreshresult(struct rpc_task *task
- 	task->tk_action = call_refresh;
- 	switch (status) {
- 	case 0:
--		if (rpcauth_uptodatecred(task))
-+		if (rpcauth_uptodatecred(task)) {
- 			task->tk_action = call_allocate;
--		return;
-+			return;
-+		}
-+		/* Use rate-limiting and a max number of retries if refresh
-+		 * had status 0 but failed to update the cred.
-+		 */
- 	case -ETIMEDOUT:
- 		rpc_delay(task, 3*HZ);
- 	case -EAGAIN:
+--- a/drivers/gpu/drm/nouveau/nouveau_bo.c
++++ b/drivers/gpu/drm/nouveau/nouveau_bo.c
+@@ -798,25 +798,25 @@ nv50_bo_move_m2mf(struct nouveau_channel
+ 		  struct ttm_mem_reg *old_mem, struct ttm_mem_reg *new_mem)
+ {
+ 	struct nouveau_mem *node = old_mem->mm_node;
+-	struct nouveau_bo *nvbo = nouveau_bo(bo);
+ 	u64 length = (new_mem->num_pages << PAGE_SHIFT);
+ 	u64 src_offset = node->vma[0].offset;
+ 	u64 dst_offset = node->vma[1].offset;
++	int src_tiled = !!node->memtype;
++	int dst_tiled = !!((struct nouveau_mem *)new_mem->mm_node)->memtype;
+ 	int ret;
+ 
+ 	while (length) {
+ 		u32 amount, stride, height;
+ 
++		ret = RING_SPACE(chan, 18 + 6 * (src_tiled + dst_tiled));
++		if (ret)
++			return ret;
++
+ 		amount  = min(length, (u64)(4 * 1024 * 1024));
+ 		stride  = 16 * 4;
+ 		height  = amount / stride;
+ 
+-		if (old_mem->mem_type == TTM_PL_VRAM &&
+-		    nouveau_bo_tile_layout(nvbo)) {
+-			ret = RING_SPACE(chan, 8);
+-			if (ret)
+-				return ret;
+-
++		if (src_tiled) {
+ 			BEGIN_NV04(chan, NvSubCopy, 0x0200, 7);
+ 			OUT_RING  (chan, 0);
+ 			OUT_RING  (chan, 0);
+@@ -826,19 +826,10 @@ nv50_bo_move_m2mf(struct nouveau_channel
+ 			OUT_RING  (chan, 0);
+ 			OUT_RING  (chan, 0);
+ 		} else {
+-			ret = RING_SPACE(chan, 2);
+-			if (ret)
+-				return ret;
+-
+ 			BEGIN_NV04(chan, NvSubCopy, 0x0200, 1);
+ 			OUT_RING  (chan, 1);
+ 		}
+-		if (new_mem->mem_type == TTM_PL_VRAM &&
+-		    nouveau_bo_tile_layout(nvbo)) {
+-			ret = RING_SPACE(chan, 8);
+-			if (ret)
+-				return ret;
+-
++		if (dst_tiled) {
+ 			BEGIN_NV04(chan, NvSubCopy, 0x021c, 7);
+ 			OUT_RING  (chan, 0);
+ 			OUT_RING  (chan, 0);
+@@ -848,18 +839,10 @@ nv50_bo_move_m2mf(struct nouveau_channel
+ 			OUT_RING  (chan, 0);
+ 			OUT_RING  (chan, 0);
+ 		} else {
+-			ret = RING_SPACE(chan, 2);
+-			if (ret)
+-				return ret;
+-
+ 			BEGIN_NV04(chan, NvSubCopy, 0x021c, 1);
+ 			OUT_RING  (chan, 1);
+ 		}
+ 
+-		ret = RING_SPACE(chan, 14);
+-		if (ret)
+-			return ret;
+-
+ 		BEGIN_NV04(chan, NvSubCopy, 0x0238, 2);
+ 		OUT_RING  (chan, upper_32_bits(src_offset));
+ 		OUT_RING  (chan, upper_32_bits(dst_offset));
 
 
