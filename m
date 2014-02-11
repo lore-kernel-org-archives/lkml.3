@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753920AbaBKTH2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:07:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40239 "EHLO
+	id S1755412AbaBKTs5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:48:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40262 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753877AbaBKTHX (ORCPT
+	with ESMTP id S1753917AbaBKTH2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:07:23 -0500
+	Tue, 11 Feb 2014 14:07:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Adrian Hunter <adrian.hunter@intel.com>, Chris Ball <chris@printf.net>
-Subject: [PATCH 3.12 106/107] mmc: sdhci-pci: Fix BYT sd card getting stuck in runtime suspend
-Date: Tue, 11 Feb 2014 11:06:12 -0800
-Message-Id: <20140211184751.220951807@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.12 076/107] drm/radeon: fix DAC interrupt handling on DCE5+
+Date: Tue, 11 Feb 2014 11:05:42 -0800
+Message-Id: <20140211184750.365869358@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -28,73 +28,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 77a0122e0838663795651aa0beb2325156f98c09 upstream.
+commit e9a321c6b2ac954a7dbf235f419c255a424a1273 upstream.
 
-A host controller for a SD card may need a GPIO for card detect in order
-to wake up from runtime suspend when a card is inserted.  If that GPIO is
-not configured, then the host controller will not wake up.  Fix that for
-the affected devices by not enabling runtime PM unless the GPIO is
-successfully set up.
+DCE5 and newer hardware only has 1 DAC.  Use the correct
+offset.  This may fix display problems on certain board
+configurations.
 
-This affects BYT sd card host controller which had runtime PM enabled from
-v3.11.  For completeness, the MFD sd card host controller is flagged also.
-
-The original patch before rebasing (see link below) was tested on v3.11.10
-and v3.12.4 although the patch applied with some offsets and fuzz.  The
-original patch is here:
-
-    http://marc.info/?l=linux-mmc&m=138676702327057
-
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Signed-off-by: Chris Ball <chris@printf.net>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/host/sdhci-pci.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ drivers/gpu/drm/radeon/evergreen.c |    4 ++--
+ drivers/gpu/drm/radeon/si.c        |    2 +-
+ drivers/gpu/drm/radeon/sid.h       |    2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/mmc/host/sdhci-pci.c
-+++ b/drivers/mmc/host/sdhci-pci.c
-@@ -59,6 +59,7 @@ struct sdhci_pci_fixes {
- 	unsigned int		quirks;
- 	unsigned int		quirks2;
- 	bool			allow_runtime_pm;
-+	bool			own_cd_for_runtime_pm;
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -4249,8 +4249,8 @@ void evergreen_disable_interrupt_state(s
+ 		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET, 0);
+ 	}
  
- 	int			(*probe) (struct sdhci_pci_chip *);
+-	/* only one DAC on DCE6 */
+-	if (!ASIC_IS_DCE6(rdev))
++	/* only one DAC on DCE5 */
++	if (!ASIC_IS_DCE5(rdev))
+ 		WREG32(DACA_AUTODETECT_INT_CONTROL, 0);
+ 	WREG32(DACB_AUTODETECT_INT_CONTROL, 0);
  
-@@ -290,6 +291,7 @@ static const struct sdhci_pci_fixes sdhc
- static const struct sdhci_pci_fixes sdhci_intel_mfd_sd = {
- 	.quirks		= SDHCI_QUIRK_NO_ENDATTR_IN_NOPDESC,
- 	.allow_runtime_pm = true,
-+	.own_cd_for_runtime_pm = true,
- };
+--- a/drivers/gpu/drm/radeon/si.c
++++ b/drivers/gpu/drm/radeon/si.c
+@@ -5625,7 +5625,7 @@ static void si_disable_interrupt_state(s
+ 	}
  
- static const struct sdhci_pci_fixes sdhci_intel_mfd_sdio = {
-@@ -354,6 +356,7 @@ static const struct sdhci_pci_fixes sdhc
- static const struct sdhci_pci_fixes sdhci_intel_byt_sd = {
- 	.quirks2	= SDHCI_QUIRK2_CARD_ON_NEEDS_BUS_ON,
- 	.allow_runtime_pm = true,
-+	.own_cd_for_runtime_pm = true,
- };
+ 	if (!ASIC_IS_NODCE(rdev)) {
+-		WREG32(DACA_AUTODETECT_INT_CONTROL, 0);
++		WREG32(DAC_AUTODETECT_INT_CONTROL, 0);
  
- /* O2Micro extra registers */
-@@ -1381,6 +1384,14 @@ static struct sdhci_pci_slot *sdhci_pci_
+ 		tmp = RREG32(DC_HPD1_INT_CONTROL) & DC_HPDx_INT_POLARITY;
+ 		WREG32(DC_HPD1_INT_CONTROL, tmp);
+--- a/drivers/gpu/drm/radeon/sid.h
++++ b/drivers/gpu/drm/radeon/sid.h
+@@ -770,7 +770,7 @@
+ #       define GRPH_PFLIP_INT_MASK                      (1 << 0)
+ #       define GRPH_PFLIP_INT_TYPE                      (1 << 8)
  
- 	sdhci_pci_add_own_cd(slot);
+-#define	DACA_AUTODETECT_INT_CONTROL			0x66c8
++#define	DAC_AUTODETECT_INT_CONTROL			0x67c8
  
-+	/*
-+	 * Check if the chip needs a separate GPIO for card detect to wake up
-+	 * from runtime suspend.  If it is not there, don't allow runtime PM.
-+	 * Note sdhci_pci_add_own_cd() sets slot->cd_gpio to -EINVAL on failure.
-+	 */
-+	if (chip->fixes->own_cd_for_runtime_pm && !gpio_is_valid(slot->cd_gpio))
-+		chip->allow_runtime_pm = false;
-+
- 	return slot;
- 
- remove:
+ #define DC_HPD1_INT_STATUS                              0x601c
+ #define DC_HPD2_INT_STATUS                              0x6028
 
 
