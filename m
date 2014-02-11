@@ -1,117 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755700AbaBKUu3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:50:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39697 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752895AbaBKTFf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:05:35 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.13 046/120] pnfs: Proper delay for NFS4ERR_RECALLCONFLICT in layout_get_done
-Date: Tue, 11 Feb 2014 11:04:47 -0800
-Message-Id: <20140211184824.925974164@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
-References: <20140211184823.492407127@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	id S1755743AbaBKUux (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:50:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42280 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753475AbaBKUuu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 15:50:50 -0500
+Date: Tue, 11 Feb 2014 18:50:35 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
+        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Jiri Olsa <jolsa@redhat.com>, Eric Dumazet <edumazet@google.com>,
+        linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] n_tty: Fix poll() when TIME_CHAR and MIN_CHAR == 0
+Message-ID: <20140211205035.GB4368@infradead.org>
+References: <20140211121411.GA4368@infradead.org>
+ <1392137400-4205-1-git-send-email-peter@hurleysoftware.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392137400-4205-1-git-send-email-peter@hurleysoftware.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+> Commit eafbe67f84761d787802e5113d895a316b6292fe,
+>   n_tty: Refactor input_available_p() by call site
+> broke poll() when TIME_CHAR(tty) and MIN_CHAR(tty) are both 0.
+> 
+> When TIME_CHAR and MIN_CHAR are both 0, input is available if the
+> read_cnt is 1 (not 0).
+> 
+> Reported-by: Stephane Eranian <eranian@google.com>
+> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 
-------------------
+Thanks,
 
-From: Boaz Harrosh <bharrosh@panasas.com>
+Tested-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-commit ed7e5423014ad89720fcf315c0b73f2c5d0c7bd2 upstream.
+- Arnaldo
 
-An NFS4ERR_RECALLCONFLICT is returned by server from a GET_LAYOUT
-only when a Server Sent a RECALL do to that GET_LAYOUT, or
-the RECALL and GET_LAYOUT crossed on the wire.
-In any way this means we want to wait at most until in-flight IO
-is finished and the RECALL can be satisfied.
-
-So a proper wait here is more like 1/10 of a second, not 15 seconds
-like we have now. In case of a server bug we delay exponentially
-longer on each retry.
-
-Current code totally craps out performance of very large files on
-most pnfs-objects layouts, because of how the map changes when the
-file has grown into the next raid group.
-
-[Stable: This will patch back to 3.9. If there are earlier still
- maintained trees, please tell me I'll send a patch]
-
-Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/nfs/nfs4proc.c |   34 ++++++++++++++++++++++++++++++----
- 1 file changed, 30 insertions(+), 4 deletions(-)
-
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -7409,9 +7409,9 @@ static void nfs4_layoutget_done(struct r
- 	struct nfs_server *server = NFS_SERVER(inode);
- 	struct pnfs_layout_hdr *lo;
- 	struct nfs4_state *state = NULL;
--	unsigned long timeo, giveup;
-+	unsigned long timeo, now, giveup;
- 
--	dprintk("--> %s\n", __func__);
-+	dprintk("--> %s tk_status => %d\n", __func__, -task->tk_status);
- 
- 	if (!nfs41_sequence_done(task, &lgp->res.seq_res))
- 		goto out;
-@@ -7419,12 +7419,38 @@ static void nfs4_layoutget_done(struct r
- 	switch (task->tk_status) {
- 	case 0:
- 		goto out;
-+	/*
-+	 * NFS4ERR_LAYOUTTRYLATER is a conflict with another client
-+	 * (or clients) writing to the same RAID stripe
-+	 */
- 	case -NFS4ERR_LAYOUTTRYLATER:
-+	/*
-+	 * NFS4ERR_RECALLCONFLICT is when conflict with self (must recall
-+	 * existing layout before getting a new one).
-+	 */
- 	case -NFS4ERR_RECALLCONFLICT:
- 		timeo = rpc_get_timeout(task->tk_client);
- 		giveup = lgp->args.timestamp + timeo;
--		if (time_after(giveup, jiffies))
--			task->tk_status = -NFS4ERR_DELAY;
-+		now = jiffies;
-+		if (time_after(giveup, now)) {
-+			unsigned long delay;
-+
-+			/* Delay for:
-+			 * - Not less then NFS4_POLL_RETRY_MIN.
-+			 * - One last time a jiffie before we give up
-+			 * - exponential backoff (time_now minus start_attempt)
-+			 */
-+			delay = max_t(unsigned long, NFS4_POLL_RETRY_MIN,
-+				    min((giveup - now - 1),
-+					now - lgp->args.timestamp));
-+
-+			dprintk("%s: NFS4ERR_RECALLCONFLICT waiting %lu\n",
-+				__func__, delay);
-+			rpc_delay(task, delay);
-+			task->tk_status = 0;
-+			rpc_restart_call_prepare(task);
-+			goto out; /* Do not call nfs4_async_handle_error() */
-+		}
- 		break;
- 	case -NFS4ERR_EXPIRED:
- 	case -NFS4ERR_BAD_STATEID:
-
-
+> ---
+>  drivers/tty/n_tty.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+> index cb8017a..2747a3b 100644
+> --- a/drivers/tty/n_tty.c
+> +++ b/drivers/tty/n_tty.c
+> @@ -1896,7 +1896,7 @@ err:
+>  static inline int input_available_p(struct tty_struct *tty, int poll)
+>  {
+>  	struct n_tty_data *ldata = tty->disc_data;
+> -	int amt = poll && !TIME_CHAR(tty) ? MIN_CHAR(tty) : 1;
+> +	int amt = poll && !TIME_CHAR(tty) && MIN_CHAR(tty) ? MIN_CHAR(tty) : 1;
+>  
+>  	if (ldata->icanon && !L_EXTPROC(tty)) {
+>  		if (ldata->canon_head != ldata->read_tail)
+> -- 
+> 1.8.1.2
