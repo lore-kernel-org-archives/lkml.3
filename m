@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755692AbaBKUtV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:49:21 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54495 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754337AbaBKUtR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 15:49:17 -0500
-Date: Tue, 11 Feb 2014 21:49:16 +0100
-From: Jan Kara <jack@suse.cz>
-To: Rashika Kheria <rashika.kheria@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        josh@joshtriplett.org
-Subject: Re: [PATCH 09/21] fs: Mark function as static in
- ext3/xattr_security.c
-Message-ID: <20140211204916.GE22835@quack.suse.cz>
-References: <b572932c3e016c55e596686283036316a1aacd2f.1391949868.git.rashika.kheria@gmail.com>
- <bcf66d9631e4094a46e539950331f79289e4d85a.1391949868.git.rashika.kheria@gmail.com>
+	id S1755442AbaBKUsp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:48:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39707 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752833AbaBKTFh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 14:05:37 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org
+Subject: [PATCH 3.13 075/120] Revert "drm/radeon: disable CIK CP semaphores for now"
+Date: Tue, 11 Feb 2014 11:05:16 -0800
+Message-Id: <20140211184825.749322029@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
+References: <20140211184823.492407127@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <bcf66d9631e4094a46e539950331f79289e4d85a.1391949868.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 09-02-14 18:39:11, Rashika Kheria wrote:
-> Mark function as static in ext3/xattr_security.c because it is not used
-> outside this file.
-> 
-> This eliminates the following warning in ext3/xattr_security.c:
-> fs/ext3/xattr_security.c:46:5: warning: no previous prototype for ‘ext3_initxattrs’ [-Wmissing-prototypes]
-> 
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-  Thanks. I've merged the patch.
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
-								Honza
-> ---
->  fs/ext3/xattr_security.c |    5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/ext3/xattr_security.c b/fs/ext3/xattr_security.c
-> index 3387664..722c2bf 100644
-> --- a/fs/ext3/xattr_security.c
-> +++ b/fs/ext3/xattr_security.c
-> @@ -43,8 +43,9 @@ ext3_xattr_security_set(struct dentry *dentry, const char *name,
->  			      name, value, size, flags);
->  }
->  
-> -int ext3_initxattrs(struct inode *inode, const struct xattr *xattr_array,
-> -		    void *fs_info)
-> +static int ext3_initxattrs(struct inode *inode,
-> +			   const struct xattr *xattr_array,
-> +			   void *fs_info)
->  {
->  	const struct xattr *xattr;
->  	handle_t *handle = fs_info;
-> -- 
-> 1.7.9.5
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+------------------
+
+From: Alex Deucher <alexander.deucher@amd.com>
+
+commit 7f4237c6dad7c959615b896d3c6c728c37943f4d upstream.
+
+This reverts commit 99b4f25122f43210278cde17a9d100906235a074.
+
+Semaphores work fine after further review and testing.
+
+---
+ drivers/gpu/drm/radeon/cik.c |    5 -----
+ 1 file changed, 5 deletions(-)
+
+--- a/drivers/gpu/drm/radeon/cik.c
++++ b/drivers/gpu/drm/radeon/cik.c
+@@ -3566,8 +3566,6 @@ bool cik_semaphore_ring_emit(struct rade
+ 			     struct radeon_semaphore *semaphore,
+ 			     bool emit_wait)
+ {
+-/* TODO: figure out why semaphore cause lockups */
+-#if 0
+ 	uint64_t addr = semaphore->gpu_addr;
+ 	unsigned sel = emit_wait ? PACKET3_SEM_SEL_WAIT : PACKET3_SEM_SEL_SIGNAL;
+ 
+@@ -3576,9 +3574,6 @@ bool cik_semaphore_ring_emit(struct rade
+ 	radeon_ring_write(ring, (upper_32_bits(addr) & 0xffff) | sel);
+ 
+ 	return true;
+-#else
+-	return false;
+-#endif
+ }
+ 
+ /**
+
+
