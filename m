@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752496AbaBKTFA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:05:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39482 "EHLO
+	id S1754798AbaBKVHI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 16:07:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39491 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752362AbaBKTE4 (ORCPT
+	with ESMTP id S1752456AbaBKTE7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:04:56 -0500
+	Tue, 11 Feb 2014 14:04:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ray Jui <rjui@broadcom.com>, Seungwon Jeon <tgih.jun@samsung.com>,
-        Chris Ball <cjb@laptop.org>
-Subject: [PATCH 3.13 020/120] mmc: fix host release issue after discard operation
-Date: Tue, 11 Feb 2014 11:04:21 -0800
-Message-Id: <20140211184824.115631587@linuxfoundation.org>
+        Christoph Lameter <cl@linux.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, Li Zefan <lizefan@huawei.com>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: [PATCH 3.13 025/120] slub: Fix calculation of cpu slabs
+Date: Tue, 11 Feb 2014 11:04:26 -0800
+Message-Id: <20140211184824.271308793@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -29,66 +30,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ray Jui <rjui@broadcom.com>
+From: Li Zefan <lizefan@huawei.com>
 
-commit f662ae48ae67dfd42739e65750274fe8de46240a upstream.
+commit 8afb1474db4701d1ab80cd8251137a3260e6913e upstream.
 
-Under function mmc_blk_issue_rq, after an MMC discard operation,
-the MMC request data structure may be freed in memory. Later in
-the same function, the check of req->cmd_flags & MMC_REQ_SPECIAL_MASK
-is dangerous and invalid. It causes the MMC host not to be released
-when it should.
+  /sys/kernel/slab/:t-0000048 # cat cpu_slabs
+  231 N0=16 N1=215
+  /sys/kernel/slab/:t-0000048 # cat slabs
+  145 N0=36 N1=109
 
-This patch fixes the issue by marking the special request down before
-the discard/flush operation.
+See, the number of slabs is smaller than that of cpu slabs.
 
-Reported by: Harold (SoonYeal) Yang <haroldsy@broadcom.com>
-Signed-off-by: Ray Jui <rjui@broadcom.com>
-Reviewed-by: Seungwon Jeon <tgih.jun@samsung.com>
-Acked-by: Seungwon Jeon <tgih.jun@samsung.com>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+The bug was introduced by commit 49e2258586b423684f03c278149ab46d8f8b6700
+("slub: per cpu cache for partial pages").
+
+We should use page->pages instead of page->pobjects when calculating
+the number of cpu partial slabs. This also fixes the mapping of slabs
+and nodes.
+
+As there's no variable storing the number of total/active objects in
+cpu partial slabs, and we don't have user interfaces requiring those
+statistics, I just add WARN_ON for those cases.
+
+Acked-by: Christoph Lameter <cl@linux.com>
+Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/card/block.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ mm/slub.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/drivers/mmc/card/block.c
-+++ b/drivers/mmc/card/block.c
-@@ -1959,6 +1959,7 @@ static int mmc_blk_issue_rq(struct mmc_q
- 	struct mmc_card *card = md->queue.card;
- 	struct mmc_host *host = card->host;
- 	unsigned long flags;
-+	unsigned int cmd_flags = req ? req->cmd_flags : 0;
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -4299,7 +4299,13 @@ static ssize_t show_slab_objects(struct
  
- 	if (req && !mq->mqrq_prev->req)
- 		/* claim host only for the first request */
-@@ -1974,7 +1975,7 @@ static int mmc_blk_issue_rq(struct mmc_q
- 	}
- 
- 	mq->flags &= ~MMC_QUEUE_NEW_REQUEST;
--	if (req && req->cmd_flags & REQ_DISCARD) {
-+	if (cmd_flags & REQ_DISCARD) {
- 		/* complete ongoing async transfer before issuing discard */
- 		if (card->host->areq)
- 			mmc_blk_issue_rw_rq(mq, NULL);
-@@ -1983,7 +1984,7 @@ static int mmc_blk_issue_rq(struct mmc_q
- 			ret = mmc_blk_issue_secdiscard_rq(mq, req);
- 		else
- 			ret = mmc_blk_issue_discard_rq(mq, req);
--	} else if (req && req->cmd_flags & REQ_FLUSH) {
-+	} else if (cmd_flags & REQ_FLUSH) {
- 		/* complete ongoing async transfer before issuing flush */
- 		if (card->host->areq)
- 			mmc_blk_issue_rw_rq(mq, NULL);
-@@ -1999,7 +2000,7 @@ static int mmc_blk_issue_rq(struct mmc_q
- 
- out:
- 	if ((!req && !(mq->flags & MMC_QUEUE_NEW_REQUEST)) ||
--	     (req && (req->cmd_flags & MMC_REQ_SPECIAL_MASK)))
-+	     (cmd_flags & MMC_REQ_SPECIAL_MASK))
- 		/*
- 		 * Release host when there are no more requests
- 		 * and after special request(discard, flush) is done.
+ 			page = ACCESS_ONCE(c->partial);
+ 			if (page) {
+-				x = page->pobjects;
++				node = page_to_nid(page);
++				if (flags & SO_TOTAL)
++					WARN_ON_ONCE(1);
++				else if (flags & SO_OBJECTS)
++					WARN_ON_ONCE(1);
++				else
++					x = page->pages;
+ 				total += x;
+ 				nodes[node] += x;
+ 			}
 
 
