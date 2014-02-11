@@ -1,210 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751986AbaBKPdo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 10:33:44 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:34878 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065AbaBKPdn (ORCPT
+	id S1752062AbaBKPeh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 10:34:37 -0500
+Received: from www.linutronix.de ([62.245.132.108]:42684 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751285AbaBKPef (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 10:33:43 -0500
-Message-ID: <52FA42D4.9050401@linaro.org>
-Date: Tue, 11 Feb 2014 16:33:40 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
+	Tue, 11 Feb 2014 10:34:35 -0500
+Date: Tue, 11 Feb 2014 16:34:38 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
 To: Peter Zijlstra <peterz@infradead.org>
-CC: mingo@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sched/fair: Remove idle_balance() declaration in sched.h
-References: <1392130864-4416-1-git-send-email-daniel.lezcano@linaro.org> <20140211151148.GP27965@twins.programming.kicks-ass.net>
-In-Reply-To: <20140211151148.GP27965@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/6 v2] sched: Init idle->on_rq in init_idle()
+In-Reply-To: <20140211092108.GL27965@twins.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.02.1402111534000.21991@ionos.tec.linutronix.de>
+References: <1391803122-4425-1-git-send-email-bigeasy@linutronix.de> <1391803122-4425-2-git-send-email-bigeasy@linutronix.de> <20140207210905.GV5002@laptop.programming.kicks-ass.net> <20140211091758.GA19477@linutronix.de>
+ <20140211092108.GL27965@twins.programming.kicks-ass.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2014 04:11 PM, Peter Zijlstra wrote:
-> On Tue, Feb 11, 2014 at 04:01:04PM +0100, Daniel Lezcano wrote:
->> The idle_balance() function is called within a #ifdef CONFIG_SMP section.
->>
->> Remove its declaration in sched.h for !CONFIG_SMP because it is pointless.
->>
->> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
->
-> The below again makes a horrible mess of idle_balance() -- which you
-> tried to clean up.. but it does rid us of some #ifdef goo.
->
-> Hmmm?
+On Tue, 11 Feb 2014, Peter Zijlstra wrote:
 
-Yes, it sounds ok.
+> On Tue, Feb 11, 2014 at 10:17:58AM +0100, Sebastian Andrzej Siewior wrote:
+> > The init task is state TASK_RUNNING and on_irq should be set to 1. It won't
+> 
+> 					^^^ irq? :-)
+> 
+> > be set by scheduler because the idle task is never woken up, it is always the
+> > task we fall back to if there is no other task pending.
+> 
+> But why? Who cares? I mean, its true.. but what problem does it solve.
+> Why did Thomas write this patch.
 
-Why is idle_enter_fair() called unconditionally in idle_balance() ?
-Isn't the call in pick_next_task_idle enough ?  Shouldn't be called when 
-we will go to idle effectively ?
+I could slap myself for not writing a proper changelog right away. It
+took me some time to figure out why it was added in the first place,
+why it's not longer necessary and why I kept it.
 
-If I am not wrong idle_enter_fair() is called from idle_balance() but a 
-task may be pulled, so we the next task won't be the idle task and 
-idle_exit_fair won't be called at put_prev_task.
+We stumbled in RT over a SMP bringup issue on ARM where the
+idle->on_rq == 0 was causing try_to_wakeup() on the other cpu to run
+into nada land.
 
-May be I missed this change which was done at purpose in the previous 
-patchset you sent...
+After adding that idle->on_rq = 1; I was able to find the root cause
+of the lockup: the idle task on the newly woken up cpu was fiddling
+with a sleeping spinlock, which is a nono.
 
+I kept the init of idle->on_rq to keep the state consistent and to
+avoid another long lasting debug session.
 
-> ---
->   kernel/sched/fair.c  | 47 +++++++++++++++++++++++++++++------------------
->   kernel/sched/sched.h |  7 -------
->   2 files changed, 29 insertions(+), 25 deletions(-)
->
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 235cfa7ad8fc..d168c968195b 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -2374,13 +2374,13 @@ static inline void __update_group_entity_contrib(struct sched_entity *se)
->   		se->avg.load_avg_contrib >>= NICE_0_SHIFT;
->   	}
->   }
-> -#else
-> +#else /* CONFIG_FAIR_GROUP_SCHED */
->   static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
->   						 int force_update) {}
->   static inline void __update_tg_runnable_avg(struct sched_avg *sa,
->   						  struct cfs_rq *cfs_rq) {}
->   static inline void __update_group_entity_contrib(struct sched_entity *se) {}
-> -#endif
-> +#endif /* CONFIG_FAIR_GROUP_SCHED */
->
->   static inline void __update_task_entity_contrib(struct sched_entity *se)
->   {
-> @@ -2571,6 +2571,8 @@ void idle_exit_fair(struct rq *this_rq)
->   	update_rq_runnable_avg(this_rq, 0);
->   }
->
-> +static int idle_balance(struct rq *this_rq);
-> +
->   #else /* CONFIG_SMP */
->
->   static inline void update_entity_load_avg(struct sched_entity *se,
-> @@ -2584,6 +2586,12 @@ static inline void dequeue_entity_load_avg(struct cfs_rq *cfs_rq,
->   					   int sleep) {}
->   static inline void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq,
->   					      int force_update) {}
-> +
-> +static inline int idle_balance(struct rq *rq)
-> +{
-> +	return 0;
-> +}
-> +
->   #endif /* CONFIG_SMP */
->
->   static void enqueue_sleeper(struct cfs_rq *cfs_rq, struct sched_entity *se)
-> @@ -4677,7 +4685,7 @@ pick_next_task_fair(struct rq *rq, struct task_struct *prev)
->   	struct sched_entity *se;
->   	struct task_struct *p;
->
-> -again: __maybe_unused
-> +again:
->   #ifdef CONFIG_FAIR_GROUP_SCHED
->   	if (!cfs_rq->nr_running)
->   		goto idle;
-> @@ -4775,18 +4783,8 @@ again: __maybe_unused
->   	return p;
->
->   idle:
-> -#ifdef CONFIG_SMP
-> -	idle_enter_fair(rq);
-> -	/*
-> -	 * We must set idle_stamp _before_ calling idle_balance(), such that we
-> -	 * measure the duration of idle_balance() as idle time.
-> -	 */
-> -	rq->idle_stamp = rq_clock(rq);
-> -	if (idle_balance(rq)) { /* drops rq->lock */
-> -		rq->idle_stamp = 0;
-> +	if (idle_balance(rq)) /* drops rq->lock */
->   		goto again;
-> -	}
-> -#endif
->
->   	return NULL;
->   }
-> @@ -6634,7 +6632,7 @@ static int load_balance(int this_cpu, struct rq *this_rq,
->    * idle_balance is called by schedule() if this_cpu is about to become
->    * idle. Attempts to pull tasks from other CPUs.
->    */
-> -int idle_balance(struct rq *this_rq)
-> +static int idle_balance(struct rq *this_rq)
->   {
->   	struct sched_domain *sd;
->   	int pulled_task = 0;
-> @@ -6642,8 +6640,15 @@ int idle_balance(struct rq *this_rq)
->   	u64 curr_cost = 0;
->   	int this_cpu = this_rq->cpu;
->
-> +	idle_enter_fair(this_rq);
-> +	/*
-> +	 * We must set idle_stamp _before_ calling idle_balance(), such that we
-> +	 * measure the duration of idle_balance() as idle time.
-> +	 */
-> +	this_rq->idle_stamp = rq_clock(this_rq);
-> +
->   	if (this_rq->avg_idle < sysctl_sched_migration_cost)
-> -		return 0;
-> +		goto out;
->
->   	/*
->   	 * Drop the rq->lock, but keep IRQ/preempt disabled.
-> @@ -6692,8 +6697,10 @@ int idle_balance(struct rq *this_rq)
->   	 * While browsing the domains, we released the rq lock.
->   	 * A task could have be enqueued in the meantime
->   	 */
-> -	if (this_rq->nr_running && !pulled_task)
-> -		return 1;
-> +	if (this_rq->nr_running && !pulled_task) {
-> +		pulled_task = 1;
-> +		goto out;
-> +	}
->
->   	if (pulled_task || time_after(jiffies, this_rq->next_balance)) {
->   		/*
-> @@ -6706,6 +6713,10 @@ int idle_balance(struct rq *this_rq)
->   	if (curr_cost > this_rq->max_idle_balance_cost)
->   		this_rq->max_idle_balance_cost = curr_cost;
->
-> +out:
-> +	if (pulled_task)
-> +		this_rq->idle_stamp = 0;
-> +
->   	return pulled_task;
->   }
->
-> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-> index 1bf34c257d3b..92018f9821e8 100644
-> --- a/kernel/sched/sched.h
-> +++ b/kernel/sched/sched.h
-> @@ -1163,17 +1163,10 @@ extern const struct sched_class idle_sched_class;
->   extern void update_group_power(struct sched_domain *sd, int cpu);
->
->   extern void trigger_load_balance(struct rq *rq);
-> -extern int idle_balance(struct rq *this_rq);
->
->   extern void idle_enter_fair(struct rq *this_rq);
->   extern void idle_exit_fair(struct rq *this_rq);
->
-> -#else	/* CONFIG_SMP */
-> -
-> -static inline void idle_balance(int cpu, struct rq *rq)
-> -{
-> -}
-> -
->   #endif
->
->   extern void sysrq_sched_debug_show(void);
->
+As a side note, the whole debug mess could have been avoided if
+might_sleep() would have yelled when called from the idle task. That's
+fixed with patch 2/6 - and that one actually has a changelog :)
+
+Thanks,
+
+	tglx
 
 
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+
+
 
