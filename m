@@ -1,91 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932173AbaBKU75 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:59:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39605 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752676AbaBKTFQ (ORCPT
+	id S1755234AbaBKVAM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 16:00:12 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:52805 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752676AbaBKVAI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:05:16 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Williamson <alex.williamson@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>, Joerg Roedel <joro@8bytes.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.13 006/120] intel-iommu: fix off-by-one in pagetable freeing
-Date: Tue, 11 Feb 2014 11:04:07 -0800
-Message-Id: <20140211184823.694214122@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
-References: <20140211184823.492407127@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Tue, 11 Feb 2014 16:00:08 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Pawel Moll <pawel.moll@arm.com>
+Subject: Re: [PATCH 02/12] power/reset: vexpress: Use udelay instead of timers
+Date: Tue, 11 Feb 2014 21:59:16 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        "Dmitry Eremin-Solenikov" <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>
+References: <1392138636-29240-1-git-send-email-pawel.moll@arm.com> <1392138636-29240-3-git-send-email-pawel.moll@arm.com>
+In-Reply-To: <1392138636-29240-3-git-send-email-pawel.moll@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201402112159.16758.arnd@arndb.de>
+X-Provags-ID: V02:K0:aoJQdhzfzpop04MAKwkgy0FsrDgHUXxZqYHsVDP9/Oh
+ YOysJbBnJZUaN2i3GordgWu9wHgqAyteQ+BhCnVvlj/wH6QTZN
+ CfxsUD8SIjVsAZpNDYNVuWFLNzkFeNXskdpfaAlB9KkOCTEsQL
+ 8DlTGzwC9IEXWuEr05NAY941qYJTu2QCyf4oJPiWU6nVuvCws8
+ wOYrZmmG8WI5eEyCPjO7P9cznENBi6A0q4eCK/qo0KD6nCdIch
+ TrP3KQpSB9J3zNAiJVO+bL5tkvC9B5vvbJIHo38yuKlOIZR40Y
+ bIItIbGktm3i0B7oRbAOdP1jsSkLeQHfdG7J2wJvZH0yf1SDI3
+ mXg/x5tdLGMVi8fb+umE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+On Tuesday 11 February 2014, Pawel Moll wrote:
+> At this stage of system shutdown procedure the jiffies may
+> not be updated anymore, so just use udelay instead.
 
-------------------
+comment doesn't match code: s/udelay/mdelay/
 
-From: Alex Williamson <alex.williamson@redhat.com>
+> +                       mdelay(1000);
+>         }
 
-commit 08336fd218e087cc4fcc458e6b6dcafe8702b098 upstream.
-
-dma_pte_free_level() has an off-by-one error when checking whether a pte
-is completely covered by a range.  Take for example the case of
-attempting to free pfn 0x0 - 0x1ff, ie.  512 entries covering the first
-2M superpage.
-
-The level_size() is 0x200 and we test:
-
-  static void dma_pte_free_level(...
-	...
-
-	if (!(0 > 0 || 0x1ff < 0 + 0x200)) {
-		...
-	}
-
-Clearly the 2nd test is true, which means we fail to take the branch to
-clear and free the pagetable entry.  As a result, we're leaking
-pagetables and failing to install new pages over the range.
-
-This was found with a PCI device assigned to a QEMU guest using vfio-pci
-without a VGA device present.  The first 1M of guest address space is
-mapped with various combinations of 4K pages, but eventually the range
-is entirely freed and replaced with a 2M contiguous mapping.
-intel-iommu errors out with something like:
-
-  ERROR: DMA PTE for vPFN 0x0 already set (to 5c2b8003 not 849c00083)
-
-In this case 5c2b8003 is the pointer to the previous leaf page that was
-neither freed nor cleared and 849c00083 is the superpage entry that
-we're trying to replace it with.
-
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Joerg Roedel <joro@8bytes.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/iommu/intel-iommu.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -917,7 +917,7 @@ static void dma_pte_free_level(struct dm
- 
- 		/* If range covers entire pagetable, free it */
- 		if (!(start_pfn > level_pfn ||
--		      last_pfn < level_pfn + level_size(level))) {
-+		      last_pfn < level_pfn + level_size(level) - 1)) {
- 			dma_clear_pte(pte);
- 			domain_flush_cache(domain, pte, sizeof(*pte));
- 			free_pgtable_page(level_pte);
-
-
+	Arnd
