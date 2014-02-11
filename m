@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751824AbaBKNRn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 08:17:43 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:28270 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750785AbaBKNRm (ORCPT
+	id S1751886AbaBKNUE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 08:20:04 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:35306 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053AbaBKNUC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 08:17:42 -0500
-Date: Tue, 11 Feb 2014 16:17:47 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Martin Walch <walch.martin@web.de>, linux-kernel@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>
-Subject: Re: [PATCH] staging: r8188eu: default to "y" in Kconfig
-Message-ID: <20140211131747.GX26722@mwanda>
-References: <1392121892.13064.9.camel@x220>
- <20140211125306.GW26722@mwanda>
- <1392123668.13064.23.camel@x220>
+	Tue, 11 Feb 2014 08:20:02 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392123668.13064.23.camel@x220>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <20140211121426.GQ4250@linux.vnet.ibm.com>
+References: <20140102203320.GA27615@linux.vnet.ibm.com>
+	<52F60699.8010204@iki.fi>
+	<alpine.DEB.2.10.1402101304110.17517@nuc>
+	<20140211121426.GQ4250@linux.vnet.ibm.com>
+Date: Tue, 11 Feb 2014 15:20:01 +0200
+X-Google-Sender-Auth: cDBYYvMInj7uKHFLtJI6vrjdwEE
+Message-ID: <CAOJsxLET90NRnEKeFjWKWTgZm+otSSwfCkhFga2hGjhV12nz9Q@mail.gmail.com>
+Subject: Re: Memory allocator semantics
+From: Pekka Enberg <penberg@kernel.org>
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Christoph Lameter <cl@linux.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Matt Mackall <mpm@selenic.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 02:01:08PM +0100, Paul Bolle wrote:
-> On Tue, 2014-02-11 at 15:53 +0300, Dan Carpenter wrote:
-> > You've pretty much given Martin's secret assistance away already on a
-> > public mailing list.  Next time just add the Reported-by.  :P
-> 
-> I would have done, if I hadn't bothered to check
-> Documentation/SubmittingPatches first. It contains:
->    Please note that this tag should not be added without the reporter's
->    permission, especially if the problem was not reported in a public
->    forum.
-> 
-> Perhaps that should read:
->    [...], unless the problem was reported in a public forum.
+On Tue, Feb 11, 2014 at 2:14 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> In contrast, from kfree() to a kmalloc() returning some of the kfree()ed
+> memory, I believe the kfree()/kmalloc() implementation must do any needed
+> synchronization and ordering.  But that is a different set of examples,
+> for example, this one:
+>
+>         CPU 0                   CPU 1
+>         p->a = 42;              q = kmalloc(...); /* returning p */
+>         kfree(p);               q->a = 5;
+>                                 BUG_ON(q->a != 5);
+>
+> Unlike the situation with (A), (B), and (C), in this case I believe
+> that it is kfree()'s and kmalloc()'s responsibility to ensure that
+> the BUG_ON() never triggers.
+>
+> Make sense?
 
-Or maybe:
+I'm not sure...
 
-	Please note that if the problem was reported in private then you
-	should ask for permission before adding a Reported-by tag.
+It's the caller's responsibility not to touch "p" after it's handed over to
+kfree() - otherwise that's a "use-after-free" error.  If there's some reordering
+going on here, I'm tempted to blame the caller for lack of locking.
 
-regards,
-dan carpenter
-
+                           Pekka
