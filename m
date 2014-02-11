@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754642AbaBKTau (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:30:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40400 "EHLO
+	id S1755186AbaBKTbJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:31:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40397 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754164AbaBKTH5 (ORCPT
+	with ESMTP id S1754111AbaBKTH4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:07:57 -0500
+	Tue, 11 Feb 2014 14:07:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 3.10 09/79] audit: correct a type mismatch in audit_syscall_exit()
-Date: Tue, 11 Feb 2014 11:05:13 -0800
-Message-Id: <20140211184721.201717370@linuxfoundation.org>
+        Antti Palosaari <crope@iki.fi>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.10 44/79] media: anysee: fix non-working E30 Combo Plus DVB-T
+Date: Tue, 11 Feb 2014 11:05:48 -0800
+Message-Id: <20140211184722.220395424@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
 References: <20140211184720.928667275@linuxfoundation.org>
@@ -30,39 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+From: Antti Palosaari <crope@iki.fi>
 
-commit 06bdadd7634551cfe8ce071fe44d0311b3033d9e upstream.
+commit c57f87e62368c33ebda11a4993380c8e5a19a5c5 upstream.
 
-audit_syscall_exit() saves a result of regs_return_value() in intermediate
-"int" variable and passes it to __audit_syscall_exit(), which expects its
-second argument as a "long" value.  This will result in truncating the
-value returned by a system call and making a wrong audit record.
+PLL was attached twice to frontend0 leaving frontend1 without a tuner.
+frontend0 is DVB-C and frontend1 is DVB-T.
 
-I don't know why gcc compiler doesn't complain about this, but anyway it
-causes a problem at runtime on arm64 (and probably most 64-bit archs).
-
-Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Eric Paris <eparis@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/audit.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/media/usb/dvb-usb-v2/anysee.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/include/linux/audit.h
-+++ b/include/linux/audit.h
-@@ -135,7 +135,7 @@ static inline void audit_syscall_exit(vo
- {
- 	if (unlikely(current->audit_context)) {
- 		int success = is_syscall_success(pt_regs);
--		int return_code = regs_return_value(pt_regs);
-+		long return_code = regs_return_value(pt_regs);
+--- a/drivers/media/usb/dvb-usb-v2/anysee.c
++++ b/drivers/media/usb/dvb-usb-v2/anysee.c
+@@ -442,6 +442,7 @@ static struct cxd2820r_config anysee_cxd
+  * IOD[0] ZL10353 1=enabled
+  * IOE[0] tuner 0=enabled
+  * tuner is behind ZL10353 I2C-gate
++ * tuner is behind TDA10023 I2C-gate
+  *
+  * E7 TC VID=1c73 PID=861f HW=18 FW=0.7 AMTCI=0.5 "anysee-E7TC(LP)"
+  * PCB: 508TC (rev0.6)
+@@ -956,7 +957,7 @@ static int anysee_tuner_attach(struct dv
  
- 		__audit_syscall_exit(success, return_code);
- 	}
+ 		if (fe && adap->fe[1]) {
+ 			/* attach tuner for 2nd FE */
+-			fe = dvb_attach(dvb_pll_attach, adap->fe[0],
++			fe = dvb_attach(dvb_pll_attach, adap->fe[1],
+ 					(0xc0 >> 1), &d->i2c_adap,
+ 					DVB_PLL_SAMSUNG_DTOS403IH102A);
+ 		}
 
 
