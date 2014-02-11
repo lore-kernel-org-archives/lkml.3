@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755197AbaBKTbQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:31:16 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:63597 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754706AbaBKTbI (ORCPT
+	id S1754157AbaBKTH4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:07:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40367 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754111AbaBKTHt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:31:08 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Pawel Moll <pawel.moll@arm.com>, arm@kernel.org,
-        linux-kernel@vger.kernel.org, Alexandre Courbot <gnurou@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>, lm-sensors@lm-sensors.org,
-        Guenter Roeck <linux@roeck-us.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Woodhouse <dwmw2@infradead.org>, Jean Delvare <jdelvare@suse.de>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH 00/12] Versatile Express updates
-Date: Tue, 11 Feb 2014 20:28:55 +0100
-Message-ID: <2782419.lfJiZZjaFg@wuerfel>
-User-Agent: KMail/4.11.3 (Linux/3.11.0-15-generic; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <1392138636-29240-1-git-send-email-pawel.moll@arm.com>
-References: <1392138636-29240-1-git-send-email-pawel.moll@arm.com>
+	Tue, 11 Feb 2014 14:07:49 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        Dan Duval <dan.duval@oracle.com>,
+        Chuck Anderson <chuck.anderson@oracle.com>,
+        Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>
+Subject: [PATCH 3.10 08/79] audit: reset audit backlog wait time after error recovery
+Date: Tue, 11 Feb 2014 11:05:12 -0800
+Message-Id: <20140211184721.173742955@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
+References: <20140211184720.928667275@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:6xuYg1P4fKQ6B+Pn4gzvpdhoNIlxxJeT0F765bGn9Rz
- lXyXtfIlGXyQYzzhnPeadGIIQhfNWAWcPbcu9S3s+6nNzxeVSd
- oaU55UMeEi450ToUXyvPy3RBXgwcorry9hC798zh+5zLJCDSl2
- Hd0BcoAt2qP9nE5u9gA3OBkq0psS8Ol+2KFwIeMO4RjpBKzX39
- W0ujt2ldEc5uQwPJ/5G4SxcEjyyzacZvUFMiHikmyToT8bZ7wl
- niXf2IPmSu2CYYmsSgPYouXOJonqTw9zQ6dbfiLZ0OEEx3BC6V
- ns6uWHM7KI3QqtCaGZna7rRjbUGqJqSmnm1HMFD6zw4AbP4vb2
- 2YZJ65fDOGSc1RqEp4Og=
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 11 February 2014 17:10:24 Pawel Moll wrote:
-> This series is a set of updates following the infrastructure
-> rework and depends on it. It will be finally posted once
-> the main series is merged. For the time being I would really
-> appreciate feedback and/or (n)acks...
-> 
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-I haven't read the patches yet, but on a general level, do
-you think this code can be (or should) be shared with
-mach-versatile and mach-realview?
+------------------
 
-One of the things on my (mid-term) to-do list is to completely
-convert those two platforms over to being entirely DT based
-and having no board specific code so we can actually delete
-the directories along with mach-vexpress. The sysreg part
-seems to be almost identical, and I wonder if you have an
-overview of what the difference is, if any.
+From: Richard Guy Briggs <rgb@redhat.com>
 
-If we are going to share that code, we might want to give it
-a different name, as vexpress is just the latest platform
-in that line.
+commit e789e561a50de0aaa8c695662d97aaa5eac9d55f upstream.
 
-	Arnd
+When the audit queue overflows and times out (audit_backlog_wait_time), the
+audit queue overflow timeout is set to zero.  Once the audit queue overflow
+timeout condition recovers, the timeout should be reset to the original value.
+
+See also:
+	https://lkml.org/lkml/2013/9/2/473
+
+Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
+Signed-off-by: Dan Duval <dan.duval@oracle.com>
+Signed-off-by: Chuck Anderson <chuck.anderson@oracle.com>
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+Signed-off-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ kernel/audit.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -103,7 +103,8 @@ static int	audit_rate_limit;
+ 
+ /* Number of outstanding audit_buffers allowed. */
+ static int	audit_backlog_limit = 64;
+-static int	audit_backlog_wait_time = 60 * HZ;
++#define AUDIT_BACKLOG_WAIT_TIME (60 * HZ)
++static int	audit_backlog_wait_time = AUDIT_BACKLOG_WAIT_TIME;
+ static int	audit_backlog_wait_overflow = 0;
+ 
+ /* The identity of the user shutting down the audit system. */
+@@ -1135,6 +1136,8 @@ struct audit_buffer *audit_log_start(str
+ 		return NULL;
+ 	}
+ 
++	audit_backlog_wait_time = AUDIT_BACKLOG_WAIT_TIME;
++
+ 	ab = audit_buffer_alloc(ctx, gfp_mask, type);
+ 	if (!ab) {
+ 		audit_log_lost("out of memory in audit_log_start");
+
+
