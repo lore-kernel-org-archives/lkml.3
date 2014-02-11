@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755157AbaBKUqT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:46:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39721 "EHLO
+	id S932122AbaBKUqR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:46:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39722 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752964AbaBKTFm (ORCPT
+	with ESMTP id S1752933AbaBKTFm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Feb 2014 14:05:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.13 082/120] drm/radeon: fix DAC interrupt handling on DCE5+
-Date: Tue, 11 Feb 2014 11:05:23 -0800
-Message-Id: <20140211184825.954390087@linuxfoundation.org>
+        Chuck Lever <chuck.lever@oracle.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.13 047/120] NFSv4: Fix a slot leak in nfs40_sequence_done
+Date: Tue, 11 Feb 2014 11:04:48 -0800
+Message-Id: <20140211184824.954726656@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -28,57 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit e9a321c6b2ac954a7dbf235f419c255a424a1273 upstream.
+commit cab92c19821a814ecf5a5279e2699bf28e66caee upstream.
 
-DCE5 and newer hardware only has 1 DAC.  Use the correct
-offset.  This may fix display problems on certain board
-configurations.
+The check for whether or not we sent an RPC call in nfs40_sequence_done
+is insufficient to decide whether or not we are holding a session slot,
+and thus should not be used to decide when to free that slot.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+This patch replaces the RPC_WAS_SENT() test with the correct test for
+whether or not slot == NULL.
+
+Cc: Chuck Lever <chuck.lever@oracle.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/evergreen.c |    4 ++--
- drivers/gpu/drm/radeon/si.c        |    2 +-
- drivers/gpu/drm/radeon/sid.h       |    2 +-
- 3 files changed, 4 insertions(+), 4 deletions(-)
+ fs/nfs/nfs4proc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -4298,8 +4298,8 @@ void evergreen_disable_interrupt_state(s
- 		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET, 0);
- 	}
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -539,7 +539,7 @@ static int nfs40_sequence_done(struct rp
+ 	struct nfs4_slot *slot = res->sr_slot;
+ 	struct nfs4_slot_table *tbl;
  
--	/* only one DAC on DCE6 */
--	if (!ASIC_IS_DCE6(rdev))
-+	/* only one DAC on DCE5 */
-+	if (!ASIC_IS_DCE5(rdev))
- 		WREG32(DACA_AUTODETECT_INT_CONTROL, 0);
- 	WREG32(DACB_AUTODETECT_INT_CONTROL, 0);
+-	if (!RPC_WAS_SENT(task))
++	if (slot == NULL)
+ 		goto out;
  
---- a/drivers/gpu/drm/radeon/si.c
-+++ b/drivers/gpu/drm/radeon/si.c
-@@ -5566,7 +5566,7 @@ static void si_disable_interrupt_state(s
- 	}
- 
- 	if (!ASIC_IS_NODCE(rdev)) {
--		WREG32(DACA_AUTODETECT_INT_CONTROL, 0);
-+		WREG32(DAC_AUTODETECT_INT_CONTROL, 0);
- 
- 		tmp = RREG32(DC_HPD1_INT_CONTROL) & DC_HPDx_INT_POLARITY;
- 		WREG32(DC_HPD1_INT_CONTROL, tmp);
---- a/drivers/gpu/drm/radeon/sid.h
-+++ b/drivers/gpu/drm/radeon/sid.h
-@@ -815,7 +815,7 @@
- #       define GRPH_PFLIP_INT_MASK                      (1 << 0)
- #       define GRPH_PFLIP_INT_TYPE                      (1 << 8)
- 
--#define	DACA_AUTODETECT_INT_CONTROL			0x66c8
-+#define	DAC_AUTODETECT_INT_CONTROL			0x67c8
- 
- #define DC_HPD1_INT_STATUS                              0x601c
- #define DC_HPD2_INT_STATUS                              0x6028
+ 	tbl = slot->table;
 
 
