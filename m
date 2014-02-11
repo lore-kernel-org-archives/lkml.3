@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751847AbaBKOST (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 09:18:19 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:54441 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751481AbaBKOSR (ORCPT
+	id S1751939AbaBKOSw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 09:18:52 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:44345 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751468AbaBKOSv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 09:18:17 -0500
-Message-ID: <52FA3102.7080407@ti.com>
-Date: Tue, 11 Feb 2014 08:17:38 -0600
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 11 Feb 2014 09:18:51 -0500
+Date: Tue, 11 Feb 2014 14:18:46 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Madper Xie <cxie@redhat.com>
+Cc: Matt Fleming <matt.fleming@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Josh Triplett <josh@joshtriplett.org>
+Subject: Re: [BUG] can't boot up: unable to handle kernel paging request at
+ ffffffffff340003
+Message-ID: <20140211141846.GA1725@console-pimps.org>
+References: <8738jr5t3e.fsf@redhat.com>
+ <20140210175246.GB2887@console-pimps.org>
+ <87mwhy8iaj.fsf@redhat.com>
+ <20140211131640.GD2887@console-pimps.org>
+ <87lhxh69u0.fsf@redhat.com>
 MIME-Version: 1.0
-To: Roger Quadros <rogerq@ti.com>, <tony@atomide.com>
-CC: <bcousson@baylibre.com>, <balbi@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, Hans de Goede <hdegoede@redhat.com>
-Subject: Re: [PATCH] ARM: dts: OMAP2+: Fix boot with multi_v7_defconfig
-References: <1392055835-6494-1-git-send-email-rogerq@ti.com> <52FA2B4F.3010408@ti.com>
-In-Reply-To: <52FA2B4F.3010408@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87lhxh69u0.fsf@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2014 07:53 AM, Roger Quadros wrote:
-> On 02/10/2014 08:10 PM, Roger Quadros wrote:
->> The OMAP EHCI controller is not compatible with the EHCI
->> platform HCD driver so don't claim that we are.
->>
->> This fixes boot on OMAP platforms with CONFIG_USB_EHCI_HCD_PLATFORM=y
->> e.g. multi_v7_defconfig
->>
->> Reported-by: Nishanth Menon <nm@ti.com>
->> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> 
-> Please ignore this patch as Hans has agreed to do a more proper fix in
-> 
-> http://article.gmane.org/gmane.comp.hardware.netbook.arm.sunxi/7015
-umm.. even then, drivers/usb/host/ehci-ppc-of.c claims compatibility
-with usb,ehci -> and we wont function with that driver either.
+(Entering the realm of ACPI, pulling in more folks)
+
+On Tue, 11 Feb, at 09:47:57PM, Madper Xie wrote:
+> Thanks for your reply. I attached the all the dmesg outputs for you.
+> [    0.000000] ACPI: BGRT 00000000d9bb5100 00003C (v00 HPQOEM SLIC-BPC 01072009 AMI  00010013)
+ 
+Your BGRT table has an extra 4 bytes for some reason, (0x3C should be
+0x38) and doesn't match the defintion in include/acpi/actbl3.h,
+
+
+struct acpi_table_bgrt {
+	struct acpi_table_header header;	/* Common ACPI table header */
+	u16 version;
+	u8 status;
+	u8 image_type;
+	u64 image_address;
+	u32 image_offset_x;
+	u32 image_offset_y;
+};
+
+
+which explains why when we dereference ->image_address we don't get a
+sensible value.
+
+Guys, what do you make of this? Firmware bug? Full thread here,
+
+  http://article.gmane.org/gmane.linux.kernel.efi/3499
 
 -- 
-Regards,
-Nishanth Menon
+Matt Fleming, Intel Open Source Technology Center
