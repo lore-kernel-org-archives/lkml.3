@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755214AbaBKTp2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:45:28 -0500
-Received: from oproxy12-pub.mail.unifiedlayer.com ([50.87.16.10]:49156 "HELO
-	oproxy12-pub.mail.unifiedlayer.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754184AbaBKTp0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:45:26 -0500
-Date: Tue, 11 Feb 2014 11:45:24 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Baytrail/T (ASUS T100 etc) regression from 3.13 onwards
-Message-ID: <20140211114524.42ceefa5@jbarnes-desktop>
-In-Reply-To: <20140211182812.7cc8854a@alan.etchedpixels.co.uk>
-References: <CA+55aFwLXnW-GWKNcUCrpS5e7fd_0ZoKk83H4qMJNUS_WCF_3A@mail.gmail.com>
-	<20140114120103.436d190b@alan.etchedpixels.co.uk>
-	<20140211142203.77561e0f@alan.etchedpixels.co.uk>
-	<20140211163541.GB12567@kroah.com>
-	<20140211101137.23b2274b@jbarnes-desktop>
-	<20140211181815.GA19306@kroah.com>
-	<20140211182812.7cc8854a@alan.etchedpixels.co.uk>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755320AbaBKTpZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:45:25 -0500
+Received: from mail.wdtv.com ([66.118.69.84]:34645 "EHLO mail.wdtv.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754184AbaBKTpV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 14:45:21 -0500
+From: Gene Heskett <gheskett@wdtv.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Subject: Re: make oldfonfig broken.
+Date: Tue, 11 Feb 2014 14:45:19 -0500
+Cc: linux-kernel@vger.kernel.org
+References: <1391971686-9517-1-git-send-email-richard@nod.at> <201402101913.04969.gheskett@wdtv.com> <52FA6A62.5010000@infradead.org>
+In-Reply-To: <52FA6A62.5010000@infradead.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="windows-1256"
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+Message-Id: <201402111445.19169.gheskett@wdtv.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Feb 2014 18:28:12 +0000
-One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk> wrote:
+On Tuesday 11 February 2014, Randy Dunlap wrote:
+>
+>You have ext[234] filesystems builtin. I suppose the rootfs is one of
+>those?
 
-> O> > According to the reg dumps, this is actually a MIPI panel we're failing
-> > > to bring up properly.  We're working on that issue, but in the
-> > > meantime, maybe something like the below would work for you?
-> > 
-> > A module paramater to fix a bug?  Ugh, that's almost worse than just
-> > reverting the original patch, right?
-> > 
-> > Please don't do this, the distros will hate you even more than they
-> > currently do :)
-> 
-> Can we just turn hot plug detection off if a panel is present for now ?
+Yes, its all ext2-3-4 here (except swap of course)
 
-Looks like another option would be to add an 'e' to your forced boot
-line.  That should prevent the detection stuff from running.  E.g. in
-your case:
-video=VGA-1:1366x768e
+>Your .config file also has the ATA drivers as =m (loadable modules), but
+>I guess that you also tested with those drivers =y (builtin).
 
-There's some info on this in Documentation/fb/modedb.txt
+Yes, both ways.
+>
+>I don't see what the problem is.
+>You may need to try taking a photo of the failed boot and sending it to
+>the mailing list (and me) again, even though that has not worked for you
+>some time in the past.
 
+I'll try it with the ext2-3-4 as modules.  But the last error was 2 lines 
+farther, stalling till the BusyBox timeout after echoing the change to TSC 
+clock to the low res screen.  Whatever that is.
+
+We'll keep plodding along.
+
+Cheers, Gene
 -- 
-Jesse Barnes, Intel Open Source Technology Center
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
+Genes Web page <http://geneslinuxbox.net:6309/gene>
+
+NOTICE: Will pay 100 USD for an HP-4815A defective but
+complete probe assembly.
+
