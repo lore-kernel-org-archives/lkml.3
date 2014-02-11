@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752071AbaBKXZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 18:25:29 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:49224 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751788AbaBKXZ2 (ORCPT
+	id S1752192AbaBKXes (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 18:34:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42307 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751752AbaBKXer (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 18:25:28 -0500
-Message-ID: <52FAB164.3090701@infradead.org>
-Date: Tue, 11 Feb 2014 15:25:24 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging/rtl8821ae: fix build, depends on MAC80211
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 11 Feb 2014 18:34:47 -0500
+Date: Tue, 11 Feb 2014 15:34:45 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel@vger.kernel.org, rdunlap <rdunlap@infradead.org>
+Subject: Re: [PATCH 1/1] kernel: panic: display reason at end + pr_emerg
+Message-Id: <20140211153445.c03bf3b266880ff0a174cee6@linux-foundation.org>
+In-Reply-To: <20140208154522.aa927a34df7b018c5eee47ef@skynet.be>
+References: <20140208154522.aa927a34df7b018c5eee47ef@skynet.be>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@infradead.org>
+On Sat, 8 Feb 2014 15:45:22 +0800 Fabian Frederick <fabf@skynet.be> wrote:
 
-rtl8821ae uses ieee80211 interfaces so it should depend on
-MAC80211.  Fixes these build errors:
+> Currently, booting without initrd specified on 80x25 screen
+> gives a call trace followed by atkbd : Spurious ACK.
+> Original message ("VFS: Unable to mount root fs") is not available.
+> Of course this could happen in other situations...
+> 
+> -This patch displays panic reason after call trace which could help
+> lot of people even if it's not the very last line on screen.
 
-ERROR: "ieee80211_rx_irqsafe" [drivers/staging/rtl8821ae/rtl8821ae.ko] undefined!
-ERROR: "ieee80211_beacon_get_tim" [drivers/staging/rtl8821ae/rtl8821ae.ko] undefined!
-ERROR: "ieee80211_unregister_hw" [drivers/staging/rtl8821ae/rtl8821ae.ko] undefined!
-ERROR: "rate_control_send_low" [drivers/staging/rtl8821ae/rtl8821ae.ko] undefined!
-ERROR: "ieee80211_stop_queue" [drivers/staging/rtl8821ae/rtl8821ae.ko] undefined!
-ERROR: "ieee80211_rate_control_register" [drivers/staging/rtl8821ae/rtl8821ae.ko] undefined!
-ERROR: "wiphy_to_ieee80211_hw" [drivers/staging/rtl8821ae/rtl8821ae.ko] undefined!
-ERROR: "ieee80211_stop_tx_ba_cb_irqsafe" [drivers/staging/rtl8821ae/rtl8821ae.ko] undefined!
-ERROR: "ieee80211_tx_status_irqsafe" [drivers/staging/rtl8821ae/rtl8821ae.ko] undefined!
-ERROR: "ieee80211_find_sta" [drivers/staging/rtl8821ae/rtl8821ae.ko] undefined!
-ERROR: "ieee80211_wake_queue" [drivers/staging/rtl8821ae/rtl8821ae.ko] undefined!
-ERROR: "ieee80211_rate_control_unregister" [drivers/staging/rtl8821ae/rtl8821ae.ko] undefined!
-ERROR: "ieee80211_register_hw" [drivers/staging/rtl8821ae/rtl8821ae.ko] undefined!
-ERROR: "ieee80211_start_tx_ba_session" [drivers/staging/rtl8821ae/rtl8821ae.ko] undefined!
-ERROR: "ieee80211_alloc_hw" [drivers/staging/rtl8821ae/rtl8821ae.ko] undefined!
-ERROR: "ieee80211_free_hw" [drivers/staging/rtl8821ae/rtl8821ae.ko] undefined!
-ERROR: "ieee80211_connection_loss" [drivers/staging/rtl8821ae/rtl8821ae.ko] undefined!
-ERROR: "ieee80211_start_tx_ba_cb_irqsafe" [drivers/staging/rtl8821ae/rtl8821ae.ko] undefined!
+Fair enough.  Hate it when that happens!
 
-Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
----
- drivers/staging/rtl8821ae/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> -Converting all panic.c printk(KERN_EMERG to pr_emerg(
 
---- linux-next-20140211.orig/drivers/staging/rtl8821ae/Kconfig
-+++ linux-next-20140211/drivers/staging/rtl8821ae/Kconfig
-@@ -1,6 +1,6 @@
- config R8821AE
- 	tristate "RealTek RTL8821AE Wireless LAN NIC driver"
--	depends on PCI && WLAN
-+	depends on PCI && WLAN && MAC80211
- 	depends on m
- 	select WIRELESS_EXT
- 	select WEXT_PRIV
+You missed a couple.
+
+--- a/kernel/panic.c~kernel-panicc-display-reason-at-end-pr_emerg-fix
++++ a/kernel/panic.c
+@@ -275,8 +275,7 @@ unsigned long get_taint(void)
+ void add_taint(unsigned flag, enum lockdep_ok lockdep_ok)
+ {
+ 	if (lockdep_ok == LOCKDEP_NOW_UNRELIABLE && __debug_locks_off())
+-		printk(KERN_WARNING
+-		       "Disabling lock debugging due to kernel taint\n");
++		pr_warn("Disabling lock debugging due to kernel taint\n");
+ 
+ 	set_bit(flag, &tainted_mask);
+ }
+@@ -381,8 +380,7 @@ late_initcall(init_oops_id);
+ void print_oops_end_marker(void)
+ {
+ 	init_oops_id();
+-	printk(KERN_WARNING "---[ end trace %016llx ]---\n",
+-		(unsigned long long)oops_id);
++	pr_warn("---[ end trace %016llx ]---\n", (unsigned long long)oops_id);
+ }
+ 
+ /*
+_
+
