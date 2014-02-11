@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754843AbaBKTUk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:20:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40564 "EHLO
+	id S1754322AbaBKTIT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:08:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40510 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754333AbaBKTIV (ORCPT
+	with ESMTP id S1754262AbaBKTIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:08:21 -0500
+	Tue, 11 Feb 2014 14:08:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
+To: linux-kernel@vger.kernel.org,
+        Luis Henriques <luis.henriques@canonical.com>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.10 79/79] intel_pstate: Correct calculation of min pstate value
-Date: Tue, 11 Feb 2014 11:06:23 -0800
-Message-Id: <20140211184723.254951348@linuxfoundation.org>
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.10 69/79] ftrace: Fix synchronization location disabling and freeing ftrace_ops
+Date: Tue, 11 Feb 2014 11:06:13 -0800
+Message-Id: <20140211184722.968697027@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
 References: <20140211184720.928667275@linuxfoundation.org>
@@ -29,39 +29,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+From: Steven Rostedt <rostedt@goodmis.org>
 
-commit 7244cb62d96e735847dc9d08f870550df896898c upstream.
+commit a4c35ed241129dd142be4cadb1e5a474a56d5464 upstream.
 
-The minimum pstate is supposed to be a percentage of the maximum P
-state available.  Calculate min using max pstate and not the
-current max which may have been limited by the user
+The synchronization needed after ftrace_ops are unregistered must happen
+after the callback is disabled from becing called by functions.
 
-Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+The current location happens after the function is being removed from the
+internal lists, but not after the function callbacks were disabled, leaving
+the functions susceptible of being called after their callbacks are freed.
+
+This affects perf and any externel users of function tracing (LTTng and
+SystemTap).
+
+Fixes: cdbe61bfe704 "ftrace: Allow dynamically allocated function tracers"
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/intel_pstate.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ kernel/trace/ftrace.c |   50 ++++++++++++++++++++++++++++++++------------------
+ 1 file changed, 32 insertions(+), 18 deletions(-)
 
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -366,12 +366,13 @@ static int intel_pstate_turbo_pstate(voi
- static void intel_pstate_get_min_max(struct cpudata *cpu, int *min, int *max)
- {
- 	int max_perf = cpu->pstate.turbo_pstate;
-+	int max_perf_adj;
- 	int min_perf;
- 	if (limits.no_turbo)
- 		max_perf = cpu->pstate.max_pstate;
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -490,16 +490,6 @@ static int __unregister_ftrace_function(
+ 	} else if (ops->flags & FTRACE_OPS_FL_CONTROL) {
+ 		ret = remove_ftrace_list_ops(&ftrace_control_list,
+ 					     &control_ops, ops);
+-		if (!ret) {
+-			/*
+-			 * The ftrace_ops is now removed from the list,
+-			 * so there'll be no new users. We must ensure
+-			 * all current users are done before we free
+-			 * the control data.
+-			 */
+-			synchronize_sched();
+-			control_ops_free(ops);
+-		}
+ 	} else
+ 		ret = remove_ftrace_ops(&ftrace_ops_list, ops);
  
--	max_perf = fp_toint(mul_fp(int_tofp(max_perf), limits.max_perf));
--	*max = clamp_t(int, max_perf,
-+	max_perf_adj = fp_toint(mul_fp(int_tofp(max_perf), limits.max_perf));
-+	*max = clamp_t(int, max_perf_adj,
- 			cpu->pstate.min_pstate, cpu->pstate.turbo_pstate);
+@@ -509,13 +499,6 @@ static int __unregister_ftrace_function(
+ 	if (ftrace_enabled)
+ 		update_ftrace_function();
  
- 	min_perf = fp_toint(mul_fp(int_tofp(max_perf), limits.min_perf));
+-	/*
+-	 * Dynamic ops may be freed, we must make sure that all
+-	 * callers are done before leaving this function.
+-	 */
+-	if (ops->flags & FTRACE_OPS_FL_DYNAMIC)
+-		synchronize_sched();
+-
+ 	return 0;
+ }
+ 
+@@ -2184,10 +2167,41 @@ static int ftrace_shutdown(struct ftrace
+ 		command |= FTRACE_UPDATE_TRACE_FUNC;
+ 	}
+ 
+-	if (!command || !ftrace_enabled)
++	if (!command || !ftrace_enabled) {
++		/*
++		 * If these are control ops, they still need their
++		 * per_cpu field freed. Since, function tracing is
++		 * not currently active, we can just free them
++		 * without synchronizing all CPUs.
++		 */
++		if (ops->flags & FTRACE_OPS_FL_CONTROL)
++			control_ops_free(ops);
+ 		return 0;
++	}
+ 
+ 	ftrace_run_update_code(command);
++
++	/*
++	 * Dynamic ops may be freed, we must make sure that all
++	 * callers are done before leaving this function.
++	 * The same goes for freeing the per_cpu data of the control
++	 * ops.
++	 *
++	 * Again, normal synchronize_sched() is not good enough.
++	 * We need to do a hard force of sched synchronization.
++	 * This is because we use preempt_disable() to do RCU, but
++	 * the function tracers can be called where RCU is not watching
++	 * (like before user_exit()). We can not rely on the RCU
++	 * infrastructure to do the synchronization, thus we must do it
++	 * ourselves.
++	 */
++	if (ops->flags & (FTRACE_OPS_FL_DYNAMIC | FTRACE_OPS_FL_CONTROL)) {
++		schedule_on_each_cpu(ftrace_sync);
++
++		if (ops->flags & FTRACE_OPS_FL_CONTROL)
++			control_ops_free(ops);
++	}
++
+ 	return 0;
+ }
+ 
 
 
