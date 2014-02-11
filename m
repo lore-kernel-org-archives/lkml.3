@@ -1,76 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752089AbaBKP1Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 10:27:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44978 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751285AbaBKP1W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 10:27:22 -0500
-Date: Tue, 11 Feb 2014 10:27:01 -0500
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, mtosatti@redhat.com,
-        mgorman@suse.de, aarcange@redhat.com, andi@firstfloor.org,
-        riel@redhat.com
-Subject: Re: [PATCH 4/4] hugetlb: hugepagesnid=: add 1G huge page support
-Message-ID: <20140211102701.6114576b@redhat.com>
-In-Reply-To: <20140210153032.ac9325938264a3894dc83f8b@linux-foundation.org>
-References: <1392053268-29239-1-git-send-email-lcapitulino@redhat.com>
-	<1392053268-29239-5-git-send-email-lcapitulino@redhat.com>
-	<20140210153032.ac9325938264a3894dc83f8b@linux-foundation.org>
-Organization: Red Hat
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752277AbaBKP1r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 10:27:47 -0500
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:48779 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751285AbaBKP1o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 10:27:44 -0500
+Date: Tue, 11 Feb 2014 10:27:41 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Tommi Rantala <tt.rantala@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        trinity@vger.kernel.org
+Subject: Re: lockdep: strange %s#5 lock name
+Message-ID: <20140211152741.GA24490@htj.dyndns.org>
+References: <CA+ydwtqC7En++T5S7q5qzaDe_tf9dcMx3Y3aH=+Fcss_NU7stA@mail.gmail.com>
+ <20140210192846.GF27965@twins.programming.kicks-ass.net>
+ <20140210215224.GB25350@mtj.dyndns.org>
+ <20140211110036.GT9987@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140211110036.GT9987@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Feb 2014 15:30:32 -0800
-Andrew Morton <akpm@linux-foundation.org> wrote:
+On Tue, Feb 11, 2014 at 12:00:36PM +0100, Peter Zijlstra wrote:
+> > Looks good to me.  Can you please post the patch with SOB?
+> 
+> ---
+> Subject: workqueue: Fix workqueue lockdep name
+> 
+> Tommi noticed a 'funny' lock class name: "%s#5" from a lock acquired in
+> process_one_work(). It turns out that commit b196be89cdc14 forgot to
+> change the lockdep_init_map() when it changed the @lock_name argument
+> from a string to a format.
+> 
+> Fixes: b196be89cdc14 ("workqueue: make alloc_workqueue() take printf fmt and args for name")
+> Reported-by: Tommi Rantala <tt.rantala@gmail.com>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 
-> On Mon, 10 Feb 2014 12:27:48 -0500 Luiz Capitulino <lcapitulino@redhat.com> wrote:
-> 
-> > 
-> > ...
-> >
-> > --- a/mm/hugetlb.c
-> > +++ b/mm/hugetlb.c
-> > @@ -2051,6 +2051,29 @@ void __init hugetlb_add_hstate(unsigned order)
-> >  	parsed_hstate = h;
-> >  }
-> >  
-> > +static void __init hugetlb_hstate_alloc_pages_nid(struct hstate *h,
-> > +						int nid,
-> > +						unsigned long nr_pages)
-> > +{
-> > +	struct huge_bootmem_page *m;
-> > +	unsigned long i;
-> > +	void *addr;
-> > +
-> > +	for (i = 0; i < nr_pages; i++) {
-> > +		addr = memblock_virt_alloc_nid_nopanic(
-> > +				huge_page_size(h), huge_page_size(h),
-> > +				0, BOOTMEM_ALLOC_ACCESSIBLE, nid);
-> > +		if (!addr)
-> > +			break;
-> > +		m = addr;
-> > +		BUG_ON((unsigned long)virt_to_phys(m) & (huge_page_size(h) - 1));
-> 
-> IS_ALIGNED()?
-> 
-> > +		list_add(&m->list, &huge_boot_pages);
-> > +		m->hstate = h;
-> > +	}
-> > +
-> > +	h->max_huge_pages += i;
-> > +}
-> > +
-> >  void __init hugetlb_add_nrpages_nid(unsigned order, unsigned long nid,
-> >  				unsigned long nr_pages)
-> >  {
-> 
-> Please cc Yinghai Lu <yinghai@kernel.org> on these patches - he
-> understands memblock well and is a strong reviewer.
+Applied to wq/for-3.14-fixes.
 
-Will do for v2, with your comments addressed.
+Thanks!
+
+-- 
+tejun
