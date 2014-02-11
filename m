@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753303AbaBKTGV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:06:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39904 "EHLO
+	id S1756418AbaBKU05 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:26:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39932 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751572AbaBKTGR (ORCPT
+	with ESMTP id S1751572AbaBKTGV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:17 -0500
+	Tue, 11 Feb 2014 14:06:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Wu Fengguang <fengguang.wu@intel.com>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.12 014/107] mm/page-writeback.c: do not count anon pages as dirtyable memory
-Date: Tue, 11 Feb 2014 11:04:40 -0800
-Message-Id: <20140211184748.611064336@linuxfoundation.org>
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.12 002/107] tracing: Have trace buffer point back to trace_array
+Date: Tue, 11 Feb 2014 11:04:28 -0800
+Message-Id: <20140211184748.263066429@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -32,125 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Weiner <hannes@cmpxchg.org>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit a1c3bfb2f67ef766de03f1f56bdfff9c8595ab14 upstream.
+commit dced341b2d4f06668efaab33f88de5d287c0f45b upstream.
 
-The VM is currently heavily tuned to avoid swapping.  Whether that is
-good or bad is a separate discussion, but as long as the VM won't swap
-to make room for dirty cache, we can not consider anonymous pages when
-calculating the amount of dirtyable memory, the baseline to which
-dirty_background_ratio and dirty_ratio are applied.
+The trace buffer has a descriptor pointer that goes back to the trace
+array. But it was never assigned. Luckily, nothing uses it (yet), but
+it will in the future.
 
-A simple workload that occupies a significant size (40+%, depending on
-memory layout, storage speeds etc.) of memory with anon/tmpfs pages and
-uses the remainder for a streaming writer demonstrates this problem.  In
-that case, the actual cache pages are a small fraction of what is
-considered dirtyable overall, which results in an relatively large
-portion of the cache pages to be dirtied.  As kswapd starts rotating
-these, random tasks enter direct reclaim and stall on IO.
+Although nothing currently uses this, if any of the new features get
+backported to older kernels, and because this is such a simple change,
+I'm marking it for stable too.
 
-Only consider free pages and file pages dirtyable.
-
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Reported-by: Tejun Heo <tj@kernel.org>
-Tested-by: Tejun Heo <tj@kernel.org>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Fixes: 12883efb670c "tracing: Consolidate max_tr into main trace_array structure"
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/vmstat.h |    2 --
- mm/internal.h          |    1 -
- mm/page-writeback.c    |    6 ++++--
- mm/vmscan.c            |   23 +----------------------
- 4 files changed, 5 insertions(+), 27 deletions(-)
+ kernel/trace/trace.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/include/linux/vmstat.h
-+++ b/include/linux/vmstat.h
-@@ -142,8 +142,6 @@ static inline unsigned long zone_page_st
- 	return x;
- }
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -5872,6 +5872,8 @@ allocate_trace_buffer(struct trace_array
  
--extern unsigned long global_reclaimable_pages(void);
--
- #ifdef CONFIG_NUMA
- /*
-  * Determine the per node value of a stat item. This function
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -85,7 +85,6 @@ extern unsigned long highest_memmap_pfn;
-  */
- extern int isolate_lru_page(struct page *page);
- extern void putback_lru_page(struct page *page);
--extern unsigned long zone_reclaimable_pages(struct zone *zone);
- extern bool zone_reclaimable(struct zone *zone);
+ 	rb_flags = trace_flags & TRACE_ITER_OVERWRITE ? RB_FL_OVERWRITE : 0;
  
- /*
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -205,7 +205,8 @@ static unsigned long zone_dirtyable_memo
- 	nr_pages = zone_page_state(zone, NR_FREE_PAGES);
- 	nr_pages -= min(nr_pages, zone->dirty_balance_reserve);
- 
--	nr_pages += zone_reclaimable_pages(zone);
-+	nr_pages += zone_page_state(zone, NR_INACTIVE_FILE);
-+	nr_pages += zone_page_state(zone, NR_ACTIVE_FILE);
- 
- 	return nr_pages;
- }
-@@ -258,7 +259,8 @@ static unsigned long global_dirtyable_me
- 	x = global_page_state(NR_FREE_PAGES);
- 	x -= min(x, dirty_balance_reserve);
- 
--	x += global_reclaimable_pages();
-+	x += global_page_state(NR_INACTIVE_FILE);
-+	x += global_page_state(NR_ACTIVE_FILE);
- 
- 	if (!vm_highmem_is_dirtyable)
- 		x -= highmem_dirtyable_memory(x);
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -147,7 +147,7 @@ static bool global_reclaim(struct scan_c
- }
- #endif
- 
--unsigned long zone_reclaimable_pages(struct zone *zone)
-+static unsigned long zone_reclaimable_pages(struct zone *zone)
- {
- 	int nr;
- 
-@@ -3297,27 +3297,6 @@ void wakeup_kswapd(struct zone *zone, in
- 	wake_up_interruptible(&pgdat->kswapd_wait);
- }
- 
--/*
-- * The reclaimable count would be mostly accurate.
-- * The less reclaimable pages may be
-- * - mlocked pages, which will be moved to unevictable list when encountered
-- * - mapped pages, which may require several travels to be reclaimed
-- * - dirty pages, which is not "instantly" reclaimable
-- */
--unsigned long global_reclaimable_pages(void)
--{
--	int nr;
--
--	nr = global_page_state(NR_ACTIVE_FILE) +
--	     global_page_state(NR_INACTIVE_FILE);
--
--	if (get_nr_swap_pages() > 0)
--		nr += global_page_state(NR_ACTIVE_ANON) +
--		      global_page_state(NR_INACTIVE_ANON);
--
--	return nr;
--}
--
- #ifdef CONFIG_HIBERNATION
- /*
-  * Try to free `nr_to_reclaim' of memory, system-wide, and return the number of
++	buf->tr = tr;
++
+ 	buf->buffer = ring_buffer_alloc(size, rb_flags);
+ 	if (!buf->buffer)
+ 		return -ENOMEM;
 
 
