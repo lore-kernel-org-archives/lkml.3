@@ -1,81 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753817AbaBKUV4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:21:56 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:48330 "EHLO
+	id S1756267AbaBKUWH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:22:07 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:48352 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753858AbaBKUVv (ORCPT
+	with ESMTP id S1753858AbaBKUWC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 15:21:51 -0500
-Date: Tue, 11 Feb 2014 14:19:33 -0600
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-mm-sig@lists.linaro.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>, Michal Nazarewicz <mina86@mina86.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Laura Abbott <lauraa@codeaurora.org>, Rob Herring <robh+dt@gmail.com>,
-        Olof Johansson <olof@lixom.net>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Kumar Gala <galak@codeaurora.org>,
-        Nishanth Peethambaran <nishanth.p@gmail.com>,
-        Marc <marc.ceeeee@gmail.com>
-Subject: Re: [PATCH v2 1/5] drivers: of: add initialization code for reserved
- memory
-Message-ID: <20140211201933.GI841@joshc.qualcomm.com>
-References: <1391515773-6112-1-git-send-email-m.szyprowski@samsung.com>
- <1391515773-6112-2-git-send-email-m.szyprowski@samsung.com>
- <20140205110538.99E47C40A89@trevor.secretlab.ca>
- <52FA0D6E.9090304@samsung.com>
- <20140211121316.24032C40C4D@trevor.secretlab.ca>
- <52FA33E2.4050004@samsung.com>
- <20140211190104.7E6C5C4140E@trevor.secretlab.ca>
- <1392148971.3835.15.camel@pasglop>
- <52FA8245.5050707@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52FA8245.5050707@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 11 Feb 2014 15:22:02 -0500
+From: Kumar Gala <galak@codeaurora.org>
+To: David Airlie <airlied@linux.ie>, Rob Clark <robdclark@gmail.com>
+Cc: Kumar Gala <galak@codeaurora.org>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] drm/msm: drop ARCH_MSM Kconfig depend
+Date: Tue, 11 Feb 2014 14:21:59 -0600
+Message-Id: <1392150119-21132-1-git-send-email-galak@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 09:04:21PM +0100, Tomasz Figa wrote:
-> 
-> 
-> On 11.02.2014 21:02, Benjamin Herrenschmidt wrote:
-> >On Tue, 2014-02-11 at 19:01 +0000, Grant Likely wrote:
-> >
-> >>>except that the former IMHO better suits the definition of memory
-> >>>region, which I see as a single contiguous range of memory and can be
-> >>>simplified to have a single reg entry per region.
-> >>
-> >>My point is rather if multiple reg tuples are found in a reserved memory
-> >>node, the kernel must respect them and reserve the memory. I'm not
-> >>arguing about whether or not that makes for a good binding.
-> >
-> >agreed.
-> 
-> My point is why, if the binding defines that just a single tuple should be
-> provided.
+The ARCH_MSM depend is redundant with ARCH_MSM8960, so we can remove it.
+Additionally, we are splitting Qualcomm MSM support into legacy (ARCH_MSM)
+and multiplatform (ARCH_QCOM).  The MSM8960 with be ARCH_QCOM going forward
+so dropping ARCH_MSM will work properly for the new ARCH_QCOM multiplatform
+build.
 
-FWIW, the usecase I had mentioned in reply to Grant in the patch 5/5
-thread [1] could make use of this.  The shared memory region is split
-into a main chunk and several "auxiliary" chunk, but collectively these
-regions all share the same heap state.
+Signed-off-by: Kumar Gala <galak@codeaurora.org>
+---
+David/Rob,
 
-  Josh
+If you can ack this I'll send it via linux-qcom/arm-soc tree's
 
-1: http://lkml.kernel.org/r/20140205192502.GO20228@joshc.qualcomm.com
+thanks
 
+- k
+ drivers/gpu/drm/msm/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/msm/Kconfig b/drivers/gpu/drm/msm/Kconfig
+index c69d1e0..b698497 100644
+--- a/drivers/gpu/drm/msm/Kconfig
++++ b/drivers/gpu/drm/msm/Kconfig
+@@ -3,7 +3,7 @@ config DRM_MSM
+ 	tristate "MSM DRM"
+ 	depends on DRM
+ 	depends on MSM_IOMMU
+-	depends on (ARCH_MSM && ARCH_MSM8960) || (ARM && COMPILE_TEST)
++	depends on ARCH_MSM8960 || (ARM && COMPILE_TEST)
+ 	select DRM_KMS_HELPER
+ 	select SHMEM
+ 	select TMPFS
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
+
