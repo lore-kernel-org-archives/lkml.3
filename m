@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756196AbaBKVE6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 16:04:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39536 "EHLO
+	id S1756235AbaBKVFq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 16:05:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39511 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752505AbaBKTFD (ORCPT
+	with ESMTP id S1752491AbaBKTFA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:05:03 -0500
+	Tue, 11 Feb 2014 14:05:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.13 003/120] tracing: Have trace buffer point back to trace_array
-Date: Tue, 11 Feb 2014 11:04:04 -0800
-Message-Id: <20140211184823.602284779@linuxfoundation.org>
+        Josh Triplett <josh@joshtriplett.org>, Len Brown <len.brown@intel.com>
+Subject: [PATCH 3.13 026/120] turbostat: Dont put unprocessed uapi headers in the include path
+Date: Tue, 11 Feb 2014 11:04:27 -0800
+Message-Id: <20140211184824.301344317@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -28,36 +28,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Josh Triplett <josh@joshtriplett.org>
 
-commit dced341b2d4f06668efaab33f88de5d287c0f45b upstream.
+commit b731f3119de57144e16c19fd593b8daeb637843e upstream.
 
-The trace buffer has a descriptor pointer that goes back to the trace
-array. But it was never assigned. Luckily, nothing uses it (yet), but
-it will in the future.
+turbostat's Makefile puts arch/x86/include/uapi/ in the include path, so
+that it can include <asm/msr.h> from it.  It isn't in general safe to
+include even uapi headers directly from the kernel tree without
+processing them through scripts/headers_install.sh, but asm/msr.h
+happens to work.
 
-Although nothing currently uses this, if any of the new features get
-backported to older kernels, and because this is such a simple change,
-I'm marking it for stable too.
+However, that include path can break with some versions of system
+headers, by overriding some system headers with the unprocessed versions
+directly from the kernel source.  For instance:
 
-Fixes: 12883efb670c "tracing: Consolidate max_tr into main trace_array structure"
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+In file included from /build/x86-generic/usr/include/bits/sigcontext.h:28:0,
+                 from /build/x86-generic/usr/include/signal.h:339,
+                 from /build/x86-generic/usr/include/sys/wait.h:31,
+                 from turbostat.c:27:
+../../../../arch/x86/include/uapi/asm/sigcontext.h:4:28: fatal error: linux/compiler.h: No such file or directory
+
+This occurs because the system bits/sigcontext.h on that build system
+includes <asm/sigcontext.h>, and asm/sigcontext.h in the kernel source
+includes <linux/compiler.h>, which scripts/headers_install.sh would have
+filtered out.
+
+Since turbostat really only wants a single header, just include that one
+header rather than putting an entire directory of kernel headers on the
+include path.
+
+In the process, switch from msr.h to msr-index.h, since turbostat just
+wants the MSR numbers.
+
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/trace.c |    2 ++
- 1 file changed, 2 insertions(+)
+ tools/power/x86/turbostat/Makefile    |    2 +-
+ tools/power/x86/turbostat/turbostat.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -5883,6 +5883,8 @@ allocate_trace_buffer(struct trace_array
+--- a/tools/power/x86/turbostat/Makefile
++++ b/tools/power/x86/turbostat/Makefile
+@@ -5,7 +5,7 @@ DESTDIR		:=
  
- 	rb_flags = trace_flags & TRACE_ITER_OVERWRITE ? RB_FL_OVERWRITE : 0;
+ turbostat : turbostat.c
+ CFLAGS +=	-Wall
+-CFLAGS +=	-I../../../../arch/x86/include/uapi/
++CFLAGS +=	-DMSRHEADER='"../../../../arch/x86/include/uapi/asm/msr-index.h"'
  
-+	buf->tr = tr;
-+
- 	buf->buffer = ring_buffer_alloc(size, rb_flags);
- 	if (!buf->buffer)
- 		return -ENOMEM;
+ %: %.c
+ 	@mkdir -p $(BUILD_OUTPUT)
+--- a/tools/power/x86/turbostat/turbostat.c
++++ b/tools/power/x86/turbostat/turbostat.c
+@@ -20,7 +20,7 @@
+  */
+ 
+ #define _GNU_SOURCE
+-#include <asm/msr.h>
++#include MSRHEADER
+ #include <stdio.h>
+ #include <unistd.h>
+ #include <sys/types.h>
 
 
