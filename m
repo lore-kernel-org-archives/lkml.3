@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754579AbaBKUjW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:39:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39780 "EHLO
+	id S1753098AbaBKTF5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:05:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39738 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753103AbaBKTF7 (ORCPT
+	with ESMTP id S1752997AbaBKTFs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:05:59 -0500
+	Tue, 11 Feb 2014 14:05:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.13 108/120] ftrace: Fix synchronization location disabling and freeing ftrace_ops
-Date: Tue, 11 Feb 2014 11:05:49 -0800
-Message-Id: <20140211184826.714544319@linuxfoundation.org>
+        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.13 050/120] dm thin: fix discard support to a previously shared block
+Date: Tue, 11 Feb 2014 11:04:51 -0800
+Message-Id: <20140211184825.049026121@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -28,111 +28,128 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Joe Thornber <ejt@redhat.com>
 
-commit a4c35ed241129dd142be4cadb1e5a474a56d5464 upstream.
+commit 19fa1a6756ed9e92daa9537c03b47d6b55cc2316 upstream.
 
-The synchronization needed after ftrace_ops are unregistered must happen
-after the callback is disabled from becing called by functions.
+If a snapshot is created and later deleted the origin dm_thin_device's
+snapshotted_time will have been updated to reflect the snapshot's
+creation time.  The 'shared' flag in the dm_thin_lookup_result struct
+returned from dm_thin_find_block() is an approximation based on
+snapshotted_time -- this is done to avoid 0(n), or worse, time
+complexity.  In this case, the shared flag would be true.
 
-The current location happens after the function is being removed from the
-internal lists, but not after the function callbacks were disabled, leaving
-the functions susceptible of being called after their callbacks are freed.
+But because the 'shared' flag reflects an approximation a block can be
+incorrectly assumed to be shared (e.g. false positive for 'shared'
+because the snapshot no longer exists).  This could result in discards
+issued to a thin device not being passed down to the pool's underlying
+data device.
 
-This affects perf and any externel users of function tracing (LTTng and
-SystemTap).
+To fix this we double check that a thin block is really still in-use
+after a mapping is removed using dm_pool_block_is_used().  If the
+reference count for a block is now zero the discard is allowed to be
+passed down.
 
-Fixes: cdbe61bfe704 "ftrace: Allow dynamically allocated function tracers"
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Also add a 'definitely_not_shared' member to the dm_thin_new_mapping
+structure -- reflects that the 'shared' flag in the response from
+dm_thin_find_block() can only be held as definitive if false is
+returned.
+
+Resolves: https://bugzilla.redhat.com/show_bug.cgi?id=1043527
+
+Signed-off-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/ftrace.c |   58 +++++++++++++++++++++++++++-----------------------
- 1 file changed, 32 insertions(+), 26 deletions(-)
+ drivers/md/dm-thin-metadata.c |   20 ++++++++++++++++++++
+ drivers/md/dm-thin-metadata.h |    2 ++
+ drivers/md/dm-thin.c          |   14 ++++++++++++--
+ 3 files changed, 34 insertions(+), 2 deletions(-)
 
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -490,20 +490,6 @@ static int __unregister_ftrace_function(
- 	} else if (ops->flags & FTRACE_OPS_FL_CONTROL) {
- 		ret = remove_ftrace_list_ops(&ftrace_control_list,
- 					     &control_ops, ops);
--		if (!ret) {
--			/*
--			 * The ftrace_ops is now removed from the list,
--			 * so there'll be no new users. We must ensure
--			 * all current users are done before we free
--			 * the control data.
--			 * Note synchronize_sched() is not enough, as we
--			 * use preempt_disable() to do RCU, but the function
--			 * tracer can be called where RCU is not active
--			 * (before user_exit()).
--			 */
--			schedule_on_each_cpu(ftrace_sync);
--			control_ops_free(ops);
--		}
- 	} else
- 		ret = remove_ftrace_ops(&ftrace_ops_list, ops);
- 
-@@ -513,17 +499,6 @@ static int __unregister_ftrace_function(
- 	if (ftrace_enabled)
- 		update_ftrace_function();
- 
--	/*
--	 * Dynamic ops may be freed, we must make sure that all
--	 * callers are done before leaving this function.
--	 *
--	 * Again, normal synchronize_sched() is not good enough.
--	 * We need to do a hard force of sched synchronization.
--	 */
--	if (ops->flags & FTRACE_OPS_FL_DYNAMIC)
--		schedule_on_each_cpu(ftrace_sync);
--
--
- 	return 0;
+--- a/drivers/md/dm-thin-metadata.c
++++ b/drivers/md/dm-thin-metadata.c
+@@ -1349,6 +1349,12 @@ dm_thin_id dm_thin_dev_id(struct dm_thin
+ 	return td->id;
  }
  
-@@ -2213,10 +2188,41 @@ static int ftrace_shutdown(struct ftrace
- 		command |= FTRACE_UPDATE_TRACE_FUNC;
- 	}
++/*
++ * Check whether @time (of block creation) is older than @td's last snapshot.
++ * If so then the associated block is shared with the last snapshot device.
++ * Any block on a device created *after* the device last got snapshotted is
++ * necessarily not shared.
++ */
+ static bool __snapshotted_since(struct dm_thin_device *td, uint32_t time)
+ {
+ 	return td->snapshotted_time > time;
+@@ -1457,6 +1463,20 @@ int dm_thin_remove_block(struct dm_thin_
  
--	if (!command || !ftrace_enabled)
-+	if (!command || !ftrace_enabled) {
-+		/*
-+		 * If these are control ops, they still need their
-+		 * per_cpu field freed. Since, function tracing is
-+		 * not currently active, we can just free them
-+		 * without synchronizing all CPUs.
-+		 */
-+		if (ops->flags & FTRACE_OPS_FL_CONTROL)
-+			control_ops_free(ops);
- 		return 0;
-+	}
- 
- 	ftrace_run_update_code(command);
-+
-+	/*
-+	 * Dynamic ops may be freed, we must make sure that all
-+	 * callers are done before leaving this function.
-+	 * The same goes for freeing the per_cpu data of the control
-+	 * ops.
-+	 *
-+	 * Again, normal synchronize_sched() is not good enough.
-+	 * We need to do a hard force of sched synchronization.
-+	 * This is because we use preempt_disable() to do RCU, but
-+	 * the function tracers can be called where RCU is not watching
-+	 * (like before user_exit()). We can not rely on the RCU
-+	 * infrastructure to do the synchronization, thus we must do it
-+	 * ourselves.
-+	 */
-+	if (ops->flags & (FTRACE_OPS_FL_DYNAMIC | FTRACE_OPS_FL_CONTROL)) {
-+		schedule_on_each_cpu(ftrace_sync);
-+
-+		if (ops->flags & FTRACE_OPS_FL_CONTROL)
-+			control_ops_free(ops);
-+	}
-+
- 	return 0;
+ 	return r;
  }
++
++int dm_pool_block_is_used(struct dm_pool_metadata *pmd, dm_block_t b, bool *result)
++{
++	int r;
++	uint32_t ref_count;
++
++	down_read(&pmd->root_lock);
++	r = dm_sm_get_count(pmd->data_sm, b, &ref_count);
++	if (!r)
++		*result = (ref_count != 0);
++	up_read(&pmd->root_lock);
++
++	return r;
++}
  
+ bool dm_thin_changed_this_transaction(struct dm_thin_device *td)
+ {
+--- a/drivers/md/dm-thin-metadata.h
++++ b/drivers/md/dm-thin-metadata.h
+@@ -181,6 +181,8 @@ int dm_pool_get_data_block_size(struct d
+ 
+ int dm_pool_get_data_dev_size(struct dm_pool_metadata *pmd, dm_block_t *result);
+ 
++int dm_pool_block_is_used(struct dm_pool_metadata *pmd, dm_block_t b, bool *result);
++
+ /*
+  * Returns -ENOSPC if the new size is too small and already allocated
+  * blocks would be lost.
+--- a/drivers/md/dm-thin.c
++++ b/drivers/md/dm-thin.c
+@@ -512,6 +512,7 @@ struct dm_thin_new_mapping {
+ 	unsigned quiesced:1;
+ 	unsigned prepared:1;
+ 	unsigned pass_discard:1;
++	unsigned definitely_not_shared:1;
+ 
+ 	struct thin_c *tc;
+ 	dm_block_t virt_block;
+@@ -683,7 +684,15 @@ static void process_prepared_discard_pas
+ 	cell_defer_no_holder(tc, m->cell2);
+ 
+ 	if (m->pass_discard)
+-		remap_and_issue(tc, m->bio, m->data_block);
++		if (m->definitely_not_shared)
++			remap_and_issue(tc, m->bio, m->data_block);
++		else {
++			bool used = false;
++			if (dm_pool_block_is_used(tc->pool->pmd, m->data_block, &used) || used)
++				bio_endio(m->bio, 0);
++			else
++				remap_and_issue(tc, m->bio, m->data_block);
++		}
+ 	else
+ 		bio_endio(m->bio, 0);
+ 
+@@ -1040,7 +1049,8 @@ static void process_discard(struct thin_
+ 			 */
+ 			m = get_next_mapping(pool);
+ 			m->tc = tc;
+-			m->pass_discard = (!lookup_result.shared) && pool->pf.discard_passdown;
++			m->pass_discard = pool->pf.discard_passdown;
++			m->definitely_not_shared = !lookup_result.shared;
+ 			m->virt_block = block;
+ 			m->data_block = lookup_result.block;
+ 			m->cell = cell;
 
 
