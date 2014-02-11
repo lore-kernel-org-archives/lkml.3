@@ -1,64 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752899AbaBKQpt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 11:45:49 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:37492 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752779AbaBKQpp (ORCPT
+	id S1752243AbaBKQuZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 11:50:25 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:33475 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751803AbaBKQuW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 11:45:45 -0500
-Date: Tue, 11 Feb 2014 08:39:03 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, mingo@kernel.org, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:irq/core] genirq: Add devm_request_any_context_irq()
-Message-ID: <20140211163903.GD12106@core.coreip.homeip.net>
-References: <1388709460-19222-3-git-send-email-sboyd@codeaurora.org>
- <tip-0668d3065128d39449c097e62dbdb5707820137d@git.kernel.org>
- <20140211064640.GG10784@codeaurora.org>
- <alpine.DEB.2.02.1402111527090.21991@ionos.tec.linutronix.de>
+	Tue, 11 Feb 2014 11:50:22 -0500
+Date: Tue, 11 Feb 2014 17:50:13 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: Re: [PATCH v2 6/8] perf/x86/uncore: add SNB/IVB/HSW client uncore
+ memory controller support
+Message-ID: <20140211165013.GV27965@twins.programming.kicks-ass.net>
+References: <1392132015-14521-1-git-send-email-eranian@google.com>
+ <1392132015-14521-7-git-send-email-eranian@google.com>
+ <20140211161905.GS27965@twins.programming.kicks-ass.net>
+ <CABPqkBRmt120Xn02sR8nhFCjuxSJ7xZbE4-G57x7rgsmB3nwNg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1402111527090.21991@ionos.tec.linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CABPqkBRmt120Xn02sR8nhFCjuxSJ7xZbE4-G57x7rgsmB3nwNg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 03:32:44PM +0100, Thomas Gleixner wrote:
-> On Mon, 10 Feb 2014, Stephen Boyd wrote:
-> > On 02/09, tip-bot for Stephen Boyd wrote:
-> > > Commit-ID:  0668d3065128d39449c097e62dbdb5707820137d
-> > > Gitweb:     http://git.kernel.org/tip/0668d3065128d39449c097e62dbdb5707820137d
-> > > Author:     Stephen Boyd <sboyd@codeaurora.org>
-> > > AuthorDate: Thu, 2 Jan 2014 16:37:32 -0800
-> > > Committer:  Thomas Gleixner <tglx@linutronix.de>
-> > > CommitDate: Sun, 9 Feb 2014 15:27:21 +0100
-> > > 
-> > > genirq: Add devm_request_any_context_irq()
-> > > 
-> > > Some drivers use request_any_context_irq() but there isn't a
-> > > devm_* function for it. Add one so that these drivers don't need
-> > > to explicitly free the irq on driver detach.
-> > > 
-> > > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> > > Cc: linux-arm-kernel@lists.infradead.org
-> > > Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> > > Link: http://lkml.kernel.org/r/1388709460-19222-3-git-send-email-sboyd@codeaurora.org
-> > > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> > 
-> > Thanks Thomas. Is this going in for 3.14? Or can Dmitry pull a
-> > branch from the tip tree into the input tree so that the
-> > dependent input driver patches can be applied?
+On Tue, Feb 11, 2014 at 05:25:39PM +0100, Stephane Eranian wrote:
+> On Tue, Feb 11, 2014 at 5:19 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Tue, Feb 11, 2014 at 04:20:12PM +0100, Stephane Eranian wrote:
+> >> This patch adds a new uncore PMU for Intel SNB/IVB/HSW client
+> >
+> >
+> >> @@ -3501,6 +3844,28 @@ static int __init uncore_pci_init(void)
+> >>               pci_uncores = ivt_pci_uncores;
+> >>               uncore_pci_driver = &ivt_uncore_pci_driver;
+> >>               break;
+> >> +     case 42: /* Sandy Bridge */
+> >> +             ret = snb_pci2phy_map_init(PCI_DEVICE_ID_INTEL_SNB_IMC);
+> >> +             if (ret)
+> >> +                     return ret;
+> >> +             pci_uncores = snb_pci_uncores;
+> >> +             uncore_pci_driver = &snb_uncore_pci_driver;
+> >> +             break;
+> >> +     case 60: /* Haswell */
+> >> +     case 69: /* Haswell Celeron */
+> >> +             ret = snb_pci2phy_map_init(PCI_DEVICE_ID_INTEL_HSW_IMC);
+> >> +             if (ret)
+> >> +                     return ret;
+> >> +             pci_uncores = snb_pci_uncores;
+> >> +             uncore_pci_driver = &hsw_uncore_pci_driver;
+> >> +             break;
+> >> +     case 58: /* Ivy Bridge */
+> >> +             ret = snb_pci2phy_map_init(PCI_DEVICE_ID_INTEL_IVB_IMC);
+> >> +             if (ret)
+> >> +                     return ret;
+> >> +             pci_uncores = snb_pci_uncores;
+> >> +             uncore_pci_driver = &ivb_uncore_pci_driver;
+> >> +             break;
+> >>       default:
+> >>               return 0;
+> >>       }
+> >
+> > I reorderd that list; but looking at perf_event_intel.c we have a lot
+> > more HSW clients listed there. Plz as to make it consistent.
 > 
-> tip/irq/devm contains only this commit so Dmitry can pull it in.
+> I don't have all of them, so no testing possible. I doubt they have so
+> many clients model numbers.
 
-Unfortunately it is based on top of some random commit. If you could
-create a branch off 3.14 with this commit I would be able to pull it in.
+Yeah, I don't have any of those chips.. last I have is WSM-EP.
 
-Thanks.
+Anyway, perf_event_intel.c lists: 60,63,69,70,71 as being haswell
+clients.  Andi did all that, so if its wrong its on Intel anyway.
 
--- 
-Dmitry
+I'm still thinking we ought to make a big Intel classification function;
+something that returns something like:
+
+struct intel_part {
+	enum { client, ep, ex } type;
+	enum { core, core2, nhm, wsm, snb, ivb, hsw } gen;
+};
+
+And we can do things like:
+
+  if (ip.type == client && ip.gen >= snb)
+
+And then we only have to fix up the one classification function with all
+those stupid model numbers, instead of having them duplicated all over
+the stinking place.
