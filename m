@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754227AbaBKTIH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:08:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40409 "EHLO
+	id S1755110AbaBKT0e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:26:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40469 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751526AbaBKTH6 (ORCPT
+	with ESMTP id S1754215AbaBKTIG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:07:58 -0500
+	Tue, 11 Feb 2014 14:08:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kamil Debski <k.debski@samsung.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.10 46/79] [media] media: s5p_mfc: remove s5p_mfc_get_node_type() function
-Date: Tue, 11 Feb 2014 11:05:50 -0800
-Message-Id: <20140211184722.283290291@linuxfoundation.org>
+        Akash Goel <akash.goel@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [PATCH 3.10 60/79] drm/i915: Fix the offset issue for the stolen GEM objects
+Date: Tue, 11 Feb 2014 11:06:04 -0800
+Message-Id: <20140211184722.705227873@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
 References: <20140211184720.928667275@linuxfoundation.org>
@@ -30,121 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marek Szyprowski <m.szyprowski@samsung.com>
+From: Akash Goel <akash.goel@intel.com>
 
-commit b80cb8dc4162bc954cc71efec192ed89f2061573 upstream.
+commit ec14ba47791965d2c08e0a681ff44eacbf3c4553 upstream.
 
-s5p_mfc_get_node_type() relies on get_index() helper function, which in
-turn relies on video_device index numbers assigned on driver
-registration. All this code is not really needed, because there is
-already access to respective video_device structures via common
-s5p_mfc_dev structure. This fixes the issues introduced by patch
-1056e4388b0454917a512618c8416a98628fc9ce ("v4l2-dev: Fix race condition
-on __video_register_device"), which has been merged in v3.12-rc1.
+The 'offset' field of the 'scatterlist' structure was wrongly
+programmed with the offset value from the base of stolen area,
+whereas this field indicates the offset from where the interested
+data starts within the first PAGE pointed to by 'scattterlist'
+structure. As a result when a new GEM object allocated from stolen
+area is mapped to GTT, it could lead to an overwrite of GTT entries
+as the page count calculation will go wrong, refer the function
+'sg_page_count'.
 
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-Signed-off-by: Kamil Debski <k.debski@samsung.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+v2: Modified the commit message. (Chris)
+
+Signed-off-by: Akash Goel <akash.goel@intel.com>
+Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=71908
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=69104
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/platform/s5p-mfc/s5p_mfc.c        |   28 ++++++------------------
- drivers/media/platform/s5p-mfc/s5p_mfc_common.h |    9 -------
- 2 files changed, 7 insertions(+), 30 deletions(-)
+ drivers/gpu/drm/i915/i915_gem_stolen.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/media/platform/s5p-mfc/s5p_mfc.c
-+++ b/drivers/media/platform/s5p-mfc/s5p_mfc.c
-@@ -177,21 +177,6 @@ unlock:
- 		mutex_unlock(&dev->mfc_mutex);
- }
+--- a/drivers/gpu/drm/i915/i915_gem_stolen.c
++++ b/drivers/gpu/drm/i915/i915_gem_stolen.c
+@@ -222,7 +222,7 @@ i915_pages_create_for_stolen(struct drm_
+ 	}
  
--static enum s5p_mfc_node_type s5p_mfc_get_node_type(struct file *file)
--{
--	struct video_device *vdev = video_devdata(file);
--
--	if (!vdev) {
--		mfc_err("failed to get video_device");
--		return MFCNODE_INVALID;
--	}
--	if (vdev->index == 0)
--		return MFCNODE_DECODER;
--	else if (vdev->index == 1)
--		return MFCNODE_ENCODER;
--	return MFCNODE_INVALID;
--}
--
- static void s5p_mfc_clear_int_flags(struct s5p_mfc_dev *dev)
- {
- 	mfc_write(dev, 0, S5P_FIMV_RISC_HOST_INT);
-@@ -701,6 +686,7 @@ irq_cleanup_hw:
- /* Open an MFC node */
- static int s5p_mfc_open(struct file *file)
- {
-+	struct video_device *vdev = video_devdata(file);
- 	struct s5p_mfc_dev *dev = video_drvdata(file);
- 	struct s5p_mfc_ctx *ctx = NULL;
- 	struct vb2_queue *q;
-@@ -738,7 +724,7 @@ static int s5p_mfc_open(struct file *fil
- 	/* Mark context as idle */
- 	clear_work_bit_irqsave(ctx);
- 	dev->ctx[ctx->num] = ctx;
--	if (s5p_mfc_get_node_type(file) == MFCNODE_DECODER) {
-+	if (vdev == dev->vfd_dec) {
- 		ctx->type = MFCINST_DECODER;
- 		ctx->c_ops = get_dec_codec_ops();
- 		s5p_mfc_dec_init(ctx);
-@@ -748,7 +734,7 @@ static int s5p_mfc_open(struct file *fil
- 			mfc_err("Failed to setup mfc controls\n");
- 			goto err_ctrls_setup;
- 		}
--	} else if (s5p_mfc_get_node_type(file) == MFCNODE_ENCODER) {
-+	} else if (vdev == dev->vfd_enc) {
- 		ctx->type = MFCINST_ENCODER;
- 		ctx->c_ops = get_enc_codec_ops();
- 		/* only for encoder */
-@@ -793,10 +779,10 @@ static int s5p_mfc_open(struct file *fil
- 	q = &ctx->vq_dst;
- 	q->type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
- 	q->drv_priv = &ctx->fh;
--	if (s5p_mfc_get_node_type(file) == MFCNODE_DECODER) {
-+	if (vdev == dev->vfd_dec) {
- 		q->io_modes = VB2_MMAP;
- 		q->ops = get_dec_queue_ops();
--	} else if (s5p_mfc_get_node_type(file) == MFCNODE_ENCODER) {
-+	} else if (vdev == dev->vfd_enc) {
- 		q->io_modes = VB2_MMAP | VB2_USERPTR;
- 		q->ops = get_enc_queue_ops();
- 	} else {
-@@ -815,10 +801,10 @@ static int s5p_mfc_open(struct file *fil
- 	q->type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
- 	q->io_modes = VB2_MMAP;
- 	q->drv_priv = &ctx->fh;
--	if (s5p_mfc_get_node_type(file) == MFCNODE_DECODER) {
-+	if (vdev == dev->vfd_dec) {
- 		q->io_modes = VB2_MMAP;
- 		q->ops = get_dec_queue_ops();
--	} else if (s5p_mfc_get_node_type(file) == MFCNODE_ENCODER) {
-+	} else if (vdev == dev->vfd_enc) {
- 		q->io_modes = VB2_MMAP | VB2_USERPTR;
- 		q->ops = get_enc_queue_ops();
- 	} else {
---- a/drivers/media/platform/s5p-mfc/s5p_mfc_common.h
-+++ b/drivers/media/platform/s5p-mfc/s5p_mfc_common.h
-@@ -113,15 +113,6 @@ enum s5p_mfc_fmt_type {
- };
+ 	sg = st->sgl;
+-	sg->offset = offset;
++	sg->offset = 0;
+ 	sg->length = size;
  
- /**
-- * enum s5p_mfc_node_type - The type of an MFC device node.
-- */
--enum s5p_mfc_node_type {
--	MFCNODE_INVALID = -1,
--	MFCNODE_DECODER = 0,
--	MFCNODE_ENCODER = 1,
--};
--
--/**
-  * enum s5p_mfc_inst_type - The type of an MFC instance.
-  */
- enum s5p_mfc_inst_type {
+ 	sg_dma_address(sg) = (dma_addr_t)dev_priv->mm.stolen_base + offset;
 
 
