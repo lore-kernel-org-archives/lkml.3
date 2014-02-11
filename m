@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751572AbaBKOGX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 09:06:23 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:36277 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750984AbaBKOGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 09:06:22 -0500
-Message-ID: <52FA2E57.3010300@ti.com>
-Date: Tue, 11 Feb 2014 16:06:15 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751664AbaBKOMw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 09:12:52 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:60347 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750984AbaBKOMu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 09:12:50 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: monstr@monstr.eu
+Subject: Re: [PATCH] can: xilinx CAN controller support.
+Date: Tue, 11 Feb 2014 15:12:45 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: "Marc Kleine-Budde" <mkl@pengutronix.de>,
+        Michal Simek <michal.simek@xilinx.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>,
+        "wg@grandegger.com" <wg@grandegger.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+References: <6c2bcce0-9897-4d1d-a8b9-47924e40f73c@VA3EHSMHS008.ehs.local> <52FA1910.2060101@pengutronix.de> <52FA2419.70102@monstr.eu>
+In-Reply-To: <52FA2419.70102@monstr.eu>
 MIME-Version: 1.0
-To: Ryan Mallon <rmallon@gmail.com>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH] video: Use fb_sys_write rather than open-coding in
- drivers
-References: <523BF40B.1090002@gmail.com>
-In-Reply-To: <523BF40B.1090002@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="QVPrfwc3wawPJcD5Q9EiX5Fg3JejxVlQt"
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201402111512.45678.arnd@arndb.de>
+X-Provags-ID: V02:K0:xDoUEcs2bNeZNxO/KMkzwPrZtg1N0PdooQkaGQEQinL
+ IVZN2y4cjGi9jbEOTRD5l5wFh2bG1ekJcuzWMnBl40uFIk7hsi
+ VGNnMbS9EwyxyYMJ/jTjeBAlbTfrLeI4jPT0GQ0Q9buC4SoPHv
+ Xsaa4pEEs7cHeAEYdx3ns6mKOT8bJqBn65y5Aozl0xz9h5J6LR
+ ATI/40lg9rW3Y7JKuVAEb4kmpD3F4xO6y3O0aYwg/v+6rFwjMW
+ eqNT3y+yA0ZMU4WncwjefhuhOaErG0ue+lIizTax6jf2gEg5Oj
+ guLWzMaO9Nh/r8mWbIV7Udn4ZVROqXq4BLrOsqpp9QptlDlUid
+ AnYEIhc81RkaHquJjhnw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---QVPrfwc3wawPJcD5Q9EiX5Fg3JejxVlQt
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Tuesday 11 February 2014, Michal Simek wrote:
+> >> The only remaining question is if we should create generic DT binding
+> >> for fifo depth. Arnd, Rob: Any opinion about it?
+> >> Definitely will be worth to have one generic binding if this is generic feature.
+> >> But if this is just specific feature for us then current properties should
+> >> be fine.
+> >>
+> >> In general all these xlnx,XXX properties just reflect all configurable options
+> >> which you can setup in design tool which means that provide full hw description
+> >> with all variants and they are automatically generated from tools.
+> >>
+> >> Please let me know what you think.
+> > 
+> > I like:
+> > 
+> >     rx-fifo-depth
+> >     tx-fifo-depth
+> 
+> No problem with that. Let Kedar to fix it according this and he will send v2 with this.
+> 
 
-On 20/09/13 10:06, Ryan Mallon wrote:
-> Several video drivers open code the fb_write write function with code
-> which is very similar to fb_sys_write. Replace the open code versions
-> with calls to fb_sys_write. An fb_sync callback is added to each of
-> the drivers.
->    =20
-> Signed-off-by: Ryan Mallon <rmallon@gmail.com>
-> ---
+Sounds reasonable to me too.
 
-Doesn't this change the behavior so that fb_write does no longer update
-the display, but fb_sync does? I don't think fb_sync is even meant to
-update the display, it's meant to wait for an update to finish. Then
-again, I'm not sure about that, all I see in fb.h is "wait for blit
-idle, optional"
-
- Tomi
-
-
-
---QVPrfwc3wawPJcD5Q9EiX5Fg3JejxVlQt
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJS+i5YAAoJEPo9qoy8lh71MFQP/inA/g1qn2yD1hZsjbQEMKKs
-JgjBZYmvzuzsRxLHQ5vTVj+fS2H9LX8l0zL6TdFfk6k1VFBXsOCfa1Otn9FftJoD
-pNuKI1ePMnim5b3VG8hGs1AA12JToVqiSAq2Tx1A/XBZ3Xeg3ZGFwCqyzWOBTuU0
-9thg8xdzfWETfn7NKn8pjnZsKhX+CwLPo5waZj6id3Qlx4xg0HgYvW2hXplQzIFJ
-WP3w3b+0CK5kEeh+pNFkuOcWm9+CzzvjEOjgVGcqolCLB3bRZtdLtI7ewR7iGVVd
-l8GpHc4yEfC0mkrhYOQkdJzlo+NwXzW8J6q3EehsYK/rK36W/vJeg/Oh9VVoNczn
-lJ1LEgXRYDnNHOpm/JXO6y3Z9Y/vK3qxVF5u92LX03sBKvzK81wNdgNVNFmWeAKk
-YPUNDfDUTkoT6ahmDaqn3sZvBOCTklNAEDW7k0wyyFwWFcDxdyTLpF5WMsbS37u8
-rnHR5NKYJ0l3q0fpc91NhfWRnYYPE44kz2h+lMUq1rp6BbnJyiAkuJU/Y/HcZcnO
-GJIAfEkG6wtTV+8RJgJAJAfoN2vFPkcLU34wzncYxllUGk/NMtJvS6zKnCTXWZYK
-yeqAPeCNg2mI2KhWtN/AkqfV33L3vbVHbU8cljWY8kewDkXQbJ3cacIuU/vCnCg2
-SU9ttgqhoTK8hEKjs79R
-=5wgk
------END PGP SIGNATURE-----
-
---QVPrfwc3wawPJcD5Q9EiX5Fg3JejxVlQt--
+	Arnd
