@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752723AbaBKBIK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 20:08:10 -0500
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:63793 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752163AbaBKBIH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 20:08:07 -0500
-Date: Mon, 10 Feb 2014 18:08:03 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: David Miller <davem@davemloft.net>
-Cc: agordeev@redhat.com, linux-kernel@vger.kernel.org, mchan@broadcom.com,
-        netdev@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH 01/34] bnx2: Use pci_enable_msix_range()
-Message-ID: <20140211010803.GD12851@google.com>
-References: <cover.1391172839.git.agordeev@redhat.com>
- <434a34e01c353441131204edef36126a95e8928a.1391172839.git.agordeev@redhat.com>
- <20140131.133051.483295479425700960.davem@davemloft.net>
- <20140211003814.GC12851@google.com>
+	id S1752486AbaBKBK6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 20:10:58 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:27147 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752131AbaBKBKz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 20:10:55 -0500
+X-IronPort-AV: E=Sophos;i="4.95,821,1384272000"; 
+   d="scan'208";a="9502792"
+Message-ID: <52F97892.1040205@cn.fujitsu.com>
+Date: Tue, 11 Feb 2014 09:10:42 +0800
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140211003814.GC12851@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Namhyung Kim <namhyung@kernel.org>, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, raistlin@linux.it, juri.lelli@gmail.com,
+        clark.williams@gmail.com, mingo@redhat.com
+Subject: Re: [PATCH 1/3] sched: Move the priority specific bits into a new
+ header file.
+References: <cover.1390859827.git.yangds.fnst@cn.fujitsu.com> <f7549508a1588da2c613d601748ca9de30fa5dcf.1390859827.git.yangds.fnst@cn.fujitsu.com> <87fvo75pci.fsf@sejong.aot.lge.com> <52F83FE2.90004@cn.fujitsu.com> <20140210090948.02266f38@gandalf.local.home>
+In-Reply-To: <20140210090948.02266f38@gandalf.local.home>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/02/11 09:08:49,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/02/11 09:08:57,
+	Serialize complete at 2014/02/11 09:08:57
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 05:38:14PM -0700, Bjorn Helgaas wrote:
-> On Fri, Jan 31, 2014 at 01:30:51PM -0800, David Miller wrote:
-> > 
-> > Please submit this patch series when the net-next tree opens back up,
-> > I'm only accepting bug fixes at this time.
-> > 
-> > Also, please always provide a proper "00/NN" openning posting for a
-> > patch series, that gives background and high level information about
-> > what your patch series is trying to achieve and how it achieves it.
-> > 
-> > That way people reviewing the patches know what to expect, and why,
-> > and I have exactly one posting to reply to if I apply the whole
-> > series.
-> 
-> I *think* this whole series applies to drivers/net (the usual patch sending
-> tools like "stg mail" insert the diffstat automatically in the 00/nn
-> message), and it sounds like David is willing to apply them via his tree,
-> so I'm ignoring these for now.  Let me know if you need me to do anything.
+Hi Steven,
 
-I skimmed these and the scsi patches, and I think you were right in
-proposing an MSI-X enable function that takes a single "number of vectors"
-argument, in addition to pci_enable_msix_range(), which takes a minimum and
-a maximum.  Obviously the pci_enable_msix_fixed() or whatever could be a
-simple #define wrapper or something.
+On 02/10/2014 10:09 PM, Steven Rostedt wrote:
+>
+>
+> That's why you have:
+>
+> +++ b/include/linux/sched/prio.h
+> @@ -0,0 +1,23 @@
+> +#ifndef _SCHED_PRIO_H
+> +#define _SCHED_PRIO_H
+>
+> The first time a header gets included, it checks if _SCHED_PRIO_H is
+> defined, if not, it defines it and continues. Otherwise it skips the
+> content of the file.
+>
+> This is so standard practice that CPP (C Pre-Processor) optimizes this
+> by checking if this exists and caches it. It wont even open the file
+> the second time it sees it included.
 
-Of the fifty-some net and scsi patches, I counted 23 that use the min ==
-max pattern, and it seems a shame to have to repeat that expression.
+Wow, yes. Thank you for your kind explanation. :)
+>
+> -- Steve
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-BTW, I noticed that Documentation/PCI/MSI-HOWTO.txt uses
-pci_enable_msi_range() in some of the examples that are really talking
-about pci_enable_msix_range() (4.3.1.1 and 4.3.1.2, at least).
-
-Bjorn
