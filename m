@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752172AbaBKRKu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 12:10:50 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:25038 "EHLO
+	id S1752877AbaBKRNx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 12:13:53 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:25372 "EHLO
 	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752025AbaBKRKo (ORCPT
+	by vger.kernel.org with ESMTP id S1752121AbaBKRKt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 12:10:44 -0500
+	Tue, 11 Feb 2014 12:10:49 -0500
 From: Pawel Moll <pawel.moll@arm.com>
 To: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Cc: Pawel Moll <pawel.moll@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 01/12] misc: vexpress-syscfg: Add udelay-based delay
-Date: Tue, 11 Feb 2014 17:10:25 +0000
-Message-Id: <1392138636-29240-2-git-send-email-pawel.moll@arm.com>
+Cc: Pawel Moll <pawel.moll@arm.com>, Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 05/12] GPIO: gpio-generic: Add label to platform data
+Date: Tue, 11 Feb 2014 17:10:29 +0000
+Message-Id: <1392138636-29240-6-git-send-email-pawel.moll@arm.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392138636-29240-1-git-send-email-pawel.moll@arm.com>
 References: <1392138636-29240-1-git-send-email-pawel.moll@arm.com>
@@ -22,86 +23,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is normally preferable to yield the task
-waiting for syscfg operations (that can take
-up to dozens of milliseconds), but when the
-system is shutting down it may not be possible.
+When registering more than one platform device, it is
+useful to set the gpio chip label in the platform data.
 
-This patch adds a udelay-based version of the
-code to be used in such circumstances.
-
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Alexandre Courbot <gnurou@gmail.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Pawel Moll <pawel.moll@arm.com>
 ---
- drivers/misc/vexpress-syscfg.c | 40 ++++++++++++++++++++++++++++++++++++----
- 1 file changed, 36 insertions(+), 4 deletions(-)
+This patch has been already merged by Linux; it has been included
+for completeness only.
 
-diff --git a/drivers/misc/vexpress-syscfg.c b/drivers/misc/vexpress-syscfg.c
-index 4d661ef..82f8229 100644
---- a/drivers/misc/vexpress-syscfg.c
-+++ b/drivers/misc/vexpress-syscfg.c
-@@ -53,6 +53,37 @@ struct vexpress_syscfg_func {
+ drivers/gpio/gpio-generic.c     | 2 ++
+ include/linux/basic_mmio_gpio.h | 1 +
+ 2 files changed, 3 insertions(+)
+
+diff --git a/drivers/gpio/gpio-generic.c b/drivers/gpio/gpio-generic.c
+index d2196bf..8c778af 100644
+--- a/drivers/gpio/gpio-generic.c
++++ b/drivers/gpio/gpio-generic.c
+@@ -531,6 +531,8 @@ static int bgpio_pdev_probe(struct platform_device *pdev)
+ 		return err;
+ 
+ 	if (pdata) {
++		if (pdata->label)
++			bgc->gc.label = pdata->label;
+ 		bgc->gc.base = pdata->base;
+ 		if (pdata->ngpio > 0)
+ 			bgc->gc.ngpio = pdata->ngpio;
+diff --git a/include/linux/basic_mmio_gpio.h b/include/linux/basic_mmio_gpio.h
+index d8a97ec..0e97856 100644
+--- a/include/linux/basic_mmio_gpio.h
++++ b/include/linux/basic_mmio_gpio.h
+@@ -19,6 +19,7 @@
+ #include <linux/spinlock_types.h>
+ 
+ struct bgpio_pdata {
++	const char *label;
+ 	int base;
+ 	int ngpio;
  };
- 
- 
-+static int vexpress_syscfg_delay_schedule(unsigned int us)
-+{
-+	set_current_state(TASK_INTERRUPTIBLE);
-+	schedule_timeout(usecs_to_jiffies(us));
-+	if (signal_pending(current))
-+		return -EINTR;
-+
-+	return 0;
-+}
-+
-+static int vexpress_syscfg_delay_loop(unsigned int us)
-+{
-+	udelay(us);
-+
-+	return 0;
-+}
-+
-+static int (*vexpress_syscfg_delay)(unsigned int us) =
-+		vexpress_syscfg_delay_schedule;
-+
-+static void vexpress_syscfg_shutdown(void)
-+{
-+	/* Can't relay on the scheduler when the system is going down */
-+	vexpress_syscfg_delay = vexpress_syscfg_delay_loop;
-+}
-+
-+static struct syscore_ops vexpress_syscfg_syscore_ops = {
-+	.shutdown = vexpress_syscfg_shutdown,
-+};
-+
-+
- static int vexpress_syscfg_exec(struct vexpress_syscfg_func *func,
- 		int index, bool write, u32 *data)
- {
-@@ -87,10 +118,9 @@ static int vexpress_syscfg_exec(struct vexpress_syscfg_func *func,
- 	tries = 100;
- 	timeout = 100;
- 	do {
--		set_current_state(TASK_INTERRUPTIBLE);
--		schedule_timeout(usecs_to_jiffies(timeout));
--		if (signal_pending(current))
--			return -EINTR;
-+		int err = vexpress_syscfg_delay(timeout);
-+		if (err)
-+			return err;
- 
- 		status = readl(syscfg->base + SYS_CFGSTAT);
- 		if (status & SYS_CFGSTAT_ERR)
-@@ -299,6 +329,8 @@ int vexpress_syscfg_probe(struct platform_device *pdev)
- 	if (!pdev->dev.of_node)
- 		vexpress_syscfg_bridge = bridge;
- 
-+	register_syscore_ops(&vexpress_syscfg_syscore_ops);
-+
- 	return 0;
- }
- 
 -- 
 1.8.3.2
 
