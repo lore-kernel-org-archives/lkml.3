@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753753AbaBKTHJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:07:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40140 "EHLO
+	id S1755340AbaBKT6f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:58:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40159 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753729AbaBKTHG (ORCPT
+	with ESMTP id S1753754AbaBKTHK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:07:06 -0500
+	Tue, 11 Feb 2014 14:07:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Todd Previte <tprevite@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Herrmann <dh.herrmann@gmail.com>,
         Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [PATCH 3.12 084/107] drm/i915: VLV2 - Fix hotplug detect bits
-Date: Tue, 11 Feb 2014 11:05:50 -0800
-Message-Id: <20140211184750.597546886@linuxfoundation.org>
+Subject: [PATCH 3.12 088/107] drm/gem: Always initialize the gem object in object_init
+Date: Tue, 11 Feb 2014 11:05:54 -0800
+Message-Id: <20140211184750.710798006@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -29,100 +30,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Todd Previte <tprevite@gmail.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 232a6ee9af8adb185640f67fcaaa9014a9aa0573 upstream.
+commit 6ab11a2635ce988ebc2e798947beb72cf7324119 upstream.
 
-Add new definitions for hotplug live status bits for VLV2 since they're
-in reverse order from the gen4x ones.
+At least drm/i915 expects that the obj->dev pointer is set even in
+failure paths. Specifically when the shmem initialization fails we
+call i915_gem_object_free which needs to deref obj->base.dev to get at
+the slab pointer in the device private structure. And the shmem
+allocation can easily fail when userspace is hitting open file limits.
 
-Changelog:
-- Restored gen4 bit definitions
-- Added new definitions for VLV2
-- Added platform check for IS_VALLEYVIEW() in dp_detect to use the correct
-  bit defintions
-- Replaced a lost trailing brace for the added switch()
+Doing the structure init even when the shmem file allocation fails
+prevents this Oops.
 
-Signed-off-by: Todd Previte <tprevite@gmail.com>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=73951
-[danvet: Switch to _VLV postfix instead of prefix and regroupg
-comments again so that the g4x warning is right next to those defines.
-Also add a _G4X suffix for those special ones. Also cc stable.]
+This is a regression from
+
+commit 89c8233f82d9c8af5b20e72e4a185a38a7d3c50b
+Author: David Herrmann <dh.herrmann@gmail.com>
+Date:   Thu Jul 11 11:56:32 2013 +0200
+
+    drm/gem: simplify object initialization
+
+v2: Add regression note which Chris supplied.
+
+Testcase: igt/gem_fd_exhaustion
+Reported-and-Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+References: http://lists.freedesktop.org/archives/intel-gfx/2014-January/038433.html
+Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+Cc: David Herrmann <dh.herrmann@gmail.com>
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_reg.h |   10 +++++++---
- drivers/gpu/drm/i915/intel_dp.c |   40 ++++++++++++++++++++++++++++------------
- 2 files changed, 35 insertions(+), 15 deletions(-)
+ drivers/gpu/drm/drm_gem.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -1955,9 +1955,13 @@
-  * Please check the detailed lore in the commit message for for experimental
-  * evidence.
-  */
--#define   PORTD_HOTPLUG_LIVE_STATUS               (1 << 29)
--#define   PORTC_HOTPLUG_LIVE_STATUS               (1 << 28)
--#define   PORTB_HOTPLUG_LIVE_STATUS               (1 << 27)
-+#define   PORTD_HOTPLUG_LIVE_STATUS_G4X		(1 << 29)
-+#define   PORTC_HOTPLUG_LIVE_STATUS_G4X		(1 << 28)
-+#define   PORTB_HOTPLUG_LIVE_STATUS_G4X		(1 << 27)
-+/* VLV DP/HDMI bits again match Bspec */
-+#define   PORTD_HOTPLUG_LIVE_STATUS_VLV		(1 << 27)
-+#define   PORTC_HOTPLUG_LIVE_STATUS_VLV		(1 << 28)
-+#define   PORTB_HOTPLUG_LIVE_STATUS_VLV		(1 << 29)
- #define   PORTD_HOTPLUG_INT_STATUS		(3 << 21)
- #define   PORTC_HOTPLUG_INT_STATUS		(3 << 19)
- #define   PORTB_HOTPLUG_INT_STATUS		(3 << 17)
---- a/drivers/gpu/drm/i915/intel_dp.c
-+++ b/drivers/gpu/drm/i915/intel_dp.c
-@@ -2803,18 +2803,34 @@ g4x_dp_detect(struct intel_dp *intel_dp)
- 		return status;
- 	}
+--- a/drivers/gpu/drm/drm_gem.c
++++ b/drivers/gpu/drm/drm_gem.c
+@@ -129,11 +129,12 @@ int drm_gem_object_init(struct drm_devic
+ {
+ 	struct file *filp;
  
--	switch (intel_dig_port->port) {
--	case PORT_B:
--		bit = PORTB_HOTPLUG_LIVE_STATUS;
--		break;
--	case PORT_C:
--		bit = PORTC_HOTPLUG_LIVE_STATUS;
--		break;
--	case PORT_D:
--		bit = PORTD_HOTPLUG_LIVE_STATUS;
--		break;
--	default:
--		return connector_status_unknown;
-+	if (IS_VALLEYVIEW(dev)) {
-+		switch (intel_dig_port->port) {
-+		case PORT_B:
-+			bit = PORTB_HOTPLUG_LIVE_STATUS_VLV;
-+			break;
-+		case PORT_C:
-+			bit = PORTC_HOTPLUG_LIVE_STATUS_VLV;
-+			break;
-+		case PORT_D:
-+			bit = PORTD_HOTPLUG_LIVE_STATUS_VLV;
-+			break;
-+		default:
-+			return connector_status_unknown;
-+		}
-+	} else {
-+		switch (intel_dig_port->port) {
-+		case PORT_B:
-+			bit = PORTB_HOTPLUG_LIVE_STATUS_G4X;
-+			break;
-+		case PORT_C:
-+			bit = PORTC_HOTPLUG_LIVE_STATUS_G4X;
-+			break;
-+		case PORT_D:
-+			bit = PORTD_HOTPLUG_LIVE_STATUS_G4X;
-+			break;
-+		default:
-+			return connector_status_unknown;
-+		}
- 	}
++	drm_gem_private_object_init(dev, obj, size);
++
+ 	filp = shmem_file_setup("drm mm object", size, VM_NORESERVE);
+ 	if (IS_ERR(filp))
+ 		return PTR_ERR(filp);
  
- 	if ((I915_READ(PORT_HOTPLUG_STAT) & bit) == 0)
+-	drm_gem_private_object_init(dev, obj, size);
+ 	obj->filp = filp;
+ 
+ 	return 0;
 
 
