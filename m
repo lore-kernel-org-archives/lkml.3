@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751481AbaBKKw0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 05:52:26 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:50433 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751001AbaBKKwZ (ORCPT
+	id S1751614AbaBKKwe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 05:52:34 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:27795 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750776AbaBKKwa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 05:52:25 -0500
-Date: Tue, 11 Feb 2014 11:52:17 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Don Zickus <dzickus@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Joe Mario <jmario@redhat.com>, Richard Fowles <fowles@inreach.com>
-Subject: Re: [PATCH 00/21] perf, c2c: Add new tool to analyze cacheline
- contention on NUMA systems
-Message-ID: <20140211105217.GS9987@twins.programming.kicks-ass.net>
-References: <1392053356-23024-1-git-send-email-dzickus@redhat.com>
- <20140210212955.GC5002@laptop.programming.kicks-ass.net>
- <CABPqkBRzvfcdKGG4yY9q1PmtVL5Z=9H1RzHg8QDMN42a7=AF6A@mail.gmail.com>
- <20140211071401.GG27965@twins.programming.kicks-ass.net>
- <CABPqkBRn+AVUA-KTx-JQ28j1NhE4pDQe5vjb5NKGx0jrZq8g_Q@mail.gmail.com>
+	Tue, 11 Feb 2014 05:52:30 -0500
+Date: Tue, 11 Feb 2014 10:52:24 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Vinayak Kale <vkale@apm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "nico@linaro.org" <nico@linaro.org>,
+        Dave P Martin <Dave.Martin@arm.com>, Will Deacon <Will.Deacon@arm.com>,
+        "dirk.behme@gmail.com" <dirk.behme@gmail.com>
+Subject: Re: [PATCH RESEND] arm: add DSB after icache flush in
+ __flush_icache_all()
+Message-ID: <20140211105224.GC3748@arm.com>
+References: <1392109811-8525-1-git-send-email-vkale@apm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CABPqkBRn+AVUA-KTx-JQ28j1NhE4pDQe5vjb5NKGx0jrZq8g_Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1392109811-8525-1-git-send-email-vkale@apm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 11:35:45AM +0100, Stephane Eranian wrote:
-> On Tue, Feb 11, 2014 at 8:14 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> >
-> > That blows; how much is missing?
+On Tue, Feb 11, 2014 at 09:10:11AM +0000, Vinayak Kale wrote:
+> Add DSB after icache flush to complete the cache maintenance operation.
 > 
-> They need to annotate load and stores. I asked for that feature a while ago.
-> It will come.
+> Signed-off-by: Vinayak Kale <vkale@apm.com>
+> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
 
-And there is no way to deduce the information? We have type information
-for all arguments and local variables, right? So we can follow that.
+I guess what you need to do is add:
 
-struct foo {
-	int ponies;
-	int moar_ponies;
-};
+Cc: <stable@vger.kernel.org>
 
-struct bar {
-	int my_ponies;
-	struct foo *foo;
-};
+and send the patch to Russell's patch system (and add any other acks you
+may get in the meantime).
 
-int moo(struct bar *bar)
-{
-	return bar->foo->moar_ponies;
-}
-
-Since we have the argument type, we can find the type for both loads,
-the first load:
-
-  *bar+8, we know is: struct foo * bar::foo
-  *foo+4, we know is: int foo::moar_ponies
-
-Or am I missing something?
+-- 
+Catalin
