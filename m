@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751491AbaBKKG4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 05:06:56 -0500
-Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:54116 "EHLO
-	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750785AbaBKKGv (ORCPT
+	id S1752011AbaBKKH0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 05:07:26 -0500
+Received: from eu1sys200aog125.obsmtp.com ([207.126.144.159]:50624 "EHLO
+	eu1sys200aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751969AbaBKKHV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 05:06:51 -0500
+	Tue, 11 Feb 2014 05:07:21 -0500
 From: <srinivas.kandagatla@st.com>
 To: <netdev@vger.kernel.org>
 Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
@@ -20,12 +20,12 @@ Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <kernel@stlinux.com>, <davem@davemloft.net>
-Subject: [PATCH v3 0/3] net: stmmac: Add STi GMAC ethernet
-Date: Tue, 11 Feb 2014 09:58:36 +0000
-Message-ID: <1392112716-30803-1-git-send-email-srinivas.kandagatla@st.com>
+Subject: [PATCH v3 3/3] ARM: STi: Add STiH416 ethernet support.
+Date: Tue, 11 Feb 2014 10:00:10 +0000
+Message-ID: <1392112810-30972-1-git-send-email-srinivas.kandagatla@st.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1391770455-24291-1-git-send-email-srinivas.kandagatla@st.com>
-References: <1391770455-24291-1-git-send-email-srinivas.kandagatla@st.com>
+In-Reply-To: <1392112716-30803-1-git-send-email-srinivas.kandagatla@st.com>
+References: <1392112716-30803-1-git-send-email-srinivas.kandagatla@st.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.65.51.147]
@@ -35,59 +35,224 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 
-Hi All,
+This patch adds support to STiH416 SOC, which has two ethernet
+snps,dwmac controllers version 3.710. With this patch B2000 and B2020
+boards can boot with ethernet in MII and RGMII modes.
 
-This patch series adds Ethernet support to STi series SOCs STiH415 and STiH416.
-STi SOC series integrates dwmac IP from synopsis, however there is a hardware
-glue on top of this standard IP, this glue needs to configured before the
-actual dwmac can be used.  Also the glue logic needs re-configuring when the
-link speed changes, This is because the clk source can change as the link
-speed changes.
+Tested on both B2020 and B2000.
 
-This patch just adds STi specific callbacks into of_data for configuring the
-glue layer.
+Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+---
+ arch/arm/boot/dts/stih416-clock.dtsi   |   14 ++++
+ arch/arm/boot/dts/stih416-pinctrl.dtsi |  109 ++++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/stih416.dtsi         |   44 +++++++++++++
+ 3 files changed, 167 insertions(+)
 
-I have rebased my original patches (http://lkml.org/lkml/2013/11/12/243)
-to latest stmmac which updates callbacks to suit glue drivers like this.
-
-These patches are tested on b2000 and B2020 with STiH415 and STiH416.
-
-Changes since v1:
- - fixed multi-line function call format as suggested by David Miller.
-
-Changes since v2:
- - fix indenting issues & superfluous empty lines as suggested by David Miller.
- - Run the code through scripts/Lindent.
-
-Dave, Can I request you to take the first patch via net tree for v3.15, I can
-request Arnd or Olof to take the DT patches via the arm-soc tree for v3.15.
-
-Thanks,
-srini
-
-Srinivas Kandagatla (3):
-  net: stmmac:sti: Add STi SOC glue driver.
-  ARM: STi: Add STiH415 ethernet support.
-  ARM: STi: Add STiH416 ethernet support.
-
- .../devicetree/bindings/net/sti-dwmac.txt          |   58 ++++
- arch/arm/boot/dts/stih415-clock.dtsi               |   14 +
- arch/arm/boot/dts/stih415-pinctrl.dtsi             |  121 +++++++
- arch/arm/boot/dts/stih415.dtsi                     |   48 +++
- arch/arm/boot/dts/stih416-clock.dtsi               |   14 +
- arch/arm/boot/dts/stih416-pinctrl.dtsi             |  109 +++++++
- arch/arm/boot/dts/stih416.dtsi                     |   44 +++
- arch/arm/boot/dts/stih41x-b2000.dtsi               |   22 ++
- arch/arm/boot/dts/stih41x-b2020.dtsi               |   26 ++
- drivers/net/ethernet/stmicro/stmmac/Kconfig        |   11 +
- drivers/net/ethernet/stmicro/stmmac/Makefile       |    1 +
- drivers/net/ethernet/stmicro/stmmac/dwmac-sti.c    |  330 ++++++++++++++++++++
- drivers/net/ethernet/stmicro/stmmac/stmmac.h       |    3 +
- .../net/ethernet/stmicro/stmmac/stmmac_platform.c  |    5 +
- 14 files changed, 806 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/net/sti-dwmac.txt
- create mode 100644 drivers/net/ethernet/stmicro/stmmac/dwmac-sti.c
-
+diff --git a/arch/arm/boot/dts/stih416-clock.dtsi b/arch/arm/boot/dts/stih416-clock.dtsi
+index 7026bf1..a6942c7 100644
+--- a/arch/arm/boot/dts/stih416-clock.dtsi
++++ b/arch/arm/boot/dts/stih416-clock.dtsi
+@@ -37,5 +37,19 @@
+ 			clock-frequency = <100000000>;
+ 			clock-output-names = "CLK_S_ICN_REG_0";
+ 		};
++
++		CLK_S_GMAC0_PHY: clockgenA1@7 {
++			#clock-cells = <0>;
++			compatible = "fixed-clock";
++			clock-frequency = <25000000>;
++			clock-output-names = "CLK_S_GMAC0_PHY";
++		};
++
++		CLK_S_ETH1_PHY: clockgenA0@7 {
++			#clock-cells = <0>;
++			compatible = "fixed-clock";
++			clock-frequency = <25000000>;
++			clock-output-names = "CLK_S_ETH1_PHY";
++		};
+ 	};
+ };
+diff --git a/arch/arm/boot/dts/stih416-pinctrl.dtsi b/arch/arm/boot/dts/stih416-pinctrl.dtsi
+index 8863c38..c4beef2 100644
+--- a/arch/arm/boot/dts/stih416-pinctrl.dtsi
++++ b/arch/arm/boot/dts/stih416-pinctrl.dtsi
+@@ -132,6 +132,58 @@
+ 					};
+ 				};
+ 			};
++
++			gmac1 {
++				pinctrl_mii1: mii1 {
++					st,pins {
++						txd0 = <&PIO0 0 ALT1 OUT SE_NICLK_IO 0 CLK_A>;
++						txd1 = <&PIO0 1 ALT1 OUT SE_NICLK_IO 0 CLK_A>;
++						txd2 = <&PIO0 2 ALT1 OUT SE_NICLK_IO 0 CLK_A>;
++						txd3 = <&PIO0 3 ALT1 OUT SE_NICLK_IO 0 CLK_A>;
++						txer = <&PIO0 4 ALT1 OUT SE_NICLK_IO 0 CLK_A>;
++						txen = <&PIO0 5 ALT1 OUT SE_NICLK_IO 0 CLK_A>;
++						txclk = <&PIO0 6 ALT1 IN NICLK 0 CLK_A>;
++						col =   <&PIO0 7 ALT1 IN BYPASS 1000>;
++
++						mdio =  <&PIO1 0 ALT1 OUT BYPASS 1500>;
++						mdc =   <&PIO1 1 ALT1 OUT NICLK 0 CLK_A>;
++						crs =   <&PIO1 2 ALT1 IN BYPASS 1000>;
++						mdint = <&PIO1 3 ALT1 IN BYPASS 0>;
++						rxd0 =  <&PIO1 4 ALT1 IN SE_NICLK_IO 0 CLK_A>;
++						rxd1 =  <&PIO1 5 ALT1 IN SE_NICLK_IO 0 CLK_A>;
++						rxd2 =  <&PIO1 6 ALT1 IN SE_NICLK_IO 0 CLK_A>;
++						rxd3 =  <&PIO1 7 ALT1 IN SE_NICLK_IO 0 CLK_A>;
++
++						rxdv =  <&PIO2 0 ALT1 IN SE_NICLK_IO 0 CLK_A>;
++						rx_er = <&PIO2 1 ALT1 IN SE_NICLK_IO 0 CLK_A>;
++						rxclk = <&PIO2 2 ALT1 IN NICLK 0 CLK_A>;
++					 	phyclk = <&PIO2 3 ALT1 OUT NICLK 0 CLK_A>;
++					};
++				};
++				pinctrl_rgmii1: rgmii1-0 {
++					st,pins {
++						txd0 =  <&PIO0 0 ALT1 OUT DE_IO 500 CLK_A>;
++						txd1 =  <&PIO0 1 ALT1 OUT DE_IO 500 CLK_A>;
++						txd2 =  <&PIO0 2 ALT1 OUT DE_IO 500 CLK_A>;
++						txd3 =  <&PIO0 3 ALT1 OUT DE_IO 500 CLK_A>;
++						txen =  <&PIO0 5 ALT1 OUT DE_IO 0   CLK_A>;
++						txclk = <&PIO0 6 ALT1 IN  NICLK 0   CLK_A>;
++
++						mdio = <&PIO1 0 ALT1 OUT BYPASS 0>;
++						mdc  = <&PIO1 1 ALT1 OUT NICLK  0 CLK_A>;
++						rxd0 = <&PIO1 4 ALT1 IN DE_IO 500 CLK_A>;
++						rxd1 = <&PIO1 5 ALT1 IN DE_IO 500 CLK_A>;
++						rxd2 = <&PIO1 6 ALT1 IN DE_IO 500 CLK_A>;
++						rxd3 = <&PIO1 7 ALT1 IN DE_IO 500 CLK_A>;
++
++						rxdv   = <&PIO2 0 ALT1 IN  DE_IO 500 CLK_A>;
++						rxclk  = <&PIO2 2 ALT1 IN  NICLK 0   CLK_A>;
++						phyclk = <&PIO2 3 ALT4 OUT NICLK 0   CLK_B>;
++
++						clk125= <&PIO3 7 ALT4 IN NICLK 0 CLK_A>;
++					};
++				};
++			};
+ 		};
+ 
+ 		pin-controller-front {
+@@ -322,6 +374,63 @@
+ 					};
+ 				};
+ 			};
++
++			gmac0 {
++				pinctrl_mii0: mii0 {
++					st,pins {
++						mdint = <&PIO13 6 ALT2 IN  BYPASS      0>;
++						txen =  <&PIO13 7 ALT2 OUT SE_NICLK_IO 0 CLK_A>;
++						txd0 =  <&PIO14 0 ALT2 OUT SE_NICLK_IO 0 CLK_A>;
++						txd1 =  <&PIO14 1 ALT2 OUT SE_NICLK_IO 0 CLK_A>;
++						txd2 =  <&PIO14 2 ALT2 OUT SE_NICLK_IO 0 CLK_B>;
++						txd3 =  <&PIO14 3 ALT2 OUT SE_NICLK_IO 0 CLK_B>;
++
++						txclk = <&PIO15 0 ALT2 IN  NICLK       0 CLK_A>;
++						txer =  <&PIO15 1 ALT2 OUT SE_NICLK_IO 0 CLK_A>;
++						crs = <&PIO15 2 ALT2 IN  BYPASS 1000>;
++						col = <&PIO15 3 ALT2 IN  BYPASS 1000>;
++						mdio= <&PIO15 4 ALT2 OUT BYPASS 1500>;
++						mdc = <&PIO15 5 ALT2 OUT NICLK  0    CLK_B>;
++
++						rxd0 =  <&PIO16 0 ALT2 IN SE_NICLK_IO 0 CLK_A>;
++						rxd1 =  <&PIO16 1 ALT2 IN SE_NICLK_IO 0 CLK_A>;
++						rxd2 =  <&PIO16 2 ALT2 IN SE_NICLK_IO 0 CLK_A>;
++						rxd3 =  <&PIO16 3 ALT2 IN SE_NICLK_IO 0 CLK_A>;
++						rxdv =  <&PIO15 6 ALT2 IN SE_NICLK_IO 0 CLK_A>;
++						rx_er = <&PIO15 7 ALT2 IN SE_NICLK_IO 0 CLK_A>;
++						rxclk = <&PIO17 0 ALT2 IN NICLK 0 CLK_A>;
++					 	phyclk = <&PIO13 5 ALT2 OUT NICLK 0 CLK_B>;
++					};
++				};
++
++				pinctrl_gmii0: gmii0 {
++					st,pins {
++						};
++				};
++				pinctrl_rgmii0: rgmii0 {
++					st,pins {
++						 phyclk = <&PIO13  5 ALT4 OUT NICLK 0 CLK_B>;
++						 txen = <&PIO13 7 ALT2 OUT DE_IO 0 CLK_A>;
++						 txd0  = <&PIO14 0 ALT2 OUT DE_IO 500 CLK_A>;
++						 txd1  = <&PIO14 1 ALT2 OUT DE_IO 500 CLK_A>;
++						 txd2  = <&PIO14 2 ALT2 OUT DE_IO 500 CLK_B>;
++						 txd3  = <&PIO14 3 ALT2 OUT DE_IO 500 CLK_B>;
++						 txclk = <&PIO15 0 ALT2 IN NICLK 0 CLK_A>;
++
++						 mdio = <&PIO15 4 ALT2 OUT BYPASS 0>;
++						 mdc = <&PIO15 5 ALT2 OUT NICLK 0 CLK_B>;
++
++						 rxdv = <&PIO15 6 ALT2 IN DE_IO 500 CLK_A>;
++						 rxd0 =<&PIO16 0 ALT2 IN DE_IO	500 CLK_A>;
++						 rxd1 =<&PIO16 1 ALT2 IN DE_IO	500 CLK_A>;
++						 rxd2 =<&PIO16 2 ALT2 IN DE_IO	500 CLK_A>;
++						 rxd3  =<&PIO16 3 ALT2 IN DE_IO 500 CLK_A>;
++						 rxclk =<&PIO17 0 ALT2 IN NICLK 0 CLK_A>;
++
++						 clk125=<&PIO17 6 ALT1 IN NICLK 0 CLK_A>;
++					};
++				};
++			};
+ 		};
+ 
+ 		pin-controller-fvdp-fe {
+diff --git a/arch/arm/boot/dts/stih416.dtsi b/arch/arm/boot/dts/stih416.dtsi
+index 788ba5b..a96055b 100644
+--- a/arch/arm/boot/dts/stih416.dtsi
++++ b/arch/arm/boot/dts/stih416.dtsi
+@@ -156,5 +156,49 @@
+ 
+ 			status		= "disabled";
+ 		};
++
++		ethernet0: dwmac@fe810000 {
++			device_type 	= "network";
++			compatible	= "st,stih416-dwmac", "snps,dwmac", "snps,dwmac-3.710";
++			status 		= "disabled";
++			reg 		= <0xfe810000 0x8000>, <0x8bc 0x4>;
++			reg-names	= "stmmaceth", "sti-ethconf";
++
++			interrupts = <0 133 0>, <0 134 0>, <0 135 0>;
++			interrupt-names = "macirq", "eth_wake_irq", "eth_lpi";
++
++			snps,pbl 	= <32>;
++			snps,mixed-burst;
++
++			st,syscon		= <&syscfg_rear>;
++			resets			= <&softreset STIH416_ETH0_SOFTRESET>;
++			reset-names		= "stmmaceth";
++			pinctrl-names 	= "default";
++			pinctrl-0	= <&pinctrl_mii0>;
++			clock-names	= "stmmaceth";
++			clocks		= <&CLK_S_GMAC0_PHY>;
++		};
++
++		ethernet1: dwmac@fef08000 {
++			device_type = "network";
++			compatible		= "st,stih416-dwmac", "snps,dwmac", "snps,dwmac-3.710";
++			status 		= "disabled";
++			reg		= <0xfef08000 0x8000>, <0x7f0 0x4>;
++			reg-names	= "stmmaceth", "sti-ethconf";
++			interrupts = <0 136 0>, <0 137 0>, <0 138 0>;
++			interrupt-names = "macirq", "eth_wake_irq", "eth_lpi";
++
++			snps,pbl	= <32>;
++			snps,mixed-burst;
++
++			st,syscon	= <&syscfg_sbc>;
++
++			resets		= <&softreset STIH416_ETH1_SOFTRESET>;
++			reset-names	= "stmmaceth";
++			pinctrl-names 	= "default";
++			pinctrl-0	= <&pinctrl_mii1>;
++			clock-names	= "stmmaceth";
++			clocks		= <&CLK_S_ETH1_PHY>;
++		};
+ 	};
+ };
 -- 
 1.7.9.5
 
