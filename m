@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932102AbaBKVDx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 16:03:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39570 "EHLO
+	id S1755349AbaBKVEN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 16:04:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39567 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752544AbaBKTFH (ORCPT
+	with ESMTP id S1752537AbaBKTFH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Feb 2014 14:05:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Grzeschik <m.grzeschik@pengutronix.de>,
-        Brian Norris <computersforpeace@gmail.com>
-Subject: [PATCH 3.13 034/120] mtd: mxc_nand: remove duplicated ecc_stats counting
-Date: Tue, 11 Feb 2014 11:04:35 -0800
-Message-Id: <20140211184824.541875084@linuxfoundation.org>
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Nicolin Chen <b42378@freescale.com>, Joe Perches <joe@perches.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.13 033/120] lib/genalloc.c: add check gen_pool_dma_alloc() if dma pointer is not NULL
+Date: Tue, 11 Feb 2014 11:04:34 -0800
+Message-Id: <20140211184824.511834689@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -29,30 +33,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Grzeschik <m.grzeschik@pengutronix.de>
+From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 
-commit 0566477762f9e174e97af347ee9c865f908a5647 upstream.
+commit 0368dfd01ae3b7647ef9b2f0525fdefd5e0d28e1 upstream.
 
-The ecc_stats.corrected count variable will already be incremented in
-the above framework-layer just after this callback.
+In the gen_pool_dma_alloc() the dma pointer can be NULL and while
+assigning gen_pool_virt_to_phys(pool, vaddr) to dma caused the following
+crash on da850 evm:
 
-Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+   Unable to handle kernel NULL pointer dereference at virtual address 00000000
+   Internal error: Oops: 805 [#1] PREEMPT ARM
+   Modules linked in:
+   CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.13.0-rc1-00001-g0609e45-dirty #5
+   task: c4830000 ti: c4832000 task.ti: c4832000
+   PC is at gen_pool_dma_alloc+0x30/0x3c
+   LR is at gen_pool_virt_to_phys+0x74/0x80
+   Process swapper, call trace:
+     gen_pool_dma_alloc+0x30/0x3c
+     davinci_pm_probe+0x40/0xa8
+     platform_drv_probe+0x1c/0x4c
+     driver_probe_device+0x98/0x22c
+     __driver_attach+0x8c/0x90
+     bus_for_each_dev+0x6c/0x8c
+     bus_add_driver+0x124/0x1d4
+     driver_register+0x78/0xf8
+     platform_driver_probe+0x20/0xa4
+     davinci_init_late+0xc/0x14
+     init_machine_late+0x1c/0x28
+     do_one_initcall+0x34/0x15c
+     kernel_init_freeable+0xe4/0x1ac
+     kernel_init+0x8/0xec
+
+This patch fixes the above.
+
+[akpm@linux-foundation.org: update kerneldoc]
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+Cc: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Nicolin Chen <b42378@freescale.com>
+Cc: Joe Perches <joe@perches.com>
+Cc: Sachin Kamat <sachin.kamat@linaro.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/nand/mxc_nand.c |    1 -
- 1 file changed, 1 deletion(-)
+ lib/genalloc.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/mtd/nand/mxc_nand.c
-+++ b/drivers/mtd/nand/mxc_nand.c
-@@ -677,7 +677,6 @@ static int mxc_nand_correct_data_v2_v3(s
- 		ecc_stat >>= 4;
- 	} while (--no_subpages);
+--- a/lib/genalloc.c
++++ b/lib/genalloc.c
+@@ -316,7 +316,7 @@ EXPORT_SYMBOL(gen_pool_alloc);
+  * gen_pool_dma_alloc - allocate special memory from the pool for DMA usage
+  * @pool: pool to allocate from
+  * @size: number of bytes to allocate from the pool
+- * @dma: dma-view physical address
++ * @dma: dma-view physical address return value.  Use NULL if unneeded.
+  *
+  * Allocate the requested number of bytes from the specified pool.
+  * Uses the pool allocation function (with first-fit algorithm by default).
+@@ -334,7 +334,8 @@ void *gen_pool_dma_alloc(struct gen_pool
+ 	if (!vaddr)
+ 		return NULL;
  
--	mtd->ecc_stats.corrected += ret;
- 	pr_debug("%d Symbol Correctable RS-ECC Error\n", ret);
+-	*dma = gen_pool_virt_to_phys(pool, vaddr);
++	if (dma)
++		*dma = gen_pool_virt_to_phys(pool, vaddr);
  
- 	return ret;
+ 	return (void *)vaddr;
+ }
 
 
