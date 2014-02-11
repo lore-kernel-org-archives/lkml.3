@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138AbaBKTHx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:07:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40370 "EHLO
+	id S1754867AbaBKTc6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:32:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40378 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751359AbaBKTHt (ORCPT
+	with ESMTP id S1754127AbaBKTHw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:07:49 -0500
+	Tue, 11 Feb 2014 14:07:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.10 35/79] dm thin: fix discard support to a previously shared block
-Date: Tue, 11 Feb 2014 11:05:39 -0800
-Message-Id: <20140211184721.951861167@linuxfoundation.org>
+Subject: [PATCH 3.10 39/79] dm space map metadata: fix extending the space map
+Date: Tue, 11 Feb 2014 11:05:43 -0800
+Message-Id: <20140211184722.073696089@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
 References: <20140211184720.928667275@linuxfoundation.org>
@@ -30,126 +30,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Joe Thornber <ejt@redhat.com>
 
-commit 19fa1a6756ed9e92daa9537c03b47d6b55cc2316 upstream.
+commit 7e664b3dec431eebf0c5df5ff704d6197634cf35 upstream.
 
-If a snapshot is created and later deleted the origin dm_thin_device's
-snapshotted_time will have been updated to reflect the snapshot's
-creation time.  The 'shared' flag in the dm_thin_lookup_result struct
-returned from dm_thin_find_block() is an approximation based on
-snapshotted_time -- this is done to avoid 0(n), or worse, time
-complexity.  In this case, the shared flag would be true.
+When extending a metadata space map we should do the first commit whilst
+still in bootstrap mode -- a mode where all blocks get allocated in the
+new area.
 
-But because the 'shared' flag reflects an approximation a block can be
-incorrectly assumed to be shared (e.g. false positive for 'shared'
-because the snapshot no longer exists).  This could result in discards
-issued to a thin device not being passed down to the pool's underlying
-data device.
+That way the commit overhead is allocated from the newly added space.
+Otherwise we risk running out of space.
 
-To fix this we double check that a thin block is really still in-use
-after a mapping is removed using dm_pool_block_is_used().  If the
-reference count for a block is now zero the discard is allowed to be
-passed down.
-
-Also add a 'definitely_not_shared' member to the dm_thin_new_mapping
-structure -- reflects that the 'shared' flag in the response from
-dm_thin_find_block() can only be held as definitive if false is
-returned.
-
-Resolves: https://bugzilla.redhat.com/show_bug.cgi?id=1043527
+With this fix, and the previous commit "dm space map common: make sure
+new space is used during extend", the following device mapper testsuite
+test passes:
+ dmtest run --suite thin-provisioning -n /resize_metadata_no_io/
 
 Signed-off-by: Joe Thornber <ejt@redhat.com>
 Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-thin-metadata.c |   20 ++++++++++++++++++++
- drivers/md/dm-thin-metadata.h |    2 ++
- drivers/md/dm-thin.c          |   14 ++++++++++++--
- 3 files changed, 34 insertions(+), 2 deletions(-)
+ drivers/md/persistent-data/dm-space-map-metadata.c |   18 +++++++++++++-----
+ 1 file changed, 13 insertions(+), 5 deletions(-)
 
---- a/drivers/md/dm-thin-metadata.c
-+++ b/drivers/md/dm-thin-metadata.c
-@@ -1349,6 +1349,12 @@ dm_thin_id dm_thin_dev_id(struct dm_thin
- 	return td->id;
- }
+--- a/drivers/md/persistent-data/dm-space-map-metadata.c
++++ b/drivers/md/persistent-data/dm-space-map-metadata.c
+@@ -608,20 +608,28 @@ static int sm_metadata_extend(struct dm_
+ 	 * Flick into a mode where all blocks get allocated in the new area.
+ 	 */
+ 	smm->begin = old_len;
+-	memcpy(&smm->sm, &bootstrap_ops, sizeof(smm->sm));
++	memcpy(sm, &bootstrap_ops, sizeof(*sm));
  
-+/*
-+ * Check whether @time (of block creation) is older than @td's last snapshot.
-+ * If so then the associated block is shared with the last snapshot device.
-+ * Any block on a device created *after* the device last got snapshotted is
-+ * necessarily not shared.
-+ */
- static bool __snapshotted_since(struct dm_thin_device *td, uint32_t time)
- {
- 	return td->snapshotted_time > time;
-@@ -1457,6 +1463,20 @@ int dm_thin_remove_block(struct dm_thin_
+ 	/*
+ 	 * Extend.
+ 	 */
+ 	r = sm_ll_extend(&smm->ll, extra_blocks);
++	if (r)
++		goto out;
  
++	for (i = old_len; !r && i < smm->begin; i++) {
++		r = sm_ll_inc(&smm->ll, i, &ev);
++		if (r)
++			goto out;
++	}
++
++	r = sm_metadata_commit(sm);
++
++out:
+ 	/*
+ 	 * Switch back to normal behaviour.
+ 	 */
+-	memcpy(&smm->sm, &ops, sizeof(smm->sm));
+-	for (i = old_len; !r && i < smm->begin; i++)
+-		r = sm_ll_inc(&smm->ll, i, &ev);
+-
++	memcpy(sm, &ops, sizeof(*sm));
  	return r;
  }
-+
-+int dm_pool_block_is_used(struct dm_pool_metadata *pmd, dm_block_t b, bool *result)
-+{
-+	int r;
-+	uint32_t ref_count;
-+
-+	down_read(&pmd->root_lock);
-+	r = dm_sm_get_count(pmd->data_sm, b, &ref_count);
-+	if (!r)
-+		*result = (ref_count != 0);
-+	up_read(&pmd->root_lock);
-+
-+	return r;
-+}
  
- bool dm_thin_changed_this_transaction(struct dm_thin_device *td)
- {
---- a/drivers/md/dm-thin-metadata.h
-+++ b/drivers/md/dm-thin-metadata.h
-@@ -181,6 +181,8 @@ int dm_pool_get_data_block_size(struct d
- 
- int dm_pool_get_data_dev_size(struct dm_pool_metadata *pmd, dm_block_t *result);
- 
-+int dm_pool_block_is_used(struct dm_pool_metadata *pmd, dm_block_t b, bool *result);
-+
- /*
-  * Returns -ENOSPC if the new size is too small and already allocated
-  * blocks would be lost.
---- a/drivers/md/dm-thin.c
-+++ b/drivers/md/dm-thin.c
-@@ -512,6 +512,7 @@ struct dm_thin_new_mapping {
- 	unsigned quiesced:1;
- 	unsigned prepared:1;
- 	unsigned pass_discard:1;
-+	unsigned definitely_not_shared:1;
- 
- 	struct thin_c *tc;
- 	dm_block_t virt_block;
-@@ -683,7 +684,15 @@ static void process_prepared_discard_pas
- 	cell_defer_no_holder(tc, m->cell2);
- 
- 	if (m->pass_discard)
--		remap_and_issue(tc, m->bio, m->data_block);
-+		if (m->definitely_not_shared)
-+			remap_and_issue(tc, m->bio, m->data_block);
-+		else {
-+			bool used = false;
-+			if (dm_pool_block_is_used(tc->pool->pmd, m->data_block, &used) || used)
-+				bio_endio(m->bio, 0);
-+			else
-+				remap_and_issue(tc, m->bio, m->data_block);
-+		}
- 	else
- 		bio_endio(m->bio, 0);
- 
-@@ -1032,7 +1041,8 @@ static void process_discard(struct thin_
- 			 */
- 			m = get_next_mapping(pool);
- 			m->tc = tc;
--			m->pass_discard = (!lookup_result.shared) && pool->pf.discard_passdown;
-+			m->pass_discard = pool->pf.discard_passdown;
-+			m->definitely_not_shared = !lookup_result.shared;
- 			m->virt_block = block;
- 			m->data_block = lookup_result.block;
- 			m->cell = cell;
 
 
