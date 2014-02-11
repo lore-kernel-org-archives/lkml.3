@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752906AbaBKTFg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:05:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39674 "EHLO
+	id S1753233AbaBKTGJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:06:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39822 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752833AbaBKTF3 (ORCPT
+	with ESMTP id S1752380AbaBKTGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:05:29 -0500
+	Tue, 11 Feb 2014 14:06:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Sakari Ailus <sakari.ailus@linux.intel.com>,
-        Ricardo Ribalda <ricardo.ribalda@gmail.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.13 065/120] media: media: v4l2-dev: fix video device index assignment
-Date: Tue, 11 Feb 2014 11:05:06 -0800
-Message-Id: <20140211184825.472116162@linuxfoundation.org>
+        Sasha Levin <sasha.levin@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 3.13 116/120] timekeeping: Fix CLOCK_TAI timer/nanosleep delays
+Date: Tue, 11 Feb 2014 11:05:57 -0800
+Message-Id: <20140211184826.954281361@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -31,40 +32,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marek Szyprowski <m.szyprowski@samsung.com>
+From: John Stultz <john.stultz@linaro.org>
 
-commit 6c3df5da67f1f53df78c7e20cd53a481dc28eade upstream.
+commit 04005f6011e3b504cd4d791d9769f7cb9a3b2eae upstream.
 
-The side effect of commit 1056e4388b045 ("v4l2-dev: Fix race condition on
-__video_register_device") is the increased number of index value assigned
-on video_device registration. Before that commit video_devices were
-numbered from 0, after it, the indexes starts from 1, because get_index()
-always count the device, which is being registered. Some device drivers
-rely on video_device index number for internal purposes, i.e. s5p-mfc
-driver stopped working after that patch. This patch restores the old method
-of numbering the video_device indexes.
+A think-o in the calculation of the monotonic -> tai time offset
+results in CLOCK_TAI timers and nanosleeps to expire late (the
+latency is ~2x the tai offset).
 
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-Acked-by: Sakari Ailus <sakari.ailus@linux.intel.com>
-Acked-by: Ricardo Ribalda <ricardo.ribalda@gmail.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Fix this by adding the tai offset from the realtime offset instead
+of subtracting.
+
+Cc: Sasha Levin <sasha.levin@oracle.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Richard Cochran <richardcochran@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/v4l2-core/v4l2-dev.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/time/timekeeping.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/media/v4l2-core/v4l2-dev.c
-+++ b/drivers/media/v4l2-core/v4l2-dev.c
-@@ -872,8 +872,8 @@ int __video_register_device(struct video
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -77,7 +77,7 @@ static void tk_set_wall_to_mono(struct t
+ 	tk->wall_to_monotonic = wtm;
+ 	set_normalized_timespec(&tmp, -wtm.tv_sec, -wtm.tv_nsec);
+ 	tk->offs_real = timespec_to_ktime(tmp);
+-	tk->offs_tai = ktime_sub(tk->offs_real, ktime_set(tk->tai_offset, 0));
++	tk->offs_tai = ktime_add(tk->offs_real, ktime_set(tk->tai_offset, 0));
+ }
  
- 	/* Should not happen since we thought this minor was free */
- 	WARN_ON(video_device[vdev->minor] != NULL);
--	video_device[vdev->minor] = vdev;
- 	vdev->index = get_index(vdev);
-+	video_device[vdev->minor] = vdev;
- 	mutex_unlock(&videodev_lock);
+ static void tk_set_sleep_time(struct timekeeper *tk, struct timespec t)
+@@ -595,7 +595,7 @@ s32 timekeeping_get_tai_offset(void)
+ static void __timekeeping_set_tai_offset(struct timekeeper *tk, s32 tai_offset)
+ {
+ 	tk->tai_offset = tai_offset;
+-	tk->offs_tai = ktime_sub(tk->offs_real, ktime_set(tai_offset, 0));
++	tk->offs_tai = ktime_add(tk->offs_real, ktime_set(tai_offset, 0));
+ }
  
- 	if (vdev->ioctl_ops)
+ /**
 
 
