@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754061AbaBKTHo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:07:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40341 "EHLO
+	id S1754747AbaBKTjx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:39:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40349 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753994AbaBKTHm (ORCPT
+	with ESMTP id S1754054AbaBKTHo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:07:42 -0500
+	Tue, 11 Feb 2014 14:07:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Max Filippov <jcmvbkbc@gmail.com>
-Subject: [PATCH 3.10 25/79] xtensa: xtfpga: fix definitions of platform devices
-Date: Tue, 11 Feb 2014 11:05:29 -0800
-Message-Id: <20140211184721.654783288@linuxfoundation.org>
+        Daniel Santos <daniel.santos@pobox.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.10 28/79] spidev: fix hang when transfer_one_message fails
+Date: Tue, 11 Feb 2014 11:05:32 -0800
+Message-Id: <20140211184721.737406538@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
 References: <20140211184720.928667275@linuxfoundation.org>
@@ -28,73 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Max Filippov <jcmvbkbc@gmail.com>
+From: Daniel Santos <daniel.santos@pobox.com>
 
-commit a558d99263936b8a67d4eff8918745a77bfd8c31 upstream.
+commit e120cc0dcf2880a4c5c0a6cb27b655600a1cfa1d upstream.
 
-Remove __initdata attribute, as the devices may be used after init
-sections are freed.
+This corrects a problem in spi_pump_messages() that leads to an spi
+message hanging forever when a call to transfer_one_message() fails.
+This failure occurs in my MCP2210 driver when the cs_change bit is set
+on the last transfer in a message, an operation which the hardware does
+not support.
 
-Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+Rationale
+Since the transfer_one_message() returns an int, we must presume that it
+may fail.  If transfer_one_message() should never fail, it should return
+void.  Thus, calls to transfer_one_message() should properly manage a
+failure.
+
+Fixes: ffbbdd21329f3 (spi: create a message queueing infrastructure)
+Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/xtensa/platforms/xtfpga/setup.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/spi/spi.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/arch/xtensa/platforms/xtfpga/setup.c
-+++ b/arch/xtensa/platforms/xtfpga/setup.c
-@@ -195,7 +195,7 @@ void platform_calibrate_ccount(void)
-  *  Ethernet -- OpenCores Ethernet MAC (ethoc driver)
-  */
- 
--static struct resource ethoc_res[] __initdata = {
-+static struct resource ethoc_res[] = {
- 	[0] = { /* register space */
- 		.start = OETH_REGS_PADDR,
- 		.end   = OETH_REGS_PADDR + OETH_REGS_SIZE - 1,
-@@ -213,7 +213,7 @@ static struct resource ethoc_res[] __ini
- 	},
- };
- 
--static struct ethoc_platform_data ethoc_pdata __initdata = {
-+static struct ethoc_platform_data ethoc_pdata = {
- 	/*
- 	 * The MAC address for these boards is 00:50:c2:13:6f:xx.
- 	 * The last byte (here as zero) is read from the DIP switches on the
-@@ -223,7 +223,7 @@ static struct ethoc_platform_data ethoc_
- 	.phy_id = -1,
- };
- 
--static struct platform_device ethoc_device __initdata = {
-+static struct platform_device ethoc_device = {
- 	.name = "ethoc",
- 	.id = -1,
- 	.num_resources = ARRAY_SIZE(ethoc_res),
-@@ -237,13 +237,13 @@ static struct platform_device ethoc_devi
-  *  UART
-  */
- 
--static struct resource serial_resource __initdata = {
-+static struct resource serial_resource = {
- 	.start	= DUART16552_PADDR,
- 	.end	= DUART16552_PADDR + 0x1f,
- 	.flags	= IORESOURCE_MEM,
- };
- 
--static struct plat_serial8250_port serial_platform_data[] __initdata = {
-+static struct plat_serial8250_port serial_platform_data[] = {
- 	[0] = {
- 		.mapbase	= DUART16552_PADDR,
- 		.irq		= DUART16552_INTNUM,
-@@ -256,7 +256,7 @@ static struct plat_serial8250_port seria
- 	{ },
- };
- 
--static struct platform_device xtavnet_uart __initdata = {
-+static struct platform_device xtavnet_uart = {
- 	.name		= "serial8250",
- 	.id		= PLAT8250_DEV_PLATFORM,
- 	.dev		= {
+--- a/drivers/spi/spi.c
++++ b/drivers/spi/spi.c
+@@ -584,7 +584,9 @@ static void spi_pump_messages(struct kth
+ 	ret = master->transfer_one_message(master, master->cur_msg);
+ 	if (ret) {
+ 		dev_err(&master->dev,
+-			"failed to transfer one message from queue\n");
++			"failed to transfer one message from queue: %d\n", ret);
++		master->cur_msg->status = ret;
++		spi_finalize_current_message(master);
+ 		return;
+ 	}
+ }
 
 
