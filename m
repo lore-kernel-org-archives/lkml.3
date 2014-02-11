@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753611AbaBKUkm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:40:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39771 "EHLO
+	id S1754156AbaBKUlH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:41:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39766 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751978AbaBKTF4 (ORCPT
+	with ESMTP id S1753065AbaBKTFz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:05:56 -0500
+	Tue, 11 Feb 2014 14:05:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Airlie <airlied@redhat.com>
-Subject: [PATCH 3.13 105/120] drm/mgag200: fix typo causing bw limits to be ignored on some chips
-Date: Tue, 11 Feb 2014 11:05:46 -0800
-Message-Id: <20140211184826.627755635@linuxfoundation.org>
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        Jakob Bornecrantz <jakob@vmware.com>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Jerome Glisse <jglisse@redhat.com>, Dave Airlie <airlied@redhat.com>
+Subject: [PATCH 3.13 103/120] drm/vmwgfx: Fix regression caused by "drm/ttm: make ttm reservation calls behave like reservation calls"
+Date: Tue, 11 Feb 2014 11:05:44 -0800
+Message-Id: <20140211184826.570100239@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -28,36 +31,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Airlie <airlied@redhat.com>
+From: Thomas Hellstrom <thellstrom@vmware.com>
 
-commit ec22b4aa993abbd18f5bbbcb20a1c56be3b1d38b upstream.
+commit cf5e3413337309050c05e13dcebe85b7194a21e5 upstream.
 
-mode->mdev otherwise the bw limits never kick in.
+The call to ttm_eu_backoff_reservation() as part of an error path would cause
+a lock imbalance if the reservation ticket was not initialized. This error is
+easily triggered from user-space by submitting a bogus command stream.
 
-Reported in RHEL testing.
-
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
+Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
+Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Cc: Jerome Glisse <jglisse@redhat.com>
+Cc: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/mgag200/mgag200_mode.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/mgag200/mgag200_mode.c
-+++ b/drivers/gpu/drm/mgag200/mgag200_mode.c
-@@ -1519,11 +1519,11 @@ static int mga_vga_mode_valid(struct drm
- 		(mga_vga_calculate_mode_bandwidth(mode, bpp)
- 			> (32700 * 1024))) {
- 		return MODE_BANDWIDTH;
--	} else if (mode->type == G200_EH &&
-+	} else if (mdev->type == G200_EH &&
- 		(mga_vga_calculate_mode_bandwidth(mode, bpp)
- 			> (37500 * 1024))) {
- 		return MODE_BANDWIDTH;
--	} else if (mode->type == G200_ER &&
-+	} else if (mdev->type == G200_ER &&
- 		(mga_vga_calculate_mode_bandwidth(mode,
- 			bpp) > (55000 * 1024))) {
- 		return MODE_BANDWIDTH;
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c
+@@ -1483,11 +1483,11 @@ int vmw_execbuf_process(struct drm_file
+ 	ret = vmw_cmd_check_all(dev_priv, sw_context, kernel_commands,
+ 				command_size);
+ 	if (unlikely(ret != 0))
+-		goto out_err;
++		goto out_err_nores;
+ 
+ 	ret = vmw_resources_reserve(sw_context);
+ 	if (unlikely(ret != 0))
+-		goto out_err;
++		goto out_err_nores;
+ 
+ 	ret = ttm_eu_reserve_buffers(&ticket, &sw_context->validate_nodes);
+ 	if (unlikely(ret != 0))
+@@ -1569,10 +1569,11 @@ int vmw_execbuf_process(struct drm_file
+ 	return 0;
+ 
+ out_err:
+-	vmw_resource_relocations_free(&sw_context->res_relocations);
+-	vmw_free_relocations(sw_context);
+ 	ttm_eu_backoff_reservation(&ticket, &sw_context->validate_nodes);
++out_err_nores:
+ 	vmw_resource_list_unreserve(&sw_context->resource_list, true);
++	vmw_resource_relocations_free(&sw_context->res_relocations);
++	vmw_free_relocations(sw_context);
+ 	vmw_clear_validations(sw_context);
+ 	if (unlikely(dev_priv->pinned_bo != NULL &&
+ 		     !dev_priv->query_cid_valid))
 
 
