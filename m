@@ -1,39 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751919AbaBKQDI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 11:03:08 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:50646 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751064AbaBKQDG (ORCPT
+	id S1752095AbaBKQDy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 11:03:54 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:37849 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750779AbaBKQDx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 11:03:06 -0500
-Date: Tue, 11 Feb 2014 08:03:02 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-fsdevel@vger.kernel.org, linux-man@vger.kernel.org,
+	Tue, 11 Feb 2014 11:03:53 -0500
+Date: Tue, 11 Feb 2014 11:03:48 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Qiaowei Ren <qiaowei.ren@intel.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
         linux-kernel@vger.kernel.org
-Subject: O_TMPFILE detection
-Message-ID: <20140211160302.GA18936@infradead.org>
+Subject: Re: [PATCH] kernel/trace: fix compiler warning
+Message-ID: <20140211110348.492c47b4@gandalf.local.home>
+In-Reply-To: <1392133301-17974-1-git-send-email-qiaowei.ren@intel.com>
+References: <1392133301-17974-1-git-send-email-qiaowei.ren@intel.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've started implementing support for O_TMPFILE in xfs_io in preparation
-for proper testcases and found something rather annoying:
+On Tue, 11 Feb 2014 23:41:41 +0800
+Qiaowei Ren <qiaowei.ren@intel.com> wrote:
 
-Given that we implicitly pass O_DIRECTORY as part of the full O_TMPFILE
-flag an open using O_TMPFILE will simply succeed on a kernel old enough
-to not have O_TMPFILE support, and give you a file descriptor for the
-directory passed in.  Of course this only works if you open the fd
-read-only which isn't all that useful for real temporary files, but it
-would be the natural choice for a feature test.
+> The patch fixes the following compiler warning:
+>     CC      kernel/trace/trace_events.o
+>   kernel/trace/trace_events.c: In function 'event_enable_read'
+>   kernel/trace/trace_events.c:693: warning: 'flags' may be used \
+>   uninitialized in this function
 
-I guess we can't really fix this up any more, but does anyone have a
-good idea how to document this properly in the man page?
+You don't happen to have the branch profilers enabled?
+
+Is CONFIG_TRACE_BRANCH_PROFILING set?
+
+> 
+> Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
+> ---
+>  kernel/trace/trace_events.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+> index e71ffd4..b7915f2 100644
+> --- a/kernel/trace/trace_events.c
+> +++ b/kernel/trace/trace_events.c
+> @@ -690,7 +690,7 @@ event_enable_read(struct file *filp, char __user *ubuf, size_t cnt,
+>  		  loff_t *ppos)
+>  {
+>  	struct ftrace_event_file *file;
+> -	unsigned long flags;
+> +	unsigned long flags = 0;
+>  	char buf[4] = "0";
+>  
+>  	mutex_lock(&event_mutex);
+
+
+False warning, and most likely because the branch profilers screw up
+gcc's ability to figure these things out.
+
+Here's the content of that function:
+
+        mutex_lock(&event_mutex);
+        file = event_file_data(filp);
+        if (likely(file))
+                flags = file->flags;
+        mutex_unlock(&event_mutex);
+
+        if (!file)
+                return -ENODEV;
+
+        if (flags & FTRACE_EVENT_FL_ENABLED &&
+
+
+Pretty obvious that flags can not be used uninitialized. If you happen
+to have BRANCH profiling enabled, you must ignore all the gcc "might be
+used uninitialized" warnings. They are useless.
+
+This is not a bug, sorry.
+
+-- Steve
