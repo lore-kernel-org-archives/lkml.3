@@ -1,68 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754249AbaBKUVy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:21:54 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:48332 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753868AbaBKUVv (ORCPT
+	id S932451AbaBKUXl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:23:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39956 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751939AbaBKTG0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 15:21:51 -0500
-From: Kumar Gala <galak@codeaurora.org>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] hwrng: msm: switch Kconfig to ARCH_QCOM depends
-Date: Tue, 11 Feb 2014 14:21:45 -0600
-Message-Id: <1392150105-21057-1-git-send-email-galak@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
+	Tue, 11 Feb 2014 14:06:26 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [PATCH 3.12 006/107] Revert "EISA: Initialize device before its resources"
+Date: Tue, 11 Feb 2014 11:04:32 -0800
+Message-Id: <20140211184748.379851541@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
+References: <20140211184748.191276235@linuxfoundation.org>
+User-Agent: quilt/0.61-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the splits the Qualcomm MSM platform into legacy support that we will
-not try and convert to multiplatform and multiplatform support.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-- k
+------------------
 
-Changes from v2:
-* Dropped ARCH_MSM depends from CLKSRC_QCOM, since we select it
-* Fixed some grammar/typo's in commit messages
-* kept smp ops code in platsmp.c to match what other mach's do
-* Kept mach-qcom/Kconfig sorted alphabetically
+From: Bjorn Helgaas <bhelgaas@google.com>
 
-Changes from v1:
-* Added patch to remove hotplug.c
-* Added patch to rename msm_ to qcom_
-* Changes the Kconfig to drop CPU_V7
-* used wfi() in cpu_die function
-* Added git tree to MAINTAINERS file
+commit 765ee51f9a3f652959b4c7297d198a28e37952b4 upstream.
 
-Kumar Gala (5):
+This reverts commit 26abfeed4341872364386c6a52b9acef8c81a81a.
 
-We've split Qualcomm MSM support into legacy and multiplatform.  The RNG
-driver is only relevant on the multiplatform supported SoCs so switch the
-Kconfig depends to ARCH_QCOM.
+In the eisa_probe() force_probe path, if we were unable to request slot
+resources (e.g., [io 0x800-0x8ff]), we skipped the slot with "Cannot
+allocate resource for EISA slot %d" before reading the EISA signature in
+eisa_init_device().
 
-CC: Herbert Xu <herbert@gondor.apana.org.au>
-Signed-off-by: Kumar Gala <galak@codeaurora.org>
+Commit 26abfeed4341 moved eisa_init_device() earlier, so we tried to read
+the EISA signature before requesting the slot resources, and this caused
+hangs during boot.
+
+Link: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1251816
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- drivers/char/hw_random/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/eisa/eisa-bus.c |   26 +++++++++++++++-----------
+ 1 file changed, 15 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/char/hw_random/Kconfig b/drivers/char/hw_random/Kconfig
-index 2f2b084..289bd3a 100644
---- a/drivers/char/hw_random/Kconfig
-+++ b/drivers/char/hw_random/Kconfig
-@@ -343,7 +343,7 @@ config HW_RANDOM_TPM
+--- a/drivers/eisa/eisa-bus.c
++++ b/drivers/eisa/eisa-bus.c
+@@ -275,11 +275,13 @@ static int __init eisa_request_resources
+ 		}
+ 		
+ 		if (slot) {
++			edev->res[i].name  = NULL;
+ 			edev->res[i].start = SLOT_ADDRESS(root, slot)
+ 					     + (i * 0x400);
+ 			edev->res[i].end   = edev->res[i].start + 0xff;
+ 			edev->res[i].flags = IORESOURCE_IO;
+ 		} else {
++			edev->res[i].name  = NULL;
+ 			edev->res[i].start = SLOT_ADDRESS(root, slot)
+ 					     + EISA_VENDOR_ID_OFFSET;
+ 			edev->res[i].end   = edev->res[i].start + 3;
+@@ -326,19 +328,20 @@ static int __init eisa_probe(struct eisa
+ 		return -ENOMEM;
+ 	}
+ 		
+-	if (eisa_init_device(root, edev, 0)) {
++	if (eisa_request_resources(root, edev, 0)) {
++		dev_warn(root->dev,
++		         "EISA: Cannot allocate resource for mainboard\n");
+ 		kfree(edev);
+ 		if (!root->force_probe)
+-			return -ENODEV;
++			return -EBUSY;
+ 		goto force_probe;
+ 	}
  
- config HW_RANDOM_MSM
- 	tristate "Qualcomm MSM Random Number Generator support"
--	depends on HW_RANDOM && ARCH_MSM
-+	depends on HW_RANDOM && ARCH_QCOM
- 	---help---
- 	  This driver provides kernel-side support for the Random Number
- 	  Generator hardware found on Qualcomm MSM SoCs.
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+-	if (eisa_request_resources(root, edev, 0)) {
+-		dev_warn(root->dev,
+-		         "EISA: Cannot allocate resource for mainboard\n");
++	if (eisa_init_device(root, edev, 0)) {
++		eisa_release_resources(edev);
+ 		kfree(edev);
+ 		if (!root->force_probe)
+-			return -EBUSY;
++			return -ENODEV;
+ 		goto force_probe;
+ 	}
+ 
+@@ -361,11 +364,6 @@ static int __init eisa_probe(struct eisa
+ 			continue;
+ 		}
+ 
+-		if (eisa_init_device(root, edev, i)) {
+-			kfree(edev);
+-			continue;
+-		}
+-
+ 		if (eisa_request_resources(root, edev, i)) {
+ 			dev_warn(root->dev,
+ 			         "Cannot allocate resource for EISA slot %d\n",
+@@ -373,6 +371,12 @@ static int __init eisa_probe(struct eisa
+ 			kfree(edev);
+ 			continue;
+ 		}
++
++		if (eisa_init_device(root, edev, i)) {
++			eisa_release_resources(edev);
++			kfree(edev);
++			continue;
++		}
+ 
+ 		if (edev->state == (EISA_CONFIG_ENABLED | EISA_CONFIG_FORCED))
+ 			enabled_str = " (forced enabled)";
+
 
