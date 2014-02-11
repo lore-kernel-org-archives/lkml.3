@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756161AbaBKVDL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 16:03:11 -0500
+	id S1756133AbaBKVDJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 16:03:09 -0500
 Received: from mail.linuxfoundation.org ([140.211.169.12]:39570 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752559AbaBKTFI (ORCPT
+	with ESMTP id S1751347AbaBKTFI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Feb 2014 14:05:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Boaz Harrosh <bharrosh@panasas.com>
-Subject: [PATCH 3.13 035/120] ore: Fix wrong math in allocation of per device BIO
-Date: Tue, 11 Feb 2014 11:04:36 -0800
-Message-Id: <20140211184824.572179413@linuxfoundation.org>
+        Max Filippov <jcmvbkbc@gmail.com>
+Subject: [PATCH 3.13 036/120] xtensa: xtfpga: fix definitions of platform devices
+Date: Tue, 11 Feb 2014 11:04:37 -0800
+Message-Id: <20140211184824.602432440@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -28,132 +28,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Boaz Harrosh <bharrosh@panasas.com>
+From: Max Filippov <jcmvbkbc@gmail.com>
 
-commit aad560b7f63b495f48a7232fd086c5913a676e6f upstream.
+commit a558d99263936b8a67d4eff8918745a77bfd8c31 upstream.
 
-At IO preparation we calculate the max pages at each device and
-allocate a BIO per device of that size. The calculation was wrong
-on some unaligned corner cases offset/length combination and would
-make prepare return with -ENOMEM. This would be bad for pnfs-objects
-that would in that case IO through MDS. And fatal for exofs were it
-would fail writes with EIO.
+Remove __initdata attribute, as the devices may be used after init
+sections are freed.
 
-Fix it by doing the proper math, that will work in all cases. (I
-ran a test with all possible offset/length combinations this time
-round).
-
-Also when reading we do not need to allocate for the parity units
-since we jump over them.
-
-Also lower the max_io_length to take into account the parity pages
-so not to allocate BIOs bigger than PAGE_SIZE
-
-Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
+Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/exofs/ore.c         |   37 +++++++++++++++++++++++++------------
- include/scsi/osd_ore.h |    1 +
- 2 files changed, 26 insertions(+), 12 deletions(-)
+ arch/xtensa/platforms/xtfpga/setup.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/fs/exofs/ore.c
-+++ b/fs/exofs/ore.c
-@@ -103,7 +103,7 @@ int ore_verify_layout(unsigned total_com
+--- a/arch/xtensa/platforms/xtfpga/setup.c
++++ b/arch/xtensa/platforms/xtfpga/setup.c
+@@ -194,7 +194,7 @@ void __init platform_calibrate_ccount(vo
+  *  Ethernet -- OpenCores Ethernet MAC (ethoc driver)
+  */
  
- 	layout->max_io_length =
- 		(BIO_MAX_PAGES_KMALLOC * PAGE_SIZE - layout->stripe_unit) *
--							layout->group_width;
-+					(layout->group_width - layout->parity);
- 	if (layout->parity) {
- 		unsigned stripe_length =
- 				(layout->group_width - layout->parity) *
-@@ -286,7 +286,8 @@ int  ore_get_rw_state(struct ore_layout
- 	if (length) {
- 		ore_calc_stripe_info(layout, offset, length, &ios->si);
- 		ios->length = ios->si.length;
--		ios->nr_pages = (ios->length + PAGE_SIZE - 1) / PAGE_SIZE;
-+		ios->nr_pages = ((ios->offset & (PAGE_SIZE - 1)) +
-+				 ios->length + PAGE_SIZE - 1) / PAGE_SIZE;
- 		if (layout->parity)
- 			_ore_post_alloc_raid_stuff(ios);
- 	}
-@@ -536,6 +537,7 @@ void ore_calc_stripe_info(struct ore_lay
- 	u64	H = LmodS - G * T;
- 
- 	u32	N = div_u64(H, U);
-+	u32	Nlast;
- 
- 	/* "H - (N * U)" is just "H % U" so it's bound to u32 */
- 	u32	C = (u32)(H - (N * U)) / stripe_unit + G * group_width;
-@@ -568,6 +570,10 @@ void ore_calc_stripe_info(struct ore_lay
- 	si->length = T - H;
- 	if (si->length > length)
- 		si->length = length;
-+
-+	Nlast = div_u64(H + si->length + U - 1, U);
-+	si->maxdevUnits = Nlast - N;
-+
- 	si->M = M;
- }
- EXPORT_SYMBOL(ore_calc_stripe_info);
-@@ -583,13 +589,16 @@ int _ore_add_stripe_unit(struct ore_io_s
- 	int ret;
- 
- 	if (per_dev->bio == NULL) {
--		unsigned pages_in_stripe = ios->layout->group_width *
--					(ios->layout->stripe_unit / PAGE_SIZE);
--		unsigned nr_pages = ios->nr_pages * ios->layout->group_width /
--					(ios->layout->group_width -
--					 ios->layout->parity);
--		unsigned bio_size = (nr_pages + pages_in_stripe) /
--					ios->layout->group_width;
-+		unsigned bio_size;
-+
-+		if (!ios->reading) {
-+			bio_size = ios->si.maxdevUnits;
-+		} else {
-+			bio_size = (ios->si.maxdevUnits + 1) *
-+			     (ios->layout->group_width - ios->layout->parity) /
-+			     ios->layout->group_width;
-+		}
-+		bio_size *= (ios->layout->stripe_unit / PAGE_SIZE);
- 
- 		per_dev->bio = bio_kmalloc(GFP_KERNEL, bio_size);
- 		if (unlikely(!per_dev->bio)) {
-@@ -609,8 +618,12 @@ int _ore_add_stripe_unit(struct ore_io_s
- 		added_len = bio_add_pc_page(q, per_dev->bio, pages[pg],
- 					    pglen, pgbase);
- 		if (unlikely(pglen != added_len)) {
--			ORE_DBGMSG("Failed bio_add_pc_page bi_vcnt=%u\n",
--				   per_dev->bio->bi_vcnt);
-+			/* If bi_vcnt == bi_max then this is a SW BUG */
-+			ORE_DBGMSG("Failed bio_add_pc_page bi_vcnt=0x%x "
-+				   "bi_max=0x%x BIO_MAX=0x%x cur_len=0x%x\n",
-+				   per_dev->bio->bi_vcnt,
-+				   per_dev->bio->bi_max_vecs,
-+				   BIO_MAX_PAGES_KMALLOC, cur_len);
- 			ret = -ENOMEM;
- 			goto out;
- 		}
-@@ -1098,7 +1111,7 @@ int ore_truncate(struct ore_layout *layo
- 		size_attr->attr = g_attr_logical_length;
- 		size_attr->attr.val_ptr = &size_attr->newsize;
- 
--		ORE_DBGMSG("trunc(0x%llx) obj_offset=0x%llx dev=%d\n",
-+		ORE_DBGMSG2("trunc(0x%llx) obj_offset=0x%llx dev=%d\n",
- 			     _LLU(oc->comps->obj.id), _LLU(obj_size), i);
- 		ret = _truncate_mirrors(ios, i * ios->layout->mirrors_p1,
- 					&size_attr->attr);
---- a/include/scsi/osd_ore.h
-+++ b/include/scsi/osd_ore.h
-@@ -102,6 +102,7 @@ struct ore_striping_info {
- 	unsigned unit_off;
- 	unsigned cur_pg;
- 	unsigned cur_comp;
-+	unsigned maxdevUnits;
+-static struct resource ethoc_res[] __initdata = {
++static struct resource ethoc_res[] = {
+ 	[0] = { /* register space */
+ 		.start = OETH_REGS_PADDR,
+ 		.end   = OETH_REGS_PADDR + OETH_REGS_SIZE - 1,
+@@ -212,7 +212,7 @@ static struct resource ethoc_res[] __ini
+ 	},
  };
  
- struct ore_io_state;
+-static struct ethoc_platform_data ethoc_pdata __initdata = {
++static struct ethoc_platform_data ethoc_pdata = {
+ 	/*
+ 	 * The MAC address for these boards is 00:50:c2:13:6f:xx.
+ 	 * The last byte (here as zero) is read from the DIP switches on the
+@@ -222,7 +222,7 @@ static struct ethoc_platform_data ethoc_
+ 	.phy_id = -1,
+ };
+ 
+-static struct platform_device ethoc_device __initdata = {
++static struct platform_device ethoc_device = {
+ 	.name = "ethoc",
+ 	.id = -1,
+ 	.num_resources = ARRAY_SIZE(ethoc_res),
+@@ -236,13 +236,13 @@ static struct platform_device ethoc_devi
+  *  UART
+  */
+ 
+-static struct resource serial_resource __initdata = {
++static struct resource serial_resource = {
+ 	.start	= DUART16552_PADDR,
+ 	.end	= DUART16552_PADDR + 0x1f,
+ 	.flags	= IORESOURCE_MEM,
+ };
+ 
+-static struct plat_serial8250_port serial_platform_data[] __initdata = {
++static struct plat_serial8250_port serial_platform_data[] = {
+ 	[0] = {
+ 		.mapbase	= DUART16552_PADDR,
+ 		.irq		= DUART16552_INTNUM,
+@@ -255,7 +255,7 @@ static struct plat_serial8250_port seria
+ 	{ },
+ };
+ 
+-static struct platform_device xtavnet_uart __initdata = {
++static struct platform_device xtavnet_uart = {
+ 	.name		= "serial8250",
+ 	.id		= PLAT8250_DEV_PLATFORM,
+ 	.dev		= {
 
 
