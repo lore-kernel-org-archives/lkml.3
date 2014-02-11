@@ -1,97 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752486AbaBKNIi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 08:08:38 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:34136 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751837AbaBKNEP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 08:04:15 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-90-52fa1fce6ec7
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 05/14] mfd: sec: Use consistent S2MPS11 RTC alarm interrupt
- indexes
-Date: Tue, 11 Feb 2014 14:03:48 +0100
-Message-id: <1392123837-5517-6-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1392123837-5517-1-git-send-email-k.kozlowski@samsung.com>
-References: <1392123837-5517-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOJMWRmVeSWpSXmKPExsVy+t/xK7rn5H8FGSx8JWixccZ6VovXLwwt
-	zja9Ybe4//Uoo8XlXXPYLGac38dksfbIXXaL092sFhdXfGFy4PS4c20Pm8e8k4EefVtWMXp8
-	3iQXwBLFZZOSmpNZllqkb5fAlTHr6wemgja+iu37hBsYD3B3MXJySAiYSJz+PJMZwhaTuHBv
-	PVsXIxeHkMBSRokd62cxQTh9TBIzZr9iAqliEzCW2Lx8CViViMBmRonF36+ygjjMAkcZJab3
-	vgWrEhYIlXjw5CsLiM0ioCox9/o1NhCbV8BNomf1csYuRg6gfQoScybZgIQ5Bdwl+j79ZwMJ
-	CwGVLO+PncDIu4CRYRWjaGppckFxUnquoV5xYm5xaV66XnJ+7iZGSGB92cG4+JjVIUYBDkYl
-	Ht4Nij+DhFgTy4orcw8xSnAwK4nwfhH+FSTEm5JYWZValB9fVJqTWnyIkYmDU6qBUbz5uEpP
-	lfSfggj9vv9yDGduXXrz8N78j3/yFGdWbfKvd8pUWvItQ+f2Da8P/RyX/ns+0haNWpg/YcvM
-	i3+ZZW2zwvo670rYLrrx/H/HspBvXHvu3l0gNzH1+IbbR6KiwnKD1a6uWPXZ+05rXvDW2Dch
-	Fnr7NJw9RQyyX1xX6Ny+NqJrh6u6mBJLcUaioRZzUXEiALfuf08KAgAA
+	id S1751487AbaBKNNQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 08:13:16 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:42847 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750812AbaBKNNO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 08:13:14 -0500
+Message-ID: <52FA21CF.1040809@ti.com>
+Date: Tue, 11 Feb 2014 15:12:47 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Michal Simek <michal.simek@xilinx.com>, <linux-kernel@vger.kernel.org>,
+        <monstr@monstr.eu>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        <linux-fbdev@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] video: xilinxfb: Move xilinxfb_platform_data directly
+ to the driver
+References: <af8de8bd8803b319c0f6a02ca5109768e5ef8457.1392101292.git.michal.simek@xilinx.com>
+In-Reply-To: <af8de8bd8803b319c0f6a02ca5109768e5ef8457.1392101292.git.michal.simek@xilinx.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="ISMwuIjBEdGC4fnl2bQHI8toMbmHQspSP"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The S2MPS11 RTC has two alarms: alarm0 and alarm1 (corresponding
-interrupts are named similarly). Use consistent names for interrupts to
-limit possible errors.
+--ISMwuIjBEdGC4fnl2bQHI8toMbmHQspSP
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- drivers/mfd/sec-irq.c           |    8 ++++----
- include/linux/mfd/samsung/irq.h |    4 ++--
- 2 files changed, 6 insertions(+), 6 deletions(-)
+On 11/02/14 08:48, Michal Simek wrote:
+> No reason to have separate file in header in include/linux folder
+> if this is purely driver specific structure.
+>=20
+> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+> ---
+>=20
+> I have this patch in my devel tree for a while and would like
+> to hear your opinion. I can't see any reason to have
+> xilinxfb_platform_data in header if this is purely OF driver
+> used on OF archs.
+> ---
+>  drivers/video/xilinxfb.c | 15 ++++++++++++++-
+>  include/linux/xilinxfb.h | 30 ------------------------------
+>  2 files changed, 14 insertions(+), 31 deletions(-)
+>  delete mode 100644 include/linux/xilinxfb.h
 
-diff --git a/drivers/mfd/sec-irq.c b/drivers/mfd/sec-irq.c
-index 4de494f51d40..e403c293b437 100644
---- a/drivers/mfd/sec-irq.c
-+++ b/drivers/mfd/sec-irq.c
-@@ -59,13 +59,13 @@ static const struct regmap_irq s2mps11_irqs[] = {
- 		.reg_offset = 1,
- 		.mask = S2MPS11_IRQ_RTC60S_MASK,
- 	},
--	[S2MPS11_IRQ_RTCA1] = {
-+	[S2MPS11_IRQ_RTCA0] = {
- 		.reg_offset = 1,
--		.mask = S2MPS11_IRQ_RTCA1_MASK,
-+		.mask = S2MPS11_IRQ_RTCA0_MASK,
- 	},
--	[S2MPS11_IRQ_RTCA2] = {
-+	[S2MPS11_IRQ_RTCA1] = {
- 		.reg_offset = 1,
--		.mask = S2MPS11_IRQ_RTCA2_MASK,
-+		.mask = S2MPS11_IRQ_RTCA1_MASK,
- 	},
- 	[S2MPS11_IRQ_SMPL] = {
- 		.reg_offset = 1,
-diff --git a/include/linux/mfd/samsung/irq.h b/include/linux/mfd/samsung/irq.h
-index d43b4f9e7fb2..abe1a6aae3b7 100644
---- a/include/linux/mfd/samsung/irq.h
-+++ b/include/linux/mfd/samsung/irq.h
-@@ -24,8 +24,8 @@ enum s2mps11_irq {
- 	S2MPS11_IRQ_MRB,
- 
- 	S2MPS11_IRQ_RTC60S,
-+	S2MPS11_IRQ_RTCA0,
- 	S2MPS11_IRQ_RTCA1,
--	S2MPS11_IRQ_RTCA2,
- 	S2MPS11_IRQ_SMPL,
- 	S2MPS11_IRQ_RTC1S,
- 	S2MPS11_IRQ_WTSR,
-@@ -47,7 +47,7 @@ enum s2mps11_irq {
- 
- #define S2MPS11_IRQ_RTC60S_MASK		(1 << 0)
- #define S2MPS11_IRQ_RTCA1_MASK		(1 << 1)
--#define S2MPS11_IRQ_RTCA2_MASK		(1 << 2)
-+#define S2MPS11_IRQ_RTCA0_MASK		(1 << 2)
- #define S2MPS11_IRQ_SMPL_MASK		(1 << 3)
- #define S2MPS11_IRQ_RTC1S_MASK		(1 << 4)
- #define S2MPS11_IRQ_WTSR_MASK		(1 << 5)
--- 
-1.7.9.5
+Thanks. Queued for 3.15.
 
+ Tomi
+
+
+
+--ISMwuIjBEdGC4fnl2bQHI8toMbmHQspSP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJS+iHPAAoJEPo9qoy8lh71Kz0QAIKXcLqRcJsDM77rYnfaZ9h9
+2gDAPo2bxtkm9ZZ4L28Bhuxs0kmNlq1XzEbTcbtZiOxIRl0yvR735JDymV3zloGz
+7z1N6/U0d/m1ikwQ84HOSo4TC8T0yIiVJEEumMskiAuKTW0SNR2fPEa1vu3OBCf2
+Nmv2AtWzU4zGLeUGpJ6z+VVgVnqIeFYMUhUeWywjOTGzMWlXlRHUNQiuhoIWbThV
+IRr2Qu0raADfM5knNB1vB4iwf99Qwp/Bo5MM6ayzRD78l74OotOVbpB2NZ7wSD5i
+nrTSMtSbl2Jdi0xdSuUiIDZNzwWs/7Q7LS/Wspg9gttG01G8QPFl6s7q5oFBwWE6
+TMNFwRJHZ8+lFYNwVxqJJH5B6cFPEtYZ08e2Nq+37/uGQ/FPvWzzKeP6DU0YZwkc
+HY0CV7KM6oLcZO5BPlZYZ5ufnF63a7yEZy36Z7PXWKe132Ducmg0hNO/rliESL1G
+iMumHvpoGoz82GnAtGxbYaCy0zbrf6CT7I8f55AJL+oPVoijnXNmx+rnx0Rk04eG
+usSqW18M4jKzzgYzSjDkN3CTSzv/sD61J5h36btsqeTY5pdeecSSx/g9GotN2sov
+vRHHtgfHnkZuXG/W63+sIEq4Qn3uoO3WlLlzaNvM5lApDiH4uEfSoGZtBMfwVrii
+AUq0+Cf3HMl9pkE6R3KD
+=4zlY
+-----END PGP SIGNATURE-----
+
+--ISMwuIjBEdGC4fnl2bQHI8toMbmHQspSP--
