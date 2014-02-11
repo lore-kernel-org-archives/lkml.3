@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753327AbaBKTGX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:06:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39873 "EHLO
+	id S1756400AbaBKU0j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:26:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39940 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753269AbaBKTGQ (ORCPT
+	with ESMTP id S1753312AbaBKTGX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:16 -0500
+	Tue, 11 Feb 2014 14:06:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Wu Fengguang <fengguang.wu@intel.com>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.12 013/107] mm/page-writeback.c: fix dirty_balance_reserve subtraction from dirtyable memory
-Date: Tue, 11 Feb 2014 11:04:39 -0800
-Message-Id: <20140211184748.582969879@linuxfoundation.org>
+        Wolfram Sang <wsa@the-dreams.de>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Chris Ball <chris@printf.net>
+Subject: [PATCH 3.12 021/107] mmc: core: sd: implement proper support for sd3.0 au sizes
+Date: Tue, 11 Feb 2014 11:04:47 -0800
+Message-Id: <20140211184748.805516227@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -32,147 +31,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Weiner <hannes@cmpxchg.org>
+From: Wolfram Sang <wsa@the-dreams.de>
 
-commit a804552b9a15c931cfc2a92a2e0aed1add8b580a upstream.
+commit 9288cac05405a7da406097a44721aa4004609b4d upstream.
 
-Tejun reported stuttering and latency spikes on a system where random
-tasks would enter direct reclaim and get stuck on dirty pages.  Around
-50% of memory was occupied by tmpfs backed by an SSD, and another disk
-(rotating) was reading and writing at max speed to shrink a partition.
+This reverts and updates commit 77776fd0a4cc541b9 ("mmc: sd: fix the
+maximum au_size for SD3.0"). The au_size for SD3.0 cannot be achieved
+by a simple bit shift, so this needs to be implemented differently.
+Also, don't print the warning in case of 0 since 'not defined' is
+different from 'invalid'.
 
-: The problem was pretty ridiculous.  It's a 8gig machine w/ one ssd and 10k
-: rpm harddrive and I could reliably reproduce constant stuttering every
-: several seconds for as long as buffered IO was going on on the hard drive
-: either with tmpfs occupying somewhere above 4gig or a test program which
-: allocates about the same amount of anon memory.  Although swap usage was
-: zero, turning off swap also made the problem go away too.
-:
-: The trigger conditions seem quite plausible - high anon memory usage w/
-: heavy buffered IO and swap configured - and it's highly likely that this
-: is happening in the wild too.  (this can happen with copying large files
-: to usb sticks too, right?)
-
-This patch (of 2):
-
-The dirty_balance_reserve is an approximation of the fraction of free
-pages that the page allocator does not make available for page cache
-allocations.  As a result, it has to be taken into account when
-calculating the amount of "dirtyable memory", the baseline to which
-dirty_background_ratio and dirty_ratio are applied.
-
-However, currently the reserve is subtracted from the sum of free and
-reclaimable pages, which is non-sensical and leads to erroneous results
-when the system is dominated by unreclaimable pages and the
-dirty_balance_reserve is bigger than free+reclaimable.  In that case, at
-least the already allocated cache should be considered dirtyable.
-
-Fix the calculation by subtracting the reserve from the amount of free
-pages, then adding the reclaimable pages on top.
-
-[akpm@linux-foundation.org: fix CONFIG_HIGHMEM build]
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Reported-by: Tejun Heo <tj@kernel.org>
-Tested-by: Tejun Heo <tj@kernel.org>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Acked-by: Jaehoon Chung <jh80.chung@samsung.com>
+Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Signed-off-by: Chris Ball <chris@printf.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/page-writeback.c |   55 ++++++++++++++++++++++------------------------------
- 1 file changed, 24 insertions(+), 31 deletions(-)
+ drivers/mmc/core/sd.c |   37 ++++++++++++++++++++++---------------
+ 1 file changed, 22 insertions(+), 15 deletions(-)
 
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -191,6 +191,25 @@ static unsigned long writeout_period_tim
-  * global dirtyable memory first.
+--- a/drivers/mmc/core/sd.c
++++ b/drivers/mmc/core/sd.c
+@@ -11,6 +11,7 @@
   */
  
-+/**
-+ * zone_dirtyable_memory - number of dirtyable pages in a zone
-+ * @zone: the zone
-+ *
-+ * Returns the zone's number of pages potentially available for dirty
-+ * page cache.  This is the base value for the per-zone dirty limits.
-+ */
-+static unsigned long zone_dirtyable_memory(struct zone *zone)
-+{
-+	unsigned long nr_pages;
+ #include <linux/err.h>
++#include <linux/sizes.h>
+ #include <linux/slab.h>
+ #include <linux/stat.h>
+ 
+@@ -44,6 +45,13 @@ static const unsigned int tacc_mant[] =
+ 	35,	40,	45,	50,	55,	60,	70,	80,
+ };
+ 
++static const unsigned int sd_au_size[] = {
++	0,		SZ_16K / 512,		SZ_32K / 512,	SZ_64K / 512,
++	SZ_128K / 512,	SZ_256K / 512,		SZ_512K / 512,	SZ_1M / 512,
++	SZ_2M / 512,	SZ_4M / 512,		SZ_8M / 512,	(SZ_8M + SZ_4M) / 512,
++	SZ_16M / 512,	(SZ_16M + SZ_8M) / 512,	SZ_32M / 512,	SZ_64M / 512,
++};
 +
-+	nr_pages = zone_page_state(zone, NR_FREE_PAGES);
-+	nr_pages -= min(nr_pages, zone->dirty_balance_reserve);
-+
-+	nr_pages += zone_reclaimable_pages(zone);
-+
-+	return nr_pages;
-+}
-+
- static unsigned long highmem_dirtyable_memory(unsigned long total)
+ #define UNSTUFF_BITS(resp,start,size)					\
+ 	({								\
+ 		const int __size = size;				\
+@@ -215,7 +223,7 @@ static int mmc_decode_scr(struct mmc_car
+ static int mmc_read_ssr(struct mmc_card *card)
  {
- #ifdef CONFIG_HIGHMEM
-@@ -198,11 +217,9 @@ static unsigned long highmem_dirtyable_m
- 	unsigned long x = 0;
+ 	unsigned int au, es, et, eo;
+-	int err, i, max_au;
++	int err, i;
+ 	u32 *ssr;
  
- 	for_each_node_state(node, N_HIGH_MEMORY) {
--		struct zone *z =
--			&NODE_DATA(node)->node_zones[ZONE_HIGHMEM];
-+		struct zone *z = &NODE_DATA(node)->node_zones[ZONE_HIGHMEM];
+ 	if (!(card->csd.cmdclass & CCC_APP_SPEC)) {
+@@ -239,26 +247,25 @@ static int mmc_read_ssr(struct mmc_card
+ 	for (i = 0; i < 16; i++)
+ 		ssr[i] = be32_to_cpu(ssr[i]);
  
--		x += zone_page_state(z, NR_FREE_PAGES) +
--		     zone_reclaimable_pages(z) - z->dirty_balance_reserve;
-+		x += zone_dirtyable_memory(z);
- 	}
+-	/* SD3.0 increases max AU size to 64MB (0xF) from 4MB (0x9) */
+-	max_au = card->scr.sda_spec3 ? 0xF : 0x9;
+-
  	/*
- 	 * Unreclaimable memory (kernel memory or anonymous memory
-@@ -238,9 +255,11 @@ static unsigned long global_dirtyable_me
- {
- 	unsigned long x;
- 
--	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages();
-+	x = global_page_state(NR_FREE_PAGES);
- 	x -= min(x, dirty_balance_reserve);
- 
-+	x += global_reclaimable_pages();
-+
- 	if (!vm_highmem_is_dirtyable)
- 		x -= highmem_dirtyable_memory(x);
- 
-@@ -289,32 +308,6 @@ void global_dirty_limits(unsigned long *
- }
- 
- /**
-- * zone_dirtyable_memory - number of dirtyable pages in a zone
-- * @zone: the zone
-- *
-- * Returns the zone's number of pages potentially available for dirty
-- * page cache.  This is the base value for the per-zone dirty limits.
-- */
--static unsigned long zone_dirtyable_memory(struct zone *zone)
--{
--	/*
--	 * The effective global number of dirtyable pages may exclude
--	 * highmem as a big-picture measure to keep the ratio between
--	 * dirty memory and lowmem reasonable.
--	 *
--	 * But this function is purely about the individual zone and a
--	 * highmem zone can hold its share of dirty pages, so we don't
--	 * care about vm_highmem_is_dirtyable here.
--	 */
--	unsigned long nr_pages = zone_page_state(zone, NR_FREE_PAGES) +
--		zone_reclaimable_pages(zone);
--
--	/* don't allow this to underflow */
--	nr_pages -= min(nr_pages, zone->dirty_balance_reserve);
--	return nr_pages;
--}
--
--/**
-  * zone_dirty_limit - maximum number of dirty pages allowed in a zone
-  * @zone: the zone
-  *
+ 	 * UNSTUFF_BITS only works with four u32s so we have to offset the
+ 	 * bitfield positions accordingly.
+ 	 */
+ 	au = UNSTUFF_BITS(ssr, 428 - 384, 4);
+-	if (au > 0 && au <= max_au) {
+-		card->ssr.au = 1 << (au + 4);
+-		es = UNSTUFF_BITS(ssr, 408 - 384, 16);
+-		et = UNSTUFF_BITS(ssr, 402 - 384, 6);
+-		eo = UNSTUFF_BITS(ssr, 400 - 384, 2);
+-		if (es && et) {
+-			card->ssr.erase_timeout = (et * 1000) / es;
+-			card->ssr.erase_offset = eo * 1000;
++	if (au) {
++		if (au <= 9 || card->scr.sda_spec3) {
++			card->ssr.au = sd_au_size[au];
++			es = UNSTUFF_BITS(ssr, 408 - 384, 16);
++			et = UNSTUFF_BITS(ssr, 402 - 384, 6);
++			if (es && et) {
++				eo = UNSTUFF_BITS(ssr, 400 - 384, 2);
++				card->ssr.erase_timeout = (et * 1000) / es;
++				card->ssr.erase_offset = eo * 1000;
++			}
++		} else {
++			pr_warning("%s: SD Status: Invalid Allocation Unit size.\n",
++				   mmc_hostname(card->host));
+ 		}
+-	} else {
+-		pr_warning("%s: SD Status: Invalid Allocation Unit "
+-			"size.\n", mmc_hostname(card->host));
+ 	}
+ out:
+ 	kfree(ssr);
 
 
