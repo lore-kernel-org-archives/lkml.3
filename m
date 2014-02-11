@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755993AbaBKU6K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:58:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39627 "EHLO
+	id S1754644AbaBKU6i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:58:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39619 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752599AbaBKTFT (ORCPT
+	with ESMTP id S1752706AbaBKTFS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:05:19 -0500
+	Tue, 11 Feb 2014 14:05:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.13 044/120] NFSv4.1: Handle errors correctly in nfs41_walk_client_list
-Date: Tue, 11 Feb 2014 11:04:45 -0800
-Message-Id: <20140211184824.866990847@linuxfoundation.org>
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        Dan Duval <dan.duval@oracle.com>,
+        Chuck Anderson <chuck.anderson@oracle.com>,
+        Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>
+Subject: [PATCH 3.13 009/120] audit: reset audit backlog wait time after error recovery
+Date: Tue, 11 Feb 2014 11:04:10 -0800
+Message-Id: <20140211184823.780685449@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -28,48 +31,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Richard Guy Briggs <rgb@redhat.com>
 
-commit 64590daa9e0dfb3aad89e3ab9230683b76211d5b upstream.
+commit e789e561a50de0aaa8c695662d97aaa5eac9d55f upstream.
 
-Both nfs41_walk_client_list and nfs40_walk_client_list expect the
-'status' variable to be set to the value -NFS4ERR_STALE_CLIENTID
-if the loop fails to find a match.
-The problem is that the 'pos->cl_cons_state > NFS_CS_READY' changes
-the value of 'status', and sets it either to the value '0' (which
-indicates success), or to the value EINTR.
+When the audit queue overflows and times out (audit_backlog_wait_time), the
+audit queue overflow timeout is set to zero.  Once the audit queue overflow
+timeout condition recovers, the timeout should be reset to the original value.
 
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+See also:
+	https://lkml.org/lkml/2013/9/2/473
+
+Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
+Signed-off-by: Dan Duval <dan.duval@oracle.com>
+Signed-off-by: Chuck Anderson <chuck.anderson@oracle.com>
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+Signed-off-by: Eric Paris <eparis@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4client.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ kernel/audit.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/fs/nfs/nfs4client.c
-+++ b/fs/nfs/nfs4client.c
-@@ -493,9 +493,10 @@ int nfs40_walk_client_list(struct nfs_cl
- 			prev = pos;
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -102,7 +102,8 @@ static int	audit_rate_limit;
  
- 			status = nfs_wait_client_init_complete(pos);
--			spin_lock(&nn->nfs_client_lock);
- 			if (status < 0)
--				continue;
-+				goto out;
-+			status = -NFS4ERR_STALE_CLIENTID;
-+			spin_lock(&nn->nfs_client_lock);
- 		}
- 		if (pos->cl_cons_state != NFS_CS_READY)
- 			continue;
-@@ -633,7 +634,8 @@ int nfs41_walk_client_list(struct nfs_cl
- 			}
- 			spin_lock(&nn->nfs_client_lock);
- 			if (status < 0)
--				continue;
-+				break;
-+			status = -NFS4ERR_STALE_CLIENTID;
- 		}
- 		if (pos->cl_cons_state != NFS_CS_READY)
- 			continue;
+ /* Number of outstanding audit_buffers allowed. */
+ static int	audit_backlog_limit = 64;
+-static int	audit_backlog_wait_time = 60 * HZ;
++#define AUDIT_BACKLOG_WAIT_TIME (60 * HZ)
++static int	audit_backlog_wait_time = AUDIT_BACKLOG_WAIT_TIME;
+ static int	audit_backlog_wait_overflow = 0;
+ 
+ /* The identity of the user shutting down the audit system. */
+@@ -1239,6 +1240,8 @@ struct audit_buffer *audit_log_start(str
+ 		return NULL;
+ 	}
+ 
++	audit_backlog_wait_time = AUDIT_BACKLOG_WAIT_TIME;
++
+ 	ab = audit_buffer_alloc(ctx, gfp_mask, type);
+ 	if (!ab) {
+ 		audit_log_lost("out of memory in audit_log_start");
 
 
