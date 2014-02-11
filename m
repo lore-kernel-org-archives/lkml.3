@@ -1,179 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932443AbaBKUVj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:21:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39960 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753364AbaBKTG1 (ORCPT
+	id S1753817AbaBKUV4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:21:56 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:48330 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753858AbaBKUVv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:27 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>, Miklos Szeredi <mszeredi@suse.cz>
-Subject: [PATCH 3.12 007/107] fuse: fix pipe_buf_operations
-Date: Tue, 11 Feb 2014 11:04:33 -0800
-Message-Id: <20140211184748.414620016@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
-References: <20140211184748.191276235@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Tue, 11 Feb 2014 15:21:51 -0500
+Date: Tue, 11 Feb 2014 14:19:33 -0600
+From: Josh Cartwright <joshc@codeaurora.org>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-mm-sig@lists.linaro.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>, Michal Nazarewicz <mina86@mina86.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Laura Abbott <lauraa@codeaurora.org>, Rob Herring <robh+dt@gmail.com>,
+        Olof Johansson <olof@lixom.net>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Kumar Gala <galak@codeaurora.org>,
+        Nishanth Peethambaran <nishanth.p@gmail.com>,
+        Marc <marc.ceeeee@gmail.com>
+Subject: Re: [PATCH v2 1/5] drivers: of: add initialization code for reserved
+ memory
+Message-ID: <20140211201933.GI841@joshc.qualcomm.com>
+References: <1391515773-6112-1-git-send-email-m.szyprowski@samsung.com>
+ <1391515773-6112-2-git-send-email-m.szyprowski@samsung.com>
+ <20140205110538.99E47C40A89@trevor.secretlab.ca>
+ <52FA0D6E.9090304@samsung.com>
+ <20140211121316.24032C40C4D@trevor.secretlab.ca>
+ <52FA33E2.4050004@samsung.com>
+ <20140211190104.7E6C5C4140E@trevor.secretlab.ca>
+ <1392148971.3835.15.camel@pasglop>
+ <52FA8245.5050707@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52FA8245.5050707@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Feb 11, 2014 at 09:04:21PM +0100, Tomasz Figa wrote:
+> 
+> 
+> On 11.02.2014 21:02, Benjamin Herrenschmidt wrote:
+> >On Tue, 2014-02-11 at 19:01 +0000, Grant Likely wrote:
+> >
+> >>>except that the former IMHO better suits the definition of memory
+> >>>region, which I see as a single contiguous range of memory and can be
+> >>>simplified to have a single reg entry per region.
+> >>
+> >>My point is rather if multiple reg tuples are found in a reserved memory
+> >>node, the kernel must respect them and reserve the memory. I'm not
+> >>arguing about whether or not that makes for a good binding.
+> >
+> >agreed.
+> 
+> My point is why, if the binding defines that just a single tuple should be
+> provided.
 
-------------------
+FWIW, the usecase I had mentioned in reply to Grant in the patch 5/5
+thread [1] could make use of this.  The shared memory region is split
+into a main chunk and several "auxiliary" chunk, but collectively these
+regions all share the same heap state.
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+  Josh
 
-commit 28a625cbc2a14f17b83e47ef907b2658576a32aa upstream.
+1: http://lkml.kernel.org/r/20140205192502.GO20228@joshc.qualcomm.com
 
-Having this struct in module memory could Oops when if the module is
-unloaded while the buffer still persists in a pipe.
-
-Since sock_pipe_buf_ops is essentially the same as fuse_dev_pipe_buf_steal
-merge them into nosteal_pipe_buf_ops (this is the same as
-default_pipe_buf_ops except stealing the page from the buffer is not
-allowed).
-
-Reported-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/fuse/dev.c             |   22 +++++-----------------
- fs/splice.c               |   18 ++++++++++++++++++
- include/linux/pipe_fs_i.h |    2 ++
- net/core/skbuff.c         |   32 +-------------------------------
- 4 files changed, 26 insertions(+), 48 deletions(-)
-
---- a/fs/fuse/dev.c
-+++ b/fs/fuse/dev.c
-@@ -1296,22 +1296,6 @@ static ssize_t fuse_dev_read(struct kioc
- 	return fuse_dev_do_read(fc, file, &cs, iov_length(iov, nr_segs));
- }
- 
--static int fuse_dev_pipe_buf_steal(struct pipe_inode_info *pipe,
--				   struct pipe_buffer *buf)
--{
--	return 1;
--}
--
--static const struct pipe_buf_operations fuse_dev_pipe_buf_ops = {
--	.can_merge = 0,
--	.map = generic_pipe_buf_map,
--	.unmap = generic_pipe_buf_unmap,
--	.confirm = generic_pipe_buf_confirm,
--	.release = generic_pipe_buf_release,
--	.steal = fuse_dev_pipe_buf_steal,
--	.get = generic_pipe_buf_get,
--};
--
- static ssize_t fuse_dev_splice_read(struct file *in, loff_t *ppos,
- 				    struct pipe_inode_info *pipe,
- 				    size_t len, unsigned int flags)
-@@ -1358,7 +1342,11 @@ static ssize_t fuse_dev_splice_read(stru
- 		buf->page = bufs[page_nr].page;
- 		buf->offset = bufs[page_nr].offset;
- 		buf->len = bufs[page_nr].len;
--		buf->ops = &fuse_dev_pipe_buf_ops;
-+		/*
-+		 * Need to be careful about this.  Having buf->ops in module
-+		 * code can Oops if the buffer persists after module unload.
-+		 */
-+		buf->ops = &nosteal_pipe_buf_ops;
- 
- 		pipe->nrbufs++;
- 		page_nr++;
---- a/fs/splice.c
-+++ b/fs/splice.c
-@@ -555,6 +555,24 @@ static const struct pipe_buf_operations
- 	.get = generic_pipe_buf_get,
- };
- 
-+static int generic_pipe_buf_nosteal(struct pipe_inode_info *pipe,
-+				    struct pipe_buffer *buf)
-+{
-+	return 1;
-+}
-+
-+/* Pipe buffer operations for a socket and similar. */
-+const struct pipe_buf_operations nosteal_pipe_buf_ops = {
-+	.can_merge = 0,
-+	.map = generic_pipe_buf_map,
-+	.unmap = generic_pipe_buf_unmap,
-+	.confirm = generic_pipe_buf_confirm,
-+	.release = generic_pipe_buf_release,
-+	.steal = generic_pipe_buf_nosteal,
-+	.get = generic_pipe_buf_get,
-+};
-+EXPORT_SYMBOL(nosteal_pipe_buf_ops);
-+
- static ssize_t kernel_readv(struct file *file, const struct iovec *vec,
- 			    unsigned long vlen, loff_t offset)
- {
---- a/include/linux/pipe_fs_i.h
-+++ b/include/linux/pipe_fs_i.h
-@@ -157,6 +157,8 @@ int generic_pipe_buf_confirm(struct pipe
- int generic_pipe_buf_steal(struct pipe_inode_info *, struct pipe_buffer *);
- void generic_pipe_buf_release(struct pipe_inode_info *, struct pipe_buffer *);
- 
-+extern const struct pipe_buf_operations nosteal_pipe_buf_ops;
-+
- /* for F_SETPIPE_SZ and F_GETPIPE_SZ */
- long pipe_fcntl(struct file *, unsigned int, unsigned long arg);
- struct pipe_inode_info *get_pipe_info(struct file *file);
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -74,36 +74,6 @@
- struct kmem_cache *skbuff_head_cache __read_mostly;
- static struct kmem_cache *skbuff_fclone_cache __read_mostly;
- 
--static void sock_pipe_buf_release(struct pipe_inode_info *pipe,
--				  struct pipe_buffer *buf)
--{
--	put_page(buf->page);
--}
--
--static void sock_pipe_buf_get(struct pipe_inode_info *pipe,
--				struct pipe_buffer *buf)
--{
--	get_page(buf->page);
--}
--
--static int sock_pipe_buf_steal(struct pipe_inode_info *pipe,
--			       struct pipe_buffer *buf)
--{
--	return 1;
--}
--
--
--/* Pipe buffer operations for a socket. */
--static const struct pipe_buf_operations sock_pipe_buf_ops = {
--	.can_merge = 0,
--	.map = generic_pipe_buf_map,
--	.unmap = generic_pipe_buf_unmap,
--	.confirm = generic_pipe_buf_confirm,
--	.release = sock_pipe_buf_release,
--	.steal = sock_pipe_buf_steal,
--	.get = sock_pipe_buf_get,
--};
--
- /**
-  *	skb_panic - private function for out-of-line support
-  *	@skb:	buffer
-@@ -1800,7 +1770,7 @@ int skb_splice_bits(struct sk_buff *skb,
- 		.partial = partial,
- 		.nr_pages_max = MAX_SKB_FRAGS,
- 		.flags = flags,
--		.ops = &sock_pipe_buf_ops,
-+		.ops = &nosteal_pipe_buf_ops,
- 		.spd_release = sock_spd_release,
- 	};
- 	struct sk_buff *frag_iter;
-
-
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
