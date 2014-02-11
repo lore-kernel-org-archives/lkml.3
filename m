@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357AbaBKTG0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:06:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39908 "EHLO
+	id S1755351AbaBKUYB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:24:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39954 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751939AbaBKTGS (ORCPT
+	with ESMTP id S1753353AbaBKTGZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:18 -0500
+	Tue, 11 Feb 2014 14:06:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Greg Thelen <gthelen@google.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        David Woodhouse <dwmw2@infradead.org>, Joerg Roedel <joro@8bytes.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.12 015/107] memcg: fix endless loop caused by mem_cgroup_iter
-Date: Tue, 11 Feb 2014 11:04:41 -0800
-Message-Id: <20140211184748.638971647@linuxfoundation.org>
+Subject: [PATCH 3.12 005/107] intel-iommu: fix off-by-one in pagetable freeing
+Date: Tue, 11 Feb 2014 11:04:31 -0800
+Message-Id: <20140211184748.352259842@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -31,98 +31,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Hocko <mhocko@suse.cz>
+From: Alex Williamson <alex.williamson@redhat.com>
 
-commit ecc736fc3c71c411a9d201d8588c9e7e049e5d8c upstream.
+commit 08336fd218e087cc4fcc458e6b6dcafe8702b098 upstream.
 
-Hugh has reported an endless loop when the hardlimit reclaim sees the
-same group all the time.  This might happen when the reclaim races with
-the memcg removal.
+dma_pte_free_level() has an off-by-one error when checking whether a pte
+is completely covered by a range.  Take for example the case of
+attempting to free pfn 0x0 - 0x1ff, ie.  512 entries covering the first
+2M superpage.
 
-shrink_zone
-                                                [rmdir root]
-  mem_cgroup_iter(root, NULL, reclaim)
-    // prev = NULL
-    rcu_read_lock()
-    mem_cgroup_iter_load
-      last_visited = iter->last_visited   // gets root || NULL
-      css_tryget(last_visited)            // failed
-      last_visited = NULL                 [1]
-    memcg = root = __mem_cgroup_iter_next(root, NULL)
-    mem_cgroup_iter_update
-      iter->last_visited = root;
-    reclaim->generation = iter->generation
+The level_size() is 0x200 and we test:
 
- mem_cgroup_iter(root, root, reclaim)
-   // prev = root
-   rcu_read_lock
-    mem_cgroup_iter_load
-      last_visited = iter->last_visited   // gets root
-      css_tryget(last_visited)            // failed
-    [1]
+  static void dma_pte_free_level(...
+	...
 
-The issue seemed to be introduced by commit 5f5781619718 ("memcg: relax
-memcg iter caching") which has replaced unconditional css_get/css_put by
-css_tryget/css_put for the cached iterator.
+	if (!(0 > 0 || 0x1ff < 0 + 0x200)) {
+		...
+	}
 
-This patch fixes the issue by skipping css_tryget on the root of the
-tree walk in mem_cgroup_iter_load and symmetrically doesn't release it
-in mem_cgroup_iter_update.
+Clearly the 2nd test is true, which means we fail to take the branch to
+clear and free the pagetable entry.  As a result, we're leaking
+pagetables and failing to install new pages over the range.
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Reported-by: Hugh Dickins <hughd@google.com>
-Tested-by: Hugh Dickins <hughd@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Greg Thelen <gthelen@google.com>
+This was found with a PCI device assigned to a QEMU guest using vfio-pci
+without a VGA device present.  The first 1M of guest address space is
+mapped with various combinations of 4K pages, but eventually the range
+is entirely freed and replaced with a 2M contiguous mapping.
+intel-iommu errors out with something like:
+
+  ERROR: DMA PTE for vPFN 0x0 already set (to 5c2b8003 not 849c00083)
+
+In this case 5c2b8003 is the pointer to the previous leaf page that was
+neither freed nor cleared and 849c00083 is the superpage entry that
+we're trying to replace it with.
+
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Joerg Roedel <joro@8bytes.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/memcontrol.c |   17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
+ drivers/iommu/intel-iommu.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1120,7 +1120,15 @@ mem_cgroup_iter_load(struct mem_cgroup_r
- 	if (iter->last_dead_count == *sequence) {
- 		smp_rmb();
- 		position = iter->last_visited;
--		if (position && !css_tryget(&position->css))
-+
-+		/*
-+		 * We cannot take a reference to root because we might race
-+		 * with root removal and returning NULL would end up in
-+		 * an endless loop on the iterator user level when root
-+		 * would be returned all the time.
-+		 */
-+		if (position && position != root &&
-+				!css_tryget(&position->css))
- 			position = NULL;
- 	}
- 	return position;
-@@ -1129,9 +1137,11 @@ mem_cgroup_iter_load(struct mem_cgroup_r
- static void mem_cgroup_iter_update(struct mem_cgroup_reclaim_iter *iter,
- 				   struct mem_cgroup *last_visited,
- 				   struct mem_cgroup *new_position,
-+				   struct mem_cgroup *root,
- 				   int sequence)
- {
--	if (last_visited)
-+	/* root reference counting symmetric to mem_cgroup_iter_load */
-+	if (last_visited && last_visited != root)
- 		css_put(&last_visited->css);
- 	/*
- 	 * We store the sequence count from the time @last_visited was
-@@ -1206,7 +1216,8 @@ struct mem_cgroup *mem_cgroup_iter(struc
- 		memcg = __mem_cgroup_iter_next(root, last_visited);
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -917,7 +917,7 @@ static void dma_pte_free_level(struct dm
  
- 		if (reclaim) {
--			mem_cgroup_iter_update(iter, last_visited, memcg, seq);
-+			mem_cgroup_iter_update(iter, last_visited, memcg, root,
-+					seq);
- 
- 			if (!memcg)
- 				iter->generation++;
+ 		/* If range covers entire pagetable, free it */
+ 		if (!(start_pfn > level_pfn ||
+-		      last_pfn < level_pfn + level_size(level))) {
++		      last_pfn < level_pfn + level_size(level) - 1)) {
+ 			dma_clear_pte(pte);
+ 			domain_flush_cache(domain, pte, sizeof(*pte));
+ 			free_pgtable_page(level_pte);
 
 
