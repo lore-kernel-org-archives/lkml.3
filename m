@@ -1,109 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751992AbaBKSMJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 13:12:09 -0500
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:60434 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751760AbaBKSMI (ORCPT
+	id S1752129AbaBKSMQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 13:12:16 -0500
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:60052 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752093AbaBKSMN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 13:12:08 -0500
+	Tue, 11 Feb 2014 13:12:13 -0500
 From: William Roberts <bill.c.roberts@gmail.com>
 To: linux-audit@redhat.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         rgb@redhat.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
         sds@tycho.nsa.gov
 Cc: William Roberts <wroberts@tresys.com>
-Subject: [PATCH v7 1/3] mm: Create utility function for accessing a tasks commandline value
-Date: Tue, 11 Feb 2014 10:11:59 -0800
-Message-Id: <1392142321-16217-1-git-send-email-wroberts@tresys.com>
+Subject: [PATCH v7 3/3] audit: Audit proc/<pid>/cmdline aka proctitle
+Date: Tue, 11 Feb 2014 10:12:01 -0800
+Message-Id: <1392142321-16217-3-git-send-email-wroberts@tresys.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1392142321-16217-1-git-send-email-wroberts@tresys.com>
+References: <1392142321-16217-1-git-send-email-wroberts@tresys.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-introduce get_cmdline() for retreiving the value of a processes
-proc/self/cmdline value.
+During an audit event, cache and print the value of the process's
+proctitle value (proc/<pid>/cmdline). This is useful in situations
+where processes are started via fork'd virtual machines where the
+comm field is incorrect. Often times, setting the comm field still
+is insufficient as the comm width is not very wide and most
+virtual machine "package names" do not fit. Also, during execution,
+many threads have their comm field set as well. By tying it back to
+the global cmdline value for the process, audit records will be more
+complete in systems with these properties. An example of where this
+is useful and applicable is in the realm of Android. With Android,
+their is no fork/exec for VM instances. The bare, preloaded Dalvik
+VM listens for a fork and specialize request. When this request comes
+in, the VM forks, and the loads the specific application (specializing).
+This was done to take advantage of COW and to not require a load of
+basic packages by the VM on very app spawn. When this spawn occurs,
+the package name is set via setproctitle() and shows up in procfs.
+Many of these package names are longer then 16 bytes, the historical
+width of task->comm. Having the cmdline in the audit records will
+couple the application back to the record directly. Also, on my
+Debian development box, some audit records were more useful then
+what was printed under comm.
 
-Acked-by: David Rientjes <rientjes@google.com>
-Acked-by: Stephen Smalley <sds@tycho.nsa.gov>
-Acked-by: Richard Guy Briggs <rgb@redhat.com>
+The cached proctitle is tied to the life-cycle of the audit_context
+structure and is built on demand.
+
+Proctitle is controllable by userspace, and thus should not be trusted.
+It is meant as an aid to assist in debugging. The proctitle event is
+emitted during syscall audits, and can be filtered with auditctl.
+
+Example:
+type=AVC msg=audit(1391217013.924:386): avc:  denied  { getattr } for  pid=1971 comm="mkdir" name="/" dev="selinuxfs" ino=1 scontext=system_u:system_r:consolekit_t:s0-s0:c0.c255 tcontext=system_u:object_r:security_t:s0 tclass=filesystem
+type=SYSCALL msg=audit(1391217013.924:386): arch=c000003e syscall=137 success=yes exit=0 a0=7f019dfc8bd7 a1=7fffa6aed2c0 a2=fffffffffff4bd25 a3=7fffa6aed050 items=0 ppid=1967 pid=1971 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm="mkdir" exe="/bin/mkdir" subj=system_u:system_r:consolekit_t:s0-s0:c0.c255 key=(null)
+type=UNKNOWN[1327] msg=audit(1391217013.924:386):  proctitle=6D6B646972002D70002F7661722F72756E2F636F6E736F6C65
+
+Acked-by: Steve Grubb <sgrubb@redhat.com> (wrt record formating)
 
 Signed-off-by: William Roberts <wroberts@tresys.com>
 ---
- include/linux/mm.h |    1 +
- mm/util.c          |   48 ++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 49 insertions(+)
+ include/uapi/linux/audit.h |    1 +
+ kernel/audit.h             |    6 ++++
+ kernel/auditsc.c           |   67 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 74 insertions(+)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index f28f46e..db89a94 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1175,6 +1175,7 @@ void account_page_writeback(struct page *page);
- int set_page_dirty(struct page *page);
- int set_page_dirty_lock(struct page *page);
- int clear_page_dirty_for_io(struct page *page);
-+int get_cmdline(struct task_struct *task, char *buffer, int buflen);
+diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
+index 2d48fe1..4315ee9 100644
+--- a/include/uapi/linux/audit.h
++++ b/include/uapi/linux/audit.h
+@@ -109,6 +109,7 @@
+ #define AUDIT_NETFILTER_PKT	1324	/* Packets traversing netfilter chains */
+ #define AUDIT_NETFILTER_CFG	1325	/* Netfilter chain modifications */
+ #define AUDIT_SECCOMP		1326	/* Secure Computing event */
++#define AUDIT_PROCTITLE		1327	/* Proctitle emit event */
  
- /* Is the vma a continuation of the stack vma above it? */
- static inline int vma_growsdown(struct vm_area_struct *vma, unsigned long addr)
-diff --git a/mm/util.c b/mm/util.c
-index a24aa22..8122710 100644
---- a/mm/util.c
-+++ b/mm/util.c
-@@ -445,6 +445,54 @@ unsigned long vm_commit_limit(void)
- 	return allowed;
+ #define AUDIT_AVC		1400	/* SE Linux avc denial or grant */
+ #define AUDIT_SELINUX_ERR	1401	/* Internal SE Linux Errors */
+diff --git a/kernel/audit.h b/kernel/audit.h
+index 57cc64d..38c967d 100644
+--- a/kernel/audit.h
++++ b/kernel/audit.h
+@@ -106,6 +106,11 @@ struct audit_names {
+ 	bool			should_free;
+ };
+ 
++struct audit_proctitle {
++	int	len;	/* length of the cmdline field. */
++	char	*value;	/* the cmdline field */
++};
++
+ /* The per-task audit context. */
+ struct audit_context {
+ 	int		    dummy;	/* must be the first element */
+@@ -202,6 +207,7 @@ struct audit_context {
+ 		} execve;
+ 	};
+ 	int fds[2];
++	struct audit_proctitle proctitle;
+ 
+ #if AUDIT_DEBUG
+ 	int		    put_count;
+diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+index 10176cd..e342eb0 100644
+--- a/kernel/auditsc.c
++++ b/kernel/auditsc.c
+@@ -68,6 +68,7 @@
+ #include <linux/capability.h>
+ #include <linux/fs_struct.h>
+ #include <linux/compat.h>
++#include <linux/ctype.h>
+ 
+ #include "audit.h"
+ 
+@@ -79,6 +80,9 @@
+ /* no execve audit message should be longer than this (userspace limits) */
+ #define MAX_EXECVE_AUDIT_LEN 7500
+ 
++/* max length to print of cmdline/proctitle value during audit */
++#define MAX_PROCTITLE_AUDIT_LEN 128
++
+ /* number of audit rules */
+ int audit_n_rules;
+ 
+@@ -842,6 +846,13 @@ static inline struct audit_context *audit_get_context(struct task_struct *tsk,
+ 	return context;
  }
  
-+/**
-+ * get_cmdline() - copy the cmdline value to a buffer.
-+ * @task:     the task whose cmdline value to copy.
-+ * @buffer:   the buffer to copy to.
-+ * @buflen:   the length of the buffer. Larger cmdline values are truncated
-+ *            to this length.
-+ * Returns the size of the cmdline field copied. Note that the copy does
-+ * not guarantee an ending NULL byte.
-+ */
-+int get_cmdline(struct task_struct *task, char *buffer, int buflen)
++static inline void audit_proctitle_free(struct audit_context *context)
 +{
-+	int res = 0;
-+	unsigned int len;
-+	struct mm_struct *mm = get_task_mm(task);
-+	if (!mm)
-+		goto out;
-+	if (!mm->arg_end)
-+		goto out_mm;	/* Shh! No looking before we're done */
-+
-+	len = mm->arg_end - mm->arg_start;
-+
-+	if (len > buflen)
-+		len = buflen;
-+
-+	res = access_process_vm(task, mm->arg_start, buffer, len, 0);
-+
-+	/*
-+	 * If the nul at the end of args has been overwritten, then
-+	 * assume application is using setproctitle(3).
-+	 */
-+	if (res > 0 && buffer[res-1] != '\0' && len < buflen) {
-+		len = strnlen(buffer, res);
-+		if (len < res) {
-+			res = len;
-+		} else {
-+			len = mm->env_end - mm->env_start;
-+			if (len > buflen - res)
-+				len = buflen - res;
-+			res += access_process_vm(task, mm->env_start,
-+						 buffer+res, len, 0);
-+			res = strnlen(buffer, res);
-+		}
-+	}
-+out_mm:
-+	mmput(mm);
-+out:
-+	return res;
++	kfree(context->proctitle.value);
++	context->proctitle.value = NULL;
++	context->proctitle.len = 0;
 +}
++
+ static inline void audit_free_names(struct audit_context *context)
+ {
+ 	struct audit_names *n, *next;
+@@ -955,6 +966,7 @@ static inline void audit_free_context(struct audit_context *context)
+ 	audit_free_aux(context);
+ 	kfree(context->filterkey);
+ 	kfree(context->sockaddr);
++	audit_proctitle_free(context);
+ 	kfree(context);
+ }
  
- /* Tracepoints definitions. */
- EXPORT_TRACEPOINT_SYMBOL(kmalloc);
+@@ -1271,6 +1283,59 @@ static void show_special(struct audit_context *context, int *call_panic)
+ 	audit_log_end(ab);
+ }
+ 
++static inline int audit_proctitle_rtrim(char *proctitle, int len)
++{
++	char *end = proctitle + len - 1;
++	while (end > proctitle && !isprint(*end))
++		end--;
++
++	/* catch the case where proctitle is only 1 non-print character */
++	len = end - proctitle + 1;
++	len -= isprint(proctitle[len-1]) == 0;
++	return len;
++}
++
++static void audit_log_proctitle(struct task_struct *tsk,
++			 struct audit_context *context)
++{
++	int res;
++	char *buf;
++	char *msg = "(null)";
++	int len = strlen(msg);
++	struct audit_buffer *ab;
++
++	ab = audit_log_start(context, GFP_KERNEL, AUDIT_PROCTITLE);
++	if (!ab)
++		return;	/* audit_panic or being filtered */
++
++	audit_log_format(ab, "proctitle=");
++
++	/* Not  cached */
++	if (!context->proctitle.value) {
++		buf = kmalloc(MAX_PROCTITLE_AUDIT_LEN, GFP_KERNEL);
++		if (!buf)
++			goto out;
++		/* Historically called this from procfs naming */
++		res = get_cmdline(tsk, buf, MAX_PROCTITLE_AUDIT_LEN);
++		if (res == 0) {
++			kfree(buf);
++			goto out;
++		}
++		res = audit_proctitle_rtrim(buf, res);
++		if (res == 0) {
++			kfree(buf);
++			goto out;
++		}
++		context->proctitle.value = buf;
++		context->proctitle.len = res;
++	}
++	msg = context->proctitle.value;
++	len = context->proctitle.len;
++out:
++	audit_log_n_untrustedstring(ab, msg, len);
++	audit_log_end(ab);
++}
++
+ static void audit_log_exit(struct audit_context *context, struct task_struct *tsk)
+ {
+ 	int i, call_panic = 0;
+@@ -1388,6 +1453,8 @@ static void audit_log_exit(struct audit_context *context, struct task_struct *ts
+ 		audit_log_name(context, n, NULL, i++, &call_panic);
+ 	}
+ 
++	audit_log_proctitle(tsk, context);
++
+ 	/* Send end of event record to help user space know we are finished */
+ 	ab = audit_log_start(context, GFP_KERNEL, AUDIT_EOE);
+ 	if (ab)
 -- 
 1.7.9.5
 
