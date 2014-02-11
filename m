@@ -1,66 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752670AbaBKHgF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 02:36:05 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:4755 "EHLO song.cn.fujitsu.com"
+	id S1752708AbaBKHgJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 02:36:09 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:6289 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750903AbaBKHfH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1750831AbaBKHfH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Feb 2014 02:35:07 -0500
 X-IronPort-AV: E=Sophos;i="4.95,824,1384272000"; 
-   d="scan'208";a="9505339"
+   d="scan'208";a="9505337"
 From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
 To: linux-kernel@vger.kernel.org
 Cc: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: [PATCH 9/9] trace: Replace hardcoding of 19 with MAX_NICE.
-Date: Tue, 11 Feb 2014 15:34:53 +0800
-Message-Id: <eeb2a85d74c71e0d50c88789f99ad857a6b4b7b4.1392103744.git.yangds.fnst@cn.fujitsu.com>
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH 3/9] sched: prio: Use NICE_WIDTH macro to avoid using of hard coding of 40 and 20 in prio.h.
+Date: Tue, 11 Feb 2014 15:34:47 +0800
+Message-Id: <72dc351df816a975e30b6320754fb52823d2aa3f.1392103744.git.yangds.fnst@cn.fujitsu.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <cover.1392103744.git.yangds.fnst@cn.fujitsu.com>
 References: <cover.1392103744.git.yangds.fnst@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/02/11 15:33:02,
+ 2014/02/11 15:33:01,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/02/11 15:33:05,
-	Serialize complete at 2014/02/11 15:33:05
+ 2014/02/11 15:33:04,
+	Serialize complete at 2014/02/11 15:33:04
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-cc: Steven Rostedt <rostedt@goodmis.org>
-cc: Frederic Weisbecker <fweisbec@gmail.com>
-cc: Ingo Molnar <mingo@redhat.com>
+cc: Ingo Molnar <mingo@kernel.org>
+cc: Peter Zijlstra <peterz@infradead.org>
 ---
- kernel/trace/ring_buffer_benchmark.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ include/linux/sched/prio.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/trace/ring_buffer_benchmark.c b/kernel/trace/ring_buffer_benchmark.c
-index a5457d5..0434ff1 100644
---- a/kernel/trace/ring_buffer_benchmark.c
-+++ b/kernel/trace/ring_buffer_benchmark.c
-@@ -40,8 +40,8 @@ static int write_iteration = 50;
- module_param(write_iteration, uint, 0644);
- MODULE_PARM_DESC(write_iteration, "# of writes between timestamp readings");
+diff --git a/include/linux/sched/prio.h b/include/linux/sched/prio.h
+index c6974c4..ac32258 100644
+--- a/include/linux/sched/prio.h
++++ b/include/linux/sched/prio.h
+@@ -21,8 +21,8 @@
+ #define MAX_USER_RT_PRIO	100
+ #define MAX_RT_PRIO		MAX_USER_RT_PRIO
  
--static int producer_nice = 19;
--static int consumer_nice = 19;
-+static int producer_nice = MAX_NICE;
-+static int consumer_nice = MAX_NICE;
+-#define MAX_PRIO		(MAX_RT_PRIO + 40)
+-#define DEFAULT_PRIO		(MAX_RT_PRIO + 20)
++#define MAX_PRIO		(MAX_RT_PRIO + NICE_WIDTH)
++#define DEFAULT_PRIO		(MAX_RT_PRIO + NICE_WIDTH / 2)
  
- static int producer_fifo = -1;
- static int consumer_fifo = -1;
-@@ -308,7 +308,7 @@ static void ring_buffer_producer(void)
- 
- 	/* Let the user know that the test is running at low priority */
- 	if (producer_fifo < 0 && consumer_fifo < 0 &&
--	    producer_nice == 19 && consumer_nice == 19)
-+	    producer_nice == MAX_NICE && consumer_nice == MAX_NICE)
- 		trace_printk("WARNING!!! This test is running at lowest priority.\n");
- 
- 	trace_printk("Time:     %lld (usecs)\n", time);
+ /*
+  * Convert user-nice values [ -20 ... 0 ... 19 ]
 -- 
 1.8.2.1
 
