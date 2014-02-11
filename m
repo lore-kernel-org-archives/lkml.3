@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755746AbaBKUCB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:02:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40123 "EHLO
+	id S1755776AbaBKUCc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:02:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40119 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753697AbaBKTHB (ORCPT
+	with ESMTP id S1753686AbaBKTHA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:07:01 -0500
+	Tue, 11 Feb 2014 14:07:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.12 077/107] drm/radeon/DCE4+: clear bios scratch dpms bit (v2)
-Date: Tue, 11 Feb 2014 11:05:43 -0800
-Message-Id: <20140211184750.395364691@linuxfoundation.org>
+        Olivier Grenie <olivier.grenie@parrot.com>,
+        Patrick Boettcher <pboettcher@kernellabs.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.12 068/107] [media] dib8000: fix regression with dib807x
+Date: Tue, 11 Feb 2014 11:05:34 -0800
+Message-Id: <20140211184750.135276714@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -28,38 +30,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Olivier Grenie <olivier.grenie@parrot.com>
 
-commit 6802d4bad83f50081b2788698570218aaff8d10e upstream.
+commit d67350f8c4e67f5eba627e1fd111f16257ca9c95 upstream.
 
-The BlankCrtc table in some DCE8 boards has some
-logic shortcuts for the vbios when this bit is set.
-Clear it for driver use.
+Commit 173a64cb3fcf broke support for some dib807x versions.
 
-v2: fix typo
+Fix it by providing backward compatibility with the older versions.
 
-Bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=73420
+[mkrufky@linuxtv.org: conflict handling and CodingStyle fixes]
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Olivier Grenie <olivier.grenie@parrot.com>
+Acked-by: Patrick Boettcher <pboettcher@kernellabs.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_atombios.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/media/dvb-frontends/dib8000.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -3944,6 +3944,10 @@ void radeon_atom_initialize_bios_scratch
- 	/* tell the bios not to handle mode switching */
- 	bios_6_scratch |= ATOM_S6_ACC_BLOCK_DISPLAY_SWITCH;
+--- a/drivers/media/dvb-frontends/dib8000.c
++++ b/drivers/media/dvb-frontends/dib8000.c
+@@ -2462,7 +2462,8 @@ static int dib8000_autosearch_start(stru
+ 	if (state->revision == 0x8090)
+ 		internal = dib8000_read32(state, 23) / 1000;
  
-+	/* clear the vbios dpms state */
-+	if (ASIC_IS_DCE4(rdev))
-+		bios_2_scratch &= ~ATOM_S2_DEVICE_DPMS_STATE;
-+
- 	if (rdev->family >= CHIP_R600) {
- 		WREG32(R600_BIOS_2_SCRATCH, bios_2_scratch);
- 		WREG32(R600_BIOS_6_SCRATCH, bios_6_scratch);
+-	if (state->autosearch_state == AS_SEARCHING_FFT) {
++	if ((state->revision >= 0x8002) &&
++	    (state->autosearch_state == AS_SEARCHING_FFT)) {
+ 		dib8000_write_word(state,  37, 0x0065); /* P_ctrl_pha_off_max default values */
+ 		dib8000_write_word(state, 116, 0x0000); /* P_ana_gain to 0 */
+ 
+@@ -2498,7 +2499,8 @@ static int dib8000_autosearch_start(stru
+ 		dib8000_write_word(state, 770, (dib8000_read_word(state, 770) & 0xdfff) | (1 << 13)); /* P_restart_ccg = 1 */
+ 		dib8000_write_word(state, 770, (dib8000_read_word(state, 770) & 0xdfff) | (0 << 13)); /* P_restart_ccg = 0 */
+ 		dib8000_write_word(state, 0, (dib8000_read_word(state, 0) & 0x7ff) | (0 << 15) | (1 << 13)); /* P_restart_search = 0; */
+-	} else if (state->autosearch_state == AS_SEARCHING_GUARD) {
++	} else if ((state->revision >= 0x8002) &&
++		   (state->autosearch_state == AS_SEARCHING_GUARD)) {
+ 		c->transmission_mode = TRANSMISSION_MODE_8K;
+ 		c->guard_interval = GUARD_INTERVAL_1_8;
+ 		c->inversion = 0;
+@@ -2600,7 +2602,8 @@ static int dib8000_autosearch_irq(struct
+ 	struct dib8000_state *state = fe->demodulator_priv;
+ 	u16 irq_pending = dib8000_read_word(state, 1284);
+ 
+-	if (state->autosearch_state == AS_SEARCHING_FFT) {
++	if ((state->revision >= 0x8002) &&
++	    (state->autosearch_state == AS_SEARCHING_FFT)) {
+ 		if (irq_pending & 0x1) {
+ 			dprintk("dib8000_autosearch_irq: max correlation result available");
+ 			return 3;
 
 
