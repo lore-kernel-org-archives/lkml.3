@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753985AbaBKUlF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:41:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39769 "EHLO
+	id S1754028AbaBKUlp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:41:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39762 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753074AbaBKTFz (ORCPT
+	with ESMTP id S1751660AbaBKTFy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:05:55 -0500
+	Tue, 11 Feb 2014 14:05:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Airlie <airlied@redhat.com>
-Subject: [PATCH 3.13 104/120] drm/mgag200: fix oops in cursor code.
-Date: Tue, 11 Feb 2014 11:05:45 -0800
-Message-Id: <20140211184826.598434860@linuxfoundation.org>
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        Jakob Bornecrantz <jakob@vmware.com>
+Subject: [PATCH 3.13 102/120] drm/vmwgfx: Fix the driver for large dma addresses
+Date: Tue, 11 Feb 2014 11:05:43 -0800
+Message-Id: <20140211184826.541626357@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -28,43 +29,314 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Airlie <airlied@redhat.com>
+From: Thomas Hellstrom <thellstrom@vmware.com>
 
-commit 53dac830537b51df555ba5e7ebb236705b7eaa7c upstream.
+commit 0d00c488f3de59d19784d5ce774528acaa194525 upstream.
 
-In some cases we enter the cursor code with file_priv = NULL causing an oops,
-we also can try to unpin something that isn't pinned, and this is a good fix for it.
+With dma compliance / IOMMU support added to the driver in kernel 3.13,
+the dma addresses can exceed 44 bits, which is what we support in
+32-bit mode and with GMR1.
+So in 32-bit mode and optionally in 64-bit mode, restrict the dma
+addresses to 44 bits, and strip the old GMR1 code.
 
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
+Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/mgag200/mgag200_cursor.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/vmwgfx/vmwgfx_drv.c |   47 ++++++++--
+ drivers/gpu/drm/vmwgfx/vmwgfx_drv.h |    1 
+ drivers/gpu/drm/vmwgfx/vmwgfx_gmr.c |  160 ------------------------------------
+ 3 files changed, 39 insertions(+), 169 deletions(-)
 
---- a/drivers/gpu/drm/mgag200/mgag200_cursor.c
-+++ b/drivers/gpu/drm/mgag200/mgag200_cursor.c
-@@ -22,8 +22,10 @@ static void mga_hide_cursor(struct mga_d
- {
- 	WREG8(MGA_CURPOSXL, 0);
- 	WREG8(MGA_CURPOSXH, 0);
--	mgag200_bo_unpin(mdev->cursor.pixels_1);
--	mgag200_bo_unpin(mdev->cursor.pixels_2);
-+	if (mdev->cursor.pixels_1->pin_count)
-+		mgag200_bo_unpin(mdev->cursor.pixels_1);
-+	if (mdev->cursor.pixels_2->pin_count)
-+		mgag200_bo_unpin(mdev->cursor.pixels_2);
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
+@@ -189,6 +189,7 @@ static int enable_fbdev = IS_ENABLED(CON
+ static int vmw_force_iommu;
+ static int vmw_restrict_iommu;
+ static int vmw_force_coherent;
++static int vmw_restrict_dma_mask;
+ 
+ static int vmw_probe(struct pci_dev *, const struct pci_device_id *);
+ static void vmw_master_init(struct vmw_master *);
+@@ -203,6 +204,8 @@ MODULE_PARM_DESC(restrict_iommu, "Try to
+ module_param_named(restrict_iommu, vmw_restrict_iommu, int, 0600);
+ MODULE_PARM_DESC(force_coherent, "Force coherent TTM pages");
+ module_param_named(force_coherent, vmw_force_coherent, int, 0600);
++MODULE_PARM_DESC(restrict_dma_mask, "Restrict DMA mask to 44 bits with IOMMU");
++module_param_named(restrict_dma_mask, vmw_restrict_dma_mask, int, 0600);
+ 
+ 
+ static void vmw_print_capabilities(uint32_t capabilities)
+@@ -510,6 +513,33 @@ out_fixup:
+ 	return 0;
  }
  
- int mga_crtc_cursor_set(struct drm_crtc *crtc,
-@@ -32,7 +34,7 @@ int mga_crtc_cursor_set(struct drm_crtc
- 			uint32_t width,
- 			uint32_t height)
++/**
++ * vmw_dma_masks - set required page- and dma masks
++ *
++ * @dev: Pointer to struct drm-device
++ *
++ * With 32-bit we can only handle 32 bit PFNs. Optionally set that
++ * restriction also for 64-bit systems.
++ */
++#ifdef CONFIG_INTEL_IOMMU
++static int vmw_dma_masks(struct vmw_private *dev_priv)
++{
++	struct drm_device *dev = dev_priv->dev;
++
++	if (intel_iommu_enabled &&
++	    (sizeof(unsigned long) == 4 || vmw_restrict_dma_mask)) {
++		DRM_INFO("Restricting DMA addresses to 44 bits.\n");
++		return dma_set_mask(dev->dev, DMA_BIT_MASK(44));
++	}
++	return 0;
++}
++#else
++static int vmw_dma_masks(struct vmw_private *dev_priv)
++{
++	return 0;
++}
++#endif
++
+ static int vmw_driver_load(struct drm_device *dev, unsigned long chipset)
  {
--	struct drm_device *dev = (struct drm_device *)file_priv->minor->dev;
-+	struct drm_device *dev = crtc->dev;
- 	struct mga_device *mdev = (struct mga_device *)dev->dev_private;
- 	struct mgag200_bo *pixels_1 = mdev->cursor.pixels_1;
- 	struct mgag200_bo *pixels_2 = mdev->cursor.pixels_2;
+ 	struct vmw_private *dev_priv;
+@@ -578,14 +608,9 @@ static int vmw_driver_load(struct drm_de
+ 
+ 	vmw_get_initial_size(dev_priv);
+ 
+-	if (dev_priv->capabilities & SVGA_CAP_GMR) {
+-		dev_priv->max_gmr_descriptors =
+-			vmw_read(dev_priv,
+-				 SVGA_REG_GMR_MAX_DESCRIPTOR_LENGTH);
++	if (dev_priv->capabilities & SVGA_CAP_GMR2) {
+ 		dev_priv->max_gmr_ids =
+ 			vmw_read(dev_priv, SVGA_REG_GMR_MAX_IDS);
+-	}
+-	if (dev_priv->capabilities & SVGA_CAP_GMR2) {
+ 		dev_priv->max_gmr_pages =
+ 			vmw_read(dev_priv, SVGA_REG_GMRS_MAX_PAGES);
+ 		dev_priv->memory_size =
+@@ -599,17 +624,17 @@ static int vmw_driver_load(struct drm_de
+ 		dev_priv->memory_size = 512*1024*1024;
+ 	}
+ 
++	ret = vmw_dma_masks(dev_priv);
++	if (unlikely(ret != 0))
++		goto out_err0;
++
+ 	mutex_unlock(&dev_priv->hw_mutex);
+ 
+ 	vmw_print_capabilities(dev_priv->capabilities);
+ 
+-	if (dev_priv->capabilities & SVGA_CAP_GMR) {
++	if (dev_priv->capabilities & SVGA_CAP_GMR2) {
+ 		DRM_INFO("Max GMR ids is %u\n",
+ 			 (unsigned)dev_priv->max_gmr_ids);
+-		DRM_INFO("Max GMR descriptors is %u\n",
+-			 (unsigned)dev_priv->max_gmr_descriptors);
+-	}
+-	if (dev_priv->capabilities & SVGA_CAP_GMR2) {
+ 		DRM_INFO("Max number of GMR pages is %u\n",
+ 			 (unsigned)dev_priv->max_gmr_pages);
+ 		DRM_INFO("Max dedicated hypervisor surface memory is %u kiB\n",
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.h
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.h
+@@ -290,7 +290,6 @@ struct vmw_private {
+ 	__le32 __iomem *mmio_virt;
+ 	int mmio_mtrr;
+ 	uint32_t capabilities;
+-	uint32_t max_gmr_descriptors;
+ 	uint32_t max_gmr_ids;
+ 	uint32_t max_gmr_pages;
+ 	uint32_t memory_size;
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_gmr.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_gmr.c
+@@ -125,181 +125,27 @@ static void vmw_gmr2_unbind(struct vmw_p
+ }
+ 
+ 
+-static void vmw_gmr_free_descriptors(struct device *dev, dma_addr_t desc_dma,
+-				     struct list_head *desc_pages)
+-{
+-	struct page *page, *next;
+-	struct svga_guest_mem_descriptor *page_virtual;
+-	unsigned int desc_per_page = PAGE_SIZE /
+-		sizeof(struct svga_guest_mem_descriptor) - 1;
+-
+-	if (list_empty(desc_pages))
+-		return;
+-
+-	list_for_each_entry_safe(page, next, desc_pages, lru) {
+-		list_del_init(&page->lru);
+-
+-		if (likely(desc_dma != DMA_ADDR_INVALID)) {
+-			dma_unmap_page(dev, desc_dma, PAGE_SIZE,
+-				       DMA_TO_DEVICE);
+-		}
+-
+-		page_virtual = kmap_atomic(page);
+-		desc_dma = (dma_addr_t)
+-			le32_to_cpu(page_virtual[desc_per_page].ppn) <<
+-			PAGE_SHIFT;
+-		kunmap_atomic(page_virtual);
+-
+-		__free_page(page);
+-	}
+-}
+-
+-/**
+- * FIXME: Adjust to the ttm lowmem / highmem storage to minimize
+- * the number of used descriptors.
+- *
+- */
+-
+-static int vmw_gmr_build_descriptors(struct device *dev,
+-				     struct list_head *desc_pages,
+-				     struct vmw_piter *iter,
+-				     unsigned long num_pages,
+-				     dma_addr_t *first_dma)
+-{
+-	struct page *page;
+-	struct svga_guest_mem_descriptor *page_virtual = NULL;
+-	struct svga_guest_mem_descriptor *desc_virtual = NULL;
+-	unsigned int desc_per_page;
+-	unsigned long prev_pfn;
+-	unsigned long pfn;
+-	int ret;
+-	dma_addr_t desc_dma;
+-
+-	desc_per_page = PAGE_SIZE /
+-	    sizeof(struct svga_guest_mem_descriptor) - 1;
+-
+-	while (likely(num_pages != 0)) {
+-		page = alloc_page(__GFP_HIGHMEM);
+-		if (unlikely(page == NULL)) {
+-			ret = -ENOMEM;
+-			goto out_err;
+-		}
+-
+-		list_add_tail(&page->lru, desc_pages);
+-		page_virtual = kmap_atomic(page);
+-		desc_virtual = page_virtual - 1;
+-		prev_pfn = ~(0UL);
+-
+-		while (likely(num_pages != 0)) {
+-			pfn = vmw_piter_dma_addr(iter) >> PAGE_SHIFT;
+-
+-			if (pfn != prev_pfn + 1) {
+-
+-				if (desc_virtual - page_virtual ==
+-				    desc_per_page - 1)
+-					break;
+-
+-				(++desc_virtual)->ppn = cpu_to_le32(pfn);
+-				desc_virtual->num_pages = cpu_to_le32(1);
+-			} else {
+-				uint32_t tmp =
+-				    le32_to_cpu(desc_virtual->num_pages);
+-				desc_virtual->num_pages = cpu_to_le32(tmp + 1);
+-			}
+-			prev_pfn = pfn;
+-			--num_pages;
+-			vmw_piter_next(iter);
+-		}
+-
+-		(++desc_virtual)->ppn = DMA_PAGE_INVALID;
+-		desc_virtual->num_pages = cpu_to_le32(0);
+-		kunmap_atomic(page_virtual);
+-	}
+-
+-	desc_dma = 0;
+-	list_for_each_entry_reverse(page, desc_pages, lru) {
+-		page_virtual = kmap_atomic(page);
+-		page_virtual[desc_per_page].ppn = cpu_to_le32
+-			(desc_dma >> PAGE_SHIFT);
+-		kunmap_atomic(page_virtual);
+-		desc_dma = dma_map_page(dev, page, 0, PAGE_SIZE,
+-					DMA_TO_DEVICE);
+-
+-		if (unlikely(dma_mapping_error(dev, desc_dma)))
+-			goto out_err;
+-	}
+-	*first_dma = desc_dma;
+-
+-	return 0;
+-out_err:
+-	vmw_gmr_free_descriptors(dev, DMA_ADDR_INVALID, desc_pages);
+-	return ret;
+-}
+-
+-static void vmw_gmr_fire_descriptors(struct vmw_private *dev_priv,
+-				     int gmr_id, dma_addr_t desc_dma)
+-{
+-	mutex_lock(&dev_priv->hw_mutex);
+-
+-	vmw_write(dev_priv, SVGA_REG_GMR_ID, gmr_id);
+-	wmb();
+-	vmw_write(dev_priv, SVGA_REG_GMR_DESCRIPTOR, desc_dma >> PAGE_SHIFT);
+-	mb();
+-
+-	mutex_unlock(&dev_priv->hw_mutex);
+-
+-}
+-
+ int vmw_gmr_bind(struct vmw_private *dev_priv,
+ 		 const struct vmw_sg_table *vsgt,
+ 		 unsigned long num_pages,
+ 		 int gmr_id)
+ {
+-	struct list_head desc_pages;
+-	dma_addr_t desc_dma = 0;
+-	struct device *dev = dev_priv->dev->dev;
+ 	struct vmw_piter data_iter;
+-	int ret;
+ 
+ 	vmw_piter_start(&data_iter, vsgt, 0);
+ 
+ 	if (unlikely(!vmw_piter_next(&data_iter)))
+ 		return 0;
+ 
+-	if (likely(dev_priv->capabilities & SVGA_CAP_GMR2))
+-		return vmw_gmr2_bind(dev_priv, &data_iter, num_pages, gmr_id);
+-
+-	if (unlikely(!(dev_priv->capabilities & SVGA_CAP_GMR)))
+-		return -EINVAL;
+-
+-	if (vsgt->num_regions > dev_priv->max_gmr_descriptors)
++	if (unlikely(!(dev_priv->capabilities & SVGA_CAP_GMR2)))
+ 		return -EINVAL;
+ 
+-	INIT_LIST_HEAD(&desc_pages);
+-
+-	ret = vmw_gmr_build_descriptors(dev, &desc_pages, &data_iter,
+-					num_pages, &desc_dma);
+-	if (unlikely(ret != 0))
+-		return ret;
+-
+-	vmw_gmr_fire_descriptors(dev_priv, gmr_id, desc_dma);
+-	vmw_gmr_free_descriptors(dev, desc_dma, &desc_pages);
+-
+-	return 0;
++	return vmw_gmr2_bind(dev_priv, &data_iter, num_pages, gmr_id);
+ }
+ 
+ 
+ void vmw_gmr_unbind(struct vmw_private *dev_priv, int gmr_id)
+ {
+-	if (likely(dev_priv->capabilities & SVGA_CAP_GMR2)) {
++	if (likely(dev_priv->capabilities & SVGA_CAP_GMR2))
+ 		vmw_gmr2_unbind(dev_priv, gmr_id);
+-		return;
+-	}
+-
+-	mutex_lock(&dev_priv->hw_mutex);
+-	vmw_write(dev_priv, SVGA_REG_GMR_ID, gmr_id);
+-	wmb();
+-	vmw_write(dev_priv, SVGA_REG_GMR_DESCRIPTOR, 0);
+-	mb();
+-	mutex_unlock(&dev_priv->hw_mutex);
+ }
 
 
