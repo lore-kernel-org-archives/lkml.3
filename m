@@ -1,120 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752594AbaBKBeX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 20:34:23 -0500
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:40800 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751779AbaBKBeW (ORCPT
+	id S1752628AbaBKBfT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 20:35:19 -0500
+Received: from mail-bl2lp0212.outbound.protection.outlook.com ([207.46.163.212]:54293
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752133AbaBKBfQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 20:34:22 -0500
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: gregkh@linuxfoundation.org, swetland@google.com
-Cc: john.stultz@linaro.org, rebecca@android.com, ccross@android.com,
-        ohaugan@codeaurora.org, romlem@google.com,
-        linux-kernel@vger.kernel.org, joe@perches.com,
-        dan.carpenter@oracle.com
-Subject: [PATCH V3] staging : ion : Fix some checkpatch warnings and an error
-Date: Tue, 11 Feb 2014 10:34:17 +0900
-Message-ID: <7513768.Qb36xuJgax@daeseok-laptop.cloud.net>
-User-Agent: KMail/4.8.5 (Linux/3.2.0-58-generic; KDE/4.8.5; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
+	Mon, 10 Feb 2014 20:35:16 -0500
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Mark Brown <broonie@kernel.org>
+CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "guangyu.chen@freescale.com" <guangyu.chen@freescale.com>
+Subject: RE: [PATCH v2] ASoC: fsl-sai: convert to use regmap API for
+ Freeacale SAI
+Thread-Topic: [PATCH v2] ASoC: fsl-sai: convert to use regmap API for
+ Freeacale SAI
+Thread-Index: AQHPJKEhZlIN1QfzEk2n7gs7XZaenZqufoIAgADKv8A=
+Date: Tue, 11 Feb 2014 01:34:55 +0000
+Message-ID: <9a21e8cc57f54793a05d33f2ca6d7ec0@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1391841508-14025-1-git-send-email-Li.Xiubo@freescale.com>
+ <20140210132746.GD1757@sirena.org.uk>
+In-Reply-To: <20140210132746.GD1757@sirena.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.49]
+x-forefront-prvs: 0119DC3B5E
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(24454002)(164054003)(51704005)(189002)(199002)(81686001)(65816001)(81816001)(31966008)(76576001)(63696002)(2656002)(87266001)(56816005)(92566001)(87936001)(85852003)(83072002)(74316001)(47446002)(66066001)(80022001)(93136001)(74662001)(85306002)(74502001)(90146001)(51856001)(95416001)(93516002)(94316002)(94946001)(81542001)(74706001)(69226001)(46102001)(53806001)(54316002)(56776001)(54356001)(76482001)(4396001)(50986001)(47976001)(49866001)(74876001)(47736001)(81342001)(33646001)(76796001)(74366001)(86362001)(76786001)(80976001)(79102001)(95666001)(77982001)(59766001)(83322001)(19580395003)(19580405001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB441;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:7EDDF181.16106C89.BDE1878C.F4D160BB.20119;InfoNoRecordsMX:1;A:1;LANG:en;
 Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 5b07f49e38a55ccc2788c29b7e3852827298261a Mon Sep 17 00:00:00 2001
-From: Daeseok Youn <daeseok.youn@gmail.com>
-Date: Mon, 10 Feb 2014 20:16:50 +0900
-Subject: [PATCH] staging : ion : Fix some checkpatch warnings and an error
 
-Warning:
- - Unnecessary space after function pointer name
- - quoted string split across lines
- - fix alignment issues
 
-Error:
- - return is not a function, parentheses are not required
+> Subject: Re: [PATCH v2] ASoC: fsl-sai: convert to use regmap API for Freeacale
+> SAI
+> 
+> On Sat, Feb 08, 2014 at 02:38:28PM +0800, Xiubo Li wrote:
+> > Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> 
+> Applied, thanks but I think this needs a select of REGMAP_MMIO in the
+> Kconfig to ensure that regmap-mmio is actually there (it might well be
+> OK due to implicit dependencies at the minute but should be fixed
+> properly).
 
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
----
- drivers/staging/android/ion/ion.c      |    9 ++++-----
- drivers/staging/android/ion/ion_priv.h |   26 +++++++++++++-------------
- 2 files changed, 17 insertions(+), 18 deletions(-)
+Yes, I will send another patch to fix it.
 
-diff --git a/drivers/staging/android/ion/ion.c b/drivers/staging/android/ion/ion.c
-index 574066f..cc8b20d 100644
---- a/drivers/staging/android/ion/ion.c
-+++ b/drivers/staging/android/ion/ion.c
-@@ -55,8 +55,8 @@ struct ion_device {
- 	struct mutex buffer_lock;
- 	struct rw_semaphore lock;
- 	struct plist_head heaps;
--	long (*custom_ioctl) (struct ion_client *client, unsigned int cmd,
--			      unsigned long arg);
-+	long (*custom_ioctl)(struct ion_client *client, unsigned int cmd,
-+			     unsigned long arg);
- 	struct rb_root clients;
- 	struct dentry *debug_root;
- };
-@@ -429,7 +429,7 @@ static bool ion_handle_validate(struct ion_client *client,
- 				struct ion_handle *handle)
- {
- 	WARN_ON(!mutex_is_locked(&client->lock));
--	return (idr_find(&client->idr, handle->id) == handle);
-+	return idr_find(&client->idr, handle->id) == handle;
- }
- 
- static int ion_handle_add(struct ion_client *client, struct ion_handle *handle)
-@@ -1527,8 +1527,7 @@ void __init ion_reserve(struct ion_platform_data *data)
- 						    data->heaps[i].align,
- 						    MEMBLOCK_ALLOC_ANYWHERE);
- 			if (!paddr) {
--				pr_err("%s: error allocating memblock for "
--				       "heap %d\n",
-+				pr_err("%s: error allocating memblock for heap %d\n",
- 					__func__, i);
- 				continue;
- 			}
-diff --git a/drivers/staging/android/ion/ion_priv.h b/drivers/staging/android/ion/ion_priv.h
-index d986739..0467b7b 100644
---- a/drivers/staging/android/ion/ion_priv.h
-+++ b/drivers/staging/android/ion/ion_priv.h
-@@ -100,19 +100,19 @@ void ion_buffer_destroy(struct ion_buffer *buffer);
-  * map_dma and map_kernel return pointer on success, ERR_PTR on error.
-  */
- struct ion_heap_ops {
--	int (*allocate) (struct ion_heap *heap,
--			 struct ion_buffer *buffer, unsigned long len,
--			 unsigned long align, unsigned long flags);
--	void (*free) (struct ion_buffer *buffer);
--	int (*phys) (struct ion_heap *heap, struct ion_buffer *buffer,
--		     ion_phys_addr_t *addr, size_t *len);
--	struct sg_table *(*map_dma) (struct ion_heap *heap,
--					struct ion_buffer *buffer);
--	void (*unmap_dma) (struct ion_heap *heap, struct ion_buffer *buffer);
--	void * (*map_kernel) (struct ion_heap *heap, struct ion_buffer *buffer);
--	void (*unmap_kernel) (struct ion_heap *heap, struct ion_buffer *buffer);
--	int (*map_user) (struct ion_heap *mapper, struct ion_buffer *buffer,
--			 struct vm_area_struct *vma);
-+	int (*allocate)(struct ion_heap *heap,
-+			struct ion_buffer *buffer, unsigned long len,
-+			unsigned long align, unsigned long flags);
-+	void (*free)(struct ion_buffer *buffer);
-+	int (*phys)(struct ion_heap *heap, struct ion_buffer *buffer,
-+		    ion_phys_addr_t *addr, size_t *len);
-+	struct sg_table * (*map_dma)(struct ion_heap *heap,
-+				     struct ion_buffer *buffer);
-+	void (*unmap_dma)(struct ion_heap *heap, struct ion_buffer *buffer);
-+	void * (*map_kernel)(struct ion_heap *heap, struct ion_buffer *buffer);
-+	void (*unmap_kernel)(struct ion_heap *heap, struct ion_buffer *buffer);
-+	int (*map_user)(struct ion_heap *mapper, struct ion_buffer *buffer,
-+			struct vm_area_struct *vma);
- };
- 
- /**
--- 
-1.7.9.5
----
+Thanks,
+
+--
+Best Regards,
+Xiubo
 
