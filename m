@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753080AbaBKTF4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:05:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39736 "EHLO
+	id S1753611AbaBKUkm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:40:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39771 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752995AbaBKTFr (ORCPT
+	with ESMTP id S1751978AbaBKTF4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:05:47 -0500
+	Tue, 11 Feb 2014 14:05:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jeff Layton <jlayton@redhat.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [PATCH 3.13 049/120] sunrpc: dont wait for write before allowing reads from use-gss-proxy file
-Date: Tue, 11 Feb 2014 11:04:50 -0800
-Message-Id: <20140211184825.019351164@linuxfoundation.org>
+        Dave Airlie <airlied@redhat.com>
+Subject: [PATCH 3.13 105/120] drm/mgag200: fix typo causing bw limits to be ignored on some chips
+Date: Tue, 11 Feb 2014 11:05:46 -0800
+Message-Id: <20140211184826.627755635@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -29,112 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Dave Airlie <airlied@redhat.com>
 
-commit 1654a04cd702fd19c297c36300a6ab834cf8c072 upstream.
+commit ec22b4aa993abbd18f5bbbcb20a1c56be3b1d38b upstream.
 
-It doesn't make much sense to make reads from this procfile hang. As
-far as I can tell, only gssproxy itself will open this file and it
-never reads from it. Change it to just give the present setting of
-sn->use_gss_proxy without waiting for anything.
+mode->mdev otherwise the bw limits never kick in.
 
-Note that we do not want to call use_gss_proxy() in this codepath
-since an inopportune read of this file could cause it to be disabled
-prematurely.
+Reported in RHEL testing.
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/auth_gss/gss_rpc_upcall.c |    2 --
- net/sunrpc/auth_gss/svcauth_gss.c    |   33 ++-------------------------------
- net/sunrpc/netns.h                   |    1 -
- 3 files changed, 2 insertions(+), 34 deletions(-)
+ drivers/gpu/drm/mgag200/mgag200_mode.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/sunrpc/auth_gss/gss_rpc_upcall.c
-+++ b/net/sunrpc/auth_gss/gss_rpc_upcall.c
-@@ -137,7 +137,6 @@ void init_gssp_clnt(struct sunrpc_net *s
- {
- 	mutex_init(&sn->gssp_lock);
- 	sn->gssp_clnt = NULL;
--	init_waitqueue_head(&sn->gssp_wq);
- }
- 
- int set_gssp_clnt(struct net *net)
-@@ -154,7 +153,6 @@ int set_gssp_clnt(struct net *net)
- 		sn->gssp_clnt = clnt;
- 	}
- 	mutex_unlock(&sn->gssp_lock);
--	wake_up(&sn->gssp_wq);
- 	return ret;
- }
- 
---- a/net/sunrpc/auth_gss/svcauth_gss.c
-+++ b/net/sunrpc/auth_gss/svcauth_gss.c
-@@ -1295,34 +1295,9 @@ static int set_gss_proxy(struct net *net
- 	else
- 		ret = -EBUSY;
- 	spin_unlock(&use_gssp_lock);
--	wake_up(&sn->gssp_wq);
- 	return ret;
- }
- 
--static inline bool gssp_ready(struct sunrpc_net *sn)
--{
--	switch (sn->use_gss_proxy) {
--		case -1:
--			return false;
--		case 0:
--			return true;
--		case 1:
--			return sn->gssp_clnt;
--	}
--	WARN_ON_ONCE(1);
--	return false;
--}
--
--static int wait_for_gss_proxy(struct net *net, struct file *file)
--{
--	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
--
--	if (file->f_flags & O_NONBLOCK && !gssp_ready(sn))
--		return -EAGAIN;
--	return wait_event_interruptible(sn->gssp_wq, gssp_ready(sn));
--}
--
--
- static ssize_t write_gssp(struct file *file, const char __user *buf,
- 			 size_t count, loff_t *ppos)
- {
-@@ -1355,16 +1330,12 @@ static ssize_t read_gssp(struct file *fi
- 			 size_t count, loff_t *ppos)
- {
- 	struct net *net = PDE_DATA(file_inode(file));
-+	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
- 	unsigned long p = *ppos;
- 	char tbuf[10];
- 	size_t len;
--	int ret;
--
--	ret = wait_for_gss_proxy(net, file);
--	if (ret)
--		return ret;
- 
--	snprintf(tbuf, sizeof(tbuf), "%d\n", use_gss_proxy(net));
-+	snprintf(tbuf, sizeof(tbuf), "%d\n", sn->use_gss_proxy);
- 	len = strlen(tbuf);
- 	if (p >= len)
- 		return 0;
---- a/net/sunrpc/netns.h
-+++ b/net/sunrpc/netns.h
-@@ -26,7 +26,6 @@ struct sunrpc_net {
- 	unsigned int rpcb_is_af_local : 1;
- 
- 	struct mutex gssp_lock;
--	wait_queue_head_t gssp_wq;
- 	struct rpc_clnt *gssp_clnt;
- 	int use_gss_proxy;
- 	int pipe_version;
+--- a/drivers/gpu/drm/mgag200/mgag200_mode.c
++++ b/drivers/gpu/drm/mgag200/mgag200_mode.c
+@@ -1519,11 +1519,11 @@ static int mga_vga_mode_valid(struct drm
+ 		(mga_vga_calculate_mode_bandwidth(mode, bpp)
+ 			> (32700 * 1024))) {
+ 		return MODE_BANDWIDTH;
+-	} else if (mode->type == G200_EH &&
++	} else if (mdev->type == G200_EH &&
+ 		(mga_vga_calculate_mode_bandwidth(mode, bpp)
+ 			> (37500 * 1024))) {
+ 		return MODE_BANDWIDTH;
+-	} else if (mode->type == G200_ER &&
++	} else if (mdev->type == G200_ER &&
+ 		(mga_vga_calculate_mode_bandwidth(mode,
+ 			bpp) > (55000 * 1024))) {
+ 		return MODE_BANDWIDTH;
 
 
