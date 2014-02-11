@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755442AbaBKUsp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:48:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39707 "EHLO
+	id S1755700AbaBKUu3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:50:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39697 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752833AbaBKTFh (ORCPT
+	with ESMTP id S1752895AbaBKTFf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:05:37 -0500
+	Tue, 11 Feb 2014 14:05:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org
-Subject: [PATCH 3.13 075/120] Revert "drm/radeon: disable CIK CP semaphores for now"
-Date: Tue, 11 Feb 2014 11:05:16 -0800
-Message-Id: <20140211184825.749322029@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.13 046/120] pnfs: Proper delay for NFS4ERR_RECALLCONFLICT in layout_get_done
+Date: Tue, 11 Feb 2014 11:04:47 -0800
+Message-Id: <20140211184824.925974164@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -27,38 +29,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Boaz Harrosh <bharrosh@panasas.com>
 
-commit 7f4237c6dad7c959615b896d3c6c728c37943f4d upstream.
+commit ed7e5423014ad89720fcf315c0b73f2c5d0c7bd2 upstream.
 
-This reverts commit 99b4f25122f43210278cde17a9d100906235a074.
+An NFS4ERR_RECALLCONFLICT is returned by server from a GET_LAYOUT
+only when a Server Sent a RECALL do to that GET_LAYOUT, or
+the RECALL and GET_LAYOUT crossed on the wire.
+In any way this means we want to wait at most until in-flight IO
+is finished and the RECALL can be satisfied.
 
-Semaphores work fine after further review and testing.
+So a proper wait here is more like 1/10 of a second, not 15 seconds
+like we have now. In case of a server bug we delay exponentially
+longer on each retry.
+
+Current code totally craps out performance of very large files on
+most pnfs-objects layouts, because of how the map changes when the
+file has grown into the next raid group.
+
+[Stable: This will patch back to 3.9. If there are earlier still
+ maintained trees, please tell me I'll send a patch]
+
+Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/cik.c |    5 -----
- 1 file changed, 5 deletions(-)
+ fs/nfs/nfs4proc.c |   34 ++++++++++++++++++++++++++++++----
+ 1 file changed, 30 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/radeon/cik.c
-+++ b/drivers/gpu/drm/radeon/cik.c
-@@ -3566,8 +3566,6 @@ bool cik_semaphore_ring_emit(struct rade
- 			     struct radeon_semaphore *semaphore,
- 			     bool emit_wait)
- {
--/* TODO: figure out why semaphore cause lockups */
--#if 0
- 	uint64_t addr = semaphore->gpu_addr;
- 	unsigned sel = emit_wait ? PACKET3_SEM_SEL_WAIT : PACKET3_SEM_SEL_SIGNAL;
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -7409,9 +7409,9 @@ static void nfs4_layoutget_done(struct r
+ 	struct nfs_server *server = NFS_SERVER(inode);
+ 	struct pnfs_layout_hdr *lo;
+ 	struct nfs4_state *state = NULL;
+-	unsigned long timeo, giveup;
++	unsigned long timeo, now, giveup;
  
-@@ -3576,9 +3574,6 @@ bool cik_semaphore_ring_emit(struct rade
- 	radeon_ring_write(ring, (upper_32_bits(addr) & 0xffff) | sel);
+-	dprintk("--> %s\n", __func__);
++	dprintk("--> %s tk_status => %d\n", __func__, -task->tk_status);
  
- 	return true;
--#else
--	return false;
--#endif
- }
- 
- /**
+ 	if (!nfs41_sequence_done(task, &lgp->res.seq_res))
+ 		goto out;
+@@ -7419,12 +7419,38 @@ static void nfs4_layoutget_done(struct r
+ 	switch (task->tk_status) {
+ 	case 0:
+ 		goto out;
++	/*
++	 * NFS4ERR_LAYOUTTRYLATER is a conflict with another client
++	 * (or clients) writing to the same RAID stripe
++	 */
+ 	case -NFS4ERR_LAYOUTTRYLATER:
++	/*
++	 * NFS4ERR_RECALLCONFLICT is when conflict with self (must recall
++	 * existing layout before getting a new one).
++	 */
+ 	case -NFS4ERR_RECALLCONFLICT:
+ 		timeo = rpc_get_timeout(task->tk_client);
+ 		giveup = lgp->args.timestamp + timeo;
+-		if (time_after(giveup, jiffies))
+-			task->tk_status = -NFS4ERR_DELAY;
++		now = jiffies;
++		if (time_after(giveup, now)) {
++			unsigned long delay;
++
++			/* Delay for:
++			 * - Not less then NFS4_POLL_RETRY_MIN.
++			 * - One last time a jiffie before we give up
++			 * - exponential backoff (time_now minus start_attempt)
++			 */
++			delay = max_t(unsigned long, NFS4_POLL_RETRY_MIN,
++				    min((giveup - now - 1),
++					now - lgp->args.timestamp));
++
++			dprintk("%s: NFS4ERR_RECALLCONFLICT waiting %lu\n",
++				__func__, delay);
++			rpc_delay(task, delay);
++			task->tk_status = 0;
++			rpc_restart_call_prepare(task);
++			goto out; /* Do not call nfs4_async_handle_error() */
++		}
+ 		break;
+ 	case -NFS4ERR_EXPIRED:
+ 	case -NFS4ERR_BAD_STATEID:
 
 
