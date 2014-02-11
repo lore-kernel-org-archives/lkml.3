@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756075AbaBKVB7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 16:01:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39593 "EHLO
+	id S1752597AbaBKTFK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:05:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39526 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752626AbaBKTFN (ORCPT
+	with ESMTP id S1752529AbaBKTFE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:05:13 -0500
+	Tue, 11 Feb 2014 14:05:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        J Bruce Fields <bfields@fieldses.org>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.13 041/120] NFSv4: OPEN must handle the NFS4ERR_IO return code correctly
-Date: Tue, 11 Feb 2014 11:04:42 -0800
-Message-Id: <20140211184824.772122967@linuxfoundation.org>
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.13 030/120] fs/compat: fix parameter handling for compat readv/writev syscalls
+Date: Tue, 11 Feb 2014 11:04:31 -0800
+Message-Id: <20140211184824.420982853@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -29,97 +34,113 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-commit c7848f69ec4a8c03732cde5c949bd2aa711a9f4b upstream.
+commit dfd948e32af2e7b28bcd7a490c0a30d4b8df2a36 upstream.
 
-decode_op_hdr() cannot distinguish between an XDR decoding error and
-the perfectly valid errorcode NFS4ERR_IO. This is normally not a
-problem, but for the particular case of OPEN, we need to be able
-to increment the NFSv4 open sequence id when the server returns
-a valid response.
+We got a report that the pwritev syscall does not work correctly in
+compat mode on s390.
 
-Reported-by: J Bruce Fields <bfields@fieldses.org>
-Link: http://lkml.kernel.org/r/20131204210356.GA19452@fieldses.org
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+It turned out that with commit 72ec35163f9f ("switch compat readv/writev
+variants to COMPAT_SYSCALL_DEFINE") we lost the zero extension of a
+couple of syscall parameters because the some parameter types haven't
+been converted from unsigned long to compat_ulong_t.
+
+This is needed for architectures where the ABI requires that the caller
+of a function performed zero and/or sign extension to 64 bit of all
+parameters.
+
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4xdr.c |   47 +++++++++++++++++++++++++++++++----------------
- 1 file changed, 31 insertions(+), 16 deletions(-)
+ fs/read_write.c        |   16 ++++++++--------
+ include/linux/compat.h |   16 ++++++++--------
+ 2 files changed, 16 insertions(+), 16 deletions(-)
 
---- a/fs/nfs/nfs4xdr.c
-+++ b/fs/nfs/nfs4xdr.c
-@@ -3097,7 +3097,8 @@ out_overflow:
- 	return -EIO;
+--- a/fs/read_write.c
++++ b/fs/read_write.c
+@@ -968,9 +968,9 @@ out:
+ 	return ret;
  }
  
--static int decode_op_hdr(struct xdr_stream *xdr, enum nfs_opnum4 expected)
-+static bool __decode_op_hdr(struct xdr_stream *xdr, enum nfs_opnum4 expected,
-+		int *nfs_retval)
+-COMPAT_SYSCALL_DEFINE3(readv, unsigned long, fd,
++COMPAT_SYSCALL_DEFINE3(readv, compat_ulong_t, fd,
+ 		const struct compat_iovec __user *,vec,
+-		unsigned long, vlen)
++		compat_ulong_t, vlen)
  {
- 	__be32 *p;
- 	uint32_t opnum;
-@@ -3107,19 +3108,32 @@ static int decode_op_hdr(struct xdr_stre
- 	if (unlikely(!p))
- 		goto out_overflow;
- 	opnum = be32_to_cpup(p++);
--	if (opnum != expected) {
--		dprintk("nfs: Server returned operation"
--			" %d but we issued a request for %d\n",
--				opnum, expected);
--		return -EIO;
--	}
-+	if (unlikely(opnum != expected))
-+		goto out_bad_operation;
- 	nfserr = be32_to_cpup(p);
--	if (nfserr != NFS_OK)
--		return nfs4_stat_to_errno(nfserr);
--	return 0;
-+	if (nfserr == NFS_OK)
-+		*nfs_retval = 0;
-+	else
-+		*nfs_retval = nfs4_stat_to_errno(nfserr);
-+	return true;
-+out_bad_operation:
-+	dprintk("nfs: Server returned operation"
-+		" %d but we issued a request for %d\n",
-+			opnum, expected);
-+	*nfs_retval = -EREMOTEIO;
-+	return false;
- out_overflow:
- 	print_overflow_msg(__func__, xdr);
--	return -EIO;
-+	*nfs_retval = -EIO;
-+	return false;
-+}
-+
-+static int decode_op_hdr(struct xdr_stream *xdr, enum nfs_opnum4 expected)
-+{
-+	int retval;
-+
-+	__decode_op_hdr(xdr, expected, &retval);
-+	return retval;
+ 	struct fd f = fdget(fd);
+ 	ssize_t ret;
+@@ -1005,9 +1005,9 @@ COMPAT_SYSCALL_DEFINE4(preadv64, unsigne
+ 	return ret;
  }
  
- /* Dummy routine */
-@@ -5001,11 +5015,12 @@ static int decode_open(struct xdr_stream
- 	uint32_t savewords, bmlen, i;
- 	int status;
+-COMPAT_SYSCALL_DEFINE5(preadv, unsigned long, fd,
++COMPAT_SYSCALL_DEFINE5(preadv, compat_ulong_t, fd,
+ 		const struct compat_iovec __user *,vec,
+-		unsigned long, vlen, u32, pos_low, u32, pos_high)
++		compat_ulong_t, vlen, u32, pos_low, u32, pos_high)
+ {
+ 	loff_t pos = ((loff_t)pos_high << 32) | pos_low;
+ 	return compat_sys_preadv64(fd, vec, vlen, pos);
+@@ -1035,9 +1035,9 @@ out:
+ 	return ret;
+ }
  
--	status = decode_op_hdr(xdr, OP_OPEN);
--	if (status != -EIO)
--		nfs_increment_open_seqid(status, res->seqid);
--	if (!status)
--		status = decode_stateid(xdr, &res->stateid);
-+	if (!__decode_op_hdr(xdr, OP_OPEN, &status))
-+		return status;
-+	nfs_increment_open_seqid(status, res->seqid);
-+	if (status)
-+		return status;
-+	status = decode_stateid(xdr, &res->stateid);
- 	if (unlikely(status))
- 		return status;
+-COMPAT_SYSCALL_DEFINE3(writev, unsigned long, fd,
++COMPAT_SYSCALL_DEFINE3(writev, compat_ulong_t, fd,
+ 		const struct compat_iovec __user *, vec,
+-		unsigned long, vlen)
++		compat_ulong_t, vlen)
+ {
+ 	struct fd f = fdget(fd);
+ 	ssize_t ret;
+@@ -1072,9 +1072,9 @@ COMPAT_SYSCALL_DEFINE4(pwritev64, unsign
+ 	return ret;
+ }
  
+-COMPAT_SYSCALL_DEFINE5(pwritev, unsigned long, fd,
++COMPAT_SYSCALL_DEFINE5(pwritev, compat_ulong_t, fd,
+ 		const struct compat_iovec __user *,vec,
+-		unsigned long, vlen, u32, pos_low, u32, pos_high)
++		compat_ulong_t, vlen, u32, pos_low, u32, pos_high)
+ {
+ 	loff_t pos = ((loff_t)pos_high << 32) | pos_low;
+ 	return compat_sys_pwritev64(fd, vec, vlen, pos);
+--- a/include/linux/compat.h
++++ b/include/linux/compat.h
+@@ -327,16 +327,16 @@ asmlinkage long compat_sys_keyctl(u32 op
+ 			      u32 arg2, u32 arg3, u32 arg4, u32 arg5);
+ asmlinkage long compat_sys_ustat(unsigned dev, struct compat_ustat __user *u32);
+ 
+-asmlinkage ssize_t compat_sys_readv(unsigned long fd,
+-		const struct compat_iovec __user *vec, unsigned long vlen);
+-asmlinkage ssize_t compat_sys_writev(unsigned long fd,
+-		const struct compat_iovec __user *vec, unsigned long vlen);
+-asmlinkage ssize_t compat_sys_preadv(unsigned long fd,
++asmlinkage ssize_t compat_sys_readv(compat_ulong_t fd,
++		const struct compat_iovec __user *vec, compat_ulong_t vlen);
++asmlinkage ssize_t compat_sys_writev(compat_ulong_t fd,
++		const struct compat_iovec __user *vec, compat_ulong_t vlen);
++asmlinkage ssize_t compat_sys_preadv(compat_ulong_t fd,
+ 		const struct compat_iovec __user *vec,
+-		unsigned long vlen, u32 pos_low, u32 pos_high);
+-asmlinkage ssize_t compat_sys_pwritev(unsigned long fd,
++		compat_ulong_t vlen, u32 pos_low, u32 pos_high);
++asmlinkage ssize_t compat_sys_pwritev(compat_ulong_t fd,
+ 		const struct compat_iovec __user *vec,
+-		unsigned long vlen, u32 pos_low, u32 pos_high);
++		compat_ulong_t vlen, u32 pos_low, u32 pos_high);
+ asmlinkage long comat_sys_lseek(unsigned int, compat_off_t, unsigned int);
+ 
+ asmlinkage long compat_sys_execve(const char __user *filename, const compat_uptr_t __user *argv,
 
 
