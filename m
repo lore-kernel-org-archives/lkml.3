@@ -1,161 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752105AbaBKR1S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 12:27:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57772 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751015AbaBKR1Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 12:27:16 -0500
-Date: Tue, 11 Feb 2014 12:27:07 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: xfs@oss.sgi.com
-Subject: 3.14-rc2 XFS backtrace because irqs_disabled.
-Message-ID: <20140211172707.GA1749@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+	id S1752451AbaBKR1Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 12:27:25 -0500
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:46369 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751460AbaBKR1W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 12:27:22 -0500
+Date: Tue, 11 Feb 2014 12:27:19 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+cc: mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
+        rjw@rjwysocki.net, preeti@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] idle/cpuidle: Split cpuidle_idle_call main function
+ into smaller functions
+In-Reply-To: <1392131491-5265-1-git-send-email-daniel.lezcano@linaro.org>
+Message-ID: <alpine.LFD.2.11.1402111226370.17677@knanqh.ubzr>
+References: <1392131491-5265-1-git-send-email-daniel.lezcano@linaro.org>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BUG: sleeping function called from invalid context at mm/mempool.c:203
-in_atomic(): 0, irqs_disabled(): 1, pid: 27511, name: trinity-c3
-5 locks held by trinity-c3/27511:
- #0:  (sb_writers#9){......}, at: [<ffffffff831df3b4>] mnt_want_write+0x24/0x50
- #1:  (&type->i_mutex_dir_key#3){......}, at: [<ffffffff831cced4>] do_last.isra.51+0x294/0x11f0
- #2:  (sb_internal#2){......}, at: [<ffffffffc03225c4>] xfs_trans_alloc+0x24/0x40 [xfs]
- #3:  (&(&ip->i_lock)->mr_lock/1){......}, at: [<ffffffffc036447f>] xfs_ilock+0x16f/0x1b0 [xfs]
- #4:  (&(&ip->i_lock)->mr_lock){......}, at: [<ffffffffc03646d4>] xfs_ilock_nowait+0x184/0x200 [xfs]
-CPU: 3 PID: 27511 Comm: trinity-c3 Not tainted 3.14.0-rc2+ #111 
- ffffffff83a3fd56 0000000045a3849a ffff88009f368f60 ffffffff8372afea
- 0000000000000000 ffff88009f368f88 ffffffff8309ddb5 0000000000000010
- ffff880243566288 0000000000000008 ffff88009f369008 ffffffff831534d3
-Call Trace:
- [<ffffffff8372afea>] dump_stack+0x4e/0x7a
- [<ffffffff8309ddb5>] __might_sleep+0x105/0x150
- [<ffffffff831534d3>] mempool_alloc+0xa3/0x170
- [<ffffffff831a955a>] ? deactivate_slab+0x51a/0x590
- [<ffffffff831f8fd6>] bio_alloc_bioset+0x156/0x210
- [<ffffffffc0308231>] _xfs_buf_ioapply+0x1c1/0x3c0 [xfs]
- [<ffffffffc03798f2>] ? xlog_bdstrat+0x22/0x60 [xfs]
- [<ffffffffc030849b>] xfs_buf_iorequest+0x6b/0xf0 [xfs]
- [<ffffffffc03798f2>] xlog_bdstrat+0x22/0x60 [xfs]
- [<ffffffffc037ba87>] xlog_sync+0x3a7/0x5b0 [xfs]
- [<ffffffffc037bd9f>] xlog_state_release_iclog+0x10f/0x120 [xfs]
- [<ffffffffc037c840>] xlog_write+0x6f0/0x800 [xfs]
- [<ffffffffc037e061>] xlog_cil_push+0x2f1/0x410 [xfs]
- [<ffffffffc037e948>] xlog_cil_force_lsn+0x1d8/0x210 [xfs]
- [<ffffffffc03428a8>] ? xfs_bmbt_get_all+0x18/0x20 [xfs]
- [<ffffffffc037cc40>] _xfs_log_force+0x70/0x290 [xfs]
- [<ffffffff830a4edd>] ? get_parent_ip+0xd/0x50
- [<ffffffffc037ce86>] xfs_log_force+0x26/0xb0 [xfs]
- [<ffffffffc03076e6>] ? _xfs_buf_find+0x1f6/0x3c0 [xfs]
- [<ffffffffc03074e3>] xfs_buf_lock+0x133/0x140 [xfs]
- [<ffffffffc03076e6>] _xfs_buf_find+0x1f6/0x3c0 [xfs]
- [<ffffffffc030796a>] xfs_buf_get_map+0x2a/0x1b0 [xfs]
- [<ffffffffc0383c61>] xfs_trans_get_buf_map+0x1a1/0x240 [xfs]
- [<ffffffffc034e03d>] xfs_da_get_buf+0xbd/0x100 [xfs]
- [<ffffffffc0356869>] xfs_dir3_data_init+0x59/0x1d0 [xfs]
- [<ffffffffc03526db>] ? xfs_dir2_grow_inode+0x13b/0x150 [xfs]
- [<ffffffffc0354ede>] xfs_dir2_sf_to_block+0x17e/0x7b0 [xfs]
- [<ffffffffc0351f5a>] ? xfs_dir2_sfe_get_ino+0x1a/0x20 [xfs]
- [<ffffffffc035e9b4>] ? xfs_dir2_sf_check.isra.7+0x114/0x1b0 [xfs]
- [<ffffffffc034c24f>] ? xfs_da_compname+0x1f/0x30 [xfs]
- [<ffffffffc035f503>] ? xfs_dir2_sf_lookup+0x303/0x310 [xfs]
- [<ffffffffc035f858>] xfs_dir2_sf_addname+0x348/0x6d0 [xfs]
- [<ffffffffc031970d>] ? xfs_setup_inode+0x1cd/0x320 [xfs]
- [<ffffffffc03529a4>] xfs_dir_createname+0x184/0x1e0 [xfs]
- [<ffffffffc03663d9>] xfs_create+0x469/0x580 [xfs]
- [<ffffffffc0318864>] xfs_vn_mknod+0xc4/0x1e0 [xfs]
- [<ffffffffc0318993>] xfs_vn_create+0x13/0x20 [xfs]
- [<ffffffff831ccc15>] vfs_create+0x95/0xc0
- [<ffffffff831cd638>] do_last.isra.51+0x9f8/0x11f0
- [<ffffffff831c9e11>] ? link_path_walk+0x81/0x870
- [<ffffffff831cdef9>] path_openat+0xc9/0x620
- [<ffffffff8331cc02>] ? put_dec+0x72/0x90
- [<ffffffff831ceb6d>] do_filp_open+0x4d/0xb0
- [<ffffffff831bc4ae>] file_open_name+0xfe/0x160
- [<ffffffff831bc554>] filp_open+0x44/0x60
- [<ffffffff83221862>] do_coredump+0x602/0xf60
- [<ffffffff83081358>] get_signal_to_deliver+0x2b8/0x6b0
- [<ffffffff830024d7>] do_signal+0x57/0x9d0
- [<ffffffff8311115e>] ? __acct_update_integrals+0x8e/0x120
- [<ffffffff83730000>] ? __schedule+0x60/0x850
- [<ffffffff8373a1db>] ? preempt_count_sub+0x6b/0xf0
- [<ffffffff83735a31>] ? _raw_spin_unlock+0x31/0x50
- [<ffffffff830ab671>] ? vtime_account_user+0x91/0xa0
- [<ffffffff8314f57b>] ? context_tracking_user_exit+0x9b/0x100
- [<ffffffff83002eac>] do_notify_resume+0x5c/0xa0
- [<ffffffff83736746>] retint_signal+0x46/0x90
-------------[ cut here ]------------
-WARNING: CPU: 3 PID: 27511 at block/blk.h:227 generic_make_request_checks+0x33f/0x460()
-Modules linked in: bridge stp tun snd_seq_dummy fuse hidp bnep rfcomm nf_conntrack_netlink nf_conntrack scsi_transport_iscsi nfnetlink can_raw nfc pn_pep caif_socket caif af_802154 phonet af_rxrpc can_bcm can llc2 pppoe pppox ppp_generic slhc irda crc_ccitt rds ipt_ULOG af_key rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 cfg80211 xfs libcrc32c coretemp hwmon x86_pkg_temp_thermal kvm_intel kvm crct10dif_pclmul crc32c_intel ghash_clmulni_intel snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_codec_generic serio_raw microcode pcspkr snd_hda_intel snd_hda_codec usb_debug btusb snd_hwdep snd_seq snd_seq_device bluetooth 6lowpan_iphc rfkill snd_pcm snd_timer snd soundcore e1000e ptp shpchp pps_core
-CPU: 3 PID: 27511 Comm: trinity-c3 Not tainted 3.14.0-rc2+ #111 
- 0000000000000009 0000000045a3849a ffff88009f368f10 ffffffff8372afea
- 0000000000000000 ffff88009f368f48 ffffffff8306d0cd ffff88023933ed00
- 00000000ffffffff 00000000197f7510 0000000000800005 ffff880240913740
-Call Trace:
- [<ffffffff8372afea>] dump_stack+0x4e/0x7a
- [<ffffffff8306d0cd>] warn_slowpath_common+0x7d/0xa0
- [<ffffffff8306d1fa>] warn_slowpath_null+0x1a/0x20
- [<ffffffff832e81bf>] generic_make_request_checks+0x33f/0x460
- [<ffffffff832e8307>] generic_make_request+0x27/0x130
- [<ffffffff832e8488>] submit_bio+0x78/0x160
- [<ffffffff831f9000>] ? bio_alloc_bioset+0x180/0x210
- [<ffffffffc030832b>] _xfs_buf_ioapply+0x2bb/0x3c0 [xfs]
- [<ffffffffc03798f2>] ? xlog_bdstrat+0x22/0x60 [xfs]
- [<ffffffffc030849b>] xfs_buf_iorequest+0x6b/0xf0 [xfs]
- [<ffffffffc03798f2>] xlog_bdstrat+0x22/0x60 [xfs]
- [<ffffffffc037ba87>] xlog_sync+0x3a7/0x5b0 [xfs]
- [<ffffffffc037bd9f>] xlog_state_release_iclog+0x10f/0x120 [xfs]
- [<ffffffffc037c840>] xlog_write+0x6f0/0x800 [xfs]
- [<ffffffffc037e061>] xlog_cil_push+0x2f1/0x410 [xfs]
- [<ffffffffc037e948>] xlog_cil_force_lsn+0x1d8/0x210 [xfs]
- [<ffffffffc03428a8>] ? xfs_bmbt_get_all+0x18/0x20 [xfs]
- [<ffffffffc037cc40>] _xfs_log_force+0x70/0x290 [xfs]
- [<ffffffff830a4edd>] ? get_parent_ip+0xd/0x50
- [<ffffffffc037ce86>] xfs_log_force+0x26/0xb0 [xfs]
- [<ffffffffc03076e6>] ? _xfs_buf_find+0x1f6/0x3c0 [xfs]
- [<ffffffffc03074e3>] xfs_buf_lock+0x133/0x140 [xfs]
- [<ffffffffc03076e6>] _xfs_buf_find+0x1f6/0x3c0 [xfs]
- [<ffffffffc030796a>] xfs_buf_get_map+0x2a/0x1b0 [xfs]
- [<ffffffffc0383c61>] xfs_trans_get_buf_map+0x1a1/0x240 [xfs]
- [<ffffffffc034e03d>] xfs_da_get_buf+0xbd/0x100 [xfs]
- [<ffffffffc0356869>] xfs_dir3_data_init+0x59/0x1d0 [xfs]
- [<ffffffffc03526db>] ? xfs_dir2_grow_inode+0x13b/0x150 [xfs]
- [<ffffffffc0354ede>] xfs_dir2_sf_to_block+0x17e/0x7b0 [xfs]
- [<ffffffffc0351f5a>] ? xfs_dir2_sfe_get_ino+0x1a/0x20 [xfs]
- [<ffffffffc035e9b4>] ? xfs_dir2_sf_check.isra.7+0x114/0x1b0 [xfs]
- [<ffffffffc034c24f>] ? xfs_da_compname+0x1f/0x30 [xfs]
- [<ffffffffc035f503>] ? xfs_dir2_sf_lookup+0x303/0x310 [xfs]
- [<ffffffffc035f858>] xfs_dir2_sf_addname+0x348/0x6d0 [xfs]
- [<ffffffffc031970d>] ? xfs_setup_inode+0x1cd/0x320 [xfs]
- [<ffffffffc03529a4>] xfs_dir_createname+0x184/0x1e0 [xfs]
- [<ffffffffc03663d9>] xfs_create+0x469/0x580 [xfs]
- [<ffffffffc0318864>] xfs_vn_mknod+0xc4/0x1e0 [xfs]
- [<ffffffffc0318993>] xfs_vn_create+0x13/0x20 [xfs]
- [<ffffffff831ccc15>] vfs_create+0x95/0xc0
- [<ffffffff831cd638>] do_last.isra.51+0x9f8/0x11f0
- [<ffffffff831c9e11>] ? link_path_walk+0x81/0x870
- [<ffffffff831cdef9>] path_openat+0xc9/0x620
- [<ffffffff8331cc02>] ? put_dec+0x72/0x90
- [<ffffffff831ceb6d>] do_filp_open+0x4d/0xb0
- [<ffffffff831bc4ae>] file_open_name+0xfe/0x160
- [<ffffffff831bc554>] filp_open+0x44/0x60
- [<ffffffff83221862>] do_coredump+0x602/0xf60
- [<ffffffff83081358>] get_signal_to_deliver+0x2b8/0x6b0
- [<ffffffff830024d7>] do_signal+0x57/0x9d0
- [<ffffffff8311115e>] ? __acct_update_integrals+0x8e/0x120
- [<ffffffff83730000>] ? __schedule+0x60/0x850
- [<ffffffff8373a1db>] ? preempt_count_sub+0x6b/0xf0
- [<ffffffff83735a31>] ? _raw_spin_unlock+0x31/0x50
- [<ffffffff830ab671>] ? vtime_account_user+0x91/0xa0
- [<ffffffff8314f57b>] ? context_tracking_user_exit+0x9b/0x100
- [<ffffffff83002eac>] do_notify_resume+0x5c/0xa0
- [<ffffffff83736746>] retint_signal+0x46/0x90
----[ end trace e6e48f6461c98e81 ]---
+On Tue, 11 Feb 2014, Daniel Lezcano wrote:
 
+> In order to allow better integration between the cpuidle framework and the
+> scheduler, reducing the distance between these two sub-components will
+> facilitate this integration by moving part of the cpuidle code in the idle
+> task file and, because idle.c is in the sched directory, we have access to
+> the scheduler's private structures.
+> 
+> This patch splits the cpuidle_idle_call main entry function into 3 calls
+> to a newly added API:
+>  1. select the idle state
+>  2. enter the idle state
+>  3. reflect the idle state
+> 
+> The cpuidle_idle_call calls these three functions to implement the main
+> idle entry function.
+> 
+> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+
+Acked-by: Nicolas Pitre <nico@linaro.org>
+
+> ---
+>  drivers/cpuidle/cpuidle.c |  102 ++++++++++++++++++++++++++++++++-------------
+>  include/linux/cpuidle.h   |   14 +++++++
+>  2 files changed, 87 insertions(+), 29 deletions(-)
+> 
+> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+> index a55e68f..172ab6a 100644
+> --- a/drivers/cpuidle/cpuidle.c
+> +++ b/drivers/cpuidle/cpuidle.c
+> @@ -108,6 +108,71 @@ int cpuidle_enter_state(struct cpuidle_device *dev, struct cpuidle_driver *drv,
+>  }
+>  
+>  /**
+> + * cpuidle_select - ask the cpuidle framework to choose an idle state
+> + *
+> + * @drv: the cpuidle driver
+> + * @dev: the cpuidle device
+> + *
+> + * Returns the index of the idle state. On error it returns:
+> + * -NODEV : the cpuidle framework is not available
+> + * -EBUSY : the cpuidle framework is not initialized
+> + */
+> +int cpuidle_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+> +{
+> +	if (off || !initialized)
+> +		return -ENODEV;
+> +
+> +	if (!drv || !dev || !dev->enabled)
+> +		return -EBUSY;
+> +
+> +	return cpuidle_curr_governor->select(drv, dev);
+> +}
+> +
+> +/**
+> + * cpuidle_enter - enter into the specified idle state
+> + *
+> + * @drv:   the cpuidle driver tied with the cpu
+> + * @dev:   the cpuidle device
+> + * @index: the index in the idle state table
+> + *
+> + * Returns the index in the idle state, < 0 in case of error.
+> + * The error code depends on the backend driver
+> + */
+> +int cpuidle_enter(struct cpuidle_driver *drv, struct cpuidle_device *dev,
+> +		  int index)
+> +{
+> +	int entered_state;
+> +	bool broadcast = !!(drv->states[index].flags & CPUIDLE_FLAG_TIMER_STOP);
+> +
+> +	if (broadcast)
+> +		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &dev->cpu);
+> +
+> +	if (cpuidle_state_is_coupled(dev, drv, index))
+> +		entered_state = cpuidle_enter_state_coupled(dev, drv, index);
+> +	else
+> +		entered_state = cpuidle_enter_state(dev, drv, index);
+> +
+> +	if (broadcast)
+> +		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &dev->cpu);
+> +
+> +	return entered_state;
+> +}
+> +
+> +/**
+> + * cpuidle_reflect - tell the underlying governor what was the state
+> + * we were in
+> + *
+> + * @dev  : the cpuidle device
+> + * @index: the index in the idle state table
+> + *
+> + */
+> +void cpuidle_reflect(struct cpuidle_device *dev, int index)
+> +{
+> +	if (cpuidle_curr_governor->reflect)
+> +		cpuidle_curr_governor->reflect(dev, index);
+> +}
+> +
+> +/**
+>   * cpuidle_idle_call - the main idle loop
+>   *
+>   * NOTE: no locks or semaphores should be used here
+> @@ -116,51 +181,30 @@ int cpuidle_enter_state(struct cpuidle_device *dev, struct cpuidle_driver *drv,
+>  int cpuidle_idle_call(void)
+>  {
+>  	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
+> -	struct cpuidle_driver *drv;
+> +	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
+>  	int next_state, entered_state;
+> -	bool broadcast;
+> -
+> -	if (off || !initialized)
+> -		return -ENODEV;
+> -
+> -	/* check if the device is ready */
+> -	if (!dev || !dev->enabled)
+> -		return -EBUSY;
+> -
+> -	drv = cpuidle_get_cpu_driver(dev);
+>  
+>  	/* ask the governor for the next state */
+> -	next_state = cpuidle_curr_governor->select(drv, dev);
+> +	next_state = cpuidle_select(drv, dev);
+> +	if (next_state < 0)
+> +		return next_state;
+> +
+>  	if (need_resched()) {
+>  		dev->last_residency = 0;
+>  		/* give the governor an opportunity to reflect on the outcome */
+> -		if (cpuidle_curr_governor->reflect)
+> -			cpuidle_curr_governor->reflect(dev, next_state);
+> +		cpuidle_reflect(dev, next_state);
+>  		local_irq_enable();
+>  		return 0;
+>  	}
+>  
+>  	trace_cpu_idle_rcuidle(next_state, dev->cpu);
+>  
+> -	broadcast = !!(drv->states[next_state].flags & CPUIDLE_FLAG_TIMER_STOP);
+> -
+> -	if (broadcast)
+> -		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &dev->cpu);
+> -
+> -	if (cpuidle_state_is_coupled(dev, drv, next_state))
+> -		entered_state = cpuidle_enter_state_coupled(dev, drv,
+> -							    next_state);
+> -	else
+> -		entered_state = cpuidle_enter_state(dev, drv, next_state);
+> -
+> -	if (broadcast)
+> -		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &dev->cpu);
+> +	entered_state = cpuidle_enter(drv, dev, next_state);
+>  
+>  	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, dev->cpu);
+>  
+>  	/* give the governor an opportunity to reflect on the outcome */
+> -	if (cpuidle_curr_governor->reflect)
+> -		cpuidle_curr_governor->reflect(dev, entered_state);
+> +	cpuidle_reflect(dev, entered_state);
+>  
+>  	return 0;
+>  }
+> diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
+> index 50fcbb0..bf06f37 100644
+> --- a/include/linux/cpuidle.h
+> +++ b/include/linux/cpuidle.h
+> @@ -119,6 +119,13 @@ struct cpuidle_driver {
+>  
+>  #ifdef CONFIG_CPU_IDLE
+>  extern void disable_cpuidle(void);
+> +
+> +extern int cpuidle_select(struct cpuidle_driver *drv,
+> +			  struct cpuidle_device *dev);
+> +extern int cpuidle_enter(struct cpuidle_driver *drv,
+> +			 struct cpuidle_device *dev, int index);
+> +extern void cpuidle_reflect(struct cpuidle_device *dev, int index);
+> +
+>  extern int cpuidle_idle_call(void);
+>  extern int cpuidle_register_driver(struct cpuidle_driver *drv);
+>  extern struct cpuidle_driver *cpuidle_get_driver(void);
+> @@ -141,6 +148,13 @@ extern int cpuidle_play_dead(void);
+>  extern struct cpuidle_driver *cpuidle_get_cpu_driver(struct cpuidle_device *dev);
+>  #else
+>  static inline void disable_cpuidle(void) { }
+> +static inline int cpuidle_select(struct cpuidle_driver *drv,
+> +				 struct cpuidle_device *dev)
+> +{return -ENODEV; }
+> +static inline int cpuidle_enter(struct cpuidle_driver *drv,
+> +				struct cpuidle_device *dev, int index)
+> +{return -ENODEV; }
+> +static inline void cpuidle_reflect(struct cpuidle_device *dev, int index) { }
+>  static inline int cpuidle_idle_call(void) { return -ENODEV; }
+>  static inline int cpuidle_register_driver(struct cpuidle_driver *drv)
+>  {return -ENODEV; }
+> -- 
+> 1.7.9.5
+> 
