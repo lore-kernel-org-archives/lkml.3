@@ -1,114 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752048AbaBKPPp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 10:15:45 -0500
-Received: from relay.parallels.com ([195.214.232.42]:37154 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751481AbaBKPPn (ORCPT
+	id S1751658AbaBKPUc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 10:20:32 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:38798 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751367AbaBKPUb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 10:15:43 -0500
-Message-ID: <52FA3E8E.2080601@parallels.com>
-Date: Tue, 11 Feb 2014 19:15:26 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-MIME-Version: 1.0
-To: <dchinner@redhat.com>, <mhocko@suse.cz>, <hannes@cmpxchg.org>
-CC: <akpm@linux-foundation.org>, <glommer@gmail.com>, <rientjes@google.com>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <devel@openvz.org>
-Subject: Re: [PATCH -mm v15 00/13] kmemcg shrinkers
-References: <cover.1391624021.git.vdavydov@parallels.com>
-In-Reply-To: <cover.1391624021.git.vdavydov@parallels.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.16.96]
+	Tue, 11 Feb 2014 10:20:31 -0500
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com, ak@linux.intel.com,
+        zheng.z.yan@intel.com
+Subject: [PATCH v2 0/8] perf/x86/uncore: add support for SNB/IVB/HSW integrated memory controller PMU
+Date: Tue, 11 Feb 2014 16:20:06 +0100
+Message-Id: <1392132015-14521-1-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michal, Johannes, David,
+This patch series adds support for SandyBridge, IvyBridge, Haswell client (desktop/mobile)
+processor PCI-based integrated memory controller PMU. This PMU provides a few free running
+32-bit counters which can be used to determine memory bandwidth utilization.
 
-Could you please take a look at this if you have time? Without your
-review, it'll never get committed.
+The code is based on the documentation at:
+http://software.intel.com/en-us/articles/monitoring-integrated-memory-controller-requests-in-the-2nd-3rd-and-4th-generation-intel
 
-Thank you.
+The patches implement a new uncore PMU called uncore_imc.
+It exports its format and events in sysfs as usual.
 
-On 02/05/2014 10:39 PM, Vladimir Davydov wrote:
-> Hi,
->
-> This is the 15th iteration of Glauber Costa's patch-set implementing slab
-> shrinking on memcg pressure. The main idea is to make the list_lru structure
-> used by most FS shrinkers per-memcg. When adding or removing an element from a
-> list_lru, we use the page information to figure out which memcg it belongs to
-> and relay it to the appropriate list. This allows scanning kmem objects
-> accounted to different memcgs independently.
->
-> Please note that this patch-set implements slab shrinking only when we hit the
-> user memory limit so that kmem allocations will still fail if we are below the
-> user memory limit, but close to the kmem limit. I am going to fix this in a
-> separate patch-set, but currently it is only worthwhile setting the kmem limit
-> to be greater than the user mem limit just to enable per-memcg slab accounting
-> and reclaim.
->
-> The patch-set is based on top of v3.14-rc1-mmots-2014-02-04-16-48 (there are
-> some vmscan cleanups that I need committed there) and organized as follows:
->  - patches 1-4 introduce some minor changes to memcg needed for this set;
->  - patches 5-7 prepare fs for per-memcg list_lru;
->  - patch 8 implement kmemcg reclaim core;
->  - patch 9 make list_lru per-memcg and patch 10 marks sb shrinker memcg-aware;
->  - patch 10 is trivial - it issues shrinkers on memcg destruction;
->  - patches 12 and 13 introduce shrinking of dead kmem caches to facilitate
->    memcg destruction.
->
-> Changes in v15:
->  - remove patches that have been merged to -mm;
->  - fix memory barrier usage in per-memcg list_lru implementation;
->  - fix list_lru_destroy(), which might sleep for per-memcg lrus, called from
->    atomic context (__put_super()).
->
-> Previous iterations of this patch-set can be found here:
->  - https://lkml.org/lkml/2013/12/16/206 (v14)
->  - https://lkml.org/lkml/2013/12/9/103 (v13)
->  - https://lkml.org/lkml/2013/12/2/141 (v12)
->  - https://lkml.org/lkml/2013/11/25/214 (v11)
->
-> Comments are highly appreciated.
->
-> Thanks.
->
-> Glauber Costa (6):
->   memcg: make cache index determination more robust
->   memcg: consolidate callers of memcg_cache_id
->   memcg: move initialization to memcg creation
->   memcg: flush memcg items upon memcg destruction
->   vmpressure: in-kernel notifications
->   memcg: reap dead memcgs upon global memory pressure
->
-> Vladimir Davydov (7):
->   memcg: make for_each_mem_cgroup macros public
->   list_lru, shrinkers: introduce list_lru_shrink_{count,walk}
->   fs: consolidate {nr,free}_cached_objects args in shrink_control
->   fs: do not call destroy_super() in atomic context
->   vmscan: shrink slab on memcg pressure
->   list_lru: add per-memcg lists
->   fs: make shrinker memcg aware
->
->  fs/dcache.c                |   14 +-
->  fs/gfs2/quota.c            |    6 +-
->  fs/inode.c                 |    7 +-
->  fs/internal.h              |    7 +-
->  fs/super.c                 |   44 ++---
->  fs/xfs/xfs_buf.c           |    7 +-
->  fs/xfs/xfs_qm.c            |    7 +-
->  fs/xfs/xfs_super.c         |    7 +-
->  include/linux/fs.h         |    8 +-
->  include/linux/list_lru.h   |  112 ++++++++++---
->  include/linux/memcontrol.h |   50 ++++++
->  include/linux/shrinker.h   |   10 +-
->  include/linux/vmpressure.h |    5 +
->  mm/list_lru.c              |  271 +++++++++++++++++++++++++++---
->  mm/memcontrol.c            |  399 ++++++++++++++++++++++++++++++++++++++------
->  mm/vmpressure.c            |   53 +++++-
->  mm/vmscan.c                |   94 ++++++++---
->  17 files changed, 926 insertions(+), 175 deletions(-)
->
+The following events are currently defined:
+  - name: uncore_imc/data_reads/
+  - code: 0x1
+  - unit: 64 bytes
+  - number of full cacheline (64 bytes) read requests to the IMC
+
+  - name: uncore_imc/data_writes/
+  - code: 0x2
+  - unit: 64 bytes
+  - number of full cacheline (64 bytes) write requests to the IMC
+
+The unit and scale of each event are also exposed in sysfs and
+are picked up by perf stat (needs v3.13).
+
+The uncore_imc PMU is by construction system-wide only and counting
+mode only. There is no priv level filtering. The kernel enforces
+those restrictions. Counters are 32-bit and do not generate overflow
+interrupts, therefore the kernel uses a hrtimer to poll the counters
+and avoid missing an overflow.
+
+The series includes an optional patch to alter the unit of the event
+to be Mebibytes in perf stat. The kernel still exports counts as
+64 bytes increments (raw value of the counter).
+
+To use the PMU with perf stat:
+ # perf stat -a -e uncore_imc/data_reads/,uncore_imc/data_writes/ -I 1000 sleep 100
+   #           time             counts unit events
+        1.000169151             180.62 MiB  uncore_imc/data_reads/
+        1.000169151               0.14 MiB  uncore_imc/data_writes/  
+        2.000506913             180.37 MiB  uncore_imc/data_reads/   
+        2.000506913               0.02 MiB  uncore_imc/data_writes/  
+        3.000748105             180.32 MiB  uncore_imc/data_reads/   
+        3.000748105               0.02 MiB  uncore_imc/data_writes/  
+        4.000991441             180.30 MiB  uncore_imc/data_reads/   
+
+In v2, we drop a couple of patches because they were not needed.
+We rebased to 3.14-rc2 from tip.git.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+
+
+Stephane Eranian (8):
+  perf/x86/uncore: fix initialization of cpumask
+  perf/x86/uncore: add ability to customize pmu callbacks
+  perf/x86/uncore: add PCI ids for SNB/IVB/HSW IMC
+  perf/x86/uncore: make hrtimer timeout configurable per box
+  perf/x86/uncore: move uncore_event_to_box() and uncore_pmu_to_box()
+  perf/x86/uncore: add SNB/IVB/HSW client uncore memory controller
+    support
+  perf/x86/uncore: add hrtimer to SNB uncore IMC PMU
+  perf/x86/uncore: use MiB unit for events for SNB/IVB/HSW IMC
+
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c |  540 +++++++++++++++++++++----
+ arch/x86/kernel/cpu/perf_event_intel_uncore.h |    5 +
+ include/linux/pci_ids.h                       |    3 +
+ 3 files changed, 477 insertions(+), 71 deletions(-)
+
+-- 
+1.7.9.5
 
