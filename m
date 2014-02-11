@@ -1,72 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932414AbaBKUUv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:20:51 -0500
-Received: from fep16.mx.upcmail.net ([62.179.121.36]:42560 "EHLO
-	fep16.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755951AbaBKUUs (ORCPT
+	id S932429AbaBKUU6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:20:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41137 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932418AbaBKUU4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 15:20:48 -0500
-X-SourceIP: 77.56.27.120
-X-Authenticated-Sender: odi.ch@hispeed.ch
-Message-ID: <52FA8618.5030509@odi.ch>
-Date: Tue, 11 Feb 2014 21:20:40 +0100
-From: =?UTF-8?B?T3J0d2luIEdsw7xjaw==?= <odi@odi.ch>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Tue, 11 Feb 2014 15:20:56 -0500
+Date: Tue, 11 Feb 2014 12:22:11 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: SeongJae Park <sj38.park@gmail.com>
+Cc: devel@driverdev.osuosl.org, swetland@google.com, arve@android.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] staging: android: remove unused constant,
+ BINDER_SET_IDLE_PRIORITY
+Message-ID: <20140211202211.GA2306@kroah.com>
+References: <1391828381-4303-1-git-send-email-sj38.park@gmail.com>
+ <1391828381-4303-2-git-send-email-sj38.park@gmail.com>
 MIME-Version: 1.0
-To: Hannes Frederic Sowa <hannes@stressinduktion.org>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: xfrm: is pmtu broken with ESP tunneling?
-References: <52F890D2.2060109@odi.ch> <20140211023258.GC11150@order.stressinduktion.org>
-In-Reply-To: <20140211023258.GC11150@order.stressinduktion.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391828381-4303-2-git-send-email-sj38.park@gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2014 03:32 AM, Hannes Frederic Sowa wrote:
->> net.ipv4.ip_no_pmtu_disc=1.
->
-> This setting will shrink the path mtu to min_pmtu when a frag needed icmp is
-> received.
+On Sat, Feb 08, 2014 at 11:59:41AM +0900, SeongJae Park wrote:
+> Remove constant BINDER_SET_IDLE_PRIORITY because it is not used from
+> anywhere.
 
-The UDP+ESP encapsulation adds 60 bytes to the original packet size.
+> 
+> Signed-off-by: SeongJae Park <sj38.park@gmail.com>
+> ---
+>  drivers/staging/android/binder.h | 7 +++----
+>  1 file changed, 3 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/staging/android/binder.h b/drivers/staging/android/binder.h
+> index c4c1ed6..6d08e61 100644
+> --- a/drivers/staging/android/binder.h
+> +++ b/drivers/staging/android/binder.h
+> @@ -87,10 +87,9 @@ struct binder_version {
+>  #define BINDER_WRITE_READ		_IOWR('b', 1, struct binder_write_read)
+>  #define BINDER_SET_IDLE_TIMEOUT		_IOW('b', 3, __s64)
+>  #define BINDER_SET_MAX_THREADS		_IOW('b', 5, __u32)
+> -#define BINDER_SET_IDLE_PRIORITY	_IOW('b', 6, __s32)
+> -#define BINDER_SET_CONTEXT_MGR		_IOW('b', 7, __s32)
+> -#define BINDER_THREAD_EXIT		_IOW('b', 8, __s32)
+> -#define BINDER_VERSION			_IOWR('b', 9, struct binder_version)
+> +#define BINDER_SET_CONTEXT_MGR		_IOW('b', 6, __s32)
+> +#define BINDER_THREAD_EXIT		_IOW('b', 7, __s32)
+> +#define BINDER_VERSION			_IOWR('b', 8, struct binder_version)
 
-ifconfig wla0 shows an mtu of 1500.
+And you just broke all userspace code that uses this interface :(
 
-The size of the first big packet on the interface:
-net.ipv4.ip_no_pmtu_disc=1: packet length is 1300
-net.ipv4.ip_no_pmtu_disc=0: packet length is 1500
+Please be more careful, and test your patches properly.
 
-Length is without the ESP wrapper and UDP encapsulation. The packets are so big 
-that they can't even leave the wireless interface and never show up on the 
-router. So no ICMP packets are received. PMTU can't work with initial packets of 
-that size.
-
-dump question: which layer discard these packets? qdisc? why no notification to 
-the sender?
-
-When I increase the mtu of the interface to 2000 with ifconfig, then I start 
-seeing ICMP fragmentation needed from the next hop, indicating 1500 as the mtu 
-as response to a 1560 byte UDP[ESP] packet.
-
-The next UDP[ESP] packet is shorter: 1360 bytes. It gets hard to see what's 
-going on after that, but the connection is still not working.
-
-So, instead of somehow losing these packets on the way out of the interface 
-should the kernel not start with a lower mtu in the first place? Now it seems it 
-is trying with the maximum of the interface and expecting to scale down with 
-pmtu - which can ever happen.
-
-> Can you send a ip route get <ip> to the problematic target to see how
-> far off the calculated value is?
-
-That command doesn't return anything useful. No hint on the mtu here.
-
-BTW, instead of disabling pmtu, setting mtu explicitly also helps:
-ip route add 10.6.6.0/24 via ${localip} mtu 1300
-
-Thanks,
-
-Ortwin
+greg k-h
