@@ -1,185 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751893AbaBKLpv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 06:45:51 -0500
-Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:20550
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751004AbaBKLpp (ORCPT
+	id S1751943AbaBKLqD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 06:46:03 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:27326 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751908AbaBKLpz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 06:45:45 -0500
-X-Forefront-Antispam-Report: CIP:62.221.5.235;KIP:(null);UIP:(null);IPV:NLI;H:xir-gw1;RD:unknown-62-221-5-235.ipspace.xilinx.com;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VPS3(zzbb2dI98dI9371I1dbaI1432I4015Ide40h853kzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h1de097hz2fh95h839hc61hd24hf0ah119dh1288h12a5h12bdh137ah1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19b5h19c3h1b0ah1bceh1be0h224fh1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh20f0h2216h2336h2438h2461h2487h24ach24d7h2516h2545h255eh34h19b6n1155h)
-Date: Tue, 11 Feb 2014 12:45:31 +0100
-From: Michal Simek <michal.simek@xilinx.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Marc Kleine-Budde <mkl@pengutronix.de>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-CC: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>,
-        "wg@grandegger.com" <wg@grandegger.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH] can: xilinx CAN controller support.
-References: <6c2bcce0-9897-4d1d-a8b9-47924e40f73c@VA3EHSMHS008.ehs.local> <52F382D5.6090706@pengutronix.de> <8b4dad82-c72a-4e1f-b1af-b8c7964bbf24@TX2EHSMHS043.ehs.local> <52F4A960.10809@pengutronix.de>
-In-Reply-To: <52F4A960.10809@pengutronix.de>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="JaxILsq4rGx903n6X379Vge7eAxE5kk1O"
-X-RCIS-Action: ALLOW
-Message-ID: <da80c522-5524-4f53-9373-3f2bb6f81ddc@CO9EHSMHS015.ehs.local>
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	Tue, 11 Feb 2014 06:45:55 -0500
+X-AuditID: cbfec7f5-b7fc96d000004885-f5-52fa0d70f6a9
+Message-id: <52FA0D6E.9090304@samsung.com>
+Date: Tue, 11 Feb 2014 12:45:50 +0100
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101
+ Thunderbird/24.3.0
+MIME-version: 1.0
+To: Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Arnd Bergmann <arnd@arndb.de>, Michal Nazarewicz <mina86@mina86.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Laura Abbott <lauraa@codeaurora.org>, Rob Herring <robh+dt@gmail.com>,
+        Olof Johansson <olof@lixom.net>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Kumar Gala <galak@codeaurora.org>,
+        Nishanth Peethambaran <nishanth.p@gmail.com>,
+        Marc <marc.ceeeee@gmail.com>, Josh Cartwright <joshc@codeaurora.org>
+Subject: Re: [PATCH v2 1/5] drivers: of: add initialization code for reserved
+ memory
+References: <1391515773-6112-1-git-send-email-m.szyprowski@samsung.com>
+ <1391515773-6112-2-git-send-email-m.szyprowski@samsung.com>
+ <20140205110538.99E47C40A89@trevor.secretlab.ca>
+In-reply-to: <20140205110538.99E47C40A89@trevor.secretlab.ca>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrEIsWRmVeSWpSXmKPExsVy+t/xK7oFvL+CDBpPCVj8nXSM3eJDUyuz
+	xfwj51gt+t8sZLU48GcHo8Wb3g4Wi53r3jFanG16w26xvXMGu8WXKw+ZLDY9vsZqsbBtCYvF
+	5V1z2Cw2vDzIZLH0+kUmiwXHW1gt/kyXszh1/TObxYTpa1ksNt1fy2jxd/smFotXB9tYLNbP
+	eM1isWrXH0YHCY8189Ywevz+NYnR4/XkCYwel/t6mTx2zrrL7tHzpoXV4861PWwem5fUe9z+
+	95jZ48qJJlaPdX9eMXn0/zXw6NuyitHj8yY5j41zQwP4o7hsUlJzMstSi/TtErgydqz7xliw
+	UqfizLSzjA2Mm5W7GDk5JARMJPon/2WGsMUkLtxbz9bFyMUhJLCUUeL7svfsEM4nRonu+z/Y
+	QKp4BbQk9t19DGazCKhKvO49yApiswkYSnS97QKKc3CICoRKzJurB1EuKPFj8j0WkDkiAicZ
+	Jf7t7QMbyiywl1Wi685edpAqYYEwifk71jKC2EICOxglTu1KAbE5BWwlVvyawQJiMwuYSTxq
+	WccMYctLbF7zlnkCo8AsJEtmISmbhaRsASPzKkbR1NLkguKk9FwjveLE3OLSvHS95PzcTYyQ
+	eP+6g3HpMatDjAIcjEo8vBpffwQJsSaWFVfmHmKU4GBWEuHdyPIrSIg3JbGyKrUoP76oNCe1
+	+BAjEwenVAOj1ql+k71nBA2iuhZJmXFdEmo78EYlR+iFo0lGVCmzSblLpBGHzHurxf0dKY0v
+	5mbMcDpw3yHwZeLan6420bbuH++ck1zqI36ld//qiglrX50696G+MfOiSuOpTOlbqeU7/8gw
+	/36ceN2B74LmpHfLZbaHuFWofVl+d2JAk8TXfbLJWvWmHluVWIozEg21mIuKEwEANCmd1QIA	AA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---JaxILsq4rGx903n6X379Vge7eAxE5kk1O
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Hello,
 
-Hi Marc,
+On 2014-02-05 12:05, Grant Likely wrote:
+> On Tue, 04 Feb 2014 13:09:29 +0100, Marek Szyprowski <m.szyprowski@samsung.com> wrote:
+> > This patch adds device tree support for contiguous and reserved memory
+> > regions defined in device tree.
+> >
+> > Large memory blocks can be reliably reserved only during early boot.
+> > This must happen before the whole memory management subsystem is
+> > initialized, because we need to ensure that the given contiguous blocks
+> > are not yet allocated by kernel. Also it must happen before kernel
+> > mappings for the whole low memory are created, to ensure that there will
+> > be no mappings (for reserved blocks) or mapping with special properties
+> > can be created (for CMA blocks). This all happens before device tree
+> > structures are unflattened, so we need to get reserved memory layout
+> > directly from fdt.
+> >
+> > Later, those reserved memory regions are assigned to devices on each
+> > device structure initialization.
+> >
+> > Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> > Cc: Laura Abbott <lauraa@codeaurora.org>
+> > Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> > [joshc: rework to implement new DT binding, provide mechanism for
+> >  plugging in new reserved-memory node handlers via
+> >  RESERVEDMEM_OF_DECLARE]
+> > Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+> > [mszyprow: little code cleanup]
+> > Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> > ---
+> >  drivers/of/Kconfig                |    6 +
+> >  drivers/of/Makefile               |    1 +
+> >  drivers/of/of_reserved_mem.c      |  219 +++++++++++++++++++++++++++++++++++++
+> >  drivers/of/platform.c             |    7 ++
+> >  include/asm-generic/vmlinux.lds.h |   11 ++
+> >  include/linux/of_reserved_mem.h   |   62 +++++++++++
+> >  6 files changed, 306 insertions(+)
+> >  create mode 100644 drivers/of/of_reserved_mem.c
+> >  create mode 100644 include/linux/of_reserved_mem.h
+> >
+> > diff --git a/drivers/of/Kconfig b/drivers/of/Kconfig
+> > index c6973f101a3e..aba13df56f3a 100644
+> > --- a/drivers/of/Kconfig
+> > +++ b/drivers/of/Kconfig
+> > @@ -75,4 +75,10 @@ config OF_MTD
+> >  	depends on MTD
+> >  	def_bool y
+> >
+> > +config OF_RESERVED_MEM
+> > +	depends on HAVE_MEMBLOCK
+> > +	def_bool y
+> > +	help
+> > +	  Helpers to allow for reservation of memory regions
+> > +
+> >  endmenu # OF
+> > diff --git a/drivers/of/Makefile b/drivers/of/Makefile
+> > index efd05102c405..ed9660adad77 100644
+> > --- a/drivers/of/Makefile
+> > +++ b/drivers/of/Makefile
+> > @@ -9,3 +9,4 @@ obj-$(CONFIG_OF_MDIO)	+= of_mdio.o
+> >  obj-$(CONFIG_OF_PCI)	+= of_pci.o
+> >  obj-$(CONFIG_OF_PCI_IRQ)  += of_pci_irq.o
+> >  obj-$(CONFIG_OF_MTD)	+= of_mtd.o
+> > +obj-$(CONFIG_OF_RESERVED_MEM) += of_reserved_mem.o
+> > diff --git a/drivers/of/of_reserved_mem.c b/drivers/of/of_reserved_mem.c
+> > new file mode 100644
+> > index 000000000000..f17cd56e68d9
+> > --- /dev/null
+> > +++ b/drivers/of/of_reserved_mem.c
+> > @@ -0,0 +1,219 @@
+> > +/*
+> > + * Device tree based initialization code for reserved memory.
+> > + *
+> > + * Copyright (c) 2013, The Linux Foundation. All Rights Reserved.
+> > + * Copyright (c) 2013 Samsung Electronics Co., Ltd.
+> > + *		http://www.samsung.com
+> > + * Author: Marek Szyprowski <m.szyprowski@samsung.com>
+> > + * Author: Josh Cartwright <joshc@codeaurora.org>
+> > + *
+> > + * This program is free software; you can redistribute it and/or
+> > + * modify it under the terms of the GNU General Public License as
+> > + * published by the Free Software Foundation; either version 2 of the
+> > + * License or (at your optional) any later version of the license.
+> > + */
+> > +#include <linux/memblock.h>
+> > +#include <linux/err.h>
+> > +#include <linux/of.h>
+> > +#include <linux/of_fdt.h>
+> > +#include <linux/of_platform.h>
+> > +#include <linux/mm.h>
+> > +#include <linux/sizes.h>
+> > +#include <linux/of_reserved_mem.h>
+> > +
+> > +#define MAX_RESERVED_REGIONS	16
+> > +static struct reserved_mem reserved_mem[MAX_RESERVED_REGIONS];
+> > +static int reserved_mem_count;
+> > +
+> > +int __init of_parse_flat_dt_reg(unsigned long node, const char *uname,
+> > +				   phys_addr_t *base, phys_addr_t *size)
+>
+> Useful utility function; move to drivers/of/fdt.c
+>
+> > +{
+> > +	unsigned long len;
+> > +	__be32 *prop;
+> > +
+> > +	prop = of_get_flat_dt_prop(node, "reg", &len);
+> > +	if (!prop)
+> > +		return -EINVAL;
+> > +
+> > +	if (len < (dt_root_addr_cells + dt_root_size_cells) * sizeof(__be32)) {
+> > +		pr_err("Reserved memory: invalid reg property in '%s' node.\n",
+> > +				uname);
+> > +		return -EINVAL;
+> > +	}
+>
+> This is /okay/ for an initial implementation, but it is naive. While I
+> suggested making #address-cells and #size-cells equal the root node
+> values for the purpose of simplicity, it should still be perfectly valid
+> to have different values if the ranges property is correctly formed.
+>
+> > +
+> > +	*base = dt_mem_next_cell(dt_root_addr_cells, &prop);
+> > +	*size = dt_mem_next_cell(dt_root_size_cells, &prop);
+>
+> Future enhancement; allow for parsing more than just the first reg
+> tuple.
 
-On 02/07/2014 10:37 AM, Marc Kleine-Budde wrote:
-> On 02/07/2014 09:42 AM, Appana Durga Kedareswara Rao wrote:
->>>> ---
->>>> This patch is rebased on the 3.14 rc1 kernel.
->>>> ---
->>>>  .../devicetree/bindings/net/can/xilinx_can.txt     |   43 +
->>>>  drivers/net/can/Kconfig                            |    8 +
->>>>  drivers/net/can/Makefile                           |    1 +
->>>>  drivers/net/can/xilinx_can.c                       | 1150 +++++++++++=
-+++++++++
->>>>  4 files changed, 1202 insertions(+), 0 deletions(-)  create mode
->>>> 100644 Documentation/devicetree/bindings/net/can/xilinx_can.txt
->>>>  create mode 100644 drivers/net/can/xilinx_can.c
->>>>
->>>> diff --git a/Documentation/devicetree/bindings/net/can/xilinx_can.txt
->>>> b/Documentation/devicetree/bindings/net/can/xilinx_can.txt
->>>> new file mode 100644
->>>> index 0000000..34f9643
->>>> --- /dev/null
->>>> +++ b/Documentation/devicetree/bindings/net/can/xilinx_can.txt
->>>> @@ -0,0 +1,43 @@
->>>> +Xilinx Axi CAN/Zynq CANPS controller Device Tree Bindings
->>>> +---------------------------------------------------------
->>>> +
->>>> +Required properties:
->>>> +- compatible               : Should be "xlnx,zynq-can-1.00.a" for Zyn=
-q
->>> CAN
->>>> +                     controllers and "xlnx,axi-can-1.00.a" for Axi CA=
-N
->>>> +                     controllers.
->>>> +- reg                      : Physical base address and size of the Ax=
-i CAN/Zynq
->>>> +                     CANPS registers map.
->>>> +- interrupts               : Property with a value describing the int=
-errupt
->>>> +                     number.
->>>> +- interrupt-parent : Must be core interrupt controller
->>>> +- clock-names              : List of input clock names - "ref_clk",
->>> "aper_clk"
->>>> +                     (See clock bindings for details. Two clocks are
->>>> +                      required for Zynq CAN. For Axi CAN
->>>> +                      case it is one(ref_clk)).
->>>> +- clocks           : Clock phandles (see clock bindings for details).=
+One more question. Does it really makes any sense to support more than 
+one tuple
+for reg property? For consistency we should also allow more than one 
+entry in
+size, align and alloc-ranges property, but I don't see any benefits for 
+defining
+more than one range for a single region. Same can be achieved by 
+defining more
+regions instead if one really needs such configuration.
 
->>>> +- xlnx,can-tx-dpth : Can Tx fifo depth (Required for Axi CAN).
->>>> +- xlnx,can-rx-dpth : Can Rx fifo depth (Required for Axi CAN).
->>>> +
->>>> +
->>>> +Example:
->>>> +
->>>> +For Zynq CANPS Dts file:
->>>> +   zynq_can_0: zynq-can@e0008000 {
->>>> +                   compatible =3D "xlnx,zynq-can-1.00.a";
->>>> +                   clocks =3D <&clkc 19>, <&clkc 36>;
->>>> +                   clock-names =3D "ref_clk", "aper_clk";
->>>> +                   reg =3D <0xe0008000 0x1000>;
->>>> +                   interrupts =3D <0 28 4>;
->>>> +                   interrupt-parent =3D <&intc>;
->>>
->>> Above xlnx,can-{rx,tx}-dpth is mentioned as required, but it's not in t=
-he
->>> Zynq example.
->>
->> One of the Difference b/w the AXI CAN and zynq CAN is in AXI CAN the fif=
-o depth(tx,rx)
->> Is user configurable. But in case of ZYNQ CAN  the fifo depth  is fixed =
-for tx and rx fifo's(64)
->> Xlnx,can-{rx,tx}-dpth is required only for AXI CAN case it is not requir=
-ed for zynq CAN.
->> That's why didn't putted that property in device tree.
-> =
+Best regards
+-- 
+Marek Szyprowski, PhD
+Samsung R&D Institute Poland
 
-> The device tree should be a hardware only description and should not
-> hold any user configurable data. Please split your patch into two
-> patches. The first one should add the driver with a fixed fifo size
-> (e.g. 0x40) for the AXI, too. The second patch should make the fifo
-> configurable via device tree.
-
-can-rx/tx-dpth is not user configurable data as you think.
-This is FPGA where you can configure this parameter in design tools.
-It means these 2 values just describe real hardware and user can't just cha=
-nge it
-for different software behaviour.
-
-Also I don't think it is worth to create 2 patches for the same driver
-where the first one is useless for axi can device. But if you think
-that it is worth to do we can create 2 patches as you suggested.
-
-Also what we can do is to define that this property is required also
-for zynq which is 0x40 and change code according too.
-
-> If it's acceptable to describe the fifo usage by device tree, I'd like
-> to make it a generic CAN driver option. But we have to look around, e.g.
-> what the Ethernet driver use to configure their hardware.
-
-I think the real question is not if this is acceptable or not. It is just
-reality that we can setup hardware fifo depth and driver has to reflect thi=
-s
-because without it driver just doesn't work for axi can.
-
-The only remaining question is if we should create generic DT binding
-for fifo depth. Arnd, Rob: Any opinion about it?
-Definitely will be worth to have one generic binding if this is generic fea=
-ture.
-But if this is just specific feature for us then current properties should
-be fine.
-
-In general all these xlnx,XXX properties just reflect all configurable opti=
-ons
-which you can setup in design tool which means that provide full hw descrip=
-tion
-with all variants and they are automatically generated from tools.
-
-Please let me know what you think.
-
-Thanks,
-Michal
-
-
---JaxILsq4rGx903n6X379Vge7eAxE5kk1O
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlL6DVsACgkQykllyylKDCHZhwCeJkO74M5tOGQGTPL56zp1YxtK
-WugAoIJWLpKIIElilRGyKZzdMVed0D8C
-=1jFI
------END PGP SIGNATURE-----
-
-
---JaxILsq4rGx903n6X379Vge7eAxE5kk1O--
