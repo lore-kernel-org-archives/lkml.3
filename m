@@ -1,47 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752882AbaBKQmi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 11:42:38 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:33143 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751639AbaBKQmh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 11:42:37 -0500
-Date: Tue, 11 Feb 2014 17:42:30 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Josh Triplett <josh@freedesktop.org>,
-        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 5/9] rcu: Use MAX_NICE to replace hard coding of 19.
-Message-ID: <20140211164230.GU27965@twins.programming.kicks-ass.net>
-References: <cover.1392103744.git.yangds.fnst@cn.fujitsu.com>
- <5b3bf232f41b33ab703a1595e94671b303e2d1fc.1392103744.git.yangds.fnst@cn.fujitsu.com>
- <20140211153732.GA2985@leaf>
- <20140211161313.GV4250@linux.vnet.ibm.com>
+	id S1752211AbaBKQob (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 11:44:31 -0500
+Received: from mga09.intel.com ([134.134.136.24]:6589 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751566AbaBKQoa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 11:44:30 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,826,1384329600"; 
+   d="scan'208";a="481659378"
+Message-ID: <52FA5366.3020007@linux.intel.com>
+Date: Tue, 11 Feb 2014 08:44:22 -0800
+From: Dave Hansen <dave.hansen@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140211161313.GV4250@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, dzickus@redhat.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/core] x86/nmi: Push duration printk() to irq context
+References: <tip-rdw0au56a5ymis1u8p48c12d@git.kernel.org> <52F9021C.1030801@linux.intel.com> <20140211150116.GO27965@twins.programming.kicks-ass.net>
+In-Reply-To: <20140211150116.GO27965@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 08:13:13AM -0800, Paul E. McKenney wrote:
-> On Tue, Feb 11, 2014 at 07:37:32AM -0800, Josh Triplett wrote:
-> > On Tue, Feb 11, 2014 at 03:34:49PM +0800, Dongsheng Yang wrote:
-> > > Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-> > > cc: Josh Triplett <josh@freedesktop.org>
-> > > cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > > cc: Peter Zijlstra <peterz@infradead.org>
-> > > cc: Ingo Molnar <mingo@kernel.org>
-> > 
-> > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> 
-> I get complaints about MAX_NICE being undefined, and I don't see any
-> definition of MAX_NICE in sched.h as of 3.14-rc2.  Am I looking in
-> the wrong place, or is this symbol not yet quite in mainline?
+On 02/11/2014 07:01 AM, Peter Zijlstra wrote:
+> -	irq_work_queue(&perf_duration_work);
+> +	if (!irq_work_queue(&perf_duration_work)) {
+> +		early_printk("perf interrupt took too long (%lld > %lld), lowering "
+> +			     "kernel.perf_event_max_sample_rate to %d\n",
+> +			     avg_local_sample_len, allowed_ns >> 1,
+> +			     sysctl_perf_event_sample_rate);
+> +	}
+>  }
 
-It is not.. its a proposed thingy. I'm still trying to make up my mind
-on it.
+That's a cool trick.  Works for me.
