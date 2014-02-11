@@ -1,69 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754918AbaBKThz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:37:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40359 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754040AbaBKTHq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:07:46 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Weston Andros Adamson <dros@primarydata.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.10 32/79] nfs4: fix discover_server_trunking use after free
-Date: Tue, 11 Feb 2014 11:05:36 -0800
-Message-Id: <20140211184721.861128190@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
-References: <20140211184720.928667275@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	id S932185AbaBKTiI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:38:08 -0500
+Received: from fieldses.org ([174.143.236.118]:41160 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754289AbaBKTiG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 14:38:06 -0500
+Date: Tue, 11 Feb 2014 14:38:01 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Steven Whitehouse <swhiteho@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
+Subject: [PATCH] nfsd4: fix acl buffer overrun
+Message-ID: <20140211193801.GA22695@fieldses.org>
+References: <20140208204522.GG8801@fieldses.org>
+ <20140209020933.GA23163@fieldses.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140209020933.GA23163@fieldses.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-------------------
+4ac7249ea5a0ceef9f8269f63f33cc873c3fac61 "nfsd: use get_acl and
+->set_acl" forgets to set the size in the case get_acl() succeeds, so
+_posix_to_nfsv4_one() can then write past the end of its allocation.
+Symptoms were slab corruption warnings.
 
-From: Weston Andros Adamson <dros@primarydata.com>
+Also, some minor cleanup while we're here.  (Among other things, note
+that the first few lines guarantee that pacl is non-NULL.)
 
-commit abad2fa5ba67725a3f9c376c8cfe76fbe94a3041 upstream.
-
-If clp is new (cl_count = 1) and it matches another client in
-nfs4_discover_server_trunking, the nfs_put_client will free clp before
-->cl_preserve_clid is set.
-
-Signed-off-by: Weston Andros Adamson <dros@primarydata.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 ---
- fs/nfs/nfs4client.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+ fs/nfsd/nfs4acl.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
---- a/fs/nfs/nfs4client.c
-+++ b/fs/nfs/nfs4client.c
-@@ -240,13 +240,11 @@ struct nfs_client *nfs4_init_client(stru
- 	error = nfs4_discover_server_trunking(clp, &old);
- 	if (error < 0)
- 		goto error;
--	nfs_put_client(clp);
--	if (clp != old) {
--		clp->cl_preserve_clid = true;
--		clp = old;
--	}
- 
--	return clp;
-+	if (clp != old)
-+		clp->cl_preserve_clid = true;
-+	nfs_put_client(clp);
-+	return old;
- 
- error:
- 	nfs_mark_client_ready(clp, error);
+On Sat, Feb 08, 2014 at 09:09:33PM -0500, J. Bruce Fields wrote:
+> On Sat, Feb 08, 2014 at 03:45:22PM -0500, bfields wrote:
+> > I'm getting warnings about corruption of the kmalloc-32 slab on an nfs
+> > server while running some regression tests.
+> > 
+> > A bisect lands on 9fe55eea7e4b444bafc42fa0000cc2d1d2847275 "Fix race
+> > when checking i_size on direct i/o read".  Is there any known problem
+> > here?
+> > 
+> > It doesn't reproduce immediately and it's possible I could have made a
+> > mistake on the bisect.
+> 
+> Argh, apologies, yes--I'm able to reproduce the corruption before that
+> commit.  I'll keep looking....
 
+Fortunately my mistake was at the end of the bisect so the offending
+commit was nearby (and clearly labeled "nfsd:...").  This fixes the
+regression I was seeing.  I intend to include it in a pull request for
+3.14 soon.
+
+diff --git a/fs/nfsd/nfs4acl.c b/fs/nfsd/nfs4acl.c
+index d3a5871..d190e33 100644
+--- a/fs/nfsd/nfs4acl.c
++++ b/fs/nfsd/nfs4acl.c
+@@ -151,17 +151,15 @@ nfsd4_get_nfs4_acl(struct svc_rqst *rqstp, struct dentry *dentry,
+ 		pacl = posix_acl_from_mode(inode->i_mode, GFP_KERNEL);
+ 		if (IS_ERR(pacl))
+ 			return PTR_ERR(pacl);
+-		/* allocate for worst case: one (deny, allow) pair each: */
+-		size += 2 * pacl->a_count;
+ 	}
++	/* allocate for worst case: one (deny, allow) pair each: */
++	size += 2 * pacl->a_count;
+ 
+ 	if (S_ISDIR(inode->i_mode)) {
+ 		flags = NFS4_ACL_DIR;
+ 		dpacl = get_acl(inode, ACL_TYPE_DEFAULT);
+ 		if (dpacl)
+ 			size += 2 * dpacl->a_count;
+-	} else {
+-		dpacl = NULL;
+ 	}
+ 
+ 	*acl = nfs4_acl_new(size);
+@@ -170,8 +168,7 @@ nfsd4_get_nfs4_acl(struct svc_rqst *rqstp, struct dentry *dentry,
+ 		goto out;
+ 	}
+ 
+-	if (pacl)
+-		_posix_to_nfsv4_one(pacl, *acl, flags & ~NFS4_ACL_TYPE_DEFAULT);
++	_posix_to_nfsv4_one(pacl, *acl, flags & ~NFS4_ACL_TYPE_DEFAULT);
+ 
+ 	if (dpacl)
+ 		_posix_to_nfsv4_one(dpacl, *acl, flags | NFS4_ACL_TYPE_DEFAULT);
+-- 
+1.7.9.5
 
