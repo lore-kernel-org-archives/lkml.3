@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751752AbaBKLbi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 06:31:38 -0500
-Received: from mail-yh0-f51.google.com ([209.85.213.51]:51707 "EHLO
-	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750788AbaBKLbf (ORCPT
+	id S1751841AbaBKLcA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 06:32:00 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:51069 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751786AbaBKLb4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 06:31:35 -0500
-Date: Tue, 11 Feb 2014 08:31:27 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Don Zickus <dzickus@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        jolsa@redhat.com, jmario@redhat.com, fowles@inreach.com,
-        eranian@google.com, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Richard Fowles <rfowles@redhat.com>
-Subject: Re: [PATCH 01/21] perf c2c: Shared data analyser
-Message-ID: <20140211113127.GA28757@ghostprotocols.net>
-References: <1392053356-23024-1-git-send-email-dzickus@redhat.com>
- <1392059886-30812-1-git-send-email-dzickus@redhat.com>
- <1392070204.25316.1.camel@buesod1.americas.hpqcorp.net>
+	Tue, 11 Feb 2014 06:31:56 -0500
+Date: Tue, 11 Feb 2014 12:31:49 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Don Zickus <dzickus@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Joe Mario <jmario@redhat.com>, Richard Fowles <fowles@inreach.com>
+Subject: Re: [PATCH 00/21] perf, c2c: Add new tool to analyze cacheline
+ contention on NUMA systems
+Message-ID: <20140211113149.GW9987@twins.programming.kicks-ass.net>
+References: <CABPqkBRzvfcdKGG4yY9q1PmtVL5Z=9H1RzHg8QDMN42a7=AF6A@mail.gmail.com>
+ <20140211071401.GG27965@twins.programming.kicks-ass.net>
+ <CABPqkBRn+AVUA-KTx-JQ28j1NhE4pDQe5vjb5NKGx0jrZq8g_Q@mail.gmail.com>
+ <20140211105217.GS9987@twins.programming.kicks-ass.net>
+ <CABPqkBROriDQa5-b-w45zV+2gS94oEW1c_bYwGmYAeYcqPoUog@mail.gmail.com>
+ <20140211110242.GU9987@twins.programming.kicks-ass.net>
+ <CABPqkBQhUCUOszQzBJZd_pwX-nLf6y=0X-+swPi0pE3ivRpVcg@mail.gmail.com>
+ <CABPqkBSbBqOtvstKwQWD7jM8nn3XEdq0OXMjW8Z8oCF17uRYPw@mail.gmail.com>
+ <20140211111421.GN27965@twins.programming.kicks-ass.net>
+ <CABPqkBRw4W9=ORuhAJpx4L0pCt8iBKshhR5Qv5cLvcD5vR2eRA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1392070204.25316.1.camel@buesod1.americas.hpqcorp.net>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CABPqkBRw4W9=ORuhAJpx4L0pCt8iBKshhR5Qv5cLvcD5vR2eRA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Feb 10, 2014 at 02:10:04PM -0800, Davidlohr Bueso escreveu:
-> On Mon, 2014-02-10 at 14:18 -0500, Don Zickus wrote:
-> > From: Arnaldo Carvalho de Melo <acme@redhat.com>
-> > 
-> > This is the start of a new perf tool that will collect information about
-> > memory accesses and analyse it to find things like hot cachelines, etc.
-> > 
-> > This is basically trying to get a prototype written by Richard Fowles
-> > written using the tools/perf coding style and libraries.
-> > 
-> > Start it from 'perf sched', this patch starts the process by adding the
-> > 'record' subcommand to collect the needed mem loads and stores samples.
-> > 
-> > It also have the basic 'report' skeleton, resolving the sample address
-> > and hooking the events found in a perf.data file with methods to handle
-> > them, right now just printing the resolved perf_sample data structure
-> > after each event name.
+On Tue, Feb 11, 2014 at 12:28:47PM +0100, Stephane Eranian wrote:
+> On Tue, Feb 11, 2014 at 12:14 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Tue, Feb 11, 2014 at 12:08:56PM +0100, Stephane Eranian wrote:
+> >> Assuming you can decode and get the info about the base registers used,
+> >> you'd have to do this for each arch with load/store sampling capabilities.
+> >> this is painful compared to getting the portable info from dwarf directly.
+> >
+> > But its useful now, as compared to whenever GCC gets around to
+> > implementing more dwarves and that GCC getting used widely enough to
+> > actually rely on it.
+> >
+> > All you need for the decode is a disassembler, and every arch should
+> > already have multiple of those. Should be easy to reuse one, right?
 > 
-> What tree/branch is this developed against? I'm getting the following
-> with Linus' latest and tip tree:
+> I know, and you want to pull this into the perf tool?
 
-I'll try refreshing it on top of my perf/core branch today
- 
-> builtin-c2c.c: In function ‘perf_c2c__process_sample’:
-> builtin-c2c.c:68:20: error: request for member ‘func’ in something not a structure or union
-> builtin-c2c.c:69:36: error: request for member ‘func’ in something not a structure or union
-> builtin-c2c.c: In function ‘perf_c2c__read_events’:
-> builtin-c2c.c:81:2: error: passing argument 1 of ‘perf_session__new’ from incompatible pointer type [-Werror]
-> In file included from builtin-c2c.c:6:0:
-> util/session.h:52:22: note: expected ‘struct perf_data_file *’ but argument is of type ‘const char *’
-> builtin-c2c.c:81:2: error: too many arguments to function ‘perf_session__new’
-> In file included from builtin-c2c.c:6:0:
-> util/session.h:52:22: note: declared here
-> 
+Sure why not, its already got the world and then some :/
+
+It would be just another dynamic lib.
