@@ -1,52 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752333AbaBKP3c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 10:29:32 -0500
-Received: from 213083164162.static.sonofon.dk ([213.83.164.162]:33157 "EHLO
-	HORWDSPRD01.spectralink.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751735AbaBKP33 (ORCPT
+	id S1752504AbaBKPaT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 10:30:19 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:55272 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752478AbaBKPaQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 10:29:29 -0500
-From: =?UTF-8?q?Stefan=20S=C3=B8rensen?= 
-	<stefan.sorensen@spectralink.com>
-To: richardcochran@gmail.com, grant.likely@linaro.org, robh+dt@kernel.org,
-        mark.rutland@arm.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Cc: =?UTF-8?q?Stefan=20S=C3=B8rensen?= 
-	<stefan.sorensen@spectralink.com>
-Subject: [PATCH v2 0/2] dp83640: Get pin and master/slave configuration from DT
-Date: Tue, 11 Feb 2014 16:29:20 +0100
-Message-Id: <1392132562-23644-1-git-send-email-stefan.sorensen@spectralink.com>
-X-Mailer: git-send-email 1.8.5.3
+	Tue, 11 Feb 2014 10:30:16 -0500
+Message-ID: <52FA41FA.6030908@ahsoftware.de>
+Date: Tue, 11 Feb 2014 16:30:02 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 11 Feb 2014 15:29:26.0416 (UTC) FILETIME=[0C424900:01CF273E]
+To: linux-kernel@vger.kernel.org
+Subject: work unwinding?
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series add DT configuration to the DP83640 PHY driver and makes
-the configuration of periodic output pins dynamic.
+Hello,
 
-Changes since v1:
- - Add bindings documentation
- - Keep module parameters
- - Rename gpio->pin
- - Split patch into DT part and dynamic periodic output support
+Since the kernel has become more RT-aware and many stuff has moved into
+works, dump_stack() has often become a bit useless, because it just
+shows the call stack of a work, which quiet often is a bit short and
+doesn't reveal the real source of a problem.
 
-Stefan
+At least I would like it if there would be some mechanism to record the
+call stack for works, so that dump_stack() could display what actually
+queued a work (and it's call stack).
 
+Not that I want to implement such, I'm just curious if someone already
+has thought about implementing something like that, which I'm calling
+here "work unwinding" ;)
 
-Stefan Sørensen (2):
-  dp83640: Support a configurable number of periodic outputs
-  dp83640: Get pin and master/slave configuration from DT
+Regards,
 
- Documentation/devicetree/bindings/net/dp83640.txt |  29 +++
- drivers/net/phy/dp83640.c                         | 205 +++++++++++++++-------
- 2 files changed, 175 insertions(+), 59 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/net/dp83640.txt
-
--- 
-1.8.5.3
-
+Alexander Holler
