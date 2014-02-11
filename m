@@ -1,119 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751870AbaBKN4f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 08:56:35 -0500
-Received: from mail-vb0-f53.google.com ([209.85.212.53]:50484 "EHLO
-	mail-vb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750903AbaBKN4e (ORCPT
+	id S1751415AbaBKOBJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 09:01:09 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:36761 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750812AbaBKOBI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 08:56:34 -0500
+	Tue, 11 Feb 2014 09:01:08 -0500
+Date: Tue, 11 Feb 2014 11:01:03 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Boris BREZILLON <b.brezillon.dev@gmail.com>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] mtd: add per NAND partition ECC config
+Message-ID: <20140211140102.GB23150@localhost>
+References: <1391855206-5974-1-git-send-email-b.brezillon.dev@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de>
-References: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de>
-Date: Tue, 11 Feb 2014 07:56:33 -0600
-Message-ID: <CAL_Jsq+U9zU1i+STLHMBjY5BeEP6djYnJVE5X1ix-D2q_zWztQ@mail.gmail.com>
-Subject: Re: [RFC PATCH] [media]: of: move graph helpers from
- drivers/media/v4l2-core to drivers/of
-From: Rob Herring <robherring2@gmail.com>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Philipp Zabel <philipp.zabel@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1391855206-5974-1-git-send-email-b.brezillon.dev@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 5:45 AM, Philipp Zabel <p.zabel@pengutronix.de> wrote:
-> From: Philipp Zabel <philipp.zabel@gmail.com>
->
-> This patch moves the parsing helpers used to parse connected graphs
-> in the device tree, like the video interface bindings documented in
-> Documentation/devicetree/bindings/media/video-interfaces.txt, from
-> drivers/media/v4l2-core to drivers/of.
+Hi Boris,
 
-This is the opposite direction things have been moving...
-
-> This allows to reuse the same parser code from outside the V4L2 framework,
-> most importantly from display drivers. There have been patches that duplicate
-> the code (and I am going to send one of my own), such as
-> http://lists.freedesktop.org/archives/dri-devel/2013-August/043308.html
-> and others that parse the same binding in a different way:
-> https://www.mail-archive.com/linux-omap@vger.kernel.org/msg100761.html
->
-> I think that all common video interface parsing helpers should be moved to a
-> single place, outside of the specific subsystems, so that it can be reused
-> by all drivers.
-
-Perhaps that should be done rather than moving to drivers/of now and
-then again to somewhere else.
-
-> I moved v4l2_of_get_next_endpoint, v4l2_of_get_remote_port,
-> and v4l2_of_get_remote_port_parent. They are renamed to
-> of_graph_get_next_endpoint, of_graph_get_remote_port, and
-> of_graph_get_remote_port_parent, respectively.
->
-> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+On Sat, Feb 08, 2014 at 11:26:46AM +0100, Boris BREZILLON wrote:
+> This patch aims to add per partition ECC config for NAND devices.
+> It defines a new field in the mtd struct to store the mtd ECC config and
+> thus each mtd partition device can store its config instead of using the
+> default NAND chip config.
+> 
+> This feature is needed to support the sunxi boot0 paritition case:
+> Allwinner boot code (BROM) requires a specific HW ECC for its boot code
+> that may not fit the HW NAND requirements for the entire NAND chip.
+> 
+> Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
 > ---
->  drivers/media/Kconfig             |   1 +
->  drivers/media/v4l2-core/v4l2-of.c | 117 ---------------------------------
->  drivers/of/Kconfig                |   3 +
->  drivers/of/Makefile               |   1 +
->  drivers/of/of_graph.c             | 133 ++++++++++++++++++++++++++++++++++++++
->  include/linux/of_graph.h          |  23 +++++++
->  include/media/v4l2-of.h           |  16 ++---
->  7 files changed, 167 insertions(+), 127 deletions(-)
->  create mode 100644 drivers/of/of_graph.c
->  create mode 100644 include/linux/of_graph.h
+> Hello,
+> 
+> This patch is just a draft that implement per partition ECC config.
+> It's currently not properly splitted (it should be separated in several
+> patches) and not documented either.
+> 
 
-[snip]
+Ah, ah...
 
-> diff --git a/include/media/v4l2-of.h b/include/media/v4l2-of.h
-> index 541cea4..404a493 100644
-> --- a/include/media/v4l2-of.h
-> +++ b/include/media/v4l2-of.h
-> @@ -17,6 +17,7 @@
->  #include <linux/list.h>
->  #include <linux/types.h>
->  #include <linux/errno.h>
-> +#include <linux/of_graph.h>
->
->  #include <media/v4l2-mediabus.h>
->
-> @@ -72,11 +73,6 @@ struct v4l2_of_endpoint {
->  #ifdef CONFIG_OF
->  int v4l2_of_parse_endpoint(const struct device_node *node,
->                            struct v4l2_of_endpoint *endpoint);
-> -struct device_node *v4l2_of_get_next_endpoint(const struct device_node *parent,
-> -                                       struct device_node *previous);
-> -struct device_node *v4l2_of_get_remote_port_parent(
-> -                                       const struct device_node *node);
-> -struct device_node *v4l2_of_get_remote_port(const struct device_node *node);
->  #else /* CONFIG_OF */
->
->  static inline int v4l2_of_parse_endpoint(const struct device_node *node,
-> @@ -85,25 +81,25 @@ static inline int v4l2_of_parse_endpoint(const struct device_node *node,
->         return -ENOSYS;
->  }
->
-> +#endif /* CONFIG_OF */
-> +
->  static inline struct device_node *v4l2_of_get_next_endpoint(
->                                         const struct device_node *parent,
->                                         struct device_node *previous)
->  {
-> -       return NULL;
-> +       return of_graph_get_next_endpoint(parent, previous);
+> There's at least one point that bother me in the current implementation:
+> I introduced DT notions in the nand core code by the mean of the get_ecc_ctrl
+> callback, and so far this was kept out of mtd/nand core code (I guess it was
+> on purpose).
+> 
+> Please let me know if you see other drawbacks.
+> 
+> If you think per partition ECC should not be implemented, could you help me
+> find a way to handle sunxi specific case decribed above ?
+> 
+>  drivers/mtd/mtdpart.c          |   23 ++-
+>  drivers/mtd/nand/nand_base.c   |  428 ++++++++++++++++++++++++----------------
 
-Won't this break for !OF?
+I really appreciate your effort, but 428 changed lines is a too big and
+intrusive change. I must admit I'm not smart enough to review such patches.
 
-Rob
+I honestly think you'll have better luck getting feedback if you take the time
+to properly split and document this.
+
+Yeah, it's annoying and time-consuming, but it's globally cheaper for you to
+invest time on making it easier for reviewers and maintainers, than for each
+of us to invest the time deciphering this :-)
+
+Just my point of view, of course.
+-- 
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
