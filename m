@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754968AbaBKTXw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:23:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40514 "EHLO
+	id S1754251AbaBKTIL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:08:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40479 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754264AbaBKTIO (ORCPT
+	with ESMTP id S1751526AbaBKTIH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:08:14 -0500
+	Tue, 11 Feb 2014 14:08:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org,
-        Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.10 70/79] ftrace: Have function graph only trace based on  global_ops filters
-Date: Tue, 11 Feb 2014 11:06:14 -0800
-Message-Id: <20140211184722.996948570@linuxfoundation.org>
+        Giandomenico De Tullio <ghisha@gmail.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [PATCH 3.10 62/79] i915: remove pm_qos request on error
+Date: Tue, 11 Feb 2014 11:06:06 -0800
+Message-Id: <20140211184722.763840997@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
 References: <20140211184720.928667275@linuxfoundation.org>
@@ -29,183 +30,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Rostedt <rostedt@goodmis.org>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 23a8e8441a0a74dd612edf81dc89d1600bc0a3d1 upstream.
+commit 22accca01713b13dac386ca90b787aadf88f6551 upstream.
 
-Doing some different tests, I discovered that function graph tracing, when
-filtered via the set_ftrace_filter and set_ftrace_notrace files, does
-not always keep with them if another function ftrace_ops is registered
-to trace functions.
+Not removing pm qos request and free memory for it can cause crash,
+when some other driver use pm qos. For example, this oops:
 
-The reason is that function graph just happens to trace all functions
-that the function tracer enables. When there was only one user of
-function tracing, the function graph tracer did not need to worry about
-being called by functions that it did not want to trace. But now that there
-are other users, this becomes a problem.
+BUG: unable to handle kernel paging request at fffffffffffffff8
+IP: [<ffffffff81307a6b>] plist_add+0x5b/0xd0
+Call Trace:
+ [<ffffffff810acf25>] pm_qos_update_target+0x125/0x1e0
+ [<ffffffff810ad071>] pm_qos_add_request+0x91/0x100
+ [<ffffffffa053ec14>] e1000_open+0xe4/0x5b0 [e1000e]
 
-For example, one just needs to do the following:
+was caused by earlier i915 probe failure:
 
- # cd /sys/kernel/debug/tracing
- # echo schedule > set_ftrace_filter
- # echo function_graph > current_tracer
- # cat trace
-[..]
- 0)               |  schedule() {
- ------------------------------------------
- 0)    <idle>-0    =>   rcu_pre-7
- ------------------------------------------
+[drm:i915_report_and_clear_eir] *ERROR* EIR stuck: 0x00000010, masking
+[drm:init_ring_common] *ERROR* render ring initialization failed ctl 0001f001 head 00003004 tail 00000000 start 00003000
+[drm:i915_driver_load] *ERROR* failed to init modeset
+i915: probe of 0000:00:02.0 failed with error -5
 
- 0) ! 2980.314 us |  }
- 0)               |  schedule() {
- ------------------------------------------
- 0)   rcu_pre-7    =>    <idle>-0
- ------------------------------------------
+Bug report:
+http://bugzilla.redhat.com/show_bug.cgi?id=1057533
 
- 0) + 20.701 us   |  }
-
- # echo 1 > /proc/sys/kernel/stack_tracer_enabled
- # cat trace
-[..]
- 1) + 20.825 us   |      }
- 1) + 21.651 us   |    }
- 1) + 30.924 us   |  } /* SyS_ioctl */
- 1)               |  do_page_fault() {
- 1)               |    __do_page_fault() {
- 1)   0.274 us    |      down_read_trylock();
- 1)   0.098 us    |      find_vma();
- 1)               |      handle_mm_fault() {
- 1)               |        _raw_spin_lock() {
- 1)   0.102 us    |          preempt_count_add();
- 1)   0.097 us    |          do_raw_spin_lock();
- 1)   2.173 us    |        }
- 1)               |        do_wp_page() {
- 1)   0.079 us    |          vm_normal_page();
- 1)   0.086 us    |          reuse_swap_page();
- 1)   0.076 us    |          page_move_anon_rmap();
- 1)               |          unlock_page() {
- 1)   0.082 us    |            page_waitqueue();
- 1)   0.086 us    |            __wake_up_bit();
- 1)   1.801 us    |          }
- 1)   0.075 us    |          ptep_set_access_flags();
- 1)               |          _raw_spin_unlock() {
- 1)   0.098 us    |            do_raw_spin_unlock();
- 1)   0.105 us    |            preempt_count_sub();
- 1)   1.884 us    |          }
- 1)   9.149 us    |        }
- 1) + 13.083 us   |      }
- 1)   0.146 us    |      up_read();
-
-When the stack tracer was enabled, it enabled all functions to be traced, which
-now the function graph tracer also traces. This is a side effect that should
-not occur.
-
-To fix this a test is added when the function tracing is changed, as well as when
-the graph tracer is enabled, to see if anything other than the ftrace global_ops
-function tracer is enabled. If so, then the graph tracer calls a test trampoline
-that will look at the function that is being traced and compare it with the
-filters defined by the global_ops.
-
-As an optimization, if there's no other function tracers registered, or if
-the only registered function tracers also use the global ops, the function
-graph infrastructure will call the registered function graph callback directly
-and not go through the test trampoline.
-
-Fixes: d2d45c7a03a2 "tracing: Have stack_tracer use a separate list of functions"
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Reported-by: Giandomenico De Tullio <ghisha@gmail.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+[danvet: Drop unnecessary code movement.]
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- kernel/trace/ftrace.c |   45 ++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 44 insertions(+), 1 deletion(-)
 
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -297,6 +297,12 @@ static void ftrace_sync_ipi(void *data)
- 	smp_rmb();
- }
+---
+ drivers/gpu/drm/i915/i915_dma.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@ -1687,6 +1687,7 @@ out_gem_unload:
  
-+#ifdef CONFIG_FUNCTION_GRAPH_TRACER
-+static void update_function_graph_func(void);
-+#else
-+static inline void update_function_graph_func(void) { }
-+#endif
-+
- static void update_ftrace_function(void)
- {
- 	ftrace_func_t func;
-@@ -329,6 +335,8 @@ static void update_ftrace_function(void)
- 	if (ftrace_trace_function == func)
- 		return;
- 
-+	update_function_graph_func();
-+
- 	/*
- 	 * If we are using the list function, it doesn't care
- 	 * about the function_trace_ops.
-@@ -4810,6 +4818,7 @@ int ftrace_graph_entry_stub(struct ftrac
- trace_func_graph_ret_t ftrace_graph_return =
- 			(trace_func_graph_ret_t)ftrace_stub;
- trace_func_graph_ent_t ftrace_graph_entry = ftrace_graph_entry_stub;
-+static trace_func_graph_ent_t __ftrace_graph_entry = ftrace_graph_entry_stub;
- 
- /* Try to assign a return stack array on FTRACE_RETSTACK_ALLOC_SIZE tasks. */
- static int alloc_retstack_tasklist(struct ftrace_ret_stack **ret_stack_list)
-@@ -4951,6 +4960,30 @@ static struct ftrace_ops fgraph_ops __re
- 				FTRACE_OPS_FL_RECURSION_SAFE,
- };
- 
-+static int ftrace_graph_entry_test(struct ftrace_graph_ent *trace)
-+{
-+	if (!ftrace_ops_test(&global_ops, trace->func, NULL))
-+		return 0;
-+	return __ftrace_graph_entry(trace);
-+}
-+
-+/*
-+ * The function graph tracer should only trace the functions defined
-+ * by set_ftrace_filter and set_ftrace_notrace. If another function
-+ * tracer ops is registered, the graph tracer requires testing the
-+ * function against the global ops, and not just trace any function
-+ * that any ftrace_ops registered.
-+ */
-+static void update_function_graph_func(void)
-+{
-+	if (ftrace_ops_list == &ftrace_list_end ||
-+	    (ftrace_ops_list == &global_ops &&
-+	     global_ops.next == &ftrace_list_end))
-+		ftrace_graph_entry = __ftrace_graph_entry;
-+	else
-+		ftrace_graph_entry = ftrace_graph_entry_test;
-+}
-+
- int register_ftrace_graph(trace_func_graph_ret_t retfunc,
- 			trace_func_graph_ent_t entryfunc)
- {
-@@ -4975,7 +5008,16 @@ int register_ftrace_graph(trace_func_gra
- 	}
- 
- 	ftrace_graph_return = retfunc;
--	ftrace_graph_entry = entryfunc;
-+
-+	/*
-+	 * Update the indirect function to the entryfunc, and the
-+	 * function that gets called to the entry_test first. Then
-+	 * call the update fgraph entry function to determine if
-+	 * the entryfunc should be called directly or not.
-+	 */
-+	__ftrace_graph_entry = entryfunc;
-+	ftrace_graph_entry = ftrace_graph_entry_test;
-+	update_function_graph_func();
- 
- 	ret = ftrace_startup(&fgraph_ops, FTRACE_START_FUNC_RET);
- 
-@@ -4994,6 +5036,7 @@ void unregister_ftrace_graph(void)
- 	ftrace_graph_active--;
- 	ftrace_graph_return = (trace_func_graph_ret_t)ftrace_stub;
- 	ftrace_graph_entry = ftrace_graph_entry_stub;
-+	__ftrace_graph_entry = ftrace_graph_entry_stub;
- 	ftrace_shutdown(&fgraph_ops, FTRACE_STOP_FUNC_RET);
- 	unregister_pm_notifier(&ftrace_suspend_notifier);
- 	unregister_trace_sched_switch(ftrace_graph_probe_sched_switch, NULL);
+ 	intel_teardown_gmbus(dev);
+ 	intel_teardown_mchbar(dev);
++	pm_qos_remove_request(&dev_priv->pm_qos);
+ 	destroy_workqueue(dev_priv->wq);
+ out_mtrrfree:
+ 	if (dev_priv->mm.gtt_mtrr >= 0) {
 
 
