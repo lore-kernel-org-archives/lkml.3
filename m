@@ -1,170 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751956AbaBKKUm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 05:20:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40207 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751435AbaBKKUh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 05:20:37 -0500
-Date: Tue, 11 Feb 2014 11:20:32 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>
-Subject: Re: [PATCH] cgroup: protect modifications to cgroup_idr with
- cgroup_mutex
-Message-ID: <20140211102032.GA11946@dhcp22.suse.cz>
-References: <52F9D9DA.7040108@huawei.com>
+	id S1751428AbaBKKWZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 05:22:25 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:65365 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809AbaBKKWW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 05:22:22 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52F9D9DA.7040108@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140211085053.GD32042@lee--X1>
+References: <1392045953-26596-1-git-send-email-lpapp@kde.org>
+	<20140210160842.GB26997@lee--X1>
+	<20140210173811.04ba5964@endymion.delvare>
+	<CAOMwXhPTkrUUaUL-H_0fvZBO9_kt4jqKXs5BJYthDfu0_1c3xg@mail.gmail.com>
+	<20140211085014.4ef32b56@endymion.delvare>
+	<CAOMwXhMhKdp420+SPTih+C3fAgTmrpJgPnGBxsfPO3pEhESGTA@mail.gmail.com>
+	<20140211085053.GD32042@lee--X1>
+Date: Tue, 11 Feb 2014 10:22:22 +0000
+X-Google-Sender-Auth: 446e-S84I2doCyE5ytQ3lLk5WWs
+Message-ID: <CAOMwXhMzaymrV4qF+jR5rPo-ve_YV5-GpRSwVvGC83CCaUg0Yg@mail.gmail.com>
+Subject: Re: [lm-sensors] [PATCH] hwmon: (max6650) Rename the device ids to
+ contain the hwmon suffix
+From: Laszlo Papp <lpapp@kde.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Jean Delvare <jdelvare@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        lm-sensors@lm-sensors.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Li,
-good work in reproducing the issue so quickly!
-I have tried to backport this patch to 3.12 kernel but the code has
-changed since then.
-The only two instances of idr_remove which are called outside of
-cgroup_mutex seem to be:
- - cgroup_create calling it from err_free_id: path
- - css_free_work_fn
-     mem_cgroup_css_free
-       __mem_cgroup_free
-         free_css_id
+On Tue, Feb 11, 2014 at 8:50 AM, Lee Jones <lee.jones@linaro.org> wrote:
+>> >> On Mon, Feb 10, 2014 at 4:38 PM, Jean Delvare <jdelvare@suse.de> wrote:
+>> >> > Additionally, dashes are explicitly forbidden in hwmon
+>> >> > device names.
+>> >>
+>> >> Also, where is that documented?
+>> >
+>> > In Documentation/hwmon/sysfs-interface:
+>> >
+>> > *********************
+>> > * Global attributes *
+>> > *********************
+>> >
+>> > name            The chip name.
+>> >                 This should be a short, lowercase string, not containing
+>> >                 spaces nor dashes, representing the chip name. This is
+>> >                 the only mandatory attribute.
+>> >                 I2C devices get this attribute created automatically.
+>> >                 RO
+>>
+>> Time to revisit this decision....
+>>
+>> So, based on the fact that children device names usually contain
+>> dashes, I do not understand why hwmon would be any special in this
+>> regard. It is possible that the hwmon developers have not faced much
+>> MFD situation before, and so, this was not considered to be handled
+>> like in other subsystems.
+>>
+>> I am proposing to change this "rule"...  Any objection?
+>
+> Prior to proposing such an invasive change which is highly likely to
+> come up against heavy opposition, why don't you try to work _with_ the
+> current ruling and the Maintainers to see what others have done to
+> solve the problem.  I highly doubt you are the first/only developer who
+> has had this issue.
+>
+> Do:
+>   `git grep "\-hwmon"`
+>
+> ... and have a good look around for an accepted solution.
 
-The second one takes ss->id_lock spinlock which should be sufficient
-to exclude get_new_cssid but cgroup_mount and cgroup_create don't use
-id_lock. They do hold cgroup_mutex though. So I guess I need something
-like the following (I will have it tested):
----
-Date: Tue, 11 Feb 2014 16:05:46 +0800
-From: Li Zefan <lizefan@huawei.com>
-Subject: [PATCH - for 3.12] cgroup: protect modifications to cgroup_idr with cgroup_mutex
-
-Setup cgroupfs like this:
-  # mount -t cgroup -o cpuacct xxx /cgroup
-  # mkdir /cgroup/sub1
-  # mkdir /cgroup/sub2
-
-Then run these two commands:
-  # for ((; ;)) { mkdir /cgroup/sub1/tmp && rmdir /mnt/sub1/tmp; } &
-  # for ((; ;)) { mkdir /cgroup/sub2/tmp && rmdir /mnt/sub2/tmp; } &
-
-After seconds you may see this warning:
-
-------------[ cut here ]------------
-WARNING: CPU: 1 PID: 25243 at lib/idr.c:527 sub_remove+0x87/0x1b0()
-idr_remove called for id=6 which is not allocated.
-...
-Call Trace:
- [<ffffffff8156063c>] dump_stack+0x7a/0x96
- [<ffffffff810591ac>] warn_slowpath_common+0x8c/0xc0
- [<ffffffff81059296>] warn_slowpath_fmt+0x46/0x50
- [<ffffffff81300aa7>] sub_remove+0x87/0x1b0
- [<ffffffff810f3f02>] ? css_killed_work_fn+0x32/0x1b0
- [<ffffffff81300bf5>] idr_remove+0x25/0xd0
- [<ffffffff810f2bab>] cgroup_destroy_css_killed+0x5b/0xc0
- [<ffffffff810f4000>] css_killed_work_fn+0x130/0x1b0
- [<ffffffff8107cdbc>] process_one_work+0x26c/0x550
- [<ffffffff8107eefe>] worker_thread+0x12e/0x3b0
- [<ffffffff81085f96>] kthread+0xe6/0xf0
- [<ffffffff81570bac>] ret_from_fork+0x7c/0xb0
----[ end trace 2d1577ec10cf80d0 ]---
-
-It's because allocating/removing cgroup ID is not properly synchronized.
-
-The bug was introduced when we converted cgroup_ida to cgroup_idr.
-While synchronization is already done inside ida_simple_{get,remove}(),
-users are responsible for concurrent calls to idr_{alloc,remove}().
-
-[mhocko@suse.cz: ported to 3.12]
-Fixes: 4e96ee8e981b ("cgroup: convert cgroup_ida to cgroup_idr")
-Cc: <stable@vger.kernel.org> #3.12+
-Reported-by: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- include/linux/cgroup.h |    2 ++
- kernel/cgroup.c        |   25 ++++++++++++++-----------
- 2 files changed, 16 insertions(+), 11 deletions(-)
-
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -169,6 +169,8 @@ struct cgroup {
- 	 *
- 	 * The ID of the root cgroup is always 0, and a new cgroup
- 	 * will be assigned with a smallest available ID.
-+	 *
-+	 * Allocating/Removing ID must be protected by cgroup_mutex.
- 	 */
- 	int id;
- 
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -4410,14 +4410,6 @@ static long cgroup_create(struct cgroup
- 	rcu_assign_pointer(cgrp->name, name);
- 
- 	/*
--	 * Temporarily set the pointer to NULL, so idr_find() won't return
--	 * a half-baked cgroup.
--	 */
--	cgrp->id = idr_alloc(&root->cgroup_idr, NULL, 1, 0, GFP_KERNEL);
--	if (cgrp->id < 0)
--		goto err_free_name;
--
--	/*
- 	 * Only live parents can have children.  Note that the liveliness
- 	 * check isn't strictly necessary because cgroup_mkdir() and
- 	 * cgroup_rmdir() are fully synchronized by i_mutex; however, do it
-@@ -4426,9 +4418,17 @@ static long cgroup_create(struct cgroup
- 	 */
- 	if (!cgroup_lock_live_group(parent)) {
- 		err = -ENODEV;
--		goto err_free_id;
-+		goto err_free_name;
- 	}
- 
-+	/*
-+	 * Temporarily set the pointer to NULL, so idr_find() won't return
-+	 * a half-baked cgroup.
-+	 */
-+	cgrp->id = idr_alloc(&root->cgroup_idr, NULL, 1, 0, GFP_KERNEL);
-+	if (cgrp->id < 0)
-+		goto err_unlock;
-+
- 	/* Grab a reference on the superblock so the hierarchy doesn't
- 	 * get deleted on unmount if there are child cgroups.  This
- 	 * can be done outside cgroup_mutex, since the sb can't
-@@ -4542,11 +4542,11 @@ err_free_all:
- 			ss->css_free(css);
- 		}
- 	}
-+	idr_remove(&root->cgroup_idr, cgrp->id);
-+err_unlock:
- 	mutex_unlock(&cgroup_mutex);
- 	/* Release the reference count that we took on the superblock */
- 	deactivate_super(sb);
--err_free_id:
--	idr_remove(&root->cgroup_idr, cgrp->id);
- err_free_name:
- 	kfree(rcu_dereference_raw(cgrp->name));
- err_free_cgrp:
-@@ -5622,9 +5622,12 @@ void free_css_id(struct cgroup_subsys *s
- 
- 	rcu_assign_pointer(id->css, NULL);
- 	rcu_assign_pointer(css->id, NULL);
-+
-+	mutex_lock(&cgroup_mutex);
- 	spin_lock(&ss->id_lock);
- 	idr_remove(&ss->idr, id->id);
- 	spin_unlock(&ss->id_lock);
-+	mutex_unlock(&cgroup_mutex);
- 	kfree_rcu(id, rcu_head);
- }
- EXPORT_SYMBOL_GPL(free_css_id);
--- 
-Michal Hocko
-SUSE Labs
+Well, this did not bring up relevant results, at least for my
+understanding, but I will send a new patch with the
+devm_hwmon_device_register_
+with_groups() stuff based on my little understanding without further help.
