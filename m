@@ -1,47 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756644AbaBKUeu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:34:50 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:44247 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755653AbaBKUe0 (ORCPT
+	id S1754320AbaBKUgA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:36:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39828 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753184AbaBKTGG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 15:34:26 -0500
-Date: Tue, 11 Feb 2014 21:34:13 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: Re: [PATCH v2 6/8] perf/x86/uncore: add SNB/IVB/HSW client uncore
- memory controller support
-Message-ID: <20140211203413.GB9987@twins.programming.kicks-ass.net>
-References: <1392132015-14521-1-git-send-email-eranian@google.com>
- <1392132015-14521-7-git-send-email-eranian@google.com>
- <20140211161905.GS27965@twins.programming.kicks-ass.net>
- <CABPqkBRmt120Xn02sR8nhFCjuxSJ7xZbE4-G57x7rgsmB3nwNg@mail.gmail.com>
- <20140211165013.GV27965@twins.programming.kicks-ass.net>
- <CABPqkBSoW5bUret1-Rnm4AQSVrDm+CkrzuzZzdeh9HN8bsj58Q@mail.gmail.com>
+	Tue, 11 Feb 2014 14:06:06 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 3.13 117/120] timekeeping: Fix missing timekeeping_update in suspend path
+Date: Tue, 11 Feb 2014 11:05:58 -0800
+Message-Id: <20140211184826.982552333@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
+References: <20140211184823.492407127@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBSoW5bUret1-Rnm4AQSVrDm+CkrzuzZzdeh9HN8bsj58Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 07:31:59PM +0100, Stephane Eranian wrote:
-> > Anyway, perf_event_intel.c lists: 60,63,69,70,71 as being haswell
-> > clients.  Andi did all that, so if its wrong its on Intel anyway.
-> >
-> What he has is okay for core. They all have the same core PMU at 99%.
-> But the uncore can be radically different. Look at IVB (58) vs IVB-EP (62).
-> So this is more risky there. That is why I did not add the other model numbers.
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
-Well, if any of those is a !client part; then still his fault for not
-putting in a comment.
+------------------
 
-What's the worst that can happen? Failing to find the hardware I suppose
-seeing as this is all discoverable PCI space?
+From: John Stultz <john.stultz@linaro.org>
+
+commit 330a1617b0a6268d427aa5922c94d082b1d3e96d upstream.
+
+Since 48cdc135d4840 (Implement a shadow timekeeper), we have to
+call timekeeping_update() after any adjustment to the timekeeping
+structure in order to make sure that any adjustments to the structure
+persist.
+
+In the timekeeping suspend path, we udpate the timekeeper
+structure, so we should be sure to update the shadow-timekeeper
+before releasing the timekeeping locks. Currently this isn't done.
+
+In most cases, the next time related code to run would be
+timekeeping_resume, which does update the shadow-timekeeper, but
+in an abundence of caution, this patch adds the call to
+timekeeping_update() in the suspend path.
+
+Cc: Sasha Levin <sasha.levin@oracle.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Richard Cochran <richardcochran@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ kernel/time/timekeeping.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -1024,6 +1024,8 @@ static int timekeeping_suspend(void)
+ 		timekeeping_suspend_time =
+ 			timespec_add(timekeeping_suspend_time, delta_delta);
+ 	}
++
++	timekeeping_update(tk, TK_MIRROR);
+ 	write_seqcount_end(&timekeeper_seq);
+ 	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
+ 
+
+
