@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755909AbaBKUzL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:55:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39658 "EHLO
+	id S1755925AbaBKUzt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:55:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39638 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752787AbaBKTF0 (ORCPT
+	with ESMTP id S1751627AbaBKTFW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:05:26 -0500
+	Tue, 11 Feb 2014 14:05:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, Mel Gorman <mgorman@suse.de>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.13 062/120] numa: add a sysctl for numa_balancing
-Date: Tue, 11 Feb 2014 11:05:03 -0800
-Message-Id: <20140211184825.388910627@linuxfoundation.org>
+        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.13 056/120] dm space map metadata: fix bug in resizing of thin metadata
+Date: Tue, 11 Feb 2014 11:04:57 -0800
+Message-Id: <20140211184825.222874545@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -30,106 +28,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andi Kleen <ak@linux.intel.com>
+From: Joe Thornber <ejt@redhat.com>
 
-commit 54a43d54988a3731d644fdeb7a1d6f46b4ac64c7 upstream.
+commit fca028438fb903852beaf7c3fe1cd326651af57d upstream.
 
-Add a working sysctl to enable/disable automatic numa memory balancing
-at runtime.
+This bug was introduced in commit 7e664b3dec431e ("dm space map metadata:
+fix extending the space map").
 
-This allows us to track down performance problems with this feature and
-is generally a good idea.
+When extending a dm-thin metadata volume we:
 
-This was possible earlier through debugfs, but only with special
-debugging options set.  Also fix the boot message.
+- Switch the space map into a simple bootstrap mode, which allocates
+  all space linearly from the newly added space.
+- Add new bitmap entries for the new space
+- Increment the reference counts for those newly allocated bitmap
+  entries
+- Commit changes to disk
+- Switch back out of bootstrap mode.
 
-[akpm@linux-foundation.org: s/sched_numa_balancing/sysctl_numa_balancing/]
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Cc: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+But, the disk commit may allocate space itself, if so this fact will be
+lost when switching out of bootstrap mode.
+
+The bug exhibited itself as an error when the bitmap_root, with an
+erroneous ref count of 0, was subsequently decremented as part of a
+later disk commit.  This would cause the disk commit to fail, and thinp
+to enter read_only mode.  The metadata was not damaged (thin_check
+passed).
+
+The fix is to put the increments + commit into a loop, running until
+the commit has not allocated extra space.  In practise this loop only
+runs twice.
+
+With this fix the following device mapper testsuite test passes:
+ dmtest run --suite thin-provisioning -n thin_remove_works_after_resize
+
+Signed-off-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/sched/sysctl.h |    4 ++++
- kernel/sched/core.c          |   24 +++++++++++++++++++++++-
- kernel/sysctl.c              |    9 +++++++++
- mm/mempolicy.c               |    2 +-
- 4 files changed, 37 insertions(+), 2 deletions(-)
+ drivers/md/persistent-data/dm-space-map-metadata.c |   18 ++++++++++++++----
+ 1 file changed, 14 insertions(+), 4 deletions(-)
 
---- a/include/linux/sched/sysctl.h
-+++ b/include/linux/sched/sysctl.h
-@@ -100,4 +100,8 @@ extern int sched_rt_handler(struct ctl_t
- 		void __user *buffer, size_t *lenp,
- 		loff_t *ppos);
+--- a/drivers/md/persistent-data/dm-space-map-metadata.c
++++ b/drivers/md/persistent-data/dm-space-map-metadata.c
+@@ -617,13 +617,23 @@ static int sm_metadata_extend(struct dm_
+ 	if (r)
+ 		goto out;
  
-+extern int sysctl_numa_balancing(struct ctl_table *table, int write,
-+				 void __user *buffer, size_t *lenp,
-+				 loff_t *ppos);
+-	for (i = old_len; !r && i < smm->begin; i++) {
+-		r = sm_ll_inc(&smm->ll, i, &ev);
++	/*
++	 * We repeatedly increment then commit until the commit doesn't
++	 * allocate any new blocks.
++	 */
++	do {
++		for (i = old_len; !r && i < smm->begin; i++) {
++			r = sm_ll_inc(&smm->ll, i, &ev);
++			if (r)
++				goto out;
++		}
++		old_len = smm->begin;
 +
- #endif /* _SCHED_SYSCTL_H */
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1763,7 +1763,29 @@ void set_numabalancing_state(bool enable
- 	numabalancing_enabled = enabled;
- }
- #endif /* CONFIG_SCHED_DEBUG */
--#endif /* CONFIG_NUMA_BALANCING */
-+
-+#ifdef CONFIG_PROC_SYSCTL
-+int sysctl_numa_balancing(struct ctl_table *table, int write,
-+			 void __user *buffer, size_t *lenp, loff_t *ppos)
-+{
-+	struct ctl_table t;
-+	int err;
-+	int state = numabalancing_enabled;
-+
-+	if (write && !capable(CAP_SYS_ADMIN))
-+		return -EPERM;
-+
-+	t = *table;
-+	t.data = &state;
-+	err = proc_dointvec_minmax(&t, write, buffer, lenp, ppos);
-+	if (err < 0)
-+		return err;
-+	if (write)
-+		set_numabalancing_state(state);
-+	return err;
-+}
-+#endif
-+#endif
++		r = sm_ll_commit(&smm->ll);
+ 		if (r)
+ 			goto out;
+-	}
  
- /*
-  * fork()/clone()-time setup:
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -398,6 +398,15 @@ static struct ctl_table kern_table[] = {
- 		.mode           = 0644,
- 		.proc_handler   = proc_dointvec,
- 	},
-+	{
-+		.procname	= "numa_balancing",
-+		.data		= NULL, /* filled in by handler */
-+		.maxlen		= sizeof(unsigned int),
-+		.mode		= 0644,
-+		.proc_handler	= sysctl_numa_balancing,
-+		.extra1		= &zero,
-+		.extra2		= &one,
-+	},
- #endif /* CONFIG_NUMA_BALANCING */
- #endif /* CONFIG_SCHED_DEBUG */
- 	{
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2668,7 +2668,7 @@ static void __init check_numabalancing_e
+-	r = sm_metadata_commit(sm);
++	} while (old_len != smm->begin);
  
- 	if (nr_node_ids > 1 && !numabalancing_override) {
- 		printk(KERN_INFO "Enabling automatic NUMA balancing. "
--			"Configure with numa_balancing= or sysctl");
-+			"Configure with numa_balancing= or the kernel.numa_balancing sysctl");
- 		set_numabalancing_state(numabalancing_default);
- 	}
- }
+ out:
+ 	/*
 
 
