@@ -1,55 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752580AbaBKEgA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 23:36:00 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:50221 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751970AbaBKEf5 (ORCPT
+	id S1752257AbaBKEv1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 23:51:27 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:50108 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750869AbaBKEvL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 23:35:57 -0500
-Message-ID: <52F9A82F.3060806@huawei.com>
-Date: Tue, 11 Feb 2014 12:33:51 +0800
-From: Weng Meiling <wengmeiling.weng@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
-MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: Robert Richter <rric@kernel.org>,
-        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>,
-        "wangnan0@huawei.com" <wangnan0@huawei.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Huang Qiang <h.huangqiang@huawei.com>,
-        "sdu.liu@huawei.com" <sdu.liu@huawei.com>
-Subject: Re: [PATCH] oprofile: check whether oprofile perf enabled in op_overflow_handler()
-References: <52B3F66D.6060707@huawei.com> <20140113084555.GU20315@rric.localhost> <52D4984B.9090600@huawei.com> <20140114150553.GC20315@rric.localhost> <52D5EC44.30101@huawei.com> <20140115102445.GE20315@rric.localhost> <52D73148.4090408@huawei.com> <52D7A750.50906@huawei.com> <20140116115245.GB8360@rric.localhost> <20140116193652.GD22105@mudshark.cambridge.arm.com> <52D8A56F.1010507@huawei.com>
-In-Reply-To: <52D8A56F.1010507@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.24.66]
-X-CFilter-Loop: Reflected
+	Mon, 10 Feb 2014 23:51:11 -0500
+From: Laszlo Papp <lpapp@kde.org>
+To: lee.jones@linaro.org
+Cc: linux-kernel@vger.kernel.org, lpapp@kde.org
+Subject: [PATCH v2 1/2] mfd: fix a grammar issue in the Kconfig entries
+Date: Tue, 11 Feb 2014 04:50:51 +0000
+Message-Id: <1392094251-29365-1-git-send-email-lpapp@kde.org>
+X-Mailer: git-send-email 1.8.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Will,
+"to support for" is incorrect English in here, hence the change to "to add
+support".
 
-> 
->>> how userland can be notified about throttling. Throttling could be
->>> worth for operf too, not only for the oprofile kernel driver.
->>>
-> 
->>> From a quick look it seems there is also code in x86 that dynamically
->>> adjusts the rate which might be worth being implemented for ARM too.
->>
->> Are you referring to the perf_sample_event_took callback? If so, that
->> certainly looks worth persuing. I'll stick it on my list, thanks!
->>
+Signed-off-by: Laszlo Papp <lpapp@kde.org>
+---
+ drivers/mfd/Kconfig | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-Is there any progress on this work? Because this is important for me.
-Sorry for trouble you.
-
-Thanks!
-Weng Meiling
-
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 49bb445..58f2fb5 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -100,7 +100,7 @@ config PMIC_DA903X
+ 	bool "Dialog Semiconductor DA9030/DA9034 PMIC Support"
+ 	depends on I2C=y
+ 	help
+-	  Say yes here to support for Dialog Semiconductor DA9030 (a.k.a
++	  Say yes here to add support for Dialog Semiconductor DA9030 (a.k.a
+ 	  ARAVA) and DA9034 (a.k.a MICCO), these are Power Management IC
+ 	  usually found on PXA processors-based platforms. This includes
+ 	  the I2C driver and the core APIs _only_, you have to select
+@@ -324,7 +324,7 @@ config MFD_MAX14577
+ 	select REGMAP_I2C
+ 	select IRQ_DOMAIN
+ 	help
+-	  Say yes here to support for Maxim Semiconductor MAX14577.
++	  Say yes here to add support for Maxim Semiconductor MAX14577.
+ 	  This is a Micro-USB IC with Charger controls on chip.
+ 	  This driver provides common support for accessing the device;
+ 	  additional drivers must be enabled in order to use the functionality
+@@ -337,7 +337,7 @@ config MFD_MAX77686
+ 	select REGMAP_I2C
+ 	select IRQ_DOMAIN
+ 	help
+-	  Say yes here to support for Maxim Semiconductor MAX77686.
++	  Say yes here to add support for Maxim Semiconductor MAX77686.
+ 	  This is a Power Management IC with RTC on chip.
+ 	  This driver provides common support for accessing the device;
+ 	  additional drivers must be enabled in order to use the functionality
+@@ -349,7 +349,7 @@ config MFD_MAX77693
+ 	select MFD_CORE
+ 	select REGMAP_I2C
+ 	help
+-	  Say yes here to support for Maxim Semiconductor MAX77693.
++	  Say yes here to add support for Maxim Semiconductor MAX77693.
+ 	  This is a companion Power Management IC with Flash, Haptic, Charger,
+ 	  and MUIC(Micro USB Interface Controller) controls on chip.
+ 	  This driver provides common support for accessing the device;
+@@ -363,7 +363,7 @@ config MFD_MAX8907
+ 	select REGMAP_I2C
+ 	select REGMAP_IRQ
+ 	help
+-	  Say yes here to support for Maxim Semiconductor MAX8907. This is
++	  Say yes here to add support for Maxim Semiconductor MAX8907. This is
+ 	  a Power Management IC. This driver provides common support for
+ 	  accessing the device; additional drivers must be enabled in order
+ 	  to use the functionality of the device.
+@@ -373,7 +373,7 @@ config MFD_MAX8925
+ 	depends on I2C=y
+ 	select MFD_CORE
+ 	help
+-	  Say yes here to support for Maxim Semiconductor MAX8925. This is
++	  Say yes here to add support for Maxim Semiconductor MAX8925. This is
+ 	  a Power Management IC. This driver provides common support for
+ 	  accessing the device, additional drivers must be enabled in order
+ 	  to use the functionality of the device.
+@@ -384,7 +384,7 @@ config MFD_MAX8997
+ 	select MFD_CORE
+ 	select IRQ_DOMAIN
+ 	help
+-	  Say yes here to support for Maxim Semiconductor MAX8997/8966.
++	  Say yes here to add support for Maxim Semiconductor MAX8997/8966.
+ 	  This is a Power Management IC with RTC, Flash, Fuel Gauge, Haptic,
+ 	  MUIC controls on chip.
+ 	  This driver provides common support for accessing the device;
+@@ -397,7 +397,7 @@ config MFD_MAX8998
+ 	select MFD_CORE
+ 	select IRQ_DOMAIN
+ 	help
+-	  Say yes here to support for Maxim Semiconductor MAX8998 and
++	  Say yes here to add support for Maxim Semiconductor MAX8998 and
+ 	  National Semiconductor LP3974. This is a Power Management IC.
+ 	  This driver provides common support for accessing the device,
+ 	  additional drivers must be enabled in order to use the functionality
+-- 
+1.8.5.4
 
