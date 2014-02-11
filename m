@@ -1,126 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751948AbaBKSwL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 13:52:11 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40499 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750978AbaBKSwJ (ORCPT
+	id S1752133AbaBKSwm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 13:52:42 -0500
+Received: from filtteri5.pp.htv.fi ([213.243.153.188]:38306 "EHLO
+	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751966AbaBKSwj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 13:52:09 -0500
-Date: Tue, 11 Feb 2014 18:51:57 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Steve Twiss <stwiss.opensource@diasemi.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Message-ID: <20140211185157.GY13533@sirena.org.uk>
-References: <201402111758.s1BHweP2015522@swsrvapps-01.diasemi.com>
+	Tue, 11 Feb 2014 13:52:39 -0500
+Date: Tue, 11 Feb 2014 20:51:36 +0200
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Nishanth Menon <nm@ti.com>
+Cc: =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: dts: omap3-n9 family: mark proper OMAP version
+Message-ID: <20140211185136.GG573@drone.musicnaut.iki.fi>
+References: <1392132541-25340-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="I/wet25DnWlSyk1C"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201402111758.s1BHweP2015522@swsrvapps-01.diasemi.com>
-X-Cookie: My LESLIE GORE record is BROKEN ...
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH V1] regulator: da9063: Bug fix when setting max voltage
- on LDOs 5-11
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <1392132541-25340-1-git-send-email-nm@ti.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---I/wet25DnWlSyk1C
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Feb 11, 2014 at 09:29:01AM -0600, Nishanth Menon wrote:
+> Nokia N900 uses OMAP3430 and N9/N950 uses OMAP3630. Mark SoC compatibilty
+> as per Documentation/devicetree/bindings/arm/omap/omap.txt else
+> N9/N950 will be probed as a OMAP3430 type device, since default ti,omap3
+> maps to OMAP3430 compatibility.
 
-On Tue, Feb 11, 2014 at 05:46:41PM +0000, Steve Twiss wrote:
-> From: Steve Twiss <stwiss.opensource@diasemi.com>
->=20
-> Bug fix to allow the setting of maximum voltage for certain LDOs.
+I already sent & tested patches for this:
 
-This changelog isn't very useful, it doesn't say what the bug was or
-what the fix is.  However...
+http://marc.info/?l=linux-omap&m=139194800711362&w=2
+http://marc.info/?l=linux-omap&m=139194800011360&w=2
 
-> This fixes a problem caused by an invalid calculation of n_voltages
-> in the driver. This n_voltages value has the potential to be
-> different for each regulator and the new calculation takes this
-> into account.
+The N9/N950 is mandatory for 3.14, as the boot hangs without it.
 
-> Several of the regulators have a non-linear response of voltage
-> versus voltage selector. This is true for the following LDOs:
-> 5, 6, 7, 8, 9, 10 and 11.
+A.
 
-=2E..but this one is more so.  It should have been the actual changelog,
-along with a description of what the fix actually is.  In general
-anything that's not in the changelog should normally be process stuff
-not a description of the change.
-
-> This patch also includes several minor alterations to clean up
-> the code so that checkpatch.pl will not display any warnings.
-
-Don't do things like this for bug fix patches, fix the bug and then
-separately do any style fixes.  Mixing in unrelated changes makes things
-harder to review since there is and makes it harder to send things to stabl=
-e.
-
-> @@ -60,7 +61,8 @@ struct da9063_regulator_info {
->  	.desc.ops =3D &da9063_ldo_ops, \
->  	.desc.min_uV =3D (min_mV) * 1000, \
->  	.desc.uV_step =3D (step_mV) * 1000, \
-> -	.desc.n_voltages =3D (((max_mV) - (min_mV))/(step_mV) + 1), \
-> +	.desc.n_voltages =3D (((max_mV) - (min_mV))/(step_mV) + 1 \
-> +		+ (DA9063_V##regl_name##_BIAS)), \
-
-This seems a bit confusing - the number of voltages is affected by
-something called _BIAS?  That's not very clear.  There was also some
-mention of non-linear responses which doesn't seem to have been
-addressed at all in the change.
-
-> @@ -387,7 +389,8 @@ static int da9063_suspend_disable(struct regulator_de=
-v *rdev)
->  	return regmap_field_write(regl->suspend, 0);
->  }
-> =20
-> -static int da9063_buck_set_suspend_mode(struct regulator_dev *rdev, unsi=
-gned mode)
-> +static int da9063_buck_set_suspend_mode(struct regulator_dev *rdev,
-> +					unsigned mode)
->  {
->  	struct da9063_regulator *regl =3D rdev_get_drvdata(rdev);
->  	int val;
-
-This is an example of something that just shouldn't be in this change at
-all, send it separately.  There's no overlap in either the purpose of
-the patch or in the code affected.  In fact it looks like the entire
-rest of the patch is unrelated stylistic changes?  If that's the case
-there's far more checkpatch in here than anything related to the main
-purpose of the patch.
-
---I/wet25DnWlSyk1C
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS+nFKAAoJELSic+t+oim9im4P/3vZCisWK7lGmbf9gVC9qmsA
-8K8Jj7wvzp3h2MRp930n0Wzm+sLCsjHhj9cYvTPh/9ana08Ons0Z2NGVzhd7x20d
-RpOXi/Qi8cCoHS6O2d8SJgIqlb2jKMOLYuXOIGBCf1Ya1ATmnd7Xq8II4VDMmY4X
-efy6fcpHem3PQi7bzc+2WaWEvsUg1xuwggnJvPUr30YgwXFWVt2qy0eWp2ysGghA
-yd5TriZ0qOE5XQQLqgd/1hacJRjb8g08vjXGMhfIKjnIkJGN5NJKZ9G0XR46aNSj
-fdBGIDNy8z4bokOih+ecRp9FDgMECZG+N+/YCy3k0jdPl8t9DV+1ELWdrK03AhqQ
-zw1ZVkd1li7RU1lLr1l6KFkmjmwgnUMmUqrzChbqZdtaWLGyoVI5MoMhpRHmaRhv
-FM/3SjaT2Ep2YQG414woHRRYx+Aehtf7mfF124J8lPRuQ3SUJICV1ZKyHzRWgOr9
-vrKeesuaCPGjGHD4i8hvwonG6w+VLRRrDkkvd0w47jLOHjnjTYlx5EE/2za5U2IR
-8amJBvJXQwiNgWLMBdYn5rFW8aDreS+FDgsUgCCwrSd/dwbVX3PmmHd5mg1jcn0x
-/N597dR3WJa+gv48mWXUHFFi4mGAOmaZeMiwxLke3ORdvlJoiMZdndgGXoq5uoIc
-vIVHtyQRD0BZzuy3d0Z7
-=oLzq
------END PGP SIGNATURE-----
-
---I/wet25DnWlSyk1C--
+> Cc: Aaro Koskinen <aaro.koskinen@iki.fi>
+> Signed-off-by: Nishanth Menon <nm@ti.com>
+> ---
+> 
+> just build tested. but given examples such as 
+> http://thread.gmane.org/gmane.linux.ports.arm.omap/110006
+> 
+> I guess, some form of failure is expected.
+> 
+> based on v3.14-rc2
+> 
+>  arch/arm/boot/dts/omap3-n9.dts   |    2 +-
+>  arch/arm/boot/dts/omap3-n900.dts |    2 +-
+>  arch/arm/boot/dts/omap3-n950.dts |    2 +-
+>  3 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/omap3-n9.dts b/arch/arm/boot/dts/omap3-n9.dts
+> index 39828ce..9938b5d 100644
+> --- a/arch/arm/boot/dts/omap3-n9.dts
+> +++ b/arch/arm/boot/dts/omap3-n9.dts
+> @@ -14,5 +14,5 @@
+>  
+>  / {
+>  	model = "Nokia N9";
+> -	compatible = "nokia,omap3-n9", "ti,omap3";
+> +	compatible = "nokia,omap3-n9", "ti,omap36xx", "ti,omap3";
+>  };
+> diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
+> index 6fc85f9..97db027 100644
+> --- a/arch/arm/boot/dts/omap3-n900.dts
+> +++ b/arch/arm/boot/dts/omap3-n900.dts
+> @@ -13,7 +13,7 @@
+>  
+>  / {
+>  	model = "Nokia N900";
+> -	compatible = "nokia,omap3-n900", "ti,omap3";
+> +	compatible = "nokia,omap3-n900", "ti,omap3430", "ti,omap3";
+>  
+>  	cpus {
+>  		cpu@0 {
+> diff --git a/arch/arm/boot/dts/omap3-n950.dts b/arch/arm/boot/dts/omap3-n950.dts
+> index b076a52..261c558 100644
+> --- a/arch/arm/boot/dts/omap3-n950.dts
+> +++ b/arch/arm/boot/dts/omap3-n950.dts
+> @@ -14,5 +14,5 @@
+>  
+>  / {
+>  	model = "Nokia N950";
+> -	compatible = "nokia,omap3-n950", "ti,omap3";
+> +	compatible = "nokia,omap3-n950", "ti,omap36xx", "ti,omap3";
+>  };
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
