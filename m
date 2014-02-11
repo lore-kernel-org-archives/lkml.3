@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932379AbaBKU2W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:28:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39917 "EHLO
+	id S1756516AbaBKU2z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:28:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39881 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753276AbaBKTGT (ORCPT
+	with ESMTP id S1752997AbaBKTGP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:19 -0500
+	Tue, 11 Feb 2014 14:06:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Bastian Hougaard <gnome@rvzt.net>, Mel Gorman <mgorman@suse.de>,
-        Pavel Emelyanov <xemul@parallels.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.12 017/107] mm: ignore VM_SOFTDIRTY on VMA merging
-Date: Tue, 11 Feb 2014 11:04:43 -0800
-Message-Id: <20140211184748.694664560@linuxfoundation.org>
+Subject: [PATCH 3.12 011/107] mm/memory-failure.c: shift page lock from head page to tail page after thp split
+Date: Tue, 11 Feb 2014 11:04:37 -0800
+Message-Id: <20140211184748.526088274@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -32,83 +32,141 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cyrill Gorcunov <gorcunov@gmail.com>
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-commit 34228d473efe764d4db7c0536375f0c993e6e06a upstream.
+commit 54b9dd14d09f24927285359a227aa363ce46089e upstream.
 
-The VM_SOFTDIRTY bit affects vma merge routine: if two VMAs has all bits
-in vm_flags matched except dirty bit the kernel can't longer merge them
-and this forces the kernel to generate new VMAs instead.
+After thp split in hwpoison_user_mappings(), we hold page lock on the
+raw error page only between try_to_unmap, hence we are in danger of race
+condition.
 
-It finally may lead to the situation when userspace application reaches
-vm.max_map_count limit and get crashed in worse case
+I found in the RHEL7 MCE-relay testing that we have "bad page" error
+when a memory error happens on a thp tail page used by qemu-kvm:
 
- | (gimp:11768): GLib-ERROR **: gmem.c:110: failed to allocate 4096 bytes
- |
- | (file-tiff-load:12038): LibGimpBase-WARNING **: file-tiff-load: gimp_wire_read(): error
- | xinit: connection to X server lost
- |
- | waiting for X server to shut down
- | /usr/lib64/gimp/2.0/plug-ins/file-tiff-load terminated: Hangup
- | /usr/lib64/gimp/2.0/plug-ins/script-fu terminated: Hangup
- | /usr/lib64/gimp/2.0/plug-ins/script-fu terminated: Hangup
+  Triggering MCE exception on CPU 10
+  mce: [Hardware Error]: Machine check events logged
+  MCE exception done on CPU 10
+  MCE 0x38c535: Killing qemu-kvm:8418 due to hardware memory corruption
+  MCE 0x38c535: dirty LRU page recovery: Recovered
+  qemu-kvm[8418]: segfault at 20 ip 00007ffb0f0f229a sp 00007fffd6bc5240 error 4 in qemu-kvm[7ffb0ef14000+420000]
+  BUG: Bad page state in process qemu-kvm  pfn:38c400
+  page:ffffea000e310000 count:0 mapcount:0 mapping:          (null) index:0x7ffae3c00
+  page flags: 0x2fffff0008001d(locked|referenced|uptodate|dirty|swapbacked)
+  Modules linked in: hwpoison_inject mce_inject vhost_net macvtap macvlan ...
+  CPU: 0 PID: 8418 Comm: qemu-kvm Tainted: G   M        --------------   3.10.0-54.0.1.el7.mce_test_fixed.x86_64 #1
+  Hardware name: NEC NEC Express5800/R120b-1 [N8100-1719F]/MS-91E7-001, BIOS 4.6.3C19 02/10/2011
+  Call Trace:
+    dump_stack+0x19/0x1b
+    bad_page.part.59+0xcf/0xe8
+    free_pages_prepare+0x148/0x160
+    free_hot_cold_page+0x31/0x140
+    free_hot_cold_page_list+0x46/0xa0
+    release_pages+0x1c1/0x200
+    free_pages_and_swap_cache+0xad/0xd0
+    tlb_flush_mmu.part.46+0x4c/0x90
+    tlb_finish_mmu+0x55/0x60
+    exit_mmap+0xcb/0x170
+    mmput+0x67/0xf0
+    vhost_dev_cleanup+0x231/0x260 [vhost_net]
+    vhost_net_release+0x3f/0x90 [vhost_net]
+    __fput+0xe9/0x270
+    ____fput+0xe/0x10
+    task_work_run+0xc4/0xe0
+    do_exit+0x2bb/0xa40
+    do_group_exit+0x3f/0xa0
+    get_signal_to_deliver+0x1d0/0x6e0
+    do_signal+0x48/0x5e0
+    do_notify_resume+0x71/0xc0
+    retint_signal+0x48/0x8c
 
-  https://bugzilla.kernel.org/show_bug.cgi?id=67651
-  https://bugzilla.gnome.org/show_bug.cgi?id=719619#c0
+The reason of this bug is that a page fault happens before unlocking the
+head page at the end of memory_failure().  This strange page fault is
+trying to access to address 0x20 and I'm not sure why qemu-kvm does
+this, but anyway as a result the SIGSEGV makes qemu-kvm exit and on the
+way we catch the bad page bug/warning because we try to free a locked
+page (which was the former head page.)
 
-Initial problem came from missed VM_SOFTDIRTY in do_brk() routine but
-even if we would set up VM_SOFTDIRTY here, there is still a way to
-prevent VMAs from merging: one can call
+To fix this, this patch suggests to shift page lock from head page to
+tail page just after thp split.  SIGSEGV still happens, but it affects
+only error affected VMs, not a whole system.
 
- | echo 4 > /proc/$PID/clear_refs
-
-and clear all VM_SOFTDIRTY over all VMAs presented in memory map, then
-new do_brk() will try to extend old VMA and finds that dirty bit doesn't
-match thus new VMA will be generated.
-
-As discussed with Pavel, the right approach should be to ignore
-VM_SOFTDIRTY bit when we're trying to merge VMAs and if merge successed
-we mark extended VMA with dirty bit where needed.
-
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Reported-by: Bastian Hougaard <gnome@rvzt.net>
-Reported-by: Mel Gorman <mgorman@suse.de>
-Cc: Pavel Emelyanov <xemul@parallels.com>
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/mmap.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ mm/memory-failure.c |   21 +++++++++++----------
+ 1 file changed, 11 insertions(+), 10 deletions(-)
 
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -895,7 +895,15 @@ again:			remove_next = 1 + (end > next->
- static inline int is_mergeable_vma(struct vm_area_struct *vma,
- 			struct file *file, unsigned long vm_flags)
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -856,14 +856,14 @@ static int page_action(struct page_state
+  * the pages and send SIGBUS to the processes if the data was dirty.
+  */
+ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
+-				  int trapno, int flags)
++				  int trapno, int flags, struct page **hpagep)
  {
--	if (vma->vm_flags ^ vm_flags)
-+	/*
-+	 * VM_SOFTDIRTY should not prevent from VMA merging, if we
-+	 * match the flags but dirty bit -- the caller should mark
-+	 * merged VMA as dirty. If dirty bit won't be excluded from
-+	 * comparison, we increase pressue on the memory system forcing
-+	 * the kernel to generate new VMAs when old one could be
-+	 * extended instead.
-+	 */
-+	if ((vma->vm_flags ^ vm_flags) & ~VM_SOFTDIRTY)
- 		return 0;
- 	if (vma->vm_file != file)
- 		return 0;
-@@ -1084,7 +1092,7 @@ static int anon_vma_compatible(struct vm
- 	return a->vm_end == b->vm_start &&
- 		mpol_equal(vma_policy(a), vma_policy(b)) &&
- 		a->vm_file == b->vm_file &&
--		!((a->vm_flags ^ b->vm_flags) & ~(VM_READ|VM_WRITE|VM_EXEC)) &&
-+		!((a->vm_flags ^ b->vm_flags) & ~(VM_READ|VM_WRITE|VM_EXEC|VM_SOFTDIRTY)) &&
- 		b->vm_pgoff == a->vm_pgoff + ((b->vm_start - a->vm_start) >> PAGE_SHIFT);
- }
+ 	enum ttu_flags ttu = TTU_UNMAP | TTU_IGNORE_MLOCK | TTU_IGNORE_ACCESS;
+ 	struct address_space *mapping;
+ 	LIST_HEAD(tokill);
+ 	int ret;
+ 	int kill = 1, forcekill;
+-	struct page *hpage = compound_head(p);
++	struct page *hpage = *hpagep;
+ 	struct page *ppage;
  
+ 	if (PageReserved(p) || PageSlab(p))
+@@ -942,11 +942,14 @@ static int hwpoison_user_mappings(struct
+ 			 * We pinned the head page for hwpoison handling,
+ 			 * now we split the thp and we are interested in
+ 			 * the hwpoisoned raw page, so move the refcount
+-			 * to it.
++			 * to it. Similarly, page lock is shifted.
+ 			 */
+ 			if (hpage != p) {
+ 				put_page(hpage);
+ 				get_page(p);
++				lock_page(p);
++				unlock_page(hpage);
++				*hpagep = p;
+ 			}
+ 			/* THP is split, so ppage should be the real poisoned page. */
+ 			ppage = p;
+@@ -964,17 +967,11 @@ static int hwpoison_user_mappings(struct
+ 	if (kill)
+ 		collect_procs(ppage, &tokill);
+ 
+-	if (hpage != ppage)
+-		lock_page(ppage);
+-
+ 	ret = try_to_unmap(ppage, ttu);
+ 	if (ret != SWAP_SUCCESS)
+ 		printk(KERN_ERR "MCE %#lx: failed to unmap page (mapcount=%d)\n",
+ 				pfn, page_mapcount(ppage));
+ 
+-	if (hpage != ppage)
+-		unlock_page(ppage);
+-
+ 	/*
+ 	 * Now that the dirty bit has been propagated to the
+ 	 * struct page and all unmaps done we can decide if
+@@ -1193,8 +1190,12 @@ int memory_failure(unsigned long pfn, in
+ 	/*
+ 	 * Now take care of user space mappings.
+ 	 * Abort on fail: __delete_from_page_cache() assumes unmapped page.
++	 *
++	 * When the raw error page is thp tail page, hpage points to the raw
++	 * page after thp split.
+ 	 */
+-	if (hwpoison_user_mappings(p, pfn, trapno, flags) != SWAP_SUCCESS) {
++	if (hwpoison_user_mappings(p, pfn, trapno, flags, &hpage)
++	    != SWAP_SUCCESS) {
+ 		printk(KERN_ERR "MCE %#lx: cannot unmap page, give up\n", pfn);
+ 		res = -EBUSY;
+ 		goto out;
 
 
