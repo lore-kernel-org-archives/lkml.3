@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752679AbaBKQ1o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 11:27:44 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:50766 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752427AbaBKQ1j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 11:27:39 -0500
-Message-Id: <20140211162739.554458485@bombadil.infradead.org>
-User-Agent: quilt/0.60-1
-Date: Tue, 11 Feb 2014 08:27:13 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] blk-mq: dont assume rq->errors is set when returning an error from
- ->queue_rq
-References: <20140211162712.055066190@bombadil.infradead.org>
-Content-Disposition: inline; filename=0001-blk-mq-don-t-assume-rq-errors-is-set-when-returning-.patch
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1752746AbaBKQ2Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 11:28:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:65040 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751585AbaBKQ2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 11:28:21 -0500
+Date: Tue, 11 Feb 2014 17:27:21 +0100
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: poma <pomidorabelisima@gmail.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-pm@vger.kernel.org, Olaf Hering <olaf@aepfle.de>,
+        Dave Jones <davej@redhat.com>, "Justin M. Forbes" <jforbes@redhat.com>,
+        Josh Boyer <jwboyer@redhat.com>,
+        Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>
+Subject: Re: WARNING: CPU: 1 PID: 0 at kernel/time/tick-broadcast.c:668
+ tick_broadcast_oneshot_control+0x17d/0x190()
+Message-ID: <20140211162720.GA3729@redhat.com>
+References: <52F84A9B.5020008@gmail.com>
+ <alpine.DEB.2.02.1402101056260.21991@ionos.tec.linutronix.de>
+ <52F9219B.5020003@gmail.com>
+ <20140211082306.GA1528@redhat.com>
+ <alpine.DEB.2.02.1402111702090.21991@ionos.tec.linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1402111702090.21991@ionos.tec.linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rq->errors never has been part of the communication protocol between drivers
-and the block stack and most drivers will not have initialized it.
+> > I came with a below patch, which also clear pending mask, but perhaps
+> 
+> Fun. I came up with the exact same solution independent of you and I
+> tested it on real C1E contaminated hardware.
+> 
+> > oneshot_mask should not be cleared on tick_broadcast_setup_oneshot(),
+> > or should be cleared only conditionally, or some other solution is
+> 
+> We can do it unconditionally. It creates consistent state in all
+> corner cases.
+> 
+> There are other solutions to the problem, but that needs a major
+> rework of the broadcast code. I so wish that this mess would have
+> never been necessary at all ...
 
-Return -EIO to upper layers when the driver returns BLK_MQ_RQ_QUEUE_ERROR
-unconditionally.  If a driver want to return a different error it can easily
-do so by returning success after calling blk_mq_end_io itself.
+Thomas, please post/apply patch, which you think is the most
+appropriate.
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
----
- block/blk-mq.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/block/blk-mq.c b/block/blk-mq.c
-index a59b056..0480710 100644
---- a/block/blk-mq.c
-+++ b/block/blk-mq.c
-@@ -605,8 +605,8 @@ static void __blk_mq_run_hw_queue(struct blk_mq_hw_ctx *hctx)
- 			break;
- 		default:
- 			pr_err("blk-mq: bad return on queue: %d\n", ret);
--			rq->errors = -EIO;
- 		case BLK_MQ_RQ_QUEUE_ERROR:
-+			rq->errors = -EIO;
- 			blk_mq_end_io(rq, rq->errors);
- 			break;
- 		}
--- 
-1.7.10.4
-
-
+Thanks
+Stanislaw
