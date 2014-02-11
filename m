@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754812AbaBKTSh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:18:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40580 "EHLO
+	id S1754369AbaBKTIY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:08:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40554 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754379AbaBKTIZ (ORCPT
+	with ESMTP id S1754324AbaBKTIT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:08:25 -0500
+	Tue, 11 Feb 2014 14:08:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: [PATCH 3.10 58/79] drm/nouveau: fix m2mf copy to tiled gart
-Date: Tue, 11 Feb 2014 11:06:02 -0800
-Message-Id: <20140211184722.648112008@linuxfoundation.org>
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.10 77/79] intel_pstate: fix no_turbo
+Date: Tue, 11 Feb 2014 11:06:21 -0800
+Message-Id: <20140211184723.198462165@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
 References: <20140211184720.928667275@linuxfoundation.org>
@@ -29,96 +30,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
 
-commit ce8f7699f2b6ffe4aa8368b8d9d370875accaa5f upstream.
+commit 1ccf7a1cdafadd02e33e8f3d74370685a0600ec6 upstream.
 
-Commit de7b7d59d54852c introduced tiled GART, but a linear copy is
-still performed. This may result in errors on eviction, fix it by
-checking tiling from memtype.
+When sysfs for no_turbo is set, then also some p states in turbo regions
+are observed. This patch will set IDA Engage bit when no_turbo is set to
+explicitly disengage turbo.
 
-Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+Signed-off-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+Acked-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/nouveau_bo.c |   33 ++++++++-------------------------
- 1 file changed, 8 insertions(+), 25 deletions(-)
+ drivers/cpufreq/intel_pstate.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/nouveau/nouveau_bo.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_bo.c
-@@ -788,25 +788,25 @@ nv50_bo_move_m2mf(struct nouveau_channel
- 		  struct ttm_mem_reg *old_mem, struct ttm_mem_reg *new_mem)
- {
- 	struct nouveau_mem *node = old_mem->mm_node;
--	struct nouveau_bo *nvbo = nouveau_bo(bo);
- 	u64 length = (new_mem->num_pages << PAGE_SHIFT);
- 	u64 src_offset = node->vma[0].offset;
- 	u64 dst_offset = node->vma[1].offset;
-+	int src_tiled = !!node->memtype;
-+	int dst_tiled = !!((struct nouveau_mem *)new_mem->mm_node)->memtype;
- 	int ret;
+--- a/drivers/cpufreq/intel_pstate.c
++++ b/drivers/cpufreq/intel_pstate.c
+@@ -394,7 +394,10 @@ static void intel_pstate_set_pstate(stru
+ 	trace_cpu_frequency(pstate * 100000, cpu->cpu);
  
- 	while (length) {
- 		u32 amount, stride, height;
+ 	cpu->pstate.current_pstate = pstate;
+-	wrmsrl(MSR_IA32_PERF_CTL, pstate << 8);
++	if (limits.no_turbo)
++		wrmsrl(MSR_IA32_PERF_CTL, BIT(32) | (pstate << 8));
++	else
++		wrmsrl(MSR_IA32_PERF_CTL, pstate << 8);
  
-+		ret = RING_SPACE(chan, 18 + 6 * (src_tiled + dst_tiled));
-+		if (ret)
-+			return ret;
-+
- 		amount  = min(length, (u64)(4 * 1024 * 1024));
- 		stride  = 16 * 4;
- 		height  = amount / stride;
+ }
  
--		if (old_mem->mem_type == TTM_PL_VRAM &&
--		    nouveau_bo_tile_layout(nvbo)) {
--			ret = RING_SPACE(chan, 8);
--			if (ret)
--				return ret;
--
-+		if (src_tiled) {
- 			BEGIN_NV04(chan, NvSubCopy, 0x0200, 7);
- 			OUT_RING  (chan, 0);
- 			OUT_RING  (chan, 0);
-@@ -816,19 +816,10 @@ nv50_bo_move_m2mf(struct nouveau_channel
- 			OUT_RING  (chan, 0);
- 			OUT_RING  (chan, 0);
- 		} else {
--			ret = RING_SPACE(chan, 2);
--			if (ret)
--				return ret;
--
- 			BEGIN_NV04(chan, NvSubCopy, 0x0200, 1);
- 			OUT_RING  (chan, 1);
- 		}
--		if (new_mem->mem_type == TTM_PL_VRAM &&
--		    nouveau_bo_tile_layout(nvbo)) {
--			ret = RING_SPACE(chan, 8);
--			if (ret)
--				return ret;
--
-+		if (dst_tiled) {
- 			BEGIN_NV04(chan, NvSubCopy, 0x021c, 7);
- 			OUT_RING  (chan, 0);
- 			OUT_RING  (chan, 0);
-@@ -838,18 +829,10 @@ nv50_bo_move_m2mf(struct nouveau_channel
- 			OUT_RING  (chan, 0);
- 			OUT_RING  (chan, 0);
- 		} else {
--			ret = RING_SPACE(chan, 2);
--			if (ret)
--				return ret;
--
- 			BEGIN_NV04(chan, NvSubCopy, 0x021c, 1);
- 			OUT_RING  (chan, 1);
- 		}
- 
--		ret = RING_SPACE(chan, 14);
--		if (ret)
--			return ret;
--
- 		BEGIN_NV04(chan, NvSubCopy, 0x0238, 2);
- 		OUT_RING  (chan, upper_32_bits(src_offset));
- 		OUT_RING  (chan, upper_32_bits(dst_offset));
 
 
