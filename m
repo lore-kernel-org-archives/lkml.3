@@ -1,111 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754723AbaBKTdV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:33:21 -0500
-Received: from kolab.o2s.ch ([77.109.136.180]:60078 "EHLO kolab.o2s.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753344AbaBKTdS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:33:18 -0500
-Subject: [PATCH v5 0/8] ARM: sunxi: Add driver for SD/MMC hosts found on
- allwinner sunxi SOCs
-To: devicetree@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Simon Baatz <gmbnomis@gmail.com>, Hans de Goede <hdegoede@redhat.com>,
-        Emilio =?utf-8?b?TMOzcGV6?= <emilio@elopez.com.ar>,
-        linux-mmc@vger.kernel.org, Chris Ball <chris@printf.net>,
-        linux-kernel@vger.kernel.org,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        linux-sunxi@googlegroups.com, Tejun Heo <tj@kernel.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        linux-arm-kernel@lists.infradead.org
-From: David =?utf-8?q?Lanzend=C3=B6rfer?= <david.lanzendoerfer@o2s.ch>
-Date: Tue, 11 Feb 2014 20:33:06 +0100
-Message-ID: <20140211190543.4568.83517.stgit@dizzy-6.o2s.ch>
-User-Agent: StGit/0.16
+	id S932142AbaBKTgt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:36:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40374 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754114AbaBKTHv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 14:07:51 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.10 37/79] dm: wait until embedded kobject is released before destroying a device
+Date: Tue, 11 Feb 2014 11:05:41 -0800
+Message-Id: <20140211184722.014942997@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
+References: <20140211184720.928667275@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
-The following patchset adds support for the SD/MMC host found in the Allwinner SoCs.
-It contains all the necessary modifications for clock environment and also the device
-tree script modification which add it to all the boards using it.
-The clock environment function needed for phase offset configuration has
-been proposed and implemented by Emilio.
-A lot of work and cleanup has been done by Hans de Goede. Special thanks to him!
-This patchset is the 4th attempt to send this driver upstream.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Changes since v1:
--Using mmc_of_parse instead of diy dt parsing
--Adding nodes for all mmc controller to the dtsi files,
- including sofar unused controllers
--Using generic GPIO slot library for WP/CD
--Adding additional MMC device nodes into DTSI files
+------------------
 
-Changes since v2:
--Add missing Signed-off-by tags
--Stop using __raw_readl / __raw_writel so that barriers are properly used
--Adding missing new lines
--Adding missing patch for automatic reparenting of clocks
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-Changes since v3:
--Move clk_enable / disable into host_init / exit (Hans)
--Fix hang on boot caused by irq storm (Hans)
+commit be35f486108227e10fe5d96fd42fb2b344c59983 upstream.
 
-Changes since v4:
--moving sunxi-mci.{c/h} to sunxi-mmc.{c/h}
--removing camel cases from the defines in  sunxi-mmc.h
--moving defines out of the struct definition
- since this is bad coding style
--adding documentation for the device tree binding
+There may be other parts of the kernel holding a reference on the dm
+kobject.  We must wait until all references are dropped before
+deallocating the mapped_device structure.
+
+The dm_kobject_release method signals that all references are dropped
+via completion.  But dm_kobject_release doesn't free the kobject (which
+is embedded in the mapped_device structure).
+
+This is the sequence of operations:
+* when destroying a DM device, call kobject_put from dm_sysfs_exit
+* wait until all users stop using the kobject, when it happens the
+  release method is called
+* the release method signals the completion and should return without
+  delay
+* the dm device removal code that waits on the completion continues
+* the dm device removal code drops the dm_mod reference the device had
+* the dm device removal code frees the mapped_device structure that
+  contains the kobject
+
+Using kobject this way should avoid the module unload race that was
+mentioned at the beginning of this thread:
+https://lkml.org/lkml/2014/1/4/83
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
+ drivers/md/dm-sysfs.c |   10 +++++++++-
+ drivers/md/dm.c       |   11 +++++++++++
+ drivers/md/dm.h       |    2 ++
+ 3 files changed, 22 insertions(+), 1 deletion(-)
 
-David Lanzendörfer (5):
-      ARM: sunxi: Add driver for SD/MMC hosts found on Allwinner sunxi SoCs
-      ARM: dts: sun7i: Add support for mmc
-      ARM: dts: sun4i: Add support for mmc
-      ARM: dts: sun5i: Add support for mmc
-      ARM: sunxi: Add documentation for driver for SD/MMC hosts found on Allwinner sunxi SoCs
+--- a/drivers/md/dm-sysfs.c
++++ b/drivers/md/dm-sysfs.c
+@@ -79,6 +79,11 @@ static const struct sysfs_ops dm_sysfs_o
+ 	.show	= dm_attr_show,
+ };
+ 
++static void dm_kobject_release(struct kobject *kobj)
++{
++	complete(dm_get_completion_from_kobject(kobj));
++}
++
+ /*
+  * dm kobject is embedded in mapped_device structure
+  * no need to define release function here
+@@ -86,6 +91,7 @@ static const struct sysfs_ops dm_sysfs_o
+ static struct kobj_type dm_ktype = {
+ 	.sysfs_ops	= &dm_sysfs_ops,
+ 	.default_attrs	= dm_attrs,
++	.release	= dm_kobject_release,
+ };
+ 
+ /*
+@@ -104,5 +110,7 @@ int dm_sysfs_init(struct mapped_device *
+  */
+ void dm_sysfs_exit(struct mapped_device *md)
+ {
+-	kobject_put(dm_kobject(md));
++	struct kobject *kobj = dm_kobject(md);
++	kobject_put(kobj);
++	wait_for_completion(dm_get_completion_from_kobject(kobj));
+ }
+--- a/drivers/md/dm.c
++++ b/drivers/md/dm.c
+@@ -187,6 +187,9 @@ struct mapped_device {
+ 	/* sysfs handle */
+ 	struct kobject kobj;
+ 
++	/* wait until the kobject is released */
++	struct completion kobj_completion;
++
+ 	/* zero-length flush that will be cloned and submitted to targets */
+ 	struct bio flush_bio;
+ };
+@@ -1904,6 +1907,7 @@ static struct mapped_device *alloc_dev(i
+ 	init_waitqueue_head(&md->wait);
+ 	INIT_WORK(&md->work, dm_wq_work);
+ 	init_waitqueue_head(&md->eventq);
++	init_completion(&md->kobj_completion);
+ 
+ 	md->disk->major = _major;
+ 	md->disk->first_minor = minor;
+@@ -2758,6 +2762,13 @@ struct mapped_device *dm_get_from_kobjec
+ 	return md;
+ }
+ 
++struct completion *dm_get_completion_from_kobject(struct kobject *kobj)
++{
++	struct mapped_device *md = container_of(kobj, struct mapped_device, kobj);
++
++	return &md->kobj_completion;
++}
++
+ int dm_suspended_md(struct mapped_device *md)
+ {
+ 	return test_bit(DMF_SUSPENDED, &md->flags);
+--- a/drivers/md/dm.h
++++ b/drivers/md/dm.h
+@@ -15,6 +15,7 @@
+ #include <linux/list.h>
+ #include <linux/blkdev.h>
+ #include <linux/hdreg.h>
++#include <linux/completion.h>
+ 
+ /*
+  * Suspend feature flags
+@@ -129,6 +130,7 @@ int dm_sysfs_init(struct mapped_device *
+ void dm_sysfs_exit(struct mapped_device *md);
+ struct kobject *dm_kobject(struct mapped_device *md);
+ struct mapped_device *dm_get_from_kobject(struct kobject *kobj);
++struct completion *dm_get_completion_from_kobject(struct kobject *kobj);
+ 
+ /*
+  * Targets for linear and striped mappings
 
-Emilio López (2):
-      clk: sunxi: factors: automatic reparenting support
-      clk: sunxi: Implement MMC phase control
 
-Hans de Goede (1):
-      ARM: sunxi: clk: export clk_sunxi_mmc_phase_control
-
-
- .../devicetree/bindings/mmc/sunxi-mmc.txt          |   32 +
- arch/arm/boot/dts/sun4i-a10-a1000.dts              |    8 
- arch/arm/boot/dts/sun4i-a10-cubieboard.dts         |    8 
- arch/arm/boot/dts/sun4i-a10.dtsi                   |   54 +
- arch/arm/boot/dts/sun5i-a10s-olinuxino-micro.dts   |   30 +
- arch/arm/boot/dts/sun5i-a10s.dtsi                  |   44 +
- arch/arm/boot/dts/sun5i-a13-olinuxino-micro.dts    |   15 
- arch/arm/boot/dts/sun5i-a13-olinuxino.dts          |   15 
- arch/arm/boot/dts/sun5i-a13.dtsi                   |   37 +
- arch/arm/boot/dts/sun7i-a20-cubieboard2.dts        |    8 
- arch/arm/boot/dts/sun7i-a20-cubietruck.dts         |    8 
- arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts    |   23 +
- arch/arm/boot/dts/sun7i-a20.dtsi                   |   61 +
- drivers/clk/sunxi/clk-factors.c                    |   36 +
- drivers/clk/sunxi/clk-sunxi.c                      |   35 +
- drivers/mmc/host/Kconfig                           |    7 
- drivers/mmc/host/Makefile                          |    2 
- drivers/mmc/host/sunxi-mmc.c                       |  872 ++++++++++++++++++++
- drivers/mmc/host/sunxi-mmc.h                       |  239 +++++
- include/linux/clk/sunxi.h                          |   22 +
- 20 files changed, 1556 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mmc/sunxi-mmc.txt
- create mode 100644 drivers/mmc/host/sunxi-mmc.c
- create mode 100644 drivers/mmc/host/sunxi-mmc.h
- create mode 100644 include/linux/clk/sunxi.h
-
--- 
-Signature
