@@ -1,226 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752547AbaBKPbB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 10:31:01 -0500
-Received: from 213083164162.static.sonofon.dk ([213.83.164.162]:34689 "EHLO
-	HORWDSPRD01.spectralink.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752034AbaBKP3b (ORCPT
+	id S1752556AbaBKPby (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 10:31:54 -0500
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:36729 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751578AbaBKPbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 10:29:31 -0500
-From: =?UTF-8?q?Stefan=20S=C3=B8rensen?= 
-	<stefan.sorensen@spectralink.com>
-To: richardcochran@gmail.com, grant.likely@linaro.org, robh+dt@kernel.org,
-        mark.rutland@arm.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Cc: =?UTF-8?q?Stefan=20S=C3=B8rensen?= 
-	<stefan.sorensen@spectralink.com>
-Subject: [PATCH v2 1/2] dp83640: Support a configurable number of periodic outputs
-Date: Tue, 11 Feb 2014 16:29:21 +0100
-Message-Id: <1392132562-23644-2-git-send-email-stefan.sorensen@spectralink.com>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1392132562-23644-1-git-send-email-stefan.sorensen@spectralink.com>
-References: <1392132562-23644-1-git-send-email-stefan.sorensen@spectralink.com>
+	Tue, 11 Feb 2014 10:31:52 -0500
+Date: Tue, 11 Feb 2014 16:32:55 +0100
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hch@infradead.org, akpm@linux-foundation.org, dhowells@redhat.com,
+        zab@redhat.com, jack@suse.cz, luto@amacapital.net, mszeredi@suse.cz
+Subject: Re: [PATCH 07/13] vfs: lock_two_nondirectories: allow directory args
+Message-ID: <20140211153255.GA8204@tucsk.piliscsaba.szeredi.hu>
+References: <1391791751-2533-1-git-send-email-miklos@szeredi.hu>
+ <1391791751-2533-8-git-send-email-miklos@szeredi.hu>
+ <20140207211644.GB8801@fieldses.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 11 Feb 2014 15:29:29.0270 (UTC) FILETIME=[0DF5C560:01CF273E]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140207211644.GB8801@fieldses.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver is currently limited to a single periodic output. This patch makes
-the number of peridodic output dynamic by dropping the gpio_tab module
-parameter and adding calibrate_pin, perout_pins, and extts_pins parameters.
+On Fri, Feb 07, 2014 at 04:16:44PM -0500, J. Bruce Fields wrote:
+> 
+> Nit: I find the conditionals here a little complicated.
+> 
+> Would something like this be clearer? (Untested):
+> 
+> 	if (inode1 > inode2)
+> 		swap(inode1, inode2);
+> 
+> 	if (inode1 && !S_ISDIR(inode1->i_mode))
+> 		mutex_lock(&inode1->i_mutex);
+> 
+> 	if (inode2 && !S_ISDIR(inode2->i_mode) && inode2 != inode1)
+> 		mutex_lock_nested(&inode2->i_mutex, I_MUTEX_NONDIR2);
 
-Signed-off-by: Stefan Sørensen <stefan.sorensen@spectralink.com>
----
- drivers/net/phy/dp83640.c | 75 ++++++++++++++++++++---------------------------
- 1 file changed, 32 insertions(+), 43 deletions(-)
+Yes, much better.  And it becomes nicely symmetric with the unlock function.
 
-diff --git a/drivers/net/phy/dp83640.c b/drivers/net/phy/dp83640.c
-index 547725f..d4fe95d 100644
---- a/drivers/net/phy/dp83640.c
-+++ b/drivers/net/phy/dp83640.c
-@@ -38,15 +38,11 @@
- #define LAYER4		0x02
- #define LAYER2		0x01
- #define MAX_RXTS	64
--#define N_EXT_TS	6
-+#define N_EXT		8
- #define PSF_PTPVER	2
- #define PSF_EVNT	0x4000
- #define PSF_RX		0x2000
- #define PSF_TX		0x1000
--#define EXT_EVENT	1
--#define CAL_EVENT	7
--#define CAL_TRIGGER	7
--#define PER_TRIGGER	6
- 
- #define MII_DP83640_MICR 0x11
- #define MII_DP83640_MISR 0x12
-@@ -146,32 +142,24 @@ struct dp83640_clock {
- 	struct ptp_clock *ptp_clock;
- };
- 
--/* globals */
--
--enum {
--	CALIBRATE_GPIO,
--	PEROUT_GPIO,
--	EXTTS0_GPIO,
--	EXTTS1_GPIO,
--	EXTTS2_GPIO,
--	EXTTS3_GPIO,
--	EXTTS4_GPIO,
--	EXTTS5_GPIO,
--	GPIO_TABLE_SIZE
--};
- 
- static int chosen_phy = -1;
--static ushort gpio_tab[GPIO_TABLE_SIZE] = {
--	1, 2, 3, 4, 8, 9, 10, 11
--};
-+static int calibrate_pin = 1;
-+static int perout_pins[N_EXT] = {2};
-+static int n_per_out = 1;
-+static int extts_pins[N_EXT] = {3, 4, 8, 9, 10, 11};
-+static int n_ext_ts = 6;
- 
- module_param(chosen_phy, int, 0444);
--module_param_array(gpio_tab, ushort, NULL, 0444);
-+module_param(calibrate_pin, int, 0444);
-+module_param_array(perout_pins, int, &n_per_out, 0444);
-+module_param_array(extts_pins, int, &n_ext_ts, 0444);
- 
- MODULE_PARM_DESC(chosen_phy, \
- 	"The address of the PHY to use for the ancillary clock features");
--MODULE_PARM_DESC(gpio_tab, \
--	"Which GPIO line to use for which purpose: cal,perout,extts1,...,extts6");
-+MODULE_PARM_DESC(calibrate_pin, "Which pin to use for calibration");
-+MODULE_PARM_DESC(perout_pins, "Which pins to use for periodic output");
-+MODULE_PARM_DESC(extts_pins, "Which pins to use for external timestamping");
- 
- /* a list of clocks and a mutex to protect it */
- static LIST_HEAD(phyter_clocks);
-@@ -267,15 +255,16 @@ static u64 phy2txts(struct phy_txts *p)
- }
- 
- static void periodic_output(struct dp83640_clock *clock,
--			    struct ptp_clock_request *clkreq, bool on)
-+			    struct ptp_clock_request *clkreq, int index,
-+			    bool on)
- {
- 	struct dp83640_private *dp83640 = clock->chosen;
- 	struct phy_device *phydev = dp83640->phydev;
- 	u32 sec, nsec, period;
- 	u16 gpio, ptp_trig, trigger, val;
- 
--	gpio = on ? gpio_tab[PEROUT_GPIO] : 0;
--	trigger = PER_TRIGGER;
-+	gpio = on ? perout_pins[index] : 0;
-+	trigger = n_ext_ts + index;
- 
- 	ptp_trig = TRIG_WR |
- 		(trigger & TRIG_CSEL_MASK) << TRIG_CSEL_SHIFT |
-@@ -430,12 +419,12 @@ static int ptp_dp83640_enable(struct ptp_clock_info *ptp,
- 	switch (rq->type) {
- 	case PTP_CLK_REQ_EXTTS:
- 		index = rq->extts.index;
--		if (index < 0 || index >= N_EXT_TS)
-+		if (index < 0 || index >= n_ext_ts)
- 			return -EINVAL;
--		event_num = EXT_EVENT + index;
-+		event_num = index;
- 		evnt = EVNT_WR | (event_num & EVNT_SEL_MASK) << EVNT_SEL_SHIFT;
- 		if (on) {
--			gpio_num = gpio_tab[EXTTS0_GPIO + index];
-+			gpio_num = extts_pins[index];
- 			evnt |= (gpio_num & EVNT_GPIO_MASK) << EVNT_GPIO_SHIFT;
- 			evnt |= EVNT_RISE;
- 		}
-@@ -443,9 +432,10 @@ static int ptp_dp83640_enable(struct ptp_clock_info *ptp,
- 		return 0;
- 
- 	case PTP_CLK_REQ_PEROUT:
--		if (rq->perout.index != 0)
-+		index = rq->perout.index;
-+		if (index < 0 || index >= n_per_out)
- 			return -EINVAL;
--		periodic_output(clock, rq, on);
-+		periodic_output(clock, rq, index, on);
- 		return 0;
- 
- 	default:
-@@ -538,10 +528,9 @@ static void recalibrate(struct dp83640_clock *clock)
- 	struct list_head *this;
- 	struct dp83640_private *tmp;
- 	struct phy_device *master = clock->chosen->phydev;
--	u16 cal_gpio, cfg0, evnt, ptp_trig, trigger, val;
-+	u16 cfg0, evnt, ptp_trig, trigger, val;
- 
--	trigger = CAL_TRIGGER;
--	cal_gpio = gpio_tab[CALIBRATE_GPIO];
-+	trigger = n_ext_ts + n_per_out;
- 
- 	mutex_lock(&clock->extreg_lock);
- 
-@@ -564,8 +553,8 @@ static void recalibrate(struct dp83640_clock *clock)
- 	 * enable an event timestamp
- 	 */
- 	evnt = EVNT_WR | EVNT_RISE | EVNT_SINGLE;
--	evnt |= (CAL_EVENT & EVNT_SEL_MASK) << EVNT_SEL_SHIFT;
--	evnt |= (cal_gpio & EVNT_GPIO_MASK) << EVNT_GPIO_SHIFT;
-+	evnt |= (trigger & EVNT_SEL_MASK) << EVNT_SEL_SHIFT;
-+	evnt |= (calibrate_pin & EVNT_GPIO_MASK) << EVNT_GPIO_SHIFT;
- 
- 	list_for_each(this, &clock->phylist) {
- 		tmp = list_entry(this, struct dp83640_private, list);
-@@ -578,7 +567,7 @@ static void recalibrate(struct dp83640_clock *clock)
- 	 */
- 	ptp_trig = TRIG_WR | TRIG_IF_LATE | TRIG_PULSE;
- 	ptp_trig |= (trigger  & TRIG_CSEL_MASK) << TRIG_CSEL_SHIFT;
--	ptp_trig |= (cal_gpio & TRIG_GPIO_MASK) << TRIG_GPIO_SHIFT;
-+	ptp_trig |= (calibrate_pin & TRIG_GPIO_MASK) << TRIG_GPIO_SHIFT;
- 	ext_write(0, master, PAGE5, PTP_TRIG, ptp_trig);
- 
- 	/* load trigger */
-@@ -642,7 +631,7 @@ static void recalibrate(struct dp83640_clock *clock)
- 
- static inline u16 exts_chan_to_edata(int ch)
- {
--	return 1 << ((ch + EXT_EVENT) * 2);
-+	return 1 << ((ch) * 2);
- }
- 
- static int decode_evnt(struct dp83640_private *dp83640,
-@@ -676,14 +665,14 @@ static int decode_evnt(struct dp83640_private *dp83640,
- 		parsed = words + 2;
- 	} else {
- 		parsed = words + 1;
--		i = ((ests >> EVNT_NUM_SHIFT) & EVNT_NUM_MASK) - EXT_EVENT;
-+		i = ((ests >> EVNT_NUM_SHIFT) & EVNT_NUM_MASK);
- 		ext_status = exts_chan_to_edata(i);
- 	}
- 
- 	event.type = PTP_CLOCK_EXTTS;
- 	event.timestamp = phy2txts(&dp83640->edata);
- 
--	for (i = 0; i < N_EXT_TS; i++) {
-+	for (i = 0; i < n_ext_ts; i++) {
- 		if (ext_status & exts_chan_to_edata(i)) {
- 			event.index = i;
- 			ptp_clock_event(dp83640->clock->ptp_clock, &event);
-@@ -889,8 +878,8 @@ static void dp83640_clock_init(struct dp83640_clock *clock, struct mii_bus *bus)
- 	sprintf(clock->caps.name, "dp83640 timer");
- 	clock->caps.max_adj	= 1953124;
- 	clock->caps.n_alarm	= 0;
--	clock->caps.n_ext_ts	= N_EXT_TS;
--	clock->caps.n_per_out	= 1;
-+	clock->caps.n_ext_ts	= n_ext_ts;
-+	clock->caps.n_per_out	= n_per_out;
- 	clock->caps.pps		= 0;
- 	clock->caps.adjfreq	= ptp_dp83640_adjfreq;
- 	clock->caps.adjtime	= ptp_dp83640_adjtime;
--- 
-1.8.5.3
+Thanks,
+Miklos
 
+
+> 
+> --b.
+> 
+> diff --git a/fs/inode.c b/fs/inode.c
+> index 4bcdad3..94e41c8 100644
+> --- a/fs/inode.c
+> +++ b/fs/inode.c
+> @@ -944,24 +944,23 @@ EXPORT_SYMBOL(unlock_new_inode);
+>  
+>  /**
+>   * lock_two_nondirectories - take two i_mutexes on non-directory objects
+> + *
+> + * Lock any non-NULL argument that is not a directory.
+> + * Zero, one or two objects may be locked by this function.
+> + *
+>   * @inode1: first inode to lock
+>   * @inode2: second inode to lock
+>   */
+>  void lock_two_nondirectories(struct inode *inode1, struct inode *inode2)
+>  {
+> -	WARN_ON_ONCE(S_ISDIR(inode1->i_mode));
+> -	if (inode1 == inode2 || !inode2) {
+> -		mutex_lock(&inode1->i_mutex);
+> -		return;
+> -	}
+> -	WARN_ON_ONCE(S_ISDIR(inode2->i_mode));
+> -	if (inode1 < inode2) {
+> +	if (inode1 > inode2)
+> +		swap(inode1, inode2);
+> +
+> +	if (inode1 && !S_ISDIR(inode1->i_mode))
+>  		mutex_lock(&inode1->i_mutex);
+> +
+> +	if (inode2 && !S_ISDIR(inode2->i_mode) && inode2 != inode1)
+>  		mutex_lock_nested(&inode2->i_mutex, I_MUTEX_NONDIR2);
+> -	} else {
+> -		mutex_lock(&inode2->i_mutex);
+> -		mutex_lock_nested(&inode1->i_mutex, I_MUTEX_NONDIR2);
+> -	}
+>  }
+>  EXPORT_SYMBOL(lock_two_nondirectories);
+>  
+> @@ -972,8 +971,9 @@ EXPORT_SYMBOL(lock_two_nondirectories);
+>   */
+>  void unlock_two_nondirectories(struct inode *inode1, struct inode *inode2)
+>  {
+> -	mutex_unlock(&inode1->i_mutex);
+> -	if (inode2 && inode2 != inode1)
+> +	if (inode1 && !S_ISDIR(inode1->i_mode))
+> +		mutex_unlock(&inode1->i_mutex);
+> +	if (inode2 && !S_ISDIR(inode2->i_mode) && inode2 != inode1)
+>  		mutex_unlock(&inode2->i_mutex);
+>  }
+>  EXPORT_SYMBOL(unlock_two_nondirectories);
