@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554AbaBKTIp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:08:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40658 "EHLO
+	id S1754618AbaBKTJm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:09:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40700 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754530AbaBKTIl (ORCPT
+	with ESMTP id S1754558AbaBKTIq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:08:41 -0500
+	Tue, 11 Feb 2014 14:08:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Boaz Harrosh <bharrosh@panasas.com>
-Subject: [PATCH 3.4 09/30] ore: Fix wrong math in allocation of per device BIO
-Date: Tue, 11 Feb 2014 11:06:09 -0800
-Message-Id: <20140211184647.413723379@linuxfoundation.org>
+        Thomas Gleixner <tglx@linutronix.de>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Sasha Levin <sasha.levin@oracle.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 3.4 29/30] timekeeping: Avoid possible deadlock from clock_was_set_delayed
+Date: Tue, 11 Feb 2014 11:06:29 -0800
+Message-Id: <20140211184647.974439302@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184647.149512538@linuxfoundation.org>
 References: <20140211184647.149512538@linuxfoundation.org>
@@ -28,132 +32,169 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Boaz Harrosh <bharrosh@panasas.com>
+From: John Stultz <john.stultz@linaro.org>
 
-commit aad560b7f63b495f48a7232fd086c5913a676e6f upstream.
+commit 6fdda9a9c5db367130cf32df5d6618d08b89f46a upstream.
 
-At IO preparation we calculate the max pages at each device and
-allocate a BIO per device of that size. The calculation was wrong
-on some unaligned corner cases offset/length combination and would
-make prepare return with -ENOMEM. This would be bad for pnfs-objects
-that would in that case IO through MDS. And fatal for exofs were it
-would fail writes with EIO.
+As part of normal operaions, the hrtimer subsystem frequently calls
+into the timekeeping code, creating a locking order of
+  hrtimer locks -> timekeeping locks
 
-Fix it by doing the proper math, that will work in all cases. (I
-ran a test with all possible offset/length combinations this time
-round).
+clock_was_set_delayed() was suppoed to allow us to avoid deadlocks
+between the timekeeping the hrtimer subsystem, so that we could
+notify the hrtimer subsytem the time had changed while holding
+the timekeeping locks. This was done by scheduling delayed work
+that would run later once we were out of the timekeeing code.
 
-Also when reading we do not need to allocate for the parity units
-since we jump over them.
+But unfortunately the lock chains are complex enoguh that in
+scheduling delayed work, we end up eventually trying to grab
+an hrtimer lock.
 
-Also lower the max_io_length to take into account the parity pages
-so not to allocate BIOs bigger than PAGE_SIZE
+Sasha Levin noticed this in testing when the new seqlock lockdep
+enablement triggered the following (somewhat abrieviated) message:
 
-Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
+[  251.100221] ======================================================
+[  251.100221] [ INFO: possible circular locking dependency detected ]
+[  251.100221] 3.13.0-rc2-next-20131206-sasha-00005-g8be2375-dirty #4053 Not tainted
+[  251.101967] -------------------------------------------------------
+[  251.101967] kworker/10:1/4506 is trying to acquire lock:
+[  251.101967]  (timekeeper_seq){----..}, at: [<ffffffff81160e96>] retrigger_next_event+0x56/0x70
+[  251.101967]
+[  251.101967] but task is already holding lock:
+[  251.101967]  (hrtimer_bases.lock#11){-.-...}, at: [<ffffffff81160e7c>] retrigger_next_event+0x3c/0x70
+[  251.101967]
+[  251.101967] which lock already depends on the new lock.
+[  251.101967]
+[  251.101967]
+[  251.101967] the existing dependency chain (in reverse order) is:
+[  251.101967]
+-> #5 (hrtimer_bases.lock#11){-.-...}:
+[snipped]
+-> #4 (&rt_b->rt_runtime_lock){-.-...}:
+[snipped]
+-> #3 (&rq->lock){-.-.-.}:
+[snipped]
+-> #2 (&p->pi_lock){-.-.-.}:
+[snipped]
+-> #1 (&(&pool->lock)->rlock){-.-...}:
+[  251.101967]        [<ffffffff81194803>] validate_chain+0x6c3/0x7b0
+[  251.101967]        [<ffffffff81194d9d>] __lock_acquire+0x4ad/0x580
+[  251.101967]        [<ffffffff81194ff2>] lock_acquire+0x182/0x1d0
+[  251.101967]        [<ffffffff84398500>] _raw_spin_lock+0x40/0x80
+[  251.101967]        [<ffffffff81153e69>] __queue_work+0x1a9/0x3f0
+[  251.101967]        [<ffffffff81154168>] queue_work_on+0x98/0x120
+[  251.101967]        [<ffffffff81161351>] clock_was_set_delayed+0x21/0x30
+[  251.101967]        [<ffffffff811c4bd1>] do_adjtimex+0x111/0x160
+[  251.101967]        [<ffffffff811e2711>] compat_sys_adjtimex+0x41/0x70
+[  251.101967]        [<ffffffff843a4b49>] ia32_sysret+0x0/0x5
+[  251.101967]
+-> #0 (timekeeper_seq){----..}:
+[snipped]
+[  251.101967] other info that might help us debug this:
+[  251.101967]
+[  251.101967] Chain exists of:
+  timekeeper_seq --> &rt_b->rt_runtime_lock --> hrtimer_bases.lock#11
+
+[  251.101967]  Possible unsafe locking scenario:
+[  251.101967]
+[  251.101967]        CPU0                    CPU1
+[  251.101967]        ----                    ----
+[  251.101967]   lock(hrtimer_bases.lock#11);
+[  251.101967]                                lock(&rt_b->rt_runtime_lock);
+[  251.101967]                                lock(hrtimer_bases.lock#11);
+[  251.101967]   lock(timekeeper_seq);
+[  251.101967]
+[  251.101967]  *** DEADLOCK ***
+[  251.101967]
+[  251.101967] 3 locks held by kworker/10:1/4506:
+[  251.101967]  #0:  (events){.+.+.+}, at: [<ffffffff81154960>] process_one_work+0x200/0x530
+[  251.101967]  #1:  (hrtimer_work){+.+...}, at: [<ffffffff81154960>] process_one_work+0x200/0x530
+[  251.101967]  #2:  (hrtimer_bases.lock#11){-.-...}, at: [<ffffffff81160e7c>] retrigger_next_event+0x3c/0x70
+[  251.101967]
+[  251.101967] stack backtrace:
+[  251.101967] CPU: 10 PID: 4506 Comm: kworker/10:1 Not tainted 3.13.0-rc2-next-20131206-sasha-00005-g8be2375-dirty #4053
+[  251.101967] Workqueue: events clock_was_set_work
+
+So the best solution is to avoid calling clock_was_set_delayed() while
+holding the timekeeping lock, and instead using a flag variable to
+decide if we should call clock_was_set() once we've released the locks.
+
+This works for the case here, where the do_adjtimex() was the deadlock
+trigger point. Unfortuantely, in update_wall_time() we still hold
+the jiffies lock, which would deadlock with the ipi triggered by
+clock_was_set(), preventing us from calling it even after we drop the
+timekeeping lock. So instead call clock_was_set_delayed() at that point.
+
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Richard Cochran <richardcochran@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Sasha Levin <sasha.levin@oracle.com>
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Tested-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- fs/exofs/ore.c         |   37 +++++++++++++++++++++++++------------
- include/scsi/osd_ore.h |    1 +
- 2 files changed, 26 insertions(+), 12 deletions(-)
 
---- a/fs/exofs/ore.c
-+++ b/fs/exofs/ore.c
-@@ -103,7 +103,7 @@ int ore_verify_layout(unsigned total_com
- 
- 	layout->max_io_length =
- 		(BIO_MAX_PAGES_KMALLOC * PAGE_SIZE - layout->stripe_unit) *
--							layout->group_width;
-+					(layout->group_width - layout->parity);
- 	if (layout->parity) {
- 		unsigned stripe_length =
- 				(layout->group_width - layout->parity) *
-@@ -286,7 +286,8 @@ int  ore_get_rw_state(struct ore_layout
- 	if (length) {
- 		ore_calc_stripe_info(layout, offset, length, &ios->si);
- 		ios->length = ios->si.length;
--		ios->nr_pages = (ios->length + PAGE_SIZE - 1) / PAGE_SIZE;
-+		ios->nr_pages = ((ios->offset & (PAGE_SIZE - 1)) +
-+				 ios->length + PAGE_SIZE - 1) / PAGE_SIZE;
- 		if (layout->parity)
- 			_ore_post_alloc_raid_stuff(ios);
+---
+ kernel/time/timekeeping.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
+
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -988,7 +988,8 @@ static void timekeeping_adjust(s64 offse
+  *
+  * Returns the unconsumed cycles.
+  */
+-static cycle_t logarithmic_accumulation(cycle_t offset, int shift)
++static cycle_t logarithmic_accumulation(cycle_t offset, int shift,
++							unsigned int *clock_set)
+ {
+ 	u64 nsecps = (u64)NSEC_PER_SEC << timekeeper.shift;
+ 	u64 raw_nsecs;
+@@ -1010,7 +1011,7 @@ static cycle_t logarithmic_accumulation(
+ 		timekeeper.xtime.tv_sec += leap;
+ 		timekeeper.wall_to_monotonic.tv_sec -= leap;
+ 		if (leap)
+-			clock_was_set_delayed();
++			*clock_set = 1;
  	}
-@@ -536,6 +537,7 @@ void ore_calc_stripe_info(struct ore_lay
- 	u64	H = LmodS - G * T;
  
- 	u32	N = div_u64(H, U);
-+	u32	Nlast;
+ 	/* Accumulate raw time */
+@@ -1042,6 +1043,7 @@ static void update_wall_time(void)
+ 	struct clocksource *clock;
+ 	cycle_t offset;
+ 	int shift = 0, maxshift;
++	unsigned int clock_set = 0;
+ 	unsigned long flags;
  
- 	/* "H - (N * U)" is just "H % U" so it's bound to u32 */
- 	u32	C = (u32)(H - (N * U)) / stripe_unit + G * group_width;
-@@ -568,6 +570,10 @@ void ore_calc_stripe_info(struct ore_lay
- 	si->length = T - H;
- 	if (si->length > length)
- 		si->length = length;
-+
-+	Nlast = div_u64(H + si->length + U - 1, U);
-+	si->maxdevUnits = Nlast - N;
-+
- 	si->M = M;
+ 	write_seqlock_irqsave(&timekeeper.lock, flags);
+@@ -1077,7 +1079,7 @@ static void update_wall_time(void)
+ 	maxshift = (64 - (ilog2(ntp_tick_length())+1)) - 1;
+ 	shift = min(shift, maxshift);
+ 	while (offset >= timekeeper.cycle_interval) {
+-		offset = logarithmic_accumulation(offset, shift);
++		offset = logarithmic_accumulation(offset, shift, &clock_set);
+ 		if(offset < timekeeper.cycle_interval<<shift)
+ 			shift--;
+ 	}
+@@ -1131,7 +1133,7 @@ static void update_wall_time(void)
+ 		timekeeper.xtime.tv_sec += leap;
+ 		timekeeper.wall_to_monotonic.tv_sec -= leap;
+ 		if (leap)
+-			clock_was_set_delayed();
++			clock_set = 1;
+ 	}
+ 
+ 	timekeeping_update(false);
+@@ -1139,6 +1141,8 @@ static void update_wall_time(void)
+ out:
+ 	write_sequnlock_irqrestore(&timekeeper.lock, flags);
+ 
++	if (clock_set)
++		clock_was_set_delayed();
  }
- EXPORT_SYMBOL(ore_calc_stripe_info);
-@@ -583,13 +589,16 @@ int _ore_add_stripe_unit(struct ore_io_s
- 	int ret;
  
- 	if (per_dev->bio == NULL) {
--		unsigned pages_in_stripe = ios->layout->group_width *
--					(ios->layout->stripe_unit / PAGE_SIZE);
--		unsigned nr_pages = ios->nr_pages * ios->layout->group_width /
--					(ios->layout->group_width -
--					 ios->layout->parity);
--		unsigned bio_size = (nr_pages + pages_in_stripe) /
--					ios->layout->group_width;
-+		unsigned bio_size;
-+
-+		if (!ios->reading) {
-+			bio_size = ios->si.maxdevUnits;
-+		} else {
-+			bio_size = (ios->si.maxdevUnits + 1) *
-+			     (ios->layout->group_width - ios->layout->parity) /
-+			     ios->layout->group_width;
-+		}
-+		bio_size *= (ios->layout->stripe_unit / PAGE_SIZE);
- 
- 		per_dev->bio = bio_kmalloc(GFP_KERNEL, bio_size);
- 		if (unlikely(!per_dev->bio)) {
-@@ -609,8 +618,12 @@ int _ore_add_stripe_unit(struct ore_io_s
- 		added_len = bio_add_pc_page(q, per_dev->bio, pages[pg],
- 					    pglen, pgbase);
- 		if (unlikely(pglen != added_len)) {
--			ORE_DBGMSG("Failed bio_add_pc_page bi_vcnt=%u\n",
--				   per_dev->bio->bi_vcnt);
-+			/* If bi_vcnt == bi_max then this is a SW BUG */
-+			ORE_DBGMSG("Failed bio_add_pc_page bi_vcnt=0x%x "
-+				   "bi_max=0x%x BIO_MAX=0x%x cur_len=0x%x\n",
-+				   per_dev->bio->bi_vcnt,
-+				   per_dev->bio->bi_max_vecs,
-+				   BIO_MAX_PAGES_KMALLOC, cur_len);
- 			ret = -ENOMEM;
- 			goto out;
- 		}
-@@ -1099,7 +1112,7 @@ int ore_truncate(struct ore_layout *layo
- 		size_attr->attr = g_attr_logical_length;
- 		size_attr->attr.val_ptr = &size_attr->newsize;
- 
--		ORE_DBGMSG("trunc(0x%llx) obj_offset=0x%llx dev=%d\n",
-+		ORE_DBGMSG2("trunc(0x%llx) obj_offset=0x%llx dev=%d\n",
- 			     _LLU(oc->comps->obj.id), _LLU(obj_size), i);
- 		ret = _truncate_mirrors(ios, i * ios->layout->mirrors_p1,
- 					&size_attr->attr);
---- a/include/scsi/osd_ore.h
-+++ b/include/scsi/osd_ore.h
-@@ -102,6 +102,7 @@ struct ore_striping_info {
- 	unsigned unit_off;
- 	unsigned cur_pg;
- 	unsigned cur_comp;
-+	unsigned maxdevUnits;
- };
- 
- struct ore_io_state;
+ /**
 
 
