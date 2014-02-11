@@ -1,75 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752262AbaBKPmq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 10:42:46 -0500
-Received: from fep21.mx.upcmail.net ([62.179.121.41]:46128 "EHLO
-	fep21.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752015AbaBKPmn (ORCPT
+	id S1752140AbaBKPoJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 10:44:09 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:40388 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751323AbaBKPoI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 10:42:43 -0500
-X-SourceIP: 37.49.105.23
-X-Authenticated-Sender: bjoern.christoph@kabelbw.de
-Date: Tue, 11 Feb 2014 16:42:33 +0100
-From: bjoern <lkml@call-home.ch>
-To: linux-kernel@vger.kernel.org
-Subject: IRQ nobody cared; Comm: swapper/2 Not tainted
-Message-ID: <20140211164233.6a94ecc0@ubuntu>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.13; i686-pc-linux-gnu)
+	Tue, 11 Feb 2014 10:44:08 -0500
+Date: Tue, 11 Feb 2014 08:44:03 -0700
+From: Jens Axboe <axboe@kernel.dk>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: error returns from ->queue_rq
+Message-ID: <20140211154403.GE19057@kernel.dk>
+References: <20140211092904.GA6229@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140211092904.GA6229@infradead.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Feb 11 2014, Christoph Hellwig wrote:
+> Hi Jens,
+> 
+> seems like with the SCSI work I introduced the first
+> BLK_MQ_RQ_QUEUE_ERROR error return in the tree, and immediately ran into
+> the first pitfall.  The code as-is expects rq->errors set to an error
+> value, which otherwise is an  internal field used by the block layer and
+> some drivers, but not part of the communication protocol between the
+> two.
+> 
+> We can either make it part of the protocol for blk-mq, which would
+> require documenting and praying driver writers get it right, or
+> alternatively we could map BLK_MQ_RQ_QUEUE_ERROR to -EIO and if
+> nessecary introduce other return values if we need to return other
+> errors.  The third option would be to remove BLK_MQ_RQ_QUEUE_ERROR
+> entirely and require drivers to call blk_mq_end_io themselves from
+> ->queue_rq, mirroring the ->queuecommand error handling.  I'm undecided
+> between options 2 and 3, but I'd rather avoid the current pitfall.
 
-I just got this dump on my system. It happens occasionally, maybe once
-a week. Result is that my USB keyboard and mouse (both Logitech
-wireless) are laggy, mouse jumps across the screen and keyboard input
-lags behind and creates multiple same keystrokes although the key was
-only hit once.
+Lets go for option #2. I agree that we should not make this a new
+depedency, it's a lot more robust to just have it be -EIO and add other
+error returns as needed.
 
-Ubuntu x64 13.10, Ubuntu kernel 3.13.1 (issue has occured in past also
-when using 3.10/3.11)
+-- 
+Jens Axboe
 
-[    6.161395] irq 16: nobody cared (try booting with the "irqpoll"
-option)
-[    6.161428] CPU: 2 PID: 0 Comm: swapper/2 Not tainted
-3.13.1-031301-generic #201401291035
-[    6.161429] Hardware
-name:                  /DH61AG, BIOS AGH6110H.86A.0106.2013.0509.1441
-05/09/2013 
-[    6.161431]  ffff880119548e9c ffff88011f303e48 ffffffff8173356d
-0000000000002652 
-[    6.161433]  ffff880119548e00 ffff88011f303e78 ffffffff810c461d
-0000001c2000af00 
-[    6.161435] ffff880119548e00 0000000000000010 0000000000000000
-ffff88011f303ea8
-[    6.161437] Call Trace: 
-[    6.161438]  <IRQ> [<ffffffff8173356d>] dump_stack+0x46/0x58
-[    6.161446] [<ffffffff810c461d>] __report_bad_irq+0x3d/0xe0
-[    6.161448] [<ffffffff810c4a4b>] note_interrupt+0x14b/0x1a0
-[    6.161450] [<ffffffff810c2201>] handle_irq_event_percpu+0xb1/0x210
-[    6.161453] [<ffffffff8101d089>] ? sched_clock+0x9/0x10
-[    6.161454] [<ffffffff810c23a8>] handle_irq_event+0x48/0x70
-[    6.161456] [<ffffffff810c568a>] handle_fasteoi_irq+0x5a/0x100
-[    6.161460] [<ffffffff81016f32>] handle_irq+0x22/0x40 
-[    6.161463] [<ffffffff8174ad9a>] do_IRQ+0x5a/0xe0 
-[    6.161466] [<ffffffff8173ff6d>] common_interrupt+0x6d/0x6d 
-[    6.161467] <EOI>
-[<ffffffff815db8e1>] ?cpuidle_enter_state+0x61/0xe0 
-[    6.161472] [<ffffffff815db8d7>] ? cpuidle_enter_state+0x57/0xe0 
-[    6.161474] [<ffffffff815dba20>] cpuidle_idle_call+0xc0/0x210 
-[    6.161477] [<ffffffff8101e4fe>] arch_cpu_idle+0xe/0x30 
-[    6.161481] [<ffffffff810c1598>] cpu_idle_loop+0x78/0x270 
-[    6.161485]
-[<ffffffff810d6eb2>] ?clockevents_register_device+0xe2/0x140
-[    6.161487] [<ffffffff810c17fb>] cpu_startup_entry+0x6b/0x70
-[    6.161489] [<ffffffff810440e8>] start_secondary+0xc8/0xd0
-[    6.161490] handlers: 
-[    6.161505] [<ffffffff81547a40>] usb_hcd_irq 
-[    6.161526] Disabling IRQ #16
-
-Regards,
-Bjoern
