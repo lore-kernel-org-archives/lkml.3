@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756235AbaBKVFq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 16:05:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39511 "EHLO
+	id S1756215AbaBKVFo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 16:05:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39519 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752491AbaBKTFA (ORCPT
+	with ESMTP id S1751969AbaBKTFC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:05:00 -0500
+	Tue, 11 Feb 2014 14:05:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josh Triplett <josh@joshtriplett.org>, Len Brown <len.brown@intel.com>
-Subject: [PATCH 3.13 026/120] turbostat: Dont put unprocessed uapi headers in the include path
-Date: Tue, 11 Feb 2014 11:04:27 -0800
-Message-Id: <20140211184824.301344317@linuxfoundation.org>
+        Mark Brown <broonie@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.13 028/120] ACPI / init: Flag use of ACPI and ACPI idioms for power supplies to regulator API
+Date: Tue, 11 Feb 2014 11:04:29 -0800
+Message-Id: <20140211184824.360636707@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -28,68 +29,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Triplett <josh@joshtriplett.org>
+From: Mark Brown <broonie@linaro.org>
 
-commit b731f3119de57144e16c19fd593b8daeb637843e upstream.
+commit 49a12877d2777cadcb838981c3c4f5a424aef310 upstream.
 
-turbostat's Makefile puts arch/x86/include/uapi/ in the include path, so
-that it can include <asm/msr.h> from it.  It isn't in general safe to
-include even uapi headers directly from the kernel tree without
-processing them through scripts/headers_install.sh, but asm/msr.h
-happens to work.
+There is currently no facility in ACPI to express the hookup of voltage
+regulators, the expectation is that the regulators that exist in the
+system will be handled transparently by firmware if they need software
+control at all. This means that if for some reason the regulator API is
+enabled on such a system it should assume that any supplies that devices
+need are provided by the system at all relevant times without any software
+intervention.
 
-However, that include path can break with some versions of system
-headers, by overriding some system headers with the unprocessed versions
-directly from the kernel source.  For instance:
+Tell the regulator core to make this assumption by calling
+regulator_has_full_constraints(). Do this as soon as we know we are using
+ACPI so that the information is available to the regulator core as early
+as possible. This will cause the regulator core to pretend that there is
+an always on regulator supplying any supply that is requested but that has
+not otherwise been mapped which is the behaviour expected on a system with
+ACPI.
 
-In file included from /build/x86-generic/usr/include/bits/sigcontext.h:28:0,
-                 from /build/x86-generic/usr/include/signal.h:339,
-                 from /build/x86-generic/usr/include/sys/wait.h:31,
-                 from turbostat.c:27:
-../../../../arch/x86/include/uapi/asm/sigcontext.h:4:28: fatal error: linux/compiler.h: No such file or directory
+Should the ability to specify regulators be added in future revisions of
+ACPI then once we have support for ACPI mappings in the kernel the same
+assumptions will apply. It is also likely that systems will default to a
+mode of operation which does not require any interpretation of these
+mappings in order to be compatible with existing operating system releases
+so it should remain safe to make these assumptions even if the mappings
+exist but are not supported by the kernel.
 
-This occurs because the system bits/sigcontext.h on that build system
-includes <asm/sigcontext.h>, and asm/sigcontext.h in the kernel source
-includes <linux/compiler.h>, which scripts/headers_install.sh would have
-filtered out.
-
-Since turbostat really only wants a single header, just include that one
-header rather than putting an entire directory of kernel headers on the
-include path.
-
-In the process, switch from msr.h to msr-index.h, since turbostat just
-wants the MSR numbers.
-
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
-Signed-off-by: Len Brown <len.brown@intel.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- tools/power/x86/turbostat/Makefile    |    2 +-
- tools/power/x86/turbostat/turbostat.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/acpi/bus.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/tools/power/x86/turbostat/Makefile
-+++ b/tools/power/x86/turbostat/Makefile
-@@ -5,7 +5,7 @@ DESTDIR		:=
+--- a/drivers/acpi/bus.c
++++ b/drivers/acpi/bus.c
+@@ -33,6 +33,7 @@
+ #include <linux/proc_fs.h>
+ #include <linux/acpi.h>
+ #include <linux/slab.h>
++#include <linux/regulator/machine.h>
+ #ifdef CONFIG_X86
+ #include <asm/mpspec.h>
+ #endif
+@@ -576,6 +577,14 @@ void __init acpi_early_init(void)
+ 		goto error0;
+ 	}
  
- turbostat : turbostat.c
- CFLAGS +=	-Wall
--CFLAGS +=	-I../../../../arch/x86/include/uapi/
-+CFLAGS +=	-DMSRHEADER='"../../../../arch/x86/include/uapi/asm/msr-index.h"'
++	/*
++	 * If the system is using ACPI then we can be reasonably
++	 * confident that any regulators are managed by the firmware
++	 * so tell the regulator core it has everything it needs to
++	 * know.
++	 */
++	regulator_has_full_constraints();
++
+ 	return;
  
- %: %.c
- 	@mkdir -p $(BUILD_OUTPUT)
---- a/tools/power/x86/turbostat/turbostat.c
-+++ b/tools/power/x86/turbostat/turbostat.c
-@@ -20,7 +20,7 @@
-  */
- 
- #define _GNU_SOURCE
--#include <asm/msr.h>
-+#include MSRHEADER
- #include <stdio.h>
- #include <unistd.h>
- #include <sys/types.h>
+       error0:
 
 
