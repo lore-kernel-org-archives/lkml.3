@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751014AbaBKT2d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:28:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40441 "EHLO
+	id S1754492AbaBKT3G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:29:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40423 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754189AbaBKTIC (ORCPT
+	with ESMTP id S1754181AbaBKTIA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:08:02 -0500
+	Tue, 11 Feb 2014 14:08:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Wu Fengguang <fengguang.wu@intel.com>, Michal Hocko <mhocko@suse.cz>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 12/79] mm/page-writeback.c: do not count anon pages as dirtyable memory
-Date: Tue, 11 Feb 2014 11:05:16 -0800
-Message-Id: <20140211184721.285844481@linuxfoundation.org>
+Subject: [PATCH 3.10 10/79] mm/memory-failure.c: shift page lock from head page to tail page after thp split
+Date: Tue, 11 Feb 2014 11:05:14 -0800
+Message-Id: <20140211184721.229978627@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
 References: <20140211184720.928667275@linuxfoundation.org>
@@ -32,141 +32,141 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Weiner <hannes@cmpxchg.org>
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-commit a1c3bfb2f67ef766de03f1f56bdfff9c8595ab14 upstream.
+commit 54b9dd14d09f24927285359a227aa363ce46089e upstream.
 
-The VM is currently heavily tuned to avoid swapping.  Whether that is
-good or bad is a separate discussion, but as long as the VM won't swap
-to make room for dirty cache, we can not consider anonymous pages when
-calculating the amount of dirtyable memory, the baseline to which
-dirty_background_ratio and dirty_ratio are applied.
+After thp split in hwpoison_user_mappings(), we hold page lock on the
+raw error page only between try_to_unmap, hence we are in danger of race
+condition.
 
-A simple workload that occupies a significant size (40+%, depending on
-memory layout, storage speeds etc.) of memory with anon/tmpfs pages and
-uses the remainder for a streaming writer demonstrates this problem.  In
-that case, the actual cache pages are a small fraction of what is
-considered dirtyable overall, which results in an relatively large
-portion of the cache pages to be dirtied.  As kswapd starts rotating
-these, random tasks enter direct reclaim and stall on IO.
+I found in the RHEL7 MCE-relay testing that we have "bad page" error
+when a memory error happens on a thp tail page used by qemu-kvm:
 
-Only consider free pages and file pages dirtyable.
+  Triggering MCE exception on CPU 10
+  mce: [Hardware Error]: Machine check events logged
+  MCE exception done on CPU 10
+  MCE 0x38c535: Killing qemu-kvm:8418 due to hardware memory corruption
+  MCE 0x38c535: dirty LRU page recovery: Recovered
+  qemu-kvm[8418]: segfault at 20 ip 00007ffb0f0f229a sp 00007fffd6bc5240 error 4 in qemu-kvm[7ffb0ef14000+420000]
+  BUG: Bad page state in process qemu-kvm  pfn:38c400
+  page:ffffea000e310000 count:0 mapcount:0 mapping:          (null) index:0x7ffae3c00
+  page flags: 0x2fffff0008001d(locked|referenced|uptodate|dirty|swapbacked)
+  Modules linked in: hwpoison_inject mce_inject vhost_net macvtap macvlan ...
+  CPU: 0 PID: 8418 Comm: qemu-kvm Tainted: G   M        --------------   3.10.0-54.0.1.el7.mce_test_fixed.x86_64 #1
+  Hardware name: NEC NEC Express5800/R120b-1 [N8100-1719F]/MS-91E7-001, BIOS 4.6.3C19 02/10/2011
+  Call Trace:
+    dump_stack+0x19/0x1b
+    bad_page.part.59+0xcf/0xe8
+    free_pages_prepare+0x148/0x160
+    free_hot_cold_page+0x31/0x140
+    free_hot_cold_page_list+0x46/0xa0
+    release_pages+0x1c1/0x200
+    free_pages_and_swap_cache+0xad/0xd0
+    tlb_flush_mmu.part.46+0x4c/0x90
+    tlb_finish_mmu+0x55/0x60
+    exit_mmap+0xcb/0x170
+    mmput+0x67/0xf0
+    vhost_dev_cleanup+0x231/0x260 [vhost_net]
+    vhost_net_release+0x3f/0x90 [vhost_net]
+    __fput+0xe9/0x270
+    ____fput+0xe/0x10
+    task_work_run+0xc4/0xe0
+    do_exit+0x2bb/0xa40
+    do_group_exit+0x3f/0xa0
+    get_signal_to_deliver+0x1d0/0x6e0
+    do_signal+0x48/0x5e0
+    do_notify_resume+0x71/0xc0
+    retint_signal+0x48/0x8c
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Reported-by: Tejun Heo <tj@kernel.org>
-Tested-by: Tejun Heo <tj@kernel.org>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+The reason of this bug is that a page fault happens before unlocking the
+head page at the end of memory_failure().  This strange page fault is
+trying to access to address 0x20 and I'm not sure why qemu-kvm does
+this, but anyway as a result the SIGSEGV makes qemu-kvm exit and on the
+way we catch the bad page bug/warning because we try to free a locked
+page (which was the former head page.)
+
+To fix this, this patch suggests to shift page lock from head page to
+tail page just after thp split.  SIGSEGV still happens, but it affects
+only error affected VMs, not a whole system.
+
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/vmstat.h |    3 ---
- mm/page-writeback.c    |    6 ++++--
- mm/vmscan.c            |   49 ++++++++++++++-----------------------------------
- 3 files changed, 18 insertions(+), 40 deletions(-)
+ mm/memory-failure.c |   21 +++++++++++----------
+ 1 file changed, 11 insertions(+), 10 deletions(-)
 
---- a/include/linux/vmstat.h
-+++ b/include/linux/vmstat.h
-@@ -142,9 +142,6 @@ static inline unsigned long zone_page_st
- 	return x;
- }
- 
--extern unsigned long global_reclaimable_pages(void);
--extern unsigned long zone_reclaimable_pages(struct zone *zone);
--
- #ifdef CONFIG_NUMA
- /*
-  * Determine the per node value of a stat item. This function
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -202,7 +202,8 @@ static unsigned long zone_dirtyable_memo
- 	nr_pages = zone_page_state(zone, NR_FREE_PAGES);
- 	nr_pages -= min(nr_pages, zone->dirty_balance_reserve);
- 
--	nr_pages += zone_reclaimable_pages(zone);
-+	nr_pages += zone_page_state(zone, NR_INACTIVE_FILE);
-+	nr_pages += zone_page_state(zone, NR_ACTIVE_FILE);
- 
- 	return nr_pages;
- }
-@@ -255,7 +256,8 @@ static unsigned long global_dirtyable_me
- 	x = global_page_state(NR_FREE_PAGES);
- 	x -= min(x, dirty_balance_reserve);
- 
--	x += global_reclaimable_pages();
-+	x += global_page_state(NR_INACTIVE_FILE);
-+	x += global_page_state(NR_ACTIVE_FILE);
- 
- 	if (!vm_highmem_is_dirtyable)
- 		x -= highmem_dirtyable_memory(x);
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2117,6 +2117,20 @@ static bool shrink_zones(struct zonelist
- 	return aborted_reclaim;
- }
- 
-+static unsigned long zone_reclaimable_pages(struct zone *zone)
-+{
-+	int nr;
-+
-+	nr = zone_page_state(zone, NR_ACTIVE_FILE) +
-+	     zone_page_state(zone, NR_INACTIVE_FILE);
-+
-+	if (get_nr_swap_pages() > 0)
-+		nr += zone_page_state(zone, NR_ACTIVE_ANON) +
-+		      zone_page_state(zone, NR_INACTIVE_ANON);
-+
-+	return nr;
-+}
-+
- static bool zone_reclaimable(struct zone *zone)
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -854,14 +854,14 @@ static int page_action(struct page_state
+  * the pages and send SIGBUS to the processes if the data was dirty.
+  */
+ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
+-				  int trapno, int flags)
++				  int trapno, int flags, struct page **hpagep)
  {
- 	return zone->pages_scanned < zone_reclaimable_pages(zone) * 6;
-@@ -3075,41 +3089,6 @@ void wakeup_kswapd(struct zone *zone, in
- 	wake_up_interruptible(&pgdat->kswapd_wait);
- }
+ 	enum ttu_flags ttu = TTU_UNMAP | TTU_IGNORE_MLOCK | TTU_IGNORE_ACCESS;
+ 	struct address_space *mapping;
+ 	LIST_HEAD(tokill);
+ 	int ret;
+ 	int kill = 1, forcekill;
+-	struct page *hpage = compound_head(p);
++	struct page *hpage = *hpagep;
+ 	struct page *ppage;
  
--/*
-- * The reclaimable count would be mostly accurate.
-- * The less reclaimable pages may be
-- * - mlocked pages, which will be moved to unevictable list when encountered
-- * - mapped pages, which may require several travels to be reclaimed
-- * - dirty pages, which is not "instantly" reclaimable
-- */
--unsigned long global_reclaimable_pages(void)
--{
--	int nr;
+ 	if (PageReserved(p) || PageSlab(p))
+@@ -940,11 +940,14 @@ static int hwpoison_user_mappings(struct
+ 			 * We pinned the head page for hwpoison handling,
+ 			 * now we split the thp and we are interested in
+ 			 * the hwpoisoned raw page, so move the refcount
+-			 * to it.
++			 * to it. Similarly, page lock is shifted.
+ 			 */
+ 			if (hpage != p) {
+ 				put_page(hpage);
+ 				get_page(p);
++				lock_page(p);
++				unlock_page(hpage);
++				*hpagep = p;
+ 			}
+ 			/* THP is split, so ppage should be the real poisoned page. */
+ 			ppage = p;
+@@ -962,17 +965,11 @@ static int hwpoison_user_mappings(struct
+ 	if (kill)
+ 		collect_procs(ppage, &tokill);
+ 
+-	if (hpage != ppage)
+-		lock_page(ppage);
 -
--	nr = global_page_state(NR_ACTIVE_FILE) +
--	     global_page_state(NR_INACTIVE_FILE);
+ 	ret = try_to_unmap(ppage, ttu);
+ 	if (ret != SWAP_SUCCESS)
+ 		printk(KERN_ERR "MCE %#lx: failed to unmap page (mapcount=%d)\n",
+ 				pfn, page_mapcount(ppage));
+ 
+-	if (hpage != ppage)
+-		unlock_page(ppage);
 -
--	if (get_nr_swap_pages() > 0)
--		nr += global_page_state(NR_ACTIVE_ANON) +
--		      global_page_state(NR_INACTIVE_ANON);
--
--	return nr;
--}
--
--unsigned long zone_reclaimable_pages(struct zone *zone)
--{
--	int nr;
--
--	nr = zone_page_state(zone, NR_ACTIVE_FILE) +
--	     zone_page_state(zone, NR_INACTIVE_FILE);
--
--	if (get_nr_swap_pages() > 0)
--		nr += zone_page_state(zone, NR_ACTIVE_ANON) +
--		      zone_page_state(zone, NR_INACTIVE_ANON);
--
--	return nr;
--}
--
- #ifdef CONFIG_HIBERNATION
- /*
-  * Try to free `nr_to_reclaim' of memory, system-wide, and return the number of
+ 	/*
+ 	 * Now that the dirty bit has been propagated to the
+ 	 * struct page and all unmaps done we can decide if
+@@ -1189,8 +1186,12 @@ int memory_failure(unsigned long pfn, in
+ 	/*
+ 	 * Now take care of user space mappings.
+ 	 * Abort on fail: __delete_from_page_cache() assumes unmapped page.
++	 *
++	 * When the raw error page is thp tail page, hpage points to the raw
++	 * page after thp split.
+ 	 */
+-	if (hwpoison_user_mappings(p, pfn, trapno, flags) != SWAP_SUCCESS) {
++	if (hwpoison_user_mappings(p, pfn, trapno, flags, &hpage)
++	    != SWAP_SUCCESS) {
+ 		printk(KERN_ERR "MCE %#lx: cannot unmap page, give up\n", pfn);
+ 		res = -EBUSY;
+ 		goto out;
 
 
