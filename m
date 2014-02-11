@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755805AbaBKUCs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:02:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40117 "EHLO
+	id S1753674AbaBKTG7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:06:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40077 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753642AbaBKTHA (ORCPT
+	with ESMTP id S1753587AbaBKTG4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:07:00 -0500
+	Tue, 11 Feb 2014 14:06:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH 3.12 023/107] ARM: mvebu: Fix kernel hang in mvebu_soc_id_init() when of_iomap failed
-Date: Tue, 11 Feb 2014 11:04:49 -0800
-Message-Id: <20140211184748.861083452@linuxfoundation.org>
+        Malcolm Priestley <tvboxspy@gmail.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.12 066/107] [media] it913x: Add support for Avermedia H335 id 0x0335
+Date: Tue, 11 Feb 2014 11:05:32 -0800
+Message-Id: <20140211184750.078256593@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -30,35 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+From: Malcolm Priestley <tvboxspy@gmail.com>
 
-commit dc4910d9e93f8cc56b190dd8fc9e789135978216 upstream.
+commit 17f335c304ac19d9b11814238fe8a7519d80e2ff upstream.
 
-When pci_base is accessed whereas it has not been properly mapped by
-of_iomap() the kernel hang. The check of this pointer made an improper
-use of IS_ERR() instead of comparing to NULL. This patch fix this
-issue.
+Trivial USB ID addition for Avermedia H335.
 
-Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Reported-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Fixes: 930ab3d403ae (i2c: mv64xxx: Add I2C Transaction Generator support)
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-mvebu/mvebu-soc-id.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/media/dvb-core/dvb-usb-ids.h  |    1 +
+ drivers/media/usb/dvb-usb-v2/it913x.c |    3 +++
+ 2 files changed, 4 insertions(+)
 
---- a/arch/arm/mach-mvebu/mvebu-soc-id.c
-+++ b/arch/arm/mach-mvebu/mvebu-soc-id.c
-@@ -88,7 +88,7 @@ static int __init mvebu_soc_id_init(void
- 	}
+--- a/drivers/media/dvb-core/dvb-usb-ids.h
++++ b/drivers/media/dvb-core/dvb-usb-ids.h
+@@ -239,6 +239,7 @@
+ #define USB_PID_AVERMEDIA_A835B_4835			0x4835
+ #define USB_PID_AVERMEDIA_1867				0x1867
+ #define USB_PID_AVERMEDIA_A867				0xa867
++#define USB_PID_AVERMEDIA_H335				0x0335
+ #define USB_PID_AVERMEDIA_TWINSTAR			0x0825
+ #define USB_PID_TECHNOTREND_CONNECT_S2400               0x3006
+ #define USB_PID_TECHNOTREND_CONNECT_S2400_8KEEPROM	0x3009
+--- a/drivers/media/usb/dvb-usb-v2/it913x.c
++++ b/drivers/media/usb/dvb-usb-v2/it913x.c
+@@ -799,6 +799,9 @@ static const struct usb_device_id it913x
+ 	{ DVB_USB_DEVICE(USB_VID_KWORLD_2, USB_PID_CTVDIGDUAL_V2,
+ 		&it913x_properties, "Digital Dual TV Receiver CTVDIGDUAL_V2",
+ 			RC_MAP_IT913X_V1) },
++	{ DVB_USB_DEVICE(USB_VID_AVERMEDIA, USB_PID_AVERMEDIA_H335,
++		&it913x_properties, "Avermedia H335",
++			RC_MAP_IT913X_V2) },
+ 	{}		/* Terminating entry */
+ };
  
- 	pci_base = of_iomap(child, 0);
--	if (IS_ERR(pci_base)) {
-+	if (pci_base == NULL) {
- 		pr_err("cannot map registers\n");
- 		ret = -ENOMEM;
- 		goto res_ioremap;
 
 
