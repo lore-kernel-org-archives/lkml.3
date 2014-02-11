@@ -1,85 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753189AbaBKQh0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 11:37:26 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:34107 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752541AbaBKQhW (ORCPT
+	id S1752599AbaBKQiK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 11:38:10 -0500
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:51924 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751797AbaBKQiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 11:37:22 -0500
-Message-ID: <1392136617.6943.33.camel@pizza.hi.pengutronix.de>
-Subject: Re: [RFC PATCH] [media]: of: move graph helpers from
- drivers/media/v4l2-core to drivers/of
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Rob Herring <robherring2@gmail.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Philipp Zabel <philipp.zabel@gmail.com>
-Date: Tue, 11 Feb 2014 17:36:57 +0100
-In-Reply-To: <8648675.AIXYyYlgXy@avalon>
-References: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de>
-	 <CAL_Jsq+U9zU1i+STLHMBjY5BeEP6djYnJVE5X1ix-D2q_zWztQ@mail.gmail.com>
-	 <20140211145248.GI26684@n2100.arm.linux.org.uk> <8648675.AIXYyYlgXy@avalon>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 11 Feb 2014 11:38:07 -0500
+Date: Tue, 11 Feb 2014 10:37:38 -0600
+From: Calvin Owens <jcalvinowens@gmail.com>
+To: Joe Perches <joe@perches.com>, Johannes Berg <johannes@sipsolutions.net>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jcalvinowens@gmail.com
+Subject: [PATCH v3] ieee80211: Print human-readable disassoc/deauth reason
+ codes
+Message-ID: <20140211163738.GA32043@gmail.com>
+References: <1391651088-31785-1-git-send-email-jcalvinowens@gmail.com>
+ <1391661863.30094.56.camel@joe-AO722>
+ <1392030546.4128.11.camel@jlt4.sipsolutions.net>
+ <1392050359.2507.10.camel@joe-AO722>
+ <20140211012523.GA2739@gmail.com>
+ <1392082740.2507.49.camel@joe-AO722>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1392082740.2507.49.camel@joe-AO722>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, den 11.02.2014, 16:23 +0100 schrieb Laurent Pinchart:
-> Hi Russell,
-> 
-> On Tuesday 11 February 2014 14:52:48 Russell King - ARM Linux wrote:
-> > On Tue, Feb 11, 2014 at 07:56:33AM -0600, Rob Herring wrote:
-> > > On Tue, Feb 11, 2014 at 5:45 AM, Philipp Zabel wrote:
-> > > > This allows to reuse the same parser code from outside the V4L2
-> > > > framework, most importantly from display drivers. There have been
-> > > > patches that duplicate the code (and I am going to send one of my own),
-> > > > such as
-> > > > http://lists.freedesktop.org/archives/dri-devel/2013-August/043308.html
-> > > > and others that parse the same binding in a different way:
-> > > > https://www.mail-archive.com/linux-omap@vger.kernel.org/msg100761.html
-> > > > 
-> > > > I think that all common video interface parsing helpers should be moved
-> > > > to a single place, outside of the specific subsystems, so that it can
-> > > > be reused by all drivers.
-> > > 
-> > > Perhaps that should be done rather than moving to drivers/of now and
-> > > then again to somewhere else.
-> > 
-> > Do you have a better suggestion where it should move to?
-> > 
-> > drivers/gpu/drm - no, because v4l2 wants to use it
-> > drivers/media/video - no, because DRM drivers want to use it
-> > drivers/video - no, because v4l2 and drm drivers want to use it
-> 
-> Just pointing out a missing location (which might be rejected due to similar 
-> concerns), there's also drivers/media, which isn't V4L-specific.
+Create a function to return a descriptive string for each reason code,
+and print that in addition to the numeric value in the kernel log. These
+codes are easily found on popular search engines, but one is generally
+not able to access the internet when dealing with wireless connectivity
+issues.
 
-Since drivers/Makefile has media/ in obj-y, moving the graph helpers to
-drivers/media should technically work.
+Changes in v2: Refactored array of strings into switch statement.
+Changes in v3: Fix style problem, use simplifying macro for switch
+statement, eliminate temporary enum variable.
 
-> > Maybe drivers/of-graph/ ?  Or maybe it's just as good a place to move it
-> > into drivers/of ?
+Signed-off-by: Calvin Owens <jcalvinowens@gmail.com>
+---
+ include/net/mac80211.h | 10 +++++++++
+ net/mac80211/main.c    | 57 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ net/mac80211/mlme.c    | 12 +++++------
+ 3 files changed, 73 insertions(+), 6 deletions(-)
 
-include/media/of_graph.h,
-drivers/media/of_graph.c?
-
-regards
-Philipp
+diff --git a/include/net/mac80211.h b/include/net/mac80211.h
+index f4ab2fb..d18acfe 100644
+--- a/include/net/mac80211.h
++++ b/include/net/mac80211.h
+@@ -2971,6 +2971,16 @@ struct ieee80211_ops {
+  */
+ struct ieee80211_hw *ieee80211_alloc_hw(size_t priv_data_len,
+ 					const struct ieee80211_ops *ops);
++/**
++ * ieee80211_get_reason_code_string - Get human readable reason code
++ *
++ * This function returns a string describing the @reason_code.
++ *
++ * @reason_code: Reason code
++ *
++ * Return: Human readable reason string, or "<INVALID>"
++ */
++const char *ieee80211_get_reason_code_string(u16 reason_code);
+ 
+ /**
+  * ieee80211_register_hw - Register hardware device
+diff --git a/net/mac80211/main.c b/net/mac80211/main.c
+index d767cfb..307b444 100644
+--- a/net/mac80211/main.c
++++ b/net/mac80211/main.c
+@@ -743,6 +743,63 @@ static int ieee80211_init_cipher_suites(struct ieee80211_local *local)
+ 	return 0;
+ }
+ 
++#define case_WLAN(type) \
++	case WLAN_REASON_##type: return #type
++
++const char *ieee80211_get_reason_code_string(u16 reason_code)
++{
++	switch (reason_code) {
++	case_WLAN(UNSPECIFIED);
++	case_WLAN(PREV_AUTH_NOT_VALID);
++	case_WLAN(DEAUTH_LEAVING);
++	case_WLAN(DISASSOC_DUE_TO_INACTIVITY);
++	case_WLAN(DISASSOC_AP_BUSY);
++	case_WLAN(CLASS2_FRAME_FROM_NONAUTH_STA);
++	case_WLAN(CLASS3_FRAME_FROM_NONASSOC_STA);
++	case_WLAN(DISASSOC_STA_HAS_LEFT);
++	case_WLAN(STA_REQ_ASSOC_WITHOUT_AUTH);
++	case_WLAN(DISASSOC_BAD_POWER);
++	case_WLAN(DISASSOC_BAD_SUPP_CHAN);
++	case_WLAN(INVALID_IE);
++	case_WLAN(MIC_FAILURE);
++	case_WLAN(4WAY_HANDSHAKE_TIMEOUT);
++	case_WLAN(GROUP_KEY_HANDSHAKE_TIMEOUT);
++	case_WLAN(IE_DIFFERENT);
++	case_WLAN(INVALID_GROUP_CIPHER);
++	case_WLAN(INVALID_PAIRWISE_CIPHER);
++	case_WLAN(INVALID_AKMP);
++	case_WLAN(UNSUPP_RSN_VERSION);
++	case_WLAN(INVALID_RSN_IE_CAP);
++	case_WLAN(IEEE8021X_FAILED);
++	case_WLAN(CIPHER_SUITE_REJECTED);
++	case_WLAN(DISASSOC_UNSPECIFIED_QOS);
++	case_WLAN(DISASSOC_QAP_NO_BANDWIDTH);
++	case_WLAN(DISASSOC_LOW_ACK);
++	case_WLAN(DISASSOC_QAP_EXCEED_TXOP);
++	case_WLAN(QSTA_LEAVE_QBSS);
++	case_WLAN(QSTA_NOT_USE);
++	case_WLAN(QSTA_REQUIRE_SETUP);
++	case_WLAN(QSTA_TIMEOUT);
++	case_WLAN(QSTA_CIPHER_NOT_SUPP);
++	case_WLAN(MESH_PEER_CANCELED);
++	case_WLAN(MESH_MAX_PEERS);
++	case_WLAN(MESH_CONFIG);
++	case_WLAN(MESH_CLOSE);
++	case_WLAN(MESH_MAX_RETRIES);
++	case_WLAN(MESH_CONFIRM_TIMEOUT);
++	case_WLAN(MESH_INVALID_GTK);
++	case_WLAN(MESH_INCONSISTENT_PARAM);
++	case_WLAN(MESH_INVALID_SECURITY);
++	case_WLAN(MESH_PATH_ERROR);
++	case_WLAN(MESH_PATH_NOFORWARD);
++	case_WLAN(MESH_PATH_DEST_UNREACHABLE);
++	case_WLAN(MAC_EXISTS_IN_MBSS);
++	case_WLAN(MESH_CHAN_REGULATORY);
++	case_WLAN(MESH_CHAN);
++	default: return "<INVALID>";
++	}
++}
++
+ int ieee80211_register_hw(struct ieee80211_hw *hw)
+ {
+ 	struct ieee80211_local *local = hw_to_local(hw);
+diff --git a/net/mac80211/mlme.c b/net/mac80211/mlme.c
+index fc1d824..5dec202 100644
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -2231,8 +2231,8 @@ static void ieee80211_rx_mgmt_deauth(struct ieee80211_sub_if_data *sdata,
+ 
+ 	reason_code = le16_to_cpu(mgmt->u.deauth.reason_code);
+ 
+-	sdata_info(sdata, "deauthenticated from %pM (Reason: %u)\n",
+-		   bssid, reason_code);
++	sdata_info(sdata, "deauthenticated from %pM (Reason: %u=%s)\n",
++		   bssid, reason_code, ieee80211_get_reason_code_string(reason_code));
+ 
+ 	ieee80211_set_disassoc(sdata, 0, 0, false, NULL);
+ 
+@@ -4301,8 +4301,8 @@ int ieee80211_mgd_deauth(struct ieee80211_sub_if_data *sdata,
+ 	bool report_frame = false;
+ 
+ 	sdata_info(sdata,
+-		   "deauthenticating from %pM by local choice (reason=%d)\n",
+-		   req->bssid, req->reason_code);
++		   "deauthenticating from %pM by local choice (Reason: %u=%s)\n",
++		   req->bssid, req->reason_code, ieee80211_get_reason_code_string(req->reason_code));
+ 
+ 	if (ifmgd->auth_data) {
+ 		drv_mgd_prepare_tx(sdata->local, sdata);
+@@ -4348,8 +4348,8 @@ int ieee80211_mgd_disassoc(struct ieee80211_sub_if_data *sdata,
+ 		return -ENOLINK;
+ 
+ 	sdata_info(sdata,
+-		   "disassociating from %pM by local choice (reason=%d)\n",
+-		   req->bss->bssid, req->reason_code);
++		   "disassociating from %pM by local choice (Reason: %u=%s)\n",
++		   req->bss->bssid, req->reason_code, ieee80211_get_reason_code_string(req->reason_code));
+ 
+ 	memcpy(bssid, req->bss->bssid, ETH_ALEN);
+ 	ieee80211_set_disassoc(sdata, IEEE80211_STYPE_DISASSOC,
+-- 
+1.8.5.3
 
