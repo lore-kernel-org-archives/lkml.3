@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752049AbaBKOn2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 09:43:28 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:37844 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751753AbaBKOn0 (ORCPT
+	id S1751518AbaBKOxG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 09:53:06 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:32794 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751015AbaBKOxE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 09:43:26 -0500
-Date: Tue, 11 Feb 2014 08:41:08 -0600
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+	Tue, 11 Feb 2014 09:53:04 -0500
+Date: Tue, 11 Feb 2014 14:52:48 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Philipp Zabel <p.zabel@pengutronix.de>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>
-Subject: Re: [PATCH] of: Turn of_match_node into a static inline when
- CONFIG_OF isn't set
-Message-ID: <20140211144108.GB841@joshc.qualcomm.com>
-References: <1392122211-11422-1-git-send-email-laurent.pinchart@ideasonboard.com>
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Philipp Zabel <philipp.zabel@gmail.com>
+Subject: Re: [RFC PATCH] [media]: of: move graph helpers from
+	drivers/media/v4l2-core to drivers/of
+Message-ID: <20140211145248.GI26684@n2100.arm.linux.org.uk>
+References: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de> <CAL_Jsq+U9zU1i+STLHMBjY5BeEP6djYnJVE5X1ix-D2q_zWztQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1392122211-11422-1-git-send-email-laurent.pinchart@ideasonboard.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CAL_Jsq+U9zU1i+STLHMBjY5BeEP6djYnJVE5X1ix-D2q_zWztQ@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Laurent-
+On Tue, Feb 11, 2014 at 07:56:33AM -0600, Rob Herring wrote:
+> On Tue, Feb 11, 2014 at 5:45 AM, Philipp Zabel <p.zabel@pengutronix.de> wrote:
+> > This allows to reuse the same parser code from outside the V4L2 framework,
+> > most importantly from display drivers. There have been patches that duplicate
+> > the code (and I am going to send one of my own), such as
+> > http://lists.freedesktop.org/archives/dri-devel/2013-August/043308.html
+> > and others that parse the same binding in a different way:
+> > https://www.mail-archive.com/linux-omap@vger.kernel.org/msg100761.html
+> >
+> > I think that all common video interface parsing helpers should be moved to a
+> > single place, outside of the specific subsystems, so that it can be reused
+> > by all drivers.
+> 
+> Perhaps that should be done rather than moving to drivers/of now and
+> then again to somewhere else.
 
-On Tue, Feb 11, 2014 at 01:36:51PM +0100, Laurent Pinchart wrote:
-> when CONFIG_OF is disabled of_match_node is defined as a macro that
-> evaluates to NULL. This breaks compilation of drivers that dereference
-> the function's return value directly. Fix it by turning the macro into a
-> static inline function that returns NULL.
+Do you have a better suggestion where it should move to?
 
-Just this past week I did the same thing, but noticed that it breaks the
-following usecase:
+drivers/gpu/drm - no, because v4l2 wants to use it
+drivers/media/video - no, because DRM drivers want to use it
+drivers/video - no, because v4l2 and drm drivers want to use it
 
-	#ifdef CONFIG_OF
-	static const struct of_device_id foobar_matches[] = {
-		{ .compatible = "foobar,whatsit", },
-		{ },
-	};
-	#endif
-	
-	static int probeme(struct platform_device *pdev)
-	{
-		struct of_device_id *id;
-	
-		id = of_match_node(foobar_matches, pdev->dev.of_node);
-		if (id) {
-			/* ... */
-		}
-		return 0;
-	}
-
-When !CONFIG_OF and with your change, this will fail to build due to
-foobar_matches being undefined.
-
-   Josh
+Maybe drivers/of-graph/ ?  Or maybe it's just as good a place to move it
+into drivers/of ?
 
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
