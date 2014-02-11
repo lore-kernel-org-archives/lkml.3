@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754632AbaBKTJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:09:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40672 "EHLO
+	id S1753488AbaBKTK3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:10:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40677 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754550AbaBKTIo (ORCPT
+	with ESMTP id S1754545AbaBKTIo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Feb 2014 14:08:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ying Xue <ying.xue@windriver.com>, Fan Du <fan.du@windriver.com>,
-        Yong Zhang <yong.zhang0@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, peterz@infradead.org,
+        Peter Boonstoppel <pboonstoppel@nvidia.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
         Ingo Molnar <mingo@kernel.org>, Li Zefan <lizefan@huawei.com>
-Subject: [PATCH 3.4 27/30] sched/rt: Avoid updating RT entry timeout twice within one tick period
-Date: Tue, 11 Feb 2014 11:06:27 -0800
-Message-Id: <20140211184647.919162730@linuxfoundation.org>
+Subject: [PATCH 3.4 26/30] sched: Unthrottle rt runqueues in __disable_runtime()
+Date: Tue, 11 Feb 2014 11:06:26 -0800
+Message-Id: <20140211184647.891254567@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184647.149512538@linuxfoundation.org>
 References: <20140211184647.149512538@linuxfoundation.org>
@@ -31,106 +30,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ying Xue <ying.xue@windriver.com>
+From: Peter Boonstoppel <pboonstoppel@nvidia.com>
 
-commit 57d2aa00dcec67afa52478730f2b524521af14fb upstream.
+commit a4c96ae319b8047f62dedbe1eac79e321c185749 upstream.
 
-The issue below was found in 2.6.34-rt rather than mainline rt
-kernel, but the issue still exists upstream as well.
+migrate_tasks() uses _pick_next_task_rt() to get tasks from the
+real-time runqueues to be migrated. When rt_rq is throttled
+_pick_next_task_rt() won't return anything, in which case
+migrate_tasks() can't move all threads over and gets stuck in an
+infinite loop.
 
-So please let me describe how it was noticed on 2.6.34-rt:
+Instead unthrottle rt runqueues before migrating tasks.
 
-On this version, each softirq has its own thread, it means there
-is at least one RT FIFO task per cpu. The priority of these
-tasks is set to 49 by default. If user launches an RT FIFO task
-with priority lower than 49 of softirq RT tasks, it's possible
-there are two RT FIFO tasks enqueued one cpu runqueue at one
-moment. By current strategy of balancing RT tasks, when it comes
-to RT tasks, we really need to put them off to a CPU that they
-can run on as soon as possible. Even if it means a bit of cache
-line flushing, we want RT tasks to be run with the least latency.
+Additionally: move unthrottle_offline_cfs_rqs() to rq_offline_fair()
 
-When the user RT FIFO task which just launched before is
-running, the sched timer tick of the current cpu happens. In this
-tick period, the timeout value of the user RT task will be
-updated once. Subsequently, we try to wake up one softirq RT
-task on its local cpu. As the priority of current user RT task
-is lower than the softirq RT task, the current task will be
-preempted by the higher priority softirq RT task. Before
-preemption, we check to see if current can readily move to a
-different cpu. If so, we will reschedule to allow the RT push logic
-to try to move current somewhere else. Whenever the woken
-softirq RT task runs, it first tries to migrate the user FIFO RT
-task over to a cpu that is running a task of lesser priority. If
-migration is done, it will send a reschedule request to the found
-cpu by IPI interrupt. Once the target cpu responds the IPI
-interrupt, it will pick the migrated user RT task to preempt its
-current task. When the user RT task is running on the new cpu,
-the sched timer tick of the cpu fires. So it will tick the user
-RT task again. This also means the RT task timeout value will be
-updated again. As the migration may be done in one tick period,
-it means the user RT task timeout value will be updated twice
-within one tick.
-
-If we set a limit on the amount of cpu time for the user RT task
-by setrlimit(RLIMIT_RTTIME), the SIGXCPU signal should be posted
-upon reaching the soft limit.
-
-But exactly when the SIGXCPU signal should be sent depends on the
-RT task timeout value. In fact the timeout mechanism of sending
-the SIGXCPU signal assumes the RT task timeout is increased once
-every tick.
-
-However, currently the timeout value may be added twice per
-tick. So it results in the SIGXCPU signal being sent earlier
-than expected.
-
-To solve this issue, we prevent the timeout value from increasing
-twice within one tick time by remembering the jiffies value of
-last updating the timeout. As long as the RT task's jiffies is
-different with the global jiffies value, we allow its timeout to
-be updated.
-
-Signed-off-by: Ying Xue <ying.xue@windriver.com>
-Signed-off-by: Fan Du <fan.du@windriver.com>
-Reviewed-by: Yong Zhang <yong.zhang0@gmail.com>
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1342508623-2887-1-git-send-email-ying.xue@windriver.com
+Signed-off-by: Peter Boonstoppel <pboonstoppel@nvidia.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Turner <pjt@google.com>
+Link: http://lkml.kernel.org/r/5FBF8E85CA34454794F0F7ECBA79798F379D3648B7@HQMAIL04.nvidia.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 [ lizf: backported to 3.4: adjust context ]
 Signed-off-by: Li Zefan <lizefan@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/sched.h |    1 +
- kernel/sched/rt.c     |    6 +++++-
- 2 files changed, 6 insertions(+), 1 deletion(-)
+ kernel/sched/core.c  |    3 ---
+ kernel/sched/fair.c  |    7 +++++--
+ kernel/sched/rt.c    |    1 +
+ kernel/sched/sched.h |    1 -
+ 4 files changed, 6 insertions(+), 6 deletions(-)
 
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1237,6 +1237,7 @@ struct sched_entity {
- struct sched_rt_entity {
- 	struct list_head run_list;
- 	unsigned long timeout;
-+	unsigned long watchdog_stamp;
- 	unsigned int time_slice;
- 	int nr_cpus_allowed;
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -5301,9 +5301,6 @@ static void migrate_tasks(unsigned int d
+ 	 */
+ 	rq->stop = NULL;
  
+-	/* Ensure any throttled groups are reachable by pick_next_task */
+-	unthrottle_offline_cfs_rqs(rq);
+-
+ 	for ( ; ; ) {
+ 		/*
+ 		 * There's this thread running, bail when that's the only
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2071,7 +2071,7 @@ static void destroy_cfs_bandwidth(struct
+ 	hrtimer_cancel(&cfs_b->slack_timer);
+ }
+ 
+-void unthrottle_offline_cfs_rqs(struct rq *rq)
++static void unthrottle_offline_cfs_rqs(struct rq *rq)
+ {
+ 	struct cfs_rq *cfs_rq;
+ 
+@@ -2125,7 +2125,7 @@ static inline struct cfs_bandwidth *tg_c
+ 	return NULL;
+ }
+ static inline void destroy_cfs_bandwidth(struct cfs_bandwidth *cfs_b) {}
+-void unthrottle_offline_cfs_rqs(struct rq *rq) {}
++static inline void unthrottle_offline_cfs_rqs(struct rq *rq) {}
+ 
+ #endif /* CONFIG_CFS_BANDWIDTH */
+ 
+@@ -5171,6 +5171,9 @@ static void rq_online_fair(struct rq *rq
+ static void rq_offline_fair(struct rq *rq)
+ {
+ 	update_sysctl();
++
++	/* Ensure any throttled groups are reachable by pick_next_task */
++	unthrottle_offline_cfs_rqs(rq);
+ }
+ 
+ #endif /* CONFIG_SMP */
 --- a/kernel/sched/rt.c
 +++ b/kernel/sched/rt.c
-@@ -2002,7 +2002,11 @@ static void watchdog(struct rq *rq, stru
- 	if (soft != RLIM_INFINITY) {
- 		unsigned long next;
+@@ -685,6 +685,7 @@ balanced:
+ 		 * runtime - in which case borrowing doesn't make sense.
+ 		 */
+ 		rt_rq->rt_runtime = RUNTIME_INF;
++		rt_rq->rt_throttled = 0;
+ 		raw_spin_unlock(&rt_rq->rt_runtime_lock);
+ 		raw_spin_unlock(&rt_b->rt_runtime_lock);
+ 	}
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -1138,7 +1138,6 @@ extern void print_rt_stats(struct seq_fi
  
--		p->rt.timeout++;
-+		if (p->rt.watchdog_stamp != jiffies) {
-+			p->rt.timeout++;
-+			p->rt.watchdog_stamp = jiffies;
-+		}
-+
- 		next = DIV_ROUND_UP(min(soft, hard), USEC_PER_SEC/HZ);
- 		if (p->rt.timeout > next)
- 			p->cputime_expires.sched_exp = p->se.sum_exec_runtime;
+ extern void init_cfs_rq(struct cfs_rq *cfs_rq);
+ extern void init_rt_rq(struct rt_rq *rt_rq, struct rq *rq);
+-extern void unthrottle_offline_cfs_rqs(struct rq *rq);
+ 
+ extern void cfs_bandwidth_usage_inc(void);
+ extern void cfs_bandwidth_usage_dec(void);
 
 
