@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755544AbaBKUaZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:30:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39869 "EHLO
+	id S1755672AbaBKUa5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:30:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39859 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753256AbaBKTGN (ORCPT
+	with ESMTP id S1753245AbaBKTGL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:13 -0500
+	Tue, 11 Feb 2014 14:06:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tommy Apel <tommyapeldk@gmail.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.13 087/120] target: Fix percpu_ref_put race in transport_lun_remove_cmd
-Date: Tue, 11 Feb 2014 11:05:28 -0800
-Message-Id: <20140211184826.094276598@linuxfoundation.org>
+        Giandomenico De Tullio <ghisha@gmail.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [PATCH 3.13 095/120] i915: remove pm_qos request on error
+Date: Tue, 11 Feb 2014 11:05:36 -0800
+Message-Id: <20140211184826.331304658@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -29,61 +30,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 5259a06ef97068b710f45d092a587e8d740f750f upstream.
+commit 22accca01713b13dac386ca90b787aadf88f6551 upstream.
 
-This patch fixes a percpu_ref_put race for se_lun->lun_ref in
-transport_lun_remove_cmd() where ->lun_ref could end up being
-put more than once per command via different target completion
-and fabric release contexts.
+Not removing pm qos request and free memory for it can cause crash,
+when some other driver use pm qos. For example, this oops:
 
-It adds a cmpxchg() for se_cmd->lun_ref_active to ensure that
-percpu_ref_put() is only ever called once per se_cmd.
+BUG: unable to handle kernel paging request at fffffffffffffff8
+IP: [<ffffffff81307a6b>] plist_add+0x5b/0xd0
+Call Trace:
+ [<ffffffff810acf25>] pm_qos_update_target+0x125/0x1e0
+ [<ffffffff810ad071>] pm_qos_add_request+0x91/0x100
+ [<ffffffffa053ec14>] e1000_open+0xe4/0x5b0 [e1000e]
 
-This bug was manifesting itself as a LUN shutdown regression
-bug in >= v3.13 code, where percpu_ref_kill() would end up
-hanging indefinately due to the incorrect percpu_ref count.
+was caused by earlier i915 probe failure:
 
-(Change se_cmd->lun_ref_active from bool -> int to force at
- least a 4-byte cmpxchg with MIPS ll/sc ins. - Fengguang)
+[drm:i915_report_and_clear_eir] *ERROR* EIR stuck: 0x00000010, masking
+[drm:init_ring_common] *ERROR* render ring initialization failed ctl 0001f001 head 00003004 tail 00000000 start 00003000
+[drm:i915_driver_load] *ERROR* failed to init modeset
+i915: probe of 0000:00:02.0 failed with error -5
 
-Reported-by: Tommy Apel <tommyapeldk@gmail.com>
-Cc: Tommy Apel <tommyapeldk@gmail.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Bug report:
+http://bugzilla.redhat.com/show_bug.cgi?id=1057533
+
+Reported-by: Giandomenico De Tullio <ghisha@gmail.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+[danvet: Drop unnecessary code movement.]
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_transport.c |    5 +++--
- include/target/target_core_base.h      |    2 +-
- 2 files changed, 4 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/i915/i915_dma.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -568,10 +568,11 @@ static void transport_lun_remove_cmd(str
- {
- 	struct se_lun *lun = cmd->se_lun;
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@ -1679,6 +1679,7 @@ out_gem_unload:
  
--	if (!lun || !cmd->lun_ref_active)
-+	if (!lun)
- 		return;
- 
--	percpu_ref_put(&lun->lun_ref);
-+	if (cmpxchg(&cmd->lun_ref_active, true, false))
-+		percpu_ref_put(&lun->lun_ref);
- }
- 
- void transport_cmd_finish_abort(struct se_cmd *cmd, int remove)
---- a/include/target/target_core_base.h
-+++ b/include/target/target_core_base.h
-@@ -497,7 +497,7 @@ struct se_cmd {
- 	void			*priv;
- 
- 	/* Used for lun->lun_ref counting */
--	bool			lun_ref_active;
-+	int			lun_ref_active;
- };
- 
- struct se_ua {
+ 	intel_teardown_gmbus(dev);
+ 	intel_teardown_mchbar(dev);
++	pm_qos_remove_request(&dev_priv->pm_qos);
+ 	destroy_workqueue(dev_priv->wq);
+ out_mtrrfree:
+ 	arch_phys_wc_del(dev_priv->gtt.mtrr);
 
 
