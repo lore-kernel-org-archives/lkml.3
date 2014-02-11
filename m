@@ -1,81 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756456AbaBKU1w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:27:52 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:53841 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755562AbaBKU1s (ORCPT
+	id S1756478AbaBKU2Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:28:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39912 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753271AbaBKTGS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 15:27:48 -0500
-Message-ID: <52FA87B8.8040203@gmail.com>
-Date: Tue, 11 Feb 2014 21:27:36 +0100
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Tue, 11 Feb 2014 14:06:18 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Greg Thelen <gthelen@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.12 016/107] memcg: fix css reference leak and endless loop in mem_cgroup_iter
+Date: Tue, 11 Feb 2014 11:04:42 -0800
+Message-Id: <20140211184748.667006388@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
+References: <20140211184748.191276235@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-To: Josh Cartwright <joshc@codeaurora.org>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-mm-sig@lists.linaro.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>, Michal Nazarewicz <mina86@mina86.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Laura Abbott <lauraa@codeaurora.org>, Rob Herring <robh+dt@gmail.com>,
-        Olof Johansson <olof@lixom.net>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Kumar Gala <galak@codeaurora.org>,
-        Nishanth Peethambaran <nishanth.p@gmail.com>,
-        Marc <marc.ceeeee@gmail.com>
-Subject: Re: [PATCH v2 1/5] drivers: of: add initialization code for reserved
- memory
-References: <1391515773-6112-1-git-send-email-m.szyprowski@samsung.com> <1391515773-6112-2-git-send-email-m.szyprowski@samsung.com> <20140205110538.99E47C40A89@trevor.secretlab.ca> <52FA0D6E.9090304@samsung.com> <20140211121316.24032C40C4D@trevor.secretlab.ca> <52FA33E2.4050004@samsung.com> <20140211190104.7E6C5C4140E@trevor.secretlab.ca> <1392148971.3835.15.camel@pasglop> <52FA8245.5050707@gmail.com> <20140211201933.GI841@joshc.qualcomm.com>
-In-Reply-To: <20140211201933.GI841@joshc.qualcomm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.12-stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: Michal Hocko <mhocko@suse.cz>
+
+commit 0eef615665ede1e0d603ea9ecca88c1da6f02234 upstream.
+
+Commit 19f39402864e ("memcg: simplify mem_cgroup_iter") has reorganized
+mem_cgroup_iter code in order to simplify it.  A part of that change was
+dropping an optimization which didn't call css_tryget on the root of the
+walked tree.  The patch however didn't change the css_put part in
+mem_cgroup_iter which excludes root.
+
+This wasn't an issue at the time because __mem_cgroup_iter_next bailed
+out for root early without taking a reference as cgroup iterators
+(css_next_descendant_pre) didn't visit root themselves.
+
+Nevertheless cgroup iterators have been reworked to visit root by commit
+bd8815a6d802 ("cgroup: make css_for_each_descendant() and friends
+include the origin css in the iteration") when the root bypass have been
+dropped in __mem_cgroup_iter_next.  This means that css_put is not
+called for root and so css along with mem_cgroup and other cgroup
+internal object tied by css lifetime are never freed.
+
+Fix the issue by reintroducing root check in __mem_cgroup_iter_next and
+do not take css reference for it.
+
+This reference counting magic protects us also from another issue, an
+endless loop reported by Hugh Dickins when reclaim races with root
+removal and css_tryget called by iterator internally would fail.  There
+would be no other nodes to visit so __mem_cgroup_iter_next would return
+NULL and mem_cgroup_iter would interpret it as "start looping from root
+again" and so mem_cgroup_iter would loop forever internally.
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Reported-by: Hugh Dickins <hughd@google.com>
+Tested-by: Hugh Dickins <hughd@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Greg Thelen <gthelen@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ mm/memcontrol.c |   18 +++++++++++++-----
+ 1 file changed, 13 insertions(+), 5 deletions(-)
+
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1079,14 +1079,22 @@ skip_node:
+ 	 * skipped and we should continue the tree walk.
+ 	 * last_visited css is safe to use because it is
+ 	 * protected by css_get and the tree walk is rcu safe.
++	 *
++	 * We do not take a reference on the root of the tree walk
++	 * because we might race with the root removal when it would
++	 * be the only node in the iterated hierarchy and mem_cgroup_iter
++	 * would end up in an endless loop because it expects that at
++	 * least one valid node will be returned. Root cannot disappear
++	 * because caller of the iterator should hold it already so
++	 * skipping css reference should be safe.
+ 	 */
+ 	if (next_css) {
+-		if ((next_css->flags & CSS_ONLINE) && css_tryget(next_css))
++		if ((next_css->flags & CSS_ONLINE) &&
++				(next_css == &root->css || css_tryget(next_css)))
+ 			return mem_cgroup_from_css(next_css);
+-		else {
+-			prev_css = next_css;
+-			goto skip_node;
+-		}
++
++		prev_css = next_css;
++		goto skip_node;
+ 	}
+ 
+ 	return NULL;
 
 
-On 11.02.2014 21:19, Josh Cartwright wrote:
-> On Tue, Feb 11, 2014 at 09:04:21PM +0100, Tomasz Figa wrote:
->>
->>
->> On 11.02.2014 21:02, Benjamin Herrenschmidt wrote:
->>> On Tue, 2014-02-11 at 19:01 +0000, Grant Likely wrote:
->>>
->>>>> except that the former IMHO better suits the definition of memory
->>>>> region, which I see as a single contiguous range of memory and can be
->>>>> simplified to have a single reg entry per region.
->>>>
->>>> My point is rather if multiple reg tuples are found in a reserved memory
->>>> node, the kernel must respect them and reserve the memory. I'm not
->>>> arguing about whether or not that makes for a good binding.
->>>
->>> agreed.
->>
->> My point is why, if the binding defines that just a single tuple should be
->> provided.
->
-> FWIW, the usecase I had mentioned in reply to Grant in the patch 5/5
-> thread [1] could make use of this.  The shared memory region is split
-> into a main chunk and several "auxiliary" chunk, but collectively these
-> regions all share the same heap state.
->
->    Josh
->
-> 1: http://lkml.kernel.org/r/20140205192502.GO20228@joshc.qualcomm.com
->
-
-The use case seems fine, but I believe it could be properly represented 
-in device tree using multiple single-reg regions as well, unless the 
-consumer can request a block of memory that crosses boundary of two 
-sub-regions specified by reg entries of single region.
-
-Best regards,
-Tomasz
