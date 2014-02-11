@@ -1,83 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751975AbaBKRWO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 12:22:14 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:41523 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751014AbaBKRWN (ORCPT
+	id S1752300AbaBKRWp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 12:22:45 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:42162 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751366AbaBKRWn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 12:22:13 -0500
-From: Pawel Moll <Pawel.Moll@arm.com>
-To: Lee Jones <lee.jones@linaro.org>
-CC: "arm@kernel.org" <arm@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	Tue, 11 Feb 2014 12:22:43 -0500
+X-AuditID: cbfec7f4-b7f796d000005a13-df-52fa5c601a81
+Message-id: <52FA5C5A.1090008@samsung.com>
+Date: Tue, 11 Feb 2014 18:22:34 +0100
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.2.0
+MIME-version: 1.0
+To: Philipp Zabel <p.zabel@pengutronix.de>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Rob Herring <robherring2@gmail.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Date: Tue, 11 Feb 2014 17:20:56 +0000
-Subject: Re: [PATCH 05/12] GPIO: gpio-generic: Add label to platform data
-Thread-Topic: [PATCH 05/12] GPIO: gpio-generic: Add label to platform data
-Thread-Index: Ac8nTZ911wFmVfqdSsCmid6Fk8Wtew==
-Message-ID: <1392139256.3380.45.camel@hornet>
-References: <1392138636-29240-1-git-send-email-pawel.moll@arm.com>
-	 <1392138636-29240-6-git-send-email-pawel.moll@arm.com>
-	 <20140211171721.GE15081@lee--X1>
-In-Reply-To: <20140211171721.GE15081@lee--X1>
-Accept-Language: en-US, en-GB
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US, en-GB
-MIME-Version: 1.0
-X-MC-Unique: 114021117205705002
-Content-Type: text/plain; charset=UTF-8
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Philipp Zabel <philipp.zabel@gmail.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Subject: Re: [RFC PATCH] [media]: of: move graph helpers from
+ drivers/media/v4l2-core to drivers/of
+References: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de>
+ <CAL_Jsq+U9zU1i+STLHMBjY5BeEP6djYnJVE5X1ix-D2q_zWztQ@mail.gmail.com>
+ <20140211145248.GI26684@n2100.arm.linux.org.uk> <8648675.AIXYyYlgXy@avalon>
+ <1392136617.6943.33.camel@pizza.hi.pengutronix.de>
+In-reply-to: <1392136617.6943.33.camel@pizza.hi.pengutronix.de>
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBLMWRmVeSWpSXmKPExsVy+t/xK7oJMb+CDP6fUbGYf+Qcq8X7jfOY
+	LA782cFocbbpDbtF58Ql7BaXd81hs+jZsJXV4vZlXouL6+Qt7t47wWKxdd45RovWvUfYLb5/
+	+8ZmsX7+LTYHPo+W5h42j52z7rJ7fPgY5zG7Yyarx6ZVnWwed67tYfPo/2vg0bdlFaPH8Rvb
+	mTw+b5IL4IrisklJzcksSy3St0vgymhYv5+poE2g4mf/fKYGxi7eLkZODgkBE4mGJ6uYIGwx
+	iQv31rN1MXJxCAksZZRYtPcTE4TziVFiyaVTLCBVvAJaErfmzAazWQRUJe69XA5mswkYSvQe
+	7WMEsUUFIiRenZ0IVS8o8WPyPTBbRCBJ4tWMp2AbmAVOsEh8Xr4PLCEskCqx9vBtVohtE5gk
+	Wo5OAbuJU8BeYvu97WwgNrOAusSkeYuYIWx5ic1r3jJPYBSYhWTJLCRls5CULWBkXsUomlqa
+	XFCclJ5rqFecmFtcmpeul5yfu4kREltfdjAuPmZ1iFGAg1GJh5fB81eQEGtiWXFl7iFGCQ5m
+	JRFeNTWgEG9KYmVValF+fFFpTmrxIUYmDk6pBsYZS1qc/3G9mae6aXqP0iGurTJ/lp/J4GFZ
+	1d0936tMn1dUg9HeRPjyj+VeRcnKKeoT/XcYt/eUbdmwx8LZ+OPfbSHPdWX/9Mz5+npF8scb
+	h/K3Lwpze8ouljv9SGAMf877juQZ8xc1OZ3pEv025fOivKpLLn+SDj08dHnlt33pS1Y+sFSN
+	n5yhxFKckWioxVxUnAgA0pOzHYsCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1BHMI8F008904
 
-On Tue, 2014-02-11 at 17:17 +0000, Lee Jones wrote:
-> > When registering more than one platform device, it is
-> > useful to set the gpio chip label in the platform data.
-> >
-> > Cc: Linus Walleij <linus.walleij@linaro.org>
-> > Cc: Alexandre Courbot <gnurou@gmail.com>
-> > Cc: Samuel Ortiz <sameo@linux.intel.com>
-> > Cc: Lee Jones <lee.jones@linaro.org>
-> > Signed-off-by: Pawel Moll <pawel.moll@arm.com>
-> > ---
-> > This patch has been already merged by Linux; it has been included
-> > for completeness only.
-> >
-> >  drivers/gpio/gpio-generic.c     | 2 ++
-> >  include/linux/basic_mmio_gpio.h | 1 +
-> >  2 files changed, 3 insertions(+)
-> >
-> > diff --git a/drivers/gpio/gpio-generic.c b/drivers/gpio/gpio-generic.c
-> > index d2196bf..8c778af 100644
-> > --- a/drivers/gpio/gpio-generic.c
-> > +++ b/drivers/gpio/gpio-generic.c
-> > @@ -531,6 +531,8 @@ static int bgpio_pdev_probe(struct platform_device *pdev)
-> >             return err;
-> >
-> >     if (pdata) {
-> > +           if (pdata->label)
->
-> Why is this check necessary?
->
-> > +                   bgc->gc.label = pdata->label;
+(adding Guennadi to Cc)
 
-Because bgc->gc.label is initialized to a default value in bgpio_init()
-and I don't want to override it with NULL if there is no label passed in
-the platform data.
+On 11/02/14 17:36, Philipp Zabel wrote:
+> Am Dienstag, den 11.02.2014, 16:23 +0100 schrieb Laurent Pinchart:
+>> Hi Russell,
+>>
+>> On Tuesday 11 February 2014 14:52:48 Russell King - ARM Linux wrote:
+>>> On Tue, Feb 11, 2014 at 07:56:33AM -0600, Rob Herring wrote:
+>>>> On Tue, Feb 11, 2014 at 5:45 AM, Philipp Zabel wrote:
+>>>>> This allows to reuse the same parser code from outside the V4L2
+>>>>> framework, most importantly from display drivers. There have been
+>>>>> patches that duplicate the code (and I am going to send one of my own),
+>>>>> such as
+>>>>> http://lists.freedesktop.org/archives/dri-devel/2013-August/043308.html
+>>>>> and others that parse the same binding in a different way:
+>>>>> https://www.mail-archive.com/linux-omap@vger.kernel.org/msg100761.html
+>>>>>
+>>>>> I think that all common video interface parsing helpers should be moved
+>>>>> to a single place, outside of the specific subsystems, so that it can
+>>>>> be reused by all drivers.
+>>>>
+>>>> Perhaps that should be done rather than moving to drivers/of now and
+>>>> then again to somewhere else.
+>>>
+>>> Do you have a better suggestion where it should move to?
+>>>
+>>> drivers/gpu/drm - no, because v4l2 wants to use it
+>>> drivers/media/video - no, because DRM drivers want to use it
+>>> drivers/video - no, because v4l2 and drm drivers want to use it
+>>
+>> Just pointing out a missing location (which might be rejected due to similar 
+>> concerns), there's also drivers/media, which isn't V4L-specific.
+> 
+> Since drivers/Makefile has media/ in obj-y, moving the graph helpers to
+> drivers/media should technically work.
+> 
+>>> Maybe drivers/of-graph/ ?  Or maybe it's just as good a place to move it
+>>> into drivers/of ?
+> 
+> include/media/of_graph.h,
+> drivers/media/of_graph.c?
 
-Pawel
+drivers/media sounds like a good alternative to me.
 
--- IMPORTANT NOTICE: The contents of this email and any attachments are confidential and may also be privileged. If you are not the intended recipient, please notify the sender immediately and do not disclose the contents to any other person, use it for any purpose, or store or copy the information in any medium.  Thank you.
+I would just remove also v4l2_of_{parse/get}* and update the users
+to call of_graph_* directly, there should not be many of them.
 
-ARM Limited, Registered office 110 Fulbourn Road, Cambridge CB1 9NJ, Registered in England & Wales, Company No:  2557590
-ARM Holdings plc, Registered office 110 Fulbourn Road, Cambridge CB1 9NJ, Registered in England & Wales, Company No:  2548782
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+--
+Thanks,
+Sylwester
+
