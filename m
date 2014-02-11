@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932373AbaBKT5V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:57:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40167 "EHLO
+	id S932384AbaBKT5x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:57:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40164 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753772AbaBKTHM (ORCPT
+	with ESMTP id S1753731AbaBKTHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:07:12 -0500
+	Tue, 11 Feb 2014 14:07:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Airlie <airlied@redhat.com>
-Subject: [PATCH 3.12 091/107] drm: ast,cirrus,mgag200: use drm_can_sleep
-Date: Tue, 11 Feb 2014 11:05:57 -0800
-Message-Id: <20140211184750.793693250@linuxfoundation.org>
+        Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+Subject: [PATCH 3.12 090/107] drm/gma500: Lock struct_mutex around cursor updates
+Date: Tue, 11 Feb 2014 11:05:56 -0800
+Message-Id: <20140211184750.766670511@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -28,56 +28,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Airlie <airlied@redhat.com>
+From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
 
-commit f4b4718b61d1d5a7442a4fd6863ea80c3a10e508 upstream.
+commit 631794b44bd3dbfba37074954d5c584c9e8725f0 upstream.
 
-these 3 were checking in_interrupt but we have situations where
-calling vunmap under this could cause a BUG to be hit in
-smp_call_function_many. Use the drm_can_sleep macro instead,
-which should stop this path from been taken in this case.
-
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=64361
+Signed-off-by: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/ast/ast_fb.c          |    2 +-
- drivers/gpu/drm/cirrus/cirrus_fbdev.c |    2 +-
- drivers/gpu/drm/mgag200/mgag200_fb.c  |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/gma500/gma_display.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/ast/ast_fb.c
-+++ b/drivers/gpu/drm/ast/ast_fb.c
-@@ -65,7 +65,7 @@ static void ast_dirty_update(struct ast_
- 	 * then the BO is being moved and we should
- 	 * store up the damage until later.
- 	 */
--	if (!in_interrupt())
-+	if (!drm_can_sleep())
- 		ret = ast_bo_reserve(bo, true);
- 	if (ret) {
- 		if (ret != -EBUSY)
---- a/drivers/gpu/drm/cirrus/cirrus_fbdev.c
-+++ b/drivers/gpu/drm/cirrus/cirrus_fbdev.c
-@@ -39,7 +39,7 @@ static void cirrus_dirty_update(struct c
- 	 * then the BO is being moved and we should
- 	 * store up the damage until later.
- 	 */
--	if (!in_interrupt())
-+	if (!drm_can_sleep())
- 		ret = cirrus_bo_reserve(bo, true);
- 	if (ret) {
- 		if (ret != -EBUSY)
---- a/drivers/gpu/drm/mgag200/mgag200_fb.c
-+++ b/drivers/gpu/drm/mgag200/mgag200_fb.c
-@@ -41,7 +41,7 @@ static void mga_dirty_update(struct mga_
- 	 * then the BO is being moved and we should
- 	 * store up the damage until later.
- 	 */
--	if (!in_interrupt())
-+	if (!drm_can_sleep())
- 		ret = mgag200_bo_reserve(bo, true);
- 	if (ret) {
- 		if (ret != -EBUSY)
+--- a/drivers/gpu/drm/gma500/gma_display.c
++++ b/drivers/gpu/drm/gma500/gma_display.c
+@@ -349,6 +349,7 @@ int gma_crtc_cursor_set(struct drm_crtc
+ 	/* If we didn't get a handle then turn the cursor off */
+ 	if (!handle) {
+ 		temp = CURSOR_MODE_DISABLE;
++		mutex_lock(&dev->struct_mutex);
+ 
+ 		if (gma_power_begin(dev, false)) {
+ 			REG_WRITE(control, temp);
+@@ -365,6 +366,7 @@ int gma_crtc_cursor_set(struct drm_crtc
+ 			gma_crtc->cursor_obj = NULL;
+ 		}
+ 
++		mutex_unlock(&dev->struct_mutex);
+ 		return 0;
+ 	}
+ 
+@@ -374,9 +376,12 @@ int gma_crtc_cursor_set(struct drm_crtc
+ 		return -EINVAL;
+ 	}
+ 
++	mutex_lock(&dev->struct_mutex);
+ 	obj = drm_gem_object_lookup(dev, file_priv, handle);
+-	if (!obj)
+-		return -ENOENT;
++	if (!obj) {
++		ret = -ENOENT;
++		goto unlock;
++	}
+ 
+ 	if (obj->size < width * height * 4) {
+ 		dev_dbg(dev->dev, "Buffer is too small\n");
+@@ -440,10 +445,13 @@ int gma_crtc_cursor_set(struct drm_crtc
+ 	}
+ 
+ 	gma_crtc->cursor_obj = obj;
++unlock:
++	mutex_unlock(&dev->struct_mutex);
+ 	return ret;
+ 
+ unref_cursor:
+ 	drm_gem_object_unreference(obj);
++	mutex_unlock(&dev->struct_mutex);
+ 	return ret;
+ }
+ 
 
 
