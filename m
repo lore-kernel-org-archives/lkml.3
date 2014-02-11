@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752231AbaBKHfr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 02:35:47 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:4755 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750807AbaBKHfG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 02:35:06 -0500
-X-IronPort-AV: E=Sophos;i="4.95,824,1384272000"; 
-   d="scan'208";a="9505336"
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-To: linux-kernel@vger.kernel.org
-Cc: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 1/9] sched: Prio: Use DEFAULT_PRIO to define NICE_TO_PRIO and PRIO_TO_NICE.
-Date: Tue, 11 Feb 2014 15:34:45 +0800
-Message-Id: <4e28ec36fb49e8906027cbbdd900ab26a149905e.1392103744.git.yangds.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <cover.1392103744.git.yangds.fnst@cn.fujitsu.com>
-References: <cover.1392103744.git.yangds.fnst@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/02/11 15:33:01,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/02/11 15:33:04,
-	Serialize complete at 2014/02/11 15:33:04
+	id S1752089AbaBKHjv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 02:39:51 -0500
+Received: from mail-bn1blp0187.outbound.protection.outlook.com ([207.46.163.187]:34741
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750825AbaBKHjs convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 02:39:48 -0500
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: "guangyu.chen@freescale.com" <guangyu.chen@freescale.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>
+CC: "broonie@kernel.org" <broonie@kernel.org>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 1/2] ASoC: fsl-spdif: big-endian support
+Thread-Topic: [PATCH 1/2] ASoC: fsl-spdif: big-endian support
+Thread-Index: AQHPJvTIhHGuF/I49EuZaw8bNa7Cepqvos2AgAAGauA=
+Date: Tue, 11 Feb 2014 07:39:44 +0000
+Message-ID: <1a10273e564a4bb7a5aafe3f01ccffa2@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1392097276-14705-1-git-send-email-Li.Xiubo@freescale.com>
+ <20140211071034.GA18803@MrMyself>
+In-Reply-To: <20140211071034.GA18803@MrMyself>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.49]
+x-forefront-prvs: 0119DC3B5E
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(51704005)(164054003)(199002)(189002)(74502001)(74662001)(47446002)(49866001)(74316001)(54316002)(51856001)(4396001)(47736001)(50986001)(47976001)(81686001)(33646001)(87266001)(74366001)(46102001)(76482001)(74706001)(53806001)(56776001)(54356001)(69226001)(31966008)(79102001)(59766001)(77982001)(63696002)(65816001)(87936001)(74876001)(2656002)(95416001)(66066001)(80022001)(81816001)(92566001)(83072002)(56816005)(81542001)(85852003)(90146001)(93516002)(76796001)(76786001)(76576001)(85306002)(81342001)(93136001)(80976001)(83322001)(86362001)(94946001)(94316002)(95666001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB444;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:7AE9C9EE.9210C423.71E187B2.86E62131.20142;InfoNoRecordsA:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is already a macro named DEFAULT_PRIO in prio.h, we can use it
-to define NICE_TO_PRIO and PRIO_TO_NICE rather than use hard coding
-of (MAX_RT_PRIO + 20).
 
-Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-cc: Peter Zijlstra <peterz@infradead.org>
-cc: Ingo Molnar <mingo@kernel.org>
----
- include/linux/sched/prio.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/sched/prio.h b/include/linux/sched/prio.h
-index 410ccb7..1ceaaa1 100644
---- a/include/linux/sched/prio.h
-+++ b/include/linux/sched/prio.h
-@@ -25,8 +25,8 @@
-  * to static priority [ MAX_RT_PRIO..MAX_PRIO-1 ],
-  * and back.
-  */
--#define NICE_TO_PRIO(nice)	(MAX_RT_PRIO + (nice) + 20)
--#define PRIO_TO_NICE(prio)	((prio) - MAX_RT_PRIO - 20)
-+#define NICE_TO_PRIO(nice)	((nice) + DEFAULT_PRIO)
-+#define PRIO_TO_NICE(prio)	((prio) - DEFAULT_PRIO)
- 
- /*
-  * 'User priority' is the nice value converted to something we
--- 
-1.8.2.1
+> > +   - big-endian : If this property is absent, the native endian mode will
+> > +   be in use as default, or the big endian mode will be in use for all the
+> > +   device registers.
+> > +
+> 
+> @Shawn
+> Does DT have an existing approach to determine if the current SoC this IP
+> uses is BE or LE? I am thinking the scenario that if all drivers support
+> BE/LE while the SoC is big-endian, all the nodes in the DT would have to
+> include a duplicated property (big-endian).
+> 
 
+@Nicolin, @Shawn
+One special scenario likes the LS1 platform, the CPU and a few devices are in
+LE mode and other devices will be in BE mode.
+
+Thanks,
+
+--
+Best Regards,
+Xiubo
