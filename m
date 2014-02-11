@@ -1,84 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751978AbaBKPnl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 10:43:41 -0500
-Received: from slow1-d.mail.gandi.net ([217.70.178.86]:47025 "EHLO
-	slow1-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750909AbaBKPnk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 10:43:40 -0500
-X-Originating-IP: 50.43.14.201
-Date: Tue, 11 Feb 2014 07:37:32 -0800
-From: Josh Triplett <josh@freedesktop.org>
-To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 5/9] rcu: Use MAX_NICE to replace hard coding of 19.
-Message-ID: <20140211153732.GA2985@leaf>
-References: <cover.1392103744.git.yangds.fnst@cn.fujitsu.com>
- <5b3bf232f41b33ab703a1595e94671b303e2d1fc.1392103744.git.yangds.fnst@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5b3bf232f41b33ab703a1595e94671b303e2d1fc.1392103744.git.yangds.fnst@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752034AbaBKPry (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 10:47:54 -0500
+Received: from ns.mm-sol.com ([37.157.136.199]:51778 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751518AbaBKPrw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 10:47:52 -0500
+Message-ID: <1392133587.12787.32.camel@iivanov-dev>
+Subject: Re: [PATCH 2/2] spi: Add Qualcomm QUP SPI controller support
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Courtney Cavin <courtney.cavin@sonymobile.com>
+Cc: Andy Gross <agross@codeaurora.org>, Mark Brown <broonie@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Alok Chauhan <alokc@codeaurora.org>,
+        Gilad Avidov <gavidov@codeaurora.org>,
+        Kiran Gunda <kgunda@codeaurora.org>,
+        Sagar Dharia <sdharia@codeaurora.org>
+Date: Tue, 11 Feb 2014 17:46:27 +0200
+In-Reply-To: <20140210202926.GV1706@sonymobile.com>
+References: <1391705868-20091-1-git-send-email-iivanov@mm-sol.com>
+	 <1391705868-20091-3-git-send-email-iivanov@mm-sol.com>
+	 <20140207073952.GA2610@qualcomm.com>
+	 <1391766753.27491.60.camel@iivanov-dev>
+	 <20140207173207.GA19974@qualcomm.com>
+	 <1392051302.2853.56.camel@iivanov-dev>
+	 <20140210174738.GA31596@qualcomm.com> <1392061304.24621.17.camel@violet>
+	 <20140210202926.GV1706@sonymobile.com>
+Content-Type: text/plain; charset="us-ascii"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 03:34:49PM +0800, Dongsheng Yang wrote:
-> Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-> cc: Josh Triplett <josh@freedesktop.org>
-> cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> cc: Peter Zijlstra <peterz@infradead.org>
-> cc: Ingo Molnar <mingo@kernel.org>
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Hi, 
 
->  kernel/rcu/torture.c | 8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
+On Mon, 2014-02-10 at 12:29 -0800, Courtney Cavin wrote: 
+> On Mon, Feb 10, 2014 at 08:41:44PM +0100, Ivan T. Ivanov wrote:
+> > 
+> > Hi,
+> > 
+> > On Mon, 2014-02-10 at 11:47 -0600, Andy Gross wrote:
+> > > On Mon, Feb 10, 2014 at 06:55:02PM +0200, Ivan T. Ivanov wrote:
+> > > 
+> > > [....]
+> > > 
+> > > > > > > Bail here?
+> > > > > > 
+> > > > > > I don't know. What will be the consequences if controller continue to
+> > > > > > operate on its default rate?
+> > > > > > 
+> > > > > 
+> > > > > It is unclear.  But if you can't set the rate that is configured or if there is
+> > > > > a misconfiguration, it's probably better to exit the probe and catch it here.
+> > > > 
+> > > > 
+> > > > My preference is to delay clock speed change till first
+> > > > SPI transfer. And use wherever transfer itself mandate.
+> > > > 
+> > > 
+> > > That works.  My only concern is that it might be nice to catch a configuration
+> > > problem early rather than wait for the SPI transfer to fail continuously.
+> > 
+> > If developer is skilled enough to know which version controller is,
+> > (s)he will be able to put the right frequency constrain here :-)
 > 
-> diff --git a/kernel/rcu/torture.c b/kernel/rcu/torture.c
-> index 732f8ae..219761d 100644
-> --- a/kernel/rcu/torture.c
-> +++ b/kernel/rcu/torture.c
-> @@ -805,7 +805,7 @@ rcu_torture_writer(void *arg)
->  	static DEFINE_RCU_RANDOM(rand);
->  
->  	VERBOSE_PRINTK_STRING("rcu_torture_writer task started");
-> -	set_user_nice(current, 19);
-> +	set_user_nice(current, MAX_NICE);
->  
->  	do {
->  		schedule_timeout_uninterruptible(1);
-> @@ -871,7 +871,7 @@ rcu_torture_fakewriter(void *arg)
->  	DEFINE_RCU_RANDOM(rand);
->  
->  	VERBOSE_PRINTK_STRING("rcu_torture_fakewriter task started");
-> -	set_user_nice(current, 19);
-> +	set_user_nice(current, MAX_NICE);
->  
->  	do {
->  		schedule_timeout_uninterruptible(1 + rcu_random(&rand)%10);
-> @@ -987,7 +987,7 @@ rcu_torture_reader(void *arg)
->  	unsigned long long ts;
->  
->  	VERBOSE_PRINTK_STRING("rcu_torture_reader task started");
-> -	set_user_nice(current, 19);
-> +	set_user_nice(current, MAX_NICE);
->  	if (irqreader && cur_ops->irq_capable)
->  		setup_timer_on_stack(&t, rcu_torture_timer, 0);
->  
-> @@ -1584,7 +1584,7 @@ static int rcu_torture_barrier_cbs(void *arg)
->  
->  	init_rcu_head_on_stack(&rcu);
->  	VERBOSE_PRINTK_STRING("rcu_torture_barrier_cbs task started");
-> -	set_user_nice(current, 19);
-> +	set_user_nice(current, MAX_NICE);
->  	do {
->  		wait_event(barrier_cbs_wq[myid],
->  			   (newphase =
-> -- 
-> 1.8.2.1
+> A developer doesn't have to have much skill at all to copy-paste DT
+> configurations around and muck with numbers....  I agree with Andy here,
+> early validation is a good idea here, at the very least, some sanity
+> checks.
+
+Actually, thinking more on this. Supplying SPI controller with, 
+let say 50MHz, which is what success of clk_set_rate() means, doesn't
+necessarily guaranteer that controller will be able to do transfers
+properly, right? Setting frequency at this point didn't bring any
+benefit. 
+
+Regards,
+Ivan
+
+
 > 
+> -Courtney
+
+
