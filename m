@@ -1,71 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751722AbaBKJMn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 04:12:43 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:49130 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750863AbaBKJMh (ORCPT
+	id S1751813AbaBKJO1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 04:14:27 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:24793 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374AbaBKJOV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 04:12:37 -0500
-Date: Tue, 11 Feb 2014 01:12:28 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Kent Overstreet <kmo@daterainc.com>,
-        Alexander Gordeev <agordeev@redhat.com>, Shaohua Li <shli@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: [patch 1/2]percpu_ida: fix a live lock
-Message-ID: <20140211091228.GA25567@infradead.org>
-References: <20140104210804.GA24199@kmo-pixel>
- <20140105131300.GB4186@kernel.org>
- <20140106204641.GB9037@kmo>
- <52CB1783.4050205@kernel.dk>
- <20140106214726.GD9037@kmo>
- <20140209155006.GA16149@dhcp-26-207.brq.redhat.com>
- <20140210103211.GA28396@infradead.org>
- <52F8FDA7.7070809@kernel.dk>
- <20140210224145.GB2362@kmo>
- <52F95B73.7030205@kernel.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52F95B73.7030205@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 11 Feb 2014 04:14:21 -0500
+X-AuditID: cbfec7f4-b7f796d000005a13-e0-52f9e9ea265d
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>, stable@vger.kernel.org
+Subject: [PATCH] mfd: sec-core: Fix possible NULL pointer dereference when
+ i2c_new_dummy error
+Date: Tue, 11 Feb 2014 10:12:25 +0100
+Message-id: <1392109945-333-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKJMWRmVeSWpSXmKPExsVy+t/xK7qvXv4MMth/VcRi44z1rBavXxha
+	nG16w25x/+tRRovLu+awWcw4v4/JYu2Ru+wWp7tZLS6u+MJksWDjI0YHLo871/awecw7GejR
+	t2UVo8fnTXIBLFFcNimpOZllqUX6dglcGU87vjMWPOSoWPV4E1MD4xr2LkZODgkBE4nXP+Yw
+	Q9hiEhfurWcDsYUEljJK3J3M2sXIBWT3MUmced/OCJJgEzCW2Lx8CRtIQkRgM6PE4u9XwaqY
+	Be4ySjTffQ9WJSyQILH88nVWEJtFQFViyq+bYHFeAVeJHQsvAK3jAFqnIDFnks0ERu4FjAyr
+	GEVTS5MLipPScw31ihNzi0vz0vWS83M3MUKC5ssOxsXHrA4xCnAwKvHwblD8GSTEmlhWXJl7
+	iFGCg1lJhFfpOFCINyWxsiq1KD++qDQntfgQIxMHp1QD4/yEN9c2hvbtrRWP0V8i2uWklczP
+	E6X9pD/0uEhL3ZfXgqd01t33tl9/u+5mo1Cnpe28pmctoYcDmH+HXxAoWeKpu6/BZoaaiVN5
+	xwFZBb4bPfdmLih8z314yUEFtzupx/hPh1ox/3+fvePs7FsMobu6vi2pVbvIt8OoTLX/z9O+
+	9dMC2R+6KrEUZyQaajEXFScCAOp6bJr4AQAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 04:06:27PM -0700, Jens Axboe wrote:
-> For the common case, I'd assume that anywhere between 31..256 tags
-> is "normal". That's where the majority of devices will end up being,
-> largely. So single digits would be an anomaly.
+During probe the sec-core driver allocates dummy I2C device for RTC with
+i2c_new_dummy() but return value is not checked. In case of error
+(i2c_new_device(): memory allocation failure or I2C address cannot be
+used) this function returns NULL which is later used by
+devm_regmap_init_i2c() or i2c_unregister_device().
 
-Unfortunately that's not true in SCSI land, where most driver do per-lun
-tagging, and the the cmd_per_lun values are very low and very often
-single digits, as a simple grep for cmd_per_lun will tell.  Now it might
-be that the tag space actually is much bigger in the hardware and the
-driver authors for some reason want to limit the number of outstanding
-commands, but the interface to the drivers doesn't allow them to express
-such a difference at the moment.
+If i2c_new_dummy() fails for RTC device, fail also the probe for main
+MFD driver.
 
-> >How about we just make the number of tags that are allowed to be stranded an
-> >explicit parameter (somehow) - then it can be up to device drivers to do
-> >something sensible with it. Half is probably an ideal default for devices where
-> >that works, but this way more constrained devices will be able to futz with it
-> >however they want.
-> 
-> I don't think we should involve device drivers in this, that's
-> punting a complicated issue to someone who likely has little idea
-> what to do about it. This needs to be handled sensibly in the core,
-> not in a device driver. If we can't come up with a sensible
-> algorithm to handle this, how can we expect someone writing a device
-> driver to do so?
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: stable@vger.kernel.org
+---
+ drivers/mfd/sec-core.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-Agreed, punting this to the drivers is a bad idea.  But at least
-exposing variable for the allowed tag space and allowed outstanding
-commands to be able to make a smarter decision might be a good idea.  On
-the other hand this will require us to count the outstanding commands
-again, introducing more cachelines touched than nessecary.  To make
-things worse for complex topologies like SCSI we might have to limit the
-outstanding commands at up to three levels in the hierarchy.
+diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
+index a139798b8065..7c6ce2e4aaa6 100644
+--- a/drivers/mfd/sec-core.c
++++ b/drivers/mfd/sec-core.c
+@@ -252,6 +252,10 @@ static int sec_pmic_probe(struct i2c_client *i2c,
+ 	}
+ 
+ 	sec_pmic->rtc = i2c_new_dummy(i2c->adapter, RTC_I2C_ADDR);
++	if (!sec_pmic->rtc) {
++		dev_err(&i2c->dev, "Failed to allocate I2C for RTC\n");
++		return -ENODEV;
++	}
+ 	i2c_set_clientdata(sec_pmic->rtc, sec_pmic);
+ 
+ 	sec_pmic->regmap_rtc = devm_regmap_init_i2c(sec_pmic->rtc,
+-- 
+1.7.9.5
+
