@@ -1,224 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752451AbaBKR1Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 12:27:25 -0500
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:46369 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751460AbaBKR1W (ORCPT
+	id S1752065AbaBKR3d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 12:29:33 -0500
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:53362 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751703AbaBKR3a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 12:27:22 -0500
-Date: Tue, 11 Feb 2014 12:27:19 -0500 (EST)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-cc: mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
-        rjw@rjwysocki.net, preeti@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] idle/cpuidle: Split cpuidle_idle_call main function
- into smaller functions
-In-Reply-To: <1392131491-5265-1-git-send-email-daniel.lezcano@linaro.org>
-Message-ID: <alpine.LFD.2.11.1402111226370.17677@knanqh.ubzr>
-References: <1392131491-5265-1-git-send-email-daniel.lezcano@linaro.org>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	Tue, 11 Feb 2014 12:29:30 -0500
+Date: Tue, 11 Feb 2014 17:29:18 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH 08/12] mfd: vexpress-sysreg: Add syscon labels as
+ platform data
+Message-ID: <20140211172918.GH15081@lee--X1>
+References: <1392138636-29240-1-git-send-email-pawel.moll@arm.com>
+ <1392138636-29240-9-git-send-email-pawel.moll@arm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1392138636-29240-9-git-send-email-pawel.moll@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Feb 2014, Daniel Lezcano wrote:
+> This patch adds label names for syscon registers as platform
+> data for the relevant MFD cells.
 
-> In order to allow better integration between the cpuidle framework and the
-> scheduler, reducing the distance between these two sub-components will
-> facilitate this integration by moving part of the cpuidle code in the idle
-> task file and, because idle.c is in the sched directory, we have access to
-> the scheduler's private structures.
-> 
-> This patch splits the cpuidle_idle_call main entry function into 3 calls
-> to a newly added API:
->  1. select the idle state
->  2. enter the idle state
->  3. reflect the idle state
-> 
-> The cpuidle_idle_call calls these three functions to implement the main
-> idle entry function.
-> 
-> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Okay, I see.
 
-Acked-by: Nicolas Pitre <nico@linaro.org>
+Hmm... not sure I like this at all. It seems awfully as though you're
+bending current infrastructure to suit your needs. There must be better
+ways of passing a name than through pdata, and if there isn't I'd
+suggest setting up a sysconf pdata struct that others can use in case
+they wish to expand the functionality further in some other
+unfathomable way. :)
 
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Cc: Lee Jones <lee.jones@linaro.org>
+> Signed-off-by: Pawel Moll <pawel.moll@arm.com>
 > ---
->  drivers/cpuidle/cpuidle.c |  102 ++++++++++++++++++++++++++++++++-------------
->  include/linux/cpuidle.h   |   14 +++++++
->  2 files changed, 87 insertions(+), 29 deletions(-)
+>  drivers/mfd/vexpress-sysreg.c | 12 ++++++++++++
+>  1 file changed, 12 insertions(+)
 > 
-> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-> index a55e68f..172ab6a 100644
-> --- a/drivers/cpuidle/cpuidle.c
-> +++ b/drivers/cpuidle/cpuidle.c
-> @@ -108,6 +108,71 @@ int cpuidle_enter_state(struct cpuidle_device *dev, struct cpuidle_driver *drv,
->  }
+> diff --git a/drivers/mfd/vexpress-sysreg.c b/drivers/mfd/vexpress-sysreg.c
+> index ece5ac8..57c21a0 100644
+> --- a/drivers/mfd/vexpress-sysreg.c
+> +++ b/drivers/mfd/vexpress-sysreg.c
+> @@ -132,6 +132,8 @@ void __init vexpress_sysreg_early_init(void __iomem *base)
 >  
->  /**
-> + * cpuidle_select - ask the cpuidle framework to choose an idle state
-> + *
-> + * @drv: the cpuidle driver
-> + * @dev: the cpuidle device
-> + *
-> + * Returns the index of the idle state. On error it returns:
-> + * -NODEV : the cpuidle framework is not available
-> + * -EBUSY : the cpuidle framework is not initialized
-> + */
-> +int cpuidle_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
-> +{
-> +	if (off || !initialized)
-> +		return -ENODEV;
-> +
-> +	if (!drv || !dev || !dev->enabled)
-> +		return -EBUSY;
-> +
-> +	return cpuidle_curr_governor->select(drv, dev);
-> +}
-> +
-> +/**
-> + * cpuidle_enter - enter into the specified idle state
-> + *
-> + * @drv:   the cpuidle driver tied with the cpu
-> + * @dev:   the cpuidle device
-> + * @index: the index in the idle state table
-> + *
-> + * Returns the index in the idle state, < 0 in case of error.
-> + * The error code depends on the backend driver
-> + */
-> +int cpuidle_enter(struct cpuidle_driver *drv, struct cpuidle_device *dev,
-> +		  int index)
-> +{
-> +	int entered_state;
-> +	bool broadcast = !!(drv->states[index].flags & CPUIDLE_FLAG_TIMER_STOP);
-> +
-> +	if (broadcast)
-> +		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &dev->cpu);
-> +
-> +	if (cpuidle_state_is_coupled(dev, drv, index))
-> +		entered_state = cpuidle_enter_state_coupled(dev, drv, index);
-> +	else
-> +		entered_state = cpuidle_enter_state(dev, drv, index);
-> +
-> +	if (broadcast)
-> +		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &dev->cpu);
-> +
-> +	return entered_state;
-> +}
-> +
-> +/**
-> + * cpuidle_reflect - tell the underlying governor what was the state
-> + * we were in
-> + *
-> + * @dev  : the cpuidle device
-> + * @index: the index in the idle state table
-> + *
-> + */
-> +void cpuidle_reflect(struct cpuidle_device *dev, int index)
-> +{
-> +	if (cpuidle_curr_governor->reflect)
-> +		cpuidle_curr_governor->reflect(dev, index);
-> +}
-> +
-> +/**
->   * cpuidle_idle_call - the main idle loop
->   *
->   * NOTE: no locks or semaphores should be used here
-> @@ -116,51 +181,30 @@ int cpuidle_enter_state(struct cpuidle_device *dev, struct cpuidle_driver *drv,
->  int cpuidle_idle_call(void)
->  {
->  	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
-> -	struct cpuidle_driver *drv;
-> +	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
->  	int next_state, entered_state;
-> -	bool broadcast;
-> -
-> -	if (off || !initialized)
-> -		return -ENODEV;
-> -
-> -	/* check if the device is ready */
-> -	if (!dev || !dev->enabled)
-> -		return -EBUSY;
-> -
-> -	drv = cpuidle_get_cpu_driver(dev);
+>  /* The sysreg block is just a random collection of various functions... */
 >  
->  	/* ask the governor for the next state */
-> -	next_state = cpuidle_curr_governor->select(drv, dev);
-> +	next_state = cpuidle_select(drv, dev);
-> +	if (next_state < 0)
-> +		return next_state;
+> +static const char vexpress_sysreg_sys_id_pdata[] = "sys_id";
 > +
->  	if (need_resched()) {
->  		dev->last_residency = 0;
->  		/* give the governor an opportunity to reflect on the outcome */
-> -		if (cpuidle_curr_governor->reflect)
-> -			cpuidle_curr_governor->reflect(dev, next_state);
-> +		cpuidle_reflect(dev, next_state);
->  		local_irq_enable();
->  		return 0;
->  	}
+>  static struct bgpio_pdata vexpress_sysreg_sys_led_pdata = {
+>  	.label = "sys_led",
+>  	.base = -1,
+> @@ -150,6 +152,10 @@ static struct bgpio_pdata vexpress_sysreg_sys_flash_pdata = {
+>  	.ngpio = 1,
+>  };
 >  
->  	trace_cpu_idle_rcuidle(next_state, dev->cpu);
->  
-> -	broadcast = !!(drv->states[next_state].flags & CPUIDLE_FLAG_TIMER_STOP);
-> -
-> -	if (broadcast)
-> -		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &dev->cpu);
-> -
-> -	if (cpuidle_state_is_coupled(dev, drv, next_state))
-> -		entered_state = cpuidle_enter_state_coupled(dev, drv,
-> -							    next_state);
-> -	else
-> -		entered_state = cpuidle_enter_state(dev, drv, next_state);
-> -
-> -	if (broadcast)
-> -		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &dev->cpu);
-> +	entered_state = cpuidle_enter(drv, dev, next_state);
->  
->  	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, dev->cpu);
->  
->  	/* give the governor an opportunity to reflect on the outcome */
-> -	if (cpuidle_curr_governor->reflect)
-> -		cpuidle_curr_governor->reflect(dev, entered_state);
-> +	cpuidle_reflect(dev, entered_state);
->  
->  	return 0;
->  }
-> diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
-> index 50fcbb0..bf06f37 100644
-> --- a/include/linux/cpuidle.h
-> +++ b/include/linux/cpuidle.h
-> @@ -119,6 +119,13 @@ struct cpuidle_driver {
->  
->  #ifdef CONFIG_CPU_IDLE
->  extern void disable_cpuidle(void);
+> +static const char vexpress_sysreg_sys_misc_pdata[] = "sys_misc";
 > +
-> +extern int cpuidle_select(struct cpuidle_driver *drv,
-> +			  struct cpuidle_device *dev);
-> +extern int cpuidle_enter(struct cpuidle_driver *drv,
-> +			 struct cpuidle_device *dev, int index);
-> +extern void cpuidle_reflect(struct cpuidle_device *dev, int index);
+> +static const char vexpress_sysreg_sys_procid_pdata[] = "sys_procid";
 > +
->  extern int cpuidle_idle_call(void);
->  extern int cpuidle_register_driver(struct cpuidle_driver *drv);
->  extern struct cpuidle_driver *cpuidle_get_driver(void);
-> @@ -141,6 +148,13 @@ extern int cpuidle_play_dead(void);
->  extern struct cpuidle_driver *cpuidle_get_cpu_driver(struct cpuidle_device *dev);
->  #else
->  static inline void disable_cpuidle(void) { }
-> +static inline int cpuidle_select(struct cpuidle_driver *drv,
-> +				 struct cpuidle_device *dev)
-> +{return -ENODEV; }
-> +static inline int cpuidle_enter(struct cpuidle_driver *drv,
-> +				struct cpuidle_device *dev, int index)
-> +{return -ENODEV; }
-> +static inline void cpuidle_reflect(struct cpuidle_device *dev, int index) { }
->  static inline int cpuidle_idle_call(void) { return -ENODEV; }
->  static inline int cpuidle_register_driver(struct cpuidle_driver *drv)
->  {return -ENODEV; }
-> -- 
-> 1.7.9.5
-> 
+>  static struct mfd_cell vexpress_sysreg_cells[] = {
+>  	{
+>  		.name = "syscon",
+> @@ -157,6 +163,8 @@ static struct mfd_cell vexpress_sysreg_cells[] = {
+>  		.resources = (struct resource []) {
+>  			DEFINE_RES_MEM(SYS_ID, 0x4),
+>  		},
+> +		.platform_data = &vexpress_sysreg_sys_id_pdata,
+> +		.pdata_size = sizeof(vexpress_sysreg_sys_id_pdata),
+>  	}, {
+>  		.name = "basic-mmio-gpio",
+>  		.of_compatible = "arm,vexpress-sysreg,sys_led",
+> @@ -190,12 +198,16 @@ static struct mfd_cell vexpress_sysreg_cells[] = {
+>  		.resources = (struct resource []) {
+>  			DEFINE_RES_MEM(SYS_MISC, 0x4),
+>  		},
+> +		.platform_data = &vexpress_sysreg_sys_misc_pdata,
+> +		.pdata_size = sizeof(vexpress_sysreg_sys_misc_pdata),
+>  	}, {
+>  		.name = "syscon",
+>  		.num_resources = 1,
+>  		.resources = (struct resource []) {
+>  			DEFINE_RES_MEM(SYS_PROCID0, 0x8),
+>  		},
+> +		.platform_data = &vexpress_sysreg_sys_procid_pdata,
+> +		.pdata_size = sizeof(vexpress_sysreg_sys_procid_pdata),
+>  	}, {
+>  		.name = "vexpress-syscfg",
+>  		.num_resources = 1,
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
