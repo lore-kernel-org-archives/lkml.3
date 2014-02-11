@@ -1,133 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751926AbaBKLCV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 06:02:21 -0500
-Received: from mga09.intel.com ([134.134.136.24]:27638 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751415AbaBKLCU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 06:02:20 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,825,1384329600"; 
-   d="scan'208";a="473330323"
-Message-ID: <1392116552.28501.10.camel@sagar-desktop>
-Subject: Re: [PATCH v2 02/11] drm: Add support_bits parameter to
- drm_property_create_bitmask()
-From: Sagar Arun Kamble <sagar.a.kamble@intel.com>
-To: ville.syrjala@linux.intel.com
-Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        David Airlie <airlied@linux.ie>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Rob Clark <robdclark@gmail.com>, dri-devel@lists.freedesktop.org
-Date: Tue, 11 Feb 2014 16:32:32 +0530
-In-Reply-To: <1392041145-5691-1-git-send-email-ville.syrjala@linux.intel.com>
-References: <20140210134311.GL3891@intel.com>
-	 <1392041145-5691-1-git-send-email-ville.syrjala@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1751935AbaBKLCt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 06:02:49 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:50660 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750863AbaBKLCr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 06:02:47 -0500
+Date: Tue, 11 Feb 2014 12:02:42 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Don Zickus <dzickus@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Joe Mario <jmario@redhat.com>, Richard Fowles <fowles@inreach.com>
+Subject: Re: [PATCH 00/21] perf, c2c: Add new tool to analyze cacheline
+ contention on NUMA systems
+Message-ID: <20140211110242.GU9987@twins.programming.kicks-ass.net>
+References: <1392053356-23024-1-git-send-email-dzickus@redhat.com>
+ <20140210212955.GC5002@laptop.programming.kicks-ass.net>
+ <CABPqkBRzvfcdKGG4yY9q1PmtVL5Z=9H1RzHg8QDMN42a7=AF6A@mail.gmail.com>
+ <20140211071401.GG27965@twins.programming.kicks-ass.net>
+ <CABPqkBRn+AVUA-KTx-JQ28j1NhE4pDQe5vjb5NKGx0jrZq8g_Q@mail.gmail.com>
+ <20140211105217.GS9987@twins.programming.kicks-ass.net>
+ <CABPqkBROriDQa5-b-w45zV+2gS94oEW1c_bYwGmYAeYcqPoUog@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBROriDQa5-b-w45zV+2gS94oEW1c_bYwGmYAeYcqPoUog@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reviewed-by: Sagar Kamble <sagar.a.kamble@intel.com>
-Tested-by: Sagar Kamble <sagar.a.kamble@intel.com>
+On Tue, Feb 11, 2014 at 11:58:45AM +0100, Stephane Eranian wrote:
+> On Tue, Feb 11, 2014 at 11:52 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Tue, Feb 11, 2014 at 11:35:45AM +0100, Stephane Eranian wrote:
+> >> On Tue, Feb 11, 2014 at 8:14 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> >> >
+> >> > That blows; how much is missing?
+> >>
+> >> They need to annotate load and stores. I asked for that feature a while ago.
+> >> It will come.
+> >
+> > And there is no way to deduce the information? We have type information
+> > for all arguments and local variables, right? So we can follow that.
+> >
+> > struct foo {
+> >         int ponies;
+> >         int moar_ponies;
+> > };
+> >
+> > struct bar {
+> >         int my_ponies;
+> >         struct foo *foo;
+> > };
+> >
+> > int moo(struct bar *bar)
+> > {
+> >         return bar->foo->moar_ponies;
+> > }
+> >
+> > Since we have the argument type, we can find the type for both loads,
+> > the first load:
+> >
+> >   *bar+8, we know is: struct foo * bar::foo
+> >   *foo+4, we know is: int foo::moar_ponies
+> >
+> > Or am I missing something?
+> 
+> How do you know that load at addr 0x1000 is accessing variable bar?
+> The IP gives you line number, and then what?
+> I think dwarf has the mapping regs -> variable and yes, the type info.
+> But I am not sure that's enough.
 
-On Mon, 2014-02-10 at 16:05 +0200, ville.syrjala@linux.intel.com wrote:
-> From: Ville Syrjälä <ville.syrjala at linux.intel.com>
-> 
-> Make drm_property_create_bitmask() a bit more generic by allowing the
-> caller to specify which bits are in fact supported. This allows multiple
-> callers to use the same enum list, but still create different versions
-> of the same property with different list of supported bits.
-> 
-> v2: Populate values[] array as non-sparse
->     Make supported_bits 64bit
->     Fix up omapdrm call site (Rob)
-> 
-> Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
-> Cc: Rob Clark <robdclark@gmail.com>
-> Cc: Sagar Kamble <sagar.a.kamble@intel.com>
-> Cc: dri-devel@lists.freedesktop.org
-> Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
-> ---
-> This should also make my original "drm: Add drm_mode_create_rotation_property()"
-> patch do the right thing. So patch 03/11 of the series needs to be replaced with the
-> original.
-> 
->  drivers/gpu/drm/drm_crtc.c           | 18 ++++++++++++++----
->  drivers/gpu/drm/omapdrm/omap_plane.c |  5 ++++-
->  include/drm/drm_crtc.h               |  3 ++-
->  3 files changed, 20 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
-> index 3b7d32d..6e099069 100644
-> --- a/drivers/gpu/drm/drm_crtc.c
-> +++ b/drivers/gpu/drm/drm_crtc.c
-> @@ -2906,10 +2906,12 @@ EXPORT_SYMBOL(drm_property_create_enum);
->  struct drm_property *drm_property_create_bitmask(struct drm_device *dev,
->  					 int flags, const char *name,
->  					 const struct drm_prop_enum_list *props,
-> -					 int num_values)
-> +					 int num_props,
-> +					 uint64_t supported_bits)
->  {
->  	struct drm_property *property;
-> -	int i, ret;
-> +	int i, ret, index = 0;
-> +	int num_values = hweight64(supported_bits);
->  
->  	flags |= DRM_MODE_PROP_BITMASK;
->  
-> @@ -2917,8 +2919,16 @@ struct drm_property *drm_property_create_bitmask(struct drm_device *dev,
->  	if (!property)
->  		return NULL;
->  
-> -	for (i = 0; i < num_values; i++) {
-> -		ret = drm_property_add_enum(property, i,
-> +	for (i = 0; i < num_props; i++) {
-> +		if (!(supported_bits & (1ULL << props[i].type)))
-> +			continue;
-> +
-> +		if (WARN_ON(index >= num_values)) {
-> +			drm_property_destroy(dev, property);
-> +			return NULL;
-> +		}
-> +
-> +		ret = drm_property_add_enum(property, index++,
->  				      props[i].type,
->  				      props[i].name);
->  		if (ret) {
-> diff --git a/drivers/gpu/drm/omapdrm/omap_plane.c b/drivers/gpu/drm/omapdrm/omap_plane.c
-> index 046d5e6..0d97650 100644
-> --- a/drivers/gpu/drm/omapdrm/omap_plane.c
-> +++ b/drivers/gpu/drm/omapdrm/omap_plane.c
-> @@ -309,7 +309,10 @@ void omap_plane_install_properties(struct drm_plane *plane,
->  					{ DRM_REFLECT_Y,  "reflect-y" },
->  			};
->  			prop = drm_property_create_bitmask(dev, 0, "rotation",
-> -					props, ARRAY_SIZE(props));
-> +					props, ARRAY_SIZE(props),
-> +					BIT(DRM_ROTATE_0) | BIT(DRM_ROTATE_90) |
-> +					BIT(DRM_ROTATE_180) | BIT(DRM_ROTATE_270) |
-> +					BIT(DRM_REFLECT_X) | BIT(DRM_REFLECT_Y));
->  			if (prop == NULL)
->  				return;
->  			priv->rotation_prop = prop;
-> diff --git a/include/drm/drm_crtc.h b/include/drm/drm_crtc.h
-> index d5c46c1..4e6d2aa 100644
-> --- a/include/drm/drm_crtc.h
-> +++ b/include/drm/drm_crtc.h
-> @@ -1070,7 +1070,8 @@ extern struct drm_property *drm_property_create_enum(struct drm_device *dev, int
->  struct drm_property *drm_property_create_bitmask(struct drm_device *dev,
->  					 int flags, const char *name,
->  					 const struct drm_prop_enum_list *props,
-> -					 int num_values);
-> +					 int num_props,
-> +					 uint64_t supported_bits);
->  struct drm_property *drm_property_create_range(struct drm_device *dev, int flags,
->  					 const char *name,
->  					 uint64_t min, uint64_t max);
-
+Ah, but if you have the instruction, you can decode it and obtain the
+reg and thus type-info, no?
 
