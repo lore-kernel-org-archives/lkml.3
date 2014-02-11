@@ -1,44 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753090AbaBKW0v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 17:26:51 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:60299 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751818AbaBKW0s (ORCPT
+	id S1752842AbaBKW3k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 17:29:40 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42255 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751622AbaBKW3i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 17:26:48 -0500
-Date: Tue, 11 Feb 2014 14:26:45 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org
-Subject: Re: [PATCH] x86: fix two sparse warnings in early boot string
- handling
-In-Reply-To: <1392143619-11453-1-git-send-email-paul.gortmaker@windriver.com>
-Message-ID: <alpine.DEB.2.02.1402111425430.32020@chino.kir.corp.google.com>
-References: <1392143619-11453-1-git-send-email-paul.gortmaker@windriver.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 11 Feb 2014 17:29:38 -0500
+Message-ID: <1392157761.13418.26.camel@fourier>
+Subject: Re: [PATCH 3.8 070/124] x86: Add check for number of available
+ vectors before CPU down
+From: Kamal Mostafa <kamal@canonical.com>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team <kernel-team@lists.ubuntu.com>,
+        Andi Kleen <ak@linux.intel.com>, Michel Lespinasse <walken@google.com>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        Yang Zhang <yang.z.zhang@Intel.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Janet Morgan <janet.morgan@Intel.com>, Tony Luck <tony.luck@Intel.com>,
+        Ruiv Wang <ruiv.wang@gmail.com>, Gong Chen <gong.chen@linux.intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Date: Tue, 11 Feb 2014 14:29:21 -0800
+In-Reply-To: <52F973E0.7030400@redhat.com>
+References: <1392061264-28124-1-git-send-email-kamal@canonical.com>
+	 <1392061264-28124-71-git-send-email-kamal@canonical.com>
+	 <52F973E0.7030400@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Feb 2014, Paul Gortmaker wrote:
+On Mon, 2014-02-10 at 19:50 -0500, Prarit Bhargava wrote:
+> 
+> On 02/10/2014 02:40 PM, Kamal Mostafa wrote:
+> > 3.8.13.18 -stable review patch.  If anyone has any objections, please let me know.
+> > 
+> 
+> There are some additional fixes required in this code.  I'll push a stable
+> request when they are committed to linux.git.
+> 
+> P.
 
-> Fixes:
-> 
-> arch/x86/boot/compressed/../string.c:60:14: warning: symbol 'atou' was not declared. Should it be static?
-> arch/x86/boot/string.c:133:6: warning: symbol 'strstr' was not declared. Should it be static?
-> 
-> The atou one could be considered a false positive; it seems somehow
-> caused by including ./string.c from within /compressed/string.c file.
-> However git grep shows only the atou prototype and declaration, so
-> it is completely unused and we can hence delete it.
-> 
 
-Declaring a prototype in a header file would be pointless if there is no 
-current breakage; I don't see why you can't remove strstr() in 
-arch/x86/boot/string.c entirely.  What breaks?
+Thanks Prarit.  I've dropped this from the 3.8-stable queue:
+
+        Author: Prarit Bhargava <prarit@redhat.com>
+        Date:   Mon Jan 13 06:51:01 2014 -0500
+        
+            x86: Add check for number of available vectors before CPU down
+            
+            commit da6139e49c7cb0f4251265cb5243b8d220adb48d upstream.
+            
+
+ -Kamal
+
+
