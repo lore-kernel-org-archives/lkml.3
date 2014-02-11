@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754606AbaBKUjk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:39:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39775 "EHLO
+	id S1754698AbaBKUkI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:40:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39772 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753094AbaBKTF5 (ORCPT
+	with ESMTP id S1753084AbaBKTF5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Feb 2014 14:05:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ilia Mirkin <imirkin@alum.mit.edu>
-Subject: [PATCH 3.13 089/120] drm/nouveau/falcon: use vmalloc to create firwmare copies
-Date: Tue, 11 Feb 2014 11:05:30 -0800
-Message-Id: <20140211184826.150024123@linuxfoundation.org>
+        "Sabrina Dubroca" <sd@queasysnail.net>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [PATCH 3.13 106/120] drm/mgag200,ast,cirrus: fix regression with drm_can_sleep conversion
+Date: Tue, 11 Feb 2014 11:05:47 -0800
+Message-Id: <20140211184826.658135246@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -28,77 +29,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ilia Mirkin <imirkin@alum.mit.edu>
+From: Dave Airlie <airlied@redhat.com>
 
-commit 90d6db1635d5e225623af2e2e859feb607345287 upstream.
+commit 8b7ad1bb3d440da888f2a939dc870eba429b9192 upstream.
 
-Some firmware images may be large (64K), so using kmalloc memory is
-inappropriate for them. Use vmalloc instead, to avoid high-order
-allocation failures.
+I totally sign inverted my way out of this one.
 
-Signed-off-by: Ilia Mirkin <imirkin@alum.mit.edu>
+Reported-by: "Sabrina Dubroca" <sd@queasysnail.net>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/core/engine/falcon.c |   20 +++++++++++++++-----
- 1 file changed, 15 insertions(+), 5 deletions(-)
+ drivers/gpu/drm/ast/ast_fb.c          |    2 +-
+ drivers/gpu/drm/cirrus/cirrus_fbdev.c |    2 +-
+ drivers/gpu/drm/mgag200/mgag200_fb.c  |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/nouveau/core/engine/falcon.c
-+++ b/drivers/gpu/drm/nouveau/core/engine/falcon.c
-@@ -56,6 +56,16 @@ _nouveau_falcon_wr32(struct nouveau_obje
- 	nv_wr32(falcon, falcon->addr + addr, data);
- }
- 
-+static void *
-+vmemdup(const void *src, size_t len)
-+{
-+	void *p = vmalloc(len);
-+
-+	if (p)
-+		memcpy(p, src, len);
-+	return p;
-+}
-+
- int
- _nouveau_falcon_init(struct nouveau_object *object)
- {
-@@ -111,7 +121,7 @@ _nouveau_falcon_init(struct nouveau_obje
- 
- 		ret = request_firmware(&fw, name, &device->pdev->dev);
- 		if (ret == 0) {
--			falcon->code.data = kmemdup(fw->data, fw->size, GFP_KERNEL);
-+			falcon->code.data = vmemdup(fw->data, fw->size);
- 			falcon->code.size = fw->size;
- 			falcon->data.data = NULL;
- 			falcon->data.size = 0;
-@@ -134,7 +144,7 @@ _nouveau_falcon_init(struct nouveau_obje
- 			return ret;
- 		}
- 
--		falcon->data.data = kmemdup(fw->data, fw->size, GFP_KERNEL);
-+		falcon->data.data = vmemdup(fw->data, fw->size);
- 		falcon->data.size = fw->size;
- 		release_firmware(fw);
- 		if (!falcon->data.data)
-@@ -149,7 +159,7 @@ _nouveau_falcon_init(struct nouveau_obje
- 			return ret;
- 		}
- 
--		falcon->code.data = kmemdup(fw->data, fw->size, GFP_KERNEL);
-+		falcon->code.data = vmemdup(fw->data, fw->size);
- 		falcon->code.size = fw->size;
- 		release_firmware(fw);
- 		if (!falcon->code.data)
-@@ -235,8 +245,8 @@ _nouveau_falcon_fini(struct nouveau_obje
- 	if (!suspend) {
- 		nouveau_gpuobj_ref(NULL, &falcon->core);
- 		if (falcon->external) {
--			kfree(falcon->data.data);
--			kfree(falcon->code.data);
-+			vfree(falcon->data.data);
-+			vfree(falcon->code.data);
- 			falcon->code.data = NULL;
- 		}
- 	}
+--- a/drivers/gpu/drm/ast/ast_fb.c
++++ b/drivers/gpu/drm/ast/ast_fb.c
+@@ -65,7 +65,7 @@ static void ast_dirty_update(struct ast_
+ 	 * then the BO is being moved and we should
+ 	 * store up the damage until later.
+ 	 */
+-	if (!drm_can_sleep())
++	if (drm_can_sleep())
+ 		ret = ast_bo_reserve(bo, true);
+ 	if (ret) {
+ 		if (ret != -EBUSY)
+--- a/drivers/gpu/drm/cirrus/cirrus_fbdev.c
++++ b/drivers/gpu/drm/cirrus/cirrus_fbdev.c
+@@ -39,7 +39,7 @@ static void cirrus_dirty_update(struct c
+ 	 * then the BO is being moved and we should
+ 	 * store up the damage until later.
+ 	 */
+-	if (!drm_can_sleep())
++	if (drm_can_sleep())
+ 		ret = cirrus_bo_reserve(bo, true);
+ 	if (ret) {
+ 		if (ret != -EBUSY)
+--- a/drivers/gpu/drm/mgag200/mgag200_fb.c
++++ b/drivers/gpu/drm/mgag200/mgag200_fb.c
+@@ -41,7 +41,7 @@ static void mga_dirty_update(struct mga_
+ 	 * then the BO is being moved and we should
+ 	 * store up the damage until later.
+ 	 */
+-	if (!drm_can_sleep())
++	if (drm_can_sleep())
+ 		ret = mgag200_bo_reserve(bo, true);
+ 	if (ret) {
+ 		if (ret != -EBUSY)
 
 
