@@ -1,86 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752181AbaBKPWf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 10:22:35 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:61610 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751744AbaBKPUh (ORCPT
+	id S1752213AbaBKPWy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 10:22:54 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:47570 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752093AbaBKPWw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 10:20:37 -0500
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com, ak@linux.intel.com,
-        zheng.z.yan@intel.com
-Subject: [PATCH v2 2/8] perf/x86/uncore: add ability to customize pmu callbacks
-Date: Tue, 11 Feb 2014 16:20:08 +0100
-Message-Id: <1392132015-14521-3-git-send-email-eranian@google.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1392132015-14521-1-git-send-email-eranian@google.com>
-References: <1392132015-14521-1-git-send-email-eranian@google.com>
+	Tue, 11 Feb 2014 10:22:52 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Rob Herring <robherring2@gmail.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Philipp Zabel <philipp.zabel@gmail.com>
+Subject: Re: [RFC PATCH] [media]: of: move graph helpers from drivers/media/v4l2-core to drivers/of
+Date: Tue, 11 Feb 2014 16:23:56 +0100
+Message-ID: <8648675.AIXYyYlgXy@avalon>
+User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140211145248.GI26684@n2100.arm.linux.org.uk>
+References: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de> <CAL_Jsq+U9zU1i+STLHMBjY5BeEP6djYnJVE5X1ix-D2q_zWztQ@mail.gmail.com> <20140211145248.GI26684@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enables custom struct pmu callbacks per uncore
-PMU types. This feature may be used to simplify counter
-setup for certain uncore PMUs which have free running
-counters for instance. It becomes possible to bypass
-the event scheduling phase of the configuration.
+Hi Russell,
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
- arch/x86/kernel/cpu/perf_event_intel_uncore.c |   25 +++++++++++++++----------
- arch/x86/kernel/cpu/perf_event_intel_uncore.h |    1 +
- 2 files changed, 16 insertions(+), 10 deletions(-)
+On Tuesday 11 February 2014 14:52:48 Russell King - ARM Linux wrote:
+> On Tue, Feb 11, 2014 at 07:56:33AM -0600, Rob Herring wrote:
+> > On Tue, Feb 11, 2014 at 5:45 AM, Philipp Zabel wrote:
+> > > This allows to reuse the same parser code from outside the V4L2
+> > > framework, most importantly from display drivers. There have been
+> > > patches that duplicate the code (and I am going to send one of my own),
+> > > such as
+> > > http://lists.freedesktop.org/archives/dri-devel/2013-August/043308.html
+> > > and others that parse the same binding in a different way:
+> > > https://www.mail-archive.com/linux-omap@vger.kernel.org/msg100761.html
+> > > 
+> > > I think that all common video interface parsing helpers should be moved
+> > > to a single place, outside of the specific subsystems, so that it can
+> > > be reused by all drivers.
+> > 
+> > Perhaps that should be done rather than moving to drivers/of now and
+> > then again to somewhere else.
+> 
+> Do you have a better suggestion where it should move to?
+> 
+> drivers/gpu/drm - no, because v4l2 wants to use it
+> drivers/media/video - no, because DRM drivers want to use it
+> drivers/video - no, because v4l2 and drm drivers want to use it
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index fe4255b..e6f32b3 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -3271,16 +3271,21 @@ static int __init uncore_pmu_register(struct intel_uncore_pmu *pmu)
- {
- 	int ret;
- 
--	pmu->pmu = (struct pmu) {
--		.attr_groups	= pmu->type->attr_groups,
--		.task_ctx_nr	= perf_invalid_context,
--		.event_init	= uncore_pmu_event_init,
--		.add		= uncore_pmu_event_add,
--		.del		= uncore_pmu_event_del,
--		.start		= uncore_pmu_event_start,
--		.stop		= uncore_pmu_event_stop,
--		.read		= uncore_pmu_event_read,
--	};
-+	if (!pmu->type->pmu) {
-+		pmu->pmu = (struct pmu) {
-+			.attr_groups	= pmu->type->attr_groups,
-+			.task_ctx_nr	= perf_invalid_context,
-+			.event_init	= uncore_pmu_event_init,
-+			.add		= uncore_pmu_event_add,
-+			.del		= uncore_pmu_event_del,
-+			.start		= uncore_pmu_event_start,
-+			.stop		= uncore_pmu_event_stop,
-+			.read		= uncore_pmu_event_read,
-+		};
-+	} else {
-+		pmu->pmu = *pmu->type->pmu;
-+		pmu->pmu.attr_groups = pmu->type->attr_groups;
-+	}
- 
- 	if (pmu->type->num_boxes == 1) {
- 		if (strlen(pmu->type->name) > 0)
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-index a80ab71..77dc9a5 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-@@ -440,6 +440,7 @@ struct intel_uncore_type {
- 	struct intel_uncore_ops *ops;
- 	struct uncore_event_desc *event_descs;
- 	const struct attribute_group *attr_groups[4];
-+	struct pmu *pmu; /* for custom pmu ops */
- };
- 
- #define pmu_group attr_groups[0]
+Just pointing out a missing location (which might be rejected due to similar 
+concerns), there's also drivers/media, which isn't V4L-specific.
+
+> Maybe drivers/of-graph/ ?  Or maybe it's just as good a place to move it
+> into drivers/of ?
+
 -- 
-1.7.9.5
+Regards,
+
+Laurent Pinchart
 
