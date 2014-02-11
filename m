@@ -1,91 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753243AbaBMB3z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 20:29:55 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:37419 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752708AbaBMB3x (ORCPT
+	id S1751820AbaBMBd1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 20:33:27 -0500
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:46274 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751256AbaBMBdZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 20:29:53 -0500
-Date: Wed, 12 Feb 2014 17:29:09 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Michal Hocko <mhocko@suse.cz>, Tejun Heo <tj@kernel.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Greg Thelen <gthelen@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] memcg: barriers to see memcgs as fully initialized
-In-Reply-To: <alpine.LSU.2.11.1402121717420.5917@eggly.anvils>
-Message-ID: <alpine.LSU.2.11.1402121727050.5917@eggly.anvils>
-References: <alpine.LSU.2.11.1402121717420.5917@eggly.anvils>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Wed, 12 Feb 2014 20:33:25 -0500
+Message-ID: <52F99907.6010604@samsung.com>
+Date: Tue, 11 Feb 2014 12:29:11 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Richard Weinberger <richard@nod.at>
+CC: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "moderated list:ARM SUB-ARCHITECT..." 
+	<linux-arm-kernel@lists.infradead.org>,
+        "moderated list:ARM/SAMSUNG ARM A..." 
+	<linux-samsung-soc@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 13/28] Remove S3C24XX_GPIO_EXTRA64
+References: <1391971686-9517-1-git-send-email-richard@nod.at> <1391971686-9517-14-git-send-email-richard@nod.at>
+In-Reply-To: <1391971686-9517-14-git-send-email-richard@nod.at>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit d8ad30559715 ("mm/memcg: iteration skip memcgs not yet fully
-initialized") is not bad, but Greg Thelen asks "Are barriers needed?"
+On 02/10/14 03:47, Richard Weinberger wrote:
+> The symbol is an orphan, get rid of it.
+>
+> Signed-off-by: Richard Weinberger<richard@nod.at>
+> ---
+>   arch/arm/mach-s3c24xx/Kconfig | 1 -
+>   1 file changed, 1 deletion(-)
+>
+> diff --git a/arch/arm/mach-s3c24xx/Kconfig b/arch/arm/mach-s3c24xx/Kconfig
+> index d876431..1c67f04 100644
+> --- a/arch/arm/mach-s3c24xx/Kconfig
+> +++ b/arch/arm/mach-s3c24xx/Kconfig
+> @@ -521,7 +521,6 @@ config MACH_ANUBIS
+>   	select HAVE_PATA_PLATFORM
+>   	select S3C2440_XTAL_12000000
+>   	select S3C24XX_DCLK
+> -	select S3C24XX_GPIO_EXTRA64
+>   	select S3C24XX_SIMTEC_PM if PM
+>   	select S3C_DEV_USB_HOST
+>   	help
 
-Yes, I'm afraid so: this makes it a little heavier than the original,
-but there's no point in guaranteeing that mem_cgroup_iter() returns only
-fully initialized memcgs, if we don't guarantee that the initialization
-is visible.
+OK, I will take this into samsung tree.
 
-If we move online_css()'s setting CSS_ONLINE after rcu_assign_pointer()
-(I don't see why not), we can reasonably rely on the smp_wmb() in that.
-But I can't find a pre-existing barrier at the mem_cgroup_iter() end,
-so add an smp_rmb() where __mem_cgroup_iter_next() returns non-NULL.
-
-Fixes: d8ad30559715 ("mm/memcg: iteration skip memcgs not yet fully initialized")
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Cc: stable@vger.kernel.org # 3.12+
----
-I'd have been happier not to have to add this patch: maybe you can see
-a better placement, or a way we can avoid this altogether.
-
- kernel/cgroup.c |    8 +++++++-
- mm/memcontrol.c |   11 +++++++++--
- 2 files changed, 16 insertions(+), 3 deletions(-)
-
---- 3.14-rc2+/kernel/cgroup.c	2014-02-02 18:49:07.737302111 -0800
-+++ linux/kernel/cgroup.c	2014-02-12 11:59:52.804041895 -0800
-@@ -4063,9 +4063,15 @@ static int online_css(struct cgroup_subs
- 	if (ss->css_online)
- 		ret = ss->css_online(css);
- 	if (!ret) {
--		css->flags |= CSS_ONLINE;
- 		css->cgroup->nr_css++;
- 		rcu_assign_pointer(css->cgroup->subsys[ss->subsys_id], css);
-+		/*
-+		 * Set CSS_ONLINE after rcu_assign_pointer(), so that its
-+		 * smp_wmb() will guarantee that those seeing CSS_ONLINE
-+		 * can see the initialization done in ss->css_online() - if
-+		 * they provide an smp_rmb(), as in __mem_cgroup_iter_next().
-+		 */
-+		css->flags |= CSS_ONLINE;
- 	}
- 	return ret;
- }
---- 3.14-rc2+/mm/memcontrol.c	2014-02-12 11:55:02.836035004 -0800
-+++ linux/mm/memcontrol.c	2014-02-12 11:59:52.804041895 -0800
-@@ -1128,9 +1128,16 @@ skip_node:
- 	 */
- 	if (next_css) {
- 		if ((next_css == &root->css) ||
--		    ((next_css->flags & CSS_ONLINE) && css_tryget(next_css)))
-+		    ((next_css->flags & CSS_ONLINE) && css_tryget(next_css))) {
-+			/*
-+			 * Ensure that all memcg initialization, done before
-+			 * CSS_ONLINE was set, will be visible to our caller.
-+			 * This matches the smp_wmb() in online_css()'s
-+			 * rcu_assign_pointer(), before it set CSS_ONLINE.
-+			 */
-+			smp_rmb();
- 			return mem_cgroup_from_css(next_css);
--
-+		}
- 		prev_css = next_css;
- 		goto skip_node;
- 	}
+Thanks,
+Kukjin
