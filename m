@@ -1,85 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751987AbaBKLJW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 06:09:22 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:39678 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751782AbaBKLJU (ORCPT
+	id S1751772AbaBKLLz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 06:11:55 -0500
+Received: from mail-we0-f172.google.com ([74.125.82.172]:51615 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809AbaBKLLy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 06:09:20 -0500
+	Tue, 11 Feb 2014 06:11:54 -0500
+Message-ID: <52FA0577.6080607@linaro.org>
+Date: Tue, 11 Feb 2014 12:11:51 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <CAOMwXhMzaymrV4qF+jR5rPo-ve_YV5-GpRSwVvGC83CCaUg0Yg@mail.gmail.com>
-References: <1392045953-26596-1-git-send-email-lpapp@kde.org>
-	<20140210160842.GB26997@lee--X1>
-	<20140210173811.04ba5964@endymion.delvare>
-	<CAOMwXhPTkrUUaUL-H_0fvZBO9_kt4jqKXs5BJYthDfu0_1c3xg@mail.gmail.com>
-	<20140211085014.4ef32b56@endymion.delvare>
-	<CAOMwXhMhKdp420+SPTih+C3fAgTmrpJgPnGBxsfPO3pEhESGTA@mail.gmail.com>
-	<20140211085053.GD32042@lee--X1>
-	<CAOMwXhMzaymrV4qF+jR5rPo-ve_YV5-GpRSwVvGC83CCaUg0Yg@mail.gmail.com>
-Date: Tue, 11 Feb 2014 11:09:19 +0000
-X-Google-Sender-Auth: ZKoREmsxFnL1O0Kkm41kIaA2Fr8
-Message-ID: <CAOMwXhMDJN9e+QRSww8KWiVsb0++CEF-VmzgESuECWfRAn8fSQ@mail.gmail.com>
-Subject: Re: [lm-sensors] [PATCH] hwmon: (max6650) Rename the device ids to
- contain the hwmon suffix
-From: Laszlo Papp <lpapp@kde.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Jean Delvare <jdelvare@suse.de>, LKML <linux-kernel@vger.kernel.org>,
-        lm-sensors@lm-sensors.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Preeti Murthy <preeti.lkml@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: mingo@kernel.org, alex.shi@linaro.org, LKML <linux-kernel@vger.kernel.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Subject: Re: [PATCH V2 2/3] sched: Fix race in idle_balance()
+References: <1391728237-4441-1-git-send-email-daniel.lezcano@linaro.org>	<1391728237-4441-3-git-send-email-daniel.lezcano@linaro.org> <CAM4v1pMEFTe6pQVDFzaXmqt_A3vw3tyj7Ewqib6zbzH++YzY3w@mail.gmail.com>
+In-Reply-To: <CAM4v1pMEFTe6pQVDFzaXmqt_A3vw3tyj7Ewqib6zbzH++YzY3w@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 10:22 AM, Laszlo Papp <lpapp@kde.org> wrote:
-> On Tue, Feb 11, 2014 at 8:50 AM, Lee Jones <lee.jones@linaro.org> wrote:
->>> >> On Mon, Feb 10, 2014 at 4:38 PM, Jean Delvare <jdelvare@suse.de> wrote:
->>> >> > Additionally, dashes are explicitly forbidden in hwmon
->>> >> > device names.
->>> >>
->>> >> Also, where is that documented?
->>> >
->>> > In Documentation/hwmon/sysfs-interface:
->>> >
->>> > *********************
->>> > * Global attributes *
->>> > *********************
->>> >
->>> > name            The chip name.
->>> >                 This should be a short, lowercase string, not containing
->>> >                 spaces nor dashes, representing the chip name. This is
->>> >                 the only mandatory attribute.
->>> >                 I2C devices get this attribute created automatically.
->>> >                 RO
->>>
->>> Time to revisit this decision....
->>>
->>> So, based on the fact that children device names usually contain
->>> dashes, I do not understand why hwmon would be any special in this
->>> regard. It is possible that the hwmon developers have not faced much
->>> MFD situation before, and so, this was not considered to be handled
->>> like in other subsystems.
->>>
->>> I am proposing to change this "rule"...  Any objection?
->>
->> Prior to proposing such an invasive change which is highly likely to
->> come up against heavy opposition, why don't you try to work _with_ the
->> current ruling and the Maintainers to see what others have done to
->> solve the problem.  I highly doubt you are the first/only developer who
->> has had this issue.
->>
->> Do:
->>   `git grep "\-hwmon"`
->>
->> ... and have a good look around for an accepted solution.
+On 02/10/2014 10:24 AM, Preeti Murthy wrote:
+> HI Daniel,
 >
-> Well, this did not bring up relevant results, at least for my
-> understanding, but I will send a new patch with the
-> devm_hwmon_device_register_
-> with_groups() stuff based on my little understanding without further help.
+> Isn't the only scenario where another cpu can put an idle task on
+> our runqueue,
 
-https://lkml.org/lkml/2014/2/11/155
+Well, I am not sure to understand what you meant, but I assume you are 
+asking if it is possible to have a task to be pulled when we are idle, 
+right ?
 
-but I do not know how to enable the different devices conditionally.
-What is the best practice for this in the kernel? (We can continue it
-in there)
+This patch fixes the race when the current cpu is *about* to enter idle 
+when calling schedule().
+
+
+> in nohz_idle_balance() where only the cpus in
+> the nohz.idle_cpus_mask are iterated through. But for the case
+> that this patch is addressing, the cpu in question is not yet a part
+> of the nohz.idle_cpus_mask right?
+>
+> Any other case would trigger load balancing on the same cpu, but
+> we are preempt_disabled and interrupt disabled at this point.
+>
+> Thanks
+>
+> Regards
+> Preeti U Murthy
+>
+> On Fri, Feb 7, 2014 at 4:40 AM, Daniel Lezcano
+> <daniel.lezcano@linaro.org> wrote:
+>> The scheduler main function 'schedule()' checks if there are no more tasks
+>> on the runqueue. Then it checks if a task should be pulled in the current
+>> runqueue in idle_balance() assuming it will go to idle otherwise.
+>>
+>> But the idle_balance() releases the rq->lock in order to lookup in the sched
+>> domains and takes the lock again right after. That opens a window where
+>> another cpu may put a task in our runqueue, so we won't go to idle but
+>> we have filled the idle_stamp, thinking we will.
+>>
+>> This patch closes the window by checking if the runqueue has been modified
+>> but without pulling a task after taking the lock again, so we won't go to idle
+>> right after in the __schedule() function.
+>>
+>> Cc: alex.shi@linaro.org
+>> Cc: peterz@infradead.org
+>> Cc: mingo@kernel.org
+>> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+>> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+>> ---
+>>   kernel/sched/fair.c |    7 +++++++
+>>   1 file changed, 7 insertions(+)
+>>
+>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> index 428bc9d..5ebc681 100644
+>> --- a/kernel/sched/fair.c
+>> +++ b/kernel/sched/fair.c
+>> @@ -6589,6 +6589,13 @@ void idle_balance(struct rq *this_rq)
+>>
+>>          raw_spin_lock(&this_rq->lock);
+>>
+>> +       /*
+>> +        * While browsing the domains, we released the rq lock.
+>> +        * A task could have be enqueued in the meantime
+>> +        */
+>> +       if (this_rq->nr_running && !pulled_task)
+>> +               return;
+>> +
+>>          if (pulled_task || time_after(jiffies, this_rq->next_balance)) {
+>>                  /*
+>>                   * We are going idle. next_balance may be set based on
+>> --
+>> 1.7.9.5
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
