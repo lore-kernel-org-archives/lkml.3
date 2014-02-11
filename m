@@ -1,128 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751664AbaBKLvE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 06:51:04 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:50639 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751087AbaBKLvB (ORCPT
+	id S1751832AbaBKLvo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 06:51:44 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:51800 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751105AbaBKLvn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 06:51:01 -0500
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v2 4/5] ARM: init: add support for reserved memory defined by device tree
-To: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>, Michal Nazarewicz <mina86@mina86.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Laura Abbott <lauraa@codeaurora.org>, Rob Herring <robh+dt@gmail.com>,
-        Olof Johansson <olof@lixom.net>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Kumar Gala <galak@codeaurora.org>,
-        Nishanth Peethambaran <nishanth.p@gmail.com>,
-        Marc <marc.ceeeee@gmail.com>, Josh Cartwright <joshc@codeaurora.org>
-In-Reply-To: <52FA00FA.1090400@samsung.com>
-References: <1391515773-6112-1-git-send-email-m.szyprowski@samsung.com> < 1391515773-6112-5-git-send-email-m.szyprowski@samsung.com> <20140205101510. 59A95C40A89@trevor.secretlab.ca> <52F38D75.4030704@samsung.com> < 20140210215929.4473BC408F7@trevor.secretlab.ca> <52FA00FA.1090400@samsung. com>
-Date: Tue, 11 Feb 2014 11:50:51 +0000
-Message-Id: <20140211115051.85084C40C4D@trevor.secretlab.ca>
+	Tue, 11 Feb 2014 06:51:43 -0500
+Date: Tue, 11 Feb 2014 12:51:35 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Don Zickus <dzickus@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Joe Mario <jmario@redhat.com>, Richard Fowles <fowles@inreach.com>
+Subject: Re: [PATCH 00/21] perf, c2c: Add new tool to analyze cacheline
+ contention on NUMA systems
+Message-ID: <20140211115135.GE3104@twins.programming.kicks-ass.net>
+References: <20140211071401.GG27965@twins.programming.kicks-ass.net>
+ <CABPqkBRn+AVUA-KTx-JQ28j1NhE4pDQe5vjb5NKGx0jrZq8g_Q@mail.gmail.com>
+ <20140211105217.GS9987@twins.programming.kicks-ass.net>
+ <CABPqkBROriDQa5-b-w45zV+2gS94oEW1c_bYwGmYAeYcqPoUog@mail.gmail.com>
+ <20140211110242.GU9987@twins.programming.kicks-ass.net>
+ <CABPqkBQhUCUOszQzBJZd_pwX-nLf6y=0X-+swPi0pE3ivRpVcg@mail.gmail.com>
+ <CABPqkBSbBqOtvstKwQWD7jM8nn3XEdq0OXMjW8Z8oCF17uRYPw@mail.gmail.com>
+ <20140211111421.GN27965@twins.programming.kicks-ass.net>
+ <CABPqkBRw4W9=ORuhAJpx4L0pCt8iBKshhR5Qv5cLvcD5vR2eRA@mail.gmail.com>
+ <20140211113149.GW9987@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140211113149.GW9987@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Feb 2014 11:52:42 +0100, Marek Szyprowski <m.szyprowski@samsung.com> wrote:
-> 
-> On 2014-02-10 22:59, Grant Likely wrote:
-> > On Thu, 06 Feb 2014 14:26:13 +0100, Marek Szyprowski <m.szyprowski@samsung.com> wrote:
-> > > Hello,
+On Tue, Feb 11, 2014 at 12:31:49PM +0100, Peter Zijlstra wrote:
+> On Tue, Feb 11, 2014 at 12:28:47PM +0100, Stephane Eranian wrote:
+> > On Tue, Feb 11, 2014 at 12:14 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > > On Tue, Feb 11, 2014 at 12:08:56PM +0100, Stephane Eranian wrote:
+> > >> Assuming you can decode and get the info about the base registers used,
+> > >> you'd have to do this for each arch with load/store sampling capabilities.
+> > >> this is painful compared to getting the portable info from dwarf directly.
 > > >
-> > > On 2014-02-05 11:15, Grant Likely wrote:
-> > > > On Tue, 04 Feb 2014 13:09:32 +0100, Marek Szyprowski <m.szyprowski@samsung.com> wrote:
-> > > > > Enable reserved memory initialization from device tree.
-> > > > >
-> > > > > Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> > > > > Cc: Laura Abbott <lauraa@codeaurora.org>
-> > > > > Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> > > > > ---
-> > > > >  arch/arm/mm/init.c |    3 +++
-> > > > >  1 file changed, 3 insertions(+)
-> > > > >
-> > > > > diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-> > > > > index 804d61566a53..ebafdb479410 100644
-> > > > > --- a/arch/arm/mm/init.c
-> > > > > +++ b/arch/arm/mm/init.c
-> > > > > @@ -17,6 +17,7 @@
-> > > > >  #include <linux/nodemask.h>
-> > > > >  #include <linux/initrd.h>
-> > > > >  #include <linux/of_fdt.h>
-> > > > > +#include <linux/of_reserved_mem.h>
-> > > > >  #include <linux/highmem.h>
-> > > > >  #include <linux/gfp.h>
-> > > > >  #include <linux/memblock.h>
-> > > > > @@ -323,6 +324,8 @@ void __init arm_memblock_init(struct meminfo *mi,
-> > > > >  	if (mdesc->reserve)
-> > > > >  		mdesc->reserve();
-> > > > >
-> > > > > +	early_init_dt_scan_reserved_mem();
-> > > > > +
-> > > >
-> > > > The new binding is being made fundamental. If the reserved-memory node
-> > > > is present, then it needs to be honored, even if the kernel doesn't know
-> > > > how to use the regions. Therefore, This needs to be unconditional for
-> > > > all architectures. The hook should be called in early_init_dt_scan()
-> > > > (drivers/of/fdt.c) immediately after the early_init_dt_scan_memory()
-> > > > hook.
+> > > But its useful now, as compared to whenever GCC gets around to
+> > > implementing more dwarves and that GCC getting used widely enough to
+> > > actually rely on it.
 > > >
-> > > In theory this will be the best solution, but it practice there is a
-> > > problem. early_init_dt_scan() is called as the first function from kernel
-> > > booting code. That time there is no memory yet added to the system, so it
-> > > would be really hard to reserve anything. Memory nodes are being added
-> > > later either with memblock_add() or by some other arch specific way.
-> >
-> > Hmmm, depends on the architecture. On ARM the memory is loaded into the
-> > meminfo structure first, and it isn't until arm_memblock_init() that
-> > memblock_add() gets called on all the regions. Some architectures do the
-> > memblock_add() directly from early_init_dt_add_memory_arch() function.
-> >
-> > The default early_init_dt_add_memory_arch() in drivers/of/fdt.c is
-> > overridden by ARM and a number of other architectures. However...
-> >
-> > > Finally, once all memory has been added to the system we can parse and
-> > > reserve all regions defined in the device tree. This really requires
-> > > creating another function which will be called by arch specific code.
-> >
-> > ...Or it means getting rid of meminfo entirely so that memblock is
-> > available earlier. Laura Abbott has just posted v2 of her series to do
-> > exactly that. If you base on that then you should be able to do exactly
-> > what I suggested.
+> > > All you need for the decode is a disassembler, and every arch should
+> > > already have multiple of those. Should be easy to reuse one, right?
+> > 
+> > I know, and you want to pull this into the perf tool?
 > 
-> I've checked Laura's patches and in fact it is possible to do memory
-> reservation as a last step in early_init_dt_scan_memory(). However still
-> see some problem which I have no idea how to resolve. Right now I focus
-> only on ARM, so I have no idea how it is solved by other architectures.
+> Sure why not, its already got the world and then some :/
+> 
+> It would be just another dynamic lib.
 
-It isn't at the moment because no other architectures are doing dynamic
-allocation of regions in this way.
+The added benefit is that we could get rid of the objdump usage for
+annotate if we find a usable disasm lib. At which point we can start
+improving the annotations with these variable/type information as well.
 
-> On of the key features of the new binding is the ability to automatically
-> allocate reserved regions of the given size. However kernel, initrd, dt
-> and other sub-arch specific critical regions are marked/allocated in
-> arm_memblock_init(), which is called after setup_machine_fdt(). This
-> might lead to some serious failures when automatically reserved region
-> overlaps with some critical resources. Do you have any idea how to solve
-> this without a new callback?
 
-Not without moving the kernel/initrd/fdt reservation earlier, which can
-certainly be done after Laura's series is applied. It would also be
-possible to split up the fixed regions from the dynamic regions so that
-the dynamic stuff would be done later.
-
-However, I don't want to block this series on Laura's rework. Go ahead
-and keep it as a separate hook, but make the other changes I suggested,
-particularly with regard to making the hook architecture independent.
-Further rework can be done later after Laura's series is merged.
-
-g.
