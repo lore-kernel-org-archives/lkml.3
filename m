@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755242AbaBKTwE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:52:04 -0500
+	id S1755462AbaBKTw0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:52:26 -0500
 Received: from mail.linuxfoundation.org ([140.211.169.12]:40249 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753895AbaBKTHZ (ORCPT
+	with ESMTP id S1753891AbaBKTHY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:07:25 -0500
+	Tue, 11 Feb 2014 14:07:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.12 072/107] drm/radeon: disable ss on DP for DCE3.x
-Date: Tue, 11 Feb 2014 11:05:38 -0800
-Message-Id: <20140211184750.247331311@linuxfoundation.org>
+        Adrian Hunter <adrian.hunter@intel.com>, Chris Ball <chris@printf.net>
+Subject: [PATCH 3.12 107/107] mmc: sdhci-pci: Fix possibility of chip->fixes being null
+Date: Tue, 11 Feb 2014 11:06:13 -0800
+Message-Id: <20140211184751.248291852@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -28,39 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-commit d8e24525094200601236fa64a54cf73e3d682f2e upstream.
+commit 945be38caa287b177b8c17ffaae7754cab6a658f upstream.
 
-Seems to cause problems with certain DP monitors.
+It is possible for chip->fixes to be null.  Check before dereferencing it.
 
-Bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=40699
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Signed-off-by: Chris Ball <chris@printf.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/atombios_crtc.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/mmc/host/sdhci-pci.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/atombios_crtc.c
-+++ b/drivers/gpu/drm/radeon/atombios_crtc.c
-@@ -938,11 +938,14 @@ static bool atombios_crtc_prepare_pll(st
- 							radeon_atombios_get_ppll_ss_info(rdev,
- 											 &radeon_crtc->ss,
- 											 ATOM_DP_SS_ID1);
--				} else
-+				} else {
- 					radeon_crtc->ss_enabled =
- 						radeon_atombios_get_ppll_ss_info(rdev,
- 										 &radeon_crtc->ss,
- 										 ATOM_DP_SS_ID1);
-+				}
-+				/* disable spread spectrum on DCE3 DP */
-+				radeon_crtc->ss_enabled = false;
- 			}
- 			break;
- 		case ATOM_ENCODER_MODE_LVDS:
+--- a/drivers/mmc/host/sdhci-pci.c
++++ b/drivers/mmc/host/sdhci-pci.c
+@@ -1389,7 +1389,8 @@ static struct sdhci_pci_slot *sdhci_pci_
+ 	 * from runtime suspend.  If it is not there, don't allow runtime PM.
+ 	 * Note sdhci_pci_add_own_cd() sets slot->cd_gpio to -EINVAL on failure.
+ 	 */
+-	if (chip->fixes->own_cd_for_runtime_pm && !gpio_is_valid(slot->cd_gpio))
++	if (chip->fixes && chip->fixes->own_cd_for_runtime_pm &&
++	    !gpio_is_valid(slot->cd_gpio))
+ 		chip->allow_runtime_pm = false;
+ 
+ 	return slot;
 
 
