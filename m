@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755123AbaBKT0v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:26:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40465 "EHLO
+	id S1755161AbaBKT1N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:27:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40456 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754208AbaBKTIF (ORCPT
+	with ESMTP id S1754204AbaBKTIE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:08:05 -0500
+	Tue, 11 Feb 2014 14:08:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Mika Kuoppala <mika.kuoppala@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@intel.com>
-Subject: [PATCH 3.10 59/79] drm/i915: Flush outstanding requests before allocating new seqno
-Date: Tue, 11 Feb 2014 11:06:03 -0800
-Message-Id: <20140211184722.676745278@linuxfoundation.org>
+        Alex Williamson <alex.williamson@redhat.com>,
+        David Woodhouse <dwmw2@infradead.org>, Joerg Roedel <joro@8bytes.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 05/79] intel-iommu: fix off-by-one in pagetable freeing
+Date: Tue, 11 Feb 2014 11:05:09 -0800
+Message-Id: <20140211184721.090360044@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
 References: <20140211184720.928667275@linuxfoundation.org>
@@ -31,78 +31,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Alex Williamson <alex.williamson@redhat.com>
 
-commit 304d695c3dc8eb65206b9eaf16f8d1a41510d1cf upstream.
+commit 08336fd218e087cc4fcc458e6b6dcafe8702b098 upstream.
 
-In very rare cases (such as a memory failure stress test) it is possible
-to fill the entire ring without emitting a request. Under this
-circumstance, the outstanding request is flushed and waited upon. After
-space on the ring is cleared, we return to emitting the new command -
-except that we just cleared the seqno allocated for this operation and
-trigger the sanity check that a request is only ever emitted with a
-valid seqno. The fix is to rearrange the code to make sure the
-allocation of the seqno for this operation is after any required flushes
-of outstanding operations.
+dma_pte_free_level() has an off-by-one error when checking whether a pte
+is completely covered by a range.  Take for example the case of
+attempting to free pfn 0x0 - 0x1ff, ie.  512 entries covering the first
+2M superpage.
 
-The bug exists since the preallocation was introduced in
-commit 9d7730914f4cd496e356acfab95b41075aa8eae8
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Tue Nov 27 16:22:52 2012 +0000
+The level_size() is 0x200 and we test:
 
-    drm/i915: Preallocate next seqno before touching the ring
+  static void dma_pte_free_level(...
+	...
 
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Mika Kuoppala <mika.kuoppala@intel.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Reviewed-by: Jani Nikula <jani.nikula@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+	if (!(0 > 0 || 0x1ff < 0 + 0x200)) {
+		...
+	}
+
+Clearly the 2nd test is true, which means we fail to take the branch to
+clear and free the pagetable entry.  As a result, we're leaking
+pagetables and failing to install new pages over the range.
+
+This was found with a PCI device assigned to a QEMU guest using vfio-pci
+without a VGA device present.  The first 1M of guest address space is
+mapped with various combinations of 4K pages, but eventually the range
+is entirely freed and replaced with a 2M contiguous mapping.
+intel-iommu errors out with something like:
+
+  ERROR: DMA PTE for vPFN 0x0 already set (to 5c2b8003 not 849c00083)
+
+In this case 5c2b8003 is the pointer to the previous leaf page that was
+neither freed nor cleared and 849c00083 is the superpage entry that
+we're trying to replace it with.
+
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Joerg Roedel <joro@8bytes.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_ringbuffer.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ drivers/iommu/intel-iommu.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_ringbuffer.c
-+++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
-@@ -1459,8 +1459,8 @@ intel_ring_alloc_seqno(struct intel_ring
- 	return i915_gem_get_seqno(ring->dev, &ring->outstanding_lazy_request);
- }
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -917,7 +917,7 @@ static void dma_pte_free_level(struct dm
  
--static int __intel_ring_begin(struct intel_ring_buffer *ring,
--			      int bytes)
-+static int __intel_ring_prepare(struct intel_ring_buffer *ring,
-+				int bytes)
- {
- 	int ret;
- 
-@@ -1476,7 +1476,6 @@ static int __intel_ring_begin(struct int
- 			return ret;
- 	}
- 
--	ring->space -= bytes;
- 	return 0;
- }
- 
-@@ -1491,12 +1490,17 @@ int intel_ring_begin(struct intel_ring_b
- 	if (ret)
- 		return ret;
- 
-+	ret = __intel_ring_prepare(ring, num_dwords * sizeof(uint32_t));
-+	if (ret)
-+		return ret;
-+
- 	/* Preallocate the olr before touching the ring */
- 	ret = intel_ring_alloc_seqno(ring);
- 	if (ret)
- 		return ret;
- 
--	return __intel_ring_begin(ring, num_dwords * sizeof(uint32_t));
-+	ring->space -= num_dwords * sizeof(uint32_t);
-+	return 0;
- }
- 
- void intel_ring_init_seqno(struct intel_ring_buffer *ring, u32 seqno)
+ 		/* If range covers entire pagetable, free it */
+ 		if (!(start_pfn > level_pfn ||
+-		      last_pfn < level_pfn + level_size(level))) {
++		      last_pfn < level_pfn + level_size(level) - 1)) {
+ 			dma_clear_pte(pte);
+ 			domain_flush_cache(domain, pte, sizeof(*pte));
+ 			free_pgtable_page(level_pte);
 
 
