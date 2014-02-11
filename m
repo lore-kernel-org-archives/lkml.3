@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754016AbaBKTHj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:07:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40297 "EHLO
+	id S1755101AbaBKTly (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:41:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40329 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753944AbaBKTHg (ORCPT
+	with ESMTP id S1754011AbaBKTHj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:07:36 -0500
+	Tue, 11 Feb 2014 14:07:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Brown <broonie@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.10 18/79] ACPI / init: Flag use of ACPI and ACPI idioms for power supplies to regulator API
-Date: Tue, 11 Feb 2014 11:05:22 -0800
-Message-Id: <20140211184721.454836621@linuxfoundation.org>
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 3.10 22/79] tile: remove compat_sys_lookup_dcookie declaration to fix compile error
+Date: Tue, 11 Feb 2014 11:05:26 -0800
+Message-Id: <20140211184721.572134166@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
 References: <20140211184720.928667275@linuxfoundation.org>
@@ -29,66 +31,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@linaro.org>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-commit 49a12877d2777cadcb838981c3c4f5a424aef310 upstream.
+commit 5a5e75f4714a592f31e57f248b8f5c866f278b8d upstream.
 
-There is currently no facility in ACPI to express the hookup of voltage
-regulators, the expectation is that the regulators that exist in the
-system will be handled transparently by firmware if they need software
-control at all. This means that if for some reason the regulator API is
-enabled on such a system it should assume that any supplies that devices
-need are provided by the system at all relevant times without any software
-intervention.
+With commit d8d14bd09cdd ("fs/compat: fix lookup_dcookie() parameter
+handling") I changed the type of the len parameter of the
+lookup_dcookie() syscall.
 
-Tell the regulator core to make this assumption by calling
-regulator_has_full_constraints(). Do this as soon as we know we are using
-ACPI so that the information is available to the regulator core as early
-as possible. This will cause the regulator core to pretend that there is
-an always on regulator supplying any supply that is requested but that has
-not otherwise been mapped which is the behaviour expected on a system with
-ACPI.
+However I missed that there was still a stale declaration in
+arch/tile/..  which now causes a compile error on tile:
 
-Should the ability to specify regulators be added in future revisions of
-ACPI then once we have support for ACPI mappings in the kernel the same
-assumptions will apply. It is also likely that systems will default to a
-mode of operation which does not require any interpretation of these
-mappings in order to be compatible with existing operating system releases
-so it should remain safe to make these assumptions even if the mappings
-exist but are not supported by the kernel.
+  In file included from fs/dcookies.c:28:0:
+  include/linux/compat.h:425:17: error: conflicting types for 'compat_sys_lookup_dcookie'
+  fs/dcookies.c:207:1: error: conflicting types for 'compat_sys_lookup_dcookie'
 
-Signed-off-by: Mark Brown <broonie@linaro.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Simply remove the declaration in the tile architecture, which is only a
+leftover from before the different compat lookup_dcookie() versions have
+been merged.  The correct declaration is now in include/linux/compat.h
+
+The build error was reported by Fenguang's build bot.
+
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/bus.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ arch/tile/include/asm/compat.h |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/acpi/bus.c
-+++ b/drivers/acpi/bus.c
-@@ -33,6 +33,7 @@
- #include <linux/proc_fs.h>
- #include <linux/acpi.h>
- #include <linux/slab.h>
-+#include <linux/regulator/machine.h>
- #ifdef CONFIG_X86
- #include <asm/mpspec.h>
- #endif
-@@ -705,6 +706,14 @@ void __init acpi_early_init(void)
- 		goto error0;
- 	}
- 
-+	/*
-+	 * If the system is using ACPI then we can be reasonably
-+	 * confident that any regulators are managed by the firmware
-+	 * so tell the regulator core it has everything it needs to
-+	 * know.
-+	 */
-+	regulator_has_full_constraints();
-+
- 	return;
- 
-       error0:
+--- a/arch/tile/include/asm/compat.h
++++ b/arch/tile/include/asm/compat.h
+@@ -281,7 +281,6 @@ long compat_sys_pread64(unsigned int fd,
+ 			u32 dummy, u32 low, u32 high);
+ long compat_sys_pwrite64(unsigned int fd, char __user *ubuf, size_t count,
+ 			 u32 dummy, u32 low, u32 high);
+-long compat_sys_lookup_dcookie(u32 low, u32 high, char __user *buf, size_t len);
+ long compat_sys_sync_file_range2(int fd, unsigned int flags,
+ 				 u32 offset_lo, u32 offset_hi,
+ 				 u32 nbytes_lo, u32 nbytes_hi);
 
 
