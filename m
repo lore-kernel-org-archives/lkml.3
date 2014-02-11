@@ -1,84 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751606AbaBKOjX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 09:39:23 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:59778 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751014AbaBKOjV (ORCPT
+	id S1751756AbaBKOlk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 09:41:40 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:55251 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750812AbaBKOlj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 09:39:21 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mohit KUMAR DCG <Mohit.KUMAR@st.com>
-Cc: Pratyush ANAND <pratyush.anand@st.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        spear-devel <spear-devel@list.st.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH V5 4/8] phy: st-miphy-40lp: Add skeleton driver
-Date: Tue, 11 Feb 2014 15:38:51 +0100
-Message-ID: <10315753.nkNxr0yDnp@wuerfel>
-User-Agent: KMail/4.11.3 (Linux/3.11.0-15-generic; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <2CC2A0A4A178534D93D5159BF3BCB66189FD2CAA9B@EAPEX1MAIL1.st.com>
-References: <cover.1391871170.git.pratyush.anand@st.com> <201402101654.22187.arnd@arndb.de> <2CC2A0A4A178534D93D5159BF3BCB66189FD2CAA9B@EAPEX1MAIL1.st.com>
+	Tue, 11 Feb 2014 09:41:39 -0500
+Message-ID: <52FA3686.5080800@ti.com>
+Date: Tue, 11 Feb 2014 08:41:10 -0600
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:dUYOEPYFYgbjZudzzyTYtlCkIUnbE6NYGE++6H0eRY6
- 3axJRYwFWaLm9VVSb2HGG8u05sXjYvbHW6hutuvwjZUXmKXtmR
- Iwml7ItPKn51IfUDlEYm6shmK30r3B/R0c/scX3tSRXNu9utwR
- R8bGP/64nP+t0LYRVGDz2A3D8b+crvSyhU8w9pjDLhe/FQYHxQ
- 2CurYUADUXAnUENgaTRslcORO8ed9Xfk5oGNz8KR6WnSINd1Ta
- JE1oiu6E2jOzpEZ2RKi1ZRvgHUTRBEAyg8r8nohhsYxgYBQck7
- 1so/bUZA+ycBLdqa/7gLmMgSylj72ImSjhMtYaYmFvhgWVQInO
- 6N2ku8n8C0xkYZxlDFsk=
+To: Hans de Goede <hdegoede@redhat.com>, Roger Quadros <rogerq@ti.com>,
+        <tony@atomide.com>
+CC: <bcousson@baylibre.com>, <balbi@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+Subject: Re: [PATCH] ARM: dts: OMAP2+: Fix boot with multi_v7_defconfig
+References: <1392055835-6494-1-git-send-email-rogerq@ti.com> <52FA2B4F.3010408@ti.com> <52FA3102.7080407@ti.com> <52FA3531.8090308@redhat.com>
+In-Reply-To: <52FA3531.8090308@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 11 February 2014 11:57:46 Mohit KUMAR DCG wrote:
+On 02/11/2014 08:35 AM, Hans de Goede wrote:
+> On 02/11/2014 03:17 PM, Nishanth Menon wrote:
+>> On 02/11/2014 07:53 AM, Roger Quadros wrote:
+>>> On 02/10/2014 08:10 PM, Roger Quadros wrote:
+>>>> The OMAP EHCI controller is not compatible with the EHCI
+>>>> platform HCD driver so don't claim that we are.
+>>>>
+>>>> This fixes boot on OMAP platforms with CONFIG_USB_EHCI_HCD_PLATFORM=y
+>>>> e.g. multi_v7_defconfig
+>>>>
+>>>> Reported-by: Nishanth Menon <nm@ti.com>
+>>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>>>
+>>> Please ignore this patch as Hans has agreed to do a more proper fix in
+>>>
+>>> http://article.gmane.org/gmane.comp.hardware.netbook.arm.sunxi/7015
+>> umm.. even then, drivers/usb/host/ehci-ppc-of.c claims compatibility
+>> with usb,ehci -> and we wont function with that driver either.
 > 
-> > Maybe mention that this phy is used inside the spear13xx
-> > SoC here rather than a standalone phy.
-> 
-> - Yes, for spear13xx its used internally. Do you think that
-> it requires to be mentioned here? 
-> We have few prototype boards that uses this as external phy.
+> Right, but that has never been an issue as no kernel will ever include
+> both ppc and omap support.
 
-[adding Lee since he mentioned working on a similar part]
+Conceptually, we have compatibility string today in dts description
+that maps a driver that cant ever handle the device. I dont have
+strong opinions either way.. just something i noticed with a git grep..
 
-I'm a bit confused. Is it actually the same IP block that can
-be used internally as part of a SoC and as a standalone chip?
-
-Since some of the settings of the PHY are controlled through
-the misc register in case of spear13xx, I assume that part
-is different on the standalone version. How do you actually
-select the mode in that case?
-
-It would certainly be helpful to explain this somewhere,
-and the binding might not be the worst place for this.
-
-On a related note, the driver in its current shape looks
-a bit silly since it doesn't contain any of the miphy specific
-code but only the SoC specific parts (as I suggested you
-do, so I'm not blaming you :-)) and a multiplexer that
-switches between the two possible implementations.
-
-What is your plan for the future, do you intend to add
-the actual miphy code soon, or is that something you just
-want to leave as an option for the future but have no
-specific plans to do right now? If not, the driver
-would probably look nicer if it were split into two
-separate implementations, one for each spear13xx SoC
-and with a separate set of phy_ops but no multiplexer.
-The connection to the miphy code (if you want to keep
-your options open) could be done by implementing some
-kind of nested phy model where the st,spear1340-phy contains
-another "phys" property pointing to the st,miphy40 node
-and the driver just calls the slave phy_ops recursively,
-or the sata and pcie nodes actually link to two phy nodes
-that are separate from one another.
-
-	Arnd
+-- 
+Regards,
+Nishanth Menon
