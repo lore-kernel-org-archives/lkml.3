@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753233AbaBKTGJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:06:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39822 "EHLO
+	id S1753262AbaBKTGN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:06:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39853 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752380AbaBKTGE (ORCPT
+	with ESMTP id S1752380AbaBKTGK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:04 -0500
+	Tue, 11 Feb 2014 14:06:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 3.13 116/120] timekeeping: Fix CLOCK_TAI timer/nanosleep delays
-Date: Tue, 11 Feb 2014 11:05:57 -0800
-Message-Id: <20140211184826.954281361@linuxfoundation.org>
+        Akash Goel <akash.goel@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [PATCH 3.13 093/120] drm/i915: Fix the offset issue for the stolen GEM objects
+Date: Tue, 11 Feb 2014 11:05:34 -0800
+Message-Id: <20140211184826.268154613@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -32,48 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John Stultz <john.stultz@linaro.org>
+From: Akash Goel <akash.goel@intel.com>
 
-commit 04005f6011e3b504cd4d791d9769f7cb9a3b2eae upstream.
+commit ec14ba47791965d2c08e0a681ff44eacbf3c4553 upstream.
 
-A think-o in the calculation of the monotonic -> tai time offset
-results in CLOCK_TAI timers and nanosleeps to expire late (the
-latency is ~2x the tai offset).
+The 'offset' field of the 'scatterlist' structure was wrongly
+programmed with the offset value from the base of stolen area,
+whereas this field indicates the offset from where the interested
+data starts within the first PAGE pointed to by 'scattterlist'
+structure. As a result when a new GEM object allocated from stolen
+area is mapped to GTT, it could lead to an overwrite of GTT entries
+as the page count calculation will go wrong, refer the function
+'sg_page_count'.
 
-Fix this by adding the tai offset from the realtime offset instead
-of subtracting.
+v2: Modified the commit message. (Chris)
 
-Cc: Sasha Levin <sasha.levin@oracle.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Akash Goel <akash.goel@intel.com>
+Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=71908
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=69104
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/time/timekeeping.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/i915_gem_stolen.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -77,7 +77,7 @@ static void tk_set_wall_to_mono(struct t
- 	tk->wall_to_monotonic = wtm;
- 	set_normalized_timespec(&tmp, -wtm.tv_sec, -wtm.tv_nsec);
- 	tk->offs_real = timespec_to_ktime(tmp);
--	tk->offs_tai = ktime_sub(tk->offs_real, ktime_set(tk->tai_offset, 0));
-+	tk->offs_tai = ktime_add(tk->offs_real, ktime_set(tk->tai_offset, 0));
- }
+--- a/drivers/gpu/drm/i915/i915_gem_stolen.c
++++ b/drivers/gpu/drm/i915/i915_gem_stolen.c
+@@ -250,7 +250,7 @@ i915_pages_create_for_stolen(struct drm_
+ 	}
  
- static void tk_set_sleep_time(struct timekeeper *tk, struct timespec t)
-@@ -595,7 +595,7 @@ s32 timekeeping_get_tai_offset(void)
- static void __timekeeping_set_tai_offset(struct timekeeper *tk, s32 tai_offset)
- {
- 	tk->tai_offset = tai_offset;
--	tk->offs_tai = ktime_sub(tk->offs_real, ktime_set(tai_offset, 0));
-+	tk->offs_tai = ktime_add(tk->offs_real, ktime_set(tai_offset, 0));
- }
+ 	sg = st->sgl;
+-	sg->offset = offset;
++	sg->offset = 0;
+ 	sg->length = size;
  
- /**
+ 	sg_dma_address(sg) = (dma_addr_t)dev_priv->mm.stolen_base + offset;
 
 
