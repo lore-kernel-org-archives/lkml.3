@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753073AbaBKQfE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 11:35:04 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:48861 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752066AbaBKQ01 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753052AbaBKQfC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 11:35:02 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:46692 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752067AbaBKQ01 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Feb 2014 11:26:27 -0500
-Date: Tue, 11 Feb 2014 17:26:25 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>
-Subject: Re: [PATCH cgroup/for-3.14-fixes] cgroup: protect modifications to
- cgroup_idr with cgroup_mutex
-Message-ID: <20140211162625.GP11946@dhcp22.suse.cz>
-References: <52F9D9DA.7040108@huawei.com>
- <20140211154105.GC24490@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140211154105.GC24490@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Josh Cartwright <joshc@codeaurora.org>
+To: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 4/8] ARM: mvebu: make use of of_find_matching_node_and_match
+Date: Tue, 11 Feb 2014 10:24:02 -0600
+Message-Id: <1392135847-30791-5-git-send-email-joshc@codeaurora.org>
+X-Mailer: git-send-email 1.8.5.4
+In-Reply-To: <1392135847-30791-1-git-send-email-joshc@codeaurora.org>
+References: <1392135847-30791-1-git-send-email-joshc@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 11-02-14 10:41:05, Tejun Heo wrote:
-[...]
-> @@ -4254,12 +4256,12 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
->  
->  	return 0;
->  
-> -err_unlock:
-> -	mutex_unlock(&cgroup_mutex);
-> -	/* Release the reference count that we took on the superblock */
-> -	deactivate_super(sb);
->  err_free_id:
->  	idr_remove(&root->cgroup_idr, cgrp->id);
-> +	/* Release the reference count that we took on the superblock */
-> +	deactivate_super(sb);
-> +err_unlock:
-> +	mutex_unlock(&cgroup_mutex);
->  err_free_name:
->  	kfree(rcu_dereference_raw(cgrp->name));
->  err_free_cgrp:
+Instead of the of_find_matching_node()/of_match_node() pair, which requires two
+iterations through the match table, make use of of_find_matching_node_and_match(),
+which only iterates through the table once.
 
-Do I have to change deactivate_super vs. mutex_unlock ordering in my
-backport for 3.12 as well?
+While we're here, mark the of_system_controller table const.
+
+Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+---
+ arch/arm/mach-mvebu/system-controller.c | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm/mach-mvebu/system-controller.c b/arch/arm/mach-mvebu/system-controller.c
+index a7fb89a..e6e300a 100644
+--- a/arch/arm/mach-mvebu/system-controller.c
++++ b/arch/arm/mach-mvebu/system-controller.c
+@@ -54,7 +54,7 @@ static const struct mvebu_system_controller orion_system_controller = {
+ 	.system_soft_reset = 0x1,
+ };
+ 
+-static struct of_device_id of_system_controller_table[] = {
++static const struct of_device_id of_system_controller_table[] = {
+ 	{
+ 		.compatible = "marvell,orion-system-controller",
+ 		.data = (void *) &orion_system_controller,
+@@ -90,13 +90,12 @@ void mvebu_restart(enum reboot_mode mode, const char *cmd)
+ 
+ static int __init mvebu_system_controller_init(void)
+ {
++	const struct of_device_id *match;
+ 	struct device_node *np;
+ 
+-	np = of_find_matching_node(NULL, of_system_controller_table);
++	np = of_find_matching_node_and_match(NULL, of_system_controller_table,
++					     &match);
+ 	if (np) {
+-		const struct of_device_id *match =
+-		    of_match_node(of_system_controller_table, np);
+-		BUG_ON(!match);
+ 		system_controller_base = of_iomap(np, 0);
+ 		mvebu_sc = (struct mvebu_system_controller *)match->data;
+ 		of_node_put(np);
 -- 
-Michal Hocko
-SUSE Labs
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
