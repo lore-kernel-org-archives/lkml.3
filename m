@@ -1,78 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752277AbaBKQp3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 11:45:29 -0500
-Received: from SpacedOut.fries.net ([67.64.210.234]:34872 "EHLO
-	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751064AbaBKQp1 (ORCPT
+	id S1752804AbaBKQpp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 11:45:45 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:53928 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752189AbaBKQpn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 11:45:27 -0500
-Date: Tue, 11 Feb 2014 10:45:13 -0600
-From: David Fries <David@Fries.net>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Evgeniy Polyakov <zbr@ioremap.net>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [patch] w1: small type cleanup in sysfs
-Message-ID: <20140211164513.GF5530@spacedout.fries.net>
-References: <20140211160826.GD9406@elgon.mountain>
+	Tue, 11 Feb 2014 11:45:43 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140211160826.GD9406@elgon.mountain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.9 (SpacedOut.fries.net [127.0.0.1]); Tue, 11 Feb 2014 10:45:14 -0600 (CST)
+In-Reply-To: <1390928069-7313-1-git-send-email-badarkhe.manish@gmail.com>
+References: <1390928069-7313-1-git-send-email-badarkhe.manish@gmail.com>
+Date: Tue, 11 Feb 2014 22:15:41 +0530
+Message-ID: <CAKDJKT5PuL6RTwUC3pkZCPDVosfcX51TRmrX3tC952L2N+X43Q@mail.gmail.com>
+Subject: Re: [PATCH V4] max8925_power: Use "IS_ENABLED(CONFIG_OF)" for DT code.
+From: Manish Badarkhe <badarkhe.manish@gmail.com>
+To: "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        =?UTF-8?B?4KSu4KSo4KS/4KS3IOCkrOCkpuCksOCkluClhw==?= 
+	<badarkhe.manish@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dan,
+Hi Dmitry,
 
-I have some other changes in work, how automated is your checkers?
-How much work is it for me to give a github repository and branch and
-find out if I introduced any problems before submitting them?
-
-
-I didn't get how you could get a less than one after a check for less
-than one from the description or patch until I looked at the rest of
-the source code.  Looks good if the description mentions
-max_slave_count is an int.
-
-How about wording it,
-
-On 64 bit systems, a large value for "long tmp" is truncated when
-assigning to "int md->max_slave_count" so we still end up with a value
-less than one despite the "tmp < 1" check.
-
-Acked-by: David Fries <david@fries.net>
-
-On Tue, Feb 11, 2014 at 07:08:26PM +0300, Dan Carpenter wrote:
-> On 64 bit systems, a large value for "tmp" could be truncated so we
-> still end up with a ->max_slave_count which is less than one despite the
-> "tmp < 1" check.
-> 
-> This is more of a problem for static checkers than a real life issue,
-> but it's simple enough to fix.
-> 
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-> 
-> diff --git a/drivers/w1/w1.c b/drivers/w1/w1.c
-> index 9eb816b2ea5e..b96f61b15dc6 100644
-> --- a/drivers/w1/w1.c
-> +++ b/drivers/w1/w1.c
-> @@ -320,10 +320,10 @@ static ssize_t w1_master_attribute_show_timeout(struct device *dev, struct devic
->  static ssize_t w1_master_attribute_store_max_slave_count(struct device *dev,
->  	struct device_attribute *attr, const char *buf, size_t count)
+On Tue, Jan 28, 2014 at 10:24 PM, Manish Badarkhe
+<badarkhe.manish@gmail.com> wrote:
+> Instead of "#ifdef CONFIG_OF" use "IS_ENABLED(CONFIG_OF)"
+> option for DT code to avoid if-deffery in code.
+>
+> Signed-off-by: Manish Badarkhe <badarkhe.manish@gmail.com>
+> ---
+> Changes since V1:
+> 1.Updated code to use "IS_ENABLED" during retrieval
+>   of platform/DT data.
+>
+> Changes since V2:
+> 1.Updated code as per Dmitry's comment to give preferance to
+>   platform data.
+>
+> Changes since V3:
+> 1.Updated code to use "IS_ENABLED(CONFIG_OF)" to remove
+>   DT data retrieval function during compilation itself
+>   when CONFIG_OF option is not set.
+>
+> :100644 100644 b4513f2... a7482db... M  drivers/power/max8925_power.c
+>  drivers/power/max8925_power.c |   17 +++++------------
+>  1 file changed, 5 insertions(+), 12 deletions(-)
+>
+> diff --git a/drivers/power/max8925_power.c b/drivers/power/max8925_power.c
+> index b4513f2..a7482db 100644
+> --- a/drivers/power/max8925_power.c
+> +++ b/drivers/power/max8925_power.c
+> @@ -427,7 +427,6 @@ static int max8925_deinit_charger(struct max8925_power_info *info)
+>         return 0;
+>  }
+>
+> -#ifdef CONFIG_OF
+>  static struct max8925_power_pdata *
+>  max8925_power_dt_init(struct platform_device *pdev)
 >  {
-> -	long tmp;
-> +	int tmp;
->  	struct w1_master *md = dev_to_w1_master(dev);
->  
-> -	if (kstrtol(buf, 0, &tmp) == -EINVAL || tmp < 1)
-> +	if (kstrtoint(buf, 0, &tmp) == -EINVAL || tmp < 1)
->  		return -EINVAL;
->  
->  	mutex_lock(&md->mutex);
+> @@ -440,9 +439,6 @@ max8925_power_dt_init(struct platform_device *pdev)
+>         int no_insert_detect;
+>         struct max8925_power_pdata *pdata;
+>
+> -       if (!nproot)
+> -               return pdev->dev.platform_data;
+> -
+>         np = of_find_node_by_name(nproot, "charger");
+>         if (!np) {
+>                 dev_err(&pdev->dev, "failed to find charger node\n");
+> @@ -468,13 +464,6 @@ max8925_power_dt_init(struct platform_device *pdev)
+>
+>         return pdata;
+>  }
+> -#else
+> -static struct max8925_power_pdata *
+> -max8925_power_dt_init(struct platform_device *pdev)
+> -{
+> -       return pdev->dev.platform_data;
+> -}
+> -#endif
+>
+>  static int max8925_power_probe(struct platform_device *pdev)
+>  {
+> @@ -483,7 +472,11 @@ static int max8925_power_probe(struct platform_device *pdev)
+>         struct max8925_power_info *info;
+>         int ret;
+>
+> -       pdata = max8925_power_dt_init(pdev);
+> +       pdata = dev_get_platdata(&pdev->dev);
+> +
+> +       if (IS_ENABLED(CONFIG_OF) && !pdata && chip->dev->of_node)
+> +               pdata = max8925_power_dt_init(pdev);
+> +
+>         if (!pdata) {
+>                 dev_err(&pdev->dev, "platform data isn't assigned to "
+>                         "power supply\n");
 
--- 
-David Fries <david@fries.net>    PGP pub CB1EE8F0
-http://fries.net/~david/
+Gentle ping!!
+Please let me know, are there any review comments on this patch?
+
+Thanks
+Manish Badarkhe
