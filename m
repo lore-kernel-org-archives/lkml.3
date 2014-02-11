@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752667AbaBKD4N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 22:56:13 -0500
-Received: from ozlabs.org ([203.10.76.45]:35875 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752180AbaBKD4M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 22:56:12 -0500
-Date: Tue, 11 Feb 2014 14:56:06 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexandre TORGUE <alexandre.torgue@st.com>
-Subject: linux-next: build failure after merge of the pinctrl tree
-Message-Id: <20140211145606.9e46a881c51e7aa71da43e4c@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+	id S1752452AbaBKD6S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 22:58:18 -0500
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:9934 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752231AbaBKD6Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 22:58:16 -0500
+Message-ID: <1392091093.2501.7.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH 0/4] hugetlb: add hugepagesnid= command-line option
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Luiz Capitulino <lcapitulino@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, mtosatti@redhat.com, mgorman@suse.de,
+        aarcange@redhat.com, andi@firstfloor.org, riel@redhat.com
+Date: Mon, 10 Feb 2014 19:58:13 -0800
+In-Reply-To: <20140210151354.68fe414f81335d4ce0e4c550@linux-foundation.org>
+References: <1392053268-29239-1-git-send-email-lcapitulino@redhat.com>
+	 <20140210151354.68fe414f81335d4ce0e4c550@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__11_Feb_2014_14_56_06_+1100_Dx8VsTj+xSEePlZV"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__11_Feb_2014_14_56_06_+1100_Dx8VsTj+xSEePlZV
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2014-02-10 at 15:13 -0800, Andrew Morton wrote:
+> On Mon, 10 Feb 2014 12:27:44 -0500 Luiz Capitulino <lcapitulino@redhat.com> wrote:
+> 
+> > HugeTLB command-line option hugepages= allows the user to specify how many
+> > huge pages should be allocated at boot. On NUMA systems, this argument
+> > automatically distributes huge pages allocation among nodes, which can
+> > be undesirable.
+> 
+> Grumble.  "can be undesirable" is the entire reason for the entire
+> patchset.  We need far, far more detail than can be conveyed in three
+> words, please!
 
-Hi Linus,
+One (not so real-world) scenario that comes right to mind which can
+benefit for such a feature is the ability to study socket/node scaling
+for hugepage aware applications. Yes, we do have numactl to bind
+programs to resources, but I don't mind having a way of finer graining
+hugetlb allocations, specially if it doesn't hurt anything.
 
-After merging the pinctrl tree, today's linux-next build (arm
-multi_v7_defconfig) failed like this:
+Thanks,
+Davidlohr
 
-drivers/pinctrl/pinctrl-st.c:407:18: error: 'stid127_delays' undeclared her=
-e (not in a function)
-
-Caused by commit cab6bf05bab5 ("pinctrl: st: add stid127 support").
-
-I have used the pinctrl tree from next-20140210 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__11_Feb_2014_14_56_06_+1100_Dx8VsTj+xSEePlZV
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJS+Z9aAAoJEMDTa8Ir7ZwVFHgP/iu0JVw8l3S4OfmK5LJvI1s4
-5SfeeWsIf87o8g/R3HELm1bhorkJQIaIaPhi+YORd+TA7fc3kCACq9zJ5Io8DQCx
-/rA2BnHLKjW50eNeAIrlW4jBRNxICTt7+TbycjiW+NGIbgp7xFjZGTTCGJrQNY7S
-vnz8JAF0hfoGXVxFRK6I1+mU1E/x5A0h1fa6cENPr62tCrel6WtlUfJJFltxPPxk
-G5cmdmOfPOb2rjD7AR9M2kU+BJL05/QO7Ql6evRplUV+cWkbr9dmzj/NhouR1TJj
-zoDaJ5he37jA65D1TVD7EJiqbsB6ez3IFc1M7wWvzTSTGMxnkp0CfmvzQO9HAVrR
-9JB1YbMpUcKxqD1cFC6mpXTAGOgvhpc5QnOvb2yXgG36i+6m7Y4+1dkx/xeEXLa5
-TCunZcaD32R1MipNRdXZpB6PFNjTiHwY317a1dnEv+11Es0ldqgCXFWXkaspMEoW
-aOf7lwx8wb8j4GFGmXbAN3h7gDsW8+Wd5GFvIiBx1YYkd94bUdCubrHCspobW8mn
-vhQ6ZHEZx0gne/soUbt46RU9Bw+JT4mcarAdikVMl/5YyRCscA5Bx6d1Q+jm8mV+
-EX0e4Y3kpLrhr9yAOnzbIc6tcsF/Un4mWKp9TMKG1vI2o4XBrd4K+IuhuRHVhMP3
-xjf5nFhe56pcVA8JRQ88
-=TcBI
------END PGP SIGNATURE-----
-
---Signature=_Tue__11_Feb_2014_14_56_06_+1100_Dx8VsTj+xSEePlZV--
