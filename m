@@ -1,82 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751894AbaBKKFv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 05:05:51 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:22473 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751209AbaBKKDz (ORCPT
+	id S1751491AbaBKKG4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 05:06:56 -0500
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:54116 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750785AbaBKKGv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 05:03:55 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-f4-52f9f58858da
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>, stable@vger.kernel.org
-Subject: [PATCH 5/7] mfd: max8925: Fix possible NULL pointer dereference on
- i2c_new_dummy error
-Date: Tue, 11 Feb 2014 11:03:33 +0100
-Message-id: <1392113015-11180-5-git-send-email-k.kozlowski@samsung.com>
+	Tue, 11 Feb 2014 05:06:51 -0500
+From: <srinivas.kandagatla@st.com>
+To: <netdev@vger.kernel.org>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <kernel@stlinux.com>, <davem@davemloft.net>
+Subject: [PATCH v3 0/3] net: stmmac: Add STi GMAC ethernet
+Date: Tue, 11 Feb 2014 09:58:36 +0000
+Message-ID: <1392112716-30803-1-git-send-email-srinivas.kandagatla@st.com>
 X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1392113015-11180-1-git-send-email-k.kozlowski@samsung.com>
-References: <1392113015-11180-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLJMWRmVeSWpSXmKPExsVy+t/xK7odX38GGVxfaWqxccZ6VovXLwwt
-	zja9Ybe4//Uoo8XlXXPYLGac38dksfbIXXaL092sFhdXfGGyWLDxEaMDl8eda3vYPOadDPTo
-	27KK0ePzJrkAligum5TUnMyy1CJ9uwSujF8bLjIWNHBXfFq6iLWBcTpnFyMnh4SAicSnvhms
-	ELaYxIV769m6GLk4hASWMkrc/XyICcLpY5J4u2YnI0gVm4CxxOblS8CqRAQ2M0os/n6VFcRh
-	FrjLKNF89z1QFQeHsECixJF7SiANLAKqEiuXnWQHsXkF3CV+dJ9lBymREFCQmDPJBiTMKeAh
-	seLDGWYQWwiopLX/LusERt4FjAyrGEVTS5MLipPScw31ihNzi0vz0vWS83M3MUKC7MsOxsXH
-	rA4xCnAwKvHwblD8GSTEmlhWXJl7iFGCg1lJhFfpOFCINyWxsiq1KD++qDQntfgQIxMHp1QD
-	Y8XSrrmSElYHN91fnHe9ONssbVJ263rL2qir0/Z/nLYm9V7yz7mu+7aVm3W/qymwtuBaH7FO
-	7uKD/IeHXmWvOPT56KdzKbqxD1eFTy688zqUz4j5pdghDhev51n37uxL2/g04HKY8ISjklqx
-	ApVKj7l/6jZEsYj0GZiJ/WfRnJT0znKdhbPQWyWW4oxEQy3mouJEAPNaDSIQAgAA
+In-Reply-To: <1391770455-24291-1-git-send-email-srinivas.kandagatla@st.com>
+References: <1391770455-24291-1-git-send-email-srinivas.kandagatla@st.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.65.51.147]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During probe the driver allocates dummy I2C devices for RTC and ADC
-with i2c_new_dummy() but it does not check the return value of this
-calls.
+From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 
-In case of error (i2c_new_device(): memory allocation failure or I2C
-address cannot be used) this function returns NULL which is later used
-by i2c_unregister_device().
+Hi All,
 
-If i2c_new_dummy() fails for RTC or ADC devices, fail also the probe
-for main MFD driver.
+This patch series adds Ethernet support to STi series SOCs STiH415 and STiH416.
+STi SOC series integrates dwmac IP from synopsis, however there is a hardware
+glue on top of this standard IP, this glue needs to configured before the
+actual dwmac can be used.  Also the glue logic needs re-configuring when the
+link speed changes, This is because the clk source can change as the link
+speed changes.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: stable@vger.kernel.org
----
- drivers/mfd/max8925-i2c.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+This patch just adds STi specific callbacks into of_data for configuring the
+glue layer.
 
-diff --git a/drivers/mfd/max8925-i2c.c b/drivers/mfd/max8925-i2c.c
-index 176aa26fc787..a83eed5c15ca 100644
---- a/drivers/mfd/max8925-i2c.c
-+++ b/drivers/mfd/max8925-i2c.c
-@@ -181,9 +181,18 @@ static int max8925_probe(struct i2c_client *client,
- 	mutex_init(&chip->io_lock);
- 
- 	chip->rtc = i2c_new_dummy(chip->i2c->adapter, RTC_I2C_ADDR);
-+	if (!chip->rtc) {
-+		dev_err(chip->dev, "Failed to allocate I2C device for RTC\n");
-+		return -ENODEV;
-+	}
- 	i2c_set_clientdata(chip->rtc, chip);
- 
- 	chip->adc = i2c_new_dummy(chip->i2c->adapter, ADC_I2C_ADDR);
-+	if (!chip->adc) {
-+		dev_err(chip->dev, "Failed to allocate I2C device for ADC\n");
-+		i2c_unregister_device(chip->rtc);
-+		return -ENODEV;
-+	}
- 	i2c_set_clientdata(chip->adc, chip);
- 
- 	device_init_wakeup(&client->dev, 1);
+I have rebased my original patches (http://lkml.org/lkml/2013/11/12/243)
+to latest stmmac which updates callbacks to suit glue drivers like this.
+
+These patches are tested on b2000 and B2020 with STiH415 and STiH416.
+
+Changes since v1:
+ - fixed multi-line function call format as suggested by David Miller.
+
+Changes since v2:
+ - fix indenting issues & superfluous empty lines as suggested by David Miller.
+ - Run the code through scripts/Lindent.
+
+Dave, Can I request you to take the first patch via net tree for v3.15, I can
+request Arnd or Olof to take the DT patches via the arm-soc tree for v3.15.
+
+Thanks,
+srini
+
+Srinivas Kandagatla (3):
+  net: stmmac:sti: Add STi SOC glue driver.
+  ARM: STi: Add STiH415 ethernet support.
+  ARM: STi: Add STiH416 ethernet support.
+
+ .../devicetree/bindings/net/sti-dwmac.txt          |   58 ++++
+ arch/arm/boot/dts/stih415-clock.dtsi               |   14 +
+ arch/arm/boot/dts/stih415-pinctrl.dtsi             |  121 +++++++
+ arch/arm/boot/dts/stih415.dtsi                     |   48 +++
+ arch/arm/boot/dts/stih416-clock.dtsi               |   14 +
+ arch/arm/boot/dts/stih416-pinctrl.dtsi             |  109 +++++++
+ arch/arm/boot/dts/stih416.dtsi                     |   44 +++
+ arch/arm/boot/dts/stih41x-b2000.dtsi               |   22 ++
+ arch/arm/boot/dts/stih41x-b2020.dtsi               |   26 ++
+ drivers/net/ethernet/stmicro/stmmac/Kconfig        |   11 +
+ drivers/net/ethernet/stmicro/stmmac/Makefile       |    1 +
+ drivers/net/ethernet/stmicro/stmmac/dwmac-sti.c    |  330 ++++++++++++++++++++
+ drivers/net/ethernet/stmicro/stmmac/stmmac.h       |    3 +
+ .../net/ethernet/stmicro/stmmac/stmmac_platform.c  |    5 +
+ 14 files changed, 806 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/net/sti-dwmac.txt
+ create mode 100644 drivers/net/ethernet/stmicro/stmmac/dwmac-sti.c
+
 -- 
 1.7.9.5
 
