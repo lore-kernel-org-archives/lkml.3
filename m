@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752556AbaBKRLC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 12:11:02 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:25784 "EHLO
+	id S1752524AbaBKRLA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 12:11:00 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:25825 "EHLO
 	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752425AbaBKRK5 (ORCPT
+	by vger.kernel.org with ESMTP id S1752279AbaBKRK6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 12:10:57 -0500
+	Tue, 11 Feb 2014 12:10:58 -0500
 From: Pawel Moll <pawel.moll@arm.com>
 To: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
 Cc: Pawel Moll <pawel.moll@arm.com>
-Subject: [PATCH 11/12] ARM: vexpress: Simplify SMP operations for DT-powered system
-Date: Tue, 11 Feb 2014 17:10:35 +0000
-Message-Id: <1392138636-29240-12-git-send-email-pawel.moll@arm.com>
+Subject: [PATCH 12/12] ARM: vexpress: move HBI check to sysreg driver
+Date: Tue, 11 Feb 2014 17:10:36 +0000
+Message-Id: <1392138636-29240-13-git-send-email-pawel.moll@arm.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392138636-29240-1-git-send-email-pawel.moll@arm.com>
 References: <1392138636-29240-1-git-send-email-pawel.moll@arm.com>
@@ -21,252 +21,159 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As all cores must be properly described in the Device Tree,
-there is no point in getting their numbers from SCU on
-A5/A9 platforms. This significantly simplifies the code,
-removing the need for flat-tree scanning and early static
-mapping.
+The last reason for static memory mapping is the HBI (board
+identification number) check early in the machine code.
+
+Moving the check to the sysreg driver makes it possible to
+completely remove the early mapping and init functions.
 
 Signed-off-by: Pawel Moll <pawel.moll@arm.com>
 ---
- arch/arm/mach-vexpress/core.h    |   3 +-
- arch/arm/mach-vexpress/platsmp.c | 158 ++++++++++-----------------------------
- arch/arm/mach-vexpress/v2m.c     |   6 +-
- 3 files changed, 41 insertions(+), 126 deletions(-)
+ arch/arm/mach-vexpress/v2m.c  | 49 -------------------------------------------
+ drivers/mfd/vexpress-sysreg.c | 30 ++++++++++----------------
+ include/linux/vexpress.h      |  1 -
+ 3 files changed, 11 insertions(+), 69 deletions(-)
 
-diff --git a/arch/arm/mach-vexpress/core.h b/arch/arm/mach-vexpress/core.h
-index bde4374..152fad9 100644
---- a/arch/arm/mach-vexpress/core.h
-+++ b/arch/arm/mach-vexpress/core.h
-@@ -4,10 +4,9 @@
- /* Tile's peripherals static mappings should start here */
- #define V2T_PERIPH 0xf8200000
+diff --git a/arch/arm/mach-vexpress/v2m.c b/arch/arm/mach-vexpress/v2m.c
+index d8b419b..38f4f6f 100644
+--- a/arch/arm/mach-vexpress/v2m.c
++++ b/arch/arm/mach-vexpress/v2m.c
+@@ -370,53 +370,6 @@ MACHINE_START(VEXPRESS, "ARM-Versatile Express")
+ 	.init_machine	= v2m_init,
+ MACHINE_END
  
--void vexpress_dt_smp_map_io(void);
--
- bool vexpress_smp_init_ops(void);
- 
- extern struct smp_operations	vexpress_smp_ops;
-+extern struct smp_operations	vexpress_smp_dt_ops;
- 
- extern void vexpress_cpu_die(unsigned int cpu);
-diff --git a/arch/arm/mach-vexpress/platsmp.c b/arch/arm/mach-vexpress/platsmp.c
-index 12a8751..a1f3804 100644
---- a/arch/arm/mach-vexpress/platsmp.c
-+++ b/arch/arm/mach-vexpress/platsmp.c
-@@ -12,8 +12,7 @@
- #include <linux/errno.h>
- #include <linux/smp.h>
- #include <linux/io.h>
--#include <linux/of.h>
--#include <linux/of_fdt.h>
-+#include <linux/of_address.h>
- #include <linux/vexpress.h>
- 
- #include <asm/mcpm.h>
-@@ -26,125 +25,13 @@
- 
- #include "core.h"
- 
--#if defined(CONFIG_OF)
--
--static enum {
--	GENERIC_SCU,
--	CORTEX_A9_SCU,
--} vexpress_dt_scu __initdata = GENERIC_SCU;
--
--static struct map_desc vexpress_dt_cortex_a9_scu_map __initdata = {
--	.virtual	= V2T_PERIPH,
--	/* .pfn	set in vexpress_dt_init_cortex_a9_scu() */
--	.length		= SZ_128,
+-static struct map_desc v2m_rs1_io_desc __initdata = {
+-	.virtual	= V2M_PERIPH,
+-	.pfn		= __phys_to_pfn(0x1c000000),
+-	.length		= SZ_2M,
 -	.type		= MT_DEVICE,
 -};
 -
--static void *vexpress_dt_cortex_a9_scu_base __initdata;
--
--const static char *vexpress_dt_cortex_a9_match[] __initconst = {
--	"arm,cortex-a5-scu",
--	"arm,cortex-a9-scu",
--	NULL
--};
--
--static int __init vexpress_dt_find_scu(unsigned long node,
--		const char *uname, int depth, void *data)
+-static int __init v2m_dt_scan_memory_map(unsigned long node, const char *uname,
+-		int depth, void *data)
 -{
--	if (of_flat_dt_match(node, vexpress_dt_cortex_a9_match)) {
--		phys_addr_t phys_addr;
--		__be32 *reg = of_get_flat_dt_prop(node, "reg", NULL);
+-	const char **map = data;
 -
--		if (WARN_ON(!reg))
--			return -EINVAL;
+-	if (strcmp(uname, "motherboard") != 0)
+-		return 0;
 -
--		phys_addr = be32_to_cpup(reg);
--		vexpress_dt_scu = CORTEX_A9_SCU;
+-	*map = of_get_flat_dt_prop(node, "arm,v2m-memory-map", NULL);
 -
--		vexpress_dt_cortex_a9_scu_map.pfn = __phys_to_pfn(phys_addr);
--		iotable_init(&vexpress_dt_cortex_a9_scu_map, 1);
--		vexpress_dt_cortex_a9_scu_base = ioremap(phys_addr, SZ_256);
--		if (WARN_ON(!vexpress_dt_cortex_a9_scu_base))
--			return -EFAULT;
--	}
--
--	return 0;
+-	return 1;
 -}
 -
--void __init vexpress_dt_smp_map_io(void)
+-void __init v2m_dt_map_io(void)
 -{
--	if (initial_boot_params)
--		WARN_ON(of_scan_flat_dt(vexpress_dt_find_scu, NULL));
+-	const char *map = NULL;
+-
+-	of_scan_flat_dt(v2m_dt_scan_memory_map, &map);
+-
+-	if (map && strcmp(map, "rs1") == 0)
+-		iotable_init(&v2m_rs1_io_desc, 1);
+-	else
+-		iotable_init(v2m_io_desc, ARRAY_SIZE(v2m_io_desc));
 -}
 -
--static void __init vexpress_dt_smp_init_cpus(void)
+-void __init v2m_dt_init_early(void)
 -{
--	int ncores = 0, i;
+-	u32 dt_hbi;
 -
--	switch (vexpress_dt_scu) {
--	case GENERIC_SCU:
--		return;
--	case CORTEX_A9_SCU:
--		ncores = scu_get_core_count(vexpress_dt_cortex_a9_scu_base);
--		break;
--	default:
--		WARN_ON(1);
--		break;
--	}
+-	/* Confirm board type against DT property, if available */
+-	if (of_property_read_u32(of_allnodes, "arm,hbi", &dt_hbi) == 0) {
+-		u32 hbi = vexpress_get_hbi(VEXPRESS_SITE_MASTER);
 -
--	if (ncores < 2)
--		return;
--
--	if (ncores > nr_cpu_ids) {
--		pr_warn("SMP: %u cores greater than maximum (%u), clipping\n",
--				ncores, nr_cpu_ids);
--		ncores = nr_cpu_ids;
--	}
--
--	for (i = 0; i < ncores; ++i)
--		set_cpu_possible(i, true);
--}
--
--static void __init vexpress_dt_smp_prepare_cpus(unsigned int max_cpus)
--{
--
--	switch (vexpress_dt_scu) {
--	case GENERIC_SCU:
--		break;
--	case CORTEX_A9_SCU:
--		scu_enable(vexpress_dt_cortex_a9_scu_base);
--		break;
--	default:
--		WARN_ON(1);
--		break;
+-		if (WARN_ON(dt_hbi != hbi))
+-			pr_warning("vexpress: DT HBI (%x) is not matching "
+-					"hardware (%x)!\n", dt_hbi, hbi);
 -	}
 -}
 -
--#else
 -
--static void __init vexpress_dt_smp_init_cpus(void)
--{
--	WARN_ON(1);
--}
--
--void __init vexpress_dt_smp_prepare_cpus(unsigned int max_cpus)
--{
--	WARN_ON(1);
--}
--
--#endif
--
- /*
-  * Initialise the CPU possible map early - this describes the CPUs
-  * which may be present or become present in the system.
-  */
- static void __init vexpress_smp_init_cpus(void)
+ static void __init v2m_dt_init(void)
  {
--	if (ct_desc)
--		ct_desc->init_cpu_map();
--	else
--		vexpress_dt_smp_init_cpus();
--
-+	ct_desc->init_cpu_map();
- }
- 
- static void __init vexpress_smp_prepare_cpus(unsigned int max_cpus)
-@@ -153,10 +40,7 @@ static void __init vexpress_smp_prepare_cpus(unsigned int max_cpus)
- 	 * Initialise the present map, which describes the set of CPUs
- 	 * actually populated at the present time.
- 	 */
--	if (ct_desc)
--		ct_desc->smp_enable(max_cpus);
--	else
--		vexpress_dt_smp_prepare_cpus(max_cpus);
-+	ct_desc->smp_enable(max_cpus);
- 
- 	/*
- 	 * Write the address of secondary startup into the
-@@ -194,3 +78,39 @@ bool __init vexpress_smp_init_ops(void)
- #endif
- 	return false;
- }
-+
-+#if defined(CONFIG_OF)
-+
-+static const struct of_device_id vexpress_smp_dt_scu_match[] __initconst = {
-+	{ .compatible = "arm,cortex-a5-scu", },
-+	{ .compatible = "arm,cortex-a9-scu", },
-+	{}
-+};
-+
-+static void __init vexpress_smp_dt_prepare_cpus(unsigned int max_cpus)
-+{
-+	struct device_node *scu = of_find_matching_node(NULL,
-+			vexpress_smp_dt_scu_match);
-+
-+	if (scu)
-+		scu_enable(of_iomap(scu, 0));
-+
-+	/*
-+	 * Write the address of secondary startup into the
-+	 * system-wide flags register. The boot monitor waits
-+	 * until it receives a soft interrupt, and then the
-+	 * secondary CPU branches to this address.
-+	 */
-+	vexpress_flags_set(virt_to_phys(versatile_secondary_startup));
-+}
-+
-+struct smp_operations __initdata vexpress_smp_dt_ops = {
-+	.smp_prepare_cpus	= vexpress_smp_dt_prepare_cpus,
-+	.smp_secondary_init	= versatile_secondary_init,
-+	.smp_boot_secondary	= versatile_boot_secondary,
-+#ifdef CONFIG_HOTPLUG_CPU
-+	.cpu_die		= vexpress_cpu_die,
-+#endif
-+};
-+
-+#endif
-diff --git a/arch/arm/mach-vexpress/v2m.c b/arch/arm/mach-vexpress/v2m.c
-index d8a9fd7..d8b419b 100644
---- a/arch/arm/mach-vexpress/v2m.c
-+++ b/arch/arm/mach-vexpress/v2m.c
-@@ -400,10 +400,6 @@ void __init v2m_dt_map_io(void)
- 		iotable_init(&v2m_rs1_io_desc, 1);
- 	else
- 		iotable_init(v2m_io_desc, ARRAY_SIZE(v2m_io_desc));
--
--#if defined(CONFIG_SMP)
--	vexpress_dt_smp_map_io();
--#endif
- }
- 
- void __init v2m_dt_init_early(void)
-@@ -434,7 +430,7 @@ static const char * const v2m_dt_match[] __initconst = {
- 
- DT_MACHINE_START(VEXPRESS_DT, "ARM-Versatile Express")
+ 	l2x0_of_init(0x00400000, 0xfe0fffff);
+@@ -432,7 +385,5 @@ DT_MACHINE_START(VEXPRESS_DT, "ARM-Versatile Express")
  	.dt_compat	= v2m_dt_match,
--	.smp		= smp_ops(vexpress_smp_ops),
-+	.smp		= smp_ops(vexpress_smp_dt_ops),
+ 	.smp		= smp_ops(vexpress_smp_dt_ops),
  	.smp_init	= smp_init_ops(vexpress_smp_init_ops),
- 	.map_io		= v2m_dt_map_io,
- 	.init_early	= v2m_dt_init_early,
+-	.map_io		= v2m_dt_map_io,
+-	.init_early	= v2m_dt_init_early,
+ 	.init_machine	= v2m_dt_init,
+ MACHINE_END
+diff --git a/drivers/mfd/vexpress-sysreg.c b/drivers/mfd/vexpress-sysreg.c
+index 57c21a0..3eb26e1 100644
+--- a/drivers/mfd/vexpress-sysreg.c
++++ b/drivers/mfd/vexpress-sysreg.c
+@@ -44,7 +44,6 @@
+ #define SYS_CFGSTAT		0x0a8
+ 
+ #define SYS_HBI_MASK		0xfff
+-#define SYS_ID_HBI_SHIFT	16
+ #define SYS_PROCIDx_HBI_SHIFT	0
+ 
+ #define SYS_MCI_CARDIN		(1 << 0)
+@@ -98,24 +97,6 @@ u32 vexpress_get_procid(int site)
+ 			SYS_PROCID0 : SYS_PROCID1));
+ }
+ 
+-u32 vexpress_get_hbi(int site)
+-{
+-	u32 id;
+-
+-	switch (site) {
+-	case VEXPRESS_SITE_MB:
+-		id = readl(vexpress_sysreg_base() + SYS_ID);
+-		return (id >> SYS_ID_HBI_SHIFT) & SYS_HBI_MASK;
+-	case VEXPRESS_SITE_MASTER:
+-	case VEXPRESS_SITE_DB1:
+-	case VEXPRESS_SITE_DB2:
+-		id = vexpress_get_procid(site);
+-		return (id >> SYS_PROCIDx_HBI_SHIFT) & SYS_HBI_MASK;
+-	}
+-
+-	return ~0;
+-}
+-
+ void __iomem *vexpress_get_24mhz_clock_base(void)
+ {
+ 	return vexpress_sysreg_base() + SYS_24MHZ;
+@@ -222,6 +203,7 @@ static int vexpress_sysreg_probe(struct platform_device *pdev)
+ 	struct resource *mem;
+ 	void __iomem *base;
+ 	struct bgpio_chip *mmc_gpio_chip;
++	u32 dt_hbi;
+ 
+ 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (!mem)
+@@ -233,6 +215,16 @@ static int vexpress_sysreg_probe(struct platform_device *pdev)
+ 
+ 	vexpress_config_set_master(vexpress_sysreg_get_master());
+ 
++	/* Confirm board type against DT property, if available */
++	if (of_property_read_u32(of_allnodes, "arm,hbi", &dt_hbi) == 0) {
++		u32 id = vexpress_get_procid(VEXPRESS_SITE_MASTER);
++		u32 hbi = (id >> SYS_PROCIDx_HBI_SHIFT) & SYS_HBI_MASK;
++
++		if (WARN_ON(dt_hbi != hbi))
++			dev_warn(&pdev->dev, "DT HBI (%x) is not matching hardware (%x)!\n",
++					dt_hbi, hbi);
++	}
++
+ 	/*
+ 	 * Duplicated SYS_MCI pseudo-GPIO controller for compatibility with
+ 	 * older trees using sysreg node for MMC control lines.
+diff --git a/include/linux/vexpress.h b/include/linux/vexpress.h
+index 0aee1b9..06e1ab8 100644
+--- a/include/linux/vexpress.h
++++ b/include/linux/vexpress.h
+@@ -60,7 +60,6 @@ struct regmap *devm_regmap_init_vexpress_config(struct device *dev);
+ 
+ unsigned int vexpress_get_mci_cardin(struct device *dev);
+ u32 vexpress_get_procid(int site);
+-u32 vexpress_get_hbi(int site);
+ void *vexpress_get_24mhz_clock_base(void);
+ void vexpress_flags_set(u32 data);
+ 
 -- 
 1.8.3.2
 
