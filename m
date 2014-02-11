@@ -1,78 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751849AbaBKNzO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 08:55:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56572 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751802AbaBKNzN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 08:55:13 -0500
-Date: Tue, 11 Feb 2014 08:54:37 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Davidlohr Bueso <davidlohr@hp.com>, LKML <linux-kernel@vger.kernel.org>,
-        jolsa@redhat.com, jmario@redhat.com, fowles@inreach.com,
-        eranian@google.com, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Richard Fowles <rfowles@redhat.com>
-Subject: Re: [PATCH 01/21] perf c2c: Shared data analyser
-Message-ID: <20140211135437.GW25953@redhat.com>
-References: <1392053356-23024-1-git-send-email-dzickus@redhat.com>
- <1392059886-30812-1-git-send-email-dzickus@redhat.com>
- <1392070204.25316.1.camel@buesod1.americas.hpqcorp.net>
- <20140211113127.GA28757@ghostprotocols.net>
+	id S1751870AbaBKN4f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 08:56:35 -0500
+Received: from mail-vb0-f53.google.com ([209.85.212.53]:50484 "EHLO
+	mail-vb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750903AbaBKN4e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 08:56:34 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140211113127.GA28757@ghostprotocols.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de>
+References: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de>
+Date: Tue, 11 Feb 2014 07:56:33 -0600
+Message-ID: <CAL_Jsq+U9zU1i+STLHMBjY5BeEP6djYnJVE5X1ix-D2q_zWztQ@mail.gmail.com>
+Subject: Re: [RFC PATCH] [media]: of: move graph helpers from
+ drivers/media/v4l2-core to drivers/of
+From: Rob Herring <robherring2@gmail.com>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Philipp Zabel <philipp.zabel@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 08:31:27AM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Mon, Feb 10, 2014 at 02:10:04PM -0800, Davidlohr Bueso escreveu:
-> > On Mon, 2014-02-10 at 14:18 -0500, Don Zickus wrote:
-> > > From: Arnaldo Carvalho de Melo <acme@redhat.com>
-> > > 
-> > > This is the start of a new perf tool that will collect information about
-> > > memory accesses and analyse it to find things like hot cachelines, etc.
-> > > 
-> > > This is basically trying to get a prototype written by Richard Fowles
-> > > written using the tools/perf coding style and libraries.
-> > > 
-> > > Start it from 'perf sched', this patch starts the process by adding the
-> > > 'record' subcommand to collect the needed mem loads and stores samples.
-> > > 
-> > > It also have the basic 'report' skeleton, resolving the sample address
-> > > and hooking the events found in a perf.data file with methods to handle
-> > > them, right now just printing the resolved perf_sample data structure
-> > > after each event name.
-> > 
-> > What tree/branch is this developed against? I'm getting the following
-> > with Linus' latest and tip tree:
-> 
-> I'll try refreshing it on top of my perf/core branch today
+On Tue, Feb 11, 2014 at 5:45 AM, Philipp Zabel <p.zabel@pengutronix.de> wrote:
+> From: Philipp Zabel <philipp.zabel@gmail.com>
+>
+> This patch moves the parsing helpers used to parse connected graphs
+> in the device tree, like the video interface bindings documented in
+> Documentation/devicetree/bindings/media/video-interfaces.txt, from
+> drivers/media/v4l2-core to drivers/of.
 
-Sorry everyone,  I managed to rebase it on top of Ingo's master branch
-f58a0b1790e3973b23548e297db60c18b29b0818
+This is the opposite direction things have been moving...
 
-Let me find your perf/core branch.
+> This allows to reuse the same parser code from outside the V4L2 framework,
+> most importantly from display drivers. There have been patches that duplicate
+> the code (and I am going to send one of my own), such as
+> http://lists.freedesktop.org/archives/dri-devel/2013-August/043308.html
+> and others that parse the same binding in a different way:
+> https://www.mail-archive.com/linux-omap@vger.kernel.org/msg100761.html
+>
+> I think that all common video interface parsing helpers should be moved to a
+> single place, outside of the specific subsystems, so that it can be reused
+> by all drivers.
 
-Cheers,
-Don
+Perhaps that should be done rather than moving to drivers/of now and
+then again to somewhere else.
 
->  
-> > builtin-c2c.c: In function ‘perf_c2c__process_sample’:
-> > builtin-c2c.c:68:20: error: request for member ‘func’ in something not a structure or union
-> > builtin-c2c.c:69:36: error: request for member ‘func’ in something not a structure or union
-> > builtin-c2c.c: In function ‘perf_c2c__read_events’:
-> > builtin-c2c.c:81:2: error: passing argument 1 of ‘perf_session__new’ from incompatible pointer type [-Werror]
-> > In file included from builtin-c2c.c:6:0:
-> > util/session.h:52:22: note: expected ‘struct perf_data_file *’ but argument is of type ‘const char *’
-> > builtin-c2c.c:81:2: error: too many arguments to function ‘perf_session__new’
-> > In file included from builtin-c2c.c:6:0:
-> > util/session.h:52:22: note: declared here
-> > 
+> I moved v4l2_of_get_next_endpoint, v4l2_of_get_remote_port,
+> and v4l2_of_get_remote_port_parent. They are renamed to
+> of_graph_get_next_endpoint, of_graph_get_remote_port, and
+> of_graph_get_remote_port_parent, respectively.
+>
+> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> ---
+>  drivers/media/Kconfig             |   1 +
+>  drivers/media/v4l2-core/v4l2-of.c | 117 ---------------------------------
+>  drivers/of/Kconfig                |   3 +
+>  drivers/of/Makefile               |   1 +
+>  drivers/of/of_graph.c             | 133 ++++++++++++++++++++++++++++++++++++++
+>  include/linux/of_graph.h          |  23 +++++++
+>  include/media/v4l2-of.h           |  16 ++---
+>  7 files changed, 167 insertions(+), 127 deletions(-)
+>  create mode 100644 drivers/of/of_graph.c
+>  create mode 100644 include/linux/of_graph.h
+
+[snip]
+
+> diff --git a/include/media/v4l2-of.h b/include/media/v4l2-of.h
+> index 541cea4..404a493 100644
+> --- a/include/media/v4l2-of.h
+> +++ b/include/media/v4l2-of.h
+> @@ -17,6 +17,7 @@
+>  #include <linux/list.h>
+>  #include <linux/types.h>
+>  #include <linux/errno.h>
+> +#include <linux/of_graph.h>
+>
+>  #include <media/v4l2-mediabus.h>
+>
+> @@ -72,11 +73,6 @@ struct v4l2_of_endpoint {
+>  #ifdef CONFIG_OF
+>  int v4l2_of_parse_endpoint(const struct device_node *node,
+>                            struct v4l2_of_endpoint *endpoint);
+> -struct device_node *v4l2_of_get_next_endpoint(const struct device_node *parent,
+> -                                       struct device_node *previous);
+> -struct device_node *v4l2_of_get_remote_port_parent(
+> -                                       const struct device_node *node);
+> -struct device_node *v4l2_of_get_remote_port(const struct device_node *node);
+>  #else /* CONFIG_OF */
+>
+>  static inline int v4l2_of_parse_endpoint(const struct device_node *node,
+> @@ -85,25 +81,25 @@ static inline int v4l2_of_parse_endpoint(const struct device_node *node,
+>         return -ENOSYS;
+>  }
+>
+> +#endif /* CONFIG_OF */
+> +
+>  static inline struct device_node *v4l2_of_get_next_endpoint(
+>                                         const struct device_node *parent,
+>                                         struct device_node *previous)
+>  {
+> -       return NULL;
+> +       return of_graph_get_next_endpoint(parent, previous);
+
+Won't this break for !OF?
+
+Rob
