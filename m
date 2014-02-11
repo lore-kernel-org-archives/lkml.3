@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756400AbaBKU0j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:26:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39940 "EHLO
+	id S1753303AbaBKTGV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:06:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39904 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753312AbaBKTGX (ORCPT
+	with ESMTP id S1751572AbaBKTGR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:23 -0500
+	Tue, 11 Feb 2014 14:06:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Chris Ball <chris@printf.net>
-Subject: [PATCH 3.12 021/107] mmc: core: sd: implement proper support for sd3.0 au sizes
-Date: Tue, 11 Feb 2014 11:04:47 -0800
-Message-Id: <20140211184748.805516227@linuxfoundation.org>
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Wu Fengguang <fengguang.wu@intel.com>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.12 014/107] mm/page-writeback.c: do not count anon pages as dirtyable memory
+Date: Tue, 11 Feb 2014 11:04:40 -0800
+Message-Id: <20140211184748.611064336@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -31,98 +32,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wolfram Sang <wsa@the-dreams.de>
+From: Johannes Weiner <hannes@cmpxchg.org>
 
-commit 9288cac05405a7da406097a44721aa4004609b4d upstream.
+commit a1c3bfb2f67ef766de03f1f56bdfff9c8595ab14 upstream.
 
-This reverts and updates commit 77776fd0a4cc541b9 ("mmc: sd: fix the
-maximum au_size for SD3.0"). The au_size for SD3.0 cannot be achieved
-by a simple bit shift, so this needs to be implemented differently.
-Also, don't print the warning in case of 0 since 'not defined' is
-different from 'invalid'.
+The VM is currently heavily tuned to avoid swapping.  Whether that is
+good or bad is a separate discussion, but as long as the VM won't swap
+to make room for dirty cache, we can not consider anonymous pages when
+calculating the amount of dirtyable memory, the baseline to which
+dirty_background_ratio and dirty_ratio are applied.
 
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-Acked-by: Jaehoon Chung <jh80.chung@samsung.com>
-Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Signed-off-by: Chris Ball <chris@printf.net>
+A simple workload that occupies a significant size (40+%, depending on
+memory layout, storage speeds etc.) of memory with anon/tmpfs pages and
+uses the remainder for a streaming writer demonstrates this problem.  In
+that case, the actual cache pages are a small fraction of what is
+considered dirtyable overall, which results in an relatively large
+portion of the cache pages to be dirtied.  As kswapd starts rotating
+these, random tasks enter direct reclaim and stall on IO.
+
+Only consider free pages and file pages dirtyable.
+
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Reported-by: Tejun Heo <tj@kernel.org>
+Tested-by: Tejun Heo <tj@kernel.org>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/core/sd.c |   37 ++++++++++++++++++++++---------------
- 1 file changed, 22 insertions(+), 15 deletions(-)
+ include/linux/vmstat.h |    2 --
+ mm/internal.h          |    1 -
+ mm/page-writeback.c    |    6 ++++--
+ mm/vmscan.c            |   23 +----------------------
+ 4 files changed, 5 insertions(+), 27 deletions(-)
 
---- a/drivers/mmc/core/sd.c
-+++ b/drivers/mmc/core/sd.c
-@@ -11,6 +11,7 @@
-  */
+--- a/include/linux/vmstat.h
++++ b/include/linux/vmstat.h
+@@ -142,8 +142,6 @@ static inline unsigned long zone_page_st
+ 	return x;
+ }
  
- #include <linux/err.h>
-+#include <linux/sizes.h>
- #include <linux/slab.h>
- #include <linux/stat.h>
- 
-@@ -44,6 +45,13 @@ static const unsigned int tacc_mant[] =
- 	35,	40,	45,	50,	55,	60,	70,	80,
- };
- 
-+static const unsigned int sd_au_size[] = {
-+	0,		SZ_16K / 512,		SZ_32K / 512,	SZ_64K / 512,
-+	SZ_128K / 512,	SZ_256K / 512,		SZ_512K / 512,	SZ_1M / 512,
-+	SZ_2M / 512,	SZ_4M / 512,		SZ_8M / 512,	(SZ_8M + SZ_4M) / 512,
-+	SZ_16M / 512,	(SZ_16M + SZ_8M) / 512,	SZ_32M / 512,	SZ_64M / 512,
-+};
-+
- #define UNSTUFF_BITS(resp,start,size)					\
- 	({								\
- 		const int __size = size;				\
-@@ -215,7 +223,7 @@ static int mmc_decode_scr(struct mmc_car
- static int mmc_read_ssr(struct mmc_card *card)
- {
- 	unsigned int au, es, et, eo;
--	int err, i, max_au;
-+	int err, i;
- 	u32 *ssr;
- 
- 	if (!(card->csd.cmdclass & CCC_APP_SPEC)) {
-@@ -239,26 +247,25 @@ static int mmc_read_ssr(struct mmc_card
- 	for (i = 0; i < 16; i++)
- 		ssr[i] = be32_to_cpu(ssr[i]);
- 
--	/* SD3.0 increases max AU size to 64MB (0xF) from 4MB (0x9) */
--	max_au = card->scr.sda_spec3 ? 0xF : 0x9;
+-extern unsigned long global_reclaimable_pages(void);
 -
- 	/*
- 	 * UNSTUFF_BITS only works with four u32s so we have to offset the
- 	 * bitfield positions accordingly.
- 	 */
- 	au = UNSTUFF_BITS(ssr, 428 - 384, 4);
--	if (au > 0 && au <= max_au) {
--		card->ssr.au = 1 << (au + 4);
--		es = UNSTUFF_BITS(ssr, 408 - 384, 16);
--		et = UNSTUFF_BITS(ssr, 402 - 384, 6);
--		eo = UNSTUFF_BITS(ssr, 400 - 384, 2);
--		if (es && et) {
--			card->ssr.erase_timeout = (et * 1000) / es;
--			card->ssr.erase_offset = eo * 1000;
-+	if (au) {
-+		if (au <= 9 || card->scr.sda_spec3) {
-+			card->ssr.au = sd_au_size[au];
-+			es = UNSTUFF_BITS(ssr, 408 - 384, 16);
-+			et = UNSTUFF_BITS(ssr, 402 - 384, 6);
-+			if (es && et) {
-+				eo = UNSTUFF_BITS(ssr, 400 - 384, 2);
-+				card->ssr.erase_timeout = (et * 1000) / es;
-+				card->ssr.erase_offset = eo * 1000;
-+			}
-+		} else {
-+			pr_warning("%s: SD Status: Invalid Allocation Unit size.\n",
-+				   mmc_hostname(card->host));
- 		}
--	} else {
--		pr_warning("%s: SD Status: Invalid Allocation Unit "
--			"size.\n", mmc_hostname(card->host));
- 	}
- out:
- 	kfree(ssr);
+ #ifdef CONFIG_NUMA
+ /*
+  * Determine the per node value of a stat item. This function
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -85,7 +85,6 @@ extern unsigned long highest_memmap_pfn;
+  */
+ extern int isolate_lru_page(struct page *page);
+ extern void putback_lru_page(struct page *page);
+-extern unsigned long zone_reclaimable_pages(struct zone *zone);
+ extern bool zone_reclaimable(struct zone *zone);
+ 
+ /*
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -205,7 +205,8 @@ static unsigned long zone_dirtyable_memo
+ 	nr_pages = zone_page_state(zone, NR_FREE_PAGES);
+ 	nr_pages -= min(nr_pages, zone->dirty_balance_reserve);
+ 
+-	nr_pages += zone_reclaimable_pages(zone);
++	nr_pages += zone_page_state(zone, NR_INACTIVE_FILE);
++	nr_pages += zone_page_state(zone, NR_ACTIVE_FILE);
+ 
+ 	return nr_pages;
+ }
+@@ -258,7 +259,8 @@ static unsigned long global_dirtyable_me
+ 	x = global_page_state(NR_FREE_PAGES);
+ 	x -= min(x, dirty_balance_reserve);
+ 
+-	x += global_reclaimable_pages();
++	x += global_page_state(NR_INACTIVE_FILE);
++	x += global_page_state(NR_ACTIVE_FILE);
+ 
+ 	if (!vm_highmem_is_dirtyable)
+ 		x -= highmem_dirtyable_memory(x);
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -147,7 +147,7 @@ static bool global_reclaim(struct scan_c
+ }
+ #endif
+ 
+-unsigned long zone_reclaimable_pages(struct zone *zone)
++static unsigned long zone_reclaimable_pages(struct zone *zone)
+ {
+ 	int nr;
+ 
+@@ -3297,27 +3297,6 @@ void wakeup_kswapd(struct zone *zone, in
+ 	wake_up_interruptible(&pgdat->kswapd_wait);
+ }
+ 
+-/*
+- * The reclaimable count would be mostly accurate.
+- * The less reclaimable pages may be
+- * - mlocked pages, which will be moved to unevictable list when encountered
+- * - mapped pages, which may require several travels to be reclaimed
+- * - dirty pages, which is not "instantly" reclaimable
+- */
+-unsigned long global_reclaimable_pages(void)
+-{
+-	int nr;
+-
+-	nr = global_page_state(NR_ACTIVE_FILE) +
+-	     global_page_state(NR_INACTIVE_FILE);
+-
+-	if (get_nr_swap_pages() > 0)
+-		nr += global_page_state(NR_ACTIVE_ANON) +
+-		      global_page_state(NR_INACTIVE_ANON);
+-
+-	return nr;
+-}
+-
+ #ifdef CONFIG_HIBERNATION
+ /*
+  * Try to free `nr_to_reclaim' of memory, system-wide, and return the number of
 
 
