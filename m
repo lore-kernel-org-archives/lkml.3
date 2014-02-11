@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756478AbaBKU2Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:28:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39912 "EHLO
+	id S932379AbaBKU2W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:28:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39917 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753271AbaBKTGS (ORCPT
+	with ESMTP id S1753276AbaBKTGT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:18 -0500
+	Tue, 11 Feb 2014 14:06:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Greg Thelen <gthelen@google.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Bastian Hougaard <gnome@rvzt.net>, Mel Gorman <mgorman@suse.de>,
+        Pavel Emelyanov <xemul@parallels.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.12 016/107] memcg: fix css reference leak and endless loop in mem_cgroup_iter
-Date: Tue, 11 Feb 2014 11:04:42 -0800
-Message-Id: <20140211184748.667006388@linuxfoundation.org>
+Subject: [PATCH 3.12 017/107] mm: ignore VM_SOFTDIRTY on VMA merging
+Date: Tue, 11 Feb 2014 11:04:43 -0800
+Message-Id: <20140211184748.694664560@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -31,79 +32,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Hocko <mhocko@suse.cz>
+From: Cyrill Gorcunov <gorcunov@gmail.com>
 
-commit 0eef615665ede1e0d603ea9ecca88c1da6f02234 upstream.
+commit 34228d473efe764d4db7c0536375f0c993e6e06a upstream.
 
-Commit 19f39402864e ("memcg: simplify mem_cgroup_iter") has reorganized
-mem_cgroup_iter code in order to simplify it.  A part of that change was
-dropping an optimization which didn't call css_tryget on the root of the
-walked tree.  The patch however didn't change the css_put part in
-mem_cgroup_iter which excludes root.
+The VM_SOFTDIRTY bit affects vma merge routine: if two VMAs has all bits
+in vm_flags matched except dirty bit the kernel can't longer merge them
+and this forces the kernel to generate new VMAs instead.
 
-This wasn't an issue at the time because __mem_cgroup_iter_next bailed
-out for root early without taking a reference as cgroup iterators
-(css_next_descendant_pre) didn't visit root themselves.
+It finally may lead to the situation when userspace application reaches
+vm.max_map_count limit and get crashed in worse case
 
-Nevertheless cgroup iterators have been reworked to visit root by commit
-bd8815a6d802 ("cgroup: make css_for_each_descendant() and friends
-include the origin css in the iteration") when the root bypass have been
-dropped in __mem_cgroup_iter_next.  This means that css_put is not
-called for root and so css along with mem_cgroup and other cgroup
-internal object tied by css lifetime are never freed.
+ | (gimp:11768): GLib-ERROR **: gmem.c:110: failed to allocate 4096 bytes
+ |
+ | (file-tiff-load:12038): LibGimpBase-WARNING **: file-tiff-load: gimp_wire_read(): error
+ | xinit: connection to X server lost
+ |
+ | waiting for X server to shut down
+ | /usr/lib64/gimp/2.0/plug-ins/file-tiff-load terminated: Hangup
+ | /usr/lib64/gimp/2.0/plug-ins/script-fu terminated: Hangup
+ | /usr/lib64/gimp/2.0/plug-ins/script-fu terminated: Hangup
 
-Fix the issue by reintroducing root check in __mem_cgroup_iter_next and
-do not take css reference for it.
+  https://bugzilla.kernel.org/show_bug.cgi?id=67651
+  https://bugzilla.gnome.org/show_bug.cgi?id=719619#c0
 
-This reference counting magic protects us also from another issue, an
-endless loop reported by Hugh Dickins when reclaim races with root
-removal and css_tryget called by iterator internally would fail.  There
-would be no other nodes to visit so __mem_cgroup_iter_next would return
-NULL and mem_cgroup_iter would interpret it as "start looping from root
-again" and so mem_cgroup_iter would loop forever internally.
+Initial problem came from missed VM_SOFTDIRTY in do_brk() routine but
+even if we would set up VM_SOFTDIRTY here, there is still a way to
+prevent VMAs from merging: one can call
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Reported-by: Hugh Dickins <hughd@google.com>
-Tested-by: Hugh Dickins <hughd@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Greg Thelen <gthelen@google.com>
+ | echo 4 > /proc/$PID/clear_refs
+
+and clear all VM_SOFTDIRTY over all VMAs presented in memory map, then
+new do_brk() will try to extend old VMA and finds that dirty bit doesn't
+match thus new VMA will be generated.
+
+As discussed with Pavel, the right approach should be to ignore
+VM_SOFTDIRTY bit when we're trying to merge VMAs and if merge successed
+we mark extended VMA with dirty bit where needed.
+
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Reported-by: Bastian Hougaard <gnome@rvzt.net>
+Reported-by: Mel Gorman <mgorman@suse.de>
+Cc: Pavel Emelyanov <xemul@parallels.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/memcontrol.c |   18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
+ mm/mmap.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1079,14 +1079,22 @@ skip_node:
- 	 * skipped and we should continue the tree walk.
- 	 * last_visited css is safe to use because it is
- 	 * protected by css_get and the tree walk is rcu safe.
-+	 *
-+	 * We do not take a reference on the root of the tree walk
-+	 * because we might race with the root removal when it would
-+	 * be the only node in the iterated hierarchy and mem_cgroup_iter
-+	 * would end up in an endless loop because it expects that at
-+	 * least one valid node will be returned. Root cannot disappear
-+	 * because caller of the iterator should hold it already so
-+	 * skipping css reference should be safe.
- 	 */
- 	if (next_css) {
--		if ((next_css->flags & CSS_ONLINE) && css_tryget(next_css))
-+		if ((next_css->flags & CSS_ONLINE) &&
-+				(next_css == &root->css || css_tryget(next_css)))
- 			return mem_cgroup_from_css(next_css);
--		else {
--			prev_css = next_css;
--			goto skip_node;
--		}
-+
-+		prev_css = next_css;
-+		goto skip_node;
- 	}
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -895,7 +895,15 @@ again:			remove_next = 1 + (end > next->
+ static inline int is_mergeable_vma(struct vm_area_struct *vma,
+ 			struct file *file, unsigned long vm_flags)
+ {
+-	if (vma->vm_flags ^ vm_flags)
++	/*
++	 * VM_SOFTDIRTY should not prevent from VMA merging, if we
++	 * match the flags but dirty bit -- the caller should mark
++	 * merged VMA as dirty. If dirty bit won't be excluded from
++	 * comparison, we increase pressue on the memory system forcing
++	 * the kernel to generate new VMAs when old one could be
++	 * extended instead.
++	 */
++	if ((vma->vm_flags ^ vm_flags) & ~VM_SOFTDIRTY)
+ 		return 0;
+ 	if (vma->vm_file != file)
+ 		return 0;
+@@ -1084,7 +1092,7 @@ static int anon_vma_compatible(struct vm
+ 	return a->vm_end == b->vm_start &&
+ 		mpol_equal(vma_policy(a), vma_policy(b)) &&
+ 		a->vm_file == b->vm_file &&
+-		!((a->vm_flags ^ b->vm_flags) & ~(VM_READ|VM_WRITE|VM_EXEC)) &&
++		!((a->vm_flags ^ b->vm_flags) & ~(VM_READ|VM_WRITE|VM_EXEC|VM_SOFTDIRTY)) &&
+ 		b->vm_pgoff == a->vm_pgoff + ((b->vm_start - a->vm_start) >> PAGE_SHIFT);
+ }
  
- 	return NULL;
 
 
