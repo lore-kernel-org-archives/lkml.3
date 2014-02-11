@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756177AbaBKUSx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:18:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39966 "EHLO
+	id S1756180AbaBKUTO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:19:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39962 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753384AbaBKTG2 (ORCPT
+	with ESMTP id S1753376AbaBKTG2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Feb 2014 14:06:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 3.12 009/107] audit: correct a type mismatch in audit_syscall_exit()
-Date: Tue, 11 Feb 2014 11:04:35 -0800
-Message-Id: <20140211184748.469779400@linuxfoundation.org>
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        Dan Duval <dan.duval@oracle.com>,
+        Chuck Anderson <chuck.anderson@oracle.com>,
+        Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>
+Subject: [PATCH 3.12 008/107] audit: reset audit backlog wait time after error recovery
+Date: Tue, 11 Feb 2014 11:04:34 -0800
+Message-Id: <20140211184748.442307978@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -30,39 +31,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+From: Richard Guy Briggs <rgb@redhat.com>
 
-commit 06bdadd7634551cfe8ce071fe44d0311b3033d9e upstream.
+commit e789e561a50de0aaa8c695662d97aaa5eac9d55f upstream.
 
-audit_syscall_exit() saves a result of regs_return_value() in intermediate
-"int" variable and passes it to __audit_syscall_exit(), which expects its
-second argument as a "long" value.  This will result in truncating the
-value returned by a system call and making a wrong audit record.
+When the audit queue overflows and times out (audit_backlog_wait_time), the
+audit queue overflow timeout is set to zero.  Once the audit queue overflow
+timeout condition recovers, the timeout should be reset to the original value.
 
-I don't know why gcc compiler doesn't complain about this, but anyway it
-causes a problem at runtime on arm64 (and probably most 64-bit archs).
+See also:
+	https://lkml.org/lkml/2013/9/2/473
 
-Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Eric Paris <eparis@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
+Signed-off-by: Dan Duval <dan.duval@oracle.com>
+Signed-off-by: Chuck Anderson <chuck.anderson@oracle.com>
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
 Signed-off-by: Eric Paris <eparis@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/audit.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/audit.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/include/linux/audit.h
-+++ b/include/linux/audit.h
-@@ -135,7 +135,7 @@ static inline void audit_syscall_exit(vo
- {
- 	if (unlikely(current->audit_context)) {
- 		int success = is_syscall_success(pt_regs);
--		int return_code = regs_return_value(pt_regs);
-+		long return_code = regs_return_value(pt_regs);
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -103,7 +103,8 @@ static int	audit_rate_limit;
  
- 		__audit_syscall_exit(success, return_code);
+ /* Number of outstanding audit_buffers allowed. */
+ static int	audit_backlog_limit = 64;
+-static int	audit_backlog_wait_time = 60 * HZ;
++#define AUDIT_BACKLOG_WAIT_TIME (60 * HZ)
++static int	audit_backlog_wait_time = AUDIT_BACKLOG_WAIT_TIME;
+ static int	audit_backlog_wait_overflow = 0;
+ 
+ /* The identity of the user shutting down the audit system. */
+@@ -1135,6 +1136,8 @@ struct audit_buffer *audit_log_start(str
+ 		return NULL;
  	}
+ 
++	audit_backlog_wait_time = AUDIT_BACKLOG_WAIT_TIME;
++
+ 	ab = audit_buffer_alloc(ctx, gfp_mask, type);
+ 	if (!ab) {
+ 		audit_log_lost("out of memory in audit_log_start");
 
 
