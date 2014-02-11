@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754859AbaBKTVa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:21:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40544 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751830AbaBKTIR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754301AbaBKTIR (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 11 Feb 2014 14:08:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40505 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751830AbaBKTIM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 14:08:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
+To: linux-kernel@vger.kernel.org,
+        Luis Henriques <luis.henriques@canonical.com>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Sasha Levin <sasha.levin@oracle.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 3.10 75/79] timekeeping: Avoid possible deadlock from clock_was_set_delayed
-Date: Tue, 11 Feb 2014 11:06:19 -0800
-Message-Id: <20140211184723.140485463@linuxfoundation.org>
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.10 68/79] ftrace: Synchronize setting function_trace_op with ftrace_trace_function
+Date: Tue, 11 Feb 2014 11:06:12 -0800
+Message-Id: <20140211184722.940208673@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
 References: <20140211184720.928667275@linuxfoundation.org>
@@ -32,210 +29,149 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John Stultz <john.stultz@linaro.org>
+From: Steven Rostedt <rostedt@goodmis.org>
 
-commit 6fdda9a9c5db367130cf32df5d6618d08b89f46a upstream.
+commit 405e1d834807e51b2ebd3dea81cb51e53fb61504 upstream.
 
-As part of normal operaions, the hrtimer subsystem frequently calls
-into the timekeeping code, creating a locking order of
-  hrtimer locks -> timekeeping locks
+ftrace_trace_function is a variable that holds what function will be called
+directly by the assembly code (mcount). If just a single function is
+registered and it handles recursion itself, then the assembly will call that
+function directly without any helper function. It also passes in the
+ftrace_op that was registered with the callback. The ftrace_op to send is
+stored in the function_trace_op variable.
 
-clock_was_set_delayed() was suppoed to allow us to avoid deadlocks
-between the timekeeping the hrtimer subsystem, so that we could
-notify the hrtimer subsytem the time had changed while holding
-the timekeeping locks. This was done by scheduling delayed work
-that would run later once we were out of the timekeeing code.
+The ftrace_trace_function and function_trace_op needs to be coordinated such
+that the called callback wont be called with the wrong ftrace_op, otherwise
+bad things can happen if it expected a different op. Luckily, there's no
+callback that doesn't use the helper functions that requires this. But
+there soon will be and this needs to be fixed.
 
-But unfortunately the lock chains are complex enoguh that in
-scheduling delayed work, we end up eventually trying to grab
-an hrtimer lock.
+Use a set_function_trace_op to store the ftrace_op to set the
+function_trace_op to when it is safe to do so (during the update function
+within the breakpoint or stop machine calls). Or if dynamic ftrace is not
+being used (static tracing) then we have to do a bit more synchronization
+when the ftrace_trace_function is set as that takes affect immediately
+(as oppose to dynamic ftrace doing it with the modification of the trampoline).
 
-Sasha Levin noticed this in testing when the new seqlock lockdep
-enablement triggered the following (somewhat abrieviated) message:
-
-[  251.100221] ======================================================
-[  251.100221] [ INFO: possible circular locking dependency detected ]
-[  251.100221] 3.13.0-rc2-next-20131206-sasha-00005-g8be2375-dirty #4053 Not tainted
-[  251.101967] -------------------------------------------------------
-[  251.101967] kworker/10:1/4506 is trying to acquire lock:
-[  251.101967]  (timekeeper_seq){----..}, at: [<ffffffff81160e96>] retrigger_next_event+0x56/0x70
-[  251.101967]
-[  251.101967] but task is already holding lock:
-[  251.101967]  (hrtimer_bases.lock#11){-.-...}, at: [<ffffffff81160e7c>] retrigger_next_event+0x3c/0x70
-[  251.101967]
-[  251.101967] which lock already depends on the new lock.
-[  251.101967]
-[  251.101967]
-[  251.101967] the existing dependency chain (in reverse order) is:
-[  251.101967]
--> #5 (hrtimer_bases.lock#11){-.-...}:
-[snipped]
--> #4 (&rt_b->rt_runtime_lock){-.-...}:
-[snipped]
--> #3 (&rq->lock){-.-.-.}:
-[snipped]
--> #2 (&p->pi_lock){-.-.-.}:
-[snipped]
--> #1 (&(&pool->lock)->rlock){-.-...}:
-[  251.101967]        [<ffffffff81194803>] validate_chain+0x6c3/0x7b0
-[  251.101967]        [<ffffffff81194d9d>] __lock_acquire+0x4ad/0x580
-[  251.101967]        [<ffffffff81194ff2>] lock_acquire+0x182/0x1d0
-[  251.101967]        [<ffffffff84398500>] _raw_spin_lock+0x40/0x80
-[  251.101967]        [<ffffffff81153e69>] __queue_work+0x1a9/0x3f0
-[  251.101967]        [<ffffffff81154168>] queue_work_on+0x98/0x120
-[  251.101967]        [<ffffffff81161351>] clock_was_set_delayed+0x21/0x30
-[  251.101967]        [<ffffffff811c4bd1>] do_adjtimex+0x111/0x160
-[  251.101967]        [<ffffffff811e2711>] compat_sys_adjtimex+0x41/0x70
-[  251.101967]        [<ffffffff843a4b49>] ia32_sysret+0x0/0x5
-[  251.101967]
--> #0 (timekeeper_seq){----..}:
-[snipped]
-[  251.101967] other info that might help us debug this:
-[  251.101967]
-[  251.101967] Chain exists of:
-  timekeeper_seq --> &rt_b->rt_runtime_lock --> hrtimer_bases.lock#11
-
-[  251.101967]  Possible unsafe locking scenario:
-[  251.101967]
-[  251.101967]        CPU0                    CPU1
-[  251.101967]        ----                    ----
-[  251.101967]   lock(hrtimer_bases.lock#11);
-[  251.101967]                                lock(&rt_b->rt_runtime_lock);
-[  251.101967]                                lock(hrtimer_bases.lock#11);
-[  251.101967]   lock(timekeeper_seq);
-[  251.101967]
-[  251.101967]  *** DEADLOCK ***
-[  251.101967]
-[  251.101967] 3 locks held by kworker/10:1/4506:
-[  251.101967]  #0:  (events){.+.+.+}, at: [<ffffffff81154960>] process_one_work+0x200/0x530
-[  251.101967]  #1:  (hrtimer_work){+.+...}, at: [<ffffffff81154960>] process_one_work+0x200/0x530
-[  251.101967]  #2:  (hrtimer_bases.lock#11){-.-...}, at: [<ffffffff81160e7c>] retrigger_next_event+0x3c/0x70
-[  251.101967]
-[  251.101967] stack backtrace:
-[  251.101967] CPU: 10 PID: 4506 Comm: kworker/10:1 Not tainted 3.13.0-rc2-next-20131206-sasha-00005-g8be2375-dirty #4053
-[  251.101967] Workqueue: events clock_was_set_work
-
-So the best solution is to avoid calling clock_was_set_delayed() while
-holding the timekeeping lock, and instead using a flag variable to
-decide if we should call clock_was_set() once we've released the locks.
-
-This works for the case here, where the do_adjtimex() was the deadlock
-trigger point. Unfortuantely, in update_wall_time() we still hold
-the jiffies lock, which would deadlock with the ipi triggered by
-clock_was_set(), preventing us from calling it even after we drop the
-timekeeping lock. So instead call clock_was_set_delayed() at that point.
-
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Tested-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- kernel/time/timekeeping.c |   25 ++++++++++++++++++-------
- 1 file changed, 18 insertions(+), 7 deletions(-)
+ kernel/trace/ftrace.c |   76 +++++++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 72 insertions(+), 4 deletions(-)
 
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -1239,9 +1239,10 @@ out_adjust:
-  * It also calls into the NTP code to handle leapsecond processing.
-  *
-  */
--static inline void accumulate_nsecs_to_secs(struct timekeeper *tk)
-+static inline unsigned int accumulate_nsecs_to_secs(struct timekeeper *tk)
- {
- 	u64 nsecps = (u64)NSEC_PER_SEC << tk->shift;
-+	unsigned int clock_set = 0;
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -85,6 +85,8 @@ int function_trace_stop __read_mostly;
  
- 	while (tk->xtime_nsec >= nsecps) {
- 		int leap;
-@@ -1263,9 +1264,10 @@ static inline void accumulate_nsecs_to_s
+ /* Current function tracing op */
+ struct ftrace_ops *function_trace_op __read_mostly = &ftrace_list_end;
++/* What to set function_trace_op to */
++static struct ftrace_ops *set_function_trace_op;
  
- 			__timekeeping_set_tai_offset(tk, tk->tai_offset - leap);
- 
--			clock_was_set_delayed();
-+			clock_set = 1;
- 		}
- 	}
-+	return clock_set;
+ /* List for set_ftrace_pid's pids. */
+ LIST_HEAD(ftrace_pids);
+@@ -278,6 +280,23 @@ static void update_global_ops(void)
+ 	global_ops.func = func;
  }
  
- /**
-@@ -1278,7 +1280,8 @@ static inline void accumulate_nsecs_to_s
-  * Returns the unconsumed cycles.
-  */
- static cycle_t logarithmic_accumulation(struct timekeeper *tk, cycle_t offset,
--						u32 shift)
-+						u32 shift,
-+						unsigned int *clock_set)
- {
- 	cycle_t interval = tk->cycle_interval << shift;
- 	u64 raw_nsecs;
-@@ -1292,7 +1295,7 @@ static cycle_t logarithmic_accumulation(
- 	tk->cycle_last += interval;
- 
- 	tk->xtime_nsec += tk->xtime_interval << shift;
--	accumulate_nsecs_to_secs(tk);
-+	*clock_set |= accumulate_nsecs_to_secs(tk);
- 
- 	/* Accumulate raw time */
- 	raw_nsecs = (u64)tk->raw_interval << shift;
-@@ -1350,6 +1353,7 @@ static void update_wall_time(void)
- 	struct timekeeper *tk = &shadow_timekeeper;
- 	cycle_t offset;
- 	int shift = 0, maxshift;
-+	unsigned int clock_set = 0;
- 	unsigned long flags;
- 
- 	raw_spin_lock_irqsave(&timekeeper_lock, flags);
-@@ -1384,7 +1388,8 @@ static void update_wall_time(void)
- 	maxshift = (64 - (ilog2(ntp_tick_length())+1)) - 1;
- 	shift = min(shift, maxshift);
- 	while (offset >= tk->cycle_interval) {
--		offset = logarithmic_accumulation(tk, offset, shift);
-+		offset = logarithmic_accumulation(tk, offset, shift,
-+							&clock_set);
- 		if (offset < tk->cycle_interval<<shift)
- 			shift--;
- 	}
-@@ -1402,7 +1407,7 @@ static void update_wall_time(void)
- 	 * Finally, make sure that after the rounding
- 	 * xtime_nsec isn't larger than NSEC_PER_SEC
- 	 */
--	accumulate_nsecs_to_secs(tk);
-+	clock_set |= accumulate_nsecs_to_secs(tk);
- 
- 	write_seqcount_begin(&timekeeper_seq);
- 	/* Update clock->cycle_last with the new value */
-@@ -1422,6 +1427,10 @@ static void update_wall_time(void)
- 	write_seqcount_end(&timekeeper_seq);
- out:
- 	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
-+	if (clock_set)
-+		/* have to call outside the timekeeper_seq */
-+		clock_was_set_delayed();
++static void ftrace_sync(struct work_struct *work)
++{
++	/*
++	 * This function is just a stub to implement a hard force
++	 * of synchronize_sched(). This requires synchronizing
++	 * tasks even in userspace and idle.
++	 *
++	 * Yes, function tracing is rude.
++	 */
++}
 +
++static void ftrace_sync_ipi(void *data)
++{
++	/* Probably not needed, but do it anyway */
++	smp_rmb();
++}
++
+ static void update_ftrace_function(void)
+ {
+ 	ftrace_func_t func;
+@@ -296,16 +315,59 @@ static void update_ftrace_function(void)
+ 	     !FTRACE_FORCE_LIST_FUNC)) {
+ 		/* Set the ftrace_ops that the arch callback uses */
+ 		if (ftrace_ops_list == &global_ops)
+-			function_trace_op = ftrace_global_list;
++			set_function_trace_op = ftrace_global_list;
+ 		else
+-			function_trace_op = ftrace_ops_list;
++			set_function_trace_op = ftrace_ops_list;
+ 		func = ftrace_ops_list->func;
+ 	} else {
+ 		/* Just use the default ftrace_ops */
+-		function_trace_op = &ftrace_list_end;
++		set_function_trace_op = &ftrace_list_end;
+ 		func = ftrace_ops_list_func;
+ 	}
+ 
++	/* If there's no change, then do nothing more here */
++	if (ftrace_trace_function == func)
++		return;
++
++	/*
++	 * If we are using the list function, it doesn't care
++	 * about the function_trace_ops.
++	 */
++	if (func == ftrace_ops_list_func) {
++		ftrace_trace_function = func;
++		/*
++		 * Don't even bother setting function_trace_ops,
++		 * it would be racy to do so anyway.
++		 */
++		return;
++	}
++
++#ifndef CONFIG_DYNAMIC_FTRACE
++	/*
++	 * For static tracing, we need to be a bit more careful.
++	 * The function change takes affect immediately. Thus,
++	 * we need to coorditate the setting of the function_trace_ops
++	 * with the setting of the ftrace_trace_function.
++	 *
++	 * Set the function to the list ops, which will call the
++	 * function we want, albeit indirectly, but it handles the
++	 * ftrace_ops and doesn't depend on function_trace_op.
++	 */
++	ftrace_trace_function = ftrace_ops_list_func;
++	/*
++	 * Make sure all CPUs see this. Yes this is slow, but static
++	 * tracing is slow and nasty to have enabled.
++	 */
++	schedule_on_each_cpu(ftrace_sync);
++	/* Now all cpus are using the list ops. */
++	function_trace_op = set_function_trace_op;
++	/* Make sure the function_trace_op is visible on all CPUs */
++	smp_wmb();
++	/* Nasty way to force a rmb on all cpus */
++	smp_call_function(ftrace_sync_ipi, NULL, 1);
++	/* OK, we are all set to update the ftrace_trace_function now! */
++#endif /* !CONFIG_DYNAMIC_FTRACE */
++
+ 	ftrace_trace_function = func;
  }
  
- /**
-@@ -1681,11 +1690,13 @@ int do_adjtimex(struct timex *txc)
- 	if (tai != orig_tai) {
- 		__timekeeping_set_tai_offset(tk, tai);
- 		timekeeping_update(tk, false, true);
--		clock_was_set_delayed();
- 	}
- 	write_seqcount_end(&timekeeper_seq);
- 	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
+@@ -1952,8 +2014,14 @@ void ftrace_modify_all_code(int command)
+ 	else if (command & FTRACE_DISABLE_CALLS)
+ 		ftrace_replace_code(0);
  
-+	if (tai != orig_tai)
-+		clock_was_set();
-+
- 	ntp_notify_cmos_timer();
+-	if (command & FTRACE_UPDATE_TRACE_FUNC)
++	if (command & FTRACE_UPDATE_TRACE_FUNC) {
++		function_trace_op = set_function_trace_op;
++		smp_wmb();
++		/* If irqs are disabled, we are in stop machine */
++		if (!irqs_disabled())
++			smp_call_function(ftrace_sync_ipi, NULL, 1);
+ 		ftrace_update_ftrace_func(ftrace_trace_function);
++	}
  
- 	return ret;
+ 	if (command & FTRACE_START_FUNC_RET)
+ 		ftrace_enable_ftrace_graph_caller();
 
 
