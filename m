@@ -1,81 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932291AbaBKTnD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:43:03 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:33771 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754552AbaBKTnA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:43:00 -0500
-Message-ID: <52FA7D1A.8090408@ti.com>
-Date: Tue, 11 Feb 2014 21:42:18 +0200
-From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1755138AbaBKTnf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:43:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40291 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753969AbaBKTHf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 14:07:35 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Josh Triplett <josh@joshtriplett.org>, Len Brown <len.brown@intel.com>
+Subject: [PATCH 3.10 16/79] turbostat: Dont put unprocessed uapi headers in the include path
+Date: Tue, 11 Feb 2014 11:05:20 -0800
+Message-Id: <20140211184721.399966917@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
+References: <20140211184720.928667275@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-To: Brian Norris <computersforpeace@gmail.com>,
-        Paul Bolle <pebolle@tiscali.nl>
-CC: Richard Weinberger <richard@nod.at>, David Woodhouse <dwmw2@infradead.org>,
-        "open list:MEMORY TECHNOLOGY..." <linux-mtd@lists.infradead.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: Re: [PATCH 15/28] Remove TI_AEMIF
-References: <1391971686-9517-1-git-send-email-richard@nod.at> <1391971686-9517-16-git-send-email-richard@nod.at> <1391979242.25855.37.camel@x220> <20140211190404.GI18440@ld-irv-0074>
-In-Reply-To: <20140211190404.GI18440@ld-irv-0074>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2014 09:04 PM, Brian Norris wrote:
-> + Ivan, others
->
-> On Sun, Feb 09, 2014 at 09:54:02PM +0100, Paul Bolle wrote:
->> On Sun, 2014-02-09 at 19:47 +0100, Richard Weinberger wrote:
->>> The symbol is an orphan, get rid of it.
->>>
->>> Signed-off-by: Richard Weinberger <richard@nod.at>
->>> ---
->>>   drivers/mtd/nand/Kconfig | 2 +-
->>>   1 file changed, 1 insertion(+), 1 deletion(-)
->>>
->>> diff --git a/drivers/mtd/nand/Kconfig b/drivers/mtd/nand/Kconfig
->>> index 90ff447..a195d57 100644
->>> --- a/drivers/mtd/nand/Kconfig
->>> +++ b/drivers/mtd/nand/Kconfig
->>> @@ -465,7 +465,7 @@ config MTD_NAND_SH_FLCTL
->>>   
->>>   config MTD_NAND_DAVINCI
->>>           tristate "Support NAND on DaVinci/Keystone SoC"
->>> -        depends on ARCH_DAVINCI || (ARCH_KEYSTONE && TI_AEMIF)
->>> +        depends on ARCH_DAVINCI || ARCH_KEYSTONE
->>>           help
->>>   	  Enable the driver for NAND flash chips on Texas Instruments
->>>   	  DaVinci/Keystone processors.
->> What's strange about the current dependency is that the only aemif code
->> I could find lives at arch/arm/mach-davinci/aemif.c. Is that reachable
->> for code in arch/arm/mach-keystone?
-> It looks like I merged this code before the supporting aemif driver [1] was
-> merged. I think this is harmless, and so I plan to leave it as-is for
-> now. Or if Ivan prefers, I can drop the Keystone dependency entirely
-> until it is ready.
->
-> https://lkml.org/lkml/2013/11/20/283
->
-> Brian
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-It is harmless.
+------------------
 
-For Keystone NAND depends on AEMIF.
-AEMIF is responsible to set timings.
+From: Josh Triplett <josh@joshtriplett.org>
 
-In case of Davinci the timings are set by arch/arm/mach-davinci/aemif.c.
-In case of Keystone the timings are going to be set by AEMIF driver.
+commit b731f3119de57144e16c19fd593b8daeb637843e upstream.
 
-AEMIF is going to be merged I hope. That's plan.
+turbostat's Makefile puts arch/x86/include/uapi/ in the include path, so
+that it can include <asm/msr.h> from it.  It isn't in general safe to
+include even uapi headers directly from the kernel tree without
+processing them through scripts/headers_install.sh, but asm/msr.h
+happens to work.
 
-So you can leave it.
+However, that include path can break with some versions of system
+headers, by overriding some system headers with the unprocessed versions
+directly from the kernel source.  For instance:
 
--- 
-Regards,
-Ivan Khoronzhuk
+In file included from /build/x86-generic/usr/include/bits/sigcontext.h:28:0,
+                 from /build/x86-generic/usr/include/signal.h:339,
+                 from /build/x86-generic/usr/include/sys/wait.h:31,
+                 from turbostat.c:27:
+../../../../arch/x86/include/uapi/asm/sigcontext.h:4:28: fatal error: linux/compiler.h: No such file or directory
+
+This occurs because the system bits/sigcontext.h on that build system
+includes <asm/sigcontext.h>, and asm/sigcontext.h in the kernel source
+includes <linux/compiler.h>, which scripts/headers_install.sh would have
+filtered out.
+
+Since turbostat really only wants a single header, just include that one
+header rather than putting an entire directory of kernel headers on the
+include path.
+
+In the process, switch from msr.h to msr-index.h, since turbostat just
+wants the MSR numbers.
+
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+Signed-off-by: Len Brown <len.brown@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ tools/power/x86/turbostat/Makefile    |    2 +-
+ tools/power/x86/turbostat/turbostat.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+--- a/tools/power/x86/turbostat/Makefile
++++ b/tools/power/x86/turbostat/Makefile
+@@ -5,7 +5,7 @@ DESTDIR		:=
+ 
+ turbostat : turbostat.c
+ CFLAGS +=	-Wall
+-CFLAGS +=	-I../../../../arch/x86/include/uapi/
++CFLAGS +=	-DMSRHEADER='"../../../../arch/x86/include/uapi/asm/msr-index.h"'
+ 
+ %: %.c
+ 	@mkdir -p $(BUILD_OUTPUT)
+--- a/tools/power/x86/turbostat/turbostat.c
++++ b/tools/power/x86/turbostat/turbostat.c
+@@ -20,7 +20,7 @@
+  */
+ 
+ #define _GNU_SOURCE
+-#include <asm/msr.h>
++#include MSRHEADER
+ #include <stdio.h>
+ #include <unistd.h>
+ #include <sys/types.h>
+
 
