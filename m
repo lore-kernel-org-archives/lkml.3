@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756516AbaBKU2z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:28:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39881 "EHLO
+	id S1756542AbaBKU26 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:28:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39873 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752997AbaBKTGP (ORCPT
+	with ESMTP id S1753265AbaBKTGO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:15 -0500
+	Tue, 11 Feb 2014 14:06:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.12 011/107] mm/memory-failure.c: shift page lock from head page to tail page after thp split
-Date: Tue, 11 Feb 2014 11:04:37 -0800
-Message-Id: <20140211184748.526088274@linuxfoundation.org>
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Eric Paris <eparis@redhat.com>, Paul Moore <pmoore@redhat.com>
+Subject: [PATCH 3.12 001/107] SELinux: Fix memory leak upon loading policy
+Date: Tue, 11 Feb 2014 11:04:27 -0800
+Message-Id: <20140211184748.235245190@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -32,141 +29,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 
-commit 54b9dd14d09f24927285359a227aa363ce46089e upstream.
+commit 8ed814602876bec9bad2649ca17f34b499357a1c upstream.
 
-After thp split in hwpoison_user_mappings(), we hold page lock on the
-raw error page only between try_to_unmap, hence we are in danger of race
-condition.
+Hello.
 
-I found in the RHEL7 MCE-relay testing that we have "bad page" error
-when a memory error happens on a thp tail page used by qemu-kvm:
+I got below leak with linux-3.10.0-54.0.1.el7.x86_64 .
 
-  Triggering MCE exception on CPU 10
-  mce: [Hardware Error]: Machine check events logged
-  MCE exception done on CPU 10
-  MCE 0x38c535: Killing qemu-kvm:8418 due to hardware memory corruption
-  MCE 0x38c535: dirty LRU page recovery: Recovered
-  qemu-kvm[8418]: segfault at 20 ip 00007ffb0f0f229a sp 00007fffd6bc5240 error 4 in qemu-kvm[7ffb0ef14000+420000]
-  BUG: Bad page state in process qemu-kvm  pfn:38c400
-  page:ffffea000e310000 count:0 mapcount:0 mapping:          (null) index:0x7ffae3c00
-  page flags: 0x2fffff0008001d(locked|referenced|uptodate|dirty|swapbacked)
-  Modules linked in: hwpoison_inject mce_inject vhost_net macvtap macvlan ...
-  CPU: 0 PID: 8418 Comm: qemu-kvm Tainted: G   M        --------------   3.10.0-54.0.1.el7.mce_test_fixed.x86_64 #1
-  Hardware name: NEC NEC Express5800/R120b-1 [N8100-1719F]/MS-91E7-001, BIOS 4.6.3C19 02/10/2011
-  Call Trace:
-    dump_stack+0x19/0x1b
-    bad_page.part.59+0xcf/0xe8
-    free_pages_prepare+0x148/0x160
-    free_hot_cold_page+0x31/0x140
-    free_hot_cold_page_list+0x46/0xa0
-    release_pages+0x1c1/0x200
-    free_pages_and_swap_cache+0xad/0xd0
-    tlb_flush_mmu.part.46+0x4c/0x90
-    tlb_finish_mmu+0x55/0x60
-    exit_mmap+0xcb/0x170
-    mmput+0x67/0xf0
-    vhost_dev_cleanup+0x231/0x260 [vhost_net]
-    vhost_net_release+0x3f/0x90 [vhost_net]
-    __fput+0xe9/0x270
-    ____fput+0xe/0x10
-    task_work_run+0xc4/0xe0
-    do_exit+0x2bb/0xa40
-    do_group_exit+0x3f/0xa0
-    get_signal_to_deliver+0x1d0/0x6e0
-    do_signal+0x48/0x5e0
-    do_notify_resume+0x71/0xc0
-    retint_signal+0x48/0x8c
+[  681.903890] kmemleak: 5538 new suspected memory leaks (see /sys/kernel/debug/kmemleak)
 
-The reason of this bug is that a page fault happens before unlocking the
-head page at the end of memory_failure().  This strange page fault is
-trying to access to address 0x20 and I'm not sure why qemu-kvm does
-this, but anyway as a result the SIGSEGV makes qemu-kvm exit and on the
-way we catch the bad page bug/warning because we try to free a locked
-page (which was the former head page.)
+Below is a patch, but I don't know whether we need special handing for undoing
+ebitmap_set_bit() call.
+----------
+>>From fe97527a90fe95e2239dfbaa7558f0ed559c0992 Mon Sep 17 00:00:00 2001
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Date: Mon, 6 Jan 2014 16:30:21 +0900
+Subject: [PATCH 3.12 001/107] SELinux: Fix memory leak upon loading policy
 
-To fix this, this patch suggests to shift page lock from head page to
-tail page just after thp split.  SIGSEGV still happens, but it affects
-only error affected VMs, not a whole system.
+Commit 2463c26d "SELinux: put name based create rules in a hashtable" did not
+check return value from hashtab_insert() in filename_trans_read(). It leaks
+memory if hashtab_insert() returns error.
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+  unreferenced object 0xffff88005c9160d0 (size 8):
+    comm "systemd", pid 1, jiffies 4294688674 (age 235.265s)
+    hex dump (first 8 bytes):
+      57 0b 00 00 6b 6b 6b a5                          W...kkk.
+    backtrace:
+      [<ffffffff816604ae>] kmemleak_alloc+0x4e/0xb0
+      [<ffffffff811cba5e>] kmem_cache_alloc_trace+0x12e/0x360
+      [<ffffffff812aec5d>] policydb_read+0xd1d/0xf70
+      [<ffffffff812b345c>] security_load_policy+0x6c/0x500
+      [<ffffffff812a623c>] sel_write_load+0xac/0x750
+      [<ffffffff811eb680>] vfs_write+0xc0/0x1f0
+      [<ffffffff811ec08c>] SyS_write+0x4c/0xa0
+      [<ffffffff81690419>] system_call_fastpath+0x16/0x1b
+      [<ffffffffffffffff>] 0xffffffffffffffff
+
+However, we should not return EEXIST error to the caller, or the systemd will
+show below message and the boot sequence freezes.
+
+  systemd[1]: Failed to load SELinux policy. Freezing.
+
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Acked-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/memory-failure.c |   21 +++++++++++----------
- 1 file changed, 11 insertions(+), 10 deletions(-)
+ security/selinux/ss/policydb.c |   14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
 
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -856,14 +856,14 @@ static int page_action(struct page_state
-  * the pages and send SIGBUS to the processes if the data was dirty.
-  */
- static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
--				  int trapno, int flags)
-+				  int trapno, int flags, struct page **hpagep)
- {
- 	enum ttu_flags ttu = TTU_UNMAP | TTU_IGNORE_MLOCK | TTU_IGNORE_ACCESS;
- 	struct address_space *mapping;
- 	LIST_HEAD(tokill);
- 	int ret;
- 	int kill = 1, forcekill;
--	struct page *hpage = compound_head(p);
-+	struct page *hpage = *hpagep;
- 	struct page *ppage;
+--- a/security/selinux/ss/policydb.c
++++ b/security/selinux/ss/policydb.c
+@@ -1941,7 +1941,19 @@ static int filename_trans_read(struct po
+ 		if (rc)
+ 			goto out;
  
- 	if (PageReserved(p) || PageSlab(p))
-@@ -942,11 +942,14 @@ static int hwpoison_user_mappings(struct
- 			 * We pinned the head page for hwpoison handling,
- 			 * now we split the thp and we are interested in
- 			 * the hwpoisoned raw page, so move the refcount
--			 * to it.
-+			 * to it. Similarly, page lock is shifted.
- 			 */
- 			if (hpage != p) {
- 				put_page(hpage);
- 				get_page(p);
-+				lock_page(p);
-+				unlock_page(hpage);
-+				*hpagep = p;
- 			}
- 			/* THP is split, so ppage should be the real poisoned page. */
- 			ppage = p;
-@@ -964,17 +967,11 @@ static int hwpoison_user_mappings(struct
- 	if (kill)
- 		collect_procs(ppage, &tokill);
- 
--	if (hpage != ppage)
--		lock_page(ppage);
--
- 	ret = try_to_unmap(ppage, ttu);
- 	if (ret != SWAP_SUCCESS)
- 		printk(KERN_ERR "MCE %#lx: failed to unmap page (mapcount=%d)\n",
- 				pfn, page_mapcount(ppage));
- 
--	if (hpage != ppage)
--		unlock_page(ppage);
--
- 	/*
- 	 * Now that the dirty bit has been propagated to the
- 	 * struct page and all unmaps done we can decide if
-@@ -1193,8 +1190,12 @@ int memory_failure(unsigned long pfn, in
- 	/*
- 	 * Now take care of user space mappings.
- 	 * Abort on fail: __delete_from_page_cache() assumes unmapped page.
-+	 *
-+	 * When the raw error page is thp tail page, hpage points to the raw
-+	 * page after thp split.
- 	 */
--	if (hwpoison_user_mappings(p, pfn, trapno, flags) != SWAP_SUCCESS) {
-+	if (hwpoison_user_mappings(p, pfn, trapno, flags, &hpage)
-+	    != SWAP_SUCCESS) {
- 		printk(KERN_ERR "MCE %#lx: cannot unmap page, give up\n", pfn);
- 		res = -EBUSY;
- 		goto out;
+-		hashtab_insert(p->filename_trans, ft, otype);
++		rc = hashtab_insert(p->filename_trans, ft, otype);
++		if (rc) {
++			/*
++			 * Do not return -EEXIST to the caller, or the system
++			 * will not boot.
++			 */
++			if (rc != -EEXIST)
++				goto out;
++			/* But free memory to avoid memory leak. */
++			kfree(ft);
++			kfree(name);
++			kfree(otype);
++		}
+ 	}
+ 	hash_eval(p->filename_trans, "filenametr");
+ 	return 0;
 
 
