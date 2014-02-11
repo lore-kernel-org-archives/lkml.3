@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752140AbaBKPoJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 10:44:09 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:40388 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751323AbaBKPoI (ORCPT
+	id S1752017AbaBKPqU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 10:46:20 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:58913 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751359AbaBKPqT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 10:44:08 -0500
-Date: Tue, 11 Feb 2014 08:44:03 -0700
-From: Jens Axboe <axboe@kernel.dk>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: error returns from ->queue_rq
-Message-ID: <20140211154403.GE19057@kernel.dk>
-References: <20140211092904.GA6229@infradead.org>
+	Tue, 11 Feb 2014 10:46:19 -0500
+Date: Tue, 11 Feb 2014 16:46:14 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org,
+        Vincent Guittot <vincent.guittot@linaro.org>
+Subject: Re: [PATCH] sched/fair: Remove idle_balance() declaration in sched.h
+Message-ID: <20140211154614.GQ27965@twins.programming.kicks-ass.net>
+References: <1392130864-4416-1-git-send-email-daniel.lezcano@linaro.org>
+ <20140211151148.GP27965@twins.programming.kicks-ass.net>
+ <52FA42D4.9050401@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140211092904.GA6229@infradead.org>
+In-Reply-To: <52FA42D4.9050401@linaro.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11 2014, Christoph Hellwig wrote:
-> Hi Jens,
+On Tue, Feb 11, 2014 at 04:33:40PM +0100, Daniel Lezcano wrote:
+> On 02/11/2014 04:11 PM, Peter Zijlstra wrote:
+> >On Tue, Feb 11, 2014 at 04:01:04PM +0100, Daniel Lezcano wrote:
+> >>The idle_balance() function is called within a #ifdef CONFIG_SMP section.
+> >>
+> >>Remove its declaration in sched.h for !CONFIG_SMP because it is pointless.
+> >>
+> >>Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> >
+> >The below again makes a horrible mess of idle_balance() -- which you
+> >tried to clean up.. but it does rid us of some #ifdef goo.
+> >
+> >Hmmm?
 > 
-> seems like with the SCSI work I introduced the first
-> BLK_MQ_RQ_QUEUE_ERROR error return in the tree, and immediately ran into
-> the first pitfall.  The code as-is expects rq->errors set to an error
-> value, which otherwise is an  internal field used by the block layer and
-> some drivers, but not part of the communication protocol between the
-> two.
+> Yes, it sounds ok.
 > 
-> We can either make it part of the protocol for blk-mq, which would
-> require documenting and praying driver writers get it right, or
-> alternatively we could map BLK_MQ_RQ_QUEUE_ERROR to -EIO and if
-> nessecary introduce other return values if we need to return other
-> errors.  The third option would be to remove BLK_MQ_RQ_QUEUE_ERROR
-> entirely and require drivers to call blk_mq_end_io themselves from
-> ->queue_rq, mirroring the ->queuecommand error handling.  I'm undecided
-> between options 2 and 3, but I'd rather avoid the current pitfall.
+> Why is idle_enter_fair() called unconditionally in idle_balance() ?
+> Isn't the call in pick_next_task_idle enough ?  Shouldn't be called when we
+> will go to idle effectively ?
+> 
+> If I am not wrong idle_enter_fair() is called from idle_balance() but a task
+> may be pulled, so we the next task won't be the idle task and idle_exit_fair
+> won't be called at put_prev_task.
+> 
+> May be I missed this change which was done at purpose in the previous
+> patchset you sent...
 
-Lets go for option #2. I agree that we should not make this a new
-depedency, it's a lot more robust to just have it be -EIO and add other
-error returns as needed.
+lkml.kernel.org/r/CAKfTPtAMmhq0tBpu+pk_uzwrfUM-6Fz4Do1yrzc4NRQS4cZ_-A@mail.gmail.com
 
--- 
-Jens Axboe
-
+I seem to be terminally confused on the subject, but Vincent explains it
+there I think.
