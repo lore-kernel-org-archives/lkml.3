@@ -1,85 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750869AbaBKFKf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 00:10:35 -0500
-Received: from alln-iport-8.cisco.com ([173.37.142.95]:9006 "EHLO
-	alln-iport-8.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750721AbaBKFKd convert rfc822-to-8bit (ORCPT
+	id S1751082AbaBKFMn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 00:12:43 -0500
+Received: from hapkido.dreamhost.com ([66.33.216.122]:40525 "EHLO
+	hapkido.dreamhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750721AbaBKFMk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 00:10:33 -0500
-X-Greylist: delayed 574 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 Feb 2014 00:10:32 EST
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgwFAG+t+VKtJXG9/2dsb2JhbABZgwyBD75kgRAWdIImAQEEJxM/EAIBCA4oEDIlAgQBDQWIBcl+F45wB4Q4AQOYKopOh1KDLYIq
-X-IronPort-AV: E=Sophos;i="4.95,823,1384300800"; 
-   d="scan'208";a="19456580"
-From: "Suma Ramars (sramars)" <sramars@cisco.com>
-To: Alexander Gordeev <agordeev@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "Brian Uchino (buchino)" <buchino@cisco.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH 07/22] fnic: Use pci_enable_msix_range()
-Thread-Topic: [PATCH 07/22] fnic: Use pci_enable_msix_range()
-Thread-Index: AQHPIZpwUuYz/FpPW0CbWHDKot9hHZqwSg8A
-Date: Tue, 11 Feb 2014 05:00:56 +0000
-Message-ID: <CF1FAC07.820C%sramars@cisco.com>
-References: <cover.1391512266.git.agordeev@redhat.com>
- <01c54a9cf2e52395c59bd663766c8d1071da0a33.1391512266.git.agordeev@redhat.com>
-In-Reply-To: <01c54a9cf2e52395c59bd663766c8d1071da0a33.1391512266.git.agordeev@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Microsoft-MacOutlook/14.3.9.131030
-x-originating-ip: [173.39.24.78]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <FB883B43E8C43943A343F7BBA3A0D44C@emea.cisco.com>
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 11 Feb 2014 00:12:40 -0500
+Message-ID: <1392095546.10065.56.camel@chiang>
+Subject: Re: [PATCH] ext4: explain encoding of 34-bit a,c,mtime values
+From: David Turner <novalis@novalis.org>
+To: "Darrick J. Wong" <darrick.wong@oracle.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Mark Harris <mhlk@osj.us>,
+        Andreas Dilger <adilger@dilger.ca>, Jan Kara <jack@suse.cz>,
+        Ext4 Developers List <linux-ext4@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Tue, 11 Feb 2014 00:12:26 -0500
+In-Reply-To: <20140122062255.GA8973@birch.djwong.org>
+References: <1383808590.23882.13.camel@chiang>
+	 <20131107160341.GA3850@quack.suse.cz> <1383864864.23882.33.camel@chiang>
+	 <20131107231445.GG2054@quack.suse.cz> <1383866807.23882.41.camel@chiang>
+	 <D8C465B6-15A7-473A-BA26-8037AF9CE739@dilger.ca>
+	 <1383981551.8994.27.camel@chiang>
+	 <CADQUmxULoLgXRyoPpJJMJLqJPsZ8M4oPP8ScGxWp+Np8-efq3g@mail.gmail.com>
+	 <1384070214.8994.47.camel@chiang> <20131112003018.GA30281@thunk.org>
+	 <20140122062255.GA8973@birch.djwong.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexander
+On Tue, 2014-01-21 at 22:22 -0800, Darrick J. Wong wrote:
+> On Mon, Nov 11, 2013 at 07:30:18PM -0500, Theodore Ts'o wrote:
+> > On Sun, Nov 10, 2013 at 02:56:54AM -0500, David Turner wrote:
+> > > b. Use Andreas's encoding, which is incompatible with pre-1970 files
+> > > written on 64-bit systems.
+> > >
+> > > I don't care about currently-existing post-2038 files, because I believe
+> > > that nobody has a valid reason to have such files.  However, I do
+> > > believe that pre-1970 files are probably important to someone.
+> > > 
+> > > Despite this, I prefer option (b), because I think the simplicity is
+> > > valuable, and because I hate to give up date ranges (even ones that I
+> > > think we'll "never" need). Option (b) is not actually lossy, because we
+> > > could correct pre-1970 files with e2fsck; under Andreas's encoding,
+> > > their dates would be in the far future (and thus cannot be legitimate).
+> > > 
+> > > Would a patch that does (b) be accepted?  I would accompany it with a
+> > > patch to e2fsck (which I assume would also go to the ext4 developers
+> > > mailing list?).
+> > 
+> > I agree, I think this is the best way to go.  I'm going to drop your
+> > earlier patch, and wait for an updated patch from you.  It may miss
+> > this merge window, but as Andreas has pointed out, we still have a few
+> > years to get this right.  :-)
+> 
+> Just out of curiosity, did this (updated patch) ever happen?
 
-The changes look good to me. Thanks for taking care of this
+I think I sent a usable patch that Ted merged part of into e2fscktools;
+the kernel portion was dropped for some reason.
 
--Suma
+While I was waiting to hear back on the kernel portion, I started
+looking into the dtime stuff, but then I got distracted by a new job.
 
-On 04/02/14 4:46 PM, "Alexander Gordeev" <agordeev@redhat.com> wrote:
-
->As result of deprecation of MSI-X/MSI enablement functions
->pci_enable_msix() and pci_enable_msi_block() all drivers
->using these two interfaces need to be updated to use the
->new pci_enable_msi_range() and pci_enable_msix_range()
->interfaces.
->
->Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
->Cc: Hiral Patel <hiralpat@cisco.com>
->Cc: Suma Ramars <sramars@cisco.com>
->Cc: Brian Uchino <buchino@cisco.com>
->Cc: linux-scsi@vger.kernel.org
->Cc: linux-pci@vger.kernel.org
->---
-> drivers/scsi/fnic/fnic_isr.c |    4 ++--
-> 1 files changed, 2 insertions(+), 2 deletions(-)
->
->diff --git a/drivers/scsi/fnic/fnic_isr.c b/drivers/scsi/fnic/fnic_isr.c
->index 7d9b54a..0031c3e 100644
->--- a/drivers/scsi/fnic/fnic_isr.c
->+++ b/drivers/scsi/fnic/fnic_isr.c
->@@ -257,8 +257,8 @@ int fnic_set_intr_mode(struct fnic *fnic)
-> 	    fnic->raw_wq_count >= m &&
-> 	    fnic->wq_copy_count >= o &&
-> 	    fnic->cq_count >= n + m + o) {
->-		if (!pci_enable_msix(fnic->pdev, fnic->msix_entry,
->-				    n + m + o + 1)) {
->+		if (pci_enable_msix_range(fnic->pdev, fnic->msix_entry,
->+				          n + m + o + 1, n + m + o + 1) > 0) {
-> 			fnic->rq_count = n;
-> 			fnic->raw_wq_count = m;
-> 			fnic->wq_copy_count = o;
->-- 
->1.7.7.6
->
+Assuming that I won't have time to deal with dtime (since it seems to be
+much more complicated), is the right way forward for me to rebase the
+non-dtime portion of my patch against the latest kernel, and resend it?
+If so, will it get merged?  (Assume here that I do the same with the
+e2fsck stuff)
 
