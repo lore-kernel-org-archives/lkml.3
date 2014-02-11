@@ -1,79 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887AbaBKTWa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:22:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40525 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751526AbaBKTIP (ORCPT
+	id S1754899AbaBKTWp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:22:45 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:19825 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751622AbaBKTWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:08:15 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 3.10 72/79] timekeeping: Fix CLOCK_TAI timer/nanosleep delays
-Date: Tue, 11 Feb 2014 11:06:16 -0800
-Message-Id: <20140211184723.054244612@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
-References: <20140211184720.928667275@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Tue, 11 Feb 2014 14:22:42 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+Iany+DGNkzbP2Im1NwIu2IYqKH0CsqVY=
+X-DKIM: OpenDKIM Filter v2.0.1 titan A77D1524C8A
+Date: Tue, 11 Feb 2014 14:22:28 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Josh Cartwright <joshc@codeaurora.org>
+Cc: Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 2/8] bus: mvebu-mbus: make use of
+ of_find_matching_node_and_match
+Message-ID: <20140211192228.GG27395@titan.lakedaemon.net>
+References: <1392135847-30791-1-git-send-email-joshc@codeaurora.org>
+ <1392135847-30791-3-git-send-email-joshc@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392135847-30791-3-git-send-email-joshc@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Feb 11, 2014 at 10:24:00AM -0600, Josh Cartwright wrote:
+> Instead of the of_find_matching_node()/of_match_node() pair, which requires two
+> iterations through the match table, make use of of_find_matching_node_and_match(),
+> which only iterates through the table once.
+> 
+> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+> ---
+>  drivers/bus/mvebu-mbus.c | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
 
-------------------
+Applied to mvebu/drivers
 
-From: John Stultz <john.stultz@linaro.org>
+thx,
 
-commit 04005f6011e3b504cd4d791d9769f7cb9a3b2eae upstream.
-
-A think-o in the calculation of the monotonic -> tai time offset
-results in CLOCK_TAI timers and nanosleeps to expire late (the
-latency is ~2x the tai offset).
-
-Fix this by adding the tai offset from the realtime offset instead
-of subtracting.
-
-Cc: Sasha Levin <sasha.levin@oracle.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- kernel/time/timekeeping.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -72,7 +72,7 @@ static void tk_set_wall_to_mono(struct t
- 	tk->wall_to_monotonic = wtm;
- 	set_normalized_timespec(&tmp, -wtm.tv_sec, -wtm.tv_nsec);
- 	tk->offs_real = timespec_to_ktime(tmp);
--	tk->offs_tai = ktime_sub(tk->offs_real, ktime_set(tk->tai_offset, 0));
-+	tk->offs_tai = ktime_add(tk->offs_real, ktime_set(tk->tai_offset, 0));
- }
- 
- static void tk_set_sleep_time(struct timekeeper *tk, struct timespec t)
-@@ -590,7 +590,7 @@ s32 timekeeping_get_tai_offset(void)
- static void __timekeeping_set_tai_offset(struct timekeeper *tk, s32 tai_offset)
- {
- 	tk->tai_offset = tai_offset;
--	tk->offs_tai = ktime_sub(tk->offs_real, ktime_set(tai_offset, 0));
-+	tk->offs_tai = ktime_add(tk->offs_real, ktime_set(tai_offset, 0));
- }
- 
- /**
-
-
+Jason.
