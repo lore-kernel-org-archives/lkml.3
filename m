@@ -1,542 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751790AbaBKSz1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 13:55:27 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:29271 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750909AbaBKSzZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 13:55:25 -0500
-X-IronPort-AV: E=Sophos;i="4.95,826,1384300800"; 
-   d="scan'208";a="99893728"
-Date: Tue, 11 Feb 2014 18:55:06 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Zoltan Kiss <zoltan.kiss@citrix.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
-        <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
-        =?UTF-8?Q?Roger_Pau_Monn=C3=A9?= <roger.pau@citrix.com>,
-        Jan Beulich <jbeulich@suse.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        <stefano.stabellini@eu.citrix.com>
-Subject: Re: [PATCH v8] xen/grant-table: Avoid m2p_override during mapping
-In-Reply-To: <1391691376-21471-1-git-send-email-zoltan.kiss@citrix.com>
-Message-ID: <alpine.DEB.2.02.1402111845430.4373@kaball.uk.xensource.com>
-References: <1391691376-21471-1-git-send-email-zoltan.kiss@citrix.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1751957AbaBKS46 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 13:56:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23059 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751359AbaBKS45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 13:56:57 -0500
+Date: Tue, 11 Feb 2014 13:56:43 -0500
+From: Richard Guy Briggs <rgb@redhat.com>
+To: William Roberts <bill.c.roberts@gmail.com>
+Cc: "linux-audit@redhat.com" <linux-audit@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        akpm@linux-foundation.org, Stephen Smalley <sds@tycho.nsa.gov>,
+        William Roberts <wroberts@tresys.com>
+Subject: Re: [PATCH v5 3/3] audit: Audit proc/<pid>/cmdline aka proctitle
+Message-ID: <20140211185643.GA29339@madcap2.tricolour.ca>
+References: <1391710528-23481-1-git-send-email-wroberts@tresys.com>
+ <1391710528-23481-3-git-send-email-wroberts@tresys.com>
+ <20140211163629.GM18807@madcap2.tricolour.ca>
+ <CAFftDdrxZtSpQi5zugwkcbfRhvbsyL9y=51x8PwqryhtE+2x4g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFftDdrxZtSpQi5zugwkcbfRhvbsyL9y=51x8PwqryhtE+2x4g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Feb 2014, Zoltan Kiss wrote:
-> The grant mapping API does m2p_override unnecessarily: only gntdev needs it,
-> for blkback and future netback patches it just cause a lock contention, as
-> those pages never go to userspace. Therefore this series does the following:
-> - the original functions were renamed to __gnttab_[un]map_refs, with a new
->   parameter m2p_override
-> - based on m2p_override either they follow the original behaviour, or just set
->   the private flag and call set_phys_to_machine
-> - gnttab_[un]map_refs are now a wrapper to call __gnttab_[un]map_refs with
->   m2p_override false
-> - a new function gnttab_[un]map_refs_userspace provides the old behaviour
-> - it cuts out common parts from m2p_*_override functions to
->   *_foreign_p2m_mapping functions
+On 14/02/11, William Roberts wrote:
+> On Tue, Feb 11, 2014 at 8:36 AM, Richard Guy Briggs <rgb@redhat.com> wrote:
+> > On 14/02/06, William Roberts wrote:
+> >> During an audit event, cache and print the value of the process's
+> >> proctitle value (proc/<pid>/cmdline). This is useful in situations
+> >> where processes are started via fork'd virtual machines where the
+> >> comm field is incorrect. Often times, setting the comm field still
+> >> is insufficient as the comm width is not very wide and most
+> >> virtual machine "package names" do not fit. Also, during execution,
+> >> many threads have their comm field set as well. By tying it back to
+> >> the global cmdline value for the process, audit records will be more
+> >> complete in systems with these properties. An example of where this
+> >> is useful and applicable is in the realm of Android. With Android,
+> >> their is no fork/exec for VM instances. The bare, preloaded Dalvik
+> >> VM listens for a fork and specialize request. When this request comes
+> >> in, the VM forks, and the loads the specific application (specializing).
+> >> This was done to take advantage of COW and to not require a load of
+> >> basic packages by the VM on very app spawn. When this spawn occurs,
+> >> the package name is set via setproctitle() and shows up in procfs.
+> >> Many of these package names are longer then 16 bytes, the historical
+> >> width of task->comm. Having the cmdline in the audit records will
+> >> couple the application back to the record directly. Also, on my
+> >> Debian development box, some audit records were more useful then
+> >> what was printed under comm.
+> >>
+> >> The cached proctitle is tied to the life-cycle of the audit_context
+> >> structure and is built on demand.
+> >>
+> >> Proctitle is controllable by userspace, and thus should not be trusted.
+> >> It is meant as an aid to assist in debugging. The proctitle event is
+> >> emitted during syscall audits, and can be filtered with auditctl.
+> >>
+> >> Example:
+> >> type=AVC msg=audit(1391217013.924:386): avc:  denied  { getattr } for  pid=1971 comm="mkdir" name="/" dev="selinuxfs" ino=1 scontext=system_u:system_r:consolekit_t:s0-s0:c0.c255 tcontext=system_u:object_r:security_t:s0 tclass=filesystem
+> >> type=SYSCALL msg=audit(1391217013.924:386): arch=c000003e syscall=137 success=yes exit=0 a0=7f019dfc8bd7 a1=7fffa6aed2c0 a2=fffffffffff4bd25 a3=7fffa6aed050 items=0 ppid=1967 pid=1971 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm="mkdir" exe="/bin/mkdir" subj=system_u:system_r:consolekit_t:s0-s0:c0.c255 key=(null)
+> >> type=UNKNOWN[1327] msg=audit(1391217013.924:386):  proctitle=6D6B646972002D70002F7661722F72756E2F636F6E736F6C65
+> >>
+> >> Signed-off-by: William Roberts <wroberts@tresys.com>
+> >
+> > Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+> >
+> > Though, I would prefer to see the size of the proctitle copy buffer
+> > dynamically allocated based on the size of the original rather than
+> > pinned at 128.
 > 
-> It also removes a stray space from page.h and change ret to 0 if
-> XENFEAT_auto_translated_physmap, as that is the only possible return value
-> there.
+> Not as good as it originally seems as this could be a whole page,
+> which would result in 2*PAGE_SIZE if hex escaped back to
+> userspace. A tuneable interface could be added in the future if its needed.
+
+This could be clamped at PAGE_SIZE.
+
+> >> ---
+> >>  include/uapi/linux/audit.h |    1 +
+> >>  kernel/audit.h             |    6 ++++
+> >>  kernel/auditsc.c           |   67 ++++++++++++++++++++++++++++++++++++++++++++
+> >>  3 files changed, 74 insertions(+)
+> >>
+> >> diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
+> >> index 2d48fe1..4315ee9 100644
+> >> --- a/include/uapi/linux/audit.h
+> >> +++ b/include/uapi/linux/audit.h
+> >> @@ -109,6 +109,7 @@
+> >>  #define AUDIT_NETFILTER_PKT  1324    /* Packets traversing netfilter chains */
+> >>  #define AUDIT_NETFILTER_CFG  1325    /* Netfilter chain modifications */
+> >>  #define AUDIT_SECCOMP                1326    /* Secure Computing event */
+> >> +#define AUDIT_PROCTITLE              1327    /* Proctitle emit event */
+> >>
+> >>  #define AUDIT_AVC            1400    /* SE Linux avc denial or grant */
+> >>  #define AUDIT_SELINUX_ERR    1401    /* Internal SE Linux Errors */
+> >> diff --git a/kernel/audit.h b/kernel/audit.h
+> >> index 57cc64d..38c967d 100644
+> >> --- a/kernel/audit.h
+> >> +++ b/kernel/audit.h
+> >> @@ -106,6 +106,11 @@ struct audit_names {
+> >>       bool                    should_free;
+> >>  };
+> >>
+> >> +struct audit_proctitle {
+> >> +     int     len;    /* length of the cmdline field. */
+> >> +     char    *value; /* the cmdline field */
+> >> +};
+> >> +
+> >>  /* The per-task audit context. */
+> >>  struct audit_context {
+> >>       int                 dummy;      /* must be the first element */
+> >> @@ -202,6 +207,7 @@ struct audit_context {
+> >>               } execve;
+> >>       };
+> >>       int fds[2];
+> >> +     struct audit_proctitle proctitle;
+> >>
+> >>  #if AUDIT_DEBUG
+> >>       int                 put_count;
+> >> diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+> >> index 10176cd..e342eb0 100644
+> >> --- a/kernel/auditsc.c
+> >> +++ b/kernel/auditsc.c
+> >> @@ -68,6 +68,7 @@
+> >>  #include <linux/capability.h>
+> >>  #include <linux/fs_struct.h>
+> >>  #include <linux/compat.h>
+> >> +#include <linux/ctype.h>
+> >>
+> >>  #include "audit.h"
+> >>
+> >> @@ -79,6 +80,9 @@
+> >>  /* no execve audit message should be longer than this (userspace limits) */
+> >>  #define MAX_EXECVE_AUDIT_LEN 7500
+> >>
+> >> +/* max length to print of cmdline/proctitle value during audit */
+> >> +#define MAX_PROCTITLE_AUDIT_LEN 128
+> >> +
+> >>  /* number of audit rules */
+> >>  int audit_n_rules;
+> >>
+> >> @@ -842,6 +846,13 @@ static inline struct audit_context *audit_get_context(struct task_struct *tsk,
+> >>       return context;
+> >>  }
+> >>
+> >> +static inline void audit_proctitle_free(struct audit_context *context)
+> >> +{
+> >> +     kfree(context->proctitle.value);
+> >> +     context->proctitle.value = NULL;
+> >> +     context->proctitle.len = 0;
+> >> +}
+> >> +
+> >>  static inline void audit_free_names(struct audit_context *context)
+> >>  {
+> >>       struct audit_names *n, *next;
+> >> @@ -955,6 +966,7 @@ static inline void audit_free_context(struct audit_context *context)
+> >>       audit_free_aux(context);
+> >>       kfree(context->filterkey);
+> >>       kfree(context->sockaddr);
+> >> +     audit_proctitle_free(context);
+> >>       kfree(context);
+> >>  }
+> >>
+> >> @@ -1271,6 +1283,59 @@ static void show_special(struct audit_context *context, int *call_panic)
+> >>       audit_log_end(ab);
+> >>  }
+> >>
+> >> +static inline int audit_proctitle_rtrim(char *proctitle, int len)
+> >> +{
+> >> +     char *end = proctitle + len - 1;
+> >> +     while (end > proctitle && !isprint(*end))
+> >> +             end--;
+> >> +
+> >> +     /* catch the case where proctitle is only 1 non-print character */
+> >> +     len = end - proctitle + 1;
+> >> +     len -= isprint(proctitle[len-1]) == 0;
+> >> +     return len;
+> >> +}
+> >> +
+> >> +static void audit_log_proctitle(struct task_struct *tsk,
+> >> +                      struct audit_context *context)
+> >> +{
+> >> +     int res;
+> >> +     char *buf;
+> >> +     char *msg = "(null)";
+> >> +     int len = strlen(msg);
+> >> +     struct audit_buffer *ab;
+> >> +
+> >> +     ab = audit_log_start(context, GFP_KERNEL, AUDIT_PROCTITLE);
+> >> +     if (!ab)
+> >> +             return; /* audit_panic or being filtered */
+> >> +
+> >> +     audit_log_format(ab, "proctitle=");
+> >> +
+> >> +     /* Not  cached */
+> >> +     if (!context->proctitle.value) {
+> >> +             buf = kmalloc(MAX_PROCTITLE_AUDIT_LEN, GFP_KERNEL);
+> >> +             if (!buf)
+> >> +                     goto out;
+> >> +             /* Historically called this from procfs naming */
+> >> +             res = get_cmdline(tsk, buf, MAX_PROCTITLE_AUDIT_LEN);
+> >> +             if (res == 0) {
+> >> +                     kfree(buf);
+> >> +                     goto out;
+> >> +             }
+> >> +             res = audit_proctitle_rtrim(buf, res);
+> >> +             if (res == 0) {
+> >> +                     kfree(buf);
+> >> +                     goto out;
+> >> +             }
+> >> +             context->proctitle.value = buf;
+> >> +             context->proctitle.len = res;
+> >> +     }
+> >> +     msg = context->proctitle.value;
+> >> +     len = context->proctitle.len;
+> >> +out:
+> >> +     audit_log_n_untrustedstring(ab, msg, len);
+> >> +     audit_log_end(ab);
+> >> +}
+> >> +
+> >>  static void audit_log_exit(struct audit_context *context, struct task_struct *tsk)
+> >>  {
+> >>       int i, call_panic = 0;
+> >> @@ -1388,6 +1453,8 @@ static void audit_log_exit(struct audit_context *context, struct task_struct *ts
+> >>               audit_log_name(context, n, NULL, i++, &call_panic);
+> >>       }
+> >>
+> >> +     audit_log_proctitle(tsk, context);
+> >> +
+> >>       /* Send end of event record to help user space know we are finished */
+> >>       ab = audit_log_start(context, GFP_KERNEL, AUDIT_EOE);
+> >>       if (ab)
+> >> --
+> >> 1.7.9.5
+> >>
+> >
+> > - RGB
+> >
+> > --
+> > Richard Guy Briggs <rbriggs@redhat.com>
+> > Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+> > Remote, Ottawa, Canada
+> > Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
 > 
-> v2:
-> - move the storing of the old mfn in page->index to gnttab_map_refs
-> - move the function header update to a separate patch
 > 
-> v3:
-> - a new approach to retain old behaviour where it needed
-> - squash the patches into one
 > 
-> v4:
-> - move out the common bits from m2p* functions, and pass pfn/mfn as parameter
-> - clear page->private before doing anything with the page, so m2p_find_override
->   won't race with this
+> -- 
+> Respectfully,
 > 
-> v5:
-> - change return value handling in __gnttab_[un]map_refs
-> - remove a stray space in page.h
-> - add detail why ret = 0 now at some places
-> 
-> v6:
-> - don't pass pfn to m2p* functions, just get it locally
-> 
-> v7:
-> - the previous version broke build on ARM, as there is no need for those p2m
->   changes. I've put them into arch specific functions, which are stubs on arm
-> 
-> v8:
-> - give credit to Anthony Liguori who submitted a very similar patch originally:
-> http://marc.info/?i=1384307336-5328-1-git-send-email-anthony%40codemonkey.ws
-> - create ARM stub for get_phys_to_machine
-> - move definition of mfn in __gnttab_unmap_refs to the right place
-> 
-> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
-> Original-by: Anthony Liguori <aliguori@amazon.com>
-> ---
->  arch/arm/include/asm/xen/page.h     |   20 +++++++++-
->  arch/x86/include/asm/xen/page.h     |    7 +++-
->  arch/x86/xen/p2m.c                  |   49 ++++++++++++++++-------
->  drivers/block/xen-blkback/blkback.c |   15 +++----
->  drivers/xen/gntdev.c                |   13 +++---
->  drivers/xen/grant-table.c           |   74 +++++++++++++++++++++++++++++------
->  include/xen/grant_table.h           |    8 +++-
->  7 files changed, 140 insertions(+), 46 deletions(-)
-> 
-> diff --git a/arch/arm/include/asm/xen/page.h b/arch/arm/include/asm/xen/page.h
-> index e0965ab..d26c3d7 100644
-> --- a/arch/arm/include/asm/xen/page.h
-> +++ b/arch/arm/include/asm/xen/page.h
-> @@ -97,13 +97,31 @@ static inline pte_t *lookup_address(unsigned long address, unsigned int *level)
->  	return NULL;
->  }
->  
-> +static inline unsigned long get_phys_to_machine(unsigned long pfn)
-> +{
-> +	return 0;
-> +}
+> William C Roberts
 
-We can probably just rename phys_to_machine to get_phys_to_machine.
-Be careful about the other callers in page.h.
+- RGB
 
-
-> +static inline int set_foreign_p2m_mapping(struct page *page, unsigned long mfn)
-> +{
-> +	return 0;
-> +}
-> +
->  static inline int m2p_add_override(unsigned long mfn, struct page *page,
->  		struct gnttab_map_grant_ref *kmap_op)
->  {
->  	return 0;
->  }
->  
-> -static inline int m2p_remove_override(struct page *page, bool clear_pte)
-> +static inline int restore_foreign_p2m_mapping(struct page *page,
-> +					      unsigned long mfn)
-> +{
-> +	return 0;
-> +}
-> +
-> +static inline int m2p_remove_override(struct page *page,
-> +				      struct gnttab_map_grant_ref *kmap_op,
-> +				      unsigned long mfn)
->  {
->  	return 0;
->  }
-
-I like set_foreign_p2m_mapping and restore_foreign_p2m_mapping but we
-need to use them coherently.
-I think that on ARM it makes sense to rename the current implementation of
-set_phys_to_machine to set_foreign_p2m_mapping.
-I also makes sense to change the call to set_phys_to_machine with
-INVALID_P2M_ENTRY as a parameter to restore_foreign_p2m_mapping.
-
-Then you can implement set_phys_to_machine as
-
-BUG_ON(pfn != mfn):
-    
-and get_phys_to_machine as
-
-return pfn;
-
-
-> diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
-> index 3e276eb..0340954 100644
-> --- a/arch/x86/include/asm/xen/page.h
-> +++ b/arch/x86/include/asm/xen/page.h
-> @@ -49,10 +49,13 @@ extern bool __set_phys_to_machine(unsigned long pfn, unsigned long mfn);
->  extern unsigned long set_phys_range_identity(unsigned long pfn_s,
->  					     unsigned long pfn_e);
->  
-> +extern int set_foreign_p2m_mapping(struct page *page, unsigned long mfn);
->  extern int m2p_add_override(unsigned long mfn, struct page *page,
->  			    struct gnttab_map_grant_ref *kmap_op);
-> +extern int restore_foreign_p2m_mapping(struct page *page, unsigned long mfn);
->  extern int m2p_remove_override(struct page *page,
-> -				struct gnttab_map_grant_ref *kmap_op);
-> +			       struct gnttab_map_grant_ref *kmap_op,
-> +			       unsigned long mfn);
->  extern struct page *m2p_find_override(unsigned long mfn);
->  extern unsigned long m2p_find_override_pfn(unsigned long mfn, unsigned long pfn);
->  
-> @@ -121,7 +124,7 @@ static inline unsigned long mfn_to_pfn(unsigned long mfn)
->  		pfn = m2p_find_override_pfn(mfn, ~0);
->  	}
->  
-> -	/* 
-> +	/*
->  	 * pfn is ~0 if there are no entries in the m2p for mfn or if the
->  	 * entry doesn't map back to the mfn and m2p_override doesn't have a
->  	 * valid entry for it.
-> diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-> index 696c694..3e7cfa9 100644
-> --- a/arch/x86/xen/p2m.c
-> +++ b/arch/x86/xen/p2m.c
-> @@ -881,6 +881,22 @@ static unsigned long mfn_hash(unsigned long mfn)
->  	return hash_long(mfn, M2P_OVERRIDE_HASH_SHIFT);
->  }
->  
-> +int set_foreign_p2m_mapping(struct page *page, unsigned long mfn)
-> +{
-> +	unsigned long pfn = page_to_pfn(page);
-> +
-> +	WARN_ON(PagePrivate(page));
-> +	SetPagePrivate(page);
-> +	set_page_private(page, mfn);
-> +
-> +	page->index = pfn_to_mfn(pfn);
-> +	if (unlikely(!set_phys_to_machine(pfn, FOREIGN_FRAME(mfn))))
-> +		return -ENOMEM;
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(set_foreign_p2m_mapping);
-> +
->  /* Add an MFN override for a particular page */
->  int m2p_add_override(unsigned long mfn, struct page *page,
->  		struct gnttab_map_grant_ref *kmap_op)
-> @@ -899,13 +915,6 @@ int m2p_add_override(unsigned long mfn, struct page *page,
->  					"m2p_add_override: pfn %lx not mapped", pfn))
->  			return -EINVAL;
->  	}
-> -	WARN_ON(PagePrivate(page));
-> -	SetPagePrivate(page);
-> -	set_page_private(page, mfn);
-> -	page->index = pfn_to_mfn(pfn);
-> -
-> -	if (unlikely(!set_phys_to_machine(pfn, FOREIGN_FRAME(mfn))))
-> -		return -ENOMEM;
->  
->  	if (kmap_op != NULL) {
->  		if (!PageHighMem(page)) {
-> @@ -943,20 +952,33 @@ int m2p_add_override(unsigned long mfn, struct page *page,
->  	return 0;
->  }
->  EXPORT_SYMBOL_GPL(m2p_add_override);
-> +
-> +int restore_foreign_p2m_mapping(struct page *page, unsigned long mfn)
-> +{
-> +	unsigned long pfn = page_to_pfn(page);
-> +
-> +	if (mfn == INVALID_P2M_ENTRY || !(mfn & FOREIGN_FRAME_BIT))
-> +		return -EINVAL;
-> +
-> +	set_page_private(page, INVALID_P2M_ENTRY);
-> +	WARN_ON(!PagePrivate(page));
-> +	ClearPagePrivate(page);
-> +	set_phys_to_machine(pfn, page->index);
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(restore_foreign_p2m_mapping);
-> +
->  int m2p_remove_override(struct page *page,
-> -		struct gnttab_map_grant_ref *kmap_op)
-> +			struct gnttab_map_grant_ref *kmap_op,
-> +			unsigned long mfn)
->  {
->  	unsigned long flags;
-> -	unsigned long mfn;
->  	unsigned long pfn;
->  	unsigned long uninitialized_var(address);
->  	unsigned level;
->  	pte_t *ptep = NULL;
->  
->  	pfn = page_to_pfn(page);
-> -	mfn = get_phys_to_machine(pfn);
-> -	if (mfn == INVALID_P2M_ENTRY || !(mfn & FOREIGN_FRAME_BIT))
-> -		return -EINVAL;
->  
->  	if (!PageHighMem(page)) {
->  		address = (unsigned long)__va(pfn << PAGE_SHIFT);
-> @@ -970,10 +992,7 @@ int m2p_remove_override(struct page *page,
->  	spin_lock_irqsave(&m2p_override_lock, flags);
->  	list_del(&page->lru);
->  	spin_unlock_irqrestore(&m2p_override_lock, flags);
-> -	WARN_ON(!PagePrivate(page));
-> -	ClearPagePrivate(page);
->  
-> -	set_phys_to_machine(pfn, page->index);
->  	if (kmap_op != NULL) {
->  		if (!PageHighMem(page)) {
->  			struct multicall_space mcs;
-> diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
-> index 4b97b86..da18046 100644
-> --- a/drivers/block/xen-blkback/blkback.c
-> +++ b/drivers/block/xen-blkback/blkback.c
-> @@ -285,8 +285,7 @@ static void free_persistent_gnts(struct xen_blkif *blkif, struct rb_root *root,
->  
->  		if (++segs_to_unmap == BLKIF_MAX_SEGMENTS_PER_REQUEST ||
->  			!rb_next(&persistent_gnt->node)) {
-> -			ret = gnttab_unmap_refs(unmap, NULL, pages,
-> -				segs_to_unmap);
-> +			ret = gnttab_unmap_refs(unmap, pages, segs_to_unmap);
->  			BUG_ON(ret);
->  			put_free_pages(blkif, pages, segs_to_unmap);
->  			segs_to_unmap = 0;
-> @@ -321,8 +320,7 @@ static void unmap_purged_grants(struct work_struct *work)
->  		pages[segs_to_unmap] = persistent_gnt->page;
->  
->  		if (++segs_to_unmap == BLKIF_MAX_SEGMENTS_PER_REQUEST) {
-> -			ret = gnttab_unmap_refs(unmap, NULL, pages,
-> -				segs_to_unmap);
-> +			ret = gnttab_unmap_refs(unmap, pages, segs_to_unmap);
->  			BUG_ON(ret);
->  			put_free_pages(blkif, pages, segs_to_unmap);
->  			segs_to_unmap = 0;
-> @@ -330,7 +328,7 @@ static void unmap_purged_grants(struct work_struct *work)
->  		kfree(persistent_gnt);
->  	}
->  	if (segs_to_unmap > 0) {
-> -		ret = gnttab_unmap_refs(unmap, NULL, pages, segs_to_unmap);
-> +		ret = gnttab_unmap_refs(unmap, pages, segs_to_unmap);
->  		BUG_ON(ret);
->  		put_free_pages(blkif, pages, segs_to_unmap);
->  	}
-> @@ -670,15 +668,14 @@ static void xen_blkbk_unmap(struct xen_blkif *blkif,
->  				    GNTMAP_host_map, pages[i]->handle);
->  		pages[i]->handle = BLKBACK_INVALID_HANDLE;
->  		if (++invcount == BLKIF_MAX_SEGMENTS_PER_REQUEST) {
-> -			ret = gnttab_unmap_refs(unmap, NULL, unmap_pages,
-> -			                        invcount);
-> +			ret = gnttab_unmap_refs(unmap, unmap_pages, invcount);
->  			BUG_ON(ret);
->  			put_free_pages(blkif, unmap_pages, invcount);
->  			invcount = 0;
->  		}
->  	}
->  	if (invcount) {
-> -		ret = gnttab_unmap_refs(unmap, NULL, unmap_pages, invcount);
-> +		ret = gnttab_unmap_refs(unmap, unmap_pages, invcount);
->  		BUG_ON(ret);
->  		put_free_pages(blkif, unmap_pages, invcount);
->  	}
-> @@ -740,7 +737,7 @@ again:
->  	}
->  
->  	if (segs_to_map) {
-> -		ret = gnttab_map_refs(map, NULL, pages_to_gnt, segs_to_map);
-> +		ret = gnttab_map_refs(map, pages_to_gnt, segs_to_map);
->  		BUG_ON(ret);
->  	}
->  
-> diff --git a/drivers/xen/gntdev.c b/drivers/xen/gntdev.c
-> index 073b4a1..34a2704 100644
-> --- a/drivers/xen/gntdev.c
-> +++ b/drivers/xen/gntdev.c
-> @@ -284,8 +284,10 @@ static int map_grant_pages(struct grant_map *map)
->  	}
->  
->  	pr_debug("map %d+%d\n", map->index, map->count);
-> -	err = gnttab_map_refs(map->map_ops, use_ptemod ? map->kmap_ops : NULL,
-> -			map->pages, map->count);
-> +	err = gnttab_map_refs_userspace(map->map_ops,
-> +					use_ptemod ? map->kmap_ops : NULL,
-> +					map->pages,
-> +					map->count);
->  	if (err)
->  		return err;
->  
-> @@ -315,9 +317,10 @@ static int __unmap_grant_pages(struct grant_map *map, int offset, int pages)
->  		}
->  	}
->  
-> -	err = gnttab_unmap_refs(map->unmap_ops + offset,
-> -			use_ptemod ? map->kmap_ops + offset : NULL, map->pages + offset,
-> -			pages);
-> +	err = gnttab_unmap_refs_userspace(map->unmap_ops + offset,
-> +					  use_ptemod ? map->kmap_ops + offset : NULL,
-> +					  map->pages + offset,
-> +					  pages);
->  	if (err)
->  		return err;
->  
-> diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-> index b84e3ab..c719bc8 100644
-> --- a/drivers/xen/grant-table.c
-> +++ b/drivers/xen/grant-table.c
-> @@ -928,15 +928,17 @@ void gnttab_batch_copy(struct gnttab_copy *batch, unsigned count)
->  }
->  EXPORT_SYMBOL_GPL(gnttab_batch_copy);
->  
-> -int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
-> +int __gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
->  		    struct gnttab_map_grant_ref *kmap_ops,
-> -		    struct page **pages, unsigned int count)
-> +		    struct page **pages, unsigned int count,
-> +		    bool m2p_override)
->  {
->  	int i, ret;
->  	bool lazy = false;
->  	pte_t *pte;
->  	unsigned long mfn;
->  
-> +	BUG_ON(kmap_ops && !m2p_override);
->  	ret = HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, map_ops, count);
->  	if (ret)
->  		return ret;
-> @@ -955,10 +957,12 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
->  			set_phys_to_machine(map_ops[i].host_addr >> PAGE_SHIFT,
->  					map_ops[i].dev_bus_addr >> PAGE_SHIFT);
-
-I think that this should become a call to set_foreign_p2m_mapping
-
-
->  		}
-> -		return ret;
-> +		return 0;
->  	}
->  
-> -	if (!in_interrupt() && paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
-> +	if (m2p_override &&
-> +	    !in_interrupt() &&
-> +	    paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
->  		arch_enter_lazy_mmu_mode();
->  		lazy = true;
->  	}
-> @@ -975,8 +979,14 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
->  		} else {
->  			mfn = PFN_DOWN(map_ops[i].dev_bus_addr);
->  		}
-> -		ret = m2p_add_override(mfn, pages[i], kmap_ops ?
-> -				       &kmap_ops[i] : NULL);
-> +
-> +		ret = set_foreign_p2m_mapping(pages[i], mfn);
-> +		if (ret)
-> +			goto out;
-> +
-> +		if (m2p_override)
-> +			ret = m2p_add_override(mfn, pages[i], kmap_ops ?
-> +					       &kmap_ops[i] : NULL);
->  		if (ret)
->  			goto out;
->  	}
-> @@ -987,15 +997,31 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
->  
->  	return ret;
->  }
-> +
-> +int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
-> +		    struct page **pages, unsigned int count)
-> +{
-> +	return __gnttab_map_refs(map_ops, NULL, pages, count, false);
-> +}
->  EXPORT_SYMBOL_GPL(gnttab_map_refs);
->  
-> -int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
-> +int gnttab_map_refs_userspace(struct gnttab_map_grant_ref *map_ops,
-> +			      struct gnttab_map_grant_ref *kmap_ops,
-> +			      struct page **pages, unsigned int count)
-> +{
-> +	return __gnttab_map_refs(map_ops, kmap_ops, pages, count, true);
-> +}
-> +EXPORT_SYMBOL_GPL(gnttab_map_refs_userspace);
-> +
-> +int __gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
->  		      struct gnttab_map_grant_ref *kmap_ops,
-> -		      struct page **pages, unsigned int count)
-> +		      struct page **pages, unsigned int count,
-> +		      bool m2p_override)
->  {
->  	int i, ret;
->  	bool lazy = false;
->  
-> +	BUG_ON(kmap_ops && !m2p_override);
->  	ret = HYPERVISOR_grant_table_op(GNTTABOP_unmap_grant_ref, unmap_ops, count);
->  	if (ret)
->  		return ret;
-> @@ -1006,17 +1032,27 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
->  			set_phys_to_machine(unmap_ops[i].host_addr >> PAGE_SHIFT,
->  					INVALID_P2M_ENTRY);
-
-this should become a call to restore_foreign_p2m_mapping
-
-
->  		}
-> -		return ret;
-> +		return 0;
->  	}
->  
-> -	if (!in_interrupt() && paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
-> +	if (m2p_override &&
-> +	    !in_interrupt() &&
-> +	    paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
->  		arch_enter_lazy_mmu_mode();
->  		lazy = true;
->  	}
->  
->  	for (i = 0; i < count; i++) {
-> -		ret = m2p_remove_override(pages[i], kmap_ops ?
-> -				       &kmap_ops[i] : NULL);
-> +		unsigned long mfn = get_phys_to_machine(page_to_pfn(pages[i]));
-> +		ret = restore_foreign_p2m_mapping(pages[i], mfn);
-> +		if (ret)
-> +			goto out;
-> +
-> +		if (m2p_override)
-> +			ret = m2p_remove_override(pages[i],
-> +						  kmap_ops ?
-> +						   &kmap_ops[i] : NULL,
-> +						  mfn);
->  		if (ret)
->  			goto out;
->  	}
-> @@ -1027,8 +1063,22 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
->  
->  	return ret;
->  }
-> +
-> +int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *map_ops,
-> +		    struct page **pages, unsigned int count)
-> +{
-> +	return __gnttab_unmap_refs(map_ops, NULL, pages, count, false);
-> +}
->  EXPORT_SYMBOL_GPL(gnttab_unmap_refs);
->  
-> +int gnttab_unmap_refs_userspace(struct gnttab_unmap_grant_ref *map_ops,
-> +				struct gnttab_map_grant_ref *kmap_ops,
-> +				struct page **pages, unsigned int count)
-> +{
-> +	return __gnttab_unmap_refs(map_ops, kmap_ops, pages, count, true);
-> +}
-> +EXPORT_SYMBOL_GPL(gnttab_unmap_refs_userspace);
-> +
->  static unsigned nr_status_frames(unsigned nr_grant_frames)
->  {
->  	BUG_ON(grefs_per_grant_frame == 0);
-> diff --git a/include/xen/grant_table.h b/include/xen/grant_table.h
-> index a5af2a2..7ad033d 100644
-> --- a/include/xen/grant_table.h
-> +++ b/include/xen/grant_table.h
-> @@ -191,11 +191,15 @@ void gnttab_free_auto_xlat_frames(void);
->  #define gnttab_map_vaddr(map) ((void *)(map.host_virt_addr))
->  
->  int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
-> -		    struct gnttab_map_grant_ref *kmap_ops,
->  		    struct page **pages, unsigned int count);
-> +int gnttab_map_refs_userspace(struct gnttab_map_grant_ref *map_ops,
-> +			      struct gnttab_map_grant_ref *kmap_ops,
-> +			      struct page **pages, unsigned int count);
->  int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
-> -		      struct gnttab_map_grant_ref *kunmap_ops,
->  		      struct page **pages, unsigned int count);
-> +int gnttab_unmap_refs_userspace(struct gnttab_unmap_grant_ref *unmap_ops,
-> +				struct gnttab_map_grant_ref *kunmap_ops,
-> +				struct page **pages, unsigned int count);
->  
->  /* Perform a batch of grant map/copy operations. Retry every batch slot
->   * for which the hypervisor returns GNTST_eagain. This is typically due
-> 
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
