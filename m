@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752153AbaBKPWI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 10:22:08 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:58993 "EHLO
+	id S1752181AbaBKPWf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 10:22:35 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:61610 "EHLO
 	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751869AbaBKPUn (ORCPT
+	with ESMTP id S1751744AbaBKPUh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 10:20:43 -0500
+	Tue, 11 Feb 2014 10:20:37 -0500
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com, ak@linux.intel.com,
         zheng.z.yan@intel.com
-Subject: [PATCH v2 4/8] perf/x86/uncore: make hrtimer timeout configurable per box
-Date: Tue, 11 Feb 2014 16:20:10 +0100
-Message-Id: <1392132015-14521-5-git-send-email-eranian@google.com>
+Subject: [PATCH v2 2/8] perf/x86/uncore: add ability to customize pmu callbacks
+Date: Tue, 11 Feb 2014 16:20:08 +0100
+Message-Id: <1392132015-14521-3-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1392132015-14521-1-git-send-email-eranian@google.com>
 References: <1392132015-14521-1-git-send-email-eranian@google.com>
@@ -21,63 +21,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes the hrtimer timeout configurable per PMU
-box. Not all counters have necessarily the same width and
-rate, thus the default timeout of 60s may need to be adjusted.
-
-This patch adds box->hrtimer_duration. It is set to default
-when the box is allocated. It can be overriden when the box
-is initialized.
+This patch enables custom struct pmu callbacks per uncore
+PMU types. This feature may be used to simplify counter
+setup for certain uncore PMUs which have free running
+counters for instance. It becomes possible to bypass
+the event scheduling phase of the configuration.
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel_uncore.c |    7 +++++--
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c |   25 +++++++++++++++----------
  arch/x86/kernel/cpu/perf_event_intel_uncore.h |    1 +
- 2 files changed, 6 insertions(+), 2 deletions(-)
+ 2 files changed, 16 insertions(+), 10 deletions(-)
 
 diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index e6f32b3..ea823b8 100644
+index fe4255b..e6f32b3 100644
 --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
 +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -2798,14 +2798,14 @@ static enum hrtimer_restart uncore_pmu_hrtimer(struct hrtimer *hrtimer)
- 
- 	local_irq_restore(flags);
- 
--	hrtimer_forward_now(hrtimer, ns_to_ktime(UNCORE_PMU_HRTIMER_INTERVAL));
-+	hrtimer_forward_now(hrtimer, ns_to_ktime(box->hrtimer_duration));
- 	return HRTIMER_RESTART;
- }
- 
- static void uncore_pmu_start_hrtimer(struct intel_uncore_box *box)
+@@ -3271,16 +3271,21 @@ static int __init uncore_pmu_register(struct intel_uncore_pmu *pmu)
  {
- 	__hrtimer_start_range_ns(&box->hrtimer,
--			ns_to_ktime(UNCORE_PMU_HRTIMER_INTERVAL), 0,
-+			ns_to_ktime(box->hrtimer_duration), 0,
- 			HRTIMER_MODE_REL_PINNED, 0);
- }
+ 	int ret;
  
-@@ -2839,6 +2839,9 @@ static struct intel_uncore_box *uncore_alloc_box(struct intel_uncore_type *type,
- 	box->cpu = -1;
- 	box->phys_id = -1;
+-	pmu->pmu = (struct pmu) {
+-		.attr_groups	= pmu->type->attr_groups,
+-		.task_ctx_nr	= perf_invalid_context,
+-		.event_init	= uncore_pmu_event_init,
+-		.add		= uncore_pmu_event_add,
+-		.del		= uncore_pmu_event_del,
+-		.start		= uncore_pmu_event_start,
+-		.stop		= uncore_pmu_event_stop,
+-		.read		= uncore_pmu_event_read,
+-	};
++	if (!pmu->type->pmu) {
++		pmu->pmu = (struct pmu) {
++			.attr_groups	= pmu->type->attr_groups,
++			.task_ctx_nr	= perf_invalid_context,
++			.event_init	= uncore_pmu_event_init,
++			.add		= uncore_pmu_event_add,
++			.del		= uncore_pmu_event_del,
++			.start		= uncore_pmu_event_start,
++			.stop		= uncore_pmu_event_stop,
++			.read		= uncore_pmu_event_read,
++		};
++	} else {
++		pmu->pmu = *pmu->type->pmu;
++		pmu->pmu.attr_groups = pmu->type->attr_groups;
++	}
  
-+	/* set default hrtimer timeout */
-+	box->hrtimer_duration = UNCORE_PMU_HRTIMER_INTERVAL;
-+
- 	return box;
- }
- 
+ 	if (pmu->type->num_boxes == 1) {
+ 		if (strlen(pmu->type->name) > 0)
 diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-index 77dc9a5..7efd298 100644
+index a80ab71..77dc9a5 100644
 --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
 +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-@@ -489,6 +489,7 @@ struct intel_uncore_box {
- 	u64 tags[UNCORE_PMC_IDX_MAX];
- 	struct pci_dev *pci_dev;
- 	struct intel_uncore_pmu *pmu;
-+	u64 hrtimer_duration; /* hrtimer timeout for this box */
- 	struct hrtimer hrtimer;
- 	struct list_head list;
- 	struct intel_uncore_extra_reg shared_regs[0];
+@@ -440,6 +440,7 @@ struct intel_uncore_type {
+ 	struct intel_uncore_ops *ops;
+ 	struct uncore_event_desc *event_descs;
+ 	const struct attribute_group *attr_groups[4];
++	struct pmu *pmu; /* for custom pmu ops */
+ };
+ 
+ #define pmu_group attr_groups[0]
 -- 
 1.7.9.5
 
