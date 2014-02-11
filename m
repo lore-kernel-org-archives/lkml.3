@@ -1,80 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752178AbaBKSeG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 13:34:06 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:45013 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751347AbaBKSeE (ORCPT
+	id S1752226AbaBKSeS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 13:34:18 -0500
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:51554 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751840AbaBKSeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 13:34:04 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, <x86@kernel.org>
-Subject: [PATCH] x86: fix two sparse warnings in early boot string handling
-Date: Tue, 11 Feb 2014 13:33:39 -0500
-Message-ID: <1392143619-11453-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.8.5.2
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 11 Feb 2014 13:34:05 -0500
+From: Rob Herring <robherring2@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
+        Rob Herring <robh@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        cpufreq@vger.kernel.org
+Subject: [PATCH v2] cpufreq: cpu0: drop selecting of THERMAL and THERMAL_CPU
+Date: Tue, 11 Feb 2014 12:33:52 -0600
+Message-Id: <1392143632-15405-1-git-send-email-robherring2@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes:
+From: Rob Herring <robh@kernel.org>
 
-arch/x86/boot/compressed/../string.c:60:14: warning: symbol 'atou' was not declared. Should it be static?
-arch/x86/boot/string.c:133:6: warning: symbol 'strstr' was not declared. Should it be static?
+The addition of THERMAL and THERMAL_CPU selections causes a kconfig
+warning on highbank platforms:
 
-The atou one could be considered a false positive; it seems somehow
-caused by including ./string.c from within /compressed/string.c file.
-However git grep shows only the atou prototype and declaration, so
-it is completely unused and we can hence delete it.
+warning: (ARM_HIGHBANK_CPUFREQ) selects GENERIC_CPUFREQ_CPU0 which has
+unmet direct dependencies (ARCH_HAS_CPUFREQ && CPU_FREQ && HAVE_CLK &&
+ REGULATOR && OF && THERMAL && CPU_THERMAL)
 
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: x86@kernel.org
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+The cpufreq-cpu0 driver does not require thermal zone support to
+function as highbank does not need these, so drop selecting of THERMAL
+and CPU_THERMAL.
+
+Reported-by: Olof Johansson <olof@lixom.net>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: cpufreq@vger.kernel.org
+Signed-off-by: Rob Herring <robh@kernel.org>
 ---
- arch/x86/boot/boot.h   | 2 +-
- arch/x86/boot/string.c | 8 --------
- 2 files changed, 1 insertion(+), 9 deletions(-)
+v2:
+- just drop selecting THERMAL and THERMAL_CPU instead of a new kconfig
+  option
 
-diff --git a/arch/x86/boot/boot.h b/arch/x86/boot/boot.h
-index 50f8c5e0f37e..d318b6b86197 100644
---- a/arch/x86/boot/boot.h
-+++ b/arch/x86/boot/boot.h
-@@ -344,8 +344,8 @@ void initregs(struct biosregs *regs);
- /* string.c */
- int strcmp(const char *str1, const char *str2);
- int strncmp(const char *cs, const char *ct, size_t count);
-+char *strstr(const char *s1, const char *s2);
- size_t strnlen(const char *s, size_t maxlen);
--unsigned int atou(const char *s);
- unsigned long long simple_strtoull(const char *cp, char **endp, unsigned int base);
- size_t strlen(const char *s);
+Dropping REGULATOR doesn't build w/o some empty regulator functions, so
+that's 3.15 material.
+
+Rob
+
+ drivers/cpufreq/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
+index 4b029c0..d100926 100644
+--- a/drivers/cpufreq/Kconfig
++++ b/drivers/cpufreq/Kconfig
+@@ -185,7 +185,7 @@ config CPU_FREQ_GOV_CONSERVATIVE
  
-diff --git a/arch/x86/boot/string.c b/arch/x86/boot/string.c
-index 574dedfe2890..59b219c03c77 100644
---- a/arch/x86/boot/string.c
-+++ b/arch/x86/boot/string.c
-@@ -57,14 +57,6 @@ size_t strnlen(const char *s, size_t maxlen)
- 	return (es - s);
- }
- 
--unsigned int atou(const char *s)
--{
--	unsigned int i = 0;
--	while (isdigit(*s))
--		i = i * 10 + (*s++ - '0');
--	return i;
--}
--
- /* Works only for digits and letters, but small and fast */
- #define TOLOWER(x) ((x) | 0x20)
- 
+ config GENERIC_CPUFREQ_CPU0
+ 	tristate "Generic CPU0 cpufreq driver"
+-	depends on HAVE_CLK && REGULATOR && OF && THERMAL && CPU_THERMAL
++	depends on HAVE_CLK && REGULATOR && OF
+ 	select PM_OPP
+ 	help
+ 	  This adds a generic cpufreq driver for CPU0 frequency management.
 -- 
-1.8.5.2
+1.8.3.2
 
