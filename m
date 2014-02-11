@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755181AbaBKT3u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:29:50 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:60376 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754557AbaBKT3c (ORCPT
+	id S1754642AbaBKTau (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:30:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40400 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754164AbaBKTH5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:29:32 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19s7aveNH19SrzZdW7MQGVJGQ2ZHBUntNY=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 8C6FB524CC8
-Date: Tue, 11 Feb 2014 14:29:19 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Josh Cartwright <joshc@codeaurora.org>
-Cc: Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        devicetree@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 4/8] ARM: mvebu: make use of
- of_find_matching_node_and_match
-Message-ID: <20140211192919.GH27395@titan.lakedaemon.net>
-References: <1392135847-30791-1-git-send-email-joshc@codeaurora.org>
- <1392135847-30791-5-git-send-email-joshc@codeaurora.org>
+	Tue, 11 Feb 2014 14:07:57 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 3.10 09/79] audit: correct a type mismatch in audit_syscall_exit()
+Date: Tue, 11 Feb 2014 11:05:13 -0800
+Message-Id: <20140211184721.201717370@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
+References: <20140211184720.928667275@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392135847-30791-5-git-send-email-joshc@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 10:24:02AM -0600, Josh Cartwright wrote:
-> Instead of the of_find_matching_node()/of_match_node() pair, which requires two
-> iterations through the match table, make use of of_find_matching_node_and_match(),
-> which only iterates through the table once.
-> 
-> While we're here, mark the of_system_controller table const.
-> 
-> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
-> ---
->  arch/arm/mach-mvebu/system-controller.c | 9 ++++-----
->  1 file changed, 4 insertions(+), 5 deletions(-)
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Applied to mvebu/soc with Thomas' Reviewed-by, and Gregory's Ack.
+------------------
 
-thx,
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
 
-Jason.
+commit 06bdadd7634551cfe8ce071fe44d0311b3033d9e upstream.
+
+audit_syscall_exit() saves a result of regs_return_value() in intermediate
+"int" variable and passes it to __audit_syscall_exit(), which expects its
+second argument as a "long" value.  This will result in truncating the
+value returned by a system call and making a wrong audit record.
+
+I don't know why gcc compiler doesn't complain about this, but anyway it
+causes a problem at runtime on arm64 (and probably most 64-bit archs).
+
+Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Eric Paris <eparis@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ include/linux/audit.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/include/linux/audit.h
++++ b/include/linux/audit.h
+@@ -135,7 +135,7 @@ static inline void audit_syscall_exit(vo
+ {
+ 	if (unlikely(current->audit_context)) {
+ 		int success = is_syscall_success(pt_regs);
+-		int return_code = regs_return_value(pt_regs);
++		long return_code = regs_return_value(pt_regs);
+ 
+ 		__audit_syscall_exit(success, return_code);
+ 	}
+
+
