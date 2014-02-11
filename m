@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751767AbaBKIwp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 03:52:45 -0500
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:65230 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750785AbaBKIwn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 03:52:43 -0500
+	id S1751584AbaBKIzF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 03:55:05 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:35089 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750809AbaBKIzA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 03:55:00 -0500
+Message-ID: <52F9E55E.2050708@ti.com>
+Date: Tue, 11 Feb 2014 10:54:54 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <20140128132306.GB9172@localhost.localdomain>
-References: <CAKohpomO+2WbNLceBznWwYRcv0e7RsPiaRF7ctRZ+6GFKtr4aA@mail.gmail.com>
-	<20140115171704.GB21574@localhost.localdomain>
-	<CAKohponEZydR1OmP2xziA9bc3OJPgP3bFmuWFQmrmeQFZccMVQ@mail.gmail.com>
-	<alpine.DEB.2.02.1401161043350.4207@ionos.tec.linutronix.de>
-	<CAKohpond3wY25H_tsJQ9xs_D2dP2_wGGU5J8fBteyfB=7wmAdA@mail.gmail.com>
-	<20140120155145.GB9436@localhost.localdomain>
-	<CAKohpom8av7A1wwcdOr5+LpHz--P+s9m_gR_9B+Aa4fpwkN7uQ@mail.gmail.com>
-	<20140123145842.GD13345@localhost.localdomain>
-	<CAKohpok5AObcFbOmLYGT-KkjhVHUiLRZ=AYqofYk59_sVneSjA@mail.gmail.com>
-	<20140128132306.GB9172@localhost.localdomain>
-Date: Tue, 11 Feb 2014 14:22:43 +0530
-Message-ID: <CAKohpommw4=LcyYKvj8rNJgUkOT+_Gh=1kppcDQYm3BuQQe_Qg@mail.gmail.com>
-Subject: Re: [QUERY]: Is using CPU hotplug right for isolating CPUs?
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linaro Networking <linaro-networking@linaro.org>,
-        Kevin Hilman <khilman@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Colin King <colin.king@canonical.com>
+CC: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mfd: omap-usb-tll: allocate correct size for ch_clk
+References: <1392059407-15452-1-git-send-email-colin.king@canonical.com> <20140210195421.GB31864@lee--X1>
+In-Reply-To: <20140210195421.GB31864@lee--X1>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28 January 2014 18:53, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> No, when a single task is running on a full dynticks CPU, the tick is supposed to run
-> every seconds. I'm actually suprised it doesn't happen in your traces, did you tweak
-> something specific?
+Hi Colin,
 
-Why do we need this 1 second tick currently? And what will happen if I
-hotunplug that
-CPU and get it back? Would the timer for tick move away from CPU in
-question? I see
-that when I have changed this 1sec stuff to 300 seconds. But what
-would be impact
-of that? Will things still work normally?
+On 02/10/2014 09:54 PM, Lee Jones wrote:
+>> From: Colin Ian King <colin.king@canonical.com>
+>>
+>> ch_clk was erroneously being allocated the incorrect size which
+>> can be problematic for larger sizes of tll->nch
+
+The code fix is good but the subject and description aren't right.
+
+You could instead mention about the cppcheck warning and hard to read
+code.
+
+>>
+>> Signed-off-by: Colin Ian King <colin.king@canonical.com>
+>> ---
+>>  drivers/mfd/omap-usb-tll.c | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
+>> index 5ee50f7..532eacab 100644
+>> --- a/drivers/mfd/omap-usb-tll.c
+>> +++ b/drivers/mfd/omap-usb-tll.c
+>> @@ -252,7 +252,7 @@ static int usbtll_omap_probe(struct platform_device *pdev)
+>>  		break;
+>>  	}
+>>  
+>> -	tll->ch_clk = devm_kzalloc(dev, sizeof(struct clk * [tll->nch]),
+>> +	tll->ch_clk = devm_kzalloc(dev, sizeof(struct clk *) * tll->nch,
+>>  						GFP_KERNEL);
+>>  	if (!tll->ch_clk) {
+>>  		ret = -ENOMEM;
+> 
+> Thanks Colin, patch looks good to me.
+> 
+> Roger, fancy finishing this off with an Acked-by?
+> 
+
+cheers,
+-roger
