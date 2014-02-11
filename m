@@ -1,188 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754274AbaBKUgs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:36:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39809 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753154AbaBKTGD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:03 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Sasha Levin <sasha.levin@oracle.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 3.13 114/120] timekeeping: Avoid possible deadlock from clock_was_set_delayed
-Date: Tue, 11 Feb 2014 11:05:55 -0800
-Message-Id: <20140211184826.896984703@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
-References: <20140211184823.492407127@linuxfoundation.org>
-User-Agent: quilt/0.61-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	id S1754472AbaBKUhK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:37:10 -0500
+Received: from gate.crashing.org ([63.228.1.57]:57218 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754364AbaBKUhH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 15:37:07 -0500
+Message-ID: <1392147268.3835.11.camel@pasglop>
+Subject: Re: [PATCH v2] powerpc ticket locks
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Scott Wood <scottwood@freescale.com>
+Cc: Torsten Duwe <duwe@lst.de>,
+        Raghavendra KT <raghavendra.kt.linux@gmail.com>,
+        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Tom Musta <tommusta@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linuxppc-dev@lists.ozlabs.org,
+        Raghavendra KT <raghavendra.kt@linux.vnet.ibm.com>
+Date: Wed, 12 Feb 2014 06:34:28 +1100
+In-Reply-To: <1392143455.6733.386.camel@snotra.buserror.net>
+References: <20140207165801.GC2107@lst.de>
+	 <1392001823.3996.21.camel@pasglop>
+	 <CAC4Lta2Pssu5QY_QLmy5C3Fm2G3fwpiuc5BNOLBnQTmmRH+W4Q@mail.gmail.com>
+	 <20140211104030.GG2107@lst.de>
+	 <1392143455.6733.386.camel@snotra.buserror.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+On Tue, 2014-02-11 at 12:30 -0600, Scott Wood wrote:
+> > It's something very special to IBM pSeries: the hypervisor can assign
+> > fractions of physical CPUs to guests. Sometimes a guest with 4 quarter
+> > CPUs will be faster than 1 monoprocessor. (correct me if I'm wrong).
+> > 
+> > The directed yield resolves the silly situation when holder and waiter
+> > reside on the same physical CPU, as I understand it.
+> > 
+> > x86 has nothing comparable.
+> 
+> How is this different from the very ordinary case of an SMP KVM guest
+> whose vcpus are not bound to host cpus, and thus you could have multiple
+> vcpus running on the same host cpu?
 
-------------------
+It's not really ... though I can see drawbacks with the scheme as well
+and I think in KVM we should be careful to only confer if the owner
+vcpu last scheduled on the same physical cpu where the waiter is, other
+wise, there's too much chances of us bouncing things around the machine
+for minor contention cases.
 
-From: John Stultz <john.stultz@linaro.org>
+Paul, what's your policy today ?
 
-commit 6fdda9a9c5db367130cf32df5d6618d08b89f46a upstream.
-
-As part of normal operaions, the hrtimer subsystem frequently calls
-into the timekeeping code, creating a locking order of
-  hrtimer locks -> timekeeping locks
-
-clock_was_set_delayed() was suppoed to allow us to avoid deadlocks
-between the timekeeping the hrtimer subsystem, so that we could
-notify the hrtimer subsytem the time had changed while holding
-the timekeeping locks. This was done by scheduling delayed work
-that would run later once we were out of the timekeeing code.
-
-But unfortunately the lock chains are complex enoguh that in
-scheduling delayed work, we end up eventually trying to grab
-an hrtimer lock.
-
-Sasha Levin noticed this in testing when the new seqlock lockdep
-enablement triggered the following (somewhat abrieviated) message:
-
-[  251.100221] ======================================================
-[  251.100221] [ INFO: possible circular locking dependency detected ]
-[  251.100221] 3.13.0-rc2-next-20131206-sasha-00005-g8be2375-dirty #4053 Not tainted
-[  251.101967] -------------------------------------------------------
-[  251.101967] kworker/10:1/4506 is trying to acquire lock:
-[  251.101967]  (timekeeper_seq){----..}, at: [<ffffffff81160e96>] retrigger_next_event+0x56/0x70
-[  251.101967]
-[  251.101967] but task is already holding lock:
-[  251.101967]  (hrtimer_bases.lock#11){-.-...}, at: [<ffffffff81160e7c>] retrigger_next_event+0x3c/0x70
-[  251.101967]
-[  251.101967] which lock already depends on the new lock.
-[  251.101967]
-[  251.101967]
-[  251.101967] the existing dependency chain (in reverse order) is:
-[  251.101967]
--> #5 (hrtimer_bases.lock#11){-.-...}:
-[snipped]
--> #4 (&rt_b->rt_runtime_lock){-.-...}:
-[snipped]
--> #3 (&rq->lock){-.-.-.}:
-[snipped]
--> #2 (&p->pi_lock){-.-.-.}:
-[snipped]
--> #1 (&(&pool->lock)->rlock){-.-...}:
-[  251.101967]        [<ffffffff81194803>] validate_chain+0x6c3/0x7b0
-[  251.101967]        [<ffffffff81194d9d>] __lock_acquire+0x4ad/0x580
-[  251.101967]        [<ffffffff81194ff2>] lock_acquire+0x182/0x1d0
-[  251.101967]        [<ffffffff84398500>] _raw_spin_lock+0x40/0x80
-[  251.101967]        [<ffffffff81153e69>] __queue_work+0x1a9/0x3f0
-[  251.101967]        [<ffffffff81154168>] queue_work_on+0x98/0x120
-[  251.101967]        [<ffffffff81161351>] clock_was_set_delayed+0x21/0x30
-[  251.101967]        [<ffffffff811c4bd1>] do_adjtimex+0x111/0x160
-[  251.101967]        [<ffffffff811e2711>] compat_sys_adjtimex+0x41/0x70
-[  251.101967]        [<ffffffff843a4b49>] ia32_sysret+0x0/0x5
-[  251.101967]
--> #0 (timekeeper_seq){----..}:
-[snipped]
-[  251.101967] other info that might help us debug this:
-[  251.101967]
-[  251.101967] Chain exists of:
-  timekeeper_seq --> &rt_b->rt_runtime_lock --> hrtimer_bases.lock#11
-
-[  251.101967]  Possible unsafe locking scenario:
-[  251.101967]
-[  251.101967]        CPU0                    CPU1
-[  251.101967]        ----                    ----
-[  251.101967]   lock(hrtimer_bases.lock#11);
-[  251.101967]                                lock(&rt_b->rt_runtime_lock);
-[  251.101967]                                lock(hrtimer_bases.lock#11);
-[  251.101967]   lock(timekeeper_seq);
-[  251.101967]
-[  251.101967]  *** DEADLOCK ***
-[  251.101967]
-[  251.101967] 3 locks held by kworker/10:1/4506:
-[  251.101967]  #0:  (events){.+.+.+}, at: [<ffffffff81154960>] process_one_work+0x200/0x530
-[  251.101967]  #1:  (hrtimer_work){+.+...}, at: [<ffffffff81154960>] process_one_work+0x200/0x530
-[  251.101967]  #2:  (hrtimer_bases.lock#11){-.-...}, at: [<ffffffff81160e7c>] retrigger_next_event+0x3c/0x70
-[  251.101967]
-[  251.101967] stack backtrace:
-[  251.101967] CPU: 10 PID: 4506 Comm: kworker/10:1 Not tainted 3.13.0-rc2-next-20131206-sasha-00005-g8be2375-dirty #4053
-[  251.101967] Workqueue: events clock_was_set_work
-
-So the best solution is to avoid calling clock_was_set_delayed() while
-holding the timekeeping lock, and instead using a flag variable to
-decide if we should call clock_was_set() once we've released the locks.
-
-This works for the case here, where the do_adjtimex() was the deadlock
-trigger point. Unfortuantely, in update_wall_time() we still hold
-the jiffies lock, which would deadlock with the ipi triggered by
-clock_was_set(), preventing us from calling it even after we drop the
-timekeeping lock. So instead call clock_was_set_delayed() at that point.
-
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Tested-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- kernel/time/timekeeping.c |   18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
-
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -1278,7 +1278,6 @@ static inline unsigned int accumulate_ns
- 
- 			__timekeeping_set_tai_offset(tk, tk->tai_offset - leap);
- 
--			clock_was_set_delayed();
- 			clock_set = TK_CLOCK_WAS_SET;
- 		}
- 	}
-@@ -1442,6 +1441,19 @@ static void update_wall_time(void)
- 	write_seqcount_end(&timekeeper_seq);
- out:
- 	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
-+	if (clock_was_set) {
-+		/*
-+		 * XXX -  I'd rather we just call clock_was_set(), but
-+		 * since we're currently holding the jiffies lock, calling
-+		 * clock_was_set would trigger an ipi which would then grab
-+		 * the jiffies lock and we'd deadlock. :(
-+		 * The right solution should probably be droping
-+		 * the jiffies lock before calling update_wall_time
-+		 * but that requires some rework of the tick sched
-+		 * code.
-+		 */
-+		clock_was_set_delayed();
-+	}
- }
- 
- /**
-@@ -1702,11 +1714,13 @@ int do_adjtimex(struct timex *txc)
- 	if (tai != orig_tai) {
- 		__timekeeping_set_tai_offset(tk, tai);
- 		timekeeping_update(tk, TK_MIRROR | TK_CLOCK_WAS_SET);
--		clock_was_set_delayed();
- 	}
- 	write_seqcount_end(&timekeeper_seq);
- 	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
- 
-+	if (tai != orig_tai)
-+		clock_was_set();
-+
- 	ntp_notify_cmos_timer();
- 
- 	return ret;
+Cheers,
+Ben.
 
 
