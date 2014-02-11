@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755021AbaBKTYj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:24:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40492 "EHLO
+	id S1755072AbaBKTY4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:24:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40484 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754238AbaBKTIK (ORCPT
+	with ESMTP id S1754179AbaBKTII (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:08:10 -0500
+	Tue, 11 Feb 2014 14:08:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        James Ralston <james.d.ralston@intel.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "Chan, Wei Sern" <wei.sern.chan@intel.com>
-Subject: [PATCH 3.10 65/79] mfd: lpc_ich: Add support for Intel Avoton SoC
-Date: Tue, 11 Feb 2014 11:06:09 -0800
-Message-Id: <20140211184722.855229027@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>, Jiri Slaby <jslaby@suse.cz>,
+        David Airlie <airlied@linux.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [PATCH 3.10 63/79] drm/cirrus: correct register values for 16bpp
+Date: Tue, 11 Feb 2014 11:06:07 -0800
+Message-Id: <20140211184722.791875228@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
 References: <20140211184720.928667275@linuxfoundation.org>
@@ -30,61 +31,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Ralston <james.d.ralston@intel.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 8477128fe0c3c455e9dfb1ba7ad7e6d09489d33c upstream.
+commit 2510538fa000dd13a3e57b79bf073ffb1748976c upstream.
 
-This patch adds the LPC Controller Device IDs for Watchdog and GPIO for
-Intel Avoton SoC, to the lpc_ich driver.
+When the mode is set with 16bpp on QEMU, the output gets totally broken.
+The culprit is the bogus register values set for 16bpp, which was likely
+copied from from a wrong place.
 
-Signed-off-by: James Ralston <james.d.ralston@intel.com>
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
-Cc: "Chan, Wei Sern" <wei.sern.chan@intel.com>
+Addresses https://bugzilla.novell.com/show_bug.cgi?id=799216
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: David Airlie <airlied@linux.ie>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mfd/lpc_ich.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/gpu/drm/cirrus/cirrus_mode.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/mfd/lpc_ich.c
-+++ b/drivers/mfd/lpc_ich.c
-@@ -51,6 +51,7 @@
-  *	document number TBD : Lynx Point
-  *	document number TBD : Lynx Point-LP
-  *	document number TBD : Wellsburg
-+ *	document number TBD : Avoton SoC
-  */
- 
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-@@ -207,6 +208,7 @@ enum lpc_chipsets {
- 	LPC_LPT,	/* Lynx Point */
- 	LPC_LPT_LP,	/* Lynx Point-LP */
- 	LPC_WBG,	/* Wellsburg */
-+	LPC_AVN,	/* Avoton SoC */
- };
- 
- struct lpc_ich_info lpc_chipset_info[] = {
-@@ -491,6 +493,10 @@ struct lpc_ich_info lpc_chipset_info[] =
- 		.name = "Wellsburg",
- 		.iTCO_version = 2,
- 	},
-+	[LPC_AVN] = {
-+		.name = "Avoton SoC",
-+		.iTCO_version = 1,
-+	},
- };
- 
- /*
-@@ -704,6 +710,10 @@ static DEFINE_PCI_DEVICE_TABLE(lpc_ich_i
- 	{ PCI_VDEVICE(INTEL, 0x8d5d), LPC_WBG},
- 	{ PCI_VDEVICE(INTEL, 0x8d5e), LPC_WBG},
- 	{ PCI_VDEVICE(INTEL, 0x8d5f), LPC_WBG},
-+	{ PCI_VDEVICE(INTEL, 0x1f38), LPC_AVN},
-+	{ PCI_VDEVICE(INTEL, 0x1f39), LPC_AVN},
-+	{ PCI_VDEVICE(INTEL, 0x1f3a), LPC_AVN},
-+	{ PCI_VDEVICE(INTEL, 0x1f3b), LPC_AVN},
- 	{ 0, },			/* End of list */
- };
- MODULE_DEVICE_TABLE(pci, lpc_ich_ids);
+--- a/drivers/gpu/drm/cirrus/cirrus_mode.c
++++ b/drivers/gpu/drm/cirrus/cirrus_mode.c
+@@ -273,8 +273,8 @@ static int cirrus_crtc_mode_set(struct d
+ 		sr07 |= 0x11;
+ 		break;
+ 	case 16:
+-		sr07 |= 0xc1;
+-		hdr = 0xc0;
++		sr07 |= 0x17;
++		hdr = 0xc1;
+ 		break;
+ 	case 24:
+ 		sr07 |= 0x15;
 
 
