@@ -1,80 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750878AbaBKF3I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 00:29:08 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:59561 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750721AbaBKF3C (ORCPT
+	id S1751082AbaBKFh2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 00:37:28 -0500
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:60758 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750721AbaBKFhX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 00:29:02 -0500
-Subject: [PATCH v3] scsi: Add timeout to avoid infinite command retry
-To: JBottomley@parallels.com, linux-scsi@vger.kernel.org
-From: Eiichi Tsukata <eiichi.tsukata.xh@hitachi.com>
-Cc: clbchenlibo.chen@huawei.com, handai.szj@gmail.com,
-        linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com
-Date: Tue, 11 Feb 2014 14:29:52 +0900
-Message-ID: <20140211052952.31205.4965.stgit@ltc223.sdl.hitachi.co.jp>
-User-Agent: StGit/0.16
+	Tue, 11 Feb 2014 00:37:23 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140209163142.GB11774@kroah.com>
+References: <1391936386-2890-1-git-send-email-raymond.wanyoike@gmail.com>
+	<20140209163142.GB11774@kroah.com>
+Date: Tue, 11 Feb 2014 08:37:21 +0300
+Message-ID: <CAJ9+zUuCiLGkH1CuB6jtw5+SvtfXhubvAiikAC3hxO=BQxO2Lg@mail.gmail.com>
+Subject: Re: [RFC] usb: option: blacklist ZTE MF667 net interface
+From: Raymond W <raymond.wanyoike@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, scsi error handling in scsi_io_completion() tries to
-unconditionally requeue scsi command when device keeps some error state.
-For example, UNIT_ATTENTION causes infinite retry with
-action == ACTION_RETRY.
-This is because retryable errors are thought to be temporary and the scsi
-device will soon recover from those errors. Normally, such retry policy is
-appropriate because the device will soon recover from temporary error state.
+Sorry, first time, meant to be "PATCH".
 
-But there is no guarantee that device is able to recover from error state
-immediately. Some hardware error can prevent device from recovering.
+On Sun, Feb 9, 2014 at 7:31 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Sun, Feb 09, 2014 at 11:59:46AM +0300, Raymond Wanyoike wrote:
+>> Interface #5 of 19d2:1270 is a net interface which has been submitted to the
+>> qmi_wwan driver so consequently remove it from the option driver.
+>>
+>> Signed-off-by: Raymond Wanyoike <raymond.wanyoike@gmail.com>
+>> ---
+>>  drivers/usb/serial/option.c | 3 ++-
+>>  1 file changed, 2 insertions(+), 1 deletion(-)
+>
+> Why is this patch a "RFC"?
 
-This patch adds timeout in scsi_io_completion() to avoid infinite command
-retry in scsi_io_completion(). Once scsi command retry time is longer than
-this timeout, the command is treated as failure.
 
-Changes in v3:
- - use existing timeout instead of adding new sysfs attribute
-   (Thanks to James)
 
-Changes in v2:
- - check retry timeout in scsi_io_completion() instead of scsi_softirq_done()
-
-Signed-off-by: Eiichi Tsukata <eiichi.tsukata.xh@hitachi.com>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: linux-scsi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/scsi/scsi_lib.c |    7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index 7bd7f0d..fa9707d 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -788,6 +788,7 @@ void scsi_io_completion(struct scsi_cmnd *cmd, unsigned int good_bytes)
- 	enum {ACTION_FAIL, ACTION_REPREP, ACTION_RETRY,
- 	      ACTION_DELAYED_RETRY} action;
- 	char *description = NULL;
-+	unsigned long wait_for = (cmd->allowed + 1) * req->timeout;
- 
- 	if (result) {
- 		sense_valid = scsi_command_normalize_sense(cmd, &sshdr);
-@@ -989,6 +990,12 @@ void scsi_io_completion(struct scsi_cmnd *cmd, unsigned int good_bytes)
- 		action = ACTION_FAIL;
- 	}
- 
-+	if (action != ACTION_FAIL &&
-+	    time_before(cmd->jiffies_at_alloc + wait_for, jiffies)) {
-+		action = ACTION_FAIL;
-+		description = "Command timed out";
-+	}
-+
- 	switch (action) {
- 	case ACTION_FAIL:
- 		/* Give up and fail the remainder of the request */
-
+-- 
+Raymond
