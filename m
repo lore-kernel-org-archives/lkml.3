@@ -1,70 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751597AbaBKJI6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 04:08:58 -0500
-Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:44443 "EHLO
-	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750934AbaBKJIy (ORCPT
+	id S1751722AbaBKJMn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 04:12:43 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:49130 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750863AbaBKJMh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 04:08:54 -0500
-Message-ID: <52F9E6CD.7040204@st.com>
-Date: Tue, 11 Feb 2014 09:01:01 +0000
-From: srinivas kandagatla <srinivas.kandagatla@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 11 Feb 2014 04:12:37 -0500
+Date: Tue, 11 Feb 2014 01:12:28 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Kent Overstreet <kmo@daterainc.com>,
+        Alexander Gordeev <agordeev@redhat.com>, Shaohua Li <shli@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: [patch 1/2]percpu_ida: fix a live lock
+Message-ID: <20140211091228.GA25567@infradead.org>
+References: <20140104210804.GA24199@kmo-pixel>
+ <20140105131300.GB4186@kernel.org>
+ <20140106204641.GB9037@kmo>
+ <52CB1783.4050205@kernel.dk>
+ <20140106214726.GD9037@kmo>
+ <20140209155006.GA16149@dhcp-26-207.brq.redhat.com>
+ <20140210103211.GA28396@infradead.org>
+ <52F8FDA7.7070809@kernel.dk>
+ <20140210224145.GB2362@kmo>
+ <52F95B73.7030205@kernel.dk>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-Cc: <netdev@vger.kernel.org>, <robh+dt@kernel.org>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
-        <galak@codeaurora.org>, <rob@landley.net>, <linux@arm.linux.org.uk>,
-        <stuart.menefy@st.com>, <peppe.cavallaro@st.com>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <kernel@stlinux.com>
-Subject: Re: [PATCH v2 1/3] net: stmmac:sti: Add STi SOC glue driver.
-References: <1391770455-24291-1-git-send-email-srinivas.kandagatla@st.com>	<1391770525-24349-1-git-send-email-srinivas.kandagatla@st.com> <20140210.144054.2066120014050984537.davem@davemloft.net>
-In-Reply-To: <20140210.144054.2066120014050984537.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.65.51.147]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52F95B73.7030205@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thankyou Dave,
-I will fix these in next version.
+On Mon, Feb 10, 2014 at 04:06:27PM -0700, Jens Axboe wrote:
+> For the common case, I'd assume that anywhere between 31..256 tags
+> is "normal". That's where the majority of devices will end up being,
+> largely. So single digits would be an anomaly.
 
+Unfortunately that's not true in SCSI land, where most driver do per-lun
+tagging, and the the cmd_per_lun values are very low and very often
+single digits, as a simple grep for cmd_per_lun will tell.  Now it might
+be that the tag space actually is much bigger in the hardware and the
+driver authors for some reason want to limit the number of outstanding
+commands, but the interface to the drivers doesn't allow them to express
+such a difference at the moment.
 
-On 10/02/14 22:40, David Miller wrote:
-> From: <srinivas.kandagatla@st.com>
-> Date: Fri, 7 Feb 2014 10:55:25 +0000
+> >How about we just make the number of tags that are allowed to be stranded an
+> >explicit parameter (somehow) - then it can be up to device drivers to do
+> >something sensible with it. Half is probably an ideal default for devices where
+> >that works, but this way more constrained devices will be able to futz with it
+> >however they want.
 > 
->> +		if (dwmac->interface == PHY_INTERFACE_MODE_MII ||
->> +			dwmac->interface == PHY_INTERFACE_MODE_GMII) {
-> 
-> This is not indented correctly, the first character on the second line should
-> line up exactly at the column after the openning parenthesis on the first
-> line.
-> 
-> The objective is not to indent using only TAB characters, which you
-> are doing here.
-> 
-> Rather, the objective is to use the appropriate number of TAB _and_
-> space characters necessary to reach the proper column.
-> 
->> +		const char *rs;
->> +		err = of_property_read_string(np, "st,tx-retime-src", &rs);
-> 
-> Please add an empty line after the local variable declaration.
-> 
->> +		if (!strcasecmp(rs, "clk_125"))
->> +			dwmac->is_tx_retime_src_clk_125 = true;
->> +
->> +	}
-> 
-> That empty line is superfluous, please delete it.
-> 
-> 
+> I don't think we should involve device drivers in this, that's
+> punting a complicated issue to someone who likely has little idea
+> what to do about it. This needs to be handled sensibly in the core,
+> not in a device driver. If we can't come up with a sensible
+> algorithm to handle this, how can we expect someone writing a device
+> driver to do so?
 
-
-Thanks,
-srini
+Agreed, punting this to the drivers is a bad idea.  But at least
+exposing variable for the allowed tag space and allowed outstanding
+commands to be able to make a smarter decision might be a good idea.  On
+the other hand this will require us to count the outstanding commands
+again, introducing more cachelines touched than nessecary.  To make
+things worse for complex topologies like SCSI we might have to limit the
+outstanding commands at up to three levels in the hierarchy.
