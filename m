@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753208AbaBKTGH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:06:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39815 "EHLO
+	id S932551AbaBKUdT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:33:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39838 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753164AbaBKTGE (ORCPT
+	with ESMTP id S1753207AbaBKTGH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:04 -0500
+	Tue, 11 Feb 2014 14:06:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable <stable@vger.kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Sasha Levin <sasha.levin@oracle.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 3.13 115/120] 3.13.y: timekeeping: Fix clock_set/clock_was_set think-o
-Date: Tue, 11 Feb 2014 11:05:56 -0800
-Message-Id: <20140211184826.925176633@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Adrian Hunter <adrian.hunter@intel.com>, Chris Ball <chris@printf.net>
+Subject: [PATCH 3.13 119/120] mmc: sdhci-pci: Fix BYT sd card getting stuck in runtime suspend
+Date: Tue, 11 Feb 2014 11:06:00 -0800
+Message-Id: <20140211184827.039243725@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -32,41 +28,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John Stultz <john.stultz@linaro.org>
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-In backporting 6fdda9a9c5db367130cf32df5d6618d08b89f46a
-(timekeeping: Avoid possible deadlock from clock_was_set_delayed),
-I ralized the patch had a think-o where instead of checking
-clock_set I accidentally typed clock_was_set (which is a function
-- so the conditional always is true).
+commit 77a0122e0838663795651aa0beb2325156f98c09 upstream.
 
-Upstream this was resolved in the immediately following patch
-47a1b796306356f358e515149d86baf0cc6bf007 (tick/timekeeping: Call
-update_wall_time outside the jiffies lock). But since that patch
-really isn't -stable material, so this patch only pulls
-the name change.
+A host controller for a SD card may need a GPIO for card detect in order
+to wake up from runtime suspend when a card is inserted.  If that GPIO is
+not configured, then the host controller will not wake up.  Fix that for
+the affected devices by not enabling runtime PM unless the GPIO is
+successfully set up.
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+This affects BYT sd card host controller which had runtime PM enabled from
+v3.11.  For completeness, the MFD sd card host controller is flagged also.
+
+The original patch before rebasing (see link below) was tested on v3.11.10
+and v3.12.4 although the patch applied with some offsets and fuzz.  The
+original patch is here:
+
+    http://marc.info/?l=linux-mmc&m=138676702327057
+
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Signed-off-by: Chris Ball <chris@printf.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- kernel/time/timekeeping.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -1441,7 +1441,7 @@ static void update_wall_time(void)
- 	write_seqcount_end(&timekeeper_seq);
- out:
- 	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
--	if (clock_was_set) {
-+	if (clock_set) {
- 		/*
- 		 * XXX -  I'd rather we just call clock_was_set(), but
- 		 * since we're currently holding the jiffies lock, calling
+---
+ drivers/mmc/host/sdhci-pci.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+--- a/drivers/mmc/host/sdhci-pci.c
++++ b/drivers/mmc/host/sdhci-pci.c
+@@ -65,6 +65,7 @@ struct sdhci_pci_fixes {
+ 	unsigned int		quirks;
+ 	unsigned int		quirks2;
+ 	bool			allow_runtime_pm;
++	bool			own_cd_for_runtime_pm;
+ 
+ 	int			(*probe) (struct sdhci_pci_chip *);
+ 
+@@ -296,6 +297,7 @@ static const struct sdhci_pci_fixes sdhc
+ static const struct sdhci_pci_fixes sdhci_intel_mfd_sd = {
+ 	.quirks		= SDHCI_QUIRK_NO_ENDATTR_IN_NOPDESC,
+ 	.allow_runtime_pm = true,
++	.own_cd_for_runtime_pm = true,
+ };
+ 
+ static const struct sdhci_pci_fixes sdhci_intel_mfd_sdio = {
+@@ -360,6 +362,7 @@ static const struct sdhci_pci_fixes sdhc
+ static const struct sdhci_pci_fixes sdhci_intel_byt_sd = {
+ 	.quirks2	= SDHCI_QUIRK2_CARD_ON_NEEDS_BUS_ON,
+ 	.allow_runtime_pm = true,
++	.own_cd_for_runtime_pm = true,
+ };
+ 
+ /* Define Host controllers for Intel Merrifield platform */
+@@ -1458,6 +1461,14 @@ static struct sdhci_pci_slot *sdhci_pci_
+ 
+ 	sdhci_pci_add_own_cd(slot);
+ 
++	/*
++	 * Check if the chip needs a separate GPIO for card detect to wake up
++	 * from runtime suspend.  If it is not there, don't allow runtime PM.
++	 * Note sdhci_pci_add_own_cd() sets slot->cd_gpio to -EINVAL on failure.
++	 */
++	if (chip->fixes->own_cd_for_runtime_pm && !gpio_is_valid(slot->cd_gpio))
++		chip->allow_runtime_pm = false;
++
+ 	return slot;
+ 
+ remove:
 
 
