@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752145AbaBKQ0a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 11:26:30 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:46670 "EHLO
+	id S1752970AbaBKQeE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 11:34:04 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:46722 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751614AbaBKQ00 (ORCPT
+	with ESMTP id S1752101AbaBKQ03 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 11:26:26 -0500
+	Tue, 11 Feb 2014 11:26:29 -0500
 From: Josh Cartwright <joshc@codeaurora.org>
-To: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+To: Mark Salter <msalter@redhat.com>, Aurelien Jacquiot <a-jacquiot@ti.com>,
         linux-kernel@vger.kernel.org
-Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 2/8] bus: mvebu-mbus: make use of of_find_matching_node_and_match
-Date: Tue, 11 Feb 2014 10:24:00 -0600
-Message-Id: <1392135847-30791-3-git-send-email-joshc@codeaurora.org>
+Cc: devicetree@vger.kernel.org, linux-c6x-dev@linux-c6x.org
+Subject: [PATCH 7/8] C6X: make use of of_find_matching_node_and_match
+Date: Tue, 11 Feb 2014 10:24:05 -0600
+Message-Id: <1392135847-30791-8-git-send-email-joshc@codeaurora.org>
 X-Mailer: git-send-email 1.8.5.4
 In-Reply-To: <1392135847-30791-1-git-send-email-joshc@codeaurora.org>
 References: <1392135847-30791-1-git-send-email-joshc@codeaurora.org>
@@ -29,28 +27,41 @@ which only iterates through the table once.
 
 Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
 ---
- drivers/bus/mvebu-mbus.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ arch/c6x/platforms/plldata.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/bus/mvebu-mbus.c b/drivers/bus/mvebu-mbus.c
-index 725c461..31f2c80 100644
---- a/drivers/bus/mvebu-mbus.c
-+++ b/drivers/bus/mvebu-mbus.c
-@@ -890,13 +890,12 @@ int __init mvebu_mbus_dt_init(void)
- 	const __be32 *prop;
- 	int ret;
+diff --git a/arch/c6x/platforms/plldata.c b/arch/c6x/platforms/plldata.c
+index 755359e..8fddc46 100644
+--- a/arch/c6x/platforms/plldata.c
++++ b/arch/c6x/platforms/plldata.c
+@@ -397,7 +397,7 @@ static void __init c6678_setup_clocks(struct device_node *node)
+ }
+ #endif /* CONFIG_SOC_TMS320C6678 */
  
--	np = of_find_matching_node(NULL, of_mvebu_mbus_ids);
-+	np = of_find_matching_node_and_match(NULL, of_mvebu_mbus_ids, &of_id);
- 	if (!np) {
- 		pr_err("could not find a matching SoC family\n");
- 		return -ENODEV;
+-static struct of_device_id c6x_clkc_match[] __initdata = {
++static const struct of_device_id c6x_clkc_match[] __initdata = {
+ #ifdef CONFIG_SOC_TMS320C6455
+ 	{ .compatible = "ti,c6455-pll", .data = c6455_setup_clocks },
+ #endif
+@@ -426,7 +426,7 @@ void __init c64x_setup_clocks(void)
+ 	int err;
+ 	u32 val;
+ 
+-	node = of_find_matching_node(NULL, c6x_clkc_match);
++	node = of_find_matching_node_and_match(NULL, c6x_clkc_match, &id);
+ 	if (!node)
+ 		return;
+ 
+@@ -458,8 +458,7 @@ void __init c64x_setup_clocks(void)
+ 	pll->lock_delay = val;
+ 
+ 	/* id->data is a pointer to SoC-specific setup */
+-	id = of_match_node(c6x_clkc_match, node);
+-	if (id && id->data) {
++	if (id->data) {
+ 		__setup_clocks = id->data;
+ 		__setup_clocks(node);
  	}
- 
--	of_id = of_match_node(of_mvebu_mbus_ids, np);
- 	mbus_state.soc = of_id->data;
- 
- 	prop = of_get_property(np, "controller", NULL);
 -- 
 Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
 hosted by The Linux Foundation
