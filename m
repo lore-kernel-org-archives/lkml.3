@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755672AbaBKUa5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:30:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39859 "EHLO
+	id S1755638AbaBKUbV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:31:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39849 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753245AbaBKTGL (ORCPT
+	with ESMTP id S1753229AbaBKTGJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:11 -0500
+	Tue, 11 Feb 2014 14:06:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Giandomenico De Tullio <ghisha@gmail.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [PATCH 3.13 095/120] i915: remove pm_qos request on error
-Date: Tue, 11 Feb 2014 11:05:36 -0800
-Message-Id: <20140211184826.331304658@linuxfoundation.org>
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Mika Kuoppala <mika.kuoppala@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@intel.com>
+Subject: [PATCH 3.13 092/120] drm/i915: Flush outstanding requests before allocating new seqno
+Date: Tue, 11 Feb 2014 11:05:33 -0800
+Message-Id: <20140211184826.234668010@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -30,49 +31,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 22accca01713b13dac386ca90b787aadf88f6551 upstream.
+commit 304d695c3dc8eb65206b9eaf16f8d1a41510d1cf upstream.
 
-Not removing pm qos request and free memory for it can cause crash,
-when some other driver use pm qos. For example, this oops:
+In very rare cases (such as a memory failure stress test) it is possible
+to fill the entire ring without emitting a request. Under this
+circumstance, the outstanding request is flushed and waited upon. After
+space on the ring is cleared, we return to emitting the new command -
+except that we just cleared the seqno allocated for this operation and
+trigger the sanity check that a request is only ever emitted with a
+valid seqno. The fix is to rearrange the code to make sure the
+allocation of the seqno for this operation is after any required flushes
+of outstanding operations.
 
-BUG: unable to handle kernel paging request at fffffffffffffff8
-IP: [<ffffffff81307a6b>] plist_add+0x5b/0xd0
-Call Trace:
- [<ffffffff810acf25>] pm_qos_update_target+0x125/0x1e0
- [<ffffffff810ad071>] pm_qos_add_request+0x91/0x100
- [<ffffffffa053ec14>] e1000_open+0xe4/0x5b0 [e1000e]
+The bug exists since the preallocation was introduced in
+commit 9d7730914f4cd496e356acfab95b41075aa8eae8
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Tue Nov 27 16:22:52 2012 +0000
 
-was caused by earlier i915 probe failure:
+    drm/i915: Preallocate next seqno before touching the ring
 
-[drm:i915_report_and_clear_eir] *ERROR* EIR stuck: 0x00000010, masking
-[drm:init_ring_common] *ERROR* render ring initialization failed ctl 0001f001 head 00003004 tail 00000000 start 00003000
-[drm:i915_driver_load] *ERROR* failed to init modeset
-i915: probe of 0000:00:02.0 failed with error -5
-
-Bug report:
-http://bugzilla.redhat.com/show_bug.cgi?id=1057533
-
-Reported-by: Giandomenico De Tullio <ghisha@gmail.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-[danvet: Drop unnecessary code movement.]
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Mika Kuoppala <mika.kuoppala@intel.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Reviewed-by: Jani Nikula <jani.nikula@intel.com>
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_dma.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/i915/intel_ringbuffer.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@ -1679,6 +1679,7 @@ out_gem_unload:
+--- a/drivers/gpu/drm/i915/intel_ringbuffer.c
++++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
+@@ -1611,8 +1611,8 @@ intel_ring_alloc_seqno(struct intel_ring
+ 	return i915_gem_get_seqno(ring->dev, &ring->outstanding_lazy_seqno);
+ }
  
- 	intel_teardown_gmbus(dev);
- 	intel_teardown_mchbar(dev);
-+	pm_qos_remove_request(&dev_priv->pm_qos);
- 	destroy_workqueue(dev_priv->wq);
- out_mtrrfree:
- 	arch_phys_wc_del(dev_priv->gtt.mtrr);
+-static int __intel_ring_begin(struct intel_ring_buffer *ring,
+-			      int bytes)
++static int __intel_ring_prepare(struct intel_ring_buffer *ring,
++				int bytes)
+ {
+ 	int ret;
+ 
+@@ -1628,7 +1628,6 @@ static int __intel_ring_begin(struct int
+ 			return ret;
+ 	}
+ 
+-	ring->space -= bytes;
+ 	return 0;
+ }
+ 
+@@ -1643,12 +1642,17 @@ int intel_ring_begin(struct intel_ring_b
+ 	if (ret)
+ 		return ret;
+ 
++	ret = __intel_ring_prepare(ring, num_dwords * sizeof(uint32_t));
++	if (ret)
++		return ret;
++
+ 	/* Preallocate the olr before touching the ring */
+ 	ret = intel_ring_alloc_seqno(ring);
+ 	if (ret)
+ 		return ret;
+ 
+-	return __intel_ring_begin(ring, num_dwords * sizeof(uint32_t));
++	ring->space -= num_dwords * sizeof(uint32_t);
++	return 0;
+ }
+ 
+ void intel_ring_init_seqno(struct intel_ring_buffer *ring, u32 seqno)
 
 
