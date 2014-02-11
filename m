@@ -1,72 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756025AbaBKU7b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:59:31 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:55832 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753033AbaBKU72 (ORCPT
+	id S932173AbaBKU75 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:59:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39605 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752676AbaBKTFQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 15:59:28 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Pawel Moll <pawel.moll@arm.com>
-Subject: Re: [PATCH 09/12] hwmon: vexpress: Use devm helper for hwmon device registration
-Date: Tue, 11 Feb 2014 21:57:46 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Jean Delvare <jdelvare@suse.de>,
-        Guenter Roeck <linux@roeck-us.net>, lm-sensors@lm-sensors.org
-References: <1392138636-29240-1-git-send-email-pawel.moll@arm.com> <1392138636-29240-10-git-send-email-pawel.moll@arm.com>
-In-Reply-To: <1392138636-29240-10-git-send-email-pawel.moll@arm.com>
+	Tue, 11 Feb 2014 14:05:16 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Alex Williamson <alex.williamson@redhat.com>,
+        David Woodhouse <dwmw2@infradead.org>, Joerg Roedel <joro@8bytes.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.13 006/120] intel-iommu: fix off-by-one in pagetable freeing
+Date: Tue, 11 Feb 2014 11:04:07 -0800
+Message-Id: <20140211184823.694214122@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
+References: <20140211184823.492407127@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201402112157.46774.arnd@arndb.de>
-X-Provags-ID: V02:K0:MrTmH2AfJUZ72HCq7DMSLiVJlP7u+E9P8v/R7SpVOn/
- vXtc/MyrqRDjaLVxCxnn5Sfd7oNpWf0ATHAfYiNUagkU83nmVR
- 3O4HjPL9p/RiclfTcGd0uy5ZY0fgAjb9/uKij8rM4WOqflGrsu
- E6AiBMCV8/CX005vPjo9WPfy4JOJaAvA1WEokjaphsMpLHA4mc
- ZrRh5+zvMFxhnnNdS3sYwm/CpyN6iTjmLsbZWpuimgO3+fMHb6
- n8vHLdFy3kbDSYCI5yqxLQ7z3Yk7JvcFKuwzM9jEE9MdUPAYJu
- 56TUcHT4/k7yFNcdbkznFYiCvBn5mJVvt4W6hYRZ9o/AaD43Kb
- KJ6sL0P2kkFM3QLPsZ1w=
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 11 February 2014, Pawel Moll wrote:
-> -#define VEXPRESS_HWMON_ATTRS(_name, _label_attr, _input_attr)  \
-> -struct attribute *vexpress_hwmon_attrs_##_name[] = {           \
-> -       &dev_attr_name.attr,                                    \
-> -       &dev_attr_##_label_attr.attr,                           \
-> -       &sensor_dev_attr_##_input_attr.dev_attr.attr,           \
-> -       NULL                                                    \
-> -}
-> +#define VEXPRESS_HWMON_ATTR_GROUPS(_name, _label_attr, _input_attr)    \
-> +static struct attribute *vexpress_hwmon_##_name##_attrs[] = {          \
-> +       &dev_attr_##_label_attr.attr,                                   \
-> +       &sensor_dev_attr_##_input_attr.dev_attr.attr,                   \
-> +       NULL                                                            \
-> +};                                                                     \
-> +ATTRIBUTE_GROUPS(vexpress_hwmon_##_name)
->  
->  #if !defined(CONFIG_REGULATOR_VEXPRESS)
->  static DEVICE_ATTR(in1_label, S_IRUGO, vexpress_hwmon_label_show, NULL);
->  static SENSOR_DEVICE_ATTR(in1_input, S_IRUGO, vexpress_hwmon_u32_show,
->                 NULL, 1000);
-> -static VEXPRESS_HWMON_ATTRS(volt, in1_label, in1_input);
-> -static struct attribute_group vexpress_hwmon_group_volt = {
-> -       .attrs = vexpress_hwmon_attrs_volt,
-> -};
-> +VEXPRESS_HWMON_ATTR_GROUPS(volt, in1_label, in1_input);
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
-Maybe it would be a good time to get rid of the obfuscation here and just
-open-code the attribute groups rather than defining another macro.
+------------------
 
-I understand you want to save a few source lines, but it really helps
-readability if you can search for the attribute groups when they
-are referenced later. Just because the common driver model code uses
-macros with string concatenation doesn't mean it's a good idea to
-do the same in a device driver.
+From: Alex Williamson <alex.williamson@redhat.com>
 
-	Arnd
+commit 08336fd218e087cc4fcc458e6b6dcafe8702b098 upstream.
+
+dma_pte_free_level() has an off-by-one error when checking whether a pte
+is completely covered by a range.  Take for example the case of
+attempting to free pfn 0x0 - 0x1ff, ie.  512 entries covering the first
+2M superpage.
+
+The level_size() is 0x200 and we test:
+
+  static void dma_pte_free_level(...
+	...
+
+	if (!(0 > 0 || 0x1ff < 0 + 0x200)) {
+		...
+	}
+
+Clearly the 2nd test is true, which means we fail to take the branch to
+clear and free the pagetable entry.  As a result, we're leaking
+pagetables and failing to install new pages over the range.
+
+This was found with a PCI device assigned to a QEMU guest using vfio-pci
+without a VGA device present.  The first 1M of guest address space is
+mapped with various combinations of 4K pages, but eventually the range
+is entirely freed and replaced with a 2M contiguous mapping.
+intel-iommu errors out with something like:
+
+  ERROR: DMA PTE for vPFN 0x0 already set (to 5c2b8003 not 849c00083)
+
+In this case 5c2b8003 is the pointer to the previous leaf page that was
+neither freed nor cleared and 849c00083 is the superpage entry that
+we're trying to replace it with.
+
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Joerg Roedel <joro@8bytes.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/iommu/intel-iommu.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -917,7 +917,7 @@ static void dma_pte_free_level(struct dm
+ 
+ 		/* If range covers entire pagetable, free it */
+ 		if (!(start_pfn > level_pfn ||
+-		      last_pfn < level_pfn + level_size(level))) {
++		      last_pfn < level_pfn + level_size(level) - 1)) {
+ 			dma_clear_pte(pte);
+ 			domain_flush_cache(domain, pte, sizeof(*pte));
+ 			free_pgtable_page(level_pte);
+
+
