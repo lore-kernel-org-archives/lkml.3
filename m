@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751540AbaBKJin (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 04:38:43 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:58041 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751381AbaBKJik (ORCPT
+	id S1751644AbaBKJi6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 04:38:58 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38595 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750785AbaBKJi4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 04:38:40 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s1B9bqca013015, This message is accepted by code: ctloc85258
-Message-ID: <52F9F012.8030302@realtek.com>
-Date: Tue, 11 Feb 2014 17:40:34 +0800
-From: Roger <rogerable@realtek.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: Samuel Ortiz <sameo@linux.intel.com>, Chris Ball <cjb@laptop.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
-        <driverdev-devel@linuxdriverproject.org>, <wei_wang@realsil.com.cn>,
-        <micky_ching@realsil.com.cn>, Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [PATCH v3 1/3] mfd: Add realtek USB card reader driver
-References: <1391697307-23457-1-git-send-email-rogerable@realtek.com> <1391697307-23457-2-git-send-email-rogerable@realtek.com> <20140210113054.GE21522@lee--X1>
-In-Reply-To: <20140210113054.GE21522@lee--X1>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.21.81.189]
+	Tue, 11 Feb 2014 04:38:56 -0500
+From: Colin King <colin.king@canonical.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        linux-kernel@vger.kernel.org
+Cc: rogerq@ti.com
+Subject: [PATCH][v2] mfd: omap-usb-tll: fix cppcheck sizeof warning
+Date: Tue, 11 Feb 2014 09:38:53 +0000
+Message-Id: <1392111533-23053-1-git-send-email-colin.king@canonical.com>
+X-Mailer: git-send-email 1.9.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/10/2014 07:30 PM, Lee Jones wrote:
->> From: Roger Tseng <rogerable@realtek.com>
->>
->> Realtek USB card reader provides a channel to transfer command or data to flash
->> memory cards. This driver exports host instances for mmc and memstick subsystems
->> and handles basic works.
->>
->> Signed-off-by: Roger Tseng <rogerable@realtek.com>
->> ---
->>   drivers/mfd/Kconfig          |  10 +
->>   drivers/mfd/Makefile         |   1 +
->>   drivers/mfd/rtsx_usb.c       | 760 +++++++++++++++++++++++++++++++++++++++++++
->>   include/linux/mfd/rtsx_usb.h | 628 +++++++++++++++++++++++++++++++++++
->>   4 files changed, 1399 insertions(+)
->>   create mode 100644 drivers/mfd/rtsx_usb.c
->>   create mode 100644 include/linux/mfd/rtsx_usb.h
->
-> Applied with Greg's Ack.
->
-Thanks. But I have to modify some places in PATCH 2/3 and 3/3 according 
-to Ulf's suggestion. I will resend v4 later but currently I don't plan 
-to change the 1/3 part(for mfd) in it.
+From: Colin Ian King <colin.king@canonical.com>
 
-Would you wait for and re-apply the v4 submission or give any advice?
+Static analysis from cppcheck issued the following warning:
+
+[drivers/mfd/omap-usb-tll.c:255]: (warning) Found calculation
+  inside sizeof().
+
+The current size calculation is not obvious and is easy to
+miscomprehend, so re-work the size of the allocation based
+on the size of the struct pointer and quantity to allocate.
+
+Signed-off-by: Colin Ian King <colin.king@canonical.com>
+---
+ drivers/mfd/omap-usb-tll.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
+index 5ee50f7..532eacab 100644
+--- a/drivers/mfd/omap-usb-tll.c
++++ b/drivers/mfd/omap-usb-tll.c
+@@ -252,7 +252,7 @@ static int usbtll_omap_probe(struct platform_device *pdev)
+ 		break;
+ 	}
+ 
+-	tll->ch_clk = devm_kzalloc(dev, sizeof(struct clk * [tll->nch]),
++	tll->ch_clk = devm_kzalloc(dev, sizeof(struct clk *) * tll->nch,
+ 						GFP_KERNEL);
+ 	if (!tll->ch_clk) {
+ 		ret = -ENOMEM;
+-- 
+1.9.rc1
+
