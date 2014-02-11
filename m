@@ -1,67 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754686AbaBKTtr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:49:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40249 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753904AbaBKTH1 (ORCPT
+	id S932074AbaBKTuR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:50:17 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:39058 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754128AbaBKTuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:07:27 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.12 075/107] drm/radeon: add UVD support for OLAND
-Date: Tue, 11 Feb 2014 11:05:41 -0800
-Message-Id: <20140211184750.338515311@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
-References: <20140211184748.191276235@linuxfoundation.org>
-User-Agent: quilt/0.61-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Tue, 11 Feb 2014 14:50:08 -0500
+From: David Daney <ddaney.cavm@gmail.com>
+To: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        devicetree@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, linux-gpio@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
+Subject: [PATCH v2 0/2] of/gpio: Automatic handling of devicetree open-drain GPIO specifications.
+Date: Tue, 11 Feb 2014 11:49:58 -0800
+Message-Id: <1392148200-5393-1-git-send-email-ddaney.cavm@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+From: David Daney <david.daney@cavium.com>
 
-------------------
+Add two new flags for open-drain and open-source GPIOs and the
+corresponding handling in gpiod_get() to automatically set the
+corresponding flags in the GPIO system.
 
-From: Alex Deucher <alexander.deucher@amd.com>
+Changes from v1 (suggested by Alexandre Courbot):
 
-commit 5d029339bb8ce69aeb68280c3de67d3cea456146 upstream.
+  o Add OF_GPIO_OPEN_SOURCE
+  o Add automatic propagation of the flags in gpiod_get() et al.
 
-It seems this got dropped when we merged UVD support
-last year.  Add this back now.
+David Daney (2):
+  of/gpio: Define OF_GPIO_OPEN_DRAIN and OF_GPIO_OPEN_SOURCE flags.
+  of/gpio: Automatically decode OF_GPIO_OPEN_DRAIN and
+    OF_GPIO_OPEN_SOURCE flags in gpiolib.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+ drivers/gpio/gpiolib.c  | 6 ++++++
+ include/linux/of_gpio.h | 2 ++
+ 2 files changed, 8 insertions(+)
 
----
- drivers/gpu/drm/radeon/radeon_uvd.c |    1 +
- drivers/gpu/drm/radeon/uvd_v2_2.c   |    1 +
- 2 files changed, 2 insertions(+)
-
---- a/drivers/gpu/drm/radeon/radeon_uvd.c
-+++ b/drivers/gpu/drm/radeon/radeon_uvd.c
-@@ -91,6 +91,7 @@ int radeon_uvd_init(struct radeon_device
- 	case CHIP_VERDE:
- 	case CHIP_PITCAIRN:
- 	case CHIP_ARUBA:
-+	case CHIP_OLAND:
- 		fw_name = FIRMWARE_TAHITI;
- 		break;
- 
---- a/drivers/gpu/drm/radeon/uvd_v2_2.c
-+++ b/drivers/gpu/drm/radeon/uvd_v2_2.c
-@@ -153,6 +153,7 @@ int uvd_v2_2_resume(struct radeon_device
- 		chip_id = 0x01000015;
- 		break;
- 	case CHIP_PITCAIRN:
-+	case CHIP_OLAND:
- 		chip_id = 0x01000016;
- 		break;
- 	case CHIP_ARUBA:
-
+-- 
+1.7.11.7
 
