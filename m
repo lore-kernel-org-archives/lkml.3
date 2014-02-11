@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754202AbaBKTIE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:08:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40413 "EHLO
+	id S1754700AbaBKT2J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:28:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40447 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754065AbaBKTH7 (ORCPT
+	with ESMTP id S1754194AbaBKTID (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:07:59 -0500
+	Tue, 11 Feb 2014 14:08:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rich Freeman <rich0@gentoo.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.10 47/79] [media] nxt200x: increase write buffer size
-Date: Tue, 11 Feb 2014 11:05:51 -0800
-Message-Id: <20140211184722.312199422@linuxfoundation.org>
+        Ray Jui <rjui@broadcom.com>, Seungwon Jeon <tgih.jun@samsung.com>,
+        Chris Ball <cjb@laptop.org>
+Subject: [PATCH 3.10 13/79] mmc: fix host release issue after discard operation
+Date: Tue, 11 Feb 2014 11:05:17 -0800
+Message-Id: <20140211184721.317053191@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
 References: <20140211184720.928667275@linuxfoundation.org>
@@ -29,36 +29,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+From: Ray Jui <rjui@broadcom.com>
 
-commit fa1e1de6bb679f2c86da3311bbafee7eaf78f125 upstream.
+commit f662ae48ae67dfd42739e65750274fe8de46240a upstream.
 
-The buffer size on nxt200x is not enough:
+Under function mmc_blk_issue_rq, after an MMC discard operation,
+the MMC request data structure may be freed in memory. Later in
+the same function, the check of req->cmd_flags & MMC_REQ_SPECIAL_MASK
+is dangerous and invalid. It causes the MMC host not to be released
+when it should.
 
-	...
-	> Dec 20 10:52:04 rich kernel: [   31.747949] nxt200x: nxt200x_writebytes: i2c wr reg=002c: len=255 is too big!
-	...
+This patch fixes the issue by marking the special request down before
+the discard/flush operation.
 
-Increase it to 256 bytes.
-
-Reported-by: Rich Freeman <rich0@gentoo.org>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Reported by: Harold (SoonYeal) Yang <haroldsy@broadcom.com>
+Signed-off-by: Ray Jui <rjui@broadcom.com>
+Reviewed-by: Seungwon Jeon <tgih.jun@samsung.com>
+Acked-by: Seungwon Jeon <tgih.jun@samsung.com>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/dvb-frontends/nxt200x.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/mmc/card/block.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/drivers/media/dvb-frontends/nxt200x.c
-+++ b/drivers/media/dvb-frontends/nxt200x.c
-@@ -40,7 +40,7 @@
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+--- a/drivers/mmc/card/block.c
++++ b/drivers/mmc/card/block.c
+@@ -1931,6 +1931,7 @@ static int mmc_blk_issue_rq(struct mmc_q
+ 	struct mmc_card *card = md->queue.card;
+ 	struct mmc_host *host = card->host;
+ 	unsigned long flags;
++	unsigned int cmd_flags = req ? req->cmd_flags : 0;
  
- /* Max transfer size done by I2C transfer functions */
--#define MAX_XFER_SIZE  64
-+#define MAX_XFER_SIZE  256
+ 	if (req && !mq->mqrq_prev->req)
+ 		/* claim host only for the first request */
+@@ -1946,7 +1947,7 @@ static int mmc_blk_issue_rq(struct mmc_q
+ 	}
  
- #define NXT2002_DEFAULT_FIRMWARE "dvb-fe-nxt2002.fw"
- #define NXT2004_DEFAULT_FIRMWARE "dvb-fe-nxt2004.fw"
+ 	mq->flags &= ~MMC_QUEUE_NEW_REQUEST;
+-	if (req && req->cmd_flags & REQ_DISCARD) {
++	if (cmd_flags & REQ_DISCARD) {
+ 		/* complete ongoing async transfer before issuing discard */
+ 		if (card->host->areq)
+ 			mmc_blk_issue_rw_rq(mq, NULL);
+@@ -1955,7 +1956,7 @@ static int mmc_blk_issue_rq(struct mmc_q
+ 			ret = mmc_blk_issue_secdiscard_rq(mq, req);
+ 		else
+ 			ret = mmc_blk_issue_discard_rq(mq, req);
+-	} else if (req && req->cmd_flags & REQ_FLUSH) {
++	} else if (cmd_flags & REQ_FLUSH) {
+ 		/* complete ongoing async transfer before issuing flush */
+ 		if (card->host->areq)
+ 			mmc_blk_issue_rw_rq(mq, NULL);
+@@ -1971,7 +1972,7 @@ static int mmc_blk_issue_rq(struct mmc_q
+ 
+ out:
+ 	if ((!req && !(mq->flags & MMC_QUEUE_NEW_REQUEST)) ||
+-	     (req && (req->cmd_flags & MMC_REQ_SPECIAL_MASK)))
++	     (cmd_flags & MMC_REQ_SPECIAL_MASK))
+ 		/*
+ 		 * Release host when there are no more requests
+ 		 * and after special request(discard, flush) is done.
 
 
