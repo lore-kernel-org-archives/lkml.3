@@ -1,159 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750969AbaBKFn4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 00:43:56 -0500
-Received: from mout.web.de ([212.227.17.12]:57116 "EHLO mout.web.de"
+	id S1750934AbaBKGAO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 01:00:14 -0500
+Received: from m12-13.163.com ([220.181.12.13]:46405 "EHLO m12-13.163.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750758AbaBKFnv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 00:43:51 -0500
-Message-ID: <52F9B88E.3090601@web.de>
-Date: Tue, 11 Feb 2014 06:43:42 +0100
-From: Jan Kiszka <jan.kiszka@web.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
-MIME-Version: 1.0
-To: Len Brown <lenb@kernel.org>
-CC: Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] intel_idle: Add CPU model 54 (Atom N2000 series)
-References: <52E42B86.1020701@web.de> <CAJvTdKnt=75AEQhsa8aAdEft7nnySvhxc57_1BHmOS7+tbLeNQ@mail.gmail.com>
-In-Reply-To: <CAJvTdKnt=75AEQhsa8aAdEft7nnySvhxc57_1BHmOS7+tbLeNQ@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="RupKIdeTBeda7xoSPhNRoLgr7Rwv4N617"
-X-Provags-ID: V03:K0:r6q1uRIIVU3H7bqz0+4w0ChbuKFo0OnnxxsSDT75pFS8Gsye8Sl
- z1hbqHwRnhNgFAkO9UyMIi/QDRDJvHFjMaSiDMYZjAiH9DdLg2nIXbwhB1dolaJzimO3TvH
- BWq4t/hUcUftsDGB3tBVSgJWVk9+eqatpbinrizTuDQWiM0CPSqJyJSF67pHAVZJXK6zroR
- bJ9ssEQDDYLgGGJ2ISE2A==
+	id S1750721AbaBKGAJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 01:00:09 -0500
+Date: Tue, 11 Feb 2014 13:59:34 +0800
+From: "liujunliang_ljl" <liujunliang_ljl@163.com>
+To: "David Miller" <davem@davemloft.net>
+Cc: "joe" <joe@perches.com>, "horms" <horms@verge.net.au>,
+        "romieu" <romieu@fr.zoreil.com>, "gregkh" <gregkh@linuxfoundation.org>,
+        "netdev" <netdev@vger.kernel.org>,
+        "linux-usb" <linux-usb@vger.kernel.org>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>,
+        "sunhecheng" <sunhecheng@vip.126.com>
+References: <1392013902-4875-1-git-send-email-liujunliang_ljl@163.com>,
+ <20140210.165352.625954565773549494.davem@davemloft.net>
+Subject: Re: Re: [PATCH] USB2NET : SR9800 : One chip USB2.0 USB2NET SR9800Device Driver Support
+Message-ID: <201402111359344538040@163.com>
+X-mailer: Foxmail 6, 15, 201, 22 [cn]
+Mime-Version: 1.0
+Content-Type: text/plain;
+	charset="gb2312"
+X-CM-TRANSID: DcCowEA520g8vPlSsViKAg--.103S2
+X-Coremail-Antispam: 1Uf129KBjDUn29KB7ZKAUJUUUUU529EdanIXcx71UUUUU7v73
+	VFW2AGmfu7bjvjm3AaLaJ3UbIYCTnIWIevJa73UjIFyTuYvjxU7K0PDUUUU
+X-Originating-IP: [113.102.134.146]
+X-CM-SenderInfo: xolxy3pqolt0hjboyzi6rwjhhfrp/1tbiqxwvX1EAIYxz9gAAs+
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1B61BL7004579
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---RupKIdeTBeda7xoSPhNRoLgr7Rwv4N617
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Dear Miller :
 
-On 2014-02-11 01:01, Len Brown wrote:
-> Please send the output of these two command before and after the patch:=
+		Thanks a lot.
 
->=20
-> dmesg | grep idle
-> grep . /sys/devices/system/cpu/cpu0/cpuidle/*/*
 
-Before:
-# dmesg | grep idle
-[    0.648783] cpuidle: using governor ladder
-[    0.648787] cpuidle: using governor menu
-[    1.053215] intel_idle: does not run on family 6 model 54
-[    3.285430] ACPI: acpi_idle registered with cpuidle
-# grep . /sys/devices/system/cpu/cpu0/cpuidle/*/*
-/sys/devices/system/cpu/cpu0/cpuidle/state0/desc:CPUIDLE CORE POLL IDLE
-/sys/devices/system/cpu/cpu0/cpuidle/state0/disable:0
-/sys/devices/system/cpu/cpu0/cpuidle/state0/latency:0
-/sys/devices/system/cpu/cpu0/cpuidle/state0/name:POLL
-/sys/devices/system/cpu/cpu0/cpuidle/state0/power:4294967295
-/sys/devices/system/cpu/cpu0/cpuidle/state0/time:443
-/sys/devices/system/cpu/cpu0/cpuidle/state0/usage:5
-/sys/devices/system/cpu/cpu0/cpuidle/state1/desc:ACPI FFH INTEL MWAIT 0x0=
-
-/sys/devices/system/cpu/cpu0/cpuidle/state1/disable:0
-/sys/devices/system/cpu/cpu0/cpuidle/state1/latency:1
-/sys/devices/system/cpu/cpu0/cpuidle/state1/name:C1
-/sys/devices/system/cpu/cpu0/cpuidle/state1/power:0
-/sys/devices/system/cpu/cpu0/cpuidle/state1/time:420944
-/sys/devices/system/cpu/cpu0/cpuidle/state1/usage:1798
-/sys/devices/system/cpu/cpu0/cpuidle/state2/desc:ACPI FFH INTEL MWAIT 0x1=
-0
-/sys/devices/system/cpu/cpu0/cpuidle/state2/disable:0
-/sys/devices/system/cpu/cpu0/cpuidle/state2/latency:20
-/sys/devices/system/cpu/cpu0/cpuidle/state2/name:C2
-/sys/devices/system/cpu/cpu0/cpuidle/state2/power:0
-/sys/devices/system/cpu/cpu0/cpuidle/state2/time:119479360
-/sys/devices/system/cpu/cpu0/cpuidle/state2/usage:32863
-/sys/devices/system/cpu/cpu0/cpuidle/state3/desc:ACPI FFH INTEL MWAIT 0x3=
-0
-/sys/devices/system/cpu/cpu0/cpuidle/state3/disable:0
-/sys/devices/system/cpu/cpu0/cpuidle/state3/latency:100
-/sys/devices/system/cpu/cpu0/cpuidle/state3/name:C3
-/sys/devices/system/cpu/cpu0/cpuidle/state3/power:0
-/sys/devices/system/cpu/cpu0/cpuidle/state3/time:1673
-/sys/devices/system/cpu/cpu0/cpuidle/state3/usage:7
-/sys/devices/system/cpu/cpu0/cpuidle/state4/desc:ACPI FFH INTEL MWAIT 0x5=
-2
-/sys/devices/system/cpu/cpu0/cpuidle/state4/disable:0
-/sys/devices/system/cpu/cpu0/cpuidle/state4/latency:140
-/sys/devices/system/cpu/cpu0/cpuidle/state4/name:C4
-/sys/devices/system/cpu/cpu0/cpuidle/state4/power:0
-/sys/devices/system/cpu/cpu0/cpuidle/state4/time:125622
-/sys/devices/system/cpu/cpu0/cpuidle/state4/usage:63
-
-After:
-# dmesg | grep idle
-[    0.244640] cpuidle: using governor ladder
-[    0.244645] cpuidle: using governor menu
-[    0.654351] intel_idle: MWAIT substates: 0x3020220
-[    0.654355] intel_idle: v0.4 model 0x36
-[    0.654359] intel_idle: lapic_timer_reliable_states 0xffffffff
-# grep . /sys/devices/system/cpu/cpu0/cpuidle/*/*
-/sys/devices/system/cpu/cpu0/cpuidle/state0/desc:CPUIDLE CORE POLL IDLE
-/sys/devices/system/cpu/cpu0/cpuidle/state0/disable:0
-/sys/devices/system/cpu/cpu0/cpuidle/state0/latency:0
-/sys/devices/system/cpu/cpu0/cpuidle/state0/name:POLL
-/sys/devices/system/cpu/cpu0/cpuidle/state0/power:4294967295
-/sys/devices/system/cpu/cpu0/cpuidle/state0/time:572
-/sys/devices/system/cpu/cpu0/cpuidle/state0/usage:12
-/sys/devices/system/cpu/cpu0/cpuidle/state1/desc:MWAIT 0x00
-/sys/devices/system/cpu/cpu0/cpuidle/state1/disable:0
-/sys/devices/system/cpu/cpu0/cpuidle/state1/latency:10
-/sys/devices/system/cpu/cpu0/cpuidle/state1/name:C1E-ATM
-/sys/devices/system/cpu/cpu0/cpuidle/state1/power:0
-/sys/devices/system/cpu/cpu0/cpuidle/state1/time:722013
-/sys/devices/system/cpu/cpu0/cpuidle/state1/usage:3132
-/sys/devices/system/cpu/cpu0/cpuidle/state2/desc:MWAIT 0x10
-/sys/devices/system/cpu/cpu0/cpuidle/state2/disable:0
-/sys/devices/system/cpu/cpu0/cpuidle/state2/latency:20
-/sys/devices/system/cpu/cpu0/cpuidle/state2/name:C2-ATM
-/sys/devices/system/cpu/cpu0/cpuidle/state2/power:0
-/sys/devices/system/cpu/cpu0/cpuidle/state2/time:4512127
-/sys/devices/system/cpu/cpu0/cpuidle/state2/usage:9147
-/sys/devices/system/cpu/cpu0/cpuidle/state3/desc:MWAIT 0x30
-/sys/devices/system/cpu/cpu0/cpuidle/state3/disable:0
-/sys/devices/system/cpu/cpu0/cpuidle/state3/latency:100
-/sys/devices/system/cpu/cpu0/cpuidle/state3/name:C4-ATM
-/sys/devices/system/cpu/cpu0/cpuidle/state3/power:0
-/sys/devices/system/cpu/cpu0/cpuidle/state3/time:1996954
-/sys/devices/system/cpu/cpu0/cpuidle/state3/usage:2696
-/sys/devices/system/cpu/cpu0/cpuidle/state4/desc:MWAIT 0x52
-/sys/devices/system/cpu/cpu0/cpuidle/state4/disable:0
-/sys/devices/system/cpu/cpu0/cpuidle/state4/latency:140
-/sys/devices/system/cpu/cpu0/cpuidle/state4/name:C6-ATM
-/sys/devices/system/cpu/cpu0/cpuidle/state4/power:0
-/sys/devices/system/cpu/cpu0/cpuidle/state4/time:266926331
-/sys/devices/system/cpu/cpu0/cpuidle/state4/usage:73695
-
->=20
-> How did you measure power on the the DN2800MT, and on what workload?
-
-I measured the input current of the board @12V. In both cases, the
-system was idle in single-user mode, practically no processes running.
-
-Jan
+2014-02-11 
 
 
 
---RupKIdeTBeda7xoSPhNRoLgr7Rwv4N617
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+liujunliang_ljl 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-iEYEARECAAYFAlL5uJQACgkQitSsb3rl5xS6YwCeKw51D05WcUX2N5hKQ6Rr/ZJs
-HJgAn1Hii8qWwVMV2xbZUmt2It2MPaIi
-=r7P5
------END PGP SIGNATURE-----
 
---RupKIdeTBeda7xoSPhNRoLgr7Rwv4N617--
+·¢¼şÈË£º David Miller 
+·¢ËÍÊ±¼ä£º 2014-02-11  08:54:00 
+ÊÕ¼şÈË£º liujunliang_ljl 
+³­ËÍ£º joe; horms; romieu; gregkh; netdev; linux-usb; linux-kernel; sunhecheng 
+Ö÷Ìâ£º Re: [PATCH] USB2NET : SR9800 : One chip USB2.0 USB2NET SR9800Device Driver Support 
+ 
+From: liujunliang_ljl@163.com
+Date: Mon, 10 Feb 2014 14:31:42 +0800
+> From: Liu Junliang <liujunliang_ljl@163.com>
+> 
+> 
+> Signed-off-by: Liu Junliang <liujunliang_ljl@163.com>
+Applied, thanks.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
