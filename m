@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755788AbaBKUvS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:51:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39695 "EHLO
+	id S1752881AbaBKTFd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:05:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39646 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752887AbaBKTFe (ORCPT
+	with ESMTP id S1752784AbaBKTFZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:05:34 -0500
+	Tue, 11 Feb 2014 14:05:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Malcolm Priestley <tvboxspy@gmail.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.13 072/120] [media] m88rs2000: add m88rs2000_set_carrieroffset
-Date: Tue, 11 Feb 2014 11:05:13 -0800
-Message-Id: <20140211184825.666309618@linuxfoundation.org>
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Jens Axboe <axboe@kernel.dk>, Kent Overstreet <kmo@daterainc.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.13 060/120] percpu_ida: Make percpu_ida_alloc + callers accept task state bitmask
+Date: Tue, 11 Feb 2014 11:05:01 -0800
+Message-Id: <20140211184825.333484254@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -29,147 +31,182 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+From: Kent Overstreet <kmo@daterainc.com>
 
-commit 06af15d1b6f45c60358feab88004472e5428f01c upstream.
+commit 6f6b5d1ec56acdeab0503d2b823f6f88a0af493e upstream.
 
-Set the carrier offset correctly using the default mclk values.
+This patch changes percpu_ida_alloc() + callers to accept task state
+bitmask for prepare_to_wait() for code like target/iscsi that needs
+it for interruptible sleep, that is provided in a subsequent patch.
 
-Add function m88rs2000_get_mclk to calculate the mclk value
-against crystal frequency which will later be used for
-other functions.
+It now expects TASK_UNINTERRUPTIBLE when the caller is able to sleep
+waiting for a new tag, or TASK_RUNNING when the caller cannot sleep,
+and is forced to return a negative value when no tags are available.
 
-Add function m88rs2000_set_carrieroffset to calculate
-and set the offset value.
+v2 changes:
+  - Include blk-mq + tcm_fc + vhost/scsi + target/iscsi changes
+  - Drop signal_pending_state() call
+v3 changes:
+  - Only call prepare_to_wait() + finish_wait() when != TASK_RUNNING
+    (PeterZ)
 
-variable offset becomes a signed value.
-
-Register 0x86 is set the appropriate value according to
-remainder value of frequency % 192857 calculation as
-shown.
-
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Kent Overstreet <kmo@daterainc.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/dvb-frontends/m88rs2000.c |   77 +++++++++++++++++++++++---------
- drivers/media/dvb-frontends/m88rs2000.h |    2 
- 2 files changed, 59 insertions(+), 20 deletions(-)
+ block/blk-mq-tag.c                       |    6 ++++--
+ drivers/target/iscsi/iscsi_target_util.c |    8 ++++++--
+ drivers/target/tcm_fc/tfc_cmd.c          |    2 +-
+ drivers/vhost/scsi.c                     |    2 +-
+ include/linux/percpu_ida.h               |    3 ++-
+ lib/percpu_ida.c                         |   16 +++++++++-------
+ 6 files changed, 23 insertions(+), 14 deletions(-)
 
---- a/drivers/media/dvb-frontends/m88rs2000.c
-+++ b/drivers/media/dvb-frontends/m88rs2000.c
-@@ -110,6 +110,52 @@ static u8 m88rs2000_readreg(struct m88rs
- 	return b1[0];
- }
- 
-+static u32 m88rs2000_get_mclk(struct dvb_frontend *fe)
-+{
-+	struct m88rs2000_state *state = fe->demodulator_priv;
-+	u32 mclk;
-+	u8 reg;
-+	/* Must not be 0x00 or 0xff */
-+	reg = m88rs2000_readreg(state, 0x86);
-+	if (!reg || reg == 0xff)
-+		return 0;
-+
-+	reg /= 2;
-+	reg += 1;
-+
-+	mclk = (u32)(reg * RS2000_FE_CRYSTAL_KHZ + 28 / 2) / 28;
-+
-+	return mclk;
-+}
-+
-+static int m88rs2000_set_carrieroffset(struct dvb_frontend *fe, s16 offset)
-+{
-+	struct m88rs2000_state *state = fe->demodulator_priv;
-+	u32 mclk;
-+	s32 tmp;
-+	u8 reg;
-+	int ret;
-+
-+	mclk = m88rs2000_get_mclk(fe);
-+	if (!mclk)
-+		return -EINVAL;
-+
-+	tmp = (offset * 4096 + (s32)mclk / 2) / (s32)mclk;
-+	if (tmp < 0)
-+		tmp += 4096;
-+
-+	/* Carrier Offset */
-+	ret = m88rs2000_writereg(state, 0x9c, (u8)(tmp >> 4));
-+
-+	reg = m88rs2000_readreg(state, 0x9d);
-+	reg &= 0xf;
-+	reg |= (u8)(tmp & 0xf) << 4;
-+
-+	ret |= m88rs2000_writereg(state, 0x9d, reg);
-+
-+	return ret;
-+}
-+
- static int m88rs2000_set_symbolrate(struct dvb_frontend *fe, u32 srate)
+--- a/block/blk-mq-tag.c
++++ b/block/blk-mq-tag.c
+@@ -36,7 +36,8 @@ static unsigned int __blk_mq_get_tag(str
  {
- 	struct m88rs2000_state *state = fe->demodulator_priv;
-@@ -540,9 +586,8 @@ static int m88rs2000_set_frontend(struct
- 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
- 	fe_status_t status;
- 	int i, ret = 0;
--	s32 tmp;
- 	u32 tuner_freq;
--	u16 offset = 0;
-+	s16 offset = 0;
- 	u8 reg;
+ 	int tag;
  
- 	state->no_lock_count = 0;
-@@ -567,26 +612,18 @@ static int m88rs2000_set_frontend(struct
- 	if (ret < 0)
- 		return -ENODEV;
+-	tag = percpu_ida_alloc(&tags->free_tags, gfp);
++	tag = percpu_ida_alloc(&tags->free_tags, (gfp & __GFP_WAIT) ?
++			       TASK_UNINTERRUPTIBLE : TASK_RUNNING);
+ 	if (tag < 0)
+ 		return BLK_MQ_TAG_FAIL;
+ 	return tag + tags->nr_reserved_tags;
+@@ -52,7 +53,8 @@ static unsigned int __blk_mq_get_reserve
+ 		return BLK_MQ_TAG_FAIL;
+ 	}
  
--	offset = tuner_freq - c->frequency;
-+	offset = (s16)((s32)tuner_freq - c->frequency);
- 
--	/* calculate offset assuming 96000kHz*/
--	tmp = offset;
--	tmp *= 65536;
--
--	tmp = (2 * tmp + 96000) / (2 * 96000);
--	if (tmp < 0)
--		tmp += 65536;
--
--	offset = tmp & 0xffff;
--
--	ret = m88rs2000_writereg(state, 0x9a, 0x30);
--	/* Unknown usually 0xc6 sometimes 0xc1 */
--	reg = m88rs2000_readreg(state, 0x86);
--	ret |= m88rs2000_writereg(state, 0x86, reg);
--	/* Offset lower nibble always 0 */
--	ret |= m88rs2000_writereg(state, 0x9c, (offset >> 8));
--	ret |= m88rs2000_writereg(state, 0x9d, offset & 0xf0);
-+	/* default mclk value 96.4285 * 2 * 1000 = 192857 */
-+	if (((c->frequency % 192857) >= (192857 - 3000)) ||
-+				(c->frequency % 192857) <= 3000)
-+		ret = m88rs2000_writereg(state, 0x86, 0xc2);
-+	else
-+		ret = m88rs2000_writereg(state, 0x86, 0xc6);
- 
-+	ret |= m88rs2000_set_carrieroffset(fe, offset);
-+	if (ret < 0)
-+		return -ENODEV;
- 
- 	/* Reset Demod */
- 	ret = m88rs2000_tab_set(state, fe_reset);
---- a/drivers/media/dvb-frontends/m88rs2000.h
-+++ b/drivers/media/dvb-frontends/m88rs2000.h
-@@ -53,6 +53,8 @@ static inline struct dvb_frontend *m88rs
- }
- #endif /* CONFIG_DVB_M88RS2000 */
- 
-+#define RS2000_FE_CRYSTAL_KHZ 27000
+-	tag = percpu_ida_alloc(&tags->reserved_tags, gfp);
++	tag = percpu_ida_alloc(&tags->reserved_tags, (gfp & __GFP_WAIT) ?
++			       TASK_UNINTERRUPTIBLE : TASK_RUNNING);
+ 	if (tag < 0)
+ 		return BLK_MQ_TAG_FAIL;
+ 	return tag;
+--- a/drivers/target/iscsi/iscsi_target_util.c
++++ b/drivers/target/iscsi/iscsi_target_util.c
+@@ -156,9 +156,13 @@ struct iscsi_cmd *iscsit_allocate_cmd(st
+ {
+ 	struct iscsi_cmd *cmd;
+ 	struct se_session *se_sess = conn->sess->se_sess;
+-	int size, tag;
++	int size, tag, state = (gfp_mask & __GFP_WAIT) ? TASK_UNINTERRUPTIBLE :
++				TASK_RUNNING;
 +
- enum {
- 	DEMOD_WRITE = 0x1,
- 	WRITE_DELAY = 0x10,
++	tag = percpu_ida_alloc(&se_sess->sess_tag_pool, state);
++	if (tag < 0)
++		return NULL;
+ 
+-	tag = percpu_ida_alloc(&se_sess->sess_tag_pool, gfp_mask);
+ 	size = sizeof(struct iscsi_cmd) + conn->conn_transport->priv_size;
+ 	cmd = (struct iscsi_cmd *)(se_sess->sess_cmd_map + (tag * size));
+ 	memset(cmd, 0, size);
+--- a/drivers/target/tcm_fc/tfc_cmd.c
++++ b/drivers/target/tcm_fc/tfc_cmd.c
+@@ -438,7 +438,7 @@ static void ft_recv_cmd(struct ft_sess *
+ 	struct se_session *se_sess = sess->se_sess;
+ 	int tag;
+ 
+-	tag = percpu_ida_alloc(&se_sess->sess_tag_pool, GFP_ATOMIC);
++	tag = percpu_ida_alloc(&se_sess->sess_tag_pool, TASK_RUNNING);
+ 	if (tag < 0)
+ 		goto busy;
+ 
+--- a/drivers/vhost/scsi.c
++++ b/drivers/vhost/scsi.c
+@@ -728,7 +728,7 @@ vhost_scsi_get_tag(struct vhost_virtqueu
+ 	}
+ 	se_sess = tv_nexus->tvn_se_sess;
+ 
+-	tag = percpu_ida_alloc(&se_sess->sess_tag_pool, GFP_ATOMIC);
++	tag = percpu_ida_alloc(&se_sess->sess_tag_pool, TASK_RUNNING);
+ 	if (tag < 0) {
+ 		pr_err("Unable to obtain tag for tcm_vhost_cmd\n");
+ 		return ERR_PTR(-ENOMEM);
+--- a/include/linux/percpu_ida.h
++++ b/include/linux/percpu_ida.h
+@@ -4,6 +4,7 @@
+ #include <linux/types.h>
+ #include <linux/bitops.h>
+ #include <linux/init.h>
++#include <linux/sched.h>
+ #include <linux/spinlock_types.h>
+ #include <linux/wait.h>
+ #include <linux/cpumask.h>
+@@ -61,7 +62,7 @@ struct percpu_ida {
+ /* Max size of percpu freelist, */
+ #define IDA_DEFAULT_PCPU_SIZE	((IDA_DEFAULT_PCPU_BATCH_MOVE * 3) / 2)
+ 
+-int percpu_ida_alloc(struct percpu_ida *pool, gfp_t gfp);
++int percpu_ida_alloc(struct percpu_ida *pool, int state);
+ void percpu_ida_free(struct percpu_ida *pool, unsigned tag);
+ 
+ void percpu_ida_destroy(struct percpu_ida *pool);
+--- a/lib/percpu_ida.c
++++ b/lib/percpu_ida.c
+@@ -132,22 +132,22 @@ static inline unsigned alloc_local_tag(s
+ /**
+  * percpu_ida_alloc - allocate a tag
+  * @pool: pool to allocate from
+- * @gfp: gfp flags
++ * @state: task state for prepare_to_wait
+  *
+  * Returns a tag - an integer in the range [0..nr_tags) (passed to
+  * tag_pool_init()), or otherwise -ENOSPC on allocation failure.
+  *
+  * Safe to be called from interrupt context (assuming it isn't passed
+- * __GFP_WAIT, of course).
++ * TASK_UNINTERRUPTIBLE, of course).
+  *
+  * @gfp indicates whether or not to wait until a free id is available (it's not
+  * used for internal memory allocations); thus if passed __GFP_WAIT we may sleep
+  * however long it takes until another thread frees an id (same semantics as a
+  * mempool).
+  *
+- * Will not fail if passed __GFP_WAIT.
++ * Will not fail if passed TASK_UNINTERRUPTIBLE.
+  */
+-int percpu_ida_alloc(struct percpu_ida *pool, gfp_t gfp)
++int percpu_ida_alloc(struct percpu_ida *pool, int state)
+ {
+ 	DEFINE_WAIT(wait);
+ 	struct percpu_ida_cpu *tags;
+@@ -174,7 +174,8 @@ int percpu_ida_alloc(struct percpu_ida *
+ 		 *
+ 		 * global lock held and irqs disabled, don't need percpu lock
+ 		 */
+-		prepare_to_wait(&pool->wait, &wait, TASK_UNINTERRUPTIBLE);
++		if (state != TASK_RUNNING)
++			prepare_to_wait(&pool->wait, &wait, state);
+ 
+ 		if (!tags->nr_free)
+ 			alloc_global_tags(pool, tags);
+@@ -191,7 +192,7 @@ int percpu_ida_alloc(struct percpu_ida *
+ 		spin_unlock(&pool->lock);
+ 		local_irq_restore(flags);
+ 
+-		if (tag >= 0 || !(gfp & __GFP_WAIT))
++		if (tag >= 0 || state == TASK_RUNNING)
+ 			break;
+ 
+ 		schedule();
+@@ -199,8 +200,9 @@ int percpu_ida_alloc(struct percpu_ida *
+ 		local_irq_save(flags);
+ 		tags = this_cpu_ptr(pool->tag_cpu);
+ 	}
++	if (state != TASK_RUNNING)
++		finish_wait(&pool->wait, &wait);
+ 
+-	finish_wait(&pool->wait, &wait);
+ 	return tag;
+ }
+ EXPORT_SYMBOL_GPL(percpu_ida_alloc);
 
 
