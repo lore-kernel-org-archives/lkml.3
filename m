@@ -1,81 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751582AbaBKKSm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 05:18:42 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:35908 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751186AbaBKKSg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 05:18:36 -0500
-From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH] serial: 8250_pci: unbreak last serial ports on NetMos 9865 cards
-Date: Tue, 11 Feb 2014 14:18:13 +0400
-Message-Id: <1392113893-8269-1-git-send-email-dbaryshkov@gmail.com>
-X-Mailer: git-send-email 1.8.5.2
+	id S1751753AbaBKKTC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 05:19:02 -0500
+Received: from mail1.bemta5.messagelabs.com ([195.245.231.151]:36961 "EHLO
+	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751675AbaBKKS6 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 05:18:58 -0500
+X-Env-Sender: Adam.Thomson.Opensource@diasemi.com
+X-Msg-Ref: server-15.tower-179.messagelabs.com!1392113936!26637316!1
+X-Originating-IP: [82.210.246.133]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.16; banners=-,-,-
+X-VirusChecked: Checked
+Message-ID: <68b98f4a080bb8be65eb97e63a5fb6c72ca555eb.1392044599.git.Adam.Thomson.Opensource@diasemi.com>
+In-Reply-To: <cover.1392044599.git.Adam.Thomson.Opensource@diasemi.com>
+References: <cover.1392044599.git.Adam.Thomson.Opensource@diasemi.com>
+From: Adam Thomson <adam.thomson@diasemi.com>
+Date: Tue, 11 Feb 2014 10:18:54 +0000
+Subject: [PATCH 1/2] onkey: da9055: Remove use of regmap_irq_get_virq()
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Dmitry Torokhov <dtor@mail.ru>,
+        Alessandro Zummo <a.zummo@towertech.it>
+CC: <linux-kernel@vger.kernel.org>, <rtc-linux@googlegroups.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Aparently 9865 uses standard BAR encoding scheme (unlike 99xx cards).
-Current pci_netmos_9900_setup() uses wrong BAR indices for the 9865 PCI
-device, function 2. Using standard BAR indices makes all 6 ports work
-for me. Thus disable the NetMos 9900 quirk for NetMos 9865 pci device.
+Using platform_get_irq_byname() to retrieve the IRQ number
+returns the VIRQ number rather than the local IRQ number for
+the device. Passing that value then into regmap_irq_get_virq()
+causes a failure because the function is expecting the local
+IRQ number (e.g. 0, 1, 2, 3, etc). This patch removes use of
+regmap_irq_get_virq() to prevent this failure from happening.
 
-For the reference, here is the relevant part of lspci for my device:
-
-02:07.0 Serial controller: MosChip Semiconductor Technology Ltd. PCI
-9865 Multi-I/O Controller (prog-if 02 [16550])
-	Subsystem: Device a000:1000
-	Flags: bus master, medium devsel, latency 32, IRQ 17
-	I/O ports at ac00 [size=8]
-	Memory at fcfff000 (32-bit, non-prefetchable) [size=4K]
-	Memory at fcffe000 (32-bit, non-prefetchable) [size=4K]
-	Capabilities: [48] Power Management version 2
-	Kernel driver in use: serial
-
-02:07.1 Serial controller: MosChip Semiconductor Technology Ltd. PCI
-9865 Multi-I/O Controller (prog-if 02 [16550])
-	Subsystem: Device a000:1000
-	Flags: bus master, medium devsel, latency 32, IRQ 18
-	I/O ports at a800 [size=8]
-	Memory at fcffd000 (32-bit, non-prefetchable) [size=4K]
-	Memory at fcffc000 (32-bit, non-prefetchable) [size=4K]
-	Capabilities: [48] Power Management version 2
-	Kernel driver in use: serial
-
-02:07.2 Communication controller: MosChip Semiconductor Technology Ltd.
-PCI 9865 Multi-I/O Controller
-	Subsystem: Device a000:3004
-	Flags: bus master, medium devsel, latency 32, IRQ 19
-	I/O ports at a400 [size=8]
-	I/O ports at a000 [size=8]
-	I/O ports at 9c00 [size=8]
-	I/O ports at 9800 [size=8]
-	Memory at fcffb000 (32-bit, non-prefetchable) [size=4K]
-	Capabilities: [48] Power Management version 2
-	Kernel driver in use: serial
-
-Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
 ---
- drivers/tty/serial/8250/8250_pci.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/input/misc/da9055_onkey.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/tty/serial/8250/8250_pci.c b/drivers/tty/serial/8250/8250_pci.c
-index 4697a51..143a381 100644
---- a/drivers/tty/serial/8250/8250_pci.c
-+++ b/drivers/tty/serial/8250/8250_pci.c
-@@ -784,7 +784,8 @@ static int pci_netmos_9900_setup(struct serial_private *priv,
- {
- 	unsigned int bar;
- 
--	if ((priv->dev->subsystem_device & 0xff00) == 0x3000) {
-+	if ((priv->dev->device != PCI_DEVICE_ID_NETMOS_9865) &&
-+	    (priv->dev->subsystem_device & 0xff00) == 0x3000) {
- 		/* netmos apparently orders BARs by datasheet layout, so serial
- 		 * ports get BARs 0 and 3 (or 1 and 4 for memmapped)
- 		 */
--- 
-1.8.5.2
+diff --git a/drivers/input/misc/da9055_onkey.c b/drivers/input/misc/da9055_onkey.c
+index 4b11ede..4765799 100644
+--- a/drivers/input/misc/da9055_onkey.c
++++ b/drivers/input/misc/da9055_onkey.c
+@@ -109,7 +109,6 @@ static int da9055_onkey_probe(struct platform_device *pdev)
+
+        INIT_DELAYED_WORK(&onkey->work, da9055_onkey_work);
+
+-       irq = regmap_irq_get_virq(da9055->irq_data, irq);
+        err = request_threaded_irq(irq, NULL, da9055_onkey_irq,
+                                   IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
+                                   "ONKEY", onkey);
+--
+1.7.0.4
+
+Legal Disclaimer: This e-mail communication (and any attachment/s) is confidential and contains proprietary information, some or all of which may be legally privileged. It is intended solely for the use of the individual or entity to which it is addressed. Access to this email by anyone else is unauthorized. If you are not the intended recipient, any disclosure, copying, distribution or any action taken or omitted to be taken in reliance on it, is prohibited and may be unlawful.
+
+Please consider the environment before printing this e-mail
+
 
