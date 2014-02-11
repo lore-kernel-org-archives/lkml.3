@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755167AbaBKUvt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:51:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39688 "EHLO
+	id S1755870AbaBKUwR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:52:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39679 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752871AbaBKTFd (ORCPT
+	with ESMTP id S1752851AbaBKTFa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:05:33 -0500
+	Tue, 11 Feb 2014 14:05:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rich Freeman <rich0@gentoo.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.13 070/120] [media] nxt200x: increase write buffer size
-Date: Tue, 11 Feb 2014 11:05:11 -0800
-Message-Id: <20140211184825.611066293@linuxfoundation.org>
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Patrick Boettcher <pboettcher@kernellabs.com>
+Subject: [PATCH 3.13 067/120] [media] dib8000: make 32 bits read atomic
+Date: Tue, 11 Feb 2014 11:05:08 -0800
+Message-Id: <20140211184825.527888964@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -31,34 +31,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
-commit fa1e1de6bb679f2c86da3311bbafee7eaf78f125 upstream.
+commit 5ac64ba12aca3bef18e61c866583155a3bbf81c4 upstream.
 
-The buffer size on nxt200x is not enough:
+As the dvb-frontend kthread can be called anytime, it can race
+with some get status ioctl. So, it seems better to avoid one to
+race with the other while reading a 32 bits register.
+I can't see any other reason for having a mutex there at I2C, except
+to provide such kind of protection, as the I2C core already has a
+mutex to protect I2C transfers.
 
-	...
-	> Dec 20 10:52:04 rich kernel: [   31.747949] nxt200x: nxt200x_writebytes: i2c wr reg=002c: len=255 is too big!
-	...
+Note: instead of this approach, it could eventually remove the dib8000
+specific mutex for it, and either group the 4 ops into one xfer or
+to manually control the I2C mutex. The main advantage of the current
+approach is that the changes are smaller and more puntual.
 
-Increase it to 256 bytes.
-
-Reported-by: Rich Freeman <rich0@gentoo.org>
 Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Acked-by: Patrick Boettcher <pboettcher@kernellabs.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/dvb-frontends/nxt200x.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/media/dvb-frontends/dib8000.c |   33 +++++++++++++++++++++++++--------
+ 1 file changed, 25 insertions(+), 8 deletions(-)
 
---- a/drivers/media/dvb-frontends/nxt200x.c
-+++ b/drivers/media/dvb-frontends/nxt200x.c
-@@ -40,7 +40,7 @@
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+--- a/drivers/media/dvb-frontends/dib8000.c
++++ b/drivers/media/dvb-frontends/dib8000.c
+@@ -157,15 +157,10 @@ static u16 dib8000_i2c_read16(struct i2c
+ 	return ret;
+ }
  
- /* Max transfer size done by I2C transfer functions */
--#define MAX_XFER_SIZE  64
-+#define MAX_XFER_SIZE  256
+-static u16 dib8000_read_word(struct dib8000_state *state, u16 reg)
++static u16 __dib8000_read_word(struct dib8000_state *state, u16 reg)
+ {
+ 	u16 ret;
  
- #define NXT2002_DEFAULT_FIRMWARE "dvb-fe-nxt2002.fw"
- #define NXT2004_DEFAULT_FIRMWARE "dvb-fe-nxt2004.fw"
+-	if (mutex_lock_interruptible(&state->i2c_buffer_lock) < 0) {
+-		dprintk("could not acquire lock");
+-		return 0;
+-	}
+-
+ 	state->i2c_write_buffer[0] = reg >> 8;
+ 	state->i2c_write_buffer[1] = reg & 0xff;
+ 
+@@ -183,6 +178,21 @@ static u16 dib8000_read_word(struct dib8
+ 		dprintk("i2c read error on %d", reg);
+ 
+ 	ret = (state->i2c_read_buffer[0] << 8) | state->i2c_read_buffer[1];
++
++	return ret;
++}
++
++static u16 dib8000_read_word(struct dib8000_state *state, u16 reg)
++{
++	u16 ret;
++
++	if (mutex_lock_interruptible(&state->i2c_buffer_lock) < 0) {
++		dprintk("could not acquire lock");
++		return 0;
++	}
++
++	ret = __dib8000_read_word(state, reg);
++
+ 	mutex_unlock(&state->i2c_buffer_lock);
+ 
+ 	return ret;
+@@ -192,8 +202,15 @@ static u32 dib8000_read32(struct dib8000
+ {
+ 	u16 rw[2];
+ 
+-	rw[0] = dib8000_read_word(state, reg + 0);
+-	rw[1] = dib8000_read_word(state, reg + 1);
++	if (mutex_lock_interruptible(&state->i2c_buffer_lock) < 0) {
++		dprintk("could not acquire lock");
++		return 0;
++	}
++
++	rw[0] = __dib8000_read_word(state, reg + 0);
++	rw[1] = __dib8000_read_word(state, reg + 1);
++
++	mutex_unlock(&state->i2c_buffer_lock);
+ 
+ 	return ((rw[0] << 16) | (rw[1]));
+ }
 
 
