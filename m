@@ -1,81 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752527AbaBKQuq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 11:50:46 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:49896 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752291AbaBKQun (ORCPT
+	id S1752394AbaBKQuo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 11:50:44 -0500
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:44681 "EHLO
+	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751014AbaBKQuj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 11:50:43 -0500
-Date: Tue, 11 Feb 2014 10:48:26 -0600
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>
-Subject: Re: [PATCH] of: Turn of_match_node into a static inline when
- CONFIG_OF isn't set
-Message-ID: <20140211164825.GC841@joshc.qualcomm.com>
-References: <1392122211-11422-1-git-send-email-laurent.pinchart@ideasonboard.com>
- <20140211144108.GB841@joshc.qualcomm.com>
- <1596542.hkJp71u3OJ@avalon>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1596542.hkJp71u3OJ@avalon>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 11 Feb 2014 11:50:39 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
+        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Jiri Olsa <jolsa@redhat.com>, Eric Dumazet <edumazet@google.com>,
+        linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH] n_tty: Fix poll() when TIME_CHAR and MIN_CHAR == 0
+Date: Tue, 11 Feb 2014 11:49:58 -0500
+Message-Id: <1392137400-4205-1-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <20140211121411.GA4368@infradead.org>
+References: <20140211121411.GA4368@infradead.org>
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 03:55:35PM +0100, Laurent Pinchart wrote:
-> Hi Josh,
-> 
-> On Tuesday 11 February 2014 08:41:08 Josh Cartwright wrote:
-> > On Tue, Feb 11, 2014 at 01:36:51PM +0100, Laurent Pinchart wrote:
-> > > when CONFIG_OF is disabled of_match_node is defined as a macro that
-> > > evaluates to NULL. This breaks compilation of drivers that dereference
-> > > the function's return value directly. Fix it by turning the macro into a
-> > > static inline function that returns NULL.
-> > 
-> > Just this past week I did the same thing, but noticed that it breaks the
-> > following usecase:
-> > 
-> > 	#ifdef CONFIG_OF
-> > 	static const struct of_device_id foobar_matches[] = {
-> > 		{ .compatible = "foobar,whatsit", },
-> > 		{ },
-> > 	};
-> > 	#endif
-> > 
-> > 	static int probeme(struct platform_device *pdev)
-> > 	{
-> > 		struct of_device_id *id;
-> > 
-> > 		id = of_match_node(foobar_matches, pdev->dev.of_node);
-> > 		if (id) {
-> > 			/* ... */
-> > 		}
-> > 		return 0;
-> > 	}
-> > 
-> > When !CONFIG_OF and with your change, this will fail to build due to
-> > foobar_matches being undefined.
-> 
-> Good point. What would you think about
-> 
-> #define of_match_node(_matches, _node)  ((const struct of_device_id *)NULL)
+On 02/11/2014 07:14 AM, Arnaldo Carvalho de Melo wrote:
+> Em Mon, Feb 10, 2014 at 09:15:42PM -0500, Peter Hurley escreveu:
+>>> Bisected it down to:
+>
+>>> eb3e4668bd9e0bbda592e830e889f137e44ec9e4 is the first bad commit
+>>> Author: Peter Hurley <peter@hurleysoftware.com>
+>>> Date:   Mon Dec 2 14:24:42 2013 -0500
+>
+>>>      n_tty: Un-inline slow-path n_tty_receive_char()
+>
+>>> In a hurry now, will continue later, trying to understand what is the problem
+>>> introduced by the above cset...
+>
+>>> Need to revert just this one to confirm that it is the culprit, etc.
+>
+>> Thanks for the report and bisect. Seems unlikely this commit is the
+>> cause, but very likely to be some change I made since 3.13, since
+>> I can repro on 3.14-rc1 but not on 3.13.2 -stable. I can also repro
+>> this on 3.12 + the patch stack from me for 3.13 and 3.14.
+>
+>> I'm looking into this now.
+>
+> I just reverted just this cset and the problem persisted, so I'll wait
+> for you on this one :-) 
 
-I've just sent out a patchset that cleans up at least a couple of users
-that directly do of_match_node(matches, np)->data using
-of_find_matching_node_and_match.  Not sure if that will fix the usage
-you have in mind, though.
+My bisection pointed to:
 
-I am a bit weary about having an of_match_node() user that both directly
-dereferences the result (i.e. of_match_node(matches, np)->data) _and_
-builds when !CONFIG_OF; most likely due to a traumatic childhood event
-where demons flew out my nose.
+eafbe67f84761d787802e5113d895a316b6292fe is the first bad commit
+commit eafbe67f84761d787802e5113d895a316b6292fe
+Author: Peter Hurley <peter@hurleysoftware.com>
+Date:   Mon Dec 2 14:24:45 2013 -0500
 
+    n_tty: Refactor input_available_p() by call site
+
+Apologies for the breakage; the patch below should fix it.
+
+Regards,
+Peter Hurley
+
+--- >% ---
+From: Peter Hurley <peter@hurleysoftware.com>
+Date: Tue, 11 Feb 2014 10:10:07 -0500
+Subject: [PATCH] n_tty: Fix poll() when TIME_CHAR and MIN_CHAR == 0
+
+Commit eafbe67f84761d787802e5113d895a316b6292fe,
+  n_tty: Refactor input_available_p() by call site
+broke poll() when TIME_CHAR(tty) and MIN_CHAR(tty) are both 0.
+
+When TIME_CHAR and MIN_CHAR are both 0, input is available if the
+read_cnt is 1 (not 0).
+
+Reported-by: Stephane Eranian <eranian@google.com>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ drivers/tty/n_tty.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+index cb8017a..2747a3b 100644
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -1896,7 +1896,7 @@ err:
+ static inline int input_available_p(struct tty_struct *tty, int poll)
+ {
+ 	struct n_tty_data *ldata = tty->disc_data;
+-	int amt = poll && !TIME_CHAR(tty) ? MIN_CHAR(tty) : 1;
++	int amt = poll && !TIME_CHAR(tty) && MIN_CHAR(tty) ? MIN_CHAR(tty) : 1;
+ 
+ 	if (ldata->icanon && !L_EXTPROC(tty)) {
+ 		if (ldata->canon_head != ldata->read_tail)
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+1.8.1.2
+
