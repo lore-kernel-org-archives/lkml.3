@@ -1,36 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756141AbaBKUR0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:17:26 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:55563 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753415AbaBKURV (ORCPT
+	id S1753404AbaBKTGa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:06:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39934 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753306AbaBKTGW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 15:17:21 -0500
-Date: Tue, 11 Feb 2014 12:17:18 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: linux-kernel@vger.kernel.org, monstr@monstr.eu,
-        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 11/11] watchdog: xilinx: Remove no_timeout variable
-Message-ID: <20140211201718.GB11798@roeck-us.net>
-References: <f298edd222c57b0ce1ebad3ae50c3f715406c631.1392101734.git.michal.simek@xilinx.com>
- <52d86e3f2b957411deafbdfbd4bf93bb78f491ac.1392101734.git.michal.simek@xilinx.com>
+	Tue, 11 Feb 2014 14:06:22 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, Chris Ball <cjb@laptop.org>
+Subject: [PATCH 3.12 020/107] mmc: atmel-mci: fix timeout errors in SDIO mode when using DMA
+Date: Tue, 11 Feb 2014 11:04:46 -0800
+Message-Id: <20140211184748.778991099@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
+References: <20140211184748.191276235@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52d86e3f2b957411deafbdfbd4bf93bb78f491ac.1392101734.git.michal.simek@xilinx.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 07:55:54AM +0100, Michal Simek wrote:
-> Remove no_timeout variable and check variables
-> directly.
-> 
-> Suggested-by: Rob Herring <robherring2@gmail.com>
-> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+------------------
+
+From: Ludovic Desroches <ludovic.desroches@atmel.com>
+
+commit 66b512eda74d59b17eac04c4da1b38d82059e6c9 upstream.
+
+With some SDIO devices, timeout errors can happen when reading data.
+To solve this issue, the DMA transfer has to be activated before sending
+the command to the device. This order is incorrect in PDC mode. So we
+have to take care if we are using DMA or PDC to know when to send the
+MMC command.
+
+Signed-off-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Chris Ball <cjb@laptop.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/mmc/host/atmel-mci.c |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
+
+--- a/drivers/mmc/host/atmel-mci.c
++++ b/drivers/mmc/host/atmel-mci.c
+@@ -1193,11 +1193,22 @@ static void atmci_start_request(struct a
+ 	iflags |= ATMCI_CMDRDY;
+ 	cmd = mrq->cmd;
+ 	cmdflags = atmci_prepare_command(slot->mmc, cmd);
+-	atmci_send_command(host, cmd, cmdflags);
++
++	/*
++	 * DMA transfer should be started before sending the command to avoid
++	 * unexpected errors especially for read operations in SDIO mode.
++	 * Unfortunately, in PDC mode, command has to be sent before starting
++	 * the transfer.
++	 */
++	if (host->submit_data != &atmci_submit_data_dma)
++		atmci_send_command(host, cmd, cmdflags);
+ 
+ 	if (data)
+ 		host->submit_data(host, data);
+ 
++	if (host->submit_data == &atmci_submit_data_dma)
++		atmci_send_command(host, cmd, cmdflags);
++
+ 	if (mrq->stop) {
+ 		host->stop_cmdr = atmci_prepare_command(slot->mmc, mrq->stop);
+ 		host->stop_cmdr |= ATMCI_CMDR_STOP_XFER;
+
+
