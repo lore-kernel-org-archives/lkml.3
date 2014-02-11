@@ -1,183 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754029AbaBKVsF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 16:48:05 -0500
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:46867 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753893AbaBKVr3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 16:47:29 -0500
-From: Boris BREZILLON <b.brezillon.dev@gmail.com>
-To: David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Gupta Pekon <pekon@ti.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Boris BREZILLON <b.brezillon.dev@gmail.com>
-Subject: =?UTF-8?q?=5BRFC=20PATCH=20v2=203/4=5D=20mtd=3A=20nand=3A=20add=20DT=20NAND=20partition=20parser?=
-Date: Tue, 11 Feb 2014 22:46:48 +0100
-Message-Id: <1392155209-14495-4-git-send-email-b.brezillon.dev@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1392155209-14495-1-git-send-email-b.brezillon.dev@gmail.com>
-References: <1392155209-14495-1-git-send-email-b.brezillon.dev@gmail.com>
+	id S1753776AbaBKVtR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 16:49:17 -0500
+Received: from sandeen.net ([63.231.237.45]:33157 "EHLO sandeen.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752759AbaBKVtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 16:49:15 -0500
+Message-ID: <52FA9ADA.9040803@sandeen.net>
+Date: Tue, 11 Feb 2014 15:49:14 -0600
+From: Eric Sandeen <sandeen@sandeen.net>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Dave Chinner <david@fromorbit.com>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
+References: <20140211172707.GA1749@redhat.com> <20140211210841.GM13647@dastard>
+In-Reply-To: <20140211210841.GM13647@dastard>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add ofnandpart_parse function to help parsing NAND partitions from DT.
-This function should be called from NAND controller drivers just after the
-nand_scan_tail in place of mtd_device_parse_register.
-The caller can specify a parser function to retrieve HW specific
-informations from  the DT.
+On 2/11/14, 3:08 PM, Dave Chinner wrote:
+> On Tue, Feb 11, 2014 at 12:27:07PM -0500, Dave Jones wrote:
+>> BUG: sleeping function called from invalid context at mm/mempool.c:203
+>> in_atomic(): 0, irqs_disabled(): 1, pid: 27511, name: trinity-c3
+>> 5 locks held by trinity-c3/27511:
+>>  #0:  (sb_writers#9){......}, at: [<ffffffff831df3b4>] mnt_want_write+0x24/0x50
+>>  #1:  (&type->i_mutex_dir_key#3){......}, at: [<ffffffff831cced4>] do_last.isra.51+0x294/0x11f0
+>>  #2:  (sb_internal#2){......}, at: [<ffffffffc03225c4>] xfs_trans_alloc+0x24/0x40 [xfs]
+>>  #3:  (&(&ip->i_lock)->mr_lock/1){......}, at: [<ffffffffc036447f>] xfs_ilock+0x16f/0x1b0 [xfs]
+>>  #4:  (&(&ip->i_lock)->mr_lock){......}, at: [<ffffffffc03646d4>] xfs_ilock_nowait+0x184/0x200 [xfs]
+>> CPU: 3 PID: 27511 Comm: trinity-c3 Not tainted 3.14.0-rc2+ #111 
+>>  ffffffff83a3fd56 0000000045a3849a ffff88009f368f60 ffffffff8372afea
+>>  0000000000000000 ffff88009f368f88 ffffffff8309ddb5 0000000000000010
+>>  ffff880243566288 0000000000000008 ffff88009f369008 ffffffff831534d3
+>> Call Trace:
+>>  [<ffffffff8372afea>] dump_stack+0x4e/0x7a
+>>  [<ffffffff8309ddb5>] __might_sleep+0x105/0x150
+>>  [<ffffffff831534d3>] mempool_alloc+0xa3/0x170
+>>  [<ffffffff831a955a>] ? deactivate_slab+0x51a/0x590
+>>  [<ffffffff831f8fd6>] bio_alloc_bioset+0x156/0x210
+>>  [<ffffffffc0308231>] _xfs_buf_ioapply+0x1c1/0x3c0 [xfs]
+>>  [<ffffffffc03798f2>] ? xlog_bdstrat+0x22/0x60 [xfs]
+>>  [<ffffffffc030849b>] xfs_buf_iorequest+0x6b/0xf0 [xfs]
+>>  [<ffffffffc03798f2>] xlog_bdstrat+0x22/0x60 [xfs]
+>>  [<ffffffffc037ba87>] xlog_sync+0x3a7/0x5b0 [xfs]
+>>  [<ffffffffc037bd9f>] xlog_state_release_iclog+0x10f/0x120 [xfs]
+>>  [<ffffffffc037c840>] xlog_write+0x6f0/0x800 [xfs]
+>>  [<ffffffffc037e061>] xlog_cil_push+0x2f1/0x410 [xfs]
+>>  [<ffffffffc037e948>] xlog_cil_force_lsn+0x1d8/0x210 [xfs]
+>>  [<ffffffffc03428a8>] ? xfs_bmbt_get_all+0x18/0x20 [xfs]
+>>  [<ffffffffc037cc40>] _xfs_log_force+0x70/0x290 [xfs]
+>>  [<ffffffff830a4edd>] ? get_parent_ip+0xd/0x50
+>>  [<ffffffffc037ce86>] xfs_log_force+0x26/0xb0 [xfs]
+>>  [<ffffffffc03076e6>] ? _xfs_buf_find+0x1f6/0x3c0 [xfs]
+>>  [<ffffffffc03074e3>] xfs_buf_lock+0x133/0x140 [xfs]
+>>  [<ffffffffc03076e6>] _xfs_buf_find+0x1f6/0x3c0 [xfs]
+>>  [<ffffffffc030796a>] xfs_buf_get_map+0x2a/0x1b0 [xfs]
+>>  [<ffffffffc0383c61>] xfs_trans_get_buf_map+0x1a1/0x240 [xfs]
+>>  [<ffffffffc034e03d>] xfs_da_get_buf+0xbd/0x100 [xfs]
+>>  [<ffffffffc0356869>] xfs_dir3_data_init+0x59/0x1d0 [xfs]
+>>  [<ffffffffc03526db>] ? xfs_dir2_grow_inode+0x13b/0x150 [xfs]
+>>  [<ffffffffc0354ede>] xfs_dir2_sf_to_block+0x17e/0x7b0 [xfs]
+>>  [<ffffffffc0351f5a>] ? xfs_dir2_sfe_get_ino+0x1a/0x20 [xfs]
+>>  [<ffffffffc035e9b4>] ? xfs_dir2_sf_check.isra.7+0x114/0x1b0 [xfs]
+>>  [<ffffffffc034c24f>] ? xfs_da_compname+0x1f/0x30 [xfs]
+>>  [<ffffffffc035f503>] ? xfs_dir2_sf_lookup+0x303/0x310 [xfs]
+>>  [<ffffffffc035f858>] xfs_dir2_sf_addname+0x348/0x6d0 [xfs]
+>>  [<ffffffffc031970d>] ? xfs_setup_inode+0x1cd/0x320 [xfs]
+>>  [<ffffffffc03529a4>] xfs_dir_createname+0x184/0x1e0 [xfs]
+>>  [<ffffffffc03663d9>] xfs_create+0x469/0x580 [xfs]
+>>  [<ffffffffc0318864>] xfs_vn_mknod+0xc4/0x1e0 [xfs]
+>>  [<ffffffffc0318993>] xfs_vn_create+0x13/0x20 [xfs]
+>>  [<ffffffff831ccc15>] vfs_create+0x95/0xc0
+>>  [<ffffffff831cd638>] do_last.isra.51+0x9f8/0x11f0
+>>  [<ffffffff831c9e11>] ? link_path_walk+0x81/0x870
+>>  [<ffffffff831cdef9>] path_openat+0xc9/0x620
+>>  [<ffffffff8331cc02>] ? put_dec+0x72/0x90
+>>  [<ffffffff831ceb6d>] do_filp_open+0x4d/0xb0
+>>  [<ffffffff831bc4ae>] file_open_name+0xfe/0x160
+>>  [<ffffffff831bc554>] filp_open+0x44/0x60
+>>  [<ffffffff83221862>] do_coredump+0x602/0xf60
+>>  [<ffffffff83081358>] get_signal_to_deliver+0x2b8/0x6b0
+>>  [<ffffffff830024d7>] do_signal+0x57/0x9d0
+>>  [<ffffffff8311115e>] ? __acct_update_integrals+0x8e/0x120
+>>  [<ffffffff83730000>] ? __schedule+0x60/0x850
+>>  [<ffffffff8373a1db>] ? preempt_count_sub+0x6b/0xf0
+>>  [<ffffffff83735a31>] ? _raw_spin_unlock+0x31/0x50
+>>  [<ffffffff830ab671>] ? vtime_account_user+0x91/0xa0
+>>  [<ffffffff8314f57b>] ? context_tracking_user_exit+0x9b/0x100
+>>  [<ffffffff83002eac>] do_notify_resume+0x5c/0xa0
+>>  [<ffffffff83736746>] retint_signal+0x46/0x90
+> 
+> There's nowhere in this XFS stack that disables interrupts, so I
+> thinks it's either above or below XFS that is causing this problem.
 
-Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
----
- drivers/mtd/nand/ofnandpart.c |  104 +++++++++++++++++++++++++++++++++++++++++
- include/linux/mtd/nand.h      |   17 +++++++
- 2 files changed, 121 insertions(+)
- create mode 100644 drivers/mtd/nand/ofnandpart.c
+any chance the stack got blown & corrupted things such that it
+only _looks_ like irqs are disabled?
 
-diff --git a/drivers/mtd/nand/ofnandpart.c b/drivers/mtd/nand/ofnandpart.c
-new file mode 100644
-index 0000000..293daee
---- /dev/null
-+++ b/drivers/mtd/nand/ofnandpart.c
-@@ -0,0 +1,104 @@
-+/*
-+ * NAND Flash partitions described by the OF (or flattened) device tree
-+ *
-+ * Copyright © 2014 Boris BREZILLON <b.brezillon.dev@gmail.com>
-+ *
-+ * This program is free software; you can redistribute  it and/or modify it
-+ * under  the terms of  the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/of.h>
-+#include <linux/mtd/mtd.h>
-+#include <linux/slab.h>
-+#include <linux/mtd/nand.h>
-+
-+static inline bool node_has_compatible(struct device_node *pp)
-+{
-+	return of_get_property(pp, "compatible", NULL);
-+}
-+
-+int ofnandpart_parse(struct mtd_info *master,
-+		     const struct ofnandpart_data *data)
-+{
-+	struct device_node *node;
-+	const char *partname;
-+	struct device_node *pp;
-+	int i;
-+
-+	if (!data)
-+		return 0;
-+
-+	node = data->node;
-+	if (!node)
-+		return 0;
-+
-+	i = 0;
-+	for_each_child_of_node(node,  pp) {
-+		const __be32 *reg;
-+		int len;
-+		int a_cells, s_cells;
-+		uint64_t offset, size;
-+		uint32_t mask_flags = 0;
-+		struct nand_part *part;
-+
-+		if (node_has_compatible(pp))
-+			continue;
-+
-+		reg = of_get_property(pp, "reg", &len);
-+		if (!reg)
-+			continue;
-+
-+		a_cells = of_n_addr_cells(pp);
-+		s_cells = of_n_size_cells(pp);
-+		offset = of_read_number(reg, a_cells);
-+		size = of_read_number(reg + a_cells, s_cells);
-+
-+		partname = of_get_property(pp, "label", &len);
-+		if (!partname)
-+			partname = of_get_property(pp, "name", &len);
-+
-+		if (of_get_property(pp, "read-only", &len))
-+			mask_flags |= MTD_WRITEABLE;
-+
-+		if (of_get_property(pp, "lock", &len))
-+			mask_flags |= MTD_POWERUP_LOCK;
-+
-+		if (data->parse)
-+			part = data->parse(data->priv, master, pp);
-+		else
-+			part = nandpart_alloc();
-+
-+		if (IS_ERR(part))
-+			continue;
-+
-+		part->offset = offset;
-+		part->master = master;
-+		part->mtd.name = partname;
-+		part->mtd.size = size;
-+		part->mtd.flags = mask_flags;
-+
-+		if (nand_add_partition(master, part)) {
-+			if (part->release)
-+				part->release(part);
-+			continue;
-+		}
-+
-+		i++;
-+	}
-+
-+	if (!i) {
-+		of_node_put(pp);
-+		pr_err("No valid partition found on %s\n", node->full_name);
-+	}
-+
-+	return i;
-+}
-+EXPORT_SYMBOL(ofnandpart_parse);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("Parser for NAND flash partitioning information in device tree");
-+MODULE_AUTHOR("Boris BREZILLON");
-diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
-index c4d271a..0c5890b 100644
---- a/include/linux/mtd/nand.h
-+++ b/include/linux/mtd/nand.h
-@@ -845,6 +845,23 @@ void nand_del_partition(struct nand_part *part);
- struct nand_part *nandpart_alloc(void);
- 
- /**
-+ * struct ofnandpart_data - struct used to retrieve NAND partitions from a DT
-+ *			    node
-+ * @parse:		driver specific parser function
-+ * @priv:		driver private data
-+ * @node:		OF node containing NAND partitions
-+ */
-+struct ofnandpart_data {
-+	struct nand_part *(*parse)(void *priv, struct mtd_info *master,
-+				   struct device_node *pp);
-+	void *priv;
-+	struct device_node *node;
-+};
-+
-+int ofnandpart_parse(struct mtd_info *master,
-+		     const struct ofnandpart_data *data);
-+
-+/**
-  * struct nand_sdr_timings - SDR NAND chip timings
-  *
-  * This struct defines the timing requirements of a SDR NAND chip.
--- 
-1.7.9.5
+-Eric
+
+> Cheers,
+> 
+> Dave.
+> 
 
