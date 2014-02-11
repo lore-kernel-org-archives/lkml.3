@@ -1,202 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751833AbaBKK70 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 05:59:26 -0500
-Received: from mga02.intel.com ([134.134.136.20]:7866 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751694AbaBKK7W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 05:59:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,825,1384329600"; 
-   d="scan'208";a="481502960"
-From: sagar.a.kamble@intel.com
-To: intel-gfx@lists.freedesktop.org
-Cc: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
-	<ville.syrjala@linux.intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Sagar Kamble <sagar.a.kamble@intel.com>
-Subject: [PATCH v3 1/1] drm/i915: Add 180 degree sprite rotation support
-Date: Tue, 11 Feb 2014 16:30:16 +0530
-Message-Id: <1392116416-23902-1-git-send-email-sagar.a.kamble@intel.com>
-X-Mailer: git-send-email 1.8.5
+	id S1751889AbaBKLAr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 06:00:47 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:50622 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751752AbaBKLAl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 06:00:41 -0500
+Date: Tue, 11 Feb 2014 12:00:36 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Tommi Rantala <tt.rantala@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        trinity@vger.kernel.org
+Subject: Re: lockdep: strange %s#5 lock name
+Message-ID: <20140211110036.GT9987@twins.programming.kicks-ass.net>
+References: <CA+ydwtqC7En++T5S7q5qzaDe_tf9dcMx3Y3aH=+Fcss_NU7stA@mail.gmail.com>
+ <20140210192846.GF27965@twins.programming.kicks-ass.net>
+ <20140210215224.GB25350@mtj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140210215224.GB25350@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ville Syrjälä <ville.syrjala@linux.intel.com>
+> Looks good to me.  Can you please post the patch with SOB?
 
-The sprite planes (in fact all display planes starting from gen4)
-support 180 degree rotation. Add the relevant low level bits to the
-sprite code to make use of that feature.
-
-The upper layers are not yet plugged in.
-
-v2: HSW handles the rotated buffer offset automagically
-
-v3: BDW also handles the rotated buffer offset automagically
-
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Jani Nikula <jani.nikula@linux.intel.com>
-Cc: David Airlie <airlied@linux.ie>
-Cc: dri-devel@lists.freedesktop.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Signed-off-by: Sagar Kamble <sagar.a.kamble@intel.com>
 ---
- drivers/gpu/drm/i915/i915_reg.h     |  3 +++
- drivers/gpu/drm/i915/intel_drv.h    |  1 +
- drivers/gpu/drm/i915/intel_sprite.c | 37 +++++++++++++++++++++++++++++++++++++
- 3 files changed, 41 insertions(+)
+Subject: workqueue: Fix workqueue lockdep name
 
-diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
-index abd18cd..57906c5 100644
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -3637,6 +3637,7 @@
- #define   DVS_YUV_ORDER_UYVY	(1<<16)
- #define   DVS_YUV_ORDER_YVYU	(2<<16)
- #define   DVS_YUV_ORDER_VYUY	(3<<16)
-+#define   DVS_ROTATE_180	(1<<15)
- #define   DVS_DEST_KEY		(1<<2)
- #define   DVS_TRICKLE_FEED_DISABLE (1<<14)
- #define   DVS_TILED		(1<<10)
-@@ -3707,6 +3708,7 @@
- #define   SPRITE_YUV_ORDER_UYVY		(1<<16)
- #define   SPRITE_YUV_ORDER_YVYU		(2<<16)
- #define   SPRITE_YUV_ORDER_VYUY		(3<<16)
-+#define   SPRITE_ROTATE_180		(1<<15)
- #define   SPRITE_TRICKLE_FEED_DISABLE	(1<<14)
- #define   SPRITE_INT_GAMMA_ENABLE	(1<<13)
- #define   SPRITE_TILED			(1<<10)
-@@ -3780,6 +3782,7 @@
- #define   SP_YUV_ORDER_UYVY		(1<<16)
- #define   SP_YUV_ORDER_YVYU		(2<<16)
- #define   SP_YUV_ORDER_VYUY		(3<<16)
-+#define   SP_ROTATE_180			(1<<15)
- #define   SP_TILED			(1<<10)
- #define _SPALINOFF		(VLV_DISPLAY_BASE + 0x72184)
- #define _SPASTRIDE		(VLV_DISPLAY_BASE + 0x72188)
-diff --git a/drivers/gpu/drm/i915/intel_drv.h b/drivers/gpu/drm/i915/intel_drv.h
-index 44067bc..85864fc 100644
---- a/drivers/gpu/drm/i915/intel_drv.h
-+++ b/drivers/gpu/drm/i915/intel_drv.h
-@@ -397,6 +397,7 @@ struct intel_plane {
- 	unsigned int crtc_w, crtc_h;
- 	uint32_t src_x, src_y;
- 	uint32_t src_w, src_h;
-+	unsigned int rotation;
- 
- 	/* Since we need to change the watermarks before/after
- 	 * enabling/disabling the planes, we need to store the parameters here
-diff --git a/drivers/gpu/drm/i915/intel_sprite.c b/drivers/gpu/drm/i915/intel_sprite.c
-index 336ae6c..2076878 100644
---- a/drivers/gpu/drm/i915/intel_sprite.c
-+++ b/drivers/gpu/drm/i915/intel_sprite.c
-@@ -60,6 +60,7 @@ vlv_update_plane(struct drm_plane *dplane, struct drm_crtc *crtc,
- 	sprctl &= ~SP_PIXFORMAT_MASK;
- 	sprctl &= ~SP_YUV_BYTE_ORDER_MASK;
- 	sprctl &= ~SP_TILED;
-+	sprctl &= ~SP_ROTATE_180;
- 
- 	switch (fb->pixel_format) {
- 	case DRM_FORMAT_YUYV:
-@@ -131,6 +132,14 @@ vlv_update_plane(struct drm_plane *dplane, struct drm_crtc *crtc,
- 							fb->pitches[0]);
- 	linear_offset -= sprsurf_offset;
- 
-+	if (intel_plane->rotation == BIT(DRM_ROTATE_180)) {
-+		sprctl |= SP_ROTATE_180;
-+
-+		x += src_w;
-+		y += src_h;
-+		linear_offset += src_h * fb->pitches[0] + src_w * pixel_size;
-+	}
-+
- 	I915_WRITE(SPSTRIDE(pipe, plane), fb->pitches[0]);
- 	I915_WRITE(SPPOS(pipe, plane), (crtc_y << 16) | crtc_x);
- 
-@@ -238,6 +247,7 @@ ivb_update_plane(struct drm_plane *plane, struct drm_crtc *crtc,
- 	sprctl &= ~SPRITE_RGB_ORDER_RGBX;
- 	sprctl &= ~SPRITE_YUV_BYTE_ORDER_MASK;
- 	sprctl &= ~SPRITE_TILED;
-+	sprctl &= ~SPRITE_ROTATE_180;
- 
- 	switch (fb->pixel_format) {
- 	case DRM_FORMAT_XBGR8888:
-@@ -299,6 +309,17 @@ ivb_update_plane(struct drm_plane *plane, struct drm_crtc *crtc,
- 					       pixel_size, fb->pitches[0]);
- 	linear_offset -= sprsurf_offset;
- 
-+	if (intel_plane->rotation == BIT(DRM_ROTATE_180)) {
-+		sprctl |= SPRITE_ROTATE_180;
-+
-+		/* HSW and BDW does this automagically in hardware */
-+		if (!IS_HASWELL(dev) && !IS_BROADWELL(dev)) {
-+			x += src_w;
-+			y += src_h;
-+			linear_offset += src_h * fb->pitches[0] + src_w * pixel_size;
-+		}
-+	}
-+
- 	I915_WRITE(SPRSTRIDE(pipe), fb->pitches[0]);
- 	I915_WRITE(SPRPOS(pipe), (crtc_y << 16) | crtc_x);
- 
-@@ -422,6 +443,7 @@ ilk_update_plane(struct drm_plane *plane, struct drm_crtc *crtc,
- 	dvscntr &= ~DVS_RGB_ORDER_XBGR;
- 	dvscntr &= ~DVS_YUV_BYTE_ORDER_MASK;
- 	dvscntr &= ~DVS_TILED;
-+	dvscntr &= ~DVS_ROTATE_180;
- 
- 	switch (fb->pixel_format) {
- 	case DRM_FORMAT_XBGR8888:
-@@ -478,6 +500,14 @@ ilk_update_plane(struct drm_plane *plane, struct drm_crtc *crtc,
- 					       pixel_size, fb->pitches[0]);
- 	linear_offset -= dvssurf_offset;
- 
-+	if (intel_plane->rotation == BIT(DRM_ROTATE_180)) {
-+		dvscntr |= DVS_ROTATE_180;
-+
-+		x += src_w;
-+		y += src_h;
-+		linear_offset += src_h * fb->pitches[0] + src_w * pixel_size;
-+	}
-+
- 	I915_WRITE(DVSSTRIDE(pipe), fb->pitches[0]);
- 	I915_WRITE(DVSPOS(pipe), (crtc_y << 16) | crtc_x);
- 
-@@ -739,6 +769,9 @@ intel_update_plane(struct drm_plane *plane, struct drm_crtc *crtc,
- 	max_scale = intel_plane->max_downscale << 16;
- 	min_scale = intel_plane->can_scale ? 1 : (1 << 16);
- 
-+	drm_rect_rotate(&src, fb->width << 16, fb->height << 16,
-+			intel_plane->rotation);
-+
- 	hscale = drm_rect_calc_hscale_relaxed(&src, &dst, min_scale, max_scale);
- 	BUG_ON(hscale < 0);
- 
-@@ -777,6 +810,9 @@ intel_update_plane(struct drm_plane *plane, struct drm_crtc *crtc,
- 				     drm_rect_width(&dst) * hscale - drm_rect_width(&src),
- 				     drm_rect_height(&dst) * vscale - drm_rect_height(&src));
- 
-+		drm_rect_rotate_inv(&src, fb->width << 16, fb->height << 16,
-+				    intel_plane->rotation);
-+
- 		/* sanity check to make sure the src viewport wasn't enlarged */
- 		WARN_ON(src.x1 < (int) src_x ||
- 			src.y1 < (int) src_y ||
-@@ -1141,6 +1177,7 @@ intel_plane_init(struct drm_device *dev, enum pipe pipe, int plane)
- 
- 	intel_plane->pipe = pipe;
- 	intel_plane->plane = plane;
-+	intel_plane->rotation = BIT(DRM_ROTATE_0);
- 	possible_crtcs = (1 << pipe);
- 	ret = drm_plane_init(dev, &intel_plane->base, possible_crtcs,
- 			     &intel_plane_funcs,
--- 
-1.8.5
+Tommi noticed a 'funny' lock class name: "%s#5" from a lock acquired in
+process_one_work(). It turns out that commit b196be89cdc14 forgot to
+change the lockdep_init_map() when it changed the @lock_name argument
+from a string to a format.
 
+Fixes: b196be89cdc14 ("workqueue: make alloc_workqueue() take printf fmt and args for name")
+Reported-by: Tommi Rantala <tt.rantala@gmail.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 82ef9f3b7473..861d8ddd92a2 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -4202,7 +4202,7 @@ struct workqueue_struct *__alloc_workqueue_key(const char *fmt,
+ 	INIT_LIST_HEAD(&wq->flusher_overflow);
+ 	INIT_LIST_HEAD(&wq->maydays);
+ 
+-	lockdep_init_map(&wq->lockdep_map, lock_name, key, 0);
++	lockdep_init_map(&wq->lockdep_map, wq->name, key, 0);
+ 	INIT_LIST_HEAD(&wq->list);
+ 
+ 	if (alloc_and_link_pwqs(wq) < 0)
