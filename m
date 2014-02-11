@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755138AbaBKTnf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:43:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40291 "EHLO
+	id S1753966AbaBKTHe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:07:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40274 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753969AbaBKTHf (ORCPT
+	with ESMTP id S1753804AbaBKTHb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:07:35 -0500
+	Tue, 11 Feb 2014 14:07:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josh Triplett <josh@joshtriplett.org>, Len Brown <len.brown@intel.com>
-Subject: [PATCH 3.10 16/79] turbostat: Dont put unprocessed uapi headers in the include path
-Date: Tue, 11 Feb 2014 11:05:20 -0800
-Message-Id: <20140211184721.399966917@linuxfoundation.org>
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.10 03/79] tracing: Check if tracing is enabled in trace_puts()
+Date: Tue, 11 Feb 2014 11:05:07 -0800
+Message-Id: <20140211184721.034388642@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
 References: <20140211184720.928667275@linuxfoundation.org>
@@ -28,68 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Triplett <josh@joshtriplett.org>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit b731f3119de57144e16c19fd593b8daeb637843e upstream.
+commit 3132e107d608f8753240d82d61303c500fd515b4 upstream.
 
-turbostat's Makefile puts arch/x86/include/uapi/ in the include path, so
-that it can include <asm/msr.h> from it.  It isn't in general safe to
-include even uapi headers directly from the kernel tree without
-processing them through scripts/headers_install.sh, but asm/msr.h
-happens to work.
+If trace_puts() is used very early in boot up, it can crash the machine
+if it is called before the ring buffer is allocated. If a trace_printk()
+is used with no arguments, then it will be converted into a trace_puts()
+and suffer the same fate.
 
-However, that include path can break with some versions of system
-headers, by overriding some system headers with the unprocessed versions
-directly from the kernel source.  For instance:
-
-In file included from /build/x86-generic/usr/include/bits/sigcontext.h:28:0,
-                 from /build/x86-generic/usr/include/signal.h:339,
-                 from /build/x86-generic/usr/include/sys/wait.h:31,
-                 from turbostat.c:27:
-../../../../arch/x86/include/uapi/asm/sigcontext.h:4:28: fatal error: linux/compiler.h: No such file or directory
-
-This occurs because the system bits/sigcontext.h on that build system
-includes <asm/sigcontext.h>, and asm/sigcontext.h in the kernel source
-includes <linux/compiler.h>, which scripts/headers_install.sh would have
-filtered out.
-
-Since turbostat really only wants a single header, just include that one
-header rather than putting an entire directory of kernel headers on the
-include path.
-
-In the process, switch from msr.h to msr-index.h, since turbostat just
-wants the MSR numbers.
-
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
-Signed-off-by: Len Brown <len.brown@intel.com>
+Fixes: 09ae72348ecc "tracing: Add trace_puts() for even faster trace_printk() tracing"
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- tools/power/x86/turbostat/Makefile    |    2 +-
- tools/power/x86/turbostat/turbostat.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ kernel/trace/trace.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/tools/power/x86/turbostat/Makefile
-+++ b/tools/power/x86/turbostat/Makefile
-@@ -5,7 +5,7 @@ DESTDIR		:=
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -424,6 +424,9 @@ int __trace_puts(unsigned long ip, const
+ 	unsigned long irq_flags;
+ 	int alloc;
  
- turbostat : turbostat.c
- CFLAGS +=	-Wall
--CFLAGS +=	-I../../../../arch/x86/include/uapi/
-+CFLAGS +=	-DMSRHEADER='"../../../../arch/x86/include/uapi/asm/msr-index.h"'
++	if (unlikely(tracing_selftest_running || tracing_disabled))
++		return 0;
++
+ 	alloc = sizeof(*entry) + size + 2; /* possible \n added */
  
- %: %.c
- 	@mkdir -p $(BUILD_OUTPUT)
---- a/tools/power/x86/turbostat/turbostat.c
-+++ b/tools/power/x86/turbostat/turbostat.c
-@@ -20,7 +20,7 @@
-  */
+ 	local_save_flags(irq_flags);
+@@ -464,6 +467,9 @@ int __trace_bputs(unsigned long ip, cons
+ 	unsigned long irq_flags;
+ 	int size = sizeof(struct bputs_entry);
  
- #define _GNU_SOURCE
--#include <asm/msr.h>
-+#include MSRHEADER
- #include <stdio.h>
- #include <unistd.h>
- #include <sys/types.h>
++	if (unlikely(tracing_selftest_running || tracing_disabled))
++		return 0;
++
+ 	local_save_flags(irq_flags);
+ 	buffer = global_trace.trace_buffer.buffer;
+ 	event = trace_buffer_lock_reserve(buffer, TRACE_BPUTS, size,
 
 
