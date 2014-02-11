@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755589AbaBKUcA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:32:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39847 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753218AbaBKTGI (ORCPT
+	id S932500AbaBKUcE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:32:04 -0500
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:62813 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753218AbaBKUcA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:08 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: [PATCH 3.13 091/120] drm/nouveau: fix lock unbalance in nouveau_crtc_page_flip
-Date: Tue, 11 Feb 2014 11:05:32 -0800
-Message-Id: <20140211184826.205569422@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
-References: <20140211184823.492407127@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Tue, 11 Feb 2014 15:32:00 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1392150119-21132-1-git-send-email-galak@codeaurora.org>
+References: <1392150119-21132-1-git-send-email-galak@codeaurora.org>
+Date: Tue, 11 Feb 2014 15:32:00 -0500
+Message-ID: <CAF6AEGtQRhwRS+GpGqrGUNts26X=sfOKWUjbbxwUmkPs2btbYw@mail.gmail.com>
+Subject: Re: [PATCH] drm/msm: drop ARCH_MSM Kconfig depend
+From: Rob Clark <robdclark@gmail.com>
+To: Kumar Gala <galak@codeaurora.org>
+Cc: David Airlie <airlied@linux.ie>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arm-msm@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Feb 11, 2014 at 3:21 PM, Kumar Gala <galak@codeaurora.org> wrote:
+> The ARCH_MSM depend is redundant with ARCH_MSM8960, so we can remove it.
+> Additionally, we are splitting Qualcomm MSM support into legacy (ARCH_MSM)
+> and multiplatform (ARCH_QCOM).  The MSM8960 with be ARCH_QCOM going forward
+> so dropping ARCH_MSM will work properly for the new ARCH_QCOM multiplatform
+> build.
+>
+> Signed-off-by: Kumar Gala <galak@codeaurora.org>
 
-------------------
-
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-
-commit 09c3de135063f93d7137ad112f551f293b1204cf upstream.
-
-Fixes a regression introduced by d5c1e84b3a130f0
-"drm/nouveau: hold mutex while syncing to kernel channel".
-
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/gpu/drm/nouveau/nouveau_display.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/gpu/drm/nouveau/nouveau_display.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_display.c
-@@ -618,7 +618,7 @@ nouveau_crtc_page_flip(struct drm_crtc *
- 	ret = nouveau_fence_sync(fence, chan);
- 	nouveau_fence_unref(&fence);
- 	if (ret)
--		goto fail_free;
-+		goto fail_unpin;
- 
- 	ret = ttm_bo_reserve(&old_bo->bo, true, false, false, NULL);
- 	if (ret)
+Acked-by: Rob Clark <robdclark@gmail.com>
 
 
+> ---
+> David/Rob,
+>
+> If you can ack this I'll send it via linux-qcom/arm-soc tree's
+>
+> thanks
+>
+> - k
+>  drivers/gpu/drm/msm/Kconfig | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/gpu/drm/msm/Kconfig b/drivers/gpu/drm/msm/Kconfig
+> index c69d1e0..b698497 100644
+> --- a/drivers/gpu/drm/msm/Kconfig
+> +++ b/drivers/gpu/drm/msm/Kconfig
+> @@ -3,7 +3,7 @@ config DRM_MSM
+>         tristate "MSM DRM"
+>         depends on DRM
+>         depends on MSM_IOMMU
+> -       depends on (ARCH_MSM && ARCH_MSM8960) || (ARM && COMPILE_TEST)
+> +       depends on ARCH_MSM8960 || (ARM && COMPILE_TEST)
+>         select DRM_KMS_HELPER
+>         select SHMEM
+>         select TMPFS
+> --
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> hosted by The Linux Foundation
+>
