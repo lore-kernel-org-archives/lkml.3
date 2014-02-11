@@ -1,70 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752062AbaBKPeh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 10:34:37 -0500
-Received: from www.linutronix.de ([62.245.132.108]:42684 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751285AbaBKPef (ORCPT
+	id S1752017AbaBKPgf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 10:36:35 -0500
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:65404 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803AbaBKPgd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 10:34:35 -0500
-Date: Tue, 11 Feb 2014 16:34:38 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6 v2] sched: Init idle->on_rq in init_idle()
-In-Reply-To: <20140211092108.GL27965@twins.programming.kicks-ass.net>
-Message-ID: <alpine.DEB.2.02.1402111534000.21991@ionos.tec.linutronix.de>
-References: <1391803122-4425-1-git-send-email-bigeasy@linutronix.de> <1391803122-4425-2-git-send-email-bigeasy@linutronix.de> <20140207210905.GV5002@laptop.programming.kicks-ass.net> <20140211091758.GA19477@linutronix.de>
- <20140211092108.GL27965@twins.programming.kicks-ass.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 11 Feb 2014 10:36:33 -0500
+Date: Tue, 11 Feb 2014 10:36:30 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Michal Hocko <mhocko@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH] cgroup: protect modifications to cgroup_idr with
+ cgroup_mutex
+Message-ID: <20140211153630.GB24490@htj.dyndns.org>
+References: <52F9D9DA.7040108@huawei.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52F9D9DA.7040108@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Feb 2014, Peter Zijlstra wrote:
-
-> On Tue, Feb 11, 2014 at 10:17:58AM +0100, Sebastian Andrzej Siewior wrote:
-> > The init task is state TASK_RUNNING and on_irq should be set to 1. It won't
+On Tue, Feb 11, 2014 at 04:05:46PM +0800, Li Zefan wrote:
+> Setup cgroupfs like this:
+>   # mount -t cgroup -o cpuacct xxx /cgroup
+>   # mkdir /cgroup/sub1
+>   # mkdir /cgroup/sub2
 > 
-> 					^^^ irq? :-)
+> Then run these two commands:
+>   # for ((; ;)) { mkdir /cgroup/sub1/tmp && rmdir /mnt/sub1/tmp; } &
+>   # for ((; ;)) { mkdir /cgroup/sub2/tmp && rmdir /mnt/sub2/tmp; } &
 > 
-> > be set by scheduler because the idle task is never woken up, it is always the
-> > task we fall back to if there is no other task pending.
+> After seconds you may see this warning:
 > 
-> But why? Who cares? I mean, its true.. but what problem does it solve.
-> Why did Thomas write this patch.
+> ------------[ cut here ]------------
+> WARNING: CPU: 1 PID: 25243 at lib/idr.c:527 sub_remove+0x87/0x1b0()
+> idr_remove called for id=6 which is not allocated.
+> ...
+> Call Trace:
+>  [<ffffffff8156063c>] dump_stack+0x7a/0x96
+>  [<ffffffff810591ac>] warn_slowpath_common+0x8c/0xc0
+>  [<ffffffff81059296>] warn_slowpath_fmt+0x46/0x50
+>  [<ffffffff81300aa7>] sub_remove+0x87/0x1b0
+>  [<ffffffff810f3f02>] ? css_killed_work_fn+0x32/0x1b0
+>  [<ffffffff81300bf5>] idr_remove+0x25/0xd0
+>  [<ffffffff810f2bab>] cgroup_destroy_css_killed+0x5b/0xc0
+>  [<ffffffff810f4000>] css_killed_work_fn+0x130/0x1b0
+>  [<ffffffff8107cdbc>] process_one_work+0x26c/0x550
+>  [<ffffffff8107eefe>] worker_thread+0x12e/0x3b0
+>  [<ffffffff81085f96>] kthread+0xe6/0xf0
+>  [<ffffffff81570bac>] ret_from_fork+0x7c/0xb0
+> ---[ end trace 2d1577ec10cf80d0 ]---
+> 
+> It's because allocating/removing cgroup ID is not properly synchronized.
+> 
+> The bug was introduced when we converted cgroup_ida to cgroup_idr.
+> While synchronization is already done inside ida_simple_{get,remove}(),
+> users are responsible for concurrent calls to idr_{alloc,remove}().
+> 
+> Fixes: 4e96ee8e981b ("cgroup: convert cgroup_ida to cgroup_idr")
+> Cc: <stable@vger.kernel.org> #3.12+
+> Reported-by: Michal Hocko <mhocko@suse.cz>
+> Signed-off-by: Li Zefan <lizefan@huawei.com>
 
-I could slap myself for not writing a proper changelog right away. It
-took me some time to figure out why it was added in the first place,
-why it's not longer necessary and why I kept it.
+Jesus, you're right.  I missed that completely.  It conflicts with the
+return value fix in cgroup/for-3.14-fixes but easy to fix up.
+Applying to cgroup/for-3.14-fixes.
 
-We stumbled in RT over a SMP bringup issue on ARM where the
-idle->on_rq == 0 was causing try_to_wakeup() on the other cpu to run
-into nada land.
+Thanks!
 
-After adding that idle->on_rq = 1; I was able to find the root cause
-of the lockup: the idle task on the newly woken up cpu was fiddling
-with a sleeping spinlock, which is a nono.
-
-I kept the init of idle->on_rq to keep the state consistent and to
-avoid another long lasting debug session.
-
-As a side note, the whole debug mess could have been avoided if
-might_sleep() would have yelled when called from the idle task. That's
-fixed with patch 2/6 - and that one actually has a changelog :)
-
-Thanks,
-
-	tglx
-
-
-
-
-
-
+-- 
+tejun
