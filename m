@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754618AbaBKTJm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:09:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40700 "EHLO
+	id S1754632AbaBKTJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:09:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40672 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754558AbaBKTIq (ORCPT
+	with ESMTP id S1754550AbaBKTIo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:08:46 -0500
+	Tue, 11 Feb 2014 14:08:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Sasha Levin <sasha.levin@oracle.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 3.4 29/30] timekeeping: Avoid possible deadlock from clock_was_set_delayed
-Date: Tue, 11 Feb 2014 11:06:29 -0800
-Message-Id: <20140211184647.974439302@linuxfoundation.org>
+        Ying Xue <ying.xue@windriver.com>, Fan Du <fan.du@windriver.com>,
+        Yong Zhang <yong.zhang0@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, peterz@infradead.org,
+        Ingo Molnar <mingo@kernel.org>, Li Zefan <lizefan@huawei.com>
+Subject: [PATCH 3.4 27/30] sched/rt: Avoid updating RT entry timeout twice within one tick period
+Date: Tue, 11 Feb 2014 11:06:27 -0800
+Message-Id: <20140211184647.919162730@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184647.149512538@linuxfoundation.org>
 References: <20140211184647.149512538@linuxfoundation.org>
@@ -32,169 +31,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John Stultz <john.stultz@linaro.org>
+From: Ying Xue <ying.xue@windriver.com>
 
-commit 6fdda9a9c5db367130cf32df5d6618d08b89f46a upstream.
+commit 57d2aa00dcec67afa52478730f2b524521af14fb upstream.
 
-As part of normal operaions, the hrtimer subsystem frequently calls
-into the timekeeping code, creating a locking order of
-  hrtimer locks -> timekeeping locks
+The issue below was found in 2.6.34-rt rather than mainline rt
+kernel, but the issue still exists upstream as well.
 
-clock_was_set_delayed() was suppoed to allow us to avoid deadlocks
-between the timekeeping the hrtimer subsystem, so that we could
-notify the hrtimer subsytem the time had changed while holding
-the timekeeping locks. This was done by scheduling delayed work
-that would run later once we were out of the timekeeing code.
+So please let me describe how it was noticed on 2.6.34-rt:
 
-But unfortunately the lock chains are complex enoguh that in
-scheduling delayed work, we end up eventually trying to grab
-an hrtimer lock.
+On this version, each softirq has its own thread, it means there
+is at least one RT FIFO task per cpu. The priority of these
+tasks is set to 49 by default. If user launches an RT FIFO task
+with priority lower than 49 of softirq RT tasks, it's possible
+there are two RT FIFO tasks enqueued one cpu runqueue at one
+moment. By current strategy of balancing RT tasks, when it comes
+to RT tasks, we really need to put them off to a CPU that they
+can run on as soon as possible. Even if it means a bit of cache
+line flushing, we want RT tasks to be run with the least latency.
 
-Sasha Levin noticed this in testing when the new seqlock lockdep
-enablement triggered the following (somewhat abrieviated) message:
+When the user RT FIFO task which just launched before is
+running, the sched timer tick of the current cpu happens. In this
+tick period, the timeout value of the user RT task will be
+updated once. Subsequently, we try to wake up one softirq RT
+task on its local cpu. As the priority of current user RT task
+is lower than the softirq RT task, the current task will be
+preempted by the higher priority softirq RT task. Before
+preemption, we check to see if current can readily move to a
+different cpu. If so, we will reschedule to allow the RT push logic
+to try to move current somewhere else. Whenever the woken
+softirq RT task runs, it first tries to migrate the user FIFO RT
+task over to a cpu that is running a task of lesser priority. If
+migration is done, it will send a reschedule request to the found
+cpu by IPI interrupt. Once the target cpu responds the IPI
+interrupt, it will pick the migrated user RT task to preempt its
+current task. When the user RT task is running on the new cpu,
+the sched timer tick of the cpu fires. So it will tick the user
+RT task again. This also means the RT task timeout value will be
+updated again. As the migration may be done in one tick period,
+it means the user RT task timeout value will be updated twice
+within one tick.
 
-[  251.100221] ======================================================
-[  251.100221] [ INFO: possible circular locking dependency detected ]
-[  251.100221] 3.13.0-rc2-next-20131206-sasha-00005-g8be2375-dirty #4053 Not tainted
-[  251.101967] -------------------------------------------------------
-[  251.101967] kworker/10:1/4506 is trying to acquire lock:
-[  251.101967]  (timekeeper_seq){----..}, at: [<ffffffff81160e96>] retrigger_next_event+0x56/0x70
-[  251.101967]
-[  251.101967] but task is already holding lock:
-[  251.101967]  (hrtimer_bases.lock#11){-.-...}, at: [<ffffffff81160e7c>] retrigger_next_event+0x3c/0x70
-[  251.101967]
-[  251.101967] which lock already depends on the new lock.
-[  251.101967]
-[  251.101967]
-[  251.101967] the existing dependency chain (in reverse order) is:
-[  251.101967]
--> #5 (hrtimer_bases.lock#11){-.-...}:
-[snipped]
--> #4 (&rt_b->rt_runtime_lock){-.-...}:
-[snipped]
--> #3 (&rq->lock){-.-.-.}:
-[snipped]
--> #2 (&p->pi_lock){-.-.-.}:
-[snipped]
--> #1 (&(&pool->lock)->rlock){-.-...}:
-[  251.101967]        [<ffffffff81194803>] validate_chain+0x6c3/0x7b0
-[  251.101967]        [<ffffffff81194d9d>] __lock_acquire+0x4ad/0x580
-[  251.101967]        [<ffffffff81194ff2>] lock_acquire+0x182/0x1d0
-[  251.101967]        [<ffffffff84398500>] _raw_spin_lock+0x40/0x80
-[  251.101967]        [<ffffffff81153e69>] __queue_work+0x1a9/0x3f0
-[  251.101967]        [<ffffffff81154168>] queue_work_on+0x98/0x120
-[  251.101967]        [<ffffffff81161351>] clock_was_set_delayed+0x21/0x30
-[  251.101967]        [<ffffffff811c4bd1>] do_adjtimex+0x111/0x160
-[  251.101967]        [<ffffffff811e2711>] compat_sys_adjtimex+0x41/0x70
-[  251.101967]        [<ffffffff843a4b49>] ia32_sysret+0x0/0x5
-[  251.101967]
--> #0 (timekeeper_seq){----..}:
-[snipped]
-[  251.101967] other info that might help us debug this:
-[  251.101967]
-[  251.101967] Chain exists of:
-  timekeeper_seq --> &rt_b->rt_runtime_lock --> hrtimer_bases.lock#11
+If we set a limit on the amount of cpu time for the user RT task
+by setrlimit(RLIMIT_RTTIME), the SIGXCPU signal should be posted
+upon reaching the soft limit.
 
-[  251.101967]  Possible unsafe locking scenario:
-[  251.101967]
-[  251.101967]        CPU0                    CPU1
-[  251.101967]        ----                    ----
-[  251.101967]   lock(hrtimer_bases.lock#11);
-[  251.101967]                                lock(&rt_b->rt_runtime_lock);
-[  251.101967]                                lock(hrtimer_bases.lock#11);
-[  251.101967]   lock(timekeeper_seq);
-[  251.101967]
-[  251.101967]  *** DEADLOCK ***
-[  251.101967]
-[  251.101967] 3 locks held by kworker/10:1/4506:
-[  251.101967]  #0:  (events){.+.+.+}, at: [<ffffffff81154960>] process_one_work+0x200/0x530
-[  251.101967]  #1:  (hrtimer_work){+.+...}, at: [<ffffffff81154960>] process_one_work+0x200/0x530
-[  251.101967]  #2:  (hrtimer_bases.lock#11){-.-...}, at: [<ffffffff81160e7c>] retrigger_next_event+0x3c/0x70
-[  251.101967]
-[  251.101967] stack backtrace:
-[  251.101967] CPU: 10 PID: 4506 Comm: kworker/10:1 Not tainted 3.13.0-rc2-next-20131206-sasha-00005-g8be2375-dirty #4053
-[  251.101967] Workqueue: events clock_was_set_work
+But exactly when the SIGXCPU signal should be sent depends on the
+RT task timeout value. In fact the timeout mechanism of sending
+the SIGXCPU signal assumes the RT task timeout is increased once
+every tick.
 
-So the best solution is to avoid calling clock_was_set_delayed() while
-holding the timekeeping lock, and instead using a flag variable to
-decide if we should call clock_was_set() once we've released the locks.
+However, currently the timeout value may be added twice per
+tick. So it results in the SIGXCPU signal being sent earlier
+than expected.
 
-This works for the case here, where the do_adjtimex() was the deadlock
-trigger point. Unfortuantely, in update_wall_time() we still hold
-the jiffies lock, which would deadlock with the ipi triggered by
-clock_was_set(), preventing us from calling it even after we drop the
-timekeeping lock. So instead call clock_was_set_delayed() at that point.
+To solve this issue, we prevent the timeout value from increasing
+twice within one tick time by remembering the jiffies value of
+last updating the timeout. As long as the RT task's jiffies is
+different with the global jiffies value, we allow its timeout to
+be updated.
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Tested-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Ying Xue <ying.xue@windriver.com>
+Signed-off-by: Fan Du <fan.du@windriver.com>
+Reviewed-by: Yong Zhang <yong.zhang0@gmail.com>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1342508623-2887-1-git-send-email-ying.xue@windriver.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+[ lizf: backported to 3.4: adjust context ]
+Signed-off-by: Li Zefan <lizefan@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- kernel/time/timekeeping.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ include/linux/sched.h |    1 +
+ kernel/sched/rt.c     |    6 +++++-
+ 2 files changed, 6 insertions(+), 1 deletion(-)
 
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -988,7 +988,8 @@ static void timekeeping_adjust(s64 offse
-  *
-  * Returns the unconsumed cycles.
-  */
--static cycle_t logarithmic_accumulation(cycle_t offset, int shift)
-+static cycle_t logarithmic_accumulation(cycle_t offset, int shift,
-+							unsigned int *clock_set)
- {
- 	u64 nsecps = (u64)NSEC_PER_SEC << timekeeper.shift;
- 	u64 raw_nsecs;
-@@ -1010,7 +1011,7 @@ static cycle_t logarithmic_accumulation(
- 		timekeeper.xtime.tv_sec += leap;
- 		timekeeper.wall_to_monotonic.tv_sec -= leap;
- 		if (leap)
--			clock_was_set_delayed();
-+			*clock_set = 1;
- 	}
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1237,6 +1237,7 @@ struct sched_entity {
+ struct sched_rt_entity {
+ 	struct list_head run_list;
+ 	unsigned long timeout;
++	unsigned long watchdog_stamp;
+ 	unsigned int time_slice;
+ 	int nr_cpus_allowed;
  
- 	/* Accumulate raw time */
-@@ -1042,6 +1043,7 @@ static void update_wall_time(void)
- 	struct clocksource *clock;
- 	cycle_t offset;
- 	int shift = 0, maxshift;
-+	unsigned int clock_set = 0;
- 	unsigned long flags;
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -2002,7 +2002,11 @@ static void watchdog(struct rq *rq, stru
+ 	if (soft != RLIM_INFINITY) {
+ 		unsigned long next;
  
- 	write_seqlock_irqsave(&timekeeper.lock, flags);
-@@ -1077,7 +1079,7 @@ static void update_wall_time(void)
- 	maxshift = (64 - (ilog2(ntp_tick_length())+1)) - 1;
- 	shift = min(shift, maxshift);
- 	while (offset >= timekeeper.cycle_interval) {
--		offset = logarithmic_accumulation(offset, shift);
-+		offset = logarithmic_accumulation(offset, shift, &clock_set);
- 		if(offset < timekeeper.cycle_interval<<shift)
- 			shift--;
- 	}
-@@ -1131,7 +1133,7 @@ static void update_wall_time(void)
- 		timekeeper.xtime.tv_sec += leap;
- 		timekeeper.wall_to_monotonic.tv_sec -= leap;
- 		if (leap)
--			clock_was_set_delayed();
-+			clock_set = 1;
- 	}
- 
- 	timekeeping_update(false);
-@@ -1139,6 +1141,8 @@ static void update_wall_time(void)
- out:
- 	write_sequnlock_irqrestore(&timekeeper.lock, flags);
- 
-+	if (clock_set)
-+		clock_was_set_delayed();
- }
- 
- /**
+-		p->rt.timeout++;
++		if (p->rt.watchdog_stamp != jiffies) {
++			p->rt.timeout++;
++			p->rt.watchdog_stamp = jiffies;
++		}
++
+ 		next = DIV_ROUND_UP(min(soft, hard), USEC_PER_SEC/HZ);
+ 		if (p->rt.timeout > next)
+ 			p->cputime_expires.sched_exp = p->se.sum_exec_runtime;
 
 
