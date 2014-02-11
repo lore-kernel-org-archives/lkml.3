@@ -1,103 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754793AbaBKTcR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:32:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40383 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754141AbaBKTHx (ORCPT
+	id S1755205AbaBKTca (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:32:30 -0500
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:51847 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754141AbaBKTc0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:07:53 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.10 40/79] dm space map metadata: fix bug in resizing of thin metadata
-Date: Tue, 11 Feb 2014 11:05:44 -0800
-Message-Id: <20140211184722.103122072@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
-References: <20140211184720.928667275@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Tue, 11 Feb 2014 14:32:26 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20140211184511.GA32425@kroah.com>
+References: <CA+O4pCJAL_Dqrt0mF5rbErBXbLTALx8Rrs1+vB3JmT=+rT0jCg@mail.gmail.com>
+	<CA+O4pC+bHC1Bo4ERSfos8fL+FdnwXTTu_EE=rfd9eFkY7432Jg@mail.gmail.com>
+	<CA+O4pCJ5xUQwRem3rvZbvv7K8BEnMW983Qq_vR0tVzwAwmVS6A@mail.gmail.com>
+	<CA+O4pCJ9dFuwrcVF2b5MsreUb4NJX8t6664i3XHM9CYrdN7VzA@mail.gmail.com>
+	<20140120193510.GC5545@xanatos>
+	<CA+O4pC+inTZBSVJDBs4PfaDv0et3ZT+eN-1epThRJMztdgQryQ@mail.gmail.com>
+	<063D6719AE5E284EB5DD2968C1650D6D0F6B8058@AcuExch.aculab.com>
+	<CA+O4pCKedNsBcLoVP6T0BHT6sq00D+XNHLT790UDgdx-r7TL4Q@mail.gmail.com>
+	<52F80C28.5040709@gmail.com>
+	<CA+O4pCL8gUqFs7zTJZ+0UftOq_jALpg=rsmz3hSypOPr2qZg7Q@mail.gmail.com>
+	<20140211184511.GA32425@kroah.com>
+Date: Tue, 11 Feb 2014 20:32:25 +0100
+Message-ID: <CA+O4pCLR8ztYv2p0yGMpP6qA7fH=V4zpv5Q7fzfsY0RSORo-dg@mail.gmail.com>
+Subject: Re: [BUGREPORT] Linux USB 3.0
+From: Markus Rechberger <mrechberger@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Robert Hancock <hancockrwd@gmail.com>,
+        David Laight <David.Laight@aculab.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Feb 11, 2014 at 7:45 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Tue, Feb 11, 2014 at 07:29:47PM +0100, Markus Rechberger wrote:
+>> On Mon, Feb 10, 2014 at 12:15 AM, Robert Hancock <hancockrwd@gmail.com> wrote:
+>> > On 08/02/14 03:00 AM, Markus Rechberger wrote:
+>> >>
+>> >> On Tue, Feb 4, 2014 at 10:31 AM, David Laight <David.Laight@aculab.com>
+>> >> wrote:
+>> >>>
+>> >>> From: Markus Rechberger
+>> >>>>>>
+>> >>>>>> Dec 27 23:23:50 solist kernel: [   36.118245] xhci_hcd 0000:00:14.0:
+>> >>>>>> ERROR Transfer event TRB DMA
+>> >>>>
+>> >>>> ptr
+>> >>>>>
+>> >>>>>
+>> >>>>> These messages might be harmless.  The 3.0 kernel contains a fix for
+>> >>>>> Intel Panther Point xHCI hosts that suppresses those messages, commit
+>> >>>>> ad808333d8201d53075a11bc8dd83b81f3d68f0b "Intel xhci: Ignore spurious
+>> >>>>> successful event."
+>> >>>>>
+>> >>>>> A later commit extends that to all xHCI 1.0 hosts, commit
+>> >>>>> 07f3cb7c28bf3f4dd80bfb136cf45810c46ac474 "usb: host: xhci: Enable
+>> >>>>> XHCI_SPURIOUS_SUCCESS for all controllers with xhci 1.0"  That was
+>> >>>>> queued for 3.11 and marked to be backported into stable kernels as old
+>> >>>>> as 3.0.
+>> >>>
+>> >>>
+>> >>> I see the same error message on the 0.96 ASMedia controller when
+>> >>> the rx buffers for the ax88179_178a driver cross 64k boundaries.
+>> >>>
+>> >>> So this isn't confined to 1.0 controllers.
+>> >>>
+>> >>
+>> >> Sarah,
+>> >>
+>> >> since there is no response yet, is there anyone at Intel dedicated at
+>> >> working on USB 3.0?
+>> >> We are also getting more and more negative USB 3.0 feedback with Linux
+>> >
+>> >
+>> > Still nobody appears to have provided the requested debugging information
+>> > that was requested. So there is not much that can be done upstream to debug
+>> > things based only on vague reports, especially when not using current kernel
+>> > versions.
+>> >
+>>
+>> Next kernel crash report, this time a Synology NAS System:
+>> http://support.sundtek.com/index.php/topic,1511.0.html
+>
+> That kernel has a closed source kernel module loaded, no community
+> member can look at it, sorry, please get support from the company that
+> wrote that module.
+>
 
-------------------
+I'm going to collect all XHCI issues we get here as a reference,
+unfortunately we're busy with our own hardware so we don't have the
+time to dig into USB 3.0 Kernel issues at the moment. All that can be
+done is collecting the feedback and maybe help to translate between
+German and English. So if someone wants to volunteer to fix some
+issues (eg Intel) just drop me a line. As Sarah indicated there are
+already several issues mentioned within this post.
 
-From: Joe Thornber <ejt@redhat.com>
-
-commit fca028438fb903852beaf7c3fe1cd326651af57d upstream.
-
-This bug was introduced in commit 7e664b3dec431e ("dm space map metadata:
-fix extending the space map").
-
-When extending a dm-thin metadata volume we:
-
-- Switch the space map into a simple bootstrap mode, which allocates
-  all space linearly from the newly added space.
-- Add new bitmap entries for the new space
-- Increment the reference counts for those newly allocated bitmap
-  entries
-- Commit changes to disk
-- Switch back out of bootstrap mode.
-
-But, the disk commit may allocate space itself, if so this fact will be
-lost when switching out of bootstrap mode.
-
-The bug exhibited itself as an error when the bitmap_root, with an
-erroneous ref count of 0, was subsequently decremented as part of a
-later disk commit.  This would cause the disk commit to fail, and thinp
-to enter read_only mode.  The metadata was not damaged (thin_check
-passed).
-
-The fix is to put the increments + commit into a loop, running until
-the commit has not allocated extra space.  In practise this loop only
-runs twice.
-
-With this fix the following device mapper testsuite test passes:
- dmtest run --suite thin-provisioning -n thin_remove_works_after_resize
-
-Signed-off-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/md/persistent-data/dm-space-map-metadata.c |   18 ++++++++++++++----
- 1 file changed, 14 insertions(+), 4 deletions(-)
-
---- a/drivers/md/persistent-data/dm-space-map-metadata.c
-+++ b/drivers/md/persistent-data/dm-space-map-metadata.c
-@@ -617,13 +617,23 @@ static int sm_metadata_extend(struct dm_
- 	if (r)
- 		goto out;
- 
--	for (i = old_len; !r && i < smm->begin; i++) {
--		r = sm_ll_inc(&smm->ll, i, &ev);
-+	/*
-+	 * We repeatedly increment then commit until the commit doesn't
-+	 * allocate any new blocks.
-+	 */
-+	do {
-+		for (i = old_len; !r && i < smm->begin; i++) {
-+			r = sm_ll_inc(&smm->ll, i, &ev);
-+			if (r)
-+				goto out;
-+		}
-+		old_len = smm->begin;
-+
-+		r = sm_ll_commit(&smm->ll);
- 		if (r)
- 			goto out;
--	}
- 
--	r = sm_metadata_commit(sm);
-+	} while (old_len != smm->begin);
- 
- out:
- 	/*
-
-
+Markus
