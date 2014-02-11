@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751869AbaBKMjY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 07:39:24 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:54936 "HELO
+	id S1751347AbaBKMmp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 07:42:45 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:55659 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751435AbaBKMjU (ORCPT
+	with SMTP id S1750972AbaBKMmn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 07:39:20 -0500
+	Tue, 11 Feb 2014 07:42:43 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: Re: [PATCH 0/11] ACPI / hotplug / PCI: Updates on top of changes merged recently
-Date: Tue, 11 Feb 2014 13:53:58 +0100
-Message-ID: <2679492.S4dAZoqvRT@vostro.rjw.lan>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Peter Wu <lekensteyn@gmail.com>
+Cc: Bastien Traverse <bastien.traverse@gmail.com>,
+        linux-kernel@vger.kernel.org, francis.moro@gmail.com,
+        linux-pm@vger.kernel.org
+Subject: Re: 3.12: ethernet controller missing after resuming from suspend to RAM
+Date: Tue, 11 Feb 2014 13:57:22 +0100
+Message-ID: <2639692.IvKAOviyt1@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140211001958.GB12851@google.com>
-References: <2217793.001RY6hKlo@vostro.rjw.lan> <20140211001958.GB12851@google.com>
+In-Reply-To: <20140211104237.GE18029@intel.com>
+References: <52F2CC7B.80406@gmail.com> <4302366.hs31VgE4VT@vostro.rjw.lan> <20140211104237.GE18029@intel.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -27,29 +26,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, February 10, 2014 05:19:58 PM Bjorn Helgaas wrote:
-> On Mon, Jan 27, 2014 at 01:37:17AM +0100, Rafael J. Wysocki wrote:
-> > Hi All,
+On Tuesday, February 11, 2014 12:42:37 PM Mika Westerberg wrote:
+> On Mon, Feb 10, 2014 at 11:39:29PM +0100, Rafael J. Wysocki wrote:
+> > > _STA() returns 0x0A instead of 0x0F. Could there be something missing in
+> > > the ACPI hotplug code that overlooks this and removes the device on resume?
 > > 
-> > ACPIPHP can be simplified a bit on top of some PCI and ACPI changes merged
-> > recently and the following series of patches implements those simplifications:
-> > 
-> > [1/11] Fix up two kerneldoc comments in acpiphp_glue.c.
-> > [2/11] Get rid of an unnecessary label in register_slot().
-> > [3/11] Drop acpiphp_bus_trim() and use acpi_bus_trim() instead of it directly.
-> > [4/11] Move the acpi_bus_get_device() call out of acpiphp_no_hotplug().
-> > [5/11] Store struct acpi_device pointers instead of ACPI handles in struct acpiphp_context.
-> > [6/11] Drop acpiphp_bus_add() (which has only one user).
-> > [7/11] Drop crit_sect mutexes (that are redundant).
-> > [8/11] Clean up the usage of the slot variable in hotplug_event().
-> > [9/11] Drop dev_in_slot() and rework disable_slot() to walk bus->devices directly.
-> > [10/11] Use acpi_handle_debug() in hotplug_event() instead of open-coded stuff.
-> > [11/11] Drop handle argument from the member functions of struct acpi_dock_ops.
+> > That is possible.  Actually even quite likely, but let's wait for the response
+> > from Peter.
 > 
-> I assume you'll handle all these through your tree, Rafael.  Let me know if
-> you need me to do anything.
+> Here's a hack that should take the 0xa return value into consideration. It
+> turned out that this case is even mentioned in the ACPI spec.
 
-Yes, I'll handle these, thanks!
+Looks reasonable.
 
-Rafael
+Peter, please check if this one makes a difference for you.
 
+> diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
+> index e2a783fdb98f..014381b42d86 100644
+> --- a/drivers/pci/hotplug/acpiphp_glue.c
+> +++ b/drivers/pci/hotplug/acpiphp_glue.c
+> @@ -730,6 +730,17 @@ static unsigned int get_slot_status(struct acpiphp_slot *slot)
+>  	return (unsigned int)sta;
+>  }
+>  
+> +static inline bool device_sta_valid(unsigned long long sta)
+> +{
+> +	/*
+> +	 * ACPI spec says that _STA may return bit 0 clear with bit 8 set
+> +	 * if the device is valid but does not require device driver to be
+> +	 * loaded (chapter 6.3.7).
+> +	 */
+> +	unsigned mask = ACPI_STA_DEVICE_ENABLED | ACPI_STA_DEVICE_FUNCTIONING;
+> +	return (sta & mask) == mask;
+> +}
+> +
+>  /**
+>   * trim_stale_devices - remove PCI devices that are not responding.
+>   * @dev: PCI device to start walking the hierarchy from.
+> @@ -745,7 +756,7 @@ static void trim_stale_devices(struct pci_dev *dev)
+>  		unsigned long long sta;
+>  
+>  		status = acpi_evaluate_integer(handle, "_STA", NULL, &sta);
+> -		alive = (ACPI_SUCCESS(status) && sta == ACPI_STA_ALL)
+> +		alive = (ACPI_SUCCESS(status) && device_sta_valid(sta))
+>  			|| acpiphp_no_hotplug(handle);
+>  	}
+>  	if (!alive) {
+> @@ -792,7 +803,7 @@ static void acpiphp_check_bridge(struct acpiphp_bridge *bridge)
+>  		mutex_lock(&slot->crit_sect);
+>  		if (slot_no_hotplug(slot)) {
+>  			; /* do nothing */
+> -		} else if (get_slot_status(slot) == ACPI_STA_ALL) {
+> +		} else if (device_sta_valid(get_slot_status(slot))) {
+>  			/* remove stale devices if any */
+>  			list_for_each_entry_safe_reverse(dev, tmp,
+>  							 &bus->devices, bus_list)
+> 
+> 
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
