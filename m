@@ -1,26 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756322AbaBKVJp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 16:09:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39472 "EHLO
+	id S1752298AbaBKTEy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:04:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39417 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752305AbaBKTEz (ORCPT
+	with ESMTP id S1752123AbaBKTEu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:04:55 -0500
+	Tue, 11 Feb 2014 14:04:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrey Vagin <avagin@openvz.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Pavel Emelyanov <xemul@parallels.com>, Borislav Petkov <bp@suse.de>,
-        Wen Congyang <wency@cn.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.13 019/120] mm: dont lose the SOFT_DIRTY flag on mprotect
-Date: Tue, 11 Feb 2014 11:04:20 -0800
-Message-Id: <20140211184824.084217451@linuxfoundation.org>
+Subject: [PATCH 3.13 013/120] mm/memcg: iteration skip memcgs not yet fully initialized
+Date: Tue, 11 Feb 2014 11:04:14 -0800
+Message-Id: <20140211184823.906131987@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -35,52 +31,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrey Vagin <avagin@openvz.org>
+From: Hugh Dickins <hughd@google.com>
 
-commit 24f91eba18bbfdb27e71a1aae5b3a61b67fcd091 upstream.
+commit d8ad30559715ce97afb7d1a93a12fd90e8fff312 upstream.
 
-The SOFT_DIRTY bit shows that the content of memory was changed after a
-defined point in the past.  mprotect() doesn't change the content of
-memory, so it must not change the SOFT_DIRTY bit.
+It is surprising that the mem_cgroup iterator can return memcgs which
+have not yet been fully initialized.  By accident (or trial and error?)
+this appears not to present an actual problem; but it may be better to
+prevent such surprises, by skipping memcgs not yet online.
 
-This bug causes a malfunction: on the first iteration all pages are
-dumped.  On other iterations only pages with the SOFT_DIRTY bit are
-dumped.  So if the SOFT_DIRTY bit is cleared from a page by mistake, the
-page is not dumped and its content will be restored incorrectly.
-
-This patch does nothing with _PAGE_SWP_SOFT_DIRTY, becase pte_modify()
-is called only for present pages.
-
-Fixes commit 0f8975ec4db2 ("mm: soft-dirty bits for user memory changes
-tracking").
-
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
-Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: Wen Congyang <wency@cn.fujitsu.com>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Cc: Tejun Heo <tj@kernel.org>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/pgtable_types.h |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ mm/memcontrol.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
---- a/arch/x86/include/asm/pgtable_types.h
-+++ b/arch/x86/include/asm/pgtable_types.h
-@@ -121,7 +121,8 @@
- 
- /* Set of bits not changed in pte_modify */
- #define _PAGE_CHG_MASK	(PTE_PFN_MASK | _PAGE_PCD | _PAGE_PWT |		\
--			 _PAGE_SPECIAL | _PAGE_ACCESSED | _PAGE_DIRTY)
-+			 _PAGE_SPECIAL | _PAGE_ACCESSED | _PAGE_DIRTY |	\
-+			 _PAGE_SOFT_DIRTY)
- #define _HPAGE_CHG_MASK (_PAGE_CHG_MASK | _PAGE_PSE)
- 
- #define _PAGE_CACHE_MASK	(_PAGE_PCD | _PAGE_PWT)
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1100,10 +1100,8 @@ skip_node:
+ 	 * protected by css_get and the tree walk is rcu safe.
+ 	 */
+ 	if (next_css) {
+-		struct mem_cgroup *mem = mem_cgroup_from_css(next_css);
+-
+-		if (css_tryget(&mem->css))
+-			return mem;
++		if ((next_css->flags & CSS_ONLINE) && css_tryget(next_css))
++			return mem_cgroup_from_css(next_css);
+ 		else {
+ 			prev_css = next_css;
+ 			goto skip_node;
 
 
