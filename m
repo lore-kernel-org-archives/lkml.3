@@ -1,61 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753129AbaBKAUJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 19:20:09 -0500
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:48787 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752554AbaBKAUB (ORCPT
+	id S1753309AbaBKAUe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 19:20:34 -0500
+Received: from smtprelay0199.hostedemail.com ([216.40.44.199]:47131 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752850AbaBKAUb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 19:20:01 -0500
-Date: Mon, 10 Feb 2014 17:19:58 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: Re: [PATCH 0/11] ACPI / hotplug / PCI: Updates on top of changes
- merged recently
-Message-ID: <20140211001958.GB12851@google.com>
-References: <2217793.001RY6hKlo@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2217793.001RY6hKlo@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 10 Feb 2014 19:20:31 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1801:2393:2559:2562:2693:2828:2911:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3872:3873:4184:4321:4362:4425:4605:5007:7652:7903:8957:10004:10400:10848:11232:11657:11658:11914:12043:12296:12517:12519:12740:13019:13069:13071:13161:13163:13229:13311:13357:21060,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:no
+X-HE-Tag: wave46_3f328a606e50
+X-Filterd-Recvd-Size: 2654
+Message-ID: <1392078024.2507.34.camel@joe-AO722>
+Subject: Re: [Resend PATCH] staging : ion : Fix some checkpatch warnings and
+ an error
+From: Joe Perches <joe@perches.com>
+To: DaeSeok Youn <daeseok.youn@gmail.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Brian Swetland <swetland@google.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Rebecca Zavin <rebecca@android.com>, ccross@android.com,
+        ohaugan@codeaurora.org, Rom Lemarchand <romlem@google.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Date: Mon, 10 Feb 2014 16:20:24 -0800
+In-Reply-To: <CAHb8M2DZHv7qsnt8RxAKyycMptyvKbfZcCtwV4juTs4jRp_z-A@mail.gmail.com>
+References: <1861074.WmPcbRBdNV@daeseok-laptop.cloud.net>
+	 <1392050018.2507.6.camel@joe-AO722>
+	 <CAHb8M2DZHv7qsnt8RxAKyycMptyvKbfZcCtwV4juTs4jRp_z-A@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 27, 2014 at 01:37:17AM +0100, Rafael J. Wysocki wrote:
-> Hi All,
-> 
-> ACPIPHP can be simplified a bit on top of some PCI and ACPI changes merged
-> recently and the following series of patches implements those simplifications:
-> 
-> [1/11] Fix up two kerneldoc comments in acpiphp_glue.c.
-> [2/11] Get rid of an unnecessary label in register_slot().
-> [3/11] Drop acpiphp_bus_trim() and use acpi_bus_trim() instead of it directly.
-> [4/11] Move the acpi_bus_get_device() call out of acpiphp_no_hotplug().
-> [5/11] Store struct acpi_device pointers instead of ACPI handles in struct acpiphp_context.
-> [6/11] Drop acpiphp_bus_add() (which has only one user).
-> [7/11] Drop crit_sect mutexes (that are redundant).
-> [8/11] Clean up the usage of the slot variable in hotplug_event().
-> [9/11] Drop dev_in_slot() and rework disable_slot() to walk bus->devices directly.
-> [10/11] Use acpi_handle_debug() in hotplug_event() instead of open-coded stuff.
-> [11/11] Drop handle argument from the member functions of struct acpi_dock_ops.
+On Tue, 2014-02-11 at 09:11 +0900, DaeSeok Youn wrote:
+> Hi,
 
-I assume you'll handle all these through your tree, Rafael.  Let me know if
-you need me to do anything.
+Hello.
 
-Bjorn
+> Thanks for review.
+> If I send this patch again, i will use a subject as you comment.
 
-> All of that is relateively straightforward, but I have some more intrusive changes
-> on top of it in the works.  They will be posted separately later this week.
-> 
-> Thanks!
-> 
-> -- 
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
+Thanks.
+
+> And alignment issue, my patch line seems to be same with your example.
+
+You took out a space from the line with the function pointer
+but not from the subsequent lines of the arguments.
+
+> >> diff --git a/drivers/staging/android/ion/ion.c b/drivers/staging/android/ion/ion.c
+> > []
+> >> @@ -55,7 +55,7 @@ struct ion_device {
+> >>       struct mutex buffer_lock;
+> >>       struct rw_semaphore lock;
+> >>       struct plist_head heaps;
+> >> -     long (*custom_ioctl) (struct ion_client *client, unsigned int cmd,
+> >> +     long (*custom_ioctl)(struct ion_client *client, unsigned int cmd,
+> >>                             unsigned long arg);
+> >
+> > Please realign the arguments to the open parenthesis like:
+> >
+> >         long (*custom_ioctl)(struct ion_client *client, unsigned int cmd,
+> >                              unsigned long arg);
+
+Your patch has:
+
+	long (*custom_ioctl)(struct ion_client *client, unsigned int cmd,
+			      unsigned long arg);
+
+it should be:
+
+	long (*custom_ioctl)(struct ion_client *client, unsigned int cmd,
+			     unsigned long arg);
+
+with the "unsigned long arg" aligned immediately after
+the open parenthesis of the function arguments.
+
+(under the "s" of struct, not the first "t" of struct)
+
+
+
