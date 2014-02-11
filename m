@@ -1,140 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751802AbaBKKwy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 05:52:54 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:23815 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751756AbaBKKwq (ORCPT
+	id S1751291AbaBKK6v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 05:58:51 -0500
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:39371 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758AbaBKK6r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 05:52:46 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-99-52fa00fb9e72
-Message-id: <52FA00FA.1090400@samsung.com>
-Date: Tue, 11 Feb 2014 11:52:42 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101
- Thunderbird/24.3.0
-MIME-version: 1.0
-To: Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>, Michal Nazarewicz <mina86@mina86.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Laura Abbott <lauraa@codeaurora.org>, Rob Herring <robh+dt@gmail.com>,
-        Olof Johansson <olof@lixom.net>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Kumar Gala <galak@codeaurora.org>,
-        Nishanth Peethambaran <nishanth.p@gmail.com>,
-        Marc <marc.ceeeee@gmail.com>, Josh Cartwright <joshc@codeaurora.org>
-Subject: Re: [PATCH v2 4/5] ARM: init: add support for reserved memory defined
- by device tree
-References: <1391515773-6112-1-git-send-email-m.szyprowski@samsung.com>
- <1391515773-6112-5-git-send-email-m.szyprowski@samsung.com>
- <20140205101510.59A95C40A89@trevor.secretlab.ca>
- <52F38D75.4030704@samsung.com> <20140210215929.4473BC408F7@trevor.secretlab.ca>
-In-reply-to: <20140210215929.4473BC408F7@trevor.secretlab.ca>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrIIsWRmVeSWpSXmKPExsVy+t/xK7q/GX4FGRzaYGLxd9IxdosPTa3M
-	FvOPnGO16H+zkNXiwJ8djBZvejtYLHaue8docbbpDbvF9s4Z7BZfrjxkstj0+BqrxcK2JSwW
-	l3fNYbPY8PIgk8XS6xeZLBYcb2G1+DNdzuLU9c9sFhOmr2Wx2HR/LaPF3+2bWCxeHWxjsVg/
-	4zWLxapdfxgdJDzWzFvD6PH71yRGj9eTJzB6XO7rZfLYOesuu0fPmxZWjzvX9rB5bF5S73H7
-	32Nmjysnmlg91v15xeTR/9fAo2/LKkaPz5vkPDbODQ3gj+KySUnNySxLLdK3S+DKuLRgMnvB
-	NLmKNUc6WRsYF0h0MXJySAiYSEx4spAFwhaTuHBvPVsXIxeHkMBSRomW7i52kISQwCdGianT
-	HEFsXgEtiU9Tf4M1sAioShz+94cVxGYTMJToetsF1MzBISoQKjFvrh5EuaDEj8n3WEBmigic
-	ZJT4t7ePHcRhFtjLKtF1Zy87SIOwQLzEl/ZqiMVdTBLLVkwFW8ApYCux8swnRhCbWcBM4lHL
-	OmYIW15i85q3zBMYBWYhWTILSdksJGULGJlXMYqmliYXFCel5xrqFSfmFpfmpesl5+duYoRE
-	+5cdjIuPWR1iFOBgVOLh3aD4M0iINbGsuDL3EKMEB7OSCK/2X6AQb0piZVVqUX58UWlOavEh
-	RiYOTqkGRl/HUJbqY5cuFe6xT+Srq1ROzKy2nbRM982n+U/Pb1Fre9ofxB3aO49bwOjdxDM8
-	YZf3lmQ7Zj0I4dQ0bxaoXxjx0mPpgefKRWt5Vxxbb+1Y73HWqnTdiqU7+O5tfMhtX5CRHP5c
-	b2b//vcsNYw/7e2md7y5pv9MWng3vzPP19/OceKXOb+XKrEUZyQaajEXFScCAHfsCOrUAgAA
+	Tue, 11 Feb 2014 05:58:47 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140211105217.GS9987@twins.programming.kicks-ass.net>
+References: <1392053356-23024-1-git-send-email-dzickus@redhat.com>
+	<20140210212955.GC5002@laptop.programming.kicks-ass.net>
+	<CABPqkBRzvfcdKGG4yY9q1PmtVL5Z=9H1RzHg8QDMN42a7=AF6A@mail.gmail.com>
+	<20140211071401.GG27965@twins.programming.kicks-ass.net>
+	<CABPqkBRn+AVUA-KTx-JQ28j1NhE4pDQe5vjb5NKGx0jrZq8g_Q@mail.gmail.com>
+	<20140211105217.GS9987@twins.programming.kicks-ass.net>
+Date: Tue, 11 Feb 2014 11:58:45 +0100
+Message-ID: <CABPqkBROriDQa5-b-w45zV+2gS94oEW1c_bYwGmYAeYcqPoUog@mail.gmail.com>
+Subject: Re: [PATCH 00/21] perf, c2c: Add new tool to analyze cacheline
+ contention on NUMA systems
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Don Zickus <dzickus@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Joe Mario <jmario@redhat.com>, Richard Fowles <fowles@inreach.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 2014-02-10 22:59, Grant Likely wrote:
-> On Thu, 06 Feb 2014 14:26:13 +0100, Marek Szyprowski <m.szyprowski@samsung.com> wrote:
-> > Hello,
-> >
-> > On 2014-02-05 11:15, Grant Likely wrote:
-> > > On Tue, 04 Feb 2014 13:09:32 +0100, Marek Szyprowski <m.szyprowski@samsung.com> wrote:
-> > > > Enable reserved memory initialization from device tree.
-> > > >
-> > > > Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> > > > Cc: Laura Abbott <lauraa@codeaurora.org>
-> > > > Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> > > > ---
-> > > >  arch/arm/mm/init.c |    3 +++
-> > > >  1 file changed, 3 insertions(+)
-> > > >
-> > > > diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-> > > > index 804d61566a53..ebafdb479410 100644
-> > > > --- a/arch/arm/mm/init.c
-> > > > +++ b/arch/arm/mm/init.c
-> > > > @@ -17,6 +17,7 @@
-> > > >  #include <linux/nodemask.h>
-> > > >  #include <linux/initrd.h>
-> > > >  #include <linux/of_fdt.h>
-> > > > +#include <linux/of_reserved_mem.h>
-> > > >  #include <linux/highmem.h>
-> > > >  #include <linux/gfp.h>
-> > > >  #include <linux/memblock.h>
-> > > > @@ -323,6 +324,8 @@ void __init arm_memblock_init(struct meminfo *mi,
-> > > >  	if (mdesc->reserve)
-> > > >  		mdesc->reserve();
-> > > >
-> > > > +	early_init_dt_scan_reserved_mem();
-> > > > +
-> > >
-> > > The new binding is being made fundamental. If the reserved-memory node
-> > > is present, then it needs to be honored, even if the kernel doesn't know
-> > > how to use the regions. Therefore, This needs to be unconditional for
-> > > all architectures. The hook should be called in early_init_dt_scan()
-> > > (drivers/of/fdt.c) immediately after the early_init_dt_scan_memory()
-> > > hook.
-> >
-> > In theory this will be the best solution, but it practice there is a
-> > problem. early_init_dt_scan() is called as the first function from kernel
-> > booting code. That time there is no memory yet added to the system, so it
-> > would be really hard to reserve anything. Memory nodes are being added
-> > later either with memblock_add() or by some other arch specific way.
+On Tue, Feb 11, 2014 at 11:52 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, Feb 11, 2014 at 11:35:45AM +0100, Stephane Eranian wrote:
+>> On Tue, Feb 11, 2014 at 8:14 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> >
+>> > That blows; how much is missing?
+>>
+>> They need to annotate load and stores. I asked for that feature a while ago.
+>> It will come.
 >
-> Hmmm, depends on the architecture. On ARM the memory is loaded into the
-> meminfo structure first, and it isn't until arm_memblock_init() that
-> memblock_add() gets called on all the regions. Some architectures do the
-> memblock_add() directly from early_init_dt_add_memory_arch() function.
+> And there is no way to deduce the information? We have type information
+> for all arguments and local variables, right? So we can follow that.
 >
-> The default early_init_dt_add_memory_arch() in drivers/of/fdt.c is
-> overridden by ARM and a number of other architectures. However...
+> struct foo {
+>         int ponies;
+>         int moar_ponies;
+> };
 >
-> > Finally, once all memory has been added to the system we can parse and
-> > reserve all regions defined in the device tree. This really requires
-> > creating another function which will be called by arch specific code.
+> struct bar {
+>         int my_ponies;
+>         struct foo *foo;
+> };
 >
-> ...Or it means getting rid of meminfo entirely so that memblock is
-> available earlier. Laura Abbott has just posted v2 of her series to do
-> exactly that. If you base on that then you should be able to do exactly
-> what I suggested.
+> int moo(struct bar *bar)
+> {
+>         return bar->foo->moar_ponies;
+> }
+>
+> Since we have the argument type, we can find the type for both loads,
+> the first load:
+>
+>   *bar+8, we know is: struct foo * bar::foo
+>   *foo+4, we know is: int foo::moar_ponies
+>
+> Or am I missing something?
 
-I've checked Laura's patches and in fact it is possible to do memory
-reservation as a last step in early_init_dt_scan_memory(). However still
-see some problem which I have no idea how to resolve. Right now I focus
-only on ARM, so I have no idea how it is solved by other architectures.
-On of the key features of the new binding is the ability to automatically
-allocate reserved regions of the given size. However kernel, initrd, dt
-and other sub-arch specific critical regions are marked/allocated in
-arm_memblock_init(), which is called after setup_machine_fdt(). This
-might lead to some serious failures when automatically reserved region
-overlaps with some critical resources. Do you have any idea how to solve
-this without a new callback?
-
-Best regards
--- 
-Marek Szyprowski, PhD
-Samsung R&D Institute Poland
-
+How do you know that load at addr 0x1000 is accessing variable bar?
+The IP gives you line number, and then what?
+I think dwarf has the mapping regs -> variable and yes, the type info.
+But I am not sure that's enough.
