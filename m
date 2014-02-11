@@ -1,102 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752211AbaBKMS7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 07:18:59 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:8923 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750803AbaBKMS4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 07:18:56 -0500
-X-AuditID: cbfee68f-b7f156d00000276c-0a-52fa152ea6c1
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Lars-Peter Clausen'" <lars@metafoo.de>
-Cc: "'Dmitry Torokhov'" <dmitry.torokhov@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <003901cf25fc$73002790$590076b0$%han@samsung.com>
- <003f01cf25fd$b3e274b0$1ba75e10$%han@samsung.com> <52FA12D1.4020408@metafoo.de>
-In-reply-to: <52FA12D1.4020408@metafoo.de>
-Subject: Re: [PATCH 6/7] Input: pwm-beepe: remove HAVE_PWM dependencies
-Date: Tue, 11 Feb 2014 21:18:54 +0900
-Message-id: <000901cf2723$6e68bc10$4b3a3430$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac8nIgHSf0sRpC3AS8mOGgsbgZGqfAAAVD5A
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMIsWRmVeSWpSXmKPExsVy+t8zI1190V9BBteVLQ4vesFocXnhJVaL
-	JZPns1rc/PSN1eLyrjlsDqweO2fdZfdY8uYQq0ffllWMHp83yQWwRHHZpKTmZJalFunbJXBl
-	nD67nalgHVfFjfs/mBsYp3N0MXJySAiYSMzqncYIYYtJXLi3nq2LkYtDSGAZo8T2Bz1sMEWH
-	T95lhkgsYpTo/PgVyvnFKDHp/01WkCo2ATWJL18Os4PYIgJaElO/vWUFKWIWmMIo0TDzHDtE
-	Rz+jxIc1J4AyHBycQFVn38aCNAgLuEscPt3AAmKzCKhKrFy1jwnE5hWwlWj4f54dwhaU+DH5
-	HlgNM1Dr+p3HmSBseYnNa94yg4yUEFCXePRXF+IGI4mFi64yQpSISOx78Y4R5AQJgVvsEndO
-	dLBC7BKQ+Db5EAtEr6zEpgPMEB9LShxccYNlAqPELCSbZyHZPAvJ5llIVixgZFnFKJpakFxQ
-	nJReZKxXnJhbXJqXrpecn7uJERKh/TsY7x6wPsSYDLR+IrOUaHI+MMLzSuINjc2MLExNTI2N
-	zC3NSBNWEue9/zApSEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVANjSq7UovipvjMjH6twVcg9
-	fc5qoOelXjQ/6pVdVBNzlVfPmXOT5rW5TA2cFJRzpbCeffOyr3Vxm+TvnlxzQlmaL3zH4VVv
-	9D9/OhAoYdKrJZmkvaXu7lm/8sRaliqlb0tnr4w6/P/y7oCnar1am2QXcurffzTln1LaSb3i
-	5zaaJXkW6Q8XuDYrsRRnJBpqMRcVJwIAi8d4IeYCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrIKsWRmVeSWpSXmKPExsVy+t9jAV090V9BBjcWW1ocXvSC0eLywkus
-	Fksmz2e1uPnpG6vF5V1z2BxYPXbOusvuseTNIVaPvi2rGD0+b5ILYIlqYLTJSE1MSS1SSM1L
-	zk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAVqspFCWmFMKFApILC5W0rfD
-	NCE0xE3XAqYxQtc3JAiux8gADSSsY8w4fXY7U8E6roob938wNzBO5+hi5OSQEDCROHzyLjOE
-	LSZx4d56ti5GLg4hgUWMEp0fvzJDOL8YJSb9v8kKUsUmoCbx5cthdhBbREBLYuq3t6wgRcwC
-	UxglGmaeY4fo6GeU+LDmBFCGg4MTqOrs21iQBmEBd4nDpxtYQGwWAVWJlav2MYHYvAK2Eg3/
-	z7ND2IISPybfA6thBmpdv/M4E4QtL7F5zVtmkJESAuoSj/7qQtxgJLFw0VVGiBIRiX0v3jFO
-	YBSahWTSLCSTZiGZNAtJywJGllWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYwQngmfQOxlUN
-	FocYBTgYlXh4L3z6ESTEmlhWXJl7iFGCg1lJhHcjy68gId6UxMqq1KL8+KLSnNTiQ4zJQI9O
-	ZJYSTc4HJqe8knhDYxMzI0sjMwsjE3Nz0oSVxHkPtloHCgmkJ5akZqemFqQWwWxh4uCUamBc
-	LfPs5r6uUGuLuoa2RdJtS24fnN+1Jt+zfBHjq0Z+oyt7f2leLnknNHeh5p3MnfNiv628b/Hi
-	dZ+8etpFV5G6VUtUF/8L8o0/rfXb8FpM+t3HNxLZFv0puv/4+uw1xru2TPMV8JGSen7sangc
-	8zupzAiVErbjqYdd5U7zeN6d8+iEUnTZr+8cSizFGYmGWsxFxYkAOLz0M0QDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1752257AbaBKMTJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 07:19:09 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:60326 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752228AbaBKMTE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 07:19:04 -0500
+Message-ID: <52FA1531.2080109@ti.com>
+Date: Tue, 11 Feb 2014 14:18:57 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Keith Packard <keithp@keithp.com>
+CC: <linux-kernel@vger.kernel.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        <linux-fbdev@vger.kernel.org>
+Subject: Re: [PATCH] fbcon: Clean up fbcon data in fb_info on FB_EVENT_FB_UNBIND
+ with 0 fbs
+References: <1390253470-23594-1-git-send-email-keithp@keithp.com>
+In-Reply-To: <1390253470-23594-1-git-send-email-keithp@keithp.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="qAtSr1hUsLXVD7h6UnOVUIOsS0tXFOEfn"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, February 11, 2014 9:09 PM, Lars-Peter Clausen wrote:
-> On 02/10/2014 02:16 AM, Jingoo Han wrote:
-> > The HAVE_PWM symbol is only for legacy platforms that provide
-> > the PWM API without using the generic framework. However, legacy
-> > PWM drivers were already moved to the generic PWM framework.
-> > Thus, HAVE_PWM should be removed, because HAVE_PWM is not
-> > required anymore.
-> >
-> > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> 
-> Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+--qAtSr1hUsLXVD7h6UnOVUIOsS0tXFOEfn
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Hi Lars-Peter Clausen,
+Hi,
 
-I really appreciate your Acked-by. However, the same patch was
-already submitted by Sascha Hauer.[1] So, please ignore this patch.
-Thank you.
+On 20/01/14 23:31, Keith Packard wrote:
+> When FB_EVENT_FB_UNBIND is sent, fbcon has two paths, one path taken
+> when there is another frame buffer to switch any affected vcs to and
+> another path when there isn't.
+>=20
+> In the case where there is another frame buffer to use,
+> fbcon_fb_unbind calls set_con2fb_map to remap all of the affected vcs
+> to the replacement frame buffer. set_con2fb_map will eventually call
+> con2fb_release_oldinfo when the last vcs gets unmapped from the old
+> frame buffer.
+>=20
+> con2fb_release_oldinfo frees the fbcon data that is hooked off of the
+> fb_info structure, including the cursor timer.
+>=20
+> In the case where there isn't another frame buffer to use,
+> fbcon_fb_unbind simply calls fbcon_unbind, which doesn't clear the
+> con2fb_map or free the fbcon data hooked from the fb_info
+> structure. In particular, it doesn't stop the cursor blink timer. When
+> the fb_info structure is then freed, we end up with a timer queue
+> pointing into freed memory and "bad things" start happening.
+>=20
+> This patch first changes con2fb_release_oldinfo so that it can take a
+> NULL pointer for the new frame buffer, but still does all of the
+> deallocation and cursor timer cleanup.
+>=20
+> Finally, the patch tries to replicate some of what set_con2fb_map does
+> by clearing the con2fb_map for the affected vcs and calling the
+> modified con2fb_release_info function to clean up the fb_info structure=
+=2E
+>=20
+> Signed-off-by: Keith Packard <keithp@keithp.com>
+> ---
+>  drivers/video/console/fbcon.c | 27 +++++++++++++++++++++++++--
+>  1 file changed, 25 insertions(+), 2 deletions(-)
 
-[1] https://lkml.org/lkml/2014/1/16/262
+Thanks, queued for 3.15.
 
-Best regards,
-Jingoo Han
+ Tomi
 
-> 
-> > ---
-> >   drivers/input/misc/Kconfig |    2 +-
-> >   1 file changed, 1 insertion(+), 1 deletion(-)
-> >
-> > diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
-> > index ae74df7..762e6d2 100644
-> > --- a/drivers/input/misc/Kconfig
-> > +++ b/drivers/input/misc/Kconfig
-> > @@ -470,7 +470,7 @@ config INPUT_PCF8574
-> >
-> >   config INPUT_PWM_BEEPER
-> >   	tristate "PWM beeper support"
-> > -	depends on PWM && HAVE_PWM
-> > +	depends on PWM
-> >   	help
-> >   	  Say Y here to get support for PWM based beeper devices.
-> >
-> >
 
+
+--qAtSr1hUsLXVD7h6UnOVUIOsS0tXFOEfn
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJS+hUxAAoJEPo9qoy8lh71M5cP/2CVjhWMZArVxAml/DO5kMF6
+9avEEBc7pIk50NhQ/YmMRIfW2uNoiv0LNsLtZHXjpbSgE7E2kFFn47uBu8FyiAGc
+rwzKeHbV450o47VyWO5bRk8a/ymwX9kSUyZ9juJW8OQSdYiWlxmgIYrL47scImxz
+DPkiEIKvDon2ClAYcdAoAi3nBJ6vZLbt4psW7Mqvsq7PCUEoh50RuTvYlxyeAlu9
+7NFaIxOb/qPqfdJZE63UivtIU6ARTQDQq4a7K6tiL46fmx8pjj5AjjoNSjNk0Q0N
+TjBAQrD8XhnLDcAS5T4Z80nQGT9xqdT8hNf0jwTOlwi8n+VwOhop8vRQvOsLtRgq
+rwRNq8on9h5yaWyRq5ODPC3XWm3r/Puw6xLHQ4JyXbdAQn2/SKRfU9pIZG6pSvP0
+Y5TZX+YazgYx9edY0+1CDJByuxKSHPTcU6I7UKVjl+fxT3KDuYkBYsrMPUaG+GyA
+sfkDsHicf0+4y7dKTsWIYn54/1oJnBujCdvdtvSqSAU0XAQHvVTA8f2zXo5OYLuu
+7YKH94Gzl27CFU2xiVjlpsi8EPGSqZ2A6PBPVEiviPqKYwAtwIzfwxNnqn94AUUs
+4ZhmIOYHWJ2NGO3RV166/Ul4fxThJx64phz1ou/PQyGEgXV6x0ZlJv0Fw08HCyP+
+7OHUOmXwD9LVw1IrJkSC
+=fRHj
+-----END PGP SIGNATURE-----
+
+--qAtSr1hUsLXVD7h6UnOVUIOsS0tXFOEfn--
