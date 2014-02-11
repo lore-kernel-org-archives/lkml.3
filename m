@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753098AbaBKTF5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:05:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39738 "EHLO
+	id S1754606AbaBKUjk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:39:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39775 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752997AbaBKTFs (ORCPT
+	with ESMTP id S1753094AbaBKTF5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:05:48 -0500
+	Tue, 11 Feb 2014 14:05:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.13 050/120] dm thin: fix discard support to a previously shared block
-Date: Tue, 11 Feb 2014 11:04:51 -0800
-Message-Id: <20140211184825.049026121@linuxfoundation.org>
+        Ilia Mirkin <imirkin@alum.mit.edu>
+Subject: [PATCH 3.13 089/120] drm/nouveau/falcon: use vmalloc to create firwmare copies
+Date: Tue, 11 Feb 2014 11:05:30 -0800
+Message-Id: <20140211184826.150024123@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -28,128 +28,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Thornber <ejt@redhat.com>
+From: Ilia Mirkin <imirkin@alum.mit.edu>
 
-commit 19fa1a6756ed9e92daa9537c03b47d6b55cc2316 upstream.
+commit 90d6db1635d5e225623af2e2e859feb607345287 upstream.
 
-If a snapshot is created and later deleted the origin dm_thin_device's
-snapshotted_time will have been updated to reflect the snapshot's
-creation time.  The 'shared' flag in the dm_thin_lookup_result struct
-returned from dm_thin_find_block() is an approximation based on
-snapshotted_time -- this is done to avoid 0(n), or worse, time
-complexity.  In this case, the shared flag would be true.
+Some firmware images may be large (64K), so using kmalloc memory is
+inappropriate for them. Use vmalloc instead, to avoid high-order
+allocation failures.
 
-But because the 'shared' flag reflects an approximation a block can be
-incorrectly assumed to be shared (e.g. false positive for 'shared'
-because the snapshot no longer exists).  This could result in discards
-issued to a thin device not being passed down to the pool's underlying
-data device.
-
-To fix this we double check that a thin block is really still in-use
-after a mapping is removed using dm_pool_block_is_used().  If the
-reference count for a block is now zero the discard is allowed to be
-passed down.
-
-Also add a 'definitely_not_shared' member to the dm_thin_new_mapping
-structure -- reflects that the 'shared' flag in the response from
-dm_thin_find_block() can only be held as definitive if false is
-returned.
-
-Resolves: https://bugzilla.redhat.com/show_bug.cgi?id=1043527
-
-Signed-off-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Ilia Mirkin <imirkin@alum.mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-thin-metadata.c |   20 ++++++++++++++++++++
- drivers/md/dm-thin-metadata.h |    2 ++
- drivers/md/dm-thin.c          |   14 ++++++++++++--
- 3 files changed, 34 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/nouveau/core/engine/falcon.c |   20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
 
---- a/drivers/md/dm-thin-metadata.c
-+++ b/drivers/md/dm-thin-metadata.c
-@@ -1349,6 +1349,12 @@ dm_thin_id dm_thin_dev_id(struct dm_thin
- 	return td->id;
+--- a/drivers/gpu/drm/nouveau/core/engine/falcon.c
++++ b/drivers/gpu/drm/nouveau/core/engine/falcon.c
+@@ -56,6 +56,16 @@ _nouveau_falcon_wr32(struct nouveau_obje
+ 	nv_wr32(falcon, falcon->addr + addr, data);
  }
  
-+/*
-+ * Check whether @time (of block creation) is older than @td's last snapshot.
-+ * If so then the associated block is shared with the last snapshot device.
-+ * Any block on a device created *after* the device last got snapshotted is
-+ * necessarily not shared.
-+ */
- static bool __snapshotted_since(struct dm_thin_device *td, uint32_t time)
- {
- 	return td->snapshotted_time > time;
-@@ -1457,6 +1463,20 @@ int dm_thin_remove_block(struct dm_thin_
- 
- 	return r;
- }
-+
-+int dm_pool_block_is_used(struct dm_pool_metadata *pmd, dm_block_t b, bool *result)
++static void *
++vmemdup(const void *src, size_t len)
 +{
-+	int r;
-+	uint32_t ref_count;
++	void *p = vmalloc(len);
 +
-+	down_read(&pmd->root_lock);
-+	r = dm_sm_get_count(pmd->data_sm, b, &ref_count);
-+	if (!r)
-+		*result = (ref_count != 0);
-+	up_read(&pmd->root_lock);
-+
-+	return r;
++	if (p)
++		memcpy(p, src, len);
++	return p;
 +}
- 
- bool dm_thin_changed_this_transaction(struct dm_thin_device *td)
- {
---- a/drivers/md/dm-thin-metadata.h
-+++ b/drivers/md/dm-thin-metadata.h
-@@ -181,6 +181,8 @@ int dm_pool_get_data_block_size(struct d
- 
- int dm_pool_get_data_dev_size(struct dm_pool_metadata *pmd, dm_block_t *result);
- 
-+int dm_pool_block_is_used(struct dm_pool_metadata *pmd, dm_block_t b, bool *result);
 +
- /*
-  * Returns -ENOSPC if the new size is too small and already allocated
-  * blocks would be lost.
---- a/drivers/md/dm-thin.c
-+++ b/drivers/md/dm-thin.c
-@@ -512,6 +512,7 @@ struct dm_thin_new_mapping {
- 	unsigned quiesced:1;
- 	unsigned prepared:1;
- 	unsigned pass_discard:1;
-+	unsigned definitely_not_shared:1;
+ int
+ _nouveau_falcon_init(struct nouveau_object *object)
+ {
+@@ -111,7 +121,7 @@ _nouveau_falcon_init(struct nouveau_obje
  
- 	struct thin_c *tc;
- 	dm_block_t virt_block;
-@@ -683,7 +684,15 @@ static void process_prepared_discard_pas
- 	cell_defer_no_holder(tc, m->cell2);
+ 		ret = request_firmware(&fw, name, &device->pdev->dev);
+ 		if (ret == 0) {
+-			falcon->code.data = kmemdup(fw->data, fw->size, GFP_KERNEL);
++			falcon->code.data = vmemdup(fw->data, fw->size);
+ 			falcon->code.size = fw->size;
+ 			falcon->data.data = NULL;
+ 			falcon->data.size = 0;
+@@ -134,7 +144,7 @@ _nouveau_falcon_init(struct nouveau_obje
+ 			return ret;
+ 		}
  
- 	if (m->pass_discard)
--		remap_and_issue(tc, m->bio, m->data_block);
-+		if (m->definitely_not_shared)
-+			remap_and_issue(tc, m->bio, m->data_block);
-+		else {
-+			bool used = false;
-+			if (dm_pool_block_is_used(tc->pool->pmd, m->data_block, &used) || used)
-+				bio_endio(m->bio, 0);
-+			else
-+				remap_and_issue(tc, m->bio, m->data_block);
-+		}
- 	else
- 		bio_endio(m->bio, 0);
+-		falcon->data.data = kmemdup(fw->data, fw->size, GFP_KERNEL);
++		falcon->data.data = vmemdup(fw->data, fw->size);
+ 		falcon->data.size = fw->size;
+ 		release_firmware(fw);
+ 		if (!falcon->data.data)
+@@ -149,7 +159,7 @@ _nouveau_falcon_init(struct nouveau_obje
+ 			return ret;
+ 		}
  
-@@ -1040,7 +1049,8 @@ static void process_discard(struct thin_
- 			 */
- 			m = get_next_mapping(pool);
- 			m->tc = tc;
--			m->pass_discard = (!lookup_result.shared) && pool->pf.discard_passdown;
-+			m->pass_discard = pool->pf.discard_passdown;
-+			m->definitely_not_shared = !lookup_result.shared;
- 			m->virt_block = block;
- 			m->data_block = lookup_result.block;
- 			m->cell = cell;
+-		falcon->code.data = kmemdup(fw->data, fw->size, GFP_KERNEL);
++		falcon->code.data = vmemdup(fw->data, fw->size);
+ 		falcon->code.size = fw->size;
+ 		release_firmware(fw);
+ 		if (!falcon->code.data)
+@@ -235,8 +245,8 @@ _nouveau_falcon_fini(struct nouveau_obje
+ 	if (!suspend) {
+ 		nouveau_gpuobj_ref(NULL, &falcon->core);
+ 		if (falcon->external) {
+-			kfree(falcon->data.data);
+-			kfree(falcon->code.data);
++			vfree(falcon->data.data);
++			vfree(falcon->code.data);
+ 			falcon->code.data = NULL;
+ 		}
+ 	}
 
 
