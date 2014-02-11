@@ -1,60 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752377AbaBKWLZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 17:11:25 -0500
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:12388 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751347AbaBKWLW convert rfc822-to-8bit (ORCPT
+	id S1752159AbaBKWQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 17:16:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41794 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751347AbaBKWQZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 17:11:22 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 11 Feb 2014 14:09:32 -0800
-From: Andrew Chew <AChew@nvidia.com>
-To: Guenter Roeck <linux@roeck-us.net>, "wim@iguana.be" <wim@iguana.be>,
-        "rob@landley.net" <rob@landley.net>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "abrestic@chromium.org" <abrestic@chromium.org>,
-        "dgreid@chromium.org" <dgreid@chromium.org>,
-        "katierh@chromium.org" <katierh@chromium.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Date: Tue, 11 Feb 2014 14:11:20 -0800
-Subject: RE: [PATCH v5 1/1] watchdog: Add tegra watchdog
-Thread-Topic: [PATCH v5 1/1] watchdog: Add tegra watchdog
-Thread-Index: Ac8jp/ik4+hKjovOQkutJBQS/7f+bgDziKrg
-Message-ID: <643E69AA4436674C8F39DCC2C05F76386319AB352D@HQMAIL03.nvidia.com>
-References: <1391738086-29142-1-git-send-email-achew@nvidia.com>
- <52F43D88.2050304@roeck-us.net>
-In-Reply-To: <52F43D88.2050304@roeck-us.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 11 Feb 2014 17:16:25 -0500
+Date: Tue, 11 Feb 2014 14:16:24 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: m@silodev.com, stable@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Manfred Spraul <manfred@colorfullife.com>, dledford@redhat.com
+Subject: Re: [PATCH] ipc,mqueue: remove limits for the amount of system-wide
+ queues
+Message-Id: <20140211141624.a24283a60496b445d8434e4f@linux-foundation.org>
+In-Reply-To: <1391979963.1099.34.camel@buesod1.americas.hpqcorp.net>
+References: <11414.87.110.183.114.1391682066.squirrel@www.silodev.com>
+	<1391803868.1099.23.camel@buesod1.americas.hpqcorp.net>
+	<1391979963.1099.34.camel@buesod1.americas.hpqcorp.net>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 02/06/2014 05:54 PM, Andrew Chew wrote:
-> > Add a driver for the hardware watchdogs in NVIDIA Tegra SoCs (Tegra30
-> > and later).  This driver will configure one watchdog timer that will
-> > reset the system in the case of a watchdog timeout.
-> >
-> > This driver binds to the nvidia,tegra30-timer device node and gets its
-> > register base from there.
-> >
-> > Signed-off-by: Andrew Chew <achew@nvidia.com>
+On Sun, 09 Feb 2014 13:06:03 -0800 Davidlohr Bueso <davidlohr@hp.com> wrote:
+
+> From: Davidlohr Bueso <davidlohr@hp.com>
 > 
-> Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+> Commit 93e6f119 (ipc/mqueue: cleanup definition names and locations) added
+> global hardcoded limits to the amount of message queues that can be created.
+> While these limits are per-namespace, reality is that it ends up breaking
+> userspace applications. Historically users have, at least in theory, been able
+> to create up to INT_MAX queues, and limiting it to just 1024 is way too low
+> and dramatic for some workloads and use cases. For instance, Madars reports:
+> 
+> "This update imposes bad limits on our multi-process application. As our
+> app uses approaches that each process opens its own set of queues (usually
+> something about 3-5 queues per process). In some scenarios we might run up
+> to 3000 processes or more (which of-course for linux is not a problem).
+> Thus we might need up to 9000 queues or more. All processes run under one
+> user."
+> 
+> Other affected users can be found in launchpad bug #1155695:
+> https://bugs.launchpad.net/ubuntu/+source/manpages/+bug/1155695
+> 
+> Instead of increasing this limit, revert it entirely and fallback to the
+> original way of dealing queue limits -- where once a user's resource limit
+> is reached, and all memory is used, new queues cannot be created.
+> 
+> --- a/ipc/mq_sysctl.c
+> +++ b/ipc/mq_sysctl.c
+> @@ -22,6 +22,16 @@ static void *get_mq(ctl_table *table)
+>  	return which;
+>  }
+>  
+> +static int proc_mq_dointvec(ctl_table *table, int write,
+> +			    void __user *buffer, size_t *lenp, loff_t *ppos)
+> +{
+> +	struct ctl_table mq_table;
+> +	memcpy(&mq_table, table, sizeof(mq_table));
+> +	mq_table.data = get_mq(table);
+> +
+> +	return proc_dointvec(&mq_table, write, buffer, lenp, ppos);
+> +}
+> +
+>  static int proc_mq_dointvec_minmax(ctl_table *table, int write,
+>  	void __user *buffer, size_t *lenp, loff_t *ppos)
+>  {
+>
+> ...
+>
+> @@ -51,9 +59,7 @@ static ctl_table mq_sysctls[] = {
+>  		.data		= &init_ipc_ns.mq_queues_max,
+>  		.maxlen		= sizeof(int),
+>  		.mode		= 0644,
+> -		.proc_handler	= proc_mq_dointvec_minmax,
+> -		.extra1		= &msg_queues_limit_min,
+> -		.extra2		= &msg_queues_limit_max,
+> +		.proc_handler	= proc_mq_dointvec,
+>  	},
 
-Thanks, Guenter.
+hm, afaict proc_mq_dointvec() isn't needed - proc_dointvec_minmax()
+will do the right thing if ->extra1 and/or ->extra2 are NULL, so we can
+still use proc_mq_dointvec_minmax().
 
-Pinging other potential reviewers.  Any other comments for me, guys?
+Which has absolutely nothing at all to do with your patch, but makes me
+think we could take a sharp instrument to the sysctl code...
