@@ -1,73 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751962AbaBKRva (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 12:51:30 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:58644 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751288AbaBKRv1 (ORCPT
+	id S1752011AbaBKRvp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 12:51:45 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:52674 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751288AbaBKRvo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 12:51:27 -0500
-Date: Tue, 11 Feb 2014 11:49:10 -0600
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Andy Gross <agross@codeaurora.org>,
-        Dan Williams <dan.j.williams@intel.com>, dmaengine@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [Patch v5 1/2] dmaengine: add Qualcomm BAM dma driver
-Message-ID: <20140211174910.GE841@joshc.qualcomm.com>
-References: <1391546556-27702-1-git-send-email-agross@codeaurora.org>
- <1391546556-27702-2-git-send-email-agross@codeaurora.org>
- <20140211173048.GP10628@intel.com>
+	Tue, 11 Feb 2014 12:51:44 -0500
+Date: Tue, 11 Feb 2014 12:51:41 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+cc: mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
+        rjw@rjwysocki.net, preeti@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] idle: Add more comments to the code
+In-Reply-To: <1392131491-5265-5-git-send-email-daniel.lezcano@linaro.org>
+Message-ID: <alpine.LFD.2.11.1402111245400.17677@knanqh.ubzr>
+References: <1392131491-5265-1-git-send-email-daniel.lezcano@linaro.org> <1392131491-5265-5-git-send-email-daniel.lezcano@linaro.org>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140211173048.GP10628@intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 11:00:48PM +0530, Vinod Koul wrote:
-> On Tue, Feb 04, 2014 at 02:42:35PM -0600, Andy Gross wrote:
-> > Add the DMA engine driver for the QCOM Bus Access Manager (BAM) DMA controller
-> > found in the MSM 8x74 platforms.
-> > 
-> > Each BAM DMA device is associated with a specific on-chip peripheral.  Each
-> > channel provides a uni-directional data transfer engine that is capable of
-> > transferring data between the peripheral and system memory (System mode), or
-> > between two peripherals (BAM2BAM).
-> > 
-> > The initial release of this driver only supports slave transfers between
-> > peripherals and system memory.
-> > 
-> > Signed-off-by: Andy Gross <agross@codeaurora.org>
->
-> > +++ b/drivers/dma/qcom_bam_dma.c
-[..]
-> > +static void bam_reset_channel(struct bam_chan *bchan)
-> > +{
-> > +	struct bam_device *bdev = bchan->bdev;
-> > +
-> > +	/* reset channel */
-> > +	writel_relaxed(1, bdev->regs + BAM_P_RST(bchan->id));
-> > +	writel_relaxed(0, bdev->regs + BAM_P_RST(bchan->id));
-> > +
-> > +	/* don't allow reorder of the channel reset */
-> > +	wmb();
-> Documentation/memory-barriers.txt describes wmb() as a CPU barier but based on
-> above you want it to be a compiler barrier then you should do 1st write,
-> barrier(), second write.
+On Tue, 11 Feb 2014, Daniel Lezcano wrote:
 
-It could also be that the intent was to prevent these writes from being
-ordered before setting the initialized flag below, either way the
-comment could be made clearer.
+> The idle main function is a complex and a critical function. Added more
+> comments to the code.
+> 
+> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 
-> > +
-> > +	/* make sure hw is initialized when channel is used the first time  */
-> > +	bchan->initialized = 0;
-> > +}
+Few questions below.  In any case,:
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Acked-by: Nicolas Pitre <nico@linaro.org>
+
+> ---
+>  kernel/sched/idle.c |   37 +++++++++++++++++++++++++++++++++----
+>  1 file changed, 33 insertions(+), 4 deletions(-)
+> 
+> diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
+> index 72b5926..36ff1a7 100644
+> --- a/kernel/sched/idle.c
+> +++ b/kernel/sched/idle.c
+> @@ -86,19 +86,34 @@ static int cpuidle_idle_call(void)
+>  	if (cpu_idle_force_poll || tick_check_broadcast_expired())
+>  		return cpu_idle_poll();
+>  
+> +	/*
+> +	 * Check if the idle task must rescheduled. If it is the case,
+
+s/must/must be/
+
+> +	 * exit the function after re-enabling the local irq and set
+> +	 * again the polling flag
+> +	 */
+>  	if (current_clr_polling_and_test()) {
+>  		local_irq_enable();
+>  		__current_set_polling();
+>  		return 0;
+>  	}
+>  
+> +	/*
+> +	 * During the idle period, stop measuring the disabled irqs
+> +	 * critical sections latencies
+> +	 */
+>  	stop_critical_timings();
+> +
+> +	/*
+> +	 * Tell the RCU framework we are entering an idle section,
+> +	 * so no more rcu read side critical sections and one more
+> +	 * step to the grace period
+> +	 */
+>  	rcu_idle_enter();
+>  
+> -	/* Ask the governor for the next state, this call can fail for
+> -	 * different reasons: cpuidle is not enabled or an idle state
+> -	 * fulfilling the constraints was not found. In this case, we fall
+> -	 * back to the default idle function
+> +	/*
+> +	 * Ask the governor to choose an idle state it thinks it is
+> +	 * convenient to go to. There is *always* a convenient idle
+> +	 * state but the call could fail if cpuidle is not enabled
+>  	 */
+>  	next_state = cpuidle_select(drv, dev);
+>  	if (next_state < 0) {
+> @@ -106,6 +121,10 @@ static int cpuidle_idle_call(void)
+>  		goto out;
+>  	}
+>  
+> +	/*
+> +	 * The idle task must be scheduled, it is pointless to go to idle,
+> +	 * just update no idle residency and get out of this function
+> +	 */
+>  	if (need_resched()) {
+>  		dev->last_residency = 0;
+>  		/* give the governor an opportunity to reflect on the outcome */
+
+Is this if block really necessary?  We already have need_resched() being 
+monitored in the outer loop.  Are cpuidle_select() or rcu_idle_enter() 
+likely to spend a significant amount of time justifying a recheck here?
+
+
+Nicolas
