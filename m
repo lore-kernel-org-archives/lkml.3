@@ -1,199 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752723AbaBKCWo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 21:22:44 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:38649 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752047AbaBKCWl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 21:22:41 -0500
-Message-ID: <52F9896D.7090908@gmail.com>
-Date: Mon, 10 Feb 2014 18:22:37 -0800
-From: Rajat Jain <rajatxjain@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Rajat Jain <rajatjain@juniper.net>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yhlu.kernel@gmail.com>, Guenter Roeck <groeck@juniper.net>
-Subject: [PATCH v5 8/8] Allow Link state changes for Hot-Plug
-References: <52F1A1B6.2090709@gmail.com> <4f93bb24b6214bfb9dbcc91b682184eb@DM2PR05MB671.namprd05.prod.outlook.com> <20140211011816.GA15412@google.com>
-In-Reply-To: <20140211011816.GA15412@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752757AbaBKC0C (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 21:26:02 -0500
+Received: from ozlabs.org ([203.10.76.45]:47983 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752474AbaBKCZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 21:25:59 -0500
+Date: Tue, 11 Feb 2014 13:25:52 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Keerthy <j-keerthy@ti.com>
+Subject: linux-next: build failure after merge of the mfd-lj tree
+Message-Id: <20140211132552.68b0802fd8742c6d72dfa738@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__11_Feb_2014_13_25_52_+1100_oNImwvJr3nuTDAzc"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Today it is there is no protection around pciehp_enable_slot() and
-pciehp_disable_slot() to ensure that they complete before another
-hot-plug operation can be done on that particular slot.
+--Signature=_Tue__11_Feb_2014_13_25_52_+1100_oNImwvJr3nuTDAzc
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This patch introduces the slot->hotplug_lock to ensure that any
-hotplug operations (add / remove) complete before another HP event
-can begin processing on that particular slot.
+Hi Lee,
 
-Signed-off-by: Rajat Jain <rajatxjain@gmail.com>
-Signed-off-by: Rajat Jain <rajatjain@juniper.net>
-Signed-off-by: Guenter Roeck <groeck@juniper.net>
----
-Hello Bjorn,
+After merging the mfd-lj tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-> 
-> I applied these to pci/pciehp for v3.15, thanks!  I dropped the "ret" decl
-> in 8/8, which I assume was the cause of the unused variable warning.
->
+drivers/mfd/tps65218: struct i2c_device_id is 32 bytes.  The last of 1 is:
+0x74 0x70 0x73 0x36 0x35 0x32 0x31 0x38 0x00 0x00 0x00 0x00 0x00 0x00 0x00 =
+0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0xf0 0x00 0x00 0x00 0x00 0x00 =
+0x00 0x00=20
+FATAL: drivers/mfd/tps65218: struct i2c_device_id is not terminated with a =
+NULL entry!
 
-Thank you so much for accepting the patchset. The "ret" variable in 8/8
-was supposed to be used for holding the return value, so that the call to
-pciehp_green_led_off() could be moved to after releasing the lock. Here
-is the revised 8/8 patch (only a couple lines diff from v4). Please feel
-free to either use this, or just make that small change in
-pciehp_power_thread(). I was holding off sending this in case there were
-any other comments.
+Caused by commit cc493e30e3a1 ("mfd: tps65218: Add driver for the
+TPS65218 PMIC").
 
-Thank you so much once again,
+I have used the mfd-lj tree from next-20140210 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Rajat
- 
-v5: Remove the "unused variable" warning by using it to hold return value
-    (Thus reducing lock hold time, by moving pciehp_green_led_off() to
-     after releasing the lock)
-v4: same as v3, only rebased on top of 3.14-rc1
-v3: same as v2, only patch numbering changed from [4/4] to [8/8].
-v2: Same as v1, dropped the "RFC" from subject, added Guenter's signature
-v1: Initial patch
+--Signature=_Tue__11_Feb_2014_13_25_52_+1100_oNImwvJr3nuTDAzc
+Content-Type: application/pgp-signature
 
- drivers/pci/hotplug/pciehp.h      |    1 +
- drivers/pci/hotplug/pciehp_core.c |    7 ++++++-
- drivers/pci/hotplug/pciehp_ctrl.c |   17 +++++++++++++++--
- drivers/pci/hotplug/pciehp_hpc.c  |    1 +
- 4 files changed, 23 insertions(+), 3 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-diff --git a/drivers/pci/hotplug/pciehp.h b/drivers/pci/hotplug/pciehp.h
-index d8d0336..8a66866 100644
---- a/drivers/pci/hotplug/pciehp.h
-+++ b/drivers/pci/hotplug/pciehp.h
-@@ -76,6 +76,7 @@ struct slot {
- 	struct hotplug_slot *hotplug_slot;
- 	struct delayed_work work;	/* work for button event */
- 	struct mutex lock;
-+	struct mutex hotplug_lock;
- 	struct workqueue_struct *wq;
- };
- 
-diff --git a/drivers/pci/hotplug/pciehp_core.c b/drivers/pci/hotplug/pciehp_core.c
-index 53b58de..23b4bde 100644
---- a/drivers/pci/hotplug/pciehp_core.c
-+++ b/drivers/pci/hotplug/pciehp_core.c
-@@ -283,8 +283,11 @@ static int pciehp_probe(struct pcie_device *dev)
- 	slot = ctrl->slot;
- 	pciehp_get_adapter_status(slot, &occupied);
- 	pciehp_get_power_status(slot, &poweron);
--	if (occupied && pciehp_force)
-+	if (occupied && pciehp_force) {
-+		mutex_lock(&slot->hotplug_lock);
- 		pciehp_enable_slot(slot);
-+		mutex_unlock(&slot->hotplug_lock);
-+	}
- 	/* If empty slot's power status is on, turn power off */
- 	if (!occupied && poweron && POWER_CTRL(ctrl))
- 		pciehp_power_off_slot(slot);
-@@ -328,10 +331,12 @@ static int pciehp_resume (struct pcie_device *dev)
- 
- 	/* Check if slot is occupied */
- 	pciehp_get_adapter_status(slot, &status);
-+	mutex_lock(&slot->hotplug_lock);
- 	if (status)
- 		pciehp_enable_slot(slot);
- 	else
- 		pciehp_disable_slot(slot);
-+	mutex_unlock(&slot->hotplug_lock);
- 	return 0;
- }
- #endif /* PM */
-diff --git a/drivers/pci/hotplug/pciehp_ctrl.c b/drivers/pci/hotplug/pciehp_ctrl.c
-index 3e40ec0..fec99a1 100644
---- a/drivers/pci/hotplug/pciehp_ctrl.c
-+++ b/drivers/pci/hotplug/pciehp_ctrl.c
-@@ -293,6 +293,7 @@ static void pciehp_power_thread(struct work_struct *work)
- 	struct power_work_info *info =
- 		container_of(work, struct power_work_info, work);
- 	struct slot *p_slot = info->p_slot;
-+	int ret;
- 
- 	switch (info->req) {
- 	case DISABLE_REQ:
-@@ -300,7 +301,9 @@ static void pciehp_power_thread(struct work_struct *work)
- 			 "Disabling domain:bus:device=%04x:%02x:00\n",
- 			 pci_domain_nr(p_slot->ctrl->pcie->port->subordinate),
- 			 p_slot->ctrl->pcie->port->subordinate->number);
-+		mutex_lock(&p_slot->hotplug_lock);
- 		pciehp_disable_slot(p_slot);
-+		mutex_unlock(&p_slot->hotplug_lock);
- 		mutex_lock(&p_slot->lock);
- 		p_slot->state = STATIC_STATE;
- 		mutex_unlock(&p_slot->lock);
-@@ -310,7 +313,10 @@ static void pciehp_power_thread(struct work_struct *work)
- 			 "Enabling domain:bus:device=%04x:%02x:00\n",
- 			 pci_domain_nr(p_slot->ctrl->pcie->port->subordinate),
- 			 p_slot->ctrl->pcie->port->subordinate->number);
--		if (pciehp_enable_slot(p_slot))
-+		mutex_lock(&p_slot->hotplug_lock);
-+		ret = pciehp_enable_slot(p_slot);
-+		mutex_unlock(&p_slot->hotplug_lock);
-+		if (ret)
- 			pciehp_green_led_off(p_slot);
- 		mutex_lock(&p_slot->lock);
- 		p_slot->state = STATIC_STATE;
-@@ -546,6 +552,9 @@ static void interrupt_event_handler(struct work_struct *work)
- 	kfree(info);
- }
- 
-+/*
-+ * Note: This function must be called with slot->hotplug_lock held
-+ */
- int pciehp_enable_slot(struct slot *p_slot)
- {
- 	u8 getstatus = 0;
-@@ -584,7 +593,9 @@ int pciehp_enable_slot(struct slot *p_slot)
- 	return rc;
- }
- 
--
-+/*
-+ * Note: This function must be called with slot->hotplug_lock held
-+ */
- int pciehp_disable_slot(struct slot *p_slot)
- {
- 	u8 getstatus = 0;
-@@ -617,7 +628,9 @@ int pciehp_sysfs_enable_slot(struct slot *p_slot)
- 	case STATIC_STATE:
- 		p_slot->state = POWERON_STATE;
- 		mutex_unlock(&p_slot->lock);
-+		mutex_lock(&p_slot->hotplug_lock);
- 		retval = pciehp_enable_slot(p_slot);
-+		mutex_unlock(&p_slot->hotplug_lock);
- 		mutex_lock(&p_slot->lock);
- 		p_slot->state = STATIC_STATE;
- 		break;
-diff --git a/drivers/pci/hotplug/pciehp_hpc.c b/drivers/pci/hotplug/pciehp_hpc.c
-index 55cc389..68447a1 100644
---- a/drivers/pci/hotplug/pciehp_hpc.c
-+++ b/drivers/pci/hotplug/pciehp_hpc.c
-@@ -686,6 +686,7 @@ static int pcie_init_slot(struct controller *ctrl)
- 
- 	slot->ctrl = ctrl;
- 	mutex_init(&slot->lock);
-+	mutex_init(&slot->hotplug_lock);
- 	INIT_DELAYED_WORK(&slot->work, pciehp_queue_pushbutton_work);
- 	ctrl->slot = slot;
- 	return 0;
--- 
-1.7.9.5
+iQIcBAEBCAAGBQJS+Yo0AAoJEMDTa8Ir7ZwVif0QAIPb5UxzxRtQkvKlXjdZobBK
+ahSa7kDNkrIR3SFCzHx3zktaIceiorkW+HcN66wW1Wuk40z9LFTkqcMCp/L2+bMN
+vZ4Qtpr2IXUuTvy+j8DSQn5obmM77QT1QR9C6WAqwxoHdHwHnbu3LyhvzhYTdoIW
+B/HwE3LPzJhKU4DRlTtUHfi2hQoebyBP9MkayhQkFBGtpHF+AbotcuUePe30VPdw
+UjdouOwwt3NoBlTZY0eicnBUyiHF6MnLrTvClAPVALkmu40wUvLFyJVwP+Z/lXz/
+26v6T65wazfoU2O9j/FaD0l8LHwAn5eaDwOLDWgOYatWFE7r9R0mVmZRt3HQlqk7
+CxaEFZ1tN4KKnCHwuIQ+BfsomIBYHKoL+Gp3mVa55HofbthYdCbVC8ZjoSC1dxjh
+u3O9dPgnGE36qIStWRJ39YWluoipVC706wTQTc9n/DPJTQYKeVHmM5TJbAt8qqgd
+icci2FiN3k3glb5JSKGlcAo9jcX4j7mX9bEeWIoissB8PMwsPmM1eeLZxmAEYVPA
+/ZmJlR1iMeD/9LHG+m/M6MNfIc1BHsBrLACPDXZCudT4ESUVw8IZtjDgx2ACcuWk
+oLVvf8ScZtMoycYdz73yx/wOZmtkrscMwEDDz8cIG4/sYs7o6wUMRXZEur8rheH9
+uAsVDVn530GTBRs6ZY23
+=q/5k
+-----END PGP SIGNATURE-----
 
+--Signature=_Tue__11_Feb_2014_13_25_52_+1100_oNImwvJr3nuTDAzc--
