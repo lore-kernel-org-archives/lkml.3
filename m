@@ -1,81 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751487AbaBKNNQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 08:13:16 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:42847 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750812AbaBKNNO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 08:13:14 -0500
-Message-ID: <52FA21CF.1040809@ti.com>
-Date: Tue, 11 Feb 2014 15:12:47 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Michal Simek <michal.simek@xilinx.com>, <linux-kernel@vger.kernel.org>,
-        <monstr@monstr.eu>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        <linux-fbdev@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] video: xilinxfb: Move xilinxfb_platform_data directly
- to the driver
-References: <af8de8bd8803b319c0f6a02ca5109768e5ef8457.1392101292.git.michal.simek@xilinx.com>
-In-Reply-To: <af8de8bd8803b319c0f6a02ca5109768e5ef8457.1392101292.git.michal.simek@xilinx.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="ISMwuIjBEdGC4fnl2bQHI8toMbmHQspSP"
+	id S1751694AbaBKNPT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 08:15:19 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:47587 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751481AbaBKNPR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 08:15:17 -0500
+From: Masanari Iida <standby24x7@gmail.com>
+To: linux-kernel@vger.kernel.org, mturquette@linaro.org
+Cc: nicolas.ferre@atmel.com, b.brezillon@overkiz.com,
+        linux-arm-kernel@lists.infradead.org,
+        Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] clk:at91: Fix memory leak in of_at91_clk_master_setup()
+Date: Tue, 11 Feb 2014 22:15:07 +0900
+Message-Id: <1392124507-14463-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.9.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---ISMwuIjBEdGC4fnl2bQHI8toMbmHQspSP
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+cppcheck detected following error
+[clk-master.c:245]: (error) Memory leak: characteristics
 
-On 11/02/14 08:48, Michal Simek wrote:
-> No reason to have separate file in header in include/linux folder
-> if this is purely driver specific structure.
->=20
-> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
-> ---
->=20
-> I have this patch in my devel tree for a while and would like
-> to hear your opinion. I can't see any reason to have
-> xilinxfb_platform_data in header if this is purely OF driver
-> used on OF archs.
-> ---
->  drivers/video/xilinxfb.c | 15 ++++++++++++++-
->  include/linux/xilinxfb.h | 30 ------------------------------
->  2 files changed, 14 insertions(+), 31 deletions(-)
->  delete mode 100644 include/linux/xilinxfb.h
+The original code forgot to free characteristics when
+irq_of_parse_and_map() failed.
 
-Thanks. Queued for 3.15.
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ drivers/clk/at91/clk-master.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- Tomi
+diff --git a/drivers/clk/at91/clk-master.c b/drivers/clk/at91/clk-master.c
+index bd313f7..c1af80b 100644
+--- a/drivers/clk/at91/clk-master.c
++++ b/drivers/clk/at91/clk-master.c
+@@ -242,7 +242,7 @@ of_at91_clk_master_setup(struct device_node *np, struct at91_pmc *pmc,
+ 
+ 	irq = irq_of_parse_and_map(np, 0);
+ 	if (!irq)
+-		return;
++		goto out_free_characteristics;
+ 
+ 	clk = at91_clk_register_master(pmc, irq, name, num_parents,
+ 				       parent_names, layout,
+-- 
+1.9.rc1
 
-
-
---ISMwuIjBEdGC4fnl2bQHI8toMbmHQspSP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJS+iHPAAoJEPo9qoy8lh71Kz0QAIKXcLqRcJsDM77rYnfaZ9h9
-2gDAPo2bxtkm9ZZ4L28Bhuxs0kmNlq1XzEbTcbtZiOxIRl0yvR735JDymV3zloGz
-7z1N6/U0d/m1ikwQ84HOSo4TC8T0yIiVJEEumMskiAuKTW0SNR2fPEa1vu3OBCf2
-Nmv2AtWzU4zGLeUGpJ6z+VVgVnqIeFYMUhUeWywjOTGzMWlXlRHUNQiuhoIWbThV
-IRr2Qu0raADfM5knNB1vB4iwf99Qwp/Bo5MM6ayzRD78l74OotOVbpB2NZ7wSD5i
-nrTSMtSbl2Jdi0xdSuUiIDZNzwWs/7Q7LS/Wspg9gttG01G8QPFl6s7q5oFBwWE6
-TMNFwRJHZ8+lFYNwVxqJJH5B6cFPEtYZ08e2Nq+37/uGQ/FPvWzzKeP6DU0YZwkc
-HY0CV7KM6oLcZO5BPlZYZ5ufnF63a7yEZy36Z7PXWKe132Ducmg0hNO/rliESL1G
-iMumHvpoGoz82GnAtGxbYaCy0zbrf6CT7I8f55AJL+oPVoijnXNmx+rnx0Rk04eG
-usSqW18M4jKzzgYzSjDkN3CTSzv/sD61J5h36btsqeTY5pdeecSSx/g9GotN2sov
-vRHHtgfHnkZuXG/W63+sIEq4Qn3uoO3WlLlzaNvM5lApDiH4uEfSoGZtBMfwVrii
-AUq0+Cf3HMl9pkE6R3KD
-=4zlY
------END PGP SIGNATURE-----
-
---ISMwuIjBEdGC4fnl2bQHI8toMbmHQspSP--
