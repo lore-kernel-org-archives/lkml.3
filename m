@@ -1,76 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753803AbaBKVT0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 16:19:26 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:55672 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751966AbaBKVTY (ORCPT
+	id S1754019AbaBKVTd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 16:19:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41460 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752666AbaBKVTa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 16:19:24 -0500
-Date: Tue, 11 Feb 2014 15:19:17 -0600 (CST)
-From: Kumar Gala <galak@codeaurora.org>
-X-X-Sender: galak@galak-ubuntu.qualcomm.com
-To: arm@kernel.org
-cc: Kevin Hilman <khilman@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Rohit Vaswani <rvaswani@codeaurora.org>,
-        Olof Johansson <olof@lixom.net>, David Brown <davidb@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [GIT PULL] qcom SoC changes for v3.15
-Message-ID: <alpine.DEB.2.00.1402111516560.9530@galak-ubuntu.qualcomm.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+	Tue, 11 Feb 2014 16:19:30 -0500
+Date: Tue, 11 Feb 2014 13:19:27 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: <jiel@marvell.com>
+Cc: <joe@perches.com>, <tj@kernel.org>, <fweisbec@gmail.com>,
+        <davem@davemloft.net>, <keescook@chromium.org>,
+        <linux-kernel@vger.kernel.org>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jan Kara <jack@suse.cz>
+Subject: Re: [PATCH] printk: fix one circular lockdep warning about
+ console_lock
+Message-Id: <20140211131927.f180ac29dede51b2733b92a6@linux-foundation.org>
+In-Reply-To: <1392101400-14550-1-git-send-email-jiel@marvell.com>
+References: <1392101400-14550-1-git-send-email-jiel@marvell.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit cf1e8f0cd665e2a9966d2bee4e11ecc0938ff166:
+On Tue, 11 Feb 2014 14:50:00 +0800 <jiel@marvell.com> wrote:
 
-   ARM: qcom: Rename various msm prefixed functions to qcom (2014-02-06 16:20:41 -0600)
+> From: Jane Li <jiel@marvell.com>
+> 
+> This patch tries to fix a warning about possible circular locking
+> dependency.
+> 
+> If do in following sequence:
+>     enter suspend ->  resume ->  plug-out CPUx (echo 0 > cpux/online)
+> lockdep will show warning as following:
+> 
+> ======================================================
+> [ INFO: possible circular locking dependency detected ]
+> 3.10.0 #2 Tainted: G           O
+> -------------------------------------------------------
+> sh/1271 is trying to acquire lock:
+> (console_lock){+.+.+.}, at: [<c06ebf7c>] console_cpu_notify+0x20/0x2c
+> but task is already holding lock:
+> (cpu_hotplug.lock){+.+.+.}, at: [<c012b4e8>] cpu_hotplug_begin+0x2c/0x58
+> which lock already depends on the new lock.
+> 
+> the existing dependency chain (in reverse order) is:
+> -> #2 (cpu_hotplug.lock){+.+.+.}:
+> [<c017bb7c>] lock_acquire+0x98/0x12c
+> [<c06f5014>] mutex_lock_nested+0x50/0x3d8
+> [<c012b4e8>] cpu_hotplug_begin+0x2c/0x58
+> [<c06ebfac>] _cpu_up+0x24/0x154
+> [<c06ec140>] cpu_up+0x64/0x84
+> [<c0981834>] smp_init+0x9c/0xd4
+> [<c0973880>] kernel_init_freeable+0x78/0x1c8
+> [<c06e7f40>] kernel_init+0x8/0xe4
+> [<c010eec8>] ret_from_fork+0x14/0x2c
+> 
+> -> #1 (cpu_add_remove_lock){+.+.+.}:
+> [<c017bb7c>] lock_acquire+0x98/0x12c
+> [<c06f5014>] mutex_lock_nested+0x50/0x3d8
+> [<c012b758>] disable_nonboot_cpus+0x8/0xe8
+> [<c016b83c>] suspend_devices_and_enter+0x214/0x448
+> [<c016bc54>] pm_suspend+0x1e4/0x284
+> [<c016bdcc>] try_to_suspend+0xa4/0xbc
+> [<c0143848>] process_one_work+0x1c4/0x4fc
+> [<c0143f80>] worker_thread+0x138/0x37c
+> [<c014aaf8>] kthread+0xa4/0xb0
+> [<c010eec8>] ret_from_fork+0x14/0x2c
+> 
+> -> #0 (console_lock){+.+.+.}:
+> [<c017b5d0>] __lock_acquire+0x1b38/0x1b80
+> [<c017bb7c>] lock_acquire+0x98/0x12c
+> [<c01288c4>] console_lock+0x54/0x68
+> [<c06ebf7c>] console_cpu_notify+0x20/0x2c
+> [<c01501d4>] notifier_call_chain+0x44/0x84
+> [<c012b448>] __cpu_notify+0x2c/0x48
+> [<c012b5b0>] cpu_notify_nofail+0x8/0x14
+> [<c06e81bc>] _cpu_down+0xf4/0x258
+> [<c06e8344>] cpu_down+0x24/0x40
+> [<c06e921c>] store_online+0x30/0x74
+> [<c03b7298>] dev_attr_store+0x18/0x24
+> [<c025fc5c>] sysfs_write_file+0x16c/0x19c
+> [<c0207a98>] vfs_write+0xb4/0x190
+> [<c0207e58>] SyS_write+0x3c/0x70
+> [<c010ee00>] ret_fast_syscall+0x0/0x48
+> 
+> Chain exists of:
+>    console_lock --> cpu_add_remove_lock --> cpu_hotplug.lock
+> 
+> Possible unsafe locking scenario:
+>        CPU0                    CPU1
+>        ----                    ----
+> lock(cpu_hotplug.lock);
+>                                lock(cpu_add_remove_lock);
+>                                lock(cpu_hotplug.lock);
+> lock(console_lock);
+>   *** DEADLOCK ***
 
-are available in the git repository at:
+These traces hurt my brain.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-soc-for-3.15
+> There are three locks involved in two sequence:
+> a) pm suspend:
+> 	console_lock (@suspend_console())
+> 	cpu_add_remove_lock (@disable_nonboot_cpus())
+> 	cpu_hotplug.lock (@_cpu_down())
 
-for you to fetch changes up to 6990c132abc984bd6e75ac2be1f1d657cd600f63:
+But but but.  suspend_console() releases console_sem again.  So the
+sequence is actually
 
-   ARM: qcom: Add SMP support for KPSSv2 (2014-02-11 15:00:40 -0600)
+ 	down(&console_sem) (@suspend_console())
+ 	up(&console_sem) (@suspend_console())
+ 	cpu_add_remove_lock (@disable_nonboot_cpus())
+ 	cpu_hotplug.lock (@_cpu_down())
 
-----------------------------------------------------------------
-Qualcomm ARM Based SoC Updates for v3.15
+So console_sem *doesn't* nest outside cpu_add_remove_lock and
+cpu_hotplug.lock.
 
-* Add support for determining smp ops based on device tree.
-* Add DT binding specs for Krait/Scorpion enable method
-* Add DT binding specs for various Krait Processor controller complexes
-* Add SoC SMP support for Krait Processor Subsystem v1 & v2
+> b) Plug-out CPUx:
+> 	cpu_add_remove_lock (@(cpu_down())
+> 	cpu_hotplug.lock (@_cpu_down())
+> 	console_lock (@console_cpu_notify()) => Lockdeps prints warning log.
+> 
+> There should be not real deadlock, as flag of console_suspended can
+> protect this.
 
-----------------------------------------------------------------
-Rohit Vaswani (4):
-       ARM: qcom: Re-organize platsmp to make it extensible
-       devicetree: bindings: Document Krait/Scorpion cpus and enable-method
-       ARM: qcom: Add SMP support for KPSSv1
-       ARM: qcom: Add SMP support for KPSSv2
+console_lock() does down(&console_sem) *before* testing
+console_suspended, so I don't understand this sentence - a more
+detailed description would help.
 
-Stephen Boyd (3):
-       ARM: Introduce CPU_METHOD_OF_DECLARE() for cpu hotplug/smp
-       devicetree: bindings: Document qcom,kpss-acc
-       devicetree: bindings: Document qcom,saw2 node
+> Printk registers cpu hotplug notify function. When CPUx is plug-out/in,
+> always execute console_lock() and console_unlock(). This patch
+> modifies that with console_trylock() and console_unlock(). Then use
+> that instead of the unconditional console_lock/unlock pair to avoid the
+> warning.
+> 
+> ...
+>
+> --- a/kernel/printk/printk.c
+> +++ b/kernel/printk/printk.c
+> @@ -1893,6 +1893,20 @@ void resume_console(void)
+>  }
+>  
+>  /**
+> + * console_flush - flush dmesg if console isn't suspended
+> + *
+> + * console_unlock always flushes the dmesg buffer, so just try to
+> + * grab&drop the console lock. If that fails we know that the current
+> + * holder will eventually drop the console lock and so flush the dmesg
+> + * buffers at the earliest possible time.
+> + */
 
-  Documentation/devicetree/bindings/arm/cpus.txt     |  25 +-
-  .../devicetree/bindings/arm/msm/qcom,kpss-acc.txt  |  30 ++
-  .../devicetree/bindings/arm/msm/qcom,saw2.txt      |  35 +++
-  arch/arm/include/asm/smp.h                         |   9 +
-  arch/arm/kernel/devtree.c                          |  40 +++
-  arch/arm/mach-msm/common.h                         |   2 -
-  arch/arm/mach-qcom/board.c                         |  14 -
-  arch/arm/mach-qcom/platsmp.c                       | 341 ++++++++++++++++++---
-  arch/arm/mach-qcom/scm-boot.h                      |   8 +-
-  include/asm-generic/vmlinux.lds.h                  |  10 +
-  10 files changed, 444 insertions(+), 70 deletions(-)
-  create mode 100644 Documentation/devicetree/bindings/arm/msm/qcom,kpss-acc.txt
-  create mode 100644 Documentation/devicetree/bindings/arm/msm/qcom,saw2.txt
+The comment should describe why we added this code, please: talk about
+cpu_hotplug.lock and console_lock.
 
---
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+> +void console_flush(void)
+> +{
+> +	if (console_trylock())
+> +		console_unlock();
+> +}
+> +
+> +/**
+>   * console_cpu_notify - print deferred console messages after CPU hotplug
+>   * @self: notifier struct
+>   * @action: CPU hotplug event
+> @@ -1911,8 +1925,7 @@ static int console_cpu_notify(struct notifier_block *self,
+>  	case CPU_DEAD:
+>  	case CPU_DOWN_FAILED:
+>  	case CPU_UP_CANCELED:
+> -		console_lock();
+> -		console_unlock();
+> +		console_flush();
+>  	}
+>  	return NOTIFY_OK;
+
+Well, this is a bit hacky and makes the already-far-too-complex code
+even more complex.  If it is indeed the case that the deadlock cannot
+really occur then let's try to find a way of suppressing the lockdep
+warning without making runtime changes.
+
+What I'm struggling with is what *should* the ranking of these locks be?
+>From a conceptual high-level design standpoint, which is the
+"innermost" lock?  I tend to think that it is console_lock, because
+blocking CPU hotplug is a quite high-level operation.
+
+But console_lock is such a kooky special-case in the way it is used to
+control the printk corking that it is hard to take general rules and
+apply them here.
