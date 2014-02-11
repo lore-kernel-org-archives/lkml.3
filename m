@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752691AbaBKRfw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 12:35:52 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:37352 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751829AbaBKRfu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 12:35:50 -0500
+	id S1752717AbaBKRgO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 12:36:14 -0500
+Received: from mga09.intel.com ([134.134.136.24]:36929 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751285AbaBKRgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 12:36:12 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,826,1384329600"; 
+   d="scan'208";a="453646758"
+Date: Tue, 11 Feb 2014 23:04:18 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Paul Bolle <pebolle@tiscali.nl>, Richard Weinberger <richard@nod.at>
+Cc: Dan Williams <dan.j.williams@intel.com>, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dmaengine: Remove dependency on MACH_BCM2708
+Message-ID: <20140211173418.GQ10628@intel.com>
+References: <1391956765.25424.9.camel@x220>
 MIME-Version: 1.0
-In-Reply-To: <1392140035-31263-1-git-send-email-geert@linux-m68k.org>
-References: <1392140035-31263-1-git-send-email-geert@linux-m68k.org>
-Date: Tue, 11 Feb 2014 18:35:49 +0100
-X-Google-Sender-Auth: HoLd62CXxLFciF6tf5giLkWP4ig
-Message-ID: <CAMuHMdWVx3CCgUo0eWNwmghBvwhmmJYjyC0a1XVebO+kfg3DMQ@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.14-rc2
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Linux-sh list <linux-sh@vger.kernel.org>,
-        sparclinux <sparclinux@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391956765.25424.9.camel@x220>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 6:33 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> JFYI, when comparing v3.14-rc2[1]  to v3.14-rc1[3], the summaries are:
->   - build errors: +3/-2
+On Sun, Feb 09, 2014 at 03:39:25PM +0100, Paul Bolle wrote:
+> Commit 96286b576690 ("dmaengine: Add support for BCM2835") added an
+> optional dependency on MACH_BCM2708. But there's no Kconfig symbol
+> MACH_BCM2708.
+> 
+> (There was an entry for MACH_BCM2708 in arch/arm/tools/mach-types from
+> v2.6.37 until v3.2. But it seems that entry was never used in the tree.)
+> 
+> This optional dependency can safely be removed.
+Applied this one as this was first in my queue
 
-  + /scratch/kisskb/src/drivers/gpu/drm/drm_gem_cma_helper.c: error:
-implicit declaration of function 'dma_alloc_writecombine'
-[-Werror=implicit-function-declaration]:  => 91:2
-  + /scratch/kisskb/src/drivers/gpu/drm/drm_gem_cma_helper.c: error:
-implicit declaration of function 'dma_free_writecombine'
-[-Werror=implicit-function-declaration]:  => 176:3
+-- 
+~Vinod
 
-sh4/sh-randconfig
+> 
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> Untested.
+> 
+>  drivers/dma/Kconfig | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+> index 9bed1a2..e4382ec 100644
+> --- a/drivers/dma/Kconfig
+> +++ b/drivers/dma/Kconfig
+> @@ -308,7 +308,7 @@ config DMA_OMAP
+>  
+>  config DMA_BCM2835
+>  	tristate "BCM2835 DMA engine support"
+> -	depends on (ARCH_BCM2835 || MACH_BCM2708)
+> +	depends on ARCH_BCM2835
+>  	select DMA_ENGINE
+>  	select DMA_VIRTUAL_CHANNELS
+>  
+> -- 
+> 1.8.5.
+> 
 
-  + error: jump_label.c: undefined reference to
-`arch_jump_label_transform':  => .text+0x85dbc)
-
-sparc64/sparc-allmodconfig
-
-> [1] http://kisskb.ellerman.id.au/kisskb/head/7167/ (119 out of 119 configs)
-> [3] http://kisskb.ellerman.id.au/kisskb/head/7145/ (119 out of 119 configs)
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
