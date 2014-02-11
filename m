@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754911AbaBKTXP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:23:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40516 "EHLO
+	id S1754968AbaBKTXw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:23:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40514 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754272AbaBKTIP (ORCPT
+	with ESMTP id S1754264AbaBKTIO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:08:15 -0500
+	Tue, 11 Feb 2014 14:08:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
+To: linux-kernel@vger.kernel.org,
+        Luis Henriques <luis.henriques@canonical.com>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 3.10 71/79] timekeeping: Fix lost updates to tai adjustment
-Date: Tue, 11 Feb 2014 11:06:15 -0800
-Message-Id: <20140211184723.025144033@linuxfoundation.org>
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.10 70/79] ftrace: Have function graph only trace based on  global_ops filters
+Date: Tue, 11 Feb 2014 11:06:14 -0800
+Message-Id: <20140211184722.996948570@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
 References: <20140211184720.928667275@linuxfoundation.org>
@@ -32,52 +29,183 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John Stultz <john.stultz@linaro.org>
+From: Steven Rostedt <rostedt@goodmis.org>
 
-commit f55c07607a38f84b5c7e6066ee1cfe433fa5643c upstream.
+commit 23a8e8441a0a74dd612edf81dc89d1600bc0a3d1 upstream.
 
-Since 48cdc135d4840 (Implement a shadow timekeeper), we have to
-call timekeeping_update() after any adjustment to the timekeeping
-structure in order to make sure that any adjustments to the structure
-persist.
+Doing some different tests, I discovered that function graph tracing, when
+filtered via the set_ftrace_filter and set_ftrace_notrace files, does
+not always keep with them if another function ftrace_ops is registered
+to trace functions.
 
-Unfortunately, the updates to the tai offset via adjtimex do not
-trigger this update, causing adjustments to the tai offset to be
-made and then over-written by the previous value at the next
-update_wall_time() call.
+The reason is that function graph just happens to trace all functions
+that the function tracer enables. When there was only one user of
+function tracing, the function graph tracer did not need to worry about
+being called by functions that it did not want to trace. But now that there
+are other users, this becomes a problem.
 
-This patch resovles the issue by calling timekeeping_update()
-right after setting the tai offset.
+For example, one just needs to do the following:
 
-Cc: Sasha Levin <sasha.levin@oracle.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+ # cd /sys/kernel/debug/tracing
+ # echo schedule > set_ftrace_filter
+ # echo function_graph > current_tracer
+ # cat trace
+[..]
+ 0)               |  schedule() {
+ ------------------------------------------
+ 0)    <idle>-0    =>   rcu_pre-7
+ ------------------------------------------
+
+ 0) ! 2980.314 us |  }
+ 0)               |  schedule() {
+ ------------------------------------------
+ 0)   rcu_pre-7    =>    <idle>-0
+ ------------------------------------------
+
+ 0) + 20.701 us   |  }
+
+ # echo 1 > /proc/sys/kernel/stack_tracer_enabled
+ # cat trace
+[..]
+ 1) + 20.825 us   |      }
+ 1) + 21.651 us   |    }
+ 1) + 30.924 us   |  } /* SyS_ioctl */
+ 1)               |  do_page_fault() {
+ 1)               |    __do_page_fault() {
+ 1)   0.274 us    |      down_read_trylock();
+ 1)   0.098 us    |      find_vma();
+ 1)               |      handle_mm_fault() {
+ 1)               |        _raw_spin_lock() {
+ 1)   0.102 us    |          preempt_count_add();
+ 1)   0.097 us    |          do_raw_spin_lock();
+ 1)   2.173 us    |        }
+ 1)               |        do_wp_page() {
+ 1)   0.079 us    |          vm_normal_page();
+ 1)   0.086 us    |          reuse_swap_page();
+ 1)   0.076 us    |          page_move_anon_rmap();
+ 1)               |          unlock_page() {
+ 1)   0.082 us    |            page_waitqueue();
+ 1)   0.086 us    |            __wake_up_bit();
+ 1)   1.801 us    |          }
+ 1)   0.075 us    |          ptep_set_access_flags();
+ 1)               |          _raw_spin_unlock() {
+ 1)   0.098 us    |            do_raw_spin_unlock();
+ 1)   0.105 us    |            preempt_count_sub();
+ 1)   1.884 us    |          }
+ 1)   9.149 us    |        }
+ 1) + 13.083 us   |      }
+ 1)   0.146 us    |      up_read();
+
+When the stack tracer was enabled, it enabled all functions to be traced, which
+now the function graph tracer also traces. This is a side effect that should
+not occur.
+
+To fix this a test is added when the function tracing is changed, as well as when
+the graph tracer is enabled, to see if anything other than the ftrace global_ops
+function tracer is enabled. If so, then the graph tracer calls a test trampoline
+that will look at the function that is being traced and compare it with the
+filters defined by the global_ops.
+
+As an optimization, if there's no other function tracers registered, or if
+the only registered function tracers also use the global ops, the function
+graph infrastructure will call the registered function graph callback directly
+and not go through the test trampoline.
+
+Fixes: d2d45c7a03a2 "tracing: Have stack_tracer use a separate list of functions"
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- kernel/time/timekeeping.c |    2 ++
- 1 file changed, 2 insertions(+)
+ kernel/trace/ftrace.c |   45 ++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 44 insertions(+), 1 deletion(-)
 
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -605,6 +605,7 @@ void timekeeping_set_tai_offset(s32 tai_
- 	raw_spin_lock_irqsave(&timekeeper_lock, flags);
- 	write_seqcount_begin(&timekeeper_seq);
- 	__timekeeping_set_tai_offset(tk, tai_offset);
-+	timekeeping_update(tk, false, true);
- 	write_seqcount_end(&timekeeper_seq);
- 	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
- 	clock_was_set();
-@@ -1677,6 +1678,7 @@ int do_adjtimex(struct timex *txc)
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -297,6 +297,12 @@ static void ftrace_sync_ipi(void *data)
+ 	smp_rmb();
+ }
  
- 	if (tai != orig_tai) {
- 		__timekeeping_set_tai_offset(tk, tai);
-+		timekeeping_update(tk, false, true);
- 		clock_was_set_delayed();
++#ifdef CONFIG_FUNCTION_GRAPH_TRACER
++static void update_function_graph_func(void);
++#else
++static inline void update_function_graph_func(void) { }
++#endif
++
+ static void update_ftrace_function(void)
+ {
+ 	ftrace_func_t func;
+@@ -329,6 +335,8 @@ static void update_ftrace_function(void)
+ 	if (ftrace_trace_function == func)
+ 		return;
+ 
++	update_function_graph_func();
++
+ 	/*
+ 	 * If we are using the list function, it doesn't care
+ 	 * about the function_trace_ops.
+@@ -4810,6 +4818,7 @@ int ftrace_graph_entry_stub(struct ftrac
+ trace_func_graph_ret_t ftrace_graph_return =
+ 			(trace_func_graph_ret_t)ftrace_stub;
+ trace_func_graph_ent_t ftrace_graph_entry = ftrace_graph_entry_stub;
++static trace_func_graph_ent_t __ftrace_graph_entry = ftrace_graph_entry_stub;
+ 
+ /* Try to assign a return stack array on FTRACE_RETSTACK_ALLOC_SIZE tasks. */
+ static int alloc_retstack_tasklist(struct ftrace_ret_stack **ret_stack_list)
+@@ -4951,6 +4960,30 @@ static struct ftrace_ops fgraph_ops __re
+ 				FTRACE_OPS_FL_RECURSION_SAFE,
+ };
+ 
++static int ftrace_graph_entry_test(struct ftrace_graph_ent *trace)
++{
++	if (!ftrace_ops_test(&global_ops, trace->func, NULL))
++		return 0;
++	return __ftrace_graph_entry(trace);
++}
++
++/*
++ * The function graph tracer should only trace the functions defined
++ * by set_ftrace_filter and set_ftrace_notrace. If another function
++ * tracer ops is registered, the graph tracer requires testing the
++ * function against the global ops, and not just trace any function
++ * that any ftrace_ops registered.
++ */
++static void update_function_graph_func(void)
++{
++	if (ftrace_ops_list == &ftrace_list_end ||
++	    (ftrace_ops_list == &global_ops &&
++	     global_ops.next == &ftrace_list_end))
++		ftrace_graph_entry = __ftrace_graph_entry;
++	else
++		ftrace_graph_entry = ftrace_graph_entry_test;
++}
++
+ int register_ftrace_graph(trace_func_graph_ret_t retfunc,
+ 			trace_func_graph_ent_t entryfunc)
+ {
+@@ -4975,7 +5008,16 @@ int register_ftrace_graph(trace_func_gra
  	}
- 	write_seqcount_end(&timekeeper_seq);
+ 
+ 	ftrace_graph_return = retfunc;
+-	ftrace_graph_entry = entryfunc;
++
++	/*
++	 * Update the indirect function to the entryfunc, and the
++	 * function that gets called to the entry_test first. Then
++	 * call the update fgraph entry function to determine if
++	 * the entryfunc should be called directly or not.
++	 */
++	__ftrace_graph_entry = entryfunc;
++	ftrace_graph_entry = ftrace_graph_entry_test;
++	update_function_graph_func();
+ 
+ 	ret = ftrace_startup(&fgraph_ops, FTRACE_START_FUNC_RET);
+ 
+@@ -4994,6 +5036,7 @@ void unregister_ftrace_graph(void)
+ 	ftrace_graph_active--;
+ 	ftrace_graph_return = (trace_func_graph_ret_t)ftrace_stub;
+ 	ftrace_graph_entry = ftrace_graph_entry_stub;
++	__ftrace_graph_entry = ftrace_graph_entry_stub;
+ 	ftrace_shutdown(&fgraph_ops, FTRACE_STOP_FUNC_RET);
+ 	unregister_pm_notifier(&ftrace_suspend_notifier);
+ 	unregister_trace_sched_switch(ftrace_graph_probe_sched_switch, NULL);
 
 
