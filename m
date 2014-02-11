@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755042AbaBKTlh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:41:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40332 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753944AbaBKTHj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754016AbaBKTHj (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 11 Feb 2014 14:07:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40297 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753944AbaBKTHg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 14:07:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Grzeschik <m.grzeschik@pengutronix.de>,
-        Brian Norris <computersforpeace@gmail.com>
-Subject: [PATCH 3.10 23/79] mtd: mxc_nand: remove duplicated ecc_stats counting
-Date: Tue, 11 Feb 2014 11:05:27 -0800
-Message-Id: <20140211184721.599893136@linuxfoundation.org>
+        Mark Brown <broonie@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.10 18/79] ACPI / init: Flag use of ACPI and ACPI idioms for power supplies to regulator API
+Date: Tue, 11 Feb 2014 11:05:22 -0800
+Message-Id: <20140211184721.454836621@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
 References: <20140211184720.928667275@linuxfoundation.org>
@@ -29,30 +29,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Grzeschik <m.grzeschik@pengutronix.de>
+From: Mark Brown <broonie@linaro.org>
 
-commit 0566477762f9e174e97af347ee9c865f908a5647 upstream.
+commit 49a12877d2777cadcb838981c3c4f5a424aef310 upstream.
 
-The ecc_stats.corrected count variable will already be incremented in
-the above framework-layer just after this callback.
+There is currently no facility in ACPI to express the hookup of voltage
+regulators, the expectation is that the regulators that exist in the
+system will be handled transparently by firmware if they need software
+control at all. This means that if for some reason the regulator API is
+enabled on such a system it should assume that any supplies that devices
+need are provided by the system at all relevant times without any software
+intervention.
 
-Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Tell the regulator core to make this assumption by calling
+regulator_has_full_constraints(). Do this as soon as we know we are using
+ACPI so that the information is available to the regulator core as early
+as possible. This will cause the regulator core to pretend that there is
+an always on regulator supplying any supply that is requested but that has
+not otherwise been mapped which is the behaviour expected on a system with
+ACPI.
+
+Should the ability to specify regulators be added in future revisions of
+ACPI then once we have support for ACPI mappings in the kernel the same
+assumptions will apply. It is also likely that systems will default to a
+mode of operation which does not require any interpretation of these
+mappings in order to be compatible with existing operating system releases
+so it should remain safe to make these assumptions even if the mappings
+exist but are not supported by the kernel.
+
+Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/nand/mxc_nand.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/acpi/bus.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/drivers/mtd/nand/mxc_nand.c
-+++ b/drivers/mtd/nand/mxc_nand.c
-@@ -676,7 +676,6 @@ static int mxc_nand_correct_data_v2_v3(s
- 		ecc_stat >>= 4;
- 	} while (--no_subpages);
+--- a/drivers/acpi/bus.c
++++ b/drivers/acpi/bus.c
+@@ -33,6 +33,7 @@
+ #include <linux/proc_fs.h>
+ #include <linux/acpi.h>
+ #include <linux/slab.h>
++#include <linux/regulator/machine.h>
+ #ifdef CONFIG_X86
+ #include <asm/mpspec.h>
+ #endif
+@@ -705,6 +706,14 @@ void __init acpi_early_init(void)
+ 		goto error0;
+ 	}
  
--	mtd->ecc_stats.corrected += ret;
- 	pr_debug("%d Symbol Correctable RS-ECC Error\n", ret);
++	/*
++	 * If the system is using ACPI then we can be reasonably
++	 * confident that any regulators are managed by the firmware
++	 * so tell the regulator core it has everything it needs to
++	 * know.
++	 */
++	regulator_has_full_constraints();
++
+ 	return;
  
- 	return ret;
+       error0:
 
 
