@@ -1,82 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755438AbaBKU4e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:56:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39633 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752749AbaBKTFU (ORCPT
+	id S1755881AbaBKU4p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:56:45 -0500
+Received: from fep20.mx.upcmail.net ([62.179.121.40]:47290 "EHLO
+	fep20.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752819AbaBKU4m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:05:20 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.13 054/120] dm space map common: make sure new space is used during extend
-Date: Tue, 11 Feb 2014 11:04:55 -0800
-Message-Id: <20140211184825.167812215@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
-References: <20140211184823.492407127@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Tue, 11 Feb 2014 15:56:42 -0500
+X-SourceIP: 77.56.27.120
+X-Authenticated-Sender: odi.ch@hispeed.ch
+Message-ID: <52FA8E87.7080705@odi.ch>
+Date: Tue, 11 Feb 2014 21:56:39 +0100
+From: =?ISO-8859-1?Q?Ortwin_Gl=FCck?= <odi@odi.ch>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: What commit dropped config PLAT_SPEAR_SINGLE?
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+The next commit on that file:
+3a768d04639307db  Merge branch 'spear/multiplatform' into next/multiplatform
 
-------------------
+easy to see with this:
+gitk v3.13 arch/arm/Kconfig
 
-From: Joe Thornber <ejt@redhat.com>
+Cheers,
 
-commit 12c91a5c2d2a8e8cc40a9552313e1e7b0a2d9ee3 upstream.
-
-When extending a low level space map we should update nr_blocks at
-the start so the new space is used for the index entries.
-
-Otherwise extend can fail, e.g.: sm_metadata_extend call sequence
-that fails:
- -> sm_ll_extend
-    -> dm_tm_new_block -> dm_sm_new_block -> sm_bootstrap_new_block
-    => returns -ENOSPC because smm->begin == smm->ll.nr_blocks
-
-Signed-off-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/md/persistent-data/dm-space-map-common.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
-
---- a/drivers/md/persistent-data/dm-space-map-common.c
-+++ b/drivers/md/persistent-data/dm-space-map-common.c
-@@ -245,6 +245,10 @@ int sm_ll_extend(struct ll_disk *ll, dm_
- 		return -EINVAL;
- 	}
- 
-+	/*
-+	 * We need to set this before the dm_tm_new_block() call below.
-+	 */
-+	ll->nr_blocks = nr_blocks;
- 	for (i = old_blocks; i < blocks; i++) {
- 		struct dm_block *b;
- 		struct disk_index_entry idx;
-@@ -252,6 +256,7 @@ int sm_ll_extend(struct ll_disk *ll, dm_
- 		r = dm_tm_new_block(ll->tm, &dm_sm_bitmap_validator, &b);
- 		if (r < 0)
- 			return r;
-+
- 		idx.blocknr = cpu_to_le64(dm_block_location(b));
- 
- 		r = dm_tm_unlock(ll->tm, b);
-@@ -266,7 +271,6 @@ int sm_ll_extend(struct ll_disk *ll, dm_
- 			return r;
- 	}
- 
--	ll->nr_blocks = nr_blocks;
- 	return 0;
- }
- 
-
-
+Ortwin
