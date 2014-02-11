@@ -1,297 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751956AbaBKSNr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 13:13:47 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:38978 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750909AbaBKSNp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 13:13:45 -0500
+	id S1752138AbaBKSOS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 13:14:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44988 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751674AbaBKSOQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 13:14:16 -0500
+Message-ID: <52FA686F.6070701@redhat.com>
+Date: Tue, 11 Feb 2014 13:14:07 -0500
+From: Doug Ledford <dledford@redhat.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <CAFftDdpmqCOv6Ed9CvEUV_QF5F6HrLOUHQHL8Bdfjxa1Z8uowA@mail.gmail.com>
-References: <1391710528-23481-1-git-send-email-wroberts@tresys.com>
-	<1391710528-23481-3-git-send-email-wroberts@tresys.com>
-	<20140211163629.GM18807@madcap2.tricolour.ca>
-	<CAFftDdrxZtSpQi5zugwkcbfRhvbsyL9y=51x8PwqryhtE+2x4g@mail.gmail.com>
-	<CAFftDdpmqCOv6Ed9CvEUV_QF5F6HrLOUHQHL8Bdfjxa1Z8uowA@mail.gmail.com>
-Date: Tue, 11 Feb 2014 10:13:44 -0800
-Message-ID: <CAFftDdoMBg-7bcgQ_VPh_1Cy4jkfcamz4NZJexm5BGqi6iRvvg@mail.gmail.com>
-Subject: Re: [PATCH v5 3/3] audit: Audit proc/<pid>/cmdline aka proctitle
-From: William Roberts <bill.c.roberts@gmail.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: "linux-audit@redhat.com" <linux-audit@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        akpm@linux-foundation.org, Stephen Smalley <sds@tycho.nsa.gov>,
-        William Roberts <wroberts@tresys.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+To: Davidlohr Bueso <davidlohr@hp.com>, m@silodev.com, stable@vger.kernel.org,
+        akpm@linux-foundation.org
+CC: linux-kernel@vger.kernel.org, Manfred Spraul <manfred@colorfullife.com>
+Subject: Re: [PATCH] ipc,mqueue: remove limits for the amount of system-wide
+ queues
+References: <11414.87.110.183.114.1391682066.squirrel@www.silodev.com>	 <1391803868.1099.23.camel@buesod1.americas.hpqcorp.net> <1391979963.1099.34.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <1391979963.1099.34.camel@buesod1.americas.hpqcorp.net>
+X-Enigmail-Version: 1.6
+OpenPGP: id=0E572FDD
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="MBX2lhCQMUiJIMABkDQEov32oLUSsjjaT"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm a liar v6 does not include rtrim and appears to be the same thing as v5.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--MBX2lhCQMUiJIMABkDQEov32oLUSsjjaT
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-I'm posting v7 now, that has the acks I have received on the patches
-as well as rtrim on
-patch 3, the patch that adds the support to audit.
+On 2/9/2014 4:06 PM, Davidlohr Bueso wrote:
+> From: Davidlohr Bueso <davidlohr@hp.com>
+>=20
+> Commit 93e6f119 (ipc/mqueue: cleanup definition names and locations) ad=
+ded
+> global hardcoded limits to the amount of message queues that can be cre=
+ated.
+> While these limits are per-namespace, reality is that it ends up breaki=
+ng
+> userspace applications. Historically users have, at least in theory, be=
+en able
+> to create up to INT_MAX queues, and limiting it to just 1024 is way too=
+ low
+> and dramatic for some workloads and use cases. For instance, Madars rep=
+orts:
+>=20
+> "This update imposes bad limits on our multi-process application. As ou=
+r
+> app uses approaches that each process opens its own set of queues (usua=
+lly
+> something about 3-5 queues per process). In some scenarios we might run=
+ up
+> to 3000 processes or more (which of-course for linux is not a problem).=
 
-Sorry for the confusion, ill buy the first 3 people who come to me that were
-inconvenienced a drink at a conference :-P
+> Thus we might need up to 9000 queues or more. All processes run under o=
+ne
+> user."
+>=20
+> Other affected users can be found in launchpad bug #1155695:
+> https://bugs.launchpad.net/ubuntu/+source/manpages/+bug/1155695
+>=20
+> Instead of increasing this limit, revert it entirely and fallback to th=
+e
+> original way of dealing queue limits -- where once a user's resource li=
+mit
+> is reached, and all memory is used, new queues cannot be created.
+>=20
+> Reported-by: m@silodev.com
+> Cc: Doug Ledford <dledford@redhat.com>
 
-Bill
+Acked-by: Doug Ledford <dledford@redhat.com>
 
-On Tue, Feb 11, 2014 at 9:47 AM, William Roberts
-<bill.c.roberts@gmail.com> wrote:
-> The most up to date patches were v6. The difference between v5 and v6
-> is rtrim(). Did you not want the rtrim?
-> Most things end with null bytes, this helps prevent hex-escaping when
-> not needed.
->
-> v6 - adds rtrim
-> http://marc.info/?l=linux-kernel&m=139093195718315&w=2
-> http://marc.info/?l=linux-kernel&m=139093196518317&w=2
-> http://marc.info/?l=linux-kernel&m=139093197518332&w=2
->
-> Bill
->
->
-> On Tue, Feb 11, 2014 at 9:25 AM, William Roberts
-> <bill.c.roberts@gmail.com> wrote:
->> On Tue, Feb 11, 2014 at 8:36 AM, Richard Guy Briggs <rgb@redhat.com> wrote:
->>> On 14/02/06, William Roberts wrote:
->>>> During an audit event, cache and print the value of the process's
->>>> proctitle value (proc/<pid>/cmdline). This is useful in situations
->>>> where processes are started via fork'd virtual machines where the
->>>> comm field is incorrect. Often times, setting the comm field still
->>>> is insufficient as the comm width is not very wide and most
->>>> virtual machine "package names" do not fit. Also, during execution,
->>>> many threads have their comm field set as well. By tying it back to
->>>> the global cmdline value for the process, audit records will be more
->>>> complete in systems with these properties. An example of where this
->>>> is useful and applicable is in the realm of Android. With Android,
->>>> their is no fork/exec for VM instances. The bare, preloaded Dalvik
->>>> VM listens for a fork and specialize request. When this request comes
->>>> in, the VM forks, and the loads the specific application (specializing).
->>>> This was done to take advantage of COW and to not require a load of
->>>> basic packages by the VM on very app spawn. When this spawn occurs,
->>>> the package name is set via setproctitle() and shows up in procfs.
->>>> Many of these package names are longer then 16 bytes, the historical
->>>> width of task->comm. Having the cmdline in the audit records will
->>>> couple the application back to the record directly. Also, on my
->>>> Debian development box, some audit records were more useful then
->>>> what was printed under comm.
->>>>
->>>> The cached proctitle is tied to the life-cycle of the audit_context
->>>> structure and is built on demand.
->>>>
->>>> Proctitle is controllable by userspace, and thus should not be trusted.
->>>> It is meant as an aid to assist in debugging. The proctitle event is
->>>> emitted during syscall audits, and can be filtered with auditctl.
->>>>
->>>> Example:
->>>> type=AVC msg=audit(1391217013.924:386): avc:  denied  { getattr } for  pid=1971 comm="mkdir" name="/" dev="selinuxfs" ino=1 scontext=system_u:system_r:consolekit_t:s0-s0:c0.c255 tcontext=system_u:object_r:security_t:s0 tclass=filesystem
->>>> type=SYSCALL msg=audit(1391217013.924:386): arch=c000003e syscall=137 success=yes exit=0 a0=7f019dfc8bd7 a1=7fffa6aed2c0 a2=fffffffffff4bd25 a3=7fffa6aed050 items=0 ppid=1967 pid=1971 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm="mkdir" exe="/bin/mkdir" subj=system_u:system_r:consolekit_t:s0-s0:c0.c255 key=(null)
->>>> type=UNKNOWN[1327] msg=audit(1391217013.924:386):  proctitle=6D6B646972002D70002F7661722F72756E2F636F6E736F6C65
->>>>
->>>> Signed-off-by: William Roberts <wroberts@tresys.com>
->>>
->>> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
->>>
->>> Though, I would prefer to see the size of the proctitle copy buffer
->>> dynamically allocated based on the size of the original rather than
->>> pinned at 128.
->>
->> Not as good as it originally seems as this could be a whole page,
->> which would result in 2*PAGE_SIZE if hex escaped back to
->> userspace. A tuneable interface could be added in the future if its needed.
->>
->>>
->>>> ---
->>>>  include/uapi/linux/audit.h |    1 +
->>>>  kernel/audit.h             |    6 ++++
->>>>  kernel/auditsc.c           |   67 ++++++++++++++++++++++++++++++++++++++++++++
->>>>  3 files changed, 74 insertions(+)
->>>>
->>>> diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
->>>> index 2d48fe1..4315ee9 100644
->>>> --- a/include/uapi/linux/audit.h
->>>> +++ b/include/uapi/linux/audit.h
->>>> @@ -109,6 +109,7 @@
->>>>  #define AUDIT_NETFILTER_PKT  1324    /* Packets traversing netfilter chains */
->>>>  #define AUDIT_NETFILTER_CFG  1325    /* Netfilter chain modifications */
->>>>  #define AUDIT_SECCOMP                1326    /* Secure Computing event */
->>>> +#define AUDIT_PROCTITLE              1327    /* Proctitle emit event */
->>>>
->>>>  #define AUDIT_AVC            1400    /* SE Linux avc denial or grant */
->>>>  #define AUDIT_SELINUX_ERR    1401    /* Internal SE Linux Errors */
->>>> diff --git a/kernel/audit.h b/kernel/audit.h
->>>> index 57cc64d..38c967d 100644
->>>> --- a/kernel/audit.h
->>>> +++ b/kernel/audit.h
->>>> @@ -106,6 +106,11 @@ struct audit_names {
->>>>       bool                    should_free;
->>>>  };
->>>>
->>>> +struct audit_proctitle {
->>>> +     int     len;    /* length of the cmdline field. */
->>>> +     char    *value; /* the cmdline field */
->>>> +};
->>>> +
->>>>  /* The per-task audit context. */
->>>>  struct audit_context {
->>>>       int                 dummy;      /* must be the first element */
->>>> @@ -202,6 +207,7 @@ struct audit_context {
->>>>               } execve;
->>>>       };
->>>>       int fds[2];
->>>> +     struct audit_proctitle proctitle;
->>>>
->>>>  #if AUDIT_DEBUG
->>>>       int                 put_count;
->>>> diff --git a/kernel/auditsc.c b/kernel/auditsc.c
->>>> index 10176cd..e342eb0 100644
->>>> --- a/kernel/auditsc.c
->>>> +++ b/kernel/auditsc.c
->>>> @@ -68,6 +68,7 @@
->>>>  #include <linux/capability.h>
->>>>  #include <linux/fs_struct.h>
->>>>  #include <linux/compat.h>
->>>> +#include <linux/ctype.h>
->>>>
->>>>  #include "audit.h"
->>>>
->>>> @@ -79,6 +80,9 @@
->>>>  /* no execve audit message should be longer than this (userspace limits) */
->>>>  #define MAX_EXECVE_AUDIT_LEN 7500
->>>>
->>>> +/* max length to print of cmdline/proctitle value during audit */
->>>> +#define MAX_PROCTITLE_AUDIT_LEN 128
->>>> +
->>>>  /* number of audit rules */
->>>>  int audit_n_rules;
->>>>
->>>> @@ -842,6 +846,13 @@ static inline struct audit_context *audit_get_context(struct task_struct *tsk,
->>>>       return context;
->>>>  }
->>>>
->>>> +static inline void audit_proctitle_free(struct audit_context *context)
->>>> +{
->>>> +     kfree(context->proctitle.value);
->>>> +     context->proctitle.value = NULL;
->>>> +     context->proctitle.len = 0;
->>>> +}
->>>> +
->>>>  static inline void audit_free_names(struct audit_context *context)
->>>>  {
->>>>       struct audit_names *n, *next;
->>>> @@ -955,6 +966,7 @@ static inline void audit_free_context(struct audit_context *context)
->>>>       audit_free_aux(context);
->>>>       kfree(context->filterkey);
->>>>       kfree(context->sockaddr);
->>>> +     audit_proctitle_free(context);
->>>>       kfree(context);
->>>>  }
->>>>
->>>> @@ -1271,6 +1283,59 @@ static void show_special(struct audit_context *context, int *call_panic)
->>>>       audit_log_end(ab);
->>>>  }
->>>>
->>>> +static inline int audit_proctitle_rtrim(char *proctitle, int len)
->>>> +{
->>>> +     char *end = proctitle + len - 1;
->>>> +     while (end > proctitle && !isprint(*end))
->>>> +             end--;
->>>> +
->>>> +     /* catch the case where proctitle is only 1 non-print character */
->>>> +     len = end - proctitle + 1;
->>>> +     len -= isprint(proctitle[len-1]) == 0;
->>>> +     return len;
->>>> +}
->>>> +
->>>> +static void audit_log_proctitle(struct task_struct *tsk,
->>>> +                      struct audit_context *context)
->>>> +{
->>>> +     int res;
->>>> +     char *buf;
->>>> +     char *msg = "(null)";
->>>> +     int len = strlen(msg);
->>>> +     struct audit_buffer *ab;
->>>> +
->>>> +     ab = audit_log_start(context, GFP_KERNEL, AUDIT_PROCTITLE);
->>>> +     if (!ab)
->>>> +             return; /* audit_panic or being filtered */
->>>> +
->>>> +     audit_log_format(ab, "proctitle=");
->>>> +
->>>> +     /* Not  cached */
->>>> +     if (!context->proctitle.value) {
->>>> +             buf = kmalloc(MAX_PROCTITLE_AUDIT_LEN, GFP_KERNEL);
->>>> +             if (!buf)
->>>> +                     goto out;
->>>> +             /* Historically called this from procfs naming */
->>>> +             res = get_cmdline(tsk, buf, MAX_PROCTITLE_AUDIT_LEN);
->>>> +             if (res == 0) {
->>>> +                     kfree(buf);
->>>> +                     goto out;
->>>> +             }
->>>> +             res = audit_proctitle_rtrim(buf, res);
->>>> +             if (res == 0) {
->>>> +                     kfree(buf);
->>>> +                     goto out;
->>>> +             }
->>>> +             context->proctitle.value = buf;
->>>> +             context->proctitle.len = res;
->>>> +     }
->>>> +     msg = context->proctitle.value;
->>>> +     len = context->proctitle.len;
->>>> +out:
->>>> +     audit_log_n_untrustedstring(ab, msg, len);
->>>> +     audit_log_end(ab);
->>>> +}
->>>> +
->>>>  static void audit_log_exit(struct audit_context *context, struct task_struct *tsk)
->>>>  {
->>>>       int i, call_panic = 0;
->>>> @@ -1388,6 +1453,8 @@ static void audit_log_exit(struct audit_context *context, struct task_struct *ts
->>>>               audit_log_name(context, n, NULL, i++, &call_panic);
->>>>       }
->>>>
->>>> +     audit_log_proctitle(tsk, context);
->>>> +
->>>>       /* Send end of event record to help user space know we are finished */
->>>>       ab = audit_log_start(context, GFP_KERNEL, AUDIT_EOE);
->>>>       if (ab)
->>>> --
->>>> 1.7.9.5
->>>>
->>>
->>> - RGB
->>>
->>> --
->>> Richard Guy Briggs <rbriggs@redhat.com>
->>> Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
->>> Remote, Ottawa, Canada
->>> Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
->>
->>
->>
->> --
->> Respectfully,
->>
->> William C Roberts
->
->
->
-> --
-> Respectfully,
->
-> William C Roberts
+> Cc: Manfred Spraul <manfred@colorfullife.com>
+> Cc: stable@vger.kernel.org # v3.5+
+> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> ---
+>  include/linux/ipc_namespace.h |  2 --
+>  ipc/mq_sysctl.c               | 18 ++++++++++++------
+>  ipc/mqueue.c                  |  6 +++---
+>  3 files changed, 15 insertions(+), 11 deletions(-)
 
 
 
--- 
-Respectfully,
+--MBX2lhCQMUiJIMABkDQEov32oLUSsjjaT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-William C Roberts
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (MingW32)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJS+mhvAAoJELgmozMOVy/d+nAP/2EpHxHLNdJ5Ju+1Sl+trYc0
+hNE7/dj4xBRTdlJk0//VxomEUM51U1n67iEYgXe95kCkpY5m/iRTDV3JBR/LtKKz
+zMaTSUoR4OGa8T/rddIRP6hBMw8SgJU7i41MTfYcqlmh6z11wlRX9mem7EX3QO73
+iQmP/1AnBpkdU+6UAsXuT0jVJ7pD5f5IS5syb9B6LzUkwq+AOeRW3umGaBU1wjXZ
+I9YgiSNwma5anq5dbb9em79Yq2JAZp0Gcni0u2vAVzH/k8p4zAMvHod6xwHFFYQ4
+kPygSHTHn+V0N7uhZS3Zpq+RDl0kTP33bLuZ9k2VfexYXzbcYVhfyhBIsO7tCf7u
+tIlE+xxLZfBguQgL2YHyNoUwvJ0uqQrO21VpInGpeVj9lCTXqbZGNUyMI1HWN3c3
+UCEEfgaDwtF7WmWlB9J3pdGnU+wkhYKuz9RLv26ifx45RRJRODO+o1Wq9OE5vR0+
+nZeLXVljW4PEEaVNRqxaM16pD+lfe4rTl87Ue6CiUT6ATcshJqGwO6qjx7oRPUc4
+1Ity2Eg1b657BguQZZ5LhUwUOSNghYRv1UxWy+cRdfeI7LJPH2AFETj1whNJc2fi
+xuuSj2Flasx4FNbcNGTxM3nvjn3mnPROSo0pBDE2ZCr0wwuio/oH4R/TaniYwF/t
+IaCd+6t/IMKL+M2xZAPM
+=MZkE
+-----END PGP SIGNATURE-----
+
+--MBX2lhCQMUiJIMABkDQEov32oLUSsjjaT--
