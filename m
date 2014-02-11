@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755546AbaBKT66 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:58:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40157 "EHLO
+	id S1755567AbaBKT72 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:59:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40152 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753752AbaBKTHJ (ORCPT
+	with ESMTP id S1753737AbaBKTHI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:07:09 -0500
+	Tue, 11 Feb 2014 14:07:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>, Jiri Slaby <jslaby@suse.cz>,
-        David Airlie <airlied@linux.ie>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [PATCH 3.12 087/107] drm/cirrus: correct register values for 16bpp
-Date: Tue, 11 Feb 2014 11:05:53 -0800
-Message-Id: <20140211184750.683211177@linuxfoundation.org>
+        Malcolm Priestley <tvboxspy@gmail.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.12 069/107] [media] m88rs2000: add m88rs2000_set_carrieroffset
+Date: Tue, 11 Feb 2014 11:05:35 -0800
+Message-Id: <20140211184750.162849066@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -31,39 +29,147 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Malcolm Priestley <tvboxspy@gmail.com>
 
-commit 2510538fa000dd13a3e57b79bf073ffb1748976c upstream.
+commit 06af15d1b6f45c60358feab88004472e5428f01c upstream.
 
-When the mode is set with 16bpp on QEMU, the output gets totally broken.
-The culprit is the bogus register values set for 16bpp, which was likely
-copied from from a wrong place.
+Set the carrier offset correctly using the default mclk values.
 
-Addresses https://bugzilla.novell.com/show_bug.cgi?id=799216
+Add function m88rs2000_get_mclk to calculate the mclk value
+against crystal frequency which will later be used for
+other functions.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: David Airlie <airlied@linux.ie>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Add function m88rs2000_set_carrieroffset to calculate
+and set the offset value.
+
+variable offset becomes a signed value.
+
+Register 0x86 is set the appropriate value according to
+remainder value of frequency % 192857 calculation as
+shown.
+
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/cirrus/cirrus_mode.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/media/dvb-frontends/m88rs2000.c |   77 +++++++++++++++++++++++---------
+ drivers/media/dvb-frontends/m88rs2000.h |    2 
+ 2 files changed, 59 insertions(+), 20 deletions(-)
 
---- a/drivers/gpu/drm/cirrus/cirrus_mode.c
-+++ b/drivers/gpu/drm/cirrus/cirrus_mode.c
-@@ -273,8 +273,8 @@ static int cirrus_crtc_mode_set(struct d
- 		sr07 |= 0x11;
- 		break;
- 	case 16:
--		sr07 |= 0xc1;
--		hdr = 0xc0;
-+		sr07 |= 0x17;
-+		hdr = 0xc1;
- 		break;
- 	case 24:
- 		sr07 |= 0x15;
+--- a/drivers/media/dvb-frontends/m88rs2000.c
++++ b/drivers/media/dvb-frontends/m88rs2000.c
+@@ -110,6 +110,52 @@ static u8 m88rs2000_readreg(struct m88rs
+ 	return b1[0];
+ }
+ 
++static u32 m88rs2000_get_mclk(struct dvb_frontend *fe)
++{
++	struct m88rs2000_state *state = fe->demodulator_priv;
++	u32 mclk;
++	u8 reg;
++	/* Must not be 0x00 or 0xff */
++	reg = m88rs2000_readreg(state, 0x86);
++	if (!reg || reg == 0xff)
++		return 0;
++
++	reg /= 2;
++	reg += 1;
++
++	mclk = (u32)(reg * RS2000_FE_CRYSTAL_KHZ + 28 / 2) / 28;
++
++	return mclk;
++}
++
++static int m88rs2000_set_carrieroffset(struct dvb_frontend *fe, s16 offset)
++{
++	struct m88rs2000_state *state = fe->demodulator_priv;
++	u32 mclk;
++	s32 tmp;
++	u8 reg;
++	int ret;
++
++	mclk = m88rs2000_get_mclk(fe);
++	if (!mclk)
++		return -EINVAL;
++
++	tmp = (offset * 4096 + (s32)mclk / 2) / (s32)mclk;
++	if (tmp < 0)
++		tmp += 4096;
++
++	/* Carrier Offset */
++	ret = m88rs2000_writereg(state, 0x9c, (u8)(tmp >> 4));
++
++	reg = m88rs2000_readreg(state, 0x9d);
++	reg &= 0xf;
++	reg |= (u8)(tmp & 0xf) << 4;
++
++	ret |= m88rs2000_writereg(state, 0x9d, reg);
++
++	return ret;
++}
++
+ static int m88rs2000_set_symbolrate(struct dvb_frontend *fe, u32 srate)
+ {
+ 	struct m88rs2000_state *state = fe->demodulator_priv;
+@@ -540,9 +586,8 @@ static int m88rs2000_set_frontend(struct
+ 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
+ 	fe_status_t status;
+ 	int i, ret = 0;
+-	s32 tmp;
+ 	u32 tuner_freq;
+-	u16 offset = 0;
++	s16 offset = 0;
+ 	u8 reg;
+ 
+ 	state->no_lock_count = 0;
+@@ -567,26 +612,18 @@ static int m88rs2000_set_frontend(struct
+ 	if (ret < 0)
+ 		return -ENODEV;
+ 
+-	offset = tuner_freq - c->frequency;
++	offset = (s16)((s32)tuner_freq - c->frequency);
+ 
+-	/* calculate offset assuming 96000kHz*/
+-	tmp = offset;
+-	tmp *= 65536;
+-
+-	tmp = (2 * tmp + 96000) / (2 * 96000);
+-	if (tmp < 0)
+-		tmp += 65536;
+-
+-	offset = tmp & 0xffff;
+-
+-	ret = m88rs2000_writereg(state, 0x9a, 0x30);
+-	/* Unknown usually 0xc6 sometimes 0xc1 */
+-	reg = m88rs2000_readreg(state, 0x86);
+-	ret |= m88rs2000_writereg(state, 0x86, reg);
+-	/* Offset lower nibble always 0 */
+-	ret |= m88rs2000_writereg(state, 0x9c, (offset >> 8));
+-	ret |= m88rs2000_writereg(state, 0x9d, offset & 0xf0);
++	/* default mclk value 96.4285 * 2 * 1000 = 192857 */
++	if (((c->frequency % 192857) >= (192857 - 3000)) ||
++				(c->frequency % 192857) <= 3000)
++		ret = m88rs2000_writereg(state, 0x86, 0xc2);
++	else
++		ret = m88rs2000_writereg(state, 0x86, 0xc6);
+ 
++	ret |= m88rs2000_set_carrieroffset(fe, offset);
++	if (ret < 0)
++		return -ENODEV;
+ 
+ 	/* Reset Demod */
+ 	ret = m88rs2000_tab_set(state, fe_reset);
+--- a/drivers/media/dvb-frontends/m88rs2000.h
++++ b/drivers/media/dvb-frontends/m88rs2000.h
+@@ -53,6 +53,8 @@ static inline struct dvb_frontend *m88rs
+ }
+ #endif /* CONFIG_DVB_M88RS2000 */
+ 
++#define RS2000_FE_CRYSTAL_KHZ 27000
++
+ enum {
+ 	DEMOD_WRITE = 0x1,
+ 	WRITE_DELAY = 0x10,
 
 
