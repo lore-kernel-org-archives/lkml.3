@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932521AbaBKUcg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:32:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41251 "EHLO
+	id S932538AbaBKUc4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:32:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39842 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932504AbaBKUcd (ORCPT
+	with ESMTP id S1753164AbaBKTGI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 15:32:33 -0500
-Date: Tue, 11 Feb 2014 12:33:48 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: navin patidar <navin.patidar@gmail.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] staging: rtl8188eu: remove header file ethernet.h
-Message-ID: <20140211203348.GA25883@kroah.com>
-References: <1391935247-3797-1-git-send-email-navin.patidar@gmail.com>
- <1391935247-3797-3-git-send-email-navin.patidar@gmail.com>
+	Tue, 11 Feb 2014 14:06:08 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Adrian Hunter <adrian.hunter@intel.com>, Chris Ball <chris@printf.net>
+Subject: [PATCH 3.13 120/120] mmc: sdhci-pci: Fix possibility of chip->fixes being null
+Date: Tue, 11 Feb 2014 11:06:01 -0800
+Message-Id: <20140211184827.067308699@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
+References: <20140211184823.492407127@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1391935247-3797-3-git-send-email-navin.patidar@gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 09, 2014 at 02:10:46PM +0530, navin patidar wrote:
-> "ethernet.h" is included in three files but only "rtw_recv.c" using two macros
-> defined in "ethernet.h", so move used macros in "rtw_recv.c" and
-> remove "include/ethernet.h" header file and inclusion of this header file.
-> 
-> Signed-off-by: navin patidar <navin.patidar@gmail.com>
-> ---
->  drivers/staging/rtl8188eu/core/rtw_recv.c      |    4 ++-
->  drivers/staging/rtl8188eu/hal/rtl8188eu_recv.c |    1 -
->  drivers/staging/rtl8188eu/include/ethernet.h   |   42 ------------------------
->  drivers/staging/rtl8188eu/os_dep/recv_linux.c  |    1 -
->  4 files changed, 3 insertions(+), 45 deletions(-)
->  delete mode 100644 drivers/staging/rtl8188eu/include/ethernet.h
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
-This patch fails to apply (2/3 had fuzz, but I fixed that up), can you
-redo this against linux-next and resend it?
+------------------
 
-thanks,
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-greg k-h
+commit 945be38caa287b177b8c17ffaae7754cab6a658f upstream.
+
+It is possible for chip->fixes to be null.  Check before dereferencing it.
+
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Signed-off-by: Chris Ball <chris@printf.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/mmc/host/sdhci-pci.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/drivers/mmc/host/sdhci-pci.c
++++ b/drivers/mmc/host/sdhci-pci.c
+@@ -1466,7 +1466,8 @@ static struct sdhci_pci_slot *sdhci_pci_
+ 	 * from runtime suspend.  If it is not there, don't allow runtime PM.
+ 	 * Note sdhci_pci_add_own_cd() sets slot->cd_gpio to -EINVAL on failure.
+ 	 */
+-	if (chip->fixes->own_cd_for_runtime_pm && !gpio_is_valid(slot->cd_gpio))
++	if (chip->fixes && chip->fixes->own_cd_for_runtime_pm &&
++	    !gpio_is_valid(slot->cd_gpio))
+ 		chip->allow_runtime_pm = false;
+ 
+ 	return slot;
+
+
