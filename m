@@ -1,56 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752940AbaBJXql (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 18:46:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59816 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752231AbaBJXqi (ORCPT
+	id S1752993AbaBJX5d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 18:57:33 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:65523 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752740AbaBJX5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 18:46:38 -0500
-Date: Mon, 10 Feb 2014 15:46:37 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, gleb@redhat.com,
-        pbonzini@redhat.com, kvm@vger.kernel.org
-Subject: Re: [PATCH 01/14] asmlinkage, kvm: Make kvm_rebooting visible
-Message-Id: <20140210154637.dd58edfcbae273034d34c4df@linux-foundation.org>
-In-Reply-To: <1391845930-28580-1-git-send-email-ak@linux.intel.com>
-References: <1391845930-28580-1-git-send-email-ak@linux.intel.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 10 Feb 2014 18:57:22 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [PATCH 0/3] ACPI / dock: Rework the handling of dock notifications
+Date: Tue, 11 Feb 2014 01:09:32 +0100
+Message-ID: <3728252.WpMGKRKmqq@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat,  8 Feb 2014 08:51:57 +0100 Andi Kleen <ak@linux.intel.com> wrote:
+Hi All,
 
-> kvm_rebooting is referenced from assembler code, thus
-> needs to be visible.
+This is on top of the current linux-next branch of linux-pm.git.
 
-So I read the gcc page and looked at the __visible definition but I
-still don't really get it.  What goes wrong if the __visible isn't
-present on these referenced-from-asm identifiers?
+The handling of ACPI dock notifications doesn't require a notify handler to
+be installed for every dock device object.  Moreover, the namespace doesn't
+have to be scanned upfront to discover those objects and the ACPI container
+code should be made avoid trying to handle dock notifications (in case dock
+stations have container device IDs).
 
-> Cc: gleb@redhat.com
-> Cc: pbonzini@redhat.com
+The series makes the changes following from the above observations and a
+couple of improvements on top of them.
 
-Grumble.  Email addresses go into commits with display names and <>. 
-At least, 89.3% of them do.  Some sucker has to go through these and
-fix them up.  I'd prefer it not be me ;)
+[1/3] Dispatch ACPI dock notifications from the global notify handler.
+[2/3] Pass ACPI device pointer to acpi_device_is_battery() (which is a new
+      helper function added by [1/3]).
+[3/3] Associate dock platform devices with ACPI device objects
 
->
-> ...
->
-> --- a/virt/kvm/kvm_main.c
-> +++ b/virt/kvm/kvm_main.c
-> @@ -102,7 +102,7 @@ static void kvm_release_pfn_dirty(pfn_t pfn);
->  static void mark_page_dirty_in_slot(struct kvm *kvm,
->  				    struct kvm_memory_slot *memslot, gfn_t gfn);
->  
-> -bool kvm_rebooting;
-> +__visible bool kvm_rebooting;
->  EXPORT_SYMBOL_GPL(kvm_rebooting);
->  
->  static bool largepages_enabled = true;
+Thanks!
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
