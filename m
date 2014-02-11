@@ -1,180 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752599AbaBKQiK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 11:38:10 -0500
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:51924 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751797AbaBKQiH (ORCPT
+	id S1752739AbaBKQjM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 11:39:12 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40443 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751487AbaBKQjJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 11:38:07 -0500
-Date: Tue, 11 Feb 2014 10:37:38 -0600
-From: Calvin Owens <jcalvinowens@gmail.com>
-To: Joe Perches <joe@perches.com>, Johannes Berg <johannes@sipsolutions.net>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jcalvinowens@gmail.com
-Subject: [PATCH v3] ieee80211: Print human-readable disassoc/deauth reason
- codes
-Message-ID: <20140211163738.GA32043@gmail.com>
-References: <1391651088-31785-1-git-send-email-jcalvinowens@gmail.com>
- <1391661863.30094.56.camel@joe-AO722>
- <1392030546.4128.11.camel@jlt4.sipsolutions.net>
- <1392050359.2507.10.camel@joe-AO722>
- <20140211012523.GA2739@gmail.com>
- <1392082740.2507.49.camel@joe-AO722>
+	Tue, 11 Feb 2014 11:39:09 -0500
+Date: Tue, 11 Feb 2014 16:39:01 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: linux-kernel@vger.kernel.org, monstr@monstr.eu,
+        Arnd Bergmann <arnd@arndb.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Message-ID: <20140211163901.GR13533@sirena.org.uk>
+References: <57a9999d46c2e0703c95ee68a88f3c539bd10f9f.1392033580.git.michal.simek@xilinx.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="1GSL5ZULXUIqbbH1"
 Content-Disposition: inline
-In-Reply-To: <1392082740.2507.49.camel@joe-AO722>
+In-Reply-To: <57a9999d46c2e0703c95ee68a88f3c539bd10f9f.1392033580.git.michal.simek@xilinx.com>
+X-Cookie: My LESLIE GORE record is BROKEN ...
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2] regmap: Check readable regs in _regmap_read
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Create a function to return a descriptive string for each reason code,
-and print that in addition to the numeric value in the kernel log. These
-codes are easily found on popular search engines, but one is generally
-not able to access the internet when dealing with wireless connectivity
-issues.
 
-Changes in v2: Refactored array of strings into switch statement.
-Changes in v3: Fix style problem, use simplifying macro for switch
-statement, eliminate temporary enum variable.
+--1GSL5ZULXUIqbbH1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: Calvin Owens <jcalvinowens@gmail.com>
----
- include/net/mac80211.h | 10 +++++++++
- net/mac80211/main.c    | 57 ++++++++++++++++++++++++++++++++++++++++++++++++++
- net/mac80211/mlme.c    | 12 +++++------
- 3 files changed, 73 insertions(+), 6 deletions(-)
+On Mon, Feb 10, 2014 at 12:59:46PM +0100, Michal Simek wrote:
+> Check if regs are readable.
 
-diff --git a/include/net/mac80211.h b/include/net/mac80211.h
-index f4ab2fb..d18acfe 100644
---- a/include/net/mac80211.h
-+++ b/include/net/mac80211.h
-@@ -2971,6 +2971,16 @@ struct ieee80211_ops {
-  */
- struct ieee80211_hw *ieee80211_alloc_hw(size_t priv_data_len,
- 					const struct ieee80211_ops *ops);
-+/**
-+ * ieee80211_get_reason_code_string - Get human readable reason code
-+ *
-+ * This function returns a string describing the @reason_code.
-+ *
-+ * @reason_code: Reason code
-+ *
-+ * Return: Human readable reason string, or "<INVALID>"
-+ */
-+const char *ieee80211_get_reason_code_string(u16 reason_code);
- 
- /**
-  * ieee80211_register_hw - Register hardware device
-diff --git a/net/mac80211/main.c b/net/mac80211/main.c
-index d767cfb..307b444 100644
---- a/net/mac80211/main.c
-+++ b/net/mac80211/main.c
-@@ -743,6 +743,63 @@ static int ieee80211_init_cipher_suites(struct ieee80211_local *local)
- 	return 0;
- }
- 
-+#define case_WLAN(type) \
-+	case WLAN_REASON_##type: return #type
-+
-+const char *ieee80211_get_reason_code_string(u16 reason_code)
-+{
-+	switch (reason_code) {
-+	case_WLAN(UNSPECIFIED);
-+	case_WLAN(PREV_AUTH_NOT_VALID);
-+	case_WLAN(DEAUTH_LEAVING);
-+	case_WLAN(DISASSOC_DUE_TO_INACTIVITY);
-+	case_WLAN(DISASSOC_AP_BUSY);
-+	case_WLAN(CLASS2_FRAME_FROM_NONAUTH_STA);
-+	case_WLAN(CLASS3_FRAME_FROM_NONASSOC_STA);
-+	case_WLAN(DISASSOC_STA_HAS_LEFT);
-+	case_WLAN(STA_REQ_ASSOC_WITHOUT_AUTH);
-+	case_WLAN(DISASSOC_BAD_POWER);
-+	case_WLAN(DISASSOC_BAD_SUPP_CHAN);
-+	case_WLAN(INVALID_IE);
-+	case_WLAN(MIC_FAILURE);
-+	case_WLAN(4WAY_HANDSHAKE_TIMEOUT);
-+	case_WLAN(GROUP_KEY_HANDSHAKE_TIMEOUT);
-+	case_WLAN(IE_DIFFERENT);
-+	case_WLAN(INVALID_GROUP_CIPHER);
-+	case_WLAN(INVALID_PAIRWISE_CIPHER);
-+	case_WLAN(INVALID_AKMP);
-+	case_WLAN(UNSUPP_RSN_VERSION);
-+	case_WLAN(INVALID_RSN_IE_CAP);
-+	case_WLAN(IEEE8021X_FAILED);
-+	case_WLAN(CIPHER_SUITE_REJECTED);
-+	case_WLAN(DISASSOC_UNSPECIFIED_QOS);
-+	case_WLAN(DISASSOC_QAP_NO_BANDWIDTH);
-+	case_WLAN(DISASSOC_LOW_ACK);
-+	case_WLAN(DISASSOC_QAP_EXCEED_TXOP);
-+	case_WLAN(QSTA_LEAVE_QBSS);
-+	case_WLAN(QSTA_NOT_USE);
-+	case_WLAN(QSTA_REQUIRE_SETUP);
-+	case_WLAN(QSTA_TIMEOUT);
-+	case_WLAN(QSTA_CIPHER_NOT_SUPP);
-+	case_WLAN(MESH_PEER_CANCELED);
-+	case_WLAN(MESH_MAX_PEERS);
-+	case_WLAN(MESH_CONFIG);
-+	case_WLAN(MESH_CLOSE);
-+	case_WLAN(MESH_MAX_RETRIES);
-+	case_WLAN(MESH_CONFIRM_TIMEOUT);
-+	case_WLAN(MESH_INVALID_GTK);
-+	case_WLAN(MESH_INCONSISTENT_PARAM);
-+	case_WLAN(MESH_INVALID_SECURITY);
-+	case_WLAN(MESH_PATH_ERROR);
-+	case_WLAN(MESH_PATH_NOFORWARD);
-+	case_WLAN(MESH_PATH_DEST_UNREACHABLE);
-+	case_WLAN(MAC_EXISTS_IN_MBSS);
-+	case_WLAN(MESH_CHAN_REGULATORY);
-+	case_WLAN(MESH_CHAN);
-+	default: return "<INVALID>";
-+	}
-+}
-+
- int ieee80211_register_hw(struct ieee80211_hw *hw)
- {
- 	struct ieee80211_local *local = hw_to_local(hw);
-diff --git a/net/mac80211/mlme.c b/net/mac80211/mlme.c
-index fc1d824..5dec202 100644
---- a/net/mac80211/mlme.c
-+++ b/net/mac80211/mlme.c
-@@ -2231,8 +2231,8 @@ static void ieee80211_rx_mgmt_deauth(struct ieee80211_sub_if_data *sdata,
- 
- 	reason_code = le16_to_cpu(mgmt->u.deauth.reason_code);
- 
--	sdata_info(sdata, "deauthenticated from %pM (Reason: %u)\n",
--		   bssid, reason_code);
-+	sdata_info(sdata, "deauthenticated from %pM (Reason: %u=%s)\n",
-+		   bssid, reason_code, ieee80211_get_reason_code_string(reason_code));
- 
- 	ieee80211_set_disassoc(sdata, 0, 0, false, NULL);
- 
-@@ -4301,8 +4301,8 @@ int ieee80211_mgd_deauth(struct ieee80211_sub_if_data *sdata,
- 	bool report_frame = false;
- 
- 	sdata_info(sdata,
--		   "deauthenticating from %pM by local choice (reason=%d)\n",
--		   req->bssid, req->reason_code);
-+		   "deauthenticating from %pM by local choice (Reason: %u=%s)\n",
-+		   req->bssid, req->reason_code, ieee80211_get_reason_code_string(req->reason_code));
- 
- 	if (ifmgd->auth_data) {
- 		drv_mgd_prepare_tx(sdata->local, sdata);
-@@ -4348,8 +4348,8 @@ int ieee80211_mgd_disassoc(struct ieee80211_sub_if_data *sdata,
- 		return -ENOLINK;
- 
- 	sdata_info(sdata,
--		   "disassociating from %pM by local choice (reason=%d)\n",
--		   req->bss->bssid, req->reason_code);
-+		   "disassociating from %pM by local choice (Reason: %u=%s)\n",
-+		   req->bss->bssid, req->reason_code, ieee80211_get_reason_code_string(req->reason_code));
- 
- 	memcpy(bssid, req->bss->bssid, ETH_ALEN);
- 	ieee80211_set_disassoc(sdata, IEEE80211_STYPE_DISASSOC,
--- 
-1.8.5.3
+Applied, thanks.
 
+--1GSL5ZULXUIqbbH1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS+lIiAAoJELSic+t+oim9tF0P/2/LSAbE81pN1+ObjcNn/Fd/
+cNgEH2NfD0U1n0Pzw323frMGrRIviOEAfKvCXBYgMhhtIl8aqzcEYYitmybZ8XOt
+NHDJP2ZA+I1djQyddBYDDSh+sGps+9f+v5f1cqP8dzkCq/B2Jm1ZIEXyWM1XXH8G
+ElCixw8tIyhuVM+6cuIPI98d9XjA82UeU4V0tAcaZ+4aq691WWjRNxDwIHUrU45Z
+KmO/w+254vvCMJW42DmH9X6WBfL7wpekn7/8uN+sHZrAmSV5gFZKl9xiHA2sBsnG
+JYCJlhYrqZaHCzhNZcrtLIQvcp9DO2/ieSUCMtGJ0v8XX9QtnUyCZ3FbqyCISjL4
+e3CgrCjwC1ReKJZGEWKGTnxBC4wW9I7PJOz73szUTYCs2DnYs/Nq99ASj+EGq7QD
+lV+DXZ805bXMjuUtcSUcy+dCcXCLxlk2x/CqgFT1pm9C+1qy8Kc3qYATFpl4z06d
+STOZ+564c/R/OqsuF0/gkL/8ZmGT3tRTQzXfZ9aBI7kU4gVm86muacgKE8b7PP1u
+OJQ7DMPve5J2AnimDVoiHTJcGzUrtz76jSS6hdjPZ8skWS+bgwV4XsTY0eO1s2sx
+Mb2ch6zJDpO/+rlFtkMJz/M2091ISBzY0+hwymXfwJwLw5HcOhJiba/QOi5sFqxH
+gAx3om5LYXXn6xG92qEZ
+=DSg0
+-----END PGP SIGNATURE-----
+
+--1GSL5ZULXUIqbbH1--
