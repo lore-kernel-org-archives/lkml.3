@@ -1,102 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755982AbaBKU5m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:57:42 -0500
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:5957 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753910AbaBKU5k (ORCPT
+	id S1752724AbaBKTFS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:05:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39570 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752599AbaBKTFK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 15:57:40 -0500
-Message-ID: <1392151870.5612.159.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 01/51] CPU hotplug: Provide lockless versions of
- callback registration functions
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: ego@linux.vnet.ibm.com, "paulus@samba.org" <paulus@samba.org>,
-        "oleg@redhat.com" <oleg@redhat.com>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "tj@kernel.org" <tj@kernel.org>,
-        "walken@google.com" <walken@google.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Date: Tue, 11 Feb 2014 13:51:10 -0700
-In-Reply-To: <52FA77EA.7050105@linux.vnet.ibm.com>
-References: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com>
-	 <20140205220447.19080.9460.stgit@srivatsabhat.in.ibm.com>
-	 <1392081980.5612.123.camel@misato.fc.hp.com>
-	 <52F9ED11.5010800@linux.vnet.ibm.com>
-	 <1392136436.5612.131.camel@misato.fc.hp.com>
-	 <20140211171805.GA3932@in.ibm.com>
-	 <1392140115.5612.135.camel@misato.fc.hp.com>
-	 <52FA77EA.7050105@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 11 Feb 2014 14:05:10 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jonas Gorski <jogo@openwrt.org>,
+        Florian Fainelli <florian@openwrt.org>,
+        Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.13 038/120] spi/bcm63xx: dont substract prepend length from total length
+Date: Tue, 11 Feb 2014 11:04:39 -0800
+Message-Id: <20140211184824.669408350@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
+References: <20140211184823.492407127@linuxfoundation.org>
+User-Agent: quilt/0.61-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-02-12 at 00:50 +0530, Srivatsa S. Bhat wrote:
-> On 02/11/2014 11:05 PM, Toshi Kani wrote:
- :
-> > How about this?  foo_cpu_notifier returns NOP when foo_notifier_ready is
-> > false.
-> > 
-> >         register_cpu_notifier(&foobar_cpu_notifier);
-> > 
-> >         get_online_cpus();
-> > 
-> >         for_each_online_cpu(cpu)
-> >                 init_cpu(cpu);
-> > 
-> > 	foo_notifier_ready = true;
-> > 
-> >         put_online_cpus();
-> > 
-> 
-> Nah, that looks a lot like some quick-n-dirty hack ;-(
-> It would also amount to burdening the various subsystems to add weird-looking
-> pieces of code such as this in their callbacks:
-> 
-> 	if (!foo_notifier_ready)
-> 		return NOTIFY_OK;
-> 
-> This only makes it all the more evident that the callback registration APIs
-> exposed by the CPU hotplug core is poorly designed.
-> 
-> What we need instead, is an elegant, well-defined and easy-to-use set of
-> interfaces/APIs exposed by the core CPU hotplug code to the various
-> subsystems. I don't think we should worry so much about the fact that
-> we can't use the familiar get/put_online_cpus() in this type of callback
-> registration scenario. We can introduce a sane set of APIs that work
-> well in such situations and use them consistently.
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
-> For example, something like the code snippet shown below looks pretty
-> neat to me:
-> 
-> 	cpu_notifier_register_begin();
-> 
-> 	for_each_online_cpu(cpu)
-> 		init_cpu(cpu);
-> 
-> 	register_cpu_notifier(&foobar_cpu_notifier);
-> 
-> 	cpu_notifier_register_done();
-> 
-> What do you think?
+------------------
 
-I agree that it is cleaner for the callers as long as people understand
-how to use them.  Can you document them properly so that they know when
-they need to use them instead of the familiar get/put_online_cpus()?
+From: Jonas Gorski <jogo@openwrt.org>
 
-Thanks,
--Toshi
+commit 86b3bde003e6bf60ccb9c09b4115b8a2f533974c upstream.
+
+The spi command must include the full message length including any
+prepended writes, else transfers larger than 256 bytes will be
+incomplete.
+
+Signed-off-by: Jonas Gorski <jogo@openwrt.org>
+Acked-by: Florian Fainelli <florian@openwrt.org>
+Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/spi/spi-bcm63xx.c |    2 --
+ 1 file changed, 2 deletions(-)
+
+--- a/drivers/spi/spi-bcm63xx.c
++++ b/drivers/spi/spi-bcm63xx.c
+@@ -169,8 +169,6 @@ static int bcm63xx_txrx_bufs(struct spi_
+ 			       transfer_list);
+ 	}
+ 
+-	len -= prepend_len;
+-
+ 	init_completion(&bs->done);
+ 
+ 	/* Fill in the Message control register */
 
 
