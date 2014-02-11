@@ -1,101 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752317AbaBKSen (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 13:34:43 -0500
-Received: from oproxy12-pub.mail.unifiedlayer.com ([50.87.16.10]:56573 "HELO
-	oproxy12-pub.mail.unifiedlayer.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752279AbaBKSem (ORCPT
+	id S1751776AbaBKSfA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 13:35:00 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41272 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752353AbaBKSe7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 13:34:42 -0500
-X-Greylist: delayed 397 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 Feb 2014 13:34:42 EST
-Date: Tue, 11 Feb 2014 10:28:00 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jani Nikula <jani.nikula@intel.com>
-Subject: Re: Baytrail/T (ASUS T100 etc) regression from 3.13 onwards
-Message-ID: <20140211102800.4eae832d@jbarnes-desktop>
-In-Reply-To: <20140211181815.GA19306@kroah.com>
-References: <CA+55aFwLXnW-GWKNcUCrpS5e7fd_0ZoKk83H4qMJNUS_WCF_3A@mail.gmail.com>
-	<20140114120103.436d190b@alan.etchedpixels.co.uk>
-	<20140211142203.77561e0f@alan.etchedpixels.co.uk>
-	<20140211163541.GB12567@kroah.com>
-	<20140211101137.23b2274b@jbarnes-desktop>
-	<20140211181815.GA19306@kroah.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Tue, 11 Feb 2014 13:34:59 -0500
+Message-ID: <52FA6D4B.7020709@canonical.com>
+Date: Tue, 11 Feb 2014 19:34:51 +0100
+From: Stefan Bader <stefan.bader@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>, Paolo Bonzini <pbonzini@redhat.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        kvm@vger.kernel.org
+Subject: Another preempt folding issue?
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="fSxTdVX4c8RPDFqCCIKkqUDTrIK0ElF4s"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Feb 2014 10:18:15 -0800
-Greg KH <gregkh@linuxfoundation.org> wrote:
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--fSxTdVX4c8RPDFqCCIKkqUDTrIK0ElF4s
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
-> On Tue, Feb 11, 2014 at 10:11:37AM -0800, Jesse Barnes wrote:
-> > On Tue, 11 Feb 2014 08:35:41 -0800
-> > Greg KH <gregkh@linuxfoundation.org> wrote:
-> > 
-> > > On Tue, Feb 11, 2014 at 02:22:03PM +0000, One Thousand Gnomes wrote:
-> > > > On Tue, 14 Jan 2014 12:01:03 +0000
-> > > > One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk> wrote:
-> > > > 
-> > > > > On Sun, 12 Jan 2014 20:33:03 +0700
-> > > > > Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> > > > > 
-> > > > > > Another week, another RC. And things look fine.
-> > > > > 
-> > > > > It seems to hate Baytrail/T
-> > > > > 
-> > > > > My ASUS T100TA has gone from 3.11 'needs video=VGA-1:blah' to get the mode
-> > > > > right but otherwise running nicely and playing 3D games to 3.13-rc8
-> > > > 
-> > > > This has now been pinned down to (confirmed by multiple people)
-> > > > 
-> > > > commit 6c4a8962a4a078cacfc8eb5d4bd79f6343b8cd7a
-> > > > Author: Jesse Barnes <jbarnes@virtuousgeek.org>
-> > > > Date:   Tue Sep 10 14:54:42 2013 -0700
-> > > > 
-> > > >     drm/i915/vlv: re-enable hotplug detect based probing on VLV/BYT
-> > > > 
-> > > > 
-> > > > which given this is affecting some of the top 10 Amazon selling new
-> > > > laptops and has not been fixed for 3.14-rc should IMHO be reverted until
-> > > > such time as any needed debugging for the MIPI panels is done for this
-> > > > driver and the hotplug probing doesn't break the workarounds.
-> > > > 
-> > > > Likewise it wants pulling from any -stable backports.
-> > > 
-> > > I only see it in the 3.13 tree, so when this gets reverted in Linus's
-> > > tree, can someone mark it for stable so I know to pick it up for
-> > > 3.13-stable as well?
-> > 
-> > Ugg, so reverting a real fix to make the T100TA work by accident...
-> > this is ugly.
-> > 
-> > According to the reg dumps, this is actually a MIPI panel we're failing
-> > to bring up properly.  We're working on that issue, but in the
-> > meantime, maybe something like the below would work for you?
-> 
-> A module paramater to fix a bug?  Ugh, that's almost worse than just
-> reverting the original patch, right?
-> 
-> Please don't do this, the distros will hate you even more than they
-> currently do :)
+Hi Peter,
 
-Well reverting the real bug fix to get back to the "this happens to
-work but totally by accident" is also pretty bad...
+I am currently looking at a weird issue that manifest itself when trying =
+to run
+kvm enabled qemu on a i386 host (v3.13 kernel, oh and potentially importa=
+nt the
+cpu is 64bit capable, so qemu-system-x86_64 is called). Sooner or later t=
+his
+causes softlockup messages on the host. I tracked this down to __vcpu_run=
+ in
+arch/x86/kvm/x86.c which does a loop which in that case never seems to ma=
+ke
+progress or exit.
 
-Another option would be to quirk this machine, but that's gross too.
-Would be best to just fix the bug for real.
+What I found is that vcpu_enter_guest will exit quickly without causing t=
+he loop
+to exit when need_resched() is true. Looking at a crash dump I took, this=
+ was
+the case (thread_info->flags had TIF_NEED_RESCHED set). So after immediat=
+ely
+returning __vcpu_run has the following code:
 
-FWIW the kernel bug is here:
-https://bugzilla.kernel.org/show_bug.cgi?id=68451
+        if (need_resched()) {
+                srcu_read_unlock(&kvm->srcu, vcpu->srcu_idx);
+                kvm_resched(vcpu); // now cond_resched();
+                vcpu->srcu_idx =3D srcu_read_lock(&kvm->srcu);
+        }
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+The kvm_resched basically would end up doing a cond_resched() which now c=
+hecks
+preempt_count() to be 0. If that is zero it will do the reschedule, other=
+wise it
+just does nothing. Looking at the percpu variables in the dump, I saw tha=
+t
+the preempt_count was 0x8000000 (actually it was 0x80110000 but that was =
+me
+triggering the kexec crashdump with sysrq-c).
+
+I saw that there have been some changes in the upstream kernel and have p=
+icked
+the following:
+1) x86, acpi, idle: Restructure the mwait idle routines
+2) x86, idle: Use static_cpu_has() for CLFLUSH workaround, add barriers
+3) sched/preempt: Fix up missed PREEMPT_NEED_RESCHED folding
+4) sched/preempt/x86: Fix voluntary preempt for x86
+
+Patch 1) and 2) as dependencies of 3) (to get the mwait function correct =
+and to
+the other file). Finally 4) is fixing up 3). [maybe worth suggesting to d=
+o for
+3.13.y stable].
+
+Still, with all those I got the softlockup. Since I knew from the dump in=
+fo that
+something is wrong with the folding, I made the pragmatic approach and ad=
+ded the
+following:
+
+        if (need_resched()) {
+                srcu_read_unlock(&kvm->srcu, vcpu->srcu_idx);
++               preempt_fold_need_resched();
+                kvm_resched(vcpu); // now cond_resched();
+                vcpu->srcu_idx =3D srcu_read_lock(&kvm->srcu);
+        }
+
+And this lets the kvm guest run without the softlockups! However I am les=
+s than
+convinced that this is the right thing to do. Somehow something done when=
+
+converting the preempt_count into percpu has caused at least the i386 sid=
+e to
+get into this mess (as there has not been any whining about 64bit). Just =
+fail to
+see what.
+
+-Stefan
+
+
+--fSxTdVX4c8RPDFqCCIKkqUDTrIK0ElF4s
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBCgAGBQJS+m1LAAoJEOhnXe7L7s6jgOwP/0JJ+OkIuvpHDiQm1vovP471
+dnr8rNwbLpq7p/nw4flKxENQ/oe7W9Vsuf23J6/wBf5OHFmEiri332NuJu9clfeF
+UZ7YnLEnkb1cmeGouxJdXhl/o1skzAAKhJWqSmNMbZ3FWtYzq7zmzYbXNSmM/GWj
+vjFpZ2mpwSkQp4biRoe4TE/7Rv/SB2y3mPzYukLHZVnwPpH9s0OCFfusHAN48giT
+H2VREVL5u2Lx76R7eoXbJQnmB7aXWhD776U/AaNMrsf6VM04UxhEZ+zB/mFSF3td
+8r3uKx/YBIbhWj7grPE57uprmyXfESGRWTihDxrsFx/Zj0ugOnBC9WECiIQ7BFEF
+3LeJlwFvG+URXImWAR8Ufv6AJU9ryo5EfK501oMom7v24/5vAC1BhFImI2RhRJDQ
+WNhOJcqxVlQjvOLvHQN1xg6FL3SXlDxYQ0s+Ed+zQwK19UHi0UPs4Yq8hD2b69t5
+EEpUDHAJ/KcTtAVHPuM6zchgj/Ul+yD7RXHARxnagz1eeHZBMchr03cX0sLeBFnY
+1dPs6/LdR96uleYR/pCE4TxkuV8JKAVgeAgFXdbfMJ69Dyzr7wuGakoHKhVMhrbE
+wxbdvUhBePVIcSJs4jWEH4l4yCynI9y7flsJf6dUdDpMkYz1x50Y8rttYYPqB6zL
+8Q904TdPe+GnZB+Ezxur
+=SzOQ
+-----END PGP SIGNATURE-----
+
+--fSxTdVX4c8RPDFqCCIKkqUDTrIK0ElF4s--
