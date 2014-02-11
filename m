@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751694AbaBKNPT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 08:15:19 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:47587 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751481AbaBKNPR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 08:15:17 -0500
-From: Masanari Iida <standby24x7@gmail.com>
-To: linux-kernel@vger.kernel.org, mturquette@linaro.org
-Cc: nicolas.ferre@atmel.com, b.brezillon@overkiz.com,
-        linux-arm-kernel@lists.infradead.org,
-        Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] clk:at91: Fix memory leak in of_at91_clk_master_setup()
-Date: Tue, 11 Feb 2014 22:15:07 +0900
-Message-Id: <1392124507-14463-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.9.rc1
+	id S1751790AbaBKNQo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 08:16:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33465 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750767AbaBKNQm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 08:16:42 -0500
+Date: Tue, 11 Feb 2014 08:16:40 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Dave Young <dyoung@redhat.com>
+Cc: keescook@chromium.org, hpa@zytor.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] disable kaslr in kdump kernel
+Message-ID: <20140211131640.GB1055@redhat.com>
+References: <20140211100837.GA17202@dhcp-16-126.nay.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140211100837.GA17202@dhcp-16-126.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cppcheck detected following error
-[clk-master.c:245]: (error) Memory leak: characteristics
+On Tue, Feb 11, 2014 at 06:08:38PM +0800, Dave Young wrote:
+> 
+> KASLR does not work in kdump kernel because it's too early that mem=exactmap
+> has not been parsed.
+> 
+> Since KASLR does not make much sense for kdump kernel thus let's disable it
+> for kdump kernel. To check if it is a kdump kernel I just check the cmdline
+> param elfcorehdr just like is_kdump_kernel.
+> 
+> Signed-off-by: Dave Young <dyoung@redhat.com>
 
-The original code forgot to free characteristics when
-irq_of_parse_and_map() failed.
+I don't think it is a good idea. I don't like hardcoding second kernel's
+behavior. I rather vary second kernel's behavior based on command line
+parameters or based on values passed in bootparams.
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- drivers/clk/at91/clk-master.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+So I am more than happy to pass command line option "nokaslr" instead
+of hardcoding this in kernel.
 
-diff --git a/drivers/clk/at91/clk-master.c b/drivers/clk/at91/clk-master.c
-index bd313f7..c1af80b 100644
---- a/drivers/clk/at91/clk-master.c
-+++ b/drivers/clk/at91/clk-master.c
-@@ -242,7 +242,7 @@ of_at91_clk_master_setup(struct device_node *np, struct at91_pmc *pmc,
- 
- 	irq = irq_of_parse_and_map(np, 0);
- 	if (!irq)
--		return;
-+		goto out_free_characteristics;
- 
- 	clk = at91_clk_register_master(pmc, irq, name, num_parents,
- 				       parent_names, layout,
--- 
-1.9.rc1
+Thanks
+Vivek
 
+> ---
+>  linux-2.6/arch/x86/boot/compressed/aslr.c |    5 +++++
+>  1 file changed, 5 insertions(+)
+> 
+> Index: dyoung/git/linux-2.6/arch/x86/boot/compressed/aslr.c
+> ===================================================================
+> --- linux-2.6/arch/x86/boot/compressed/aslr.c
+> +++ linux-2.6/arch/x86/boot/compressed/aslr.c
+> @@ -293,6 +293,11 @@ unsigned char *choose_kernel_location(un
+>  		goto out;
+>  	}
+>  
+> +	if (cmdline_find_option("elfcorehdr", NULL, 0) != -1) {
+> +		debug_putstr("KASLR disabled...\n");
+> +		goto out;
+> +	}
+> +
+>  	/* Record the various known unsafe memory ranges. */
+>  	mem_avoid_init((unsigned long)input, input_size,
+>  		       (unsigned long)output, output_size);
