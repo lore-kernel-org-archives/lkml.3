@@ -1,98 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932185AbaBKTiI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:38:08 -0500
-Received: from fieldses.org ([174.143.236.118]:41160 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754289AbaBKTiG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:38:06 -0500
-Date: Tue, 11 Feb 2014 14:38:01 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
-Subject: [PATCH] nfsd4: fix acl buffer overrun
-Message-ID: <20140211193801.GA22695@fieldses.org>
-References: <20140208204522.GG8801@fieldses.org>
- <20140209020933.GA23163@fieldses.org>
+	id S1754695AbaBKThx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:37:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40361 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754088AbaBKTHr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 14:07:47 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.10 33/79] pnfs: Proper delay for NFS4ERR_RECALLCONFLICT in layout_get_done
+Date: Tue, 11 Feb 2014 11:05:37 -0800
+Message-Id: <20140211184721.889028749@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
+References: <20140211184720.928667275@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140209020933.GA23163@fieldses.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-4ac7249ea5a0ceef9f8269f63f33cc873c3fac61 "nfsd: use get_acl and
-->set_acl" forgets to set the size in the case get_acl() succeeds, so
-_posix_to_nfsv4_one() can then write past the end of its allocation.
-Symptoms were slab corruption warnings.
+------------------
 
-Also, some minor cleanup while we're here.  (Among other things, note
-that the first few lines guarantee that pacl is non-NULL.)
+From: Boaz Harrosh <bharrosh@panasas.com>
 
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+commit ed7e5423014ad89720fcf315c0b73f2c5d0c7bd2 upstream.
+
+An NFS4ERR_RECALLCONFLICT is returned by server from a GET_LAYOUT
+only when a Server Sent a RECALL do to that GET_LAYOUT, or
+the RECALL and GET_LAYOUT crossed on the wire.
+In any way this means we want to wait at most until in-flight IO
+is finished and the RECALL can be satisfied.
+
+So a proper wait here is more like 1/10 of a second, not 15 seconds
+like we have now. In case of a server bug we delay exponentially
+longer on each retry.
+
+Current code totally craps out performance of very large files on
+most pnfs-objects layouts, because of how the map changes when the
+file has grown into the next raid group.
+
+[Stable: This will patch back to 3.9. If there are earlier still
+ maintained trees, please tell me I'll send a patch]
+
+Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- fs/nfsd/nfs4acl.c |    9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+ fs/nfs/nfs4proc.c |   34 ++++++++++++++++++++++++++++++----
+ 1 file changed, 30 insertions(+), 4 deletions(-)
 
-On Sat, Feb 08, 2014 at 09:09:33PM -0500, J. Bruce Fields wrote:
-> On Sat, Feb 08, 2014 at 03:45:22PM -0500, bfields wrote:
-> > I'm getting warnings about corruption of the kmalloc-32 slab on an nfs
-> > server while running some regression tests.
-> > 
-> > A bisect lands on 9fe55eea7e4b444bafc42fa0000cc2d1d2847275 "Fix race
-> > when checking i_size on direct i/o read".  Is there any known problem
-> > here?
-> > 
-> > It doesn't reproduce immediately and it's possible I could have made a
-> > mistake on the bisect.
-> 
-> Argh, apologies, yes--I'm able to reproduce the corruption before that
-> commit.  I'll keep looking....
-
-Fortunately my mistake was at the end of the bisect so the offending
-commit was nearby (and clearly labeled "nfsd:...").  This fixes the
-regression I was seeing.  I intend to include it in a pull request for
-3.14 soon.
-
-diff --git a/fs/nfsd/nfs4acl.c b/fs/nfsd/nfs4acl.c
-index d3a5871..d190e33 100644
---- a/fs/nfsd/nfs4acl.c
-+++ b/fs/nfsd/nfs4acl.c
-@@ -151,17 +151,15 @@ nfsd4_get_nfs4_acl(struct svc_rqst *rqstp, struct dentry *dentry,
- 		pacl = posix_acl_from_mode(inode->i_mode, GFP_KERNEL);
- 		if (IS_ERR(pacl))
- 			return PTR_ERR(pacl);
--		/* allocate for worst case: one (deny, allow) pair each: */
--		size += 2 * pacl->a_count;
- 	}
-+	/* allocate for worst case: one (deny, allow) pair each: */
-+	size += 2 * pacl->a_count;
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -6232,9 +6232,9 @@ static void nfs4_layoutget_done(struct r
+ 	struct nfs_server *server = NFS_SERVER(inode);
+ 	struct pnfs_layout_hdr *lo;
+ 	struct nfs4_state *state = NULL;
+-	unsigned long timeo, giveup;
++	unsigned long timeo, now, giveup;
  
- 	if (S_ISDIR(inode->i_mode)) {
- 		flags = NFS4_ACL_DIR;
- 		dpacl = get_acl(inode, ACL_TYPE_DEFAULT);
- 		if (dpacl)
- 			size += 2 * dpacl->a_count;
--	} else {
--		dpacl = NULL;
- 	}
+-	dprintk("--> %s\n", __func__);
++	dprintk("--> %s tk_status => %d\n", __func__, -task->tk_status);
  
- 	*acl = nfs4_acl_new(size);
-@@ -170,8 +168,7 @@ nfsd4_get_nfs4_acl(struct svc_rqst *rqstp, struct dentry *dentry,
+ 	if (!nfs41_sequence_done(task, &lgp->res.seq_res))
  		goto out;
- 	}
- 
--	if (pacl)
--		_posix_to_nfsv4_one(pacl, *acl, flags & ~NFS4_ACL_TYPE_DEFAULT);
-+	_posix_to_nfsv4_one(pacl, *acl, flags & ~NFS4_ACL_TYPE_DEFAULT);
- 
- 	if (dpacl)
- 		_posix_to_nfsv4_one(dpacl, *acl, flags | NFS4_ACL_TYPE_DEFAULT);
--- 
-1.7.9.5
+@@ -6242,12 +6242,38 @@ static void nfs4_layoutget_done(struct r
+ 	switch (task->tk_status) {
+ 	case 0:
+ 		goto out;
++	/*
++	 * NFS4ERR_LAYOUTTRYLATER is a conflict with another client
++	 * (or clients) writing to the same RAID stripe
++	 */
+ 	case -NFS4ERR_LAYOUTTRYLATER:
++	/*
++	 * NFS4ERR_RECALLCONFLICT is when conflict with self (must recall
++	 * existing layout before getting a new one).
++	 */
+ 	case -NFS4ERR_RECALLCONFLICT:
+ 		timeo = rpc_get_timeout(task->tk_client);
+ 		giveup = lgp->args.timestamp + timeo;
+-		if (time_after(giveup, jiffies))
+-			task->tk_status = -NFS4ERR_DELAY;
++		now = jiffies;
++		if (time_after(giveup, now)) {
++			unsigned long delay;
++
++			/* Delay for:
++			 * - Not less then NFS4_POLL_RETRY_MIN.
++			 * - One last time a jiffie before we give up
++			 * - exponential backoff (time_now minus start_attempt)
++			 */
++			delay = max_t(unsigned long, NFS4_POLL_RETRY_MIN,
++				    min((giveup - now - 1),
++					now - lgp->args.timestamp));
++
++			dprintk("%s: NFS4ERR_RECALLCONFLICT waiting %lu\n",
++				__func__, delay);
++			rpc_delay(task, delay);
++			task->tk_status = 0;
++			rpc_restart_call_prepare(task);
++			goto out; /* Do not call nfs4_async_handle_error() */
++		}
+ 		break;
+ 	case -NFS4ERR_EXPIRED:
+ 	case -NFS4ERR_BAD_STATEID:
+
 
