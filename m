@@ -1,77 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755376AbaBKTrn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:47:43 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:41857 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753938AbaBKTri (ORCPT
+	id S1755392AbaBKTsQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:48:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40269 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753925AbaBKTH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:47:38 -0500
-Date: Tue, 11 Feb 2014 20:47:26 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Morten Rasmussen <morten.rasmussen@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Len Brown <len.brown@intel.com>, Preeti Murthy <preeti.lkml@gmail.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Subject: Re: [RFC PATCH 3/3] idle: store the idle state index in the struct rq
-Message-ID: <20140211194726.GA9987@twins.programming.kicks-ass.net>
-References: <52EBBC23.8020603@linux.intel.com>
- <52EBC33A.6080101@linaro.org>
- <52EBC645.2040607@linux.intel.com>
- <alpine.LFD.2.11.1401311236470.2312@knanqh.ubzr>
- <20140203125441.GD19029@e103034-lin>
- <52EFA9D3.1030601@linux.intel.com>
- <20140203145605.GL8874@twins.programming.kicks-ass.net>
- <52EFC12B.50704@linux.intel.com>
- <20140211164136.GT27965@twins.programming.kicks-ass.net>
- <52FA59E2.1000802@linux.intel.com>
+	Tue, 11 Feb 2014 14:07:29 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Eric Paris <eparis@redhat.com>, Paul Moore <pmoore@redhat.com>
+Subject: [PATCH 3.10 01/79] SELinux: Fix memory leak upon loading policy
+Date: Tue, 11 Feb 2014 11:05:05 -0800
+Message-Id: <20140211184720.971671020@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
+References: <20140211184720.928667275@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52FA59E2.1000802@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 09:12:02AM -0800, Arjan van de Ven wrote:
-> On 2/11/2014 8:41 AM, Peter Zijlstra wrote:
-> >On Mon, Feb 03, 2014 at 08:17:47AM -0800, Arjan van de Ven wrote:
-> >>On 2/3/2014 6:56 AM, Peter Zijlstra wrote:
-> >>if there's a simple api like
-> >>
-> >>sched_cpu_cache_wiped(int llc)
-> >>
-> >>that would be very nice for this; the menuidle side knows this
-> >>for some cases and thus can just call it. This would be a very
-> >>small and minimal change
-> >>
-> >>* if you don't care about llc vs core local caches then that
-> >>   parameter can go away
-> >>
-> >>* I assume this is also called for the local cpu... if not then we
-> >>   need to add a cpu number argument
-> >>
-> >>* we can also call this from architecture code when wbinvd or the
-> >>   arm equivalent is called etc
-> >
-> >A little something like so?
-> >
-> 
-> is there value also in doing a cpu level cache flush?
-> (cpu cache flush we know from the C state, for the llc cache flush we need to read an MSR
-> on x86. Not insane expensive but not zero either)
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-L1 or L2? L1 is too small to really bother afaik and L2 is shared
-between logical cpus so we'd need a mask there, not sure the generic
-topology has that.
+------------------
 
-I'll have a quick peek later.
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+
+commit 8ed814602876bec9bad2649ca17f34b499357a1c upstream.
+
+Hello.
+
+I got below leak with linux-3.10.0-54.0.1.el7.x86_64 .
+
+[  681.903890] kmemleak: 5538 new suspected memory leaks (see /sys/kernel/debug/kmemleak)
+
+Below is a patch, but I don't know whether we need special handing for undoing
+ebitmap_set_bit() call.
+----------
+>>From fe97527a90fe95e2239dfbaa7558f0ed559c0992 Mon Sep 17 00:00:00 2001
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Date: Mon, 6 Jan 2014 16:30:21 +0900
+Subject: [PATCH 3.10 01/79] SELinux: Fix memory leak upon loading policy
+
+Commit 2463c26d "SELinux: put name based create rules in a hashtable" did not
+check return value from hashtab_insert() in filename_trans_read(). It leaks
+memory if hashtab_insert() returns error.
+
+  unreferenced object 0xffff88005c9160d0 (size 8):
+    comm "systemd", pid 1, jiffies 4294688674 (age 235.265s)
+    hex dump (first 8 bytes):
+      57 0b 00 00 6b 6b 6b a5                          W...kkk.
+    backtrace:
+      [<ffffffff816604ae>] kmemleak_alloc+0x4e/0xb0
+      [<ffffffff811cba5e>] kmem_cache_alloc_trace+0x12e/0x360
+      [<ffffffff812aec5d>] policydb_read+0xd1d/0xf70
+      [<ffffffff812b345c>] security_load_policy+0x6c/0x500
+      [<ffffffff812a623c>] sel_write_load+0xac/0x750
+      [<ffffffff811eb680>] vfs_write+0xc0/0x1f0
+      [<ffffffff811ec08c>] SyS_write+0x4c/0xa0
+      [<ffffffff81690419>] system_call_fastpath+0x16/0x1b
+      [<ffffffffffffffff>] 0xffffffffffffffff
+
+However, we should not return EEXIST error to the caller, or the systemd will
+show below message and the boot sequence freezes.
+
+  systemd[1]: Failed to load SELinux policy. Freezing.
+
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Acked-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ security/selinux/ss/policydb.c |   14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
+
+--- a/security/selinux/ss/policydb.c
++++ b/security/selinux/ss/policydb.c
+@@ -1941,7 +1941,19 @@ static int filename_trans_read(struct po
+ 		if (rc)
+ 			goto out;
+ 
+-		hashtab_insert(p->filename_trans, ft, otype);
++		rc = hashtab_insert(p->filename_trans, ft, otype);
++		if (rc) {
++			/*
++			 * Do not return -EEXIST to the caller, or the system
++			 * will not boot.
++			 */
++			if (rc != -EEXIST)
++				goto out;
++			/* But free memory to avoid memory leak. */
++			kfree(ft);
++			kfree(name);
++			kfree(otype);
++		}
+ 	}
+ 	hash_eval(p->filename_trans, "filenametr");
+ 	return 0;
+
+
