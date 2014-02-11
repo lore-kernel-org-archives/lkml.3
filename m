@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751354AbaBKItM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 03:49:12 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37261 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750809AbaBKItJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 03:49:09 -0500
-Subject: Re: [lm-sensors] [PATCH] hwmon: (max6650) Rename the device ids to
- contain the hwmon suffix
-From: Jean Delvare <jdelvare@suse.de>
-To: Laszlo Papp <lpapp@kde.org>
-Cc: Lee Jones <lee.jones@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
-        lm-sensors@lm-sensors.org
-In-Reply-To: <CAOMwXhMhKdp420+SPTih+C3fAgTmrpJgPnGBxsfPO3pEhESGTA@mail.gmail.com>
-References: <1392045953-26596-1-git-send-email-lpapp@kde.org>
-	 <20140210160842.GB26997@lee--X1> <20140210173811.04ba5964@endymion.delvare>
-	 <CAOMwXhPTkrUUaUL-H_0fvZBO9_kt4jqKXs5BJYthDfu0_1c3xg@mail.gmail.com>
-	 <20140211085014.4ef32b56@endymion.delvare>
-	 <CAOMwXhMhKdp420+SPTih+C3fAgTmrpJgPnGBxsfPO3pEhESGTA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Suse Linux
-Date: Tue, 11 Feb 2014 09:49:05 +0100
-Message-ID: <1392108545.4700.4.camel@chaos.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S1751517AbaBKIuC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 03:50:02 -0500
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:62759 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758AbaBKIuA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 03:50:00 -0500
+Date: Tue, 11 Feb 2014 09:49:56 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Juri Lelli <juri.lelli@gmail.com>
+Cc: peterz@infradead.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 0/2] A couple of sched patches
+Message-ID: <20140211084956.GB26063@gmail.com>
+References: <1392107067-19907-1-git-send-email-juri.lelli@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392107067-19907-1-git-send-email-juri.lelli@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le Tuesday 11 February 2014 à 08:28 +0000, Laszlo Papp a écrit :
-> On Tue, Feb 11, 2014 at 7:50 AM, Jean Delvare <jdelvare@suse.de> wrote:
-> > Hi Laszlo,
-> >
-> > On Tue, 11 Feb 2014 03:13:37 +0000, Laszlo Papp wrote:
-> >> On Mon, Feb 10, 2014 at 4:38 PM, Jean Delvare <jdelvare@suse.de> wrote:
-> >> > Additionally, dashes are explicitly forbidden in hwmon
-> >> > device names.
-> >>
-> >> Also, where is that documented?
-> >
-> > In Documentation/hwmon/sysfs-interface:
-> >
-> > *********************
-> > * Global attributes *
-> > *********************
-> >
-> > name            The chip name.
-> >                 This should be a short, lowercase string, not containing
-> >                 spaces nor dashes, representing the chip name. This is
-> >                 the only mandatory attribute.
-> >                 I2C devices get this attribute created automatically.
-> >                 RO
-> 
-> Time to revisit this decision....
-> 
-> So, based on the fact that children device names usually contain
-> dashes, I do not understand why hwmon would be any special in this
-> regard. It is possible that the hwmon developers have not faced much
-> MFD situation before, and so, this was not considered to be handled
-> like in other subsystems.
-> 
-> I am proposing to change this "rule"...  Any objection?
 
-I'm giving up here, sorry. There's no point in me writing any more on
-the topic as you are not listening to me. I do not have the impression
-you are doing any effort to understand what I'm saying. Plus you keep
-focusing on things that do not matter and problems for which a solution
-has already been provided. So wherever you're going, this is without me.
+* Juri Lelli <juri.lelli@gmail.com> wrote:
 
--- 
-Jean Delvare
-Suse L3 Support
+> This two patches (on top of tip/master as of today) fix bugs
+> in sched/core. First one is a repost of
+> http://comments.gmane.org/gmane.linux.kernel/1638425, and exposed,
+> at least to me, another bug (fixed by second patch).
 
+With today's -tip there's a new warning on UP builds:
+
+  /home/mingo/tip/kernel/sched/deadline.c:993: warning: 'pull_dl_task' declared 'static' but never defined
+
+And in general the #ifdef happiness of deadline.c is rather sad:
+
+ comet:~/tip> grep '#ifdef' kernel/sched/deadline.c 
+ #ifdef CONFIG_SMP
+ #ifdef CONFIG_SMP
+ #ifdef CONFIG_SMP
+ #ifdef CONFIG_SMP
+ #ifdef CONFIG_SMP
+ #ifdef CONFIG_SMP
+ #ifdef CONFIG_SCHED_HRTICK
+ #ifdef CONFIG_SMP
+ #ifdef CONFIG_SCHED_HRTICK
+ #ifdef CONFIG_SMP
+ #ifdef CONFIG_SCHED_HRTICK
+ #ifdef CONFIG_SMP
+ #ifdef CONFIG_SMP
+ #ifdef CONFIG_SMP
+ #ifdef CONFIG_SMP
+ #ifdef CONFIG_SMP
+
+All that needs to be cleaned up.
+
+Thanks,
+
+	Ingo
