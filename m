@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754210AbaBKUhx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:37:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39794 "EHLO
+	id S1754383AbaBKUiM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:38:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39790 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753145AbaBKTGC (ORCPT
+	with ESMTP id S1752989AbaBKTGB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:02 -0500
+	Tue, 11 Feb 2014 14:06:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 3.13 112/120] timekeeping: Fix lost updates to tai adjustment
-Date: Tue, 11 Feb 2014 11:05:53 -0800
-Message-Id: <20140211184826.833456399@linuxfoundation.org>
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.13 111/120] powerpc/mm: Fix compile error of pgtable-ppc64.h
+Date: Tue, 11 Feb 2014 11:05:52 -0800
+Message-Id: <20140211184826.805535289@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -32,53 +30,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John Stultz <john.stultz@linaro.org>
+From: Li Zhong <zhong@linux.vnet.ibm.com>
 
-commit f55c07607a38f84b5c7e6066ee1cfe433fa5643c upstream.
+commit fd120dc2e205d2318a8b47d6d8098b789e3af67d upstream.
 
-Since 48cdc135d4840 (Implement a shadow timekeeper), we have to
-call timekeeping_update() after any adjustment to the timekeeping
-structure in order to make sure that any adjustments to the structure
-persist.
+It seems that forward declaration couldn't work well with typedef, use
+struct spinlock directly to avoiding following build errors:
 
-Unfortunately, the updates to the tai offset via adjtimex do not
-trigger this update, causing adjustments to the tai offset to be
-made and then over-written by the previous value at the next
-update_wall_time() call.
+In file included from include/linux/spinlock.h:81,
+                 from include/linux/seqlock.h:35,
+                 from include/linux/time.h:5,
+                 from include/uapi/linux/timex.h:56,
+                 from include/linux/timex.h:56,
+                 from include/linux/sched.h:17,
+                 from arch/powerpc/kernel/asm-offsets.c:17:
+include/linux/spinlock_types.h:76: error: redefinition of typedef 'spinlock_t'
+/root/linux-next/arch/powerpc/include/asm/pgtable-ppc64.h:563: note: previous declaration of 'spinlock_t' was here
 
-This patch resovles the issue by calling timekeeping_update()
-right after setting the tai offset.
-
-Cc: Sasha Levin <sasha.levin@oracle.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/time/timekeeping.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/powerpc/include/asm/pgtable-ppc64.h |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -610,6 +610,7 @@ void timekeeping_set_tai_offset(s32 tai_
- 	raw_spin_lock_irqsave(&timekeeper_lock, flags);
- 	write_seqcount_begin(&timekeeper_seq);
- 	__timekeeping_set_tai_offset(tk, tai_offset);
-+	timekeeping_update(tk, TK_MIRROR | TK_CLOCK_WAS_SET);
- 	write_seqcount_end(&timekeeper_seq);
- 	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
- 	clock_was_set();
-@@ -1698,7 +1699,7 @@ int do_adjtimex(struct timex *txc)
+--- a/arch/powerpc/include/asm/pgtable-ppc64.h
++++ b/arch/powerpc/include/asm/pgtable-ppc64.h
+@@ -560,9 +560,9 @@ extern void pmdp_invalidate(struct vm_ar
+ 			    pmd_t *pmdp);
  
- 	if (tai != orig_tai) {
- 		__timekeeping_set_tai_offset(tk, tai);
--		update_pvclock_gtod(tk, true);
-+		timekeeping_update(tk, TK_MIRROR | TK_CLOCK_WAS_SET);
- 		clock_was_set_delayed();
- 	}
- 	write_seqcount_end(&timekeeper_seq);
+ #define pmd_move_must_withdraw pmd_move_must_withdraw
+-typedef struct spinlock spinlock_t;
+-static inline int pmd_move_must_withdraw(spinlock_t *new_pmd_ptl,
+-					 spinlock_t *old_pmd_ptl)
++struct spinlock;
++static inline int pmd_move_must_withdraw(struct spinlock *new_pmd_ptl,
++					 struct spinlock *old_pmd_ptl)
+ {
+ 	/*
+ 	 * Archs like ppc64 use pgtable to store per pmd
 
 
