@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751359AbaBKJk5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 04:40:57 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:36790 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750758AbaBKJky (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 04:40:54 -0500
-Message-ID: <52F9F020.6090504@ti.com>
-Date: Tue, 11 Feb 2014 11:40:48 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751199AbaBKJmH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 04:42:07 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:48724 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750776AbaBKJmD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 04:42:03 -0500
+Date: Tue, 11 Feb 2014 10:41:06 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: kbuild test robot <fengguang.wu@intel.com>
+Cc: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
+        Ingo Molnar <mingo@kernel.org>, kbuild-all@01.org,
+        Arnd Bergmann <arnd@arndb.de>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] powerpc/spufs: Fix duplicate definition of MAX_USER_PRIO
+Message-ID: <20140211094106.GM27965@twins.programming.kicks-ass.net>
+References: <52f92761.nu9w3QblrTnGpeYg%fengguang.wu@intel.com>
 MIME-Version: 1.0
-To: Colin King <colin.king@canonical.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH][v2] mfd: omap-usb-tll: fix cppcheck sizeof warning
-References: <1392111533-23053-1-git-send-email-colin.king@canonical.com>
-In-Reply-To: <1392111533-23053-1-git-send-email-colin.king@canonical.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52f92761.nu9w3QblrTnGpeYg%fengguang.wu@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2014 11:38 AM, Colin King wrote:
-> From: Colin Ian King <colin.king@canonical.com>
-> 
-> Static analysis from cppcheck issued the following warning:
-> 
-> [drivers/mfd/omap-usb-tll.c:255]: (warning) Found calculation
->   inside sizeof().
-> 
-> The current size calculation is not obvious and is easy to
-> miscomprehend, so re-work the size of the allocation based
-> on the size of the struct pointer and quantity to allocate.
-> 
-> Signed-off-by: Colin Ian King <colin.king@canonical.com>
-> ---
->  drivers/mfd/omap-usb-tll.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
-> index 5ee50f7..532eacab 100644
-> --- a/drivers/mfd/omap-usb-tll.c
-> +++ b/drivers/mfd/omap-usb-tll.c
-> @@ -252,7 +252,7 @@ static int usbtll_omap_probe(struct platform_device *pdev)
->  		break;
->  	}
->  
-> -	tll->ch_clk = devm_kzalloc(dev, sizeof(struct clk * [tll->nch]),
-> +	tll->ch_clk = devm_kzalloc(dev, sizeof(struct clk *) * tll->nch,
->  						GFP_KERNEL);
->  	if (!tll->ch_clk) {
->  		ret = -ENOMEM;
-> 
+On Tue, Feb 11, 2014 at 03:24:17AM +0800, kbuild test robot wrote:
+> >> arch/powerpc/platforms/cell/spufs/sched.c:86:0: warning: "MAX_USER_PRIO" redefined [enabled by default]
+>     #define MAX_USER_PRIO  (MAX_PRIO - MAX_RT_PRIO)
+>     ^
+>    In file included from include/linux/sched.h:6:0,
+>                     from arch/powerpc/platforms/cell/spufs/sched.c:26:
+>    include/linux/sched/prio.h:39:0: note: this is the location of the previous definition
+>     #define MAX_USER_PRIO  (USER_PRIO(MAX_PRIO))
+>     ^
 
-Thanks for the patch Colin.
+Since USER_PRIO(p) is ((p)-MAX_RT_PRIO) the above two definitions are
+the same and we can simply remove the spufs one.
 
-Acked-by: Roger Quadros <rogerq@ti.com>
+Fixes: 6b6350f155af ("sched: Expose some macros related to priority")
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ arch/powerpc/platforms/cell/spufs/sched.c | 1 -
+ 1 file changed, 1 deletion(-)
 
---
-cheers,
--roger
+diff --git a/arch/powerpc/platforms/cell/spufs/sched.c b/arch/powerpc/platforms/cell/spufs/sched.c
+index 49318385d4fa..4a0a64fe25df 100644
+--- a/arch/powerpc/platforms/cell/spufs/sched.c
++++ b/arch/powerpc/platforms/cell/spufs/sched.c
+@@ -83,7 +83,6 @@ static struct timer_list spuloadavg_timer;
+ #define MIN_SPU_TIMESLICE	max(5 * HZ / (1000 * SPUSCHED_TICK), 1)
+ #define DEF_SPU_TIMESLICE	(100 * HZ / (1000 * SPUSCHED_TICK))
+ 
+-#define MAX_USER_PRIO		(MAX_PRIO - MAX_RT_PRIO)
+ #define SCALE_PRIO(x, prio) \
+ 	max(x * (MAX_PRIO - prio) / (MAX_USER_PRIO / 2), MIN_SPU_TIMESLICE)
+ 
