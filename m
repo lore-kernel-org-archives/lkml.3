@@ -1,114 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751772AbaBKLLz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 06:11:55 -0500
-Received: from mail-we0-f172.google.com ([74.125.82.172]:51615 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750809AbaBKLLy (ORCPT
+	id S1752007AbaBKLMZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 06:12:25 -0500
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:45832 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751015AbaBKLMW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 06:11:54 -0500
-Message-ID: <52FA0577.6080607@linaro.org>
-Date: Tue, 11 Feb 2014 12:11:51 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 11 Feb 2014 06:12:22 -0500
 MIME-Version: 1.0
-To: Preeti Murthy <preeti.lkml@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>
-CC: mingo@kernel.org, alex.shi@linaro.org, LKML <linux-kernel@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Subject: Re: [PATCH V2 2/3] sched: Fix race in idle_balance()
-References: <1391728237-4441-1-git-send-email-daniel.lezcano@linaro.org>	<1391728237-4441-3-git-send-email-daniel.lezcano@linaro.org> <CAM4v1pMEFTe6pQVDFzaXmqt_A3vw3tyj7Ewqib6zbzH++YzY3w@mail.gmail.com>
-In-Reply-To: <CAM4v1pMEFTe6pQVDFzaXmqt_A3vw3tyj7Ewqib6zbzH++YzY3w@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <52F83E34.8030305@intel.com>
+References: <1391432142-18723-1-git-send-email-eranian@google.com>
+	<1391432142-18723-2-git-send-email-eranian@google.com>
+	<52F83E34.8030305@intel.com>
+Date: Tue, 11 Feb 2014 12:12:21 +0100
+Message-ID: <CABPqkBTJNrWwbnWazXV2g3m2MBmujp-mjod9Ujy3UMguv7Gp0g@mail.gmail.com>
+Subject: Re: [PATCH v1 01/10] perf/x86/uncore: fix initialization of cpumask
+From: Stephane Eranian <eranian@google.com>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/10/2014 10:24 AM, Preeti Murthy wrote:
-> HI Daniel,
+On Mon, Feb 10, 2014 at 3:49 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+> why not something like below. I think it's simpler.
 >
-> Isn't the only scenario where another cpu can put an idle task on
-> our runqueue,
+I don't like that too much. It assumes msr_uncores is initialized properly.
+I have seen compiler complaining about missing default: case.
 
-Well, I am not sure to understand what you meant, but I assume you are 
-asking if it is possible to have a task to be pulled when we are idle, 
-right ?
-
-This patch fixes the race when the current cpu is *about* to enter idle 
-when calling schedule().
-
-
-> in nohz_idle_balance() where only the cpus in
-> the nohz.idle_cpus_mask are iterated through. But for the case
-> that this patch is addressing, the cpu in question is not yet a part
-> of the nohz.idle_cpus_mask right?
+> ---
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> index 29c2487..169ef4a 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> @@ -3799,9 +3799,6 @@ static int __init uncore_cpu_init(void)
+>                         ivt_uncore_cbox.num_boxes = max_cores;
+>                 msr_uncores = ivt_msr_uncores;
+>                 break;
+> -
+> -       default:
+> -               return 0;
+>         }
 >
-> Any other case would trigger load balancing on the same cpu, but
-> we are preempt_disabled and interrupt disabled at this point.
+>         ret = uncore_types_init(msr_uncores);
 >
-> Thanks
 >
 > Regards
-> Preeti U Murthy
+> Yan, Zheng
 >
-> On Fri, Feb 7, 2014 at 4:40 AM, Daniel Lezcano
-> <daniel.lezcano@linaro.org> wrote:
->> The scheduler main function 'schedule()' checks if there are no more tasks
->> on the runqueue. Then it checks if a task should be pulled in the current
->> runqueue in idle_balance() assuming it will go to idle otherwise.
+>
+> On 02/03/2014 08:55 PM, Stephane Eranian wrote:
+>> On certain processors, the uncore PMU boxes may only be
+>> msr-bsed or PCI-based. But in both cases, the cpumask,
+>> suggesting on which CPUs to monitor to get full coverage
+>> of the particular PMU, must be created.
 >>
->> But the idle_balance() releases the rq->lock in order to lookup in the sched
->> domains and takes the lock again right after. That opens a window where
->> another cpu may put a task in our runqueue, so we won't go to idle but
->> we have filled the idle_stamp, thinking we will.
+>> However with the current code base, the cpumask was only
+>> created on processor which had at least one MSR-based
+>> uncore PMU. This patch removes that restriction and
+>> ensures the cpumask is created even when there is no
+>> msr-based PMU. For instance, on SNB client where only
+>> a PCI-based memory controller PMU is supported.
 >>
->> This patch closes the window by checking if the runqueue has been modified
->> but without pulling a task after taking the lock again, so we won't go to idle
->> right after in the __schedule() function.
->>
->> Cc: alex.shi@linaro.org
->> Cc: peterz@infradead.org
->> Cc: mingo@kernel.org
->> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
->> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+>> Signed-off-by: Stephane Eranian <eranian@google.com>
 >> ---
->>   kernel/sched/fair.c |    7 +++++++
->>   1 file changed, 7 insertions(+)
+>>  arch/x86/kernel/cpu/perf_event_intel_uncore.c |   61 +++++++++++++++----------
+>>  1 file changed, 37 insertions(+), 24 deletions(-)
 >>
->> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->> index 428bc9d..5ebc681 100644
->> --- a/kernel/sched/fair.c
->> +++ b/kernel/sched/fair.c
->> @@ -6589,6 +6589,13 @@ void idle_balance(struct rq *this_rq)
+>> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+>> index 29c2487..fe4255b 100644
+>> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+>> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+>> @@ -3764,7 +3764,7 @@ static void __init uncore_cpu_setup(void *dummy)
 >>
->>          raw_spin_lock(&this_rq->lock);
+>>  static int __init uncore_cpu_init(void)
+>>  {
+>> -     int ret, cpu, max_cores;
+>> +     int ret, max_cores;
 >>
->> +       /*
->> +        * While browsing the domains, we released the rq lock.
->> +        * A task could have be enqueued in the meantime
->> +        */
->> +       if (this_rq->nr_running && !pulled_task)
->> +               return;
+>>       max_cores = boot_cpu_data.x86_max_cores;
+>>       switch (boot_cpu_data.x86_model) {
+>> @@ -3808,29 +3808,6 @@ static int __init uncore_cpu_init(void)
+>>       if (ret)
+>>               return ret;
+>>
+>> -     get_online_cpus();
+>> -
+>> -     for_each_online_cpu(cpu) {
+>> -             int i, phys_id = topology_physical_package_id(cpu);
+>> -
+>> -             for_each_cpu(i, &uncore_cpu_mask) {
+>> -                     if (phys_id == topology_physical_package_id(i)) {
+>> -                             phys_id = -1;
+>> -                             break;
+>> -                     }
+>> -             }
+>> -             if (phys_id < 0)
+>> -                     continue;
+>> -
+>> -             uncore_cpu_prepare(cpu, phys_id);
+>> -             uncore_event_init_cpu(cpu);
+>> -     }
+>> -     on_each_cpu(uncore_cpu_setup, NULL, 1);
+>> -
+>> -     register_cpu_notifier(&uncore_cpu_nb);
+>> -
+>> -     put_online_cpus();
+>> -
+>>       return 0;
+>>  }
+>>
+>> @@ -3859,6 +3836,41 @@ static int __init uncore_pmus_register(void)
+>>       return 0;
+>>  }
+>>
+>> +static void uncore_cpumask_init(void)
+>> +{
+>> +     int cpu;
 >> +
->>          if (pulled_task || time_after(jiffies, this_rq->next_balance)) {
->>                  /*
->>                   * We are going idle. next_balance may be set based on
->> --
->> 1.7.9.5
+>> +     /*
+>> +      * ony invoke once from msr or pci init code
+>> +      */
+>> +     if (!cpumask_empty(&uncore_cpu_mask))
+>> +             return;
+>> +
+>> +     get_online_cpus();
+>> +
+>> +     for_each_online_cpu(cpu) {
+>> +             int i, phys_id = topology_physical_package_id(cpu);
+>> +
+>> +             for_each_cpu(i, &uncore_cpu_mask) {
+>> +                     if (phys_id == topology_physical_package_id(i)) {
+>> +                             phys_id = -1;
+>> +                             break;
+>> +                     }
+>> +             }
+>> +             if (phys_id < 0)
+>> +                     continue;
+>> +
+>> +             uncore_cpu_prepare(cpu, phys_id);
+>> +             uncore_event_init_cpu(cpu);
+>> +     }
+>> +     on_each_cpu(uncore_cpu_setup, NULL, 1);
+>> +
+>> +     register_cpu_notifier(&uncore_cpu_nb);
+>> +
+>> +     put_online_cpus();
+>> +}
+>> +
+>> +
+>>  static int __init intel_uncore_init(void)
+>>  {
+>>       int ret;
+>> @@ -3877,6 +3889,7 @@ static int __init intel_uncore_init(void)
+>>               uncore_pci_exit();
+>>               goto fail;
+>>       }
+>> +     uncore_cpumask_init();
 >>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+>>       uncore_pmus_register();
+>>       return 0;
+>>
+>
