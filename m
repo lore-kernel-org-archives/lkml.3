@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932101AbaBKVHg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 16:07:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39500 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752449AbaBKTE7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752432AbaBKTE7 (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 11 Feb 2014 14:04:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39487 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752123AbaBKTE5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 14:04:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH 3.13 024/120] ARM: mvebu: Fix kernel hang in mvebu_soc_id_init() when of_iomap failed
-Date: Tue, 11 Feb 2014 11:04:25 -0800
-Message-Id: <20140211184824.241253352@linuxfoundation.org>
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, Chris Ball <cjb@laptop.org>
+Subject: [PATCH 3.13 021/120] mmc: atmel-mci: fix timeout errors in SDIO mode when using DMA
+Date: Tue, 11 Feb 2014 11:04:22 -0800
+Message-Id: <20140211184824.144737782@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -30,35 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+From: Ludovic Desroches <ludovic.desroches@atmel.com>
 
-commit dc4910d9e93f8cc56b190dd8fc9e789135978216 upstream.
+commit 66b512eda74d59b17eac04c4da1b38d82059e6c9 upstream.
 
-When pci_base is accessed whereas it has not been properly mapped by
-of_iomap() the kernel hang. The check of this pointer made an improper
-use of IS_ERR() instead of comparing to NULL. This patch fix this
-issue.
+With some SDIO devices, timeout errors can happen when reading data.
+To solve this issue, the DMA transfer has to be activated before sending
+the command to the device. This order is incorrect in PDC mode. So we
+have to take care if we are using DMA or PDC to know when to send the
+MMC command.
 
-Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Reported-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Fixes: 930ab3d403ae (i2c: mv64xxx: Add I2C Transaction Generator support)
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-mvebu/mvebu-soc-id.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/mmc/host/atmel-mci.c |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
---- a/arch/arm/mach-mvebu/mvebu-soc-id.c
-+++ b/arch/arm/mach-mvebu/mvebu-soc-id.c
-@@ -88,7 +88,7 @@ static int __init mvebu_soc_id_init(void
- 	}
+--- a/drivers/mmc/host/atmel-mci.c
++++ b/drivers/mmc/host/atmel-mci.c
+@@ -1192,11 +1192,22 @@ static void atmci_start_request(struct a
+ 	iflags |= ATMCI_CMDRDY;
+ 	cmd = mrq->cmd;
+ 	cmdflags = atmci_prepare_command(slot->mmc, cmd);
+-	atmci_send_command(host, cmd, cmdflags);
++
++	/*
++	 * DMA transfer should be started before sending the command to avoid
++	 * unexpected errors especially for read operations in SDIO mode.
++	 * Unfortunately, in PDC mode, command has to be sent before starting
++	 * the transfer.
++	 */
++	if (host->submit_data != &atmci_submit_data_dma)
++		atmci_send_command(host, cmd, cmdflags);
  
- 	pci_base = of_iomap(child, 0);
--	if (IS_ERR(pci_base)) {
-+	if (pci_base == NULL) {
- 		pr_err("cannot map registers\n");
- 		ret = -ENOMEM;
- 		goto res_ioremap;
+ 	if (data)
+ 		host->submit_data(host, data);
+ 
++	if (host->submit_data == &atmci_submit_data_dma)
++		atmci_send_command(host, cmd, cmdflags);
++
+ 	if (mrq->stop) {
+ 		host->stop_cmdr = atmci_prepare_command(slot->mmc, mrq->stop);
+ 		host->stop_cmdr |= ATMCI_CMDR_STOP_XFER;
 
 
