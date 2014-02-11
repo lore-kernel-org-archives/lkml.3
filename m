@@ -1,126 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751014AbaBKJuv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 04:50:51 -0500
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:46080 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750767AbaBKJuo (ORCPT
+	id S1751462AbaBKJu7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 04:50:59 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:48479 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751096AbaBKJux convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 04:50:44 -0500
+	Tue, 11 Feb 2014 04:50:53 -0500
 MIME-Version: 1.0
-In-Reply-To: <52F9ED02.6000604@realtek.com>
-References: <1391697307-23457-1-git-send-email-rogerable@realtek.com>
-	<1391697307-23457-3-git-send-email-rogerable@realtek.com>
-	<201402110748.s1B7miQ8010938@rtits1.realtek.com>
-	<52F9ED02.6000604@realtek.com>
-Date: Tue, 11 Feb 2014 10:50:43 +0100
-Message-ID: <CAPDyKFqp-_KguRjby4gSnjjXKctHrhjh3uWqYHmJFcD=x3Dogg@mail.gmail.com>
-Subject: Re: [PATCH v3 2/3] mmc: Add realtek USB sdmmc host driver
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Roger <rogerable@realtek.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Chris Ball <cjb@laptop.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        driverdev-devel@linuxdriverproject.org,
-        Wei WANG <wei_wang@realsil.com.cn>, micky_ching@realsil.com.cn
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20140211094726.GH32042@lee--X1>
+References: <1392045953-26596-1-git-send-email-lpapp@kde.org>
+	<20140210160842.GB26997@lee--X1>
+	<20140210173811.04ba5964@endymion.delvare>
+	<CAOMwXhPTkrUUaUL-H_0fvZBO9_kt4jqKXs5BJYthDfu0_1c3xg@mail.gmail.com>
+	<20140211085014.4ef32b56@endymion.delvare>
+	<CAOMwXhMhKdp420+SPTih+C3fAgTmrpJgPnGBxsfPO3pEhESGTA@mail.gmail.com>
+	<20140211085053.GD32042@lee--X1>
+	<CAOMwXhPfmXDKcov_+HHDTCaieGDiMEi+6CV_OnYDM3c8+S+bfA@mail.gmail.com>
+	<20140211094726.GH32042@lee--X1>
+Date: Tue, 11 Feb 2014 09:50:52 +0000
+X-Google-Sender-Auth: u1GVrogxS9OVHzuroCh_O_AnQ-Q
+Message-ID: <CAOMwXhNJaVX4LF+PeWh2zi5-vbF95hQNGMvqnK1=sOMO1to8VA@mail.gmail.com>
+Subject: Re: [lm-sensors] [PATCH] hwmon: (max6650) Rename the device ids to
+ contain the hwmon suffix
+From: Laszlo Papp <lpapp@kde.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Jean Delvare <jdelvare@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        lm-sensors@lm-sensors.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 February 2014 10:27, Roger <rogerable@realtek.com> wrote:
-> On 02/10/2014 10:58 PM, Ulf Hansson wrote:
+On Tue, Feb 11, 2014 at 9:47 AM, Lee Jones <lee.jones@linaro.org> wrote:
+>> >> >> On Mon, Feb 10, 2014 at 4:38 PM, Jean Delvare <jdelvare@suse.de> wrote:
+>> >> >> > Additionally, dashes are explicitly forbidden in hwmon
+>> >> >> > device names.
+>> >> >>
+>> >> >> Also, where is that documented?
+>> >> >
+>> >> > In Documentation/hwmon/sysfs-interface:
+>> >> >
+>> >> > *********************
+>> >> > * Global attributes *
+>> >> > *********************
+>> >> >
+>> >> > name            The chip name.
+>> >> >                 This should be a short, lowercase string, not containing
+>> >> >                 spaces nor dashes, representing the chip name. This is
+>> >> >                 the only mandatory attribute.
+>> >> >                 I2C devices get this attribute created automatically.
+>> >> >                 RO
+>> >>
+>> >> Time to revisit this decision....
+>> >>
+>> >> So, based on the fact that children device names usually contain
+>> >> dashes, I do not understand why hwmon would be any special in this
+>> >> regard. It is possible that the hwmon developers have not faced much
+>> >> MFD situation before, and so, this was not considered to be handled
+>> >> like in other subsystems.
+>> >>
+>> >> I am proposing to change this "rule"...  Any objection?
+>> >
+>> > Prior to proposing such an invasive change which is highly likely to
+>> > come up against heavy opposition,
 >>
->> On 6 February 2014 15:35,  <rogerable@realtek.com> wrote:
->>>
->>> From: Roger Tseng <rogerable@realtek.com>
->>>
->>> Realtek USB SD/MMC host driver provides mmc host support based on the
->>> Realtek
->>> USB card reader MFD driver.
->>>
->>> Signed-off-by: Roger Tseng <rogerable@realtek.com>
->>> ---
->>>   drivers/mmc/host/Kconfig          |    7 +
->>>   drivers/mmc/host/Makefile         |    1 +
->>>   drivers/mmc/host/rtsx_usb_sdmmc.c | 1500
->>> +++++++++++++++++++++++++++++++++++++
->>>   3 files changed, 1508 insertions(+)
->>>   create mode 100644 drivers/mmc/host/rtsx_usb_sdmmc.c
+>> It is possible that someone does not understand why you think it may
+>> be invasive, right? Could you please explain the reason for that?
 >
-> [snip]
->
->>> +#ifdef CONFIG_PM_RUNTIME
->>
->>
->> There are stubs for pm_runtime* functions, thus the ifdefs can be removed.
->> Please go though the complete patch and remove all instances.
->>
->>> +               pm_runtime_put(sdmmc_dev(host));
->>
->>
->> I don't know so much about USB mmc hosts hardware, but I just wanted
->> to find out if I have understood this correct.
->>
->> You can't do fine grained power management of the USB parent device,
->> since it needs to be runtime resumed to be able keep the power the
->> card? Once it becomes runtime suspended, the power to the card will
->> thus also be dropped?
->>
-> Yes, and to keep some internal state of the controller.
+> The reason is a good one. In the kernel we make every attempt not to
+> break userspace. By that I mean _any_ userspace application. Userspace
+> applications which interface with the kernel can do so via a variety of
+> methods. One of those is Sysfs, where this name you are attempting to
+> change appears. The userspace applications already mentioned parse for
+> these devices, regex:ing for '-' separators. If you add an additional
+> '-' separator there is a chance that these applications will get
+> confused and break without warning.
 
-Okay.
+Only for new devices that they have not supported before, right?
+Provided, we apply the logic only for new drivers.
 
-But the internal state of the controller should be possible to restore
-at runtime_resume, so that should not be the reason, right?
+Is it unacceptable to have an interim "obsolete" period for a while
+and the recommendation is the dash for the long future?
+
+Also, how about applications that would expect hwmon to behave the
+same way like all the rest? They also break with the current hwmon
+schema, right?
 
 >
-> [snip]
->
->>> +#ifdef CONFIG_PM
->>
->>
->> I suppose this should be CONFIG_PM_SLEEP?
->>
-> ...
->
->>> +       err = mmc_suspend_host(mmc);
->>
->>
->> This won't compile. The mmc_suspend_host API has been removed.
->>
-> ...
->
->>> +       return mmc_resume_host(mmc);
->>
->>
->> This won't compile. The mmc_resume_host API has been removed.
->>
-> ...
->>>
->>> +static struct platform_driver rtsx_usb_sdmmc_driver = {
->>> +       .probe          = rtsx_usb_sdmmc_drv_probe,
->>> +       .remove         = rtsx_usb_sdmmc_drv_remove,
->>> +       .id_table       = rtsx_usb_sdmmc_ids,
->>> +       .suspend        = rtsx_usb_sdmmc_suspend,
->>> +       .resume         = rtsx_usb_sdmmc_resume,
->>
->>
->> Please use the modern pm_ops instead of the legacy suspend/resume
->> callbacks.
->> I suggest you then also switch to use the SIMPLE_DEV_PM_OPS macro.
->
->
-> I just missed the removal of mmc_suspend|resume_host.
->
-> I'll remove all these unnecessary mmc host pm things as done in commit
-> ff71c4bcb0af2730d047989e485303ae4e1ce794 for drivers of our PCIe devices.
->
-> Thanks for pointing this out.
->
->> Kind regards
->> Ulf Hansson
+> --
+> Lee Jones
+> Linaro STMicroelectronics Landing Team Lead
+> Linaro.org │ Open source software for ARM SoCs
+> Follow Linaro: Facebook | Twitter | Blog
