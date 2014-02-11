@@ -1,107 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756542AbaBKU26 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:28:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39873 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753265AbaBKTGO (ORCPT
+	id S932398AbaBKU3H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:29:07 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:48809 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756104AbaBKU3C convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:14 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Eric Paris <eparis@redhat.com>, Paul Moore <pmoore@redhat.com>
-Subject: [PATCH 3.12 001/107] SELinux: Fix memory leak upon loading policy
-Date: Tue, 11 Feb 2014 11:04:27 -0800
-Message-Id: <20140211184748.235245190@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
-References: <20140211184748.191276235@linuxfoundation.org>
-User-Agent: quilt/0.61-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Tue, 11 Feb 2014 15:29:02 -0500
+Content-Type: text/plain; charset=US-ASCII
+Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
+Subject: Re: [PATCH 2/2] ARM: dts: MSM8974: Add pinctrl node
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <CAJAp7OhEE0rTv2KRjajU361wrMh0VqOwCH4u4vC3+F4KMcU0GQ@mail.gmail.com>
+Date: Tue, 11 Feb 2014 14:28:57 -0600
+Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        Bjorn Andersson <bjorn@kryo.se>
+Content-Transfer-Encoding: 7BIT
+Message-Id: <41801E64-243A-47DF-9AED-F8594373EC10@codeaurora.org>
+References: <1391700529-11816-1-git-send-email-iivanov@mm-sol.com> <1391700529-11816-2-git-send-email-iivanov@mm-sol.com> <CAJAp7OhEE0rTv2KRjajU361wrMh0VqOwCH4u4vC3+F4KMcU0GQ@mail.gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+X-Mailer: Apple Mail (2.1827)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+On Feb 10, 2014, at 12:55 PM, Bjorn Andersson <bjorn@kryo.se> wrote:
 
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> On Thu, Feb 6, 2014 at 7:28 AM, Ivan T. Ivanov <iivanov@mm-sol.com> wrote:
+>> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+>> 
+>> Add the pin control node and pin definitions of SPI8.
+>> 
+>> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+>> ---
+>> arch/arm/boot/dts/qcom-msm8974.dtsi |   29 +++++++++++++++++++++++++++++
+>> 1 file changed, 29 insertions(+)
+>> 
+>> diff --git a/arch/arm/boot/dts/qcom-msm8974.dtsi b/arch/arm/boot/dts/qcom-msm8974.dtsi
+>> index 9e5dadb..395603f 100644
+>> --- a/arch/arm/boot/dts/qcom-msm8974.dtsi
+>> +++ b/arch/arm/boot/dts/qcom-msm8974.dtsi
+>> @@ -117,5 +117,34 @@
+>>                        clocks = <&gcc GCC_BLSP1_UART2_APPS_CLK>, <&gcc GCC_BLSP1_AHB_CLK>;
+>>                        clock-names = "core", "iface";
+>>                };
+>> +
+>> +               msmgpio: pinctrl@fd510000 {
+>> +                       compatible = "qcom,msm8974-pinctrl";
+>> +                       reg = <0xfd510000 0x4000>;
+>> +                       gpio-controller;
+>> +                       #gpio-cells = <2>;
+>> +                       interrupt-controller;
+>> +                       #interrupt-cells = <2>;
+>> +                       interrupts = <0 208 0>;
+>> +
+>> +                       spi8_default: spi8_default {
+>> +                               mosi {
+>> +                                       pins = "gpio45";
+>> +                                       function = "blsp_spi8";
+>> +                               };
+>> +                               miso {
+>> +                                       pins = "gpio46";
+>> +                                       function = "blsp_spi8";
+>> +                               };
+>> +                               cs {
+>> +                                       pins = "gpio47";
+>> +                                       function = "blsp_spi8";
+>> +                               };
+>> +                               clk {
+>> +                                       pins = "gpio48";
+>> +                                       function = "blsp_spi8";
+>> +                               };
+>> +                       };
+>> +               };
+>>        };
+>> };
+> 
+> Nice, listing it like this makes it easy to add the electrical
+> properties when inheriting these nodes, closer to the product dts
+> files.
+> 
+> Reviewed-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
 
-commit 8ed814602876bec9bad2649ca17f34b499357a1c upstream.
+Linus,
 
-Hello.
+I can take the .dts patch via the linux-qcom tree to keep it with other DT changes if you want to provide an ack.
 
-I got below leak with linux-3.10.0-54.0.1.el7.x86_64 .
+- k
 
-[  681.903890] kmemleak: 5538 new suspected memory leaks (see /sys/kernel/debug/kmemleak)
 
-Below is a patch, but I don't know whether we need special handing for undoing
-ebitmap_set_bit() call.
-----------
->>From fe97527a90fe95e2239dfbaa7558f0ed559c0992 Mon Sep 17 00:00:00 2001
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Mon, 6 Jan 2014 16:30:21 +0900
-Subject: [PATCH 3.12 001/107] SELinux: Fix memory leak upon loading policy
-
-Commit 2463c26d "SELinux: put name based create rules in a hashtable" did not
-check return value from hashtab_insert() in filename_trans_read(). It leaks
-memory if hashtab_insert() returns error.
-
-  unreferenced object 0xffff88005c9160d0 (size 8):
-    comm "systemd", pid 1, jiffies 4294688674 (age 235.265s)
-    hex dump (first 8 bytes):
-      57 0b 00 00 6b 6b 6b a5                          W...kkk.
-    backtrace:
-      [<ffffffff816604ae>] kmemleak_alloc+0x4e/0xb0
-      [<ffffffff811cba5e>] kmem_cache_alloc_trace+0x12e/0x360
-      [<ffffffff812aec5d>] policydb_read+0xd1d/0xf70
-      [<ffffffff812b345c>] security_load_policy+0x6c/0x500
-      [<ffffffff812a623c>] sel_write_load+0xac/0x750
-      [<ffffffff811eb680>] vfs_write+0xc0/0x1f0
-      [<ffffffff811ec08c>] SyS_write+0x4c/0xa0
-      [<ffffffff81690419>] system_call_fastpath+0x16/0x1b
-      [<ffffffffffffffff>] 0xffffffffffffffff
-
-However, we should not return EEXIST error to the caller, or the systemd will
-show below message and the boot sequence freezes.
-
-  systemd[1]: Failed to load SELinux policy. Freezing.
-
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Acked-by: Eric Paris <eparis@redhat.com>
-Signed-off-by: Paul Moore <pmoore@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- security/selinux/ss/policydb.c |   14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
-
---- a/security/selinux/ss/policydb.c
-+++ b/security/selinux/ss/policydb.c
-@@ -1941,7 +1941,19 @@ static int filename_trans_read(struct po
- 		if (rc)
- 			goto out;
- 
--		hashtab_insert(p->filename_trans, ft, otype);
-+		rc = hashtab_insert(p->filename_trans, ft, otype);
-+		if (rc) {
-+			/*
-+			 * Do not return -EEXIST to the caller, or the system
-+			 * will not boot.
-+			 */
-+			if (rc != -EEXIST)
-+				goto out;
-+			/* But free memory to avoid memory leak. */
-+			kfree(ft);
-+			kfree(name);
-+			kfree(otype);
-+		}
- 	}
- 	hash_eval(p->filename_trans, "filenametr");
- 	return 0;
-
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
