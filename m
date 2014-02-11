@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754702AbaBKTM4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:12:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40642 "EHLO
+	id S1754718AbaBKTNX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:13:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40623 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754498AbaBKTIi (ORCPT
+	with ESMTP id S1754477AbaBKTIf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:08:38 -0500
+	Tue, 11 Feb 2014 14:08:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christoph Lameter <cl@linux.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, Li Zefan <lizefan@huawei.com>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: [PATCH 3.4 05/30] slub: Fix calculation of cpu slabs
-Date: Tue, 11 Feb 2014 11:06:05 -0800
-Message-Id: <20140211184647.303822567@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.4 21/30] drm/radeon/DCE4+: clear bios scratch dpms bit (v2)
+Date: Tue, 11 Feb 2014 11:06:21 -0800
+Message-Id: <20140211184647.748599943@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184647.149512538@linuxfoundation.org>
 References: <20140211184647.149512538@linuxfoundation.org>
@@ -30,54 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Zefan <lizefan@huawei.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 8afb1474db4701d1ab80cd8251137a3260e6913e upstream.
+commit 6802d4bad83f50081b2788698570218aaff8d10e upstream.
 
-  /sys/kernel/slab/:t-0000048 # cat cpu_slabs
-  231 N0=16 N1=215
-  /sys/kernel/slab/:t-0000048 # cat slabs
-  145 N0=36 N1=109
+The BlankCrtc table in some DCE8 boards has some
+logic shortcuts for the vbios when this bit is set.
+Clear it for driver use.
 
-See, the number of slabs is smaller than that of cpu slabs.
+v2: fix typo
 
-The bug was introduced by commit 49e2258586b423684f03c278149ab46d8f8b6700
-("slub: per cpu cache for partial pages").
+Bug:
+https://bugs.freedesktop.org/show_bug.cgi?id=73420
 
-We should use page->pages instead of page->pobjects when calculating
-the number of cpu partial slabs. This also fixes the mapping of slabs
-and nodes.
-
-As there's no variable storing the number of total/active objects in
-cpu partial slabs, and we don't have user interfaces requiring those
-statistics, I just add WARN_ON for those cases.
-
-Acked-by: Christoph Lameter <cl@linux.com>
-Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/slub.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/radeon_atombios.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -4520,7 +4520,13 @@ static ssize_t show_slab_objects(struct
- 			page = c->partial;
+--- a/drivers/gpu/drm/radeon/radeon_atombios.c
++++ b/drivers/gpu/drm/radeon/radeon_atombios.c
+@@ -2785,6 +2785,10 @@ void radeon_atom_initialize_bios_scratch
+ 	/* tell the bios not to handle mode switching */
+ 	bios_6_scratch |= ATOM_S6_ACC_BLOCK_DISPLAY_SWITCH;
  
- 			if (page) {
--				x = page->pobjects;
-+				node = page_to_nid(page);
-+				if (flags & SO_TOTAL)
-+					WARN_ON_ONCE(1);
-+				else if (flags & SO_OBJECTS)
-+					WARN_ON_ONCE(1);
-+				else
-+					x = page->pages;
- 				total += x;
- 				nodes[node] += x;
- 			}
++	/* clear the vbios dpms state */
++	if (ASIC_IS_DCE4(rdev))
++		bios_2_scratch &= ~ATOM_S2_DEVICE_DPMS_STATE;
++
+ 	if (rdev->family >= CHIP_R600) {
+ 		WREG32(R600_BIOS_2_SCRATCH, bios_2_scratch);
+ 		WREG32(R600_BIOS_6_SCRATCH, bios_6_scratch);
 
 
