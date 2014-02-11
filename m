@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756635AbaBKVNU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 16:13:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39417 "EHLO
+	id S1756604AbaBKVNR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 16:13:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39423 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752002AbaBKTEt (ORCPT
+	with ESMTP id S1752075AbaBKTEt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Feb 2014 14:04:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anthony PERARD <anthony.perard@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH 3.13 011/120] xen/pvhvm: If xen_platform_pci=0 is set dont blow up (v4).
-Date: Tue, 11 Feb 2014 11:04:12 -0800
-Message-Id: <20140211184823.839675992@linuxfoundation.org>
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.13 012/120] mm/memory-failure.c: shift page lock from head page to tail page after thp split
+Date: Tue, 11 Feb 2014 11:04:13 -0800
+Message-Id: <20140211184823.877496061@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -30,334 +32,141 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-commit 51c71a3bbaca868043cc45b3ad3786dd48a90235 upstream.
+commit 54b9dd14d09f24927285359a227aa363ce46089e upstream.
 
-The user has the option of disabling the platform driver:
-00:02.0 Unassigned class [ff80]: XenSource, Inc. Xen Platform Device (rev 01)
+After thp split in hwpoison_user_mappings(), we hold page lock on the
+raw error page only between try_to_unmap, hence we are in danger of race
+condition.
 
-which is used to unplug the emulated drivers (IDE, Realtek 8169, etc)
-and allow the PV drivers to take over. If the user wishes
-to disable that they can set:
+I found in the RHEL7 MCE-relay testing that we have "bad page" error
+when a memory error happens on a thp tail page used by qemu-kvm:
 
-  xen_platform_pci=0
-  (in the guest config file)
+  Triggering MCE exception on CPU 10
+  mce: [Hardware Error]: Machine check events logged
+  MCE exception done on CPU 10
+  MCE 0x38c535: Killing qemu-kvm:8418 due to hardware memory corruption
+  MCE 0x38c535: dirty LRU page recovery: Recovered
+  qemu-kvm[8418]: segfault at 20 ip 00007ffb0f0f229a sp 00007fffd6bc5240 error 4 in qemu-kvm[7ffb0ef14000+420000]
+  BUG: Bad page state in process qemu-kvm  pfn:38c400
+  page:ffffea000e310000 count:0 mapcount:0 mapping:          (null) index:0x7ffae3c00
+  page flags: 0x2fffff0008001d(locked|referenced|uptodate|dirty|swapbacked)
+  Modules linked in: hwpoison_inject mce_inject vhost_net macvtap macvlan ...
+  CPU: 0 PID: 8418 Comm: qemu-kvm Tainted: G   M        --------------   3.10.0-54.0.1.el7.mce_test_fixed.x86_64 #1
+  Hardware name: NEC NEC Express5800/R120b-1 [N8100-1719F]/MS-91E7-001, BIOS 4.6.3C19 02/10/2011
+  Call Trace:
+    dump_stack+0x19/0x1b
+    bad_page.part.59+0xcf/0xe8
+    free_pages_prepare+0x148/0x160
+    free_hot_cold_page+0x31/0x140
+    free_hot_cold_page_list+0x46/0xa0
+    release_pages+0x1c1/0x200
+    free_pages_and_swap_cache+0xad/0xd0
+    tlb_flush_mmu.part.46+0x4c/0x90
+    tlb_finish_mmu+0x55/0x60
+    exit_mmap+0xcb/0x170
+    mmput+0x67/0xf0
+    vhost_dev_cleanup+0x231/0x260 [vhost_net]
+    vhost_net_release+0x3f/0x90 [vhost_net]
+    __fput+0xe9/0x270
+    ____fput+0xe/0x10
+    task_work_run+0xc4/0xe0
+    do_exit+0x2bb/0xa40
+    do_group_exit+0x3f/0xa0
+    get_signal_to_deliver+0x1d0/0x6e0
+    do_signal+0x48/0x5e0
+    do_notify_resume+0x71/0xc0
+    retint_signal+0x48/0x8c
 
-or
-  xen_emul_unplug=never
-  (on the Linux command line)
+The reason of this bug is that a page fault happens before unlocking the
+head page at the end of memory_failure().  This strange page fault is
+trying to access to address 0x20 and I'm not sure why qemu-kvm does
+this, but anyway as a result the SIGSEGV makes qemu-kvm exit and on the
+way we catch the bad page bug/warning because we try to free a locked
+page (which was the former head page.)
 
-except it does not work properly. The PV drivers still try to
-load and since the Xen platform driver is not run - and it
-has not initialized the grant tables, most of the PV drivers
-stumble upon:
+To fix this, this patch suggests to shift page lock from head page to
+tail page just after thp split.  SIGSEGV still happens, but it affects
+only error affected VMs, not a whole system.
 
-input: Xen Virtual Keyboard as /devices/virtual/input/input5
-input: Xen Virtual Pointer as /devices/virtual/input/input6M
-------------[ cut here ]------------
-kernel BUG at /home/konrad/ssd/konrad/linux/drivers/xen/grant-table.c:1206!
-invalid opcode: 0000 [#1] SMP
-Modules linked in: xen_kbdfront(+) xenfs xen_privcmd
-CPU: 6 PID: 1389 Comm: modprobe Not tainted 3.13.0-rc1upstream-00021-ga6c892b-dirty #1
-Hardware name: Xen HVM domU, BIOS 4.4-unstable 11/26/2013
-RIP: 0010:[<ffffffff813ddc40>]  [<ffffffff813ddc40>] get_free_entries+0x2e0/0x300
-Call Trace:
- [<ffffffff8150d9a3>] ? evdev_connect+0x1e3/0x240
- [<ffffffff813ddd0e>] gnttab_grant_foreign_access+0x2e/0x70
- [<ffffffffa0010081>] xenkbd_connect_backend+0x41/0x290 [xen_kbdfront]
- [<ffffffffa0010a12>] xenkbd_probe+0x2f2/0x324 [xen_kbdfront]
- [<ffffffff813e5757>] xenbus_dev_probe+0x77/0x130
- [<ffffffff813e7217>] xenbus_frontend_dev_probe+0x47/0x50
- [<ffffffff8145e9a9>] driver_probe_device+0x89/0x230
- [<ffffffff8145ebeb>] __driver_attach+0x9b/0xa0
- [<ffffffff8145eb50>] ? driver_probe_device+0x230/0x230
- [<ffffffff8145eb50>] ? driver_probe_device+0x230/0x230
- [<ffffffff8145cf1c>] bus_for_each_dev+0x8c/0xb0
- [<ffffffff8145e7d9>] driver_attach+0x19/0x20
- [<ffffffff8145e260>] bus_add_driver+0x1a0/0x220
- [<ffffffff8145f1ff>] driver_register+0x5f/0xf0
- [<ffffffff813e55c5>] xenbus_register_driver_common+0x15/0x20
- [<ffffffff813e76b3>] xenbus_register_frontend+0x23/0x40
- [<ffffffffa0015000>] ? 0xffffffffa0014fff
- [<ffffffffa001502b>] xenkbd_init+0x2b/0x1000 [xen_kbdfront]
- [<ffffffff81002049>] do_one_initcall+0x49/0x170
-
-.. snip..
-
-which is hardly nice. This patch fixes this by having each
-PV driver check for:
- - if running in PV, then it is fine to execute (as that is their
-   native environment).
- - if running in HVM, check if user wanted 'xen_emul_unplug=never',
-   in which case bail out and don't load any PV drivers.
- - if running in HVM, and if PCI device 5853:0001 (xen_platform_pci)
-   does not exist, then bail out and not load PV drivers.
- - (v2) if running in HVM, and if the user wanted 'xen_emul_unplug=ide-disks',
-   then bail out for all PV devices _except_ the block one.
-   Ditto for the network one ('nics').
- - (v2) if running in HVM, and if the user wanted 'xen_emul_unplug=unnecessary'
-   then load block PV driver, and also setup the legacy IDE paths.
-   In (v3) make it actually load PV drivers.
-
-Reported-by: Sander Eikelenboom <linux@eikelenboom.it
-Reported-by: Anthony PERARD <anthony.perard@citrix.com>
-Reported-and-Tested-by: Fabio Fantoni <fabio.fantoni@m2r.biz>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-[v2: Add extra logic to handle the myrid ways 'xen_emul_unplug'
-can be used per Ian and Stefano suggestion]
-[v3: Make the unnecessary case work properly]
-[v4: s/disks/ide-disks/ spotted by Fabio]
-Reviewed-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Acked-by: Bjorn Helgaas <bhelgaas@google.com> [for PCI parts]
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/xen/platform-pci-unplug.c         |   74 +++++++++++++++++++++++++++++
- drivers/block/xen-blkfront.c               |    4 -
- drivers/char/tpm/xen-tpmfront.c            |    4 +
- drivers/input/misc/xen-kbdfront.c          |    4 +
- drivers/net/xen-netfront.c                 |    2 
- drivers/pci/xen-pcifront.c                 |    4 +
- drivers/video/xen-fbfront.c                |    4 +
- drivers/xen/xenbus/xenbus_probe_frontend.c |    2 
- include/xen/platform_pci.h                 |   23 +++++++++
- 9 files changed, 117 insertions(+), 4 deletions(-)
+ mm/memory-failure.c |   21 +++++++++++----------
+ 1 file changed, 11 insertions(+), 10 deletions(-)
 
---- a/arch/x86/xen/platform-pci-unplug.c
-+++ b/arch/x86/xen/platform-pci-unplug.c
-@@ -69,6 +69,80 @@ static int check_platform_magic(void)
- 	return 0;
- }
- 
-+bool xen_has_pv_devices()
-+{
-+	if (!xen_domain())
-+		return false;
-+
-+	/* PV domains always have them. */
-+	if (xen_pv_domain())
-+		return true;
-+
-+	/* And user has xen_platform_pci=0 set in guest config as
-+	 * driver did not modify the value. */
-+	if (xen_platform_pci_unplug == 0)
-+		return false;
-+
-+	if (xen_platform_pci_unplug & XEN_UNPLUG_NEVER)
-+		return false;
-+
-+	if (xen_platform_pci_unplug & XEN_UNPLUG_ALL)
-+		return true;
-+
-+	/* This is an odd one - we are going to run legacy
-+	 * and PV drivers at the same time. */
-+	if (xen_platform_pci_unplug & XEN_UNPLUG_UNNECESSARY)
-+		return true;
-+
-+	/* And the caller has to follow with xen_pv_{disk,nic}_devices
-+	 * to be certain which driver can load. */
-+	return false;
-+}
-+EXPORT_SYMBOL_GPL(xen_has_pv_devices);
-+
-+static bool __xen_has_pv_device(int state)
-+{
-+	/* HVM domains might or might not */
-+	if (xen_hvm_domain() && (xen_platform_pci_unplug & state))
-+		return true;
-+
-+	return xen_has_pv_devices();
-+}
-+
-+bool xen_has_pv_nic_devices(void)
-+{
-+	return __xen_has_pv_device(XEN_UNPLUG_ALL_NICS | XEN_UNPLUG_ALL);
-+}
-+EXPORT_SYMBOL_GPL(xen_has_pv_nic_devices);
-+
-+bool xen_has_pv_disk_devices(void)
-+{
-+	return __xen_has_pv_device(XEN_UNPLUG_ALL_IDE_DISKS |
-+				   XEN_UNPLUG_AUX_IDE_DISKS | XEN_UNPLUG_ALL);
-+}
-+EXPORT_SYMBOL_GPL(xen_has_pv_disk_devices);
-+
-+/*
-+ * This one is odd - it determines whether you want to run PV _and_
-+ * legacy (IDE) drivers together. This combination is only possible
-+ * under HVM.
-+ */
-+bool xen_has_pv_and_legacy_disk_devices(void)
-+{
-+	if (!xen_domain())
-+		return false;
-+
-+	/* N.B. This is only ever used in HVM mode */
-+	if (xen_pv_domain())
-+		return false;
-+
-+	if (xen_platform_pci_unplug & XEN_UNPLUG_UNNECESSARY)
-+		return true;
-+
-+	return false;
-+}
-+EXPORT_SYMBOL_GPL(xen_has_pv_and_legacy_disk_devices);
-+
- void xen_unplug_emulated_devices(void)
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -856,14 +856,14 @@ static int page_action(struct page_state
+  * the pages and send SIGBUS to the processes if the data was dirty.
+  */
+ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
+-				  int trapno, int flags)
++				  int trapno, int flags, struct page **hpagep)
  {
- 	int r;
---- a/drivers/block/xen-blkfront.c
-+++ b/drivers/block/xen-blkfront.c
-@@ -1356,7 +1356,7 @@ static int blkfront_probe(struct xenbus_
- 		char *type;
- 		int len;
- 		/* no unplug has been done: do not hook devices != xen vbds */
--		if (xen_platform_pci_unplug & XEN_UNPLUG_UNNECESSARY) {
-+		if (xen_has_pv_and_legacy_disk_devices()) {
- 			int major;
+ 	enum ttu_flags ttu = TTU_UNMAP | TTU_IGNORE_MLOCK | TTU_IGNORE_ACCESS;
+ 	struct address_space *mapping;
+ 	LIST_HEAD(tokill);
+ 	int ret;
+ 	int kill = 1, forcekill;
+-	struct page *hpage = compound_head(p);
++	struct page *hpage = *hpagep;
+ 	struct page *ppage;
  
- 			if (!VDEV_IS_EXTENDED(vdevice))
-@@ -2079,7 +2079,7 @@ static int __init xlblk_init(void)
- 	if (!xen_domain())
- 		return -ENODEV;
+ 	if (PageReserved(p) || PageSlab(p))
+@@ -942,11 +942,14 @@ static int hwpoison_user_mappings(struct
+ 			 * We pinned the head page for hwpoison handling,
+ 			 * now we split the thp and we are interested in
+ 			 * the hwpoisoned raw page, so move the refcount
+-			 * to it.
++			 * to it. Similarly, page lock is shifted.
+ 			 */
+ 			if (hpage != p) {
+ 				put_page(hpage);
+ 				get_page(p);
++				lock_page(p);
++				unlock_page(hpage);
++				*hpagep = p;
+ 			}
+ 			/* THP is split, so ppage should be the real poisoned page. */
+ 			ppage = p;
+@@ -964,17 +967,11 @@ static int hwpoison_user_mappings(struct
+ 	if (kill)
+ 		collect_procs(ppage, &tokill);
  
--	if (xen_hvm_domain() && !xen_platform_pci_unplug)
-+	if (!xen_has_pv_disk_devices())
- 		return -ENODEV;
+-	if (hpage != ppage)
+-		lock_page(ppage);
+-
+ 	ret = try_to_unmap(ppage, ttu);
+ 	if (ret != SWAP_SUCCESS)
+ 		printk(KERN_ERR "MCE %#lx: failed to unmap page (mapcount=%d)\n",
+ 				pfn, page_mapcount(ppage));
  
- 	if (register_blkdev(XENVBD_MAJOR, DEV_NAME)) {
---- a/drivers/char/tpm/xen-tpmfront.c
-+++ b/drivers/char/tpm/xen-tpmfront.c
-@@ -17,6 +17,7 @@
- #include <xen/xenbus.h>
- #include <xen/page.h>
- #include "tpm.h"
-+#include <xen/platform_pci.h>
- 
- struct tpm_private {
- 	struct tpm_chip *chip;
-@@ -421,6 +422,9 @@ static int __init xen_tpmfront_init(void
- 	if (!xen_domain())
- 		return -ENODEV;
- 
-+	if (!xen_has_pv_devices())
-+		return -ENODEV;
-+
- 	return xenbus_register_frontend(&tpmfront_driver);
- }
- module_init(xen_tpmfront_init);
---- a/drivers/input/misc/xen-kbdfront.c
-+++ b/drivers/input/misc/xen-kbdfront.c
-@@ -29,6 +29,7 @@
- #include <xen/interface/io/fbif.h>
- #include <xen/interface/io/kbdif.h>
- #include <xen/xenbus.h>
-+#include <xen/platform_pci.h>
- 
- struct xenkbd_info {
- 	struct input_dev *kbd;
-@@ -380,6 +381,9 @@ static int __init xenkbd_init(void)
- 	if (xen_initial_domain())
- 		return -ENODEV;
- 
-+	if (!xen_has_pv_devices())
-+		return -ENODEV;
-+
- 	return xenbus_register_frontend(&xenkbd_driver);
- }
- 
---- a/drivers/net/xen-netfront.c
-+++ b/drivers/net/xen-netfront.c
-@@ -2079,7 +2079,7 @@ static int __init netif_init(void)
- 	if (!xen_domain())
- 		return -ENODEV;
- 
--	if (xen_hvm_domain() && !xen_platform_pci_unplug)
-+	if (!xen_has_pv_nic_devices())
- 		return -ENODEV;
- 
- 	pr_info("Initialising Xen virtual ethernet driver\n");
---- a/drivers/pci/xen-pcifront.c
-+++ b/drivers/pci/xen-pcifront.c
-@@ -20,6 +20,7 @@
- #include <linux/workqueue.h>
- #include <linux/bitops.h>
- #include <linux/time.h>
-+#include <xen/platform_pci.h>
- 
- #include <asm/xen/swiotlb-xen.h>
- #define INVALID_GRANT_REF (0)
-@@ -1138,6 +1139,9 @@ static int __init pcifront_init(void)
- 	if (!xen_pv_domain() || xen_initial_domain())
- 		return -ENODEV;
- 
-+	if (!xen_has_pv_devices())
-+		return -ENODEV;
-+
- 	pci_frontend_registrar(1 /* enable */);
- 
- 	return xenbus_register_frontend(&xenpci_driver);
---- a/drivers/video/xen-fbfront.c
-+++ b/drivers/video/xen-fbfront.c
-@@ -35,6 +35,7 @@
- #include <xen/interface/io/fbif.h>
- #include <xen/interface/io/protocols.h>
- #include <xen/xenbus.h>
-+#include <xen/platform_pci.h>
- 
- struct xenfb_info {
- 	unsigned char		*fb;
-@@ -699,6 +700,9 @@ static int __init xenfb_init(void)
- 	if (xen_initial_domain())
- 		return -ENODEV;
- 
-+	if (!xen_has_pv_devices())
-+		return -ENODEV;
-+
- 	return xenbus_register_frontend(&xenfb_driver);
- }
- 
---- a/drivers/xen/xenbus/xenbus_probe_frontend.c
-+++ b/drivers/xen/xenbus/xenbus_probe_frontend.c
-@@ -496,7 +496,7 @@ subsys_initcall(xenbus_probe_frontend_in
- #ifndef MODULE
- static int __init boot_wait_for_devices(void)
- {
--	if (xen_hvm_domain() && !xen_platform_pci_unplug)
-+	if (!xen_has_pv_devices())
- 		return -ENODEV;
- 
- 	ready_to_wait_for_devices = 1;
---- a/include/xen/platform_pci.h
-+++ b/include/xen/platform_pci.h
-@@ -48,4 +48,27 @@ static inline int xen_must_unplug_disks(
- 
- extern int xen_platform_pci_unplug;
- 
-+#if defined(CONFIG_XEN_PVHVM)
-+extern bool xen_has_pv_devices(void);
-+extern bool xen_has_pv_disk_devices(void);
-+extern bool xen_has_pv_nic_devices(void);
-+extern bool xen_has_pv_and_legacy_disk_devices(void);
-+#else
-+static inline bool xen_has_pv_devices(void)
-+{
-+	return IS_ENABLED(CONFIG_XEN);
-+}
-+static inline bool xen_has_pv_disk_devices(void)
-+{
-+	return IS_ENABLED(CONFIG_XEN);
-+}
-+static inline bool xen_has_pv_nic_devices(void)
-+{
-+	return IS_ENABLED(CONFIG_XEN);
-+}
-+static inline bool xen_has_pv_and_legacy_disk_devices(void)
-+{
-+	return false;
-+}
-+#endif
- #endif /* _XEN_PLATFORM_PCI_H */
+-	if (hpage != ppage)
+-		unlock_page(ppage);
+-
+ 	/*
+ 	 * Now that the dirty bit has been propagated to the
+ 	 * struct page and all unmaps done we can decide if
+@@ -1193,8 +1190,12 @@ int memory_failure(unsigned long pfn, in
+ 	/*
+ 	 * Now take care of user space mappings.
+ 	 * Abort on fail: __delete_from_page_cache() assumes unmapped page.
++	 *
++	 * When the raw error page is thp tail page, hpage points to the raw
++	 * page after thp split.
+ 	 */
+-	if (hwpoison_user_mappings(p, pfn, trapno, flags) != SWAP_SUCCESS) {
++	if (hwpoison_user_mappings(p, pfn, trapno, flags, &hpage)
++	    != SWAP_SUCCESS) {
+ 		printk(KERN_ERR "MCE %#lx: cannot unmap page, give up\n", pfn);
+ 		res = -EBUSY;
+ 		goto out;
 
 
