@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752580AbaBKDTj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 22:19:39 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:38953 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752133AbaBKDTi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 22:19:38 -0500
-X-IronPort-AV: E=Sophos;i="4.95,822,1384272000"; 
-   d="scan'208";a="9503723"
-Message-ID: <52F996BF.402@cn.fujitsu.com>
-Date: Tue, 11 Feb 2014 11:19:27 +0800
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
+	id S1752544AbaBKDXy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 22:23:54 -0500
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:60233 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752193AbaBKDXu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Feb 2014 22:23:50 -0500
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: linux-kernel@vger.kernel.org, rostedt@goodmis.org, fweisbec@gmail.com,
-        mingo@redhat.com
-Subject: Re: [PATCH] tracing: Use task_nice() in function __update_max_tr()
- to get the nice value of task.
-References: <1390430505-17234-1-git-send-email-yangds.fnst@cn.fujitsu.com>
-In-Reply-To: <1390430505-17234-1-git-send-email-yangds.fnst@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/02/11 11:17:34,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/02/11 11:17:37,
-	Serialize complete at 2014/02/11 11:17:37
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+In-Reply-To: <20140210231031.GA5857@roeck-us.net>
+References: <1392045953-26596-1-git-send-email-lpapp@kde.org>
+	<20140210160842.GB26997@lee--X1>
+	<20140210173811.04ba5964@endymion.delvare>
+	<20140210105346.14592yef0najhyio@67.228.131.205>
+	<CAOMwXhMTK6h3MQdHHaEV+5=XbQSqXzj0mPt3MzK9X9jhj4jOhQ@mail.gmail.com>
+	<20140210231031.GA5857@roeck-us.net>
+Date: Tue, 11 Feb 2014 03:23:49 +0000
+X-Google-Sender-Auth: OVA4JJr8eLAC_HlysXu80cuRao0
+Message-ID: <CAOMwXhNPgz04SHGAbPKpCnPPufO_ygQ3ukGF+ma7Foe=F=ZrEQ@mail.gmail.com>
+Subject: Re: [lm-sensors] [PATCH] hwmon: (max6650) Rename the device ids to
+ contain the hwmon suffix
+From: Laszlo Papp <lpapp@kde.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Jean Delvare <jdelvare@suse.de>, Lee Jones <lee.jones@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, lm-sensors@lm-sensors.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steve,
-     As my patch to implement task_nice() as inline function was applied 
-to tip tree.
-http://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/commit/?id=d0ea026808ad81de2af14938448419a95211b938
+On Mon, Feb 10, 2014 at 11:10 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> On Mon, Feb 10, 2014 at 06:59:55PM +0000, Laszlo Papp wrote:
+> I think I'll let Jean handle this one.
 
-     Please consider to apply this patch in this thread. Thanx :)
+Guys, please be a bit more definite.
 
-On 01/23/2014 06:41 AM, Dongsheng Yang wrote:
-> There is already a function named task_nice in sched.h to get the nice value
-> of task_struct. We can use it in __update_max_tr() rather than calculate it
-> manually.
->
-> Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-> ---
->   kernel/trace/trace.c | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-> index 9d20cd9..ec149b4 100644
-> --- a/kernel/trace/trace.c
-> +++ b/kernel/trace/trace.c
-> @@ -970,7 +970,7 @@ __update_max_tr(struct trace_array *tr, struct task_struct *tsk, int cpu)
->   	else
->   		max_data->uid = task_uid(tsk);
->   
-> -	max_data->nice = tsk->static_prio - 20 - MAX_RT_PRIO;
-> +	max_data->nice = task_nice(tsk);
->   	max_data->policy = tsk->policy;
->   	max_data->rt_priority = tsk->rt_priority;
->   
+We should get over this long ping-pong game. It has been clearly
+stated that either way is fine, and there was no objection for months
+to either way either, and now the feature is just not moving forward.
+This is the first time I have this sorrow experience that I am having
+here in hwmon, unfortunately. A lot of effort spent, and nothing got
+done.
 
+As I said before, disagreeing is fine and natural. What is not fine is
+wasting people's time for months and not making it clear what the
+hwmon maintainers want, and months later after the work, the opposite
+is claimed than before.
+
+I am sorry if it sounds harsh, but currently this is how I see the
+situation. If the MFD solution gets rejected, I consider it a huge
+maintainer mistake since both of you were involved, and have never
+ever spoken up for months that this would not be acceptable. In fact,
+as quoted earlier in this thread, the opposite had been said.
+
+I would like to get over the hwmon situation as soon as possible, so
+please guys kindly advise what you would *really* like to see. I do
+not really mind who makes the decision, but rejecting months of work
+due to miscommunication is still better than continuing the same!
