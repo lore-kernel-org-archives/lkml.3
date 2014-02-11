@@ -1,164 +1,380 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751242AbaBKGv1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 01:51:27 -0500
-Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:58761 "EHLO
-	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750758AbaBKGvZ (ORCPT
+	id S1751609AbaBKG4F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 01:56:05 -0500
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:33211 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750785AbaBKG4A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 01:51:25 -0500
-From: <jiel@marvell.com>
-To: <akpm@linux-foundation.org>, <joe@perches.com>, <tj@kernel.org>,
-        <fweisbec@gmail.com>, <davem@davemloft.net>, <keescook@chromium.org>
-CC: <linux-kernel@vger.kernel.org>, Jane Li <jiel@marvell.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [PATCH] printk: fix one circular lockdep warning about console_lock
-Date: Tue, 11 Feb 2014 14:50:00 +0800
-Message-ID: <1392101400-14550-1-git-send-email-jiel@marvell.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-02-11_03:2014-02-10,2014-02-11,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1402100241
+	Tue, 11 Feb 2014 01:56:00 -0500
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-kernel@vger.kernel.org, monstr@monstr.eu
+Cc: Guenter Roeck <linux@roeck-us.net>, Wim Van Sebroeck <wim@iguana.be>,
+        linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v2 01/11] watchdog: xilinx: Convert driver to the watchdog framework
+Date: Tue, 11 Feb 2014 07:55:44 +0100
+Message-Id: <f298edd222c57b0ce1ebad3ae50c3f715406c631.1392101734.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-9469-1392101754-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jane Li <jiel@marvell.com>
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-This patch tries to fix a warning about possible circular locking
-dependency.
+--=_mimegpg-monstr-desktop-9469-1392101754-0001
 
-If do in following sequence:
-    enter suspend ->  resume ->  plug-out CPUx (echo 0 > cpux/online)
-lockdep will show warning as following:
+- Remove uneeded headers, fops functions
+- Use xilinx_wdt prefix in start/stop/keepalive functions
+  and in new structures
 
-======================================================
-[ INFO: possible circular locking dependency detected ]
-3.10.0 #2 Tainted: G           O
--------------------------------------------------------
-sh/1271 is trying to acquire lock:
-(console_lock){+.+.+.}, at: [<c06ebf7c>] console_cpu_notify+0x20/0x2c
-but task is already holding lock:
-(cpu_hotplug.lock){+.+.+.}, at: [<c012b4e8>] cpu_hotplug_begin+0x2c/0x58
-which lock already depends on the new lock.
-
-the existing dependency chain (in reverse order) is:
--> #2 (cpu_hotplug.lock){+.+.+.}:
-[<c017bb7c>] lock_acquire+0x98/0x12c
-[<c06f5014>] mutex_lock_nested+0x50/0x3d8
-[<c012b4e8>] cpu_hotplug_begin+0x2c/0x58
-[<c06ebfac>] _cpu_up+0x24/0x154
-[<c06ec140>] cpu_up+0x64/0x84
-[<c0981834>] smp_init+0x9c/0xd4
-[<c0973880>] kernel_init_freeable+0x78/0x1c8
-[<c06e7f40>] kernel_init+0x8/0xe4
-[<c010eec8>] ret_from_fork+0x14/0x2c
-
--> #1 (cpu_add_remove_lock){+.+.+.}:
-[<c017bb7c>] lock_acquire+0x98/0x12c
-[<c06f5014>] mutex_lock_nested+0x50/0x3d8
-[<c012b758>] disable_nonboot_cpus+0x8/0xe8
-[<c016b83c>] suspend_devices_and_enter+0x214/0x448
-[<c016bc54>] pm_suspend+0x1e4/0x284
-[<c016bdcc>] try_to_suspend+0xa4/0xbc
-[<c0143848>] process_one_work+0x1c4/0x4fc
-[<c0143f80>] worker_thread+0x138/0x37c
-[<c014aaf8>] kthread+0xa4/0xb0
-[<c010eec8>] ret_from_fork+0x14/0x2c
-
--> #0 (console_lock){+.+.+.}:
-[<c017b5d0>] __lock_acquire+0x1b38/0x1b80
-[<c017bb7c>] lock_acquire+0x98/0x12c
-[<c01288c4>] console_lock+0x54/0x68
-[<c06ebf7c>] console_cpu_notify+0x20/0x2c
-[<c01501d4>] notifier_call_chain+0x44/0x84
-[<c012b448>] __cpu_notify+0x2c/0x48
-[<c012b5b0>] cpu_notify_nofail+0x8/0x14
-[<c06e81bc>] _cpu_down+0xf4/0x258
-[<c06e8344>] cpu_down+0x24/0x40
-[<c06e921c>] store_online+0x30/0x74
-[<c03b7298>] dev_attr_store+0x18/0x24
-[<c025fc5c>] sysfs_write_file+0x16c/0x19c
-[<c0207a98>] vfs_write+0xb4/0x190
-[<c0207e58>] SyS_write+0x3c/0x70
-[<c010ee00>] ret_fast_syscall+0x0/0x48
-
-Chain exists of:
-   console_lock --> cpu_add_remove_lock --> cpu_hotplug.lock
-
-Possible unsafe locking scenario:
-       CPU0                    CPU1
-       ----                    ----
-lock(cpu_hotplug.lock);
-                               lock(cpu_add_remove_lock);
-                               lock(cpu_hotplug.lock);
-lock(console_lock);
-  *** DEADLOCK ***
-
-There are three locks involved in two sequence:
-a) pm suspend:
-	console_lock (@suspend_console())
-	cpu_add_remove_lock (@disable_nonboot_cpus())
-	cpu_hotplug.lock (@_cpu_down())
-b) Plug-out CPUx:
-	cpu_add_remove_lock (@(cpu_down())
-	cpu_hotplug.lock (@_cpu_down())
-	console_lock (@console_cpu_notify()) => Lockdeps prints warning log.
-
-There should be not real deadlock, as flag of console_suspended can
-protect this.
-
-Printk registers cpu hotplug notify function. When CPUx is plug-out/in,
-always execute console_lock() and console_unlock(). This patch
-modifies that with console_trylock() and console_unlock(). Then use
-that instead of the unconditional console_lock/unlock pair to avoid the
-warning.
-
-Signed-off-by: Jane Li <jiel@marvell.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
 ---
- kernel/printk/printk.c |   17 +++++++++++++++--
- 1 file changed, 15 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index b1d255f..e7a0525 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -1893,6 +1893,20 @@ void resume_console(void)
- }
- 
- /**
-+ * console_flush - flush dmesg if console isn't suspended
-+ *
-+ * console_unlock always flushes the dmesg buffer, so just try to
-+ * grab&drop the console lock. If that fails we know that the current
-+ * holder will eventually drop the console lock and so flush the dmesg
-+ * buffers at the earliest possible time.
-+ */
-+void console_flush(void)
-+{
-+	if (console_trylock())
-+		console_unlock();
-+}
+Changes in v2: None
+
+ drivers/watchdog/Kconfig         |   1 +
+ drivers/watchdog/of_xilinx_wdt.c | 204 ++++++---------------------------------
+ 2 files changed, 33 insertions(+), 172 deletions(-)
+
+diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+index 4c4c566..9db5d3c 100644
+--- a/drivers/watchdog/Kconfig
++++ b/drivers/watchdog/Kconfig
+@@ -1025,6 +1025,7 @@ config M54xx_WATCHDOG
+ config XILINX_WATCHDOG
+ 	tristate "Xilinx Watchdog timer"
+ 	depends on MICROBLAZE
++	select WATCHDOG_CORE
+ 	---help---
+ 	  Watchdog driver for the xps_timebase_wdt ip core.
+
+diff --git a/drivers/watchdog/of_xilinx_wdt.c b/drivers/watchdog/of_xilinx_wdt.c
+index fb57103..8c2814e 100644
+--- a/drivers/watchdog/of_xilinx_wdt.c
++++ b/drivers/watchdog/of_xilinx_wdt.c
+@@ -1,6 +1,7 @@
+ /*
+  * Watchdog Device Driver for Xilinx axi/xps_timebase_wdt
+  *
++ * (C) Copyright 2013 - 2014 Xilinx, Inc.
+  * (C) Copyright 2011 (Alejandro Cabrera <aldaya@gmail.com>)
+  *
+  * This program is free software; you can redistribute it and/or
+@@ -14,13 +15,10 @@
+ #include <linux/module.h>
+ #include <linux/types.h>
+ #include <linux/kernel.h>
+-#include <linux/fs.h>
+-#include <linux/miscdevice.h>
+ #include <linux/init.h>
+ #include <linux/ioport.h>
+ #include <linux/watchdog.h>
+ #include <linux/io.h>
+-#include <linux/uaccess.h>
+ #include <linux/of.h>
+ #include <linux/of_device.h>
+ #include <linux/of_address.h>
+@@ -48,22 +46,18 @@
+ struct xwdt_device {
+ 	struct resource  res;
+ 	void __iomem *base;
+-	u32 nowayout;
+ 	u32 wdt_interval;
+-	u32 boot_status;
+ };
+
+ static struct xwdt_device xdev;
+
+ static  u32 timeout;
+ static  u32 control_status_reg;
+-static  u8  expect_close;
+ static  u8  no_timeout;
+-static unsigned long driver_open;
+
+ static  DEFINE_SPINLOCK(spinlock);
+
+-static void xwdt_start(void)
++static int xilinx_wdt_start(struct watchdog_device *wdd)
+ {
+ 	spin_lock(&spinlock);
+
+@@ -77,9 +71,11 @@ static void xwdt_start(void)
+ 	iowrite32(XWT_CSRX_EWDT2_MASK, xdev.base + XWT_TWCSR1_OFFSET);
+
+ 	spin_unlock(&spinlock);
 +
-+/**
-  * console_cpu_notify - print deferred console messages after CPU hotplug
-  * @self: notifier struct
-  * @action: CPU hotplug event
-@@ -1911,8 +1925,7 @@ static int console_cpu_notify(struct notifier_block *self,
- 	case CPU_DEAD:
- 	case CPU_DOWN_FAILED:
- 	case CPU_UP_CANCELED:
--		console_lock();
--		console_unlock();
-+		console_flush();
- 	}
- 	return NOTIFY_OK;
++	return 0;
  }
--- 
-1.7.9.5
 
+-static void xwdt_stop(void)
++static int xilinx_wdt_stop(struct watchdog_device *wdd)
+ {
+ 	spin_lock(&spinlock);
+
+@@ -92,9 +88,11 @@ static void xwdt_stop(void)
+
+ 	spin_unlock(&spinlock);
+ 	pr_info("Stopped!\n");
++
++	return 0;
+ }
+
+-static void xwdt_keepalive(void)
++static int xilinx_wdt_keepalive(struct watchdog_device *wdd)
+ {
+ 	spin_lock(&spinlock);
+
+@@ -103,23 +101,28 @@ static void xwdt_keepalive(void)
+ 	iowrite32(control_status_reg, xdev.base + XWT_TWCSR0_OFFSET);
+
+ 	spin_unlock(&spinlock);
+-}
+
+-static void xwdt_get_status(int *status)
+-{
+-	int new_status;
++	return 0;
++}
+
+-	spin_lock(&spinlock);
++static const struct watchdog_info xilinx_wdt_ident = {
++	.options =  WDIOF_MAGICCLOSE |
++		    WDIOF_KEEPALIVEPING,
++	.firmware_version =	1,
++	.identity =	WATCHDOG_NAME,
++};
+
+-	control_status_reg = ioread32(xdev.base + XWT_TWCSR0_OFFSET);
+-	new_status = ((control_status_reg &
+-			(XWT_CSR0_WRS_MASK | XWT_CSR0_WDS_MASK)) != 0);
+-	spin_unlock(&spinlock);
++static const struct watchdog_ops xilinx_wdt_ops = {
++	.owner = THIS_MODULE,
++	.start = xilinx_wdt_start,
++	.stop = xilinx_wdt_stop,
++	.ping = xilinx_wdt_keepalive,
++};
+
+-	*status = 0;
+-	if (new_status & 1)
+-		*status |= WDIOF_CARDRESET;
+-}
++static struct watchdog_device xilinx_wdt_wdd = {
++	.info = &xilinx_wdt_ident,
++	.ops = &xilinx_wdt_ops,
++};
+
+ static u32 xwdt_selftest(void)
+ {
+@@ -146,139 +149,6 @@ static u32 xwdt_selftest(void)
+ 		return XWT_TIMER_FAILED;
+ }
+
+-static int xwdt_open(struct inode *inode, struct file *file)
+-{
+-	/* Only one process can handle the wdt at a time */
+-	if (test_and_set_bit(0, &driver_open))
+-		return -EBUSY;
+-
+-	/* Make sure that the module are always loaded...*/
+-	if (xdev.nowayout)
+-		__module_get(THIS_MODULE);
+-
+-	xwdt_start();
+-	pr_info("Started...\n");
+-
+-	return nonseekable_open(inode, file);
+-}
+-
+-static int xwdt_release(struct inode *inode, struct file *file)
+-{
+-	if (expect_close == 42) {
+-		xwdt_stop();
+-	} else {
+-		pr_crit("Unexpected close, not stopping watchdog!\n");
+-		xwdt_keepalive();
+-	}
+-
+-	clear_bit(0, &driver_open);
+-	expect_close = 0;
+-	return 0;
+-}
+-
+-/*
+- *      xwdt_write:
+- *      @file: file handle to the watchdog
+- *      @buf: buffer to write (unused as data does not matter here
+- *      @count: count of bytes
+- *      @ppos: pointer to the position to write. No seeks allowed
+- *
+- *      A write to a watchdog device is defined as a keepalive signal. Any
+- *      write of data will do, as we don't define content meaning.
+- */
+-static ssize_t xwdt_write(struct file *file, const char __user *buf,
+-						size_t len, loff_t *ppos)
+-{
+-	if (len) {
+-		if (!xdev.nowayout) {
+-			size_t i;
+-
+-			/* In case it was set long ago */
+-			expect_close = 0;
+-
+-			for (i = 0; i != len; i++) {
+-				char c;
+-
+-				if (get_user(c, buf + i))
+-					return -EFAULT;
+-				if (c == 'V')
+-					expect_close = 42;
+-			}
+-		}
+-		xwdt_keepalive();
+-	}
+-	return len;
+-}
+-
+-static const struct watchdog_info ident = {
+-	.options =  WDIOF_MAGICCLOSE |
+-		    WDIOF_KEEPALIVEPING,
+-	.firmware_version =	1,
+-	.identity =	WATCHDOG_NAME,
+-};
+-
+-/*
+- *      xwdt_ioctl:
+- *      @file: file handle to the device
+- *      @cmd: watchdog command
+- *      @arg: argument pointer
+- *
+- *      The watchdog API defines a common set of functions for all watchdogs
+- *      according to their available features.
+- */
+-static long xwdt_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+-{
+-	int status;
+-
+-	union {
+-		struct watchdog_info __user *ident;
+-		int __user *i;
+-	} uarg;
+-
+-	uarg.i = (int __user *)arg;
+-
+-	switch (cmd) {
+-	case WDIOC_GETSUPPORT:
+-		return copy_to_user(uarg.ident, &ident,
+-					sizeof(ident)) ? -EFAULT : 0;
+-
+-	case WDIOC_GETBOOTSTATUS:
+-		return put_user(xdev.boot_status, uarg.i);
+-
+-	case WDIOC_GETSTATUS:
+-		xwdt_get_status(&status);
+-		return put_user(status, uarg.i);
+-
+-	case WDIOC_KEEPALIVE:
+-		xwdt_keepalive();
+-		return 0;
+-
+-	case WDIOC_GETTIMEOUT:
+-		if (no_timeout)
+-			return -ENOTTY;
+-		else
+-			return put_user(timeout, uarg.i);
+-
+-	default:
+-		return -ENOTTY;
+-	}
+-}
+-
+-static const struct file_operations xwdt_fops = {
+-	.owner      = THIS_MODULE,
+-	.llseek     = no_llseek,
+-	.write      = xwdt_write,
+-	.open       = xwdt_open,
+-	.release    = xwdt_release,
+-	.unlocked_ioctl = xwdt_ioctl,
+-};
+-
+-static struct miscdevice xwdt_miscdev = {
+-	.minor      = WATCHDOG_MINOR,
+-	.name       = "watchdog",
+-	.fops       = &xwdt_fops,
+-};
+-
+ static int xwdt_probe(struct platform_device *pdev)
+ {
+ 	int rc;
+@@ -314,7 +184,7 @@ static int xwdt_probe(struct platform_device *pdev)
+ 					"xlnx,wdt-enable-once", NULL);
+ 	if (tmptr == NULL) {
+ 		pr_warn("Parameter \"xlnx,wdt-enable-once\" not found in device tree!\n");
+-		xdev.nowayout = WATCHDOG_NOWAYOUT;
++		watchdog_set_nowayout(&xilinx_wdt_wdd, true);
+ 	}
+
+ /*
+@@ -344,24 +214,14 @@ static int xwdt_probe(struct platform_device *pdev)
+ 		goto unmap_io;
+ 	}
+
+-	xwdt_get_status(&xdev.boot_status);
+-
+-	rc = misc_register(&xwdt_miscdev);
++	rc = watchdog_register_device(&xilinx_wdt_wdd);
+ 	if (rc) {
+-		pr_err("cannot register miscdev on minor=%d (err=%d)\n",
+-		       xwdt_miscdev.minor, rc);
++		pr_err("cannot register watchdog (err=%d)\n", rc);
+ 		goto unmap_io;
+ 	}
+
+-	if (no_timeout)
+-		pr_info("driver loaded (timeout=? sec, nowayout=%d)\n",
+-			xdev.nowayout);
+-	else
+-		pr_info("driver loaded (timeout=%d sec, nowayout=%d)\n",
+-			timeout, xdev.nowayout);
+-
+-	expect_close = 0;
+-	clear_bit(0, &driver_open);
++	dev_info(&pdev->dev, "Xilinx Watchdog Timer at %p with timeout %ds\n",
++		 xdev.base, timeout);
+
+ 	return 0;
+
+@@ -375,7 +235,7 @@ err_out:
+
+ static int xwdt_remove(struct platform_device *dev)
+ {
+-	misc_deregister(&xwdt_miscdev);
++	watchdog_unregister_device(&xilinx_wdt_wdd);
+ 	iounmap(xdev.base);
+ 	release_mem_region(xdev.res.start, resource_size(&xdev.res));
+
+--
+1.8.2.3
+
+
+--=_mimegpg-monstr-desktop-9469-1392101754-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlL5yXoACgkQykllyylKDCHJJgCfQGU36E18F12tBTAYWT+11qOh
+8MYAnj6itSN3RrMiiTvhmQ2c0Y/aOot1
+=87JG
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-9469-1392101754-0001--
