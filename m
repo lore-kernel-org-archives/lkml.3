@@ -1,105 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932268AbaBKUQp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:16:45 -0500
-Received: from qmta09.emeryville.ca.mail.comcast.net ([76.96.30.96]:33332 "EHLO
-	qmta09.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754820AbaBKUQl (ORCPT
+	id S1756129AbaBKURL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:17:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39979 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753415AbaBKTGc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 15:16:41 -0500
-From: Shuah Khan <shuah.kh@samsung.com>
-To: rjw@rjwysocki.net, mirq-linux@rere.qmqm.pl, chris@printf.net
-Cc: Shuah Khan <shuah.kh@samsung.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        shuahkhan@gmail.com
-Subject: [RFT][PATCH v2] mmc: change cb710-mmc platform power management to use dev_pm_ops
-Date: Tue, 11 Feb 2014 13:16:21 -0700
-Message-Id: <1392149781-4991-1-git-send-email-shuah.kh@samsung.com>
-X-Mailer: git-send-email 1.8.3.2
+	Tue, 11 Feb 2014 14:06:32 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Mike Marciniszyn <mike.marciniszyn@intel.com>,
+        Ira Weiny <ira.weiny@intel.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [PATCH 3.12 035/107] IB/qib: Fix QP check when looping back to/from QP1
+Date: Tue, 11 Feb 2014 11:05:01 -0800
+Message-Id: <20140211184749.199728798@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
+References: <20140211184748.191276235@linuxfoundation.org>
+User-Agent: quilt/0.61-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change cb710-mmc platform driver to register pm ops using dev_pm_ops instead
-of legacy pm_ops. The existing legacy suspend/resume routines are identical
-and simply clear IRQ mask in the device in case it got undefined during sleep
-state. Changed code to collapse suspend and resume into one .pm interface
-for suspend and resume which gets installed for suspend, freeze, poweroff,
-thaw, restore, and resume states.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+------------------
+
+From: Ira Weiny <ira.weiny@intel.com>
+
+commit 6e0ea9e6cbcead7fa8c76e3e3b9de4a50c5131c5 upstream.
+
+The GSI QP type is compatible with and should be allowed to send data
+to/from any UD QP.  This was found when testing ibacm on the same node
+as an SA.
+
+Reviewed-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
+Signed-off-by: Ira Weiny <ira.weiny@intel.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
+ drivers/infiniband/hw/qib/qib_ud.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-patch v2: Addresses review comments on patch v1
-
- drivers/mmc/host/cb710-mmc.c |   42 ++++++++++++++++++++----------------------
- 1 file changed, 20 insertions(+), 22 deletions(-)
-
-diff --git a/drivers/mmc/host/cb710-mmc.c b/drivers/mmc/host/cb710-mmc.c
-index 1087b4c..ccf7a75 100644
---- a/drivers/mmc/host/cb710-mmc.c
-+++ b/drivers/mmc/host/cb710-mmc.c
-@@ -662,26 +662,6 @@ static const struct mmc_host_ops cb710_mmc_host = {
- 	.get_cd = cb710_mmc_get_cd,
- };
+--- a/drivers/infiniband/hw/qib/qib_ud.c
++++ b/drivers/infiniband/hw/qib/qib_ud.c
+@@ -57,13 +57,20 @@ static void qib_ud_loopback(struct qib_q
+ 	struct qib_sge *sge;
+ 	struct ib_wc wc;
+ 	u32 length;
++	enum ib_qp_type sqptype, dqptype;
  
--#ifdef CONFIG_PM
--
--static int cb710_mmc_suspend(struct platform_device *pdev, pm_message_t state)
--{
--	struct cb710_slot *slot = cb710_pdev_to_slot(pdev);
--
--	cb710_mmc_enable_irq(slot, 0, ~0);
--	return 0;
--}
--
--static int cb710_mmc_resume(struct platform_device *pdev)
--{
--	struct cb710_slot *slot = cb710_pdev_to_slot(pdev);
--
--	cb710_mmc_enable_irq(slot, 0, ~0);
--	return 0;
--}
--
--#endif /* CONFIG_PM */
--
- static int cb710_mmc_init(struct platform_device *pdev)
- {
- 	struct cb710_slot *slot = cb710_pdev_to_slot(pdev);
-@@ -762,13 +742,31 @@ static int cb710_mmc_exit(struct platform_device *pdev)
- 	return 0;
- }
- 
-+#ifdef CONFIG_PM
-+static int cb710_mmc_suspend_resume(struct device *dev)
-+{
-+	struct cb710_slot *slot = cb710_pdev_to_slot(to_platform_device(dev));
+ 	qp = qib_lookup_qpn(ibp, swqe->wr.wr.ud.remote_qpn);
+ 	if (!qp) {
+ 		ibp->n_pkt_drops++;
+ 		return;
+ 	}
+-	if (qp->ibqp.qp_type != sqp->ibqp.qp_type ||
 +
-+	cb710_mmc_enable_irq(slot, 0, ~0);
-+	return 0;
-+}
++	sqptype = sqp->ibqp.qp_type == IB_QPT_GSI ?
++			IB_QPT_UD : sqp->ibqp.qp_type;
++	dqptype = qp->ibqp.qp_type == IB_QPT_GSI ?
++			IB_QPT_UD : qp->ibqp.qp_type;
 +
-+static const struct dev_pm_ops cb710_mmc_dev_pm_ops = {
-+	.suspend = cb710_mmc_suspend_resume,
-+	.resume = cb710_mmc_suspend_resume,
-+	/* Hibernate hooks */
-+	.freeze = cb710_mmc_suspend_resume,
-+	.thaw = cb710_mmc_suspend_resume,
-+	.poweroff = cb710_mmc_suspend_resume,
-+	.restore = cb710_mmc_suspend_resume,
-+};
-+#endif
- static struct platform_driver cb710_mmc_driver = {
- 	.driver.name = "cb710-mmc",
- 	.probe = cb710_mmc_init,
- 	.remove = cb710_mmc_exit,
- #ifdef CONFIG_PM
--	.suspend = cb710_mmc_suspend,
--	.resume = cb710_mmc_resume,
-+	.driver.pm = &cb710_mmc_dev_pm_ops,
- #endif
- };
- 
--- 
-1.7.10.4
++	if (dqptype != sqptype ||
+ 	    !(ib_qib_state_ops[qp->state] & QIB_PROCESS_RECV_OK)) {
+ 		ibp->n_pkt_drops++;
+ 		goto drop;
+
 
