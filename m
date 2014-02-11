@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756250AbaBKVIA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 16:08:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39491 "EHLO
+	id S1756195AbaBKVH6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 16:07:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39478 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752400AbaBKTE6 (ORCPT
+	with ESMTP id S1752407AbaBKTE6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Feb 2014 14:04:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Ian Campbell <ijc@hellion.org.uk>, Andrew Lunn <andrew@lunn.ch>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH 3.13 023/120] ARM: orion: provide C-style interrupt handler for MULTI_IRQ_HANDLER
-Date: Tue, 11 Feb 2014 11:04:24 -0800
-Message-Id: <20140211184824.204765321@linuxfoundation.org>
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Eric Paris <eparis@redhat.com>, Paul Moore <pmoore@redhat.com>
+Subject: [PATCH 3.13 002/120] SELinux: Fix memory leak upon loading policy
+Date: Tue, 11 Feb 2014 11:04:03 -0800
+Message-Id: <20140211184823.570896616@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -30,102 +29,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 
-commit f28d7de6bd4d41774744e011141945affa127da4 upstream.
+commit 8ed814602876bec9bad2649ca17f34b499357a1c upstream.
 
-DT-enabled Marvell Kirkwood and Dove SoCs make use of an irqchip
-driver. As expected for irqchip drivers, it uses a C-style
-interrupt handler and therefore selects MULTI_IRQ_HANDLER.
+Hello.
 
-Now, compiling a kernel with both non-DT and DT support enabled,
-selecting MULTI_IRQ_HANDLER will break ASM irq handler used by
-non-DT boards.
+I got below leak with linux-3.10.0-54.0.1.el7.x86_64 .
 
-Therefore, we provide a C-style irq handler even for non-DT boards,
-if MULTI_IRQ_HANDLER is set. By installing the C-style irq handler
-in orion_irq_init this is transparent to all non-DT board files.
+[  681.903890] kmemleak: 5538 new suspected memory leaks (see /sys/kernel/debug/kmemleak)
 
-While the regression report was filed on Marvell Kirkwood, also
-Marvell Dove non-DT boards are affected and fixed by this patch.
+Below is a patch, but I don't know whether we need special handing for undoing
+ebitmap_set_bit() call.
+----------
+>>From fe97527a90fe95e2239dfbaa7558f0ed559c0992 Mon Sep 17 00:00:00 2001
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Date: Mon, 6 Jan 2014 16:30:21 +0900
+Subject: [PATCH 3.13 002/120] SELinux: Fix memory leak upon loading policy
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Tested-by: Ian Campbell <ijc@hellion.org.uk>
-Reported-by: Ian Campbell <ijc@hellion.org.uk>
-Fixes: 2326f04321a9 ("ARM: kirkwood: convert to DT irqchip and clocksource")
-Fixes: f07d73e33d0e ("ARM: dove: convert to DT irqchip and clocksource")
-Acked-by: Andrew Lunn <andrew@lunn.ch>
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Commit 2463c26d "SELinux: put name based create rules in a hashtable" did not
+check return value from hashtab_insert() in filename_trans_read(). It leaks
+memory if hashtab_insert() returns error.
+
+  unreferenced object 0xffff88005c9160d0 (size 8):
+    comm "systemd", pid 1, jiffies 4294688674 (age 235.265s)
+    hex dump (first 8 bytes):
+      57 0b 00 00 6b 6b 6b a5                          W...kkk.
+    backtrace:
+      [<ffffffff816604ae>] kmemleak_alloc+0x4e/0xb0
+      [<ffffffff811cba5e>] kmem_cache_alloc_trace+0x12e/0x360
+      [<ffffffff812aec5d>] policydb_read+0xd1d/0xf70
+      [<ffffffff812b345c>] security_load_policy+0x6c/0x500
+      [<ffffffff812a623c>] sel_write_load+0xac/0x750
+      [<ffffffff811eb680>] vfs_write+0xc0/0x1f0
+      [<ffffffff811ec08c>] SyS_write+0x4c/0xa0
+      [<ffffffff81690419>] system_call_fastpath+0x16/0x1b
+      [<ffffffffffffffff>] 0xffffffffffffffff
+
+However, we should not return EEXIST error to the caller, or the systemd will
+show below message and the boot sequence freezes.
+
+  systemd[1]: Failed to load SELinux policy. Freezing.
+
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Acked-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/plat-orion/irq.c |   47 ++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 47 insertions(+)
+ security/selinux/ss/policydb.c |   14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
 
---- a/arch/arm/plat-orion/irq.c
-+++ b/arch/arm/plat-orion/irq.c
-@@ -15,8 +15,51 @@
- #include <linux/io.h>
- #include <linux/of_address.h>
- #include <linux/of_irq.h>
-+#include <asm/exception.h>
- #include <plat/irq.h>
- #include <plat/orion-gpio.h>
-+#include <mach/bridge-regs.h>
-+
-+#ifdef CONFIG_MULTI_IRQ_HANDLER
-+/*
-+ * Compiling with both non-DT and DT support enabled, will
-+ * break asm irq handler used by non-DT boards. Therefore,
-+ * we provide a C-style irq handler even for non-DT boards,
-+ * if MULTI_IRQ_HANDLER is set.
-+ *
-+ * Notes:
-+ * - this is prepared for Kirkwood and Dove only, update
-+ *   accordingly if you add Orion5x or MV78x00.
-+ * - Orion5x uses different macro names and has only one
-+ *   set of CAUSE/MASK registers.
-+ * - MV78x00 uses the same macro names but has a third
-+ *   set of CAUSE/MASK registers.
-+ *
-+ */
-+
-+static void __iomem *orion_irq_base = IRQ_VIRT_BASE;
-+
-+asmlinkage void
-+__exception_irq_entry orion_legacy_handle_irq(struct pt_regs *regs)
-+{
-+	u32 stat;
-+
-+	stat = readl_relaxed(orion_irq_base + IRQ_CAUSE_LOW_OFF);
-+	stat &= readl_relaxed(orion_irq_base + IRQ_MASK_LOW_OFF);
-+	if (stat) {
-+		unsigned int hwirq = __fls(stat);
-+		handle_IRQ(hwirq, regs);
-+		return;
-+	}
-+	stat = readl_relaxed(orion_irq_base + IRQ_CAUSE_HIGH_OFF);
-+	stat &= readl_relaxed(orion_irq_base + IRQ_MASK_HIGH_OFF);
-+	if (stat) {
-+		unsigned int hwirq = 32 + __fls(stat);
-+		handle_IRQ(hwirq, regs);
-+		return;
-+	}
-+}
-+#endif
+--- a/security/selinux/ss/policydb.c
++++ b/security/selinux/ss/policydb.c
+@@ -1941,7 +1941,19 @@ static int filename_trans_read(struct po
+ 		if (rc)
+ 			goto out;
  
- void __init orion_irq_init(unsigned int irq_start, void __iomem *maskaddr)
- {
-@@ -35,6 +78,10 @@ void __init orion_irq_init(unsigned int
- 	ct->chip.irq_unmask = irq_gc_mask_set_bit;
- 	irq_setup_generic_chip(gc, IRQ_MSK(32), IRQ_GC_INIT_MASK_CACHE,
- 			       IRQ_NOREQUEST, IRQ_LEVEL | IRQ_NOPROBE);
-+
-+#ifdef CONFIG_MULTI_IRQ_HANDLER
-+	set_handle_irq(orion_legacy_handle_irq);
-+#endif
- }
- 
- #ifdef CONFIG_OF
+-		hashtab_insert(p->filename_trans, ft, otype);
++		rc = hashtab_insert(p->filename_trans, ft, otype);
++		if (rc) {
++			/*
++			 * Do not return -EEXIST to the caller, or the system
++			 * will not boot.
++			 */
++			if (rc != -EEXIST)
++				goto out;
++			/* But free memory to avoid memory leak. */
++			kfree(ft);
++			kfree(name);
++			kfree(otype);
++		}
+ 	}
+ 	hash_eval(p->filename_trans, "filenametr");
+ 	return 0;
 
 
