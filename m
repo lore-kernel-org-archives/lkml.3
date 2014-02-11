@@ -1,222 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751689AbaBKNWo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 08:22:44 -0500
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:58374 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751014AbaBKNWm (ORCPT
+	id S1751825AbaBKNYQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 08:24:16 -0500
+Received: from 15.mo6.mail-out.ovh.net ([188.165.39.161]:46214 "EHLO
+	mo6.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750767AbaBKNYP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 08:22:42 -0500
-Message-ID: <52FA2419.70102@monstr.eu>
-Date: Tue, 11 Feb 2014 14:22:33 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Tue, 11 Feb 2014 08:24:15 -0500
+Message-ID: <52FA2338.3030707@overkiz.com>
+Date: Tue, 11 Feb 2014 14:18:48 +0100
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-CC: Michal Simek <michal.simek@xilinx.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>,
-        "wg@grandegger.com" <wg@grandegger.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH] can: xilinx CAN controller support.
-References: <6c2bcce0-9897-4d1d-a8b9-47924e40f73c@VA3EHSMHS008.ehs.local> <52F382D5.6090706@pengutronix.de> <8b4dad82-c72a-4e1f-b1af-b8c7964bbf24@TX2EHSMHS043.ehs.local> <52F4A960.10809@pengutronix.de> <da80c522-5524-4f53-9373-3f2bb6f81ddc@CO9EHSMHS015.ehs.local> <52FA1910.2060101@pengutronix.de>
-In-Reply-To: <52FA1910.2060101@pengutronix.de>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="hjpfTfliEGdB02KKQBhcv4U3qXDB4SDcb"
+To: Masanari Iida <standby24x7@gmail.com>, linux-kernel@vger.kernel.org,
+        mturquette@linaro.org
+CC: nicolas.ferre@atmel.com, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] clk:at91: Fix memory leak in of_at91_clk_master_setup()
+References: <1392124507-14463-1-git-send-email-standby24x7@gmail.com>
+In-Reply-To: <1392124507-14463-1-git-send-email-standby24x7@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 2536089540899535074
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: 0
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrjedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecu
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: 0
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrjeehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---hjpfTfliEGdB02KKQBhcv4U3qXDB4SDcb
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On 11/02/2014 14:15, Masanari Iida wrote:
+> cppcheck detected following error
+> [clk-master.c:245]: (error) Memory leak: characteristics
+>
+> The original code forgot to free characteristics when
+> irq_of_parse_and_map() failed.
+>
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+Acked-by Boris BREZILLON <b.brezillon@overkiz.com>
 
-On 02/11/2014 01:35 PM, Marc Kleine-Budde wrote:
-> On 02/11/2014 12:45 PM, Michal Simek wrote:
->> Hi Marc,
->>
->> On 02/07/2014 10:37 AM, Marc Kleine-Budde wrote:
->>> On 02/07/2014 09:42 AM, Appana Durga Kedareswara Rao wrote:
->>>>>> ---
->>>>>> This patch is rebased on the 3.14 rc1 kernel.
->>>>>> ---
->>>>>>  .../devicetree/bindings/net/can/xilinx_can.txt     |   43 +
->>>>>>  drivers/net/can/Kconfig                            |    8 +
->>>>>>  drivers/net/can/Makefile                           |    1 +
->>>>>>  drivers/net/can/xilinx_can.c                       | 1150 +++++++=
-+++++++++++++
->>>>>>  4 files changed, 1202 insertions(+), 0 deletions(-)  create mode
->>>>>> 100644 Documentation/devicetree/bindings/net/can/xilinx_can.txt
->>>>>>  create mode 100644 drivers/net/can/xilinx_can.c
->>>>>>
->>>>>> diff --git a/Documentation/devicetree/bindings/net/can/xilinx_can.=
-txt
->>>>>> b/Documentation/devicetree/bindings/net/can/xilinx_can.txt
->>>>>> new file mode 100644
->>>>>> index 0000000..34f9643
->>>>>> --- /dev/null
->>>>>> +++ b/Documentation/devicetree/bindings/net/can/xilinx_can.txt
->>>>>> @@ -0,0 +1,43 @@
->>>>>> +Xilinx Axi CAN/Zynq CANPS controller Device Tree Bindings
->>>>>> +---------------------------------------------------------
->>>>>> +
->>>>>> +Required properties:
->>>>>> +- compatible               : Should be "xlnx,zynq-can-1.00.a" for=
- Zynq
->>>>> CAN
->>>>>> +                     controllers and "xlnx,axi-can-1.00.a" for Ax=
-i CAN
->>>>>> +                     controllers.
->>>>>> +- reg                      : Physical base address and size of th=
-e Axi CAN/Zynq
->>>>>> +                     CANPS registers map.
->>>>>> +- interrupts               : Property with a value describing the=
- interrupt
->>>>>> +                     number.
->>>>>> +- interrupt-parent : Must be core interrupt controller
->>>>>> +- clock-names              : List of input clock names - "ref_clk=
-",
->>>>> "aper_clk"
->>>>>> +                     (See clock bindings for details. Two clocks =
-are
->>>>>> +                      required for Zynq CAN. For Axi CAN
->>>>>> +                      case it is one(ref_clk)).
->>>>>> +- clocks           : Clock phandles (see clock bindings for detai=
-ls).
->>>>>> +- xlnx,can-tx-dpth : Can Tx fifo depth (Required for Axi CAN).
->>>>>> +- xlnx,can-rx-dpth : Can Rx fifo depth (Required for Axi CAN).
->>>>>> +
->>>>>> +
->>>>>> +Example:
->>>>>> +
->>>>>> +For Zynq CANPS Dts file:
->>>>>> +   zynq_can_0: zynq-can@e0008000 {
->>>>>> +                   compatible =3D "xlnx,zynq-can-1.00.a";
->>>>>> +                   clocks =3D <&clkc 19>, <&clkc 36>;
->>>>>> +                   clock-names =3D "ref_clk", "aper_clk";
->>>>>> +                   reg =3D <0xe0008000 0x1000>;
->>>>>> +                   interrupts =3D <0 28 4>;
->>>>>> +                   interrupt-parent =3D <&intc>;
->>>>>
->>>>> Above xlnx,can-{rx,tx}-dpth is mentioned as required, but it's not =
-in the
->>>>> Zynq example.
->>>>
->>>> One of the Difference b/w the AXI CAN and zynq CAN is in AXI CAN the=
- fifo depth(tx,rx)
->>>> Is user configurable. But in case of ZYNQ CAN  the fifo depth  is fi=
-xed for tx and rx fifo's(64)
->>>> Xlnx,can-{rx,tx}-dpth is required only for AXI CAN case it is not re=
-quired for zynq CAN.
->>>> That's why didn't putted that property in device tree.
->>>
->>> The device tree should be a hardware only description and should not
->>> hold any user configurable data. Please split your patch into two
->>> patches. The first one should add the driver with a fixed fifo size
->>> (e.g. 0x40) for the AXI, too. The second patch should make the fifo
->>> configurable via device tree.
->>
->> can-rx/tx-dpth is not user configurable data as you think.
->> This is FPGA where you can configure this parameter in design tools.
->> It means these 2 values just describe real hardware and user can't jus=
-t change it
->> for different software behaviour.
->=20
-> I see, thanks for the clarification. I had a short grep over the
-> arm/boot/dts folder and it seems that fifo-depth is a more or less
-> common property. I think it should be called {rx,tx}-fifo-depth. I'm
-> unsure whether we need the xlnx or not.
+Thanks for fixing this.
 
-We are using xlnx prefix for all generated properties that's why
-Kedar just kept it there.
+Best Regards,
 
+Boris
+> ---
+>   drivers/clk/at91/clk-master.c | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/clk/at91/clk-master.c b/drivers/clk/at91/clk-master.c
+> index bd313f7..c1af80b 100644
+> --- a/drivers/clk/at91/clk-master.c
+> +++ b/drivers/clk/at91/clk-master.c
+> @@ -242,7 +242,7 @@ of_at91_clk_master_setup(struct device_node *np, struct at91_pmc *pmc,
+>   
+>   	irq = irq_of_parse_and_map(np, 0);
+>   	if (!irq)
+> -		return;
+> +		goto out_free_characteristics;
+>   
+>   	clk = at91_clk_register_master(pmc, irq, name, num_parents,
+>   				       parent_names, layout,
 
->> Also I don't think it is worth to create 2 patches for the same driver=
-
->> where the first one is useless for axi can device. But if you think
->> that it is worth to do we can create 2 patches as you suggested.
->>
->> Also what we can do is to define that this property is required also
->> for zynq which is 0x40 and change code according too.
->=20
-> Good idea, I think this would make the driver more uniform.
-
-ok.
-
-
->>> If it's acceptable to describe the fifo usage by device tree, I'd lik=
-e
->>> to make it a generic CAN driver option. But we have to look around, e=
-=2Eg.
->>> what the Ethernet driver use to configure their hardware.
->>
->> I think the real question is not if this is acceptable or not. It is j=
-ust
->> reality that we can setup hardware fifo depth and driver has to reflec=
-t this
->> because without it driver just doesn't work for axi can.
->>
->> The only remaining question is if we should create generic DT binding
->> for fifo depth. Arnd, Rob: Any opinion about it?
->> Definitely will be worth to have one generic binding if this is generi=
-c feature.
->> But if this is just specific feature for us then current properties sh=
-ould
->> be fine.
->>
->> In general all these xlnx,XXX properties just reflect all configurable=
- options
->> which you can setup in design tool which means that provide full hw de=
-scription
->> with all variants and they are automatically generated from tools.
->>
->> Please let me know what you think.
->=20
-> I like:
->=20
->     rx-fifo-depth
->     tx-fifo-depth
-
-No problem with that. Let Kedar to fix it according this and he will send=
- v2 with this.
-
-Thanks,
-Michal
-
-
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---hjpfTfliEGdB02KKQBhcv4U3qXDB4SDcb
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlL6JBkACgkQykllyylKDCFgPACfR2Jzw7gwJ3lLQ5y/OWVSSJNy
-xzEAn2Z4wvwW7Xxy+9bVcMrXn8YoMXzp
-=VtUH
------END PGP SIGNATURE-----
-
---hjpfTfliEGdB02KKQBhcv4U3qXDB4SDcb--
