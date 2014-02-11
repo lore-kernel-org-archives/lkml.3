@@ -1,169 +1,542 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751852AbaBKSwl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 13:52:41 -0500
-Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:50558
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751435AbaBKSwi (ORCPT
+	id S1751790AbaBKSz1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 13:55:27 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:29271 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750909AbaBKSzZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 13:52:38 -0500
-X-Forefront-Antispam-Report: CIP:157.56.240.101;KIP:(null);UIP:(null);IPV:NLI;H:BL2PRD0510HT002.namprd05.prod.outlook.com;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VPS-2(zz9371I542I1432I4015Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h17326ah8275dh1de097h186068hz2fh109h2a8h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh1ad9h1b0ah224fh1d07h1d0ch1d2eh1d3fh1de9h1dfeh1dffh1fe8h1ff5h2216h22d0h2336h2461h2487h24d7h2516h2545h255eh9a9j1155h)
-X-Forefront-Antispam-Report-Untrusted: SFV:NSPM;SFS:(10009001)(6009001)(51704005)(377454003)(164054003)(13464003)(199002)(189002)(79102001)(76796001)(80022001)(66066001)(76482001)(63696002)(65816001)(74876001)(76786001)(59766001)(74706001)(83072002)(56776001)(94316002)(81816001)(81686001)(31966008)(74662001)(51856001)(33646001)(47446002)(74502001)(86362001)(95666001)(94946001)(46102001)(93516002)(93136001)(92566001)(77982001)(53806001)(54356001)(54316002)(4396001)(95416001)(15975445006)(69226001)(47976001)(19580405001)(19580395003)(81542001)(47736001)(80976001)(83322001)(87266001)(15202345003)(85306002)(74316001)(87936001)(2656002)(76576001)(81342001)(49866001)(50986001)(85852003)(74366001)(90146001)(56816005)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR05MB669;H:DM2PR05MB671.namprd05.prod.outlook.com;CLIP:66.129.239.14;FPR:AE09FC76.91C2DC10.EAF5757B.43A9DA4D.2046B;InfoNoRecordsA:1;MX:1;LANG:en;
-From: Rajat Jain <rajatjain@juniper.net>
-To: Takashi Iwai <tiwai@suse.de>, Bjorn Helgaas <bhelgaas@google.com>
-CC: Alex Williamson <alex.williamson@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] PCI: pciehp: Remove surprise bit checks
-Thread-Topic: [PATCH] PCI: pciehp: Remove surprise bit checks
-Thread-Index: AQHPJx3aPSx88dSndk+D3PuOxMYjFJqwZLPg
-Date: Tue, 11 Feb 2014 18:52:30 +0000
-Message-ID: <1117e550ec6248e3a1834f887cbfdfad@DM2PR05MB671.namprd05.prod.outlook.com>
-References: <s5hmwhx98vx.wl%tiwai@suse.de>
-In-Reply-To: <s5hmwhx98vx.wl%tiwai@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [66.129.239.14]
-x-forefront-prvs: 0119DC3B5E
-Content-Type: text/plain; charset="utf-8"
+	Tue, 11 Feb 2014 13:55:25 -0500
+X-IronPort-AV: E=Sophos;i="4.95,826,1384300800"; 
+   d="scan'208";a="99893728"
+Date: Tue, 11 Feb 2014 18:55:06 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
+        <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
+        =?UTF-8?Q?Roger_Pau_Monn=C3=A9?= <roger.pau@citrix.com>,
+        Jan Beulich <jbeulich@suse.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        <stefano.stabellini@eu.citrix.com>
+Subject: Re: [PATCH v8] xen/grant-table: Avoid m2p_override during mapping
+In-Reply-To: <1391691376-21471-1-git-send-email-zoltan.kiss@citrix.com>
+Message-ID: <alpine.DEB.2.02.1402111845430.4373@kaball.uk.xensource.com>
+References: <1391691376-21471-1-git-send-email-zoltan.kiss@citrix.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-X-OriginatorOrg: juniper.net
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1BIr0oZ009806
 
-Hello Takashi,
-
-> -----Original Message-----
-> From: linux-pci-owner@vger.kernel.org [mailto:linux-pci-
-> owner@vger.kernel.org] On Behalf Of Takashi Iwai
-> Sent: Tuesday, February 11, 2014 3:39 AM
-> To: Bjorn Helgaas
-> Cc: Alex Williamson; linux-pci@vger.kernel.org; linux-
-> kernel@vger.kernel.org
-> Subject: [PATCH] PCI: pciehp: Remove surprise bit checks
+On Thu, 6 Feb 2014, Zoltan Kiss wrote:
+> The grant mapping API does m2p_override unnecessarily: only gntdev needs it,
+> for blkback and future netback patches it just cause a lock contention, as
+> those pages never go to userspace. Therefore this series does the following:
+> - the original functions were renamed to __gnttab_[un]map_refs, with a new
+>   parameter m2p_override
+> - based on m2p_override either they follow the original behaviour, or just set
+>   the private flag and call set_phys_to_machine
+> - gnttab_[un]map_refs are now a wrapper to call __gnttab_[un]map_refs with
+>   m2p_override false
+> - a new function gnttab_[un]map_refs_userspace provides the old behaviour
+> - it cuts out common parts from m2p_*_override functions to
+>   *_foreign_p2m_mapping functions
 > 
-> Currently pciehp driver checks the surprise removal bit and handles
-> the hotplug event only when the bit is set.  But there are devices
-> that don't set that bit but yet expect the hotplug working, e.g. the
-> PCI card reader on HP ProBook 445 and 455 laptops appears only when
-> you insert a card, and it needs the hotplug event handling.
+> It also removes a stray space from page.h and change ret to 0 if
+> XENFEAT_auto_translated_physmap, as that is the only possible return value
+> there.
 > 
-> For fixing this, basically we may ignore the surprise bit and always
-> handle the event.
-
-Some of this has been taken care of in the recent changes to pciehcp (last night).
-
-Please see
-
-https://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/commit/?h=pci/pciehp&id=a3eba3887960d00abb912fe3703cd3a058c721b8
-
-Also, link state hotplug has been added as part of this patch set. Can you please try with Bjorn's latest pci tree?
-
-With that, I think you should not see the issue you are describing, because if the PCIe Link comes up when you insert the card, it shall be added (now) irrespective of whether or not you have the surprise bit set.
-
-Thanks,
-
-Rajat
-
-
-> The only big concern in the past was the KVM device
-> assignment, but this has been fixed in KVM side (ignoring hotplug
-> events during secondary bus resets), there should be no obstacle
-> ahead.
+> v2:
+> - move the storing of the old mfn in page->index to gnttab_map_refs
+> - move the function header update to a separate patch
 > 
-> The earlier discussion thread is found at:
->     https://lkml.org/lkml/2013/3/20/274
+> v3:
+> - a new approach to retain old behaviour where it needed
+> - squash the patches into one
 > 
-> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=70261
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+> v4:
+> - move out the common bits from m2p* functions, and pass pfn/mfn as parameter
+> - clear page->private before doing anything with the page, so m2p_find_override
+>   won't race with this
+> 
+> v5:
+> - change return value handling in __gnttab_[un]map_refs
+> - remove a stray space in page.h
+> - add detail why ret = 0 now at some places
+> 
+> v6:
+> - don't pass pfn to m2p* functions, just get it locally
+> 
+> v7:
+> - the previous version broke build on ARM, as there is no need for those p2m
+>   changes. I've put them into arch specific functions, which are stubs on arm
+> 
+> v8:
+> - give credit to Anthony Liguori who submitted a very similar patch originally:
+> http://marc.info/?i=1384307336-5328-1-git-send-email-anthony%40codemonkey.ws
+> - create ARM stub for get_phys_to_machine
+> - move definition of mfn in __gnttab_unmap_refs to the right place
+> 
+> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+> Original-by: Anthony Liguori <aliguori@amazon.com>
 > ---
->  drivers/pci/hotplug/pciehp_ctrl.c | 11 -----------
->  drivers/pci/hotplug/pciehp_hpc.c  | 19 +++++++------------
->  2 files changed, 7 insertions(+), 23 deletions(-)
+>  arch/arm/include/asm/xen/page.h     |   20 +++++++++-
+>  arch/x86/include/asm/xen/page.h     |    7 +++-
+>  arch/x86/xen/p2m.c                  |   49 ++++++++++++++++-------
+>  drivers/block/xen-blkback/blkback.c |   15 +++----
+>  drivers/xen/gntdev.c                |   13 +++---
+>  drivers/xen/grant-table.c           |   74 +++++++++++++++++++++++++++++------
+>  include/xen/grant_table.h           |    8 +++-
+>  7 files changed, 140 insertions(+), 46 deletions(-)
 > 
-> diff --git a/drivers/pci/hotplug/pciehp_ctrl.c
-> b/drivers/pci/hotplug/pciehp_ctrl.c
-> index 50628487597d..8f6c626b4e21 100644
-> --- a/drivers/pci/hotplug/pciehp_ctrl.c
-> +++ b/drivers/pci/hotplug/pciehp_ctrl.c
-> @@ -434,8 +434,6 @@ static void interrupt_event_handler(struct
-> work_struct *work)
->  		break;
->  	case INT_PRESENCE_ON:
->  	case INT_PRESENCE_OFF:
-> -		if (!HP_SUPR_RM(ctrl))
-> -			break;
->  		ctrl_dbg(ctrl, "Surprise Removal\n");
->  		handle_surprise_event(p_slot);
->  		break;
-> @@ -494,15 +492,6 @@ int pciehp_disable_slot(struct slot *p_slot)
->  	if (!p_slot->ctrl)
->  		return 1;
-> 
-> -	if (!HP_SUPR_RM(p_slot->ctrl)) {
-> -		pciehp_get_adapter_status(p_slot, &getstatus);
-> -		if (!getstatus) {
-> -			ctrl_info(ctrl, "No adapter on slot(%s)\n",
-> -				  slot_name(p_slot));
-> -			return -ENODEV;
-> -		}
-> -	}
-> -
->  	if (MRL_SENS(p_slot->ctrl)) {
->  		pciehp_get_latch_status(p_slot, &getstatus);
->  		if (getstatus) {
-> diff --git a/drivers/pci/hotplug/pciehp_hpc.c
-> b/drivers/pci/hotplug/pciehp_hpc.c
-> index 14acfccb7670..5f9196a85a53 100644
-> --- a/drivers/pci/hotplug/pciehp_hpc.c
-> +++ b/drivers/pci/hotplug/pciehp_hpc.c
-> @@ -636,21 +636,16 @@ int pciehp_reset_slot(struct slot *slot, int
-> probe)
->  	if (probe)
->  		return 0;
-> 
-> -	if (HP_SUPR_RM(ctrl)) {
-> -		pcie_write_cmd(ctrl, 0, PCI_EXP_SLTCTL_PDCE);
-> -		if (pciehp_poll_mode)
-> -			del_timer_sync(&ctrl->poll_timer);
-> -	}
-> +	pcie_write_cmd(ctrl, 0, PCI_EXP_SLTCTL_PDCE);
-> +	if (pciehp_poll_mode)
-> +		del_timer_sync(&ctrl->poll_timer);
-> 
->  	pci_reset_bridge_secondary_bus(ctrl->pcie->port);
-> 
-> -	if (HP_SUPR_RM(ctrl)) {
-> -		pcie_capability_write_word(pdev, PCI_EXP_SLTSTA,
-> -					   PCI_EXP_SLTSTA_PDC);
-> -		pcie_write_cmd(ctrl, PCI_EXP_SLTCTL_PDCE,
-> PCI_EXP_SLTCTL_PDCE);
-> -		if (pciehp_poll_mode)
-> -			int_poll_timeout(ctrl->poll_timer.data);
-> -	}
-> +	pcie_capability_write_word(pdev, PCI_EXP_SLTSTA,
-> PCI_EXP_SLTSTA_PDC);
-> +	pcie_write_cmd(ctrl, PCI_EXP_SLTCTL_PDCE, PCI_EXP_SLTCTL_PDCE);
-> +	if (pciehp_poll_mode)
-> +		int_poll_timeout(ctrl->poll_timer.data);
-> 
+> diff --git a/arch/arm/include/asm/xen/page.h b/arch/arm/include/asm/xen/page.h
+> index e0965ab..d26c3d7 100644
+> --- a/arch/arm/include/asm/xen/page.h
+> +++ b/arch/arm/include/asm/xen/page.h
+> @@ -97,13 +97,31 @@ static inline pte_t *lookup_address(unsigned long address, unsigned int *level)
+>  	return NULL;
+>  }
+>  
+> +static inline unsigned long get_phys_to_machine(unsigned long pfn)
+> +{
+> +	return 0;
+> +}
+
+We can probably just rename phys_to_machine to get_phys_to_machine.
+Be careful about the other callers in page.h.
+
+
+> +static inline int set_foreign_p2m_mapping(struct page *page, unsigned long mfn)
+> +{
+> +	return 0;
+> +}
+> +
+>  static inline int m2p_add_override(unsigned long mfn, struct page *page,
+>  		struct gnttab_map_grant_ref *kmap_op)
+>  {
 >  	return 0;
 >  }
-> --
-> 1.8.5.2
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+>  
+> -static inline int m2p_remove_override(struct page *page, bool clear_pte)
+> +static inline int restore_foreign_p2m_mapping(struct page *page,
+> +					      unsigned long mfn)
+> +{
+> +	return 0;
+> +}
+> +
+> +static inline int m2p_remove_override(struct page *page,
+> +				      struct gnttab_map_grant_ref *kmap_op,
+> +				      unsigned long mfn)
+>  {
+>  	return 0;
+>  }
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I like set_foreign_p2m_mapping and restore_foreign_p2m_mapping but we
+need to use them coherently.
+I think that on ARM it makes sense to rename the current implementation of
+set_phys_to_machine to set_foreign_p2m_mapping.
+I also makes sense to change the call to set_phys_to_machine with
+INVALID_P2M_ENTRY as a parameter to restore_foreign_p2m_mapping.
+
+Then you can implement set_phys_to_machine as
+
+BUG_ON(pfn != mfn):
+    
+and get_phys_to_machine as
+
+return pfn;
+
+
+> diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
+> index 3e276eb..0340954 100644
+> --- a/arch/x86/include/asm/xen/page.h
+> +++ b/arch/x86/include/asm/xen/page.h
+> @@ -49,10 +49,13 @@ extern bool __set_phys_to_machine(unsigned long pfn, unsigned long mfn);
+>  extern unsigned long set_phys_range_identity(unsigned long pfn_s,
+>  					     unsigned long pfn_e);
+>  
+> +extern int set_foreign_p2m_mapping(struct page *page, unsigned long mfn);
+>  extern int m2p_add_override(unsigned long mfn, struct page *page,
+>  			    struct gnttab_map_grant_ref *kmap_op);
+> +extern int restore_foreign_p2m_mapping(struct page *page, unsigned long mfn);
+>  extern int m2p_remove_override(struct page *page,
+> -				struct gnttab_map_grant_ref *kmap_op);
+> +			       struct gnttab_map_grant_ref *kmap_op,
+> +			       unsigned long mfn);
+>  extern struct page *m2p_find_override(unsigned long mfn);
+>  extern unsigned long m2p_find_override_pfn(unsigned long mfn, unsigned long pfn);
+>  
+> @@ -121,7 +124,7 @@ static inline unsigned long mfn_to_pfn(unsigned long mfn)
+>  		pfn = m2p_find_override_pfn(mfn, ~0);
+>  	}
+>  
+> -	/* 
+> +	/*
+>  	 * pfn is ~0 if there are no entries in the m2p for mfn or if the
+>  	 * entry doesn't map back to the mfn and m2p_override doesn't have a
+>  	 * valid entry for it.
+> diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+> index 696c694..3e7cfa9 100644
+> --- a/arch/x86/xen/p2m.c
+> +++ b/arch/x86/xen/p2m.c
+> @@ -881,6 +881,22 @@ static unsigned long mfn_hash(unsigned long mfn)
+>  	return hash_long(mfn, M2P_OVERRIDE_HASH_SHIFT);
+>  }
+>  
+> +int set_foreign_p2m_mapping(struct page *page, unsigned long mfn)
+> +{
+> +	unsigned long pfn = page_to_pfn(page);
+> +
+> +	WARN_ON(PagePrivate(page));
+> +	SetPagePrivate(page);
+> +	set_page_private(page, mfn);
+> +
+> +	page->index = pfn_to_mfn(pfn);
+> +	if (unlikely(!set_phys_to_machine(pfn, FOREIGN_FRAME(mfn))))
+> +		return -ENOMEM;
+> +
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL_GPL(set_foreign_p2m_mapping);
+> +
+>  /* Add an MFN override for a particular page */
+>  int m2p_add_override(unsigned long mfn, struct page *page,
+>  		struct gnttab_map_grant_ref *kmap_op)
+> @@ -899,13 +915,6 @@ int m2p_add_override(unsigned long mfn, struct page *page,
+>  					"m2p_add_override: pfn %lx not mapped", pfn))
+>  			return -EINVAL;
+>  	}
+> -	WARN_ON(PagePrivate(page));
+> -	SetPagePrivate(page);
+> -	set_page_private(page, mfn);
+> -	page->index = pfn_to_mfn(pfn);
+> -
+> -	if (unlikely(!set_phys_to_machine(pfn, FOREIGN_FRAME(mfn))))
+> -		return -ENOMEM;
+>  
+>  	if (kmap_op != NULL) {
+>  		if (!PageHighMem(page)) {
+> @@ -943,20 +952,33 @@ int m2p_add_override(unsigned long mfn, struct page *page,
+>  	return 0;
+>  }
+>  EXPORT_SYMBOL_GPL(m2p_add_override);
+> +
+> +int restore_foreign_p2m_mapping(struct page *page, unsigned long mfn)
+> +{
+> +	unsigned long pfn = page_to_pfn(page);
+> +
+> +	if (mfn == INVALID_P2M_ENTRY || !(mfn & FOREIGN_FRAME_BIT))
+> +		return -EINVAL;
+> +
+> +	set_page_private(page, INVALID_P2M_ENTRY);
+> +	WARN_ON(!PagePrivate(page));
+> +	ClearPagePrivate(page);
+> +	set_phys_to_machine(pfn, page->index);
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL_GPL(restore_foreign_p2m_mapping);
+> +
+>  int m2p_remove_override(struct page *page,
+> -		struct gnttab_map_grant_ref *kmap_op)
+> +			struct gnttab_map_grant_ref *kmap_op,
+> +			unsigned long mfn)
+>  {
+>  	unsigned long flags;
+> -	unsigned long mfn;
+>  	unsigned long pfn;
+>  	unsigned long uninitialized_var(address);
+>  	unsigned level;
+>  	pte_t *ptep = NULL;
+>  
+>  	pfn = page_to_pfn(page);
+> -	mfn = get_phys_to_machine(pfn);
+> -	if (mfn == INVALID_P2M_ENTRY || !(mfn & FOREIGN_FRAME_BIT))
+> -		return -EINVAL;
+>  
+>  	if (!PageHighMem(page)) {
+>  		address = (unsigned long)__va(pfn << PAGE_SHIFT);
+> @@ -970,10 +992,7 @@ int m2p_remove_override(struct page *page,
+>  	spin_lock_irqsave(&m2p_override_lock, flags);
+>  	list_del(&page->lru);
+>  	spin_unlock_irqrestore(&m2p_override_lock, flags);
+> -	WARN_ON(!PagePrivate(page));
+> -	ClearPagePrivate(page);
+>  
+> -	set_phys_to_machine(pfn, page->index);
+>  	if (kmap_op != NULL) {
+>  		if (!PageHighMem(page)) {
+>  			struct multicall_space mcs;
+> diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
+> index 4b97b86..da18046 100644
+> --- a/drivers/block/xen-blkback/blkback.c
+> +++ b/drivers/block/xen-blkback/blkback.c
+> @@ -285,8 +285,7 @@ static void free_persistent_gnts(struct xen_blkif *blkif, struct rb_root *root,
+>  
+>  		if (++segs_to_unmap == BLKIF_MAX_SEGMENTS_PER_REQUEST ||
+>  			!rb_next(&persistent_gnt->node)) {
+> -			ret = gnttab_unmap_refs(unmap, NULL, pages,
+> -				segs_to_unmap);
+> +			ret = gnttab_unmap_refs(unmap, pages, segs_to_unmap);
+>  			BUG_ON(ret);
+>  			put_free_pages(blkif, pages, segs_to_unmap);
+>  			segs_to_unmap = 0;
+> @@ -321,8 +320,7 @@ static void unmap_purged_grants(struct work_struct *work)
+>  		pages[segs_to_unmap] = persistent_gnt->page;
+>  
+>  		if (++segs_to_unmap == BLKIF_MAX_SEGMENTS_PER_REQUEST) {
+> -			ret = gnttab_unmap_refs(unmap, NULL, pages,
+> -				segs_to_unmap);
+> +			ret = gnttab_unmap_refs(unmap, pages, segs_to_unmap);
+>  			BUG_ON(ret);
+>  			put_free_pages(blkif, pages, segs_to_unmap);
+>  			segs_to_unmap = 0;
+> @@ -330,7 +328,7 @@ static void unmap_purged_grants(struct work_struct *work)
+>  		kfree(persistent_gnt);
+>  	}
+>  	if (segs_to_unmap > 0) {
+> -		ret = gnttab_unmap_refs(unmap, NULL, pages, segs_to_unmap);
+> +		ret = gnttab_unmap_refs(unmap, pages, segs_to_unmap);
+>  		BUG_ON(ret);
+>  		put_free_pages(blkif, pages, segs_to_unmap);
+>  	}
+> @@ -670,15 +668,14 @@ static void xen_blkbk_unmap(struct xen_blkif *blkif,
+>  				    GNTMAP_host_map, pages[i]->handle);
+>  		pages[i]->handle = BLKBACK_INVALID_HANDLE;
+>  		if (++invcount == BLKIF_MAX_SEGMENTS_PER_REQUEST) {
+> -			ret = gnttab_unmap_refs(unmap, NULL, unmap_pages,
+> -			                        invcount);
+> +			ret = gnttab_unmap_refs(unmap, unmap_pages, invcount);
+>  			BUG_ON(ret);
+>  			put_free_pages(blkif, unmap_pages, invcount);
+>  			invcount = 0;
+>  		}
+>  	}
+>  	if (invcount) {
+> -		ret = gnttab_unmap_refs(unmap, NULL, unmap_pages, invcount);
+> +		ret = gnttab_unmap_refs(unmap, unmap_pages, invcount);
+>  		BUG_ON(ret);
+>  		put_free_pages(blkif, unmap_pages, invcount);
+>  	}
+> @@ -740,7 +737,7 @@ again:
+>  	}
+>  
+>  	if (segs_to_map) {
+> -		ret = gnttab_map_refs(map, NULL, pages_to_gnt, segs_to_map);
+> +		ret = gnttab_map_refs(map, pages_to_gnt, segs_to_map);
+>  		BUG_ON(ret);
+>  	}
+>  
+> diff --git a/drivers/xen/gntdev.c b/drivers/xen/gntdev.c
+> index 073b4a1..34a2704 100644
+> --- a/drivers/xen/gntdev.c
+> +++ b/drivers/xen/gntdev.c
+> @@ -284,8 +284,10 @@ static int map_grant_pages(struct grant_map *map)
+>  	}
+>  
+>  	pr_debug("map %d+%d\n", map->index, map->count);
+> -	err = gnttab_map_refs(map->map_ops, use_ptemod ? map->kmap_ops : NULL,
+> -			map->pages, map->count);
+> +	err = gnttab_map_refs_userspace(map->map_ops,
+> +					use_ptemod ? map->kmap_ops : NULL,
+> +					map->pages,
+> +					map->count);
+>  	if (err)
+>  		return err;
+>  
+> @@ -315,9 +317,10 @@ static int __unmap_grant_pages(struct grant_map *map, int offset, int pages)
+>  		}
+>  	}
+>  
+> -	err = gnttab_unmap_refs(map->unmap_ops + offset,
+> -			use_ptemod ? map->kmap_ops + offset : NULL, map->pages + offset,
+> -			pages);
+> +	err = gnttab_unmap_refs_userspace(map->unmap_ops + offset,
+> +					  use_ptemod ? map->kmap_ops + offset : NULL,
+> +					  map->pages + offset,
+> +					  pages);
+>  	if (err)
+>  		return err;
+>  
+> diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+> index b84e3ab..c719bc8 100644
+> --- a/drivers/xen/grant-table.c
+> +++ b/drivers/xen/grant-table.c
+> @@ -928,15 +928,17 @@ void gnttab_batch_copy(struct gnttab_copy *batch, unsigned count)
+>  }
+>  EXPORT_SYMBOL_GPL(gnttab_batch_copy);
+>  
+> -int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+> +int __gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+>  		    struct gnttab_map_grant_ref *kmap_ops,
+> -		    struct page **pages, unsigned int count)
+> +		    struct page **pages, unsigned int count,
+> +		    bool m2p_override)
+>  {
+>  	int i, ret;
+>  	bool lazy = false;
+>  	pte_t *pte;
+>  	unsigned long mfn;
+>  
+> +	BUG_ON(kmap_ops && !m2p_override);
+>  	ret = HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, map_ops, count);
+>  	if (ret)
+>  		return ret;
+> @@ -955,10 +957,12 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+>  			set_phys_to_machine(map_ops[i].host_addr >> PAGE_SHIFT,
+>  					map_ops[i].dev_bus_addr >> PAGE_SHIFT);
+
+I think that this should become a call to set_foreign_p2m_mapping
+
+
+>  		}
+> -		return ret;
+> +		return 0;
+>  	}
+>  
+> -	if (!in_interrupt() && paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
+> +	if (m2p_override &&
+> +	    !in_interrupt() &&
+> +	    paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
+>  		arch_enter_lazy_mmu_mode();
+>  		lazy = true;
+>  	}
+> @@ -975,8 +979,14 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+>  		} else {
+>  			mfn = PFN_DOWN(map_ops[i].dev_bus_addr);
+>  		}
+> -		ret = m2p_add_override(mfn, pages[i], kmap_ops ?
+> -				       &kmap_ops[i] : NULL);
+> +
+> +		ret = set_foreign_p2m_mapping(pages[i], mfn);
+> +		if (ret)
+> +			goto out;
+> +
+> +		if (m2p_override)
+> +			ret = m2p_add_override(mfn, pages[i], kmap_ops ?
+> +					       &kmap_ops[i] : NULL);
+>  		if (ret)
+>  			goto out;
+>  	}
+> @@ -987,15 +997,31 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+>  
+>  	return ret;
+>  }
+> +
+> +int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+> +		    struct page **pages, unsigned int count)
+> +{
+> +	return __gnttab_map_refs(map_ops, NULL, pages, count, false);
+> +}
+>  EXPORT_SYMBOL_GPL(gnttab_map_refs);
+>  
+> -int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+> +int gnttab_map_refs_userspace(struct gnttab_map_grant_ref *map_ops,
+> +			      struct gnttab_map_grant_ref *kmap_ops,
+> +			      struct page **pages, unsigned int count)
+> +{
+> +	return __gnttab_map_refs(map_ops, kmap_ops, pages, count, true);
+> +}
+> +EXPORT_SYMBOL_GPL(gnttab_map_refs_userspace);
+> +
+> +int __gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+>  		      struct gnttab_map_grant_ref *kmap_ops,
+> -		      struct page **pages, unsigned int count)
+> +		      struct page **pages, unsigned int count,
+> +		      bool m2p_override)
+>  {
+>  	int i, ret;
+>  	bool lazy = false;
+>  
+> +	BUG_ON(kmap_ops && !m2p_override);
+>  	ret = HYPERVISOR_grant_table_op(GNTTABOP_unmap_grant_ref, unmap_ops, count);
+>  	if (ret)
+>  		return ret;
+> @@ -1006,17 +1032,27 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+>  			set_phys_to_machine(unmap_ops[i].host_addr >> PAGE_SHIFT,
+>  					INVALID_P2M_ENTRY);
+
+this should become a call to restore_foreign_p2m_mapping
+
+
+>  		}
+> -		return ret;
+> +		return 0;
+>  	}
+>  
+> -	if (!in_interrupt() && paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
+> +	if (m2p_override &&
+> +	    !in_interrupt() &&
+> +	    paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
+>  		arch_enter_lazy_mmu_mode();
+>  		lazy = true;
+>  	}
+>  
+>  	for (i = 0; i < count; i++) {
+> -		ret = m2p_remove_override(pages[i], kmap_ops ?
+> -				       &kmap_ops[i] : NULL);
+> +		unsigned long mfn = get_phys_to_machine(page_to_pfn(pages[i]));
+> +		ret = restore_foreign_p2m_mapping(pages[i], mfn);
+> +		if (ret)
+> +			goto out;
+> +
+> +		if (m2p_override)
+> +			ret = m2p_remove_override(pages[i],
+> +						  kmap_ops ?
+> +						   &kmap_ops[i] : NULL,
+> +						  mfn);
+>  		if (ret)
+>  			goto out;
+>  	}
+> @@ -1027,8 +1063,22 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+>  
+>  	return ret;
+>  }
+> +
+> +int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *map_ops,
+> +		    struct page **pages, unsigned int count)
+> +{
+> +	return __gnttab_unmap_refs(map_ops, NULL, pages, count, false);
+> +}
+>  EXPORT_SYMBOL_GPL(gnttab_unmap_refs);
+>  
+> +int gnttab_unmap_refs_userspace(struct gnttab_unmap_grant_ref *map_ops,
+> +				struct gnttab_map_grant_ref *kmap_ops,
+> +				struct page **pages, unsigned int count)
+> +{
+> +	return __gnttab_unmap_refs(map_ops, kmap_ops, pages, count, true);
+> +}
+> +EXPORT_SYMBOL_GPL(gnttab_unmap_refs_userspace);
+> +
+>  static unsigned nr_status_frames(unsigned nr_grant_frames)
+>  {
+>  	BUG_ON(grefs_per_grant_frame == 0);
+> diff --git a/include/xen/grant_table.h b/include/xen/grant_table.h
+> index a5af2a2..7ad033d 100644
+> --- a/include/xen/grant_table.h
+> +++ b/include/xen/grant_table.h
+> @@ -191,11 +191,15 @@ void gnttab_free_auto_xlat_frames(void);
+>  #define gnttab_map_vaddr(map) ((void *)(map.host_virt_addr))
+>  
+>  int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+> -		    struct gnttab_map_grant_ref *kmap_ops,
+>  		    struct page **pages, unsigned int count);
+> +int gnttab_map_refs_userspace(struct gnttab_map_grant_ref *map_ops,
+> +			      struct gnttab_map_grant_ref *kmap_ops,
+> +			      struct page **pages, unsigned int count);
+>  int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+> -		      struct gnttab_map_grant_ref *kunmap_ops,
+>  		      struct page **pages, unsigned int count);
+> +int gnttab_unmap_refs_userspace(struct gnttab_unmap_grant_ref *unmap_ops,
+> +				struct gnttab_map_grant_ref *kunmap_ops,
+> +				struct page **pages, unsigned int count);
+>  
+>  /* Perform a batch of grant map/copy operations. Retry every batch slot
+>   * for which the hypervisor returns GNTST_eagain. This is typically due
+> 
