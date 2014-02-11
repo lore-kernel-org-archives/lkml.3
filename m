@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753262AbaBKTGN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:06:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39853 "EHLO
+	id S1753379AbaBKTG2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:06:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39887 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752380AbaBKTGK (ORCPT
+	with ESMTP id S1753268AbaBKTGQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:10 -0500
+	Tue, 11 Feb 2014 14:06:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Akash Goel <akash.goel@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [PATCH 3.13 093/120] drm/i915: Fix the offset issue for the stolen GEM objects
-Date: Tue, 11 Feb 2014 11:05:34 -0800
-Message-Id: <20140211184826.268154613@linuxfoundation.org>
+        Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.12 012/107] mm/memcg: iteration skip memcgs not yet fully initialized
+Date: Tue, 11 Feb 2014 11:04:38 -0800
+Message-Id: <20140211184748.554300492@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
-References: <20140211184823.492407127@linuxfoundation.org>
+In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
+References: <20140211184748.191276235@linuxfoundation.org>
 User-Agent: quilt/0.61-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,46 +27,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Akash Goel <akash.goel@intel.com>
+From: Hugh Dickins <hughd@google.com>
 
-commit ec14ba47791965d2c08e0a681ff44eacbf3c4553 upstream.
+commit d8ad30559715ce97afb7d1a93a12fd90e8fff312 upstream.
 
-The 'offset' field of the 'scatterlist' structure was wrongly
-programmed with the offset value from the base of stolen area,
-whereas this field indicates the offset from where the interested
-data starts within the first PAGE pointed to by 'scattterlist'
-structure. As a result when a new GEM object allocated from stolen
-area is mapped to GTT, it could lead to an overwrite of GTT entries
-as the page count calculation will go wrong, refer the function
-'sg_page_count'.
+It is surprising that the mem_cgroup iterator can return memcgs which
+have not yet been fully initialized.  By accident (or trial and error?)
+this appears not to present an actual problem; but it may be better to
+prevent such surprises, by skipping memcgs not yet online.
 
-v2: Modified the commit message. (Chris)
-
-Signed-off-by: Akash Goel <akash.goel@intel.com>
-Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=71908
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=69104
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Cc: Tejun Heo <tj@kernel.org>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_gem_stolen.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/memcontrol.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_gem_stolen.c
-+++ b/drivers/gpu/drm/i915/i915_gem_stolen.c
-@@ -250,7 +250,7 @@ i915_pages_create_for_stolen(struct drm_
- 	}
- 
- 	sg = st->sgl;
--	sg->offset = offset;
-+	sg->offset = 0;
- 	sg->length = size;
- 
- 	sg_dma_address(sg) = (dma_addr_t)dev_priv->mm.stolen_base + offset;
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1081,10 +1081,8 @@ skip_node:
+ 	 * protected by css_get and the tree walk is rcu safe.
+ 	 */
+ 	if (next_css) {
+-		struct mem_cgroup *mem = mem_cgroup_from_css(next_css);
+-
+-		if (css_tryget(&mem->css))
+-			return mem;
++		if ((next_css->flags & CSS_ONLINE) && css_tryget(next_css))
++			return mem_cgroup_from_css(next_css);
+ 		else {
+ 			prev_css = next_css;
+ 			goto skip_node;
 
 
