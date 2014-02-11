@@ -1,146 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755862AbaBKUEQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:04:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40095 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753645AbaBKTG5 (ORCPT
+	id S1754987AbaBKUGM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:06:12 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:53603 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753983AbaBKUGJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:57 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.12 029/107] fs/compat: fix parameter handling for compat readv/writev syscalls
-Date: Tue, 11 Feb 2014 11:04:55 -0800
-Message-Id: <20140211184749.026961433@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
-References: <20140211184748.191276235@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Tue, 11 Feb 2014 15:06:09 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Josh Cartwright <joshc@codeaurora.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>
+Subject: Re: [PATCH] of: Turn of_match_node into a static inline when CONFIG_OF isn't set
+Date: Tue, 11 Feb 2014 21:06 +0100
+Message-ID: <3619654.tQqiI1EfTB@wuerfel>
+User-Agent: KMail/4.11.3 (Linux/3.11.0-15-generic; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <CAMuHMdVkPLe5986hYPApoQr7oJSb6U2P71=nP+9mtvtaskdHXg@mail.gmail.com>
+References: <1392122211-11422-1-git-send-email-laurent.pinchart@ideasonboard.com> <20140211180845.GG841@joshc.qualcomm.com> <CAMuHMdVkPLe5986hYPApoQr7oJSb6U2P71=nP+9mtvtaskdHXg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:4k+WpWIX5BaqeazRpijIu9C9CbuQfiiGqDRLR56AxYq
+ xJd/ki7YiTElQzoG+taqUeyBY/bQtWj76JFNb4FGxWELwiYxfj
+ naAIsvhSfXv8vf1TCMexnoGh021aDiebymibyNaT+0GOvcWfZ0
+ o6grFKHbeRNCs3hCgMlGdAw2SRSSpYPxdNOOnFrseJvD13Anui
+ WmlKHSgZdFvw+8XpEY1hvzAdLR2LOrbRqRssRHVoRviW0t1H2u
+ bUB8nGQ2ru2HWrM6jPuYoEMz5IJ5zXXXpmrAYV4D0NVNZkSDTZ
+ jDXxp6fI3IaNev/nMZTG5mnfm2BTNJx9lHv1onhGNrXD/citQl
+ ow5E7ez5CV69VjcLeM2Y=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On Tuesday 11 February 2014 19:29:19 Geert Uytterhoeven wrote:
+> On Tue, Feb 11, 2014 at 7:08 PM, Josh Cartwright <joshc@codeaurora.org> wrote:
 
-------------------
+> Ideally, all xxx_device_id look like
+> 
+>     struct xxx_device_id {
+>             ... /* bus-specific ID information */
+>             kernel_ulong_t driver_data;
+>     };
+> 
+> This may be formalized in some way, using a base class, but thay may
+> require reordering the fields, like:
+> 
+>     struct base_device_id {
+>             kernel_ulong_t driver_data;
+>             long id[0];
+>     };
+> 
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+You can't reorder the fields because they are shared with user
+space in form of the module-init-tools.
 
-commit dfd948e32af2e7b28bcd7a490c0a30d4b8df2a36 upstream.
-
-We got a report that the pwritev syscall does not work correctly in
-compat mode on s390.
-
-It turned out that with commit 72ec35163f9f ("switch compat readv/writev
-variants to COMPAT_SYSCALL_DEFINE") we lost the zero extension of a
-couple of syscall parameters because the some parameter types haven't
-been converted from unsigned long to compat_ulong_t.
-
-This is needed for architectures where the ABI requires that the caller
-of a function performed zero and/or sign extension to 64 bit of all
-parameters.
-
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/read_write.c        |   16 ++++++++--------
- include/linux/compat.h |   16 ++++++++--------
- 2 files changed, 16 insertions(+), 16 deletions(-)
-
---- a/fs/read_write.c
-+++ b/fs/read_write.c
-@@ -977,9 +977,9 @@ out:
- 	return ret;
- }
- 
--COMPAT_SYSCALL_DEFINE3(readv, unsigned long, fd,
-+COMPAT_SYSCALL_DEFINE3(readv, compat_ulong_t, fd,
- 		const struct compat_iovec __user *,vec,
--		unsigned long, vlen)
-+		compat_ulong_t, vlen)
- {
- 	struct fd f = fdget(fd);
- 	ssize_t ret;
-@@ -1014,9 +1014,9 @@ COMPAT_SYSCALL_DEFINE4(preadv64, unsigne
- 	return ret;
- }
- 
--COMPAT_SYSCALL_DEFINE5(preadv, unsigned long, fd,
-+COMPAT_SYSCALL_DEFINE5(preadv, compat_ulong_t, fd,
- 		const struct compat_iovec __user *,vec,
--		unsigned long, vlen, u32, pos_low, u32, pos_high)
-+		compat_ulong_t, vlen, u32, pos_low, u32, pos_high)
- {
- 	loff_t pos = ((loff_t)pos_high << 32) | pos_low;
- 	return compat_sys_preadv64(fd, vec, vlen, pos);
-@@ -1044,9 +1044,9 @@ out:
- 	return ret;
- }
- 
--COMPAT_SYSCALL_DEFINE3(writev, unsigned long, fd,
-+COMPAT_SYSCALL_DEFINE3(writev, compat_ulong_t, fd,
- 		const struct compat_iovec __user *, vec,
--		unsigned long, vlen)
-+		compat_ulong_t, vlen)
- {
- 	struct fd f = fdget(fd);
- 	ssize_t ret;
-@@ -1081,9 +1081,9 @@ COMPAT_SYSCALL_DEFINE4(pwritev64, unsign
- 	return ret;
- }
- 
--COMPAT_SYSCALL_DEFINE5(pwritev, unsigned long, fd,
-+COMPAT_SYSCALL_DEFINE5(pwritev, compat_ulong_t, fd,
- 		const struct compat_iovec __user *,vec,
--		unsigned long, vlen, u32, pos_low, u32, pos_high)
-+		compat_ulong_t, vlen, u32, pos_low, u32, pos_high)
- {
- 	loff_t pos = ((loff_t)pos_high << 32) | pos_low;
- 	return compat_sys_pwritev64(fd, vec, vlen, pos);
---- a/include/linux/compat.h
-+++ b/include/linux/compat.h
-@@ -327,16 +327,16 @@ asmlinkage long compat_sys_keyctl(u32 op
- 			      u32 arg2, u32 arg3, u32 arg4, u32 arg5);
- asmlinkage long compat_sys_ustat(unsigned dev, struct compat_ustat __user *u32);
- 
--asmlinkage ssize_t compat_sys_readv(unsigned long fd,
--		const struct compat_iovec __user *vec, unsigned long vlen);
--asmlinkage ssize_t compat_sys_writev(unsigned long fd,
--		const struct compat_iovec __user *vec, unsigned long vlen);
--asmlinkage ssize_t compat_sys_preadv(unsigned long fd,
-+asmlinkage ssize_t compat_sys_readv(compat_ulong_t fd,
-+		const struct compat_iovec __user *vec, compat_ulong_t vlen);
-+asmlinkage ssize_t compat_sys_writev(compat_ulong_t fd,
-+		const struct compat_iovec __user *vec, compat_ulong_t vlen);
-+asmlinkage ssize_t compat_sys_preadv(compat_ulong_t fd,
- 		const struct compat_iovec __user *vec,
--		unsigned long vlen, u32 pos_low, u32 pos_high);
--asmlinkage ssize_t compat_sys_pwritev(unsigned long fd,
-+		compat_ulong_t vlen, u32 pos_low, u32 pos_high);
-+asmlinkage ssize_t compat_sys_pwritev(compat_ulong_t fd,
- 		const struct compat_iovec __user *vec,
--		unsigned long vlen, u32 pos_low, u32 pos_high);
-+		compat_ulong_t vlen, u32 pos_low, u32 pos_high);
- asmlinkage long comat_sys_lseek(unsigned int, compat_off_t, unsigned int);
- 
- asmlinkage long compat_sys_execve(const char __user *filename, const compat_uptr_t __user *argv,
-
-
+	Arnd
