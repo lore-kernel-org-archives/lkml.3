@@ -1,121 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752221AbaBKMWb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 07:22:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8125 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751084AbaBKMW2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 07:22:28 -0500
-Date: Tue, 11 Feb 2014 12:22:17 +0000
-From: "Richard W.M. Jones" <rjones@redhat.com>
-To: Kent Overstreet <kmo@daterainc.com>
-Cc: axboe@kernel.dk, clm@fb.com, linux-fsdevel@vger.kernel.org, neilb@suse.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] block: Fix cloning of discard/write same bios
-Message-ID: <20140211122216.GE1346@redhat.com>
-References: <1392083150-11670-1-git-send-email-kmo@daterainc.com>
+	id S1752596AbaBKMWk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 07:22:40 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:57423 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752064AbaBKMWi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 07:22:38 -0500
+Date: Tue, 11 Feb 2014 12:22:32 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3/7] mfd: max77686: Fix possible NULL pointer dereference
+ on i2c_new_dummy error
+Message-ID: <20140211122232.GR32042@lee--X1>
+References: <1392113015-11180-1-git-send-email-k.kozlowski@samsung.com>
+ <1392113015-11180-3-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1392083150-11670-1-git-send-email-kmo@daterainc.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1392113015-11180-3-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 05:45:50PM -0800, Kent Overstreet wrote:
-> Immutable biovecs changed the way bio segments are treated in such a way that
-> bio_for_each_segment() cannot now do what we want for discard/write same bios,
-> since bi_size means something completely different for them.
+On Tue, 11 Feb 2014, Krzysztof Kozlowski wrote:
+
+> During probe the driver allocates dummy I2C device for RTC with
+> i2c_new_dummy() but it does not check the return value of this call.
 > 
-> Fortunately discard and write same bios never have more than a single biovec, so
-> bio_for_each_segment() is unnecessary and not terribly meaningful for them, but
-> we still have to special case them in a few places.
+> In case of error (i2c_new_device(): memory allocation failure or I2C
+> address cannot be used) this function returns NULL which is later used
+> by i2c_unregister_device().
 > 
-> Signed-off-by: Kent Overstreet <kmo@daterainc.com>
-
-Tested-by: Richard W.M. Jones <rjones@redhat.com>
-
-I have confirmed this fixes the bug described here:
-
-https://bugzilla.redhat.com/show_bug.cgi?id=1061339
-
-Rich.
-
+> If i2c_new_dummy() fails for RTC device, fail also the probe for main
+> MFD driver.
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Cc: stable@vger.kernel.org
 > ---
->  fs/bio.c            | 15 ++++++++++-----
->  include/linux/bio.h | 11 +++++++++++
->  2 files changed, 21 insertions(+), 5 deletions(-)
+>  drivers/mfd/max77686.c |    4 ++++
+>  1 file changed, 4 insertions(+)
 > 
-> diff --git a/fs/bio.c b/fs/bio.c
-> index 75c49a3822..8754e7b6eb 100644
-> --- a/fs/bio.c
-> +++ b/fs/bio.c
-> @@ -611,7 +611,6 @@ EXPORT_SYMBOL(bio_clone_fast);
->  struct bio *bio_clone_bioset(struct bio *bio_src, gfp_t gfp_mask,
->  			     struct bio_set *bs)
->  {
-> -	unsigned nr_iovecs = 0;
->  	struct bvec_iter iter;
->  	struct bio_vec bv;
->  	struct bio *bio;
-> @@ -638,10 +637,7 @@ struct bio *bio_clone_bioset(struct bio *bio_src, gfp_t gfp_mask,
->  	 *    __bio_clone_fast() anyways.
->  	 */
+> diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
+> index f53d5823a3f7..e5fce765accb 100644
+> --- a/drivers/mfd/max77686.c
+> +++ b/drivers/mfd/max77686.c
+> @@ -121,6 +121,10 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+>  		dev_info(max77686->dev, "device found\n");
 >  
-> -	bio_for_each_segment(bv, bio_src, iter)
-> -		nr_iovecs++;
-> -
-> -	bio = bio_alloc_bioset(gfp_mask, nr_iovecs, bs);
-> +	bio = bio_alloc_bioset(gfp_mask, bio_segments(bio_src), bs);
->  	if (!bio)
->  		return NULL;
->  
-> @@ -650,9 +646,18 @@ struct bio *bio_clone_bioset(struct bio *bio_src, gfp_t gfp_mask,
->  	bio->bi_iter.bi_sector	= bio_src->bi_iter.bi_sector;
->  	bio->bi_iter.bi_size	= bio_src->bi_iter.bi_size;
->  
-> +	if (bio->bi_rw & REQ_DISCARD)
-> +		goto integrity_clone;
-> +
-> +	if (bio->bi_rw & REQ_WRITE_SAME) {
-> +		bio->bi_io_vec[bio->bi_vcnt++] = bio_src->bi_io_vec[0];
-> +		goto integrity_clone;
+>  	max77686->rtc = i2c_new_dummy(i2c->adapter, I2C_ADDR_RTC);
+> +	if (!max77686->rtc) {
+> +		dev_err(max77686->dev, "Failed to allocate I2C device for RTC\n");
+> +		return -ENODEV;
 > +	}
-> +
->  	bio_for_each_segment(bv, bio_src, iter)
->  		bio->bi_io_vec[bio->bi_vcnt++] = bv;
+>  	i2c_set_clientdata(max77686->rtc, max77686);
 >  
-> +integrity_clone:
->  	if (bio_integrity(bio_src)) {
->  		int ret;
->  
-> diff --git a/include/linux/bio.h b/include/linux/bio.h
-> index 70654521da..05d2a0392f 100644
-> --- a/include/linux/bio.h
-> +++ b/include/linux/bio.h
-> @@ -250,6 +250,17 @@ static inline unsigned bio_segments(struct bio *bio)
->  	struct bio_vec bv;
->  	struct bvec_iter iter;
->  
-> +	/*
-> +	 * We special case discard/write same, because they interpret bi_size
-> +	 * differently:
-> +	 */
-> +
-> +	if (bio->bi_rw & REQ_DISCARD)
-> +		return 1;
-> +
-> +	if (bio->bi_rw & REQ_WRITE_SAME)
-> +		return 1;
-> +
->  	bio_for_each_segment(bv, bio, iter)
->  		segs++;
->  
-> -- 
-> 1.8.5.3
+>  	max77686_irq_init(max77686);
+
+Applied, thanks.
 
 -- 
-Richard Jones, Virtualization Group, Red Hat http://people.redhat.com/~rjones
-Read my programming blog: http://rwmj.wordpress.com
-Fedora now supports 80 OCaml packages (the OPEN alternative to F#)
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
