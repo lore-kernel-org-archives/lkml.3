@@ -1,83 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752063AbaBKS3v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 13:29:51 -0500
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:40850 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751291AbaBKS3s (ORCPT
+	id S1752093AbaBKSbH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 13:31:07 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:57605 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751014AbaBKSbE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 13:29:48 -0500
+	Tue, 11 Feb 2014 13:31:04 -0500
+Message-ID: <52FA6C65.3080901@gmail.com>
+Date: Tue, 11 Feb 2014 11:31:01 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <52F80C28.5040709@gmail.com>
-References: <CA+O4pCJAL_Dqrt0mF5rbErBXbLTALx8Rrs1+vB3JmT=+rT0jCg@mail.gmail.com>
-	<CA+O4pC+bHC1Bo4ERSfos8fL+FdnwXTTu_EE=rfd9eFkY7432Jg@mail.gmail.com>
-	<CA+O4pCJ5xUQwRem3rvZbvv7K8BEnMW983Qq_vR0tVzwAwmVS6A@mail.gmail.com>
-	<CA+O4pCJ9dFuwrcVF2b5MsreUb4NJX8t6664i3XHM9CYrdN7VzA@mail.gmail.com>
-	<20140120193510.GC5545@xanatos>
-	<CA+O4pC+inTZBSVJDBs4PfaDv0et3ZT+eN-1epThRJMztdgQryQ@mail.gmail.com>
-	<063D6719AE5E284EB5DD2968C1650D6D0F6B8058@AcuExch.aculab.com>
-	<CA+O4pCKedNsBcLoVP6T0BHT6sq00D+XNHLT790UDgdx-r7TL4Q@mail.gmail.com>
-	<52F80C28.5040709@gmail.com>
-Date: Tue, 11 Feb 2014 19:29:47 +0100
-Message-ID: <CA+O4pCL8gUqFs7zTJZ+0UftOq_jALpg=rsmz3hSypOPr2qZg7Q@mail.gmail.com>
-Subject: Re: [BUGREPORT] Linux USB 3.0
-From: Markus Rechberger <mrechberger@gmail.com>
-To: Robert Hancock <hancockrwd@gmail.com>
-Cc: David Laight <David.Laight@aculab.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Greg KH <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Peter Hurley <peter@hurleysoftware.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+CC: Stephane Eranian <eranian@google.com>,
+        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Jiri Olsa <jolsa@redhat.com>, Eric Dumazet <edumazet@google.com>,
+        linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] n_tty: Fix poll() when TIME_CHAR and MIN_CHAR == 0
+References: <20140211121411.GA4368@infradead.org> <1392137400-4205-1-git-send-email-peter@hurleysoftware.com>
+In-Reply-To: <1392137400-4205-1-git-send-email-peter@hurleysoftware.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 12:15 AM, Robert Hancock <hancockrwd@gmail.com> wrote:
-> On 08/02/14 03:00 AM, Markus Rechberger wrote:
->>
->> On Tue, Feb 4, 2014 at 10:31 AM, David Laight <David.Laight@aculab.com>
->> wrote:
->>>
->>> From: Markus Rechberger
->>>>>>
->>>>>> Dec 27 23:23:50 solist kernel: [   36.118245] xhci_hcd 0000:00:14.0:
->>>>>> ERROR Transfer event TRB DMA
->>>>
->>>> ptr
->>>>>
->>>>>
->>>>> These messages might be harmless.  The 3.0 kernel contains a fix for
->>>>> Intel Panther Point xHCI hosts that suppresses those messages, commit
->>>>> ad808333d8201d53075a11bc8dd83b81f3d68f0b "Intel xhci: Ignore spurious
->>>>> successful event."
->>>>>
->>>>> A later commit extends that to all xHCI 1.0 hosts, commit
->>>>> 07f3cb7c28bf3f4dd80bfb136cf45810c46ac474 "usb: host: xhci: Enable
->>>>> XHCI_SPURIOUS_SUCCESS for all controllers with xhci 1.0"  That was
->>>>> queued for 3.11 and marked to be backported into stable kernels as old
->>>>> as 3.0.
->>>
->>>
->>> I see the same error message on the 0.96 ASMedia controller when
->>> the rx buffers for the ax88179_178a driver cross 64k boundaries.
->>>
->>> So this isn't confined to 1.0 controllers.
->>>
->>
->> Sarah,
->>
->> since there is no response yet, is there anyone at Intel dedicated at
->> working on USB 3.0?
->> We are also getting more and more negative USB 3.0 feedback with Linux
+On 2/11/14, 9:49 AM, Peter Hurley wrote:
+> From: Peter Hurley <peter@hurleysoftware.com>
+> Date: Tue, 11 Feb 2014 10:10:07 -0500
+> Subject: [PATCH] n_tty: Fix poll() when TIME_CHAR and MIN_CHAR == 0
 >
+> Commit eafbe67f84761d787802e5113d895a316b6292fe,
+>    n_tty: Refactor input_available_p() by call site
+> broke poll() when TIME_CHAR(tty) and MIN_CHAR(tty) are both 0.
 >
-> Still nobody appears to have provided the requested debugging information
-> that was requested. So there is not much that can be done upstream to debug
-> things based only on vague reports, especially when not using current kernel
-> versions.
+> When TIME_CHAR and MIN_CHAR are both 0, input is available if the
+> read_cnt is 1 (not 0).
+>
+> Reported-by: Stephane Eranian <eranian@google.com>
+> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+> ---
+>   drivers/tty/n_tty.c | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+> index cb8017a..2747a3b 100644
+> --- a/drivers/tty/n_tty.c
+> +++ b/drivers/tty/n_tty.c
+> @@ -1896,7 +1896,7 @@ err:
+>   static inline int input_available_p(struct tty_struct *tty, int poll)
+>   {
+>   	struct n_tty_data *ldata = tty->disc_data;
+> -	int amt = poll && !TIME_CHAR(tty) ? MIN_CHAR(tty) : 1;
+> +	int amt = poll && !TIME_CHAR(tty) && MIN_CHAR(tty) ? MIN_CHAR(tty) : 1;
+>
+>   	if (ldata->icanon && !L_EXTPROC(tty)) {
+>   		if (ldata->canon_head != ldata->read_tail)
 >
 
-Next kernel crash report, this time a Synology NAS System:
-http://support.sundtek.com/index.php/topic,1511.0.html
+Worked for me.
+
+Tested-by: David Ahern <dsahern@gmail.com>
