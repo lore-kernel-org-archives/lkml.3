@@ -1,107 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932187AbaBKVIt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 16:08:49 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:24643 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756282AbaBKVIq (ORCPT
+	id S1752368AbaBKTE4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:04:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39460 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752277AbaBKTEy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 16:08:46 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtsHAE+Q+lJ5LBMc/2dsb2JhbABagwy6SYVPgRUXdIIlAQEFJxMcMwgDGAklDwUlAyEBEogEyHEXFo5qhDgEmCmKT4dSg0Eo
-Date: Wed, 12 Feb 2014 08:08:41 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        xfs@oss.sgi.com
-Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
-Message-ID: <20140211210841.GM13647@dastard>
-References: <20140211172707.GA1749@redhat.com>
+	Tue, 11 Feb 2014 14:04:54 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Bastian Hougaard <gnome@rvzt.net>, Mel Gorman <mgorman@suse.de>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.13 018/120] mm: ignore VM_SOFTDIRTY on VMA merging
+Date: Tue, 11 Feb 2014 11:04:19 -0800
+Message-Id: <20140211184824.055198687@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
+References: <20140211184823.492407127@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140211172707.GA1749@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 12:27:07PM -0500, Dave Jones wrote:
-> BUG: sleeping function called from invalid context at mm/mempool.c:203
-> in_atomic(): 0, irqs_disabled(): 1, pid: 27511, name: trinity-c3
-> 5 locks held by trinity-c3/27511:
->  #0:  (sb_writers#9){......}, at: [<ffffffff831df3b4>] mnt_want_write+0x24/0x50
->  #1:  (&type->i_mutex_dir_key#3){......}, at: [<ffffffff831cced4>] do_last.isra.51+0x294/0x11f0
->  #2:  (sb_internal#2){......}, at: [<ffffffffc03225c4>] xfs_trans_alloc+0x24/0x40 [xfs]
->  #3:  (&(&ip->i_lock)->mr_lock/1){......}, at: [<ffffffffc036447f>] xfs_ilock+0x16f/0x1b0 [xfs]
->  #4:  (&(&ip->i_lock)->mr_lock){......}, at: [<ffffffffc03646d4>] xfs_ilock_nowait+0x184/0x200 [xfs]
-> CPU: 3 PID: 27511 Comm: trinity-c3 Not tainted 3.14.0-rc2+ #111 
->  ffffffff83a3fd56 0000000045a3849a ffff88009f368f60 ffffffff8372afea
->  0000000000000000 ffff88009f368f88 ffffffff8309ddb5 0000000000000010
->  ffff880243566288 0000000000000008 ffff88009f369008 ffffffff831534d3
-> Call Trace:
->  [<ffffffff8372afea>] dump_stack+0x4e/0x7a
->  [<ffffffff8309ddb5>] __might_sleep+0x105/0x150
->  [<ffffffff831534d3>] mempool_alloc+0xa3/0x170
->  [<ffffffff831a955a>] ? deactivate_slab+0x51a/0x590
->  [<ffffffff831f8fd6>] bio_alloc_bioset+0x156/0x210
->  [<ffffffffc0308231>] _xfs_buf_ioapply+0x1c1/0x3c0 [xfs]
->  [<ffffffffc03798f2>] ? xlog_bdstrat+0x22/0x60 [xfs]
->  [<ffffffffc030849b>] xfs_buf_iorequest+0x6b/0xf0 [xfs]
->  [<ffffffffc03798f2>] xlog_bdstrat+0x22/0x60 [xfs]
->  [<ffffffffc037ba87>] xlog_sync+0x3a7/0x5b0 [xfs]
->  [<ffffffffc037bd9f>] xlog_state_release_iclog+0x10f/0x120 [xfs]
->  [<ffffffffc037c840>] xlog_write+0x6f0/0x800 [xfs]
->  [<ffffffffc037e061>] xlog_cil_push+0x2f1/0x410 [xfs]
->  [<ffffffffc037e948>] xlog_cil_force_lsn+0x1d8/0x210 [xfs]
->  [<ffffffffc03428a8>] ? xfs_bmbt_get_all+0x18/0x20 [xfs]
->  [<ffffffffc037cc40>] _xfs_log_force+0x70/0x290 [xfs]
->  [<ffffffff830a4edd>] ? get_parent_ip+0xd/0x50
->  [<ffffffffc037ce86>] xfs_log_force+0x26/0xb0 [xfs]
->  [<ffffffffc03076e6>] ? _xfs_buf_find+0x1f6/0x3c0 [xfs]
->  [<ffffffffc03074e3>] xfs_buf_lock+0x133/0x140 [xfs]
->  [<ffffffffc03076e6>] _xfs_buf_find+0x1f6/0x3c0 [xfs]
->  [<ffffffffc030796a>] xfs_buf_get_map+0x2a/0x1b0 [xfs]
->  [<ffffffffc0383c61>] xfs_trans_get_buf_map+0x1a1/0x240 [xfs]
->  [<ffffffffc034e03d>] xfs_da_get_buf+0xbd/0x100 [xfs]
->  [<ffffffffc0356869>] xfs_dir3_data_init+0x59/0x1d0 [xfs]
->  [<ffffffffc03526db>] ? xfs_dir2_grow_inode+0x13b/0x150 [xfs]
->  [<ffffffffc0354ede>] xfs_dir2_sf_to_block+0x17e/0x7b0 [xfs]
->  [<ffffffffc0351f5a>] ? xfs_dir2_sfe_get_ino+0x1a/0x20 [xfs]
->  [<ffffffffc035e9b4>] ? xfs_dir2_sf_check.isra.7+0x114/0x1b0 [xfs]
->  [<ffffffffc034c24f>] ? xfs_da_compname+0x1f/0x30 [xfs]
->  [<ffffffffc035f503>] ? xfs_dir2_sf_lookup+0x303/0x310 [xfs]
->  [<ffffffffc035f858>] xfs_dir2_sf_addname+0x348/0x6d0 [xfs]
->  [<ffffffffc031970d>] ? xfs_setup_inode+0x1cd/0x320 [xfs]
->  [<ffffffffc03529a4>] xfs_dir_createname+0x184/0x1e0 [xfs]
->  [<ffffffffc03663d9>] xfs_create+0x469/0x580 [xfs]
->  [<ffffffffc0318864>] xfs_vn_mknod+0xc4/0x1e0 [xfs]
->  [<ffffffffc0318993>] xfs_vn_create+0x13/0x20 [xfs]
->  [<ffffffff831ccc15>] vfs_create+0x95/0xc0
->  [<ffffffff831cd638>] do_last.isra.51+0x9f8/0x11f0
->  [<ffffffff831c9e11>] ? link_path_walk+0x81/0x870
->  [<ffffffff831cdef9>] path_openat+0xc9/0x620
->  [<ffffffff8331cc02>] ? put_dec+0x72/0x90
->  [<ffffffff831ceb6d>] do_filp_open+0x4d/0xb0
->  [<ffffffff831bc4ae>] file_open_name+0xfe/0x160
->  [<ffffffff831bc554>] filp_open+0x44/0x60
->  [<ffffffff83221862>] do_coredump+0x602/0xf60
->  [<ffffffff83081358>] get_signal_to_deliver+0x2b8/0x6b0
->  [<ffffffff830024d7>] do_signal+0x57/0x9d0
->  [<ffffffff8311115e>] ? __acct_update_integrals+0x8e/0x120
->  [<ffffffff83730000>] ? __schedule+0x60/0x850
->  [<ffffffff8373a1db>] ? preempt_count_sub+0x6b/0xf0
->  [<ffffffff83735a31>] ? _raw_spin_unlock+0x31/0x50
->  [<ffffffff830ab671>] ? vtime_account_user+0x91/0xa0
->  [<ffffffff8314f57b>] ? context_tracking_user_exit+0x9b/0x100
->  [<ffffffff83002eac>] do_notify_resume+0x5c/0xa0
->  [<ffffffff83736746>] retint_signal+0x46/0x90
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
-There's nowhere in this XFS stack that disables interrupts, so I
-thinks it's either above or below XFS that is causing this problem.
+------------------
 
-Cheers,
+From: Cyrill Gorcunov <gorcunov@gmail.com>
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+commit 34228d473efe764d4db7c0536375f0c993e6e06a upstream.
+
+The VM_SOFTDIRTY bit affects vma merge routine: if two VMAs has all bits
+in vm_flags matched except dirty bit the kernel can't longer merge them
+and this forces the kernel to generate new VMAs instead.
+
+It finally may lead to the situation when userspace application reaches
+vm.max_map_count limit and get crashed in worse case
+
+ | (gimp:11768): GLib-ERROR **: gmem.c:110: failed to allocate 4096 bytes
+ |
+ | (file-tiff-load:12038): LibGimpBase-WARNING **: file-tiff-load: gimp_wire_read(): error
+ | xinit: connection to X server lost
+ |
+ | waiting for X server to shut down
+ | /usr/lib64/gimp/2.0/plug-ins/file-tiff-load terminated: Hangup
+ | /usr/lib64/gimp/2.0/plug-ins/script-fu terminated: Hangup
+ | /usr/lib64/gimp/2.0/plug-ins/script-fu terminated: Hangup
+
+  https://bugzilla.kernel.org/show_bug.cgi?id=67651
+  https://bugzilla.gnome.org/show_bug.cgi?id=719619#c0
+
+Initial problem came from missed VM_SOFTDIRTY in do_brk() routine but
+even if we would set up VM_SOFTDIRTY here, there is still a way to
+prevent VMAs from merging: one can call
+
+ | echo 4 > /proc/$PID/clear_refs
+
+and clear all VM_SOFTDIRTY over all VMAs presented in memory map, then
+new do_brk() will try to extend old VMA and finds that dirty bit doesn't
+match thus new VMA will be generated.
+
+As discussed with Pavel, the right approach should be to ignore
+VM_SOFTDIRTY bit when we're trying to merge VMAs and if merge successed
+we mark extended VMA with dirty bit where needed.
+
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Reported-by: Bastian Hougaard <gnome@rvzt.net>
+Reported-by: Mel Gorman <mgorman@suse.de>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ mm/mmap.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -893,7 +893,15 @@ again:			remove_next = 1 + (end > next->
+ static inline int is_mergeable_vma(struct vm_area_struct *vma,
+ 			struct file *file, unsigned long vm_flags)
+ {
+-	if (vma->vm_flags ^ vm_flags)
++	/*
++	 * VM_SOFTDIRTY should not prevent from VMA merging, if we
++	 * match the flags but dirty bit -- the caller should mark
++	 * merged VMA as dirty. If dirty bit won't be excluded from
++	 * comparison, we increase pressue on the memory system forcing
++	 * the kernel to generate new VMAs when old one could be
++	 * extended instead.
++	 */
++	if ((vma->vm_flags ^ vm_flags) & ~VM_SOFTDIRTY)
+ 		return 0;
+ 	if (vma->vm_file != file)
+ 		return 0;
+@@ -1082,7 +1090,7 @@ static int anon_vma_compatible(struct vm
+ 	return a->vm_end == b->vm_start &&
+ 		mpol_equal(vma_policy(a), vma_policy(b)) &&
+ 		a->vm_file == b->vm_file &&
+-		!((a->vm_flags ^ b->vm_flags) & ~(VM_READ|VM_WRITE|VM_EXEC)) &&
++		!((a->vm_flags ^ b->vm_flags) & ~(VM_READ|VM_WRITE|VM_EXEC|VM_SOFTDIRTY)) &&
+ 		b->vm_pgoff == a->vm_pgoff + ((b->vm_start - a->vm_start) >> PAGE_SHIFT);
+ }
+ 
+
+
