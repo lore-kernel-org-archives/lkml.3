@@ -1,56 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751889AbaBKLAr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 06:00:47 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:50622 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751752AbaBKLAl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 06:00:41 -0500
-Date: Tue, 11 Feb 2014 12:00:36 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Tommi Rantala <tt.rantala@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        trinity@vger.kernel.org
-Subject: Re: lockdep: strange %s#5 lock name
-Message-ID: <20140211110036.GT9987@twins.programming.kicks-ass.net>
-References: <CA+ydwtqC7En++T5S7q5qzaDe_tf9dcMx3Y3aH=+Fcss_NU7stA@mail.gmail.com>
- <20140210192846.GF27965@twins.programming.kicks-ass.net>
- <20140210215224.GB25350@mtj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140210215224.GB25350@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1751926AbaBKLCV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 06:02:21 -0500
+Received: from mga09.intel.com ([134.134.136.24]:27638 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751415AbaBKLCU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 06:02:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,825,1384329600"; 
+   d="scan'208";a="473330323"
+Message-ID: <1392116552.28501.10.camel@sagar-desktop>
+Subject: Re: [PATCH v2 02/11] drm: Add support_bits parameter to
+ drm_property_create_bitmask()
+From: Sagar Arun Kamble <sagar.a.kamble@intel.com>
+To: ville.syrjala@linux.intel.com
+Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        David Airlie <airlied@linux.ie>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Rob Clark <robdclark@gmail.com>, dri-devel@lists.freedesktop.org
+Date: Tue, 11 Feb 2014 16:32:32 +0530
+In-Reply-To: <1392041145-5691-1-git-send-email-ville.syrjala@linux.intel.com>
+References: <20140210134311.GL3891@intel.com>
+	 <1392041145-5691-1-git-send-email-ville.syrjala@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Looks good to me.  Can you please post the patch with SOB?
+Reviewed-by: Sagar Kamble <sagar.a.kamble@intel.com>
+Tested-by: Sagar Kamble <sagar.a.kamble@intel.com>
 
----
-Subject: workqueue: Fix workqueue lockdep name
+On Mon, 2014-02-10 at 16:05 +0200, ville.syrjala@linux.intel.com wrote:
+> From: Ville Syrjälä <ville.syrjala at linux.intel.com>
+> 
+> Make drm_property_create_bitmask() a bit more generic by allowing the
+> caller to specify which bits are in fact supported. This allows multiple
+> callers to use the same enum list, but still create different versions
+> of the same property with different list of supported bits.
+> 
+> v2: Populate values[] array as non-sparse
+>     Make supported_bits 64bit
+>     Fix up omapdrm call site (Rob)
+> 
+> Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
+> Cc: Rob Clark <robdclark@gmail.com>
+> Cc: Sagar Kamble <sagar.a.kamble@intel.com>
+> Cc: dri-devel@lists.freedesktop.org
+> Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
+> ---
+> This should also make my original "drm: Add drm_mode_create_rotation_property()"
+> patch do the right thing. So patch 03/11 of the series needs to be replaced with the
+> original.
+> 
+>  drivers/gpu/drm/drm_crtc.c           | 18 ++++++++++++++----
+>  drivers/gpu/drm/omapdrm/omap_plane.c |  5 ++++-
+>  include/drm/drm_crtc.h               |  3 ++-
+>  3 files changed, 20 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
+> index 3b7d32d..6e099069 100644
+> --- a/drivers/gpu/drm/drm_crtc.c
+> +++ b/drivers/gpu/drm/drm_crtc.c
+> @@ -2906,10 +2906,12 @@ EXPORT_SYMBOL(drm_property_create_enum);
+>  struct drm_property *drm_property_create_bitmask(struct drm_device *dev,
+>  					 int flags, const char *name,
+>  					 const struct drm_prop_enum_list *props,
+> -					 int num_values)
+> +					 int num_props,
+> +					 uint64_t supported_bits)
+>  {
+>  	struct drm_property *property;
+> -	int i, ret;
+> +	int i, ret, index = 0;
+> +	int num_values = hweight64(supported_bits);
+>  
+>  	flags |= DRM_MODE_PROP_BITMASK;
+>  
+> @@ -2917,8 +2919,16 @@ struct drm_property *drm_property_create_bitmask(struct drm_device *dev,
+>  	if (!property)
+>  		return NULL;
+>  
+> -	for (i = 0; i < num_values; i++) {
+> -		ret = drm_property_add_enum(property, i,
+> +	for (i = 0; i < num_props; i++) {
+> +		if (!(supported_bits & (1ULL << props[i].type)))
+> +			continue;
+> +
+> +		if (WARN_ON(index >= num_values)) {
+> +			drm_property_destroy(dev, property);
+> +			return NULL;
+> +		}
+> +
+> +		ret = drm_property_add_enum(property, index++,
+>  				      props[i].type,
+>  				      props[i].name);
+>  		if (ret) {
+> diff --git a/drivers/gpu/drm/omapdrm/omap_plane.c b/drivers/gpu/drm/omapdrm/omap_plane.c
+> index 046d5e6..0d97650 100644
+> --- a/drivers/gpu/drm/omapdrm/omap_plane.c
+> +++ b/drivers/gpu/drm/omapdrm/omap_plane.c
+> @@ -309,7 +309,10 @@ void omap_plane_install_properties(struct drm_plane *plane,
+>  					{ DRM_REFLECT_Y,  "reflect-y" },
+>  			};
+>  			prop = drm_property_create_bitmask(dev, 0, "rotation",
+> -					props, ARRAY_SIZE(props));
+> +					props, ARRAY_SIZE(props),
+> +					BIT(DRM_ROTATE_0) | BIT(DRM_ROTATE_90) |
+> +					BIT(DRM_ROTATE_180) | BIT(DRM_ROTATE_270) |
+> +					BIT(DRM_REFLECT_X) | BIT(DRM_REFLECT_Y));
+>  			if (prop == NULL)
+>  				return;
+>  			priv->rotation_prop = prop;
+> diff --git a/include/drm/drm_crtc.h b/include/drm/drm_crtc.h
+> index d5c46c1..4e6d2aa 100644
+> --- a/include/drm/drm_crtc.h
+> +++ b/include/drm/drm_crtc.h
+> @@ -1070,7 +1070,8 @@ extern struct drm_property *drm_property_create_enum(struct drm_device *dev, int
+>  struct drm_property *drm_property_create_bitmask(struct drm_device *dev,
+>  					 int flags, const char *name,
+>  					 const struct drm_prop_enum_list *props,
+> -					 int num_values);
+> +					 int num_props,
+> +					 uint64_t supported_bits);
+>  struct drm_property *drm_property_create_range(struct drm_device *dev, int flags,
+>  					 const char *name,
+>  					 uint64_t min, uint64_t max);
 
-Tommi noticed a 'funny' lock class name: "%s#5" from a lock acquired in
-process_one_work(). It turns out that commit b196be89cdc14 forgot to
-change the lockdep_init_map() when it changed the @lock_name argument
-from a string to a format.
 
-Fixes: b196be89cdc14 ("workqueue: make alloc_workqueue() take printf fmt and args for name")
-Reported-by: Tommi Rantala <tt.rantala@gmail.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
----
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 82ef9f3b7473..861d8ddd92a2 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -4202,7 +4202,7 @@ struct workqueue_struct *__alloc_workqueue_key(const char *fmt,
- 	INIT_LIST_HEAD(&wq->flusher_overflow);
- 	INIT_LIST_HEAD(&wq->maydays);
- 
--	lockdep_init_map(&wq->lockdep_map, lock_name, key, 0);
-+	lockdep_init_map(&wq->lockdep_map, wq->name, key, 0);
- 	INIT_LIST_HEAD(&wq->list);
- 
- 	if (alloc_and_link_pwqs(wq) < 0)
