@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755265AbaBKTfG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:35:06 -0500
-Received: from kolab.o2s.ch ([77.109.136.180]:60218 "EHLO kolab.o2s.ch"
+	id S1754723AbaBKTdV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:33:21 -0500
+Received: from kolab.o2s.ch ([77.109.136.180]:60078 "EHLO kolab.o2s.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755256AbaBKTfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:35:00 -0500
-Subject: [PATCH v5 8/8] ARM: sunxi: Add documentation for driver for SD/MMC
- hosts found on Allwinner sunxi SoCs
+	id S1753344AbaBKTdS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 14:33:18 -0500
+Subject: [PATCH v5 0/8] ARM: sunxi: Add driver for SD/MMC hosts found on
+ allwinner sunxi SOCs
 To: devicetree@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>,
         Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
         Mike Turquette <mturquette@linaro.org>,
@@ -21,10 +21,8 @@ To: devicetree@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>,
         Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
         linux-arm-kernel@lists.infradead.org
 From: David =?utf-8?q?Lanzend=C3=B6rfer?= <david.lanzendoerfer@o2s.ch>
-Date: Tue, 11 Feb 2014 20:34:51 +0100
-Message-ID: <20140211193450.4568.69759.stgit@dizzy-6.o2s.ch>
-In-Reply-To: <20140211190543.4568.83517.stgit@dizzy-6.o2s.ch>
-References: <20140211190543.4568.83517.stgit@dizzy-6.o2s.ch>
+Date: Tue, 11 Feb 2014 20:33:06 +0100
+Message-ID: <20140211190543.4568.83517.stgit@dizzy-6.o2s.ch>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -33,48 +31,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: David Lanzendörfer <david.lanzendoerfer@o2s.ch>
+Hello
+The following patchset adds support for the SD/MMC host found in the Allwinner SoCs.
+It contains all the necessary modifications for clock environment and also the device
+tree script modification which add it to all the boards using it.
+The clock environment function needed for phase offset configuration has
+been proposed and implemented by Emilio.
+A lot of work and cleanup has been done by Hans de Goede. Special thanks to him!
+This patchset is the 4th attempt to send this driver upstream.
+
+Changes since v1:
+-Using mmc_of_parse instead of diy dt parsing
+-Adding nodes for all mmc controller to the dtsi files,
+ including sofar unused controllers
+-Using generic GPIO slot library for WP/CD
+-Adding additional MMC device nodes into DTSI files
+
+Changes since v2:
+-Add missing Signed-off-by tags
+-Stop using __raw_readl / __raw_writel so that barriers are properly used
+-Adding missing new lines
+-Adding missing patch for automatic reparenting of clocks
+
+Changes since v3:
+-Move clk_enable / disable into host_init / exit (Hans)
+-Fix hang on boot caused by irq storm (Hans)
+
+Changes since v4:
+-moving sunxi-mci.{c/h} to sunxi-mmc.{c/h}
+-removing camel cases from the defines in  sunxi-mmc.h
+-moving defines out of the struct definition
+ since this is bad coding style
+-adding documentation for the device tree binding
+
 ---
- .../devicetree/bindings/mmc/sunxi-mmc.txt          |   32 ++++++++++++++++++++
- 1 file changed, 32 insertions(+)
+
+David Lanzendörfer (5):
+      ARM: sunxi: Add driver for SD/MMC hosts found on Allwinner sunxi SoCs
+      ARM: dts: sun7i: Add support for mmc
+      ARM: dts: sun4i: Add support for mmc
+      ARM: dts: sun5i: Add support for mmc
+      ARM: sunxi: Add documentation for driver for SD/MMC hosts found on Allwinner sunxi SoCs
+
+Emilio López (2):
+      clk: sunxi: factors: automatic reparenting support
+      clk: sunxi: Implement MMC phase control
+
+Hans de Goede (1):
+      ARM: sunxi: clk: export clk_sunxi_mmc_phase_control
+
+
+ .../devicetree/bindings/mmc/sunxi-mmc.txt          |   32 +
+ arch/arm/boot/dts/sun4i-a10-a1000.dts              |    8 
+ arch/arm/boot/dts/sun4i-a10-cubieboard.dts         |    8 
+ arch/arm/boot/dts/sun4i-a10.dtsi                   |   54 +
+ arch/arm/boot/dts/sun5i-a10s-olinuxino-micro.dts   |   30 +
+ arch/arm/boot/dts/sun5i-a10s.dtsi                  |   44 +
+ arch/arm/boot/dts/sun5i-a13-olinuxino-micro.dts    |   15 
+ arch/arm/boot/dts/sun5i-a13-olinuxino.dts          |   15 
+ arch/arm/boot/dts/sun5i-a13.dtsi                   |   37 +
+ arch/arm/boot/dts/sun7i-a20-cubieboard2.dts        |    8 
+ arch/arm/boot/dts/sun7i-a20-cubietruck.dts         |    8 
+ arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts    |   23 +
+ arch/arm/boot/dts/sun7i-a20.dtsi                   |   61 +
+ drivers/clk/sunxi/clk-factors.c                    |   36 +
+ drivers/clk/sunxi/clk-sunxi.c                      |   35 +
+ drivers/mmc/host/Kconfig                           |    7 
+ drivers/mmc/host/Makefile                          |    2 
+ drivers/mmc/host/sunxi-mmc.c                       |  872 ++++++++++++++++++++
+ drivers/mmc/host/sunxi-mmc.h                       |  239 +++++
+ include/linux/clk/sunxi.h                          |   22 +
+ 20 files changed, 1556 insertions(+)
  create mode 100644 Documentation/devicetree/bindings/mmc/sunxi-mmc.txt
+ create mode 100644 drivers/mmc/host/sunxi-mmc.c
+ create mode 100644 drivers/mmc/host/sunxi-mmc.h
+ create mode 100644 include/linux/clk/sunxi.h
 
-diff --git a/Documentation/devicetree/bindings/mmc/sunxi-mmc.txt b/Documentation/devicetree/bindings/mmc/sunxi-mmc.txt
-new file mode 100644
-index 0000000..2ebd8af
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mmc/sunxi-mmc.txt
-@@ -0,0 +1,32 @@
-+* Allwinner sunxi MMC controller
-+
-+The highspeed MMC host controller on Allwinner SoCs provides an interface
-+for MMC, SD and SDIO types of memory cards.
-+
-+Supported maximum speeds are the ones of the eMMC standard 4.5 as well
-+as the speed of SD standard 3.0.
-+Absolute maximum transfer rate is 200MB/s
-+
-+Required properties:
-+- compatible: Should be "allwinner,<revision>-<chip>-mmc".
-+  The supported chips include a10,a10s,13,a20 and a31,.
-+- base registers are 0x1000 appart, so the base of mmc1
-+  would be 0x01c0f000+0x1000=0x01c10000(see example)
-+  and so on.
-+- clocks requires the reference at the ahb clock gate
-+  with the correct index (mmc0 -> 8, mmc1 -> 9, and so on)
-+  as well as the reference to the correct mod0 clock.
-+- interrupts requires the correct IRQ line
-+  (mmc0 -> 32, mmc1 -> 33, and so on)
-+
-+Examples:
-+
-+mmc0: mmc@01c0f000 {
-+	compatible = "allwinner,sun5i-a13-mmc";
-+	reg = <0x01c0f000 0x1000>;
-+	clocks = <&ahb_gates 8>, <&mmc0_clk>;
-+	clock-names = "ahb", "mod";
-+	interrupts = <0 32 4>;
-+	bus-width = <4>;
-+	status = "disabled";
-+};
-
+-- 
+Signature
