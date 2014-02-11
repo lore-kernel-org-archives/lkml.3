@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755922AbaBKUGb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:06:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40073 "EHLO
+	id S1755937AbaBKUGs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:06:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40070 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753627AbaBKTGy (ORCPT
+	with ESMTP id S1753615AbaBKTGy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Feb 2014 14:06:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Patrick Boettcher <pboettcher@kernellabs.com>
-Subject: [PATCH 3.12 064/107] [media] dib8000: make 32 bits read atomic
-Date: Tue, 11 Feb 2014 11:05:30 -0800
-Message-Id: <20140211184750.021635480@linuxfoundation.org>
+        Antti Palosaari <crope@iki.fi>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.12 063/107] media: anysee: fix non-working E30 Combo Plus DVB-T
+Date: Tue, 11 Feb 2014 11:05:29 -0800
+Message-Id: <20140211184749.993011498@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -29,89 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+From: Antti Palosaari <crope@iki.fi>
 
-commit 5ac64ba12aca3bef18e61c866583155a3bbf81c4 upstream.
+commit c57f87e62368c33ebda11a4993380c8e5a19a5c5 upstream.
 
-As the dvb-frontend kthread can be called anytime, it can race
-with some get status ioctl. So, it seems better to avoid one to
-race with the other while reading a 32 bits register.
-I can't see any other reason for having a mutex there at I2C, except
-to provide such kind of protection, as the I2C core already has a
-mutex to protect I2C transfers.
+PLL was attached twice to frontend0 leaving frontend1 without a tuner.
+frontend0 is DVB-C and frontend1 is DVB-T.
 
-Note: instead of this approach, it could eventually remove the dib8000
-specific mutex for it, and either group the 4 ops into one xfer or
-to manually control the I2C mutex. The main advantage of the current
-approach is that the changes are smaller and more puntual.
-
+Signed-off-by: Antti Palosaari <crope@iki.fi>
 Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Acked-by: Patrick Boettcher <pboettcher@kernellabs.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/dvb-frontends/dib8000.c |   33 +++++++++++++++++++++++++--------
- 1 file changed, 25 insertions(+), 8 deletions(-)
+ drivers/media/usb/dvb-usb-v2/anysee.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/media/dvb-frontends/dib8000.c
-+++ b/drivers/media/dvb-frontends/dib8000.c
-@@ -157,15 +157,10 @@ static u16 dib8000_i2c_read16(struct i2c
- 	return ret;
- }
+--- a/drivers/media/usb/dvb-usb-v2/anysee.c
++++ b/drivers/media/usb/dvb-usb-v2/anysee.c
+@@ -442,6 +442,7 @@ static struct cxd2820r_config anysee_cxd
+  * IOD[0] ZL10353 1=enabled
+  * IOE[0] tuner 0=enabled
+  * tuner is behind ZL10353 I2C-gate
++ * tuner is behind TDA10023 I2C-gate
+  *
+  * E7 TC VID=1c73 PID=861f HW=18 FW=0.7 AMTCI=0.5 "anysee-E7TC(LP)"
+  * PCB: 508TC (rev0.6)
+@@ -956,7 +957,7 @@ static int anysee_tuner_attach(struct dv
  
--static u16 dib8000_read_word(struct dib8000_state *state, u16 reg)
-+static u16 __dib8000_read_word(struct dib8000_state *state, u16 reg)
- {
- 	u16 ret;
- 
--	if (mutex_lock_interruptible(&state->i2c_buffer_lock) < 0) {
--		dprintk("could not acquire lock");
--		return 0;
--	}
--
- 	state->i2c_write_buffer[0] = reg >> 8;
- 	state->i2c_write_buffer[1] = reg & 0xff;
- 
-@@ -183,6 +178,21 @@ static u16 dib8000_read_word(struct dib8
- 		dprintk("i2c read error on %d", reg);
- 
- 	ret = (state->i2c_read_buffer[0] << 8) | state->i2c_read_buffer[1];
-+
-+	return ret;
-+}
-+
-+static u16 dib8000_read_word(struct dib8000_state *state, u16 reg)
-+{
-+	u16 ret;
-+
-+	if (mutex_lock_interruptible(&state->i2c_buffer_lock) < 0) {
-+		dprintk("could not acquire lock");
-+		return 0;
-+	}
-+
-+	ret = __dib8000_read_word(state, reg);
-+
- 	mutex_unlock(&state->i2c_buffer_lock);
- 
- 	return ret;
-@@ -192,8 +202,15 @@ static u32 dib8000_read32(struct dib8000
- {
- 	u16 rw[2];
- 
--	rw[0] = dib8000_read_word(state, reg + 0);
--	rw[1] = dib8000_read_word(state, reg + 1);
-+	if (mutex_lock_interruptible(&state->i2c_buffer_lock) < 0) {
-+		dprintk("could not acquire lock");
-+		return 0;
-+	}
-+
-+	rw[0] = __dib8000_read_word(state, reg + 0);
-+	rw[1] = __dib8000_read_word(state, reg + 1);
-+
-+	mutex_unlock(&state->i2c_buffer_lock);
- 
- 	return ((rw[0] << 16) | (rw[1]));
- }
+ 		if (fe && adap->fe[1]) {
+ 			/* attach tuner for 2nd FE */
+-			fe = dvb_attach(dvb_pll_attach, adap->fe[0],
++			fe = dvb_attach(dvb_pll_attach, adap->fe[1],
+ 					(0xc0 >> 1), &d->i2c_adap,
+ 					DVB_PLL_SAMSUNG_DTOS403IH102A);
+ 		}
 
 
