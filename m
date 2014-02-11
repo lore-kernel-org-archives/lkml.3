@@ -1,83 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755895AbaBKVFl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 16:05:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39526 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752362AbaBKTFC (ORCPT
+	id S1754892AbaBKVGl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 16:06:41 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:49758 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752909AbaBKVFj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:05:02 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Andreas Krebbel <krebbel@linux.vnet.ibm.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@redhat.com>, Ralf Baechle <ralf@linux-mips.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.13 029/120] compat: fix sys_fanotify_mark
-Date: Tue, 11 Feb 2014 11:04:30 -0800
-Message-Id: <20140211184824.391137374@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
-References: <20140211184823.492407127@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Tue, 11 Feb 2014 16:05:39 -0500
+Message-ID: <52FA7509.1060704@gmail.com>
+Date: Wed, 12 Feb 2014 08:07:53 +1300
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] video: Use fb_sys_write rather than open-coding in
+ drivers
+References: <523BF40B.1090002@gmail.com> <52FA2E57.3010300@ti.com>
+In-Reply-To: <52FA2E57.3010300@ti.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+On 12/02/14 03:06, Tomi Valkeinen wrote:
 
-------------------
-
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-
-commit 592f6b842f64e416c7598a1b97c649b34241e22d upstream.
-
-Commit 91c2e0bcae72 ("unify compat fanotify_mark(2), switch to
-COMPAT_SYSCALL_DEFINE") added a new unified compat fanotify_mark syscall
-to be used by all architectures.
-
-Unfortunately the unified version merges the split mask parameter in a
-wrong way: the lower and higher word got swapped.
-
-This was discovered with glibc's tst-fanotify test case.
-
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Reported-by: Andreas Krebbel <krebbel@linux.vnet.ibm.com>
-Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
-Acked-by: "David S. Miller" <davem@davemloft.net>
-Acked-by: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/notify/fanotify/fanotify_user.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/fs/notify/fanotify/fanotify_user.c
-+++ b/fs/notify/fanotify/fanotify_user.c
-@@ -888,9 +888,9 @@ COMPAT_SYSCALL_DEFINE6(fanotify_mark,
- {
- 	return sys_fanotify_mark(fanotify_fd, flags,
- #ifdef __BIG_ENDIAN
--				((__u64)mask1 << 32) | mask0,
--#else
- 				((__u64)mask0 << 32) | mask1,
-+#else
-+				((__u64)mask1 << 32) | mask0,
- #endif
- 				 dfd, pathname);
- }
+> On 20/09/13 10:06, Ryan Mallon wrote:
+>> Several video drivers open code the fb_write write function with code
+>> which is very similar to fb_sys_write. Replace the open code versions
+>> with calls to fb_sys_write. An fb_sync callback is added to each of
+>> the drivers.
+>>     
+>> Signed-off-by: Ryan Mallon <rmallon@gmail.com>
+>> ---
+> 
+> Doesn't this change the behavior so that fb_write does no longer update
+> the display, but fb_sync does? I don't think fb_sync is even meant to
+> update the display, it's meant to wait for an update to finish. Then
+> again, I'm not sure about that, all I see in fb.h is "wait for blit
+> idle, optional"
 
 
+fb_write() in fbmem.c calls ->fb_sync() after ->fb_write(), and I've set
+the fb_sync() for each of the drivers, so the behaviour should be
+unchanged for writes.
+
+The fb_sync() function is also called by fb_read() and 
+fb_get_buffer_offset() (if FB_PIXMAP_SYNC flag is set). I don't know if
+that will adversely affect behaviour.
+
+Note that I haven't actually tested this code since I don't have any of
+the hardware. It was just something I noticed while digging through
+framebuffer driver code.
+
+~Ryan
