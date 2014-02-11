@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752392AbaBKHfw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 02:35:52 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:6289 "EHLO song.cn.fujitsu.com"
+	id S1752670AbaBKHgF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 02:36:05 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:4755 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750978AbaBKHfJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 02:35:09 -0500
+	id S1750903AbaBKHfH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 02:35:07 -0500
 X-IronPort-AV: E=Sophos;i="4.95,824,1384272000"; 
-   d="scan'208";a="9505340"
+   d="scan'208";a="9505339"
 From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
 To: linux-kernel@vger.kernel.org
-Cc: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 8/9] workqueue: Replace hardcoding of -20 and 19 with MIN_NICE and MAX_NICE.
-Date: Tue, 11 Feb 2014 15:34:52 +0800
-Message-Id: <6d85138180c00ce86975addab6e34b24b84f00a5.1392103744.git.yangds.fnst@cn.fujitsu.com>
+Cc: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: [PATCH 9/9] trace: Replace hardcoding of 19 with MAX_NICE.
+Date: Tue, 11 Feb 2014 15:34:53 +0800
+Message-Id: <eeb2a85d74c71e0d50c88789f99ad857a6b4b7b4.1392103744.git.yangds.fnst@cn.fujitsu.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <cover.1392103744.git.yangds.fnst@cn.fujitsu.com>
 References: <cover.1392103744.git.yangds.fnst@cn.fujitsu.com>
@@ -28,26 +30,37 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-cc: Tejun Heo <tj@kernel.org>
-cc: Peter Zijlstra <peterz@infradead.org>
-cc: Ingo Molnar <mingo@kernel.org>
+cc: Steven Rostedt <rostedt@goodmis.org>
+cc: Frederic Weisbecker <fweisbec@gmail.com>
+cc: Ingo Molnar <mingo@redhat.com>
 ---
- kernel/workqueue.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/trace/ring_buffer_benchmark.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 82ef9f3..e4f5905 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -3218,7 +3218,7 @@ static ssize_t wq_nice_store(struct device *dev, struct device_attribute *attr,
- 		return -ENOMEM;
+diff --git a/kernel/trace/ring_buffer_benchmark.c b/kernel/trace/ring_buffer_benchmark.c
+index a5457d5..0434ff1 100644
+--- a/kernel/trace/ring_buffer_benchmark.c
++++ b/kernel/trace/ring_buffer_benchmark.c
+@@ -40,8 +40,8 @@ static int write_iteration = 50;
+ module_param(write_iteration, uint, 0644);
+ MODULE_PARM_DESC(write_iteration, "# of writes between timestamp readings");
  
- 	if (sscanf(buf, "%d", &attrs->nice) == 1 &&
--	    attrs->nice >= -20 && attrs->nice <= 19)
-+	    attrs->nice >= MIN_NICE && attrs->nice <= MAX_NICE)
- 		ret = apply_workqueue_attrs(wq, attrs);
- 	else
- 		ret = -EINVAL;
+-static int producer_nice = 19;
+-static int consumer_nice = 19;
++static int producer_nice = MAX_NICE;
++static int consumer_nice = MAX_NICE;
+ 
+ static int producer_fifo = -1;
+ static int consumer_fifo = -1;
+@@ -308,7 +308,7 @@ static void ring_buffer_producer(void)
+ 
+ 	/* Let the user know that the test is running at low priority */
+ 	if (producer_fifo < 0 && consumer_fifo < 0 &&
+-	    producer_nice == 19 && consumer_nice == 19)
++	    producer_nice == MAX_NICE && consumer_nice == MAX_NICE)
+ 		trace_printk("WARNING!!! This test is running at lowest priority.\n");
+ 
+ 	trace_printk("Time:     %lld (usecs)\n", time);
 -- 
 1.8.2.1
 
