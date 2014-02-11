@@ -1,89 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751825AbaBKQxa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 11:53:30 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:47210 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750909AbaBKQx2 (ORCPT
+	id S1752190AbaBKQxp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 11:53:45 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:20629 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751948AbaBKQxn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 11:53:28 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18SXLqHqKWhapgHvegG5qSchUc1f6Mvlnk=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 5DC945247A4
-Date: Tue, 11 Feb 2014 11:53:14 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Josh Cartwright <joshc@codeaurora.org>
-Cc: Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        devicetree@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 4/8] ARM: mvebu: make use of
- of_find_matching_node_and_match
-Message-ID: <20140211165314.GA8533@titan.lakedaemon.net>
-References: <1392135847-30791-1-git-send-email-joshc@codeaurora.org>
- <1392135847-30791-5-git-send-email-joshc@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392135847-30791-5-git-send-email-joshc@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 11 Feb 2014 11:53:43 -0500
+From: Pawel Moll <pawel.moll@arm.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, lm-sensors@lm-sensors.org, arm@kernel.org
+Cc: Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Jean Delvare <jdelvare@suse.de>, Guenter Roeck <linux@roeck-us.net>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>
+Subject: [PATCH 0/3] Versatile Express sysregs rework
+Date: Tue, 11 Feb 2014 16:53:27 +0000
+Message-Id: <1392137610-27842-1-git-send-email-pawel.moll@arm.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 10:24:02AM -0600, Josh Cartwright wrote:
-> Instead of the of_find_matching_node()/of_match_node() pair, which requires two
-> iterations through the match table, make use of of_find_matching_node_and_match(),
-> which only iterates through the table once.
-> 
-> While we're here, mark the of_system_controller table const.
-> 
-> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
-> ---
->  arch/arm/mach-mvebu/system-controller.c | 9 ++++-----
->  1 file changed, 4 insertions(+), 5 deletions(-)
-> 
-> diff --git a/arch/arm/mach-mvebu/system-controller.c b/arch/arm/mach-mvebu/system-controller.c
-> index a7fb89a..e6e300a 100644
-> --- a/arch/arm/mach-mvebu/system-controller.c
-> +++ b/arch/arm/mach-mvebu/system-controller.c
-> @@ -54,7 +54,7 @@ static const struct mvebu_system_controller orion_system_controller = {
->  	.system_soft_reset = 0x1,
->  };
->  
-> -static struct of_device_id of_system_controller_table[] = {
-> +static const struct of_device_id of_system_controller_table[] = {
->  	{
->  		.compatible = "marvell,orion-system-controller",
->  		.data = (void *) &orion_system_controller,
-> @@ -90,13 +90,12 @@ void mvebu_restart(enum reboot_mode mode, const char *cmd)
->  
->  static int __init mvebu_system_controller_init(void)
->  {
-> +	const struct of_device_id *match;
->  	struct device_node *np;
->  
-> -	np = of_find_matching_node(NULL, of_system_controller_table);
-> +	np = of_find_matching_node_and_match(NULL, of_system_controller_table,
-> +					     &match);
->  	if (np) {
-> -		const struct of_device_id *match =
-> -		    of_match_node(of_system_controller_table, np);
+It's over 6 month since I promised Samuel to rework the
+not-really-MFD driver for Versatile Express sysregs. It's
+also a while since I sent the RFC for the series, but
+finally - it is here!
 
+As suggested by Arnd back then, the VE configuration
+infrastructure is now exposing standard regmap interface
+instead of a custom one. As requested by Samuel, the sysreg
+driver mainly consists of MFD cells definition now.
 
-> -		BUG_ON(!match);
+All this was possible thanks to the first patch, which
+tries to address in a simple way an issue discussed
+a number of times - a problem of early devices registration
+in a "DT-powered" system. It simply makes it possible
+to manually create devices for selected nodes at appropriate
+init levels and guarantees that such devices will not
+be created again during the massive of_platform_populate().
 
-Gregory, is it ok to remove this?  It was added with the original code
-submission for mach-mvebu.  mvebu_restart() will handle this
-gracefully...
+I think it would make sense to merge the whole series
+through arm-soc tree so will appreciate opinions and/or
+acks from respective maintainers.
 
->  		system_controller_base = of_iomap(np, 0);
->  		mvebu_sc = (struct mvebu_system_controller *)match->data;
->  		of_node_put(np);
+Pawel Moll (3):
+  driver core & of: Mark of_nodes of added device as populated
+  mfd: vexpress: Convert custom func API to regmap
+  mfd: vexpress: Define the device as MFD cells
 
-thx,
+ .../devicetree/bindings/arm/vexpress-sysreg.txt    |  79 ++-
+ Documentation/devicetree/bindings/arm/vexpress.txt |  15 +-
+ arch/arm/boot/dts/vexpress-v2m-rs1.dtsi            |  76 ++-
+ arch/arm/boot/dts/vexpress-v2m.dtsi                |  76 ++-
+ arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts         |   5 +-
+ arch/arm/mach-vexpress/ct-ca9x4.c                  |  10 +-
+ arch/arm/mach-vexpress/v2m.c                       |  25 +-
+ arch/arm64/boot/dts/rtsm_ve-motherboard.dtsi       |   2 +-
+ drivers/base/core.c                                |   4 +
+ drivers/bus/Kconfig                                |   9 +
+ drivers/bus/Makefile                               |   2 +
+ drivers/bus/vexpress-config.c                      | 202 ++++++++
+ drivers/clk/versatile/clk-vexpress-osc.c           |  94 ++--
+ drivers/hwmon/vexpress.c                           |  15 +-
+ drivers/mfd/Kconfig                                |  15 +-
+ drivers/mfd/Makefile                               |   2 +-
+ drivers/mfd/vexpress-config.c                      | 288 -----------
+ drivers/mfd/vexpress-sysreg.c                      | 538 ++++++---------------
+ drivers/misc/Kconfig                               |   9 +
+ drivers/misc/Makefile                              |   1 +
+ drivers/misc/vexpress-syscfg.c                     | 320 ++++++++++++
+ drivers/of/device.c                                |  16 +
+ drivers/of/platform.c                              |   6 +-
+ drivers/power/reset/vexpress-poweroff.c            |  13 +-
+ drivers/regulator/vexpress.c                       |  50 +-
+ include/linux/of.h                                 |   6 +
+ include/linux/of_device.h                          |  11 +
+ include/linux/vexpress.h                           |  93 +---
+ 28 files changed, 1059 insertions(+), 923 deletions(-)
+ create mode 100644 drivers/bus/vexpress-config.c
+ delete mode 100644 drivers/mfd/vexpress-config.c
+ create mode 100644 drivers/misc/vexpress-syscfg.c
 
-Jason.
+-- 
+1.8.3.2
+
