@@ -1,91 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755351AbaBKUYB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:24:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39954 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753353AbaBKTGZ (ORCPT
+	id S1755529AbaBKUYU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:24:20 -0500
+Received: from mail-vb0-f54.google.com ([209.85.212.54]:35154 "EHLO
+	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752837AbaBKUYQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:25 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Williamson <alex.williamson@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>, Joerg Roedel <joro@8bytes.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.12 005/107] intel-iommu: fix off-by-one in pagetable freeing
-Date: Tue, 11 Feb 2014 11:04:31 -0800
-Message-Id: <20140211184748.352259842@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
-References: <20140211184748.191276235@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Tue, 11 Feb 2014 15:24:16 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 11 Feb 2014 12:23:55 -0800
+Message-ID: <CALCETrVL44ewQPJXNwPAm2s5aj9auo2p4tYYieNcxANoL91VWw@mail.gmail.com>
+Subject: Too many rescheduling interrupts (still!)
+To: Mike Galbraith <bitbucket@online.de>, X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+Rumor has it that Linux 3.13 was supposed to get rid of all the silly
+rescheduling interrupts.  It doesn't, although it does seem to have
+improved the situation.
 
-------------------
+A small number of reschedule interrupts appear to be due to a race:
+both resched_task and wake_up_idle_cpu do, essentially:
 
-From: Alex Williamson <alex.williamson@redhat.com>
+set_tsk_need_resched(t);
+smb_mb();
+if (!tsk_is_polling(t))
+  smp_send_reschedule(cpu);
 
-commit 08336fd218e087cc4fcc458e6b6dcafe8702b098 upstream.
+The problem is that set_tsk_need_resched wakes the CPU and, if the CPU
+is too quick (which isn't surprising if it was in C0 or C1), then it
+could *clear* TS_POLLING before tsk_is_polling is read.
 
-dma_pte_free_level() has an off-by-one error when checking whether a pte
-is completely covered by a range.  Take for example the case of
-attempting to free pfn 0x0 - 0x1ff, ie.  512 entries covering the first
-2M superpage.
+Is there a good reason that TIF_NEED_RESCHED is in thread->flags and
+TS_POLLING is in thread->status?  Couldn't both of these be in the
+same field in something like struct rq?  That would allow a real
+atomic op here.
 
-The level_size() is 0x200 and we test:
+The more serious issue is that AFAICS default_wake_function is
+completely missing the polling check.  It goes through
+ttwu_queue_remote, which unconditionally sends an interrupt.
 
-  static void dma_pte_free_level(...
-	...
-
-	if (!(0 > 0 || 0x1ff < 0 + 0x200)) {
-		...
-	}
-
-Clearly the 2nd test is true, which means we fail to take the branch to
-clear and free the pagetable entry.  As a result, we're leaking
-pagetables and failing to install new pages over the range.
-
-This was found with a PCI device assigned to a QEMU guest using vfio-pci
-without a VGA device present.  The first 1M of guest address space is
-mapped with various combinations of 4K pages, but eventually the range
-is entirely freed and replaced with a 2M contiguous mapping.
-intel-iommu errors out with something like:
-
-  ERROR: DMA PTE for vPFN 0x0 already set (to 5c2b8003 not 849c00083)
-
-In this case 5c2b8003 is the pointer to the previous leaf page that was
-neither freed nor cleared and 849c00083 is the superpage entry that
-we're trying to replace it with.
-
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Joerg Roedel <joro@8bytes.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/iommu/intel-iommu.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -917,7 +917,7 @@ static void dma_pte_free_level(struct dm
- 
- 		/* If range covers entire pagetable, free it */
- 		if (!(start_pfn > level_pfn ||
--		      last_pfn < level_pfn + level_size(level))) {
-+		      last_pfn < level_pfn + level_size(level) - 1)) {
- 			dma_clear_pte(pte);
- 			domain_flush_cache(domain, pte, sizeof(*pte));
- 			free_pgtable_page(level_pte);
-
-
+--Andy
