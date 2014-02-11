@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932107AbaBKTza (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:55:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40184 "EHLO
+	id S1753798AbaBKTHN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:07:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40137 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753812AbaBKTHR (ORCPT
+	with ESMTP id S1753587AbaBKTHF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:07:17 -0500
+	Tue, 11 Feb 2014 14:07:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.12 097/107] ftrace: Fix synchronization location disabling and freeing ftrace_ops
-Date: Tue, 11 Feb 2014 11:06:03 -0800
-Message-Id: <20140211184750.959719646@linuxfoundation.org>
+        Akash Goel <akash.goel@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [PATCH 3.12 083/107] drm/i915: Fix the offset issue for the stolen GEM objects
+Date: Tue, 11 Feb 2014 11:05:49 -0800
+Message-Id: <20140211184750.563254817@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -28,111 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Akash Goel <akash.goel@intel.com>
 
-commit a4c35ed241129dd142be4cadb1e5a474a56d5464 upstream.
+commit ec14ba47791965d2c08e0a681ff44eacbf3c4553 upstream.
 
-The synchronization needed after ftrace_ops are unregistered must happen
-after the callback is disabled from becing called by functions.
+The 'offset' field of the 'scatterlist' structure was wrongly
+programmed with the offset value from the base of stolen area,
+whereas this field indicates the offset from where the interested
+data starts within the first PAGE pointed to by 'scattterlist'
+structure. As a result when a new GEM object allocated from stolen
+area is mapped to GTT, it could lead to an overwrite of GTT entries
+as the page count calculation will go wrong, refer the function
+'sg_page_count'.
 
-The current location happens after the function is being removed from the
-internal lists, but not after the function callbacks were disabled, leaving
-the functions susceptible of being called after their callbacks are freed.
+v2: Modified the commit message. (Chris)
 
-This affects perf and any externel users of function tracing (LTTng and
-SystemTap).
-
-Fixes: cdbe61bfe704 "ftrace: Allow dynamically allocated function tracers"
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Akash Goel <akash.goel@intel.com>
+Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=71908
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=69104
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/ftrace.c |   58 +++++++++++++++++++++++++++-----------------------
- 1 file changed, 32 insertions(+), 26 deletions(-)
+ drivers/gpu/drm/i915/i915_gem_stolen.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -490,20 +490,6 @@ static int __unregister_ftrace_function(
- 	} else if (ops->flags & FTRACE_OPS_FL_CONTROL) {
- 		ret = remove_ftrace_list_ops(&ftrace_control_list,
- 					     &control_ops, ops);
--		if (!ret) {
--			/*
--			 * The ftrace_ops is now removed from the list,
--			 * so there'll be no new users. We must ensure
--			 * all current users are done before we free
--			 * the control data.
--			 * Note synchronize_sched() is not enough, as we
--			 * use preempt_disable() to do RCU, but the function
--			 * tracer can be called where RCU is not active
--			 * (before user_exit()).
--			 */
--			schedule_on_each_cpu(ftrace_sync);
--			control_ops_free(ops);
--		}
- 	} else
- 		ret = remove_ftrace_ops(&ftrace_ops_list, ops);
- 
-@@ -513,17 +499,6 @@ static int __unregister_ftrace_function(
- 	if (ftrace_enabled)
- 		update_ftrace_function();
- 
--	/*
--	 * Dynamic ops may be freed, we must make sure that all
--	 * callers are done before leaving this function.
--	 *
--	 * Again, normal synchronize_sched() is not good enough.
--	 * We need to do a hard force of sched synchronization.
--	 */
--	if (ops->flags & FTRACE_OPS_FL_DYNAMIC)
--		schedule_on_each_cpu(ftrace_sync);
--
--
- 	return 0;
- }
- 
-@@ -2213,10 +2188,41 @@ static int ftrace_shutdown(struct ftrace
- 		command |= FTRACE_UPDATE_TRACE_FUNC;
+--- a/drivers/gpu/drm/i915/i915_gem_stolen.c
++++ b/drivers/gpu/drm/i915/i915_gem_stolen.c
+@@ -250,7 +250,7 @@ i915_pages_create_for_stolen(struct drm_
  	}
  
--	if (!command || !ftrace_enabled)
-+	if (!command || !ftrace_enabled) {
-+		/*
-+		 * If these are control ops, they still need their
-+		 * per_cpu field freed. Since, function tracing is
-+		 * not currently active, we can just free them
-+		 * without synchronizing all CPUs.
-+		 */
-+		if (ops->flags & FTRACE_OPS_FL_CONTROL)
-+			control_ops_free(ops);
- 		return 0;
-+	}
+ 	sg = st->sgl;
+-	sg->offset = offset;
++	sg->offset = 0;
+ 	sg->length = size;
  
- 	ftrace_run_update_code(command);
-+
-+	/*
-+	 * Dynamic ops may be freed, we must make sure that all
-+	 * callers are done before leaving this function.
-+	 * The same goes for freeing the per_cpu data of the control
-+	 * ops.
-+	 *
-+	 * Again, normal synchronize_sched() is not good enough.
-+	 * We need to do a hard force of sched synchronization.
-+	 * This is because we use preempt_disable() to do RCU, but
-+	 * the function tracers can be called where RCU is not watching
-+	 * (like before user_exit()). We can not rely on the RCU
-+	 * infrastructure to do the synchronization, thus we must do it
-+	 * ourselves.
-+	 */
-+	if (ops->flags & (FTRACE_OPS_FL_DYNAMIC | FTRACE_OPS_FL_CONTROL)) {
-+		schedule_on_each_cpu(ftrace_sync);
-+
-+		if (ops->flags & FTRACE_OPS_FL_CONTROL)
-+			control_ops_free(ops);
-+	}
-+
- 	return 0;
- }
- 
+ 	sg_dma_address(sg) = (dma_addr_t)dev_priv->mm.stolen_base + offset;
 
 
