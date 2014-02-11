@@ -1,88 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751965AbaBKXMK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 18:12:10 -0500
-Received: from mga11.intel.com ([192.55.52.93]:48333 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750978AbaBKXMG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 18:12:06 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,828,1384329600"; 
-   d="scan'208";a="479914630"
-Date: Tue, 11 Feb 2014 16:12:11 -0700 (MST)
-From: Ross Zwisler <ross.zwisler@linux.intel.com>
-X-X-Sender: rzwisler@scrumpy
-To: Matthew Wilcox <matthew.r.wilcox@intel.com>
-cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-ext4@vger.kernel.org,
-        Ross Zwisler <ross.zwisler@linux.intel.com>
-Subject: Re: [PATCH v5 19/22] ext4: Add XIP functionality
-In-Reply-To: <CF1FF3EB.24114%matthew.r.wilcox@intel.com>
-Message-ID: <alpine.OSX.2.00.1402111536290.55274@scrumpy>
-References: <cover.1389779961.git.matthew.r.wilcox@intel.com> <CF1FF3EB.24114%matthew.r.wilcox@intel.com>
-User-Agent: Alpine 2.00 (OSX 1167 2008-08-23)
+	id S1752164AbaBKXOy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 18:14:54 -0500
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:54725 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751752AbaBKXOw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 18:14:52 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20140211215519.GJ841@joshc.qualcomm.com>
+References: <1392122211-11422-1-git-send-email-laurent.pinchart@ideasonboard.com>
+	<1596542.hkJp71u3OJ@avalon>
+	<20140211164825.GC841@joshc.qualcomm.com>
+	<6446980.WMjvBYStRY@avalon>
+	<20140211180845.GG841@joshc.qualcomm.com>
+	<CAMuHMdVkPLe5986hYPApoQr7oJSb6U2P71=nP+9mtvtaskdHXg@mail.gmail.com>
+	<CAL_JsqKnsr-9nSjCGvroC0nDK36vQUnwMWj=cPjvUbRymmHFOQ@mail.gmail.com>
+	<20140211215519.GJ841@joshc.qualcomm.com>
+Date: Tue, 11 Feb 2014 17:14:51 -0600
+Message-ID: <CAL_JsqJdbBuv0TgN7Okrxa4MmEon6a74hv458VFS=8RpcyX5tw@mail.gmail.com>
+Subject: Re: [PATCH] of: Turn of_match_node into a static inline when
+ CONFIG_OF isn't set
+From: Rob Herring <robherring2@gmail.com>
+To: Josh Cartwright <joshc@codeaurora.org>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Jan 2014, Matthew Wilcox wrote:
-> From: Ross Zwisler <ross.zwisler@linux.intel.com>
-> 
-> This is a port of the XIP functionality found in the current version of
-> ext2.
-> 
-> Signed-off-by: Ross Zwisler <ross.zwisler@linux.intel.com>
-> Reviewed-by: Andreas Dilger <andreas.dilger@intel.com>
-> [heavily tweaked]
-> Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+On Tue, Feb 11, 2014 at 3:55 PM, Josh Cartwright <joshc@codeaurora.org> wrote:
+> On Tue, Feb 11, 2014 at 03:30:33PM -0600, Rob Herring wrote:
+>> On Tue, Feb 11, 2014 at 12:29 PM, Geert Uytterhoeven
+>> <geert@linux-m68k.org> wrote:
+>> > On Tue, Feb 11, 2014 at 7:08 PM, Josh Cartwright <joshc@codeaurora.org> wrote:
+>> >> It sure would be convenient if platform_device had a 'const struct
+>> >> of_device_id *of_id_entry' member similar to the existing struct
+>> >> platform_device_id one, that was set up during platform device matching.
+>> >> Most platform_driver users of of_match_node() would simply go away.
+>> >
+>> > Can't the entry be shared for both platform_device_id and of_device_id?
+>> > Only one of them can be valid at the same time, right?
+>> >
+> [..]
+>>
+>> I believe this is the reason drivers have to call of_match_device:
+>>
+>> commit b1608d69cb804e414d0887140ba08a9398e4e638
+>> Author: Grant Likely <grant.likely@secretlab.ca>
+>> Date:   Wed May 18 11:19:24 2011 -0600
+>>
+>>     drivercore: revert addition of of_match to struct device
+>>
+>>     Commit b826291c, "drivercore/dt: add a match table pointer to struct
+>>     device" added an of_match pointer to struct device to cache the
+>>     of_match_table entry discovered at driver match time.  This was unsafe
+>>     because matching is not an atomic operation with probing a driver.  If
+>>     two or more drivers are attempted to be matched to a driver at the
+>>     same time, then the cached matching entry pointer could get
+>>     overwritten.
+>>
+>>     This patch reverts the of_match cache pointer and reworks all users to
+>>     call of_match_device() directly instead.
+>>
+>>     Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+>
+> Interesting, thanks for the history!  I'm wondering if this same problem
+> exists for the existing platform_device_id cached pointer as well.
+>
+> Okay, so maybe caching a pointer in the device isn't the best option,
+> what if we considered extending the platform_driver callbacks to include
+> a set of per-method (?) probe callbacks which do provide a handle to
+> matched identifiers.
+>
+> In the case of a totally contrived platform_driver supporting ACPI, OF,
+> and !OF configurations, it might look something like:
+>
+>         static const struct of_device_id acme_of_table[] = {
+>                 /* ... */
+>                 { },
+>         };
+>         MODULE_DEVICE_TABLE(of, acme_of_table);
+>
+>         static int acme_probe_of(struct platform_device *pdev,
+>                                  const struct of_device_id *id)
 
-...
+I don't think this is the right direction. You might want to look at
+of_platform_driver in git history...
 
-> diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-> index c767666..8b73d77 100644
-> --- a/fs/ext4/inode.c
-> +++ b/fs/ext4/inode.c
-> @@ -663,6 +663,18 @@ found:
->  			WARN_ON(1);
->  		}
->  
-> +		/* this is probably wrong for ext4.  unlike ext2, ext4 supports
-> +		 * uninitialised extents, so we should probably be hooking
-> +		 * into the "make it initialised" code instead. */
-> +		if (IS_XIP(inode)) {
+We still have something like this for macio_bus though.
 
-With the very first version of this patch the above logic seemed to work
-correctly, zeroing blocks as we allocated them.  With the current XIP
-infrastructure based tightly on direct IO this ends up being wrong because in
-some cases we can call ext4_map_blocks() twice for a given block.  
-
-A quick userland test program that creates a new file, truncates it up to 4k
-and then does a partial block write will end up giving you a file filled with
-all zeros.  This is because we zero the data before the write, do the write,
-and then zero again, overwriting the data.  The second call to
-ext4_map_blocks() happens via ext4_ext_direct_IO =>
-ext4_convert_unwritten_extents() => ext4_map_blocks().
-
-We can know in ext4_map_blocks() that we are being called after a write has
-already completed by looking at the flags.  One solution to get around this
-double-zeroing would be to change the above test to:
-
-+                 if (IS_XIP(inode) && !(flags & EXT4_GET_BLOCKS_CONVERT)) {
-
-This fixes the tests I've been able to come up with, but I'm not certain it's
-the correct fix for the long term.  It seems wasteful to zero the blocks we're
-allocating, just to have the zeros overwritten immediately by a write.  Maybe
-a cleaner way would be to try and zero the unwritten bits inside of
-ext4_convert_unwritten_extents(), or somewhere similar?
-
-It's worth noting that I don't think the direct I/O path has this kind of
-logic because they don't allow partial block writes.  The regular I/O path
-knows to zero unwritten space based on the BH_New flag, as set via the
-set_buffer_new() call in ext4_da_map_blocks().  This is a pretty different I/O
-path, though, so I'm not sure how much we can borrow for the XIP code.
-
-Thoughts on the correct fix?
-
-- Ross
+Rob
