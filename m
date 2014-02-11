@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754768AbaBKTQk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:16:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40593 "EHLO
+	id S1754784AbaBKTQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:16:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40590 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754410AbaBKTI2 (ORCPT
+	with ESMTP id S1754403AbaBKTI1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:08:28 -0500
+	Tue, 11 Feb 2014 14:08:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Santos <daniel.santos@pobox.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.4 11/30] spidev: fix hang when transfer_one_message fails
-Date: Tue, 11 Feb 2014 11:06:11 -0800
-Message-Id: <20140211184647.467775383@linuxfoundation.org>
+        Mike Marciniszyn <mike.marciniszyn@intel.com>,
+        Ira Weiny <ira.weiny@intel.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [PATCH 3.4 10/30] IB/qib: Fix QP check when looping back to/from QP1
+Date: Tue, 11 Feb 2014 11:06:10 -0800
+Message-Id: <20140211184647.440731158@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184647.149512538@linuxfoundation.org>
 References: <20140211184647.149512538@linuxfoundation.org>
@@ -29,43 +30,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Santos <daniel.santos@pobox.com>
+From: Ira Weiny <ira.weiny@intel.com>
 
-commit e120cc0dcf2880a4c5c0a6cb27b655600a1cfa1d upstream.
+commit 6e0ea9e6cbcead7fa8c76e3e3b9de4a50c5131c5 upstream.
 
-This corrects a problem in spi_pump_messages() that leads to an spi
-message hanging forever when a call to transfer_one_message() fails.
-This failure occurs in my MCP2210 driver when the cs_change bit is set
-on the last transfer in a message, an operation which the hardware does
-not support.
+The GSI QP type is compatible with and should be allowed to send data
+to/from any UD QP.  This was found when testing ibacm on the same node
+as an SA.
 
-Rationale
-Since the transfer_one_message() returns an int, we must presume that it
-may fail.  If transfer_one_message() should never fail, it should return
-void.  Thus, calls to transfer_one_message() should properly manage a
-failure.
-
-Fixes: ffbbdd21329f3 (spi: create a message queueing infrastructure)
-Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Reviewed-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
+Signed-off-by: Ira Weiny <ira.weiny@intel.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/spi/spi.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/infiniband/hw/qib/qib_ud.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -572,7 +572,9 @@ static void spi_pump_messages(struct kth
- 	ret = master->transfer_one_message(master, master->cur_msg);
- 	if (ret) {
- 		dev_err(&master->dev,
--			"failed to transfer one message from queue\n");
-+			"failed to transfer one message from queue: %d\n", ret);
-+		master->cur_msg->status = ret;
-+		spi_finalize_current_message(master);
+--- a/drivers/infiniband/hw/qib/qib_ud.c
++++ b/drivers/infiniband/hw/qib/qib_ud.c
+@@ -57,13 +57,20 @@ static void qib_ud_loopback(struct qib_q
+ 	struct qib_sge *sge;
+ 	struct ib_wc wc;
+ 	u32 length;
++	enum ib_qp_type sqptype, dqptype;
+ 
+ 	qp = qib_lookup_qpn(ibp, swqe->wr.wr.ud.remote_qpn);
+ 	if (!qp) {
+ 		ibp->n_pkt_drops++;
  		return;
  	}
- }
+-	if (qp->ibqp.qp_type != sqp->ibqp.qp_type ||
++
++	sqptype = sqp->ibqp.qp_type == IB_QPT_GSI ?
++			IB_QPT_UD : sqp->ibqp.qp_type;
++	dqptype = qp->ibqp.qp_type == IB_QPT_GSI ?
++			IB_QPT_UD : qp->ibqp.qp_type;
++
++	if (dqptype != sqptype ||
+ 	    !(ib_qib_state_ops[qp->state] & QIB_PROCESS_RECV_OK)) {
+ 		ibp->n_pkt_drops++;
+ 		goto drop;
 
 
