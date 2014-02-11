@@ -1,54 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932476AbaBKUYg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:24:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41220 "EHLO
+	id S1756336AbaBKUZF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:25:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39950 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756021AbaBKUYc (ORCPT
+	with ESMTP id S1753333AbaBKTGZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 15:24:32 -0500
-Date: Tue, 11 Feb 2014 12:25:47 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Daeseok Youn <daeseok.youn@gmail.com>
-Cc: john.stultz@linaro.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] gpu: ion: fix sparse non static symbol warnings
-Message-ID: <20140211202547.GA11684@kroah.com>
-References: <2249537.0tqhh5qnLv@daeseok-laptop.cloud.net>
+	Tue, 11 Feb 2014 14:06:25 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.12 004/107] arch/sh/kernel/kgdb.c: add missing #include <linux/sched.h>
+Date: Tue, 11 Feb 2014 11:04:30 -0800
+Message-Id: <20140211184748.324707466@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
+References: <20140211184748.191276235@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2249537.0tqhh5qnLv@daeseok-laptop.cloud.net>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 09:32:22AM +0900, Daeseok Youn wrote:
-> >From 08b77be03927d450810c07d3a4440dc8c32fe766 Mon Sep 17 00:00:00 2001
-> From: Daeseok Youn <daeseok.youn@gmail.com>
-> Date: Mon, 10 Feb 2014 09:02:26 +0900
-> Subject: [PATCH] gpu: ion: fix sparse non static symbol warnings
-> 
-> Fixes the following sparse warnings:
-> 
-> drivers/staging/android/ion/ion_dummy_driver.c:26:19:
->  warning: symbol 'idev' was not declared. Should it be static?
-> drivers/staging/android/ion/ion_dummy_driver.c:27:17:
->  warning: symbol 'heaps' was not declared. Should it be static?
-> drivers/staging/android/ion/ion_dummy_driver.c:29:6:
->  warning: symbol 'carveout_ptr' was not declared. Should it be static?
-> drivers/staging/android/ion/ion_dummy_driver.c:30:6:
->  warning: symbol 'chunk_ptr' was not declared. Should it be static?
-> drivers/staging/android/ion/ion_dummy_driver.c:32:26:
->  warning: symbol 'dummy_heaps' was not declared. Should it be static?
-> drivers/staging/android/ion/ion_dummy_driver.c:59:26:
->  warning: symbol 'dummy_ion_pdata' was not declared. Should it be static?
-> 
-> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-This patch has already been made in my tree, please always work against
-linux-next to prevent duplication of work.
+------------------
 
-thanks,
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
 
-greg k-h
+commit 53a52f17d96c8d47c79a7dafa81426317e89c7c1 upstream.
+
+  arch/sh/kernel/kgdb.c: In function 'sleeping_thread_to_gdb_regs':
+  arch/sh/kernel/kgdb.c:225:32: error: implicit declaration of function 'task_stack_page' [-Werror=implicit-function-declaration]
+  arch/sh/kernel/kgdb.c:242:23: error: dereferencing pointer to incomplete type
+  arch/sh/kernel/kgdb.c:243:22: error: dereferencing pointer to incomplete type
+  arch/sh/kernel/kgdb.c: In function 'singlestep_trap_handler':
+  arch/sh/kernel/kgdb.c:310:27: error: 'SIGTRAP' undeclared (first use in this function)
+  arch/sh/kernel/kgdb.c:310:27: note: each undeclared identifier is reported only once for each function it appears in
+
+This was introduced by commit 16559ae48c76 ("kgdb: remove #include
+<linux/serial_8250.h> from kgdb.h").
+
+[geert@linux-m68k.org: reworded and reformatted]
+Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/sh/kernel/kgdb.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/arch/sh/kernel/kgdb.c
++++ b/arch/sh/kernel/kgdb.c
+@@ -13,6 +13,7 @@
+ #include <linux/kdebug.h>
+ #include <linux/irq.h>
+ #include <linux/io.h>
++#include <linux/sched.h>
+ #include <asm/cacheflush.h>
+ #include <asm/traps.h>
+ 
+
+
