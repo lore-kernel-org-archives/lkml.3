@@ -1,198 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752662AbaBKCSZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Feb 2014 21:18:25 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:57584 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752478AbaBKCSN (ORCPT
+	id S1752716AbaBKCSs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Feb 2014 21:18:48 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:41277 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752133AbaBKCSr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Feb 2014 21:18:13 -0500
-X-AuditID: cbfec7f5-b7fc96d000004885-18-52f988629bff
-From: Tarek Dakhran <t.dakhran@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Chander Kashyap <chander.kashyap@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, Tarek Dakhran <t.dakhran@gmail.com>,
-        Vyacheslav Tyrtov <v.tyrtov@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Tarek Dakhran <t.dakhran@samsung.com>
-Subject: [PATCH v1 1/1] ARM: EXYNOS: enable boot all secondary cpus instead 2
-Date: Tue, 11 Feb 2014 11:15:29 +0900
-Message-id: <1392084929-14116-2-git-send-email-t.dakhran@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-In-reply-to: <1392084929-14116-1-git-send-email-t.dakhran@samsung.com>
-References: <1392084929-14116-1-git-send-email-t.dakhran@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNLMWRmVeSWpSXmKPExsVy+t/xy7pJHT+DDN5t5bGYtO4Ak8XD9TdZ
-	LPrfLGS1OPdqJaNF74KrbBabHl9jtbi8aw6bxYzz+5gsbl/mtVh6/SKTxYTpa1ksWvceYbf4
-	3fOJ2WL981OMFutnvGaxmDrjB7uDgMeaeWsYPVqae9g8Lvf1Mnn8XfWC2WPnrLvsHiuXf2Hz
-	2LSqk83jzrU9bB6bl9R79G1ZxejxeZNcAHcUl01Kak5mWWqRvl0CV8bbTb9YCz4qVny6o9PA
-	uFG6i5GTQ0LAROLCo3+sELaYxIV769lAbCGBpYwSL9vcIexeJomGuYFdjBwcbALaElt2eIGE
-	RQQUJDb3PgNrZRY4xiKxaEo+iC0s4Cux7FI/E4jNIqAqMf/hF7CRvAKuEoemTGeEWKUo0f1s
-	AlicU8BNYvmZhVBrXSXOHNvFPIGRdwEjwypG0dTS5ILipPRcI73ixNzi0rx0veT83E2MkAD/
-	uoNx6TGrQ4wCHIxKPLwaX38ECbEmlhVX5h5ilOBgVhLhPWv3M0iINyWxsiq1KD++qDQntfgQ
-	IxMHp1QDI/Nu8VL5Ky3ickmlS9rlrq06M+uzSMel2gB3zqb7x7q7ZF/6yUzQXHskrGNRv6WV
-	ls1ugwUamg+LJnVM11tjVM9/+0qi983txacsSk7Xz4n8KcLfuE9WJE7lzNP/V3w/ZUdbiKyL
-	fc8UcCth2RVmsWW/dpzWYtog3/LFosXZYVdJmtLWJT8blViKMxINtZiLihMBrPpggE4CAAA=
+	Mon, 10 Feb 2014 21:18:47 -0500
+Message-ID: <52F98883.7020803@infradead.org>
+Date: Mon, 10 Feb 2014 18:18:43 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Gene Heskett <gheskett@wdtv.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: make oldfonfig broken.
+References: <1391971686-9517-1-git-send-email-richard@nod.at> <201402101521.04113.gheskett@wdtv.com> <52F958D2.1070003@infradead.org> <201402101913.04969.gheskett@wdtv.com>
+In-Reply-To: <201402101913.04969.gheskett@wdtv.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Functions to boot secondary cpus added.
-	exynos_core_power_up(unsigned int cpu) added for power up any cpu.
-	exynos_core_power_down(unsigned int cpu) for power down any cpu.
+On 02/10/2014 04:13 PM, Gene Heskett wrote:
+> On Monday 10 February 2014, Randy Dunlap wrote:
+>> On 02/10/2014 12:21 PM, Gene Heskett wrote:
+>>> On Monday 10 February 2014, Randy Dunlap wrote:
+>>>> On 02/09/2014 08:32 PM, Gene Heskett wrote:
+>>>> AUTOSELECT driver feature Better!  ugh.
+>>>
+>>> Spit.  I presume geneology discussions are off topic. :)
+>>>
+>>>> Good luck. Let me know if you need more guidance.
+>>>
+>>> Hat in hand, I figured I had better get the first one that fails,
+>>> 3.2.40, to work before I carried that fwd to a more current kernel,
+>>> but 5 or 6 builds & boot failure later I am stumped.
+>>>
+>>> The boot gets to top_init, reports the / drive is unavailable and it
+>>> cannot load /lib/modules/3.2.40/modules.dep, which does exist.
+>>>
+>>> Stops, times out in about a minute and falls thru to the busybox shell,
+>>> and of course my keyboard and mouse are wireless to usb, so neither
+>>> work, reset button tap time.
+>>>
+>>> The only reason I can deduce is that because the drive isn't mounted,
+>>> something is still missing, either in the vmlinuz file or in the initrd
+>>> file.
+>>>
+>>> This most working 3.12.9 bootup shows:
+>>>
+>>> gene@coyote:~/src/linux-3.2.40$ lsmod |grep sata
+>>> sata_nv                16890  12
+>>> libata                146855  2 pata_amd,sata_nv
+>>>
+>>> And I'm pretty sure all that is in the initrd.
+>>>
+>>> Except according to grep, none of that is in
+>>> /lib/modules/3.2.40/modules.dep
+>>>
+>>> And I cannot find anyplace in a make xconfig that mentions libata.
+>>> So obviously my .config is still fubared. It does grep in the other
+>>> modules.dep files for several other versions.
+>>>
+>>> In fact, no .config I have mentions it. At my age the hair is thinning
+>>> quickly enough.
+>>>
+>>> So, Next please?  libata is missing, and so is sata_nv in spite of that
+>>
+>>> being enabled:
+>> It's missing as a loadable module, but that's OK since it's builtin.
+>>
+>>> gene@coyote:~/src/linux-3.2.40$ grep SATA_NV .config
+>>> CONFIG_SATA_NV=y
+>>>
+>>> But I see thats builtin, but it didn't help.
+>>
+>> Your .config has (I believe)
+>> CONFIG_ATA=y
+>> and that is what builds libata.
+>>
+>> Any other clues?
+> 
+> Not that I see in the build trace. grepping:
+> gene@coyote:~/src/linux-3.2.40$ grep CONFIG_ATA .config
+> CONFIG_ATALK=m
+> # CONFIG_ATA_OVER_ETH is not set
+> CONFIG_ATA=y
+> # CONFIG_ATA_NONSTANDARD is not set
+> CONFIG_ATA_VERBOSE_ERROR=y
+> CONFIG_ATA_ACPI=y
+> CONFIG_ATA_SFF=y
+> CONFIG_ATA_BMDMA=y
+> # CONFIG_ATA_PIIX is not set
+> CONFIG_ATA_GENERIC=m
+> 
+> And it seems to be building libata:
+> gene@coyote:~/src/linux-3.2.40/drivers/ata$ ls -l|grep libata|grep .o
+> -rw-r--r-- 1 root root  10236 2014-02-10 18:19 libata-acpi.o
+> -rw-rw-r-- 1 gene gene 175870 2013-03-05 22:24 libata-core.c
+> -rw-r--r-- 1 root root  89616 2014-02-10 18:19 libata-core.o
+> -rw-r--r-- 1 root root  35904 2014-02-10 18:19 libata-eh.o
+> -rw-r--r-- 1 root root 222732 2014-02-10 18:19 libata.o
+> -rw-r--r-- 1 root root  12072 2014-02-10 18:19 libata-pmp.o
+> -rw-r--r-- 1 root root  37156 2014-02-10 18:19 libata-scsi.o
+> -rw-r--r-- 1 root root  40996 2014-02-10 18:19 libata-sff.o
+> -rw-rw-r-- 1 gene gene  19559 2013-03-05 22:24 libata-transport.c
+> -rw-rw-r-- 1 gene gene    536 2013-03-05 22:24 libata-transport.h
+> -rw-r--r-- 1 root root  11772 2014-02-10 18:19 libata-transport.o
+> 
+> But libata.ko is not making it into the initrd, nor the modules.dep for 
+> 3.2.40.
 
-Signed-off-by: Tarek Dakhran <t.dakhran@samsung.com>
----
- arch/arm/mach-exynos/hotplug.c  |   11 ++++--
- arch/arm/mach-exynos/platsmp.c  |   75 ++++++++++++++++++++++++++++-----------
- arch/arm/mach-exynos/regs-pmu.h |    5 +++
- 3 files changed, 68 insertions(+), 23 deletions(-)
+Since CONFIG_ATA=y, it's builtin, not a loadable module (.ko), so it won't
+be in the initrd or modules.dep.
 
-diff --git a/arch/arm/mach-exynos/hotplug.c b/arch/arm/mach-exynos/hotplug.c
-index 5eead53..71982fa 100644
---- a/arch/arm/mach-exynos/hotplug.c
-+++ b/arch/arm/mach-exynos/hotplug.c
-@@ -90,13 +90,18 @@ static inline void cpu_leave_lowpower(void)
- 	  : "cc");
- }
- 
-+static void exynos_core_power_down(unsigned int cpu)
-+{
-+	writel_relaxed(0, S5P_ARM_CORE_CONFIGURATION(cpu));
-+}
-+
- static inline void platform_do_lowpower(unsigned int cpu, int *spurious)
- {
- 	for (;;) {
- 
--		/* make cpu1 to be turned off at next WFI command */
--		if (cpu == 1)
--			__raw_writel(0, S5P_ARM_CORE1_CONFIGURATION);
-+		/* make cpu to be turned off at next WFI command */
-+		if (cpu)
-+			exynos_core_power_down(cpu);
- 
- 		/*
- 		 * here's the WFI
-diff --git a/arch/arm/mach-exynos/platsmp.c b/arch/arm/mach-exynos/platsmp.c
-index 8ea02f6..4008fc8 100644
---- a/arch/arm/mach-exynos/platsmp.c
-+++ b/arch/arm/mach-exynos/platsmp.c
-@@ -88,10 +88,61 @@ static void exynos_secondary_init(unsigned int cpu)
- 	spin_unlock(&boot_lock);
- }
- 
-+/*
-+ * core_power_state is used to get core power state.
-+ * returns:
-+ *        0x0 - powered off;
-+ *        0x3 - powered on;
-+ *        other values - in process;
-+ */
-+static unsigned int core_power_state(unsigned int cpu)
-+{
-+	unsigned int status = readl_relaxed(S5P_ARM_CORE_STATUS(cpu));
-+
-+	return status & CORE_PWR_STATE_MASK;
-+}
-+
-+#define TIMEOUT 10
-+#define DELAY_TIME 1
-+
-+static int wait_core_power_up(unsigned int cpu)
-+{
-+	int timeout = TIMEOUT;
-+
-+	do {
-+		/* checking if power controller in reset */
-+		if (core_power_state(cpu) == S5P_CORE_LOCAL_PWR_EN)
-+				return 0;
-+		mdelay(DELAY_TIME);
-+		timeout -= DELAY_TIME;
-+	} while (timeout > 0);
-+
-+	return -ETIMEDOUT; /* timeout */
-+}
-+
-+static int exynos_core_power_up(unsigned int cpu)
-+{
-+	int ret;
-+
-+	if (core_power_state(cpu) != S5P_CORE_LOCAL_PWR_EN) {
-+		writel_relaxed(S5P_CORE_LOCAL_PWR_EN,
-+					S5P_ARM_CORE_CONFIGURATION(cpu));
-+
-+		ret = wait_core_power_up(cpu);
-+		if (ret) {
-+			pr_debug("timeout powering on CPU%d\n", cpu);
-+			return ret; /* timeout */
-+		}
-+	}
-+
-+	return 0;
-+}
-+
- static int exynos_boot_secondary(unsigned int cpu, struct task_struct *idle)
- {
- 	unsigned long timeout;
- 	unsigned long phys_cpu = cpu_logical_map(cpu);
-+	int ret;
- 
- 	/*
- 	 * Set synchronisation state between this boot processor
-@@ -109,26 +160,10 @@ static int exynos_boot_secondary(unsigned int cpu, struct task_struct *idle)
- 	 */
- 	write_pen_release(phys_cpu);
- 
--	if (!(__raw_readl(S5P_ARM_CORE1_STATUS) & S5P_CORE_LOCAL_PWR_EN)) {
--		__raw_writel(S5P_CORE_LOCAL_PWR_EN,
--			     S5P_ARM_CORE1_CONFIGURATION);
--
--		timeout = 10;
--
--		/* wait max 10 ms until cpu1 is on */
--		while ((__raw_readl(S5P_ARM_CORE1_STATUS)
--			& S5P_CORE_LOCAL_PWR_EN) != S5P_CORE_LOCAL_PWR_EN) {
--			if (timeout-- == 0)
--				break;
--
--			mdelay(1);
--		}
--
--		if (timeout == 0) {
--			printk(KERN_ERR "cpu1 power enable failed");
--			spin_unlock(&boot_lock);
--			return -ETIMEDOUT;
--		}
-+	ret = exynos_core_power_up(cpu);
-+	if (ret) {
-+		spin_unlock(&boot_lock);
-+		return ret;
- 	}
- 	/*
- 	 * Send the secondary CPU a soft interrupt, thereby causing
-diff --git a/arch/arm/mach-exynos/regs-pmu.h b/arch/arm/mach-exynos/regs-pmu.h
-index 7c029ce..4fc1e8f 100644
---- a/arch/arm/mach-exynos/regs-pmu.h
-+++ b/arch/arm/mach-exynos/regs-pmu.h
-@@ -104,6 +104,11 @@
- #define S5P_GPS_LOWPWR				S5P_PMUREG(0x139C)
- #define S5P_GPS_ALIVE_LOWPWR			S5P_PMUREG(0x13A0)
- 
-+#define CORE_PWR_STATE_MASK			0x3
-+
-+#define S5P_ARM_CORE_CONFIGURATION(_nr)	(S5P_PMUREG(0x2000) + ((_nr) * 0x80))
-+#define S5P_ARM_CORE_STATUS(_nr)	(S5P_PMUREG(0x2004) + ((_nr) * 0x80))
-+
- #define S5P_ARM_CORE1_CONFIGURATION		S5P_PMUREG(0x2080)
- #define S5P_ARM_CORE1_STATUS			S5P_PMUREG(0x2084)
- 
+> I been playing 20 monkeys changing one ata related thing at a time & doing 
+> a sudo time -p ./makeit to check, not much use rebooting to check until I 
+> see it.
+> 
+> I'll go gedit .config & change CONFIG_ATA to = m & try one more time.
+> 
+> Got it, test reboot time.  Made it 2 lines farther, "switching to clock 
+> source TSC" then fell through to the busybox prompt with all inputs dead.
+> 
+> Sigh.
+> 
+> .config attached if you've got time.
+> 
+> Thanks Randy
+> 
+> Cheers, Gene
+> 
+
+I'll look at it Tuesday morning.
+
 -- 
-1.7.10.4
-
+~Randy
