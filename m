@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753837AbaBKVBO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 16:01:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39601 "EHLO
+	id S1756060AbaBKVBk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 16:01:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39597 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752614AbaBKTFP (ORCPT
+	with ESMTP id S1752661AbaBKTFO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:05:15 -0500
+	Tue, 11 Feb 2014 14:05:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wanlong Gao <gaowanlong@cn.fujitsu.com>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.13 005/120] arch/sh/kernel/kgdb.c: add missing #include <linux/sched.h>
-Date: Tue, 11 Feb 2014 11:04:06 -0800
-Message-Id: <20140211184823.664297046@linuxfoundation.org>
+        Weston Andros Adamson <dros@primarydata.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.13 042/120] nfs4.1: properly handle ENOTSUP in SECINFO_NO_NAME
+Date: Tue, 11 Feb 2014 11:04:43 -0800
+Message-Id: <20140211184824.801999528@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -32,43 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+From: Weston Andros Adamson <dros@primarydata.com>
 
-commit 53a52f17d96c8d47c79a7dafa81426317e89c7c1 upstream.
+commit 78b19bae0813bd6f921ca58490196abd101297bd upstream.
 
-  arch/sh/kernel/kgdb.c: In function 'sleeping_thread_to_gdb_regs':
-  arch/sh/kernel/kgdb.c:225:32: error: implicit declaration of function 'task_stack_page' [-Werror=implicit-function-declaration]
-  arch/sh/kernel/kgdb.c:242:23: error: dereferencing pointer to incomplete type
-  arch/sh/kernel/kgdb.c:243:22: error: dereferencing pointer to incomplete type
-  arch/sh/kernel/kgdb.c: In function 'singlestep_trap_handler':
-  arch/sh/kernel/kgdb.c:310:27: error: 'SIGTRAP' undeclared (first use in this function)
-  arch/sh/kernel/kgdb.c:310:27: note: each undeclared identifier is reported only once for each function it appears in
+Don't check for -NFS4ERR_NOTSUPP, it's already been mapped to -ENOTSUPP
+by nfs4_stat_to_errno.
 
-This was introduced by commit 16559ae48c76 ("kgdb: remove #include
-<linux/serial_8250.h> from kgdb.h").
+This allows the client to mount v4.1 servers that don't support
+SECINFO_NO_NAME by falling back to the "guess and check" method of
+nfs4_find_root_sec.
 
-[geert@linux-m68k.org: reworded and reformatted]
-Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Weston Andros Adamson <dros@primarydata.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/sh/kernel/kgdb.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/nfs/nfs4proc.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/sh/kernel/kgdb.c
-+++ b/arch/sh/kernel/kgdb.c
-@@ -13,6 +13,7 @@
- #include <linux/kdebug.h>
- #include <linux/irq.h>
- #include <linux/io.h>
-+#include <linux/sched.h>
- #include <asm/cacheflush.h>
- #include <asm/traps.h>
- 
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -7920,7 +7920,7 @@ nfs41_proc_secinfo_no_name(struct nfs_se
+ 		switch (err) {
+ 		case 0:
+ 		case -NFS4ERR_WRONGSEC:
+-		case -NFS4ERR_NOTSUPP:
++		case -ENOTSUPP:
+ 			goto out;
+ 		default:
+ 			err = nfs4_handle_exception(server, err, &exception);
+@@ -7954,7 +7954,7 @@ nfs41_find_root_sec(struct nfs_server *s
+ 	 * Fall back on "guess and check" method if
+ 	 * the server doesn't support SECINFO_NO_NAME
+ 	 */
+-	if (err == -NFS4ERR_WRONGSEC || err == -NFS4ERR_NOTSUPP) {
++	if (err == -NFS4ERR_WRONGSEC || err == -ENOTSUPP) {
+ 		err = nfs4_find_root_sec(server, fhandle, info);
+ 		goto out_freepage;
+ 	}
 
 
