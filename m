@@ -1,111 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751578AbaBKJZe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 04:25:34 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:57163 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750809AbaBKJZ2 (ORCPT
+	id S1751848AbaBKJZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 04:25:57 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:60530 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751757AbaBKJZv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 04:25:28 -0500
-Message-ID: <52F9EC39.40504@huawei.com>
-Date: Tue, 11 Feb 2014 17:24:09 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Tue, 11 Feb 2014 04:25:51 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s1B9OpYi010210, This message is accepted by code: ctloc85258
+Message-ID: <52F9ED02.6000604@realtek.com>
+Date: Tue, 11 Feb 2014 17:27:30 +0800
+From: Roger <rogerable@realtek.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHSET cgroup/for-3.15] cgroup: convert to kernfs
-References: <1390953285-16360-1-git-send-email-tj@kernel.org>
-In-Reply-To: <1390953285-16360-1-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset="GB2312"
+To: Ulf Hansson <ulf.hansson@linaro.org>
+CC: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Chris Ball <cjb@laptop.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        <driverdev-devel@linuxdriverproject.org>,
+        Wei WANG <wei_wang@realsil.com.cn>, <micky_ching@realsil.com.cn>
+Subject: Re: [PATCH v3 2/3] mmc: Add realtek USB sdmmc host driver
+References: <1391697307-23457-1-git-send-email-rogerable@realtek.com>	<1391697307-23457-3-git-send-email-rogerable@realtek.com> <201402110748.s1B7miQ8010938@rtits1.realtek.com>
+In-Reply-To: <201402110748.s1B7miQ8010938@rtits1.realtek.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+X-Originating-IP: [172.21.81.189]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/1/29 7:54, Tejun Heo wrote:
-> Hello,
-> 
-> cgroup filesystem code was derived from the original sysfs
-> implementation which was heavily intertwined with vfs objects and
-> locking with the goal of re-using the existing vfs infrastructure.
-> That experiment turned out rather disastrous and sysfs switched, a
-> long time ago, to distributed filesystem model where a separate
-> representation is maintained which is queried by vfs.  Unfortunately,
-> cgroup stuck with the failed experiment all these years and
-> accumulated even more problems over time.
-> 
-> Locking and object lifetime management being entangled with vfs is
-> probably the most egregious.  vfs was never designed to be misused
-> like this and cgroup ends up jumping through various convoluted
-> dancing to make things work.  Even then, operations across multiple
-> cgroups can't be done safely as it'll deadlock with rename locking.
-> 
-> Recently, kernfs is separated out from sysfs so that it can be used by
-> users other than sysfs.  This patchset converts cgroup to use kernfs.
-> This simplifies code base quite a bit and allows further cleanups and
-> implementation of features which depend on operating across multiple
-> nodes.
-> 
-> This patchset contains the following 13 patches.
-> 
->  0001-cgroup-improve-css_from_dir-into-css_tryget_from_dir.patch
->  0002-cgroup-introduce-cgroup_tree_mutex.patch
->  0003-cgroup-release-cgroup_mutex-over-file-removals.patch
->  0004-cgroup-restructure-locking-and-error-handling-in-cgr.patch
->  0005-cgroup-factor-out-cgroup_setup_root-from-cgroup_moun.patch
->  0006-cgroup-update-cgroup-name-handling.patch
->  0007-cgroup-make-cgroup_subsys-base_cftypes-use-cgroup_ad.patch
->  0008-cgroup-update-the-meaning-of-cftype-max_write_len.patch
->  0009-cgroup-introduce-cgroup_init-exit_cftypes.patch
->  0010-cgroup-introduce-cgroup_ino.patch
->  0011-cgroup-misc-preps-for-kernfs-conversion.patch
->  0012-cgroup-relocate-functions-in-preparation-of-kernfs-c.patch
->  0013-cgroup-convert-to-kernfs.patch
-> 
-> 0001 updates css_from_dir() into css_tryget_from_dir() so that the
-> caller doesn't have to worry about RCU locking.
-> 
-> 0002-0004 introduce cgroup_tree_mutex and prepare locking.
-> 
-> 0005-0006 are misc preps.
-> 
-> 0007-0008 update cftype handling in preparation.
-> 
-> 0009-0012 are misc preps.
-> 
-> 0013 converts cgroup to kernfs.
-> 
-> This patchset is on top of
-> 
->   linus#master 54c0a4b46150 ("Merge branch 'akpm' (incoming from Andrew)")
-> + [1] [PATCHSET cgroup/for-3.14-fixes] cgroup: four misc fixes
-> + [2] [PATCH] arm, pm, vmpressure: add missing slab.h includes
-> + [3] [PATCHSET v2 cgroup/for-3.15] cgroup: drop module support and cgroup_root_mutex
-> + git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-kernfs-cgroup-prep
-> 
-> and also available in the following git branch.
-> 
->  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-kernfs-conversion
-> 
-> diffstat follows.
-> 
->  block/blk-throttle.c   |    4
->  block/cfq-iosched.c    |    3
->  include/linux/cgroup.h |   71 --
->  kernel/cgroup.c        | 1712 ++++++++++++++++++++-----------------------------
->  kernel/events/core.c   |   17
->  mm/memcontrol.c        |   16
->  mm/memory-failure.c    |    8
->  7 files changed, 754 insertions(+), 1077 deletions(-)
-> 
+On 02/10/2014 10:58 PM, Ulf Hansson wrote:
+> On 6 February 2014 15:35,  <rogerable@realtek.com> wrote:
+>> From: Roger Tseng <rogerable@realtek.com>
+>>
+>> Realtek USB SD/MMC host driver provides mmc host support based on the Realtek
+>> USB card reader MFD driver.
+>>
+>> Signed-off-by: Roger Tseng <rogerable@realtek.com>
+>> ---
+>>   drivers/mmc/host/Kconfig          |    7 +
+>>   drivers/mmc/host/Makefile         |    1 +
+>>   drivers/mmc/host/rtsx_usb_sdmmc.c | 1500 +++++++++++++++++++++++++++++++++++++
+>>   3 files changed, 1508 insertions(+)
+>>   create mode 100644 drivers/mmc/host/rtsx_usb_sdmmc.c
+[snip]
+>> +#ifdef CONFIG_PM_RUNTIME
+>
+> There are stubs for pm_runtime* functions, thus the ifdefs can be removed.
+> Please go though the complete patch and remove all instances.
+>
+>> +               pm_runtime_put(sdmmc_dev(host));
+>
+> I don't know so much about USB mmc hosts hardware, but I just wanted
+> to find out if I have understood this correct.
+>
+> You can't do fine grained power management of the USB parent device,
+> since it needs to be runtime resumed to be able keep the power the
+> card? Once it becomes runtime suspended, the power to the card will
+> thus also be dropped?
+>
+Yes, and to keep some internal state of the controller.
 
-Looks good to me!
+[snip]
+>> +#ifdef CONFIG_PM
+>
+> I suppose this should be CONFIG_PM_SLEEP?
+>
+...
+>> +       err = mmc_suspend_host(mmc);
+>
+> This won't compile. The mmc_suspend_host API has been removed.
+>
+...
+>> +       return mmc_resume_host(mmc);
+>
+> This won't compile. The mmc_resume_host API has been removed.
+>
+...
+>> +static struct platform_driver rtsx_usb_sdmmc_driver = {
+>> +       .probe          = rtsx_usb_sdmmc_drv_probe,
+>> +       .remove         = rtsx_usb_sdmmc_drv_remove,
+>> +       .id_table       = rtsx_usb_sdmmc_ids,
+>> +       .suspend        = rtsx_usb_sdmmc_suspend,
+>> +       .resume         = rtsx_usb_sdmmc_resume,
+>
+> Please use the modern pm_ops instead of the legacy suspend/resume callbacks.
+> I suggest you then also switch to use the SIMPLE_DEV_PM_OPS macro.
 
-Acked-by: Li Zefan <lizefan@huawei.com>
+I just missed the removal of mmc_suspend|resume_host.
 
-Will look into remaining patchsets tomorrow.
+I'll remove all these unnecessary mmc host pm things as done in commit 
+ff71c4bcb0af2730d047989e485303ae4e1ce794 for drivers of our PCIe devices.
 
+Thanks for pointing this out.
+
+> Kind regards
+> Ulf Hansson
