@@ -1,99 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752149AbaBKMSH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 07:18:07 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:14792 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752055AbaBKMSB (ORCPT
+	id S1752179AbaBKMS0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 07:18:26 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:46550 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751105AbaBKMSD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 07:18:01 -0500
-X-AuditID: cbfee690-b7f266d00000287c-06-52fa14f751ff
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Lars-Peter Clausen'" <lars@metafoo.de>
-Cc: "'Ralf Baechle'" <ralf@linux-mips.org>, linux-kernel@vger.kernel.org,
-        linux-mips@linux-mips.org, "'Jingoo Han'" <jg1.han@samsung.com>
-References: <003901cf25fc$73002790$590076b0$%han@samsung.com>
- <003d01cf25fd$309c58a0$91d509e0$%han@samsung.com> <52FA12B2.5090906@metafoo.de>
-In-reply-to: <52FA12B2.5090906@metafoo.de>
-Subject: Re: [PATCH 4/7] MIPS: jz4740: don't select HAVE_PWM
-Date: Tue, 11 Feb 2014 21:17:59 +0900
-Message-id: <000801cf2723$4d873940$e895abc0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac8nIe9YwZKKeTMzQweTKfLP6Xh3rwAASTfQ
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMIsWRmVeSWpSXmKPExsVy+t8zI93vIr+CDG716VhcXniJ1WLJ5Pms
-	Fpd3zWGzmDB1ErvFpT0qDqweR1euZfJY8uYQq0ffllWMHp83yQWwRHHZpKTmZJalFunbJXBl
-	/Hz7ialgLmfFnC0TGBsYF7J3MXJySAiYSEw8+pUZwhaTuHBvPVsXIxeHkMAyRomlf74xwxQ9
-	XLaPHSKxiFHi7+HXUM4vRol9L9cyglSxCahJfPlyGGysiICWxNRvb1lBipgF2hkl5q9YwQLR
-	0c8o8egASIaTgxOo6t65m2A7hAVsJPYsOsUEYrMIqEqsnD4DzOYVsJWYcuQsI4QtKPFj8j0W
-	EJsZqHf9zuNMELa8xOY1b4HmcADdqi7x6K8uxBFGEnOmrGaGKBGR2PfiHSPEO9fYJVY9dYNY
-	JSDxbfIhFohWWYlNB6A+lpQ4uOIGywRGiVlIFs9CsngWksWzkGxYwMiyilE0tSC5oDgpvchE
-	rzgxt7g0L10vOT93EyMkQifsYLx3wPoQYzLQ+onMUqLJ+cAIzyuJNzQ2M7IwNTE1NjK3NCNN
-	WEmcV+1RUpCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGxpqID1uFr0300C+9NCk+MfvtMRb3
-	yoOnzpYsargR0KmUXfuZcUPN6jmGD2dM2HRkkfyjSabvwhmvCq79e89mUnLY2k3SJaefhIYY
-	VwUfcw87P+ux7+tber43ytp+hsefFem4csHvx89LOsbZv1X2bZrrLfLquNqrF6mBl7rqT900
-	9Uk4l7Z26hIlluKMREMt5qLiRAAZLyfE5gIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrIKsWRmVeSWpSXmKPExsVy+t9jAd3vIr+CDB5P17C4vPASq8WSyfNZ
-	LS7vmsNmMWHqJHaLS3tUHFg9jq5cy+Sx5M0hVo++LasYPT5vkgtgiWpgtMlITUxJLVJIzUvO
-	T8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wB2qukUJaYUwoUCkgsLlbSt8M0
-	ITTETdcCpjFC1zckCK7HyAANJKxjzPj59hNTwVzOijlbJjA2MC5k72Lk5JAQMJF4uGwflC0m
-	ceHeerYuRi4OIYFFjBJ/D79mh3B+MUrse7mWEaSKTUBN4suXw2AdIgJaElO/vWUFKWIWaGeU
-	mL9iBQtERz+jxKMDIBlODk6gqnvnbjKD2MICNhJ7Fp1iArFZBFQlVk6fAWbzCthKTDlylhHC
-	FpT4MfkeC4jNDNS7fudxJghbXmLzmrdAcziAblWXePRXF+III4k5U1YzQ5SISOx78Y5xAqPQ
-	LCSTZiGZNAvJpFlIWhYwsqxiFE0tSC4oTkrPNdQrTswtLs1L10vOz93ECE4Az6R2MK5ssDjE
-	KMDBqMTDq/H1R5AQa2JZcWXuIUYJDmYlEd4vwr+ChHhTEiurUovy44tKc1KLDzEmAz06kVlK
-	NDkfmJzySuINjU3MjCyNzCyMTMzNSRNWEuc90GodKCSQnliSmp2aWpBaBLOFiYNTqoHRdsl7
-	q+7+q5XFa7bv3P+5qPPL9fx5tptZBO5ZzX1jwaDWt2HxgvkNDEuUlyxdcnX5t4lFk84uuR3A
-	pDZlax1jfc3doO0MMw/9LZulkuJ2PkBBUGXhq5YX/rM/HM4s/7d+xT3ePC3Tu3F7Kn+tTdCc
-	5exoc2vxFpmL//6v8cuY83xb6qEHSzqlbZRYijMSDbWYi4oTAYhYf/FEAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 11 Feb 2014 07:18:03 -0500
+Date: Tue, 11 Feb 2014 04:17:31 -0800
+From: tip-bot for Alex Shi <tipbot@zytor.com>
+Message-ID: <tip-37e6bae8395a94b4dd934c92b02b9408be992365@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, alex.shi@linaro.org, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, alex.shi@linaro.org,
+        linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <52E0F3BF.5020904@linaro.org>
+References: <52E0F3BF.5020904@linaro.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched:
+  Add statistic for newidle load balance cost
+Git-Commit-ID: 37e6bae8395a94b4dd934c92b02b9408be992365
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 11 Feb 2014 04:17:37 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, February 11, 2014 9:08 PM, Lars-Peter Clausen wrote:
-> On 02/10/2014 02:12 AM, Jingoo Han wrote:
-> > The HAVE_PWM symbol is only for legacy platforms that provide
-> > the PWM API without using the generic framework. The jz4740
-> > platform uses the generic PWM framework, after the commit "f6b8a57
-> > pwm: Add Ingenic JZ4740 support".
-> >
-> > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> 
-> Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+Commit-ID:  37e6bae8395a94b4dd934c92b02b9408be992365
+Gitweb:     http://git.kernel.org/tip/37e6bae8395a94b4dd934c92b02b9408be992365
+Author:     Alex Shi <alex.shi@linaro.org>
+AuthorDate: Thu, 23 Jan 2014 18:39:54 +0800
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Tue, 11 Feb 2014 09:58:18 +0100
 
-Hi Lars-Peter Clausen,
+sched: Add statistic for newidle load balance cost
 
-I really appreciate your Acked-by. However, the same patch was
-already submitted by Sascha Hauer.[1] So, please ignore this patch.
-Thank you.
+Tracking rq->max_idle_balance_cost and sd->max_newidle_lb_cost.
+It's useful to know these values in debug mode.
 
-[1] https://lkml.org/lkml/2014/1/16/262
+Signed-off-by: Alex Shi <alex.shi@linaro.org>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/52E0F3BF.5020904@linaro.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/sched/core.c  | 9 ++++++---
+ kernel/sched/debug.c | 1 +
+ 2 files changed, 7 insertions(+), 3 deletions(-)
 
-Best regards,
-Jingoo Han
-
-> 
-> > ---
-> >   arch/mips/Kconfig |    1 -
-> >   1 file changed, 1 deletion(-)
-> >
-> > diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-> > index dcae3a7..d132603 100644
-> > --- a/arch/mips/Kconfig
-> > +++ b/arch/mips/Kconfig
-> > @@ -235,7 +235,6 @@ config MACH_JZ4740
-> >   	select IRQ_CPU
-> >   	select ARCH_REQUIRE_GPIOLIB
-> >   	select SYS_HAS_EARLY_PRINTK
-> > -	select HAVE_PWM
-> >   	select HAVE_CLK
-> >   	select GENERIC_IRQ_CHIP
-> >
-> >
-
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 3068f37..fb9764f 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4811,7 +4811,7 @@ set_table_entry(struct ctl_table *entry,
+ static struct ctl_table *
+ sd_alloc_ctl_domain_table(struct sched_domain *sd)
+ {
+-	struct ctl_table *table = sd_alloc_ctl_entry(13);
++	struct ctl_table *table = sd_alloc_ctl_entry(14);
+ 
+ 	if (table == NULL)
+ 		return NULL;
+@@ -4839,9 +4839,12 @@ sd_alloc_ctl_domain_table(struct sched_domain *sd)
+ 		sizeof(int), 0644, proc_dointvec_minmax, false);
+ 	set_table_entry(&table[10], "flags", &sd->flags,
+ 		sizeof(int), 0644, proc_dointvec_minmax, false);
+-	set_table_entry(&table[11], "name", sd->name,
++	set_table_entry(&table[11], "max_newidle_lb_cost",
++		&sd->max_newidle_lb_cost,
++		sizeof(long), 0644, proc_doulongvec_minmax, false);
++	set_table_entry(&table[12], "name", sd->name,
+ 		CORENAME_MAX_SIZE, 0444, proc_dostring, false);
+-	/* &table[12] is terminator */
++	/* &table[13] is terminator */
+ 
+ 	return table;
+ }
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index 31b908d..f3344c3 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -321,6 +321,7 @@ do {									\
+ 	P(sched_goidle);
+ #ifdef CONFIG_SMP
+ 	P64(avg_idle);
++	P64(max_idle_balance_cost);
+ #endif
+ 
+ 	P(ttwu_count);
