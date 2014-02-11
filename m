@@ -1,57 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751795AbaBKSLF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 13:11:05 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:34177 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751323AbaBKSLD (ORCPT
+	id S1751992AbaBKSMJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 13:12:09 -0500
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:60434 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751760AbaBKSMI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 13:11:03 -0500
-Date: Tue, 11 Feb 2014 12:08:46 -0600
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>
-Subject: Re: [PATCH] of: Turn of_match_node into a static inline when
- CONFIG_OF isn't set
-Message-ID: <20140211180845.GG841@joshc.qualcomm.com>
-References: <1392122211-11422-1-git-send-email-laurent.pinchart@ideasonboard.com>
- <1596542.hkJp71u3OJ@avalon>
- <20140211164825.GC841@joshc.qualcomm.com>
- <6446980.WMjvBYStRY@avalon>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6446980.WMjvBYStRY@avalon>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 11 Feb 2014 13:12:08 -0500
+From: William Roberts <bill.c.roberts@gmail.com>
+To: linux-audit@redhat.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        rgb@redhat.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+        sds@tycho.nsa.gov
+Cc: William Roberts <wroberts@tresys.com>
+Subject: [PATCH v7 1/3] mm: Create utility function for accessing a tasks commandline value
+Date: Tue, 11 Feb 2014 10:11:59 -0800
+Message-Id: <1392142321-16217-1-git-send-email-wroberts@tresys.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 06:20:49PM +0100, Laurent Pinchart wrote:
-> On Tuesday 11 February 2014 10:48:26 Josh Cartwright wrote:
-> > On Tue, Feb 11, 2014 at 03:55:35PM +0100, Laurent Pinchart wrote:
-> > > On Tuesday 11 February 2014 08:41:08 Josh Cartwright wrote:
-> > > > On Tue, Feb 11, 2014 at 01:36:51PM +0100, Laurent Pinchart wrote:
-[..]
-> > I am a bit weary about having an of_match_node() user that both directly
-> > dereferences the result (i.e. of_match_node(matches, np)->data) _and_
-> > builds when !CONFIG_OF; most likely due to a traumatic childhood event
-> > where demons flew out my nose.
->
-> I can assign the intermediate value to a variable before dereferencing it and
-> drop my of_match_node() patch if it makes everybody happier.
+introduce get_cmdline() for retreiving the value of a processes
+proc/self/cmdline value.
 
-Assuming you also intend to handle the case of_match_node() may return
-NULL, or otherwise prevent the execution of this codepath when
-!CONFIG_OF, then, yes, that sounds good.
+Acked-by: David Rientjes <rientjes@google.com>
+Acked-by: Stephen Smalley <sds@tycho.nsa.gov>
+Acked-by: Richard Guy Briggs <rgb@redhat.com>
 
-It sure would be convenient if platform_device had a 'const struct
-of_device_id *of_id_entry' member similar to the existing struct
-platform_device_id one, that was set up during platform device matching.
-Most platform_driver users of of_match_node() would simply go away.
+Signed-off-by: William Roberts <wroberts@tresys.com>
+---
+ include/linux/mm.h |    1 +
+ mm/util.c          |   48 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 49 insertions(+)
 
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index f28f46e..db89a94 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1175,6 +1175,7 @@ void account_page_writeback(struct page *page);
+ int set_page_dirty(struct page *page);
+ int set_page_dirty_lock(struct page *page);
+ int clear_page_dirty_for_io(struct page *page);
++int get_cmdline(struct task_struct *task, char *buffer, int buflen);
+ 
+ /* Is the vma a continuation of the stack vma above it? */
+ static inline int vma_growsdown(struct vm_area_struct *vma, unsigned long addr)
+diff --git a/mm/util.c b/mm/util.c
+index a24aa22..8122710 100644
+--- a/mm/util.c
++++ b/mm/util.c
+@@ -445,6 +445,54 @@ unsigned long vm_commit_limit(void)
+ 	return allowed;
+ }
+ 
++/**
++ * get_cmdline() - copy the cmdline value to a buffer.
++ * @task:     the task whose cmdline value to copy.
++ * @buffer:   the buffer to copy to.
++ * @buflen:   the length of the buffer. Larger cmdline values are truncated
++ *            to this length.
++ * Returns the size of the cmdline field copied. Note that the copy does
++ * not guarantee an ending NULL byte.
++ */
++int get_cmdline(struct task_struct *task, char *buffer, int buflen)
++{
++	int res = 0;
++	unsigned int len;
++	struct mm_struct *mm = get_task_mm(task);
++	if (!mm)
++		goto out;
++	if (!mm->arg_end)
++		goto out_mm;	/* Shh! No looking before we're done */
++
++	len = mm->arg_end - mm->arg_start;
++
++	if (len > buflen)
++		len = buflen;
++
++	res = access_process_vm(task, mm->arg_start, buffer, len, 0);
++
++	/*
++	 * If the nul at the end of args has been overwritten, then
++	 * assume application is using setproctitle(3).
++	 */
++	if (res > 0 && buffer[res-1] != '\0' && len < buflen) {
++		len = strnlen(buffer, res);
++		if (len < res) {
++			res = len;
++		} else {
++			len = mm->env_end - mm->env_start;
++			if (len > buflen - res)
++				len = buflen - res;
++			res += access_process_vm(task, mm->env_start,
++						 buffer+res, len, 0);
++			res = strnlen(buffer, res);
++		}
++	}
++out_mm:
++	mmput(mm);
++out:
++	return res;
++}
+ 
+ /* Tracepoints definitions. */
+ EXPORT_TRACEPOINT_SYMBOL(kmalloc);
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+1.7.9.5
+
