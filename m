@@ -1,78 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751760AbaBKIvA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 03:51:00 -0500
-Received: from mail-we0-f173.google.com ([74.125.82.173]:52118 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750758AbaBKIu7 (ORCPT
+	id S1751767AbaBKIwp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 03:52:45 -0500
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:65230 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750785AbaBKIwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 03:50:59 -0500
-Date: Tue, 11 Feb 2014 08:50:53 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Laszlo Papp <lpapp@kde.org>
-Cc: Jean Delvare <jdelvare@suse.de>, LKML <linux-kernel@vger.kernel.org>,
-        lm-sensors@lm-sensors.org
-Subject: Re: [lm-sensors] [PATCH] hwmon: (max6650) Rename the device ids to
- contain the hwmon suffix
-Message-ID: <20140211085053.GD32042@lee--X1>
-References: <1392045953-26596-1-git-send-email-lpapp@kde.org>
- <20140210160842.GB26997@lee--X1>
- <20140210173811.04ba5964@endymion.delvare>
- <CAOMwXhPTkrUUaUL-H_0fvZBO9_kt4jqKXs5BJYthDfu0_1c3xg@mail.gmail.com>
- <20140211085014.4ef32b56@endymion.delvare>
- <CAOMwXhMhKdp420+SPTih+C3fAgTmrpJgPnGBxsfPO3pEhESGTA@mail.gmail.com>
+	Tue, 11 Feb 2014 03:52:43 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAOMwXhMhKdp420+SPTih+C3fAgTmrpJgPnGBxsfPO3pEhESGTA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140128132306.GB9172@localhost.localdomain>
+References: <CAKohpomO+2WbNLceBznWwYRcv0e7RsPiaRF7ctRZ+6GFKtr4aA@mail.gmail.com>
+	<20140115171704.GB21574@localhost.localdomain>
+	<CAKohponEZydR1OmP2xziA9bc3OJPgP3bFmuWFQmrmeQFZccMVQ@mail.gmail.com>
+	<alpine.DEB.2.02.1401161043350.4207@ionos.tec.linutronix.de>
+	<CAKohpond3wY25H_tsJQ9xs_D2dP2_wGGU5J8fBteyfB=7wmAdA@mail.gmail.com>
+	<20140120155145.GB9436@localhost.localdomain>
+	<CAKohpom8av7A1wwcdOr5+LpHz--P+s9m_gR_9B+Aa4fpwkN7uQ@mail.gmail.com>
+	<20140123145842.GD13345@localhost.localdomain>
+	<CAKohpok5AObcFbOmLYGT-KkjhVHUiLRZ=AYqofYk59_sVneSjA@mail.gmail.com>
+	<20140128132306.GB9172@localhost.localdomain>
+Date: Tue, 11 Feb 2014 14:22:43 +0530
+Message-ID: <CAKohpommw4=LcyYKvj8rNJgUkOT+_Gh=1kppcDQYm3BuQQe_Qg@mail.gmail.com>
+Subject: Re: [QUERY]: Is using CPU hotplug right for isolating CPUs?
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linaro Networking <linaro-networking@linaro.org>,
+        Kevin Hilman <khilman@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> On Mon, Feb 10, 2014 at 4:38 PM, Jean Delvare <jdelvare@suse.de> wrote:
-> >> > Additionally, dashes are explicitly forbidden in hwmon
-> >> > device names.
-> >>
-> >> Also, where is that documented?
-> >
-> > In Documentation/hwmon/sysfs-interface:
-> >
-> > *********************
-> > * Global attributes *
-> > *********************
-> >
-> > name            The chip name.
-> >                 This should be a short, lowercase string, not containing
-> >                 spaces nor dashes, representing the chip name. This is
-> >                 the only mandatory attribute.
-> >                 I2C devices get this attribute created automatically.
-> >                 RO
-> 
-> Time to revisit this decision....
-> 
-> So, based on the fact that children device names usually contain
-> dashes, I do not understand why hwmon would be any special in this
-> regard. It is possible that the hwmon developers have not faced much
-> MFD situation before, and so, this was not considered to be handled
-> like in other subsystems.
-> 
-> I am proposing to change this "rule"...  Any objection?
+On 28 January 2014 18:53, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> No, when a single task is running on a full dynticks CPU, the tick is supposed to run
+> every seconds. I'm actually suprised it doesn't happen in your traces, did you tweak
+> something specific?
 
-Prior to proposing such an invasive change which is highly likely to
-come up against heavy opposition, why don't you try to work _with_ the
-current ruling and the Maintainers to see what others have done to
-solve the problem.  I highly doubt you are the first/only developer who
-has had this issue.
-
-Do:
-  `git grep "\-hwmon"`
-
-... and have a good look around for an accepted solution.
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Why do we need this 1 second tick currently? And what will happen if I
+hotunplug that
+CPU and get it back? Would the timer for tick move away from CPU in
+question? I see
+that when I have changed this 1sec stuff to 300 seconds. But what
+would be impact
+of that? Will things still work normally?
