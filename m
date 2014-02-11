@@ -1,95 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752379AbaBKHF1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 02:05:27 -0500
-Received: from usmamail.tilera.com ([12.216.194.151]:42251 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750984AbaBKHFX convert rfc822-to-8bit (ORCPT
+	id S1752497AbaBKHGc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 02:06:32 -0500
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:57055 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752270AbaBKHG3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 02:05:23 -0500
-From: Tony Lu <zlu@tilera.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: RE: [PATCH] perf tools: Fix the logic of thread__fork
-Thread-Topic: [PATCH] perf tools: Fix the logic of thread__fork
-Thread-Index: Ac8mF47F18qUD7qqQNWZn8NHmpAOmgAb2oYAABMv9BA=
-Date: Tue, 11 Feb 2014 07:05:16 +0000
-Message-ID: <BAB94DBB0E89D8409949BC28AC95914C5D67EB13@USMAExch1.tad.internal.tilera.com>
-References: <BAB94DBB0E89D8409949BC28AC95914C5D67EA30@USMAExch1.tad.internal.tilera.com>
- <20140210123856.GA20833@ghostprotocols.net>
-In-Reply-To: <20140210123856.GA20833@ghostprotocols.net>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 11 Feb 2014 02:06:29 -0500
+Message-ID: <52F9CAAE.4020308@linux.vnet.ibm.com>
+Date: Tue, 11 Feb 2014 12:31:02 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
+To: ego@linux.vnet.ibm.com
+CC: paulus@samba.org, oleg@redhat.com, rusty@rustcorp.com.au,
+        peterz@infradead.org, tglx@linutronix.de, akpm@linux-foundation.org,
+        mingo@kernel.org, paulmck@linux.vnet.ibm.com, tj@kernel.org,
+        walken@google.com, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org, Robert Richter <rric@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org
+Subject: Re: [PATCH 26/51] x86, oprofile, nmi: Fix CPU hotplug callback registration
+References: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com> <20140205220921.19080.94715.stgit@srivatsabhat.in.ibm.com> <20140210190737.GD3416@in.ibm.com> <20140210192747.GE3416@in.ibm.com>
+In-Reply-To: <20140210192747.GE3416@in.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021107-1618-0000-0000-0000056C1B85
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks, I see. I was using the mainline tree, but it was just updated to 3.13-rc8.
+On 02/11/2014 12:57 AM, Gautham R Shenoy wrote:
+> On Tue, Feb 11, 2014 at 12:37:37AM +0530, Gautham R Shenoy wrote:
+>> Hi,
+>>
+>> On Thu, Feb 06, 2014 at 03:39:22AM +0530, Srivatsa S. Bhat wrote:
+>>> Fix the oprofile code in x86 by using this latter form of callback
+>>> registration. But retain the calls to get/put_online_cpus(), since they
+>>> also protect the variables 'nmi_enabled' and 'ctr_running'.
+>>
+>> get/put_online_cpus() protect us against cpu_hotplug_begin/end(). The
+>> latter is always nested inside cpu_maps_update_begin/end(), which we
+>> are already using here. 
+>>
+>> So what additional protection are we getting by retaining
+>> get/put_online_cpus() ?
+> 
+> Probably you mean to say that there are other places which access
+> 'nmi_enabled' and 'ctr_running' with the cpu-hotplug protection
+> provided only by get/put_online_cpus() and you are retaining the calls
+> in this patch to be consistent with those other places.
 
->-----Original Message-----
->From: Arnaldo Carvalho de Melo [mailto:arnaldo.melo@gmail.com] On Behalf Of
->Arnaldo Carvalho de Melo
->Sent: Monday, February 10, 2014 8:39 PM
->To: Tony Lu
->Cc: Peter Zijlstra; Paul Mackerras; Ingo Molnar; linux-kernel@vger.kernel.org;
->Chris Metcalf
->Subject: Re: [PATCH] perf tools: Fix the logic of thread__fork
+Yep, exactly!
+
+> If so, could
+> you reword the changelog to reflect this instead of saying "they also
+> protect the variables ..." ?
 >
->Em Mon, Feb 10, 2014 at 04:21:23AM +0000, Tony Lu escreveu:
->> Revert the logic of checking the return value of thread__set_comm().
->>
->> If thread__set_comm() returns zero without errors, we should not return
->> immediately, instead we should finish the rest of the clone work.
->> Otherwise, perf report would fail to resolve symbols sampled in forked
->> threads.
->
->You should mention against which tree your patch is supposed to be
->applied, in this case a fix was made in december:
->
->[acme@ssdandy linux]$ git show 8d00be815c05ed0f0202f606bab4e54f98fd3b30
->commit 8d00be815c05ed0f0202f606bab4e54f98fd3b30
->Author: David Ahern <dsahern@gmail.com>
->Date:   Tue Dec 10 21:35:38 2013 -0700
->
->    perf tools: Fix inverted error verification bug in thread__fork
->
->    Commit 1902efe7f for the new comm infra added the wrong check for return
->    code on thread__set_comm. err == 0 is normal, so don't return at that
->    point unless err != 0.
->
->    Signed-off-by: David Ahern <dsahern@gmail.com>
->    Cc: Frederic Weisbecker <fweisbec@gmail.com>
->    Link:
->http://lkml.kernel.org/r/1386736538-23525-1-git-send-email-dsahern@gmail.co
->m
->    Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
->
->> Signed-off-by: Zhigang Lu <zlu@tilera.com>
->> ---
->>  tools/perf/util/thread.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
->> index 49eaf1d..e394861 100644
->> --- a/tools/perf/util/thread.c
->> +++ b/tools/perf/util/thread.c
->> @@ -126,7 +126,7 @@ int thread__fork(struct thread *thread, struct thread
->*parent, u64 timestamp)
->>  		if (!comm)
->>  			return -ENOMEM;
->>  		err = thread__set_comm(thread, comm, timestamp);
->> -		if (!err)
->> +		if (err)
->>  			return err;
->>  		thread->comm_set = true;
->>  	}
->> --
->> 1.7.1
+
+Ok, will do! Thanks a lot!
+ 
+Regards,
+Srivatsa S. Bhat
+
