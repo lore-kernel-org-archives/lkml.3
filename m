@@ -1,55 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756274AbaBKVI2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 16:08:28 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:32116 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754471AbaBKVIY (ORCPT
+	id S932187AbaBKVIt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 16:08:49 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:24643 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756282AbaBKVIq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 16:08:24 -0500
-Date: Wed, 12 Feb 2014 00:07:55 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Evgeniy Polyakov <zbr@ioremap.net>, David Fries <David@Fries.net>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch v2] w1: small type cleanup in sysfs
-Message-ID: <20140211210755.GA25579@elgon.mountain>
+	Tue, 11 Feb 2014 16:08:46 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtsHAE+Q+lJ5LBMc/2dsb2JhbABagwy6SYVPgRUXdIIlAQEFJxMcMwgDGAklDwUlAyEBEogEyHEXFo5qhDgEmCmKT4dSg0Eo
+Date: Wed, 12 Feb 2014 08:08:41 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        xfs@oss.sgi.com
+Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
+Message-ID: <20140211210841.GM13647@dastard>
+References: <20140211172707.GA1749@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140211164513.GF5530@spacedout.fries.net>
+In-Reply-To: <20140211172707.GA1749@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 64 bit systems, a large value for "long tmp" is truncated when
-assigning to "int md->max_slave_count" so we still end up with a value
-less than one despite the "tmp < 1" check.
+On Tue, Feb 11, 2014 at 12:27:07PM -0500, Dave Jones wrote:
+> BUG: sleeping function called from invalid context at mm/mempool.c:203
+> in_atomic(): 0, irqs_disabled(): 1, pid: 27511, name: trinity-c3
+> 5 locks held by trinity-c3/27511:
+>  #0:  (sb_writers#9){......}, at: [<ffffffff831df3b4>] mnt_want_write+0x24/0x50
+>  #1:  (&type->i_mutex_dir_key#3){......}, at: [<ffffffff831cced4>] do_last.isra.51+0x294/0x11f0
+>  #2:  (sb_internal#2){......}, at: [<ffffffffc03225c4>] xfs_trans_alloc+0x24/0x40 [xfs]
+>  #3:  (&(&ip->i_lock)->mr_lock/1){......}, at: [<ffffffffc036447f>] xfs_ilock+0x16f/0x1b0 [xfs]
+>  #4:  (&(&ip->i_lock)->mr_lock){......}, at: [<ffffffffc03646d4>] xfs_ilock_nowait+0x184/0x200 [xfs]
+> CPU: 3 PID: 27511 Comm: trinity-c3 Not tainted 3.14.0-rc2+ #111 
+>  ffffffff83a3fd56 0000000045a3849a ffff88009f368f60 ffffffff8372afea
+>  0000000000000000 ffff88009f368f88 ffffffff8309ddb5 0000000000000010
+>  ffff880243566288 0000000000000008 ffff88009f369008 ffffffff831534d3
+> Call Trace:
+>  [<ffffffff8372afea>] dump_stack+0x4e/0x7a
+>  [<ffffffff8309ddb5>] __might_sleep+0x105/0x150
+>  [<ffffffff831534d3>] mempool_alloc+0xa3/0x170
+>  [<ffffffff831a955a>] ? deactivate_slab+0x51a/0x590
+>  [<ffffffff831f8fd6>] bio_alloc_bioset+0x156/0x210
+>  [<ffffffffc0308231>] _xfs_buf_ioapply+0x1c1/0x3c0 [xfs]
+>  [<ffffffffc03798f2>] ? xlog_bdstrat+0x22/0x60 [xfs]
+>  [<ffffffffc030849b>] xfs_buf_iorequest+0x6b/0xf0 [xfs]
+>  [<ffffffffc03798f2>] xlog_bdstrat+0x22/0x60 [xfs]
+>  [<ffffffffc037ba87>] xlog_sync+0x3a7/0x5b0 [xfs]
+>  [<ffffffffc037bd9f>] xlog_state_release_iclog+0x10f/0x120 [xfs]
+>  [<ffffffffc037c840>] xlog_write+0x6f0/0x800 [xfs]
+>  [<ffffffffc037e061>] xlog_cil_push+0x2f1/0x410 [xfs]
+>  [<ffffffffc037e948>] xlog_cil_force_lsn+0x1d8/0x210 [xfs]
+>  [<ffffffffc03428a8>] ? xfs_bmbt_get_all+0x18/0x20 [xfs]
+>  [<ffffffffc037cc40>] _xfs_log_force+0x70/0x290 [xfs]
+>  [<ffffffff830a4edd>] ? get_parent_ip+0xd/0x50
+>  [<ffffffffc037ce86>] xfs_log_force+0x26/0xb0 [xfs]
+>  [<ffffffffc03076e6>] ? _xfs_buf_find+0x1f6/0x3c0 [xfs]
+>  [<ffffffffc03074e3>] xfs_buf_lock+0x133/0x140 [xfs]
+>  [<ffffffffc03076e6>] _xfs_buf_find+0x1f6/0x3c0 [xfs]
+>  [<ffffffffc030796a>] xfs_buf_get_map+0x2a/0x1b0 [xfs]
+>  [<ffffffffc0383c61>] xfs_trans_get_buf_map+0x1a1/0x240 [xfs]
+>  [<ffffffffc034e03d>] xfs_da_get_buf+0xbd/0x100 [xfs]
+>  [<ffffffffc0356869>] xfs_dir3_data_init+0x59/0x1d0 [xfs]
+>  [<ffffffffc03526db>] ? xfs_dir2_grow_inode+0x13b/0x150 [xfs]
+>  [<ffffffffc0354ede>] xfs_dir2_sf_to_block+0x17e/0x7b0 [xfs]
+>  [<ffffffffc0351f5a>] ? xfs_dir2_sfe_get_ino+0x1a/0x20 [xfs]
+>  [<ffffffffc035e9b4>] ? xfs_dir2_sf_check.isra.7+0x114/0x1b0 [xfs]
+>  [<ffffffffc034c24f>] ? xfs_da_compname+0x1f/0x30 [xfs]
+>  [<ffffffffc035f503>] ? xfs_dir2_sf_lookup+0x303/0x310 [xfs]
+>  [<ffffffffc035f858>] xfs_dir2_sf_addname+0x348/0x6d0 [xfs]
+>  [<ffffffffc031970d>] ? xfs_setup_inode+0x1cd/0x320 [xfs]
+>  [<ffffffffc03529a4>] xfs_dir_createname+0x184/0x1e0 [xfs]
+>  [<ffffffffc03663d9>] xfs_create+0x469/0x580 [xfs]
+>  [<ffffffffc0318864>] xfs_vn_mknod+0xc4/0x1e0 [xfs]
+>  [<ffffffffc0318993>] xfs_vn_create+0x13/0x20 [xfs]
+>  [<ffffffff831ccc15>] vfs_create+0x95/0xc0
+>  [<ffffffff831cd638>] do_last.isra.51+0x9f8/0x11f0
+>  [<ffffffff831c9e11>] ? link_path_walk+0x81/0x870
+>  [<ffffffff831cdef9>] path_openat+0xc9/0x620
+>  [<ffffffff8331cc02>] ? put_dec+0x72/0x90
+>  [<ffffffff831ceb6d>] do_filp_open+0x4d/0xb0
+>  [<ffffffff831bc4ae>] file_open_name+0xfe/0x160
+>  [<ffffffff831bc554>] filp_open+0x44/0x60
+>  [<ffffffff83221862>] do_coredump+0x602/0xf60
+>  [<ffffffff83081358>] get_signal_to_deliver+0x2b8/0x6b0
+>  [<ffffffff830024d7>] do_signal+0x57/0x9d0
+>  [<ffffffff8311115e>] ? __acct_update_integrals+0x8e/0x120
+>  [<ffffffff83730000>] ? __schedule+0x60/0x850
+>  [<ffffffff8373a1db>] ? preempt_count_sub+0x6b/0xf0
+>  [<ffffffff83735a31>] ? _raw_spin_unlock+0x31/0x50
+>  [<ffffffff830ab671>] ? vtime_account_user+0x91/0xa0
+>  [<ffffffff8314f57b>] ? context_tracking_user_exit+0x9b/0x100
+>  [<ffffffff83002eac>] do_notify_resume+0x5c/0xa0
+>  [<ffffffff83736746>] retint_signal+0x46/0x90
 
-This is more of a problem for static checkers than a real life issue,
-but it's simple enough to fix.
+There's nowhere in this XFS stack that disables interrupts, so I
+thinks it's either above or below XFS that is causing this problem.
 
-Acked-by: David Fries <david@fries.net>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
----
-v2: clarified the commit message
+Cheers,
 
-diff --git a/drivers/w1/w1.c b/drivers/w1/w1.c
-index 9eb816b2ea5e..b96f61b15dc6 100644
---- a/drivers/w1/w1.c
-+++ b/drivers/w1/w1.c
-@@ -320,10 +320,10 @@ static ssize_t w1_master_attribute_show_timeout(struct device *dev, struct devic
- static ssize_t w1_master_attribute_store_max_slave_count(struct device *dev,
- 	struct device_attribute *attr, const char *buf, size_t count)
- {
--	long tmp;
-+	int tmp;
- 	struct w1_master *md = dev_to_w1_master(dev);
- 
--	if (kstrtol(buf, 0, &tmp) == -EINVAL || tmp < 1)
-+	if (kstrtoint(buf, 0, &tmp) == -EINVAL || tmp < 1)
- 		return -EINVAL;
- 
- 	mutex_lock(&md->mutex);
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
