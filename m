@@ -1,63 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752246AbaBKHFG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 02:05:06 -0500
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:53725 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751831AbaBKHFC (ORCPT
+	id S1752379AbaBKHF1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 02:05:27 -0500
+Received: from usmamail.tilera.com ([12.216.194.151]:42251 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750984AbaBKHFX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 02:05:02 -0500
-Message-ID: <52F9CA58.1080404@linux.vnet.ibm.com>
-Date: Tue, 11 Feb 2014 12:29:36 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Tue, 11 Feb 2014 02:05:23 -0500
+From: Tony Lu <zlu@tilera.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: RE: [PATCH] perf tools: Fix the logic of thread__fork
+Thread-Topic: [PATCH] perf tools: Fix the logic of thread__fork
+Thread-Index: Ac8mF47F18qUD7qqQNWZn8NHmpAOmgAb2oYAABMv9BA=
+Date: Tue, 11 Feb 2014 07:05:16 +0000
+Message-ID: <BAB94DBB0E89D8409949BC28AC95914C5D67EB13@USMAExch1.tad.internal.tilera.com>
+References: <BAB94DBB0E89D8409949BC28AC95914C5D67EA30@USMAExch1.tad.internal.tilera.com>
+ <20140210123856.GA20833@ghostprotocols.net>
+In-Reply-To: <20140210123856.GA20833@ghostprotocols.net>
+Accept-Language: zh-CN, en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: ego@linux.vnet.ibm.com
-CC: paulus@samba.org, oleg@redhat.com, rusty@rustcorp.com.au,
-        peterz@infradead.org, tglx@linutronix.de, akpm@linux-foundation.org,
-        mingo@kernel.org, paulmck@linux.vnet.ibm.com, tj@kernel.org,
-        walken@google.com, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Subject: Re: [PATCH 24/51] x86, hpet: Fix CPU hotplug callback registration
-References: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com> <20140205220859.19080.7550.stgit@srivatsabhat.in.ibm.com> <20140210185843.GC3416@in.ibm.com>
-In-Reply-To: <20140210185843.GC3416@in.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021107-5140-0000-0000-00000489DAFD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2014 12:28 AM, Gautham R Shenoy wrote:
-> Hi,
-> 
-> On Thu, Feb 06, 2014 at 03:39:00AM +0530, Srivatsa S. Bhat wrote:
->> diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
->> index da85a8e..199aaae 100644
->> --- a/arch/x86/kernel/hpet.c
->> +++ b/arch/x86/kernel/hpet.c
->> @@ -943,12 +943,14 @@ static __init int hpet_late_init(void)
->>  	if (boot_cpu_has(X86_FEATURE_ARAT))
->>  		return 0;
+Thanks, I see. I was using the mainline tree, but it was just updated to 3.13-rc8.
+
+>-----Original Message-----
+>From: Arnaldo Carvalho de Melo [mailto:arnaldo.melo@gmail.com] On Behalf Of
+>Arnaldo Carvalho de Melo
+>Sent: Monday, February 10, 2014 8:39 PM
+>To: Tony Lu
+>Cc: Peter Zijlstra; Paul Mackerras; Ingo Molnar; linux-kernel@vger.kernel.org;
+>Chris Metcalf
+>Subject: Re: [PATCH] perf tools: Fix the logic of thread__fork
+>
+>Em Mon, Feb 10, 2014 at 04:21:23AM +0000, Tony Lu escreveu:
+>> Revert the logic of checking the return value of thread__set_comm().
 >>
->> +	cpu_maps_update_begin();
->>  	for_each_online_cpu(cpu) {
->>  		hpet_cpuhp_notify(NULL, CPU_ONLINE, (void *)(long)cpu);
+>> If thread__set_comm() returns zero without errors, we should not return
+>> immediately, instead we should finish the rest of the clone work.
+>> Otherwise, perf report would fail to resolve symbols sampled in forked
+>> threads.
+>
+>You should mention against which tree your patch is supposed to be
+>applied, in this case a fix was made in december:
+>
+>[acme@ssdandy linux]$ git show 8d00be815c05ed0f0202f606bab4e54f98fd3b30
+>commit 8d00be815c05ed0f0202f606bab4e54f98fd3b30
+>Author: David Ahern <dsahern@gmail.com>
+>Date:   Tue Dec 10 21:35:38 2013 -0700
+>
+>    perf tools: Fix inverted error verification bug in thread__fork
+>
+>    Commit 1902efe7f for the new comm infra added the wrong check for return
+>    code on thread__set_comm. err == 0 is normal, so don't return at that
+>    point unless err != 0.
+>
+>    Signed-off-by: David Ahern <dsahern@gmail.com>
+>    Cc: Frederic Weisbecker <fweisbec@gmail.com>
+>    Link:
+>http://lkml.kernel.org/r/1386736538-23525-1-git-send-email-dsahern@gmail.co
+>m
+>    Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+>
+>> Signed-off-by: Zhigang Lu <zlu@tilera.com>
+>> ---
+>>  tools/perf/util/thread.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
+>> index 49eaf1d..e394861 100644
+>> --- a/tools/perf/util/thread.c
+>> +++ b/tools/perf/util/thread.c
+>> @@ -126,7 +126,7 @@ int thread__fork(struct thread *thread, struct thread
+>*parent, u64 timestamp)
+>>  		if (!comm)
+>>  			return -ENOMEM;
+>>  		err = thread__set_comm(thread, comm, timestamp);
+>> -		if (!err)
+>> +		if (err)
+>>  			return err;
+>>  		thread->comm_set = true;
 >>  	}
->>
->>  	/* This notifier should be called after workqueue is ready */
->> -	hotcpu_notifier(hpet_cpuhp_notify, -20);
->> +	__hotcpu_notifier(hpet_cpuhp_notify, -20);
-> 
-> We could #define HPET_CPUHP_PRIO relative to the workqueue priority instead of
-> hardcoding this it this way.
-> 
-
-Sure, we can do that. Thanks for pointing that out!
- 
-Regards,
-Srivatsa S. Bhat
-
+>> --
+>> 1.7.1
