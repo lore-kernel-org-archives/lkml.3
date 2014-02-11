@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752752AbaBKTFV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:05:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39612 "EHLO
+	id S1755438AbaBKU4e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:56:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39633 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752693AbaBKTFQ (ORCPT
+	with ESMTP id S1752749AbaBKTFU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:05:16 -0500
+	Tue, 11 Feb 2014 14:05:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH 3.13 007/120] Revert "EISA: Initialize device before its resources"
-Date: Tue, 11 Feb 2014 11:04:08 -0800
-Message-Id: <20140211184823.723730298@linuxfoundation.org>
+        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.13 054/120] dm space map common: make sure new space is used during extend
+Date: Tue, 11 Feb 2014 11:04:55 -0800
+Message-Id: <20140211184825.167812215@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -28,96 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjorn Helgaas <bhelgaas@google.com>
+From: Joe Thornber <ejt@redhat.com>
 
-commit 765ee51f9a3f652959b4c7297d198a28e37952b4 upstream.
+commit 12c91a5c2d2a8e8cc40a9552313e1e7b0a2d9ee3 upstream.
 
-This reverts commit 26abfeed4341872364386c6a52b9acef8c81a81a.
+When extending a low level space map we should update nr_blocks at
+the start so the new space is used for the index entries.
 
-In the eisa_probe() force_probe path, if we were unable to request slot
-resources (e.g., [io 0x800-0x8ff]), we skipped the slot with "Cannot
-allocate resource for EISA slot %d" before reading the EISA signature in
-eisa_init_device().
+Otherwise extend can fail, e.g.: sm_metadata_extend call sequence
+that fails:
+ -> sm_ll_extend
+    -> dm_tm_new_block -> dm_sm_new_block -> sm_bootstrap_new_block
+    => returns -ENOSPC because smm->begin == smm->ll.nr_blocks
 
-Commit 26abfeed4341 moved eisa_init_device() earlier, so we tried to read
-the EISA signature before requesting the slot resources, and this caused
-hangs during boot.
-
-Link: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1251816
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/eisa/eisa-bus.c |   26 +++++++++++++++-----------
- 1 file changed, 15 insertions(+), 11 deletions(-)
+ drivers/md/persistent-data/dm-space-map-common.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/eisa/eisa-bus.c
-+++ b/drivers/eisa/eisa-bus.c
-@@ -275,11 +275,13 @@ static int __init eisa_request_resources
- 		}
- 		
- 		if (slot) {
-+			edev->res[i].name  = NULL;
- 			edev->res[i].start = SLOT_ADDRESS(root, slot)
- 					     + (i * 0x400);
- 			edev->res[i].end   = edev->res[i].start + 0xff;
- 			edev->res[i].flags = IORESOURCE_IO;
- 		} else {
-+			edev->res[i].name  = NULL;
- 			edev->res[i].start = SLOT_ADDRESS(root, slot)
- 					     + EISA_VENDOR_ID_OFFSET;
- 			edev->res[i].end   = edev->res[i].start + 3;
-@@ -326,19 +328,20 @@ static int __init eisa_probe(struct eisa
- 		return -ENOMEM;
- 	}
- 		
--	if (eisa_init_device(root, edev, 0)) {
-+	if (eisa_request_resources(root, edev, 0)) {
-+		dev_warn(root->dev,
-+		         "EISA: Cannot allocate resource for mainboard\n");
- 		kfree(edev);
- 		if (!root->force_probe)
--			return -ENODEV;
-+			return -EBUSY;
- 		goto force_probe;
+--- a/drivers/md/persistent-data/dm-space-map-common.c
++++ b/drivers/md/persistent-data/dm-space-map-common.c
+@@ -245,6 +245,10 @@ int sm_ll_extend(struct ll_disk *ll, dm_
+ 		return -EINVAL;
  	}
  
--	if (eisa_request_resources(root, edev, 0)) {
--		dev_warn(root->dev,
--		         "EISA: Cannot allocate resource for mainboard\n");
-+	if (eisa_init_device(root, edev, 0)) {
-+		eisa_release_resources(edev);
- 		kfree(edev);
- 		if (!root->force_probe)
--			return -EBUSY;
-+			return -ENODEV;
- 		goto force_probe;
- 	}
- 
-@@ -361,11 +364,6 @@ static int __init eisa_probe(struct eisa
- 			continue;
- 		}
- 
--		if (eisa_init_device(root, edev, i)) {
--			kfree(edev);
--			continue;
--		}
--
- 		if (eisa_request_resources(root, edev, i)) {
- 			dev_warn(root->dev,
- 			         "Cannot allocate resource for EISA slot %d\n",
-@@ -373,6 +371,12 @@ static int __init eisa_probe(struct eisa
- 			kfree(edev);
- 			continue;
- 		}
++	/*
++	 * We need to set this before the dm_tm_new_block() call below.
++	 */
++	ll->nr_blocks = nr_blocks;
+ 	for (i = old_blocks; i < blocks; i++) {
+ 		struct dm_block *b;
+ 		struct disk_index_entry idx;
+@@ -252,6 +256,7 @@ int sm_ll_extend(struct ll_disk *ll, dm_
+ 		r = dm_tm_new_block(ll->tm, &dm_sm_bitmap_validator, &b);
+ 		if (r < 0)
+ 			return r;
 +
-+		if (eisa_init_device(root, edev, i)) {
-+			eisa_release_resources(edev);
-+			kfree(edev);
-+			continue;
-+		}
+ 		idx.blocknr = cpu_to_le64(dm_block_location(b));
  
- 		if (edev->state == (EISA_CONFIG_ENABLED | EISA_CONFIG_FORCED))
- 			enabled_str = " (forced enabled)";
+ 		r = dm_tm_unlock(ll->tm, b);
+@@ -266,7 +271,6 @@ int sm_ll_extend(struct ll_disk *ll, dm_
+ 			return r;
+ 	}
+ 
+-	ll->nr_blocks = nr_blocks;
+ 	return 0;
+ }
+ 
 
 
