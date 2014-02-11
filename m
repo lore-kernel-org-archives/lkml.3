@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932401AbaBKT6N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:58:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40163 "EHLO
+	id S1753753AbaBKTHJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:07:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40140 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753729AbaBKTHK (ORCPT
+	with ESMTP id S1753729AbaBKTHG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:07:10 -0500
+	Tue, 11 Feb 2014 14:07:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-Subject: [PATCH 3.12 089/107] drm/rcar-du: Update plane pitch in .mode_set_base() operation
-Date: Tue, 11 Feb 2014 11:05:55 -0800
-Message-Id: <20140211184750.738491102@linuxfoundation.org>
+        Todd Previte <tprevite@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [PATCH 3.12 084/107] drm/i915: VLV2 - Fix hotplug detect bits
+Date: Tue, 11 Feb 2014 11:05:50 -0800
+Message-Id: <20140211184750.597546886@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -28,90 +29,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+From: Todd Previte <tprevite@gmail.com>
 
-commit eb86301f293da3c362db729a9f40ddb25755902b upstream.
+commit 232a6ee9af8adb185640f67fcaaa9014a9aa0573 upstream.
 
-When setting a new frame buffer with the mode set base operation the
-pitch value might change. Set the hardware plane pitch register at the
-same time as the plane base address in the rcar_du_plane_update_base()
-function to make sure the pitch value always matches the frame buffer.
+Add new definitions for hotplug live status bits for VLV2 since they're
+in reverse order from the gen4x ones.
 
-Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Changelog:
+- Restored gen4 bit definitions
+- Added new definitions for VLV2
+- Added platform check for IS_VALLEYVIEW() in dp_detect to use the correct
+  bit defintions
+- Replaced a lost trailing brace for the added switch()
+
+Signed-off-by: Todd Previte <tprevite@gmail.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=73951
+[danvet: Switch to _VLV postfix instead of prefix and regroupg
+comments again so that the g4x warning is right next to those defines.
+Also add a _G4X suffix for those special ones. Also cc stable.]
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/rcar-du/rcar_du_crtc.c  |    1 -
- drivers/gpu/drm/rcar-du/rcar_du_plane.c |   21 +++++++++++----------
- 2 files changed, 11 insertions(+), 11 deletions(-)
+ drivers/gpu/drm/i915/i915_reg.h |   10 +++++++---
+ drivers/gpu/drm/i915/intel_dp.c |   40 ++++++++++++++++++++++++++++------------
+ 2 files changed, 35 insertions(+), 15 deletions(-)
 
---- a/drivers/gpu/drm/rcar-du/rcar_du_crtc.c
-+++ b/drivers/gpu/drm/rcar-du/rcar_du_crtc.c
-@@ -371,7 +371,6 @@ static int rcar_du_crtc_mode_set(struct
- 		goto error;
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -1955,9 +1955,13 @@
+  * Please check the detailed lore in the commit message for for experimental
+  * evidence.
+  */
+-#define   PORTD_HOTPLUG_LIVE_STATUS               (1 << 29)
+-#define   PORTC_HOTPLUG_LIVE_STATUS               (1 << 28)
+-#define   PORTB_HOTPLUG_LIVE_STATUS               (1 << 27)
++#define   PORTD_HOTPLUG_LIVE_STATUS_G4X		(1 << 29)
++#define   PORTC_HOTPLUG_LIVE_STATUS_G4X		(1 << 28)
++#define   PORTB_HOTPLUG_LIVE_STATUS_G4X		(1 << 27)
++/* VLV DP/HDMI bits again match Bspec */
++#define   PORTD_HOTPLUG_LIVE_STATUS_VLV		(1 << 27)
++#define   PORTC_HOTPLUG_LIVE_STATUS_VLV		(1 << 28)
++#define   PORTB_HOTPLUG_LIVE_STATUS_VLV		(1 << 29)
+ #define   PORTD_HOTPLUG_INT_STATUS		(3 << 21)
+ #define   PORTC_HOTPLUG_INT_STATUS		(3 << 19)
+ #define   PORTB_HOTPLUG_INT_STATUS		(3 << 17)
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -2803,18 +2803,34 @@ g4x_dp_detect(struct intel_dp *intel_dp)
+ 		return status;
+ 	}
  
- 	rcrtc->plane->format = format;
--	rcrtc->plane->pitch = crtc->fb->pitches[0];
+-	switch (intel_dig_port->port) {
+-	case PORT_B:
+-		bit = PORTB_HOTPLUG_LIVE_STATUS;
+-		break;
+-	case PORT_C:
+-		bit = PORTC_HOTPLUG_LIVE_STATUS;
+-		break;
+-	case PORT_D:
+-		bit = PORTD_HOTPLUG_LIVE_STATUS;
+-		break;
+-	default:
+-		return connector_status_unknown;
++	if (IS_VALLEYVIEW(dev)) {
++		switch (intel_dig_port->port) {
++		case PORT_B:
++			bit = PORTB_HOTPLUG_LIVE_STATUS_VLV;
++			break;
++		case PORT_C:
++			bit = PORTC_HOTPLUG_LIVE_STATUS_VLV;
++			break;
++		case PORT_D:
++			bit = PORTD_HOTPLUG_LIVE_STATUS_VLV;
++			break;
++		default:
++			return connector_status_unknown;
++		}
++	} else {
++		switch (intel_dig_port->port) {
++		case PORT_B:
++			bit = PORTB_HOTPLUG_LIVE_STATUS_G4X;
++			break;
++		case PORT_C:
++			bit = PORTC_HOTPLUG_LIVE_STATUS_G4X;
++			break;
++		case PORT_D:
++			bit = PORTD_HOTPLUG_LIVE_STATUS_G4X;
++			break;
++		default:
++			return connector_status_unknown;
++		}
+ 	}
  
- 	rcrtc->plane->src_x = x;
- 	rcrtc->plane->src_y = y;
---- a/drivers/gpu/drm/rcar-du/rcar_du_plane.c
-+++ b/drivers/gpu/drm/rcar-du/rcar_du_plane.c
-@@ -104,6 +104,15 @@ void rcar_du_plane_update_base(struct rc
- {
- 	struct rcar_du_group *rgrp = plane->group;
- 	unsigned int index = plane->hwindex;
-+	u32 mwr;
-+
-+	/* Memory pitch (expressed in pixels) */
-+	if (plane->format->planes == 2)
-+		mwr = plane->pitch;
-+	else
-+		mwr = plane->pitch * 8 / plane->format->bpp;
-+
-+	rcar_du_plane_write(rgrp, index, PnMWR, mwr);
- 
- 	/* The Y position is expressed in raster line units and must be doubled
- 	 * for 32bpp formats, according to the R8A7790 datasheet. No mention of
-@@ -133,6 +142,8 @@ void rcar_du_plane_compute_base(struct r
- {
- 	struct drm_gem_cma_object *gem;
- 
-+	plane->pitch = fb->pitches[0];
-+
- 	gem = drm_fb_cma_get_gem_obj(fb, 0);
- 	plane->dma[0] = gem->paddr + fb->offsets[0];
- 
-@@ -209,7 +220,6 @@ static void __rcar_du_plane_setup(struct
- 	struct rcar_du_group *rgrp = plane->group;
- 	u32 ddcr2 = PnDDCR2_CODE;
- 	u32 ddcr4;
--	u32 mwr;
- 
- 	/* Data format
- 	 *
-@@ -240,14 +250,6 @@ static void __rcar_du_plane_setup(struct
- 	rcar_du_plane_write(rgrp, index, PnDDCR2, ddcr2);
- 	rcar_du_plane_write(rgrp, index, PnDDCR4, ddcr4);
- 
--	/* Memory pitch (expressed in pixels) */
--	if (plane->format->planes == 2)
--		mwr = plane->pitch;
--	else
--		mwr = plane->pitch * 8 / plane->format->bpp;
--
--	rcar_du_plane_write(rgrp, index, PnMWR, mwr);
--
- 	/* Destination position and size */
- 	rcar_du_plane_write(rgrp, index, PnDSXR, plane->width);
- 	rcar_du_plane_write(rgrp, index, PnDSYR, plane->height);
-@@ -309,7 +311,6 @@ rcar_du_plane_update(struct drm_plane *p
- 
- 	rplane->crtc = crtc;
- 	rplane->format = format;
--	rplane->pitch = fb->pitches[0];
- 
- 	rplane->src_x = src_x >> 16;
- 	rplane->src_y = src_y >> 16;
+ 	if ((I915_READ(PORT_HOTPLUG_STAT) & bit) == 0)
 
 
