@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754594AbaBKTIu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:08:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40710 "EHLO
+	id S1754577AbaBKTIr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:08:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40693 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754578AbaBKTIs (ORCPT
+	with ESMTP id S1754530AbaBKTIp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:08:48 -0500
+	Tue, 11 Feb 2014 14:08:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
-Subject: [PATCH 3.4 23/30] hpfs: deadlock and race in directory lseek()
-Date: Tue, 11 Feb 2014 11:06:23 -0800
-Message-Id: <20140211184647.803086811@linuxfoundation.org>
+        Brecht Machiels <brecht@mos6581.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Rabin Vincent <rabin.vincent@stericsson.com>,
+        Borislav Petkov <bp@suse.de>
+Subject: [PATCH 3.4 28/30] rtc-cmos: Add an alarm disable quirk
+Date: Tue, 11 Feb 2014 11:06:28 -0800
+Message-Id: <20140211184647.947165277@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184647.149512538@linuxfoundation.org>
 References: <20140211184647.149512538@linuxfoundation.org>
@@ -29,61 +32,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Borislav Petkov <bp@alien8.de>
 
-commit 31abdab9c11bb1694ecd1476a7edbe8e964d94ac upstream.
+commit d5a1c7e3fc38d9c7d629e1e47f32f863acbdec3d upstream.
 
-For one thing, there's an ABBA deadlock on hpfs fs-wide lock and i_mutex
-in hpfs_dir_lseek() - there's a lot of methods that grab the former with
-the caller already holding the latter, so it must take i_mutex first.
+41c7f7424259f ("rtc: Disable the alarm in the hardware (v2)") added the
+functionality to disable the RTC wake alarm when shutting down the box.
 
-For another, locking the damn thing, carefully validating the offset,
-then dropping locks and assigning the offset is obviously racy.
+However, there are at least two b0rked BIOSes we know about:
 
-Moreover, we _must_ do hpfs_add_pos(), or the machinery in dnode.c
-won't modify the sucker on B-tree surgeries.
+https://bugzilla.novell.com/show_bug.cgi?id=812592
+https://bugzilla.novell.com/show_bug.cgi?id=805740
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+where, when wakeup alarm is enabled in the BIOS, the machine reboots
+automatically right after shutdown, regardless of what wakeup time is
+programmed.
+
+Bisecting the issue lead to this patch so disable its functionality with
+a DMI quirk only for those boxes.
+
+Cc: Brecht Machiels <brecht@mos6581.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Rabin Vincent <rabin.vincent@stericsson.com>
+Signed-off-by: Borislav Petkov <bp@suse.de>
+[jstultz: Changed variable name for clarity, added extra dmi entry]
+Tested-by: Brecht Machiels <brecht@mos6581.org>
+Tested-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/hpfs/dir.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/rtc/rtc-cmos.c |   52 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 51 insertions(+), 1 deletion(-)
 
---- a/fs/hpfs/dir.c
-+++ b/fs/hpfs/dir.c
-@@ -33,25 +33,27 @@ static loff_t hpfs_dir_lseek(struct file
- 	if (whence == SEEK_DATA || whence == SEEK_HOLE)
+--- a/drivers/rtc/rtc-cmos.c
++++ b/drivers/rtc/rtc-cmos.c
+@@ -34,11 +34,11 @@
+ #include <linux/interrupt.h>
+ #include <linux/spinlock.h>
+ #include <linux/platform_device.h>
+-#include <linux/mod_devicetable.h>
+ #include <linux/log2.h>
+ #include <linux/pm.h>
+ #include <linux/of.h>
+ #include <linux/of_platform.h>
++#include <linux/dmi.h>
+ 
+ /* this is for "generic access to PC-style RTC" using CMOS_READ/CMOS_WRITE */
+ #include <asm-generic/rtc.h>
+@@ -377,6 +377,51 @@ static int cmos_set_alarm(struct device
+ 	return 0;
+ }
+ 
++/*
++ * Do not disable RTC alarm on shutdown - workaround for b0rked BIOSes.
++ */
++static bool alarm_disable_quirk;
++
++static int __init set_alarm_disable_quirk(const struct dmi_system_id *id)
++{
++	alarm_disable_quirk = true;
++	pr_info("rtc-cmos: BIOS has alarm-disable quirk. ");
++	pr_info("RTC alarms disabled\n");
++	return 0;
++}
++
++static const struct dmi_system_id rtc_quirks[] __initconst = {
++	/* https://bugzilla.novell.com/show_bug.cgi?id=805740 */
++	{
++		.callback = set_alarm_disable_quirk,
++		.ident    = "IBM Truman",
++		.matches  = {
++			DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "4852570"),
++		},
++	},
++	/* https://bugzilla.novell.com/show_bug.cgi?id=812592 */
++	{
++		.callback = set_alarm_disable_quirk,
++		.ident    = "Gigabyte GA-990XA-UD3",
++		.matches  = {
++			DMI_MATCH(DMI_SYS_VENDOR,
++					"Gigabyte Technology Co., Ltd."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "GA-990XA-UD3"),
++		},
++	},
++	/* http://permalink.gmane.org/gmane.linux.kernel/1604474 */
++	{
++		.callback = set_alarm_disable_quirk,
++		.ident    = "Toshiba Satellite L300",
++		.matches  = {
++			DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Satellite L300"),
++		},
++	},
++	{}
++};
++
+ static int cmos_alarm_irq_enable(struct device *dev, unsigned int enabled)
+ {
+ 	struct cmos_rtc	*cmos = dev_get_drvdata(dev);
+@@ -385,6 +430,9 @@ static int cmos_alarm_irq_enable(struct
+ 	if (!is_valid_irq(cmos->irq))
  		return -EINVAL;
  
-+	mutex_lock(&i->i_mutex);
- 	hpfs_lock(s);
++	if (alarm_disable_quirk)
++		return 0;
++
+ 	spin_lock_irqsave(&rtc_lock, flags);
  
- 	/*printk("dir lseek\n");*/
- 	if (new_off == 0 || new_off == 1 || new_off == 11 || new_off == 12 || new_off == 13) goto ok;
--	mutex_lock(&i->i_mutex);
- 	pos = ((loff_t) hpfs_de_as_down_as_possible(s, hpfs_inode->i_dno) << 4) + 1;
- 	while (pos != new_off) {
- 		if (map_pos_dirent(i, &pos, &qbh)) hpfs_brelse4(&qbh);
- 		else goto fail;
- 		if (pos == 12) goto fail;
+ 	if (enabled)
+@@ -1166,6 +1214,8 @@ static int __init cmos_init(void)
+ 			platform_driver_registered = true;
  	}
--	mutex_unlock(&i->i_mutex);
-+	hpfs_add_pos(i, &filp->f_pos);
- ok:
-+	filp->f_pos = new_off;
- 	hpfs_unlock(s);
--	return filp->f_pos = new_off;
--fail:
- 	mutex_unlock(&i->i_mutex);
-+	return new_off;
-+fail:
- 	/*printk("illegal lseek: %016llx\n", new_off);*/
- 	hpfs_unlock(s);
-+	mutex_unlock(&i->i_mutex);
- 	return -ESPIPE;
- }
+ 
++	dmi_check_system(rtc_quirks);
++
+ 	if (retval == 0)
+ 		return 0;
  
 
 
