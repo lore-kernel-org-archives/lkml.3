@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752835AbaBKQlL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 11:41:11 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:37927 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752460AbaBKQlI (ORCPT
+	id S1752836AbaBKQle (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 11:41:34 -0500
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:59420 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751494AbaBKQlc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 11:41:08 -0500
-Date: Tue, 11 Feb 2014 17:41:05 +0100
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Josh Cartwright <joshc@codeaurora.org>
-Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        devicetree@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 4/8] ARM: mvebu: make use of
- of_find_matching_node_and_match
-Message-ID: <20140211174105.7a2ad23b@skate>
-In-Reply-To: <1392135847-30791-5-git-send-email-joshc@codeaurora.org>
-References: <1392135847-30791-1-git-send-email-joshc@codeaurora.org>
-	<1392135847-30791-5-git-send-email-joshc@codeaurora.org>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 11 Feb 2014 11:41:32 -0500
+Date: Tue, 11 Feb 2014 09:41:28 -0700
+From: Jens Axboe <axboe@kernel.dk>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3]
+ 0001-blk-mq-don-t-assume-rq-errors-is-set-when-returning-.patch
+ 0002-blk-mq-pair-blk_mq_start_request-blk_mq_requeue_requ.patch series
+Message-ID: <20140211164128.GJ19057@kernel.dk>
+References: <20140211162712.055066190@bombadil.infradead.org>
+ <20140211162739.912640751@bombadil.infradead.org>
+ <20140211163104.GH19057@kernel.dk>
+ <20140211163546.GA21083@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140211163546.GA21083@infradead.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Josh Cartwright,
-
-On Tue, 11 Feb 2014 10:24:02 -0600, Josh Cartwright wrote:
-> Instead of the of_find_matching_node()/of_match_node() pair, which requires two
-> iterations through the match table, make use of of_find_matching_node_and_match(),
-> which only iterates through the table once.
+On Tue, Feb 11 2014, Christoph Hellwig wrote:
+> On Tue, Feb 11, 2014 at 09:31:04AM -0700, Jens Axboe wrote:
+> > On Tue, Feb 11 2014, Christoph Hellwig wrote:
+> > > 
+> > 
+> > looks like the last one got botched?
 > 
-> While we're here, mark the of_system_controller table const.
+> That was quilt sending along the series file which I created by doing
 > 
-> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
-> ---
->  arch/arm/mach-mvebu/system-controller.c | 9 ++++-----
->  1 file changed, 4 insertions(+), 5 deletions(-)
+> ls > series
+> 
+> just ignore it, hopefully one day quilt and I will get along fine..
 
-Reviewed-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Ignored, applied the other two, thanks!
+
 -- 
-Thomas Petazzoni, CTO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Jens Axboe
+
