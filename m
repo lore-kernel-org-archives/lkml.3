@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755349AbaBKVEN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 16:04:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39567 "EHLO
+	id S1756171AbaBKVEg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 16:04:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39560 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752537AbaBKTFH (ORCPT
+	with ESMTP id S1751674AbaBKTFG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:05:07 -0500
+	Tue, 11 Feb 2014 14:05:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Nicolin Chen <b42378@freescale.com>, Joe Perches <joe@perches.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.13 033/120] lib/genalloc.c: add check gen_pool_dma_alloc() if dma pointer is not NULL
-Date: Tue, 11 Feb 2014 11:04:34 -0800
-Message-Id: <20140211184824.511834689@linuxfoundation.org>
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 3.13 032/120] tile: remove compat_sys_lookup_dcookie declaration to fix compile error
+Date: Tue, 11 Feb 2014 11:04:33 -0800
+Message-Id: <20140211184824.481862106@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184823.492407127@linuxfoundation.org>
 References: <20140211184823.492407127@linuxfoundation.org>
@@ -33,73 +31,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-commit 0368dfd01ae3b7647ef9b2f0525fdefd5e0d28e1 upstream.
+commit 5a5e75f4714a592f31e57f248b8f5c866f278b8d upstream.
 
-In the gen_pool_dma_alloc() the dma pointer can be NULL and while
-assigning gen_pool_virt_to_phys(pool, vaddr) to dma caused the following
-crash on da850 evm:
+With commit d8d14bd09cdd ("fs/compat: fix lookup_dcookie() parameter
+handling") I changed the type of the len parameter of the
+lookup_dcookie() syscall.
 
-   Unable to handle kernel NULL pointer dereference at virtual address 00000000
-   Internal error: Oops: 805 [#1] PREEMPT ARM
-   Modules linked in:
-   CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.13.0-rc1-00001-g0609e45-dirty #5
-   task: c4830000 ti: c4832000 task.ti: c4832000
-   PC is at gen_pool_dma_alloc+0x30/0x3c
-   LR is at gen_pool_virt_to_phys+0x74/0x80
-   Process swapper, call trace:
-     gen_pool_dma_alloc+0x30/0x3c
-     davinci_pm_probe+0x40/0xa8
-     platform_drv_probe+0x1c/0x4c
-     driver_probe_device+0x98/0x22c
-     __driver_attach+0x8c/0x90
-     bus_for_each_dev+0x6c/0x8c
-     bus_add_driver+0x124/0x1d4
-     driver_register+0x78/0xf8
-     platform_driver_probe+0x20/0xa4
-     davinci_init_late+0xc/0x14
-     init_machine_late+0x1c/0x28
-     do_one_initcall+0x34/0x15c
-     kernel_init_freeable+0xe4/0x1ac
-     kernel_init+0x8/0xec
+However I missed that there was still a stale declaration in
+arch/tile/..  which now causes a compile error on tile:
 
-This patch fixes the above.
+  In file included from fs/dcookies.c:28:0:
+  include/linux/compat.h:425:17: error: conflicting types for 'compat_sys_lookup_dcookie'
+  fs/dcookies.c:207:1: error: conflicting types for 'compat_sys_lookup_dcookie'
 
-[akpm@linux-foundation.org: update kerneldoc]
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-Cc: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: Nicolin Chen <b42378@freescale.com>
-Cc: Joe Perches <joe@perches.com>
-Cc: Sachin Kamat <sachin.kamat@linaro.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Simply remove the declaration in the tile architecture, which is only a
+leftover from before the different compat lookup_dcookie() versions have
+been merged.  The correct declaration is now in include/linux/compat.h
+
+The build error was reported by Fenguang's build bot.
+
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Acked-by: Chris Metcalf <cmetcalf@tilera.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- lib/genalloc.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ arch/tile/include/asm/compat.h |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/lib/genalloc.c
-+++ b/lib/genalloc.c
-@@ -316,7 +316,7 @@ EXPORT_SYMBOL(gen_pool_alloc);
-  * gen_pool_dma_alloc - allocate special memory from the pool for DMA usage
-  * @pool: pool to allocate from
-  * @size: number of bytes to allocate from the pool
-- * @dma: dma-view physical address
-+ * @dma: dma-view physical address return value.  Use NULL if unneeded.
-  *
-  * Allocate the requested number of bytes from the specified pool.
-  * Uses the pool allocation function (with first-fit algorithm by default).
-@@ -334,7 +334,8 @@ void *gen_pool_dma_alloc(struct gen_pool
- 	if (!vaddr)
- 		return NULL;
- 
--	*dma = gen_pool_virt_to_phys(pool, vaddr);
-+	if (dma)
-+		*dma = gen_pool_virt_to_phys(pool, vaddr);
- 
- 	return (void *)vaddr;
- }
+--- a/arch/tile/include/asm/compat.h
++++ b/arch/tile/include/asm/compat.h
+@@ -281,7 +281,6 @@ long compat_sys_pread64(unsigned int fd,
+ 			u32 dummy, u32 low, u32 high);
+ long compat_sys_pwrite64(unsigned int fd, char __user *ubuf, size_t count,
+ 			 u32 dummy, u32 low, u32 high);
+-long compat_sys_lookup_dcookie(u32 low, u32 high, char __user *buf, size_t len);
+ long compat_sys_sync_file_range2(int fd, unsigned int flags,
+ 				 u32 offset_lo, u32 offset_hi,
+ 				 u32 nbytes_lo, u32 nbytes_hi);
 
 
