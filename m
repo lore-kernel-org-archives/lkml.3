@@ -1,92 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751582AbaBKNxx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 08:53:53 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:52778 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751052AbaBKNxw (ORCPT
+	id S1751782AbaBKNyy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 08:54:54 -0500
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:52412 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750984AbaBKNyw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 08:53:52 -0500
-Message-ID: <52FA2B4F.3010408@ti.com>
-Date: Tue, 11 Feb 2014 15:53:19 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 11 Feb 2014 08:54:52 -0500
 MIME-Version: 1.0
-To: <tony@atomide.com>
-CC: <bcousson@baylibre.com>, <balbi@ti.com>, <nm@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        Roger Quadros <rogerq@ti.com>, Hans de Goede <hdegoede@redhat.com>
-Subject: Re: [PATCH] ARM: dts: OMAP2+: Fix boot with multi_v7_defconfig
-References: <1392055835-6494-1-git-send-email-rogerq@ti.com>
-In-Reply-To: <1392055835-6494-1-git-send-email-rogerq@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <52F8436E.8090907@intel.com>
+References: <1391432142-18723-1-git-send-email-eranian@google.com>
+	<1391432142-18723-4-git-send-email-eranian@google.com>
+	<52F8436E.8090907@intel.com>
+Date: Tue, 11 Feb 2014 14:54:52 +0100
+Message-ID: <CABPqkBS8ruWaAiZ+bsgqZfDYF+n34aDVQUaoTbSW+qip5=nSCg@mail.gmail.com>
+Subject: Re: [PATCH v1 03/10] perf/x86/uncore: do not assume PCI fixed ctrs
+ have more than 32 bits
+From: Stephane Eranian <eranian@google.com>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/10/2014 08:10 PM, Roger Quadros wrote:
-> The OMAP EHCI controller is not compatible with the EHCI
-> platform HCD driver so don't claim that we are.
-> 
-> This fixes boot on OMAP platforms with CONFIG_USB_EHCI_HCD_PLATFORM=y
-> e.g. multi_v7_defconfig
-> 
-> Reported-by: Nishanth Menon <nm@ti.com>
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
+Yan,
 
-Please ignore this patch as Hans has agreed to do a more proper fix in
+In fact, I realized I was not even using all those fixed counter
+changes, thanks to the
+pmu bypass from patch 1. So I will drop all of this in V2. It will
+make the patch simpler.
 
-http://article.gmane.org/gmane.comp.hardware.netbook.arm.sunxi/7015
+Thanks for catching this.
 
-cheers,
--roger
 
-> ---
->  arch/arm/boot/dts/omap3.dtsi | 2 +-
->  arch/arm/boot/dts/omap4.dtsi | 2 +-
->  arch/arm/boot/dts/omap5.dtsi | 2 +-
->  3 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/arm/boot/dts/omap3.dtsi b/arch/arm/boot/dts/omap3.dtsi
-> index a5fc83b..6b5dbf8 100644
-> --- a/arch/arm/boot/dts/omap3.dtsi
-> +++ b/arch/arm/boot/dts/omap3.dtsi
-> @@ -641,7 +641,7 @@
->  			};
->  
->  			usbhsehci: ehci@48064800 {
-> -				compatible = "ti,ehci-omap", "usb-ehci";
-> +				compatible = "ti,ehci-omap";
->  				reg = <0x48064800 0x400>;
->  				interrupt-parent = <&intc>;
->  				interrupts = <77>;
-> diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
-> index d3f8a6e..f5d754b 100644
-> --- a/arch/arm/boot/dts/omap4.dtsi
-> +++ b/arch/arm/boot/dts/omap4.dtsi
-> @@ -706,7 +706,7 @@
->  			};
->  
->  			usbhsehci: ehci@4a064c00 {
-> -				compatible = "ti,ehci-omap", "usb-ehci";
-> +				compatible = "ti,ehci-omap";
->  				reg = <0x4a064c00 0x400>;
->  				interrupt-parent = <&gic>;
->  				interrupts = <GIC_SPI 77 IRQ_TYPE_LEVEL_HIGH>;
-> diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
-> index a72813a..42fcffd 100644
-> --- a/arch/arm/boot/dts/omap5.dtsi
-> +++ b/arch/arm/boot/dts/omap5.dtsi
-> @@ -784,7 +784,7 @@
->  			};
->  
->  			usbhsehci: ehci@4a064c00 {
-> -				compatible = "ti,ehci-omap", "usb-ehci";
-> +				compatible = "ti,ehci-omap";
->  				reg = <0x4a064c00 0x400>;
->  				interrupt-parent = <&gic>;
->  				interrupts = <GIC_SPI 77 IRQ_TYPE_LEVEL_HIGH>;
-> 
-
+On Mon, Feb 10, 2014 at 4:11 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+> On 02/03/2014 08:55 PM, Stephane Eranian wrote:
+>> The current code assumes all PCI fixed counters implement more than
+>> 32-bit hardware counters. The actual width is then round up to 64 to
+>> enable base + 8 * idx calculations.
+>>
+>> Not all PMUs necessarily implement counters with more than 32-bits.
+>> The patch makes the uncore_pci_perf_ctr() function dynamically
+>> determine the actual bits width of a pci perf counter.
+>>
+>> This patch paves the way for handling more than one uncore fixed
+>> counter per PMU box.
+>>
+>> Signed-off-by: Stephane Eranian <eranian@google.com>
+>> ---
+>>  arch/x86/kernel/cpu/perf_event_intel_uncore.h |   31 ++++++++++++++++---------
+>>  1 file changed, 20 insertions(+), 11 deletions(-)
+>>
+>> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+>> index 77dc9a5..f5549cf 100644
+>> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+>> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+>> @@ -548,10 +548,29 @@ unsigned uncore_pci_event_ctl(struct intel_uncore_box *box, int idx)
+>>       return idx * 4 + box->pmu->type->event_ctl;
+>>  }
+>>
+>> +static inline int uncore_perf_ctr_bits(struct intel_uncore_box *box)
+>> +{
+>> +     return box->pmu->type->perf_ctr_bits;
+>> +}
+>> +
+>> +static inline int uncore_fixed_ctr_bits(struct intel_uncore_box *box)
+>> +{
+>> +     return box->pmu->type->fixed_ctr_bits;
+>> +}
+>> +
+>>  static inline
+>>  unsigned uncore_pci_perf_ctr(struct intel_uncore_box *box, int idx)
+>>  {
+>> -     return idx * 8 + box->pmu->type->perf_ctr;
+>> +     int bits, bytes;
+>> +
+>> +     if (idx == UNCORE_PMC_IDX_FIXED)
+>> +             bits = uncore_fixed_ctr_bits(box);
+>> +     else
+>> +             bits = uncore_perf_ctr_bits(box);
+>> +
+>> +     bytes = round_up(bits, 8);
+>
+> should this be "round_up(bits, 32) / 8" ?
+>
+> Regards
+> Yan, Zheng
+>
+>> +
+>> +     return idx * bytes + box->pmu->type->perf_ctr;
+>>  }
+>>
+>>  static inline unsigned uncore_msr_box_offset(struct intel_uncore_box *box)
+>> @@ -633,16 +652,6 @@ unsigned uncore_perf_ctr(struct intel_uncore_box *box, int idx)
+>>               return uncore_msr_perf_ctr(box, idx);
+>>  }
+>>
+>> -static inline int uncore_perf_ctr_bits(struct intel_uncore_box *box)
+>> -{
+>> -     return box->pmu->type->perf_ctr_bits;
+>> -}
+>> -
+>> -static inline int uncore_fixed_ctr_bits(struct intel_uncore_box *box)
+>> -{
+>> -     return box->pmu->type->fixed_ctr_bits;
+>> -}
+>> -
+>>  static inline int uncore_num_counters(struct intel_uncore_box *box)
+>>  {
+>>       return box->pmu->type->num_counters;
+>>
+>
