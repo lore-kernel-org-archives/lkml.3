@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756089AbaBKUOP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 15:14:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40005 "EHLO
+	id S1756092AbaBKUOk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 15:14:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40002 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753475AbaBKTGi (ORCPT
+	with ESMTP id S1753466AbaBKTGh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:06:38 -0500
+	Tue, 11 Feb 2014 14:06:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Weston Andros Adamson <dros@primarydata.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.12 043/107] nfs4: fix discover_server_trunking use after free
-Date: Tue, 11 Feb 2014 11:05:09 -0800
-Message-Id: <20140211184749.420233363@linuxfoundation.org>
+        Josh Triplett <josh@joshtriplett.org>, Len Brown <len.brown@intel.com>
+Subject: [PATCH 3.12 025/107] turbostat: Dont put unprocessed uapi headers in the include path
+Date: Tue, 11 Feb 2014 11:04:51 -0800
+Message-Id: <20140211184748.916502032@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140211184748.191276235@linuxfoundation.org>
 References: <20140211184748.191276235@linuxfoundation.org>
@@ -29,41 +28,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Weston Andros Adamson <dros@primarydata.com>
+From: Josh Triplett <josh@joshtriplett.org>
 
-commit abad2fa5ba67725a3f9c376c8cfe76fbe94a3041 upstream.
+commit b731f3119de57144e16c19fd593b8daeb637843e upstream.
 
-If clp is new (cl_count = 1) and it matches another client in
-nfs4_discover_server_trunking, the nfs_put_client will free clp before
-->cl_preserve_clid is set.
+turbostat's Makefile puts arch/x86/include/uapi/ in the include path, so
+that it can include <asm/msr.h> from it.  It isn't in general safe to
+include even uapi headers directly from the kernel tree without
+processing them through scripts/headers_install.sh, but asm/msr.h
+happens to work.
 
-Signed-off-by: Weston Andros Adamson <dros@primarydata.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+However, that include path can break with some versions of system
+headers, by overriding some system headers with the unprocessed versions
+directly from the kernel source.  For instance:
+
+In file included from /build/x86-generic/usr/include/bits/sigcontext.h:28:0,
+                 from /build/x86-generic/usr/include/signal.h:339,
+                 from /build/x86-generic/usr/include/sys/wait.h:31,
+                 from turbostat.c:27:
+../../../../arch/x86/include/uapi/asm/sigcontext.h:4:28: fatal error: linux/compiler.h: No such file or directory
+
+This occurs because the system bits/sigcontext.h on that build system
+includes <asm/sigcontext.h>, and asm/sigcontext.h in the kernel source
+includes <linux/compiler.h>, which scripts/headers_install.sh would have
+filtered out.
+
+Since turbostat really only wants a single header, just include that one
+header rather than putting an entire directory of kernel headers on the
+include path.
+
+In the process, switch from msr.h to msr-index.h, since turbostat just
+wants the MSR numbers.
+
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4client.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+ tools/power/x86/turbostat/Makefile    |    2 +-
+ tools/power/x86/turbostat/turbostat.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/nfs/nfs4client.c
-+++ b/fs/nfs/nfs4client.c
-@@ -407,13 +407,11 @@ struct nfs_client *nfs4_init_client(stru
- 	error = nfs4_discover_server_trunking(clp, &old);
- 	if (error < 0)
- 		goto error;
--	nfs_put_client(clp);
--	if (clp != old) {
--		clp->cl_preserve_clid = true;
--		clp = old;
--	}
+--- a/tools/power/x86/turbostat/Makefile
++++ b/tools/power/x86/turbostat/Makefile
+@@ -5,7 +5,7 @@ DESTDIR		:=
  
--	return clp;
-+	if (clp != old)
-+		clp->cl_preserve_clid = true;
-+	nfs_put_client(clp);
-+	return old;
+ turbostat : turbostat.c
+ CFLAGS +=	-Wall
+-CFLAGS +=	-I../../../../arch/x86/include/uapi/
++CFLAGS +=	-DMSRHEADER='"../../../../arch/x86/include/uapi/asm/msr-index.h"'
  
- error:
- 	nfs_mark_client_ready(clp, error);
+ %: %.c
+ 	@mkdir -p $(BUILD_OUTPUT)
+--- a/tools/power/x86/turbostat/turbostat.c
++++ b/tools/power/x86/turbostat/turbostat.c
+@@ -20,7 +20,7 @@
+  */
+ 
+ #define _GNU_SOURCE
+-#include <asm/msr.h>
++#include MSRHEADER
+ #include <stdio.h>
+ #include <unistd.h>
+ #include <sys/types.h>
 
 
