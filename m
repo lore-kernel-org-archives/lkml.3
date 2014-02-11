@@ -1,120 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755095AbaBKTZk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 14:25:40 -0500
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:54900 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755039AbaBKTZh (ORCPT
+	id S1755104AbaBKT0D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 14:26:03 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40474 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754229AbaBKTIH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 14:25:37 -0500
-Message-ID: <52FA77EA.7050105@linux.vnet.ibm.com>
-Date: Wed, 12 Feb 2014 00:50:10 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Tue, 11 Feb 2014 14:08:07 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Todd Previte <tprevite@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [PATCH 3.10 61/79] drm/i915: VLV2 - Fix hotplug detect bits
+Date: Tue, 11 Feb 2014 11:06:05 -0800
+Message-Id: <20140211184722.733495063@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140211184720.928667275@linuxfoundation.org>
+References: <20140211184720.928667275@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: ego@linux.vnet.ibm.com, "paulus@samba.org" <paulus@samba.org>,
-        "oleg@redhat.com" <oleg@redhat.com>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "tj@kernel.org" <tj@kernel.org>,
-        "walken@google.com" <walken@google.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH 01/51] CPU hotplug: Provide lockless versions of callback
- registration functions
-References: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com> <20140205220447.19080.9460.stgit@srivatsabhat.in.ibm.com> <1392081980.5612.123.camel@misato.fc.hp.com> <52F9ED11.5010800@linux.vnet.ibm.com> <1392136436.5612.131.camel@misato.fc.hp.com> <20140211171805.GA3932@in.ibm.com> <1392140115.5612.135.camel@misato.fc.hp.com>
-In-Reply-To: <1392140115.5612.135.camel@misato.fc.hp.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021119-4790-0000-0000-00000CACC7E3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2014 11:05 PM, Toshi Kani wrote:
-> On Tue, 2014-02-11 at 22:48 +0530, Gautham R Shenoy wrote:
->> On Tue, Feb 11, 2014 at 09:33:56AM -0700, Toshi Kani wrote:
->>>
->>> I agree that introducing a reader-writer semaphore allows concurrent
->>> executions.  Adding yet another hotplug lock is a bit unfortunate,
->>> though.
->>>
->>
->> I agree with this last part. We already have enough locks for
->> cpu-hotplug. Another one sounds one too many!!
->>
->>
->>> This may be a dumb question, but can't we simply do this way?
->>>
->>>         get_online_cpus();
->>>
->>>         for_each_online_cpu(cpu)
->>>                 init_cpu(cpu);
->>>
->>>         put_online_cpus();
->>>
->>       -------- Someone chooses to hotplug a cpu here ------
->>       -------- But this subsystem might miss out on knowing
->>                about it since it hasn't registered its
->>                notifier yet! 
->>
->>>         register_cpu_notifier(&foobar_cpu_notifier);
-> 
-> 
-> How about this?  foo_cpu_notifier returns NOP when foo_notifier_ready is
-> false.
-> 
->         register_cpu_notifier(&foobar_cpu_notifier);
-> 
->         get_online_cpus();
-> 
->         for_each_online_cpu(cpu)
->                 init_cpu(cpu);
-> 
-> 	foo_notifier_ready = true;
-> 
->         put_online_cpus();
-> 
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Nah, that looks a lot like some quick-n-dirty hack ;-(
-It would also amount to burdening the various subsystems to add weird-looking
-pieces of code such as this in their callbacks:
+------------------
 
-	if (!foo_notifier_ready)
-		return NOTIFY_OK;
+From: Todd Previte <tprevite@gmail.com>
 
-This only makes it all the more evident that the callback registration APIs
-exposed by the CPU hotplug core is poorly designed.
+commit 232a6ee9af8adb185640f67fcaaa9014a9aa0573 upstream.
 
-What we need instead, is an elegant, well-defined and easy-to-use set of
-interfaces/APIs exposed by the core CPU hotplug code to the various
-subsystems. I don't think we should worry so much about the fact that
-we can't use the familiar get/put_online_cpus() in this type of callback
-registration scenario. We can introduce a sane set of APIs that work
-well in such situations and use them consistently.
+Add new definitions for hotplug live status bits for VLV2 since they're
+in reverse order from the gen4x ones.
 
-For example, something like the code snippet shown below looks pretty
-neat to me:
+Changelog:
+- Restored gen4 bit definitions
+- Added new definitions for VLV2
+- Added platform check for IS_VALLEYVIEW() in dp_detect to use the correct
+  bit defintions
+- Replaced a lost trailing brace for the added switch()
 
-	cpu_notifier_register_begin();
+Signed-off-by: Todd Previte <tprevite@gmail.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=73951
+[danvet: Switch to _VLV postfix instead of prefix and regroupg
+comments again so that the g4x warning is right next to those defines.
+Also add a _G4X suffix for those special ones. Also cc stable.]
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-	for_each_online_cpu(cpu)
-		init_cpu(cpu);
+---
+ drivers/gpu/drm/i915/i915_reg.h |   10 +++++++---
+ drivers/gpu/drm/i915/intel_dp.c |   40 ++++++++++++++++++++++++++++------------
+ 2 files changed, 35 insertions(+), 15 deletions(-)
 
-	register_cpu_notifier(&foobar_cpu_notifier);
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -1682,9 +1682,13 @@
+  * Please check the detailed lore in the commit message for for experimental
+  * evidence.
+  */
+-#define   PORTD_HOTPLUG_LIVE_STATUS               (1 << 29)
+-#define   PORTC_HOTPLUG_LIVE_STATUS               (1 << 28)
+-#define   PORTB_HOTPLUG_LIVE_STATUS               (1 << 27)
++#define   PORTD_HOTPLUG_LIVE_STATUS_G4X		(1 << 29)
++#define   PORTC_HOTPLUG_LIVE_STATUS_G4X		(1 << 28)
++#define   PORTB_HOTPLUG_LIVE_STATUS_G4X		(1 << 27)
++/* VLV DP/HDMI bits again match Bspec */
++#define   PORTD_HOTPLUG_LIVE_STATUS_VLV		(1 << 27)
++#define   PORTC_HOTPLUG_LIVE_STATUS_VLV		(1 << 28)
++#define   PORTB_HOTPLUG_LIVE_STATUS_VLV		(1 << 29)
+ #define   PORTD_HOTPLUG_INT_STATUS		(3 << 21)
+ #define   PORTC_HOTPLUG_INT_STATUS		(3 << 19)
+ #define   PORTB_HOTPLUG_INT_STATUS		(3 << 17)
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -2277,18 +2277,34 @@ g4x_dp_detect(struct intel_dp *intel_dp)
+ 		return status;
+ 	}
+ 
+-	switch (intel_dig_port->port) {
+-	case PORT_B:
+-		bit = PORTB_HOTPLUG_LIVE_STATUS;
+-		break;
+-	case PORT_C:
+-		bit = PORTC_HOTPLUG_LIVE_STATUS;
+-		break;
+-	case PORT_D:
+-		bit = PORTD_HOTPLUG_LIVE_STATUS;
+-		break;
+-	default:
+-		return connector_status_unknown;
++	if (IS_VALLEYVIEW(dev)) {
++		switch (intel_dig_port->port) {
++		case PORT_B:
++			bit = PORTB_HOTPLUG_LIVE_STATUS_VLV;
++			break;
++		case PORT_C:
++			bit = PORTC_HOTPLUG_LIVE_STATUS_VLV;
++			break;
++		case PORT_D:
++			bit = PORTD_HOTPLUG_LIVE_STATUS_VLV;
++			break;
++		default:
++			return connector_status_unknown;
++		}
++	} else {
++		switch (intel_dig_port->port) {
++		case PORT_B:
++			bit = PORTB_HOTPLUG_LIVE_STATUS_G4X;
++			break;
++		case PORT_C:
++			bit = PORTC_HOTPLUG_LIVE_STATUS_G4X;
++			break;
++		case PORT_D:
++			bit = PORTD_HOTPLUG_LIVE_STATUS_G4X;
++			break;
++		default:
++			return connector_status_unknown;
++		}
+ 	}
+ 
+ 	if ((I915_READ(PORT_HOTPLUG_STAT) & bit) == 0)
 
-	cpu_notifier_register_done();
-
-What do you think?
-
-Regards,
-Srivatsa S. Bhat
 
