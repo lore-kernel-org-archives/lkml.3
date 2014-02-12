@@ -1,61 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752097AbaBLAZz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 19:25:55 -0500
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:50225 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750978AbaBLAZy (ORCPT
+	id S1752481AbaBLA1t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 19:27:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42829 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752120AbaBLA1s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 19:25:54 -0500
-Message-ID: <1392164751.19535.15.camel@x220>
-Subject: Re: [PATCH] staging: r8188eu: default to "y" in Kconfig
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Martin Walch <walch.martin@web.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Richard Weinberger <richard@nod.at>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 12 Feb 2014 01:25:51 +0100
-In-Reply-To: <10092086.3B4WUYQ8VT@tacticalops>
-References: <1392121892.13064.9.camel@x220>
-	 <10092086.3B4WUYQ8VT@tacticalops>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+	Tue, 11 Feb 2014 19:27:48 -0500
+Date: Tue, 11 Feb 2014 16:27:45 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [process_vm_access] BUG: unable to handle kernel paging request
+ at fffffff27b92dd20
+Message-Id: <20140211162745.c4fdb96ec58fa9581e6c2841@linux-foundation.org>
+In-Reply-To: <20140210112231.GA11951@localhost>
+References: <20140210112231.GA11951@localhost>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 12 Feb 2014 00:25:52.0260 (UTC) FILETIME=[FC845440:01CF2788]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-02-12 at 01:09 +0100, Martin Walch wrote:
-> On Tuesday 11 February 2014 13:31:32 Paul Bolle wrote:
-> > This patch also deserves a
-> >     Reported-by: Martin Walch <walch.martin@web.de>
-> > 
-> > line, but that apparently requires Martin's permission.
-> 
-> I would be happy.
+On Mon, 10 Feb 2014 19:22:31 +0800 Fengguang Wu <fengguang.wu@intel.com> wrote:
 
-It seems I interpreted the requirements for Reported-By: tags rather
-strictly. We might change the documentation to discourage that
-interpretation. (Greg, is it too late to add this tag in your queue?)
+> We noticed the below oops since commit 68a25f08c9bec07ad95e55a01b127168e43aed84
+> ("process_vm_access: take get_user_pages/put_pages one level up")
+> while running ltp tests inside kvm.
 
-> And I am sorry for not sending patches myself. As I expect
-> to find some more issues in Kconfig files soon, I wanted to gather all of
-> them before sending any patches. However, I did not expect this to take me
-> so long. Therefore I am glad you took the initiative and just created
-> some patches.
-
-My experience is that one can easily get stuck when trying to fix all
-issues of a certain, broad category. Fixing all (say) all unused Kconfig
-symbols is a big job. Fixing all that got added in v3.14-rc1 is doable
-(depending on the amount of time one wants to spend).
-
-Anyhow, I do hope you find time to send in patches yourself. Perhaps it
-would help if we'd coordinate the stuff a bit. Richard seems keen to
-help too.
-
-
-Paul Bolle
-
+I can't find this patch anywhere.  Where did it come from?
