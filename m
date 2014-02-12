@@ -1,125 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751598AbaBLMah (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 07:30:37 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:56279 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751199AbaBLMag (ORCPT
+	id S1751829AbaBLMen (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 07:34:43 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:56344 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751320AbaBLMel convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 07:30:36 -0500
-Message-ID: <1392208233.848.48.camel@hornet>
-Subject: Re: [PATCH 00/12] Versatile Express updates
-From: Pawel Moll <pawel.moll@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Woodhouse <dwmw2@infradead.org>, Jean Delvare <jdelvare@suse.de>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Date: Wed, 12 Feb 2014 12:30:33 +0000
-In-Reply-To: <2782419.lfJiZZjaFg@wuerfel>
-References: <1392138636-29240-1-git-send-email-pawel.moll@arm.com>
-	 <2782419.lfJiZZjaFg@wuerfel>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 12 Feb 2014 07:34:41 -0500
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
+Subject: Re: [PATCH v2] NFSv4.1: new layout stateid can not be overwrite by one out of date
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+In-Reply-To: <1392199580-14249-1-git-send-email-shaobingqing@bwstor.com.cn>
+Date: Wed, 12 Feb 2014 07:34:38 -0500
+Cc: linuxnfs <linux-nfs@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <EF4B0DD4-D0EC-498C-B10B-6FE157061C5F@primarydata.com>
+References: <N> <1392199580-14249-1-git-send-email-shaobingqing@bwstor.com.cn>
+To: shaobingqing <shaobingqing@bwstor.com.cn>
+X-Mailer: Apple Mail (2.1827)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-02-11 at 19:28 +0000, Arnd Bergmann wrote:
-> On Tuesday 11 February 2014 17:10:24 Pawel Moll wrote:
-> > This series is a set of updates following the infrastructure
-> > rework and depends on it. It will be finally posted once
-> > the main series is merged. For the time being I would really
-> > appreciate feedback and/or (n)acks...
+
+On Feb 12, 2014, at 5:06, shaobingqing <shaobingqing@bwstor.com.cn> wrote:
+
+> If initiate_file_draining returned NFS4ERR_DELAY, all the lsegs of
+> a file might be released before the retrying cb_layout request arriving
+> at the client. In this situation, layoutget request of the file will
+> use open stateid to obtain a new layout stateid. And if the retrying
+> cb_layout request arrived at the client after the layoutget reply,
+> new layout stateid would be overwrite by one out of date.
 > 
-> I haven't read the patches yet, but on a general level, do
-> you think this code can be (or should) be shared with
-> mach-versatile and mach-realview?
+> Signed-off-by: shaobingqing <shaobingqing@bwstor.com.cn>
+> ---
+> fs/nfs/callback.h      |    5 +++++
+> fs/nfs/callback_proc.c |   24 ++++++++++++++++++++++++
+> fs/nfs/inode.c         |    1 +
+> include/linux/nfs_fs.h |    1 +
+> 4 files changed, 31 insertions(+), 0 deletions(-)
+> 
+<snip>
+> diff --git a/include/linux/nfs_fs.h b/include/linux/nfs_fs.h
+> index 3ea4cde..ba47870 100644
+> --- a/include/linux/nfs_fs.h
+> +++ b/include/linux/nfs_fs.h
+> @@ -181,6 +181,7 @@ struct nfs_inode {
+> 	struct nfs4_cached_acl	*nfs4_acl;
+>         /* NFSv4 state */
+> 	struct list_head	open_states;
+> +	struct list_head	cb_stale_state_list;
+> 	struct nfs_delegation __rcu *delegation;
+> 	fmode_t			 delegation_state;
+> 	struct rw_semaphore	rwsem;
 
-Haven't worked with the old ones too much, I just had a look at a couple
-of TRMs... The sysregs look similar, don't they? Deceitfully
-similar... ;-)
-
-Let me start from the VE side and classify the registers into functional
-groups, looking at them from a MFD cells point of view:
-
-- general ID registers like SYS_ID, SYS_MISC, SYS_PROCIDx - either not
-really useful for drivers or different bitmasks if needed (eg. the
-MASTERSITE bit in SYS_MISC); in other words - good candidates for syscon
-if at all interesting
-
-- de-facto GPIO registers like SYS_LED, SYS_MCI, SYS_FLASH - easily
-covered via "basic-mmio-gpio" driver; can be simply exposed in the tree
-as subnodes
-
-- flags (SYS_*FLAGS*) - used pretty much only for SMP booting; that's
-where, I believe, we could unify and move the DT-based operations into
-plat_versatile; it is too early for the device model though, so out of
-the sysreg driver scope, really (even if the code lives here for now)
-
-- counters (SYS_100HZ, SYS_24MHZ) - the 24MHz one is used on some of the
-platforms as a sched clock source; in the fourth patch of the second
-series I moved it out into drivers/clocksource - it could be easily
-generalised and used across more platforms, but again - it's early code,
-so out of sysreg driver scope
-
-- system configuration (SYS_CFG*) - that's the main difference between
-VE and its predecessors; the older seem to provide separate system
-registers to control infrastructure like clocks etc. (eg. SYS_OSC* on
-the realview boards), while here we have the (whatever you call it ;-)
-config bus
-
-- other registers that are currently not used at all, but most of them
-differ either in naming (and location) or in offset.
-
-All this leads, I believe, to conclusion that they definitely deserve
-different compatible values. Therefore they would also require different
-mfdcells definitions. Of course we could have more than one in a single
-file and pick one via matching table but:
-
-1. There is always that little "extra" (like the master site
-configuration on VE, which doesn't happen on the previous ones)
-
-2. I'd rather not to have the non-VE stuff in arm64 kernel.
-
-So, to summarize, I think we need separate files for at least main
-families of the sysreg drivers (I didn't spent enough time on this to be
-able to find commonalities and differences inside realview and versatile
-families), but try to share as much as possible of the "functional"
-drivers (with the sched clock and the smp operations being the most
-obvious candidates).
-
-> One of the things on my (mid-term) to-do list is to completely
-> convert those two platforms over to being entirely DT based
-> and having no board specific code so we can actually delete
-> the directories along with mach-vexpress
-
-And I sympathise with this goal :-) (interestingly Olof in the past
-expressed strong and opposite opinion in the subject ;-)
-
-If you have a look at the last patch of the second series, you'll find
-that what's left in the VEXPRESS_DT machine are smp operations and
-l2x0_of_init. Then, assuming that we finally get some answer to the CLCD
-problem (latest in this subject happened here:
-http://thread.gmane.org/gmane.linux.ports.arm.kernel/268037 - I really
-lost all hopes for CDF getting anywhere...) removal of the non-DT code
-is a matter of a single patch (and a massive negative stat :-). From
-there there's only a bunch of PM-related files in arch/arm/mach-vexpress
-that I guess could be moved somewhere else (that's what Olof didn't
-really like).
-
-Pawel
+No. We are definitely not adding new fields to the inode in order to track old layout stateids.
+_________________________________
+Trond Myklebust
+Linux NFS client maintainer, PrimaryData
+trond.myklebust@primarydata.com
 
