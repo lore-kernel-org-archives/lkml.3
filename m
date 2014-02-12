@@ -1,46 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752395AbaBLL06 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 06:26:58 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:45983 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752178AbaBLL05 (ORCPT
+	id S1752432AbaBLL1o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 06:27:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45586 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750963AbaBLL1n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 06:26:57 -0500
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: <linux-arm-kernel@lists.infradead.org>, <linux-mtd@lists.infradead.org>,
-        Josh Wu <josh.wu@atmel.com>
-CC: <computersforpeace@gmail.com>, <dedekind1@gmail.com>,
-        <linux-kernel@vger.kernel.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH] MTD: atmel_nand: POI fall back is not an issue: change log level
-Date: Wed, 12 Feb 2014 12:26:54 +0100
-Message-ID: <1392204414-20700-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 12 Feb 2014 06:27:43 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: lwn@lwn.net
+Subject: [3.11.y.z extended stable] Linux 3.11.10.4
+Date: Wed, 12 Feb 2014 11:27:39 +0000
+Message-Id: <1392204460-17728-1-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- drivers/mtd/nand/atmel_nand.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I am announcing the release of the Linux 3.11.10.4 kernel.
 
-diff --git a/drivers/mtd/nand/atmel_nand.c b/drivers/mtd/nand/atmel_nand.c
-index c36e9b84487c..8d210f8a072d 100644
---- a/drivers/mtd/nand/atmel_nand.c
-+++ b/drivers/mtd/nand/atmel_nand.c
-@@ -430,7 +430,7 @@ err_dma:
- 	dma_unmap_single(dma_dev->dev, phys_addr, len, dir);
- err_buf:
- 	if (err != 0)
--		dev_warn(host->dev, "Fall back to CPU I/O\n");
-+		dev_dbg(host->dev, "Fall back to CPU I/O\n");
- 	return err;
- }
- 
+The updated 3.11.y tree can be found at: 
+  git://kernel.ubuntu.com/ubuntu/linux.git linux-3.11.y
+and can be browsed at:
+  http://kernel.ubuntu.com/git?p=ubuntu/linux.git;h=refs/heads/linux-3.11.y;a=shortlog
+
+The diff from v3.11.10.4 is posted as a follow-up to this email.
+
+The 3.11.y extended stable tree is maintained by the Ubuntu Kernel Team.
+For more info, see https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
+
+ -Luis
+
 -- 
-1.8.2.2
 
