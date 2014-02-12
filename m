@@ -1,75 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753217AbaBLQDe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 11:03:34 -0500
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:52261 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753302AbaBLQAC (ORCPT
+	id S1753472AbaBLQDn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 11:03:43 -0500
+Received: from mail-we0-f176.google.com ([74.125.82.176]:54284 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753247AbaBLQDk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 11:00:02 -0500
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 02/13] pinctrl: mvebu: remove obsolete per-control name buffer allocation
-Date: Wed, 12 Feb 2014 16:59:25 +0100
-Message-Id: <1392220776-30851-3-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1392220776-30851-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1390869573-27624-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1392220776-30851-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Wed, 12 Feb 2014 11:03:40 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: alexandre.torgue@st.com, Lee Jones <lee.jones@linaro.org>,
+        devicetree@vger.kernel.org,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Subject: [PATCH 1/4] phy: miphy365x: Add Device Tree bindings for the MiPHY365x
+Date: Wed, 12 Feb 2014 16:03:02 +0000
+Message-Id: <1392220985-28189-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the introduction of a global name buffer, we can now remove
-the allocation and preparation of per-control name buffers.
+The MiPHY365x is a Generic PHY which can serve various SATA or PCIe
+devices. It has 2 ports which it can use for either; both SATA, both
+PCIe or one of each in any configuration.
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Tested-by: Andrew Lunn <andrew@lunn.ch>
+Cc: devicetree@vger.kernel.org
+Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
-Cc: Linus Walleij <linus.walleij@linaro.org> 
-Cc: Jason Cooper <jason@lakedaemon.net> 
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Gregory Clement <gregory.clement@free-electrons.com>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/pinctrl/mvebu/pinctrl-mvebu.c | 9 ---------
- 1 file changed, 9 deletions(-)
+ .../devicetree/bindings/phy/phy-miphy365x.txt      | 43 ++++++++++++++++++++++
+ 1 file changed, 43 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/phy/phy-miphy365x.txt
 
-diff --git a/drivers/pinctrl/mvebu/pinctrl-mvebu.c b/drivers/pinctrl/mvebu/pinctrl-mvebu.c
-index d47650fc5119..c0e27e4f8953 100644
---- a/drivers/pinctrl/mvebu/pinctrl-mvebu.c
-+++ b/drivers/pinctrl/mvebu/pinctrl-mvebu.c
-@@ -636,7 +636,6 @@ int mvebu_pinctrl_probe(struct platform_device *pdev)
- 	pctl->desc.npins = 0;
- 	for (n = 0; n < soc->ncontrols; n++) {
- 		struct mvebu_mpp_ctrl *ctrl = &soc->controls[n];
--		char *names;
- 
- 		pctl->desc.npins += ctrl->npins;
- 		/* initial control pins */
-@@ -654,14 +653,6 @@ int mvebu_pinctrl_probe(struct platform_device *pdev)
- 		}
- 
- 		/* generic mvebu register control */
--		names = devm_kzalloc(&pdev->dev, ctrl->npins * 8, GFP_KERNEL);
--		if (!names) {
--			dev_err(&pdev->dev, "failed to alloc mpp names\n");
--			return -ENOMEM;
--		}
--		for (k = 0; k < ctrl->npins; k++)
--			sprintf(names + 8*k, "mpp%d", ctrl->pid+k);
--		ctrl->name = names;
- 		pctl->num_groups += ctrl->npins;
- 		noname += ctrl->npins;
- 	}
+diff --git a/Documentation/devicetree/bindings/phy/phy-miphy365x.txt b/Documentation/devicetree/bindings/phy/phy-miphy365x.txt
+new file mode 100644
+index 0000000..fdfa7ca
+--- /dev/null
++++ b/Documentation/devicetree/bindings/phy/phy-miphy365x.txt
+@@ -0,0 +1,43 @@
++STMicroelectronics STi MIPHY365x PHY binding
++============================================
++
++This binding describes a miphy device that is used to control PHY hardware
++for SATA and PCIe.
++
++Required properties:
++- compatible: Should be "st,miphy365x-phy"
++- #phy-cells: Should be 2 (See example)
++- reg:	      Address and length of the register set for the device
++- reg-names:  The names of the register addresses corresponding to the
++	      registers filled in "reg".
++- st,syscfg : Should be a phandle of the syscfg node.
++
++Example:
++
++	miphy365x_phy: miphy365x@0 {
++		compatible = "st,miphy365x-phy";
++		#phy-cells = <1>;
++		reg =	<0xfe382000 0x100>,
++			<0xfe38a000 0x100>,
++			<0xfe394000 0x100>,
++			<0xfe804000 0x100>;
++		reg-names = "sata0", "sata1", "pcie0", "pcie1";
++		st,syscfg= <&syscfg_rear>;
++	};
++
++Specifying phy control of devices
++=================================
++
++Device nodes should specify the configuration required in their "phys"
++property, containing a phandle to the miphy device node, a port number
++and a device type.
++
++Example:
++
++#include <dt-bindings/phy/phy-miphy365x.h>
++
++	sata0: sata@fe380000 {
++		...
++		phys	  = <&miphy365x_phy MIPHY_PORT_0 MIPHY_TYPE_SATA>;
++		...
++	};
 -- 
-1.8.5.3
+1.8.3.2
 
