@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752869AbaBLBiu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 20:38:50 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:47085 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751975AbaBLBis (ORCPT
+	id S1752592AbaBLBmw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 20:42:52 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:47626 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751435AbaBLBmv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 20:38:48 -0500
-Date: Tue, 11 Feb 2014 17:38:46 -0800
-From: Olof Johansson <olof@lixom.net>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tomasz Figa <t.figa@samsung.com>, linux-arm-kernel@lists.infradead.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gnurou@gmail.com
-Subject: Re: [PATCH v2 0/6] ARM: firmware: improvements to Trusted
- Foundations support
-Message-ID: <20140212013846.GB7584@quad.lixom.net>
-References: <1391747706-1847-1-git-send-email-acourbot@nvidia.com>
+	Tue, 11 Feb 2014 20:42:51 -0500
+Message-ID: <52FAD18C.8080208@huawei.com>
+Date: Wed, 12 Feb 2014 09:42:36 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1391747706-1847-1-git-send-email-acourbot@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: LKML <linux-kernel@vger.kernel.org>, <dwmw2@infradead.org>,
+        <linux-mtd@lists.infradead.org>
+Subject: Re: [PATCH 2/3] jffs2: avoid soft-lockup in jffs2_reserve_space_gc()
+References: <52F592F2.6010008@huawei.com> <52F5934B.4000101@huawei.com> <20140211155440.62c5e90eb498ec2964258969@linux-foundation.org>
+In-Reply-To: <20140211155440.62c5e90eb498ec2964258969@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 07, 2014 at 01:35:00PM +0900, Alexandre Courbot wrote:
-> These (mostly minor) patches fix a few typos, improve points that
-> were agreed upon when the Trusted Foundation series was initially
-> submitted, and more importantly add support for a prepare_idle()
-> firmware operation that informs the firmware a CPU is doing idle.
-> Tegra's cpuidle driver is then also updated accordingly.
+>> --- a/fs/jffs2/nodemgmt.c
+>> +++ b/fs/jffs2/nodemgmt.c
+>> @@ -216,15 +216,20 @@ int jffs2_reserve_space_gc(struct jffs2_sb_info *c, uint32_t minsize,
+>>  
+>>  	jffs2_dbg(1, "%s(): Requested 0x%x bytes\n", __func__, minsize);
+>>  
+>> -	spin_lock(&c->erase_completion_lock);
+>> -	while(ret == -EAGAIN) {
+>> +	while (true) {
+>> +		spin_lock(&c->erase_completion_lock);
+>>  		ret = jffs2_do_reserve_space(c, minsize, len, sumsize);
+>>  		if (ret) {
+>>  			jffs2_dbg(1, "%s(): looping, ret is %d\n",
+>>  				  __func__, ret);
+>>  		}
+>> +		spin_unlock(&c->erase_completion_lock);
+>> +
+>> +		if (ret == -EAGAIN)
+>> +			cond_resched();
+>> +		else
+>> +			break;
+>>  	}
+>> -	spin_unlock(&c->erase_completion_lock);
+>>  	if (!ret)
+>>  		ret = jffs2_prealloc_raw_node_refs(c, c->nextblock, 1);
 > 
-> These patches should be the last step before device trees for NVIDIA
-> SHIELD and Tegra Note 7 can be submitted.
+> Looks OK.  We can do this:
 > 
-> Changes since v1:
-> - Do not remove TF support from tegra_defconfig (will automatically be taken
->   care of during next configuration update)
-> - Add a new prepare_idle() operation to firmware_ops that informs the firmware
->   a CPU is going idle (vs. asking the firmware to do it itself as do_idle()
->   does)
-> - Fix idle states names in TF implementation of prepare_idle to sound less
->   Tegra-specific
 
-1-5:
+Yeah, thanks for the cleanup.
 
-Acked-by: Olof Johansson <olof@lixom.net>
+> --- a/fs/jffs2/nodemgmt.c~jffs2-avoid-soft-lockup-in-jffs2_reserve_space_gc-fix
+> +++ a/fs/jffs2/nodemgmt.c
+> @@ -211,7 +211,7 @@ out:
+>  int jffs2_reserve_space_gc(struct jffs2_sb_info *c, uint32_t minsize,
+>  			   uint32_t *len, uint32_t sumsize)
+>  {
+> -	int ret = -EAGAIN;
+> +	int ret;
+>  	minsize = PAD(minsize);
+>  
+>  	jffs2_dbg(1, "%s(): Requested 0x%x bytes\n", __func__, minsize);
+> _
 
-Stephen asked if he should merge through Russell's tree or ours; since
-tegra is the only user I don't have a problem merging this (via tegra
-pull requests) but I'm giving Russell veto power. :)
-
-
--Olof
