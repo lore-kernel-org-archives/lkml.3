@@ -1,204 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752458AbaBLOay (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 09:30:54 -0500
-Received: from forward4m.mail.yandex.net ([37.140.138.4]:50619 "EHLO
-	forward4m.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752093AbaBLOaw (ORCPT
+	id S1752269AbaBLOcT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 09:32:19 -0500
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:37286 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751557AbaBLOcS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 09:30:52 -0500
-X-Greylist: delayed 385 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Feb 2014 09:30:52 EST
-From: Kirill Tkhai <tkhai@yandex.ru>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "mingo@kernel.org" <mingo@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-In-Reply-To: <20140212140620.GD9987@twins.programming.kicks-ass.net>
-References: <1328936700.2476.17.camel@laptop>
- <tip-606dba2e289446600a0b68422ed2019af5355c12@git.kernel.org>
- <124891392188453@web4h.yandex.ru> <20140212140620.GD9987@twins.programming.kicks-ass.net>
-Subject: Re: [tip:sched/core] sched: Push put_prev_task() into pick_next_task( )
+	Wed, 12 Feb 2014 09:32:18 -0500
 MIME-Version: 1.0
-Message-Id: <364441392215058@web18m.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Wed, 12 Feb 2014 18:24:18 +0400
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=koi8-r
+Date: Wed, 12 Feb 2014 15:32:16 +0100
+Message-ID: <CABPqkBSzttXoe3f_jC=Fv+ieN7_TNxLMDs4CH1C0TLYRq+Oz7g@mail.gmail.com>
+Subject: [BUG] perf report/annotate: consuming too many file descriptors
+From: Stephane Eranian <eranian@google.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>, Namhyung Kim <namhyung.kim@lge.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
 
-12.02.2014, 18:06, "Peter Zijlstra" <peterz@infradead.org>:
-> On Wed, Feb 12, 2014 at 11:00:53AM +0400, Kirill Tkhai wrote:
->
->>> š@@ -4748,7 +4743,7 @@ static void migrate_tasks(unsigned int dead_cpu)
->>> ššššššššššššššššššif (rq->nr_running == 1)
->>> ššššššššššššššššššššššššššbreak;
->>>
->>> š- next = pick_next_task(rq);
->>> š+ next = pick_next_task(rq, NULL);
->> špick_next_task() firstly checks for prev->sched_class, doesn't it ???
->>
->> šThe same for pick_next_task_rt().
->
-> OK, how about something like this?
+I was testing 3.14-rc2 (tip.git) perf and ran into a serious problem
+with report/annotate on a collection with lots of shared libraries (500).
 
-Good for me.
+Perf ran out of file descriptors (ulimit set to 1024). It did not print
+an error message, but simply refused to proceed to objdump.
 
-Maybe pack prev->sched_class->put_prev_task() into inline function?
+I ran strace and discovered it was running out of descriptors to
+my big surprise! I narrowed it down with strace -etrace=open.
+I saw an appalling result.
 
-Kirill
+My .so files were opened at least 4 times each, each
+allocated an fd that was kept open, each open incur a read of the ELF
+headers. So each dso was consuming 4 fd.
 
-> ---
-> Subject: sched: Fix hotplug task migration
-> From: Peter Zijlstra <peterz@infradead.org>
-> Date: Wed, 12 Feb 2014 10:49:30 +0100
->
-> Dan Carpenter reported:
->
->> škernel/sched/rt.c:1347 pick_next_task_rt() warn: variable dereferenced before check 'prev' (see line 1338)
->> škernel/sched/deadline.c:1011 pick_next_task_dl() warn: variable dereferenced before check 'prev' (see line 1005)
->
-> Kirill also spotted that migrate_tasks() will have an instant NULL
-> deref because pick_next_task() will immediately deref prev.
->
-> Instead of fixing all the corner cases because migrate_tasks() can
-> pass in a NULL prev task in the unlikely case of hot-un-plug, provide
-> a fake task such that we can remove all the NULL checks from the far
-> more common paths.
->
-> A further problem; not previously spotted; is that because we pushed
-> pre_schedule() and idle_balance() into pick_next_task() we now need to
-> avoid those getting called and pulling more tasks on our dying CPU.
->
-> We avoid pull_{dl,rt}_task() by setting fake_task.prio to MAX_PRIO+1.
-> We also note that since we call pick_next_task() exactly the amount of
-> times we have runnable tasks present, we should never land in
-> idle_balance().
->
-> Fixes: 38033c37faab ("sched: Push down pre_schedule() and idle_balance()")
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Juri Lelli <juri.lelli@gmail.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Reported-by: Kirill Tkhai <tkhai@yandex.ru>
-> Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> Link: http://lkml.kernel.org/r/20140212094930.GB3545@laptop.programming.kicks-ass.net
-> ---
-> škernel/sched/core.c ššššš| šš18 +++++++++++++++++-
-> škernel/sched/deadline.c š| ššš3 +--
-> škernel/sched/fair.c ššššš| ššš5 ++---
-> škernel/sched/idle_task.c | ššš3 +--
-> škernel/sched/rt.c ššššššš| ššš3 +--
-> škernel/sched/stop_task.c | ššš3 +--
-> š6 files changed, 23 insertions(+), 12 deletions(-)
->
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -4681,6 +4681,22 @@ static void calc_load_migrate(struct rq
-> šššššššššššššššššatomic_long_add(delta, &calc_load_tasks);
-> š}
->
-> +static void put_prev_task_fake(struct rq *rq, struct task_struct *prev)
-> +{
-> +}
-> +
-> +static const struct sched_class fake_sched_class = {
-> + .put_prev_task = put_prev_task_fake,
-> +};
-> +
-> +static struct task_struct fake_task = {
-> + /*
-> + * Avoid pull_{rt,dl}_task()
-> + */
-> + .prio = MAX_PRIO + 1,
-> + .sched_class = &fake_sched_class,
-> +};
-> +
-> š/*
-> šš* Migrate all tasks from the rq, sleeping tasks will be migrated by
-> šš* try_to_wake_up()->select_task_rq().
-> @@ -4721,7 +4737,7 @@ static void migrate_tasks(unsigned int d
-> šššššššššššššššššif (rq->nr_running == 1)
-> šššššššššššššššššššššššššbreak;
->
-> - next = pick_next_task(rq, NULL);
-> + next = pick_next_task(rq, &fake_task);
-> šššššššššššššššššBUG_ON(!next);
-> šššššššššššššššššnext->sched_class->put_prev_task(rq, next);
->
-> --- a/kernel/sched/deadline.c
-> +++ b/kernel/sched/deadline.c
-> @@ -1008,8 +1008,7 @@ struct task_struct *pick_next_task_dl(st
-> šššššššššif (unlikely(!dl_rq->dl_nr_running))
-> šššššššššššššššššreturn NULL;
->
-> - if (prev)
-> - prev->sched_class->put_prev_task(rq, prev);
-> + prev->sched_class->put_prev_task(rq, prev);
->
-> šššššššššdl_se = pick_next_dl_entity(rq, dl_rq);
-> šššššššššBUG_ON(!dl_se);
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -4690,7 +4690,7 @@ pick_next_task_fair(struct rq *rq, struc
-> šššššššššif (!cfs_rq->nr_running)
-> šššššššššššššššššgoto idle;
->
-> - if (!prev || prev->sched_class != &fair_sched_class)
-> + if (prev->sched_class != &fair_sched_class)
-> šššššššššššššššššgoto simple;
->
-> ššššššššš/*
-> @@ -4766,8 +4766,7 @@ pick_next_task_fair(struct rq *rq, struc
-> šššššššššif (!cfs_rq->nr_running)
-> šššššššššššššššššgoto idle;
->
-> - if (prev)
-> - prev->sched_class->put_prev_task(rq, prev);
-> + prev->sched_class->put_prev_task(rq, prev);
->
-> šššššššššdo {
-> šššššššššššššššššse = pick_next_entity(cfs_rq, NULL);
-> --- a/kernel/sched/idle_task.c
-> +++ b/kernel/sched/idle_task.c
-> @@ -26,8 +26,7 @@ static void check_preempt_curr_idle(stru
-> šstatic struct task_struct *
-> špick_next_task_idle(struct rq *rq, struct task_struct *prev)
-> š{
-> - if (prev)
-> - prev->sched_class->put_prev_task(rq, prev);
-> + prev->sched_class->put_prev_task(rq, prev);
->
-> šššššššššschedstat_inc(rq, sched_goidle);
-> š#ifdef CONFIG_SMP
-> --- a/kernel/sched/rt.c
-> +++ b/kernel/sched/rt.c
-> @@ -1344,8 +1344,7 @@ pick_next_task_rt(struct rq *rq, struct
-> šššššššššif (rt_rq_throttled(rt_rq))
-> šššššššššššššššššreturn NULL;
->
-> - if (prev)
-> - prev->sched_class->put_prev_task(rq, prev);
-> + prev->sched_class->put_prev_task(rq, prev);
->
-> šššššššššp = _pick_next_task_rt(rq);
->
-> --- a/kernel/sched/stop_task.c
-> +++ b/kernel/sched/stop_task.c
-> @@ -31,8 +31,7 @@ pick_next_task_stop(struct rq *rq, struc
-> šššššššššif (!stop || !stop->on_rq)
-> šššššššššššššššššreturn NULL;
->
-> - if (prev)
-> - prev->sched_class->put_prev_task(rq, prev);
-> + prev->sched_class->put_prev_task(rq, prev);
->
-> šššššššššstop->se.exec_start = rq_clock_task(rq);
+Why?
+
+Because of what's going on in dso__load() when perf iterates
+over the binary_type_symtab[]. It tries a bunch of types. For
+each match, symsrc_init() is invoked to read the ELF image.
+The fd opened there is kept open (for later loading).
+
+The first problem is why is dso__read_binary_type_filename()
+blindly returning success on many types. For my files, I got matches
+on DEBUGLINK, SYSTEM_DSO_PATH, GUEST_KMODULE,
+SYSTEM_PATH_KMODULE.
+
+I have a tendency to believe that the dso__read_binary_type_filename()
+meaning has been abused to stash things that do not really
+belong there.
+
+Furthermore, I believe many of the type matches do NOT need an ELF
+read and certainly not one that keeps a descriptor opened.
+
+This problem is not just about consuming too many fd, it is also about
+execution overhead. Why read the ELF headers 4 times?
+
+The current situation makes reporting on large collection impossible for
+regular users. I don't quite know how to best address this issue. One way
+I found would be for  dso__read_binary_type_filename() to return a value
+meaning success but no ELF read. Not sure would be correct, though.
+
+Any ideas on how to fix this?
+
+Thanks.
