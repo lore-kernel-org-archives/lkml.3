@@ -1,46 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752667AbaBLQ3K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 11:29:10 -0500
-Received: from imap.thunk.org ([74.207.234.97]:57103 "EHLO imap.thunk.org"
+	id S1752873AbaBLQaG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 11:30:06 -0500
+Received: from 1wt.eu ([62.212.114.60]:56960 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751218AbaBLQ3I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 11:29:08 -0500
-Date: Wed, 12 Feb 2014 11:29:04 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Azat Khuzhin <a3at.mail@gmail.com>
-Cc: linux-ext4@vger.kernel.org, Andreas Dilger <adilger.kernel@dilger.ca>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] ext4: initialize multi-block allocator before
- checking block descriptors
-Message-ID: <20140212162904.GD14520@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Azat Khuzhin <a3at.mail@gmail.com>, linux-ext4@vger.kernel.org,
-	Andreas Dilger <adilger.kernel@dilger.ca>,
-	open list <linux-kernel@vger.kernel.org>
-References: <1392128652-6882-1-git-send-email-a3at.mail@gmail.com>
-MIME-Version: 1.0
+	id S1752586AbaBLQaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 11:30:04 -0500
+Date: Wed, 12 Feb 2014 17:29:57 +0100
+From: Willy Tarreau <w@1wt.eu>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Subject: Re: [PATCH 3.13 000/120] 3.13.3-stable review
+Message-ID: <20140212162957.GG17206@1wt.eu>
+References: <20140211184823.492407127@linuxfoundation.org> <20140212083223.GD13873@1wt.eu> <20140212162643.GA21336@kroah.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1392128652-6882-1-git-send-email-a3at.mail@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <20140212162643.GA21336@kroah.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 06:24:12PM +0400, Azat Khuzhin wrote:
-> With EXT4FS_DEBUG ext4_count_free_clusters() will call
-> ext4_read_block_bitmap() without s_group_info initialized, so we need to
-> initialize multi-block allocator before.
+On Wed, Feb 12, 2014 at 08:26:43AM -0800, Greg Kroah-Hartman wrote:
+> On Wed, Feb 12, 2014 at 09:32:23AM +0100, Willy Tarreau wrote:
+> > Hi Greg,
+> > 
+> > On Tue, Feb 11, 2014 at 11:04:01AM -0800, Greg Kroah-Hartman wrote:
+> > > Test these out well, they have barely survived my systems, and I don't
+> > > trust them in the slightest to not eat your disks, reap your tasks, and
+> > > run away laughing as your CPU turns into a space heater.
+> > > 
+> > > You have been warned.
+> > 
+> > I upgraded my netbook from 3.10.x to test it (asus 1025C). It seems
+> > to work, cpufreq, SATA, FB, Xorg (gma500), wifi (ath9k), LAN (atl1c),
+> > sound, suspend. I'm hearing the fan run all the time without the CPU
+> > spinning, but I suspect that it's the result of upgrading from 3.10
+> > to 3.13, I'll have to dig that later (I didn't find anything related
+> > to this in .3-rc1). I know this is very limited for a test, but it's
+> > all I can provide for now.
 > 
-> And we can't initialize multi-block allocator without group descriptors,
-> since it use them.
-> Also we need to install s_op before initializing multi-block allocator,
-> because in ext4_mb_init_backend() new inode is created.
+> Can you verify if 3.13.0 also has this problem for you or not?
 
-Applied, thanks.
+I will, I just didn't have enough time this morning to do a second build.
 
-					- Ted
+Willy
+
