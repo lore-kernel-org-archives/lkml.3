@@ -1,87 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754204AbaBLWIA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 17:08:00 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:40221 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752644AbaBLWH7 (ORCPT
+	id S1753905AbaBLWLy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 17:11:54 -0500
+Received: from relay.parallels.com ([195.214.232.42]:53173 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752638AbaBLWLx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 17:07:59 -0500
-Date: Wed, 12 Feb 2014 14:07:53 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Trond Myklebust <trond.myklebust@primarydata.com>
-Cc: linuxnfs <linux-nfs@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Question about nfs4_destroy_session()
-Message-ID: <20140212220753.GG4250@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140212214209.GA4136@linux.vnet.ibm.com>
- <5BCC49E0-6F92-49EC-BFCD-17D5CA4D30C7@primarydata.com>
+	Wed, 12 Feb 2014 17:11:53 -0500
+Date: Thu, 13 Feb 2014 02:11:20 +0400
+From: Andrew Vagin <avagin@parallels.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Andrey Vagin <avagin@openvz.org>, <linux-kernel@vger.kernel.org>,
+        <criu@openvz.org>, Oleg Nesterov <oleg@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Kees Cook <keescook@chromium.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Aditya Kali <adityakali@google.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: Re: [PATCH] kernel: reduce required permission for prctl_set_mm
+Message-ID: <20140212221120.GA17603@paralelels.com>
+References: <1392219611-13260-1-git-send-email-avagin@openvz.org>
+ <20140212133228.e4ff66c6add0c6b121232aad@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset="koi8-r"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5BCC49E0-6F92-49EC-BFCD-17D5CA4D30C7@primarydata.com>
+In-Reply-To: <20140212133228.e4ff66c6add0c6b121232aad@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14021222-9332-0000-0000-000003161BB2
+X-Originating-IP: [10.24.24.113]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 04:55:02PM -0500, Trond Myklebust wrote:
+On Wed, Feb 12, 2014 at 01:32:28PM -0800, Andrew Morton wrote:
+> On Wed, 12 Feb 2014 19:40:11 +0400 Andrey Vagin <avagin@openvz.org> wrote:
 > 
-> On Feb 12, 2014, at 16:42, Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+> > Currently prctl_set_mm requires the global CAP_SYS_RESOURCE,
+> > this patch reduce requiremence to CAP_SYS_RESOURCE in the current
+> > namespace.
+> > 
+> > When we restore a task we need to set up text, data and data heap sizes
+> > from userspace to the values a task had at checkpoint time.
+> > 
+> > Currently we can not restore these parameters, if a task lives in
+> > a non-root user name space, because it has no capabilities in the
+> > parent namespace.
+> > 
+> > prctl_set_mm() changes parameters of the current task and doesn't affect
+> > other tasks.
+> > 
+> > This patch affects the RLIMIT_DATA limit, because a consumtiuon is
+> > calculated relatively to mm->end_data, mm->start_data, mm->start_brk.
 > 
-> > Hello, Trond,
-> > 
-> > In nfs4_destroy_session(), there is an rcu_dereference() that looks to
-> > leak the returned pointer out of an RCU read-side critical section.
-> > If the pointed-to object might have just now been created, this is a
-> > bug because xprt_destroy_backchannel() dereferences this pointer.
-> > 
-> > So, does xprt_destroy_backchannel() exclude creation-side code?  (If so,
-> > no bug -- but a comment might be good.)
-> > 
-> > 							Thanx, Paul
-> > 
-> > void nfs4_destroy_session(struct nfs4_session *session)
-> > {
-> > 	struct rpc_xprt *xprt;
-> > 	struct rpc_cred *cred;
-> > 
-> > 	cred = nfs4_get_clid_cred(session->clp);
-> > 	nfs4_proc_destroy_session(session, cred);
-> > 	if (cred)
-> > 		put_rpccred(cred);
-> > 
-> > 	rcu_read_lock();
-> > 	xprt = rcu_dereference(session->clp->cl_rpcclient->cl_xprt);
-> > 	rcu_read_unlock();
-> > 	dprintk("%s Destroy backchannel for xprt %p\n",
-> > 		__func__, xprt);
-> > 	xprt_destroy_backchannel(xprt, NFS41_BC_MIN_CALLBACKS);
-> > 	nfs4_destroy_session_slot_tables(session);
-> > 	kfree(session);
-> > }
-> > 
-> 
-> Hi Paul,
-> 
-> nfs4_destroy_session() is only called when we’re tearing down the struct nfs_client that owns the cl_rppcclient, and the associated cl_xprt, so the code above should be safe, despite being ugly.
-> 
-> Is there a better annotation for use in the above kind of situation?
+> I can't for the life of me work out what you were trying to say here. 
+> Please fix and resend this paragraph?
 
-One approach would be to add a comment on the rcu_dereference() stating
-that creation-side code is excluded, e.g., via locking or by the data
-structures no longer being accessible.  Another approach would be to
-move the rcu_read_unlock() to follow the xprt_destroy_backchannel(),
-assuming none of the code that would be pulled into the RCU read-side
-critical section can block.
+A task can exceed the RLIMIT_DATA limit by changing mm->start_brk,
+so this patch reduces required permission for RLIMIT_DATA too
 
-The second approach would prevent false positives from the RCU pointer
-leak detectors that are being worked on.
-
-							Thanx, Paul
-
+> 
+> > rlim = rlimit(RLIMIT_DATA);
+> > if (rlim < RLIM_INFINITY && (brk - mm->start_brk) +
+> > 		(mm->end_data - mm->start_data) > rlim)
+> > 	goto out;
+> > 
+> > This limit affects calls to brk() and sbrk(), but it doesn't affect
+> > mmap. So I think requirement of CAP_SYS_RESOURCE in the current
+> > namespace is enough for this limit.
+> > 
+> > ...
+> >
+> > Cc: security@kernel.org
+> 
+> That list is for reporting kernel security bugs.
+> 
+> >
+> > --- a/kernel/sys.c
+> > +++ b/kernel/sys.c
+> > @@ -1701,7 +1701,7 @@ static int prctl_set_mm(int opt, unsigned long addr,
+> >  	if (arg5 || (arg4 && opt != PR_SET_MM_AUXV))
+> >  		return -EINVAL;
+> >  
+> > -	if (!capable(CAP_SYS_RESOURCE))
+> > +	if (!ns_capable(current_user_ns(), CAP_SYS_RESOURCE))
+> >  		return -EPERM;
+> >  
+> >  	if (opt == PR_SET_MM_EXE_FILE)
+> 
+> This looks harmless.
+> 
+> My relatively-up-to-date manpages don't mention prctl(PR_SET_MM).  I
+> see from http://marc.info/?l=linux-man&m=133132612704130&w=2 that
+> manpage additions were prepared nearly three years ago.  Michael, did
+> this fall through a crack?
+> 
