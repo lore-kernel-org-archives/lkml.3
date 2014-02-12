@@ -1,98 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752778AbaBLPsl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 10:48:41 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:49015 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751735AbaBLPsj (ORCPT
+	id S1752796AbaBLPtQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 10:49:16 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:38313 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752078AbaBLPtP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 10:48:39 -0500
-Date: Wed, 12 Feb 2014 15:48:15 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH 05/14] mfd: sec: Use consistent S2MPS11 RTC alarm
- interrupt indexes
-Message-ID: <20140212154815.GB20026@lee--X1>
-References: <1392123837-5517-1-git-send-email-k.kozlowski@samsung.com>
- <1392123837-5517-6-git-send-email-k.kozlowski@samsung.com>
- <20140212090746.GR15081@lee--X1>
- <1392197497.22265.8.camel@AMDC1943>
- <20140212100219.GX15081@lee--X1>
- <1392206769.22265.25.camel@AMDC1943>
+	Wed, 12 Feb 2014 10:49:15 -0500
+Message-ID: <52FB9807.40706@windriver.com>
+Date: Wed, 12 Feb 2014 10:49:27 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1392206769.22265.25.camel@AMDC1943>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Rientjes <rientjes@google.com>
+CC: <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        <x86@kernel.org>
+Subject: Re: [PATCH] x86: fix two sparse warnings in early boot string handling
+References: <1392143619-11453-1-git-send-email-paul.gortmaker@windriver.com> <alpine.DEB.2.02.1402111425430.32020@chino.kir.corp.google.com> <20140212020010.GB21033@windriver.com> <alpine.DEB.2.02.1402111821510.13509@chino.kir.corp.google.com> <52FB8BEB.5020506@windriver.com>
+In-Reply-To: <52FB8BEB.5020506@windriver.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > > > The S2MPS11 RTC has two alarms: alarm0 and alarm1 (corresponding
-> > > > > interrupts are named similarly). Use consistent names for interrupts to
-> > > > > limit possible errors.
-> > > > > 
-> > > > > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > > > > ---
-> > > > >  drivers/mfd/sec-irq.c           |    8 ++++----
-> > > > >  include/linux/mfd/samsung/irq.h |    4 ++--
-> > > > >  2 files changed, 6 insertions(+), 6 deletions(-)
-> > > > 
-> > > > <snip>
-> > > > 
-> > > > >  #define S2MPS11_IRQ_RTC60S_MASK		(1 << 0)
-> > > > >  #define S2MPS11_IRQ_RTCA1_MASK		(1 << 1)
-> > > > > -#define S2MPS11_IRQ_RTCA2_MASK		(1 << 2)
-> > > > > +#define S2MPS11_IRQ_RTCA0_MASK		(1 << 2)
-> > > > 
-> > > > This doesn't look correct to me.
-> > > 
-> > > It is just renaming RTCA2 to RTCA0 because there is no "alarm 2"
-> > > registers. Actually the behavior of driver does not change (especially
-> > > that there is no RTC driver for S2MPS11) but now it looks properly:
-> > >  - set ALARM0 registers for RTCA0 interrupt,
-> > >  - set ALARM1 registers for RTCA1 interrupt,
-> > > 
-> > > This patch is not essential.
-> > 
-> > I mean the logic.
-> > 
-> > If these masks are used for registers then I assume RTCA0 would be
-> > BIT(1) amd RTCA1 would be BIT(2), but this patch swaps them round.
+On 14-02-12 09:57 AM, Paul Gortmaker wrote:
+> On 14-02-11 09:23 PM, David Rientjes wrote:
+>> On Tue, 11 Feb 2014, Paul Gortmaker wrote:
+>>
+>>>>> Fixes:
+>>>>>
+>>>>> arch/x86/boot/compressed/../string.c:60:14: warning: symbol 'atou' was not declared. Should it be static?
+>>>>> arch/x86/boot/string.c:133:6: warning: symbol 'strstr' was not declared. Should it be static?
+>>>>>
+>>>>> The atou one could be considered a false positive; it seems somehow
+>>>>> caused by including ./string.c from within /compressed/string.c file.
+>>>>> However git grep shows only the atou prototype and declaration, so
+>>>>> it is completely unused and we can hence delete it.
+>>>>>
+>>>>
+>>>> Declaring a prototype in a header file would be pointless if there is no 
+>>>> current breakage; I don't see why you can't remove strstr() in 
+>>>> arch/x86/boot/string.c entirely.  What breaks?
+>>>
+>>> Explicit breakage vs. sparse warnings are two different things.  It may
+>>> be that we can delete strstr() just like I did for atou() -- but in the
+>>> interest of doing the minimal change, I did just what was needed for
+>>> fixing the sparse warnings for strstr.  I can test if it can be removed,
+>>> but it has the smell of generic-libc usage all over it...
+>>>
+>>
+>> When the minimal change is to add an unnecessary prototype for a function 
+>> that is not referenced, it doesn't seem acceptable.
 > 
-> 
-> Yes, one could assume that and in case of S5M8767 this is right (the
-> order is proper)... but on S2MPS11/S2MPS14 this is reverted:
->  - BIT(0): RTC periodic 60s
->  - BIT(1): RTC Alarm 1
->  - BIT(2): RTC Alarm 0
-> 
-> The original code (BIT(1) for RTCA1 and BIT(2) for RTCA2) was wrong here
-> and may lead to errors. I think that this was changed during mainstream
-> process to match S5M8767. However some old internal driver sources for
-> S2MPS11 have:
-> #define S2MPS11_IRQ_RTCA2_MASK          (1 << 1)
-> #define S2MPS11_IRQ_RTCA1_MASK          (1 << 2)
+> OK, fair enough -- it seems surprisingly unused, as well as strcmp, despite
+> my gut feeling that they'd be used in multiple places.  I'll send a v2
+> that deletes all three once it passes allyesconfig on linux-next for x86
+> 32/64/uml.
 
-Okay, if you're happy that this is correct:
-  Acked-by: Lee Jones <lee.jones@linaro.org>
+Actually no v2 pending.  The original v1 patch was/is correct as-is.
 
-> > > > >  #define S2MPS11_IRQ_SMPL_MASK		(1 << 3)
-> > > > >  #define S2MPS11_IRQ_RTC1S_MASK		(1 << 4)
-> > > > >  #define S2MPS11_IRQ_WTSR_MASK		(1 << 5)
-> > > > 
-> > > 
-> > 
-> 
+While x86-64 defconfig passed, it turns out that both strcmp and strstr
+have to stay, else we will get this on i386 allyesconfig builds:
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+arch/x86/boot/compressed/eboot.o: In function `handle_cmdline_files.isra.5.constprop.6':
+eboot.c:(.text+0x4cf): undefined reference to `strstr'
+eboot.c:(.text+0x601): undefined reference to `strstr'
+make[2]: *** [arch/x86/boot/compressed/vmlinux] Error 1
+
+arch/x86/boot/edd.o: In function `query_edd':
+arch/x86/boot/edd.c:136: undefined reference to `strcmp'
+arch/x86/boot/edd.c:136: undefined reference to `strcmp'
+arch/x86/boot/edd.c:140: undefined reference to `strcmp'
+arch/x86/boot/edd.c:142: undefined reference to `strcmp'
+make[1]: *** [arch/x86/boot/setup.elf] Error 1
+
+So my gut feeling was right after all.  ;)
+
+Thanks,
+Paul.
+--
