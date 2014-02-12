@@ -1,154 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754484AbaBLUlZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 15:41:25 -0500
-Received: from www84.your-server.de ([213.133.104.84]:47977 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753803AbaBLUlX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 15:41:23 -0500
-From: stefani@seibold.net
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        ak@linux.intel.com, aarcange@redhat.com, john.stultz@linaro.org,
-        luto@amacapital.net, xemul@parallels.com, gorcunov@openvz.org,
-        andriy.shevchenko@linux.intel.com
-Cc: Martin.Runge@rohde-schwarz.com, Andreas.Brief@rohde-schwarz.com,
-        Stefani Seibold <stefani@seibold.net>
-Subject: [PATCH v15 03/10] revamp vclock_gettime.c
-Date: Wed, 12 Feb 2014 21:37:56 +0100
-Message-Id: <1392237483-6421-4-git-send-email-stefani@seibold.net>
-X-Mailer: git-send-email 1.8.5.4
-In-Reply-To: <1392237483-6421-1-git-send-email-stefani@seibold.net>
-References: <1392237483-6421-1-git-send-email-stefani@seibold.net>
-X-Authenticated-Sender: stefani@seibold.net
+	id S1754112AbaBLUnf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 15:43:35 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:45040 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753261AbaBLUnd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 15:43:33 -0500
+Date: Wed, 12 Feb 2014 12:43:08 -0800
+From: Kees Cook <kees@outflux.net>
+To: Pablo Neira Ayuso <pablo@netfilter.org>, Patrick McHardy <kaber@trash.net>
+Cc: linux-kernel@vger.kernel.org, davej@redhat.com
+Subject: flaw in "nf_tables: add reject module for NFPROTO_INET"
+Message-ID: <20140212204307.GK23300@outflux.net>
+References: <52fb24097b42_6b5073486c727c3@209.249.196.67.mail>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52fb24097b42_6b5073486c727c3@209.249.196.67.mail>
+Organization: Outflux
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefani Seibold <stefani@seibold.net>
+Hi,
 
-This intermediate patch revamps the vclock_gettime.c by moving some functions
-around. It is only for spliting purpose, to make whole the 32 bit vdso timer
-patch easier to review.
+This seems like a legit problem detected by Coverity. Looks like a break is
+missing?
 
-Signed-off-by: Stefani Seibold <Stefani Seibold stefani@seibold.net>
----
- arch/x86/vdso/vclock_gettime.c | 85 +++++++++++++++++++++---------------------
- 1 file changed, 42 insertions(+), 43 deletions(-)
+-Kees
 
-diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
-index eb5d7a5..bbc8065 100644
---- a/arch/x86/vdso/vclock_gettime.c
-+++ b/arch/x86/vdso/vclock_gettime.c
-@@ -26,41 +26,26 @@
- 
- #define gtod (&VVAR(vsyscall_gtod_data))
- 
--notrace static cycle_t vread_tsc(void)
-+static notrace cycle_t vread_hpet(void)
- {
--	cycle_t ret;
--	u64 last;
--
--	/*
--	 * Empirically, a fence (of type that depends on the CPU)
--	 * before rdtsc is enough to ensure that rdtsc is ordered
--	 * with respect to loads.  The various CPU manuals are unclear
--	 * as to whether rdtsc can be reordered with later loads,
--	 * but no one has ever seen it happen.
--	 */
--	rdtsc_barrier();
--	ret = (cycle_t)vget_cycles();
--
--	last = VVAR(vsyscall_gtod_data).clock.cycle_last;
--
--	if (likely(ret >= last))
--		return ret;
-+	return readl((const void __iomem *)fix_to_virt(VSYSCALL_HPET) + HPET_COUNTER);
-+}
- 
--	/*
--	 * GCC likes to generate cmov here, but this branch is extremely
--	 * predictable (it's just a funciton of time and the likely is
--	 * very likely) and there's a data dependence, so force GCC
--	 * to generate a branch instead.  I don't barrier() because
--	 * we don't actually need a barrier, and if this function
--	 * ever gets inlined it will generate worse code.
--	 */
--	asm volatile ("");
--	return last;
-+notrace static long vdso_fallback_gettime(long clock, struct timespec *ts)
-+{
-+	long ret;
-+	asm("syscall" : "=a" (ret) :
-+	    "0" (__NR_clock_gettime), "D" (clock), "S" (ts) : "memory");
-+	return ret;
- }
- 
--static notrace cycle_t vread_hpet(void)
-+notrace static long vdso_fallback_gtod(struct timeval *tv, struct timezone *tz)
- {
--	return readl((const void __iomem *)fix_to_virt(VSYSCALL_HPET) + HPET_COUNTER);
-+	long ret;
-+
-+	asm("syscall" : "=a" (ret) :
-+	    "0" (__NR_gettimeofday), "D" (tv), "S" (tz) : "memory");
-+	return ret;
- }
- 
- #ifdef CONFIG_PARAVIRT_CLOCK
-@@ -133,23 +118,37 @@ static notrace cycle_t vread_pvclock(int *mode)
- }
- #endif
- 
--notrace static long vdso_fallback_gettime(long clock, struct timespec *ts)
-+notrace static cycle_t vread_tsc(void)
- {
--	long ret;
--	asm("syscall" : "=a" (ret) :
--	    "0" (__NR_clock_gettime),"D" (clock), "S" (ts) : "memory");
--	return ret;
--}
-+	cycle_t ret;
-+	u64 last;
- 
--notrace static long vdso_fallback_gtod(struct timeval *tv, struct timezone *tz)
--{
--	long ret;
-+	/*
-+	 * Empirically, a fence (of type that depends on the CPU)
-+	 * before rdtsc is enough to ensure that rdtsc is ordered
-+	 * with respect to loads.  The various CPU manuals are unclear
-+	 * as to whether rdtsc can be reordered with later loads,
-+	 * but no one has ever seen it happen.
-+	 */
-+	rdtsc_barrier();
-+	ret = (cycle_t)vget_cycles();
- 
--	asm("syscall" : "=a" (ret) :
--	    "0" (__NR_gettimeofday), "D" (tv), "S" (tz) : "memory");
--	return ret;
--}
-+	last = VVAR(vsyscall_gtod_data).clock.cycle_last;
- 
-+	if (likely(ret >= last))
-+		return ret;
-+
-+	/*
-+	 * GCC likes to generate cmov here, but this branch is extremely
-+	 * predictable (it's just a funciton of time and the likely is
-+	 * very likely) and there's a data dependence, so force GCC
-+	 * to generate a branch instead.  I don't barrier() because
-+	 * we don't actually need a barrier, and if this function
-+	 * ever gets inlined it will generate worse code.
-+	 */
-+	asm volatile ("");
-+	return last;
-+}
- 
- notrace static inline u64 vgetsns(int *mode)
- {
+On Tue, Feb 11, 2014 at 11:34:33PM -0800, scan-admin@coverity.com wrote:
+> 
+> Hi,
+> 
+> 
+> Please find the latest report on new defect(s) introduced to Linux found with Coverity Scan.
+> 
+> Defect(s) Reported-by: Coverity Scan
+> Showing 1 of 1 defect(s)
+> 
+> 
+> ** CID 1171942:  Missing break in switch  (MISSING_BREAK)
+> /net/netfilter/nft_reject_inet.c: 25 in nft_reject_inet_eval()
+> 
+> 
+> ________________________________________________________________________________________________________
+> *** CID 1171942:  Missing break in switch  (MISSING_BREAK)
+> /net/netfilter/nft_reject_inet.c: 25 in nft_reject_inet_eval()
+> 19     				 struct nft_data data[NFT_REG_MAX + 1],
+> 20     				 const struct nft_pktinfo *pkt)
+> 21     {
+> 22     	switch (pkt->ops->pf) {
+> 23     	case NFPROTO_IPV4:
+> 24     		nft_reject_ipv4_eval(expr, data, pkt);
+> >>>     CID 1171942:  Missing break in switch  (MISSING_BREAK)
+> >>>     The above case falls through to this one.
+> 25     	case NFPROTO_IPV6:
+> 26     		nft_reject_ipv6_eval(expr, data, pkt);
+> 27     	}
+> 28     }
+> 29     
+> 30     static struct nft_expr_type nft_reject_inet_type;
+
 -- 
-1.8.5.4
-
+Kees Cook                                            @outflux.net
