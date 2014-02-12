@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752589AbaBLAB7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 19:01:59 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:54655 "EHLO gloria.sntech.de"
+	id S1752642AbaBLACg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 19:02:36 -0500
+Received: from gloria.sntech.de ([95.129.55.99]:54668 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751507AbaBLAB6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 19:01:58 -0500
+	id S1752503AbaBLACe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Feb 2014 19:02:34 -0500
 From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
 To: grant.likely@linaro.org
 Cc: robh+dt@kernel.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>,
         Mark Brown <broonie@kernel.org>
-Subject: [PATCH 2/3] regulator: gpio-regulator: do not open-code counting and access of dt array elements
-Date: Wed, 12 Feb 2014 01:01:08 +0100
-Message-ID: <1553563.pNlhnjkCFL@phil>
+Subject: [PATCH 3/3] regulator: ti-abb-regulator: do not open-code counting and access of dt array elements
+Date: Wed, 12 Feb 2014 01:01:42 +0100
+Message-ID: <2193931.Kqcd3TrslU@phil>
 User-Agent: KMail/4.11.3 (Linux/3.11-2-amd64; KDE/4.11.3; x86_64; ; )
 In-Reply-To: <2573561.oCYNnnL0gm@phil>
 References: <2573561.oCYNnnL0gm@phil>
@@ -32,60 +32,92 @@ over the states element exposes the endian conversion and dtb-format details,
 which according to Mark Rutland "would be nice to limit [...] to of_ helper
 functions".
 
-Thus change gpio-regulator to use the helper for element counting and
+Thus change ti-abb-regulator to use the helper for element counting and
 of_property_read_u32_index for retrieval of individual values.
 
-This makes it possible to remove the raw access to the states property entirely.
+This makes it possible to remove the raw access to the property entirely.
 
 Signed-off-by: Heiko Stuebner <heiko.stuebner@bqreaders.com>
 ---
- drivers/regulator/gpio-regulator.c |   15 ++++++---------
- 1 file changed, 6 insertions(+), 9 deletions(-)
+ drivers/regulator/ti-abb-regulator.c |   43 ++++++++++++++++------------------
+ 1 file changed, 20 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/regulator/gpio-regulator.c b/drivers/regulator/gpio-regulator.c
-index ac3a8c7..500aa3b 100644
---- a/drivers/regulator/gpio-regulator.c
-+++ b/drivers/regulator/gpio-regulator.c
-@@ -136,7 +136,6 @@ static struct gpio_regulator_config *
- of_get_gpio_regulator_config(struct device *dev, struct device_node *np)
+diff --git a/drivers/regulator/ti-abb-regulator.c b/drivers/regulator/ti-abb-regulator.c
+index a97d0c5..804c83a 100644
+--- a/drivers/regulator/ti-abb-regulator.c
++++ b/drivers/regulator/ti-abb-regulator.c
+@@ -507,32 +507,24 @@ static int ti_abb_init_table(struct device *dev, struct ti_abb *abb,
+ 			     struct regulator_init_data *rinit_data)
  {
- 	struct gpio_regulator_config *config;
--	struct property *prop;
- 	const char *regtype;
- 	int proplen, gpio, i;
- 	int ret;
-@@ -191,14 +190,12 @@ of_get_gpio_regulator_config(struct device *dev, struct device_node *np)
- 	}
+ 	struct ti_abb_info *info;
+-	const struct property *prop;
+-	const __be32 *abb_info;
+ 	const u32 num_values = 6;
+ 	char *pname = "ti,abb_info";
+-	u32 num_entries, i;
++	u32 i;
+ 	unsigned int *volt_table;
+-	int min_uV = INT_MAX, max_uV = 0;
++	int num_entries, min_uV = INT_MAX, max_uV = 0;
+ 	struct regulation_constraints *c = &rinit_data->constraints;
  
- 	/* Fetch states. */
--	prop = of_find_property(np, "states", NULL);
+-	prop = of_find_property(dev->of_node, pname, NULL);
 -	if (!prop) {
-+	proplen = of_property_count_u32_elems(np, "states");
-+	if (proplen < 0) {
- 		dev_err(dev, "No 'states' property found\n");
- 		return ERR_PTR(-EINVAL);
- 	}
- 
--	proplen = prop->length / sizeof(int);
+-		dev_err(dev, "No '%s' property?\n", pname);
+-		return -ENODEV;
+-	}
 -
- 	config->states = devm_kzalloc(dev,
- 				sizeof(struct gpio_regulator_state)
- 				* (proplen / 2),
-@@ -207,10 +204,10 @@ of_get_gpio_regulator_config(struct device *dev, struct device_node *np)
- 		return ERR_PTR(-ENOMEM);
+-	if (!prop->value) {
+-		dev_err(dev, "Empty '%s' property?\n", pname);
+-		return -ENODATA;
+-	}
+-
+ 	/*
+ 	 * Each abb_info is a set of n-tuple, where n is num_values, consisting
+ 	 * of voltage and a set of detection logic for ABB information for that
+ 	 * voltage to apply.
+ 	 */
+-	num_entries = prop->length / sizeof(u32);
++	num_entries = of_property_count_u32_elems(dev->of_node, pname);
++	if (num_entries < 0) {
++		dev_err(dev, "No '%s' property?\n", pname);
++		return -ENODEV;
++	}
++
+ 	if (!num_entries || (num_entries % num_values)) {
+ 		dev_err(dev, "All '%s' list entries need %d vals\n", pname,
+ 			num_values);
+@@ -561,18 +553,23 @@ static int ti_abb_init_table(struct device *dev, struct ti_abb *abb,
+ 	/* We do not know where the OPP voltage is at the moment */
+ 	abb->current_info_idx = -EINVAL;
  
- 	for (i = 0; i < proplen / 2; i++) {
--		config->states[i].value =
--			be32_to_cpup((int *)prop->value + (i * 2));
--		config->states[i].gpios =
--			be32_to_cpup((int *)prop->value + (i * 2 + 1));
-+		of_property_read_u32_index(np, "states", i * 2,
-+					   &config->states[i].value);
-+		of_property_read_u32_index(np, "states", i * 2 + 1,
-+					   &config->states[i].gpios);
- 	}
- 	config->nr_states = i;
+-	abb_info = prop->value;
+ 	for (i = 0; i < num_entries; i++, info++, volt_table++) {
+ 		u32 efuse_offset, rbb_mask, fbb_mask, vset_mask;
+ 		u32 efuse_val;
  
+ 		/* NOTE: num_values should equal to entries picked up here */
+-		*volt_table = be32_to_cpup(abb_info++);
+-		info->opp_sel = be32_to_cpup(abb_info++);
+-		efuse_offset = be32_to_cpup(abb_info++);
+-		rbb_mask = be32_to_cpup(abb_info++);
+-		fbb_mask = be32_to_cpup(abb_info++);
+-		vset_mask = be32_to_cpup(abb_info++);
++		of_property_read_u32_index(dev->of_node, pname, i * num_values,
++					   volt_table);
++		of_property_read_u32_index(dev->of_node, pname,
++					   i * num_values + 1, &info->opp_sel);
++		of_property_read_u32_index(dev->of_node, pname,
++					   i * num_values + 2, &efuse_offset);
++		of_property_read_u32_index(dev->of_node, pname,
++					   i * num_values + 3, &rbb_mask);
++		of_property_read_u32_index(dev->of_node, pname,
++					   i * num_values + 4, &fbb_mask);
++		of_property_read_u32_index(dev->of_node, pname,
++					   i * num_values + 5, &vset_mask);
+ 
+ 		dev_dbg(dev,
+ 			"[%d]v=%d ABB=%d ef=0x%x rbb=0x%x fbb=0x%x vset=0x%x\n",
 -- 
 1.7.10.4
 
