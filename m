@@ -1,65 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751998AbaBLNDd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 08:03:33 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:22557 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065AbaBLNDb (ORCPT
+	id S1751849AbaBLNHr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 08:07:47 -0500
+Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:54876 "EHLO
+	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751320AbaBLNHq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 08:03:31 -0500
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <jjhiblot@traphandler.com>, <b.brezillon@overkiz.com>,
-        stable <stable@vger.kernel.org>
-Subject: [PATCH RESEND] usb: at91-udc: fix irq and iomem resource retrieval
-Date: Wed, 12 Feb 2014 14:03:29 +0100
-Message-ID: <1392210209-22142-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
-In-Reply-To: <1390488102-8548-1-git-send-email-jjhiblot@traphandler.com>
-References: <1390488102-8548-1-git-send-email-jjhiblot@traphandler.com>
+	Wed, 12 Feb 2014 08:07:46 -0500
+Message-ID: <52FB7201.20202@st.com>
+Date: Wed, 12 Feb 2014 14:07:13 +0100
+From: Fabrice Gasnier <fabrice.gasnier@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Fabrice GASNIER <fabrice.gasnier@st.com>, <linux@arm.linux.org.uk>,
+        <u.kleine-koenig@pengutronix.de>, <jonathan.austin@arm.com>,
+        <catalin.marinas@arm.com>, <will.deacon@arm.com>, <nico@linaro.org>,
+        <sboyd@codeaurora.org>, <marc.zyngier@arm.com>,
+        <ben.dooks@codethink.co.uk>, <vgupta@synopsys.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Cc: <maxime.coquelin@st.com>
+Subject: Re: [PATCH v2] ARM: Add imprecise abort enable/disable macro
+References: <1392050756-11145-1-git-send-email-fabrice.gasnier@st.com>
+In-Reply-To: <1392050756-11145-1-git-send-email-fabrice.gasnier@st.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.201.23.81]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Hi,
 
-When using dt resources retrieval (interrupts and reg properties) there is
-no predefined order for these resources in the platform dev resource
-table. Also don't expect the number of resource to be always 2.
+Any comments on this patch ?
 
-Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-Acked-by: Boris BREZILLON <b.brezillon@overkiz.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: stable <stable@vger.kernel.org> # 3.4
----
- drivers/usb/gadget/at91_udc.c | 10 ----------
- 1 file changed, 10 deletions(-)
+Russel, can I add this patch to your patch tracker system ?
 
-diff --git a/drivers/usb/gadget/at91_udc.c b/drivers/usb/gadget/at91_udc.c
-index cea8c20a1425..1926925a52a9 100644
---- a/drivers/usb/gadget/at91_udc.c
-+++ b/drivers/usb/gadget/at91_udc.c
-@@ -1709,16 +1709,6 @@ static int at91udc_probe(struct platform_device *pdev)
- 		return -ENODEV;
- 	}
- 
--	if (pdev->num_resources != 2) {
--		DBG("invalid num_resources\n");
--		return -ENODEV;
--	}
--	if ((pdev->resource[0].flags != IORESOURCE_MEM)
--			|| (pdev->resource[1].flags != IORESOURCE_IRQ)) {
--		DBG("invalid resource type\n");
--		return -ENODEV;
--	}
--
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!res)
- 		return -ENXIO;
--- 
-1.8.2.2
+Thanks,
+Fabrice
+
+On 02/10/2014 05:45 PM, Fabrice GASNIER wrote:
+> This patch adds imprecise abort enable/disable macros.
+> It also enables imprecise aborts when starting kernel.
+>
+> Changes in v2:
+> Only ARMv6 and later have CPSR.A bit. On earlier CPUs,
+> and ARMv7M this should be a no-op.
+>
+> Signed-off-by: Fabrice Gasnier <fabrice.gasnier@st.com>
+> ---
+>   arch/arm/include/asm/irqflags.h |   10 ++++++++++
+>   arch/arm/kernel/smp.c           |    1 +
+>   arch/arm/kernel/traps.c         |    4 ++++
+>   3 files changed, 15 insertions(+)
+>
+> diff --git a/arch/arm/include/asm/irqflags.h b/arch/arm/include/asm/irqflags.h
+> index 3b763d6..8301f87 100644
+> --- a/arch/arm/include/asm/irqflags.h
+> +++ b/arch/arm/include/asm/irqflags.h
+> @@ -51,6 +51,14 @@ static inline void arch_local_irq_disable(void)
+>   
+>   #define local_fiq_enable()  __asm__("cpsie f	@ __stf" : : : "memory", "cc")
+>   #define local_fiq_disable() __asm__("cpsid f	@ __clf" : : : "memory", "cc")
+> +
+> +#ifndef CONFIG_CPU_V7M
+> +#define local_abt_enable()  __asm__("cpsie a	@ __sta" : : : "memory", "cc")
+> +#define local_abt_disable() __asm__("cpsid a	@ __cla" : : : "memory", "cc")
+> +#else
+> +#define local_abt_enable()	do { } while (0)
+> +#define local_abt_disable()	do { } while (0)
+> +#endif
+>   #else
+>   
+>   /*
+> @@ -130,6 +138,8 @@ static inline void arch_local_irq_disable(void)
+>   	: "memory", "cc");					\
+>   	})
+>   
+> +#define local_abt_enable()	do { } while (0)
+> +#define local_abt_disable()	do { } while (0)
+>   #endif
+>   
+>   /*
+> diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+> index dc894ab..c2093cb 100644
+> --- a/arch/arm/kernel/smp.c
+> +++ b/arch/arm/kernel/smp.c
+> @@ -377,6 +377,7 @@ asmlinkage void secondary_start_kernel(void)
+>   
+>   	local_irq_enable();
+>   	local_fiq_enable();
+> +	local_abt_enable();
+>   
+>   	/*
+>   	 * OK, it's off to the idle thread for us
+> diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
+> index 4636d56..ef15709 100644
+> --- a/arch/arm/kernel/traps.c
+> +++ b/arch/arm/kernel/traps.c
+> @@ -900,6 +900,10 @@ void __init early_trap_init(void *vectors_base)
+>   
+>   	flush_icache_range(vectors, vectors + PAGE_SIZE * 2);
+>   	modify_domain(DOMAIN_USER, DOMAIN_CLIENT);
+> +
+> +	/* Enable imprecise aborts */
+> +	local_abt_enable();
+> +
+>   #else /* ifndef CONFIG_CPU_V7M */
+>   	/*
+>   	 * on V7-M there is no need to copy the vector table to a dedicated
 
