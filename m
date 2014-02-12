@@ -1,74 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752276AbaBLKtP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 05:49:15 -0500
-Received: from mail.fireflyinternet.com ([87.106.93.118]:54939 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751323AbaBLKtL (ORCPT
+	id S1752371AbaBLKtx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 05:49:53 -0500
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:47048 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751811AbaBLKtu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 05:49:11 -0500
-X-Greylist: delayed 1024 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Feb 2014 05:49:10 EST
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.73.22;
-Date: Wed, 12 Feb 2014 10:31:56 +0000
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Aaron Lu <aaron.lu@intel.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Oleksij Rempel <linux@rempel-privat.de>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH] drm/i915/opregion: work around buggy firmware that
- provides 8+ output devices
-Message-ID: <20140212103156.GC5298@nuc-i3427.alporthouse.com>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	Aaron Lu <aaron.lu@intel.com>,
-	Daniel Vetter <daniel.vetter@ffwll.ch>,
-	Matthew Garrett <mjg59@srcf.ucam.org>,
-	Jani Nikula <jani.nikula@linux.intel.com>,
-	"Rafael J. Wysocki" <rjw@rjwysocki.net>,
-	Oleksij Rempel <linux@rempel-privat.de>,
-	"intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
-References: <52FAE504.8020001@intel.com>
+	Wed, 12 Feb 2014 05:49:50 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52FAE504.8020001@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1392055139-19631-13-git-send-email-benjamin.tissoires@redhat.com>
+References: <1392055139-19631-1-git-send-email-benjamin.tissoires@redhat.com>
+	<1392055139-19631-13-git-send-email-benjamin.tissoires@redhat.com>
+Date: Wed, 12 Feb 2014 11:49:49 +0100
+Message-ID: <CANq1E4RvnReiak20x2HPeZ6evYzDuVnLtbT9-WNeZR9yQbeHXg@mail.gmail.com>
+Subject: Re: [PATCH 12/14] HID: hidraw: replace hid_output_raw_report() calls
+ by appropriates ones
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 11:05:40AM +0800, Aaron Lu wrote:
-> The ACPI table on ASUS UX302LA has more than 8 output devices under the
-> graphics controller device node. The problem is, the real active output
-> device, the LCD panel, is listed the last. The result is, the LCD's
-> device id doesn't get recorded in the active device list CADL array and
-> when the _DCS control method for the LCD device is executed, it returns
-> 0x1d, meaning it is not active. This affects the hotkey delivery ASL
-> code that will not deliver a notification if the output device is not
-> active on backlight hotkey press.
-> 
-> I don't see a clean way to solve this problem since the operation region
-> spec doesn't allow more than 8 output devices so we have no way of
-> storing all these output devices. The fact that output devices that have
-> _BCM control method usually means they have a higher possibility of being
-> used than those who don't made me choose a simple way to work around
-> the buggy firmware by replacing the last entry in CADL array with the one
-> that has _BCM control method. There is no specific reason why the last
-> entry is picked instead of others.
+Hi
 
-Another possibility is that the connector list is in rough priority
-order so might be useful for sorting the CADL array.
+On Mon, Feb 10, 2014 at 6:58 PM, Benjamin Tissoires
+<benjamin.tissoires@redhat.com> wrote:
+> Remove hid_output_raw_report() call as it is not a ll_driver callbacj,
+> and switch to the hid_hw_* implementation. USB-HID used to fallback
+> into SET_REPORT when there were no output interrupt endpoint,
+> so emulating this if hid_hw_output_report() returns -ENOSYS.
+>
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> ---
+>  drivers/hid/hidraw.c | 22 +++++++++++++++++-----
+>  1 file changed, 17 insertions(+), 5 deletions(-)
+>
+> diff --git a/drivers/hid/hidraw.c b/drivers/hid/hidraw.c
+> index f8708c9..704718b 100644
+> --- a/drivers/hid/hidraw.c
+> +++ b/drivers/hid/hidraw.c
+> @@ -123,10 +123,8 @@ static ssize_t hidraw_send_report(struct file *file, const char __user *buffer,
+>
+>         dev = hidraw_table[minor]->hid;
+>
+> -       if (!dev->hid_output_raw_report) {
+> -               ret = -ENODEV;
+> -               goto out;
+> -       }
+> +       if (!dev->ll_driver->raw_request || !dev->ll_driver->output_report)
+> +               return -ENODEV;
 
-Since the CADL should only be a list of currently active devices, we
-could just bite the bullet and repopulate it correctly after every
-setcrtc.
--Chris
+You still have a "goto out;" above (not visible in the patch). The
+error paths look quite ugly now. I'd prefer consistency here, so
+either keep the jump or fix the error-path above, too. Otherwise looks
+good.
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+
+Thanks
+David
+
+>
+>         if (count > HID_MAX_BUFFER_SIZE) {
+>                 hid_warn(dev, "pid %d passed too large report\n",
+> @@ -153,7 +151,21 @@ static ssize_t hidraw_send_report(struct file *file, const char __user *buffer,
+>                 goto out_free;
+>         }
+>
+> -       ret = hid_output_raw_report(dev, buf, count, report_type);
+> +       if (report_type == HID_OUTPUT_REPORT) {
+> +               ret = hid_hw_output_report(dev, buf, count);
+> +               /*
+> +                * compatibility with old implementation of USB-HID and I2C-HID:
+> +                * if the device does not support receiving output reports,
+> +                * on an interrupt endpoint, then fallback to the SET_REPORT
+> +                * HID command.
+> +                */
+> +               if (ret != -ENOSYS)
+> +                       goto out_free;
+> +       }
+> +
+> +       ret = hid_hw_raw_request(dev, buf[0], buf, count, report_type,
+> +                               HID_REQ_SET_REPORT);
+> +
+>  out_free:
+>         kfree(buf);
+>  out:
+> --
+> 1.8.3.1
+>
