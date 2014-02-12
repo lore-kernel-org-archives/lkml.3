@@ -1,62 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751999AbaBLJwA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 04:52:00 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:14089 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751288AbaBLJv5 (ORCPT
+	id S1752080AbaBLJxH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 04:53:07 -0500
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:58638 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750932AbaBLJxE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 04:51:57 -0500
-X-AuditID: cbfec7f5-b7fc96d000004885-46-52fb443b68b4
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-kernel@vger.kernel.org
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>, stable@vger.kernel.org
-Subject: [PATCH] mfd: 88pm800: Fix I2C device resource leak if probe fails
-Date: Wed, 12 Feb 2014 10:51:41 +0100
-Message-id: <1392198701-20547-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNJMWRmVeSWpSXmKPExsVy+t/xK7rWLr+DDGZtUbB4/cLQ4v7Xo4wW
-	l3fNYbM43c1qsWDjI0YHVo871/awecw7GejRt2UVo8fnTXIBLFFcNimpOZllqUX6dglcGfvv
-	vGMt2Mpe8f3df+YGxtlsXYycHBICJhJ/3/dD2WISF+6tB7K5OIQEljJKnNu6nRnC6WOS2PNi
-	HStIFZuAscTm5UvAOkQEsiR+TFvNAmIzC3hKvPv7kB3EFhbwkui8+gUsziKgKrHn/iomEJtX
-	wF1i+pI9QL0cQNsUJOZMspnAyL2AkWEVo2hqaXJBcVJ6rpFecWJucWleul5yfu4mRkgAfN3B
-	uPSY1SFGAQ5GJR5eBs9fQUKsiWXFlbmHGCU4mJVEePVPAIV4UxIrq1KL8uOLSnNSiw8xMnFw
-	SjUwpt2umfpnQ6JH3Ido9gfsucxSer18X2ccU1N2vXxHOnLO5wmu5zn3u775VHT/tvD5sqOP
-	fGQbppUq+LwOiPkg1CJfEWT4JSJ/6W6W9QLPJp5MMNT5smbLOvNDpl4pE/dn6/zKublbZYLG
-	cXs38fvsbMUz2LLOyx+rXdRyu/HAv/jSWN/kZ4vKlViKMxINtZiLihMBGKzbpt4BAAA=
+	Wed, 12 Feb 2014 04:53:04 -0500
+Message-ID: <1392198781.23759.15.camel@x220>
+Subject: [PATCH] netfilter: nft_meta: fix typo "CONFIG_NET_CLS_ROUTE"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Pablo Neira Ayuso <pablo@netfilter.org>, Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: Richard Weinberger <richard@nod.at>, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, coreteam@netfilter.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 12 Feb 2014 10:53:01 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 12 Feb 2014 09:53:02.0594 (UTC) FILETIME=[382D3620:01CF27D8]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During probe the driver allocates two dummy I2C devices for subchips in
-function pm800_pages_init(). Additionally this function allocates
-regmaps for these subchips. If any of these steps fail then these dummy
-I2C devices are not freed and resources leak.
+There are two checks for CONFIG_NET_CLS_ROUTE, but the corresponding
+Kconfig symbol was dropped in v2.6.39. Since the code guards access to
+dst_entry.tclassid it seems CONFIG_IP_ROUTE_CLASSID should be used
+instead.
 
-On pm800_pages_init() fail the driver must call pm800_pages_exit() to
-unregister dummy I2C devices.
-
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: stable@vger.kernel.org
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
- drivers/mfd/88pm800.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Untested! I don't use CONFIG_NF_TABLES in my .config (yet). Besides, I
+would have no clue how to runtime test this.
 
-diff --git a/drivers/mfd/88pm800.c b/drivers/mfd/88pm800.c
-index 7dca1e640970..28627c1ff9da 100644
---- a/drivers/mfd/88pm800.c
-+++ b/drivers/mfd/88pm800.c
-@@ -586,8 +586,8 @@ static int pm800_probe(struct i2c_client *client,
- 	return 0;
+And, yes, typo is stretching it a bit.
+
+ net/netfilter/nft_meta.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/net/netfilter/nft_meta.c b/net/netfilter/nft_meta.c
+index e8254ad..425cf39 100644
+--- a/net/netfilter/nft_meta.c
++++ b/net/netfilter/nft_meta.c
+@@ -116,7 +116,7 @@ static void nft_meta_get_eval(const struct nft_expr *expr,
+ 				 skb->sk->sk_socket->file->f_cred->fsgid);
+ 		read_unlock_bh(&skb->sk->sk_callback_lock);
+ 		break;
+-#ifdef CONFIG_NET_CLS_ROUTE
++#ifdef CONFIG_IP_ROUTE_CLASSID
+ 	case NFT_META_RTCLASSID: {
+ 		const struct dst_entry *dst = skb_dst(skb);
  
- err_device_init:
--	pm800_pages_exit(chip);
- err_page_init:
-+	pm800_pages_exit(chip);
- err_subchip_alloc:
- 	pm80x_deinit();
- out_init:
+@@ -199,7 +199,7 @@ static int nft_meta_init_validate_get(uint32_t key)
+ 	case NFT_META_OIFTYPE:
+ 	case NFT_META_SKUID:
+ 	case NFT_META_SKGID:
+-#ifdef CONFIG_NET_CLS_ROUTE
++#ifdef CONFIG_IP_ROUTE_CLASSID
+ 	case NFT_META_RTCLASSID:
+ #endif
+ #ifdef CONFIG_NETWORK_SECMARK
 -- 
-1.7.9.5
+1.8.5.3
 
