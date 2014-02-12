@@ -1,56 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754170AbaBLVUm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 16:20:42 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:42939 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753863AbaBLVUl (ORCPT
+	id S1754323AbaBLVU7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 16:20:59 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:33970 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753863AbaBLVU6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 16:20:41 -0500
-Message-ID: <52FBE5A5.3040602@converseincode.com>
-Date: Wed, 12 Feb 2014 13:20:37 -0800
-From: Behan Webster <behanw@converseincode.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 12 Feb 2014 16:20:58 -0500
+Message-ID: <52FBE5B6.2040603@gmail.com>
+Date: Wed, 12 Feb 2014 22:20:54 +0100
+From: Boris BREZILLON <b.brezillon.dev@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>, dl9pf@gmx.de
-CC: David Woodhouse <David.Woodhouse@intel.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        ibm-acpi-devel@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86, acpi: LLVMLinux: Remove nested functions from Thinkpad
- ACPI
-References: <1392238726-18787-1-git-send-email-dl9pf@gmx.de> <20140212211159.GA29409@infradead.org>
-In-Reply-To: <20140212211159.GA29409@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Florian Fainelli <f.fainelli@gmail.com>
+CC: David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Gupta Pekon <pekon@ti.com>
+Subject: Re: [RFC PATCH v2 0/4] mtd: nand: add per partition ECC config
+References: <1392155209-14495-1-git-send-email-b.brezillon.dev@gmail.com> <CAGVrzcZei92K9Jeue-Yvcev7n08YEEqfRbN2xgqLpW7epMzFVA@mail.gmail.com>
+In-Reply-To: <CAGVrzcZei92K9Jeue-Yvcev7n08YEEqfRbN2xgqLpW7epMzFVA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/12/14 13:11, Christoph Hellwig wrote:
-> On Wed, Feb 12, 2014 at 09:58:46PM +0100, dl9pf@gmx.de wrote:
->> being able to compile the Linux kernel with Clang. The use of nested functions
->> blocks this effort.
-> Is there any good way to make gcc warn about the use of nested functions?
-Interesting idea.
+Hi Florian,
 
-'-Wtrampolines'
-      Warn about trampolines generated for pointers to nested functions.
+On 12/02/2014 20:49, Florian Fainelli wrote:
+> Hi Boris,
+>
+> 2014-02-11 13:46 GMT-08:00 Boris BREZILLON <b.brezillon.dev@gmail.com>:
+>> Hello,
+>>
+>> This patch series is a proposal to add per partition ECC config.
+>>
+>> It defines a new partition type called nand_part which stores a pointer to
+>> a nand_ecc_ctrl struct.
+>> This specific nand_ecc_ctrl struct is used in place of the base NAND chip
+>> nand_ecc_ctrl struct when accessing NAND chip from nand_part MTD device.
+>>
+>> If the partition does not define any ECC config, the NAND chip ECC config
+>> is used instead.
+> Although the idea does look nice on the paper, I wonder if it is
+> really useful to have that much complexity in the kernel. Most likely
+> what is happening is that your bootloader partition has a specific ECC
+> scheme due to the CPU bootrom or whatever early bootagent is running
+> on the system. When that is the case, this can be solved in user-space
+> by preparing full pages (main+spare) along with their specific ECC
+> requirements and use the MTD_FILE_MODE_RAW option on your specific MTD
+> partition.
 
-      A trampoline is a small piece of data or code that is created at
-      run time on the stack when the address of a nested function is
-      taken, and is used to call the nested function indirectly.  For
-      some targets, it is made up of data only and thus requires no
-      special treatment.  But, for most targets, it is made up of code
-      and thus requires the stack to be made executable in order for the
-      program to work properly.
+Okay, that should be possible, althought in the sunxi specific case I 
+haven't
+figured out how to generate these ECC data yet (even if it's using BCH 
+algorithms).
 
+> You do not describe what is the end goal of this patchset, which might
+> help figuring out the potential other platforms requirements etc...
 
-That might work.
+My goal is exactly the one you described above, I just thought this would be
+much easier to handle this within the kernel, without having to develop 
+extra
+user space tools.
+Moreover the user would be able to directly manipulate the data on the MTD
+partitions.
 
-Behan
+This implementation is not that complex and should not impact performances
+(it's just using cur_ecc pointer instead of intern ecc struct).
 
--- 
-Behan Webster
-behanw@converseincode.com
+Most of the extra code introduced by this series come from the new 
+partition type
+handling, which is quite straightforward BTW.
+
+Anyway, I understand your concern. Could MTD maintainers (and NAND driver
+developpers) give there opinion too ?
+
+BTW, I'm also working on a data randomization layer (needed by some 
+MLC/TLC chips)
+within the NAND core framework and I'm using the same per partition approach
+(for the exact same reason: boot0 partition uses a randomizer seed that 
+might not fit
+the NAND chip requirements).
+
+Should I reconsider doing this too ?
+
+Thanks for you comments.
+
+Best Regards,
+
+Boris
+>
+>> This patch series also provides an helper function to parse DT defined NAND
+>> partitions (ofnandpart_parse).
+>>
+>> If you want to test it you'll have to replace calls to
+>> mtd_device_parse_register with ofnandpart_parse within your NAND controller
+>> driver and implement a driver specific parser function that will provide
+>> the ECC config (see ofnandpart_data struct).
+>>
+>> The 4th patch of this series is here as an example on how to move from MTD
+>> partitions to NAND partitions.
+>>
+>> Best Regards,
+>>
+>> Boris
+>>
+>> Changes since v1:
+>> - almost everything :-)
+>>
+>> Boris BREZILLON (4):
+>>    mtd: nand: take nand_ecc_ctrl initialization out of nand_scan_tail
+>>    mtd: nand: add support for NAND partitions
+>>    mtd: nand: add DT NAND partition parser
+>>    mtd: nand: add NAND partition support to the sunxi driver
+>>
+>>   drivers/mtd/nand/Kconfig      |    4 +
+>>   drivers/mtd/nand/Makefile     |    2 +
+>>   drivers/mtd/nand/nand_base.c  |  763 ++++++++++++++++++++++++++++++++---------
+>>   drivers/mtd/nand/ofnandpart.c |  104 ++++++
+>>   drivers/mtd/nand/sunxi_nand.c |   69 +++-
+>>   include/linux/mtd/nand.h      |   54 +++
+>>   6 files changed, 835 insertions(+), 161 deletions(-)
+>>   create mode 100644 drivers/mtd/nand/ofnandpart.c
+>>
+>> --
+>> 1.7.9.5
+>>
+>>
+>> ______________________________________________________
+>> Linux MTD discussion mailing list
+>> http://lists.infradead.org/mailman/listinfo/linux-mtd/
+>
+>
 
