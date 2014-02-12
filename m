@@ -1,105 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754619AbaBLXFC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 18:05:02 -0500
-Received: from mail-we0-f182.google.com ([74.125.82.182]:36541 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754202AbaBLXFB (ORCPT
+	id S1754622AbaBLXHQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 18:07:16 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59897 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753563AbaBLXHO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 18:05:01 -0500
-Date: Thu, 13 Feb 2014 00:04:57 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Tejun Heo <tj@kernel.org>, Kevin Hilman <khilman@linaro.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Zoran Markovic <zoran.markovic@linaro.org>,
-        linux-kernel@vger.kernel.org,
-        Shaibal Dutta <shaibal.dutta@broadcom.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>
-Subject: Re: [RFC PATCH] rcu: move SRCU grace period work to power efficient
- workqueue
-Message-ID: <20140212230454.GA14383@localhost.localdomain>
-References: <1391197986-12774-1-git-send-email-zoran.markovic@linaro.org>
- <52F8A51F.4090909@cn.fujitsu.com>
- <20140210184729.GL4250@linux.vnet.ibm.com>
- <20140212182336.GD5496@localhost.localdomain>
- <20140212190241.GD4250@linux.vnet.ibm.com>
- <20140212192354.GC26809@htj.dyndns.org>
- <20140212195922.GE4250@linux.vnet.ibm.com>
+	Wed, 12 Feb 2014 18:07:14 -0500
+Date: Wed, 12 Feb 2014 15:06:26 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Tejun Heo <tj@kernel.org>, Michal Hocko <mhocko@suse.cz>
+cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Filipe Brandenburger <filbranden@google.com>,
+        Li Zefan <lizefan@huawei.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>,
+        Markus Blank-Burian <burian@muenster.de>,
+        Shawn Bohrer <shawn.bohrer@gmail.com>, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH 2/2] cgroup: bring back kill_cnt to order css destruction
+In-Reply-To: <alpine.LSU.2.11.1402121417230.5029@eggly.anvils>
+Message-ID: <alpine.LSU.2.11.1402121504150.5029@eggly.anvils>
+References: <alpine.LSU.2.11.1402061541560.31342@eggly.anvils> <20140207164321.GE6963@cmpxchg.org> <alpine.LSU.2.11.1402121417230.5029@eggly.anvils>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140212195922.GE4250@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 11:59:22AM -0800, Paul E. McKenney wrote:
-> On Wed, Feb 12, 2014 at 02:23:54PM -0500, Tejun Heo wrote:
-> > Hello,
-> > 
-> > On Wed, Feb 12, 2014 at 11:02:41AM -0800, Paul E. McKenney wrote:
-> > > +2.	Use the /sys/devices/virtual/workqueue/*/cpumask sysfs files
-> > > +	to force the WQ_SYSFS workqueues to run on the specified set
-> > > +	of CPUs.  The set of WQ_SYSFS workqueues can be displayed using
-> > > +	"ls sys/devices/virtual/workqueue".
-> > 
-> > One thing to be careful about is that once published, it becomes part
-> > of userland visible interface.  Maybe adding some words warning
-> > against sprinkling WQ_SYSFS willy-nilly is a good idea?
-> 
-> Good point!  How about the following?
-> 
-> 							Thanx, Paul
-> 
-> ------------------------------------------------------------------------
-> 
-> Documentation/kernel-per-CPU-kthreads.txt: Workqueue affinity
-> 
-> This commit documents the ability to apply CPU affinity to WQ_SYSFS
-> workqueues, thus offloading them from the desired worker CPUs.
-> 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Tejun Heo <tj@kernel.org>
-> 
-> diff --git a/Documentation/kernel-per-CPU-kthreads.txt b/Documentation/kernel-per-CPU-kthreads.txt
-> index 827104fb9364..214da3a47a68 100644
-> --- a/Documentation/kernel-per-CPU-kthreads.txt
-> +++ b/Documentation/kernel-per-CPU-kthreads.txt
-> @@ -162,7 +162,16 @@ Purpose: Execute workqueue requests
->  To reduce its OS jitter, do any of the following:
->  1.	Run your workload at a real-time priority, which will allow
->  	preempting the kworker daemons.
-> -2.	Do any of the following needed to avoid jitter that your
-> +2.	Use the /sys/devices/virtual/workqueue/*/cpumask sysfs files
-> +	to force the WQ_SYSFS workqueues to run on the specified set
-> +	of CPUs.  The set of WQ_SYSFS workqueues can be displayed using
-> +	"ls sys/devices/virtual/workqueue".  That said, the workqueues
-> +	maintainer would like to caution people against indiscriminately
-> +	sprinkling WQ_SYSFS across all the workqueues.  The reason for
-> +	caution is that it is easy to add WQ_SYSFS, but because sysfs
-> +	is part of the formal user/kernel API, it can be nearly impossible
-> +	to remove it, even if its addition was a mistake.
-> +3.	Do any of the following needed to avoid jitter that your
+Sometimes the cleanup after memcg hierarchy testing gets stuck in
+mem_cgroup_reparent_charges(), unable to bring non-kmem usage down to 0.
 
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+There may turn out to be several causes, but a major cause is this: the
+workitem to offline parent can get run before workitem to offline child;
+parent's mem_cgroup_reparent_charges() circles around waiting for the
+child's pages to be reparented to its lrus, but it's holding cgroup_mutex
+which prevents the child from reaching its mem_cgroup_reparent_charges().
 
-I just suggest we append a small explanation about what WQ_SYSFS is about.
-Like:
+Further testing showed that an ordered workqueue for cgroup_destroy_wq
+is not always good enough: percpu_ref_kill_and_confirm's call_rcu_sched
+stage on the way can mess up the order before reaching the workqueue.
 
-+2.
-+       The workqueues that want to be visible on the sysfs hierarchy
-+	set the WQ_SYSFS flag.
-+  	For those who have this flag set, you can use the
-+	/sys/devices/virtual/workqueue/*/cpumask sysfs files
-+	to force the workqueues to run on the specified set
-+	of CPUs.  The set of WQ_SYSFS workqueues can be displayed using
-+	"ls sys/devices/virtual/workqueue".  That said, the workqueues
-+	maintainer would like to caution people against indiscriminately
-+	sprinkling WQ_SYSFS across all the workqueues.  The reason for
-+	caution is that it is easy to add WQ_SYSFS, but because sysfs
-+	is part of the formal user/kernel API, it can be nearly impossible
-+	to remove it, even if its addition was a mistake.
-+3.	Do any of the following needed to avoid jitter that your
+Instead bring back v3.11's css kill_cnt, repurposing it to make sure
+that offline_css() is not called for parent before it has been called
+for all children.
+
+Fixes: e5fca243abae ("cgroup: use a dedicated workqueue for cgroup destruction")
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Reviewed-by: Filipe Brandenburger <filbranden@google.com>
+Cc: stable@vger.kernel.org # v3.10+ (but will need extra care)
+---
+This is an alternative to Filipe's 1/2: there's no need for both,
+but each has its merits.  I prefer Filipe's, which is much easier to
+understand: this one made more sense in v3.11, when it was just a matter
+of extending the use of css_kill_cnt; but might be preferred if offlining
+children before parent is thought to be a good idea generally.
+
+ include/linux/cgroup.h |    3 +++
+ kernel/cgroup.c        |   21 +++++++++++++++++++++
+ 2 files changed, 24 insertions(+)
+
+--- 3.14-rc2/include/linux/cgroup.h	2014-02-02 18:49:07.033302094 -0800
++++ linux/include/linux/cgroup.h	2014-02-11 15:59:22.720393186 -0800
+@@ -79,6 +79,9 @@ struct cgroup_subsys_state {
+ 
+ 	unsigned long flags;
+ 
++	/* ensure children are offlined before parent */
++	atomic_t kill_cnt;
++
+ 	/* percpu_ref killing and RCU release */
+ 	struct rcu_head rcu_head;
+ 	struct work_struct destroy_work;
+--- 3.14-rc2/kernel/cgroup.c	2014-02-02 18:49:07.737302111 -0800
++++ linux/kernel/cgroup.c	2014-02-11 15:57:56.000391125 -0800
+@@ -175,6 +175,7 @@ static int need_forkexit_callback __read
+ 
+ static struct cftype cgroup_base_files[];
+ 
++static void css_killed_ref_fn(struct percpu_ref *ref);
+ static void cgroup_destroy_css_killed(struct cgroup *cgrp);
+ static int cgroup_destroy_locked(struct cgroup *cgrp);
+ static int cgroup_addrm_files(struct cgroup *cgrp, struct cftype cfts[],
+@@ -4043,6 +4044,7 @@ static void init_css(struct cgroup_subsy
+ 	css->cgroup = cgrp;
+ 	css->ss = ss;
+ 	css->flags = 0;
++	atomic_set(&css->kill_cnt, 1);
+ 
+ 	if (cgrp->parent)
+ 		css->parent = cgroup_css(cgrp->parent, ss);
+@@ -4292,6 +4294,7 @@ static void css_killed_work_fn(struct wo
+ {
+ 	struct cgroup_subsys_state *css =
+ 		container_of(work, struct cgroup_subsys_state, destroy_work);
++	struct cgroup_subsys_state *parent = css->parent;
+ 	struct cgroup *cgrp = css->cgroup;
+ 
+ 	mutex_lock(&cgroup_mutex);
+@@ -4320,6 +4323,12 @@ static void css_killed_work_fn(struct wo
+ 	 * destruction happens only after all css's are released.
+ 	 */
+ 	css_put(css);
++
++	/*
++	 * Put the parent's kill_cnt reference from kill_css(), and
++	 * schedule its ->css_offline() if all children are now offline.
++	 */
++	css_killed_ref_fn(&parent->refcnt);
+ }
+ 
+ /* css kill confirmation processing requires process context, bounce */
+@@ -4328,6 +4337,9 @@ static void css_killed_ref_fn(struct per
+ 	struct cgroup_subsys_state *css =
+ 		container_of(ref, struct cgroup_subsys_state, refcnt);
+ 
++	if (!atomic_dec_and_test(&css->kill_cnt))
++		return;
++
+ 	INIT_WORK(&css->destroy_work, css_killed_work_fn);
+ 	queue_work(cgroup_destroy_wq, &css->destroy_work);
+ }
+@@ -4362,6 +4374,15 @@ static void kill_css(struct cgroup_subsy
+ 	 * css is confirmed to be seen as killed on all CPUs.
+ 	 */
+ 	percpu_ref_kill_and_confirm(&css->refcnt, css_killed_ref_fn);
++
++	/*
++	 * Make sure that ->css_offline() will not be called for parent
++	 * before it has been called for all children: this ordering
++	 * requirement is important for memcg, where parent's offline
++	 * might wait for a child's, leading to deadlock.
++	 */
++	atomic_inc(&css->parent->kill_cnt);
++	css_killed_ref_fn(&css->refcnt);
+ }
+ 
+ /**
