@@ -1,73 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751218AbaBLElV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 23:41:21 -0500
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:60283 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750767AbaBLElT (ORCPT
+	id S1751469AbaBLEmO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 23:42:14 -0500
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:36959 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750743AbaBLEmM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 23:41:19 -0500
+	Tue, 11 Feb 2014 23:42:12 -0500
 MIME-Version: 1.0
-In-Reply-To: <1392143632-15405-1-git-send-email-robherring2@gmail.com>
-References: <1392143632-15405-1-git-send-email-robherring2@gmail.com>
-Date: Wed, 12 Feb 2014 10:11:19 +0530
-Message-ID: <CAKohpok+68RsWk6TN3E-h2cUBgYNCpEgj0WS1pdfnP+SzKALQQ@mail.gmail.com>
-Subject: Re: [PATCH v2] cpufreq: cpu0: drop selecting of THERMAL and THERMAL_CPU
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>, Rob Herring <robh@kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>
+In-Reply-To: <1392177760-17959-1-git-send-email-lpapp@kde.org>
+References: <1392177760-17959-1-git-send-email-lpapp@kde.org>
+Date: Wed, 12 Feb 2014 10:12:12 +0530
+Message-ID: <CAK9yfHztuCSBSJUjc1xcf-f+O+kaKQQ=ExpWB-LoCkLoaZPfWA@mail.gmail.com>
+Subject: Re: [PATCH v6] mfd: MAX6650/6651 support
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Laszlo Papp <lpapp@kde.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>, jdelvare@suse.de,
+        Guenter Roeck <linux@roeck-us.net>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 February 2014 00:03, Rob Herring <robherring2@gmail.com> wrote:
-> From: Rob Herring <robh@kernel.org>
->
-> The addition of THERMAL and THERMAL_CPU selections causes a kconfig
-> warning on highbank platforms:
->
-> warning: (ARM_HIGHBANK_CPUFREQ) selects GENERIC_CPUFREQ_CPU0 which has
-> unmet direct dependencies (ARCH_HAS_CPUFREQ && CPU_FREQ && HAVE_CLK &&
->  REGULATOR && OF && THERMAL && CPU_THERMAL)
->
-> The cpufreq-cpu0 driver does not require thermal zone support to
-> function as highbank does not need these, so drop selecting of THERMAL
-> and CPU_THERMAL.
->
-> Reported-by: Olof Johansson <olof@lixom.net>
-> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-> Cc: Viresh Kumar <viresh.kumar@linaro.org>
-> Cc: cpufreq@vger.kernel.org
-> Signed-off-by: Rob Herring <robh@kernel.org>
-> ---
-> v2:
-> - just drop selecting THERMAL and THERMAL_CPU instead of a new kconfig
->   option
->
-> Dropping REGULATOR doesn't build w/o some empty regulator functions, so
-> that's 3.15 material.
->
-> Rob
->
->  drivers/cpufreq/Kconfig | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
-> index 4b029c0..d100926 100644
-> --- a/drivers/cpufreq/Kconfig
-> +++ b/drivers/cpufreq/Kconfig
-> @@ -185,7 +185,7 @@ config CPU_FREQ_GOV_CONSERVATIVE
->
->  config GENERIC_CPUFREQ_CPU0
->         tristate "Generic CPU0 cpufreq driver"
-> -       depends on HAVE_CLK && REGULATOR && OF && THERMAL && CPU_THERMAL
-> +       depends on HAVE_CLK && REGULATOR && OF
->         select PM_OPP
->         help
->           This adds a generic cpufreq driver for CPU0 frequency management.
+Hi Laszlo,
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Sorry for missing out on a couple of points during my earlier review.
+Please see inline.
+
+On 12 February 2014 09:32, Laszlo Papp <lpapp@kde.org> wrote:
+> MAX6650/MAX6651 chip is a multi-function device with I2C busses. The
+> chip includes fan-speed regulators and monitors, GPIO, and alarm.
+>
+> This patch is an initial release of a MAX6650/6651 MFD driver that
+> supports to enable the chip with its primary I2C bus that will connect
+> the hwmon, and then the gpio devices for now.
+>
+> Signed-off-by: Laszlo Papp <lpapp@kde.org>
+> ---
+[snip]
+
+> --- /dev/null
+> +++ b/drivers/mfd/max665x.c
+> @@ -0,0 +1,87 @@
+> +/*
+> + * Device access for MAX6650-MAX6651
+> + *
+> + * Copyright(c) 2013 Polatis Ltd.
+> + *
+> + * Author: Laszlo Papp <laszlo.papp@polatis.com>
+> + *
+> + *  This program is free software; you can redistribute  it and/or modify it
+> + *  under  the terms of  the GNU General  Public License as published by the
+> + *  Free Software Foundation;  either version 2 of the  License, or (at your
+> + *  option) any later version.
+> + */
+> +
+> +#include <linux/device.h>
+> +#include <linux/mfd/core.h>
+> +#include <linux/module.h>
+> +#include <linux/i2c.h>
+> +
+> +#include <linux/mfd/max665x-private.h>
+> +
+> +static struct mfd_cell max665x_devs[] = {
+> +       { .name = "max6651-gpio", },
+> +       { .name = "max6650", }, /* hwmon driver */
+> +       {},
+> +};
+> +
+> +const struct regmap_config max665x_regmap_config = {
+> +       .reg_bits = 5,
+> +};
+
+This should be static.
+
+> +static int max665x_probe(struct i2c_client *i2c,
+> +                           const struct i2c_device_id *id)
+> +{
+> +       struct max665x_dev *max665x;
+> +       int ret;
+> +
+> +       max665x = devm_kzalloc(&i2c->dev, sizeof(*max665x), GFP_KERNEL);
+> +       if (!max665x)
+> +               return -ENOMEM;
+> +
+> +       i2c_set_clientdata(i2c, max665x);
+> +       max665x->dev = &i2c->dev;
+> +       max665x->i2c = i2c;
+> +       max665x->map = devm_regmap_init_i2c(i2c, &max665x_regmap_config);
+
+Don't you need to check the return value of devm_regmap_init_i2c?
+
+-- 
+With warm regards,
+Sachin
