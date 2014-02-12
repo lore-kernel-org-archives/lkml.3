@@ -1,69 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752332AbaBLPPw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 10:15:52 -0500
-Received: from sauhun.de ([89.238.76.85]:41493 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751942AbaBLPPt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 10:15:49 -0500
-Date: Wed, 12 Feb 2014 16:15:43 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: linux@roeck-us.net
-Cc: linux-i2c@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Rob Landley <rob@landley.net>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/17] Documentation: i2c: describe devicetree method for
- instantiating devices
-Message-ID: <20140212151543.GA10871@katana>
-References: <1392026654-5343-1-git-send-email-wsa@the-dreams.de>
- <1392026654-5343-2-git-send-email-wsa@the-dreams.de>
- <20140210122119.115858a7ntu4lr40@67.228.131.205>
+	id S1752501AbaBLPQe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 10:16:34 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:48859 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752452AbaBLPQc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 10:16:32 -0500
+Date: Wed, 12 Feb 2014 15:16:26 +0000
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Len Brown <len.brown@intel.com>, Preeti Murthy <preeti.lkml@gmail.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
+Subject: Re: [RFC PATCH 3/3] idle: store the idle state index in the struct rq
+Message-ID: <20140212151626.GE28661@e102568-lin.cambridge.arm.com>
+References: <20140131090230.GM5002@laptop.programming.kicks-ass.net>
+ <52EB6F65.8050008@linux.vnet.ibm.com>
+ <52EBBC23.8020603@linux.intel.com>
+ <52EBC33A.6080101@linaro.org>
+ <52EBC645.2040607@linux.intel.com>
+ <alpine.LFD.2.11.1401311236470.2312@knanqh.ubzr>
+ <20140203125441.GD19029@e103034-lin>
+ <52EFA9D3.1030601@linux.intel.com>
+ <20140203145605.GL8874@twins.programming.kicks-ass.net>
+ <52EFC12B.50704@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rwEMma7ioTxnRzrJ"
-Content-Disposition: inline
-In-Reply-To: <20140210122119.115858a7ntu4lr40@67.228.131.205>
+In-Reply-To: <52EFC12B.50704@linux.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 12 Feb 2014 15:16:27.0280 (UTC) FILETIME=[66455100:01CF2805]
+X-MC-Unique: 114021215162807601
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Feb 03, 2014 at 04:17:47PM +0000, Arjan van de Ven wrote:
 
---rwEMma7ioTxnRzrJ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+[...]
 
+> >> 1) A latency driven one
+> >> 2) A performance impact on
+> >>
+> >> first one is pretty much the exit latency related time, sort of a
+> >> "expected time to first instruction" (currently menuidle has the
+> >> 99.999% worst case number, which is not useful for this, but is a
+> >> first approximation). This is obviously the dominating number for
+> >> expected-short running tasks
+> >>
+> >> second on is more of a "is there any cache/TLB left or is it flushed"
+> >> kind of metric. It's more tricky to compute, since what is the cost of
+> >> an empty cache (or even a cache migration) after all....  .... but I
+> >> suspect it's in part what the scheduler will care about more for
+> >> expected-long  running tasks.
+> >
+> > Yeah, so currently we 'assume' cache hotness based on runtime; see
+> > task_hot(). A hint that the CPU wiped its caches might help there.
+> 
+> if there's a simple api like
+> 
+> sched_cpu_cache_wiped(int llc)
+> 
+> that would be very nice for this; the menuidle side knows this
+> for some cases and thus can just call it. This would be a very
+> small and minimal change
 
-> There is now also a means to instantiate I2C devices through
-> ACPI. This is documented in Documentation/acpi/enumeration.txt.
->=20
-> Might be worthwhile to reference it from instantiating-devices.
-> I guess that would be a separate patch though.
+What do you mean by "menuidle side knows this for some cases" ?
+You mean you know that some C-state entries imply llc clean/invalidate ?
 
-Yes, it would. Thanks for the pointer!
+Thanks,
+Lorenzo
 
-
---rwEMma7ioTxnRzrJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS+5AfAAoJEBQN5MwUoCm28tMP/168mE9oo/SJj64Qh5ZeM8vL
-pPoxY3k/4I4LSpyWysiuV9exTZb8DLi0llyWGmCw6T98nIxcpIeqMpHm91wxMY4X
-JNTHMneAvcHgS1aRI/TtlvrrxP+TCt/DE9qFeyREjfH/MidVZkBQR5kPfpzGJ758
-6hs0JlUEJW/8ysiTLGI/ToBIOty5el+T9rX8QweMt8TBaiQqat60o1hD4nR3qTrI
-cAVcLGdOJ9ix41ghJeO/r1QGSkYVKUvLS9aHGyLoHH6GZ3oVP4g8mvXfklz6TB9R
-dFqnBgWtVajVO5HNFGJ+S1fO3qFqpzP5AlWetQO0xccW2mTu+cUfWuxJFR5/B+UG
-TQPwoDuUcAFlOoKg36G4/d3Lq5CK8UJ3kbNRQeGTLwrP7A8p+//glRs8PoO4Znr/
-frq6xKhzwI7vAW+82j9sAI2Du/DlWhbkNkGNmhvZW7vLPLwdYueMEVJi/82uJeAV
-4wxTAYX5+vvL4aurgh+O3G+iPtCFr7pxVhXT8UhwMHa9Yp9gvKfwBdyWWtOgWtCh
-69L/ZfbZm09kFn5Ao3xawPaleb+XWfI9bE1s8+ZUVuqrawOUayYLCUk1UuKQtm7c
-gyv8YMzA+HcSRab+R9P20q1ltWugJV3ppkdEkNqva8mTvSPc/SGO9Pq6XnrhJryF
-CI/gvqRjbf/PrlDckTZM
-=Uqmz
------END PGP SIGNATURE-----
-
---rwEMma7ioTxnRzrJ--
