@@ -1,33 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752895AbaBLPuZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 10:50:25 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40873 "EHLO
+	id S1752910AbaBLPud (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 10:50:33 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40880 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751620AbaBLPuY (ORCPT
+	with ESMTP id S1752447AbaBLPua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 10:50:24 -0500
-Date: Wed, 12 Feb 2014 15:44:14 +0000
+	Wed, 12 Feb 2014 10:50:30 -0500
+Date: Wed, 12 Feb 2014 15:32:02 +0000
 From: Mark Brown <broonie@kernel.org>
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Cc: lgirdwood@gmail.com, dmitry.torokhov@gmail.com, myungjoo.ham@samsung.com,
-        cw00.choi@samsung.com, alsa-devel@alsa-project.org,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Message-ID: <20140212154414.GW28112@sirena.org.uk>
-References: <20140210110536.GB6856@opensource.wolfsonmicro.com>
- <20140210120803.GS1757@sirena.org.uk>
- <20140212112409.GD16684@opensource.wolfsonmicro.com>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+Cc: lgirdwood@gmail.com, Guangyu.Chen@freescale.com, perex@perex.cz,
+        tiwai@suse.de, shawn.guo@linaro.org, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20140212153202.GU28112@sirena.org.uk>
+References: <1392104569-27792-1-git-send-email-Li.Xiubo@freescale.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cbsCxbAnPLQXdgdB"
+	protocol="application/pgp-signature"; boundary="AonAANj1daC6QcQu"
 Content-Disposition: inline
-In-Reply-To: <20140212112409.GD16684@opensource.wolfsonmicro.com>
+In-Reply-To: <1392104569-27792-1-git-send-email-Li.Xiubo@freescale.com>
 X-Cookie: Oh no, not again.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 94.175.92.69
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: dapm: Add locking to snd_soc_dapm_xxxx_pin
- functions
+Subject: Re: [PATCH v2 1/2] ASoC: fsl-spdif: big-endian support
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
 X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -35,59 +32,37 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---cbsCxbAnPLQXdgdB
+--AonAANj1daC6QcQu
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Wed, Feb 12, 2014 at 11:24:09AM +0000, Charles Keepax wrote:
-> On Mon, Feb 10, 2014 at 12:08:03PM +0000, Mark Brown wrote:
+On Tue, Feb 11, 2014 at 03:42:48PM +0800, Xiubo Li wrote:
+> For most platforms, the CPU and SPDIF device is in the same endianess
+> mode. While for the LS1 platform, the CPU is in LE mode and the SPDIF
+> is in BE mode.
 
-> > Unfortunately the fix needs to be in the callers to some extent - there
-> > are situations where you want to do atomic updates of multiple pins so
-> > that we don't end up bouncing the power up and down too much, we need
-> > the unlocked version for things that care.  This means we need to at
-> > least preserve an unlocked version and translate those callers that
-> > might care over to it (not sure if any of them are in mainline).
+Applied, thanks.
 
-> There are indeed none in mainline at the moment, or at least if
-> there are any they are not holding the lock at the moment so it
-> is not obviously they require atomic update.
-
-Anything doing this off jack detection probably falls into that category
-so the core jack detection code ought to be doing a bulk update.  For
-safety I'd say that anything that's doing multiple updates at once
-should be assumed to expect them to go through together (that is the
-most likely outcome after all and the whole update then sync idiom means
-the code looks that way).
-
-> How would you feel about adding an extra functions that allows the
-> caller to hold the lock and adding locking into the DAPM core for
-> the existing users? Feels like the intention would be more clear
-> and will allow out of mainline users requiring atomic updates to
-> still do that.
-
-That was roughly what I was suggesting, yes.
-
---cbsCxbAnPLQXdgdB
+--AonAANj1daC6QcQu
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJS+5bLAAoJELSic+t+oim9/4MP/A+0jGucB4EKFe296N/4qHer
-yY8MtRk9PZso7v+hf72I/ta7Qdvl2VE0Fz4e6RiCUn3m0LiHnEE8FNX25Qy6WgJK
-9aDVZkMx1su9Kx8heCT2yPXlQX4w91XM/92CyT/Iz/to83GEssat9dXXXPKo56Z0
-yQHQ7oj7DVO1BRrPnuofaMjn6MknjWkqNkQ9AbaND4b5DeGL4zlUmrE30qCTLtNH
-zJwJs5b4Vs5ixJpNSNI7uQKXWC5WONWoLyUDjFRAiZV1eEGNGg1+ThHFW/oHKq9/
-uNOZCmvIRtkOxd4X5XRZTWE6ljSHPGvYwEdncrRmi5/3t5iG9TkGAvBAeJ8coRCU
-poLQuuRW9IHFw7khdNLMdbQ+CfxAlaVNgmJdBEemzP+DNbi7N2HqM/1boVmhO5kf
-IhsczHx026qS0mZQ6QaDLAtMhglpvDzt8ajb37oOlkFFWrmpSr2kJYJMM44Huaq1
-2I7DIbsj0rmC04tRwFJrgQ9M0Rh2KPYnHuVCCF8C/hW6jwz4QsJauMGF6wU/ZA85
-RVqe3dOHnC2smnmcL79YyUIbSpmPyyVkoLkEOPhfUFISMcypU2tHGyCHrH4ZEMk6
-NWaMOpJzJT61HuFCmaJscUdFSXpc8mLqJLDbZ4cWJWcbryb6UF1yaN6WLrZxcSJH
-H9OiCziX+PWUumJnlJpD
-=rv9+
+iQIcBAEBAgAGBQJS+5PuAAoJELSic+t+oim908oQAIYbd2MZWgXVaE4iF63RaROu
+z0iNBNUrGecXgKD4lixfUvvJmgkMxV4+J4HmtFvELnszwRyIILI9h2UtGOQFZg7r
+6FzGlxUhzEHqDdtVI7V2oShKfUrRf7SFX6Xw3lDLjUx9keZnbCWqCKS/Yt8HI6N8
+4cn2eO2hbNCx3uCjDqDMsfV6+N39hkhaAO9bL14D3oHHduq4fQGb+OCAV2vS+9OZ
+/0aSF8Ze4f+F94SLHtkn42Yyw7S7rxyJMvr0p4GVjYtTzInWHG4BogaplxgHLdNj
+Rls/ZekvQcctT39pOiJSGOfOora9VQStINhZgVe6q0Rdavr2WoR2CS7OI8Rdnppy
+Ec76v8c7aeWBnCj1DyfMkr+5ZvPMgn3yXSTPSh+KPHbl7o10edLjKrPdshtYidRu
+ONp1RBVp2Y147APL7S3pjTl0VADFUPBNbD0kMIGKzAsUTbpRvAu2vD4+if4L+2HP
+qh0d5e2HMtboi/LbxB3lJMfShuif31roSehXkf2NZ2zlo7rnenonGVGsV85jRc+g
+7ctWWjopz9L74jsvCJiGN/mv+PdNXp8fFgJ1t9/CjTAP7YPXWzprmgikoVlSAW2a
+r8uWVXt6r5vvVzqxKNnfUdWUHNBfeRN2hAOd/UxjW9SnN8lqb7J4UrxWYfoquaNN
+bSopPqdxnRoMQzHlp+7R
+=183T
 -----END PGP SIGNATURE-----
 
---cbsCxbAnPLQXdgdB--
+--AonAANj1daC6QcQu--
