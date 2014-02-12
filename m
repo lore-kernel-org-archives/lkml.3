@@ -1,25 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752339AbaBLIOR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 03:14:17 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50337 "EHLO
+	id S1752531AbaBLIPU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 03:15:20 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50371 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752240AbaBLIOM (ORCPT
+	by vger.kernel.org with ESMTP id S1752305AbaBLIOR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 03:14:12 -0500
+	Wed, 12 Feb 2014 03:14:17 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, kernel-team@lists.ubuntu.com,
-        "Ian Abbott" <abbotti@mev.co.uk>
+CC: akpm@linux-foundation.org, "Khalid Aziz" <khalid.aziz@oracle.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Christoph Lameter" <cl@linux.com>,
+        "Ben Hutchings" <bhutchings@solarflare.com>,
+        "Minchan Kim" <minchan@kernel.org>, "Andi Kleen" <andi@firstfloor.org>,
+        "Pravin Shelar" <pshelar@nicira.com>,
+        "Andrea Arcangeli" <aarcange@redhat.com>,
+        "Mel Gorman" <mgorman@suse.de>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Johannes Weiner" <jweiner@redhat.com>,
+        "Rik van Riel" <riel@redhat.com>
 Date: Wed, 12 Feb 2014 08:10:12 +0000
-Message-ID: <lsq.1392192612.906388703@decadent.org.uk>
+Message-ID: <lsq.1392192612.133215022@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 21/79] staging: comedi: cb_pcidio: fix for newer 
- PCI-DIO48H
+Subject: [PATCH 3.2 75/79] mm: hugetlbfs: fix hugetlbfs optimization
 In-Reply-To: <lsq.1392192611.998273004@decadent.org.uk>
 X-SA-Exim-Connect-IP: 91.84.160.45
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,90 +40,268 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Andrea Arcangeli <aarcange@redhat.com>
 
-commit 0283f7a100882684ad32b768f9f1ad81658a0b92 upstream.
+commit 27c73ae759774e63313c1fbfeb17ba076cea64c5 upstream.
 
-At some point, Measurement Computing / ComputerBoards redesigned the
-PCI-DIO48H to use a PLX PCI interface chip instead of an AMCC chip.
-This meant they had to put their hardware registers in the PCI BAR 2
-region instead of PCI BAR 1.  Unfortunately, they kept the same PCI
-device ID for the new design.  This means the driver recognizes the
-newer cards, but doesn't work (and is likely to screw up the local
-configuration registers of the PLX chip) because it's using the wrong
-region.
+Commit 7cb2ef56e6a8 ("mm: fix aio performance regression for database
+caused by THP") can cause dereference of a dangling pointer if
+split_huge_page runs during PageHuge() if there are updates to the
+tail_page->private field.
 
-Since all the supported boards have the DIO registers in the PCI BAR 2
-region except for older PCI-DIO48H boards which have an empty PCI BAR 2
-region and the DIO registers in PCI BAR 1, determine which PCI BAR
-region to use based on whether the PCI BAR 2 region is empty or not.
+Also it is repeating compound_head twice for hugetlbfs and it is running
+compound_head+compound_trans_head for THP when a single one is needed in
+both cases.
 
-This change makes the `dioregs_badrindex` member of `struct
-pcidio_board` redundant.  The `pcicontroler_badrindex` member is also
-unused, so remove both members.
+The new code within the PageSlab() check doesn't need to verify that the
+THP page size is never bigger than the smallest hugetlbfs page size, to
+avoid memory corruption.
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-Cc: kernel-team@lists.ubuntu.com
+A longstanding theoretical race condition was found while fixing the
+above (see the change right after the skip_unlock label, that is
+relevant for the compound_lock path too).
+
+By re-establishing the _mapcount tail refcounting for all compound
+pages, this also fixes the below problem:
+
+  echo 0 >/sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages
+
+  BUG: Bad page state in process bash  pfn:59a01
+  page:ffffea000139b038 count:0 mapcount:10 mapping:          (null) index:0x0
+  page flags: 0x1c00000000008000(tail)
+  Modules linked in:
+  CPU: 6 PID: 2018 Comm: bash Not tainted 3.12.0+ #25
+  Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+  Call Trace:
+    dump_stack+0x55/0x76
+    bad_page+0xd5/0x130
+    free_pages_prepare+0x213/0x280
+    __free_pages+0x36/0x80
+    update_and_free_page+0xc1/0xd0
+    free_pool_huge_page+0xc2/0xe0
+    set_max_huge_pages.part.58+0x14c/0x220
+    nr_hugepages_store_common.isra.60+0xd0/0xf0
+    nr_hugepages_store+0x13/0x20
+    kobj_attr_store+0xf/0x20
+    sysfs_write_file+0x189/0x1e0
+    vfs_write+0xc5/0x1f0
+    SyS_write+0x55/0xb0
+    system_call_fastpath+0x16/0x1b
+
+Signed-off-by: Khalid Aziz <khalid.aziz@oracle.com>
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Tested-by: Khalid Aziz <khalid.aziz@oracle.com>
+Cc: Pravin Shelar <pshelar@nicira.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Ben Hutchings <bhutchings@solarflare.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Johannes Weiner <jweiner@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Minchan Kim <minchan@kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[Khalid Aziz: Backported to 3.4]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/staging/comedi/drivers/cb_pcidio.c | 21 ++++++++-------------
- 1 file changed, 8 insertions(+), 13 deletions(-)
+ include/linux/hugetlb.h |    6 +++
+ mm/hugetlb.c            |   17 ++++++++
+ mm/swap.c               |  107 ++++++++++++++++++++++++++++++++++-------------
+ 3 files changed, 101 insertions(+), 29 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/cb_pcidio.c b/drivers/staging/comedi/drivers/cb_pcidio.c
-index 79477a5..b3c9c8f 100644
---- a/drivers/staging/comedi/drivers/cb_pcidio.c
-+++ b/drivers/staging/comedi/drivers/cb_pcidio.c
-@@ -56,10 +56,6 @@ struct pcidio_board {
- 	const char *name;	/*  name of the board */
- 	int dev_id;
- 	int n_8255;		/*  number of 8255 chips on board */
+--- a/include/linux/hugetlb.h
++++ b/include/linux/hugetlb.h
+@@ -24,6 +24,7 @@ struct hugepage_subpool *hugepage_new_su
+ void hugepage_put_subpool(struct hugepage_subpool *spool);
+ 
+ int PageHuge(struct page *page);
++int PageHeadHuge(struct page *page_head);
+ 
+ void reset_vma_resv_huge_pages(struct vm_area_struct *vma);
+ int hugetlb_sysctl_handler(struct ctl_table *, int, void __user *, size_t *, loff_t *);
+@@ -87,6 +88,11 @@ static inline int PageHuge(struct page *
+ {
+ 	return 0;
+ }
++
++static inline int PageHeadHuge(struct page *page_head)
++{
++	return 0;
++}
+ 
+ static inline void reset_vma_resv_huge_pages(struct vm_area_struct *vma)
+ {
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -679,6 +679,23 @@ int PageHuge(struct page *page)
+ }
+ EXPORT_SYMBOL_GPL(PageHuge);
+ 
++/*
++ * PageHeadHuge() only returns true for hugetlbfs head page, but not for
++ * normal or transparent huge pages.
++ */
++int PageHeadHuge(struct page *page_head)
++{
++	compound_page_dtor *dtor;
++
++	if (!PageHead(page_head))
++		return 0;
++
++	dtor = get_compound_page_dtor(page_head);
++
++	return dtor == free_huge_page;
++}
++EXPORT_SYMBOL_GPL(PageHeadHuge);
++
+ pgoff_t __basepage_index(struct page *page)
+ {
+ 	struct page *page_head = compound_head(page);
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -78,18 +78,6 @@ static void __put_compound_page(struct p
+ 
+ static void put_compound_page(struct page *page)
+ {
+-	/*
+-	 * hugetlbfs pages cannot be split from under us.  If this is a
+-	 * hugetlbfs page, check refcount on head page and release the page if
+-	 * the refcount becomes zero.
+-	 */
+-	if (PageHuge(page)) {
+-		page = compound_head(page);
+-		if (put_page_testzero(page))
+-			__put_compound_page(page);
+-		return;
+-	}
 -
--	/*  indices of base address regions */
--	int pcicontroler_badrindex;
--	int dioregs_badrindex;
- };
+ 	if (unlikely(PageTail(page))) {
+ 		/* __split_huge_page_refcount can run under us */
+ 		struct page *page_head = compound_trans_head(page);
+@@ -97,6 +85,35 @@ static void put_compound_page(struct pag
+ 		if (likely(page != page_head &&
+ 			   get_page_unless_zero(page_head))) {
+ 			unsigned long flags;
++
++			 if (PageHeadHuge(page_head)) {
++				if (likely(PageTail(page))) {
++					/*
++					 * __split_huge_page_refcount
++					 * cannot race here.
++					 */
++					VM_BUG_ON(!PageHead(page_head));
++					atomic_dec(&page->_mapcount);
++					if (put_page_testzero(page_head))
++						VM_BUG_ON(1);
++					if (put_page_testzero(page_head))
++						__put_compound_page(page_head);
++					return;
++				} else {
++					/*
++					 * __split_huge_page_refcount
++					 * run before us, "page" was a
++					 * THP tail. The split
++					 * page_head has been freed
++					 * and reallocated as slab or
++					 * hugetlbfs page of smaller
++					 * order (only possible if
++					 * reallocated as slab on
++					 * x86).
++					 */
++					goto skip_lock;
++				}
++			}
+ 			/*
+ 			 * page_head wasn't a dangling pointer but it
+ 			 * may not be a head page anymore by the time
+@@ -108,9 +125,29 @@ static void put_compound_page(struct pag
+ 				/* __split_huge_page_refcount run before us */
+ 				compound_unlock_irqrestore(page_head, flags);
+ 				VM_BUG_ON(PageHead(page_head));
+-				if (put_page_testzero(page_head))
+-					__put_single_page(page_head);
+-			out_put_single:
++skip_lock:
++				if (put_page_testzero(page_head)) {
++					/*
++					 * The head page may have been
++					 * freed and reallocated as a
++					 * compound page of smaller
++					 * order and then freed again.
++					 * All we know is that it
++					 * cannot have become: a THP
++					 * page, a compound page of
++					 * higher order, a tail page.
++					 * That is because we still
++					 * hold the refcount of the
++					 * split THP tail and
++					 * page_head was the THP head
++					 * before the split.
++					 */
++					if (PageHead(page_head))
++						__put_compound_page(page_head);
++					else
++						__put_single_page(page_head);
++				}
++out_put_single:
+ 				if (put_page_testzero(page))
+ 					__put_single_page(page);
+ 				return;
+@@ -174,21 +211,34 @@ bool __get_page_tail(struct page *page)
+ 	 */
+ 	unsigned long flags;
+ 	bool got = false;
+-	struct page *page_head;
++	struct page *page_head = compound_trans_head(page);
  
- static const struct pcidio_board pcidio_boards[] = {
-@@ -67,22 +63,16 @@ static const struct pcidio_board pcidio_boards[] = {
- 	 .name = "pci-dio24",
- 	 .dev_id = 0x0028,
- 	 .n_8255 = 1,
--	 .pcicontroler_badrindex = 1,
--	 .dioregs_badrindex = 2,
- 	 },
- 	{
- 	 .name = "pci-dio24h",
- 	 .dev_id = 0x0014,
- 	 .n_8255 = 1,
--	 .pcicontroler_badrindex = 1,
--	 .dioregs_badrindex = 2,
- 	 },
- 	{
- 	 .name = "pci-dio48h",
- 	 .dev_id = 0x000b,
- 	 .n_8255 = 2,
--	 .pcicontroler_badrindex = 0,
--	 .dioregs_badrindex = 1,
- 	 },
- };
- 
-@@ -244,10 +234,15 @@ found:
- 		    ("cb_pcidio: failed to enable PCI device and request regions\n");
- 		return -EIO;
+-	/*
+-	 * If this is a hugetlbfs page it cannot be split under us.  Simply
+-	 * increment refcount for the head page.
+-	 */
+-	if (PageHuge(page)) {
+-		page_head = compound_head(page);
+-		atomic_inc(&page_head->_count);
+-		got = true;
+-		goto out;
+-	}
+-
+-	page_head = compound_trans_head(page);
+ 	if (likely(page != page_head && get_page_unless_zero(page_head))) {
++		/* Ref to put_compound_page() comment. */
++		if (PageHeadHuge(page_head)) {
++			if (likely(PageTail(page))) {
++				/*
++				 * This is a hugetlbfs
++				 * page. __split_huge_page_refcount
++				 * cannot race here.
++				 */
++				VM_BUG_ON(!PageHead(page_head));
++				__get_page_tail_foll(page, false);
++				return true;
++			} else {
++				/*
++				 * __split_huge_page_refcount run
++				 * before us, "page" was a THP
++				 * tail. The split page_head has been
++				 * freed and reallocated as slab or
++				 * hugetlbfs page of smaller order
++				 * (only possible if reallocated as
++				 * slab on x86).
++				 */
++				put_page(page_head);
++				return false;
++			}
++		}
+ 		/*
+ 		 * page_head wasn't a dangling pointer but it
+ 		 * may not be a head page anymore by the time
+@@ -205,7 +255,6 @@ bool __get_page_tail(struct page *page)
+ 		if (unlikely(!got))
+ 			put_page(page_head);
  	}
--	devpriv->dio_reg_base
--	    =
-+	/*
-+	 * Use PCI BAR 2 region if non-zero length, else use PCI BAR 1 region.
-+	 * PCI BAR 1 is only used for older PCI-DIO48H boards.  At some point
-+	 * the PCI-DIO48H was redesigned to use the same PCI interface chip
-+	 * (and same PCI BAR region) as the other boards.
-+	 */
-+	devpriv->dio_reg_base =
- 	    pci_resource_start(devpriv->pci_dev,
--			       pcidio_boards[index].dioregs_badrindex);
-+			       (pci_resource_len(pcidev, 2) ? 2 : 1));
- 
- /*
-  * Allocate the subdevice structures.  alloc_subdevice() is a
+-out:
+ 	return got;
+ }
+ EXPORT_SYMBOL(__get_page_tail);
 
