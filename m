@@ -1,345 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751927AbaBLOPl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 09:15:41 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:34043 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751065AbaBLOPi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 09:15:38 -0500
-Message-ID: <52FB8E91.8030400@ti.com>
-Date: Wed, 12 Feb 2014 17:09:05 +0200
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752041AbaBLOQT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 09:16:19 -0500
+Received: from mail-we0-f177.google.com ([74.125.82.177]:52521 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751218AbaBLOQQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 09:16:16 -0500
+Message-ID: <52FB82AC.1010405@gmail.com>
+Date: Wed, 12 Feb 2014 14:18:20 +0000
+From: Emil Velikov <emil.l.velikov@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Laura Abbott <lauraa@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        <linux-arm-kernel@lists.infradead.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Rob Herring <robherring2@gmail.com>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>, <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCHv3 2/2] arm: Get rid of meminfo
-References: <1392153265-14439-1-git-send-email-lauraa@codeaurora.org> <1392153265-14439-3-git-send-email-lauraa@codeaurora.org>
-In-Reply-To: <1392153265-14439-3-git-send-email-lauraa@codeaurora.org>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Alexandre Courbot <acourbot@nvidia.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Ben Skeggs <bskeggs@redhat.com>
+CC: emil.l.velikov@gmail.com, nouveau@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [Nouveau] [PATCH v2] drm/nouveau: support for platform devices
+References: <CAAVeFuJaD1C7yPRGm3+hByLDuSiBhftehcbwFfrbLaYsAwRcZQ@mail.gmail.com> <1392183495-11481-1-git-send-email-acourbot@nvidia.com>
+In-Reply-To: <1392183495-11481-1-git-send-email-acourbot@nvidia.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laura,
-
-On 02/11/2014 11:14 PM, Laura Abbott wrote:
-> memblock is now fully integrated into the kernel and is the prefered
-> method for tracking memory. Rather than reinvent the wheel with
-> meminfo, migrate to using memblock directly instead of meminfo as
-> an intermediate.
+On 12/02/14 05:38, Alexandre Courbot wrote:
+> Upcoming mobile Kepler GPUs (such as GK20A) use the platform bus instead
+> of PCI to which Nouveau is tightly dependent. This patch allows Nouveau
+> to handle platform devices by:
 > 
-> Acked-by: Jason Cooper <jason@lakedaemon.net>
-> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Tested-by: Leif Lindholm <leif.lindholm@linaro.org>
-> Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
+> - abstracting PCI-dependent functions that were typically used for
+>   resource querying and page mapping,
+> - introducing a nv_device_is_pci() function that allows to make
+>   PCI-dependent code conditional,
+> - providing a nouveau_drm_platform_probe() function that takes a GPU
+>   platform device to be probed.
+> 
+> Core code as well as engine/subdev drivers are updated wherever possible
+> to make use of these functions. Some older drivers are too dependent on
+> PCI to be properly updated, but all newer code on which future chips may
+> depend should at least be runnable with platform devices.
+> 
+Hi Alexandre
+
+I've tried really hard to find something wrong with this patch but it
+seems that you have it polished very nicely.
+
+There is one quite minor nit in-line, but I'm not fussed either way.
+
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
 > ---
->   arch/arm/include/asm/mach/arch.h         |    4 +-
->   arch/arm/include/asm/memblock.h          |    3 +-
->   arch/arm/include/asm/setup.h             |   23 ------
->   arch/arm/kernel/atags_parse.c            |    5 +-
->   arch/arm/kernel/devtree.c                |    5 --
->   arch/arm/kernel/setup.c                  |   30 ++------
->   arch/arm/mach-clps711x/board-clep7312.c  |    7 +-
->   arch/arm/mach-clps711x/board-edb7211.c   |   10 +--
->   arch/arm/mach-clps711x/board-p720t.c     |    2 +-
->   arch/arm/mach-footbridge/cats-hw.c       |    2 +-
->   arch/arm/mach-footbridge/netwinder-hw.c  |    2 +-
->   arch/arm/mach-msm/board-halibut.c        |    6 --
->   arch/arm/mach-msm/board-mahimahi.c       |   13 +---
->   arch/arm/mach-msm/board-msm7x30.c        |    3 +-
->   arch/arm/mach-msm/board-sapphire.c       |   13 ++--
->   arch/arm/mach-msm/board-trout.c          |    8 +--
->   arch/arm/mach-orion5x/common.c           |    3 +-
->   arch/arm/mach-orion5x/common.h           |    3 +-
->   arch/arm/mach-pxa/cm-x300.c              |    3 +-
->   arch/arm/mach-pxa/corgi.c                |   10 +--
->   arch/arm/mach-pxa/eseries.c              |    9 +--
->   arch/arm/mach-pxa/poodle.c               |    8 +--
->   arch/arm/mach-pxa/spitz.c                |    8 +--
->   arch/arm/mach-pxa/tosa.c                 |    8 +--
->   arch/arm/mach-realview/core.c            |   11 +--
->   arch/arm/mach-realview/core.h            |    3 +-
->   arch/arm/mach-realview/realview_pb1176.c |    8 +--
->   arch/arm/mach-realview/realview_pbx.c    |   17 ++---
->   arch/arm/mach-s3c24xx/mach-smdk2413.c    |    8 +--
->   arch/arm/mach-s3c24xx/mach-vstms.c       |    8 +--
->   arch/arm/mach-sa1100/assabet.c           |    2 +-
->   arch/arm/mm/init.c                       |   67 +++++++-----------
->   arch/arm/mm/mmu.c                        |  115 +++++++++---------------------
+> Changes since v1:
+> - Refactored nouveau_device_create_() to take an additional bus type
+>   argument instead of having two versions of it that duplicate code.
+> - Fixed a typo when substituting pci_resource_* with nv_device_resource_*
+> - Check whether devices are PCI in relevant functions instead of
+>   nouveau_drm_load().
+> 
+>  drivers/gpu/drm/nouveau/core/engine/device/base.c  | 83 ++++++++++++++++++++--
+>  drivers/gpu/drm/nouveau/core/engine/falcon.c       |  6 +-
+>  drivers/gpu/drm/nouveau/core/engine/fifo/base.c    |  2 +-
+>  drivers/gpu/drm/nouveau/core/engine/graph/nv20.c   |  2 +-
+>  drivers/gpu/drm/nouveau/core/engine/graph/nv40.c   |  2 +-
+>  drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c   |  4 +-
+>  drivers/gpu/drm/nouveau/core/engine/xtensa.c       |  2 +-
+>  drivers/gpu/drm/nouveau/core/include/core/device.h | 30 ++++++++
+>  .../gpu/drm/nouveau/core/include/engine/device.h   | 17 +++--
+>  drivers/gpu/drm/nouveau/core/include/subdev/mc.h   |  1 +
+>  drivers/gpu/drm/nouveau/core/os.h                  |  1 +
+>  drivers/gpu/drm/nouveau/core/subdev/bar/base.c     |  4 +-
+>  drivers/gpu/drm/nouveau/core/subdev/bar/nv50.c     |  4 +-
+>  drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c     | 15 ++--
+>  .../gpu/drm/nouveau/core/subdev/devinit/fbmem.h    |  8 ++-
+>  drivers/gpu/drm/nouveau/core/subdev/devinit/nv04.c |  2 +-
+>  drivers/gpu/drm/nouveau/core/subdev/devinit/nv05.c |  2 +-
+>  drivers/gpu/drm/nouveau/core/subdev/devinit/nv10.c |  2 +-
+>  drivers/gpu/drm/nouveau/core/subdev/devinit/nv20.c |  2 +-
+>  drivers/gpu/drm/nouveau/core/subdev/fb/nv50.c      |  9 +--
+>  drivers/gpu/drm/nouveau/core/subdev/fb/nvc0.c      |  9 +--
+>  drivers/gpu/drm/nouveau/core/subdev/i2c/base.c     |  2 +-
+>  drivers/gpu/drm/nouveau/core/subdev/instmem/nv40.c |  7 +-
+>  drivers/gpu/drm/nouveau/core/subdev/mc/base.c      | 39 ++++++----
+>  drivers/gpu/drm/nouveau/core/subdev/mxm/base.c     |  2 +-
+>  drivers/gpu/drm/nouveau/nouveau_abi16.c            | 13 +++-
+>  drivers/gpu/drm/nouveau/nouveau_agp.c              |  2 +-
+>  drivers/gpu/drm/nouveau/nouveau_bios.c             |  4 ++
+>  drivers/gpu/drm/nouveau/nouveau_bo.c               | 22 +++---
+>  drivers/gpu/drm/nouveau/nouveau_chan.c             |  2 +-
+>  drivers/gpu/drm/nouveau/nouveau_display.c          |  3 +-
+>  drivers/gpu/drm/nouveau/nouveau_drm.c              | 59 ++++++++++++---
+>  drivers/gpu/drm/nouveau/nouveau_sysfs.c            |  8 ++-
+>  drivers/gpu/drm/nouveau/nouveau_ttm.c              | 31 ++++----
+>  drivers/gpu/drm/nouveau/nouveau_vga.c              |  5 ++
+>  35 files changed, 297 insertions(+), 109 deletions(-)
+> 
+[snip]
+> diff --git a/drivers/gpu/drm/nouveau/core/subdev/mc/base.c b/drivers/gpu/drm/nouveau/core/subdev/mc/base.c
+> index b4b9943773bc..572190c8363b 100644
+> --- a/drivers/gpu/drm/nouveau/core/subdev/mc/base.c
+> +++ b/drivers/gpu/drm/nouveau/core/subdev/mc/base.c
+> @@ -93,8 +93,8 @@ _nouveau_mc_dtor(struct nouveau_object *object)
+>  {
+>  	struct nouveau_device *device = nv_device(object);
+>  	struct nouveau_mc *pmc = (void *)object;
+> -	free_irq(device->pdev->irq, pmc);
+> -	if (pmc->use_msi)
+> +	free_irq(pmc->irq, pmc);
+> +	if (nv_device_is_pci(device) && pmc->use_msi)
+You should be able to keep the conditional as is.
 
-The arch/arm/mm/nommu.c has to be updated too :)
+>  		pci_disable_msi(device->pdev);
+>  	nouveau_subdev_destroy(&pmc->base);
+>  }
+> @@ -114,22 +114,25 @@ nouveau_mc_create_(struct nouveau_object *parent, struct nouveau_object *engine,
+>  	if (ret)
+>  		return ret;
+>  
+> -	switch (device->pdev->device & 0x0ff0) {
+> -	case 0x00f0:
+> -	case 0x02e0:
+> -		/* BR02? NFI how these would be handled yet exactly */
+> -		break;
+> -	default:
+> -		switch (device->chipset) {
+> -		case 0xaa: break; /* reported broken, nv also disable it */
+> -		default:
+> -			pmc->use_msi = true;
+> +	if (nv_device_is_pci(device))
+> +		switch (device->pdev->device & 0x0ff0) {
+> +		case 0x00f0:
+> +		case 0x02e0:
+> +			/* BR02? NFI how these would be handled yet exactly */
+>  			break;
+> +		default:
+> +			switch (device->chipset) {
+> +			case 0xaa:
+> +				/* reported broken, nv also disable it */
+> +				break;
+> +			default:
+> +				pmc->use_msi = true;
+> +				break;
+>  		}
+>  	}
+>  
+>  	pmc->use_msi = nouveau_boolopt(device->cfgopt, "NvMSI", pmc->use_msi);
+As you explicitly disable msi on platform devices you can move the
+option parsing within the if (nv_device_is_pci()) block.
 
-[...]
+This way you can drop the change in the following conditional and the
+similar one in _nouveau_mc_dtor.
 
-I've tested your change on keystone (with some additional printouts in sanity_check_meminfo())
-and got following results:
-
-- without your change + HIGHMEM=ON
-[    0.000000] ==== memblock_limit0x00000000af800000, arm_lowmem_limit0x00000000af800000 high_memoryef800000 vmalloc_limit0x00000000af800000
-
- - without your change + HIGHMEM=OFF
-[    0.000000] Truncating RAM at 80000000-bfffffff to -af7fffff (vmalloc region overlap).
-[    0.000000] ==== memblock_limit0x00000000af800000, arm_lowmem_limit0x00000000af800000 high_memoryef800000 vmalloc_limit0x00000000af800000
-
-- with your change + HIGHMEM=ON
-[    0.000000] ==== memblock_limit0x00000000af800000, arm_lowmem_limit0x00000000af800000 high_memoryef800000 vmalloc_limit0x00000000af800000
-
-- with your change + HIGHMEM=OFF
-[    0.000000] Truncating RAM at 0x0000000080000000-0x00000000c0000000 to -0x0000000010800000
-                                                                          ^printout changed
-[    0.000000] ==== memblock_limit0x00000000af800000, arm_lowmem_limit0x00000000af800000 high_memoryef800000 vmalloc_limit0x00000000af800000
-
-Keystone mem defined as: from@0x80000000 size@0x40000000 (LPAE=OFF)
-
-As result, i have few comments regarding sanity_check_meminfo() changes as I think there are
-some issues &side effects changes at least in printouts - see below.
-
->   	memblock_reserve(__pa(_sdata), _end - _sdata);
-> @@ -413,54 +397,53 @@ free_memmap(unsigned long start_pfn, unsigned long end_pfn)
->   /*
->    * The mem_map array can get very big.  Free the unused area of the memory map.
->    */
-> -static void __init free_unused_memmap(struct meminfo *mi)
-> +static void __init free_unused_memmap(void)
->   {
-> -	unsigned long bank_start, prev_bank_end = 0;
-> -	unsigned int i;
-> +	unsigned long start, prev_end = 0;
-> +	struct memblock_region *reg;
->   
->   	/*
->   	 * This relies on each bank being in address order.
->   	 * The banks are sorted previously in bootmem_init().
->   	 */
-> -	for_each_bank(i, mi) {
-> -		struct membank *bank = &mi->bank[i];
-> -
-> -		bank_start = bank_pfn_start(bank);
-> +	for_each_memblock(memory, reg) {
-> +		start = __phys_to_pfn(reg->base);
-
-memblock_region_memory_base_pfn() can be used here.
-
->   
->   #ifdef CONFIG_SPARSEMEM
->   		/*
->   		 * Take care not to free memmap entries that don't exist
->   		 * due to SPARSEMEM sections which aren't present.
->   		 */
-> -		bank_start = min(bank_start,
-> -				 ALIGN(prev_bank_end, PAGES_PER_SECTION));
-> +		start = min(start,
-> +				 ALIGN(prev_end, PAGES_PER_SECTION));
->   #else
->   		/*
->   		 * Align down here since the VM subsystem insists that the
->   		 * memmap entries are valid from the bank start aligned to
->   		 * MAX_ORDER_NR_PAGES.
->   		 */
-> -		bank_start = round_down(bank_start, MAX_ORDER_NR_PAGES);
-> +		start = round_down(start, MAX_ORDER_NR_PAGES);
->   #endif
->   		/*
->   		 * If we had a previous bank, and there is a space
->   		 * between the current bank and the previous, free it.
->   		 */
-> -		if (prev_bank_end && prev_bank_end < bank_start)
-> -			free_memmap(prev_bank_end, bank_start);
-> +		if (prev_end && prev_end < start)
-> +			free_memmap(prev_end, start);
->   
->   		/*
->   		 * Align up here since the VM subsystem insists that the
->   		 * memmap entries are valid from the bank end aligned to
->   		 * MAX_ORDER_NR_PAGES.
->   		 */
-> -		prev_bank_end = ALIGN(bank_pfn_end(bank), MAX_ORDER_NR_PAGES);
-> +		prev_end = ALIGN(start + __phys_to_pfn(reg->size),
-
-I think, start + __phys_to_pfn(reg->size) can be replaced by
-memblock_region_memory_end_pfn().
-
-> +				 MAX_ORDER_NR_PAGES);
->   	}
->   
->   #ifdef CONFIG_SPARSEMEM
-> -	if (!IS_ALIGNED(prev_bank_end, PAGES_PER_SECTION))
-> -		free_memmap(prev_bank_end,
-> -			    ALIGN(prev_bank_end, PAGES_PER_SECTION));
-> +	if (!IS_ALIGNED(prev_end, PAGES_PER_SECTION))
-> +		free_memmap(prev_end,
-> +			    ALIGN(prev_end, PAGES_PER_SECTION));
->   #endif
->   }
->   
-> @@ -536,7 +519,7 @@ void __init mem_init(void)
->   	set_max_mapnr(pfn_to_page(max_pfn) - mem_map);
->   
->   	/* this will put all unused low memory onto the freelists */
-> -	free_unused_memmap(&meminfo);
-> +	free_unused_memmap();
->   	free_all_bootmem();
->   
->   #ifdef CONFIG_SA1111
-> diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
-> index 4f08c13..23433ef 100644
-> --- a/arch/arm/mm/mmu.c
-> +++ b/arch/arm/mm/mmu.c
-> @@ -1046,74 +1046,44 @@ phys_addr_t arm_lowmem_limit __initdata = 0;
->   void __init sanity_check_meminfo(void)
->   {
->   	phys_addr_t memblock_limit = 0;
-> -	int i, j, highmem = 0;
-> +	int highmem = 0;
->   	phys_addr_t vmalloc_limit = __pa(vmalloc_min - 1) + 1;
-> +	struct memblock_region *reg;
->   
-> -	for (i = 0, j = 0; i < meminfo.nr_banks; i++) {
-> -		struct membank *bank = &meminfo.bank[j];
-> -		phys_addr_t size_limit;
-> -
-> -		*bank = meminfo.bank[i];
-> -		size_limit = bank->size;
-> +	for_each_memblock(memory, reg) {
-> +		phys_addr_t block_start = reg->base;
-> +		phys_addr_t block_end = reg->base + reg->size;
-> +		phys_addr_t size_limit = reg->size;
->   
-> -		if (bank->start >= vmalloc_limit)
-> +		if (reg->base >= vmalloc_limit)
->   			highmem = 1;
->   		else
-> -			size_limit = vmalloc_limit - bank->start;
-> +			size_limit = vmalloc_limit - reg->base;
->   
-> -		bank->highmem = highmem;
->   
-> -#ifdef CONFIG_HIGHMEM
-> -		/*
-> -		 * Split those memory banks which are partially overlapping
-> -		 * the vmalloc area greatly simplifying things later.
-> -		 */
-> -		if (!highmem && bank->size > size_limit) {
-> -			if (meminfo.nr_banks >= NR_BANKS) {
-> -				printk(KERN_CRIT "NR_BANKS too low, "
-> -						 "ignoring high memory\n");
-> -			} else {
-> -				memmove(bank + 1, bank,
-> -					(meminfo.nr_banks - i) * sizeof(*bank));
-> -				meminfo.nr_banks++;
-> -				i++;
-> -				bank[1].size -= size_limit;
-> -				bank[1].start = vmalloc_limit;
-> -				bank[1].highmem = highmem = 1;
-> -				j++;
-> +		if (!IS_ENABLED(CONFIG_HIGHMEM) || cache_is_vipt_aliasing()) {
-> +
-> +			if (highmem) {
-> +				pr_notice("Ignoring ram at %pa-%pa (!CONFIG_HIGHMEM)\n",
-> +					&block_start, &block_end);
-> +				memblock_remove(block_start, block_end);
-
-The wrong size is used here, should be => memblock_remove(block_start, reg->size);
-or => memblock_remove(block_start, size_limit);
-
-> +				continue;
->   			}
-> -			bank->size = size_limit;
-> -		}
-> -#else
-> -		/*
-> -		 * Highmem banks not allowed with !CONFIG_HIGHMEM.
-> -		 */
-> -		if (highmem) {
-> -			printk(KERN_NOTICE "Ignoring RAM at %.8llx-%.8llx "
-> -			       "(!CONFIG_HIGHMEM).\n",
-> -			       (unsigned long long)bank->start,
-> -			       (unsigned long long)bank->start + bank->size - 1);
-> -			continue;
-> -		}
->   
-> -		/*
-> -		 * Check whether this memory bank would partially overlap
-> -		 * the vmalloc area.
-> -		 */
-> -		if (bank->size > size_limit) {
-> -			printk(KERN_NOTICE "Truncating RAM at %.8llx-%.8llx "
-> -			       "to -%.8llx (vmalloc region overlap).\n",
-> -			       (unsigned long long)bank->start,
-> -			       (unsigned long long)bank->start + bank->size - 1,
-> -			       (unsigned long long)bank->start + size_limit - 1);
-> -			bank->size = size_limit;
-> +			if (reg->size > size_limit) {
-> +				phys_addr_t overlap_size = reg->size - size_limit;
-> +
-> +				pr_notice("Truncating RAM at %pa-%pa to -%pa",
-> +					&block_start, &block_end, &overlap_size);
-
-Pls, change it back to show new RAM limit instead of size.
-pr_notice("Truncating RAM at %pa-%pa to -%pa",
-				&block_start, &block_end, &vmalloc_limit);
+> -	if (pmc->use_msi && oclass->msi_rearm) {
+> +	if (nv_device_is_pci(device) && pmc->use_msi && oclass->msi_rearm) {
 
 
-> +				memblock_remove(vmalloc_limit, overlap_size);
-> +				block_end = vmalloc_limit;
-> +			}
->   		}
-> -#endif
-> -		if (!bank->highmem) {
-> -			phys_addr_t bank_end = bank->start + bank->size;
->   
-> -			if (bank_end > arm_lowmem_limit)
-> -				arm_lowmem_limit = bank_end;
-> +		if (!highmem) {
-> +			if (block_end > arm_lowmem_limit)
-> +				arm_lowmem_limit = reg->base + size_limit;
-> +
+Many thanks, and again, welcome to nouveau :-)
 
-if !highmem then size_limit will be calculated as vmalloc_limit - reg->base
-which in turn can be greater than reg->size. So, arm_lowmem_limit can point on
-non existent memory address.
-
-Seems, it should be:
-  arm_lowmem_limit = block_end;
-
->   
->   			/*
->   			 * Find the first non-section-aligned page, and point
-> @@ -1129,35 +1099,16 @@ void __init sanity_check_meminfo(void)
->   			 * occurs before any free memory is mapped.
->   			 */
->   			if (!memblock_limit) {
-> -				if (!IS_ALIGNED(bank->start, SECTION_SIZE))
-> -					memblock_limit = bank->start;
-> -				else if (!IS_ALIGNED(bank_end, SECTION_SIZE))
-> -					memblock_limit = bank_end;
-[...]
-
-Thanks for your patience :)
-
-Regards,
--grygorii
-
+-Emil
