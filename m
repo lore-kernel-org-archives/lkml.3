@@ -1,85 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751772AbaBLHkl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 02:40:41 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:16574 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750840AbaBLHkj (ORCPT
+	id S1751643AbaBLHnP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 02:43:15 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:39541 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809AbaBLHnN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 02:40:39 -0500
-Message-ID: <52FB24EA.3060001@huawei.com>
-Date: Wed, 12 Feb 2014 15:38:18 +0800
-From: Qin Chuanyu <qinchuanyu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Wed, 12 Feb 2014 02:43:13 -0500
+Message-ID: <52FB264D.30809@gmail.com>
+Date: Wed, 12 Feb 2014 08:44:13 +0100
+From: Francis Moreau <francis.moro@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Jason Wang <jasowang@redhat.com>,
-        <virtualization@lists.linux-foundation.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <mst@redhat.com>, <kvm@vger.kernel.org>
-Subject: Re: [PATCH V2 5/6] vhost_net: poll vhost queue after marking DMA
- is done
-References: <1377836962-49780-1-git-send-email-jasowang@redhat.com> <1377836962-49780-6-git-send-email-jasowang@redhat.com>
-In-Reply-To: <1377836962-49780-6-git-send-email-jasowang@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Peter Wu <lekensteyn@gmail.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+CC: Bastien Traverse <bastien.traverse@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: 3.12: ethernet controller missing after resuming from suspend
+ to RAM
+References: <52F2CC7B.80406@gmail.com> <20140211104237.GE18029@intel.com> <8701691.z6Q6jDD18v@al> <1835578.EmLUpvTMQe@vostro.rjw.lan>
+In-Reply-To: <1835578.EmLUpvTMQe@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.21.101]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/8/30 12:29, Jason Wang wrote:
-> We used to poll vhost queue before making DMA is done, this is racy if vhost
-> thread were waked up before marking DMA is done which can result the signal to
-> be missed. Fix this by always poll the vhost thread before DMA is done.
->
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
->   drivers/vhost/net.c |    9 +++++----
->   1 files changed, 5 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-> index ff60c2a..d09c17c 100644
-> --- a/drivers/vhost/net.c
-> +++ b/drivers/vhost/net.c
-> @@ -308,6 +308,11 @@ static void vhost_zerocopy_callback(struct ubuf_info *ubuf, bool success)
->   	struct vhost_virtqueue *vq = ubufs->vq;
->   	int cnt = atomic_read(&ubufs->kref.refcount);
->
-> +	/* set len to mark this desc buffers done DMA */
-> +	vq->heads[ubuf->desc].len = success ?
-> +		VHOST_DMA_DONE_LEN : VHOST_DMA_FAILED_LEN;
-> +	vhost_net_ubuf_put(ubufs);
-> +
->   	/*
->   	 * Trigger polling thread if guest stopped submitting new buffers:
->   	 * in this case, the refcount after decrement will eventually reach 1
-> @@ -318,10 +323,6 @@ static void vhost_zerocopy_callback(struct ubuf_info *ubuf, bool success)
->   	 */
->   	if (cnt <= 2 || !(cnt % 16))
->   		vhost_poll_queue(&vq->poll);
-> -	/* set len to mark this desc buffers done DMA */
-> -	vq->heads[ubuf->desc].len = success ?
-> -		VHOST_DMA_DONE_LEN : VHOST_DMA_FAILED_LEN;
-> -	vhost_net_ubuf_put(ubufs);
->   }
->
->   /* Expects to be always run from workqueue - which acts as
->
-with this change, vq would lose protection that provided by ubufs->kref.
-if another thread is waiting at vhost_net_ubuf_put_and_wait called by
-vhost_net_release, then after vhost_net_ubuf_put, vq would been free
-by vhost_net_release soon, vhost_poll_queue(&vq->poll) may cause NULL
-pointer Exception.
+On 02/12/2014 12:58 AM, Rafael J. Wysocki wrote:
+> On Tuesday, February 11, 2014 07:17:37 PM Peter Wu wrote:
+>> On Tuesday 11 February 2014 12:42:37 Mika Westerberg wrote:
+>>> On Mon, Feb 10, 2014 at 11:39:29PM +0100, Rafael J. Wysocki wrote:
+>>>>> _STA() returns 0x0A instead of 0x0F. Could there be something missing in
+>>>>> the ACPI hotplug code that overlooks this and removes the device on
+>>>>> resume?
+>>>>
+>>>> That is possible.  Actually even quite likely, but let's wait for the
+>>>> response from Peter.
+>>>
+>>> Here's a hack that should take the 0xa return value into consideration. It
+>>> turned out that this case is even mentioned in the ACPI spec.
+>>
+>> Tested-by: Peter Wu <lekensteyn@gmail.com>
+>>
+>> This works, the devices are not lost anymore after resume. dmesg
+>> mentions the 04:00.* devices at resume compared to the unpatched kernel:
+>>
+>> [   42.650721] PM: Finishing wakeup.
+>> [   42.650768] acpiphp_glue: hotplug_event: Bus check notify on \_SB_.PCI0.RP03
+>> [   42.650772] acpiphp_glue: hotplug_event: re-enumerating slots under \_SB_.PCI0.RP03
+>> [   42.650874] iwlwifi 0000:05:00.0: no hotplug settings from platform
+>> [   42.650722] Restarting tasks ... done.
+>> [   42.650985] video LNXVIDEO:00: Restoring backlight state
+>> [   42.650988] video LNXVIDEO:01: Restoring backlight state
+>> [   43.124208] ACPI: \_SB_.AC__: ACPI_NOTIFY_BUS_CHECK event: unsupported
+>> [   43.128401] jme 0000:04:00.5: irq 50 for MSI/MSI-X
+>> [   43.153005] jme 0000:04:00.5 eth0: Link is down
+>> [   43.153030] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
+>> [   43.154364] iwlwifi 0000:05:00.0: L1 Enabled; Disabling L0S
+>> [   43.162307] iwlwifi 0000:05:00.0: Radio type=0x1-0x3-0x1
+>> [   43.276220] acpiphp_glue: hotplug_event: Bus check notify on \_SB_.PCI0.RP01
+>> [   43.276223] acpiphp_glue: hotplug_event: re-enumerating slots under \_SB_.PCI0.RP01
+>> [   43.276257] xhci_hcd 0000:02:00.0: no hotplug settings from platform
+>> [   43.276267] acpiphp_glue: hotplug_event: Bus check notify on \_SB_.PCI0.RP02
+>> [   43.276268] acpiphp_glue: hotplug_event: re-enumerating slots under \_SB_.PCI0.RP02
+>> [   43.276355] sdhci-pci 0000:04:00.0: no hotplug settings from platform
+>> [   43.276368] pci 0000:04:00.2: no hotplug settings from platform
+>> [   43.276381] jmb38x_ms 0000:04:00.3: no hotplug settings from platform
+>> [   43.276393] jme 0000:04:00.5: no hotplug settings from platform
+>> [   43.276398] acpiphp_glue: hotplug_event: Bus check notify on \_SB_.PCI0.RP03
+>> [   43.276399] acpiphp_glue: hotplug_event: re-enumerating slots under \_SB_.PCI0.RP03
+>> [   43.276491] iwlwifi 0000:05:00.0: no hotplug settings from platform
+>> [   43.277214] IPv6: ADDRCONF(NETDEV_UP): wlan0: link is not ready
+>>
+>> Rafael, do you want me to test the other patch as well?
+> 
+> No, thanks!
+> 
+> Mika, I'll add a changelog to your patch and queue it up as a fix for 3.14.
+> 
 
-another question is that vhost_zerocopy_callback is called by kfree_skb,
-it may called in different thread context.
-vhost_poll_queue is called decided by ubufs->kref.refcount, this may 
-cause there isn't any thread call  vhost_poll_queue, but at least one is 
-needed. and this cause network break.
-We could repeat it by using 8 netperf thread in guest to xmit tcp to its 
-host.
+Thanks guys for solving this issue !
 
-I think if using atomic_read to decide while do vhost_poll_queue or not,
-at least a spink_lock is needed.
+Rafael, could this be submitted to stable trees (at least 3.12, 3.13) as
+well ?
 
