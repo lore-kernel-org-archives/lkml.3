@@ -1,44 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753136AbaBLVlX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 16:41:23 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:59258 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752932AbaBLVlW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 16:41:22 -0500
-Date: Wed, 12 Feb 2014 13:41:12 -0800
-From: Kees Cook <kees@outflux.net>
-To: tytso@mit.edu, Dave Jones <davej@redhat.com>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>, linux-kernel@vger.kernel.org
-Subject: Re: flaw in "nf_tables: add reject module for NFPROTO_INET"
-Message-ID: <20140212214112.GN23300@outflux.net>
-References: <52fb24097b42_6b5073486c727c3@209.249.196.67.mail>
- <20140212204307.GK23300@outflux.net>
- <20140212205037.GA6563@redhat.com>
- <20140212205453.GL23300@outflux.net>
- <20140212210347.GB6563@redhat.com>
- <20140212210554.GM23300@outflux.net>
- <20140212213151.GB12617@thunk.org>
+	id S1753628AbaBLVmP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 16:42:15 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:50438 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753332AbaBLVmN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 16:42:13 -0500
+Date: Wed, 12 Feb 2014 13:42:09 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: trond.myklebust@primarydata.com
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Question about nfs4_destroy_session()
+Message-ID: <20140212214209.GA4136@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140212213151.GB12617@thunk.org>
-Organization: Outflux
-X-HELO: www.outflux.net
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14021221-7164-0000-0000-000005F18D36
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 09:31:51PM +0000, tytso@mit.edu wrote:
-> I'm paying attention to Linux kernel coverity reports (as well as
-> working on my goal to drive the number of e2fsprogs coverity reports
-> to zero :-), so feel free to CC me on any reports.
+Hello, Trond,
 
-Okay, 3 people sounds like "we need a mailing list". :) Who's best to
-ask for that?
+In nfs4_destroy_session(), there is an rcu_dereference() that looks to
+leak the returned pointer out of an RCU read-side critical section.
+If the pointed-to object might have just now been created, this is a
+bug because xprt_destroy_backchannel() dereferences this pointer.
 
--Kees
+So, does xprt_destroy_backchannel() exclude creation-side code?  (If so,
+no bug -- but a comment might be good.)
 
--- 
-Kees Cook                                            @outflux.net
+							Thanx, Paul
+
+void nfs4_destroy_session(struct nfs4_session *session)
+{
+	struct rpc_xprt *xprt;
+	struct rpc_cred *cred;
+
+	cred = nfs4_get_clid_cred(session->clp);
+	nfs4_proc_destroy_session(session, cred);
+	if (cred)
+		put_rpccred(cred);
+
+	rcu_read_lock();
+	xprt = rcu_dereference(session->clp->cl_rpcclient->cl_xprt);
+	rcu_read_unlock();
+	dprintk("%s Destroy backchannel for xprt %p\n",
+		__func__, xprt);
+	xprt_destroy_backchannel(xprt, NFS41_BC_MIN_CALLBACKS);
+	nfs4_destroy_session_slot_tables(session);
+	kfree(session);
+}
+
