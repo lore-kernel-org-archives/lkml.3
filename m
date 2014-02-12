@@ -1,79 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752158AbaBLOSz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 09:18:55 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:39020 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751557AbaBLOSx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 09:18:53 -0500
-Date: Wed, 12 Feb 2014 11:18:37 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Anton Blanchard <anton@samba.org>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Michael Ellerman <michaele@au1.ibm.com>
-Subject: Re: [PATCH 06/35] perf hists: Leave symbol addr hist bucket auto
- alloc to symbol layer
-Message-ID: <20140212141837.GB7116@ghostprotocols.net>
-References: <1387566550-3524-1-git-send-email-acme@infradead.org>
- <1387566550-3524-7-git-send-email-acme@infradead.org>
- <20140212182316.44a10ca6@kryten>
+	id S1751790AbaBLOZz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 09:25:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25385 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751337AbaBLOZy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 09:25:54 -0500
+Date: Wed, 12 Feb 2014 09:25:38 -0500
+From: Dave Jones <davej@redhat.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Eric Sandeen <sandeen@sandeen.net>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
+Message-ID: <20140212142538.GA11046@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Dave Chinner <david@fromorbit.com>,
+	Al Viro <viro@ZenIV.linux.org.uk>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Eric Sandeen <sandeen@sandeen.net>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+References: <20140211210841.GM13647@dastard>
+ <52FA9ADA.9040803@sandeen.net>
+ <20140212004403.GA17129@redhat.com>
+ <20140212010941.GM18016@ZenIV.linux.org.uk>
+ <CA+55aFwoWT-0A_KTkXMkNqOy8hc=YmouTMBgWUD_z+8qYPphjA@mail.gmail.com>
+ <20140212040358.GA25327@redhat.com>
+ <20140212042215.GN18016@ZenIV.linux.org.uk>
+ <20140212054043.GB13997@dastard>
+ <20140212055027.GA28502@redhat.com>
+ <20140212061038.GC13997@dastard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140212182316.44a10ca6@kryten>
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <20140212061038.GC13997@dastard>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Feb 12, 2014 at 06:23:16PM +1100, Anton Blanchard escreveu:
-> Hi,
-> 
-> > From: Arnaldo Carvalho de Melo <acme@redhat.com>
-> > 
-> > Since now symbol__addr_inc_samples() does the auto alloc, no need to
-> > do it prior to calling hist_entry__inc_addr_samples.
-> 
-> perf annotate on a ppc64 build (no TUI) is failing. I get zero output.
-> I haven't had a chance to look closer, but I used the following git
-> bisect test script to isolate:
+On Wed, Feb 12, 2014 at 05:10:38PM +1100, Dave Chinner wrote:
+ > On Wed, Feb 12, 2014 at 12:50:27AM -0500, Dave Jones wrote:
+ > > On Wed, Feb 12, 2014 at 04:40:43PM +1100, Dave Chinner wrote:
+ > > 
+ > >  > None of the XFS code disables interrupts in that path, not does is
+ > >  > call outside XFS except to dispatch IO. The stack is pretty deep at
+ > >  > this point and I know that the standard (non stacked) IO stack can
+ > >  > consume >3kb of stack space when it gets down to having to do memory
+ > >  > reclaim during GFP_NOIO allocation at the lowest level of SCSI
+ > >  > drivers. Stack overruns typically show up with symptoms like we are
+ > >  > seeing.
+ > >  > ..
+ > >  > 
+ > >  > Dave, before chasing ghosts, can you (like Eric originally asked)
+ > >  > turn on stack overrun detection?
+ > > 
+ > > CONFIG_DEBUG_STACKOVERFLOW ? Already turned on.
+ > 
+ > That only checks stack usage when an interrupt is taken. If no
+ > interrupts are taken when stack usage is within 128 bytes of
+ > overflow, then it doesn't catch it.
+ > 
+ > I tend to use CONFIG_DEBUG_STACK_USAGE=y as it records the maximum
+ > stack usage of a process via canary overwrites and it records it in
+ > do_exit().
 
-Can you try the following patch?
+I had that on too. The only message from it came from quite a while
+before the trace that happened overnight..
 
-It should fix another problem, i.e. we were allocating, but annotation
-would fail in the !TUI case, as it would return at
-symbol__inc_addr_samples when use_browser != 1, now it will allocate and
-mark the right bucket.
+[ 3415.655125] trinity-c0 (4383) used greatest stack depth: 992 bytes left
+[12900.804230] BUG: sleeping function called from invalid context at mm/mempool.c:203
 
-I'll have this in perf/urgent and will do the optimization of not
-allocating those buckets in the report case when not doing integrated
-annotation, i.e. report --stdio doesn't provide a way to go to the
-annotation --stdio, so no point on allocating the buckets. Just on
-'annotate --stdio' we should allocate it, etc.
+ > I also use the stack tracer to record the largest stack
+ > usage seen so I know exactly what code paths are approaching stack
+ > overruns...
 
-- Arnaldo
+I can give that a try later.
 
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 469eb679fb9d..7cf522523c12 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -489,7 +489,7 @@ static int symbol__inc_addr_samples(struct symbol *sym, struct map *map,
- {
- 	struct annotation *notes;
- 
--	if (sym == NULL || use_browser != 1 || !sort__has_sym)
-+	if (sym == NULL || !sort__has_sym)
- 		return 0;
- 
- 	notes = symbol__annotation(sym);
+	Dave
+
