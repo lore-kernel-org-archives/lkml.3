@@ -1,127 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753768AbaBLSbS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 13:31:18 -0500
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:44777 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753142AbaBLSbQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 13:31:16 -0500
-Date: Wed, 12 Feb 2014 19:31:10 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Daniel Vetter <daniel@ffwll.ch>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Dave Airlie <airlied@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 05/13] drm: provide device-refcount
-Message-ID: <20140212183110.GY17001@phenom.ffwll.local>
-Mail-Followup-To: David Herrmann <dh.herrmann@gmail.com>,
-	Greg KH <gregkh@linuxfoundation.org>,
-	"dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-	Dave Airlie <airlied@gmail.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <1391004120-687-1-git-send-email-dh.herrmann@gmail.com>
- <1391004120-687-6-git-send-email-dh.herrmann@gmail.com>
- <20140212132541.GU17001@phenom.ffwll.local>
- <CANq1E4RACz+bZmBGFtVGNKZhcJtC6iQtCpsCTTjEXrGUDP6C+A@mail.gmail.com>
- <CAKMK7uEbHUL5=CiRqcCh7nBRAirOB4tdSwiz6YPHNiThVujA8A@mail.gmail.com>
- <20140212164055.GB22377@kroah.com>
- <CANq1E4TJbZv1e=OSshR740k3UkwdRwWo+zY-hrVKuUh31SqKrg@mail.gmail.com>
+	id S1753867AbaBLSbx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 13:31:53 -0500
+Received: from mx02a.posteo.de ([89.146.194.168]:45860 "EHLO mx02a.posteo.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753372AbaBLSbw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 13:31:52 -0500
+Message-ID: <52FBBE08.5030902@posteo.de>
+Date: Wed, 12 Feb 2014 19:31:36 +0100
+From: Martin Kepplinger <martink@posteo.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20131104 Icedove/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANq1E4TJbZv1e=OSshR740k3UkwdRwWo+zY-hrVKuUh31SqKrg@mail.gmail.com>
-X-Operating-System: Linux phenom 3.12.0+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Takashi Iwai <tiwai@suse.de>
+CC: perex@perex.cz, david.henningsson@canonical.com, hui.wang@canonical.com,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [BUG]3.14-rc2 [PATCH] Revert "ALSA: hda/realtek - Avoid invalid
+ COEFs for ALC271X"
+References: <1392221363-5447-1-git-send-email-martink@posteo.de> <s5h4n445mm2.wl%tiwai@suse.de> <s5hwqh046w5.wl%tiwai@suse.de>
+In-Reply-To: <s5hwqh046w5.wl%tiwai@suse.de>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 06:48:50PM +0100, David Herrmann wrote:
-> On Wed, Feb 12, 2014 at 5:40 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Wed, Feb 12, 2014 at 05:26:57PM +0100, Daniel Vetter wrote:
-> >> On Wed, Feb 12, 2014 at 3:44 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
-> >> >>> +/**
-> >> >>> + * drm_dev_ref - Take reference of a DRM device
-> >> >>> + * @dev: device to take reference of or NULL
-> >> >>> + *
-> >> >>> + * This increases the ref-count of @dev by one. You *must* already own a
-> >> >>> + * reference when calling this. Use drm_dev_unref() to drop this reference
-> >> >>> + * again.
-> >> >>> + *
-> >> >>> + * This function never fails. However, this function does not provide *any*
-> >> >>> + * guarantee whether the device is alive or running. It only provides a
-> >> >>> + * reference to the object and the memory associated with it.
-> >> >>> + */
-> >> >>> +void drm_dev_ref(struct drm_device *dev)
-> >> >>> +{
-> >> >>> +     if (dev)
-> >> >>
-> >> >> This check here (and below in the unref code) look funny. What's the
-> >> >> reason for it? Trying to grab/drop a ref on a NULL pointer sounds like a
-> >> >> pretty serious bug to me. This is in contrast to kfree(NULL) which imo
-> >> >> makes sense - freeing nothing is a legitimate operation imo.
-> >> >
-> >> > I added it mainly to simplify cleanup-code paths. You can then just
-> >> > call unref() and set it to NULL regardless whether you actually hold a
-> >> > reference or not. For ref() I don't really care but I think the
-> >> > NULL-test doesn't hurt either.
-> >> >
-> >> > I copied this behavior from get_device() and put_device(), btw.
-> >> > Similar to these functions, I think a lot more will go wrong if the
-> >> > NULL pointer is not intentional. Imo, ref-counting on a NULL object
-> >> > just means "no object", so it shouldn't do anything.
-> >>
-> >> My fear with this kind of magic is that someone accidentally exchanges
-> >> the pointer clearing to NULL (or assignement when grabbing a ref) with
-> >> the unref/ref call and then we have a very subtle bug at hand. If we
-> >> don't accept NULL objects the failure will be much more obvious.
-> >>
-> >> The entire kernel kobject stuff is very consistent about this, but I
-> >> couldn't find a reason for it - all the NULL checks predate git
-> >> history. Greg can you please shed some lights on best practice here
-> >> and whether my fears are justified given your experience with shoddy
-> >> drivers in general?
-> >
-> > Yes, the driver core does test for NULL here, as sometimes you are
-> > passing in a "parent" pointer, and don't really care if it is NULL or
-> > not, so just treating it as if you really do have a reference is usually
-> > fine.
-> >
-> > But, for a subsystem where you "know" you will not be doing anything as
-> > foolish as that, I'd not allow that :)
-> >
-> > So I'd recommend taking those checks out of the drm code.
+Am 2014-02-12 17:45, schrieb Takashi Iwai:
+> At Wed, 12 Feb 2014 17:20:21 +0100,
+> Takashi Iwai wrote:
+>>
+>> At Wed, 12 Feb 2014 17:09:23 +0100,
+>> Martin Kepplinger wrote:
+>>>
+>>> This reverts commit d3c56568f43807135f2c2a09582a69f809f0d8b7.
+>>>
+>>> The reverted commit breaks audio through headphone line out on
+>>> the Acer TravelMate B113 (Type1Sku0) Notebook, my main work
+>>> machine. I don't know much about it but this fixes my problem.
+>>> Bisected and tested.
+>>>
+>>> Tested-by: Martin Kepplinger <martink@posteo.de>
+>>> Signed-off-by: Martin Kepplinger <martink@posteo.de>
+>>
+>> Too bad, we need COEF for some machine but it breaks for some.
+>> Since reverting breaks obviously another machine, we need a different
+>> approach, e.g. checking the machine ID.  Please give alsa-info.sh
+>> output of your machine.
 > 
-> Ok, for _ref() I'm fine dropping it, but for _unref() I really don't
-> understand the concerns. I like to follow the principle of making
-> teardown-functions work with partially initialized objects. A caller
-> shouldn't be required to reverse all it's setup functions if one last
-> step of object-initialization fails. It's much easier if they can just
-> call the destructor which figures itself out which parts are
-> initialized. Obviously, this isn't always possible, but checking for
-> NULL in _unref() or _put() paths simplifies this a lot and avoids
-> non-sense if(obj) unref(obj);
+> Thinking it again, I'll take your patch as is, and put an additional
+> fix for AO725 as below.  Could you try it to see whether it brings any
+> regressions?  It's to be applied after your revert patch.
 > 
-> For instance for drm_minor objects we only initialize the minors that
-> are enabled by the specific driver. However, it's enough to test for
-> the flags during device-initialization. device-registration,
-> -deregistration and -teardown just call _free/unref on all possible
-> minors. Allowing NULL avoids testing for these flags in every path but
-> the initialization.
 > 
-> Anyhow, shared code -> many opinions, so if people agree on dropping
-> it, I will do so.
+> thanks,
+> 
+> Takashi
+> 
+> -- 8< --
+> From: Takashi Iwai <tiwai@suse.de>
+> Subject: [PATCH] ALSA: hda - Better fix for invalid COEF setup on Acer AO725
+> 
+> Instead of disabling the COEF setup for all ALC271X codec (like commit
+> d3c56568), do it only if needed.  Currently, Acer AO725 is known to
+> show the problem, so clear the bad init_hook in the fixup.
+> 
+> The explicit call of alc269_fill_coef() in patch_alc269() is also
+> removed, since the function will be called anyway at init callback.
+> 
+> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=52181
+> Cc: <stable@vger.kernel.org>
+> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+> ---
+>  sound/pci/hda/patch_realtek.c | 18 ++++++++++++++++--
+>  1 file changed, 16 insertions(+), 2 deletions(-)
+> 
+> diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+> index a9a83b85517a..eaff10598f67 100644
+> --- a/sound/pci/hda/patch_realtek.c
+> +++ b/sound/pci/hda/patch_realtek.c
+> @@ -3817,6 +3817,14 @@ static void alc290_fixup_mono_speakers(struct hda_codec *codec,
+>  	}
+>  }
+>  
+> +static void alc_fixup_clear_init_hook(struct hda_codec *codec,
+> +				      const struct hda_fixup *fix, int action)
+> +{
+> +	struct alc_spec *spec = codec->spec;
+> +	if (action == HDA_FIXUP_ACT_PROBE)
+> +		spec->init_hook = NULL;
+> +}
+> +
+>  /* for hda_fixup_thinkpad_acpi() */
+>  #include "thinkpad_helper.c"
+>  
+> @@ -3858,6 +3866,7 @@ enum {
+>  	ALC271_FIXUP_HP_GATE_MIC_JACK,
+>  	ALC271_FIXUP_HP_GATE_MIC_JACK_E1_572,
+>  	ALC269_FIXUP_ACER_AC700,
+> +	ALC271_FIXUP_ACER_AO725,
+>  	ALC269_FIXUP_LIMIT_INT_MIC_BOOST,
+>  	ALC269VB_FIXUP_ASUS_ZENBOOK,
+>  	ALC269VB_FIXUP_ASUS_ZENBOOK_UX31A,
+> @@ -4250,13 +4259,19 @@ static const struct hda_fixup alc269_fixups[] = {
+>  		.type = HDA_FIXUP_FUNC,
+>  		.v.func = alc_fixup_headset_mode_alc255,
+>  	},
+> +	[ALC271_FIXUP_ACER_AO725] = {
+> +		.type = HDA_FIXUP_FUNC,
+> +		.v.func = alc_fixup_clear_init_hook,
+> +		.chained = true,
+> +		.chain_id = ALC271_FIXUP_HP_GATE_MIC_JACK,
+> +	},
+>  };
+>  
+>  static const struct snd_pci_quirk alc269_fixup_tbl[] = {
+>  	SND_PCI_QUIRK(0x1025, 0x029b, "Acer 1810TZ", ALC269_FIXUP_INV_DMIC),
+>  	SND_PCI_QUIRK(0x1025, 0x0349, "Acer AOD260", ALC269_FIXUP_INV_DMIC),
+>  	SND_PCI_QUIRK(0x1025, 0x047c, "Acer AC700", ALC269_FIXUP_ACER_AC700),
+> -	SND_PCI_QUIRK(0x1025, 0x0740, "Acer AO725", ALC271_FIXUP_HP_GATE_MIC_JACK),
+> +	SND_PCI_QUIRK(0x1025, 0x0740, "Acer AO725", ALC271_FIXUP_ACER_AO725),
+>  	SND_PCI_QUIRK(0x1025, 0x0742, "Acer AO756", ALC271_FIXUP_HP_GATE_MIC_JACK),
+>  	SND_PCI_QUIRK_VENDOR(0x1025, "Acer Aspire", ALC271_FIXUP_DMIC),
+>  	SND_PCI_QUIRK(0x1025, 0x0775, "Acer Aspire E1-572", ALC271_FIXUP_HP_GATE_MIC_JACK_E1_572),
+> @@ -4523,7 +4538,6 @@ static int patch_alc269(struct hda_codec *codec)
+>  		if (err < 0)
+>  			goto error;
+>  		spec->init_hook = alc269_fill_coef;
+> -		alc269_fill_coef(codec);
+>  		break;
+>  
+>  	case 0x10ec0280:
+> 
 
-I might have missed it, but afaics both drm_minor_free and unregister
-already have NULL pointer checks at the beginning for other reasons. And
-the _unref in the drm unload paths also should never see a NULL
-drm_device. So I think with your current patch series we're already
-covered and there's no need for any additional NULL checks, hence also
-none for the drm_dev_unref function.
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+So my alsa-info.sh is
+http://www.alsa-project.org/db/?f=3e9c5d39ff057106d6ae307f9b86c1e562056c1b
+and I'm running your patch on top of mine without any problems.
+
+thanks,
+
+            martin
