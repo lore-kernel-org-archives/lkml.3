@@ -1,89 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404AbaBLQjk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 11:39:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50477 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752491AbaBLQjj (ORCPT
+	id S1753427AbaBLQkF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 11:40:05 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:53144 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752931AbaBLQkD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 11:39:39 -0500
-Date: Wed, 12 Feb 2014 08:40:55 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: David Herrmann <dh.herrmann@gmail.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Dave Airlie <airlied@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 05/13] drm: provide device-refcount
-Message-ID: <20140212164055.GB22377@kroah.com>
-References: <1391004120-687-1-git-send-email-dh.herrmann@gmail.com>
- <1391004120-687-6-git-send-email-dh.herrmann@gmail.com>
- <20140212132541.GU17001@phenom.ffwll.local>
- <CANq1E4RACz+bZmBGFtVGNKZhcJtC6iQtCpsCTTjEXrGUDP6C+A@mail.gmail.com>
- <CAKMK7uEbHUL5=CiRqcCh7nBRAirOB4tdSwiz6YPHNiThVujA8A@mail.gmail.com>
+	Wed, 12 Feb 2014 11:40:03 -0500
+Date: Wed, 12 Feb 2014 16:39:38 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: Madper Xie <cxie@redhat.com>, Matt Fleming <matt.fleming@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Josh Triplett <josh@joshtriplett.org>
+Subject: Re: [BUG] can't boot up: unable to handle kernel paging request at
+ ffffffffff340003
+Message-ID: <20140212163938.GA20717@console-pimps.org>
+References: <8738jr5t3e.fsf@redhat.com>
+ <20140210175246.GB2887@console-pimps.org>
+ <87mwhy8iaj.fsf@redhat.com>
+ <20140211131640.GD2887@console-pimps.org>
+ <87lhxh69u0.fsf@redhat.com>
+ <20140211141846.GA1725@console-pimps.org>
+ <1392221703.5612.164.camel@misato.fc.hp.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAKMK7uEbHUL5=CiRqcCh7nBRAirOB4tdSwiz6YPHNiThVujA8A@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1392221703.5612.164.camel@misato.fc.hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 05:26:57PM +0100, Daniel Vetter wrote:
-> On Wed, Feb 12, 2014 at 3:44 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
-> >>> +/**
-> >>> + * drm_dev_ref - Take reference of a DRM device
-> >>> + * @dev: device to take reference of or NULL
-> >>> + *
-> >>> + * This increases the ref-count of @dev by one. You *must* already own a
-> >>> + * reference when calling this. Use drm_dev_unref() to drop this reference
-> >>> + * again.
-> >>> + *
-> >>> + * This function never fails. However, this function does not provide *any*
-> >>> + * guarantee whether the device is alive or running. It only provides a
-> >>> + * reference to the object and the memory associated with it.
-> >>> + */
-> >>> +void drm_dev_ref(struct drm_device *dev)
-> >>> +{
-> >>> +     if (dev)
-> >>
-> >> This check here (and below in the unref code) look funny. What's the
-> >> reason for it? Trying to grab/drop a ref on a NULL pointer sounds like a
-> >> pretty serious bug to me. This is in contrast to kfree(NULL) which imo
-> >> makes sense - freeing nothing is a legitimate operation imo.
-> >
-> > I added it mainly to simplify cleanup-code paths. You can then just
-> > call unref() and set it to NULL regardless whether you actually hold a
-> > reference or not. For ref() I don't really care but I think the
-> > NULL-test doesn't hurt either.
-> >
-> > I copied this behavior from get_device() and put_device(), btw.
-> > Similar to these functions, I think a lot more will go wrong if the
-> > NULL pointer is not intentional. Imo, ref-counting on a NULL object
-> > just means "no object", so it shouldn't do anything.
+On Wed, 12 Feb, at 09:15:03AM, Toshi Kani wrote:
 > 
-> My fear with this kind of magic is that someone accidentally exchanges
-> the pointer clearing to NULL (or assignement when grabbing a ref) with
-> the unref/ref call and then we have a very subtle bug at hand. If we
-> don't accept NULL objects the failure will be much more obvious.
-> 
-> The entire kernel kobject stuff is very consistent about this, but I
-> couldn't find a reason for it - all the NULL checks predate git
-> history. Greg can you please shed some lights on best practice here
-> and whether my fears are justified given your experience with shoddy
-> drivers in general?
+> Yes, I agree that the table size should be 0x38.  However, ACPI spec
+> states that bit0 of status indicates if the boot image graphic is valid.
+> This bit is set to 0 (invalid) on the system.  Can you check this bit
+> and return when invalid? 
 
-Yes, the driver core does test for NULL here, as sometimes you are
-passing in a "parent" pointer, and don't really care if it is NULL or
-not, so just treating it as if you really do have a reference is usually
-fine.
+Seems reasonable to me. Anyone know of a reason that wouldn't work?
 
-But, for a subsystem where you "know" you will not be doing anything as
-foolish as that, I'd not allow that :)
-
-So I'd recommend taking those checks out of the drm code.
-
-thanks,
-
-greg k-h
+-- 
+Matt Fleming, Intel Open Source Technology Center
