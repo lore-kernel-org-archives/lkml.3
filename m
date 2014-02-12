@@ -1,196 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751464AbaBLG4Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 01:56:16 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:25483 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750763AbaBLG4P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 01:56:15 -0500
-Message-ID: <52FB1AAA.9030108@huawei.com>
-Date: Wed, 12 Feb 2014 14:54:34 +0800
-From: Jianguo Wu <wujianguo@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1751521AbaBLG5k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 01:57:40 -0500
+Received: from mga11.intel.com ([192.55.52.93]:62988 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750932AbaBLG5j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 01:57:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,831,1384329600"; 
+   d="scan'208";a="480087742"
+From: sagar.a.kamble@intel.com
+To: intel-gfx@lists.freedesktop.org
+Cc: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
+	<ville.syrjala@linux.intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, Sagar Kamble <sagar.a.kamble@intel.com>
+Subject: [PATCH v3 1/1] drm/i915: Add 180 degree sprite rotation support
+Date: Wed, 12 Feb 2014 12:28:09 +0530
+Message-Id: <1392188289-28441-1-git-send-email-sagar.a.kamble@intel.com>
+X-Mailer: git-send-email 1.8.5
+In-Reply-To: <1392116416-23902-1-git-send-email-sagar.a.kamble@intel.com>
+References: <1392116416-23902-1-git-send-email-sagar.a.kamble@intel.com>
 MIME-Version: 1.0
-To: Ben Dooks <ben.dooks@codethink.co.uk>
-CC: <linux@arm.linux.org.uk>, <will.deacon@arm.com>,
-        <gregkh@linuxfoundation.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "Li Zefan" <lizefan@huawei.com>, Wang Nan <wangnan0@huawei.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH] ARM: mm: support big-endian page tables
-References: <52F9EB40.1030703@huawei.com> <52F9FE1A.6000607@codethink.co.uk>
-In-Reply-To: <52F9FE1A.6000607@codethink.co.uk>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.24.155]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/2/11 18:40, Ben Dooks wrote:
+From: Ville Syrjälä <ville.syrjala@linux.intel.com>
 
-> On 11/02/14 09:20, Jianguo Wu wrote:
->> When enable LPAE and big-endian in a hisilicon board, while specify
->> mem=384M mem=512M@7680M, will get bad page state:
->>
->> Freeing unused kernel memory: 180K (c0466000 - c0493000)
->> BUG: Bad page state in process init  pfn:fa442
->> page:c7749840 count:0 mapcount:-1 mapping:  (null) index:0x0
->> page flags: 0x40000400(reserved)
->> Modules linked in:
->> CPU: 0 PID: 1 Comm: init Not tainted 3.10.27+ #66
->> [<c000f5f0>] (unwind_backtrace+0x0/0x11c) from [<c000cbc4>] (show_stack+0x10/0x14)
->> [<c000cbc4>] (show_stack+0x10/0x14) from [<c009e448>] (bad_page+0xd4/0x104)
->> [<c009e448>] (bad_page+0xd4/0x104) from [<c009e520>] (free_pages_prepare+0xa8/0x14c)
->> [<c009e520>] (free_pages_prepare+0xa8/0x14c) from [<c009f8ec>] (free_hot_cold_page+0x18/0xf0)
->> [<c009f8ec>] (free_hot_cold_page+0x18/0xf0) from [<c00b5444>] (handle_pte_fault+0xcf4/0xdc8)
->> [<c00b5444>] (handle_pte_fault+0xcf4/0xdc8) from [<c00b6458>] (handle_mm_fault+0xf4/0x120)
->> [<c00b6458>] (handle_mm_fault+0xf4/0x120) from [<c0013754>] (do_page_fault+0xfc/0x354)
->> [<c0013754>] (do_page_fault+0xfc/0x354) from [<c0008400>] (do_DataAbort+0x2c/0x90)
->> [<c0008400>] (do_DataAbort+0x2c/0x90) from [<c0008fb4>] (__dabt_usr+0x34/0x40)
->>
->> The bad pfn:fa442 is not system memory(mem=384M mem=512M@7680M), after debugging,
->> I find in page fault handler, will get wrong pfn from pte just after set pte,
->> as follow:
->> do_anonymous_page()
->> {
->>     ...
->>     set_pte_at(mm, address, page_table, entry);
->>     
->>     //debug code
->>     pfn = pte_pfn(entry);
->>     pr_info("pfn:0x%lx, pte:0x%llx\n", pfn, pte_val(entry));
->>
->>     //read out the pte just set
->>     new_pte = pte_offset_map(pmd, address);
->>     new_pfn = pte_pfn(*new_pte);
->>     pr_info("new pfn:0x%lx, new pte:0x%llx\n", pfn, pte_val(entry));
->>     ...
->> }
-> 
-> Thanks, must have missed tickling this one.
-> 
->>
->> pfn:   0x1fa4f5,     pte:0xc00001fa4f575f
->> new_pfn:0xfa4f5, new_pte:0xc00000fa4f5f5f    //new pfn/pte is wrong.
->>
->> The bug is happened in cpu_v7_set_pte_ext(ptep, pte):
->> when pte is 64-bit, for little-endian, will store low 32-bit in r2,
->> high 32-bit in r3; for big-endian, will store low 32-bit in r3,
->> high 32-bit in r2, this will cause wrong pfn stored in pte,
->> so we should exchange r2 and r3 for big-endian.
->>
->> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
->> ---
->>   arch/arm/mm/proc-v7-3level.S |   10 ++++++++++
->>   1 files changed, 10 insertions(+), 0 deletions(-)
->>
->> diff --git a/arch/arm/mm/proc-v7-3level.S b/arch/arm/mm/proc-v7-3level.S
->> index 6ba4bd9..71b3892 100644
->> --- a/arch/arm/mm/proc-v7-3level.S
->> +++ b/arch/arm/mm/proc-v7-3level.S
->> @@ -65,6 +65,15 @@ ENDPROC(cpu_v7_switch_mm)
->>    */
->>   ENTRY(cpu_v7_set_pte_ext)
->>   #ifdef CONFIG_MMU
->> +#ifdef CONFIG_CPU_ENDIAN_BE8
->> +    tst    r3, #L_PTE_VALID
->> +    beq    1f
->> +    tst    r2, #1 << (57 - 32)        @ L_PTE_NONE
->> +    bicne    r3, #L_PTE_VALID
->> +    bne    1f
->> +    tst    r2, #1 << (55 - 32)        @ L_PTE_DIRTY
->> +    orreq    r3, #L_PTE_RDONLY
->> +#else
->>       tst    r2, #L_PTE_VALID
->>       beq    1f
->>       tst    r3, #1 << (57 - 32)        @ L_PTE_NONE
->> @@ -72,6 +81,7 @@ ENTRY(cpu_v7_set_pte_ext)
->>       bne    1f
->>       tst    r3, #1 << (55 - 32)        @ L_PTE_DIRTY
->>       orreq    r2, #L_PTE_RDONLY
->> +#endif
->>   1:    strd    r2, r3, [r0]
->>       ALT_SMP(W(nop))
->>       ALT_UP (mcr    p15, 0, r0, c7, c10, 1)        @ flush_pte
->> -- 1.7.1
-> 
-> If possible can we avoid large #ifdef blocks here?
-> 
-> Two ideas are
-> 
-> ARM_LE(tst r2, #L_PTE_VALID)
-> ARM_BE(tst r3, #L_PTE_VALID)
-> 
-> or change r2, r3 pair to say rlow, rhi and
-> 
-> #ifdef  CONFIG_CPU_ENDIAN_BE8
-> #define rlow r3
-> #define rhi r2
-> #else
-> #define rlow r2
-> #define rhi r3
-> #endif
-> 
+The sprite planes (in fact all display planes starting from gen4)
+support 180 degree rotation. Add the relevant low level bits to the
+sprite code to make use of that feature.
 
-Hi Ben,
-Thanks for your suggestion, how about this?
+The upper layers are not yet plugged in.
 
-Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+v2: HSW handles the rotated buffer offset automagically
+
+v3: BDW also handles the rotated buffer offset automagically
+
+Testcase: igt/kms_plane_rotation_crc
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Jani Nikula <jani.nikula@linux.intel.com>
+Cc: David Airlie <airlied@linux.ie>
+Cc: dri-devel@lists.freedesktop.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Signed-off-by: Sagar Kamble <sagar.a.kamble@intel.com>
 ---
- arch/arm/mm/proc-v7-3level.S |   18 +++++++++++++-----
- 1 files changed, 13 insertions(+), 5 deletions(-)
+ drivers/gpu/drm/i915/i915_reg.h     |  3 +++
+ drivers/gpu/drm/i915/intel_drv.h    |  1 +
+ drivers/gpu/drm/i915/intel_sprite.c | 37 +++++++++++++++++++++++++++++++++++++
+ 3 files changed, 41 insertions(+)
 
-diff --git a/arch/arm/mm/proc-v7-3level.S b/arch/arm/mm/proc-v7-3level.S
-index 01a719e..22e3ad6 100644
---- a/arch/arm/mm/proc-v7-3level.S
-+++ b/arch/arm/mm/proc-v7-3level.S
-@@ -64,6 +64,14 @@ ENTRY(cpu_v7_switch_mm)
- 	mov	pc, lr
- ENDPROC(cpu_v7_switch_mm)
+diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
+index abd18cd..57906c5 100644
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -3637,6 +3637,7 @@
+ #define   DVS_YUV_ORDER_UYVY	(1<<16)
+ #define   DVS_YUV_ORDER_YVYU	(2<<16)
+ #define   DVS_YUV_ORDER_VYUY	(3<<16)
++#define   DVS_ROTATE_180	(1<<15)
+ #define   DVS_DEST_KEY		(1<<2)
+ #define   DVS_TRICKLE_FEED_DISABLE (1<<14)
+ #define   DVS_TILED		(1<<10)
+@@ -3707,6 +3708,7 @@
+ #define   SPRITE_YUV_ORDER_UYVY		(1<<16)
+ #define   SPRITE_YUV_ORDER_YVYU		(2<<16)
+ #define   SPRITE_YUV_ORDER_VYUY		(3<<16)
++#define   SPRITE_ROTATE_180		(1<<15)
+ #define   SPRITE_TRICKLE_FEED_DISABLE	(1<<14)
+ #define   SPRITE_INT_GAMMA_ENABLE	(1<<13)
+ #define   SPRITE_TILED			(1<<10)
+@@ -3780,6 +3782,7 @@
+ #define   SP_YUV_ORDER_UYVY		(1<<16)
+ #define   SP_YUV_ORDER_YVYU		(2<<16)
+ #define   SP_YUV_ORDER_VYUY		(3<<16)
++#define   SP_ROTATE_180			(1<<15)
+ #define   SP_TILED			(1<<10)
+ #define _SPALINOFF		(VLV_DISPLAY_BASE + 0x72184)
+ #define _SPASTRIDE		(VLV_DISPLAY_BASE + 0x72188)
+diff --git a/drivers/gpu/drm/i915/intel_drv.h b/drivers/gpu/drm/i915/intel_drv.h
+index 44067bc..85864fc 100644
+--- a/drivers/gpu/drm/i915/intel_drv.h
++++ b/drivers/gpu/drm/i915/intel_drv.h
+@@ -397,6 +397,7 @@ struct intel_plane {
+ 	unsigned int crtc_w, crtc_h;
+ 	uint32_t src_x, src_y;
+ 	uint32_t src_w, src_h;
++	unsigned int rotation;
  
-+#ifdef __ARMEB__
-+#define rl r3
-+#define rh r2
-+#else
-+#define rl r2
-+#define rh r3
-+#endif
+ 	/* Since we need to change the watermarks before/after
+ 	 * enabling/disabling the planes, we need to store the parameters here
+diff --git a/drivers/gpu/drm/i915/intel_sprite.c b/drivers/gpu/drm/i915/intel_sprite.c
+index 336ae6c..2076878 100644
+--- a/drivers/gpu/drm/i915/intel_sprite.c
++++ b/drivers/gpu/drm/i915/intel_sprite.c
+@@ -60,6 +60,7 @@ vlv_update_plane(struct drm_plane *dplane, struct drm_crtc *crtc,
+ 	sprctl &= ~SP_PIXFORMAT_MASK;
+ 	sprctl &= ~SP_YUV_BYTE_ORDER_MASK;
+ 	sprctl &= ~SP_TILED;
++	sprctl &= ~SP_ROTATE_180;
+ 
+ 	switch (fb->pixel_format) {
+ 	case DRM_FORMAT_YUYV:
+@@ -131,6 +132,14 @@ vlv_update_plane(struct drm_plane *dplane, struct drm_crtc *crtc,
+ 							fb->pitches[0]);
+ 	linear_offset -= sprsurf_offset;
+ 
++	if (intel_plane->rotation == BIT(DRM_ROTATE_180)) {
++		sprctl |= SP_ROTATE_180;
 +
- /*
-  * cpu_v7_set_pte_ext(ptep, pte)
-  *
-@@ -73,13 +81,13 @@ ENDPROC(cpu_v7_switch_mm)
-  */
- ENTRY(cpu_v7_set_pte_ext)
- #ifdef CONFIG_MMU
--	tst	r2, #L_PTE_VALID
-+	tst	rl, #L_PTE_VALID
- 	beq	1f
--	tst	r3, #1 << (57 - 32)		@ L_PTE_NONE
--	bicne	r2, #L_PTE_VALID
-+	tst	rh, #1 << (57 - 32)		@ L_PTE_NONE
-+	bicne	rl, #L_PTE_VALID
- 	bne	1f
--	tst	r3, #1 << (55 - 32)		@ L_PTE_DIRTY
--	orreq	r2, #L_PTE_RDONLY
-+	tst	rh, #1 << (55 - 32)		@ L_PTE_DIRTY
-+	orreq	rl, #L_PTE_RDONLY
- 1:	strd	r2, r3, [r0]
- 	ALT_SMP(W(nop))
- 	ALT_UP (mcr	p15, 0, r0, c7, c10, 1)		@ flush_pte
++		x += src_w;
++		y += src_h;
++		linear_offset += src_h * fb->pitches[0] + src_w * pixel_size;
++	}
++
+ 	I915_WRITE(SPSTRIDE(pipe, plane), fb->pitches[0]);
+ 	I915_WRITE(SPPOS(pipe, plane), (crtc_y << 16) | crtc_x);
+ 
+@@ -238,6 +247,7 @@ ivb_update_plane(struct drm_plane *plane, struct drm_crtc *crtc,
+ 	sprctl &= ~SPRITE_RGB_ORDER_RGBX;
+ 	sprctl &= ~SPRITE_YUV_BYTE_ORDER_MASK;
+ 	sprctl &= ~SPRITE_TILED;
++	sprctl &= ~SPRITE_ROTATE_180;
+ 
+ 	switch (fb->pixel_format) {
+ 	case DRM_FORMAT_XBGR8888:
+@@ -299,6 +309,17 @@ ivb_update_plane(struct drm_plane *plane, struct drm_crtc *crtc,
+ 					       pixel_size, fb->pitches[0]);
+ 	linear_offset -= sprsurf_offset;
+ 
++	if (intel_plane->rotation == BIT(DRM_ROTATE_180)) {
++		sprctl |= SPRITE_ROTATE_180;
++
++		/* HSW and BDW does this automagically in hardware */
++		if (!IS_HASWELL(dev) && !IS_BROADWELL(dev)) {
++			x += src_w;
++			y += src_h;
++			linear_offset += src_h * fb->pitches[0] + src_w * pixel_size;
++		}
++	}
++
+ 	I915_WRITE(SPRSTRIDE(pipe), fb->pitches[0]);
+ 	I915_WRITE(SPRPOS(pipe), (crtc_y << 16) | crtc_x);
+ 
+@@ -422,6 +443,7 @@ ilk_update_plane(struct drm_plane *plane, struct drm_crtc *crtc,
+ 	dvscntr &= ~DVS_RGB_ORDER_XBGR;
+ 	dvscntr &= ~DVS_YUV_BYTE_ORDER_MASK;
+ 	dvscntr &= ~DVS_TILED;
++	dvscntr &= ~DVS_ROTATE_180;
+ 
+ 	switch (fb->pixel_format) {
+ 	case DRM_FORMAT_XBGR8888:
+@@ -478,6 +500,14 @@ ilk_update_plane(struct drm_plane *plane, struct drm_crtc *crtc,
+ 					       pixel_size, fb->pitches[0]);
+ 	linear_offset -= dvssurf_offset;
+ 
++	if (intel_plane->rotation == BIT(DRM_ROTATE_180)) {
++		dvscntr |= DVS_ROTATE_180;
++
++		x += src_w;
++		y += src_h;
++		linear_offset += src_h * fb->pitches[0] + src_w * pixel_size;
++	}
++
+ 	I915_WRITE(DVSSTRIDE(pipe), fb->pitches[0]);
+ 	I915_WRITE(DVSPOS(pipe), (crtc_y << 16) | crtc_x);
+ 
+@@ -739,6 +769,9 @@ intel_update_plane(struct drm_plane *plane, struct drm_crtc *crtc,
+ 	max_scale = intel_plane->max_downscale << 16;
+ 	min_scale = intel_plane->can_scale ? 1 : (1 << 16);
+ 
++	drm_rect_rotate(&src, fb->width << 16, fb->height << 16,
++			intel_plane->rotation);
++
+ 	hscale = drm_rect_calc_hscale_relaxed(&src, &dst, min_scale, max_scale);
+ 	BUG_ON(hscale < 0);
+ 
+@@ -777,6 +810,9 @@ intel_update_plane(struct drm_plane *plane, struct drm_crtc *crtc,
+ 				     drm_rect_width(&dst) * hscale - drm_rect_width(&src),
+ 				     drm_rect_height(&dst) * vscale - drm_rect_height(&src));
+ 
++		drm_rect_rotate_inv(&src, fb->width << 16, fb->height << 16,
++				    intel_plane->rotation);
++
+ 		/* sanity check to make sure the src viewport wasn't enlarged */
+ 		WARN_ON(src.x1 < (int) src_x ||
+ 			src.y1 < (int) src_y ||
+@@ -1141,6 +1177,7 @@ intel_plane_init(struct drm_device *dev, enum pipe pipe, int plane)
+ 
+ 	intel_plane->pipe = pipe;
+ 	intel_plane->plane = plane;
++	intel_plane->rotation = BIT(DRM_ROTATE_0);
+ 	possible_crtcs = (1 << pipe);
+ 	ret = drm_plane_init(dev, &intel_plane->base, possible_crtcs,
+ 			     &intel_plane_funcs,
 -- 
-1.7.1
-
-Thanks,
-Jianguo Wu
-
-> 
-> 
-
-
+1.8.5
 
