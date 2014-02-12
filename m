@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752788AbaBLQgx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 11:36:53 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:59486 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751606AbaBLQgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 11:36:51 -0500
-Date: Wed, 12 Feb 2014 17:36:44 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Tejun Heo <tj@kernel.org>
-Cc: Prarit Bhargava <prarit@redhat.com>, linux-edac@vger.kernel.org,
-        Doug Thompson <dougthompson@xmission.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] edac, poll timeout cannot be zero
-Message-ID: <20140212163644.GG5121@pd.tnic>
-References: <1391457913-881-1-git-send-email-prarit@redhat.com>
- <20140212150748.GE5121@pd.tnic>
- <20140212151657.GL24490@htj.dyndns.org>
- <20140212155752.GF5121@pd.tnic>
- <20140212162311.GB26809@htj.dyndns.org>
+	id S1753374AbaBLQiy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 11:38:54 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:45571 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753155AbaBLQiw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 11:38:52 -0500
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Michal Simek'" <michal.simek@xilinx.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+CC: Srikanth Thokala <sthokal@xilinx.com>,
+        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
+        Michal Simek <monstr@monstr.eu>,
+        "Anirudha Sarangi" <anirudh@xilinx.com>,
+        John Linn <John.Linn@xilinx.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 05/14] net: axienet: Service completion interrupts ASAP
+Thread-Topic: [PATCH 05/14] net: axienet: Service completion interrupts ASAP
+Thread-Index: AQHPKAyNveH31gmZlkKmADz9sJ5s6JqxzqpA
+Date: Wed, 12 Feb 2014 16:38:36 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F6BDFEE@AcuExch.aculab.com>
+References: <cover.1392220536.git.michal.simek@xilinx.com>
+ <cafb13f2ebe4bb996bafb91e405d8609454bb920.1392220536.git.michal.simek@xilinx.com>
+In-Reply-To: <cafb13f2ebe4bb996bafb91e405d8609454bb920.1392220536.git.michal.simek@xilinx.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140212162311.GB26809@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 11:23:11AM -0500, Tejun Heo wrote:
-> Hah... can't you just do it on object initialization?  It's a bit
-> nasty and fragile to game initialization state.
+From: Michal Simek
+> From: Peter Crosthwaite <peter.crosthwaite@xilinx.com>
 > 
-> > or so... I.e., what PREPARE_WORK() does?
-> 
-> It allows you to change the callback without breaking the
-> synchronization.  Of course, if there's a pending work item, it may or
-> may not execute the newly assigned function.  It's also a bit nasty
-> and has only few users in the whole kernel and I think we might wanna
-> get rid of them.
+> The packet completion interrupts for TX and RX should be serviced before
+> the packets are consumed. This ensures against the degenerate case when a
+> new completion interrupt is raised after the handler has exited but before
+> the interrupts are cleared. In this case its possible for the ISR to clear
+> an unhandled interrupt (leading to potential deadlock).
 
-Yeah, no, I certainly don't have to touch wq inner organs - I was
-wondering whether there's such functionality already. The simple patch I
-sent earlier should be good enough then.
+I would clear the IRQ after processing the last packet, and then do a final
+check for another packet.
 
-Thanks!
+That reduces the number of interrupts you take and then find there is
+no work (because it was done on the previous interrupt).
 
--- 
-Regards/Gruss,
-    Boris.
+There is a slight 'gotcha' in that the write to clear the IRQ can easily
+get delayed enough the that cpu exits the ISR before the IRQ line
+actually drops - leading the unwanted and unclaimed interrupts.
+A posted write over PCIe could easily take long enough.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Maybe a hybrid scheme where the IRQ is cleared when the next entry
+is still owned by the device would work.
+
+	David
+
+
+
