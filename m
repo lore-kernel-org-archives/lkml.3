@@ -1,115 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753362AbaBLI2m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 03:28:42 -0500
-Received: from nm1.bullet.mail.gq1.yahoo.com ([98.136.218.75]:44693 "EHLO
-	nm1.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751041AbaBLI2k (ORCPT
+	id S1753324AbaBLI2b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 03:28:31 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50203 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752080AbaBLIOD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 03:28:40 -0500
-X-Yahoo-Newman-Id: 236129.42767.bm@smtp229.mail.gq1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: p5VzswIVM1lVte56IfiStFHiuHoWEs77bNZW50Gv_YSoneJ
- ATMACgjs4NcxUjUE8.LyWUVwo99bx2xJL2QWaFMiTuzZ8N8K9cV1iEE2Y1Ww
- qutIZDbYuLYVKlPaVV1nC_bIbLiw1CRGyB6Zw4pa2HWNFmx90ryYadHFoiuJ
- UjO_lIZdiXcl6lKs_Jc.Wey43dDMkrQ7G4OU.cWTYBMPzgZJLMy1aWOfgsP_
- HvKZexReWn.BQwDUuJDMBNr6P_Yyq_gCuTmcDloPv8FoGAl2ZGiih7Ebyi8x
- rAuhlOD9YF4A2vGQW7MySwLvhQiOWo59bRsIu3Np8crxsli8.ZMyV932Acy8
- Q_NJ62JUns2L2U.hzOKwKkHm7lnb9eIIqe8oGjOfLzktwYLRuY8GlMglOSs6
- t6exqyP9EMbbj_B00ramOLihqN4NkvVoPQhGjVgJ2nj8KISUXU9HAXpWJl0u
- P5NHVrGaMnYaqD1IztEWjd0BKMdnrtRCNLLhpgLuKU950EQrgoAcJqBZkIpc
- 5i5YEyHFVyN5kk5azk8J6Dn3Ivh0eWUCe.xGi4_gmr_wIv8uY
-X-Yahoo-SMTP: Ua.BYCGswBCLcNpMqiQEtkMTjL08M6XQy5ZdmA--
-X-Rocket-Received: from localhost.localdomain (chase.southwood@50.129.102.163 with plain [98.139.211.125])
-        by smtp229.mail.gq1.yahoo.com with SMTP; 12 Feb 2014 08:28:40 +0000 UTC
-From: Chase Southwood <chase.southwood@yahoo.com>
-To: gregkh@linuxfoundation.org
-Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Chase Southwood <chase.southwood@yahoo.com>
-Subject: [PATCH] Staging: comedi: Correct a few printf format codes
-Date: Wed, 12 Feb 2014 02:28:35 -0600
-Message-Id: <1392193715-29467-1-git-send-email-chase.southwood@yahoo.com>
-X-Mailer: git-send-email 1.8.5.3
+	Wed, 12 Feb 2014 03:14:03 -0500
+Content-Type: text/plain; charset="UTF-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "Damian Nowak" <spam@nowaker.net>,
+        "NeilBrown" <neilb@suse.de>
+Date: Wed, 12 Feb 2014 08:10:12 +0000
+Message-ID: <lsq.1392192612.381492409@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 70/79] md/raid10: fix bug when raid10 recovery fails
+ to recover a block.
+In-Reply-To: <lsq.1392192611.998273004@decadent.org.uk>
+X-SA-Exim-Connect-IP: 91.84.160.45
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My static checker found some slightly inaccurate format codes in printf
-calls in comedi_fops.c and drivers/comedi_bond.c.  It may be slightly
-pedantic to change them, but using the correctly corresponding format
-codes is probably a good idea.  All but one were unsigned ints that were
-formatted with %i, change these to %u, and one was an int formatted with
-%u, we want to format this with %d.
+3.2.55-rc1 review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
+------------------
+
+From: NeilBrown <neilb@suse.de>
+
+commit e8b849158508565e0cd6bc80061124afc5879160 upstream.
+
+commit e875ecea266a543e643b19e44cf472f1412708f9
+    md/raid10 record bad blocks as needed during recovery.
+
+added code to the "cannot recover this block" path to record a bad
+block rather than fail the whole recovery.
+Unfortunately this new case was placed *after* r10bio was freed rather
+than *before*, yet it still uses r10bio.
+This is will crash with a null dereference.
+
+So move the freeing of r10bio down where it is safe.
+
+Fixes: e875ecea266a543e643b19e44cf472f1412708f9
+Reported-by: Damian Nowak <spam@nowaker.net>
+URL: https://bugzilla.kernel.org/show_bug.cgi?id=68181
+Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/staging/comedi/comedi_fops.c         | 8 ++++----
- drivers/staging/comedi/drivers/comedi_bond.c | 4 ++--
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ drivers/md/raid10.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
-index c22c617..b36b760 100644
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -297,7 +297,7 @@ static ssize_t max_read_buffer_kb_show(struct device *csdev,
- 	mutex_unlock(&dev->mutex);
- 
- 	comedi_dev_put(dev);
--	return snprintf(buf, PAGE_SIZE, "%i\n", size);
-+	return snprintf(buf, PAGE_SIZE, "%u\n", size);
- }
- 
- static ssize_t max_read_buffer_kb_store(struct device *csdev,
-@@ -353,7 +353,7 @@ static ssize_t read_buffer_kb_show(struct device *csdev,
- 	mutex_unlock(&dev->mutex);
- 
- 	comedi_dev_put(dev);
--	return snprintf(buf, PAGE_SIZE, "%i\n", size);
-+	return snprintf(buf, PAGE_SIZE, "%u\n", size);
- }
- 
- static ssize_t read_buffer_kb_store(struct device *csdev,
-@@ -410,7 +410,7 @@ static ssize_t max_write_buffer_kb_show(struct device *csdev,
- 	mutex_unlock(&dev->mutex);
- 
- 	comedi_dev_put(dev);
--	return snprintf(buf, PAGE_SIZE, "%i\n", size);
-+	return snprintf(buf, PAGE_SIZE, "%u\n", size);
- }
- 
- static ssize_t max_write_buffer_kb_store(struct device *csdev,
-@@ -466,7 +466,7 @@ static ssize_t write_buffer_kb_show(struct device *csdev,
- 	mutex_unlock(&dev->mutex);
- 
- 	comedi_dev_put(dev);
--	return snprintf(buf, PAGE_SIZE, "%i\n", size);
-+	return snprintf(buf, PAGE_SIZE, "%u\n", size);
- }
- 
- static ssize_t write_buffer_kb_store(struct device *csdev,
-diff --git a/drivers/staging/comedi/drivers/comedi_bond.c b/drivers/staging/comedi/drivers/comedi_bond.c
-index 406aedb..8450c99 100644
---- a/drivers/staging/comedi/drivers/comedi_bond.c
-+++ b/drivers/staging/comedi/drivers/comedi_bond.c
-@@ -211,7 +211,7 @@ static int do_dev_config(struct comedi_device *dev, struct comedi_devconfig *it)
- 			return -EINVAL;
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -2563,10 +2563,6 @@ static sector_t sync_request(struct mdde
+ 			if (j == conf->copies) {
+ 				/* Cannot recover, so abort the recovery or
+ 				 * record a bad block */
+-				put_buf(r10_bio);
+-				if (rb2)
+-					atomic_dec(&rb2->remaining);
+-				r10_bio = rb2;
+ 				if (any_working) {
+ 					/* problem is that there are bad blocks
+ 					 * on other device(s)
+@@ -2590,6 +2586,10 @@ static sector_t sync_request(struct mdde
+ 					conf->mirrors[i].recovery_disabled
+ 						= mddev->recovery_disabled;
+ 				}
++				put_buf(r10_bio);
++				if (rb2)
++					atomic_dec(&rb2->remaining);
++				r10_bio = rb2;
+ 				break;
+ 			}
  		}
- 
--		snprintf(file, sizeof(file), "/dev/comedi%u", minor);
-+		snprintf(file, sizeof(file), "/dev/comedi%d", minor);
- 		file[sizeof(file) - 1] = 0;
- 
- 		d = comedi_open(file);
-@@ -264,7 +264,7 @@ static int do_dev_config(struct comedi_device *dev, struct comedi_devconfig *it)
- 				char buf[20];
- 				int left =
- 				    MAX_BOARD_NAME - strlen(devpriv->name) - 1;
--				snprintf(buf, sizeof(buf), "%d:%d ",
-+				snprintf(buf, sizeof(buf), "%u:%u ",
- 					 bdev->minor, bdev->subdev);
- 				buf[sizeof(buf) - 1] = 0;
- 				strncat(devpriv->name, buf, left);
--- 
-1.8.5.3
 
