@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752998AbaBLKVp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 05:21:45 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:42356 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752893AbaBLKUP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 05:20:15 -0500
+	id S1752838AbaBLKUE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 05:20:04 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:54989 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752066AbaBLKTw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 05:19:52 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <tony@atomide.com>, <bcousson@baylibre.com>, <lee.jones@linaro.org>
 CC: <balbi@ti.com>, <nm@ti.com>, <khilman@linaro.org>,
         <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
         <linux-usb@vger.kernel.org>, Roger Quadros <rogerq@ti.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH v7 11/12] ARM: dts: OMAP2+: Get rid of incompatible ids for USB host nodes
-Date: Wed, 12 Feb 2014 12:18:52 +0200
-Message-ID: <1392200333-28397-12-git-send-email-rogerq@ti.com>
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [PATCH v7 04/12] mfd: omap-usb-host: Update DT clock binding information
+Date: Wed, 12 Feb 2014 12:18:45 +0200
+Message-ID: <1392200333-28397-5-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1392200333-28397-1-git-send-email-rogerq@ti.com>
 References: <1392200333-28397-1-git-send-email-rogerq@ti.com>
@@ -26,81 +25,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The OMAP EHCI and OHCI controllers are not compatible with drivers
-other than "ti,ehci-omap" and "ti,ohci-omap3" respectively, so get
-rid of the incompatible ids.
+The omap-usb-host driver expects certained named clocks.
+Add this information to the DT binding document.
 
-CC: Alan Stern <stern@rowland.harvard.edu>
+CC: Lee Jones <lee.jones@linaro.org>
+CC: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- arch/arm/boot/dts/omap3.dtsi | 4 ++--
- arch/arm/boot/dts/omap4.dtsi | 4 ++--
- arch/arm/boot/dts/omap5.dtsi | 4 ++--
- 3 files changed, 6 insertions(+), 6 deletions(-)
+ .../devicetree/bindings/mfd/omap-usb-host.txt      | 23 ++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
 
-diff --git a/arch/arm/boot/dts/omap3.dtsi b/arch/arm/boot/dts/omap3.dtsi
-index a5fc83b..8e7de9e 100644
---- a/arch/arm/boot/dts/omap3.dtsi
-+++ b/arch/arm/boot/dts/omap3.dtsi
-@@ -634,14 +634,14 @@
- 			ranges;
+diff --git a/Documentation/devicetree/bindings/mfd/omap-usb-host.txt b/Documentation/devicetree/bindings/mfd/omap-usb-host.txt
+index b381fa6..4721b2d 100644
+--- a/Documentation/devicetree/bindings/mfd/omap-usb-host.txt
++++ b/Documentation/devicetree/bindings/mfd/omap-usb-host.txt
+@@ -32,6 +32,29 @@ Optional properties:
+ - single-ulpi-bypass: Must be present if the controller contains a single
+   ULPI bypass control bit. e.g. OMAP3 silicon <= ES2.1
  
- 			usbhsohci: ohci@48064400 {
--				compatible = "ti,ohci-omap3", "usb-ohci";
-+				compatible = "ti,ohci-omap3";
- 				reg = <0x48064400 0x400>;
- 				interrupt-parent = <&intc>;
- 				interrupts = <76>;
- 			};
++- clocks: a list of phandles and clock-specifier pairs, one for each entry in
++  clock-names.
++
++- clock-names: should include:
++  For OMAP3
++  * "usbhost_120m_fck" - 120MHz Functional clock.
++
++  For OMAP4+
++  * "refclk_60m_int" - 60MHz internal reference clock for UTMI clock mux
++  * "refclk_60m_ext_p1" - 60MHz external ref. clock for Port 1's UTMI clock mux.
++  * "refclk_60m_ext_p2" - 60MHz external ref. clock for Port 2's UTMI clock mux
++  * "utmi_p1_gfclk" - Port 1 UTMI clock mux.
++  * "utmi_p2_gfclk" - Port 2 UTMI clock mux.
++  * "usb_host_hs_utmi_p1_clk" - Port 1 UTMI clock gate.
++  * "usb_host_hs_utmi_p2_clk" - Port 2 UTMI clock gate.
++  * "usb_host_hs_utmi_p3_clk" - Port 3 UTMI clock gate.
++  * "usb_host_hs_hsic480m_p1_clk" - Port 1 480MHz HSIC clock gate.
++  * "usb_host_hs_hsic480m_p2_clk" - Port 2 480MHz HSIC clock gate.
++  * "usb_host_hs_hsic480m_p3_clk" - Port 3 480MHz HSIC clock gate.
++  * "usb_host_hs_hsic60m_p1_clk" - Port 1 60MHz HSIC clock gate.
++  * "usb_host_hs_hsic60m_p2_clk" - Port 2 60MHz HSIC clock gate.
++  * "usb_host_hs_hsic60m_p3_clk" - Port 3 60MHz HSIC clock gate.
++
+ Required properties if child node exists:
  
- 			usbhsehci: ehci@48064800 {
--				compatible = "ti,ehci-omap", "usb-ehci";
-+				compatible = "ti,ehci-omap";
- 				reg = <0x48064800 0x400>;
- 				interrupt-parent = <&intc>;
- 				interrupts = <77>;
-diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
-index 39a05ce..ff1b057 100644
---- a/arch/arm/boot/dts/omap4.dtsi
-+++ b/arch/arm/boot/dts/omap4.dtsi
-@@ -705,14 +705,14 @@
- 				      "refclk_60m_ext_p2";
- 
- 			usbhsohci: ohci@4a064800 {
--				compatible = "ti,ohci-omap3", "usb-ohci";
-+				compatible = "ti,ohci-omap3";
- 				reg = <0x4a064800 0x400>;
- 				interrupt-parent = <&gic>;
- 				interrupts = <GIC_SPI 76 IRQ_TYPE_LEVEL_HIGH>;
- 			};
- 
- 			usbhsehci: ehci@4a064c00 {
--				compatible = "ti,ehci-omap", "usb-ehci";
-+				compatible = "ti,ehci-omap";
- 				reg = <0x4a064c00 0x400>;
- 				interrupt-parent = <&gic>;
- 				interrupts = <GIC_SPI 77 IRQ_TYPE_LEVEL_HIGH>;
-diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
-index d4dae48..f65aa65 100644
---- a/arch/arm/boot/dts/omap5.dtsi
-+++ b/arch/arm/boot/dts/omap5.dtsi
-@@ -783,14 +783,14 @@
- 				      "refclk_60m_ext_p2";
- 
- 			usbhsohci: ohci@4a064800 {
--				compatible = "ti,ohci-omap3", "usb-ohci";
-+				compatible = "ti,ohci-omap3";
- 				reg = <0x4a064800 0x400>;
- 				interrupt-parent = <&gic>;
- 				interrupts = <GIC_SPI 76 IRQ_TYPE_LEVEL_HIGH>;
- 			};
- 
- 			usbhsehci: ehci@4a064c00 {
--				compatible = "ti,ehci-omap", "usb-ehci";
-+				compatible = "ti,ehci-omap";
- 				reg = <0x4a064c00 0x400>;
- 				interrupt-parent = <&gic>;
- 				interrupts = <GIC_SPI 77 IRQ_TYPE_LEVEL_HIGH>;
+ - #address-cells: Must be 1
 -- 
 1.8.3.2
 
