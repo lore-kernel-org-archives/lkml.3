@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754112AbaBLUnf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 15:43:35 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:45040 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753261AbaBLUnd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 15:43:33 -0500
-Date: Wed, 12 Feb 2014 12:43:08 -0800
-From: Kees Cook <kees@outflux.net>
-To: Pablo Neira Ayuso <pablo@netfilter.org>, Patrick McHardy <kaber@trash.net>
-Cc: linux-kernel@vger.kernel.org, davej@redhat.com
-Subject: flaw in "nf_tables: add reject module for NFPROTO_INET"
-Message-ID: <20140212204307.GK23300@outflux.net>
-References: <52fb24097b42_6b5073486c727c3@209.249.196.67.mail>
+	id S1754184AbaBLUok (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 15:44:40 -0500
+Received: from asavdk4.altibox.net ([109.247.116.15]:54738 "EHLO
+	asavdk4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753822AbaBLUoj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 15:44:39 -0500
+X-Greylist: delayed 487 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Feb 2014 15:44:39 EST
+Date: Wed, 12 Feb 2014 21:36:21 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
+Subject: Re: linux-next: build failure after merge of the final tree (cgroup
+ tree related)
+Message-ID: <20140212203621.GA31074@ravnborg.org>
+References: <20140212162500.242e91e4cc3541b992fa3a0c@canb.auug.org.au>
+ <20140212063933.GB7984@mtj.dyndns.org>
+ <20140212214743.22fd2d8e1889ae69986e58aa@canb.auug.org.au>
+ <20140212142700.GJ24490@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52fb24097b42_6b5073486c727c3@209.249.196.67.mail>
-Organization: Outflux
-X-HELO: www.outflux.net
+In-Reply-To: <20140212142700.GJ24490@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Tejun.
 
-This seems like a legit problem detected by Coverity. Looks like a break is
-missing?
+On Wed, Feb 12, 2014 at 09:27:00AM -0500, Tejun Heo wrote:
+> On Wed, Feb 12, 2014 at 09:47:43PM +1100, Stephen Rothwell wrote:
+> > Hi, Tejun,
+> > 
+> > On Wed, 12 Feb 2014 01:39:33 -0500 Tejun Heo <tj@kernel.org> wrote:
+> > >
+> > > On Wed, Feb 12, 2014 at 04:25:00PM +1100, Stephen Rothwell wrote:
+> > > > Presumably caused by commit 2bd59d48ebfb ("cgroup: convert to kernfs")
+> > > > (see the comment in commit 1ff6bbfd13ca ("arm, pm, vmpressure: add
+> > > > missing slab.h includes")).  I wonder how mane more builds are broken by
+> > > > this :-(
+> > > 
+> > > Dang, I was feeling pretty safe as kbuild bot was reporting build
+> > > successes.  We better fix them at any rate.  David / Sam, can you
+> > > please pick this one up?
+> > 
+> > It really needs to go into the tree with the cgroup commit so it doesn't
+> > break there.
+> 
+> Hmmm... I see.  I'll route the patch once Dave or Sam acks it.
+My sparc setup is broken for many reasons - so I have not been able to try it out.
+But the patch is obvious enough that I do not hesitate to do:
 
--Kees
+Acked-by: Sam Ravnborg <sam@ravnborg.org>
 
-On Tue, Feb 11, 2014 at 11:34:33PM -0800, scan-admin@coverity.com wrote:
-> 
-> Hi,
-> 
-> 
-> Please find the latest report on new defect(s) introduced to Linux found with Coverity Scan.
-> 
-> Defect(s) Reported-by: Coverity Scan
-> Showing 1 of 1 defect(s)
-> 
-> 
-> ** CID 1171942:  Missing break in switch  (MISSING_BREAK)
-> /net/netfilter/nft_reject_inet.c: 25 in nft_reject_inet_eval()
-> 
-> 
-> ________________________________________________________________________________________________________
-> *** CID 1171942:  Missing break in switch  (MISSING_BREAK)
-> /net/netfilter/nft_reject_inet.c: 25 in nft_reject_inet_eval()
-> 19     				 struct nft_data data[NFT_REG_MAX + 1],
-> 20     				 const struct nft_pktinfo *pkt)
-> 21     {
-> 22     	switch (pkt->ops->pf) {
-> 23     	case NFPROTO_IPV4:
-> 24     		nft_reject_ipv4_eval(expr, data, pkt);
-> >>>     CID 1171942:  Missing break in switch  (MISSING_BREAK)
-> >>>     The above case falls through to this one.
-> 25     	case NFPROTO_IPV6:
-> 26     		nft_reject_ipv6_eval(expr, data, pkt);
-> 27     	}
-> 28     }
-> 29     
-> 30     static struct nft_expr_type nft_reject_inet_type;
-
--- 
-Kees Cook                                            @outflux.net
+	Sam
