@@ -1,64 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751829AbaBLMen (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 07:34:43 -0500
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:56344 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751320AbaBLMel convert rfc822-to-8bit (ORCPT
+	id S1751934AbaBLMez (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 07:34:55 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:43855 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751291AbaBLMew (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 07:34:41 -0500
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
-Subject: Re: [PATCH v2] NFSv4.1: new layout stateid can not be overwrite by one out of date
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-In-Reply-To: <1392199580-14249-1-git-send-email-shaobingqing@bwstor.com.cn>
-Date: Wed, 12 Feb 2014 07:34:38 -0500
-Cc: linuxnfs <linux-nfs@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <EF4B0DD4-D0EC-498C-B10B-6FE157061C5F@primarydata.com>
-References: <N> <1392199580-14249-1-git-send-email-shaobingqing@bwstor.com.cn>
-To: shaobingqing <shaobingqing@bwstor.com.cn>
-X-Mailer: Apple Mail (2.1827)
+	Wed, 12 Feb 2014 07:34:52 -0500
+Date: Wed, 12 Feb 2014 13:34:49 +0100
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Jean-Jacques Hiblot <jjhiblot@traphandler.com>, nicolas.ferre@atmel.com,
+        plagnioj@jcrosoft.com, b.brezillon@overkiz.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 0/8] Device Tree support for the at91sam9261ek
+Message-ID: <20140212133449.5c42216d@skate>
+In-Reply-To: <52FB5795.9020708@free-electrons.com>
+References: <1392199607-27452-1-git-send-email-jjhiblot@traphandler.com>
+	<52FB5795.9020708@free-electrons.com>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dear Gregory CLEMENT,
 
-On Feb 12, 2014, at 5:06, shaobingqing <shaobingqing@bwstor.com.cn> wrote:
+On Wed, 12 Feb 2014 12:14:29 +0100, Gregory CLEMENT wrote:
 
-> If initiate_file_draining returned NFS4ERR_DELAY, all the lsegs of
-> a file might be released before the retrying cb_layout request arriving
-> at the client. In this situation, layoutget request of the file will
-> use open stateid to obtain a new layout stateid. And if the retrying
-> cb_layout request arrived at the client after the layoutget reply,
-> new layout stateid would be overwrite by one out of date.
-> 
-> Signed-off-by: shaobingqing <shaobingqing@bwstor.com.cn>
-> ---
-> fs/nfs/callback.h      |    5 +++++
-> fs/nfs/callback_proc.c |   24 ++++++++++++++++++++++++
-> fs/nfs/inode.c         |    1 +
-> include/linux/nfs_fs.h |    1 +
-> 4 files changed, 31 insertions(+), 0 deletions(-)
-> 
-<snip>
-> diff --git a/include/linux/nfs_fs.h b/include/linux/nfs_fs.h
-> index 3ea4cde..ba47870 100644
-> --- a/include/linux/nfs_fs.h
-> +++ b/include/linux/nfs_fs.h
-> @@ -181,6 +181,7 @@ struct nfs_inode {
-> 	struct nfs4_cached_acl	*nfs4_acl;
->         /* NFSv4 state */
-> 	struct list_head	open_states;
-> +	struct list_head	cb_stale_state_list;
-> 	struct nfs_delegation __rcu *delegation;
-> 	fmode_t			 delegation_state;
-> 	struct rw_semaphore	rwsem;
+> For dm9000 the issue is (again) related to an ordering problem:
+> the Ethernet need an interrupt provided by the gpio driver. Unfortunately,
+> the gpio driver initialization is called after the dm900 driver
+> initialization.
 
-No. We are definitely not adding new fields to the inode in order to track old layout stateids.
-_________________________________
-Trond Myklebust
-Linux NFS client maintainer, PrimaryData
-trond.myklebust@primarydata.com
+And -EPROBE_DEFER doesn't solve this problem?
 
+Thomas
+-- 
+Thomas Petazzoni, CTO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
