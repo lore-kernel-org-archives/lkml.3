@@ -1,66 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752095AbaBLLzU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 06:55:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27563 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751849AbaBLLzS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 06:55:18 -0500
-Date: Wed, 12 Feb 2014 13:59:01 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: rusty@rustcorp.com.au, virtio-dev@lists.oasis-open.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sridhar Samudrala <sri@us.ibm.com>
-Subject: Re: [PATCH net] virtio-net: alloc big buffers also when guest can
- receive UFO
-Message-ID: <20140212115901.GC23006@redhat.com>
-References: <1392183808-16789-1-git-send-email-jasowang@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392183808-16789-1-git-send-email-jasowang@redhat.com>
+	id S1752220AbaBLL4h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 06:56:37 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:44200 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751133AbaBLL4g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 06:56:36 -0500
+Message-ID: <1392206196.848.18.camel@hornet>
+Subject: Re: [PATCH 09/12] hwmon: vexpress: Use devm helper for hwmon device
+ registration
+From: Pawel Moll <pawel.moll@arm.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: "arm@kernel.org" <arm@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jean Delvare <jdelvare@suse.de>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Date: Wed, 12 Feb 2014 11:56:36 +0000
+In-Reply-To: <20140212024904.GA19352@roeck-us.net>
+References: <20140212024904.GA19352@roeck-us.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 01:43:28PM +0800, Jason Wang wrote:
-> We should alloc big buffers also when guest can receive UFO
-> pakcets. Otherwise the big packets will be truncated when mergeable rx
-> buffer is disabled.
-
-Not truncated, they will be dropped.
-
-> Fixes 5c5167515d80f78f6bb538492c423adcae31ad65
-> (virtio-net: Allow UFO feature to be set and advertised.)
->
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Cc: Sridhar Samudrala <sri@us.ibm.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-
-for patch but please fix commit message.
-
-
-> ---
->  drivers/net/virtio_net.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
+On Wed, 2014-02-12 at 02:49 +0000, Guenter Roeck wrote:
+> On Tue, Feb 11, 2014 at 05:10:33PM +0000, Pawel Moll wrote:
+> > Use devm_hwmon_device_register_with_groups instead of
+> > the old-style manual attributes and hwmon device registration.
+> > 
 > 
-> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index d75f8ed..5632a99 100644
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-> @@ -1711,7 +1711,8 @@ static int virtnet_probe(struct virtio_device *vdev)
->  	/* If we can receive ANY GSO packets, we must allocate large ones. */
->  	if (virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO4) ||
->  	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO6) ||
-> -	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_ECN))
-> +	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_ECN) ||
-> +	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_UFO))
->  		vi->big_packets = true;
->  
->  	if (virtio_has_feature(vdev, VIRTIO_NET_F_MRG_RXBUF))
-> -- 
-> 1.8.3.2
+> [ ... ]
+> 
+> >  static int vexpress_hwmon_probe(struct platform_device *pdev)
+> >  {
+> > -	int err;
+> >  	const struct of_device_id *match;
+> >  	struct vexpress_hwmon_data *data;
+> > +	const char *name;
+> > +	const struct attribute_group **groups;
+> >  
+> >  	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
+> >  	if (!data)
+> > @@ -176,42 +151,19 @@ static int vexpress_hwmon_probe(struct platform_device *pdev)
+> >  		return -ENODEV;
+> >  
+> 
+> There is a leftover platform_set_drvdata() above which you can remove;
+> attributes are now attached to the hwmon device and no longer
+> to the platform device.
+
+Right, missed this fact. Will remove.
+
+BTW. It's cool that the attributes live in the class device now. You
+probably don't remember, but in the very first version of the driver I
+was trying to get this point with some tricks that weren't taken
+nicely ;-)
+
+> > -	match = of_match_device(vexpress_hwmon_of_match, &pdev->dev);
+> > -	sysfs_remove_group(&pdev->dev.kobj, match->data);
+> > +	name = of_get_property(pdev->dev.of_node, "compatible", NULL);
+> 
+> Couple of problems, two of which escaped me earlier.
+> First, can of_get_property ever return NULL ? I think not, just wondering.
+
+Generally it can, but not in this particular case, no. The device
+wouldn't get bound to the driver if it lacked the "compatible" property.
+
+> Second is a real problem. You have a '-' in the compatible property which is
+> illegal for the 'name' attribute in hwmon devices. It messes up libsensors
+> and thus every application using it. Not sure what a good fix (or name)
+> would be; simplest might be to copy the name string and replace it with '_'.
+> Sorry for not noticing this earlier; it might actually make sense to submit
+> a separate patch to address this so we can apply it to the current kernel
+> and if necessary patch it into earlier kernels.
+
+Ok, will do. Either with s/-/_/ or with a name lookup table.
+
+Interestingly enough I never observed any problem with libsensors (3.3.2
+was the one I used) on my board...
+
+> Third, I noticed that the 'label' attribute is always created but returns  
+> -ENOENT if there is no label. A much better implementation would be to use
+> .is_visible and not create the label attribute if its devicetree entry
+> does not exist. I don't know how libsensors reacts to -ENOENT on a read,
+> but no matter how it does react, it is pretty much undefined.
+> Again, that should be handled in a separate patch.
+
+> I agree with Arnd that it would be nice to get rid of the local macro,
+> but I won't mandate that.
+
+I actually prefer to have the structures unfolded, but was just trying
+to mimic the trend in other hwmon drivers. No problem - will change this
+gladly.
+
+Pawel
+
