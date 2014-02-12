@@ -1,84 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752101AbaBLJ1G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 04:27:06 -0500
-Received: from mga03.intel.com ([143.182.124.21]:21971 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752002AbaBLJ05 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 04:26:57 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,831,1384329600"; 
-   d="scan'208";a="473886150"
-Date: Wed, 12 Feb 2014 11:34:30 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Aaron Lu <aaron.lu@intel.com>
-Cc: linux-acpi@vger.kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI / video: Add HP EliteBook Revolve 810 to the
- blacklist
-Message-ID: <20140212093430.GB5018@intel.com>
-References: <1391425156-27821-1-git-send-email-mika.westerberg@linux.intel.com>
- <52F43716.7020008@intel.com>
- <20140207102523.GO18029@intel.com>
- <52FADD1F.90209@intel.com>
+	id S1752138AbaBLJ1c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 04:27:32 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:57038 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751055AbaBLJ1B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 04:27:01 -0500
+Message-ID: <52FB3E50.8020809@huawei.com>
+Date: Wed, 12 Feb 2014 17:26:40 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52FADD1F.90209@intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michal Hocko <mhocko@suse.cz>
+CC: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH] cgroup: protect modifications to cgroup_idr with cgroup_mutex
+References: <52F9D9DA.7040108@huawei.com> <20140211102032.GA11946@dhcp22.suse.cz> <20140212091238.GC28085@dhcp22.suse.cz>
+In-Reply-To: <20140212091238.GC28085@dhcp22.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 10:31:59AM +0800, Aaron Lu wrote:
-> On 02/07/2014 06:25 PM, Mika Westerberg wrote:
-> > On Fri, Feb 07, 2014 at 09:29:58AM +0800, Aaron Lu wrote:
-> >> On 02/03/2014 06:59 PM, Mika Westerberg wrote:
-> >>> On HP EliteBook Revolve 810 the ACPI backlight device doesn't work as
-> >>> expected. For example when resuming from system sleep, it seems to lose
-> >>> backlight settings.
-> >>>
-> >>> Forcing Intel driver fixes the problem so add this machine the ACPI
-> >>> video detect blacklist.
-> >>
-> >> For reference's purpose, can you please file a bug to kernel bugzilla
-> >> under the ACPI/Power-Video category and attach the acpidump and dmesg
-> >> there? Thanks.
-> > 
-> > Done, the bug is here:
-> > 
-> > https://bugzilla.kernel.org/show_bug.cgi?id=70231
-> > 
-> > I noticed that using only the acpi_video0 for tuning backlight works but if
-> > I use intel_backlight directly, on resume I get values from acpi_video0
-> > instead. I'm not really familiar how this is supposed to work, though so
-> > please let me know if I'm missing something.
+On 2014/2/12 17:12, Michal Hocko wrote:
+> Li has pointed out that my previous backport was not correct because
+> err_unlock label releases a reference to supperblock which was not taken
+> before idr_alloc. I've also removed cgroup_mutex from free_css_id as per
+> Li.
+> Fixed in this version.
 > 
-> Thanks for the report, as communicated on the bug page, your system is
-> already blacklisted for win8 by commit:
-> 
-> commit 2d4054d8422462cb2771fdb4eb1925df55d2b320
-> Author:	Takashi Iwai <tiwai@suse.de>  Fri Dec 20 00:09:12 2013
-> Committer:	Rafael J. Wysocki <rafael.j.wysocki@intel.com>  Fri Dec 20 22:50:56 2013
-> 
-> ACPI: Blacklist Win8 OSI for some HP laptop 2013 models
-> 
-> And the fact that acpi_video interface works made it not appropriate to
-> add your system into the video_detect_dmi_table. You can just use acpi_video
-> interface and everything should work fine.
 
-OK, thanks for the investigation Aaron.
+Looks good to me!
 
-I have few questions, though.
+Are you going to send it to stable mailing list after the fix hits mainline
+or use it internally?
 
- 1) Is it always right thing to do to use acpi_video0 over anything else?
- In my case that device first disapeared and then reappeared so I got kind
- of confused about that. I'm going to tune my scripts to use acpi_video0 as
- you suggested.
+It has small conflicts with this patch that will also be backported to 3.12:
 
- 2) What should we do with this commit? It is already in mainline so I
- guess revert is the sane thing to do.
+https://git.kernel.org/cgit/linux/kernel/git/tj/cgroup.git/commit/kernel/cgroup.c?h=for-3.14-fixes&id=b58c89986a77a23658682a100eb15d8edb571ebb
 
-I should have asked/investigated this more before submitting the patch.
-Sorry about that.
