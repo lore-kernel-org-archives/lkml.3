@@ -1,76 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753285AbaBLQ0P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 11:26:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49943 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752740AbaBLQ0M (ORCPT
+	id S1752907AbaBLQ07 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 11:26:59 -0500
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:60943 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751480AbaBLQ05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 11:26:12 -0500
-Date: Wed, 12 Feb 2014 08:27:28 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Subject: Re: [PATCH 3.13 000/120] 3.13.3-stable review
-Message-ID: <20140212162728.GB21336@kroah.com>
-References: <20140211184823.492407127@linuxfoundation.org>
- <20140212042906.GD26490@roeck-us.net>
+	Wed, 12 Feb 2014 11:26:57 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140212042906.GD26490@roeck-us.net>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+X-Originating-IP: [84.73.67.144]
+In-Reply-To: <CANq1E4RACz+bZmBGFtVGNKZhcJtC6iQtCpsCTTjEXrGUDP6C+A@mail.gmail.com>
+References: <1391004120-687-1-git-send-email-dh.herrmann@gmail.com>
+	<1391004120-687-6-git-send-email-dh.herrmann@gmail.com>
+	<20140212132541.GU17001@phenom.ffwll.local>
+	<CANq1E4RACz+bZmBGFtVGNKZhcJtC6iQtCpsCTTjEXrGUDP6C+A@mail.gmail.com>
+Date: Wed, 12 Feb 2014 17:26:57 +0100
+X-Google-Sender-Auth: BFPOFnCyvh-QzeqIcXiXPv3Sdgs
+Message-ID: <CAKMK7uEbHUL5=CiRqcCh7nBRAirOB4tdSwiz6YPHNiThVujA8A@mail.gmail.com>
+Subject: Re: [PATCH 05/13] drm: provide device-refcount
+From: Daniel Vetter <daniel@ffwll.ch>
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Dave Airlie <airlied@gmail.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 08:29:06PM -0800, Guenter Roeck wrote:
-> On Tue, Feb 11, 2014 at 11:04:01AM -0800, Greg Kroah-Hartman wrote:
-> > Some -stable releases spring out from my build system bright and shiny
-> > and ready to go.  Not so with these releases.  Maybe it's the horrid
-> > weather that was happening during the creation of these kernels, or
-> > something else, but whatever it was, they came into this world
-> > screaming, kicking, killing build servers left-and-right, and breaking
-> > the build every other patch.  Some developers decided to get into the
-> > act, constantly pushing the boundaries of what is an acceptable -stable
-> > patch, and trying to skirt the rules of upstream patches first numerous
-> > times, making me even grumpier than normal, "forcing" me to relax and
-> > take in an afternoon playing of the Lego movie...
-> > 
-> Come on, compared to me you are never grumpy.
-> 
-> > Test these out well, they have barely survived my systems, and I don't
-> > trust them in the slightest to not eat your disks, reap your tasks, and
-> > run away laughing as your CPU turns into a space heater.
-> > 
-> > You have been warned.
-> > 
-> Hmm ... not sure if I want to take that risk :-). Going to be fun.
-> And looking for volunteers to provide me with a really great test suite
-> which I can run in qemu (and which doesn't take me days to set up).
+On Wed, Feb 12, 2014 at 3:44 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
+>>> +/**
+>>> + * drm_dev_ref - Take reference of a DRM device
+>>> + * @dev: device to take reference of or NULL
+>>> + *
+>>> + * This increases the ref-count of @dev by one. You *must* already own a
+>>> + * reference when calling this. Use drm_dev_unref() to drop this reference
+>>> + * again.
+>>> + *
+>>> + * This function never fails. However, this function does not provide *any*
+>>> + * guarantee whether the device is alive or running. It only provides a
+>>> + * reference to the object and the memory associated with it.
+>>> + */
+>>> +void drm_dev_ref(struct drm_device *dev)
+>>> +{
+>>> +     if (dev)
+>>
+>> This check here (and below in the unref code) look funny. What's the
+>> reason for it? Trying to grab/drop a ref on a NULL pointer sounds like a
+>> pretty serious bug to me. This is in contrast to kfree(NULL) which imo
+>> makes sense - freeing nothing is a legitimate operation imo.
+>
+> I added it mainly to simplify cleanup-code paths. You can then just
+> call unref() and set it to NULL regardless whether you actually hold a
+> reference or not. For ref() I don't really care but I think the
+> NULL-test doesn't hurt either.
+>
+> I copied this behavior from get_device() and put_device(), btw.
+> Similar to these functions, I think a lot more will go wrong if the
+> NULL pointer is not intentional. Imo, ref-counting on a NULL object
+> just means "no object", so it shouldn't do anything.
 
-What about the new rcu test suite that has been added to the kernel
-tree?
+My fear with this kind of magic is that someone accidentally exchanges
+the pointer clearing to NULL (or assignement when grabbing a ref) with
+the unref/ref call and then we have a very subtle bug at hand. If we
+don't accept NULL objects the failure will be much more obvious.
 
-> > -----------------
-> > 
-> > This is the start of the stable review cycle for the 3.13.3 release.
-> > There are 120 patches in this series, all will be posted as a response
-> > to this one.  If anyone has any issues with these being applied, please
-> > let me know.
-> > 
-> > Responses should be made by Thu Feb 13 18:47:55 UTC 2014.
-> > Anything received after that time might be too late.
-> > 
-> 
-> Build results:
-> 	total: 126 pass: 122 skipped: 4 fail: 0
-> 
-> qemu tests all passed.
-> 
-> Results are as expected (even though that may be unexpected in this case ;-).
+The entire kernel kobject stuff is very consistent about this, but I
+couldn't find a reason for it - all the NULL checks predate git
+history. Greg can you please shed some lights on best practice here
+and whether my fears are justified given your experience with shoddy
+drivers in general?
 
-Yeah, it lives!   Thanks for testing all of these and letting me know.
-
-greg k-h
+Thanks, Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
