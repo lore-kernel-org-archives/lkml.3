@@ -1,116 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751802AbaBLJqk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 04:46:40 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:34809 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751015AbaBLJqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 04:46:35 -0500
-Message-ID: <52FB42DE.4090203@ti.com>
-Date: Wed, 12 Feb 2014 15:16:06 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1751993AbaBLJrc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 04:47:32 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:45485 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751129AbaBLJr3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 04:47:29 -0500
 MIME-Version: 1.0
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Felipe Balbi <balbi@ti.com>
-CC: <george.cherian@ti.com>, <rogerq@ti.com>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
-Subject: Re: [PATCH 1/2] usb: dwc3: core: continue probing if usb phy library
- returns -ENODEV/-ENXIO
-References: <1385373690-12170-1-git-send-email-kishon@ti.com> <1390299099-14764-1-git-send-email-kishon@ti.com> <20140121144725.GF30451@saruman.home> <20140127150855.GA17928@xps8300> <20140127160458.GF13268@saruman.home> <20140128153230.GA20991@xps8300> <20140128163036.GD28546@saruman.home> <20140129144659.GA22152@xps8300>
-In-Reply-To: <20140129144659.GA22152@xps8300>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1392198068.23759.7.camel@x220>
+References: <1392198068.23759.7.camel@x220>
+Date: Wed, 12 Feb 2014 15:17:28 +0530
+Message-ID: <CAK9yfHyXmY52KmKPj6=te829-R83dfM7wB813h=+=zCpzzxobA@mail.gmail.com>
+Subject: Re: [PATCH] ARM: S3C24XX: Fix typo "CONFIG_CPUS_3C2443"
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Richard Weinberger <richard@nod.at>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 29 January 2014 08:17 PM, Heikki Krogerus wrote:
-> Hi,
-> 
-> On Tue, Jan 28, 2014 at 10:30:36AM -0600, Felipe Balbi wrote:
->> On Tue, Jan 28, 2014 at 05:32:30PM +0200, Heikki Krogerus wrote:
->>> On Mon, Jan 27, 2014 at 10:05:20AM -0600, Felipe Balbi wrote:
->>> For the controller drivers the PHYs are just a resource like any
->>> other. The controller drivers can't have any responsibility of
->>> them. They should not care if PHY drivers are available for them or
->>> not, or even if the PHY framework is available or not.
->>
->> huh? If memory isn't available you don't continue probing, right ? If
->> your IORESOURCE_MEM is missing, you also don't continue probing, if your
->> IRQ line is missing, you bail too. Those are also nothing but resources
->> to the driver, what you're asking here is to treat PHY as a _different_
->> resource; which might be fine, but we need to make sure we don't
->> continue probing when a PHY is missing in a platform that certainly
->> needs a PHY.
-> 
-> Yes, true. In my head I was comparing the PHY only to resources like
-> gpios, clocks, dma channels, etc. that are often optional to the
-> drivers.
-> 
->>>>>> But I really want to see the argument against using no-op. As far as I
->>>>>> could see, everybody needs a PHY driver one way or another, some
->>>>>> platforms just haven't sent any PHY driver upstream and have their own
->>>>>> hacked up solution to avoid using the PHY layer.
->>>>>
->>>>> Not true in our case. Platforms using Intel's SoCs and chip sets may
->>>>> or may not have controllable USB PHY. Quite often they don't. The
->>>>> Baytrails have usually ULPI PHY for USB2, but that does not mean they
->>>>> provide any vendor specific functions or any need for a driver in any
->>>>> case.
->>>>
->>>> that's different from what I heard.
->>>
->>> I don't know where you got that impression, but it's not true. The
->>> Baytrail SoCs for example don't have internal USB PHYs, which means
->>> the manufacturers using it can select what they want. So we have
->>> boards where PHY driver(s) is needed and boards where it isn't.
->>
->> alright, that explains it ;-) So you have external USB2 and USB3 PHYs ?
->> You have an external PIPE3 interface ? That's quite an achievement,
->> kudos to your HW designers. Getting timing closure on PIPE3 is a
->> difficult task.
-> 
-> No, only the USB2 PHY is external. I'm giving you wrong information,
-> I'm sorry about that. Need to concentrate on what I'm writing.
-> 
-> <snip>
-> 
->>> This is really good to get. We have some projects where we are dealing
->>> with more embedded environments, like IVI, where the kernel should be
->>> stripped of everything useless. Since the PHYs are autonomous, we
->>> should be able to disable the PHY libraries/frameworks.
->>
->> hmmm, in that case it's a lot easier to treat. We can use
->> ERR_PTR(-ENXIO) as an indication that the framework is disabled, or
->> something like that.
->>
->> The difficult is really reliably supporting e.g. OMAP5 (which won't work
->> without a PHY) and your BayTrail with autonomous PHYs. What can we use
->> as an indication ?
-> 
-> OMAP has it's own glue driver, so shouldn't it depend on the PHY
-> layer?
+On 12 February 2014 15:11, Paul Bolle <pebolle@tiscali.nl> wrote:
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> Untested. This needs testing by people with access to knowledge,
+> compilers, and/or hardware related to CPU_S3C2443. I'm not one of them.
+>
+>  arch/arm/mach-s3c24xx/common.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/arch/arm/mach-s3c24xx/common.c b/arch/arm/mach-s3c24xx/common.c
+> index 4adaa4b..1d77d70 100644
+> --- a/arch/arm/mach-s3c24xx/common.c
+> +++ b/arch/arm/mach-s3c24xx/common.c
+> @@ -484,7 +484,7 @@ struct platform_device s3c2440_device_dma = {
+>  };
+>  #endif
+>
+> -#if defined(CONFIG_CPUS_3C2443) || defined(CONFIG_CPU_S3C2416)
+> +#if defined(CONFIG_CPU_S3C2443) || defined(CONFIG_CPU_S3C2416)
 
-right, but the PHY is connected to the dwc3 core and not to the glue.
-> 
->> I mean, I need to know that a particular platform depends on a PHY
->> driver before I decide to return -EPROBE_DEFER or just assume the PHY
->> isn't needed ;-)
-> 
-> I don't think dwc3 (core) should care about that. The PHY layer needs
-> to tell us that. If the PHY driver that the platform depends is not
-> available yet, the PHY layer returns -EPROBE_DEFER and dwc3 ends up
-> returning -EPROBE_DEFER.
+This is definitely a typo and the current fix looks good.
 
-I don't think the PHY layer can 'reliably' tell if PHY driver is available or
-not. Consider when the phy_provider_register fails, there is no way to know if
-PHY driver is available or not. There are a few cases where PHY layer returns
--EPROBE_DEFER but none of them can tell for sure that PHY driver is either
-available and failed or not available at all. It would be best for us to leave
-that to the platforms if we want to be sure if the platform needs a PHY or not.
+Reviewed-by: Sachin Kamat <sachin.kamat@linaro.org>
 
-Thanks
-Kishon
+-- 
+With warm regards,
+Sachin
