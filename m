@@ -1,89 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753886AbaBLScl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 13:32:41 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:51570 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752702AbaBLScj (ORCPT
+	id S1753548AbaBLSgm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 13:36:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51783 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752834AbaBLSgl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 13:32:39 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19g2U4PoepLjLeVtazrFFyvp8+dy/Vs6iM=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 7050D525D2F
-Date: Wed, 12 Feb 2014 13:32:09 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Olof Johansson <olof@lixom.net>
-Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC/PATCH 0/3] Add devicetree scanning for randomness
-Message-ID: <20140212183209.GN27395@titan.lakedaemon.net>
-References: <1392168805-14200-1-git-send-email-lauraa@codeaurora.org>
- <201402121251.06280.arnd@arndb.de>
- <20140212174554.GM27395@titan.lakedaemon.net>
- <CAOesGMgNkdxW4znmns10-DPc4+OTWJLyx2fcJGTgdND6pp0zUQ@mail.gmail.com>
+	Wed, 12 Feb 2014 13:36:41 -0500
+Date: Wed, 12 Feb 2014 10:37:57 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Jason Wang <jasowang@redhat.com>,
+        virtio-dev@lists.oasis-open.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        davem@davemloft.net, qinchuanyu@huawei.com,
+        Joern Engel <joern@logfs.org>,
+        Anatol Pomozov <anatol.pomozov@gmail.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: Re: [PATCH net 1/3] kref: add kref_sub_return
+Message-ID: <20140212183757.GA27840@kroah.com>
+References: <1392222846-26699-1-git-send-email-mst@redhat.com>
+ <1392222846-26699-2-git-send-email-mst@redhat.com>
+ <20140212165630.GA22991@kroah.com>
+ <20140212173524.GA26860@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAOesGMgNkdxW4znmns10-DPc4+OTWJLyx2fcJGTgdND6pp0zUQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20140212173524.GA26860@redhat.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 10:13:59AM -0800, Olof Johansson wrote:
-> On Wed, Feb 12, 2014 at 9:45 AM, Jason Cooper <jason@lakedaemon.net> wrote:
+On Wed, Feb 12, 2014 at 07:35:24PM +0200, Michael S. Tsirkin wrote:
+> On Wed, Feb 12, 2014 at 08:56:30AM -0800, Greg Kroah-Hartman wrote:
+> > On Wed, Feb 12, 2014 at 06:38:21PM +0200, Michael S. Tsirkin wrote:
+> > > It is sometimes useful to get the value of the reference count after
+> > > decrement.
+> > > For example, vhost wants to execute some periodic cleanup operations
+> > > once number of references drops below a specific value, before it
+> > > reaches zero (for efficiency).
+> > 
+> > You should never care about what the value of the kref is, if you are
+> > using it correctly :)
+> > 
+> > So I really don't want to add this function, as I'm sure people will use
+> > it incorrectly.  You should only care if the reference drops to 0, if
+> > not, then your usage doesn't really fit into the "kref" model, and so,
+> > just use an atomic variable.
 > 
-> > I brought this up at last weeks devicetree irc meeting.  My goal is to
-> > provide early randomness for kaslr on ARM.  Currently, my idea is modify
-> > the init script to save an additional random seed from /dev/urandom to
-> > /boot/random-seed.
-> >
-> > The bootloader would then load this file into ram, and pass the
-> > address/size to the kernel either via dt, or commandline.  kaslr (run in
-> > the decompressor) would consume some of this randomness, and then
-> > random.c would consume the rest in a non-crediting initialization.
-> >
-> > While not ideal, it works in absence of an HRNG, and is no worse than
-> > the current situation of storing the seed in /var/lib/misc/random-seed.
-> > It also doesn't require modification of the bootloaders.  Just an
-> > updated kernel, and update the bootloader environment to load the
-> > seed.
+> This happens when you have code that keeps
+> reference itself implicitly or explicitly.
 > 
-> Hmm. There are some drawbacks with this -- it assumes you can "just
-> update the bootloader environment" which in general isn't easy to do.
+> 	foo(struct kref *k, int bar) {
+> 
+> 	sub = kref_sub(k)
+> 
+> 	if (sub == 1)
+> 		FOO(k, bar) /* Here I am the only one
+> 			       with a reference */
 
-true, the scope of my experience is consumer grade NASs, routers and
-APs.  At the very least, it's much easier than upgrading the bootloader.
+Why do you care if you are the only one with a reference?
 
-Also, my pov is as a hobbyist modifying devices post-sale.  The idea is
-something I could add to my existing boxes without having to upgrade the
-bootloaders.
+If you do, then just don't grab that reference and do the work in the
+cleanup callback :)
 
-> Also, you can't assume that /boot is writable or exists on all
-> embedded systems.
+> 	}
+> 
+> 	kref_get(k)
+> 	foo(k, bar);
+> 	....
+> 	kref_put(k)
+> 
+> Why not do FOO in destructor you ask?
+> Absolutely but this will be called much later.
+> 
+> Maybe you will reconsider if I document this
+> as the only legal use?
 
-In systems missing this capability, they often have the ability to
-update the kernel.  All that's needed is one block of flash.  Current
-random-seed size is 512 bytes.  I'm not saying it's easy or desirable.
-But for folks who feel it's necessary to have kaslr on embedded devices,
-it would facilitate better random numbers.  "Better" meaning much harder
-for an attacker to guess.
+No one reads documentation :(
 
-> In general, taking both runtime and system-dependend data and using
-> that to see entropy is a good idea.
+> > I really want to know why it matters for "efficiency" that you know this
+> > number.  How does that help anything, as the number could then go up
+> > later on, and the work you did at a "lower" number is obsolete, right?
+> > 
+> > thanks,
+> > 
+> > greg k-h
+> 
+> The issue is that if number dropped to 1, this means
+> we must do the cleanup work since there are
+> no outstanding buffers, (last user is ourselves)
+> if we do not cleanup,
+> guest will hang waiting for us.
 
-Of course, I wasn't arguing for one or the other.  As you said later, in
-situations where you can't feed in a seed file, MAC addresses and serial
-numbers are better than nothing.
+This doesn't make sense, nor does it sound like a use for a kref (or you
+are using it wrong.)
 
-thx,
+> But it never drops to 0 since we have our own reference
+> in the device.
 
-Jason.
+Then don't do that.
+
+> If it goes up again this means we didn't have
+> to do cleanup, but an alternative is doing
+> it all the time and that is slow.
+
+Then just cleanup when it hits 0, like the rest of the world does.
+
+> Yes I can rework vhost to open-code this kref use, it's
+> no big deal.
+> Alternatively since most of the use does match kref
+> model, maybe __kref_sub_return with disclaimers
+> that you must know what you are doing?
+
+No, no one reads documentation, sorry.  Either fix your use of kref
+(i.e. don't care about the count), or do something else, as you don't
+want a kref, but rather, an atomic count of what is going on and "1"
+means something "special" to you.
+
+sorry,
+
+greg k-h
