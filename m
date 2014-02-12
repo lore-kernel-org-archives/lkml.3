@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752938AbaBLQMK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 11:12:10 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:64629 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751988AbaBLQMI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 11:12:08 -0500
+	id S1752958AbaBLQOz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 11:14:55 -0500
+Received: from mga09.intel.com ([134.134.136.24]:19076 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751014AbaBLQOx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 11:14:53 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,832,1384329600"; 
+   d="scan'208";a="454271932"
+Message-ID: <52FB9DEE.9020200@linux.intel.com>
+Date: Wed, 12 Feb 2014 08:14:38 -0800
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <20140211203348.GA25883@kroah.com>
-References: <1391935247-3797-1-git-send-email-navin.patidar@gmail.com>
-	<1391935247-3797-3-git-send-email-navin.patidar@gmail.com>
-	<20140211203348.GA25883@kroah.com>
-Date: Wed, 12 Feb 2014 21:42:08 +0530
-Message-ID: <CAPV97ycAs_=73DdRJgT1i9-4HHZpCFU2TkrhZx9LtuLOMekXfw@mail.gmail.com>
-Subject: Re: [PATCH 3/3] staging: rtl8188eu: remove header file ethernet.h
-From: navin patidar <navin.patidar@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Len Brown <len.brown@intel.com>, Preeti Murthy <preeti.lkml@gmail.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
+Subject: Re: [RFC PATCH 3/3] idle: store the idle state index in the struct
+ rq
+References: <20140131090230.GM5002@laptop.programming.kicks-ass.net> <52EB6F65.8050008@linux.vnet.ibm.com> <52EBBC23.8020603@linux.intel.com> <52EBC33A.6080101@linaro.org> <52EBC645.2040607@linux.intel.com> <alpine.LFD.2.11.1401311236470.2312@knanqh.ubzr> <20140203125441.GD19029@e103034-lin> <52EFA9D3.1030601@linux.intel.com> <20140203145605.GL8874@twins.programming.kicks-ass.net> <52EFC12B.50704@linux.intel.com> <20140212151626.GE28661@e102568-lin.cambridge.arm.com>
+In-Reply-To: <20140212151626.GE28661@e102568-lin.cambridge.arm.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've submitted second version of this patch.
 
-regards,
---navin-patidar
-
-On Wed, Feb 12, 2014 at 2:03 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Sun, Feb 09, 2014 at 02:10:46PM +0530, navin patidar wrote:
->> "ethernet.h" is included in three files but only "rtw_recv.c" using two macros
->> defined in "ethernet.h", so move used macros in "rtw_recv.c" and
->> remove "include/ethernet.h" header file and inclusion of this header file.
+>> sched_cpu_cache_wiped(int llc)
 >>
->> Signed-off-by: navin patidar <navin.patidar@gmail.com>
->> ---
->>  drivers/staging/rtl8188eu/core/rtw_recv.c      |    4 ++-
->>  drivers/staging/rtl8188eu/hal/rtl8188eu_recv.c |    1 -
->>  drivers/staging/rtl8188eu/include/ethernet.h   |   42 ------------------------
->>  drivers/staging/rtl8188eu/os_dep/recv_linux.c  |    1 -
->>  4 files changed, 3 insertions(+), 45 deletions(-)
->>  delete mode 100644 drivers/staging/rtl8188eu/include/ethernet.h
+>> that would be very nice for this; the menuidle side knows this
+>> for some cases and thus can just call it. This would be a very
+>> small and minimal change
 >
-> This patch fails to apply (2/3 had fuzz, but I fixed that up), can you
-> redo this against linux-next and resend it?
->
-> thanks,
->
-> greg k-h
+> What do you mean by "menuidle side knows this for some cases" ?
+> You mean you know that some C-state entries imply llc clean/invalidate ?
+
+in the architectural idle code we can know if the llc got flushed
+there's also the per core flags where we know with reasonable certainty
+that the per core caches got flushed.
+
+
