@@ -1,100 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752449AbaBLKG2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 05:06:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20148 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751461AbaBLKGZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 05:06:25 -0500
-Message-ID: <52FB4797.2020101@redhat.com>
-Date: Wed, 12 Feb 2014 18:06:15 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Qin Chuanyu <qinchuanyu@huawei.com>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-CC: mst@redhat.com, kvm@vger.kernel.org
-Subject: Re: [PATCH V2 5/6] vhost_net: poll vhost queue after marking DMA
- is done
-References: <1377836962-49780-1-git-send-email-jasowang@redhat.com> <1377836962-49780-6-git-send-email-jasowang@redhat.com> <52FB24EA.3060001@huawei.com>
-In-Reply-To: <52FB24EA.3060001@huawei.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752338AbaBLKHz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 05:07:55 -0500
+Received: from mx.bwstor.com.cn ([211.103.180.228]:41320 "EHLO mx.bwstor.cn"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751397AbaBLKHw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 05:07:52 -0500
+From: shaobingqing <shaobingqing@bwstor.com.cn>
+To: trond.myklebust@primarydata.com
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        shaobingqing <shaobingqing@bwstor.com.cn>
+Subject: [PATCH v2] NFSv4.1: new layout stateid can not be overwrite by one out of date
+Date: Wed, 12 Feb 2014 18:06:20 +0800
+Message-Id: <1392199580-14249-1-git-send-email-shaobingqing@bwstor.com.cn>
+X-Mailer: git-send-email 1.7.4.2
+In-Reply-To: <N>
+References: <N>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/12/2014 03:38 PM, Qin Chuanyu wrote:
-> On 2013/8/30 12:29, Jason Wang wrote:
->> We used to poll vhost queue before making DMA is done, this is racy
->> if vhost
->> thread were waked up before marking DMA is done which can result the
->> signal to
->> be missed. Fix this by always poll the vhost thread before DMA is done.
->>
->> Signed-off-by: Jason Wang <jasowang@redhat.com>
->> ---
->>   drivers/vhost/net.c |    9 +++++----
->>   1 files changed, 5 insertions(+), 4 deletions(-)
->>
->> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
->> index ff60c2a..d09c17c 100644
->> --- a/drivers/vhost/net.c
->> +++ b/drivers/vhost/net.c
->> @@ -308,6 +308,11 @@ static void vhost_zerocopy_callback(struct
->> ubuf_info *ubuf, bool success)
->>       struct vhost_virtqueue *vq = ubufs->vq;
->>       int cnt = atomic_read(&ubufs->kref.refcount);
->>
->> +    /* set len to mark this desc buffers done DMA */
->> +    vq->heads[ubuf->desc].len = success ?
->> +        VHOST_DMA_DONE_LEN : VHOST_DMA_FAILED_LEN;
->> +    vhost_net_ubuf_put(ubufs);
->> +
->>       /*
->>        * Trigger polling thread if guest stopped submitting new buffers:
->>        * in this case, the refcount after decrement will eventually
->> reach 1
->> @@ -318,10 +323,6 @@ static void vhost_zerocopy_callback(struct
->> ubuf_info *ubuf, bool success)
->>        */
->>       if (cnt <= 2 || !(cnt % 16))
->>           vhost_poll_queue(&vq->poll);
->> -    /* set len to mark this desc buffers done DMA */
->> -    vq->heads[ubuf->desc].len = success ?
->> -        VHOST_DMA_DONE_LEN : VHOST_DMA_FAILED_LEN;
->> -    vhost_net_ubuf_put(ubufs);
->>   }
->>
->>   /* Expects to be always run from workqueue - which acts as
->>
-> with this change, vq would lose protection that provided by ubufs->kref.
-> if another thread is waiting at vhost_net_ubuf_put_and_wait called by
-> vhost_net_release, then after vhost_net_ubuf_put, vq would been free
-> by vhost_net_release soon, vhost_poll_queue(&vq->poll) may cause NULL
-> pointer Exception.
->
+If initiate_file_draining returned NFS4ERR_DELAY, all the lsegs of
+a file might be released before the retrying cb_layout request arriving
+at the client. In this situation, layoutget request of the file will
+use open stateid to obtain a new layout stateid. And if the retrying
+cb_layout request arrived at the client after the layoutget reply,
+new layout stateid would be overwrite by one out of date.
 
-Good catch.
-> another question is that vhost_zerocopy_callback is called by kfree_skb,
-> it may called in different thread context.
-> vhost_poll_queue is called decided by ubufs->kref.refcount, this may
-> cause there isn't any thread call  vhost_poll_queue, but at least one
-> is needed. and this cause network break.
-> We could repeat it by using 8 netperf thread in guest to xmit tcp to
-> its host.
->
-> I think if using atomic_read to decide while do vhost_poll_queue or not,
-> at least a spink_lock is needed.
+Signed-off-by: shaobingqing <shaobingqing@bwstor.com.cn>
+---
+ fs/nfs/callback.h      |    5 +++++
+ fs/nfs/callback_proc.c |   24 ++++++++++++++++++++++++
+ fs/nfs/inode.c         |    1 +
+ include/linux/nfs_fs.h |    1 +
+ 4 files changed, 31 insertions(+), 0 deletions(-)
 
-Then you need another ref count to protect that spinlock? Care to send
-patches?
-
-Thanks
->
-> -- 
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/fs/nfs/callback.h b/fs/nfs/callback.h
+index 84326e9..213ded9 100644
+--- a/fs/nfs/callback.h
++++ b/fs/nfs/callback.h
+@@ -166,6 +166,11 @@ struct cb_layoutrecallargs {
+ 	};
+ };
+ 
++struct cb_stalestatenode {
++	nfs4_stateid cbs_stateid;
++	struct list_head cb_stale_state;
++};
++
+ extern __be32 nfs4_callback_layoutrecall(
+ 	struct cb_layoutrecallargs *args,
+ 	void *dummy, struct cb_process_state *cps);
+diff --git a/fs/nfs/callback_proc.c b/fs/nfs/callback_proc.c
+index ae2e87b..80bafbe 100644
+--- a/fs/nfs/callback_proc.c
++++ b/fs/nfs/callback_proc.c
+@@ -159,9 +159,16 @@ static u32 initiate_file_draining(struct nfs_client *clp,
+ {
+ 	struct inode *ino;
+ 	struct pnfs_layout_hdr *lo;
++	struct cb_stalestatenode  *state_entry, *state_node;
++	struct cb_stalestatenode *tmp;
++	bool res;
+ 	u32 rv = NFS4ERR_NOMATCHING_LAYOUT;
+ 	LIST_HEAD(free_me_list);
+ 
++	state_node = kmalloc(sizeof(cb_stalestatenode), GFP_KERNEL);
++	if (!state_node)
++		return NFS4ERR_DELAY;
++
+ 	lo = get_layout_by_fh(clp, &args->cbl_fh);
+ 	if (!lo)
+ 		return NFS4ERR_NOMATCHING_LAYOUT;
+@@ -174,7 +181,24 @@ static u32 initiate_file_draining(struct nfs_client *clp,
+ 		rv = NFS4ERR_DELAY;
+ 	else
+ 		rv = NFS4ERR_NOMATCHING_LAYOUT;
++	list_for_each_entry_safe(state_entry, tmp,
++			&NFS_I(ino)->cb_stale_state_list, cb_stale_state) {
++		if (memcmp(&args->cbl_stateid, &state_entry->cbs_stateid,
++				NFS4_STATEID_OTHER_SIZE) != 0)
++			continue;
++		if (rv == NFS4ERR_NOMATCHING_LAYOUT)
++			list_del(&state_entry->cb_stale_state);
++		goto unlock;
++	}
++	if (rv == NFS4ERR_DELAY) {
++		nfs4_stateid_copy(&state_node->cbs_stateid, &args->cbl_stateid);
++		list_add(&state_node->cb_stale_state,
++				&NFS_I(ino)->cb_stale_state_list);
++	} else {
++		kfree(state_node);
++	}
+ 	pnfs_set_layout_stateid(lo, &args->cbl_stateid, true);
++unlock:
+ 	spin_unlock(&ino->i_lock);
+ 	pnfs_free_lseg_list(&free_me_list);
+ 	pnfs_put_layout_hdr(lo);
+diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
+index eda8879..e2c881a 100644
+--- a/fs/nfs/inode.c
++++ b/fs/nfs/inode.c
+@@ -1643,6 +1643,7 @@ struct inode *nfs_alloc_inode(struct super_block *sb)
+ 		return NULL;
+ 	nfsi->flags = 0UL;
+ 	nfsi->cache_validity = 0UL;
++	INIT_LIST_HEAD(&nfsi->cb_stale_state_list);
+ #ifdef CONFIG_NFS_V3_ACL
+ 	nfsi->acl_access = ERR_PTR(-EAGAIN);
+ 	nfsi->acl_default = ERR_PTR(-EAGAIN);
+diff --git a/include/linux/nfs_fs.h b/include/linux/nfs_fs.h
+index 3ea4cde..ba47870 100644
+--- a/include/linux/nfs_fs.h
++++ b/include/linux/nfs_fs.h
+@@ -181,6 +181,7 @@ struct nfs_inode {
+ 	struct nfs4_cached_acl	*nfs4_acl;
+         /* NFSv4 state */
+ 	struct list_head	open_states;
++	struct list_head	cb_stale_state_list;
+ 	struct nfs_delegation __rcu *delegation;
+ 	fmode_t			 delegation_state;
+ 	struct rw_semaphore	rwsem;
+-- 
+1.7.4.2
 
