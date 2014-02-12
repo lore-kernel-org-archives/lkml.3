@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752931AbaBLCx0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 21:53:26 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:12635 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752333AbaBLCxY (ORCPT
+	id S1753052AbaBLCxh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 21:53:37 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:21553 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752941AbaBLCxc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 21:53:24 -0500
+	Tue, 11 Feb 2014 21:53:32 -0500
 From: Yijing Wang <wangyijing@huawei.com>
 To: Bjorn Helgaas <bhelgaas@google.com>
 CC: <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
         Yijing Wang <wangyijing@huawei.com>, Hanjun Guo <guohanjun@huawei.com>
-Subject: [PATCH part1 v6 6/7] PCI: Check pci device serial number when scan device
-Date: Wed, 12 Feb 2014 10:52:52 +0800
-Message-ID: <1392173573-59844-7-git-send-email-wangyijing@huawei.com>
+Subject: [PATCH part1 v6 1/7] PCI: rework pci_find_next_ext_capability()
+Date: Wed, 12 Feb 2014 10:52:47 +0800
+Message-ID: <1392173573-59844-2-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.11.msysgit.1
 In-Reply-To: <1392173573-59844-1-git-send-email-wangyijing@huawei.com>
 References: <1392173573-59844-1-git-send-email-wangyijing@huawei.com>
@@ -25,46 +25,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sometimes pci device will be removed and reinsert
-while suspended. In this case system can not identify
-the device has been changed. Now PCIe support Device
-Serial Number Capability which has the unique number.
-So make system check pci device DSN during scanning
-device if support.
+Rework pci_find_next_ext_capability(), use
+pci_bus_read_config_xxx() instead of
+pci_read_config_xxx(). So we can use this
+function before pci_dev setup.
 
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 ---
- drivers/pci/probe.c |   13 ++++++++++++-
- 1 files changed, 12 insertions(+), 1 deletions(-)
+ drivers/pci/pci.c   |   17 +++++++++--------
+ include/linux/pci.h |    2 +-
+ 2 files changed, 10 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 27d3e6f..370b25c 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1383,11 +1383,22 @@ void pci_device_add(struct pci_dev *dev, struct pci_bus *bus)
- struct pci_dev *__ref pci_scan_single_device(struct pci_bus *bus, int devfn)
- {
- 	struct pci_dev *dev;
-+	int rescan = 0;
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index 1febe90..a263c0a 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -256,7 +256,8 @@ int pci_bus_find_capability(struct pci_bus *bus, unsigned int devfn, int cap)
  
- 	dev = pci_get_slot(bus, devfn);
- 	if (dev) {
-+		/* only check func 0 device */
-+		if (PCI_FUNC(devfn) == 0) {
-+			if (pci_serial_number_changed(dev)) {
-+				pci_bus_freeze_device(bus);
-+				pci_stop_and_remove_bus_device(dev);
-+				pci_bus_unfreeze_device(bus);
-+				rescan = 1;
-+			}
-+		}
- 		pci_dev_put(dev);
--		return dev;
-+		if (!rescan)
-+			return dev;
+ /**
+  * pci_find_next_ext_capability - Find an extended capability
+- * @dev: PCI device to query
++ * @bus: the PCI bus to query
++ * @devfn: PCI device to query
+  * @start: address at which to start looking (0 to start at beginning of list)
+  * @cap: capability code
+  *
+@@ -265,7 +266,7 @@ int pci_bus_find_capability(struct pci_bus *bus, unsigned int devfn, int cap)
+  * not support it.  Some capabilities can occur several times, e.g., the
+  * vendor-specific capability, and this provides a way to find them all.
+  */
+-int pci_find_next_ext_capability(struct pci_dev *dev, int start, int cap)
++int pci_find_next_ext_capability(struct pci_bus *bus, int devfn, int start, int cap)
+ {
+ 	u32 header;
+ 	int ttl;
+@@ -274,13 +275,10 @@ int pci_find_next_ext_capability(struct pci_dev *dev, int start, int cap)
+ 	/* minimum 8 bytes per capability */
+ 	ttl = (PCI_CFG_SPACE_EXP_SIZE - PCI_CFG_SPACE_SIZE) / 8;
+ 
+-	if (dev->cfg_size <= PCI_CFG_SPACE_SIZE)
+-		return 0;
+-
+ 	if (start)
+ 		pos = start;
+ 
+-	if (pci_read_config_dword(dev, pos, &header) != PCIBIOS_SUCCESSFUL)
++	if (pci_bus_read_config_dword(bus, devfn, pos, &header) != PCIBIOS_SUCCESSFUL)
+ 		return 0;
+ 
+ 	/*
+@@ -298,7 +296,7 @@ int pci_find_next_ext_capability(struct pci_dev *dev, int start, int cap)
+ 		if (pos < PCI_CFG_SPACE_SIZE)
+ 			break;
+ 
+-		if (pci_read_config_dword(dev, pos, &header) != PCIBIOS_SUCCESSFUL)
++		if (pci_bus_read_config_dword(bus, devfn, pos, &header) != PCIBIOS_SUCCESSFUL)
+ 			break;
  	}
  
- 	dev = pci_scan_device(bus, devfn);
+@@ -322,7 +320,10 @@ EXPORT_SYMBOL_GPL(pci_find_next_ext_capability);
+  */
+ int pci_find_ext_capability(struct pci_dev *dev, int cap)
+ {
+-	return pci_find_next_ext_capability(dev, 0, cap);
++	if (dev->cfg_size <= PCI_CFG_SPACE_SIZE)
++		return 0;
++
++	return pci_find_next_ext_capability(dev->bus, dev->devfn, 0, cap);
+ }
+ EXPORT_SYMBOL_GPL(pci_find_ext_capability);
+ 
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index fb57c89..df495e9 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -796,7 +796,7 @@ enum pci_lost_interrupt_reason pci_lost_interrupt(struct pci_dev *dev);
+ int pci_find_capability(struct pci_dev *dev, int cap);
+ int pci_find_next_capability(struct pci_dev *dev, u8 pos, int cap);
+ int pci_find_ext_capability(struct pci_dev *dev, int cap);
+-int pci_find_next_ext_capability(struct pci_dev *dev, int pos, int cap);
++int pci_find_next_ext_capability(struct pci_bus *bus, int devfn, int pos, int cap);
+ int pci_find_ht_capability(struct pci_dev *dev, int ht_cap);
+ int pci_find_next_ht_capability(struct pci_dev *dev, int pos, int ht_cap);
+ struct pci_bus *pci_find_next_bus(const struct pci_bus *from);
 -- 
 1.7.1
 
