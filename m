@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752647AbaBLIQg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 03:16:36 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50362 "EHLO
+	id S1752685AbaBLIQy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 03:16:54 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50354 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752274AbaBLIOO (ORCPT
+	by vger.kernel.org with ESMTP id S1752269AbaBLIOO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 12 Feb 2014 03:14:14 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Mathy Vanhoef" <vanhoefm@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
+CC: akpm@linux-foundation.org,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Mikulas Patocka" <mikulas@artax.karlin.mff.cuni.cz>
 Date: Wed, 12 Feb 2014 08:10:12 +0000
-Message-ID: <lsq.1392192612.582853975@decadent.org.uk>
+Message-ID: <lsq.1392192612.994746897@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 24/79] ath9k_htc: properly set MAC address and BSSID mask
+Subject: [PATCH 3.2 23/79] hpfs: fix warnings when the filesystem fills up
 In-Reply-To: <lsq.1392192611.998273004@decadent.org.uk>
 X-SA-Exim-Connect-IP: 91.84.160.45
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,97 +32,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathy Vanhoef <vanhoefm@gmail.com>
+From: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
 
-commit 657eb17d87852c42b55c4b06d5425baa08b2ddb3 upstream.
+commit bbd465df73f0d8ba41b8a0732766a243d0f5b356 upstream.
 
-Pick the MAC address of the first virtual interface as the new hardware MAC
-address. Set BSSID mask according to this MAC address. This fixes CVE-2013-4579.
+This patch fixes warnings due to missing lock on write error path.
 
-Signed-off-by: Mathy Vanhoef <vanhoefm@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+  WARNING: at fs/hpfs/hpfs_fn.h:353 hpfs_truncate+0x75/0x80 [hpfs]()
+  Hardware name: empty
+  Pid: 26563, comm: dd Tainted: P           O 3.9.4 #12
+  Call Trace:
+    hpfs_truncate+0x75/0x80 [hpfs]
+    hpfs_write_begin+0x84/0x90 [hpfs]
+    _hpfs_bmap+0x10/0x10 [hpfs]
+    generic_file_buffered_write+0x121/0x2c0
+    __generic_file_aio_write+0x1c7/0x3f0
+    generic_file_aio_write+0x7c/0x100
+    do_sync_write+0x98/0xd0
+    hpfs_file_write+0xd/0x50 [hpfs]
+    vfs_write+0xa2/0x160
+    sys_write+0x51/0xa0
+    page_fault+0x22/0x30
+    system_call_fastpath+0x1a/0x1f
+
+Signed-off-by: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[Mikulas Patocka: This is backport of upstream commit 
+ bbd465df73f0d8ba41b8a0732766a243d0f5b356, modified for stable kernels 
+ 2.6.39 - 3.7.]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/ath/ath9k/htc_drv_main.c | 25 +++++++++++++++++--------
- drivers/net/wireless/ath/ath9k/main.c         |  5 +++--
- 2 files changed, 20 insertions(+), 10 deletions(-)
+ fs/hpfs/file.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/ath9k/htc_drv_main.c
-+++ b/drivers/net/wireless/ath/ath9k/htc_drv_main.c
-@@ -139,21 +139,26 @@ static void ath9k_htc_bssid_iter(void *d
- 	struct ath9k_vif_iter_data *iter_data = data;
- 	int i;
- 
--	for (i = 0; i < ETH_ALEN; i++)
--		iter_data->mask[i] &= ~(iter_data->hw_macaddr[i] ^ mac[i]);
-+	if (iter_data->hw_macaddr != NULL) {
-+		for (i = 0; i < ETH_ALEN; i++)
-+			iter_data->mask[i] &= ~(iter_data->hw_macaddr[i] ^ mac[i]);
-+	} else {
-+		iter_data->hw_macaddr = mac;
-+	}
- }
- 
--static void ath9k_htc_set_bssid_mask(struct ath9k_htc_priv *priv,
-+static void ath9k_htc_set_mac_bssid_mask(struct ath9k_htc_priv *priv,
- 				     struct ieee80211_vif *vif)
- {
- 	struct ath_common *common = ath9k_hw_common(priv->ah);
- 	struct ath9k_vif_iter_data iter_data;
- 
- 	/*
--	 * Use the hardware MAC address as reference, the hardware uses it
--	 * together with the BSSID mask when matching addresses.
-+	 * Pick the MAC address of the first interface as the new hardware
-+	 * MAC address. The hardware will use it together with the BSSID mask
-+	 * when matching addresses.
- 	 */
--	iter_data.hw_macaddr = common->macaddr;
-+	iter_data.hw_macaddr = NULL;
- 	memset(&iter_data.mask, 0xff, ETH_ALEN);
- 
- 	if (vif)
-@@ -164,6 +169,10 @@ static void ath9k_htc_set_bssid_mask(str
- 						   &iter_data);
- 
- 	memcpy(common->bssidmask, iter_data.mask, ETH_ALEN);
-+
-+	if (iter_data.hw_macaddr)
-+		memcpy(common->macaddr, iter_data.hw_macaddr, ETH_ALEN);
-+
- 	ath_hw_setbssidmask(common);
- }
- 
-@@ -1100,7 +1109,7 @@ static int ath9k_htc_add_interface(struc
- 		goto out;
+--- a/fs/hpfs/file.c
++++ b/fs/hpfs/file.c
+@@ -116,9 +116,12 @@ static int hpfs_write_begin(struct file
+ 				hpfs_get_block,
+ 				&hpfs_i(mapping->host)->mmu_private);
+ 	if (unlikely(ret)) {
+-		loff_t isize = mapping->host->i_size;
++		loff_t isize;
++		hpfs_lock(mapping->host->i_sb);
++		isize = mapping->host->i_size;
+ 		if (pos + len > isize)
+ 			vmtruncate(mapping->host, isize);
++		hpfs_unlock(mapping->host->i_sb);
  	}
  
--	ath9k_htc_set_bssid_mask(priv, vif);
-+	ath9k_htc_set_mac_bssid_mask(priv, vif);
- 
- 	priv->vif_slot |= (1 << avp->index);
- 	priv->nvifs++;
-@@ -1163,7 +1172,7 @@ static void ath9k_htc_remove_interface(s
- 
- 	ath9k_htc_set_opmode(priv);
- 
--	ath9k_htc_set_bssid_mask(priv, vif);
-+	ath9k_htc_set_mac_bssid_mask(priv, vif);
- 
- 	/*
- 	 * Stop ANI only if there are no associated station interfaces.
---- a/drivers/net/wireless/ath/ath9k/main.c
-+++ b/drivers/net/wireless/ath/ath9k/main.c
-@@ -1357,8 +1357,9 @@ void ath9k_calculate_iter_data(struct ie
- 	struct ath_common *common = ath9k_hw_common(ah);
- 
- 	/*
--	 * Use the hardware MAC address as reference, the hardware uses it
--	 * together with the BSSID mask when matching addresses.
-+	 * Pick the MAC address of the first interface as the new hardware
-+	 * MAC address. The hardware will use it together with the BSSID mask
-+	 * when matching addresses.
- 	 */
- 	memset(iter_data, 0, sizeof(*iter_data));
- 	iter_data->hw_macaddr = common->macaddr;
+ 	return ret;
 
