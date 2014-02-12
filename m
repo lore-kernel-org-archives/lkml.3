@@ -1,44 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751966AbaBLKPG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 05:15:06 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:57024 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752255AbaBLKKJ (ORCPT
+	id S1752507AbaBLKQw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 05:16:52 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:57800 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750963AbaBLKQs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 05:10:09 -0500
-From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-To: nicolas.ferre@atmel.com, plagnioj@jcrosoft.com, b.brezillon@overkiz.com
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        gregory.clement@free-electrons.com,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-Subject: [PATCH v4 4/8] at91: dt: defconfig: Added the sam9261 to the list of DT-enabled SOCs
-Date: Wed, 12 Feb 2014 11:06:43 +0100
-Message-Id: <1392199607-27452-5-git-send-email-jjhiblot@traphandler.com>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1392199607-27452-1-git-send-email-jjhiblot@traphandler.com>
-References: <1392199607-27452-1-git-send-email-jjhiblot@traphandler.com>
+	Wed, 12 Feb 2014 05:16:48 -0500
+Date: Wed, 12 Feb 2014 10:16:42 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH v2] mfd: 88pm800: Fix I2C device resource leak if probe
+ fails
+Message-ID: <20140212101642.GY15081@lee--X1>
+References: <20140212095828.GW15081@lee--X1>
+ <1392199856-25412-1-git-send-email-k.kozlowski@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1392199856-25412-1-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
----
- arch/arm/configs/at91_dt_defconfig | 1 +
- 1 file changed, 1 insertion(+)
+On Wed, 12 Feb 2014, Krzysztof Kozlowski wrote:
 
-diff --git a/arch/arm/configs/at91_dt_defconfig b/arch/arm/configs/at91_dt_defconfig
-index 0b4e9b5..3c6905d 100644
---- a/arch/arm/configs/at91_dt_defconfig
-+++ b/arch/arm/configs/at91_dt_defconfig
-@@ -16,6 +16,7 @@ CONFIG_MODULE_UNLOAD=y
- CONFIG_ARCH_AT91=y
- CONFIG_SOC_AT91RM9200=y
- CONFIG_SOC_AT91SAM9260=y
-+CONFIG_SOC_AT91SAM9261=y
- CONFIG_SOC_AT91SAM9263=y
- CONFIG_SOC_AT91SAM9G45=y
- CONFIG_SOC_AT91SAM9X5=y
+> During probe the driver allocates two dummy I2C devices for subchips in
+> function pm800_pages_init(). Additionally this function allocates
+> regmaps for these subchips. If any of these steps fail then these dummy
+> I2C devices are not freed and resources leak.
+> 
+> On pm800_pages_init() fail the driver must call pm800_pages_exit() to
+> unregister dummy I2C devices.
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Cc: stable@vger.kernel.org
+> ---
+>  drivers/mfd/88pm800.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+
+Applied, thanks.
+
 -- 
-1.8.5.3
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
