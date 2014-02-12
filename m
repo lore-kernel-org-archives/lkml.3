@@ -1,40 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752626AbaBLBJr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 20:09:47 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:41324 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750978AbaBLBJq (ORCPT
+	id S1752371AbaBLBUN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 20:20:13 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:46534 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752044AbaBLBUK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 20:09:46 -0500
-Date: Wed, 12 Feb 2014 01:09:41 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Dave Jones <davej@redhat.com>, Eric Sandeen <sandeen@sandeen.net>,
-        Dave Chinner <david@fromorbit.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
-Message-ID: <20140212010941.GM18016@ZenIV.linux.org.uk>
-References: <20140211172707.GA1749@redhat.com>
- <20140211210841.GM13647@dastard>
- <52FA9ADA.9040803@sandeen.net>
- <20140212004403.GA17129@redhat.com>
+	Tue, 11 Feb 2014 20:20:10 -0500
+Date: Tue, 11 Feb 2014 18:20:06 -0700
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+Cc: linux-pci <linux-pci@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Liviu Dudau <liviu@dudau.co.uk>
+Subject: Re: [PATCH] pci: Makefile: Cleanup per-arch list of object files
+Message-ID: <20140212012006.GJ21057@google.com>
+References: <1391449116-22276-1-git-send-email-Liviu.Dudau@arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140212004403.GA17129@redhat.com>
+In-Reply-To: <1391449116-22276-1-git-send-email-Liviu.Dudau@arm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 07:44:03PM -0500, Dave Jones wrote:
-
-> The 'good' news is I seem to be able to reproduce it fairly quickly.
-> I've seen it 3-4 times this afternoon. (Always from the coredump path)
+On Mon, Feb 03, 2014 at 05:38:36PM +0000, Liviu Dudau wrote:
+> setup-bus.o is now included unconditionally as of commit
+> 7dc30303342562685392c8c7aa5194e98fd27625. Remove it from
+> the per-arch list of object files.
 > 
-> I was on vacation last week, but I wasn't hitting this before then, so it's a
-> fairly recent change that's introduced this.
+> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
 
-Slap the check in vfs_create(), see if interrupts had been disabled by it or
-by something in ->create().  Since it's reproducible...
+Applied to pci/misc for v3.15, thanks!
+
+Bjorn
+
+> ---
+>  drivers/pci/Makefile | 22 ++++++++--------------
+>  1 file changed, 8 insertions(+), 14 deletions(-)
+> 
+> diff --git a/drivers/pci/Makefile b/drivers/pci/Makefile
+> index 17d2b07..e2501ac 100644
+> --- a/drivers/pci/Makefile
+> +++ b/drivers/pci/Makefile
+> @@ -33,21 +33,15 @@ obj-$(CONFIG_PCI_IOV) += iov.o
+>  #
+>  # Some architectures use the generic PCI setup functions
+>  #
+> -obj-$(CONFIG_X86) += setup-bus.o
+> -obj-$(CONFIG_ALPHA) += setup-bus.o setup-irq.o
+> -obj-$(CONFIG_ARM) += setup-bus.o setup-irq.o
+> -obj-$(CONFIG_UNICORE32) += setup-bus.o setup-irq.o
+> -obj-$(CONFIG_PARISC) += setup-bus.o
+> -obj-$(CONFIG_SUPERH) += setup-bus.o setup-irq.o
+> -obj-$(CONFIG_PPC) += setup-bus.o
+> -obj-$(CONFIG_FRV) += setup-bus.o
+> -obj-$(CONFIG_MIPS) += setup-bus.o setup-irq.o
+> +obj-$(CONFIG_ALPHA) += setup-irq.o
+> +obj-$(CONFIG_ARM) += setup-irq.o
+> +obj-$(CONFIG_UNICORE32) += setup-irq.o
+> +obj-$(CONFIG_SUPERH) += setup-irq.o
+> +obj-$(CONFIG_MIPS) += setup-irq.o
+>  obj-$(CONFIG_X86_VISWS) += setup-irq.o
+> -obj-$(CONFIG_MN10300) += setup-bus.o
+> -obj-$(CONFIG_MICROBLAZE) += setup-bus.o
+> -obj-$(CONFIG_TILE) += setup-bus.o setup-irq.o
+> -obj-$(CONFIG_SPARC_LEON) += setup-bus.o setup-irq.o
+> -obj-$(CONFIG_M68K) += setup-bus.o setup-irq.o
+> +obj-$(CONFIG_TILE) += setup-irq.o
+> +obj-$(CONFIG_SPARC_LEON) += setup-irq.o
+> +obj-$(CONFIG_M68K) += setup-irq.o
+>  
+>  #
+>  # ACPI Related PCI FW Functions
+> -- 
+> 1.8.5.3
+> 
