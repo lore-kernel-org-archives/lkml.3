@@ -1,214 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753386AbaBLQj2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 11:39:28 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:43279 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752178AbaBLQj0 (ORCPT
+	id S1753404AbaBLQjk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 11:39:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50477 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752491AbaBLQjj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 11:39:26 -0500
-Date: Wed, 12 Feb 2014 17:39:16 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <bitbucket@online.de>,
-        X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Too many rescheduling interrupts (still!)
-Message-ID: <20140212163916.GA27965@twins.programming.kicks-ass.net>
-References: <CALCETrVL44ewQPJXNwPAm2s5aj9auo2p4tYYieNcxANoL91VWw@mail.gmail.com>
- <alpine.DEB.2.02.1402112219160.21991@ionos.tec.linutronix.de>
- <CALCETrUPyG1HoXFToXuVLOzX2f20zzxJyABKASOUPY691JmjMA@mail.gmail.com>
- <20140212101324.GC3545@laptop.programming.kicks-ass.net>
- <CALCETrW-GCNuqSTO=p==0gPE2c8wZKSe98Gi4PP2NRdgk5iKag@mail.gmail.com>
+	Wed, 12 Feb 2014 11:39:39 -0500
+Date: Wed, 12 Feb 2014 08:40:55 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: David Herrmann <dh.herrmann@gmail.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Dave Airlie <airlied@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 05/13] drm: provide device-refcount
+Message-ID: <20140212164055.GB22377@kroah.com>
+References: <1391004120-687-1-git-send-email-dh.herrmann@gmail.com>
+ <1391004120-687-6-git-send-email-dh.herrmann@gmail.com>
+ <20140212132541.GU17001@phenom.ffwll.local>
+ <CANq1E4RACz+bZmBGFtVGNKZhcJtC6iQtCpsCTTjEXrGUDP6C+A@mail.gmail.com>
+ <CAKMK7uEbHUL5=CiRqcCh7nBRAirOB4tdSwiz6YPHNiThVujA8A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALCETrW-GCNuqSTO=p==0gPE2c8wZKSe98Gi4PP2NRdgk5iKag@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CAKMK7uEbHUL5=CiRqcCh7nBRAirOB4tdSwiz6YPHNiThVujA8A@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 07:49:07AM -0800, Andy Lutomirski wrote:
-> On Wed, Feb 12, 2014 at 2:13 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Tue, Feb 11, 2014 at 02:34:11PM -0800, Andy Lutomirski wrote:
-> >> On Tue, Feb 11, 2014 at 1:21 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> >> >> A small number of reschedule interrupts appear to be due to a race:
-> >> >> both resched_task and wake_up_idle_cpu do, essentially:
-> >> >>
-> >> >> set_tsk_need_resched(t);
-> >> >> smb_mb();
-> >> >> if (!tsk_is_polling(t))
-> >> >>   smp_send_reschedule(cpu);
-> >> >>
-> >> >> The problem is that set_tsk_need_resched wakes the CPU and, if the CPU
-> >> >> is too quick (which isn't surprising if it was in C0 or C1), then it
-> >> >> could *clear* TS_POLLING before tsk_is_polling is read.
+On Wed, Feb 12, 2014 at 05:26:57PM +0100, Daniel Vetter wrote:
+> On Wed, Feb 12, 2014 at 3:44 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
+> >>> +/**
+> >>> + * drm_dev_ref - Take reference of a DRM device
+> >>> + * @dev: device to take reference of or NULL
+> >>> + *
+> >>> + * This increases the ref-count of @dev by one. You *must* already own a
+> >>> + * reference when calling this. Use drm_dev_unref() to drop this reference
+> >>> + * again.
+> >>> + *
+> >>> + * This function never fails. However, this function does not provide *any*
+> >>> + * guarantee whether the device is alive or running. It only provides a
+> >>> + * reference to the object and the memory associated with it.
+> >>> + */
+> >>> +void drm_dev_ref(struct drm_device *dev)
+> >>> +{
+> >>> +     if (dev)
+> >>
+> >> This check here (and below in the unref code) look funny. What's the
+> >> reason for it? Trying to grab/drop a ref on a NULL pointer sounds like a
+> >> pretty serious bug to me. This is in contrast to kfree(NULL) which imo
+> >> makes sense - freeing nothing is a legitimate operation imo.
 > >
-> > Yeah we have the wrong default for the idle loops.. it should default to
-> > polling and only switch to !polling at the very last moment if it really
-> > needs an interrupt to wake.
+> > I added it mainly to simplify cleanup-code paths. You can then just
+> > call unref() and set it to NULL regardless whether you actually hold a
+> > reference or not. For ref() I don't really care but I think the
+> > NULL-test doesn't hurt either.
+> >
+> > I copied this behavior from get_device() and put_device(), btw.
+> > Similar to these functions, I think a lot more will go wrong if the
+> > NULL pointer is not intentional. Imo, ref-counting on a NULL object
+> > just means "no object", so it shouldn't do anything.
 > 
-> I might be missing something, but won't that break the scheduler? 
-
-for the idle task.. all other tasks will have it !polling.
-
-But note how the current generic idle loop does:
-
-  if (!current_clr_polling_and_test()) {
-  	...
-	if (cpuidle_idle_call())
-		arch_cpu_idle();
-	...
-  }
-
-This means that it still runs a metric ton of code, right up to the
-mwait with !polling, and then at the mwait we switch it back to polling.
-
-Completely daft.
-
-> Since rq->lock is held, the resched calls could check the rq state
-> (curr == idle, maybe) to distinguish these cases.
-
-Not enough; but I'm afraid I confused you with the above.
-
-My suggestion was really more that we should call into the cpuidle/arch
-idle code with polling set, and only right before we hit hlt/wfi/etc..
-should we clear the polling bit.
-
-> > It can't we're holding its rq->lock.
+> My fear with this kind of magic is that someone accidentally exchanges
+> the pointer clearing to NULL (or assignement when grabbing a ref) with
+> the unref/ref call and then we have a very subtle bug at hand. If we
+> don't accept NULL objects the failure will be much more obvious.
 > 
-> Exactly.  AFAICT the only reason that any of this code holds rq->lock
-> (especially ttwu_queue_remote, which I seem to call a few thousand
-> times per second) is because the only way to make a cpu reschedule
-> involves playing with per-task flags.  If the flags were per-rq or
-> per-cpu instead, then rq->lock wouldn't be needed.  If this were all
-> done locklessly, then I think either a full cmpxchg or some fairly
-> careful use of full barriers would be needed, but I bet that cmpxchg
-> is still considerably faster than a spinlock plus a set_bit.
+> The entire kernel kobject stuff is very consistent about this, but I
+> couldn't find a reason for it - all the NULL checks predate git
+> history. Greg can you please shed some lights on best practice here
+> and whether my fears are justified given your experience with shoddy
+> drivers in general?
 
-Ahh, that's what you're saying. Yes we should be able to do something
-clever there.
+Yes, the driver core does test for NULL here, as sometimes you are
+passing in a "parent" pointer, and don't really care if it is NULL or
+not, so just treating it as if you really do have a reference is usually
+fine.
 
-Something like the below is I think as close as we can come without
-major surgery and moving TIF_NEED_RESCHED and POLLING into a per-cpu
-variable.
+But, for a subsystem where you "know" you will not be doing anything as
+foolish as that, I'd not allow that :)
 
-I might have messed it up though; brain seems to have given out for the
-day :/
+So I'd recommend taking those checks out of the drm code.
 
----
- kernel/sched/core.c  | 17 +++++++++++++----
- kernel/sched/idle.c  | 21 +++++++++++++--------
- kernel/sched/sched.h |  5 ++++-
- 3 files changed, 30 insertions(+), 13 deletions(-)
+thanks,
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index fb9764fbc537..a5b64040c21d 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -529,7 +529,7 @@ void resched_task(struct task_struct *p)
- 	}
- 
- 	/* NEED_RESCHED must be visible before we test polling */
--	smp_mb();
-+	smp_mb__after_clear_bit();
- 	if (!tsk_is_polling(p))
- 		smp_send_reschedule(cpu);
- }
-@@ -1476,12 +1476,15 @@ static int ttwu_remote(struct task_struct *p, int wake_flags)
- }
- 
- #ifdef CONFIG_SMP
--static void sched_ttwu_pending(void)
-+void sched_ttwu_pending(void)
- {
- 	struct rq *rq = this_rq();
- 	struct llist_node *llist = llist_del_all(&rq->wake_list);
- 	struct task_struct *p;
- 
-+	if (!llist)
-+		return;
-+
- 	raw_spin_lock(&rq->lock);
- 
- 	while (llist) {
-@@ -1536,8 +1539,14 @@ void scheduler_ipi(void)
- 
- static void ttwu_queue_remote(struct task_struct *p, int cpu)
- {
--	if (llist_add(&p->wake_entry, &cpu_rq(cpu)->wake_list))
--		smp_send_reschedule(cpu);
-+	struct rq *rq = cpu_rq(cpu);
-+
-+	if (llist_add(&p->wake_entry, &rq->wake_list)) {
-+		set_tsk_need_resched(rq->idle);
-+		smp_mb__after_clear_bit();
-+		if (!tsk_is_polling(rq->idle) || rq->curr != rq->idle)
-+			smp_send_reschedule(cpu);
-+	}
- }
- 
- bool cpus_share_cache(int this_cpu, int that_cpu)
-diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
-index 14ca43430aee..bd8ed2d2f2f7 100644
---- a/kernel/sched/idle.c
-+++ b/kernel/sched/idle.c
-@@ -105,19 +105,24 @@ static void cpu_idle_loop(void)
- 				} else {
- 					local_irq_enable();
- 				}
--				__current_set_polling();
- 			}
- 			arch_cpu_idle_exit();
--			/*
--			 * We need to test and propagate the TIF_NEED_RESCHED
--			 * bit here because we might not have send the
--			 * reschedule IPI to idle tasks.
--			 */
--			if (tif_need_resched())
--				set_preempt_need_resched();
- 		}
-+
-+		/*
-+		 * We must clear polling before running sched_ttwu_pending().
-+		 * Otherwise it becomes possible to have entries added in
-+		 * ttwu_queue_remote() and still not get an IPI to process
-+		 * them.
-+		 */
-+		__current_clr_polling();
-+
-+		set_preempt_need_resched();
-+		sched_ttwu_pending();
-+
- 		tick_nohz_idle_exit();
- 		schedule_preempt_disabled();
-+		__current_set_polling();
- 	}
- }
- 
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 1bf34c257d3b..b59dbdb135d8 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -1157,9 +1157,10 @@ extern const struct sched_class rt_sched_class;
- extern const struct sched_class fair_sched_class;
- extern const struct sched_class idle_sched_class;
- 
--
- #ifdef CONFIG_SMP
- 
-+extern void sched_ttwu_pending(void)
-+
- extern void update_group_power(struct sched_domain *sd, int cpu);
- 
- extern void trigger_load_balance(struct rq *rq);
-@@ -1170,6 +1171,8 @@ extern void idle_exit_fair(struct rq *this_rq);
- 
- #else	/* CONFIG_SMP */
- 
-+static inline void sched_ttwu_pending(void) { }
-+
- static inline void idle_balance(int cpu, struct rq *rq)
- {
- }
+greg k-h
