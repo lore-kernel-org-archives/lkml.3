@@ -1,195 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752451AbaBLKuc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 05:50:32 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:57908 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751811AbaBLKu3 (ORCPT
+	id S1752508AbaBLKuz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 05:50:55 -0500
+Received: from mail-yk0-f175.google.com ([209.85.160.175]:51623 "EHLO
+	mail-yk0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752103AbaBLKuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 05:50:29 -0500
+	Wed, 12 Feb 2014 05:50:51 -0500
 MIME-Version: 1.0
-In-Reply-To: <1392055139-19631-14-git-send-email-benjamin.tissoires@redhat.com>
-References: <1392055139-19631-1-git-send-email-benjamin.tissoires@redhat.com>
-	<1392055139-19631-14-git-send-email-benjamin.tissoires@redhat.com>
-Date: Wed, 12 Feb 2014 11:50:29 +0100
-Message-ID: <CANq1E4Q_7_75wvDcXQcMJFR_5dqimjrUPrJ3VK6ddav7KAn8tw@mail.gmail.com>
-Subject: Re: [PATCH 13/14] HID: remove hid_output_raw_report
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>,
-        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <CAHNKnsRACSo=DfOyiHxqV3acv_wfZmz4tMnYAW0wo4OCibwdfA@mail.gmail.com>
+References: <1391971686-9517-1-git-send-email-richard@nod.at>
+ <1391971686-9517-10-git-send-email-richard@nod.at> <52F7D480.1050106@hauke-m.de>
+ <52F7DF21.70207@nod.at> <CAHNKnsS7Mv4ZhBWZa53go9L9nZimJ7_FG5HFJ9C3kkGMAEz-mA@mail.gmail.com>
+ <52F8C373.9060108@rempel-privat.de> <CAHNKnsQF5Hdf3JT91moPraRQzn4kMpdD2NSiJ7b30wQhS1W4MA@mail.gmail.com>
+ <CAGVrzcYnECx5Q=i+m6qZn29y4JALDpw5SWoUNP-S6HgPR3_ygQ@mail.gmail.com> <CAHNKnsRACSo=DfOyiHxqV3acv_wfZmz4tMnYAW0wo4OCibwdfA@mail.gmail.com>
+From: Sergey Ryazanov <ryazanov.s.a@gmail.com>
+Date: Wed, 12 Feb 2014 14:50:30 +0400
+Message-ID: <CAHNKnsRQp7WLSJNAXEYPTd=qs1DquOfNgKtHES-Utvcy1=FEgQ@mail.gmail.com>
+Subject: Re: [PATCH 09/28] Remove ATHEROS_AR231X
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: Oleksij Rempel <linux@rempel-privat.de>,
+        Richard Weinberger <richard@nod.at>,
+        Jonathan Bither <jonbither@gmail.com>,
+        OpenWrt Development List <openwrt-devel@lists.openwrt.org>,
+        Hauke Mehrtens <hauke@hauke-m.de>, Jiri Slaby <jirislaby@gmail.com>,
+        Nick Kossifidis <mickflemm@gmail.com>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        "open list:ATHEROS ATH5K WIR..." <linux-wireless@vger.kernel.org>,
+        "open list:ATHEROS ATH5K WIR..." <ath5k-devel@venema.h4ckr.net>,
+        open@hauke-m.de,
+        "list@hauke-m.de:NETWORKING DRIVERS" <netdev@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        "antonynpavlov@gmail.com" <antonynpavlov@gmail.com>,
+        Florian Fainelli <florian@openwrt.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+2014-02-11 3:43 GMT+04:00 Sergey Ryazanov <ryazanov.s.a@gmail.com>:
+> 2014-02-11 2:37 GMT+04:00 Florian Fainelli <florian@openwrt.org>:
+>> 2014-02-10 4:38 GMT-08:00 Sergey Ryazanov <ryazanov.s.a@gmail.com>:
+>>> 2014-02-10 16:17 GMT+04:00 Oleksij Rempel <linux@rempel-privat.de>:
+>>>> Am 10.02.2014 13:05, schrieb Sergey Ryazanov:
+>>>>> 2014-02-10 0:03 GMT+04:00 Richard Weinberger <richard@nod.at>:
+>>>>>> Am 09.02.2014 20:18, schrieb Hauke Mehrtens:
+>>>>>>> On 02/09/2014 07:47 PM, Richard Weinberger wrote:
+>>>>>>>> The symbol is an orphan, get rid of it.
+>>>>>>>>
+>>>>>>>> Signed-off-by: Richard Weinberger <richard@nod.at>
+>>>>>>>> ---
+>>>>>>>>  drivers/net/wireless/ath/ath5k/Kconfig | 10 +++++-----
+>>>>>>>>  drivers/net/wireless/ath/ath5k/ath5k.h | 28 ----------------------------
+>>>>>>>>  drivers/net/wireless/ath/ath5k/base.c  | 14 --------------
+>>>>>>>>  drivers/net/wireless/ath/ath5k/led.c   |  7 -------
+>>>>>>>>  4 files changed, 5 insertions(+), 54 deletions(-)
+>>>>>>>>
+>>>>>>>
+>>>>>>> This code is used in OpenWrt with an out of tree arch code for the
+>>>>>>> Atheros 231x/531x SoC. [0] I do not think anyone is working on adding
+>>>>>>> this code to mainline Linux kernel, because of lack of time/interest.
+>>>>>>
+>>>>>> Sorry, we don't maintain out of tree code.
+>>>>>>
+>>>>>
+>>>>> Oleksij, Jonathan do you still working to make ar231x devices work
+>>>>> with upstream, since your posts [1, 2]? Or may be someone from OpenWRT
+>>>>> team would like to add upstream support?
+>>>>>
+>>>>> 1. https://lkml.org/lkml/2013/5/13/321
+>>>>> 2. https://lkml.org/lkml/2013/5/13/358
+>>>>>
+>>>>
+>>>> Hi,
+>>>> my current target was to provide barebox and openocd support.
+>>>> - ar2313 is already upstream on barebox.
+>>>> - ar2315-2318 (barebox) awaiting review by Anthony Pavlov.
+>>>> - openocd (EJTAG) support is ready and i'll push it ASUP.
+>>>>
+>>> WOW, Impressive.
+>>
+>> That's a nice toy project, although since there are is an existing
+>> bootloader with sources, I would have shifted the priority towards
+>> getting the kernel support merged such that the bootloader can be used
+>> for something. BTW I sent a few devices to Jonathan, not sure if he
+>> ever got those...
+>>
+>>>
+>>>> I hope Jonathan do kernel part. If not, i can provide some work, since i
+>>>> have testing boards and expiriance on this hardware.
+>>>>
+>>> If you need, I can test kernel part, or even do some porting work. I
+>>> have some AR231x based boards, e.g. Ubnt LS2 and NS2.
+>>
+>> I guess you could start splitting the OpenWrt patches into a format
+>> that makes them suitable for being merged upstream and starting with
+>> the MIPS parts. There might be a bunch of checkpatch.pl cleanup work
+>> to do before getting those submitted.
+>
+> I will do that if Jonathan does not have a working solution, which he
+> would like to push upstream. So, let's wait for his reply.
+>
 
-On Mon, Feb 10, 2014 at 6:58 PM, Benjamin Tissoires
-<benjamin.tissoires@redhat.com> wrote:
-> hid_output_raw_report() is not used anymore, delete it.
+John, can you delay the merging of this patch for a few months, I will
+try to prepare the necessary patches to add AR231x architecture to the
+kernel and send them to linux-mips.
 
-yippieh!
-
-Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
-
-Thanks
-David
-
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-> ---
->  drivers/hid/i2c-hid/i2c-hid.c | 14 --------------
->  drivers/hid/uhid.c            |  1 -
->  drivers/hid/usbhid/hid-core.c | 12 ------------
->  include/linux/hid.h           | 19 -------------------
->  net/bluetooth/hidp/core.c     | 14 --------------
->  5 files changed, 60 deletions(-)
->
-> diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
-> index 925fb8d..d3b8d7a 100644
-> --- a/drivers/hid/i2c-hid/i2c-hid.c
-> +++ b/drivers/hid/i2c-hid/i2c-hid.c
-> @@ -596,19 +596,6 @@ static int i2c_hid_output_raw_report(struct hid_device *hid, __u8 *buf,
->         return ret;
->  }
->
-> -static int __i2c_hid_output_raw_report(struct hid_device *hid, __u8 *buf,
-> -               size_t count, unsigned char report_type)
-> -{
-> -       struct i2c_client *client = hid->driver_data;
-> -       struct i2c_hid *ihid = i2c_get_clientdata(client);
-> -       bool data = true; /* SET_REPORT */
-> -
-> -       if (report_type == HID_OUTPUT_REPORT)
-> -               data = le16_to_cpu(ihid->hdesc.wMaxOutputLength) == 0;
-> -
-> -       return i2c_hid_output_raw_report(hid, buf, count, report_type, data);
-> -}
-> -
->  static int i2c_hid_output_report(struct hid_device *hid, __u8 *buf,
->                 size_t count)
->  {
-> @@ -1023,7 +1010,6 @@ static int i2c_hid_probe(struct i2c_client *client,
->
->         hid->driver_data = client;
->         hid->ll_driver = &i2c_hid_ll_driver;
-> -       hid->hid_output_raw_report = __i2c_hid_output_raw_report;
->         hid->dev.parent = &client->dev;
->         ACPI_COMPANION_SET(&hid->dev, ACPI_COMPANION(&client->dev));
->         hid->bus = BUS_I2C;
-> diff --git a/drivers/hid/uhid.c b/drivers/hid/uhid.c
-> index 60acee4..7ed79be 100644
-> --- a/drivers/hid/uhid.c
-> +++ b/drivers/hid/uhid.c
-> @@ -400,7 +400,6 @@ static int uhid_dev_create(struct uhid_device *uhid,
->         hid->uniq[63] = 0;
->
->         hid->ll_driver = &uhid_hid_driver;
-> -       hid->hid_output_raw_report = uhid_hid_output_raw;
->         hid->bus = ev->u.create.bus;
->         hid->vendor = ev->u.create.vendor;
->         hid->product = ev->u.create.product;
-> diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
-> index 0d1d875..02b3256 100644
-> --- a/drivers/hid/usbhid/hid-core.c
-> +++ b/drivers/hid/usbhid/hid-core.c
-> @@ -945,17 +945,6 @@ static int usbhid_output_report(struct hid_device *hid, __u8 *buf, size_t count)
->         return ret;
->  }
->
-> -static int usbhid_output_raw_report(struct hid_device *hid, __u8 *buf,
-> -               size_t count, unsigned char report_type)
-> -{
-> -       struct usbhid_device *usbhid = hid->driver_data;
-> -
-> -       if (usbhid->urbout && report_type != HID_FEATURE_REPORT)
-> -               return usbhid_output_report(hid, buf, count);
-> -
-> -       return usbhid_set_raw_report(hid, buf[0], buf, count, report_type);
-> -}
-> -
->  static void usbhid_restart_queues(struct usbhid_device *usbhid)
->  {
->         if (usbhid->urbout && !test_bit(HID_OUT_RUNNING, &usbhid->iofl))
-> @@ -1289,7 +1278,6 @@ static int usbhid_probe(struct usb_interface *intf, const struct usb_device_id *
->
->         usb_set_intfdata(intf, hid);
->         hid->ll_driver = &usb_hid_driver;
-> -       hid->hid_output_raw_report = usbhid_output_raw_report;
->         hid->ff_init = hid_pidff_init;
->  #ifdef CONFIG_USB_HIDDEV
->         hid->hiddev_connect = hiddev_connect;
-> diff --git a/include/linux/hid.h b/include/linux/hid.h
-> index 09fbbd7..fa07639 100644
-> --- a/include/linux/hid.h
-> +++ b/include/linux/hid.h
-> @@ -508,9 +508,6 @@ struct hid_device {                                                 /* device report descriptor */
->                                   struct hid_usage *, __s32);
->         void (*hiddev_report_event) (struct hid_device *, struct hid_report *);
->
-> -       /* handler for raw output data, used by hidraw */
-> -       int (*hid_output_raw_report) (struct hid_device *, __u8 *, size_t, unsigned char);
-> -
->         /* debugging support via debugfs */
->         unsigned short debug;
->         struct dentry *debug_dir;
-> @@ -1015,22 +1012,6 @@ static inline int hid_hw_output_report(struct hid_device *hdev, __u8 *buf,
->  }
->
->  /**
-> - * hid_output_raw_report - send an output or a feature report to the device
-> - *
-> - * @hdev: hid device
-> - * @buf: raw data to transfer
-> - * @len: length of buf
-> - * @report_type: HID_FEATURE_REPORT or HID_OUTPUT_REPORT
-> - *
-> - * @return: count of data transfered, negative if error
-> - */
-> -static inline int hid_output_raw_report(struct hid_device *hdev, __u8 *buf,
-> -                                       size_t len, unsigned char report_type)
-> -{
-> -       return hdev->hid_output_raw_report(hdev, buf, len, report_type);
-> -}
-> -
-> -/**
->   * hid_hw_idle - send idle request to device
->   *
->   * @hdev: hid device
-> diff --git a/net/bluetooth/hidp/core.c b/net/bluetooth/hidp/core.c
-> index 77c4bad..89da18d 100644
-> --- a/net/bluetooth/hidp/core.c
-> +++ b/net/bluetooth/hidp/core.c
-> @@ -382,18 +382,6 @@ static int hidp_output_report(struct hid_device *hid, __u8 *data, size_t count)
->                                       data, count);
->  }
->
-> -static int hidp_output_raw_report(struct hid_device *hid, unsigned char *data,
-> -               size_t count, unsigned char report_type)
-> -{
-> -       if (report_type == HID_OUTPUT_REPORT) {
-> -               return hidp_output_report(hid, data, count);
-> -       } else if (report_type != HID_FEATURE_REPORT) {
-> -               return -EINVAL;
-> -       }
-> -
-> -       return hidp_set_raw_report(hid, data[0], data, count, report_type);
-> -}
-> -
->  static int hidp_raw_request(struct hid_device *hid, unsigned char reportnum,
->                             __u8 *buf, size_t len, unsigned char rtype,
->                             int reqtype)
-> @@ -773,8 +761,6 @@ static int hidp_setup_hid(struct hidp_session *session,
->         hid->dev.parent = &session->conn->hcon->dev;
->         hid->ll_driver = &hidp_hid_driver;
->
-> -       hid->hid_output_raw_report = hidp_output_raw_report;
-> -
->         /* True if device is blacklisted in drivers/hid/hid-core.c */
->         if (hid_ignore(hid)) {
->                 hid_destroy_device(session->hid);
-> --
-> 1.8.3.1
->
+-- 
+BR,
+Sergey
