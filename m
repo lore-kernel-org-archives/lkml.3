@@ -1,153 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752746AbaBLK0A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 05:26:00 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:55073 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752451AbaBLKZz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 05:25:55 -0500
+	id S1752084AbaBLK0t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 05:26:49 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:54986 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752428AbaBLKTt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 05:19:49 -0500
+From: Roger Quadros <rogerq@ti.com>
+To: <tony@atomide.com>, <bcousson@baylibre.com>, <lee.jones@linaro.org>
+CC: <balbi@ti.com>, <nm@ti.com>, <khilman@linaro.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, Roger Quadros <rogerq@ti.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [PATCH v7 03/12] mfd: omap-usb-host: Use clock names as per function for reference clocks
+Date: Wed, 12 Feb 2014 12:18:44 +0200
+Message-ID: <1392200333-28397-4-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1392200333-28397-1-git-send-email-rogerq@ti.com>
+References: <1392200333-28397-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <1392055139-19631-4-git-send-email-benjamin.tissoires@redhat.com>
-References: <1392055139-19631-1-git-send-email-benjamin.tissoires@redhat.com>
-	<1392055139-19631-4-git-send-email-benjamin.tissoires@redhat.com>
-Date: Wed, 12 Feb 2014 11:25:54 +0100
-Message-ID: <CANq1E4TjLJUts20nVYE3WT5FXu_eswKrM0CLwQAu25df3GEDig@mail.gmail.com>
-Subject: Re: [PATCH 03/14] HID: core: implement generic .request()
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>,
-        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Use a meaningful name for the reference clocks so that it indicates the function.
 
-On Mon, Feb 10, 2014 at 6:58 PM, Benjamin Tissoires
-<benjamin.tissoires@redhat.com> wrote:
-> .request() can be emulated through .raw_request()
-> we can implement this emulation in hid-core, and make .request
-> not mandatory for transport layer drivers.
->
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-> ---
->  drivers/hid/hid-core.c | 45 ++++++++++++++++++++++++++++++++++++++++++++-
->  include/linux/hid.h    |  5 ++++-
->  2 files changed, 48 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-> index 18fe49b..f36778a 100644
-> --- a/drivers/hid/hid-core.c
-> +++ b/drivers/hid/hid-core.c
-> @@ -1248,6 +1248,11 @@ void hid_output_report(struct hid_report *report, __u8 *data)
->  }
->  EXPORT_SYMBOL_GPL(hid_output_report);
->
-> +static int hid_report_len(struct hid_report *report)
-> +{
-> +       return ((report->size - 1) >> 3) + 1 + (report->id > 0) + 7;
+CC: Lee Jones <lee.jones@linaro.org>
+CC: Samuel Ortiz <sameo@linux.intel.com>
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+---
+ drivers/mfd/omap-usb-host.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Just for clarity, this is equivalent to the following, right?
+diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
+index 60a3bed..ce620a8 100644
+--- a/drivers/mfd/omap-usb-host.c
++++ b/drivers/mfd/omap-usb-host.c
+@@ -714,21 +714,21 @@ static int usbhs_omap_probe(struct platform_device *pdev)
+ 		goto err_mem;
+ 	}
+ 
+-	omap->xclk60mhsp1_ck = devm_clk_get(dev, "xclk60mhsp1_ck");
++	omap->xclk60mhsp1_ck = devm_clk_get(dev, "refclk_60m_ext_p1");
+ 	if (IS_ERR(omap->xclk60mhsp1_ck)) {
+ 		ret = PTR_ERR(omap->xclk60mhsp1_ck);
+ 		dev_err(dev, "xclk60mhsp1_ck failed error:%d\n", ret);
+ 		goto err_mem;
+ 	}
+ 
+-	omap->xclk60mhsp2_ck = devm_clk_get(dev, "xclk60mhsp2_ck");
++	omap->xclk60mhsp2_ck = devm_clk_get(dev, "refclk_60m_ext_p2");
+ 	if (IS_ERR(omap->xclk60mhsp2_ck)) {
+ 		ret = PTR_ERR(omap->xclk60mhsp2_ck);
+ 		dev_err(dev, "xclk60mhsp2_ck failed error:%d\n", ret);
+ 		goto err_mem;
+ 	}
+ 
+-	omap->init_60m_fclk = devm_clk_get(dev, "init_60m_fclk");
++	omap->init_60m_fclk = devm_clk_get(dev, "refclk_60m_int");
+ 	if (IS_ERR(omap->init_60m_fclk)) {
+ 		ret = PTR_ERR(omap->init_60m_fclk);
+ 		dev_err(dev, "init_60m_fclk failed error:%d\n", ret);
+-- 
+1.8.3.2
 
-return DIV_ROUND_UP(report->size, 8) + !!(report->id > 0) + 7;
-
-I always have to read that shifting code twice to get it.. Maybe add a
-comment explaining the different entries here.
-
-> +}
-> +
->  /*
->   * Allocator for buffer that is going to be passed to hid_output_report()
->   */
-> @@ -1258,7 +1263,7 @@ u8 *hid_alloc_report_buf(struct hid_report *report, gfp_t flags)
->          * of implement() working on 8 byte chunks
->          */
->
-> -       int len = ((report->size - 1) >> 3) + 1 + (report->id > 0) + 7;
-> +       int len = hid_report_len(report);
->
->         return kmalloc(len, flags);
->  }
-> @@ -1314,6 +1319,44 @@ static struct hid_report *hid_get_report(struct hid_report_enum *report_enum,
->         return report;
->  }
->
-> +/*
-> + * Implement a generic .request() callback, using .raw_request()
-> + * DO NOT USE in hid drivers directly, but through hid_hw_request instead.
-> + */
-> +void __hid_request(struct hid_device *hid, struct hid_report *report,
-> +               int reqtype)
-> +{
-> +       char *buf;
-> +       int ret;
-> +       int len;
-> +
-> +       if (!hid->ll_driver->raw_request)
-> +               return;
-> +
-> +       buf = hid_alloc_report_buf(report, GFP_KERNEL);
-> +       if (!buf)
-> +               return;
-> +
-> +       len = hid_report_len(report);
-> +
-> +       if (reqtype == HID_REQ_SET_REPORT)
-> +               hid_output_report(report, buf);
-> +
-> +       ret = hid->ll_driver->raw_request(hid, report->id, buf, len,
-> +                                         report->type, reqtype);
-> +       if (ret < 0) {
-> +               dbg_hid("unable to complete request: %d\n", ret);
-> +               goto out;
-> +       }
-> +
-> +       if (reqtype == HID_REQ_GET_REPORT)
-> +               hid_input_report(hid, report->type, buf, ret, 0);
-> +
-> +out:
-> +       kfree(buf);
-> +}
-> +EXPORT_SYMBOL_GPL(__hid_request);
-> +
-
-Looks good to me.
-
-Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
-
-Thanks
-David
-
->  int hid_report_raw_event(struct hid_device *hid, int type, u8 *data, int size,
->                 int interrupt)
->  {
-> diff --git a/include/linux/hid.h b/include/linux/hid.h
-> index a837ede..09fbbd7 100644
-> --- a/include/linux/hid.h
-> +++ b/include/linux/hid.h
-> @@ -753,6 +753,7 @@ struct hid_field *hidinput_get_led_field(struct hid_device *hid);
->  unsigned int hidinput_count_leds(struct hid_device *hid);
->  __s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code);
->  void hid_output_report(struct hid_report *report, __u8 *data);
-> +void __hid_request(struct hid_device *hid, struct hid_report *rep, int reqtype);
->  u8 *hid_alloc_report_buf(struct hid_report *report, gfp_t flags);
->  struct hid_device *hid_allocate_device(void);
->  struct hid_report *hid_register_report(struct hid_device *device, unsigned type, unsigned id);
-> @@ -965,7 +966,9 @@ static inline void hid_hw_request(struct hid_device *hdev,
->                                   struct hid_report *report, int reqtype)
->  {
->         if (hdev->ll_driver->request)
-> -               hdev->ll_driver->request(hdev, report, reqtype);
-> +               return hdev->ll_driver->request(hdev, report, reqtype);
-> +
-> +       __hid_request(hdev, report, reqtype);
->  }
->
->  /**
-> --
-> 1.8.3.1
->
