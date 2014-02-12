@@ -1,144 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751935AbaBLLOi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 06:14:38 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:43324 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751105AbaBLLOh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 06:14:37 -0500
-Message-ID: <52FB5795.9020708@free-electrons.com>
-Date: Wed, 12 Feb 2014 12:14:29 +0100
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752208AbaBLLPQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 06:15:16 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:48358 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751668AbaBLLPM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 06:15:12 -0500
+X-IronPort-AV: E=Sophos;i="4.95,832,1384300800"; 
+   d="scan'208";a="101875837"
+Message-ID: <1392203708.13563.50.camel@kazak.uk.xensource.com>
+Subject: Re: [RFC 2/2] xen-netback: disable multicast and use a random hw
+ MAC address
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        <xen-devel@lists.xenproject.org>,
+        Paul Durrant <Paul.Durrant@citrix.com>,
+        "Wei Liu" <wei.liu2@citrix.com>, <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 12 Feb 2014 11:15:08 +0000
+In-Reply-To: <CAB=NE6Vu=khpj_3J7r-u8DFkhyC-RgLikNFtOU-WO7te_4HMCw@mail.gmail.com>
+References: <1392071391-13215-1-git-send-email-mcgrof@do-not-panic.com>
+	 <1392071391-13215-3-git-send-email-mcgrof@do-not-panic.com>
+	 <1392108205.22033.16.camel@dagon.hellion.org.uk>
+	 <CAB=NE6Vu=khpj_3J7r-u8DFkhyC-RgLikNFtOU-WO7te_4HMCw@mail.gmail.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
-To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>, nicolas.ferre@atmel.com,
-        plagnioj@jcrosoft.com, b.brezillon@overkiz.com
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 0/8] Device Tree support for the at91sam9261ek
-References: <1392199607-27452-1-git-send-email-jjhiblot@traphandler.com>
-In-Reply-To: <1392199607-27452-1-git-send-email-jjhiblot@traphandler.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.80]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jean-Jacques,
-
-On 12/02/2014 11:06, Jean-Jacques Hiblot wrote:
-> This patch set aims at bringing a device tree support for the sam9261.
-> It's mostly based on the sam9263 and sam9x5 stuff.
+On Tue, 2014-02-11 at 13:53 -0800, Luis R. Rodriguez wrote:
+> Cc'ing kvm folks as they may have a shared interest on the shared
+> physical case with the bridge (non NAT).
 > 
-> Changes since V3:
-> * Added support for the touchscreen
-> * Added support for the spi dataflash
-> * Activated the TCB by default
-> * Reworked the patch organization to reduce the number of patchs
-> * changed the default bootargs (no mem description, UBI on mtdpart 5)
-> * Changed the xlate implementation of the at91 pinctrl driver to lock the GPIOs
->   for IRQs instead of requesting them (needed for the touchscreen driver)
-> * some stylistic changes
+> On Tue, Feb 11, 2014 at 12:43 AM, Ian Campbell <Ian.Campbell@citrix.com> wrote:
+> > On Mon, 2014-02-10 at 14:29 -0800, Luis R. Rodriguez wrote:
+> >> From: "Luis R. Rodriguez" <mcgrof@suse.com>
+> >>
+> >> Although the xen-netback interfaces do not participate in the
+> >> link as a typical Ethernet device interfaces for them are
+> >> still required under the current archtitecture. IPv6 addresses
+> >> do not need to be created or assigned on the xen-netback interfaces
+> >> however, even if the frontend devices do need them, so clear the
+> >> multicast flag to ensure the net core does not initiate IPv6
+> >> Stateless Address Autoconfiguration.
+> >
+> > How does disabling SAA flow from the absence of multicast?
 > 
-> Changes since V2:
-> * removed the smc driver from the serie. It'll be posted in an independent
->   serie later.
-> * removed the DM9000 support (it'll come with the smc driver)
-> * the sam9261 now supports the Common Clock Framework (CCF). Note: to enable
->   the CCF you must remove from the kernel config the platforms that don't
->   support it.
-> * Added basic DT binding for the bus matrix
-> * Added support for USB host
-> * Added support for USB gadget
-> * in dts(i), replaced interrupt-parent with interrupts-extended
-> * changed the nand partition plan (same as for the sama5d3)
-> * removed 'mem' parameter in command line
-> * re-ordered dt-nodes in ascending address order.
-> * split the lcd support patch in 2 parts (SOC and board)
+> See patch 1 in this series [0], but I explain the issue I see with
+> this on the cover letter [1].
+
+Oop, I felt like I'd missed some context. Thanks for pointing out that
+it was right under my nose.
+
+> In summary the RFCs on IPv6 make it
+> clear you need multicast for Stateless address autoconfiguration
+> (SLAAC is the preferred acronym) and DAD,
+
+That seems reasonable, but I think is the opposite to what I was trying
+to get at.
+
+Why is it not possible to disable SLAAC and/or DAD even if multicast is
+present?
+
+IOW -- enabling/disabling multicast seems to me to be an odd proxy for
+disabling SLAAC or DAD and AIUI your patch fixes the opposite case,
+which is to avoid SLAAC and DAD on interfaces which don't do multicast
+(which makes sense since those protocols involve multicast).
+
+>  however the net core has not
+> made this a requirement, and hence the patch. The caveat which I
+> address on the cover letter needs to be seriously considered though.
 > 
+> [0] http://marc.info/?l=linux-netdev&m=139207142110535&w=2
+> [1] http://marc.info/?l=linux-netdev&m=139207142110536&w=2
 > 
-> Change since V1:
-> * changed the DT representation to use address translation and separate the
->   timings' configuration from the device properties by adding a "simple-bus"
->   inetrmediate node.
-> * moved the smc driver from drivers/bus to drivers/memmory
-> * smc driver now accepts timings in nanoseconds as well as raw register values
-> * smc driver can clip the timings if they're out of bound and dump them to the
->   console
-> * DM9000 timings are now described in nanosecs (for the virtue of example)
+> > Surely these should be controlled logically independently even if there is some
+> > notional linkage.
 > 
-> supported features are:
-> * working with the Common Clock Framework and the old at91 clock implementation
-> * dbgu
-> * lcdc
-> * usb host
-> * usb gadget,
-> * spi dataflash
-> * nand flash
-> * touchscreen
-> * leds
-> * user buttons
+> When a node hops on a network it will query its network by sending a
+> router solicitation multicast request for its configuration
+> parameters, the router can respond with router advertisements to
+> disable SLAAC.
+
+Surely it should be possible for an interface to be explicitly not ipv6
+enabled, in which case it doesn't want to do any solicitation at all.
+
+> Apart from that we have no other means to disable SLAAC neatly, and as
+> I gather that would be counter to the IPv6 RFCs anyway, and that makes
+> sense.
+
+In your[0] post you say:
+        it should be noted that RFC4682 Section 5.4
+        makes it clear that DAD *MUST* be performed on all unicast
+        addresses prior to assigning them to an interface
+
+is that what you mean by counter to the RFCs?
+
+In my reading this "must do DAD" requirement only comes into affect if
+you are trying to assign a unicast address to an interface. It should be
+possible to simply not do that for an interface.
+
+> > Can SAA not be disabled directly?
 > 
-> In the TODO list:
-> * dm9000 (ethernet)
-> * audio
-> * mmc
+> Nope. The ipv6 core assumes all device want ipv6
 
+IMHO it is entirely reasonable for an admin to desire that an interface
+has nothing at all to do with IPv6. At which point all of the
+requirements for multicast which flow from enabling IPv6 disappear.
 
-Besides the my comment on the 1st patch, all this series
-seems pretty neat for me.
-
-It's worth mentioning also that audio and mmc are in the
-TODO list by lack of hardware to test it. So what I suggest
-here is to send a follow-up patch set and to ask for a
-Tested-By from people being able to test it.
-
-For dm9000 the issue is (again) related to an ordering problem:
-the Ethernet need an interrupt provided by the gpio driver. Unfortunately,
-the gpio driver initialization is called after the dm900 driver
-initialization.
-
-Thanks,
-
-Gregory
-
-
-
+> >>  since using this can create an issue if a user
+> >> decides to enable multicast on the backend interfaces
+> >
+> > Please explain what this issue is.
 > 
-> This serie relies on the following patchs:
-> usb: at91-udc: fix irq and iomem resource retrieval
-> ARM: at91: prepare sam9 dt boards transition to common
-> 
-> Jean-Jacques
-> 
-> Jean-Jacques Hiblot (8):
->   at91: dt: Adds support for the bus matrix declaration in the DT
->   at91: pinctrl: don't request GPIOs used for interrupts but lock them
->     as IRQ
->   at91: dt: Add at91sam9261 dt SoC support
->   at91: dt: defconfig: Added the sam9261 to the list of DT-enabled SOCs
->   at91: dt: sam9261: Device Tree support for the at91sam9261ek
->   at91: updated the at91_dt_defconfig with support for the ADS7846
->   ARM: at91: prepare common clk transition for sam9261 SoC
->   ARM: at91: move sam9261 SoC to common clk
-> 
->  arch/arm/boot/dts/Makefile          |   2 +
->  arch/arm/boot/dts/at91sam9261.dtsi  | 740 ++++++++++++++++++++++++++++++++++++
->  arch/arm/boot/dts/at91sam9261ek.dts | 204 ++++++++++
->  arch/arm/configs/at91_dt_defconfig  |   2 +
->  arch/arm/mach-at91/Kconfig          |   1 -
->  arch/arm/mach-at91/at91sam9261.c    |  25 +-
->  arch/arm/mach-at91/setup.c          |  23 ++
->  drivers/pinctrl/pinctrl-at91.c      |   5 +-
->  8 files changed, 996 insertions(+), 6 deletions(-)
->  create mode 100644 arch/arm/boot/dts/at91sam9261.dtsi
->  create mode 100644 arch/arm/boot/dts/at91sam9261ek.dts
-> 
+> I explained this on the cover letter but should have elaborated more
+> here. The *known* and *reported* issue is that xen-backend interfaces
+> can end up  SLAAC and you'd obviously end up in some situations where
+> the MAC address and IP address clash, despite the architecture of IPv6
+> to randomize time requests for neighbor solicitations, and DAD.
+> Ultimately a series of services can end up filling your log messages
+> with tons of warnings.
 
+Right, this makes sense, but it seems like the solution should be to
+stop SLAAC from happening directly and not by playing tricks with
+multicast that happen to have the side effect of disabling SLAAC.
 
--- 
-Gregory Clement, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+> Another not reported issue, but I suspect critical and it can bite
+> both xen and kvm in the ass is described on Appendex A on RFC 4862 [2]
+> which considers the issues of getting duplicates of packets on the
+> same link with the same link layer address. I think to address that we
+> can also consider dev->type into all the different cases.
+
+We should never actually be generating any traffic with this address
+FWIW, all the generated traffic will have the guest's actual MAC. (at
+least in the bridging case, perhaps with with routing or NAT things are
+different, but I think in that case the traffic would appear to come
+from the hosts outgoing interface, not the vif device)
+
+> My preference, rather than trying to simply disable ipv6 is actually
+> seeing how xen-netback interfaces (and kvm TAP topology) can be
+> simplified further). As I see it there is tons of code which could
+> trigger being used on these xen-netback interfaces (and TAP for kvm)
+> which is simply not needed for the use case of just doing sending data
+> back and forth between host and guest: ipv6 is not needed at all, and
+> I tried to test removing ipv4, but ran into issues.
+
+Bridging is not the only way to provide VM network connectivity. It
+should also be possible to do routing and even NAT by configuring
+appropriate p2p links and routing tables in the host. For that to work I
+think the tap and vif devices do need some sort of IPv[46] capability,
+so you can't just nuke that stuff completely. (Maybe/likely it also
+requires them to have a sensible MAC address, I'm not sure).
+
+> [2] http://tools.ietf.org/html/rfc4862#appendix-A
+> [3[ https://gitorious.org/opensuse/kernel-source/source/8e16582178a29b03e850468004a47e7be5ed3005:patches.xen/ipv6-no-autoconf
+> 
+> > Also how can a user enable multicast on the b/e?
+> 
+> ip set multicast on dev <devname>
+> ip set multicast off dev <devname>
+> 
+> > AFAIK only Solaris ever
+> > implemented the m/c bits of the Xen PV network protocol (not that I
+> > wouldn't welcome attempts to add it to other platforms)
+> 
+> Do you mean kernel configuration multicast ? Or networking ?
+
+I meant the PV protocol extension which allows guests (netfront) to
+register to receive multicast frames across the PV ring -- i.e. for
+multicast to work from the guests PoV.
+
+(maybe that was just an optimisation though and the default is to flood
+everything, it was a long time ago)
+
+Ian.
+
