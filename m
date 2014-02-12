@@ -1,160 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751498AbaBLXxw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 18:53:52 -0500
-Received: from mga11.intel.com ([192.55.52.93]:21582 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751053AbaBLXxu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 18:53:50 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,835,1384329600"; 
-   d="scan'208";a="480571829"
-Date: Wed, 12 Feb 2014 16:53:53 -0700 (MST)
-From: Ross Zwisler <ross.zwisler@linux.intel.com>
-X-X-Sender: rzwisler@scrumpy
-To: Matthew Wilcox <matthew.r.wilcox@intel.com>
-cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH v5 06/22] Treat XIP like O_DIRECT
-In-Reply-To: <CF215477.24281%matthew.r.wilcox@intel.com>
-Message-ID: <alpine.OSX.2.00.1402121640310.60058@scrumpy>
-References: <cover.1389779961.git.matthew.r.wilcox@intel.com> <CF215477.24281%matthew.r.wilcox@intel.com>
-User-Agent: Alpine 2.00 (OSX 1167 2008-08-23)
+	id S1751594AbaBLXzM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 18:55:12 -0500
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:62374 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751108AbaBLXzK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 18:55:10 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1882539.R1gpoLLYks@wuerfel>
+References: <1392168805-14200-1-git-send-email-lauraa@codeaurora.org>
+	<1571508.yGAAZ8TNH0@wuerfel>
+	<20140212184521.GO27395@titan.lakedaemon.net>
+	<1882539.R1gpoLLYks@wuerfel>
+Date: Wed, 12 Feb 2014 17:55:08 -0600
+Message-ID: <CAL_JsqJetHbdsJd5B-FnwHRPgP9J=SXBhiYptHZMk9dhe20Fgg@mail.gmail.com>
+Subject: Re: [RFC/PATCH 0/3] Add devicetree scanning for randomness
+From: Rob Herring <robherring2@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Jason Cooper <jason@lakedaemon.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Kees Cook <keescook@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Jan 2014, Matthew Wilcox wrote:
-> Instead of separate read and write methods, use the generic AIO
-> infrastructure.  In addition to giving us support for AIO, this adds
-> the locking between read() and truncate() that was missing.
-> 
-> Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+On Wed, Feb 12, 2014 at 1:12 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Wednesday 12 February 2014 13:45:21 Jason Cooper wrote:
+>> On Wed, Feb 12, 2014 at 07:17:41PM +0100, Arnd Bergmann wrote:
+>> > On Wednesday 12 February 2014 12:45:54 Jason Cooper wrote:
+>> > > I brought this up at last weeks devicetree irc meeting.  My goal is to
+>> > > provide early randomness for kaslr on ARM.  Currently, my idea is modify
+>> > > the init script to save an additional random seed from /dev/urandom to
+>> > > /boot/random-seed.
+>> > >
+>> > > The bootloader would then load this file into ram, and pass the
+>> > > address/size to the kernel either via dt, or commandline.  kaslr (run in
+>> > > the decompressor) would consume some of this randomness, and then
+>> > > random.c would consume the rest in a non-crediting initialization.
+>> >
+>> > I like the idea, but wouldn't it be easier to pass actual random data
+>> > using DT, rather than the address/size?
+>>
+>> I thought about that at first, but that requires either that the
+>> bootloader be upgraded to insert the data, or that userspace is
+>> modifying the dtb at least twice per boot.
+>>
+>> I chose address/size to facilitate modifying existing/fielded devices.
+>> The user could modify the dtb once, and modify the bootloader
+>> environment to load X amount to Y address.  As a fallback, it could be
+>> expressed on the commandline for non-DT bootloaders.
+>
+> Ah, so you are interested in boot loaders that can be scripted to do
+> what you had in mind but cannot be scripted to add or modify a DT
+> property. I hadn't considered that, but you are probably right that
+> this is at least 90% of the systems you'd find in the wild today.
+>
+> Thinking this a bit further, I wonder if (at least upstream) u-boot
+> has a way to modify DT properties in a scripted way that would allow
+> the direct property. It sounds like a generally useful feature not
+> just for randomness, so if that doesn't already work, maybe someone
+> can implement it. In the simplest case, you'd only need to find the
+> address of an existing property in the dtb and load a file to
+> that location.
 
-...
+You would be referring to the u-boot fdt command which can read and
+set properties. Of course, like all u-boot commands, that may or may
+not be enabled by a vendor's u-boot. :(
 
-> +static ssize_t xip_io(int rw, struct inode *inode, const struct iovec
-> *iov,
-> +			loff_t start, loff_t end, unsigned nr_segs,
-> +			get_block_t get_block, struct buffer_head *bh)
-> +{
-> +	ssize_t retval = 0;
-> +	unsigned seg = 0;
-> +	unsigned len;
-> +	unsigned copied = 0;
-> +	loff_t offset = start;
-> +	loff_t max = start;
-> +	void *addr;
-> +	bool hole = false;
-> +
-> +	while (offset < end) {
-> +		void __user *buf = iov[seg].iov_base + copied;
-> +
-> +		if (max == offset) {
-> +			sector_t block = offset >> inode->i_blkbits;
-> +			long size;
-> +			memset(bh, 0, sizeof(*bh));
-> +			bh->b_size = ALIGN(end - offset, PAGE_SIZE);
-> +			retval = get_block(inode, block, bh, rw == WRITE);
-> +			if (retval)
-> +				break;
-> +			if (buffer_mapped(bh)) {
-> +				retval = xip_get_addr(inode, bh, &addr);
-> +				if (retval < 0)
-> +					break;
-> +				addr += offset - (block << inode->i_blkbits);
-> +				hole = false;
-> +				size = retval;
-> +			} else {
-> +				if (rw == WRITE) {
-> +					retval = -EIO;
-> +					break;
-> +				}
-> +				addr = NULL;
-> +				hole = true;
-> +				size = bh->b_size;
-> +			}
-> +			max = offset + size;
-> +		}
-> +
-> +		len = min_t(unsigned, iov[seg].iov_len - copied, max - offset);
-> +
-> +		if (rw == WRITE)
-> +			len -= __copy_from_user_nocache(addr, buf, len);
-> +		else if (!hole)
-> +			len -= __copy_to_user(buf, addr, len);
-> +		else
-> +			len -= __clear_user(buf, len);
-> +
-> +		if (!len)
-> +			break;
-> +
-> +		offset += len;
-> +		copied += len;
-> +		if (copied == iov[seg].iov_len) {
-> +			seg++;
-> +			copied = 0;
-> +		}
-> +	}
-> +
-> +	return (offset == start) ? retval : offset - start;
-> +}
-
-xip_io() as it is currently written has an issue where reads can go beyond
-inode->i_size.  A quick test to show this issue is:
-
-	create a new file
-	write to the file for 1/2 a block
-	seek back to 0
-	read for a full block
-
-The read in this case will return 4096, the length of the full block that was
-requested.  It should return 2048, reading just the data that was written.
-
-The issue is that we do have a full block allocated in ext4, we do have it
-available via XIP via xip_get_addr(), and the only extra check that we
-currently have is a check against iov_len.  iov_len in this case is 4096, so
-no one stops us from doing a full block read.
-
-Here is a quick patch that fixes this issue:
-
-diff --git a/fs/xip.c b/fs/xip.c
-index e902593..1608f29 100644
---- a/fs/xip.c
-+++ b/fs/xip.c
-@@ -91,13 +91,16 @@ static ssize_t xip_io(int rw, struct inode *inode, const struct
- {
-        ssize_t retval = 0;
-        unsigned seg = 0;
--       unsigned len;
-+       unsigned len, total_len;
-        unsigned copied = 0;
-        loff_t offset = start;
-        loff_t max = start;
-        void *addr;
-        bool hole = false;
- 
-+       end = min(end, inode->i_size);
-+       total_len = end - start;
-+
-        while (offset < end) {
-                void __user *buf = iov[seg].iov_base + copied;
- 
-@@ -136,6 +139,7 @@ static ssize_t xip_io(int rw, struct inode *inode, const struct
-                }
- 
-                len = min_t(unsigned, iov[seg].iov_len - copied, max - offset);
-+               len = min(len, total_len);
- 
-                if (rw == WRITE)
-                        len -= __copy_from_user_nocache(addr, buf, len);
-@@ -149,6 +153,7 @@ static ssize_t xip_io(int rw, struct inode *inode, const struct
- 
-                offset += len;
-                copied += len;
-+               total_len -= len;
-                if (copied == iov[seg].iov_len) {
-                        seg++;
-                        copied = 0;
+Rob
