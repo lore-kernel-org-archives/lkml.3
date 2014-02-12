@@ -1,75 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751708AbaBLXtq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 18:49:46 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:39527 "EHLO gloria.sntech.de"
+	id S1751498AbaBLXxw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 18:53:52 -0500
+Received: from mga11.intel.com ([192.55.52.93]:21582 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750862AbaBLXtp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 18:49:45 -0500
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>
-Subject: [PATCH] regulator: gpio-regulator: fix forgotten gpios-states reading
-Date: Thu, 13 Feb 2014 00:48:52 +0100
-Message-ID: <9348920.79Ktlcbcai@phil>
-User-Agent: KMail/4.11.3 (Linux/3.11-2-amd64; KDE/4.11.3; x86_64; ; )
+	id S1751053AbaBLXxu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 18:53:50 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,835,1384329600"; 
+   d="scan'208";a="480571829"
+Date: Wed, 12 Feb 2014 16:53:53 -0700 (MST)
+From: Ross Zwisler <ross.zwisler@linux.intel.com>
+X-X-Sender: rzwisler@scrumpy
+To: Matthew Wilcox <matthew.r.wilcox@intel.com>
+cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH v5 06/22] Treat XIP like O_DIRECT
+In-Reply-To: <CF215477.24281%matthew.r.wilcox@intel.com>
+Message-ID: <alpine.OSX.2.00.1402121640310.60058@scrumpy>
+References: <cover.1389779961.git.matthew.r.wilcox@intel.com> <CF215477.24281%matthew.r.wilcox@intel.com>
+User-Agent: Alpine 2.00 (OSX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Heiko Stuebner <heiko.stuebner@bqreaders.com>
+On Wed, 15 Jan 2014, Matthew Wilcox wrote:
+> Instead of separate read and write methods, use the generic AIO
+> infrastructure.  In addition to giving us support for AIO, this adds
+> the locking between read() and truncate() that was missing.
+> 
+> Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
 
-Commit 934624d6e9f0 ("regulator: gpio-regulator: do not open-code counting
-and access of dt array elements") forgot to convert the recently added
-gpios-states property using the same pattern.
+...
 
-Convert this instance to use the of-helpers too, resolving the build error.
+> +static ssize_t xip_io(int rw, struct inode *inode, const struct iovec
+> *iov,
+> +			loff_t start, loff_t end, unsigned nr_segs,
+> +			get_block_t get_block, struct buffer_head *bh)
+> +{
+> +	ssize_t retval = 0;
+> +	unsigned seg = 0;
+> +	unsigned len;
+> +	unsigned copied = 0;
+> +	loff_t offset = start;
+> +	loff_t max = start;
+> +	void *addr;
+> +	bool hole = false;
+> +
+> +	while (offset < end) {
+> +		void __user *buf = iov[seg].iov_base + copied;
+> +
+> +		if (max == offset) {
+> +			sector_t block = offset >> inode->i_blkbits;
+> +			long size;
+> +			memset(bh, 0, sizeof(*bh));
+> +			bh->b_size = ALIGN(end - offset, PAGE_SIZE);
+> +			retval = get_block(inode, block, bh, rw == WRITE);
+> +			if (retval)
+> +				break;
+> +			if (buffer_mapped(bh)) {
+> +				retval = xip_get_addr(inode, bh, &addr);
+> +				if (retval < 0)
+> +					break;
+> +				addr += offset - (block << inode->i_blkbits);
+> +				hole = false;
+> +				size = retval;
+> +			} else {
+> +				if (rw == WRITE) {
+> +					retval = -EIO;
+> +					break;
+> +				}
+> +				addr = NULL;
+> +				hole = true;
+> +				size = bh->b_size;
+> +			}
+> +			max = offset + size;
+> +		}
+> +
+> +		len = min_t(unsigned, iov[seg].iov_len - copied, max - offset);
+> +
+> +		if (rw == WRITE)
+> +			len -= __copy_from_user_nocache(addr, buf, len);
+> +		else if (!hole)
+> +			len -= __copy_to_user(buf, addr, len);
+> +		else
+> +			len -= __clear_user(buf, len);
+> +
+> +		if (!len)
+> +			break;
+> +
+> +		offset += len;
+> +		copied += len;
+> +		if (copied == iov[seg].iov_len) {
+> +			seg++;
+> +			copied = 0;
+> +		}
+> +	}
+> +
+> +	return (offset == start) ? retval : offset - start;
+> +}
 
-Signed-off-by: Heiko Stuebner <heiko.stuebner@bqreaders.com>
----
- drivers/regulator/gpio-regulator.c |   19 +++++++++----------
- 1 file changed, 9 insertions(+), 10 deletions(-)
+xip_io() as it is currently written has an issue where reads can go beyond
+inode->i_size.  A quick test to show this issue is:
 
-diff --git a/drivers/regulator/gpio-regulator.c b/drivers/regulator/gpio-regulator.c
-index 500aa3b..64b4413 100644
---- a/drivers/regulator/gpio-regulator.c
-+++ b/drivers/regulator/gpio-regulator.c
-@@ -171,22 +171,21 @@ of_get_gpio_regulator_config(struct device *dev, struct device_node *np)
- 	if (!config->gpios)
- 		return ERR_PTR(-ENOMEM);
+	create a new file
+	write to the file for 1/2 a block
+	seek back to 0
+	read for a full block
+
+The read in this case will return 4096, the length of the full block that was
+requested.  It should return 2048, reading just the data that was written.
+
+The issue is that we do have a full block allocated in ext4, we do have it
+available via XIP via xip_get_addr(), and the only extra check that we
+currently have is a check against iov_len.  iov_len in this case is 4096, so
+no one stops us from doing a full block read.
+
+Here is a quick patch that fixes this issue:
+
+diff --git a/fs/xip.c b/fs/xip.c
+index e902593..1608f29 100644
+--- a/fs/xip.c
++++ b/fs/xip.c
+@@ -91,13 +91,16 @@ static ssize_t xip_io(int rw, struct inode *inode, const struct
+ {
+        ssize_t retval = 0;
+        unsigned seg = 0;
+-       unsigned len;
++       unsigned len, total_len;
+        unsigned copied = 0;
+        loff_t offset = start;
+        loff_t max = start;
+        void *addr;
+        bool hole = false;
  
--	prop = of_find_property(np, "gpios-states", NULL);
--	if (prop) {
--		proplen = prop->length / sizeof(int);
--		if (proplen != config->nr_gpios) {
--			/* gpios <-> gpios-states mismatch */
--			prop = NULL;
--		}
--	}
-+	proplen = of_property_count_u32_elems(np, "gpios-states");
-+	/* check gpios <-> gpios-states mismatch */
-+	if (proplen != config->nr_gpios)
-+		proplen = 0;
++       end = min(end, inode->i_size);
++       total_len = end - start;
++
+        while (offset < end) {
+                void __user *buf = iov[seg].iov_base + copied;
  
- 	for (i = 0; i < config->nr_gpios; i++) {
- 		gpio = of_get_named_gpio(np, "gpios", i);
- 		if (gpio < 0)
- 			break;
- 		config->gpios[i].gpio = gpio;
--		if (prop && be32_to_cpup((int *)prop->value + i))
--			config->gpios[i].flags = GPIOF_OUT_INIT_HIGH;
-+		if (proplen > 0) {
-+			of_property_read_u32_index(np, "gpios-states", i, &ret);
-+			if (ret)
-+				config->gpios[i].flags = GPIOF_OUT_INIT_HIGH;
-+		}
- 	}
+@@ -136,6 +139,7 @@ static ssize_t xip_io(int rw, struct inode *inode, const struct
+                }
  
- 	/* Fetch states. */
--- 
-1.7.10.4
-
-
+                len = min_t(unsigned, iov[seg].iov_len - copied, max - offset);
++               len = min(len, total_len);
+ 
+                if (rw == WRITE)
+                        len -= __copy_from_user_nocache(addr, buf, len);
+@@ -149,6 +153,7 @@ static ssize_t xip_io(int rw, struct inode *inode, const struct
+ 
+                offset += len;
+                copied += len;
++               total_len -= len;
+                if (copied == iov[seg].iov_len) {
+                        seg++;
+                        copied = 0;
