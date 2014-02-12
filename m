@@ -1,81 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753845AbaBLUW4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 15:22:56 -0500
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:47067 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753056AbaBLUWy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 15:22:54 -0500
+	id S1753731AbaBLUgv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 15:36:51 -0500
+Received: from mail-bl2lp0209.outbound.protection.outlook.com ([207.46.163.209]:56964
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752460AbaBLUgu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 15:36:50 -0500
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: "tiwai@suse.de" <tiwai@suse.de>
+CC: "david.henningsson@canonical.com" <david.henningsson@canonical.com>,
+        "ibm-acpi-devel@lists.sourceforge.net" 
+	<ibm-acpi-devel@lists.sourceforge.net>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        "ibm-acpi@hmh.eng.br" <ibm-acpi@hmh.eng.br>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] thinkpad_acpi: Fix inconsistent mute LED after resume
+Thread-Topic: [PATCH] thinkpad_acpi: Fix inconsistent mute LED after resume
+Thread-Index: AQHPKAewnSz7adOkQUWPbs0OJZ4eaJqyFCWA
+Date: Wed, 12 Feb 2014 20:36:27 +0000
+Message-ID: <1392237387.1201.1.camel@x230>
+References: <1392219165-20888-1-git-send-email-tiwai@suse.de>
+In-Reply-To: <1392219165-20888-1-git-send-email-tiwai@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:470:1f07:1371:6267:20ff:fec3:2318]
+x-forefront-prvs: 01208B1E18
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(199002)(189002)(377424004)(24454002)(85306002)(74876001)(19580395003)(19580405001)(83322001)(65816001)(80022001)(81816001)(90146001)(81686001)(53806001)(63696002)(92726001)(56816005)(33716001)(87936001)(85852003)(92566001)(87266001)(83072002)(76482001)(95416001)(33646001)(56776001)(54316002)(2656002)(80976001)(95666001)(79102001)(77982001)(59766001)(74706001)(54356001)(74502001)(51856001)(74662001)(94946001)(74366001)(47736001)(93516002)(93136001)(50986001)(86362001)(94316002)(49866001)(47976001)(31966008)(76796001)(69226001)(46102001)(76786001)(81342001)(77096001)(47446002)(558084003)(81542001)(4396001)(3826001);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1PR05MB421;H:BN1PR05MB423.namprd05.prod.outlook.com;CLIP:2001:470:1f07:1371:6267:20ff:fec3:2318;FPR:F63BEC10.3B216E09.11EEB3AB.C0E8BEBA.20099;InfoNoRecordsA:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <5F7058A7279F6940B1FEF1B1E85066CF@namprd05.prod.outlook.com>
 MIME-Version: 1.0
-In-Reply-To: <20140212180739.GB4250@linux.vnet.ibm.com>
-References: <20140206221117.GJ4250@linux.vnet.ibm.com>
-	<1391730288.23421.4102.camel@triegel.csb>
-	<20140207042051.GL4250@linux.vnet.ibm.com>
-	<20140207074405.GM5002@laptop.programming.kicks-ass.net>
-	<20140207165028.GO4250@linux.vnet.ibm.com>
-	<20140207165548.GR5976@mudshark.cambridge.arm.com>
-	<20140207180216.GP4250@linux.vnet.ibm.com>
-	<1391992071.18779.99.camel@triegel.csb>
-	<CA+55aFwTwCPMpYTL_vCgNNP0hE8s2sgB0iw-79=xoj99V0JUNA@mail.gmail.com>
-	<1392183564.18779.2187.camel@triegel.csb>
-	<20140212180739.GB4250@linux.vnet.ibm.com>
-Date: Wed, 12 Feb 2014 12:22:53 -0800
-X-Google-Sender-Auth: vt9adMHiGJJBxgiAX8LZ39Np_Ms
-Message-ID: <CA+55aFw3S82GYdtnV2nJCvBGcuZf6kXdF5b7Vp9yb21QKr49Jw@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Content-Type: text/plain; charset=UTF-8
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1CKbSqQ022826
 
-On Wed, Feb 12, 2014 at 10:07 AM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
->
-> Us Linux-kernel hackers will often need to use volatile semantics in
-> combination with C11 atomics in most cases.  The C11 atomics do cover
-> some of the reasons we currently use ACCESS_ONCE(), but not all of them --
-> in particular, it allows load/store merging.
+On Wed, 2014-02-12 at 16:32 +0100, Takashi Iwai wrote:
+> The mute LED states have to be restored after resume.
 
-I really disagree with the "will need to use volatile".
+Hm. Is this something that should be done in the class code rather than
+in individual drivers?
 
-We should never need to use volatile (outside of whatever MMIO we do
-using C) if C11 defines atomics correctly.
-
-Allowing load/store merging is *fine*. All sane CPU's do that anyway -
-it's called a cache - and there's no actual reason to think that
-"ACCESS_ONCE()" has to mean our current "volatile".
-
-Now, it's possible that the C standards simply get atomics _wrong_, so
-that they create visible semantics that are different from what a CPU
-cache already does, but that's a plain bug in the standard if so.
-
-But merging loads and stores is fine. And I *guarantee* it is fine,
-exactly because CPU's already do it, so claiming that the compiler
-couldn't do it is just insanity.
-
-Now, there are things that are *not* fine, like speculative stores
-that could be visible to other threads. Those are *bugs* (either in
-the compiler or in the standard), and anybody who claims otherwise is
-not worth discussing with.
-
-But I really really disagree with the "we might have to use
-'volatile'". Because if we *ever* have to use 'volatile' with the
-standard C atomic types, then we're just better off ignoring the
-atomic types entirely, because they are obviously broken shit - and
-we're better off doing it ourselves the way we have forever.
-
-Seriously. This is not even hyperbole. It really is as simple as that.
-
-                  Linus
+-- 
+Matthew Garrett <matthew.garrett@nebula.com>
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
