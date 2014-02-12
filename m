@@ -1,385 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752051AbaBLNfU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 08:35:20 -0500
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:63003 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751933AbaBLNfO (ORCPT
+	id S1752253AbaBLNfc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 08:35:32 -0500
+Received: from mailout1.w2.samsung.com ([211.189.100.11]:37608 "EHLO
+	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751933AbaBLNfY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 08:35:14 -0500
-From: Michal Simek <michal.simek@xilinx.com>
-To: linux-kernel@vger.kernel.org, monstr@monstr.eu
-Cc: Guenter Roeck <linux@roeck-us.net>, Wim Van Sebroeck <wim@iguana.be>,
-        linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v3 01/11] watchdog: xilinx: Convert driver to the watchdog framework
-Date: Wed, 12 Feb 2014 14:34:32 +0100
-Message-Id: <f298edd222c57b0ce1ebad3ae50c3f715406c631.1392212059.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-In-Reply-To: <cover.1392212059.git.michal.simek@xilinx.com>
-References: <cover.1392212059.git.michal.simek@xilinx.com>
-In-Reply-To: <cover.1392212059.git.michal.simek@xilinx.com>
-References: <cover.1392212059.git.michal.simek@xilinx.com>
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-11835-1392212107-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	Wed, 12 Feb 2014 08:35:24 -0500
+X-AuditID: cbfec373-b7f4a6d000005e0a-a4-52fb789acd0e
+Date: Wed, 12 Feb 2014 22:35:15 +0900
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Philipp Zabel <philipp.zabel@gmail.com>
+Subject: Re: [PATCH v2] [media] of: move graph helpers from
+ drivers/media/v4l2-core to drivers/media
+Message-id: <20140212223515.71a445f4.m.chehab@samsung.com>
+In-reply-to: <1392196314.5536.15.camel@pizza.hi.pengutronix.de>
+References: <1392154905-12007-1-git-send-email-p.zabel@pengutronix.de>
+ <20140212065306.36a03e82.m.chehab@samsung.com>
+ <1392196314.5536.15.camel@pizza.hi.pengutronix.de>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCLMWRmVeSWpSXmKPExsVy+t/hIN1ZFb+DDHp7BCzmHznHavF+4zwm
+	iwN/djBanG16w27ROXEJu8XlXXPYLHo2bGW1uH2Z1+LuvRMsFlvnnWO0aN17hN3i8Jt2Vov1
+	82+xOfB6tDT3sHnsnHWX3ePDxziP2R0zWT02repk87hzbQ+bR/9fA4++LasYPY7f2M7k8XmT
+	XABXFJdNSmpOZllqkb5dAlfGnbfnmQveiFZMubqOuYGxXbCLkZNDQsBEYs6NtywQtpjEhXvr
+	2boYuTiEBJYwSiy8f5UdwmlkkmhZMJ0NpIpFQFVi052vjCA2m4CRxKvGFlYQW0RAS+LplXtg
+	3cwCX5glXi/pZwJJCAukSdxZvgRsBa+AlcTWn8fAmjkF7CW+TlvMBLFhDaPE/1Mr2SHucJJ4
+	9XoyE0SDoMSPyffAmpmBNmze1sQKYctLbF7zlnkCo8AsJGWzkJTNQlK2gJF5FaNoaXFyQXFS
+	eq6RXnFibnFpXrpecn7uJkZITBXvYHyxweoQowAHoxIPb4T3ryAh1sSy4srcQ4wSHMxKIrxb
+	S38HCfGmJFZWpRblxxeV5qQWH2Jk4uCUamD0Ov973oO8TYm7iydo6O27MLuka+vKdY0/Txar
+	Xfn0UyDw1qzT8ndPV0Zs3W6Vrcu29NW6TF6uRtHH05WvV5bYh5/JlJ99oeX7hs+PmVK8J0md
+	9dGXm/yofYFAdXZmjMqT3LfRzosUnlyI+VQUeKjmEcOJ2S8+2ErGdESvzruyt9v7LLPQS28b
+	JZbijERDLeai4kQABJrxzIcCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
+Em Wed, 12 Feb 2014 10:11:54 +0100
+Philipp Zabel <p.zabel@pengutronix.de> escreveu:
 
---=_mimegpg-monstr-desktop-11835-1392212107-0001
+> Hi Mauro,
+> 
+> Am Mittwoch, den 12.02.2014, 06:53 +0900 schrieb Mauro Carvalho Chehab:
+> [...]
+> > > diff --git a/include/media/of_graph.h b/include/media/of_graph.h
+> > > new file mode 100644
+> > > index 0000000..3bbeb60
+> > > --- /dev/null
+> > > +++ b/include/media/of_graph.h
+> > > @@ -0,0 +1,46 @@
+> > > +/*
+> > > + * OF graph binding parsing helpers
+> > > + *
+> > > + * Copyright (C) 2012 - 2013 Samsung Electronics Co., Ltd.
+> > > + * Author: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> > > + *
+> > > + * Copyright (C) 2012 Renesas Electronics Corp.
+> > > + * Author: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> > > + *
+> > > + * This program is free software; you can redistribute it and/or modify
+> > > + * it under the terms of version 2 of the GNU General Public License as
+> > > + * published by the Free Software Foundation.
+> > > + */
+> > > +#ifndef __LINUX_OF_GRAPH_H
+> > > +#define __LINUX_OF_GRAPH_H
+> > > +
+> > > +#ifdef CONFIG_OF
+> > 
+> > As a matter of consistency, it would be better to test here for
+> > CONFIG_OF_GRAPH instead, to reflect the same symbol that enables such
+> > functions as used on Kconfig/Makefile.
+> 
+> Maybe I'm trying to be too clever for my own good, but my reasoning was
+> as follows:
+> 
+> Suppose I newly use the of_graph_ helpers in a subsystem that does not
+> yet select OF_GRAPH. In that case I'd rather get linking errors earlier
+> rather than stubbed out functions that silently fail to parse the DT
+> later.
 
-- Remove uneeded headers, fops functions
-- Use xilinx_wdt prefix in start/stop/keepalive functions
-  and in new structures
+I see your point, but, imagining that someone pushed a patch using those
+symbols upstream, that would break compilation and git bisection, with 
+will hurt everyone, and not only the very few of us that would actually
+need the OF_GRAPH symbol for an specific driver.
 
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
----
+Also, such push would mean that someone forgot to do his homework and
+to test if the committed functionality is actually working.
 
-Changes in v3: None
-Changes in v2: None
+So, it seems more fair that the one that did the mistake will be the one
+that will suffer the consequences for his errors instead of applying a
+penalty to everybody's else ;)
 
- drivers/watchdog/Kconfig         |   1 +
- drivers/watchdog/of_xilinx_wdt.c | 204 ++++++---------------------------------
- 2 files changed, 33 insertions(+), 172 deletions(-)
+> Since there is
+> config VIDEO_DEV
+> 	select OF_GRAPH if OF
+> already and the same should be added for other users of device tree
+> graphs, I think stubbing out the functions only if OF is disabled should
+> be enough.
 
-diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-index 4c4c566..9db5d3c 100644
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@ -1025,6 +1025,7 @@ config M54xx_WATCHDOG
- config XILINX_WATCHDOG
- 	tristate "Xilinx Watchdog timer"
- 	depends on MICROBLAZE
-+	select WATCHDOG_CORE
- 	---help---
- 	  Watchdog driver for the xps_timebase_wdt ip core.
+Well, if you want to be sure that the graph will always be there if OF, then
+you could do, instead:
 
-diff --git a/drivers/watchdog/of_xilinx_wdt.c b/drivers/watchdog/of_xilinx_wdt.c
-index fb57103..8c2814e 100644
---- a/drivers/watchdog/of_xilinx_wdt.c
-+++ b/drivers/watchdog/of_xilinx_wdt.c
-@@ -1,6 +1,7 @@
- /*
-  * Watchdog Device Driver for Xilinx axi/xps_timebase_wdt
-  *
-+ * (C) Copyright 2013 - 2014 Xilinx, Inc.
-  * (C) Copyright 2011 (Alejandro Cabrera <aldaya@gmail.com>)
-  *
-  * This program is free software; you can redistribute it and/or
-@@ -14,13 +15,10 @@
- #include <linux/module.h>
- #include <linux/types.h>
- #include <linux/kernel.h>
--#include <linux/fs.h>
--#include <linux/miscdevice.h>
- #include <linux/init.h>
- #include <linux/ioport.h>
- #include <linux/watchdog.h>
- #include <linux/io.h>
--#include <linux/uaccess.h>
- #include <linux/of.h>
- #include <linux/of_device.h>
- #include <linux/of_address.h>
-@@ -48,22 +46,18 @@
- struct xwdt_device {
- 	struct resource  res;
- 	void __iomem *base;
--	u32 nowayout;
- 	u32 wdt_interval;
--	u32 boot_status;
- };
+config OF_GRAPH
+	bool
+	default OF
 
- static struct xwdt_device xdev;
+(that would actually make OF_GRAPH just an alias to OF - so we could just
+use OF instead).
 
- static  u32 timeout;
- static  u32 control_status_reg;
--static  u8  expect_close;
- static  u8  no_timeout;
--static unsigned long driver_open;
+In any case, I think that we should use the same config name at Makefile, 
+Kconfig and of_graph.h (either OF_GRAPH or just OF).
 
- static  DEFINE_SPINLOCK(spinlock);
-
--static void xwdt_start(void)
-+static int xilinx_wdt_start(struct watchdog_device *wdd)
- {
- 	spin_lock(&spinlock);
-
-@@ -77,9 +71,11 @@ static void xwdt_start(void)
- 	iowrite32(XWT_CSRX_EWDT2_MASK, xdev.base + XWT_TWCSR1_OFFSET);
-
- 	spin_unlock(&spinlock);
-+
-+	return 0;
- }
-
--static void xwdt_stop(void)
-+static int xilinx_wdt_stop(struct watchdog_device *wdd)
- {
- 	spin_lock(&spinlock);
-
-@@ -92,9 +88,11 @@ static void xwdt_stop(void)
-
- 	spin_unlock(&spinlock);
- 	pr_info("Stopped!\n");
-+
-+	return 0;
- }
-
--static void xwdt_keepalive(void)
-+static int xilinx_wdt_keepalive(struct watchdog_device *wdd)
- {
- 	spin_lock(&spinlock);
-
-@@ -103,23 +101,28 @@ static void xwdt_keepalive(void)
- 	iowrite32(control_status_reg, xdev.base + XWT_TWCSR0_OFFSET);
-
- 	spin_unlock(&spinlock);
--}
-
--static void xwdt_get_status(int *status)
--{
--	int new_status;
-+	return 0;
-+}
-
--	spin_lock(&spinlock);
-+static const struct watchdog_info xilinx_wdt_ident = {
-+	.options =  WDIOF_MAGICCLOSE |
-+		    WDIOF_KEEPALIVEPING,
-+	.firmware_version =	1,
-+	.identity =	WATCHDOG_NAME,
-+};
-
--	control_status_reg = ioread32(xdev.base + XWT_TWCSR0_OFFSET);
--	new_status = ((control_status_reg &
--			(XWT_CSR0_WRS_MASK | XWT_CSR0_WDS_MASK)) != 0);
--	spin_unlock(&spinlock);
-+static const struct watchdog_ops xilinx_wdt_ops = {
-+	.owner = THIS_MODULE,
-+	.start = xilinx_wdt_start,
-+	.stop = xilinx_wdt_stop,
-+	.ping = xilinx_wdt_keepalive,
-+};
-
--	*status = 0;
--	if (new_status & 1)
--		*status |= WDIOF_CARDRESET;
--}
-+static struct watchdog_device xilinx_wdt_wdd = {
-+	.info = &xilinx_wdt_ident,
-+	.ops = &xilinx_wdt_ops,
-+};
-
- static u32 xwdt_selftest(void)
- {
-@@ -146,139 +149,6 @@ static u32 xwdt_selftest(void)
- 		return XWT_TIMER_FAILED;
- }
-
--static int xwdt_open(struct inode *inode, struct file *file)
--{
--	/* Only one process can handle the wdt at a time */
--	if (test_and_set_bit(0, &driver_open))
--		return -EBUSY;
--
--	/* Make sure that the module are always loaded...*/
--	if (xdev.nowayout)
--		__module_get(THIS_MODULE);
--
--	xwdt_start();
--	pr_info("Started...\n");
--
--	return nonseekable_open(inode, file);
--}
--
--static int xwdt_release(struct inode *inode, struct file *file)
--{
--	if (expect_close == 42) {
--		xwdt_stop();
--	} else {
--		pr_crit("Unexpected close, not stopping watchdog!\n");
--		xwdt_keepalive();
--	}
--
--	clear_bit(0, &driver_open);
--	expect_close = 0;
--	return 0;
--}
--
--/*
-- *      xwdt_write:
-- *      @file: file handle to the watchdog
-- *      @buf: buffer to write (unused as data does not matter here
-- *      @count: count of bytes
-- *      @ppos: pointer to the position to write. No seeks allowed
-- *
-- *      A write to a watchdog device is defined as a keepalive signal. Any
-- *      write of data will do, as we don't define content meaning.
-- */
--static ssize_t xwdt_write(struct file *file, const char __user *buf,
--						size_t len, loff_t *ppos)
--{
--	if (len) {
--		if (!xdev.nowayout) {
--			size_t i;
--
--			/* In case it was set long ago */
--			expect_close = 0;
--
--			for (i = 0; i != len; i++) {
--				char c;
--
--				if (get_user(c, buf + i))
--					return -EFAULT;
--				if (c == 'V')
--					expect_close = 42;
--			}
--		}
--		xwdt_keepalive();
--	}
--	return len;
--}
--
--static const struct watchdog_info ident = {
--	.options =  WDIOF_MAGICCLOSE |
--		    WDIOF_KEEPALIVEPING,
--	.firmware_version =	1,
--	.identity =	WATCHDOG_NAME,
--};
--
--/*
-- *      xwdt_ioctl:
-- *      @file: file handle to the device
-- *      @cmd: watchdog command
-- *      @arg: argument pointer
-- *
-- *      The watchdog API defines a common set of functions for all watchdogs
-- *      according to their available features.
-- */
--static long xwdt_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
--{
--	int status;
--
--	union {
--		struct watchdog_info __user *ident;
--		int __user *i;
--	} uarg;
--
--	uarg.i = (int __user *)arg;
--
--	switch (cmd) {
--	case WDIOC_GETSUPPORT:
--		return copy_to_user(uarg.ident, &ident,
--					sizeof(ident)) ? -EFAULT : 0;
--
--	case WDIOC_GETBOOTSTATUS:
--		return put_user(xdev.boot_status, uarg.i);
--
--	case WDIOC_GETSTATUS:
--		xwdt_get_status(&status);
--		return put_user(status, uarg.i);
--
--	case WDIOC_KEEPALIVE:
--		xwdt_keepalive();
--		return 0;
--
--	case WDIOC_GETTIMEOUT:
--		if (no_timeout)
--			return -ENOTTY;
--		else
--			return put_user(timeout, uarg.i);
--
--	default:
--		return -ENOTTY;
--	}
--}
--
--static const struct file_operations xwdt_fops = {
--	.owner      = THIS_MODULE,
--	.llseek     = no_llseek,
--	.write      = xwdt_write,
--	.open       = xwdt_open,
--	.release    = xwdt_release,
--	.unlocked_ioctl = xwdt_ioctl,
--};
--
--static struct miscdevice xwdt_miscdev = {
--	.minor      = WATCHDOG_MINOR,
--	.name       = "watchdog",
--	.fops       = &xwdt_fops,
--};
--
- static int xwdt_probe(struct platform_device *pdev)
- {
- 	int rc;
-@@ -314,7 +184,7 @@ static int xwdt_probe(struct platform_device *pdev)
- 					"xlnx,wdt-enable-once", NULL);
- 	if (tmptr == NULL) {
- 		pr_warn("Parameter \"xlnx,wdt-enable-once\" not found in device tree!\n");
--		xdev.nowayout = WATCHDOG_NOWAYOUT;
-+		watchdog_set_nowayout(&xilinx_wdt_wdd, true);
- 	}
-
- /*
-@@ -344,24 +214,14 @@ static int xwdt_probe(struct platform_device *pdev)
- 		goto unmap_io;
- 	}
-
--	xwdt_get_status(&xdev.boot_status);
--
--	rc = misc_register(&xwdt_miscdev);
-+	rc = watchdog_register_device(&xilinx_wdt_wdd);
- 	if (rc) {
--		pr_err("cannot register miscdev on minor=%d (err=%d)\n",
--		       xwdt_miscdev.minor, rc);
-+		pr_err("cannot register watchdog (err=%d)\n", rc);
- 		goto unmap_io;
- 	}
-
--	if (no_timeout)
--		pr_info("driver loaded (timeout=? sec, nowayout=%d)\n",
--			xdev.nowayout);
--	else
--		pr_info("driver loaded (timeout=%d sec, nowayout=%d)\n",
--			timeout, xdev.nowayout);
--
--	expect_close = 0;
--	clear_bit(0, &driver_open);
-+	dev_info(&pdev->dev, "Xilinx Watchdog Timer at %p with timeout %ds\n",
-+		 xdev.base, timeout);
-
- 	return 0;
-
-@@ -375,7 +235,7 @@ err_out:
-
- static int xwdt_remove(struct platform_device *dev)
- {
--	misc_deregister(&xwdt_miscdev);
-+	watchdog_unregister_device(&xilinx_wdt_wdd);
- 	iounmap(xdev.base);
- 	release_mem_region(xdev.res.start, resource_size(&xdev.res));
-
---
-1.8.2.3
-
-
---=_mimegpg-monstr-desktop-11835-1392212107-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAlL7eIsACgkQykllyylKDCFG9wCcDYazMbqAAPjY7bbNB+gDIwKR
-13IAn3SVXpsMnZe7EvY3fmlG2WWO9KCx
-=4Ivj
------END PGP SIGNATURE-----
-
---=_mimegpg-monstr-desktop-11835-1392212107-0001--
+Regards,
+Mauro
