@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754006AbaBLSzy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 13:55:54 -0500
-Received: from mailout2.w2.samsung.com ([211.189.100.12]:54656 "EHLO
+	id S1754016AbaBLS5d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 13:57:33 -0500
+Received: from mailout2.w2.samsung.com ([211.189.100.12]:54748 "EHLO
 	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752814AbaBLSzw (ORCPT
+	with ESMTP id S1753793AbaBLS5b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 13:55:52 -0500
-X-AuditID: cbfec37c-b7f0d6d0000057bc-02-52fbc3b7de5f
-Message-id: <52FBC3B4.4090908@samsung.com>
-Date: Wed, 12 Feb 2014 11:55:48 -0700
+	Wed, 12 Feb 2014 13:57:31 -0500
+X-AuditID: cbfec37a-b7ef66d000004f2b-99-52fbc41a2415
+Message-id: <52FBC417.5010408@samsung.com>
+Date: Wed, 12 Feb 2014 11:57:27 -0700
 From: Shuah Khan <shuah.kh@samsung.com>
 Reply-to: shuah.kh@samsung.com
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
@@ -20,40 +20,40 @@ Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, stable@vger.kernel.org,
         Shuah Khan <shuah.kh@samsung.com>,
         "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: [PATCH 3.4 00/30] 3.4.80-stable review
-References: <20140211184647.149512538@linuxfoundation.org>
- <20140212041922.GA26490@roeck-us.net>
-In-reply-to: <20140212041922.GA26490@roeck-us.net>
+Subject: Re: [PATCH 3.10 00/79] 3.10.30-stable review
+References: <20140211184720.928667275@linuxfoundation.org>
+ <20140212042037.GB26490@roeck-us.net>
+In-reply-to: <20140212042037.GB26490@roeck-us.net>
 Content-type: text/plain; charset=ISO-8859-1; format=flowed
 Content-transfer-encoding: 7bit
 X-Originating-IP: [105.144.34.3]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsVy+t9hX93th38HGXz/IGMxZ/0aNovmxevZ
-	LC7vmsNm8fWng8WCjY8YLR71vWV3YPPYOesuu8eJGb9ZPPbPXcPu8XmTXABLFJdNSmpOZllq
-	kb5dAlfGjgdt7AXNXBUzLt5maWBs4uhi5OSQEDCR+LrxCyOELSZx4d56ti5GLg4hgWWMEhNa
-	X0M5vUwS3/etY4FwNjBKvOw8xA7SwiugJXF76jM2EJtFQFXi/MVuMJtNQF3i8+sdYDVCAnIS
-	TUtWM4PYogIREq/OTmSB6BWU+DH5HpgtImAs0X92Flg9s8AxRomFzSYgtjBQfOr0+VBzkiRa
-	Ny8Em88pYCRxcccyJoh6a4mVk7YxQtjyEpvXvGWGqFeW+HP5FBPEawoS6y8cZp3AKDILyepZ
-	SNpnIWlfwMi8ilGstDi5oDgpPbXCWK84Mbe4NC9dLzk/dxMjJGpqdjDe+2pziFGAg1GJh9di
-	2e8gIdbEsuLK3EOMEhzMSiK8Rs1AId6UxMqq1KL8+KLSnNTiQ4xMHJxSDYyW959FSvm/2W8U
-	4H9myetbnel+SzxfZaiHRyVs6quY6meUFqrhVt0VVBh4XSrQ7+/S/9mfAu4c/8Y9q+3xB+Xa
-	Mg77k5WP2GXr1F+Ef9LUXn2R7f5OQd6kSh/O1Y2+GZVqByXSI5aq+utLSrtXBi37f+j+s0J9
-	A/+MxAixd54G+mGfLqxJU2Ipzkg01GIuKk4EADnOhYp4AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsVy+t9hX13pI7+DDNa+YrKYs34Nm0Xz4vVs
+	Fpd3zWGz+PrTwWLBxkeMFo/63rI7sHnsnHWX3ePEjN8sHvvnrmH3+LxJLoAlissmJTUnsyy1
+	SN8ugSvj3+m3LAUtXBWzmpexNTA2c3QxcnJICJhIHG7+wghhi0lcuLeerYuRi0NIYBmjxLbf
+	T5khnF4mic/n1rFCOBsYJfrur2cCaeEV0JI4c/4hmM0ioCrxbsoiNhCbTUBd4vPrHewgtpCA
+	nETTktXMILaoQITEq7MTWSB6BSV+TL4HZosIGEv0n50FVs8scIxRYmGzCYgtLGAqse1mNyvE
+	nCSJA0/+gM3hFDCSmLB+EitEvbXEyknbGCFseYnNa94yQ9QrS/y5fIoJ4jUFifUXDrNOYBSZ
+	hWT1LCTts5C0L2BkXsUoVlqcXFCclJ5aYahXnJhbXJqXrpecn7uJERI1VTsY73y1OcQowMGo
+	xMNrsex3kBBrYllxZe4hRgkOZiURXqNmoBBvSmJlVWpRfnxRaU5q8SFGJg5OqQZGr5tMLT82
+	NKZPWfQnKFJeIvWq2dfwT50J29V5fb9un3bssvwxt4PLN3Kej5l8ksHvxz25a1qiP4/b8PZ0
+	SO11sYkpVHEu6ZtV9TuTMeFq1rpNTekFzvavE82an4e92OfwtW/3+y1tO2pFsnkqwjkNjfJ0
+	9NfOsP49o+H3zzyxxIC3niqv4gKVWIozEg21mIuKEwHoQ25SeAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2014 09:19 PM, Guenter Roeck wrote:
-> On Tue, Feb 11, 2014 at 11:06:00AM -0800, Greg Kroah-Hartman wrote:
->> This is the start of the stable review cycle for the 3.4.80 release.
->> There are 30 patches in this series, all will be posted as a response
+On 02/11/2014 09:20 PM, Guenter Roeck wrote:
+> On Tue, Feb 11, 2014 at 11:05:04AM -0800, Greg Kroah-Hartman wrote:
+>> This is the start of the stable review cycle for the 3.10.30 release.
+>> There are 79 patches in this series, all will be posted as a response
 >> to this one.  If anyone has any issues with these being applied, please
 >> let me know.
 >>
->> Responses should be made by Thu Feb 13 18:46:37 UTC 2014.
+>> Responses should be made by Thu Feb 13 18:46:56 UTC 2014.
 >> Anything received after that time might be too late.
 >>
 > Build results:
-> 	total: 119 pass: 97 skipped: 18 fail: 4
+> 	total: 126 pass: 121 skipped: 4 fail: 1
 >
 > qemu tests all passed.
 >
