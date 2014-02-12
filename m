@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754188AbaBLVNS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 16:13:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52751 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753776AbaBLVNR (ORCPT
+	id S1754304AbaBLVOb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 16:14:31 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:45321 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753776AbaBLVOa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 16:13:17 -0500
-Date: Wed, 12 Feb 2014 13:13:14 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel@vger.kernel.org, rdunlap <rdunlap@infradead.org>
-Subject: Re: [RFC 2/2] Arch: Kconfig: Disable obsolete syscalls
-Message-Id: <20140212131314.ef423a5b1214b0a33345f03d@linux-foundation.org>
-In-Reply-To: <20140212210440.6148aaa3b75240627576ba3f@skynet.be>
-References: <20140212210440.6148aaa3b75240627576ba3f@skynet.be>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 12 Feb 2014 16:14:30 -0500
+Date: Wed, 12 Feb 2014 21:14:22 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Chinner <david@fromorbit.com>, Dave Jones <davej@redhat.com>,
+        Eric Sandeen <sandeen@sandeen.net>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
+Message-ID: <20140212211421.GP18016@ZenIV.linux.org.uk>
+References: <52FA9ADA.9040803@sandeen.net>
+ <20140212004403.GA17129@redhat.com>
+ <20140212010941.GM18016@ZenIV.linux.org.uk>
+ <CA+55aFwoWT-0A_KTkXMkNqOy8hc=YmouTMBgWUD_z+8qYPphjA@mail.gmail.com>
+ <20140212040358.GA25327@redhat.com>
+ <20140212042215.GN18016@ZenIV.linux.org.uk>
+ <20140212054043.GB13997@dastard>
+ <CA+55aFxy2t7bnCUc-DhhxYxsZ0+GwL9GuQXRYtE_VzqZusmB9A@mail.gmail.com>
+ <20140212113928.GO18016@ZenIV.linux.org.uk>
+ <CA+55aFywwx0Q8xK2GJiRJ+FV7PQEKoBRxDUxW4052FVyd5XOpg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFywwx0Q8xK2GJiRJ+FV7PQEKoBRxDUxW4052FVyd5XOpg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Feb 2014 21:04:40 +0800 Fabian Frederick <fabf@skynet.be> wrote:
-
-> fs: sysfs syscall: Disable if DISABLE_OBSOLETE_SYSCALLS
+On Wed, Feb 12, 2014 at 12:13:19PM -0800, Linus Torvalds wrote:
+> On Wed, Feb 12, 2014 at 3:39 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> > On Tue, Feb 11, 2014 at 10:28:12PM -0800, Linus Torvalds wrote:
+> >
+> >> It looks like just "do_signal()" has a stack frame that is about 230
+> >> bytes even under normal circumstancs (largely due to "struct ksignal"
+> >> - which in turn is largely due to the insane 128-byte padding in
+> >> siginfo_t). Add a few other frames in there, and I guess that if it
+> >> was close before, the coredump path just makes it go off.
+> >
+> > We could, in principle, put it into task_struct and make get_signal()
+> > return its address - do_signal() is called only in the code that does
+> > assorted returns to userland...
 > 
-> sysfs syscall is obsolete (cf man sysfs).
+> We have better uses for random buffers in "struct task_struct", I'd
+> hate to put a siginfo_t there.
+
+*nod*
+
+> The thing is, siginfo_t has that idiotic 128-byte area, but it's all
+> "for future expansion". I think it's some damn glibc disease - we've
+> seen these kinds of insane paddings before.
 > 
-> Don't define fs_index, fs_name, fs_maxindex functions when
-> DISABLE_OBSOLETE_SYSCALLS is defined.
-> In that case, SYSCALL_DEFINE3(sysfs...) returns automatically -EINVAL.
+> The actual *useful* part of siginfo_t is on the order of 32 bytes. If that.
 > 
+> Sad.
 
-Are there any other syscalls which will fall under
-CONFIG_DISABLE_OBSOLETE_SYSCALLS?
+Umm...  What if we delay __sigqueue_free()?  After all, that's where the
+fat sucker normally comes from.  That way we might get away with much
+smaller structure on stack...
 
-There are plenty of other syscalls which can be disabled via Kconfig. 
-As far as I recall, they each use their own CONFIG_foo.
+Just introduce a small structure that would contain signr, uid, pid and
+pointer to struct sigqueue.  And pass a pointer to _that_ all the way down
+to collect_signal().  Pointer's NULL == it's SI_USER with signr/uid/pid
+from the small struct and all other fields are zero.  Pointer isn't NULL -
+use &small_struct->p->info.  And have struct sigqueue actually freed
+via task_work_add() in that case.
 
-So I'm thinking it would be better to add a CONFIG_SYS_SYSFS or
-whatever which enables this syscall only.  It defaults to y.
+Do you see any fundamental problems with that?  Looks like it would be
+faster as well - less copying involved...
 
-> --- a/fs/filesystems.c
-> +++ b/fs/filesystems.c
-> @@ -121,6 +121,7 @@ int unregister_filesystem(struct file_system_type * fs)
->  
->  EXPORT_SYMBOL(unregister_filesystem);
->  
-> +#ifndef CONFIG_DISABLE_OBSOLETE_SYSCALLS
->  static int fs_index(const char __user * __name)
->  {
->  	struct file_system_type * tmp;
-> @@ -199,6 +200,12 @@ SYSCALL_DEFINE3(sysfs, int, option, unsigned long, arg1, unsigned long, arg2)
->  	}
->  	return retval;
->  }
-> +#else
-> +SYSCALL_DEFINE3(sysfs, int, option, unsigned long, arg1, unsigned long, arg2)
-> +{
-> +	return -EINVAL;
-> +}
-> +#endif /*CONFIG_DISABLE_OBSOLETE_SYSCALLS*/
 
-And this should be done in kernel/sys_ni.c along with all the others.
