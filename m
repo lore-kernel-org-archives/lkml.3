@@ -1,117 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751196AbaBLHQY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 02:16:24 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:35080 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750711AbaBLHQW (ORCPT
+	id S1751512AbaBLHSg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 02:18:36 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:39235 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750763AbaBLHSe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 02:16:22 -0500
-Message-ID: <52FB1FA8.2070903@ti.com>
-Date: Wed, 12 Feb 2014 09:15:52 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 12 Feb 2014 02:18:34 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnEHADMf+1J5LJLw/2dsb2JhbABagwy6ZYVQgQ4XdIIlAQEEATocIwULCAMYCSUPBSUDIROHfQfJJRcWjmMHgySBFASYKYpPh1KDQSg
+Date: Wed, 12 Feb 2014 18:18:29 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Dave Jones <davej@redhat.com>,
+        Eric Sandeen <sandeen@sandeen.net>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
+Message-ID: <20140212071829.GE13997@dastard>
+References: <20140211172707.GA1749@redhat.com>
+ <20140211210841.GM13647@dastard>
+ <52FA9ADA.9040803@sandeen.net>
+ <20140212004403.GA17129@redhat.com>
+ <20140212010941.GM18016@ZenIV.linux.org.uk>
+ <CA+55aFwoWT-0A_KTkXMkNqOy8hc=YmouTMBgWUD_z+8qYPphjA@mail.gmail.com>
+ <20140212040358.GA25327@redhat.com>
+ <20140212042215.GN18016@ZenIV.linux.org.uk>
+ <20140212054043.GB13997@dastard>
+ <CA+55aFxy2t7bnCUc-DhhxYxsZ0+GwL9GuQXRYtE_VzqZusmB9A@mail.gmail.com>
 MIME-Version: 1.0
-To: Philipp Zabel <p.zabel@pengutronix.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-CC: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        <linux-kernel@vger.kernel.org>, <linux-media@vger.kernel.org>,
-        <devicetree@vger.kernel.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Philipp Zabel <philipp.zabel@gmail.com>
-Subject: Re: [PATCH v2] [media] of: move graph helpers from drivers/media/v4l2-core
- to drivers/media
-References: <1392154905-12007-1-git-send-email-p.zabel@pengutronix.de>
-In-Reply-To: <1392154905-12007-1-git-send-email-p.zabel@pengutronix.de>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="XwJKMSFSVwGLK8GCIkHvqebgFcNOmN8wB"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxy2t7bnCUc-DhhxYxsZ0+GwL9GuQXRYtE_VzqZusmB9A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---XwJKMSFSVwGLK8GCIkHvqebgFcNOmN8wB
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Tue, Feb 11, 2014 at 10:28:12PM -0800, Linus Torvalds wrote:
+> On Tue, Feb 11, 2014 at 9:40 PM, Dave Chinner <david@fromorbit.com> wrote:
+> >
+> > None of the XFS code disables interrupts in that path, not does is
+> > call outside XFS except to dispatch IO. The stack is pretty deep at
+> > this point and I know that the standard (non stacked) IO stack can
+> > consume >3kb of stack space when it gets down to having to do memory
+> > reclaim during GFP_NOIO allocation at the lowest level of SCSI
+> > drivers. Stack overruns typically show up with symptoms like we are
+> > seeing.
+> 
+> That would also explain why it shows up for do_coredump(), even though
+> clearly interrupts are not disabled at that point. It's just because
+> do_coredump() opens a filename at a deeper point in the stack than the
+> more normal system call paths do.
 
-Hi,
+Right, it's exactly the same problem we have when knfsd is making
+the VFS calls.
 
-On 11/02/14 23:41, Philipp Zabel wrote:
-> From: Philipp Zabel <philipp.zabel@gmail.com>
->=20
-> This patch moves the parsing helpers used to parse connected graphs
-> in the device tree, like the video interface bindings documented in
-> Documentation/devicetree/bindings/media/video-interfaces.txt, from
-> drivers/media/v4l2-core to drivers/media.
->=20
-> This allows to reuse the same parser code from outside the V4L2
-> framework, most importantly from display drivers.
-> The functions v4l2_of_get_next_endpoint, v4l2_of_get_remote_port,
-> and v4l2_of_get_remote_port_parent are moved. They are renamed to
-> of_graph_get_next_endpoint, of_graph_get_remote_port, and
-> of_graph_get_remote_port_parent, respectively.
-> Since there are not that many current users, switch all of them
-> to the new functions right away.
->=20
-> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-> Acked-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-> Acked-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> It looks like just "do_signal()" has a stack frame that is about 230
+> bytes even under normal circumstancs (largely due to "struct ksignal"
+> - which in turn is largely due to the insane 128-byte padding in
+> siginfo_t). Add a few other frames in there, and I guess that if it
+> was close before, the coredump path just makes it go off.
 
-I don't think the graphs or the parsing code has anything video
-specific. It could well be used for anything, whenever there's need to
-describe connections between devices which are not handled by the normal
-child-parent relationships. So the code could well reside in some
-generic place, in my opinion.
+Yup. But it's when you see this sort of thing you realise that
+almost no GFP_KERNEL memory allocation is really safe from stack
+overruns, though:
 
-Also, I have no problem with having it in drivers/media, but
-drivers/video should work also. We already have other, generic, video
-related things there like hdmi infoframes and display timings.
+  0)     6064      64   update_group_power+0x2c/0x270
+  1)     6000     384   find_busiest_group+0x10a/0x8b0
+  2)     5616     288   load_balance+0x165/0x870
+  3)     5328      96   idle_balance+0x106/0x1b0
+  4)     5232     112   __schedule+0x7b6/0x7e0
+  5)     5120      16   schedule+0x29/0x70
+  6)     5104     176   percpu_ida_alloc+0x1b3/0x3d0
+  7)     4928      32   blk_mq_wait_for_tags+0x1f/0x40
+  8)     4896      80   blk_mq_alloc_request_pinned+0x4e/0x110
+  9)     4816     128   blk_mq_make_request+0x42b/0x510
+ 10)     4688      48   generic_make_request+0xc0/0x110
+ 11)     4640      96   submit_bio+0x71/0x120
+ 12)     4544     192   _xfs_buf_ioapply+0x2cc/0x3b0
+ 13)     4352      48   xfs_buf_iorequest+0x6f/0xc0
+ 14)     4304      32   xlog_bdstrat+0x23/0x60
+ 15)     4272      96   xlog_sync+0x3a4/0x5c0
+ 16)     4176      48   xlog_state_release_iclog+0x121/0x130
+ 17)     4128     192   xlog_write+0x700/0x7c0
+ 18)     3936     192   xlog_cil_push+0x2ae/0x3d0
+ 19)     3744     128   xlog_cil_force_lsn+0x1b8/0x1e0
+ 20)     3616     144   _xfs_log_force_lsn+0x7c/0x300
+ 21)     3472      48   xfs_log_force_lsn+0x3b/0xa0
+ 22)     3424     112   xfs_iunpin_wait+0xd7/0x160
+ 23)     3312      80   xfs_reclaim_inode+0xd0/0x350
+ 24)     3232     432   xfs_reclaim_inodes_ag+0x277/0x3d0
+ 25)     2800      48   xfs_reclaim_inodes_nr+0x33/0x40
+ 26)     2752      16   xfs_fs_free_cached_objects+0x15/0x20
+ 27)     2736      80   super_cache_scan+0x169/0x170
+ 28)     2656     160   shrink_slab_node+0x133/0x290
+ 29)     2496      80   shrink_slab+0x122/0x160
+ 30)     2416     112   do_try_to_free_pages+0x1de/0x360
+ 31)     2304     192   try_to_free_pages+0x110/0x190
+ 32)     2112     256   __alloc_pages_nodemask+0x5a2/0x8e0
+ 33)     1856      80   alloc_pages_current+0xb2/0x170
+ 34)     1776      64   new_slab+0x265/0x2e0
+ 35)     1712     240   __slab_alloc+0x2fb/0x4c4
+ 36)     1472      80   kmem_cache_alloc+0x10b/0x140
 
-And last, it's fine to move the funcs as-is in the first place, but I
-think they should be improved a bit before non-v4l2 users use them.
-There are a couple of things I tried to accomplish with the omapdss
-specific versions in
-https://www.mail-archive.com/linux-omap@vger.kernel.org/msg100761.html:
+That's almost 4700 bytes of stack usage from the
+kmem_cache_alloc(GFP_KERNEL) call because it entered the IO path.
+Yes, it's an extreme case, but if you're looking for a smoking
+gun.... :/
 
-- Iterating ports and endpoints separately. If a node has multiple
-ports, I would think that the driver needs to know which port and
-endpoint combination is the current one during iteration. It's not
-enough to just get the endpoint.
+I can fix this one easily - we already have a workqueue for doing
+async log pushes (will split the stack between xlog_cil_force_lsn
+and xlog_cil_push), but the reason we haven't used it for synchronous
+log forces is that screws up fsync performance on CFQ. We don't
+recommend CFQ with XFS anyway, so I think I'll make this change
+anyway.
 
-- Simplify cases when there's just one port and one endpoint, in which
-case the port node can be omitted from the DT data.
+> And some of the debug options that I'm sure DaveJ has enabled tend to
+> make the stack usage worse (simply because they make a lot of data
+> structures bigger).
 
- Tomi
+True - CONFIG_XFS_DEBUG tends to add about 5% to the stack usage of
+XFS, but realistically 5% is not significant especially as we've
+been hitting stack overflows with XFS on production systems
+regularly enough on x86-64 over the past 2-3 years that we know what
+"typical symptoms" of such overflows are...
 
+The problem we have now is that everything outside XFS continues to
+grow in stack usage, so the only choice that remains for us to avoid
+overruns is to add performance impacting stack switches into the
+middle of common XFS paths. We also have to do it unconditionally
+because we don't know ahead of time if any specific operation is
+going to require all the stack we can give it because - for example
+- we can't predict when the IO path is going to require memory
+allocation...
 
+Cheers,
 
---XwJKMSFSVwGLK8GCIkHvqebgFcNOmN8wB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJS+x+oAAoJEPo9qoy8lh71uekP/1rhT/v5BSIVHRpWBiwda9+W
-yE7AEE8a+tGGyppPa9G/sRYszytnpnl3XY1hzk5oATxwbaIfnZ7Yc6vIincCIMNQ
-U/MgoM4SZDq8GkoodXnKfDZOVBzJfG4l0DHpqfVu9Q/+uRBoUUWnQTD5JMmXKEK/
-Sne+1aBnUmFy88LyPrnl71sREMrjAyoUBaeM4GXblY/dYfM6OtT7qH4asO3qAoqF
-X3GSELUe5upENcGdSkYR1wVxzUBgEaBHHRsUZD0dkbmjmfyMoNF8jmADcCkKOi23
-M32s6CAzjqV/OnklYpP8sxezNehLrXR+kJSWeRp3UjcgEEvwbEf1sZNjkzuM8Coh
-MP5wVAfgJbWjD5lILHcNipUY47jm6mPC3mriWp2x+YjsBuwN95RdW9AbcjFZmkNi
-0PMEWFqxsYCQc4ey2UY+75qdFLCfFLhNiI2pvOOWonJPFHUmIuKY6/mtxi/CZGgd
-HFXbrbnqJ5SVDkR3kSIoaG+4yL3+41bk6nmzJtSzxMdlR+OVHjpMzCrhMSXY4AZf
-K/WpKbnMuLj2sM993e7cG2lmlKk5klo0LRfoiQGyPDmMzQ2SV1iWxyu3BMKU77e6
-MQFqCoKJqJfKjXgYb/E7cgpjVVI7qT34OhmbpS1FIxO/HYKTkGrx1DS3cCs/ObLF
-bp2rljxQnWdmBebMF5q8
-=6pPK
------END PGP SIGNATURE-----
-
---XwJKMSFSVwGLK8GCIkHvqebgFcNOmN8wB--
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
