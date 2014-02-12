@@ -1,189 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841AbaBLP7c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 10:59:32 -0500
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:43391 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752760AbaBLP5Q (ORCPT
+	id S1752901AbaBLP7z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 10:59:55 -0500
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:36988 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751435AbaBLP7x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 10:57:16 -0500
-From: Michal Simek <michal.simek@xilinx.com>
-To: netdev@vger.kernel.org
-Cc: Srikanth Thokala <sthokal@xilinx.com>,
-        Srikanth Thokala <srikanth.thokala@xilinx.com>,
-        Michal Simek <monstr@monstr.eu>, Anirudha Sarangi <anirudh@xilinx.com>,
-        John Linn <John.Linn@xilinx.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 11/14] net: axienet: Use devm_* calls
-Date: Wed, 12 Feb 2014 16:55:45 +0100
-Message-Id: <1b09a985cd055344d7ff874eb27b30c9c3b27c6a.1392220536.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-In-Reply-To: <cover.1392220536.git.michal.simek@xilinx.com>
-References: <cover.1392220536.git.michal.simek@xilinx.com>
-In-Reply-To: <cover.1392220536.git.michal.simek@xilinx.com>
-References: <cover.1392220536.git.michal.simek@xilinx.com>
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-2329-1392220631-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	Wed, 12 Feb 2014 10:59:53 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140212101324.GC3545@laptop.programming.kicks-ass.net>
+References: <CALCETrVL44ewQPJXNwPAm2s5aj9auo2p4tYYieNcxANoL91VWw@mail.gmail.com>
+	<alpine.DEB.2.02.1402112219160.21991@ionos.tec.linutronix.de>
+	<CALCETrUPyG1HoXFToXuVLOzX2f20zzxJyABKASOUPY691JmjMA@mail.gmail.com>
+	<20140212101324.GC3545@laptop.programming.kicks-ass.net>
+Date: Wed, 12 Feb 2014 16:59:52 +0100
+Message-ID: <CAFTL4hyJtUHaT39NmM71=Ho4fp28PJ+-KezQryXJE_gTEMaHqA@mail.gmail.com>
+Subject: Re: Too many rescheduling interrupts (still!)
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mike Galbraith <bitbucket@online.de>, X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
+2014-02-12 11:13 GMT+01:00 Peter Zijlstra <peterz@infradead.org>:
+> On Tue, Feb 11, 2014 at 02:34:11PM -0800, Andy Lutomirski wrote:
+>> On Tue, Feb 11, 2014 at 1:21 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>> >> A small number of reschedule interrupts appear to be due to a race:
+>> >> both resched_task and wake_up_idle_cpu do, essentially:
+>> >>
+>> >> set_tsk_need_resched(t);
+>> >> smb_mb();
+>> >> if (!tsk_is_polling(t))
+>> >>   smp_send_reschedule(cpu);
+>> >>
+>> >> The problem is that set_tsk_need_resched wakes the CPU and, if the CPU
+>> >> is too quick (which isn't surprising if it was in C0 or C1), then it
+>> >> could *clear* TS_POLLING before tsk_is_polling is read.
+>
+> Yeah we have the wrong default for the idle loops.. it should default to
+> polling and only switch to !polling at the very last moment if it really
+> needs an interrupt to wake.
+>
+> Changing this requires someone (probably me again :/) to audit all arch
+> cpu idle drivers/functions.
 
---=_mimegpg-monstr-desktop-2329-1392220631-0001
+Looking at wake_up_idle_cpu(), we set need_resched and send the IPI.
+On the other end, the CPU wakes up, exits the idle loop and even goes
+to the scheduler while there is probably no task to schedule.
 
-From: Srikanth Thokala <srikanth.thokala@xilinx.com>
+I wonder if this is all necessary. All we need is the timer to be
+handled by the dynticks code to re-evaluate the next tick. So calling
+irq_exit() -> tick_nohz_irq_exit() from the scheduler_ipi() should be
+enough.
 
-use devm_* calls
-
-Signed-off-by: Srikanth Thokala <sthokal@xilinx.com>
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
----
-
- drivers/net/ethernet/xilinx/xilinx_axienet_main.c | 54 ++++++++++++-----------
- 1 file changed, 28 insertions(+), 26 deletions(-)
-
-diff --git a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
-index 324033c..936a14c 100644
---- a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
-+++ b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
-@@ -1499,6 +1499,7 @@ static int axienet_of_probe(struct platform_device *pdev)
- 	struct axienet_local *lp;
- 	struct net_device *ndev;
- 	const void *addr;
-+	struct resource *ethres, dmares;
-
- 	ndev = alloc_etherdev(sizeof(*lp));
- 	if (!ndev)
-@@ -1518,11 +1519,14 @@ static int axienet_of_probe(struct platform_device *pdev)
- 	lp->dev = &pdev->dev;
- 	lp->options = XAE_OPTION_DEFAULTS;
- 	/* Map device registers */
--	lp->regs = of_iomap(pdev->dev.of_node, 0);
-+	ethres = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	lp->regs = devm_ioremap_resource(&pdev->dev, ethres);
- 	if (!lp->regs) {
- 		dev_err(&pdev->dev, "could not map Axi Ethernet regs.\n");
--		goto nodev;
-+		ret = -ENOMEM;
-+		goto free_netdev;
- 	}
-+
- 	/* Setup checksum offload, but default to off if not specified */
- 	lp->features = 0;
-
-@@ -1584,16 +1588,21 @@ static int axienet_of_probe(struct platform_device *pdev)
-
- 	/* Find the DMA node, map the DMA registers, and decode the DMA IRQs */
- 	np = of_parse_phandle(pdev->dev.of_node, "axistream-connected", 0);
--	if (!np) {
-+	if (IS_ERR(np)) {
- 		dev_err(&pdev->dev, "could not find DMA node\n");
--		goto err_iounmap;
-+		ret = PTR_ERR(np);
-+		goto free_netdev;
- 	}
--	lp->dma_regs = of_iomap(np, 0);
--	if (lp->dma_regs) {
--		dev_dbg(&pdev->dev, "MEM base: %p\n", lp->dma_regs);
--	} else {
--		dev_err(&pdev->dev, "unable to map DMA registers\n");
--		of_node_put(np);
-+	ret = of_address_to_resource(np, 0, &dmares);
-+	if (ret) {
-+		dev_err(&pdev->dev, "unable to get DMA resource\n");
-+		goto free_netdev;
-+	}
-+	lp->dma_regs = devm_ioremap_resource(&pdev->dev, &dmares);
-+	if (!lp->dma_regs) {
-+		dev_err(&pdev->dev, "could not map DMA regs\n");
-+		ret = -ENOMEM;
-+		goto free_netdev;
- 	}
- 	lp->rx_irq = irq_of_parse_and_map(np, 1);
- 	lp->tx_irq = irq_of_parse_and_map(np, 0);
-@@ -1601,7 +1610,7 @@ static int axienet_of_probe(struct platform_device *pdev)
- 	if ((lp->rx_irq <= 0) || (lp->tx_irq <= 0)) {
- 		dev_err(&pdev->dev, "could not determine irqs\n");
- 		ret = -ENOMEM;
--		goto err_iounmap_2;
-+		goto free_netdev;
- 	}
-
- 	/* Retrieve the MAC address */
-@@ -1609,7 +1618,7 @@ static int axienet_of_probe(struct platform_device *pdev)
- 	if ((!addr) || (size != 6)) {
- 		dev_err(&pdev->dev, "could not find MAC address\n");
- 		ret = -ENODEV;
--		goto err_iounmap_2;
-+		goto free_netdev;
- 	}
- 	axienet_set_mac_address(ndev, (void *) addr);
-
-@@ -1617,27 +1626,23 @@ static int axienet_of_probe(struct platform_device *pdev)
- 	lp->coalesce_count_tx = XAXIDMA_DFT_TX_THRESHOLD;
-
- 	lp->phy_node = of_parse_phandle(pdev->dev.of_node, "phy-handle", 0);
--	if (lp->phy_node)
-+	if (lp->phy_node) {
- 		ret = axienet_mdio_setup(lp, pdev->dev.of_node);
--	if (ret)
--		dev_warn(&pdev->dev, "error registering MDIO bus\n");
-+		if (ret)
-+			dev_warn(&pdev->dev, "error registering MDIO bus\n");
-+	}
-
- 	ret = register_netdev(lp->ndev);
- 	if (ret) {
- 		dev_err(lp->dev, "register_netdev() error (%i)\n", ret);
--		goto err_iounmap_2;
-+		goto free_netdev;
- 	}
-
- 	return 0;
-
--err_iounmap_2:
--	if (lp->dma_regs)
--		iounmap(lp->dma_regs);
--err_iounmap:
--	iounmap(lp->regs);
--nodev:
-+free_netdev:
- 	free_netdev(ndev);
--	ndev = NULL;
-+
- 	return ret;
- }
-
-@@ -1653,9 +1658,6 @@ static int axienet_of_remove(struct platform_device *pdev)
- 		of_node_put(lp->phy_node);
- 	lp->phy_node = NULL;
-
--	iounmap(lp->regs);
--	if (lp->dma_regs)
--		iounmap(lp->dma_regs);
- 	free_netdev(ndev);
-
- 	return 0;
---
-1.8.2.3
-
-
---=_mimegpg-monstr-desktop-2329-1392220631-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAlL7mdcACgkQykllyylKDCGxiwCeKG+6tUQt9Q/gio4o+8JomWCD
-JFwAnAw1+5B7K7fiP4q9gdA4ECRa8j6P
-=AT1j
------END PGP SIGNATURE-----
-
---=_mimegpg-monstr-desktop-2329-1392220631-0001--
+We could use a specific flag set before smp_send_reschedule() and read
+in scheduler_ipi() entry to check if we need irq_entry()/irq_exit().
