@@ -1,35 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752856AbaBLQLP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 11:11:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49798 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751735AbaBLQLN (ORCPT
+	id S1752938AbaBLQMK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 11:12:10 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:64629 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751988AbaBLQMI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 11:11:13 -0500
-Date: Wed, 12 Feb 2014 08:13:22 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Tomas Winkler <tomas.winkler@intel.com>
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org, "chao.bi" <chao.bi@intel.com>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [char-misc] mei: set client's read_cb to NULL when flow control
- fails
-Message-ID: <20140212161322.GB22431@kroah.com>
-References: <1392218828-23208-1-git-send-email-tomas.winkler@intel.com>
+	Wed, 12 Feb 2014 11:12:08 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392218828-23208-1-git-send-email-tomas.winkler@intel.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20140211203348.GA25883@kroah.com>
+References: <1391935247-3797-1-git-send-email-navin.patidar@gmail.com>
+	<1391935247-3797-3-git-send-email-navin.patidar@gmail.com>
+	<20140211203348.GA25883@kroah.com>
+Date: Wed, 12 Feb 2014 21:42:08 +0530
+Message-ID: <CAPV97ycAs_=73DdRJgT1i9-4HHZpCFU2TkrhZx9LtuLOMekXfw@mail.gmail.com>
+Subject: Re: [PATCH 3/3] staging: rtl8188eu: remove header file ethernet.h
+From: navin patidar <navin.patidar@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 05:27:08PM +0200, Tomas Winkler wrote:
-> From: "chao.bi" <chao.bi@intel.com>
+I've submitted second version of this patch.
 
-This doesn't match the Signed-off-by: line later in the patch :(
+regards,
+--navin-patidar
 
-Please fix up.
-
-greg k-h
+On Wed, Feb 12, 2014 at 2:03 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Sun, Feb 09, 2014 at 02:10:46PM +0530, navin patidar wrote:
+>> "ethernet.h" is included in three files but only "rtw_recv.c" using two macros
+>> defined in "ethernet.h", so move used macros in "rtw_recv.c" and
+>> remove "include/ethernet.h" header file and inclusion of this header file.
+>>
+>> Signed-off-by: navin patidar <navin.patidar@gmail.com>
+>> ---
+>>  drivers/staging/rtl8188eu/core/rtw_recv.c      |    4 ++-
+>>  drivers/staging/rtl8188eu/hal/rtl8188eu_recv.c |    1 -
+>>  drivers/staging/rtl8188eu/include/ethernet.h   |   42 ------------------------
+>>  drivers/staging/rtl8188eu/os_dep/recv_linux.c  |    1 -
+>>  4 files changed, 3 insertions(+), 45 deletions(-)
+>>  delete mode 100644 drivers/staging/rtl8188eu/include/ethernet.h
+>
+> This patch fails to apply (2/3 had fuzz, but I fixed that up), can you
+> redo this against linux-next and resend it?
+>
+> thanks,
+>
+> greg k-h
