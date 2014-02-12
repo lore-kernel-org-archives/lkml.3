@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752304AbaBLJdS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 04:33:18 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:55136 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752111AbaBLJdQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 04:33:16 -0500
-Message-ID: <52FB3FDA.4060307@mm-sol.com>
-Date: Wed, 12 Feb 2014 11:33:14 +0200
-From: Stanimir Varbanov <svarbanov@mm-sol.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1752354AbaBLJeJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 04:34:09 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:63550 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751894AbaBLJeH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 04:34:07 -0500
 MIME-Version: 1.0
-To: Kumar Gala <galak@codeaurora.org>
-CC: Herbert Xu <herbert@gondor.apana.org.au>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] hwrng: msm: switch Kconfig to ARCH_QCOM depends
-References: <1392150105-21057-1-git-send-email-galak@codeaurora.org>
-In-Reply-To: <1392150105-21057-1-git-send-email-galak@codeaurora.org>
+In-Reply-To: <20140212083110.GL15081@lee--X1>
+References: <1392188969-18486-1-git-send-email-lpapp@kde.org>
+	<20140212083110.GL15081@lee--X1>
+Date: Wed, 12 Feb 2014 09:34:05 +0000
+X-Google-Sender-Auth: K9tc7WgsezbsxwrdJNBl4La85p4
+Message-ID: <CAOMwXhOtyg87pMmdKc1ZCWwH_H9D7HLkYdm8UxtJAkONdw8==Q@mail.gmail.com>
+Subject: Re: [PATCH v7] mfd: MAX6650/6651 support
+From: Laszlo Papp <lpapp@kde.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Sachin Kamat <sachin.kamat@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Jean Delvare <jdelvare@suse.de>, Guenter Roeck <linux@roeck-us.net>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-> We've split Qualcomm MSM support into legacy and multiplatform.  The RNG
-> driver is only relevant on the multiplatform supported SoCs so switch the
-> Kconfig depends to ARCH_QCOM.
-> 
-> CC: Herbert Xu <herbert@gondor.apana.org.au>
-> Signed-off-by: Kumar Gala <galak@codeaurora.org>
-> ---
->  drivers/char/hw_random/Kconfig | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/char/hw_random/Kconfig b/drivers/char/hw_random/Kconfig
-> index 2f2b084..289bd3a 100644
-> --- a/drivers/char/hw_random/Kconfig
-> +++ b/drivers/char/hw_random/Kconfig
-> @@ -343,7 +343,7 @@ config HW_RANDOM_TPM
->  
->  config HW_RANDOM_MSM
->  	tristate "Qualcomm MSM Random Number Generator support"
-> -	depends on HW_RANDOM && ARCH_MSM
-> +	depends on HW_RANDOM && ARCH_QCOM
->  	---help---
->  	  This driver provides kernel-side support for the Random Number
->  	  Generator hardware found on Qualcomm MSM SoCs.
-> 
+On Wed, Feb 12, 2014 at 8:31 AM, Lee Jones <lee.jones@linaro.org> wrote:
+>> MAX6650/MAX6651 chip is a multi-function device with I2C busses. The
+>> chip includes fan-speed regulators and monitors, GPIO, and alarm.
+>>
+>> This patch is an initial release of a MAX6650/6651 MFD driver that
+>> supports to enable the chip with its primary I2C bus that will connect
+>> the hwmon, and then the gpio devices for now.
+>>
+>> Signed-off-by: Laszlo Papp <lpapp@kde.org>
+>> ---
+>>  drivers/mfd/Kconfig                 | 11 +++++
+>>  drivers/mfd/Makefile                |  1 +
+>>  drivers/mfd/max665x.c               | 93 +++++++++++++++++++++++++++++++++++++
+>>  include/linux/mfd/max665x-private.h | 34 ++++++++++++++
+>>  4 files changed, 139 insertions(+)
+>>  create mode 100644 drivers/mfd/max665x.c
+>>  create mode 100644 include/linux/mfd/max665x-private.h
+>
+> Applied, thanks.
 
-IMO, after this change the "MSM" abbreviation in help clause is
-irrelevant, could you remove it?
-
-Reviewed-by: Stanimir Varbanov <svarbanov@mm-sol.com>
-
-regards,
-Stan
+Thanks (partial celebration time).
