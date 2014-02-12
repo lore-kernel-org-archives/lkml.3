@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752583AbaBLIPw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 03:15:52 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50367 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752297AbaBLIOP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752294AbaBLIOP (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 12 Feb 2014 03:14:15 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50208 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752089AbaBLIOE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 03:14:04 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Li Zefan" <lizefan@huawei.com>,
-        "Ingo Molnar" <mingo@kernel.org>, "Paul Turner" <pjt@google.com>,
-        "Peter Zijlstra" <a.p.zijlstra@chello.nl>,
-        "Peter Boonstoppel" <pboonstoppel@nvidia.com>
+CC: akpm@linux-foundation.org, "Steven Rostedt" <rostedt@goodmis.org>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>
 Date: Wed, 12 Feb 2014 08:10:12 +0000
-Message-ID: <lsq.1392192612.420623688@decadent.org.uk>
+Message-ID: <lsq.1392192612.693389443@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 78/79] sched: Unthrottle rt runqueues in
- __disable_runtime()
+Subject: [PATCH 3.2 67/79] SELinux: Fix possible NULL pointer dereference
+ in selinux_inode_permission()
 In-Reply-To: <lsq.1392192611.998273004@decadent.org.uk>
 X-SA-Exim-Connect-IP: 91.84.160.45
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,98 +32,137 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Boonstoppel <pboonstoppel@nvidia.com>
+From: Steven Rostedt <rostedt@goodmis.org>
 
-commit a4c96ae319b8047f62dedbe1eac79e321c185749 upstream.
+commit 3dc91d4338d698ce77832985f9cb183d8eeaf6be upstream.
 
-migrate_tasks() uses _pick_next_task_rt() to get tasks from the
-real-time runqueues to be migrated. When rt_rq is throttled
-_pick_next_task_rt() won't return anything, in which case
-migrate_tasks() can't move all threads over and gets stuck in an
-infinite loop.
+While running stress tests on adding and deleting ftrace instances I hit
+this bug:
 
-Instead unthrottle rt runqueues before migrating tasks.
+  BUG: unable to handle kernel NULL pointer dereference at 0000000000000020
+  IP: selinux_inode_permission+0x85/0x160
+  PGD 63681067 PUD 7ddbe067 PMD 0
+  Oops: 0000 [#1] PREEMPT
+  CPU: 0 PID: 5634 Comm: ftrace-test-mki Not tainted 3.13.0-rc4-test-00033-gd2a6dde-dirty #20
+  Hardware name:                  /DG965MQ, BIOS MQ96510J.86A.0372.2006.0605.1717 06/05/2006
+  task: ffff880078375800 ti: ffff88007ddb0000 task.ti: ffff88007ddb0000
+  RIP: 0010:[<ffffffff812d8bc5>]  [<ffffffff812d8bc5>] selinux_inode_permission+0x85/0x160
+  RSP: 0018:ffff88007ddb1c48  EFLAGS: 00010246
+  RAX: 0000000000000000 RBX: 0000000000800000 RCX: ffff88006dd43840
+  RDX: 0000000000000001 RSI: 0000000000000081 RDI: ffff88006ee46000
+  RBP: ffff88007ddb1c88 R08: 0000000000000000 R09: ffff88007ddb1c54
+  R10: 6e6576652f6f6f66 R11: 0000000000000003 R12: 0000000000000000
+  R13: 0000000000000081 R14: ffff88006ee46000 R15: 0000000000000000
+  FS:  00007f217b5b6700(0000) GS:ffffffff81e21000(0000) knlGS:0000000000000000
+  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033^M
+  CR2: 0000000000000020 CR3: 000000006a0fe000 CR4: 00000000000007f0
+  Call Trace:
+    security_inode_permission+0x1c/0x30
+    __inode_permission+0x41/0xa0
+    inode_permission+0x18/0x50
+    link_path_walk+0x66/0x920
+    path_openat+0xa6/0x6c0
+    do_filp_open+0x43/0xa0
+    do_sys_open+0x146/0x240
+    SyS_open+0x1e/0x20
+    system_call_fastpath+0x16/0x1b
+  Code: 84 a1 00 00 00 81 e3 00 20 00 00 89 d8 83 c8 02 40 f6 c6 04 0f 45 d8 40 f6 c6 08 74 71 80 cf 02 49 8b 46 38 4c 8d 4d cc 45 31 c0 <0f> b7 50 20 8b 70 1c 48 8b 41 70 89 d9 8b 78 04 e8 36 cf ff ff
+  RIP  selinux_inode_permission+0x85/0x160
+  CR2: 0000000000000020
 
-Additionally: move unthrottle_offline_cfs_rqs() to rq_offline_fair()
+Investigating, I found that the inode->i_security was NULL, and the
+dereference of it caused the oops.
 
-Signed-off-by: Peter Boonstoppel <pboonstoppel@nvidia.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Turner <pjt@google.com>
-Link: http://lkml.kernel.org/r/5FBF8E85CA34454794F0F7ECBA79798F379D3648B7@HQMAIL04.nvidia.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-[ lizf: backported to 3.4: adjust context ]
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-[bwh: Backported to 3.2:
- - Adjust filenames
- - unthrottle_offline_cfs_rqs() is already static, but defined in sched.c
-   after including sched_fair.c, so add forward declaration
- - unthrottle_offline_cfs_rqs() also needs to be defined for all CONFIG_SMP
-   configurations now]
+in selinux_inode_permission():
+
+	isec = inode->i_security;
+
+	rc = avc_has_perm_noaudit(sid, isec->sid, isec->sclass, perms, 0, &avd);
+
+Note, the crash came from stressing the deletion and reading of debugfs
+files.  I was not able to recreate this via normal files.  But I'm not
+sure they are safe.  It may just be that the race window is much harder
+to hit.
+
+What seems to have happened (and what I have traced), is the file is
+being opened at the same time the file or directory is being deleted.
+As the dentry and inode locks are not held during the path walk, nor is
+the inodes ref counts being incremented, there is nothing saving these
+structures from being discarded except for an rcu_read_lock().
+
+The rcu_read_lock() protects against freeing of the inode, but it does
+not protect freeing of the inode_security_struct.  Now if the freeing of
+the i_security happens with a call_rcu(), and the i_security field of
+the inode is not changed (it gets freed as the inode gets freed) then
+there will be no issue here.  (Linus Torvalds suggested not setting the
+field to NULL such that we do not need to check if it is NULL in the
+permission check).
+
+Note, this is a hack, but it fixes the problem at hand.  A real fix is
+to restructure the destroy_inode() to call all the destructor handlers
+from the RCU callback.  But that is a major job to do, and requires a
+lot of work.  For now, we just band-aid this bug with this fix (it
+works), and work on a more maintainable solution in the future.
+
+Link: http://lkml.kernel.org/r/20140109101932.0508dec7@gandalf.local.home
+Link: http://lkml.kernel.org/r/20140109182756.17abaaa8@gandalf.local.home
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -2189,6 +2189,10 @@ static int irqtime_account_si_update(voi
- 
- #endif
- 
-+#ifdef CONFIG_SMP
-+static void unthrottle_offline_cfs_rqs(struct rq *rq);
-+#endif
-+
- #include "sched_idletask.c"
- #include "sched_fair.c"
- #include "sched_rt.c"
-@@ -6566,8 +6570,6 @@ static void unthrottle_offline_cfs_rqs(s
- 			unthrottle_cfs_rq(cfs_rq);
- 	}
+ security/selinux/hooks.c          | 20 ++++++++++++++++++--
+ security/selinux/include/objsec.h |  5 ++++-
+ 2 files changed, 22 insertions(+), 3 deletions(-)
+
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -217,6 +217,14 @@ static int inode_alloc_security(struct i
+ 	return 0;
  }
--#else
--static void unthrottle_offline_cfs_rqs(struct rq *rq) {}
- #endif
  
- /*
-@@ -6595,9 +6597,6 @@ static void migrate_tasks(unsigned int d
- 	 */
- 	rq->stop = NULL;
- 
--	/* Ensure any throttled groups are reachable by pick_next_task */
--	unthrottle_offline_cfs_rqs(rq);
--
- 	for ( ; ; ) {
- 		/*
- 		 * There's this thread running, bail when that's the only
-@@ -6624,6 +6623,10 @@ static void migrate_tasks(unsigned int d
- 
- #endif /* CONFIG_HOTPLUG_CPU */
- 
-+#if !defined(CONFIG_HOTPLUG_CPU) || !defined(CONFIG_CFS_BANDWIDTH)
-+static void unthrottle_offline_cfs_rqs(struct rq *rq) {}
-+#endif
++static void inode_free_rcu(struct rcu_head *head)
++{
++	struct inode_security_struct *isec;
 +
- #if defined(CONFIG_SCHED_DEBUG) && defined(CONFIG_SYSCTL)
- 
- static struct ctl_table sd_ctl_dir[] = {
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -4848,6 +4848,9 @@ static void rq_online_fair(struct rq *rq
- static void rq_offline_fair(struct rq *rq)
++	isec = container_of(head, struct inode_security_struct, rcu);
++	kmem_cache_free(sel_inode_cache, isec);
++}
++
+ static void inode_free_security(struct inode *inode)
  {
- 	update_sysctl();
-+
-+	/* Ensure any throttled groups are reachable by pick_next_task */
-+	unthrottle_offline_cfs_rqs(rq);
+ 	struct inode_security_struct *isec = inode->i_security;
+@@ -227,8 +235,16 @@ static void inode_free_security(struct i
+ 		list_del_init(&isec->list);
+ 	spin_unlock(&sbsec->isec_lock);
+ 
+-	inode->i_security = NULL;
+-	kmem_cache_free(sel_inode_cache, isec);
++	/*
++	 * The inode may still be referenced in a path walk and
++	 * a call to selinux_inode_permission() can be made
++	 * after inode_free_security() is called. Ideally, the VFS
++	 * wouldn't do this, but fixing that is a much harder
++	 * job. For now, simply free the i_security via RCU, and
++	 * leave the current inode->i_security pointer intact.
++	 * The inode will be freed after the RCU grace period too.
++	 */
++	call_rcu(&isec->rcu, inode_free_rcu);
  }
  
- #else	/* CONFIG_SMP */
---- a/kernel/sched_rt.c
-+++ b/kernel/sched_rt.c
-@@ -509,6 +509,7 @@ balanced:
- 		 * runtime - in which case borrowing doesn't make sense.
- 		 */
- 		rt_rq->rt_runtime = RUNTIME_INF;
-+		rt_rq->rt_throttled = 0;
- 		raw_spin_unlock(&rt_rq->rt_runtime_lock);
- 		raw_spin_unlock(&rt_b->rt_runtime_lock);
- 	}
+ static int file_alloc_security(struct file *file)
+--- a/security/selinux/include/objsec.h
++++ b/security/selinux/include/objsec.h
+@@ -38,7 +38,10 @@ struct task_security_struct {
+ 
+ struct inode_security_struct {
+ 	struct inode *inode;	/* back pointer to inode object */
+-	struct list_head list;	/* list of inode_security_struct */
++	union {
++		struct list_head list;	/* list of inode_security_struct */
++		struct rcu_head rcu;	/* for freeing the inode_security_struct */
++	};
+ 	u32 task_sid;		/* SID of creating task */
+ 	u32 sid;		/* SID of this object */
+ 	u16 sclass;		/* security class of this object */
 
