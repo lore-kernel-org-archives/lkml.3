@@ -1,115 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753282AbaBLP6E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 10:58:04 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:48827 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753253AbaBLP56 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 10:57:58 -0500
-Date: Wed, 12 Feb 2014 16:57:53 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Tejun Heo <tj@kernel.org>
-Cc: Prarit Bhargava <prarit@redhat.com>, linux-edac@vger.kernel.org,
-        Doug Thompson <dougthompson@xmission.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] edac, poll timeout cannot be zero
-Message-ID: <20140212155752.GF5121@pd.tnic>
-References: <1391457913-881-1-git-send-email-prarit@redhat.com>
- <20140212150748.GE5121@pd.tnic>
- <20140212151657.GL24490@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140212151657.GL24490@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753207AbaBLP5Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 10:57:25 -0500
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:35278 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753183AbaBLP5U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 10:57:20 -0500
+From: Michal Simek <michal.simek@xilinx.com>
+To: netdev@vger.kernel.org
+Cc: Srikanth Thokala <sthokal@xilinx.com>,
+        Srikanth Thokala <srikanth.thokala@xilinx.com>,
+        Michal Simek <monstr@monstr.eu>, Anirudha Sarangi <anirudh@xilinx.com>,
+        John Linn <John.Linn@xilinx.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: [PATCH 12/14] net: axienet: Use of_property_* calls
+Date: Wed, 12 Feb 2014 16:55:46 +0100
+Message-Id: <77b9c5c033a54916c3e5be6f67dbd59c0155bc4c.1392220536.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+In-Reply-To: <cover.1392220536.git.michal.simek@xilinx.com>
+References: <cover.1392220536.git.michal.simek@xilinx.com>
+In-Reply-To: <cover.1392220536.git.michal.simek@xilinx.com>
+References: <cover.1392220536.git.michal.simek@xilinx.com>
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-2341-1392220635-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 10:16:57AM -0500, Tejun Heo wrote:
-> No, you don't need to.  All workqueue operations should be able to
-> synchronize with each other.
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-Ok.
+--=_mimegpg-monstr-desktop-2341-1392220635-0001
 
-> > Or does this mean that once the work is getting queued from the timer
-> > callback delayed_work_timer_fn, it cannot be cancelled anymore? Or
-> > something else I'm missing...?
-> 
-> Looking at edac_mc_workq_setup().... it contains INIT_DELAYED_WORK().
-> Does this race with other workqueue operations on the work item?  If
-> so, it of course breaks.  It's like doing spin_lock_init() while other
-> spinlock operations are in progress.
+From: Srikanth Thokala <srikanth.thokala@xilinx.com>
 
-Ha, so this sounds like the issue because the splat happens
-when updating /sys/.../edac_mc_poll_msec and it goes and calls
-edac_mc_workq_setup()...
+Use of_property_* calls
 
-And this code is pretty old and edac_mc_workq_setup() is used both
-when one inits an edac driver and also when one wants to change the
-polling period (edac_mc_reset_delay_period) and thus needs to mod the
-workqueue's timeout.
-
-So I'm guessing a simple fix would be to differentiate between the two
-paths, something like the diff below.
-
-Or is there a reliable way to check whether a workqueue has been
-initialized already, say, something like
-
-	if (work->func)
-
-or so... I.e., what PREPARE_WORK() does?
-
-Thanks!
-
+Signed-off-by: Srikanth Thokala <sthokal@xilinx.com>
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
 ---
-diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
-index e8c9ef03495b..17c51d3a1143 100644
---- a/drivers/edac/edac_mc.c
-+++ b/drivers/edac/edac_mc.c
-@@ -559,7 +559,8 @@ static void edac_mc_workq_function(struct work_struct *work_req)
-  *
-  *		called with the mem_ctls_mutex held
+
+ drivers/net/ethernet/xilinx/xilinx_axienet_main.c | 41 ++++++++++-------------
+ 1 file changed, 17 insertions(+), 24 deletions(-)
+
+diff --git a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
+index 936a14c..9a9ffbc 100644
+--- a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
++++ b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
+@@ -1493,13 +1493,13 @@ static void axienet_dma_err_handler(unsigned long data)
   */
--static void edac_mc_workq_setup(struct mem_ctl_info *mci, unsigned msec)
-+static void edac_mc_workq_setup(struct mem_ctl_info *mci, unsigned msec,
-+				bool init)
+ static int axienet_of_probe(struct platform_device *pdev)
  {
- 	edac_dbg(0, "\n");
- 
-@@ -567,7 +568,9 @@ static void edac_mc_workq_setup(struct mem_ctl_info *mci, unsigned msec)
- 	if (mci->op_state != OP_RUNNING_POLL)
- 		return;
- 
--	INIT_DELAYED_WORK(&mci->work, edac_mc_workq_function);
-+	if (init)
-+		INIT_DELAYED_WORK(&mci->work, edac_mc_workq_function);
-+
- 	mod_delayed_work(edac_workqueue, &mci->work, msecs_to_jiffies(msec));
- }
- 
-@@ -611,7 +614,7 @@ void edac_mc_reset_delay_period(int value)
- 	list_for_each(item, &mc_devices) {
- 		mci = list_entry(item, struct mem_ctl_info, link);
- 
--		edac_mc_workq_setup(mci, (unsigned long) value);
-+		edac_mc_workq_setup(mci, (unsigned long) value, false);
+-	__be32 *p;
+-	int size, ret = 0;
++	int ret;
+ 	struct device_node *np;
+ 	struct axienet_local *lp;
+ 	struct net_device *ndev;
+-	const void *addr;
++	u8 mac_addr[6];
+ 	struct resource *ethres, dmares;
++	u32 value;
+
+ 	ndev = alloc_etherdev(sizeof(*lp));
+ 	if (!ndev)
+@@ -1530,9 +1530,9 @@ static int axienet_of_probe(struct platform_device *pdev)
+ 	/* Setup checksum offload, but default to off if not specified */
+ 	lp->features = 0;
+
+-	p = (__be32 *) of_get_property(pdev->dev.of_node, "xlnx,txcsum", NULL);
+-	if (p) {
+-		switch (be32_to_cpup(p)) {
++	ret = of_property_read_u32(pdev->dev.of_node, "xlnx,txcsum", &value);
++	if (!ret) {
++		switch (value) {
+ 		case 1:
+ 			lp->csum_offload_on_tx_path =
+ 				XAE_FEATURE_PARTIAL_TX_CSUM;
+@@ -1551,9 +1551,9 @@ static int axienet_of_probe(struct platform_device *pdev)
+ 			lp->csum_offload_on_tx_path = XAE_NO_CSUM_OFFLOAD;
+ 		}
  	}
- 
- 	mutex_unlock(&mem_ctls_mutex);
-@@ -782,7 +785,7 @@ int edac_mc_add_mc(struct mem_ctl_info *mci)
- 		/* This instance is NOW RUNNING */
- 		mci->op_state = OP_RUNNING_POLL;
- 
--		edac_mc_workq_setup(mci, edac_mc_get_poll_msec());
-+		edac_mc_workq_setup(mci, edac_mc_get_poll_msec(), true);
- 	} else {
- 		mci->op_state = OP_RUNNING_INTERRUPT;
+-	p = (__be32 *) of_get_property(pdev->dev.of_node, "xlnx,rxcsum", NULL);
+-	if (p) {
+-		switch (be32_to_cpup(p)) {
++	ret = of_property_read_u32(pdev->dev.of_node, "xlnx,rxcsum", &value);
++	if (!ret) {
++		switch (value) {
+ 		case 1:
+ 			lp->csum_offload_on_rx_path =
+ 				XAE_FEATURE_PARTIAL_RX_CSUM;
+@@ -1574,17 +1574,10 @@ static int axienet_of_probe(struct platform_device *pdev)
+ 	 * Here we check for memory allocated for Rx/Tx in the hardware from
+ 	 * the device-tree and accordingly set flags.
+ 	 */
+-	p = (__be32 *) of_get_property(pdev->dev.of_node, "xlnx,rxmem", NULL);
+-	if (p)
+-		lp->rxmem = be32_to_cpup(p);
+-	p = (__be32 *) of_get_property(pdev->dev.of_node, "xlnx,temac-type",
+-				       NULL);
+-	if (p)
+-		lp->temac_type = be32_to_cpup(p);
+-	p = (__be32 *) of_get_property(pdev->dev.of_node,
+-						"xlnx,phy-type", NULL);
+-	if (p)
+-		lp->phy_type = be32_to_cpup(p);
++	of_property_read_u32(pdev->dev.of_node, "xlnx,rxmem", &lp->rxmem);
++	of_property_read_u32(pdev->dev.of_node, "xlnx,temac-type",
++					&lp->temac_type);
++	of_property_read_u32(pdev->dev.of_node, "xlnx,phy-type", &lp->phy_type);
+
+ 	/* Find the DMA node, map the DMA registers, and decode the DMA IRQs */
+ 	np = of_parse_phandle(pdev->dev.of_node, "axistream-connected", 0);
+@@ -1614,13 +1607,13 @@ static int axienet_of_probe(struct platform_device *pdev)
  	}
 
--- 
-Regards/Gruss,
-    Boris.
+ 	/* Retrieve the MAC address */
+-	addr = of_get_property(pdev->dev.of_node, "local-mac-address", &size);
+-	if ((!addr) || (size != 6)) {
++	ret = of_property_read_u8_array(pdev->dev.of_node,
++			"local-mac-address", mac_addr, 6);
++	if (ret) {
+ 		dev_err(&pdev->dev, "could not find MAC address\n");
+-		ret = -ENODEV;
+ 		goto free_netdev;
+ 	}
+-	axienet_set_mac_address(ndev, (void *) addr);
++	axienet_set_mac_address(ndev, (void *) mac_addr);
 
-Sent from a fat crate under my desk. Formatting is fine.
+ 	lp->coalesce_count_rx = XAXIDMA_DFT_RX_THRESHOLD;
+ 	lp->coalesce_count_tx = XAXIDMA_DFT_TX_THRESHOLD;
 --
+1.8.2.3
+
+
+--=_mimegpg-monstr-desktop-2341-1392220635-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlL7mdsACgkQykllyylKDCEWRgCffzarn5nPBwiT5RU+2Ww54H+s
+BywAoJNOxHLQKkMizSACkNBIcncoUAjt
+=AzlB
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-2341-1392220635-0001--
