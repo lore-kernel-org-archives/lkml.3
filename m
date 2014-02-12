@@ -1,53 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751557AbaBLH5p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 02:57:45 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:26749 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751055AbaBLH5n (ORCPT
+	id S1751820AbaBLH5r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 02:57:47 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:53726 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751055AbaBLH5p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 02:57:43 -0500
-Message-ID: <52FB2968.3090904@huawei.com>
-Date: Wed, 12 Feb 2014 15:57:28 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Wed, 12 Feb 2014 02:57:45 -0500
+Date: Tue, 11 Feb 2014 23:57:43 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Hannes Reinecke <hare@suse.de>
+Cc: James Bottomley <jbottomley@parallels.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] scsi_sysfs: Implement 'is_visible' callback
+Message-ID: <20140212075743.GA13498@infradead.org>
+References: <1392129294-55235-1-git-send-email-hare@suse.de>
+ <1392129294-55235-2-git-send-email-hare@suse.de>
 MIME-Version: 1.0
-To: Gu Zheng <guz.fnst@cn.fujitsu.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>, <linux-kernel@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, Hanjun Guo <guohanjun@huawei.com>,
-        Paul Bolle <pebolle@tiscali.nl>, Oliver Neukum <oneukum@suse.de>
-Subject: Re: [PATCH part1 v6 4/7] PCI: Introduce pci_serial_number_changed()
-References: <1392173573-59844-1-git-send-email-wangyijing@huawei.com> <1392173573-59844-5-git-send-email-wangyijing@huawei.com> <52FB2222.20402@cn.fujitsu.com>
-In-Reply-To: <52FB2222.20402@cn.fujitsu.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392129294-55235-2-git-send-email-hare@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> + * pci_serial_number_changed - check the device SN is changed
-> 
-> How about the name “pci_device_changed”? I think it's more readable,
-> though the judgement is according to SN.
+On Tue, Feb 11, 2014 at 03:34:53PM +0100, Hannes Reinecke wrote:
+> Instead of modifying attributes after the device has been created
+> we should be using the 'is_visible' callback to avoid races.
 
-Ah, it's nice, will update in next version.
+Can't say I like the fact that the is_visible function needs is
+per-group and not per attribute and thus needs to explicitly check
+which attribute we call it for, but that seems to be a design issue in
+the driver core and not the patch.
 
-Thanks!
-Yijing.
+Otherwise looks good with the minor nitpick that it would have looked
+cleaner in the patch if you had left the queue_type store function
+in the location it previously was.
 
-> 
-> Regards,
-> Gu
-> 
->> + * @pdev: the PCI device
->> + *
->> + * check the device serial number is changed.
->> + * if device does not support device serial number,
->> + * return false.
->> + */
->> +bool pci_serial_number_changed(struct pci_dev *pdev)
->> +{
->> +	u64 old, new;
-
+Reviewed-by: Christoph Hellwig <hch@lst.de>
