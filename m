@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754575AbaBLVc5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 16:32:57 -0500
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:33367 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753599AbaBLVc4 (ORCPT
+	id S1754590AbaBLVe5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 16:34:57 -0500
+Received: from unicorn.mansr.com ([81.2.72.234]:46084 "EHLO unicorn.mansr.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753763AbaBLVez convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 16:32:56 -0500
+	Wed, 12 Feb 2014 16:34:55 -0500
+X-Greylist: delayed 412 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Feb 2014 16:34:55 EST
+From: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
+To: Behan Webster <behanw@converseincode.com>
+Cc: Christoph Hellwig <hch@infradead.org>, dl9pf@gmx.de,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        ibm-acpi-devel@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86, acpi: LLVMLinux: Remove nested functions from Thinkpad ACPI
+References: <1392238726-18787-1-git-send-email-dl9pf@gmx.de>
+	<20140212211159.GA29409@infradead.org>
+	<52FBE5A5.3040602@converseincode.com>
+Date: Wed, 12 Feb 2014 21:27:59 +0000
+In-Reply-To: <52FBE5A5.3040602@converseincode.com> (Behan Webster's message of
+	"Wed, 12 Feb 2014 13:20:37 -0800")
+Message-ID: <yw1xzjlw58dc.fsf@unicorn.mansr.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20140212211421.GP18016@ZenIV.linux.org.uk>
-References: <52FA9ADA.9040803@sandeen.net>
-	<20140212004403.GA17129@redhat.com>
-	<20140212010941.GM18016@ZenIV.linux.org.uk>
-	<CA+55aFwoWT-0A_KTkXMkNqOy8hc=YmouTMBgWUD_z+8qYPphjA@mail.gmail.com>
-	<20140212040358.GA25327@redhat.com>
-	<20140212042215.GN18016@ZenIV.linux.org.uk>
-	<20140212054043.GB13997@dastard>
-	<CA+55aFxy2t7bnCUc-DhhxYxsZ0+GwL9GuQXRYtE_VzqZusmB9A@mail.gmail.com>
-	<20140212113928.GO18016@ZenIV.linux.org.uk>
-	<CA+55aFywwx0Q8xK2GJiRJ+FV7PQEKoBRxDUxW4052FVyd5XOpg@mail.gmail.com>
-	<20140212211421.GP18016@ZenIV.linux.org.uk>
-Date: Wed, 12 Feb 2014 13:32:55 -0800
-X-Google-Sender-Auth: jJkWM1SIUIsU6ptTziwb_jI9EkQ
-Message-ID: <CA+55aFyobyUNFo=3rpdbxTqgV7OQetCKbCfwEEbgxUcT-1+30w@mail.gmail.com>
-Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>
-Cc: Dave Chinner <david@fromorbit.com>, Dave Jones <davej@redhat.com>,
-        Eric Sandeen <sandeen@sandeen.net>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 1:14 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+Behan Webster <behanw@converseincode.com> writes:
+
+> On 02/12/14 13:11, Christoph Hellwig wrote:
+>> On Wed, Feb 12, 2014 at 09:58:46PM +0100, dl9pf@gmx.de wrote:
+>>> being able to compile the Linux kernel with Clang. The use of nested functions
+>>> blocks this effort.
+>> Is there any good way to make gcc warn about the use of nested functions?
+> Interesting idea.
 >
-> Umm...  What if we delay __sigqueue_free()?  After all, that's where the
-> fat sucker normally comes from.  That way we might get away with much
-> smaller structure on stack...
+> '-Wtrampolines'
+>      Warn about trampolines generated for pointers to nested functions.
+>
+>      A trampoline is a small piece of data or code that is created at
+>      run time on the stack when the address of a nested function is
+>      taken, and is used to call the nested function indirectly.  For
+>      some targets, it is made up of data only and thus requires no
+>      special treatment.  But, for most targets, it is made up of code
+>      and thus requires the stack to be made executable in order for the
+>      program to work properly.
+>
+> That might work.
 
-Sounds like the RightThing(tm) to do to me, and I don't see why it
-wouldn't work.
+That sounds like it will only warn if a trampoline is needed.  A nested
+function whose address isn't taken, as is the case here, wouldn't
+trigger this warning.
 
-We'd have to teach each user of "dequeue_signal()" to free the siginfo
-thing. Which shouldn't be too bad - I think we've collected all of
-that into generic code, and there isn't the mass or architecture code
-that knows about these things any more. But there are a few odd
-drivers etc and signalfd. I didn't look at what the lifetimes were.
-
-Adding Oleg to the cc, since any time we touch any of that code, he
-should be involved. Oleg - the issue is the biggish size of 'struct
-ksignal' on stack, brought on by the silly "put a whole siginfo_t in
-it".
-
-            Linus
+-- 
+Måns Rullgård
+mans@mansr.com
