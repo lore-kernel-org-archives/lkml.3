@@ -1,283 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753830AbaBLSaE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 13:30:04 -0500
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:9437 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753249AbaBLSaA (ORCPT
+	id S1753768AbaBLSbS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 13:31:18 -0500
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:44777 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753142AbaBLSbQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 13:30:00 -0500
-Date: Wed, 12 Feb 2014 10:31:43 -0800
-From: Courtney Cavin <courtney.cavin@sonymobile.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Rob Herring <robherring2@gmail.com>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        "s-anna@ti.com" <s-anna@ti.com>, Rob Herring <rob.herring@calxeda.com>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        Mark Langsdorf <mark.langsdorf@calxeda.com>,
-        Tony Lindgren <tony@atomide.com>,
-        "omar.ramirez@copitl.com" <omar.ramirez@copitl.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC 1/6] mailbox: add core framework
-Message-ID: <20140212183143.GD1706@sonymobile.com>
-References: <1391820619-25487-1-git-send-email-courtney.cavin@sonymobile.com>
- <CAL_JsqK0YoVu0BfKSUfBQGoriCa4z-teXUQe6RPpjM2KKpeMAw@mail.gmail.com>
- <20140211002347.GW1706@sonymobile.com>
- <1765844.1kjKsO2Rzo@wuerfel>
+	Wed, 12 Feb 2014 13:31:16 -0500
+Date: Wed, 12 Feb 2014 19:31:10 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Daniel Vetter <daniel@ffwll.ch>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Dave Airlie <airlied@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 05/13] drm: provide device-refcount
+Message-ID: <20140212183110.GY17001@phenom.ffwll.local>
+Mail-Followup-To: David Herrmann <dh.herrmann@gmail.com>,
+	Greg KH <gregkh@linuxfoundation.org>,
+	"dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+	Dave Airlie <airlied@gmail.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <1391004120-687-1-git-send-email-dh.herrmann@gmail.com>
+ <1391004120-687-6-git-send-email-dh.herrmann@gmail.com>
+ <20140212132541.GU17001@phenom.ffwll.local>
+ <CANq1E4RACz+bZmBGFtVGNKZhcJtC6iQtCpsCTTjEXrGUDP6C+A@mail.gmail.com>
+ <CAKMK7uEbHUL5=CiRqcCh7nBRAirOB4tdSwiz6YPHNiThVujA8A@mail.gmail.com>
+ <20140212164055.GB22377@kroah.com>
+ <CANq1E4TJbZv1e=OSshR740k3UkwdRwWo+zY-hrVKuUh31SqKrg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1765844.1kjKsO2Rzo@wuerfel>
+In-Reply-To: <CANq1E4TJbZv1e=OSshR740k3UkwdRwWo+zY-hrVKuUh31SqKrg@mail.gmail.com>
+X-Operating-System: Linux phenom 3.12.0+
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 09:35:01AM +0100, Arnd Bergmann wrote:
-> On Monday 10 February 2014 16:23:48 Courtney Cavin wrote:
+On Wed, Feb 12, 2014 at 06:48:50PM +0100, David Herrmann wrote:
+> On Wed, Feb 12, 2014 at 5:40 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > On Wed, Feb 12, 2014 at 05:26:57PM +0100, Daniel Vetter wrote:
+> >> On Wed, Feb 12, 2014 at 3:44 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
+> >> >>> +/**
+> >> >>> + * drm_dev_ref - Take reference of a DRM device
+> >> >>> + * @dev: device to take reference of or NULL
+> >> >>> + *
+> >> >>> + * This increases the ref-count of @dev by one. You *must* already own a
+> >> >>> + * reference when calling this. Use drm_dev_unref() to drop this reference
+> >> >>> + * again.
+> >> >>> + *
+> >> >>> + * This function never fails. However, this function does not provide *any*
+> >> >>> + * guarantee whether the device is alive or running. It only provides a
+> >> >>> + * reference to the object and the memory associated with it.
+> >> >>> + */
+> >> >>> +void drm_dev_ref(struct drm_device *dev)
+> >> >>> +{
+> >> >>> +     if (dev)
+> >> >>
+> >> >> This check here (and below in the unref code) look funny. What's the
+> >> >> reason for it? Trying to grab/drop a ref on a NULL pointer sounds like a
+> >> >> pretty serious bug to me. This is in contrast to kfree(NULL) which imo
+> >> >> makes sense - freeing nothing is a legitimate operation imo.
+> >> >
+> >> > I added it mainly to simplify cleanup-code paths. You can then just
+> >> > call unref() and set it to NULL regardless whether you actually hold a
+> >> > reference or not. For ref() I don't really care but I think the
+> >> > NULL-test doesn't hurt either.
+> >> >
+> >> > I copied this behavior from get_device() and put_device(), btw.
+> >> > Similar to these functions, I think a lot more will go wrong if the
+> >> > NULL pointer is not intentional. Imo, ref-counting on a NULL object
+> >> > just means "no object", so it shouldn't do anything.
+> >>
+> >> My fear with this kind of magic is that someone accidentally exchanges
+> >> the pointer clearing to NULL (or assignement when grabbing a ref) with
+> >> the unref/ref call and then we have a very subtle bug at hand. If we
+> >> don't accept NULL objects the failure will be much more obvious.
+> >>
+> >> The entire kernel kobject stuff is very consistent about this, but I
+> >> couldn't find a reason for it - all the NULL checks predate git
+> >> history. Greg can you please shed some lights on best practice here
+> >> and whether my fears are justified given your experience with shoddy
+> >> drivers in general?
+> >
+> > Yes, the driver core does test for NULL here, as sometimes you are
+> > passing in a "parent" pointer, and don't really care if it is NULL or
+> > not, so just treating it as if you really do have a reference is usually
+> > fine.
+> >
+> > But, for a subsystem where you "know" you will not be doing anything as
+> > foolish as that, I'd not allow that :)
+> >
+> > So I'd recommend taking those checks out of the drm code.
 > 
-> > While I'm not sure the dislike of notifiers entirely justifies not using
-> > them here, where they seem to make sense, I can understand that they
-> > might not fully implement what we need to expose.
+> Ok, for _ref() I'm fine dropping it, but for _unref() I really don't
+> understand the concerns. I like to follow the principle of making
+> teardown-functions work with partially initialized objects. A caller
+> shouldn't be required to reverse all it's setup functions if one last
+> step of object-initialization fails. It's much easier if they can just
+> call the destructor which figures itself out which parts are
+> initialized. Obviously, this isn't always possible, but checking for
+> NULL in _unref() or _put() paths simplifies this a lot and avoids
+> non-sense if(obj) unref(obj);
 > 
-> I think we need to look at a few more examples of things that people
-> want to with the framework to come up with a good interface. It's
-> possible that we end up with multiple alternative notification
-> methods, but it would be good to come up with one that works well
-> for everyone.
+> For instance for drm_minor objects we only initialize the minors that
+> are enabled by the specific driver. However, it's enough to test for
+> the flags during device-initialization. device-registration,
+> -deregistration and -teardown just call _free/unref on all possible
+> minors. Allowing NULL avoids testing for these flags in every path but
+> the initialization.
 > 
-> > Regarding handlers running in IRQ context: currently the API is designed
-> > to do just that.  From the use-cases I've found, most message handlers
-> > simply queue something to happen at a later point.  This is logical, as
-> > the callback will be async, so you'll need to swap contexts or add locks
-> > in your consumer anyway.
-> 
-> Right. You may also have some handlers that need to run with extreme
-> latency constraints, so we need at least the option of getting the
-> callback from hardirq context, or possibly from softirq/tasklet
-> as in the dmaengine case.
-> 
-> > The dma engine is large and confused, so I'm not sure entirely which
-> > part you are refering to.  I've looked at having async completion going
-> > both ways, but what I see every time is code complication in both the
-> > adapter and in the consumers in the simple use-case.  It doesn't really
-> > make sense to make an API which makes things so generic that it becomes
-> > hard to use.  What I tried to follow here when designing the API was
-> > what I saw in the actual implementations, not what was future-proof:
-> > 	- Message receive callbacks may be called from IRQ context
-> > 	- Message send implementations may sleep
-> 
-> I can imagine cases where you want to send messages from softirq
-> context, or from the same context in which you received the incoming
-> mail, so it would be good to have the API flexible enough to deal
-> with that. As a first step, always allowing send to sleep seems
-> fine. Alternatively, we could have a 'sync' flag in the send
-> API, to choose between "arrange this message to be sent out as
-> soon as possible, but don't sleep" and "send this message and
-> make sure it has arrived at the other end" as you do now.
+> Anyhow, shared code -> many opinions, so if people agree on dropping
+> it, I will do so.
 
-Although I'm not sure there's currently a requirement for this, I can see that
-this could be needed in the future.
-
-> > What I can do is try to alleviate implementation efforts of future
-> > requirements--as honestly, we can't really say exactly what they are--by
-> > turning the messages into structs themselves, so at a later point flags,
-> > ack callbacks, and rainbows can be added.  I can then stop using
-> > notifiers, and re-invent that functionality with a mbox_ prefix.
-> 
-> I don't think there is a point in reimplementing notifiers under a
-> different name. The question is rather how we want to deal with
-> the 'multiple listener' case. If this case is the exception rather
-> than the rule, I'd prefer making the callback API handle only
-> single listeners and adding higher-level abstractions for the
-> cases where we do need multiple listeners, but it really depends
-> on what people need.
-
-I wasn't actually planning on directly ripping-off notifiers under a new name.
-Rather, as switching to message structs is probably a good idea anyway, I don't
-think the notifier API properly represents that,... the void pointer is a bit
-vague.  It could be that it would turn out as a wrapper around notifiers.  As
-you said though, I do think this is the exception, so I'm fine with the single
-callback idea, as long as Rob and Suman agree that this will be suitable for
-their use-cases.
-
-Then again, I think that the context management stuff is the exception as well,
-and I think that can/should also be handled in a higher level.  Regardless, I
-went ahead and drafted the async flags idea out anyway, so here's some
-pseudo-code.  I also tried to shoe-horn in 'peek', and you can see how that
-turns out.  Let me know if this is something like what you had in mind.
-
-enum {
-	MBOX_ASYNC	= BIT(0),
-};
-
-struct mbox_adapter_ops {
-	...
-	int (*put_message)(struct mbox_adapter *, struct mbox_channel *,
-			const struct mbox_message *msg)
-	int (*peek_message)(struct mbox_adapter *, struct mbox_channel *,
-			struct mbox_message *msg)
-};
-
-struct mbox;
-
-#define MBOX_FIFO_SIZE PAGE_SZ /* or not? */
-
-struct mbox_channel {
-	...
-	unsigned long flags; /* MBOX_ASYNC, for now */
-	struct mbox *consumer;
-	struct kfifo_rec_ptr_1 rx_fifo;
-	/**
-	 * probably should be allocated only if user needs to call
-	 * mbox_put_message with MBOX_ASYNC, instead of statically.
-	 */
-	STRUCT_KFIFO_REC_1(MBOX_FIFO_SIZE) tx_fifo;
-	struct work_struct rx_work;
-	struct work_struct tx_work;
-}
-
-struct mbox {
-	struct mbox_channel *chan;
-	struct mbox_adapter *adapter;
-	void (*cb)(void *, struct mbox *, const struct mbox_message *);
-	void *priv;
-};
-
-struct mbox_message {
-	void *data;
-	unsigned int len;
-};
-
-static void rx_work(struct work_struct *work)
-{
-	struct mbox_channel *chan;
-	struct mbox_message msg;
-
-	chan = container_of(work, struct mbox_channel, rx_work);
-	msg.len = kfifo_out(&chan->rx_fifo, msg.data);
-	chan->consumer->cb(chan->consumer, &msg);
-}
-
-/* called from adapter, typically in a IRQ handler */
-int mbox_channel_notify(struct mbox_channel *chan,
-		const struct mbox_message *msg)
-{
-	if (chan->flags & MBOX_ASYNC) {
-		kfifo_in(&chan->rx_fifo, msg->data, msg->len);
-		schedule_work(&chan->rx_work);
-		return 0;
-	}
-
-	/*
-	 * consumer may not sleep here, as they did not specify this
-	 * requirement in channel flags when requesting
-	 */
-	return chan->consumer->cb(chan->consumer->priv, chan->consumer, msg);
-}
-
-static void tx_work(struct work_struct *work)
-{
-	struct mbox_channel *chan;
-	struct mbox_message msg;
-	char buf[PAGE_SZ]; /* should max size be specified by the adapter? */
-
-	chan = container_of(work, struct mbox_channel, tx_work);
-	msg.len = kfifo_out(&chan->tx_fifo, buf, sizeof(buf));
-	msg.data = buf;
-
-	mutex_lock(&chan->adapter->lock);
-	chan->adapter->ops->put_message(chan->adapter, chan, &msg);
-	mutex_unlock(&chan->adapter->lock);
-}
-
-/* called from consumer */
-int mbox_put_message(struct mbox *mbox, const struct mbox_message *msg,
-		unsigned long flags)
-{
-	int rc;
-
-	if (flags & MBOX_ASYNC) {
-		kfifo_in(&chan->tx_fifo, msg->data, msg->len);
-		schedule_work(&mbox->chan->tx_work);
-		return 0;
-	}
-
-	/**
-	 * obviously, if not because of the lock, then because the adapter
-	 * should wait for an ACK from it's controller if appropriate.
-	 */
-	might_sleep();
-
-	mutex_lock(&mbox->adapter->lock);
-	rc = mbox->adapter->ops->put_message(mbox->adapter, mbox->chan, msg);
-	mutex_unlock(&mbox->adapter->lock);
-
-	return rc;
-}
-
-/* called from consumer; illustrates the problem with peek */
-int mbox_peek_message(struct mbox *mbox, struct mbox_message *msg)
-{
-
-	int rc;
-	if (chan->flags & MBOX_ASYNC) {
-		msg->len = kfifo_out_peek(&mbox->chan->rx_fifo,
-				msg->data, msg->len);
-		return 0;
-	}
-
-	/**
-	 * It is unlikely that most adapters are able to properly implement
-	 * this, so we have to allow for that.
-	 */
-	if (!mbox->adapter->ops->peek_message)
-		return -EOPNOTSUPP;
-
-	/**
-	 * so this is where this lock makes things difficult, as this function
-	 * might_sleep(), but only really because of the lock.  Either we can
-	 * remove the lock and force the adapter to do its own locking
-	 * spinlock-style, or we can accept the sleep here, which seems a bit
-	 * stupid in a peek function.  Neither option is good.  Additionally,
-	 * there's no guarantee that the adapter doesn't operate over a bus
-	 * which itself might_sleep(), exacerbating the problem.
-	 */
-	mutex_lock(&mbox->adapter->lock);
-	rc = mbox->adapter->ops->peek_message(mbox->adapter, mbox->chan, msg);
-	mutex_lock(&mbox->adapter->lock);
-
-	return rc;
-}
-
-struct mbox *mbox_request(struct device *dev, const char *con_id,
-		void (*receive)(void *, struct mbox *, const struct mbox_message *),
-		void *priv, unsigned long flags)
-{
-	struct mbox_channel *chan;
-	struct mbox *mbox;
-	int rc;
-	...
-	chan->flags = flags;
-	if (flags & MBOX_ASYNC) {
-		rc = kfifo_alloc(&chan->rx_fifo, MBOX_FIFO_SIZE, GFP_KERNEL);
-		if (rc)
-			return rc;
-		INIT_WORK(&chan->rx_work, rx_work);
-	}
-	if (1 /* consumer plans on calling put_message with MBOX_ASYNC */) {
-		INIT_KFIFO(chan->tx_fifo);
-		INIT_WORK(&chan->tx_work, tx_work);
-	}
-	chan->consumer = mbox;
-	mbox->cb = receive;
-	mbox->priv = priv;
-	...
-	return mbox;
-}
+I might have missed it, but afaics both drm_minor_free and unregister
+already have NULL pointer checks at the beginning for other reasons. And
+the _unref in the drm unload paths also should never see a NULL
+drm_device. So I think with your current patch series we're already
+covered and there's no need for any additional NULL checks, hence also
+none for the drm_dev_unref function.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
