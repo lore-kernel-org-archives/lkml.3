@@ -1,39 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753112AbaBLQUh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 11:20:37 -0500
-Received: from imap.thunk.org ([74.207.234.97]:57097 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752907AbaBLQUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 11:20:33 -0500
-Date: Wed, 12 Feb 2014 11:20:30 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel@vger.kernel.org, adilger.kernel@dilger.ca,
-        linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 1/1] ext4: Add __init macro to init_inodecache
-Message-ID: <20140212162030.GC14520@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Fabian Frederick <fabf@skynet.be>, linux-kernel@vger.kernel.org,
-	adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org
-References: <20140201191007.59012c84446860984e6c4a76@skynet.be>
+	id S1753154AbaBLQUz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 11:20:55 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:38987 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753000AbaBLQUv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 11:20:51 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140201191007.59012c84446860984e6c4a76@skynet.be>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <CAAVeFuJ6BP4JnVb6qD1DYXqPQ3zBKw8hb+xLqcmUjktOxAjdGA@mail.gmail.com>
+References: <1392044614-6837-1-git-send-email-jjhiblot@traphandler.com>
+	<CAAVeFuJ6BP4JnVb6qD1DYXqPQ3zBKw8hb+xLqcmUjktOxAjdGA@mail.gmail.com>
+Date: Wed, 12 Feb 2014 17:20:51 +0100
+Message-ID: <CACRpkdbZ0LJorKN_ydk=8KBkyHToYZVAj7xUCYkU=Agtb4sVrA@mail.gmail.com>
+Subject: Re: [PATCH] gpio: take in account the active low flag when
+ configuring the gpio as an ouput
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Alexandre Courbot <gnurou@gmail.com>
+Cc: Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Richard Genoud <richard.genoud@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 01, 2014 at 07:10:07PM +0800, Fabian Frederick wrote:
-> init_inodecache is only called by __init init_ext4_fs.
-> 
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+On Tue, Feb 11, 2014 at 5:22 AM, Alexandre Courbot <gnurou@gmail.com> wrote:
+> On Tue, Feb 11, 2014 at 12:03 AM, Jean-Jacques Hiblot
+> <jjhiblot@traphandler.com> wrote:
+>> The initial value of the gpio is passed to gpiod_direction_output. Currently
+>> this value is the raw value of the GPIO line, but it should be the logical
+>> value.
+>
+> I think we have a patch that already does this:
+>
+> http://www.kernelhub.org/?msg=390263&p=2
+>
+> Linus said it would be merged for 3.15, but I am not seeing it in -next. Linus?
 
-Applied, thanks.
+I just haven't queued my devel branch for next yet. Will do
+today now that I sent a batch of fixes to Torvalds.
 
-					- Ted
+Yours,
+Linus Walleij
