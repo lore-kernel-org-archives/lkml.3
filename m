@@ -1,98 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751469AbaBLEmO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 23:42:14 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:36959 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750743AbaBLEmM (ORCPT
+	id S1751511AbaBLEpi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 23:45:38 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:28820 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750922AbaBLEph (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 23:42:12 -0500
+	Tue, 11 Feb 2014 23:45:37 -0500
+Date: Tue, 11 Feb 2014 23:45:34 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        David Howells <dhowells@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [RFC PATCH] Fix: module signature vs tracepoints: add new
+ TAINT_UNSIGNED_MODULE
+Message-ID: <20140211234534.6bc34e57@gandalf.local.home>
+In-Reply-To: <20140211072738.GA24232@gmail.com>
+References: <1392074600-21977-1-git-send-email-mathieu.desnoyers@efficios.com>
+	<20140211072738.GA24232@gmail.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <1392177760-17959-1-git-send-email-lpapp@kde.org>
-References: <1392177760-17959-1-git-send-email-lpapp@kde.org>
-Date: Wed, 12 Feb 2014 10:12:12 +0530
-Message-ID: <CAK9yfHztuCSBSJUjc1xcf-f+O+kaKQQ=ExpWB-LoCkLoaZPfWA@mail.gmail.com>
-Subject: Re: [PATCH v6] mfd: MAX6650/6651 support
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Laszlo Papp <lpapp@kde.org>
-Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>, jdelvare@suse.de,
-        Guenter Roeck <linux@roeck-us.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laszlo,
+On Tue, 11 Feb 2014 08:27:38 +0100
+Ingo Molnar <mingo@kernel.org> wrote:
 
-Sorry for missing out on a couple of points during my earlier review.
-Please see inline.
+> 
+> * Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+> 
+> > Users have reported being unable to trace non-signed modules loaded 
+> > within a kernel supporting module signature.
+> 
+> External modules should strive to get out of the 'crap' and
+> 'felony law breaker' categories and we should not make it
+> easier for them to linger in a broken state.
+> 
+> Nacked-by: Ingo Molnar <mingo@kernel.org>
 
-On 12 February 2014 09:32, Laszlo Papp <lpapp@kde.org> wrote:
-> MAX6650/MAX6651 chip is a multi-function device with I2C busses. The
-> chip includes fan-speed regulators and monitors, GPIO, and alarm.
->
-> This patch is an initial release of a MAX6650/6651 MFD driver that
-> supports to enable the chip with its primary I2C bus that will connect
-> the hwmon, and then the gpio devices for now.
->
-> Signed-off-by: Laszlo Papp <lpapp@kde.org>
-> ---
-[snip]
+I'm not sure how great this idea is, but it isn't the same as the
+"crap" and "fenony law breaker" categories. Having a non-signed module
+doesn't mean that it isn't fully GPL compliant, it just means that it
+hasn't been signed. There's several things that can taint the kernel
+when loading a module. Being non GPL compliant is just one of them, and
+that will never be allowed to accept tracepoints.
 
-> --- /dev/null
-> +++ b/drivers/mfd/max665x.c
-> @@ -0,0 +1,87 @@
-> +/*
-> + * Device access for MAX6650-MAX6651
-> + *
-> + * Copyright(c) 2013 Polatis Ltd.
-> + *
-> + * Author: Laszlo Papp <laszlo.papp@polatis.com>
-> + *
-> + *  This program is free software; you can redistribute  it and/or modify it
-> + *  under  the terms of  the GNU General  Public License as published by the
-> + *  Free Software Foundation;  either version 2 of the  License, or (at your
-> + *  option) any later version.
-> + */
-> +
-> +#include <linux/device.h>
-> +#include <linux/mfd/core.h>
-> +#include <linux/module.h>
-> +#include <linux/i2c.h>
-> +
-> +#include <linux/mfd/max665x-private.h>
-> +
-> +static struct mfd_cell max665x_devs[] = {
-> +       { .name = "max6651-gpio", },
-> +       { .name = "max6650", }, /* hwmon driver */
-> +       {},
-> +};
-> +
-> +const struct regmap_config max665x_regmap_config = {
-> +       .reg_bits = 5,
-> +};
+Forcing a module that was built for a different kernel version gives us
+another taint, which we don't add tracepoints for, not because it is
+not compliant, but because that could corrupt the kernel as we can
+not guarantee the binary structure layout of those modules would be the
+same as what the kernel was built with. We don't want people
+complaining about tracepoint failures due to forcing an older module
+into a newer kernel with different tracepoint structures.
 
-This should be static.
+But if the kernel expects to have signed modules, and you force a
+module to be loaded that is not signed, then you still get that
+"forced" module taint, which is the same one as loading a module from
+an older kernel into a newer kernel. It's a different problem, and I
+can see having a different taint flag be more informative to kernel
+developers in general. I would welcome that change with or without
+letting tracepoints be set for that module.
 
-> +static int max665x_probe(struct i2c_client *i2c,
-> +                           const struct i2c_device_id *id)
-> +{
-> +       struct max665x_dev *max665x;
-> +       int ret;
-> +
-> +       max665x = devm_kzalloc(&i2c->dev, sizeof(*max665x), GFP_KERNEL);
-> +       if (!max665x)
-> +               return -ENOMEM;
-> +
-> +       i2c_set_clientdata(i2c, max665x);
-> +       max665x->dev = &i2c->dev;
-> +       max665x->i2c = i2c;
-> +       max665x->map = devm_regmap_init_i2c(i2c, &max665x_regmap_config);
+But I have to ask Mathieu, what exactly is the use case here? If you
+have a kernel that expects to only load signed modules, why would you
+want to force non signed ones? That basically breaks the whole purpose
+of signing modules. Once you allow a non signed module to be loaded
+then the kernel can be considered compromised. That is, you just gave
+kernel access to an untrusted source.
 
-Don't you need to check the return value of devm_regmap_init_i2c?
-
--- 
-With warm regards,
-Sachin
+-- Steve
