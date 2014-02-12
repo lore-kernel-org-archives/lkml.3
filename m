@@ -1,72 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753916AbaBLSt5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 13:49:57 -0500
-Received: from mailout1.w2.samsung.com ([211.189.100.11]:49467 "EHLO
-	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753875AbaBLStz (ORCPT
+	id S1753955AbaBLSwO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 13:52:14 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:18738 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753216AbaBLSwL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 13:49:55 -0500
-X-AuditID: cbfec37a-b7ef66d000004f2b-c0-52fbc252148d
-Message-id: <52FBC250.4050709@samsung.com>
-Date: Wed, 12 Feb 2014 11:49:52 -0700
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.2.0
-MIME-version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org, Shuah Khan <shuah.kh@samsung.com>,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: [PATCH 3.12 000/107] 3.12.11-stable review
-References: <20140211184748.191276235@linuxfoundation.org>
-In-reply-to: <20140211184748.191276235@linuxfoundation.org>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.34.3]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsVy+t9hP92gQ7+DDKY+VraYs34Nm0Xz4vVs
-	Fpd3zWGz+PrTwWLBxkeMFo/63rI7sHnsnHWX3ePEjN8sHvvnrmH3+LxJLoAlissmJTUnsyy1
-	SN8ugSvjzKZvzAUr2Csur+hla2B8wdrFyMkhIWAi8eHHXyYIW0ziwr31bF2MXBxCAssYJXZP
-	WQ7l9DJJLPp0ngnC2cAoMWndFTaQFl4BLYlZLa2MIDaLgKrEz3kXwWw2AXWJz693sIPYQgJy
-	Ek1LVjOD2KICERKvzk5kgegVlPgx+R6YLSIQLLH260JGkAXMAisYJY6/fAm2QFjAXOJg82IW
-	iEFWEnMX3Acq4uDgFLCW6F/EBxJmFjCTeNSyjhnClpfYvOYtM0S5ssSfy6egXlOQWH/hMOsE
-	RpFZSFbPQtI+C0n7AkbmVYxipcXJBcVJ6akVhnrFibnFpXnpesn5uZsYIVFTtYPxzlebQ4wC
-	HIxKPLwWy34HCbEmlhVX5h5ilOBgVhLhNWoGCvGmJFZWpRblxxeV5qQWH2Jk4uCUamD0tzW2
-	Vqx7cKz/Kzcv862VVn8al3eemZ/6gvNhsaJZ/rVbn56FPw7QmPa1edWzj88PfUnf8P3kg6DX
-	i2uNTaN+rNsgbPK4zHlPqWjBz7IQ5gS+/M3v15upnez3/tVWphXcl7zUOeT9v+m3fsqr+2p1
-	2QRdu+920OxPoxvXpTPH5zr1lEZN33lTiaU4I9FQi7moOBEA8gygIHgCAAA=
+	Wed, 12 Feb 2014 13:52:11 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19z+qI5kPu/tjxTSoGoxNmlwddCe8CTarw=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 3981B525D7F
+Date: Wed, 12 Feb 2014 13:51:56 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: devicetree@vger.kernel.org, Laura Abbott <lauraa@codeaurora.org>,
+        keescook@chromium.org, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC/PATCH 0/3] Add devicetree scanning for randomness
+Message-ID: <20140212185156.GP27395@titan.lakedaemon.net>
+References: <1392168805-14200-1-git-send-email-lauraa@codeaurora.org>
+ <201402121251.06280.arnd@arndb.de>
+ <20140212174554.GM27395@titan.lakedaemon.net>
+ <20140212182000.GJ5554@obsidianresearch.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140212182000.GJ5554@obsidianresearch.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2014 12:04 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.12.11 release.
-> There are 107 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Thu Feb 13 18:47:29 UTC 2014.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.12.11-rc1.gz
-> and the diffstat can be found below.
->
-> thanks,
->
-> greg k-h
->
+On Wed, Feb 12, 2014 at 11:20:00AM -0700, Jason Gunthorpe wrote:
+> On Wed, Feb 12, 2014 at 12:45:54PM -0500, Jason Cooper wrote:
+> 
+> > The bootloader would then load this file into ram, and pass the
+> > address/size to the kernel either via dt, or commandline.  kaslr (run in
+> > the decompressor) would consume some of this randomness, and then
+> > random.c would consume the rest in a non-crediting initialization.
+> 
+> Sure is a neat idea, but I think in general it would probably be smart
+> to include the entire FDT blob in the early random pool, that way you
+> get MACs and other machine unique data too.
 
-Worked fine on all my test systems. Compile tests and boot tests passed. 
-No dmesg regressions: emerg, crit, alert, err are clean. No regressions 
-in warn.
+Sure.
 
--- Shuah
+> From there it is a small step to encourage bootloaders to include
+> boot-time-variable data in the DT like like 'boot time of day', 'cycle
+> counter', 'random blob', etc.
 
--- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+I like it.
+
+> Then you just need the bootloader to dump the random-seed file into a
+> DT property.
+
+Yes, see my response to Arnd re the binding.  I'm also interested in
+making it easier for devices already in the field.  iow, without
+upgrading the bootloader.
+
+> Or have the bootloader fetch randomness from any HWRNG it has a driver
+> for. (eg a TPM)
+
+Depends on who you're protecting against.  I'd prefer to have that
+called out as a separate blob in the DT so the kernel could decide
+whether to trust it explicitly, or mix it like random.c already does
+with RDRAND.
+
+thx,
+
+Jason.
