@@ -1,100 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754260AbaBLVul (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 16:50:41 -0500
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:60738 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751917AbaBLVug (ORCPT
+	id S1752790AbaBLVyk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 16:54:40 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:52584 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751703AbaBLVyi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 16:50:36 -0500
+	Wed, 12 Feb 2014 16:54:38 -0500
 MIME-Version: 1.0
-In-Reply-To: <20140212133228.e4ff66c6add0c6b121232aad@linux-foundation.org>
-References: <1392219611-13260-1-git-send-email-avagin@openvz.org>
-	<20140212133228.e4ff66c6add0c6b121232aad@linux-foundation.org>
-Date: Wed, 12 Feb 2014 13:50:35 -0800
-X-Google-Sender-Auth: 7X3rqSpHDbw2CBt8WmCDI_KKbfQ
-Message-ID: <CAGXu5jLwH82BSTMTB_iP=2_0yUBEeLuNOcCaotyw_iADvizb-A@mail.gmail.com>
-Subject: Re: [PATCH] kernel: reduce required permission for prctl_set_mm
-From: Kees Cook <keescook@chromium.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrey Vagin <avagin@openvz.org>, LKML <linux-kernel@vger.kernel.org>,
-        criu@openvz.org, Oleg Nesterov <oleg@redhat.com>,
-        Robin Holt <holt@sgi.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Chen Gang <gang.chen@asianux.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Aditya Kali <adityakali@google.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
+In-Reply-To: <3619654.tQqiI1EfTB@wuerfel>
+References: <1392122211-11422-1-git-send-email-laurent.pinchart@ideasonboard.com>
+	<20140211180845.GG841@joshc.qualcomm.com>
+	<CAMuHMdVkPLe5986hYPApoQr7oJSb6U2P71=nP+9mtvtaskdHXg@mail.gmail.com>
+	<3619654.tQqiI1EfTB@wuerfel>
+Date: Wed, 12 Feb 2014 22:54:37 +0100
+X-Google-Sender-Auth: wIjYNNvIqTbqKRI4TiuYnaHeLHI
+Message-ID: <CAMuHMdVOkUMxEkUK70Y=Y126XmqgKMpyqmGRG5us7vZPhP8WNw@mail.gmail.com>
+Subject: Re: [PATCH] of: Turn of_match_node into a static inline when
+ CONFIG_OF isn't set
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Josh Cartwright <joshc@codeaurora.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 1:32 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Wed, 12 Feb 2014 19:40:11 +0400 Andrey Vagin <avagin@openvz.org> wrote:
+On Tue, Feb 11, 2014 at 9:06 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Tuesday 11 February 2014 19:29:19 Geert Uytterhoeven wrote:
+>> On Tue, Feb 11, 2014 at 7:08 PM, Josh Cartwright <joshc@codeaurora.org> wrote:
+>> Ideally, all xxx_device_id look like
+>>
+>>     struct xxx_device_id {
+>>             ... /* bus-specific ID information */
+>>             kernel_ulong_t driver_data;
+>>     };
+>>
+>> This may be formalized in some way, using a base class, but thay may
+>> require reordering the fields, like:
+>>
+>>     struct base_device_id {
+>>             kernel_ulong_t driver_data;
+>>             long id[0];
+>>     };
+>>
 >
->> Currently prctl_set_mm requires the global CAP_SYS_RESOURCE,
->> this patch reduce requiremence to CAP_SYS_RESOURCE in the current
->> namespace.
->>
->> When we restore a task we need to set up text, data and data heap sizes
->> from userspace to the values a task had at checkpoint time.
->>
->> Currently we can not restore these parameters, if a task lives in
->> a non-root user name space, because it has no capabilities in the
->> parent namespace.
->>
->> prctl_set_mm() changes parameters of the current task and doesn't affect
->> other tasks.
->>
->> This patch affects the RLIMIT_DATA limit, because a consumtiuon is
->> calculated relatively to mm->end_data, mm->start_data, mm->start_brk.
->
-> I can't for the life of me work out what you were trying to say here.
-> Please fix and resend this paragraph?
->
->> rlim = rlimit(RLIMIT_DATA);
->> if (rlim < RLIM_INFINITY && (brk - mm->start_brk) +
->>               (mm->end_data - mm->start_data) > rlim)
->>       goto out;
->>
->> This limit affects calls to brk() and sbrk(), but it doesn't affect
->> mmap. So I think requirement of CAP_SYS_RESOURCE in the current
->> namespace is enough for this limit.
->>
->> ...
->>
->> Cc: security@kernel.org
->
-> That list is for reporting kernel security bugs.
->
->>
->> --- a/kernel/sys.c
->> +++ b/kernel/sys.c
->> @@ -1701,7 +1701,7 @@ static int prctl_set_mm(int opt, unsigned long addr,
->>       if (arg5 || (arg4 && opt != PR_SET_MM_AUXV))
->>               return -EINVAL;
->>
->> -     if (!capable(CAP_SYS_RESOURCE))
->> +     if (!ns_capable(current_user_ns(), CAP_SYS_RESOURCE))
->>               return -EPERM;
->>
->>       if (opt == PR_SET_MM_EXE_FILE)
->
-> This looks harmless.
+> You can't reorder the fields because they are shared with user
+> space in form of the module-init-tools.
 
-I want to be convinced of this, but weakening this cap check seems
-like an easy way for a process to hide itself trivially from the real
-root user. It can change it's exe file link, and dodge RLIMIT_DATA by
-changing the brk addresses. The whole reason this cap check was there
-was to stop that kind of thing. Limiting it to a namespace isn't great
-since USER_NS means unprivileged processes can enter a new NS as the
-NS root user.
+Sure, that's part of the ABI.
 
--Kees
+But that doesn't mean we can't change the ID as stored in the platform_device.
+Many drivers don't want to know the ID, only the driver_data part.
+Having that in a uniform way across the different ID types would help.
 
--- 
-Kees Cook
-Chrome OS Security
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
