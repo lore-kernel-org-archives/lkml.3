@@ -1,106 +1,293 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751488AbaBLHGq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 02:06:46 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:36556 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750922AbaBLHGp (ORCPT
+	id S1751703AbaBLHH1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 02:07:27 -0500
+Received: from forward5h.mail.yandex.net ([84.201.186.23]:56658 "EHLO
+	forward5h.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751783AbaBLHHO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 02:06:45 -0500
+	Wed, 12 Feb 2014 02:07:14 -0500
+X-Greylist: delayed 375 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Feb 2014 02:07:14 EST
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: "mingo@kernel.org" <mingo@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+In-Reply-To: <tip-606dba2e289446600a0b68422ed2019af5355c12@git.kernel.org>
+References: <1328936700.2476.17.camel@laptop> <tip-606dba2e289446600a0b68422ed2019af5355c12@git.kernel.org>
+Subject: Re: [tip:sched/core] sched: Push put_prev_task() into pick_next_task( )
 MIME-Version: 1.0
-In-Reply-To: <CAK9yfHztuCSBSJUjc1xcf-f+O+kaKQQ=ExpWB-LoCkLoaZPfWA@mail.gmail.com>
-References: <1392177760-17959-1-git-send-email-lpapp@kde.org>
-	<CAK9yfHztuCSBSJUjc1xcf-f+O+kaKQQ=ExpWB-LoCkLoaZPfWA@mail.gmail.com>
-Date: Wed, 12 Feb 2014 07:06:45 +0000
-X-Google-Sender-Auth: jxtdYhd_0krbVtL3B7X6AeuIMks
-Message-ID: <CAOMwXhNp-+Fr87NxdquEOtEriqt20E4b08W8JBrKMbCqh1K6_Q@mail.gmail.com>
-Subject: Re: [PATCH v6] mfd: MAX6650/6651 support
-From: Laszlo Papp <lpapp@kde.org>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Jean Delvare <jdelvare@suse.de>, Guenter Roeck <linux@roeck-us.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Message-Id: <124891392188453@web4h.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Wed, 12 Feb 2014 11:00:53 +0400
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=koi8-r
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 4:42 AM, Sachin Kamat <sachin.kamat@linaro.org> wrote:
-> Hi Laszlo,
+
+
+11.02.2014, 16:17, "tip-bot for Peter Zijlstra" <tipbot@zytor.com>:
+> Commit-ID: š606dba2e289446600a0b68422ed2019af5355c12
+> Gitweb: ššššhttp://git.kernel.org/tip/606dba2e289446600a0b68422ed2019af5355c12
+> Author: ššššPeter Zijlstra <peterz@infradead.org>
+> AuthorDate: Sat, 11 Feb 2012 06:05:00 +0100
+> Committer: šIngo Molnar <mingo@kernel.org>
+> CommitDate: Mon, 10 Feb 2014 16:17:13 +0100
 >
-> Sorry for missing out on a couple of points during my earlier review.
-> Please see inline.
-
-Np.
-
-> On 12 February 2014 09:32, Laszlo Papp <lpapp@kde.org> wrote:
->> MAX6650/MAX6651 chip is a multi-function device with I2C busses. The
->> chip includes fan-speed regulators and monitors, GPIO, and alarm.
->>
->> This patch is an initial release of a MAX6650/6651 MFD driver that
->> supports to enable the chip with its primary I2C bus that will connect
->> the hwmon, and then the gpio devices for now.
->>
->> Signed-off-by: Laszlo Papp <lpapp@kde.org>
->> ---
-> [snip]
+> sched: Push put_prev_task() into pick_next_task()
 >
->> --- /dev/null
->> +++ b/drivers/mfd/max665x.c
->> @@ -0,0 +1,87 @@
->> +/*
->> + * Device access for MAX6650-MAX6651
->> + *
->> + * Copyright(c) 2013 Polatis Ltd.
->> + *
->> + * Author: Laszlo Papp <laszlo.papp@polatis.com>
->> + *
->> + *  This program is free software; you can redistribute  it and/or modify it
->> + *  under  the terms of  the GNU General  Public License as published by the
->> + *  Free Software Foundation;  either version 2 of the  License, or (at your
->> + *  option) any later version.
->> + */
->> +
->> +#include <linux/device.h>
->> +#include <linux/mfd/core.h>
->> +#include <linux/module.h>
->> +#include <linux/i2c.h>
->> +
->> +#include <linux/mfd/max665x-private.h>
->> +
->> +static struct mfd_cell max665x_devs[] = {
->> +       { .name = "max6651-gpio", },
->> +       { .name = "max6650", }, /* hwmon driver */
->> +       {},
->> +};
->> +
->> +const struct regmap_config max665x_regmap_config = {
->> +       .reg_bits = 5,
->> +};
+> In order to avoid having to do put/set on a whole cgroup hierarchy
+> when we context switch, push the put into pick_next_task() so that
+> both operations are in the same function. Further changes then allow
+> us to possibly optimize away redundant work.
 >
-> This should be static.
-
-Agree.
-
->> +static int max665x_probe(struct i2c_client *i2c,
->> +                           const struct i2c_device_id *id)
->> +{
->> +       struct max665x_dev *max665x;
->> +       int ret;
->> +
->> +       max665x = devm_kzalloc(&i2c->dev, sizeof(*max665x), GFP_KERNEL);
->> +       if (!max665x)
->> +               return -ENOMEM;
->> +
->> +       i2c_set_clientdata(i2c, max665x);
->> +       max665x->dev = &i2c->dev;
->> +       max665x->i2c = i2c;
->> +       max665x->map = devm_regmap_init_i2c(i2c, &max665x_regmap_config);
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> Link: http://lkml.kernel.org/r/1328936700.2476.17.camel@laptop
+> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> ---
+> škernel/sched/core.c ššššš| 21 ++++++++-------------
+> škernel/sched/deadline.c š| š5 ++++-
+> škernel/sched/fair.c ššššš| š6 +++++-
+> škernel/sched/idle_task.c | š6 +++++-
+> škernel/sched/rt.c ššššššš| 27 ++++++++++++++++-----------
+> škernel/sched/sched.h šššš| š8 +++++++-
+> škernel/sched/stop_task.c | 16 ++++++++++------
+> š7 files changed, 55 insertions(+), 34 deletions(-)
 >
-> Don't you need to check the return value of devm_regmap_init_i2c?
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 417cf65..dedb5f0 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -2579,18 +2579,11 @@ static inline void schedule_debug(struct task_struct *prev)
+> šššššššššschedstat_inc(this_rq(), sched_count);
+> š}
+>
+> -static void put_prev_task(struct rq *rq, struct task_struct *prev)
+> -{
+> - if (prev->on_rq || rq->skip_clock_update < 0)
+> - update_rq_clock(rq);
+> - prev->sched_class->put_prev_task(rq, prev);
+> -}
+> -
+> š/*
+> šš* Pick up the highest-prio task:
+> šš*/
+> šstatic inline struct task_struct *
+> -pick_next_task(struct rq *rq)
+> +pick_next_task(struct rq *rq, struct task_struct *prev)
+> š{
+> šššššššššconst struct sched_class *class;
+> šššššššššstruct task_struct *p;
+> @@ -2600,13 +2593,13 @@ pick_next_task(struct rq *rq)
+> šššššššššš* the fair class we can call that function directly:
+> šššššššššš*/
+> šššššššššif (likely(rq->nr_running == rq->cfs.h_nr_running)) {
+> - p = fair_sched_class.pick_next_task(rq);
+> + p = fair_sched_class.pick_next_task(rq, prev);
+> šššššššššššššššššif (likely(p))
+> šššššššššššššššššššššššššreturn p;
+> ššššššššš}
+>
+> šššššššššfor_each_class(class) {
+> - p = class->pick_next_task(rq);
+> + p = class->pick_next_task(rq, prev);
+> šššššššššššššššššif (p)
+> šššššššššššššššššššššššššreturn p;
+> ššššššššš}
+> @@ -2714,8 +2707,10 @@ need_resched:
+> šššššššššššššššššššššššššrq->idle_stamp = 0;
+> ššššššššš}
+>
+> - put_prev_task(rq, prev);
+> - next = pick_next_task(rq);
+> + if (prev->on_rq || rq->skip_clock_update < 0)
+> + update_rq_clock(rq);
+> +
+> + next = pick_next_task(rq, prev);
+> šššššššššclear_tsk_need_resched(prev);
+> šššššššššclear_preempt_need_resched();
+> šššššššššrq->skip_clock_update = 0;
+> @@ -4748,7 +4743,7 @@ static void migrate_tasks(unsigned int dead_cpu)
+> šššššššššššššššššif (rq->nr_running == 1)
+> šššššššššššššššššššššššššbreak;
+>
+> - next = pick_next_task(rq);
+> + next = pick_next_task(rq, NULL);
 
-I personally think I should. I strived for consistency though with
-other similar drivers. After this many reviews about such things, it
-seems that consistency matters here less than other projects which I
-can cope with, thanks.
+pick_next_task() firstly checks for prev->sched_class, doesn't it ???
+
+The same for pick_next_task_rt().
+
+> šššššššššššššššššBUG_ON(!next);
+> šššššššššššššššššnext->sched_class->put_prev_task(rq, next);
+>
+> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+> index b5700bc..50797d5 100644
+> --- a/kernel/sched/deadline.c
+> +++ b/kernel/sched/deadline.c
+> @@ -990,7 +990,7 @@ static struct sched_dl_entity *pick_next_dl_entity(struct rq *rq,
+> šššššššššreturn rb_entry(left, struct sched_dl_entity, rb_node);
+> š}
+>
+> -struct task_struct *pick_next_task_dl(struct rq *rq)
+> +struct task_struct *pick_next_task_dl(struct rq *rq, struct task_struct *prev)
+> š{
+> šššššššššstruct sched_dl_entity *dl_se;
+> šššššššššstruct task_struct *p;
+> @@ -1001,6 +1001,9 @@ struct task_struct *pick_next_task_dl(struct rq *rq)
+> šššššššššif (unlikely(!dl_rq->dl_nr_running))
+> šššššššššššššššššreturn NULL;
+>
+> + if (prev)
+> + prev->sched_class->put_prev_task(rq, prev);
+> +
+> šššššššššdl_se = pick_next_dl_entity(rq, dl_rq);
+> šššššššššBUG_ON(!dl_se);
+>
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 748a7ac..c4bb0ac 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -4655,7 +4655,8 @@ preempt:
+> šššššššššššššššššset_last_buddy(se);
+> š}
+>
+> -static struct task_struct *pick_next_task_fair(struct rq *rq)
+> +static struct task_struct *
+> +pick_next_task_fair(struct rq *rq, struct task_struct *prev)
+> š{
+> šššššššššstruct task_struct *p;
+> šššššššššstruct cfs_rq *cfs_rq = &rq->cfs;
+> @@ -4664,6 +4665,9 @@ static struct task_struct *pick_next_task_fair(struct rq *rq)
+> šššššššššif (!cfs_rq->nr_running)
+> šššššššššššššššššreturn NULL;
+>
+> + if (prev)
+> + prev->sched_class->put_prev_task(rq, prev);
+> +
+> šššššššššdo {
+> šššššššššššššššššse = pick_next_entity(cfs_rq);
+> šššššššššššššššššset_next_entity(cfs_rq, se);
+> diff --git a/kernel/sched/idle_task.c b/kernel/sched/idle_task.c
+> index 516c3d9..e5c922a 100644
+> --- a/kernel/sched/idle_task.c
+> +++ b/kernel/sched/idle_task.c
+> @@ -33,8 +33,12 @@ static void check_preempt_curr_idle(struct rq *rq, struct task_struct *p, int fl
+> šššššššššresched_task(rq->idle);
+> š}
+>
+> -static struct task_struct *pick_next_task_idle(struct rq *rq)
+> +static struct task_struct *
+> +pick_next_task_idle(struct rq *rq, struct task_struct *prev)
+> š{
+> + if (prev)
+> + prev->sched_class->put_prev_task(rq, prev);
+> +
+> šššššššššschedstat_inc(rq, sched_goidle);
+> š#ifdef CONFIG_SMP
+> ššššššššš/* Trigger the post schedule to do an idle_enter for CFS */
+> diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+> index a2740b7..a15ca1c 100644
+> --- a/kernel/sched/rt.c
+> +++ b/kernel/sched/rt.c
+> @@ -1310,15 +1310,7 @@ static struct task_struct *_pick_next_task_rt(struct rq *rq)
+> š{
+> šššššššššstruct sched_rt_entity *rt_se;
+> šššššššššstruct task_struct *p;
+> - struct rt_rq *rt_rq;
+> -
+> - rt_rq = &rq->rt;
+> -
+> - if (!rt_rq->rt_nr_running)
+> - return NULL;
+> -
+> - if (rt_rq_throttled(rt_rq))
+> - return NULL;
+> + struct rt_rq *rt_rq š= &rq->rt;
+>
+> šššššššššdo {
+> šššššššššššššššššrt_se = pick_next_rt_entity(rq, rt_rq);
+> @@ -1332,9 +1324,22 @@ static struct task_struct *_pick_next_task_rt(struct rq *rq)
+> šššššššššreturn p;
+> š}
+>
+> -static struct task_struct *pick_next_task_rt(struct rq *rq)
+> +static struct task_struct *
+> +pick_next_task_rt(struct rq *rq, struct task_struct *prev)
+> š{
+> - struct task_struct *p = _pick_next_task_rt(rq);
+> + struct task_struct *p;
+> + struct rt_rq *rt_rq = &rq->rt;
+> +
+> + if (!rt_rq->rt_nr_running)
+> + return NULL;
+> +
+> + if (rt_rq_throttled(rt_rq))
+> + return NULL;
+> +
+> + if (prev)
+> + prev->sched_class->put_prev_task(rq, prev);
+> +
+> + p = _pick_next_task_rt(rq);
+>
+> ššššššššš/* The running task is never eligible for pushing */
+> šššššššššif (p)
+> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+> index bb89991..c534cf4 100644
+> --- a/kernel/sched/sched.h
+> +++ b/kernel/sched/sched.h
+> @@ -1105,7 +1105,13 @@ struct sched_class {
+>
+> šššššššššvoid (*check_preempt_curr) (struct rq *rq, struct task_struct *p, int flags);
+>
+> - struct task_struct * (*pick_next_task) (struct rq *rq);
+> + /*
+> + * It is the responsibility of the pick_next_task() method that will
+> + * return the next task to call put_prev_task() on the @prev task or
+> + * something equivalent.
+> + */
+> + struct task_struct * (*pick_next_task) (struct rq *rq,
+> + struct task_struct *prev);
+> šššššššššvoid (*put_prev_task) (struct rq *rq, struct task_struct *p);
+>
+> š#ifdef CONFIG_SMP
+> diff --git a/kernel/sched/stop_task.c b/kernel/sched/stop_task.c
+> index fdb6bb0..a4147c9 100644
+> --- a/kernel/sched/stop_task.c
+> +++ b/kernel/sched/stop_task.c
+> @@ -23,16 +23,20 @@ check_preempt_curr_stop(struct rq *rq, struct task_struct *p, int flags)
+> ššššššššš/* we're never preempted */
+> š}
+>
+> -static struct task_struct *pick_next_task_stop(struct rq *rq)
+> +static struct task_struct *
+> +pick_next_task_stop(struct rq *rq, struct task_struct *prev)
+> š{
+> šššššššššstruct task_struct *stop = rq->stop;
+>
+> - if (stop && stop->on_rq) {
+> - stop->se.exec_start = rq_clock_task(rq);
+> - return stop;
+> - }
+> + if (!stop || !stop->on_rq)
+> + return NULL;
+>
+> - return NULL;
+> + if (prev)
+> + prev->sched_class->put_prev_task(rq, prev);
+> +
+> + stop->se.exec_start = rq_clock_task(rq);
+> +
+> + return stop;
+> š}
+>
+> šstatic void
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at šhttp://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at šhttp://www.tux.org/lkml/
