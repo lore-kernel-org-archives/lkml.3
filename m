@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753027AbaBLQy5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 11:54:57 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:51854 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751538AbaBLQyz (ORCPT
+	id S1753367AbaBLQzR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 11:55:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50879 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752647AbaBLQzO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 11:54:55 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: David Howells <dhowells@redhat.com>
-Cc: akpm@linux-foundation.org, linux-arch@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 4/4] ARM: Delete asm/system.h
-Date: Wed, 12 Feb 2014 17:54:42 +0100
-Message-ID: <1559240.V3DW7mAybD@wuerfel>
-User-Agent: KMail/4.11.3 (Linux/3.11.0-15-generic; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <20140212154615.2405.88996.stgit@warthog.procyon.org.uk>
-References: <20140212154544.2405.2992.stgit@warthog.procyon.org.uk> <20140212154615.2405.88996.stgit@warthog.procyon.org.uk>
+	Wed, 12 Feb 2014 11:55:14 -0500
+Date: Wed, 12 Feb 2014 08:56:30 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Jason Wang <jasowang@redhat.com>,
+        virtio-dev@lists.oasis-open.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        davem@davemloft.net, qinchuanyu@huawei.com,
+        Joern Engel <joern@logfs.org>,
+        Anatol Pomozov <anatol.pomozov@gmail.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: Re: [PATCH net 1/3] kref: add kref_sub_return
+Message-ID: <20140212165630.GA22991@kroah.com>
+References: <1392222846-26699-1-git-send-email-mst@redhat.com>
+ <1392222846-26699-2-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:N3yUE+vOiFYMsrZZBMBy6ZqcxN2zwA0H8igqGgPnTtQ
- fYP5/pp5Z+Qe2LQBYgGUW53Ofiec1AxwwEZakBL63dnn+0DZQF
- h2ViOu+lWWmDxB4ev7cm43p79XoUBgN7XKfGq9pKDo4tnIYJxN
- ek+YD6AM2phMugQFv3S2hOeLR9kQRexVlPAyVY5YRn5tKfNM51
- b5zmLshDfN0rKKrYv+3aHPM3+IDWKt48OE7b33gLlqblhG4J9M
- t4/XthzbIjJLdjcLw0nacrhFaHSC7v1a7E8SYJJM+i7jm3GyFI
- AescBL7DO4reXna6W4okl36GQsSmLAwisPLanseuHry1TVy/0u
- IayFzHkihzZBJPV8IhIk=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392222846-26699-2-git-send-email-mst@redhat.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 12 February 2014 15:46:15 David Howells wrote:
-> Delete ARM's asm/system.h.  It's the last holdout and should be got rid of.
-> 
-> This builds for defconfig, lpc32xx_defconfig, exynos_defconfig + XEN, the
-> previous changed to a Gemini system and an omap3 config with TI_DAVINCI_EMAC.
-> 
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> cc: Russell King <linux@arm.linux.org.uk>
-> cc: linux-arm-kernel@lists.infradead.org
+On Wed, Feb 12, 2014 at 06:38:21PM +0200, Michael S. Tsirkin wrote:
+> It is sometimes useful to get the value of the reference count after
+> decrement.
+> For example, vhost wants to execute some periodic cleanup operations
+> once number of references drops below a specific value, before it
+> reaches zero (for efficiency).
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+You should never care about what the value of the kref is, if you are
+using it correctly :)
 
-I've added this to my randconfig builder, will let you know when unexpected
-bugs show up (probably won't).
+So I really don't want to add this function, as I'm sure people will use
+it incorrectly.  You should only care if the reference drops to 0, if
+not, then your usage doesn't really fit into the "kref" model, and so,
+just use an atomic variable.
 
-	Arnd
+I really want to know why it matters for "efficiency" that you know this
+number.  How does that help anything, as the number could then go up
+later on, and the work you did at a "lower" number is obsolete, right?
+
+thanks,
+
+greg k-h
