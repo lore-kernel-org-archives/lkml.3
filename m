@@ -1,293 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751703AbaBLHH1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 02:07:27 -0500
-Received: from forward5h.mail.yandex.net ([84.201.186.23]:56658 "EHLO
-	forward5h.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751783AbaBLHHO (ORCPT
+	id S1751572AbaBLHIf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 02:08:35 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:64624 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750726AbaBLHId (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 02:07:14 -0500
-X-Greylist: delayed 375 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Feb 2014 02:07:14 EST
-From: Kirill Tkhai <tkhai@yandex.ru>
-To: "mingo@kernel.org" <mingo@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-In-Reply-To: <tip-606dba2e289446600a0b68422ed2019af5355c12@git.kernel.org>
-References: <1328936700.2476.17.camel@laptop> <tip-606dba2e289446600a0b68422ed2019af5355c12@git.kernel.org>
-Subject: Re: [tip:sched/core] sched: Push put_prev_task() into pick_next_task( )
+	Wed, 12 Feb 2014 02:08:33 -0500
+X-AuditID: 9c93017d-b7c89ae000006ae1-f8-52fb1df01313
+Date: Wed, 12 Feb 2014 16:08:32 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 1/4] zram: introduce compressing backend abstraction
+Message-ID: <20140212070832.GC19818@bbox>
+References: <1392157266-13488-1-git-send-email-sergey.senozhatsky@gmail.com>
+ <1392157266-13488-2-git-send-email-sergey.senozhatsky@gmail.com>
 MIME-Version: 1.0
-Message-Id: <124891392188453@web4h.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Wed, 12 Feb 2014 11:00:53 +0400
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=koi8-r
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392157266-13488-2-git-send-email-sergey.senozhatsky@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-11.02.2014, 16:17, "tip-bot for Peter Zijlstra" <tipbot@zytor.com>:
-> Commit-ID: š606dba2e289446600a0b68422ed2019af5355c12
-> Gitweb: ššššhttp://git.kernel.org/tip/606dba2e289446600a0b68422ed2019af5355c12
-> Author: ššššPeter Zijlstra <peterz@infradead.org>
-> AuthorDate: Sat, 11 Feb 2012 06:05:00 +0100
-> Committer: šIngo Molnar <mingo@kernel.org>
-> CommitDate: Mon, 10 Feb 2014 16:17:13 +0100
->
-> sched: Push put_prev_task() into pick_next_task()
->
-> In order to avoid having to do put/set on a whole cgroup hierarchy
-> when we context switch, push the put into pick_next_task() so that
-> both operations are in the same function. Further changes then allow
-> us to possibly optimize away redundant work.
->
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> Link: http://lkml.kernel.org/r/1328936700.2476.17.camel@laptop
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+On Wed, Feb 12, 2014 at 01:21:03AM +0300, Sergey Senozhatsky wrote:
+> ZRAM performs direct LZO compression algorithm calls, making it the one
+> and only option. Introduce abstract struct zram_comp in order to support
+> multiple compression algorithms. struct zram_comp defines the following
+> set of compressing backend operations:
+>         .create
+>         .destroy
+>         .compress
+>         .decompress
+> 
+> Schematically zram write() usually contains the following steps:
+> 0) preparation (decompression of partioal IO, etc.)
+> 1) lock buffer_lock mutex (protects meta compress buffers)
+> 2) compress (using meta compress buffers)
+> 3) alloc and map zs_pool object
+> 4) copy compressed data (from meta compress buffers) to object allocated by 3)
+> 5) free previous pool page, assign a new one
+> 6) unlock buffer_lock mutex
+> 
+> As we can see, compressing buffers must remain untouched from 1) to 4),
+> because, otherwise, concurrent write() can overwrite data. At the same
+> time, zram_meta must be aware of a) specific compression algorithm
+> memory requirements and b) necessary locking to protect compression
+> buffers. Besides, zram holds buffer_lock almost through the whole write()
+> function, making parallel compression impossible. To remove requirement
+> a) new struct zcomp_workmem introduced, which contain buffers required by
+> compression algorithm. While struct zram_comp implements workmem handling
+> and locking by means of get() and put() semantics and removes requirement
+> b) from zram meta. zram_comp ->create() and ->destroy(), respectively,
+> allocate and deallocate algorithm specific zcomp_workmem `private' buffer.
+> 
+> Every zram_comp has a list of idle workmem buffers (at least 1 workmem),
+> spinlock to protect idle list and wait queue, making it possible to perform
+> parallel compressions. Each time zram issues a zcomp_workmem_get() call, the
+> following set of operations performed:
+> - spin lock buffer_lock
+> - if idle list is not empty, remove workmem from idle list, spin
+>   unlock and return workmem pointer
+> - if idle list is empty, current adds itself to wait queue. it will be
+>   awaken by zcomp_workmem_put() caller.
+> 
+> zcomp_workmem_put():
+> - spin lock buffer_lock
+> - add workmem to idle list
+> - spin unlock, wake up sleeper (if any)
+> 
+> In other words, zcomp_workmem_get() turns caller into exclusive user of workmem
+> and zcomp_workem_put() makes a particular workmem available.
+> 
+> Usage examples.
+> 
+> To initialize compressing backend:
+> 	comp = zcomp_create(NAME) /* NAME e.g. lzo */
+> 
+> which initialises compressing backend if requested algorithm is supported.
+> 
+> Compress:
+> 	wm = zcomp_workmem_get(comp)
+> 	zcomp_compress(comp, wm, src, src_len, &dst_len)
+> 	[..] /* copy compressed data */
+> 	zcomp_workmem_put(comp, wm)
+> 
+> Decompress:
+> 	zcomp_decompress(comp, src, src_len, dst, &dst_len);
+> 
+> Free compessing backend and its workmem:
+> 	zcomp_destroy(comp)
+> 
+> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 > ---
-> škernel/sched/core.c ššššš| 21 ++++++++-------------
-> škernel/sched/deadline.c š| š5 ++++-
-> škernel/sched/fair.c ššššš| š6 +++++-
-> škernel/sched/idle_task.c | š6 +++++-
-> škernel/sched/rt.c ššššššš| 27 ++++++++++++++++-----------
-> škernel/sched/sched.h šššš| š8 +++++++-
-> škernel/sched/stop_task.c | 16 ++++++++++------
-> š7 files changed, 55 insertions(+), 34 deletions(-)
->
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 417cf65..dedb5f0 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -2579,18 +2579,11 @@ static inline void schedule_debug(struct task_struct *prev)
-> šššššššššschedstat_inc(this_rq(), sched_count);
-> š}
->
-> -static void put_prev_task(struct rq *rq, struct task_struct *prev)
-> -{
-> - if (prev->on_rq || rq->skip_clock_update < 0)
-> - update_rq_clock(rq);
-> - prev->sched_class->put_prev_task(rq, prev);
-> -}
-> -
-> š/*
-> šš* Pick up the highest-prio task:
-> šš*/
-> šstatic inline struct task_struct *
-> -pick_next_task(struct rq *rq)
-> +pick_next_task(struct rq *rq, struct task_struct *prev)
-> š{
-> šššššššššconst struct sched_class *class;
-> šššššššššstruct task_struct *p;
-> @@ -2600,13 +2593,13 @@ pick_next_task(struct rq *rq)
-> šššššššššš* the fair class we can call that function directly:
-> šššššššššš*/
-> šššššššššif (likely(rq->nr_running == rq->cfs.h_nr_running)) {
-> - p = fair_sched_class.pick_next_task(rq);
-> + p = fair_sched_class.pick_next_task(rq, prev);
-> šššššššššššššššššif (likely(p))
-> šššššššššššššššššššššššššreturn p;
-> ššššššššš}
->
-> šššššššššfor_each_class(class) {
-> - p = class->pick_next_task(rq);
-> + p = class->pick_next_task(rq, prev);
-> šššššššššššššššššif (p)
-> šššššššššššššššššššššššššreturn p;
-> ššššššššš}
-> @@ -2714,8 +2707,10 @@ need_resched:
-> šššššššššššššššššššššššššrq->idle_stamp = 0;
-> ššššššššš}
->
-> - put_prev_task(rq, prev);
-> - next = pick_next_task(rq);
-> + if (prev->on_rq || rq->skip_clock_update < 0)
-> + update_rq_clock(rq);
-> +
-> + next = pick_next_task(rq, prev);
-> šššššššššclear_tsk_need_resched(prev);
-> šššššššššclear_preempt_need_resched();
-> šššššššššrq->skip_clock_update = 0;
-> @@ -4748,7 +4743,7 @@ static void migrate_tasks(unsigned int dead_cpu)
-> šššššššššššššššššif (rq->nr_running == 1)
-> šššššššššššššššššššššššššbreak;
->
-> - next = pick_next_task(rq);
-> + next = pick_next_task(rq, NULL);
-
-pick_next_task() firstly checks for prev->sched_class, doesn't it ???
-
-The same for pick_next_task_rt().
-
-> šššššššššššššššššBUG_ON(!next);
-> šššššššššššššššššnext->sched_class->put_prev_task(rq, next);
->
-> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-> index b5700bc..50797d5 100644
-> --- a/kernel/sched/deadline.c
-> +++ b/kernel/sched/deadline.c
-> @@ -990,7 +990,7 @@ static struct sched_dl_entity *pick_next_dl_entity(struct rq *rq,
-> šššššššššreturn rb_entry(left, struct sched_dl_entity, rb_node);
-> š}
->
-> -struct task_struct *pick_next_task_dl(struct rq *rq)
-> +struct task_struct *pick_next_task_dl(struct rq *rq, struct task_struct *prev)
-> š{
-> šššššššššstruct sched_dl_entity *dl_se;
-> šššššššššstruct task_struct *p;
-> @@ -1001,6 +1001,9 @@ struct task_struct *pick_next_task_dl(struct rq *rq)
-> šššššššššif (unlikely(!dl_rq->dl_nr_running))
-> šššššššššššššššššreturn NULL;
->
-> + if (prev)
-> + prev->sched_class->put_prev_task(rq, prev);
-> +
-> šššššššššdl_se = pick_next_dl_entity(rq, dl_rq);
-> šššššššššBUG_ON(!dl_se);
->
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 748a7ac..c4bb0ac 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -4655,7 +4655,8 @@ preempt:
-> šššššššššššššššššset_last_buddy(se);
-> š}
->
-> -static struct task_struct *pick_next_task_fair(struct rq *rq)
-> +static struct task_struct *
-> +pick_next_task_fair(struct rq *rq, struct task_struct *prev)
-> š{
-> šššššššššstruct task_struct *p;
-> šššššššššstruct cfs_rq *cfs_rq = &rq->cfs;
-> @@ -4664,6 +4665,9 @@ static struct task_struct *pick_next_task_fair(struct rq *rq)
-> šššššššššif (!cfs_rq->nr_running)
-> šššššššššššššššššreturn NULL;
->
-> + if (prev)
-> + prev->sched_class->put_prev_task(rq, prev);
-> +
-> šššššššššdo {
-> šššššššššššššššššse = pick_next_entity(cfs_rq);
-> šššššššššššššššššset_next_entity(cfs_rq, se);
-> diff --git a/kernel/sched/idle_task.c b/kernel/sched/idle_task.c
-> index 516c3d9..e5c922a 100644
-> --- a/kernel/sched/idle_task.c
-> +++ b/kernel/sched/idle_task.c
-> @@ -33,8 +33,12 @@ static void check_preempt_curr_idle(struct rq *rq, struct task_struct *p, int fl
-> šššššššššresched_task(rq->idle);
-> š}
->
-> -static struct task_struct *pick_next_task_idle(struct rq *rq)
-> +static struct task_struct *
-> +pick_next_task_idle(struct rq *rq, struct task_struct *prev)
-> š{
-> + if (prev)
-> + prev->sched_class->put_prev_task(rq, prev);
-> +
-> šššššššššschedstat_inc(rq, sched_goidle);
-> š#ifdef CONFIG_SMP
-> ššššššššš/* Trigger the post schedule to do an idle_enter for CFS */
-> diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-> index a2740b7..a15ca1c 100644
-> --- a/kernel/sched/rt.c
-> +++ b/kernel/sched/rt.c
-> @@ -1310,15 +1310,7 @@ static struct task_struct *_pick_next_task_rt(struct rq *rq)
-> š{
-> šššššššššstruct sched_rt_entity *rt_se;
-> šššššššššstruct task_struct *p;
-> - struct rt_rq *rt_rq;
-> -
-> - rt_rq = &rq->rt;
-> -
-> - if (!rt_rq->rt_nr_running)
-> - return NULL;
-> -
-> - if (rt_rq_throttled(rt_rq))
-> - return NULL;
-> + struct rt_rq *rt_rq š= &rq->rt;
->
-> šššššššššdo {
-> šššššššššššššššššrt_se = pick_next_rt_entity(rq, rt_rq);
-> @@ -1332,9 +1324,22 @@ static struct task_struct *_pick_next_task_rt(struct rq *rq)
-> šššššššššreturn p;
-> š}
->
-> -static struct task_struct *pick_next_task_rt(struct rq *rq)
-> +static struct task_struct *
-> +pick_next_task_rt(struct rq *rq, struct task_struct *prev)
-> š{
-> - struct task_struct *p = _pick_next_task_rt(rq);
-> + struct task_struct *p;
-> + struct rt_rq *rt_rq = &rq->rt;
-> +
-> + if (!rt_rq->rt_nr_running)
-> + return NULL;
-> +
-> + if (rt_rq_throttled(rt_rq))
-> + return NULL;
-> +
-> + if (prev)
-> + prev->sched_class->put_prev_task(rq, prev);
-> +
-> + p = _pick_next_task_rt(rq);
->
-> ššššššššš/* The running task is never eligible for pushing */
-> šššššššššif (p)
-> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-> index bb89991..c534cf4 100644
-> --- a/kernel/sched/sched.h
-> +++ b/kernel/sched/sched.h
-> @@ -1105,7 +1105,13 @@ struct sched_class {
->
-> šššššššššvoid (*check_preempt_curr) (struct rq *rq, struct task_struct *p, int flags);
->
-> - struct task_struct * (*pick_next_task) (struct rq *rq);
-> + /*
-> + * It is the responsibility of the pick_next_task() method that will
-> + * return the next task to call put_prev_task() on the @prev task or
-> + * something equivalent.
+>  drivers/block/zram/zcomp_lzo.c |  33 +++++++++
+>  drivers/block/zram/zram_comp.c | 147 +++++++++++++++++++++++++++++++++++++++++
+>  drivers/block/zram/zram_comp.h |  58 ++++++++++++++++
+>  3 files changed, 238 insertions(+)
+>  create mode 100644 drivers/block/zram/zcomp_lzo.c
+>  create mode 100644 drivers/block/zram/zram_comp.c
+>  create mode 100644 drivers/block/zram/zram_comp.h
+> 
+> diff --git a/drivers/block/zram/zcomp_lzo.c b/drivers/block/zram/zcomp_lzo.c
+> new file mode 100644
+> index 0000000..bbde74e
+> --- /dev/null
+> +++ b/drivers/block/zram/zcomp_lzo.c
+> @@ -0,0 +1,33 @@
+> +/*
+> + * Copyright (C) 2014 Sergey Senozhatsky.
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * as published by the Free Software Foundation; either version
+> + * 2 of the License, or (at your option) any later version.
 > + */
-> + struct task_struct * (*pick_next_task) (struct rq *rq,
-> + struct task_struct *prev);
-> šššššššššvoid (*put_prev_task) (struct rq *rq, struct task_struct *p);
->
-> š#ifdef CONFIG_SMP
-> diff --git a/kernel/sched/stop_task.c b/kernel/sched/stop_task.c
-> index fdb6bb0..a4147c9 100644
-> --- a/kernel/sched/stop_task.c
-> +++ b/kernel/sched/stop_task.c
-> @@ -23,16 +23,20 @@ check_preempt_curr_stop(struct rq *rq, struct task_struct *p, int flags)
-> ššššššššš/* we're never preempted */
-> š}
->
-> -static struct task_struct *pick_next_task_stop(struct rq *rq)
-> +static struct task_struct *
-> +pick_next_task_stop(struct rq *rq, struct task_struct *prev)
-> š{
-> šššššššššstruct task_struct *stop = rq->stop;
->
-> - if (stop && stop->on_rq) {
-> - stop->se.exec_start = rq_clock_task(rq);
-> - return stop;
-> - }
-> + if (!stop || !stop->on_rq)
-> + return NULL;
->
-> - return NULL;
-> + if (prev)
-> + prev->sched_class->put_prev_task(rq, prev);
 > +
-> + stop->se.exec_start = rq_clock_task(rq);
+> +#include <linux/kernel.h>
+> +#include <linux/slab.h>
+> +#include <linux/lzo.h>
 > +
-> + return stop;
-> š}
->
-> šstatic void
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at šhttp://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at šhttp://www.tux.org/lkml/
+> +#include "zram_comp.h"
+> +
+> +static void * lzo_create(void)
+> +{
+> +	return kmalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
+> +}
+> +
+> +static void lzo_destroy(void *workmem)
+> +{
+> +	kfree(workmem);
+> +}
+> +
+> +extern struct zram_comp_backend zcomp_lzo;
+> +struct zram_comp_backend zcomp_lzo = {
+> +	.compress = lzo1x_1_compress,
+> +	.decompress = lzo1x_decompress_safe,
+> +	.create = lzo_create,
+> +	.destroy = lzo_destroy,
+> +	.name = "lzo",
+> +};
+> diff --git a/drivers/block/zram/zram_comp.c b/drivers/block/zram/zram_comp.c
+> new file mode 100644
+> index 0000000..139a468
+> --- /dev/null
+> +++ b/drivers/block/zram/zram_comp.c
+> @@ -0,0 +1,147 @@
+> +/*
+> + * Copyright (C) 2014 Sergey Senozhatsky.
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * as published by the Free Software Foundation; either version
+> + * 2 of the License, or (at your option) any later version.
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/string.h>
+> +#include <linux/slab.h>
+> +#include <linux/vmalloc.h>
+> +#include <linux/wait.h>
+> +#include <linux/sched.h>
+> +
+> +#include "zram_comp.h"
+> +
+> +extern struct zram_comp_backend zcomp_lzo;
+> +
+> +static void workmem_free(struct zram_comp *comp, struct zcomp_workmem *workmem)
+> +{
+> +	comp->backend->destroy(workmem->private);
+> +	free_pages((unsigned long)workmem->buffer, 1);
+> +	kfree(workmem);
+> +}
+> +
+> +/* allocate new workmem structure with ->mem of requested size,
+> + * return NULL on error */
+> +static struct zcomp_workmem *workmem_alloc(struct zram_comp *comp)
+> +{
+> +	struct zcomp_workmem *workmem = kmalloc(sizeof(*workmem), GFP_NOFS);
+
+
+One more thing, pz, say why we need GFP_NOFS in here.
+
+-- 
+Kind regards,
+Minchan Kim
