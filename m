@@ -1,110 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754406AbaBLWxF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 17:53:05 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52909 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753118AbaBLWxD (ORCPT
+	id S1754450AbaBLW6d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 17:58:33 -0500
+Received: from senator.holtmann.net ([87.106.208.187]:56567 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753724AbaBLW6b convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 17:53:03 -0500
-Message-ID: <1392245562.15615.29.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: 3.14-mw regression: rtl8169 WARNING: DMA-API: exceeded 7
- overlapping mappings of pfn 55ebe
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Sander Eikelenboom <linux@eikelenboom.it>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Wei Liu <wei.liu2@citrix.com>, Francois Romieu <romieu@fr.zoreil.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 12 Feb 2014 22:52:42 +0000
-In-Reply-To: <1392154132.6615.91.camel@edumazet-glaptop2.roam.corp.google.com>
-References: <1859471893.20140126115521@eikelenboom.it>
-	 <20140127000305.GA14236@electric-eye.fr.zoreil.com>
-	 <CAA9_cme2hgJ=jCDkPh5n5RP8fiJE-dVwbFr-apKv1=mNGPHYZg@mail.gmail.com>
-	 <84816226.20140206123631@eikelenboom.it>
-	 <942972114.20140206140909@eikelenboom.it>
-	 <CAPcyv4g2EnCLFWfLfSDnjtwrid2tCq2k6wh-8sPYY06eJpM83A@mail.gmail.com>
-	 <1434499348.20140211205617@eikelenboom.it>
-	 <1392154132.6615.91.camel@edumazet-glaptop2.roam.corp.google.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-EmbTK6wluDjoMCIYjqB1"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 91.84.160.45
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Wed, 12 Feb 2014 17:58:31 -0500
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
+Subject: Re: [PATCH 00/24] rfcomm fixes
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <52F95A10.5010507@hurleysoftware.com>
+Date: Wed, 12 Feb 2014 14:58:08 -0800
+Cc: "Gustavo F. Padovan" <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        Gianluca Anzolin <gianluca@sottospazio.it>,
+        Alexander Holler <holler@ahsoftware.de>,
+        Andrey Vihrov <andrey.vihrov@gmail.com>,
+        Sander Eikelenboom <linux@eikelenboom.it>,
+        "bluez mailin list (linux-bluetooth@vger.kernel.org)" 
+	<linux-bluetooth@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <433F6D97-A126-4F9F-96AC-4385575E005E@holtmann.org>
+References: <1391997564-1805-1-git-send-email-peter@hurleysoftware.com> <3E0F3723-029F-4B12-8D77-9790FDBD3227@holtmann.org> <52F95A10.5010507@hurleysoftware.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+X-Mailer: Apple Mail (2.1827)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Peter,
 
---=-EmbTK6wluDjoMCIYjqB1
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+>>> This patch series addresses a number of previously unknown issues
+>>> with the RFCOMM tty device implementation, in addition to
+>>> addressing the locking regression recently reported [1].
+>>> 
+>>> As Gianluca suggested and I agree, this series first reverts
+>>> 3 of the 4 patches of 3.14-rc1 for bluetooth/rfcomm/tty.c.
+>> 
+>> so for 3.14 we should revert 3 patches. And then the other 21 are
+> > intended for 3.15 merge window.
+> 
+> Yep, this is probably best. At least 3.13 & 3.14 will behave the
+> same wrt rfcomm.
+> 
+>> I realize that we still have to deal with some breakage, but we
+> > do not want regressions and I clearly not going to take 24 patches
+> > for 3.14 at this point in time.
+> 
+> Yeah, I wasn't expecting you to.
+> 
+>> What I can do is take all 24 patches into bluetooth-next and let
+> > them sit for 1 week and have people test them. And then we go ahead
+> > with reverting 3 patches from 3.14. Does that make sense?
+> 
+> Yep, that's fine with me. Thanks.
 
-On Tue, 2014-02-11 at 13:28 -0800, Eric Dumazet wrote:
-[...]
-> Incoming frames might be taken out of order-3 pages.
->=20
-> With regular Ethernet frames, this is 21 frames per order-3 pages.
->=20
-> ACTIVE_PFN_MAX_OVERLAP seems too small.
->=20
-> Alternative would be to user order-0 only pages if CONFIG_DMA_API_DEBUG
-> is set. Not sure if it works if PAGE_SIZE=3D66536 ....
+we might also want to add some end-to-end test cases to rfcomm-tester that covers this behavior.
 
-Indeed, you can get a lot of packet buffers into a 64K page...
+Regards
 
-> diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-> index f589c9af8cbf..1b9995adfd29 100644
-> --- a/include/linux/skbuff.h
-> +++ b/include/linux/skbuff.h
-> @@ -1924,7 +1924,11 @@ static inline void __skb_queue_purge(struct sk_buf=
-f_head *list)
->  		kfree_skb(skb);
->  }
-> =20
-> +#if defined(CONFIG_DMA_API_DEBUG)
-> +#define NETDEV_FRAG_PAGE_MAX_ORDER 0
-> +#else
->  #define NETDEV_FRAG_PAGE_MAX_ORDER get_order(32768)
-> +#endif
->  #define NETDEV_FRAG_PAGE_MAX_SIZE  (PAGE_SIZE << NETDEV_FRAG_PAGE_MAX_OR=
-DER)
->  #define NETDEV_PAGECNT_MAX_BIAS	   NETDEV_FRAG_PAGE_MAX_SIZE
-> =20
+Marcel
 
-That may be useful for debugging this particular problem, but please
-don't make debugging options change behaviour like this.
-
-Ben.
-
---=20
-Ben Hutchings
-If more than one person is responsible for a bug, no one is at fault.
-
---=-EmbTK6wluDjoMCIYjqB1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIVAwUAUvv7Oue/yOyVhhEJAQpPYg//eVX07ZxPLbB2YCGGRLGXfVVNdaHNxK1s
-6EU7QxjEm2PI8clWDsY9rl5qJWTAwadXmt00GpcgUXBiPYoLy5zBXqDkzF0fxHnR
-H9CmjQ8Hs443zPUQUHas7cdvj4RZGjqXpJ2xddQaeOth/sh9E0Cww3uQEs++lUgQ
-2wgU7Gjv4JXA4R9UJOtdI9C6XGY3zXZmfhxsRbWaeu1nsQsheNCn01Q/PrtlbyAq
-IMKEnx3+WcQugayWs3BHO1Yny0sOItKo6aBOq5Y4ytnaUWbZk3Yq/IJCfxBF0PMl
-NkLoiM2tkjNyxWna5NzlcXEqguwG6nwnxGEVkTbFaF1igmFDHYTuwFC+ZQAexRDO
-CaXbDbHnyHwNl7mKK53D5TmFg9d7cIF6j8Qh/Cs/rAzKlglbQs3KLqiIQjOVWUTw
-9XLk1XLD9zzrXs4x7hnWHIzxnzwE3SBkbj4QEkveEq3SxpYHmrsfYvnCaHYUCPeI
-b8QGks9kOi+2sPnrHMndRo/AA60lARsxwZw2UTFza89Re2kwnFfoozM30juZAGHP
-2ZuXR1N/mwLY4+xLz+yeHRXY8LCzJU0SvEjTigN0KtlA53a1Awm9K+V3SBqRqv8Y
-hAQmchN9W2pDCx1WqhoQ2mueNeRq3chlsjrWKvTtCL/9S6i0pFAdbDZ/ySWSO9fW
-qvD0XOdrIzU=
-=fBIt
------END PGP SIGNATURE-----
-
---=-EmbTK6wluDjoMCIYjqB1--
