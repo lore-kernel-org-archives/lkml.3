@@ -1,87 +1,364 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754327AbaBLToA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 14:44:00 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:40916 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754309AbaBLTn5 (ORCPT
+	id S1754387AbaBLToo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 14:44:44 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:53611 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754067AbaBLTnX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 14:43:57 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/Npit5B1lODpOesfeutkWz2w2TxxWE5nA=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 713C9525E31
-Date: Wed, 12 Feb 2014 14:43:47 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Laura Abbott <lauraa@codeaurora.org>, keescook@chromium.org,
-        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: Re: [RFC/PATCH 0/3] Add devicetree scanning for randomness
-Message-ID: <20140212194347.GQ27395@titan.lakedaemon.net>
-References: <1392168805-14200-1-git-send-email-lauraa@codeaurora.org>
- <1571508.yGAAZ8TNH0@wuerfel>
- <20140212184521.GO27395@titan.lakedaemon.net>
- <1882539.R1gpoLLYks@wuerfel>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1882539.R1gpoLLYks@wuerfel>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 12 Feb 2014 14:43:23 -0500
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
+        linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Subject: [PATCHv4 1/4] zram: introduce compressing backend abstraction
+Date: Wed, 12 Feb 2014 22:39:33 +0300
+Message-Id: <1392233976-26473-3-git-send-email-sergey.senozhatsky@gmail.com>
+X-Mailer: git-send-email 1.9.0.rc3.256.g4af3ebd
+In-Reply-To: <1392233976-26473-1-git-send-email-sergey.senozhatsky@gmail.com>
+References: <1392233976-26473-1-git-send-email-sergey.senozhatsky@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 08:12:23PM +0100, Arnd Bergmann wrote:
-> On Wednesday 12 February 2014 13:45:21 Jason Cooper wrote:
-> > On Wed, Feb 12, 2014 at 07:17:41PM +0100, Arnd Bergmann wrote:
-> > > On Wednesday 12 February 2014 12:45:54 Jason Cooper wrote:
-> > > > I brought this up at last weeks devicetree irc meeting.  My goal is to
-> > > > provide early randomness for kaslr on ARM.  Currently, my idea is modify
-> > > > the init script to save an additional random seed from /dev/urandom to
-> > > > /boot/random-seed.
-> > > > 
-> > > > The bootloader would then load this file into ram, and pass the
-> > > > address/size to the kernel either via dt, or commandline.  kaslr (run in
-> > > > the decompressor) would consume some of this randomness, and then
-> > > > random.c would consume the rest in a non-crediting initialization.
-> > > 
-> > > I like the idea, but wouldn't it be easier to pass actual random data
-> > > using DT, rather than the address/size?
-> > 
-> > I thought about that at first, but that requires either that the
-> > bootloader be upgraded to insert the data, or that userspace is
-> > modifying the dtb at least twice per boot.
-> > 
-> > I chose address/size to facilitate modifying existing/fielded devices.
-> > The user could modify the dtb once, and modify the bootloader
-> > environment to load X amount to Y address.  As a fallback, it could be
-> > expressed on the commandline for non-DT bootloaders.
-> 
-> Ah, so you are interested in boot loaders that can be scripted to do
-> what you had in mind but cannot be scripted to add or modify a DT
-> property. I hadn't considered that, but you are probably right that
-> this is at least 90% of the systems you'd find in the wild today.
+ZRAM performs direct LZO compression algorithm calls, making it the one and
+only option. Introduce compressing backend abstraction zcomp in order to
+support multiple compression algorithms with the following set of operations:
+        .create
+        .destroy
+        .compress
+        .decompress
 
-Yes, exactly.
+Schematically zram write() usually contains the following steps:
+0) preparation (decompression of partioal IO, etc.)
+1) lock buffer_lock mutex (protects meta compress buffers)
+2) compress (using meta compress buffers)
+3) alloc and map zs_pool object
+4) copy compressed data (from meta compress buffers) to object allocated by 3)
+5) free previous pool page, assign a new one
+6) unlock buffer_lock mutex
 
-> Thinking this a bit further, I wonder if (at least upstream) u-boot
-> has a way to modify DT properties in a scripted way that would allow
-> the direct property. It sounds like a generally useful feature not
-> just for randomness, so if that doesn't already work, maybe someone
-> can implement it. In the simplest case, you'd only need to find the
-> address of an existing property in the dtb and load a file to
-> that location.
+As we can see, compressing buffers must remain untouched from 1) to 4),
+because, otherwise, concurrent write() can overwrite data. At the same
+time, zram_meta must be aware of a) specific compression algorithm
+memory requirements and b) necessary locking to protect compression
+buffers. Besides, zram holds buffer_lock almost through the whole write()
+function, making parallel compression impossible. To remove requirement
+a) new struct zcomp_strm introduced, which contain buffers required by
+compression algorithm. While struct zcomp implements zcomp_strm stream
+handling and locking by means of get() and put() semantics and removes
+requirement b) from zram meta. zcomp ->create() and ->destroy(), respectively,
+allocate and deallocate algorithm specific zcomp_strm `private' buffer.
 
-Like fdtget from dtc?  The thing is, this address would only need to be
-setup once per board.  Hypothetically, debian's flash-kernel could set
-the address in the dtb, then set it in the u-boot environment.  From
-then on, only the normal initscript writing to random-seed would be
-needed.
+Every zcomp has a list of idle zcomp_strm buffers, spinlock to protect idle
+list and wait queue, making it possible to perform parallel compressions.
+Each time zram issues a zcomp_strm_get() call, the following set of operations
+performed:
+- spin lock buffer_lock
+- if idle list is not empty, remove zcomp_strm from idle list, spin
+  unlock and return zcomp stream pointer to caller
+- if idle list is empty, current adds itself to wait queue. it will be
+  awaken by zcomp_strm_put() caller.
 
-thx,
+zcomp_strm_put():
+- spin lock buffer_lock
+- add zcomp stream to idle list
+- spin unlock, wake up sleeper
 
-Jason.
+In other words, zcomp_strm_get() turns caller into exclusive user of a stream
+and zcomp_strm_put() makes a particular zcomp stream available.
+
+Usage examples.
+
+To initialize compressing backend:
+	comp = zcomp_create(NAME) /* NAME e.g. "lzo" */
+
+which initialises compressing backend if requested algorithm is supported.
+
+Compress:
+	zstrm = zcomp_strm_get(comp)
+	zcomp_compress(comp, zstrm, src, src_len, &dst_len)
+	[..] /* copy compressed data */
+	zcomp_strm_put(comp, zstrm)
+
+Decompress:
+	zcomp_decompress(comp, src, src_len, dst, &dst_len);
+
+Free compessing backend and its zcomp stream:
+	zcomp_destroy(comp)
+
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+---
+ drivers/block/zram/zcomp.c     | 153 +++++++++++++++++++++++++++++++++++++++++
+ drivers/block/zram/zcomp.h     |  57 +++++++++++++++
+ drivers/block/zram/zcomp_lzo.c |  33 +++++++++
+ 3 files changed, 243 insertions(+)
+ create mode 100644 drivers/block/zram/zcomp.c
+ create mode 100644 drivers/block/zram/zcomp.h
+ create mode 100644 drivers/block/zram/zcomp_lzo.c
+
+diff --git a/drivers/block/zram/zcomp.c b/drivers/block/zram/zcomp.c
+new file mode 100644
+index 0000000..3b4920f
+--- /dev/null
++++ b/drivers/block/zram/zcomp.c
+@@ -0,0 +1,153 @@
++/*
++ * Copyright (C) 2014 Sergey Senozhatsky.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version
++ * 2 of the License, or (at your option) any later version.
++ */
++
++#include <linux/kernel.h>
++#include <linux/string.h>
++#include <linux/slab.h>
++#include <linux/vmalloc.h>
++#include <linux/wait.h>
++#include <linux/sched.h>
++
++#include "zcomp.h"
++
++extern struct zcomp_backend zcomp_lzo;
++
++static void zcomp_strm_free(struct zcomp *comp, struct zcomp_strm *zstrm)
++{
++	comp->backend->destroy(zstrm->private);
++	free_pages((unsigned long)zstrm->buffer, 1);
++	kfree(zstrm);
++}
++
++/*
++ * allocate new zcomp_strm structure with ->private initialized by
++ * backend, return NULL on error
++ */
++static struct zcomp_strm *zcomp_strm_alloc(struct zcomp *comp)
++{
++	struct zcomp_strm *zstrm = kmalloc(sizeof(*zstrm), GFP_KERNEL);
++	if (!zstrm)
++		return NULL;
++
++	INIT_LIST_HEAD(&zstrm->list);
++	/* algorithm specific working memory buffer */
++	zstrm->private = comp->backend->create();
++	/*
++	 * allocate 2 pages. 1 for compressed data, plus 1 extra for the
++	 * case when compressed size is larger than the original one
++	 */
++	zstrm->buffer = (void *)__get_free_pages(GFP_KERNEL | __GFP_ZERO, 1);
++	if (!zstrm->private || !zstrm->buffer)
++		goto fail;
++
++	return zstrm;
++fail:
++	zcomp_strm_free(comp, zstrm);
++	return NULL;
++}
++
++/*
++ * get existing idle zcomp_strm or wait until other process release
++ * (zcomp_strm_put()) one for us
++ */
++struct zcomp_strm *zcomp_strm_get(struct zcomp *comp)
++{
++	struct zcomp_strm *zstrm;
++retry:
++	spin_lock(&comp->buffer_lock);
++	if (list_empty(&comp->idle_strm)) {
++		spin_unlock(&comp->buffer_lock);
++		wait_event(comp->strm_wait,
++				!list_empty(&comp->idle_strm));
++		goto retry;
++	}
++
++	zstrm = list_entry(comp->idle_strm.next,
++			struct zcomp_strm, list);
++	list_del(&zstrm->list);
++	spin_unlock(&comp->buffer_lock);
++	return zstrm;
++}
++
++/* add zcomp_strm back to idle list and wake up waiter (if any) */
++void zcomp_strm_put(struct zcomp *comp, struct zcomp_strm *zstrm)
++{
++	spin_lock(&comp->buffer_lock);
++	list_add_tail(&zstrm->list, &comp->idle_strm);
++	spin_unlock(&comp->buffer_lock);
++
++	wake_up(&comp->strm_wait);
++}
++
++int zcomp_compress(struct zcomp *comp, struct zcomp_strm *zstrm,
++		const unsigned char *src, size_t src_len, size_t *dst_len)
++{
++	return comp->backend->compress(src, src_len, zstrm->buffer,
++			dst_len, zstrm->private);
++}
++
++int zcomp_decompress(struct zcomp *comp, const unsigned char *src,
++		size_t src_len, unsigned char *dst, size_t *dst_len)
++{
++	return comp->backend->decompress(src, src_len, dst, dst_len);
++}
++
++/* free allocated zcomp_strm buffers and zcomp */
++void zcomp_destroy(struct zcomp *comp)
++{
++	struct zcomp_strm *zstrm;
++	while (!list_empty(&comp->idle_strm)) {
++		zstrm = list_entry(comp->idle_strm.next,
++				struct zcomp_strm, list);
++		list_del(&zstrm->list);
++		zcomp_strm_free(comp, zstrm);
++	}
++	kfree(comp);
++}
++
++static struct zcomp_backend *find_backend(const char *compress)
++{
++	if (sysfs_streq(compress, "lzo"))
++		return &zcomp_lzo;
++	return NULL;
++}
++
++/*
++ * search available compressors for requested algorithm.
++ * allocate new zcomp and initialize it. return NULL
++ * if requested algorithm is not supported or in case
++ * of init error
++ */
++struct zcomp *zcomp_create(const char *compress)
++{
++	struct zcomp *comp;
++	struct zcomp_backend *backend;
++	struct zcomp_strm *zstrm;
++
++	backend = find_backend(compress);
++	if (!backend)
++		return NULL;
++
++	comp = kmalloc(sizeof(struct zcomp), GFP_KERNEL);
++	if (!comp)
++		return NULL;
++
++	comp->backend = backend;
++	spin_lock_init(&comp->buffer_lock);
++	INIT_LIST_HEAD(&comp->idle_strm);
++	init_waitqueue_head(&comp->strm_wait);
++
++	zstrm = zcomp_strm_alloc(comp);
++	if (!zstrm) {
++		zcomp_destroy(comp);
++		return NULL;
++	}
++	list_add_tail(&zstrm->list, &comp->idle_strm);
++	return comp;
++}
+diff --git a/drivers/block/zram/zcomp.h b/drivers/block/zram/zcomp.h
+new file mode 100644
+index 0000000..213e503
+--- /dev/null
++++ b/drivers/block/zram/zcomp.h
+@@ -0,0 +1,57 @@
++/*
++ * Copyright (C) 2014 Sergey Senozhatsky.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version
++ * 2 of the License, or (at your option) any later version.
++ */
++
++#ifndef _ZCOMP_H_
++#define _ZCOMP_H_
++
++#include <linux/types.h>
++#include <linux/spinlock.h>
++
++struct zcomp_strm {
++	void *buffer;     /* compression/decompression buffer */
++	void *private;      /* algorithm workmem */
++	struct list_head list;
++};
++
++/* static compression backend */
++struct zcomp_backend {
++	int (*compress)(const unsigned char *src, size_t src_len,
++			unsigned char *dst, size_t *dst_len, void *wrkmem);
++
++	int (*decompress)(const unsigned char *src, size_t src_len,
++			unsigned char *dst, size_t *dst_len);
++
++	void * (*create)(void);
++	void (*destroy)(void *private);
++
++	const char *name;
++};
++
++/* dynamic per-device compression frontend */
++struct zcomp {
++	/* protect strm list */
++	spinlock_t buffer_lock;
++	/* list of available strms */
++	struct list_head idle_strm;
++	wait_queue_head_t strm_wait;
++	struct zcomp_backend *backend;
++};
++
++struct zcomp *zcomp_create(const char *comp);
++void zcomp_destroy(struct zcomp *comp);
++
++struct zcomp_strm *zcomp_strm_get(struct zcomp *comp);
++void zcomp_strm_put(struct zcomp *comp, struct zcomp_strm *zsrtm);
++
++int zcomp_compress(struct zcomp *comp, struct zcomp_strm *zstrm,
++		const unsigned char *src, size_t src_len, size_t *dst_len);
++
++int zcomp_decompress(struct zcomp *comp, const unsigned char *src,
++		size_t src_len, unsigned char *dst, size_t *dst_len);
++#endif /* _ZCOMP_H_ */
+diff --git a/drivers/block/zram/zcomp_lzo.c b/drivers/block/zram/zcomp_lzo.c
+new file mode 100644
+index 0000000..2b23771
+--- /dev/null
++++ b/drivers/block/zram/zcomp_lzo.c
+@@ -0,0 +1,33 @@
++/*
++ * Copyright (C) 2014 Sergey Senozhatsky.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version
++ * 2 of the License, or (at your option) any later version.
++ */
++
++#include <linux/kernel.h>
++#include <linux/slab.h>
++#include <linux/lzo.h>
++
++#include "zcomp.h"
++
++static void * lzo_create(void)
++{
++	return kzalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
++}
++
++static void lzo_destroy(void *private)
++{
++	kfree(private);
++}
++
++extern struct zcomp_backend zcomp_lzo;
++struct zcomp_backend zcomp_lzo = {
++	.compress = lzo1x_1_compress,
++	.decompress = lzo1x_decompress_safe,
++	.create = lzo_create,
++	.destroy = lzo_destroy,
++	.name = "lzo",
++};
+-- 
+1.9.0.rc3.256.g4af3ebd
+
