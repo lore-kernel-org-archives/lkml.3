@@ -1,113 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751571AbaBLHev (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 02:34:51 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:37704 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751001AbaBLHet convert rfc822-to-8bit (ORCPT
+	id S1751772AbaBLHkl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 02:40:41 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:16574 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750840AbaBLHkj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 02:34:49 -0500
-X-IronPort-AV: E=Sophos;i="4.95,829,1384272000"; 
-   d="scan'208";a="9512162"
-Message-ID: <52FB2222.20402@cn.fujitsu.com>
-Date: Wed, 12 Feb 2014 15:26:26 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	Wed, 12 Feb 2014 02:40:39 -0500
+Message-ID: <52FB24EA.3060001@huawei.com>
+Date: Wed, 12 Feb 2014 15:38:18 +0800
+From: Qin Chuanyu <qinchuanyu@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: Yijing Wang <wangyijing@huawei.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, Hanjun Guo <guohanjun@huawei.com>,
-        Paul Bolle <pebolle@tiscali.nl>, Oliver Neukum <oneukum@suse.de>
-Subject: Re: [PATCH part1 v6 4/7] PCI: Introduce pci_serial_number_changed()
-References: <1392173573-59844-1-git-send-email-wangyijing@huawei.com> <1392173573-59844-5-git-send-email-wangyijing@huawei.com>
-In-Reply-To: <1392173573-59844-5-git-send-email-wangyijing@huawei.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/02/12 15:32:43,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/02/12 15:32:45
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+To: Jason Wang <jasowang@redhat.com>,
+        <virtualization@lists.linux-foundation.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <mst@redhat.com>, <kvm@vger.kernel.org>
+Subject: Re: [PATCH V2 5/6] vhost_net: poll vhost queue after marking DMA
+ is done
+References: <1377836962-49780-1-git-send-email-jasowang@redhat.com> <1377836962-49780-6-git-send-email-jasowang@redhat.com>
+In-Reply-To: <1377836962-49780-6-git-send-email-jasowang@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.21.101]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yijing,
-On 02/12/2014 10:52 AM, Yijing Wang wrote:
-
-> Sometimes OS do not know the physical device swap,
-> for instance, some device hotplug during system suspend.
-> Interrupt can not deliver to OS in some platform.
-> So we can use pci serial number capability to detect this
-> issue if device supports serial number.
-> 
-> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-> Cc: Paul Bolle <pebolle@tiscali.nl>
-> Cc: Oliver Neukum <oneukum@suse.de>
-> Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>
-> Cc: linux-pci@vger.kernel.org
+On 2013/8/30 12:29, Jason Wang wrote:
+> We used to poll vhost queue before making DMA is done, this is racy if vhost
+> thread were waked up before marking DMA is done which can result the signal to
+> be missed. Fix this by always poll the vhost thread before DMA is done.
+>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 > ---
->  drivers/pci/pci.c   |   28 ++++++++++++++++++++++++++++
->  include/linux/pci.h |    2 ++
->  2 files changed, 30 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-> index a8c1c2d..af34057 100644
-> --- a/drivers/pci/pci.c
-> +++ b/drivers/pci/pci.c
-> @@ -2199,6 +2199,34 @@ void pci_dsn_init(struct pci_dev *dev)
->  }
->  
->  /**
-> + * pci_serial_number_changed - check the device SN is changed
+>   drivers/vhost/net.c |    9 +++++----
+>   1 files changed, 5 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+> index ff60c2a..d09c17c 100644
+> --- a/drivers/vhost/net.c
+> +++ b/drivers/vhost/net.c
+> @@ -308,6 +308,11 @@ static void vhost_zerocopy_callback(struct ubuf_info *ubuf, bool success)
+>   	struct vhost_virtqueue *vq = ubufs->vq;
+>   	int cnt = atomic_read(&ubufs->kref.refcount);
+>
+> +	/* set len to mark this desc buffers done DMA */
+> +	vq->heads[ubuf->desc].len = success ?
+> +		VHOST_DMA_DONE_LEN : VHOST_DMA_FAILED_LEN;
+> +	vhost_net_ubuf_put(ubufs);
+> +
+>   	/*
+>   	 * Trigger polling thread if guest stopped submitting new buffers:
+>   	 * in this case, the refcount after decrement will eventually reach 1
+> @@ -318,10 +323,6 @@ static void vhost_zerocopy_callback(struct ubuf_info *ubuf, bool success)
+>   	 */
+>   	if (cnt <= 2 || !(cnt % 16))
+>   		vhost_poll_queue(&vq->poll);
+> -	/* set len to mark this desc buffers done DMA */
+> -	vq->heads[ubuf->desc].len = success ?
+> -		VHOST_DMA_DONE_LEN : VHOST_DMA_FAILED_LEN;
+> -	vhost_net_ubuf_put(ubufs);
+>   }
+>
+>   /* Expects to be always run from workqueue - which acts as
+>
+with this change, vq would lose protection that provided by ubufs->kref.
+if another thread is waiting at vhost_net_ubuf_put_and_wait called by
+vhost_net_release, then after vhost_net_ubuf_put, vq would been free
+by vhost_net_release soon, vhost_poll_queue(&vq->poll) may cause NULL
+pointer Exception.
 
-How about the name “pci_device_changed”? I think it's more readable,
-though the judgement is according to SN.
+another question is that vhost_zerocopy_callback is called by kfree_skb,
+it may called in different thread context.
+vhost_poll_queue is called decided by ubufs->kref.refcount, this may 
+cause there isn't any thread call  vhost_poll_queue, but at least one is 
+needed. and this cause network break.
+We could repeat it by using 8 netperf thread in guest to xmit tcp to its 
+host.
 
-Regards,
-Gu
-
-> + * @pdev: the PCI device
-> + *
-> + * check the device serial number is changed.
-> + * if device does not support device serial number,
-> + * return false.
-> + */
-> +bool pci_serial_number_changed(struct pci_dev *pdev)
-> +{
-> +	u64 old, new;
-> +	old = pdev->sn;
-> +
-> +	if (!pci_is_pcie(pdev))
-> +		return false;
-> +
-> +	new = pci_device_serial_number(pdev->bus,
-> +			pdev->devfn);
-> +
-> +	if (old != new) {
-> +		pr_info("%s: Device Serial Number Changed!\n",
-> +				pci_name(pdev));
-> +		return true;
-> +	} else
-> +		return false;
-> +}
-> +EXPORT_SYMBOL(pci_serial_number_changed);
-> +
-> +/**
->   * pci_configure_ari - enable or disable ARI forwarding
->   * @dev: the PCI device
->   *
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index 3631859..d60c0b6 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -1025,6 +1025,8 @@ void pci_unlock_rescan_remove(void);
->  ssize_t pci_read_vpd(struct pci_dev *dev, loff_t pos, size_t count, void *buf);
->  ssize_t pci_write_vpd(struct pci_dev *dev, loff_t pos, size_t count, const void *buf);
->  
-> +bool pci_serial_number_changed(struct pci_dev *pdev);
-> +
->  /* Helper functions for low-level code (drivers/pci/setup-[bus,res].c) */
->  resource_size_t pcibios_retrieve_fw_addr(struct pci_dev *dev, int idx);
->  void pci_bus_assign_resources(const struct pci_bus *bus);
-
+I think if using atomic_read to decide while do vhost_poll_queue or not,
+at least a spink_lock is needed.
 
