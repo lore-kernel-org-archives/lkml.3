@@ -1,89 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751885AbaBLPPR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 10:15:17 -0500
-Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:60658 "EHLO
-	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751284AbaBLPPP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 10:15:15 -0500
-Message-ID: <52FB8FD3.1020407@st.com>
-Date: Wed, 12 Feb 2014 16:14:27 +0100
-From: Fabrice Gasnier <fabrice.gasnier@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1752332AbaBLPPw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 10:15:52 -0500
+Received: from sauhun.de ([89.238.76.85]:41493 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751942AbaBLPPt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 10:15:49 -0500
+Date: Wed, 12 Feb 2014 16:15:43 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: linux@roeck-us.net
+Cc: linux-i2c@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Rob Landley <rob@landley.net>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/17] Documentation: i2c: describe devicetree method for
+ instantiating devices
+Message-ID: <20140212151543.GA10871@katana>
+References: <1392026654-5343-1-git-send-email-wsa@the-dreams.de>
+ <1392026654-5343-2-git-send-email-wsa@the-dreams.de>
+ <20140210122119.115858a7ntu4lr40@67.228.131.205>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Fabrice GASNIER <fabrice.gasnier@stericsson.com>
-Cc: <u.kleine-koenig@pengutronix.de>, <jonathan.austin@arm.com>,
-        <catalin.marinas@arm.com>, <will.deacon@arm.com>, <nico@linaro.org>,
-        <sboyd@codeaurora.org>, <marc.zyngier@arm.com>,
-        <ben.dooks@codethink.co.uk>, <vgupta@synopsys.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <maxime.coquelin@st.com>
-Subject: Re: [PATCH v2] ARM: Add imprecise abort enable/disable macro
-References: <1392050756-11145-1-git-send-email-fabrice.gasnier@st.com> <52FB71A3.5010505@stericsson.com> <20140212131834.GP26684@n2100.arm.linux.org.uk>
-In-Reply-To: <20140212131834.GP26684@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.201.23.81]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="rwEMma7ioTxnRzrJ"
+Content-Disposition: inline
+In-Reply-To: <20140210122119.115858a7ntu4lr40@67.228.131.205>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
 
-On 02/12/2014 02:18 PM, Russell King - ARM Linux wrote:
-> On Wed, Feb 12, 2014 at 02:05:39PM +0100, Fabrice GASNIER wrote:
->> Hi,
->>
->> Any comments on this patch ?
->>
->> Russell, can I add this patch to your patch tracker system ?
-> I don't see how this works on anything but ARMv7M.
+--rwEMma7ioTxnRzrJ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Sorry, i'm confused.
 
-In the first patch you proposed,
-http://archive.arm.linux.org.uk/lurker/message/20140131.170827.d752a1cc.en.html
-there was :
+> There is now also a means to instantiate I2C devices through
+> ACPI. This is documented in Documentation/acpi/enumeration.txt.
+>=20
+> Might be worthwhile to reference it from instantiating-devices.
+> I guess that would be a separate patch though.
 
-#ifndef CONFIG_CPU_V7M
+Yes, it would. Thanks for the pointer!
 
-[...]
 
-/* Enable imprecise aborts */
-[...]
+--rwEMma7ioTxnRzrJ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-#else /* ifndef CONFIG_CPU_V7M */
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
 
-I understand that abort handling (vectors and masking ?) is different on 
-armv7-m ?
-Or should we make no distinction ?
+iQIcBAEBAgAGBQJS+5AfAAoJEBQN5MwUoCm28tMP/168mE9oo/SJj64Qh5ZeM8vL
+pPoxY3k/4I4LSpyWysiuV9exTZb8DLi0llyWGmCw6T98nIxcpIeqMpHm91wxMY4X
+JNTHMneAvcHgS1aRI/TtlvrrxP+TCt/DE9qFeyREjfH/MidVZkBQR5kPfpzGJ758
+6hs0JlUEJW/8ysiTLGI/ToBIOty5el+T9rX8QweMt8TBaiQqat60o1hD4nR3qTrI
+cAVcLGdOJ9ix41ghJeO/r1QGSkYVKUvLS9aHGyLoHH6GZ3oVP4g8mvXfklz6TB9R
+dFqnBgWtVajVO5HNFGJ+S1fO3qFqpzP5AlWetQO0xccW2mTu+cUfWuxJFR5/B+UG
+TQPwoDuUcAFlOoKg36G4/d3Lq5CK8UJ3kbNRQeGTLwrP7A8p+//glRs8PoO4Znr/
+frq6xKhzwI7vAW+82j9sAI2Du/DlWhbkNkGNmhvZW7vLPLwdYueMEVJi/82uJeAV
+4wxTAYX5+vvL4aurgh+O3G+iPtCFr7pxVhXT8UhwMHa9Yp9gvKfwBdyWWtOgWtCh
+69L/ZfbZm09kFn5Ao3xawPaleb+XWfI9bE1s8+ZUVuqrawOUayYLCUk1UuKQtm7c
+gyv8YMzA+HcSRab+R9P20q1ltWugJV3ppkdEkNqva8mTvSPc/SGO9Pq6XnrhJryF
+CI/gvqRjbf/PrlDckTZM
+=Uqmz
+-----END PGP SIGNATURE-----
 
-I have kept the same principle regarding abort enable/disable macro.
-
-#if __LINUX_ARM_ARCH__ >= 6
-[...]
-
-#ifndef CONFIG_CPU_V7M
-#define local_abt_enable()  __asm__("cpsie a    @ __sta" : : : "memory", 
-"cc")
-#define local_abt_disable() __asm__("cpsid a    @ __cla" : : : "memory", 
-"cc")
-#else
-#define local_abt_enable()    do { } while (0)
-#define local_abt_disable()    do { } while (0)
-#endif
-
-#else
-[...]
-#define local_abt_enable()    do { } while (0)
-#define local_abt_disable()    do { } while (0)
-#endif
-
-Sorry if this is silly question ...
-
-BR,
-Fabrice
->
-
+--rwEMma7ioTxnRzrJ--
