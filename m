@@ -1,320 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751252AbaBLFj5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 00:39:57 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:63288 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750743AbaBLFjz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 00:39:55 -0500
-X-AuditID: 9c93017e-b7cf9ae000004b4b-61-52fb0928f0ad
-Date: Wed, 12 Feb 2014 14:39:56 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>, Cliff Wickman <cpw@sgi.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Pavel Emelyanov <xemul@parallels.com>, Rik van Riel <riel@redhat.com>,
-        kirill.shutemov@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/11] pagewalk: update page table walker core
-Message-ID: <20140212053956.GA2912@lge.com>
-References: <1392068676-30627-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1392068676-30627-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392068676-30627-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	id S1751645AbaBLFkH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 00:40:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15890 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750743AbaBLFkC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 00:40:02 -0500
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Torvald Riegel <triegel@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+In-Reply-To: <CA+55aFwTwCPMpYTL_vCgNNP0hE8s2sgB0iw-79=xoj99V0JUNA@mail.gmail.com>
+References: <52F3DA85.1060209@arm.com>
+	 <20140206185910.GE27276@mudshark.cambridge.arm.com>
+	 <20140206192743.GH4250@linux.vnet.ibm.com>
+	 <1391721423.23421.3898.camel@triegel.csb>
+	 <20140206221117.GJ4250@linux.vnet.ibm.com>
+	 <1391730288.23421.4102.camel@triegel.csb>
+	 <20140207042051.GL4250@linux.vnet.ibm.com>
+	 <20140207074405.GM5002@laptop.programming.kicks-ass.net>
+	 <20140207165028.GO4250@linux.vnet.ibm.com>
+	 <20140207165548.GR5976@mudshark.cambridge.arm.com>
+	 <20140207180216.GP4250@linux.vnet.ibm.com>
+	 <1391992071.18779.99.camel@triegel.csb>
+	 <CA+55aFwTwCPMpYTL_vCgNNP0hE8s2sgB0iw-79=xoj99V0JUNA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 11 Feb 2014 21:39:24 -0800
+Message-ID: <1392183564.18779.2187.camel@triegel.csb>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 04:44:26PM -0500, Naoya Horiguchi wrote:
-> This patch updates mm/pagewalk.c to make code less complex and more maintenable.
-> The basic idea is unchanged and there's no userspace visible effect.
+On Mon, 2014-02-10 at 11:09 -0800, Linus Torvalds wrote:
+> On Sun, Feb 9, 2014 at 4:27 PM, Torvald Riegel <triegel@redhat.com> wrote:
+> >
+> > Intuitively, this is wrong because this let's the program take a step
+> > the abstract machine wouldn't do.  This is different to the sequential
+> > code that Peter posted because it uses atomics, and thus one can't
+> > easily assume that the difference is not observable.
 > 
-> Most of existing callback functions need access to vma to handle each entry.
-> So we had better add a new member vma in struct mm_walk instead of using
-> mm_walk->private, which makes code simpler.
+> Btw, what is the definition of "observable" for the atomics?
 > 
-> One problem in current page table walker is that we check vma in pgd loop.
-> Historically this was introduced to support hugetlbfs in the strange manner.
-> It's better and cleaner to do the vma check outside pgd loop.
-> 
-> Another problem is that many users of page table walker now use only
-> pmd_entry(), although it does both pmd-walk and pte-walk. This makes code
-> duplication and fluctuation among callers, which worsens the maintenability.
-> 
-> One difficulty of code sharing is that the callers want to determine
-> whether they try to walk over a specific vma or not in their own way.
-> To solve this, this patch introduces test_walk() callback.
-> 
-> When we try to use multiple callbacks in different levels, skip control is
-> also important. For example we have thp enabled in normal configuration, and
-> we are interested in doing some work for a thp. But sometimes we want to
-> split it and handle as normal pages, and in another time user would handle
-> both at pmd level and pte level.
-> What we need is that when we've done pmd_entry() we want to decide whether
-> to go down to pte level handling based on the pmd_entry()'s result. So this
-> patch introduces a skip control flag in mm_walk.
-> We can't use the returned value for this purpose, because we already
-> defined the meaning of whole range of returned values (>0 is to terminate
-> page table walk in caller's specific manner, =0 is to continue to walk,
-> and <0 is to abort the walk in the general manner.)
-> 
-> ChangeLog v5:
-> - fix build error ("mm/pagewalk.c:201: error: 'hmask' undeclared")
-> 
-> ChangeLog v4:
-> - add more comment
-> - remove verbose variable in walk_page_test()
-> - rename skip_check to skip_lower_level_walking
-> - rebased onto mmotm-2014-01-09-16-23
-> 
-> ChangeLog v3:
-> - rebased onto v3.13-rc3-mmots-2013-12-10-16-38
-> 
-> ChangeLog v2:
-> - rebase onto mmots
-> - add pte_none() check in walk_pte_range()
-> - add cond_sched() in walk_hugetlb_range()
-> - add skip_check()
-> - do VM_PFNMAP check only when ->test_walk() is not defined (because some
->   caller could handle VM_PFNMAP vma. copy_page_range() is an example.)
-> - use do-while condition (addr < end) instead of (addr != end)
-> 
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> ---
->  include/linux/mm.h |  18 ++-
->  mm/pagewalk.c      | 352 +++++++++++++++++++++++++++++++++--------------------
->  2 files changed, 235 insertions(+), 135 deletions(-)
-> 
-> diff --git v3.14-rc2.orig/include/linux/mm.h v3.14-rc2/include/linux/mm.h
-> index f28f46eade6a..4d0bc01de43c 100644
-> --- v3.14-rc2.orig/include/linux/mm.h
-> +++ v3.14-rc2/include/linux/mm.h
-> @@ -1067,10 +1067,18 @@ void unmap_vmas(struct mmu_gather *tlb, struct vm_area_struct *start_vma,
->   * @pte_entry: if set, called for each non-empty PTE (4th-level) entry
->   * @pte_hole: if set, called for each hole at all levels
->   * @hugetlb_entry: if set, called for each hugetlb entry
-> - *		   *Caution*: The caller must hold mmap_sem() if @hugetlb_entry
-> - * 			      is used.
-> + * @test_walk: caller specific callback function to determine whether
-> + *             we walk over the current vma or not. A positive returned
-> + *             value means "do page table walk over the current vma,"
-> + *             and a negative one means "abort current page table walk
-> + *             right now." 0 means "skip the current vma."
-> + * @mm:        mm_struct representing the target process of page table walk
-> + * @vma:       vma currently walked
-> + * @skip:      internal control flag which is set when we skip the lower
-> + *             level entries.
-> + * @private:   private data for callbacks' use
->   *
-> - * (see walk_page_range for more details)
-> + * (see the comment on walk_page_range() for more details)
->   */
->  struct mm_walk {
->  	int (*pgd_entry)(pgd_t *pgd, unsigned long addr,
-> @@ -1086,7 +1094,11 @@ struct mm_walk {
->  	int (*hugetlb_entry)(pte_t *pte, unsigned long hmask,
->  			     unsigned long addr, unsigned long next,
->  			     struct mm_walk *walk);
-> +	int (*test_walk)(unsigned long addr, unsigned long next,
-> +			struct mm_walk *walk);
->  	struct mm_struct *mm;
-> +	struct vm_area_struct *vma;
-> +	int skip;
->  	void *private;
->  };
->  
-> diff --git v3.14-rc2.orig/mm/pagewalk.c v3.14-rc2/mm/pagewalk.c
-> index 2beeabf502c5..4770558feea8 100644
-> --- v3.14-rc2.orig/mm/pagewalk.c
-> +++ v3.14-rc2/mm/pagewalk.c
-> @@ -3,29 +3,58 @@
->  #include <linux/sched.h>
->  #include <linux/hugetlb.h>
->  
-> -static int walk_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
-> -			  struct mm_walk *walk)
-> +/*
-> + * Check the current skip status of page table walker.
-> + *
-> + * Here what I mean by skip is to skip lower level walking, and that was
-> + * determined for each entry independently. For example, when walk_pmd_range
-> + * handles a pmd_trans_huge we don't have to walk over ptes under that pmd,
-> + * and the skipping does not affect the walking over ptes under other pmds.
-> + * That's why we reset @walk->skip after tested.
-> + */
-> +static bool skip_lower_level_walking(struct mm_walk *walk)
-> +{
-> +	if (walk->skip) {
-> +		walk->skip = 0;
-> +		return true;
-> +	}
-> +	return false;
-> +}
-> +
-> +static int walk_pte_range(pmd_t *pmd, unsigned long addr,
-> +				unsigned long end, struct mm_walk *walk)
->  {
-> +	struct mm_struct *mm = walk->mm;
->  	pte_t *pte;
-> +	pte_t *orig_pte;
-> +	spinlock_t *ptl;
->  	int err = 0;
->  
-> -	pte = pte_offset_map(pmd, addr);
-> -	for (;;) {
-> +	orig_pte = pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
-> +	do {
-> +		if (pte_none(*pte)) {
-> +			if (walk->pte_hole)
-> +				err = walk->pte_hole(addr, addr + PAGE_SIZE,
-> +							walk);
-> +			if (err)
-> +				break;
-> +			continue;
+> Because I'm hoping that it's not the same as for volatiles, where
+> "observable" is about the virtual machine itself, and as such volatile
+> accesses cannot be combined or optimized at all.
 
-Hello, Naoya.
+No, atomics aren't an observable behavior of the abstract machine
+(unless they are volatile).  See 1.8.p8 (citing the C++ standard).
 
-I know that this is too late for review, but I have some opinion about this.
+> Now, I claim that atomic accesses cannot be done speculatively for
+> writes, and not re-done for reads (because the value could change),
 
-How about removing walk->pte_hole() function pointer and related code on generic
-walker? walk->pte_hole() is only used by task_mmu.c and maintaining pte_hole code
-only for task_mmu.c just give us maintanance overhead and bad readability on
-generic code. With removing it, we can get more simpler generic walker.
+Agreed, unless the compiler can prove that this doesn't make a
+difference in the program at hand and it's not volatile atomics.  In
+general, that will be hard and thus won't happen often I suppose, but if
+correctly proved it would fall under the as-if rule I think.
 
-We can implement it without pte_hole() on generic walker like as below.
+> but *combining* them would be possible and good.
 
-  walk->dont_skip_hole = 1
-  if (pte_none(*pte) && !walk->dont_skip_hole)
-  	  continue;
+Agreed.
 
-  call proper entry callback function which can handle pte_hole cases.
+> For example, we often have multiple independent atomic accesses that
+> could certainly be combined: testing the individual bits of an atomic
+> value with helper functions, causing things like "load atomic, test
+> bit, load same atomic, test another bit". The two atomic loads could
+> be done as a single load without possibly changing semantics on a real
+> machine, but if "visibility" is defined in the same way it is for
+> "volatile", that wouldn't be a valid transformation. Right now we use
+> "volatile" semantics for these kinds of things, and they really can
+> hurt.
 
-> +		}
-> +		/*
-> +		 * Callers should have their own way to handle swap entries
-> +		 * in walk->pte_entry().
-> +		 */
->  		err = walk->pte_entry(pte, addr, addr + PAGE_SIZE, walk);
->  		if (err)
->  		       break;
-> -		addr += PAGE_SIZE;
-> -		if (addr == end)
-> -			break;
-> -		pte++;
-> -	}
-> -
-> -	pte_unmap(pte);
-> -	return err;
-> +	} while (pte++, addr += PAGE_SIZE, addr < end);
-> +	pte_unmap_unlock(orig_pte, ptl);
-> +	cond_resched();
-> +	return addr == end ? 0 : err;
->  }
->  
-> -static int walk_pmd_range(pud_t *pud, unsigned long addr, unsigned long end,
-> -			  struct mm_walk *walk)
-> +static int walk_pmd_range(pud_t *pud, unsigned long addr,
-> +				unsigned long end, struct mm_walk *walk)
->  {
->  	pmd_t *pmd;
->  	unsigned long next;
-> @@ -35,6 +64,7 @@ static int walk_pmd_range(pud_t *pud, unsigned long addr, unsigned long end,
->  	do {
->  again:
->  		next = pmd_addr_end(addr, end);
-> +
->  		if (pmd_none(*pmd)) {
->  			if (walk->pte_hole)
->  				err = walk->pte_hole(addr, next, walk);
-> @@ -42,35 +72,32 @@ static int walk_pmd_range(pud_t *pud, unsigned long addr, unsigned long end,
->  				break;
->  			continue;
->  		}
-> -		/*
-> -		 * This implies that each ->pmd_entry() handler
-> -		 * needs to know about pmd_trans_huge() pmds
-> -		 */
-> -		if (walk->pmd_entry)
-> -			err = walk->pmd_entry(pmd, addr, next, walk);
-> -		if (err)
-> -			break;
->  
-> -		/*
-> -		 * Check this here so we only break down trans_huge
-> -		 * pages when we _need_ to
-> -		 */
-> -		if (!walk->pte_entry)
-> -			continue;
-> +		if (walk->pmd_entry) {
-> +			err = walk->pmd_entry(pmd, addr, next, walk);
-> +			if (skip_lower_level_walking(walk))
-> +				continue;
-> +			if (err)
-> +				break;
-> +		}
->  
-> -		split_huge_page_pmd_mm(walk->mm, addr, pmd);
-> -		if (pmd_none_or_trans_huge_or_clear_bad(pmd))
-> -			goto again;
-> -		err = walk_pte_range(pmd, addr, next, walk);
-> -		if (err)
-> -			break;
-> -	} while (pmd++, addr = next, addr != end);
-> +		if (walk->pte_entry) {
-> +			if (walk->vma) {
-> +				split_huge_page_pmd(walk->vma, addr, pmd);
-> +				if (pmd_trans_unstable(pmd))
-> +					goto again;
-> +			}
-> +			err = walk_pte_range(pmd, addr, next, walk);
-> +			if (err)
-> +				break;
-> +		}
-> +	} while (pmd++, addr = next, addr < end);
->  
->  	return err;
->  }
->  
-> -static int walk_pud_range(pgd_t *pgd, unsigned long addr, unsigned long end,
-> -			  struct mm_walk *walk)
-> +static int walk_pud_range(pgd_t *pgd, unsigned long addr,
-> +				unsigned long end, struct mm_walk *walk)
->  {
->  	pud_t *pud;
->  	unsigned long next;
-> @@ -79,6 +106,7 @@ static int walk_pud_range(pgd_t *pgd, unsigned long addr, unsigned long end,
->  	pud = pud_offset(pgd, addr);
->  	do {
->  		next = pud_addr_end(addr, end);
-> +
->  		if (pud_none_or_clear_bad(pud)) {
->  			if (walk->pte_hole)
->  				err = walk->pte_hole(addr, next, walk);
-> @@ -86,13 +114,58 @@ static int walk_pud_range(pgd_t *pgd, unsigned long addr, unsigned long end,
->  				break;
->  			continue;
->  		}
-> -		if (walk->pud_entry)
-> +
-> +		if (walk->pud_entry) {
->  			err = walk->pud_entry(pud, addr, next, walk);
-> -		if (!err && (walk->pmd_entry || walk->pte_entry))
-> +			if (skip_lower_level_walking(walk))
-> +				continue;
-> +			if (err)
-> +				break;
+Agreed.  In your example, the compiler would have to prove that the
+abstract machine would always be able to run the two loads atomically
+(ie, as one load) without running into impossible/disallowed behavior of
+the program.  But if there's no loop or branch or such in-between, this
+should be straight-forward because any hardware oddity or similar could
+merge those loads and it wouldn't be disallowed by the standard
+(considering that we're talking about a finite number of loads), so the
+compiler would be allowed to do it as well.
 
-Why do you check skip_lower_level_walking() prior to err check?
-I look through all patches roughly and find that this doesn't cause any problem,
-since err is 0 whenver walk->skip = 1. But, checking err first would be better.
+> Same goes for multiple writes (possibly due to setting bits):
+> combining multiple accesses into a single one is generally fine, it's
+> *adding* write accesses speculatively that is broken by design..
 
-Thanks.
+Agreed.  As Paul points out, this being correct assumes that there are
+no other ordering guarantees or memory accesses "interfering", but if
+the stores are to the same memory location and adjacent to each other in
+the program, then I don't see a reason why they wouldn't be combinable.
+
+> At the same time, you can't combine atomic loads or stores infinitely
+> - "visibility" on a real machine definitely is about timeliness.
+> Removing all but the last write when there are multiple consecutive
+> writes is generally fine, even if you unroll a loop to generate those
+> writes. But if what remains is a loop, it might be a busy-loop
+> basically waiting for something, so it would be wrong ("untimely") to
+> hoist a store in a loop entirely past the end of the loop, or hoist a
+> load in a loop to before the loop.
+
+Agreed.  That's what 1.10p24 and 1.10p25 are meant to specify for loads,
+although those might not be bullet-proof as Paul points out.  Forward
+progress is rather vaguely specified in the standard, but at least parts
+of the committee (and people in ISO C++ SG1, in particular) are working
+on trying to improve this.
+
+> Does the standard allow for that kind of behavior?
+
+I think the standard requires (or intends to require) the behavior that
+you (and I) seem to prefer in these examples.
+
+
