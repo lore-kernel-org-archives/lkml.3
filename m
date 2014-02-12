@@ -1,51 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752845AbaBLCwV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 21:52:21 -0500
-Received: from mail-vb0-f42.google.com ([209.85.212.42]:40157 "EHLO
-	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752085AbaBLCwU (ORCPT
+	id S1752931AbaBLCx0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 21:53:26 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:12635 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752333AbaBLCxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 21:52:20 -0500
+	Tue, 11 Feb 2014 21:53:24 -0500
+From: Yijing Wang <wangyijing@huawei.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        Yijing Wang <wangyijing@huawei.com>, Hanjun Guo <guohanjun@huawei.com>
+Subject: [PATCH part1 v6 6/7] PCI: Check pci device serial number when scan device
+Date: Wed, 12 Feb 2014 10:52:52 +0800
+Message-ID: <1392173573-59844-7-git-send-email-wangyijing@huawei.com>
+X-Mailer: git-send-email 1.7.11.msysgit.1
+In-Reply-To: <1392173573-59844-1-git-send-email-wangyijing@huawei.com>
+References: <1392173573-59844-1-git-send-email-wangyijing@huawei.com>
 MIME-Version: 1.0
-In-Reply-To: <20140212010941.GM18016@ZenIV.linux.org.uk>
-References: <20140211172707.GA1749@redhat.com>
-	<20140211210841.GM13647@dastard>
-	<52FA9ADA.9040803@sandeen.net>
-	<20140212004403.GA17129@redhat.com>
-	<20140212010941.GM18016@ZenIV.linux.org.uk>
-Date: Tue, 11 Feb 2014 18:52:19 -0800
-X-Google-Sender-Auth: AAAZddWX80Xi9pNTx8jDrkdACsY
-Message-ID: <CA+55aFwoWT-0A_KTkXMkNqOy8hc=YmouTMBgWUD_z+8qYPphjA@mail.gmail.com>
-Subject: Re: 3.14-rc2 XFS backtrace because irqs_disabled.
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Dave Jones <davej@redhat.com>, Eric Sandeen <sandeen@sandeen.net>,
-        Dave Chinner <david@fromorbit.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Originating-IP: [10.177.27.212]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 5:09 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->
-> Slap the check in vfs_create(), see if interrupts had been disabled by it or
-> by something in ->create().  Since it's reproducible...
+Sometimes pci device will be removed and reinsert
+while suspended. In this case system can not identify
+the device has been changed. Now PCIe support Device
+Serial Number Capability which has the unique number.
+So make system check pci device DSN during scanning
+device if support.
 
-path_openat() starts off with a get_empty_filp(), which allocates a
-file pointer with GFP_KERNEL. So that should have triggered the
-might_sleep warning if irq's were already disabled at that point.
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+---
+ drivers/pci/probe.c |   13 ++++++++++++-
+ 1 files changed, 12 insertions(+), 1 deletions(-)
 
-So it's not before that - in particular, it's not in the signal
-handling or do_coredump() paths.
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 27d3e6f..370b25c 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -1383,11 +1383,22 @@ void pci_device_add(struct pci_dev *dev, struct pci_bus *bus)
+ struct pci_dev *__ref pci_scan_single_device(struct pci_bus *bus, int devfn)
+ {
+ 	struct pci_dev *dev;
++	int rescan = 0;
+ 
+ 	dev = pci_get_slot(bus, devfn);
+ 	if (dev) {
++		/* only check func 0 device */
++		if (PCI_FUNC(devfn) == 0) {
++			if (pci_serial_number_changed(dev)) {
++				pci_bus_freeze_device(bus);
++				pci_stop_and_remove_bus_device(dev);
++				pci_bus_unfreeze_device(bus);
++				rescan = 1;
++			}
++		}
+ 		pci_dev_put(dev);
+-		return dev;
++		if (!rescan)
++			return dev;
+ 	}
+ 
+ 	dev = pci_scan_device(bus, devfn);
+-- 
+1.7.1
 
-Also, at least xfs_buf_lock() - which is much deeper in that chain -
-does a down(&bp->b_sema). I'm disguested that that doesn't have a
-might_sleep() in it.
 
-Dave, mind adding a "might_sleep()" to the top of
-"down[_interruptible]()". It's silly to not have coverage of semaphore
-use in bad contexts.
-
-             Linus
