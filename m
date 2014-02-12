@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753773AbaBLIgv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 03:36:51 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50072 "EHLO
+	id S1753753AbaBLIgt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 03:36:49 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50084 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751802AbaBLINu (ORCPT
+	by vger.kernel.org with ESMTP id S1751849AbaBLINv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 03:13:50 -0500
+	Wed, 12 Feb 2014 03:13:51 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Hannes Frederic Sowa" <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Florian Westphal" <fw@strlen.de>
+CC: akpm@linux-foundation.org, "Neal Cardwell" <ncardwell@google.com>,
+        "Eric Dumazet" <edumazet@google.com>
 Date: Wed, 12 Feb 2014 08:10:12 +0000
-Message-ID: <lsq.1392192612.852002172@decadent.org.uk>
+Message-ID: <lsq.1392192612.186726793@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 11/79] net: rose: restore old recvmsg behavior
+Subject: [PATCH 3.2 16/79] inet_diag: fix inet_diag_dump_icsk() timewait
+ socket  state logic
 In-Reply-To: <lsq.1392192611.998273004@decadent.org.uk>
 X-SA-Exim-Connect-IP: 91.84.160.45
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,62 +32,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Westphal <fw@strlen.de>
+From: Neal Cardwell <ncardwell@google.com>
 
-[ Upstream commit f81152e35001e91997ec74a7b4e040e6ab0acccf ]
+[ Based upon upstream commit 70315d22d3c7383f9a508d0aab21e2eb35b2303a ]
 
-recvmsg handler in net/rose/af_rose.c performs size-check ->msg_namelen.
+Fix inet_diag_dump_icsk() to reflect the fact that both TIME_WAIT and
+FIN_WAIT2 connections are represented by inet_timewait_sock (not just
+TIME_WAIT). Thus:
 
-After commit f3d3342602f8bcbf37d7c46641cb9bca7618eb1c
-(net: rework recvmsg handler msg_name and msg_namelen logic), we now
-always take the else branch due to namelen being initialized to 0.
+(a) We need to iterate through the time_wait buckets if the user wants
+either TIME_WAIT or FIN_WAIT2. (Before fixing this, "ss -nemoi state
+fin-wait-2" would not return any sockets, even if there were some in
+FIN_WAIT2.)
 
-Digging in netdev-vger-cvs git repo shows that msg_namelen was
-initialized with a fixed-size since at least 1995, so the else branch
-was never taken.
+(b) We need to check tw_substate to see if the user wants to dump
+sockets in the particular substate (TIME_WAIT or FIN_WAIT2) that a
+given connection is in. (Before fixing this, "ss -nemoi state
+time-wait" would actually return sockets in state FIN_WAIT2.)
 
-Compile tested only.
+An analogous fix is in v3.13: 70315d22d3c7383f9a508d0aab21e2eb35b2303a
+("inet_diag: fix inet_diag_dump_icsk() to use correct state for
+timewait sockets") but that patch is quite different because 3.13 code
+is very different in this area due to the unification of TCP hash
+tables in 05dbc7b ("tcp/dccp: remove twchain") in v3.13-rc1.
 
-Signed-off-by: Florian Westphal <fw@strlen.de>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+I tested that this applies cleanly between v3.3 and v3.12, and tested
+that it works in both 3.3 and 3.12. It does not apply cleanly to 3.2
+and earlier (though it makes semantic sense), and semantically is not
+the right fix for 3.13 and beyond (as mentioned above).
+
+Signed-off-by: Neal Cardwell <ncardwell@google.com>
+Cc: Eric Dumazet <edumazet@google.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/rose/af_rose.c | 16 ++++------------
- 1 file changed, 4 insertions(+), 12 deletions(-)
+ net/ipv4/inet_diag.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/net/rose/af_rose.c b/net/rose/af_rose.c
-index bf76dec7..686fb1a 100644
---- a/net/rose/af_rose.c
-+++ b/net/rose/af_rose.c
-@@ -1258,6 +1258,7 @@ static int rose_recvmsg(struct kiocb *iocb, struct socket *sock,
+diff --git a/net/ipv4/inet_diag.c b/net/ipv4/inet_diag.c
+index ccee270..1e6af4a 100644
+--- a/net/ipv4/inet_diag.c
++++ b/net/ipv4/inet_diag.c
+@@ -824,7 +824,7 @@ next_normal:
+ 			++num;
+ 		}
  
- 	if (msg->msg_name) {
- 		struct sockaddr_rose *srose;
-+		struct full_sockaddr_rose *full_srose = msg->msg_name;
+-		if (r->idiag_states & TCPF_TIME_WAIT) {
++		if (r->idiag_states & (TCPF_TIME_WAIT | TCPF_FIN_WAIT2)) {
+ 			struct inet_timewait_sock *tw;
  
- 		memset(msg->msg_name, 0, sizeof(struct full_sockaddr_rose));
- 		srose = msg->msg_name;
-@@ -1265,18 +1266,9 @@ static int rose_recvmsg(struct kiocb *iocb, struct socket *sock,
- 		srose->srose_addr   = rose->dest_addr;
- 		srose->srose_call   = rose->dest_call;
- 		srose->srose_ndigis = rose->dest_ndigis;
--		if (msg->msg_namelen >= sizeof(struct full_sockaddr_rose)) {
--			struct full_sockaddr_rose *full_srose = (struct full_sockaddr_rose *)msg->msg_name;
--			for (n = 0 ; n < rose->dest_ndigis ; n++)
--				full_srose->srose_digis[n] = rose->dest_digis[n];
--			msg->msg_namelen = sizeof(struct full_sockaddr_rose);
--		} else {
--			if (rose->dest_ndigis >= 1) {
--				srose->srose_ndigis = 1;
--				srose->srose_digi = rose->dest_digis[0];
--			}
--			msg->msg_namelen = sizeof(struct sockaddr_rose);
--		}
-+		for (n = 0 ; n < rose->dest_ndigis ; n++)
-+			full_srose->srose_digis[n] = rose->dest_digis[n];
-+		msg->msg_namelen = sizeof(struct full_sockaddr_rose);
- 	}
+ 			inet_twsk_for_each(tw, node,
+@@ -832,6 +832,8 @@ next_normal:
  
- 	skb_free_datagram(sk, skb);
+ 				if (num < s_num)
+ 					goto next_dying;
++				if (!(r->idiag_states & (1 << tw->tw_substate)))
++					goto next_dying;
+ 				if (r->id.idiag_sport != tw->tw_sport &&
+ 				    r->id.idiag_sport)
+ 					goto next_dying;
 
