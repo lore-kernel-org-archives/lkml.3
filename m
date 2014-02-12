@@ -1,38 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752432AbaBLL1o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 06:27:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45586 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750963AbaBLL1n (ORCPT
+	id S1752486AbaBLL1w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 06:27:52 -0500
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:56566 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751001AbaBLL1u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 06:27:43 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: lwn@lwn.net
-Subject: [3.11.y.z extended stable] Linux 3.11.10.4
-Date: Wed, 12 Feb 2014 11:27:39 +0000
-Message-Id: <1392204460-17728-1-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-X-Extended-Stable: 3.11
+	Wed, 12 Feb 2014 06:27:50 -0500
+Date: Wed, 12 Feb 2014 12:27:44 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Jean Pihet <jean.pihet@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Arnaldo <acme@ghostprotocols.net>, Jiri Olsa <jolsa@redhat.com>,
+        Patch Tracking <patches@linaro.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] perf: ARM64: wire up perf_regs and unwind support
+Message-ID: <20140212112744.GA10517@gmail.com>
+References: <1391451427-31221-1-git-send-email-jean.pihet@linaro.org>
+ <CAFrcx1kApRNN7aKQr89Y51w_JqUhVZ2x4+a8Sx8-X7xb-a1=pw@mail.gmail.com>
+ <20140212101011.GC13441@mudshark.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140212101011.GC13441@mudshark.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am announcing the release of the Linux 3.11.10.4 kernel.
 
-The updated 3.11.y tree can be found at: 
-  git://kernel.ubuntu.com/ubuntu/linux.git linux-3.11.y
-and can be browsed at:
-  http://kernel.ubuntu.com/git?p=ubuntu/linux.git;h=refs/heads/linux-3.11.y;a=shortlog
+* Will Deacon <will.deacon@arm.com> wrote:
 
-The diff from v3.11.10.4 is posted as a follow-up to this email.
+> On Wed, Feb 12, 2014 at 08:46:38AM +0000, Jean Pihet wrote:
+> > Hi Arnaldo, Will,
+> > 
+> > Ping on this patch.
+> 
+> This needs to go via the perf tree to avoid a repeat of the mess last time.
 
-The 3.11.y extended stable tree is maintained by the Ubuntu Kernel Team.
-For more info, see https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
+If the tooling bits are fine with Arnaldo then I have no objections 
+either - once all the bits are acked please send a single series with 
+all 4(?) patches in it, for tip:perf/core inclusion.
 
- -Luis
+Thanks,
 
--- 
-
+	Ingo
