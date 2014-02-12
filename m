@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752873AbaBLI3j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 03:29:39 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50194 "EHLO
+	id S1753391AbaBLI37 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 03:29:59 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50180 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752064AbaBLIOC (ORCPT
+	by vger.kernel.org with ESMTP id S1752051AbaBLIOA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 03:14:02 -0500
+	Wed, 12 Feb 2014 03:14:00 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Peter Korsgaard" <peter@korsgaard.com>,
-        "Joseph Chang" <joseph_chang@davicom.com.tw>,
-        "David S. Miller" <davem@davemloft.net>
+CC: akpm@linux-foundation.org, "Tejun Heo" <tj@kernel.org>,
+        "Robin H. Johnson" <robbat2@gentoo.org>
 Date: Wed, 12 Feb 2014 08:10:12 +0000
-Message-ID: <lsq.1392192612.712945272@decadent.org.uk>
+Message-ID: <lsq.1392192612.670590843@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 55/79] dm9601: work around tx fifo sync issue on dm962x
+Subject: [PATCH 3.2 44/79] libata: disable a disk via libata.force params
 In-Reply-To: <lsq.1392192611.998273004@decadent.org.uk>
 X-SA-Exim-Connect-IP: 91.84.160.45
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,81 +31,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Korsgaard <peter@korsgaard.com>
+From: "Robin H. Johnson" <robbat2@gentoo.org>
 
-commit 4263c86dca5198da6bd3ad826d0b2304fbe25776 upstream.
+commit b8bd6dc36186fe99afa7b73e9e2d9a98ad5c4865 upstream.
 
-Certain dm962x revisions contain an bug, where if a USB bulk transfer retry
-(E.G. if bulk crc mismatch) happens right after a transfer with odd or
-maxpacket length, the internal tx hardware fifo gets out of sync causing
-the interface to stop working.
+A user on StackExchange had a failing SSD that's soldered directly
+onto the motherboard of his system. The BIOS does not give any option
+to disable it at all, so he can't just hide it from the OS via the
+BIOS.
 
-Work around it by adding up to 3 bytes of padding to ensure this situation
-cannot trigger.
+The old IDE layer had hdX=noprobe override for situations like this,
+but that was never ported to the libata layer.
 
-This workaround also means we never pass multiple-of-maxpacket size skb's
-to usbnet, so the length adjustment to handle usbnet's padding of those can
-be removed.
+This patch implements a disable flag for libata.force.
 
-Reported-by: Joseph Chang <joseph_chang@davicom.com.tw>
-Signed-off-by: Peter Korsgaard <peter@korsgaard.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Example use:
+
+ libata.force=2.0:disable
+
+[v2 of the patch, removed the nodisable flag per Tejun Heo]
+
+Signed-off-by: Robin H. Johnson <robbat2@gentoo.org>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Link: http://unix.stackexchange.com/questions/102648/how-to-tell-linux-kernel-3-0-to-completely-ignore-a-failing-disk
+Link: http://askubuntu.com/questions/352836/how-can-i-tell-linux-kernel-to-completely-ignore-a-disk-as-if-it-was-not-even-co
+Link: http://superuser.com/questions/599333/how-to-disable-kernel-probing-for-drive
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/usb/dm9601.c | 27 +++++++++++++++++++--------
- 1 file changed, 19 insertions(+), 8 deletions(-)
+ Documentation/kernel-parameters.txt | 2 ++
+ drivers/ata/libata-core.c           | 1 +
+ 2 files changed, 3 insertions(+)
 
---- a/drivers/net/usb/dm9601.c
-+++ b/drivers/net/usb/dm9601.c
-@@ -536,7 +536,7 @@ static int dm9601_rx_fixup(struct usbnet
- static struct sk_buff *dm9601_tx_fixup(struct usbnet *dev, struct sk_buff *skb,
- 				       gfp_t flags)
- {
--	int len;
-+	int len, pad;
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1305,6 +1305,8 @@ bytes respectively. Such letter suffixes
  
- 	/* format:
- 	   b1: packet length low
-@@ -544,12 +544,23 @@ static struct sk_buff *dm9601_tx_fixup(s
- 	   b3..n: packet data
- 	*/
+ 			* dump_id: dump IDENTIFY data.
  
--	len = skb->len;
-+	len = skb->len + DM_TX_OVERHEAD;
- 
--	if (skb_headroom(skb) < DM_TX_OVERHEAD) {
-+	/* workaround for dm962x errata with tx fifo getting out of
-+	 * sync if a USB bulk transfer retry happens right after a
-+	 * packet with odd / maxpacket length by adding up to 3 bytes
-+	 * padding.
-+	 */
-+	while ((len & 1) || !(len % dev->maxpacket))
-+		len++;
++			* disable: Disable this device.
 +
-+	len -= DM_TX_OVERHEAD; /* hw header doesn't count as part of length */
-+	pad = len - skb->len;
-+
-+	if (skb_headroom(skb) < DM_TX_OVERHEAD || skb_tailroom(skb) < pad) {
- 		struct sk_buff *skb2;
+ 			If there are multiple matching configurations changing
+ 			the same attribute, the last one is used.
  
--		skb2 = skb_copy_expand(skb, DM_TX_OVERHEAD, 0, flags);
-+		skb2 = skb_copy_expand(skb, DM_TX_OVERHEAD, pad, flags);
- 		dev_kfree_skb_any(skb);
- 		skb = skb2;
- 		if (!skb)
-@@ -558,10 +569,10 @@ static struct sk_buff *dm9601_tx_fixup(s
- 
- 	__skb_push(skb, DM_TX_OVERHEAD);
- 
--	/* usbnet adds padding if length is a multiple of packet size
--	   if so, adjust length value in header */
--	if ((skb->len % dev->maxpacket) == 0)
--		len++;
-+	if (pad) {
-+		memset(skb->data + skb->len, 0, pad);
-+		__skb_put(skb, pad);
-+	}
- 
- 	skb->data[0] = len;
- 	skb->data[1] = len >> 8;
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -6331,6 +6331,7 @@ static int __init ata_parse_force_one(ch
+ 		{ "nohrst",	.lflags		= ATA_LFLAG_NO_HRST },
+ 		{ "nosrst",	.lflags		= ATA_LFLAG_NO_SRST },
+ 		{ "norst",	.lflags		= ATA_LFLAG_NO_HRST | ATA_LFLAG_NO_SRST },
++		{ "disable",	.horkage_on	= ATA_HORKAGE_DISABLE },
+ 	};
+ 	char *start = *cur, *p = *cur;
+ 	char *id, *val, *endp;
 
