@@ -1,33 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752481AbaBLA1t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 19:27:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42829 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752120AbaBLA1s (ORCPT
+	id S1752549AbaBLA2F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 19:28:05 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:65044 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752504AbaBLA2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 19:27:48 -0500
-Date: Tue, 11 Feb 2014 16:27:45 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [process_vm_access] BUG: unable to handle kernel paging request
- at fffffff27b92dd20
-Message-Id: <20140211162745.c4fdb96ec58fa9581e6c2841@linux-foundation.org>
-In-Reply-To: <20140210112231.GA11951@localhost>
-References: <20140210112231.GA11951@localhost>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 11 Feb 2014 19:28:03 -0500
+Date: Tue, 11 Feb 2014 16:28:00 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Jianguo Wu <wujianguo@huawei.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [question] how to figure out OOM reason? should dump slab/vmalloc
+ info when OOM?
+In-Reply-To: <52F9A1D8.7040301@huawei.com>
+Message-ID: <alpine.DEB.2.02.1402111627400.29715@chino.kir.corp.google.com>
+References: <52DCFC33.80008@huawei.com> <alpine.DEB.2.02.1401202130590.21729@chino.kir.corp.google.com> <52DE6AA0.1000801@huawei.com> <alpine.DEB.2.02.1401211236520.10355@chino.kir.corp.google.com> <52F9A1D8.7040301@huawei.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Feb 2014 19:22:31 +0800 Fengguang Wu <fengguang.wu@intel.com> wrote:
+On Tue, 11 Feb 2014, Jianguo Wu wrote:
 
-> We noticed the below oops since commit 68a25f08c9bec07ad95e55a01b127168e43aed84
-> ("process_vm_access: take get_user_pages/put_pages one level up")
-> while running ltp tests inside kvm.
+> Thanks for your kindly explanation, do you have any specific plans on this?
+> 
 
-I can't find this patch anywhere.  Where did it come from?
+We're going to be discussing it at the LSF/mm conference at the end of 
+March.
