@@ -1,43 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753839AbaBLSP1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 13:15:27 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:46090 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753114AbaBLSPZ (ORCPT
+	id S1753624AbaBLSSQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 13:18:16 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:64097 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753189AbaBLSSO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 13:15:25 -0500
-Date: Wed, 12 Feb 2014 19:15:17 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Mike Galbraith <bitbucket@online.de>, X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Too many rescheduling interrupts (still!)
-Message-ID: <20140212181517.GE27965@twins.programming.kicks-ass.net>
-References: <CALCETrVL44ewQPJXNwPAm2s5aj9auo2p4tYYieNcxANoL91VWw@mail.gmail.com>
- <alpine.DEB.2.02.1402112219160.21991@ionos.tec.linutronix.de>
- <CALCETrUPyG1HoXFToXuVLOzX2f20zzxJyABKASOUPY691JmjMA@mail.gmail.com>
- <20140212101324.GC3545@laptop.programming.kicks-ass.net>
- <CAFTL4hyJtUHaT39NmM71=Ho4fp28PJ+-KezQryXJE_gTEMaHqA@mail.gmail.com>
- <20140212164356.GB27965@twins.programming.kicks-ass.net>
- <20140212174637.GC5496@localhost.localdomain>
+	Wed, 12 Feb 2014 13:18:14 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Jason Cooper <jason@lakedaemon.net>, keescook@chromium.org,
+        devicetree@vger.kernel.org, Laura Abbott <lauraa@codeaurora.org>,
+        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: Re: [RFC/PATCH 0/3] Add devicetree scanning for randomness
+Date: Wed, 12 Feb 2014 19:17:41 +0100
+Message-ID: <1571508.yGAAZ8TNH0@wuerfel>
+User-Agent: KMail/4.11.3 (Linux/3.11.0-15-generic; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <20140212174554.GM27395@titan.lakedaemon.net>
+References: <1392168805-14200-1-git-send-email-lauraa@codeaurora.org> <201402121251.06280.arnd@arndb.de> <20140212174554.GM27395@titan.lakedaemon.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140212174637.GC5496@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:pTHPf7i0cqyPy1iRvo/Fj42qqKB2VrMD/KvP0fx42pa
+ D10D41X3C8SC8O1cYgwVBmgjoU+NipvOu7yXaLT+tdbCHpoAMA
+ NTdxBposXALystAARESGcOqMS0aB9OTdbCO2R8FCRcPWPNR+yX
+ RNsefXoykbQcqTjeTcOX5lkJsL0PE7kzvqFkj3U/fkv1z/TsfH
+ HUYpJIcM0kTOqo7bko6aBqNc3JdTJUQZE/nol4wh+gtNYGte3N
+ I/rWJxbThi3+TFBE0HuEkhcymsi37e3e22RCtwNHtMVTMVmn2v
+ /sJJVmmHVgHke/d5YLuBdilHnuEenRMy6lbD4BJ4VjZrwVujmm
+ HKAcKj1GCF+HHS4agSWw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 06:46:39PM +0100, Frederic Weisbecker wrote:
-> Ok but if the target is idle, dynticks and not polling, we don't have the choice
-> but to send an IPI, right? I'm talking about this kind of case.
+On Wednesday 12 February 2014 12:45:54 Jason Cooper wrote:
+> I brought this up at last weeks devicetree irc meeting.  My goal is to
+> provide early randomness for kaslr on ARM.  Currently, my idea is modify
+> the init script to save an additional random seed from /dev/urandom to
+> /boot/random-seed.
+> 
+> The bootloader would then load this file into ram, and pass the
+> address/size to the kernel either via dt, or commandline.  kaslr (run in
+> the decompressor) would consume some of this randomness, and then
+> random.c would consume the rest in a non-crediting initialization.
 
-Yes; but Andy doesn't seem concerned with such hardware (!x86).
+I like the idea, but wouldn't it be easier to pass actual random data
+using DT, rather than the address/size? That way we could even
+use the same DT binding for passing randomness from the bootloader,
+whereever it may have found that.
 
-Anything x86 (except ancient stuff) is effectively polling and wakes up
-from the TIF_NEED_RESCHED write.
+If the bootloader has internet connectivity, it could even mix in
+some data from http://www.random.org/cgi-bin/randbyte?nbytes=256&format=f
+;-)
 
+	Arnd
