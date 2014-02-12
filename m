@@ -1,202 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752868AbaBLR2s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 12:28:48 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:45875 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752471AbaBLR2r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 12:28:47 -0500
-Date: Wed, 12 Feb 2014 18:28:44 +0100
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-Cc: nicolas.ferre@atmel.com, plagnioj@jcrosoft.com, b.brezillon@overkiz.com,
-        gregory.clement@free-electrons.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 3/8] at91: dt: Add at91sam9261 dt SoC support
-Message-ID: <20140212172844.GE11498@piout.net>
-References: <1392199607-27452-1-git-send-email-jjhiblot@traphandler.com>
- <1392199607-27452-4-git-send-email-jjhiblot@traphandler.com>
+	id S1753350AbaBLRay (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 12:30:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8173 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752472AbaBLRav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 12:30:51 -0500
+Date: Wed, 12 Feb 2014 19:35:24 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Jason Wang <jasowang@redhat.com>,
+        virtio-dev@lists.oasis-open.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        davem@davemloft.net, qinchuanyu@huawei.com,
+        Joern Engel <joern@logfs.org>,
+        Anatol Pomozov <anatol.pomozov@gmail.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: Re: [PATCH net 1/3] kref: add kref_sub_return
+Message-ID: <20140212173524.GA26860@redhat.com>
+References: <1392222846-26699-1-git-send-email-mst@redhat.com>
+ <1392222846-26699-2-git-send-email-mst@redhat.com>
+ <20140212165630.GA22991@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1392199607-27452-4-git-send-email-jjhiblot@traphandler.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140212165630.GA22991@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 12/02/2014 at 11:06:42 +0100, Jean-Jacques Hiblot wrote :
-> This patch adds support for the Device Tree on a sam9261-based platform
+On Wed, Feb 12, 2014 at 08:56:30AM -0800, Greg Kroah-Hartman wrote:
+> On Wed, Feb 12, 2014 at 06:38:21PM +0200, Michael S. Tsirkin wrote:
+> > It is sometimes useful to get the value of the reference count after
+> > decrement.
+> > For example, vhost wants to execute some periodic cleanup operations
+> > once number of references drops below a specific value, before it
+> > reaches zero (for efficiency).
 > 
-> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-> ---
->  arch/arm/boot/dts/at91sam9261.dtsi | 740 +++++++++++++++++++++++++++++++++++++
->  arch/arm/mach-at91/at91sam9261.c   |  17 +
->  2 files changed, 757 insertions(+)
->  create mode 100644 arch/arm/boot/dts/at91sam9261.dtsi
+> You should never care about what the value of the kref is, if you are
+> using it correctly :)
+> 
+> So I really don't want to add this function, as I'm sure people will use
+> it incorrectly.  You should only care if the reference drops to 0, if
+> not, then your usage doesn't really fit into the "kref" model, and so,
+> just use an atomic variable.
 
-[...]
+This happens when you have code that keeps
+reference itself implicitly or explicitly.
 
-> +
-> +		apb {
-> +			compatible = "simple-bus";
-> +			#address-cells = <1>;
-> +			#size-cells = <1>;
-> +			ranges;
-> +
-> +			tcb0: timer@fffa0000 {
-> +				compatible = "atmel,at91rm9200-tcb";
-> +				reg = <0xfffa0000 0x100>;
-> +				interrupts = < 17 IRQ_TYPE_LEVEL_HIGH 0
-> +					18 IRQ_TYPE_LEVEL_HIGH 0
-> +					19 IRQ_TYPE_LEVEL_HIGH 0
-> +					>;
-> +				clocks = <&tc0_clk>, <&tc1_clk>, <&tc2_clk>;
-> +				clock-names = "t0_clk", "t1_clk", "t2_clk";
-> +			};
-> +
-> +			usb1: gadget@fffa4000 {
-> +				compatible = "atmel,at91rm9200-udc";
-> +				reg = <0xfffa4000 0x4000>;
-> +				interrupts = <10 IRQ_TYPE_LEVEL_HIGH 2>;
-> +				clocks = <&usb>, <&udc_clk>, <&udpck>;
-> +				clock-names = "usb_clk", "udc_clk", "udpck";
-> +				status = "disabled";
-> +			};
-> +
-> +			mmc0: mmc@fffa8000 {
-> +				compatible = "atmel,hsmci";
-> +				reg = <0xfffa8000 0x600>;
-> +				interrupts = <9 IRQ_TYPE_LEVEL_HIGH 0>;
-> +				pinctrl-names = "default";
-> +				pinctrl-0 = <&pinctrl_mmc0_clk>, <&pinctrl_mmc0_slot0_cmd_dat0>, <&pinctrl_mmc0_slot0_dat1_3>;
-> +				#address-cells = <1>;
-> +				#size-cells = <0>;
-> +				clocks = <&mci0_clk>;
-> +				clock-names = "mci_clk";
-> +				status = "disabled";
-> +			};
-> +
-> +			i2c0: i2c@fffac000 {
-> +				compatible = "atmel,at91sam9261-i2c";
-> +				pinctrl-names = "default";
-> +				pinctrl-0 = <&pinctrl_i2c_twi>;
-> +				reg = <0xfffac000 0x100>;
-> +				interrupts = <11 IRQ_TYPE_LEVEL_HIGH 6>;
-> +				#address-cells = <1>;
-> +				#size-cells = <0>;
-> +				clocks = <&twi0_clk>;
-> +				status = "disabled";
-> +			};
-> +
-> +			usart0: serial@fffb0000 {
-> +				compatible = "atmel,at91sam9260-usart";
-> +				reg = <0xfffb0000 0x200>;
-> +				interrupts = <6 IRQ_TYPE_LEVEL_HIGH 5>;
-> +				atmel,use-dma-rx;
-> +				atmel,use-dma-tx;
-> +				pinctrl-names = "default";
-> +				pinctrl-0 = <&pinctrl_usart0>;
-> +				clocks = <&usart0_clk>;
-> +				clock-names = "usart";
-> +				status = "disabled";
-> +			};
-> +
-> +			usart1: serial@fffb4000 {
-> +				compatible = "atmel,at91sam9260-usart";
-> +				reg = <0xfffb4000 0x200>;
-> +				interrupts = <7 IRQ_TYPE_LEVEL_HIGH 5>;
-> +				atmel,use-dma-rx;
-> +				atmel,use-dma-tx;
-> +				pinctrl-names = "default";
-> +				pinctrl-0 = <&pinctrl_usart1>;
-> +				clocks = <&usart1_clk>;
-> +				clock-names = "usart";
-> +				status = "disabled";
-> +			};
-> +
-> +			usart2: serial@fffb8000{
-> +				compatible = "atmel,at91sam9260-usart";
-> +				reg = <0xfffb8000 0x200>;
-> +				interrupts = <8 IRQ_TYPE_LEVEL_HIGH 5>;
-> +				atmel,use-dma-rx;
-> +				atmel,use-dma-tx;
-> +				pinctrl-names = "default";
-> +				pinctrl-0 = <&pinctrl_usart2>;
-> +				clocks = <&usart2_clk>;
-> +				clock-names = "usart";
-> +				status = "disabled";
-> +			};
-> +
-> +			ssc0: ssc@fffbc000 {
-> +				compatible = "atmel,at91rm9200-ssc";
-> +				reg = <0xfffbc000 0x4000>;
-> +				interrupts = <14 IRQ_TYPE_LEVEL_HIGH 5>;
-> +				pinctrl-names = "default";
-> +				pinctrl-0 = <&pinctrl_ssc0_tx &pinctrl_ssc0_rx>;
-> +				status = "disabled";
-> +			};
-> +
-> +			ssc1: ssc@fffc0000 {
-> +				compatible = "atmel,at91rm9200-ssc";
-> +				reg = <0xfffc0000 0x4000>;
-> +				interrupts = <15 IRQ_TYPE_LEVEL_HIGH 5>;
-> +				pinctrl-names = "default";
-> +				pinctrl-0 = <&pinctrl_ssc1_tx &pinctrl_ssc1_rx>;
-> +				status = "disabled";
-> +			};
-> +
-> +			spi0: spi@fffc8000 {
-> +				#address-cells = <1>;
-> +				#size-cells = <0>;
-> +				compatible = "atmel,at91rm9200-spi";
-> +				reg = <0xfffc8000 0x200>;
-> +				cs-gpios = <0>, <0>, <0>, <0>;
-> +				interrupts = <12 IRQ_TYPE_LEVEL_HIGH 3>;
-> +				pinctrl-names = "default";
-> +				pinctrl-0 = <&pinctrl_spi0>;
-> +				clocks = <&spi0_clk>;
-> +				clock-names = "spi_clk";
-> +				status = "disabled";
-> +			};
-> +
-> +			spi1: spi@fffcc000 {
-> +				#address-cells = <1>;
-> +				#size-cells = <0>;
-> +				compatible = "atmel,at91rm9200-spi";
-> +				reg = <0xfffcc000 0x200>;
-> +				interrupts = <13 IRQ_TYPE_LEVEL_HIGH 3>;
-> +				pinctrl-names = "default";
-> +				pinctrl-0 = <&pinctrl_spi1>;
-> +				clocks = <&spi1_clk>;
-> +				clock-names = "spi_clk";
-> +				status = "disabled";
-> +			};
-> +
-> +			ramc: ramc@ffffea00 {
-> +				compatible = "atmel,at91sam9260-sdramc";
-> +				reg = <0xffffea00 0x200>;
-> +			};
-> +
+	foo(struct kref *k, int bar) {
 
-You probably copied/pasted it but according to the block diagram, the
-sdram controller is not under the apb.
+	sub = kref_sub(k)
 
-> +			matrix: matrix@ffffee00 {
-> +				compatible = "atmel,at91sam9261-bus-matrix";
-> +				reg = <0xffffee00 0x200>;
-> +			};
-> +
+	if (sub == 1)
+		FOO(k, bar) /* Here I am the only one
+			       with a reference */
 
-Same here, the apb is actually under the bus matrix.
+	}
 
-I don't know whether it can be represented another way though.
+	kref_get(k)
+	foo(k, bar);
+	....
+	kref_put(k)
 
+Why not do FOO in destructor you ask?
+Absolutely but this will be called much later.
+
+Maybe you will reconsider if I document this
+as the only legal use?
+
+> 
+> I really want to know why it matters for "efficiency" that you know this
+> number.  How does that help anything, as the number could then go up
+> later on, and the work you did at a "lower" number is obsolete, right?
+> 
+> thanks,
+> 
+> greg k-h
+
+The issue is that if number dropped to 1, this means
+we must do the cleanup work since there are
+no outstanding buffers, (last user is ourselves)
+if we do not cleanup,
+guest will hang waiting for us.
+
+But it never drops to 0 since we have our own reference
+in the device.
+If it goes up again this means we didn't have
+to do cleanup, but an alternative is doing
+it all the time and that is slow.
+
+Yes I can rework vhost to open-code this kref use, it's
+no big deal.
+Alternatively since most of the use does match kref
+model, maybe __kref_sub_return with disclaimers
+that you must know what you are doing?
+Please let me know.
+
+Thanks!
 
 -- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+MST
