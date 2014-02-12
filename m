@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752456AbaBLB1L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Feb 2014 20:27:11 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:64513 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750978AbaBLB1J (ORCPT
+	id S1752628AbaBLB1a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Feb 2014 20:27:30 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:33999 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752526AbaBLB12 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Feb 2014 20:27:09 -0500
-Date: Tue, 11 Feb 2014 17:27:08 -0800 (PST)
-Message-ID: <87iosl9l3q.wl%kuninori.morimoto.gx@gmail.com>
+	Tue, 11 Feb 2014 20:27:28 -0500
+Date: Tue, 11 Feb 2014 17:27:27 -0800 (PST)
+Message-ID: <87ha859l37.wl%kuninori.morimoto.gx@gmail.com>
 From: Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>
-Subject: [PATCH 1/2] regulator: gpio: print warning if gpios <-> gpios-states mismatch on DT
+Subject: [PATCH 2/2] regulator: gpio: explain detail of gpios-states
 User-Agent: Wanderlust/2.14.0 Emacs/23.3 Mule/6.0
 To: Mark Brown <broonie@kernel.org>
 Cc: Liam Girdwood <lgirdwood@gmail.com>, Lee Jones <lee.jones@linaro.org>,
@@ -27,24 +27,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
 
+gpios-states is array, and default is 0
+
 Signed-off-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
 ---
- drivers/regulator/gpio-regulator.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ .../bindings/regulator/gpio-regulator.txt          |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/regulator/gpio-regulator.c b/drivers/regulator/gpio-regulator.c
-index ac3a8c7..5491cee 100644
---- a/drivers/regulator/gpio-regulator.c
-+++ b/drivers/regulator/gpio-regulator.c
-@@ -176,7 +176,7 @@ of_get_gpio_regulator_config(struct device *dev, struct device_node *np)
- 	if (prop) {
- 		proplen = prop->length / sizeof(int);
- 		if (proplen != config->nr_gpios) {
--			/* gpios <-> gpios-states mismatch */
-+			dev_warn(dev, "gpios <-> gpios-states mismatch\n");
- 			prop = NULL;
- 		}
- 	}
+diff --git a/Documentation/devicetree/bindings/regulator/gpio-regulator.txt b/Documentation/devicetree/bindings/regulator/gpio-regulator.txt
+index 3ecb585..356e8bb 100644
+--- a/Documentation/devicetree/bindings/regulator/gpio-regulator.txt
++++ b/Documentation/devicetree/bindings/regulator/gpio-regulator.txt
+@@ -8,7 +8,8 @@ Required properties:
+ Optional properties:
+ - enable-gpio		: GPIO to use to enable/disable the regulator.
+ - gpios			: GPIO group used to control voltage.
+-- gpios-states		: gpios pin's initial states. 1 means HIGH
++- gpios-states		: gpios pin's initial states array. 0: LOW, 1: HIGH.
++			  defualt is LOW if nothing is specified.
+ - startup-delay-us	: Startup time in microseconds.
+ - enable-active-high	: Polarity of GPIO is active high (default is low).
+ 
 -- 
 1.7.9.5
 
