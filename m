@@ -1,198 +1,345 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752226AbaBLOGg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 09:06:36 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:38755 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065AbaBLOGe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 09:06:34 -0500
-Date: Wed, 12 Feb 2014 15:06:20 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Kirill Tkhai <tkhai@yandex.ru>
-Cc: "mingo@kernel.org" <mingo@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: Re: [tip:sched/core] sched: Push put_prev_task() into
- pick_next_task( )
-Message-ID: <20140212140620.GD9987@twins.programming.kicks-ass.net>
-References: <1328936700.2476.17.camel@laptop>
- <tip-606dba2e289446600a0b68422ed2019af5355c12@git.kernel.org>
- <124891392188453@web4h.yandex.ru>
+	id S1751927AbaBLOPl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 09:15:41 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:34043 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751065AbaBLOPi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 09:15:38 -0500
+Message-ID: <52FB8E91.8030400@ti.com>
+Date: Wed, 12 Feb 2014 17:09:05 +0200
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <124891392188453@web4h.yandex.ru>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Laura Abbott <lauraa@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        <linux-arm-kernel@lists.infradead.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Rob Herring <robherring2@gmail.com>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>, <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCHv3 2/2] arm: Get rid of meminfo
+References: <1392153265-14439-1-git-send-email-lauraa@codeaurora.org> <1392153265-14439-3-git-send-email-lauraa@codeaurora.org>
+In-Reply-To: <1392153265-14439-3-git-send-email-lauraa@codeaurora.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 11:00:53AM +0400, Kirill Tkhai wrote:
-> > @@ -4748,7 +4743,7 @@ static void migrate_tasks(unsigned int dead_cpu)
-> >                  if (rq->nr_running == 1)
-> >                          break;
-> >
-> > - next = pick_next_task(rq);
-> > + next = pick_next_task(rq, NULL);
+Hi Laura,
+
+On 02/11/2014 11:14 PM, Laura Abbott wrote:
+> memblock is now fully integrated into the kernel and is the prefered
+> method for tracking memory. Rather than reinvent the wheel with
+> meminfo, migrate to using memblock directly instead of meminfo as
+> an intermediate.
 > 
-> pick_next_task() firstly checks for prev->sched_class, doesn't it ???
-> 
-> The same for pick_next_task_rt().
+> Acked-by: Jason Cooper <jason@lakedaemon.net>
+> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Tested-by: Leif Lindholm <leif.lindholm@linaro.org>
+> Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
+> ---
+>   arch/arm/include/asm/mach/arch.h         |    4 +-
+>   arch/arm/include/asm/memblock.h          |    3 +-
+>   arch/arm/include/asm/setup.h             |   23 ------
+>   arch/arm/kernel/atags_parse.c            |    5 +-
+>   arch/arm/kernel/devtree.c                |    5 --
+>   arch/arm/kernel/setup.c                  |   30 ++------
+>   arch/arm/mach-clps711x/board-clep7312.c  |    7 +-
+>   arch/arm/mach-clps711x/board-edb7211.c   |   10 +--
+>   arch/arm/mach-clps711x/board-p720t.c     |    2 +-
+>   arch/arm/mach-footbridge/cats-hw.c       |    2 +-
+>   arch/arm/mach-footbridge/netwinder-hw.c  |    2 +-
+>   arch/arm/mach-msm/board-halibut.c        |    6 --
+>   arch/arm/mach-msm/board-mahimahi.c       |   13 +---
+>   arch/arm/mach-msm/board-msm7x30.c        |    3 +-
+>   arch/arm/mach-msm/board-sapphire.c       |   13 ++--
+>   arch/arm/mach-msm/board-trout.c          |    8 +--
+>   arch/arm/mach-orion5x/common.c           |    3 +-
+>   arch/arm/mach-orion5x/common.h           |    3 +-
+>   arch/arm/mach-pxa/cm-x300.c              |    3 +-
+>   arch/arm/mach-pxa/corgi.c                |   10 +--
+>   arch/arm/mach-pxa/eseries.c              |    9 +--
+>   arch/arm/mach-pxa/poodle.c               |    8 +--
+>   arch/arm/mach-pxa/spitz.c                |    8 +--
+>   arch/arm/mach-pxa/tosa.c                 |    8 +--
+>   arch/arm/mach-realview/core.c            |   11 +--
+>   arch/arm/mach-realview/core.h            |    3 +-
+>   arch/arm/mach-realview/realview_pb1176.c |    8 +--
+>   arch/arm/mach-realview/realview_pbx.c    |   17 ++---
+>   arch/arm/mach-s3c24xx/mach-smdk2413.c    |    8 +--
+>   arch/arm/mach-s3c24xx/mach-vstms.c       |    8 +--
+>   arch/arm/mach-sa1100/assabet.c           |    2 +-
+>   arch/arm/mm/init.c                       |   67 +++++++-----------
+>   arch/arm/mm/mmu.c                        |  115 +++++++++---------------------
+
+The arch/arm/mm/nommu.c has to be updated too :)
+
+[...]
+
+I've tested your change on keystone (with some additional printouts in sanity_check_meminfo())
+and got following results:
+
+- without your change + HIGHMEM=ON
+[    0.000000] ==== memblock_limit0x00000000af800000, arm_lowmem_limit0x00000000af800000 high_memoryef800000 vmalloc_limit0x00000000af800000
+
+ - without your change + HIGHMEM=OFF
+[    0.000000] Truncating RAM at 80000000-bfffffff to -af7fffff (vmalloc region overlap).
+[    0.000000] ==== memblock_limit0x00000000af800000, arm_lowmem_limit0x00000000af800000 high_memoryef800000 vmalloc_limit0x00000000af800000
+
+- with your change + HIGHMEM=ON
+[    0.000000] ==== memblock_limit0x00000000af800000, arm_lowmem_limit0x00000000af800000 high_memoryef800000 vmalloc_limit0x00000000af800000
+
+- with your change + HIGHMEM=OFF
+[    0.000000] Truncating RAM at 0x0000000080000000-0x00000000c0000000 to -0x0000000010800000
+                                                                          ^printout changed
+[    0.000000] ==== memblock_limit0x00000000af800000, arm_lowmem_limit0x00000000af800000 high_memoryef800000 vmalloc_limit0x00000000af800000
+
+Keystone mem defined as: from@0x80000000 size@0x40000000 (LPAE=OFF)
+
+As result, i have few comments regarding sanity_check_meminfo() changes as I think there are
+some issues &side effects changes at least in printouts - see below.
+
+>   	memblock_reserve(__pa(_sdata), _end - _sdata);
+> @@ -413,54 +397,53 @@ free_memmap(unsigned long start_pfn, unsigned long end_pfn)
+>   /*
+>    * The mem_map array can get very big.  Free the unused area of the memory map.
+>    */
+> -static void __init free_unused_memmap(struct meminfo *mi)
+> +static void __init free_unused_memmap(void)
+>   {
+> -	unsigned long bank_start, prev_bank_end = 0;
+> -	unsigned int i;
+> +	unsigned long start, prev_end = 0;
+> +	struct memblock_region *reg;
+>   
+>   	/*
+>   	 * This relies on each bank being in address order.
+>   	 * The banks are sorted previously in bootmem_init().
+>   	 */
+> -	for_each_bank(i, mi) {
+> -		struct membank *bank = &mi->bank[i];
+> -
+> -		bank_start = bank_pfn_start(bank);
+> +	for_each_memblock(memory, reg) {
+> +		start = __phys_to_pfn(reg->base);
+
+memblock_region_memory_base_pfn() can be used here.
+
+>   
+>   #ifdef CONFIG_SPARSEMEM
+>   		/*
+>   		 * Take care not to free memmap entries that don't exist
+>   		 * due to SPARSEMEM sections which aren't present.
+>   		 */
+> -		bank_start = min(bank_start,
+> -				 ALIGN(prev_bank_end, PAGES_PER_SECTION));
+> +		start = min(start,
+> +				 ALIGN(prev_end, PAGES_PER_SECTION));
+>   #else
+>   		/*
+>   		 * Align down here since the VM subsystem insists that the
+>   		 * memmap entries are valid from the bank start aligned to
+>   		 * MAX_ORDER_NR_PAGES.
+>   		 */
+> -		bank_start = round_down(bank_start, MAX_ORDER_NR_PAGES);
+> +		start = round_down(start, MAX_ORDER_NR_PAGES);
+>   #endif
+>   		/*
+>   		 * If we had a previous bank, and there is a space
+>   		 * between the current bank and the previous, free it.
+>   		 */
+> -		if (prev_bank_end && prev_bank_end < bank_start)
+> -			free_memmap(prev_bank_end, bank_start);
+> +		if (prev_end && prev_end < start)
+> +			free_memmap(prev_end, start);
+>   
+>   		/*
+>   		 * Align up here since the VM subsystem insists that the
+>   		 * memmap entries are valid from the bank end aligned to
+>   		 * MAX_ORDER_NR_PAGES.
+>   		 */
+> -		prev_bank_end = ALIGN(bank_pfn_end(bank), MAX_ORDER_NR_PAGES);
+> +		prev_end = ALIGN(start + __phys_to_pfn(reg->size),
+
+I think, start + __phys_to_pfn(reg->size) can be replaced by
+memblock_region_memory_end_pfn().
+
+> +				 MAX_ORDER_NR_PAGES);
+>   	}
+>   
+>   #ifdef CONFIG_SPARSEMEM
+> -	if (!IS_ALIGNED(prev_bank_end, PAGES_PER_SECTION))
+> -		free_memmap(prev_bank_end,
+> -			    ALIGN(prev_bank_end, PAGES_PER_SECTION));
+> +	if (!IS_ALIGNED(prev_end, PAGES_PER_SECTION))
+> +		free_memmap(prev_end,
+> +			    ALIGN(prev_end, PAGES_PER_SECTION));
+>   #endif
+>   }
+>   
+> @@ -536,7 +519,7 @@ void __init mem_init(void)
+>   	set_max_mapnr(pfn_to_page(max_pfn) - mem_map);
+>   
+>   	/* this will put all unused low memory onto the freelists */
+> -	free_unused_memmap(&meminfo);
+> +	free_unused_memmap();
+>   	free_all_bootmem();
+>   
+>   #ifdef CONFIG_SA1111
+> diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+> index 4f08c13..23433ef 100644
+> --- a/arch/arm/mm/mmu.c
+> +++ b/arch/arm/mm/mmu.c
+> @@ -1046,74 +1046,44 @@ phys_addr_t arm_lowmem_limit __initdata = 0;
+>   void __init sanity_check_meminfo(void)
+>   {
+>   	phys_addr_t memblock_limit = 0;
+> -	int i, j, highmem = 0;
+> +	int highmem = 0;
+>   	phys_addr_t vmalloc_limit = __pa(vmalloc_min - 1) + 1;
+> +	struct memblock_region *reg;
+>   
+> -	for (i = 0, j = 0; i < meminfo.nr_banks; i++) {
+> -		struct membank *bank = &meminfo.bank[j];
+> -		phys_addr_t size_limit;
+> -
+> -		*bank = meminfo.bank[i];
+> -		size_limit = bank->size;
+> +	for_each_memblock(memory, reg) {
+> +		phys_addr_t block_start = reg->base;
+> +		phys_addr_t block_end = reg->base + reg->size;
+> +		phys_addr_t size_limit = reg->size;
+>   
+> -		if (bank->start >= vmalloc_limit)
+> +		if (reg->base >= vmalloc_limit)
+>   			highmem = 1;
+>   		else
+> -			size_limit = vmalloc_limit - bank->start;
+> +			size_limit = vmalloc_limit - reg->base;
+>   
+> -		bank->highmem = highmem;
+>   
+> -#ifdef CONFIG_HIGHMEM
+> -		/*
+> -		 * Split those memory banks which are partially overlapping
+> -		 * the vmalloc area greatly simplifying things later.
+> -		 */
+> -		if (!highmem && bank->size > size_limit) {
+> -			if (meminfo.nr_banks >= NR_BANKS) {
+> -				printk(KERN_CRIT "NR_BANKS too low, "
+> -						 "ignoring high memory\n");
+> -			} else {
+> -				memmove(bank + 1, bank,
+> -					(meminfo.nr_banks - i) * sizeof(*bank));
+> -				meminfo.nr_banks++;
+> -				i++;
+> -				bank[1].size -= size_limit;
+> -				bank[1].start = vmalloc_limit;
+> -				bank[1].highmem = highmem = 1;
+> -				j++;
+> +		if (!IS_ENABLED(CONFIG_HIGHMEM) || cache_is_vipt_aliasing()) {
+> +
+> +			if (highmem) {
+> +				pr_notice("Ignoring ram at %pa-%pa (!CONFIG_HIGHMEM)\n",
+> +					&block_start, &block_end);
+> +				memblock_remove(block_start, block_end);
+
+The wrong size is used here, should be => memblock_remove(block_start, reg->size);
+or => memblock_remove(block_start, size_limit);
+
+> +				continue;
+>   			}
+> -			bank->size = size_limit;
+> -		}
+> -#else
+> -		/*
+> -		 * Highmem banks not allowed with !CONFIG_HIGHMEM.
+> -		 */
+> -		if (highmem) {
+> -			printk(KERN_NOTICE "Ignoring RAM at %.8llx-%.8llx "
+> -			       "(!CONFIG_HIGHMEM).\n",
+> -			       (unsigned long long)bank->start,
+> -			       (unsigned long long)bank->start + bank->size - 1);
+> -			continue;
+> -		}
+>   
+> -		/*
+> -		 * Check whether this memory bank would partially overlap
+> -		 * the vmalloc area.
+> -		 */
+> -		if (bank->size > size_limit) {
+> -			printk(KERN_NOTICE "Truncating RAM at %.8llx-%.8llx "
+> -			       "to -%.8llx (vmalloc region overlap).\n",
+> -			       (unsigned long long)bank->start,
+> -			       (unsigned long long)bank->start + bank->size - 1,
+> -			       (unsigned long long)bank->start + size_limit - 1);
+> -			bank->size = size_limit;
+> +			if (reg->size > size_limit) {
+> +				phys_addr_t overlap_size = reg->size - size_limit;
+> +
+> +				pr_notice("Truncating RAM at %pa-%pa to -%pa",
+> +					&block_start, &block_end, &overlap_size);
+
+Pls, change it back to show new RAM limit instead of size.
+pr_notice("Truncating RAM at %pa-%pa to -%pa",
+				&block_start, &block_end, &vmalloc_limit);
 
 
-OK, how about something like this?
+> +				memblock_remove(vmalloc_limit, overlap_size);
+> +				block_end = vmalloc_limit;
+> +			}
+>   		}
+> -#endif
+> -		if (!bank->highmem) {
+> -			phys_addr_t bank_end = bank->start + bank->size;
+>   
+> -			if (bank_end > arm_lowmem_limit)
+> -				arm_lowmem_limit = bank_end;
+> +		if (!highmem) {
+> +			if (block_end > arm_lowmem_limit)
+> +				arm_lowmem_limit = reg->base + size_limit;
+> +
 
----
-Subject: sched: Fix hotplug task migration
-From: Peter Zijlstra <peterz@infradead.org>
-Date: Wed, 12 Feb 2014 10:49:30 +0100
+if !highmem then size_limit will be calculated as vmalloc_limit - reg->base
+which in turn can be greater than reg->size. So, arm_lowmem_limit can point on
+non existent memory address.
 
-Dan Carpenter reported:
+Seems, it should be:
+  arm_lowmem_limit = block_end;
 
-> kernel/sched/rt.c:1347 pick_next_task_rt() warn: variable dereferenced before check 'prev' (see line 1338)
-> kernel/sched/deadline.c:1011 pick_next_task_dl() warn: variable dereferenced before check 'prev' (see line 1005)
+>   
+>   			/*
+>   			 * Find the first non-section-aligned page, and point
+> @@ -1129,35 +1099,16 @@ void __init sanity_check_meminfo(void)
+>   			 * occurs before any free memory is mapped.
+>   			 */
+>   			if (!memblock_limit) {
+> -				if (!IS_ALIGNED(bank->start, SECTION_SIZE))
+> -					memblock_limit = bank->start;
+> -				else if (!IS_ALIGNED(bank_end, SECTION_SIZE))
+> -					memblock_limit = bank_end;
+[...]
 
-Kirill also spotted that migrate_tasks() will have an instant NULL
-deref because pick_next_task() will immediately deref prev.
+Thanks for your patience :)
 
-Instead of fixing all the corner cases because migrate_tasks() can
-pass in a NULL prev task in the unlikely case of hot-un-plug, provide
-a fake task such that we can remove all the NULL checks from the far
-more common paths.
+Regards,
+-grygorii
 
-A further problem; not previously spotted; is that because we pushed
-pre_schedule() and idle_balance() into pick_next_task() we now need to
-avoid those getting called and pulling more tasks on our dying CPU.
-
-We avoid pull_{dl,rt}_task() by setting fake_task.prio to MAX_PRIO+1.
-We also note that since we call pick_next_task() exactly the amount of
-times we have runnable tasks present, we should never land in
-idle_balance().
-
-Fixes: 38033c37faab ("sched: Push down pre_schedule() and idle_balance()")
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Juri Lelli <juri.lelli@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Reported-by: Kirill Tkhai <tkhai@yandex.ru>
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20140212094930.GB3545@laptop.programming.kicks-ass.net
----
- kernel/sched/core.c      |   18 +++++++++++++++++-
- kernel/sched/deadline.c  |    3 +--
- kernel/sched/fair.c      |    5 ++---
- kernel/sched/idle_task.c |    3 +--
- kernel/sched/rt.c        |    3 +--
- kernel/sched/stop_task.c |    3 +--
- 6 files changed, 23 insertions(+), 12 deletions(-)
-
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -4681,6 +4681,22 @@ static void calc_load_migrate(struct rq
- 		atomic_long_add(delta, &calc_load_tasks);
- }
- 
-+static void put_prev_task_fake(struct rq *rq, struct task_struct *prev)
-+{
-+}
-+
-+static const struct sched_class fake_sched_class = {
-+	.put_prev_task = put_prev_task_fake,
-+};
-+
-+static struct task_struct fake_task = {
-+	/*
-+	 * Avoid pull_{rt,dl}_task()
-+	 */
-+	.prio = MAX_PRIO + 1,
-+	.sched_class = &fake_sched_class,
-+};
-+
- /*
-  * Migrate all tasks from the rq, sleeping tasks will be migrated by
-  * try_to_wake_up()->select_task_rq().
-@@ -4721,7 +4737,7 @@ static void migrate_tasks(unsigned int d
- 		if (rq->nr_running == 1)
- 			break;
- 
--		next = pick_next_task(rq, NULL);
-+		next = pick_next_task(rq, &fake_task);
- 		BUG_ON(!next);
- 		next->sched_class->put_prev_task(rq, next);
- 
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -1008,8 +1008,7 @@ struct task_struct *pick_next_task_dl(st
- 	if (unlikely(!dl_rq->dl_nr_running))
- 		return NULL;
- 
--	if (prev)
--		prev->sched_class->put_prev_task(rq, prev);
-+	prev->sched_class->put_prev_task(rq, prev);
- 
- 	dl_se = pick_next_dl_entity(rq, dl_rq);
- 	BUG_ON(!dl_se);
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4690,7 +4690,7 @@ pick_next_task_fair(struct rq *rq, struc
- 	if (!cfs_rq->nr_running)
- 		goto idle;
- 
--	if (!prev || prev->sched_class != &fair_sched_class)
-+	if (prev->sched_class != &fair_sched_class)
- 		goto simple;
- 
- 	/*
-@@ -4766,8 +4766,7 @@ pick_next_task_fair(struct rq *rq, struc
- 	if (!cfs_rq->nr_running)
- 		goto idle;
- 
--	if (prev)
--		prev->sched_class->put_prev_task(rq, prev);
-+	prev->sched_class->put_prev_task(rq, prev);
- 
- 	do {
- 		se = pick_next_entity(cfs_rq, NULL);
---- a/kernel/sched/idle_task.c
-+++ b/kernel/sched/idle_task.c
-@@ -26,8 +26,7 @@ static void check_preempt_curr_idle(stru
- static struct task_struct *
- pick_next_task_idle(struct rq *rq, struct task_struct *prev)
- {
--	if (prev)
--		prev->sched_class->put_prev_task(rq, prev);
-+	prev->sched_class->put_prev_task(rq, prev);
- 
- 	schedstat_inc(rq, sched_goidle);
- #ifdef CONFIG_SMP
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -1344,8 +1344,7 @@ pick_next_task_rt(struct rq *rq, struct
- 	if (rt_rq_throttled(rt_rq))
- 		return NULL;
- 
--	if (prev)
--		prev->sched_class->put_prev_task(rq, prev);
-+	prev->sched_class->put_prev_task(rq, prev);
- 
- 	p = _pick_next_task_rt(rq);
- 
---- a/kernel/sched/stop_task.c
-+++ b/kernel/sched/stop_task.c
-@@ -31,8 +31,7 @@ pick_next_task_stop(struct rq *rq, struc
- 	if (!stop || !stop->on_rq)
- 		return NULL;
- 
--	if (prev)
--		prev->sched_class->put_prev_task(rq, prev);
-+	prev->sched_class->put_prev_task(rq, prev);
- 
- 	stop->se.exec_start = rq_clock_task(rq);
- 
