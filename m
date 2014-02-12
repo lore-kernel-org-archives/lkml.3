@@ -1,84 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754281AbaBLWem (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Feb 2014 17:34:42 -0500
-Received: from mail.windriver.com ([147.11.1.11]:39951 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753862AbaBLWel (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Feb 2014 17:34:41 -0500
-Message-ID: <52FBF5DD.3030407@windriver.com>
-Date: Wed, 12 Feb 2014 17:29:49 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1754246AbaBLWlK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Feb 2014 17:41:10 -0500
+Received: from imap.thunk.org ([74.207.234.97]:57249 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753066AbaBLWlI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Feb 2014 17:41:08 -0500
+Date: Wed, 12 Feb 2014 17:40:58 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: postmaster@vger.kernel.org
+Cc: Kees Cook <kees@outflux.net>, Dave Jones <davej@redhat.com>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>, linux-kernel@vger.kernel.org
+Subject: Re: flaw in "nf_tables: add reject module for NFPROTO_INET"
+Message-ID: <20140212224058.GA7237@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, postmaster@vger.kernel.org,
+	Kees Cook <kees@outflux.net>, Dave Jones <davej@redhat.com>,
+	Pablo Neira Ayuso <pablo@netfilter.org>,
+	Patrick McHardy <kaber@trash.net>, linux-kernel@vger.kernel.org
+References: <52fb24097b42_6b5073486c727c3@209.249.196.67.mail>
+ <20140212204307.GK23300@outflux.net>
+ <20140212205037.GA6563@redhat.com>
+ <20140212205453.GL23300@outflux.net>
+ <20140212210347.GB6563@redhat.com>
+ <20140212210554.GM23300@outflux.net>
+ <20140212213151.GB12617@thunk.org>
+ <20140212214112.GN23300@outflux.net>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        <x86@kernel.org>
-Subject: Re: [PATCH] x86: fix two sparse warnings in early boot string handling
-References: <1392143619-11453-1-git-send-email-paul.gortmaker@windriver.com> <alpine.DEB.2.02.1402111425430.32020@chino.kir.corp.google.com> <20140212020010.GB21033@windriver.com> <alpine.DEB.2.02.1402111821510.13509@chino.kir.corp.google.com> <52FB8BEB.5020506@windriver.com> <52FB9807.40706@windriver.com> <alpine.DEB.2.02.1402121357450.27082@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1402121357450.27082@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140212214112.GN23300@outflux.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14-02-12 05:00 PM, David Rientjes wrote:
-> On Wed, 12 Feb 2014, Paul Gortmaker wrote:
+On Wed, Feb 12, 2014 at 01:41:12PM -0800, Kees Cook wrote:
+> On Wed, Feb 12, 2014 at 09:31:51PM +0000, tytso@mit.edu wrote:
+> > I'm paying attention to Linux kernel coverity reports (as well as
+> > working on my goal to drive the number of e2fsprogs coverity reports
+> > to zero :-), so feel free to CC me on any reports.
 > 
->> Actually no v2 pending.  The original v1 patch was/is correct as-is.
->>
->> While x86-64 defconfig passed, it turns out that both strcmp and strstr
->> have to stay, else we will get this on i386 allyesconfig builds:
->>
->> arch/x86/boot/compressed/eboot.o: In function `handle_cmdline_files.isra.5.constprop.6':
->> eboot.c:(.text+0x4cf): undefined reference to `strstr'
->> eboot.c:(.text+0x601): undefined reference to `strstr'
->> make[2]: *** [arch/x86/boot/compressed/vmlinux] Error 1
->>
-> 
-> This means there is a strstr() prototype that is visible to 
-> drivers/firmware/efi/efi-stub-helper.c but fails at linkage because you've 
-> removed the definition. 
+> Okay, 3 people sounds like "we need a mailing list". :) Who's best to
+> ask for that?
 
-Yes, because you suggested removal when you said, in what is
-now deleted context text:
++postmaster@vger.kernel.org
 
- "I don't see why you can't remove strstr() in 
- arch/x86/boot/string.c entirely.  What breaks?"
+Hi Dave, Matti,
 
-The above answers your question. The eboot.c breaks.  So
-we can't remove strstr.
+Would it be possible to set up a new mailing list on vger.kernel.org,
+linux-coverity@vger.kernel.org?
 
-> So, again, why would you add a duplicate 
-> prototype with your patch?
+Many thanks!!
 
-I'm sure there is an implicit path to <linux/string.h>
-which allows eboot.c to see a prototype and hence compile.
-
-But that prototype is not associated with the early boot
-string.c support.  Those prototypes are in boot.h -- where
-my 1st patch added the strstr one to be consistent with
-all the other early boot string.c functions.  Is it clear now?
-
-> 
->> arch/x86/boot/edd.o: In function `query_edd':
->> arch/x86/boot/edd.c:136: undefined reference to `strcmp'
->> arch/x86/boot/edd.c:136: undefined reference to `strcmp'
->> arch/x86/boot/edd.c:140: undefined reference to `strcmp'
->> arch/x86/boot/edd.c:142: undefined reference to `strcmp'
->> make[1]: *** [arch/x86/boot/setup.elf] Error 1
->>
->> So my gut feeling was right after all.  ;)
->>
-> 
-> I'm not sure what strcmp has to do with this.
-
-Per the earlier mail, and you suggestion about removal of
-anything unused, this demonstrated that strcmp was also being
-used and hence could not be removed either.
-
-Paul.
+					- Ted
